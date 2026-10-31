@@ -41,9 +41,10 @@ describe("HTTP endpoint", () => {
     }
     expect(hits).toMatchObject([1, 2, 3].map(() => ({ kind: "mcp", name: "sources_donnees", ok: true, method: "tools/call" })));
     expect(teamVisit(new Headers(), new URL("https://rundata.re/mcp/?interne=1"))).toBe(true);
-    for (const [method, status] of [["OPTIONS", 204], ["GET", 405], ["DELETE", 405]] as const) {
+    for (const [method, status] of [["OPTIONS", 204], ["DELETE", 405]] as const) {
       expect((await handle(new Request("https://rundata.re/mcp/", { method }), new Cache())).status, method).toBe(status);
     }
+    expect((await handle(new Request("https://rundata.re/mcp/", { headers: { accept: "text/event-stream" } }), new Cache())).status).toBe(405);
     vi.stubGlobal("fetch", async () => {
       throw new Error("offline");
     });

@@ -1374,9 +1374,10 @@ export function cruesLive(data: Cached<CruesAnswer> | null, now: Date): Live | u
 // ---------------------------------------------------------------- bornes de recharge
 
 /** A station in a list: where it is, its power and plugs, « Y aller », how many points are free. */
-export function borneRow(s: BorneStation, g: Porte = porte()): string {
+/** `ancre`: the row of its commune's list, the one /carte's bubble leads to (`s-<id>`); not the fast stations' list, which repeats it. */
+export function borneRow(s: BorneStation, g: Porte = porte(), ancre = false): string {
   const free = s.libres ? `<b>${s.libres}</b> libre${s.libres > 1 ? "s" : ""} sur ${s.total}` : `aucun libre sur ${s.total}`;
-  return `<li><span>${esc(s.station)}<small>${fr(s.puissance_max_kw)} kW · ${esc(s.prises.join(", "))}${s.horaires && s.horaires !== "24 h/24, 7 j/7" ? ` · ${esc(s.horaires)}` : ""}</small>` +
+  return `<li${ancre && s.id ? ` id="s-${esc(s.id)}" class="tgt"` : ""}><span>${esc(s.station)}<small>${fr(s.puissance_max_kw)} kW · ${esc(s.prises.join(", "))}${s.horaires && s.horaires !== "24 h/24, 7 j/7" ? ` · ${esc(s.horaires)}` : ""}</small>` +
     `${g.aller({ nom: s.station, lat: s.lat, lon: s.lon, adresse: s.adresse })}</span>` +
     `<span class="${s.libres ? "free" : "busy"}">${free}</span></li>`;
 }
@@ -1410,7 +1411,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
         const free = mine.reduce((n, s) => n + s.libres, 0);
         return `<li class="card tgt" id="${anchorId("c", c.commune)}">${folded(foldBornes,
           `<h3>${esc(c.commune)}${foldBornes ? "\u00a0" : " "}<span class="note">${foldBornes ? "·\u00a0" : ""}${free}\u00a0libre${free > 1 ? "s" : ""} sur\u00a0${c.points}, ${c.stations}\u00a0station${c.stations > 1 ? "s" : ""}</span></h3>`,
-          `<ul class="rows bornes">${mine.map((s) => borneRow(s, g)).join("")}</ul>`)}</li>`;
+          `<ul class="rows bornes">${mine.map((s) => borneRow(s, g, true)).join("")}</ul>`)}</li>`;
       }).join("")}</ul>` +
       `<p class="note">${esc(d.donnees)}${d.avertissement ? ` ${esc(d.avertissement)}` : ""}</p>`
     : `<p class="card">L'état des bornes se charge : rechargez la page dans quelques secondes.</p>`;
@@ -2469,7 +2470,7 @@ export function daeLive(): Live {
  * The four accesses in short, by reach (tools/dae.ts): the same words in the list by commune and in « Autour de moi ».
  * Reserved, with whom to ask: in an emergency, the staff can bring it (marketing).
  */
-const ACCES = ["dehors, 24 h/24", "24 h/24", "horaires du lieu", "accès réservé · demander à l'accueil"];
+export const ACCES = ["dehors, 24 h/24", "24 h/24", "horaires du lieu", "accès réservé · demander à l'accueil"];
 const shortAccess = (a: string) => ACCES[a.includes("extérieur") ? 0 : a.includes("24 h") ? 1 : a.includes("accès libre") ? 2 : 3];
 
 /**

@@ -3,7 +3,24 @@ import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import type { HomeData, StationNow } from "../src/web/data.js";
 import { apart, esc, NOMS_SCRIPT, project } from "../src/web/map.js";
-import { ALT_PATH, communeOf, discR, landBreeze, METEO_SCRIPT, rainPill, rejeuScript, rejeuScriptPath, stationsMap, ventText, windPill } from "../src/web/meteo-carte.js";
+import {
+  ago,
+  ALT_PATH,
+  blend,
+  communeOf,
+  discR,
+  landBreeze,
+  METEO_SCRIPT,
+  pace,
+  rainPill,
+  rejeuScript,
+  rejeuScriptPath,
+  shownAt,
+  stationsMap,
+  trailOf,
+  ventText,
+  windPill,
+} from "../src/web/meteo-carte.js";
 import { CSS, meteoPage, stationId } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
 
@@ -375,11 +392,13 @@ describe("the page /meteo with every station", () => {
     expect(METEO_SCRIPT).toContain(`"Le radar de Météo-France ne voit pas de pluie "+(tail?"sur l'île ":"")+at_(j.fin)+"."`);
     // In the replay, a past image: its date and the past tense, never "hier".
     expect(METEO_SCRIPT).toContain(`"Le "+dm_(j.fin)+" à "+hm(j.fin)+", le radar de Météo-France ne voyait pas de pluie."`);
-    expect(METEO_SCRIPT).toContain(`say_(n,bad,{el},"",1)`);
+    expect(METEO_SCRIPT).toContain(`say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":""):dist(n).bad,{el},"",1)`);
     expect(METEO_SCRIPT).toContain(`" et n'est pas affichée."`);
     // The hatches' sentence comes after a hatched square, styled by the page, which ties it to the hatches on the map.
-    expect(METEO_SCRIPT).toContain(`w.append(i,"\u00a0Hachures");el.append(" ",w,bad.slice(9))`);
+    expect(METEO_SCRIPT).toContain(`w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))`);
+    expect(METEO_SCRIPT).toContain(`BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée."`);
     expect(CSS).toContain(".wxmap .hsw{");
+    expect(CSS).not.toContain(".hsv");
     // The radar's rain in blues only, deeper class after class: the two strongest were violet and magenta, which the
     // legend did not have (31/10/2026). Its scale before the sentence, from its first class to its last.
     const K: string[] = JSON.parse(METEO_SCRIPT.match(/const K=(\[[^\]]*\])/)![1]);
@@ -471,5 +490,131 @@ describe("the replay bar's own script", () => {
     expect(js).not.toContain("OpenWindMap");
     // The data it is given (the stations named on the map, the colours) cannot close a script.
     expect(js).not.toContain("</");
+  });
+});
+
+describe("the rain's animation and its replay", () => {
+  // The frames a loop draws at the rAF times given, and how far each moves (k, in frames of 1/30 s), as STEP does.
+  const frames = (times: number[]) => {
+    let last = 0,
+      nx = 0;
+    const out: number[] = [];
+    for (const t of times) {
+      const p = pace(t, last, nx);
+      if (!p) continue;
+      out.push(p[0]);
+      nx = p[1];
+      last = t;
+    }
+    return out;
+  };
+  const loop = METEO_SCRIPT.match(/const pace=([^]*?),loop=\(t\)=>\{raf=requestAnimationFrame\(loop\);(.*?)o\.frame\(k\)\};/)!;
+  const tick = rejeuScript().match(/const pace=([^]*?),tick=\(t\)=>\{raf=requestAnimationFrame\(tick\);const was=last;(.*?)const dt=/)!;
+
+  it("draws 30 frames a second on a 60 Hz screen never quite even, a 120 Hz one and a capture stepped at 1/30 s", () => {
+    // The animations and the replay step alike, with pace as its text, as frames() does.
+    expect(tick.slice(1)).toEqual(loop.slice(1));
+    expect(loop[1]).toBe(String(pace));
+    expect(loop[2]).toBe("const p=pace(t,last,nx);if(!p)return;const k=p[0];nx=p[1];last=t;");
+    // The functions taken as their text need nothing of the module around them.
+    expect(METEO_SCRIPT + rejeuScript()).not.toContain("__name");
+    // 60 Hz, each frame up to 0.6 ms early or late: every other one, never two skipped (a frame at 32 ms at least made 15).
+    const jitter = Array.from({ length: 600 }, (_, i) => 1000 + (i * 1000) / 60 + (i % 2 ? -0.6 : 0.6) * ((i * 7) % 3 === 0 ? 1 : -1));
+    const k60 = frames(jitter);
+    expect(k60.length).toBeGreaterThanOrEqual(299);
+    expect(k60.length).toBeLessThanOrEqual(301);
+    for (const k of k60.slice(1)) expect(k).toBeCloseTo(1, 1);
+    expect(frames(Array.from({ length: 1200 }, (_, i) => 1000 + (i * 1000) / 120)).length).toBe(300);
+    // Stepped at exactly 1/30 s, as the Reel's capture does: every step a frame, each moving one frame.
+    const stepped = frames(Array.from({ length: 300 }, (_, i) => 1000 + (i * 1000) / 30));
+    expect(stepped).toHaveLength(300);
+    for (const k of stepped.slice(1)) expect(k).toBeCloseTo(1, 6);
+    // A late frame moves things as far as the time gone by, never more than 100 ms' worth.
+    expect(frames([1000, 1100])[1]).toBeCloseTo(3, 6);
+    expect(frames([1000, 2000])[1]).toBeCloseTo(3, 6);
+  });
+
+  it("keeps the drops falling when the replay's image changes, born in each of the two faded by its share", () => {
+    // Drops born in the image drawn, or in one of the two, as much as it shows.
+    expect(METEO_SCRIPT).toContain(`s=Z&&Z.n&&(!A.n||Math.random()<f)?Z:A`);
+    expect(METEO_SCRIPT).toContain(`P=[dist(A),dist(Z),f]`);
+    // An image that changes draws the layer again and moves no drop; only rain after none starts the animation, and a
+    // still picture is drawn again with its image for those who ask for less motion.
+    expect(METEO_SCRIPT).toContain(`const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()}`);
+    expect(METEO_SCRIPT.match(/mix:\(a,z,f,el,gr,tr,wm\)=>\{[^\n]*/)![0]).not.toContain("o.again");
+    // A drop at its end is born again, or leaves when the rain wants fewer; those lacking come a tenth at a time.
+    expect(METEO_SCRIPT).toContain(`if((p.a+=k)>p.m&&(ds.length>n||!born(p)))ds.splice(i,1)`);
+    expect(METEO_SCRIPT).toContain(`Math.ceil(n/10)`);
+    // The two images faded added, each by its share: no dip half way.
+    expect(METEO_SCRIPT).toContain(`x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2]`);
+  });
+
+  it("writes the time of a radar image during the replay, never a minute between two, the next one from half way", () => {
+    const shown = shownAt;
+    expect(rejeuScript()).toContain(`const shown=${shownAt};`);
+    const at = (h: number, m: number) => Date.UTC(2026, 9, 31, h - 4, m);
+    const a = { t: at(10, 45) }, z = { t: at(10, 50) };
+    // 10:46, 10:47 and 10:47:29 show the image of 10:45; 10:47:30 and after, the one of 10:50, which the legend names then.
+    for (const m of [46, 47, 47.49]) expect(shown(at(10, m), { a, z, f: (m - 45) / 5 }, "p")).toBe(a.t);
+    for (const m of [47.5, 48, 49.9]) expect(shown(at(10, m), { a, z, f: (m - 45) / 5 }, "p")).toBe(z.t);
+    expect(rejeuScript()).toContain(`t=end?E:shown(T,r,l)`);
+    expect(rejeuScript()).toContain(`trail(shown(T,r,l)),wm())`);
+    expect(METEO_SCRIPT).toContain(`n=f<.5?A:Z`);
+    // On an image, its time; between two hours of the stations, the moment, said « estimé ».
+    expect(shown(at(10, 46), { m: a }, "p")).toBe(a.t);
+    expect(shown(at(10, 20), { a: { t: at(10, 0) }, z: { t: at(11, 0) }, f: 1 / 3 }, "t")).toBe(at(10, 20));
+  });
+
+  it("spreads the radar's cells smoothly, never in steps, and veils where the radars see badly", () => {
+    expect(METEO_SCRIPT).toContain(`smooth(x);x.drawImage(t,0,0,cw,ch)`);
+    expect(METEO_SCRIPT).toContain(`c.fillStyle="rgba(255,255,255,.3)"`);
+    // Every 12 px, twice the hatches' former spacing, their dark line darker than at first (the user, 31/10/2026).
+    expect(METEO_SCRIPT).toContain(`t.width=t.height=12`);
+    expect(METEO_SCRIPT).toContain(`["rgba(11,31,54,.62)",1.4,0]`);
+  });
+
+  it("lets where the radars saw badly linger during a play, fading over two seconds of it, and says how long before the time shown", () => {
+    const at = (m: number) => m * 6e4, W = 60;
+    // As the replay's script does: TRAIL of PLAY, an hour of radar over 6 hours; none for less motion.
+    expect(rejeuScript()).toContain(`const keep=${trailOf},trail=(s)=>rm?null:keep(K.p,T,s,DU[d]*TRAIL/PLAY),wm=`);
+    expect(rejeuScript()).toContain(`TRAIL=2000`);
+    expect((216e5 * 2000) / 12000).toBe(at(W));
+    const trail = (T: number, s: number) => trailOf(IMG.map((m) => ({ t: at(m), e: m })), T, s, at(W)) as [number, number][];
+    // And as the rain's script does, each image's grid where the radars saw badly.
+    expect(METEO_SCRIPT).toContain(`const blend=${blend},veils=(A,Z,f,tr)=>{const za=bad(Z);if(!O||O.length!==za.length)O=new Float32Array(za.length);
+return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};`);
+    type G = { a: number[] };
+    const bad = (g: G) => Object.assign(Float32Array.from(g.a), { z: !g.a.some(Boolean) });
+    const veils = (A: G, Z: G, f: number, tr: [G, number][] | null) =>
+      blend(bad(A), bad(Z), A === Z, f, tr && tr.map(([j, w]): [ReturnType<typeof bad>, number] => [bad(j), w]), new Float32Array(A.a.length));
+    // An image of the radar every 5 minutes, each seeing badly in its own cell alone (cell n for the image at 5n).
+    const IMG = Array.from({ length: 25 }, (_, n) => n * 5);
+    const grid = (m: number) => ({ a: IMG.map((x) => (x === m ? 1 : 0)) });
+    // The trail at 62 min, its time shown 60: the images of the hour before 60, each from 1 at its time down to 0.
+    const t62 = trail(at(62), at(60))!;
+    expect(t62.map(([e]) => e)).toEqual([5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]);
+    for (const [e, w] of t62) expect(w).toBeCloseTo(1 - (62 - e) / W, 6);
+    // A whole play, frame by frame: a zone is on the map only if the radar saw it badly on an image of the hour before
+    // the time shown, that time in (marketing, 31/10/2026); and the zone of the image shown is all there.
+    for (let T = at(2); T < at(120); T += 6e4 / 7) {
+      const i = Math.floor(T / at(5)), a = IMG[i] * 6e4, z = IMG[i + 1] * 6e4, f = (T - a) / (z - a);
+      const s = shownAt(T, { a: { t: a }, z: { t: z }, f }, "p");
+      const O = veils(grid(IMG[i]), grid(IMG[i + 1]), f, trail(T, s).map(([e, w]): [G, number] => [grid(e), w]));
+      IMG.forEach((m, n) => {
+        const v = O ? O[n] : 0;
+        if (v > 0) expect(at(m) <= s && at(m) > s - at(W)).toBe(true);
+        if (at(m) === s && T - s < at(W)) expect(v).toBeGreaterThan(0);
+      });
+    }
+    // Without a trail (less motion), the two images faded.
+    const near = (got: Float32Array, want: number[]) => expect([...got]).toEqual(want.map((v) => expect.closeTo(v, 6)));
+    const A = { a: [1, 0, 0] }, Z = { a: [0, 1, 0] }, old = { a: [0, 0, 1] };
+    near(veils(A, Z, 0.25, null)!, [0.75, 0.25, 0]);
+    near(veils(A, Z, 0.75, [[old, 0.4], [A, 0.9]])!, [0.9, 0.5, 0.4]);
+    near(veils(Z, Z, 0, [[A, 0.5]])!, [0.5, 1, 0]);
+    expect(veils({ a: [0, 0, 0] }, { a: [0, 0, 0] }, 0.5, [[{ a: [0, 0, 0] }, 1]])).toBeNull();
+    // The legend says how long before the time shown (marketing's words, a no-break space between figure and unit).
+    expect(METEO_SCRIPT).toContain(`const ago=${ago};`);
+    expect([30, 60, 120, 240].map(ago)).toEqual(["au cours des 30\u00a0minutes précédentes", "au cours de l'heure précédente", "au cours des 2\u00a0heures précédentes", "au cours des 4\u00a0heures précédentes"]);
   });
 });

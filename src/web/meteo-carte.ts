@@ -292,16 +292,33 @@ for(const[px,py,r]of p){const q=1/((px-x)**2+(py-y)**2+.5);sw+=q;sr+=q*r}T[i]=k+
 const o=g.createImageData(w,h),M=new Float32Array(w*h),paint=(T)=>{for(let i=0;i<w*h;i++){if(!a[i*4])continue;if(!T){o.data[i*4+3]=0;continue}const[R,G,B]=col(T[i]);o.data[i*4]=R;o.data[i*4+1]=G;o.data[i*4+2]=B;o.data[i*4+3]=215}g.putImageData(o,0,0)};
 const now=grid(st);paint(now);RJ.t={live:st,now,grid,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M[i]=A[i]+(B[i]-A[i])*f;paint(M)},back:()=>paint(now)}};im.src=vo.dataset.alt}`;
 
+/** One frame of the animations and of the replay, in ms: 30 frames a second. */
+const FRAME_MS = 1000 / 30;
+
 /**
- * What the wind and the rain share in the browser: a canvas animated about 30 frames a second, only while its layer
+ * A frame every FRAME_MS (1000 / 30, written out: the page's scripts take this function as its text), for a rAF
+ * callback at the time `t`, `last` the previous frame's time and `nx` the next's: null when it is too soon, else the
+ * time gone by in frames, how far things move, and the next frame's time. A frame is drawn as soon as its time is
+ * within 8 ms, so that a screen's 60 Hz, never quite even, gives every other frame of its own (a frame at 32 ms at
+ * least drew one in four instead, 15 a second, 31/10/2026), and a frame late by more than one starts the count again.
+ */
+export const pace = (t: number, last: number, nx: number): [number, number] | null => {
+  if (t < nx - 8) return null;
+  return [last ? Math.min(t - last, 100) / (1000 / 30) : 1, t - nx > 1000 / 30 ? t + 1000 / 30 : nx + 1000 / 30];
+};
+/** The step of a script's rAF callback that has `pace`, `t`, `last` and `nx`: `k`, how far things move. */
+const STEP = `const p=pace(t,last,nx);if(!p)return;const k=p[0];nx=p[1];last=t;`;
+
+/**
+ * What the wind and the rain share in the browser: a canvas animated 30 frames a second (STEP), only while its layer
  * is shown, the map on screen and the tab in front; drawn again when the map's width changes (a phone's address bar
  * that hides changes its height alone); one still picture for those who ask for less motion, or when nothing moves
  * (`o.moving()`). `o.ready()` says when its data has come; the function returned, called then, starts it; `o.again()`
  * draws it all again, for the replay's images.
  */
-const ANIM = `const anim=(o)=>{const inp=document.getElementById(o.id);let run=false,seen=false,raf=0,last=0,cw=0;
-const loop=(t)=>{raf=requestAnimationFrame(loop);if(t-last<32)return;last=t;o.frame()};
-const go=()=>{const on=inp&&inp.checked&&seen&&!document.hidden&&o.ready();if(on&&!run){run=true;const r=o.fl.getBoundingClientRect();cw=Math.round(r.width);o.size(r);
+const ANIM = `const anim=(o)=>{const inp=document.getElementById(o.id);let run=false,seen=false,raf=0,last=0,nx=0,cw=0;
+const pace=${pace},loop=(t)=>{raf=requestAnimationFrame(loop);${STEP}o.frame(k)};
+const go=()=>{const on=inp&&inp.checked&&seen&&!document.hidden&&o.ready();if(on&&!run){run=true;last=nx=0;const r=o.fl.getBoundingClientRect();cw=Math.round(r.width);o.size(r);
 if(o.moving&&!o.moving()||matchMedia("(prefers-reduced-motion: reduce)").matches){o.still();return}raf=requestAnimationFrame(loop)}else if(!on&&run){run=false;cancelAnimationFrame(raf)}};
 new IntersectionObserver((e)=>{seen=e[0].isIntersecting;go()}).observe(o.fl.closest("figure"));document.addEventListener("visibilitychange",go);
 document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",go));addEventListener("resize",()=>{if(run&&Math.round(o.fl.getBoundingClientRect().width)!==cw){run=false;cancelAnimationFrame(raf);go()}});
@@ -329,9 +346,9 @@ still:()=>{g.clearRect(0,0,cw,ch);g.strokeStyle="rgba(255,255,255,.9)";g.lineWid
 for(let j=e/2;j<h;j+=e)for(let i=e/2;i<w;i+=e){if(!M[(j|0)*w+(i|0)])continue;const[u,v]=at(i*${W}/w,j*${H}/h),q=Math.hypot(u,v);if(q<.5)continue;
 const X=i*cw/w,Y=j*ch/h,dx=u/q*8,dy=v/q*8,a=Math.atan2(dy,dx);g.beginPath();g.moveTo(X-dx,Y-dy);g.lineTo(X+dx,Y+dy);
 g.lineTo(X+dx-5*Math.cos(a-.5),Y+dy-5*Math.sin(a-.5));g.moveTo(X+dx,Y+dy);g.lineTo(X+dx-5*Math.cos(a+.5),Y+dy-5*Math.sin(a+.5));g.stroke()}},
-frame:()=>{const s=cw/${W};g.globalCompositeOperation="destination-in";g.fillStyle="rgba(0,0,0,.94)";g.fillRect(0,0,cw,ch);g.globalCompositeOperation="source-over";
+frame:(k)=>{const s=cw/${W};g.globalCompositeOperation="destination-in";g.fillStyle="rgba(0,0,0,.94)";g.fillRect(0,0,cw,ch);g.globalCompositeOperation="source-over";
 g.strokeStyle="rgba(255,255,255,.9)";g.lineWidth=Math.max(1.2,cw/330);g.beginPath();
-for(const p of ps){const[u,v]=at(p.x,p.y),x=p.x+u*.3,y=p.y+v*.3;if(++p.a>100||x<0||y<0||x>=${W}||y>=${H}||!on_(x,y)){born(p);continue}g.moveTo(p.x*s,p.y*s);g.lineTo(x*s,y*s);p.x=x;p.y=y}g.stroke()}};const go=anim(o);
+for(const p of ps){const[u,v]=at(p.x,p.y),x=p.x+u*.3*k,y=p.y+v*.3*k;if((p.a+=k)>100||x<0||y<0||x>=${W}||y>=${H}||!on_(x,y)){born(p);continue}g.moveTo(p.x*s,p.y*s);g.lineTo(x*s,y*s);p.x=x;p.y=y}g.stroke()}};const go=anim(o);
 // The field of a set of anemometers [x, y, u, v]: the live ones, or those of a round hour of the replay.
 let A,x;const field=(sx)=>{const p=sx.map(([X,Y,u,v])=>[X*w/${W},Y*h/${H},u,v]),u2=new Float32Array(w*h),v2=new Float32Array(w*h);for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=j*w+i;let sw=0,su=0,sv=0;
 for(const[px,py,u,v]of p){const q=1/((px-i)**2+(py-j)**2+.5);sw+=q;su+=q*u;sv+=q*v}if(sw){u2[k]=su/sw;v2[k]=sv/sw}}return[u2,v2]};
@@ -343,62 +360,141 @@ im.onload=()=>{w=im.width;h=im.height;const c=ve;c.width=w;c.height=h;x=c2d(c);x
 for(let k=0;k<w*h;k++)if(A[k*4]){M[k]=1;land.push(k)}const now=field(st);set(now);
 RJ.v={live:st,now,grid:field,show:set,mix:(F,G,f)=>{for(let k=0;k<w*h;k++){U[k]=F[0][k]+(G[0][k]-F[0][k])*f;V[k]=F[1][k]+(G[1][k]-F[1][k])*f}veil()},back:()=>set(now)};go()};im.src=ve.dataset.alt}`;
 
+/** Where the radars saw badly on an image, cell by cell from 0 to 1 (`z`: nowhere). */
+type Badly = Float32Array & { z: boolean };
+/**
+ * The veil between two images into `o`: with a trail, each of its images as much as it has left (the one drawn among
+ * them), and the next once its time is the one shown, from half way through the fade (all of it on an image, `same`);
+ * without one, the two faded. Null where nothing is seen badly. The rain's script takes it as its text.
+ */
+export const blend = (a: Badly, z: Badly, same: boolean, f: number, tr: [Badly, number][] | null, o: Float32Array) => {
+  const fz = same ? 1 : Math.max(0, 2 * f - 1);
+  let any = false;
+  if (tr) {
+    o.fill(0);
+    if (!z.z && fz) {
+      for (let k = 0; k < o.length; k++) o[k] = z[k] * fz;
+      any = true;
+    }
+    for (const [b, w] of tr) {
+      if (b.z) continue;
+      any = true;
+      for (let k = 0; k < o.length; k++) if (b[k] * w > o[k]) o[k] = b[k] * w;
+    }
+  } else {
+    any = !a.z || !z.z;
+    if (any) for (let k = 0; k < o.length; k++) o[k] = a[k] * (1 - f) + z[k] * f;
+  }
+  return any ? o : null;
+};
+/** The legend of a trail: how long, in minutes, the zones seen badly linger before the time shown. */
+export const ago = (m: number) =>
+  m === 60
+    ? "au cours de l'heure précédente"
+    : m % 60
+      ? "au cours des " + m + "\u00a0minutes précédentes"
+      : "au cours des " + m / 60 + "\u00a0heures précédentes";
+
+// RAIN_WASH as [red, green, blue, opacity], for the cells drawn as pixels.
+const RAIN_RGBA = RAIN_WASH.map((c) => c.match(/[\d.]+/g)!.map(Number));
+
 /**
  * The rain the radar sees, in the browser, asked for when the layer is first shown (web/pluie-radar.ts): its cells
- * washed in blue by class, hatched where the radars see badly (night and white stripes, which show on any relief; both
- * drawn once, at the screen's size), and drops falling
- * in the wet cells, more and faster where it rains harder (the second canvas, cleared each frame), never so many that
- * they hide the blue: in a downpour, 26 drops a cell for 1 in the lightest made white stripes over it (31/10/2026). The legend says the
- * image's time, that the radar sees no rain, or that its image is too old to say anything about now. For the replay
- * (RJ.p): an image of the history, or two faded one into the other, the drops those of the nearer.
+ * washed in blue by class, drawn one pixel a cell then spread smoothly to the screen's size (the radar's cells made
+ * steps on every edge), and where the radars see badly a light veil, with soft edges too, and fine hatches; and drops
+ * falling in the wet cells, more and faster where it rains harder (the second canvas, cleared each frame), never so
+ * many that they hide the blue: in a downpour, 26 drops a cell for 1 in the lightest made white stripes over it
+ * (31/10/2026). Each drop comes and goes faded, and falls to its end: an image that changes moves none, those born
+ * after it are born in its rain. The legend says the image's time, that the radar sees no rain, or that its image is
+ * too old to say anything about now. For the replay (RJ.p): an image of the history, or two faded one into the other,
+ * the drops born in each by its share of the fade; where the radars saw badly lingers a while, fading (the user,
+ * 31/10/2026: a zone that moves rather than patches that jump), and the legend says how long.
  */
 const PLUIE_SCRIPT = `const pr=document.querySelector("[data-pluie]");if(pr){const fl=pr.nextElementSibling,say=document.querySelector("[data-radar]"),inp=document.getElementById("wxl-p");
-let d=null,live=null,L=null,Lp=null,cells=[],acc=[],ds=[],cw=0,ch=0,g,asked=false,mx=null;const K=${JSON.stringify(RAIN_WASH)},SC=${JSON.stringify([`${fr(CLASSES[0])}\u202fmm/h`, `plus de ${CLASSES[CLASSES.length - 1]}\u202fmm/h`])},Wt=[0,1,2,3,4,5,6,7,8];
-const BAD=" Hachures : zones que le radar voit mal, où la pluie peut être manquée.";
+let d=null,live=null,L=null,Lp=null,P=null,ds=[],cw=0,ch=0,g,asked=false,mx=null;const K=${JSON.stringify(RAIN_WASH)},KA=${JSON.stringify(RAIN_RGBA)},SC=${JSON.stringify([`${fr(CLASSES[0])}\u202fmm/h`, `plus de ${CLASSES[CLASSES.length - 1]}\u202fmm/h`])},Wt=[0,1,2,3,4,5,6,7,8];
+const BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée.",calm=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 const when=(t)=>{const x=loc(t),n=loc(new Date().toISOString());return x.toISOString().slice(0,10)===n.toISOString().slice(0,10)?"de "+hm(t):"du "+p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)+" à "+hm(t)};
 const radars=(l)=>{const of=(n)=>(n==="Colorado"?"du ":"de ")+n;return(l.length>1?"Radars ":"Radar ")+l.slice(0,-1).map(of).join(", ")+(l.length>1?" et ":"")+of(l[l.length-1])+" en défaut, selon Météo-France : de la pluie peut manquer sur la carte."};
-const pick=()=>{const r=Math.random()*acc[acc.length-1];let a=0,b=acc.length-1;while(a<b){const m=(a+b)>>1;if(acc[m]<r)a=m+1;else b=m}return cells[a]};
-const born=(p)=>{const k=pick(),c=+d.pluie[k];p.x=(k%d.w+Math.random())*cw/d.w;p.y=((k/d.w|0)+Math.random())*ch/d.h;p.v=.8+c*.25;p.l=3+c;p.a=0;p.m=5+(Math.random()*6|0)};
-const drops=(n)=>{g.strokeStyle="rgba(255,255,255,.7)";g.lineWidth=1.2;g.lineCap="round";g.beginPath();for(const p of ds){g.moveTo(p.x,p.y);g.lineTo(p.x-p.l*.25,p.y-p.l)}g.stroke()};
-// A grid's cells washed in blue by class, and hatched where the radars see badly, on a canvas at the map's size.
-const wash=(x,j)=>{const sx=cw/j.w,sy=ch/j.h,t=document.createElement("canvas");t.width=t.height=6;const tg=t.getContext("2d");tg.lineWidth=1.6;for(const[c,o]of[["rgba(11,31,54,.55)",0],["rgba(255,255,255,.5)",3]]){tg.strokeStyle=c;tg.beginPath();for(const k of[-6,0,6]){tg.moveTo(k+o-1,7);tg.lineTo(k+o+7,-1)}tg.stroke()}
-const hatch=x.createPattern(t,"repeat");for(let k=0;k<j.w*j.h;k++){const c=j.pluie[k],X=(k%j.w)*sx,Y=(k/j.w|0)*sy;
-if(c>"0"){x.fillStyle=K[+c-1];x.fillRect(X,Y,sx+.6,sy+.6)}if(j.mal_vu[k]==="1"){x.fillStyle=hatch;x.fillRect(X,Y,sx+.6,sy+.6)}}};
-// The replay's two images, each washed once on a canvas of its own, then faded on the layer's.
+// A grid's rainy cells of the island alone (the map shows nothing of the sea, where the radars also see), each weighed
+// by its class, and whether the radars see badly somewhere on it; counted once.
+const DI=new Map(),dist=(j)=>{let r=DI.get(j);if(r)return r;const cells=[],acc=[];let bad="";for(let k=0;k<j.w*j.h;k++){if(!L[k])continue;const c=+j.pluie[k];if(c>0){cells.push(k);acc.push((acc[acc.length-1]||0)+Wt[c])}if(j.mal_vu[k]==="1")bad=BAD}
+r={j,cells,acc,bad,n:acc[acc.length-1]||0};DI.set(j,r);if(DI.size>8)DI.delete(DI.keys().next().value);return r};
+// Where a drop is born (P): in the image drawn, or in one of the two faded, as much as it shows.
+const pick=(s)=>{const r=Math.random()*s.n;let a=0,b=s.acc.length-1;while(a<b){const m=(a+b)>>1;if(s.acc[m]<r)a=m+1;else b=m}return s.cells[a]};
+const born=(p)=>{const[A,Z,f]=P,s=Z&&Z.n&&(!A.n||Math.random()<f)?Z:A;if(!s.n)return false;const k=pick(s),c=+s.j.pluie[k];p.x=(k%s.j.w+Math.random())*cw/s.j.w;p.y=((k/s.j.w|0)+Math.random())*ch/s.j.h;p.v=.8+c*.25;p.l=3+c;p.a=0;p.m=6+Math.random()*6;return true};
+const want=()=>{if(!P)return 0;const[A,Z,f]=P,n=Z?A.n*(1-f)+Z.n*f:A.n;return n?Math.min(900,Math.max(25,Math.round(n*.03*cw*ch/88e3))):0};
+const moving=()=>!!P&&(P[0].n>0||!!P[1]&&P[1].n>0);
+// Each drop at a third, two thirds, then all of its white, over its first frames and its last.
+const drops=()=>{g.lineWidth=1.2;g.lineCap="round";for(let q=1;q<4;q++){g.strokeStyle="rgba(255,255,255,"+(q*.7/3).toFixed(2)+")";g.beginPath();
+for(const p of ds){if(Math.min(3,Math.max(1,Math.ceil(Math.min(p.a+.01,p.m-p.a))))!==q)continue;g.moveTo(p.x,p.y);g.lineTo(p.x-p.l*.25,p.y-p.l)}g.stroke()}};
+const smooth=(x)=>{x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high"};
+// Where the radars see badly, on the radar's grid with one cell of margin: each cell's share of bad cells around it, a
+// veil from 0 to 1 past half; counted once an image (z: nowhere).
+const BG=new Map(),bad=(j)=>{let a=BG.get(j);if(a)return a;const w=j.w,h=j.h,W2=w+2,v=(i,k)=>i>=0&&k>=0&&i<w&&k<h&&j.mal_vu[k*w+i]==="1"?1:0;a=new Float32Array(W2*(h+2));a.z=!j.mal_vu.includes("1");
+if(!a.z)for(let k=-1;k<=h;k++)for(let i=-1;i<=w;i++){let s=0;for(let q=-1;q<2;q++)for(let b=-1;b<2;b++)s+=v(i+q,k+b);a[(k+1)*W2+i+1]=Math.max(0,Math.min(1,(s/9-.3)/.4))}
+BG.set(j,a);if(BG.size>16)BG.delete(BG.keys().next().value);return a};
+// The veil and its hatches in the map's two tones at the map's size, drawn once; shown through a veil of the radar's
+// grid spread smoothly, its edges soft.
+let VC=null,WC=null,M=null;
+const veil=()=>{if(VC&&VC.width===cw&&VC.height===ch)return VC;VC=document.createElement("canvas");VC.width=cw;VC.height=ch;const c=VC.getContext("2d");c.fillStyle="rgba(255,255,255,.3)";c.fillRect(0,0,cw,ch);
+const t=document.createElement("canvas");t.width=t.height=12;const tg=t.getContext("2d");for(const[s,lw,o]of[["rgba(11,31,54,.62)",1.4,0],["rgba(255,255,255,.6)",1,6]]){tg.lineWidth=lw;tg.strokeStyle=s;tg.beginPath();for(const k of[-12,0,12]){tg.moveTo(k+o-1,13);tg.lineTo(k+o+13,-1)}tg.stroke()}
+c.fillStyle=c.createPattern(t,"repeat");c.fillRect(0,0,cw,ch);return VC};
+const badly=(x,a,w,h)=>{const W2=w+2,H2=h+2;if(!M)M=document.createElement("canvas");M.width=W2;M.height=H2;const mg=M.getContext("2d"),e=mg.createImageData(W2,H2);for(let i=0;i<a.length;i++){e.data[i*4]=e.data[i*4+1]=e.data[i*4+2]=255;e.data[i*4+3]=a[i]*255}mg.putImageData(e,0,0);
+if(!WC||WC.width!==cw||WC.height!==ch){WC=document.createElement("canvas");WC.width=cw;WC.height=ch}const c=WC.getContext("2d");c.globalCompositeOperation="copy";c.drawImage(veil(),0,0);
+c.globalCompositeOperation="destination-in";smooth(c);c.drawImage(M,-cw/w,-ch/h,W2*cw/w,H2*ch/h);c.globalCompositeOperation="source-over";x.drawImage(WC,0,0)};
+// The veil between two images (blend), in one array kept.
+let O=null;const blend=${blend},veils=(A,Z,f,tr)=>{const za=bad(Z);if(!O||O.length!==za.length)O=new Float32Array(za.length);
+return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};
+// A grid's cells washed in blue by class on a canvas at the map's size.
+const wash=(x,j)=>{const t=document.createElement("canvas");t.width=j.w;t.height=j.h;const tg=t.getContext("2d"),e=tg.createImageData(j.w,j.h);
+for(let k=0;k<j.w*j.h;k++){const c=+j.pluie[k];if(!c)continue;const q=KA[c-1];e.data[k*4]=q[0];e.data[k*4+1]=q[1];e.data[k*4+2]=q[2];e.data[k*4+3]=q[3]*255}tg.putImageData(e,0,0);
+smooth(x);x.drawImage(t,0,0,cw,ch)};
+// Each image washed once on a canvas of its own; the layer's, the image drawn, or the two faded one into the other
+// (added, each by its share: no dip half way).
 const C=new Map(),cv=(j)=>{let c=C.get(j);if(c&&c.width===cw&&c.height===ch)return c;c=document.createElement("canvas");c.width=cw;c.height=ch;wash(c.getContext("2d"),j);C.set(j,c);if(C.size>4)C.delete(C.keys().next().value);return c};
-const mixed=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1};
-const o={fl,id:"wxl-p",ready:()=>!!d,moving:()=>cells.length>0,
-size:(r)=>{cw=fl.width=pr.width=Math.max(1,Math.round(r.width));ch=fl.height=pr.height=Math.max(1,Math.round(r.height));g=c2d(fl);if(mx)mixed();else wash(c2d(pr),d);
-ds=[];if(!cells.length)return;const n=Math.min(900,Math.max(25,Math.round(acc[acc.length-1]*.03*r.width*r.height/88e3)));for(let i=0;i<n;i++){const p={};born(p);p.a=(Math.random()*p.m)|0;ds.push(p)}},
+const paint=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);if(!mx){if(d){x.drawImage(cv(d),0,0);const a=bad(d);if(!a.z)badly(x,a,d.w,d.h)}return}
+x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over";
+const a=veils(...mx);if(a)badly(x,a,mx[1].w,mx[1].h)};
+const o={fl,id:"wxl-p",ready:()=>!!d,moving,
+size:(r)=>{cw=fl.width=pr.width=Math.max(1,Math.round(r.width));ch=fl.height=pr.height=Math.max(1,Math.round(r.height));g=c2d(fl);paint();
+ds=[];const n=want();for(let i=0;i<n;i++){const p={};if(!born(p))break;p.a=Math.random()*p.m;ds.push(p)}},
 still:()=>{g.clearRect(0,0,cw,ch);drops()},
-frame:()=>{g.clearRect(0,0,cw,ch);for(const p of ds){p.y+=p.v;p.x-=p.v*.25;if(++p.a>p.m)born(p)}drops()}};const go=anim(o);
+// A drop at its end is born again, unless there are more than the rain wants; a tenth of those it lacks come each frame.
+frame:(k)=>{g.clearRect(0,0,cw,ch);const n=want();for(let i=ds.length-1;i>=0;i--){const p=ds[i];p.y+=p.v*k;p.x-=p.v*.25*k;if((p.a+=k)>p.m&&(ds.length>n||!born(p)))ds.splice(i,1)}
+for(let a=Math.min(n-ds.length,Math.ceil(n/10));a>0;a--){const p={};if(!born(p))break;ds.push(p)}drops()}};const go=anim(o);
 // The hatched square ties the sentence to the hatches on the map, however small they are; it never leaves its word.
 // The radar's scale on its own line above its sentence (.lgr), never read as part of it: its first and last classes,
 // its blues (K) drawn plain.
 const scale=()=>{const s=document.createElement("span"),i=document.createElement("i");s.className="lgs lgr";i.className="vgrad";i.style.background="linear-gradient(90deg,"+K.map((c)=>c.replace("rgba","rgb").replace(/,[.\\d]+\\)$/,")")).join(",")+")";s.append(SC[0],i,SC[1]);return s};
-const show=(el,t,bad,down)=>{el.textContent=t;if(t.startsWith("En bleu"))el.prepend(scale());if(bad){const i=document.createElement("i"),w=document.createElement("span");i.className="hsw";w.className="hsn";w.append(i," Hachures");el.append(" ",w,bad.slice(9))}if(down)el.append(down);el.hidden=false};
+const show=(el,t,bad,down)=>{el.textContent=t;if(t.startsWith("En bleu"))el.prepend(scale());if(bad){const i=document.createElement("i"),w=document.createElement("span");i.className="hsw";w.className="hsn";w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))}if(down)el.append(down);el.hidden=false};
 const land=()=>Lp||(Lp=new Promise((ok,ko)=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.width;c.height=im.height;const x=c.getContext("2d");x.drawImage(im,0,0);
 const a=x.getImageData(0,0,im.width,im.height).data;ok(L=a.filter((v,i)=>i%4===0))};im.onerror=ko;im.src=pr.dataset.alt}));
-// A grid made the one drawn: its rainy cells of the island alone (the map shows nothing of the sea, where the radars
-// also see), and whether the radars see badly somewhere on it.
-const use=(j)=>{d=j;cells=[];acc=[];let bad="";for(let k=0;k<d.w*d.h;k++){if(!L[k])continue;const c=+d.pluie[k];if(c>0){cells.push(k);acc.push((acc[acc.length-1]||0)+Wt[c])}if(d.mal_vu[k]==="1")bad=BAD}return bad};
+// A grid made the one drawn, alone.
+const use=(j)=>{d=j;P=[dist(j),null,0];return dist(j).bad};
+// The drops stay where they fall when the image changes; the animation starts when rain comes, and for those who ask
+// for less motion, the still picture is drawn again with the image.
+const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()};
 // In the replay (past), the image's date and the past tense: never "hier".
 const dm_=(t)=>{const x=loc(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
-const say_=(j,bad,head,tail,past)=>show(head.el,(cells.length?"En bleu : la pluie estimée par le radar de Météo-France "+(past?"le "+dm_(j.fin)+" à "+hm(j.fin):at_(j.fin))+" ; plus c'est foncé, plus elle est forte.":past?"Le "+dm_(j.fin)+" à "+hm(j.fin)+", le radar de Météo-France ne voyait pas de pluie.":"Le radar de Météo-France ne voit pas de pluie "+(tail?"sur l'île ":"")+at_(j.fin)+".")+tail,bad,j.pannes.length?" "+radars(j.pannes):"");
+const say_=(j,bad,head,tail,past)=>show(head.el,(dist(j).cells.length?"En bleu : la pluie estimée par le radar de Météo-France "+(past?"le "+dm_(j.fin)+" à "+hm(j.fin):at_(j.fin))+" ; plus c'est foncé, plus elle est forte.":past?"Le "+dm_(j.fin)+" à "+hm(j.fin)+", le radar de Météo-France ne voyait pas de pluie.":"Le radar de Météo-France ne voit pas de pluie "+(tail?"sur l'île ":"")+at_(j.fin)+".")+tail,bad,j.pannes.length?" "+radars(j.pannes):"");
 const get=()=>{if(asked||!inp.checked)return;asked=true;Promise.all([fetch(pr.dataset.pluie).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),land()]).then(([j])=>{
 if(L.length!==j.w*j.h)throw new Error("grille");
 if(Date.now()-Date.parse(j.fin)>45*6e4){show(say,"Pas d'image radar récente : la dernière date "+when(j.fin)+" et n'est pas affichée.");return}live=j;
 if(RJ.on){say_(j,"",{el:say},"");RJ.redraw();return}say_(j,use(j),{el:say},"");go()}).catch(()=>{})};
 // The replay's images (pluie-retro.ts): each its own rain and hatches, kept once read; a gap, nothing but its sentence.
+// The legend of a trail: how long the zones seen badly linger, before the time shown.
+const ago=${ago};
 const none=(w,h)=>({fin:"",pannes:[],w,h,pluie:"0".repeat(w*h),mal_vu:"0".repeat(w*h)});
 const un=(s)=>s.split(",").map((r)=>r?r[0].repeat(parseInt(r.slice(1),36)):"").join("");
-const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(!j){j={fin:e.fin,pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>6)Dg.delete(Dg.keys().next().value)}return j};
-const ok=(gr)=>L&&L.length===gr.w*gr.h,empty=(w,h)=>{mx=null;use(none(w,h));o.again()};
+const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(!j){j={fin:e.fin,pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>16)Dg.delete(Dg.keys().next().value)}return j};
+const ok=(gr)=>L&&L.length===gr.w*gr.h,empty=(w,h)=>{mx=null;use(none(w,h));turn(true,true)};
 RJ.p={prep:land,
-mix:(a,z,f,el,gr)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr),n=f<.5?A:Z;mx=[A,Z,f];if(d!==n){const bad=use(n);o.again();say_(n,bad,{el},"",1)}if(cw)mixed()},
+// Between two images (f of the way), with the trail of those before as [image, share left], over wm minutes.
+mix:(a,z,f,el,gr,tr,wm)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr),n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg];d=n;P=[dist(A),dist(Z),f];
+if(nw)say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":""):dist(n).bad,{el},"",1);turn(was,nw)},
 gap:(e,el,gr)=>{if(!ok(gr))return;empty(gr.w,gr.h);const one=Date.parse(e.a)-Date.parse(e.de)<=3e5;show(el,one?"Pas d'image radar à "+hm(e.a)+".":"Pas d'image radar de "+hm(e.de)+" à "+hm(e.a)+".")},
 clear:(el)=>{if(d)empty(d.w,d.h);if(el)el.textContent=""},
-back:()=>{mx=null;if(live)say_(live,use(live),{el:say},"");else if(d)use(none(d.w,d.h));o.again()}};
+back:()=>{const was=moving();mx=null;if(live)say_(live,use(live),{el:say},"");else if(d)use(none(d.w,d.h));turn(was,true)}};
 inp.addEventListener("change",get);get()}`;
 
 /**
@@ -413,8 +509,32 @@ s=document.createElement("script");s.src=rb.dataset.rejeu;s.onerror=()=>{s.remov
 const pick=()=>{const c=rb.querySelector("[name=rjd]:checked")||rb.querySelector("[name=rjd]");c.checked=true;return c.value};
 rb.addEventListener("change",(e)=>{if(e.target.name==="rjd")RJ.load(e.target.value)});b.addEventListener("click",()=>{if(!RJ.go)RJ.load(pick())});ko.querySelector("button").addEventListener("click",()=>RJ.load(pick()))}`;
 
+/** A radar image of the replay, as its script keeps them: its time and its grid. */
+type Kept = { t: number; e: unknown };
+/**
+ * The trail at T of the radar's images `p`, each with its share left, from 1 at its time to 0 `w` ms of radar later:
+ * those of the span before the time shown s, s itself in, alone (the legend says « au cours de l'heure précédente »).
+ * The replay's script takes it as its text.
+ */
+export const trailOf = (p: Kept[], T: number, s: number, w: number): [unknown, number][] =>
+  p.filter((x) => x.t <= T && x.t <= s && x.t > s - w && T - x.t < w).map((x) => [x.e, 1 - (T - x.t) / w]);
+/** Where the replay is: on a measure (`m`), or between two (`a`, `z`, `f` the share of the way). */
+type At = { m?: { t: number }; a?: { t: number }; z?: { t: number }; f?: number } | null;
+/**
+ * The time of what the map shows at T: a measure's, or between the radar's two images the one its legend names (the
+ * next from half way through the fade, as mix() swaps them), never a minute the radar has no image of; else T. The
+ * replay's script takes it as its text.
+ */
+export const shownAt = (T: number, r: At, l: string): number =>
+  r && r.m ? r.m.t : r && r.a && r.z && l === "p" ? ((r.f ?? 0) < 0.5 ? r.a : r.z).t : T;
 /** A full play, whatever the length (data-run, 29/10). */
 const PLAY_MS = 12_000;
+/**
+ * How long, in a play, where the radars saw badly lingers on the map, fading: an hour of the radar over 6 hours, 4 hours
+ * over 24 (the user, 31/10/2026: « on verra plutôt une grande zone grise »). Never in the live map, nor for those who
+ * ask for less motion.
+ */
+const TRAIL_MS = 2_000;
 
 /**
  * The replay, asked by REJEU_SCRIPT when its visitor first touches the bar: the file of the length chosen
@@ -431,12 +551,12 @@ function rejeuJs(): string {
   const js = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c");
   const labels = Object.fromEntries(DUREES.map((d) => [d, REVOIR[d][1]]));
   return `(()=>{const rb=document.querySelector("[data-rejeu]");if(!rb||typeof RJ!=="object")return;
-const P=${js(REJEU_PATHS)},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},R=${js(RAIN_STEPS)},DRY=${js(RAIN_DRY)},PLAY=${PLAY_MS};
+const P=${js(REJEU_PATHS)},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},R=${js(RAIN_STEPS)},DRY=${js(RAIN_DRY)},PLAY=${PLAY_MS},TRAIL=${TRAIL_MS};
 const ST={"6h":3e5,"24h":9e5,"7j":36e5},SN={"6h":6e4,"24h":18e4,"7j":6e5},DU={"6h":216e5,"24h":864e5,"7j":6048e5},DAYS=["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
 const fig=rb.closest("figure"),b=rb.querySelector(".rj-b"),rng=rb.querySelector("input[type=range]"),q=rb.querySelector(".rj-q"),ann=rb.querySelector("[aria-live]"),
 hd=fig.querySelector(".rj-d"),hh=fig.querySelector(".rj-h"),hs=fig.querySelector(".rj-s"),dots=fig.querySelector(".rj-st"),lg=(l)=>fig.querySelector(".lg-"+l+" .rj-lg"),
 rm=matchMedia("(prefers-reduced-motion: reduce)").matches,F={},G=new Map();
-let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],LT=new Map(),TD=null,PD=null,playing=false,raf=0,last=0,cur="",was=null;
+let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],LT=new Map(),TD=null,PD=null,playing=false,raf=0,last=0,nx=0,cur="",was=null;
 const lx=(t)=>new Date(t+144e5),hmm=(t)=>{const x=lx(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())},dm=(t)=>{const x=lx(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
 const lay=()=>["t","p","v"].find((l)=>{const i=document.getElementById("wxl-"+l);return i&&i.checked})||"";
 const chip=(t)=>{let i=0;while(i<C.length-2&&t>C[i+1][0])i++;const[[t0,c0],[t1,c1]]=[C[i],C[i+1]],k=Math.min(1,Math.max(0,(t-t0)/(t1-t0)));return"rgb("+c0.map((c,j)=>Math.round(c+(c1[j]-c)*k)).join(",")+")"};
@@ -454,10 +574,12 @@ const sx=(l,i)=>l==="t"?st.filter((s)=>s.t[i]!=null).map((s)=>[s.x,s.y,s.alt,s.t
 const gridOf=(l,k)=>{if(k.i<0)return RJ[l].now;const key=l+k.i;let g=G.get(key);if(!g){g=RJ[l].grid(sx(l,k.i));G.set(key,g);if(G.size>16)G.delete(G.keys().next().value)}return g};
 const tv=(s,k)=>k.i<0?LT.get(s.x+","+s.y)??null:s.t[k.i];
 const once=(k,f)=>{if(cur!==k){cur=k;f()}};
+// The radar's images of the trail at T (trailOf), lingering TRAIL of a play: none for those who ask for less motion.
+const keep=${trailOf},trail=(s)=>rm?null:keep(K.p,T,s,DU[d]*TRAIL/PLAY),wm=()=>Math.round(DU[d]*TRAIL/PLAY/6e4);
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");PD&&(PD.g.style.display=l==="p"?"":"none");
 if(l==="p"&&d!=="7j"){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
-const r=at("p");if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr)}return r}
+const r=at("p");if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
 if(l==="p"){const k=K.p.find((x)=>x.t>=T&&x.t-T<36e5);if(RJ.p)once("rc",()=>RJ.p.clear(null));
 for(const o of PD?PD.out:[]){const v=k?o.s.rr[k.i]:null;if(o.t)o.t.textContent="";if(v==null){o.c.setAttribute("style","display:none");continue}const lab=v>0&&(o.big||v>=1);
 o.c.setAttribute("r",lab?34:v>0?17:14);o.c.setAttribute("style",v>0?"fill:"+R.find(([x])=>v>=x)[1]:"fill:#fff;stroke:"+DRY+";stroke-width:5");
@@ -465,10 +587,12 @@ if(o.t&&lab)o.t.textContent=String(Math.round(v*10)/10).replace(".",",")}return 
 const r=at(l);if(!RJ[l])return r;if(!r)once("x"+l,()=>RJ[l].show(null));else if(r.m)once(l+r.m.t,()=>RJ[l].show(gridOf(l,r.m)));else{cur="";RJ[l].mix(gridOf(l,r.a),gridOf(l,r.z),r.f)}
 if(l==="t"&&TD)for(const o of TD.out){let v=null;if(r){const a=tv(o.s,r.m||r.a),z=r.m?a:tv(o.s,r.z);if(a!=null&&z!=null)v=r.m?a:a+(z-a)*r.f}
 o.c.style.display=v==null?"none":"";if(v==null){if(o.t)o.t.textContent="";continue}o.c.setAttribute("fill",chip(v));if(o.t)o.t.textContent=Math.round(v)+"°"}return r};
+// The time of what the map shows (shownAt).
+const shown=${shownAt};
 // The time written on the map, the word under it, and what the slider says.
 const show=()=>{const l=lay();if(!l||!J)return"";const end=T>=E;fig.classList.toggle("rj-fin",end);RJ.on=!end;let r=null,t=T;if(end!==was){was=end;renames()}
 if(end){once("fin",()=>{for(const x of["t","v","p"])if(RJ[x])RJ[x].back()})}else r=draw(l);
-if(r&&r.m)t=r.m.t;else if(end)t=E;let w="",said=dm(t)+" à "+hmm(t);
+t=end?E:shown(T,r,l);let w="",said=dm(t)+" à "+hmm(t);
 if(end){w="dernière mesure";said+=", dernière mesure"}else if(r&&r.gap){said+=". Pas d'image radar de "+hmm(r.gap[0])+" à "+hmm(r.gap[1])+"."}
 else if(r&&r.h){w="Pluie de "+hmm(r.h.t-36e5)+" à "+hmm(r.h.t);said+=", pluie de "+hmm(r.h.t-36e5)+" à "+hmm(r.h.t)}
 else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le radar":", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
@@ -494,8 +618,8 @@ legend("t","t","station","stations",(x)=>"Température sous abri de "+x+" de Mé
 legend("v","ff","anémomètre","anémomètres",(x)=>"Vent moyen sur 10 minutes de "+x+" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu.");
 if(d==="7j")legend("p","rr","pluviomètre","pluviomètres",(x)=>"Pluie de chaque heure, en mm, mesurée par "+x+" de Météo-France. Point blanc : pas de pluie mesurée.");
 fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length};
-const tick=(t)=>{raf=requestAnimationFrame(tick);if(t-last<40)return;const dt=last?Math.min(t-last,200):0;last=t;T=Math.min(E,T+(E-S)*dt/PLAY);show();if(T>=E)stop(true)};
-const play=()=>{if(T>=E)T=S;playing=true;last=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
+const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=was?k*${FRAME_MS}:0;T=Math.min(E,T+(E-S)*dt/PLAY);show();if(T>=E)stop(true)};
+const play=()=>{if(T>=E)T=S;playing=true;last=nx=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
 const stop=(say)=>{playing=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show()};
 // Back to the live map when the file cannot come: the bar says so.
 const fail=()=>{J=null;fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",LB[d])};

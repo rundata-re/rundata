@@ -118,7 +118,10 @@ const SHARED_D1: Record<string, Pick<Run, "d1Calls" | "d1RowsRead">> = {
 
 // Copies the scheduled event collects and a build reads from KV (src/worker.ts `configure`): the measures at Atmo
 // Réunion's stations and the sensors of private people.
-const SHARED_KV: Record<string, number> = { "web:air": 2 };
+const SHARED_KV: Record<string, number> = { "web:air": 2, "web:electricite": 1 };
+// Writes of KV besides the copy's own: rundata.re's archive of EDF's production (providers/edf.ts `archiver`), once
+// an hour, by the build that has the day's copy, with what the pass has left (its subrequests outside the cold cost).
+const SHARED_KV_WRITES: Record<string, number> = { "web:electricite": 1 };
 
 // Never built alone over MEASURED: their CPU is that of the page that shows them; the vigilance's and the rivers', measured in Node; the earthquakes' and the ONF's map's, estimated from /volcan's and /sentiers's.
 const SHARED_ESTIMATED = new Set(["vigilance", "seismes", "onf:sentiers", "web:crues", "mer:satellites", "web:calendrier", "web:chiffres", "web:chiffres:evenements"]);
@@ -130,7 +133,7 @@ const sharedEntry = (s: Shared, after: boolean): Entry => ({
   every: typeof s.every === "number" ? s.every : s.range?.usual,
   ...(typeof s.every !== "number" && s.range && { shortest: s.range.shortest }),
   offset: s.offset ?? 0,
-  run: { subrequests: (s.cold ?? 0) + COPY_WRITE, ...(SHARED_KV[s.key] && { kvReads: SHARED_KV[s.key] }), kvWrites: COPY_WRITE, ...SHARED_D1[s.key], cpuMs: s.cpu ?? 0 },
+  run: { subrequests: (s.cold ?? 0) + COPY_WRITE, ...(SHARED_KV[s.key] && { kvReads: SHARED_KV[s.key] }), kvWrites: COPY_WRITE + (SHARED_KV_WRITES[s.key] ?? 0), ...SHARED_D1[s.key], cpuMs: s.cpu ?? 0 },
   from: SHARED_FROM[s.key] ?? [],
   basis: SHARED_ESTIMATED.has(s.key) ? "estimé" : "mesuré",
 });
@@ -535,6 +538,7 @@ interface Page {
   from: string[];
   what?: string;
   d1?: Pick<Run, "d1Calls" | "d1RowsRead" | "d1RowsWritten">;
+  kvWrites?: number;
   /** "mesuré" unless said: a page too new to have been measured is counted from its code. */
   basis?: Basis;
 }
@@ -603,6 +607,10 @@ const OTHER_PAGES: Record<string, Page> = {
   "/meteo/rejeu-6h.json": { subrequests: 6, cpuMs: 20, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   "/meteo/rejeu-24h.json": { subrequests: 6, cpuMs: 20, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   "/meteo/rejeu-7j.json": { subrequests: 5, cpuMs: 30, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV)", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
+  // /electricite's durations and years (web/electricite-historique.ts), asked when its chart nears the screen: the
+  // archive (the data center's cache, KV, written back to the cache: 3), EDF's years at most once a day (the data
+  // center's cache, KV, EDF, written back to both: 5).
+  "/electricite/historique.json": { subrequests: 8, cpuMs: 20, kvWrites: 1, from: ["src/web/electricite-historique.ts", "src/providers/edf.ts"], what: "le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF", basis: "code" },
   // A layer of /carte (web/couches.ts), asked when its box is ticked: a fixed layer is the list bundled with the
   // server, its file built once per isolate. Nothing read: no subrequest, no KV, no D1, not even the header's.
   // A fixed layer reads nothing; a live one, its page's last copy (cache.peek): the data center's cache, then KV, and
@@ -662,7 +670,7 @@ const pageEntry = (path: string, p: Page, kvReads: number): Entry => ({
   id: path,
   trigger: "visite",
   what: p.what ?? `la page ${path}`,
-  run: { subrequests: p.subrequests, ...(kvReads && { kvReads }), ...p.d1, cpuMs: p.cpuMs },
+  run: { subrequests: p.subrequests, ...(kvReads && { kvReads }), ...(p.kvWrites && { kvWrites: p.kvWrites }), ...p.d1, cpuMs: p.cpuMs },
   from: p.from,
   basis: p.basis ?? "mesuré",
 });
@@ -671,7 +679,7 @@ const pageEntry = (path: string, p: Page, kvReads: number): Entry => ({
 const SHARED_KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
 const sharedIn = (keys: string[]) => new Set(keys.filter((k) => SHARED_KEYS.has(k))).size;
 // The commune pages and /antennes: the copy of the mobile sites out of service besides.
-const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 1, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
+const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 1, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
 
 const VISITS: Entry[] = [
   ...Object.entries(OTHER_PAGES).map(([path, p]) => pageEntry(path, p, KV_READS[path] ?? 0)),

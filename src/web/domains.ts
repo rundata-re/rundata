@@ -47,7 +47,7 @@ import { avisLe, basinMap, TRACES, TRACES_SCRIPT, TRACES_SOURCES, ZONE_SOURCE } 
 import { esc, fenetre, hikesMap, islandMap, laterMap, type Marker, profile, traceMap, type ZoneLink } from "./map.js";
 import { type Cle, COUNT_COLOR, legende } from "./carte-legende.js";
 import { eventsMap } from "./evenements-carte.js";
-import { installationsLegend, installationsList, installationsMap, productionChart } from "./electricite-carte.js";
+import { anneeSection, installationsLegend, installationsList, installationsMap, installationsReplay, productionChart } from "./electricite-carte.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { cloudSeaLink, type Summit, weatherForTrace } from "./liens.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
@@ -740,7 +740,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   ${p ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Filière par filière</h3>${bars}</figure>` : ""}
 </div>`;
 
-  // The 24 hours (the page's copy, journee) and the map of the power installed (electricite-carte.ts), fixed.
+  // The 24 hours (the page's copy, journee) and the map of the power installed (electricite-carte.ts), its replay on them.
   const journee = d?.journee
     ? `<section aria-labelledby="h-journee">
   <div class="sec-h"><p class="eyebrow">La journée</p><h2 id="h-journee">La production des dernières 24\u00a0h</h2></div>
@@ -749,11 +749,12 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
     : "";
   const centrales = `<section aria-labelledby="h-centrales">
   <div class="sec-h"><p class="eyebrow">Les centrales</p><h2 id="h-centrales">Ce qui peut produire, commune par commune</h2></div>
-  <figure class="card mapcard ipc"><div class="ipm">${laterMap(installationsMap())}</div><figcaption class="note">${installationsLegend()}${folded(true, `<h3>Le détail par commune</h3>`, installationsList())}</figcaption></figure>
+  <figure class="card mapcard ipc"><div class="ipm">${laterMap(installationsMap())}</div><figcaption class="note">${installationsLegend()}${d?.journee ? installationsReplay(d.journee) : ""}${folded(true, `<h3>Le détail par commune</h3>`, installationsList())}</figcaption></figure>
 </section>`;
 
   const body = `${journee}
 ${centrales}
+${d?.journee ? anneeSection() : ""}
 <section aria-labelledby="h-reseau">
   <div class="sec-h"><p class="eyebrow">Le réseau</p><h2 id="h-reseau">Une île qui produit toute son électricité</h2>
   <p>La Réunion n'est reliée à aucun autre réseau : chaque kilowatt consommé est produit sur l'île, au moment même. Le soir, quand tout le monde rentre, le réseau est le plus chargé.</p></div>

@@ -306,9 +306,9 @@ export class Cache {
     return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: true };
   }
 
-  /** Keeps `value` under `key` in the durable store. */
-  async keep(key: string, value: unknown): Promise<void> {
-    await this.durable.put(key, { value, fetchedAt: this.now() });
+  /** Keeps `value` under `key` in the durable store; `keepSeconds`: how long, when longer than its default (kv.ts). */
+  async keep(key: string, value: unknown, keepSeconds?: number): Promise<void> {
+    await this.durable.put(key, { value, fetchedAt: this.now() }, keepSeconds);
   }
 
   /**

@@ -10,7 +10,7 @@ import * as nuages from "../tools/nuages.js";
 import type { MerDeNuages } from "../tools/nuages.js";
 import type { Jour } from "../tools/volcan.js";
 import * as arome from "../providers/arome.js";
-import { left, measured } from "../budget.js";
+import { left, measured, unmeasured } from "../budget.js";
 import { daysApart, distanceKm, localTime, sinceMidnight } from "../geo.js";
 import { type Cache, type Cached, stampOf } from "../cache.js";
 import { INSEE } from "../places/insee.js";
@@ -28,7 +28,8 @@ import * as maregraphes from "../providers/maregraphes.js";
 import * as mf from "../providers/vigilance.js";
 import { qualiteAir, type Amateurs, type Measured } from "../tools/air.js";
 import { calendrier } from "../tools/calendrier.js";
-import { electricite, produced, renewable } from "../tools/electricite.js";
+import { electricite } from "../tools/electricite.js";
+import { pointsOf } from "./electricite-historique.js";
 import * as houle from "../providers/houle.js";
 import { BEACHES, PRODUCTS as SEA_PRODUCTS, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
@@ -1289,6 +1290,12 @@ export interface ElectriciteAnswer {
 export interface Journee {
   debut: string;
   points: [number, number, number, number][];
+  /**
+   * Each point's MW by group of the register's filières (electricite-carte.ts, GROUPES): solar, wind, hydro, every
+   * plant that burns (EDF's bioénergies, coal, diesel and turbines: the register files the bagasse and coal plants
+   * otherwise than EDF), the batteries giving out (never their charging). Absent from a page's copy kept before it.
+   */
+  filieres?: [number, number, number, number, number][];
   mis_a_jour?: string;
 }
 
@@ -1303,14 +1310,9 @@ export function journeeOf(j: edf.Journee): Journee | undefined {
   const lignes = read.filter((l) => Date.parse(l.date) >= end - DAY_SPAN_MS).sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
   if (lignes.length < 2) return undefined;
   const t0 = Date.parse(lignes[0].date);
-  const r1 = (v: number) => Math.round(v * 10) / 10;
   return {
     debut: new Date(t0).toISOString(),
-    points: lignes.map((l) => {
-      const m = { ...l, statut: "" };
-      const ren = renewable(m);
-      return [Math.round((Date.parse(l.date) - t0) / 60_000), r1(ren), r1(produced(m) - ren), r1(l.total)];
-    }),
+    ...pointsOf(lignes.map((l) => [Date.parse(l.date), l]), t0),
     ...(j.mis_a_jour && { mis_a_jour: localTime(new Date(j.mis_a_jour)) }),
   };
 }
@@ -1323,6 +1325,9 @@ export const buildElectricite = async (cache: Cache, now = new Date()): Promise<
   const a = await electricite(cache, now, undefined, day.then((c) => (c ? edf.latest(c) : edf.mix(cache))));
   const d = needed<ElectriciteAnswer>(a, "électricité");
   const c = await day;
+  // The day's hours into rundata.re's archive, at most once an hour, outside the copy's cost and with what is left;
+  // its failure leaves the copy as it is.
+  if (c) await unmeasured(() => edf.archiver(cache, c.value, now));
   const j = c && journeeOf(c.value);
   return j ? { ...d, journee: j } : d;
 };

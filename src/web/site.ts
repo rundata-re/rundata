@@ -144,6 +144,7 @@ import { carteRoute } from "./vigilance-carte.js";
 import { carteRoute as cmrsRoute } from "./cmrs-carte.js";
 import { INTERDITS } from "../robots.js";
 import { PATH as PLUIE_RADAR, rainGrid } from "./pluie-radar.js";
+import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricite-historique.js";
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
 import { DUREES, PATHS as REJEU, rejeu } from "./rejeu.js";
 import { COUCHE_PATH, coucheResponse } from "./couches.js";
@@ -706,6 +707,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   // The radar's rain for /meteo's map, asked by its script: data, not a page.
   if (path === PLUIE_RADAR) return rainGrid(cache);
+  if (path === ELECTRICITE_HISTORIQUE) return historiqueResponse(cache);
   // The replay bar's files, one a length, asked by the same script when its visitor plays (rejeu.ts).
   const duree = DUREES.find((d) => REJEU[d] === path);
   if (duree) return rejeu(duree, cache, background, now);

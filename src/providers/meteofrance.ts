@@ -131,9 +131,9 @@ export interface HourlyRain {
 }
 
 /**
- * One station's hours, newest first: °C, %, degrees the wind comes from, km/h, km/h, hPa, minutes of sunshine; null
- * when not reported. `ins` is absent from a copy saved before it was kept, and null at the stations without a sunshine
- * recorder.
+ * One station's hours, newest first: °C, %, degrees the wind comes from, km/h, km/h, hPa, minutes of sunshine, and the
+ * lowest and highest temperature within the hour (°C); null when not reported. `ins`, `tn` and `tx` are absent from a
+ * copy saved before they were kept, and `ins` is null at the stations without a sunshine recorder.
  */
 export interface HourlyMeasures {
   t: (number | null)[];
@@ -143,11 +143,14 @@ export interface HourlyMeasures {
   raf: (number | null)[];
   pmer: (number | null)[];
   ins?: (number | null)[];
+  tn?: (number | null)[];
+  tx?: (number | null)[];
 }
 
 // The columns kept besides the rain, how each becomes the unit of HourlyMeasures, and its column when named otherwise.
 const HOURLY_MEASURES: [keyof HourlyMeasures, (v: number) => number, string?][] = [
   ["t", celsius], ["u", Math.round], ["dd", Math.round], ["ff", kmh], ["raf", kmh], ["pmer", (pa) => r1(pa / 100)], ["ins", Math.round, "insolh"],
+  ["tn", celsius], ["tx", celsius],
 ];
 
 /**
@@ -165,7 +168,7 @@ export function parseHourly(csv: string, newest: number): HourlyRain {
     rr[station] ??= none();
     // The two airports write -0.1 now and then: no rain counted.
     if (value) rr[station][k] = Math.max(0, Number(value));
-    const m = (mesures[station] ??= { t: none(), u: none(), dd: none(), ff: none(), raf: none(), pmer: none(), ins: none() });
+    const m = (mesures[station] ??= { t: none(), u: none(), dd: none(), ff: none(), raf: none(), pmer: none(), ins: none(), tn: none(), tx: none() });
     HOURLY_MEASURES.forEach(([c, unit], i) => {
       if (rest[i] && Number.isFinite(Number(rest[i]))) m[c]![k] = unit(Number(rest[i]));
     });
@@ -251,8 +254,8 @@ export async function keepVeille(cache: Cache, now = new Date()): Promise<Veille
 /** The rain of the last hours: every station's hour by hour, and a station's 6-minute slots since the newest hour. */
 export interface RecentRain {
   hourly: HourlyRain;
-  /** The station's slots after `hourly.end` that are there, newest first. */
-  slots(id: string): { time: string; rr: number | null }[];
+  /** The station's slots after `hourly.end` that are there, newest first, the temperature in °C. */
+  slots(id: string): { time: string; rr: number | null; t?: number | null }[];
 }
 
 /** One hour of a station: `fin` ends it, the measures are null when not reported or not yet kept. */
@@ -307,10 +310,10 @@ export async function recentRain(cache: Cache, now = new Date()): Promise<Recent
   return {
     hourly,
     slots: (id) => {
-      const out: { time: string; rr: number | null }[] = [];
+      const out: { time: string; rr: number | null; t: number | null }[] = [];
       for (let t = latest; t > Date.parse(hourly.end); t -= SLOT_MS) {
         const row = (b.peek(iso(t))?.value as Row[] | undefined)?.find((r) => r.id === id);
-        if (row) out.push({ time: row.time, rr: row.rr_per });
+        if (row) out.push({ time: row.time, rr: row.rr_per, t: row.t == null ? null : celsius(row.t) });
       }
       return out;
     },

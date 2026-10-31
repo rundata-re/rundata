@@ -19,9 +19,9 @@ const STUCK_MS = 90 * 60_000;
 export const CONVENTION =
   "Chaque ligne va de la première heure à la seconde (heure de La Réunion) : « 14\u00a0h–15\u00a0h : 1,4 mm », c'est la pluie tombée entre 14\u00a0h et 15\u00a0h.";
 
-const day = (ms: number) => Math.floor((ms + LOCAL_MS) / (24 * HOUR_MS));
+export const day = (ms: number) => Math.floor((ms + LOCAL_MS) / (24 * HOUR_MS));
 /** Minutes since midnight, Réunion time; the times written by format.ts (« 19:12 », « 18\u00a0h », « 18\u00a0h–19\u00a0h »). */
-const mins = (ms: number) => {
+export const mins = (ms: number) => {
   const d = new Date(ms + LOCAL_MS);
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 };

@@ -5,7 +5,7 @@ import { counted } from "../src/budget.js";
 import { Cache } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
 import { VEILLE, type Veille } from "../src/providers/meteofrance-stations.js";
-import { historiqueMeteo, nothing, parseDate, period } from "../src/tools/historique.js";
+import { historiqueMeteo, nothing, parseDate, period, TODAY } from "../src/tools/historique.js";
 
 // Real rows of the archive (scripts/build-climat.py): eight stations, the years 2006, 2025 and 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -127,6 +127,14 @@ describe("historique_meteo, hour by hour", () => {
     expect(a.sources.map((x: { source: string }) => x.source).join()).toMatch(/horaires/);
   });
 
+  it("sends today to meteo_actuelle when its first hours are asked, never « no station »", async () => {
+    both();
+    const a = json(await historiqueMeteo(new Cache(), "Saint-Pierre", { du: "2026-10-24" }, NOW));
+    expect(a.resume).toContain(TODAY);
+    expect(a.resume).not.toMatch(/Aucune station|lendemain/);
+    expect(a.a_savoir[0]).toContain("Pour aujourd'hui depuis minuit (température la plus haute et la plus basse, pluie), voir meteo_actuelle");
+  });
+
   it("names the rainy hours, each value being the hour that ends then", async () => {
     both();
     const a = json(await historiqueMeteo(new Cache(), "Plaine des Palmistes", { du: "2026-10-21" }, NOW));
@@ -183,6 +191,14 @@ describe("nothing measured", () => {
       `Les mesures du 24/10/2026 ne sont peut-être pas encore disponibles : ${LOADED}. Réessayer plus tard\u00a0; pour maintenant, meteo_actuelle.`,
     );
   });
+  it("sends today to meteo_actuelle, which has it since midnight, never « tomorrow » nor « no station »", async () => {
+    expect(nothing("Saint-Pierre", { du: "2026-10-25", au: "2026-10-25" }, now, "2026-10-23")).toBe(TODAY);
+    expect(TODAY).not.toMatch(/demain|lendemain/);
+    expect(nothing("Saint-Pierre", { du: "2026-10-24", au: "2026-10-25" }, now, "2026-10-23")).toMatch(/Dernier jour disponible : 23\/10\/2026\. Pour maintenant, meteo_actuelle\. Aujourd'hui n'est pas dans cette archive/);
+    // Without the hourly archive, today is outside the period: the same words.
+    plug();
+    expect(json(await historiqueMeteo(new Cache(), "Saint-Pierre", { du: "2026-10-25" }, now)).erreur).toBe(TODAY);
+  });
   it("says that no station measured over an older or longer period, or when the days asked are loaded", () => {
     expect(nothing("Mafate", { du: "2026-10-01", au: "2026-10-20" }, now, "2026-10-24")).toBe("Aucune station ne mesurait à Mafate ou près de là sur cette période.");
     expect(nothing("Mafate", { du: "2026-09-25", au: "2026-10-24" }, now)).toMatch(/^Aucune station/);
@@ -199,8 +215,9 @@ describe("nothing measured", () => {
     const b = json(await historiqueMeteo(new Cache(), "Saint-Denis", { jours: 3 }, now));
     expect(b.jours.map((d: { date: string }) => d.date)).toEqual(["22/10/2026", "23/10/2026", "24/10/2026"]);
     expect(b.resume).toMatch(/ Les mesures du 24\/10\/2026 ne sont pas encore disponibles : .* Dernier jour disponible : 23\/10\/2026\.$/);
-    // Today: never « hier » as the last day published.
-    expect(period(now, undefined, "2026-10-25")).toEqual({ erreur: `Pas encore de mesure pour cette date : ${LOADED}. Pour aujourd'hui, voir meteo_actuelle.` });
+    // Today: never « hier » as the last day published, nor « tomorrow »: meteo_actuelle has it since midnight.
+    expect(period(now, undefined, "2026-10-25")).toEqual({ erreur: TODAY });
+    expect(period(now, undefined, "2026-10-27")).toEqual({ erreur: `Pas encore de mesure pour cette date : ${LOADED}. Pour aujourd'hui, voir meteo_actuelle.` });
   });
 
   // The day before as the scheduled event kept it at 00:20 (providers/meteofrance.ts keepVeille).
@@ -214,9 +231,9 @@ describe("nothing measured", () => {
     plug();
     const c = await kept({ "97418110": { rr: 3.2, tn: 21.4, tx: 27.9 }, "97416463": { rr: 0 } });
     const a = json(await historiqueMeteo(c, "Saint-Denis", { du: "2026-10-24" }, now));
+    // Known since 00:20: never « not available yet » beside it.
     expect(a.resume.trim()).toBe(
-      `Les mesures du 24/10/2026 ne sont pas encore disponibles : ${LOADED}. Dernier jour disponible : 23/10/2026. Pour maintenant, meteo_actuelle. ` +
-        "Provisoire, 24/10/2026 0 h–24 h (heure de La Réunion), relevés horaires Météo-France : pluie 3,2 mm, températures de 21,4 °C à 27,9 °C.",
+      "Provisoire, 24/10/2026 0 h–24 h (heure de La Réunion), relevés horaires Météo-France : pluie 3,2 mm, températures de 21,4 °C à 27,9 °C.",
     );
     expect(a.hier_provisoire).toMatchObject({
       jour: "24/10/2026", periode: "0 h–24 h, heure de La Réunion", nature: "mesure provisoire",

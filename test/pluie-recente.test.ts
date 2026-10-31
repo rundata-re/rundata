@@ -129,6 +129,22 @@ describe("the rain of the last hours", () => {
     expect(r.pluie_recente.bruine).toBeUndefined();
   });
 
+  it("answers « il a fait combien au plus chaud aujourd'hui ? » at Saint-Pierre from the same package, the hour under way included", async () => {
+    const r = body(await meteoActuelle(await cache(), "Saint-Pierre", NOW));
+    expect(r.temperature_depuis_minuit).toEqual({
+      station: "Saint-Pierre Pierrefonds (aéroport)",
+      distance_km: 5.9,
+      ecart_altitude_m: 7,
+      pertinence: "bonne",
+      nature: "mesure",
+      periode: "de 00:00 à 12:54",
+      maximum: { valeur: 26.5, unite: "°C", quand: "entre 9\u00a0h et 10\u00a0h" },
+      minimum: { valeur: 22.9, unite: "°C", quand: "entre 0\u00a0h et 1\u00a0h" },
+      avertissements: [],
+    });
+    expect(r.resume).toContain("Depuis minuit (de 00:00 à 12:54) à Saint-Pierre Pierrefonds (aéroport), à 5,9 km : 26,5 °C au plus (entre 9\u00a0h et 10\u00a0h), 22,9 °C au moins (entre 0\u00a0h et 1\u00a0h).");
+  });
+
   it("says when the gauge is not at the place, so that no one says it did not rain there", async () => {
     const r = body(await meteoActuelle(await cache(), "Piton des Neiges", NOW));
     expect(r.pluie_recente.pertinence).not.toBe("bonne");

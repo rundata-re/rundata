@@ -12,6 +12,7 @@ Licence Ouverte 2.0. Usage: python3 -I scripts/build-irve.py [--csv consolidatio
 """
 import argparse
 import csv
+from datetime import date
 import io
 import json
 import re
@@ -133,6 +134,7 @@ def main():
     target = ROOT / "src/irve/stations.json"
     target.parent.mkdir(exist_ok=True)
     target.write_text(json.dumps({
+        "construit": date.today().isoformat(),
         "attribution": "Base nationale des IRVE, consolidée par transport.data.gouv.fr (Licence Ouverte 2.0)",
         "stations": out,
     }, ensure_ascii=False, separators=(",", ":")) + "\n")

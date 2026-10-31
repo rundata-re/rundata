@@ -18,14 +18,15 @@ export interface Outil {
   depuis: string;
 }
 
-// Newest first: the index of the instructions and the `serveur` block read them in this order. Except sites_sans_reponse,
-// after donner_avis, which stays within the instructions' first 700 characters (test/serveur.test.ts).
+// Newest first: the index of the instructions reads them in this order. Except donner_avis, right after the newest tool, to
+// stay within the instructions' first 700 characters (test/serveur.test.ts); the `serveur` block sorts them by date.
 export const OUTILS: Outil[] = [
+  { nom: "peche_loisir", ligne: "pêche\u00a0: bichiques, langouste", depuis: "2026-10-31T21:40:00+04:00" },
+  { nom: "donner_avis", ligne: "donnée manquante ou fausse, souhait", depuis: "2026-10-24T14:15:00+04:00" },
   { nom: "emploi", ligne: "emploi public", depuis: "2026-10-29T13:05:00+04:00" },
+  { nom: "sites_sans_reponse", ligne: "sites publics sans réponse", depuis: "2026-10-25T22:47:00+04:00" },
   { nom: "annuaire_services_publics", ligne: "mairies, santé, carburants, déchets, enfants", depuis: "2026-10-25T14:00:00+04:00" },
   { nom: "resume_du_jour", ligne: "la journée d'une commune en un appel", depuis: "2026-10-24T15:45:00+04:00" },
-  { nom: "donner_avis", ligne: "donnée manquante ou fausse, souhait", depuis: "2026-10-24T14:15:00+04:00" },
-  { nom: "sites_sans_reponse", ligne: "sites publics sans réponse", depuis: "2026-10-25T22:47:00+04:00" },
   { nom: "actualites", ligne: "blocages, routes, faits divers", depuis: "2026-10-24T12:32:00+04:00" },
   { nom: "evenements", ligne: "concerts, spectacles, fêtes, marchés", depuis: "2026-10-24T11:13:00+04:00" },
   { nom: "historique_meteo", ligne: "météo mesurée passée, records", depuis: "2026-10-24T10:58:00+04:00" },
@@ -56,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-10-31T21:40:00+04:00", texte: "Pêche de loisir\u00a0: langouste, bichiques… ce qui est fermé aujourd'hui, les tailles et les quantités, d'après les arrêtés du préfet." },
   { date: "2026-10-31T21:24:00+04:00", texte: "Météo\u00a0: la page d'un lieu donne aussi le maximum et le minimum de température depuis minuit, avec leur heure, à une station Météo-France." },
   { date: "2026-10-31T21:04:00+04:00", texte: "Météo\u00a0: votre IA donne le maximum et le minimum de température depuis minuit, avec leur heure, à une station Météo-France proche du lieu." },
   { date: "2026-10-31T16:48:00+04:00", texte: "Cartes\u00a0: en zoomant, le relief devient quatre fois plus détaillé, d'après l'IGN (altitudes RGE ALTI, photos BD ORTHO)." },
@@ -210,7 +212,8 @@ export const INDEX = OUTILS.map((o) => `- ${o.nom} : ${o.ligne}`).join("\n");
 /** The few tools online for less than a week, newest first. */
 export function outilsRecents(now: Date): Record<string, string> | undefined {
   const age = (o: Outil) => now.getTime() - new Date(o.depuis).getTime();
-  const recent = OUTILS.filter((o) => age(o) >= 0 && age(o) < RECENT_DAYS * DAY).slice(0, RECENT_MAX);
+  // By date: the index puts donner_avis early (above), the newest still come first here.
+  const recent = OUTILS.filter((o) => age(o) >= 0 && age(o) < RECENT_DAYS * DAY).sort((a, b) => age(a) - age(b)).slice(0, RECENT_MAX);
   return recent.length ? Object.fromEntries(recent.map((o) => [o.nom, o.ligne])) : undefined;
 }
 

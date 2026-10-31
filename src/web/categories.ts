@@ -80,6 +80,15 @@ export const CATEGORIES: Category[] = [
     about: "La température de l'eau mesurée par satellite au large de chaque plage, avec la date de la mesure.",
   },
   {
+    key: "peche",
+    nom: "Pêche",
+    path: "/peche",
+    icon: "fish",
+    tools: ["peche_loisir"],
+    about: "Pêche de loisir : ce qui est fermé aujourd'hui (langouste, bichiques, capucin nain, anguille marbrée), les tailles et les quantités, d'après les arrêtés du préfet.",
+    sansValeur: true,
+  },
+  {
     key: "volcan",
     nom: "Volcan",
     path: "/volcan",

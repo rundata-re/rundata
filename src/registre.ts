@@ -712,6 +712,8 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   // The copy of the offers, written each hour by the scheduled event (KV): no read of the site.
   emploi: { subrequests: 3, cpuMs: 40, file: "emploi", kvReads: 1, basis: "code" },
   defibrillateurs: { subrequests: 0, cpuMs: 70, file: "dae" },
+  // The decrees' rules in the code and the sun's hours computed: nothing read.
+  peche_loisir: { subrequests: 0, cpuMs: 10, file: "peche", basis: "code" },
   donner_avis: { subrequests: 1, cpuMs: 60, d1: { d1Calls: 1, d1RowsRead: 5, d1RowsWritten: 3 } },
   // The copy of /chiffres for its block `chiffres` (the data center's cache, else KV).
   sources_donnees: { subrequests: 2, cpuMs: 40, basis: "code" },

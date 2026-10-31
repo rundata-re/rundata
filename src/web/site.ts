@@ -84,6 +84,7 @@ import { collectePage, communeOf } from "./collecte.js";
 import { decheteriesPage } from "./decheteries.js";
 import { alertePage } from "./alerte-cyclone.js";
 import { kitPage } from "./kit-cyclone.js";
+import { pechePage } from "./peche.js";
 import { MODELE_CSV, publierPage } from "./publier.js";
 import { passePage } from "./cyclones-passes.js";
 import { PASSES } from "../historique/cyclones-passes.js";
@@ -349,7 +350,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
   const fixed = (u: string): Url => [u, undefined, "monthly"];
   const trace = (u: string): Url => [u, undefined, "daily"];
   // The defibrillators are a list bundled with the server: their page changes when it is rebuilt.
-  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
+  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
     // The busiest stops only (scripts/build-transit.py): the others' pages are not indexed.
     ...[...transit.stopPages().values()].filter((p) => p.indexe).map((p) => live(`${STOP_PATH}/${p.slug}`)),
     ...PAGES.map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
@@ -486,6 +487,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/kit-cyclone" || path === "/kit-cyclone/") {
     const a = await alerte(cache, background, now);
     return new Response(kitPage(origin, a), { headers: HTML });
+  }
+  // The rules of the day, computed from the decrees in the code (tools/peche.ts): nothing read but the vigilance's banner.
+  if (path === "/peche" || path === "/peche/") {
+    const a = await alerte(cache, background, now);
+    return new Response(pechePage(origin, a, now), { headers: HTML });
   }
   if (path === "/alerte-cyclone" || path === "/alerte-cyclone/") {
     const [data, decision] = await Promise.all([

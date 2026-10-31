@@ -211,6 +211,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | qualite_air | l'outil qualite_air | à chaque vue |  | 7 | 2 |  |  |  |  | 50 | mesuré |
 | emploi | l'outil emploi | à chaque vue |  | 3 | 1 |  |  |  |  | 40 | code |
 | defibrillateurs | l'outil defibrillateurs | à chaque vue |  | 0 |  |  |  |  |  | 70 | mesuré |
+| peche_loisir | l'outil peche_loisir | à chaque vue |  | 0 |  |  |  |  |  | 10 | code |
 | donner_avis | l'outil donner_avis | à chaque vue |  | 1 |  |  | 1 | 5 | 3 | 60 | mesuré |
 | sources_donnees | l'outil sources_donnees | à chaque vue |  | 2 |  |  |  |  |  | 40 | code |
 | sites_sans_reponse | l'outil sites_sans_reponse | à chaque vue |  | 2 |  |  | 2 | 21 |  | 30 | code |
@@ -349,4 +350,5 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | qualite_air | providers/air-mesures, providers/atmo, providers/capteurs |
 | emploi | providers/emploi |
 | defibrillateurs |  |
+| peche_loisir | providers/calendrier |
 | sites_sans_reponse | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |

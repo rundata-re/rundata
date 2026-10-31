@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Samedi 31 octobre 2026
 
+- Pêche de loisir : langouste, bichiques… ce qui est fermé aujourd'hui, les tailles et les quantités, d'après les arrêtés du préfet.
 - Météo : la page d'un lieu donne aussi le maximum et le minimum de température depuis minuit, avec leur heure, à une station Météo-France.
 - Météo : votre IA donne le maximum et le minimum de température depuis minuit, avec leur heure, à une station Météo-France proche du lieu.
 - Cartes : en zoomant, le relief devient quatre fois plus détaillé, d'après l'IGN (altitudes RGE ALTI, photos BD ORTHO).

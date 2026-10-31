@@ -58,6 +58,8 @@ export interface Station {
   points: Point[];
 }
 
+/** The day the bundled list was last rebuilt. */
+export const BUILT: string = data.construit;
 export const STATIONS: Station[] = data.stations;
 export const ATTRIBUTION: string = data.attribution;
 export const IDS = new Set(STATIONS.flatMap((s) => s.points.map((p) => p.id)));

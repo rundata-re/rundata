@@ -143,6 +143,7 @@ import { INTERDITS } from "../robots.js";
 import { PATH as PLUIE_RADAR, rainGrid } from "./pluie-radar.js";
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
 import { DUREES, PATHS as REJEU, rejeu } from "./rejeu.js";
+import { COUCHE_PATH, coucheResponse } from "./couches.js";
 
 const HTML = {
   "content-type": "text/html; charset=utf-8",
@@ -690,6 +691,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // The replay bar's files, one a length, asked by the same script when its visitor plays (rejeu.ts).
   const duree = DUREES.find((d) => REJEU[d] === path);
   if (duree) return rejeu(duree, cache, background, now);
+  // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.
+  if (path.startsWith(COUCHE_PATH)) return coucheResponse(path) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A station's page (web/station.ts): its copy built like a commune's, kept by station.
   if (path.startsWith(`${STATION_PATH}/`)) {
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");

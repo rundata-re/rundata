@@ -603,6 +603,9 @@ const OTHER_PAGES: Record<string, Page> = {
   "/meteo/rejeu-6h.json": { subrequests: 6, cpuMs: 20, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   "/meteo/rejeu-24h.json": { subrequests: 6, cpuMs: 20, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   "/meteo/rejeu-7j.json": { subrequests: 5, cpuMs: 30, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV)", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
+  // A layer of /carte (web/couches.ts), asked when its box is ticked: a fixed layer is the list bundled with the
+  // server, its file built once per isolate. Nothing read: no subrequest, no KV, no D1, not even the header's.
+  "/carte/couche/*.json": { subrequests: 0, cpuMs: 10, from: [], what: "le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet", basis: "code" },
   "/mer": { subrequests: 23, cpuMs: 120, from: ["src/tools/mer.ts", "src/tools/maree.ts"] },
   "/randonnees/*": { subrequests: 23, cpuMs: 130, from: ["src/tools/sentiers.ts"], what: "une randonnée et sa trace" },
   "/sentiers/*": { subrequests: 16, cpuMs: 30, from: ["src/tools/sentiers.ts"], what: "un sentier et sa trace" },

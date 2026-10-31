@@ -113,7 +113,8 @@ describe("temperature_mer", () => {
       asked.push(String(url));
       throw new Error("offline");
     });
-    const satellites = () => asked.filter((u) => u.includes("/thredds/") || u.includes("/erddap/"));
+    // The corals' grid (providers/coraux.ts), read by the tool once a day, is not one of the satellites' grids.
+    const satellites = () => asked.filter((u) => (u.includes("/thredds/") || u.includes("/erddap/")) && !u.includes("dhw_5km"));
     // In the Worker, where the scheduled event shares the grids; a copy of 7 hours: it has not refreshed it since.
     const inWorker = async <T,>(f: () => Promise<T>) => (await counted(PAGE_BUDGET, f)).value;
     const cache = await offlineCache({ copyAgeMs: 7 * 3600_000 });

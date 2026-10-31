@@ -611,7 +611,9 @@ const OTHER_PAGES: Record<string, Page> = {
   "/carte/couche/*.json": { subrequests: 3, cpuMs: 10, from: [], what: "le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page", basis: "code" },
   // The header's reads as any page; the map and the list built once per isolate, the layers asked by the page's script.
   "/carte": { subrequests: 7, cpuMs: 40, from: [], what: "la carte des couches : la page seule, avec la vigilance et la version de l'en-tête", basis: "code" },
-  "/mer": { subrequests: 23, cpuMs: 120, from: ["src/tools/mer.ts", "src/tools/maree.ts"] },
+  // 23, and 5 from the code for the corals' grid (providers/coraux.ts), once a day when no data center has it: the
+  // data center's cache and KV read, NOAA's grid, both written.
+  "/mer": { subrequests: 28, cpuMs: 120, from: ["src/tools/mer.ts", "src/tools/maree.ts", "src/providers/coraux.ts"] },
   "/randonnees/*": { subrequests: 23, cpuMs: 130, from: ["src/tools/sentiers.ts"], what: "une randonnée et sa trace" },
   "/sentiers/*": { subrequests: 16, cpuMs: 30, from: ["src/tools/sentiers.ts"], what: "un sentier et sa trace" },
   // Its pattern and its stops (2 reads of D1), the network's real-time feed while the bus is on the road, the header's
@@ -694,7 +696,8 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   fiche_terrain: { subrequests: 36, cpuMs: 80, file: "terrain", basis: "estimé" },
   prevision_meteo: { subrequests: 20, cpuMs: 100, file: "prevision" },
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
-  temperature_mer: { subrequests: 14, cpuMs: 50, file: "mer" },
+  // 14, and 5 from the code for the corals' grid, as /mer.
+  temperature_mer: { subrequests: 19, cpuMs: 50, file: "mer" },
   transports: { subrequests: 13, cpuMs: 80, file: "transports", d1: BUS_D1 },
   // Measured 13; 1 more while a system is active, as /cyclones.
   cyclones: { subrequests: 14, cpuMs: 70, file: "cyclones" },

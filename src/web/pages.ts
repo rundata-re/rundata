@@ -26,6 +26,7 @@ import brand from "./brand.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
 import * as traces from "../providers/traces.js";
 import { GAUGES } from "../providers/maregraphes.js";
+import * as coraux from "../providers/coraux.js";
 import { cardReason } from "../providers/ensemble.js";
 import { CITATION as TIDE_CITATION, LABEL as TIDE_LABEL } from "../maree/calcul.js";
 import { farFrom, NEAR_KM, nextText, shomPort, tidesAt, tidesNear } from "../tools/maree.js";
@@ -807,6 +808,11 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .suivi{display:grid;gap:1rem}
 .suivi p{max-width:65ch}
 .seas a{color:#fff;font-size:.85rem}
+.reefs{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.6rem;--echelle:var(--night-2)}
+.reefs li{display:grid;gap:.25rem;align-content:start;padding:.8rem 1rem;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}
+.reefs b{font:800 1.05rem/1.3 Bricolage,system-ui,sans-serif}.reefs span{font-size:.9rem;color:var(--muted)}.reefs .lieu{color:var(--ink);font-weight:600}
+.echelle{display:flex;gap:4px;margin:.2rem 0}.echelle i{width:1.6rem;height:.7rem;border:1.5px solid var(--echelle);border-radius:3px}.echelle i.on{background:var(--echelle)}
+@media (prefers-color-scheme:dark){.reefs{--echelle:var(--link)}}
 .seas li{align-content:start}
 .seas .aller{justify-self:start;margin-top:.3rem}
 .seas .aller,.band .aller{color:var(--ink)}
@@ -2045,7 +2051,31 @@ ${suivi}
 
 const CROWDED = new Set(["Plage de la Saline les Bains", "Plage de Saint-Paul"]);
 
-export function seaPage(origin: string, data: Cached<SeaData> | null, now = new Date(), alerte?: Alerte): string {
+/**
+ * The risk of coral bleaching at the three points of NOAA's grid, in marketing's words: the level in words with a scale
+ * of 0 to 4 in night blue (the day's cell full), never NOAA's yellow, orange and red.
+ */
+export function reefSection(c: Cached<coraux.Coraux> | null): string {
+  const head = `<div class="sec-h"><p class="eyebrow">Indice satellite, selon NOAA</p><h2 id="h-coraux">${esc(coraux.TITRE)}</h2>`;
+  if (!c) return `<section aria-labelledby="h-coraux">${head}<p>La grille de NOAA Coral Reef Watch n'a pas pu être lue pour le moment.</p></div></section>`;
+  const points = c.value.points.map((p) => `<li><span class="lieu">${esc(p.nom.charAt(0).toUpperCase() + p.nom.slice(1))}</span>` +
+    (p.niveau != null
+      ? `<b>${esc(coraux.NIVEAUX[p.niveau])}</b><span>selon NOAA</span>` +
+        `<span class="echelle" role="img" aria-label="niveau ${p.niveau} sur une échelle de 0 à 4">${[0, 1, 2, 3, 4].map((i) => `<i${i === p.niveau ? ' class="on"' : ""}></i>`).join("")}</span>`
+      : "<b>—</b><span>pas de niveau ce jour-là</span>") +
+    (p.dhw != null ? `<span>Chaleur accumulée sur 12 semaines\u00a0: ${esc(coraux.chaleur(p.dhw))}</span>` : "") +
+    (p.sst != null ? `<span>Mer à ${esc(thin(deg(p.sst)))}, par satellite</span>` : "") +
+    `</li>`).join("");
+  return `<section aria-labelledby="h-coraux">${head}
+  <p>${esc(coraux.nature(c.value.jour))} ${esc(coraux.PAS_OBSERVATION)}</p></div>
+  <div class="card"><ul class="reefs">${points}</ul>
+  <p class="note">${esc(coraux.AIDE_CHALEUR)}</p>
+  <p class="note">${esc(coraux.CASE)}${c.stale ? " Dernière valeur gardée\u00a0: le serveur de NOAA ne répond pas pour le moment." : ""}</p>
+  <p class="sources">Source\u00a0: ${esc(coraux.CREDIT)}.</p></div>
+</section>`;
+}
+
+export function seaPage(origin: string, data: Cached<SeaData> | null, now = new Date(), alerte?: Alerte, reef?: Cached<coraux.Coraux> | null): string {
   const g = porte(alerte);
   const d = data?.value;
   const seen = d?.plages.filter((b) => b.valeur != null) ?? [];
@@ -2161,6 +2191,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <p>Du nord à l'ouest en passant par l'est et le sud : la dernière mesure satellite à moins de 12 km de chaque plage.</p></div>
   <div class="card">${list}</div>
 </section>
+${reef !== undefined ? reefSection(reef) : ""}
 ${swell}
 ${tide}
 ${bathingBlock(now, undefined, g)}${g.feuille}

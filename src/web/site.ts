@@ -95,6 +95,7 @@ import * as carburants from "../providers/carburants.js";
 import { aujourdhuiPage } from "./aujourdhui.js";
 import { communeRss } from "./rss.js";
 import { FEUX_PATH, feuxPage } from "./feux.js";
+import * as coraux from "../providers/coraux.js";
 import * as feux from "../providers/feux.js";
 import * as prefecture from "../providers/prefecture.js";
 import { rafraichirConnecteurs, rafraichirPropositions } from "../tools/agenda.js";
@@ -195,6 +196,8 @@ const READERS = /rundata-check\/|ChatGPT-User|OAI-SearchBot|Claude-User|Claude-S
 const READER_WAIT_MS = 25_000;
 // The vigilance page waits longer than a banner for Météo-France: it is the page's whole content.
 const VIGILANCE_WAIT_MS = 8000;
+// How long a view of /mer waits for the corals' grid (providers/coraux.ts) when no data center has it yet.
+const REEF_WAIT_MS = 2000;
 // The subrequests a tile's build is assumed to take when it was measured neither in this isolate nor with its copy.
 const TILE_COST_UNKNOWN = 25;
 
@@ -511,11 +514,17 @@ async function pages(request: Request, cache: Cache, background: Background, now
     return page(path, (live) => (live ? ecolesPage(origin, data, now, alerteLue(data, now), decision, rubrique) : ecolesPage(origin, null, now)), data, background);
   }
   if (path === "/mer" || path === "/mer/") {
-    const [data, a] = await Promise.all([
+    // The corals' grid, read at the view (once a day for every data center, in KV), never by the scheduled event. The
+    // view waits for it REEF_WAIT_MS at most: past that, the page goes without the section, and the read ends after
+    // the response, for the next views.
+    const reefRead = coraux.coraux(cache).catch((err) => (console.error(`source ${coraux.SOURCE.id} indisponible:`, why(err)), null));
+    background(reefRead);
+    const [data, a, reef] = await Promise.all([
       snapshot(cache, "web:mer", () => buildSea(cache, now), background, now, waitFor(request), readerOf(request)),
       alerte(cache, background, now),
+      Promise.race([reefRead, new Promise<undefined>((resolve) => setTimeout(resolve, REEF_WAIT_MS))]),
     ]);
-    return page(path, (live) => seaPage(origin, live ? data : null, now, a), data, background, [rebuild(cache, "web:mer", () => buildSea(cache, now))]);
+    return page(path, (live) => seaPage(origin, live ? data : null, now, a, reef), data, background, [rebuild(cache, "web:mer", () => buildSea(cache, now))]);
   }
   // The traffic page's copy lasts minutes; the media's headlines on the roads are those of the view.
   if (path === "/trafic" || path === "/trafic/") {

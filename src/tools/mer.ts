@@ -2,6 +2,7 @@ import type { Cache, Cached } from "../cache.js";
 import { distanceKm, localTime } from "../geo.js";
 import { resolvePlace, type Place } from "../places/resolve.js";
 import * as acspo from "../providers/acspo.js";
+import * as coraux from "../providers/coraux.js";
 import * as houle from "../providers/houle.js";
 import * as modis from "../providers/modis.js";
 import * as requin from "../eau/requin.js";
@@ -305,11 +306,37 @@ function unavailable() {
   };
 }
 
-export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date()) {
+/** The risk of coral bleaching at the three points, in marketing's words; null when NOAA's grid could not be read. */
+export async function corauxBlock(cache: Cache) {
+  let c: Cached<coraux.Coraux>;
+  try {
+    c = await coraux.coraux(cache);
+  } catch (err) {
+    console.error(`source ${coraux.SOURCE.id} indisponible:`, why(err));
+    return null;
+  }
+  return {
+    titre: coraux.TITRE,
+    points: c.value.points.map((p) => ({
+      lieu: p.nom,
+      ...(p.niveau != null ? { niveau: `${coraux.NIVEAUX[p.niveau]} (selon NOAA)`, niveau_noaa: p.niveau } : {}),
+      ...(p.dhw != null ? { chaleur_accumulee_12_semaines: coraux.chaleur(p.dhw) } : {}),
+      ...(p.sst != null ? { temperature_satellite: `${fr(Math.round(p.sst * 10) / 10)}\u00a0°C` } : {}),
+    })),
+    jour_mesure: c.value.jour,
+    nature: coraux.nature(c.value.jour),
+    aide_chaleur: coraux.AIDE_CHALEUR,
+    avertissements: [coraux.PAS_OBSERVATION, coraux.CASE],
+    ...(c.stale ? { lecture: "Dernière valeur gardée : le serveur de NOAA ne répond pas pour le moment." } : {}),
+  };
+}
+
+/** `withCoraux`: false for a place's page (web/data.ts), whose copy shows no corals and does not pay for their read. */
+export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date(), withCoraux = true) {
   if (!lieu?.trim()) {
-    const [gs, w] = await Promise.all([copiedGrids(cache, now), wavesNow(cache)]);
+    const [gs, w, reef] = await Promise.all([copiedGrids(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
     const t = gs.length ? tourOf(gs, now) : null;
-    if (!t && !w) return unavailable();
+    if (!t && !w && !reef) return unavailable();
     const points = TOUR.map((n) => resolvePlace(n)!.lieu).map((p, i) => {
       const v = w ? wavesAt(w.value, p.lon, p.lat, now) : null;
       return { lieu: p.nom, ...t?.readings[i].r?.mesure, ...(v ? { vagues_prevision: waveWords(v.now) } : {}) };
@@ -324,15 +351,16 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       points,
       avertissements: [...(t ? CAVEATS : []), ...(t?.used.flatMap(staleWarning) ?? []), ...(w ? WAVE_WARNINGS : [])],
       risque_requin: requin.requinBlock(now),
+      ...(reef ? { coraux: reef } : {}),
       couverture: COVERAGE,
-      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(w ? [houle.SOURCE] : []), requin.SOURCE]),
+      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(w ? [houle.SOURCE] : []), requin.SOURCE, ...(reef ? [coraux.SOURCE] : [])]),
       mis_a_jour: t?.used.length ? localTime(t.used[0].cached.fetchedAt) : undefined,
     });
   }
 
   const r = resolvePlace(lieu);
   if (!r) return notFound(lieu);
-  const [gs, w] = await Promise.all([copiedGrids(cache, now), wavesNow(cache)]);
+  const [gs, w, reef] = await Promise.all([copiedGrids(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
   if (!gs.length && !w) return unavailable();
   const m = gs.length ? reading(r.lieu, gs, now) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
@@ -364,8 +392,10 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       : {}),
     // On the coast only: a place far from the sea gets no waves and no measure near it.
     ...(m || v ? { risque_requin: requin.requinBlock(now, r.lieu) } : {}),
+    // On the coast only too: the three points of the island, the reef's first.
+    ...((m || v) && reef ? { coraux: reef } : {}),
     couverture: COVERAGE,
-    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [houle.SOURCE] : []), ...(m || v ? [requin.SOURCE] : [])]),
+    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [houle.SOURCE] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : [])]),
   });
 }
 

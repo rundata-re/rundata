@@ -742,6 +742,8 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(METEO_SCRIPT).toContain(`"En bleu\u00a0: la pluie mesurée par les pluviomètres de Météo-France "+span(j)+", étalée entre eux par calcul\u00a0; "+fo()+" Entre deux pluviomètres, c'est une estimation, pas une mesure\u00a0: une averse qui tombe loin d'eux peut manquer."`);
     expect(METEO_SCRIPT).toContain(`Cap(span(j))+", aucun pluviomètre de Météo-France n'a mesuré de pluie."`);
     expect(METEO_SCRIPT).toContain(`plus de 32\u202fmm en 3\u00a0h`);
+    // The dots, the time and the legend: the 3 hours drawn, switched half way through the fade, never ahead of the map.
+    expect(rejeuScript()).toContain(`r=at("p");if(r&&r.a)r.f=ease(r.f);const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);`);
     // The 3 hours from midnight in La Réunion, each drawn whole at its middle.
     expect(rejeuScript()).toContain(`if(((th(i)/36e5+4)%24)%3===0&&st.some((s)=>three(s,{w})!=null))k.push({t:th(i)-54e5,end:th(i),i,w})`);
   });

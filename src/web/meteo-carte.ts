@@ -760,8 +760,9 @@ const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");PD&&(PD.g.style.disp
 if(l==="p"&&d!=="7j"){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
 const r=at("p");if(r&&r.a)r.f=ease(r.f);if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
 // 7 days: the rain gauges' 3 hours spread between them (rain), faded from one to the next around the time shown, and
-// the gauges' own measures on their dots.
-if(l==="p"){const k=K.p.find((x)=>x.end>=T&&x.end-T<108e5),gr=RJ.p&&RJ.p.dims(),el=lg("p");if(gr){const r=at("p");if(r&&r.a)r.f=ease(r.f);blow(T);
+// the gauges' own measures on their dots; the dots, the time and the legend those of the 3 hours shown (k), switched half
+// way through the fade.
+if(l==="p"){const gr=RJ.p&&RJ.p.dims(),el=lg("p"),r=at("p");if(r&&r.a)r.f=ease(r.f);const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);
 if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(rain(r.m),rain(r.m),0,el,gr,null,0));else{cur="";RJ.p.mix(rain(r.a),rain(r.z),r.f,el,gr,null,0)}}
 for(const o of PD?PD.out:[]){const v=k?three(o.s,k):null;if(o.t)o.t.textContent="";if(v==null){o.c.setAttribute("style","display:none");continue}const lab=v>0&&(o.big||v>=1);
 o.c.setAttribute("r",lab?34:v>0?17:14);o.c.setAttribute("style",v>0?"fill:"+R.find(([x])=>v>=x)[1]:"fill:#fff;stroke:"+DRY+";stroke-width:5");

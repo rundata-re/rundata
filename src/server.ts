@@ -102,9 +102,10 @@ import { sitesSansReponse } from "./tools/sans-reponse.js";
 import * as emploiSource from "./providers/emploi.js";
 import * as marchesPublics from "./providers/marches-publics.js";
 import { emploi } from "./tools/emploi.js";
+import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.104";
+export const VERSION = "1.0.107";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -115,7 +116,7 @@ Service fait à La Réunion, gratuit et sans compte, code libre (MIT) : https://
 ${INDEX}
 
 Règles :
-- Citer : chaque réponse porte citer (rundata.re et les producteurs), lien (la page de rundata.re qui montre la même chose), sources (les producteurs et leurs licences) et fraicheur (l'heure de la donnée, par exemple « 23:12, heure de La Réunion ») : de quoi citer et dater la réponse.
+- Citer : chaque réponse porte citer (rundata.re et les producteurs), lien (la page de rundata.re qui montre la même chose), sources (les producteurs et leurs licences) et fraicheur (l'heure de la donnée, « 23:12, heure de La Réunion »).
 - Avis : l'utilisateur signale un manque, une erreur ou un souhait sur ces données : donner_avis\u00a0; un outil n'a rien trouvé : le lui proposer, et n'appeler qu'avec son accord. Le besoin résumé, rien de personnel.
 - Liste d'outils : chaque réponse porte serveur.outils_recents\u00a0; avant de dire qu'un sujet n'est pas couvert, même à la première question, appeler sources_donnees. Outil cité là, absent de votre liste : elle est ancienne, le dire, sans dire qu'on l'a rechargée. ChatGPT : Paramètres → Plugins → rundata.re → Actualiser les outils, puis nouvelle conversation.
 - Météo : maintenant, max et min depuis minuit → meteo_actuelle, temperature_mer (MESURES : dire l'heure, la station, sa distance)\u00a0; avant (hier, ce mois-ci, record) → historique_meteo\u00a0; plus tard → prevision_meteo, une PRÉVISION : le dire à l'utilisateur\u00a0; houle, surf → temperature_mer, une PRÉVISION aussi.
@@ -195,7 +196,9 @@ export const toutesLesSources = (inactives = false) =>
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
     carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE,
     // The public sector's job offers (emploi), the public procurement notices (the page /marches-publics).
-    emploiSource.SOURCE, marchesPublics.SOURCE]);
+    emploiSource.SOURCE, marchesPublics.SOURCE,
+    // The decrees of recreational fishing, bundled (peche_loisir).
+    ...peche.SOURCES]);
 /** A source's name from its id, for one served from its last copy (fraicheur.ts). */
 export const nomDeSource = (id: string) => toutesLesSources().find((s) => s.id === id)?.nom;
 
@@ -542,6 +545,23 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       annotations: { title: "Emploi public", ...READ_ONLY },
     },
     track("emploi", (args: { lieu?: string; mot_cle?: string }) => emploi(cache, args.lieu, args.mot_cle)),
+  );
+
+  server.registerTool(
+    "peche_loisir",
+    {
+      title: "Pêche de loisir à La Réunion",
+      description:
+        "Pêche de loisir à La Réunion (974), d'après les arrêtés du préfet : fermetures du jour (langouste, bichiques, capucin nain, anguille marbrée), heures des bichiques, " +
+        "tailles minimales, quantités, espèces interdites, lagons. Citer l'article\u00a0; d'autres règles dépendent du lieu, seul le texte des arrêtés fait foi. " +
+        "Pour : « la langouste est fermée ? », « jusqu'à quand les bichiques ? ».",
+      inputSchema: {
+        espece: z.string().optional().describe("Langouste, bichiques, capucin nain, anguille marbrée. Vide = toutes."),
+        date: z.string().optional().describe("AAAA-MM-JJ. Vide = aujourd'hui."),
+      },
+      annotations: { title: "Pêche de loisir", ...READ_ONLY },
+    },
+    track("peche_loisir", async (args: { espece?: string; date?: string }) => peche.pecheLoisir(args.espece, args.date)),
   );
 
   server.registerTool(

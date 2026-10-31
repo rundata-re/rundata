@@ -52,8 +52,15 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(hits).toMatchObject([{ kind: "page", name: "/mcp", status: 200 }]);
     // HEAD from a link preview: the page too.
     expect((await handle(get("/mcp", BROWSER, "HEAD"), new Cache())).status).toBe(200);
+    // A link opened by a tool or a preview without Accept, or one that asks for something else: the page too.
+    for (const accept of ["", "*/*", "application/json"]) {
+      const page = await handle(get("/mcp", accept), new Cache());
+      expect(page.status, accept).toBe(200);
+      expect(page.headers.get("content-type"), accept).toContain("text/html");
+    }
+    expect((await handle(new Request("https://rundata.re/mcp/"), new Cache())).status).toBe(200);
     // The clients: the stream they ask for with GET is still refused, as before, whatever else they accept.
-    for (const accept of ["text/event-stream", "application/json, text/event-stream", "text/html, text/event-stream", "application/json", ""]) {
+    for (const accept of ["text/event-stream", "application/json, text/event-stream", "text/html, text/event-stream"]) {
       const refused = await handle(get("/mcp", accept), new Cache());
       expect(refused.status, accept).toBe(405);
       expect(refused.headers.get("allow")).toBe("POST, OPTIONS");

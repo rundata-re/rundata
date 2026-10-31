@@ -18,10 +18,13 @@ const DESCRIPTION = "Comment ajouter le connecteur rundata.re à ChatGPT, Claude
 const VERIFIE = "2026-10-25";
 const VERIFIE_TEXTE = "25 octobre 2026";
 
-/** A browser, or a link preview: asks for HTML, and does not open the stream an MCP client opens with GET. */
+/**
+ * A browser, a link preview or a tool opening the link, with or without an Accept: any GET or HEAD but the stream an
+ * MCP client opens with GET, which asks for text/event-stream.
+ */
 export function wantsPage(request: Request): boolean {
   const accept = request.headers.get("accept") ?? "";
-  return (request.method === "GET" || request.method === "HEAD") && accept.includes("text/html") && !accept.includes("text/event-stream");
+  return (request.method === "GET" || request.method === "HEAD") && !accept.includes("text/event-stream");
 }
 
 export function connecteurPage(origin: string, alerte?: Alerte): string {

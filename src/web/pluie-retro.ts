@@ -37,8 +37,10 @@ export const RETRIES_MS = [60_000, 60_000];
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export interface Image {
-  /** End of the radar's 5 minutes, ISO UTC. */
+  /** End of the radar's 5 minutes, ISO UTC; of the hour, for an image of an hour (parHeure). */
   fin: string;
+  /** For an image of an hour: its start. */
+  de?: string;
   pannes: string[];
   /** RainGrid's `pluie` and `mal_vu`, each run of a character written as the character and its length in base 36. */
   pluie: string;
@@ -217,4 +219,53 @@ export function auQuart(before: Historique | null, six: Historique, now: Date): 
     return acc;
   }, []);
   return { w: six.w, h: six.h, entrees: merged };
+}
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * The 24 hours an image an hour, for the replay (the user, 31/10/2026: 96 images in a play went by too fast): in each
+ * cell the strongest rain of the hour's images, and where the radars saw badly on any of them, the stations' round
+ * hours; an hour is its quarters from a quarter past to the hour. An hour with no image at all, a gap.
+ */
+export function parHeure(h: Historique): Historique {
+  const hours = new Map<number, Image[]>();
+  const gaps: Trou[] = [];
+  for (const e of h.entrees) {
+    if (isTrou(e)) gaps.push(e);
+    else {
+      const end = Math.ceil((Math.floor(Date.parse(e.fin) / QUARTER_MS) * QUARTER_MS) / HOUR_MS) * HOUR_MS;
+      hours.set(end, [...(hours.get(end) ?? []), e]);
+    }
+  }
+  const out: Entree[] = [];
+  const ends = [...hours.keys()].sort((a, b) => a - b);
+  const gap = (de: number, a: number) => {
+    const last = out[out.length - 1];
+    if (last && isTrou(last)) last.a = iso(a);
+    else out.push({ trou: true, de: iso(de), a: iso(a) });
+  };
+  if (ends.length && gaps.some((g) => Date.parse(g.de) < ends[0] - HOUR_MS)) gap(Math.min(...gaps.map((g) => Date.parse(g.de))), ends[0] - HOUR_MS);
+  ends.forEach((end, i) => {
+    if (i && end - ends[i - 1] > HOUR_MS) gap(ends[i - 1], end - HOUR_MS);
+    const n = h.w * h.h;
+    const pluie = new Uint8Array(n).fill(46); // "."
+    const mal = new Uint8Array(n).fill(48); // "0"
+    for (const x of hours.get(end)!) {
+      const p = unrle(x.pluie);
+      const m = unrle(x.mal_vu);
+      for (let k = 0; k < n; k++) {
+        const c = p.charCodeAt(k);
+        if (c !== 46 && (pluie[k] === 46 || c > pluie[k])) pluie[k] = c;
+        if (m.charCodeAt(k) === 49) mal[k] = 49;
+      }
+    }
+    const text = (a: Uint8Array) => new TextDecoder().decode(a);
+    const pannes = [...new Set(hours.get(end)!.flatMap((x) => x.pannes))];
+    out.push({ fin: iso(end), de: iso(end - HOUR_MS), pannes, pluie: rle(text(pluie)), mal_vu: rle(text(mal)) });
+  });
+  const lastEnd = ends.length ? ends[ends.length - 1] : 0;
+  const tail = gaps.filter((g) => Date.parse(g.a) > lastEnd);
+  if (tail.length) gap(Math.max(lastEnd, Math.min(...tail.map((g) => Date.parse(g.de)))), Math.max(...tail.map((g) => Date.parse(g.a))));
+  return { w: h.w, h: h.h, entrees: out };
 }

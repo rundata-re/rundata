@@ -1,7 +1,8 @@
 /**
  * The files of /meteo's replay bar, one a length, each asked by the page only when its visitor plays it:
  * - 6 hours: the radar's images, one every 5 minutes (pluie-retro.ts), and the stations' last 6 round hours;
- * - 24 hours: the radar's images, one a quarter of an hour, and the stations' last 24 round hours;
+ * - 24 hours: the radar's images, one an hour (parHeure: the strongest rain of its quarters), and the stations' last
+ *   24 round hours;
  * - 7 days: the stations' round hours of the week, no radar.
  * The stations' hours are Météo-France's hourly package (providers/meteofrance.ts), already read for /meteo: the
  * temperature and the wind at each round hour, the rain of the hour before it. It holds 24 hours; the week is kept in
@@ -14,7 +15,7 @@ import type { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { project } from "./map.js";
-import { endOf, type Historique, KEEP_MS, LONG_MS } from "./pluie-retro.js";
+import { endOf, type Historique, KEEP_MS, LONG_MS, parHeure } from "./pluie-retro.js";
 
 export const DUREES = ["6h", "24h", "7j"] as const;
 export type Duree = (typeof DUREES)[number];
@@ -208,7 +209,7 @@ async function build(d: Duree, cache: Cache, now: Date, background: (p: Promise<
   };
   const [s, r] = await Promise.all([
     semaine(cache, now, background),
-    !sources || d === "7j" ? undefined : d === "6h" ? radar(sources.six, KEEP_MS) : radar(sources.day, LONG_MS),
+    !sources || d === "7j" ? undefined : d === "6h" ? radar(sources.six, KEEP_MS) : radar(sources.day, LONG_MS).then((h) => h && parHeure(h)),
   ]);
   return { ...(d === "7j" ? {} : { radar: r ?? null }), heures: heures(s, HEURES[d]) };
 }

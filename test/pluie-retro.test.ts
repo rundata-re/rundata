@@ -4,7 +4,7 @@ import { BUILD_BUDGET, counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import type { RainGrid } from "../src/web/pluie-radar.js";
-import { auQuart, type Entree, type Historique, passage, quarters, rle, suivant, unrle } from "../src/web/pluie-retro.js";
+import { auQuart, type Entree, type Historique, type Image, parHeure, passage, quarters, rle, suivant, unrle } from "../src/web/pluie-retro.js";
 import { site } from "../src/web/site.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC, as in pluie-radar.test.ts.
@@ -236,6 +236,32 @@ describe("a run of the scheduled event", () => {
       expect([r.asked, r.waits, r.kinds]).toEqual([["05:40"], [], ["05:35", "05:40"]]);
       expect(r.said).not.toContain("rattrapage");
     });
+  });
+});
+
+describe("the 24 hours an image an hour", () => {
+  // Four cells: their rain and where the radars saw badly, as the radar's characters.
+  const img = (fin: string, pluie: string, mal = "0000", pannes: string[] = []): Image => ({ fin, pannes, pluie: rle(pluie), mal_vu: rle(mal) });
+  it("keeps in each cell the strongest rain of the hour's quarters, and where the radars saw badly on any", () => {
+    const h = parHeure({ w: 2, h: 2, entrees: [
+      img("2026-10-31T08:15:00Z", "1.00", "1000", ["Colorado"]), img("2026-10-31T08:30:00Z", "3.02"), img("2026-10-31T08:47:00Z", "20.0"),
+      img("2026-10-31T09:00:00Z", "0001", "0001", ["Piton Villers"]), img("2026-10-31T09:15:00Z", "0000"),
+    ] });
+    // The quarter of 08:45, read at 08:47, and the one of 09:00 make the hour of 08:00 to 09:00; 09:15 the next. A cell
+    // without data (.) on some images takes what the others saw.
+    expect(h.entrees).toEqual([
+      { fin: "2026-10-31T09:00:00Z", de: "2026-10-31T08:00:00Z", pannes: ["Colorado", "Piton Villers"], pluie: rle("3002"), mal_vu: rle("1001") },
+      { fin: "2026-10-31T10:00:00Z", de: "2026-10-31T09:00:00Z", pannes: [], pluie: rle("0000"), mal_vu: rle("0000") },
+    ]);
+  });
+  it("says a gap for an hour without an image, never a dry sky", () => {
+    const h = parHeure({ w: 2, h: 2, entrees: [
+      { trou: true, de: "2026-10-31T05:30:00Z", a: "2026-10-31T06:00:00Z" }, img("2026-10-31T06:15:00Z", "0000"),
+      { trou: true, de: "2026-10-31T06:15:00Z", a: "2026-10-31T08:15:00Z" }, img("2026-10-31T08:30:00Z", "1111"),
+      { trou: true, de: "2026-10-31T08:30:00Z", a: "2026-10-31T10:00:00Z" },
+    ] });
+    expect(kinds(h)).toEqual(["trou 05:30-06:00", "07:00", "trou 07:00-08:00", "09:00", "trou 09:00-10:00"]);
+    expect(unrle((h.entrees[3] as Image).pluie)).toBe("1111");
   });
 });
 

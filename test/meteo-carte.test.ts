@@ -6,19 +6,24 @@ import { apart, esc, NOMS_SCRIPT, project } from "../src/web/map.js";
 import {
   ago,
   ALT_PATH,
+  bands,
   blend,
   communeOf,
   discR,
+  gaugeField,
   landBreeze,
   METEO_SCRIPT,
   pace,
   rainPill,
   rejeuScript,
   rejeuScriptPath,
+  meteoVariant,
   shownAt,
+  soften,
   stationsMap,
   trailOf,
   ventText,
+  windAt,
   windPill,
 } from "../src/web/meteo-carte.js";
 import { CSS, meteoPage, stationId } from "../src/web/pages.js";
@@ -388,11 +393,13 @@ describe("the page /meteo with every station", () => {
     expect(page(ALL)).not.toContain(`Voir les 5 stations`);
     expect(() => new Function(METEO_SCRIPT)).not.toThrow();
     // What the radar sees, said by the script once its grid has come: rain, none, or an image too old to show.
-    expect(METEO_SCRIPT).toContain(`"En bleu : la pluie estimée par le radar de Météo-France "+(past?"le "+dm_(j.fin)+" à "+hm(j.fin):at_(j.fin))+" ; plus c'est foncé, plus elle est forte."`);
+    expect(METEO_SCRIPT).toContain(`"la pluie estimée par le radar de Météo-France "+(past?"le "+dm_(j.fin)+" à "+hm(j.fin):at_(j.fin)))+"\u00a0; "+fo()`);
+    // The blues darken with the rain in light, lighten in dark: the legend says which.
+    expect(METEO_SCRIPT).toContain(`const fo=()=>(dark()?"plus c'est clair":"plus c'est foncé")+", plus elle est forte.";`);
     expect(METEO_SCRIPT).toContain(`"Le radar de Météo-France ne voit pas de pluie "+(tail?"sur l'île ":"")+at_(j.fin)+"."`);
     // In the replay, a past image: its date and the past tense, never "hier".
     expect(METEO_SCRIPT).toContain(`"Le "+dm_(j.fin)+" à "+hm(j.fin)+", le radar de Météo-France ne voyait pas de pluie."`);
-    expect(METEO_SCRIPT).toContain(`say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":""):dist(n).bad,{el},"",1)`);
+    expect(METEO_SCRIPT).toContain(`say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":"")`);
     expect(METEO_SCRIPT).toContain(`" et n'est pas affichée."`);
     // The hatches' sentence comes after a hatched square, styled by the page, which ties it to the hatches on the map.
     expect(METEO_SCRIPT).toContain(`w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))`);
@@ -401,18 +408,24 @@ describe("the page /meteo with every station", () => {
     expect(CSS).not.toContain(".hsv");
     // The radar's rain in blues only, deeper class after class: the two strongest were violet and magenta, which the
     // legend did not have (31/10/2026). Its scale before the sentence, from its first class to its last.
-    const K: string[] = JSON.parse(METEO_SCRIPT.match(/const K=(\[[^\]]*\])/)![1]);
-    expect(K).toHaveLength(8);
-    const rgb = K.map((c) => c.match(/\d+/g)!.slice(0, 3).map(Number));
-    for (const [r, g, b] of rgb) expect(b).toBeGreaterThan(Math.max(r, g) + 50);
-    for (let i = 1; i < rgb.length; i++) expect(rgb[i][0] + rgb[i][1] + rgb[i][2]).toBeLessThan(rgb[i - 1][0] + rgb[i - 1][1] + rgb[i - 1][2]);
+    // Four blues a theme, two classes each, opaque: darker as it rains harder in light, lighter in dark (31/10/2026).
+    const TI: string[][] = JSON.parse(METEO_SCRIPT.match(/const TI=(\[\[[^\]]*\],\[[^\]]*\]\])/)![1]);
+    const sum = (c: string) => [1, 3, 5].reduce((n, i) => n + parseInt(c.slice(i, i + 2), 16), 0);
+    for (const [k, t] of TI.entries()) {
+      expect(t).toHaveLength(4);
+      for (const c of t) expect(parseInt(c.slice(5, 7), 16)).toBeGreaterThan(Math.max(parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16)));
+      for (let i = 1; i < t.length; i++) expect(k ? sum(t[i]) > sum(t[i - 1]) : sum(t[i]) < sum(t[i - 1])).toBe(true);
+    }
+    const KA: number[][][] = JSON.parse(METEO_SCRIPT.match(/KA=(\[\[\[.*?\]\]\])/)![1]);
+    for (const t of KA) expect(t.map((c) => c[3])).toEqual(Array(8).fill(1));
     expect(METEO_SCRIPT).toContain(`SC=["0,1\u202fmm/h","plus de 32\u202fmm/h"]`);
     // On its own line, above the sentence.
     expect(METEO_SCRIPT).toContain(`s.className="lgs lgr"`);
     expect(CSS).toContain(".wxmap .lgr{display:flex;");
-    expect(METEO_SCRIPT).toContain(`if(t.startsWith("En bleu"))el.prepend(scale())`);
-    // Drops lighter in a downpour: never the white stripes of 26 drops a cell for 1 in the lightest rain.
-    expect(METEO_SCRIPT).toContain(`Wt=[0,1,2,3,4,5,6,7,8]`);
+    expect(METEO_SCRIPT).toContain(`if(t.startsWith("En bleu"))el.prepend(scale(mm))`);
+    // More drops as it rains harder, about ten times more in the strongest class than in the lightest.
+    expect(METEO_SCRIPT).toContain(`DN=[3,4,6,8,12,16,23,32]`);
+    expect(METEO_SCRIPT).toContain(`Wt=[0,...DN]`);
     for (const words of [`"sur l'île "`, `"Pas d'image radar à "+hm(e.a)+"."`, `"Pas d'image radar de "+hm(e.de)+" à "+hm(e.a)+"."`, `"hier à "`, `b.textContent="Chargement…"`, `b.textContent="▶ Lire"`]) {
       expect(METEO_SCRIPT).toContain(words);
     }
@@ -480,10 +493,10 @@ describe("the replay bar's own script", () => {
     const js = rejeuScript();
     expect(() => new Function(js)).not.toThrow();
     for (const words of [`"❚❚ Pause"`, `"↻ Relire"`, `"▶ Lire"`, `"Mettre en pause"`, `"Relire"`, `"Chargement…"`, `"Lire les 24 dernières heures"`, `"Lire les 7 derniers jours"`,
-      `w="mesuré"`, `w="estimé"`, `w="estimé par radar"`, `", pluie estimée par le radar"`, `", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)`, `w="dernière mesure"`, `", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)`, `"Pluie de "+hmm(r.h.t-36e5)+" à "+hmm(r.h.t)`,
+      `w="mesuré"`, `w="estimé"`, `w="estimé par radar"`, `", pluie estimée par le radar"`, `", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)`, `w="dernière mesure"`, `", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)`, `w="estimé entre les pluviomètres"`, `", estimée entre les pluviomètres"`,
       `"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+"."`, `". Pas d'image radar de "`, `PLAY=12000`,
       `"Température sous abri de "+x+" de Météo-France, une mesure par heure.`, `" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu."`,
-      `"Pluie de chaque heure, en mm, mesurée par "+x+" de Météo-France. Point blanc : pas de pluie mesurée."`, `.lg-now .lgs`]) {
+      `" Points : la pluie mesurée par chaque pluviomètre pendant ces 3\u00a0heures, en mm. Point blanc : pas de pluie mesurée."`, `.lg-now .lgs`]) {
       expect(js).toContain(words);
     }
     expect(js).not.toMatch(/temps r[ée]el|prévision/i);
@@ -543,7 +556,7 @@ describe("the rain's animation and its replay", () => {
     expect(METEO_SCRIPT).toContain(`const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()}`);
     expect(METEO_SCRIPT.match(/mix:\(a,z,f,el,gr,tr,wm\)=>\{[^\n]*/)![0]).not.toContain("o.again");
     // A drop at its end is born again, or leaves when the rain wants fewer; those lacking come a tenth at a time.
-    expect(METEO_SCRIPT).toContain(`if((p.a+=k)>p.m&&(ds.length>n||!born(p)))ds.splice(i,1)`);
+    expect(METEO_SCRIPT).toContain(`if((p.a+=k)>p.m){if(ds.length>n||!born(p))ds.splice(i,1)}`);
     expect(METEO_SCRIPT).toContain(`Math.ceil(n/10)`);
     // The two images faded added, each by its share: no dip half way.
     expect(METEO_SCRIPT).toContain(`x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2]`);
@@ -566,7 +579,8 @@ describe("the rain's animation and its replay", () => {
   });
 
   it("spreads the radar's cells smoothly, never in steps, and veils where the radars see badly", () => {
-    expect(METEO_SCRIPT).toContain(`smooth(x);x.drawImage(t,0,0,cw,ch)`);
+    expect(METEO_SCRIPT).toContain(`tg.drawImage(t,0,0,j.w,j.h,0,0,t.width,t.height)`);
+    expect(METEO_SCRIPT).toContain(`soften(b.data,t.width,t.height,1)`);
     expect(METEO_SCRIPT).toContain(`c.fillStyle="rgba(255,255,255,.3)"`);
     // Every 12 px, twice the hatches' former spacing, their dark line darker than at first (the user, 31/10/2026).
     expect(METEO_SCRIPT).toContain(`t.width=t.height=12`);
@@ -576,7 +590,7 @@ describe("the rain's animation and its replay", () => {
   it("lets where the radars saw badly linger during a play, fading over two seconds of it, and says how long before the time shown", () => {
     const at = (m: number) => m * 6e4, W = 60;
     // As the replay's script does: TRAIL of PLAY, an hour of radar over 6 hours; none for less motion.
-    expect(rejeuScript()).toContain(`const keep=${trailOf},trail=(s)=>rm?null:keep(K.p,T,s,DU[d]*TRAIL/PLAY),wm=`);
+    expect(rejeuScript()).toContain(`const keep=${trailOf},trail=(s)=>rm||d!=="6h"?null:keep(K.p,T,s,DU[d]*TRAIL/PLAY),wm=`);
     expect(rejeuScript()).toContain(`TRAIL=2000`);
     expect((216e5 * 2000) / 12000).toBe(at(W));
     const trail = (T: number, s: number) => trailOf(IMG.map((m) => ({ t: at(m), e: m })), T, s, at(W)) as [number, number][];
@@ -616,5 +630,116 @@ return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};`);
     // The legend says how long before the time shown (marketing's words, a no-break space between figure and unit).
     expect(METEO_SCRIPT).toContain(`const ago=${ago};`);
     expect([30, 60, 120, 240].map(ago)).toEqual(["au cours des 30\u00a0minutes précédentes", "au cours de l'heure précédente", "au cours des 2\u00a0heures précédentes", "au cours des 4\u00a0heures précédentes"]);
+  });
+});
+
+describe("the rain's edges, its drops and the wind", () => {
+  // An image of w by h pixels whose red is each pixel's value.
+  const img = (red: number[]) => Uint8ClampedArray.from(red.flatMap((r) => [r, 0, 0, 255]));
+  const PAL = [[100, 150, 230, 0.6], [20, 40, 130, 0.9]], EDGE = [10, 30, 80, 1];
+
+  it("draws the rain in clear-cut blues, a line of ink around it, nothing outside", () => {
+    // A row from dry to heavy, a step of 28 (the radar's class times 28) every 4 pixels.
+    const red = [0, 0, 0, 0, 7, 14, 21, 28, 35, 42, 49, 56, 56, 56, 56];
+    const o = bands(img(red), new Uint8ClampedArray(red.length * 4), red.length, 1, PAL, EDGE, 28, 0.5);
+    const px = (i: number) => [...o.slice(i * 4, i * 4 + 4)];
+    // Outside the rain (under half the first class), nothing; where it starts, the line, its outer side half seen;
+    // then the blue of each class, never between two.
+    for (const i of [0, 1, 2, 3, 4]) expect(px(i)[3]).toBe(0);
+    expect(px(5)).toEqual([...EDGE.slice(0, 3), 128]);
+    expect(px(8)).toEqual([100, 150, 230, 153]);
+    expect(px(13)).toEqual([20, 40, 130, 230]);
+    // From 0.4 of the first class, the rain starts sooner: its line more seen there.
+    expect(bands(img(red), new Uint8ClampedArray(red.length * 4), red.length, 1, PAL, EDGE, 28, 0.4)[5 * 4 + 3]).toBeGreaterThan(200);
+    expect(METEO_SCRIPT).toContain(`const bands=${bands},soften=${soften};`);
+    expect(METEO_SCRIPT).toContain(`o.data,cw,ch,KA[dark()?1:0],[...INK[dark()?1:0],1],28,0.4)`);
+  });
+
+  it("rounds the radar's cells before cutting them, a lone cell kept", () => {
+    // A lone cell of the first class spread 4 times, smoothly (a peak 4 pixels wide each way): blurred, its middle stays
+    // over where the rain starts (0.4 of the class), its corners fall under.
+    const w = 13, red = Array.from({ length: w * w }, (_, k) => 28 * Math.max(0, 1 - Math.abs((k % w) - 6) / 4) * Math.max(0, 1 - Math.abs(((k / w) | 0) - 6) / 4));
+    const a = soften(img(red), w, w, 1);
+    expect(a[(6 * w + 6) * 4]).toBeGreaterThan(28 * 0.4);
+    expect(a[(6 * w + 6) * 4]).toBeLessThan(28);
+    expect(a[(4 * w + 4) * 4]).toBeLessThan(28 * 0.4);
+    expect(a[(6 * w + 6) * 4 + 3]).toBe(255);
+  });
+
+  it("leans each drop with the wind of the anemometers less than 15 km away, and lets it fall straight without one", () => {
+    const ws = [[100, 100, -20, 0], [130, 100, -10, 10]];
+    // Next to the first anemometer, its wind; 40 units away, both; past the reach, none: straight down.
+    expect(windAt(100, 100, ws, 50)![0]).toBeCloseTo(-20, 0);
+    const mid = windAt(115, 100, ws, 50)!;
+    expect(mid[0]).toBeCloseTo(-15, 5);
+    expect(mid[1]).toBeCloseTo(5, 5);
+    expect(windAt(400, 400, ws, 50)).toBeNull();
+    expect(METEO_SCRIPT).toContain(`const wat=${windAt};`);
+    expect(METEO_SCRIPT).toMatch(/wat\(p\.x\*\d+(\.\d+)?\/cw,p\.y\*\d+(\.\d+)?\/ch,WS,\d+(\.\d+)?\)/);
+    // M1: down the screen, leaning 0.75° a km/h of east-west wind, 30° at most, the way the wind goes; straight without one.
+    const m1 = meteoVariant("M1");
+    expect(m1).toContain(`const t=w?Math.min(30,Math.abs(w[0])*0.75)*Math.PI/180:0;p.dx=w?Math.sign(w[0])*Math.sin(t):0;p.dy=Math.cos(t)`);
+    // Each drop drawn back along its way, from where it is.
+    expect(m1).not.toContain(`if(q>=2)`);
+    expect(METEO_SCRIPT).toContain(`g.moveTo(p.x,p.y);g.lineTo(p.x-p.dx*p.l,p.y-p.dy*p.l)`);
+    expect(METEO_SCRIPT).toContain(`p.x+=p.dx*p.v*k;p.y+=p.dy*p.v*k`);
+    // M2 (the page's) and M3, seen from above: the way the wind goes, north or south too, in 16 directions, from 2 km/h;
+    // faster as it blows harder. M3 a splash where a tenth of them end.
+    const m3 = meteoVariant("M3");
+    for (const s of [METEO_SCRIPT, m3]) expect(s).toContain(`p.v=(30+30*Math.min(q,50)/50)/30;if(q>=2){const s=Math.PI*2/16,a=Math.round(Math.atan2(w[1],w[0])/s)*s;p.dx=Math.cos(a);p.dy=Math.sin(a)}else{p.dx=0;p.dy=1}};`);
+    expect(m3).toContain(`SP.push({x:p.x,y:p.y,a:0});if(ds.length>n||!born(p))ds.splice(i,1)`);
+    expect(METEO_SCRIPT).not.toContain("SP.push");
+    // In the replay, the anemometers of the image's hour.
+    expect(rejeuScript()).toContain(`RJ.p.wind(b?(b.i<0?RJ.v&&RJ.v.live:sx("v",b.i)):null,b&&b.t)`);
+    expect(METEO_SCRIPT).toContain(`back:()=>{const was=moving();mx=null;WS=WL;`);
+  });
+
+  it("halves the drops on a phone whose frames take over 30 ms, then holds them still", () => {
+    // The median of 30 frames: over 30 ms, half the drops; again, none move (the map's own frames stop too).
+    expect(METEO_SCRIPT).toContain(`FT.push(performance.now()-t0);if(FT.length===30){FT.sort((a,b)=>a-b);if(FT[15]>30){QF=QF===1?.5:0;if(!QF)o.again()}FT=[]}`);
+    expect(METEO_SCRIPT).toContain(`Math.round(n*cw*ch/(A.j.w*A.j.h)/1e4*QF)`);
+    expect(METEO_SCRIPT).toContain(`const moving=()=>!hush()&&QF>0&&`);
+  });
+
+  it("stops the drops with a button, and leaves them out of the replay in the variant without", () => {
+    expect(METEO_SCRIPT).toContain(`className="gp";gl();gb.addEventListener("click",()=>{stop=!stop;gl();o.again()})`);
+    expect(METEO_SCRIPT).toContain(`hush=()=>!true&&!!RJ.on`);
+    expect(meteoVariant("M2", false)).toContain(`hush=()=>!false&&!!RJ.on`);
+  });
+
+  it("says what the drops show and the wind they follow, in marketing's words; none when they are left out", () => {
+    const words = (verb: string) => `const gd=()=>hush()?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
+", et elles ${verb} dans le sens du vent estimé d'après les anémomètres "+(WT==="live"?"les plus proches, à leur dernière mesure.":"de Météo-France les plus proches, à "+hm(new Date(WT).toISOString())+".")+" Loin de tout anémomètre, elles tombent droit.");`;
+    expect(METEO_SCRIPT).toContain(words("vont"));
+    expect(meteoVariant("M1")).toContain(words("penchent"));
+    expect(rejeuScript()).toContain(`sx("v",b.i)):null,b&&b.t)`);
+    // Bigger and longer as it rains harder.
+    expect(METEO_SCRIPT).toContain(`p.w=DW[c-1];p.l=DL[c-1];`);
+  });
+
+  it("plays the 24 hours an image an hour, the strongest rain of each, and says so", () => {
+    expect(rejeuScript()).toContain(`const ST={"6h":3e5,"24h":36e5,"7j":36e5}`);
+    expect(METEO_SCRIPT).toContain(`"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France "+span(j)`);
+    expect(METEO_SCRIPT).toContain(`Cap(span(j))+", le radar de Météo-France n'a pas vu de pluie sur l'île."`);
+    expect(METEO_SCRIPT).toContain(`span=(j)=>"entre "+hx(j.de)+" et "+hx(j.fin)+" le "+dm_(j.fin)`);
+    expect(METEO_SCRIPT).toContain(`" "+BW+"\u00a0: zones que le radar a mal vues pendant cette heure, où la pluie peut être manquée."`);
+    // The hatches linger over 6 hours only: an hour's image is already where the radars saw badly in its hour.
+    expect(rejeuScript()).toContain(`trail=(s)=>rm||d!=="6h"?null:keep(`);
+    expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);
+    // Each image held 60 % of its time, then faded in smoothly, over 24 hours and 7 days; over 6 hours as before.
+    expect(rejeuScript()).toContain(`const ease=(f)=>{if(d==="6h")return f;const x=Math.max(0,Math.min(1,(f-.6)/.4));return x*x*(3-2*x)};`);
+  });
+
+  it("spreads the week's rain gauges between them by 3 hours, said estimated", () => {
+    // Four land cells in a row, a gauge at each end: 1.5 mm in the 3 hours and dry; the sea (0) left dry.
+    const cl = [0.1, 0.5, 1, 2, 4, 8, 16, 32];
+    expect(gaugeField([[0, 0, 1.5], [3, 0, 0]], [1, 1, 1, 1, 0], 5, 1, cl)).toBe("33100");
+    expect(gaugeField([], [1, 1], 2, 1, cl)).toBe("00");
+    expect(rejeuScript()).toContain(`field=${gaugeField}`);
+    expect(METEO_SCRIPT).toContain(`"En bleu\u00a0: la pluie mesurée par les pluviomètres de Météo-France "+span(j)+", étalée entre eux par calcul\u00a0; "+fo()+" Entre deux pluviomètres, c'est une estimation, pas une mesure\u00a0: une averse qui tombe loin d'eux peut manquer."`);
+    expect(METEO_SCRIPT).toContain(`Cap(span(j))+", aucun pluviomètre de Météo-France n'a mesuré de pluie."`);
+    expect(METEO_SCRIPT).toContain(`plus de 32\u202fmm en 3\u00a0h`);
+    // The 3 hours from midnight in La Réunion, each drawn whole at its middle.
+    expect(rejeuScript()).toContain(`if(((th(i)/36e5+4)%24)%3===0&&st.some((s)=>three(s,{w})!=null))k.push({t:th(i)-54e5,end:th(i),i,w})`);
   });
 });

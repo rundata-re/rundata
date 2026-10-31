@@ -471,7 +471,7 @@ export const AROUND = Array.from({ length: 25 * 25 }, (_, k) => [(k % 25) - 12, 
 const NEAR = 36;
 
 /** Kilometres per unit of the map, across and up and down alike. */
-const KM = ((LON1 - LON0) * 111.32 * Math.cos((((LAT0 + LAT1) / 2) * Math.PI) / 180)) / W;
+export const KM = ((LON1 - LON0) * 111.32 * Math.cos((((LAT0 + LAT1) / 2) * Math.PI) / 180)) / W;
 
 /**
  * Whether a place of importance 3 is far from all else, a landmark in an empty area (the user, the îlets of Mafate,

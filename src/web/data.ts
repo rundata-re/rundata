@@ -338,7 +338,7 @@ function answer<T>(r: { content: { text: string }[]; isError?: boolean }): T | u
 export async function buildPlace(cache: Cache, p: PlacePage, now = new Date()): Promise<PlaceData> {
   const out: PlaceData = {};
   out.meteo = answer<MeteoAnswer>(await meteoActuelle(cache, p.lieu, now, "jour"));
-  if (coastal(p)) out.mer = answer<MerAnswer>(await temperatureMer(cache, p.lieu, now));
+  if (coastal(p)) out.mer = answer<MerAnswer>(await temperatureMer(cache, p.lieu, now, false));
   if (left() >= FORECAST_MIN_LEFT) {
     try {
       out.prevision = answer<PrevisionAnswer>(await previsionMeteo(cache, p.lieu, undefined, now));

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Samedi 31 octobre 2026
 
+- Mer : le risque de blanchissement des coraux selon NOAA, d'après la chaleur de la mer mesurée par satellite, en trois points de l'île.
 - Carte : pluie au radar, stations météo, rivières, séismes, sentiers fermés… des couches à croiser, chacune avec sa source et son heure.
 - Pêche de loisir : langouste, bichiques… ce qui est fermé aujourd'hui, les tailles et les quantités, d'après les arrêtés du préfet.
 - Météo : la page d'un lieu donne aussi le maximum et le minimum de température depuis minuit, avec leur heure, à une station Météo-France.

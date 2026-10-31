@@ -5,7 +5,7 @@ import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.j
 import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
-import { agenda, COUVERTURE, type EventRow, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies } from "../src/tools/agenda.js";
+import { agenda, COUVERTURE, type EventRow, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { buildAgenda } from "../src/web/data.js";
 import { agendaHours, agendaPage } from "../src/web/domains.js";
@@ -77,6 +77,15 @@ const PORTAIL = "https://portail.sportsregions.fr/reunion/calendrier-clubs-sport
 /** One club event in the portal's JSON-LD, as its pages write it. */
 const ld = (name: string, startDate: string, club: string, postalCode = "97410", url = `https://club.example/evenements/${encodeURIComponent(name)}-${startDate}`) =>
   `<script type="application/ld+json">${JSON.stringify({ "@context": "https://schema.org", "@type": "SportsEvent", name, startDate, endDate: startDate.slice(0, 10), location: { "@type": "Place", name: club, address: { "@type": "PostalAddress", addressLocality: "SAINT PIERRE", postalCode } }, organizer: { "@type": "SportsOrganization", name: club }, sport: "Badminton", url })}</script>`;
+
+describe("the dates of an event", () => {
+  it("say both years when a period runs over two, and none otherwise", () => {
+    expect(when({ debut: "2026-05-23", fin: "2027-05-22" })).toBe("du samedi 23/05/2026 au samedi 22/05/2027");
+    expect(when({ debut: "2026-12-31T21:00", fin: "2027-01-01T04:00" })).toBe("du jeudi 31/12/2026 à 21:00 au vendredi 01/01/2027 à 04:00");
+    expect(when({ debut: "2026-10-29", fin: "2026-11-02" })).toBe("du jeudi 29/10 au lundi 02/11");
+    expect(when({ debut: "2026-10-30T20:00" })).toBe("vendredi 30/10 à 20:00");
+  });
+});
 
 describe("agenda", () => {
   let down: RegExp | undefined;

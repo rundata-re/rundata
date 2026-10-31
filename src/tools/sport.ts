@@ -51,12 +51,17 @@ const localClock = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString
 const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
 const weekday = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay();
 
-/** « 2026-10-30T20:30 » → « vendredi 30/10 à 20:30 » ; « 2026-10-31 » → « samedi 31/10 ». */
-export function quand(local: string): string {
+/** « 2026-10-30T20:30 » → « vendredi 30/10 à 20:30 » ; « 2026-10-31 » → « samedi 31/10 » ; with `annee`, « samedi 31/10/2026 ». */
+export function quand(local: string, annee = false): string {
   const d = local.slice(0, 10);
-  return `${DAYS[weekday(d)]} ${d.slice(8, 10)}/${d.slice(5, 7)}${local.length > 10 ? ` à ${local.slice(11, 16)}` : ""}`;
+  return `${DAYS[weekday(d)]} ${d.slice(8, 10)}/${d.slice(5, 7)}${annee ? `/${d.slice(0, 4)}` : ""}${local.length > 10 ? ` à ${local.slice(11, 16)}` : ""}`;
 }
-const span = (e: { debut: string; fin: string }) => (e.debut === e.fin ? quand(e.debut) : `du ${quand(e.debut)} au ${quand(e.fin)}`);
+/** « du vendredi 30/10 au dimanche 01/11 » ; both years when they differ: « du samedi 23/05/2026 au samedi 22/05/2027 ». */
+export function duAu(debut: string, fin: string, at: (local: string, annee: boolean) => string = quand): string {
+  const annee = debut.slice(0, 4) !== fin.slice(0, 4);
+  return `du ${at(debut, annee)} au ${at(fin, annee)}`;
+}
+const span = (e: { debut: string; fin: string }) => (e.debut === e.fin ? quand(e.debut) : duAu(e.debut, e.fin));
 
 /** The days a question means: this weekend is Friday to Sunday, the coming one from Monday on; « samedi » is the next one, today included. */
 export function window(q: Quand | undefined, now: Date, back = BACK_DAYS): { du: string; au: string } {
@@ -352,7 +357,7 @@ export type SportRow = Omit<Item, "date" | "fin">;
 export function grandRaidRow(g: src.GrandRaid) {
   return {
     edition: g.edition,
-    dates: g.debut === g.fin ? quand(g.debut) : `du ${quand(g.debut)} au ${quand(g.fin)}`,
+    dates: g.debut === g.fin ? quand(g.debut) : duAu(g.debut, g.fin),
     courses: g.courses.map((c) => ({
       course: `${c.nom} (${c.distance_km} km, ${c.denivele_m} m D+)`,
       depart: `${quand(c.depart)}, ${c.lieu_depart}`,
@@ -501,7 +506,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
         type: "programme sportif de la commune",
         commune,
         titre: e.titre,
-        dates: s.fin && s.fin !== s.debut ? `du ${quand(s.debut)} au ${quand(s.fin)}` : quand(s.debut),
+        dates: s.fin && s.fin !== s.debut ? duAu(s.debut, s.fin) : quand(s.debut),
         lien: e.lien,
         /** « site de la commune de Saint-Benoît, lu le samedi 24/10 à 07:00 », as on the events. */
         source: agenda.site_commune ? `${agenda.site_commune}, lu le ${quand(localClock(fetchedAt))}` : e.publie_par,
@@ -522,7 +527,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const place = w ? w.label : " à La Réunion";
   const ahead = q === "aujourd_hui" || q === "demain" || q === "samedi" || q === "dimanche"
     ? quand(au)
-    : q === "ce_week_end" ? `ce week-end (${du === au ? quand(au) : `du ${quand(du)} au ${quand(au)}`})` : `d'ici le ${quand(au)}`;
+    : q === "ce_week_end" ? `ce week-end (${du === au ? quand(au) : duAu(du, au)})` : `d'ici le ${quand(au)}`;
   // All of them, not only the UPCOMING_MAX listed: the number the page gives too (26/10/2026: « 40 » said for 77).
   const away = aheadAll.filter((i) => i.deplacement).length;
   const here = aheadAll.length - away;

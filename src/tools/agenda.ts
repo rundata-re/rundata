@@ -17,7 +17,7 @@ import { mesure } from "../web/mesure.js";
 import { a, credits, de, enumeration, notFound, placeBlock, text } from "./format.js";
 import { type Injoignable, injoignable } from "./injoignable.js";
 import { dayMonth, mention, mentionIle as ileMention, mentionReunionFr, mentionSalles, mentionSports, RESUME_REUNION_FR } from "./non-repris.js";
-import { quand as dayText, derniereLecture } from "./sport.js";
+import { quand as dayText, derniereLecture, duAu } from "./sport.js";
 import { rienTrouve } from "../vide.js";
 
 const AHEAD_DAYS = 14;
@@ -88,7 +88,10 @@ export function periode(q: string | undefined, now: Date): Periode {
   return { ...span(today, addDays(today, AHEAD_DAYS), "dans les deux semaines qui viennent"), incompris: true };
 }
 
-/** « samedi 24/10 de 14:00 à 18:00 », « du vendredi 23/10 au dimanche 25/10 », « mercredi 28/10 ». */
+/**
+ * « samedi 24/10 de 14:00 à 18:00 », « du vendredi 23/10 au dimanche 25/10 », « mercredi 28/10 » ; both years when the
+ * period runs over two: « du samedi 23/05/2026 au samedi 22/05/2027 ».
+ */
 export function when(s: src.Seance): string {
   const time = (x: string) => x.slice(11, 16);
   const end = s.fin;
@@ -96,8 +99,7 @@ export function when(s: src.Seance): string {
   if (end.slice(0, 10) === s.debut.slice(0, 10)) {
     return s.debut.length > 10 ? `${dayText(s.debut.slice(0, 10))} de ${time(s.debut)} à ${time(end)}` : dayText(s.debut);
   }
-  const at = (x: string) => (x.length > 10 ? `${dayText(x.slice(0, 10))} à ${time(x)}` : dayText(x));
-  return `du ${at(s.debut)} au ${at(end)}`;
+  return duAu(s.debut, end, (x, annee) => (x.length > 10 ? `${dayText(x.slice(0, 10), annee)} à ${time(x)}` : dayText(x, annee)));
 }
 
 // A workshop, a meeting or a talk is not a show, whatever it is about (« Atelier théâtre », « PROJET TRAIN : Atelier »).
@@ -531,13 +533,14 @@ interface Occurrence {
 export function occurrences(r: Pick<EventRow, "date" | "quand" | "autres_dates">): Occurrence[] {
   const year = Number(r.date.slice(0, 4));
   const first = r.date.slice(5, 10);
-  const day = (dd: string, mm: string) => `${year + (`${mm}-${dd}` < first ? 1 : 0)}-${mm}-${dd}`;
-  const DAY = String.raw`\S+ (\d\d)\/(\d\d)`;
+  // A period over two years says them (when): « du samedi 23/05/2026 au samedi 22/05/2027 ».
+  const day = (dd: string, mm: string, yyyy?: string) => `${yyyy ?? year + (`${mm}-${dd}` < first ? 1 : 0)}-${mm}-${dd}`;
+  const DAY = String.raw`\S+ (\d\d)\/(\d\d)(?:\/(20\d\d))?`;
   const read = (q: string): Occurrence | undefined => {
     let m = new RegExp(`^du ${DAY}(?: à (\\d\\d:\\d\\d))? au ${DAY}(?: à (\\d\\d:\\d\\d))?$`).exec(q);
-    if (m) return { du: day(m[1], m[2]), debut: m[3], au: day(m[4], m[5]), fin: m[6], quand: q };
+    if (m) return { du: day(m[1], m[2], m[3]), debut: m[4], au: day(m[5], m[6], m[7]), fin: m[8], quand: q };
     m = new RegExp(`^${DAY}(?: à (\\d\\d:\\d\\d)| de (\\d\\d:\\d\\d) à (\\d\\d:\\d\\d))?$`).exec(q);
-    if (m) return { du: day(m[1], m[2]), au: day(m[1], m[2]), debut: m[3] ?? m[4], fin: m[5], quand: q };
+    if (m) return { du: day(m[1], m[2], m[3]), au: day(m[1], m[2], m[3]), debut: m[4] ?? m[5], fin: m[6], quand: q };
     return undefined;
   };
   return [r.quand, ...(r.autres_dates ?? [])].map(read).filter((o): o is Occurrence => !!o);

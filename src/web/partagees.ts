@@ -93,6 +93,8 @@ export const SHARED: Shared[] = [
   { key: "web:crues", build: buildCrues, every: (last) => (floodRaised(last as CruesAnswer | undefined).length ? 5 : 15), cold: 10, cpu: 50, range: { usual: 15, shortest: 5 }, offset: 10, alongside: true },
   { key: "web:actualites", build: buildActualites, every: 30, cold: 10, cpu: 190, offset: 10 },
   { key: "web:trafic", build: buildTrafic, every: 30, cold: 30, cpu: 160, offset: 5 },
+  // The archive of EDF's production (providers/edf.ts `archiver`: a read of KV and, once an hour, a write) outside its
+  // cost, with what is left, as the OVPF's PDF.
   { key: "web:electricite", build: buildElectricite, every: 30, cold: 7, cpu: 80, offset: 20 },
   { key: "web:coupures", build: buildCoupures, every: 30, cold: 7, cpu: 60, offset: 25 },
   // The index (3), the copy of the measures at the stations (3: the data center's cache, KV, written back), the copy

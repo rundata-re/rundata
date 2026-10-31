@@ -19,7 +19,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | contrôle | valeur | limite |
 |---|---:|---:|
 | pire passage planifié, sous-requêtes | 453 | 500 |
-| pire passage planifié, appels KV et D1 | 104 | 1 000 |
+| pire passage planifié, appels KV et D1 | 106 | 1 000 |
 | pire passage planifié, CPU (ms) | 3 536 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 90 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 172 | 500 |
@@ -37,10 +37,10 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 453 | 27 | 51 | 26 | 1 164 | 284 | 3 536 |
-| tâche planifiée, par jour | 28 614 | 4 393 | 3 830 | 2 409 | 102 914 | 58 511 | 233 076 |
-| tâche planifiée, par jour, cadences les plus courtes | 39 506 | 5 689 | 5 654 | 2 889 | 107 954 | 58 511 | 278 556 |
-| tâche planifiée, par mois (30 jours) | 858 407 | 131 790 | 114 900 | 72 283 | 3 087 411 | 1 755 321 | 6 992 267 |
+| pire passage planifié | 453 | 28 | 52 | 26 | 1 164 | 284 | 3 536 |
+| tâche planifiée, par jour | 28 614 | 4 441 | 3 878 | 2 409 | 102 914 | 58 511 | 233 076 |
+| tâche planifiée, par jour, cadences les plus courtes | 39 506 | 5 737 | 5 702 | 2 889 | 107 954 | 58 511 | 278 556 |
+| tâche planifiée, par mois (30 jours) | 858 407 | 133 230 | 116 340 | 72 283 | 3 087 411 | 1 755 321 | 6 992 267 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -58,7 +58,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | web:crues | copie partagée (KV) | 15 min (5 au plus court) | 00:10 | 17 | 3 | 4 |  |  |  | 50 | estimé |
 | web:actualites | copie partagée (KV) | 30 min | 00:10 | 11 |  | 1 |  |  |  | 190 | mesuré |
 | web:trafic | copie partagée (KV) | 30 min | 00:05 | 31 |  | 1 | 2 | 840 |  | 160 | mesuré |
-| web:electricite | copie partagée (KV) | 30 min | 00:20 | 8 |  | 1 |  |  |  | 80 | mesuré |
+| web:electricite | copie partagée (KV) | 30 min | 00:20 | 8 | 1 | 2 |  |  |  | 80 | mesuré |
 | web:coupures | copie partagée (KV) | 30 min | 00:25 | 10 | 1 | 2 |  |  |  | 60 | mesuré |
 | web:air | copie partagée (KV) | 60 min | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
 | mer:satellites | copie partagée (KV) | 180 min (30 au plus court) | 00:55 | 11 |  | 1 |  |  |  | 110 | estimé |
@@ -129,6 +129,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV) | à chaque vue |  | 5 | 1 |  | 1 | 140 |  | 30 | code |
+| /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
 | /carte | la carte des couches : la page seule, avec la vigilance et la version de l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 40 | code |
 | /mer | la page /mer | à chaque vue |  | 28 |  |  |  |  |  | 120 | mesuré |
@@ -280,6 +281,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /meteo/rejeu-6h.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-24h.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-7j.json | providers/meteofrance, providers/mf-auth, providers/radar |
+| /electricite/historique.json | providers/avis-eau, providers/coupures-courant, providers/edf |
 | /mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
 | /randonnees/* | providers/feux, providers/sentiers, providers/traces |
 | /sentiers/* | providers/feux, providers/sentiers, providers/traces |

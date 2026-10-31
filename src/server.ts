@@ -118,7 +118,7 @@ Règles :
 - Citer : chaque réponse porte citer (rundata.re et les producteurs), lien (la page de rundata.re qui montre la même chose), sources (les producteurs et leurs licences) et fraicheur (l'heure de la donnée, par exemple « 23:12, heure de La Réunion ») : de quoi citer et dater la réponse.
 - Avis : l'utilisateur signale un manque, une erreur ou un souhait sur ces données : donner_avis\u00a0; un outil n'a rien trouvé : le lui proposer, et n'appeler qu'avec son accord. Le besoin résumé, rien de personnel.
 - Liste d'outils : chaque réponse porte serveur.outils_recents\u00a0; avant de dire qu'un sujet n'est pas couvert, même à la première question, appeler sources_donnees. Outil cité là, absent de votre liste : elle est ancienne, le dire, sans dire qu'on l'a rechargée. ChatGPT : Paramètres → Plugins → rundata.re → Actualiser les outils, puis nouvelle conversation.
-- Météo : maintenant → meteo_actuelle, temperature_mer (MESURES : dire l'heure, la station, sa distance)\u00a0; avant (hier, ce mois-ci, record) → historique_meteo\u00a0; plus tard → prevision_meteo, une PRÉVISION : le dire à l'utilisateur\u00a0; houle, surf → temperature_mer, une PRÉVISION aussi.
+- Météo : maintenant, max et min depuis minuit → meteo_actuelle, temperature_mer (MESURES : dire l'heure, la station, sa distance)\u00a0; avant (hier, ce mois-ci, record) → historique_meteo\u00a0; plus tard → prevision_meteo, une PRÉVISION : le dire à l'utilisateur\u00a0; houle, surf → temperature_mer, une PRÉVISION aussi.
 - Un champ vigilance ou avertissement se dit en premier, et les consignes de sécurité (15 ou 112, 18 pour un feu, radier, sentier fermé, eau à ne pas boire) telles quelles. Vigilance, cyclone : les zones de Météo-France, jamais une commune\u00a0; finir par le champ officiel.
 
 Détails :
@@ -270,7 +270,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "humidité, vent et rafales, pression, temps présent, à la station la plus représentative du lieu demandé, " +
         "et la pluie vue par le radar de Météo-France au lieu même (utile là où il n'y a pas de pluviomètre : Mafate, cirques, Hauts). " +
         "Avec un lieu, aussi la pluie des dernières heures au pluviomètre le plus proche (pluie_recente) : heure par heure sur 12 à 24 h, " +
-        "l'heure de la dernière pluie et le cumul depuis minuit, pour « il a plu quand à Saint-Joseph ? », « combien est-il tombé cette nuit ? ». " +
+        "l'heure de la dernière pluie et le cumul depuis minuit, pour « il a plu quand à Saint-Joseph ? », « combien est-il tombé cette nuit ? »\u00a0; " +
+        "la température max et min depuis minuit (temperature_depuis_minuit) : « quelle était la température max aujourd'hui à Saint-Pierre ? », « il a fait combien au plus chaud aujourd'hui ? ». " +
         "Pour toute question sur le temps qu'il fait en ce moment : « quel temps fait-il à Saint-Denis ? », " +
         "« il fait chaud à la plage de l'Hermitage ? », « il pleut à Cilaos ? », « y a-t-il du vent à Saint-Pierre ? », « il fait froid au Maïdo ? ». " +
         "Renvoie des mesures datées avec la station, sa distance, son altitude, et un avertissement " +
@@ -278,7 +279,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour plus tard (demain, ce soir, ce week-end), utiliser prevision_meteo. " +
         "/ Current MEASURED weather in Réunion Island (air temperature, rain, humidity, wind, pressure, present weather) " +
         "at the most representative station for a place, and with a place the rain of the last 12 to 24 hours hour by hour, " +
-        "the time of the last rain and the total since midnight. Use for 'what is the weather like now in <place in Réunion>', 'when did it last rain'; " +
+        "the time of the last rain and the total since midnight, and the max and min temperature since midnight. " +
+        "Use for 'what is the weather like now in <place in Réunion>', 'when did it last rain', 'how hot was it today'; " +
         "for later today or the coming days, use prevision_meteo.",
       inputSchema: { lieu: lieuAvecExemples },
       annotations: { title: "Météo mesurée à La Réunion", ...READ_ONLY },
@@ -809,7 +811,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Sur 3 jours ou moins (7 avec detail « heure »), depuis 2000, aussi HEURE PAR HEURE, nuit dernière comprise : à quelle heure il a plu, quand le soleil s'est caché, rafale max et à quelle heure. " +
         "Pour toute question sur le temps qu'il a fait : « il a beaucoup plu ce mois-ci à Saint-Benoît ? », « record de chaleur à Saint-Denis ? », " +
         "« à quelle heure a-t-il plu hier à Cilaos ? ». " +
-        "Pour maintenant, utiliser meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo.",
+        "Pour maintenant et aujourd'hui depuis minuit (max, min, pluie), meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo.",
       inputSchema: {
         lieu,
         jours: z.number().int().min(1).max(3650).optional()

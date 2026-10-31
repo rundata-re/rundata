@@ -9,6 +9,7 @@ import * as pioupiou from "../providers/pioupiou.js";
 import * as radar from "../providers/radar.js";
 import { radarAt } from "./radar.js";
 import { recentRainBlock } from "./pluie-recente.js";
+import { hasExtremes, todayTemperatureBlock } from "./temperature-du-jour.js";
 import { type Observation, type SourceInfo, why } from "../types.js";
 import { fit, mieux } from "./representativeness.js";
 import { credits, fr, notFound, placeBlock, show, text, when } from "./format.js";
@@ -206,6 +207,9 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   const drizzle = Boolean(gauge && dry(gauge.o.station.id) && (!rain || rain.bloc.au_lieu_mm_h === 0) &&
     (sky || Number(rain?.bloc.max_3km_mm_h ?? 0) > 0));
   const pluie = gauge ? recentRainBlock(recentRain!, { id: gauge.o.station.id, nom: gauge.o.station.nom, fit: gauge.f }, r.lieu.nom, now, drizzle) : undefined;
+  // The lowest and highest temperature since midnight, from the same hourly package, at the best-placed station that has them.
+  const thermo = recentRain && ranked.find((x) => x.o.station.source === "meteofrance" && hasExtremes(recentRain, x.o.station.id));
+  const jour = thermo ? todayTemperatureBlock(recentRain!, { id: thermo.o.station.id, nom: thermo.o.station.nom, fit: thermo.f }, now) : undefined;
 
   const resume = shown.length
     ? `Mesures les plus proches de ${r.lieu.nom} — ` +
@@ -214,7 +218,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
         .join("\u00a0; ") +
       (warnings.length ? `. Attention : ${warnings.join(" ")}` : "")
     : "Aucune mesure disponible pour le moment.";
-  const resumeAll = [resume, rain?.resume, pluie?.resume].filter(Boolean).join(" ");
+  const resumeAll = [resume, jour?.resume, rain?.resume, pluie?.resume].filter(Boolean).join(" ");
 
   return text({
     lieu: placeBlock(lieu, r),
@@ -224,6 +228,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
       const block = stationBlock(o, stale, now);
       return { ...block, ...rest, avertissements: [...avertissements, ...block.avertissements] };
     }),
+    temperature_depuis_minuit: jour && (({ resume: _, ...block }) => block)(jour),
     radar: rain?.bloc,
     pluie_recente: pluie && (({ resume: _, ...block }) => block)(pluie),
     sources_indisponibles: indisponibles,

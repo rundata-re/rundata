@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Samedi 31 octobre 2026
 
+- Météo : la température la plus haute et la plus basse depuis minuit, mesurée à la station Météo-France la plus proche.
 - Cartes : en zoomant, le relief devient quatre fois plus détaillé, d'après l'IGN (altitudes RGE ALTI, photos BD ORTHO).
 - Bus : préparez un trajet d'un arrêt, d'une commune ou d'un lieu à un autre, direct ou avec une correspondance.
 - Cartes : le relief de l'île prend les couleurs du sol, d'après la photo aérienne de l'IGN, à l'accueil et sur les cartes en relief.

@@ -103,7 +103,8 @@ describe("the server's instructions", () => {
     // 39 074 once the English and the extra examples were left out: lowered as the descriptions are made shorter.
     // 40 262 with main's words back in meteo_actuelle and prevision_meteo, 37 778 once the SDK's "$schema" and "execution" are out of the list.
     // 40 039 on 31/10/2026 with sources_donnees' first sentence (call it before saying a subject is not covered).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(40_100);
+    // 40 334 the same day with the max and min since midnight in meteo_actuelle, and historique_meteo sending today there.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(40_350);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

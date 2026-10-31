@@ -227,30 +227,56 @@ describe("nothing measured", () => {
     return c;
   };
 
-  it("gives yesterday 0 h to 24 h from the hourly readings until the day is loaded, as provisional", async () => {
+  it("gives yesterday 0 h to 24 h from the hourly readings until the day is loaded, as the hours added up", async () => {
     plug();
     const c = await kept({ "97418110": { rr: 3.2, tn: 21.4, tx: 27.9 }, "97416463": { rr: 0 } });
     const a = json(await historiqueMeteo(c, "Saint-Denis", { du: "2026-10-24" }, now));
-    // Known since 00:20: never « not available yet » beside it.
+    // Known since 00:20: never « not available yet » beside it, nor Météo-France's daily value.
     expect(a.resume.trim()).toBe(
-      "Provisoire, 24/10/2026 0 h–24 h (heure de La Réunion), relevés horaires Météo-France : pluie 3,2 mm, températures de 21,4 °C à 27,9 °C.",
+      "Hier, 24/10/2026 de 0 h à 24 h (heure de La Réunion), cumul des mesures horaires de Météo-France, pas la valeur quotidienne officielle\u00a0: " +
+        "pluie 3,2 mm, températures de 21,4 °C à 27,9 °C à Saint-Denis Gillot (aéroport).",
     );
     expect(a.hier_provisoire).toMatchObject({
-      jour: "24/10/2026", periode: "0 h–24 h, heure de La Réunion", nature: "mesure provisoire",
-      pluie_mm: 3.2, temperature_min: 21.4, temperature_max: 27.9, station: "Saint-Denis Gillot (aéroport)", altitude_m: 8,
+      jour: "24/10/2026", periode: "0 h–24 h, heure de La Réunion", nature: "cumul des mesures horaires",
+      pluie: { mm: 3.2, station: "Saint-Denis Gillot (aéroport)", altitude_m: 8 },
+      temperatures: { min: 21.4, max: 27.9, station: "Saint-Denis Gillot (aéroport)" },
     });
+    expect(a.hier_provisoire.a_savoir).toContain("pas la valeur quotidienne officielle de climatologie, qui compte la pluie de 10 h à 10 h le lendemain");
     expect(a.signaler).toBeUndefined();
     // Météo-France's own day, 10 h to 10 h, is said with it.
     expect(a.a_savoir).toContain("La pluie d'un jour est celle tombée de 10 h ce jour-là à 10 h le lendemain (heure de La Réunion), comme Météo-France la compte.");
     expect(a.sources.map((s: { source: string }) => s.source)).toContain("Stations Météo-France (mesures toutes les 6 minutes)");
   });
 
-  it("says the rain alone when the station has not all the hours of its temperatures, and leaves them out", async () => {
+  it("takes the temperatures from the nearest station that has all their hours, when the rain's station has not", async () => {
     plug();
-    const a = json(await historiqueMeteo(await kept({ "97418110": { rr: 0.4, tx: 28.1 } }), "Saint-Denis", { du: "2026-10-24" }, now));
-    expect(a.resume).toMatch(/relevés horaires Météo-France : pluie 0,4 mm\.$/);
-    expect(a.hier_provisoire).not.toHaveProperty("temperature_min");
-    expect(a.hier_provisoire.temperature_max).toBe(28.1);
+    const c = await kept({ "97418110": { rr: 0.4, tx: 28.1 }, "97418123": { rr: 0.6, tn: 21.9, tx: 28.4 } });
+    const a = json(await historiqueMeteo(c, "Saint-Denis", { du: "2026-10-24" }, now));
+    expect(a.resume).toMatch(/officielle\u00a0: pluie 0,4 mm à Saint-Denis Gillot \(aéroport\), températures de 21,9 °C à 28,4 °C à La Mare - CIRAD\.$/);
+    expect(a.hier_provisoire.pluie.station).toBe("Saint-Denis Gillot (aéroport)");
+    expect(a.hier_provisoire.temperatures).toMatchObject({ min: 21.9, max: 28.4, station: "La Mare - CIRAD" });
+    // The rain alone when no station has every hour of both temperatures.
+    const r = json(await historiqueMeteo(await kept({ "97418110": { rr: 0.4, tx: 28.1 } }), "Saint-Denis", { du: "2026-10-24" }, now));
+    expect(r.resume).toMatch(/officielle\u00a0: pluie 0,4 mm à Saint-Denis Gillot \(aéroport\)\.$/);
+    expect(r.hier_provisoire).not.toHaveProperty("temperatures");
+  });
+
+  it("gives yesterday at each station of the island's tour, until the day is loaded", async () => {
+    plug();
+    const c = await kept({ "97418110": { rr: 3.2, tn: 21.4, tx: 27.9 }, "97416463": { rr: 0, tn: 19.8, tx: 26.5 }, "97424410": { tn: 12.1, tx: 22 } });
+    const a = json(await historiqueMeteo(c, undefined, { jours: 7 }, now));
+    expect(a.resume).toContain(
+      " Hier, 24/10/2026 de 0 h à 24 h, cumul des mesures horaires de Météo-France, pas la valeur quotidienne officielle\u00a0: " +
+        "Saint-Denis Gillot (aéroport) 3,2 mm\u00a0; Saint-Pierre Pierrefonds (aéroport) 0 mm\u00a0; ",
+    );
+    expect(a.resume).not.toMatch(/pas encore disponibles/);
+    expect(a.hier_provisoire.nature).toBe("cumul des mesures horaires");
+    expect(a.hier_provisoire.stations[0]).toEqual({ zone: "nord (Saint-Denis)", station: "Saint-Denis Gillot (aéroport)", pluie_mm: 3.2, temperature_min: 21.4, temperature_max: 27.9 });
+    expect(a.sources.map((s: { source: string }) => s.source)).toContain("Stations Météo-France (mesures toutes les 6 minutes)");
+    // Not kept for that day: « not yet », as before.
+    const none = json(await historiqueMeteo(await kept({ "97418110": { rr: 3.2 } }, "2026-10-23"), undefined, { jours: 7 }, now));
+    expect(none.hier_provisoire).toBeUndefined();
+    expect(none.resume).toMatch(/pas encore disponibles/);
   });
 
   it("gives no provisional day once yesterday is loaded, nor one kept for another day", async () => {
@@ -259,6 +285,6 @@ describe("nothing measured", () => {
     expect(loaded.hier_provisoire).toBeUndefined();
     const other = json(await historiqueMeteo(await kept({ "97418110": { rr: 3.2 } }, "2026-10-23"), "Saint-Denis", { du: "2026-10-24" }, now));
     expect(other.hier_provisoire).toBeUndefined();
-    expect(other.resume).not.toMatch(/Provisoire/);
+    expect(other.resume).not.toMatch(/cumul des mesures horaires/);
   });
 });

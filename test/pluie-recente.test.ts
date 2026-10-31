@@ -5,6 +5,8 @@ import * as meteofrance from "../src/providers/meteofrance.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { CONVENTION, recentRainBlock } from "../src/tools/pluie-recente.js";
 import type { Fit } from "../src/tools/representativeness.js";
+import { placePage } from "../src/web/pages.js";
+import { pageOf } from "../src/web/places.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -179,10 +181,34 @@ describe("the rain of the last hours", () => {
       expect(r.stations[0].station).toBe("Saint-Joseph");
     });
 
-    it("is never read for the place pages", async () => {
+    it("gives the place pages the max and min since midnight only, and nothing when not asked", async () => {
+      const r = body(await meteoActuelle(await cache(), "Saint-Pierre", NOW, "jour"));
+      expect(r.temperature_depuis_minuit).toMatchObject({ station: "Saint-Pierre Pierrefonds (aéroport)", periode: "de 00:00 à 12:54" });
+      expect(r.pluie_recente).toBeUndefined();
+      expect(calls).toBe(0);
       const now = new Date("2026-10-25T09:20:00Z");
-      await meteoActuelle(await cache({}, undefined, now), "Saint-Joseph", now, false);
+      const none = body(await meteoActuelle(await cache({}, undefined, now), "Saint-Joseph", now, false));
+      expect(none.temperature_depuis_minuit).toBeUndefined();
       expect(calls).toBe(0);
     });
+  });
+});
+
+describe("the max and min since midnight on a place's weather page", () => {
+  beforeEach(() => meteofrance.configure({ token: "test" }));
+  afterEach(() => meteofrance.configure({}));
+  const p = pageOf("saint-pierre")!;
+
+  it("shows them under the measures of now, with their station and their time", async () => {
+    const meteo = body(await meteoActuelle(await cache(), p.lieu, NOW, "jour"));
+    const page = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: false }, NOW);
+    expect(page).toContain("<h3>Depuis minuit à Saint-Pierre Pierrefonds (aéroport)</h3>");
+    expect(page).toContain("à 5,9 km · pertinence bonne · de 00:00 à 12:54");
+    expect(page).toMatch(/<li><span>Au plus<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">26,5\u202f°C<\/span> <span class="q">entre 9\u00a0h et 10\u00a0h<\/span><\/span><\/li>/);
+    expect(page).toMatch(/<li><span>Au moins<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">22,9\u202f°C<\/span> <span class="q">entre 0\u00a0h et 1\u00a0h<\/span><\/span><\/li>/);
+    // A copy of the day before, served after midnight while the next is built: yesterday's would pass for today's.
+    const late = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: true }, new Date("2026-10-25T20:10:00Z"));
+    expect(late).toContain("Mesuré en ce moment près de Saint-Pierre");
+    expect(late).not.toContain("Depuis minuit");
   });
 });

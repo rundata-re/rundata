@@ -444,7 +444,7 @@ function nothingBefore(where: string, p: Period, now: Date, last?: string): stri
 const COMMON = {
   nature: "mesure",
   a_savoir: [
-    "Mesures quotidiennes des stations Météo-France, chargées chaque jour vers midi (heure de La Réunion) avec la veille : le dernier jour disponible est hier après le chargement, avant-hier avant\u00a0; avant ce chargement, hier est donné dans hier_provisoire, d'après les relevés horaires de Météo-France gardés peu après minuit. Pour aujourd'hui depuis minuit (température la plus haute et la plus basse, pluie), voir meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo.",
+    "Mesures quotidiennes des stations Météo-France, chargées chaque jour vers midi (heure de La Réunion) avec la veille : le dernier jour disponible est hier après le chargement, avant-hier avant\u00a0; avant ce chargement, hier est donné dans hier_provisoire\u00a0: le cumul des mesures horaires de Météo-France de 0 h à 24 h, gardé peu après minuit, pas la valeur quotidienne officielle. Pour aujourd'hui depuis minuit (température la plus haute et la plus basse, pluie), voir meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo.",
     "La pluie d'un jour est celle tombée de 10 h ce jour-là à 10 h le lendemain (heure de La Réunion), comme Météo-France la compte.",
     `Normales : moyennes 1991-2020 de la station, calculées sur les mesures de Météo-France (au moins 10 années).`,
     `Heure par heure (depuis 2000) : donné pour ${HOURLY_AUTO} jours ou moins, et jusqu'à ${HOURLY_MAX} jours avec detail « heure »\u00a0; chargé chaque jour vers midi (heure de La Réunion) avec la nuit qui vient de finir, si bien qu'après midi les premières heures d'aujourd'hui y sont.`,
@@ -621,38 +621,56 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
   };
 }
 
-/**
- * Yesterday 0 h to 24 h at the best Météo-France station near the place that measured its rain every hour, as kept at
- * 00:20 by the scheduled event (providers/meteofrance.ts keepVeille): said until the daily file is loaded at noon.
- */
-async function provisoire(cache: Cache, place: Place, jour: string) {
-  let kept;
+// Yesterday as kept at 00:20, said for what it is: the hours added up, not Météo-France's day of 10 h to 10 h.
+const VEILLE_NATURE = "cumul des mesures horaires";
+const VEILLE_NOTE =
+  "Pluie additionnée heure par heure de 0 h à 24 h, température la plus basse et la plus haute de ces 24 heures, aux stations Météo-France\u00a0: pas la valeur quotidienne officielle de climatologie, qui compte la pluie de 10 h à 10 h le lendemain et arrive vers midi.";
+
+/** Yesterday at each station, as kept at 00:20 by the scheduled event (providers/meteofrance.ts keepVeille). */
+async function keptVeille(cache: Cache, jour: string): Promise<Veille | undefined> {
   try {
-    kept = (await cache.kept<Veille>(VEILLE))?.value;
+    const kept = (await cache.kept<Veille>(VEILLE))?.value;
+    return kept?.jour === jour ? kept : undefined;
   } catch (err) {
     console.error("veille indisponible", why(err));
     return undefined;
   }
-  if (kept?.jour !== jour) return undefined;
-  const best = STATIONS_974.filter(([id]) => kept.stations[id]?.rr != null)
-    .map(([id, nom, lat, lon, altitude_m]): Station => ({ source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }))
-    .map((s) => ({ s, f: fit(place, s) })).sort((u, v) => u.f.score - v.f.score)[0];
-  if (!best) return undefined;
-  const v = kept.stations[best.s.id];
-  const temps = v.tn != null && v.tx != null ? `, températures de ${fr(v.tn)} °C à ${fr(v.tx)} °C` : "";
+}
+
+/**
+ * Yesterday 0 h to 24 h near the place: the rain at the best station that measured it every hour, the lowest and highest
+ * temperature at the best one that measured both every hour. Said until the daily file is loaded at noon.
+ */
+function provisoire(kept: Veille, place: Place) {
+  const near = (has: (v: Veille["stations"][string]) => boolean) =>
+    STATIONS_974.filter(([id]) => kept.stations[id] && has(kept.stations[id]))
+      .map(([id, nom, lat, lon, altitude_m]): Station => ({ source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }))
+      .map((s) => ({ s, f: fit(place, s) })).sort((u, v) => u.f.score - v.f.score)[0];
+  const rain = near((v) => v.rr != null);
+  const temp = near((v) => v.tn != null && v.tx != null);
+  if (!rain && !temp) return undefined;
+  const at = (b: { s: Station; f: ReturnType<typeof fit> }) => ({
+    station: b.s.nom,
+    distance_km: b.f.distance_km,
+    altitude_m: b.s.altitude_m,
+    avertissements: b.f.avertissements.length ? b.f.avertissements : undefined,
+  });
+  const rr = rain && kept.stations[rain.s.id].rr!;
+  const t = temp && kept.stations[temp.s.id];
+  const two = !!rain && !!temp && rain.s.id !== temp.s.id;
+  const said = [
+    rain ? `pluie ${fr(rr!)} mm${two ? ` à ${rain.s.nom}` : ""}` : "",
+    t ? `températures de ${fr(t.tn!)} °C à ${fr(t.tx!)} °C${two ? ` à ${temp!.s.nom}` : ""}` : "",
+  ].filter(Boolean).join(", ") + (two ? "" : ` à ${(rain ?? temp)!.s.nom}`);
   return {
-    etiquette: `Provisoire, ${frDate(jour)} 0 h–24 h (heure de La Réunion), relevés horaires Météo-France : pluie ${fr(v.rr!)} mm${temps}.`,
+    etiquette: `Hier, ${frDate(kept.jour)} de 0 h à 24 h (heure de La Réunion), ${VEILLE_NATURE} de Météo-France, pas la valeur quotidienne officielle\u00a0: ${said}.`,
     bloc: {
-      jour: frDate(jour),
-      periode: "0 h–24 h, heure de La Réunion",
-      nature: "mesure provisoire",
-      pluie_mm: v.rr,
-      temperature_min: v.tn,
-      temperature_max: v.tx,
-      station: best.s.nom,
-      distance_km: best.f.distance_km,
-      altitude_m: best.s.altitude_m,
-      avertissements: best.f.avertissements.length ? best.f.avertissements : undefined,
+      jour: frDate(kept.jour),
+      periode: "0 h–24 h, heure de La Réunion",
+      nature: VEILLE_NATURE,
+      a_savoir: VEILLE_NOTE,
+      ...(rain ? { pluie: { mm: rr, ...at(rain) } } : {}),
+      ...(t ? { temperatures: { min: t.tn, max: t.tx, ...at(temp!) } } : {}),
     },
   };
 }
@@ -711,10 +729,22 @@ export async function historiqueMeteo(
       const t = (r as { temperatures?: { maximales_moyenne?: number } }).temperatures;
       return `${r.station} : ${pl ? `${fr(pl.total_mm)} mm${pl.normale_mm != null ? ` (normale ${pl.normale_mm})` : ""}` : "pluie non mesurée"}${t?.maximales_moyenne != null ? `, max ${fr(t.maximales_moyenne)} °C` : ""}`;
     }).join("\u00a0; ");
+    // Yesterday asked and not loaded yet: each station's day as the scheduled event kept it, instead of « not yet ».
+    const yesterday = iso(now.getTime() + 4 * 3600_000 - DAY_MS);
+    const kept = p.au >= yesterday && (!last || last < yesterday) ? await keptVeille(cache, yesterday) : undefined;
+    const hier = kept && tour.flatMap((t) => {
+      const v = kept.stations[t.poste.poste];
+      return v ? [{ zone: t.zone, station: t.poste.nom, pluie_mm: v.rr, temperature_min: v.tn, temperature_max: v.tx }] : [];
+    });
+    const veille = hier?.length
+      ? ` Hier, ${frDate(yesterday)} de 0 h à 24 h, ${VEILLE_NATURE} de Météo-France, pas la valeur quotidienne officielle\u00a0: ${hier.map((h) => `${h.station} ${h.pluie_mm != null ? `${fr(h.pluie_mm)} mm` : "pluie non mesurée toutes les heures"}`).join("\u00a0; ")}.`
+      : undefined;
     return text({
-      resume: `La Réunion du ${frDate(q.du)} au ${frDate(q.au)} — ${resume}.${notYet(p, now, last)}`,
+      resume: `La Réunion du ${frDate(q.du)} au ${frDate(q.au)} — ${resume}.${veille ? `${veille}${todayNote(p, now)}` : notYet(p, now, last)}`,
       stations: rows,
+      ...(veille ? { hier_provisoire: { jour: frDate(yesterday), periode: "0 h–24 h, heure de La Réunion", nature: VEILLE_NATURE, a_savoir: VEILLE_NOTE, stations: hier } } : {}),
       ...common,
+      ...(veille ? { sources: credits([climat.SOURCE, METEOFRANCE]) } : {}),
       periode: { du: frDate(q.du), au: frDate(q.au), jours: n },
     });
   }
@@ -761,15 +791,16 @@ export async function historiqueMeteo(
   const yesterday = iso(now.getTime() + 4 * 3600_000 - DAY_MS);
   const last = lastDay(read, yesterday);
   // Yesterday asked and not loaded yet: the day as the scheduled event kept it from the hourly package.
-  const veille = p.au >= yesterday && (!last || last < yesterday) ? await provisoire(cache, place, yesterday) : undefined;
+  const kept = p.au >= yesterday && (!last || last < yesterday) ? await keptVeille(cache, yesterday) : undefined;
+  const veille = kept && provisoire(kept, place);
   // No measure of the period, at no station near: its days not loaded yet, or none measuring there.
   if (!rain && !temp && !sun && !hh && !veille) rienTrouve("historique_meteo");
   return text({
     lieu: placeBlock(lieu, res),
-    resume: [daily, hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
+    resume: ([daily, hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
       (warn.length ? ` Attention : ${[...new Set(warn)].join(" ")}` : "") +
       // Yesterday kept from the hourly readings: said instead of « not loaded yet ».
-      (veille ? ` ${veille.etiquette}${todayNote(p, now)}` : !rain && !temp && !hh ? ` ${nothing(place.nom, p, now, last)}` : rain || temp ? notYet(p, now, last) : todayNote(p, now)),
+      (veille ? ` ${veille.etiquette}${todayNote(p, now)}` : !rain && !temp && !hh ? ` ${nothing(place.nom, p, now, last)}` : rain || temp ? notYet(p, now, last) : todayNote(p, now))).trim(),
     stations: stationsUsed(place, [[rain, "pluie"], [temp, "températures et rafales"], [sun, "ensoleillement"]]),
     ...s,
     ...shape(rain, temp, sun),

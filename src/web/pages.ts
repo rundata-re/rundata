@@ -14,13 +14,13 @@ import { enLigne } from "./associations-drapeau.js";
 import { enLigne as connecteursEnLigne } from "./connecteurs-drapeau.js";
 import { softened } from "../tools/nuages.js";
 import type { Cached } from "../cache.js";
-import { ageMinutes, ageText, localTime, versant } from "../geo.js";
+import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { VERSION } from "../server.js";
 import { fr } from "../tools/format.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
-import type { Alerte, Credit, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
+import type { Alerte, Credit, DepuisMinuit, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
 import { joursDuJour, vigilanceLue } from "./data.js";
 import brand from "./brand.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
@@ -745,6 +745,8 @@ html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stm
 @media (min-width:58rem){.two{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
 .stcard .t{display:inline-block;padding:.4rem .9rem;font-size:1.3rem}
 .stcard ul{padding-left:1.1rem}
+.minuit ul{list-style:none;padding:0;display:grid;gap:.5rem}.minuit li{display:grid;grid-template-columns:5.2rem 1fr;align-items:center;gap:.5rem}.minuit .v{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem}
+.minuit .t{font-size:1.1rem;padding:.25rem .65rem}.minuit .q{white-space:nowrap}
 .cta{background:linear-gradient(135deg,var(--night),var(--night-2));color:var(--on-night);border:0;padding:clamp(1.3rem,4vw,2.2rem);gap:1rem}
 .cta p{color:var(--on-night-muted);max-width:40rem}
 .cta a{color:#fff}
@@ -1692,6 +1694,18 @@ function stationCard(s: StationAnswer): string {
     `</div>`;
 }
 
+/** The max and min since midnight at a Météo-France station, under the measures of now. */
+function sinceMidnightCard(j: DepuisMinuit): string {
+  const row = (label: string, x: DepuisMinuit["maximum"]) =>
+    `<li><span>${label}</span><span class="v"><span class="t" style="background:${chip(x.valeur)}">${esc(thin(`${fr(x.valeur)} ${x.unite}`))}</span> <span class="q">${esc(thin(x.quand))}</span></span></li>`;
+  return `<div class="card stcard minuit"><h3>Depuis minuit à ${esc(j.station)}</h3>` +
+    `<p class="note">${esc(thin(`à ${fr(j.distance_km)} km · pertinence ${j.pertinence} · ${j.periode}`))}</p>` +
+    `<ul>${row("Au plus", j.maximum)}${row("Au moins", j.minimum)}</ul>` +
+    `<p class="note">Relevés heure par heure de Météo-France : le plus haut et le plus bas de chaque heure, puis les mesures toutes les 6 minutes de l'heure en cours.</p>` +
+    (j.avertissements.length ? `<p class="note">⚠ ${esc(j.avertissements.join(" "))}</p>` : "") +
+    `</div>`;
+}
+
 export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> | null, now = new Date(), alerte?: Alerte, hikes?: Cached<RandonneesAnswer> | null): string {
   const g = porte(alerte);
   const place = p.place;
@@ -1719,10 +1733,12 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
       `(${metres(first.altitude_m)}${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
     : "";
 
+  // Only from a copy made today: after midnight, yesterday's would pass for today's.
+  const jour = data && daysApart(data.fetchedAt, now) === 0 ? d?.meteo?.temperature_depuis_minuit : undefined;
   const measured = !data
     ? `<p class="card">Les mesures se chargent : rechargez la page dans quelques secondes.</p>`
     : stations.length
-      ? `<div class="two">${stations.map(stationCard).join("")}</div>` +
+      ? `<div class="two">${stations.map(stationCard).join("")}</div>` + (jour ? sinceMidnightCard(jour) : "") +
         `<p class="note">Mis à jour à ${hm(data.fetchedAt)} (${since(data.fetchedAt, now)}). Sources : ${credits(d!.meteo!.sources)}.</p>`
       : `<p class="card">Aucune mesure disponible pour le moment.</p>`;
 

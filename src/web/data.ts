@@ -156,7 +156,19 @@ export interface StationAnswer {
 export interface MeteoAnswer {
   resume: string;
   stations: StationAnswer[];
+  /** The max and min since midnight at a Météo-France station (tools/temperature-du-jour.ts). */
+  temperature_depuis_minuit?: DepuisMinuit;
   sources: Credit[];
+}
+
+export interface DepuisMinuit {
+  station: string;
+  distance_km: number;
+  pertinence: string;
+  periode: string;
+  maximum: { valeur: number; unite: string; quand: string };
+  minimum: { valeur: number; unite: string; quand: string };
+  avertissements: string[];
 }
 
 export interface MerAnswer {
@@ -324,7 +336,7 @@ function answer<T>(r: { content: { text: string }[]; isError?: boolean }): T | u
 /** Measurements, then the sea, then the forecast, which sizes its downloads from the subrequests left. */
 export async function buildPlace(cache: Cache, p: PlacePage, now = new Date()): Promise<PlaceData> {
   const out: PlaceData = {};
-  out.meteo = answer<MeteoAnswer>(await meteoActuelle(cache, p.lieu, now, false));
+  out.meteo = answer<MeteoAnswer>(await meteoActuelle(cache, p.lieu, now, "jour"));
   if (coastal(p)) out.mer = answer<MerAnswer>(await temperatureMer(cache, p.lieu, now));
   if (left() >= FORECAST_MIN_LEFT) {
     try {

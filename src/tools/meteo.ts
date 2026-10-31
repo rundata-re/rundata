@@ -148,8 +148,11 @@ export async function islandTour(cache: Cache, now = new Date()) {
 // A METAR's sky now, its trend (TEMPO, BECMG) left out: broken or overcast clouds, drizzle, rain or showers nearby.
 const LOADED_SKY = /\b(BKN|OVC)\d{3}|(^|\s)[-+]?(DZ|RA|SHRA)\b|\bVCSH\b/;
 
-/** With a place, the rain of the last hours at its nearest gauge (`recent`, left out of the place pages' build). */
-export async function meteoActuelle(cache: Cache, lieu: string | undefined, now = new Date(), recent = true) {
+/**
+ * With a place, the rain of the last hours at its nearest gauge and the max and min since midnight (`recent`). The place
+ * pages' build asks for the max and min only (`"jour"`).
+ */
+export async function meteoActuelle(cache: Cache, lieu: string | undefined, now = new Date(), recent: boolean | "jour" = true) {
   if (!lieu?.trim()) {
     const { tour, down, sources } = await islandTour(cache, now);
     return text({
@@ -197,7 +200,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
     .map((x) => `${x.o.station.nom} : ${x.f.avertissements[0].replace(/^La station est/, "station")}`))];
   // The rain of the last hours at the best-placed gauge.
   const recentRain = recent && meteofrance.enabled() ? await meteofrance.recentRain(cache, now) : undefined;
-  const gauge = recentRain && ranked.find((x) => x.o.station.source === "meteofrance" && recentRain.hourly.rr[x.o.station.id]);
+  const gauge = recent === true && recentRain && ranked.find((x) => x.o.station.source === "meteofrance" && recentRain.hourly.rr[x.o.station.id]);
   // Nothing in the hour under way nor in the newest full hour.
   const dry = (id: string) => recentRain!.slots(id).every((x) => !x.rr) && recentRain!.hourly.rr[id][0] === 0;
   const sky = obs.some(({ o }) =>

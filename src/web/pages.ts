@@ -738,6 +738,7 @@ html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stm
 .wxmap .rj fieldset{border:0;margin:0;padding:0;gap:.25rem;align-items:center}.wxmap .rj legend{float:left;padding:0;margin-right:.2rem;font-weight:700}.wxmap .rj label{padding:.3rem .65rem}
 .band .rj label,.band .fonds label{color:var(--on-night-muted);border-color:rgb(255 255 255/.25)}.band .rj input:checked+label,.band .fonds input:checked+label{background:var(--on-night);color:var(--night);border-color:var(--on-night)}
 .wxmap .rj button{min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid rgb(255 255 255/.35);background:rgb(255 255 255/.08);color:inherit;font:inherit;font-weight:700;cursor:pointer}.wxmap .rj button:disabled{cursor:wait;opacity:.7}
+.wxmap .gp{display:inline-block;margin:.3rem 0 0;min-height:36px;padding:.2rem .8rem;border-radius:999px;border:1px solid rgb(255 255 255/.35);background:rgb(255 255 255/.08);color:inherit;font:inherit;font-weight:700;cursor:pointer}
 .wxmap .rj input[type=range]{flex:1 1 12rem;min-height:44px;accent-color:#fff}.wxmap .rj-q,.wxmap .rj-ko{flex-basis:100%}
 @media (prefers-reduced-motion:reduce){.wxmap .rj-b{display:none}}
 .wxmap .rj-lg,.wxmap .rj-t,.wxmap .rj-st{display:none}.wxmap.rejeu .rj-t{display:inline}.wxmap.rejeu:not(.rj-fin) :is(.rj-lg,.rj-st){display:inline}.wxmap.rejeu:not(.rj-fin) :is(.lg-now,.sts,.mtip){display:none}

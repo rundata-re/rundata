@@ -108,7 +108,10 @@ describe("the replay bar's files", () => {
     // Over 6 hours old, the image of 01:00 is left out; the 24 hours keep it.
     expect(a.body.radar.entrees.map((e: { fin: string }) => e.fin)).toEqual(["2026-10-25T08:55:00Z"]);
     expect(a.body.heures.heures).toBe(7);
-    expect((await get(PATHS["24h"])).body.radar.entrees).toHaveLength(2);
+    // The 24 hours an image an hour (parHeure): those of 01:00 and of 09:00, the hours between a gap.
+    expect((await get(PATHS["24h"])).body.radar.entrees.map((e: { fin?: string; de: string; a?: string }) => e.a ? `${e.de}-${e.a}` : `${e.de}-${e.fin}`)).toEqual([
+      "2026-10-25T00:00:00Z-2026-10-25T01:00:00Z", "2026-10-25T01:00:00Z-2026-10-25T08:00:00Z", "2026-10-25T08:00:00Z-2026-10-25T09:00:00Z",
+    ]);
     const w = await get(PATHS["7j"]);
     expect(w.res.headers.get("cache-control")).toBe("public, max-age=1080");
     expect(w.body.radar).toBeUndefined();

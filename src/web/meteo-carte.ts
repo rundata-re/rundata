@@ -446,12 +446,13 @@ export const soften = (a: Uint8ClampedArray, w: number, h: number, r: number) =>
   for (let pass = 0; pass < 4; pass++) {
     const across = pass % 2 === 0, n = across ? w : h, m = across ? h : w;
     for (let j = 0; j < m; j++) {
+      // The line's first cell and the step between two (no inner function: the page's copy of it would not run).
+      const o = across ? j * w : j, st = across ? 1 : w;
       let sum = 0;
-      const at = (i: number) => a[(across ? j * w + Math.max(0, Math.min(n - 1, i)) : Math.max(0, Math.min(n - 1, i)) * w + j) * 4];
-      for (let i = -r; i <= r; i++) sum += at(i);
+      for (let i = -r; i <= r; i++) sum += a[(o + Math.max(0, Math.min(n - 1, i)) * st) * 4];
       for (let i = 0; i < n; i++) {
-        t[across ? j * w + i : i * w + j] = sum / (2 * r + 1);
-        sum += at(i + r + 1) - at(i - r);
+        t[o + i * st] = sum / (2 * r + 1);
+        sum += a[(o + Math.min(n - 1, i + r + 1) * st) * 4] - a[(o + Math.max(0, i - r) * st) * 4];
       }
     }
     for (let k = 0; k < w * h; k++) a[k * 4] = t[k];

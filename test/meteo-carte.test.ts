@@ -652,6 +652,9 @@ describe("the rain's edges, its drops and the wind", () => {
     // From 0.4 of the first class, the rain starts sooner: its line more seen there.
     expect(bands(img(red), new Uint8ClampedArray(red.length * 4), red.length, 1, PAL, EDGE, 28, 0.4)[5 * 4 + 3]).toBeGreaterThan(200);
     expect(METEO_SCRIPT).toContain(`const bands=${bands},soften=${soften};`);
+    // No inner named function in what the page embeds: the build would wrap it in a helper the page does not have.
+    for (const m of ["M1", "M2", "M3"] as const) expect(meteoVariant(m)).not.toContain("__name");
+    expect(rejeuScript()).not.toContain("__name");
     expect(METEO_SCRIPT).toContain(`o.data,cw,ch,KA[dark()?1:0],[...INK[dark()?1:0],1],28,0.4)`);
   });
 

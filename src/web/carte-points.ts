@@ -55,7 +55,8 @@ export const LINGER_MS = 400;
 export const ARM_MS = 300;
 
 /** The bubble's links: data-run's words. */
-// A marker names another word for its link in `data-pv` (an event's point leads to its announcement).
+// A marker names another word for its link in `data-pv` (an event's point leads to its announcement), or its own words
+// in `data-pt` (a layer of /carte: « Voir la page Recharge → »).
 export const MOTS = {
   detail: "Voir la fiche →",
   commune: "Voir la commune →",
@@ -63,7 +64,7 @@ export const MOTS = {
   site: "Site du lieu",
 };
 
-export const POINTS_SCRIPT = `(()=>{const maps=[...document.querySelectorAll("svg.map")].filter((s)=>s.querySelector("a.mk,a.sp,a.zn[data-pn]"));if(!maps.length&&!document.querySelector("template.carte"))return;
+export const POINTS_SCRIPT = `(()=>{const maps=[...document.querySelectorAll("svg.map")].filter((s)=>s.querySelector("a.mk,a.sp,a.zn[data-pn]"));if(!maps.length&&!document.querySelector("template.carte,svg.map[data-kc]"))return;
 const R=${TAP_PX},LIST=${LIST_MAX},M=${MOUSE_PX},T=${JSON.stringify(MOTS)},mk=(c,t)=>{const e=document.createElement(c);if(t)e.className=t;return e};
 const lines=(a)=>[a.dataset.pn||a.dataset.tp,a.dataset.p2,a.dataset.p3].filter(Boolean);
 const mid=(a)=>{const h=a.querySelector(".hit");const r=(h||a).getBoundingClientRect();return r.width?[r.left+r.width/2,r.top+r.height/2]:null};
@@ -76,7 +77,7 @@ const later=()=>{if(on&&!shut)shut=setTimeout(hide,${LINGER_MS})},stay=()=>{clea
 const place=(a)=>{const c=mid(a);if(!c){hide();return}const f=a.matches(".zn")?a.ownerSVGElement.getBoundingClientRect():{left:0,right:innerWidth,top:0},l=Math.max(f.left,0)+6,r=Math.min(f.right,innerWidth)-6;
 const w=tip.offsetWidth,h=tip.offsetHeight,x=Math.min(Math.max(c[0]-w/2,l),r-w),up=c[1]-h-20>=Math.max(0,f.top);
 tip.classList.toggle("bas",!up);tip.style.left=x+scrollX+"px";tip.style.top=(up?c[1]-h-20:c[1]+20)+scrollY+"px";tip.style.setProperty("--ax",Math.min(Math.max(c[0]-x,14),w-14)+"px")};
-const links=(a)=>{const h=a.getAttribute("href");if(!h)return[];const r=row(a),v=mk("a","pv");v.href=h;v.textContent=T[a.dataset.pv]||T.detail;
+const links=(a)=>{const h=a.getAttribute("href");if(!h)return[];const r=row(a),v=mk("a","pv");v.href=h;v.textContent=a.dataset.pt||T[a.dataset.pv]||T.detail;
 if(r)v.addEventListener("click",(e)=>{e.preventDefault();hide();fire(a)});const out=[v],ya=r?r.querySelectorAll("a.aller"):[];if(ya.length===1)out.push(ya[0].cloneNode(true));
 const site=r&&r.dataset.site;if(site){const l=mk("a");l.href=site;l.rel="noopener";l.textContent=T.site+" ↗";out.push(l)}return out};
 const show=(a)=>{stay();if(on===a)return;const l=lines(a);if(!l.length||!mid(a)){hide();return}if(on&&on.matches(".zn"))on.classList.remove("on");on=a;if(a.matches(".zn"))a.classList.add("on");tip.classList.remove("vu","prise");clearTimeout(arm);arm=setTimeout(()=>tip.classList.add("prise"),${ARM_MS});

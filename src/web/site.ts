@@ -120,6 +120,7 @@ import { secteurPage } from "./randonnees.js";
 import { aProposPage, llmsTxt } from "./a-propos.js";
 import { PATH as VALEURS, valeursPage } from "./valeurs.js";
 import { antennesPage, PATH as ANTENNES } from "./antennes.js";
+import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
@@ -655,6 +656,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/a-propos" || path === "/a-propos/") {
     return new Response(aProposPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
+  // The map of layers (web/carte.ts): built once, nothing read but the vigilance's banner; its layers are asked by its script.
+  if (path === CARTE || path === `${CARTE}/`) return new Response(cartePage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
   // The antennas, bundled (vie/antennes.ts), and the copy of the mobile sites out of service (one read, kept an hour in
   // the data center's cache), with the vigilance's banner.
   if (path === ANTENNES || path === `${ANTENNES}/`) {
@@ -698,7 +701,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const duree = DUREES.find((d) => REJEU[d] === path);
   if (duree) return rejeu(duree, cache, background, now);
   // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.
-  if (path.startsWith(COUCHE_PATH)) return coucheResponse(path) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+  if (path.startsWith(COUCHE_PATH)) return (await coucheResponse(path, cache, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A station's page (web/station.ts): its copy built like a commune's, kept by station.
   if (path.startsWith(`${STATION_PATH}/`)) {
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");

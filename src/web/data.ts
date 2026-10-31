@@ -503,7 +503,8 @@ export interface CruesAnswer {
 /** The island's rivers: the tool's answer without a place, every gauge. */
 export const buildCrues = async (cache: Cache, now = new Date()) => needed<CruesAnswer>(await crues(cache, undefined, now), "crues");
 
-export type BorneStation = ReturnType<typeof stationRow> & { lon: number; lat: number; adresse?: string; libres: number; total: number };
+/** `id`: the station's in the national base, its row's anchor on /bornes (missing on a copy made before it). */
+export type BorneStation = ReturnType<typeof stationRow> & { id?: string; lon: number; lat: number; adresse?: string; libres: number; total: number };
 
 export interface BornesAnswer {
   resume: string;
@@ -524,7 +525,7 @@ export async function buildBornes(cache: Cache, now = new Date()): Promise<Borne
   const live = (await irve.live(cache)).value;
   const stations = irve.STATIONS.map((s) => {
     const c = countPoints([s], live);
-    return { ...stationRow(s, live, now, undefined, false), lon: s.lon, lat: s.lat, ...(s.adresse ? { adresse: s.adresse } : {}), libres: c.libres, total: c.total };
+    return { ...stationRow(s, live, now, undefined, false), id: s.id, lon: s.lon, lat: s.lat, ...(s.adresse ? { adresse: s.adresse } : {}), libres: c.libres, total: c.total };
   });
   return { ...a, stations };
 }

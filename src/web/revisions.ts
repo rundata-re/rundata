@@ -15,7 +15,7 @@
  */
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   actualites: 9,
-  agenda: 19,
+  agenda: 20,
   air: 9,
   bornes: 3,
   bus: 6,
@@ -40,7 +40,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   randonnees: 6,
   secheresse: 1,
   sentiers: 4,
-  sport: 13,
+  sport: 14,
   station: 1,
   trafic: 2,
   velos: 2,

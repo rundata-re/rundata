@@ -65,7 +65,7 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     // The halls' source named after those read, and its link theirs.
     expect([SALLES.nom, SALLES.attribution, SALLES.url]).toEqual(["Programmes des salles : Le Séchoir, Théâtre Luc Donat", "Le Séchoir, Théâtre Luc Donat", "https://www.lesechoir.com"]);
     // Its written agreement said in the halls' licence, with its day (marketing, 27/10).
-    expect(SALLES.licence).toBe("Information publique (programmes publiés par les salles)\u00a0; Théâtre Luc Donat : repris avec son accord écrit du 27/10/2026");
+    expect(SALLES.licence).toBe("Le Séchoir\u00a0: site sans mentions légales, programme repris tel qu'il est publié\u00a0; les autres salles\u00a0: seulement avec leur accord écrit\u00a0; Théâtre Luc Donat : repris avec son accord écrit du 27/10/2026");
     expect(PROGRAMMES_SALLES).toBe("les programmes du Séchoir et du Théâtre Luc Donat");
     expect(COUVERTURE).toContain("Programmes des salles : Le Séchoir, Théâtre Luc Donat.");
   });

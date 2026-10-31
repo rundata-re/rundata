@@ -57,6 +57,9 @@ describe("the weekend's events", () => {
     expect(occurrences(ROWS[3])).toEqual([{ du: "2026-10-29", au: "2026-11-02", debut: undefined, fin: undefined, quand: "du jeudi 29/10 au lundi 02/11" }]);
     // Across the new year.
     expect(occurrences(row("Réveillon", "2026-12-31T21:00", "du jeudi 31/12 à 21:00 au vendredi 01/01 à 04:00"))[0]).toMatchObject({ du: "2026-12-31", au: "2027-01-01" });
+    // With both years, as the agenda now writes such a period.
+    expect(occurrences(row("Réveillon", "2026-12-31T21:00", "du jeudi 31/12/2026 à 21:00 au vendredi 01/01/2027 à 04:00"))[0]).toEqual({ du: "2026-12-31", debut: "21:00", au: "2027-01-01", fin: "04:00", quand: "du jeudi 31/12/2026 à 21:00 au vendredi 01/01/2027 à 04:00" });
+    expect(occurrences(row("Exposition", "2026-05-23", "du samedi 23/05/2026 au samedi 22/05/2027"))[0]).toMatchObject({ du: "2026-05-23", au: "2027-05-22" });
   });
 
   it("keeps what happens that weekend: not Friday's daytime, the other dates of a row too", () => {

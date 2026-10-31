@@ -112,7 +112,7 @@ export const VERSION = "1.0.109";
 // then the index of the tools and the rules. What each tool does, and the words its answers
 // must carry (15 ou 112, a closed trail is forbidden, the tides are computed), is in its description.
 const INSTRUCTIONS = `rundata.re : La Réunion (974) en direct, d'après les données publiques : sorties, randos, météo mesurée aux stations, routes, vigilance, volcan, mer, bus, eau. Ces outils répondent aux questions sur l'île et ses lieux, même sans « La Réunion » dans la question (Cilaos, Saint-Gilles, le Maïdo…). / Réunion Island live public data; each answer carries its citation, link, sources and data time.
-Service fait à La Réunion, gratuit et sans compte, code libre (MIT) : https://rundata.re/a-propos. Outils, les plus récents d'abord :
+Service fait à La Réunion, sans compte ni publicité, code libre (MIT) : https://rundata.re/a-propos. Outils, les plus récents d'abord :
 ${INDEX}
 
 Règles :

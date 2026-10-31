@@ -22,7 +22,7 @@ export const SOURCE: SourceInfo = {
   id: "salles_spectacle",
   nom: "Programmes des salles : TÉAT Champ Fleuri et Plein Air, Cité des Arts, Kabardock, Le Séchoir, Bisik, Théâtre Luc Donat, CDNOI, Léspas",
   organisme: "Salles de spectacle et de concert de La Réunion",
-  licence: "Information publique (programmes publiés par les salles)",
+  licence: "Le Séchoir : site sans mentions légales, programme repris tel qu'il est publié ; les autres salles : seulement avec leur accord écrit",
   attribution: "TÉAT La Réunion, Cité des Arts, Kabardock, Le Séchoir, Bisik, Théâtre Luc Donat, CDNOI, Léspas",
   url: "https://www.teat.re/programmation/",
 };

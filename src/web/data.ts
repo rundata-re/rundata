@@ -338,7 +338,7 @@ function answer<T>(r: { content: { text: string }[]; isError?: boolean }): T | u
 export async function buildPlace(cache: Cache, p: PlacePage, now = new Date()): Promise<PlaceData> {
   const out: PlaceData = {};
   out.meteo = answer<MeteoAnswer>(await meteoActuelle(cache, p.lieu, now, "jour"));
-  if (coastal(p)) out.mer = answer<MerAnswer>(await temperatureMer(cache, p.lieu, now));
+  if (coastal(p)) out.mer = answer<MerAnswer>(await temperatureMer(cache, p.lieu, now, false));
   if (left() >= FORECAST_MIN_LEFT) {
     try {
       out.prevision = answer<PrevisionAnswer>(await previsionMeteo(cache, p.lieu, undefined, now));
@@ -503,7 +503,8 @@ export interface CruesAnswer {
 /** The island's rivers: the tool's answer without a place, every gauge. */
 export const buildCrues = async (cache: Cache, now = new Date()) => needed<CruesAnswer>(await crues(cache, undefined, now), "crues");
 
-export type BorneStation = ReturnType<typeof stationRow> & { lon: number; lat: number; adresse?: string; libres: number; total: number };
+/** `id`: the station's in the national base, its row's anchor on /bornes (missing on a copy made before it). */
+export type BorneStation = ReturnType<typeof stationRow> & { id?: string; lon: number; lat: number; adresse?: string; libres: number; total: number };
 
 export interface BornesAnswer {
   resume: string;
@@ -524,7 +525,7 @@ export async function buildBornes(cache: Cache, now = new Date()): Promise<Borne
   const live = (await irve.live(cache)).value;
   const stations = irve.STATIONS.map((s) => {
     const c = countPoints([s], live);
-    return { ...stationRow(s, live, now, undefined, false), lon: s.lon, lat: s.lat, ...(s.adresse ? { adresse: s.adresse } : {}), libres: c.libres, total: c.total };
+    return { ...stationRow(s, live, now, undefined, false), id: s.id, lon: s.lon, lat: s.lat, ...(s.adresse ? { adresse: s.adresse } : {}), libres: c.libres, total: c.total };
   });
   return { ...a, stations };
 }

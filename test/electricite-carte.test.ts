@@ -71,7 +71,7 @@ describe("a map put in the page as it nears the screen", () => {
     expect(html).toMatch(/^<template class="carte"><svg class="map"><\/svg><\/template><script>/);
     expect(html).toContain("IntersectionObserver");
     expect(POINTS_SCRIPT).toContain('document.addEventListener("carte"');
-    expect(POINTS_SCRIPT).toContain('document.querySelector("template.carte")');
+    expect(POINTS_SCRIPT).toContain('document.querySelector("template.carte,svg.map[data-kc]")');
     expect(NOMS_SCRIPT).toContain('document.addEventListener("carte"');
   });
 });

@@ -73,7 +73,7 @@ export const DOMAINES: Domaine[] = [
   // The OVPF's earthquakes every 10 minutes (providers/seismes.ts).
   { categorie: "volcan", sources: ids("ipgp_ovpf_seismes", "ovpf_bluesky", "prefecture_communiques", "pitonlive"), cadence: { minutes: 10, de: "ipgp_ovpf_seismes" } },
   // The tide gauges every 5 minutes (providers/maregraphes.ts).
-  { categorie: "mer", sources: ids("acspo", "modis", "openmeteo_houle", "refmar"), cadence: { minutes: 5, de: "refmar" } },
+  { categorie: "mer", sources: ids("acspo", "modis", "noaa_crw_dhw_5km", "openmeteo_houle", "refmar"), cadence: { minutes: 5, de: "refmar" } },
   // The buses' delays every minute (providers/gtfsrt.ts).
   { categorie: "bus", sources: ids("gtfs_reunion", "gtfs_rt_reunion"), cadence: { minutes: 1, de: "gtfs_rt_reunion" } },
   { categorie: "velos", sources: ids("altervelo"), cadence: { minutes: 1, de: "altervelo" } },

@@ -605,8 +605,15 @@ const OTHER_PAGES: Record<string, Page> = {
   "/meteo/rejeu-7j.json": { subrequests: 5, cpuMs: 30, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV)", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   // A layer of /carte (web/couches.ts), asked when its box is ticked: a fixed layer is the list bundled with the
   // server, its file built once per isolate. Nothing read: no subrequest, no KV, no D1, not even the header's.
-  "/carte/couche/*.json": { subrequests: 0, cpuMs: 10, from: [], what: "le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet", basis: "code" },
-  "/mer": { subrequests: 23, cpuMs: 120, from: ["src/tools/mer.ts", "src/tools/maree.ts"] },
+  // A fixed layer reads nothing; a live one, its page's last copy (cache.peek): the data center's cache, then KV, and
+  // the copy put back in the data center's cache when KV had it; nothing when the isolate's memory has one of the last
+  // 5 minutes. Never a build, never a source.
+  "/carte/couche/*.json": { subrequests: 3, cpuMs: 10, from: [], what: "le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page", basis: "code" },
+  // The header's reads as any page; the map and the list built once per isolate, the layers asked by the page's script.
+  "/carte": { subrequests: 7, cpuMs: 40, from: [], what: "la carte des couches : la page seule, avec la vigilance et la version de l'en-tête", basis: "code" },
+  // 23, and 5 from the code for the corals' grid (providers/coraux.ts), once a day when no data center has it: the
+  // data center's cache and KV read, NOAA's grid, both written.
+  "/mer": { subrequests: 28, cpuMs: 120, from: ["src/tools/mer.ts", "src/tools/maree.ts", "src/providers/coraux.ts"] },
   "/randonnees/*": { subrequests: 23, cpuMs: 130, from: ["src/tools/sentiers.ts"], what: "une randonnée et sa trace" },
   "/sentiers/*": { subrequests: 16, cpuMs: 30, from: ["src/tools/sentiers.ts"], what: "un sentier et sa trace" },
   // Its pattern and its stops (2 reads of D1), the network's real-time feed while the bus is on the road, the header's
@@ -664,7 +671,7 @@ const pageEntry = (path: string, p: Page, kvReads: number): Entry => ({
 const SHARED_KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
 const sharedIn = (keys: string[]) => new Set(keys.filter((k) => SHARED_KEYS.has(k))).size;
 // The commune pages and /antennes: the copy of the mobile sites out of service besides.
-const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 1, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
+const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 1, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
 
 const VISITS: Entry[] = [
   ...Object.entries(OTHER_PAGES).map(([path, p]) => pageEntry(path, p, KV_READS[path] ?? 0)),
@@ -689,7 +696,8 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   fiche_terrain: { subrequests: 36, cpuMs: 80, file: "terrain", basis: "estimé" },
   prevision_meteo: { subrequests: 20, cpuMs: 100, file: "prevision" },
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
-  temperature_mer: { subrequests: 14, cpuMs: 50, file: "mer" },
+  // 14, and 5 from the code for the corals' grid, as /mer.
+  temperature_mer: { subrequests: 19, cpuMs: 50, file: "mer" },
   transports: { subrequests: 13, cpuMs: 80, file: "transports", d1: BUS_D1 },
   // Measured 13; 1 more while a system is active, as /cyclones.
   cyclones: { subrequests: 14, cpuMs: 70, file: "cyclones" },

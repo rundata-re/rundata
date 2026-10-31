@@ -105,7 +105,8 @@ describe("the server's instructions", () => {
     // 40 039 on 31/10/2026 with sources_donnees' first sentence (call it before saying a subject is not covered).
     // 40 334 the same day with the max and min since midnight in meteo_actuelle, and historique_meteo sending today there.
     // 41 159 the same night with peche_loisir, a new tool (its description cut to three sentences).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_160);
+    // 41 230 with the corals' block of temperature_mer, named in its description.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_240);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

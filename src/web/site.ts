@@ -95,6 +95,7 @@ import * as carburants from "../providers/carburants.js";
 import { aujourdhuiPage } from "./aujourdhui.js";
 import { communeRss } from "./rss.js";
 import { FEUX_PATH, feuxPage } from "./feux.js";
+import * as coraux from "../providers/coraux.js";
 import * as feux from "../providers/feux.js";
 import * as prefecture from "../providers/prefecture.js";
 import { rafraichirConnecteurs, rafraichirPropositions } from "../tools/agenda.js";
@@ -120,6 +121,7 @@ import { secteurPage } from "./randonnees.js";
 import { aProposPage, llmsTxt } from "./a-propos.js";
 import { PATH as VALEURS, valeursPage } from "./valeurs.js";
 import { antennesPage, PATH as ANTENNES } from "./antennes.js";
+import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
@@ -194,6 +196,8 @@ const READERS = /rundata-check\/|ChatGPT-User|OAI-SearchBot|Claude-User|Claude-S
 const READER_WAIT_MS = 25_000;
 // The vigilance page waits longer than a banner for Météo-France: it is the page's whole content.
 const VIGILANCE_WAIT_MS = 8000;
+// How long a view of /mer waits for the corals' grid (providers/coraux.ts) when no data center has it yet.
+const REEF_WAIT_MS = 2000;
 // The subrequests a tile's build is assumed to take when it was measured neither in this isolate nor with its copy.
 const TILE_COST_UNKNOWN = 25;
 
@@ -510,11 +514,17 @@ async function pages(request: Request, cache: Cache, background: Background, now
     return page(path, (live) => (live ? ecolesPage(origin, data, now, alerteLue(data, now), decision, rubrique) : ecolesPage(origin, null, now)), data, background);
   }
   if (path === "/mer" || path === "/mer/") {
-    const [data, a] = await Promise.all([
+    // The corals' grid, read at the view (once a day for every data center, in KV), never by the scheduled event. The
+    // view waits for it REEF_WAIT_MS at most: past that, the page goes without the section, and the read ends after
+    // the response, for the next views.
+    const reefRead = coraux.coraux(cache).catch((err) => (console.error(`source ${coraux.SOURCE.id} indisponible:`, why(err)), null));
+    background(reefRead);
+    const [data, a, reef] = await Promise.all([
       snapshot(cache, "web:mer", () => buildSea(cache, now), background, now, waitFor(request), readerOf(request)),
       alerte(cache, background, now),
+      Promise.race([reefRead, new Promise<undefined>((resolve) => setTimeout(resolve, REEF_WAIT_MS))]),
     ]);
-    return page(path, (live) => seaPage(origin, live ? data : null, now, a), data, background, [rebuild(cache, "web:mer", () => buildSea(cache, now))]);
+    return page(path, (live) => seaPage(origin, live ? data : null, now, a, reef), data, background, [rebuild(cache, "web:mer", () => buildSea(cache, now))]);
   }
   // The traffic page's copy lasts minutes; the media's headlines on the roads are those of the view.
   if (path === "/trafic" || path === "/trafic/") {
@@ -655,6 +665,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/a-propos" || path === "/a-propos/") {
     return new Response(aProposPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
+  // The map of layers (web/carte.ts): built once, nothing read but the vigilance's banner; its layers are asked by its script.
+  if (path === CARTE || path === `${CARTE}/`) return new Response(cartePage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
   // The antennas, bundled (vie/antennes.ts), and the copy of the mobile sites out of service (one read, kept an hour in
   // the data center's cache), with the vigilance's banner.
   if (path === ANTENNES || path === `${ANTENNES}/`) {
@@ -698,7 +710,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const duree = DUREES.find((d) => REJEU[d] === path);
   if (duree) return rejeu(duree, cache, background, now);
   // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.
-  if (path.startsWith(COUCHE_PATH)) return coucheResponse(path) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+  if (path.startsWith(COUCHE_PATH)) return (await coucheResponse(path, cache, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A station's page (web/station.ts): its copy built like a commune's, kept by station.
   if (path.startsWith(`${STATION_PATH}/`)) {
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");

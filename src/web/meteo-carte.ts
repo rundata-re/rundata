@@ -33,7 +33,7 @@ const by = (s: StationNow) =>
   s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par l'aéroport (METAR)" : s.source === "pioupiou" ? ` par OpenWindMap (${s.nom.replace(/^Balise /, "balise de ")})` : s.source === "ffvl" ? ` par la FFVL (${s.nom.replace(/^B/, "b")})` : "";
 
 // Where the wind comes from, in words: abbreviations read badly (« vent O » as « vent 0 »).
-const FROM = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
+export const VENT_DE = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
 
 /** A tile's wind: an arrow where it goes, the speed; the whole said to a screen reader and on hover. */
 export function windPill(s: StationNow): string {
@@ -55,7 +55,7 @@ export function rainPill(s: StationNow): string {
 /** « vent d'est 12 km/h, rafales 20 km/h ». */
 export function ventText(s: StationNow): string | undefined {
   if (s.vent == null) return undefined;
-  const from = s.direction != null ? `${FROM[Math.round(s.direction / 45) % 8]} ` : "";
+  const from = s.direction != null ? `${VENT_DE[Math.round(s.direction / 45) % 8]} ` : "";
   return thin(`vent ${from}${s.vent} km/h${s.rafales != null ? `, rafales ${s.rafales} km/h` : ""}`);
 }
 
@@ -90,6 +90,9 @@ const REPLAY_DROPS = true;
 // light cell from shrinking away); how much its edges are rounded, in pixels of the radar's grid spread 4 times.
 const RAIN_CUT = 0.4;
 const RAIN_SOFT = 1;
+// The wash of blue /meteo drew its rain with before the four tiers, kept for /carte's rain layer (web/carte.ts),
+// which reads it from here.
+export const RAIN_WASH = ["rgba(120,170,230,.35)", "rgba(100,155,225,.45)", "rgba(80,135,215,.5)", "rgba(60,115,205,.55)", "rgba(45,95,190,.6)", "rgba(35,75,175,.65)", "rgba(27,60,155,.7)", "rgba(20,46,135,.75)"];
 // The wind's colours by speed, in km/h, after the usual wind maps: blue when calm, red in a storm.
 const WIND: [number, number[]][] = [[0, [70, 104, 176]], [10, [46, 150, 172]], [20, [74, 170, 98]], [30, [222, 184, 62]], [45, [222, 112, 46]], [60, [178, 44, 72]]];
 const STOPS_LO = VEIL[0][0];

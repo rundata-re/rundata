@@ -226,7 +226,8 @@ describe("home page", () => {
       asked.push(String(url));
       return upstream(String(url));
     });
-    const satellites = () => asked.filter((u) => u.includes("/thredds/") || u.includes("/erddap/"));
+    // The corals' grid (providers/coraux.ts), read at the view once a day, is not one of the satellites' grids.
+    const satellites = () => asked.filter((u) => (u.includes("/thredds/") || u.includes("/erddap/")) && !u.includes("dhw_5km"));
     // Without the shared grids, and with them three hours old beside a copy of /mer as old: the page is rebuilt from them.
     expect((await serve(isolate(), "/mer")).text).toContain("Boucan-Canot");
     expect(satellites()).toEqual([]);

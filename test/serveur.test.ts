@@ -104,7 +104,8 @@ describe("the server's instructions", () => {
     // 40 262 with main's words back in meteo_actuelle and prevision_meteo, 37 778 once the SDK's "$schema" and "execution" are out of the list.
     // 40 039 on 31/10/2026 with sources_donnees' first sentence (call it before saying a subject is not covered).
     // 40 334 the same day with the max and min since midnight in meteo_actuelle, and historique_meteo sending today there.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(40_350);
+    // 41 159 the same night with peche_loisir, a new tool (its description cut to three sentences).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_160);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 
@@ -150,14 +151,14 @@ describe("the serveur block", () => {
   afterEach(() => expect(fetched).toEqual([]));
 
   it("names the newest tools in every answer, for a client whose list is old", async () => {
-    const s = serveur(VERSION, 28, NOW);
+    const s = serveur(VERSION, 29, NOW);
     expect(Object.keys(s.outils_recents!)).toEqual(expect.arrayContaining(["sport", "historique_meteo", "actualites"]));
     // A tool not online yet at that time is not among them; once it is, the newest come first.
     expect(Object.keys(s.outils_recents!)).not.toContain("donner_avis");
     expect(Object.keys(outilsRecents(new Date("2026-10-24T13:00:00Z"))!).slice(0, 3)).toEqual(["resume_du_jour", "donner_avis", "actualites"]);
     expect(JSON.stringify(s).length).toBeLessThan(600);
     const r = body(await rpcResult("tools/call", { name: "defibrillateurs", arguments: { lieu: "Cilaos" } }));
-    expect(r.serveur).toMatchObject({ version: VERSION, nombre_outils: 28 });
+    expect(r.serveur).toMatchObject({ version: VERSION, nombre_outils: 29 });
     expect(r.serveur.si_outil_absent).toMatch(/ancienne/);
   });
 

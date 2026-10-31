@@ -40,6 +40,7 @@ const PAGES: Record<string, string> = {
   restrictions_eau: "/secheresse",
   coupures_eau: "/coupures-eau",
   defibrillateurs: "/defibrillateurs",
+  peche_loisir: "/peche",
   sport: "/sport",
   cyclones: "/cyclones",
   crues_rivieres: "/crues",

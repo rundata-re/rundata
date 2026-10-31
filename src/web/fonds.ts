@@ -79,6 +79,7 @@ export const SANS_FOND: Record<string, string> = {
   "/ouvrir-ses-donnees": "about the site itself, which has no place to show",
   "/sites-sans-reponse": "about the site itself, which has no place to show",
   "/conditions": "a legal text",
+  "/peche": "its picture comes later, made by marketing (an estuary at dawn, with vouves)",
   "/confidentialite": "a legal text",
   "/hors-ligne": "the page of a phone without network",
   "/antennes": "the relief map of the whole island is the page itself; a photo above it would show one place only",

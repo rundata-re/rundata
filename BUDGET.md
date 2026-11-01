@@ -136,6 +136,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
 | /carte/resume.json | les chiffres du bandeau « En direct » de /carte : la dernière copie des stations, des rivières, des sentiers et des séismes | à chaque vue |  | 12 | 4 |  |  |  |  | 20 | code |
+| /ecoles | la page des écoles : la carte et la liste (dans le paquet), avec la vigilance et la version de l'en-tête ; le collège de secteur cherché dans le navigateur, dans le fichier de la commune (public/carte-scolaire/), servi par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1 | à chaque vue |  | 7 |  |  |  |  |  | 60 | code |
 | /carte | la carte des couches : la page seule, avec la vigilance et la version de l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 40 | code |
 | /mer | la page /mer | à chaque vue |  | 28 |  |  |  |  |  | 120 | mesuré |
 | /randonnees/* | une randonnée et sa trace | à chaque vue |  | 25 | 1 | 1 |  |  |  | 130 | mesuré |

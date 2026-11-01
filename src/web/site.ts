@@ -123,6 +123,7 @@ import { secteurPage } from "./randonnees.js";
 import { aProposPage, llmsTxt } from "./a-propos.js";
 import { PATH as VALEURS, valeursPage } from "./valeurs.js";
 import { antennesPage, PATH as ANTENNES } from "./antennes.js";
+import { annuaireEcolesPage, PATH as ECOLES } from "./ecoles-annuaire.js";
 import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
@@ -357,7 +358,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
   const fixed = (u: string): Url => [u, undefined, "monthly"];
   const trace = (u: string): Url => [u, undefined, "daily"];
   // The defibrillators are a list bundled with the server: their page changes when it is rebuilt.
-  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
+  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed(ECOLES), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
     // The busiest stops only (scripts/build-transit.py): the others' pages are not indexed.
     ...[...transit.stopPages().values()].filter((p) => p.indexe).map((p) => live(`${STOP_PATH}/${p.slug}`)),
     ...PAGES.map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
@@ -508,6 +509,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/publier/modele-agenda.csv") {
     return new Response(MODELE_CSV, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": 'attachment; filename="modele-agenda.csv"', "cache-control": STATIC, "access-control-allow-origin": "*", "x-content-type-options": "nosniff" } });
   }
+  // The schools, bundled (vie/ecoles.ts), built once: nothing read but the vigilance's banner. The collège of an address
+  // is found in the browser, in the commune's file of public/carte-scolaire/, which never reaches the Worker.
+  if (path === ECOLES || path === `${ECOLES}/`) return new Response(annuaireEcolesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   // The plan's list, nothing read but the vigilance's banner.
   if (path === "/kit-cyclone" || path === "/kit-cyclone/") {
     const a = await alerte(cache, background, now);

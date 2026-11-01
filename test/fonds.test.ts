@@ -31,6 +31,7 @@ import { homePage } from "../src/web/home.js";
 import { kitPage } from "../src/web/kit-cyclone.js";
 import { CSS, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
 import { proposerPage } from "../src/web/propositions.js";
+import { annuaireEcolesPage } from "../src/web/ecoles-annuaire.js";
 import { withVolcan } from "../src/web/volcan-alerte.js";
 import { unzip } from "../src/zip.js";
 
@@ -69,6 +70,7 @@ const PAGES: Record<string, (alerte?: Alerte) => string> = {
   "/secheresse": (a) => secheressePage(O, null, NOW, a),
   "/sport": (a) => sportPage(O, null, NOW, a),
   "/enfants": (a) => enfantsPage(O, null, NOW, a),
+  "/ecoles": (a) => annuaireEcolesPage(O, a),
   "/eau": (a) => eauPage(O, null, NOW, a),
   "/air": (a) => airPage(O, null, NOW, a),
   "/electricite": (a) => electricitePage(O, null, NOW, a),

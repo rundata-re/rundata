@@ -1,0 +1,42 @@
+{
+ "maj": "2026-10-09",
+ "troncons": 9835,
+ "colleges": 77,
+ "communes": {
+  "97401": "/carte-scolaire/97401.1b4d26105f.json",
+  "97402": "/carte-scolaire/97402.ed3625dc58.json",
+  "97403": "/carte-scolaire/97403.bee2431aac.json",
+  "97404": "/carte-scolaire/97404.5aebb9aa2a.json",
+  "97405": "/carte-scolaire/97405.6e11c33576.json",
+  "97406": "/carte-scolaire/97406.01561cabc3.json",
+  "97407": "/carte-scolaire/97407.7c24ce201f.json",
+  "97408": "/carte-scolaire/97408.b1696c7779.json",
+  "97409": "/carte-scolaire/97409.fe59b4fc92.json",
+  "97410": "/carte-scolaire/97410.ec69e7c829.json",
+  "97411": "/carte-scolaire/97411.d5ed5e39de.json",
+  "97412": "/carte-scolaire/97412.4564474996.json",
+  "97413": "/carte-scolaire/97413.ef4674b4a7.json",
+  "97414": "/carte-scolaire/97414.1d087a750d.json",
+  "97415": "/carte-scolaire/97415.3bbbec987f.json",
+  "97416": "/carte-scolaire/97416.fb8fc51b8d.json",
+  "97417": "/carte-scolaire/97417.2c4cdb631f.json",
+  "97418": "/carte-scolaire/97418.34bc579beb.json",
+  "97419": "/carte-scolaire/97419.b40ab575ea.json",
+  "97420": "/carte-scolaire/97420.9d246dd455.json",
+  "97421": "/carte-scolaire/97421.9687d4c472.json",
+  "97422": "/carte-scolaire/97422.05cc6c5b31.json",
+  "97423": "/carte-scolaire/97423.3a0c1585e6.json",
+  "97424": "/carte-scolaire/97424.edd76bb0d5.json"
+ },
+ "uniques": [
+  "97402",
+  "97403",
+  "97405",
+  "97406",
+  "97417",
+  "97419",
+  "97421",
+  "97423",
+  "97424"
+ ]
+}

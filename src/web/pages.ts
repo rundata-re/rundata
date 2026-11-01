@@ -734,7 +734,7 @@ html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stm
    relief's, with its fine hatches in the map's two tones. */
 .wxmap .hsw{display:inline-block;width:.9rem;height:.9rem;margin:0 .1rem;vertical-align:-.1rem;border-radius:.15rem;background:repeating-linear-gradient(135deg,rgba(11,31,54,.62) 0 1.4px,transparent 1.4px 4.24px,rgba(255,255,255,.6) 4.24px 5.24px,transparent 5.24px 8.49px),#dfe7da}
 /* The replay of the last 3 hours: its button and slider under the legend, its time on the map, the stations' dots hidden. */
-.wxmap .rj{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:.6rem}.wxmap .rj[hidden],.wxmap .rj [hidden]{display:none}
+.wxmap .rj{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:.1rem 0 .6rem}.wxmap .rj[hidden],.wxmap .rj [hidden]{display:none}
 .wxmap .rj fieldset{border:0;margin:0;padding:0;gap:.25rem;align-items:center}.wxmap .rj legend{float:left;padding:0;margin-right:.2rem;font-weight:700}.wxmap .rj label{padding:.3rem .65rem}
 .band .rj label,.band .fonds label{color:var(--on-night-muted);border-color:rgb(255 255 255/.25)}.band .rj input:checked+label,.band .fonds input:checked+label{background:var(--on-night);color:var(--night);border-color:var(--on-night)}
 .wxmap .rj button{min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid rgb(255 255 255/.35);background:rgb(255 255 255/.08);color:inherit;font:inherit;font-weight:700;cursor:pointer}.wxmap .rj button:disabled{cursor:wait;opacity:.7}

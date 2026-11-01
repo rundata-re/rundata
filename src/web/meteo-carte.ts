@@ -273,9 +273,11 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   const legend = layers.map((l, i) => `<span class="lg lg-${l.id}${i ? "" : " on"}"><span class="lg-now">${l.legend}</span><span class="rj-lg"></span></span>`).join("");
   const replay = layers.length ? replayBar(latest) : "";
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="#stations"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir la station →</span></a>`;
+  // The replay bar just under the map, before the legend: on a phone, the map, the lengths and the slider fit in one
+  // screen (the user, 01/11/2026, as /electricite).
   return `<figure class="card mapcard airmap wxmap">${tabs}` +
     islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : les ${drawn.length} stations météo et leur dernière mesure, à ${hm(latest)}` }) +
-    bubble + `<figcaption class="note">${legend}${replay}</figcaption></figure>`;
+    bubble + `<figcaption class="note">${replay}${legend}</figcaption></figure>`;
 }
 
 /** The replay bar's words (marketing): each length, and the button's full name for it. */
@@ -542,6 +544,18 @@ const DROPS = {
  * the drops born in each by its share of the fade; where the radars saw badly lingers a while, fading (the user,
  * 31/10/2026: a zone that moves rather than patches that jump), and the legend says how long.
  */
+/**
+ * The hours of a radar image or of the rain gauges' 3 hours (ISO UTC), as its legend says them (marketing): « entre
+ * 14 h et 15 h le 31/10 », « 14 h 15 » off the hour; with the two dates when they cross midnight in La Réunion
+ * (« entre 23 h 15 le 31/10 et 0 h 15 le 01/11 »). The rain's script takes it as its text.
+ */
+export const spanOf = (de: string, fin: string): string => {
+  const [a, z] = [de, fin].map((x) => {
+    const y = new Date(Date.parse(x) + 144e5), m = y.getUTCMinutes();
+    return [y.getUTCHours() + "\u00a0h" + (m ? "\u00a0" + String(m).padStart(2, "0") : ""), String(y.getUTCDate()).padStart(2, "0") + "/" + String(y.getUTCMonth() + 1).padStart(2, "0")];
+  });
+  return a[1] === z[1] ? "entre " + a[0] + " et " + z[0] + " le " + z[1] : "entre " + a[0] + " le " + a[1] + " et " + z[0] + " le " + z[1];
+};
 const pluieScript = (motion: Motion, rd: boolean) => `const pr=document.querySelector("[data-pluie]");if(pr){const fl=pr.nextElementSibling,say=document.querySelector("[data-radar]"),inp=document.getElementById("wxl-p");
 let d=null,live=null,L=null,LW=0,LH=0,Lp=null,P=null,ds=[],cw=0,ch=0,g,asked=false,mx=null;const TI=${JSON.stringify([RAIN_TIERS.light, RAIN_TIERS.dark])},KA=${JSON.stringify(RAIN_RGBA)},INK=${JSON.stringify(INK_RGB)},DN=${JSON.stringify(DROPS.density)},DL=${JSON.stringify(DROPS.length)},DW=${JSON.stringify(DROPS.width)},SC=${JSON.stringify([`${fr(CLASSES[0])}\u202fmm/h`, `plus de ${CLASSES[CLASSES.length - 1]}\u202fmm/h`])},SM=${JSON.stringify([`${fr(CLASSES[0])}\u202fmm`, `plus de ${CLASSES[CLASSES.length - 1]}\u202fmm en 3\u00a0h`])},Wt=[0,...DN];
 // The theme the map is drawn in; during a replay without drops (rd), none move.
@@ -637,10 +651,10 @@ const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()};
 // In the replay (past), the image's date and the past tense: never "hier".
 const dm_=(t)=>{const x=loc(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
 // An image of an hour (de), the strongest rain of each of its quarters; the rain gauges' 3 hours spread between them
-// (pg, wet when one measured rain); their hours as « entre 14 h et 15 h le 31/10 » (marketing), « 14 h 15 » off the hour.
+// (pg, wet when one measured rain); their hours as spanOf says them.
 // The blues get darker with the rain in light, lighter in dark: the legend says which.
 const fo=()=>(dark()?"plus c'est clair":"plus c'est foncé")+", plus elle est forte.";
-const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")},span=(j)=>"entre "+hx(j.de)+" et "+hx(j.fin)+" le "+dm_(j.fin),Cap=(x)=>x[0].toUpperCase()+x.slice(1);
+const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")},span=(j)=>spanOf_(j.de,j.fin),spanOf_=${spanOf},Cap=(x)=>x[0].toUpperCase()+x.slice(1);
 // The drops' sentence (marketing), after the legend: what they show, and the wind they follow (WT: "live", the round
 // hour of the replay's, or none).
 const gd=()=>hush()?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
@@ -681,6 +695,18 @@ s=document.createElement("script");s.src=rb.dataset.rejeu;s.onerror=()=>{s.remov
 const pick=()=>{const c=rb.querySelector("[name=rjd]:checked")||rb.querySelector("[name=rjd]");c.checked=true;return c.value};
 rb.addEventListener("change",(e)=>{if(e.target.name==="rjd")RJ.load(e.target.value)});b.addEventListener("click",()=>{if(!RJ.go)RJ.load(pick())});ko.querySelector("button").addEventListener("click",()=>RJ.load(pick()))}`;
 
+/**
+ * The date written over the hours on the map (ms, UTC): the start's and the end's when the hours shown cross midnight
+ * in La Réunion (« 31/10 – 01/11 » over « 23 h 15 – 0 h 15 »), else the end's; with the day of the week over 7 days.
+ * `de` 0: a moment, not hours. The replay's script takes it as its text.
+ */
+export const daysOf = (de: number, t: number, wd: boolean): string => {
+  const [a, z] = [de || t, t].map((x) => {
+    const y = new Date(x + 144e5);
+    return (wd ? ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."][y.getUTCDay()] + " " : "") + String(y.getUTCDate()).padStart(2, "0") + "/" + String(y.getUTCMonth() + 1).padStart(2, "0");
+  });
+  return a === z ? z : a + " – " + z;
+};
 /** A radar image of the replay, as its script keeps them: its time and its grid. */
 type Kept = { t: number; e: unknown };
 /**
@@ -727,7 +753,7 @@ function rejeuJs(): string {
   const labels = Object.fromEntries(DUREES.map((d) => [d, REVOIR[d][1]]));
   return `(()=>{const rb=document.querySelector("[data-rejeu]");if(!rb||typeof RJ!=="object")return;
 const P=${js(REJEU_PATHS)},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},PL=${js(PLAY_MS)},TRAIL=${TRAIL_MS};
-const ST={"6h":3e5,"24h":9e5,"7j":36e5},SN={"6h":6e4,"24h":18e4,"7j":6e5},DU={"6h":216e5,"24h":864e5,"7j":6048e5},DAYS=["dim.","lun.","mar.","mer.","jeu.","ven.","sam."];
+const ST={"6h":3e5,"24h":9e5,"7j":36e5},SN={"6h":6e4,"24h":18e4,"7j":6e5},DU={"6h":216e5,"24h":864e5,"7j":6048e5};
 const fig=rb.closest("figure"),b=rb.querySelector(".rj-b"),rng=rb.querySelector("input[type=range]"),q=rb.querySelector(".rj-q"),ann=rb.querySelector("[aria-live]"),
 hd=fig.querySelector(".rj-d"),hh=fig.querySelector(".rj-h"),hs=fig.querySelector(".rj-s"),dots=fig.querySelector(".rj-st"),lg=(l)=>fig.querySelector(".lg-"+l+" .rj-lg"),
 rm=matchMedia("(prefers-reduced-motion: reduce)").matches,F={},G=new Map();
@@ -773,8 +799,8 @@ return k?{h:k}:null}
 const r=at(l);if(!RJ[l])return r;if(!r)once("x"+l,()=>RJ[l].show(null));else if(r.m)once(l+r.m.t,()=>RJ[l].show(gridOf(l,r.m)));else{cur="";RJ[l].mix(gridOf(l,r.a),gridOf(l,r.z),r.f)}
 if(l==="t"&&TD)for(const o of TD.out){let v=null;if(r){const a=tv(o.s,r.m||r.a),z=r.m?a:tv(o.s,r.z);if(a!=null&&z!=null)v=r.m?a:a+(z-a)*r.f}
 o.c.style.display=v==null?"none":"";if(v==null){if(o.t)o.t.textContent="";continue}o.c.setAttribute("fill",chip(v));if(o.t)o.t.textContent=Math.round(v)+"°"}return r};
-// The time of what the map shows (shownAt).
-const shown=${shownAt};
+// The time of what the map shows (shownAt); the date or dates over it (daysOf).
+const shown=${shownAt},days=${daysOf};
 // The time written on the map, the word under it, and what the slider says.
 const show=()=>{const l=lay();if(!l||!J)return"";const end=T>=E;fig.classList.toggle("rj-fin",end);RJ.on=!end;let r=null,t=T;if(end!==was){was=end;renames()}
 if(end){once("fin",()=>{for(const x of["t","v","p"])if(RJ[x])RJ[x].back()})}else r=draw(l);
@@ -785,7 +811,7 @@ else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le rad
 else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 // The hours of the rain shown, an hour's or 3 hours' (marketing: « 14 h – 15 h »).
 const im=l==="p"&&r&&(r.m||(r.a&&(r.f<.5?r.a:r.z))),de=r&&r.h?r.h.end-108e5:im&&im.e&&im.e.de?Date.parse(im.e.de):0,hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")};
-if(r&&r.h)t=r.h.end;hd.textContent=d==="7j"?DAYS[lx(t).getUTCDay()]+" "+dm(t):d==="24h"||dm(S)!==dm(E)?dm(t):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);hs.textContent=w;
+if(r&&r.h)t=r.h.end;hd.textContent=d==="7j"||d==="24h"||dm(S)!==dm(E)?days(!end&&de,t,d==="7j"):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);hs.textContent=w;
 rng.value=String((T-S)/ST[d]);rng.setAttribute("aria-valuetext",said);return said};
 const btn=()=>{const end=!!J&&T>=E;b.disabled=false;b.textContent=playing?"❚❚ Pause":end?"↻ Relire":"▶ Lire";b.setAttribute("aria-label",playing?"Mettre en pause":end?"Relire":LB[d||"6h"])};
 // The bar of the layer shown: from its first measure in the file (not before the length asked), to the latest; its

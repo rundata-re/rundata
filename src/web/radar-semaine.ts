@@ -6,7 +6,7 @@
  *   1,15 Mo a day at the most (the evening of 31/10/2026, rain over all the east: about 4 Ko an image), for finer
  *   replays later;
  * - the week, an image an hour (HEURES_KEY), each the strongest rain of its hour in each cell: about 1 Mo at the most,
- *   for /meteo's 7-day replay, which shows it once it holds 7 days (rejeu.ts) and the rain gauges until then.
+ *   for /meteo's 7-day replay, which shows it for the hours it holds (rejeu.ts) and the rain gauges before them.
  * At its first run, the 24 hours (an image a quarter of an hour) fill the hours before the 6 hours; a run that cannot
  * write leaves its hours to the next one, while the 6 hours (or the 24 for the hours of the week) still hold them.
  * Its reads and writes of KV are outside the run's cost (`unmeasured`), with what the run has left.

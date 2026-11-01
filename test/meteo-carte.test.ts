@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import type { HomeData, StationNow } from "../src/web/data.js";
-import { apart, esc, NOMS_SCRIPT, project } from "../src/web/map.js";
+import { apart, esc, KM, NOMS_SCRIPT, project, W } from "../src/web/map.js";
 import {
   ago,
   ALT_PATH,
@@ -339,12 +339,13 @@ describe("the map of every station on /meteo", () => {
     expect(stationsMap([GILLOT])).toContain(`<input type="radio" name="wxl" id="wxl-t" class="on" checked>`);
   });
 
-  it("says the rain of the last 6 minutes, tab and legend, while no station has the hour yet", () => {
+  it("says the rain of the last 6 minutes in the legend, while no station has the hour yet; the tab « Pluie » either way", () => {
     const hour = stationsMap(ALL);
-    expect(hour).toContain(`<label for="wxl-p">Pluie 1 h</label>`);
+    expect(hour).toContain(`<label for="wxl-p">Pluie</label>`);
     expect(hour).toContain("4 pluviomètres, pluie de la dernière heure en mm, la plus récente à 09:18. Point blanc : pas de pluie mesurée.");
     const six = stationsMap(ALL.map((s) => ({ ...s, pluie_6min: s.pluie_1h, pluie_1h: undefined })));
-    expect(six).toContain(`<label for="wxl-p">Pluie 6 min</label>`);
+    expect(six).toContain(`<label for="wxl-p">Pluie</label>`);
+    expect(six).not.toContain("Pluie 6");
     expect(six).toContain("4 pluviomètres, pluie des 6 dernières minutes seulement, en mm, la plus récente à 09:18 : l'heure complète n'est pas encore disponible.");
     expect(six).toContain(`data-tvp="${esc("2,4 mm en 6 min")}"`);
   });
@@ -752,9 +753,10 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(METEO_SCRIPT).toContain(`span=(j)=>spanOf_(j.de,j.fin),spanOf_=${spanOf},`);
     // An hour's, or 3 hours' for the radar's week.
     expect(METEO_SCRIPT).toContain(`" "+BW+"\u00a0: zones que le radar a mal vues pendant "+(Date.parse(n.fin)-Date.parse(n.de)>36e5?"ces 3\u00a0heures":"cette heure")+", où la pluie peut être manquée."`);
-    // The 7 days: the radar's week once the file has it (rejeu.ts), the rain gauges until then.
-    expect(rejeuScript()).toContain(`if(l==="p"&&(d!=="7j"||J.radar)){const gr=J.radar`);
-    expect(rejeuScript()).toContain(`if(d==="7j"&&!J.radar)K.p=windows();else if(J.radar)for(const e of J.radar.entrees)`);
+    // The 7 days: the radar's week for the hours the file has (rejeu.ts), the rain gauges' windows ended before its first.
+    expect(rejeuScript()).toContain(`if(l==="p"&&(d!=="7j"||J.radar&&T>=RT)){const gr=J.radar`);
+    expect(rejeuScript()).toContain(`if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e});`);
+    expect(rejeuScript()).toContain(`if(d==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;`);
     // The hatches linger over 6 hours only: an hour's image is already where the radars saw badly in its hour.
     expect(rejeuScript()).toContain(`trail=(s)=>rm||d!=="6h"?null:keep(`);
     expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);
@@ -766,14 +768,18 @@ describe("the rain's edges, its drops and the wind", () => {
   it("spreads the week's rain gauges between them by 3 hours, one every hour, said estimated, without their dots", () => {
     // Four land cells in a row, a gauge at each end: 1.5 mm in the 3 hours and dry; the sea (0) left dry.
     const cl = [0.1, 0.5, 1, 2, 4, 8, 16, 32];
-    expect(gaugeField([[0, 0, 1.5], [3, 0, 0]], [1, 1, 1, 1, 0], 5, 1, cl)).toBe("33100");
-    expect(gaugeField([], [1, 1], 2, 1, cl)).toBe("00");
+    expect(gaugeField([[0, 0, 1.5], [3, 0, 0]], [1, 1, 1, 1, 0], 5, 1, cl, 10)).toBe("33100");
+    expect(gaugeField([], [1, 1], 2, 1, cl, 10)).toBe("00");
+    // A dry gauge keeps its surroundings dry, and nothing is said far from every gauge: 5 mm at one end of 21 cells, 5
+    // cells of reach, the rest dry (the evening of 31/10/2026: Saint-Pierre dry, the gauges of the north and east wet).
+    expect(gaugeField([[0, 0, 0], [20, 0, 5]], Array(21).fill(1), 21, 1, cl, 5)).toBe("0".repeat(16) + "55555");
+    expect(rejeuScript()).toContain(`field(pts,gr.L,gr.w,gr.h,${JSON.stringify(cl)},${Math.round((10 / KM) * 10) / 10}*gr.w/${W})`);
     expect(rejeuScript()).toContain(`field=${gaugeField}`);
     expect(METEO_SCRIPT).toContain(`"En bleu\u00a0: la pluie mesurée par les pluviomètres de Météo-France "+span(j)+", étalée entre eux par calcul\u00a0; "+fo()+" Entre deux pluviomètres, c'est une estimation, pas une mesure\u00a0: une averse qui tombe loin d'eux peut manquer."`);
     expect(METEO_SCRIPT).toContain(`Cap(span(j))+", aucun pluviomètre de Météo-France n'a mesuré de pluie."`);
     expect(METEO_SCRIPT).toContain(`plus de 32\u202fmm en 3\u00a0h`);
     // The time and the legend: the 3 hours drawn, switched half way between two, never ahead of the map.
-    expect(rejeuScript()).toContain(`r=at("p");const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);`);
+    expect(rejeuScript()).toContain(`r=at("g");const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);`);
     // 3 hours ending at each round hour, each drawn whole at its middle.
     expect(rejeuScript()).toContain(`const w=[i-2,i-1,i];if(st.some((s)=>three(s,{w})!=null))k.push({t:th(i)-54e5,end:th(i),i,w})`);
     // No gauge's dot on the map while it plays (the user, 01/11/2026: « beaucoup trop chargé »), nor its sentence.

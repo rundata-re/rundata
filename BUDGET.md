@@ -129,6 +129,9 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /meteo/* | la météo d'un lieu | à chaque vue |  | 56 | 2 | 2 |  |  |  | 130 | mesuré |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
+| /meteo/rejeu-24h-5min.json | la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 40 | code |
+| /meteo/rejeu-7j-15min.json | la barre de lecture de /meteo sur 7 jours, plus d'images : le radar au quart d'heure une fois la semaine pleine (KV, ses jours) et les heures rondes des stations | à chaque vue |  | 13 | 9 |  | 1 | 140 |  | 120 | code |
+| /meteo/rejeu-jour-*.json | la barre de lecture de /meteo sur un jour choisi : le radar toutes les 5 min de ce jour (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 30 | code |
 | /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV) | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 40 | code |
 | /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
@@ -282,6 +285,9 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /meteo/* | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
 | /meteo/rejeu-6h.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-24h.json | providers/meteofrance, providers/mf-auth, providers/radar |
+| /meteo/rejeu-24h-5min.json | providers/meteofrance, providers/mf-auth, providers/radar |
+| /meteo/rejeu-7j-15min.json | providers/meteofrance, providers/mf-auth, providers/radar |
+| /meteo/rejeu-jour-*.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-7j.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /electricite/historique.json | providers/avis-eau, providers/coupures-courant, providers/edf |
 | /mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |

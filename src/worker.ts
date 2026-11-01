@@ -203,13 +203,14 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
   }));
-  // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart and its week
-  // an hour apart, kept by the scheduled event below (web/pluie-retro.ts, web/radar-semaine.ts), and the stations' week,
-  // written only by the files that read it.
+  // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart, its week
+  // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
+  // web/radar-semaine.ts), and the stations' week, written only by the files that read it.
   rejeu.configure(kv && {
     six: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
     day: async () => (await kv.get(pluieRetro.LONG_KV_KEY, "json")) as pluieRetro.Historique | null,
     week: async () => (await kv.get(radarSemaine.HEURES_KEY, "json")) as pluieRetro.Historique | null,
+    jour: async (d) => (await kv.get(radarSemaine.JOUR_PREFIX + d, "json")) as pluieRetro.Historique | null,
     semaine: {
       get: async () => (await kv.get(rejeu.SEMAINE_KV_KEY, "json")) as rejeu.Semaine | null,
       put: (w) => kv.put(rejeu.SEMAINE_KV_KEY, JSON.stringify(w), { expirationTtl: rejeu.SEMAINE_KV_TTL_SECONDS }),

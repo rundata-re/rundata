@@ -16,6 +16,8 @@ import { endOf, type Entree, type Historique, type Image, isTrou, maxOf, reader,
 
 export const HEURES_KEY = "radar:7j";
 export const JOUR_PREFIX = "radar:j:";
+/** The first day of La Réunion with a key: its hours from 07:00, the first run's, taken from the 24 hours. */
+export const PREMIER_JOUR = "2026-10-31";
 /** A day longer than the week: the first hours of the oldest day are still there when the week starts with it. */
 export const TTL_SECONDS = 8 * 86_400;
 const HOUR_MS = 3_600_000;

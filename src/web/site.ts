@@ -146,7 +146,7 @@ import { INTERDITS } from "../robots.js";
 import { PATH as PLUIE_RADAR, rainGrid } from "./pluie-radar.js";
 import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricite-historique.js";
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
-import { DUREES, PATHS as REJEU, rejeu } from "./rejeu.js";
+import { DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuFin, rejeuJour } from "./rejeu.js";
 import { COUCHE_PATH, coucheResponse } from "./couches.js";
 
 const HTML = {
@@ -711,6 +711,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // The replay bar's files, one a length, asked by the same script when its visitor plays (rejeu.ts).
   const duree = DUREES.find((d) => REJEU[d] === path);
   if (duree) return rejeu(duree, cache, background, now);
+  // Their finer files, and a day's, asked for more images (rejeu.ts).
+  const fin = (Object.keys(FINS) as Fin[]).find((f) => FINS[f] === path);
+  if (fin) return rejeuFin(fin, cache, background, now);
+  const jour = JOUR_FILE.exec(path);
+  if (jour) return (await rejeuJour(jour[1], cache, background, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.
   if (path.startsWith(COUCHE_PATH)) return (await coucheResponse(path, cache, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A station's page (web/station.ts): its copy built like a commune's, kept by station.

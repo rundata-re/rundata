@@ -14,7 +14,8 @@ import { apart, esc, H, islandMap, KM, project, W } from "./map.js";
 import { CLASSES, PATH as PLUIE_RADAR } from "./pluie-radar.js";
 import { chip, deg, hm, metres, shortName, stationId, STOPS, thin } from "./pages.js";
 import { hash } from "./pwa.js";
-import { DUREES, PATHS as REJEU_PATHS } from "./rejeu.js";
+import { PREMIER_JOUR } from "./radar-semaine.js";
+import { DUREES, FINS, jourPath, JOURS, joursOf, PATHS as REJEU_PATHS } from "./rejeu.js";
 
 const COMMUNE_OF_INSEE = new Map(Object.entries(INSEE).map(([nom, code]) => [code, nom]));
 
@@ -289,15 +290,17 @@ const REVOIR: Record<(typeof DUREES)[number], [string, string]> = {
 };
 
 /**
- * Under the map, the replay bar: a length to choose, a button to play and pause, the slider of the moment shown. Hidden
- * without a script; the page's own (METEO_SCRIPT) shows it, and asks REJEU_JS and the length's file on the first touch.
- * `fin`: the latest measure, where the bar ends.
+ * Under the map, the replay bar: a length to choose, a button to play and pause, the slider of the moment shown; more
+ * images to ask (the radar every 5 minutes over 24 hours, every quarter of an hour over 7 days), and with them a day to
+ * replay. Hidden without a script; the page's own (METEO_SCRIPT) shows it, and asks REJEU_JS and the length's file on the
+ * first touch. `fin`: the latest measure, where the bar ends.
  */
 function replayBar(fin: string): string {
   const radios = DUREES.map((d) => `<input type="radio" name="rjd" id="rjd-${d}" value="${d}"><label for="rjd-${d}">${REVOIR[d][0]}</label>`).join("");
   return `<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${esc(fin)}" hidden><fieldset class="tabs"><legend>Revoir :</legend>${radios}</fieldset>` +
     `<button type="button" class="rj-b" aria-label="${REVOIR["6h"][1]}">▶ Lire</button>` +
-    `<input type="range" min="0" max="1" step="any" value="1" aria-label="Moment affiché sur la carte" hidden><span class="rj-q" hidden></span>` +
+    `<input type="range" min="0" max="1" step="any" value="1" aria-label="Moment affiché sur la carte" hidden>` +
+    `<label class="rj-plus"><input type="checkbox"> Plus d'images</label><select class="rj-j" aria-label="Choisir un jour" hidden><option value="">Choisir un jour</option></select><span class="rj-q" hidden></span>` +
     `<span class="rj-ko" hidden>L'historique n'a pas pu être chargé : la carte reste sur la dernière mesure. <button type="button">Réessayer</button></span>` +
     `<span class="sr" aria-live="polite"></span></div>`;
 }
@@ -736,8 +739,21 @@ export const shownAt = (T: number, r: At, l: string): number =>
 /**
  * A full play: 12 s (data-run, 29/10); 24 s over 24 hours and 7 days, whose images follow each other every quarter of an
  * hour and every hour (01/11/2026: in 12 s, a slow phone drew the rain's 8 and 14 new images a second at 11 and 6 frames).
+ * The finer files, for a device that keeps up: 54 s for the 288 images of 24 hours or of a day (5 a second), 96 s for
+ * the 672 of 7 days (7 a second); their images fade into each other the whole way, never held (SN 0): held 2 minutes
+ * then faded in 2 frames, 8 images a second moved by steps (01/11/2026).
  */
-const PLAY_MS: Record<(typeof DUREES)[number], number> = { "6h": 12_000, "24h": 24_000, "7j": 24_000 };
+const PLAY_MS: Record<Mode, number> = { "6h": 12_000, "24h": 24_000, "7j": 24_000, "24h+": 54_000, "7j+": 96_000, jour: 54_000 };
+/** What the replay plays: a length, its finer file (« + »), or a day. */
+type Mode = (typeof DUREES)[number] | "24h+" | "7j+" | "jour";
+/**
+ * A device keeps up with a finer file when the rain's new images it asks a second, at the time each took to draw in the
+ * first seconds of a play, and 30 frames at the time each other took, fill less than this share of a second (the browser
+ * draws the page in the rest).
+ */
+const KEEPS_UP = 0.6;
+/** And when it drew at least so many frames a second in those seconds: what the browser takes to paint is not in the time measured. */
+const KEEPS_UP_FPS = 25;
 /**
  * How long, in a play, where the radars saw badly lingers on the map, fading: an hour of the radar over 6 hours, 4 hours
  * over 24 (the user, 31/10/2026: « on verra plutôt une grande zone grise »). Never in the live map, nor for those who
@@ -760,12 +776,23 @@ function rejeuJs(): string {
   const js = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c");
   const labels = Object.fromEntries(DUREES.map((d) => [d, REVOIR[d][1]]));
   return `(()=>{const rb=document.querySelector("[data-rejeu]");if(!rb||typeof RJ!=="object")return;
-const P=${js(REJEU_PATHS)},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},PL=${js(PLAY_MS)},TRAIL=${TRAIL_MS};
-const ST={"6h":3e5,"24h":9e5,"7j":36e5},SN={"6h":6e4,"24h":18e4,"7j":6e5},DU={"6h":216e5,"24h":864e5,"7j":6048e5};
-const fig=rb.closest("figure"),b=rb.querySelector(".rj-b"),rng=rb.querySelector("input[type=range]"),q=rb.querySelector(".rj-q"),ann=rb.querySelector("[aria-live]"),
+const P=${js({ ...REJEU_PATHS, "24h+": FINS["24h"], "7j+": FINS["7j"] })},JP=${js(jourPath("JOUR"))},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},PL=${js(PLAY_MS)},TRAIL=${TRAIL_MS};
+const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5},SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0},DU={"6h":216e5,"24h":864e5,"7j":6048e5,"24h+":864e5,"7j+":6048e5,jour:864e5};
+// The longest time between two images of the radar faded into each other: 10 minutes over 6 hours, half an hour in the
+// finer files (their first day, a quarter of an hour apart), 2 hours between the images of an hour.
+const GP={"6h":6e5,"24h+":18e5,"7j+":18e5,jour:18e5},FI={"24h":"24h+","7j":"7j+"},BA=(m)=>m==="24h+"||m==="jour"?"24h":m==="7j+"?"7j":m;
+// A page kept from before more images has neither their box nor the days (the script is served at any address, site.ts): stand-ins.
+const fig=rb.closest("figure"),b=rb.querySelector(".rj-b"),box=rb.querySelector(".rj-plus input")||document.createElement("input"),sel=rb.querySelector(".rj-j")||document.createElement("select"),rng=rb.querySelector("input[type=range]"),q=rb.querySelector(".rj-q"),ann=rb.querySelector("[aria-live]"),
 hd=fig.querySelector(".rj-d"),hh=fig.querySelector(".rj-h"),hs=fig.querySelector(".rj-s"),dots=fig.querySelector(".rj-st"),lg=(l)=>fig.querySelector(".lg-"+l+" .rj-lg"),
 rm=matchMedia("(prefers-reduced-motion: reduce)").matches,F={},G=new Map();
 let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],RT=Infinity,LT=new Map(),TD=null,playing=false,raf=0,last=0,nx=0,cur="",was=null;
+// The file shown and the one asked last; the day asked and its first midnight. More images: asked (USER), or for a
+// device that keeps up, measured in the first seconds of a play of the rain (MS: the time of the frames with a new image
+// and their number, of the others and theirs, all the frames, the time of the first measured; CW: the time of a new
+// image, of another frame, the frames a second), never on a connection that saves data or is slow.
+let DK="",WK="",DY="",J0=0,FINE=box.checked,USER=FINE,MZ=false,NWF=false,PK=0,CW=null;const MS=[0,0,0,0,0,0],cx=navigator.connection,
+slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=${KEEPS_UP_FPS}&&nps(m)*CW[0]+30*CW[1]<${KEEPS_UP * 1000},
+fine=(x)=>!!FI[x]&&FINE&&(USER||can(FI[x]));
 const lx=(t)=>new Date(t+144e5),hmm=(t)=>{const x=lx(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())},dm=(t)=>{const x=lx(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
 const lay=()=>["t","p","v"].find((l)=>{const i=document.getElementById("wxl-"+l);return i&&i.checked})||"";
 const chip=(t)=>{let i=0;while(i<C.length-2&&t>C[i+1][0])i++;const[[t0,c0],[t1,c1]]=[C[i],C[i+1]],k=Math.min(1,Math.max(0,(t-t0)/(t1-t0)));return"rgb("+c0.map((c,j)=>Math.round(c+(c1[j]-c)*k)).join(",")+")"};
@@ -777,14 +804,15 @@ const ring=(f)=>{const g=mk("g",{},dots),out=[];g.style.display="none";for(const
 out.push({s,big,c:mk("circle",{cx:s.x,cy:s.y,r:big?34:17},g),t:big?mk("text",{class:"mv",x:s.x,y:s.y+11},g):null})}return{g,out}};
 // A layer's moments at T: on one, or between two (f of the way), or none (before its first, or across a long hole).
 const at=(l)=>{const k=K[l];if(!k||!k.length||T<k[0].t-SN[d])return null;let i=0;while(i<k.length-1&&k[i+1].t<=T)i++;const a=k[i],z=k[i+1];
-if(!z||T-a.t<=SN[d])return{m:a};if(z.t-T<=SN[d])return{m:z};if(z.t-a.t>(l==="p"?2*(d==="6h"?ST[d]:36e5):72e5)+6e4)return null;return{a,z,f:(T-a.t)/(z.t-a.t)}};
+if(!z||T-a.t<=SN[d])return{m:a};if(z.t-T<=SN[d])return{m:z};if(z.t-a.t>(l==="p"&&GP[d]||72e5)+6e4)return null;return{a,z,f:(T-a.t)/(z.t-a.t)}};
 // The stations of an hour, as the page's scripts take them: [x, y, altitude, °C], or [x, y, u, v] in km/h (y down).
 const sx=(l,i)=>l==="t"?st.filter((s)=>s.t[i]!=null).map((s)=>[s.x,s.y,s.alt,s.t[i]]):st.filter((s)=>s.ff[i]!=null&&(s.dd[i]!=null||s.ff[i]===0)).map((s)=>{const a=(s.dd[i]||0)*Math.PI/180,v=s.ff[i];return[s.x,s.y,-Math.sin(a)*v,Math.cos(a)*v]});
 const gridOf=(l,k)=>{if(k.i<0)return RJ[l].now;const key=l+k.i;let g=G.get(key);if(!g){g=RJ[l].grid(sx(l,k.i));G.set(key,g);if(G.size>16)G.delete(G.keys().next().value)}return g};
 const tv=(s,k)=>k.i<0?LT.get(s.x+","+s.y)??null:s.t[k.i];
 const once=(k,f)=>{if(cur!==k){cur=k;f()}};
 // The radar's images of the trail at T (trailOf), lingering TRAIL of a play: none for those who ask for less motion.
-const keep=${trailOf},trail=(s)=>rm||d!=="6h"?null:keep(K.p,T,s,DU[d]*TRAIL/PL[d]),wm=()=>Math.round(DU[d]*TRAIL/PL[d]/6e4);
+// An hour of the radar in the finer files of 24 hours and of a day, as over 6 hours.
+const keep=${trailOf},tw=()=>d==="6h"?DU[d]*TRAIL/PL[d]:d==="24h+"||d==="jour"?36e5:0,trail=(s)=>rm||!tw()?null:keep(K.p,T,s,tw()),wm=()=>Math.round(tw()/6e4);
 // The wind the drops follow (RJ.p.wind): the anemometers of the round hour nearest t, within 1 h 30 min; none without.
 let WH=0;const blow=(t)=>{if(!RJ.p)return;let b=null;for(const x of K.v||[])if(Math.abs(x.t-t)<=54e5&&(!b||Math.abs(x.t-t)<Math.abs(b.t-t)))b=x;const key=b?b.t:-1;if(key===WH)return;WH=key;
 RJ.p.wind(b?(b.i<0?RJ.v&&RJ.v.live:sx("v",b.i)):null,b&&b.t)};
@@ -796,8 +824,8 @@ e={fin:new Date(k.end).toISOString(),de:new Date(k.end-108e5).toISOString(),pg:1
 wet:pts.some((x)=>x[2]>0)};RN.set(k.t,e);return e};
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
-if(l==="p"&&(d!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
-const r=at("p");if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
+if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
+const r=at("p"),pk=r?(r.m||r.z).t:0;if(pk!==PK){PK=pk;NWF=true}if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
 // 7 days, until the radar's week is whole (rejeu.ts; then its 3 hours an hour apart, as the 24 hours above): the rain
 // gauges' 3 hours spread between them (rain), faded from one to the next, without their dots (the
 // user, 01/11/2026: « beaucoup trop chargé »); the time and the legend those of the 3 hours shown (k), switched half way.
@@ -810,7 +838,7 @@ o.c.style.display=v==null?"none":"";if(v==null){if(o.t)o.t.textContent="";contin
 // The time of what the map shows (shownAt); the date or dates over it (daysOf).
 const shown=${shownAt},days=${daysOf};
 // The time written on the map, the word under it, and what the slider says.
-const show=()=>{const l=lay();if(!l||!J)return"";const end=T>=E;fig.classList.toggle("rj-fin",end);RJ.on=!end;let r=null,t=T;if(end!==was){was=end;renames()}
+const show=()=>{const l=lay();if(!l||!J)return"";const end=T>=E&&d!=="jour";fig.classList.toggle("rj-fin",end);RJ.on=!end;let r=null,t=T;if(end!==was){was=end;renames()}
 if(end){once("fin",()=>{for(const x of["t","v","p"])if(RJ[x])RJ[x].back()})}else r=draw(l);
 t=end?E:shown(T,r,l);let w="",said=dm(t)+" à "+hmm(t);
 if(end){w="dernière mesure";said+=", dernière mesure"}else if(r&&r.gap){said+=". Pas d'image radar de "+hmm(r.gap[0])+" à "+hmm(r.gap[1])+"."}
@@ -819,13 +847,15 @@ else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le rad
 else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 // The hours of the rain shown, an hour's or 3 hours' (marketing: « 14 h – 15 h »).
 const im=l==="p"&&r&&(r.m||(r.a&&(r.f<.5?r.a:r.z))),de=r&&r.h?r.h.end-108e5:im&&im.e&&im.e.de?Date.parse(im.e.de):0,hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")};
-if(r&&r.h)t=r.h.end;hd.textContent=d==="7j"||d==="24h"||dm(S)!==dm(E)?days(!end&&de,t,d==="7j"):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);hs.textContent=w;
+if(r&&r.h)t=r.h.end;hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);hs.textContent=w;
 rng.value=String((T-S)/ST[d]);rng.setAttribute("aria-valuetext",said);return said};
-const btn=()=>{const end=!!J&&T>=E;b.disabled=false;b.textContent=playing?"❚❚ Pause":end?"↻ Relire":"▶ Lire";b.setAttribute("aria-label",playing?"Mettre en pause":end?"Relire":LB[d||"6h"])};
+const lb=()=>d==="jour"?"Lire la journée du "+days(0,J0+432e5,true):LB[BA(d||"6h")];
+const btn=()=>{const end=!!J&&T>=E;b.disabled=false;b.textContent=playing?"❚❚ Pause":end?"↻ Relire":"▶ Lire";b.setAttribute("aria-label",playing?"Mettre en pause":end?"Relire":lb())};
 // The bar of the layer shown: from its first measure in the file (not before the length asked), to the latest; its
 // steps on the clock's (every 5 minutes, quarter of an hour or hour), where the measures are.
-const range=()=>{const l=lay(),k=l==="p"?[...K.g,...K.p]:K[l]||[],t0=Math.min(...k.map((x)=>x.t),...(l==="p"?TR.map((x)=>x[0]):[]));S=Math.min(E,Math.ceil(Math.max(E-DU[d],isFinite(t0)?t0:E)/ST[d])*ST[d]);
-const late=S>E-DU[d]+(l==="p"&&!K.g.length?2*ST[d]:36e5+6e4);q.hidden=!late;q.textContent=late?"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+".":"";
+// A day's, from its midnight.
+const range=()=>{const l=lay(),k=l==="p"?[...K.g,...K.p]:K[l]||[],t0=Math.min(...k.map((x)=>x.t),...(l==="p"?TR.map((x)=>x[0]):[])),lo=d==="jour"?J0:E-DU[d];S=Math.min(E,Math.ceil(Math.max(lo,isFinite(t0)?t0:E)/ST[d])*ST[d]);
+const late=S>lo+(l==="p"&&!K.g.length?2*ST[d]:36e5+6e4);q.hidden=!late;q.textContent=late?"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+".":"";
 T=Math.max(S,Math.min(E,T));rng.max=String((E-S)/ST[d]||0)};
 // The live map's colour scale in front, the same for the whole play.
 const legend=(l,k,one,many,text)=>{const el=lg(l);if(!el||!K[l].length)return;const c=st.filter((s)=>s[k].some((v)=>v!=null)).length,sc=fig.querySelector(".lg-"+l+" .lg-now .lgs");
@@ -835,30 +865,46 @@ const live=Date.parse(rb.dataset.fin)||0,th=(i)=>fin-(n-1-i)*36e5,hours=(f)=>{co
 // The week's rain by 3 hours, one every hour (the user, 01/11/2026: 3 hours apart, « moins fluide que 24h et plus
 // brutal »), two in a row sharing 2 of their 3 hours: each at its middle, the time its spread is drawn whole.
 const windows=()=>{const k=[];for(let i=2;i<n;i++){const w=[i-2,i-1,i];if(st.some((s)=>three(s,{w})!=null))k.push({t:th(i)-54e5,end:th(i),i,w})}return k};
-K={t:RJ.t?hours("t"):[],v:RJ.v?hours("ff"):[],p:[],g:[]};for(const l of["t","v"])if(K[l].length&&live>fin)K[l].push({t:live,i:-1});
+// A day's ends with the day, without the live map.
+K={t:RJ.t?hours("t"):[],v:RJ.v?hours("ff"):[],p:[],g:[]};if(d!=="jour")for(const l of["t","v"])if(K[l].length&&live>fin)K[l].push({t:live,i:-1});
 // Over 7 days, the radar's week for the hours it holds, and the rain gauges' windows ended before its first (K.g, RT
 // the first image's time, where the map goes from one to the other).
-TR=[];RN.clear();WH=0;if(RJ.p){if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e});
-if(d==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;
-E=Math.max(live,fin,...K.p.map((x)=>x.t),...TR.map((x)=>x[1]));LT=new Map();if(RJ.t)for(const[x,y,,t]of RJ.t.live)LT.set(Math.round(x*10)/10+","+Math.round(y*10)/10,t);
+TR=[];RN.clear();WH=0;PK=0;if(RJ.p){if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e});
+if(BA(d)==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;
+E=Math.max(d==="jour"?0:live,fin,...K.p.map((x)=>x.t),...TR.map((x)=>x[1]));LT=new Map();if(RJ.t)for(const[x,y,,t]of RJ.t.live)LT.set(Math.round(x*10)/10+","+Math.round(y*10)/10,t);
 dots.replaceChildren();TD=RJ.t?ring("t"):null;
 legend("t","t","station","stations",(x)=>"Température sous abri de "+x+" de Météo-France, une mesure par heure. Entre les stations, les couleurs sont estimées selon l'altitude : ce n'est pas une mesure.");
 legend("v","ff","anémomètre","anémomètres",(x)=>"Vent moyen sur 10 minutes de "+x+" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu.");
 fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length||K.g.length};
-const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=was?k*${FRAME_MS}:0;T=Math.min(E,T+(E-S)*dt/PL[d]);show();if(T>=E)stop(true)};
-const play=()=>{if(T>=E)T=S;playing=true;last=nx=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
+// The time of a frame, after the first 10 of the measure: once 6 with a new image of the rain and 30 others are known,
+// more images for a device that keeps up with those of 24 hours, and the file of 24 hours played swapped for its finer.
+const gauge=(ms)=>{const n=++MS[4];if(n===11)MS[5]=performance.now();if(n>10){const i=NWF?0:2;MS[i]+=ms;MS[i+1]++}NWF=false;if(MS[1]<6||MS[3]<30)return;MZ=false;const o=MS[2]/MS[3];
+CW=[Math.max(0,MS[0]/MS[1]-o),o,(n-11)*1e3/Math.max(1,performance.now()-MS[5])];
+if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",true)}};
+const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=was?k*${FRAME_MS}:0;T=Math.min(E,T+(E-S)*dt/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
+// The measure, in a play of the rain over 6 or 24 hours, until it is known or more images are asked.
+const play=()=>{if(T>=E)T=S;playing=true;last=nx=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
 const stop=(say)=>{playing=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show()};
 // Back to the live map when the file cannot come: the bar says so.
-const fail=()=>{J=null;fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",LB[d])};
-RJ.go=(x)=>{stop(false);d=x;const c=document.getElementById("rjd-"+x);if(c)c.checked=true;b.textContent="Chargement…";b.disabled=true;b.removeAttribute("aria-label");
-(F[x]||(F[x]=Promise.all([fetch(P[x]).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),RJ.p?RJ.p.prep():0]).then(([j])=>j))).then((j)=>{if(d!==x)return;J=j;
-if(!setup())throw new Error("vide");T=S;if(rm){btn();ann.textContent=show()}else{show();play()}}).catch(()=>{delete F[x];if(d===x)fail()})};
+const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};
+// A length (x), with its finer file when more images are shown (fine), or the day DY. With swap, the file shown is swapped
+// for this one once it is here, at the same moment, playing on; kept when it has no radar.
+RJ.go=(x,swap)=>{const m=x==="jour"?x:fine(x)?FI[x]:x,key=m==="jour"?m+DY:m;if(swap&&(!J||key===DK))return;WK=key;
+if(!swap){stop(false);d=m;for(const c of rb.querySelectorAll("[name=rjd]"))c.checked=c.value===x;if(x!=="jour")sel.value="";b.textContent="Chargement…";b.disabled=true;b.removeAttribute("aria-label")}
+(F[key]||(F[key]=Promise.all([fetch(m==="jour"?JP.replace("JOUR",DY):P[m]).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),RJ.p?RJ.p.prep():0]).then(([j])=>j))).then((j)=>{if(WK!==key||swap&&!j.radar)return;
+const t=T,old=[J,d,DK];d=m;DK=key;J=j;if(m==="jour")J0=Date.parse(DY+"T20:00:00Z")-864e5;if(!setup()){if(!swap)throw new Error("vide");[J,d,DK]=old;setup();T=t;return}
+if(swap){T=Math.max(S,Math.min(E,t));cur="";show();btn()}else{T=S;if(rm){btn();ann.textContent=show()}else{show();play()}}}).catch(()=>{delete F[key];if(WK===key&&!swap)fail()})};
+// More images, asked or not: the same length, swapped at the same moment; a day, back to 24 hours without them.
+box.addEventListener("change",()=>{USER=true;MZ=false;FINE=box.checked;sel.hidden=!FINE;if(!J)return;if(d==="jour"&&!FINE)RJ.go("24h");else if(d!=="jour")RJ.go(BA(d),true)});
+// The days one can replay (joursOf), as the map writes them: « dim. 01/11 ».
+for(const x of(${joursOf})(Date.parse(rb.dataset.fin)||Date.now(),${js(PREMIER_JOUR)},${JOURS})){const o=document.createElement("option");o.value=x;o.textContent=days(0,Date.parse(x+"T08:00:00Z"),true);sel.append(o)}
+sel.hidden=!FINE;sel.addEventListener("change",()=>{if(!sel.value)return;DY=sel.value;rb.querySelector(".rj-ko").hidden=true;RJ.go("jour")});
 RJ.redraw=()=>{if(J){cur="";show()}};
 b.addEventListener("click",()=>{if(J)playing?stop(true):play()});
 rng.addEventListener("input",()=>{if(playing)stop(false);T=S+(+rng.value)*ST[d];show();btn()});rng.addEventListener("change",()=>{ann.textContent=show()});
 rng.addEventListener("keydown",(e)=>{const v=+rng.value,m=+rng.max;let x=null;if(e.key==="ArrowRight"||e.key==="ArrowUp")x=Math.floor(v+1e-6)+1;else if(e.key==="ArrowLeft"||e.key==="ArrowDown")x=Math.ceil(v-1e-6)-1;
 else if(e.key==="Home")x=0;else if(e.key==="End")x=m;else if(e.key===" "){e.preventDefault();b.click();return}else return;e.preventDefault();if(playing)stop(false);T=S+Math.max(0,Math.min(m,x))*ST[d];ann.textContent=show();btn()});
-document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",()=>{if(J){cur="";range();show()}}));
+document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",()=>{MZ=false;if(J){cur="";range();show()}}));
 if(RJ.want)RJ.go(RJ.want)})()`;
 }
 

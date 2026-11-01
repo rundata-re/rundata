@@ -101,7 +101,7 @@ export const DOMAINES: Domaine[] = [
   // The scheduled event reads the notices every hour (providers/marches-publics.ts).
   { categorie: "marches", sources: ids("boamp_api"), cadence: { minutes: 60, de: "boamp_api" } },
   // The TCO's dumps every 30 minutes (providers/tco.ts).
-  { categorie: "services", sources: ids("annuaire_administration", "prefecture_carburants", "tco_decheteries", "tco_collecte", "finess", "ars_garde", "sante_fr_urgences", "osm_marches", "marches_saint_paul", "marches_saint_leu", "marches_sainte_marie", "marches_saint_louis_2020", "marches_saint_louis_2021"), cadence: { minutes: 30, de: "tco_decheteries" } },
+  { categorie: "services", sources: ids("annuaire_administration", "annuaire_education", "prefecture_carburants", "tco_decheteries", "tco_collecte", "finess", "ars_garde", "sante_fr_urgences", "osm_marches", "marches_saint_paul", "marches_saint_leu", "marches_sainte_marie", "marches_saint_louis_2020", "marches_saint_louis_2021"), cadence: { minutes: 30, de: "tco_decheteries" } },
   // The fixed speed cameras: the ministry's yearly list, bundled.
   { categorie: "trafic", sources: ids("radars_fixes") },
   // The decrees of recreational fishing, bundled and read again by hand (tools/peche.ts).

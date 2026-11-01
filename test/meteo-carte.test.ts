@@ -377,6 +377,7 @@ describe("the page /meteo with every station", () => {
     expect(html).toContain(`<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${ALL.reduce((m, x) => (x.time > m ? x.time : m), "")}" hidden><fieldset class="tabs"><legend>Revoir :</legend>` +
       `<input type="radio" name="rjd" id="rjd-6h" value="6h"><label for="rjd-6h">6\u00a0h</label><input type="radio" name="rjd" id="rjd-24h" value="24h"><label for="rjd-24h">24\u00a0h</label>` +
       `<input type="radio" name="rjd" id="rjd-7j" value="7j"><label for="rjd-7j">7\u00a0jours</label></fieldset><button type="button" class="rj-b" aria-label="Lire les 6\u00a0dernières heures">▶ Lire</button>` +
+      `<button type="button" class="rj-v" aria-label="Vitesse de lecture\u00a0: ×1">×1</button>` +
       `<input type="range" min="0" max="1" step="any" value="1" aria-label="Moment affiché sur la carte" hidden>` +
       `<label class="rj-plus"><input type="checkbox"> Plus d'images</label><select class="rj-j" aria-label="Choisir un jour" hidden><option value="">Choisir un jour</option></select><span class="rj-q" hidden></span>` +
       `<span class="rj-ko" hidden>L'historique n'a pas pu être chargé : la carte reste sur la dernière mesure. <button type="button">Réessayer</button></span><span class="sr" aria-live="polite"></span></div>`);
@@ -437,7 +438,7 @@ describe("the page /meteo with every station", () => {
     // The replay's own script is not in the page: it is asked on a first touch of the bar.
     expect(METEO_SCRIPT).not.toContain("❚❚ Pause");
     expect(CSS).toContain(".wxmap.rejeu:not(.rj-fin) :is(.lg-now,.sts,.mtip){display:none}");
-    expect(CSS).toContain("@media (prefers-reduced-motion:reduce){.wxmap .rj-b{display:none}}");
+    expect(CSS).toContain("@media (prefers-reduced-motion:reduce){.wxmap :is(.rj-b,.rj-v){display:none}}");
   });
 
   it("dates a measure of another day in the list, and says it old", () => {
@@ -621,7 +622,7 @@ describe("the rain's animation and its replay", () => {
   it("lets where the radars saw badly linger during a play, fading over two seconds of it, and says how long before the time shown", () => {
     const at = (m: number) => m * 6e4, W = 60;
     // As the replay's script does: TRAIL of the play, an hour of radar over 6 hours; none for less motion.
-    expect(rejeuScript()).toContain(`const keep=${trailOf},tw=()=>d==="6h"?DU[d]*TRAIL/PL[d]:d==="24h+"||d==="jour"?36e5:0,trail=(s)=>rm||!tw()?null:keep(K.p,T,s,tw()),wm=`);
+    expect(rejeuScript()).toContain(`const keep=${trailOf},tw=()=>d==="6h"?DU[d]*TRAIL/PL[d]:d==="24h+"||d==="jour"?36e5:0,trail=(s)=>rm||!tw()?null:keep(sub("p"),T,s,tw()),wm=`);
     expect(rejeuScript()).toContain(`TRAIL=2000`);
     expect((216e5 * 2000) / 12000).toBe(at(W));
     const trail = (T: number, s: number) => trailOf(IMG.map((m) => ({ t: at(m), e: m })), T, s, at(W)) as [number, number][];
@@ -761,7 +762,7 @@ describe("the rain's edges, its drops and the wind", () => {
     const PL = { "24h+": 54_000, "7j+": 96_000, jour: 54_000 }, DU = { "24h+": 864e5, "7j+": 6048e5, jour: 864e5 }, ST = { "24h+": 3e5, "7j+": 9e5, jour: 3e5 };
     expect((Object.keys(PL) as (keyof typeof PL)[]).map((m) => DU[m] / ST[m] * 1e3 / PL[m])).toEqual([16 / 3, 7, 16 / 3]);
     expect(js).toContain(`SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0}`);
-    expect(js).toContain(`slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=25&&nps(m)*CW[0]+30*CW[1]<600,`);
+    expect(js).toContain(`slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=25&&ne(nps(m))*CW[0]+30*CW[1]<600,`);
     // Measured in a play of the rain over 6 or 24 hours only, unless more images were asked or refused.
     expect(js).toContain(`MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p"`);
     expect(js).toContain(`if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",true)}`);
@@ -792,7 +793,7 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);
     // Faded from one image to the next all the time, never held then switched (the user, 01/11/2026).
     expect(rejeuScript()).not.toContain("ease");
-    expect(rejeuScript()).toContain(`if(z.t-a.t>(l==="p"&&GP[d]||72e5)+6e4)return null`);
+    expect(rejeuScript()).toContain(`if(z.t-a.t>((l==="p"&&GP[d]||72e5)+6e4)*n)return null`);
   });
 
   it("spreads the week's rain gauges between them by 3 hours, one every hour, said estimated, without their dots", () => {

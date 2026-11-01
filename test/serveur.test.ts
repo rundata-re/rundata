@@ -106,7 +106,8 @@ describe("the server's instructions", () => {
     // 40 334 the same day with the max and min since midnight in meteo_actuelle, and historique_meteo sending today there.
     // 41 159 the same night with peche_loisir, a new tool (its description cut to three sentences).
     // 41 230 with the corals' block of temperature_mer, named in its description.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_240);
+    // 41 397 on 1/11/2026 with the schools, collèges and lycées in annuaire_services_publics (one sentence).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_400);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

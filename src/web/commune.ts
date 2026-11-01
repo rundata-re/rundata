@@ -12,6 +12,7 @@ import * as cal from "../providers/calendrier.js";
 import * as mf from "../providers/vigilance.js";
 import * as sante from "../sante/etablissements.js";
 import * as ecoles from "../vie/ecoles.js";
+import * as medecins from "../vie/medecins.js";
 import * as enfants from "../vie/enfants.js";
 import * as dech from "../vie/decheteries.js";
 import * as antennes from "../vie/antennes.js";
@@ -325,6 +326,50 @@ function schools(p: PlacePage): string {
 `;
 }
 
+/** « 2 en secteur 1 », « tous en secteur 1 », « aucun en secteur 1 »: under a speciality, its count beside it. */
+function sector1({ total, secteur_1 }: medecins.Specialite): string {
+  return secteur_1 === total ? (total > 1 ? "tous en secteur 1" : "en secteur 1") : secteur_1 ? `${secteur_1} en secteur 1` : "aucun en secteur 1";
+}
+
+/**
+ * The commune's doctors in private practice (vie/medecins.ts), counted only: the general practitioners by sector, the
+ * specialists by speciality. Never a name nor an address (the user's decision of 01/11/2026): those are on the Assurance
+ * Maladie's directory, linked here, its general practitioners by postcode.
+ */
+function doctors(p: PlacePage): string {
+  const c = medecins.ofCommune(p.nom);
+  if (!c) return "";
+  const g = c.generalistes;
+  const specialities = Object.entries(c.specialistes)
+    .map(([s, k]) => [medecins.plural(s), k] as const)
+    .sort(([x], [y]) => x.localeCompare(y, "fr"));
+  const others = specialities.reduce((n, [, k]) => n + k.total, 0);
+  const n = (k: number, one: string, many = `${one}s`) => `${k}\u00a0${k > 1 ? many : one}`;
+  // Sectors 1 and 2 and the OPTAM always, even at 0; the rare others when there are some.
+  const bySector = [
+    ["en secteur 1", g.secteur_1, true],
+    ["en secteur 2", g.secteur_2, true],
+    ["en dépassement permanent", g.depassement_permanent, false],
+    ["non conventionnés", g.non_conventionnes, false],
+    ["adhérents à l'OPTAM", g.optam, true],
+  ] as const;
+  const gpCard = g.total
+    ? `<li class="card" data-k><h3>Généralistes <span class="note">${g.total}</span></h3><ul class="rows eau">${bySector.filter(([, k, always]) => k || always).map(([what, k]) => `<li><span>${esc(what[0].toUpperCase() + what.slice(1))}</span><span>${k}</span></li>`).join("")}</ul></li>`
+    : "";
+  const specCard = others
+    ? `<li class="card" data-k><details><summary><h3>Spécialistes <span class="note">${others}</span></h3></summary><ul class="rows eau">${specialities.map(([s, k]) => `<li><span>${esc(s)}<small>${esc(sector1(k))}</small></span><span>${k.total}</span></li>`).join("")}</ul></details></li>`
+    : "";
+  const lead = [g.total && n(g.total, "généraliste"), others && n(others, "spécialiste")].filter(Boolean).join(" et ");
+  return `<section id="medecins" aria-labelledby="h-medecins">
+  <div class="sec-h"><h2 id="h-medecins">Médecins ${esc(aCommune(p.nom))}</h2>
+  <p>${esc(`Les médecins libéraux\u00a0: ${lead}, d'après l'annuaire santé de l'Assurance Maladie.`)} Leurs noms, adresses et horaires sont sur <a href="${medecins.AMELI}" rel="noopener">l'annuaire santé Ameli</a>${g.total && c.codes_postaux.length ? `\u00a0; les généralistes du ${c.codes_postaux.map((cp) => `<a href="${esc(medecins.ameliGps(cp))}" rel="noopener">${cp}</a>`).join(", ")}` : ""}.</p></div>
+  <ul class="zones top">${gpCard}${specCard}</ul>
+  <p class="note">${esc(`${medecins.SECTORS} Un médecin qui a plusieurs cabinets dans la commune compte une fois\u00a0; Ameli montre chaque cabinet. L'annuaire ne dit pas si un médecin prend de nouveaux patients\u00a0: le demander au cabinet. Annuaire santé de l'Assurance Maladie, fichier du ${dayMonth(medecins.COMPTES.mis_a_jour)}.`)}</p>
+  <p class="sources">Source\u00a0: ${credits([credit(medecins.SOURCE)])}.</p>
+</section>
+`;
+}
+
 /** The rents asked in the ads (vie/loyers.ts): a reference flat's per m², and a house's; one vintage a year. */
 function rents(p: PlacePage): Live | undefined {
   const c = loyers.ofCommune(p.nom);
@@ -541,7 +586,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <p>Des chiffres publiés une fois par an, par trimestre, par mois ou par semaine, chacun avec sa date.</p></div>
   <ul class="tiles" aria-label="Habiter ${esc(aCommune(p.nom))}">${habiter.map((t) => tile(t)).join("")}</ul>
 </section>
-` : ""}${schools(p)}<section aria-labelledby="h-ile">
+` : ""}${schools(p)}${doctors(p)}<section aria-labelledby="h-ile">
   <h2 id="h-ile">Et pour toute l'île</h2>
   <ul class="tiles" aria-label="Toute l'île">${island.map((t) => tile(t)).join("")}</ul>
 </section>

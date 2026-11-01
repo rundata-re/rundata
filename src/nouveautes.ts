@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-01T22:26:00+04:00", texte: "Médecins\u00a0: combien de généralistes et de spécialistes dans chaque commune, par secteur, et le lien vers l'annuaire Ameli." },
   { date: "2026-11-01T22:19:00+04:00", texte: "Carte\u00a0: revoir la pluie au radar et les stations des 6 ou 24\u00a0dernières heures, sur la même carte que les autres couches." },
   { date: "2026-11-01T21:57:00+04:00", texte: "Météo\u00a0: la carte des stations en plein écran. Sur téléphone, le plein écran des cartes est plus grand et rien ne cache l'île." },
   { date: "2026-11-01T21:31:00+04:00", texte: "Carte\u00a0: la carte d'un bord à l'autre de l'écran, un bandeau «\u00a0En direct\u00a0» et un cercle bleu autour des stations sous la pluie." },

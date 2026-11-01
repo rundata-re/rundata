@@ -166,7 +166,7 @@ describe("the prefect's fuel prices", () => {
     const prix = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
     carburants.configure(async () => prix);
     const r = body(await annuaireTool(new Cache(), "prix de l'essence", undefined, NOW));
-    expect(r.resume).toBe("Prix maximum à La Réunion depuis le 1er octobre 2026 (arrêté du préfet) : sans plomb (« supercarburant » dans l'arrêté) 2,00 €/litre (+0,17 €)\u00a0; gazole 1,80 €/litre (+0,12 €)\u00a0; gaz 20,81 € la bouteille de 12,5 kg (+0,21 €), 18 € avec aides locales. Les mêmes plafonds dans toute l'île : une station peut vendre moins cher, pas plus.");
+    expect(r.resume).toBe("Prix maximum à La Réunion depuis le 1er octobre 2026 (arrêté du préfet) : sans plomb (« supercarburant » dans l'arrêté) 2,00 €/litre (+0,17 €)\u00a0; gazole 1,80 €/litre (+0,12 €)\u00a0; gaz 20,81 € la bouteille de 12,5 kg (+0,21 €), 18 € avec aides locales. Les mêmes dans toute l'île.");
     expect(r.prix_maximums).toHaveLength(7);
     expect(r.communique.lien).toBe(LIEN);
     expect(r.avertissements).toEqual([]);
@@ -266,7 +266,7 @@ describe("a new order read before its 1st", () => {
     const r = body(await annuaireTool(new Cache(), "prix de l'essence", undefined, READ));
     expect(r.resume).toBe(
       "Prix maximum en vigueur aujourd'hui à La Réunion, jusqu'au 31 octobre (arrêté du préfet) : sans plomb (« supercarburant » dans l'arrêté) 1,56 €/litre\u00a0; gazole 1,24 €/litre\u00a0; gaz 19,09 € la bouteille de 12,5 kg. " +
-      `${ANNONCE}. Les mêmes plafonds dans toute l'île : une station peut vendre moins cher, pas plus.`,
+      `${ANNONCE}. Les mêmes dans toute l'île.`,
     );
     expect(r.en_vigueur_depuis).toBe("1er octobre 2025");
     expect(r.prix_maximums[0]).toMatchObject({ produit: "Sans plomb", prix: "1,56 €/litre" });

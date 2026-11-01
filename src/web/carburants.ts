@@ -64,8 +64,8 @@ export function carburantsPage(origin: string, data: Cached<carburants.Prix> | n
   <p class="note">D'après <a href="${esc(p.lien)}" rel="noopener">le communiqué de la préfecture</a> : « ${esc(p.titre)} ».</p></section>`
     : "";
 
-  const why = `<section aria-labelledby="h-savoir"><div class="card">${icon("car")}<h3 id="h-savoir">Des prix maximum, les mêmes partout</h3>
-  <p>À La Réunion, le préfet fixe chaque mois les prix maximum des carburants et de la bouteille de gaz, d'après les cours internationaux, le taux de change et le fret. Ils s'appliquent le 1er du mois dans toutes les stations de l'île ; une station peut vendre moins cher, pas plus.</p>
+  const why = `<section aria-labelledby="h-savoir"><div class="card">${icon("car")}<h3 id="h-savoir">Des prix maximum, les mêmes dans toute l'île</h3>
+  <p>À La Réunion, le préfet fixe chaque mois les prix maximum des carburants et de la bouteille de gaz, d'après les cours internationaux, le taux de change et le fret. Ils s'appliquent le 1er du mois dans toutes les stations de l'île.</p>
   <p>Il n'y a pas de relevé des prix par station : les départements d'outre-mer ne sont pas dans le relevé national. <a href="/trafic">La circulation et l'état des routes →</a></p></div></section>`;
 
   const body = `${table}

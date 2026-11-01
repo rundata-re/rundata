@@ -4,7 +4,7 @@ import { BUILD_BUDGET, counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import type { RainGrid } from "../src/web/pluie-radar.js";
-import { auQuart, type Entree, type Historique, type Image, parHeure, passage, quarters, rle, suivant, unrle } from "../src/web/pluie-retro.js";
+import { auQuart, type Entree, type Historique, type Image, parHeure, passage, quarters, rle, sansLame, suivant, unrle } from "../src/web/pluie-retro.js";
 import { oublier } from "../src/web/radar-semaine.js";
 import { site } from "../src/web/site.js";
 
@@ -72,6 +72,17 @@ describe("the radar's last 6 hours, run after run", () => {
     expect(suivant(null, new Error("HTTP 503"), at("2026-10-29T13:50:20Z"))).toBeUndefined();
   });
 
+  it("keeps each image's lame d'eau in mm, and the replay bar's file leaves it out", () => {
+    const one = suivant(null, { ...shot("2026-10-29T13:00:00Z"), mm: "A".repeat(200) }, at("2026-10-29T13:05:20Z"))!;
+    const two = suivant(one, shot("2026-10-29T13:05:00Z"), at("2026-10-29T13:10:20Z"))!;
+    expect(two.entrees.map((e) => (e as Image).mm)).toEqual(["A".repeat(200), undefined]);
+    expect(sansLame(two).entrees.map((e) => "mm" in e)).toEqual([false, false]);
+    const { mm: _, ...rest } = two.entrees[0] as Image;
+    expect(sansLame(two).entrees[0]).toEqual(rest);
+    // The history itself is left as it is.
+    expect((two.entrees[0] as Image).mm).toBe("A".repeat(200));
+  });
+
   it("forgets what is over 6 hours old, and starts again on a grid of another size", () => {
     let h: Historique | undefined;
     for (let k = 0; k <= 80; k++) {
@@ -100,6 +111,10 @@ describe("the radar's 24 hours, an image a quarter of an hour", () => {
     const six: Historique = { w: 125, h: 112, entrees: [image(t("08:00")), image(t("08:15")), image(t("08:20"))] };
     const day = auQuart(before, six, at("2026-10-29T13:20:20Z"));
     expect(kinds(day)).toEqual(["02:00", "02:15", "trou 02:15-07:45", "08:00", "08:15"]);
+    // An image a quarter of an hour keeps no lame d'eau: its 5 minutes are not the quarter's.
+    const wet: Historique = { ...six, entrees: six.entrees.map((e) => ({ ...e, mm: "A" })) };
+    expect(auQuart(before, wet, at("2026-10-29T13:20:20Z")).entrees.some((e) => "mm" in e)).toBe(false);
+    expect(wet.entrees.every((e) => "mm" in e)).toBe(true);
     // Another grid: the 6 hours alone.
     expect(kinds(auQuart({ ...before, w: 100 }, six, at("2026-10-29T13:20:20Z")))).toEqual(["08:00", "08:15"]);
   });

@@ -348,14 +348,15 @@ const SCHEDULED: Entry[] = [
   // 22/10/2026 (HDF5, grid, history): 106 ms at the first run, 32 ms after; rounded up for a Worker. The 3 hours
   // weighed 9 to 51 Ko, the 6 hours twice that. Without the image due (an error, a copy kept, an image late: 10 runs
   // of 461 in 38 hours from 29/10/2026 18:00), up to two more reads of the radar a minute apart, one subrequest and
-  // about 32 ms each: 9 and 200 ms at most.
+  // about 32 ms each: 9 and 200 ms at most. Since 01/11/2026 each image of 5 minutes keeps its lame d'eau in mm besides
+  // (web/pluie-radar.ts, decodeMm), with no read or write more: +48 % on the images of the rainy 31/10/2026, so 7 Mo.
   {
     id: "radar:6h",
     trigger: "planifiée",
     what: "pluie radar des 6 dernières heures pour le rejeu de /meteo : la dernière image de Météo-France ajoutée dans KV quand elle est nouvelle, ou un trou daté, et chaque quart d'heure une image gardée 24 heures",
     every: EVENT_MINUTES,
     offset: 0,
-    run: { subrequests: 9, kvReads: 2, kvWrites: 2, cpuMs: 200, memoryMb: 5 },
+    run: { subrequests: 9, kvReads: 2, kvWrites: 2, cpuMs: 200, memoryMb: 7 },
     from: ["src/web/pluie-retro.ts"],
     basis: "estimé",
   },

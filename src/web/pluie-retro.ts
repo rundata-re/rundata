@@ -46,6 +46,11 @@ export interface Image {
   /** RainGrid's `pluie` and `mal_vu`, each run of a character written as the character and its length in base 36. */
   pluie: string;
   mal_vu: string;
+  /**
+   * The lame d'eau of its 5 minutes in the cells with rain (pluie-radar.ts, decodeMm), for rain totals over hours;
+   * only the images of 5 minutes, since 01/11/2026: the 6 hours and the days (radar-semaine.ts).
+   */
+  mm?: string;
 }
 /** No image from `de` to `a` (ISO UTC): the radar could not be read, or its image was too old. */
 export interface Trou {
@@ -62,6 +67,13 @@ export interface Historique {
 }
 
 export const isTrou = (e: Entree): e is Trou => "trou" in e;
+const sansMm = (e: Entree): Entree => {
+  if (isTrou(e) || e.mm == null) return e;
+  const { mm: _, ...x } = e;
+  return x;
+};
+/** The history without the lame d'eau (`mm`): what the replay bar's files show. */
+export const sansLame = (h: Historique): Historique => ({ ...h, entrees: h.entrees.map(sansMm) });
 export const endOf = (e: Entree) => Date.parse(isTrou(e) ? e.a : e.fin);
 const iso = (ms: number) => new Date(ms).toISOString().replace(".000Z", "Z");
 
@@ -104,7 +116,7 @@ export function suivant(before: Historique | null, lu: RainGrid | Error, now: Da
       last.a = fresh.debut;
       if (last.a <= last.de) entrees.pop();
     } else if (last && Date.parse(last.fin) < Date.parse(fresh.debut)) entrees.push({ trou: true, de: last.fin, a: fresh.debut });
-    entrees.push({ fin: fresh.fin, pannes: fresh.pannes, pluie: rle(fresh.pluie), mal_vu: rle(fresh.mal_vu) });
+    entrees.push({ fin: fresh.fin, pannes: fresh.pannes, pluie: rle(fresh.pluie), mal_vu: rle(fresh.mal_vu), ...(fresh.mm != null ? { mm: fresh.mm } : {}) });
     return { w, h, entrees };
   }
   // No image of now: the gap runs from the last image kept to this run, rounded down to the radar's 5 minutes.
@@ -131,7 +143,7 @@ export async function passage(store: Store, cache: Cache, now = new Date(), long
   const before = await store.get();
   const failed = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
   let kept = false;
-  let lu: RainGrid | Error = await radar.image(cache).then((img) => ((kept = img.stale), grid(img.value)), failed);
+  let lu: RainGrid | Error = await radar.image(cache).then((img) => ((kept = img.stale), grid(img.value, true)), failed);
   // The image due ends at the start of the 5 minutes before the run's: at 13:10:20, the one of 13:00–13:05.
   const due = Math.floor(now.getTime() / STEP_MS) * STEP_MS - STEP_MS;
   const behind = (x: RainGrid | Error) => x instanceof Error || Date.parse(x.fin) < due;
@@ -149,7 +161,7 @@ export async function passage(store: Store, cache: Cache, now = new Date(), long
     await wait(ms);
     waited += ms;
     again++;
-    const read: RainGrid | Error = await radar.read().then(grid, failed);
+    const read: RainGrid | Error = await radar.read().then((img) => grid(img, true), failed);
     // A newer image wins; an error only replaces an error, the latest one said.
     if (!(read instanceof Error) && (lu instanceof Error || Date.parse(read.fin) > Date.parse(lu.fin))) {
       [lu, kept] = [read, false];
@@ -205,7 +217,8 @@ export function quarters(entrees: Entree[]): Entree[] {
  * a gap where the two do not meet. Over LONG_MS old, gone.
  */
 export function auQuart(before: Historique | null, six: Historique, now: Date): Historique {
-  const recent = quarters(six.entrees);
+  // An image a quarter of an hour is not the lame d'eau of the quarter: its 5 minutes' stays in the 6 hours and the days.
+  const recent = quarters(six.entrees).map(sansMm);
   const r0 = recent[0];
   // Where the 6 hours' quarters start: the gap's start, or the image's quarter.
   const cut = !r0 ? now.getTime() : isTrou(r0) ? Date.parse(r0.de) : Date.parse(r0.fin);

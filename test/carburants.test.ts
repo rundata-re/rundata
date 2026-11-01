@@ -36,6 +36,15 @@ describe("the prefect's fuel prices", () => {
     expect(aout.depuis).toBe("2026-08-01");
     expect(aout.produits[0]).toMatchObject({ produit: "Supercarburant", prix_eur: 1.78, precedent_eur: 1.82 });
     expect(aout.produits.find((p) => p.produit === "Gaz")?.note).toBe("18 € avec aides de la Région");
+    // November 2026's release puts a table of the diesel with and without the State's aid before the table of prices.
+    const nov = carburants.parseRelease(fixture("carburants_novembre.html"), LIEN, NOW)!;
+    expect(nov).toMatchObject({ depuis: "2026-11-01", precedent_depuis: "2026-10-01", publie: "2026-10-31" });
+    expect(nov.produits.map((p) => [p.produit, p.prix_eur, p.precedent_eur])).toEqual([
+      ["Supercarburant", 2.11, 2], ["Gazole", 1.69, 1.8], ["GNR", 1.15, 1.26], ["Pétrole lampant", 1.14, 1.25],
+      ["Supercarburant destiné aux professionnels de la mer", 1.15, 1.07], ["Gazole destiné aux professionnels de la mer", 1.15, 1.26],
+      ["Gaz", 21.87, 20.81],
+    ]);
+    expect(nov.titre).toBe("Évolution du prix des carburants : baisse de 11 centimes du gazole, hausse du sans-plomb de 11 centimes");
     // A page without the table is not taken for one.
     expect(carburants.parseRelease("<h1>Prix des carburants</h1><p>Voir le tableau.</p>", LIEN)).toBeUndefined();
   });
@@ -44,6 +53,9 @@ describe("the prefect's fuel prices", () => {
     const list = `<a class="fr-card__link" href="/Actualites/Communiques-de-presse/Prix-des-carburants-en-octobre">x</a>
       <a href="/Actualites/Communiques-de-presse/Secheresse">y</a><a href="/Actualites/Communiques-de-presse/Prix-des-carburants-au-1er-septembre-2026">z</a>`;
     expect(carburants.releases(list)).toEqual([LIEN, "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Prix-des-carburants-au-1er-septembre-2026"]);
+    // The address follows the title, which does not always say « Prix des carburants » (November 2026).
+    const NOV = "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Baisse-de-11-centimes-du-gazole-hausse-du-sans-plomb-de-11-centimes";
+    expect(carburants.releases(`<a href="/Actualites/Communiques-de-presse/Retour-en-phase-de-vigilance">x</a><a href="${new URL(NOV).pathname}">y</a>`)).toEqual([NOV]);
     // A link planted in the list, to another site or in http, is never read.
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(carburants.releases(`<a href="https://pirate.example/Communiques-de-presse/Prix-des-carburants-en-octobre">x</a><a href="http://www.reunion.gouv.fr/Communiques-de-presse/Prix-des-carburants">y</a>${list}`)).toEqual(carburants.releases(list));

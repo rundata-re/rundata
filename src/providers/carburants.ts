@@ -72,18 +72,38 @@ export function headerDay(s: string): string | undefined {
   return month < 0 ? undefined : `20${m[3]}-${String(month + 1).padStart(2, "0")}-${m[1].padStart(2, "0")}`;
 }
 
-/** The links to the monthly releases on a page of the list of press releases, newest first. */
+/**
+ * The links to the monthly releases on a page of the list of press releases, newest first. The address follows the
+ * title, which changes: « Prix-des-carburants-en-octobre », « Baisse-de-11-centimes-du-gazole-hausse-du-sans-plomb… »
+ * (November 2026). A release on fuel that has no table of prices is read and passed over.
+ */
 export function releases(html: string): string[] {
-  const all = [...html.matchAll(/href="([^"]*Communiques-de-presse\/Prix-des-carburants[^"]*)"/gi)].map((m) => new URL(m[1], ORIGIN).toString());
+  const all = [...html.matchAll(/href="([^"]*Communiques-de-presse\/[^"]*(?:carburant|gazole|sans-plomb)[^"]*)"/gi)].map((m) => new URL(m[1], ORIGIN).toString());
   // Only the prefecture's own pages: a link planted in its list is never read.
   return [...new Set(all)].filter((lien) => permis(SOURCE.id, lien, [HOST]));
 }
 
-/** The table of a release: the product, the previous month's price, this month's (the second and third columns). */
+/**
+ * The table of prices of a release: the product, the previous month's price, this month's (the second and third
+ * columns). It is the first table with both the unleaded and the diesel: November 2026's release puts a table of the
+ * diesel with and without the State's aid before it.
+ */
 export function parseRelease(html: string, lien: string, now = new Date()): Prix | undefined {
-  const at = html.indexOf("<table");
-  if (at < 0) return undefined;
-  const rows = [...html.slice(at, html.indexOf("</table>", at)).matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
+  for (let at = html.indexOf("<table"); at >= 0; at = html.indexOf("<table", at + 1)) {
+    const t = table(html.slice(at, html.indexOf("</table>", at)));
+    if (!t) continue;
+    const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html);
+    const day = /Mis à jour le(?:&nbsp;|\s)*<\/span>\s*<span>(\d{2})\/(\d{2})\/(\d{4})<\/span>/.exec(html);
+    return {
+      ...t, titre: h1 ? plain(h1[1]) : "Prix des carburants", lien,
+      publie: day ? `${day[3]}-${day[2]}-${day[1]}` : undefined, lu: now.toISOString(),
+    };
+  }
+  return undefined;
+}
+
+function table(html: string): Pick<Prix, "depuis" | "precedent_depuis" | "produits"> | undefined {
+  const rows = [...html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
     .map((r) => [...r[1].matchAll(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/g)].map((c) => plain(c[1])));
   const head = rows.find((r) => r.some((c) => headerDay(c)));
   if (!head || head.length < 3) return undefined;
@@ -101,12 +121,7 @@ export function parseRelease(html: string, lien: string, now = new Date()): Prix
     };
   });
   if (!produits.some((p) => /supercarburant/i.test(p.produit)) || !produits.some((p) => /^gazole$/i.test(p.produit))) return undefined;
-  const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html);
-  const day = /Mis à jour le(?:&nbsp;|\s)*<\/span>\s*<span>(\d{2})\/(\d{2})\/(\d{4})<\/span>/.exec(html);
-  return {
-    depuis, precedent_depuis: headerDay(head[1]), produits, titre: h1 ? plain(h1[1]) : "Prix des carburants", lien,
-    publie: day ? `${day[3]}-${day[2]}-${day[1]}` : undefined, lu: now.toISOString(),
-  };
+  return { depuis, precedent_depuis: headerDay(head[1]), produits };
 }
 
 /** « 2026-10-24 », the day in Réunion (UTC+4). */

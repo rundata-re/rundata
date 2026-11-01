@@ -553,20 +553,9 @@ const DROPS = {
  * after it are born in its rain. The legend says the image's time, that the radar sees no rain, or that its image is
  * too old to say anything about now. For the replay (RJ.p): an image of the history, or two faded one into the other,
  * the drops born in each by its share of the fade; where the radars saw badly lingers a while, fading (the user,
- * 31/10/2026: a zone that moves rather than patches that jump), and the legend says how long.
+ * 31/10/2026: a zone that moves rather than patches that jump). The replay's legend is written once for the file
+ * played, the same for every image.
  */
-/**
- * The hours of a radar image or of the rain gauges' 3 hours (ISO UTC), as its legend says them (marketing): « entre
- * 14 h et 15 h le 31/10 », « 14 h 15 » off the hour; with the two dates when they cross midnight in La Réunion
- * (« entre 23 h 15 le 31/10 et 0 h 15 le 01/11 »). The rain's script takes it as its text.
- */
-export const spanOf = (de: string, fin: string): string => {
-  const [a, z] = [de, fin].map((x) => {
-    const y = new Date(Date.parse(x) + 144e5), m = y.getUTCMinutes();
-    return [y.getUTCHours() + "\u00a0h" + (m ? "\u00a0" + String(m).padStart(2, "0") : ""), String(y.getUTCDate()).padStart(2, "0") + "/" + String(y.getUTCMonth() + 1).padStart(2, "0")];
-  });
-  return a[1] === z[1] ? "entre " + a[0] + " et " + z[0] + " le " + z[1] : "entre " + a[0] + " le " + a[1] + " et " + z[0] + " le " + z[1];
-};
 const pluieScript = (motion: Motion, rd: boolean) => `const pr=document.querySelector("[data-pluie]");if(pr){const fl=pr.nextElementSibling,say=document.querySelector("[data-radar]"),inp=document.getElementById("wxl-p");
 let d=null,live=null,L=null,LW=0,LH=0,Lp=null,P=null,ds=[],cw=0,ch=0,g,asked=false,mx=null;const TI=${JSON.stringify([RAIN_TIERS.light, RAIN_TIERS.dark])},KA=${JSON.stringify(RAIN_RGBA)},INK=${JSON.stringify(INK_RGB)},DN=${JSON.stringify(DROPS.density)},DL=${JSON.stringify(DROPS.length)},DW=${JSON.stringify(DROPS.width)},SC=${JSON.stringify([`${fr(CLASSES[0])}\u202fmm/h`, `plus de ${CLASSES[CLASSES.length - 1]}\u202fmm/h`])},SM=${JSON.stringify([`${fr(CLASSES[0])}\u202fmm`, `plus de ${CLASSES[CLASSES.length - 1]}\u202fmm en 3\u00a0h`])},Wt=[0,...DN];
 // The theme the map is drawn in; during a replay without drops (rd), none move.
@@ -574,7 +563,7 @@ const dark=()=>matchMedia("(prefers-color-scheme: dark)").matches,hush=()=>!${rd
 
 const BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée.",calm=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 const when=(t)=>{const x=loc(t),n=loc(new Date().toISOString());return x.toISOString().slice(0,10)===n.toISOString().slice(0,10)?"de "+hm(t):"du "+p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)+" à "+hm(t)};
-const radars=(l)=>{const of=(n)=>(n==="Colorado"?"du ":"de ")+n;return(l.length>1?"Radars ":"Radar ")+l.slice(0,-1).map(of).join(", ")+(l.length>1?" et ":"")+of(l[l.length-1])+" en défaut, selon Météo-France : de la pluie peut manquer sur la carte."};
+const radars=(l,part)=>{const of=(n)=>(n==="Colorado"?"du ":"de ")+n;return(l.length>1?"Radars ":"Radar ")+l.slice(0,-1).map(of).join(", ")+(l.length>1?" et ":"")+of(l[l.length-1])+" en défaut"+(part?" pendant une partie du rejeu":"")+", selon Météo-France : de la pluie peut manquer sur la carte."};
 // A grid's rainy cells of the island alone (the map shows nothing of the sea, where the radars also see), each weighed
 // by its class, and whether the radars see badly somewhere on it; counted once.
 const DI=new Map(),dist=(j)=>{let r=DI.get(j);if(r)return r;const cells=[],acc=[];let bad="";for(let k=0;k<j.w*j.h;k++){if(!L[k])continue;const c=+j.pluie[k];if(c>0){cells.push(k);acc.push((acc[acc.length-1]||0)+Wt[c])}if(j.mal_vu[k]==="1")bad=BAD}
@@ -659,38 +648,42 @@ const use=(j)=>{d=j;P=[dist(j),null,0];return dist(j).bad};
 // The drops stay where they fall when the image changes; the animation starts when rain comes, and for those who ask
 // for less motion, the still picture is drawn again with the image.
 const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()};
-// In the replay (past), the image's date and the past tense: never "hier".
-const dm_=(t)=>{const x=loc(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
-// An image of an hour (de), the strongest rain of each of its quarters; the rain gauges' 3 hours spread between them
-// (pg, wet when one measured rain); their hours as spanOf says them.
 // The blues get darker with the rain in light, lighter in dark: the legend says which.
 const fo=()=>(dark()?"plus c'est clair":"plus c'est foncé")+", plus elle est forte.";
-const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")},span=(j)=>spanOf_(j.de,j.fin),spanOf_=${spanOf},Cap=(x)=>x[0].toUpperCase()+x.slice(1);
+const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")};
 // The drops' sentence (marketing), after the legend: what they show, and the wind they follow (WT: "live", the round
-// hour of the replay's, or none).
-const gd=()=>hush()?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
+// hour of the replay's, or none); the replay's (all), the same for every hour.
+const gd=(all)=>(all?!${rd}:hush())?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(all?", et elles ${motion === "M1" ? "penchent" : "vont"} dans le sens du vent estimé d'après les anémomètres de Météo-France les plus proches, mesuré chaque heure. Loin de tout anémomètre, ou quand le vent de l'heure n'est pas connu, elles tombent droit.":WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
 ", et elles ${motion === "M1" ? "penchent" : "vont"} dans le sens du vent estimé d'après les anémomètres "+(WT==="live"?"les plus proches, à leur dernière mesure.":"de Météo-France les plus proches, à "+hm(new Date(WT).toISOString())+".")+" Loin de tout anémomètre, elles tombent droit.");
-const say_=(j,bad,head,tail,past)=>show(head.el,(j.pg?(j.wet?"En bleu\u00a0: la pluie mesurée par les pluviomètres de Météo-France "+span(j)+", étalée entre eux par calcul\u00a0; "+fo()+" Entre deux pluviomètres, c'est une estimation, pas une mesure\u00a0: une averse qui tombe loin d'eux peut manquer.":Cap(span(j))+", aucun pluviomètre de Météo-France n'a mesuré de pluie.")
-:dist(j).cells.length?"En bleu\u00a0: "+(j.de?"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France "+span(j):"la pluie estimée par le radar de Météo-France "+(past?"le "+dm_(j.fin)+" à "+hm(j.fin):at_(j.fin)))+"\u00a0; "+fo()
-:j.de?Cap(span(j))+", le radar de Météo-France n'a pas vu de pluie sur l'île.":past?"Le "+dm_(j.fin)+" à "+hm(j.fin)+", le radar de Météo-France ne voyait pas de pluie.":"Le radar de Météo-France ne voit pas de pluie "+(tail?"sur l'île ":"")+at_(j.fin)+".")+tail,bad,(j.pannes.length?" "+radars(j.pannes):"")+" "+gd(),j.pg);
+const say_=(j,bad)=>show(say,(dist(j).cells.length?"En bleu\u00a0: la pluie estimée par le radar de Météo-France "+at_(j.fin)+"\u00a0; "+fo():"Le radar de Météo-France ne voit pas de pluie "+at_(j.fin)+"."),bad,(j.pannes.length?" "+radars(j.pannes):"")+" "+gd());
 const get=()=>{if(asked||!inp.checked)return;asked=true;Promise.all([fetch(pr.dataset.pluie).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),land()]).then(([j])=>{
 if(L.length!==j.w*j.h)throw new Error("grille");
 if(Date.now()-Date.parse(j.fin)>45*6e4){show(say,"Pas d'image radar récente : la dernière date "+when(j.fin)+" et n'est pas affichée.");return}live=j;
-if(RJ.on){say_(j,"",{el:say},"");RJ.redraw();return}say_(j,use(j),{el:say},"");go()}).catch(()=>{})};
+if(RJ.on){say_(j,"");RJ.redraw();return}say_(j,use(j));go()}).catch(()=>{})};
 // The replay's images (pluie-retro.ts): each its own rain and hatches, kept once read; a gap, nothing but its sentence.
 // The legend of a trail: how long the zones seen badly linger, before the time shown.
 const ago=${ago};
 const none=(w,h)=>({fin:"",pannes:[],w,h,pluie:"0".repeat(w*h),mal_vu:"0".repeat(w*h)});
 const un=(s)=>s.split(",").map((r)=>r?r[0].repeat(parseInt(r.slice(1),36)):"").join("");
-const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(!j){j={fin:e.fin,de:e.de,pg:e.pg,wet:e.wet,tail:e.tail||"",pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>16)Dg.delete(Dg.keys().next().value)}return j};
+const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(!j){j={fin:e.fin,pg:e.pg,pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>16)Dg.delete(Dg.keys().next().value)}return j};
 const ok=(gr)=>L&&L.length===gr.w*gr.h,empty=(w,h)=>{mx=null;use(none(w,h));turn(true,true)};
 RJ.p={prep:land,dims:()=>L&&{w:LW,h:LH,L},wind:(ws,t)=>{WS=ws||[];WT=ws?t:null},
 // Between two images (f of the way), with the trail of those before as [image, share left], over wm minutes.
 mix:(a,z,f,el,gr,tr,wm)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr),n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg];d=n;P=[dist(A),dist(Z),f];
-if(nw)say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":""):n.de&&dist(n).bad?" "+BW+"\u00a0: zones que le radar a mal vues pendant "+(Date.parse(n.fin)-Date.parse(n.de)>36e5?"ces 3\u00a0heures":"cette heure")+", où la pluie peut être manquée.":dist(n).bad,{el},n.tail,1);turn(was,nw)},
-gap:(e,el,gr)=>{if(!ok(gr))return;empty(gr.w,gr.h);const one=Date.parse(e.a)-Date.parse(e.de)<=3e5;show(el,one?"Pas d'image radar à "+hm(e.a)+".":"Pas d'image radar de "+hm(e.de)+" à "+hm(e.a)+".")},
-clear:(el)=>{if(d)empty(d.w,d.h);if(el)el.textContent=""},
-back:()=>{const was=moving();mx=null;WS=WL;WT=WV?"live":null;if(live)say_(live,use(live),{el:say},"");else if(d)use(none(d.w,d.h));turn(was,true)}};
+turn(was,nw)},
+gap:(e,el,gr)=>{if(ok(gr))empty(gr.w,gr.h)},
+clear:()=>{if(d)empty(d.w,d.h)},
+// The replay's legend, written once for the file played (the user, 01/11/2026: « garde le même texte pour la légende,
+// c'est inutile de changer le texte selon l'image »): the time is on the map. o: radar images (r), each the strongest
+// rain of the hours written (de), rain gauges' 3 hours where the radar has none (g), the hatches' trail in minutes (wm),
+// the radars out of order at some point (pannes).
+say:(el,o)=>{if(!el)return;const g="la pluie mesurée par les pluviomètres de Météo-France pendant les heures écrites sur la carte, étalée entre eux par calcul",
+e=" Entre deux pluviomètres, c'est une estimation, pas une mesure\u00a0: une averse qui tombe loin d'eux peut manquer.";
+if(!o.r){show(el,"En bleu\u00a0: "+g+"\u00a0; "+fo()+e,""," "+gd(1),1);return}
+show(el,"En bleu\u00a0: "+(o.de?"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France pendant les heures écrites sur la carte":"la pluie estimée par le radar de Météo-France à l'heure écrite sur la carte")+"\u00a0; "+fo()+
+(o.g?" Aux heures sans image du radar, "+g+" (mêmes bleus, de "+SM[0]+" à "+SM[1]+")."+e:""),
+" "+BW+"\u00a0: zones que le radar a mal vues"+(o.wm?" "+ago(o.wm):"")+", où la pluie peut être manquée.",(o.pannes.length?" "+radars(o.pannes,1):"")+" "+gd(1))},
+back:()=>{const was=moving();mx=null;WS=WL;WT=WV?"live":null;if(live)say_(live,use(live));else if(d)use(none(d.w,d.h));turn(was,true)}};
 inp.addEventListener("change",get);get()}`;
 const PLUIE_SCRIPT = pluieScript(MOTION, REPLAY_DROPS);
 
@@ -820,8 +813,7 @@ RJ.p.wind(b?(b.i<0?RJ.v&&RJ.v.live:sx("v",b.i)):null,b&&b.t)};
 const three=(s,k)=>k.w.some((i)=>s.rr[i]==null)?null:k.w.reduce((a,i)=>a+s.rr[i],0);
 const RN=new Map(),field=${gaugeField},enc=(x)=>x.replace(/(.)\\1*/g,(m)=>m[0]+m.length.toString(36)+",");
 const rain=(k)=>{let e=RN.get(k.t);if(e)return e;const gr=RJ.p.dims(),pts=[];for(const s of st){const v=three(s,k);if(v!=null)pts.push([s.x*gr.w/${W},s.y*gr.h/${H},v])}
-e={fin:new Date(k.end).toISOString(),de:new Date(k.end-108e5).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.w,gr.h,${JSON.stringify(CLASSES)},${GAUGE_REACH}*gr.w/${W})),mal_vu:"0"+(gr.w*gr.h).toString(36)+",",
-wet:pts.some((x)=>x[2]>0)};RN.set(k.t,e);return e};
+e={fin:new Date(k.end).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.w,gr.h,${JSON.stringify(CLASSES)},${GAUGE_REACH}*gr.w/${W})),mal_vu:"0"+(gr.w*gr.h).toString(36)+","};RN.set(k.t,e);return e};
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
 if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
@@ -841,7 +833,7 @@ const shown=${shownAt},days=${daysOf};
 const show=()=>{const l=lay();if(!l||!J)return"";const end=T>=E&&d!=="jour";fig.classList.toggle("rj-fin",end);RJ.on=!end;let r=null,t=T;if(end!==was){was=end;renames()}
 if(end){once("fin",()=>{for(const x of["t","v","p"])if(RJ[x])RJ[x].back()})}else r=draw(l);
 t=end?E:shown(T,r,l);let w="",said=dm(t)+" à "+hmm(t);
-if(end){w="dernière mesure";said+=", dernière mesure"}else if(r&&r.gap){said+=". Pas d'image radar de "+hmm(r.gap[0])+" à "+hmm(r.gap[1])+"."}
+if(end){w="dernière mesure";said+=", dernière mesure"}else if(r&&r.gap){w="pas d'image radar";said+=". Pas d'image radar de "+hmm(r.gap[0])+" à "+hmm(r.gap[1])+"."}
 else if(r&&r.h){w="estimé entre les pluviomètres";said+=", pluie de "+hmm(r.h.end-108e5)+" à "+hmm(r.h.end)+", estimée entre les pluviomètres"}
 else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le radar":", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
@@ -875,6 +867,8 @@ E=Math.max(d==="jour"?0:live,fin,...K.p.map((x)=>x.t),...TR.map((x)=>x[1]));LT=n
 dots.replaceChildren();TD=RJ.t?ring("t"):null;
 legend("t","t","station","stations",(x)=>"Température sous abri de "+x+" de Météo-France, une mesure par heure. Entre les stations, les couleurs sont estimées selon l'altitude : ce n'est pas une mesure.");
 legend("v","ff","anémomètre","anémomètres",(x)=>"Vent moyen sur 10 minutes de "+x+" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu.");
+// A page kept from before (the script is served at any address) writes its legend image by image.
+if(RJ.p&&RJ.p.say)RJ.p.say(lg("p"),{r:K.p.length>0,de:K.p.some((k)=>k.e.de),g:K.g.length>0,wm:rm?0:wm(),pannes:[...new Set(K.p.flatMap((k)=>k.e.pannes||[]))]});
 fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length||K.g.length};
 // The time of a frame, after the first 10 of the measure: once 6 with a new image of the rain and 30 others are known,
 // more images for a device that keeps up with those of 24 hours, and the file of 24 hours played swapped for its finer.

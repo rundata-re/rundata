@@ -21,6 +21,11 @@ export const CARTE_CSS = `
 .kc-seismes .km{opacity:.8}.kc-pluie .km{border-radius:2px}
 .kgr{display:inline-flex;align-items:center;gap:.3rem}.kgrad{display:inline-block;width:4.5rem;height:.6rem;border-radius:.3rem;background:linear-gradient(90deg,rgba(120,170,230,.35),rgba(60,115,205,.55),rgba(20,46,135,.75))}
 .kmapc .kcr{margin:.2rem 0 0}.kmapc .kcr:empty{display:none}
+.kcarte,.kvues{min-width:0}.kvues{margin:0 0 .75rem}.kvues[hidden]{display:none}.kvues h3{margin:0 0 .35rem;font-size:.95rem}.kvues ul{list-style:none;margin:0;padding:0 0 2px;display:flex;gap:.4rem;overflow-x:auto;scrollbar-width:none}.kvues ul::-webkit-scrollbar{display:none}
+@media (min-width:48rem){.kvues ul{flex-wrap:wrap;overflow:visible}}.pe-p .kvues ul{flex-wrap:wrap;overflow:visible}
+.kvues li{flex:none}.kvues a{display:inline-flex;white-space:nowrap;align-items:center;min-height:44px;padding:0 .9rem;border-radius:999px;border:1px solid var(--line);font-size:.9rem;font-weight:600;color:var(--ink);text-decoration:none}
+.kvues a[aria-current]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.kvues .kvd{margin:.5rem 0 0}.kvues .kvd:empty{display:none}
+.wx-k{display:inline-block;margin-top:.45rem;font-weight:600}
 .kch{margin:1rem 0}.kch>summary{display:inline-flex;align-items:center;min-height:44px;padding:0 1rem;border-radius:999px;border:1px solid var(--line);font-weight:600;cursor:pointer}
 .kths{display:grid;gap:.75rem;margin-top:.75rem}@media (min-width:48rem){.kths{grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))}}
 .kths fieldset{margin:0;padding:.6rem .75rem;border:1px solid var(--line);border-radius:12px}.kths legend{padding:0 .3rem;font-weight:700}.kths ul{list-style:none;margin:0;padding:0}

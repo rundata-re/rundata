@@ -42,10 +42,16 @@ describe("the order of the pages", () => {
   });
 
   it("keeps every page in the menu, quiet or not", () => {
-    const all = [...WITH_PAGE.map((c) => c.key), "associations", "communes"].sort();
+    const all = [...WITH_PAGE.map((c) => c.key), "associations", "carte", "communes"].sort();
     for (const page of [meteoPage(O, null, NOW), withVolcan(VOLCAN, () => meteoPage(O, null, NOW, VIGILANCE))]) {
       expect([...menu(page)].sort()).toEqual(all);
     }
+  });
+
+  it("has the map of every layer right after the first few pages, in the menu only", () => {
+    const page = meteoPage(O, null, NOW);
+    expect(menu(page).indexOf("carte")).toBe(menu(page).indexOf("meteo") + 1);
+    expect(/<nav class="quick"[^]*?<\/nav>/.exec(page)![0]).not.toContain("k-carte");
   });
 
   it("has a tile for the clubs' space right after the sport's, with its own icon and colour, while the space is out", () => {

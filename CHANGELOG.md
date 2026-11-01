@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Dimanche 1 novembre 2026
 
+- Carte : pluie, rivières, séismes, sentiers fermés, défibrillateurs… sur une seule carte, avec des vues toutes prêtes à croiser.
 - Météo : sur la carte Pluie, le rejeu fait glisser la pluie d'une image radar à la suivante, au lieu d'un fondu.
 - Météo et électricité : les rejeux ont un bouton de vitesse, de ×0,5 à ×4, gardé d'une page à l'autre.
 - Écoles, collèges et lycées : sur la page de chaque commune et dans l'annuaire, avec cantine, internat et ULIS quand ils sont déclarés.

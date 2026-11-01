@@ -280,8 +280,12 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   // screen (the user, 01/11/2026, as /electricite).
   return `<figure class="card mapcard airmap wxmap">${tabs}` +
     islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : les ${drawn.length} stations météo et leur dernière mesure, à ${hm(latest)}` }) +
-    bubble + `<figcaption class="note">${replay}${legend}</figcaption></figure>`;
+    bubble + `<figcaption class="note">${replay}${legend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
+
+/** Under the stations' map, the way to /carte, its view of the weather now: the same rain and stations, the others to tick (marketing). */
+export const TOUTES_LES_COUCHES = "La météo avec les rivières, les sentiers et le volcan, sur une seule carte →";
+const CARTE_METEO = "/carte#meteo";
 
 /** The replay bar's words (marketing): each length, and the button's full name for it. */
 const REVOIR: Record<(typeof DUREES)[number], [string, string]> = {

@@ -6,8 +6,10 @@
  * precision, its source and licence, its count, a source's silence, its page and its file. Each layer's file
  * (couches.ts) is asked only when its box is ticked, then drawn by the page's script in its own group, in a fixed order
  * of drawing: the rain under the land's lines, the closed trails, then the points, the stations' figures on top. Every
- * point has the bubble of every map (carte-points.ts), its link the layer's page. The boxes ticked are in the page's
- * address (`#c=pluie,rivieres`), so that a view can be shared. Without a script, the map alone, and the pages.
+ * point has the bubble of every map (carte-points.ts), its link the layer's page. Above the map, the views (VUES): each
+ * ticks its layers, frames the map and picks its background at once, and has its own address (`/carte#volcan`); a box
+ * ticked by hand leaves the view, and the boxes ticked go in the address (`#c=pluie,rivieres`), so that what is shown
+ * can be shared. Without a script, the map alone, and the pages.
  *
  * The words are marketing's (interne/ux/carte-mots-3110.md).
  */
@@ -22,6 +24,7 @@ import { anchorId, layout } from "./pages.js";
 import { CLASSES } from "./pluie-radar.js";
 import { COMMUNES } from "./commune.js";
 import { communePath as enfantsPath } from "./enfants.js";
+import { pleinEcran } from "./plein-ecran.js";
 
 export const PATH = "/carte";
 
@@ -34,6 +37,7 @@ export const MOTS = {
     "Cochez des couches pour les voir ensemble sur la même carte, et repérer ce qui se croise : la pluie au radar et la hauteur des rivières, les séismes et les sentiers fermés… Chacune dit ce qu'elle montre, d'où elle vient et de quelle heure date sa donnée.",
   vite: "Pour trouver vite un défibrillateur ou une borne libre, chaque couche a sa page : le lien est dans son panneau et dans chaque bulle.",
   couches: "Couches",
+  vues: "Vues",
   affichees: "Couches affichées",
   aucune: "Cochez une couche pour la voir sur la carte.",
   sansScript: "Les couches s'affichent avec JavaScript. Chacune a aussi sa page :",
@@ -128,8 +132,43 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
  */
 export const ORDRE = ["sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "seismes", "stations"];
 
-/** The layers ticked when the page's address names none: the weather now, the rain and the stations. */
-export const PAR_DEFAUT = ["pluie", "stations"];
+/**
+ * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,
+ * south, east, north; the whole island without) and its background.
+ */
+export interface Vue {
+  id: string;
+  nom: string;
+  dit: string;
+  couches: string[];
+  cadre?: [number, number, number, number];
+  fond: "relief" | "plan" | "photo";
+}
+
+/** The views, marketing's words; at least two cross two layers (the user, 31/10: curiosity, what lies over what). */
+export const VUES: Vue[] = [
+  { id: "meteo", nom: "Météo maintenant", dit: "La pluie estimée par le radar de Météo-France et la dernière mesure de chaque station.", couches: ["pluie", "stations"], fond: "relief" },
+  {
+    id: "pluie-rivieres", nom: "Pluie et rivières", dit: "Là où il pleut, les rivières montent-elles\u00a0? La pluie estimée par le radar et la hauteur mesurée aux stations des rivières.",
+    couches: ["pluie", "rivieres"], fond: "relief",
+  },
+  {
+    id: "volcan", nom: "Volcan et sentiers", dit: "Les séismes localisés par l'OVPF-IPGP depuis 7\u00a0jours, et les sentiers que l'ONF annonce fermés.",
+    couches: ["seismes", "sentiers"], cadre: [55.55, -21.41, 55.86, -21.13], fond: "relief",
+  },
+  {
+    id: "rando", nom: "Rando", dit: "Les sentiers fermés, la pluie au radar et la météo mesurée autour des cirques.",
+    couches: ["sentiers", "pluie", "stations"], cadre: [55.33, -21.22, 55.62, -20.98], fond: "relief",
+  },
+  {
+    id: "enfants", nom: "Avec les enfants", dit: "Aires de jeux, parcs, musées, piscines, médiathèques… d'après trois sources, chacune à cocher.",
+    couches: ["enfants-osm", "enfants-data-es", "enfants-basilic"], fond: "plan",
+  },
+  { id: "defibrillateurs", nom: "Défibrillateurs", dit: "Les défibrillateurs déclarés dans Géo'DAE. En cas d'arrêt cardiaque, appelez le 15 ou le 112.", couches: ["defibrillateurs"], fond: "plan" },
+];
+
+/** The layers ticked when the page's address names none: the first view's, the weather now. */
+export const PAR_DEFAUT = VUES[0].couches;
 
 /** A layer's file, where the page asks it. */
 export const fichierOf = (c: Couche) => c.fichier ?? `${COUCHE_PATH}${c.id}.json`;
@@ -152,7 +191,7 @@ function conf() {
     vent: VENT_DE,
     pluie: { classes: CLASSES, couleurs: RAIN_WASH },
     mots: MOTS,
-    defaut: PAR_DEFAUT,
+    vues: VUES.map((v) => ({ id: v.id, dit: v.dit, couches: v.couches, cadre: v.cadre, fond: v.fond })),
   };
 }
 
@@ -197,13 +236,16 @@ function corps(): string {
   const svg = islandMap({ under, overlay, peaks: true, fond: "k", label: "Carte de La Réunion (974) : les couches cochées dans la liste sous la carte" });
   const map = zoomIsland(svg, "k", { id: "kmap", mostFd: (MAX_ZOOM * FOND_ZOOM) / 2 }).replace('<svg id="kmap" class="map terrain', '<svg id="kmap" data-kc="" class="map terrain');
   const pages = [...new Map(COUCHES.map((c) => [c.page, DIT[c.id].rubrique])).entries()].map(([p, r]) => `<a href="${esc(p)}">${esc(r)}</a>`).join(", ");
+  const vues = VUES.map((v) => `<li><a href="#${esc(v.id)}" data-v="${esc(v.id)}">${esc(v.nom)}</a></li>`).join("");
   return `<section aria-labelledby="h-carte" class="kcarte"><h2 id="h-carte" class="sr">${esc(MOTS.h1)}</h2>
+  <nav class="kvues" aria-labelledby="h-vues" hidden><h3 id="h-vues">${esc(MOTS.vues)}</h3><ul>${vues}</ul><p class="kvd" aria-live="polite"></p></nav>
   <figure class="card mapcard kmapc">${map}<figcaption class="note"><ul class="klg" aria-live="polite"></ul><p class="kcr"></p></figcaption></figure>
   <noscript><p class="note">${esc(MOTS.sansScript)} ${pages}.</p></noscript>
   <details class="kch" open hidden><summary>${esc(MOTS.couches)} (<span class="kcn">0</span>)</summary><div class="kths">${choix()}</div></details>
 </section>
 <section aria-labelledby="h-aff" class="kaff" hidden><h2 id="h-aff">${esc(MOTS.affichees)}</h2><p class="note kvide">${esc(MOTS.aucune)}</p>${COUCHES.map(bloc).join("")}</section>
-<script type="application/json" id="k-conf">${inScript(conf())}</script><script>${CARTE_SCRIPT}</script>`;
+<script type="application/json" id="k-conf">${inScript(conf())}</script><script>${CARTE_SCRIPT}</script>
+${pleinEcran({ boite: ".kcarte", carte: ".kmapc", barre: '.kzoom[data-fd="k"]', panneau: [".kvues", '.fonds[data-fd="k"]', ".kch"] })}`;
 }
 
 export function cartePage(origin: string, alerte?: Alerte): string {
@@ -215,8 +257,7 @@ export function cartePage(origin: string, alerte?: Alerte): string {
   <p class="note">${esc(MOTS.vite)}</p>
 </div></div>`;
   const sources = [...new Map(COUCHES.map((c) => [c.source.attribution, c.source.licence])).entries()].map(([a, l]) => `${esc(a)} (${esc(l)})`).join(" ; ");
-  // Not in the menu nor the sitemap yet, and kept out of the search engines until then: the views and the menu come next.
-  return layout(origin, { title: MOTS.title, description: MOTS.description, path: PATH, noindex: true, jsonld: [crumbs(origin, "Carte", PATH), webPage(origin, PATH, MOTS.title, MOTS.description, null)], alerte }, band,
+  return layout(origin, { title: MOTS.title, description: MOTS.description, path: PATH, jsonld: [crumbs(origin, "Carte", PATH), webPage(origin, PATH, MOTS.title, MOTS.description, null)], alerte }, band,
     `${built}\n<p class="sources">Sources : ${sources}.</p>`);
 }
 
@@ -225,7 +266,9 @@ export function cartePage(origin: string, alerte?: Alerte): string {
  * legend and its block; unticked, it hides them (the file kept). Each point is a link (`a.sp`) with the bubble's lines
  * (carte-points.ts: `data-pn`, `data-p2`, `data-p3`, its link's words in `data-pt`), out of the keyboard's way: the
  * panel and the pages are the text of the map. The points keep their size on screen at any zoom (strokes that do not
- * scale); the stations' figures take theirs from `--u`, the map's units per pixel, set again at each zoom.
+ * scale); the stations' figures take theirs from `--u`, the map's units per pixel, set again at each zoom. A view, picked
+ * or named by the address, ticks its boxes, then picks its background and asks the zoom for its frame (`zbox`); named by
+ * no address, the first view's boxes are ticked, the map left whole.
  */
 const CARTE_SCRIPT = `(()=>{const cf=document.getElementById("k-conf"),svg=document.getElementById("kmap");if(!cf||!svg)return;
 const K=JSON.parse(cf.textContent),M=K.mots,L=new Map(K.couches.map((c)=>[c.id,c])),NS="http://www.w3.org/2000/svg",[A,B,C,D]=K.bbox,W=K.w,H=K.h;
@@ -292,5 +335,13 @@ document.querySelector(".kcn").textContent=boxes.filter((b)=>b.checked).length;a
 const ask=(c)=>{if(asked.has(c.id))return;asked.set(c.id,1);fetch(c.fichier).then((r)=>r.ok?r.json():"err").catch(()=>"err").then((j)=>{got.set(c.id,j);if(etat(c,j)!=="echec")draw(c,j);show(c)})};
 const hash=()=>{const on=boxes.filter((b)=>b.checked).map((b)=>b.value);history.replaceState(null,"",on.length?"#c="+on.join(","):location.pathname+location.search)};
 const tick=(b)=>{const c=L.get(b.value);if(b.checked)ask(c);show(c);credit()};
-list.addEventListener("change",(e)=>{const b=e.target;if(b.name!=="c")return;tick(b);hash()});
-const m=/(?:^#|&)c=([a-z0-9,-]*)/.exec(location.hash),want=m?m[1].split(","):K.defaut;boxes.forEach((b)=>{b.checked=want.includes(b.value);tick(b)})})();`;
+const nav=document.querySelector(".kvues"),vd=nav.querySelector(".kvd");nav.hidden=false;
+const mark=(v)=>{nav.querySelectorAll("a").forEach((a)=>{if(v&&a.dataset.v===v.id)a.setAttribute("aria-current","true");else a.removeAttribute("aria-current")});vd.textContent=v?v.dit:""};
+const fond=(f)=>{const i=document.querySelector('.fonds[data-fd="k"] input[value="'+f+'"]');if(i&&!i.checked){i.checked=true;i.dispatchEvent(new Event("change",{bubbles:true}))}};
+const cadre=(b)=>{let d=null;if(b){const x0=X(b[0]),x1=X(b[2]),y0=Y(b[3]),y1=Y(b[1]),w=Math.max(x1-x0,(y1-y0)*W/H);d={x:(x0+x1-w)/2,y:(y0+y1-w*H/W)/2,w}}svg.dispatchEvent(new CustomEvent("zbox",{detail:d}))};
+const vue=(v,f)=>{boxes.forEach((b)=>{b.checked=v.couches.includes(b.value);tick(b)});if(f){fond(v.fond);cadre(v.cadre)}mark(v)};
+const lire=()=>{const h=location.hash.slice(1),v=K.vues.find((x)=>x.id===h);if(v){vue(v,1);return}const m=/(?:^|&)c=([a-z0-9,-]*)/.exec(h);
+if(!m){vue(K.vues[0],0);return}mark(null);const want=m[1].split(",");boxes.forEach((b)=>{b.checked=want.includes(b.value);tick(b)})};
+list.addEventListener("change",(e)=>{const b=e.target;if(b.name!=="c")return;tick(b);mark(null);hash()});
+nav.addEventListener("click",(e)=>{const a=e.target.closest("a[data-v]");if(!a)return;e.preventDefault();history.replaceState(null,"","#"+a.dataset.v);lire()});
+addEventListener("hashchange",lire);lire()})();`;

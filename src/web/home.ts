@@ -359,6 +359,7 @@ export function homePage(origin: string, h: HomeLive | null, now = new Date(), a
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": `${origin}/#editeur-5521`,
       name: SITE,
       url: `${origin}/`,
       // Square, at least 112 px and readable on white, as Google asks of a logo: the symbol's tile, not the share picture.

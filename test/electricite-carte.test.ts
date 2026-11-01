@@ -4,6 +4,7 @@ import data from "../src/electricite/installations.json" with { type: "json" };
 import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import * as edf from "../src/providers/edf.js";
 import { buildElectricite, journeeOf } from "../src/web/data.js";
+import { electricitePage } from "../src/web/domains.js";
 import { diametre, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, parts, productionChart } from "../src/web/electricite-carte.js";
 import { esc, laterMap, NOMS_SCRIPT } from "../src/web/map.js";
 
@@ -70,6 +71,13 @@ describe("the 24 hours of /electricite", () => {
     expect(r).toContain(">Revenir à la puissance installée</button>");
     expect(installationsReplay({ ...j, filieres: undefined })).toBe("");
     expect(productionChart({ ...j, filieres: undefined })).not.toContain("&quot;f&quot;");
+  });
+
+  it("puts the replay's bar right under the map, before its legend, so the map stays on a phone's screen while it moves", () => {
+    const html = electricitePage("https://rundata.re", { value: { resume: "", avertissements: [], sources: [], journee: j }, fetchedAt: new Date(), stale: false } as never);
+    const at = ['class="ipm"', 'class="ip-rj"', 'class="mlg ipk"'].map((c) => html.indexOf(c));
+    expect(at[0]).toBeGreaterThan(0);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
   });
 });
 

@@ -116,7 +116,8 @@ export function installationsLegend(): string {
 }
 
 /**
- * The map's replay, under its legend: its own bar on the chart's moment, then, once played, the words of the estimate
+ * The map's replay, right under the map and before its legend, so that the map stays on a phone's screen while the bar
+ * moves: its own bar on the chart's moment, then, once played, the words of the estimate
  * (marketing, 31/10/2026) and the way back to the MW installed. Hidden until the script shows it; none without the
  * filières' production.
  */

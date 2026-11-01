@@ -9,6 +9,7 @@ import {
   bands,
   blend,
   communeOf,
+  daysOf,
   discR,
   gaugeField,
   landBreeze,
@@ -19,6 +20,7 @@ import {
   rejeuScriptPath,
   meteoVariant,
   shownAt,
+  spanOf,
   soften,
   stationsMap,
   trailOf,
@@ -381,6 +383,8 @@ describe("the page /meteo with every station", () => {
     // A replay legend for each layer, the temperatures' too.
     expect(html.match(/<span class="lg lg-[tpv](?: on)?"><span class="lg-now">/g)).toHaveLength(3);
     expect(html.match(/<span class="rj-lg"><\/span>/g)).toHaveLength(3);
+    // The bar just under the map, before the legends: on a phone, the map and the slider in one screen.
+    expect(html.indexOf('<figcaption class="note"><div class="rj"')).toBeGreaterThan(0);
   });
 
   it("folds the list after 12 stations, with a button for the rest; filters and sorts it, with its script on /meteo alone", () => {
@@ -562,9 +566,27 @@ describe("the rain's animation and its replay", () => {
     expect(METEO_SCRIPT).toContain(`x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2]`);
   });
 
+  it("writes both dates when the hours shown cross midnight in La Réunion, on the map and in the legend", () => {
+    const at = (d: number, h: number, m: number) => Date.UTC(2026, 9, d, h - 4, m);
+    const iso = (t: number) => new Date(t).toISOString();
+    // 23 h 15 – 0 h 15 in the night of 31/10 to 01/11 (01/11 at 06:36, on an iPhone): never « 01/11 » alone.
+    expect(daysOf(at(31, 23, 15), at(32, 0, 15), false)).toBe("31/10 – 01/11");
+    expect(spanOf(iso(at(31, 23, 15)), iso(at(32, 0, 15)))).toBe("entre 23\u00a0h\u00a015 le 31/10 et 0\u00a0h\u00a015 le 01/11");
+    // The hour ending at midnight is the day before's, and its end the next day's.
+    expect(spanOf(iso(at(31, 23, 0)), iso(at(32, 0, 0)))).toBe("entre 23\u00a0h le 31/10 et 0\u00a0h le 01/11");
+    // Within a day, one date; over 7 days, with the day of the week; a moment, its own date.
+    expect(daysOf(at(31, 14, 15), at(31, 15, 15), false)).toBe("31/10");
+    expect(spanOf(iso(at(31, 14, 15)), iso(at(31, 15, 15)))).toBe("entre 14\u00a0h\u00a015 et 15\u00a0h\u00a015 le 31/10");
+    expect(daysOf(at(31, 22, 0), at(32, 1, 0), true)).toBe("sam. 31/10 – dim. 01/11");
+    expect(daysOf(0, at(31, 10, 45), false)).toBe("31/10");
+    expect(rejeuScript()).toContain(`days=${daysOf};`);
+    expect(rejeuScript()).toContain(`hd.textContent=d==="7j"||d==="24h"||dm(S)!==dm(E)?days(!end&&de,t,d==="7j"):"";`);
+    expect(METEO_SCRIPT).toContain(`span=(j)=>spanOf_(j.de,j.fin),spanOf_=${spanOf},`);
+  });
+
   it("writes the time of a radar image during the replay, never a minute between two, the next one from half way", () => {
     const shown = shownAt;
-    expect(rejeuScript()).toContain(`const shown=${shownAt};`);
+    expect(rejeuScript()).toContain(`const shown=${shownAt},days=${daysOf};`);
     const at = (h: number, m: number) => Date.UTC(2026, 9, 31, h - 4, m);
     const a = { t: at(10, 45) }, z = { t: at(10, 50) };
     // 10:46, 10:47 and 10:47:29 show the image of 10:45; 10:47:30 and after, the one of 10:50, which the legend names then.
@@ -727,7 +749,7 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(rejeuScript()).toContain(`hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")}`);
     expect(METEO_SCRIPT).toContain(`"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France "+span(j)`);
     expect(METEO_SCRIPT).toContain(`Cap(span(j))+", le radar de Météo-France n'a pas vu de pluie sur l'île."`);
-    expect(METEO_SCRIPT).toContain(`span=(j)=>"entre "+hx(j.de)+" et "+hx(j.fin)+" le "+dm_(j.fin)`);
+    expect(METEO_SCRIPT).toContain(`span=(j)=>spanOf_(j.de,j.fin),spanOf_=${spanOf},`);
     // An hour's, or 3 hours' for the radar's week.
     expect(METEO_SCRIPT).toContain(`" "+BW+"\u00a0: zones que le radar a mal vues pendant "+(Date.parse(n.fin)-Date.parse(n.de)>36e5?"ces 3\u00a0heures":"cette heure")+", où la pluie peut être manquée."`);
     // The 7 days: the radar's week once the file has it (rejeu.ts), the rain gauges until then.

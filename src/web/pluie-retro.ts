@@ -37,8 +37,10 @@ export const RETRIES_MS = [60_000, 60_000];
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export interface Image {
-  /** End of the radar's 5 minutes, ISO UTC. */
+  /** End of the radar's 5 minutes, ISO UTC; of the hour, for an image of an hour (parHeure). */
   fin: string;
+  /** For an image of an hour: its start. */
+  de?: string;
   pannes: string[];
   /** RainGrid's `pluie` and `mal_vu`, each run of a character written as the character and its length in base 36. */
   pluie: string;
@@ -217,4 +219,58 @@ export function auQuart(before: Historique | null, six: Historique, now: Date): 
     return acc;
   }, []);
   return { w: six.w, h: six.h, entrees: merged };
+}
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * The 24 hours for the replay, an image every quarter of an hour, each the hour up to it (the user, 31/10/2026: 96
+ * images in a play went by too fast, then 24 an hour apart were too few, « on ne voit pas ce qui se passe entre 2 »): in
+ * each cell the strongest rain of the images of that hour, and where the radars saw badly on any of them; an image
+ * belongs to the hours of its quarter and of the 3 next. Two hours a quarter apart share 3 of their 4 quarters, so the
+ * map changes a little at a time. More than an hour without an image, a gap.
+ */
+export function parHeure(h: Historique): Historique {
+  const quarters = new Map<number, Image[]>();
+  const gaps: Trou[] = [];
+  for (const e of h.entrees) {
+    if (isTrou(e)) gaps.push(e);
+    else {
+      const q = Math.floor(Date.parse(e.fin) / QUARTER_MS) * QUARTER_MS;
+      quarters.set(q, [...(quarters.get(q) ?? []), e]);
+    }
+  }
+  const out: Entree[] = [];
+  const ends = [...quarters.keys()].sort((a, b) => a - b);
+  const gap = (de: number, a: number) => {
+    const last = out[out.length - 1];
+    if (last && isTrou(last)) last.a = iso(a);
+    else out.push({ trou: true, de: iso(de), a: iso(a) });
+  };
+  // Each image read once, for the 4 hours it is in.
+  const n = h.w * h.h;
+  const read = new Map<Image, [string, string]>();
+  const cells = (x: Image) => read.get(x) ?? read.set(x, [unrle(x.pluie), unrle(x.mal_vu)]).get(x)!;
+  if (ends.length && gaps.some((g) => Date.parse(g.de) < ends[0] - HOUR_MS)) gap(Math.min(...gaps.map((g) => Date.parse(g.de))), ends[0] - HOUR_MS);
+  ends.forEach((end, i) => {
+    if (i && end - ends[i - 1] > HOUR_MS) gap(ends[i - 1], end - HOUR_MS);
+    const pluie = new Uint8Array(n).fill(46); // "."
+    const mal = new Uint8Array(n).fill(48); // "0"
+    const hour = ends.filter((q) => q > end - HOUR_MS && q <= end).flatMap((q) => quarters.get(q)!);
+    for (const x of hour) {
+      const [p, m] = cells(x);
+      for (let k = 0; k < n; k++) {
+        const c = p.charCodeAt(k);
+        if (c !== 46 && (pluie[k] === 46 || c > pluie[k])) pluie[k] = c;
+        if (m.charCodeAt(k) === 49) mal[k] = 49;
+      }
+    }
+    const text = (a: Uint8Array) => new TextDecoder().decode(a);
+    const pannes = [...new Set(hour.flatMap((x) => x.pannes))];
+    out.push({ fin: iso(end), de: iso(end - HOUR_MS), pannes, pluie: rle(text(pluie)), mal_vu: rle(text(mal)) });
+  });
+  const lastEnd = ends.length ? ends[ends.length - 1] : 0;
+  const tail = gaps.filter((g) => Date.parse(g.a) > lastEnd);
+  if (tail.length) gap(Math.max(lastEnd, Math.min(...tail.map((g) => Date.parse(g.de)))), Math.max(...tail.map((g) => Date.parse(g.a))));
+  return { w: h.w, h: h.h, entrees: out };
 }

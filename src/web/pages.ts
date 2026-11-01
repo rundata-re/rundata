@@ -49,6 +49,7 @@ import { FORMS_CSS } from "./formulaires-style.js";
 import { fond, FOND_CSS } from "./fonds.js";
 import { POINTS_CSS, POINTS_SCRIPT } from "./carte-points.js";
 import { CARTE_CSS } from "./carte-style.js";
+import { PLEIN_ECRAN_CSS } from "./plein-ecran.js";
 import { ALTITUDES_CREDIT, communeOf, METEO_SCRIPT, RADAR_CREDIT, rainPill, stationsMap, windPill } from "./meteo-carte.js";
 import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
@@ -938,7 +939,7 @@ footer.foot .brand{color:var(--on-night);margin-bottom:.8rem}
 footer.foot p+p{margin-top:.6rem}
 footer.foot h3{color:var(--on-night);font-size:1rem;margin-bottom:.4rem}
 footer.foot .slogan{font-size:1rem;padding-left:calc(1.55rem + .6rem)}
-`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS;
+`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS;
 /**
  * The stylesheet, a file of its own (web/site.ts) rather than copied into every page: its address changes with its
  * content, so that browsers keep it a year and fetch it again only once it changes.
@@ -1162,10 +1163,11 @@ const withHook = (band: string, path: string, volcan?: boolean, own?: string) =>
 };
 
 // The menu: every category with a page, the clubs' space after the sport (once it is out), then the communes; the first
-// few also sit in the bar on wide screens.
+// few also sit in the bar on wide screens. The map of every layer right after the first few (marketing), in the menu only.
 const MENU = [
   ...WITH_PAGE.flatMap((c) => [{ key: c.key, nom: c.nom, path: c.path, icon: c.icon },
     ...(c.key === "sport" ? [{ key: "associations", nom: "Associations", path: "/associations?ref=menu", icon: "people" }] : [])]),
+  { key: "carte", nom: "Carte", path: "/carte", icon: "map" },
   { key: "communes", nom: "Communes", path: "/communes", icon: "pin" },
 ];
 

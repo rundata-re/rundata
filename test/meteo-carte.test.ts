@@ -82,6 +82,10 @@ describe("the wind and the commune of a station", () => {
 });
 
 describe("the map of every station on /meteo", () => {
+  it("leads to /carte, its view of the weather now, under its legend", () => {
+    expect(stationsMap(ALL)).toContain('<a class="wx-k" href="/carte#meteo">La météo avec les rivières, les sentiers et le volcan, sur une seule carte →</a></figcaption>');
+  });
+
   it("draws one link per station for every measure, each to its row, hidden where the measure shown is missing", () => {
     const html = stationsMap(ALL);
     const l = links(html);

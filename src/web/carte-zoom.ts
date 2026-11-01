@@ -6,7 +6,8 @@
  * `data-zoom-fd` times once an IGN background is picked (web/map.ts, FONDS_SCRIPT): the lines and the dots keep their
  * width on screen (vector-effect) and the names are placed again at their size (NOMS_SCRIPT, on the viewBox's change).
  * A tap that ended a drag or a pinch opens nothing. A page's own script brings a point into the frame with the event
- * `zshow` (its detail: x and y, in the map's units); carte-points.ts zooms where a finger covers too many points with
+ * `zshow` (its detail: x and y, in the map's units), and frames it with `zbox` (x, y and the width; none, the whole
+ * frame); carte-points.ts zooms where a finger covers too many points with
  * `pzoom974`. A button that can do nothing more is greyed. Without the script, the map stays whole and the buttons hidden.
  */
 export const MOTS = {
@@ -71,6 +72,7 @@ const up=(e)=>{ps.delete(e.pointerId);if(ps.size<2)last=null};["pointerup","poin
 ${WHEEL_SCRIPT}${DOUBLE_SCRIPT}
 svg.addEventListener("click",(e)=>{if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);
 svg.addEventListener("pzoom974",(e)=>{const w=v[2],c=pt(e.detail.x,e.detail.y);zoom(2.5,c[0],c[1]);if(v[2]<w)e.preventDefault()});
+svg.addEventListener("zbox",(e)=>{const d=e.detail;if(!d){v=B.slice();put();return}v=[d.x,d.y,d.w,d.w*B[3]/B[2]];clamp()});
 svg.addEventListener("zshow",(e)=>{const x=e.detail.x,y=e.detail.y;if(x<v[0]||x>v[0]+v[2]||y<v[1]||y>v[1]+v[3]){v[0]=x-v[2]/2;v[1]=y-v[3]/2;clamp()}});
 document.addEventListener("change",(e)=>{if(e.target.closest&&e.target.closest(fd))clamp()});put();
 if(z)z.addEventListener("click",(e)=>{const k=e.target.closest("button")?.dataset.z;if(k==="+")zoom(${DOUBLE_STEP});else if(k==="-")zoom(1/${DOUBLE_STEP});else if(k==="0"){v=B.slice();put()}})})})();`;

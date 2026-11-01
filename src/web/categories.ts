@@ -274,8 +274,9 @@ export interface Urgent {
 
 // What serves the most people goes first: the events, the hikes, the weather; the sea and the buses after the rest.
 export const FIRST = ["agenda", "sentiers", "meteo"];
-// In the menu and the tiles, the children's page right after the events, but not in the bar.
-const LEADING = [FIRST[0], "enfants", ...FIRST.slice(1)];
+// In the menu and the tiles, the children's page right after the events, but not in the bar; in the menu, the map of
+// every layer right after the first few (marketing).
+const LEADING = [FIRST[0], "enfants", ...FIRST.slice(1), "carte"];
 const LAST = ["mer", "bus"];
 // What is first while in force; on the home page's tiles, before the sea and the buses when quiet.
 const URGENT = ["vigilance", "crues", "volcan"];

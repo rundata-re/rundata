@@ -4,7 +4,7 @@ import { counted, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as irve from "../src/providers/irve.js";
 import { REGISTRY } from "../src/registre.js";
-import { ORDRE, PAR_DEFAUT } from "../src/web/carte.js";
+import { ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
 import { COUCHES } from "../src/web/couches.js";
 import { borneRow } from "../src/web/domains.js";
 
@@ -20,11 +20,11 @@ async function serve(path: string) {
 }
 
 describe("/carte", () => {
-  it("is the island's map that zooms, a box and a block per layer, out of the search engines until the menu has it", async () => {
+  it("is the island's map that zooms, a box and a block per layer, open to the search engines", async () => {
     const { r, html, used } = await serve("/carte");
     expect(r.status).toBe(200);
     expect(used).toBeLessThanOrEqual(REGISTRY.find((e) => e.id === "/carte")!.run.subrequests);
-    expect(html).toContain('<meta name="robots" content="noindex">');
+    expect(html).not.toContain("noindex");
     expect(html).toContain('id="kmap" data-kc=""');
     expect(html).toContain('class="kzoom" data-fd="k"');
     for (const c of COUCHES) {
@@ -35,6 +35,29 @@ describe("/carte", () => {
     const conf = JSON.parse(/<script type="application\/json" id="k-conf">(.*?)<\/script>/.exec(html)![1]);
     expect(conf.couches.map((c: { id: string }) => c.id)).toEqual(COUCHES.map((c) => c.id));
     expect(conf.dae["Saint-Pierre"]).toBe("c-saint-pierre");
+    // A button per view, its address its own; the full screen's script, after the page's.
+    for (const v of VUES) expect(html, v.id).toContain(`<a href="#${v.id}" data-v="${v.id}">`);
+    expect(conf.vues.map((v: { id: string }) => v.id)).toEqual(VUES.map((v) => v.id));
+    expect(html.indexOf('className="pe-b"')).toBeGreaterThan(html.indexOf('id="k-conf"'));
+  });
+
+  it("has views that tick layers there are, at least two of them crossing two layers, the weather now first", () => {
+    for (const v of VUES) for (const id of v.couches) expect(COUCHES.some((c) => c.id === id), `${v.id} ${id}`).toBe(true);
+    expect(VUES.filter((v) => v.couches.length >= 2).length).toBeGreaterThanOrEqual(2);
+    expect(new Set(VUES.map((v) => v.id)).size).toBe(VUES.length);
+    expect(VUES[0].id).toBe("meteo");
+    // Each frame within the island's, west before east, south before north.
+    for (const v of VUES.filter((x) => x.cadre)) {
+      const [o, s, e, n] = v.cadre!;
+      expect(o < e && s < n && o >= 55.19 && e <= 55.86 && s >= -21.41 && n <= -20.85, v.id).toBe(true);
+    }
+  });
+
+  it("is in the menu of every page, in the sitemap, and the weather's map leads to its view", async () => {
+    const home = await serve("/meteo");
+    expect(home.html).toContain('href="/carte"');
+    const map = await serve("/sitemap.xml");
+    expect(map.html).toContain("<loc>https://rundata.re/carte</loc>");
   });
 
   it("draws every layer but the rain in a group of its own, in a fixed order, and ticks the weather when the address names none", () => {

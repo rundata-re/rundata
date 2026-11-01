@@ -10,7 +10,7 @@ import { credits, de, fr, minutees, notFound, text, tranche } from "./format.js"
 import { COLLECTION, collecteAnswer } from "./collecte.js";
 import { decheteriesAnswer, WASTE } from "./decheteries.js";
 import { CHILDREN, enfantsAnswer } from "./enfants.js";
-import { ecolesAnswer, SCHOOL } from "./etablissements.js";
+import { collegeAnswer, ecolesAnswer, SCHOOL } from "./etablissements.js";
 import { MARKET, marchesAnswer } from "./marches.js";
 import { DOCTOR, medecinsAnswer } from "./medecins.js";
 import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "./sante.js";
@@ -78,7 +78,7 @@ export function named(list: annuaire.Office[], quoi: string): annuaire.Office[] 
   });
 }
 
-export async function annuaireTool(cache: Cache, quoi: string, lieu: string | undefined, now = new Date()) {
+export async function annuaireTool(cache: Cache, quoi: string, lieu: string | undefined, now = new Date(), adresse?: string) {
   // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
   // the fuel prices, the doctors, the schools, where to go with children.
   if (PHARMACY.test(quoi)) return pharmaciesAnswer(lieu);
@@ -89,6 +89,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   if (WASTE.test(quoi)) return decheteriesAnswer(cache, quoi, lieu, now);
   if (FUEL.test(quoi)) return carburantsAnswer(cache, now);
   if (DOCTOR.test(quoi)) return medecinsAnswer(quoi, lieu);
+  // An address: the collège of its sector; it goes nowhere else.
+  if (SCHOOL.test(quoi) && adresse?.trim()) return collegeAnswer(quoi, lieu, adresse);
   if (SCHOOL.test(quoi)) return ecolesAnswer(quoi, lieu);
   if (CHILDREN.test(quoi)) return enfantsAnswer(quoi, lieu, now);
   const res = lieu?.trim() ? resolvePlace(lieu) : null;

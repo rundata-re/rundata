@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Dimanche 1 novembre 2026
 
+- Connecteur : le collège public de secteur d'une adresse, d'après la carte scolaire des collèges, avec le lien vers la page des écoles.
 - Écoles : les écoles, collèges et lycées sur une carte, avec cantine, internat et ULIS, et le collège de secteur d'une adresse.
 - Médecin de garde : les horaires de la garde, le territoire de chaque commune et l'hôpital vers lequel le 15 oriente la nuit, d'après l'ARS.
 - Médecin de garde : le connecteur dit d'appeler le 15 d'abord, et où trouver la pharmacie de garde ou un médecin sans rendez-vous en journée.

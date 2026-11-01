@@ -1,10 +1,12 @@
+import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { audience, category, device, feedReader, FROM_SITE, HEBERGEURS, language, META_ASN, origin, point, teamVisit, visitor, type Hit } from "../src/metrics.js";
-import { answer, asked, understood } from "../src/usage.js";
+import { answer, asked, understood, withAddress } from "../src/usage.js";
 import { rienTrouve, withVide } from "../src/vide.js";
+import * as carteScolaire from "../src/vie/carte-scolaire.js";
 
 const post = (body: unknown, headers: Record<string, string> = {}) =>
   new Request("https://rundata.re/mcp", {
@@ -87,6 +89,36 @@ describe("MCP endpoint, as recorded", () => {
     const unknown = await hitsOf(post({ jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "nimporte", arguments: {} } }));
     expect(unknown.hits[0]).toMatchObject({ kind: "mcp", name: "nimporte", ok: false });
     expect(unknown.hits[0].outcome).toMatch(/^(rpc -32602|erreur)$/);
+  });
+
+  it("never keeps nor logs a postal address given to a tool: the commune alone, and « adresse »", async () => {
+    // The collège of the address is looked up, in the commune's file, as the Worker does.
+    carteScolaire.configure(async (path) => JSON.parse(readFileSync(`public${path}`, "utf8")));
+    const adresse = "41 avenue de la Commune de Paris";
+    const call = (id: number, lieu: string) => post({ jsonrpc: "2.0", id, method: "tools/call", params: { name: "annuaire_services_publics", arguments: { quoi: "collège", lieu, adresse } } });
+    const logs = ["log", "info", "warn", "error", "debug"].map((k) => vi.spyOn(console, k as "log"));
+    try {
+      expect(asked({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "annuaire_services_publics", arguments: { quoi: "collège", lieu: "Le Port", adresse } } })).toEqual([
+        { method: "tools/call", id: 1, tool: "annuaire_services_publics", args: "adresse,lieu,quoi", lieu: "Le Port", adresse: true },
+      ]);
+      expect(withAddress("Le Port")).toEqual({ detail: "Le Port", place: "adresse", commune: "Le Port" });
+      // The address typed in the place too: neither is kept.
+      expect(withAddress(`${adresse}, Le Port`).detail).not.toContain("Commune de Paris");
+      expect(withAddress("Zzyzx Qwrt")).toEqual({ detail: "", place: "adresse", commune: undefined });
+      for (const [id, lieu] of [[2, "Le Port"], [3, `${adresse} Le Port`]] as const) {
+        const { hits } = await hitsOf(call(id, lieu));
+        expect(hits).toHaveLength(1);
+        expect(hits[0]).toMatchObject({ kind: "mcp", name: "annuaire_services_publics", place: "adresse", args: "adresse,lieu,quoi", outcome: "ok" });
+        // What Analytics Engine receives (metrics.ts), and every line logged.
+        const written = JSON.stringify([hits, point(hits[0], { who: "assistant", country: "RE", from: "", audience: "assistant", language: "" })]);
+        for (const part of ["41", "Commune de Paris", "avenue"]) expect(written).not.toContain(part);
+      }
+      const logged = JSON.stringify(logs.flatMap((l) => l.mock.calls));
+      expect(logged).not.toContain("Commune de Paris");
+    } finally {
+      for (const l of logs) l.mockRestore();
+      carteScolaire.configure(undefined);
+    }
   });
 
   it("records why a request was refused, with its protocol header", async () => {

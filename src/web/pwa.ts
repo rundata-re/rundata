@@ -28,6 +28,8 @@ export const OFFLINE_PATH = "/hors-ligne";
 export const KEPT_PAGES = 40;
 // Past this, a page that has a copy shows it: the network may be there but too weak to bring the page (a cirque).
 const SLOW_MS = 12_000;
+// Past this, a stylesheet at another address than the shell's is taken from the shell: the page is shown styled.
+const STYLE_MS = 4_000;
 // Raised when the service worker's code changes in a way its files would not show, and when offlinePage (web/pages.ts)
 // changes visibly: the phones keep the offline page they fetched until this text changes.
 // 2: the symbol of the brand (/favicon.svg, the offline page's header).
@@ -58,7 +60,7 @@ export function serviceWorker(shell: string[]): string {
 const SHELL=${JSON.stringify(files)};
 const STYLE=SHELL.find((f)=>/^\\/style-\\w+\\.css$/.test(f));
 const SHELL_CACHE="coquille-${hash(JSON.stringify(files) + REVISION)}";
-const PAGES="pages",STATE="etat",KEEP=${KEPT_PAGES},SLOW_MS=${SLOW_MS},OFFLINE=${JSON.stringify(OFFLINE_PATH)};
+const PAGES="pages",STATE="etat",KEEP=${KEPT_PAGES},SLOW_MS=${SLOW_MS},STYLE_MS=${STYLE_MS},OFFLINE=${JSON.stringify(OFFLINE_PATH)};
 const AFTER=${JSON.stringify(OFFLINE_AFTER)},AFTER_DEFAULT=${JSON.stringify(OFFLINE_DEFAULT)};
 const SKIP=/^\\/(?:mcp|sw\\.js|avis|\\.well-known)(?:\\/|$)|\\.(?:rss|gpx|xml|txt|webmanifest|json)$/;
 ${WHEN}
@@ -90,6 +92,9 @@ const band='<div class="horsligne" role="status">Hors ligne : copie du '+when(at
 return new Response(html.replace(/<body[^>]*>/,(b)=>b+"\\n"+band),{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-store"}})}
 async function offline(){const r=await caches.match(OFFLINE,{cacheName:SHELL_CACHE});
 return r||new Response("Pas de réseau. Réessayez quand le réseau revient.",{status:503,headers:{"content-type":"text/plain; charset=utf-8"}})}
+const shellStyle=()=>caches.match(STYLE,{cacheName:SHELL_CACHE});
+function styleOf(r){const got=fetch(r);const slow=new Promise((ok)=>setTimeout(()=>shellStyle().then((c)=>{if(c)ok(c)}),STYLE_MS));
+return Promise.race([got,slow]).catch(()=>shellStyle().then((c)=>c||Response.error()))}
 async function page(e,u){const key=keyOf(u);let req=e.request;
 const mode=await inApp(u).catch(()=>false),mine=await inTeam().catch(()=>false);
 if(mode||mine){const h=new Headers(req.headers);if(mode)h.set("rundata-mode","app");if(mine)h.set("rundata-equipe","1");req=new Request(req,{headers:h})}
@@ -101,9 +106,11 @@ try{return await Promise.race([got,slow])}catch{const c=await copy();return c?fr
 self.addEventListener("fetch",(e)=>{const r=e.request;if(r.method!=="GET")return;const u=new URL(r.url);
 if(u.origin!==self.location.origin||SKIP.test(u.pathname)||u.searchParams.has("maj"))return;
 if(r.mode==="navigate")return e.respondWith(page(e,u));
-// A page kept from an earlier version asks for its stylesheet by its old address: it gets the shell's.
-const p=STYLE&&/^\\/style-\\w+\\.css$/.test(u.pathname)?STYLE:u.pathname;
-if(SHELL.includes(p))e.respondWith(caches.match(p,{cacheName:SHELL_CACHE}).then((hit)=>hit||fetch(r)))});
+// A stylesheet at another address than the shell's: a page newer than this worker (the first page after a deploy, before
+// the new worker takes over) gets its own from the network; a page kept from an earlier version, its old address, gets
+// the shell's when the network fails or is too slow to bring it.
+if(STYLE&&u.pathname!==STYLE&&/^\\/style-\\w+\\.css$/.test(u.pathname))return e.respondWith(styleOf(r));
+if(SHELL.includes(u.pathname))e.respondWith(caches.match(u.pathname,{cacheName:SHELL_CACHE}).then((hit)=>hit||fetch(r)))});
 `;
 }
 

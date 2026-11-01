@@ -106,6 +106,7 @@ import { ALIASES as ASSOCIATIONS_ALIASES, associationsPage, PATH as ASSOCIATIONS
 import { readCopies, refresh, resume } from "../tools/resume.js";
 import { SCRIPT as ALLER_SCRIPT, SCRIPT_PATH as ALLER_PATH } from "./aller.js";
 import { rejeuScript, rejeuScriptPath } from "./meteo-carte.js";
+import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
 import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, STYLE_PATH, vigilancePage } from "./pages.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
 import { pageOf, PAGES } from "./places.js";
@@ -146,7 +147,7 @@ import { INTERDITS } from "../robots.js";
 import { PATH as PLUIE_RADAR, rainGrid } from "./pluie-radar.js";
 import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricite-historique.js";
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
-import { DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuFin, rejeuJour } from "./rejeu.js";
+import { CUMULS_PATH, DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuCumuls, rejeuFin, rejeuJour } from "./rejeu.js";
 import { COUCHE_PATH, coucheResponse } from "./couches.js";
 
 const HTML = {
@@ -373,7 +374,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
 export async function site(request: Request, cache: Cache, background: Background, now = new Date()): Promise<Response | null> {
   // Nothing of the moment in them: answered before the volcano's state is read.
   const file = new URL(request.url).pathname;
-  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file);
+  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? cumulsFile(file);
   if (style) return style;
   // The bus trips, kept a minute at the edge (web/bord.ts): the copy as it was served.
   const copie = await bord.lire(request);
@@ -414,6 +415,16 @@ function rejeuFile(path: string): Response | null {
   if (!REJEU_FILE.test(path)) return null;
   return new Response(rejeuScript(), {
     headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": path === rejeuScriptPath() ? "public, max-age=31536000, immutable" : "public, max-age=300", "x-content-type-options": "nosniff" },
+  });
+}
+
+const CUMULS_FILE = /^\/meteo\/cumuls-\w+\.js$/;
+
+/** The script of /meteo's « Pluie tombée » (web/pluie-cumuls.ts), asked when its visitor comes near it, kept a year at its address. */
+function cumulsFile(path: string): Response | null {
+  if (!CUMULS_FILE.test(path)) return null;
+  return new Response(cumulsScript(), {
+    headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": path === cumulsScriptPath() ? "public, max-age=31536000, immutable" : "public, max-age=300", "x-content-type-options": "nosniff" },
   });
 }
 
@@ -714,6 +725,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // Their finer files, and a day's, asked for more images (rejeu.ts).
   const fin = (Object.keys(FINS) as Fin[]).find((f) => FINS[f] === path);
   if (fin) return rejeuFin(fin, cache, background, now);
+  // The 24 hours with the lame d'eau in mm, asked by /meteo's « Pluie tombée » (pluie-cumuls.ts).
+  if (path === CUMULS_PATH) return rejeuCumuls(cache, background, now);
   const jour = JOUR_FILE.exec(path);
   if (jour) return (await rejeuJour(jour[1], cache, background, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.

@@ -5,7 +5,7 @@ import * as climat from "../src/providers/climat.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { REGISTRY } from "../src/registre.js";
 import { type Historique, rle } from "../src/web/pluie-retro.js";
-import { assembler, configure, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
+import { assembler, configure, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
 import { PREMIER_JOUR } from "../src/web/radar-semaine.js";
 import { site } from "../src/web/site.js";
 
@@ -255,5 +255,20 @@ describe("the finer files and the days", () => {
     // A day not kept, or before the first: not found.
     expect((await get(jourPath("2026-10-24"))).res.status).toBe(404);
     expect((await get(jourPath("2026-10-30"))).res.status).toBe(404);
+  });
+
+  it("leave out the lame d'eau in mm of the images, but the file of rain totals, which keeps it", async () => {
+    const now = at("2026-11-01T08:57:00Z");
+    const t = now.getTime();
+    const lame = (h: Historique): Historique => ({ ...h, entrees: h.entrees.map((e) => ({ ...e, mm: "" })) });
+    const jours = { "2026-10-31": lame(every(Date.parse("2026-10-30T20:05:00Z"), Date.parse("2026-10-31T20:00:00Z"))), "2026-11-01": lame(every(Date.parse("2026-10-31T20:05:00Z"), Date.parse("2026-11-01T08:00:00Z"))) };
+    const six = lame(every(t - 6 * 3_600_000 + 3 * 60_000, Date.parse("2026-11-01T08:55:00Z")));
+    configure(sources({ ...merge(null, hourly, now)!, fin: "2026-11-01T08:00:00Z" }, six, null, null, jours).s);
+    const get = async (p: string) => (await (await site(new Request(`https://rundata.re${p}`), new Cache(new MemoryStore(), () => t), () => {}, now))!.json()).radar as Historique;
+    const withMm = (h: Historique) => h.entrees.filter((e) => "mm" in e).length;
+    for (const p of [PATHS["6h"], FINS["24h"], FINS["7j"], jourPath("2026-10-31")]) expect(withMm(await get(p)), p).toBe(0);
+    const cumuls = await get(CUMULS_PATH);
+    expect(cumuls.entrees).toHaveLength(288);
+    expect(withMm(cumuls)).toBe(288);
   });
 });

@@ -31,6 +31,7 @@ import { anchorId, layout } from "./pages.js";
 import { CLASSES } from "./pluie-radar.js";
 import { COMMUNES } from "./commune.js";
 import { communePath as enfantsPath } from "./enfants.js";
+import { CURSEUR_PAGE, curseurBar, curseurConf } from "./carte-curseur.js";
 import { pleinEcran } from "./plein-ecran.js";
 
 export const PATH = "/carte";
@@ -210,6 +211,7 @@ function conf() {
     acces: ACCES,
     vent: VENT_DE,
     pluie: { classes: CLASSES, couleurs: RAIN_WASH },
+    curseur: curseurConf(),
     mots: MOTS,
     vues: VUES.map((v) => ({ id: v.id, dit: v.dit, couches: v.couches, cadre: v.cadre, fond: v.fond })),
     resume: RESUME_PATH,
@@ -261,13 +263,13 @@ function corps(): string {
   const vues = VUES.map((v) => `<li><a href="#${esc(v.id)}" data-v="${esc(v.id)}">${esc(v.nom)}</a></li>`).join("");
   return `<section aria-labelledby="h-carte" class="kcarte"><h2 id="h-carte" class="sr">${esc(MOTS.h1)}</h2>
   <p class="kdir" hidden><span class="kdl"><i aria-hidden="true"></i>${esc(MOTS.direct)} · <time></time></span></p>
-  <figure class="card mapcard kmapc"><nav class="kvues" aria-labelledby="h-vues" hidden><h3 id="h-vues">${esc(MOTS.vues)}</h3><ul>${vues}</ul><p class="kvd" aria-live="polite"></p></nav>${map}<figcaption class="note"><ul class="klg" aria-live="polite"></ul><p class="kcr"></p></figcaption></figure>
+  <figure class="card mapcard kmapc"><nav class="kvues" aria-labelledby="h-vues" hidden><h3 id="h-vues">${esc(MOTS.vues)}</h3><ul>${vues}</ul><p class="kvd" aria-live="polite"></p></nav>${map}${curseurBar()}<figcaption class="note"><ul class="klg" aria-live="polite"></ul><p class="kcr"></p></figcaption></figure>
   <noscript><p class="note">${esc(MOTS.sansScript)} ${pages}.</p></noscript>
   <details class="kch" open hidden><summary>${esc(MOTS.couches)} (<span class="kcn">0</span>)</summary><div class="kths">${choix()}</div></details>
 </section>
 <section aria-labelledby="h-aff" class="kaff" hidden><h2 id="h-aff">${esc(MOTS.affichees)}</h2><p class="note kvide">${esc(MOTS.aucune)}</p>${COUCHES.map(bloc).join("")}</section>
 <script type="application/json" id="k-conf">${inScript(conf())}</script><script>${CARTE_SCRIPT}</script>
-${pleinEcran({ boite: ".kcarte", carte: ".kmapc", barre: '.kzoom[data-fd="k"]', panneau: [".kvues", '.fonds[data-fd="k"]', ".kch"], legende: ".kmapc>figcaption" })}`;
+${pleinEcran({ boite: ".kcarte", carte: ".kmapc", barre: '.kzoom[data-fd="k"]', panneau: [".kcur", ".kvues", '.fonds[data-fd="k"]', ".kch"], legende: ".kmapc>figcaption" })}`;
 }
 
 export function cartePage(origin: string, alerte?: Alerte): string {
@@ -291,10 +293,12 @@ export function cartePage(origin: string, alerte?: Alerte): string {
  * scale); the stations' figures take theirs from `--u`, the map's units per pixel, set again at each zoom. A view, picked
  * or named by the address, ticks its boxes, then picks its background and asks the zoom for its frame (`zbox`); named by
  * no address, the first view's boxes are ticked, the map left whole. The rings follow the map: its viewBox, its size, their
- * radius set again in the map's units at each zoom. The band's figures are asked once, after the views are wired.
+ * radius set again in the map's units at each zoom. The band's figures are asked once, after the views are wired. The time
+ * cursor (carte-curseur.ts) is shown while the rain or the stations are ticked; its script, asked on a first touch,
+ * draws through the hooks of `svg.kc`, and the legend says the time it shows.
  */
 const CARTE_SCRIPT = `(()=>{const cf=document.getElementById("k-conf"),svg=document.getElementById("kmap");if(!cf||!svg)return;
-const K=JSON.parse(cf.textContent),M=K.mots,L=new Map(K.couches.map((c)=>[c.id,c])),NS="http://www.w3.org/2000/svg",[A,B,C,D]=K.bbox,W=K.w,H=K.h;
+const KC={};svg.kc=KC;const K=JSON.parse(cf.textContent),M=K.mots,L=new Map(K.couches.map((c)=>[c.id,c])),NS="http://www.w3.org/2000/svg",[A,B,C,D]=K.bbox,W=K.w,H=K.h;
 const X=(o)=>Math.round((o-A)/(C-A)*W*10)/10,Y=(a)=>Math.round((D-a)/(D-B)*H*10)/10,el=(n,a)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e};
 const TZ={timeZone:"Indian/Reunion"},hm=(t)=>new Date(t).toLocaleTimeString("fr-FR",{...TZ,hour:"2-digit",minute:"2-digit"}),jm=(t)=>new Date(t).toLocaleDateString("fr-FR",{...TZ,day:"2-digit",month:"2-digit"}),
 an=(t)=>new Date(t).toLocaleDateString("fr-FR",{...TZ,day:"2-digit",month:"2-digit",year:"numeric"}),jr=(t)=>new Date(t).toLocaleDateString("fr-CA",TZ),
@@ -330,11 +334,12 @@ Object.assign(pv.style,{left:a.left-b.left-fig.clientLeft+"px",top:a.top-b.top-f
 if(window.ResizeObserver){const ro=new ResizeObserver(place);ro.observe(svg);ro.observe(fig)}new MutationObserver(place).observe(svg,{attributes:true,attributeFilter:["viewBox"]});
 const wet=(o)=>{const i=o.infos||{};return!i.ancienne&&i.pluie_1h>0};
 const rings=(j)=>{pv.replaceChildren(...j.objets.filter(wet).flatMap((o)=>[el("circle",{class:"kpb",cx:X(o.lon),cy:Y(o.lat),r:"12"}),el("circle",{cx:X(o.lon),cy:Y(o.lat),r:"12"})]));place()};
-const draw=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
+const draw=(c,j)=>{draw0(c,j);if(KC.on&&KC.frame&&(c.id==="pluie"||c.id==="stations"))KC.frame(true)};
+const draw0=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
 if(c.id==="sentiers")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl",d}))});
 j.objets.forEach((o)=>g.append(point(c,o,j)));
 if(!wired&&j.objets.length){wired=true;svg.dispatchEvent(new Event("carte",{bubbles:true}))}};
-const said=(c,j)=>{const o=j?j.objets||[]:[],hs=o.map((x)=>Date.parse(x.heure)).filter((t)=>t>0);
+const said=(c,j)=>{const r=KC.said&&KC.said(c);if(r)return r;const o=j?j.objets||[]:[],hs=o.map((x)=>Date.parse(x.heure)).filter((t)=>t>0);
 if(c.id==="stations"){const a=Math.min(...hs),b=Math.max(...hs);return[un(o.length,c.unite),"mesures de "+(hm(a)===hm(b)?hm(b):hm(a)+" à "+hm(b))]}
 if(c.id==="pluie")return["image de "+hm(j.fin)];
 if(c.id==="rivieres")return[un(o.length,c.unite),hm(j.heure)];
@@ -363,7 +368,10 @@ const credit=()=>{const on=boxes.filter((b)=>b.checked).map((b)=>L.get(b.value).
 document.querySelector(".kcn").textContent=boxes.filter((b)=>b.checked).length;aff.querySelector(".kvide").hidden=boxes.some((b)=>b.checked)};
 const ask=(c)=>{if(asked.has(c.id))return;asked.set(c.id,1);fetch(c.fichier).then((r)=>r.ok?r.json():"err").catch(()=>"err").then((j)=>{got.set(c.id,j);if(etat(c,j)!=="echec")draw(c,j);show(c)})};
 const hash=()=>{const on=boxes.filter((b)=>b.checked).map((b)=>b.value);history.replaceState(null,"",on.length?"#c="+on.join(","):location.pathname+location.search)};
-const tick=(b)=>{const c=L.get(b.value);if(b.checked)ask(c);show(c);credit()};
+const tick=(b)=>{const c=L.get(b.value);if(b.checked)ask(c);show(c);credit();anim()};
+// The time cursor's hooks (carte-curseur.ts): what it draws with, and the map back to now.
+Object.assign(KC,{K,el,rain,pv,place,hm,jm,boxes,show:(id)=>show(L.get(id)),live:()=>["pluie","stations"].forEach((id)=>{const c=L.get(id),j=got.get(id);if(j&&etat(c,j)!=="echec")draw(c,j);show(c)})});
+${CURSEUR_PAGE}
 const nav=document.querySelector(".kvues"),vd=nav.querySelector(".kvd");nav.hidden=false;
 const mark=(v)=>{nav.querySelectorAll("a").forEach((a)=>{if(v&&a.dataset.v===v.id)a.setAttribute("aria-current","true");else a.removeAttribute("aria-current")});vd.textContent=v?v.dit:""};
 const fond=(f)=>{const i=document.querySelector('.fonds[data-fd="k"] input[value="'+f+'"]');if(i&&!i.checked){i.checked=true;i.dispatchEvent(new Event("change",{bubbles:true}))}};

@@ -106,6 +106,7 @@ import { ALIASES as ASSOCIATIONS_ALIASES, associationsPage, PATH as ASSOCIATIONS
 import { readCopies, refresh, resume } from "../tools/resume.js";
 import { SCRIPT as ALLER_SCRIPT, SCRIPT_PATH as ALLER_PATH } from "./aller.js";
 import { rejeuScript, rejeuScriptPath } from "./meteo-carte.js";
+import { CURSEUR_FILE, curseurScript, curseurScriptPath } from "./carte-curseur.js";
 import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
 import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, STYLE_PATH, vigilancePage } from "./pages.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
@@ -374,7 +375,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
 export async function site(request: Request, cache: Cache, background: Background, now = new Date()): Promise<Response | null> {
   // Nothing of the moment in them: answered before the volcano's state is read.
   const file = new URL(request.url).pathname;
-  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? cumulsFile(file);
+  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file);
   if (style) return style;
   // The bus trips, kept a minute at the edge (web/bord.ts): the copy as it was served.
   const copie = await bord.lire(request);
@@ -409,6 +410,14 @@ function allerScript(path: string): Response | null {
 }
 
 const REJEU_FILE = /^\/meteo\/rejeu-\w+\.js$/;
+
+/** The script of /carte's time cursor (web/carte-curseur.ts), asked on its first touch, kept a year at its address. */
+function curseurFile(path: string): Response | null {
+  if (!CURSEUR_FILE.test(path)) return null;
+  return new Response(curseurScript(), {
+    headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": path === curseurScriptPath() ? "public, max-age=31536000, immutable" : "public, max-age=300", "x-content-type-options": "nosniff" },
+  });
+}
 
 /** The script of /meteo's replay bar (web/meteo-carte.ts), asked on its first touch, kept a year at its address. */
 function rejeuFile(path: string): Response | null {

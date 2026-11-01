@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Dimanche 1 novembre 2026
 
+- Médecin de garde : le connecteur dit d'appeler le 15 d'abord, et où trouver la pharmacie de garde ou un médecin sans rendez-vous en journée.
 - Médecins : combien de généralistes et de spécialistes dans chaque commune, par secteur, et le lien vers l'annuaire Ameli.
 - Carte : revoir la pluie au radar et les stations des 6 ou 24 dernières heures, sur la même carte que les autres couches.
 - Météo : la carte des stations en plein écran. Sur téléphone, le plein écran des cartes est plus grand et rien ne cache l'île.

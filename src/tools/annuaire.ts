@@ -13,7 +13,7 @@ import { CHILDREN, enfantsAnswer } from "./enfants.js";
 import { ecolesAnswer, SCHOOL } from "./etablissements.js";
 import { MARKET, marchesAnswer } from "./marches.js";
 import { DOCTOR, medecinsAnswer } from "./medecins.js";
-import { EMERGENCY, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "./sante.js";
+import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "./sante.js";
 import { sansLien } from "../liens.js";
 import { rienTrouve } from "../vide.js";
 
@@ -79,9 +79,10 @@ export function named(list: annuaire.Office[], quoi: string): annuaire.Office[] 
 }
 
 export async function annuaireTool(cache: Cache, quoi: string, lieu: string | undefined, now = new Date()) {
-  // Practical life, asked the same way: the pharmacies, the emergencies, the markets, the déchèteries, the fuel prices,
-  // the doctors, the schools, where to go with children.
+  // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
+  // the fuel prices, the doctors, the schools, where to go with children.
   if (PHARMACY.test(quoi)) return pharmaciesAnswer(lieu);
+  if (GARDE.test(quoi)) return gardeAnswer(lieu);
   if (EMERGENCY.test(quoi)) return urgencesAnswer(lieu);
   if (MARKET.test(quoi)) return marchesAnswer(lieu);
   if (COLLECTION.test(quoi)) return collecteAnswer(lieu, now);

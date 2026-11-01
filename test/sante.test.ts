@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { INSEE } from "../src/places/insee.js";
 import { ETABLISSEMENTS, nearest } from "../src/sante/etablissements.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
-import { EMERGENCY, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "../src/tools/sante.js";
+import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "../src/tools/sante.js";
 import { communePage } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
 import { Cache } from "../src/cache.js";
@@ -66,5 +66,38 @@ describe("the pharmacies and hospitals of FINESS", () => {
     const page = communePage("https://rundata.re", pageOf("saint-leu")!, { place: null });
     expect(page).toMatch(/<h3>Pharmacies<\/h3><p class="tv">\d+ pharmacies<\/p>/);
     expect(page).toContain('<a href="https://www.3237.fr/" rel="noopener">Pharmacie de garde : 3237.fr</a>');
+  });
+});
+
+describe("the doctor on duty", () => {
+  it("is asked in many words, never for a child's care nor a vet, and « médecin » alone stays the doctors' numbers", () => {
+    for (const q of ["médecin de garde", "medecin de garde", "garde", "docteur de garde", "maison médicale de garde", "SOS médecin", "SOS Médecins", "médecin la nuit", "docteur ce soir", "médecin le dimanche", "permanence des soins", "dentiste de garde"]) expect(GARDE.test(q), q).toBe(true);
+    for (const q of ["médecin", "médecin généraliste", "pédiatre", "garde d'enfants", "garde alternée", "vétérinaire de garde", "mairie", "urgences"]) expect(GARDE.test(q), q).toBe(false);
+  });
+
+  it("sends to the 15 before going anywhere, the 32 37 for the duty pharmacy, Santé.fr's map in the daytime", () => {
+    const r = body(gardeAnswer("Saint-Pierre"));
+    expect(r.lieu).toBeDefined();
+    expect(r.resume).toBe(
+      "Médecin de garde : appelez le 15 avant de vous déplacer, comme le demande l'ARS La Réunion. Le médecin du 15 dit où consulter, ou envoie les secours. Urgence vitale : le 15 ou le 112. Pharmacie de garde : le site 3237.fr, ou le 32 37 (numéro payant : 0,35 € TTC la minute). En journée, pour une consultation sans rendez-vous : la carte des lieux de soins de Santé.fr, https://www.sante.fr/carte-des-lieux-de-soins.",
+    );
+    expect(r.numeros).toEqual({ samu: "15", europeen: "112", sourds_et_malentendants: "114" });
+    expect(r.pharmacie_de_garde.site).toBe("https://www.3237.fr/");
+    expect(r.consultation_en_journee.carte).toBe("https://www.sante.fr/carte-des-lieux-de-soins");
+    expect(r.maison_medicale_de_garde).toEqual({ nom: "Maison de soins de l'Est (maison médicale de garde)", adresse: "60 rue Dumesgnil d'Engente, 97440 Saint-André", a_savoir: "Appeler le 15 avant de s'y rendre. Ses horaires ne sont pas donnés ici." });
+    expect(r.avertissements[0]).toMatch(/ne sait pas quel médecin est de garde/);
+    // No hour of the duty, no doctor's name, until the ARS's text of 2026 is read.
+    expect(JSON.stringify(r)).not.toMatch(/\b\d{1,2} ?h(?:\b|\d)|\bDr\b|docteur [A-Z]/);
+    expect(body(gardeAnswer(undefined)).lieu).toBeUndefined();
+    expect(JSON.stringify(body(gardeAnswer("Nulle-Part-Ici")))).not.toContain("Médecin de garde");
+  });
+
+  it("is what the public services tool answers, where it used to find no public service", async () => {
+    for (const q of ["médecin de garde", "maison médicale de garde", "SOS médecins", "garde"]) {
+      expect(body(await annuaireTool(new Cache(), q, "Saint-Pierre")).resume, q).toMatch(/^Médecin de garde : appelez le 15 avant de vous déplacer/);
+    }
+    expect(body(await annuaireTool(new Cache(), "pharmacie de garde", "Saint-Pierre")).resume).toMatch(/^Pharmacie de garde .*3237\.fr/);
+    expect(body(await annuaireTool(new Cache(), "urgences", "Saint-Pierre")).resume).toMatch(/^Urgence : appeler le 15/);
+    expect(body(await annuaireTool(new Cache(), "médecin", "Saint-Pierre")).resume).toMatch(/médecins généralistes et \d+ médecins spécialistes libéraux à Saint-Pierre/);
   });
 });

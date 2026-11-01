@@ -85,6 +85,8 @@ export function placeBlock(asked: string, r: Resolution) {
     versant: versant(p.lon, p.lat),
     correspondance: r.correspondance,
     autres_possibilites: r.autres.length ? r.autres.map((a) => `${a.nom} (${a.type}, ${a.commune})`) : undefined,
+    // Said, so that a place not known is not taken for the commune named beside it.
+    mots_ignores: r.ignores ? `«\u00a0${r.ignores.join(" ")}\u00a0» laissé de côté\u00a0: la réponse vaut pour ${p.nom}.` : undefined,
   };
 }
 

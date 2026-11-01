@@ -1837,7 +1837,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   const fuel = s && (s.annonce || s.lignes)
     ? `<div class="card">${icon("car")}<h3>Prix des carburants</h3>` +
       (s.annonce ? `<p>${esc(keep(s.annonce))}.</p>${s.jusquau ? `<p>${esc(keep(s.jusquau))}.</p>` : ""}` : `<p>${esc(keep(`${s.depuis}, fixés par le préfet : ${s.lignes}`))}.</p>`) +
-      `<p class="note">Les mêmes dans toute l'île : une station peut vendre moins cher. <a href="/carburants">Tous les prix du mois →</a></p></div>`
+      `<p class="note">Les mêmes dans toute l'île. <a href="/carburants">Tous les prix du mois →</a></p></div>`
     : "";
   // The fixed speed cameras, from the ministry's yearly list bundled with the site: where they stand, never the mobile checks.
   const cameras = radars.byCommune();

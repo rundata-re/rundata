@@ -161,7 +161,7 @@ function waterCount(avis: { ne_pas_boire?: boolean }[]): string {
 
 const MARKETS_NOT_ALL = "D'après OpenStreetMap et les sites des mairies qui permettent de les reprendre : tous les marchés n'y sont pas, et les jours peuvent avoir changé.";
 const NO_DUTY = "rundata.re ne sait pas quelle pharmacie est de garde : seuls 3237.fr et le 32 37 le disent.";
-const FUEL_NOTE = "Prix maximum fixés chaque mois par le préfet, les mêmes dans toute l'île : une station peut vendre moins cher.";
+const FUEL_NOTE = "Prix maximum fixés chaque mois par le préfet, les mêmes dans toute l'île.";
 
 /** « sans plomb 2,00 €/L, gazole 1,80 €/L », as marketing words the prices everywhere. */
 function fuelShort(p: { produits: { produit: string; prix_eur: number }[] }): string {

@@ -86,7 +86,7 @@ export async function carburantsAnswer(cache: Cache, now = new Date()) {
   const today = s.vigueur && (s.avenir
     ? `Prix maximum en vigueur aujourd'hui à La Réunion, jusqu'au ${dayOf(eve(s.avenir.depuis))} (arrêté du préfet) : ${s.lignes}.`
     : `Prix maximum à La Réunion depuis le ${firstOf(s.vigueur.depuis)} (arrêté du préfet) : ${s.lignes}.`);
-  const resume = [today, s.annonce && `${s.annonce}.`, "Les mêmes plafonds dans toute l'île : une station peut vendre moins cher, pas plus."]
+  const resume = [today, s.annonce && `${s.annonce}.`, "Les mêmes dans toute l'île."]
     .filter(Boolean).join(" ")
     // Once, the order's own word: an assistant links it to the user's.
     .replace("sans plomb ", "sans plomb (« supercarburant » dans l'arrêté) ");

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BUILD_BUDGET, counted } from "../src/budget.js";
 import { type Entree, fenetres, type Historique, type Image, isTrou, unrle } from "../src/web/pluie-retro.js";
 import { ajouter, firstHour, jour, jourOf, lastHour, oublier, pool, semaine, type Stores } from "../src/web/radar-semaine.js";
-import { full } from "../src/web/rejeu.js";
+import { written } from "../src/web/rejeu.js";
 
 const H = 3_600_000;
 const T0 = Date.parse("2026-11-01T06:00:00Z"); // 10:00 in La Réunion
@@ -110,16 +110,17 @@ describe("the radar's week, an hour an image", () => {
 });
 
 describe("the 7-day replay of the radar", () => {
-  it("is shown once the week holds 7 days, 3 hours an hour apart", () => {
+  it("is shown from its first hour while it is written, 3 hours an hour apart", () => {
     const now = new Date(T0 + 10 * 60_000);
     const hours = (n: number) => hist(Array.from({ length: n }, (_, i) => ({ fin: iso(T0 - (n - 1 - i) * H), de: iso(T0 - (n - i) * H), pannes: [], pluie: ".6,", mal_vu: "06," })));
-    expect(full(hours(100), now)).toBe(false);
-    expect(full(hours(168), now)).toBe(true);
+    expect(written(hours(1), now)).toBe(true);
+    expect(written(hours(168), now)).toBe(true);
+    expect(written(hist([{ trou: true, de: iso(T0 - H), a: iso(T0) }]), now)).toBe(false);
     const w = fenetres(hours(168), H, 3 * H);
     expect(w.entrees.length).toBe(168);
     expect(w.entrees.at(-1)).toMatchObject({ de: iso(T0 - 3 * H), fin: iso(T0) });
     // A week that stopped being written: not shown.
-    expect(full(hours(168), new Date(T0 + 4 * H))).toBe(false);
+    expect(written(hours(168), new Date(T0 + 4 * H))).toBe(false);
   });
 });
 

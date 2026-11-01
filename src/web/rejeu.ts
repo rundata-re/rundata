@@ -3,8 +3,8 @@
  * - 6 hours: the radar's images, one every 5 minutes (pluie-retro.ts), and the stations' last 6 round hours;
  * - 24 hours: the radar's images, one a quarter of an hour, each the strongest rain of the hour up to it (parHeure),
  *   and the stations' last 24 round hours;
- * - 7 days: the stations' round hours of the week; and the radar's week once it is whole (radar-semaine.ts), 3 hours
- *   an hour apart, each the strongest rain of the 3 hours, as the 24 hours.
+ * - 7 days: the stations' round hours of the week; and the radar's week (radar-semaine.ts) for the hours it holds, 3
+ *   hours an hour apart, each the strongest rain of the 3 hours, as the 24 hours; the rain gauges before them.
  * The stations' hours are Météo-France's hourly package (providers/meteofrance.ts), already read for /meteo: the
  * temperature and the wind at each round hour, the rain of the hour before it. It holds 24 hours; the week is kept in
  * KV (SEMAINE_KV_KEY), merged with each newer package a data center already holds, never one asked for it, and at
@@ -216,21 +216,19 @@ async function build(d: Duree, cache: Cache, now: Date, background: (p: Promise<
     !sources ? undefined
     : d === "6h" ? radar(sources.six, KEEP_MS)
     : d === "24h" ? radar(sources.day, LONG_MS).then((h) => h && parHeure(h))
-    : radar(sources.week, WEEK_KEEP_MS).then((h) => h && full(h, now) ? fenetres(h, HOUR_MS, 3 * HOUR_MS) : null),
+    : radar(sources.week, WEEK_KEEP_MS).then((h) => h && written(h, now) ? fenetres(h, HOUR_MS, 3 * HOUR_MS) : null),
   ]);
-  // The week of the radar once it is whole; until then, the rain gauges alone, as before it was kept.
+  // The week of the radar while it is written; the page shows the rain gauges for the hours before its first.
   return { ...(d === "7j" ? r ? { radar: r } : {} : { radar: r ?? null }), heures: heures(s, HEURES[d]) };
 }
 
 /**
- * Whether the radar's week (radar-semaine.ts) holds the 7 days up to now, its first hour to make the first window of
- * 3 hours (the hour before it may be missing: it was the first hour kept).
+ * Whether the radar's week (radar-semaine.ts) is still written: an image among its hours, the last within 3 hours. Shown
+ * from its first hour, not only once it holds 7 days (the user, 01/11/2026: the rain gauges alone put rain over the
+ * whole island the evening of 31/10, the radar had it).
  */
-export function full(h: Historique, now: Date): boolean {
-  const first = h.entrees[0];
-  if (!first) return false;
-  const start = Date.parse(isTrou(first) ? first.de : (first.de ?? first.fin));
-  return start <= now.getTime() - 7 * 24 * HOUR_MS && endOf(h.entrees[h.entrees.length - 1]) > now.getTime() - 3 * HOUR_MS;
+export function written(h: Historique, now: Date): boolean {
+  return h.entrees.some((e) => !isTrou(e)) && endOf(h.entrees[h.entrees.length - 1]) > now.getTime() - 3 * HOUR_MS;
 }
 
 /** The answer of PATHS[d], kept by the data center and the browser for freshSeconds(). */

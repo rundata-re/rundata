@@ -120,18 +120,20 @@ describe("the replay bar's files", () => {
     expect(w.body.heures.st[0].t).toHaveLength(N);
   });
 
-  it("answer the radar's week, 3 hours an hour apart, once it holds 7 days; the rain gauges alone before", async () => {
+  it("answer the radar's week, 3 hours an hour apart, from its first hour; without it, the rain gauges alone", async () => {
     const now = at("2026-10-25T08:57:00Z");
     const end = Date.parse("2026-10-25T08:00:00Z");
     const hours = (n: number): Historique => ({ w: 125, h: 112, entrees: Array.from({ length: n }, (_, i) => ({
       fin: new Date(end - (n - 1 - i) * 3_600_000).toISOString(), de: new Date(end - (n - i) * 3_600_000).toISOString(), pannes: [], pluie: rle("0".repeat(14_000)), mal_vu: rle("0".repeat(14_000)),
     })) });
-    const get = async (week: Historique) => {
+    const get = async (week: Historique | null) => {
       configure(sources(merge(null, hourly, now), null, null, week).s);
       const res = await site(new Request(`https://rundata.re${PATHS["7j"]}`), new Cache(new MemoryStore(), () => now.getTime()), () => {}, now);
       return res!.json();
     };
-    expect((await get(hours(150))).radar).toBeUndefined();
+    expect((await get(null)).radar).toBeUndefined();
+    // A day of it: its 24 windows, the page shows the rain gauges for the hours before.
+    expect((await get(hours(24))).radar.entrees).toHaveLength(24);
     const w = await get(hours(171));
     expect(w.radar.entrees).toHaveLength(171);
     expect(w.radar.entrees.at(-1)).toMatchObject({ de: "2026-10-25T05:00:00Z", fin: "2026-10-25T08:00:00Z" });

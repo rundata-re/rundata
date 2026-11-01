@@ -264,7 +264,8 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   // A tab and a legend per measure that at least one station has; the first shown without a choice.
   const layers = [
     t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>${n(t.length, "station", "stations")}, température mesurée sous abri, la plus récente à ${hm(latest)}. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.` },
-    nRain && { id: "p", tab: hour ? "Pluie 1 h" : "Pluie 6 min", legend: `${n(nRain, "pluviomètre", "pluviomètres")}, ${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente à ${hm(latest)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}. Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
+    // « Pluie » alone (the user, 01/11/2026): the legend says over how long, and the radar is in the same layer.
+    nRain && { id: "p", tab: "Pluie", legend: `${n(nRain, "pluviomètre", "pluviomètres")}, ${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente à ${hm(latest)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}. Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
     w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>${n(w.length, "anémomètre", "anémomètres")}, vent moyen mesuré en km/h, le plus récent à ${hm(latest)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.` },
   ].filter((l): l is { id: string; tab: string; legend: string } => !!l);
   const tabs = `<div class="tabs aqtabs" role="radiogroup" aria-label="Mesure affichée sur la carte">` +
@@ -482,9 +483,12 @@ export const windAt = (x: number, y: number, ws: number[][], r: number): [number
 };
 /**
  * The rain between the rain gauges, on the land's cells (`L`, w by h) by inverse distance from `pts` ([x, y, mm/h] in
- * cells), as the radar's classes (`cl`, their lower bounds): one digit a cell. The replay's script takes it as its text.
+ * cells), as the radar's classes (`cl`, their lower bounds): one digit a cell. Each gauge counts within `r` cells only,
+ * less and less up to there: a dry gauge keeps its surroundings dry, and a cell far from every gauge is left without
+ * rain, never given the island's (the user, 01/11/2026: rain at Saint-Pierre, whose gauge measured none, from the
+ * gauges of the north and the east). The replay's script takes it as its text.
  */
-export const gaugeField = (pts: number[][], L: ArrayLike<number>, w: number, h: number, cl: number[]): string => {
+export const gaugeField = (pts: number[][], L: ArrayLike<number>, w: number, h: number, cl: number[], r: number): string => {
   let out = "";
   for (let k = 0; k < w * h; k++) {
     if (!L[k] || !pts.length) {
@@ -494,16 +498,20 @@ export const gaugeField = (pts: number[][], L: ArrayLike<number>, w: number, h: 
     const x = k % w, y = (k / w) | 0;
     let sw = 0, sv = 0;
     for (const [px, py, v] of pts) {
-      const q = 1 / ((px - x) ** 2 + (py - y) ** 2 + 0.5);
+      const d2 = (px - x) ** 2 + (py - y) ** 2;
+      if (d2 >= r * r) continue;
+      const q = 1 / (d2 + 0.5) - 1 / (r * r);
       sw += q;
       sv += q * v;
     }
     let c = 0;
-    while (c < cl.length && sv / sw >= cl[c]) c++;
+    while (sw && c < cl.length && sv / sw >= cl[c]) c++;
     out += c;
   }
   return out;
 };
+/** How far a rain gauge's rain is spread in the replay, in the map's units: 10 km. */
+const GAUGE_REACH = Math.round((10 / KM) * 10) / 10;
 /** How near an anemometer must be for its wind to lean the drops, in the map's units: 15 km. */
 const WIND_REACH = Math.round((15 / KM) * 10) / 10;
 /**
@@ -757,7 +765,7 @@ const ST={"6h":3e5,"24h":9e5,"7j":36e5},SN={"6h":6e4,"24h":18e4,"7j":6e5},DU={"6
 const fig=rb.closest("figure"),b=rb.querySelector(".rj-b"),rng=rb.querySelector("input[type=range]"),q=rb.querySelector(".rj-q"),ann=rb.querySelector("[aria-live]"),
 hd=fig.querySelector(".rj-d"),hh=fig.querySelector(".rj-h"),hs=fig.querySelector(".rj-s"),dots=fig.querySelector(".rj-st"),lg=(l)=>fig.querySelector(".lg-"+l+" .rj-lg"),
 rm=matchMedia("(prefers-reduced-motion: reduce)").matches,F={},G=new Map();
-let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],LT=new Map(),TD=null,playing=false,raf=0,last=0,nx=0,cur="",was=null;
+let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],RT=Infinity,LT=new Map(),TD=null,playing=false,raf=0,last=0,nx=0,cur="",was=null;
 const lx=(t)=>new Date(t+144e5),hmm=(t)=>{const x=lx(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())},dm=(t)=>{const x=lx(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
 const lay=()=>["t","p","v"].find((l)=>{const i=document.getElementById("wxl-"+l);return i&&i.checked})||"";
 const chip=(t)=>{let i=0;while(i<C.length-2&&t>C[i+1][0])i++;const[[t0,c0],[t1,c1]]=[C[i],C[i+1]],k=Math.min(1,Math.max(0,(t-t0)/(t1-t0)));return"rgb("+c0.map((c,j)=>Math.round(c+(c1[j]-c)*k)).join(",")+")"};
@@ -784,16 +792,16 @@ RJ.p.wind(b?(b.i<0?RJ.v&&RJ.v.live:sx("v",b.i)):null,b&&b.t)};
 const three=(s,k)=>k.w.some((i)=>s.rr[i]==null)?null:k.w.reduce((a,i)=>a+s.rr[i],0);
 const RN=new Map(),field=${gaugeField},enc=(x)=>x.replace(/(.)\\1*/g,(m)=>m[0]+m.length.toString(36)+",");
 const rain=(k)=>{let e=RN.get(k.t);if(e)return e;const gr=RJ.p.dims(),pts=[];for(const s of st){const v=three(s,k);if(v!=null)pts.push([s.x*gr.w/${W},s.y*gr.h/${H},v])}
-e={fin:new Date(k.end).toISOString(),de:new Date(k.end-108e5).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.w,gr.h,${JSON.stringify(CLASSES)})),mal_vu:"0"+(gr.w*gr.h).toString(36)+",",
+e={fin:new Date(k.end).toISOString(),de:new Date(k.end-108e5).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.w,gr.h,${JSON.stringify(CLASSES)},${GAUGE_REACH}*gr.w/${W})),mal_vu:"0"+(gr.w*gr.h).toString(36)+",",
 wet:pts.some((x)=>x[2]>0)};RN.set(k.t,e);return e};
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
-if(l==="p"&&(d!=="7j"||J.radar)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
+if(l==="p"&&(d!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
 const r=at("p");if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
 // 7 days, until the radar's week is whole (rejeu.ts; then its 3 hours an hour apart, as the 24 hours above): the rain
 // gauges' 3 hours spread between them (rain), faded from one to the next, without their dots (the
 // user, 01/11/2026: « beaucoup trop chargé »); the time and the legend those of the 3 hours shown (k), switched half way.
-if(l==="p"){const gr=RJ.p&&RJ.p.dims(),el=lg("p"),r=at("p");const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);
+if(l==="p"){const gr=RJ.p&&RJ.p.dims(),el=lg("p"),r=at("g");const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);
 if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(rain(r.m),rain(r.m),0,el,gr,null,0));else{cur="";RJ.p.mix(rain(r.a),rain(r.z),r.f,el,gr,null,0)}}
 return k?{h:k}:null}
 const r=at(l);if(!RJ[l])return r;if(!r)once("x"+l,()=>RJ[l].show(null));else if(r.m)once(l+r.m.t,()=>RJ[l].show(gridOf(l,r.m)));else{cur="";RJ[l].mix(gridOf(l,r.a),gridOf(l,r.z),r.f)}
@@ -816,8 +824,8 @@ rng.value=String((T-S)/ST[d]);rng.setAttribute("aria-valuetext",said);return sai
 const btn=()=>{const end=!!J&&T>=E;b.disabled=false;b.textContent=playing?"❚❚ Pause":end?"↻ Relire":"▶ Lire";b.setAttribute("aria-label",playing?"Mettre en pause":end?"Relire":LB[d||"6h"])};
 // The bar of the layer shown: from its first measure in the file (not before the length asked), to the latest; its
 // steps on the clock's (every 5 minutes, quarter of an hour or hour), where the measures are.
-const range=()=>{const l=lay(),k=K[l]||[],t0=Math.min(...k.map((x)=>x.t),...(l==="p"?TR.map((x)=>x[0]):[]));S=Math.min(E,Math.ceil(Math.max(E-DU[d],isFinite(t0)?t0:E)/ST[d])*ST[d]);
-const late=S>E-DU[d]+(l==="p"&&(d!=="7j"||J.radar)?2*ST[d]:36e5+6e4);q.hidden=!late;q.textContent=late?"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+".":"";
+const range=()=>{const l=lay(),k=l==="p"?[...K.g,...K.p]:K[l]||[],t0=Math.min(...k.map((x)=>x.t),...(l==="p"?TR.map((x)=>x[0]):[]));S=Math.min(E,Math.ceil(Math.max(E-DU[d],isFinite(t0)?t0:E)/ST[d])*ST[d]);
+const late=S>E-DU[d]+(l==="p"&&!K.g.length?2*ST[d]:36e5+6e4);q.hidden=!late;q.textContent=late?"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+".":"";
 T=Math.max(S,Math.min(E,T));rng.max=String((E-S)/ST[d]||0)};
 // The live map's colour scale in front, the same for the whole play.
 const legend=(l,k,one,many,text)=>{const el=lg(l);if(!el||!K[l].length)return;const c=st.filter((s)=>s[k].some((v)=>v!=null)).length,sc=fig.querySelector(".lg-"+l+" .lg-now .lgs");
@@ -827,13 +835,16 @@ const live=Date.parse(rb.dataset.fin)||0,th=(i)=>fin-(n-1-i)*36e5,hours=(f)=>{co
 // The week's rain by 3 hours, one every hour (the user, 01/11/2026: 3 hours apart, « moins fluide que 24h et plus
 // brutal »), two in a row sharing 2 of their 3 hours: each at its middle, the time its spread is drawn whole.
 const windows=()=>{const k=[];for(let i=2;i<n;i++){const w=[i-2,i-1,i];if(st.some((s)=>three(s,{w})!=null))k.push({t:th(i)-54e5,end:th(i),i,w})}return k};
-K={t:RJ.t?hours("t"):[],v:RJ.v?hours("ff"):[],p:[]};for(const l of["t","v"])if(K[l].length&&live>fin)K[l].push({t:live,i:-1});
-TR=[];RN.clear();WH=0;if(RJ.p){if(d==="7j"&&!J.radar)K.p=windows();else if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e})}
+K={t:RJ.t?hours("t"):[],v:RJ.v?hours("ff"):[],p:[],g:[]};for(const l of["t","v"])if(K[l].length&&live>fin)K[l].push({t:live,i:-1});
+// Over 7 days, the radar's week for the hours it holds, and the rain gauges' windows ended before its first (K.g, RT
+// the first image's time, where the map goes from one to the other).
+TR=[];RN.clear();WH=0;if(RJ.p){if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e});
+if(d==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;
 E=Math.max(live,fin,...K.p.map((x)=>x.t),...TR.map((x)=>x[1]));LT=new Map();if(RJ.t)for(const[x,y,,t]of RJ.t.live)LT.set(Math.round(x*10)/10+","+Math.round(y*10)/10,t);
 dots.replaceChildren();TD=RJ.t?ring("t"):null;
 legend("t","t","station","stations",(x)=>"Température sous abri de "+x+" de Météo-France, une mesure par heure. Entre les stations, les couleurs sont estimées selon l'altitude : ce n'est pas une mesure.");
 legend("v","ff","anémomètre","anémomètres",(x)=>"Vent moyen sur 10 minutes de "+x+" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu.");
-fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length};
+fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length||K.g.length};
 const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=was?k*${FRAME_MS}:0;T=Math.min(E,T+(E-S)*dt/PL[d]);show();if(T>=E)stop(true)};
 const play=()=>{if(T>=E)T=S;playing=true;last=nx=0;cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
 const stop=(say)=>{playing=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show()};

@@ -82,7 +82,7 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
   // the fuel prices, the doctors, the schools, where to go with children.
   if (PHARMACY.test(quoi)) return pharmaciesAnswer(lieu);
-  if (GARDE.test(quoi)) return gardeAnswer(lieu);
+  if (GARDE.test(quoi)) return gardeAnswer(quoi, lieu);
   if (EMERGENCY.test(quoi)) return urgencesAnswer(lieu);
   if (MARKET.test(quoi)) return marchesAnswer(lieu);
   if (COLLECTION.test(quoi)) return collecteAnswer(lieu, now);

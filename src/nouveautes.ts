@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-01T22:45:00+04:00", texte: "Médecin de garde\u00a0: les horaires de la garde, le territoire de chaque commune et l'hôpital vers lequel le 15 oriente la nuit, d'après l'ARS." },
   { date: "2026-11-01T22:35:00+04:00", texte: "Médecin de garde\u00a0: le connecteur dit d'appeler le 15 d'abord, et où trouver la pharmacie de garde ou un médecin sans rendez-vous en journée." },
   { date: "2026-11-01T22:26:00+04:00", texte: "Médecins\u00a0: combien de généralistes et de spécialistes dans chaque commune, par secteur, et le lien vers l'annuaire Ameli." },
   { date: "2026-11-01T22:19:00+04:00", texte: "Carte\u00a0: revoir la pluie au radar et les stations des 6 ou 24\u00a0dernières heures, sur la même carte que les autres couches." },

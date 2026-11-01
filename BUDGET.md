@@ -135,6 +135,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV) | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 40 | code |
 | /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
+| /carte/resume.json | les chiffres du bandeau « En direct » de /carte : la dernière copie des stations, des rivières, des sentiers et des séismes | à chaque vue |  | 12 | 4 |  |  |  |  | 20 | code |
 | /carte | la carte des couches : la page seule, avec la vigilance et la version de l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 40 | code |
 | /mer | la page /mer | à chaque vue |  | 28 |  |  |  |  |  | 120 | mesuré |
 | /randonnees/* | une randonnée et sa trace | à chaque vue |  | 25 | 1 | 1 |  |  |  | 130 | mesuré |

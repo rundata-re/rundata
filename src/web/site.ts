@@ -148,7 +148,7 @@ import { PATH as PLUIE_RADAR, rainGrid } from "./pluie-radar.js";
 import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricite-historique.js";
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
 import { CUMULS_PATH, DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuCumuls, rejeuFin, rejeuJour } from "./rejeu.js";
-import { COUCHE_PATH, coucheResponse } from "./couches.js";
+import { COUCHE_PATH, coucheResponse, RESUME_PATH, resumeResponse } from "./couches.js";
 
 const HTML = {
   "content-type": "text/html; charset=utf-8",
@@ -729,6 +729,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === CUMULS_PATH) return rejeuCumuls(cache, background, now);
   const jour = JOUR_FILE.exec(path);
   if (jour) return (await rejeuJour(jour[1], cache, background, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+  // The figures of /carte's « En direct » band, from its layers' copies (couches.ts).
+  if (path === RESUME_PATH) return resumeResponse(cache, now);
   // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.
   if (path.startsWith(COUCHE_PATH)) return (await coucheResponse(path, cache, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   // A station's page (web/station.ts): its copy built like a commune's, kept by station.

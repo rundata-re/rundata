@@ -11,11 +11,18 @@
  * ticked by hand leaves the view, and the boxes ticked go in the address (`#c=pluie,rivieres`), so that what is shown
  * can be shared. Without a script, the map alone, and the pages.
  *
+ * The map is edge to edge, on the sea's colour, its views and buttons over the sea: above and under it on a phone, at its
+ * sides on a wide screen, never over the island. Over it, the « En direct » band: a figure for each of four live layers,
+ * from their copies (couches.ts, resume), each leading to the view that shows it; a layer without a fresh copy has no
+ * figure. On the map, a blue ring around each station that measured rain in its last hour, which pulses unless the
+ * phone asks for less motion: the rings are a layer of their own over the map, only its opacity moving, which the
+ * browser does without drawing the map again.
+ *
  * The words are marketing's (interne/ux/carte-mots-3110.md).
  */
 import island from "../places/island.json" with { type: "json" };
 import { MAX_ZOOM } from "./carte-zoom.js";
-import { COUCHE_PATH, COUCHES, type Couche, type Nature, type Precision, type Theme } from "./couches.js";
+import { COUCHE_PATH, COUCHES, type Couche, type Nature, type Precision, RESUME_PATH, type Theme } from "./couches.js";
 import type { Alerte } from "./data.js";
 import { ACCES, crumbBar, crumbs, webPage } from "./domains.js";
 import { esc, FOND_ZOOM, H, islandMap, W, zoomIsland } from "./map.js";
@@ -63,7 +70,20 @@ export const MOTS = {
   surLaCarte: "{n} sur la carte.",
   maj: ", données mises à jour le {d} à {h}, sans modification",
   radarMalVu: "zones que le radar voit mal",
+  // The « En direct » band over the map: none, one, many ({n} the figure, in bold); each opens its view.
+  direct: "En direct",
+  enDirect: {
+    stations: ["aucune station sous la pluie", "{n} station sous la pluie", "{n} stations sous la pluie"],
+    rivieres: ["aucune rivière en hausse", "{n} rivière en hausse", "{n} rivières en hausse"],
+    sentiers: ["aucun sentier fermé", "{n} sentier fermé", "{n} sentiers fermés"],
+    seismes: ["aucun séisme en 7\u00a0jours", "{n} séisme en 7\u00a0jours", "{n} séismes en 7\u00a0jours"],
+  },
+  // The stations' line of the legend, when rings show where it rained.
+  cercles: "cercle bleu\u00a0: pluie mesurée dans l'heure",
 };
+
+/** Where each figure of the band leads: the view, or the layer alone, that shows it. */
+export const DIRECT_VERS: Record<keyof typeof MOTS.enDirect, string> = { stations: "#meteo", rivieres: "#pluie-rivieres", sentiers: "#c=sentiers", seismes: "#volcan" };
 
 /** What each layer shows (panel, line 2), its page's name in the site's menu, and its words in the bubble and legend. */
 interface Dit {
@@ -192,6 +212,8 @@ function conf() {
     pluie: { classes: CLASSES, couleurs: RAIN_WASH },
     mots: MOTS,
     vues: VUES.map((v) => ({ id: v.id, dit: v.dit, couches: v.couches, cadre: v.cadre, fond: v.fond })),
+    resume: RESUME_PATH,
+    direct: DIRECT_VERS,
   };
 }
 
@@ -238,8 +260,8 @@ function corps(): string {
   const pages = [...new Map(COUCHES.map((c) => [c.page, DIT[c.id].rubrique])).entries()].map(([p, r]) => `<a href="${esc(p)}">${esc(r)}</a>`).join(", ");
   const vues = VUES.map((v) => `<li><a href="#${esc(v.id)}" data-v="${esc(v.id)}">${esc(v.nom)}</a></li>`).join("");
   return `<section aria-labelledby="h-carte" class="kcarte"><h2 id="h-carte" class="sr">${esc(MOTS.h1)}</h2>
-  <nav class="kvues" aria-labelledby="h-vues" hidden><h3 id="h-vues">${esc(MOTS.vues)}</h3><ul>${vues}</ul><p class="kvd" aria-live="polite"></p></nav>
-  <figure class="card mapcard kmapc">${map}<figcaption class="note"><ul class="klg" aria-live="polite"></ul><p class="kcr"></p></figcaption></figure>
+  <p class="kdir" hidden><span class="kdl"><i aria-hidden="true"></i>${esc(MOTS.direct)} · <time></time></span></p>
+  <figure class="card mapcard kmapc"><nav class="kvues" aria-labelledby="h-vues" hidden><h3 id="h-vues">${esc(MOTS.vues)}</h3><ul>${vues}</ul><p class="kvd" aria-live="polite"></p></nav>${map}<figcaption class="note"><ul class="klg" aria-live="polite"></ul><p class="kcr"></p></figcaption></figure>
   <noscript><p class="note">${esc(MOTS.sansScript)} ${pages}.</p></noscript>
   <details class="kch" open hidden><summary>${esc(MOTS.couches)} (<span class="kcn">0</span>)</summary><div class="kths">${choix()}</div></details>
 </section>
@@ -268,7 +290,8 @@ export function cartePage(origin: string, alerte?: Alerte): string {
  * panel and the pages are the text of the map. The points keep their size on screen at any zoom (strokes that do not
  * scale); the stations' figures take theirs from `--u`, the map's units per pixel, set again at each zoom. A view, picked
  * or named by the address, ticks its boxes, then picks its background and asks the zoom for its frame (`zbox`); named by
- * no address, the first view's boxes are ticked, the map left whole.
+ * no address, the first view's boxes are ticked, the map left whole. The rings follow the map: its viewBox, its size, their
+ * radius set again in the map's units at each zoom. The band's figures are asked once, after the views are wired.
  */
 const CARTE_SCRIPT = `(()=>{const cf=document.getElementById("k-conf"),svg=document.getElementById("kmap");if(!cf||!svg)return;
 const K=JSON.parse(cf.textContent),M=K.mots,L=new Map(K.couches.map((c)=>[c.id,c])),NS="http://www.w3.org/2000/svg",[A,B,C,D]=K.bbox,W=K.w,H=K.h;
@@ -301,7 +324,13 @@ if(c.id==="stations"&&i.temperature!=null){const t=el("text",{x,y,dy:"-.75em",cl
 const rain=(j)=>{const cv=svg.querySelector(".kpluie canvas");if(!cv)return;cv.width=j.w;cv.height=j.h;const g=cv.getContext("2d"),im=g.createImageData(j.w,j.h),P=K.pluie.couleurs.map((s)=>s.match(/[\\d.]+/g).map(Number));
 for(let k=0;k<j.w*j.h;k++){const v=j.pluie.charCodeAt(k)-48,mal=j.mal_vu&&j.mal_vu[k]==="1",q=k*4;if(v>=1&&v<=8){const p=P[v-1];im.data[q]=p[0];im.data[q+1]=p[1];im.data[q+2]=p[2];im.data[q+3]=Math.round(p[3]*255)}
 else if(mal&&((k%j.w)+Math.floor(k/j.w))%3===0){im.data[q]=70;im.data[q+1]=80;im.data[q+2]=95;im.data[q+3]=90}}g.putImageData(im,0,0)};
-const draw=(c,j)=>{if(c.id==="pluie"){rain(j);return}const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
+const fig=svg.closest("figure"),pv=el("svg",{class:"kpv","aria-hidden":"true",focusable:"false"});svg.after(pv);
+const place=()=>{const a=svg.getBoundingClientRect(),b=fig.getBoundingClientRect(),v=svg.viewBox.baseVal;if(!a.width||!v)return;pv.setAttribute("viewBox",svg.getAttribute("viewBox"));
+Object.assign(pv.style,{left:a.left-b.left-fig.clientLeft+"px",top:a.top-b.top-fig.clientTop+"px",width:a.width+"px",height:a.height+"px"});pv.querySelectorAll("circle").forEach((r)=>r.setAttribute("r",12*v.width/a.width))};
+if(window.ResizeObserver){const ro=new ResizeObserver(place);ro.observe(svg);ro.observe(fig)}new MutationObserver(place).observe(svg,{attributes:true,attributeFilter:["viewBox"]});
+const wet=(o)=>{const i=o.infos||{};return!i.ancienne&&i.pluie_1h>0};
+const rings=(j)=>{pv.replaceChildren(...j.objets.filter(wet).flatMap((o)=>[el("circle",{class:"kpb",cx:X(o.lon),cy:Y(o.lat),r:"12"}),el("circle",{cx:X(o.lon),cy:Y(o.lat),r:"12"})]));place()};
+const draw=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
 if(c.id==="sentiers")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl",d}))});
 j.objets.forEach((o)=>g.append(point(c,o,j)));
 if(!wired&&j.objets.length){wired=true;svg.dispatchEvent(new Event("carte",{bubbles:true}))}};
@@ -315,7 +344,7 @@ if(c.id==="bornes"){if(j.copie==="absente")return[nb(o.length),"état non lu"];c
 if(c.id.startsWith("enfants-"))return[un(o.length,c.unite),"liste du "+jm(j.heure)];return[nb(o.length),"liste du "+jm(j.heure)]};
 const etat=(c,j)=>!j||j==="err"||j.erreur||j.copie==="absente"&&c.id!=="bornes"?"echec":j.copie==="ancienne"?"vieux":"ok";
 const show=(c)=>{const on=boxes.find((b)=>b.value===c.id).checked,j=got.get(c.id),p=aff.querySelector('.kp[data-c="'+c.id+'"]'),g=c.id==="pluie"?svg.querySelector(".kpluie"):svg.querySelector('.kl[data-c="'+c.id+'"]');
-p.hidden=!on;if(g){g.style.display=on?"":"none";g.classList.toggle("vieux",etat(c,j)==="vieux")}let li=lg.querySelector('[data-c="'+c.id+'"]');
+p.hidden=!on;if(c.id==="stations")pv.style.display=on&&etat(c,j)==="ok"&&pv.childElementCount?"":"none";if(g){g.style.display=on?"":"none";g.classList.toggle("vieux",etat(c,j)==="vieux")}let li=lg.querySelector('[data-c="'+c.id+'"]');
 if(!on){if(li)li.remove();return}if(!li){li=document.createElement("li");li.dataset.c=c.id;li.className="kc-"+c.id;lg.append(li);[...lg.children].sort((a,b)=>K.couches.findIndex((x)=>x.id===a.dataset.c)-K.couches.findIndex((x)=>x.id===b.dataset.c)).forEach((x)=>lg.append(x))}
 const s=etat(c,j),q=(k)=>p.querySelector(k),h=aff.querySelector('.kh[data-c="'+c.id+'"]');
 const tx=document.createElement("span");if(j===undefined){tx.textContent=c.nom+" · "+M.chargement;li.replaceChildren(el2("i","km"),tx);return}
@@ -323,7 +352,7 @@ const msg=s==="echec"?put(M.echec,{o:c.organisme}):s==="vieux"?put(M.ancienne,{o
 q(".ks").textContent=msg;li.classList.toggle("vieux",s!=="ok");
 if(s==="echec"){tx.textContent=c.nom+" · "+put(M.echec,{o:c.organisme});li.replaceChildren(el2("i","km"),tx);q(".kt").textContent="";q(".kn").textContent="";return}
 const bits=said(c,j);tx.append(c.nom);if(c.id==="pluie"){const sp=document.createElement("span");sp.className="kgr";sp.append(K.pluie.classes[0].toLocaleString("fr-FR")+"\\u202fmm/h",el2("i","kgrad"),"plus de "+K.pluie.classes[K.pluie.classes.length-1]+"\\u202fmm/h");tx.append(" ",sp)}
-tx.append(" · "+bits.join(" · "));li.replaceChildren(el2("i","km"),tx);
+tx.append(" · "+bits.join(" · "));if(c.id==="stations"&&pv.childElementCount)tx.append(" · "+M.cercles);li.replaceChildren(el2("i","km"),tx);
 const t=c.nature==="fixe"?put(M.fixe,{d:an(j.heure)}):c.nature==="annonce"?put(M.annonce,{o:c.organisme,h:quand(j.heure)}):c.id==="seismes"||c.id==="bornes"?put(M.lu,{h:quand(j.heure)}):
 put(M.mesure,{m:hm(c.id==="pluie"?j.fin:Math.max(...(j.objets||[]).map((x)=>Date.parse(x.heure)))),h:quand(c.id==="pluie"?j.fin:j.heure)});q(".kt").textContent=t;
 if(c.id==="rivieres"){const m=q(".kmaj");if(m)m.textContent=put(M.maj,{d:jm(j.heure),h:hm(j.heure)})}
@@ -344,4 +373,11 @@ const lire=()=>{const h=location.hash.slice(1),v=K.vues.find((x)=>x.id===h);if(v
 if(!m){vue(K.vues[0],0);return}mark(null);const want=m[1].split(",");boxes.forEach((b)=>{b.checked=want.includes(b.value);tick(b)})};
 list.addEventListener("change",(e)=>{const b=e.target;if(b.name!=="c")return;tick(b);mark(null);hash()});
 nav.addEventListener("click",(e)=>{const a=e.target.closest("a[data-v]");if(!a)return;e.preventDefault();history.replaceState(null,"","#"+a.dataset.v);lire()});
-addEventListener("hashchange",lire);lire()})();`;
+addEventListener("hashchange",lire);lire();
+const dir=document.querySelector(".kdir");if(dir)fetch(K.resume).then((r)=>r.ok?r.json():null).catch(()=>null).then((r)=>{if(!r)return;
+const n={stations:r.stations&&r.stations.pluie,rivieres:r.rivieres&&r.rivieres.hausse,sentiers:r.sentiers&&r.sentiers.fermes,seismes:r.seismes&&r.seismes.n};
+const its=Object.keys(K.direct).filter((k)=>typeof n[k]==="number");if(!its.length)return;
+its.forEach((k)=>{const w=M.enDirect[k][Math.min(n[k],2)].split("{n}"),a=document.createElement("a");a.href=K.direct[k];
+if(w.length>1){const b=document.createElement("b");b.textContent=nb(n[k]);a.append(w[0],b,w[1])}else a.append(w[0]);dir.append(a)});
+const t=dir.querySelector("time");t.dateTime=r.heure;t.textContent=hm(r.heure);dir.hidden=false;
+dir.addEventListener("click",(e)=>{const a=e.target.closest("a");if(!a)return;e.preventDefault();const h=a.getAttribute("href");history.replaceState(null,"",h);if(!K.vues.some((v)=>"#"+v.id===h))cadre(null);lire()})})})();`;

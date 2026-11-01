@@ -9,7 +9,9 @@ import { REGISTRY } from "../src/registre.js";
 import * as enfants from "../src/vie/enfants.js";
 import * as seismes from "../src/providers/seismes.js";
 import * as vigicrues from "../src/providers/vigicrues.js";
-import { COUCHES, couchePath, type CoucheJson, MAX_GZIP } from "../src/web/couches.js";
+import * as mfStations from "../src/providers/meteofrance-stations.js";
+import * as onf from "../src/providers/sentiers.js";
+import { COUCHES, couchePath, type CoucheJson, MAX_GZIP, RESUME_PATH, type Resume } from "../src/web/couches.js";
 
 const NOW = new Date("2026-10-31T18:00:00Z");
 
@@ -135,5 +137,32 @@ describe("the layers of /carte", () => {
     expect(cr.objets).toMatchObject([{ nom: g.nom, lon: g.lon, lat: g.lat, nature: "mesure", infos: { hauteur_m: 1.24, tendance: "en hausse", heure_mesure: "21:45" } }]);
     const bo = JSON.parse((await serve(couchePath("bornes"), store)).text) as CoucheJson;
     expect(bo.objets).toMatchObject([{ lien: `/bornes#s-${s.id}`, infos: { libres: 2, total: 4 } }]);
+  });
+});
+
+describe("the figures of /carte's « En direct » band", () => {
+  it("are none without their layers' copies, never a count that is not of now", async () => {
+    const { r, text, used } = await serve(RESUME_PATH);
+    expect([r.status, used]).toEqual([200, 0]);
+    expect(r.headers.get("cache-control")).toBe("public, max-age=120");
+    expect(Object.keys(JSON.parse(text))).toEqual(["heure"]);
+  });
+
+  it("count from the copies the stations that measured rain, the rivers that rise, the trails closed, the earthquakes; an old copy none", async () => {
+    const store = new MemoryStore();
+    const st = (nom: string, pluie_1h: number, stale = false) => ({ nom, id: nom, lon: 55.5, lat: -21.1, time: "2026-10-31T17:48:00.000Z", source: mfStations.SOURCE.id, altitude_m: 100, pluie_1h, ...(stale && { stale }) });
+    await store.put("web:meteo", { value: { stations: [st("a", 0.4), st("b", 0), st("c", 2, true), st("d", 1.2)] }, fetchedAt: NOW.getTime() - 60_000 });
+    const [g, h] = vigicrues.STATIONS;
+    await store.put("web:crues", { value: { resume: "", stations: [{ station: g.nom, riviere: g.riviere, commune: g.commune, hauteur_m: 1.2, tendance_30_min: "en hausse" }, { station: h.nom, riviere: h.riviere, commune: h.commune, hauteur_m: 0.5, tendance_30_min: "stable" }], sources: [] }, fetchedAt: NOW.getTime() - 60_000 });
+    await store.put(onf.KEY, { value: { sentiers: [{ nom: "x", statut: "fermé", points: [[55.5, -21.1], [55.51, -21.11]], longueur_km: 2 }, { nom: "y", statut: "ouvert", points: [[55.5, -21.1]], longueur_km: 1 }], routes: [] }, fetchedAt: NOW.getTime() - 60_000 });
+    await store.put(seismes.KEY, { value: [{ id: "q1", time: "2026-10-30T00:12:00.000Z", lon: 55.71, lat: -21.24, profondeur_km: 1, magnitude: 1.4, type_magnitude: "ml" }], fetchedAt: NOW.getTime() - 3 * 3600_000 });
+    const { text, used } = await serve(RESUME_PATH, store);
+    expect(used).toBeLessThanOrEqual(REGISTRY.find((e) => e.id === "/carte/resume.json")!.run.subrequests);
+    const j = JSON.parse(text) as Resume;
+    // A station late is not counted; the earthquakes' copy, 3 hours old, gives no figure.
+    expect(j.stations).toEqual({ pluie: 2, total: 3, heure: "2026-10-31T17:48:00.000Z" });
+    expect([j.rivieres?.hausse, j.rivieres?.total]).toEqual([1, 2]);
+    expect(j.sentiers?.fermes).toBe(1);
+    expect(j.seismes).toBeUndefined();
   });
 });

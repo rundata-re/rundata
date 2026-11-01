@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-01T21:31:00+04:00", texte: "Carte\u00a0: la carte d'un bord à l'autre de l'écran, un bandeau «\u00a0En direct\u00a0» et un cercle bleu autour des stations sous la pluie." },
   { date: "2026-11-01T16:30:00+04:00", texte: "Carte\u00a0: pluie, rivières, séismes, sentiers fermés, défibrillateurs… sur une seule carte, avec des vues toutes prêtes à croiser." },
   { date: "2026-11-01T16:17:00+04:00", texte: "Météo\u00a0: sur la carte Pluie, le rejeu fait glisser la pluie d'une image radar à la suivante, au lieu d'un fondu." },
   { date: "2026-11-01T14:07:00+04:00", texte: "Météo et électricité\u00a0: les rejeux ont un bouton de vitesse, de ×0,5 à ×4, gardé d'une page à l'autre." },

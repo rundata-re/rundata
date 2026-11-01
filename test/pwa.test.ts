@@ -123,6 +123,24 @@ describe("the service worker", () => {
     expect(await ask("/autre.css")).toBeUndefined();
   });
 
+  it("gives a page newer than itself its own stylesheet from the network: the first page after a deploy", async () => {
+    const w = worker({ net: async (r) => basic(new Response(`réseau ${new URL(r.url).pathname}`)), shell: ["/style-ancien.css", "/font.woff2"] });
+    await w.extend("install");
+    const ask = (path: string) => w.extend("fetch", { request: new Request(`${O}${path}`) });
+    expect(await (await ask("/style-neuf.css"))!.text()).toBe("réseau /style-neuf.css");
+    // Its own stylesheet still comes from the shell, without the network.
+    const asked = w.asked.length;
+    expect(await (await ask("/style-ancien.css"))!.text()).toBe("shell /style-ancien.css");
+    expect(w.asked.length).toBe(asked);
+  });
+
+  it("gives the shell's stylesheet when the network is too slow to bring the page's", async () => {
+    const w = worker({ net: () => new Promise<Response>(() => {}), slow: true, shell: ["/style-ancien.css", "/font.woff2"] });
+    await w.extend("install");
+    const res = await w.extend("fetch", { request: new Request(`${O}/style-neuf.css`) });
+    expect(await res!.text()).toBe("shell /style-ancien.css");
+  });
+
   it("changes its text only with the files it keeps", () => {
     expect(serviceWorker(["/a"])).toBe(serviceWorker(["/a"]));
     expect(serviceWorker(["/a"]).match(/coquille-\w+/)![0]).not.toBe(serviceWorker(["/b"]).match(/coquille-\w+/)![0]);

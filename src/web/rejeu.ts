@@ -10,6 +10,8 @@
  * - 24 hours, an image every 5 minutes, the 6 hours' for the hours not yet in a day;
  * - 7 days, an image every quarter of an hour, for the hours the days hold;
  * - a day of La Réunion, an image every 5 minutes, among the days kept (joursOf).
+ * None of them carries the lame d'eau in mm of the images (pluie-retro.ts, sansLame): only the file of rain totals,
+ * CUMULS_PATH, the 24 hours an image every 5 minutes, asked by /meteo's « Pluie tombée » (pluie-cumuls.ts).
  * The stations' hours are Météo-France's hourly package (providers/meteofrance.ts), already read for /meteo: the
  * temperature and the wind at each round hour, the rain of the hour before it. It holds 24 hours; the week is kept in
  * KV (SEMAINE_KV_KEY), merged with each newer package a data center already holds, never one asked for it, and at
@@ -21,7 +23,7 @@ import type { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { project } from "./map.js";
-import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure } from "./pluie-retro.js";
+import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure, sansLame } from "./pluie-retro.js";
 import { KEEP_MS as WEEK_KEEP_MS, PREMIER_JOUR } from "./radar-semaine.js";
 
 export const DUREES = ["6h", "24h", "7j"] as const;
@@ -30,6 +32,8 @@ export const PATHS: Record<Duree, string> = { "6h": "/meteo/rejeu-6h.json", "24h
 /** The finer files of 24 hours and 7 days. */
 export const FINS = { "24h": "/meteo/rejeu-24h-5min.json", "7j": "/meteo/rejeu-7j-15min.json" } as const;
 export type Fin = keyof typeof FINS;
+/** The file of rain totals: the finer 24 hours, with the lame d'eau in mm of each image. */
+export const CUMULS_PATH = "/meteo/cumuls.json";
 export const JOUR_FILE = /^\/meteo\/rejeu-jour-(\d{4}-\d{2}-\d{2})\.json$/;
 export const jourPath = (date: string) => `/meteo/rejeu-jour-${date}.json`;
 /** The days of a day's file: that of today and the 7 before, as long as their keys are kept (radar-semaine.ts). */
@@ -174,9 +178,9 @@ export function heures(s: Semaine | null, n: number, end?: number): Heures | nul
 }
 
 export interface Sources {
-  /** The radar's 6 hours (KV, pluie-retro.ts). */
+  /** The radar's 6 hours (KV, pluie-retro.ts), with the lame d'eau in mm of its images. */
   six(): Promise<Historique | null>;
-  /** Its day of La Réunion `date`, an image every 5 minutes (radar-semaine.ts). */
+  /** Its day of La Réunion `date`, an image every 5 minutes (radar-semaine.ts), with their lame d'eau in mm. */
   jour(date: string): Promise<Historique | null>;
   /** Its 24 hours, a quarter of an hour apart. */
   day(): Promise<Historique | null>;
@@ -236,7 +240,7 @@ async function build(d: Duree, cache: Cache, now: Date, background: (p: Promise<
     count();
     const h = await read().catch((err) => (console.error("rejeu : historique radar illisible", err instanceof Error ? err.message : String(err)), null));
     const entrees = h?.entrees.filter((e) => endOf(e) > now.getTime() - keep) ?? [];
-    return h && entrees.length ? { ...h, entrees } : null;
+    return h && entrees.length ? sansLame({ ...h, entrees }) : null;
   };
   const [s, r] = await Promise.all([
     semaine(cache, now, background),
@@ -290,15 +294,17 @@ export function assembler(hs: (Historique | null)[], from: number): Historique |
 /** Over 7 days, the images of the quarters of an hour, and the gaps of half an hour or more. */
 const QUART = (e: Entree) => (isTrou(e) ? endOf(e) - Date.parse(e.de) >= 30 * 60_000 : new Date(e.fin).getUTCMinutes() % 15 === 0);
 
-const radarOf = async (read: () => Promise<Historique | null>) => {
+/** A history of the radar, without the lame d'eau of its images unless `lame` (the file of rain totals). */
+const radarOf = async (read: () => Promise<Historique | null>, lame = false) => {
   count();
-  return read().catch((err) => (console.error("rejeu : historique radar illisible", err instanceof Error ? err.message : String(err)), null));
+  const h = await read().catch((err) => (console.error("rejeu : historique radar illisible", err instanceof Error ? err.message : String(err)), null));
+  return h && !lame ? sansLame(h) : h;
 };
 
-async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Rejeu> {
+async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise<unknown>) => void, lame = false): Promise<Rejeu> {
   const from = now.getTime() - (f === "24h" ? LONG_MS : 7 * DAY_MS);
   const src = sources;
-  const reads = !src ? [] : [...joursEntre(from, now.getTime()).map((d) => radarOf(() => src.jour(d))), ...(f === "24h" ? [radarOf(src.six)] : [])];
+  const reads = !src ? [] : [...joursEntre(from, now.getTime()).map((d) => radarOf(() => src.jour(d), lame)), ...(f === "24h" ? [radarOf(src.six, lame)] : [])];
   const [s, hs] = await Promise.all([semaine(cache, now, background), Promise.all(reads)]);
   if (f === "24h") return { radar: src ? assembler(hs, from) : null, heures: heures(s, HEURES["24h"]) };
   // The days for the hours they hold while written, as the file of an image an hour; the rain gauges before them.
@@ -328,6 +334,11 @@ export async function rejeu(d: Duree, cache: Cache, background: (p: Promise<unkn
 /** The answer of FINS[f]: the 24 hours kept as the 6 hours' newest image, the week as the days' last hour. */
 export async function rejeuFin(f: Fin, cache: Cache, background: (p: Promise<unknown>) => void, now = new Date()): Promise<Response> {
   return answer(`rejeu:${f}:fin`, f === "24h" ? 300 : freshSeconds("7j", now), cache, () => buildFin(f, cache, now, background));
+}
+
+/** The answer of CUMULS_PATH: the finer 24 hours with the lame d'eau of each image, kept as they are. */
+export async function rejeuCumuls(cache: Cache, background: (p: Promise<unknown>) => void, now = new Date()): Promise<Response> {
+  return answer("rejeu:cumuls", 300, cache, () => buildFin("24h", cache, now, background, true));
 }
 
 /**

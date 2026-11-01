@@ -8,6 +8,7 @@
  * The weather is one category among others, but the one people search for: « météo réunion 974 », « météo cilaos
  * 974 ». « 974 » sorts La Réunion from meetings, so titles and headings carry it.
  */
+import { CUMULS_LOADER, cumulsSection } from "./pluie-cumuls.js";
 import { porte } from "./aller.js";
 import { resolvePlace } from "../places/resolve.js";
 import { enLigne } from "./associations-drapeau.js";
@@ -714,6 +715,12 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 /* The station bubble (.mtip) is placed by the script against its parent, the figure: the figure must be its containing block. */
 .wxmap{position:relative}
 .wxmap .lgs{display:inline-flex;align-items:center;gap:.35rem;margin-right:.5rem;white-space:nowrap}.wxmap .lgr{display:flex;width:max-content;margin:.15rem 0 .2rem}
+/* /meteo's « Pluie tombée » (pluie-cumuls.ts): its place, its lengths, the radar's rain on the island; the colours, the map's rain above. */
+.cumap{--cu0:#abd8f3;--cu1:#7cb5f8;--cu2:#738be9;--cu3:#7561c5;display:grid;grid-template-columns:minmax(0,1fr);gap:.55rem}.cu-c{display:flex;align-items:center;gap:.5rem;min-width:0}.cu-c select{flex:1;min-width:0;font:inherit;max-width:100%;padding:.3rem .5rem;border:1px solid var(--line);border-radius:.6rem;background:var(--surface);color:var(--ink)}
+.cu-d{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}.cu-d legend{float:left;margin-right:.3rem;font-size:.9rem;color:var(--muted)}.cu-d label[hidden]{display:none}
+.cu-t{font-weight:700;font-size:1.05rem}.cumap .voile{display:block;width:100%;height:100%}.cumap .cu-mk{fill:none;stroke:var(--ink);stroke-width:4px;vector-effect:non-scaling-stroke}
+.cu-lg{display:flex;flex-wrap:wrap;gap:.3rem .9rem;margin-bottom:.35rem}.cu-sw{display:inline-flex;align-items:center;gap:.35rem}.cu-sw i{width:.8rem;height:.8rem;border-radius:.2rem;background:var(--c)}
+@media (prefers-color-scheme:dark){.cumap{--cu0:#284972;--cu1:#405a9d;--cu2:#6469c3;--cu3:#8c79e0}}
 .wxmap .voile{display:block;width:100%;height:100%}.wxmap .aqtabs{gap:.25rem}.wxmap .aqtabs label{padding:.3rem .65rem}
 html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stmore{font:inherit;font-weight:600;padding:.45rem 1rem;border:1px solid var(--line);border-radius:99px;background:none;color:var(--link);cursor:pointer}
 #stl{display:grid;grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr));gap:.6rem}
@@ -1641,6 +1648,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   ${stationsList(all, now)}
   <p class="sources">Sources : ${credits([...data!.value.sources, ALTITUDES_CREDIT, RADAR_CREDIT])}.</p>
 </section><script>${METEO_SCRIPT}</script>
+${cumulsSection()}<script>${CUMULS_LOADER}</script>
 ${sea ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p class="eyebrow">La mer</p><h2 id="h-mer">La mer au large</h2></div>${sea}</section>` : ""}
 <section id="communes" aria-labelledby="h-communes">
   <div class="sec-h"><p class="eyebrow">Prévisions</p><h2 id="h-communes">Prévision par commune et par lieu</h2>

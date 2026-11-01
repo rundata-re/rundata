@@ -958,7 +958,7 @@ function fondChoice(key: string): string {
 // The characters that could end a <script> or a line of JavaScript inside a string written into one, each as \uXXXX.
 const UNSAFE: Record<string, string> = { "<": "\\u003c", ">": "\\u003e", "&": "\\u0026", "/": "\\u002f", "\u2028": "\\u2028", "\u2029": "\\u2029" };
 /** A value written as a JavaScript literal inside an inline <script>. */
-const inScript = (v: unknown) => JSON.stringify(v).replace(/[<>&\/\u2028\u2029]/g, (c) => UNSAFE[c]);
+export const inScript = (v: unknown) => JSON.stringify(v).replace(/[<>&\/\u2028\u2029]/g, (c) => UNSAFE[c]);
 
 // New tiles only once a pinch or a drag has stopped (250 ms): the Géoplateforme takes at most 40 requests a second
 // from one address, and a view asks for 96 tiles at most, a level lower if the screen's would take more (a wide map on

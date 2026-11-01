@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Dimanche 1 novembre 2026
 
+- Météo et électricité : les rejeux ont un bouton de vitesse, de ×0,5 à ×4, gardé d'une page à l'autre.
 - Écoles, collèges et lycées : sur la page de chaque commune et dans l'annuaire, avec cantine, internat et ULIS quand ils sont déclarés.
 - Météo : sur la carte Pluie, « Plus d'images » rejoue le radar toutes les 5 minutes sur 24 heures, ou un jour au choix.
 - Électricité : chaque filière expliquée, avec sa puissance installée, ses plus grandes installations et sa part dans la production.

@@ -18,6 +18,7 @@ import { a, enumeration } from "../tools/format.js";
 import type { Journee } from "./data.js";
 import { esc, H, islandMap, project, W } from "./map.js";
 import { slugify } from "./places.js";
+import { VITESSE_JS, vitesseBouton } from "./vitesse.js";
 
 interface Filiere { nom: string; mw: number; installations: number }
 interface Commune { commune: string; filieres: Filiere[] }
@@ -138,7 +139,7 @@ export function installationsLegend(): string {
 export function installationsReplay(j: Journee): string {
   if (!j.mix?.length) return "";
   const n = j.points.length;
-  return `<div class="ip-rj" hidden><div class="rj ech-rj"><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures sur la carte">▶ Lire</button>` +
+  return `<div class="ip-rj" hidden><div class="rj ech-rj"><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures sur la carte">▶ Lire</button>${vitesseBouton("rj-v")}` +
     `<input type="range" min="0" max="${n - 1}" step="1" value="${n - 1}" aria-label="Moment affiché sur la carte"></div>` +
     `<p class="ip-est" hidden><b>Estimé\u00a0: chaque rond suit sa filière sur toute l'île, d'après la production publiée par EDF le <span class="ip-h"></span>.</b> ` +
     `La taille d'un rond n'est pas la production de cette centrale\u00a0: EDF ne la publie pas. Bioénergies et thermique suivent ensemble toutes les centrales à combustion (bagasse, biomasse, charbon, fioul…)\u00a0: EDF ne les range pas dans les mêmes filières que le registre des installations. ` +
@@ -284,7 +285,7 @@ export function productionChart(j: Journee): string {
   const xs = hours.map((t) => `<span class="cx" style="left:${at(X((t - t0) / 60_000) / CW)}" data-v="${hm(t)}"></span>`).join("");
   const keys = `<span class="mlg ech-kr"><span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-ren" x="-15" y="-15" width="30" height="30" rx="4"/></svg>renouvelable</span>` +
     `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-non" x="-15" y="-15" width="30" height="30" rx="4"/></svg>non renouvelable</span></span>`;
-  const bar = `<div class="rj ech-rj" hidden><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures">▶ Lire</button>` +
+  const bar = `<div class="rj ech-rj" hidden><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures">▶ Lire</button>${vitesseBouton("rj-v")}` +
     `<input type="range" min="0" max="${pts.length - 1}" step="1" value="${pts.length - 1}" aria-label="Moment affiché sur le graphique"></div>`;
   // The durations: the archive's, shown by the script once it has them; « depuis le … » under them while one is not
   // full (in the buttons, two lines on a phone).
@@ -321,8 +322,8 @@ export function anneeSection(): string {
 
 /**
  * The replay of the chart: each bar's slider and button (the chart's, the map's) move the cursor from point to point,
- * the words under the chart follow it; over PLAY_MS for the duration shown, from the start or from where the slider
- * is. Once a bar is touched, the map's rounds follow the moment too (`on`), each its MW × its group's share (`f`, in
+ * the words under the chart follow it; over PLAY_MS for the duration shown at ×1, at the speed chosen (vitesse.ts),
+ * from the start or from where the slider is. Once a bar is touched, the map's rounds follow the moment too (`on`), each its MW × its group's share (`f`, in
  * thousandths), its words under it, until « Revenir à la puissance installée »; a map put in the page later takes the
  * moment when it comes (the event `carte`). Without a script, the cursor stays on the latest point, the bars hidden;
  * with less motion asked, no button (ELECTRICITE_CSS), the sliders only. The durations of the archive and the year's
@@ -330,7 +331,7 @@ export function anneeSection(): string {
  * graduations as the server draws them. Once the page is read: the map's bar and the year's section come after it.
  */
 const PLAY_MS = 12_000;
-const CHART_SCRIPT = `(()=>{const go=()=>{const f=document.querySelector("[data-ech]");if(!f)return;const D={j1:JSON.parse(f.dataset.ech)},svg=f.querySelector("svg.ech"),cur=f.querySelector(".cur"),m=f.querySelector(".ech-m"),ax=f.querySelector(".ech-ax"),src=f.querySelector(".ech-src"),note=f.querySelector(".ech-n"),du=f.querySelector(".ech-d"),an=document.querySelector("[data-an]"),
+const CHART_SCRIPT = `(()=>{${VITESSE_JS}const go=()=>{const f=document.querySelector("[data-ech]");if(!f)return;const D={j1:JSON.parse(f.dataset.ech)},svg=f.querySelector("svg.ech"),cur=f.querySelector(".cur"),m=f.querySelector(".ech-m"),ax=f.querySelector(".ech-ax"),src=f.querySelector(".ech-src"),note=f.querySelector(".ech-n"),du=f.querySelector(".ech-d"),an=document.querySelector("[data-an]"),
 ip=D.j1.m&&document.querySelector(".ip-rj"),bars=[...document.querySelectorAll(".ech-rj")].filter((x)=>f.contains(x)||ip&&ip.contains(x)),est=ip&&ip.querySelector(".ip-est");
 const hm=(t)=>new Date(t+144e5).toISOString().slice(11,16),dm=(t)=>{const d=new Date(t+144e5).toISOString();return d.slice(8,10)+"/"+d.slice(5,7)},dmy=(s)=>{const d=new Date(Date.parse(s)+144e5).toISOString();return d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4)},pc=(r,n)=>r+n>0?Math.round(r/(r+n)*100):0,nb=(v,d)=>v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const I=D.j1.i,vw=f.querySelector(".ech-v"),kr=f.querySelector(".ech-kr"),kf=f.querySelector(".ech-kf"),dd=f.querySelector(".ech-dd"),MIX=${JSON.stringify(MIX)},PILE=${JSON.stringify(PILE)},LEG=${JSON.stringify(LEGENDE)};
@@ -342,9 +343,9 @@ const show=(i,user)=>{at=i;const p=J.p[i],x=1e3*p[0]/J.s,t=J.t0+p[0]*6e4;cur.set
 if(ip&&J.m&&(user||on)){on=true;est.hidden=false;est.querySelector(".ip-h").textContent=dm(t)+" à "+hm(t);map()}else if(ip&&!J.m&&on){on=false;est.hidden=true;map()}};
 const stop=()=>{cancelAnimationFrame(run);run=0;bars.forEach((x)=>{const b=x.querySelector("button");b.textContent="▶ Lire";b.setAttribute("aria-label",LIRE[k]+b.dataset.s)})};
 bars.forEach((x)=>{const b=x.querySelector("button"),rg=x.querySelector("input");b.dataset.s=ip&&ip.contains(x)?" sur la carte":"";
-b.addEventListener("click",()=>{if(run)return stop();const P=J.p;let from=at;if(from>=P.length-1)from=0;const s=performance.now()-from/(P.length-1)*${PLAY_MS};b.textContent="❚❚ Pause";b.setAttribute("aria-label","Arrêter");
-const step=(now)=>{const i=Math.min(P.length-1,Math.round((now-s)/${PLAY_MS}*(P.length-1)));show(i,1);if(i>=P.length-1)return stop();run=requestAnimationFrame(step)};run=requestAnimationFrame(step)});
-rg.addEventListener("input",()=>{if(run)stop();show(+rg.value,1)});x.hidden=false});
+b.addEventListener("click",()=>{if(run)return stop();const P=J.p;let x=at,t0=0;if(x>=P.length-1)x=0;b.textContent="❚❚ Pause";b.setAttribute("aria-label","Arrêter");
+const step=(now)=>{if(t0)x+=(now-t0)/${PLAY_MS}*(P.length-1)*V;t0=now;const i=Math.min(P.length-1,Math.round(x));show(i,1);if(i>=P.length-1)return stop();run=requestAnimationFrame(step)};run=requestAnimationFrame(step)});
+rg.addEventListener("input",()=>{if(run)stop();show(+rg.value,1)});x.hidden=false});vbind(bars.map((x)=>x.querySelector(".rj-v")).filter(Boolean));
 if(ip){ip.hidden=false;ip.querySelector(".ip-re").addEventListener("click",()=>{if(run)stop();on=false;est.hidden=true;map()});document.addEventListener("carte",()=>{if(on)map()})}
 const NS="http://www.w3.org/2000/svg",sp=(c,st,v)=>{const e=document.createElement("span");e.className=c;e.setAttribute("style",st);e.dataset.v=v;return e};
 const draw=()=>{const P=J.p,last=P[P.length-1],top=Math.max(100,Math.ceil(Math.max(...P.map((p)=>p[1]+p[2]))/100)*100),X=(v)=>1e3*v/J.s,Y=(v)=>480-480*v/top;
@@ -386,7 +387,7 @@ export const ELECTRICITE_CSS = `.ipm{aspect-ratio:${W}/${H}}` +
   `.ar-ren{fill:var(--a-ren)}.ar-non{fill:var(--a-non)}.ech .cur{stroke:var(--ink);stroke-width:2.5}.ech-m{font-weight:700;font-size:1.05rem;color:var(--ink);margin:0 0 .5rem}` +
   `.ech-rj{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:.4rem 0}.ech-rj[hidden]{display:none}` +
   `.ech-rj button{min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}` +
-  `.ech-rj input{flex:1 1 12rem;min-height:44px;accent-color:var(--ink)}@media (prefers-reduced-motion:reduce){.ech-rj button{display:none}}` +
+  `.ech-rj .rj-v{min-width:3.6rem;padding-inline:.6rem}.ech-rj input{flex:1 1 12rem;min-height:44px;accent-color:var(--ink)}@media (prefers-reduced-motion:reduce){.ech-rj button{display:none}}` +
   `.ip-rj .ech-rj{margin:.6rem 0 .2rem}.ip-est{margin:.3rem 0 0;color:var(--muted)}.ip-est b{color:var(--ink)}.ip-re{display:block;margin-top:.5rem;min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}` +
   `.ech-d{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 .6rem}.ech-d[hidden],.ech-d button[hidden]{display:none}.ech-d button{min-height:44px;padding:.35rem .9rem;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}.ech-d button[aria-pressed=true]{background:var(--ink);color:var(--surface)}` +
   `.an-d button{padding:.35rem .75rem}.an-l{margin:.4rem 0 .2rem}.an-l b{font-variant-numeric:tabular-nums;white-space:nowrap}` +

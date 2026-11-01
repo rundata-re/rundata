@@ -6,6 +6,7 @@
 import type { Cached } from "../cache.js";
 import { mentionOf } from "../mentions.js";
 import { ACCUEILS } from "../providers/agenda.js";
+import * as ecoles from "../vie/ecoles.js";
 import * as enfants from "../vie/enfants.js";
 import { porte, type Porte } from "./aller.js";
 import { PAGES, type PlacePage } from "./places.js";
@@ -14,6 +15,7 @@ import type { Alerte, EnfantsAnswer } from "./data.js";
 import { agendaHours, connectorCta, crumbBar, crumbs, eventGo, loading, webPage } from "./domains.js";
 import { communeMap, esc, islandMap, type Spot } from "./map.js";
 import { COUNT_COLOR, legende } from "./carte-legende.js";
+import { PATH as ECOLES } from "./ecoles-annuaire.js";
 import { anchorId, ask, dayMonth, FOLD_ROWS, folded, icon, layout, type Live } from "./pages.js";
 
 type Row = EnfantsAnswer["evenements"][number];
@@ -154,11 +156,18 @@ ${filter}
   <p class="note">${esc(enfants.INDICATIF_NOTE)}</p>
   <p class="note">${esc(CREDITS)}</p>
 </section>
+<section aria-labelledby="h-ecoles">
+  <div class="sec-h"><p class="eyebrow">À l'école</p><h2 id="h-ecoles">Écoles</h2></div>
+  <div class="card"><p>${esc(ECOLES_TEXTE(ecoles.LIST.length))}</p><p><a href="${ECOLES}">Les écoles sur la carte →</a> · <a href="${ECOLES}#college">Quel collège pour votre adresse\u00a0? →</a></p></div>
+</section>
 </div><script>${FILTER_SCRIPT}</script>${g.feuille}
 ${connectorCta("annuaire_services_publics", "les lieux pour les enfants")}`;
 
   return layout(origin, { title: TITLE, description: DESCRIPTION, path, jsonld: [crumbs(origin, "Enfants", path), webPage(origin, path, TITLE, DESCRIPTION, data)], alerte }, band, g.ligne + body);
 }
+
+/** The schools' part: what /ecoles has. */
+const ECOLES_TEXTE = (n: number) => `Les ${n} écoles, collèges et lycées des 24 communes, sur une carte, avec la cantine, l'internat et l'ULIS, et le collège de secteur de votre adresse.`;
 
 // ---------------------------------------------------------------- a commune's page: its places on a map
 

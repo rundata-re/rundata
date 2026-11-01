@@ -36,6 +36,7 @@ export const FONDS: Record<string, { nom: keyof typeof files; y: number }> = {
   "/secheresse": { nom: "fond-secheresse-ravine", y: 44 },
   "/sport": { nom: "sport-stade-montagnes", y: 61 },
   "/enfants": { nom: "enfants-aire-de-jeux-haut", y: 74 },
+  "/ecoles": { nom: "enfants-aire-de-jeux-haut", y: 74 },
   "/eau": { nom: "eau-bassin-ravine", y: 77 },
   "/air": { nom: "air-cote-ouest", y: 56 },
   "/electricite": { nom: "electricite-barrage-toits", y: 56 },

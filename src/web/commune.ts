@@ -38,6 +38,7 @@ import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
 import { INSEE } from "../places/insee.js";
 import { ligneTuile } from "./antennes.js";
+import { PATH as ECOLES, schoolLi } from "./ecoles-annuaire.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { enTete } from "../tools/representativeness.js";
 
@@ -294,18 +295,6 @@ function children(p: PlacePage): Live | undefined {
 }
 
 /**
- * A school, collège or lycée on two lines: its name (its site or Onisep sheet), what it declares; its address and phone.
- * No « Y aller »: a commune has up to 119 of them, folded at the foot of the page.
- */
-function schoolLi(e: ecoles.Etablissement): string {
-  const link = e.web ?? e.onisep;
-  const name = link ? `<a href="${esc(link)}" rel="noopener">${esc(e.nom)}</a>` : esc(e.nom);
-  const tel = e.tel ? ` <small><a href="tel:${esc(e.tel.replace(/\s/g, ""))}">${esc(e.tel)}</a></small>` : "";
-  return `<li><span>${name}<small>${esc(ecoles.services(e).join(" · "))}</small></span>` +
-    `<span class="l2"><span><small class="adr">${esc(e.adresse)}</small>${tel}</span></span></li>`;
-}
-
-/**
  * The commune's schools, collèges and lycées (vie/ecoles.ts), a folded card by kind: the directory's services, never
  * which one an address depends on (the mairie and the Département decide it, said under the cards).
  */
@@ -314,13 +303,14 @@ function schools(p: PlacePage): string {
   if (!list.length) return "";
   const cards = ecoles.KINDS.map((k) => {
     const of = list.filter((e) => e.type === k.type);
-    return of.length ? `<li class="card" data-k><details><summary><h3>${esc(k.court[0].toUpperCase() + k.court.slice(1))} <span class="note">${of.length}</span></h3></summary><ul class="rows eau">${of.map(schoolLi).join("")}</ul></details></li>` : "";
+    return of.length ? `<li class="card" data-k><details><summary><h3>${esc(k.court[0].toUpperCase() + k.court.slice(1))} <span class="note">${of.length}</span></h3></summary><ul class="rows eau">${of.map((e) => schoolLi(e)).join("")}</ul></details></li>` : "";
   }).join("");
   return `<section id="ecoles" aria-labelledby="h-ecoles">
   <div class="sec-h"><h2 id="h-ecoles">Écoles, collèges et lycées ${esc(aCommune(p.nom))}</h2>
   <p>${esc(`${ecoles.KINDS.map((k) => [k.type, list.filter((e) => e.type === k.type).length] as const).filter(([, n]) => n).map(([t, n]) => ecoles.counted(t, n)).join(", ")}, publics et privés, avec la cantine, l'internat ou l'ULIS quand l'établissement les déclare.`)}</p></div>
   <ul class="zones top">${cards}</ul>
   <p class="note">${esc(`Le secteur d'une adresse est fixé par la mairie pour l'école et par le Département pour le collège\u00a0: l'établissement le plus proche n'est pas forcément celui du secteur. Annuaire de l'Éducation nationale, lu le ${dayMonth(ecoles.BUILT)}.`)}</p>
+  <p><a href="${ECOLES}#college">Le collège de secteur de votre adresse, et les écoles de toute l'île →</a></p>
   <p class="sources">Source\u00a0: ${credits([credit(ecoles.SOURCE)])}.</p>
 </section>
 `;

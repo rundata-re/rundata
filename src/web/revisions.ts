@@ -20,7 +20,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   bornes: 3,
   bus: 6,
   calendrier: 2,
-  chiffres: 12,
+  chiffres: 13,
   commune: 9,
   coupures: 4,
   courant: 4,

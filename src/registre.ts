@@ -641,6 +641,9 @@ const OTHER_PAGES: Record<string, Page> = {
   // as a layer's file reads it (3 at most each). Never a build, never a source.
   "/carte/resume.json": { subrequests: 12, cpuMs: 20, from: [], what: "les chiffres du bandeau « En direct » de /carte : la dernière copie des stations, des rivières, des sentiers et des séismes", basis: "code" },
   // The header's reads as any page; the map and the list built once per isolate, the layers asked by the page's script.
+  // The schools bundled; the collège of an address found in the browser, in the commune's file of public/carte-scolaire/
+  // (served by Cloudflare before the Worker): the address never reaches it.
+  "/ecoles": { subrequests: 7, cpuMs: 60, from: [], what: "la page des écoles : la carte et la liste (dans le paquet), avec la vigilance et la version de l'en-tête ; le collège de secteur cherché dans le navigateur, dans le fichier de la commune (public/carte-scolaire/), servi par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1", basis: "code" },
   "/carte": { subrequests: 7, cpuMs: 40, from: [], what: "la carte des couches : la page seule, avec la vigilance et la version de l'en-tête", basis: "code" },
   // 23, and 5 from the code for the corals' grid (providers/coraux.ts), once a day when no data center has it: the
   // data center's cache and KV read, NOAA's grid, both written.

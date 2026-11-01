@@ -120,7 +120,7 @@ const C=${JSON.stringify(MM_CHARS)},V=Array.from(C,(_,k)=>${MM_MIN}*${MM_STEP}**
 const p2=(n)=>String(n).padStart(2,"0"),loc=(ms)=>new Date(ms+144e5),hm=(ms)=>{const x=loc(ms);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())};
 const dm=(ms)=>p2(loc(ms).getUTCDate())+"/"+p2(loc(ms).getUTCMonth()+1),day=(ms)=>loc(ms).toISOString().slice(0,10),quand=(ms)=>{const d=day(ms),n=Date.now();return d===day(n)?"aujourd'hui à "+hm(ms):d===day(n-864e5)?"hier à "+hm(ms):"le "+dm(ms)+" à "+hm(ms)};
 const span=(a,b)=>day(a)===day(b)?(day(a)===day(Date.now())?"":"le "+dm(a)+" ")+"de "+hm(a)+" à "+hm(b):"du "+dm(a)+" à "+hm(a)+" au "+dm(b)+" à "+hm(b);
-const mmTxt=(v)=>(v<.05?"0":v.toLocaleString("fr-FR",{maximumFractionDigits:1,minimumFractionDigits:v<10?1:0}))+NB+"mm";
+const mmTxt=(v)=>(v>0&&v<.05?"moins de 0,1":v<.05?"0":v.toLocaleString("fr-FR",{maximumFractionDigits:1,minimumFractionDigits:v<10?1:0}))+NB+"mm";
 const un=(s)=>s.split(",").map((r)=>r?r[0].repeat(parseInt(r.slice(1),36)):"").join("");
 let D=null,ims=[],cls=[],w=0,h=0,lieu=null,choix=null;
 try{lieu=localStorage.getItem("cumuls-lieu")}catch(e){}
@@ -141,7 +141,7 @@ t.textContent=s.nom+NB+": "+ici+(m==="a"?(av.de==null?" depuis "+quand(from)+", 
 const hs=D.heures,g=hs&&hs.st.find((x)=>x.id===s.id),pv=g&&pluvio(g.rr,Date.parse(hs.fin),from,to);
 nt.textContent=" Estimée par le radar "+span(from,to)+NB+": une estimation, pas une mesure."+(m!=="a"&&!av?" Pas de pluie vue par le radar à moins de 2"+NB+"km.":m!=="a"&&!on?" Dernière pluie vue par le radar à moins de 2"+NB+"km "+quand(av.fin)+".":"")+
 (pv?pv[0]==null?" Le pluviomètre de "+s.nom+" n'a pas mesuré toutes les heures de cette durée.":" Pluviomètre de "+s.nom+NB+": "+mmTxt(pv[0])+" mesurés "+span(pv[1],pv[2])+".":" Le pluviomètre donne la pluie heure par heure"+NB+": pas d'heure entière sur cette durée.")+
-(miss>=10?" Il manque "+(miss>=120?Math.round(miss/60)+NB+"h":miss+NB+"min")+" d'images du radar sur cette durée"+NB+": la pluie a pu être plus forte.":"")};
+(miss>=10?" Il manque "+(miss>=60?Math.floor(miss/60)+NB+"h"+(miss%60?NB+String(miss%60).padStart(2,"0"):""):miss+NB+"min")+" d'images du radar sur cette durée"+NB+": la pluie a pu être plus forte.":"")};
 sel.addEventListener("change",()=>{try{localStorage.setItem("cumuls-lieu",sel.value)}catch(e){}choix=null;show()});
 cu.querySelectorAll("[name=cud]").forEach((r)=>r.addEventListener("change",()=>{choix=r.value;show()}));
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",show);

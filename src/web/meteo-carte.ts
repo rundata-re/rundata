@@ -470,6 +470,128 @@ export const soften = (a: Uint8ClampedArray, w: number, h: number, r: number) =>
   return a;
 };
 /**
+ * Where the rain went between two images of the radar, for the replay to move it rather than fade it (the user,
+ * 01/11/2026: « une vraie transition entre les images », then « toujours un effet de fondu »). The functions below are
+ * the page's script's as their text (no inner function: the page's copy of it would not run). `downOf`: grid `v`
+ * (w × h) averaged over k × k cells, with its size.
+ */
+export const downOf = (v: Float32Array, w: number, h: number, k: number): [Float32Array, number, number] => {
+  const W = Math.ceil(w / k), H = Math.ceil(h / k), o = new Float32Array(W * H);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) o[((y / k) | 0) * W + ((x / k) | 0)] += v[y * w + x] / (k * k);
+  return [o, W, H];
+};
+/** The sum of differences of a window of grid a (W × H, centre cx, cy, half-size K) with grid z moved by (u, v), stopped past stop. */
+export const sadOf = (a: Float32Array, z: Float32Array, W: number, H: number, cx: number, cy: number, K: number, u: number, v: number, stop: number) => {
+  let s = 0;
+  for (let y = cy - K; y <= cy + K && s <= stop; y++) {
+    if (y < 0 || y >= H) continue;
+    for (let x = cx - K; x <= cx + K; x++) {
+      if (x < 0 || x >= W) continue;
+      const X = x + u, Y = y + v;
+      s += Math.abs(a[y * W + x] - (X < 0 || Y < 0 || X >= W || Y >= H ? 0 : z[Y * W + X]));
+    }
+  }
+  return s;
+};
+/**
+ * Each of BW × BH blocks of grid a (W × H) found in z within R cells of its way given (U, V, in cells, changed in place),
+ * held to that way the more the block is wet. At the first size (`first`): a dry block is left to be filled from its
+ * neighbours (0 in what it returns), and rain that keeps its place nearly as well as it moves stays (held by the relief).
+ */
+export const matchOf = (a: Float32Array, z: Float32Array, W: number, H: number, BW: number, BH: number, K: number, R: number, U: Float32Array, V: Float32Array, first: boolean) => {
+  const S = new Uint8Array(BW * BH);
+  for (let by = 0; by < BH; by++) for (let bx = 0; bx < BW; bx++) {
+    const cx = Math.round(((bx + 0.5) * W) / BW - 0.5), cy = Math.round(((by + 0.5) * H) / BH - 0.5), i = by * BW + bx;
+    let wet = 0;
+    for (let y = cy - K; y <= cy + K; y++) for (let x = cx - K; x <= cx + K; x++) if (x >= 0 && y >= 0 && x < W && y < H && (a[y * W + x] > 0.2 || z[y * W + x] > 0.2)) wet++;
+    S[i] = first ? 0 : 1;
+    if (wet < 4) continue;
+    S[i] = 1;
+    const u0 = Math.round(U[i]), v0 = Math.round(V[i]);
+    let best = sadOf(a, z, W, H, cx, cy, K, u0, v0, Infinity), bu = u0, bv = v0, bp = 0;
+    for (let v = v0 - R; v <= v0 + R; v++) for (let u = u0 - R; u <= u0 + R; u++) {
+      const p = 0.08 * wet * ((u - u0) ** 2 + (v - v0) ** 2), s = sadOf(a, z, W, H, cx, cy, K, u, v, best - p) + p;
+      if (s < best) { best = s; bu = u; bv = v; bp = p; }
+    }
+    if (first && sadOf(a, z, W, H, cx, cy, K, 0, 0, Infinity) <= 1.15 * (best - bp)) bu = bv = 0;
+    U[i] = bu; V[i] = bv;
+  }
+  return S;
+};
+/** A field of BW × BH blocks (U, V) smoothed in place: each block the mean of the 3 × 3 around it, `passes` times. */
+export const blurOf = (U: Float32Array, V: Float32Array, BW: number, BH: number, passes: number) => {
+  for (let pass = 0; pass < passes; pass++) {
+    const U2 = U.slice(), V2 = V.slice();
+    for (let i = 0; i < U.length; i++) {
+      let su = 0, sv = 0, c = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        const x = (i % BW) + dx, y = ((i / BW) | 0) + dy;
+        if (x < 0 || y < 0 || x >= BW || y >= BH) continue;
+        su += U2[y * BW + x]; sv += V2[y * BW + x]; c++;
+      }
+      U[i] = su / c; V[i] = sv / c;
+    }
+  }
+};
+/** A field of BW × BH blocks read at BW2 × BH2 blocks (bilinear), times k (the next size's cells). */
+export const upOf = (U: Float32Array, BW: number, BH: number, BW2: number, BH2: number, k: number) => {
+  const o = new Float32Array(BW2 * BH2);
+  for (let y = 0; y < BH2; y++) for (let x = 0; x < BW2; x++) {
+    const fx = Math.max(0, Math.min(BW - 1, ((x + 0.5) * BW) / BW2 - 0.5)), fy = Math.max(0, Math.min(BH - 1, ((y + 0.5) * BH) / BH2 - 0.5));
+    const x0 = fx | 0, y0 = fy | 0, x1 = Math.min(BW - 1, x0 + 1), y1 = Math.min(BH - 1, y0 + 1), ax = fx - x0, ay = fy - y0;
+    o[y * BW2 + x] = k * ((U[y0 * BW + x0] * (1 - ax) + U[y0 * BW + x1] * ax) * (1 - ay) + (U[y1 * BW + x0] * (1 - ax) + U[y1 * BW + x1] * ax) * ay);
+  }
+  return o;
+};
+/**
+ * Where the rain of grid a went in grid z (both w × h, classes), `dt` minutes apart: the whole image's way first, then
+ * 16 × 14 blocks at a quarter of the grid's size held to it (the dry ones filled from their neighbours), smoothed, then
+ * refined at half and at the full size, a cell around the coarser way. The field in cells (U, V), at about two cells a
+ * block (w, h), and as an image for the page's WebGL (t: red and green 128 + 4 × the way, quarter cells).
+ */
+export const flowOf = (a: Float32Array, z: Float32Array, w: number, h: number, dt: number) => {
+  const [a4, W4, H4] = downOf(a, w, h, 4), [z4] = downOf(z, w, h, 4), [a2, W2, H2] = downOf(a, w, h, 2), [z2] = downOf(z, w, h, 2);
+  const R = Math.max(2, Math.min(6, Math.ceil((dt / 15) * 3))), all = Math.max(W4, H4);
+  // The whole image's way: what the blocks are held to, unless staying is nearly as good.
+  let gu = 0, gv = 0, gb = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, 0, 0, Infinity);
+  const g0 = gb;
+  for (let v = -R; v <= R; v++) for (let u = -R; u <= R; u++) {
+    const s = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, u, v, gb);
+    if (s < gb) { gb = s; gu = u; gv = v; }
+  }
+  if (gb > 0.9 * g0) gu = gv = 0;
+  let BW = 16, BH = 14, U = new Float32Array(BW * BH).fill(gu), V = new Float32Array(BW * BH).fill(gv);
+  const S = matchOf(a4, z4, W4, H4, BW, BH, 3, R, U, V, true);
+  for (let pass = 0; pass < 6; pass++) {
+    const S2 = S.slice();
+    for (let i = 0; i < S.length; i++) {
+      if (S[i]) continue;
+      let su = 0, sv = 0, c = 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const x = (i % BW) + dx, y = ((i / BW) | 0) + dy;
+        if (x < 0 || y < 0 || x >= BW || y >= BH || !S[y * BW + x]) continue;
+        su += U[y * BW + x]; sv += V[y * BW + x]; c++;
+      }
+      if (c) { U[i] = su / c; V[i] = sv / c; S2[i] = 1; }
+    }
+    S.set(S2);
+  }
+  blurOf(U, V, BW, BH, 3);
+  for (const [ga, gz, GW, GH] of [[a2, z2, W2, H2], [a, z, w, h]] as [Float32Array, Float32Array, number, number][]) {
+    const BW2 = Math.ceil(GW / 2), BH2 = Math.ceil(GH / 2);
+    U = upOf(U, BW, BH, BW2, BH2, 2); V = upOf(V, BW, BH, BW2, BH2, 2); BW = BW2; BH = BH2;
+    matchOf(ga, gz, GW, GH, BW, BH, 2, 1, U, V, false);
+    blurOf(U, V, BW, BH, 2);
+  }
+  const t = new Uint8Array(BW * BH * 4);
+  for (let i = 0; i < BW * BH; i++) {
+    t[i * 4] = Math.max(0, Math.min(255, Math.round(128 + U[i] * 4)));
+    t[i * 4 + 1] = Math.max(0, Math.min(255, Math.round(128 + V[i] * 4)));
+    t[i * 4 + 3] = 255;
+  }
+  return { U, V, w: BW, h: BH, t };
+};
+/**
  * The wind at (x, y) on the map, from the anemometers `ws` ([x, y, u, v], km/h, y down) less than `r` away, by inverse
  * distance; null with none so near: a drop there falls straight, no wind made up. The page's script takes it as its text.
  */
@@ -552,8 +674,8 @@ const DROPS = {
  * many that they hide the blue: in a downpour, 26 drops a cell for 1 in the lightest made white stripes over it
  * (31/10/2026). Each drop comes and goes faded, and falls to its end: an image that changes moves none, those born
  * after it are born in its rain. The legend says the image's time, that the radar sees no rain, or that its image is
- * too old to say anything about now. For the replay (RJ.p): an image of the history, or two faded one into the other,
- * the drops born in each by its share of the fade; where the radars saw badly lingers a while, fading (the user,
+ * too old to say anything about now. For the replay (RJ.p): an image of the history, or two moved one into the other
+ * (flowOf), the drops born in each by its share of the passage; where the radars saw badly lingers a while, fading (the user,
  * 31/10/2026: a zone that moves rather than patches that jump). The replay's legend is written once for the file
  * played, the same for every image.
  */
@@ -610,20 +732,50 @@ c.globalCompositeOperation="destination-in";smooth(c);c.drawImage(M,-cw/w,-ch/h,
 // The veil between two images (blend), in one array kept.
 let O=null;const blend=${blend},veils=(A,Z,f,tr)=>{const za=bad(Z);if(!O||O.length!==za.length)O=new Float32Array(za.length);
 return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};
-// A grid's classes spread smoothly to the map's size, then drawn in clear-cut blues (bands).
+// A grid's classes spread smoothly (soft, kept with the grid: also what the replay moves), then to the map's size, drawn
+// in clear-cut blues (bands).
 const bands=${bands},soften=${soften};
-const wash=(x,j)=>{const t=document.createElement("canvas");t.width=j.w*4;t.height=j.h*4;const tg=c2d(t),e=tg.createImageData(j.w,j.h);
+const soft=(j)=>{if(j.sf)return j.sf;const t=document.createElement("canvas");t.width=j.w*4;t.height=j.h*4;const tg=c2d(t),e=tg.createImageData(j.w,j.h);
 for(let k=0;k<j.w*j.h;k++){e.data[k*4]=(+j.pluie[k]||0)*28;e.data[k*4+3]=255}tg.putImageData(e,0,0);lin(tg);tg.drawImage(t,0,0,j.w,j.h,0,0,t.width,t.height);
-const b=tg.getImageData(0,0,t.width,t.height);tg.putImageData(soften(b.data,t.width,t.height,${RAIN_SOFT})&&b,0,0);
-const u=document.createElement("canvas");u.width=cw;u.height=ch;const ug=c2d(u);lin(ug);ug.drawImage(t,0,0,cw,ch);
+const b=tg.getImageData(0,0,t.width,t.height);tg.putImageData(soften(b.data,t.width,t.height,${RAIN_SOFT})&&b,0,0);return j.sf=t};
+const wash=(x,j)=>{const u=document.createElement("canvas");u.width=cw;u.height=ch;const ug=c2d(u);lin(ug);ug.drawImage(soft(j),0,0,cw,ch);
 const o=x.createImageData(cw,ch);bands(ug.getImageData(0,0,cw,ch).data,o.data,cw,ch,KA[dark()?1:0],[...INK[dark()?1:0],1],28,${RAIN_CUT});x.putImageData(o,0,0)};
-// Each image washed once on a canvas of its own; the layer's, the image drawn, or the two faded one into the other
-// (added, each by its share: no dip half way).
+// Each image washed once on a canvas of its own; the layer's, the image drawn, or the two moved one into the other, or
+// faded where they cannot be (added, each by its share: no dip half way).
 // The rain gauges' estimate (pg) hatched over its blues: never read as the radar's.
 const C=new Map(),cv=(j)=>{let c=C.get(j);if(c&&c.width===cw&&c.height===ch&&c.dk===dark())return c;c=document.createElement("canvas");c.width=cw;c.height=ch;c.dk=dark();const x=c.getContext("2d");wash(x,j);
 if(j.pg){x.globalCompositeOperation="source-atop";x.strokeStyle="rgba("+INK[c.dk?1:0].join(",")+",.45)";x.lineWidth=1;x.beginPath();for(let k=-ch;k<cw;k+=6){x.moveTo(k,ch);x.lineTo(k+ch,0)}x.stroke();x.globalCompositeOperation="source-over"}C.set(j,c);if(C.size>4)C.delete(C.keys().next().value);return c};
+// Between two images of the radar, the rain moved rather than faded (flowOf): the two images' smooth fields (before their
+// blues) pushed along the way found and mixed as amounts of rain, then cut in blues as one image (WebGL), as bands does:
+// no image seen through the other, rain that forms or ends grows or shrinks. The sea cut by the map's outline as before.
+const downOf=${downOf},sadOf=${sadOf},matchOf=${matchOf},blurOf=${blurOf},upOf=${upOf},flowOf=${flowOf};
+const FL=new Map(),gv=(j)=>{if(!j.v){const v=new Float32Array(j.w*j.h);for(let k=0;k<v.length;k++)v[k]=+j.pluie[k]||0;j.v=v}return j.v};
+const flow=(A,Z)=>{const key=A.fin+" "+Z.fin;let r=FL.get(key);if(!r){r=flowOf(gv(A),gv(Z),A.w,A.h,(Date.parse(Z.fin)-Date.parse(A.fin))/6e4);FL.set(key,r);if(FL.size>32)FL.delete(FL.keys().next().value)}return r};
+let GC=null,GL=null,GQ=null;const GU=[null,null,null];
+const glInit=()=>{if(GL!==null)return GL;GC=document.createElement("canvas");const gl=GC.getContext("webgl",{premultipliedAlpha:true,antialias:false});if(!gl)return GL=false;
+const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);return o},p=gl.createProgram();
+gl.attachShader(p,sh(gl.VERTEX_SHADER,"attribute vec2 q;varying vec2 u;void main(){u=vec2(q.x*.5+.5,.5-q.y*.5);gl_Position=vec4(q,0.,1.);}"));
+// The amount of rain at q, the two fields pushed and mixed; then the blues and the line of bands, as the page draws them.
+gl.attachShader(p,sh(gl.FRAGMENT_SHADER,"precision highp float;varying vec2 u;uniform sampler2D A,Z,F;uniform float f,cut;uniform vec2 n,px;uniform vec3 P[8];uniform vec3 E;"+
+"float r(vec2 q){vec2 m=(texture2D(F,q).xy*255.-128.)/4./n;return(texture2D(A,q-f*m).r*(1.-f)+texture2D(Z,q+(1.-f)*m).r*f)*255.;}"+
+"void main(){float v=r(u);gl_FragColor=vec4(0.);if(v<14.*cut)return;float gx=(r(u+vec2(px.x,0.))-r(u-vec2(px.x,0.)))/2.,gy=(r(u+vec2(0.,px.y))-r(u-vec2(0.,px.y)))/2.;"+
+"float d=(v-28.*cut)/max(length(vec2(gx,gy)),1e-3)+.5;if(d<=0.)return;int c=int(clamp(floor(v/28.+.5),1.,8.))-1;vec3 b=P[0];for(int i=1;i<8;i++)if(i==c)b=P[i];"+
+"float m=d<1.?0.:min(1.,d-1.),a=min(1.,d);gl_FragColor=vec4((E+(b-E)*m)*a,a);}"));
+gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))return GL=false;gl.useProgram(p);
+gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);const l=gl.getAttribLocation(p,"q");gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,2,gl.FLOAT,false,0,0);
+for(let i=0;i<3;i++){gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,gl.createTexture());for(const[k,v]of[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v)}
+gl.uniform1i(gl.getUniformLocation(p,"A"),0);gl.uniform1i(gl.getUniformLocation(p,"Z"),1);gl.uniform1i(gl.getUniformLocation(p,"F"),2);gl.uniform1f(gl.getUniformLocation(p,"cut"),${RAIN_CUT});
+GQ={f:gl.getUniformLocation(p,"f"),n:gl.getUniformLocation(p,"n"),px:gl.getUniformLocation(p,"px"),P:gl.getUniformLocation(p,"P[0]"),E:gl.getUniformLocation(p,"E")};return GL=gl};
+const warp=(A,Z,F,f)=>{const gl=GL;if(GC.width!==cw||GC.height!==ch){GC.width=cw;GC.height=ch;gl.viewport(0,0,cw,ch)}
+for(const[i,c]of[[0,soft(A)],[1,soft(Z)]])if(GU[i]!==c){gl.activeTexture(gl.TEXTURE0+i);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);GU[i]=c}
+if(GU[2]!==F){gl.activeTexture(gl.TEXTURE2);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,F.w,F.h,0,gl.RGBA,gl.UNSIGNED_BYTE,F.t);GU[2]=F}
+const k=dark()?1:0;gl.uniform3fv(GQ.P,KA[k].flatMap((c)=>c.slice(0,3).map((x)=>x/255)));gl.uniform3fv(GQ.E,INK[k].map((x)=>x/255));
+gl.uniform1f(GQ.f,f);gl.uniform2f(GQ.n,A.w,A.h);gl.uniform2f(GQ.px,1/cw,1/ch);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4)};
 const paint=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);if(!mx){if(d){x.drawImage(cv(d),0,0);const a=bad(d);if(!a.z)badly(x,a,d.w,d.h)}return}
-x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over";
+// Moved where the browser draws with WebGL and neither image is the rain gauges' estimate; faded otherwise.
+const F=mx[0]!==mx[1]&&!mx[0].pg&&!mx[1].pg&&glInit()&&flow(mx[0],mx[1]);
+if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{
+x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over"}
 const a=veils(...mx);if(a)badly(x,a,mx[1].w,mx[1].h)};
 const o={fl,id:"wxl-p",ready:()=>!!d,moving,
 size:(r)=>{cw=fl.width=pr.width=Math.max(1,Math.round(r.width));ch=fl.height=pr.height=Math.max(1,Math.round(r.height));g=c2d(fl);paint();

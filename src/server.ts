@@ -110,7 +110,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.142";
+export const VERSION = "1.0.143";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -456,16 +456,17 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »), d'après les calendriers du TCO\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aires de jeux, parcs, piscines, médiathèques, zoos, " +
         "parcs de loisirs, salles de jeux, skateparks, escalade, musées, commune par commune, avec l'âge quand la carte le donne, d'après OpenStreetMap, Data ES et Basilic\u00a0; " +
-        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale\u00a0; " +
+        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale, et le collège de secteur d'une adresse (adresse)\u00a0; " +
         "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…), par secteur, d'après l'annuaire santé Ameli. " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ce mois-ci ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {
         quoi: z.string().describe("Le service cherché, en quelques mots : « mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, ou « carburant » pour les prix du mois, « pharmacie », « urgences », « enfants » pour les lieux où aller avec eux."),
         lieu,
+        adresse: z.string().optional().describe("Collège de secteur (quoi = « collège ») : le numéro et la voie, la commune dans lieu. Ni gardée ni journalisée."),
       },
       annotations: { title: "Services publics à La Réunion", ...READ_ONLY },
     },
-    track("annuaire_services_publics", (args: { quoi: string; lieu?: string }) => annuaireTool(cache, args.quoi, args.lieu)),
+    track("annuaire_services_publics", (args: { quoi: string; lieu?: string; adresse?: string }) => annuaireTool(cache, args.quoi, args.lieu, undefined, args.adresse)),
   );
 
   server.registerTool(

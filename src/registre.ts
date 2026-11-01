@@ -746,6 +746,7 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   calendrier: { subrequests: 7, cpuMs: 70, file: "calendrier" },
   velos_libre_service: { subrequests: 6, cpuMs: 30, file: "velos" },
   maree: { subrequests: 6, cpuMs: 130, file: "maree" },
+  // The collège of an address: its commune's file read from the static assets (env.ASSETS), counted as 1 (wrangler dev).
   annuaire_services_publics: { subrequests: 3, cpuMs: 20, file: "annuaire" },
   restrictions_eau: { subrequests: 3, cpuMs: 60, file: "secheresse" },
   bornes_recharge: { subrequests: 3, cpuMs: 50, file: "bornes" },

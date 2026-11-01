@@ -49,6 +49,7 @@ import { configurerDefiOpenai } from "./web/site.js";
 import * as pluieRetro from "./web/pluie-retro.js";
 import * as radarSemaine from "./web/radar-semaine.js";
 import * as rejeu from "./web/rejeu.js";
+import * as carteScolaire from "./vie/carte-scolaire.js";
 import { why } from "./types.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
@@ -123,6 +124,8 @@ interface Env {
   EMAIL?: propositions.EmailBinding;
   /** Browser Rendering: the picture of Météo-France's official map of the vigilance (src/providers/vigilance-carte.ts). */
   BROWSER?: vigilanceCarte.Browser;
+  /** The static assets (public/), served before the Worker; read through it by a tool: a commune's map of sectors (vie/carte-scolaire.ts). */
+  ASSETS?: { fetch(request: Request): Promise<Response> };
   /** Rate Limiting: the calls to /mcp and the forms' sends, per address and per minute (src/limite.ts). */
   LIMITE_MCP?: limite.Limiteur;
   LIMITE_FORMULAIRES?: limite.Limiteur;
@@ -285,6 +288,14 @@ function setup(env: Env): Cache {
     put: (key, value, ttl) => kv.put(key, value, ttl ? { expirationTtl: ttl } : undefined),
   };
   vigilanceCarte.configure(cartes, env.BROWSER);
+  // The collège of an address (annuaire_services_publics): its commune's file, from the static assets. Counted as a
+  // call to a bound service, which the platform's documentation neither counts nor exempts.
+  const assets = env.ASSETS;
+  carteScolaire.configure(assets && (async (path: string) => {
+    count();
+    const r = await assets.fetch(new Request(`https://rundata.re${path}`));
+    return r.ok ? ((await r.json()) as carteScolaire.CarteCommune) : null;
+  }));
   // The RSMC's forecast track map, read by the scheduled event while a system is active.
   cmrsCarte.configure(cartes);
   // The path travelled by a system, from the RSMC's bulletins, once Météo-France agrees (providers/cmrs-trace.ts).

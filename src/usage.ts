@@ -18,6 +18,8 @@ export interface Asked {
   /** The names of the arguments, sorted. */
   args?: string;
   lieu?: string;
+  /** A postal address was given (annuaire_services_publics, the collège of an address): its value is never kept. */
+  adresse?: boolean;
   client?: string;
   clientVersion?: string;
   protocol?: string;
@@ -40,6 +42,7 @@ export function asked(body: unknown): Asked[] {
       const args = record(p.arguments);
       a.args = Object.keys(args).filter((k) => /^[\w-]{1,30}$/.test(k)).sort().join(",").slice(0, 120);
       if (typeof args.lieu === "string" && args.lieu.trim()) a.lieu = args.lieu;
+      if (typeof args.adresse === "string" && args.adresse.trim()) a.adresse = true;
     } else if (method === "initialize") {
       const info = record(p.clientInfo);
       a.client = short(info.name, 60);
@@ -66,6 +69,15 @@ export function understood(lieu: string): Pick<Hit, "detail" | "place" | "commun
   if (COORDINATES.test(lieu)) return { detail: "coordonnées hors de l'île", place: "inconnu" };
   if (ADDRESS.test(lieu)) return { detail: "adresse", place: "inconnu" };
   return { detail: lieu.trim().slice(0, 60), place: "inconnu" };
+}
+
+/**
+ * The place of a call that gave a postal address: its commune alone, as the gazetteer understands the place, and
+ * « adresse »; never the address, nor the place as written (it may hold the address too).
+ */
+export function withAddress(lieu: string | undefined): Pick<Hit, "detail" | "place" | "commune"> {
+  const commune = lieu ? understood(lieu).commune : undefined;
+  return { detail: commune ?? "", place: "adresse", commune };
 }
 
 type Measures = ReturnType<ReturnType<typeof stopwatch>>;
@@ -129,7 +141,7 @@ export function watch(request: Request, record: Recorder) {
       for (const m of messages) {
         if (m.method === "notifications/initialized") continue; // follows every initialize: nothing to learn
         const a = m.id !== undefined ? answers.get(m.id) : undefined;
-        const place = m.lieu ? understood(m.lieu) : {};
+        const place = m.adresse ? withAddress(m.lieu) : m.lieu ? understood(m.lieu) : {};
         let outcome = a?.outcome ?? (refused ? `http ${status}` : "ok");
         if (outcome === "erreur" && place.place === "inconnu") outcome = "lieu inconnu";
         if (outcome === "ok" && m.id !== undefined && empty.has(m.id)) outcome = "vide";

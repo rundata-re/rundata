@@ -14,14 +14,22 @@
  */
 import data from "../electricite/installations.json" with { type: "json" };
 import { resolvePlace } from "../places/resolve.js";
+import { a, enumeration } from "../tools/format.js";
 import type { Journee } from "./data.js";
 import { esc, H, islandMap, project, W } from "./map.js";
 import { slugify } from "./places.js";
 
 interface Filiere { nom: string; mw: number; installations: number }
 interface Commune { commune: string; filieres: Filiere[] }
+/** One of a filière's biggest installations, its name only when the register gives one. */
+interface Grande { commune: string; mw: number; nom?: string }
 
-const INSTALLATIONS = data as { mis_a_jour: string; communes: Commune[] };
+const INSTALLATIONS = data as {
+  mis_a_jour: string;
+  communes: Commune[];
+  grandes: Record<string, Grande[]>;
+  moins_de_36_kw: { mw: number; installations: number };
+};
 
 /** Each filière of the register: its class, for its colour in each theme (ELECTRICITE_CSS). */
 const CLASSE: Record<string, string> = {
@@ -141,6 +149,87 @@ export function installationsReplay(j: Journee): string {
 export function installationsList(): string {
   return `<ul class="rows inst">${INSTALLATIONS.communes.map((c) =>
     `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b><span>${esc(filieresText(c))}</span></li>`).join("")}</ul>`;
+}
+
+// ---------------------------------------------------------------- the filières, one by one
+
+/**
+ * What each filière is, in EDF SEI's words (the definitions of its yearly balance, « Production annuelle d'électricité
+ * par filière »), in the map's order. Its share over a year (FIL_ANNEE): its columns of that balance (ANNEE_CHAMPS),
+ * the coal, the diesel engines and the turbines in the thermique non renouvelable, as EDF counts them; over the 24 hours
+ * (FIL_MIX): its column of Journee.mix, where EDF's live Biomasse and Bioliquide are bioénergies (electricite-historique.ts).
+ */
+const FIL_TEXTE: Record<string, string> = {
+  "bioénergies": "Bois énergie, bagasse, autres biocombustibles solides ou liquides, biogaz, incinération des déchets ménagers\u00a0: la filière telle qu'EDF la définit.",
+  "solaire": "",
+  "hydraulique": "Les centrales au fil de l'eau, d'éclusée et de lac, comme EDF les compte.",
+  "éolien": "",
+  "thermique non renouvelable": "Charbon, moteurs diesel et turbines à combustion au fioul, comme EDF les compte\u00a0; ce qu'ils produisent à partir de bagasse, de bioliquide ou de bioéthanol va aux bioénergies.",
+  "stockage non hydraulique": "Il rend au réseau de l'électricité produite avant\u00a0: il n'entre pas dans les parts de production.",
+};
+const FIL_MIX: Record<string, number> = { "solaire": 0, "éolien": 1, "hydraulique": 2, "bioénergies": 3, "thermique non renouvelable": 4 };
+const FIL_ANNEE: Record<string, number[]> = { "solaire": [0], "éolien": [1], "hydraulique": [2], "bioénergies": [3], "thermique non renouvelable": [4, 5, 6] };
+/** « au Port », « à l'Entre-Deux » (as aujourdhui.ts says it, without importing the pages through it). */
+const aCommune = (nom: string) => (nom === "Entre-Deux" ? "à l'Entre-Deux" : a(nom));
+const NOMBRES = ["", "une", "deux", "trois", "quatre", "cinq", "six", "sept"];
+/** The register's MW to a tenth, as it gives them: « 99,5 », « 9 ». */
+const mw1 = (mw: number) => String(Math.round(mw * 10) / 10).replace(".", ",");
+const pctText = (v: number) => `${v.toFixed(1).replace(".", ",")}\u00a0%`;
+/** The communes said for a filière's biggest installations, the biggest first. */
+const GRANDES_COMMUNES = 3;
+/** EDF's dataset pages, the sources under the section. */
+const EDF_PAGE = "https://opendata-reunion.edf.fr/datasets/";
+
+/**
+ * A filière's biggest installations, commune by commune, the biggest first, in GRANDES_COMMUNES places at most:
+ * « quatre de 40 MW à La Possession ». An installation the register names is a place of its own.
+ */
+function grandesText(gs: Grande[]): string {
+  const groups: { at: string; mws: number[]; nom?: string }[] = [];
+  for (const g of gs) {
+    const same = !g.nom && groups.find((x) => x.at === g.commune && !x.nom);
+    if (same) same.mws.push(g.mw);
+    else groups.push({ at: g.commune, mws: [g.mw], ...(g.nom && { nom: g.nom }) });
+  }
+  return groups.slice(0, GRANDES_COMMUNES).map(({ at, mws, nom }) =>
+    (mws.length > 1 && mws.every((v) => v === mws[0]) ? `${NOMBRES[mws.length] ?? mws.length} de ${mw1(mws[0])}\u00a0MW` : `${enumeration(mws.map(mw1))}\u00a0MW`) +
+    ` ${aCommune(at)}${nom ? ` (« ${esc(nom)} », le seul nom que donne le registre)` : ""}`).join(", ");
+}
+
+/**
+ * « Les filières »: each filière of the map, in its colour, what it is, the MW the register gives it and its biggest
+ * installations, then its share of the production over EDF's last 24 hours and, once the chart's script has read the
+ * yearly balance (/electricite/historique.json), over the last year published. Only figures read: the register's, EDF's.
+ */
+export function filieresSection(j?: Journee): string {
+  const mix = j?.mix?.length ? j.mix : undefined;
+  const produit = mix ? mix.reduce((t, f) => t + f.slice(0, 5).reduce((s, v) => s + Math.max(0, v), 0), 0) : 0;
+  const items = ORDRE.map((nom) => {
+    const fs = INSTALLATIONS.communes.flatMap((c) => c.filieres.filter((f) => f.nom === nom));
+    if (!fs.length) return "";
+    const mw = fs.reduce((t, f) => t + f.mw, 0);
+    const n = fs.reduce((t, f) => t + f.installations, 0);
+    const gs = INSTALLATIONS.grandes[nom] ?? [];
+    const petites = nom === "solaire" && INSTALLATIONS.moins_de_36_kw.installations
+      ? `, dont ${INSTALLATIONS.moins_de_36_kw.installations.toLocaleString("fr-FR")} de moins de 36\u00a0kW, ${mw1(INSTALLATIONS.moins_de_36_kw.mw)}\u00a0MW` : "";
+    const all = gs.length === n && new Set(gs.map((x) => x.nom ?? x.commune)).size <= GRANDES_COMMUNES;
+    const figures = all
+      ? `${mwText(mw)} installés en ${installations(n)}\u00a0: ${grandesText(gs)}.`
+      : `${mwText(mw)} installés (${installations(n)}${petites})${gs.length ? `\u00a0; les plus grandes\u00a0: ${grandesText(gs)}` : ""}.`;
+    const g = FIL_MIX[nom];
+    const part = g == null || !mix || !(produit > 0) ? "" :
+      `<p class="fil-p">Part de la production\u00a0: <b>${pctText((mix.reduce((t, f) => t + Math.max(0, f[g]), 0) / produit) * 100)}</b> sur les dernières 24\u00a0h` +
+      `<span class="fil-a" data-k="${FIL_ANNEE[nom].join(",")}" hidden></span>.</p>`;
+    return `<li><h3><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="${CLASSE[nom]}" r="15"/></svg>${esc(nom[0].toUpperCase() + nom.slice(1))}</h3>` +
+      `${FIL_TEXTE[nom] ? `<p class="fil-t">${FIL_TEXTE[nom]}</p>` : ""}<p>${figures}</p>${part}</li>`;
+  }).join("");
+  return `<section aria-labelledby="h-filieres">
+  <div class="sec-h"><p class="eyebrow">Les filières</p><h2 id="h-filieres">Les filières, une par une</h2></div>
+  <div class="card fil"><ul class="fil-l">${items}</ul>
+  <p class="mls">Puissance installée\u00a0: <a href="${EDF_PAGE}registre-national-des-installations-de-production-et-de-stockage-d-electricite-reunion">registre national des installations</a> (RTE, EDF SEI), mis à jour par EDF SEI le ${MIS_A_JOUR}\u00a0; il tait le nom de presque toutes les installations («\u00a0Confidentiel\u00a0»). ` +
+    `Définitions et part sur l'année\u00a0: <a href="${EDF_PAGE}production-annuelle-delectricite-par-filiere-reunion">bilan annuel d'EDF SEI</a>. ` +
+    `Part sur 24\u00a0h\u00a0: <a href="${EDF_PAGE}njq-knwu0diqrdup6tya8qxi">production en direct d'EDF SEI</a>, ses colonnes Bioénergies, Biomasse et Bioliquide comptées en bioénergies, ses turbines à combustion en thermique non renouvelable, sans le stockage. Licence Ouverte.</p></div>
+</section>`;
 }
 
 // ---------------------------------------------------------------- the chart of the 24 hours
@@ -277,9 +366,10 @@ an.querySelector(".an-tot").textContent="Total\\u00a0: "+gwh(Y.total)+". Part re
 an.querySelector(".an-l").replaceChildren(...Y.filieres.map((v,i)=>[v,i]).sort((x,y)=>y[0]-x[0]).map(([v,i])=>{const s=Y.total>0?v/Y.total*100:0,li=el("li"),b=el("i",i<4?"ren":null);b.style.width=Math.max(1,s).toFixed(1)+"%";li.append(el("span",null,NOMS[i]),el("b",null,gwh(v)+" · "+nb(s,1)+"\\u00a0%"),b);return li}))};
 dd.replaceChildren(...a.annees.map((Y)=>{const b=el("button",null,String(Y.annee));b.type="button";b.addEventListener("click",()=>pick(Y));return b}));pick(L);
 an.querySelector(".an-src").textContent="Bilan annuel publié par EDF SEI"+(a.mis_a_jour?", mis à jour le "+dmy(a.mis_a_jour):"")+"\\u00a0: "+L.annee+" est la dernière année publiée (lu le "+dmy(a.lu)+").";an.hidden=false};
+const fy=(a)=>{const L=a.annees[a.annees.length-1];if(!(L.total>0))return;document.querySelectorAll(".fil-a").forEach((s)=>{const v=s.dataset.k.split(",").reduce((t,i)=>t+(L.filieres[+i]||0),0);s.replaceChildren(", ",el("b",null,nb(v/L.total*100,1)+"\\u00a0%")," en "+L.annee);s.hidden=false})};
 let asked=0;const ask=()=>{if(asked)return;asked=1;fetch(f.dataset.h).then((r)=>r.ok?r.json():{}).catch(()=>({})).then((h)=>{const pa=["j7","j30"].filter((n)=>h[n]&&h[n].depuis);["j7","j30"].forEach((n)=>{if(!h[n])return;D[n]=h[n];du.querySelector('[data-d="'+n+'"]').hidden=false});
 if(pa.length){dd.textContent=(pa.length>1?"7 et 30\\u00a0jours":DUREE[pa[0]])+"\\u00a0: depuis le "+dm(Date.parse(h[pa[0]].depuis))+", début de l'archive de rundata.re.";dd.hidden=false}
-if(h.j7||h.j30){du.hidden=false;if(h.depuis)note.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis))}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length&&an)year(h.annuel)})};
+if(h.j7||h.j30){du.hidden=false;if(h.depuis)note.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis))}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length){if(an)year(h.annuel);fy(h.annuel)}})};
 if(window.IntersectionObserver){const o=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){o.disconnect();ask()}},{rootMargin:"100% 0px"});o.observe(f)}else ask()};document.readyState==="loading"?addEventListener("DOMContentLoaded",go,{once:true}):go()})();`;
 
 /** Their style, in the page's sheet: the filières' and the areas' colours in each theme (marketing, 31/10/2026). */
@@ -302,4 +392,6 @@ export const ELECTRICITE_CSS = `.ipm{aspect-ratio:${W}/${H}}` +
   `.an-d button{padding:.35rem .75rem}.an-l{margin:.4rem 0 .2rem}.an-l b{font-variant-numeric:tabular-nums;white-space:nowrap}` +
   `.ecard .mls[hidden],.ecard .mlg[hidden]{display:none}.ech-dd{margin:-.2rem 0 .6rem;color:var(--muted);font-size:.85rem}.an-tot{font-weight:700;margin:.8rem 0 .3rem}.an .mls{display:block;margin:.3rem 0 0}` +
   `.rows.inst li{display:flex;flex-wrap:wrap;gap:.2rem .8rem}.rows.inst li>span{color:var(--muted)}.ipc details{margin-top:.8rem}.ipc summary h3{display:inline;font-size:1rem}` +
+  `.fil-l{list-style:none;padding:0;margin:0;display:grid;gap:1.1rem 2rem}@media (min-width:48rem){.fil-l{grid-template-columns:1fr 1fr}}.fil-l h3{display:flex;align-items:center;gap:.5rem;font-size:1.05rem;margin:0 0 .25rem}.fil-l h3 svg{width:1.1rem;height:1.1rem;flex:none}.fil-l circle{stroke:#fff;stroke-width:4}` +
+  `.fil-l p{margin:.15rem 0}.fil-t{color:var(--muted)}.fil-p b{font-variant-numeric:tabular-nums}.fil-a[hidden]{display:none}.fil .mls{margin:1rem 0 0;color:var(--muted);font-size:.85rem}` +
   `@media (max-width:37.49rem){.ech{aspect-ratio:${CW}/700}}`;

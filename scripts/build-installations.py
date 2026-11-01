@@ -3,9 +3,11 @@
 
 From the national register of the installations that produce or store electricity (RTE, with EDF SEI for La Réunion),
 as EDF SEI publishes it for the island on opendata-reunion.edf.fr (data-fair, no key). The register gives each
-installation's filière, power and commune, never its position, and hides most names (« Confidentiel »): only the
-commune and the filière are kept, summed. The small solar roofs come as one line per commune (« Agrégation des
-installations de moins de 36KW »), counted with their number of installations.
+installation's filière, power and commune, never its position, and hides most names (« Confidentiel »): the commune
+and the filière are kept, summed. The small solar roofs come as one line per commune (« Agrégation des
+installations de moins de 36KW »), counted with their number of installations, and summed apart (`moins_de_36_kw`).
+The biggest installations of each filière (GRANDES) are kept one by one, for /electricite's section « Les filières »:
+their commune, their MW and their name when the register gives one.
 The date kept is the dataset's own update by EDF SEI (`dataUpdatedAt`): the one date true for the whole file (the
 lines' versions differ, its description says another).
 Licence Ouverte. Two requests to the portal, a minute apart. Usage: python3 -I scripts/build-installations.py
@@ -31,6 +33,10 @@ FILIERES = {
     "Thermique non renouvelable": "thermique non renouvelable",
     "Stockage non hydraulique": "stockage non hydraulique",
 }
+# The installations kept one by one: of at least GRANDES_MW, at most GRANDES_N per filière, the biggest first.
+GRANDES_MW = 4.5
+GRANDES_N = 7
+AGREGATION = "Agrégation des installations de moins de 36KW"
 
 
 def read(url):
@@ -50,6 +56,8 @@ def main():
     if lines.get("total", len(rows)) > len(rows):
         raise SystemExit(f"registre : {lines['total']} lignes, {len(rows)} lues")
     out = defaultdict(lambda: defaultdict(lambda: [0.0, 0]))
+    grandes = defaultdict(list)
+    petites = [0.0, 0]
     left = []
     for r in rows:
         nom = FILIERES.get(r.get("filiere"))
@@ -61,13 +69,25 @@ def main():
         f = out[r["commune"]][nom]
         f[0] += (r.get("puismaxinstallee") or 0) / 1000
         f[1] += r.get("nbinstallations") or 0
+        mw = (r.get("puismaxinstallee") or 0) / 1000
+        if r.get("nominstallation") == AGREGATION:
+            petites[0] += mw
+            petites[1] += r.get("nbinstallations") or 0
+        elif r.get("nbinstallations") == 1 and mw >= GRANDES_MW:
+            nom_i = r.get("nominstallation")
+            grandes[nom].append({"commune": r["commune"], "mw": round(mw, 2), **({"nom": nom_i} if nom_i and nom_i != "Confidentiel" else {})})
     # The day in La Réunion of the dataset's update.
     maj = (datetime.fromisoformat(meta["dataUpdatedAt"].replace("Z", "+00:00")) + timedelta(hours=4)).date().isoformat()
     communes = [
         {"commune": c, "filieres": [{"nom": n, "mw": round(mw, 2), "installations": k} for n, (mw, k) in sorted(fs.items(), key=lambda x: -x[1][0])]}
         for c, fs in sorted(out.items())
     ]
-    data = {"mis_a_jour": maj, "communes": communes}
+    data = {
+        "mis_a_jour": maj,
+        "communes": communes,
+        "grandes": {n: sorted(gs, key=lambda g: (-g["mw"], g["commune"]))[:GRANDES_N] for n, gs in sorted(grandes.items())},
+        "moins_de_36_kw": {"mw": round(petites[0], 2), "installations": petites[1]},
+    }
     path = ROOT / "src/electricite/installations.json"
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n")

@@ -6,6 +6,7 @@ import * as irve from "../src/providers/irve.js";
 import { REGISTRY } from "../src/registre.js";
 import { DIRECT_VERS, MOTS, ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
 import { CARTE_CSS } from "../src/web/carte-style.js";
+import { PLEIN_ECRAN_CSS, pleinEcran } from "../src/web/plein-ecran.js";
 import { COUCHES, RESUME_PATH } from "../src/web/couches.js";
 import { borneRow } from "../src/web/domains.js";
 
@@ -40,6 +41,23 @@ describe("/carte", () => {
     for (const v of VUES) expect(html, v.id).toContain(`<a href="#${v.id}" data-v="${v.id}">`);
     expect(conf.vues.map((v: { id: string }) => v.id)).toEqual(VUES.map((v) => v.id));
     expect(html.indexOf('className="pe-b"')).toBeGreaterThan(html.indexOf('id="k-conf"'));
+  });
+
+  it("in full screen on a phone, puts the map's buttons in their place, never over it, and the legend over the panel", async () => {
+    const { html } = await serve("/carte");
+    // The buttons over the map only on a large screen, where they sit over the sea of its corner.
+    const wide = PLEIN_ECRAN_CSS.indexOf("@media (min-width:48rem){");
+    const over = [...PLEIN_ECRAN_CSS.matchAll(/\.pe-on \.pe-c\{position:absolute/g)].map((m) => m.index);
+    expect(over).toHaveLength(1);
+    expect(over[0]).toBeGreaterThan(wide);
+    expect(PLEIN_ECRAN_CSS).toMatch(/@media \(min-width:48rem\) and \(max-height:35\.98rem\)\{[^@]*\.pe-on \.pe-c\{position:static/);
+    // On a phone, the panel in the map's block, the legend at its top; the same screens in the script as in the style.
+    const s = pleinEcran({ boite: ".b", carte: ".c", barre: ".z", panneau: [], legende: ".c>figcaption" });
+    expect(s).toContain('matchMedia("(min-width:48rem) and (min-height:36rem)")');
+    expect(s).toContain("(small?map:box).append(p)");
+    expect(s).toContain("p.prepend(leg)");
+    expect(PLEIN_ECRAN_CSS).toContain(".pe-p:empty{display:none}");
+    expect(html).toContain('"legende":".kmapc\\u003efigcaption"');
   });
 
   it("has views that tick layers there are, at least two of them crossing two layers, the weather now first", () => {

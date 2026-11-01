@@ -267,7 +267,7 @@ function corps(): string {
 </section>
 <section aria-labelledby="h-aff" class="kaff" hidden><h2 id="h-aff">${esc(MOTS.affichees)}</h2><p class="note kvide">${esc(MOTS.aucune)}</p>${COUCHES.map(bloc).join("")}</section>
 <script type="application/json" id="k-conf">${inScript(conf())}</script><script>${CARTE_SCRIPT}</script>
-${pleinEcran({ boite: ".kcarte", carte: ".kmapc", barre: '.kzoom[data-fd="k"]', panneau: [".kvues", '.fonds[data-fd="k"]', ".kch"] })}`;
+${pleinEcran({ boite: ".kcarte", carte: ".kmapc", barre: '.kzoom[data-fd="k"]', panneau: [".kvues", '.fonds[data-fd="k"]', ".kch"], legende: ".kmapc>figcaption" })}`;
 }
 
 export function cartePage(origin: string, alerte?: Alerte): string {

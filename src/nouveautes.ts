@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-01T07:30:00+04:00", texte: "Météo\u00a0: sur la carte Pluie, «\u00a0Plus d'images\u00a0» rejoue le radar toutes les 5\u00a0minutes sur 24\u00a0heures, ou un jour au choix." },
   { date: "2026-11-01T06:28:00+04:00", texte: "Électricité\u00a0: chaque filière expliquée, avec sa puissance installée, ses plus grandes installations et sa part dans la production." },
   { date: "2026-11-01T06:11:00+04:00", texte: "Météo\u00a0: la carte Pluie rejoue aussi 24\u00a0heures, heure par heure, et 7\u00a0jours d'après les pluviomètres\u00a0; les gouttes vont dans le sens du vent." },
   { date: "2026-11-01T04:35:00+04:00", texte: "Électricité\u00a0: le graphique montre aussi chaque filière, aux couleurs de la carte, sur 24\u00a0h, 7 ou 30\u00a0jours." },

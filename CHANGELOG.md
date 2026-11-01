@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Dimanche 1 novembre 2026
 
+- Météo : sur la carte Pluie, « Plus d'images » rejoue le radar toutes les 5 minutes sur 24 heures, ou un jour au choix.
 - Électricité : chaque filière expliquée, avec sa puissance installée, ses plus grandes installations et sa part dans la production.
 - Météo : la carte Pluie rejoue aussi 24 heures, heure par heure, et 7 jours d'après les pluviomètres ; les gouttes vont dans le sens du vent.
 - Électricité : le graphique montre aussi chaque filière, aux couleurs de la carte, sur 24 h, 7 ou 30 jours.

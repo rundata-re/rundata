@@ -5,6 +5,11 @@
  *   and the stations' last 24 round hours;
  * - 7 days: the stations' round hours of the week; and the radar's week (radar-semaine.ts) for the hours it holds, 3
  *   hours an hour apart, each the strongest rain of the 3 hours, as the 24 hours; the rain gauges before them.
+ * The finer files, for the visitors who ask for more images or whose device keeps up (meteo-carte.ts), take the radar's
+ * own images, not the strongest rain of an hour, from its days kept in KV (radar-semaine.ts):
+ * - 24 hours, an image every 5 minutes, the 6 hours' for the hours not yet in a day;
+ * - 7 days, an image every quarter of an hour, for the hours the days hold;
+ * - a day of La Réunion, an image every 5 minutes, among the days kept (joursOf).
  * The stations' hours are Météo-France's hourly package (providers/meteofrance.ts), already read for /meteo: the
  * temperature and the wind at each round hour, the rain of the hour before it. It holds 24 hours; the week is kept in
  * KV (SEMAINE_KV_KEY), merged with each newer package a data center already holds, never one asked for it, and at
@@ -16,12 +21,25 @@ import type { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { project } from "./map.js";
-import { endOf, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure } from "./pluie-retro.js";
-import { KEEP_MS as WEEK_KEEP_MS } from "./radar-semaine.js";
+import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure } from "./pluie-retro.js";
+import { KEEP_MS as WEEK_KEEP_MS, PREMIER_JOUR } from "./radar-semaine.js";
 
 export const DUREES = ["6h", "24h", "7j"] as const;
 export type Duree = (typeof DUREES)[number];
 export const PATHS: Record<Duree, string> = { "6h": "/meteo/rejeu-6h.json", "24h": "/meteo/rejeu-24h.json", "7j": "/meteo/rejeu-7j.json" };
+/** The finer files of 24 hours and 7 days. */
+export const FINS = { "24h": "/meteo/rejeu-24h-5min.json", "7j": "/meteo/rejeu-7j-15min.json" } as const;
+export type Fin = keyof typeof FINS;
+export const JOUR_FILE = /^\/meteo\/rejeu-jour-(\d{4}-\d{2}-\d{2})\.json$/;
+export const jourPath = (date: string) => `/meteo/rejeu-jour-${date}.json`;
+/** The days of a day's file: that of today and the 7 before, as long as their keys are kept (radar-semaine.ts). */
+export const JOURS = 8;
+/**
+ * The days of La Réunion one can replay at `now` (ms), the newest first: `n` of them, none before `premier`. The page's
+ * script takes it as its text.
+ */
+export const joursOf = (now: number, premier: string, n: number): string[] =>
+  Array.from({ length: n }, (_, i) => new Date(now + 144e5 - i * 864e5).toISOString().slice(0, 10)).filter((x) => x >= premier);
 
 /** The round hours of each file: 6 hours are 7 of them, the first one starting the 6 hours. */
 export const HEURES: Record<Duree, number> = { "6h": 7, "24h": 24, "7j": 7 * 24 + 1 };
@@ -132,25 +150,34 @@ export function fill(s: Semaine, months: Map<string, Map<number, climat.Month>>,
   return { ...s, st, d1: now.toISOString() };
 }
 
-/** The file's hours: the last `n` of the week, at the Météo-France stations that measured any. */
-export function heures(s: Semaine | null, n: number): Heures | null {
+/**
+ * The file's hours: the last `n` of the week up to `end` (ms, at most the week's end), at the Météo-France stations
+ * that measured any.
+ */
+export function heures(s: Semaine | null, n: number, end?: number): Heures | null {
   if (!s) return null;
   const all = HEURES["7j"];
+  const last = Date.parse(s.fin);
+  const after = end === undefined || end >= last ? 0 : Math.round((last - end) / HOUR_MS);
+  n = Math.min(n, all - after);
+  if (n <= 0) return null;
   const st: SerieCarte[] = [];
   for (const x of meteofrance.stations()) {
     const series = s.st[x.id];
     if (!series) continue;
-    const cut = Object.fromEntries(FIELDS.map((f) => [f, series[f].slice(all - n)])) as Series;
+    const cut = Object.fromEntries(FIELDS.map((f) => [f, series[f].slice(all - after - n, all - after)])) as Series;
     if (!FIELDS.some((f) => cut[f].some((v) => v != null))) continue;
     const [px, py] = project(x.lon, x.lat);
     st.push({ id: x.id, x: Math.round(px * 10) / 10, y: Math.round(py * 10) / 10, alt: x.altitude_m, ...cut });
   }
-  return st.length ? { fin: s.fin, heures: n, st } : null;
+  return st.length ? { fin: after ? iso(last - after * HOUR_MS) : s.fin, heures: n, st } : null;
 }
 
 export interface Sources {
   /** The radar's 6 hours (KV, pluie-retro.ts). */
   six(): Promise<Historique | null>;
+  /** Its day of La Réunion `date`, an image every 5 minutes (radar-semaine.ts). */
+  jour(date: string): Promise<Historique | null>;
   /** Its 24 hours, a quarter of an hour apart. */
   day(): Promise<Historique | null>;
   /** Its week, an hour apart (radar-semaine.ts). */
@@ -231,11 +258,85 @@ export function written(h: Historique, now: Date): boolean {
   return h.entrees.some((e) => !isTrou(e)) && endOf(h.entrees[h.entrees.length - 1]) > now.getTime() - 3 * HOUR_MS;
 }
 
-/** The answer of PATHS[d], kept by the data center and the browser for freshSeconds(). */
-export async function rejeu(d: Duree, cache: Cache, background: (p: Promise<unknown>) => void, now = new Date()): Promise<Response> {
-  const fresh = freshSeconds(d, now);
-  const body = (await cache.get(`rejeu:${d}`, fresh, () => build(d, cache, now, background))).value;
-  return new Response(JSON.stringify(body), {
+const DAY_MS = 24 * HOUR_MS;
+/** The days of La Réunion (AAAA-MM-JJ) whose images end after `from` up to `to` (ms), oldest first. */
+export function joursEntre(from: number, to: number): string[] {
+  const out: string[] = [];
+  for (let t = Math.floor((from + 4 * HOUR_MS) / DAY_MS) * DAY_MS - 4 * HOUR_MS; t < to; t += DAY_MS) out.push(iso(t + 4 * HOUR_MS).slice(0, 10));
+  return out;
+}
+
+/**
+ * The entries of the histories `hs` that end after `from`, oldest first, each once: a gap the longest it was said;
+ * one size of grid, the first's.
+ */
+export function assembler(hs: (Historique | null)[], from: number): Historique | null {
+  const first = hs.find((h) => h?.entrees.length);
+  if (!first) return null;
+  const seen = new Map<string, Entree>();
+  for (const h of hs) {
+    if (!h || h.w !== first.w || h.h !== first.h) continue;
+    for (const e of h.entrees) {
+      if (endOf(e) <= from) continue;
+      const key = isTrou(e) ? `trou ${e.de}` : e.fin;
+      const was = seen.get(key);
+      if (!was || endOf(e) > endOf(was)) seen.set(key, e);
+    }
+  }
+  const entrees = [...seen.values()].sort((a, b) => endOf(a) - endOf(b));
+  return entrees.length ? { w: first.w, h: first.h, entrees } : null;
+}
+
+/** Over 7 days, the images of the quarters of an hour, and the gaps of half an hour or more. */
+const QUART = (e: Entree) => (isTrou(e) ? endOf(e) - Date.parse(e.de) >= 30 * 60_000 : new Date(e.fin).getUTCMinutes() % 15 === 0);
+
+const radarOf = async (read: () => Promise<Historique | null>) => {
+  count();
+  return read().catch((err) => (console.error("rejeu : historique radar illisible", err instanceof Error ? err.message : String(err)), null));
+};
+
+async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Rejeu> {
+  const from = now.getTime() - (f === "24h" ? LONG_MS : 7 * DAY_MS);
+  const src = sources;
+  const reads = !src ? [] : [...joursEntre(from, now.getTime()).map((d) => radarOf(() => src.jour(d))), ...(f === "24h" ? [radarOf(src.six)] : [])];
+  const [s, hs] = await Promise.all([semaine(cache, now, background), Promise.all(reads)]);
+  if (f === "24h") return { radar: src ? assembler(hs, from) : null, heures: heures(s, HEURES["24h"]) };
+  // The days for the hours they hold while written, as the file of an image an hour; the rain gauges before them.
+  const all = src && assembler(hs, from);
+  const radar = all && written(all, now) ? { ...all, entrees: all.entrees.filter(QUART) } : null;
+  return { ...(radar ? { radar } : {}), heures: heures(s, HEURES["7j"]) };
+}
+
+/** The day `date`: its images, and the stations' hours from the midnight it starts at (`end` the one it ends at). */
+async function buildJour(date: string, end: number, cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Rejeu> {
+  const src = sources;
+  const [s, h] = await Promise.all([semaine(cache, now, background), src ? radarOf(() => src.jour(date)) : null]);
+  const fin = s ? Math.min(end, Date.parse(s.fin)) : end;
+  return { radar: src ? (h?.entrees.length ? h : null) : undefined, heures: heures(s, Math.round((fin - end + DAY_MS) / HOUR_MS) + 1, end) };
+}
+
+const answer = async (key: string, fresh: number, cache: Cache, build: () => Promise<Rejeu>) =>
+  new Response(JSON.stringify((await cache.get(key, fresh, build)).value), {
     headers: { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff", "cache-control": `public, max-age=${fresh}` },
   });
+
+/** The answer of PATHS[d], kept by the data center and the browser for freshSeconds(). */
+export async function rejeu(d: Duree, cache: Cache, background: (p: Promise<unknown>) => void, now = new Date()): Promise<Response> {
+  return answer(`rejeu:${d}`, freshSeconds(d, now), cache, () => build(d, cache, now, background));
+}
+
+/** The answer of FINS[f]: the 24 hours kept as the 6 hours' newest image, the week as the days' last hour. */
+export async function rejeuFin(f: Fin, cache: Cache, background: (p: Promise<unknown>) => void, now = new Date()): Promise<Response> {
+  return answer(`rejeu:${f}:fin`, f === "24h" ? 300 : freshSeconds("7j", now), cache, () => buildFin(f, cache, now, background));
+}
+
+/**
+ * The answer of jourPath(date), or null for a day not kept (joursOf): until its last hour is written, kept as the
+ * week; then 6 hours, the stations' holes it may still fill.
+ */
+export async function rejeuJour(date: string, cache: Cache, background: (p: Promise<unknown>) => void, now = new Date()): Promise<Response | null> {
+  if (!joursOf(now.getTime(), PREMIER_JOUR, JOURS).includes(date)) return null;
+  const end = Date.parse(`${date}T20:00:00Z`);
+  const fresh = now.getTime() < end + HOUR_MS ? freshSeconds("7j", now) : 6 * 3600;
+  return answer(`rejeu:jour:${date}`, fresh, cache, () => buildJour(date, end, cache, now, background));
 }

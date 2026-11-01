@@ -620,6 +620,11 @@ const OTHER_PAGES: Record<string, Page> = {
   // archive in D1 for the hours the week lacks, at most once in 6 hours (about 140 rows).
   "/meteo/rejeu-6h.json": { subrequests: 6, cpuMs: 20, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   "/meteo/rejeu-24h.json": { subrequests: 6, cpuMs: 20, from: ["src/web/rejeu.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
+  // The finer files read the radar's days (KV) in place of its 6 hours, 24 hours or week: 2 days and the 6 hours over 24
+  // hours, 8 days over 7, the day asked; about 3, 9 and 1,2 Mo of JSON at the most to read (radar-semaine.ts).
+  "/meteo/rejeu-24h-5min.json": { subrequests: 8, cpuMs: 40, from: ["src/web/rejeu.ts", "src/web/radar-semaine.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
+  "/meteo/rejeu-7j-15min.json": { subrequests: 13, cpuMs: 120, from: ["src/web/rejeu.ts", "src/web/radar-semaine.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 7 jours, plus d'images : le radar au quart d'heure une fois la semaine pleine (KV, ses jours) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
+  "/meteo/rejeu-jour-*.json": { subrequests: 6, cpuMs: 30, from: ["src/web/rejeu.ts", "src/web/radar-semaine.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur un jour choisi : le radar toutes les 5 min de ce jour (KV) et les heures rondes des stations", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   "/meteo/rejeu-7j.json": { subrequests: 6, cpuMs: 40, from: ["src/web/rejeu.ts", "src/web/radar-semaine.ts", "src/providers/meteofrance.ts"], what: "la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV)", basis: "code", d1: { d1Calls: 1, d1RowsRead: 140 } },
   // /electricite's durations and years (web/electricite-historique.ts), asked when its chart nears the screen: the
   // archive (the data center's cache, KV, written back to the cache: 3), EDF's years at most once a day (the data
@@ -693,7 +698,7 @@ const pageEntry = (path: string, p: Page, kvReads: number): Entry => ({
 const SHARED_KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
 const sharedIn = (keys: string[]) => new Set(keys.filter((k) => SHARED_KEYS.has(k))).size;
 // The commune pages and /antennes: the copy of the mobile sites out of service besides.
-const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 2, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
+const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 2, "/meteo/rejeu-24h-5min.json": 4, "/meteo/rejeu-7j-15min.json": 9, "/meteo/rejeu-jour-*.json": 2, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
 
 const VISITS: Entry[] = [
   ...Object.entries(OTHER_PAGES).map(([path, p]) => pageEntry(path, p, KV_READS[path] ?? 0)),

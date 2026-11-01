@@ -5,7 +5,8 @@ import * as climat from "../src/providers/climat.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { REGISTRY } from "../src/registre.js";
 import { type Historique, rle } from "../src/web/pluie-retro.js";
-import { configure, fill, freshSeconds, heures, HEURES, holes, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
+import { assembler, configure, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
+import { PREMIER_JOUR } from "../src/web/radar-semaine.js";
 import { site } from "../src/web/site.js";
 
 const csv = readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8");
@@ -15,10 +16,11 @@ const at = (iso: string) => new Date(iso);
 const ID = "97416463";
 
 /** A store in memory, as KV, counting its writes. */
-function sources(semaine: Semaine | null, six: Historique | null = null, day: Historique | null = null, week: Historique | null = null) {
-  const kept = { semaine, writes: 0 };
+function sources(semaine: Semaine | null, six: Historique | null = null, day: Historique | null = null, week: Historique | null = null, jours: Record<string, Historique> = {}) {
+  const kept = { semaine, writes: 0, jours: [] as string[] };
   const s: Sources = {
     six: async () => six,
+    jour: async (d) => (kept.jours.push(d), jours[d] ?? null),
     day: async () => day,
     week: async () => week,
     semaine: { get: async () => kept.semaine, put: async (w) => void ((kept.semaine = w), kept.writes++) },
@@ -170,5 +172,88 @@ describe("the replay bar's files", () => {
     expect(worker).not.toContain("semaine des stations");
     expect(Object.keys(await import("../src/web/rejeu.js"))).not.toContain("passage");
     expect(REGISTRY.filter((e) => e.from.includes("src/web/rejeu.ts") && e.trigger === "planifiée")).toEqual([]);
+  });
+});
+
+describe("the finer files and the days", () => {
+  const M5 = 5 * 60_000;
+  const image = (ms: number) => ({ fin: new Date(ms).toISOString().replace(".000Z", "Z"), pannes: [], pluie: rle("0".repeat(14_000)), mal_vu: rle("0".repeat(14_000)) });
+  const every = (from: number, to: number, step = M5): Historique => {
+    const entrees = [];
+    for (let t = from; t <= to; t += step) entrees.push(image(t));
+    return { w: 125, h: 112, entrees };
+  };
+  const fins = (h: { entrees: { fin?: string; de: string; a?: string }[] }) => h.entrees.map((e) => e.fin ?? `trou ${e.de}-${e.a}`);
+
+  it("name the days of La Réunion, a day's images ending after its midnight up to the next", () => {
+    // 01/11/2026 08:57 UTC is 12:57 in La Réunion: today and the 7 days before, none before the first day kept.
+    const now = Date.parse("2026-11-01T08:57:00Z");
+    expect(joursOf(now, "2026-10-20", JOURS)).toEqual(["2026-11-01", "2026-10-31", "2026-10-30", "2026-10-29", "2026-10-28", "2026-10-27", "2026-10-26", "2026-10-25"]);
+    expect(joursOf(now, PREMIER_JOUR, JOURS)).toEqual(["2026-11-01", "2026-10-31"]);
+    // 20:00 UTC is midnight: 19:59 is still the 31st, 20:01 already the 1st.
+    expect(joursOf(Date.parse("2026-10-31T19:59:00Z"), PREMIER_JOUR, 1)).toEqual(["2026-10-31"]);
+    expect(joursOf(Date.parse("2026-10-31T20:01:00Z"), PREMIER_JOUR, 1)).toEqual(["2026-11-01"]);
+    expect(joursEntre(now - 24 * 3_600_000, now)).toEqual(["2026-10-31", "2026-11-01"]);
+    expect(joursEntre(Date.parse("2026-10-31T20:00:00Z"), Date.parse("2026-11-01T20:00:00Z"))).toEqual(["2026-11-01"]);
+    expect(joursEntre(now - 7 * 86_400_000, now)).toHaveLength(8);
+  });
+
+  it("put the days and the 6 hours together, oldest first, each image once, a gap the longest it was said", () => {
+    const t = Date.parse("2026-11-01T06:00:00Z");
+    const a: Historique = { w: 125, h: 112, entrees: [image(t - 2 * M5), { trou: true, de: "2026-11-01T05:55:00Z", a: "2026-11-01T06:00:00Z" }] };
+    const b: Historique = { w: 125, h: 112, entrees: [{ trou: true, de: "2026-11-01T05:55:00Z", a: "2026-11-01T06:05:00Z" }, image(t + 2 * M5), image(t - 2 * M5)] };
+    expect(fins(assembler([a, null, b, { ...every(t, t), w: 4 }], t - 3 * M5)!)).toEqual(["2026-11-01T05:50:00Z", "trou 2026-11-01T05:55:00Z-2026-11-01T06:05:00Z", "2026-11-01T06:10:00Z"]);
+    expect(assembler([null, { w: 125, h: 112, entrees: [] }], 0)).toBeNull();
+  });
+
+  it("answer 24 hours every 5 minutes from the days and the 6 hours, the week every quarter of an hour for the hours the days hold, a day kept", async () => {
+    const now = at("2026-11-01T08:57:00Z");
+    const t = now.getTime();
+    // The days up to the hour of 08:00, the 6 hours to 08:55.
+    const jours = { "2026-10-31": every(Date.parse("2026-10-30T20:05:00Z"), Date.parse("2026-10-31T20:00:00Z")), "2026-11-01": every(Date.parse("2026-10-31T20:05:00Z"), Date.parse("2026-11-01T08:00:00Z")) };
+    const six = every(t - 6 * 3_600_000 + 3 * 60_000, Date.parse("2026-11-01T08:55:00Z"));
+    // The stations' week of the package, shifted to end at 08:00.
+    const week = { ...merge(null, hourly, now)!, fin: "2026-11-01T08:00:00Z" };
+    const { s, kept } = sources(week, six, null, null, jours);
+    configure(s);
+    const get = async (p: string) => {
+      const res = await site(new Request(`https://rundata.re${p}`), new Cache(new MemoryStore(), () => t), () => {}, now);
+      return { res: res!, body: res!.status === 200 ? await res!.json() : null };
+    };
+    const a = await get(FINS["24h"]);
+    expect(a.res.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(kept.jours).toEqual(["2026-10-31", "2026-11-01"]);
+    // 24 hours after 08:57 the day before, every 5 minutes: 288 images, the last the 6 hours'.
+    expect(a.body.radar.entrees).toHaveLength(288);
+    expect(fins(a.body.radar).slice(0, 1).concat(fins(a.body.radar).slice(-1))).toEqual(["2026-10-31T09:00:00Z", "2026-11-01T08:55:00Z"]);
+    expect(a.body.heures.heures).toBe(24);
+    // The week: the days hold 2 of its 7, their images of the quarters of an hour, the rain gauges before them.
+    kept.jours.length = 0;
+    const w = await get(FINS["7j"]);
+    expect(kept.jours).toHaveLength(8);
+    expect(w.body.radar.entrees).toHaveLength(144);
+    expect(fins(w.body.radar).slice(0, 1).concat(fins(w.body.radar).slice(-1))).toEqual(["2026-10-30T20:15:00Z", "2026-11-01T08:00:00Z"]);
+    // Whole, its images of the quarters of an hour; the 5 minutes between them left out.
+    const all: Record<string, Historique> = {};
+    for (const d of joursEntre(t - 7 * 86_400_000, t)) {
+      const end = Date.parse(`${d}T20:00:00Z`);
+      all[d] = every(end - 86_400_000 + M5, Math.min(end, Date.parse("2026-11-01T08:00:00Z")));
+    }
+    configure(sources(week, null, null, null, all).s);
+    const whole = (await get(FINS["7j"])).body;
+    expect(whole.radar.entrees).toHaveLength(7 * 96 - 3);
+    expect(fins(whole.radar).slice(-2)).toEqual(["2026-11-01T07:45:00Z", "2026-11-01T08:00:00Z"]);
+    // A day kept: its images and the stations' hours from its midnight; today up to now.
+    configure(s);
+    const day = await get(jourPath("2026-10-31"));
+    expect(day.res.headers.get("cache-control")).toBe("public, max-age=21600");
+    expect(day.body.radar.entrees).toHaveLength(288);
+    expect(day.body.heures).toMatchObject({ fin: "2026-10-31T20:00:00Z", heures: 25 });
+    const today = await get(jourPath("2026-11-01"));
+    expect(today.res.headers.get("cache-control")).toBe("public, max-age=1080");
+    expect(today.body.heures).toMatchObject({ fin: "2026-11-01T08:00:00Z", heures: 13 });
+    // A day not kept, or before the first: not found.
+    expect((await get(jourPath("2026-10-24"))).res.status).toBe(404);
+    expect((await get(jourPath("2026-10-30"))).res.status).toBe(404);
   });
 });

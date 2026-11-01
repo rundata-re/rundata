@@ -378,7 +378,8 @@ describe("the page /meteo with every station", () => {
     expect(html).toContain(`<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${ALL.reduce((m, x) => (x.time > m ? x.time : m), "")}" hidden><fieldset class="tabs"><legend>Revoir :</legend>` +
       `<input type="radio" name="rjd" id="rjd-6h" value="6h"><label for="rjd-6h">6\u00a0h</label><input type="radio" name="rjd" id="rjd-24h" value="24h"><label for="rjd-24h">24\u00a0h</label>` +
       `<input type="radio" name="rjd" id="rjd-7j" value="7j"><label for="rjd-7j">7\u00a0jours</label></fieldset><button type="button" class="rj-b" aria-label="Lire les 6\u00a0dernières heures">▶ Lire</button>` +
-      `<input type="range" min="0" max="1" step="any" value="1" aria-label="Moment affiché sur la carte" hidden><span class="rj-q" hidden></span>` +
+      `<input type="range" min="0" max="1" step="any" value="1" aria-label="Moment affiché sur la carte" hidden>` +
+      `<label class="rj-plus"><input type="checkbox"> Plus d'images</label><select class="rj-j" aria-label="Choisir un jour" hidden><option value="">Choisir un jour</option></select><span class="rj-q" hidden></span>` +
       `<span class="rj-ko" hidden>L'historique n'a pas pu être chargé : la carte reste sur la dernière mesure. <button type="button">Réessayer</button></span><span class="sr" aria-live="polite"></span></div>`);
     expect(html).toContain(`<g class="rj-st"></g><g class="rj-t" aria-hidden="true"><text class="rj-d" x="24" y="782"></text><text class="rj-h" x="24" y="846"></text><text class="rj-s" x="24" y="886"></text></g>`);
     // A replay legend for each layer, the temperatures' too.
@@ -497,9 +498,9 @@ describe("the replay bar's own script", () => {
   it("says marketing's words, plays in 12 s (24 s over 24 hours and 7 days), and never says « temps réel » nor « prévision »", () => {
     const js = rejeuScript();
     expect(() => new Function(js)).not.toThrow();
-    for (const words of [`"❚❚ Pause"`, `"↻ Relire"`, `"▶ Lire"`, `"Mettre en pause"`, `"Relire"`, `"Chargement…"`, `"Lire les 24 dernières heures"`, `"Lire les 7 derniers jours"`,
+    for (const words of [`"❚❚ Pause"`, `"↻ Relire"`, `"▶ Lire"`, `"Mettre en pause"`, `"Relire"`, `"Chargement…"`, `"Lire la journée du "`, `"Lire les 24 dernières heures"`, `"Lire les 7 derniers jours"`,
       `w="mesuré"`, `w="estimé"`, `w="estimé par radar"`, `", pluie estimée par le radar"`, `", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)`, `w="dernière mesure"`, `", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)`, `w="estimé entre les pluviomètres"`, `", estimée entre les pluviomètres"`,
-      `"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+"."`, `". Pas d'image radar de "`, `PL={"6h":12000,"24h":24000,"7j":24000}`,
+      `"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+"."`, `". Pas d'image radar de "`, `PL={"6h":12000,"24h":24000,"7j":24000,"24h+":54000,"7j+":96000,"jour":54000}`,
       `"Température sous abri de "+x+" de Météo-France, une mesure par heure.`, `" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu."`,
       `.lg-now .lgs`]) {
       expect(js).toContain(words);
@@ -581,7 +582,7 @@ describe("the rain's animation and its replay", () => {
     expect(daysOf(at(31, 22, 0), at(32, 1, 0), true)).toBe("sam. 31/10 – dim. 01/11");
     expect(daysOf(0, at(31, 10, 45), false)).toBe("31/10");
     expect(rejeuScript()).toContain(`days=${daysOf};`);
-    expect(rejeuScript()).toContain(`hd.textContent=d==="7j"||d==="24h"||dm(S)!==dm(E)?days(!end&&de,t,d==="7j"):"";`);
+    expect(rejeuScript()).toContain(`hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";`);
     expect(METEO_SCRIPT).toContain(`span=(j)=>spanOf_(j.de,j.fin),spanOf_=${spanOf},`);
   });
 
@@ -613,7 +614,7 @@ describe("the rain's animation and its replay", () => {
   it("lets where the radars saw badly linger during a play, fading over two seconds of it, and says how long before the time shown", () => {
     const at = (m: number) => m * 6e4, W = 60;
     // As the replay's script does: TRAIL of the play, an hour of radar over 6 hours; none for less motion.
-    expect(rejeuScript()).toContain(`const keep=${trailOf},trail=(s)=>rm||d!=="6h"?null:keep(K.p,T,s,DU[d]*TRAIL/PL[d]),wm=`);
+    expect(rejeuScript()).toContain(`const keep=${trailOf},tw=()=>d==="6h"?DU[d]*TRAIL/PL[d]:d==="24h+"||d==="jour"?36e5:0,trail=(s)=>rm||!tw()?null:keep(K.p,T,s,tw()),wm=`);
     expect(rejeuScript()).toContain(`TRAIL=2000`);
     expect((216e5 * 2000) / 12000).toBe(at(W));
     const trail = (T: number, s: number) => trailOf(IMG.map((m) => ({ t: at(m), e: m })), T, s, at(W)) as [number, number][];
@@ -743,8 +744,30 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(METEO_SCRIPT).toContain(`p.w=DW[c-1];p.l=DL[c-1];`);
   });
 
+  it("asks more images on « Plus d'images », or for a device that keeps up, never on a connection that saves data or is slow", () => {
+    const js = rejeuScript();
+    // The finer files of 24 hours and 7 days, and a day's.
+    expect(js).toContain(`"24h+":"/meteo/rejeu-24h-5min.json","7j+":"/meteo/rejeu-7j-15min.json"},JP="/meteo/rejeu-jour-JOUR.json"`);
+    // 288 images in 54 s and 672 in 96 s: 5 and 7 new images of rain a second, faded into each other the whole way.
+    const PL = { "24h+": 54_000, "7j+": 96_000, jour: 54_000 }, DU = { "24h+": 864e5, "7j+": 6048e5, jour: 864e5 }, ST = { "24h+": 3e5, "7j+": 9e5, jour: 3e5 };
+    expect((Object.keys(PL) as (keyof typeof PL)[]).map((m) => DU[m] / ST[m] * 1e3 / PL[m])).toEqual([16 / 3, 7, 16 / 3]);
+    expect(js).toContain(`SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0}`);
+    expect(js).toContain(`slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=25&&nps(m)*CW[0]+30*CW[1]<600,`);
+    // Measured in a play of the rain over 6 or 24 hours only, unless more images were asked or refused.
+    expect(js).toContain(`MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p"`);
+    expect(js).toContain(`if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",true)}`);
+    // A page kept from before has neither the box nor the days: the script still runs.
+    expect(js).toContain(`box=rb.querySelector(".rj-plus input")||document.createElement("input"),sel=rb.querySelector(".rj-j")||document.createElement("select"),`);
+    // The box, asked: the same length swapped at the same moment.
+    expect(js).toContain(`box.addEventListener("change",()=>{USER=true;MZ=false;FINE=box.checked;`);
+    expect(js).toContain(`if(swap){T=Math.max(S,Math.min(E,t));`);
+    // A day: from its midnight, without the live map at its end.
+    expect(js).toContain(`lo=d==="jour"?J0:E-DU[d]`);
+    expect(js).toContain(`const end=T>=E&&d!=="jour";`);
+  });
+
   it("plays the 24 hours a quarter of an hour at a time, the strongest rain of the hour up to it, and says so", () => {
-    expect(rejeuScript()).toContain(`const ST={"6h":3e5,"24h":9e5,"7j":36e5}`);
+    expect(rejeuScript()).toContain(`const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5}`);
     // « 14 h 15 » off the hour, « 14 h » on it.
     expect(METEO_SCRIPT).toContain(`const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")}`);
     expect(rejeuScript()).toContain(`hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")}`);
@@ -754,15 +777,15 @@ describe("the rain's edges, its drops and the wind", () => {
     // An hour's, or 3 hours' for the radar's week.
     expect(METEO_SCRIPT).toContain(`" "+BW+"\u00a0: zones que le radar a mal vues pendant "+(Date.parse(n.fin)-Date.parse(n.de)>36e5?"ces 3\u00a0heures":"cette heure")+", où la pluie peut être manquée."`);
     // The 7 days: the radar's week for the hours the file has (rejeu.ts), the rain gauges' windows ended before its first.
-    expect(rejeuScript()).toContain(`if(l==="p"&&(d!=="7j"||J.radar&&T>=RT)){const gr=J.radar`);
+    expect(rejeuScript()).toContain(`if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar`);
     expect(rejeuScript()).toContain(`if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e});`);
-    expect(rejeuScript()).toContain(`if(d==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;`);
-    // The hatches linger over 6 hours only: an hour's image is already where the radars saw badly in its hour.
-    expect(rejeuScript()).toContain(`trail=(s)=>rm||d!=="6h"?null:keep(`);
+    expect(rejeuScript()).toContain(`if(BA(d)==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;`);
+    // The hatches linger over the images of 5 minutes only: an hour's image is already where the radars saw badly in its hour.
+    expect(rejeuScript()).toContain(`trail=(s)=>rm||!tw()?null:keep(`);
     expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);
     // Faded from one image to the next all the time, never held then switched (the user, 01/11/2026).
     expect(rejeuScript()).not.toContain("ease");
-    expect(rejeuScript()).toContain(`if(z.t-a.t>(l==="p"?2*(d==="6h"?ST[d]:36e5):72e5)+6e4)return null`);
+    expect(rejeuScript()).toContain(`if(z.t-a.t>(l==="p"&&GP[d]||72e5)+6e4)return null`);
   });
 
   it("spreads the week's rain gauges between them by 3 hours, one every hour, said estimated, without their dots", () => {

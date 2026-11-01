@@ -15,6 +15,7 @@ import * as sitesHs from "./providers/sites-hs.js";
 import * as internetArcep from "./vie/internet.js";
 import * as loyersAnil from "./vie/loyers.js";
 import * as ecolesAnnuaire from "./vie/ecoles.js";
+import * as medecinsAmeli from "./vie/medecins.js";
 import * as marchesOsm from "./vie/marches.js";
 import { z } from "zod";
 import type { Cache } from "./cache.js";
@@ -107,7 +108,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.138";
+export const VERSION = "1.0.139";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -199,7 +200,7 @@ const lieuAvecExemples = z
 export const toutesLesSources = (inactives = false) =>
   oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, dae.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
-    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE,
+    carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, medecinsAmeli.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE,
     // The public sector's job offers (emploi), the public procurement notices (the page /marches-publics).
     emploiSource.SOURCE, marchesPublics.SOURCE,
     // The decrees of recreational fishing, bundled (peche_loisir).
@@ -453,7 +454,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »), d'après les calendriers du TCO\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aires de jeux, parcs, piscines, médiathèques, zoos, " +
         "parcs de loisirs, salles de jeux, skateparks, escalade, musées, commune par commune, avec l'âge quand la carte le donne, d'après OpenStreetMap, Data ES et Basilic\u00a0; " +
-          "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale. " +
+        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale\u00a0; " +
+        "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…), par secteur, d'après l'annuaire santé Ameli. " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ce mois-ci ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {
         quoi: z.string().describe("Le service cherché, en quelques mots : « mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, ou « carburant » pour les prix du mois, « pharmacie », « urgences », « enfants » pour les lieux où aller avec eux."),

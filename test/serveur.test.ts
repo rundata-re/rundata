@@ -107,7 +107,8 @@ describe("the server's instructions", () => {
     // 41 159 the same night with peche_loisir, a new tool (its description cut to three sentences).
     // 41 230 with the corals' block of temperature_mer, named in its description.
     // 41 397 on 1/11/2026 with the schools, collèges and lycées in annuaire_services_publics (one sentence).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_400);
+    // 41 511 the same day with the doctors in annuaire_services_publics (one short sentence), 41 521 when they are counted.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_530);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

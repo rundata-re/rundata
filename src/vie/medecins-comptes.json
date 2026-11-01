@@ -1,0 +1,1412 @@
+{
+ "construit": "2026-11-01",
+ "mis_a_jour": "2026-10-26",
+ "ile": {
+  "generalistes": {
+   "total": 1043,
+   "secteur_1": 1030,
+   "secteur_2": 8,
+   "depassement_permanent": 0,
+   "non_conventionnes": 5,
+   "optam": 8
+  },
+  "specialistes": {
+   "Anatomo-Cyto-Pathologiste": {
+    "total": 10,
+    "secteur_1": 10
+   },
+   "Anesthésiste réanimateur": {
+    "total": 43,
+    "secteur_1": 13
+   },
+   "Cancérologue médical": {
+    "total": 2,
+    "secteur_1": 2
+   },
+   "Cancérologue radiothérapeute": {
+    "total": 5,
+    "secteur_1": 5
+   },
+   "Cardiologue": {
+    "total": 60,
+    "secteur_1": 50
+   },
+   "Chirurgien général": {
+    "total": 8,
+    "secteur_1": 1
+   },
+   "Chirurgien infantile": {
+    "total": 1,
+    "secteur_1": 0
+   },
+   "Chirurgien maxillo-facial": {
+    "total": 1,
+    "secteur_1": 0
+   },
+   "Chirurgien maxillo-facial et stomatologiste": {
+    "total": 4,
+    "secteur_1": 0
+   },
+   "Chirurgien oral": {
+    "total": 1,
+    "secteur_1": 1
+   },
+   "Chirurgien orthopédiste et traumatologue": {
+    "total": 21,
+    "secteur_1": 2
+   },
+   "Chirurgien plasticien": {
+    "total": 8,
+    "secteur_1": 0
+   },
+   "Chirurgien thoracique et cardio-vasculaire": {
+    "total": 3,
+    "secteur_1": 3
+   },
+   "Chirurgien urologue": {
+    "total": 13,
+    "secteur_1": 4
+   },
+   "Chirurgien vasculaire": {
+    "total": 9,
+    "secteur_1": 1
+   },
+   "Chirurgien viscéral": {
+    "total": 8,
+    "secteur_1": 0
+   },
+   "Dermatologue et vénérologue": {
+    "total": 21,
+    "secteur_1": 19
+   },
+   "Endocrinologue-diabétologue": {
+    "total": 19,
+    "secteur_1": 15
+   },
+   "Gastro-entérologue et hépatologue": {
+    "total": 24,
+    "secteur_1": 18
+   },
+   "Gynécologue / Obstétricien": {
+    "total": 77,
+    "secteur_1": 22
+   },
+   "Gériatre": {
+    "total": 2,
+    "secteur_1": 1
+   },
+   "Hématologue": {
+    "total": 2,
+    "secteur_1": 0
+   },
+   "Médecin biologiste": {
+    "total": 3,
+    "secteur_1": 3
+   },
+   "Médecin spécialiste en médecine nucléaire": {
+    "total": 6,
+    "secteur_1": 6
+   },
+   "Médecine des Maladies infectieuses et tropicales": {
+    "total": 2,
+    "secteur_1": 2
+   },
+   "Médecine vasculaire": {
+    "total": 10,
+    "secteur_1": 9
+   },
+   "Neurochirurgien": {
+    "total": 3,
+    "secteur_1": 1
+   },
+   "Neurologue": {
+    "total": 12,
+    "secteur_1": 10
+   },
+   "Néphrologue": {
+    "total": 31,
+    "secteur_1": 31
+   },
+   "Ophtalmologiste": {
+    "total": 58,
+    "secteur_1": 21
+   },
+   "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+    "total": 24,
+    "secteur_1": 6
+   },
+   "Pneumologue": {
+    "total": 12,
+    "secteur_1": 10
+   },
+   "Psychiatre": {
+    "total": 62,
+    "secteur_1": 35
+   },
+   "Pédiatre": {
+    "total": 49,
+    "secteur_1": 34
+   },
+   "Radiologue": {
+    "total": 62,
+    "secteur_1": 49
+   },
+   "Radiothérapeute": {
+    "total": 2,
+    "secteur_1": 2
+   },
+   "Rhumatologue": {
+    "total": 10,
+    "secteur_1": 4
+   },
+   "Spécialiste en allergologie": {
+    "total": 5,
+    "secteur_1": 4
+   },
+   "Spécialiste en médecine interne": {
+    "total": 2,
+    "secteur_1": 2
+   },
+   "Spécialiste en médecine physique et de réadaptation": {
+    "total": 6,
+    "secteur_1": 3
+   },
+   "Stomatologiste": {
+    "total": 7,
+    "secteur_1": 7
+   }
+  }
+ },
+ "communes": {
+  "Bras-Panon": {
+   "codes_postaux": [
+    "97412"
+   ],
+   "generalistes": {
+    "total": 17,
+    "secteur_1": 17,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Cardiologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Ophtalmologiste": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Psychiatre": {
+     "total": 2,
+     "secteur_1": 1
+    },
+    "Pédiatre": {
+     "total": 1,
+     "secteur_1": 0
+    }
+   }
+  },
+  "Cilaos": {
+   "codes_postaux": [
+    "97413"
+   ],
+   "generalistes": {
+    "total": 5,
+    "secteur_1": 5,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  },
+  "Entre-Deux": {
+   "codes_postaux": [
+    "97414"
+   ],
+   "generalistes": {
+    "total": 5,
+    "secteur_1": 5,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  },
+  "L'Étang-Salé": {
+   "codes_postaux": [
+    "97427"
+   ],
+   "generalistes": {
+    "total": 19,
+    "secteur_1": 19,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Chirurgien urologue": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Ophtalmologiste": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Psychiatre": {
+     "total": 4,
+     "secteur_1": 0
+    },
+    "Pédiatre": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Rhumatologue": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 1
+    }
+   }
+  },
+  "La Plaine-des-Palmistes": {
+   "codes_postaux": [
+    "97431"
+   ],
+   "generalistes": {
+    "total": 2,
+    "secteur_1": 2,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  },
+  "La Possession": {
+   "codes_postaux": [
+    "97419"
+   ],
+   "generalistes": {
+    "total": 34,
+    "secteur_1": 34,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Néphrologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Psychiatre": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Pédiatre": {
+     "total": 1,
+     "secteur_1": 0
+    }
+   }
+  },
+  "Le Port": {
+   "codes_postaux": [
+    "97420"
+   ],
+   "generalistes": {
+    "total": 57,
+    "secteur_1": 54,
+    "secteur_2": 3,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 3
+   },
+   "specialistes": {
+    "Anesthésiste réanimateur": {
+     "total": 20,
+     "secteur_1": 5
+    },
+    "Cardiologue": {
+     "total": 5,
+     "secteur_1": 5
+    },
+    "Chirurgien général": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien maxillo-facial": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien maxillo-facial et stomatologiste": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien orthopédiste et traumatologue": {
+     "total": 4,
+     "secteur_1": 0
+    },
+    "Chirurgien plasticien": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Chirurgien urologue": {
+     "total": 4,
+     "secteur_1": 1
+    },
+    "Chirurgien vasculaire": {
+     "total": 4,
+     "secteur_1": 1
+    },
+    "Chirurgien viscéral": {
+     "total": 5,
+     "secteur_1": 0
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 6,
+     "secteur_1": 3
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 13,
+     "secteur_1": 0
+    },
+    "Hématologue": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Médecin biologiste": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Médecine des Maladies infectieuses et tropicales": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Néphrologue": {
+     "total": 12,
+     "secteur_1": 12
+    },
+    "Ophtalmologiste": {
+     "total": 19,
+     "secteur_1": 2
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 7,
+     "secteur_1": 0
+    },
+    "Pneumologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Psychiatre": {
+     "total": 10,
+     "secteur_1": 7
+    },
+    "Pédiatre": {
+     "total": 6,
+     "secteur_1": 6
+    },
+    "Radiologue": {
+     "total": 17,
+     "secteur_1": 12
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 0
+    }
+   }
+  },
+  "Le Tampon": {
+   "codes_postaux": [
+    "97418",
+    "97430"
+   ],
+   "generalistes": {
+    "total": 97,
+    "secteur_1": 96,
+    "secteur_2": 1,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 1
+   },
+   "specialistes": {
+    "Anesthésiste réanimateur": {
+     "total": 7,
+     "secteur_1": 2
+    },
+    "Cardiologue": {
+     "total": 3,
+     "secteur_1": 3
+    },
+    "Chirurgien général": {
+     "total": 2,
+     "secteur_1": 1
+    },
+    "Chirurgien orthopédiste et traumatologue": {
+     "total": 5,
+     "secteur_1": 1
+    },
+    "Chirurgien plasticien": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Chirurgien urologue": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien vasculaire": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien viscéral": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 6,
+     "secteur_1": 6
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 9,
+     "secteur_1": 4
+    },
+    "Néphrologue": {
+     "total": 10,
+     "secteur_1": 10
+    },
+    "Ophtalmologiste": {
+     "total": 13,
+     "secteur_1": 3
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 6,
+     "secteur_1": 0
+    },
+    "Psychiatre": {
+     "total": 3,
+     "secteur_1": 2
+    },
+    "Pédiatre": {
+     "total": 4,
+     "secteur_1": 4
+    },
+    "Radiologue": {
+     "total": 16,
+     "secteur_1": 15
+    },
+    "Spécialiste en allergologie": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Stomatologiste": {
+     "total": 1,
+     "secteur_1": 1
+    }
+   }
+  },
+  "Les Avirons": {
+   "codes_postaux": [
+    "97425"
+   ],
+   "generalistes": {
+    "total": 16,
+    "secteur_1": 16,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  },
+  "Les Trois-Bassins": {
+   "codes_postaux": [
+    "97426"
+   ],
+   "generalistes": {
+    "total": 7,
+    "secteur_1": 7,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Cardiologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Ophtalmologiste": {
+     "total": 3,
+     "secteur_1": 0
+    }
+   }
+  },
+  "Petite-Île": {
+   "codes_postaux": [
+    "97429"
+   ],
+   "generalistes": {
+    "total": 14,
+    "secteur_1": 13,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 1,
+    "optam": 0
+   },
+   "specialistes": {
+    "Endocrinologue-diabétologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Ophtalmologiste": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Pédiatre": {
+     "total": 3,
+     "secteur_1": 2
+    }
+   }
+  },
+  "Saint-André": {
+   "codes_postaux": [
+    "97440"
+   ],
+   "generalistes": {
+    "total": 50,
+    "secteur_1": 50,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 1
+   },
+   "specialistes": {
+    "Cardiologue": {
+     "total": 4,
+     "secteur_1": 4
+    },
+    "Chirurgien général": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien oral": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Chirurgien vasculaire": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 11,
+     "secteur_1": 1
+    },
+    "Néphrologue": {
+     "total": 4,
+     "secteur_1": 4
+    },
+    "Ophtalmologiste": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Psychiatre": {
+     "total": 3,
+     "secteur_1": 1
+    },
+    "Pédiatre": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Radiologue": {
+     "total": 10,
+     "secteur_1": 8
+    },
+    "Rhumatologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Stomatologiste": {
+     "total": 2,
+     "secteur_1": 2
+    }
+   }
+  },
+  "Saint-Benoît": {
+   "codes_postaux": [
+    "97437",
+    "97470"
+   ],
+   "generalistes": {
+    "total": 30,
+    "secteur_1": 30,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 1
+   },
+   "specialistes": {
+    "Anesthésiste réanimateur": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Cardiologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Chirurgien orthopédiste et traumatologue": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Chirurgien plasticien": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien urologue": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 3,
+     "secteur_1": 3
+    },
+    "Néphrologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Ophtalmologiste": {
+     "total": 2,
+     "secteur_1": 1
+    },
+    "Psychiatre": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Pédiatre": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Radiologue": {
+     "total": 7,
+     "secteur_1": 6
+    }
+   }
+  },
+  "Saint-Denis": {
+   "codes_postaux": [
+    "97400",
+    "97417",
+    "97490"
+   ],
+   "generalistes": {
+    "total": 166,
+    "secteur_1": 161,
+    "secteur_2": 4,
+    "depassement_permanent": 0,
+    "non_conventionnes": 1,
+    "optam": 5
+   },
+   "specialistes": {
+    "Anatomo-Cyto-Pathologiste": {
+     "total": 8,
+     "secteur_1": 8
+    },
+    "Anesthésiste réanimateur": {
+     "total": 18,
+     "secteur_1": 5
+    },
+    "Cancérologue médical": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Cancérologue radiothérapeute": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Cardiologue": {
+     "total": 24,
+     "secteur_1": 19
+    },
+    "Chirurgien général": {
+     "total": 5,
+     "secteur_1": 0
+    },
+    "Chirurgien oral": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Chirurgien orthopédiste et traumatologue": {
+     "total": 5,
+     "secteur_1": 1
+    },
+    "Chirurgien plasticien": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Chirurgien thoracique et cardio-vasculaire": {
+     "total": 3,
+     "secteur_1": 3
+    },
+    "Chirurgien urologue": {
+     "total": 6,
+     "secteur_1": 2
+    },
+    "Chirurgien vasculaire": {
+     "total": 6,
+     "secteur_1": 1
+    },
+    "Chirurgien viscéral": {
+     "total": 4,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 5,
+     "secteur_1": 5
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 6,
+     "secteur_1": 2
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 8,
+     "secteur_1": 7
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 29,
+     "secteur_1": 8
+    },
+    "Gériatre": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Hématologue": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Médecin biologiste": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Médecin spécialiste en médecine nucléaire": {
+     "total": 6,
+     "secteur_1": 6
+    },
+    "Médecine des Maladies infectieuses et tropicales": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Médecine vasculaire": {
+     "total": 5,
+     "secteur_1": 4
+    },
+    "Neurochirurgien": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Neurologue": {
+     "total": 3,
+     "secteur_1": 3
+    },
+    "Néphrologue": {
+     "total": 12,
+     "secteur_1": 12
+    },
+    "Ophtalmologiste": {
+     "total": 19,
+     "secteur_1": 6
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 6,
+     "secteur_1": 3
+    },
+    "Pneumologue": {
+     "total": 4,
+     "secteur_1": 4
+    },
+    "Psychiatre": {
+     "total": 7,
+     "secteur_1": 6
+    },
+    "Pédiatre": {
+     "total": 13,
+     "secteur_1": 10
+    },
+    "Radiologue": {
+     "total": 19,
+     "secteur_1": 15
+    },
+    "Radiothérapeute": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Rhumatologue": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Spécialiste en allergologie": {
+     "total": 2,
+     "secteur_1": 1
+    },
+    "Spécialiste en médecine interne": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Stomatologiste": {
+     "total": 2,
+     "secteur_1": 2
+    }
+   }
+  },
+  "Saint-Joseph": {
+   "codes_postaux": [
+    "97480"
+   ],
+   "generalistes": {
+    "total": 33,
+    "secteur_1": 33,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Cardiologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Dermatologue et vénérologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Gériatre": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Néphrologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Ophtalmologiste": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Psychiatre": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Pédiatre": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Radiologue": {
+     "total": 3,
+     "secteur_1": 3
+    }
+   }
+  },
+  "Saint-Leu": {
+   "codes_postaux": [
+    "97416",
+    "97424",
+    "97436"
+   ],
+   "generalistes": {
+    "total": 49,
+    "secteur_1": 49,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Chirurgien maxillo-facial et stomatologiste": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 4,
+     "secteur_1": 0
+    },
+    "Médecin biologiste": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Neurologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Néphrologue": {
+     "total": 6,
+     "secteur_1": 6
+    },
+    "Ophtalmologiste": {
+     "total": 5,
+     "secteur_1": 2
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 2,
+     "secteur_1": 1
+    },
+    "Pneumologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Psychiatre": {
+     "total": 6,
+     "secteur_1": 2
+    },
+    "Pédiatre": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Radiologue": {
+     "total": 9,
+     "secteur_1": 9
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 0
+    }
+   }
+  },
+  "Saint-Louis": {
+   "codes_postaux": [
+    "97421",
+    "97450"
+   ],
+   "generalistes": {
+    "total": 69,
+    "secteur_1": 69,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Cardiologue": {
+     "total": 4,
+     "secteur_1": 1
+    },
+    "Chirurgien urologue": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 3,
+     "secteur_1": 2
+    },
+    "Médecin biologiste": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Néphrologue": {
+     "total": 7,
+     "secteur_1": 7
+    },
+    "Ophtalmologiste": {
+     "total": 10,
+     "secteur_1": 1
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Psychiatre": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Pédiatre": {
+     "total": 3,
+     "secteur_1": 1
+    },
+    "Radiologue": {
+     "total": 14,
+     "secteur_1": 14
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 1
+    }
+   }
+  },
+  "Saint-Paul": {
+   "codes_postaux": [
+    "97411",
+    "97422",
+    "97423",
+    "97434",
+    "97435",
+    "97460"
+   ],
+   "generalistes": {
+    "total": 145,
+    "secteur_1": 139,
+    "secteur_2": 3,
+    "depassement_permanent": 0,
+    "non_conventionnes": 3,
+    "optam": 0
+   },
+   "specialistes": {
+    "Anesthésiste réanimateur": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Cardiologue": {
+     "total": 13,
+     "secteur_1": 13
+    },
+    "Chirurgien général": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Chirurgien maxillo-facial et stomatologiste": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Chirurgien orthopédiste et traumatologue": {
+     "total": 6,
+     "secteur_1": 0
+    },
+    "Chirurgien plasticien": {
+     "total": 6,
+     "secteur_1": 0
+    },
+    "Chirurgien vasculaire": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Chirurgien viscéral": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 7,
+     "secteur_1": 5
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 6,
+     "secteur_1": 6
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 12,
+     "secteur_1": 2
+    },
+    "Médecine vasculaire": {
+     "total": 3,
+     "secteur_1": 3
+    },
+    "Néphrologue": {
+     "total": 10,
+     "secteur_1": 10
+    },
+    "Ophtalmologiste": {
+     "total": 11,
+     "secteur_1": 5
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 7,
+     "secteur_1": 1
+    },
+    "Pneumologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Psychiatre": {
+     "total": 15,
+     "secteur_1": 9
+    },
+    "Pédiatre": {
+     "total": 7,
+     "secteur_1": 4
+    },
+    "Radiologue": {
+     "total": 20,
+     "secteur_1": 13
+    },
+    "Rhumatologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Spécialiste en médecine physique et de réadaptation": {
+     "total": 1,
+     "secteur_1": 0
+    }
+   }
+  },
+  "Saint-Philippe": {
+   "codes_postaux": [
+    "97442"
+   ],
+   "generalistes": {
+    "total": 6,
+    "secteur_1": 6,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  },
+  "Saint-Pierre": {
+   "codes_postaux": [
+    "97410",
+    "97432"
+   ],
+   "generalistes": {
+    "total": 181,
+    "secteur_1": 181,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Anatomo-Cyto-Pathologiste": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Anesthésiste réanimateur": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Cancérologue radiothérapeute": {
+     "total": 3,
+     "secteur_1": 3
+    },
+    "Cardiologue": {
+     "total": 12,
+     "secteur_1": 8
+    },
+    "Chirurgien infantile": {
+     "total": 1,
+     "secteur_1": 0
+    },
+    "Chirurgien orthopédiste et traumatologue": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Chirurgien plasticien": {
+     "total": 3,
+     "secteur_1": 0
+    },
+    "Chirurgien urologue": {
+     "total": 2,
+     "secteur_1": 1
+    },
+    "Chirurgien vasculaire": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Dermatologue et vénérologue": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Endocrinologue-diabétologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Gastro-entérologue et hépatologue": {
+     "total": 3,
+     "secteur_1": 1
+    },
+    "Gynécologue / Obstétricien": {
+     "total": 15,
+     "secteur_1": 7
+    },
+    "Médecine vasculaire": {
+     "total": 2,
+     "secteur_1": 2
+    },
+    "Neurochirurgien": {
+     "total": 2,
+     "secteur_1": 0
+    },
+    "Neurologue": {
+     "total": 8,
+     "secteur_1": 6
+    },
+    "Néphrologue": {
+     "total": 7,
+     "secteur_1": 7
+    },
+    "Ophtalmologiste": {
+     "total": 12,
+     "secteur_1": 3
+    },
+    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
+     "total": 4,
+     "secteur_1": 1
+    },
+    "Pneumologue": {
+     "total": 3,
+     "secteur_1": 1
+    },
+    "Psychiatre": {
+     "total": 13,
+     "secteur_1": 10
+    },
+    "Pédiatre": {
+     "total": 9,
+     "secteur_1": 5
+    },
+    "Radiologue": {
+     "total": 18,
+     "secteur_1": 17
+    },
+    "Rhumatologue": {
+     "total": 6,
+     "secteur_1": 2
+    },
+    "Spécialiste en allergologie": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Stomatologiste": {
+     "total": 3,
+     "secteur_1": 3
+    }
+   }
+  },
+  "Sainte-Marie": {
+   "codes_postaux": [
+    "97438"
+   ],
+   "generalistes": {
+    "total": 31,
+    "secteur_1": 31,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Cardiologue": {
+     "total": 1,
+     "secteur_1": 1
+    },
+    "Néphrologue": {
+     "total": 3,
+     "secteur_1": 3
+    }
+   }
+  },
+  "Sainte-Rose": {
+   "codes_postaux": [
+    "97439"
+   ],
+   "generalistes": {
+    "total": 5,
+    "secteur_1": 5,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  },
+  "Sainte-Suzanne": {
+   "codes_postaux": [
+    "97441"
+   ],
+   "generalistes": {
+    "total": 15,
+    "secteur_1": 15,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {
+    "Endocrinologue-diabétologue": {
+     "total": 1,
+     "secteur_1": 1
+    }
+   }
+  },
+  "Salazie": {
+   "codes_postaux": [
+    "97433"
+   ],
+   "generalistes": {
+    "total": 5,
+    "secteur_1": 5,
+    "secteur_2": 0,
+    "depassement_permanent": 0,
+    "non_conventionnes": 0,
+    "optam": 0
+   },
+   "specialistes": {}
+  }
+ }
+}

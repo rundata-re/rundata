@@ -4,7 +4,8 @@ import data from "../src/electricite/installations.json" with { type: "json" };
 import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import * as edf from "../src/providers/edf.js";
 import { buildElectricite, journeeOf } from "../src/web/data.js";
-import { diametre, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, parts, productionChart } from "../src/web/electricite-carte.js";
+import { electricitePage } from "../src/web/domains.js";
+import { anneeSection, diametre, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, parts, productionChart } from "../src/web/electricite-carte.js";
 import { esc, laterMap, NOMS_SCRIPT } from "../src/web/map.js";
 
 // EDF's lines of 31/10/2026 05:15 and 05:20, read on its open data: the batteries charging (-2.1 MW) at 05:20.
@@ -70,6 +71,23 @@ describe("the 24 hours of /electricite", () => {
     expect(r).toContain(">Revenir à la puissance installée</button>");
     expect(installationsReplay({ ...j, filieres: undefined })).toBe("");
     expect(productionChart({ ...j, filieres: undefined })).not.toContain("&quot;f&quot;");
+  });
+
+  it("shows EDF's years in the bars of « Filière par filière », a button per year, without the line of every year", () => {
+    const a = anneeSection();
+    expect(a).toContain('<div class="ech-d an-d" role="group" aria-label="Année du bilan"></div>');
+    expect(a).toContain('<ul class="bars an-l"></ul>');
+    expect(a).not.toContain("<table");
+    const html = productionChart(j);
+    expect(html).toContain('el("i",i<4?"ren":null)');
+    expect(html).not.toContain("Par année");
+  });
+
+  it("puts the replay's bar right under the map, before its legend, so the map stays on a phone's screen while it moves", () => {
+    const html = electricitePage("https://rundata.re", { value: { resume: "", avertissements: [], sources: [], journee: j }, fetchedAt: new Date(), stale: false } as never);
+    const at = ['class="ipm"', 'class="ip-rj"', 'class="mlg ipk"'].map((c) => html.indexOf(c));
+    expect(at[0]).toBeGreaterThan(0);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
   });
 });
 

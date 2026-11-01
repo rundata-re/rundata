@@ -116,7 +116,8 @@ export function installationsLegend(): string {
 }
 
 /**
- * The map's replay, under its legend: its own bar on the chart's moment, then, once played, the words of the estimate
+ * The map's replay, right under the map and before its legend, so that the map stays on a phone's screen while the bar
+ * moves: its own bar on the chart's moment, then, once played, the words of the estimate
  * (marketing, 31/10/2026) and the way back to the MW installed. Hidden until the script shows it; none without the
  * filières' production.
  */
@@ -204,14 +205,15 @@ export function productionChart(j: Journee): string {
 }
 
 /**
- * The year's production by filière (EDF SEI's yearly figures, /electricite/historique.json): filled by the chart's
- * script once it has them, hidden until then and without a script.
+ * The year's production by filière (EDF SEI's yearly figures, /electricite/historique.json), in the bars of « Filière
+ * par filière » (renewable in green, as EDF counts it), a button per year, the latest first shown: filled by the
+ * chart's script once it has them, hidden until then and without a script.
  */
 export function anneeSection(): string {
   return `<section aria-labelledby="h-annee" data-an hidden>
   <div class="sec-h"><p class="eyebrow">L'année</p><h2 id="h-annee">La production de <span class="an-y"></span>, filière par filière</h2></div>
-  <div class="card an"><table class="an-t"><thead><tr><th scope="col">Filière</th><th scope="col">Production</th><th scope="col">Part</th></tr></thead><tbody></tbody></table>
-  <p class="an-tot"></p><p class="mls an-ys"></p><p class="mls an-src"></p></div>
+  <div class="card an"><div class="ech-d an-d" role="group" aria-label="Année du bilan"></div>
+  <p class="an-tot"></p><ul class="bars an-l"></ul><p class="mls an-src"></p></div>
 </section>`;
 }
 
@@ -250,11 +252,12 @@ ax.replaceChildren(...lv.map((v)=>sp("cy","top:"+(Y(v)/4.8).toFixed(2)+"%",v===t
 src.hidden=k!=="j1";note.hidden=k==="j1"};
 du.querySelectorAll("button").forEach((b)=>b.addEventListener("click",()=>{const n=b.dataset.d;if(!D[n]||n===k)return;if(run)stop();k=n;J=D[n];du.querySelectorAll("button").forEach((x)=>x.setAttribute("aria-pressed",x===b));draw();show(J.p.length-1);stop()}));
 const NOMS=["Photovoltaïque","Éolien","Hydraulique","Bioénergies","Charbon","Diesel","Turbines à combustion"],gwh=(v)=>nb(v/1e3,v<1e4?1:0)+"\\u00a0GWh",el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
-const year=(a)=>{const Y=a.annees[a.annees.length-1];an.querySelector(".an-y").textContent=Y.annee;
-an.querySelector("tbody").replaceChildren(...Y.filieres.map((v,i)=>{const s=Y.total>0?v/Y.total*100:0,tr=el("tr"),th=el("th",null,NOMS[i]),b=el("span","an-b");b.style.width=s.toFixed(1)+"%";th.scope="row";th.append(b);tr.append(th,el("td",null,gwh(v)),el("td",null,nb(s,1)+"\\u00a0%"));return tr}));
+const year=(a)=>{const L=a.annees[a.annees.length-1],dd=an.querySelector(".an-d"),
+pick=(Y)=>{an.querySelector(".an-y").textContent=Y.annee;dd.querySelectorAll("button").forEach((x)=>x.setAttribute("aria-pressed",x.textContent===String(Y.annee)));
 an.querySelector(".an-tot").textContent="Total\\u00a0: "+gwh(Y.total)+". Part renouvelable, selon EDF\\u00a0: "+nb(Y.part_enr,1)+"\\u00a0%.";
-an.querySelector(".an-ys").textContent="Par année, selon EDF · "+a.annees.map((y)=>y.annee+"\\u00a0: "+gwh(y.total)+" ("+nb(y.part_enr,1)+"\\u00a0% renouvelable)").join(" · ")+".";
-an.querySelector(".an-src").textContent="Bilan annuel publié par EDF SEI"+(a.mis_a_jour?", mis à jour le "+dmy(a.mis_a_jour):"")+"\\u00a0: "+Y.annee+" est la dernière année publiée (lu le "+dmy(a.lu)+").";an.hidden=false};
+an.querySelector(".an-l").replaceChildren(...Y.filieres.map((v,i)=>[v,i]).sort((x,y)=>y[0]-x[0]).map(([v,i])=>{const s=Y.total>0?v/Y.total*100:0,li=el("li"),b=el("i",i<4?"ren":null);b.style.width=Math.max(1,s).toFixed(1)+"%";li.append(el("span",null,NOMS[i]),el("b",null,gwh(v)+" · "+nb(s,1)+"\\u00a0%"),b);return li}))};
+dd.replaceChildren(...a.annees.map((Y)=>{const b=el("button",null,String(Y.annee));b.type="button";b.addEventListener("click",()=>pick(Y));return b}));pick(L);
+an.querySelector(".an-src").textContent="Bilan annuel publié par EDF SEI"+(a.mis_a_jour?", mis à jour le "+dmy(a.mis_a_jour):"")+"\\u00a0: "+L.annee+" est la dernière année publiée (lu le "+dmy(a.lu)+").";an.hidden=false};
 let asked=0;const ask=()=>{if(asked)return;asked=1;fetch(f.dataset.h).then((r)=>r.ok?r.json():{}).catch(()=>({})).then((h)=>{["j7","j30"].forEach((n)=>{if(!h[n])return;D[n]=h[n];const b=du.querySelector('[data-d="'+n+'"]');if(h[n].depuis)b.textContent=n.slice(1)+"\\u00a0j (depuis le "+dm(Date.parse(h[n].depuis))+")";b.hidden=false});
 if(h.j7||h.j30){du.hidden=false;if(h.depuis)note.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis))}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length&&an)year(h.annuel)})};
 if(window.IntersectionObserver){const o=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){o.disconnect();ask()}},{rootMargin:"100% 0px"});o.observe(f)}else ask()};document.readyState==="loading"?addEventListener("DOMContentLoaded",go,{once:true}):go()})();`;
@@ -276,7 +279,7 @@ export const ELECTRICITE_CSS = `.ipm{aspect-ratio:${W}/${H}}` +
   `.ech-rj input{flex:1 1 12rem;min-height:44px;accent-color:var(--ink)}@media (prefers-reduced-motion:reduce){.ech-rj button{display:none}}` +
   `.ip-rj .ech-rj{margin:.6rem 0 .2rem}.ip-est{margin:.3rem 0 0;color:var(--muted)}.ip-est b{color:var(--ink)}.ip-re{display:block;margin-top:.5rem;min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}` +
   `.ech-d{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 .6rem}.ech-d[hidden],.ech-d button[hidden]{display:none}.ech-d button{min-height:44px;padding:.35rem .9rem;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}.ech-d button[aria-pressed=true]{background:var(--ink);color:var(--surface)}` +
-  `.an-t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.an-t th,.an-t td{padding:.4rem .5rem .4rem 0;text-align:left;border-bottom:1px solid var(--line)}.an-t td:nth-child(2),.an-t td:nth-child(3){text-align:right;white-space:nowrap}.an-t thead th{color:var(--muted);font-size:.82rem}.an-t tbody th{font-weight:600}` +
-  `.ecard .mls[hidden]{display:none}.an-b{display:block;height:.45rem;margin-top:.3rem;border-radius:3px;background:var(--ink);min-width:2px}.an-tot{font-weight:700;margin:.8rem 0 .3rem}.an .mls{display:block;margin:.3rem 0 0}` +
+  `.an-d button{padding:.35rem .75rem}.an-l{margin:.4rem 0 .2rem}.an-l b{font-variant-numeric:tabular-nums;white-space:nowrap}` +
+  `.ecard .mls[hidden]{display:none}.an-tot{font-weight:700;margin:.8rem 0 .3rem}.an .mls{display:block;margin:.3rem 0 0}` +
   `.rows.inst li{display:flex;flex-wrap:wrap;gap:.2rem .8rem}.rows.inst li>span{color:var(--muted)}.ipc details{margin-top:.8rem}.ipc summary h3{display:inline;font-size:1rem}` +
   `@media (max-width:37.49rem){.ech{aspect-ratio:${CW}/700}}`;

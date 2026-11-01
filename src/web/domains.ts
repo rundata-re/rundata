@@ -749,7 +749,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
     : "";
   const centrales = `<section aria-labelledby="h-centrales">
   <div class="sec-h"><p class="eyebrow">Les centrales</p><h2 id="h-centrales">Ce qui peut produire, commune par commune</h2></div>
-  <figure class="card mapcard ipc"><div class="ipm">${laterMap(installationsMap())}</div><figcaption class="note">${installationsLegend()}${d?.journee ? installationsReplay(d.journee) : ""}${folded(true, `<h3>Le détail par commune</h3>`, installationsList())}</figcaption></figure>
+  <figure class="card mapcard ipc"><div class="ipm">${laterMap(installationsMap())}</div><figcaption class="note">${d?.journee ? installationsReplay(d.journee) : ""}${installationsLegend()}${folded(true, `<h3>Le détail par commune</h3>`, installationsList())}</figcaption></figure>
 </section>`;
 
   const body = `${journee}

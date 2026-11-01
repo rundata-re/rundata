@@ -278,7 +278,8 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="#stations"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir la station →</span></a>`;
   // The replay bar just under the map, before the legend: on a phone, the map, the lengths and the slider fit in one
   // screen (the user, 01/11/2026, as /electricite).
-  return `<figure class="card mapcard airmap wxmap">${tabs}` +
+  // The tabs in a bar, which the full screen's button joins (pages.ts).
+  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}</div>` +
     islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : les ${drawn.length} stations météo et leur dernière mesure, à ${hm(latest)}` }) +
     bubble + `<figcaption class="note">${replay}${legend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }

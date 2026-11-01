@@ -372,6 +372,11 @@ describe("the page /meteo with every station", () => {
     expect(list).toBeGreaterThan(map);
     expect(sea).toBeGreaterThan(list);
     expect(forecast).toBeGreaterThan(sea);
+    // The map's full screen: its block, the tabs' bar the button joins, its script after the map.
+    expect(html).toContain(`<div class="wxbox"><figure class="card mapcard airmap wxmap"><div class="wxbar"><div class="tabs aqtabs"`);
+    const pe = html.indexOf('className="pe-b"');
+    expect(pe).toBeGreaterThan(map);
+    expect(html.slice(pe - 2000, pe)).toContain('"boite":".wxbox","carte":".wxmap","barre":".wxbar","panneau":[],"legende":".wxmap\\u003efigcaption"');
     expect(html.match(/<li class="st tgt"/g)).toHaveLength(5);
     expect(html).toContain(esc("Les 5 stations, de la côte aux sommets"));
     expect(html).toContain("Pour chaque commune, les cirques, le volcan et les plages : la mesure de la station qui représente le mieux le lieu (proche, à une altitude voisine, du même versant) et la prévision sur 7 jours, aujourd'hui compris");

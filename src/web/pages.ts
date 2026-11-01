@@ -49,7 +49,7 @@ import { FORMS_CSS } from "./formulaires-style.js";
 import { fond, FOND_CSS } from "./fonds.js";
 import { POINTS_CSS, POINTS_SCRIPT } from "./carte-points.js";
 import { CARTE_CSS } from "./carte-style.js";
-import { PLEIN_ECRAN_CSS } from "./plein-ecran.js";
+import { PLEIN_ECRAN_CSS, pleinEcran } from "./plein-ecran.js";
 import { ALTITUDES_CREDIT, communeOf, METEO_SCRIPT, RADAR_CREDIT, rainPill, stationsMap, windPill } from "./meteo-carte.js";
 import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
@@ -698,7 +698,7 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .now p{color:var(--on-night-muted);max-width:22rem;font-size:.95rem}
 .now p b{color:var(--on-night)}
 .band .mapcard{background:rgb(255 255 255/.06);border-color:rgb(255 255 255/.12);box-shadow:none}
-.airmap .aqtabs{margin-bottom:.5rem}.band .aqtabs label{color:var(--on-night-muted);border-color:rgb(255 255 255/.25)}.band .aqtabs input:checked+label{background:var(--on-night);color:var(--night);border-color:var(--on-night)}
+.airmap .aqtabs{margin-bottom:.5rem}.wxbar{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:space-between;align-items:flex-start}.wxbar .pe-b{font:inherit;font-size:.9rem;font-weight:600;padding:.3rem .8rem;border-radius:999px;border:1px solid rgb(255 255 255/.25);background:none;color:var(--on-night-muted);cursor:pointer;margin-bottom:.5rem}.pe-on .wxbar :is(.aqtabs,.pe-b){margin:0}.wxbox.pe-on .pe-c{position:static;padding:.5rem 1rem}.band .aqtabs label{color:var(--on-night-muted);border-color:rgb(255 255 255/.25)}.band .aqtabs input:checked+label{background:var(--on-night);color:var(--night);border-color:var(--on-night)}
 /* /air's map: one pollutant's layer and legend at a time; without :has, the default one. */
 .airmap .ly,.airmap .lg{display:none}.airmap .ly.on,.airmap .lg.on{display:inline}.airmap:has(.aqtabs input:checked:not(.on)) .on:is(.ly,.lg){display:none}
 /* /antennes: one layer and legend at a time, as /air's map; a dot per support, filled when active, a ring when only planned. */
@@ -1642,7 +1642,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
     ${ask(`I fé koman lo tan La Rényon astèr ? Gèt bann mézir an dirèk si ${url} é di amwin lèr la mézir.`,
       `Quel temps fait-il en ce moment à La Réunion ? Lis les mesures en direct sur ${url} et donne-moi l'heure des mesures.`)}
   </div>
-  ${all.length ? stationsMap(all) : sea}
+  ${all.length ? `<div class="wxbox">${stationsMap(all)}</div>${pleinEcran({ boite: ".wxbox", carte: ".wxmap", barre: ".wxbar", panneau: [], legende: ".wxmap>figcaption" })}` : sea}
 </div>`;
 
   const body = all.length ? `<section id="stations" aria-labelledby="h-stations">

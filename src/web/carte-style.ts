@@ -26,6 +26,30 @@ export const CARTE_CSS = `
 .kvues li{flex:none}.kvues a{display:inline-flex;white-space:nowrap;align-items:center;min-height:44px;padding:0 .9rem;border-radius:999px;border:1px solid var(--line);font-size:.9rem;font-weight:600;color:var(--ink);text-decoration:none}
 .kvues a[aria-current]{background:var(--ink);color:var(--bg);border-color:var(--ink)}.kvues .kvd{margin:.5rem 0 0}.kvues .kvd:empty{display:none}
 .wx-k{display:inline-block;margin-top:.45rem;font-weight:600}
+.kdir{display:flex;flex-wrap:wrap;align-items:center;gap:0 1.1rem;margin:0 0 .75rem;padding:.5rem 1rem;border-radius:14px;background:#0b1f36;box-shadow:inset 0 0 0 1px rgb(255 255 255/.1);color:#e9f1f7;font-size:.92rem;font-variant-numeric:tabular-nums}.kdir[hidden]{display:none}
+.kdl{display:inline-flex;align-items:center;gap:.45rem;width:100%;font-size:.75rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}@media (min-width:48rem){.kdl{width:auto}}
+.kdl i{width:.55rem;height:.55rem;border-radius:50%;background:#69db7c;box-shadow:0 0 0 4px rgb(105 219 124/.25)}
+.kdir a{display:inline-flex;align-items:center;gap:.3rem;min-height:36px;color:inherit;text-decoration:underline;text-decoration-color:rgb(233 241 247/.4);text-underline-offset:.25em}.kdir b{font-weight:800}
+.kmapc .kpv{position:absolute;display:block;pointer-events:none;overflow:hidden}.kpv circle{fill:none;stroke:#1c7ed6;stroke-width:3px;vector-effect:non-scaling-stroke}.kpv .kpb{stroke:#fff;stroke-width:6px}
+@media (prefers-reduced-motion:no-preference){.kdl i{animation:kbeat 2s ease-in-out infinite}.kmapc .kpv{animation:kpulse 1.6s ease-in-out infinite alternate}}
+@keyframes kbeat{50%{opacity:.3}}@keyframes kpulse{from{opacity:.15}to{opacity:1}}
+body:has(.kcarte){overflow-x:clip}.kcarte:not(.pe-on){row-gap:0}.pe-on .kdir{display:none}
+.kcarte:not(.pe-on) .kmapc>.kvues{margin:0;padding:.75rem max(16px,calc(50vw - 36rem + 16px)) .5rem}
+.kcarte:not(.pe-on) .kvues a{border-color:transparent;background:rgb(255 255 255/.72);box-shadow:0 2px 10px rgb(11 31 54/.12)}.kcarte:not(.pe-on) .kvues a[aria-current]{background:var(--ink)}
+.kcarte:not(.pe-on) .kmapc{position:relative;margin:0 calc(50% - 50vw);padding:0;border:0;border-radius:0;box-shadow:none;background:var(--sea)}
+.kcarte:not(.pe-on) .kmapc>.kzoom,.kcarte:not(.pe-on) .kmapc>.fonds,.kcarte:not(.pe-on) .kmapc>.fd-w{margin:0;padding:.5rem max(16px,calc(50vw - 36rem + 16px)) 0}.kcarte:not(.pe-on) .kmapc>.fonds{padding-bottom:.75rem}
+.kcarte:not(.pe-on) .kzoom button,.kcarte:not(.pe-on) .fonds label{border-color:transparent;background:rgb(255 255 255/.72);box-shadow:0 2px 10px rgb(11 31 54/.12)}.kcarte:not(.pe-on) .fonds input:checked+label{background:var(--ink)}
+.kcarte:not(.pe-on) .kmapc>figcaption{margin:0;padding:.7rem max(16px,calc(50vw - 36rem + 16px)) 0;background:var(--bg)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .kcarte:not(.pe-on) :is(.kvues a,.kzoom button,.fonds label){background:rgb(255 255 255/.08);box-shadow:none}:root:not([data-theme=light]) .kcarte:not(.pe-on) :is(.kvues a[aria-current],.fonds input:checked+label){background:var(--ink)}}
+:root[data-theme=dark] .kcarte:not(.pe-on) :is(.kvues a,.kzoom button,.fonds label){background:rgb(255 255 255/.08);box-shadow:none}:root[data-theme=dark] .kcarte:not(.pe-on) :is(.kvues a[aria-current],.fonds input:checked+label){background:var(--ink)}
+@media (min-width:60rem) and (min-aspect-ratio:5/4){.kcarte{--kw:min(100vw - 26rem,(100svh - 13rem)*1.116);--ks:calc((100vw - var(--kw))/2 - max(16px,env(safe-area-inset-left,0px)) - 1.5rem)}
+.kcarte:not(.pe-on) .kmapc{padding-top:1rem}.kcarte:not(.pe-on) .kmapc>svg{width:var(--kw);margin:0 auto}
+.kcarte:not(.pe-on) .kmapc>.kvues{position:absolute;z-index:2;top:1rem;left:max(16px,env(safe-area-inset-left,0px));width:var(--ks);padding:0}
+.kcarte:not(.pe-on) .kvues ul{flex-wrap:wrap;overflow:visible}.kcarte:not(.pe-on) .kvues a{white-space:normal;min-height:40px}
+.kcarte:not(.pe-on) .kmapc>.kzoom,.kcarte:not(.pe-on) .kmapc>.fonds{position:absolute;z-index:2;right:max(16px,env(safe-area-inset-right,0px));width:var(--ks);padding:0;flex-wrap:wrap;justify-content:flex-end}
+.kcarte:not(.pe-on) .kmapc>.kzoom{top:1rem}.kcarte:not(.pe-on) .kmapc>.kzoom:not([hidden]){display:grid;grid-template-columns:1fr 1fr;gap:.4rem}.kcarte:not(.pe-on) .kmapc>.kzoom button{margin:0}.kcarte:not(.pe-on) .kmapc>.kzoom button:nth-child(n+3){grid-column:1/-1}
+.kcarte:not(.pe-on) .kmapc>.fonds{top:calc(2.8rem + 3*44px)}.kcarte:not(.pe-on) .kmapc>.fd-w{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:4rem;width:var(--ks);padding:0}
+.kcarte:not(.pe-on) .kmapc>figcaption{margin-top:1rem}}
 .kch{margin:1rem 0}.kch>summary{display:inline-flex;align-items:center;min-height:44px;padding:0 1rem;border-radius:999px;border:1px solid var(--line);font-weight:600;cursor:pointer}
 .kths{display:grid;gap:.75rem;margin-top:.75rem}@media (min-width:48rem){.kths{grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))}}
 .kths fieldset{margin:0;padding:.6rem .75rem;border:1px solid var(--line);border-radius:12px}.kths legend{padding:0 .3rem;font-weight:700}.kths ul{list-style:none;margin:0;padding:0}

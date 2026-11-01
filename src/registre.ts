@@ -637,6 +637,9 @@ const OTHER_PAGES: Record<string, Page> = {
   // the copy put back in the data center's cache when KV had it; nothing when the isolate's memory has one of the last
   // 5 minutes. Never a build, never a source.
   "/carte/couche/*.json": { subrequests: 3, cpuMs: 10, from: [], what: "le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page", basis: "code" },
+  // The figures of /carte's « En direct » band (web/couches.ts, resume): the last copies of four live layers, each read
+  // as a layer's file reads it (3 at most each). Never a build, never a source.
+  "/carte/resume.json": { subrequests: 12, cpuMs: 20, from: [], what: "les chiffres du bandeau « En direct » de /carte : la dernière copie des stations, des rivières, des sentiers et des séismes", basis: "code" },
   // The header's reads as any page; the map and the list built once per isolate, the layers asked by the page's script.
   "/carte": { subrequests: 7, cpuMs: 40, from: [], what: "la carte des couches : la page seule, avec la vigilance et la version de l'en-tête", basis: "code" },
   // 23, and 5 from the code for the corals' grid (providers/coraux.ts), once a day when no data center has it: the
@@ -699,7 +702,7 @@ const pageEntry = (path: string, p: Page, kvReads: number): Entry => ({
 const SHARED_KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
 const sharedIn = (keys: string[]) => new Set(keys.filter((k) => SHARED_KEYS.has(k))).size;
 // The commune pages and /antennes: the copy of the mobile sites out of service besides.
-const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 2, "/meteo/rejeu-24h-5min.json": 4, "/meteo/rejeu-7j-15min.json": 9, "/meteo/rejeu-jour-*.json": 2, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
+const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/carte/resume.json": 4, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 2, "/meteo/rejeu-24h-5min.json": 4, "/meteo/rejeu-7j-15min.json": 9, "/meteo/rejeu-jour-*.json": 2, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
 
 const VISITS: Entry[] = [
   ...Object.entries(OTHER_PAGES).map(([path, p]) => pageEntry(path, p, KV_READS[path] ?? 0)),

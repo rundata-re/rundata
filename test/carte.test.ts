@@ -4,8 +4,9 @@ import { counted, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as irve from "../src/providers/irve.js";
 import { REGISTRY } from "../src/registre.js";
-import { ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
-import { COUCHES } from "../src/web/couches.js";
+import { DIRECT_VERS, MOTS, ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
+import { CARTE_CSS } from "../src/web/carte-style.js";
+import { COUCHES, RESUME_PATH } from "../src/web/couches.js";
 import { borneRow } from "../src/web/domains.js";
 
 beforeEach(() => {
@@ -63,6 +64,29 @@ describe("/carte", () => {
   it("draws every layer but the rain in a group of its own, in a fixed order, and ticks the weather when the address names none", () => {
     expect([...ORDRE].sort()).toEqual(COUCHES.filter((c) => c.id !== "pluie").map((c) => c.id).sort());
     expect(PAR_DEFAUT.every((id) => COUCHES.some((c) => c.id === id))).toBe(true);
+  });
+
+  it("has its « En direct » band over the map, each figure leading to a view or a layer there is, and its views on the map's sea", async () => {
+    const { html } = await serve("/carte");
+    expect(html).toContain('<p class="kdir" hidden>');
+    expect(html.indexOf('class="kdir"')).toBeLessThan(html.indexOf('class="card mapcard kmapc"'));
+    expect(html).toMatch(/<figure class="card mapcard kmapc"><nav class="kvues"/);
+    const conf = JSON.parse(/<script type="application\/json" id="k-conf">(.*?)<\/script>/.exec(html)![1]);
+    expect([conf.resume, conf.direct]).toEqual([RESUME_PATH, DIRECT_VERS]);
+    expect(Object.keys(DIRECT_VERS)).toEqual(Object.keys(MOTS.enDirect));
+    for (const h of Object.values(DIRECT_VERS)) {
+      const c = /^#c=(.+)$/.exec(h);
+      expect(c ? COUCHES.some((x) => x.id === c[1]) : VUES.some((v) => `#${v.id}` === h), h).toBe(true);
+    }
+    // None, one, many: the figure in the words but for none.
+    for (const [k, w] of Object.entries(MOTS.enDirect)) expect(w.map((x) => x.includes("{n}")), k).toEqual([false, true, true]);
+  });
+
+  it("moves only when the phone allows it: the rings' pulse and the band's dot", () => {
+    const calm = /@media \(prefers-reduced-motion:no-preference\)\{([^@]*)\}/.exec(CARTE_CSS)![1];
+    expect(calm).toContain("animation:kpulse");
+    expect(calm).toContain("animation:kbeat");
+    expect(CARTE_CSS.split("animation:").length - 1).toBe(2);
   });
 
   it("leads a charging station's bubble to its row of /bornes", () => {

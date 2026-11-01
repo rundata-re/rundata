@@ -372,3 +372,41 @@ export async function coucheResponse(path: string, cache: Cache, now = new Date(
     },
   });
 }
+
+/** The figures of /carte's « En direct » band, one small file: asked by every visit, instead of four layers' files. */
+export const RESUME_PATH = "/carte/resume.json";
+
+/**
+ * Each figure from its layer's copy, as its file would give it (never a read of a source). A layer whose copy is
+ * missing or old has no figure: the band then says nothing of it, rather than a count that is not of now.
+ */
+export interface Resume {
+  heure: string;
+  /** The stations that measured rain in their last hour, out of all; the time of the newest measure. */
+  stations?: { pluie: number; total: number; heure: string };
+  /** The river gauges whose height rises. */
+  rivieres?: { hausse: number; total: number; heure: string };
+  sentiers?: { fermes: number; heure: string };
+  /** The earthquakes located in the last 7 days. */
+  seismes?: { n: number; heure: string };
+}
+
+export async function resume(cache: Cache, now = new Date()): Promise<Resume> {
+  const [st, ri, se, sq] = await Promise.all(["stations", "rivieres", "sentiers", "seismes"].map((id) => coucheOf(id)!.lire!(cache, now)));
+  const frais = (j: CoucheJson) => !j.copie;
+  const r: Resume = { heure: now.toISOString() };
+  if (frais(st) && st.objets.length) {
+    const vues = st.objets.filter((o) => !o.infos?.ancienne);
+    r.stations = { pluie: vues.filter((o) => Number(o.infos?.pluie_1h) > 0).length, total: vues.length, heure: new Date(Math.max(...st.objets.map((o) => Date.parse(o.heure)))).toISOString() };
+  }
+  if (frais(ri) && ri.objets.length) r.rivieres = { hausse: ri.objets.filter((o) => o.infos?.tendance === "en hausse" && !o.infos?.ancienne).length, total: ri.objets.length, heure: ri.heure };
+  if (frais(se)) r.sentiers = { fermes: se.objets.length, heure: se.heure };
+  if (frais(sq)) r.seismes = { n: sq.objets.length, heure: sq.heure };
+  return r;
+}
+
+export async function resumeResponse(cache: Cache, now = new Date()): Promise<Response> {
+  return new Response(JSON.stringify(await resume(cache, now)), {
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": `public, max-age=${DIRECT_MAX_AGE}`, "x-content-type-options": "nosniff" },
+  });
+}

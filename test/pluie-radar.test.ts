@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { project, W, H } from "../src/web/map.js";
 import { NODATA, parse, pixel, WINDOW, type RadarImage } from "../src/providers/radar.js";
-import { GH, GW, grid, PATH, rainGrid } from "../src/web/pluie-radar.js";
+import { decodeMm, GH, GW, grid, MM_CHARS, mmChar, PATH, rainGrid } from "../src/web/pluie-radar.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC: almost dry over the island.
 const file = readFileSync(new URL("./fixtures/radar_lame_eau.h5", import.meta.url));
@@ -44,6 +44,35 @@ describe("the radar's rain on the map's grid", () => {
     expect(grid(withValue(await image(), lon, lat, 300)).pluie[cell(lon, lat)]).toBe("8");
     expect(grid(withValue(await image(), lon, lat, NODATA)).pluie[cell(lon, lat)]).toBe(".");
     expect(grid(await image()).pluie[cell(lon, lat)]).toBe("0");
+  });
+
+  it("keeps, when asked, the lame d'eau in mm of each cell with rain, one character within 6 % of it", async () => {
+    const [lon, lat] = [55.68, -21.03];
+    // 50 hundredths in 5 min over the square around the point: a cell within it has 0,5 mm.
+    const g = grid(withValue(await image(), lon, lat, 50), true);
+    const wet = [...g.pluie].filter((c) => c !== "." && c !== "0").length;
+    expect(g.mm).toHaveLength(wet);
+    const mm = decodeMm(g.pluie, g.mm)!;
+    expect(mm[cell(lon, lat)] / 0.5).toBeGreaterThan(0.94);
+    expect(mm[cell(lon, lat)] / 0.5).toBeLessThan(1.06);
+    // A cell without rain has 0, one not seen has none.
+    expect(mm[g.pluie.indexOf("0")]).toBe(0);
+    const unseen = grid(withValue(await image(), lon, lat, NODATA), true);
+    expect(decodeMm(unseen.pluie, unseen.mm)![cell(lon, lat)]).toBeNaN();
+    // The grid of the live layer keeps none.
+    expect(grid(await image())).not.toHaveProperty("mm");
+    // From 0,001 to about 27 mm in 5 minutes, each character a step of 12 %; nothing JSON escapes.
+    expect([mmChar(0), mmChar(0.001), mmChar(1000)]).toEqual([MM_CHARS[0], MM_CHARS[0], MM_CHARS[90]]);
+    expect(JSON.stringify(MM_CHARS)).toBe(`"${MM_CHARS}"`);
+    for (const v of [0.002, 0.08, 1, 7.3, 20]) {
+      const back = decodeMm("1", mmChar(v))![0];
+      expect(Math.abs(back / v - 1)).toBeLessThan(0.06);
+    }
+    // A string that does not fit its grid is no lame d'eau.
+    expect(decodeMm("011", "##")).not.toBeNull();
+    expect(decodeMm("011", "#")).toBeNull();
+    expect(decodeMm("011", "###")).toBeNull();
+    expect(decodeMm("011", undefined)).toBeNull();
   });
 
   it("answers 503 when the radar cannot be read, never an empty grid passed off as no rain", async () => {

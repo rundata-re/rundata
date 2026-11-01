@@ -3,8 +3,8 @@
  * 24 hours of them (pluie-retro.ts); an image not kept is lost for good. So, once an hour, the radar's run adds the
  * hours just ended to two stores in KV:
  * - each day of La Réunion (UTC+4) in its own key (JOUR_PREFIX), every image of the 6 hours, 5 minutes apart: about
- *   1,15 Mo a day at the most (the evening of 31/10/2026, rain over all the east: about 4 Ko an image), for finer
- *   replays later;
+ *   1,15 Mo a day at the most (the evening of 31/10/2026, rain over all the east: about 4 Ko an image), 1,7 Mo with
+ *   the lame d'eau in mm each image keeps since 01/11/2026 (pluie-retro.ts), for finer replays and rain totals;
  * - the week, an image an hour (HEURES_KEY), each the strongest rain of its hour in each cell: about 1 Mo at the most,
  *   for /meteo's 7-day replay, which shows it for the hours it holds (rejeu.ts) and the rain gauges before them.
  * At its first run, the 24 hours (an image a quarter of an hour) fill the hours before the 6 hours; a run that cannot

@@ -207,7 +207,10 @@ function setup(env: Env): Cache {
   // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
   // web/radar-semaine.ts), and the stations' week, written only by the files that read it.
   rejeu.configure(kv && {
-    six: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
+    six: async () => {
+      const h = (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null;
+      return h && pluieRetro.sansLame(h);
+    },
     day: async () => (await kv.get(pluieRetro.LONG_KV_KEY, "json")) as pluieRetro.Historique | null,
     week: async () => (await kv.get(radarSemaine.HEURES_KEY, "json")) as pluieRetro.Historique | null,
     jour: async (d) => (await kv.get(radarSemaine.JOUR_PREFIX + d, "json")) as pluieRetro.Historique | null,

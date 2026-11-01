@@ -12,7 +12,7 @@ export const PDSA: SourceInfo = {
   id: "ars_pdsa",
   nom: "Permanence des soins ambulatoires : cahier des charges (arrêté n°82/ARS/2026)",
   organisme: "Agence régionale de santé La Réunion",
-  licence: "Document officiel, reproduction libre",
+  licence: "Information publique",
   attribution: "arrêté n°82/ARS/2026, ARS La Réunion",
   url: "https://www.reunion.gouv.fr/contenu/telechargement/51490/389150/file/Arr%C3%AAt%C3%A9%20n%C2%B082-ARS-2026%20portant%20adoption%20du%20cahier%20des%20charges%20de%20la%20permanence%20des%20soins%20ambulatoires%20dans%20le%20d%C3%A9partement%20de%20La%20R%C3%A9union.pdf",
 };

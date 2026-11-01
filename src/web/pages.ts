@@ -332,7 +332,7 @@ background:repeating-conic-gradient(from -90deg at 78% 115%,rgb(255 207 31/.09) 
 .band>.wrap{position:relative}
 .band a{color:#fff}
 .intro{display:grid;gap:2.2rem;align-items:center;padding-block:clamp(2rem,6vw,4.5rem) 2rem}
-@media (min-width:58rem){.intro{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}}
+@media (min-width:58rem){.intro{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}.intro.haut{align-items:start}}
 .intro.solo{grid-template-columns:minmax(0,1fr)}.intro.solo h1{max-width:52rem}.intro.solo .pitch>p{max-width:40rem}
 .pitch{display:grid;gap:1.1rem;justify-items:start;min-width:0}
 .pill{display:inline-flex;align-items:center;gap:.45rem;font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
@@ -1624,7 +1624,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   ];
 
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Météo</li></ol></nav></div>
-<div class="wrap intro">
+<div class="wrap intro haut">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Mesures en direct</p>
     <h1>Météo à La Réunion <span class="n974">974</span></h1>

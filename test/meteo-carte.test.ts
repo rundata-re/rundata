@@ -396,6 +396,9 @@ describe("the page /meteo with every station", () => {
     expect(html).toContain(`<span id="sttri">Trier par</span>`);
     expect(html.split(METEO_SCRIPT)).toHaveLength(2);
     expect(page(ALL)).not.toContain(`Voir les 5 stations`);
+    // On a wide screen, the text on the left stays at the top, whatever the caption under the map holds during a replay.
+    expect(html).toContain(`<div class="wrap intro haut">`);
+    expect(CSS).toContain(`@media (min-width:58rem){.intro{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}.intro.haut{align-items:start}}`);
     expect(() => new Function(METEO_SCRIPT)).not.toThrow();
     // What the radar sees, said by the script once its grid has come: rain, none, or an image too old to show.
     expect(METEO_SCRIPT).toContain(`"En bleu\u00a0: la pluie estimée par le radar de Météo-France "+at_(j.fin)+"\u00a0; "+fo()`);

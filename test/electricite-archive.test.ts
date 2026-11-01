@@ -4,7 +4,6 @@ import { counted } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore } from "../src/cache.js";
 import * as edf from "../src/providers/edf.js";
 import { buildElectricite } from "../src/web/data.js";
-import { parts } from "../src/web/electricite-carte.js";
 import { dureeOf, type Historique } from "../src/web/electricite-historique.js";
 
 // 31/10/2026 from 04:00 (La Réunion): a line every 5 minutes, the sun rising, the rest steady.
@@ -98,7 +97,7 @@ describe("the chart over 7 and 30 days", () => {
     expect(j.depuis).toBe(new Date(H0).toISOString());
     // Renewable as tools/electricite.ts counts EDF's filières (its charbon and diesel lines included), the turbines not.
     expect(j.points[1]).toEqual([60, 1 + 5 + 25 + 51 + 77 + 108, 14, 281]);
-    expect(j.filieres![1]).toEqual([1, 5, 25, 51 + 77 + 108 + 14, 0]);
+    expect(j.mix![1]).toEqual([1, 5, 25, 51 + 77 + 108, 14, 0]);
   });
 
   it("takes a point every 3 hours on La Réunion's hours, the mean of its hours, and no « depuis » once full", () => {
@@ -137,7 +136,8 @@ describe("/electricite/historique.json", () => {
     const j = (await r.json()) as Historique;
     expect(j.depuis).toBe(new Date(H0).toISOString());
     expect(j.j7?.p).toHaveLength(50);
-    expect(j.j7?.f).toEqual(parts(dureeOf(heures, 7, 1)!.filieres!));
+    expect(j.j7?.m).toEqual(dureeOf(heures, 7, 1)!.mix!.map((f) => f.map(Math.round)));
+    expect(j.j7?.m[1]).toEqual([1, 5, 25, 236, 14, 0]);
     expect(j.j7?.depuis).toBe(new Date(H0).toISOString());
     expect(j.j30?.pas).toBe(3);
     expect(j.annuel?.annees.map((y) => y.annee)).toEqual([2023, 2024]);

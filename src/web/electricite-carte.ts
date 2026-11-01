@@ -46,8 +46,14 @@ export const INSTALLE = INSTALLATIONS.communes.reduce((t, c) => {
   for (const f of c.filieres) if (f.nom in GROUPES) t[GROUPES[f.nom]] += f.mw;
   return t;
 }, [0, 0, 0, 0, 0]);
-/** Each group's production at each point, in thousandths of its MW installed, never over all of it. */
-export const parts = (fs: number[][]) => fs.map((f) => f.map((mw, g) => (INSTALLE[g] > 0 ? Math.round(Math.min(1, mw / INSTALLE[g]) * 1000) : 0)));
+/**
+ * The filières of EDF's production in Journee.mix, by their names and colours on the map: solar, wind, hydro,
+ * bioénergies, thermique non renouvelable, the batteries. The chart « Par filière » stacks the first five (the
+ * batteries left out, as `produced` does), the steadiest under; its legend in the map's order.
+ */
+const MIX = [["solaire", "f-sol"], ["éolien", "f-eol"], ["hydraulique", "f-hyd"], ["bioénergies", "f-bio"], ["thermique non renouvelable", "f-the"]];
+const PILE = [3, 2, 1, 0, 4];
+const LEGENDE = ORDRE.flatMap((n) => { const i = MIX.findIndex(([m]) => m === n); return i < 0 ? [] : [i]; });
 
 /**
  * A round's diameter in the map's units: its area as its MW, 211 MW (the biggest) 120 units, about 64 px on the
@@ -122,7 +128,7 @@ export function installationsLegend(): string {
  * filières' production.
  */
 export function installationsReplay(j: Journee): string {
-  if (!j.filieres?.length) return "";
+  if (!j.mix?.length) return "";
   const n = j.points.length;
   return `<div class="ip-rj" hidden><div class="rj ech-rj"><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures sur la carte">▶ Lire</button>` +
     `<input type="range" min="0" max="${n - 1}" step="1" value="${n - 1}" aria-label="Moment affiché sur la carte"></div>` +
@@ -187,21 +193,28 @@ export function productionChart(j: Journee): string {
   // and the hours read as a phone number to iOS, which underlined them as a link (the user's iPhone, 31/10/2026).
   const ys = levels.map((mw) => `<span class="cy" style="top:${at(Y(mw) / CH)}" data-v="${mw === top ? `${mw}\u00a0MW` : mw}"></span>`).join("");
   const xs = hours.map((t) => `<span class="cx" style="left:${at(X((t - t0) / 60_000) / CW)}" data-v="${hm(t)}"></span>`).join("");
-  const keys = `<span class="mlg"><span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-ren" x="-15" y="-15" width="30" height="30" rx="4"/></svg>renouvelable</span>` +
+  const keys = `<span class="mlg ech-kr"><span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-ren" x="-15" y="-15" width="30" height="30" rx="4"/></svg>renouvelable</span>` +
     `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="ar-non" x="-15" y="-15" width="30" height="30" rx="4"/></svg>non renouvelable</span></span>`;
   const bar = `<div class="rj ech-rj" hidden><button type="button" class="rj-b" aria-label="Lire les 24\u00a0dernières heures">▶ Lire</button>` +
     `<input type="range" min="0" max="${pts.length - 1}" step="1" value="${pts.length - 1}" aria-label="Moment affiché sur le graphique"></div>`;
-  // The durations: the archive's, shown by the script once it has them; « depuis le … » while one is not full.
+  // The durations: the archive's, shown by the script once it has them; « depuis le … » under them while one is not
+  // full (in the buttons, two lines on a phone).
   const durees = `<div class="ech-d" role="group" aria-label="Durée du graphique" hidden><button type="button" aria-pressed="true" data-d="j1">24\u00a0h</button>` +
-    `<button type="button" aria-pressed="false" data-d="j7" hidden>7\u00a0jours</button><button type="button" aria-pressed="false" data-d="j30" hidden>30\u00a0jours</button></div>`;
+    `<button type="button" aria-pressed="false" data-d="j7" hidden>7\u00a0jours</button><button type="button" aria-pressed="false" data-d="j30" hidden>30\u00a0jours</button></div><p class="mls ech-dd" hidden></p>`;
   const source = `Production d'électricité de l'île sur 24\u00a0h, toutes les 5\u00a0minutes, estimée par EDF${j.mis_a_jour ? ` (mise à jour le ${esc(j.mis_a_jour.replace(" ", " à "))})` : ""}. Part renouvelable selon les filières d'EDF, sans les batteries.`;
   const archive = `Moyennes par heure (7\u00a0jours) ou par 3\u00a0heures (30\u00a0jours), calculées par rundata.re d'après la production qu'EDF publie toutes les 5\u00a0minutes. EDF ne garde que les 24\u00a0dernières heures\u00a0: rundata.re les garde depuis le <span class="ech-dp"></span>.`;
-  // The points for the script, in whole MW: what it says is rounded the same.
-  // With each group's share of its MW installed, for the map's rounds, when the copy has the filières.
-  const fs = j.filieres?.length === pts.length ? { f: parts(j.filieres) } : {};
+  // The points for the script, in whole MW: what it says is rounded the same. With each filière's MW when the copy has
+  // them (`m`), and each group's MW installed (`i`), for the map's rounds: none in a copy kept before them.
+  const mix = j.mix?.length === pts.length ? j.mix : undefined;
+  const fs = mix ? { m: mix.map((f) => f.map(Math.round)), i: INSTALLE.map((mw) => Math.round(mw * 10) / 10) } : {};
   const data = esc(JSON.stringify({ t0, s: span, p: pts.map((p) => p.map(Math.round)), ...fs }));
-  return `<figure class="card ecard" data-ech="${data}" data-h="${HISTORIQUE_PATH}">${durees}<div class="ech-g"><div class="ech-p">${svg}<span class="ech-ax" aria-hidden="true">${ys}${xs}</span></div>` +
-    `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}<span class="mls ech-src">${source}</span><span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure><script>${CHART_SCRIPT}</script>`;
+  // The view: the renewable part, or each filière in the map's colours, its legend under the chart.
+  const vue = mix ? `<div class="ech-d ech-v" role="group" aria-label="Vue du graphique" hidden><button type="button" aria-pressed="true" data-v="ren">Renouvelable</button>` +
+    `<button type="button" aria-pressed="false" data-v="fil">Par filière</button></div>` : "";
+  const fkeys = mix ? `<span class="mlg ech-kf" hidden>${LEGENDE.map((i) =>
+    `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="${MIX[i][1]}" x="-15" y="-15" width="30" height="30" rx="4"/></svg>${MIX[i][0]}</span>`).join("")}</span>` : "";
+  return `<figure class="card ecard" data-ech="${data}" data-h="${HISTORIQUE_PATH}">${durees}${vue}<div class="ech-g"><div class="ech-p">${svg}<span class="ech-ax" aria-hidden="true">${ys}${xs}</span></div>` +
+    `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}${fkeys}<span class="mls ech-src">${source}</span><span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure><script>${CHART_SCRIPT}</script>`;
 }
 
 /**
@@ -229,13 +242,15 @@ export function anneeSection(): string {
  */
 const PLAY_MS = 12_000;
 const CHART_SCRIPT = `(()=>{const go=()=>{const f=document.querySelector("[data-ech]");if(!f)return;const D={j1:JSON.parse(f.dataset.ech)},svg=f.querySelector("svg.ech"),cur=f.querySelector(".cur"),m=f.querySelector(".ech-m"),ax=f.querySelector(".ech-ax"),src=f.querySelector(".ech-src"),note=f.querySelector(".ech-n"),du=f.querySelector(".ech-d"),an=document.querySelector("[data-an]"),
-ip=D.j1.f&&document.querySelector(".ip-rj"),bars=[...document.querySelectorAll(".ech-rj")].filter((x)=>f.contains(x)||ip&&ip.contains(x)),est=ip&&ip.querySelector(".ip-est");
+ip=D.j1.m&&document.querySelector(".ip-rj"),bars=[...document.querySelectorAll(".ech-rj")].filter((x)=>f.contains(x)||ip&&ip.contains(x)),est=ip&&ip.querySelector(".ip-est");
 const hm=(t)=>new Date(t+144e5).toISOString().slice(11,16),dm=(t)=>{const d=new Date(t+144e5).toISOString();return d.slice(8,10)+"/"+d.slice(5,7)},dmy=(s)=>{const d=new Date(Date.parse(s)+144e5).toISOString();return d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4)},pc=(r,n)=>r+n>0?Math.round(r/(r+n)*100):0,nb=(v,d)=>v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
-const hh=(x)=>x%24?x+"\\u00a0h":"minuit",LIRE={j1:"Lire les 24\\u00a0dernières heures",j7:"Lire les 7\\u00a0derniers jours",j30:"Lire les 30\\u00a0derniers jours"},SUR={j7:"Production d'électricité de l'île sur 7\\u00a0jours, en moyenne par heure.",j30:"Production d'électricité de l'île sur 30\\u00a0jours, en moyenne par 3\\u00a0heures.",j1:svg.getAttribute("aria-label")};
-let k="j1",J=D.j1,at=J.p.length-1,on=false,run=0;
-const map=()=>{if(!ip)return;document.querySelectorAll(".ip circle[data-g]").forEach((c)=>{if(!c.dataset.r)c.dataset.r=c.getAttribute("r");c.setAttribute("r",on&&J.f?Math.max(3,4.13*Math.sqrt(c.dataset.mw*J.f[at][c.dataset.g]/1e3)).toFixed(1):c.dataset.r)})};
-const show=(i,user)=>{at=i;const p=J.p[i],x=1e3*p[0]/J.s,t=J.t0+p[0]*6e4;cur.setAttribute("x1",x);cur.setAttribute("x2",x);bars.forEach((b)=>{const r=b.querySelector("input");r.max=J.p.length-1;r.value=i});const a=new Date(t+144e5).getUTCHours();m.textContent=k==="j1"?dm(t)+" à "+hm(t)+"\\u00a0: "+Math.round(p[3])+"\\u00a0MW, dont "+pc(p[1],p[2])+"\\u00a0% renouvelable.":dm(t)+", de "+hh(a)+" à "+hh(a+J.pas)+"\\u00a0: "+Math.round(p[3])+"\\u00a0MW en moyenne, dont "+pc(p[1],p[2])+"\\u00a0% renouvelable.";
-if(ip&&J.f&&(user||on)){on=true;est.hidden=false;est.querySelector(".ip-h").textContent=dm(t)+" à "+hm(t);map()}else if(ip&&!J.f&&on){on=false;est.hidden=true;map()}};
+const I=D.j1.i,vw=f.querySelector(".ech-v"),kr=f.querySelector(".ech-kr"),kf=f.querySelector(".ech-kf"),dd=f.querySelector(".ech-dd"),MIX=${JSON.stringify(MIX)},PILE=${JSON.stringify(PILE)},LEG=${JSON.stringify(LEGENDE)};
+const hh=(x)=>x%24?x+"\\u00a0h":"minuit",DUREE={j1:"24\\u00a0h",j7:"7\\u00a0jours",j30:"30\\u00a0jours"},LIRE={j1:"Lire les 24\\u00a0dernières heures",j7:"Lire les 7\\u00a0derniers jours",j30:"Lire les 30\\u00a0derniers jours"},SUR={j7:"Production d'électricité de l'île sur 7\\u00a0jours, en moyenne par heure.",j30:"Production d'électricité de l'île sur 30\\u00a0jours, en moyenne par 3\\u00a0heures.",j1:svg.getAttribute("aria-label")};
+let k="j1",J=D.j1,at=J.p.length-1,on=false,run=0,v="ren";
+const fil=()=>v==="fil"&&J.m&&J.m.length===J.p.length,sh=(r,g)=>{const x=g===3?r[3]+r[4]:r[g>3?5:g];return I[g]>0?Math.min(1,x/I[g]):0};
+const map=()=>{if(!ip)return;document.querySelectorAll(".ip circle[data-g]").forEach((c)=>{if(!c.dataset.r)c.dataset.r=c.getAttribute("r");c.setAttribute("r",on&&J.m?Math.max(3,4.13*Math.sqrt(c.dataset.mw*sh(J.m[at],+c.dataset.g))).toFixed(1):c.dataset.r)})};
+const show=(i,user)=>{at=i;const p=J.p[i],x=1e3*p[0]/J.s,t=J.t0+p[0]*6e4;cur.setAttribute("x1",x);cur.setAttribute("x2",x);bars.forEach((b)=>{const r=b.querySelector("input");r.max=J.p.length-1;r.value=i});const a=new Date(t+144e5).getUTCHours();m.textContent=(k==="j1"?dm(t)+" à "+hm(t)+"\\u00a0: "+Math.round(p[3])+"\\u00a0MW":dm(t)+", de "+hh(a)+" à "+hh(a+J.pas)+"\\u00a0: "+Math.round(p[3])+"\\u00a0MW en moyenne")+", dont "+(fil()?LEG.map((g)=>MIX[g][0]+" "+J.m[i][g]+"\\u00a0MW").join(", "):pc(p[1],p[2])+"\\u00a0% renouvelable")+".";
+if(ip&&J.m&&(user||on)){on=true;est.hidden=false;est.querySelector(".ip-h").textContent=dm(t)+" à "+hm(t);map()}else if(ip&&!J.m&&on){on=false;est.hidden=true;map()}};
 const stop=()=>{cancelAnimationFrame(run);run=0;bars.forEach((x)=>{const b=x.querySelector("button");b.textContent="▶ Lire";b.setAttribute("aria-label",LIRE[k]+b.dataset.s)})};
 bars.forEach((x)=>{const b=x.querySelector("button"),rg=x.querySelector("input");b.dataset.s=ip&&ip.contains(x)?" sur la carte":"";
 b.addEventListener("click",()=>{if(run)return stop();const P=J.p;let from=at;if(from>=P.length-1)from=0;const s=performance.now()-from/(P.length-1)*${PLAY_MS};b.textContent="❚❚ Pause";b.setAttribute("aria-label","Arrêter");
@@ -244,12 +259,16 @@ rg.addEventListener("input",()=>{if(run)stop();show(+rg.value,1)});x.hidden=fals
 if(ip){ip.hidden=false;ip.querySelector(".ip-re").addEventListener("click",()=>{if(run)stop();on=false;est.hidden=true;map()});document.addEventListener("carte",()=>{if(on)map()})}
 const NS="http://www.w3.org/2000/svg",sp=(c,st,v)=>{const e=document.createElement("span");e.className=c;e.setAttribute("style",st);e.dataset.v=v;return e};
 const draw=()=>{const P=J.p,last=P[P.length-1],top=Math.max(100,Math.ceil(Math.max(...P.map((p)=>p[1]+p[2]))/100)*100),X=(v)=>1e3*v/J.s,Y=(v)=>480-480*v/top;
-const area=(g)=>"M"+Math.round(X(P[0][0]))+" 480L"+P.map((p)=>Math.round(X(p[0]))+" "+Math.round(Y(g(p)))).join("L")+"L"+Math.round(X(last[0]))+" 480Z";
-svg.querySelector(".ar-non").setAttribute("d",area((p)=>p[1]+p[2]));svg.querySelector(".ar-ren").setAttribute("d",area((p)=>p[1]));svg.setAttribute("aria-label",SUR[k]);
+const area=(g)=>"M"+Math.round(X(P[0][0]))+" 480L"+P.map((p,i)=>Math.round(X(p[0]))+" "+Math.round(Y(g(p,i)))).join("L")+"L"+Math.round(X(last[0]))+" 480Z";
+const F=fil();svg.querySelector(".ar-non").setAttribute("d",F?"":area((p)=>p[1]+p[2]));svg.querySelector(".ar-ren").setAttribute("d",F?"":area((p)=>p[1]));
+let gf=svg.querySelector(".arf");if(!gf){gf=document.createElementNS(NS,"g");gf.setAttribute("class","arf");svg.insertBefore(gf,cur)}
+gf.replaceChildren(...(F?PILE.map((g,n)=>{const e=document.createElementNS(NS,"path");e.setAttribute("class","ar "+MIX[g][1]);e.setAttribute("d",area((p,i)=>PILE.slice(0,n+1).reduce((x,h)=>x+J.m[i][h],0)));return e}).reverse():[]));
+if(kf){kr.hidden=F;kf.hidden=!F}svg.setAttribute("aria-label",F?"Production d'électricité de l'île sur "+DUREE[k]+", par filière\\u00a0: "+LEG.map((g)=>MIX[g][0]).join(", ")+".":SUR[k]);
 const lv=[];for(let v=0;v<=top;v+=100)lv.push(v);svg.querySelector(".cg").replaceChildren(...lv.map((v)=>{const l=document.createElementNS(NS,"line");l.setAttribute("x1",0);l.setAttribute("x2",1e3);l.setAttribute("y1",Y(v));l.setAttribute("y2",Y(v));return l}));
 const H=k==="j1"?216e5:k==="j7"?864e5:432e6,lab=k==="j1"?hm:dm,t1=J.t0+last[0]*6e4,ts=[];for(let t=Math.ceil((J.t0+144e5)/H)*H-144e5;t<=t1;t+=H)ts.push(t);
 ax.replaceChildren(...lv.map((v)=>sp("cy","top:"+(Y(v)/4.8).toFixed(2)+"%",v===top?v+"\\u00a0MW":v)),...ts.map((t)=>sp("cx","left:"+(X((t-J.t0)/6e4)/10).toFixed(2)+"%",lab(t))));
 src.hidden=k!=="j1";note.hidden=k==="j1"};
+if(vw){vw.hidden=false;vw.querySelectorAll("button").forEach((b)=>b.addEventListener("click",()=>{if(b.dataset.v===v)return;v=b.dataset.v;vw.querySelectorAll("button").forEach((x)=>x.setAttribute("aria-pressed",x===b));draw();show(at)}))}
 du.querySelectorAll("button").forEach((b)=>b.addEventListener("click",()=>{const n=b.dataset.d;if(!D[n]||n===k)return;if(run)stop();k=n;J=D[n];du.querySelectorAll("button").forEach((x)=>x.setAttribute("aria-pressed",x===b));draw();show(J.p.length-1);stop()}));
 const NOMS=["Photovoltaïque","Éolien","Hydraulique","Bioénergies","Charbon","Diesel","Turbines à combustion"],gwh=(v)=>nb(v/1e3,v<1e4?1:0)+"\\u00a0GWh",el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const year=(a)=>{const L=a.annees[a.annees.length-1],dd=an.querySelector(".an-d"),
@@ -258,7 +277,8 @@ an.querySelector(".an-tot").textContent="Total\\u00a0: "+gwh(Y.total)+". Part re
 an.querySelector(".an-l").replaceChildren(...Y.filieres.map((v,i)=>[v,i]).sort((x,y)=>y[0]-x[0]).map(([v,i])=>{const s=Y.total>0?v/Y.total*100:0,li=el("li"),b=el("i",i<4?"ren":null);b.style.width=Math.max(1,s).toFixed(1)+"%";li.append(el("span",null,NOMS[i]),el("b",null,gwh(v)+" · "+nb(s,1)+"\\u00a0%"),b);return li}))};
 dd.replaceChildren(...a.annees.map((Y)=>{const b=el("button",null,String(Y.annee));b.type="button";b.addEventListener("click",()=>pick(Y));return b}));pick(L);
 an.querySelector(".an-src").textContent="Bilan annuel publié par EDF SEI"+(a.mis_a_jour?", mis à jour le "+dmy(a.mis_a_jour):"")+"\\u00a0: "+L.annee+" est la dernière année publiée (lu le "+dmy(a.lu)+").";an.hidden=false};
-let asked=0;const ask=()=>{if(asked)return;asked=1;fetch(f.dataset.h).then((r)=>r.ok?r.json():{}).catch(()=>({})).then((h)=>{["j7","j30"].forEach((n)=>{if(!h[n])return;D[n]=h[n];const b=du.querySelector('[data-d="'+n+'"]');if(h[n].depuis)b.textContent=n.slice(1)+"\\u00a0j (depuis le "+dm(Date.parse(h[n].depuis))+")";b.hidden=false});
+let asked=0;const ask=()=>{if(asked)return;asked=1;fetch(f.dataset.h).then((r)=>r.ok?r.json():{}).catch(()=>({})).then((h)=>{const pa=["j7","j30"].filter((n)=>h[n]&&h[n].depuis);["j7","j30"].forEach((n)=>{if(!h[n])return;D[n]=h[n];du.querySelector('[data-d="'+n+'"]').hidden=false});
+if(pa.length){dd.textContent=(pa.length>1?"7 et 30\\u00a0jours":DUREE[pa[0]])+"\\u00a0: depuis le "+dm(Date.parse(h[pa[0]].depuis))+", début de l'archive de rundata.re.";dd.hidden=false}
 if(h.j7||h.j30){du.hidden=false;if(h.depuis)note.querySelector(".ech-dp").textContent=dm(Date.parse(h.depuis))}if(h.annuel&&h.annuel.annees&&h.annuel.annees.length&&an)year(h.annuel)})};
 if(window.IntersectionObserver){const o=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){o.disconnect();ask()}},{rootMargin:"100% 0px"});o.observe(f)}else ask()};document.readyState==="loading"?addEventListener("DOMContentLoaded",go,{once:true}):go()})();`;
 
@@ -280,6 +300,6 @@ export const ELECTRICITE_CSS = `.ipm{aspect-ratio:${W}/${H}}` +
   `.ip-rj .ech-rj{margin:.6rem 0 .2rem}.ip-est{margin:.3rem 0 0;color:var(--muted)}.ip-est b{color:var(--ink)}.ip-re{display:block;margin-top:.5rem;min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font:inherit;font-weight:700;cursor:pointer}` +
   `.ech-d{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 .6rem}.ech-d[hidden],.ech-d button[hidden]{display:none}.ech-d button{min-height:44px;padding:.35rem .9rem;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}.ech-d button[aria-pressed=true]{background:var(--ink);color:var(--surface)}` +
   `.an-d button{padding:.35rem .75rem}.an-l{margin:.4rem 0 .2rem}.an-l b{font-variant-numeric:tabular-nums;white-space:nowrap}` +
-  `.ecard .mls[hidden]{display:none}.an-tot{font-weight:700;margin:.8rem 0 .3rem}.an .mls{display:block;margin:.3rem 0 0}` +
+  `.ecard .mls[hidden],.ecard .mlg[hidden]{display:none}.ech-dd{margin:-.2rem 0 .6rem;color:var(--muted);font-size:.85rem}.an-tot{font-weight:700;margin:.8rem 0 .3rem}.an .mls{display:block;margin:.3rem 0 0}` +
   `.rows.inst li{display:flex;flex-wrap:wrap;gap:.2rem .8rem}.rows.inst li>span{color:var(--muted)}.ipc details{margin-top:.8rem}.ipc summary h3{display:inline;font-size:1rem}` +
   `@media (max-width:37.49rem){.ech{aspect-ratio:${CW}/700}}`;

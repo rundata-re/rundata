@@ -289,7 +289,7 @@ export const TOUTES_LES_COUCHES = "La météo avec les rivières, les sentiers e
 const CARTE_METEO = "/carte#meteo";
 
 /** The replay bar's words (marketing): each length, and the button's full name for it. */
-const REVOIR: Record<(typeof DUREES)[number], [string, string]> = {
+export const REVOIR: Record<(typeof DUREES)[number], [string, string]> = {
   "6h": ["6\u00a0h", "Lire les 6\u00a0dernières heures"],
   "24h": ["24\u00a0h", "Lire les 24\u00a0dernières heures"],
   "7j": ["7\u00a0jours", "Lire les 7\u00a0derniers jours"],
@@ -894,7 +894,7 @@ export const shownAt = (T: number, r: At, l: string): number =>
  * the 672 of 7 days (7 a second); their images fade into each other the whole way, never held (SN 0): held 2 minutes
  * then faded in 2 frames, 8 images a second moved by steps (01/11/2026).
  */
-const PLAY_MS: Record<Mode, number> = { "6h": 12_000, "24h": 24_000, "7j": 24_000, "24h+": 54_000, "7j+": 96_000, jour: 54_000 };
+export const PLAY_MS: Record<Mode, number> = { "6h": 12_000, "24h": 24_000, "7j": 24_000, "24h+": 54_000, "7j+": 96_000, jour: 54_000 };
 /** What the replay plays: a length, its finer file (« + »), or a day. */
 type Mode = (typeof DUREES)[number] | "24h+" | "7j+" | "jour";
 /**

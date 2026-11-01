@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INSEE } from "../src/places/insee.js";
 import { ETABLISSEMENTS, nearest } from "../src/sante/etablissements.js";
+import { territoires, TERRITOIRES } from "../src/sante/garde.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "../src/tools/sante.js";
 import { communePage } from "../src/web/commune.js";
@@ -75,21 +76,81 @@ describe("the doctor on duty", () => {
     for (const q of ["médecin", "médecin généraliste", "pédiatre", "garde d'enfants", "garde alternée", "vétérinaire de garde", "mairie", "urgences"]) expect(GARDE.test(q), q).toBe(false);
   });
 
-  it("sends to the 15 before going anywhere, the 32 37 for the duty pharmacy, Santé.fr's map in the daytime", () => {
-    const r = body(gardeAnswer("Saint-Pierre"));
+  it("sends to the 15 before going anywhere, then gives the duty's hours and the place's territory (a whole commune)", () => {
+    const r = body(gardeAnswer("médecin de garde", "Saint-Pierre"));
     expect(r.lieu).toBeDefined();
     expect(r.resume).toBe(
-      "Médecin de garde : appelez le 15 avant de vous déplacer, comme le demande l'ARS La Réunion. Le médecin du 15 dit où consulter, ou envoie les secours. Urgence vitale : le 15 ou le 112. Pharmacie de garde : le site 3237.fr, ou le 32 37 (numéro payant : 0,35 € TTC la minute). En journée, pour une consultation sans rendez-vous : la carte des lieux de soins de Santé.fr, https://www.sante.fr/carte-des-lieux-de-soins.",
+      "Médecin de garde : appelez le 15 avant de vous déplacer, comme le demande l'ARS La Réunion. Le médecin du 15 dit où consulter, ou envoie les secours. " +
+        "La garde des médecins, la même dans toute l'île d'après l'arrêté n°82/ARS/2026 : tous les soirs de 19 h à 23 h\u00a0; le samedi de 12 h à 19 h\u00a0; les dimanches et jours fériés de 7 h à 19 h\u00a0; et les ponts que l'ARS fixe chaque année. " +
+        "Saint-Pierre est dans le territoire de garde Sud Bas, où l'arrêté prévoit la maison médicale de garde hospitalière du CHU Sud. " +
+        "La nuit, de 23 h à 7 h, une garde seulement là où des médecins sont volontaires : sinon, le 15 oriente vers les urgences du CHU site Sud (Saint-Pierre). " +
+        "Urgence vitale : le 15 ou le 112. Pharmacie de garde : le site 3237.fr, ou le 32 37 (numéro payant : 0,35 € TTC la minute). En journée, pour une consultation sans rendez-vous : la carte des lieux de soins de Santé.fr, https://www.sante.fr/carte-des-lieux-de-soins.",
     );
+    expect(r.territoires_de_garde).toEqual([
+      {
+        territoire: "Sud Bas",
+        communes: ["Saint-Pierre", "Entre-Deux"],
+        lieu_prevu_par_l_arrete: "la maison médicale de garde hospitalière du CHU Sud",
+        nuit_profonde: "De 23 h à 7 h, une garde seulement là où des médecins sont volontaires\u00a0; sinon, le 15 oriente vers les urgences du CHU site Sud (Saint-Pierre).",
+      },
+    ]);
+    expect(r.horaires_de_garde).toMatchObject({ soirs: "tous les soirs de 19 h à 23 h", samedi: "le samedi de 12 h à 19 h", dimanches_et_feries: "les dimanches et jours fériés de 7 h à 19 h" });
     expect(r.numeros).toEqual({ samu: "15", europeen: "112", sourds_et_malentendants: "114" });
     expect(r.pharmacie_de_garde.site).toBe("https://www.3237.fr/");
     expect(r.consultation_en_journee.carte).toBe("https://www.sante.fr/carte-des-lieux-de-soins");
-    expect(r.maison_medicale_de_garde).toEqual({ nom: "Maison de soins de l'Est (maison médicale de garde)", adresse: "60 rue Dumesgnil d'Engente, 97440 Saint-André", a_savoir: "Appeler le 15 avant de s'y rendre. Ses horaires ne sont pas donnés ici." });
-    expect(r.avertissements[0]).toMatch(/ne sait pas quel médecin est de garde/);
-    // No hour of the duty, no doctor's name, until the ARS's text of 2026 is read.
-    expect(JSON.stringify(r)).not.toMatch(/\b\d{1,2} ?h(?:\b|\d)|\bDr\b|docteur [A-Z]/);
-    expect(body(gardeAnswer(undefined)).lieu).toBeUndefined();
-    expect(JSON.stringify(body(gardeAnswer("Nulle-Part-Ici")))).not.toContain("Médecin de garde");
+    // The East's duty centre of FINESS in the North-East only.
+    expect(r.maison_medicale_de_garde).toBeUndefined();
+    expect(r.avertissements).toEqual([
+      "rundata.re ne sait pas quel médecin est de garde : le tableau de garde n'est pas publié. Ne jamais désigner un médecin ni une pharmacie comme étant de garde.",
+      "Les lieux de garde nommés par l'arrêté sont prévus : leur ouverture n'est pas vérifiée. Le 15 dit où aller.",
+    ]);
+    expect(r.sources[0]).toMatchObject({ source: expect.stringContaining("arrêté n°82/ARS/2026") });
+    // No doctor's name, nothing of the repealed n°54 (Sunday from 8 h, the night until 8 h).
+    expect(JSON.stringify(r)).not.toMatch(/\bDr\b|docteur [A-Z]|\b8 h\b|n°54/);
+    expect(JSON.stringify(body(gardeAnswer("garde", "Nulle-Part-Ici")))).not.toContain("Médecin de garde");
+  });
+
+  it("gives both territories of Saint-Denis without a quarter, one with a quarter the arrêté lists", () => {
+    const r = body(gardeAnswer("médecin de garde", "Saint-Denis"));
+    expect(r.resume).toContain("Saint-Denis relève de deux territoires de garde selon le quartier : Nord 1 et Nord 2. La nuit, de 23 h à 7 h, une garde seulement là où des médecins sont volontaires : sinon, le 15 oriente vers les urgences du CHU site Nord (Saint-Denis).");
+    expect(r.territoires_de_garde.map((t: { territoire: string }) => t.territoire)).toEqual(["Nord 1", "Nord 2"]);
+    expect(r.territoires_de_garde[0].communes).toEqual(["Sainte-Marie", "Saint-Denis (Sainte-Clotilde, Moufia, Chaudron, Bois de Nèfles, La Bretagne, Domenjod)"]);
+    expect(r.territoires_de_garde[1].lieu_prevu_par_l_arrete).toBe("la maison médicale de garde hospitalière du CHU Nord");
+    for (const [lieu, t] of [["Moufia", "Nord 1"], ["Bellepierre", "Nord 2"], ["L'Éperon", "Ouest 1"], ["Saint-Gilles-les-Bains", "Ouest 2"]]) {
+      expect(body(gardeAnswer("garde", lieu)).territoires_de_garde.map((x: { territoire: string }) => x.territoire), lieu).toEqual([t]);
+    }
+    // A quarter the arrêté does not list: both.
+    expect(body(gardeAnswer("garde", "Les Camélias")).territoires_de_garde).toHaveLength(2);
+  });
+
+  it("invents no night hospital for Cilaos, and every commune has its territory", () => {
+    const r = body(gardeAnswer("médecin de garde", "Cilaos"));
+    expect(r.resume).toContain("Cilaos est à lui seul un territoire de garde. La nuit, de 23 h à 7 h : le 15 oriente.");
+    expect(r.territoires_de_garde).toEqual([{ territoire: "Cilaos", communes: ["Cilaos"], nuit_profonde: "De 23 h à 7 h : le 15 oriente." }]);
+    for (const c of Object.keys(INSEE)) expect(territoires(c, c).length, c).toBeGreaterThan(0);
+    expect(TERRITOIRES).toHaveLength(12);
+    const est = body(gardeAnswer("garde", "Saint-André"));
+    expect(est.territoires_de_garde[0].territoire).toBe("Nord-Est");
+    expect(est.maison_medicale_de_garde).toEqual({ nom: "Maison de soins de l'Est (maison médicale de garde)", adresse: "60 rue Dumesgnil d'Engente, 97440 Saint-André", a_savoir: "Appeler le 15 avant de s'y rendre. Ses horaires ne sont pas donnés ici." });
+    expect(body(gardeAnswer("garde", "Saint-Benoît")).territoires_de_garde[0]).toMatchObject({ territoire: "Est", lieu_prevu_par_l_arrete: "le cabinet de garde du GHER" });
+  });
+
+  it("lists the places the arrêté plans without a place, and the paediatric SMUR for a child", () => {
+    const r = body(gardeAnswer("garde", undefined));
+    expect(r.lieu).toBeUndefined();
+    expect(r.resume).toContain("Donner une commune pour son territoire de garde.");
+    expect(r.lieux_prevus_par_l_arrete).toEqual([
+      "la maison médicale de garde hospitalière du CHU Nord (Nord 2)",
+      "le cabinet de garde du GHER (Est)",
+      "la maison médicale de garde hospitalière du CHOR (Ouest 1)",
+      "la maison médicale de garde hospitalière du CHU Sud (Sud Bas)",
+    ]);
+    expect(r.urgences_pediatriques).toBeUndefined();
+    const smur = "SMUR pédiatrique régional (24 h/24, basé au CHU Nord), déclenché par le 15 : annoncé le 30/09/2026 par l'ARS et le CHU";
+    expect(body(gardeAnswer("pédiatre de garde", "Le Port")).urgences_pediatriques.smur).toBe(smur);
+    const u = body(urgencesAnswer("Saint-Pierre")).urgences_pediatriques;
+    expect(u.smur).toBe(smur);
+    expect(u.smur_source).toBe("https://www.lareunion.ars.sante.fr/system/files/2026-09/CP%20annonce%20SMUR%20p%C3%A9diatrique.pdf");
   });
 
   it("is what the public services tool answers, where it used to find no public service", async () => {

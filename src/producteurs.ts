@@ -105,6 +105,8 @@ export const FICHES: Record<string, Fiche> = {
   // Santé.fr is the ministry's public service.
   sante_fr_urgences: { famille: "information_publique", producteurs: [SANTE] },
   ars_garde: { famille: "information_publique", producteurs: [ARS] },
+  // An official text: the ARS's legal notice lets « documents publics ou officiels » be reproduced freely.
+  ars_pdsa: { famille: "domaine_public", producteurs: [ARS] },
   // Places, land, public services.
   annuaire_administration: { famille: "licence_ouverte", producteurs: ["DILA"] },
   ban_geocodage: { famille: "licence_ouverte", producteurs: ["IGN", "Etalab"] },

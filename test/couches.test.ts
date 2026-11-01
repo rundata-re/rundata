@@ -165,4 +165,17 @@ describe("the figures of /carte's « En direct » band", () => {
     expect(j.sentiers?.fermes).toBe(1);
     expect(j.seismes).toBeUndefined();
   });
+
+  it("leave out a station's empty or unreadable time, never a 500", async () => {
+    const store = new MemoryStore();
+    const st = (nom: string, time: string) => ({ nom, id: nom, lon: 55.5, lat: -21.1, time, source: mfStations.SOURCE.id, altitude_m: 100, pluie_1h: 0.2 });
+    await store.put("web:meteo", { value: { stations: [st("a", ""), st("b", "pas une heure"), st("c", "2026-10-31T17:42:00.000Z")] }, fetchedAt: NOW.getTime() - 60_000 });
+    const { r, text } = await serve(RESUME_PATH, store);
+    expect(r.status).toBe(200);
+    expect((JSON.parse(text) as Resume).stations?.heure).toBe("2026-10-31T17:42:00.000Z");
+    await store.put("web:meteo", { value: { stations: [st("a", ""), st("b", "pas une heure")] }, fetchedAt: NOW.getTime() - 60_000 });
+    const sans = await serve(RESUME_PATH, store);
+    expect(sans.r.status).toBe(200);
+    expect(Number.isFinite(Date.parse((JSON.parse(sans.text) as Resume).stations!.heure))).toBe(true);
+  });
 });

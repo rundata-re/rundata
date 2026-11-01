@@ -397,7 +397,9 @@ export async function resume(cache: Cache, now = new Date()): Promise<Resume> {
   const r: Resume = { heure: now.toISOString() };
   if (frais(st) && st.objets.length) {
     const vues = st.objets.filter((o) => !o.infos?.ancienne);
-    r.stations = { pluie: vues.filter((o) => Number(o.infos?.pluie_1h) > 0).length, total: vues.length, heure: new Date(Math.max(...st.objets.map((o) => Date.parse(o.heure)))).toISOString() };
+    // A station whose time is empty or unreadable gives no time; with none readable, the copy's time.
+    const lues = st.objets.map((o) => Date.parse(o.heure)).filter(Number.isFinite);
+    r.stations = { pluie: vues.filter((o) => Number(o.infos?.pluie_1h) > 0).length, total: vues.length, heure: lues.length ? new Date(Math.max(...lues)).toISOString() : st.heure };
   }
   if (frais(ri) && ri.objets.length) r.rivieres = { hausse: ri.objets.filter((o) => o.infos?.tendance === "en hausse" && !o.infos?.ancienne).length, total: ri.objets.length, heure: ri.heure };
   if (frais(se)) r.sentiers = { fermes: se.objets.length, heure: se.heure };

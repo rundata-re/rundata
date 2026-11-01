@@ -19,9 +19,9 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | contrôle | valeur | limite |
 |---|---:|---:|
 | pire passage planifié, sous-requêtes | 453 | 500 |
-| pire passage planifié, appels KV et D1 | 106 | 1 000 |
-| pire passage planifié, CPU (ms) | 3 536 | 30 000 |
-| pire passage planifié, mémoire déclarée (Mo) | 90 | 128 |
+| pire passage planifié, appels KV et D1 | 112 | 1 000 |
+| pire passage planifié, CPU (ms) | 3 576 | 30 000 |
+| pire passage planifié, mémoire déclarée (Mo) | 100 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 172 | 500 |
 | vue la plus chère, sous-requêtes | 84 | 200 |
 | question la plus chère, sous-requêtes | 70 | 200 |
@@ -29,7 +29,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
 - Marge : le pire passage planifié est à 453 sous-requêtes sur 500. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus.
-- Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, radar:6h, 5 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
+- Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, radar:6h, 5 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 00:00 UTC, 131 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, vigilance:carte, vigilance:carte:bulletin, agendas:planifies, agendas:planifies:ecriture, agenda:salazie, agenda:cirest, agenda:lrvb, agenda:saint_louis_actus, agenda:saint_leu, agenda:plaine_des_palmistes_agenda, agenda:plaine_des_palmistes_actus, agenda:sainte_marie_actus, agenda:salazie_actus, sans-reponse:echecs, copies:echecs, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, propositions:purge, clubs:annuaire, clubs:purge, connecteurs:purge).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:00 UTC, 172 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:volcan, vigilance:carte, vigilance:carte:bulletin, agendas:planifies, agendas:planifies:ecriture, agenda:salazie, agenda:cirest, agenda:lrvb, agenda:saint_louis_actus, agenda:saint_leu, agenda:plaine_des_palmistes_agenda, agenda:plaine_des_palmistes_actus, agenda:sainte_marie_actus, agenda:salazie_actus, sans-reponse:echecs, copies:echecs, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, propositions:purge, clubs:annuaire, clubs:purge, connecteurs:purge).
 - Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 378 sous-requêtes à 00:00 UTC.
@@ -37,10 +37,10 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 453 | 28 | 52 | 26 | 1 164 | 284 | 3 536 |
-| tâche planifiée, par jour | 28 614 | 4 441 | 3 878 | 2 409 | 102 914 | 58 511 | 233 076 |
-| tâche planifiée, par jour, cadences les plus courtes | 39 506 | 5 737 | 5 702 | 2 889 | 107 954 | 58 511 | 278 556 |
-| tâche planifiée, par mois (30 jours) | 858 407 | 133 230 | 116 340 | 72 283 | 3 087 411 | 1 755 321 | 6 992 267 |
+| pire passage planifié | 453 | 31 | 55 | 26 | 1 164 | 284 | 3 576 |
+| tâche planifiée, par jour | 28 614 | 4 513 | 3 950 | 2 409 | 102 914 | 58 511 | 234 036 |
+| tâche planifiée, par jour, cadences les plus courtes | 39 506 | 5 809 | 5 774 | 2 889 | 107 954 | 58 511 | 279 516 |
+| tâche planifiée, par mois (30 jours) | 858 407 | 135 390 | 118 500 | 72 283 | 3 087 411 | 1 755 321 | 7 021 067 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -95,6 +95,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | antennes:hors-service | sites mobiles hors service : les lignes de La Réunion du fichier quotidien de l'Arcep (0,5 à 2,2 Mo), écrites dans KV une fois par jour | 1440 min | 10:30 | 3 | 1 | 1 |  |  |  | 40 | estimé |
 | capteurs:air | capteurs amateurs de particules (Sensor.Community) : les 5 dernières minutes sur l'île, une requête, gardées 2 heures dans KV | 15 min | 00:10 | 3 | 1 | 1 |  |  |  | 10 | code |
 | radar:6h | pluie radar des 6 dernières heures pour le rejeu de /meteo : la dernière image de Météo-France ajoutée dans KV quand elle est nouvelle, ou un trou daté, et chaque quart d'heure une image gardée 24 heures | 5 min | 00:00 | 9 | 2 | 2 |  |  |  | 200 | estimé |
+| radar:7j | semaine du radar pour le rejeu 7 jours de /meteo : chaque heure finie ajoutée par le passage du radar, la pluie la plus forte de l'heure, et chaque image de 5 min dans la clé de son jour | 60 min | 00:05 | 0 | 3 | 3 |  |  |  | 40 | estimé |
 | meteofrance:jeton | jeton Météo-France commun à tous les isolats : lu dans KV au premier besoin d'un isolat, à son échéance ou après un refus (401), au plus une fois par invocation qui lit Météo-France | 1 min | 00:00 | 1 | 1 |  |  |  |  |  | estimé |
 | meteofrance:jeton:nouveau | jeton Météo-France commun à tous les isolats : un nouveau jeton demandé au portail et écrit dans KV, environ une fois par heure | 30 min | 00:00 | 2 |  | 1 |  |  |  |  | estimé |
 | emploi:offres | emploi public : la page d'une offre de Choisir le service public à chaque événement, la plus récente pas encore lue, sinon chaque offre ouverte à son tour, écrites dans KV quand elles changent | 5 min | 00:00 | 3 | 1 | 1 |  |  |  | 15 | estimé |
@@ -128,7 +129,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /meteo/* | la météo d'un lieu | à chaque vue |  | 56 | 2 | 2 |  |  |  | 130 | mesuré |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
-| /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV) | à chaque vue |  | 5 | 1 |  | 1 | 140 |  | 30 | code |
+| /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV) | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 40 | code |
 | /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
 | /carte | la carte des couches : la page seule, avec la vigilance et la version de l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 40 | code |
@@ -264,6 +265,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | antennes:hors-service | providers/sites-hs |
 | capteurs:air | providers/capteurs |
 | radar:6h | providers/mf-auth, providers/radar |
+| radar:7j | providers/mf-auth, providers/radar |
 | meteofrance:jeton | providers/mf-auth |
 | meteofrance:jeton:nouveau | providers/mf-auth |
 | emploi:offres | providers/emploi |

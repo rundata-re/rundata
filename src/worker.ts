@@ -47,6 +47,7 @@ import { prefetchForecasts } from "./tools/prevision.js";
 import { listShared, SHARED, SHARED_AFTER, SharedFallback, warmShared } from "./web/partagees.js";
 import { configurerDefiOpenai } from "./web/site.js";
 import * as pluieRetro from "./web/pluie-retro.js";
+import * as radarSemaine from "./web/radar-semaine.js";
 import * as rejeu from "./web/rejeu.js";
 import { why } from "./types.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
@@ -202,11 +203,13 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
   }));
-  // The replay bar's files (web/rejeu.ts): the radar's last 6 hours and its 24 hours a quarter of an hour apart, kept by
-  // the scheduled event below (web/pluie-retro.ts), and the stations' week, written only by the files that read it.
+  // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart and its week
+  // an hour apart, kept by the scheduled event below (web/pluie-retro.ts, web/radar-semaine.ts), and the stations' week,
+  // written only by the files that read it.
   rejeu.configure(kv && {
     six: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
     day: async () => (await kv.get(pluieRetro.LONG_KV_KEY, "json")) as pluieRetro.Historique | null,
+    week: async () => (await kv.get(radarSemaine.HEURES_KEY, "json")) as pluieRetro.Historique | null,
     semaine: {
       get: async () => (await kv.get(rejeu.SEMAINE_KV_KEY, "json")) as rejeu.Semaine | null,
       put: (w) => kv.put(rejeu.SEMAINE_KV_KEY, JSON.stringify(w), { expirationTtl: rejeu.SEMAINE_KV_TTL_SECONDS }),
@@ -436,7 +439,8 @@ export default {
     }
     // Every run: the radar's latest image added to its last 6 hours in KV when it is new, or a gap when it cannot be
     // read or is too old (web/pluie-retro.ts), once the reads above are done. One read of KV; one write when it changed.
-    // About once a quarter of an hour, one more read and write: the 24 hours, an image a quarter of an hour.
+    // About once a quarter of an hour, one more read and write: the 24 hours, an image a quarter of an hour; once an
+    // hour, the week and its days besides, outside the run's cost (web/radar-semaine.ts).
     if (kv && radar.enabled()) {
       ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, () => pluieRetro.passage({
         get: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
@@ -444,6 +448,15 @@ export default {
       }, c, now, {
         get: async () => (await kv.get(pluieRetro.LONG_KV_KEY, "json")) as pluieRetro.Historique | null,
         put: (h) => kv.put(pluieRetro.LONG_KV_KEY, JSON.stringify(h), { expirationTtl: pluieRetro.LONG_KV_TTL_SECONDS }),
+      }, undefined, {
+        heures: {
+          get: async () => (await kv.get(radarSemaine.HEURES_KEY, "json")) as pluieRetro.Historique | null,
+          put: (h) => kv.put(radarSemaine.HEURES_KEY, JSON.stringify(h), { expirationTtl: radarSemaine.TTL_SECONDS }),
+        },
+        jour: (date) => ({
+          get: async () => (await kv.get(radarSemaine.JOUR_PREFIX + date, "json")) as pluieRetro.Historique | null,
+          put: (h) => kv.put(radarSemaine.JOUR_PREFIX + date, JSON.stringify(h), { expirationTtl: radarSemaine.TTL_SECONDS }),
+        }),
       })))
         .then(({ value, used, reads }) => console.log(`historique radar : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("historique radar : passage impossible", why(err))));

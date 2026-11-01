@@ -662,7 +662,7 @@ const ok=(gr)=>L&&L.length===gr.w*gr.h,empty=(w,h)=>{mx=null;use(none(w,h));turn
 RJ.p={prep:land,dims:()=>L&&{w:LW,h:LH,L},wind:(ws,t)=>{WS=ws||[];WT=ws?t:null},
 // Between two images (f of the way), with the trail of those before as [image, share left], over wm minutes.
 mix:(a,z,f,el,gr,tr,wm)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr),n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg];d=n;P=[dist(A),dist(Z),f];
-if(nw)say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":""):n.de&&dist(n).bad?" "+BW+"\u00a0: zones que le radar a mal vues pendant cette heure, où la pluie peut être manquée.":dist(n).bad,{el},n.tail,1);turn(was,nw)},
+if(nw)say_(n,tg?(dist(Z).bad||tg.some(([j])=>dist(j).bad)?" "+BW+"\u00a0: zones que le radar a mal vues "+ago(wm)+", où la pluie peut être manquée.":""):n.de&&dist(n).bad?" "+BW+"\u00a0: zones que le radar a mal vues pendant "+(Date.parse(n.fin)-Date.parse(n.de)>36e5?"ces 3\u00a0heures":"cette heure")+", où la pluie peut être manquée.":dist(n).bad,{el},n.tail,1);turn(was,nw)},
 gap:(e,el,gr)=>{if(!ok(gr))return;empty(gr.w,gr.h);const one=Date.parse(e.a)-Date.parse(e.de)<=3e5;show(el,one?"Pas d'image radar à "+hm(e.a)+".":"Pas d'image radar de "+hm(e.de)+" à "+hm(e.a)+".")},
 clear:(el)=>{if(d)empty(d.w,d.h);if(el)el.textContent=""},
 back:()=>{const was=moving();mx=null;WS=WL;WT=WV?"live":null;if(live)say_(live,use(live),{el:say},"");else if(d)use(none(d.w,d.h));turn(was,true)}};
@@ -762,9 +762,10 @@ e={fin:new Date(k.end).toISOString(),de:new Date(k.end-108e5).toISOString(),pg:1
 wet:pts.some((x)=>x[2]>0)};RN.set(k.t,e);return e};
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
-if(l==="p"&&d!=="7j"){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
+if(l==="p"&&(d!=="7j"||J.radar)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
 const r=at("p");if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
-// 7 days: the rain gauges' 3 hours spread between them (rain), faded from one to the next, without their dots (the
+// 7 days, until the radar's week is whole (rejeu.ts; then its 3 hours an hour apart, as the 24 hours above): the rain
+// gauges' 3 hours spread between them (rain), faded from one to the next, without their dots (the
 // user, 01/11/2026: « beaucoup trop chargé »); the time and the legend those of the 3 hours shown (k), switched half way.
 if(l==="p"){const gr=RJ.p&&RJ.p.dims(),el=lg("p"),r=at("p");const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);
 if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(rain(r.m),rain(r.m),0,el,gr,null,0));else{cur="";RJ.p.mix(rain(r.a),rain(r.z),r.f,el,gr,null,0)}}
@@ -790,7 +791,7 @@ const btn=()=>{const end=!!J&&T>=E;b.disabled=false;b.textContent=playing?"❚�
 // The bar of the layer shown: from its first measure in the file (not before the length asked), to the latest; its
 // steps on the clock's (every 5 minutes, quarter of an hour or hour), where the measures are.
 const range=()=>{const l=lay(),k=K[l]||[],t0=Math.min(...k.map((x)=>x.t),...(l==="p"?TR.map((x)=>x[0]):[]));S=Math.min(E,Math.ceil(Math.max(E-DU[d],isFinite(t0)?t0:E)/ST[d])*ST[d]);
-const late=S>E-DU[d]+(l==="p"&&d!=="7j"?2*ST[d]:36e5+6e4);q.hidden=!late;q.textContent=late?"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+".":"";
+const late=S>E-DU[d]+(l==="p"&&(d!=="7j"||J.radar)?2*ST[d]:36e5+6e4);q.hidden=!late;q.textContent=late?"Historique gardé depuis le "+dm(S)+" à "+hmm(S)+".":"";
 T=Math.max(S,Math.min(E,T));rng.max=String((E-S)/ST[d]||0)};
 // The live map's colour scale in front, the same for the whole play.
 const legend=(l,k,one,many,text)=>{const el=lg(l);if(!el||!K[l].length)return;const c=st.filter((s)=>s[k].some((v)=>v!=null)).length,sc=fig.querySelector(".lg-"+l+" .lg-now .lgs");
@@ -801,7 +802,7 @@ const live=Date.parse(rb.dataset.fin)||0,th=(i)=>fin-(n-1-i)*36e5,hours=(f)=>{co
 // brutal »), two in a row sharing 2 of their 3 hours: each at its middle, the time its spread is drawn whole.
 const windows=()=>{const k=[];for(let i=2;i<n;i++){const w=[i-2,i-1,i];if(st.some((s)=>three(s,{w})!=null))k.push({t:th(i)-54e5,end:th(i),i,w})}return k};
 K={t:RJ.t?hours("t"):[],v:RJ.v?hours("ff"):[],p:[]};for(const l of["t","v"])if(K[l].length&&live>fin)K[l].push({t:live,i:-1});
-TR=[];RN.clear();WH=0;if(RJ.p){if(d==="7j")K.p=windows();else if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e})}
+TR=[];RN.clear();WH=0;if(RJ.p){if(d==="7j"&&!J.radar)K.p=windows();else if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e})}
 E=Math.max(live,fin,...K.p.map((x)=>x.t),...TR.map((x)=>x[1]));LT=new Map();if(RJ.t)for(const[x,y,,t]of RJ.t.live)LT.set(Math.round(x*10)/10+","+Math.round(y*10)/10,t);
 dots.replaceChildren();TD=RJ.t?ring("t"):null;
 legend("t","t","station","stations",(x)=>"Température sous abri de "+x+" de Météo-France, une mesure par heure. Entre les stations, les couleurs sont estimées selon l'altitude : ce n'est pas une mesure.");

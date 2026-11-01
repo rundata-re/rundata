@@ -10,12 +10,13 @@
  * apart, until it gets it. In 38 hours from 29/10/2026 18:00, 10 runs of 461 missed it: 1 error, 7 copies kept,
  * 2 images late.
  */
-import { count } from "../budget.js";
+import { count, unmeasured } from "../budget.js";
 import type { Cache } from "../cache.js";
 import { why } from "../types.js";
 import { tokensIssued } from "../providers/mf-auth.js";
 import * as radar from "../providers/radar.js";
 import { grid, type RainGrid } from "./pluie-radar.js";
+import * as semaine from "./radar-semaine.js";
 
 export const KV_KEY = "radar:6h";
 /** Gone from KV an hour after the last write: a scheduled event that stopped leaves no old images behind. */
@@ -124,7 +125,7 @@ export function suivant(before: Historique | null, lu: RainGrid | Error, now: Da
  * the image due (the one that ended 5 minutes before the run's 5 minutes), up to two more reads of the radar, one
  * subrequest each, RETRIES_MS apart (`wait`).
  */
-export async function passage(store: Store, cache: Cache, now = new Date(), long?: Store, wait = sleep): Promise<string> {
+export async function passage(store: Store, cache: Cache, now = new Date(), long?: Store, wait = sleep, week?: semaine.Stores): Promise<string> {
   const tokens = tokensIssued();
   count();
   const before = await store.get();
@@ -169,6 +170,8 @@ export async function passage(store: Store, cache: Cache, now = new Date(), long
       count(1, true);
       await long.put(day);
       longSaid = `, 24 h : ${day.entrees.length} entrées écrites`;
+      // The hours just ended into the week, at most once an hour, outside the run's cost (radar-semaine.ts).
+      if (week) longSaid += await unmeasured(() => semaine.ajouter(week, next!, day, at));
     }
   }
   const said = lu instanceof Error ? `illisible (${why(lu)})` : `${kept ? "copie gardée, " : ""}image finie à ${lu.fin}`;
@@ -224,53 +227,69 @@ export function auQuart(before: Historique | null, six: Historique, now: Date): 
 const HOUR_MS = 3_600_000;
 
 /**
- * The 24 hours for the replay, an image every quarter of an hour, each the hour up to it (the user, 31/10/2026: 96
- * images in a play went by too fast, then 24 an hour apart were too few, « on ne voit pas ce qui se passe entre 2 »): in
- * each cell the strongest rain of the images of that hour, and where the radars saw badly on any of them; an image
- * belongs to the hours of its quarter and of the 3 next. Two hours a quarter apart share 3 of their 4 quarters, so the
- * map changes a little at a time. More than an hour without an image, a gap.
+ * In each cell, the strongest rain of `images`, and where the radars saw badly on any of them; each image's cells read
+ * once through `cells`, for the windows it is in.
  */
-export function parHeure(h: Historique): Historique {
-  const quarters = new Map<number, Image[]>();
+export function maxOf(images: Image[], n: number, cells: (x: Image) => [string, string]): Pick<Image, "pannes" | "pluie" | "mal_vu"> {
+  const pluie = new Uint8Array(n).fill(46); // "."
+  const mal = new Uint8Array(n).fill(48); // "0"
+  for (const x of images) {
+    const [p, m] = cells(x);
+    for (let k = 0; k < n; k++) {
+      const c = p.charCodeAt(k);
+      if (c !== 46 && (pluie[k] === 46 || c > pluie[k])) pluie[k] = c;
+      if (m.charCodeAt(k) === 49) mal[k] = 49;
+    }
+  }
+  const text = (a: Uint8Array) => new TextDecoder().decode(a);
+  return { pannes: [...new Set(images.flatMap((x) => x.pannes))], pluie: rle(text(pluie)), mal_vu: rle(text(mal)) };
+}
+
+/** Reads each image's cells once: `maxOf`'s `cells`. */
+export function reader(): (x: Image) => [string, string] {
+  const read = new Map<Image, [string, string]>();
+  return (x) => read.get(x) ?? read.set(x, [unrle(x.pluie), unrle(x.mal_vu)]).get(x)!;
+}
+
+/**
+ * The windows of `span` ending every `step` where the history has an image: in each cell the strongest rain of the
+ * images of the window (maxOf); an image belongs to the windows of its step and of the next ones within `span`. Two
+ * windows a step apart share all but a step, so the map changes a little at a time. More than `span` without an
+ * image, a gap.
+ */
+export function fenetres(h: Historique, step: number, span: number): Historique {
+  const steps = new Map<number, Image[]>();
   const gaps: Trou[] = [];
   for (const e of h.entrees) {
     if (isTrou(e)) gaps.push(e);
     else {
-      const q = Math.floor(Date.parse(e.fin) / QUARTER_MS) * QUARTER_MS;
-      quarters.set(q, [...(quarters.get(q) ?? []), e]);
+      const q = Math.floor(Date.parse(e.fin) / step) * step;
+      steps.set(q, [...(steps.get(q) ?? []), e]);
     }
   }
   const out: Entree[] = [];
-  const ends = [...quarters.keys()].sort((a, b) => a - b);
+  const ends = [...steps.keys()].sort((a, b) => a - b);
   const gap = (de: number, a: number) => {
     const last = out[out.length - 1];
     if (last && isTrou(last)) last.a = iso(a);
     else out.push({ trou: true, de: iso(de), a: iso(a) });
   };
-  // Each image read once, for the 4 hours it is in.
-  const n = h.w * h.h;
-  const read = new Map<Image, [string, string]>();
-  const cells = (x: Image) => read.get(x) ?? read.set(x, [unrle(x.pluie), unrle(x.mal_vu)]).get(x)!;
-  if (ends.length && gaps.some((g) => Date.parse(g.de) < ends[0] - HOUR_MS)) gap(Math.min(...gaps.map((g) => Date.parse(g.de))), ends[0] - HOUR_MS);
+  const cells = reader();
+  if (ends.length && gaps.some((g) => Date.parse(g.de) < ends[0] - span)) gap(Math.min(...gaps.map((g) => Date.parse(g.de))), ends[0] - span);
   ends.forEach((end, i) => {
-    if (i && end - ends[i - 1] > HOUR_MS) gap(ends[i - 1], end - HOUR_MS);
-    const pluie = new Uint8Array(n).fill(46); // "."
-    const mal = new Uint8Array(n).fill(48); // "0"
-    const hour = ends.filter((q) => q > end - HOUR_MS && q <= end).flatMap((q) => quarters.get(q)!);
-    for (const x of hour) {
-      const [p, m] = cells(x);
-      for (let k = 0; k < n; k++) {
-        const c = p.charCodeAt(k);
-        if (c !== 46 && (pluie[k] === 46 || c > pluie[k])) pluie[k] = c;
-        if (m.charCodeAt(k) === 49) mal[k] = 49;
-      }
-    }
-    const text = (a: Uint8Array) => new TextDecoder().decode(a);
-    const pannes = [...new Set(hour.flatMap((x) => x.pannes))];
-    out.push({ fin: iso(end), de: iso(end - HOUR_MS), pannes, pluie: rle(text(pluie)), mal_vu: rle(text(mal)) });
+    if (i && end - ends[i - 1] > span) gap(ends[i - 1], end - span);
+    const window = ends.filter((q) => q > end - span && q <= end).flatMap((q) => steps.get(q)!);
+    out.push({ fin: iso(end), de: iso(end - span), ...maxOf(window, h.w * h.h, cells) });
   });
   const lastEnd = ends.length ? ends[ends.length - 1] : 0;
   const tail = gaps.filter((g) => Date.parse(g.a) > lastEnd);
   if (tail.length) gap(Math.max(lastEnd, Math.min(...tail.map((g) => Date.parse(g.de)))), Math.max(...tail.map((g) => Date.parse(g.a))));
   return { w: h.w, h: h.h, entrees: out };
 }
+
+/**
+ * The 24 hours for the replay, an image every quarter of an hour, each the hour up to it (the user, 31/10/2026: 96
+ * images in a play went by too fast, then 24 an hour apart were too few, « on ne voit pas ce qui se passe entre 2 »):
+ * the windows of an hour a quarter of an hour apart (fenetres).
+ */
+export const parHeure = (h: Historique): Historique => fenetres(h, QUARTER_MS, HOUR_MS);

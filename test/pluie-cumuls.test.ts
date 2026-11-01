@@ -74,8 +74,10 @@ describe("/meteo's « Pluie tombée »", () => {
     expect(html).not.toContain("<option");
     expect(html.length).toBeLessThan(1000);
     const js = cumulsScript();
-    expect(js.match(/<option /g)!.length).toBe(meteofrance.stations().length);
-    expect(js).toContain(">Le Tévelave</option>");
+    // The map and the places are written into the script as a string whose < > & / are escaped.
+    expect(js.match(/\\u003coption /g)!.length).toBe(meteofrance.stations().length);
+    expect(js).toContain("\\u003eLe Tévelave\\u003c\\u002foption\\u003e");
+    expect(js).not.toMatch(/<\/|\u2028|\u2029/);
     // Both scripts are valid JavaScript.
     expect(() => new Script(js)).not.toThrow();
     expect(() => new Script(CUMULS_LOADER)).not.toThrow();

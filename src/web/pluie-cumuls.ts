@@ -8,7 +8,7 @@
  * The page holds only the section's title: the map and the places, with the script, are asked only when the visitor
  * comes near it (10.8 kB compressed in the page, 70 places and the island drawn a second time).
  */
-import { esc, H, islandMap, KM, project, W } from "./map.js";
+import { esc, H, inScript, islandMap, KM, project, W } from "./map.js";
 import { GH, GW, MM_CHARS, MM_MIN, MM_STEP } from "./pluie-radar.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { hash } from "./pwa.js";
@@ -114,9 +114,9 @@ export const cumulsSection = (): string => `<section id="pluie-tombee" aria-labe
 export const CUMULS_LOADER = `const cu=document.getElementById("pluie-tombee");if(cu){cu.hidden=false;const go=()=>{const s=document.createElement("script");s.src=cu.dataset.cumuls;document.head.append(s)};
 if("IntersectionObserver"in window){const io=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){io.disconnect();go()}},{rootMargin:"400px"});io.observe(cu)}else go()}`;
 
-const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee");cu.querySelector("figure").innerHTML=${JSON.stringify(figure())};const sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
+const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee");cu.querySelector("figure").innerHTML=${inScript(figure())};const sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
 const averse=${averse},somme=${somme},pluvio=${pluvio},autour=${autour};
-const C=${JSON.stringify(MM_CHARS)},V=Array.from(C,(_,k)=>${MM_MIN}*${MM_STEP}**k),P=${JSON.stringify(PALIERS)},T=${JSON.stringify(TEINTES)},NB="\\u00a0";
+const C=${inScript(MM_CHARS)},V=Array.from(C,(_,k)=>${MM_MIN}*${MM_STEP}**k),P=${inScript(PALIERS)},T=${inScript(TEINTES)},NB="\\u00a0";
 const p2=(n)=>String(n).padStart(2,"0"),loc=(ms)=>new Date(ms+144e5),hm=(ms)=>{const x=loc(ms);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())};
 const dm=(ms)=>p2(loc(ms).getUTCDate())+"/"+p2(loc(ms).getUTCMonth()+1),day=(ms)=>loc(ms).toISOString().slice(0,10),quand=(ms)=>{const d=day(ms),n=Date.now();return d===day(n)?"aujourd'hui à "+hm(ms):d===day(n-864e5)?"hier à "+hm(ms):"le "+dm(ms)+" à "+hm(ms)};
 const span=(a,b)=>day(a)===day(b)?(day(a)===day(Date.now())?"":"le "+dm(a)+" ")+"de "+hm(a)+" à "+hm(b):"du "+dm(a)+" à "+hm(a)+" au "+dm(b)+" à "+hm(b);
@@ -145,7 +145,7 @@ nt.textContent=" Estimée par le radar "+span(from,to)+NB+": une estimation, pas
 sel.addEventListener("change",()=>{try{localStorage.setItem("cumuls-lieu",sel.value)}catch(e){}choix=null;show()});
 cu.querySelectorAll("[name=cud]").forEach((r)=>r.addEventListener("change",()=>{choix=r.value;show()}));
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",show);
-fetch(${JSON.stringify(CUMULS_PATH)}).then((r)=>{if(!r.ok)throw 0;return r.json()}).then((d)=>{const r=d.radar;if(!r||!r.entrees.length)throw 0;w=r.w;h=r.h;cv.width=w;cv.height=h;
+fetch(${inScript(CUMULS_PATH)}).then((r)=>{if(!r.ok)throw 0;return r.json()}).then((d)=>{const r=d.radar;if(!r||!r.entrees.length)throw 0;w=r.w;h=r.h;cv.width=w;cv.height=h;
 for(const e of r.entrees){if("trou"in e){ims.push([Date.parse(e.de),Date.parse(e.a),null]);cls.push(null);continue}const[c,mm]=decode(e),f=Date.parse(e.fin);ims.push([f-3e5,f,mm]);cls.push(c)}
 if(d.heures)for(const o of[...sel.options])if(!d.heures.st.some((x)=>x.id===o.value&&x.rr.some((v)=>v!=null)))o.remove();
 if(lieu&&[...sel.options].some((o)=>o.value===lieu))sel.value=lieu;else if(d.heures){let best=-1;for(const o of sel.options){const g=d.heures.st.find((x)=>x.id===o.value),s=g?g.rr.reduce((x,y)=>x+(y||0),0):-1;if(s>best){best=s;sel.value=o.value}}}

@@ -4,6 +4,7 @@
 Sources:
   - communes: geo.api.gouv.fr (contours, Licence Ouverte) — also used to tag each place with its commune
   - places, beaches, peaks, viewpoints, pools: OpenStreetMap via Overpass (ODbL)
+  - a few places OSM does not name: IGN BD TOPO via the Géoplateforme WFS (Licence Ouverte)
   - altitude of every point: IGN RGE ALTI via the Géoplateforme altimetry API (Licence Ouverte)
 
 Usage: python3 -I scripts/build-gazetteer.py [--cache DIR]
@@ -23,6 +24,7 @@ UA = {"User-Agent": "reunion-temps-reel/0.1", "Accept": "application/json"}
 COMMUNES = "https://geo.api.gouv.fr/departements/974/communes?format=geojson&geometry=contour&fields=nom,code,population"
 OVERPASS = "https://overpass-api.de/api/interpreter"
 ALTI = "https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json"
+WFS = "https://data.geopf.fr/wfs/ows"
 QUERY = """[out:json][timeout:120][bbox:-21.40,55.20,-20.86,55.84];
 (
   node["place"~"^(city|town|village|hamlet|suburb|quarter|neighbourhood|locality)$"]["name"];
@@ -41,6 +43,12 @@ EXTRA = [
     ("Cambaie", "lieu_dit", "way", 477835389),  # Z.A.C. de Cambaie, Saint-Paul
 ]
 QUERY = QUERY.replace("\n);", "".join(f"\n  {t}(id:{i});" for _, _, t, i in EXTRA) + "\n);")
+
+# Places people name that OSM does not, read in IGN's BD TOPO by their id in its layer of named areas: (our kind,
+# cleabs). Located at the centre of their largest outline, named as the BD TOPO names them.
+BDTOPO = [
+    ("lieu_dit", "SURFACTI0000001402419989"),  # Parc des Palmiers du Monde (jardin botanique), Le Tampon
+]
 
 # OSM tag → our kind, and how much a match on that kind is worth when several places share a name.
 KINDS = [
@@ -80,6 +88,7 @@ ALIASES = {
     "Aéroport Roland Garros": "Aéroport de la Réunion Roland-Garros",
     "Roland Garros": "Aéroport de la Réunion Roland-Garros",
     "Aéroport de Pierrefonds": "Aéroport de Saint-Pierre - Pierrefonds",
+    "Parc des Palmiers": "Parc des Palmiers du Monde",
 }
 
 
@@ -123,6 +132,26 @@ def commune_of(lon, lat, communes):
     return min(communes, key=dist)["properties"]["nom"]
 
 
+def bdtopo_places(cache):
+    ids = ",".join(f"'{i}'" for _, i in BDTOPO)
+    q = urllib.parse.urlencode({"service": "WFS", "version": "2.0.0", "request": "GetFeature", "outputFormat": "application/json",
+                                "typeNames": "BDTOPO_V3:zone_d_activite_ou_d_interet", "cql_filter": f"cleabs IN ({ids})"})
+    kinds = dict((i, k) for k, i in BDTOPO)
+    out = []
+    for f in fetch(f"{WFS}?{q}", cache, "bdtopo-zones.json")["features"]:
+        g = f["geometry"]
+        ring = max((p[0] for p in (g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]])), key=len)
+        # The centroid of the outline (shoelace), not the mean of its corners, which follows wherever they are dense.
+        a = cx = cy = 0
+        for (x0, y0, *_), (x1, y1, *_) in zip(ring, ring[1:] + ring[:1]):
+            w = x0 * y1 - x1 * y0
+            a, cx, cy = a + w, cx + (x0 + x1) * w, cy + (y0 + y1) * w
+        out.append({"nom": f["properties"]["toponyme"], "type": kinds[f["properties"]["cleabs"]], "lon": cx / (3 * a), "lat": cy / (3 * a)})
+    if len(out) != len(BDTOPO):
+        raise SystemExit(f"BD TOPO returned {len(out)} places for {len(BDTOPO)}")
+    return out
+
+
 def altitudes(points, cache):
     """IGN altimetry, 100 points per call. Sea and out-of-coverage points come back as -99999."""
     out = []
@@ -164,6 +193,7 @@ def main():
         c = e.get("center") or e
         if kind and norm(t["name"]) not in GENERIC:
             places.append({"nom": t["name"].strip(), "type": kind, "lon": c["lon"], "lat": c["lat"]})
+    places += bdtopo_places(cache)
 
     # A commune is located at its main settlement (the OSM node with the same name), not at the
     # polygon centroid, which for Saint-Paul or Saint-Pierre lies far up in the hills.
@@ -198,7 +228,7 @@ def main():
 
     out = ROOT / "src" / "places" / "gazetteer.json"
     out.write_text(json.dumps({
-        "attribution": "© contributeurs OpenStreetMap (ODbL)\u00a0; IGN RGE ALTI et geo.api.gouv.fr (Licence Ouverte 2.0)",
+        "attribution": "© contributeurs OpenStreetMap (ODbL)\u00a0; IGN BD TOPO, RGE ALTI et geo.api.gouv.fr (Licence Ouverte 2.0)",
         "places": kept, "aliases": aliases}, ensure_ascii=False, separators=(",", ":")))
     counts = {}
     for p in kept:

@@ -21,6 +21,8 @@ export interface Resolution {
   correspondance: "exacte" | "partielle" | "approchee" | "coordonnees";
   /** Other places the text could mean, when the match is not exact. */
   autres: Place[];
+  /** The words of the text left aside around the name found, but its commune's (« parc », « palmiers » around « Saint-Pierre »). */
+  ignores?: string[];
 }
 
 // Words that carry no identity ("plage de la …"), dropped from both the question and the names.
@@ -95,14 +97,20 @@ function similar(a: string, b: string): number {
   return 1 - levenshtein(a, b) / Math.max(a.length, b.length);
 }
 
-function score(q: string[], e: Entry): { score: number; kind: Resolution["correspondance"] } | null {
+function score(q: string[], e: Entry): { score: number; kind: Resolution["correspondance"]; rest?: string[] } | null {
   const qk = q.join(" ");
   if (qk === e.key) return { score: e.alias ? 101 : 100, kind: "exacte" };
   const inName = q.every((t) => e.tokens.includes(t));
   if (inName) return { score: 80 - 3 * (e.tokens.length - q.length), kind: "partielle" };
   // The question carries extra words around the name ("il fait beau à cilaos aujourd'hui").
   const inQuestion = e.tokens.every((t) => q.includes(t));
-  if (inQuestion) return { score: 50 + 5 * e.tokens.length, kind: "partielle" };
+  if (inQuestion) {
+    // The name and its commune ("parc des palmiers, le tampon") is the name, said where it is.
+    const commune = tokens(e.place.commune);
+    const rest = q.filter((t) => !e.tokens.includes(t) && !commune.includes(t));
+    if (rest.length === 0) return { score: 95, kind: "exacte" };
+    return { score: 50 + 5 * e.tokens.length, kind: "partielle", rest };
+  }
   // Typos: every name token close to some question token. Two words whose lengths differ by more than 30 % cannot be
   // that close (the distance is at least the difference), so they are not compared.
   if (e.tokens.length <= q.length + 1) {
@@ -182,7 +190,7 @@ function resolve(text: string): Resolution | null {
       }
     }
   }
-  return { lieu: best.place, correspondance: best.kind, autres };
+  return { lieu: best.place, correspondance: best.kind, autres, ...(best.rest && { ignores: best.rest }) };
 }
 
 /** The nearest place of the gazetteer to a point (a hamlet, a beach, a cape…). */

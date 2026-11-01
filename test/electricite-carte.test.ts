@@ -5,7 +5,7 @@ import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import * as edf from "../src/providers/edf.js";
 import { buildElectricite, journeeOf } from "../src/web/data.js";
 import { electricitePage } from "../src/web/domains.js";
-import { anneeSection, diametre, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, productionChart } from "../src/web/electricite-carte.js";
+import { anneeSection, diametre, filieresSection, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, productionChart } from "../src/web/electricite-carte.js";
 import { esc, laterMap, NOMS_SCRIPT } from "../src/web/map.js";
 
 // EDF's lines of 31/10/2026 05:15 and 05:20, read on its open data: the batteries charging (-2.1 MW) at 05:20.
@@ -135,6 +135,40 @@ describe("the map of the power installed", () => {
   it("dates the register by its update", () => {
     expect(MIS_A_JOUR).toBe(data.mis_a_jour.split("-").reverse().join("/"));
     expect(map).toContain(esc(`registre d'EDF mis à jour le ${MIS_A_JOUR}`));
+  });
+});
+
+describe("the section « Les filières »", () => {
+  const sec = filieresSection(j0);
+
+  it("says each filière of the map, in its colour, with the MW the register gives it", () => {
+    const at = ["Bioénergies", "Solaire", "Hydraulique", "Éolien", "Thermique non renouvelable", "Stockage non hydraulique"].map((n) => sec.indexOf(`</svg>${n}</h3>`));
+    expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]))).toBe(true);
+    expect(sec).toContain(`<circle class="f-bio" r="15"/></svg>Bioénergies</h3>`);
+    expect(sec).toContain("435\u00a0MW installés (10\u00a0installations)");
+    expect(sec).toContain(`, dont ${data.moins_de_36_kw.installations.toLocaleString("fr-FR")} de moins de 36\u00a0kW`);
+  });
+
+  it("names the biggest installations by their commune and MW, a name only where the register gives one", () => {
+    expect(sec).toContain("les plus grandes\u00a0: 211\u00a0MW au Port, 99,5\u00a0MW à Saint-André, 59 et 51,8\u00a0MW à Saint-Louis.");
+    expect(sec).toContain("249\u00a0MW installés en 7\u00a0installations\u00a0: 41\u00a0MW à Saint-Pierre, quatre de 40\u00a0MW à La Possession, deux de 24\u00a0MW à Sainte-Marie.");
+    expect(sec).toContain("8,2\u00a0MW à Saint-André (« P.LO5H-CENTRALE HYDRAULIQUE DE PONT-DU-LOUP-3 », le seul nom que donne le registre), 4,6\u00a0MW à l'Entre-Deux.");
+    expect(Object.values(data.grandes).flat().filter((g) => "nom" in g)).toHaveLength(1);
+  });
+
+  it("gives each filière's share over the 24 hours, the batteries in none, and leaves the year to the chart's script", () => {
+    // j0's two points: 565.1 MW produced, 471.6 of bioénergies (EDF's Biomasse and Bioliquide in them), 27.9 of turbines.
+    expect(sec).toContain("Part de la production\u00a0: <b>83,5\u00a0%</b> sur les dernières 24\u00a0h");
+    expect(sec).toContain("Part de la production\u00a0: <b>4,9\u00a0%</b> sur les dernières 24\u00a0h<span class=\"fil-a\" data-k=\"4,5,6\" hidden></span>");
+    expect(sec.match(/class="fil-p"/g)).toHaveLength(5);
+    expect(productionChart(j0)).toContain(`querySelectorAll(".fil-a")`);
+  });
+
+  it("keeps the register's words without EDF's 24 hours", () => {
+    const sans = filieresSection(undefined);
+    expect(sans).toContain("435\u00a0MW installés");
+    expect(sans).not.toContain("fil-p");
+    expect(sans).not.toContain("fil-a");
   });
 });
 

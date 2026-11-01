@@ -47,7 +47,7 @@ import { avisLe, basinMap, TRACES, TRACES_SCRIPT, TRACES_SOURCES, ZONE_SOURCE } 
 import { esc, fenetre, hikesMap, islandMap, laterMap, type Marker, profile, traceMap, type ZoneLink } from "./map.js";
 import { type Cle, COUNT_COLOR, legende } from "./carte-legende.js";
 import { eventsMap } from "./evenements-carte.js";
-import { anneeSection, installationsLegend, installationsList, installationsMap, installationsReplay, productionChart } from "./electricite-carte.js";
+import { anneeSection, filieresSection, installationsLegend, installationsList, installationsMap, installationsReplay, productionChart } from "./electricite-carte.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { cloudSeaLink, type Summit, weatherForTrace } from "./liens.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
@@ -754,6 +754,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
 
   const body = `${journee}
 ${centrales}
+${filieresSection(d?.journee)}
 ${d?.journee ? anneeSection() : ""}
 <section aria-labelledby="h-reseau">
   <div class="sec-h"><p class="eyebrow">Le réseau</p><h2 id="h-reseau">Une île qui produit toute son électricité</h2>

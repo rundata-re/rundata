@@ -48,6 +48,21 @@ export const SANTE_FR: SourceInfo = {
   url: "https://www.sante.fr/ocean-indien-numeros-utiles-en-cas-durgence",
 };
 
+/** Santé.fr's map of the practices that see a patient without appointment, in the daytime (not the evening's duty). */
+export const CARTE_SOINS = "https://www.sante.fr/carte-des-lieux-de-soins";
+
+/**
+ * The one duty medical centre FINESS lists in the island (category 617, « Lieux de soins non programmés »; FINESS
+ * 970414322, read on 01/11/2026 in the Région's daily copy). The others (CHU Nord, CHU Sud, CHOR) are not in FINESS.
+ * Its hours are not given: the ARS's specification of the duty, revised in 2026, has not been read yet.
+ */
+export const MAISON_DE_GARDE = {
+  nom: "Maison de soins de l'Est (maison médicale de garde)",
+  adresse: "60 rue Dumesgnil d'Engente, 97440 Saint-André",
+  commune: "Saint-André",
+  finess: "970414322",
+};
+
 /** The duty pharmacy, as the ARS La Réunion says to find it. */
 export const GARDE = {
   site: "https://www.3237.fr/",

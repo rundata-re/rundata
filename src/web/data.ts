@@ -1291,11 +1291,12 @@ export interface Journee {
   debut: string;
   points: [number, number, number, number][];
   /**
-   * Each point's MW by group of the register's filières (electricite-carte.ts, GROUPES): solar, wind, hydro, every
-   * plant that burns (EDF's bioénergies, coal, diesel and turbines: the register files the bagasse and coal plants
-   * otherwise than EDF), the batteries giving out (never their charging). Absent from a page's copy kept before it.
+   * Each point's MW by filière, as the map's legend names them (electricite-carte.ts, FILIERES): solar, wind, hydro,
+   * bioénergies (EDF's bioénergies, and its columns `charbon` and `diesel`, its biomass and bioliquid), thermique non
+   * renouvelable (the turbines), the batteries giving out (never their charging). Absent from a page's copy kept before
+   * it.
    */
-  filieres?: [number, number, number, number, number][];
+  mix?: [number, number, number, number, number, number][];
   mis_a_jour?: string;
 }
 

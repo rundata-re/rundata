@@ -5,7 +5,7 @@ import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import * as edf from "../src/providers/edf.js";
 import { buildElectricite, journeeOf } from "../src/web/data.js";
 import { electricitePage } from "../src/web/domains.js";
-import { anneeSection, diametre, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, parts, productionChart } from "../src/web/electricite-carte.js";
+import { anneeSection, diametre, INSTALLE, installationsList, installationsMap, installationsReplay, MIS_A_JOUR, productionChart } from "../src/web/electricite-carte.js";
 import { esc, laterMap, NOMS_SCRIPT } from "../src/web/map.js";
 
 // EDF's lines of 31/10/2026 05:15 and 05:20, read on its open data: the batteries charging (-2.1 MW) at 05:20.
@@ -30,9 +30,10 @@ describe("the 24 hours of /electricite", () => {
     expect(journeeOf({ lignes: [l0520, l1515, stray] })!.points).toEqual(j.points);
   });
 
-  it("keeps each point's MW by group of the register: solar, wind, hydro, every plant that burns, the batteries giving out", () => {
-    // 05:20: bioénergies, coal, diesel and turbines together; the batteries charging count for nothing.
-    expect(j.filieres).toEqual([[2, 5, 25, 250, 1.5], [3.8, 4.6, 25.2, 249.5, 0]]);
+  it("keeps each point's MW by filière, as the map names them: solar, wind, hydro, bioénergies, thermique, the batteries giving out", () => {
+    // Bioénergies with EDF's biomasse and bioliquide (its columns charbon and diesel), the turbines apart; at 05:20
+    // the batteries charging count for nothing.
+    expect(j.mix).toEqual([[2, 5, 25, 51 + 77 + 108, 14, 1.5], [3.8, 4.6, 25.2, 235.6, 13.9, 0]]);
   });
 
   it("has no chart under two points", () => {
@@ -47,9 +48,20 @@ describe("the 24 hours of /electricite", () => {
     expect(html).toMatch(/<div class="rj ech-rj" hidden>/);
     const ech = JSON.parse(html.match(/data-ech="([^"]+)"/)![1].replace(/&quot;/g, '"'));
     expect(ech.p).toEqual([[0, 268, 14, 284], [5, 269, 14, 281]]);
-    // Each group's share of its MW installed, in thousandths, for the map's rounds.
-    expect(ech.f).toEqual(parts(j.filieres!));
-    expect(ech.f[1][3]).toBe(Math.round((249.5 / INSTALLE[3]) * 1000));
+    // Each filière's whole MW, for the chart « Par filière » and the map's rounds, with each group's MW installed.
+    expect(ech.m).toEqual([[2, 5, 25, 236, 14, 2], [4, 5, 25, 236, 14, 0]]);
+    expect(ech.i).toEqual(INSTALLE.map((mw) => Math.round(mw * 10) / 10));
+  });
+
+  it("offers the renewable part or each filière in the map's colours, the renewable first, the filières' legend under the chart", () => {
+    const html = productionChart(j);
+    expect(html).toContain('<div class="ech-d ech-v" role="group" aria-label="Vue du graphique" hidden><button type="button" aria-pressed="true" data-v="ren">Renouvelable</button><button type="button" aria-pressed="false" data-v="fil">Par filière</button></div>');
+    const keys = html.match(/<span class="mlg ech-kf" hidden>(.*?)<\/span><span class="mls/)![1];
+    expect([...keys.matchAll(/class="(f-[a-z]+)"/g)].map((m) => m[1])).toEqual(["f-bio", "f-sol", "f-hyd", "f-eol", "f-the"]);
+    expect(keys).toContain("thermique non renouvelable</span>");
+    // The durations without « depuis le … » in their buttons: under them, filled by the script.
+    expect(html).toContain('data-d="j7" hidden>7\u00a0jours</button>');
+    expect(html).toContain('<p class="mls ech-dd" hidden></p>');
   });
 
   it("draws its graduations by the style, no figures in the page that iOS would read as a phone number", () => {
@@ -69,8 +81,13 @@ describe("the 24 hours of /electricite", () => {
     expect(r).toContain("Estimé\u00a0: chaque rond suit sa filière sur toute l'île, d'après la production publiée par EDF le ");
     expect(r).toContain("La taille d'un rond n'est pas la production de cette centrale\u00a0: EDF ne la publie pas.");
     expect(r).toContain(">Revenir à la puissance installée</button>");
-    expect(installationsReplay({ ...j, filieres: undefined })).toBe("");
-    expect(productionChart({ ...j, filieres: undefined })).not.toContain("&quot;f&quot;");
+    expect(installationsReplay({ ...j, mix: undefined })).toBe("");
+    // A page's copy kept before the filières' MW, with only the groups of the map: no replay, no view by filière.
+    const old = { ...j, mix: undefined, filieres: [[2, 5, 25, 250, 1.5], [3.8, 4.6, 25.2, 249.5, 0]] } as never;
+    expect(installationsReplay(old)).toBe("");
+    const chart = productionChart(old);
+    expect(chart).toContain(productionChart(j).match(/<p class="ech-m"[^>]*>[^<]*<\/p>/)![0]);
+    expect(chart.split("<script>")[0]).not.toMatch(/&quot;[fmi]&quot;|ech-v|ech-kf/);
   });
 
   it("shows EDF's years in the bars of « Filière par filière », a button per year, without the line of every year", () => {

@@ -9,18 +9,18 @@ import type { Cache } from "../cache.js";
 import * as edf from "../providers/edf.js";
 import { produced, renewable } from "../tools/electricite.js";
 import type { Journee } from "./data.js";
-import { HISTORIQUE_PATH, parts } from "./electricite-carte.js";
+import { HISTORIQUE_PATH } from "./electricite-carte.js";
 
 export const PATH = HISTORIQUE_PATH;
 const ARCHIVE_FRESH_SECONDS = 3600;
 const MAX_AGE = 900;
 
-/** A duration of the chart as the script draws it: the points, each group's share of its MW installed (`f`), the step. */
+/** A duration of the chart as the script draws it: the points, each filière's whole MW (`m`), the step. */
 export interface Serie {
   t0: number;
   s: number;
   p: number[][];
-  f: number[][];
+  m: number[][];
   pas: number;
   depuis?: string;
 }
@@ -37,15 +37,15 @@ const serie = (j: (Journee & { pas: number; depuis?: string }) | undefined): Ser
   t0: Date.parse(j.debut),
   s: Math.max(j.points[j.points.length - 1][0], 60),
   p: j.points.map((p) => p.map(Math.round)),
-  f: parts(j.filieres ?? []),
+  m: (j.mix ?? []).map((f) => f.map(Math.round)),
   pas: j.pas,
   ...(j.depuis && { depuis: j.depuis }),
 };
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
 
-/** EDF's lines (or the archive's hours), each at its time, as the chart's points and their groups' MW (Journee). */
-export function pointsOf(at: [number, edf.Mix][], t0: number): Pick<Journee, "points" | "filieres"> {
+/** EDF's lines (or the archive's hours), each at its time, as the chart's points and their filières' MW (Journee). */
+export function pointsOf(at: [number, edf.Mix][], t0: number): Pick<Journee, "points" | "mix"> {
   const v = (x: number | undefined) => (typeof x === "number" && x > 0 ? x : 0);
   return {
     points: at.map(([t, l]) => {
@@ -53,7 +53,7 @@ export function pointsOf(at: [number, edf.Mix][], t0: number): Pick<Journee, "po
       const ren = renewable(m);
       return [Math.round((t - t0) / 60_000), r1(ren), r1(produced(m) - ren), r1(l.total)];
     }),
-    filieres: at.map(([, l]) => [r1(v(l.photovoltaique)), r1(v(l.eolien)), r1(v(l.hydraulique)), r1(v(l.bioenergies) + v(l.charbon) + v(l.diesel) + v(l.turbines_combustion)), r1(v(l.stockage))]),
+    mix: at.map(([, l]) => [r1(v(l.photovoltaique)), r1(v(l.eolien)), r1(v(l.hydraulique)), r1(v(l.bioenergies) + v(l.charbon) + v(l.diesel)), r1(v(l.turbines_combustion)), r1(v(l.stockage))]),
   };
 }
 

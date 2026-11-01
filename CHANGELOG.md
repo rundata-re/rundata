@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Dimanche 1 novembre 2026
+
+- Électricité : le graphique montre aussi chaque filière, aux couleurs de la carte, sur 24 h, 7 ou 30 jours.
+
 ## Samedi 31 octobre 2026
 
 - Électricité : la carte rejoue les 24 dernières heures, le graphique va jusqu'à 30 jours, et le bilan de 2024 se lit filière par filière.

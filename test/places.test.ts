@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resolvePlace } from "../src/places/resolve.js";
+import gazetteer from "../src/places/gazetteer.json" with { type: "json" };
+import { resolvePlace, wholeIsland } from "../src/places/resolve.js";
 import { placeBlock } from "../src/tools/format.js";
 
 const name = (q: string) => resolvePlace(q)?.lieu.nom;
@@ -67,10 +68,44 @@ describe("resolvePlace", () => {
     for (const q of ["Parc des Palmiers", "Parc des Palmiers, Le Tampon"]) {
       const r = resolvePlace(q)!;
       expect([r.lieu.nom, r.lieu.commune, r.correspondance, r.autres]).toEqual(["Parc des Palmiers du Monde", "Le Tampon", "exacte", []]);
-      expect([r.lieu.lon, r.lieu.lat, r.lieu.altitude_m]).toEqual([55.49519, -21.25297, 577]);
+      expect([r.lieu.type, r.lieu.lon, r.lieu.lat, r.lieu.altitude_m]).toEqual(["parc", 55.49519, -21.25297, 576]);
     }
     // Its name as the BD TOPO writes it.
     expect(name("Parc des Palmiers du Monde")).toBe("Parc des Palmiers du Monde");
+  });
+
+  it("knows the named places of IGN's BD TOPO, each where it is, without one taking another's name", () => {
+    const at = (q: string) => { const r = resolvePlace(q); return r && [r.lieu.nom, r.lieu.type, r.lieu.commune, r.correspondance]; };
+    expect(at("Le Gol les Hauts")).toEqual(["Le Gol les Hauts", "quartier", "Saint-Louis", "exacte"]);
+    expect(at("Jardin de l'État")).toEqual(["Jardin de l'État", "parc", "Saint-Denis", "exacte"]);
+    // Names alike once their small words are out: the one written as asked, its article aside.
+    expect(at("Plaine des Sables")).toEqual(["Plaine des Sables", "lieu_dit", "Sainte-Rose", "exacte"]);
+    expect(at("Sainte-Clotilde")?.slice(1, 3)).toEqual(["quartier", "Saint-Denis"]);
+    expect(at("Ravine des Cabris")).toEqual(["La Ravine des Cabris", "localite", "Saint-Pierre", "exacte"]);
+    // Two places of a kind and a name: the one the BD TOPO ranks better known.
+    expect(at("Trois-Mares")?.slice(0, 3)).toEqual(["Trois Mares", "quartier", "Le Tampon"]);
+    expect(at("Vincendo")?.slice(0, 3)).toEqual(["Vincendo", "quartier", "Saint-Joseph"]);
+    expect(at("Dimitile")?.slice(0, 2)).toEqual(["Le Dimitile", "sommet"]);
+    // Every commune and every town of OSM is still itself.
+    for (const p of gazetteer.places.filter((p) => p.type === "commune" || p.type === "localite")) {
+      if (p.nom !== "L'Ermitage") expect([p.nom, resolvePlace(p.nom)!.lieu.nom]).toEqual([p.nom, p.nom]);
+    }
+  });
+
+  it("gives a road a point of it, said so, and its usual names", () => {
+    for (const q of ["Route du Littoral", "route littoral"]) expect(resolvePlace(q)).toMatchObject({ lieu: { nom: "Route du Littoral", type: "route", commune: "La Possession" }, correspondance: "exacte" });
+    for (const q of ["RN1", "RN 1", "N1", "Route nationale 1"]) expect(resolvePlace(q)).toMatchObject({ lieu: { nom: "RN1", type: "route" }, correspondance: "exacte" });
+    expect(resolvePlace("Route des Tamarins")!.lieu.type).toBe("route");
+    const r = resolvePlace("Route du Littoral")!;
+    expect(placeBlock("Route du Littoral", r).route).toBe("Une route\u00a0: la réponse vaut pour un point de son tracé, à La Possession, pas pour toute sa longueur.");
+    expect(placeBlock("Cilaos", resolvePlace("Cilaos")!).route).toBeUndefined();
+  });
+
+  it("finds no place in words that name a kind of place, nor in the island itself", () => {
+    for (const q of ["route forestière", "parc", "près de l'école", "Stade", "4 bis chemin Qwrt Zzyzx", "Zzyzx, 15 allée des Qwrt"]) expect(resolvePlace(q)).toBeNull();
+    // A dash lists places, rather than making one name of them (« La Plaine du Bois de Nèfles » is in Saint-Louis).
+    expect(resolvePlace("La Plaine – Bois-de-Nèfles")!.lieu).toMatchObject({ nom: "Bois de Nèfles", commune: "Saint-Paul" });
+    expect(["La Réunion", "l'île de la Réunion", "974", "Saint-Denis", ""].map(wholeIsland)).toEqual([true, true, true, false, false]);
   });
 
   it("says the words it left aside when it keeps the commune named beside a place it does not know", () => {

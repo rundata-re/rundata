@@ -42,7 +42,7 @@ describe("Altervélo", () => {
 
   it("gives the nearest stations to a place, and the nearest with a bike", async () => {
     const r = body(await velosLibreService(cache(), "plage de Terre Sainte", NOW));
-    expect(r.resume).toMatch(/^Station Altervélo la plus proche de Terre Sainte : Eglise de Terre Sainte, à \d+ m : aucun vélo/);
+    expect(r.resume).toMatch(/^Station Altervélo la plus proche de Plage de Terre Sainte : Eglise de Terre Sainte, à \d+ m : aucun vélo/);
     expect(r.stations.find((s: { nom: string }) => s.nom === "Stade de Terre Sainte").etat).toBe("location impossible en ce moment");
   });
 

@@ -167,9 +167,9 @@ describe("sentiers de randonnée", () => {
     expect(b.sources.map((s: { source: string }) => s.source).join()).toContain("Aires d'accueil des forêts (ONF La Réunion)");
     // A commune: those of the commune (Cilaos, a cirque, takes the cirque's).
     const paul = body(await sentiersRandonnee(cache(), "Saint-Paul", NOW));
-    expect(paul.aires_accueil).toMatchObject({ ou: "dans la commune de Saint-Paul", nombre: 55 });
+    expect(paul.aires_accueil).toMatchObject({ ou: "dans la commune de Saint-Paul", nombre: 52 });
     expect(paul.aires_accueil).not.toHaveProperty("rayon_km");
-    expect(paul.resume).toContain(" 55 aires d'accueil de l'ONF dans la commune de Saint-Paul (voir aires_accueil).");
+    expect(paul.resume).toContain(" 52 aires d'accueil de l'ONF dans la commune de Saint-Paul (voir aires_accueil).");
     const cilaos = body(await sentiersRandonnee(cache(), "Cilaos", NOW));
     expect(cilaos.aires_accueil).toMatchObject({ ou: "dans le cirque de Cilaos", rayon_km: 6, nombre: 29 });
     // A trail asked by its name, with no place: those within 300 m of it.

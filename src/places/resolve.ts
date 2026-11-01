@@ -1,7 +1,8 @@
 /**
  * Free-text place → point with altitude. "plage de l'Hermitage", "St Pierre", "cilaos", "-21.05, 55.22".
  * Built on src/places/gazetteer.json (scripts/build-gazetteer.py): communes, villages, quartiers, beaches,
- * peaks, viewpoints and freshwater pools from OpenStreetMap, with IGN altitudes.
+ * peaks, viewpoints and freshwater pools from OpenStreetMap, the named places of IGN's BD TOPO (lieux-dits, parks,
+ * stadiums, ravines, roads…), with IGN altitudes.
  */
 import gazetteer from "./gazetteer.json" with { type: "json" };
 import { distanceKm, inReunion } from "../geo.js";
@@ -36,8 +37,21 @@ const BEACH_WORDS = /\b(plage|beach|lagon|baignade|se baigner)\b/;
 // When several places match equally well, the more common meaning wins.
 const RANK: Record<string, number> = {
   commune: 0, localite: 1, plage: 2, quartier: 3, sommet: 4, point_de_vue: 5, bassin: 6, port: 7, baie: 8,
-  cap: 9, lieu_dit: 10, aeroport: 11,
+  cap: 9, lieu_dit: 10, aeroport: 11, parc: 12, site: 13, equipement: 14, ravine: 15, route: 16,
 };
+
+// Words that name a kind of place, not one: alone (« route forestière », « parc »), they are no place, rather than the
+// first of the many places so named.
+// The words of a street address: no place is found in them, nor in their likes (« allée » is not « La Vallée »,
+// « chemin » not « Chemin Commune »).
+const STREET_WORDS = new Set([
+  "chemin", "rue", "allee", "impasse", "avenue", "av", "boulevard", "bd", "lot", "lotissement", "residence", "res",
+  "bis", "lieu", "dit", "sentier", "piste",
+]);
+const KIND_WORDS = new Set([
+  ...STREET_WORDS, "route", "forestiere", "nationale", "numero", "parc", "jardin", "square", "stade", "piscine",
+  "ravine", "riviere", "cascade", "gite", "zone", "activites", "aire", "accueil", "jeux",
+]);
 
 export function normalize(s: string): string {
   return s
@@ -62,7 +76,7 @@ interface Entry {
   alias: boolean;
 }
 
-const PLACES = gazetteer.places as Place[];
+const PLACES = [...gazetteer.places, ...gazetteer.places_ign] as Place[];
 const byName = new Map(PLACES.map((p) => [p.nom, p]));
 const INDEX: Entry[] = [
   ...PLACES.map((place) => ({ place, tokens: tokens(place.nom), alias: false })),
@@ -103,7 +117,7 @@ function score(q: string[], e: Entry): { score: number; kind: Resolution["corres
   const inName = q.every((t) => e.tokens.includes(t));
   if (inName) return { score: 80 - 3 * (e.tokens.length - q.length), kind: "partielle" };
   // The question carries extra words around the name ("il fait beau à cilaos aujourd'hui").
-  const inQuestion = e.tokens.every((t) => q.includes(t));
+  const inQuestion = e.tokens.every((t) => q.includes(t)) && !e.tokens.every((t) => STREET_WORDS.has(t));
   if (inQuestion) {
     // The name and its commune ("parc des palmiers, le tampon") is the name, said where it is.
     const commune = tokens(e.place.commune);
@@ -118,6 +132,7 @@ function score(q: string[], e: Entry): { score: number; kind: Resolution["corres
     for (const t of e.tokens) {
       let best = 0;
       for (const u of q) {
+        if (STREET_WORDS.has(u)) continue;
         if (Math.abs(t.length - u.length) <= 0.3 * Math.max(t.length, u.length)) best = Math.max(best, similar(t, u));
       }
       if (best < 0.7) return null;
@@ -165,15 +180,23 @@ function resolve(text: string): Resolution | null {
   const order = (x: { score: number; place: Place }, y: { score: number; place: Place }) =>
     y.score - x.score || rank(x.place) - rank(y.place) || (y.place.population ?? 0) - (x.place.population ?? 0);
 
-  // An exact name scores above any other kind of match, and comes alone.
-  const exact = EXACT.get(q.join(" "));
+  // An exact name scores above any other kind of match, and comes alone. Among names that differ only by their small
+  // words (« Plaine des Sables », « La Plaine aux Sables »), the one written as asked comes first, its article aside
+  // (« Ravine des Cabris » is the town of La Ravine des Cabris as much as the ravine).
+  const bare = (s: string) => normalize(s).replace(/^(?:le|la|les|l) /, "");
+  const asked = bare(text);
+  // A dash between names lists places (« La Plaine – Bois-de-Nèfles »): not one name that only differs from them by its
+  // small words (« La Plaine du Bois de Nèfles », in another commune).
+  const listed = /\s[–—-]\s/.test(text) && !EXACT.get(q.join(" "))?.some((e) => bare(e.place.nom) === asked);
+  const exact = listed ? undefined : EXACT.get(q.join(" "));
   if (exact) {
-    const best = exact.map((e) => ({ score: e.alias ? 101 : 100, place: e.place })).sort(order)[0];
+    const best = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place })).sort(order)[0];
     return { lieu: best.place, correspondance: "exacte", autres: [] };
   }
+  if (q.every((t) => KIND_WORDS.has(t))) return null;
 
   const matches = INDEX.flatMap((e) => {
-    const s = score(q, e);
+    const s = listed && e.key === q.join(" ") ? null : score(q, e);
     return s ? [{ ...s, place: e.place }] : [];
   }).sort(order);
   if (matches.length === 0) return null;
@@ -192,6 +215,9 @@ function resolve(text: string): Resolution | null {
   }
   return { lieu: best.place, correspondance: best.kind, autres, ...(best.rest && { ignores: best.rest }) };
 }
+
+/** « La Réunion », « l'île », « 974 » alone: the whole island, no place in it. */
+export const wholeIsland = (text: string): boolean => normalize(text) !== "" && tokens(text).length === 0;
 
 /** The nearest place of the gazetteer to a point (a hamlet, a beach, a cape…). */
 export function placeAt(lon: number, lat: number): Place {

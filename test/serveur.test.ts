@@ -164,6 +164,12 @@ describe("the serveur block", () => {
     expect(r.serveur.si_outil_absent).toMatch(/ancienne/);
   });
 
+  it("takes « La Réunion » alone as the whole island, as no place given", async () => {
+    const [ile, vide] = await Promise.all([{ lieu: "La Réunion" }, {}].map(async (args) => body(await rpcResult("tools/call", { name: "defibrillateurs", arguments: args }))));
+    expect(ile.erreur).toBeUndefined();
+    expect([ile.resume, ile.communes.length]).toEqual([vide.resume, 24]);
+  });
+
   it("drops tools older than a week", () => {
     // A week after the newest tool.
     expect(outilsRecents(new Date(Date.parse(OUTILS[0].depuis) + 7 * 86400_000))).toBeUndefined();

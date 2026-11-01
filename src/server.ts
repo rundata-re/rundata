@@ -21,7 +21,7 @@ import type { Cache } from "./cache.js";
 import type { Recorder } from "./metrics.js";
 import type { Background } from "./web/data.js";
 import icons from "./web/icons.json" with { type: "json" };
-import { GAZETTEER_ATTRIBUTION } from "./places/resolve.js";
+import { GAZETTEER_ATTRIBUTION, wholeIsland } from "./places/resolve.js";
 import * as acspo from "./providers/acspo.js";
 import * as coraux from "./providers/coraux.js";
 import * as arome from "./providers/arome.js";
@@ -107,7 +107,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.134";
+export const VERSION = "1.0.135";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -165,6 +165,9 @@ const ADHERENT = z
   .describe("L'utilisateur dit être adhérent ou membre d'un club : montrer aussi les séances réservées aux adhérents.");
 // Only Sportsregions' events are for members: the argument is offered while it is read (providers/autorisations.ts).
 const ADHERENT_SI_LU: Record<string, typeof ADHERENT> = autorisee("agenda:sportsregions") ? { adherent: ADHERENT } : {};
+
+// The tools whose place is not left out when it is the whole island (track).
+const NEEDS_PLACE = new Set(["resume_du_jour", "donner_avis"]);
 
 const lieu = z
   .string()
@@ -252,8 +255,11 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
   const track = <A extends object, R extends object>(name: string, run: (args: A, extra: Extra) => Promise<R>) => {
     tools++; // one per tool registered
     return async (args: A, extra: Extra = {}): Promise<R> => {
-      const { value: { value: r, vide }, lectures } = await withLectures(() => withVide(name, () => run(args, extra)), TOOL_WAIT_MS);
       const lieu = "lieu" in args && typeof args.lieu === "string" ? args.lieu : undefined;
+      // « La Réunion » alone is the whole island, as no place given (a tour of it where the tool has one); the day's
+      // summary needs a commune, and the feedback keeps what was written.
+      const island = !!lieu && wholeIsland(lieu) && !NEEDS_PLACE.has(name);
+      const { value: { value: r, vide }, lectures } = await withLectures(() => withVide(name, () => run(island ? { ...args, lieu: undefined } : args, extra)), TOOL_WAIT_MS);
       // A call that found nothing (vide.ts) is told with its id, for the transport's record of it (usage.ts).
       record({ kind: "mcp", name, detail: lieu?.trim().slice(0, 60) || undefined, ok: !("isError" in r && r.isError), ...(vide && { outcome: "vide", id: extra.requestId }) });
       // Every answer says how to cite it, error or not (tools/citer.ts); the feedback tool's thanks already names rundata.re.

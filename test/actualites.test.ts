@@ -317,8 +317,8 @@ describe("actualités", () => {
 
   it("gives the fixed speed cameras of the ministry's list with the roads, never the mobile checks", async () => {
     const sp = body(await actualites(cache(), "Saint-Pierre", "route", undefined, NOW));
-    expect(sp.radars_fixes.resume).toBe("4 radars fixes à Saint-Pierre dans la liste du ministère de l'Intérieur (fichier du 30/12/2025), limités à 90\u00a0km/h et 110\u00a0km/h.");
-    expect(sp.radars_fixes.radars).toHaveLength(4);
+    expect(sp.radars_fixes.resume).toBe("5 radars fixes à Saint-Pierre dans la liste du ministère de l'Intérieur (fichier du 30/12/2025), limités à 90\u00a0km/h et 110\u00a0km/h.");
+    expect(sp.radars_fixes.radars).toHaveLength(5);
     // The type as the dataset's page defines it, word for word; the commune only, never the nearest place of the gazetteer.
     expect(sp.radars_fixes.radars[0]).toEqual({
       numero: expect.stringMatching(/^504\d\d$/),
@@ -333,7 +333,7 @@ describe("actualités", () => {
     // A commune without one, said as the list says it; the island by commune; nothing on a question that is not about the roads.
     const cilaos = body(await actualites(cache(), "Cilaos", "radar", undefined, NOW)).radars_fixes;
     expect([cilaos.resume, "radars" in cilaos]).toEqual(["Aucun radar fixe à Cilaos dans la liste du ministère de l'Intérieur (fichier du 30/12/2025).", false]);
-    expect(body(await actualites(cache(), "Saint-Leu", "route", undefined, NOW)).radars_fixes.resume).toBe("1 radar fixe à Saint-Leu dans la liste du ministère de l'Intérieur (fichier du 30/12/2025), limité à 80\u00a0km/h.");
+    expect(body(await actualites(cache(), "Saint-Leu", "route", undefined, NOW)).radars_fixes.resume).toBe("2 radars fixes à Saint-Leu dans la liste du ministère de l'Intérieur (fichier du 30/12/2025), limités à 80\u00a0km/h et 110\u00a0km/h.");
     const ile = body(await actualites(cache(), undefined, "circulation", undefined, NOW)).radars_fixes;
     expect([ile.resume, ile.par_commune[0]]).toEqual(["24 radars fixes à La Réunion dans la liste du ministère de l'Intérieur (fichier du 30/12/2025).", { commune: "Saint-Denis", nombre: 6, vitesses_max: ["70\u00a0km/h", "90\u00a0km/h"] }]);
     expect(body(await actualites(cache(), "Saint-Pierre", undefined, undefined, NOW)).radars_fixes).toBeUndefined();

@@ -2,3 +2,9 @@ node_modules/
 dist/
 .wrangler/
 __pycache__/
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+!.dev.vars.example
+!.env.example

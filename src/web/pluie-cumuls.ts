@@ -5,11 +5,12 @@
  * it: the radar estimates, the gauge measures.
  * The shower around a place: going back from the last image, its rain within 2 km (any class, from 0.1 mm/h) after the
  * last hour without any. Shown by default while it rains there or ended less than 3 hours ago; otherwise the 24 hours.
- * The section and its script are asked only when the visitor comes near it.
+ * The page holds only the section's title: the map and the places, with the script, are asked only when the visitor
+ * comes near it (10.8 kB compressed in the page, 70 places and the island drawn a second time).
  */
-import type { StationNow } from "./data.js";
 import { esc, H, islandMap, KM, project, W } from "./map.js";
 import { GH, GW, MM_CHARS, MM_MIN, MM_STEP } from "./pluie-radar.js";
+import * as meteofrance from "../providers/meteofrance.js";
 import { hash } from "./pwa.js";
 import { CUMULS_PATH } from "./rejeu.js";
 
@@ -85,37 +86,35 @@ export const autour = (cx: number, cy: number, w: number, h: number, r: number):
 /** RAYON_KM in cells of the radar's grid. */
 const RAYON = Math.round((RAYON_KM / ((KM * W) / GW)) * 100) / 100;
 
-/** The section, hidden until the page's script shows it: the Météo-France rain gauges of `list` to choose from. */
-export function cumulsSection(list: StationNow[]): string {
-  const gauges = list.filter((s) => /^\d{8}$/.test(s.id ?? "") && (s.pluie_1h != null || s.pluie_6min != null)).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
-  if (!gauges.length) return "";
-  const options = gauges.map((s) => {
+/** The map and its controls, written by the script: the Météo-France stations to choose from, those without hours of rain left out then. */
+function figure(): string {
+  const options = meteofrance.stations().sort((a, b) => a.nom.localeCompare(b.nom, "fr")).map((s) => {
     const [x, y] = project(s.lon, s.lat);
-    return `<option value="${esc(s.id!)}" data-x="${Math.round(x)}" data-y="${Math.round(y)}">${esc(s.nom)}</option>`;
+    return `<option value="${esc(s.id)}" data-x="${Math.round(x)}" data-y="${Math.round(y)}">${esc(s.nom)}</option>`;
   }).join("");
   const radios = [`<input type="radio" name="cud" id="cud-a" value="a"><label for="cud-a">Début de l'averse</label>`,
-    ...DUREES_H.map((h) => `<input type="radio" name="cud" id="cud-${h}" value="${h}"><label for="cud-${h}">${h} h</label>`)].join("");
-  const legend = PALIERS.map((p, i) => `<span class="cu-sw"><i style="--c:var(--cu${i})"></i>${i < PALIERS.length - 1 ? `${p} à ${PALIERS[i + 1]} mm` : `${p} mm et plus`}</span>`).join("");
+    ...DUREES_H.map((h) => `<input type="radio" name="cud" id="cud-${h}" value="${h}"><label for="cud-${h}">${h}\u00a0h</label>`)].join("");
+  const legend = PALIERS.map((p, i) => `<span class="cu-sw"><i style="--c:var(--cu${i})"></i>${i < PALIERS.length - 1 ? `${p} à ${PALIERS[i + 1]}\u00a0mm` : `${p}\u00a0mm et plus`}</span>`).join("");
   const canvas = `<foreignObject width="${W}" height="${H}" clip-path="url(#isl-clip)"><canvas class="voile" width="${GW}" height="${GH}"></canvas></foreignObject>`;
   const mark = `<circle class="cu-mk" r="${Math.round(RAYON_KM / KM)}" cx="-99" cy="-99"/>`;
-  return `<section id="pluie-tombee" aria-labelledby="h-cumuls" data-cumuls="${cumulsScriptPath()}" hidden>
+  return `<div class="cu-c"><label for="cu-l">Lieu</label> <select id="cu-l">${options}</select></div>` +
+    `<fieldset class="tabs cu-d"><legend>Depuis\u00a0:</legend>${radios}</fieldset><p class="cu-t" aria-live="polite">Chargement…</p>` +
+    islandMap({ under: canvas, top: mark, label: "Carte de La Réunion (974) : la pluie estimée par le radar sur la durée choisie" }) +
+    `<figcaption class="note"><span class="cu-lg">${legend}</span><span class="cu-n"></span></figcaption>`;
+}
+
+/** The section, hidden until the page's script shows it and asks its own. */
+export const cumulsSection = (): string => `<section id="pluie-tombee" aria-labelledby="h-cumuls" data-cumuls="${cumulsScriptPath()}" hidden>
   <div class="sec-h"><p class="eyebrow">Radar et pluviomètres</p><h2 id="h-cumuls">Pluie tombée autour d'un lieu</h2>
   <p>La pluie estimée par le radar de Météo-France, en mm, depuis le début de l'averse ou sur la durée choisie, et la pluie mesurée au pluviomètre du lieu.</p></div>
-  <figure class="card mapcard cumap">
-  <div class="cu-c"><label for="cu-l">Lieu</label> <select id="cu-l">${options}</select></div>
-  <fieldset class="tabs cu-d"><legend>Depuis :</legend>${radios}</fieldset>
-  <p class="cu-t" aria-live="polite">Chargement…</p>
-  ${islandMap({ under: canvas, top: mark, label: "Carte de La Réunion (974) : la pluie estimée par le radar sur la durée choisie" })}
-  <figcaption class="note"><span class="cu-lg">${legend}</span><span class="cu-n"></span></figcaption>
-  </figure>
+  <figure class="card mapcard cumap"></figure>
 </section>`;
-}
 
 /** The inline part, in /meteo's page: shows the section, and asks its script when the visitor comes near it. */
 export const CUMULS_LOADER = `const cu=document.getElementById("pluie-tombee");if(cu){cu.hidden=false;const go=()=>{const s=document.createElement("script");s.src=cu.dataset.cumuls;document.head.append(s)};
 if("IntersectionObserver"in window){const io=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){io.disconnect();go()}},{rootMargin:"400px"});io.observe(cu)}else go()}`;
 
-const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee"),sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
+const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee");cu.querySelector("figure").innerHTML=${JSON.stringify(figure())};const sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
 const averse=${averse},somme=${somme},pluvio=${pluvio},autour=${autour};
 const C=${JSON.stringify(MM_CHARS)},V=Array.from(C,(_,k)=>${MM_MIN}*${MM_STEP}**k),P=${JSON.stringify(PALIERS)},T=${JSON.stringify(TEINTES)},NB="\\u00a0";
 const p2=(n)=>String(n).padStart(2,"0"),loc=(ms)=>new Date(ms+144e5),hm=(ms)=>{const x=loc(ms);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())};
@@ -137,19 +136,19 @@ const on=av&&to-av.fin<${FINIE_MS};let m=choix??(on?"a":"24");cu.querySelector("
 cu.querySelector("#cud-"+m).checked=true;const from=m==="a"?(av.de??first):Math.max(first,to-(+m)*36e5);
 const[out,miss]=somme(ims,w*h,from,to),v=out[cy*w+cx];
 draw(out);mk.setAttribute("cx",s.x);mk.setAttribute("cy",s.y);
-const ici=v===v?mmTxt(v):"pas d'image du radar";
+const ici=v===v?mmTxt(v):"pas d'estimation du radar";
 t.textContent=s.nom+NB+": "+ici+(m==="a"?(av.de==null?" depuis "+quand(from)+", l'averse avait déjà commencé":" depuis le début de l'averse, "+quand(from)):m==="1"?" sur la dernière heure":" sur les "+m+" dernières heures");
 const hs=D.heures,g=hs&&hs.st.find((x)=>x.id===s.id),pv=g&&pluvio(g.rr,Date.parse(hs.fin),from,to);
 nt.textContent=" Estimée par le radar "+span(from,to)+NB+": une estimation, pas une mesure."+(m!=="a"&&!av?" Pas de pluie vue par le radar à moins de 2"+NB+"km.":m!=="a"&&!on?" Dernière pluie vue par le radar à moins de 2"+NB+"km "+quand(av.fin)+".":"")+
 (pv?pv[0]==null?" Le pluviomètre de "+s.nom+" n'a pas mesuré toutes les heures de cette durée.":" Pluviomètre de "+s.nom+NB+": "+mmTxt(pv[0])+" mesurés "+span(pv[1],pv[2])+".":" Le pluviomètre donne la pluie heure par heure"+NB+": pas d'heure entière sur cette durée.")+
-(miss>=10?" Il manque "+(miss>=120?Math.round(miss/60)+NB+"h":miss+NB+"min")+" d'images du radar sur cette durée : la pluie a pu être plus forte.":"")};
-if(lieu&&[...sel.options].some((o)=>o.value===lieu))sel.value=lieu;
+(miss>=10?" Il manque "+(miss>=120?Math.round(miss/60)+NB+"h":miss+NB+"min")+" d'images du radar sur cette durée"+NB+": la pluie a pu être plus forte.":"")};
 sel.addEventListener("change",()=>{try{localStorage.setItem("cumuls-lieu",sel.value)}catch(e){}choix=null;show()});
 cu.querySelectorAll("[name=cud]").forEach((r)=>r.addEventListener("change",()=>{choix=r.value;show()}));
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",show);
 fetch(${JSON.stringify(CUMULS_PATH)}).then((r)=>{if(!r.ok)throw 0;return r.json()}).then((d)=>{const r=d.radar;if(!r||!r.entrees.length)throw 0;w=r.w;h=r.h;cv.width=w;cv.height=h;
 for(const e of r.entrees){if("trou"in e){ims.push([Date.parse(e.de),Date.parse(e.a),null]);cls.push(null);continue}const[c,mm]=decode(e),f=Date.parse(e.fin);ims.push([f-3e5,f,mm]);cls.push(c)}
-if(!lieu&&d.heures){let best=-1;for(const o of sel.options){const g=d.heures.st.find((x)=>x.id===o.value),s=g?g.rr.reduce((x,y)=>x+(y||0),0):-1;if(s>best){best=s;sel.value=o.value}}}
+if(d.heures)for(const o of[...sel.options])if(!d.heures.st.some((x)=>x.id===o.value&&x.rr.some((v)=>v!=null)))o.remove();
+if(lieu&&[...sel.options].some((o)=>o.value===lieu))sel.value=lieu;else if(d.heures){let best=-1;for(const o of sel.options){const g=d.heures.st.find((x)=>x.id===o.value),s=g?g.rr.reduce((x,y)=>x+(y||0),0):-1;if(s>best){best=s;sel.value=o.value}}}
 D=d;show()}).catch(()=>{t.textContent="La pluie tombée n'a pas pu être chargée."})})()`;
 
 let text: string | undefined;

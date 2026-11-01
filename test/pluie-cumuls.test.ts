@@ -1,6 +1,7 @@
 import { Script } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
+import * as meteofrance from "../src/providers/meteofrance.js";
 import { autour, averse, CUMULS_LOADER, cumulsScript, cumulsScriptPath, cumulsSection, pluvio, somme } from "../src/web/pluie-cumuls.js";
 import { site } from "../src/web/site.js";
 
@@ -67,16 +68,16 @@ describe("the rain fallen", () => {
 });
 
 describe("/meteo's « Pluie tombée »", () => {
-  const station = { nom: "Saint-Pierre", id: "97416463", lon: 55.48, lat: -21.32, source: "Météo-France", time: "2026-11-01T08:54:00Z", pluie_1h: 0.4 };
-
-  it("lists the Météo-France rain gauges, hidden until the page's script shows it and asks its own", () => {
-    const html = cumulsSection([station, { ...station, id: "BEALIVE-1", nom: "Ailleurs" }, { ...station, id: "97415590", nom: "Le Port", pluie_1h: undefined }] as never);
+  it("is a title in the page, hidden until its script, asked near it, writes the map and the Météo-France stations", () => {
+    const html = cumulsSection();
     expect(html).toContain(`data-cumuls="${cumulsScriptPath()}" hidden`);
-    expect(html.match(/<option /g)).toHaveLength(1);
-    expect(html).toContain(">Saint-Pierre</option>");
-    expect(cumulsSection([])).toBe("");
+    expect(html).not.toContain("<option");
+    expect(html.length).toBeLessThan(1000);
+    const js = cumulsScript();
+    expect(js.match(/<option /g)!.length).toBe(meteofrance.stations().length);
+    expect(js).toContain(">Le Tévelave</option>");
     // Both scripts are valid JavaScript.
-    expect(() => new Script(cumulsScript())).not.toThrow();
+    expect(() => new Script(js)).not.toThrow();
     expect(() => new Script(CUMULS_LOADER)).not.toThrow();
   });
 

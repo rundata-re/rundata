@@ -20,7 +20,7 @@
  *
  * With a finger, a point is small and its neighbours close: a tap takes the nearest point within TAP_PX of it, even
  * one whose own hit area is under another's, never one out of the map's frame (a map zoomed in). When several are
- * that close, a short list of their names offers them; more than LIST_MAX, a map that zooms (it handles `pzoom` and
+ * that close, a short list of their names offers them; more than LIST_MAX, a map that zooms (it handles `pzoom974` and
  * cancels it) zooms in on the tap instead, until the list is short or it can zoom no more. A drag or a pinch is not a tap.
  *
  * Where the finger was is read from the pointer's events, not the click's, which the browser may move onto the link it
@@ -44,7 +44,7 @@
 export const TAP_PX = 22;
 /** Around the mouse, in CSS pixels, on a commune's map: a point's dot and a little around it. */
 export const MOUSE_PX = 14;
-/** More points than this under a finger: a map that zooms (`pzoom`, the children's map of a commune) zooms there first. */
+/** More points than this under a finger: a map that zooms (`pzoom974`, the children's map of a commune) zooms there first. */
 export const LIST_MAX = 5;
 /** The time the bubble waits for the pointer to come into it, once off its point. */
 export const LINGER_MS = 400;
@@ -120,7 +120,7 @@ const d=down,u=up||d;down=up=null;if(Math.hypot(u[0]-d[0],u[1]-d[1])>10)return;
 const b=s.getBoundingClientRect(),near=pts().map((a)=>[a,mid(a)]).filter(([,c])=>c&&c[0]>=b.left&&c[0]<=b.right&&c[1]>=b.top&&c[1]<=b.bottom).map(([a,c])=>[a,Math.hypot(c[0]-u[0],c[1]-u[1])]).filter(([,k])=>k<=R).sort((p,q)=>p[1]-q[1]).map(([a])=>a);
 const z=!near.length&&!named&&e.target.closest("a.zn[data-pn]");if(z){e.preventDefault();e.stopPropagation();show(z);return}
 if(!near.length||(near.length===1&&near[0]===e.target.closest("a.mk,a.sp")&&!near[0].matches("[data-tp]")))return;e.preventDefault();e.stopPropagation();
-if(near.length===1)fire(near[0]);else if(near.length<=LIST||s.dispatchEvent(new CustomEvent("pzoom",{cancelable:true,detail:{x:u[0],y:u[1]}})))choose(near,u[0],u[1])},true)};maps.forEach(wire);
+if(near.length===1)fire(near[0]);else if(near.length<=LIST||s.dispatchEvent(new CustomEvent("pzoom974",{cancelable:true,detail:{x:u[0],y:u[1]}})))choose(near,u[0],u[1])},true)};maps.forEach(wire);
 document.addEventListener("carte",(e)=>{const s=e.target;if(s.matches&&s.matches("svg.map")&&s.querySelector("a.mk,a.sp,a.zn[data-pn]"))wire(s)})})();`;
 
 /** The bubble as /meteo's (.mtip), night in both themes; the list of close points the same, its rows wide enough for a finger. */

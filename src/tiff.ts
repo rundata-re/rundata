@@ -21,7 +21,7 @@ export function readTiff(buffer: ArrayBuffer | Uint8Array): Raster {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const order = String.fromCharCode(bytes[0], bytes[1]);
-  if (order !== "II" && order !== "MM") throw new Error("pas un fichier TIFF");
+  if (order !== "II" && order !== "MM") throw new Error("pas un fichier TIFF (ordre d'octets ni II ni MM)");
   const le = order === "II";
   if (view.getUint16(2, le) !== 42) throw new Error("TIFF non pris en charge (BigTIFF ?)");
 

@@ -82,7 +82,7 @@ describe("the zoom of every map that zooms", () => {
 
   it("brings a point into the frame for the page's script, and zooms where a finger covers too many points", () => {
     expect(script).toContain('svg.addEventListener("zshow",(e)=>{const x=e.detail.x,y=e.detail.y;if(x<v[0]||x>v[0]+v[2]||y<v[1]||y>v[1]+v[3]){v[0]=x-v[2]/2;v[1]=y-v[3]/2;clamp()}});');
-    expect(script).toContain('svg.addEventListener("pzoom",(e)=>{const w=v[2],c=pt(e.detail.x,e.detail.y);zoom(2.5,c[0],c[1]);if(v[2]<w)e.preventDefault()});');
+    expect(script).toContain('svg.addEventListener("pzoom974",(e)=>{const w=v[2],c=pt(e.detail.x,e.detail.y);zoom(2.5,c[0],c[1]);if(v[2]<w)e.preventDefault()});');
   });
 
   it("zooms in with the wheel forwards, always and without Ctrl, and lets the page scroll backwards once the map is whole", () => {

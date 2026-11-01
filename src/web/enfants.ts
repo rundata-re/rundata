@@ -238,7 +238,7 @@ const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 // The map and the list, kept together: a chip hides the kinds it leaves out on both; a dot marks its row, which
 // carte-points.ts then opens and brings into view; a row's button marks its dot, brought into the frame (`zshow`), and
 // opens its sheet under the map. The map zooms with the others' script (web/carte-zoom.ts), and so does a tap on too
-// many dots at once (`pzoom`, carte-points.ts). Without the script, each dot is a link to its row.
+// many dots at once (`pzoom974`, carte-points.ts). Without the script, each dot is a link to its row.
 const MAP_SCRIPT = `(()=>{const svg=document.getElementById("ecm"),f=document.getElementById("ecf"),sheet=document.getElementById("ecs");if(!svg||!f)return;
 f.hidden=false;document.querySelectorAll("#ecl .tomap").forEach((e)=>{e.hidden=false});
 const mark=(i)=>{svg.querySelectorAll(".sp.on").forEach((a)=>a.classList.remove("on"));document.querySelectorAll("#ecl li.on").forEach((l)=>l.classList.remove("on"));

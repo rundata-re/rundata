@@ -51,9 +51,9 @@ describe("the points of the maps, with a mouse and with a finger", () => {
 
   it("zooms a commune's map on too many points under a finger, and lists them otherwise", () => {
     expect(LIST_MAX).toBe(5);
-    expect(POINTS_SCRIPT).toContain(`else if(near.length<=LIST||s.dispatchEvent(new CustomEvent("pzoom",{cancelable:true,`);
+    expect(POINTS_SCRIPT).toContain(`else if(near.length<=LIST||s.dispatchEvent(new CustomEvent("pzoom974",{cancelable:true,`);
     // The map says it zoomed by cancelling the event; at its closest it does not, and the list shows.
-    expect(commune).toContain(`svg.addEventListener("pzoom",(e)=>{const w=v[2],c=pt(e.detail.x,e.detail.y);zoom(2.5,c[0],c[1]);if(v[2]<w)e.preventDefault()});`);
+    expect(commune).toContain(`svg.addEventListener("pzoom974",(e)=>{const w=v[2],c=pt(e.detail.x,e.detail.y);zoom(2.5,c[0],c[1]);if(v[2]<w)e.preventDefault()});`);
   });
 
   it("keeps the bubble of /meteo and of the home page, and gives their markers the tap with a finger's pointer", () => {

@@ -6,6 +6,7 @@ export function inReunion(lon: number, lat: number): boolean {
   return lon >= BBOX.lonMin && lon <= BBOX.lonMax && lat >= BBOX.latMin && lat <= BBOX.latMax;
 }
 
+/** Great-circle distance in km, on a sphere of 6 371 km (control table 21S-55E-0937). */
 export function distanceKm(lon1: number, lat1: number, lon2: number, lat2: number): number {
   const r = Math.PI / 180;
   const a =

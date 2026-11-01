@@ -3,7 +3,8 @@
  * - 6 hours: the radar's images, one every 5 minutes (pluie-retro.ts), and the stations' last 6 round hours;
  * - 24 hours: the radar's images, one a quarter of an hour, each the strongest rain of the hour up to it (parHeure),
  *   and the stations' last 24 round hours;
- * - 7 days: the stations' round hours of the week, no radar.
+ * - 7 days: the stations' round hours of the week; and the radar's week once it is whole (radar-semaine.ts), 3 hours
+ *   an hour apart, each the strongest rain of the 3 hours, as the 24 hours.
  * The stations' hours are Météo-France's hourly package (providers/meteofrance.ts), already read for /meteo: the
  * temperature and the wind at each round hour, the rain of the hour before it. It holds 24 hours; the week is kept in
  * KV (SEMAINE_KV_KEY), merged with each newer package a data center already holds, never one asked for it, and at
@@ -15,7 +16,8 @@ import type { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { project } from "./map.js";
-import { endOf, type Historique, KEEP_MS, LONG_MS, parHeure } from "./pluie-retro.js";
+import { endOf, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure } from "./pluie-retro.js";
+import { KEEP_MS as WEEK_KEEP_MS } from "./radar-semaine.js";
 
 export const DUREES = ["6h", "24h", "7j"] as const;
 export type Duree = (typeof DUREES)[number];
@@ -151,6 +153,8 @@ export interface Sources {
   six(): Promise<Historique | null>;
   /** Its 24 hours, a quarter of an hour apart. */
   day(): Promise<Historique | null>;
+  /** Its week, an hour apart (radar-semaine.ts). */
+  week(): Promise<Historique | null>;
   semaine: { get(): Promise<Semaine | null>; put(s: Semaine): Promise<void> };
 }
 
@@ -209,9 +213,24 @@ async function build(d: Duree, cache: Cache, now: Date, background: (p: Promise<
   };
   const [s, r] = await Promise.all([
     semaine(cache, now, background),
-    !sources || d === "7j" ? undefined : d === "6h" ? radar(sources.six, KEEP_MS) : radar(sources.day, LONG_MS).then((h) => h && parHeure(h)),
+    !sources ? undefined
+    : d === "6h" ? radar(sources.six, KEEP_MS)
+    : d === "24h" ? radar(sources.day, LONG_MS).then((h) => h && parHeure(h))
+    : radar(sources.week, WEEK_KEEP_MS).then((h) => h && full(h, now) ? fenetres(h, HOUR_MS, 3 * HOUR_MS) : null),
   ]);
-  return { ...(d === "7j" ? {} : { radar: r ?? null }), heures: heures(s, HEURES[d]) };
+  // The week of the radar once it is whole; until then, the rain gauges alone, as before it was kept.
+  return { ...(d === "7j" ? r ? { radar: r } : {} : { radar: r ?? null }), heures: heures(s, HEURES[d]) };
+}
+
+/**
+ * Whether the radar's week (radar-semaine.ts) holds the 7 days up to now, its first hour to make the first window of
+ * 3 hours (the hour before it may be missing: it was the first hour kept).
+ */
+export function full(h: Historique, now: Date): boolean {
+  const first = h.entrees[0];
+  if (!first) return false;
+  const start = Date.parse(isTrou(first) ? first.de : (first.de ?? first.fin));
+  return start <= now.getTime() - 7 * 24 * HOUR_MS && endOf(h.entrees[h.entrees.length - 1]) > now.getTime() - 3 * HOUR_MS;
 }
 
 /** The answer of PATHS[d], kept by the data center and the browser for freshSeconds(). */

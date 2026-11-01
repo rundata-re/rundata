@@ -5,6 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import type { RainGrid } from "../src/web/pluie-radar.js";
 import { auQuart, type Entree, type Historique, type Image, parHeure, passage, quarters, rle, suivant, unrle } from "../src/web/pluie-retro.js";
+import { oublier } from "../src/web/radar-semaine.js";
 import { site } from "../src/web/site.js";
 
 // The real lame d'eau of 22/10/2026 05:35–05:40 UTC, as in pluie-radar.test.ts.
@@ -152,6 +153,28 @@ describe("a run of the scheduled event", () => {
     const again = await counted(BUILD_BUDGET, () => passage(store, new Cache(new MemoryStore(), () => now.getTime()), now, long));
     expect(kinds(day!)).toEqual(["trou 05:20-05:35"]);
     expect([dayOps, again.value]).toEqual([2, expect.stringContaining("24 h : 1 entrées écrites")]);
+  });
+
+  it("adds the hour just ended to the radar's week with the 24 hours, outside the run's cost", async () => {
+    meteofrance.configure({ applicationId: "test" });
+    vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response(h5)));
+    oublier();
+    // 03:55 to 05:20 kept, every 5 minutes: the run reads 05:40, the quarter of 05:30 a gap, the hour of 04:00 to 05:00 whole.
+    let kept: Historique | null = null;
+    for (let t = Date.parse("2026-10-22T03:55:00Z"); t <= Date.parse("2026-10-22T05:20:00Z"); t += 300_000) {
+      kept = suivant(kept, { ...shot(new Date(t).toISOString()), w: 125, h: 112 }, new Date(t + 320_000)) ?? kept;
+    }
+    let day: Historique | null = null;
+    const kv = new Map<string, Historique>();
+    const store = { get: async () => kept, put: async (h: Historique) => void (kept = h) };
+    const long = { get: async () => day, put: async (h: Historique) => void (day = h) };
+    const kvStore = (k: string) => ({ get: async () => kv.get(k) ?? null, put: async (h: Historique) => void kv.set(k, h) });
+    const now = at("2026-10-22T05:42:00Z");
+    const r = await counted(BUILD_BUDGET, () => passage(store, new Cache(new MemoryStore(), () => now.getTime()), now, long, undefined, { heures: kvStore("radar:7j"), jour: (d) => kvStore(`radar:j:${d}`) }));
+    expect(r.value).toContain("semaine : 1 heures, jusqu'à 2026-10-22T05:00:00Z");
+    expect(kv.get("radar:7j")!.entrees).toMatchObject([{ de: "2026-10-22T04:00:00Z", fin: "2026-10-22T05:00:00Z" }]);
+    expect(kv.get("radar:j:2026-10-22")!.entrees.length).toBe(14);
+    oublier();
   });
 
   it("writes a gap when the radar answers an error, without throwing, after reading it twice more", async () => {

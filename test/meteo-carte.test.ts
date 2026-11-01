@@ -728,7 +728,11 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(METEO_SCRIPT).toContain(`"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France "+span(j)`);
     expect(METEO_SCRIPT).toContain(`Cap(span(j))+", le radar de Météo-France n'a pas vu de pluie sur l'île."`);
     expect(METEO_SCRIPT).toContain(`span=(j)=>"entre "+hx(j.de)+" et "+hx(j.fin)+" le "+dm_(j.fin)`);
-    expect(METEO_SCRIPT).toContain(`" "+BW+"\u00a0: zones que le radar a mal vues pendant cette heure, où la pluie peut être manquée."`);
+    // An hour's, or 3 hours' for the radar's week.
+    expect(METEO_SCRIPT).toContain(`" "+BW+"\u00a0: zones que le radar a mal vues pendant "+(Date.parse(n.fin)-Date.parse(n.de)>36e5?"ces 3\u00a0heures":"cette heure")+", où la pluie peut être manquée."`);
+    // The 7 days: the radar's week once the file has it (rejeu.ts), the rain gauges until then.
+    expect(rejeuScript()).toContain(`if(l==="p"&&(d!=="7j"||J.radar)){const gr=J.radar`);
+    expect(rejeuScript()).toContain(`if(d==="7j"&&!J.radar)K.p=windows();else if(J.radar)for(const e of J.radar.entrees)`);
     // The hatches linger over 6 hours only: an hour's image is already where the radars saw badly in its hour.
     expect(rejeuScript()).toContain(`trail=(s)=>rm||d!=="6h"?null:keep(`);
     expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);

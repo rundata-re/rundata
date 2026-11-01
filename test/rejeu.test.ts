@@ -15,11 +15,12 @@ const at = (iso: string) => new Date(iso);
 const ID = "97416463";
 
 /** A store in memory, as KV, counting its writes. */
-function sources(semaine: Semaine | null, six: Historique | null = null, day: Historique | null = null) {
+function sources(semaine: Semaine | null, six: Historique | null = null, day: Historique | null = null, week: Historique | null = null) {
   const kept = { semaine, writes: 0 };
   const s: Sources = {
     six: async () => six,
     day: async () => day,
+    week: async () => week,
     semaine: { get: async () => kept.semaine, put: async (w) => void ((kept.semaine = w), kept.writes++) },
   };
   return { s, kept };
@@ -117,6 +118,24 @@ describe("the replay bar's files", () => {
     expect(w.res.headers.get("cache-control")).toBe("public, max-age=1080");
     expect(w.body.radar).toBeUndefined();
     expect(w.body.heures.st[0].t).toHaveLength(N);
+  });
+
+  it("answer the radar's week, 3 hours an hour apart, once it holds 7 days; the rain gauges alone before", async () => {
+    const now = at("2026-10-25T08:57:00Z");
+    const end = Date.parse("2026-10-25T08:00:00Z");
+    const hours = (n: number): Historique => ({ w: 125, h: 112, entrees: Array.from({ length: n }, (_, i) => ({
+      fin: new Date(end - (n - 1 - i) * 3_600_000).toISOString(), de: new Date(end - (n - i) * 3_600_000).toISOString(), pannes: [], pluie: rle("0".repeat(14_000)), mal_vu: rle("0".repeat(14_000)),
+    })) });
+    const get = async (week: Historique) => {
+      configure(sources(merge(null, hourly, now), null, null, week).s);
+      const res = await site(new Request(`https://rundata.re${PATHS["7j"]}`), new Cache(new MemoryStore(), () => now.getTime()), () => {}, now);
+      return res!.json();
+    };
+    expect((await get(hours(150))).radar).toBeUndefined();
+    const w = await get(hours(171));
+    expect(w.radar.entrees).toHaveLength(171);
+    expect(w.radar.entrees.at(-1)).toMatchObject({ de: "2026-10-25T05:00:00Z", fin: "2026-10-25T08:00:00Z" });
+    expect(w.heures.st[0].t).toHaveLength(N);
   });
 
   it("say they have no history when KV holds none, and read the archive for the week's holes at most once in 6 hours", async () => {

@@ -135,6 +135,7 @@ export const FICHES: Record<string, Fiche> = {
   prefecture_carburants: { famille: "licence_ouverte", producteurs: [PREFECTURE] },
   radars_fixes: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   tco_decheteries: { famille: "licence_ouverte", producteurs: ["TCO"] },
+  ademe_decheteries: { famille: "licence_ouverte", producteurs: ["ADEME"] },
   tco_collecte: { famille: "licence_ouverte", producteurs: ["TCO"] },
   osm_enfants: { famille: "odbl", producteurs: [OSM] },
   osm_marches: { famille: "odbl", producteurs: [OSM] },

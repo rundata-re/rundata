@@ -20,6 +20,7 @@ import * as annuaire from "../providers/annuaire.js";
 import * as carburants from "../providers/carburants.js";
 import * as edf from "../providers/edf.js";
 import * as tco from "../providers/tco.js";
+import * as dech from "../vie/decheteries.js";
 import * as rt from "../providers/gtfsrt.js";
 import * as transit from "../providers/transit.js";
 import * as irve from "../providers/irve.js";
@@ -1607,7 +1608,8 @@ export interface DechetsAnswer {
 }
 
 export async function buildDechets(cache: Cache): Promise<DechetsAnswer> {
-  return { etats: (await tco.meteo(cache)).value, sources: credits([tco.SOURCE]) };
+  // The other communes' sites, on the same page, are the ADEME's directory's (vie/decheteries.ts).
+  return { etats: (await tco.meteo(cache)).value, sources: credits([tco.SOURCE, dech.ADEME]) };
 }
 
 /** What a commune's page adds to its weather: its town hall, and the next buses at its bus station or near its centre. */

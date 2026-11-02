@@ -5,9 +5,9 @@ import * as tco from "../src/providers/tco.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { WASTE } from "../src/tools/decheteries.js";
 import { communePage } from "../src/web/commune.js";
-import { decheteriesPage, descriptionOf, TITLE } from "../src/web/decheteries.js";
+import { anchorOf, decheteriesPage, descriptionOf, TITLE } from "../src/web/decheteries.js";
 import { pageOf } from "../src/web/places.js";
-import { SITES, sitesNow, TCO_COMMUNES, wasteAsked } from "../src/vie/decheteries.js";
+import { ELSEWHERE, ELSEWHERE_COMMUNES, epciOf, SITES, sitesNow, SURVEY, TCO_COMMUNES, wasteAsked } from "../src/vie/decheteries.js";
 
 const FIXTURE = JSON.parse(readFileSync(new URL("./fixtures/tco_meteo.json", import.meta.url), "utf8"));
 // Saturday 24 October 2026, 17:30 at La Réunion: the fixture's updates were made between 15:02 and 17:00.
@@ -40,7 +40,7 @@ describe("the déchèteries of the West", () => {
     expect(sitesNow(etats, NEXT_MORNING).some((s) => s.a_jour)).toBe(false);
   });
 
-  it("answer which nearby sites take the waste asked, and where to look outside the TCO", async () => {
+  it("answer which nearby sites take the waste asked", async () => {
     const r = body(await annuaireTool(new Cache(), "déchets verts", "Saint-Gilles-les-Bains", NOW));
     expect(r.resume).toMatch(/^Déchets verts acceptés en ce moment : /);
     expect(r.decheteries[0].etat).toBe("à jour");
@@ -50,8 +50,6 @@ describe("the déchèteries of the West", () => {
     const next = body(await annuaireTool(new Cache(), "encombrants", "Le Port", NEXT_MORNING));
     expect(next.resume).toMatch(/À vérifier sur place \(mise à jour il y a plus de 6 h\)/);
     expect(next.decheteries[0].accepte).toBeUndefined();
-    const out = body(await annuaireTool(new Cache(), "déchèterie", "Saint-Pierre", NOW));
-    expect(out.resume).toBe("Seul le TCO (Ouest) publie ces données. Pour les autres communes, voir la CINOR, la CIREST, la CIVIS ou la CASUD. Saint-Pierre est dans la CIVIS : https://www.civis.re/");
     for (const q of ["déchèterie", "déchetterie", "encombrants", "déchets verts", "gravats", "benne"]) expect(WASTE.test(q), q).toBe(true);
     for (const q of ["mairie", "CAF", "pharmacie", "marché"]) expect(WASTE.test(q), q).toBe(false);
     expect(wasteAsked("où jeter un vieux frigo")).toBe("refrigerateurs_congelateurs");
@@ -61,18 +59,71 @@ describe("the déchèteries of the West", () => {
   it("have their page, a block per commune, its description with the time of the latest update", () => {
     const page = decheteriesPage("https://rundata.re", copy, NOW);
     expect(TITLE.length).toBeLessThanOrEqual(60);
-    expect(page).toContain(`<title>${TITLE}</title>`);
-    expect(page).toContain("<h1>Déchèteries de l&#39;Ouest : les bennes en direct</h1>");
+    expect(page).toContain(`<title>${TITLE.replace(/'/g, "&#39;")}</title>`);
+    expect(page).toContain("<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest</h1>");
     for (const id of ["saint-paul", "le-port", "la-possession", "les-trois-bassins", "saint-leu"]) expect(page).toContain(`<section id="${id}"`);
-    expect(descriptionOf(sitesNow(etats, NOW))).toBe("Déchèteries de l'Ouest (974) à 17:00 : où déposer déchets verts, encombrants, gravats. Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu.");
-    expect(descriptionOf(sitesNow(etats, NEXT_MORNING))).toBe("Déchèteries de l'Ouest (974) : où déposer déchets verts, encombrants, gravats. Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu.");
+    expect(TITLE).toBe("Déchèteries 974 : adresses, bennes en direct dans l'Ouest");
+    expect(descriptionOf(sitesNow(etats, NOW))).toBe("Déchèteries de La Réunion (974) à 17:00 : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).");
+    expect(descriptionOf(sitesNow(etats, NEXT_MORNING))).toBe("Déchèteries de La Réunion (974) : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).");
     expect(decheteriesPage("https://rundata.re", copy, NEXT_MORNING)).toContain("Mise à jour il y a plus de 6 h : à vérifier sur place.");
-    expect(page).toContain('<a href="https://www.civis.re/" rel="noopener">la CIVIS</a> ou <a href="https://www.casud.re/" rel="noopener">la CASUD</a>');
   });
 
-  it("have a tile on the West's commune pages only", () => {
+  it("have a tile on the West's commune pages, with the state of their skips", () => {
     const paul = communePage("https://rundata.re", pageOf("saint-paul")!, { place: null, dechets: copy }, NOW);
     expect(paul).toMatch(/<h3><a href="\/decheteries#saint-paul">Déchèteries<\/a><\/h3><p class="tv">5 déchèteries<\/p><p class="td">d'après les agents : déchets verts acceptés dans \d sur 5, encombrants dans \d sur 5<\/p>/);
-    expect(communePage("https://rundata.re", pageOf("saint-pierre")!, { place: null }, NOW)).not.toContain("Déchèteries</a></h3>");
+  });
+});
+
+describe("the déchèteries outside the TCO, from the ADEME's directory", () => {
+  const calls: string[] = [];
+  beforeEach(() => {
+    calls.length = 0;
+    vi.stubGlobal("fetch", async (url: string) => (calls.push(String(url)), new Response("", { status: 404 })));
+  });
+
+  it("are the sites of its latest survey in the four other intercommunalités, none of the TCO's", () => {
+    expect(SURVEY).toBe(2026);
+    const count = (nom: string) => ELSEWHERE.filter((s) => s.epci.nom === nom).length;
+    expect([count("la CIVIS"), count("la CASUD"), count("la CINOR"), count("la CIREST")]).toEqual([8, 4, 11, 7]);
+    expect(ELSEWHERE.filter((s) => TCO_COMMUNES.includes(s.commune) || epciOf(s.commune) === undefined)).toEqual([]);
+    // Placed in Saint-Pierre by the directory's code, in Saint-Denis by its town and its point.
+    expect(ELSEWHERE.find((s) => s.nom === "Déchèterie de Bois de Nèfles")!.commune).toBe("Saint-Denis");
+    // More than a kilometre from its address in the directory: at its address, geocoded.
+    expect(ELSEWHERE.find((s) => s.nom === "Déchèterie ZAC Roland Hoareau")).toMatchObject({ adresse: "66 Rue Saint-Louis", lat: -21.30161, lon: 55.42257 });
+    expect(ELSEWHERE.every((s) => !("horaires" in s))).toBe(true);
+  });
+
+  it("answer a commune of the South with its own sites, nearest first, and their intercommunalité's site for the hours", async () => {
+    const r = body(await annuaireTool(new Cache(), "déchèterie", "Saint-Pierre", NOW));
+    const noms = r.decheteries.map((d: { nom: string }) => d.nom);
+    expect(noms).toEqual(expect.arrayContaining(["Déchèterie Saint-Pierre Palama", "Déchèterie Saint-Pierre Allée Bois Noirs"]));
+    expect(r.decheteries.every((d: { commune: string }) => d.commune === "Saint-Pierre")).toBe(true);
+    expect(r.decheteries.map((d: { distance_km: number }) => d.distance_km)).toEqual([...r.decheteries.map((d: { distance_km: number }) => d.distance_km)].sort((x: number, y: number) => x - y));
+    expect(r.decheteries[0]).toMatchObject({ horaires: "voir le site de la CIVIS", page: "https://www.civis.re/" });
+    expect(r.resume).toMatch(/^Déchèteries les plus proches de Saint-Pierre, selon l'annuaire des déchèteries de l'ADEME \(enquête 2026, mis à jour le \d\d\/\d\d\/\d{4}\)\u00a0: Déchèterie /);
+    expect(r.resume).toMatch(/Horaires\u00a0: voir le site de la CIVIS \(https:\/\/www\.civis\.re\/\)\.$/);
+    expect(r.page).toBe("https://rundata.re/decheteries#saint-pierre");
+    expect(r.sources.map((x: { source: string }) => x.source)).toEqual(["Annuaire des déchèteries de l'ADEME (SINOE)"]);
+    // No hours, from anywhere, and nothing read to answer.
+    expect(JSON.stringify(r)).not.toMatch(/\d{1,2}[:h]\d\d/);
+    expect(calls).toEqual([]);
+  });
+
+  it("answer a commune without a site with the nearest others, each with its own intercommunalité", async () => {
+    const r = body(await annuaireTool(new Cache(), "encombrants", "Saint-Philippe", NOW));
+    expect(r.decheteries).toHaveLength(3);
+    expect(r.decheteries.some((d: { commune: string }) => d.commune === "Saint-Philippe")).toBe(false);
+    expect(r.decheteries[0]).toMatchObject({ commune: "Saint-Joseph", horaires: "voir le site de la CASUD", page: "https://www.casud.re/au-quotidien/preserver-lenvironnement/je-depose-en-decheterie" });
+  });
+
+  it("are on the page, a block per commune, and on the commune's page", () => {
+    const page = decheteriesPage("https://rundata.re", copy, NOW);
+    for (const c of ELSEWHERE_COMMUNES) expect(page).toContain(`<section id="${anchorOf(c)}"`);
+    expect(page).toContain('<h3>Déchèterie Saint-Pierre Palama</h3><p>2 Chemin Palama</p>');
+    expect(page).toContain('Horaires\u00a0: voir le site de <a href="https://www.civis.re/" rel="noopener">la CIVIS</a>.');
+    expect(page).toContain("Déchèteries selon l&#39;annuaire des déchèteries de l&#39;ADEME (enquête 2026, mis à jour le ");
+    const pierre = communePage("https://rundata.re", pageOf("saint-pierre")!, { place: null }, NOW);
+    expect(pierre).toContain('<h3><a href="/decheteries#saint-pierre">Déchèteries</a></h3><p class="tv">4 déchèteries</p><p class="td">horaires\u00a0: voir le site de la CIVIS</p>');
+    expect(communePage("https://rundata.re", pageOf("saint-philippe")!, { place: null }, NOW)).not.toContain("Déchèteries</a></h3>");
   });
 });

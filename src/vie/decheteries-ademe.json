@@ -1,0 +1,218 @@
+{
+"construit": "2026-11-03",
+"enquete": 2026,
+"mis_a_jour": "2026-11-01",
+"source": "ADEME, annuaire des déchèteries SINOE, Licence Ouverte / Open Licence",
+"sites": [
+{
+"nom": "Déchèterie de Bras-Panon",
+"adresse": "14 Rue des Lilas",
+"commune": "Bras-Panon",
+"lon": 55.6799,
+"lat": -21.002
+},
+{
+"nom": "Déchèterie de Cilaos",
+"adresse": "Route du Brule Marron",
+"commune": "Cilaos",
+"lon": 55.472,
+"lat": -21.1479
+},
+{
+"nom": "Déchèterie de l'Étang-Salé",
+"adresse": "123 Allée Montignac",
+"commune": "L'Étang-Salé",
+"lon": 55.3618,
+"lat": -21.2646
+},
+{
+"nom": "Déchèterie de la Plaine-des-Palmistes",
+"adresse": "Angle des rues Bras Cabot et Cascade Biberon",
+"commune": "La Plaine-des-Palmistes",
+"lon": 55.6199,
+"lat": -21.1329
+},
+{
+"nom": "Déchèterie de Terrain Fleury",
+"adresse": "18 Rue de la Republique",
+"commune": "Le Tampon",
+"lon": 55.5263,
+"lat": -21.2796
+},
+{
+"nom": "Déchèterie de Trois Mares",
+"adresse": "53 Rue Montaigne",
+"commune": "Le Tampon",
+"lon": 55.4974,
+"lat": -21.263
+},
+{
+"nom": "Déchèterie du 23ème Km",
+"adresse": "120 Rue Roland Hoarau",
+"commune": "Le Tampon",
+"lon": 55.5484,
+"lat": -21.2163
+},
+{
+"nom": "Déchèterie de Petite-Île",
+"adresse": "Allée des Paquerettes",
+"commune": "Petite-Île",
+"lon": 55.5655,
+"lat": -21.3454
+},
+{
+"nom": "Déchèterie Saint-André",
+"adresse": "300 Rue du Stade",
+"commune": "Saint-André",
+"lon": 55.6478,
+"lat": -20.9546
+},
+{
+"nom": "Déchèterie Saint-André - Grand Canal",
+"adresse": "473 Chemin Grand Canal RD47",
+"commune": "Saint-André",
+"lon": 55.6891,
+"lat": -20.9577
+},
+{
+"nom": "Déchèterie de Sainte-Anne",
+"adresse": "56 Chemin Morange Sainte-Anne",
+"commune": "Saint-Benoît",
+"lon": 55.7428,
+"lat": -21.0872
+},
+{
+"nom": "Déchèterie Cité Hyacinthe",
+"adresse": "Rue Francois de Mahy",
+"commune": "Saint-Denis",
+"lon": 55.4851,
+"lat": -20.8971
+},
+{
+"nom": "Déchèterie de Bellepierre",
+"adresse": "Boulevard Gaston Monnerville",
+"commune": "Saint-Denis",
+"lon": 55.4484,
+"lat": -20.897
+},
+{
+"nom": "Déchèterie de Bois de Nèfles",
+"adresse": "Chemin Bancoule Bois de Nèfles",
+"commune": "Saint-Denis",
+"lon": 55.4791,
+"lat": -20.9079
+},
+{
+"nom": "Déchèterie de Sainte-Clotilde",
+"adresse": "Rue des Amaryllis",
+"commune": "Saint-Denis",
+"lon": 55.4766,
+"lat": -20.8965
+},
+{
+"nom": "Déchèterie de la Bretagne",
+"adresse": "Chemin Grand Canal",
+"commune": "Saint-Denis",
+"lon": 55.4982,
+"lat": -20.9052
+},
+{
+"nom": "Déchèterie de la Montagne",
+"adresse": "Chemin Neuf",
+"commune": "Saint-Denis",
+"lon": 55.4178,
+"lat": -20.8865
+},
+{
+"nom": "Déchèterie des Gregues",
+"adresse": "Rue du Quai de Transit",
+"commune": "Saint-Joseph",
+"lon": 55.6026,
+"lat": -21.3806
+},
+{
+"nom": "Déchèterie de la Rivière Saint-Louis",
+"adresse": "9 Rue Chemin la Ouette",
+"commune": "Saint-Louis",
+"lon": 55.4351,
+"lat": -21.2737
+},
+{
+"nom": "Déchèterie Saint-Pierre Allée Bois Noirs",
+"adresse": "190 Allée Bois Noirs",
+"commune": "Saint-Pierre",
+"lon": 55.4572,
+"lat": -21.2884
+},
+{
+"nom": "Déchèterie Saint-Pierre Bordier",
+"adresse": "Chemin Bordier",
+"commune": "Saint-Pierre",
+"lon": 55.4699,
+"lat": -21.3017
+},
+{
+"nom": "Déchèterie Saint-Pierre Palama",
+"adresse": "2 Chemin Palama",
+"commune": "Saint-Pierre",
+"lon": 55.4751,
+"lat": -21.2805
+},
+{
+"nom": "Déchèterie ZAC Roland Hoareau",
+"adresse": "66 Rue Saint-Louis",
+"commune": "Saint-Pierre",
+"lon": 55.42257,
+"lat": -21.30161
+},
+{
+"nom": "Déchèterie de la Mare",
+"adresse": "ZA de la Mare",
+"commune": "Sainte-Marie",
+"lon": 55.5346,
+"lat": -20.9004
+},
+{
+"nom": "Déchèterie des Gaspards",
+"adresse": "Chemin Neuf",
+"commune": "Sainte-Marie",
+"lon": 55.5587,
+"lat": -20.9009
+},
+{
+"nom": "Déchèterie de Sainte-Rose",
+"adresse": "Lieu-dit le Marocain",
+"commune": "Sainte-Rose",
+"lon": 55.8109,
+"lat": -21.1422
+},
+{
+"nom": "Déchèterie de Bagatelle",
+"adresse": "Rue Eloi Machoro",
+"commune": "Sainte-Suzanne",
+"lon": 55.587,
+"lat": -20.9291
+},
+{
+"nom": "Déchèterie de Commune Begue",
+"adresse": "Rue Ambroise Croizat",
+"commune": "Sainte-Suzanne",
+"lon": 55.6425,
+"lat": -20.9368
+},
+{
+"nom": "Déchèterie de la Marine",
+"adresse": "Rue des Pecheurs",
+"commune": "Sainte-Suzanne",
+"lon": 55.618,
+"lat": -20.9108
+},
+{
+"nom": "Déchèterie mobile de Salazie",
+"adresse": "Salazie",
+"commune": "Salazie",
+"lon": 55.509,
+"lat": -21.0251
+}
+]
+}

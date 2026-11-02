@@ -1,9 +1,13 @@
 /**
  * The déchèteries of the Territoire de l'Ouest (src/vie/decheteries.json, scripts/build-decheteries.py) and what
- * their skips take now (providers/tco.ts). Only the TCO publishes this: the other communes are told where to look.
+ * their skips take now (providers/tco.ts). Only the TCO publishes this. The others, outside the TCO, from the ADEME's
+ * directory (src/vie/decheteries-ademe.json, scripts/build-decheteries-ademe.py): where they are, without their hours,
+ * which their intercommunalité's site gives.
  */
 import { distanceKm, localTime } from "../geo.js";
 import * as tco from "../providers/tco.js";
+import type { SourceInfo } from "../types.js";
+import ademe from "./decheteries-ademe.json" with { type: "json" };
 import data from "./decheteries.json" with { type: "json" };
 
 export interface Site {
@@ -21,15 +25,48 @@ export const TCO_COMMUNES = [...new Set(SITES.map((s) => s.commune))];
 // An update older than this, or of another day, is not said to be the state now.
 const STALE_HOURS = 6;
 
-/** The intercommunalité of each commune outside the TCO, and its site. */
+/** The intercommunalité of each commune outside the TCO, and its site: its page of the déchèteries when one is known. */
 const EPCI: { nom: string; site: string; communes: string[] }[] = [
-  { nom: "la CINOR", site: "https://www.cinor.re/", communes: ["Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"] },
+  { nom: "la CINOR", site: "https://www.cinor.re/que-faire-de-mes-objets-et-dechets/", communes: ["Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"] },
   { nom: "la CIREST", site: "https://www.cirest.fr/", communes: ["Saint-André", "Bras-Panon", "Saint-Benoît", "La Plaine-des-Palmistes", "Sainte-Rose", "Salazie"] },
   { nom: "la CIVIS", site: "https://www.civis.re/", communes: ["Saint-Pierre", "Saint-Louis", "Petite-Île", "L'Étang-Salé", "Les Avirons", "Cilaos"] },
-  { nom: "la CASUD", site: "https://www.casud.re/", communes: ["Le Tampon", "Entre-Deux", "Saint-Joseph", "Saint-Philippe"] },
+  { nom: "la CASUD", site: "https://www.casud.re/au-quotidien/preserver-lenvironnement/je-depose-en-decheterie", communes: ["Le Tampon", "Entre-Deux", "Saint-Joseph", "Saint-Philippe"] },
 ];
-export const OTHERS = EPCI.map(({ nom, site }) => ({ nom, site }));
 export const epciOf = (commune: string) => EPCI.find((e) => e.communes.includes(commune));
+
+export const ADEME: SourceInfo = {
+  id: "ademe_decheteries",
+  nom: "Annuaire des déchèteries de l'ADEME (SINOE)",
+  organisme: "ADEME",
+  licence: "Licence Ouverte Etalab",
+  attribution: "ADEME, SINOE",
+  url: "https://data.ademe.fr/datasets/sinoe-(r)-annuaire-des-decheteries-dma",
+};
+/** The directory's survey the list is of, and the day the ADEME last updated it (« 2026-11-01 »). */
+export const SURVEY: number = ademe.enquete;
+export const UPDATED: string = ademe.mis_a_jour;
+const dayMonthYear = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
+/** « selon l'annuaire des déchèteries de l'ADEME (enquête 2026, mis à jour le 01/11/2026) » */
+export const FROM_ADEME = `selon l'annuaire des déchèteries de l'ADEME (enquête ${SURVEY}, mis à jour le ${dayMonthYear(UPDATED)})`;
+
+/** A déchèterie outside the TCO, and the intercommunalité whose site gives its hours. */
+export interface Elsewhere extends Omit<Site, "lien"> {
+  epci: { nom: string; site: string };
+}
+export const ELSEWHERE: Elsewhere[] = ademe.sites.map((s) => {
+  const { nom, site } = epciOf(s.commune)!;
+  return { ...s, epci: { nom, site } };
+});
+export const ELSEWHERE_COMMUNES = [...new Set(ELSEWHERE.map((s) => s.commune))];
+/** What is said of the hours of a site outside the TCO: none are taken, from the directory or from anywhere else. */
+export const hoursOf = (s: Elsewhere) => `horaires\u00a0: voir le site de ${s.epci.nom}`;
+
+/** The sites of a commune outside the TCO, nearest first, then the nearest others while there are fewer than `max`. */
+export function elsewhereNear(commune: string, lon: number, lat: number, max = 3) {
+  const all = ELSEWHERE.map((s) => ({ ...s, km: distanceKm(lon, lat, s.lon, s.lat) })).sort((a, b) => a.km - b.km);
+  const own = all.filter((s) => s.commune === commune);
+  return [...own, ...all.filter((s) => s.commune !== commune)].slice(0, Math.max(max, own.length));
+}
 
 export interface SiteNow extends Site {
   /** « 24/10 17:00 », when the staff last filled it in. */

@@ -1,34 +1,50 @@
 /**
  * The déchèteries of the West (vie/decheteries.ts), answered by annuaire_services_publics when the question is about
  * waste: the nearest sites and what their skips take now, or which take the kind of waste asked. A site whose staff
- * have not updated it for hours is said to be « à vérifier », never as it was. Outside the TCO, where to look.
+ * have not updated it for hours is said to be « à vérifier », never as it was. Outside the TCO, the sites of the ADEME's
+ * directory, nearest first, and the site of their intercommunalité for their hours.
  */
 import type { Cache } from "../cache.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as tco from "../providers/tco.js";
 import { why } from "../types.js";
+import { slugify } from "../web/places.js";
 import * as dech from "../vie/decheteries.js";
-import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 
 /** Whether `quoi` asks about a déchèterie or getting rid of waste. */
 export const WASTE = /d[ée]ch[eèé]t|encombrant|gravat|\bbenne|centre de propret/i;
 
-const ONLY_TCO = "Seul le TCO (Ouest) publie ces données. Pour les autres communes, voir la CINOR, la CIREST, la CIVIS ou la CASUD.";
+const ONLY_TCO = "Seul le TCO (Ouest) publie l'état des bennes en direct. Ailleurs, la liste des déchèteries vient de l'annuaire de l'ADEME, sans les horaires.";
 const km = (n: number) => `${fr(Math.round(n * 10) / 10)} km`;
+
+/** Outside the TCO: the commune's sites and the nearest others, where they are, their hours on their intercommunalité's site. */
+function elsewhere(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace>>, commune: string) {
+  const near = dech.elsewhereNear(commune, res.lieu.lon, res.lieu.lat);
+  const epcis = [...new Map(near.map((s) => [s.epci.nom, s.epci])).values()];
+  return text({
+    lieu: placeBlock(lieu, res),
+    resume: `Déchèteries les plus proches ${de(res.lieu.nom)}, ${dech.FROM_ADEME}\u00a0: ${near.map((s) => `${s.nom} (${s.commune}, à ${km(s.km)})`).join("\u00a0; ")}. ` +
+      `Horaires\u00a0: voir le site de ${epcis.map((e) => `${e.nom} (${e.site})`).join(" ou de ")}.`,
+    page: `https://rundata.re/decheteries#${slugify(commune)}`,
+    decheteries: near.map((s) => ({
+      nom: s.nom,
+      commune: s.commune,
+      adresse: s.adresse || undefined,
+      distance_km: Math.round(s.km * 10) / 10,
+      horaires: `voir le site de ${s.epci.nom}`,
+      page: s.epci.site,
+    })),
+    avertissements: [ONLY_TCO],
+    sources: credits([dech.ADEME]),
+  });
+}
 
 export async function decheteriesAnswer(cache: Cache, quoi: string, lieu: string | undefined, now = new Date()) {
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
   const commune = res?.lieu.commune;
-  if (commune && !dech.TCO_COMMUNES.includes(commune)) {
-    const epci = dech.epciOf(commune);
-    return text({
-      lieu: placeBlock(lieu!, res!),
-      resume: `${ONLY_TCO}${epci ? ` ${commune} est dans ${epci.nom} : ${epci.site}` : ""}`,
-      autres_intercommunalites: dech.OTHERS,
-      sources: credits([tco.SOURCE]),
-    });
-  }
+  if (commune && !dech.TCO_COMMUNES.includes(commune)) return elsewhere(lieu!, res!, commune);
   const live = await tco.meteo(cache).catch((err) => (console.error(`source ${tco.SOURCE.id} indisponible:`, why(err)), null));
   const sites = dech.sitesNow(live?.value, now);
   const kind = dech.wasteAsked(quoi);

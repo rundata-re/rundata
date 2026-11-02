@@ -2,6 +2,7 @@ import { ageMinutes, ageText, compass, localTime, versant } from "../geo.js";
 import type { Resolution } from "../places/resolve.js";
 import { withMentions } from "../mentions.js";
 
+import { a as aCommune } from "../articles.js";
 export { a, de } from "../articles.js";
 import type { Reading, SourceInfo } from "../types.js";
 
@@ -77,7 +78,7 @@ export function placeBlock(asked: string, r: Resolution) {
     versant: versant(p.lon, p.lat),
     correspondance: r.correspondance,
     // A road is long: the answer is for one point of it, said so, not for the whole of it.
-    route: p.type === "route" ? `Une route\u00a0: la réponse vaut pour un point de son tracé, à ${p.commune}, pas pour toute sa longueur.` : undefined,
+    route: p.type === "route" ? `Une route\u00a0: la réponse vaut pour un point de son tracé, ${aCommune(p.commune)}, pas pour toute sa longueur.` : undefined,
     autres_possibilites: r.autres.length ? r.autres.map((a) => `${a.nom} (${a.type}, ${a.commune})`) : undefined,
     // Said, so that a place not known is not taken for the commune named beside it.
     mots_ignores: r.ignores ? `«\u00a0${r.ignores.join(" ")}\u00a0» laissé de côté\u00a0: la réponse vaut pour ${p.nom}.` : undefined,

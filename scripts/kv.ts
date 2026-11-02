@@ -21,11 +21,11 @@ function where(key: string) {
   return { url: `https://api.cloudflare.com/client/v4/accounts/${account}/storage/kv/namespaces/${namespace()}/values/${encodeURIComponent(key)}`, token };
 }
 
-/** Stores `value` as JSON under `key`, kept `ttlSeconds`. Throws when the API refuses it. */
+/** Stores `value` as JSON under `key`, kept `ttlSeconds`. Throws when the API refuses it, the error with its HTTP `status`. */
 export async function putKv(key: string, value: unknown, ttlSeconds: number) {
   const { url, token } = where(key);
   const res = await fetch(`${url}?expiration_ttl=${ttlSeconds}`, { method: "PUT", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify(value), signal: AbortSignal.timeout(20_000) });
-  if (!res.ok) throw new Error(`écriture KV de ${key} refusée : HTTP ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error(`écriture KV de ${key} refusée : HTTP ${res.status}`), { status: res.status });
 }
 
 /** The JSON stored under `key`, undefined when there is none. Throws when the API refuses it. */
@@ -33,6 +33,6 @@ export async function getKv<T>(key: string): Promise<T | undefined> {
   const { url, token } = where(key);
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
   if (res.status === 404) return undefined;
-  if (!res.ok) throw new Error(`lecture KV de ${key} refusée : HTTP ${res.status}`);
+  if (!res.ok) throw Object.assign(new Error(`lecture KV de ${key} refusée : HTTP ${res.status}`), { status: res.status });
   return (await res.json()) as T;
 }

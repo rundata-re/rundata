@@ -24,6 +24,11 @@
  * TESSERACT (the program, « tesseract » by default), and the state file's folder as OVPF_OCR_STATE (by default
  * $XDG_STATE_HOME/rundata-ovpf-ocr, else ~/.local/state/rundata-ovpf-ocr).
  * `--essai`: reads and prints, writes nothing (neither KV nor the state file) and says nothing, but the line of costs.
+ *
+ * A passing failure of Bluesky or of the KV store (5xx, delay passed, network) is tried again once after a few seconds
+ * (scripts/passages.ts); if it fails again, the run ends without error and is counted in `rates.json`, next to the
+ * state file, and the run fails, so that the unit's failure wakes the team, only from the third missed in a row. Any
+ * other error fails the run at once.
  */
 import { execFile } from "node:child_process";
 import { appendFileSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
@@ -37,12 +42,14 @@ import { decide, MODELE, relire, type Usage } from "../src/providers/ovpf-relect
 import { activityPosts, FEED } from "../src/providers/volcan.js";
 import { UpstreamError } from "../src/types.js";
 import { putKv } from "./kv.js";
+import { passagere, rate, RATES_MAX, reussi, uneFoisDePlus } from "./passages.js";
 
 const run = promisify(execFile);
 const essai = process.argv.includes("--essai");
 const TESSERACT = process.env.TESSERACT ?? "tesseract";
 const dir = process.env.OVPF_OCR_STATE ?? join(process.env.XDG_STATE_HOME ?? join(homedir(), ".local/state"), "rundata-ovpf-ocr");
 const STATE = join(dir, "lus.json");
+const RATES = join(dir, "rates.json");
 const COUTS = process.env.OVPF_OCR_COUTS ?? join(process.env.XDG_STATE_HOME ?? join(homedir(), ".local/state"), "rundata-ia/couts.tsv");
 const KEY_IA = process.env.ANTHROPIC_API_KEY;
 // Kept 90 days, as the fuel prices: longer than a post stays in the feed's last 30.
@@ -107,13 +114,29 @@ const e = etat();
 // The feed read on api.bsky.app: public.api.bsky.app, which the Worker reads, refuses this machine's address
 // (HTTP 403, since 28/10/2026). The Worker's host again, should the other one refuse it in turn.
 type Feed = FeedJson & Parameters<typeof activityPosts>[0];
-const feed = await getJson<Feed>("ovpf_bluesky", FEED.replace("//public.api.bsky.app/", "//api.bsky.app/")).catch((err) => {
+const readFeed = () => getJson<Feed>("ovpf_bluesky", FEED.replace("//public.api.bsky.app/", "//api.bsky.app/")).catch((err) => {
   if (err instanceof UpstreamError && err.status === 403) return getJson<Feed>("ovpf_bluesky", FEED);
   throw err;
 });
+// A run missed in passing: said, counted, and an error only from the RATES_MAX-th in a row.
+function missed(why: string) {
+  const fail = !essai && rate(RATES, why);
+  console.error(`ovpf-ocr : passage manqué, erreur passagère : ${why}${fail ? ` (${RATES_MAX} passages manqués d'affilée ou plus : échec)` : ""}`);
+  if (fail) process.exitCode = 1;
+}
+let feed: Feed;
+try {
+  feed = await uneFoisDePlus("ovpf-ocr : flux Bluesky", readFeed);
+} catch (err) {
+  if (!passagere(err)) throw err;
+  missed(err instanceof Error ? err.message : String(err));
+  process.exit();
+}
 const todo = toRead(feed, activityPosts(feed)).filter((x) => !e.lus[x.id]).slice(0, PAR_PASSAGE);
 const outil = todo.length ? `${(await run(TESSERACT, ["--version"])).stdout.split("\n")[0].trim()}, fra` : "";
 let failed = false;
+// The last passing failure of the KV store, after its second try: the run is counted as missed.
+let passing: string | undefined;
 for (const { post, id, image } of todo) {
   let value: Stocke;
   // What to say once the result is stored: to the user, and to the team.
@@ -158,15 +181,19 @@ for (const { post, id, image } of todo) {
     continue;
   }
   try {
-    await putKv(KEY(id), value, TTL_SECONDS);
+    await uneFoisDePlus(`ovpf-ocr : ${id} : écriture KV`, () => putKv(KEY(id), value, TTL_SECONDS));
     e.lus[id] = value.lu_a;
     delete e.echecs[id];
     for (const m of avis) await say(process.env.OVPF_OCR_AVIS, m);
     for (const m of pannes) await say(process.env.OVPF_OCR_PANNE, m);
   } catch (err) {
-    console.error(`ovpf-ocr : ${id} : ${err instanceof Error ? err.message : String(err)}`);
-    failed = true;
+    const why = err instanceof Error ? err.message : String(err);
+    console.error(`ovpf-ocr : ${id} : ${why}`);
+    if (passagere(err)) passing = why;
+    else failed = true;
   }
 }
 if (!essai) save(e);
 if (failed) process.exitCode = 1;
+else if (passing) missed(passing);
+else if (!essai) reussi(RATES);

@@ -509,13 +509,17 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
 /** The short answer, the tool's default (Claude's directory asks for frugal answers): what it leaves out, and where. */
 export const COURT = "Réponse courte : sans la liste de ce qu'accepte chaque déchèterie ni le prix de chaque carburant. Le détail : rappeler l'outil avec detail, ou la page de la commune (lien).";
 
-/** The summary without its long lists, every warning and every link kept. */
+/**
+ * The summary without its long lists, every warning and every link kept. Its sources, half of the answer, keep their
+ * name and licence, what the rule « Citer » of the instructions asks for; their attributions are in the answer with detail.
+ */
 export function court(r: Resume) {
   const fuel = r.carburants && (({ prix_maximums: _, ...c }) => c)(r.carburants);
   return {
     ...r,
     decheteries: r.decheteries && { ...r.decheteries, sites: r.decheteries.sites.map(({ accepte: _, ...s }) => s) },
     carburants: fuel,
+    sources: r.sources.map(({ source, licence }) => ({ source, licence })),
     detail: COURT,
   };
 }

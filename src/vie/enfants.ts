@@ -68,7 +68,7 @@ export const SOURCES: Record<Lieu["source"], SourceInfo> = {
     organisme: "Ministère de la Culture",
     licence: "Licence Ouverte Etalab 2.0",
     attribution: "Basilic (ministère de la Culture)",
-    url: "https://www.data.gouv.fr/datasets/base-des-lieux-et-des-equipements-culturels",
+    url: "https://www.data.gouv.fr/datasets/base-des-lieux-et-equipements-culturels-basilic",
   },
 };
 

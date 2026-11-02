@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-03T02:09:00+04:00", texte: "Claude\u00a0: rundata.re est disponible dans l'annuaire des connecteurs de Claude\u00a0; on le branche depuis sa fiche, sans adresse." },
   { date: "2026-11-01T23:35:00+04:00", texte: "Connecteur\u00a0: le collège public de secteur d'une adresse, d'après la carte scolaire des collèges, avec le lien vers la page des écoles." },
   { date: "2026-11-01T23:20:00+04:00", texte: "Écoles\u00a0: les écoles, collèges et lycées sur une carte, avec cantine, internat et ULIS, et le collège de secteur d'une adresse." },
   { date: "2026-11-01T22:45:00+04:00", texte: "Médecin de garde\u00a0: les horaires de la garde, le territoire de chaque commune et l'hôpital vers lequel le 15 oriente la nuit, d'après l'ARS." },

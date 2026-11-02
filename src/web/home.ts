@@ -315,8 +315,11 @@ function assistant(origin: string, h: HomeLive | null, now: Date): string {
 </section>`;
 }
 
-/** The three steps to plug the connector, assistant by assistant: on the home page and on /mcp. */
-export function connectSteps(origin: string): string {
+/**
+ * The three steps to plug the connector, assistant by assistant: on the home page and on /mcp. Claude's tab sends to
+ * its directory's card first; /mcp adds the other way, with the address (`custom`), as its Claude card does.
+ */
+export function connectSteps(origin: string, custom = false): string {
   return `<ol class="steps">
     <li class="card step"><span class="num">1</span><h3>Copiez l'adresse</h3>${connector(origin, "mcp-url")}</li>
     <li class="card step"><span class="num">2</span><h3>Ajoutez-la à votre assistant</h3>
@@ -331,7 +334,7 @@ export function connectSteps(origin: string): string {
         <p>Nom : <b>rundata.re</b>. Connexion : <b>URL du serveur</b>, collez l'adresse. Authentification : remplacez <b>OAuth</b>, proposé par défaut, par <b>aucune authentification</b>. Cochez <b>Je comprends et souhaite continuer</b>, créez le plugin, puis installez-le. Un message rouge sur OAuth peut rester affiché : il n'empêche pas de continuer.</p>
         <p>Ensuite, dans une conversation (appli comprise), nommez rundata.re dans la question, par exemple <b>« Avec rundata.re : il fait combien à Cilaos en ce moment ? »</b>, ou tapez <b>@</b> et choisissez rundata.re. Sinon, ChatGPT peut répondre avec sa propre météo, sans station ni heure de mesure. Testé avec l'offre ChatGPT Go. Si le menu Plugins n'apparaît pas sur votre compte, utilisez les boutons « Domann out IA » plus haut.</p>
         <p><b>Des outils manquent ?</b> ChatGPT garde la liste d'outils du jour où vous avez ajouté le connecteur. Sur chatgpt.com (pas dans l'appli), ouvrez <b>Paramètres → Intégrations → Plugins</b>, cliquez sur rundata.re, puis, en bas, dans <b>Gérer l'application</b>, sur <b>Actualiser les outils</b>, et commencez une nouvelle conversation. Pas de bouton ? Sur la même page, <b>Supprimer l'application</b> (ou <b>Désinstaller</b> en haut), puis ajoutez-la de nouveau. Dans un espace Business ou Enterprise, c'est l'administrateur qui actualise dans les réglages de l'espace, puis coche les nouveaux outils.</p></div>
-        <p class="tab t-claude"><b>Gratuit</b> (un connecteur personnalisé inclus). Sur <a href="https://claude.ai/">claude.ai</a> dans un navigateur : <b>Personnaliser → Connecteurs → Ajouter un connecteur personnalisé</b>, nom <b>rundata.re</b>, collez l'adresse, puis <b>Ajouter</b>. Il marche ensuite aussi dans l'appli iPhone et Android.</p>
+        <div class="tab t-claude"><p><b>Toutes les offres, y compris la gratuite.</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude : ouvrez <a href="https://claude.ai/directory/rundata-re">sa fiche</a>, puis <b>Connecter</b>. Il marche ensuite aussi dans l'appli iPhone et Android.</p>${custom ? `<p><b>Autre façon :</b> <b>Personnaliser → Connecteurs → + → Ajouter un connecteur personnalisé</b>, avec l'adresse ci-dessus (sur l'offre gratuite, un seul connecteur personnalisé).</p>` : ""}</div>
         <p class="tab t-gemini">Pour l'instant, Google réserve les connecteurs personnalisés de Gemini à certains abonnés Google AI Pro ou Ultra aux États-Unis. Si votre compte y a droit : dans Gemini sur le web, ajoutez une application personnalisée et collez l'adresse du serveur MCP.</p>
         <p class="tab t-meta">Meta AI (WhatsApp, Messenger, Instagram) ne permet pas encore d'ajouter un connecteur. En attendant, envoyez-lui le lien de la page de votre commune, par exemple <b>rundata.re/meteo/saint-denis</b>, ou ouvrez-la directement : elle se met à jour en continu, chaque donnée avec son heure et sa source.</p>
         <p class="tab t-lechat">Dans <a href="https://chat.mistral.ai/">Le Chat</a> de Mistral : <b>Connecteurs → Ajouter un connecteur → MCP personnalisé</b>, puis collez l'adresse.</p>

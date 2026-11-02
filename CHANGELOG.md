@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Mardi 3 novembre 2026
+
+- Claude : rundata.re est disponible dans l'annuaire des connecteurs de Claude ; on le branche depuis sa fiche, sans adresse.
+
 ## Dimanche 1 novembre 2026
 
 - Connecteur : le collège public de secteur d'une adresse, d'après la carte scolaire des collèges, avec le lien vers la page des écoles.

@@ -15,8 +15,8 @@ const CRUMB = "Brancher mon IA";
 const DESCRIPTION = "Comment ajouter le connecteur rundata.re à ChatGPT, Claude ou Le Chat : votre IA lit les données de La Réunion en direct. Gratuit, sans compte.";
 
 // The plans and the menus, read in each assistant's help on that day (marketing's D9): to read again each month.
-const VERIFIE = "2026-10-25";
-const VERIFIE_TEXTE = "25 octobre 2026";
+const VERIFIE = "2026-11-02";
+const VERIFIE_TEXTE = "2 novembre 2026";
 
 /**
  * A browser, a link preview or a tool opening the link, with or without an Accept: any GET or HEAD but the stream an
@@ -39,7 +39,7 @@ export function connecteurPage(origin: string, alerte?: Alerte): string {
   <div class="sec-h"><p class="eyebrow">Avant de commencer</p><h2 id="h-offres">Quelle offre, quel réglage</h2>
   <p>D'après l'aide de chaque assistant, vérifiée le <time datetime="${VERIFIE}">${VERIFIE_TEXTE}</time>. Ces conditions changent souvent : si un menu a bougé, dites-le-nous avec le formulaire en bas de page.</p></div>
   <div class="three">
-    <div class="card"><h3>Claude</h3><p><b>Offre :</b> toutes, y compris la gratuite (limitée à un connecteur personnalisé).</p><p><b>Où :</b> sur claude.ai, <b>Personnaliser → Connecteurs → + → Ajouter un connecteur personnalisé</b>.</p></div>
+    <div class="card"><h3>Claude</h3><p><b>Offre :</b> toutes, y compris la gratuite.</p><p><b>Où :</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude : <a href="https://claude.ai/directory/rundata-re">ouvrez sa fiche</a>, puis <b>Connecter</b>.</p><p><b>Autre façon :</b> <b>Personnaliser → Connecteurs → + → Ajouter un connecteur personnalisé</b>, avec l'adresse ci-dessus (sur l'offre gratuite, un seul connecteur personnalisé).</p></div>
     <div class="card"><h3>ChatGPT</h3><p><b>Offre :</b> Business, Enterprise et Edu d'après l'aide d'OpenAI ; testé aussi avec ChatGPT Go. Sur les autres offres, le menu peut manquer.</p><p><b>Où :</b> sur chatgpt.com, depuis un ordinateur, <b>Plugins → Ajouter → Ajouter un serveur MCP personnalisé</b>.</p><p><b>Ensuite :</b> nommez rundata.re dans la question (« Avec rundata.re : … ») ou tapez <b>@</b> et choisissez-le.</p></div>
     <div class="card"><h3>Le Chat</h3><p><b>Offre :</b> toutes ; sur Free, Pro et Student, le titulaire du compte peut ajouter un connecteur. Sur Team et Enterprise, l'administrateur.</p><p><b>Où :</b> <b>Connecteurs → + Ajouter un connecteur → MCP personnalisé</b>. Nom sans point ni espace, par exemple <b>rundata</b>.</p></div>
   </div>
@@ -52,7 +52,7 @@ export function connecteurPage(origin: string, alerte?: Alerte): string {
 <section aria-labelledby="h-brancher">
   <div class="sec-h"><p class="eyebrow">Pas à pas</p><h2 id="h-brancher">Brancher le connecteur, en 2 minutes</h2>
   <p>Il suit le protocole ouvert MCP (Model Context Protocol), compris par la plupart des assistants IA.</p></div>
-  ${connectSteps(origin)}
+  ${connectSteps(origin, true)}
 </section>
 <section style="max-width:44rem;display:grid;gap:1rem" aria-labelledby="h-savoir">
   <h2 id="h-savoir">Bon à savoir</h2>

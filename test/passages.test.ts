@@ -18,6 +18,16 @@ describe("erreur passagère ou non", () => {
     expect(passagere(new TypeError("fetch failed"))).toBe(true);
   });
 
+  it("dit passagers un 429 et un 408 : la source dit « plus tard »", () => {
+    // Bluesky limite le débit : l'essai suivant, 5 s ou 5 min plus tard, passe.
+    expect(passagere(new UpstreamError("ovpf_bluesky", "HTTP 429", 429))).toBe(true);
+    expect(passagere(new UpstreamError("ovpf_bluesky", "HTTP 408", 408))).toBe(true);
+    expect(passagere(Object.assign(new Error("écriture KV de ovpf:ocr:x refusée : HTTP 429"), { status: 429 }))).toBe(true);
+    expect(passagere(Object.assign(new Error("écriture KV de ovpf:ocr:x refusée : HTTP 408"), { status: 408 }))).toBe(true);
+    expect(passagere(Object.assign(new Error("écriture KV de ovpf:ocr:x refusée : HTTP 403"), { status: 403 }))).toBe(false);
+    expect(passagere(Object.assign(new Error("écriture KV de ovpf:ocr:x refusée : HTTP 404"), { status: 404 }))).toBe(false);
+  });
+
   it("ne dit pas passagers un 4xx, une réponse illisible ni une erreur de code", () => {
     expect(passagere(new UpstreamError("ovpf_bluesky", "HTTP 403", 403))).toBe(false);
     expect(passagere(new UpstreamError("ovpf_bluesky", "HTTP 404", 404))).toBe(false);

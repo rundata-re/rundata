@@ -1,8 +1,8 @@
 /**
  * For the collectors run every few minutes by a timer (scripts/ovpf-ocr.ts): a source's passing failure (an answer
- * 5xx, a delay passed, the network) is tried again once after a few seconds, then counted, and the run fails only from
+ * 5xx, 408 or 429, a delay passed, the network) is tried again once after a few seconds, then counted, and the run fails only from
  * the third run missed in a row, so that the unit's failure, which wakes the team, is kept for real breakdowns. Any
- * other error (a 4xx, an answer that cannot be read, an error of the code) fails the run at once, as before.
+ * other error (a 4xx but 408 and 429, an answer that cannot be read, an error of the code) fails the run at once, as before.
  */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
@@ -11,13 +11,16 @@ import { UpstreamError } from "../src/types.js";
 /** From this many runs missed in a row, the run fails. */
 export const RATES_MAX = 3;
 
-/** Whether `err` is a source's passing failure: an answer 5xx, a delay passed, a network error. */
+/** An answer that says « later »: 5xx, a delay passed on the server's side (408), too many requests (429, Bluesky's rate limit). */
+const later = (status: number) => status >= 500 || status === 408 || status === 429;
+
+/** Whether `err` is a source's passing failure: an answer 5xx, 408 or 429, a delay passed, a network error. */
 export function passagere(err: unknown): boolean {
   // src/http.ts: with a status, the source answered; without, fetch itself failed (delay or network).
-  if (err instanceof UpstreamError) return err.status === undefined || err.status >= 500;
+  if (err instanceof UpstreamError) return err.status === undefined || later(err.status);
   if (!(err instanceof Error)) return false;
   const status = (err as { status?: unknown }).status;
-  if (typeof status === "number") return status >= 500;
+  if (typeof status === "number") return later(status);
   if (err.name === "TimeoutError" || err.name === "AbortError") return true;
   // undici's network errors: « fetch failed », the cause (ECONNRESET, ENOTFOUND…) inside.
   return err instanceof TypeError && err.message === "fetch failed";

@@ -25,7 +25,7 @@
  * $XDG_STATE_HOME/rundata-ovpf-ocr, else ~/.local/state/rundata-ovpf-ocr).
  * `--essai`: reads and prints, writes nothing (neither KV nor the state file) and says nothing, but the line of costs.
  *
- * A passing failure of Bluesky or of the KV store (5xx, delay passed, network) is tried again once after a few seconds
+ * A passing failure of Bluesky or of the KV store (5xx, 408, 429, delay passed, network) is tried again once after a few seconds
  * (scripts/passages.ts); if it fails again, the run ends without error and is counted in `rates.json`, next to the
  * state file, and the run fails, so that the unit's failure wakes the team, only from the third missed in a row. Any
  * other error fails the run at once.

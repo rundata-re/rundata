@@ -101,7 +101,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     }
     const page = await (await handle(get("/conditions", BROWSER), new Cache())).text();
     expect(page).toContain('<h2 id="mentions-legales">Mentions légales</h2>');
-    expect(page).toContain("l'article 1-1, II de la loi n° 2004-575 du 21 juin 2004");
+    expect(page).toContain("l'article 1-1, II de la loi n°\u00a02004-575 du 21 juin 2004");
     expect(page).toContain("Ses éléments d'identification ont été communiqués à l'hébergeur.");
     expect(page).toContain("enregistré auprès de l'AFNIC (.re)");
   });

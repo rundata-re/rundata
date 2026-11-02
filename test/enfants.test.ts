@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ageIn, ageRange, extrait, themesIn } from "../src/providers/agenda-mots.js";
+import { distanceKm } from "../src/geo.js";
 import { INSEE } from "../src/places/insee.js";
 import { CHILDREN, enfantsAnswer, kindAsked } from "../src/tools/enfants.js";
 import * as enfants from "../src/vie/enfants.js";
@@ -62,6 +63,17 @@ describe("the places to go with children", () => {
     expect(new Set(enfants.LIEUX.map((l) => l.commune)).size).toBe(24);
     // The students' libraries and the schools' pools are not places for children.
     expect(enfants.LIEUX.some((l) => (l.type === "mediatheque" && /universitaire/i.test(l.nom)) || (l.type === "piscine" && /coll[èe]ge|inspe/i.test(l.nom)))).toBe(false);
+  });
+
+  it("hold no place twice: the same name but for case, accents and hyphens, of the same kind, within 100 m (build-enfants.py)", () => {
+    const fold = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const doubles = enfants.LIEUX.flatMap((a, i) =>
+      enfants.LIEUX.slice(i + 1).filter((b) => a.nom && a.type === b.type && a.commune === b.commune && fold(a.nom) === fold(b.nom) && distanceKm(a.lon, a.lat, b.lon, b.lat) < 0.1).map((b) => `${a.nom} / ${b.nom}`));
+    expect(doubles).toEqual([]);
+    // Further apart, two places: the two playgrounds of Terre Sainte, Saint-Pierre, 990 m apart, both kept.
+    const terreSainte = enfants.LIEUX.filter((l) => l.commune === "Saint-Pierre" && l.type === "aire_de_jeux" && fold(l.nom) === "aire de jeux de terre sainte");
+    expect(terreSainte).toHaveLength(2);
+    expect(distanceKm(terreSainte[0].lon, terreSainte[0].lat, terreSainte[1].lon, terreSainte[1].lat)).toBeGreaterThan(0.9);
   });
 
   // /pages/equipement/ is a 404, /pages/fiches/ the search page whatever the number: the sheet is the form the site links to.

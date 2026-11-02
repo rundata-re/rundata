@@ -38,6 +38,11 @@ describe("the no-break spaces, one rule for the pages and the assistants (typogr
     expect(insecables("3 070 m")).toBe("3 070 m");
   });
 
+  it("after « n° » and « art. » before a figure, in either case, never inside a word or before a word", () => {
+    expect(insecables("arrêté préfectoral n° 180, art. 2 ; N° 12 et Art. 3")).toBe("arrêté préfectoral n°\u00a0180, art.\u00a02\u00a0; N°\u00a012 et Art.\u00a03");
+    for (const kept of ["Lun° 5", "part. 2", "n° suivant", "art. premier", "le n°", "smart. 4"]) expect(insecables(kept)).toBe(kept);
+  });
+
   it("leaves a text without them as it is, and the JSON of an answer valid", () => {
     const s = "rien à changer ici";
     expect(insecables(s)).toBe(s);

@@ -252,6 +252,29 @@ def merge(base, extra, pairs):
     return base
 
 
+def folded(name):
+    """A name as compared for doubles: no case, no accent, no hyphen or other sign (« Terre-Sainte » is « terre sainte »)."""
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", "".join(c for c in unicodedata.normalize("NFD", name.lower()) if not unicodedata.combining(c))).split())
+
+
+def doubles(places):
+    """Folds a place into the one before it of the same commune and kind, with the same name but for case, accents and
+    hyphens, within 100 m: one place mapped twice. Further apart, two places (the two playgrounds « Terre Sainte » and
+    « Terre-Sainte » of Saint-Pierre, 990 m apart, 2/11/2026); a park and its playground are two kinds."""
+    out = []
+    for x in places:
+        b = next((b for b in out if x["nom"] and b["type"] == x["type"] and b["commune"] == x["commune"]
+                  and folded(b["nom"]) == folded(x["nom"]) and km(b["lon"], b["lat"], x["lon"], x["lat"]) < 0.1), None)
+        if not b:
+            out.append(x)
+            continue
+        b.setdefault("aussi", []).append({k: x[k] for k in ("source", "lien") if x.get(k)})
+        for k in ("adresse", "reseau", "detail", "horaires_osm", "site", "age"):
+            if x.get(k) and not b.get(k):
+                b[k] = x[k]
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--osm", help="Overpass's answer to QUERY, saved; else asked")
@@ -266,6 +289,7 @@ def main():
     places += [p for p in es_places(records) if p["type"] != "piscine"]
     # The libraries are OpenStreetMap's, with their hours; Basilic adds those not mapped and the networks.
     places = merge(places, basilic_places(text), {("mediatheque", "mediatheque")})
+    places = doubles(places)
     for p in places:
         if not p["nom"]:
             p["quartier"] = locality(p["lon"], p["lat"], p["commune"])

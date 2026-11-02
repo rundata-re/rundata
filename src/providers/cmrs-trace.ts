@@ -23,8 +23,8 @@ import { why } from "../types.js";
 import * as gdacs from "./cyclones.js";
 import type { Store } from "./vigilance-carte.js";
 
-/** The date of Météo-France's written agreement to show these positions (« 2026-11-03 »); null: nothing is read nor shown. */
-export const ACCORD: string | null = null;
+/** The date of Météo-France's written agreement to show these positions; null: nothing is read nor shown. */
+export const ACCORD: string | null = "2026-11-02";
 let ouvert = ACCORD !== null;
 export const enLigne = () => ouvert;
 /** For the tests: the trace read and shown, or not, whatever the agreement. */

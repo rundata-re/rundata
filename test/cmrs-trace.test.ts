@@ -151,9 +151,14 @@ describe("the positions kept", () => {
   });
 });
 
-describe("before Météo-France's agreement", () => {
-  it("is off: no request, no read of KV, nothing on the page", async () => {
-    expect(trace.ACCORD).toBeNull();
+describe("Météo-France's agreement", () => {
+  it("is the written agreement of 02/11/2026, which turns the trace on", () => {
+    expect(trace.ACCORD).toBe("2026-11-02");
+    expect(trace.enLigne()).toBe(true);
+  });
+
+  it("off, as before it: no request, no read of KV, nothing on the page", async () => {
+    trace.ouvrir(false);
     expect(trace.enLigne()).toBe(false);
     const calls = stubFetch(() => new Response(B7));
     expect(await trace.passage(cache(AT), AT)).toBe("pas d'accord");
@@ -174,6 +179,18 @@ describe("before Météo-France's agreement", () => {
 
 describe("once Météo-France agrees", () => {
   beforeEach(() => trace.ouvrir(true));
+
+  it("changes nothing on the page in calm weather, even with a trace kept", async () => {
+    const calls = stubFetch(() => new Response(B7));
+    kv.data.set("cmrs:trace", JSON.stringify(trace.ajoute({ traces: [] }, trace.parse(B7)!, OCTOBER)));
+    const a = await buildCyclones(cache(OCTOBER), OCTOBER);
+    expect(a.systemes_actifs ?? []).toEqual([]);
+    expect(a.parcours ?? []).toEqual([]);
+    const page = cyclonesPage("https://rundata.re", { value: a, fetchedAt: OCTOBER, stale: false }, OCTOBER);
+    expect(page).not.toContain('class="cur"');
+    expect(page).not.toContain("WTIO31");
+    expect(calls.some((u) => u.includes("noaa"))).toBe(false);
+  });
 
   it("reads nothing without an active system, outside its minutes, nor without KV", async () => {
     const calls = stubFetch(() => new Response(B7));
@@ -217,7 +234,7 @@ describe("once Météo-France agrees", () => {
     expect(page).not.toContain(">tempête tropicale modérée, 03/02");
     expect(page).toContain("Aucune prévision ici : la trajectoire prévue est sur la carte officielle de Météo-France.");
     expect(page).toContain(" Opale : le chemin commence à l'avis n° 6, le premier lu par rundata.re.</p>");
-    expect(page).toContain("Positions : Météo-France, CMRS de La Réunion (bulletins WTIO31 FMEE), avec son accord écrit, dernière position le 03/02 à 10:00 (heure de La Réunion).");
+    expect(page).toContain("Positions : Météo-France, CMRS de La Réunion (bulletins WTIO31 FMEE), avec son accord écrit du 02/11/2026, dernière position le 03/02 à 10:00 (heure de La Réunion).");
     expect(page).not.toContain("Cette carte ne montre aucun système, ni sa position ni sa trajectoire.");
     // Nothing of the bulletin's forecasts, winds or pressure, nor a distance to the island.
     expect(page).not.toMatch(/18\.0|19\.5|990 hPa|45 KT|km de La Réunion/);

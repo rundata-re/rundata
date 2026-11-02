@@ -121,7 +121,7 @@ Service fait à La Réunion, sans compte ni publicité, code libre (MIT) : https
 ${INDEX}
 
 Règles :
-- Citer : chaque réponse porte citer (rundata.re et les producteurs), lien (la page de rundata.re qui montre la même chose), sources (les producteurs et leurs licences) et fraicheur (l'heure de la donnée, « 23:12, heure de La Réunion »).
+- Citer : finir chaque réponse par citer (rundata.re et les producteurs), lien, sources (leurs licences) et l'heure de lecture (fraicheur, « 23:12, heure de La Réunion »), à dire en toutes lettres\u00a0; la date si fraicheur n'a pas d'heure.
 - Avis : l'utilisateur signale un manque, une erreur ou un souhait sur ces données : donner_avis\u00a0; un outil n'a rien trouvé : le lui proposer, et n'appeler qu'avec son accord. Le besoin résumé, rien de personnel.
 - Liste d'outils : chaque réponse porte serveur.outils_recents\u00a0; avant de dire qu'un sujet n'est pas couvert, même à la première question, appeler sources_donnees. Outil cité là, absent de votre liste : elle est ancienne, le dire, sans dire qu'on l'a rechargée. ChatGPT : Paramètres → Plugins → rundata.re → Actualiser les outils, puis nouvelle conversation.
 - Météo : maintenant, max et min depuis minuit → meteo_actuelle, temperature_mer (MESURES : dire l'heure, la station, sa distance)\u00a0; avant (hier, ce mois-ci, record) → historique_meteo\u00a0; plus tard → prevision_meteo, une PRÉVISION : le dire à l'utilisateur\u00a0; houle, surf → temperature_mer, une PRÉVISION aussi.

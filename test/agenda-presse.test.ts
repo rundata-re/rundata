@@ -11,10 +11,13 @@ import { agenda } from "../src/tools/agenda.js";
 vi.mock("../src/providers/autorisations.js", () => import("./autorisees.js"));
 
 // Saturday 24/10/2026, a day of mobilisation: Imaz Press's live blog says « À Saint-Pierre, le Festival Mizik O Marmay
-// est annulé, tandis qu'au Port, le concert de Cédric "Analyse" est reporté au 5 décembre » (entry of 10:27).
+// est annulé, tandis qu'au Port, le concert de Cédric "Analyse" est reporté au 5 décembre » (entry of 10:27), in its
+// third sentence. Only the first sentence of an entry is kept: `live` has the entry say it first, as a medium may.
 const NOW = new Date("2026-10-24T08:05:00Z");
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
-const live = () => parseImazLive(fixture("actualites/imaz_live.html"), "https://imazpress.com/live", NOW);
+const read = () => parseImazLive(fixture("actualites/imaz_live.html"), "https://imazpress.com/live", NOW);
+const SAID = "À Saint-Pierre, le Festival Mizik O Marmay est annulé, tandis qu'au Port, le concert de Cédric \"Analyse\" est reporté au 5 décembre.";
+const live = () => read().map((i): Info => (i.titre.startsWith("Plusieurs événements sportifs et culturels") ? { ...i, resume: SAID } : i));
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 
 const event = (titre: string, commune: string, debut: string, extra: Partial<Evenement> = {}): Evenement => ({
@@ -29,7 +32,9 @@ describe("events cancelled or postponed by the news", () => {
       { statut: "reporté", commune: "Le Port", reporte_au: "2026-12-05", media: "Imaz Press" },
     ]);
     // The headline « Plusieurs événements… annulés ou reportés » says no event: no verb, no commune.
-    expect(annonces([{ ...live()[0], resume: undefined, extraits: undefined }], NOW)).toEqual([]);
+    expect(annonces([{ ...live()[0], resume: undefined }], NOW)).toEqual([]);
+    // Said past the first sentence, which is all that is kept of a text: not read.
+    expect(annonces(read(), NOW)).toEqual([]);
   });
 
   it("marks the Kabardock's concert postponed, from Imaz Press, the organiser's page having moved it already", () => {

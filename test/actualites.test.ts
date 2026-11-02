@@ -2,8 +2,8 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { fil, firstSentence, lire, local, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, type Info } from "../src/providers/actualites.js";
-import { actualites, NOM_SEUL, quand } from "../src/tools/actualites.js";
+import { fil, firstSentence, lire, local, LUS, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, SOURCES, SUSPENDUS, type Info } from "../src/providers/actualites.js";
+import { actualites, COUVERTURE, NOM_SEUL, quand } from "../src/tools/actualites.js";
 import { actualitesPage } from "../src/web/domains.js";
 import { buildActualites } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
@@ -90,8 +90,9 @@ describe("actualités", () => {
     // The races of Auteuil.
     expect(has(freedom, "Quinté+")).toBe(false);
     for (const t of ["Le Tampon : budget", "Sainte-Marie : « Sortez le rose", "AVC à La Réunion", "Église de Champ-Borne", "Blindés Centaure", "Devis, factures"]) expect(has(freedom, t), t).toBe(true);
-    // Filed under the CCIR and « Collectivités »: its day of the island's businesses, at Saint-Pierre.
-    expect(freedom.find((i) => i.titre.startsWith("Rentrer du travail"))!.communes).toEqual(["Saint-Pierre"]);
+    // Filed under the CCIR and « Collectivités »: its day of the island's businesses, kept. Saint-Pierre is named only
+    // further on than its first sentence, the only text kept: not put under Saint-Pierre.
+    expect(freedom.find((i) => i.titre.startsWith("Rentrer du travail"))!.communes).toEqual([]);
 
     const clicanoo = parseRss(fixture("clicanoo-2026-10-29.xml"), "Clicanoo");
     // The world's, and France's: the presidents of the universities, La Réunion's among them further on.
@@ -115,7 +116,13 @@ describe("actualités", () => {
     const { infos } = (await fil(cache(), NOW)).value;
     const all = infos.map((i) => i.titre);
     for (const t of ["Témoignages n°", "Trump-Poutine-XI", "L'Assemblée nationale rejette", "Fusillade de Trappes", "Jordanie :"]) expect(all.some((x) => x.startsWith(t)), t).toBe(false);
-    for (const m of ["Témoignages", "Clicanoo", "Parallèle Sud", "Le Quotidien"]) expect(infos.some((i) => i.media === m || i.aussi?.some((a) => a.media === m)), m).toBe(true);
+    for (const m of ["Clicanoo", "Parallèle Sud", "Le Quotidien"]) expect(infos.some((i) => i.media === m || i.aussi?.some((a) => a.media === m)), m).toBe(true);
+    // Témoignages is not read until it agrees (SUSPENDUS): neither asked nor named.
+    expect(SUSPENDUS.has("Témoignages")).toBe(true);
+    expect(asked.some((a) => a.includes("temoignages"))).toBe(false);
+    expect(infos.some((i) => i.media === "Témoignages" || i.aussi?.some((a) => a.media === "Témoignages"))).toBe(false);
+    expect(`${SOURCES.medias.nom} ${SOURCES.medias.attribution} ${COUVERTURE}`).not.toMatch(/Témoignages/);
+    expect(LUS.map((m) => m.media)).toEqual(["Clicanoo", "Le Quotidien", "Imaz Press", "Freedom", "Parallèle Sud"]);
   });
 
   it("reads Le Quotidien's home page: the titles, the day of each, the time only when given to the minute", () => {
@@ -139,15 +146,16 @@ describe("actualités", () => {
     expect(new Set(list.map((i) => i.lien)).size).toBe(list.length);
   });
 
-  it("reads a live blog, its Paris times turned into La Réunion's, and what each entry says of each commune", () => {
+  it("reads a live blog, its Paris times turned into La Réunion's, and the communes its headline and first sentence name", () => {
     const live = parseImazLive(fixture("imaz_live.html"), "https://imazpress.com/live", NOW);
     // Stamped 09:33 in Paris: 11:33 in La Réunion, « À 11 heures, une vingtaine de personnes rassemblées ».
     expect(live[0]).toMatchObject({ publie: "2026-10-24T07:33:00.000Z", direct: true, communes: ["Saint-Denis"] });
     expect(quand(live[0], NOW)).toBe("aujourd'hui à 11:33");
     expect(live.some((i) => /^Bonjour/.test(i.titre))).toBe(false);
     const gathering = live.find((i) => i.titre.startsWith("Plusieurs rassemblements annoncés"))!;
-    expect(gathering.communes).toEqual(expect.arrayContaining(["Saint-Pierre", "Sainte-Marie", "Le Port", "Sainte-Suzanne"]));
-    expect(gathering.extraits!.find((e) => e.communes.includes("Saint-Pierre"))!.texte).toMatch(/Canabady à Saint-Pierre/);
+    // Its first sentence names Sainte-Marie; Saint-Pierre, Le Port and Sainte-Suzanne come further on, in text not kept.
+    expect(gathering.communes).toEqual(["Sainte-Marie"]);
+    expect(gathering).not.toHaveProperty("extraits");
     // After the change of time in Paris (25/10, UTC+1), the same stamp is an hour later in UTC.
     const winter = parseImazLive(fixture("imaz_live.html"), "https://imazpress.com/live", new Date("2026-10-26T09:05:00Z"));
     expect(winter[0].publie).toBe("2026-10-26T08:33:00.000Z");
@@ -166,14 +174,20 @@ describe("actualités", () => {
     expect(out[1].aussi).toEqual([{ media: "Imaz Press", lien: "a" }]);
   });
 
-  it("answers for a commune with what the media say of it, and the live blog of the island", async () => {
-    const b = body(await actualites(cache(), "Saint-Pierre", undefined, undefined, NOW));
-    expect(b.resume).toMatch(/^\d+ informations des dernières 24 h mentionnent Saint-Pierre\./);
-    expect(b.resume).toMatch(/À Saint-Pierre, le Festival Mizik O Marmay est annulé/);
-    expect(b.resume).toMatch(/En direct sur l'île, aujourd'hui à 11:33 \(Imaz Press, en direct\)/);
-    const canabady = b.en_direct.find((r: { titre: string }) => r.titre.startsWith("Plusieurs rassemblements annoncés"));
-    expect(canabady.mentionne_le_lieu).toBe(true);
-    expect(canabady.ce_qui_est_dit_du_lieu[0]).toMatch(/zone Canabady à Saint-Pierre/);
+  it("answers for a commune with what the media say of it in a headline or a first sentence, and the live blog of the island", async () => {
+    const c = cache();
+    const m = body(await actualites(c, "Sainte-Marie", undefined, undefined, NOW));
+    expect(m.resume).toMatch(/^2 informations des dernières 24 h mentionnent Sainte-Marie\./);
+    // The first sentence quoted, the only text kept, when it names the commune.
+    expect(m.resume).toMatch(/« Plusieurs rassemblements annoncés sur l'ensemble de l'île ce samedi » : « Dès 6 heures, une convergence des mouvements/);
+    expect(m.resume).toMatch(/En direct sur l'île, aujourd'hui à 11:33 \(Imaz Press, en direct\)/);
+    const duparc = m.en_direct.find((r: { titre: string }) => r.titre.startsWith("Plusieurs rassemblements annoncés"));
+    expect(duparc.mentionne_le_lieu).toBe(true);
+    expect(duparc).not.toHaveProperty("ce_qui_est_dit_du_lieu");
+    // Saint-Pierre is named past the first sentence only (the festival cancelled, the gathering at Canabady): not found.
+    const b = body(await actualites(c, "Saint-Pierre", undefined, undefined, NOW));
+    expect(b.resume).toMatch(/^Aucune information des médias lus ne mentionne Saint-Pierre depuis hier à 12:05\./);
+    expect(JSON.stringify(b)).not.toMatch(/Canabady|Mizik O Marmay/);
     expect(b.prefecture[0].titre).toBe("Violences urbaines : bilan de la nuit");
     // Every medium is read with the site's name; one request each, and the live blog.
     expect(asked.every((a) => a.startsWith("rundata.re (contact@rundata.re) "))).toBe(true);
@@ -389,7 +403,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

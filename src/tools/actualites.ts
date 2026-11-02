@@ -32,10 +32,11 @@ const ARTICLES_MAX = 15;
 const LIVE_MAX = 8;
 const PREFECTURE_DAYS = 3;
 
+// The media read (providers/actualites.ts, LUS), Imaz Press with its live blog.
+const IMAZ_DIRECT = "Imaz Press (et son direct « l'actu en continu » les jours de mobilisation, de cyclone ou d'éruption)";
 export const COUVERTURE =
-  "Médias lus toutes les 5 minutes : Clicanoo (Le Journal de l'île), Le Quotidien de La Réunion, Imaz Press (et son direct « l'actu en continu » les jours de mobilisation, " +
-  "de cyclone ou d'éruption), Freedom, Parallèle Sud, Témoignages, et les communiqués de la préfecture. Linfo.re et Zinfos974 ne se laissent pas lire " +
-  "par un programme : ils n'y sont pas.";
+  `Médias lus toutes les 5 minutes : ${src.LUS.map((m) => (m.media === "Imaz Press" ? IMAZ_DIRECT : m.credit)).join(", ")}, et les communiqués de la préfecture. ` +
+  "Linfo.re et Zinfos974 ne se laissent pas lire par un programme : ils n'y sont pas.";
 export const A_SAVOIR =
   "Titres des articles, avec leur première phrase quand le média la donne, et leur lien : lire l'article pour le détail. Qu'aucune information ne mentionne un lieu ne prouve pas " +
   "qu'il ne s'y passe rien. Pour la route en direct, écouter la radio (Freedom, Réunion La 1ère)\u00a0; en cas de danger, appeler le 17 ou le 112, et suivre " +
@@ -71,8 +72,7 @@ function ilYA(iso: string, now: Date): string {
   return h < 48 ? `il y a ${h} h${min % 60 >= 10 && h < 6 ? ` ${String(min % 60).padStart(2, "0")}` : ""}` : `il y a ${Math.round(h / 24)} jours`;
 }
 
-export function infoRow(i: src.Info, now: Date, commune?: string) {
-  const said = commune ? i.extraits?.filter((e) => e.communes.includes(commune)).map((e) => e.texte) : undefined;
+export function infoRow(i: src.Info, now: Date) {
   return {
     quand: quand(i, now),
     /** ISO, UTC. */
@@ -81,7 +81,6 @@ export function infoRow(i: src.Info, now: Date, commune?: string) {
     media: i.media,
     titre: i.titre,
     resume: i.resume,
-    ce_qui_est_dit_du_lieu: said?.length ? said : undefined,
     en_direct: i.direct || undefined,
     communes: i.communes.length ? i.communes : undefined,
     lieux: i.lieux.length ? i.lieux : undefined,
@@ -141,7 +140,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   // A place inside a commune (Ravine des Cabris) is looked for by its own name too.
   // What names it itself comes first.
   const place = said ?? (res && res.lieu.type !== "commune" ? normalize(res.lieu.nom).replace(/^(le|la|les|l) /, "") : undefined);
-  const own = (i: src.Info) => !!place && ` ${normalize(`${i.lieux.join(" ")} ${i.titre} ${i.resume ?? ""} ${i.extraits?.map((e) => e.texte).join(" ") ?? ""}`)} `.includes(` ${place} `);
+  const own = (i: src.Info) => !!place && ` ${normalize(`${i.lieux.join(" ")} ${i.titre} ${i.resume ?? ""}`)} `.includes(` ${place} `);
   const names = (i: src.Info) => own(i) || (!!commune && i.communes.includes(commune));
   const asked = !!res || !!said;
   const where = said ? `« ${lieu!.trim()} »` : res ? (res.lieu.type === "commune" ? commune! : `${res.lieu.nom} (${commune})`) : undefined;
@@ -155,10 +154,10 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
 
   const kind = what ? ` (${what.nom})` : "";
   const latest = (i: src.Info) => `${quand(i, now)} (${i.media}${i.direct ? ", en direct" : ""}) : « ${i.titre} »`;
-  // What a text says of the place asked for, when it says it past its first sentence.
-  const about = (i: src.Info) => said
-    ? i.extraits?.find((e) => ` ${normalize(e.texte)} `.includes(` ${said} `))?.texte
-    : i.extraits?.find((e) => e.communes.includes(commune!))?.texte ?? (i.resume && src.placesIn(i.resume).communes.includes(commune!) ? i.resume : undefined);
+  // What an item says of the place asked for: its first sentence, the only text kept, when it names it.
+  const about = (i: src.Info) => !i.resume ? undefined : said
+    ? ` ${normalize(i.resume)} `.includes(` ${said} `) ? i.resume : undefined
+    : src.placesIn(i.resume).communes.includes(commune!) ? i.resume : undefined;
   // Media that did not answer: said, and no « aucune information » when none of them answered (a site that does not
   // answer is neither gone nor empty).
   const silent = data.indisponible.length ? mediasNonLus(data.indisponible, localTime(readAt), now) : "";
@@ -190,8 +189,8 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     route_du_littoral: roadAsked ? littoral.forTool(littoral.littoral(data, now), now) : undefined,
     radars_fixes: cameras,
     periode: `les dernières ${h} heures`,
-    infos: mine.filter((i) => !asked || !i.direct).slice(0, ARTICLES_MAX).map((i) => infoRow(i, now, commune)),
-    en_direct: live.length ? live.map((i) => ({ ...infoRow(i, now, commune), mentionne_le_lieu: asked ? names(i) : undefined })) : undefined,
+    infos: mine.filter((i) => !asked || !i.direct).slice(0, ARTICLES_MAX).map((i) => infoRow(i, now)),
+    en_direct: live.length ? live.map((i) => ({ ...infoRow(i, now), mentionne_le_lieu: asked ? names(i) : undefined })) : undefined,
     prefecture: prefecture.length ? prefecture.map((i) => infoRow(i, now)) : undefined,
     prefecture_injoignable: prefSilent,
     sujet_non_compris: sujet?.trim() && !what ? `« ${sujet} » n'a pas été compris : toutes les informations sont données.` : undefined,

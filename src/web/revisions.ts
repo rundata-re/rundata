@@ -14,13 +14,13 @@
  * is settled. A change that makes the new code unable to read an old copy raises `CACHE_FORMAT` instead (cache.ts).
  */
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
-  actualites: 9,
-  agenda: 22,
+  actualites: 10,
+  agenda: 23,
   air: 9,
   bornes: 3,
   bus: 6,
   calendrier: 2,
-  chiffres: 13,
+  chiffres: 14,
   commune: 9,
   coupures: 4,
   courant: 4,
@@ -40,9 +40,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   randonnees: 7,
   secheresse: 1,
   sentiers: 5,
-  sport: 15,
+  sport: 16,
   station: 1,
-  trafic: 2,
+  trafic: 3,
   velos: 3,
   volcan: 9,
 };
@@ -65,7 +65,7 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // With the time the prefecture's list was last asked (prefectureLue), which it is every 15 minutes only.
   // With the time the prefecture's list shown was read (prefectureReussie), kept while its site does not answer.
   // The island's news only: France's and the world's left out (`local`).
-  "actualites:fil": 4,
+  "actualites:fil": 5,
   // Read again with its written agreement of 28/10/2026, without the price and the sentence an older entry kept.
   "agenda:bras_panon": 1,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).

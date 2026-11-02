@@ -1,11 +1,13 @@
 /**
  * What is happening on the island now, from its newsrooms: the headlines of the local media, the live blogs they run
  * on a day of mobilisation, a cyclone or an eruption, and the press releases of the prefecture. Headlines, the first
- * sentence and the link only, as a news aggregator does: the articles stay on the media's sites.
+ * sentence and the link only, as a news aggregator does: the articles stay on the media's sites. The communes and places
+ * an item names are those of its headline and its first sentence, the only text kept (the user's choice of 26/10/2026).
  * - Clicanoo (Le Journal de l'île), Freedom, Parallèle Sud: their RSS; Freedom's terms allow a link to its home page
  *   only, so its items link there (src/providers/accueils-medias.ts);
  * - Imaz Press and Témoignages: their Google News sitemap (Imaz Press keeps its RSS from robots); Imaz Press's live
- *   blogs (« l'actu en continu »), read from the article page, each entry with its time;
+ *   blogs (« l'actu en continu »), read from the article page, each entry with its time; Témoignages is not read for
+ *   now (SUSPENDUS);
  * - Le Quotidien de La Réunion: its home page (no feed, and a sitemap without titles), the time to the minute only when
  *   it says « il y a N minutes »;
  * - the prefecture: the list of its press releases.
@@ -23,13 +25,36 @@ import { ACCUEIL, ACCUEILS } from "./accueils-medias.js";
 import { strip } from "./avis-eau.js";
 import * as copie from "./prefecture-copie.js";
 
+/**
+ * The media, by the name their items carry (`media`), their name in the credits and as a producer. One in SUSPENDUS is
+ * neither read nor named as read, until it agrees in writing: taking it out of the set reads it again.
+ */
+export const MEDIAS = [
+  { media: "Clicanoo", credit: "Clicanoo (Le Journal de l'île)", producteur: "Clicanoo" },
+  { media: "Le Quotidien", credit: "Le Quotidien de La Réunion", producteur: "Le Quotidien de La Réunion" },
+  { media: "Imaz Press", credit: "Imaz Press Réunion", producteur: "Imaz Press Réunion" },
+  { media: "Freedom", credit: "Freedom", producteur: "Freedom" },
+  { media: "Parallèle Sud", credit: "Parallèle Sud", producteur: "Parallèle Sud" },
+  { media: "Témoignages", credit: "Témoignages", producteur: "Témoignages" },
+] as const;
+
+/**
+ * Not read until they agree in writing. Témoignages: its robots.txt closes its site to ClaudeBot (since 01/10/2026),
+ * and its headlines end in the answers of AI assistants; its legal notice asks its prior agreement to reproduce its
+ * content, asked for on 26/10/2026 (interne/catalogue/actualites-conditions-0211.md).
+ */
+export const SUSPENDUS: ReadonlySet<string> = new Set(["Témoignages"]);
+
+/** The media read, in the list's order. */
+export const LUS = MEDIAS.filter((m) => !SUSPENDUS.has(m.media));
+
 export const SOURCES = {
   medias: {
     id: "medias_locaux",
-    nom: "Titres des médias de La Réunion : Clicanoo, Le Quotidien, Imaz Press, Freedom, Parallèle Sud, Témoignages",
+    nom: `Titres des médias de La Réunion : ${LUS.map((m) => m.media).join(", ")}`,
     organisme: "Rédactions de La Réunion",
     licence: "Titres, première phrase quand le média la donne, et lien seulement\u00a0; les articles sont sur le site de chaque média",
-    attribution: "Clicanoo (Le Journal de l'île), Le Quotidien de La Réunion, Imaz Press Réunion, Freedom, Parallèle Sud, Témoignages",
+    attribution: LUS.map((m) => m.credit).join(", "),
     url: "https://www.clicanoo.re/",
   },
   prefecture: {
@@ -47,9 +72,8 @@ export const FRESH_SECONDS = 5 * 60;
 /** What is kept: the last three days. */
 const KEEP_HOURS = 72;
 const SUMMARY_MAX = 220;
-/** What is read of a text: the start of an article tells where; the rest only costs time. */
+/** What is read of a text, for its subjects and whether it is the island's: never kept past its first sentence. */
 const BODY_MAX = 700;
-const EXTRACTS_MAX = 4;
 /** Live blogs looked for among the newest articles of a medium that runs them. */
 const LIVE_PAGES = 2;
 const LIVE_HOURS = 18;
@@ -70,8 +94,6 @@ export interface Info {
   /** The places named, besides the communes: « Ravine des Cabris », « Canabady ». */
   lieux: string[];
   sujets: string[];
-  /** The sentences of the text that name a place (« À Saint-Pierre, rendez-vous au centre commercial Canabady »), quoted short. */
-  extraits?: { communes: string[]; texte: string }[];
   /** The same story told by other media. */
   aussi?: { media: string; lien: string }[];
 }
@@ -312,72 +334,17 @@ export function local(titre: string, chapeau = "", rubrique = false, corps = "")
 /** A section of a medium's feed that is the island's (Freedom's « Collectivités », « Le Tampon », Parallèle Sud's « Communiqué Région Réunion »). */
 const rubriqueLocale = (c: string) => /^(?:Collectivités|Communiqué)\b/u.test(c) || here(c) || HERE_WEAK.test(c);
 
-const cut = (s: string) => (s.length > SUMMARY_MAX ? `${s.slice(0, SUMMARY_MAX - 1).replace(/\s+\S*$/, "")}…` : s);
-
-const FOLD = new Map<string, string>();
-/** The text in lower case, without accents or punctuation, character for character: a position in one is a position in the other. */
-function folded(s: string): string {
-  let out = "";
-  for (let k = 0; k < s.length; k++) {
-    const ch = s[k];
-    let c = FOLD.get(ch);
-    if (c === undefined) {
-      const d = ch.normalize("NFD")[0].toLowerCase();
-      c = /[\p{L}\p{N}]/u.test(d) ? d : " ";
-      FOLD.set(ch, c);
-    }
-    out += c;
-  }
-  return out;
-}
-const PATTERNS = new Map<string, RegExp>();
-const patternOf = (nom: string) => {
-  let re = PATTERNS.get(nom);
-  if (!re) PATTERNS.set(nom, (re = new RegExp(`\\b${squeezed(nom).replace(/^(le|la|les|l|cite) /, "").replace(/ /g, " +")}\\b`)));
-  return re;
-};
-const squeezed = (s: string) => folded(s).split(" ").filter(Boolean).join(" ");
-
 /**
- * For each commune a text names, the clause where it first names it or one of its places (« au centre commercial
- * Canabady à Saint-Pierre »): what a question about that commune needs, when the first sentence does not say it.
+ * An item; `body` is the text the source gives with it, read for its subjects, of which only the first sentence is
+ * kept. Its communes and places are those of its headline and that sentence: what is shown of it says why it is listed.
  */
-function extracts(body: string, found: ReturnType<typeof hits>): Info["extraits"] {
-  const text = body.replace(/\s+/g, " ").trim();
-  if (!text || !found.size) return undefined;
-  const flat = folded(text);
-  const at = new Map<string, number>();
-  for (const [nom, h] of found) {
-    const i = flat.search(patternOf(nom));
-    if (i < 0) continue;
-    for (const c of h.communes) if (!at.has(c) || at.get(c)! > i) at.set(c, i);
-  }
-  const kept = (firstSentence(text) ?? "").replace(/…$/, "").length;
-  const out: NonNullable<Info["extraits"]> = [];
-  for (const [c, i] of [...at].sort((x, y) => x[1] - y[1])) {
-    if (i + 20 < kept) continue; // in the summary already
-    let from = Math.max(0, ...[". ", "; ", "• ", ": "].map((e) => {
-      const k = text.lastIndexOf(e, i);
-      return k < 0 ? 0 : k + e.length;
-    }));
-    if (i - from > 140) from = Math.max(text.lastIndexOf(", ", i) + 2, text.lastIndexOf(" ", i - 120) + 1);
-    const ends = [". ", "; ", " •"].map((e) => text.indexOf(e, i)).filter((e) => e > 0);
-    const to = Math.min(ends.length ? Math.min(...ends) + 1 : text.length, from + SUMMARY_MAX);
-    const clause = text.slice(from, to).trim();
-    out.push({ communes: [c], texte: `${from > 0 && !/[.;•:!?]\s$/.test(text.slice(from - 2, from)) ? "…" : ""}${cut(clause)}${to < text.length && !/[.!?…]$/.test(clause) ? "…" : ""}` });
-    if (out.length >= EXTRACTS_MAX) break;
-  }
-  return out.length ? out : undefined;
-}
-
-/** An item; `body` is the text the source gives with it, read for its places and subjects, of which only the first sentence and the sentences naming a place are kept. */
 function info(media: string, titre: string, raw: string, publie: Date, whole = "", opts: { heure?: boolean; direct?: boolean } = {}): Info | null {
   // An item is its link: one that is not an http(s) address is not kept.
   const lien = httpUrl(raw);
   if (!titre || !lien || Number.isNaN(publie.getTime())) return null;
   const body = whole.length > BODY_MAX ? whole.slice(0, whole.lastIndexOf(" ", BODY_MAX)) : whole;
-  const found = hits(`${titre} ${body}`);
   const resume = firstSentence(body);
+  const found = hits(`${titre} ${resume ?? ""}`);
   return {
     titre,
     resume: resume !== titre ? resume : undefined,
@@ -389,7 +356,6 @@ function info(media: string, titre: string, raw: string, publie: Date, whole = "
     ...places(found),
     // The subject is in the headline and the lead.
     sujets: sujetsOf(`${titre} ${body.slice(0, 300)}`),
-    extraits: extracts(body, found),
   };
 }
 
@@ -650,10 +616,11 @@ async function prefectureList(read: (url: string) => Promise<string>, now: Date)
 /** Every medium read now, and the prefecture when its list is due (`avant`: the copy this one replaces). */
 export async function lire(now = new Date(), avant?: Fil): Promise<Fil> {
   const read = (url: string) => getText(SOURCES.medias.id, url, 12_000, HEADERS);
+  const feedsRead = FEEDS.filter((f) => !SUSPENDUS.has(f.media));
   const lue = avant?.prefectureLue ? Date.parse(avant.prefectureLue) : NaN;
   const kept = avant && now.getTime() - lue < PREFECTURE_DUE_MS ? avant : undefined;
   const [feeds, got] = await Promise.all([
-    Promise.allSettled(FEEDS.map(async (f) => f.parse(await read(f.url), now))),
+    Promise.allSettled(feedsRead.map(async (f) => f.parse(await read(f.url), now))),
     kept ? undefined : prefectureList(read, now),
   ]);
   // The list read now, or the collector's copy; else the last one read, said with its time, two days at most. A copy
@@ -666,7 +633,7 @@ export async function lire(now = new Date(), avant?: Fil): Promise<Fil> {
   const items = feeds.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
   const lives = await Promise.allSettled(liveCandidates(items, now).map(async (u) => parseImazLive(await read(u), u, now)));
   const all = [...items, ...lives.flatMap((r) => (r.status === "fulfilled" ? r.value : []))];
-  const down = [...new Set(FEEDS.filter((_, k) => feeds[k].status === "rejected").map((f) => f.media))];
+  const down = [...new Set(feedsRead.filter((_, k) => feeds[k].status === "rejected").map((f) => f.media))];
   if (!all.length && !pref && feeds.every((r) => r.status === "rejected")) throw new Error("aucun média ne répond");
   const since = new Date(now.getTime() - KEEP_HOURS * 3600_000).toISOString();
   return {

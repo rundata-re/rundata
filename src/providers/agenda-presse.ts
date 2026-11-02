@@ -77,7 +77,7 @@ export function annonces(infos: Info[], now: Date): Annonce[] {
   const out: Annonce[] = [];
   for (const i of infos) {
     if (i.publie < since) continue;
-    const texts = [...new Set([i.titre, i.resume ?? "", ...(i.extraits ?? []).map((e) => e.texte)])];
+    const texts = [...new Set([i.titre, i.resume ?? ""])];
     // Most news says neither: not cut into clauses.
     if (!texts.some((t) => MAYBE.test(t))) continue;
     const seen = new Set<string>();

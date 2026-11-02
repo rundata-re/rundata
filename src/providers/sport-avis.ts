@@ -253,7 +253,7 @@ export function avisPresse(infos: Info[] | undefined, now: Date): { avis: Avis[]
   const since = new Date(now.getTime() - NEWS_HOURS * 3600_000).toISOString();
   for (const i of infos) {
     if (i.publie < since) continue;
-    const texts = [...new Set([i.titre, i.resume ?? "", ...(i.extraits ?? []).map((e) => e.texte)])].filter(Boolean);
+    const texts = [...new Set([i.titre, i.resume ?? ""])].filter(Boolean);
     const all = fold(texts.join(" "));
     if (!(CANCELLED.test(all) || POSTPONED.test(all)) || !(i.sujets.includes("sport") || SPORTISH.test(all))) continue;
     const ref = localDay(i.publie);

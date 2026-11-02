@@ -110,7 +110,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.149";
+export const VERSION = "1.0.150";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -898,9 +898,10 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     {
       title: "Actualités de La Réunion en direct : manifestations, blocages, routes, faits divers",
       description:
-        "Ce qui se passe en ce moment à La Réunion (974), d'après les médias de l'île (Clicanoo, Le Quotidien, Imaz Press et son direct, Freedom, " +
-        "Parallèle Sud, Témoignages) relus toutes les 5 minutes, et les communiqués de la préfecture : pour chaque information, l'heure (ou le jour seul quand le média ne donne pas l'heure), " +
-        "le média, le titre, la première phrase quand le média la donne, les communes et lieux nommés, ce qu'elle dit du lieu demandé, le lien vers l'article. Par lieu (commune, quartier) " +
+        "Ce qui se passe en ce moment à La Réunion (974), d'après les médias de l'île (" +
+        `${actuSources.LUS.map((m) => (m.media === "Imaz Press" ? "Imaz Press et son direct" : m.media)).join(", ")}) relus toutes les 5 minutes` +
+        ", et les communiqués de la préfecture : pour chaque information, l'heure (ou le jour seul quand le média ne donne pas l'heure), " +
+        "le média, le titre, la première phrase quand le média la donne, les communes et lieux nommés, le lien vers l'article. Par lieu (commune, quartier) " +
         "et par sujet (manifestations et blocages, routes, météo, volcan, eau, faits divers, santé, politique, culture, sport). " +
         "Route du Littoral : champ route_du_littoral, une annonce des médias datée, pas une mesure. " +
         "Radars fixes (champ radars_fixes) : la liste publiée par le ministère de l'Intérieur, avec la vitesse limite de chacun, pour une question sur les routes ou les radars. Jamais les contrôles mobiles. " +

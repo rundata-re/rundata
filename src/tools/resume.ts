@@ -249,7 +249,7 @@ function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefine
   return m ? { temperature_eau: m.temperature_eau, jour_mesure: m.jour_mesure, mesure: "satellite, au large" } : undefined;
 }
 
-const newsRow = (i: ActualitesAnswer["infos"][number]) => ({ quand: i.quand, media: i.media, titre: i.titre, ce_qui_est_dit_du_lieu: i.ce_qui_est_dit_du_lieu, lien: i.lien });
+const newsRow = (i: ActualitesAnswer["infos"][number]) => ({ quand: i.quand, media: i.media, titre: i.titre, lien: i.lien });
 
 /** Every source the parts used, once each. */
 function sourcesOf(lists: (Credit[] | undefined)[]): Credit[] {

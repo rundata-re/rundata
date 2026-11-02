@@ -15,6 +15,7 @@
  * taken from the agendas that read it.
  */
 import { normalize } from "./places/resolve.js";
+import { LUS } from "./providers/actualites.js";
 import { AGENDAS, type Agenda } from "./providers/agenda.js";
 import { STATIONS as BORNES } from "./providers/irve.js";
 import type { SourceInfo } from "./types.js";
@@ -177,7 +178,7 @@ export const FICHES: Record<string, Fiche> = {
   // A platform: the clubs it names, from its last copy, counted live.
   sportsregions: { famille: "information_publique", producteurs: [] },
   // News and events.
-  medias_locaux: { famille: "information_publique", producteurs: ["Clicanoo", "Le Quotidien de La Réunion", "Imaz Press Réunion", "Freedom", "Parallèle Sud", "Témoignages"] },
+  medias_locaux: { famille: "information_publique", producteurs: LUS.map((m) => m.producteur) },
   prefecture_communiques: { famille: "licence_ouverte", producteurs: [PREFECTURE] },
   openagenda: { famille: "licence_ouverte", producteurs: ["CINOR", "Office de tourisme intercommunal du Nord"] },
   agenda_oti_est: { famille: "information_publique", producteurs: ["Office de tourisme intercommunal de l'Est"] },

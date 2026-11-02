@@ -80,6 +80,27 @@ describe("Vigicrues Réunion", () => {
     expect(many).not.toContain(name(2));
   });
 
+  it("puts apart the stations Vigicrues answered for with no level in 3 hours, never said late, then the late ones", async () => {
+    const at = (hhmm: string) => Date.parse(`2026-10-23T${hhmm}:00+04:00`);
+    const now = new Date(at("03:50"));
+    const lvl = (i: number, hhmm?: string, vide?: true) => ({ station: STATIONS[i], ...(hhmm ? { hauteur: { t: at(hhmm), v: 0.18, tendance: "stable" as const, max3h: 0.18 } } : {}), ...(vide ? { vide } : {}) });
+    const name = (i: number) => STATIONS[i].nom;
+    expect(islandLevels([lvl(0, "03:40"), lvl(1, "03:45"), lvl(2, undefined, true), lvl(3, "03:00"), lvl(4)], now, at("03:48"))).toBe(
+      `Aucune des 2 stations à jour n'est en hausse sur la dernière demi-heure (mesures de 03:45). Aucune mesure publiée par Vigicrues depuis au moins 3 h\u00a0: ${name(2)}. Sans mesure récente\u00a0: ${name(3)}, ${name(4)}.`,
+    );
+    expect(islandLevels([lvl(0, "03:40"), lvl(1, "03:45"), lvl(2, undefined, true)], now, at("03:48"))).not.toContain("Sans mesure récente");
+    expect(sentence(lvl(2, undefined, true), now)).toBe(`${name(2)} (${STATIONS[2].riviere}, ${STATIONS[2].commune}) : aucune mesure publiée par Vigicrues depuis au moins 3 h`);
+    expect(sentence(lvl(4), now)).toMatch(/ : pas de mesure récente$/);
+    expect(levelRow(lvl(2, undefined, true), now)).toMatchObject({ hauteur_m: null, avertissement: "Aucune mesure publiée par Vigicrues depuis au moins 3 h." });
+    expect(levelRow(lvl(4), now)).not.toHaveProperty("avertissement");
+    // From the site: a gauge it leaves out of its answer has no level in the window (an empty list), said apart.
+    const r = body(await crues(cache(), undefined, NOW));
+    const none = r.stations.filter((s: { hauteur_m: number | null }) => s.hauteur_m == null);
+    expect(none.length).toBeGreaterThan(0);
+    for (const s of none) expect(s.avertissement).toBe("Aucune mesure publiée par Vigicrues depuis au moins 3 h.");
+    expect(r.resume).toContain(`Aucune mesure publiée par Vigicrues depuis au moins 3 h\u00a0: ${none.map((s: { station: string }) => s.station).join(", ")}.`);
+  });
+
   it("says a late station's last level with its time, never its trend, and « Dernière mesure il y a … »", () => {
     const now = new Date(Date.parse("2026-10-23T05:22:00+04:00"));
     const l = { station: STATIONS[0], hauteur: { t: Date.parse("2026-10-23T04:00:00+04:00"), v: 0.18, tendance: "en hausse" as const, max3h: 0.2 } };

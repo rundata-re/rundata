@@ -38,7 +38,9 @@ describe("the /crues page", () => {
     expect(w).toMatch(/Crues des rivières 974/);
     expect(w).toContain("Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert.");
     expect(w).toContain("Dernier bulletin le 07/08 à 06:22 : Vigicrues Réunion n'en publie qu'en vigilance jaune ou plus.");
-    expect(w).toMatch(/En hausse sur la dernière demi-heure \(mesures de 03:45\) : Cabris - RN3 \(ravine des Cabris, Saint-Pierre\), 0,06 m[^.]*\. Les 2 autres n'ont pas de mesure récente\./);
+    expect(w).toMatch(/En hausse sur la dernière demi-heure \(mesures de 03:45\) : Cabris - RN3 \([^)]+\), 0,06 m[^.]*\. Aucune mesure publiée par Vigicrues depuis au moins 3 h : [^.]+\./);
+    // The gauges Vigicrues answered for with no level are not said late.
+    expect(w).not.toContain("n'ont pas de mesure récente");
     // Never said of the rivers by the page itself.
     expect(w).not.toMatch(/pas de crue|aucune rivière en crue|en panne|hors ligne|ne répond pas/i);
   });
@@ -65,7 +67,10 @@ describe("the /crues page", () => {
     const w = words(html);
     expect(w).toContain("Les 21 rivières suivies, toutes au vert d'après Vigicrues Réunion");
     const silent = data.value.stations.find((s) => s.hauteur_m == null)!;
-    expect(w).toContain(`${silent.station} · ${silent.commune} Pas de mesure dans notre lecture de 03:51.`);
+    expect(w).toContain(`${silent.station} · ${silent.commune} Aucune mesure publiée par Vigicrues depuis au moins 3 h.`);
+    // Without a level and without that warning (a batch that did not answer, no copy before): not read, said so.
+    const unread = data.value.stations.map((s) => (s === silent ? { ...s, avertissement: undefined } : s));
+    expect(words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations: unread } }, NOW))).toContain(`${silent.station} · ${silent.commune} Pas de mesure dans notre lecture de 03:51.`);
     expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis -?\d+,?\d* m, (stable|en hausse|en baisse) · [\d,]+ m³\/s · mesurée à \d\d:\d\d/);
     expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis [^]*?Crues de référence [^]*?1,5 m · 43 m³\/s · Cyclone Dumile \(janvier 2013\)/);
     // The hour of the reading by the rivers; the producer and its licence at the bottom of the page.
@@ -79,15 +84,28 @@ describe("the /crues page", () => {
     const { data } = await page();
     const silent = data.value.stations.filter((s) => s.hauteur_m == null);
     const [one, ...others] = silent;
-    const stations = data.value.stations.map((s) => (others.includes(s) ? { ...s, hauteur_m: 0.2, tendance_30_min: "stable" as const, heure_mesure: "24/10 03:45" } : s));
+    // The one not read (no warning), the others measured.
+    const stations = data.value.stations.map((s) => (others.includes(s) ? { ...s, hauteur_m: 0.2, tendance_30_min: "stable" as const, heure_mesure: "24/10 03:45", avertissement: undefined } : s === one ? { ...s, avertissement: undefined } : s));
     const w = words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations } }, NOW));
     expect(w).toMatch(new RegExp(`0,06 m[^.]*\\. Une station n'a pas de mesure récente : ${one.station}\\.`));
+  });
+
+  it("puts apart the gauges Vigicrues publishes nothing for, before the late ones, never counted with them", async () => {
+    const { data } = await page();
+    const none = data.value.stations.filter((s) => s.hauteur_m == null);
+    const fresh = data.value.stations.filter((s) => s.hauteur_m != null && s.station !== "Cabris - RN3");
+    const late = (n: number) => fresh.slice(0, n).map((s) => s.station);
+    const at = (n: number) => data.value.stations.map((s) => (late(n).includes(s.station) ? { ...s, heure_mesure: "24/10 01:45", avertissement: "Dernière mesure il y a 2 h." } : s));
+    const said = (n: number) => words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations: at(n) } }, NOW));
+    const head = `Aucune mesure publiée par Vigicrues depuis au moins 3 h : ${none.map((s) => s.station).join(", ")}.`;
+    expect(said(1)).toContain(`${head} Une station n'a pas de mesure récente : ${late(1)[0]}.`);
+    expect(said(2)).toContain(`${head} 2 autres stations n'ont pas de mesure récente.`);
   });
 
   it("draws each gauge on the map, a ring for one without a recent measurement, and says its line aloud", async () => {
     const { html, data } = await page();
     const silent = data.value.stations.find((s) => s.hauteur_m == null)!;
-    expect(html).toContain(`aria-label="${silent.station} · ${silent.commune} : pas de mesure dans notre lecture de 03:51, voir le détail"`);
+    expect(html).toContain(`aria-label="${silent.station} · ${silent.commune} : aucune mesure publiée par Vigicrues depuis au moins 3 h, voir le détail"`);
     expect(html).toMatch(/aria-label="Cabris - RN3 · Saint-Pierre : 0,06\u00a0m, en hausse · 0\u00a0m³\/s · mesurée à 03:45, voir le détail"/);
     expect(html.match(/style="fill:none;stroke:#868e96;stroke-width:6"/g)).toHaveLength(data.value.stations.filter((s) => s.hauteur_m == null || s.avertissement).length);
     // The legend drawn as on the map (charter of the maps), then the latest measure.

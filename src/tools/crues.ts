@@ -6,6 +6,8 @@ import * as vc from "../providers/vigicrues.js";
 import { why } from "../types.js";
 import { credits, de, fr, notFound, placeBlock, text } from "./format.js";
 
+const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+
 // A gauge this close speaks for the place; past it, the nearest two are given anyway, with a note.
 const NEAR_KM = 10;
 const MAX_SHOWN = 4;
@@ -20,6 +22,8 @@ export interface Level {
   station: vc.Station;
   hauteur?: { t: number; v: number; tendance: "en hausse" | "en baisse" | "stable"; max3h: number };
   debit?: { t: number; v: number };
+  /** Vigicrues answered for it with no level in the window (vigicrues.ts `NONE_PUBLISHED`). */
+  vide?: true;
 }
 
 function last(list: [number, number][] | undefined) {
@@ -30,6 +34,7 @@ export function level(station: vc.Station, h: vc.Readings, q: vc.Readings): Leve
   const hs = h[station.id];
   const now = last(hs);
   const out: Level = { station };
+  if (hs && !hs.length) out.vide = true;
   if (now) {
     const before = [...hs].reverse().find(([t]) => t <= now[0] - 30 * 60_000);
     const d = before ? now[1] - before[1] : 0;
@@ -61,7 +66,7 @@ function landmark(s: vc.Station): string | undefined {
 export function sentence(l: Level, now?: Date): string {
   const s = l.station;
   if (l.hauteur && now && late(l, now)) return `${s.nom} (${s.riviere}, ${s.commune}) : ${fr(Math.round(l.hauteur.v * 100) / 100)} m à ${hm(l.hauteur.t)}, pas de mesure plus récente`;
-  const parts = l.hauteur ? [`${fr(Math.round(l.hauteur.v * 100) / 100)} m, ${l.hauteur.tendance}`] : ["pas de mesure récente"];
+  const parts = l.hauteur ? [`${fr(Math.round(l.hauteur.v * 100) / 100)} m, ${l.hauteur.tendance}`] : [l.vide ? vc.NONE_PUBLISHED : "pas de mesure récente"];
   if (l.debit) parts.push(`${fr(Math.round(l.debit.v * 100) / 100)} m³/s`);
   return `${s.nom} (${s.riviere}, ${s.commune}) : ${parts.join(", ")}`;
 }
@@ -86,6 +91,7 @@ export function levelRow(l: Level, now: Date, km?: number) {
     ...(l.debit ? { debit_m3s: Math.round(l.debit.v * 1000) / 1000 } : {}),
     ...(s.crues.length ? { crues_de_reference: s.crues } : {}),
     ...(age != null && age > LATE_MINUTES ? { avertissement: `Dernière mesure ${ageText(age)}.` } : {}),
+    ...(!l.hauteur && l.vide ? { avertissement: `${cap(vc.NONE_PUBLISHED)}.` } : {}),
   };
 }
 
@@ -144,8 +150,12 @@ const NAMED_SILENT = 5;
 export function islandLevels(levels: Level[], now: Date, readAt: number): string {
   const fresh = levels.filter((l) => l.hauteur && !late(l, now));
   if (!fresh.length) return `Aucune des ${levels.length} stations n'a de mesure de moins de ${LATE_MINUTES} minutes dans notre lecture de ${hm(readAt)}\u00a0: nous ne savons pas pour l'instant si les rivières montent.`;
+  // Apart: the gauges Vigicrues publishes nothing for (never said late), then the late ones.
   const silent = levels.filter((l) => !fresh.includes(l));
-  const end = !silent.length ? "" : ` Sans mesure récente\u00a0: ${silent.length <= NAMED_SILENT ? silent.map((l) => l.station.nom).join(", ") : `${silent.length} stations`}.`;
+  const named = (ls: Level[]) => (ls.length <= NAMED_SILENT ? ls.map((l) => l.station.nom).join(", ") : `${ls.length} stations`);
+  const none = silent.filter((l) => !l.hauteur && l.vide);
+  const behind = silent.filter((l) => !none.includes(l));
+  const end = (none.length ? ` ${cap(vc.NONE_PUBLISHED)}\u00a0: ${named(none)}.` : "") + (behind.length ? ` Sans mesure récente\u00a0: ${named(behind)}.` : "");
   const at = hm(Math.max(...fresh.map((l) => l.hauteur!.t)));
   const rising = fresh.filter((l) => l.hauteur!.tendance === "en hausse");
   if (rising.length) return `En hausse sur la dernière demi-heure (mesures de ${at})\u00a0: ${rising.map((l) => sentence(l)).join("\u00a0; ")}.${end}`;

@@ -23,7 +23,10 @@ export const SOURCE: SourceInfo = {
 const BASE = "https://www.vigicrues-reunion.re/assets/php/vigicrues/";
 const LOCAL_AS_UTC = 4 * 3600_000;
 // Three hours of readings: the trend, and how high the river went just before.
-const WINDOW_MS = 3 * 3600_000;
+export const WINDOW_HOURS = 3;
+const WINDOW_MS = WINDOW_HOURS * 3600_000;
+/** A gauge the site answered for with no reading in the window: not late, silent for that long at least (Domenjod, 27/10/2026: none in 30 days). */
+export const NONE_PUBLISHED = `aucune mesure publiée par Vigicrues depuis au moins ${WINDOW_HOURS} h`;
 const LEVELS_SECONDS = 5 * 60;
 const VIGILANCE_SECONDS = 10 * 60;
 // The gauges asked together. The site takes about half a second per gauge, and from Cloudflare more than the 34 s
@@ -136,7 +139,11 @@ async function ask(measure: Measure, ids: string[], now: Date, timeout = 5_000 +
   // Each gauge with the time of the last reading the page holds, in the site's local-as-UTC clock: the readings after it come back.
   const since = now.getTime() - WINDOW_MS + LOCAL_AS_UTC;
   const liste = JSON.stringify(Object.fromEntries(ids.map((id) => [id, since])));
-  return parseReadings(await postForm<Record<string, unknown>>(SOURCE.id, `${BASE}valeurs.php`, { mesure: measure, liste }, timeout));
+  const got = parseReadings(await postForm<Record<string, unknown>>(SOURCE.id, `${BASE}valeurs.php`, { mesure: measure, liste }, timeout));
+  // The site leaves out a gauge with no reading since then: asked and answered, it has none (an empty list), unlike a
+  // gauge of a batch that did not answer, absent.
+  for (const id of ids) got[id] ??= [];
+  return got;
 }
 
 /** « 4,1 s », for the Worker's logs. */

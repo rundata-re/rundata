@@ -6,6 +6,7 @@
  * never says so: the flag on the spot does, and the answer points to those stories. Once the decree has ended,
  * nothing is said permitted or forbidden on its strength.
  */
+import { de } from "../articles.js";
 import { distanceKm } from "../geo.js";
 import type { SourceInfo } from "../types.js";
 
@@ -155,7 +156,7 @@ export function zoneLine(z: Zone, now: Date): string {
 
 /** No zone near the place: where the list comes from, then the rule if it still applies. */
 export function noneLine(nom: string, now: Date): string {
-  const first = `Aucune zone du ${CSR} près de ${nom}.`;
+  const first = `Aucune zone du ${CSR} près ${de(nom)}.`;
   return inForce(now)
     ? `${first} Hors lagon et espace aménagé et surveillé, la baignade et le surf y sont interdits dans la bande des 300 m (arrêté préfectoral n° 180).`
     : first;

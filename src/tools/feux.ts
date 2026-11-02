@@ -53,7 +53,7 @@ export function block(f: feux.Feux, now: Date, from?: { lon: number; lat: number
   return {
     avertissement: `${feux.LABEL[0].toUpperCase()}${feux.LABEL.slice(1)} : toit chaud, site industriel, brûlage autorisé.`,
     urgence: URGENCE,
-    resume: n ? `${n} point${n > 1 ? "s" : ""} chaud${n > 1 ? "s" : ""} détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près de ${f.detections[0].lieu} (${f.detections[0].commune}) ${when(f.detections[0].t, now)}.` : QUIET,
+    resume: n ? `${n} point${n > 1 ? "s" : ""} chaud${n > 1 ? "s" : ""} détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près ${de(f.detections[0].lieu)} (${f.detections[0].commune}) ${when(f.detections[0].t, now)}.` : QUIET,
     detections: n ? f.detections.map((d) => row(d, now, from)) : undefined,
     satellites: f.satellites,
   };

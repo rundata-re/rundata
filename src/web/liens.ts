@@ -9,7 +9,7 @@ import * as traces from "../providers/traces.js";
 import * as fire from "../tools/feux.js";
 import { mentionCommune, mentionCourte, repris, silentOf } from "../tools/agenda.js";
 import { secteur } from "../tools/sentiers.js";
-import { nombre } from "../tools/format.js";
+import { de, nombre } from "../tools/format.js";
 import { secteurNamed } from "../traces/secteurs.js";
 import type { AgendaAnswer, RandonneesAnswer } from "./data.js";
 import { esc } from "./map.js";
@@ -55,7 +55,7 @@ export function hikesAround(p: PlacePage, hikes: Cached<RandonneesAnswer> | null
     ? `<ul class="rows eau">${near.map(({ r, km }) => `<li><span><a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a><small>${kmFr(r.km)} km · +${nombre(r.dplus)}\u00a0m · passe à ${kmFr(km)} km</small></span>${state(r.slug)}</li>`).join("")}</ul>`
     : "";
   return `<section aria-labelledby="h-rando">
-  <h2 id="h-rando">Randonner autour de ${esc(p.nom)}</h2>
+  <h2 id="h-rando">Randonner autour ${esc(de(p.nom))}</h2>
   ${list ? `<div class="card">${list}</div>` : ""}
   ${sector ? `<p class="note"><a href="/randonnees/${sector.slug}">Randonnée ${esc(sector.dans)} : tous les sentiers, ceux qui sont fermés, les accès →</a></p>` : ""}
 </section>`;

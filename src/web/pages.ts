@@ -17,7 +17,7 @@ import { softened } from "../tools/nuages.js";
 import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { VERSION } from "../server.js";
-import { a, fr } from "../tools/format.js";
+import { a, de, fr } from "../tools/format.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
@@ -1748,7 +1748,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const kind = p.precision ?? KIND[place.type] ?? place.type;
   const where = place.nom !== p.nom ? ` Les mesures et la prévision sont données pour ${esc(place.nom)}.` : "";
   const alt = place.altitude_m != null ? `, à ${place.altitude_m.toLocaleString("fr-FR")} m d'altitude` : "";
-  const commune = place.commune && place.commune !== p.nom ? ` (commune de ${esc(place.commune)})` : "";
+  const commune = place.commune && place.commune !== p.nom ? ` (commune ${esc(de(place.commune))})` : "";
   const v = versant(place.lon, place.lat);
   const title = `Météo ${p.nom} en direct et prévisions · 974`.length <= 60 ? `Météo ${p.nom} en direct et prévisions · 974` : `Météo ${p.nom} en direct · 974`;
   const description = fit(
@@ -1797,7 +1797,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
         `<a href="${esc(away.lien)}">${away.port ? `Horaires officiels du SHOM pour ${esc(away.port)}` : "Horaires officiels sur le site du SHOM"}</a></p>`
       : "";
   const sea = coastal(p) && d?.mer
-    ? `<section aria-labelledby="h-mer"><h2 id="h-mer">Température de la mer à ${esc(p.nom)}</h2>` +
+    ? `<section aria-labelledby="h-mer"><h2 id="h-mer">Température de la mer ${esc(a(p.nom))}</h2>` +
       `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span><b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
       `<p>${esc(thin(d.mer.resume))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
       `pas celle du lagon ni du bord.${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""} Source : ${credits(d.mer.sources)}${tides ? `, ${esc(TIDE_CITATION)}` : ""}.</p></div></section>`
@@ -1858,7 +1858,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Météo en direct</p>
-    <h1>Météo à ${esc(p.nom)} <span class="n974">974</span></h1>
+    <h1>Météo ${esc(a(p.nom))} <span class="n974">974</span></h1>
     ${SLOGAN}
     ${headline}
     ${ask(`I fé koman lo tan ${p.nom} astèr ? Gèt la mézir an dirèk si ${origin}/meteo/${p.slug} é di amwin lèr la mézir é la stasion.`,
@@ -1870,13 +1870,13 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
 </div>`;
 
   const body = `<section aria-labelledby="h-now">
-  <div class="hb"><h2 id="h-now">Mesuré en ce moment près de ${esc(p.nom)}</h2><span class="badge m">Mesure</span></div>
+  <div class="hb"><h2 id="h-now">Mesuré en ce moment près ${esc(de(p.nom))}</h2><span class="badge m">Mesure</span></div>
   ${measured}
 </section>
 ${cloudSea}
 <section class="card cta" aria-labelledby="h-ia">
-  <h2 id="h-ia">Votre IA, branchée sur la météo de ${esc(p.nom)}</h2>
-  <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « il pleut à ${esc(p.nom)} ? », il ira chercher lui-même la mesure, avec son heure et sa source. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
+  <h2 id="h-ia">Votre IA, branchée sur la météo ${esc(de(p.nom))}</h2>
+  <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « il pleut ${esc(a(p.nom))} ? », il ira chercher lui-même la mesure, avec son heure et sa source. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 ${sea}

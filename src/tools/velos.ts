@@ -96,7 +96,7 @@ export async function velosLibreService(cache: Cache, lieu: string | undefined, 
     const first = by[0];
     return text({
       lieu: placeBlock(lieu, res),
-      resume: `Pas de vélo en libre-service Altervélo à ${p.commune || p.nom} : le service ne couvre que ${COMMUNES.join(", ")}. Station la plus proche : ${first.s.nom} (${first.s.commune}), à ${fr(Math.round(first.m / 1000))} km.`,
+      resume: `Pas de vélo en libre-service Altervélo ${a(p.commune || p.nom)} : le service ne couvre que ${COMMUNES.join(", ")}. Station la plus proche : ${first.s.nom} (${first.s.commune}), à ${fr(Math.round(first.m / 1000))} km.`,
       ...COMMON,
       sources: credits([velos.SOURCE]),
     });

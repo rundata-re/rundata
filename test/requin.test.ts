@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { CSR_URL, inForce, requinBlock, SOURCE, STORIES, T, ZONES, zonesNear } from "../src/eau/requin.js";
+import { CSR_URL, inForce, noneLine, requinBlock, SOURCE, STORIES, T, ZONES, zonesNear } from "../src/eau/requin.js";
 import { bathingPage, LINE } from "../src/web/baignade.js";
 import { placePage, seaPage } from "../src/web/pages.js";
 import { coastal, PAGES, pageOf } from "../src/web/places.js";
@@ -131,5 +131,9 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     const place = placePage(O, pageOf("saint-leu")!, null, NOW);
     expect(place).toContain(`<a href="${CSR_URL}">GIP Centre Sécurité Requin</a>`);
     expect(place).toContain(`<a href="${STORIES.instagram}">Instagram</a>`);
+  });
+
+  it("say « près du Port » when no zone is near a place whose name takes an article", () => {
+    expect(noneLine("Le Port", new Date("2026-11-02T10:00:00Z"))).toContain("Centre Sécurité Requin près du Port.");
   });
 });

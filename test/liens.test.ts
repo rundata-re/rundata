@@ -23,6 +23,16 @@ describe("links between the weather, the hikes and the communes", () => {
     expect(html).toContain(`<a href="/randonnees/cilaos">Randonnée à Cilaos`);
   });
 
+  it("contract the article before a place's name on its weather page: « au Port », never « à Le Port »", () => {
+    const html = placePage(O, pageOf("le-port")!, null, NOW);
+    expect(html).toContain(`<h1>Météo au Port <span class="n974">974</span></h1>`);
+    expect(html).toContain("Mesuré en ce moment près du Port");
+    expect(html).toContain("branchée sur la météo du Port");
+    expect(html).toContain("« il pleut au Port ? »");
+    expect(html).toContain(`<h2 id="h-rando">Randonner autour du Port</h2>`);
+    expect(html).not.toMatch(/(?:à|de) Le Port/);
+  });
+
   it("put the nearest weather on a trail's page", () => {
     const d = { value: { nom: "x", slug: "x", genre: "sentier", km: 1, etat: "Ouvert", ferme: false, troncons: [], lignes: [{ etat: "ouvert", points: [[55.70, -21.24], [55.71, -21.245]] }], profil: [], randonnees: [], fermes: [], inconnus: [], sources: [] }, fetchedAt: NOW } as any;
     expect(tracePage(O, "sentier", "x", "Sentier", d, NOW)).toContain(`<a href="/meteo/piton-de-la-fournaise">météo Piton de la Fournaise</a>`);

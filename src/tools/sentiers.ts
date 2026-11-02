@@ -413,7 +413,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   const warn = warning([...hikes, ...around].map((r) => routeRow(r, carte)), named);
   // A fire seen near the place goes first, before the closures.
   const nearby = center && fires ? fires.detections.filter((d) => distanceKm(center.lon, center.lat, d.lon, d.lat) <= center.km + FIRE_KM) : [];
-  if (nearby.length) parts.push(`Feu de végétation détecté par satellite près de ${nearby[0].lieu}, ${fire.when(nearby[0].t, now)}${nearby.length > 1 ? ` (${nearby.length} détections dans le secteur)` : ""} : ${feux.LABEL}. ${fire.URGENCE}`);
+  if (nearby.length) parts.push(`Feu de végétation détecté par satellite près ${de(nearby[0].lieu)}, ${fire.when(nearby[0].t, now)}${nearby.length > 1 ? ` (${nearby.length} détections dans le secteur)` : ""} : ${feux.LABEL}. ${fire.URGENCE}`);
   if (warn?.routes) parts.push(warn.message);
   for (const h of hikes.slice(0, 3)) {
     const row = routeRow(h, carte);

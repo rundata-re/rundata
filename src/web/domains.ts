@@ -1173,6 +1173,8 @@ const flow = (v: number) => `${fr(Math.round(v * 100) / 100)} m³/s`;
 const measuredHm = (s: CruesStation) => s.heure_mesure?.split(" ")[1] ?? "";
 /** Measured within the last half hour: only these are said rising or not. */
 const upToDate = (s: CruesStation) => s.hauteur_m != null && !s.avertissement;
+/** No level, and a warning: Vigicrues answered for it with none in our window (vigicrues.ts `NONE_PUBLISHED`), not late. */
+const unpublished = (s: CruesStation) => s.hauteur_m == null && !!s.avertissement;
 const dayAt = (d: Date) => localTime(d).replace(" ", " à ");
 /** A river's name to match the vigilance's to the gauges': « rivière des Galets » → « galets ». */
 const riverCore = (r: string) => normalize(r).replace(/^(grande |petite )?(riviere|ravine|bras|etang) (de la |des |du |de |d )?/, "");
@@ -1207,8 +1209,11 @@ function floodVigilance(v: CruesAnswer["vigilance_crues"], read: string): string
 function floodLevels(stations: CruesStation[], read: string): string {
   const fresh = stations.filter(upToDate);
   if (!fresh.length) return `<p class="lead">Aucune des ${stations.length} stations n'a de mesure de moins de 30 minutes dans notre lecture ${esc(read)} : nous ne savons pas pour l'instant si les rivières montent.</p>`;
-  const others = stations.filter((s) => !upToDate(s));
-  const end = others.length > 1 ? ` Les ${others.length} autres n'ont pas de mesure récente.` : others.length ? ` Une station n'a pas de mesure récente : ${esc(others[0].station)}.` : "";
+  // Apart: the gauges Vigicrues publishes nothing for, then the late ones.
+  const none = stations.filter(unpublished);
+  const others = stations.filter((s) => !upToDate(s) && !unpublished(s));
+  const end = (none.length ? ` ${esc(vigicrues.NONE_PUBLISHED[0].toUpperCase() + vigicrues.NONE_PUBLISHED.slice(1))} : ${none.map((s) => esc(s.station)).join(", ")}.` : "") +
+    (others.length > 1 ? ` ${none.length ? `${others.length} autres stations` : `Les ${others.length} autres`} n'ont pas de mesure récente.` : others.length ? ` Une station n'a pas de mesure récente : ${esc(others[0].station)}.` : "");
   const at = fresh.map(measuredHm).sort().at(-1);
   const rising = fresh.filter((s) => s.tendance_30_min === "en hausse");
   if (rising.length) return `<p class="lead">En hausse sur la dernière demi-heure (mesures de ${at}) : ${rising.map((s) => `${esc(s.station)} (${esc(s.riviere)}, ${esc(s.commune)}), ${metres(s.hauteur_m!)}`).join(" ; ")}.${end}</p>`;
@@ -1227,7 +1232,7 @@ const gaugeValue = (s: CruesStation): string | null =>
 /** A gauge's line in its river's group: up to date, late, or without a level in our read. */
 function gaugeRow(s: CruesStation, read: string): string {
   const said = gaugeValue(s);
-  const value = said == null ? `Pas de mesure dans notre lecture ${esc(read)}.` : esc(said);
+  const value = said == null ? (unpublished(s) ? esc(s.avertissement!) : `Pas de mesure dans notre lecture ${esc(read)}.`) : esc(said);
   const floods = [...(s.crues_de_reference ?? [])].sort((a, b) => b.hauteur_m - a.hauteur_m);
   const marks = floods.length
     ? `<details><summary>Crues de référence</summary><ul class="plain">${floods.map((c) => `<li>${[metres(c.hauteur_m), ...(c.debit_m3s != null ? [flow(c.debit_m3s)] : []), esc(c.nom)].join(" · ")}</li>`).join("")}</ul></details>`
@@ -1301,7 +1306,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
     .sort((a, b) => GAUGE_RANK[a.kind] - GAUGE_RANK[b.kind]).flatMap(({ s, kind }) => {
     const at = place.get(s.station);
     if (!at) return [];
-    const line = gaugeValue(s) ?? `pas de mesure dans notre lecture ${read}`;
+    const line = gaugeValue(s) ?? (unpublished(s) ? vigicrues.NONE_PUBLISHED : `pas de mesure dans notre lecture ${read}`);
     const where = `${s.station} · ${s.commune}`;
     return [{ lon: at.lon, lat: at.lat, label: kind === "hausse" ? "↑" : "", name: `${where}\u00a0: ${line}`, round: true, hollow: kind === "muette", big: kind === "hausse", color: GAUGE_COLOR[kind], quiet: true,
       place: where, say: line, href: `#${anchorId("s", s.station)}` }];

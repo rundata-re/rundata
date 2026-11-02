@@ -24,7 +24,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   commune: 9,
   coupures: 4,
   courant: 4,
-  crues: 1,
+  crues: 2,
   cyclones: 3,
   dae: 2,
   dechets: 1,

@@ -14,6 +14,7 @@ import { evenements as proposes, ID as PROPOSITIONS_ID } from "../providers/agen
 import { SOURCE as SALLES_SOURCE, titleKey } from "../providers/salles.js";
 import { type SourceInfo, UpstreamError, why } from "../types.js";
 import { mesure } from "../web/mesure.js";
+import { casse } from "./casse.js";
 import { a, credits, de, enumeration, notFound, placeBlock, text } from "./format.js";
 import { type Injoignable, injoignable } from "./injoignable.js";
 import { dayMonth, mention, mentionIle as ileMention, mentionReunionFr, mentionSalles, mentionSports, RESUME_REUNION_FR } from "./non-repris.js";
@@ -466,7 +467,8 @@ const luVia = (v: NonNullable<src.Evenement["via"]>) => (v.sans_reponse ? `lu su
 export function eventRow(e: src.Evenement, seances: src.Seance[], place = false) {
   const [first, ...others] = seances;
   return {
-    titre: e.titre,
+    /** All in capitals in its agenda, in the case of a sentence (casse.ts). */
+    titre: casse(e.titre),
     quand: when(first),
     /** Local, « 2026-10-24T14:00 » or « 2026-10-24 ». */
     date: first.debut,
@@ -738,7 +740,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const nonRepris = [...(commune ? [mentionCommune(commune)] : mentionIle()), ...mentionSalles(commune), irt ? mentionReunionFr() : undefined].filter(Boolean).join(" ") || undefined;
   const resume = [
     n ? `${n} événement${n > 1 ? "s" : ""}${kind} ${where} ${periodText}` : `Aucun événement${kind} trouvé ${where} ${periodText}`,
-    off.length ? `ATTENTION : ${off.map((x) => `« ${x.e.titre} » ${x.e.statut}${x.e.reporte_au ? ` au ${dayText(x.e.reporte_au)}` : ""}${x.e.selon ? ` (d'après ${x.e.selon.media})` : ""}`).slice(0, 4).join(", ")}` : "",
+    off.length ? `ATTENTION : ${off.map((x) => `« ${casse(x.e.titre)} » ${x.e.statut}${x.e.reporte_au ? ` au ${dayText(x.e.reporte_au)}` : ""}${x.e.selon ? ` (d'après ${x.e.selon.media})` : ""}`).slice(0, 4).join(", ")}` : "",
     commune && mentionCourte(commune) ? mentionCourte(commune)!.resume : "",
     commune && !covered && !mentionCourte(commune) ? src.SANS_AGENDA[commune] ?? `ni la mairie ${de(commune)} ni une salle de la commune ne publient d'agenda lisible` : "",
     irt ? RESUME_REUNION_FR : "",

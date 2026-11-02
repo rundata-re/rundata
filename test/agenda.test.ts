@@ -525,9 +525,9 @@ describe("agenda", () => {
       expect((await refreshPlanned(at(), new Date(t))).lus).toContain("sportsregions");
       expect(read()).toBe(8);
       const b = body(await agenda(at(), undefined, "à venir", "Grand Prix", new Date(t)));
-      expect(b.evenements.find((e: { titre: string }) => e.titre === "GRAND PRIX LRGR DE BOURBON")).toMatchObject({ description: "Organisé par Ligue Régionale de Golf de La Réunion (Le Tampon)", publie_par: "Ligue Régionale de Golf de La Réunion" });
+      expect(b.evenements.find((e: { titre: string }) => e.titre === "Grand prix LRGR de bourbon")).toMatchObject({ description: "Organisé par Ligue Régionale de Golf de La Réunion (Le Tampon)", publie_par: "Ligue Régionale de Golf de La Réunion" });
       // Not in a commune by the club's address.
-      expect(titles(body(await agenda(at(), "Le Tampon", "à venir", "Grand Prix", new Date(t))))).not.toContain("GRAND PRIX LRGR DE BOURBON");
+      expect(titles(body(await agenda(at(), "Le Tampon", "à venir", "Grand Prix", new Date(t))))).not.toContain("Grand prix LRGR de bourbon");
       // The members' sessions: not told by default; to a member, said reserved, with the club's site.
       const libre = (b: { evenements?: { titre: string }[] }) => (b.evenements ?? []).filter((e) => e.titre.startsWith("Jeu libre"));
       expect(libre(body(await agenda(at(), undefined, "à venir", "Jeu libre", new Date(t))))).toEqual([]);
@@ -536,7 +536,7 @@ describe("agenda", () => {
       expect(member.length).toBeGreaterThan(0);
       expect(member[0]).toMatchObject({ acces: "réservé aux adhérents de Badminton Club de Saint-Pierre", site_du_club: "https://www.bcspi.re", publie_par: "Badminton Club de Saint-Pierre" });
       // An event open to all says nothing of it.
-      const gp = body(await agenda(at(), undefined, "à venir", "Grand Prix", new Date(t), undefined, true)).evenements.find((e: { titre: string }) => e.titre === "GRAND PRIX LRGR DE BOURBON");
+      const gp = body(await agenda(at(), undefined, "à venir", "Grand Prix", new Date(t), undefined, true)).evenements.find((e: { titre: string }) => e.titre === "Grand prix LRGR de bourbon");
       expect([gp.acces, gp.site_du_club]).toEqual([undefined, undefined]);
       vi.mocked(console.log).mockRestore();
     });
@@ -949,7 +949,7 @@ describe("agenda", () => {
     // A day without hours may be tonight: the musical of the East is.
     // The DKLO at Tan Rouge says « Cirque et musique » only after its first sentence: that text is not kept, the genre
     // it names is (`themes`), so the search still finds it.
-    expect(b.evenements.map((e: { titre: string }) => e.titre)).toEqual(["CALOGERO", "Olivier Ker Ourio", "Une nouvelle comédie musicale indienne signée Sivayanama", "DKLO TAN ROUGE", "Somèn kréol – Plato Zartis"]);
+    expect(b.evenements.map((e: { titre: string }) => e.titre)).toEqual(["Calogero", "Olivier Ker Ourio", "Une nouvelle comédie musicale indienne signée Sivayanama", "DKLO Tan Rouge", "Somèn kréol – Plato Zartis"]);
     expect(b.evenements[0]).toMatchObject({ lieu: "TÉAT Plein Air", commune: "Saint-Paul", genres: ["concert"], publie_par: "TÉAT La Réunion" });
     expect(b.evenements[4]).toMatchObject({ quand: "samedi 24/10 de 18:00 à 23:00", commune: "Les Trois-Bassins" });
     // The genres are never returned as words of the source: no `themes` in a row.

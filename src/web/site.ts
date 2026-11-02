@@ -76,6 +76,8 @@ import { homePage } from "./home.js";
 import { RELIEF_PATH } from "./map.js";
 import { ligne, mesure } from "./mesure.js";
 import icons from "./icons.json" with { type: "json" };
+import og from "./og.json" with { type: "json" };
+import rubriques from "./og-rubriques.json" with { type: "json" };
 import { NOUVEAUTES } from "../nouveautes.js";
 import { nouveautesPage } from "./nouveautes.js";
 import { bathingPage, PATH as BAIGNADE } from "./baignade.js";
@@ -376,7 +378,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
 export async function site(request: Request, cache: Cache, background: Background, now = new Date()): Promise<Response | null> {
   // Nothing of the moment in them: answered before the volcano's state is read.
   const file = new URL(request.url).pathname;
-  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file);
+  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? ogFile(file);
   if (style) return style;
   // The bus trips, kept a minute at the edge (web/bord.ts): the copy as it was served.
   const copie = await bord.lire(request);
@@ -398,6 +400,21 @@ function stylesheet(path: string): Response | null {
   return new Response(CSS, {
     headers: { "content-type": "text/css; charset=utf-8", "cache-control": path === STYLE_PATH ? "public, max-age=31536000, immutable" : "public, max-age=300", "x-content-type-options": "nosniff" },
   });
+}
+
+const OG_FILE = /^\/og\/([a-z0-9-]+)\.[0-9a-f]+\.png$/;
+/** Each share picture of public/og/ by its name (scripts/build-og.py): « mer » → « /og/mer.8705e349af.png ». */
+const OG_PICTURES = new Map([og.png_4x5, ...rubriques.flatMap((r) => [r.png, r.png_4x5])].map((p) => [OG_FILE.exec(p)![1], p]));
+
+/**
+ * A share picture asked by an earlier fingerprint, as a post shared before a new picture keeps it (Facebook and WhatsApp
+ * read its preview again): led to today's. The static files answer before the Worker, so only a missing one comes here.
+ */
+function ogFile(path: string): Response | null {
+  const name = OG_FILE.exec(path)?.[1];
+  const now = name === undefined ? undefined : OG_PICTURES.get(name);
+  if (!now || now === path) return null;
+  return new Response(null, { status: 301, headers: { location: now, "cache-control": "public, max-age=3600" } });
 }
 
 const ALLER_FILE = /^\/aller-\w+\.js$/;

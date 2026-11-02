@@ -105,7 +105,7 @@ describe("where a place stands against the cloud sea", () => {
     const now = new Date("2026-10-25T03:00:00Z"); // 7 h
     const mn = merDeNuages(forecast([hour(SIX, 10, null, null), hour(NINE, 85, 1200, 1800)]), MAIDO, now)!;
     const wet = softened(mn, now, { nom: "Le Maïdo", humidite: 98, mesure: new Date(now.getTime() - 10 * 60_000) });
-    expect(wet.ligne).toContain("dégagé selon le modèle, mais la station de Le Maïdo mesure 98 % d'humidité à 06:50 : nuages ou brouillard possibles");
+    expect(wet.ligne).toContain("dégagé selon le modèle, mais la station du Maïdo mesure 98 % d'humidité à 06:50 : nuages ou brouillard possibles");
     // An old reading, a dry one, or tomorrow's morning: as it is.
     expect(softened(mn, now, { nom: "Le Maïdo", humidite: 98, mesure: new Date(now.getTime() - 2 * H) })).toBe(mn);
     expect(softened(mn, now, { nom: "Le Maïdo", humidite: 80, mesure: now })).toBe(mn);

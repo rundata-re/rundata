@@ -12,7 +12,7 @@ import { recentRainBlock } from "./pluie-recente.js";
 import { hasExtremes, todayTemperatureBlock } from "./temperature-du-jour.js";
 import { type Observation, type SourceInfo, why } from "../types.js";
 import { fit, mieux } from "./representativeness.js";
-import { credits, fr, notFound, placeBlock, show, text, when } from "./format.js";
+import { credits, de, fr, notFound, placeBlock, show, text, when } from "./format.js";
 
 interface Provider {
   source: SourceInfo;
@@ -215,7 +215,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   const jour = thermo ? todayTemperatureBlock(recentRain!, { id: thermo.o.station.id, nom: thermo.o.station.nom, fit: thermo.f }, now) : undefined;
 
   const resume = shown.length
-    ? `Mesures les plus proches de ${r.lieu.nom} — ` +
+    ? `Mesures les plus proches ${de(r.lieu.nom)} — ` +
       shown
         .map((x) => sentence(`${x.o.station.nom} (${fr(x.f.distance_km)} km, direction ${x.f.direction}, pertinence ${x.f.pertinence})`, x.o, now))
         .join("\u00a0; ") +

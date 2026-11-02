@@ -8,7 +8,7 @@ import * as modis from "../providers/modis.js";
 import * as requin from "../eau/requin.js";
 import { later, left } from "../budget.js";
 import { type SourceInfo, why } from "../types.js";
-import { credits, fr, heure, notFound, placeBlock, text } from "./format.js";
+import { credits, de, fr, heure, notFound, placeBlock, text } from "./format.js";
 import { dayLabel, localDate, localHour } from "./prevision.js";
 
 // Answer for the whole island when no place is given: one spot per stretch of coast people swim on. All are BEACHES too:
@@ -275,7 +275,7 @@ function waveBlock(w: Cached<houle.Waves>, place: Place, now: Date) {
   const at = l.at;
   return {
     resume:
-      `Vagues PRÉVUES près de ${place.nom} (modèle ${houle.MODEL.nom}, pas une mesure) : ${l.maintenant} ` +
+      `Vagues PRÉVUES près ${de(place.nom)} (modèle ${houle.MODEL.nom}, pas une mesure) : ${l.maintenant} ` +
       `vers ${l.heure}\u00a0; jusqu'à ${l.max} ${l.max_jour}.`,
     bloc: {
       nature: "prevision",
@@ -365,16 +365,16 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
   const m = gs.length ? reading(r.lieu, gs, now) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
   const temperature = m
-    ? `Eau de mer près de ${r.lieu.nom}\u00a0: ${m.mesure.temperature_eau}, mesurée par satellite ${measuredOn(m.mesure.jour_mesure, now)} ` +
+    ? `Eau de mer près ${de(r.lieu.nom)}\u00a0: ${m.mesure.temperature_eau}, mesurée par satellite ${measuredOn(m.mesure.jour_mesure, now)} ` +
       `(moyenne du jour, point de mesure à ${fr(m.mesure.distance_km)} km).`
     : gs.length
-      ? `Pas de mesure satellite exploitable à moins de 12 km de ${r.lieu.nom} sur les derniers jours ` +
+      ? `Pas de mesure satellite exploitable à moins de 12 km ${de(r.lieu.nom)} sur les derniers jours ` +
         "(nuages, ou lieu trop loin de la mer)."
       : "Température de l'eau : les sources satellite ne répondent pas pour le moment.";
   const waves = v
     ? v.resume
     : w
-      ? `Pas de prévision de vagues à moins de ${WAVE_MAX_KM} km de ${r.lieu.nom} (lieu loin de la côte).`
+      ? `Pas de prévision de vagues à moins de ${WAVE_MAX_KM} km ${de(r.lieu.nom)} (lieu loin de la côte).`
       : "Prévision des vagues momentanément indisponible.";
   return text({
     lieu: placeBlock(lieu, r),

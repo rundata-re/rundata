@@ -7,7 +7,7 @@ import * as ensemble from "../providers/ensemble.js";
 import * as openmeteo from "../providers/openmeteo.js";
 import * as uv from "../providers/uv.js";
 import { type Forecast, type ForecastDay, type ForecastHour, why } from "../types.js";
-import { credits, fr, heure, nombre, notFound, paire, placeBlock, text, tranche } from "./format.js";
+import { credits, de, fr, heure, nombre, notFound, paire, placeBlock, text, tranche } from "./format.js";
 import * as nuages from "./nuages.js";
 
 const TOUR = ["Saint-Denis", "Saint-Pierre", "Saint-Gilles-les-Bains", "Saint-Benoît", "Cilaos", "Plaine des Cafres"];
@@ -422,7 +422,7 @@ function warnings(f: Forecast, place?: Place): string[] {
     }
   } else {
     const altitude = place
-      ? `Les températures sont ramenées à l'altitude de ${place.nom} (${nombre(f.altitude_m)} m)\u00a0; la pluie, le vent et les nuages ` +
+      ? `Les températures sont ramenées à l'altitude ${de(place.nom)} (${nombre(f.altitude_m)} m)\u00a0; la pluie, le vent et les nuages ` +
         "sont ceux de tout le carré."
       : "Les températures sont ramenées à l'altitude de chaque lieu\u00a0; la pluie, le vent et les nuages sont ceux de tout le carré.";
     out.push(

@@ -3,6 +3,7 @@
  * label of every point, the emergency numbers on every surface, and what a quiet day does not prove (worded by
  * marketing).
  */
+import { de } from "../articles.js";
 import { distanceKm, localTime } from "../geo.js";
 import * as feux from "../providers/feux.js";
 
@@ -22,7 +23,7 @@ export function at(t: string, now: Date): string {
 export const when = (t: string, now: Date) => (at(t, now).startsWith("hier") ? at(t, now) : `à ${at(t, now)}`);
 
 /** A point of the list on the site: « Feu détecté près de Bois-de-Nèfles, à 14:20 · confiance forte ». */
-export const listLine = (d: feux.Detection, now: Date) => `Feu détecté près de ${d.lieu}, ${when(d.t, now)} · confiance ${d.confiance}`;
+export const listLine = (d: feux.Detection, now: Date) => `Feu détecté près ${de(d.lieu)}, ${when(d.t, now)} · confiance ${d.confiance}`;
 
 /** A commune's tile: the newest of its detections. */
 export function tileLine(list: feux.Detection[], now: Date): string {
@@ -63,5 +64,5 @@ export function vigilanceLine(f: feux.Feux, now: Date): string | undefined {
   const n = f.detections.length;
   if (!n) return undefined;
   const last = f.detections[0];
-  return `${n} feu${n > 1 ? "x" : ""} de végétation détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près de ${last.lieu} (${last.commune}) ${when(last.t, now)} : ${feux.LABEL}. ${URGENCE} Détails avec sentiers_randonnee.`;
+  return `${n} feu${n > 1 ? "x" : ""} de végétation détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près ${de(last.lieu)} (${last.commune}) ${when(last.t, now)} : ${feux.LABEL}. ${URGENCE} Détails avec sentiers_randonnee.`;
 }

@@ -8,10 +8,10 @@ import { credits, notFound, text } from "./format.js";
 const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
-/** « samedi 10 octobre 2026 » for a local date YYYY-MM-DD. */
-export function longDate(ymd: string): string {
+/** « samedi 10 octobre 2026 » for a local date YYYY-MM-DD; « samedi 10 octobre » when `year` is false. */
+export function longDate(ymd: string, year = true): string {
   const d = new Date(`${ymd}T12:00:00Z`);
-  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate() === 1 ? "1er" : d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  return `${WEEKDAYS[d.getUTCDay()]} ${d.getUTCDate() === 1 ? "1er" : d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}${year ? ` ${d.getUTCFullYear()}` : ""}`;
 }
 
 /** Shown instead of a date when the rectorat has not published the end of a holiday yet. */
@@ -41,6 +41,9 @@ export function moonOf(day: string, now: Date, lon: number, lat: number, altitud
   const next = cal.nextPhases(new Date(Date.parse(`${day}T00:00:00+04:00`)), 4);
   const main = next.find((x) => localDay(x.at) === day);
   const phase = main ? `${main.phase} à ${hm(main.at)}` : cal.between(cal.moonLight(now).angle);
+  // « aujourd'hui » for the day of the view, else that day's date (marketing, 31/10); the year of a next phase only
+  // when it is not the year of `day`.
+  const that = day === today(now) ? "aujourd'hui" : `le ${longDate(day)}`;
   const events = [
     ...(lever ? [{ at: lever, texte: `lever à ${hm(lever)}` }] : []),
     ...(coucher ? [{ at: coucher, texte: `coucher à ${hm(coucher)}` }] : []),
@@ -50,9 +53,9 @@ export function moonOf(day: string, now: Date, lon: number, lat: number, altitud
     champs: {
       phase,
       eclairee_pct: lit,
-      lever: lever ? hm(lever) : "pas de lever de Lune ce jour",
-      coucher: coucher ? hm(coucher) : "pas de coucher de Lune ce jour",
-      prochaines_phases: next.filter((x) => x !== main && x.at > now).slice(0, 3).map((x) => ({ phase: x.phase, date: longDate(localDay(x.at)), heure: hm(x.at) })),
+      lever: lever ? hm(lever) : `pas de lever de Lune ${that}`,
+      coucher: coucher ? hm(coucher) : `pas de coucher de Lune ${that}`,
+      prochaines_phases: next.filter((x) => x !== main && x.at > now).slice(0, 3).map((x) => ({ phase: x.phase, date: longDate(localDay(x.at), localDay(x.at).slice(0, 4) !== day.slice(0, 4)), heure: hm(x.at) })),
       note:
         "Calculé, pas mesuré : position de la Lune par les formules astronomiques usuelles, à quelques minutes près, pour " +
         "l'horizon dégagé. Dans les cirques et les ravines, le relief la cache plus longtemps : elle s'y lève plus tard et s'y couche plus tôt.",

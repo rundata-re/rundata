@@ -6,7 +6,7 @@
 import type { Cache, Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import { avis, type Avis, prochaineLecture, SOURCE } from "../providers/marches-publics.js";
-import { credits } from "../tools/format.js";
+import { a as aCommune, credits } from "../tools/format.js";
 import { injoignable } from "../tools/injoignable.js";
 import { crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
@@ -70,7 +70,7 @@ function jour(d: string, now: Date): string {
 }
 
 function row(a: Avis, now: Date): string {
-  const place = a.commune ? `à ${a.commune}` : a.communeAcheteur ? `acheteur à ${a.communeAcheteur}` : undefined;
+  const place = a.commune ? aCommune(a.commune) : a.communeAcheteur ? `acheteur ${aCommune(a.communeAcheteur)}` : undefined;
   const small = [a.acheteur, a.types.join(", "), place].filter(Boolean).map((x) => esc(x!)).join(" · ");
   return `<li data-c="${esc(a.commune ?? a.communeAcheteur ?? "")}"><span><a href="${esc(a.lien)}" rel="noopener">${esc(a.objet)}</a><small>${small}</small></span>` +
     `<span class="q-none">${esc(`jusqu'au ${jour(a.limite, now)}`)}</span></li>`;

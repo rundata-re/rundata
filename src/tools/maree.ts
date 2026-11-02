@@ -4,7 +4,7 @@ import * as calc from "../maree/calcul.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as mg from "../providers/maregraphes.js";
 import { why } from "../types.js";
-import { credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 import { dayLabel, localDate } from "./prevision.js";
 
 // Past this, the gauge has stopped sending (Sainte-Marie does, for hours at a time): its level is given as old.
@@ -251,7 +251,7 @@ function far(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace>>, al
   const f = farFrom(p.lon, p.lat, p.commune)!;
   const r = all.find((x) => x.gauge.id === f.gauge.id)?.reading;
   const km = fr(Math.round(f.km));
-  const at = f.gauge.commune === "Le Port" ? "au Port" : `à ${f.gauge.commune}`;
+  const at = a(f.gauge.commune);
   return text({
     lieu: placeBlock(lieu, res),
     avertissement:

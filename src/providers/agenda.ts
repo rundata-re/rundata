@@ -21,6 +21,7 @@
  * link there (`accueil`). Each source is one line of AGENDAS: taking it out stops its reading, its events, its credit
  * and its coverage at once.
  */
+import { de } from "../articles.js";
 import type { Bundle, Cache, Cached } from "../cache.js";
 import { getBytes, getText, httpUrl } from "../http.js";
 import { inReunion } from "../geo.js";
@@ -1632,10 +1633,9 @@ export const AGENDAS: Agenda[] = LISIBLES.filter((a) => autorisee(`agenda:${a.id
 
 // The mairies' agendas credited by name: those read only, one left out until it agrees no longer named.
 const mairiesLues = AGENDAS.filter((a) => a.source === SOURCES.mairies).map((a) => a.commune!);
-const ofCommune = (c: string) => c.replace(/^Le /, "du ").replace(/^Les /, "des ").replace(/^(?!du |des )/, "de ");
 const listed = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} et ${xs.at(-1)}` : xs.join(""));
-SOURCES.mairies.nom = `Agendas des mairies ${listed(mairiesLues.map(ofCommune))}`;
-SOURCES.mairies.attribution = `Villes de ${listed(mairiesLues)}`;
+SOURCES.mairies.nom = `Agendas des mairies ${listed(mairiesLues.map(de))}`;
+SOURCES.mairies.attribution = `Villes ${listed(mairiesLues.map(de))}`;
 // The same for the halls: those read only.
 const sallesLues = AGENDAS.filter((a) => a.source === SALLES_SOURCE).map((a) => a.nom);
 // One hall: « Programme du Séchoir » (marketing).

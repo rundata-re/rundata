@@ -7,6 +7,7 @@
  * The sky of the night too, from 18 h to 6 h, for everyone: below the Hauts by the cloud cover over the place, in the
  * Hauts against the cloud layer, as in the morning (« le ciel sera dégagé ce soir au Maïdo pour les étoiles ? »).
  */
+import { de } from "../articles.js";
 import type { Place } from "../places/resolve.js";
 import type { Forecast, ForecastHour } from "../types.js";
 
@@ -160,7 +161,7 @@ export function softened(mn: MerDeNuages, now: Date, station: { nom: string; hum
   const w = mn.fenetres.find((x) => h >= x.de && h < x.a);
   if (!w || !["degage", "dessus", "bord"].includes(w.etat)) return mn;
   const hm = new Date(station.mesure.getTime() + REUNION_MS).toISOString().slice(11, 16);
-  const said = `la station de ${station.nom} mesure ${station.humidite} % d'humidité à ${hm}`;
+  const said = `la station ${de(station.nom)} mesure ${station.humidite} % d'humidité à ${hm}`;
   const texte = w.etat === "degage"
     ? `dégagé selon le modèle, mais ${said} : nuages ou brouillard possibles`
     : `au-dessus de la mer de nuages selon le modèle, mais ${said} : vous pourriez être dans les nuages`;

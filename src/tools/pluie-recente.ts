@@ -3,7 +3,7 @@
  * the last rain and the total since midnight, from the Météo-France stations (meteofrance.ts, hourly package and
  * 6-minute slots). Réunion time is UTC+4 all year.
  */
-import { a, fr, heure, paire, tranche } from "./format.js";
+import { a, fr, paire, tranche } from "./format.js";
 import type { RecentRain } from "../providers/meteofrance.js";
 import type { Fit } from "./representativeness.js";
 
@@ -17,17 +17,20 @@ const STUCK_MS = 90 * 60_000;
 
 /** Every hour, how it is written: one hour from the first time to the second, Réunion time. */
 export const CONVENTION =
-  "Chaque ligne va de la première heure à la seconde (heure de La Réunion) : « 14\u00a0h–15\u00a0h : 1,4 mm », c'est la pluie tombée entre 14\u00a0h et 15\u00a0h.";
+  "Chaque ligne va de la première heure à la seconde (heure de La Réunion) : « 14:00–15:00 : 1,4 mm », c'est la pluie tombée entre 14:00 et 15:00.";
 
 export const day = (ms: number) => Math.floor((ms + LOCAL_MS) / (24 * HOUR_MS));
-/** Minutes since midnight, Réunion time; the times written by format.ts (« 19:12 », « 18\u00a0h », « 18\u00a0h–19\u00a0h »). */
+/**
+ * Minutes since midnight, Réunion time. Every time is written with its minutes (« 19:12 », « 18:00–19:00 »): the
+ * cumul runs to the last measure, « de 00:00 à 10:30 », and the kit writes all the hours of one place one way.
+ */
 export const mins = (ms: number) => {
   const d = new Date(ms + LOCAL_MS);
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 };
-const hm = (ms: number) => heure(mins(ms));
-const span = (from: number, to: number) => tranche(mins(from), mins(to));
-const between = (from: number, to: number) => paire(mins(from), mins(to));
+const hm = (ms: number) => paire(mins(ms), mins(ms), true)[0];
+const span = (from: number, to: number) => tranche(mins(from), mins(to), true);
+const between = (from: number, to: number) => paire(mins(from), mins(to), true);
 /** « aujourd'hui », « hier », or the date, for the day `ms` falls in. */
 const dayWord = (ms: number, now: number) =>
   day(ms) === day(now) ? "aujourd'hui" : day(ms) === day(now) - 1 ? "hier" : new Date(ms + LOCAL_MS).toISOString().slice(8, 10) + "/" + new Date(ms + LOCAL_MS).toISOString().slice(5, 7);
@@ -92,7 +95,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
   const missing = stuck || today.some((v) => v == null) || !partialWhole || end - today.length * HOUR_MS > midnight;
   const total = today.reduce<number>((sum, v) => sum + (v ?? 0), 0) + partial;
   const upTo = newest ?? end;
-  const [c0, c1] = paire(0, mins(upTo));
+  const [c0, c1] = paire(0, mins(upTo), true);
   const cumul = `${missing ? "au moins " : ""}${mm(total)} de ${c0} à ${c1}`;
 
   const k0 = hours.findIndex((v) => v != null && v > 0);
@@ -107,7 +110,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
 
   const avertissements = [...station.fit.avertissements];
   if (station.fit.pertinence !== "bonne") {
-    avertissements.push(`Pluie mesurée à ${station.nom}, pas ${a(lieu)} : elle peut y être très différente. Ne pas dire qu'il a plu ou non ${a(lieu)} sans le préciser.`);
+    avertissements.push(`Pluie mesurée ${a(station.nom)}, pas ${a(lieu)} : elle peut y être très différente. Ne pas dire qu'il a plu ou non ${a(lieu)} sans le préciser.`);
   }
   const bruine = drizzle
     ? "Le pluviomètre et le radar ne mesurent pas de pluie, mais le ciel est chargé : une bruine ou une pluie très faible peut leur échapper (un pluviomètre compte la pluie par 0,2 mm)."
@@ -124,6 +127,6 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
     convention: CONVENTION,
     bruine,
     avertissements,
-    resume: `Pluie à ${station.nom} (pluviomètre, ${fr(station.fit.distance_km)} km) : ${derniere.startsWith("pas de") ? derniere : `dernière pluie ${derniere}`}\u00a0; ${cumul} (depuis minuit).${bruine ? ` ${bruine}` : ""}`,
+    resume: `Pluie ${a(station.nom)} (pluviomètre, ${fr(station.fit.distance_km)} km) : ${derniere.startsWith("pas de") ? derniere : `dernière pluie ${derniere}`}\u00a0; ${cumul} (depuis minuit).${bruine ? ` ${bruine}` : ""}`,
   };
 }

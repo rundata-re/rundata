@@ -3,7 +3,7 @@ import { distanceKm, localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as velos from "../providers/velos.js";
 import { why } from "../types.js";
-import { credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 
 export const COMMUNES = ["Saint-Pierre", "Saint-Louis", "L'Étang-Salé"];
 // Stations this close to the place asked are worth the walk; past this, the nearest few are given anyway.
@@ -102,7 +102,7 @@ export async function velosLibreService(cache: Cache, lieu: string | undefined, 
     });
   }
   const best = shown.find((x) => x.s.location && x.s.velos + x.s.trottinettes > 0);
-  const where = wholeCommune ? `à ${p.nom}` : `près de ${p.nom}`;
+  const where = wholeCommune ? a(p.nom) : `près ${de(p.nom)}`;
   const resume = wholeCommune
     ? `Altervélo ${where} : ${plural(shown.filter((x) => x.s.location).reduce((n, x) => n + x.s.velos + x.s.trottinettes, 0), "vélo disponible", "vélos disponibles")} dans ${plural(shown.length, "station", "stations")}` +
       (best ? `, dont ${best.s.nom} (${stock(best.s)}).` : ".")

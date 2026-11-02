@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { breaks, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
-import { calendrier, longDate } from "../src/tools/calendrier.js";
+import { calendrier, longDate, moonOf } from "../src/tools/calendrier.js";
 import { buildCalendrier } from "../src/web/data.js";
 import { calendrierLive, calendrierPage } from "../src/web/domains.js";
 
@@ -110,13 +110,17 @@ describe("calendar", () => {
     // Saint-Denis at 34 m: its horizon a little lower than the sea level of the ephemeris above.
     expect(r.resume).toContain("Lune : pleine lune à 08:13, éclairée à 100 %, coucher à 05:24, lever à 18:48 (calcul astronomique).");
     expect(r.lune).toMatchObject({ lieu: "Saint-Denis", phase: "pleine lune à 08:13", eclairee_pct: 100, lever: "18:48", coucher: "05:24" });
-    expect(r.lune.prochaines_phases[0]).toEqual({ phase: "dernier quartier", date: "lundi 2 novembre 2026", heure: "00:30" });
+    expect(r.lune.prochaines_phases[0]).toEqual({ phase: "dernier quartier", date: "lundi 2 novembre", heure: "00:30" });
     expect(r.lune.note).toMatch(/^Calculé, pas mesuré : .* elle s'y lève plus tard et s'y couche plus tôt\.$/);
     // No rising that day: said, and left out of the summary.
     const later = new Date("2026-10-31T08:00:00Z");
     const l = body(await calendrier(cacheAt(later), "Saint-Denis", later));
-    expect(l.lune.lever).toBe("pas de lever de Lune ce jour");
+    expect(l.lune.lever).toBe("pas de lever de Lune aujourd'hui");
     expect(l.resume).toMatch(/Lune : Lune décroissante, éclairée à \d+ %, coucher à 10:1\d \(calcul astronomique\)\./);
+    // The year of a next phase only when it is not the year of the day asked.
+    const dec = moonOf("2026-12-28", new Date("2026-12-27T08:00:00Z"), 55.45, -20.88, 34).champs.prochaines_phases.map((x) => x.date);
+    expect(dec.some((d) => d.endsWith(" janvier 2027"))).toBe(true);
+    expect(dec.filter((d) => d.includes("décembre")).every((d) => d.endsWith(" décembre"))).toBe(true);
   });
 
   it("shows the Moon on the page, under the sun, computed at the hour of the view", async () => {
@@ -126,12 +130,12 @@ describe("calendar", () => {
     const card = html.match(/<div class="pile">([\s\S]*?)<\/div><\/div><\/div>/)![1];
     expect(card.indexOf("<h3>Soleil à Saint-Denis</h3>")).toBeLessThan(card.indexOf("<h3>Lune à Saint-Denis</h3>"));
     expect(card).toContain("<h3>Lune à Saint-Denis</h3><p>Pleine lune à 08:13, éclairée à 100\u00a0%.</p><p>Coucher à 05:24, lever à 18:48.</p>");
-    expect(card).toContain(`<ul class="plain"><li><b>Dernier quartier</b> : lundi 2 novembre 2026 à 00:30</li>`);
+    expect(card).toContain(`<ul class="plain"><li><b>Dernier quartier</b> : lundi 2 novembre à 00:30</li>`);
     expect(card).toContain(`<p class="note">Calculé, pas mesuré : position de la Lune`);
     // A day without rising: the setting first, then said.
     const later = new Date("2026-10-31T08:00:00Z");
     const l = calendrierPage("https://rundata.re", { value: await buildCalendrier(cacheAt(later), later), fetchedAt: later }, later);
-    expect(l).toMatch(/<p>Lune décroissante, éclairée à \d+\u00a0%\.<\/p><p>Coucher à 10:1\d, pas de lever de Lune ce jour\.<\/p>/);
+    expect(l).toMatch(/<p>Lune décroissante, éclairée à \d+\u00a0%\.<\/p><p>Coucher à 10:1\d, pas de lever de Lune aujourd&#39;hui\.<\/p>/);
     // A copy of the morning read in the evening: the Moon of the evening, not of the copy.
     const evening = new Date("2026-10-31T15:00:00Z");
     const fromCopy = calendrierPage("https://rundata.re", { value: await buildCalendrier(cacheAt(later), later), fetchedAt: later }, evening);

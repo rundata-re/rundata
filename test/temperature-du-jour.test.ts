@@ -21,8 +21,8 @@ describe("the temperature since midnight", () => {
     expect([m.tx![2], m.t[2]]).toEqual([26.5, 25.5]);
     expect(block()).toMatchObject({
       periode: "de 00:00 à 12:00",
-      maximum: { valeur: 26.5, quand: "entre 9 h et 10 h" },
-      minimum: { valeur: 22.9, quand: "entre 0 h et 1 h" },
+      maximum: { valeur: 26.5, quand: "entre 09:00 et 10:00" },
+      minimum: { valeur: 22.9, quand: "entre 00:00 et 01:00" },
       avertissements: [],
     });
   });
@@ -31,7 +31,7 @@ describe("the temperature since midnight", () => {
     const b = block(under(Array.from({ length: 9 }, (_, k) => (k === 2 ? 27.3 : 25))))!;
     expect(b.periode).toBe("de 00:00 à 12:54");
     expect(b.maximum).toEqual({ valeur: 27.3, unite: "°C", quand: "à 12:42" });
-    expect(b.resume).toBe("Depuis minuit (de 00:00 à 12:54) à Saint-Pierre Pierrefonds (aéroport), à 1,2 km : 27,3 °C au plus (à 12:42), 22,9 °C au moins (entre 0 h et 1 h).");
+    expect(b.resume).toBe("Depuis minuit (de 00:00 à 12:54) à Saint-Pierre Pierrefonds (aéroport), à 1,2 km : 27,3 °C au plus (à 12:42), 22,9 °C au moins (entre 00:00 et 01:00).");
   });
 
   it("leaves yesterday's hours out, and has only the 6-minute measures before 01:00", () => {

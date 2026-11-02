@@ -17,7 +17,7 @@ import { softened } from "../tools/nuages.js";
 import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { VERSION } from "../server.js";
-import { fr } from "../tools/format.js";
+import { a, fr } from "../tools/format.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
@@ -1753,9 +1753,9 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const title = `Météo ${p.nom} en direct et prévisions · 974`.length <= 60 ? `Météo ${p.nom} en direct et prévisions · 974` : `Météo ${p.nom} en direct · 974`;
   const description = fit(
     first
-      ? `Météo à ${p.nom} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés à ${first.station} à ` +
+      ? `Météo ${a(p.nom)} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés à ${first.station} à ` +
         `${first.heure_mesure.split(" ")[1]}.`
-      : `Météo à ${p.nom} (La Réunion, 974) en direct : température, pluie et vent mesurés par la station la plus proche.`,
+      : `Météo ${a(p.nom)} (La Réunion, 974) en direct : température, pluie et vent mesurés par la station la plus proche.`,
     first ? ` Pluie, vent${coastal(p) ? ", mer" : ""} et prévision.` : ` ${coastal(p) ? "Mer et prévision" : "Prévision"} des prochains jours.`,
   );
 
@@ -1862,7 +1862,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     ${SLOGAN}
     ${headline}
     ${ask(`I fé koman lo tan ${p.nom} astèr ? Gèt la mézir an dirèk si ${origin}/meteo/${p.slug} é di amwin lèr la mézir é la stasion.`,
-      `Quel temps fait-il en ce moment à ${p.nom} ? Lis la mesure en direct sur ${origin}/meteo/${p.slug} et donne-moi l'heure de la mesure et la station.`)}
+      `Quel temps fait-il en ce moment ${a(p.nom)} ? Lis la mesure en direct sur ${origin}/meteo/${p.slug} et donne-moi l'heure de la mesure et la station.`)}
     <p class="lead">${esc(p.nom)}, ${esc(kind)}${commune}${alt}, ${esc(v.replace(/ \(.*\)$/, ""))} de l'île${v.includes("(") ? ` (${esc(v.replace(/^.*\(|\)$/g, ""))})` : ""}.${where}</p>
     ${p.commune ? `<p class="or"><a href="/communes/${p.slug}">${esc(p.nom)} en direct : vigilance, air, bus, mairie →</a></p>` : ""}
   </div>

@@ -3070,7 +3070,7 @@ export function eventSummary(r: AgendaRow): string {
   const text = r.description?.replace(/\s+/g, " ").trim();
   if (text && text.length > 20) return text.length <= SUMMARY_MAX ? text : `${text.slice(0, SUMMARY_MAX).replace(/\s+\S*$/, "")}…`;
   const kind = r.genres.map((g) => KIND[g]).find(Boolean) ?? "Événement";
-  return `${kind} à ${r.commune}${r.lieu && r.lieu !== r.commune ? `, ${r.lieu}` : ""}.`;
+  return `${kind}${r.commune ? ` ${a(r.commune)}` : ""}${r.lieu && r.lieu !== r.commune ? `, ${r.lieu}` : ""}.`;
 }
 
 /**

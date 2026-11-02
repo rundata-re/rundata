@@ -226,8 +226,8 @@ function vigilance(p: PlacePage, v: mf.Vigilance, now: Date) {
   const alert = highest(cyc) >= 2;
   return {
     zone: name || undefined,
-    // « Vigilance météo : verte pour l'Ouest (Météo-France), la zone de Saint-Paul. »: the zone named, never the commune coloured.
-    maintenant: `Vigilance météo : ${zoneText(v, zone, now)} ${forZone(name)} (Météo-France), la zone de ${p.nom}.`,
+    // « Vigilance météo : verte pour l'Ouest (Météo-France), la zone de Saint-Paul. », « la zone du Tampon »: the zone named, never the commune coloured.
+    maintenant: `Vigilance météo : ${zoneText(v, zone, now)} ${forZone(name)} (Météo-France), la zone ${de(p.nom)}.`,
     au_dessus_du_vert: zoneLevels(v, zone, now).above.length > 0,
     vagues_submersion: coastal(p) ? coastText(v) : undefined,
     alerte_cyclonique: alert ? cyclone(v, now) : undefined,

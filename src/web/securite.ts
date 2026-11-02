@@ -16,6 +16,7 @@
  *   de moi » of /defibrillateurs), and for no frame. The other features keep the browser's default: the clipboard of
  *   the copy buttons, the fullscreen of Waze's map.
  */
+import { cheminMasque } from "../chemin-secret.js";
 import { bodyText } from "../http.js";
 import { IGN_TUILES } from "./map.js";
 
@@ -116,9 +117,6 @@ const UNE_HEURE = 3600_000;
 const vus = new Map<string, number>();
 const VUS_MAX = 500;
 
-// The links e-mailed to the clubs carry their secret in the path: never written down.
-const SECRET = /^(\/associations\/(?:proposition|connexion)\/).+$/;
-
 const court = (v: unknown, n: number) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, " ").slice(0, n) : "");
 
 /** « inline », « eval », « data », or the host of what was blocked. */
@@ -134,7 +132,8 @@ function bloque(v: string): string {
 
 function page(v: string): string {
   try {
-    return new URL(v).pathname.replace(SECRET, "$1…").slice(0, 120);
+    // The links e-mailed to the clubs carry their secret in the path: never written down (chemin-secret.ts).
+    return cheminMasque(new URL(v).pathname).slice(0, 120);
   } catch {
     return "?";
   }

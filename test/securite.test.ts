@@ -54,12 +54,29 @@ describe("the browsers' reports, POST /csp-rapport", () => {
     expect((await rapport(report(one), t + 60_000)).status).toBe(204);
     expect(warn).toHaveBeenCalledTimes(1);
     const line = String(warn.mock.calls[0][0]);
-    expect(line).toBe("csp : script-src-elem a bloqué tiers.example sur /associations/proposition/… (rundata.re, ligne 3)");
+    expect(line).toBe("csp : script-src-elem a bloqué tiers.example sur /associations/proposition/* (rundata.re, ligne 3)");
     expect(line).not.toContain("AbCdEf");
     await rapport(report({ ...one, "blocked-uri": "inline", "script-sample": "alert(1)" }), t + 120_000);
     await rapport(report(one), t + 3600_000);
     expect(warn).toHaveBeenCalledTimes(3);
-    expect(String(warn.mock.calls[1][0])).toContain("a bloqué inline sur /associations/proposition/… (rundata.re, ligne 3) « alert(1) »");
+    expect(String(warn.mock.calls[1][0])).toContain("a bloqué inline sur /associations/proposition/* (rundata.re, ligne 3) « alert(1) »");
+  });
+
+  it("say no secret of the other links e-mailed to the clubs either: the connection, the club's access and its space", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const pages = {
+      "/associations/connexion/AbCdEfGhIjKlMnOpQrStUv/retirer": "/associations/connexion/*",
+      "/associations/club/acces/AbCdEfGhIjKlMnOpQrStUv": "/associations/club/acces/*",
+      "/associations/club/AbCdEfGhIjKlMnOpQrStUv": "/associations/club/*",
+      "/associations/club/demande": "/associations/club/demande",
+    };
+    let n = 0;
+    for (const [path, said] of Object.entries(pages)) {
+      await rapport(report({ "document-uri": `https://rundata.re${path}`, "effective-directive": "img-src", "blocked-uri": `https://tiers${n++}.example/x.png` }), Date.parse("2026-10-26T16:00:00Z"));
+      const line = String(warn.mock.calls.at(-1)?.[0]);
+      expect(line.endsWith(` sur ${said}`), line).toBe(true);
+    }
+    expect(warn.mock.calls.map((c) => String(c[0])).join(" ")).not.toContain("AbCdEf");
   });
 
   it("say « bloquerait » for a page still under the report-only policy, kept by a browser or a cache", async () => {

@@ -82,7 +82,7 @@ describe("the server's instructions", () => {
     // Who makes the service, then the index, early.
     expect(text.indexOf("https://rundata.re/a-propos")).toBeLessThan(text.indexOf("\n- "));
     expect(text.indexOf("- donner_avis :")).toBeLessThan(700);
-    for (const must of ["citer (rundata.re et les producteurs)", "fraicheur (l'heure de la donnée", "donner_avis", "serveur.outils_recents", "sources_donnees", "PRÉVISION", "15 ou 112", "Actualiser les outils"]) expect(text).toContain(must);
+    for (const must of ["citer (rundata.re et les producteurs)", "donner_avis", "serveur.outils_recents", "sources_donnees", "PRÉVISION", "15 ou 112", "Actualiser les outils"]) expect(text).toContain(must);
     // The words the tools' own answers must carry are in their descriptions, not here.
     const tools: { name: string; description: string }[] = (await rpcResult("tools/list")).tools;
     const d = (n: string) => tools.find((t) => t.name === n)!.description;
@@ -92,6 +92,9 @@ describe("the server's instructions", () => {
     expect(d("cyclones")).toContain("jamais de trajectoire inventée");
     expect(d("qualite_eau")).toContain("sans requin");
     expect(d("crues_rivieres")).toContain("radier submergé");
+    // The time of the data said in words: with fraicheur only listed among the fields, 6 answers of the Monday bench of
+    // 2/11/2026 out of 30 left it out, and 11 of 12 when those 6 were asked again.
+    expect(text).toContain("l'heure de la donnée (fraicheur, « 23:12, heure de La Réunion »), à dire en toutes lettres ; la date si fraicheur n'a pas d'heure.");
     // Not « pas couvert » before sources_donnees, even with no tool called yet (a public tenders question, 31/10/2026).
     expect(text).toContain("avant de dire qu'un sujet n'est pas couvert, même à la première question, appeler sources_donnees.");
     expect(d("sources_donnees").replace(/[\u00a0\u202f]/g, " ").startsWith("À appeler avant de dire qu'un sujet n'est pas couvert, même à la première question : la liste à jour de ce que rundata.re couvre.")).toBe(true);

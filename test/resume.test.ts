@@ -133,7 +133,7 @@ describe("the summary of a day", () => {
     expect(JSON.stringify(r)).not.toMatch(/conforme/);
   });
 
-  it("answers short by default (Claude's directory): without each skip's list nor each fuel's price, the rest the same", () => {
+  it("answers short by default (Claude's directory): without each skip's list, each fuel's price nor the sources' attributions, the rest the same", () => {
     const r = resume(SAINT_PAUL, COPIES as never, NOW);
     const c = court(r);
     expect(c.detail).toBe(COURT);
@@ -142,8 +142,11 @@ describe("the summary of a day", () => {
     expect(c.decheteries!.sites.find((x) => x.nom === "Déchèterie de Plateau Caillou")).toMatchObject({ etat: "à jour", benne_pleine: ["encombrants"] });
     expect(c.decheteries!.page).toBe(r.decheteries!.page);
     expect(c.carburants).toEqual({ prix_maximum: r.carburants!.prix_maximum, depuis: r.carburants!.depuis, a_savoir: r.carburants!.a_savoir, lien: r.carburants!.lien });
-    const { decheteries: _d, carburants: _c, detail: _x, ...rest } = c;
-    const { decheteries: _rd, carburants: _rc, ...all } = r;
+    // Each source once, by its name and licence, what the rule « Citer » needs.
+    expect(c.sources).toEqual(r.sources.map((x) => ({ source: x.source, licence: x.licence })));
+    expect(c.sources.length).toBeGreaterThan(5);
+    const { decheteries: _d, carburants: _c, detail: _x, sources: _s, ...rest } = c;
+    const { decheteries: _rd, carburants: _rc, sources: _rs, ...all } = r;
     expect(rest).toEqual(all);
   });
 

@@ -949,7 +949,7 @@ describe("agenda", () => {
     // A day without hours may be tonight: the musical of the East is.
     // The DKLO at Tan Rouge says « Cirque et musique » only after its first sentence: that text is not kept, the genre
     // it names is (`themes`), so the search still finds it.
-    expect(b.evenements.map((e: { titre: string }) => e.titre)).toEqual(["Calogero", "Olivier Ker Ourio", "Une nouvelle comédie musicale indienne signée Sivayanama", "Dklo Tan Rouge", "Somèn kréol – Plato Zartis"]);
+    expect(b.evenements.map((e: { titre: string }) => e.titre)).toEqual(["Calogero", "Olivier Ker Ourio", "Une nouvelle comédie musicale indienne signée Sivayanama", "DKLO Tan Rouge", "Somèn kréol – Plato Zartis"]);
     expect(b.evenements[0]).toMatchObject({ lieu: "TÉAT Plein Air", commune: "Saint-Paul", genres: ["concert"], publie_par: "TÉAT La Réunion" });
     expect(b.evenements[4]).toMatchObject({ quand: "samedi 24/10 de 18:00 à 23:00", commune: "Les Trois-Bassins" });
     // The genres are never returned as words of the source: no `themes` in a row.

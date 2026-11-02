@@ -2,7 +2,8 @@
  * An agenda's title written all in capitals (« ATELIER DE GESTION BUDGETAIRE »), shown in the case of a sentence
  * (marketing, /evenements): « Atelier de gestion budgetaire ». A title with one lowercase letter is left as written, and
  * so is one too short not to be a sigle. Kept in capitals: the sigles of the island's bodies (CCAS, CINOR…), a word
- * without a vowel (« LRGR »), the roman numerals and the words with a digit. A commune or a village the resolver knows gets its capitals back (« Le
+ * without a vowel (« LRGR »), a short one no French word starts like (« DKLO »), the roman numerals and the words with a
+ * digit. A commune or a village the resolver knows gets its capitals back (« Le
  * rallye Grand Est fait étape à St-André »). A title of one or two words is a name more often than a sentence (an
  * artist, a show: « NAWELL MADANI »): each of its words takes a capital.
  */
@@ -16,6 +17,16 @@ const SIGLES = new Set([
 const ROMAN = /^(?:X{1,3}(?:IX|IV|V?I{0,3})|IX|IV|V?I{1,3}|V)$/;
 /** A word without a vowel is a sigle: « LRGR », « DJ ». */
 const NO_VOWEL = /^(?!ST$)[^AEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸ]{2,}$/u;
+/**
+ * The two consonants a French word may start with, and the loanwords the agendas use (« ski », « slam », « snack »). A
+ * word of four letters at most that starts otherwise is a name or a brand (« DKLO »): left in capitals.
+ */
+const ONSETS = new Set(["bl", "br", "ch", "cl", "cr", "dr", "fl", "fr", "gl", "gn", "gr", "ph", "pl", "pr", "ps", "qu", "sc", "sk", "sl", "sm", "sn", "sp", "st", "th", "tr", "vr"]);
+const BRAND_MAX = 4;
+const brand = (w: string) => {
+  const f = fold(w);
+  return f.length <= BRAND_MAX && /^[^aeiouy\P{L}]{2}/u.test(f) && !ONSETS.has(f.slice(0, 2));
+};
 /** Fewer letters than this, in a title of one word, may be a sigle (« DKLO »): left as written. */
 const SIGLE_MAX = 5;
 
@@ -60,7 +71,7 @@ export function casse(titre: string): string {
   const short = titre.trim().split(/\s+/).length <= 2;
   const out = words.map((m) => {
     const w = m[0];
-    if (SIGLES.has(w) || ROMAN.test(w) || NO_VOWEL.test(w) || /\p{N}/u.test(w)) return w;
+    if (SIGLES.has(w) || ROMAN.test(w) || NO_VOWEL.test(w) || brand(w) || /\p{N}/u.test(w)) return w;
     const lower = w.toLocaleLowerCase("fr");
     return short ? upperFirst(lower) : lower;
   });

@@ -22,6 +22,13 @@ describe("an agenda's title written all in capitals", () => {
     expect(casse("GRAND PRIX LRGR DE GOLF")).toBe("Grand prix LRGR de golf");
   });
 
+  it("keeps a short word no French word starts like, a name or a brand, and not one that starts as French words do", () => {
+    expect(casse("DKLO TAN ROUGE")).toBe("DKLO Tan Rouge");
+    expect(casse("CLUB DE LECTURE")).toBe("Club de lecture");
+    expect(casse("TRÈS GRAND SPECTACLE PLUS FORT")).toBe("Très grand spectacle plus fort");
+    expect(casse("SOIRÉE SLAM ET SKI NAUTIQUE")).toBe("Soirée slam et ski nautique");
+  });
+
   it("gives back their capitals to the communes and villages the resolver knows, written in full or « St », « Ste »", () => {
     expect(casse("LE RALLYE GRAND EST FAIT ÉTAPE À ST-ANDRÉ")).toBe("Le rallye grand est fait étape à St-André");
     expect(casse("SORTIE À LA PLAINE-DES-PALMISTES ET À STE-MARIE")).toBe("Sortie à La Plaine-des-Palmistes et à Ste-Marie");
@@ -41,7 +48,7 @@ describe("an agenda's title written all in capitals", () => {
   it("gives each word a capital in a title of one or two words, more often a name than a sentence", () => {
     expect(casse("BOUCHES COUSUES")).toBe("Bouches Cousues");
     expect(casse("ZAZA FLANBO")).toBe("Zaza Flanbo");
-    expect(casse("DKLO TROIS-BASSINS")).toBe("Dklo Trois-Bassins");
+    expect(casse("DKLO TROIS-BASSINS")).toBe("DKLO Trois-Bassins");
     expect(casse("TRANSLATIONS")).toBe("Translations");
   });
 

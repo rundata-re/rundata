@@ -6,12 +6,14 @@ import { apart, esc, KM, NOMS_SCRIPT, project, W } from "../src/web/map.js";
 import {
   ago,
   ALT_PATH,
+  badlyEnough,
   bands,
   blend,
   communeOf,
   daysOf,
   discR,
   gaugeField,
+  HACHURES_DITES,
   landBreeze,
   METEO_SCRIPT,
   pace,
@@ -419,6 +421,16 @@ describe("the page /meteo with every station", () => {
     // The hatches' sentence comes after a hatched square, styled by the page, which ties it to the hatches on the map.
     expect(METEO_SCRIPT).toContain(`w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))`);
     expect(METEO_SCRIPT).toContain(`BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée."`);
+    // Said from 100 land cells seen badly only (marketing's choice, 2/11/2026); the hatches are drawn from the first.
+    expect(HACHURES_DITES).toBe(100);
+    expect(METEO_SCRIPT).toContain(`bad=enough(L,j.mal_vu,${HACHURES_DITES})?BAD:"";`);
+    // 300 cells, the first 200 on land: sea cells seen badly do not count.
+    const land = Uint8Array.from({ length: 300 }, (_, k) => (k < 200 ? 1 : 0));
+    const mal = (onLand: number) => "1".repeat(onLand) + "0".repeat(200 - onLand) + "1".repeat(100);
+    expect(badlyEnough(land, mal(99), HACHURES_DITES)).toBe(false);
+    expect(badlyEnough(land, mal(100), HACHURES_DITES)).toBe(true);
+    expect(badlyEnough(land, mal(0), 1)).toBe(false);
+    expect(badlyEnough(land, mal(1), 1)).toBe(true);
     expect(CSS).toContain(".wxmap .hsw{");
     expect(CSS).not.toContain(".hsv");
     // The radar's rain in blues only, deeper class after class: the two strongest were violet and magenta, which the

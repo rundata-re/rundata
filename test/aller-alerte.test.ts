@@ -212,6 +212,6 @@ describe("« Y aller » under a cyclone alert", () => {
     expect([permis(level(6), "randonnee"), permis(level(6), "baignade"), permis(level(6), "lieu")]).toEqual([false, false, true]);
     expectGone(level(6), ["mer", "baignade", "eau", "meteo", "randonnee"]);
     expect(buttons(free.baignade)).toHaveLength(ZONES.length);
-    expect(buttons(free.decheteries)).toHaveLength(dech.SITES.length);
+    expect(buttons(free.decheteries)).toHaveLength(dech.SITES.length + dech.ELSEWHERE.length);
   });
 });

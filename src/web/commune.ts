@@ -265,6 +265,12 @@ function bikes(data: Cached<CommuneData> | null | undefined, g: Porte, now: Date
   };
 }
 
+/** Outside the TCO, the commune's sites from the ADEME's directory, their hours on their intercommunalité's site. */
+function elsewhereLive(p: PlacePage): Live {
+  const here = dech.ELSEWHERE.filter((s) => s.commune === p.nom);
+  return { valeur: `${here.length} déchèterie${here.length > 1 ? "s" : ""}`, detail: dech.hoursOf(here[0]) };
+}
+
 /** The commune's déchèteries: how many take the green waste and the bulky items now, else that they are to be checked. */
 function wasteLive(p: PlacePage, data: Cached<DechetsAnswer> | null | undefined, now: Date): Live | undefined {
   if (!data) return undefined;
@@ -468,6 +474,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       foot: fiche ? `<a href="${esc(fiche)}" rel="noopener">Fiche service-public.fr</a>` : `<a href="/#assistant">Demandez à votre IA →</a>`,
     },
     ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, live: wasteLive(p, l.dechets, now) }] : []),
+    ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, live: elsewhereLive(p) }] : []),
     { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `<a href="${sante.GARDE.site}" rel="noopener">Pharmacie de garde : 3237.fr</a>` },
     ...(hikes ? [{ icon: "mountain", nom: "Randonnée", href: hikes.href, live: hikes.live, foot: hikes.foot }] : []),
     { icon: "music", nom: "Sorties", href: "/evenements", live: communeEvents(p, l.agenda) },

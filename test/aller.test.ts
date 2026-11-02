@@ -237,7 +237,7 @@ describe("« Y aller » beyond /enfants: stations, bathing, beaches, recycling c
 
   it("is on each recycling centre, its address and commune to copy", () => {
     const page = decheteriesPage(O, { value: { etats: [], sources: [] }, fetchedAt: NOW, stale: false } as never, NOW);
-    expect(labels(page)).toHaveLength(dech.SITES.length);
+    expect(labels(page)).toHaveLength(dech.SITES.length + dech.ELSEWHERE.length);
     const s = dech.SITES.find((x) => x.adresse)!;
     expect(page).toContain(`data-a="${`${s.adresse}, ${s.commune}`.replace(/'/g, "&#39;")}"`);
     expect(sheets(page)).toBe(1);

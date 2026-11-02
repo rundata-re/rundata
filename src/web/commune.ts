@@ -20,7 +20,7 @@ import * as internet from "../vie/internet.js";
 import * as loyers from "../vie/loyers.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
-import { de, fr, nombre } from "../tools/format.js";
+import { a, de, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
 import { coastText, cyclone, cycloneLevel, feminine, forZone, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
@@ -140,7 +140,7 @@ function tile(t: Tile, span: number[] = []): string {
 function weather(p: PlacePage, data: Cached<PlaceData> | null, now: Date): Live | undefined {
   if (!data) return undefined;
   const s = enTete(data.value.meteo?.stations);
-  if (!s) return empty(`Aucune température près de ${p.nom} dans la lecture ${readAt(data.fetchedAt, now).de}.`);
+  if (!s) return empty(`Aucune température près ${de(p.nom)} dans la lecture ${readAt(data.fetchedAt, now).de}.`);
   // In the evening, tomorrow's forecast rather than what is left of today; from today's, whenever the copy was made.
   const evening = new Date(now.getTime() + 4 * 3600_000).getUTCHours() >= 17;
   const jours = joursDuJour(data!.value.prevision?.jours, data.fetchedAt, now);
@@ -170,7 +170,7 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
   return officielLive(lue({
     // As /aujourdhui says it (tools/resume.ts): « Vigilance météo : verte » / « pour l'Ouest (Météo-France), la zone de Saint-Paul ».
     valeur: `Vigilance météo : ${said}`,
-    detail: esc(`${forZone(name)} (Météo-France), la zone de ${p.nom}`) + (coast ? ` · ${esc(coast)}` : ""),
+    detail: esc(`${forZone(name)} (Météo-France), la zone ${de(p.nom)}`) + (coast ? ` · ${esc(coast)}` : ""),
   }, data!, now), mf.OFFICIEL_VIGILANCE);
 }
 
@@ -473,7 +473,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     { icon: "music", nom: "Sorties", href: "/evenements", live: communeEvents(p, l.agenda) },
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),
     { icon: "calendar", nom: "Soleil et calendrier", href: "/calendrier", live: sunTimes(p, l.calendrier, now) },
-    { icon: "map", nom: "Terrain et risques", question: `Mon adresse à ${p.nom} est-elle en zone inondable ?`, foot: `<a href="/#assistant">Demandez à votre IA →</a>`, wide: true },
+    { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/#assistant">Demandez à votre IA →</a>`, wide: true },
   ];
   // Figures of a year or a quarter, out of the grid that says « en ce moment » (marketing, 26/10).
   const habiter: Tile[] = [
@@ -541,7 +541,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ${headline}
     <p class="hero-cta"><a class="btn glass" href="/aujourdhui/${p.slug}">${esc(LINK(p))}</a></p>
     ${ask(`Kosa i spas ${p.nom} astèr ? Gèt si ${url} é di amwin.`,
-      `Que se passe-t-il en ce moment à ${p.nom} ? Lis ${url} et résume-moi la météo, la vigilance, l'air, les prochains bus et si la mairie est ouverte, avec l'heure des données.`)}
+      `Que se passe-t-il en ce moment ${a(p.nom)} ? Lis ${url} et résume-moi la météo, la vigilance, l'air, les prochains bus et si la mairie est ouverte, avec l'heure des données.`)}
   </div>
   <figure class="card mapcard nophone">${islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
 </div>`;

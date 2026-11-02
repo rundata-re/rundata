@@ -8,7 +8,7 @@ import type { Cached } from "../cache.js";
 import * as feux from "../providers/feux.js";
 import * as mf from "../providers/vigilance.js";
 import { listLine, QUIET, URGENCE, when } from "../tools/feux.js";
-import { credits as creditOf } from "../tools/format.js";
+import { credits as creditOf, de } from "../tools/format.js";
 import { cyclone, islandGreen, NONE_ISSUED_SAID, raised } from "../tools/vigilance.js";
 import type { Alerte, SentiersAnswer } from "./data.js";
 import { CLE_FERME, CLE_FEU, closedMarkers, closedTrails, connectorCta, crumbBar, crumbs, fireId, fireMarkers, onfMap, sourcesNote, webPage } from "./domains.js";
@@ -45,7 +45,7 @@ export function feuxDescription(fires: feux.Feux | null, now: Date): string {
     n === 1
       ? `1 feu vu par satellite en 24 h à La Réunion (974), ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`
       : `${n} feux vus par satellite en 24 h à La Réunion (974), le dernier ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`;
-  const full = make(` près de ${last.lieu}`);
+  const full = make(` près ${de(last.lieu)}`);
   return full.length <= DESCRIPTION_MAX ? full : make("");
 }
 

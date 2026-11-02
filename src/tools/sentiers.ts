@@ -399,8 +399,8 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   } else if (res) {
     const from = { lon: res.lieu.lon, lat: res.lieu.lat };
     zone = {
-      nom: `${NEAR_KM} km autour de ${res.lieu.nom}`,
-      dans: `À moins de ${NEAR_KM} km de ${res.lieu.nom}`,
+      nom: `${NEAR_KM} km autour ${de(res.lieu.nom)}`,
+      dans: `À moins de ${NEAR_KM} km ${de(res.lieu.nom)}`,
       sentiers: carte.sentiers.filter((s) => near(s, from.lon, from.lat) <= NEAR_KM),
       routes: carte.routes.filter((r) => near(r, from.lon, from.lat) <= NEAR_KM),
       from,

@@ -14,6 +14,7 @@
  * Every source of toutesLesSources (server.ts) has its entry here (test/producteurs.test.ts), its producers given or
  * taken from the agendas that read it.
  */
+import { de } from "./articles.js";
 import { normalize } from "./places/resolve.js";
 import { LUS } from "./providers/actualites.js";
 import { AGENDAS, type Agenda } from "./providers/agenda.js";
@@ -43,9 +44,7 @@ export interface Fiche {
 
 /** « Commune de Saint-Leu », « Commune du Port », « Commune des Trois-Bassins ». */
 export function commune(nom: string): string {
-  if (nom.startsWith("Le ")) return `Commune du ${nom.slice(3)}`;
-  if (nom.startsWith("Les ")) return `Commune des ${nom.slice(4)}`;
-  return `Commune de ${nom}`;
+  return `Commune ${de(nom)}`;
 }
 
 /** The charge point operators, each once whatever its spelling (« EZDrive », « Ezdrive »), as the file first writes it. */

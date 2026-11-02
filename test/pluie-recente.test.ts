@@ -69,14 +69,14 @@ describe("the rain of the last hours", () => {
     const rain = { hourly: HOURLY, slots: () => [] };
     const b = recentRainBlock(rain, { id: "97412356", nom: "La Crête", fit: near }, "Saint-Joseph", NOW, false)!;
     // The value dated 08:00Z (12 h in Réunion) is the rain from 11 h to 12 h.
-    expect(b.par_heure.slice(0, 3)).toEqual(["11\u00a0h–12\u00a0h : 2,6 mm", "10\u00a0h–11\u00a0h : 9,1 mm", "9\u00a0h–10\u00a0h : 0,6 mm"]);
+    expect(b.par_heure.slice(0, 3)).toEqual(["11:00–12:00 : 2,6 mm", "10:00–11:00 : 9,1 mm", "09:00–10:00 : 0,6 mm"]);
     expect(b.convention).toBe(CONVENTION);
-    expect(b.derniere_pluie).toBe("aujourd'hui entre 11\u00a0h et 12\u00a0h");
+    expect(b.derniere_pluie).toBe("aujourd'hui entre 11:00 et 12:00");
     // Midnight to noon: 2.6 + 9.1 + 0.6 (the 0.2 of yesterday 20 h–21 h left out).
-    expect(b.cumul_depuis_minuit).toBe("12,3 mm de 0\u00a0h à 12\u00a0h");
+    expect(b.cumul_depuis_minuit).toBe("12,3 mm de 00:00 à 12:00");
     // Twelve hours, the ones of yesterday named so.
     expect(b.par_heure).toHaveLength(12);
-    expect(b.par_heure.at(-1)).toBe("0\u00a0h–1\u00a0h : 0 mm");
+    expect(b.par_heure.at(-1)).toBe("00:00–01:00 : 0 mm");
   });
 
   it("says the hours not read when the hourly package is stuck on an old copy, never as the hour under way", () => {
@@ -87,10 +87,10 @@ describe("the rain of the last hours", () => {
     expect(b.par_heure.slice(0, 3)).toEqual([
       "16:30–17:24 : 0 mm (dernières mesures lues, toutes les 6 minutes)",
       "12:00–16:30 : non lue (notre lecture n'a pas abouti)",
-      "11\u00a0h–12\u00a0h : 2,6 mm",
+      "11:00–12:00 : 2,6 mm",
     ]);
     // The last rain read is before the hours not read: it may have rained since.
-    expect(b.derniere_pluie).toBe("aujourd'hui entre 11\u00a0h et 12\u00a0h (de 12:00 à 16:30, non lue : il a pu pleuvoir pendant ce temps)");
+    expect(b.derniere_pluie).toBe("aujourd'hui entre 11:00 et 12:00 (de 12:00 à 16:30, non lue : il a pu pleuvoir pendant ce temps)");
     // Rain measured after them is the last rain: said as it is.
     const wet = slots.map((x, k) => (k === 2 ? { ...x, rr: 0.2 } : x));
     expect(recentRainBlock({ hourly: HOURLY, slots: () => wet }, { id: "97412356", nom: "La Crête", fit: near }, "Saint-Joseph", now, false)!.derniere_pluie).toBe("aujourd'hui entre 17:06 et 17:12");
@@ -110,9 +110,9 @@ describe("the rain of the last hours", () => {
   it("goes back 24 hours when the last rain is older than 12 hours, yesterday's hours named", () => {
     const b = recentRainBlock({ hourly: HOURLY, slots: () => [] }, { id: "97422440", nom: "Plaine des Cafres", fit: near }, "Plaine des Cafres", NOW, false)!;
     expect(b.par_heure).toHaveLength(24);
-    expect(b.par_heure).toContain("hier 22\u00a0h–23\u00a0h : 0,2 mm");
-    expect(b.derniere_pluie).toBe("hier entre 22\u00a0h et 23\u00a0h");
-    expect(b.cumul_depuis_minuit).toBe("0 mm de 0\u00a0h à 12\u00a0h");
+    expect(b.par_heure).toContain("hier 22:00–23:00 : 0,2 mm");
+    expect(b.derniere_pluie).toBe("hier entre 22:00 et 23:00");
+    expect(b.cumul_depuis_minuit).toBe("0 mm de 00:00 à 12:00");
   });
 
   it("answers « il a plu quand ? » at Saint-Joseph to the 6 minutes, the hour under way included", async () => {
@@ -125,7 +125,7 @@ describe("the rain of the last hours", () => {
       cumul_depuis_minuit: "0,4 mm de 00:00 à 12:54",
     });
     expect(r.pluie_recente.par_heure[0]).toBe("12:00–12:54 : 0,4 mm (heure en cours)");
-    expect(r.pluie_recente.par_heure[1]).toBe("11\u00a0h–12\u00a0h : 0 mm");
+    expect(r.pluie_recente.par_heure[1]).toBe("11:00–12:00 : 0 mm");
     expect(r.resume).toContain("Pluie à Saint-Joseph (pluviomètre, ");
     expect(r.resume).toContain("dernière pluie aujourd'hui entre 12:24 et 12:30\u00a0; 0,4 mm de 00:00 à 12:54 (depuis minuit).");
     expect(r.pluie_recente.bruine).toBeUndefined();
@@ -140,11 +140,11 @@ describe("the rain of the last hours", () => {
       pertinence: "bonne",
       nature: "mesure",
       periode: "de 00:00 à 12:54",
-      maximum: { valeur: 26.5, unite: "°C", quand: "entre 9\u00a0h et 10\u00a0h" },
-      minimum: { valeur: 22.9, unite: "°C", quand: "entre 0\u00a0h et 1\u00a0h" },
+      maximum: { valeur: 26.5, unite: "°C", quand: "entre 09:00 et 10:00" },
+      minimum: { valeur: 22.9, unite: "°C", quand: "entre 00:00 et 01:00" },
       avertissements: [],
     });
-    expect(r.resume).toContain("Depuis minuit (de 00:00 à 12:54) à Saint-Pierre Pierrefonds (aéroport), à 5,9 km : 26,5 °C au plus (entre 9\u00a0h et 10\u00a0h), 22,9 °C au moins (entre 0\u00a0h et 1\u00a0h).");
+    expect(r.resume).toContain("Depuis minuit (de 00:00 à 12:54) à Saint-Pierre Pierrefonds (aéroport), à 5,9 km : 26,5 °C au plus (entre 09:00 et 10:00), 22,9 °C au moins (entre 00:00 et 01:00).");
   });
 
   it("says when the gauge is not at the place, so that no one says it did not rain there", async () => {
@@ -156,7 +156,7 @@ describe("the rain of the last hours", () => {
 
   it("warns that a light drizzle may not be measured when the gauge and the radar see nothing under a loaded sky", async () => {
     // 24 hours back from 12 h.
-    const dry = "pas de pluie mesurée depuis hier 12\u00a0h";
+    const dry = "pas de pluie mesurée depuis hier 12:00";
     const loaded = body(await meteoActuelle(await cache({}, "METAR FMEP 250830Z AUTO 13017KT 9000 FEW009 SCT013 BKN019 24/21 Q1018 TEMPO 3000 SHRA BKN010TCU"), "Saint-Joseph", NOW));
     expect(loaded.pluie_recente.derniere_pluie).toBe(dry);
     expect(loaded.pluie_recente.bruine).toMatch(/une bruine ou une pluie très faible peut leur échapper \(un pluviomètre compte la pluie par 0,2 mm\)/);
@@ -170,10 +170,10 @@ describe("the rain of the last hours", () => {
       const at = async (now: string, hourly = true) =>
         body(await meteoActuelle(await cache({}, undefined, new Date(now), hourly), "Saint-Joseph", new Date(now)));
       // 09:10Z: the 09:00Z hour is not due before 09:15Z, the 08:00Z one in hand is enough.
-      expect((await at("2026-10-25T09:10:00Z")).pluie_recente.par_heure[1]).toBe("11\u00a0h–12\u00a0h : 0 mm");
+      expect((await at("2026-10-25T09:10:00Z")).pluie_recente.par_heure[1]).toBe("11:00–12:00 : 0 mm");
       expect(calls).toBe(0);
       // 09:20Z: due, asked again; unreadable here, so the hours in hand.
-      expect((await at("2026-10-25T09:20:00Z")).pluie_recente.par_heure[1]).toBe("11\u00a0h–12\u00a0h : 0 mm");
+      expect((await at("2026-10-25T09:20:00Z")).pluie_recente.par_heure[1]).toBe("11:00–12:00 : 0 mm");
       expect(calls).toBe(1);
       // Never read: the answer goes without the block.
       const r = await at("2026-10-25T09:20:00Z", false);
@@ -204,8 +204,8 @@ describe("the max and min since midnight on a place's weather page", () => {
     const page = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: false }, NOW);
     expect(page).toContain("<h3>Depuis minuit à Saint-Pierre Pierrefonds (aéroport)</h3>");
     expect(page).toContain("à 5,9 km · pertinence bonne · de 00:00 à 12:54");
-    expect(page).toMatch(/<li><span>Au plus<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">26,5\u202f°C<\/span> <span class="q">entre 9\u00a0h et 10\u00a0h<\/span><\/span><\/li>/);
-    expect(page).toMatch(/<li><span>Au moins<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">22,9\u202f°C<\/span> <span class="q">entre 0\u00a0h et 1\u00a0h<\/span><\/span><\/li>/);
+    expect(page).toMatch(/<li><span>Au plus<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">26,5\u202f°C<\/span> <span class="q">entre 09:00 et 10:00<\/span><\/span><\/li>/);
+    expect(page).toMatch(/<li><span>Au moins<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">22,9\u202f°C<\/span> <span class="q">entre 00:00 et 01:00<\/span><\/span><\/li>/);
     // A copy of the day before, served after midnight while the next is built: yesterday's would pass for today's.
     const late = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: true }, new Date("2026-10-25T20:10:00Z"));
     expect(late).toContain("Mesuré en ce moment près de Saint-Pierre");

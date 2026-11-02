@@ -3,6 +3,7 @@
  * event service. No key; events appear once an analyst has located them (minutes to hours). Most are tiny
  * (magnitude under 1) and sit under the volcano's summit: their count, not their size, says the volcano is stirring.
  */
+import { de } from "../articles.js";
 import type { Cache, Cached } from "../cache.js";
 import gazetteer from "../places/gazetteer.json" with { type: "json" };
 import { bearingDeg, distanceKm } from "../geo.js";
@@ -76,8 +77,7 @@ export function where(lon: number, lat: number): string {
     if (k < d) [best, d] = [c, k];
   }
   const dir = DIRECTIONS[Math.round(bearingDeg(best.lon, best.lat, lon, lat) / 45) % 8];
-  const of = best.nom.replace(/^Le /, "du ").replace(/^Les /, "des ").replace(/^(?!du |des )/, "de ");
-  return d < 3 ? `sous ${best.nom}` : `à ${Math.round(d)} km ${dir} ${of}`;
+  return d < 3 ? `sous ${best.nom}` : `à ${Math.round(d)} km ${dir} ${de(best.nom)}`;
 }
 
 export function underSummit(s: Seisme): boolean {

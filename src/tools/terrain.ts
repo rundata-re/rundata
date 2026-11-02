@@ -7,7 +7,7 @@ import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
 import * as loyers from "../vie/loyers.js";
 import { why } from "../types.js";
-import { a, credits, de, nombre, text } from "./format.js";
+import { a, a as aCommune, credits, de, nombre, text } from "./format.js";
 
 // What a PLU zone letter means (code de l'urbanisme, articles R151-18 to R151-25).
 const ZONE_TYPES: Record<string, string> = {
@@ -338,7 +338,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
       const near = ((await settle(terrain.SOURCES.ban.id, terrain.streets(cache, adresse.split(",")[0], insee))) ?? []).filter((x) => x !== street);
       const N = "\u00a0";
       const q = (x: string) => `«${N}${x}${N}»`;
-      const at = commune ? ` à ${commune}` : "";
+      const at = commune ? ` ${aCommune(commune)}` : "";
       const one = near.length === 1;
       return {
         ...text({

@@ -3,7 +3,7 @@
  * a Météo-France station, from the hourly package already read for the rain of the last hours (its tn and tx, the
  * extremes within each hour), then the 6-minute slots of the hour under way. No request of its own.
  */
-import { fr, paire } from "./format.js";
+import { a, fr, paire } from "./format.js";
 import type { RecentRain } from "../providers/meteofrance.js";
 import type { Fit } from "./representativeness.js";
 import { day, mins } from "./pluie-recente.js";
@@ -22,7 +22,7 @@ export interface StationTemperature {
 
 interface Extreme {
   valeur: number;
-  /** When: « entre 12 h et 13 h » for an hour, « à 20:42 » for a 6-minute measure. */
+  /** When: « entre 12:00 et 13:00 » for an hour, « à 20:42 » for a 6-minute measure, with its minutes as the period. */
   quand: string;
 }
 
@@ -52,7 +52,7 @@ export function todayTemperatureBlock(rain: RecentRain, station: StationTemperat
     const e = end - k * HOUR_MS;
     if (e - HOUR_MS < midnight) continue;
     if (m.tx[k] == null || m.tn[k] == null) missing++;
-    const [x, y] = paire(mins(e - HOUR_MS), mins(e));
+    const [x, y] = paire(mins(e - HOUR_MS), mins(e), true);
     meet(m.tx[k], m.tn[k], `entre ${x} et ${y}`);
   }
   // Then the hour under way, from the 6-minute measures (a value at the slot's end, not the extreme within it).
@@ -79,6 +79,6 @@ export function todayTemperatureBlock(rain: RecentRain, station: StationTemperat
     maximum: { valeur: max.valeur, unite: "°C", quand: max.quand },
     minimum: { valeur: min.valeur, unite: "°C", quand: min.quand },
     avertissements,
-    resume: `Depuis minuit (${periode}) à ${station.nom}, à ${fr(station.fit.distance_km)} km : ${fr(max.valeur)} °C au plus (${max.quand}), ${fr(min.valeur)} °C au moins (${min.quand}).`,
+    resume: `Depuis minuit (${periode}) ${a(station.nom)}, à ${fr(station.fit.distance_km)} km : ${fr(max.valeur)} °C au plus (${max.quand}), ${fr(min.valeur)} °C au moins (${min.quand}).`,
   };
 }

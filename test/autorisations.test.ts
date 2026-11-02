@@ -47,11 +47,11 @@ const restore = () => {
 const unasked = () => {
   for (const a of Object.values(AUTORISATIONS)) if (a.etat !== "permise" && a.etat !== "accordee") Object.assign(a, { etat: "a_demander", demandee_le: undefined });
 };
-// Asked on 26/10: the agendas or news of eight communes, the notices of power cuts of three.
-const DEMANDEES = ["agenda:la_possession", "agenda:le_tampon", "agenda:petite_ile", "agenda:saint_andre", "agenda:saint_benoit", "agenda:saint_joseph", "agenda:saint_philippe", "agenda:saint_pierre", "courant:Saint-André", "courant:Saint-Philippe", "courant:Sainte-Suzanne"];
+// Asked on 26/10: the agendas or news of the twelve communes, the notices of power cuts of the four.
+const DEMANDEES = ["agenda:cilaos", "agenda:etang_sale", "agenda:la_possession", "agenda:le_tampon", "agenda:petite_ile", "agenda:saint_andre", "agenda:saint_benoit", "agenda:saint_denis", "agenda:saint_joseph", "agenda:saint_philippe", "agenda:saint_pierre", "agenda:sainte_rose", "courant:Cilaos", "courant:Saint-André", "courant:Saint-Philippe", "courant:Sainte-Suzanne"];
 
 describe("the setting, by source", () => {
-  it("lists the agendas and news of twelve communes, and the notices of power cuts of four, not agreed yet, eleven asked on 26/10; Bras-Panon agreed on 28/10", () => {
+  it("lists the agendas and news of twelve communes, and the notices of power cuts of four, not agreed yet, all sixteen asked on 26/10; Bras-Panon agreed on 28/10", () => {
     // Those whose terms allow it on conditions (« permise ») apart, and those that agreed: they are read.
     expect(AUTORISATIONS["agenda:bras_panon"]).toEqual({ commune: "Bras-Panon", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-10-28" });
     expect(AGENDAS.find((a) => a.id === "bras_panon")!.source.licence).toBe("Information publique (agenda municipal)\u00a0; repris avec son accord écrit du 28/10/2026");
@@ -74,13 +74,12 @@ describe("the setting, by source", () => {
   it("says the communes asked, and the day, in one sentence after the block: each commune named once", () => {
     const agendas = mentionIle();
     expect(agendas).toHaveLength(1);
-    expect(agendas[0]).toMatch(/^Les mentions légales des sites de 12 communes [^]*qu'elles y publient\. Nous avons demandé cet accord le 26\/10 à La Possession, au Tampon, à Petite-Île, à Saint-André, à Saint-Benoît, à Saint-Joseph, à Saint-Philippe et à Saint-Pierre, et attendons leur réponse\.$/);
-    // Named in the block, and again in the sentence only when asked.
-    const asked = (c: string) => DEMANDEES.some((k) => k.startsWith("agenda:") && AUTORISATIONS[k].commune === c);
-    for (const c of DOUZE) expect([c, agendas[0].split(c.replace(/^Le /, "")).length - 1]).toEqual([c, asked(c) ? 2 : 1]);
+    expect(agendas[0]).toMatch(/^Les mentions légales des sites de 12 communes [^]*qu'elles y publient\. Nous leur avons demandé cet accord le 26\/10 et attendons leur réponse\.$/);
+    // All asked the same day: each named in the block only.
+    for (const c of DOUZE) expect([c, agendas[0].split(c.replace(/^Le /, "")).length - 1]).toEqual([c, 1]);
     expect(mentionCourte("Le Tampon")?.detail).toBe("ses mentions légales l'interdisent sans son accord, demandé le 26/10");
-    expect(mentionCourte("Cilaos")?.detail).toBe("ses mentions légales l'interdisent sans son accord");
-    expect(ileMention("courant")).toEqual([expect.stringMatching(/^Les mentions légales des sites de 4 communes [^]*Ils restent consultables sur leurs sites\. Nous avons demandé cet accord le 26\/10 à Saint-André, à Saint-Philippe et à Sainte-Suzanne, et attendons leur réponse\.$/)]);
+    expect(mentionCourte("Cilaos")?.detail).toBe("ses mentions légales l'interdisent sans son accord, demandé le 26/10");
+    expect(ileMention("courant")).toEqual([expect.stringMatching(/^Les mentions légales des sites de 4 communes [^]*Ils restent consultables sur leurs sites\. Nous leur avons demandé cet accord le 26\/10 et attendons leur réponse\.$/)]);
   });
 });
 
@@ -155,8 +154,10 @@ describe("the communes whose site's terms ask for their authorisation, until the
     expect(mentionIle()).toEqual([`${block} Nous leur avons demandé cet accord le 26/10 et attendons leur réponse.`]);
     // Not all asked: those asked in one sentence after the block, each commune said once (marketing, 26/10).
     restore();
-    expect(mentionIle()).toEqual([`${block} Nous avons demandé cet accord le 26/10 à La Possession, au Tampon, à Petite-Île, à Saint-André, à Saint-Benoît, à Saint-Joseph, à Saint-Philippe et à Saint-Pierre, et attendons leur réponse.`]);
-    expect(COUVERTURE.match(/au Tampon|du Tampon/g)).toEqual(["au Tampon"]);
+    set("Saint-Denis", { etat: "a_demander", demandee_le: undefined });
+    expect(mentionIle()).toEqual([`${block} Nous avons demandé cet accord le 26/10 à Cilaos, à L'Étang-Salé, à La Possession, au Tampon, à Petite-Île, à Saint-André, à Saint-Benoît, à Saint-Joseph, à Saint-Philippe, à Saint-Pierre et à Sainte-Rose, et attendons leur réponse.`]);
+    restore();
+    expect(COUVERTURE).not.toMatch(/(?:à|de) Le Tampon/);
     unasked();
     set("Le Tampon", { etat: "demandee", demandee_le: "2026-10-26" });
     expect(mentionIle()).toEqual([`${block} Nous avons demandé cet accord le 26/10 au Tampon et attendons sa réponse.`]);
@@ -215,7 +216,7 @@ describe("the communes whose site's terms ask for their authorisation, until the
     expect(JSON.stringify(r)).not.toMatch(/letampon\.fr\/agenda|du Tampon, de Saint-Louis/);
     expect(communeEvents(page, { value: old as unknown as AgendaAnswer, fetchedAt: NOW, stale: false })).toMatchObject({ valeur: "1 événement" });
     // Named after the mairies read: not Saint-Louis nor Le Port, credited apart with their terms' clause.
-    expect([SOURCES.mairies.nom, SOURCES.mairies.attribution]).toEqual(["Agendas des mairies de Saint-Paul et des Trois-Bassins", "Villes de Saint-Paul et Les Trois-Bassins"]);
+    expect([SOURCES.mairies.nom, SOURCES.mairies.attribution]).toEqual(["Agendas des mairies de Saint-Paul et des Trois-Bassins", "Villes de Saint-Paul et des Trois-Bassins"]);
     expect(sourcesServies(old.sources)!.map((c) => c.source)).toEqual([SOURCES.mairies.nom]);
   });
 
@@ -326,9 +327,9 @@ describe("the notices of power cuts of the mairies whose site's terms ask for th
     expect(ileMention("courant")).toEqual([`${BLOC} Nous leur avons demandé cet accord le 26/10 et attendons leur réponse.`]);
     set("Sainte-Suzanne", { demandee_le: "2026-10-27" }, "courant");
     expect(ileMention("courant")).toEqual([`${BLOC} Nous avons demandé cet accord à Cilaos, à Saint-André et à Saint-Philippe le 26/10 et à Sainte-Suzanne le 27/10, et attendons leur réponse.`]);
-    // As they are: Cilaos not asked yet.
+    // As they are: the four asked on 26/10.
     restore();
-    expect(ileMention("courant")).toEqual([`${BLOC} Nous avons demandé cet accord le 26/10 à Saint-André, à Saint-Philippe et à Sainte-Suzanne, et attendons leur réponse.`]);
+    expect(ileMention("courant")).toEqual([`${BLOC} Nous leur avons demandé cet accord le 26/10 et attendons leur réponse.`]);
   });
 
   it("are no longer said from the copy kept before: the commune's mention instead, not « publishes nothing »", () => {

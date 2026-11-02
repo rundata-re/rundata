@@ -1,6 +1,8 @@
 import { ageMinutes, ageText, compass, localTime, versant } from "../geo.js";
 import type { Resolution } from "../places/resolve.js";
 import { withMentions } from "../mentions.js";
+
+export { a, de } from "../articles.js";
 import type { Reading, SourceInfo } from "../types.js";
 
 /**
@@ -46,19 +48,9 @@ export function nombre(n: number): string {
   return n.toLocaleString("fr-FR", { maximumFractionDigits: 20 }).replace(/\s/g, "\u202f");
 }
 
-/** « de Saint-Paul », « du Tampon », « des Avirons », « de L'Étang-Salé ». */
-export function de(nom: string): string {
-  return nom.replace(/^Le /, "du ").replace(/^Les /, "des ").replace(/^(?!du |des )/, "de ");
-}
-
 /** « Saint-Denis, Saint-Paul et Salazie ». */
 export function enumeration(xs: string[]): string {
   return xs.length > 1 ? `${xs.slice(0, -1).join(", ")} et ${xs.at(-1)}` : xs.join("");
-}
-
-/** « à Saint-Paul », « au Tampon », « aux Avirons », « à L'Étang-Salé ». */
-export function a(nom: string): string {
-  return nom.replace(/^Le /, "au ").replace(/^Les /, "aux ").replace(/^(?!au |aux )/, "à ");
 }
 
 export function show(r: Reading): string {

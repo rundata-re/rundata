@@ -5,7 +5,7 @@ import * as airMesures from "../providers/air-mesures.js";
 import * as atmo from "../providers/atmo.js";
 import * as capteurs from "../providers/capteurs.js";
 import { why } from "../types.js";
-import { credits, notFound, placeBlock, text } from "./format.js";
+import { a, credits, notFound, paire, placeBlock, text } from "./format.js";
 
 const today = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 
@@ -54,16 +54,16 @@ export function diffusion(list: atmo.Index[], day: string): string | undefined {
 // A measure is said late once its hour ended this long ago.
 const LATE_MS = 3 * 3600_000;
 
-// The kit's way: « 7 h » for a round hour, « 7 h 30 » else; an hour ending at midnight ends at « 24 h ».
-const hour = (iso: string, end = false) => {
-  const [h, min] = [Number(iso.slice(11, 13)), iso.slice(14, 16)];
-  const at = end && h === 0 && min === "00" ? 24 : h;
-  return min === "00" ? `${at} h` : `${at} h ${min}`;
+// Minutes since midnight of a local ISO time; an hour ending at midnight ends at 24:00, written « 24\u00a0h » (format.ts).
+const minutes = (iso: string, end = false) => {
+  const m = Number(iso.slice(11, 13)) * 60 + Number(iso.slice(14, 16));
+  return end && m === 0 ? 24 * 60 : m;
 };
 
 /** The hour measured: « de 7 h à 8 h », with its day when it is not today's, « le 28/10, de 23 h à 24 h ». */
 export function hourMeasured(m: airMesures.Mesure, now: Date): string {
-  const hours = `de ${hour(m.debut)} à ${hour(m.fin, true)}`;
+  const [from, to] = paire(minutes(m.debut), minutes(m.fin, true));
+  const hours = `de ${from} à ${to}`;
   return m.debut.slice(0, 10) === today(now) ? hours : `le ${m.debut.slice(8, 10)}/${m.debut.slice(5, 7)}, ${hours}`;
 }
 
@@ -278,7 +278,7 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
   const next = mine.find((x) => x.jour > day);
   const mesures = await stations(cache, now, res.lieu);
   const amateur = await amateurs(cache, now);
-  const parts = [now_ && sentence(now_, `Qualité de l'air prévue aujourd'hui à ${res.lieu.commune}`), next && sentence(next, "demain")].filter(Boolean);
+  const parts = [now_ && sentence(now_, `Qualité de l'air prévue aujourd'hui ${a(res.lieu.commune)}`), next && sentence(next, "demain")].filter(Boolean);
   return text({
     lieu: placeBlock(lieu, res),
     resume: parts.length ? `${parts.join("\u00a0; ")}.` : `Pas d'indice publié pour ${res.lieu.commune} aujourd'hui.`,

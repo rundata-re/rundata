@@ -94,7 +94,7 @@ describe("the server's instructions", () => {
     expect(d("crues_rivieres")).toContain("radier submergé");
     // The time of the data said in words: with fraicheur only listed among the fields, 6 answers of the Monday bench of
     // 2/11/2026 out of 30 left it out, and 11 of 12 when those 6 were asked again.
-    expect(text).toContain("l'heure de lecture (fraicheur, « 23:12, heure de La Réunion »), à dire en toutes lettres ; la date si fraicheur n'a pas d'heure.");
+    expect(text).toContain("l'heure de la donnée (fraicheur, « 23:12, heure de La Réunion »), à dire en toutes lettres ; la date si fraicheur n'a pas d'heure.");
     // Not « pas couvert » before sources_donnees, even with no tool called yet (a public tenders question, 31/10/2026).
     expect(text).toContain("avant de dire qu'un sujet n'est pas couvert, même à la première question, appeler sources_donnees.");
     expect(d("sources_donnees").replace(/[\u00a0\u202f]/g, " ").startsWith("À appeler avant de dire qu'un sujet n'est pas couvert, même à la première question : la liste à jour de ce que rundata.re couvre.")).toBe(true);

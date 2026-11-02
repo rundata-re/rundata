@@ -8,11 +8,13 @@
  * Each pair of a time and a genre is a layer of islandMap (`ly-<time>-<genre>`), or a line saying nothing was found:
  * the page's own CSS shows the one of the buttons checked. Nothing read: the agenda's copy, already there.
  * A map that filters (marketing's charter of the maps, 31/10/2026): in the content, the width of the page.
+ * Put in the page only when it nears the screen (laterMap()), its room kept until then: on a phone it is two screens
+ * under the top, and the first paint neither builds nor draws it. Its buttons stay in the page; the list says the same.
  */
 import { resolvePlace } from "../places/resolve.js";
 import { occurrences, type EventRow } from "../tools/agenda.js";
 import { COUNT_COLOR, legende } from "./carte-legende.js";
-import { esc, fenetre, islandMap, type Marker, project } from "./map.js";
+import { esc, fenetre, H, islandMap, laterMap, type Marker, project, W } from "./map.js";
 
 type Row = Pick<EventRow, "titre" | "date" | "quand" | "autres_dates" | "commune" | "lieu" | "lien" | "genres" | "position" | "source">;
 
@@ -106,8 +108,9 @@ export function pointsSvg(points: Point[], href: string, rounds: [number, number
 // lieu », Okabe-Ito's sky blue), apart from the rounds' count and from the yellow that marks what a page is about.
 const POINT = "#56b4e9";
 // Under the text on a phone: its drawing waits until it nears the screen (content-visibility), the first paint does not
-// (slow 4G at 390 px: +118 ms instead of +217 ms).
-const STYLE = ".evmap{content-visibility:auto;contain-intrinsic-size:auto 560px}.evmap .tabs{margin-bottom:.45rem}.evmap .tabs label{white-space:nowrap;font-size:.82rem;padding:.22rem .62rem}" +
+// (slow 4G at 390 px: +118 ms instead of +217 ms). `.evm`: the map's room while it waits to be put in (laterMap()).
+const STYLE = `.evmap{content-visibility:auto;contain-intrinsic-size:auto 560px}.evm{aspect-ratio:${W}/${H}}` +
+  ".evmap .tabs{margin-bottom:.45rem}.evmap .tabs label{white-space:nowrap;font-size:.82rem;padding:.22rem .62rem}" +
   `.evmap .evp .sh{fill:${POINT};stroke:#fff;stroke-width:5;paint-order:stroke}.evmap .ev0{margin:.4rem 0 0}`;
 
 const TIMES = [["soir", "Ce soir", "ce soir"], ["demain", "Demain", "demain"], ["we", "Ce week-end", "ce week-end"]] as const;
@@ -157,7 +160,7 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
     shown.map((id) => { const [t, i] = id.split("-"); return `.evmap:has(#evt-${t}:checked):has(#evg-${i}:checked) .ly-${id}{display:${empty.includes(`ly-${id}"`) ? "block" : "inline"}}`; }).join("");
   const label = "Carte de La Réunion (974) : les événements de ce soir, de demain ou du week-end, par commune";
   return `<figure class="card mapcard evmap"><style>${css}</style>${times}${genre}` +
-    islandMap({ layers, overlay: under, label }) + empty +
+    `<div class="evm">${laterMap(islandMap({ layers, overlay: under, label }))}</div>` + empty +
     `<figcaption class="note">${legende([
       { forme: "rond", couleur: COUNT_COLOR, texte: "3", dit: "événements de la commune" },
       { forme: "point", couleur: POINT, dit: "lieu de l'événement, d'après l'annonce" },

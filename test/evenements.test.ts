@@ -6,6 +6,7 @@ import { concertsPage, holidays, inWeekend, occurrences, weekend, weekendPage, w
 import { STYLE_PATH } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
 import { beside, couche } from "../src/web/evenements-carte.js";
+import { H, W } from "../src/web/map.js";
 
 type Row = NonNullable<AgendaAnswer["evenements"]>[number];
 const row = (titre: string, date: string, quand: string, more: Partial<Row> = {}): Row =>
@@ -237,6 +238,20 @@ describe("the map of /evenements", () => {
     // Two events at one venue: counted, without the one's link or source.
     expect(c.points).toEqual([{ lieu: "Léspas", lon: 55.27, lat: -21.01, nombre: 2, titre: "Kabar" }]);
     expect(couche([placed]).points).toEqual([{ lieu: "Léspas", lon: 55.27, lat: -21.01, nombre: 1, titre: "Kabar", lien: "https://example.re/Kabar", source: "Léspas (site lu le mardi 27/10 à 08:00)" }]);
+  });
+
+  it("waits in a template until it nears the screen, its room kept, its buttons and its empty lines in the page", () => {
+    const html = page(ROWS, ROWS.filter((r) => inWeekend(r, weekend(TUESDAY), TUESDAY).length));
+    const fig = html.slice(html.indexOf('<figure class="card mapcard evmap">'), html.indexOf("</figure>", html.indexOf('<figure class="card mapcard evmap">')));
+    const [open, close] = [fig.indexOf('<div class="evm"><template class="carte"><svg class="map'), fig.indexOf("</template><script>")];
+    expect(open).toBeGreaterThan(0);
+    // The layers wait with the map; the buttons that choose them, and the lines that say a pair has nothing, do not.
+    expect(fig.slice(open, close)).toContain('<g class="ly ly-we-0">');
+    expect(fig.slice(open, close)).not.toContain('<input type="radio"');
+    expect(fig.indexOf('<div class="tabs evt"')).toBeLessThan(open);
+    expect(fig.indexOf('<p class="note ev0 ly ly-demain-1">')).toBeGreaterThan(close);
+    // Its room, the map's own shape, so that nothing moves when it comes.
+    expect(html).toContain(`.evm{aspect-ratio:${W}/${H}}`);
   });
 
   it("opens on the first time that has events, and is left out when none has", () => {

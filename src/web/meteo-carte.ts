@@ -393,6 +393,20 @@ im.onload=()=>{w=im.width;h=im.height;const c=ve;c.width=w;c.height=h;x=c2d(c);x
 for(let k=0;k<w*h;k++)if(A[k*4]){M[k]=1;land.push(k)}const now=field(st);set(now);
 RJ.v={live:st,now,grid:field,show:set,mix:(F,G,f)=>{for(let k=0;k<w*h;k++){U[k]=F[0][k]+(G[0][k]-F[0][k])*f;V[k]=F[1][k]+(G[1][k]-F[1][k])*f}veil()},back:()=>set(now)};go()};im.src=ve.dataset.alt}`;
 
+/**
+ * The land cells seen badly on an image (of 8 382) from which the sentence of the hatches is said under the map; the
+ * hatches are drawn from the first. Under it, an ordinary day: 0 to 98 cells, median 38.5, over 330 surveys of
+ * 29/10-2/11/2026, 100 or more only during the two episodes (marketing's choice).
+ */
+export const HACHURES_DITES = 100;
+
+/** Whether an image's land (`land`, cell by cell) has at least `from` cells seen badly (`mal`, "1" each). */
+export const badlyEnough = (land: ArrayLike<number>, mal: string, from: number) => {
+  let n = 0;
+  for (let k = 0; k < mal.length; k++) if (land[k] && mal[k] === "1" && ++n >= from) return true;
+  return false;
+};
+
 /** Where the radars saw badly on an image, cell by cell from 0 to 1 (`z`: nowhere). */
 type Badly = Float32Array & { z: boolean };
 /**
@@ -689,12 +703,12 @@ let d=null,live=null,L=null,LW=0,LH=0,Lp=null,P=null,ds=[],cw=0,ch=0,g,asked=fal
 // The theme the map is drawn in; during a replay without drops (rd), none move.
 const dark=()=>matchMedia("(prefers-color-scheme: dark)").matches,hush=()=>!${rd}&&!!RJ.on;
 
-const BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée.",calm=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+const BW="Hachures",BAD=" "+BW+"\u00a0: zones que le radar voit mal, où la pluie peut être manquée.",enough=${badlyEnough},calm=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
 const when=(t)=>{const x=loc(t),n=loc(new Date().toISOString());return x.toISOString().slice(0,10)===n.toISOString().slice(0,10)?"de "+hm(t):"du "+p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)+" à "+hm(t)};
 const radars=(l,part)=>{const of=(n)=>(n==="Colorado"?"du ":"de ")+n;return(l.length>1?"Radars ":"Radar ")+l.slice(0,-1).map(of).join(", ")+(l.length>1?" et ":"")+of(l[l.length-1])+" en défaut"+(part?" pendant une partie du rejeu":"")+", selon Météo-France : de la pluie peut manquer sur la carte."};
 // A grid's rainy cells of the island alone (the map shows nothing of the sea, where the radars also see), each weighed
 // by its class, and whether the radars see badly somewhere on it; counted once.
-const DI=new Map(),dist=(j)=>{let r=DI.get(j);if(r)return r;const cells=[],acc=[];let bad="";for(let k=0;k<j.w*j.h;k++){if(!L[k])continue;const c=+j.pluie[k];if(c>0){cells.push(k);acc.push((acc[acc.length-1]||0)+Wt[c])}if(j.mal_vu[k]==="1")bad=BAD}
+const DI=new Map(),dist=(j)=>{let r=DI.get(j);if(r)return r;const cells=[],acc=[],bad=enough(L,j.mal_vu,${HACHURES_DITES})?BAD:"";for(let k=0;k<j.w*j.h;k++){if(!L[k])continue;const c=+j.pluie[k];if(c>0){cells.push(k);acc.push((acc[acc.length-1]||0)+Wt[c])}}
 r={j,cells,acc,bad,n:acc[acc.length-1]||0};DI.set(j,r);if(DI.size>8)DI.delete(DI.keys().next().value);return r};
 // The wind the drops follow (windAt): the anemometers of now, or of the replay's hour (RJ.p.wind); each drop takes it
 // where it is born, its way and its pace (DROPS), its size by its class.

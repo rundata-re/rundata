@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Cached } from "../src/cache.js";
 import { BIKES_STALE_MS, COLUMNS, COMMUNES, communePage, spans } from "../src/web/commune.js";
 import type { CommuneData } from "../src/web/data.js";
+import { H, W } from "../src/web/map.js";
+import { CSS } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 
 const ORIGIN = "https://rundata.re";
@@ -114,5 +116,18 @@ describe("the town hall's tile", () => {
     const page = communePage(ORIGIN, p, commune(ago(60_000), { mairie: hall }), NOW);
     expect(page).toContain(`<p class="tv">Horaires absents de l'annuaire</p>`);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie/i);
+  });
+});
+
+describe("a commune's map", () => {
+  it("waits in a template until it nears the screen, its room kept", () => {
+    const page = communePage(ORIGIN, p, commune(ago(60_000)), NOW);
+    const fig = page.match(/<figure class="card mapcard nophone">(.*?)<\/figure>/s)![1];
+    expect(fig).toMatch(/^<div class="sit"><template class="carte"><svg class="map[^"]*"[^>]*aria-label="Carte de La Réunion \(974\) situant Saint-Pierre"/);
+    // The commune drawn apart, inside the template with the rest of the map.
+    expect(fig.indexOf('<path class="hl"')).toBeGreaterThan(0);
+    expect(fig.indexOf('<path class="hl"')).toBeLessThan(fig.indexOf("</template>"));
+    expect(fig).toMatch(/<\/template><script>.*IntersectionObserver.*<\/script><\/div>$/s);
+    expect(CSS).toContain(`.mapcard .sit{aspect-ratio:${W}/${H}}`);
   });
 });

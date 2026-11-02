@@ -30,7 +30,7 @@ import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
 import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, stillToCome, volcanLive, waitText } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
-import { esc, islandMap } from "./map.js";
+import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
 import { ask, connector, credits, cycloneVg, dayMonth, deg, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
@@ -532,6 +532,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     },
   ];
 
+  // The island situating the commune: hidden on a phone (nophone), where building it still cost 400 ms before the page was
+  // read, so put in only when it nears the screen (laterMap()), its room kept until then (`.sit`). Hidden, it never comes.
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li aria-current="page">${esc(p.nom)}</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
@@ -543,7 +545,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ${ask(`Kosa i spas ${p.nom} astèr ? Gèt si ${url} é di amwin.`,
       `Que se passe-t-il en ce moment ${a(p.nom)} ? Lis ${url} et résume-moi la météo, la vigilance, l'air, les prochains bus et si la mairie est ouverte, avec l'heure des données.`)}
   </div>
-  <figure class="card mapcard nophone">${islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
+  <figure class="card mapcard nophone"><div class="sit">${laterMap(islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` }))}</div></figure>
 </div>`;
 
   // Every tile's producers, as their licences ask: a page with its own sources has none in its footer (layout).

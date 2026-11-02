@@ -23,6 +23,25 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(page).toContain("Ensuite, dans une conversation (appli comprise), nommez rundata.re dans la question, par exemple <b>«\u00a0Avec rundata.re\u00a0: il fait combien à Cilaos en ce moment\u00a0?\u00a0»</b>, ou tapez <b>@</b> et choisissez rundata.re. Sinon, ChatGPT peut répondre avec sa propre météo, sans station ni heure de mesure. Testé avec l'offre ChatGPT Go.");
   });
 
+  it("sends Claude's users to its directory's card first, the custom connector as the other way on /mcp only", async () => {
+    const FICHE = "https://claude.ai/directory/rundata-re";
+    const AUTRE = "<p><b>Autre façon\u00a0:</b> <b>Personnaliser → Connecteurs → + → Ajouter un connecteur personnalisé</b>, avec l'adresse ci-dessus (sur l'offre gratuite, un seul connecteur personnalisé).</p>";
+    const home = await (await handle(get("/", BROWSER), new Cache())).text();
+    const tab = home.slice(home.indexOf('<div class="tab t-claude">'), home.indexOf('<p class="tab t-gemini">'));
+    expect(tab).toBe(`<div class="tab t-claude"><p><b>Toutes les offres, y compris la gratuite.</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude\u00a0: ouvrez <a href="${FICHE}">sa fiche</a>, puis <b>Connecter</b>. Il marche ensuite aussi dans l'appli iPhone et Android.</p></div>\n        `);
+    const mcp = await (await handle(get("/mcp", BROWSER), new Cache())).text();
+    expect(mcp).toContain(`<div class="card"><h3>Claude</h3><p><b>Offre\u00a0:</b> toutes, y compris la gratuite.</p><p><b>Où\u00a0:</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude\u00a0: <a href="${FICHE}">ouvrez sa fiche</a>, puis <b>Connecter</b>.</p>${AUTRE}</div>`);
+    // The steps: the card first, then the address.
+    const step = mcp.slice(mcp.indexOf('<div class="tab t-claude">'), mcp.indexOf('<p class="tab t-gemini">'));
+    expect(step.indexOf(FICHE)).toBeGreaterThan(0);
+    expect(step.indexOf(AUTRE)).toBeGreaterThan(step.indexOf(FICHE));
+    const about = await (await handle(get("/a-propos", BROWSER), new Cache())).text();
+    expect(about).toContain("pour les habitants et pour leurs assistants IA. Il est aussi disponible dans l'annuaire des connecteurs de Claude.</p>");
+    // Available in the directory, nothing more.
+    const card = mcp.slice(mcp.indexOf("<h3>Claude</h3>"), mcp.indexOf("<h3>ChatGPT</h3>"));
+    for (const said of [tab, card, step]) expect(said).not.toMatch(/officiel|certifié|vérifié|recommandé|partenaire/i);
+  });
+
   it("shows a browser at /mcp how to add the connector, and keeps the endpoint for the MCP clients", async () => {
     const hits: Hit[] = [];
     const r = await handle(get("/mcp", BROWSER), new Cache(), () => {}, (h) => hits.push(h));
@@ -44,7 +63,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(lead.split(/[\s\u00a0]+/).filter((w) => /\p{L}/u.test(w)).length).toBeLessThanOrEqual(20);
     expect(band.indexOf('<code id="mcp-adresse">https://rundata.re/<wbr>mcp</code><button type="button" data-copy="mcp-adresse"')).toBeGreaterThan(band.indexOf("<h1>"));
     expect(page.match(/"name":"Brancher mon IA"/)).not.toBeNull();
-    for (const a of ["<h3>Claude</h3>", "<h3>ChatGPT</h3>", "<h3>Le Chat</h3>", 'datetime="2026-10-25"', 'href="/confidentialite"', 'href="/conditions"']) expect(page).toContain(a);
+    for (const a of ["<h3>Claude</h3>", "<h3>ChatGPT</h3>", "<h3>Le Chat</h3>", 'datetime="2026-11-02"', 'href="/confidentialite"', 'href="/conditions"']) expect(page).toContain(a);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1].length).toBeLessThanOrEqual(DESCRIPTION_MAX);
     // ChatGPT answers with its own weather unless rundata.re is named: the card says to name it, no-break spaces as sent.
     expect(page).toContain("<b>Plugins → Ajouter → Ajouter un serveur MCP personnalisé</b>.</p>");

@@ -110,7 +110,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.143";
+export const VERSION = "1.0.144";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -446,23 +446,23 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     {
       title: "Services publics et vie pratique à La Réunion : adresses, horaires, carburants, pharmacies",
       description:
-        "Adresse, horaires d'ouverture (et si c'est ouvert en ce moment), téléphone et site des services publics de La Réunion (974) : " +
+        "Adresse, horaires d'ouverture (et si c'est ouvert), téléphone et site des services publics de La Réunion (974) : " +
         "mairies et mairies annexes, préfecture et sous-préfectures, CAF, CPAM, France Travail, impôts, tribunaux, France services… " +
         "d'après l'annuaire officiel de service-public.fr. Aussi les prix maximum des carburants et de la bouteille de gaz du mois, " +
         "fixés par le préfet (quoi = « carburant », « essence », « gazole », « gaz »), les pharmacies et les hôpitaux les plus proches d'après FINESS " +
         "(quoi = « pharmacie », « médecin de garde », « urgences », « hôpital ») : la pharmacie de garde n'est connue que de 3237.fr et du 32 37, l'urgence et la garde passent par le 15\u00a0; " +
         "les marchés forains et couverts d'après OpenStreetMap (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), et les déchèteries de l'Ouest (TCO) avec les bennes pleines " +
-        "en direct (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte des déchets rue par rue dans l'Ouest " +
+        "en direct (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue " +
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »), d'après les calendriers du TCO\u00a0; " +
-        "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aires de jeux, parcs, piscines, médiathèques, zoos, " +
-        "parcs de loisirs, salles de jeux, skateparks, escalade, musées, commune par commune, avec l'âge quand la carte le donne, d'après OpenStreetMap, Data ES et Basilic\u00a0; " +
-        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale, et le collège de secteur d'une adresse (adresse)\u00a0; " +
+        "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aussi parcs, zoos, " +
+        "parcs de loisirs, salles de jeux, escalade, musées, commune par commune, avec l'âge quand la carte le donne, d'après OpenStreetMap, Data ES et Basilic\u00a0; " +
+        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
         "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…), par secteur, d'après l'annuaire santé Ameli. " +
-        "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ce mois-ci ? », « quel jour passent les poubelles à Saint-Paul ? ».",
+        "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {
         quoi: z.string().describe("Le service cherché, en quelques mots : « mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, ou « carburant » pour les prix du mois, « pharmacie », « urgences », « enfants » pour les lieux où aller avec eux."),
         lieu,
-        adresse: z.string().optional().describe("Collège de secteur (quoi = « collège ») : le numéro et la voie, la commune dans lieu. Ni gardée ni journalisée."),
+        adresse: z.string().optional().describe("Collège de secteur (quoi = « collège ») : l'adresse sur laquelle on s'interroge, pas la position de l'utilisateur : numéro et voie, commune dans lieu. Ni gardée ni journalisée."),
       },
       annotations: { title: "Services publics à La Réunion", ...READ_ONLY },
     },

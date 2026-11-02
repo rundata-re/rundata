@@ -110,8 +110,20 @@ describe("the server's instructions", () => {
     // 41 511 the same day with the doctors in annuaire_services_publics (one short sentence), 41 521 when they are counted.
     // 41 557 the same night with « médecin de garde » in annuaire_services_publics (a few words).
     // 41 763 the same night with the collège of an address in annuaire_services_publics (a few words, and its argument adresse).
+    // 41 762 on 2/11/2026 with that address « sur laquelle on s'interroge », the words said twice in the tool cut to make room.
     expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_770);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
+  });
+
+  it("asks for the address one wonders about, never for the user's position, and says it is neither kept nor logged", async () => {
+    const tools: { name: string; description: string; inputSchema: { properties: Record<string, { description?: string }> } }[] = (await rpcResult("tools/list")).tools;
+    const annuaire = tools.find((t) => t.name === "annuaire_services_publics")!;
+    expect(annuaire.description).toContain("le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)");
+    const adresse = annuaire.inputSchema.properties.adresse.description!;
+    expect(adresse).toContain("l'adresse sur laquelle on s'interroge, pas la position de l'utilisateur");
+    expect(adresse).toContain("Ni gardée ni journalisée.");
+    // Nowhere « votre adresse » or « votre position »: the tools never ask where the user is.
+    expect(JSON.stringify(tools)).not.toMatch(/votre (adresse|position)|your (address|location)/i);
   });
 
   it("list the tools without the SDK's \"$schema\" and default \"execution\", each inputSchema still a JSON Schema object", async () => {

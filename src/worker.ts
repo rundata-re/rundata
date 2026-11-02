@@ -53,6 +53,7 @@ import * as carteScolaire from "./vie/carte-scolaire.js";
 import { why } from "./types.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
+import { plage } from "./web/plage.js";
 
 // How long the edge keeps an entry. Much longer than any freshness window: an old copy is what gets served,
 // marked as such, while a source is down.
@@ -365,6 +366,9 @@ function setup(env: Env): Cache {
   return (cache ??= new Cache(new TieredStore(new MemoryStore(), edge), Date.now, false, env.STORE && new KvStore(env.STORE), VERSION));
 }
 
+/** public/_headers' lines for /demo/*, which a response of the Worker does not get from it. */
+const DEMO_HEADERS = { "cache-control": "public, max-age=31536000, immutable", "x-content-type-options": "nosniff", "x-robots-tag": "noindex" };
+
 export default {
   async fetch(request: Request, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
     const arrived = Date.now();
@@ -374,6 +378,12 @@ export default {
     // A connection past its threshold is answered before anything is read or built.
     const trop = await limite.refuse(request, { mcp: env.LIMITE_MCP, formulaire: env.LIMITE_FORMULAIRES });
     if (trop) return trop;
+    // The demo video, sent through the Worker for it alone (wrangler.jsonc, run_worker_first): the static assets answer
+    // a byte range with the whole file, and Safari plays a video only from ranges (web/plage.ts). Same headers as
+    // public/_headers gives /demo/*.
+    if (env.ASSETS && new URL(request.url).pathname.startsWith("/demo/")) {
+      return plage(request, await env.ASSETS.fetch(new Request(request.url)), DEMO_HEADERS);
+    }
     const c = setup(env);
     // A page served from its last copy refreshes it after the response (web/data.ts); an agenda too slow for the
     // answer is still stored (tools/agenda.ts).

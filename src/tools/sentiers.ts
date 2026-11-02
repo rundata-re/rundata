@@ -432,7 +432,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     : res?.lieu.type === "commune"
       ? airesBlock(aires.inCommune(res.lieu.commune), `dans la commune ${de(res.lieu.commune)}`)
       : zone?.from
-        ? airesBlock(aires.near(zone.from.lon, zone.from.lat, NEAR_KM), `à moins de ${NEAR_KM} km de ${res!.lieu.nom}`, NEAR_KM)
+        ? airesBlock(aires.near(zone.from.lon, zone.from.lat, NEAR_KM), `à moins de ${NEAR_KM} km ${de(res!.lieu.nom)}`, NEAR_KM)
         : named.length
           ? airesBlock(aires.along(named.flatMap((s) => s.points), AIRES_TRAIL_KM), `à moins de ${AIRES_TRAIL_KM * 1000} m ${named.length > 1 ? "de ces sentiers" : "du sentier"}`, AIRES_TRAIL_KM)
           : undefined;

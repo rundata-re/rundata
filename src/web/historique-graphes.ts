@@ -6,7 +6,7 @@
  * as drawn and the table above gives the figures.
  */
 import { GREY_SIGMA } from "../tools/historique.js";
-import { fr } from "../tools/format.js";
+import { a, fr } from "../tools/format.js";
 import type { HistoriqueAnswer } from "./data.js";
 import { chart, known } from "./graphe.js";
 import { esc } from "./map.js";
@@ -42,7 +42,7 @@ function rain(r: Row): string {
   let ns = 0;
   const ncum = norm ? norm.map((v) => Math.round((ns += v) * 10) / 10) : [];
   const last = cum.reduce<number>((b, v, i) => (v != null ? i : b), -1);
-  const said = `Pluie cumulée mesurée par Météo-France à ${r.station} du ${ddmm(days[0].date)} au ${ddmm(days[last].date)}\u00a0: ${num(cum[last]!)} mm mesurés${norm ? `, ${num(ncum[last])} mm pour la normale 1991-2020 à cette date` : ""}.`;
+  const said = `Pluie cumulée mesurée par Météo-France ${a(r.station)} du ${ddmm(days[0].date)} au ${ddmm(days[last].date)}\u00a0: ${num(cum[last]!)} mm mesurés${norm ? `, ${num(ncum[last])} mm pour la normale 1991-2020 à cette date` : ""}.`;
   return card(r, "mm", chart({
     label: said, labels: days.map((j) => ddmm(j.date)), every: 7, h: H, min: 0, max: top(Math.max(...known(cum), ...ncum)),
     lines: [...(norm ? [{ pts: ncum, cls: "ln-no" }] : []), { pts: cum, cls: "ln-p" }],
@@ -59,7 +59,7 @@ function temperatures(r: Row): string {
   const band: [(number | null)[], (number | null)[]] | undefined = n?.tmin && n.tmax ? [n.tmin, n.tmax] : undefined;
   const range = (xs: (number | null)[]) => `de ${num(Math.min(...known(xs)))} à ${num(Math.max(...known(xs)))} °C`;
   const mean = (xs?: number[]) => xs && num(xs.reduce((a, b) => a + b, 0) / xs.length);
-  const said = `Températures de chaque jour mesurées par Météo-France à ${r.station} du ${ddmm(days[0].date)} au ${ddmm(lastOf(days, (j) => j.tmax != null)!)}\u00a0: maximales ${range(tx)}, minimales ${range(tn)}` +
+  const said = `Températures de chaque jour mesurées par Météo-France ${a(r.station)} du ${ddmm(days[0].date)} au ${ddmm(lastOf(days, (j) => j.tmax != null)!)}\u00a0: maximales ${range(tx)}, minimales ${range(tn)}` +
     `${band ? `\u00a0; normale 1991-2020\u00a0: maximales ${mean(n!.tmax)} °C, minimales ${mean(n!.tmin)} °C` : ""}.`;
   return card(r, "°C", chart({
     label: said, labels: days.map((j) => ddmm(j.date)), every: 7, h: H, band,
@@ -76,7 +76,7 @@ function sunshine(r: Row): string {
   const norm = r.normale_jour?.soleil_h;
   const grey = days.map((j) => j.soleil_pct != null && j.soleil_pct < GREY_SIGMA);
   const greys = grey.filter(Boolean).length;
-  const said = `Heures de soleil de chaque jour mesurées par Météo-France à ${r.station} du ${ddmm(days[0].date)} au ${ddmm(lastOf(days, (j) => j.soleil_h != null)!)}\u00a0: ` +
+  const said = `Heures de soleil de chaque jour mesurées par Météo-France ${a(r.station)} du ${ddmm(days[0].date)} au ${ddmm(lastOf(days, (j) => j.soleil_h != null)!)}\u00a0: ` +
     `${num(known(h).reduce((a, b) => a + b, 0) / known(h).length)} h par jour en moyenne${norm ? `, normale 1991-2020 ${num(norm.reduce((a, b) => a + b, 0) / norm.length)} h` : ""}\u00a0; ` +
     `${greys} jour${greys > 1 ? "s" : ""} gris.`;
   return card(r, "heures", chart({
@@ -101,7 +101,7 @@ export function warmer(): string {
   const mean = (xs: [number, number][]) => xs.reduce((s, [, g]) => s + g, 0) / xs.length;
   const first = ys.slice(0, 10), last = ys.slice(-10);
   const hot = ys.reduce((b, v) => (v[1] > b[1] ? v : b));
-  const said = `Écart de la température moyenne de chaque année à la normale 1991-2020 (${fr(chaud.normale_c)}\u00a0°C), mesuré par Météo-France à ${chaud.station}, de ${ys[0][0]} à ${ys[n - 1][0]}\u00a0: ` +
+  const said = `Écart de la température moyenne de chaque année à la normale 1991-2020 (${fr(chaud.normale_c)}\u00a0°C), mesuré par Météo-France ${a(chaud.station)}, de ${ys[0][0]} à ${ys[n - 1][0]}\u00a0: ` +
     `${signed(mean(first))} en moyenne de ${first[0][0]} à ${first[9][0]}, ${signed(mean(last))} de ${last[0][0]} à ${last[9][0]}\u00a0; année la plus chaude ${hot[0]} (${signed(hot[1])}).`;
   const hi = Math.ceil(Math.max(...ys.map(([, g]) => g)) * 2) / 2, lo = Math.floor(Math.min(...ys.map(([, g]) => g)) * 2) / 2;
   const r1 = (v: number) => Math.round(v * 10) / 10;

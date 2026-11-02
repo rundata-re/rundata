@@ -353,7 +353,7 @@ describe("the notices of power cuts of the mairies whose site's terms ask for th
     expect(cilaos.resume.startsWith(CILAOS)).toBe(true);
     expect(cilaos.coupures_annoncees.non_repris).toBe(CILAOS);
     const ile = body(await electricite(c, NOW));
-    expect(ile.resume).toContain("Avis de coupure d'électricité de Cilaos, Saint-André, Saint-Philippe et Sainte-Suzanne non repris, leurs mentions légales l'interdisent sans leur accord (voir non_repris).");
+    expect(ile.resume).toContain("Avis de coupure d'électricité de Cilaos, de Saint-André, de Saint-Philippe et de Sainte-Suzanne non repris, leurs mentions légales l'interdisent sans leur accord (voir non_repris).");
     expect(ile.coupures_annoncees.non_repris).toBe(BLOC);
     vi.restoreAllMocks();
   });

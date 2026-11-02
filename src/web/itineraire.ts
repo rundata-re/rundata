@@ -67,13 +67,13 @@ function stopName(id: number): string {
 
 const legLi = (l: Leg) =>
   `<li><b>${esc(at(l.depart))}</b> ${esc(stopName(l.de))} : ${l.trajet ? `<a href="${esc(l.trajet)}">ligne ${esc(l.ligne)}</a>` : `ligne ${esc(l.ligne)}`} <span class="note">(${esc(l.reseau)})</span> vers ${esc(l.direction)}</li>` +
-  `<li><b>${esc(at(l.arrivee))}</b> descendre à ${esc(stopName(l.a))}</li>`;
+  `<li><b>${esc(at(l.arrivee))}</b> descendre ${esc(aCommune(stopName(l.a)))}</li>`;
 
 function journeyCard(j: Journey): string {
   const [first, second] = j.legs;
   const change = second
     ? j.marche_changement
-      ? `<li class="note">Changement : environ ${fr(walkMin(j.marche_changement))} min à pied jusqu'à ${esc(stopName(second.de))}.</li>`
+      ? `<li class="note">Changement : environ ${fr(walkMin(j.marche_changement))} min à pied jusqu'${esc(aCommune(stopName(second.de)))}.</li>`
       : `<li class="note">Changement au même arrêt.</li>`
     : "";
   return `<li class="card"><h3>${esc(at(j.depart))} → ${esc(at(j.arrivee))} <span class="note">· ${esc(lasting(j.arrivee - j.depart))} · ${second ? "1 correspondance" : "direct"}</span></h3>
@@ -176,7 +176,7 @@ export function itinerairePage(origin: string, r: Answer | undefined, alerte?: A
       result = `<p>Les horaires de bus ne répondent pas pour le moment. Réessayer dans un instant.</p>`;
     } else {
       const { de, a, search } = r as Required<Pick<Answer, "de" | "a" | "search">>;
-      const zones = [de, a].filter((e) => e.sorte === "commune").map((e) => `<p class="note">Résultats pour les principaux arrêts de ${esc(e.nom)} : précisez l'arrêt pour un quartier.</p>`).join("");
+      const zones = [de, a].filter((e) => e.sorte === "commune").map((e) => `<p class="note">Résultats pour les principaux arrêts ${esc(deCommune(e.nom))} : précisez l'arrêt pour un quartier.</p>`).join("");
       const found = search.trop_large
         ? `<p>Trop d'arrêts et de lignes à parcourir : précisez le départ ou l'arrivée, avec un arrêt ou un quartier.</p>`
         : search.trajets.length

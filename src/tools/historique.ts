@@ -455,11 +455,11 @@ function sentence(where: string, p: Period, s: Record<string, unknown>, names: {
   if (p.du === p.au) return oneDay(where, p.du, s, names);
   const parts: string[] = [];
   const pl = s.pluie as { total_mm: number; jours_de_pluie: number; normale_mm?: number; jours_mesures: number } | undefined;
-  if (pl?.jours_mesures) parts.push(`${fr(pl.total_mm)} mm de pluie à ${names.rain} (${pl.jours_de_pluie} jour${pl.jours_de_pluie > 1 ? "s" : ""} de pluie${pl.normale_mm != null ? `, normale ≈ ${pl.normale_mm} mm` : ""})`);
+  if (pl?.jours_mesures) parts.push(`${fr(pl.total_mm)} mm de pluie ${a(names.rain!)} (${pl.jours_de_pluie} jour${pl.jours_de_pluie > 1 ? "s" : ""} de pluie${pl.normale_mm != null ? `, normale ≈ ${pl.normale_mm} mm` : ""})`);
   const t = s.temperatures as { maximales_moyenne?: number; maximales_normale?: number; minimales_moyenne?: number } | undefined;
-  if (t?.maximales_moyenne != null) parts.push(`maximales ${fr(t.maximales_moyenne)} °C en moyenne${t.maximales_normale != null ? ` (normale ${fr(t.maximales_normale)} °C)` : ""}, minimales ${fr(t.minimales_moyenne ?? NaN)} °C à ${names.temp}`);
+  if (t?.maximales_moyenne != null) parts.push(`maximales ${fr(t.maximales_moyenne)} °C en moyenne${t.maximales_normale != null ? ` (normale ${fr(t.maximales_normale)} °C)` : ""}, minimales ${fr(t.minimales_moyenne ?? NaN)} °C ${a(names.temp!)}`);
   const e = s.ensoleillement as { heures_par_jour?: number; normale_heures_par_jour?: number; jours_gris: number; jours_mesures: number } | undefined;
-  if (e?.jours_mesures) parts.push(`soleil ${e.heures_par_jour != null ? `${fr(e.heures_par_jour)} h par jour` : ""}${e.normale_heures_par_jour != null ? ` (normale ${fr(e.normale_heures_par_jour)} h)` : ""}, ${e.jours_gris} jour${e.jours_gris > 1 ? "s" : ""} gris sur ${e.jours_mesures} à ${names.sun}`);
+  if (e?.jours_mesures) parts.push(`soleil ${e.heures_par_jour != null ? `${fr(e.heures_par_jour)} h par jour` : ""}${e.normale_heures_par_jour != null ? ` (normale ${fr(e.normale_heures_par_jour)} h)` : ""}, ${e.jours_gris} jour${e.jours_gris > 1 ? "s" : ""} gris sur ${e.jours_mesures} ${a(names.sun!)}`);
   const span = p.du === p.au ? `le ${frDate(p.du)}` : `du ${frDate(p.du)} au ${frDate(p.au)}`;
   return `${where}, ${span} : ${parts.join("\u00a0; ") || "aucune mesure publiée"}.`;
 }
@@ -467,13 +467,13 @@ function sentence(where: string, p: Period, s: Record<string, unknown>, names: {
 function oneDay(where: string, d: string, s: Record<string, unknown>, names: { rain?: string; temp?: string; sun?: string }): string {
   const parts: string[] = [];
   const pl = s.pluie as { total_mm: number; jours_mesures: number; normale_mm?: number } | undefined;
-  if (pl?.jours_mesures) parts.push(`${fr(pl.total_mm)} mm de pluie à ${names.rain}`);
+  if (pl?.jours_mesures) parts.push(`${fr(pl.total_mm)} mm de pluie ${a(names.rain!)}`);
   const t = s.temperatures as { maximales_moyenne?: number; minimales_moyenne?: number; maximales_normale?: number } | undefined;
   if (t?.maximales_moyenne != null || t?.minimales_moyenne != null) {
-    parts.push(`minimale ${t.minimales_moyenne != null ? `${fr(t.minimales_moyenne)} °C` : "non mesurée"}, maximale ${t.maximales_moyenne != null ? `${fr(t.maximales_moyenne)} °C` : "non mesurée"}${t.maximales_normale != null ? ` (normale du mois ${fr(t.maximales_normale)} °C)` : ""} à ${names.temp}`);
+    parts.push(`minimale ${t.minimales_moyenne != null ? `${fr(t.minimales_moyenne)} °C` : "non mesurée"}, maximale ${t.maximales_moyenne != null ? `${fr(t.maximales_moyenne)} °C` : "non mesurée"}${t.maximales_normale != null ? ` (normale du mois ${fr(t.maximales_normale)} °C)` : ""} ${a(names.temp!)}`);
   }
   const e = s.ensoleillement as { heures_par_jour?: number; jours_mesures: number } | undefined;
-  if (e?.jours_mesures && e.heures_par_jour != null) parts.push(`${fr(e.heures_par_jour)} h de soleil à ${names.sun}`);
+  if (e?.jours_mesures && e.heures_par_jour != null) parts.push(`${fr(e.heures_par_jour)} h de soleil ${a(names.sun!)}`);
   return `${where}, le ${frDate(d)} : ${parts.join("\u00a0; ") || "aucune mesure publiée"}.`;
 }
 
@@ -659,9 +659,9 @@ function provisoire(kept: Veille, place: Place) {
   const t = temp && kept.stations[temp.s.id];
   const two = !!rain && !!temp && rain.s.id !== temp.s.id;
   const said = [
-    rain ? `pluie ${fr(rr!)} mm${two ? ` à ${rain.s.nom}` : ""}` : "",
-    t ? `températures de ${fr(t.tn!)} °C à ${fr(t.tx!)} °C${two ? ` à ${temp!.s.nom}` : ""}` : "",
-  ].filter(Boolean).join(", ") + (two ? "" : ` à ${(rain ?? temp)!.s.nom}`);
+    rain ? `pluie ${fr(rr!)} mm${two ? ` ${a(rain.s.nom)}` : ""}` : "",
+    t ? `températures de ${fr(t.tn!)} °C à ${fr(t.tx!)} °C${two ? ` ${a(temp!.s.nom)}` : ""}` : "",
+  ].filter(Boolean).join(", ") + (two ? "" : ` ${a((rain ?? temp)!.s.nom)}`);
   return {
     etiquette: `Hier, ${frDate(kept.jour)} de 0 h à 24 h (heure de La Réunion), ${VEILLE_NATURE} de Météo-France, pas la valeur quotidienne officielle\u00a0: ${said}.`,
     bloc: {

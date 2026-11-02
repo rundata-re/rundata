@@ -7,7 +7,7 @@ import * as rt from "../providers/gtfsrt.js";
 import * as transit from "../providers/transit.js";
 import { why } from "../types.js";
 import { asksCrossing, T as FERRY } from "./ferries.js";
-import { credits, fr, heure, text } from "./format.js";
+import { a as aLieu, credits, de as deLieu, fr, heure, text } from "./format.js";
 import { rienTrouve } from "../vide.js";
 
 // Words of a question that say nothing about which stop: « prochain bus à l'arrêt X pour Y ». « Routière » too:
@@ -304,10 +304,10 @@ function whereIs(net: string, v: rt.Vehicle): string | undefined {
   if (id !== undefined) {
     const s = transit.stop(id);
     const at = `${s.nom} (${s.commune})`;
-    return v.status === 1 ? `à l'arrêt ${at}` : v.status === 0 ? `arrive à ${at}` : `en route vers ${at}`;
+    return v.status === 1 ? `à l'arrêt ${at}` : v.status === 0 ? `arrive ${aLieu(at)}` : `en route vers ${at}`;
   }
   const near = nearStops(v.lon, v.lat, net)[0];
-  return near && near.m <= NEAR_STOP_M ? `près de ${near.g.nom} (${near.g.commune})` : undefined;
+  return near && near.m <= NEAR_STOP_M ? `près ${deLieu(near.g.nom)} (${near.g.commune})` : undefined;
 }
 
 /** A bus's position as the tool gives it, with its time; undefined when it is more than 10 minutes old. */
@@ -500,9 +500,9 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
   const others = alertes.filter((a) => !told.has(a.titre));
   // After the stop's opening, which says where and by what, the departures alone.
   const next = shown.length
-    ? (off ? `Prochains départs${NBSP}: ` : `Prochains départs à ${where}, d'après ${live.length ? "les annonces en direct des réseaux et " : ""}les horaires publiés${NBSP}: `) + shown.slice(0, 5).map(said).join("\u00a0; ") + "." +
+    ? (off ? `Prochains départs${NBSP}: ` : `Prochains départs ${aLieu(where)}, d'après ${live.length ? "les annonces en direct des réseaux et " : ""}les horaires publiés${NBSP}: `) + shown.slice(0, 5).map(said).join("\u00a0; ") + "." +
       (others.length ? ` Info trafic : ${others.map((a) => `${a.lignes ? `ligne ${a.lignes.join(", ")}, ` : ""}${a.titre}`).join("\u00a0; ")}.` : "")
-    : off ? "" : `Aucun départ prévu dans les prochaines heures à ${where}, d'après les horaires publiés.`;
+    : off ? "" : `Aucun départ prévu dans les prochaines heures ${aLieu(where)}, d'après les horaires publiés.`;
   const resume = [off?.text, next].filter(Boolean).join(" ");
   const used = live.length > 0 || alertes.length > 0 || !!off?.alertes;
   return text({
@@ -796,7 +796,7 @@ async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache
         const dist = nearest.m < 1000 ? `${Math.round(nearest.m / 10) * 10} m` : `${fr(Math.round(nearest.m / 100) / 10)} km`;
         place = { arret: nearest.s.nom, commune: nearest.s.commune, dessert_le_lieu_demande: serves, ...(nearest.m ? { distance_du_lieu_demande: dist } : {}) };
         resume += serves
-          ? ` Elle s'arrête à ${nearest.s.nom} (${nearest.s.commune})${nearest.m ? `, à ${dist} de « ${where} »` : ""}.`
+          ? ` Elle s'arrête ${aLieu(nearest.s.nom)} (${nearest.s.commune})${nearest.m ? `, à ${dist} de « ${where} »` : ""}.`
           : ` Elle ne passe pas à « ${where} » : son arrêt le plus proche est ${nearest.s.nom} (${nearest.s.commune}), à ${dist}.`;
       }
     } else {
@@ -804,7 +804,7 @@ async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache
     }
     if (groups.length) {
       shownAt = await stopDepartures(groups, now, cache, (x) => routes.includes(x.route));
-      if (shownAt.shown.length) resume += ` Prochains départs à ${groups[0].nom}${NBSP}: ${shownAt.shown.slice(0, 4).map(said).join("\u00a0; ")}.`;
+      if (shownAt.shown.length) resume += ` Prochains départs ${aLieu(groups[0].nom)}${NBSP}: ${shownAt.shown.slice(0, 4).map(said).join("\u00a0; ")}.`;
     }
   }
   const used = !!buses?.length || !!off?.alertes || (!!shownAt && (shownAt.live.length > 0 || shownAt.alertes.length > 0));

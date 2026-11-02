@@ -152,7 +152,7 @@ describe("a station's page", () => {
     const cirad = STATIONS.find((s) => / - CIRAD$/.test(s.nom))!;
     const html = page({ ...(await data({ historique: undefined })), id: cirad.id, nom: "La Mare - CIRAD", altitude_m: 68 });
     expect(html).toContain(`<h1>La Mare <span class="n974">CIRAD</span></h1>`);
-    expect(html).toMatch(/<p>mesurés à <b>\d\d:\d\d<\/b> par la station du CIRAD, à /);
+    expect(html).toMatch(/<p>mesurés à <b>\d\d:\d\d<\/b> par la station du CIRAD, (?:à|au|aux) /);
     expect(html).toContain("Mesures du CIRAD, diffusées par Météo-France, toutes les 6\u202fminutes.");
     expect(html).toContain(`<meta name="description" content="Ce que mesure la station La Mare du CIRAD (`);
   });

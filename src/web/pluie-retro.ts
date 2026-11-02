@@ -9,6 +9,12 @@
  * an error, the cache served an old copy, or the image was late at Météo-France) reads the radar again, RETRIES_MS
  * apart, until it gets it. In 38 hours from 29/10/2026 18:00, 10 runs of 461 missed it: 1 error, 7 copies kept,
  * 2 images late.
+ *
+ * Météo-France sometimes skips an image: it still serves the one before at the run, then the one after. The image due
+ * was never its latest, and no read can get it back (its API serves the latest only): the run says « image due sautée
+ * à la source » in its log line, which counts them, and the map says the gap. In 24 hours to 02/11/2026 23:00 (La
+ * Réunion), 3 images of 288 were lost, all so, none to an error. Météo-France's package of the last three images
+ * (DPPaquetRadar, 9 to 14 Mo for all its territories) could fill them, at a cost not worth these gaps.
  */
 import { count, unmeasured } from "../budget.js";
 import type { Cache } from "../cache.js";
@@ -187,7 +193,12 @@ export async function passage(store: Store, cache: Cache, now = new Date(), long
     }
   }
   const said = lu instanceof Error ? `illisible (${why(lu)})` : `${kept ? "copie gardée, " : ""}image finie à ${lu.fin}`;
-  const caught = again ? `, rattrapage : ${again} lecture${again > 1 ? "s" : ""} de plus, image due ${behind(lu) ? "toujours absente" : "lue"}` : "";
+  // An image after the one due, which neither this run nor one before it read: Météo-France skipped it.
+  const lastBefore = [...(before?.entrees ?? [])].reverse().find((e): e is Image => !isTrou(e));
+  const skipped = !(lu instanceof Error) && Date.parse(lu.fin) > due && !!lastBefore && Date.parse(lastBefore.fin) < due &&
+    !(next ?? before)!.entrees.some((e) => !isTrou(e) && Date.parse(e.fin) === due);
+  const dueSaid = behind(lu) ? "toujours absente" : skipped ? `sautée à la source (finie à ${iso(due)})` : "lue";
+  const caught = again ? `, rattrapage : ${again} lecture${again > 1 ? "s" : ""} de plus, image due ${dueSaid}` : skipped ? `, image due ${dueSaid}` : "";
   return `${said}${caught}, ${next ? `${next.entrees.length} entrées écrites` : "rien à écrire"}${longSaid}, jetons Météo-France pris : ${tokensIssued() - tokens}`;
 }
 

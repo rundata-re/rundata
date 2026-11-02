@@ -269,6 +269,21 @@ describe("a run of the scheduled event", () => {
       expect(kinds(kept!)).toEqual(["05:40"]);
     });
 
+    // 02/11/2026: 3 images of 288 lost in 24 hours, each skipped by Météo-France, none to an error.
+    it("says an image Météo-France skipped as such, never as read, and leaves its gap", async () => {
+      // At 05:45:20 the image due is 05:35–05:40; the radar already gives 05:40–05:45.
+      const r = await run("2026-10-22T05:45:20Z", [later]);
+      expect([r.asked, r.waits]).toEqual([["05:45"], []]);
+      expect(r.kinds).toEqual(["05:35", "trou 05:35-05:40", "05:45"]);
+      expect(r.said).toBe("image finie à 2026-10-22T05:45:00Z, image due sautée à la source (finie à 2026-10-22T05:40:00Z), 3 entrées écrites, jetons Météo-France pris : 1");
+    });
+
+    it("says it skipped after a read more too", async () => {
+      const r = await run("2026-10-22T05:45:20Z", [500, later]);
+      expect(r.asked).toEqual(["500", "05:45"]);
+      expect(r.said).toMatch(/^image finie à 2026-10-22T05:45:00Z, rattrapage : 1 lecture de plus, image due sautée à la source \(finie à 2026-10-22T05:40:00Z\), 3 entrées écrites/);
+    });
+
     it("reads the radar once only when the image due is there", async () => {
       const r = await run("2026-10-22T05:45:20Z", [h5, later]);
       expect([r.asked, r.waits, r.kinds]).toEqual([["05:40"], [], ["05:35", "05:40"]]);

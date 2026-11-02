@@ -16,7 +16,7 @@ import { chart, known } from "./graphe.js";
 import { esc } from "./map.js";
 import { inseeCommune, ventText } from "./meteo-carte.js";
 import { credits, dayMonth, deg, hm, layout, metres, shortName, thin } from "./pages.js";
-import { fr } from "../tools/format.js";
+import { a, fr } from "../tools/format.js";
 
 export const STATION_PATH = "/meteo/station";
 export const stationPath = (id: string) => `${STATION_PATH}/${id}`;
@@ -118,7 +118,7 @@ function band(d: StationData, now: Date): string {
   const commune = inseeCommune(d.id);
   const m = d.derniere?.mesures ?? {};
   const at = d.derniere ? hm(d.derniere.time) : "";
-  const where = `par la station ${cirad(d.nom) ? "du CIRAD" : "Météo-France"}${airport ? " de l'aéroport" : ""}${commune ? `, à ${esc(commune)}` : ""}, ${metres(d.altitude_m)} d'altitude`;
+  const where = `par la station ${cirad(d.nom) ? "du CIRAD" : "Météo-France"}${airport ? " de l'aéroport" : ""}${commune ? `, ${esc(a(commune))}` : ""}, ${metres(d.altitude_m)} d'altitude`;
   const said = !d.derniere
     ? ""
     : m.temperature != null

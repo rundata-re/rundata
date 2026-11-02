@@ -1533,7 +1533,7 @@ export function meteoLive(data: Cached<HomeData> | null, now = new Date()): Live
   const latest = data.value.stations.reduce((m, s) => (s.time > m ? s.time : m), "");
   return {
     valeur: range(lo.temperature!, hi.temperature!),
-    detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) à ${esc(shortName(hi.nom))}, mesuré à ${hm(latest)}`,
+    detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) ${esc(a(shortName(hi.nom)))}, mesuré à ${hm(latest)}`,
   };
 }
 
@@ -1602,7 +1602,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
 
   const title = "Météo Réunion 974 en direct : stations et prévisions";
   const description = live
-    ? fit(`Météo à La Réunion (974) en direct : de ${thin(deg(coldest(l).temperature!))} à ${shortName(coldest(l).nom)} à ${thin(deg(warmest(l).temperature!))} à ${shortName(warmest(l).nom)}, mesurés à ${hm(latest!)}.`,
+    ? fit(`Météo à La Réunion (974) en direct : de ${thin(deg(coldest(l).temperature!))} ${a(shortName(coldest(l).nom))} à ${thin(deg(warmest(l).temperature!))} ${a(shortName(warmest(l).nom))}, mesurés à ${hm(latest!)}.`,
         " Pluie, vent, mer et prévisions par commune.")
     : "Météo à La Réunion (974) en direct : température, pluie et vent mesurés par les stations de l'île, mer et prévisions par commune.";
 
@@ -1730,7 +1730,7 @@ function stationCard(s: StationAnswer): string {
 function sinceMidnightCard(j: DepuisMinuit): string {
   const row = (label: string, x: DepuisMinuit["maximum"]) =>
     `<li><span>${label}</span><span class="v"><span class="t" style="background:${chip(x.valeur)}">${esc(thin(`${fr(x.valeur)} ${x.unite}`))}</span> <span class="q">${esc(thin(x.quand))}</span></span></li>`;
-  return `<div class="card stcard minuit"><h3>Depuis minuit à ${esc(j.station)}</h3>` +
+  return `<div class="card stcard minuit"><h3>Depuis minuit ${esc(a(j.station))}</h3>` +
     `<p class="note">${esc(thin(`à ${fr(j.distance_km)} km · pertinence ${j.pertinence} · ${j.periode}`))}</p>` +
     `<ul>${row("Au plus", j.maximum)}${row("Au moins", j.minimum)}</ul>` +
     `<p class="note">Relevés heure par heure de Météo-France : le plus haut et le plus bas de chaque heure, puis les mesures toutes les 6 minutes de l'heure en cours.</p>` +
@@ -1753,7 +1753,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const title = `Météo ${p.nom} en direct et prévisions · 974`.length <= 60 ? `Météo ${p.nom} en direct et prévisions · 974` : `Météo ${p.nom} en direct · 974`;
   const description = fit(
     first
-      ? `Météo ${a(p.nom)} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés à ${first.station} à ` +
+      ? `Météo ${a(p.nom)} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés ${a(first.station)} à ` +
         `${first.heure_mesure.split(" ")[1]}.`
       : `Météo ${a(p.nom)} (La Réunion, 974) en direct : température, pluie et vent mesurés par la station la plus proche.`,
     first ? ` Pluie, vent${coastal(p) ? ", mer" : ""} et prévision.` : ` ${coastal(p) ? "Mer et prévision" : "Prévision"} des prochains jours.`,
@@ -1791,7 +1791,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   // Away from the gauges, no times: they are not the place's.
   const away = coastal(p) && !tides ? farFrom(p.place.lon, p.place.lat, p.place.commune) : undefined;
   const tideLine = tides
-    ? `<p>Marée à ${esc(tides.nom)}, ${esc(TIDE_LABEL)}, à environ ${tides.minutes} min près : ${esc(thin(nextText(tides.next)))}.</p>`
+    ? `<p>Marée ${esc(a(tides.nom))}, ${esc(TIDE_LABEL)}, à environ ${tides.minutes} min près : ${esc(thin(nextText(tides.next)))}.</p>`
     : away
       ? `<p>Marée : pas d'heures calculées ici, la marée y arrive à une autre heure qu'au Port et à Sainte-Marie, nos deux marégraphes. ` +
         `<a href="${esc(away.lien)}">${away.port ? `Horaires officiels du SHOM pour ${esc(away.port)}` : "Horaires officiels sur le site du SHOM"}</a></p>`
@@ -2143,7 +2143,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <ul class="seas">${computed.map((x) => `<li><span>${esc(x.nom)}</span>` +
       x.next.liste.map((e, i) => (i === 0 ? `<b>${esc(e.type)} ${esc(e.heure)}</b><span>${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""}</span>` : `<span>${esc(e.type)} ${esc(e.heure)} (${esc(thin(`${fr(e.hauteur_m)} m`))})</span>`)).join("") +
       `</li>`).join("")}</ul>
-  <p class="note">${esc(TIDE_LABEL.replace(/^c/, "C"))} : analyse harmonique de plusieurs années de mesures de ces deux marégraphes ; heures à environ ${computed.map((x) => `${x.minutes} min près ${x.gauge.commune === "Le Port" ? "au Port" : `à ${x.gauge.commune}`}`).join(", ")}, hauteurs à environ 5 cm près ; pas de coefficient. La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation. ${esc(TIDE_CITATION)}</p>
+  <p class="note">${esc(TIDE_LABEL.replace(/^c/, "C"))} : analyse harmonique de plusieurs années de mesures de ces deux marégraphes ; heures à environ ${computed.map((x) => `${x.minutes} min près ${a(x.gauge.commune)}`).join(", ")}, hauteurs à environ 5 cm près ; pas de coefficient. La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation. ${esc(TIDE_CITATION)}</p>
   <p class="note">Ces heures valent près des deux marégraphes, à ${NEAR_KM} km au plus. Plus loin sur la côte, la marée arrive à une autre heure : horaires officiels du SHOM pour ${["Saint-Leu", "Saint-Pierre"].map((c) => `<a href="${esc(shomPort(c)!)}">${c}</a>`).join(" et ")}.</p>`
     : "";
   const tide = d?.maree?.length || coming

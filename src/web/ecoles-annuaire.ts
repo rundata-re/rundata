@@ -7,7 +7,7 @@
  * primary schools' sectors are set by each mairie and not published: the page says so. Nothing read but the vigilance's banner.
  */
 import { INSEE } from "../places/insee.js";
-import { nombre } from "../tools/format.js";
+import { de, nombre } from "../tools/format.js";
 import * as ecoles from "../vie/ecoles.js";
 import { CARTE, motsVoie, SOURCE as SOURCE_CARTE, trouve } from "../vie/carte-scolaire.js";
 import { credit, type Alerte } from "./data.js";
@@ -50,7 +50,7 @@ const T = {
   tous: "Tous",
   offre: "Avec",
   services: [["c", "Cantine"], ["i", "Internat"], ["u", "ULIS"]] as const,
-  versCommune: (c: string) => `Les écoles sur la page de ${c}`,
+  versCommune: (c: string) => `Les écoles sur la page ${de(c)}`,
   servicesNote: "La cantine, l'internat et l'ULIS sont ceux que l'établissement déclare à l'annuaire de l'Éducation nationale : un établissement qui ne les déclare pas peut quand même les avoir.",
 };
 

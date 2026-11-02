@@ -6,7 +6,7 @@
 import { localTime } from "../geo.js";
 import * as rt from "../providers/gtfsrt.js";
 import * as transit from "../providers/transit.js";
-import { fr, heure } from "../tools/format.js";
+import { a, de, fr, heure } from "../tools/format.js";
 import { dayName, type TripRun, type TripStop } from "../tools/transports.js";
 import { crumbBar, crumbs, saidNow, STOP_PATH } from "./domains.js";
 import { esc } from "./map.js";
@@ -68,16 +68,16 @@ export function tripPage(origin: string, path: string, t: TripRun, chosen: numbe
   const tail = n ? ` : les ${n} arrêts du parcours dans l'ordre, avec l'heure de passage à chacun.` : ".";
   const lean = n ? ` : les ${n} arrêts du parcours, avec l'heure de passage à chacun.` : ".";
   const description = [
-    `Ligne ${t.ligne} (${t.nom_reseau}), départ de ${t.origine} à ${start} vers ${t.direction}${tail}`,
-    `Ligne ${t.ligne}, départ de ${t.origine} à ${start} vers ${t.direction}${tail}`,
-    `Ligne ${t.ligne}, départ de ${t.origine} à ${start} vers ${t.direction}${lean}`,
-  ].find((d) => d.length <= DESCRIPTION_MAX) ?? `Ligne ${t.ligne}, départ de ${t.origine} à ${start} vers ${t.direction}${lean}`;
+    `Ligne ${t.ligne} (${t.nom_reseau}), départ ${de(t.origine)} à ${start} vers ${t.direction}${tail}`,
+    `Ligne ${t.ligne}, départ ${de(t.origine)} à ${start} vers ${t.direction}${tail}`,
+    `Ligne ${t.ligne}, départ ${de(t.origine)} à ${start} vers ${t.direction}${lean}`,
+  ].find((d) => d.length <= DESCRIPTION_MAX) ?? `Ligne ${t.ligne}, départ ${de(t.origine)} à ${start} vers ${t.direction}${lean}`;
 
   const band = `${crumbBar(`Ligne ${t.ligne}`, { name: "Bus", path: "/bus" })}
 <div class="wrap intro">
   <div class="pitch">
     <h1>Ligne ${esc(t.ligne)} vers ${esc(t.direction)}</h1>
-    <p class="lead">${esc(t.nom_reseau)} · départ de ${esc(t.origine)} à ${esc(start)}, ${esc(dayOf(t.depart, now))}</p>
+    <p class="lead">${esc(t.nom_reseau)} · départ ${esc(de(t.origine))} à ${esc(start)}, ${esc(dayOf(t.depart, now))}</p>
   </div>
 </div>`;
 
@@ -116,5 +116,5 @@ export function tripGonePage(origin: string, path: string, net: string | undefin
     ? "Les horaires de bus ne répondent pas pour le moment. Réessayer dans un instant."
     : n ? `Ce départ ne figure plus dans les horaires publiés par ${n}.` : "Ce départ ne figure plus dans les horaires publiés des réseaux.";
   return layout(origin, { title: `Page introuvable · ${SITE}`, description: said, path, noindex: true, jsonld: [], alerte },
-    `${crumbBar("Page introuvable", { name: "Bus", path: "/bus" })}<div class="wrap intro"><div class="pitch"><h1>Page introuvable</h1><p class="lead">${esc(said)}</p><p>${stop ? `<a href="${STOP_PATH}/${esc(stop.slug)}">Prochains bus à ${esc(stop.nom)} →</a>` : `<a href="/bus">Prochains départs dans les gares →</a>`}</p></div></div>`, "");
+    `${crumbBar("Page introuvable", { name: "Bus", path: "/bus" })}<div class="wrap intro"><div class="pitch"><h1>Page introuvable</h1><p class="lead">${esc(said)}</p><p>${stop ? `<a href="${STOP_PATH}/${esc(stop.slug)}">Prochains bus ${esc(a(stop.nom))} →</a>` : `<a href="/bus">Prochains départs dans les gares →</a>`}</p></div></div>`, "");
 }

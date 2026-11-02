@@ -25,7 +25,7 @@ import { SUJETS } from "../providers/actualites.js";
 import * as littoral from "../tools/littoral.js";
 import { longDate, moonOf, UNPUBLISHED } from "../tools/calendrier.js";
 import type { CourantRow } from "../tools/courant.js";
-import { a, de, enumeration, fr, heure, nombre, tranche } from "../tools/format.js";
+import { a, a as aLieu, de, enumeration, fr, heure, nombre, tranche } from "../tools/format.js";
 import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
 import * as capteurs from "../providers/capteurs.js";
 import * as radars from "../routes/radars.js";
@@ -486,7 +486,7 @@ function airMeasured(l: AirLayer, lu: string, now: Date): string {
     : `${l.tab} : ${Math.round(hi.valeur)} µg/m³`;
   // Worded by marketing (29/10/2026): the verb says it is a measure; the legend's name of the pollutant.
   const name = `${l.polluant[0].toUpperCase()}${l.polluant.slice(1)} ${l.polluant.startsWith("particules") ? "mesurées" : "mesuré"} ${l.heure}`;
-  const lead = at.length > 1 ? `${name} à ${at.length} stations d'Atmo Réunion : le plus haut à ${where(hi)}.` : `${name} à la station ${where(hi)}.`;
+  const lead = at.length > 1 ? `${name} à ${at.length} stations d'Atmo Réunion : le plus haut ${aLieu(where(hi))}.` : `${name} à la station ${where(hi)}.`;
   // The day only when the reading is not today's, as the forecast's note under it.
   const [le, a] = lu.split(" ");
   const when = le === localTime(now).split(" ")[0] ? `à ${a}` : `le ${le} à ${a}`;
@@ -823,7 +823,7 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
       `</ul><p class="note">${esc(v.note)}</p></div>`
     : "";
   const sun = d?.soleil
-    ? `<div class="card">${icon("mountain")}<h3>Soleil à ${esc(d.soleil.lieu)}</h3><p>Lever ${esc(d.soleil.lever)}, coucher ${esc(d.soleil.coucher)} : ${esc(d.soleil.duree_du_jour)} de jour.</p><p class="note">${esc(d.soleil.note)}</p></div>`
+    ? `<div class="card">${icon("mountain")}<h3>Soleil ${esc(a(d.soleil.lieu))}</h3><p>Lever ${esc(d.soleil.lever)}, coucher ${esc(d.soleil.coucher)} : ${esc(d.soleil.duree_du_jour)} de jour.</p><p class="note">${esc(d.soleil.note)}</p></div>`
     : "";
 
   // The Moon where the sun is said, computed at each view (a pure calculation, no source): its phase and how much is lit
@@ -838,7 +838,7 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
         .map((x) => (/^\d/.test(x.t) ? x.texte : x.t))
     : [];
   const moon = lune
-    ? `<div class="card">${icon("moon")}<h3>Lune à ${esc(moonAt!.nom)}</h3><p>${esc(upper(lune.phase))}, éclairée à ${lune.eclairee_pct}\u00a0%.</p>` +
+    ? `<div class="card">${icon("moon")}<h3>Lune ${esc(a(moonAt!.nom))}</h3><p>${esc(upper(lune.phase))}, éclairée à ${lune.eclairee_pct}\u00a0%.</p>` +
       `<p>${esc(upper(moonTimes.join(", ")))}.</p>` +
       (lune.prochaines_phases.length ? `<ul class="plain">${lune.prochaines_phases.map((x) => `<li><b>${esc(upper(x.phase))}</b> : ${esc(x.date)} à ${esc(x.heure)}</li>`).join("")}</ul>` : "") +
       `<p class="note">${esc(lune.note)}</p></div>`
@@ -1152,7 +1152,7 @@ export function velosLive(data: Cached<VelosAnswer> | null, now = new Date()): L
   const best = [...d.stations].sort((a, b) => b.velos_electriques - a.velos_electriques)[0];
   return {
     valeur: `${total} vélo${total > 1 ? "s" : ""}`,
-    detail: `disponibles dans ${d.stations.length} stations Altervélo${best?.velos_electriques ? `, dont ${best.velos_electriques} à ${esc(best.nom)} (${esc(best.commune)})` : ""}`,
+    detail: `disponibles dans ${d.stations.length} stations Altervélo${best?.velos_electriques ? `, dont ${best.velos_electriques} ${esc(a(best.nom))} (${esc(best.commune)})` : ""}`,
   };
 }
 
@@ -2971,7 +2971,7 @@ export function historiqueLive(data: Cached<HistoriqueAnswer> | null, now = new 
   if (!d) return undefined;
   const r = d.stations.find((x) => x.pluie?.rapport_a_la_normale);
   if (!r?.pluie) return empty(`Rapport à la normale pas encore calculé pour les 30 derniers jours (lecture ${readAt(data!.fetchedAt, now).de}).`);
-  return { valeur: `${r.pluie.rapport_a_la_normale} de la normale`, detail: `pluie des 30 derniers jours à ${esc(r.station)} (${fr(r.pluie.total_mm)} mm)` };
+  return { valeur: `${r.pluie.rapport_a_la_normale} de la normale`, detail: `pluie des 30 derniers jours ${esc(a(r.station))} (${fr(r.pluie.total_mm)} mm)` };
 }
 
 // ---------------------------------------------------------------- agenda

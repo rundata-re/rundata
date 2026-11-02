@@ -215,7 +215,7 @@ export function nonReprisCourt(): string | undefined {
   const communes = cc.LISIBLES.map((m) => m.commune).filter((x) => !followed(x)).sort((a, b) => a.localeCompare(b, "fr"));
   if (!communes.length) return undefined;
   const theirs = communes.length > 1 ? "leurs mentions légales l'interdisent sans leur accord" : "ses mentions légales l'interdisent sans son accord";
-  return `avis de coupure d'électricité de ${enumeration(communes)} non repris, ${theirs} (voir non_repris)`;
+  return `avis de coupure d'électricité ${enumeration(communes.map(de))} non repris, ${theirs} (voir non_repris)`;
 }
 
 /**

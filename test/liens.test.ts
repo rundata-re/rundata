@@ -33,6 +33,14 @@ describe("links between the weather, the hikes and the communes", () => {
     expect(html).not.toMatch(/(?:à|de) Le Port/);
   });
 
+  it("contract the article before the station's name in the page's description: « mesurés au Port »", () => {
+    const station = { station: "Le Port", source: "meteofrance", altitude_m: 9, heure_mesure: "27/10 09:50", age_min: 10, mesures: { temperature: "28,9 °C" }, avertissements: [] };
+    const data = { value: { meteo: { resume: "", sources: [], stations: [station] } }, fetchedAt: new Date(NOW.getTime() - 60_000), stale: false };
+    const html = placePage(O, pageOf("le-port")!, data as unknown as Parameters<typeof placePage>[2], NOW);
+    expect(html).toMatch(/<meta name="description" content="Météo au Port \(La Réunion, 974\) en direct[^"]*mesurés au Port[^"]*09:50\./);
+    expect(html).not.toMatch(/(?:à|de) Le Port/);
+  });
+
   it("put the nearest weather on a trail's page", () => {
     const d = { value: { nom: "x", slug: "x", genre: "sentier", km: 1, etat: "Ouvert", ferme: false, troncons: [], lignes: [{ etat: "ouvert", points: [[55.70, -21.24], [55.71, -21.245]] }], profil: [], randonnees: [], fermes: [], inconnus: [], sources: [] }, fetchedAt: NOW } as any;
     expect(tracePage(O, "sentier", "x", "Sentier", d, NOW)).toContain(`<a href="/meteo/piton-de-la-fournaise">météo Piton de la Fournaise</a>`);

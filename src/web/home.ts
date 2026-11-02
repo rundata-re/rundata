@@ -11,7 +11,7 @@ import { byUse, CATEGORIES, type Category, FIRST, type Urgent, urgentKeys } from
 import type { ActualitesAnswer, AgendaAnswer, AirAnswer, Alerte, BusData, CalendrierAnswer, CruesAnswer, ElectriciteAnswer, HomeData, VelosAnswer, VolcanAnswer, BornesAnswer, CoupuresAnswer, EauAnswer, SecheresseAnswer, SentiersAnswer, SportAnswer, CyclonesAnswer, HistoriqueAnswer, TraficAnswer } from "./data.js";
 import { actualitesLive, airLive, atDay, bornesLive, cruesLive, floodRaised, imageLinks, busLive, coupuresLive, daeLive, eauLive, secheresseLive, randonneesLive, traficLive, sportLive, cyclonesLive, historiqueLive, agendaLive, calendrierLive, electriciteLive, velosLive, volcanLive, saidNow, stillToCome } from "./domains.js";
 import type { InfoRow } from "../tools/actualites.js";
-import { de } from "../tools/format.js";
+import { a, de } from "../tools/format.js";
 import { enImagesApres, enImagesLuesAilleurs, jusquALecture, NON_ANNONCEE } from "../tools/volcan.js";
 import { libelle } from "../tools/volcan-acces.js";
 import { enfantsLive } from "./enfants.js";
@@ -125,7 +125,7 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
     const where = shortName(s.nom);
     const by = s.source === "meteofrance" ? "la station Météo-France" : s.source === "metar" ? "la station de l'aéroport" : "la station";
     out.push({
-      question: `Il fait combien à ${esc(where)} en ce moment ?`,
+      question: `Il fait combien ${esc(a(where))} en ce moment ?`,
       call: `meteo_actuelle(lieu: "${esc(where)}")`,
       answer: `${thin(deg(s.temperature!))}, mesurés à ${hm(s.time)} (${since(s.time, now)}) par ${by} ${esc(s.nom)}, ` +
         `à ${metres(s.altitude_m)} d'altitude.${windText(s) ? ` ${esc(thin(windText(s)!.replace(/^vent/, "Vent")))}.` : ""}`,

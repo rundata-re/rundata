@@ -262,7 +262,7 @@ function far(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace>>, al
       (r
         ? `Hauteur mesurée au marégraphe ${de(f.nom)}, à ${km} km : ${m(r.h)} à ${hm(r.t)} (${at}, pas ${a(p.nom)}). `
         : `Le marégraphe ${de(f.nom)}, à ${km} km, ne transmet pas de mesure en ce moment. `) +
-      (f.port ? `Horaires officiels de la marée à ${f.port}, par le SHOM : ${f.lien}.` : `Horaires officiels de la marée : site du SHOM, ${f.lien}.`),
+      (f.port ? `Horaires officiels de la marée ${a(f.port)}, par le SHOM : ${f.lien}.` : `Horaires officiels de la marée : site du SHOM, ${f.lien}.`),
     horaires_officiels: f.lien,
     maregraphes: all
       .map((x) => ({ x, km: distanceKm(p.lon, p.lat, x.gauge.lon, x.gauge.lat) }))

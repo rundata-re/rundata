@@ -4,7 +4,7 @@ import { ageMinutes, ageText, distanceKm, localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as vc from "../providers/vigicrues.js";
 import { why } from "../types.js";
-import { credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 
@@ -220,7 +220,7 @@ export async function crues(cache: Cache, lieu: string | undefined, now = new Da
     const ref = landmark(river[0]);
     const at = measuredAt(mine);
     return text({
-      resume: say(`${mine.map((l) => sentence(l, now)).join("\u00a0; ")}${at ? ` (${at})` : ""}.${ref ? ` Pour repère, la plus petite crue de référence à ${river[0].nom} : ${ref}.` : ""}`),
+      resume: say(`${mine.map((l) => sentence(l, now)).join("\u00a0; ")}${at ? ` (${at})` : ""}.${ref ? ` Pour repère, la plus petite crue de référence ${a(river[0].nom)} : ${ref}.` : ""}`),
       ...(v ? { vigilance_crues: vigilanceBlock(v) } : {}),
       stations: mine.map((l) => levelRow(l, now)),
       ...common,
@@ -243,7 +243,7 @@ export async function crues(cache: Cache, lieu: string | undefined, now = new Da
     lieu: placeBlock(lieu, res),
     resume: say(
       `Rivières suivies près ${de(p.nom)}${at ? `, ${at}` : ""} : ${shown.map((x, i) => `${sentence(levels[i], now)} (à ${fr(Math.round(x.km))} km)`).join("\u00a0; ")}.` +
-        (ref ? ` Pour repère, la plus petite crue de référence à ${shown[0].s.nom} : ${ref}.` : ""),
+        (ref ? ` Pour repère, la plus petite crue de référence ${a(shown[0].s.nom)} : ${ref}.` : ""),
     ),
     ...(v ? { vigilance_crues: vigilanceBlock(v) } : {}),
     stations: shown.map((x, i) => levelRow(levels[i], now, x.km)),

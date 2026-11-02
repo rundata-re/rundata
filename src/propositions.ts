@@ -15,6 +15,7 @@
  * holds nothing the sender wrote, only the day, the commune and the link: it cannot carry a stranger's message. The e-mail goes through `Envoi`, plugged by worker.ts once a way to send
  * is chosen: without one, a proposal is refused as « indisponible », never kept unconfirmable.
  */
+import { a } from "./articles.js";
 import { empreinte, nettoie, type Run } from "./avis.js";
 
 export const LIENS_PAR_JOUR = 5;
@@ -283,7 +284,7 @@ export function messageConfirmation(p: Proposition, lien: string): { subject: st
     text: [
       "Bonjour,",
       "",
-      `Un événement a été proposé sur rundata.re avec cette adresse, pour le ${jour(p.date)}${p.repete ? `, chaque ${p.repete} jusqu'au ${jour(p.jusqu_au!)},` : ""} à ${p.debut} à ${p.commune}.`,
+      `Un événement a été proposé sur rundata.re avec cette adresse, pour le ${jour(p.date)}${p.repete ? `, chaque ${p.repete} jusqu'au ${jour(p.jusqu_au!)},` : ""} à ${p.debut} ${a(p.commune)}.`,
       "",
       "Pour le voir et le confirmer, ouvrez ce lien\u00a0:",
       lien,

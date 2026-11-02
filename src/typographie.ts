@@ -2,7 +2,8 @@
  * French typography, one rule for all that is said, the pages (web/typo.ts) and the assistants' answers, instructions
  * and tool descriptions (server.ts): the ordinary space that a phone must not break becomes a no-break one (marketing's
  * kit). U+00A0 before « : ; ? ! » », after « « », after the word « à » before a figure (« à 08:00 », « à 3 km ») and
- * between a figure and its unit (« 39 % », « 16,8 mm », « 2,00 € »); U+202F between the thousands of a quantity
+ * between a figure and its unit (« 39 % », « 16,8 mm », « 2,00 € »), after « n° » and « art. » before a figure
+ * (« arrêté n° 180 », « art. 2 »); U+202F between the thousands of a quantity
  * (« 3 070 m », « 1 000 km »), as toLocaleString("fr-FR") writes them (tools/format.ts, `nombre`).
  *
  * By the character, never by a regular expression over the whole text: a page goes through it as it is sent.
@@ -24,6 +25,14 @@ const NOT_QUANTITY = new Set([44, 46, 47, 58, 43]); // , . / : +
 
 const digit = (c: number) => c >= 48 && c <= 57;
 
+// The abbreviations a number follows, kept with it: « n° 180 », « art. 2 », each a word of its own (not « Lun° »).
+const NUMBERED = ["n°", "art."];
+
+/** An abbreviation of NUMBERED, in either case, ends at `i` and starts a word. */
+function numbered(s: string, i: number): boolean {
+  return NUMBERED.some((a) => i >= a.length && s.slice(i - a.length, i).toLowerCase() === a && !LETTER.test(s.charAt(i - a.length - 1)));
+}
+
 /** The thousands of a quantity at the space `i`: 1 to 3 figures before it, not starting with 0, and 3 after it. */
 function thousands(s: string, i: number): boolean {
   if (!(digit(s.charCodeAt(i + 1)) && digit(s.charCodeAt(i + 2)) && digit(s.charCodeAt(i + 3)) && !digit(s.charCodeAt(i + 4)))) return false;
@@ -41,6 +50,7 @@ export function spaceAt(s: string, i: number): string {
   const prev = s.charCodeAt(i - 1);
   if (BEFORE.has(next) || prev === OPEN) return NBSP;
   if (digit(next) && A.has(prev) && !LETTER.test(s.charAt(i - 2))) return NBSP;
+  if (digit(next) && numbered(s, i)) return NBSP;
   if (!digit(prev)) return " ";
   if (thousands(s, i)) return NNBSP;
   UNIT.lastIndex = i + 1;

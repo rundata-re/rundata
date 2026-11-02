@@ -16,10 +16,10 @@
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   actualites: 11,
   agenda: 24,
-  air: 11,
+  air: 10,
   bornes: 3,
   bus: 7,
-  calendrier: 4,
+  calendrier: 3,
   chiffres: 14,
   commune: 12,
   coupures: 4,
@@ -43,7 +43,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   sport: 16,
   station: 2,
   trafic: 3,
-  velos: 6,
+  velos: 5,
   volcan: 9,
 };
 

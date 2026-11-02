@@ -25,7 +25,7 @@ describe("the charter of the maps", () => {
   });
 
   it("keeps a landmark map off a phone, and has none on /calendrier", () => {
-    expect(communePage(ORIGIN, pageOf("cilaos")!, { place: null })).toContain('<figure class="card mapcard nophone"><svg class="map terrain"');
+    expect(communePage(ORIGIN, pageOf("cilaos")!, { place: null })).toContain('<figure class="card mapcard nophone"><div class="sit"><template class="carte"><svg class="map terrain"');
     expect(coupuresCommunePage(ORIGIN, pageOf("saint-paul")!, { coupures: null }, NOW)).toContain('<figure class="card mapcard nophone"><svg class="map terrain"');
     expect(volcanPage(ORIGIN, cached(answer("volcan_seismes")), NOW)).toContain('<figure class="card mapcard nophone"><svg class="map terrain" viewBox="0 0 1000 896" role="img" aria-label="Carte de La Réunion (974) avec le Piton de la Fournaise"');
     const calendrier = calendrierPage(ORIGIN, cached(answer("calendrier")), NOW);

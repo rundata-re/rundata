@@ -862,6 +862,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.seismes li{font-size:.86rem}.rows.seismes b{font-size:inherit}
 .rows.medias a{display:block;margin-top:.15rem;font-size:1rem}
 @media (max-width:37.49rem){.mapcard.nophone{display:none}}
+.mapcard .sit{aspect-ratio:${MAP_W}/${MAP_H}}
 .rows.eau small{display:block;color:var(--muted);font-size:.82rem}
 .rows.eau .du{max-width:6.5rem;text-align:right}
 .rows.eau li>.refs{grid-column:1/-1}

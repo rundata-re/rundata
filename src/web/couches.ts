@@ -25,6 +25,7 @@ import * as traces from "../providers/traces.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import type { SourceInfo } from "../types.js";
 import * as enfants from "../vie/enfants.js";
+import * as marmailles from "../vie/marmailles.js";
 import * as monuments from "../vie/monuments.js";
 import type { BornesAnswer, CruesAnswer, HomeData } from "./data.js";
 import { slugify } from "./places.js";
@@ -301,6 +302,31 @@ function tracer(points: [number, number][]): [number, number][] {
   return out;
 }
 
+/**
+ * The « sentiers marmailles », each drawn as its longest piece (the others, a few points, are spurs), its dot in its
+ * middle, leading to its commune's walks on /enfants. Their state is not in the file: the source has none, and the
+ * ONF's closed trails are their own layer.
+ */
+export function marmaillesCouche(list: marmailles.Marmaille[], lu: string): CoucheJson {
+  const objets = list.map((m): Objet => {
+    const [lon, lat] = marmailles.milieu(m);
+    const commune = marmailles.communeOf(m);
+    return {
+      nom: m.nom,
+      commune,
+      lon: r5(lon),
+      lat: r5(lat),
+      nature: "fixe",
+      precision: "adresse",
+      heure: lu,
+      lien: `/enfants#m-${slugify(commune)}`,
+      trace: tracer(marmailles.points(m)),
+      infos: { type: marmailles.figures(m), ...(m.sentiers_onf.length && { sentiers_onf: m.sentiers_onf }) },
+    };
+  });
+  return { id: "marmailles", nom: "Sentiers marmailles (Conseil Général de La Réunion / AGORAH)", nature: "fixe", precision: "adresse", source: marmailles.SOURCE, heure: lu, objets };
+}
+
 /** The trails the ONF closes, as its map draws them, with why and until when. */
 export function sentiersObjets(c: onf.Carte, heure: string): Objet[] {
   return c.sentiers.filter((t) => t.statut === "fermé" && t.points.length).map((t): Objet => {
@@ -373,6 +399,8 @@ export const COUCHES: Couche[] = [
     return fixe({ id, nom: COURTS_ENFANTS[s], long: NOMS_ENFANTS[s], theme: "sortir", precision: "adresse", source: enfants.SOURCES[s], page: "/enfants", donnees: () => enfantsCouche(id, s, enfants.LIEUX, enfants.BUILT) });
   }),
   // No page of their own: each leads to its commune's monuments on /aujourdhui, the layer's panel to the communes.
+  // Drawn as lines: each leads to its commune's walks on /enfants.
+  { ...fixe({ id: "marmailles", nom: "Sentiers marmailles", long: "Sentiers marmailles (Conseil Général de La Réunion / AGORAH)", theme: "sortir", precision: "adresse", source: marmailles.SOURCE, page: "/enfants", donnees: () => marmaillesCouche(marmailles.SENTIERS, marmailles.LU_LE) }), forme: "traces" },
   fixe({ id: "monuments", nom: "Monuments historiques", long: "Monuments historiques (base Mérimée)", theme: "sortir", precision: "lieu", source: monuments.SOURCE, page: "/communes", donnees: () => monumentsCouche(monuments.MONUMENTS, monuments.FICHIER_DU) }),
 ];
 

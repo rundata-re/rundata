@@ -5,6 +5,7 @@ import * as feux from "../providers/feux.js";
 import * as onf from "../providers/sentiers.js";
 import * as traces from "../providers/traces.js";
 import * as aires from "../traces/aires.js";
+import * as marmailles from "../vie/marmailles.js";
 import { why } from "../types.js";
 import * as fire from "./feux.js";
 import { a, credits, de, notFound, placeBlock, text } from "./format.js";
@@ -320,7 +321,79 @@ export function airesBlock(list: (aires.Aire & { distance_km?: number })[], ou: 
   };
 }
 
-export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, now = new Date(), filtre?: Filtre) {
+// A walk for a family around a place that is not a commune nor a cirque: this close to it, the nearest first.
+const FAMILLE_KM = 10;
+const FAMILLE_NEAREST = 3;
+
+/** A walk for a family in an answer, its state from the ONF's map on the trails it follows only. */
+export function marmailleRow(m: marmailles.Marmaille, carte: onf.Carte, from?: { lon: number; lat: number }) {
+  const e = marmailles.etat(m, carte.sentiers);
+  return {
+    sentier: m.nom,
+    commune: marmailles.communeOf(m),
+    longueur_km: m.km,
+    parcours: m.parcours,
+    duree: m.duree,
+    etat: e.etat,
+    etat_detail: e.texte,
+    sentiers_fermes: e.fermes,
+    distance_km: from ? Math.round(distanceKm(from.lon, from.lat, ...marmailles.milieu(m)) * 10) / 10 : undefined,
+    sentiers_onf: m.sentiers_onf.length ? m.sentiers_onf.map((nom) => ({ sentier: nom, page: traces.SENTIERS[nom] ? `${SITE_URL}/sentiers/${traces.SENTIERS[nom].slug}` : undefined })) : undefined,
+  };
+}
+
+/**
+ * The answer for a family (`famille`): the « sentiers marmailles » of the zone asked (a cirque, a commune, around a place)
+ * or of the island, those the ONF closes on a trail they follow said first, each with what the ONF's map says of it and
+ * never more, and the source's age.
+ */
+function familleAnswer(carte: onf.Carte, lieu: string | undefined, filtre: Filtre | undefined, common: Record<string, unknown>) {
+  const q = normalize(lieu ?? "");
+  const cirque = Object.entries(CIRQUES).find(([k]) => q.split(" ").includes(k))?.[1];
+  const res = !lieu?.trim() || cirque ? null : resolvePlace(lieu);
+  if (lieu?.trim() && !cirque && !res) return notFound(lieu);
+  const fit = (m: marmailles.Marmaille) => fits({ ...filtre, denivele_max_m: undefined }, m.km);
+  let from: { lon: number; lat: number } | undefined;
+  let dans = "À La Réunion";
+  let list = marmailles.SENTIERS.filter(fit).sort((x, y) => marmailles.communeOf(x).localeCompare(marmailles.communeOf(y), "fr") || x.nom.localeCompare(y.nom, "fr"));
+  if (cirque) {
+    dans = `Dans ${cirque.nom}`;
+    list = list.filter((m) => secteur(...marmailles.milieu(m)).secteur === cirque.secteur);
+  } else if (res?.lieu.type === "commune") {
+    dans = cap(a(res.lieu.commune));
+    list = list.filter((m) => marmailles.communeOf(m) === res.lieu.commune);
+  } else if (res) {
+    from = { lon: res.lieu.lon, lat: res.lieu.lat };
+    const d = (m: marmailles.Marmaille) => distanceKm(from!.lon, from!.lat, ...marmailles.milieu(m));
+    const sorted = list.sort((x, y) => d(x) - d(y));
+    const near = sorted.filter((m) => d(m) <= FAMILLE_KM);
+    dans = near.length ? `À moins de ${FAMILLE_KM} km ${de(res.lieu.nom)}` : `Les plus proches ${de(res.lieu.nom)}`;
+    list = near.length ? near : sorted.slice(0, FAMILLE_NEAREST);
+  }
+  const rows = list.map((m) => marmailleRow(m, carte, from));
+  const shut = rows.filter((r) => r.etat === "fermé");
+  const n = rows.length;
+  const parts = [
+    ...(shut.length ? [`ATTENTION : ${shut.map((r) => {
+      const f = r.sentiers_fermes!;
+      return `${r.sentier} emprunte ${f.length > 1 ? `${f.length} sentiers fermés` : "un sentier fermé"} par l'ONF : ${f.map((x) => `${x.sentier}${x.cause ? ` (${x.cause})` : ""}`).join(", ")}.`;
+    }).join(" ")} Un sentier fermé est interdit : ne pas s'y engager.`] : []),
+    n
+      ? `${dans} : ${n} sentier${n > 1 ? "s" : ""} marmaille${n > 1 ? "s" : ""}, balade${n > 1 ? "s" : ""} pour toute la famille recensée${n > 1 ? "s" : ""} par le Conseil Général et l'AGORAH${shut.length ? `, dont ${shut.length} qui emprunte${shut.length > 1 ? "nt" : ""} un sentier fermé par l'ONF` : ""}.`
+      : `${dans} : aucun sentier marmaille${filtering(filtre) ? " de cette longueur" : ""} dans la liste du Conseil Général et de l'AGORAH.`,
+    marmailles.AVERTISSEMENT,
+    "Leur état est celui des sentiers de l'ONF qu'ils empruntent, quand ils en empruntent : voir etat_detail.",
+  ];
+  return text({
+    lieu: res ? placeBlock(lieu!, res) : undefined,
+    resume: parts.join(" "),
+    sentiers_marmailles: { zone: dans, nombre: n, avertissement: marmailles.AVERTISSEMENT, liste_lue_le: day(marmailles.LU_LE), sentiers: rows },
+    ...common,
+    sources: credits([marmailles.SOURCE, onf.SOURCE]),
+  });
+}
+
+export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, now = new Date(), filtre?: Filtre, famille = false) {
   let carte: onf.Carte;
   // The fires seen by satellite, beside the trails: nothing without FIRMS's key (providers/feux.ts).
   const seen = feux.feuxNow(cache, now);
@@ -342,6 +415,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   };
   // Said after the trails on the island: a list of the closures is what was asked.
   const fireSentence = fires?.detections.length ? ` ${fire.vigilanceLine(fires, now)!.replace(" Détails avec sentiers_randonnee.", "")}` : "";
+  if (famille) return familleAnswer(carte, lieu, filtre, common);
 
   if (!lieu?.trim() && filtering(filtre)) {
     // A hike of a given length or climb anywhere: the full routes first, then the ONF trails, open ones only.

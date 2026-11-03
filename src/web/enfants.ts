@@ -6,8 +6,10 @@
 import type { Cached } from "../cache.js";
 import { mentionOf } from "../mentions.js";
 import { ACCUEILS } from "../providers/agenda.js";
+import * as traces from "../providers/traces.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as enfants from "../vie/enfants.js";
+import * as marmailles from "../vie/marmailles.js";
 import { porte, type Porte } from "./aller.js";
 import { PAGES, type PlacePage } from "./places.js";
 import { aCommune, deCommune } from "./aujourdhui.js";
@@ -84,10 +86,46 @@ open();addEventListener("hashchange",open);
 const f=document.getElementById("kf");if(!f)return;f.hidden=false;
 const run=()=>{const b=f.b.value,t=f.t.value;let n=0;document.querySelectorAll("#enf li[data-b]").forEach((li)=>{const ok=(!b||li.dataset.b.split(" ").includes(b))&&(!t||li.dataset.t===t);li.hidden=!ok;if(ok)n++});
 document.querySelectorAll("#enf [data-k]").forEach((g)=>{g.hidden=!g.querySelector("li[data-b]:not([hidden])")});
-document.querySelectorAll("#enf details").forEach((d)=>{d.open=!!(b||t)});
+document.querySelectorAll("#enf [data-k] details").forEach((d)=>{d.open=!!(b||t)});
 document.querySelectorAll("#enf .note[data-n]").forEach((e)=>{const all=+e.dataset.n,k=e.closest("[data-k]").querySelectorAll("li[data-b]:not([hidden])").length,w=(x)=>x+" "+(x>1?e.dataset.p:e.dataset.s);e.textContent=b||t?w(k)+" sur "+all:w(all)});
 document.getElementById("kf-n").textContent=b||t?n+" résultat"+(n>1?"s":""):"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
+
+/** The « sentiers marmailles » part's words: marketing's. */
+const MARMAILLES = {
+  intro: (n: number) => typo(`Les balades pour toute la famille recensées par le Conseil Général et l'AGORAH : ${n} sentiers marmailles, avec leur longueur et leur durée.`),
+  etat: "État sur la carte de l'ONF\u00a0: ",
+  reste: " (le reste du parcours n'est pas suivi par l'ONF)",
+  nonSuivi: "État non suivi par l'ONF.",
+  carte: "Les tracés sur la carte",
+  credit: (lu: string) => typo(`Sentiers marmailles : Conseil Général de La Réunion / AGORAH, sur le portail de la Région, Licence Ouverte. Liste lue le ${lu}.`),
+};
+
+/**
+ * The « sentiers marmailles », by commune, each with its length and time as the source gives them, and the ONF trails it
+ * follows, whose page says their state: never read here (no read more for /enfants), never said open.
+ */
+export function marmaillesSection(): string {
+  const li = (m: marmailles.Marmaille) => {
+    const onf = m.sentiers_onf.map((nom) => {
+      const t = traces.SENTIERS[nom];
+      return t ? `<a href="/sentiers/${t.slug}">${esc(nom)}</a>` : esc(nom);
+    });
+    const etat = onf.length ? `${esc(MARMAILLES.etat)}${onf.join(", ")}${m.part_onf < marmailles.PRESQUE ? esc(MARMAILLES.reste) : ""}` : esc(MARMAILLES.nonSuivi);
+    return `<li><span>${esc(m.nom)}<small>${esc(marmailles.figures(m))}</small><small>${etat}</small></span></li>`;
+  };
+  const cards = marmailles.communes().map((c) => {
+    const list = marmailles.inCommune(c);
+    return `<li class="card" id="${anchorId("m", c)}"><details><summary><h3>${esc(c)} <span class="note">${list.length} sentier${list.length > 1 ? "s" : ""}</span></h3></summary><ul class="rows eau">${list.map(li).join("")}</ul></details></li>`;
+  }).join("");
+  const lu = marmailles.LU_LE.split("-").reverse().join("/");
+  return `<section aria-labelledby="h-marmailles">
+  <div class="sec-h"><p class="eyebrow">En famille</p><h2 id="h-marmailles">Sentiers marmailles</h2></div>
+  <div class="card"><p>${esc(MARMAILLES.intro(marmailles.SENTIERS.length))}</p><p><b>${esc(marmailles.AVERTISSEMENT)}</b></p><p><a href="/carte#c=marmailles">${esc(MARMAILLES.carte)} →</a></p></div>
+  <ul class="zones top">${cards}</ul>
+  <p class="note">${esc(MARMAILLES.credit(lu))}</p>
+</section>`;
+}
 
 export function enfantsPage(origin: string, data: Cached<EnfantsAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
@@ -156,6 +194,7 @@ ${filter}
   <p class="note">${esc(enfants.INDICATIF_NOTE)}</p>
   <p class="note">${esc(CREDITS)}</p>
 </section>
+${marmaillesSection()}
 <section aria-labelledby="h-ecoles">
   <div class="sec-h"><p class="eyebrow">À l'école</p><h2 id="h-ecoles">Écoles</h2></div>
   <div class="card"><p>${esc(ECOLES_TEXTE(ecoles.LIST.length))}</p><p><a href="${ECOLES}">Les écoles sur la carte →</a> · <a href="${ECOLES}#college">Quel collège pour votre adresse\u00a0? →</a></p></div>

@@ -89,7 +89,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "sport", sources: () => Object.values(SPORT_SOURCES).map((s) => s.id), cadence: { minutes: 30, de: "livetrail" } },
   // Every agenda read (providers/agenda.ts), the scheduled ones every hour.
   { categorie: "agenda", sources: () => SOURCES_LUES.map((s) => s.id), cadence: { minutes: 60, de: "agenda_mairies" } },
-  { categorie: "enfants", sources: ids("osm_enfants", "data_es", "basilic") },
+  { categorie: "enfants", sources: ids("osm_enfants", "data_es", "basilic", "region_sentiers_marmailles") },
   { categorie: "air", sources: ids("atmo_indice", "lcsqa_mesures", "sensor_community"), cadence: { minutes: 60, de: "atmo_indice" } },
   // EDF's mix every 4 minutes (providers/edf.ts).
   { categorie: "electricite", sources: ids("edf_sei_reunion", "mairies_edf"), cadence: { minutes: 4, de: "edf_sei_reunion" } },

@@ -142,6 +142,10 @@ const DIT: Record<string, Dit> = {
     montre: "Les médiathèques et bibliothèques recensées par le ministère de la Culture (Basilic). Une même médiathèque peut aussi figurer dans « Jeux, parcs et musées » : les deux sources restent séparées.",
     rubrique: "Enfants", court: "Basilic", unite: ["lieu", "lieux"], organisme: "Basilic",
   },
+  marmailles: {
+    montre: "Les sentiers marmailles, balades pour toute la famille recensées par le Conseil Général et l'AGORAH, avec leur longueur et leur durée. Tracés sans date : un chemin a pu changer depuis. Leur état n'est pas ici : cochez aussi « Sentiers fermés » avant de partir.",
+    rubrique: "Enfants", court: "Conseil Général / AGORAH", unite: ["sentier", "sentiers"], organisme: "le Conseil Général et l'AGORAH",
+  },
   monuments: {
     montre: "Les immeubles protégés au titre des monuments historiques, classés ou inscrits, d'après la base Mérimée du ministère de la Culture. Beaucoup sont des propriétés privées : être protégé ne veut pas dire se visiter.",
     rubrique: "Communes", court: "Base Mérimée", unite: ["monument", "monuments"], organisme: "la base Mérimée",
@@ -155,7 +159,7 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
  * The order of drawing, from the bottom: the trails' lines, then the points from the most to the fewest, the rarest
  * and the stations' figures on top, so that a crowded layer never hides another. The rain is under the land's lines.
  */
-export const ORDRE = ["sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
+export const ORDRE = ["marmailles", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
 
 /**
  * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,
@@ -340,7 +344,7 @@ const wet=(o)=>{const i=o.infos||{};return!i.ancienne&&i.pluie_1h>0};
 const rings=(j)=>{pv.replaceChildren(...j.objets.filter(wet).flatMap((o)=>[el("circle",{class:"kpb",cx:X(o.lon),cy:Y(o.lat),r:"12"}),el("circle",{cx:X(o.lon),cy:Y(o.lat),r:"12"})]));place()};
 const draw=(c,j)=>{draw0(c,j);if(KC.on&&KC.frame&&(c.id==="pluie"||c.id==="stations"))KC.frame(true)};
 const draw0=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
-if(c.id==="sentiers")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl",d}))});
+if(c.forme==="traces")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl",d}))});
 j.objets.forEach((o)=>g.append(point(c,o,j)));
 if(!wired&&j.objets.length){wired=true;svg.dispatchEvent(new Event("carte",{bubbles:true}))}};
 const said=(c,j)=>{const r=KC.said&&KC.said(c);if(r)return r;const o=j?j.objets||[]:[],hs=o.map((x)=>Date.parse(x.heure)).filter((t)=>t>0);

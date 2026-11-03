@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
-import type { Cached } from "../src/cache.js";
+import { readFileSync } from "node:fs";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { Cache, type Cached, MemoryStore } from "../src/cache.js";
 import { BIKES_STALE_MS, COLUMNS, COMMUNES, communePage, spans } from "../src/web/commune.js";
-import type { CommuneData } from "../src/web/data.js";
+import { type CommuneData, pointJustice } from "../src/web/data.js";
 import { H, W } from "../src/web/map.js";
 import { CSS } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
@@ -51,7 +52,7 @@ function pack(span: number[], c: number): number[][] {
   return rows;
 }
 
-const tile = (page: string, nom: string) => page.match(new RegExp(`<li class="tile[^>]*>(?:(?!<li class="tile).)*?>${nom}</a></h3>.*?(?=<li class="tile)`, "s"))![0];
+const tile = (page: string, nom: string) => page.match(new RegExp(`<li class="tile[^>]*>(?:(?!<li class="tile).)*?>${nom}(?:</a>)?</h3>.*?(?=<li class="tile)`, "s"))![0];
 
 describe("a commune's tiles", () => {
   it("leave no hole in the grid, on a phone, a tablet or a computer, in every commune", () => {
@@ -116,6 +117,52 @@ describe("the town hall's tile", () => {
     const page = communePage(ORIGIN, p, commune(ago(60_000), { mairie: hall }), NOW);
     expect(page).toContain(`<p class="tv">Horaires absents de l'annuaire</p>`);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie/i);
+  });
+});
+
+describe("the point-justice's tile", () => {
+  afterEach(() => vi.unstubAllGlobals());
+  // The places of justice of the 974, as service-public.fr's directory gave them on 03/11/2026.
+  const rows = JSON.parse(readFileSync(new URL("./fixtures/annuaire_justice.json", import.meta.url), "utf8")).results;
+  const of = async (slug: string) => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ total_count: rows.length, results: rows }), { headers: { "content-type": "application/json" } })));
+    return pointJustice(new Cache(new MemoryStore(), () => NOW.getTime()), pageOf(slug)!);
+  };
+
+  it("gives the commune's own point-justice, its hours unpublished, and its phone", async () => {
+    const justice = await of("cilaos");
+    expect(justice).toMatchObject({ dans_la_commune: 1, lieu: { nom: "Point-justice de Cilaos" } });
+    expect(justice!.km).toBeUndefined();
+    const t = tile(communePage(ORIGIN, pageOf("cilaos")!, commune(ago(60_000), { justice }), NOW), "Point-justice");
+    expect(t).toContain('<p class="tv">1 dans la commune</p>');
+    expect(t).toContain('<p class="td">Point-justice de Cilaos, 4 rue des Ecoles, 97413 CILAOS</p>');
+    // Below the detail, which a phone cuts at three lines.
+    expect(t).toContain('<p class="note">horaires non publiés · tél. <a href="tel:0262289282">02\u00a062\u00a028\u00a092\u00a082</a></p><p class="ya"><a class="aller"');
+    expect(t).toContain("Fiche service-public.fr");
+  });
+
+  it("gives the nearest one elsewhere, with how far, where the commune has none", async () => {
+    const justice = await of("sainte-rose");
+    expect(justice!.dans_la_commune).toBe(0);
+    expect(justice!.km).toBeGreaterThan(5);
+    const t = tile(communePage(ORIGIN, pageOf("sainte-rose")!, commune(ago(60_000), { justice }), NOW), "Point-justice");
+    expect(t).toContain('<p class="tv">Aucun dans la commune</p>');
+    expect(t).toContain(`le plus proche\u00a0: ${justice!.lieu.nom}, ${justice!.lieu.adresse}</p>`);
+    expect(t).toContain(`<p class="note">à ${justice!.km} km à vol d&#39;oiseau · horaires non publiés · tél. <a href="tel:`);
+  });
+
+  it("never gives a point-justice held in a prison or at the EPSMR", async () => {
+    for (const slug of ["le-port", "saint-paul", "saint-pierre", "saint-benoit", "saint-denis"]) {
+      const justice = await of(slug);
+      expect(justice!.lieu.nom, slug).not.toMatch(/EPSMR|détention|Pénitentiaire|arrêt/);
+      expect(justice!.dans_la_commune, slug).toBeGreaterThan(0);
+    }
+    // Saint-Paul: four, of which the EPSMR's.
+    expect((await of("saint-paul"))!.dans_la_commune).toBe(3);
+  });
+
+  it("is left out when the directory gave nothing", () => {
+    expect(grid(communePage(ORIGIN, p, commune(ago(60_000)), NOW)).map((t) => t.nom)).not.toContain("Point-justice");
   });
 });
 

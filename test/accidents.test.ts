@@ -98,7 +98,7 @@ describe("the last five years (routes/accidents.ts, /trafic)", () => {
     expect(html).toContain('<tfoot><tr><th scope="row">5 ans</th><td>4\u202f302</td><td>199</td><td>1\u202f387</td><td>3\u202f881</td></tr></tfoot>');
     expect(html).toContain('<tr><th scope="row">Saint-Paul</th><td>12</td><td>6</td><td>4</td><td>7</td><td>4</td><td>33</td></tr>');
     expect(html).toContain('<tr><th scope="row">Salazie</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>');
-    expect(html).toContain('<table class="drought histo passe colle">');
+    expect(html.match(/<div class="card table-wrap defile"><table class="drought histo passe colle">/g)).toHaveLength(2);
     expect(html).toContain("Tués à 30 jours, relevés par les forces de l'ordre.");
     expect(html).toContain("fichiers des accidents corporels de 2021 à 2025 (BAAC), Licence Ouverte : mis en ligne du 24/10/2022 au 30/10/2026.");
     expect(html).not.toMatch(/tendance|[↑↓↗↘]/);

@@ -1934,9 +1934,9 @@ function accidentsSerie(): string {
   const [du, au] = accidents.MIS_EN_LIGNE;
   return `<div class="sec-h"><h3 id="h-accidents-serie">De ${from} à ${to}</h3></div>
   <div class="card"><p>Les mêmes comptes sur cinq ans, d'après le fichier de chaque année, dans sa version lue le ${accidents.jour(accidents.LU_LE)}. L'ONISR corrige ces fichiers après leur publication : une année peut encore changer de quelques unités.</p></div>
-  <div class="card table-wrap"><table class="drought histo passe colle"><thead><tr><th scope="col">Année</th><th scope="col">Accidents</th><th scope="col">Tués</th><th scope="col">Blessés<br>hospitalisés</th><th scope="col">Blessés<br>légers</th></tr></thead>
+  <div class="card table-wrap defile"><table class="drought histo passe colle"><thead><tr><th scope="col">Année</th><th scope="col">Accidents</th><th scope="col">Tués</th><th scope="col">Blessés<br>hospitalisés</th><th scope="col">Blessés<br>légers</th></tr></thead>
   <tbody>${islandRows}</tbody><tfoot><tr><th scope="row">5 ans</th>${cells(total)}</tr></tfoot></table></div>
-  <div class="card table-wrap"><table class="drought histo passe colle"><thead><tr><th scope="col">Commune</th>${years.map((year) => `<th scope="col">${year}</th>`).join("")}<th scope="col">5 ans</th></tr></thead>
+  <div class="card table-wrap defile"><table class="drought histo passe colle"><thead><tr><th scope="col">Commune</th>${years.map((year) => `<th scope="col">${year}</th>`).join("")}<th scope="col">5 ans</th></tr></thead>
   <tbody>${communeRows}</tbody></table>
   <p class="note">Tués à 30 jours, relevés par les forces de l'ordre.</p></div>
   <p class="note">Ministère de l'Intérieur, ONISR, fichiers des accidents corporels de ${from} à ${to} (BAAC), Licence Ouverte : mis en ligne du ${accidents.jour(du)} au ${accidents.jour(au)}.</p>`;

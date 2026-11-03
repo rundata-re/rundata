@@ -114,7 +114,8 @@ describe("the server's instructions", () => {
     // 41 557 the same night with « médecin de garde » in annuaire_services_publics (a few words).
     // 41 763 the same night with the collège of an address in annuaire_services_publics (a few words, and its argument adresse).
     // 41 762 on 2/11/2026 with that address « sur laquelle on s'interroge », the words said twice in the tool cut to make room.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_770);
+    // 41 772 on 3/11/2026 with the points-justice and the help to victims in annuaire_services_publics (four words).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_772);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

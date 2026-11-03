@@ -111,7 +111,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.167";
+export const VERSION = "1.0.168";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -448,7 +448,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Services publics et vie pratique à La Réunion : adresses, horaires, carburants, pharmacies",
       description:
         "Adresse, horaires d'ouverture (et si c'est ouvert), téléphone et site des services publics de La Réunion (974) : " +
-        "mairies et mairies annexes, préfecture et sous-préfectures, CAF, CPAM, France Travail, impôts, tribunaux, France services… " +
+        "mairies et mairies annexes, préfecture et sous-préfectures, CAF, CPAM, France Travail, impôts, tribunaux, points-justice, aide aux victimes, France services… " +
         "d'après l'annuaire officiel de service-public.fr. Aussi les prix maximum des carburants et de la bouteille de gaz du mois, " +
         "fixés par le préfet (quoi = « carburant », « essence », « gazole », « gaz »), les pharmacies et les hôpitaux les plus proches d'après FINESS " +
         "(quoi = « pharmacie », « médecin de garde », « urgences », « hôpital ») : la pharmacie de garde n'est connue que de 3237.fr et du 32 37, l'urgence et la garde passent par le 15\u00a0; " +

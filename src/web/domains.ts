@@ -28,6 +28,7 @@ import type { CourantRow } from "../tools/courant.js";
 import { a, a as aLieu, de, enumeration, fr, heure, nombre, tranche } from "../tools/format.js";
 import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
 import * as capteurs from "../providers/capteurs.js";
+import * as accidents from "../routes/accidents.js";
 import * as radars from "../routes/radars.js";
 import * as fire from "../tools/feux.js";
 import * as feux from "../providers/feux.js";
@@ -1868,6 +1869,8 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   const why = `<section aria-labelledby="h-pourquoi"><div class="card warn">${icon("alert")}<h3 id="h-pourquoi">Pourquoi pas les bouchons ici</h3>
   <p>rundata.re n'a pas la mesure des bouchons : la Région ne la rend pas réutilisable pour l'instant, et aucune autre source ouverte ne mesure le trafic à La Réunion. Waze et Google ne permettent pas de reprendre leurs données. D'où la carte de Waze, chargée à votre demande, et le lien vers infotrafic.re.</p></div></section>`;
 
+  const crash = accidentsSection();
+
   const title = "Info trafic Réunion : bouchons, routes, bus en direct · 974";
   const short = "Circulation à La Réunion (974) : carte officielle des bouchons, accidents et travaux sur infotrafic.re, retards des bus et routes forestières fermées.";
   // An announcement of the last hours leads the description; otherwise, what the page has.
@@ -1882,9 +1885,34 @@ ${official}
 ${waze}
 ${ours}
 ${why}
+${crash}
 ${connectorCta("transports", "les bus en direct")}
 <script>${WAZE_SCRIPT}</script>`;
   return layout(origin, { title, description, path: "/trafic", jsonld: [crumbs(origin, "Circulation", "/trafic"), webPage(origin, "/trafic", title, description, data)], alerte }, band, body);
+}
+
+/** The road kinds as said on /trafic, in the national file's order. */
+const ROUTE_KINDS = [["nationales", "Routes nationales"], ["departementales", "Routes départementales"], ["communales", "Voies communales"], ["autres", "Parkings et autres voies"]] as const;
+
+/**
+ * The year's road accidents with casualties (routes/accidents.ts): the island's, by kind of road and commune by
+ * commune, in alphabetical order. Never a rank, a rate per inhabitant nor a colour: counts as the national file has them.
+ */
+export function accidentsSection(): string {
+  const i = accidents.ILE;
+  const y = accidents.ANNEE;
+  const row = (name: string, b: accidents.Bilan, blesses = true) =>
+    `<tr><th scope="row">${esc(name)}</th><td>${nombre(b.accidents)}</td><td>${nombre(b.tues)}</td>${blesses ? `<td>${nombre(b.blesses)}</td>` : ""}</tr>`;
+  const head = (first: string, blesses = true) => `<thead><tr><th scope="col">${first}</th><th scope="col">Accidents</th><th scope="col">Tués</th>${blesses ? `<th scope="col">Blessés</th>` : ""}</tr></thead>`;
+  return `<section id="accidents" aria-labelledby="h-accidents">
+  <div class="sec-h"><p class="eyebrow">Fichier national, ${y}</p><h2 id="h-accidents">Les accidents de la route en ${y}</h2></div>
+  <div class="card"><p>Un accident corporel est un accident de la route qui fait au moins une victime. En ${y}, les forces de l'ordre en ont relevé ${nombre(i.accidents)} à La Réunion : ${accidents.tues(i.tues)}, ${nombre(i.hospitalises)} blessés hospitalisés et ${nombre(i.legers)} blessés légers.</p>
+  <p>Selon l'ONISR, un tué est décédé sur le coup ou dans les 30 jours qui suivent l'accident ; un blessé hospitalisé est resté plus de 24 heures à l'hôpital ; un blessé léger a été soigné sans y rester plus de 24 heures. L'ONISR prévient que le chiffre des blessés hospitalisés n'est plus labellisé par la statistique publique depuis 2019.</p></div>
+  <div class="card table-wrap"><table class="drought histo passe">${head("Route", false)}<tbody>${ROUTE_KINDS.map(([k, name]) => row(name, accidents.ROUTES[k], false)).join("")}</tbody></table></div>
+  <div class="card table-wrap"><table class="drought histo passe">${head("Commune")}<tbody>${accidents.communes().map(([nom, b]) => row(nom, b)).join("")}</tbody></table>
+  <p class="note">Relevés par les forces de l'ordre ; seuls les tués se comparent d'une commune à l'autre.</p></div>
+  <p class="note">Ministère de l'Intérieur, ONISR, fichier national des accidents corporels (BAAC), Licence Ouverte : année ${y}, publiée le ${accidents.PUBLIE_LE.split("-").reverse().join("/")}.</p>
+</section>`;
 }
 
 export function traficLive(data: Cached<TraficAnswer> | null): Live | undefined {

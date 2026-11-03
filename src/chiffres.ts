@@ -102,8 +102,9 @@ export const DOMAINES: Domaine[] = [
   { categorie: "marches", sources: ids("boamp_api"), cadence: { minutes: 60, de: "boamp_api" } },
   // The TCO's dumps every 30 minutes (providers/tco.ts).
   { categorie: "services", sources: ids("annuaire_administration", "annuaire_education", "carte_scolaire_colleges", "annuaire_sante_ameli", "prefecture_carburants", "tco_decheteries", "ademe_decheteries", "tco_collecte", "finess", "ars_garde", "ars_pdsa", "sante_fr_urgences", "osm_marches", "marches_saint_paul", "marches_saint_leu", "marches_sainte_marie", "marches_saint_louis_2020", "marches_saint_louis_2021"), cadence: { minutes: 30, de: "tco_decheteries" } },
-  // The fixed speed cameras: the ministry's yearly list, bundled; the speeds of the routes nationales, of /carte.
-  { categorie: "trafic", sources: ids("radars_fixes", "region_vitesses_rn") },
+  // The fixed speed cameras: the ministry's yearly list, bundled; the speeds of the routes nationales, of /carte;
+  // the road accidents' yearly counts, bundled.
+  { categorie: "trafic", sources: ids("radars_fixes", "region_vitesses_rn", "onisr_accidents") },
   // The historic monuments and the SIT's remarkable places, bundled: a category of /chiffres only, not on the home page
   // (web/categories.ts, `horsAccueil`).
   { categorie: "patrimoine", sources: ids("merimee_monuments", "sit_lieux_remarquables") },

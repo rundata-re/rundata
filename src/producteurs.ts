@@ -134,6 +134,7 @@ export const FICHES: Record<string, Fiche> = {
   arcep_sites_indisponibles: { famille: "licence_ouverte", producteurs: ["Arcep"] },
   prefecture_carburants: { famille: "licence_ouverte", producteurs: [PREFECTURE] },
   radars_fixes: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
+  onisr_accidents: { famille: "licence_ouverte", producteurs: ["Ministère de l'Intérieur"] },
   tco_decheteries: { famille: "licence_ouverte", producteurs: ["TCO"] },
   ademe_decheteries: { famille: "licence_ouverte", producteurs: ["ADEME"] },
   tco_collecte: { famille: "licence_ouverte", producteurs: ["TCO"] },

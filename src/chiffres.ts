@@ -76,7 +76,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "mer", sources: ids("acspo", "modis", "noaa_crw_dhw_5km", "openmeteo_houle", "refmar"), cadence: { minutes: 5, de: "refmar" } },
   // The buses' delays every minute (providers/gtfsrt.ts).
   { categorie: "bus", sources: ids("gtfs_reunion", "gtfs_rt_reunion"), cadence: { minutes: 1, de: "gtfs_rt_reunion" } },
-  { categorie: "velos", sources: ids("altervelo"), cadence: { minutes: 1, de: "altervelo" } },
+  { categorie: "velos", sources: ids("altervelo", "region_voie_velo", "saint_denis_pistes_cyclables", "civis_accroches_velo"), cadence: { minutes: 1, de: "altervelo" } },
   // The scheduled event writes the charge points' states every 15 minutes (providers/irve.ts, refresh).
   { categorie: "bornes", sources: ids("irve"), cadence: { minutes: 15, de: "irve" } },
   { categorie: "coupures", sources: ids("avis_eau"), cadence: { minutes: 15, de: "avis_eau" } },
@@ -102,8 +102,8 @@ export const DOMAINES: Domaine[] = [
   { categorie: "marches", sources: ids("boamp_api"), cadence: { minutes: 60, de: "boamp_api" } },
   // The TCO's dumps every 30 minutes (providers/tco.ts).
   { categorie: "services", sources: ids("annuaire_administration", "annuaire_education", "carte_scolaire_colleges", "annuaire_sante_ameli", "prefecture_carburants", "tco_decheteries", "ademe_decheteries", "tco_collecte", "finess", "ars_garde", "ars_pdsa", "sante_fr_urgences", "osm_marches", "marches_saint_paul", "marches_saint_leu", "marches_sainte_marie", "marches_saint_louis_2020", "marches_saint_louis_2021"), cadence: { minutes: 30, de: "tco_decheteries" } },
-  // The fixed speed cameras: the ministry's yearly list, bundled.
-  { categorie: "trafic", sources: ids("radars_fixes") },
+  // The fixed speed cameras: the ministry's yearly list, bundled; the speeds of the routes nationales, of /carte.
+  { categorie: "trafic", sources: ids("radars_fixes", "region_vitesses_rn") },
   // The historic monuments and the SIT's remarkable places, bundled: a category of /chiffres only, not on the home page
   // (web/categories.ts, `horsAccueil`).
   { categorie: "patrimoine", sources: ids("merimee_monuments", "sit_lieux_remarquables") },

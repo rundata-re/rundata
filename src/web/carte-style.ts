@@ -2,6 +2,14 @@
  * The style of /carte (web/carte.ts), in the site's sheet: a module of its own, so that the sheet (web/pages.ts) does not
  * import the page. The rain's scale is the first, fourth and last colours of /meteo's (RAIN_WASH, web/meteo-carte.ts).
  */
+/**
+ * The speeds of the routes nationales there are, from the slowest, and their colours: a scale of greys to the night's
+ * blue, never red (red says an alert on the map), darker the faster.
+ */
+export const VITESSES = [30, 50, 60, 70, 80, 90, 110];
+const GRIS = ["#7d8aa3", "#66748f", "#56657f", "#46566f", "#36465f", "#26354e", "#0b1f36"];
+const PAR_VITESSE = VITESSES.map((v, i) => `.kmapc .kc-vitesses .v${v}{--c:${GRIS[i]}}`).join("");
+
 /** The layers' colours are told apart by their shape too: a disc, a square, a line, a figure. */
 export const CARTE_CSS = `
 .kmapc .kpluie{pointer-events:none}.kmapc .kpw,.kmapc .kpw canvas{display:block;width:100%;height:100%}.kmapc .kpw canvas{image-rendering:auto}
@@ -14,6 +22,9 @@ export const CARTE_CSS = `
 .kmapc .kc-rivieres .kr,.kmapc .kc-rivieres .kd,.kmapc .kc-bornes .kr,.kmapc .kc-bornes .kd{stroke-linecap:square}
 .kmapc .kc-seismes .kd{stroke-opacity:.72}.kmapc .kc-seismes .kr{stroke-width:calc(var(--w) + 3px)}
 .kmapc .kl .kth{stroke:#fff;stroke-width:6px}.kmapc .kl .ktl{stroke:var(--c);stroke-width:3px;stroke-dasharray:6 4}.kmapc .kc-marmailles .ktl,.kmapc .kc-canyons .ktl{stroke-dasharray:none}
+.kc-velo{--c:#0b8a9c;--w:6px}.kmapc .kc-velo .ktl,.kmapc .kc-vitesses .ktl{stroke-dasharray:none}.kmapc .kc-velo .ka .kr,.kmapc .kc-velo .ka .kd{stroke-linecap:square}.kmapc .kc-velo .ka{--w:8px}
+.kc-vitesses{--c:#435269;--w:5px}${PAR_VITESSE}.kc-velo .km,.kc-vitesses .km{height:.25rem;border-radius:0;box-shadow:none}
+.kgrad.kgv{background:linear-gradient(90deg,${GRIS.join(",")})}
 .kmapc .kl .kt{font:700 calc(var(--u,1)*12px) system-ui,sans-serif;fill:#0b1f36;stroke:#fff;stroke-width:calc(var(--u,1)*3px);paint-order:stroke;text-anchor:middle;pointer-events:none}
 .kmapc .klg{list-style:none;margin:0 0 .35rem;padding:0;display:grid;gap:.25rem}.kmapc .klg li{display:flex;align-items:baseline;gap:.45rem}.kmapc .klg li>.km{position:relative;top:.1rem}.kmapc .klg li.vieux{opacity:.6}
 .km{flex:none;display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:var(--c);box-shadow:0 0 0 1.5px #fff,0 0 0 2.5px rgb(11 31 54/.3)}

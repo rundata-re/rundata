@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-03T20:58:00+04:00", texte: "Communes\u00a0: les résultats de chaque élection depuis 1999 et la participation, commune par commune, d'après le ministère de l'Intérieur." },
   { date: "2026-11-03T17:53:00+04:00", texte: "Écoles\u00a0: l'indice de position sociale des collèges et des lycées, et leurs résultats au brevet et au bac 2025 avec le taux attendu." },
   { date: "2026-11-03T17:33:00+04:00", texte: "Emploi\u00a0: les formations éligibles au CPF à La Réunion, par thème sur la page Emploi, et dans le connecteur avec leurs frais et leur durée." },
   { date: "2026-11-03T12:47:00+04:00", texte: "Connecteur\u00a0: les points-justice, tribunaux et lieux d'aide aux victimes les plus proches, avec leur téléphone, d'après service-public.fr." },

@@ -901,6 +901,9 @@ table.psup{table-layout:fixed}table.psup thead th:nth-child(2){width:4.2rem}tabl
 .table-wrap.defile{background:linear-gradient(to right,transparent,var(--surface) 1.3rem) right/2.6rem 100% no-repeat local,linear-gradient(to left,var(--border),transparent) right/1rem 100% no-repeat scroll,var(--surface)}table.hours td,table.hours th{white-space:nowrap}details.table-wrap>summary{cursor:pointer;font-weight:600;padding:.2rem 0 .6rem}.ratio{display:block;position:relative;height:.45rem;margin-top:.3rem;border-radius:.3rem;background:var(--line);max-width:9rem}.ratio i{position:absolute;inset:0 auto 0 0;border-radius:.3rem}.ratio s{position:absolute;left:50%;top:-.15rem;bottom:-.15rem;width:2px;background:var(--ink);opacity:.5}
 table.drought th,table.drought td{text-align:left;padding:.45rem .5rem;border-top:1px solid var(--line)}
 table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
+/* A commune's elections: a scrutin's heading in its summary, a round's and a block's, a card's details no wider than the
+   card, and tables of four short columns, their figures to the right, that fit a phone without scrolling. */
+#elections .card>details>summary h4{display:inline;font:600 1rem system-ui,sans-serif}#elections h5{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}#elections h6{margin:.8rem 0 .2rem;font:600 .9rem system-ui,sans-serif}#elections .card>details{min-width:0}#elections table.votes th,#elections table.votes td{padding:.4rem .3rem}#elections table.votes td{overflow-wrap:anywhere}#elections table.votes th:nth-last-child(-n+2),#elections table.votes td:nth-last-child(-n+2){text-align:right;white-space:nowrap;overflow-wrap:normal}
 .rt{font-weight:700;color:var(--link)}
 .rows b{font:800 1.05rem Bricolage,system-ui,sans-serif;overflow-wrap:anywhere}
 .bars{list-style:none;padding:0;display:grid;gap:.7rem}

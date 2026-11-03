@@ -13,6 +13,7 @@ import * as mf from "../providers/vigilance.js";
 import * as sante from "../sante/etablissements.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as medecins from "../vie/medecins.js";
+import * as elections from "../vie/elections.js";
 import * as accidents from "../routes/accidents.js";
 import * as creches from "../vie/creches.js";
 import * as parcoursup from "../vie/parcoursup.js";
@@ -396,6 +397,72 @@ function doctors(p: PlacePage): string {
 `;
 }
 
+const TOURS = ["1er tour", "2nd tour"];
+
+/** A block's figures, in the ministry's words and order; the abstention also as a share of the inscrits. */
+function figures(b: elections.Bloc): string {
+  const nuls = b.blancs === null ? `blancs et nuls\u00a0: ${nombre(b.nuls)}` : `blancs\u00a0: ${nombre(b.blancs)} · nuls\u00a0: ${nombre(b.nuls)}`;
+  return `<p class="note">${esc(`Inscrits\u00a0: ${nombre(b.inscrits)} · votants\u00a0: ${nombre(b.votants)} · abstentions\u00a0: ${nombre(b.abstentions)}, soit ${elections.pourcent(b.abstentions, b.inscrits)} des inscrits · ${nuls} · exprimés\u00a0: ${nombre(b.exprimes)}`)}</p>`;
+}
+
+/**
+ * A block's ballot lines in the order of their panels, each with its voix and its share of the exprimés: no mark on any.
+ * Four short columns, to fit a phone without scrolling; no panel column where the file has none.
+ */
+function ballot(b: elections.Bloc, type: elections.Type): string {
+  const panneaux = b.lignes.some((l) => l.panneau !== null);
+  const rows = b.lignes.map((l) => `<tr>${panneaux ? `<td>${l.panneau}</td>` : ""}<td>${esc(l.nom ?? `Liste conduite par ${l.tete}`)}${l.nom && l.tete ? `<small>${esc(`Tête de liste\u00a0: ${l.tete}`)}</small>` : ""}</td><td>${nombre(l.voix)}</td><td>${elections.pourcent(l.voix, b.exprimes)}</td></tr>`);
+  return `<div class="table-wrap"><table class="drought histo votes"><thead><tr>${panneaux ? `<th scope="col">N°</th>` : ""}<th scope="col">${esc(elections.TYPES[type].ligne)}</th><th scope="col">Voix</th><th scope="col">%</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+}
+
+/** One scrutin, folded: round by round, each block's figures and ballot, a heading for each block of a split commune. */
+function scrutin(s: elections.Scrutin): string {
+  const rounds = s.tours.map((blocs, t) => blocs.length
+    ? `<div class="kind">${s.tours.length > 1 ? `<h5>${TOURS[t]}</h5>` : ""}${blocs.map((b, i) => (blocs.length > 1 ? `<h6>${esc(elections.partie(s.type, b, i, blocs.length))}</h6>` : "") + figures(b) + ballot(b, s.type)).join("")}</div>`
+    : "").join("");
+  return `<details><summary><h4>${esc(s.nom)}</h4></summary>${rounds}</details>`;
+}
+
+/**
+ * The commune's elections (vie/elections.ts): a card a type, a folded block a scrutin, newest first, round by round,
+ * then its participation since the file's first year. The ministry's figures and its order of the panels, whatever the
+ * result: no political nuance, no colour, no bar, nothing in bold, no « élu » nor « en tête », no link to a candidate.
+ */
+function votes(p: PlacePage): string {
+  const types = elections.parType(p.nom);
+  if (!types.length) return "";
+  const cards = types.map(({ type, scrutins }) => `<li class="card" data-k><h3>${esc(elections.TYPES[type].nom)}</h3>${scrutins.map(scrutin).join("")}${type === "cant"
+    ? `<p class="note">${esc(`Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés. Ces cantons ne sont pas ceux des départementales, redessinés en 2015\u00a0: les deux ne se comparent pas.`)}</p>`
+    : ""}</li>`).join("");
+  const series = elections.participation(p.nom);
+  const serie = series.length
+    ? `<li class="card" data-k><h3>Participation</h3><details><summary><h4>${esc(`Au 1er tour, depuis ${elections.DEBUT}`)}</h4></summary><div class="table-wrap"><table class="drought votes"><thead><tr><th scope="col">Scrutin</th><th scope="col">Inscrits</th><th scope="col">Votants</th><th scope="col">%</th></tr></thead><tbody>${
+      series.flatMap((x) => x.tours.map((t) => `<tr><td>${esc(`${x.nom} ${t.annee}`)}</td><td>${nombre(t.inscrits)}</td><td>${nombre(t.votants)}</td><td>${elections.pourcent(t.votants, t.inscrits)}</td></tr>`)).join("")
+    }</tbody></table></div><p class="note">${esc(`La participation ${aCommune(p.nom)} au 1er tour de chaque scrutin depuis ${elections.DEBUT}, sauf les cantonales, où seule une partie des cantons votait\u00a0: les votants et leur % des inscrits. Les bureaux de vote changent de périmètre d'une élection à l'autre\u00a0: la série est donnée pour la commune entière.`)}</p></details></li>`
+    : "";
+  const all = types.flatMap((x) => x.scrutins);
+  const split = [...new Set((Object.keys(elections.TYPES) as elections.Type[])
+    .filter((t) => all.some((s) => s.type === t && s.tours.some((b) => b.length > 1)))
+    .map((t) => `La commune est partagée entre plusieurs ${elections.TYPES[t].parties}\u00a0: les résultats sont donnés pour chacun${elections.TYPES[t].parties === "circonscriptions" ? "e" : ""}.`))];
+  const anonymes = all.some((s) => s.tours.some((b) => b.length > 1 && b.some((x) => !x.lieu)))
+    ? ["Quand le fichier ne nomme pas la circonscription ou le canton, les bureaux sont regroupés par leurs candidats."]
+    : [];
+  const anciens = [
+    ...(all.some((s) => s.tours.some((b) => b.some((x) => x.lignes.some((l) => l.panneau === null))))
+      ? [`Sans panneaux dans le fichier (${all.filter((s) => s.tours[0]![0]!.lignes.some((l) => l.panneau === null)).sort((x, y) => y.annee - x.annee).map((s) => s.nom).join(", ")}), les listes sont dans l'ordre alphabétique.`]
+      : []),
+    ...(all.some((s) => s.tours.some((b) => b.some((x) => x.blancs === null))) ? ["Jusqu'en 2015, le fichier compte les blancs avec les nuls."] : []),
+  ];
+  return `<section id="elections" aria-labelledby="h-elections">
+  <div class="sec-h"><p class="eyebrow">Ministère de l'Intérieur</p><h2 id="h-elections">Élections ${esc(aCommune(p.nom))}</h2>
+  <p>${esc(`Chaque scrutin ${aCommune(p.nom)}, tel que le ministère de l'Intérieur le publie\u00a0: inscrits, votants, blancs, nuls, exprimés, puis les voix de chaque candidat ou liste. Le jeu de données commence en ${elections.DEBUT}\u00a0: les scrutins plus anciens ne sont pas repris.`)}</p></div>
+  <ul class="zones top">${cards}${serie}</ul>
+  <p class="note">${esc(["Les candidats et les listes sont dans l'ordre des panneaux (N°), celui du ministère, quel que soit le résultat, avec leurs voix et leur % des exprimés. Les nuances politiques ne sont pas reprises.", ...anciens, ...split, ...anonymes].join(" "))}</p>
+  <p class="sources">Source\u00a0: ${credits([{ ...credit(elections.SOURCE), source: elections.SOURCE.attribution }])}, jeu mis à jour le ${esc(elections.MIS_A_JOUR.split("-").reverse().join("/"))}.</p>
+</section>
+`;
+}
+
 /** The rents asked in the ads (vie/loyers.ts): a reference flat's per m², and a house's; one vintage a year. */
 function rents(p: PlacePage): Live | undefined {
   const c = loyers.ofCommune(p.nom);
@@ -721,7 +788,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <p>Des chiffres publiés une fois par an, par trimestre, par mois ou par semaine, chacun avec sa date.</p></div>
   <ul class="tiles" aria-label="Habiter ${esc(aCommune(p.nom))}">${habiter.map((t) => tile(t)).join("")}</ul>
 </section>
-` : ""}${schools(p)}${doctors(p)}<section aria-labelledby="h-ile">
+` : ""}${schools(p)}${doctors(p)}${votes(p)}<section aria-labelledby="h-ile">
   <h2 id="h-ile">Et pour toute l'île</h2>
   <ul class="tiles" aria-label="Toute l'île">${island.map((t) => tile(t)).join("")}</ul>
 </section>

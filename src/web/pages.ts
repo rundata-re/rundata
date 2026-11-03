@@ -876,7 +876,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau li>.refs{grid-column:1/-1}
 .rows.eau .refs small{color:inherit}
 .rows .refs a{display:block;margin:0;padding:.5rem 0;font-weight:400}
-.rows .refs .nw{white-space:nowrap}
+.rows .nw{white-space:nowrap}
 .rows small.said{color:var(--lave);font-weight:700}
 .rows .age{font-weight:700;font-size:.85rem;text-align:right;max-width:8.5rem}.rows .age.i{font-weight:400;color:var(--muted)}
 .kind h4{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}

@@ -21,6 +21,7 @@ import * as dech from "../vie/decheteries.js";
 import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
 import * as loyers from "../vie/loyers.js";
+import * as annexesSd from "../vie/mairies-annexes.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
 import { a, de, fr, nombre } from "../tools/format.js";
@@ -497,6 +498,16 @@ function townHall(data: Cached<CommuneData> | null | undefined, now: Date): Live
   };
 }
 
+/** Saint-Denis's mairies annexes and centres municipaux, folded under its town hall: the Ville's list, without hours. */
+function annexes(p: PlacePage): string {
+  if (p.nom !== annexesSd.COMMUNE) return "";
+  // « 97400 Saint-Denis » kept on one line.
+  const where = (s: string) => esc(s).replace(/974\d\d .+$/, (t) => `<span class="nw">${t}</span>`);
+  const li = (l: annexesSd.Lieu) => `<li><span><b>${esc(l.nom)}</b> · ${esc(l.nature.toLowerCase())}<small>${where(l.adresse)}</small></span></li>`;
+  return `<details class="plus"><summary>${annexesSd.TITRE} <span class="note">${annexesSd.LIEUX.length}</span></summary>` +
+    `<ul class="rows lieux cols">${annexesSd.LIEUX.map(li).join("")}</ul><p class="note">${esc(annexesSd.LISTE)}</p></details>`;
+}
+
 /**
  * The commune's point-justice, or the nearest one with how far: free advice on the law. Most publish no hours in the
  * annuaire, hence the phone, as the tool says (tools/justice.ts), on a line of its own with how far: the detail is cut
@@ -541,6 +552,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   // « Y aller » under the town hall's address, where the directory gives its position.
   const o = l.commune?.value.mairie;
   const toHall = o && mairie ? g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse }, "mairie") : "";
+  const quartiers = annexes(p);
   const hikes = communeHikes(p, l.randonnees, now);
   const droit = justice(l.commune, g, now);
   const lieux = discover(p);
@@ -558,7 +570,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       icon: "building",
       nom: "Mairie",
       live: mairie,
-      ...(toHall ? { more: `<p class="ya">${toHall}</p>` } : {}),
+      ...(toHall || quartiers ? { more: `${toHall ? `<p class="ya">${toHall}</p>` : ""}${quartiers}` } : {}),
+      ...(quartiers ? { full: true } : {}),
       question: `La mairie ${de(p.nom)} est ouverte ?`,
       foot: fiche ? `<a href="${esc(fiche)}" rel="noopener">Fiche service-public.fr</a>` : `<a href="/#assistant">Demandez à votre IA →</a>`,
     },
@@ -668,6 +681,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(hikes?.live ? (l.randonnees?.value.sources ?? []) : []),
     ...(children(p) ? enfants.sourcesOf(enfants.inCommune(p.nom)).map(credit) : []),
     ...(lieux ? [credit(decouvrir.SOURCE)] : []),
+    ...(quartiers ? [credit(annexesSd.SOURCE)] : []),
     ...(rents(p) ? [credit(loyers.SOURCE)] : []),
     ...(nursery(p) ? [credit(creches.SOURCE)] : []),
     ...(roadAccidents(p) ? [credit(accidents.SOURCE)] : []),

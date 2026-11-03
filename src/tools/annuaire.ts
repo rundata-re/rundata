@@ -3,6 +3,7 @@ import { distanceKm } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as annuaire from "../providers/annuaire.js";
+import * as annexesSd from "../vie/mairies-annexes.js";
 import { why } from "../types.js";
 import { pageOf, slugify } from "../web/places.js";
 import { carburantsAnswer, FUEL } from "./carburants.js";
@@ -20,6 +21,10 @@ import { rienTrouve } from "../vide.js";
 
 // Asked of the annuaire, a defibrillator is not an office: its link is the page of the devices.
 const DEFIBRILLATOR = /d[ée]fibrillateur|\bdae\b/i;
+
+// A town hall asked, and one of a quarter: Saint-Denis's are only in the Ville's list (vie/mairies-annexes.ts).
+const TOWN_HALL = /\bmairies?\b|centres? municipa/i;
+const ANNEX = /annexe|quartier|centres? municipa/i;
 
 const DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 
@@ -100,13 +105,16 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
   const code = res ? INSEE[res.lieu.commune] : undefined;
+  // In Saint-Denis, the Hôtel de Ville from the annuaire, its mairies annexes and centres municipaux beside it.
+  const annexes = res?.lieu.commune === annexesSd.COMMUNE && TOWN_HALL.test(quoi);
+  const asked = annexes && ANNEX.test(quoi) ? "mairie" : quoi;
   let found: annuaire.Office[];
   try {
     // The place's commune first; the whole island when it has no such office (one CAF, one prefecture…).
-    found = code ? named((await annuaire.search(cache, quoi, code)).value, quoi) : [];
+    found = code ? named((await annuaire.search(cache, asked, code)).value, asked) : [];
     if (!found.length) {
-      const island = (await annuaire.search(cache, quoi)).value;
-      found = named(island, quoi).length ? named(island, quoi) : island;
+      const island = (await annuaire.search(cache, asked)).value;
+      found = named(island, asked).length ? named(island, asked) : island;
     }
   } catch (err) {
     console.error(`source ${annuaire.SOURCE.id} indisponible:`, why(err));
@@ -133,6 +141,9 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   const town = p && pageOf(slugify(p.commune));
   const h = hoursText(best.o);
   const open = openNow(best.o, now);
+  const near = annexes ? annexesSd.nearest(p!.lon, p!.lat) : [];
+  const hall = near.length ? found.find((o) => o.insee === code && /^mairie\b/i.test(o.nom)) : undefined;
+  const km = (d: number) => `${fr(Math.round(d * 10) / 10)} km`;
   return text({
     resume:
       `${best.o.nom}, ${best.o.adresse}` +
@@ -140,7 +151,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
       (h ? `. Horaires : ${h}` : "") +
       (open === null ? "" : open ? ". Ouvert en ce moment (d'après les horaires publiés)" : ". Fermé en ce moment (d'après les horaires publiés)") +
       (best.o.telephone ? `. Tél. ${best.o.telephone}` : "") +
-      ".",
+      "." +
+      (near.length ? ` La plus proche des mairies annexes et centres municipaux, d'après la liste de la Ville\u00a0: ${near[0].nature} ${near[0].nom}, ${near[0].adresse} (à ${km(near[0].km)} ${de(p!.nom)}).` : ""),
     resultats: ranked.map(({ o, d }) => ({
       nom: o.nom,
       adresse: o.adresse,
@@ -154,8 +166,15 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
       site: sansLien(o.site) ? undefined : o.site,
       fiche: o.fiche || undefined,
     })),
+    mairies_annexes: near.length
+      ? {
+        liste: annexesSd.LISTE,
+        telephone_hotel_de_ville: hall?.telephone,
+        lieux: near.map((l) => ({ nature: l.nature, nom: l.nom, quartier: l.quartier, adresse: l.adresse, distance_km: Math.round(l.km * 10) / 10 })),
+      }
+      : undefined,
     avertissements: ["Horaires publiés par chaque service sur service-public.fr : jours fériés et fermetures exceptionnelles non pris en compte."],
     page: town?.commune ? `https://rundata.re/communes/${town.slug}` : undefined,
-    sources: credits([annuaire.SOURCE]),
+    sources: credits([annuaire.SOURCE, ...(near.length ? [annexesSd.SOURCE] : [])]),
   });
 }

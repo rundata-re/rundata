@@ -1,0 +1,167 @@
+{
+ "construit": "2026-11-03",
+ "export_du": "2026-07-16",
+ "page": "https://data.regionreunion.com/explore/assets/mairies-annexes-villesaintdenis/",
+ "lieux": [
+  {
+   "nature": "Mairie annexe",
+   "nom": "Bellepierre",
+   "quartier": "BELLEPIERRE",
+   "adresse": "38, allée des topazes, 97400 Saint-Denis",
+   "lon": 55.44631,
+   "lat": -20.89612
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Bois de Nèfles",
+   "quartier": "BOIS DE NEFLES",
+   "adresse": "132, route des ananas, 97490 Sainte-Clotilde",
+   "lon": 55.47775,
+   "lat": -20.91646
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Bretagne",
+   "quartier": "BRETAGNE",
+   "adresse": "5, chemin Bois Rouge, 97490 Sainte-Clotilde",
+   "lon": 55.49333,
+   "lat": -20.91994
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Brulé",
+   "quartier": "BRULE",
+   "adresse": "Route des Bambous, 97400 Saint-Denis",
+   "lon": 55.43485,
+   "lat": -20.92259
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Chaudron",
+   "quartier": "CHAUDRON",
+   "adresse": "1, rue Roger Payet, 97490 Sainte-Clotilde",
+   "lon": 55.48752,
+   "lat": -20.8925
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Domenjod",
+   "quartier": "DOMENJOD",
+   "adresse": "10, rue impasse Florville, 97490 Sainte-Clotilde",
+   "lon": 55.50759,
+   "lat": -20.9153
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Montagne 15ème",
+   "quartier": "MONTAGNE 15ème",
+   "adresse": "87 chemin du Père Raimbault, 97417 La Montagne",
+   "lon": 55.3995,
+   "lat": -20.90866
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Montagne 8ème",
+   "quartier": "MONTAGNE 8ème",
+   "adresse": "Route des Palmistes, 97417 La Montagne",
+   "lon": 55.42314,
+   "lat": -20.88961
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Montgaillard",
+   "quartier": "MONTGAILLARD COLLINE DES CAMELIAS",
+   "adresse": "44, Boulevard de la Trinité, 97400 Saint-Denis",
+   "lon": 55.46642,
+   "lat": -20.89338
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Moufia",
+   "quartier": "MOUFIA",
+   "adresse": "40, rue des Jacynthe, 97490 Sainte-Clotilde",
+   "lon": 55.48162,
+   "lat": -20.91006
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Providence",
+   "quartier": "CAMELIAS PROVIDENCE",
+   "adresse": "31, rue Jean Albany, 97400 Saint-Denis",
+   "lon": 55.45736,
+   "lat": -20.89306
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Saint François",
+   "quartier": "SAINT-FRANCOIS",
+   "adresse": "127, Route de St François, 97400 Saint-Denis",
+   "lon": 55.4592,
+   "lat": -20.91621
+  },
+  {
+   "nature": "Mairie annexe",
+   "nom": "Sainte Clotilde",
+   "quartier": "BUTOR STE-CLOTILDE",
+   "adresse": "Place de la liberté, 97400 Saint-Denis",
+   "lon": 55.4792,
+   "lat": -20.89313
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "Centre-Ville",
+   "quartier": "CENTRE-VILLE",
+   "adresse": "51 bis rue Sainte Anne",
+   "lon": 55.45423,
+   "lat": -20.88077
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "La Source",
+   "quartier": "LA SOURCE",
+   "adresse": "52, rue du ruisseau des noirs, 97400 Saint-Denis",
+   "lon": 55.45205,
+   "lat": -20.89091
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "Marcadet",
+   "quartier": "MARCADET",
+   "adresse": "Ruelle Marcadet, 97400 Saint-Denis",
+   "lon": 55.46272,
+   "lat": -20.88434
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "Moufia 2",
+   "quartier": "MOUFIA 2",
+   "adresse": "28 D Route de Moufia, 97490 Sainte-Clotilde",
+   "lon": 55.49178,
+   "lat": -20.89999
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "Petite-Ile",
+   "quartier": "PETITE ILE BAS DE LA RIVIERE",
+   "adresse": "1, rue de Petite Ile, 97400 Saint-Denis",
+   "lon": 55.4422,
+   "lat": -20.88083
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "Prima",
+   "quartier": "PRIMA",
+   "adresse": "12, rue des lavandière, 97490 Sainte-Clotilde",
+   "lon": 55.50309,
+   "lat": -20.8994
+  },
+  {
+   "nature": "Centre municipal",
+   "nom": "Vauban",
+   "quartier": "VAUBAN",
+   "adresse": "7b boulevard Vauban, 97400 Saint-Denis",
+   "lon": 55.46448,
+   "lat": -20.88765
+  }
+ ]
+}

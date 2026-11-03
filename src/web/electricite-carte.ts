@@ -16,7 +16,7 @@ import data from "../electricite/installations.json" with { type: "json" };
 import { resolvePlace } from "../places/resolve.js";
 import { a, enumeration } from "../tools/format.js";
 import type { Journee } from "./data.js";
-import { esc, H, islandMap, project, W } from "./map.js";
+import { esc, H, inScript, islandMap, project, W } from "./map.js";
 import { slugify } from "./places.js";
 import { VITESSE_JS, vitesseBouton } from "./vitesse.js";
 
@@ -334,7 +334,7 @@ const PLAY_MS = 12_000;
 const CHART_SCRIPT = `(()=>{${VITESSE_JS}const go=()=>{const f=document.querySelector("[data-ech]");if(!f)return;const D={j1:JSON.parse(f.dataset.ech)},svg=f.querySelector("svg.ech"),cur=f.querySelector(".cur"),m=f.querySelector(".ech-m"),ax=f.querySelector(".ech-ax"),src=f.querySelector(".ech-src"),note=f.querySelector(".ech-n"),du=f.querySelector(".ech-d"),an=document.querySelector("[data-an]"),
 ip=D.j1.m&&document.querySelector(".ip-rj"),bars=[...document.querySelectorAll(".ech-rj")].filter((x)=>f.contains(x)||ip&&ip.contains(x)),est=ip&&ip.querySelector(".ip-est");
 const hm=(t)=>new Date(t+144e5).toISOString().slice(11,16),dm=(t)=>{const d=new Date(t+144e5).toISOString();return d.slice(8,10)+"/"+d.slice(5,7)},dmy=(s)=>{const d=new Date(Date.parse(s)+144e5).toISOString();return d.slice(8,10)+"/"+d.slice(5,7)+"/"+d.slice(0,4)},pc=(r,n)=>r+n>0?Math.round(r/(r+n)*100):0,nb=(v,d)=>v.toLocaleString("fr-FR",{minimumFractionDigits:d,maximumFractionDigits:d});
-const I=D.j1.i,vw=f.querySelector(".ech-v"),kr=f.querySelector(".ech-kr"),kf=f.querySelector(".ech-kf"),dd=f.querySelector(".ech-dd"),MIX=${JSON.stringify(MIX)},PILE=${JSON.stringify(PILE)},LEG=${JSON.stringify(LEGENDE)};
+const I=D.j1.i,vw=f.querySelector(".ech-v"),kr=f.querySelector(".ech-kr"),kf=f.querySelector(".ech-kf"),dd=f.querySelector(".ech-dd"),MIX=${inScript(MIX)},PILE=${inScript(PILE)},LEG=${inScript(LEGENDE)};
 const hh=(x)=>x%24?x+"\\u00a0h":"minuit",DUREE={j1:"24\\u00a0h",j7:"7\\u00a0jours",j30:"30\\u00a0jours"},LIRE={j1:"Lire les 24\\u00a0dernières heures",j7:"Lire les 7\\u00a0derniers jours",j30:"Lire les 30\\u00a0derniers jours"},SUR={j7:"Production d'électricité de l'île sur 7\\u00a0jours, en moyenne par heure.",j30:"Production d'électricité de l'île sur 30\\u00a0jours, en moyenne par 3\\u00a0heures.",j1:svg.getAttribute("aria-label")};
 let k="j1",J=D.j1,at=J.p.length-1,on=false,run=0,v="ren";
 const fil=()=>v==="fil"&&J.m&&J.m.length===J.p.length,sh=(r,g)=>{const x=g===3?r[3]+r[4]:r[g>3?5:g];return I[g]>0?Math.min(1,x/I[g]):0};

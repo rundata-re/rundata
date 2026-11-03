@@ -11,28 +11,13 @@ import "../src/bin/net.js";
 import { KV_KEY, KV_TTL_SECONDS, PAGE_AGAIN_MS, pageKey, type Copie, type PageCopie } from "../src/providers/prefecture-copie.js";
 import { getPage, lireSite } from "../src/providers/prefecture.js";
 import { doubtful, phaseOf, readReleasePage, volcanicPage, type Page } from "../src/providers/volcan.js";
-import { UpstreamError, why } from "../src/types.js";
+import { why } from "../src/types.js";
 import { getKv, putKv } from "./kv.js";
-import { asked, waitTurn } from "./reunion-gouv.js";
+import { readPage } from "./reunion-gouv.js";
 
 // One page of the prefecture's site a minute at most, with the other collectors' (scripts/reunion-gouv.ts): the list,
-// and the cyclone's section when its menu links one. A page whose connection fails (no HTTP answer) is asked again a
-// minute later, TRIES times at most; an HTTP error is never asked again.
-const TRIES = 3;
-
-async function read(url: string): Promise<string> {
-  for (let n = 1; ; n++) {
-    await waitTurn();
-    try {
-      return await getPage(url);
-    } catch (err) {
-      if (n >= TRIES || !(err instanceof UpstreamError) || err.status !== undefined) throw err;
-      console.error(`${err.message} (${url}), essai ${n} sur ${TRIES} : nouvel essai dans une minute`);
-    } finally {
-      asked();
-    }
-  }
-}
+// and the cyclone's section when its menu links one.
+const read = (url: string) => readPage(getPage, url);
 
 const kv = process.argv.includes("--kv");
 const lu_le = new Date().toISOString();

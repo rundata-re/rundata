@@ -16,6 +16,7 @@ import * as irve from "./providers/irve.js";
 import * as eauIle from "./eau/ile.js";
 import * as carburants from "./providers/carburants.js";
 import * as prefectureCopie from "./providers/prefecture-copie.js";
+import * as raa from "./providers/raa.js";
 import * as airMesures from "./providers/air-mesures.js";
 import * as capteurs from "./providers/capteurs.js";
 import * as emploi from "./providers/emploi.js";
@@ -244,6 +245,13 @@ function setup(env: Env): Cache {
       return (await kv.get(prefectureCopie.pageKey(lien), "json")) as prefectureCopie.PageCopie | null;
     },
   );
+  // Read every hour from the prefecture's recueil des actes administratifs by scripts/raa.ts, on a machine of the project
+  // (src/providers/raa.ts): only for the news of a place.
+  raa.configure(async () => {
+    if (!kv) return null;
+    count();
+    return (await kv.get(raa.KV_KEY, "json")) as raa.Copie | null;
+  });
   // Read every hour from the LCSQA's files by the scheduled event below, and kept in KV (src/providers/air-mesures.ts).
   airMesures.configure(async () => {
     if (!kv) return null;

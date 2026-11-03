@@ -9,6 +9,8 @@
 import { INSEE } from "../places/insee.js";
 import { de, nombre } from "../tools/format.js";
 import * as ecoles from "../vie/ecoles.js";
+import * as parcoursup from "../vie/parcoursup.js";
+import { parCommune } from "../vie/parcoursup-formations.js";
 import { CARTE, motsVoie, SOURCE as SOURCE_CARTE, trouve } from "../vie/carte-scolaire.js";
 import { credit, type Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
@@ -180,6 +182,32 @@ function list(): string {
   }).join("")}</ul>`;
 }
 
+// ---------------------------------------------------------------- after the bac: Parcoursup
+
+/**
+ * The formations of the island in Parcoursup, by commune, establishment and formation, in alphabetical order: places,
+ * taux d'accès and sheet. Never sorted by the taux, nor coloured, nor averaged; the ministry's words say what it is.
+ */
+function afterBacSection(): string {
+  const all = parCommune();
+  const n = all.reduce((k, [, list]) => k + list.reduce((m, e) => m + e.formations.length, 0), 0);
+  const y = parcoursup.SESSION;
+  return `<section id="apres-bac" aria-labelledby="h-apres-bac">
+  <div class="sec-h"><p class="eyebrow">Parcoursup, session ${y}</p><h2 id="h-apres-bac">Après le bac</h2><p>${esc(`${nombre(n)} formations dans ${all.length} communes, hors apprentissage, avec leurs places et leur taux d'accès.`)}</p></div>
+  <div class="card"><p>${esc("Le taux d'accès, selon le ministère de l'Enseignement supérieur : « rapport entre le nombre de candidats dont le rang de classement est inférieur ou égal au rang du dernier appelé de son groupe et le nombre de candidats ayant validé un vœu pour la formation étudiée en phase principale (hors GDD) ». « Si le taux est de 100 %, cela signifie qu'aucun candidat n'était en attente de proposition dans cette formation à la fin de la PP (hors GDD). »")}</p>
+  <p class="note">${esc("PP : phase principale. GDD : « phase permettant de redistribuer les places laissées vacantes à l'issue de la phase principale aux néo-bacheliers sans proposition ».")}</p>
+  <p>${esc("Un taux d'accès bas veut dire que les candidats étaient nombreux pour les places : il ne dit rien de la qualité de la formation. Chaque candidat fait jusqu'à 10 vœux.")}</p></div>
+  <ul class="zones top" id="pbl">${all.map(([c, list]) => {
+    const k = list.reduce((m, e) => m + e.formations.length, 0);
+    return `<li class="card tgt" id="${anchorId("b", c)}"><details><summary><h3>${esc(c)} <span class="note">${k} formation${k > 1 ? "s" : ""}</span></h3></summary><div class="kinds">` +
+      list.map((e) => `<div class="kind"><h4>${esc(e.nom)}</h4><div class="table-wrap"><table class="drought histo passe psup"><thead><tr><th scope="col">Formation</th><th scope="col">Places</th><th scope="col">Taux d'accès</th></tr></thead><tbody>` +
+        e.formations.map((f) => `<tr><th scope="row"><a href="${esc(f.fiche)}" rel="noopener">${esc(f.nom)}</a></th><td>${nombre(f.places)}</td><td>${f.tauxAcces}\u00a0%</td></tr>`).join("") +
+        `</tbody></table></div></div>`).join("") + `</div></details></li>`;
+  }).join("")}</ul>
+  <p class="note">${esc(`Parcoursup - Traitement SIES, session ${y} (données arrêtées au ${parcoursup.jour(parcoursup.ARRETE_LE)}), Licence Ouverte.`)}</p>
+</section>`;
+}
+
 /** Built at the first view: nothing in it changes until the next build. */
 let built: { band: string; body: string } | undefined;
 
@@ -197,7 +225,8 @@ ${filterForm()}${map()}</section>
 ${list()}
 <p class="note">${esc(T.servicesNote)} ${esc(`Annuaire de l'Éducation nationale, lu le ${dayMonth(ecoles.BUILT)}.`)}</p>
 <p class="sources">Sources : ${credits([credit(ecoles.SOURCE), credit(SOURCE_CARTE)])}.</p>
-</section><script>${FILTER_SCRIPT}</script>`;
+</section>
+${afterBacSection()}<script>${FILTER_SCRIPT}</script>`;
   return { band, body };
 }
 

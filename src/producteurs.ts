@@ -125,6 +125,7 @@ export const FICHES: Record<string, Fiche> = {
   anil_loyers: { famille: "licence_ouverte", producteurs: ["ANIL"] },
   annuaire_education: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   carte_scolaire_colleges: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
+  esr_parcoursup: { famille: "licence_ouverte", producteurs: ["Ministère de l'Enseignement supérieur"] },
   annuaire_sante_ameli: { famille: "licence_ouverte", producteurs: ["Caisse nationale de l'Assurance Maladie"] },
   // The operators declare, the Arcep counts the premises and publishes.
   arcep_connexion: { famille: "licence_ouverte", producteurs: ["Arcep"] },

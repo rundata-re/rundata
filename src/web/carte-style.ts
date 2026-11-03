@@ -10,7 +10,7 @@ export const CARTE_CSS = `
 .kmapc .kl .kr{stroke:#fff;stroke-width:calc(var(--w,9px) + 4px)}.kmapc .kl .kd{stroke:var(--c);stroke-width:var(--w,9px)}
 .kmapc .kl .kv .kd{stroke:#868e96}.kmapc .kl .k0 .kd{stroke:#b4a5e6}
 .kc-stations{--c:#0b1f36;--w:7px}.kc-rivieres{--c:#1864ab;--w:12px}.kc-seismes{--c:#e8590c}.kc-sentiers{--c:#c92a2a;--w:7px}.kc-defibrillateurs{--c:#2b8a3e;--w:7px}
-.kc-bornes{--c:#6741d9;--w:8px}.kc-enfants-osm{--c:#d6336c;--w:8px}.kc-enfants-data-es{--c:#e67700;--w:8px}.kc-enfants-basilic{--c:#0c8599;--w:8px}.kc-pluie{--c:#3a73d0}
+.kc-bornes{--c:#6741d9;--w:8px}.kc-enfants-osm{--c:#d6336c;--w:8px}.kc-enfants-data-es{--c:#e67700;--w:8px}.kc-enfants-basilic{--c:#0c8599;--w:8px}.kc-monuments{--c:#8c5a2b;--w:8px}.kc-pluie{--c:#3a73d0}
 .kmapc .kc-rivieres .kr,.kmapc .kc-rivieres .kd,.kmapc .kc-bornes .kr,.kmapc .kc-bornes .kd{stroke-linecap:square}
 .kmapc .kc-seismes .kd{stroke-opacity:.72}.kmapc .kc-seismes .kr{stroke-width:calc(var(--w) + 3px)}
 .kmapc .kl .kth{stroke:#fff;stroke-width:6px}.kmapc .kl .ktl{stroke:var(--c);stroke-width:3px;stroke-dasharray:6 4}

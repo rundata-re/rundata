@@ -89,8 +89,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "sport", sources: () => Object.values(SPORT_SOURCES).map((s) => s.id), cadence: { minutes: 30, de: "livetrail" } },
   // Every agenda read (providers/agenda.ts), the scheduled ones every hour.
   { categorie: "agenda", sources: () => SOURCES_LUES.map((s) => s.id), cadence: { minutes: 60, de: "agenda_mairies" } },
-  // The historic monuments with the places to go out, bundled as they are: no category of their own.
-  { categorie: "enfants", sources: ids("osm_enfants", "data_es", "basilic", "merimee_monuments") },
+  { categorie: "enfants", sources: ids("osm_enfants", "data_es", "basilic") },
   { categorie: "air", sources: ids("atmo_indice", "lcsqa_mesures", "sensor_community"), cadence: { minutes: 60, de: "atmo_indice" } },
   // EDF's mix every 4 minutes (providers/edf.ts).
   { categorie: "electricite", sources: ids("edf_sei_reunion", "mairies_edf"), cadence: { minutes: 4, de: "edf_sei_reunion" } },
@@ -105,6 +104,8 @@ export const DOMAINES: Domaine[] = [
   { categorie: "services", sources: ids("annuaire_administration", "annuaire_education", "carte_scolaire_colleges", "annuaire_sante_ameli", "prefecture_carburants", "tco_decheteries", "ademe_decheteries", "tco_collecte", "finess", "ars_garde", "ars_pdsa", "sante_fr_urgences", "osm_marches", "marches_saint_paul", "marches_saint_leu", "marches_sainte_marie", "marches_saint_louis_2020", "marches_saint_louis_2021"), cadence: { minutes: 30, de: "tco_decheteries" } },
   // The fixed speed cameras: the ministry's yearly list, bundled.
   { categorie: "trafic", sources: ids("radars_fixes") },
+  // The historic monuments, bundled: a category of /chiffres only, not on the home page (web/categories.ts, `horsAccueil`).
+  { categorie: "patrimoine", sources: ids("merimee_monuments") },
   // The decrees of recreational fishing, bundled and read again by hand (tools/peche.ts).
   { categorie: "peche", sources: ids("dmsoi_peche_loisir", "deal_bichiques") },
   { categorie: "terrain", sources: ids("ban_geocodage", "cadastre_apicarto", "gpu_zone_urba", "gpu_ppr", "georisques", "dvf_cerema", "dvf_etalab", "ign_altimetrie", "ign_bdtopo", "ign_photos_aeriennes", "anil_loyers", "arcep_connexion", "anfr_observatoire_mobile", "anfr_installations_5w"), question: true },

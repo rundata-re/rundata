@@ -20,6 +20,11 @@ export interface Category {
    * that it costs no read more.
    */
   sansValeur?: true;
+  /**
+   * Not among the home page's tiles: a category neither a page nor a tool answers, there only for /chiffres to list its
+   * sources (the historic monuments, on each commune's day and on /carte).
+   */
+  horsAccueil?: true;
 }
 
 export const CATEGORIES: Category[] = [
@@ -258,6 +263,14 @@ export const CATEGORIES: Category[] = [
     tools: ["fiche_terrain"],
     about: "À une adresse : parcelle, zone du PLU, prix de vente autour, plan de prévention des risques, catastrophes naturelles, mouvements de terrain.",
     exemple: "Le 12 rue de Paris à Saint-Denis est-il en zone inondable ?",
+  },
+  {
+    key: "patrimoine",
+    nom: "Patrimoine",
+    icon: "history",
+    tools: [],
+    about: "Les monuments historiques de chaque commune, classés ou inscrits, d'après la base Mérimée du ministère de la Culture : sur la page du jour de la commune et sur la carte.",
+    horsAccueil: true,
   },
 ];
 

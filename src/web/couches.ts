@@ -173,7 +173,8 @@ export function enfantsCouche(id: string, source: enfants.Lieu["source"], list: 
 
 /**
  * The historic monuments of the base Mérimée that have a point (all but two), each leading to the monuments of its
- * commune on its day's page; one on two communes, to the first one's.
+ * commune on its day's page; one on two communes, to the first one's. A place near them, not the building: for 10
+ * monuments drawn at random, the base's points stood 40 to 400 m from their geocoded address (8 found).
  */
 export function monumentsCouche(list: monuments.Monument[], du: string): CoucheJson {
   const objets = list.filter((m) => m.lon != null && m.lat != null).map((m): Objet => {
@@ -184,13 +185,13 @@ export function monumentsCouche(list: monuments.Monument[], du: string): CoucheJ
       lon: r5(m.lon!),
       lat: r5(m.lat!),
       nature: "fixe",
-      precision: "adresse",
+      precision: "lieu",
       heure: du,
       lien: `/aujourdhui/${slugify(noms[0])}#h-patrimoine`,
       infos: { type: monuments.protege(m), ...(m.adresse && { adresse: m.adresse }), notice: monuments.notice(m) },
     };
   });
-  return { id: "monuments", nom: "Monuments historiques (base Mérimée)", nature: "fixe", precision: "adresse", source: monuments.SOURCE, heure: du, objets };
+  return { id: "monuments", nom: "Monuments historiques (base Mérimée)", nature: "fixe", precision: "lieu", source: monuments.SOURCE, heure: du, objets };
 }
 
 // The names of the files, read alone: what they show and their source (marketing).
@@ -372,7 +373,7 @@ export const COUCHES: Couche[] = [
     return fixe({ id, nom: COURTS_ENFANTS[s], long: NOMS_ENFANTS[s], theme: "sortir", precision: "adresse", source: enfants.SOURCES[s], page: "/enfants", donnees: () => enfantsCouche(id, s, enfants.LIEUX, enfants.BUILT) });
   }),
   // No page of their own: each leads to its commune's monuments on /aujourdhui, the layer's panel to the communes.
-  fixe({ id: "monuments", nom: "Monuments historiques", long: "Monuments historiques (base Mérimée)", theme: "sortir", precision: "adresse", source: monuments.SOURCE, page: "/communes", donnees: () => monumentsCouche(monuments.MONUMENTS, monuments.FICHIER_DU) }),
+  fixe({ id: "monuments", nom: "Monuments historiques", long: "Monuments historiques (base Mérimée)", theme: "sortir", precision: "lieu", source: monuments.SOURCE, page: "/communes", donnees: () => monumentsCouche(monuments.MONUMENTS, monuments.FICHIER_DU) }),
 ];
 
 const BY_ID = new Map(COUCHES.map((c) => [c.id, c]));

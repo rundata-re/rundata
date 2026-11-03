@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { chiffres, inventaire } from "../src/chiffres.js";
 import { INSEE } from "../src/places/insee.js";
+import { toutesLesSources } from "../src/server.js";
 import { resume } from "../src/tools/resume.js";
 import { aujourdhuiPage, monumentsCard } from "../src/web/aujourdhui.js";
+import { chiffresPage } from "../src/web/chiffres.js";
 import { monumentsCouche } from "../src/web/couches.js";
+import { homePage } from "../src/web/home.js";
 import { pageOf } from "../src/web/places.js";
 import { FICHIER_DU, MONUMENTS, ofCommune, protege, SOURCE } from "../src/vie/monuments.js";
 
@@ -48,7 +52,7 @@ describe("a commune's monuments on its day's page", () => {
 
   it("opens a short list, and says when the base has none", () => {
     expect(monumentsCard("Cilaos")).toContain('<details open><summary><h3>Monuments historiques</h3> <span class="note">1 classé ou inscrit</span>');
-    expect(monumentsCard("Les Trois-Bassins")).toBe('<div class="card"><h3>Monuments historiques</h3><p>Aucun immeuble protégé au titre des monuments historiques aux Trois-Bassins dans la base Mérimée du ministère de la Culture.</p></div>');
+    expect(monumentsCard("Les Trois-Bassins")).toBe('<div class="card"><h3>Monuments historiques</h3><p>Aucun monument historique aux Trois-Bassins dans la base Mérimée du ministère de la Culture.</p></div>');
   });
 
   it("comes after the practical life, its source credited", () => {
@@ -63,8 +67,27 @@ describe("the monuments' layer of /carte", () => {
   it("has those with a point, each leading to its commune's monuments", () => {
     const j = monumentsCouche(MONUMENTS, FICHIER_DU);
     expect(j.objets.length).toBe(202);
+    // A place near them, not the building itself: their points stand tens to hundreds of metres from their address.
+    expect(j.precision).toBe("lieu");
+    expect(j.objets.every((o) => o.precision === "lieu")).toBe(true);
     const l = j.objets.find((o) => o.nom === "Lazarets de la Grande Chaloupe")!;
     expect([l.commune, l.lien]).toEqual(["Saint-Denis, La Possession", "/aujourdhui/saint-denis#h-patrimoine"]);
     expect(l.infos).toEqual({ type: "inscrit · 19e s.", notice: "https://pop.culture.gouv.fr/notice/merimee/PA97400026" });
+  });
+});
+
+describe("the monuments' category", () => {
+  it("is a section of /chiffres with its source, never a tile of the home page", () => {
+    const html = chiffresPage("https://rundata.re", chiffres(toutesLesSources(), undefined, NOW, 0), inventaire(toutesLesSources()));
+    const at = html.indexOf('<h3 id="sources-patrimoine">Patrimoine <small>1 source</small></h3>');
+    expect(at).toBeGreaterThan(0);
+    expect(html.slice(at, html.indexOf("<h3", at + 1))).toContain("Immeubles protégés au titre des Monuments historiques (base Mérimée)");
+    const home = homePage("https://rundata.re", null, NOW);
+    const grid = home.slice(home.indexOf('<ul class="tiles"'), home.indexOf("</ul>", home.indexOf('<ul class="tiles"')));
+    expect(grid).not.toContain("k-patrimoine");
+    expect(grid).not.toContain("Patrimoine");
+    // The two without a page stay there.
+    expect(grid).toContain('class="tile k-services wide');
+    expect(grid).toContain('class="tile k-terrain wide');
   });
 });

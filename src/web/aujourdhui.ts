@@ -94,7 +94,7 @@ const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice
 export function monumentsCard(nom: string): string {
   const list = monuments.ofCommune(nom);
   const base = "la base Mérimée du ministère de la Culture";
-  if (!list.length) return `<div class="card"><h3>Monuments historiques</h3><p>Aucun immeuble protégé au titre des monuments historiques ${esc(aCommune(nom))} dans ${base}.</p></div>`;
+  if (!list.length) return `<div class="card"><h3>Monuments historiques</h3><p>Aucun monument historique ${esc(aCommune(nom))} dans ${base}.</p></div>`;
   const item = (m: monuments.Monument) => {
     // A monument on two communes says the other one.
     const aussi = monuments.autres(m, nom);

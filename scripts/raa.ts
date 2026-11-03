@@ -1,10 +1,11 @@
 /**
  * The acts of the prefecture's « recueil des actes administratifs » that name a place of the island, read from a
  * machine of the project and written to the Worker's KV store (src/providers/raa.ts), as the prefecture's releases are
- * (scripts/prefecture.ts): its site cuts the connection of Cloudflare's Workers. A run reads the year's list, then the
- * recueils of the last 15 days it has not read yet, 3 at most: 4 pages, one a minute with the other collectors'
- * (scripts/reunion-gouv.ts), even when many are left to read (the next runs read them). Every title goes through the
- * filters of scripts/raa-lire.ts before anything is kept: a title left out is never written.
+ * (scripts/prefecture.ts): its site cuts the connection of Cloudflare's Workers. A run reads page 1 of the year's list
+ * (and its next pages, while the recueils seen do not go back 15 days), then the recueils of the last 15 days it has
+ * not read yet: 4 pages at most, one a minute with the other collectors' (scripts/reunion-gouv.ts), even when many are
+ * left to read (the next runs read them). Every title goes through the filters of scripts/raa-lire.ts before anything
+ * is kept: a title left out is never written.
  * What it read is kept on the machine (STATE), and written to the store only once the recueils of the 15 days are all
  * read: until then « no act names this place » would not be true. A copy written after that, while recueils are left
  * to read again (the site silent for hours), says since when they are all read (`lus_depuis`).
@@ -20,15 +21,15 @@ import { getPage } from "../src/providers/prefecture.js";
 import { type Copie, DAYS, KV_KEY, KV_TTL_SECONDS } from "../src/providers/raa.js";
 import { why } from "../src/types.js";
 import { getKv, putKv } from "./kv.js";
-import { couverture, ecrire, garder, listeDe, parseListe, parseRecueil, prenoms, suite } from "./raa-lire.js";
+import { couverture, ecrire, garder, listeDe, parseListe, parseRecueil, prenoms, suite, type Vus, vusAssez, vusPage1, vusSuivante } from "./raa-lire.js";
 import { readPage } from "./reunion-gouv.js";
 
-const RECUEILS_MAX = 3;
 const STATE = join(homedir(), ".local/state/rundata-collecte/raa.json");
 
-/** What the collector read, and what it last wrote to the store (without its `lu_le`), if it did. */
+/** What the collector read, the recueils of the list it saw, and what it last wrote to the store (without its `lu_le`). */
 interface Etat {
   copie: Copie;
+  vus?: Vus;
   ecrite?: string;
 }
 
@@ -49,16 +50,27 @@ const before = had?.copie;
 const now = new Date();
 const today = new Date(now.getTime() + 4 * 3600_000);
 const since = new Date(today.getTime() - DAYS * 86_400_000).toISOString().slice(0, 10);
-// The year's page: on the first days of January, the recueils of December are on the page of the year before, not read.
+// The year's list: on the first days of January, the recueils of December are on the list of the year before, not read.
+// Page 1 at each run; while the recueils seen do not go back to `since` (the first runs), its next pages too, within
+// the PAGES_MAX pages of a run.
+const PAGES_MAX = 4;
+let pages = 1;
 const page = await readPage(getPage, listeDe(today.getUTCFullYear()));
 const liste = parseListe(page);
 if (!liste.length) throw new Error(`aucun recueil dans la liste ${listeDe(today.getUTCFullYear())} : page changée ?`);
+let vus = vusPage1(had?.vus, liste, !!suite(page), since);
+for (let lien = suite(page); lien && !vusAssez(vus, since) && pages < PAGES_MAX; pages++) {
+  const html = await readPage(getPage, lien);
+  vus = vusSuivante(vus, parseListe(html), !!suite(html), since);
+  lien = suite(html);
+}
+if (!vusAssez(vus, since)) console.log(`liste vue jusqu'au ${vus.vu_jusqua} : la suite au passage suivant`);
 
 const recueils = (before?.recueils ?? []).filter((r) => r.date >= since);
 const actes = (before?.actes ?? []).filter((a) => a.recueil.date >= since);
 const noms = prenoms();
-const todo = couverture(liste, suite(page), new Set(recueils.map((r) => r.lien)), since).a_lire;
-for (const r of todo.slice(0, RECUEILS_MAX)) {
+const todo = couverture(vus, new Set(recueils.map((r) => r.lien)), since).a_lire;
+for (const r of todo.slice(0, PAGES_MAX - pages)) {
   try {
     const lus = parseRecueil(await readPage(getPage, r.lien), r);
     const { ajoutes, gardes } = garder(lus, r, noms, actes);
@@ -72,7 +84,7 @@ for (const r of todo.slice(0, RECUEILS_MAX)) {
   }
 }
 
-const cover = couverture(liste, suite(page), new Set(recueils.map((r) => r.lien)), since);
+const cover = couverture(vus, new Set(recueils.map((r) => r.lien)), since);
 if (cover.a_lire.length) console.log(`${cover.a_lire.length} recueils lus aux passages suivants`);
 const order = <T extends { date: string }>(x: T, y: T) => y.date.localeCompare(x.date);
 const next: Copie = {
@@ -91,5 +103,5 @@ if (kv) {
     console.log(`écrit dans KV : ${KV_KEY}`);
   } else if (!ready) console.log(`pas écrit dans KV : ${ecrite ? "le recueil le plus récent n'est pas lu" : "rattrapage des 15 jours en cours"}`);
   mkdirSync(dirname(STATE), { recursive: true });
-  writeFileSync(STATE, JSON.stringify({ copie: next, ...(ecrite && { ecrite }) } satisfies Etat));
+  writeFileSync(STATE, JSON.stringify({ copie: next, vus, ...(ecrite && { ecrite }) } satisfies Etat));
 }

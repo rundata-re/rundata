@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as raa from "../src/providers/raa.js";
 import { actualites, RAA_A_SAVOIR } from "../src/tools/actualites.js";
-import { couverture, ecarte, ecrire, FILTRES, garder, parseListe, parseRecueil, prenoms, suite } from "../scripts/raa-lire.js";
+import { couverture, ecarte, ecrire, FILTRES, garder, parseListe, parseRecueil, prenoms, suite, vusAssez, vusPage1, vusSuivante } from "../scripts/raa-lire.js";
 
 // Every title and name here is made up: no act of a real recueil, no real person.
 const NOW = new Date("2026-11-03T08:00:00Z");
@@ -89,32 +89,54 @@ describe("the prefecture's recueil des actes administratifs", () => {
 
 describe("what the recueils read cover", () => {
   const r = (n: number, date: string): raa.Recueil => ({ titre: `Spécial n° ${n}`, numero: n, date, lien: `https://www.reunion.gouv.fr/${n}` });
-  // Page 1 of the list, newest first; the 15 days from 19/10.
-  const liste = [r(5, "2026-11-03"), r(4, "2026-11-01"), r(3, "2026-10-28"), r(2, "2026-10-22"), r(1, "2026-10-15")];
   const lus = (...n: number[]) => new Set(n.map((k) => `https://www.reunion.gouv.fr/${k}`));
+  // The 15 days from 19/10; the list, newest first, 3 recueils a page.
+  const SINCE = "2026-10-19";
+  const page1 = [r(5, "2026-11-03"), r(4, "2026-11-01"), r(3, "2026-10-28")];
+  const page2 = [r(2, "2026-10-22"), r(1, "2026-10-15"), r(0, "2026-10-12")];
 
-  it("writes nothing to the store while the first catch-up of the 15 days is not done", () => {
-    const debut = couverture(liste, false, lus(5, 4, 3), "2026-10-19");
+  it("reads the next pages of the list, then writes nothing to the store, until the recueils seen go back 15 days and are all read", () => {
+    const vus1 = vusPage1(undefined, page1, true, SINCE);
+    expect(vusAssez(vus1, SINCE)).toBe(false);
+    const vus = vusSuivante(vus1, page2, true, SINCE);
+    expect(vusAssez(vus, SINCE)).toBe(true);
+    expect(vus.connus.map((x) => x.numero)).toEqual([5, 4, 3, 2]);
+    // Page 1 alone read, all its recueils read: not yet.
+    expect(ecrire(false, couverture(vus1, lus(5, 4, 3), SINCE))).toBe(false);
+    const debut = couverture(vus, lus(5, 4, 3), SINCE);
     expect(debut.a_lire.map((x) => x.numero)).toEqual([2]);
-    expect(debut.lus_depuis).toBe("2026-10-28");
     expect(ecrire(false, debut)).toBe(false);
-    const fin = couverture(liste, false, lus(5, 4, 3, 2), "2026-10-19");
-    expect(fin).toEqual({ a_lire: [], lus_depuis: undefined, publiable: true });
+    const fin = couverture(vus, lus(5, 4, 3, 2), SINCE);
+    expect(fin).toEqual({ a_lire: [], lus_depuis: undefined, publiable: true, complet: true });
     expect(ecrire(false, fin)).toBe(true);
   });
 
+  it("once the state covers the 15 days, reads page 1 only, though it holds fewer days, and says the 15 days", () => {
+    const etat = { connus: [...page1, page2[0]], vu_jusqua: "2026-10-15" };
+    // A new recueil: page 1 holds 3 of them, back to 01/11, and has a next page.
+    const vus = vusPage1(etat, [r(6, "2026-11-04"), ...page1.slice(0, 2)], true, SINCE);
+    expect(vusAssez(vus, SINCE)).toBe(true);
+    const c = couverture(vus, lus(6, 5, 4, 3, 2), SINCE);
+    expect(c.lus_depuis).toBeUndefined();
+    expect(c.complet).toBe(true);
+  });
+
   it("says since when the recueils are read without a gap once it lags again, and writes nothing while the newest is unread", () => {
+    const vus = vusSuivante(vusPage1(undefined, page1, true, SINCE), page2, true, SINCE);
     // The site silent for hours: the 3 newest read again, n° 2 left to read.
-    const retard = couverture(liste, false, lus(5, 4, 3), "2026-10-19");
-    expect(ecrire(true, retard)).toBe(true);
+    const retard = couverture(vus, lus(5, 4, 3), SINCE);
     expect(retard.lus_depuis).toBe("2026-10-28");
-    expect(ecrire(true, couverture(liste, false, lus(4, 3, 2), "2026-10-19"))).toBe(false);
-    // More recueils in 15 days than page 1 holds: covered since the oldest of page 1.
-    const page = liste.slice(0, 4);
-    expect(couverture(page, true, lus(5, 4, 3, 2), "2026-10-19").lus_depuis).toBe("2026-10-22");
-    expect(couverture(page, false, lus(5, 4, 3, 2), "2026-10-19").lus_depuis).toBeUndefined();
-    expect(suite('<a id=x class="fr-pagination__link fr-pagination__link--next" href="/RAA-2026/(offset)/10">')).toBe(true);
-    expect(suite('<a id=x class="fr-pagination__link fr-pagination__link--next">')).toBe(false);
+    expect(ecrire(true, retard)).toBe(true);
+    expect(ecrire(true, couverture(vus, lus(4, 3, 2), SINCE))).toBe(false);
+    // More published since the last run than page 1 holds: the pages between are read again.
+    const saut = vusPage1(vus, [r(9, "2026-11-08"), r(8, "2026-11-07"), r(7, "2026-11-06")], true, SINCE);
+    expect(saut).toEqual({ connus: [r(9, "2026-11-08"), r(8, "2026-11-07"), r(7, "2026-11-06")], vu_jusqua: "2026-11-06" });
+    expect(vusAssez(saut, SINCE)).toBe(false);
+  });
+
+  it("follows the list's next page by its link", () => {
+    expect(suite('<a id=x class="fr-pagination__link fr-pagination__link--next fr-pagination__link--lg-label" href="/RAA/Recueil-des-actes-administratifs-2026/(offset)/10">')).toBe("https://www.reunion.gouv.fr/RAA/Recueil-des-actes-administratifs-2026/(offset)/10");
+    expect(suite('<a id=x class="fr-pagination__link fr-pagination__link--next">')).toBeUndefined();
   });
 });
 

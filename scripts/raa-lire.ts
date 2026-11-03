@@ -47,32 +47,68 @@ export function parseListe(html: string): Recueil[] {
   return out;
 }
 
-/** Whether the year's page has a next page (older recueils than its own). */
-export const suite = (html: string) => /class="[^"]*fr-pagination__link--next[^"]*"[^>]*href=/.test(html);
-
-/**
- * What the recueils read cover, from `since` (YYYY-MM-DD): the recueils of `liste` (page 1 of the year's list, newest
- * first) since then that are not read yet, and `lus_depuis`, the day of the oldest recueil read with none unread
- * after it, when the read ones do not cover all the days since `since`: some recueils are left to read, or page 1
- * stops after `since` while older ones are on page 2 (`suite`), which is not read. `publiable`: whether something can
- * be said of the days since `lus_depuis` (or `since`), that is when the newest recueil is read.
- */
-export function couverture(liste: Recueil[], suiteExiste: boolean, lus: Set<string>, since: string): { a_lire: Recueil[]; lus_depuis?: string; publiable: boolean } {
-  const recents = liste.filter((r) => r.date >= since);
-  const a_lire = recents.filter((r) => !lus.has(r.lien));
-  const first = recents.findIndex((r) => !lus.has(r.lien));
-  const covered = first < 0 ? recents : recents.slice(0, first);
-  // Page 1 ends after `since`: the recueils from `since` to its last one may be on page 2.
-  const cut = suiteExiste && recents.length === liste.length;
-  const lus_depuis = first >= 0 || cut ? covered.at(-1)?.date : undefined;
-  return { a_lire, lus_depuis, publiable: first !== 0 || !recents.length };
+/** The link of the next page of the year's list (older recueils), undefined on its last page. */
+export function suite(html: string): string | undefined {
+  const m = /<a\b[^>]*class="[^"]*fr-pagination__link--next[^"]*"[^>]*href="([^"]+)"/.exec(html);
+  return m ? new URL(plain(m[1]), ORIGIN).href : undefined;
 }
 
 /**
- * Whether a copy may be written to the store: the first once nothing is left to read (before, « no act names this
- * place » would not be true); after it, whenever the newest recueil is read.
+ * The recueils of the list the collector has seen since `since`, newest first, and how far down the list it has seen
+ * them without a page missing: `vu_jusqua`, the day of the last recueil of the last page read (« » once the list's last
+ * page is read). Kept on the machine with what it read (scripts/raa.ts).
  */
-export const ecrire = (dejaEcrite: boolean, c: ReturnType<typeof couverture>) => (dejaEcrite ? c.publiable : !c.a_lire.length);
+export interface Vus {
+  connus: Recueil[];
+  vu_jusqua: string;
+}
+
+const byDay = (x: Recueil, y: Recueil) => y.date.localeCompare(x.date);
+const union = (a: Recueil[], b: Recueil[], since: string) =>
+  [...new Map([...a, ...b].map((r) => [r.lien, r])).values()].filter((r) => r.date >= since).sort(byDay);
+
+/**
+ * The recueils seen once page 1 of the list is read again: those seen before and its own, the list seen as far down
+ * as before. When page 1 holds none of those seen before and does not go back past `since` (more were published since
+ * the last run than a page holds), the pages between are missing: the list is seen down to page 1's last one only, and
+ * the next pages are read again (the recueils already read are not).
+ */
+export function vusPage1(avant: Vus | undefined, page: Recueil[], suiteExiste: boolean, since: string): Vus {
+  // « » : the list's last page.
+  const bout = suiteExiste ? page.at(-1)?.date ?? "" : "";
+  const known = new Set(avant?.connus.map((r) => r.lien));
+  if (!avant || !(page.some((r) => known.has(r.lien)) || !bout || bout < since)) return { connus: union([], page, since), vu_jusqua: bout };
+  return { connus: union(avant.connus, page, since), vu_jusqua: !bout ? "" : bout < since ? bout : avant.vu_jusqua };
+}
+
+/** The recueils seen once a next page of the list is read (`page`, the one after the last read). */
+export const vusSuivante = (avant: Vus, page: Recueil[], suiteExiste: boolean, since: string): Vus =>
+  ({ connus: union(avant.connus, page, since), vu_jusqua: suiteExiste ? page.at(-1)?.date ?? "" : "" });
+
+/** Whether the list is seen far enough: down to `since` (a next page is then not read), or to its last page. */
+export const vusAssez = (v: Vus, since: string) => !v.vu_jusqua || v.vu_jusqua < since;
+
+/**
+ * What the recueils read cover, since `since` (YYYY-MM-DD): the recueils seen since then and not read yet, and
+ * `lus_depuis`, the day of the oldest recueil read with none unread after it, when the recueils read do not cover all
+ * the days since `since` (some left to read, or the list not seen down to `since`). `publiable`: whether something can
+ * be said of the days since `lus_depuis`, that is when the newest recueil is read; `complet`, of all the days since
+ * `since`.
+ */
+export function couverture(v: Vus, lus: Set<string>, since: string): { a_lire: Recueil[]; lus_depuis?: string; publiable: boolean; complet: boolean } {
+  const recents = v.connus.filter((r) => r.date >= since);
+  const a_lire = recents.filter((r) => !lus.has(r.lien));
+  const first = recents.findIndex((r) => !lus.has(r.lien));
+  const covered = first < 0 ? recents : recents.slice(0, first);
+  const complet = first < 0 && vusAssez(v, since);
+  return { a_lire, lus_depuis: complet ? undefined : covered.at(-1)?.date, publiable: first !== 0 || !recents.length, complet };
+}
+
+/**
+ * Whether a copy may be written to the store: the first once the recueils since `since` are all read (before,
+ * « no act names this place » would not be true); after it, whenever the newest recueil is read.
+ */
+export const ecrire = (dejaEcrite: boolean, c: ReturnType<typeof couverture>) => (dejaEcrite ? c.publiable : c.complet);
 
 /** An act as a recueil's page lists it, before the filters. */
 export interface Lu {

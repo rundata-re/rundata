@@ -110,6 +110,9 @@ export const JUSTICE_TYPES = {
 export type JusticeType = keyof typeof JUSTICE_TYPES;
 export type JusticePlace = Office & { type: JusticeType };
 
+/** A point-justice inside a prison or a hospital (EPSMR): for the people there, left out of the answers and the pages. */
+export const RESERVED = /d[ée]tention|p[ée]nitentiaire|maison d.arr[eê]t|\bEPSMR\b/i;
+
 /** All the places of justice of La Réunion in one request (48 on 03/11/2026, the API gives up to 100), kept a day. */
 export async function justice(cache: Cache): Promise<Cached<JusticePlace[]>> {
   return cache.get("annuaire:justice", FRESH_SECONDS, async () => {

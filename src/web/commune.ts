@@ -433,6 +433,28 @@ function townHall(data: Cached<CommuneData> | null | undefined, now: Date): Live
   };
 }
 
+/**
+ * The commune's point-justice, or the nearest one with how far: free advice on the law. Most publish no hours in the
+ * annuaire, hence the phone, as the tool says (tools/justice.ts), on a line of its own with how far: the detail is cut
+ * at three lines.
+ */
+function justice(data: Cached<CommuneData> | null | undefined, g: Porte, now: Date): { live?: Live; more?: string } | undefined {
+  const j = data?.value.justice;
+  if (!j) return undefined;
+  const o = j.lieu;
+  const open = openNow(o, now);
+  const today = hoursOn(o, now);
+  const n = j.dans_la_commune;
+  const where = n > 1 ? "le plus proche du centre\u00a0: " : n ? "" : "le plus proche\u00a0: ";
+  const hours = open === null ? "horaires non publiés" : today ? `${open ? "ouvert" : "fermé"} en ce moment, aujourd'hui ${today}` : "fermé aujourd'hui";
+  const tel = o.telephone ? ` · tél. <a href="tel:${esc(o.telephone.replace(/\s/g, ""))}">${esc(o.telephone.replace(/ /g, "\u00a0"))}</a>` : "";
+  const go = g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse });
+  return {
+    live: { valeur: n ? `${n} dans la commune` : "Aucun dans la commune", detail: esc(`${where}${o.nom}, ${o.adresse}`) },
+    more: `<p class="note">${esc(`${j.km != null ? `à ${j.km} km à vol d'oiseau · ` : ""}${hours}`)}${tel}</p>${go ? `<p class="ya">${go}</p>` : ""}`,
+  };
+}
+
 function sunTimes(p: PlacePage, calendrier: Cached<CalendrierAnswer> | null | undefined, now: Date): Live {
   const day = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
   const s = cal.sun(day, p.place.lon, p.place.lat, p.place.altitude_m ?? 0);
@@ -456,6 +478,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const o = l.commune?.value.mairie;
   const toHall = o && mairie ? g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse }, "mairie") : "";
   const hikes = communeHikes(p, l.randonnees, now);
+  const droit = justice(l.commune, g, now);
+  const fichePj = l.commune?.value.justice?.lieu.fiche;
 
   const tiles: Tile[] = [
     { icon: "thermo", nom: "Météo", href: `/meteo/${p.slug}`, live: w },
@@ -476,6 +500,14 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, live: wasteLive(p, l.dechets, now) }] : []),
     ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, live: elsewhereLive(p) }] : []),
     { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `<a href="${sante.GARDE.site}" rel="noopener">Pharmacie de garde : 3237.fr</a>` },
+    ...(droit
+      ? [{
+        icon: "scale",
+        nom: "Point-justice",
+        ...droit,
+        ...(fichePj ? { foot: `<a href="${esc(fichePj)}" rel="noopener">Fiche service-public.fr</a>` } : {}),
+      }]
+      : []),
     ...(hikes ? [{ icon: "mountain", nom: "Randonnée", href: hikes.href, live: hikes.live, foot: hikes.foot }] : []),
     { icon: "music", nom: "Sorties", href: "/evenements", live: communeEvents(p, l.agenda) },
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),

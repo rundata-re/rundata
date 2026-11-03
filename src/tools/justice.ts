@@ -52,9 +52,6 @@ const COURTS: [RegExp, annuaire.JusticeType][] = [
   [/proximit[ée]/i, "ti"],
 ];
 
-/** A point-justice inside a prison or a hospital (EPSMR): for the people there. */
-const RESERVED = /d[ée]tention|p[ée]nitentiaire|maison d.arr[eê]t|\bEPSMR\b/i;
-
 const NAMES: Record<Groupe, { cle: string; un: string; nombre: (l: annuaire.JusticePlace[]) => string }> = {
   acces: {
     cle: "points_justice",
@@ -73,7 +70,7 @@ export async function justiceAnswer(cache: Cache, quoi: string, lieu: string | u
   if (lieu?.trim() && !res) return notFound(lieu);
   let all: annuaire.JusticePlace[];
   try {
-    all = (await annuaire.justice(cache)).value.filter((o) => !RESERVED.test(o.nom));
+    all = (await annuaire.justice(cache)).value.filter((o) => !annuaire.RESERVED.test(o.nom));
   } catch (err) {
     console.error(`source ${annuaire.SOURCE.id} indisponible:`, why(err));
     return { ...text({ erreur: "L'annuaire de l'administration ne répond pas pour le moment.", consulter: annuaire.SOURCE.url }), isError: true };

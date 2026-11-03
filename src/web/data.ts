@@ -1626,6 +1626,11 @@ export interface CommuneData {
   };
   /** The commune's Altervélo stations, those with bikes first (Saint-Pierre, Saint-Louis, L'Étang-Salé). */
   velos?: VeloStation[];
+  /**
+   * The commune's point-justice nearest its centre, or the island's nearest one when it has none (`km`, straight line),
+   * leaving out those of a prison or the EPSMR (annuaire.RESERVED).
+   */
+  justice?: { lieu: annuaire.Office; dans_la_commune: number; km?: number };
   sources: Credit[];
 }
 
@@ -1645,9 +1650,20 @@ async function townHall(cache: Cache, p: PlacePage): Promise<annuaire.Office | u
   return list.find((o) => /^Mairie - /.test(o.nom)) ?? named(list, "mairie")[0];
 }
 
+/** The commune's point-justice nearest its centre, or the nearest one elsewhere: see `CommuneData.justice`. */
+export async function pointJustice(cache: Cache, p: PlacePage): Promise<CommuneData["justice"]> {
+  const all = (await annuaire.justice(cache)).value.filter((o) => o.type === "point_justice" && !annuaire.RESERVED.test(o.nom));
+  const here = all.filter((o) => o.insee === INSEE[p.nom]);
+  const km = (o: annuaire.Office) => (o.lon != null && o.lat != null ? distanceKm(p.place.lon, p.place.lat, o.lon, o.lat) : Infinity);
+  const lieu = [...(here.length ? here : all)].sort((a, b) => km(a) - km(b))[0];
+  if (!lieu) return undefined;
+  const d = km(lieu);
+  return { lieu, dans_la_commune: here.length, ...(!here.length && Number.isFinite(d) ? { km: Math.round(d) } : {}) };
+}
+
 export async function buildCommune(cache: Cache, p: PlacePage, now = new Date()): Promise<CommuneData> {
   const out: CommuneData = { sources: [] };
-  const [mairie, bus, bikes] = await Promise.allSettled([
+  const [mairie, bus, bikes, justice] = await Promise.allSettled([
     townHall(cache, p),
     (async () => {
       if (!transit.enabled()) return undefined;
@@ -1669,6 +1685,7 @@ export async function buildCommune(cache: Cache, p: PlacePage, now = new Date())
       };
     })(),
     BIKE_COMMUNES.includes(p.nom) ? velosLibreService(cache, p.nom, now, true).then((r) => answer<VelosAnswer>(r)?.stations) : Promise.resolve(undefined),
+    pointJustice(cache, p),
   ]);
   if (mairie.status === "fulfilled" && mairie.value) {
     out.mairie = mairie.value;
@@ -1683,6 +1700,10 @@ export async function buildCommune(cache: Cache, p: PlacePage, now = new Date())
     out.velos = bikes.value;
     out.sources.push(credit(velos.SOURCE));
   } else if (bikes.status === "rejected") console.error(`page ${p.slug} : vélos indisponibles`, why(bikes.reason));
+  if (justice.status === "fulfilled" && justice.value) {
+    out.justice = justice.value;
+    if (!out.mairie) out.sources.push(credit(annuaire.SOURCE));
+  } else if (justice.status === "rejected") console.error(`page ${p.slug} : points-justice indisponibles`, why(justice.reason));
   if (!out.mairie && !out.bus) throw new Error(`aucune donnée de commune pour ${p.nom}`);
   return out;
 }

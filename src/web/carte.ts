@@ -29,10 +29,13 @@ import { esc, FOND_ZOOM, H, islandMap, W, zoomIsland } from "./map.js";
 import { RAIN_WASH, VENT_DE } from "./meteo-carte.js";
 import { anchorId, layout } from "./pages.js";
 import { CLASSES } from "./pluie-radar.js";
+import { VITESSES } from "./carte-style.js";
 import { COMMUNES } from "./commune.js";
 import { communePath as enfantsPath } from "./enfants.js";
 import { CURSEUR_PAGE, curseurBar, curseurConf } from "./carte-curseur.js";
 import { pleinEcran } from "./plein-ecran.js";
+import * as velo from "../vie/velo.js";
+import * as vitesses from "../vie/vitesses.js";
 
 export const PATH = "/carte";
 
@@ -79,6 +82,9 @@ export const MOTS = {
     sentiers: ["aucun sentier fermé", "{n} sentier fermé", "{n} sentiers fermés"],
     seismes: ["aucun séisme en 7\u00a0jours", "{n} séisme en 7\u00a0jours", "{n} séismes en 7\u00a0jours"],
   },
+  // The bike lanes' and the speeds' last words in the legend and the list.
+  sansEtat: "sans l'état du jour",
+  vitessesDu: "mise à jour d'août 2024",
   // The stations' line of the legend, when rings show where it rained.
   cercles: "cercle bleu\u00a0: pluie mesurée dans l'heure",
 };
@@ -148,6 +154,14 @@ const DIT: Record<string, Dit> = {
     montre: "Les sentiers marmailles, balades pour toute la famille recensées par le Conseil Général et l'AGORAH, avec leur longueur et leur durée. Tracés sans date : un chemin a pu changer depuis. Leur état n'est pas ici : cochez aussi « Sentiers fermés » avant de partir.",
     rubrique: "Enfants", court: "Conseil Général / AGORAH", unite: ["sentier", "sentiers"], organisme: "le Conseil Général et l'AGORAH",
   },
+  velo: {
+    montre: `Les aménagements pour le vélo de la Voie vélo régionale et de la Ville de Saint-Denis (pistes, bandes, voies vertes, accotements…), nommés comme dans leurs listes, et les accroches vélo de la CIVIS. ${velo.RECENSE}`,
+    rubrique: "Vélos", court: "Région Réunion, Ville de Saint-Denis, CIVIS", unite: ["aménagement", "aménagements"], organisme: "la Région, la Ville de Saint-Denis et la CIVIS",
+  },
+  vitesses: {
+    montre: `La vitesse maximale autorisée sur chaque tronçon des routes nationales, d'après le Système d'information routier de la Région Réunion : plus le trait est foncé, plus elle est haute. ${vitesses.RELEVE}`,
+    rubrique: "Circulation", court: "Région Réunion, mise à jour d'août 2024", unite: ["tronçon", "tronçons"], organisme: "la Région",
+  },
   canyons: {
     montre: "Les canyons recensés par le Parc national, d'après son inventaire sans date, avec leur longueur. En rouge : signalé interdit dans l'inventaire. L'inventaire ne dit pas si un canyon est autorisé : une interdiction a pu être levée, ou décidée depuis. Jamais de canyon par temps de pluie ou de vigilance : l'eau monte vite. Cochez aussi « Sentiers fermés » avant de partir.",
     rubrique: "Randonnée", court: "Parc national", unite: ["canyon", "canyons"], organisme: "le Parc national",
@@ -166,7 +180,7 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
  * The order of drawing, from the bottom: the trails' lines, then the points from the most to the fewest, the rarest
  * and the stations' figures on top, so that a crowded layer never hides another. The rain is under the land's lines.
  */
-export const ORDRE = ["marmailles", "canyons", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
+export const ORDRE = ["vitesses", "velo", "marmailles", "canyons", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
 
 /**
  * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,
@@ -226,6 +240,8 @@ function conf() {
     acces: ACCES,
     vent: VENT_DE,
     pluie: { classes: CLASSES, couleurs: RAIN_WASH },
+    // The speeds there are, from the slowest: the legend's scale (carte-style.ts, VITESSES).
+    vitesses: VITESSES,
     curseur: curseurConf(),
     mots: MOTS,
     vues: VUES.map((v) => ({ id: v.id, dit: v.dit, couches: v.couches, cadre: v.cadre, fond: v.fond })),
@@ -332,6 +348,8 @@ else if(c.id==="sentiers"){const k=/éruption/i.test(i.cause||"")?"instable apr�
 else if(c.id==="defibrillateurs"){p2=K.acces[i.exterieur?0:i.horaires==="24 h/24, 7 j/7"?1:i.acces_libre?2:3]+(i.etage?" · "+i.etage:"");p3=src("liste du "+jm(j.heure))}
 else if(c.id==="bornes"){const kw=" · jusqu'à "+dec(i.kw_max)+"\\u00a0kW"+(i.gratuit?" · gratuit":"")+(i.acces_reserve?" · accès réservé":"");
 if(i.libres!=null){p2=(i.libres?nb(i.libres)+" libre"+(i.libres>1?"s":""):"aucun libre")+" sur "+nb(i.total)+kw;p3=src("état de "+hm(j.heure))}else{p2=un(i.points,["point de charge","points de charge"])+kw.replace(" · jusqu'à",", jusqu'à");p3=src("état non lu")}}
+else if(c.id==="velo"){p2=[i.type,i.sens,i.annee&&"mise en service en "+i.annee,i.etat,i.accroches&&un(i.accroches,["accroche vélo","accroches vélo"])].filter(Boolean).join(" · ");p3=i.source+", "+i.liste}
+else if(c.id==="vitesses"){p2=i.annee?"tronçon mis à jour en "+i.annee:"";p3=c.court}
 else if(c.id==="canyons"){p2=[i.type,i.signalement].filter(Boolean).join(" · ");p3=src("inventaire sans date")}
 else{p2=[i.type,i.adresse].filter(Boolean).join(" · ");p3=src("liste du "+jm(j.heure))}
 return[o.nom+(o.commune?" · "+o.commune:""),p2,p3]};
@@ -339,7 +357,7 @@ const lien=(c,o)=>c.id==="defibrillateurs"?"/defibrillateurs#"+(K.dae[o.commune]
 const point=(c,o,j)=>{const x=X(o.lon),y=Y(o.lat),l=lines(c,o,j),a=el("a",{class:"sp",href:lien(c,o),tabindex:"-1","aria-label":l.filter(Boolean).join(", "),"data-pt":"Voir la page "+c.rubrique+" →"});["pn","p2","p3"].forEach((k,n)=>{if(l[n])a.setAttribute("data-"+k,l[n])});
 const d="M"+x+" "+y+"h0",i=o.infos||{};a.append(el("circle",{class:"hit",cx:x,cy:y,r:"3"}),el("path",{class:"kr",d}),el("path",{class:"kd",d}));
 if(c.id==="seismes"){const w=Math.max(7,Math.min(40,8+7*i.magnitude));a.style.setProperty("--w",w+"px")}
-if(c.id==="bornes"&&i.libres===0)a.classList.add("k0");if(i.alerte)a.classList.add("kti");if(i.ancienne)a.classList.add("kv");
+if(c.id==="bornes"&&i.libres===0)a.classList.add("k0");if(i.alerte)a.classList.add("kti");if(c.id==="vitesses")a.classList.add("v"+i.vitesse_kmh);if(c.id==="velo"&&!o.trace)a.classList.add("ka");if(i.ancienne)a.classList.add("kv");
 if(c.id==="stations"&&i.temperature!=null){const t=el("text",{x,y,dy:"-.75em",class:"kt"});t.textContent=Math.round(i.temperature)+"°";a.append(t)}return a};
 const rain=(j)=>{const cv=svg.querySelector(".kpluie canvas");if(!cv)return;cv.width=j.w;cv.height=j.h;const g=cv.getContext("2d"),im=g.createImageData(j.w,j.h),P=K.pluie.couleurs.map((s)=>s.match(/[\\d.]+/g).map(Number));
 for(let k=0;k<j.w*j.h;k++){const v=j.pluie.charCodeAt(k)-48,mal=j.mal_vu&&j.mal_vu[k]==="1",q=k*4;if(v>=1&&v<=8){const p=P[v-1];im.data[q]=p[0];im.data[q+1]=p[1];im.data[q+2]=p[2];im.data[q+3]=Math.round(p[3]*255)}
@@ -352,7 +370,7 @@ const wet=(o)=>{const i=o.infos||{};return!i.ancienne&&i.pluie_1h>0};
 const rings=(j)=>{pv.replaceChildren(...j.objets.filter(wet).flatMap((o)=>[el("circle",{class:"kpb",cx:X(o.lon),cy:Y(o.lat),r:"12"}),el("circle",{cx:X(o.lon),cy:Y(o.lat),r:"12"})]));place()};
 const draw=(c,j)=>{draw0(c,j);if(KC.on&&KC.frame&&(c.id==="pluie"||c.id==="stations"))KC.frame(true)};
 const draw0=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
-if(c.forme==="traces")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl"+((o.infos||{}).alerte?" kti":""),d}))});
+if(c.forme==="traces")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl"+((o.infos||{}).alerte?" kti":"")+(c.id==="vitesses"?" v"+o.infos.vitesse_kmh:""),d}))});
 j.objets.forEach((o)=>g.append(point(c,o,j)));
 if(!wired&&j.objets.length){wired=true;svg.dispatchEvent(new Event("carte",{bubbles:true}))}};
 const said=(c,j)=>{const r=KC.said&&KC.said(c);if(r)return r;const o=j?j.objets||[]:[],hs=o.map((x)=>Date.parse(x.heure)).filter((t)=>t>0);
@@ -363,7 +381,9 @@ if(c.id==="seismes")return o.length?[nb(o.length)+" en 7\\u00a0jours","dernier "
 if(c.id==="sentiers")return[nb(o.length),"carte de l'ONF du "+jm(j.heure)];
 if(c.id==="canyons"){const n=o.filter((x)=>(x.infos||{}).alerte).length;return[nb(o.length),"dont "+nb(n)+" en rouge","inventaire sans date"]}
 if(c.id==="bornes"){if(j.copie==="absente")return[nb(o.length),"état non lu"];const f=o.reduce((n,x)=>n+(x.infos.libres||0),0),t=o.reduce((n,x)=>n+(x.infos.total||0),0);return[nb(f)+" libre"+(f>1?"s":"")+" sur "+nb(t),"état de "+hm(j.heure)]}
-if(c.id.startsWith("enfants-"))return[un(o.length,c.unite),"liste du "+jm(j.heure)];return[nb(o.length),"liste du "+jm(j.heure)]};
+if(c.id.startsWith("enfants-"))return[un(o.length,c.unite),"liste du "+jm(j.heure)];
+if(c.id==="velo"){const v=o.filter((x)=>x.trace).length,n=o.reduce((k,x)=>k+(x.infos.accroches||0),0);return[un(v,c.unite),un(n,["accroche vélo","accroches vélo"]),M.sansEtat]}
+if(c.id==="vitesses")return[un(o.length,c.unite),M.vitessesDu];return[nb(o.length),"liste du "+jm(j.heure)]};
 const etat=(c,j)=>!j||j==="err"||j.erreur||j.copie==="absente"&&c.id!=="bornes"?"echec":j.copie==="ancienne"?"vieux":"ok";
 const show=(c)=>{const on=boxes.find((b)=>b.value===c.id).checked,j=got.get(c.id),p=aff.querySelector('.kp[data-c="'+c.id+'"]'),g=c.id==="pluie"?svg.querySelector(".kpluie"):svg.querySelector('.kl[data-c="'+c.id+'"]');
 p.hidden=!on;if(c.id==="stations")pv.style.display=on&&etat(c,j)==="ok"&&pv.childElementCount?"":"none";if(g){g.style.display=on?"":"none";g.classList.toggle("vieux",etat(c,j)==="vieux")}let li=lg.querySelector('[data-c="'+c.id+'"]');
@@ -374,12 +394,13 @@ const msg=s==="echec"?put(M.echec,{o:c.organisme}):s==="vieux"?put(M.ancienne,{o
 q(".ks").textContent=msg;li.classList.toggle("vieux",s!=="ok");
 if(s==="echec"){tx.textContent=c.nom+" · "+put(M.echec,{o:c.organisme});li.replaceChildren(el2("i","km"),tx);q(".kt").textContent="";q(".kn").textContent="";return}
 const bits=said(c,j);tx.append(c.nom);if(c.id==="pluie"){const sp=document.createElement("span");sp.className="kgr";sp.append(K.pluie.classes[0].toLocaleString("fr-FR")+"\\u202fmm/h",el2("i","kgrad"),"plus de "+K.pluie.classes[K.pluie.classes.length-1]+"\\u202fmm/h");tx.append(" ",sp)}
+if(c.id==="vitesses"){const sp=document.createElement("span"),v=K.vitesses;sp.className="kgr";sp.append(v[0]+"\\u00a0km/h",el2("i","kgrad kgv"),v[v.length-1]+"\\u00a0km/h");tx.append(" ",sp)}
 tx.append(" · "+bits.join(" · "));if(c.id==="stations"&&pv.childElementCount)tx.append(" · "+M.cercles);li.replaceChildren(el2("i","km"),tx);
 const t=c.nature==="fixe"?put(M.fixe,{d:an(j.heure)}):c.nature==="annonce"?put(M.annonce,{o:c.organisme,h:quand(j.heure)}):c.id==="seismes"||c.id==="bornes"?put(M.lu,{h:quand(j.heure)}):
 put(M.mesure,{m:hm(c.id==="pluie"?j.fin:Math.max(...(j.objets||[]).map((x)=>Date.parse(x.heure)))),h:quand(c.id==="pluie"?j.fin:j.heure)});q(".kt").textContent=t;
 if(c.id==="rivieres"){const m=q(".kmaj");if(m)m.textContent=put(M.maj,{d:jm(j.heure),h:hm(j.heure)})}
 if(c.id==="bornes")q(".kmo").textContent=j.copie==="absente"?c.montreSans:c.montre;
-q(".kn").textContent=c.id==="pluie"?"":put(M.surLaCarte,{n:un((j.objets||[]).length,c.unite)});if(h)h.textContent=" · "+bits[bits.length-1]};
+q(".kn").textContent=c.id==="pluie"?"":put(M.surLaCarte,{n:c.id==="velo"?bits[0]+" et "+bits[1]:un((j.objets||[]).length,c.unite)});if(h)h.textContent=" · "+bits[bits.length-1]};
 const el2=(n,k)=>{const e=document.createElement(n);e.className=k;return e};
 const credit=()=>{const on=boxes.filter((b)=>b.checked).map((b)=>L.get(b.value).source.attribution);cr.textContent=[...new Set(on)].join(" · ");
 document.querySelector(".kcn").textContent=boxes.filter((b)=>b.checked).length;aff.querySelector(".kvide").hidden=boxes.some((b)=>b.checked)};

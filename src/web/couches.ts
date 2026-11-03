@@ -6,7 +6,8 @@
  * (the point is the place itself, a place near it, or only its commune), and each object of its file carries them
  * again, with the time of its source, so that a file read alone says what it is. One file a source: OpenStreetMap is
  * under ODbL, and a file that mixed it with another source would be a derived database (the places for children are
- * three layers, one for each of their sources).
+ * three layers, one for each of their sources). Lists under the same Licence Ouverte may share one, each object naming its
+ * own (the bike lanes and racks: the Région's, the Ville de Saint-Denis's and the CIVIS's).
  *
  * The fixed layers are the lists bundled with the server, as their pages show them: their file is built once per
  * isolate, with no read at all (no subrequest, no KV, no D1). The live layers read the last copy of their page, or of
@@ -15,6 +16,7 @@
  * an empty layer never reads as « nothing there » (no earthquake, no flood).
  */
 import type { Cache } from "../cache.js";
+import { communeAt } from "../places/resolve.js";
 import * as dae from "../providers/dae.js";
 import * as irve from "../providers/irve.js";
 import * as mfStations from "../providers/meteofrance-stations.js";
@@ -28,6 +30,8 @@ import * as enfants from "../vie/enfants.js";
 import * as canyons from "../vie/canyons.js";
 import * as marmailles from "../vie/marmailles.js";
 import * as monuments from "../vie/monuments.js";
+import * as velo from "../vie/velo.js";
+import * as vitesses from "../vie/vitesses.js";
 import type { BornesAnswer, CruesAnswer, HomeData } from "./data.js";
 import { slugify } from "./places.js";
 import { PATH as PLUIE_RADAR } from "./pluie-radar.js";
@@ -354,6 +358,70 @@ export function canyonsCouche(list: canyons.Canyon[], lu: string): CoucheJson {
   return { id: "canyons", nom: "Canyons (Parc national de La Réunion)", nature: "fixe", precision: "adresse", source: canyons.SOURCE, heure: lu, objets };
 }
 
+/** « 31/12/2025 ». */
+const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/**
+ * The bike lanes of the Région and of the Ville de Saint-Denis, drawn, and the bike racks of the CIVIS, each with its
+ * source and the date of its list (none for the CIVIS's). What a list gives is said as given, never a lane said usable:
+ * the Région's « Requalification » does not say if it is done (data-run, 03/11).
+ */
+export function veloCouche(voies: velo.Voie[], accroches: velo.Accroche[], lu: string): CoucheJson {
+  const listes: Record<velo.Liste, string> = { region: `liste du ${jma(velo.REGION_DU)}`, "saint-denis": "février 2023", civis: "sans date" };
+  const deVoies = voies.map((v): Objet => {
+    const [lon, lat] = velo.milieu(v);
+    return {
+      nom: v.nom ?? v.type,
+      commune: velo.communeOf(v),
+      lon: r5(lon),
+      lat: r5(lat),
+      nature: "fixe",
+      precision: "adresse",
+      heure: lu,
+      trace: tracer(velo.points(v)),
+      infos: {
+        source: velo.SOURCES[v.s].attribution,
+        liste: listes[v.s],
+        ...(v.nom && { type: v.type }),
+        ...(v.sens && { sens: v.sens }),
+        ...(v.annee && { annee: v.annee }),
+        ...(v.requalification && { etat: "Requalification (d'après la Région)" }),
+        ...(v.provisoire && { etat: "provisoire d'après la Ville" }),
+      },
+    };
+  });
+  const deAccroches = accroches.map((a): Objet => ({
+    nom: a.nom ?? "Accroches vélo",
+    commune: communeAt(a.lon, a.lat),
+    lon: r5(a.lon),
+    lat: r5(a.lat),
+    nature: "fixe",
+    precision: "adresse",
+    heure: lu,
+    infos: { source: velo.SOURCES.civis.attribution, liste: listes.civis, accroches: a.n },
+  }));
+  return { id: "velo", nom: "Aménagements cyclables (Région Réunion, Ville de Saint-Denis) et accroches vélo (CIVIS)", nature: "fixe", precision: "adresse", source: velo.SOURCE, heure: lu, objets: [...deVoies, ...deAccroches] };
+}
+
+/** The speed limits on the routes nationales, each piece drawn with its speed, its route and its year. */
+export function vitessesCouche(list: vitesses.Troncon[], lu: string): CoucheJson {
+  const objets = list.map((t): Objet => {
+    const p = vitesses.points(t);
+    const [lon, lat] = p[Math.floor(p.length / 2)];
+    return {
+      nom: `${t.v}\u00a0km/h · ${t.route}`,
+      lon: r5(lon),
+      lat: r5(lat),
+      nature: "fixe",
+      precision: "adresse",
+      heure: lu,
+      trace: tracer(p),
+      infos: { vitesse_kmh: t.v, ...(t.annee && { annee: t.annee }) },
+    };
+  });
+  return { id: "vitesses", nom: "Limitations de vitesse sur les routes nationales (Région Réunion)", nature: "fixe", precision: "adresse", source: vitesses.SOURCE, heure: lu, objets };
+}
+
 /** The trails the ONF closes, as its map draws them, with why and until when. */
 export function sentiersObjets(c: onf.Carte, heure: string): Objet[] {
   return c.sentiers.filter((t) => t.statut === "fermé" && t.points.length).map((t): Objet => {
@@ -421,6 +489,9 @@ export const COUCHES: Couche[] = [
       return j.copie === "absente" ? { ...j, objets: bornesCouche(irve.STATIONS, irve.BUILT).objets.map((o, i) => ({ ...o, lien: `/bornes#s-${irve.STATIONS[i].id}` })) } : j;
     },
   },
+  // Drawn as lines but the racks, both leading to /velos and /trafic: no page of their own.
+  { ...fixe({ id: "velo", nom: "Vélo", long: "Aménagements cyclables (Région Réunion, Ville de Saint-Denis) et accroches vélo (CIVIS)", theme: "deplacements", precision: "adresse", source: velo.SOURCE, page: "/velos", donnees: () => veloCouche(velo.VOIES, velo.ACCROCHES, velo.LU_LE) }), forme: "traces" },
+  { ...fixe({ id: "vitesses", nom: "Vitesses sur les routes nationales", long: "Limitations de vitesse sur les routes nationales (Région Réunion)", theme: "deplacements", precision: "adresse", source: vitesses.SOURCE, page: "/trafic", donnees: () => vitessesCouche(vitesses.TRONCONS, vitesses.LU_LE) }), forme: "traces" },
   ...(["osm", "data_es", "basilic"] as const).map((s) => {
     const id = `enfants-${s.replace("_", "-")}`;
     return fixe({ id, nom: COURTS_ENFANTS[s], long: NOMS_ENFANTS[s], theme: "sortir", precision: "adresse", source: enfants.SOURCES[s], page: "/enfants", donnees: () => enfantsCouche(id, s, enfants.LIEUX, enfants.BUILT) });

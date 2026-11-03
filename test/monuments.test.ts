@@ -29,6 +29,17 @@ describe("the historic monuments (vie/monuments.ts)", () => {
     expect(SOURCE.licence).toBe("Licence Ouverte Etalab 2.0");
   });
 
+  it("write their names and addresses with French quotes, without a space too many", () => {
+    // The base writes « " Mon Repos " »: no space inside the quotes, and never two in a row.
+    expect(MONUMENTS.find((m) => m.ref === "PA97400071")?.nom).toBe("Propriété « Mon Repos »");
+    for (const m of MONUMENTS) {
+      for (const s of [m.nom, m.adresse ?? ""]) {
+        expect(s, m.ref).not.toMatch(/« \s|\s »|\s\s/);
+        expect(s, m.ref).not.toContain('"');
+      }
+    }
+  });
+
   it("put a monument on two communes under both", () => {
     const lazarets = (nom: string) => ofCommune(nom).find((m) => m.nom === "Lazarets de la Grande Chaloupe");
     expect(lazarets("Saint-Denis")).toBeDefined();

@@ -47,10 +47,11 @@ def typo(s):
     """
     One line, a no-break space before « : ; ? ! » as on every page (« chemin Lagourgue ; chemin du Centre »), and the
     base's straight quotes as French ones: « Cheminée dite de « Mahavel » ». Quotes around a name that has its own
-    (« "Cheminée dite de "Manapany"" ») are dropped, the inner ones kept.
+    (« "Cheminée dite de "Manapany"" ») are dropped, the inner ones kept, and the spaces just inside a pair too
+    (« " Mon Repos " »).
     """
     s = re.sub(r'"([^"]*)"([^"]+)""', '\\1"\\2"', " ".join(s.split()))
-    s = re.sub(r'"([^"]+)"', "«\u00a0\\1\u00a0»", s)
+    s = re.sub(r'"\s*([^"]+?)\s*"', "«\u00a0\\1\u00a0»", s)
     return re.sub(r" ([:;?!])", "\u00a0\\1", s)
 
 

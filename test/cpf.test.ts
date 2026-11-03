@@ -146,7 +146,7 @@ describe("the formations in the tool emploi and on /emploi", () => {
     expect(JSON.stringify(r)).not.toContain("Martin");
     expect(b.a_savoir).toBe(A_SAVOIR);
     expect(A_SAVOIR).toContain("ne publie pas la commune");
-    expect(A_SAVOIR).toContain("formations à distance");
+    expect(A_SAVOIR).toContain("Les formations à distance n'ont pas de département dans le catalogue\u00a0: elles ne sont donc pas dans cette liste, et une formation absente ici peut exister.");
     expect(A_SAVOIR).toContain("reste à charge");
     expect(b.donnees).toBe("Catalogue de Mon Compte Formation (lecture du 03/11 à 16:15, heure de La Réunion).");
     expect(r.sources.map((s: { source: string }) => s.source)).toContain(cpf.SOURCE.nom);
@@ -162,7 +162,7 @@ describe("the formations in the tool emploi and on /emploi", () => {
     const none = body(await emploi(cache(), undefined, "plongée", NOW)).formations_cpf;
     expect(none.nombre).toBe(0);
     expect(none.resume).not.toMatch(/aucune formation/i);
-    expect(none.resume).toContain("Les formations à distance n'y sont pas");
+    expect(none.resume).toBe("Le catalogue de Mon Compte Formation n'a pas de session ouverte à La Réunion pour « plongée ». Les formations à distance n'y sont pas\u00a0: une formation peut exister, à chercher sur moncompteformation.gouv.fr.");
     const r = body(await emploi(cache(), undefined, "cariste", NOW)).formations_cpf;
     expect(r.formations.map((f: { intitule: string }) => f.intitule)).toEqual(Array.from({ length: 10 }, (_, i) => `Cariste ${String(i + 1).padStart(2, "0")}`));
     expect(r.autres).toBe(`2 autres, sur ${cpf.SITE}`);

@@ -14,7 +14,7 @@ import { nombre } from "./format.js";
 
 /** The three things the catalogue does not say (03/11/2026). */
 export const A_SAVOIR = "Le catalogue ne publie pas la commune des sessions, seulement le département. " +
-  "Les formations à distance n'y sont rattachées à aucun département : elles ne sont pas ici, une formation absente de cette liste peut donc exister. " +
+  "Les formations à distance n'ont pas de département dans le catalogue : elles ne sont donc pas dans cette liste, et une formation absente ici peut exister. " +
   `La fiche de chaque formation, ses dates et le reste à charge se lisent sur moncompteformation.gouv.fr (${cpf.SITE}).`;
 /** In place of the name of a body that may be a person (providers/cpf.ts). */
 export const ORGANISME_MASQUE = "nom sur moncompteformation.gouv.fr";
@@ -71,7 +71,7 @@ export async function formationsCpf(cache: Cache, motCle: string, words: string[
   const asked = `« ${motCle.trim()} »`;
   const resume = found.length
     ? `${nombre(found.length)} formation${found.length > 1 ? "s" : ""} éligible${found.length > 1 ? "s" : ""} au CPF avec une session ouverte à La Réunion pour ${asked}, d'après le catalogue de Mon Compte Formation.`
-    : `Le catalogue de Mon Compte Formation n'a pas, pour La Réunion, de session ouverte qui corresponde à ${asked}. Les formations à distance n'y sont pas : une formation peut exister, à chercher sur moncompteformation.gouv.fr.`;
+    : `Le catalogue de Mon Compte Formation n'a pas de session ouverte à La Réunion pour ${asked}. Les formations à distance n'y sont pas : une formation peut exister, à chercher sur moncompteformation.gouv.fr.`;
   return {
     resume,
     nombre: found.length,

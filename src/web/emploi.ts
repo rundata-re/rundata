@@ -1,10 +1,15 @@
 /**
  * /emploi: the public sector's offers open at La Réunion, from Choisir le service public, newest first, to filter by
  * commune or by words, each with its link to apply on the site. In marketing's words (29/10/2026); the companies'
- * offers are not taken: a sentence with two links, and the user's line on the sites that do not allow it.
+ * offers are not taken: a sentence with two links, and the user's line on the sites that do not allow it. Then « Se
+ * former avec le CPF »: how many formations eligible to the CPF have an open session at La Réunion, by theme, without
+ * a body's name nor a fee (03/11/2026); the tool gives them for words asked.
  */
 import type { Cache, Cached } from "../cache.js";
 import { offres, prochaineLecture } from "../providers/emploi.js";
+import { SITE as CPF_SITE } from "../providers/cpf.js";
+import { A_SAVOIR as CPF_A_SAVOIR, themesCpf } from "../tools/cpf.js";
+import { nombre } from "../tools/format.js";
 import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../tools/emploi.js";
 import { connectorCta, crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
@@ -27,6 +32,8 @@ export interface EmploiAnswer {
   lu?: string;
   /** No copy of the offers yet: when the scheduled event reads them next (ISO). */
   prochaine?: string;
+  /** The formations eligible to the CPF, counted by theme; absent without a copy. */
+  cpf?: NonNullable<Awaited<ReturnType<typeof themesCpf>>>;
 }
 
 /**
@@ -35,11 +42,12 @@ export interface EmploiAnswer {
  */
 export async function buildEmploi(cache: Cache, now = new Date()): Promise<EmploiAnswer> {
   const r = await emploi(cache, undefined, undefined, now, Infinity);
-  if ("isError" in r && r.isError) return { resume: "", nombre: 0, offres: [], couverture: COUVERTURE, sources: [], prochaine: prochaineLecture(now).toISOString() };
+  const cpf = (await themesCpf(cache)) ?? undefined;
+  if ("isError" in r && r.isError) return { resume: "", nombre: 0, offres: [], couverture: COUVERTURE, sources: [], prochaine: prochaineLecture(now).toISOString(), ...(cpf ? { cpf } : {}) };
   const { resume, nombre, offres: list, injoignable, couverture, sources } = JSON.parse(r.content[0].text) as EmploiAnswer;
   // The copy the tool has just read, from memory: its time.
   const lu = (await offres(cache, now).catch(() => null))?.value.lu;
-  return { resume, nombre, offres: list, ...(lu ? { lu } : {}), ...(injoignable ? { injoignable } : {}), couverture, sources };
+  return { resume, nombre, offres: list, ...(lu ? { lu } : {}), ...(injoignable ? { injoignable } : {}), couverture, sources, ...(cpf ? { cpf } : {}) };
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
@@ -64,6 +72,17 @@ function row(o: OffreRow): string {
   const title = "references" in o ? `<b>${esc(o.intitule)}</b>` : `<a href="${esc(o.lien)}" rel="noopener">${esc(o.intitule)}</a>`;
   return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title}<small>${small}</small></span>` +
     `<span class="q-none${"references" in o && !o.date_limite && !o.publiee_le ? " du" : ""}">${esc(quand(o))}</span>${refs}</li>`;
+}
+
+/** « Se former avec le CPF »: the themes by name, each with its count; nothing without a copy. */
+function cpfSection(c: EmploiAnswer["cpf"], now: Date): string {
+  if (!c) return "";
+  return `<section id="cpf" aria-labelledby="h-cpf">
+  <div class="sec-h"><p class="eyebrow">Mon Compte Formation</p><h2 id="h-cpf">Se former avec le CPF</h2><p>${esc(`${nombre(c.nombre)} formations éligibles au CPF ont une session ouverte à La Réunion dans le catalogue de Mon Compte Formation, lu ${readAt(new Date(c.lu), now).a}. Par thème, dans l'ordre alphabétique :`)}</p></div>
+  <details class="card"><summary>${esc(`Les ${c.themes.length} thèmes`)}</summary><div class="table-wrap"><table class="drought histo passe"><thead><tr><th scope="col">Thème</th><th scope="col">Formations</th></tr></thead><tbody>${c.themes.map((t) => `<tr><th scope="row">${esc(t.theme)}</th><td>${nombre(t.formations)}</td></tr>`).join("")}</tbody></table></div></details>
+  <p>${esc(CPF_A_SAVOIR.replace(` (${CPF_SITE})`, ""))} <a href="${esc(CPF_SITE)}" rel="noopener">Chercher une formation sur moncompteformation.gouv.fr</a>.</p>
+  <p class="note">${esc("Caisse des Dépôts et DGEFP, Mon Compte Formation, l'offre de formation, Licence Ouverte.")}</p>
+</section>`;
 }
 
 const FILTER = `<form id="of" class="card filter" hidden role="search" aria-label="Filtrer les offres">
@@ -117,6 +136,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
   <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? esc(d.couverture) : ""}</p></div>
   ${d && data && !d.prochaine ? sourcesNote(d.sources, data) : ""}
 </section>
+${cpfSection(d?.cpf, now)}
 ${connectorCta("emploi", "les offres d'emploi public")}
 <script>${SCRIPT}</script>`;
 

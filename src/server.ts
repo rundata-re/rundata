@@ -116,13 +116,14 @@ import * as accidentsRoute from "./routes/accidents.js";
 import * as parcoursupFormations from "./vie/parcoursup.js";
 import { BDTOPO, PHOTOS } from "./providers/ign.js";
 import { sitesSansReponse } from "./tools/sans-reponse.js";
+import * as cpfFormations from "./providers/cpf.js";
 import * as emploiSource from "./providers/emploi.js";
 import * as marchesPublics from "./providers/marches-publics.js";
 import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.180";
+export const VERSION = "1.0.181";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -217,8 +218,9 @@ export const toutesLesSources = (inactives = false) =>
     carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, medecinsAmeli.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
     ...Object.values(velo.SOURCES), vitessesRn.SOURCE,
-    // The public sector's job offers (emploi), the public procurement notices (the page /marches-publics).
-    emploiSource.SOURCE, marchesPublics.SOURCE,
+    // The public sector's job offers and the formations eligible to the CPF (emploi), the public procurement notices (the
+    // page /marches-publics).
+    emploiSource.SOURCE, cpfFormations.SOURCE, marchesPublics.SOURCE,
     // The decrees of recreational fishing, bundled (peche_loisir).
     ...peche.SOURCES]);
 /** A source's name from its id, for one served from its last copy (fraicheur.ts). */
@@ -560,7 +562,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour chaque offre ouverte : l'intitulé, l'employeur, la commune, la nature de l'emploi, la date de publication, la date limite de candidature et le lien pour postuler sur le site, la plus récente d'abord. " +
         "Un poste publié sous plusieurs références : une ligne, nombre_offres et references (référence, date, lien). " +
         "Donner le lien de chaque offre\u00a0; la page de l'offre fait foi (elle peut être pourvue avant sa date limite). Les offres des entreprises n'y sont pas : renvoyer à France Travail, sans en inventer. " +
-        "Pour : « offres d'emploi à la mairie de Saint-Paul ? », « le CHU recrute des infirmiers ? », « emploi public au Tampon ? ».",
+        "Avec mot_cle, aussi les formations CPF de La Réunion (formations_cpf, sans commune ni formation à distance) : ne jamais dire qu'une formation n'existe pas, ni comparer les frais. " +
+        "Pour : « offres d'emploi à la mairie de Saint-Paul ? », « le CHU recrute des infirmiers ? », « emploi public au Tampon ? », « formation cariste CPF ? ».",
       inputSchema: {
         lieu: z
           .string()
@@ -569,7 +572,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         mot_cle: z
           .string()
           .optional()
-          .describe("Des mots de l'intitulé, du métier ou de l'employeur : « infirmier », « agent d'entretien », « CHU », « contractuel »."),
+          .describe("Des mots de l'intitulé, du métier ou de l'employeur : « infirmier », « agent d'entretien », « CHU », « contractuel », « cariste »."),
       },
       annotations: { title: "Emploi public", ...READ_ONLY },
     },

@@ -97,7 +97,7 @@ export const DOMAINES: Domaine[] = [
   // The antennas bundled; the mobile sites out of service once a day (providers/sites-hs.ts).
   { categorie: "antennes", sources: ids("anfr_observatoire_mobile", "anfr_installations_5w", "arcep_sites_indisponibles"), cadence: { minutes: DAY, de: "arcep_sites_indisponibles" } },
   // The scheduled event reads the offers every hour (providers/emploi.ts).
-  { categorie: "emploi", sources: ids("csp_offres"), cadence: { minutes: 60, de: "csp_offres" } },
+  { categorie: "emploi", sources: ids("csp_offres", "cdc_moncompteformation"), cadence: { minutes: 60, de: "csp_offres" } },
   // The scheduled event reads the notices every hour (providers/marches-publics.ts).
   { categorie: "marches", sources: ids("boamp_api"), cadence: { minutes: 60, de: "boamp_api" } },
   // The TCO's dumps every 30 minutes (providers/tco.ts).

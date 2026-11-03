@@ -1,9 +1,11 @@
 import type { Cache } from "../cache.js";
 import { localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
+import * as cpfSource from "../providers/cpf.js";
 import * as emploiSource from "../providers/emploi.js";
 import type { Offre } from "../providers/emploi.js";
 import { why } from "../types.js";
+import { formationsCpf } from "./cpf.js";
 import { injoignable } from "./injoignable.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
 
@@ -108,6 +110,8 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
       (sansCommune ? ` ${plural(sansCommune, "autre offre de La Réunion ne précise pas sa commune", "autres offres de La Réunion ne précisent pas leur commune")}${what}.` : "");
 
   const rows = lignes(all).slice(0, max);
+  // The formations eligible to the CPF for the same words: read only when words are asked.
+  const formations = words.length ? await formationsCpf(cache, motCle!, words, now) : undefined;
   const shown = rows.reduce((n, r) => n + ("nombre_offres" in r ? r.nombre_offres : 1), 0);
   return text({
     ...(place && lieu ? { lieu: placeBlock(lieu, place) } : {}),
@@ -119,7 +123,8 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
     couverture: c.offres.some((o) => !o.limite && !emploiSource.enAttente(o)) ? `${COUVERTURE} ${SANS_LIMITE}` : COUVERTURE,
     entreprises: `Les offres des entreprises ne sont pas reprises ici : vous les trouvez sur ${ENTREPRISES.map((e) => `${e.nom} (${e.lien})`).join(" et sur ")}, le portail emploi et formation de La Réunion.`,
     non_repris: NON_REPRIS,
+    ...(formations ? { formations_cpf: formations } : {}),
     donnees: `Offres lues sur Choisir le service public (lecture de ${at.split(" ")[1]} le ${at.split(" ")[0]}, heure de La Réunion)\u00a0; chaque offre dit sa date de publication et sa date limite de candidature quand le site la donne.`,
-    sources: credits([emploiSource.SOURCE]),
+    sources: credits(formations && !("erreur" in formations) ? [emploiSource.SOURCE, cpfSource.SOURCE] : [emploiSource.SOURCE]),
   });
 }

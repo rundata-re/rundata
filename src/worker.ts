@@ -19,6 +19,7 @@ import * as prefectureCopie from "./providers/prefecture-copie.js";
 import * as raa from "./providers/raa.js";
 import * as airMesures from "./providers/air-mesures.js";
 import * as capteurs from "./providers/capteurs.js";
+import * as cpf from "./providers/cpf.js";
 import * as emploi from "./providers/emploi.js";
 import * as sitesHs from "./providers/sites-hs.js";
 import * as marchesPublics from "./providers/marches-publics.js";
@@ -270,6 +271,13 @@ function setup(env: Env): Cache {
     if (!kv) return null;
     count();
     return (await kv.get(emploi.KV_KEY, "json")) as emploi.Copie | null;
+  });
+  // Read once a day from the Caisse des Dépôts' catalogue by the scheduled event below, and kept in KV
+  // (src/providers/cpf.ts).
+  cpf.configure(async () => {
+    if (!kv) return null;
+    count();
+    return (await kv.get(cpf.KV_KEY, "json")) as cpf.Copie | null;
   });
   // Read once a day from the Arcep's file by the scheduled event below, and kept in KV (src/providers/sites-hs.ts).
   sitesHs.configure(async () => {
@@ -548,6 +556,21 @@ export default {
       }))
         .then(({ value, used, reads }) => console.log(`sites mobiles hors service : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("sites mobiles hors service : lecture impossible", why(err))));
+    }
+    // Every hour at 15 past, from 12:15 to 18:15 UTC, until the catalogue of the day is read: the formations eligible to
+    // the CPF with an open session at La Réunion (Caisse des Dépôts, about 780 Ko), kept in KV, once the reads above are
+    // done.
+    if (kv && cpf.refreshDue(now)) {
+      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
+        count();
+        const before = (await kv.get(cpf.KV_KEY, "json")) as cpf.Copie | null;
+        return cpf.collect(before, async (copie) => {
+          count(1, true);
+          await kv.put(cpf.KV_KEY, JSON.stringify(copie), { expirationTtl: cpf.KV_TTL_SECONDS });
+        }, now);
+      }))
+        .then(({ value, used, reads }) => console.log(`formations CPF : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
+        .catch((err) => console.error("formations CPF : lecture impossible", why(err))));
     }
     // Every hour, at 35 past: the public procurement notices open at La Réunion (BOAMP), the full text of the new ones
     // only, kept in KV when they changed, once the reads above are done.

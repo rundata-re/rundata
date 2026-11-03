@@ -170,6 +170,7 @@ export const FICHES: Record<string, Fiche> = {
   altervelo: { famille: "licence_ouverte", producteurs: ["CIVIS"] },
   // The offers' employers are many and change every day: the site's publisher is named.
   csp_offres: { famille: "licence_ouverte", producteurs: ["DGAFP"] },
+  cdc_moncompteformation: { famille: "licence_ouverte", producteurs: ["Caisse des Dépôts", "DGEFP"] },
   // The prefect signs both decrees; the DMSOI consolidates the first, the DEAL publishes the second.
   dmsoi_peche_loisir: { famille: "licence_ouverte", producteurs: ["DMSOI"] },
   deal_bichiques: { famille: "licence_ouverte", producteurs: ["DEAL Réunion"] },

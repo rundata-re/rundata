@@ -13,6 +13,7 @@ import * as mf from "../providers/vigilance.js";
 import * as sante from "../sante/etablissements.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as medecins from "../vie/medecins.js";
+import * as creches from "../vie/creches.js";
 import * as decouvrir from "../vie/decouvrir.js";
 import * as enfants from "../vie/enfants.js";
 import * as dech from "../vie/decheteries.js";
@@ -408,6 +409,28 @@ function rents(p: PlacePage): Live | undefined {
   };
 }
 
+/**
+ * The places for the children under 3 (vie/creches.ts): the commune's own figure from the CAF; below 10 000
+ * inhabitants it has none, and its intercommunalité's is said as such, never as the commune's.
+ */
+function nursery(p: PlacePage): Live | undefined {
+  const c = creches.ofCommune(p.nom);
+  const theorique = `offre théorique fin ${creches.ANNEE}, d'après la CAF`;
+  if (c)
+    return {
+      valeur: `${creches.taux(c.creche)} places`,
+      detail: `en crèche pour 100 enfants de moins de 3\u00a0ans · ${creches.taux(c.global)} pour 100 en comptant les assistantes maternelles, la garde à domicile et l'école · ${nombre(c.places_creche)} places en crèche · ${theorique}`,
+      entier: true,
+    };
+  const e = creches.epciOf(p.nom);
+  if (!e) return undefined;
+  return {
+    valeur: "Pas de chiffre pour la commune",
+    detail: `la CAF ne le donne que pour les communes de plus de 10\u00a0000 habitants · pour ${e.nom}, ses ${e.communes.length} communes ensemble\u00a0: ${creches.taux(e.creche)} places en crèche pour 100 enfants de moins de 3\u00a0ans · ${theorique}`,
+    entier: true,
+  };
+}
+
 /** How the premises can be connected (vie/internet.ts): the fibre's share; one release a quarter, never live. */
 function connexion(p: PlacePage): Live | undefined {
   const c = internet.ofCommune(p.nom);
@@ -547,6 +570,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(rents(p) ? [{ icon: "key", nom: "Loyers d'annonce", live: rents(p), foot: `<a href="${loyers.SOURCE.url}" rel="noopener">La carte des loyers de l'ANIL</a>` }] : []),
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),
     ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/#assistant">Votre adresse : demandez à votre IA →</a>` }] : []),
+    ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `<a href="https://monenfant.fr" rel="noopener">Trouver une crèche\u00a0: monenfant.fr</a>` }] : []),
   ];
   const island: Tile[] = [
     { icon: "volcano", nom: "Volcan", href: "/volcan", live: volcanLive(l.volcan ?? null, now) },
@@ -629,6 +653,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(children(p) ? enfants.sourcesOf(enfants.inCommune(p.nom)).map(credit) : []),
     ...(lieux ? [credit(decouvrir.SOURCE)] : []),
     ...(rents(p) ? [credit(loyers.SOURCE)] : []),
+    ...(nursery(p) ? [credit(creches.SOURCE)] : []),
     ...(connexion(p) ? [credit(internet.SOURCE)] : []),
     ...(antennas(p) ? [antennes.SOURCE_MOBILE, ...(antennes.ofCommune(p.nom).emetteurs.length ? [antennes.SOURCE_RADIO] : []), ...(horsService(l.hs, p) ? [sitesHs.SOURCE] : [])].map(credit) : []),
     ...(l.volcan?.value.sources ?? []),

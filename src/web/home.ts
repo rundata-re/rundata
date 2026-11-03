@@ -47,6 +47,8 @@ import {
   windText,
   withTemp,
 } from "./pages.js";
+import { compte } from "../producteurs.js";
+import { toutesLesSources } from "../server.js";
 
 /** The last copy of each category page, as the home page found it; null or missing when there is none yet. */
 export interface HomeLive {
@@ -190,6 +192,14 @@ function chatDemo(h: HomeLive | null, now: Date): string {
 export function sky(now: Date): "nuit" | "aube" | "jour" | "soir" {
   const h = (now.getUTCHours() + 4) % 24;
   return h < 5 || h >= 19 ? "nuit" : h < 7 ? "aube" : h < 17 ? "jour" : "soir";
+}
+
+/**
+ * Under the follow line, as small: what rundata.re reads and what it holds to. The count is that of /chiffres (« sources
+ * publiques lues », chiffres() takes it from compte()), from the code alone, so the view reads nothing more for it.
+ */
+export function behind(): string {
+  return `<p class="hero-follow"><a href="/chiffres">${compte(toutesLesSources()).sources} sources publiques</a> · <a href="/valeurs">nos valeurs</a></p>`;
 }
 
 /**
@@ -403,6 +413,7 @@ export function homePage(origin: string, h: HomeLive | null, now = new Date(), a
     <p class="lead">Sorties, randos, météo, routes : la donnée publique du moment, datée et sourcée, pour vous et pour <b>votre assistant IA</b>.</p>
     <p class="hero-cta"><a class="btn sun" href="#en-ce-moment">Voir l'île</a><a class="btn glass" href="#assistant">${icon("spark")}Brancher mon IA</a></p>
     ${follow(undefined, "social hero-follow")}
+    ${behind()}
     ${facts(live, u)}
   </div>
   ${heroMap(h)}

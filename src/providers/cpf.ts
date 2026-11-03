@@ -56,7 +56,7 @@ export interface Formation {
   referentiel: "RS" | "RNCP";
   /** « CAP, BEP... (NIVEAU 3) »; none for a RS. */
   niveau?: string;
-  /** The first NSF field, as published: « Transports, manutention, magasinage ». */
+  /** The first NSF field, as published, its spelling corrected (THEMES_NSF): « Transports, manutention, magasinage ». */
   theme?: string;
   /** The main Formacode: « Chariot automoteur ». */
   formacode?: string;
@@ -101,6 +101,31 @@ interface Row {
 
 const clean = (s: string | null | undefined) => s?.replace(/\s+/g, " ").trim() || undefined;
 
+/**
+ * The first NSF themes the catalogue publishes misspelled (all of them, over the whole catalogue, on 03/11/2026), spelled
+ * as the Insee's « Nomenclature des groupes de Spécialités de Formation (NSF : niveau 100) » spells the same group
+ * (https://www.insee.fr/fr/statistiques/fichier/5351753/BFE_NSF_niveau_100.pdf, decree 94-522 of 21 June 1994): the
+ * catalogue's wording is kept, only its misspelled words are corrected. A theme not here is shown as published.
+ */
+export const THEMES_NSF: Record<string, string> = {
+  "Spécialites plurivalentes de l'agronomie et de l'agriculture": "Spécialités plurivalentes de l'agronomie et de l'agriculture", // 210
+  "Forets, espaces naturels, faune sauvage, pêche": "Forêts, espaces naturels, faune sauvage, pêche", // 213
+  "Spécialites pluritechnologiques matériaux souples": "Spécialités pluritechnologiques matériaux souples", // 240
+  "Spécialites pluritechnologiques mécanique-electricite": "Spécialités pluritechnologiques mécanique-électricité", // 250
+  "Electricite, électronique": "Electricité, électronique", // 255
+  "Spécialites plurivalentes des services": "Spécialités plurivalentes des services", // 300
+  "Comptabilite, gestion": "Comptabilité, gestion", // 314
+  "Spécialites plurivalentes de la communication et de l'information": "Spécialités plurivalentes de la communication et de l'information", // 320
+  "Spécialites plurivalentes des services aux personnes": "Spécialités plurivalentes des services aux personnes", // 330
+  "Accueil, hotellerie, tourisme": "Accueil, hôtellerie, tourisme", // 334
+  "Animation sportive, culturelle et de Loisirs": "Animation sportive, culturelle et de loisirs", // 335
+  "Coiffure, esthétique et autres spécialites de services aux personnes": "Coiffure, esthétique et autres spécialités de services aux personnes", // 336
+  "Spécialites plurivalentes des services a la collectivité": "Spécialités plurivalentes des services à la collectivité", // 340
+  "Sécurite des biens et des personnes, police, surveillance": "Sécurité des biens et des personnes, police, surveillance", // 344
+  "Développement des capacités individuelles d organisation": "Développement des capacités individuelles d'organisation", // 414
+  "Developpement des capacités d orientation,d insertion ou de réinsertion sociales et professionnelles": "Développement des capacités d'orientation, d'insertion ou de réinsertion sociales et professionnelles", // 415
+};
+
 /** One line of the catalogue, or none without a title, a fee or an open session. */
 export function formation(r: Row): Formation | undefined {
   const intitule = clean(r.intitule_formation);
@@ -108,7 +133,8 @@ export function formation(r: Row): Formation | undefined {
   const referentiel = r.type_referentiel === "RS" || r.type_referentiel === "RNCP" ? r.type_referentiel : undefined;
   if (!intitule || !certification || !referentiel || typeof r.frais_ttc_tot_min !== "number" || typeof r.frais_ttc_tot_max !== "number" || !r.nb_session_active) return undefined;
   const niveau = clean(r.libelle_niveau_sortie_formation);
-  const theme = clean(r.libelle_nsf_1);
+  const published = clean(r.libelle_nsf_1);
+  const theme = published && (THEMES_NSF[published] ?? published);
   const formacode = clean(r.libelle_code_formacode_principal);
   const organisme = r.siret && NOMMABLES.has(r.siret.slice(0, 9)) ? clean(r.nom_of) : undefined;
   const hMax = r.nombre_heures_total_max ?? 0;

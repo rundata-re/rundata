@@ -5,6 +5,7 @@ import * as feux from "../providers/feux.js";
 import * as onf from "../providers/sentiers.js";
 import * as traces from "../providers/traces.js";
 import * as aires from "../traces/aires.js";
+import * as canyons from "../vie/canyons.js";
 import * as marmailles from "../vie/marmailles.js";
 import { why } from "../types.js";
 import * as fire from "./feux.js";
@@ -321,9 +322,41 @@ export function airesBlock(list: (aires.Aire & { distance_km?: number })[], ou: 
   };
 }
 
-// A walk for a family around a place that is not a commune nor a cirque: this close to it, the nearest first.
+// A walk for a family, or a canyon, around a place that is not a commune nor a cirque: this close to it, the nearest first.
 const FAMILLE_KM = 10;
 const FAMILLE_NEAREST = 3;
+
+/**
+ * The zone asked of a list of bundled lines (walks, canyons): a cirque, a commune, around a place, or the island, as the
+ * summary says it (« Dans le cirque de Cilaos », « À moins de 10 km de Maïdo »); `null` when the place is not found.
+ */
+function zone<T>(lieu: string | undefined, all: T[], milieu: (x: T) => [number, number], communeOf: (x: T) => string) {
+  const q = normalize(lieu ?? "");
+  const cirque = Object.entries(CIRQUES).find(([k]) => q.split(" ").includes(k))?.[1];
+  const res = !lieu?.trim() || cirque ? null : resolvePlace(lieu);
+  if (lieu?.trim() && !cirque && !res) return null;
+  let from: { lon: number; lat: number } | undefined;
+  let dans = "À La Réunion";
+  let list = all;
+  if (cirque) {
+    dans = `Dans ${cirque.nom}`;
+    list = list.filter((x) => secteur(...milieu(x)).secteur === cirque.secteur);
+  } else if (res?.lieu.type === "commune") {
+    dans = cap(a(res.lieu.commune));
+    list = list.filter((x) => communeOf(x) === res.lieu.commune);
+  } else if (res) {
+    from = { lon: res.lieu.lon, lat: res.lieu.lat };
+    const d = (x: T) => distanceKm(from!.lon, from!.lat, ...milieu(x));
+    const sorted = [...list].sort((x, y) => d(x) - d(y));
+    const near = sorted.filter((x) => d(x) <= FAMILLE_KM);
+    dans = near.length ? `À moins de ${FAMILLE_KM} km ${de(res.lieu.nom)}` : `Les plus proches ${de(res.lieu.nom)}`;
+    list = near.length ? near : sorted.slice(0, FAMILLE_NEAREST);
+  }
+  return { res, from, dans, list, island: !lieu?.trim() };
+}
+
+const onfPages = (noms: string[]) =>
+  noms.length ? noms.map((nom) => ({ sentier: nom, page: traces.SENTIERS[nom] ? `${SITE_URL}/sentiers/${traces.SENTIERS[nom].slug}` : undefined })) : undefined;
 
 /** A walk for a family in an answer, its state from the ONF's map on the trails it follows only. */
 export function marmailleRow(m: marmailles.Marmaille, carte: onf.Carte, from?: { lon: number; lat: number }) {
@@ -338,7 +371,7 @@ export function marmailleRow(m: marmailles.Marmaille, carte: onf.Carte, from?: {
     etat_detail: e.texte,
     sentiers_fermes: e.fermes,
     distance_km: from ? Math.round(distanceKm(from.lon, from.lat, ...marmailles.milieu(m)) * 10) / 10 : undefined,
-    sentiers_onf: m.sentiers_onf.length ? m.sentiers_onf.map((nom) => ({ sentier: nom, page: traces.SENTIERS[nom] ? `${SITE_URL}/sentiers/${traces.SENTIERS[nom].slug}` : undefined })) : undefined,
+    sentiers_onf: onfPages(m.sentiers_onf),
   };
 }
 
@@ -348,28 +381,11 @@ export function marmailleRow(m: marmailles.Marmaille, carte: onf.Carte, from?: {
  * never more, and the source's age.
  */
 function familleAnswer(carte: onf.Carte, lieu: string | undefined, filtre: Filtre | undefined, common: Record<string, unknown>) {
-  const q = normalize(lieu ?? "");
-  const cirque = Object.entries(CIRQUES).find(([k]) => q.split(" ").includes(k))?.[1];
-  const res = !lieu?.trim() || cirque ? null : resolvePlace(lieu);
-  if (lieu?.trim() && !cirque && !res) return notFound(lieu);
   const fit = (m: marmailles.Marmaille) => fits({ ...filtre, denivele_max_m: undefined }, m.km);
-  let from: { lon: number; lat: number } | undefined;
-  let dans = "À La Réunion";
-  let list = marmailles.SENTIERS.filter(fit).sort((x, y) => marmailles.communeOf(x).localeCompare(marmailles.communeOf(y), "fr") || x.nom.localeCompare(y.nom, "fr"));
-  if (cirque) {
-    dans = `Dans ${cirque.nom}`;
-    list = list.filter((m) => secteur(...marmailles.milieu(m)).secteur === cirque.secteur);
-  } else if (res?.lieu.type === "commune") {
-    dans = cap(a(res.lieu.commune));
-    list = list.filter((m) => marmailles.communeOf(m) === res.lieu.commune);
-  } else if (res) {
-    from = { lon: res.lieu.lon, lat: res.lieu.lat };
-    const d = (m: marmailles.Marmaille) => distanceKm(from!.lon, from!.lat, ...marmailles.milieu(m));
-    const sorted = list.sort((x, y) => d(x) - d(y));
-    const near = sorted.filter((m) => d(m) <= FAMILLE_KM);
-    dans = near.length ? `À moins de ${FAMILLE_KM} km ${de(res.lieu.nom)}` : `Les plus proches ${de(res.lieu.nom)}`;
-    list = near.length ? near : sorted.slice(0, FAMILLE_NEAREST);
-  }
+  const sorted = marmailles.SENTIERS.filter(fit).sort((x, y) => marmailles.communeOf(x).localeCompare(marmailles.communeOf(y), "fr") || x.nom.localeCompare(y.nom, "fr"));
+  const z = zone(lieu, sorted, marmailles.milieu, marmailles.communeOf);
+  if (!z) return notFound(lieu!);
+  const { res, from, dans, list } = z;
   const rows = list.map((m) => marmailleRow(m, carte, from));
   const shut = rows.filter((r) => r.etat === "fermé");
   const n = rows.length;
@@ -393,7 +409,71 @@ function familleAnswer(carte: onf.Carte, lieu: string | undefined, filtre: Filtr
   });
 }
 
-export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, now = new Date(), filtre?: Filtre, famille = false) {
+/** A canyon in an answer: what the inventory says of it, as said, and the ONF trails it runs along with their state. */
+export function canyonRow(c: canyons.Canyon, carte: onf.Carte, from?: { lon: number; lat: number }) {
+  const shut = canyons.fermes(c, carte.sentiers);
+  return {
+    canyon: c.nom,
+    commune: canyons.communeOf(c),
+    longueur_km: c.km,
+    coeur_du_parc_national: c.coeur,
+    signalement: canyons.signalement(c),
+    sentiers_fermes: shut.length ? shut : undefined,
+    distance_km: from ? Math.round(distanceKm(from.lon, from.lat, ...canyons.milieu(c)) * 10) / 10 : undefined,
+    sentiers_onf_longes: onfPages(c.sentiers_onf),
+  };
+}
+
+/**
+ * The answer for canyoning (`canyon`): the canyons of the Parc national's inventory in the zone asked, never said open
+ * nor allowed. First what closes or bans: an ONF trail along one closed, then the bans the inventory gives, as given by
+ * it, then the safety. Over the island, the count by commune only: the list is asked with a place.
+ */
+function canyonAnswer(carte: onf.Carte, lieu: string | undefined, filtre: Filtre | undefined, common: Record<string, unknown>) {
+  const fit = (c: canyons.Canyon) => fits({ ...filtre, denivele_max_m: undefined }, c.km);
+  const sorted = canyons.CANYONS.filter(fit).sort((x, y) => canyons.communeOf(x).localeCompare(canyons.communeOf(y), "fr") || x.nom.localeCompare(y.nom, "fr"));
+  const z = zone(lieu, sorted, canyons.milieu, canyons.communeOf);
+  if (!z) return notFound(lieu!);
+  const { res, from, dans, list, island } = z;
+  const rows = list.map((c) => canyonRow(c, carte, from));
+  const shut = rows.filter((r) => r.sentiers_fermes);
+  const banned = list.filter((c) => c.interdit);
+  const asked = list.filter((c) => c.autorisation && !c.interdit);
+  const n = rows.length;
+  const parts = [
+    ...(shut.length ? [`ATTENTION : ${shut.map((r) => `${r.canyon} longe ${r.sentiers_fermes!.length > 1 ? `${r.sentiers_fermes!.length} sentiers fermés` : "un sentier fermé"} par l'ONF : ${r.sentiers_fermes!.map((x) => `${x.sentier}${x.cause ? ` (${x.cause})` : ""}`).join(", ")}.`).join(" ")} Un sentier fermé est interdit : ne pas s'y engager.`] : []),
+    // Over the island, their number only: each is said with its zone.
+    ...(banned.length && island ? [`${banned.length} canyons signalés interdits dans l'inventaire du Parc national (sans date) : chacun se dit avec un lieu.`] : []),
+    ...(banned.length && !island ? [`Signalé${banned.length > 1 ? "s" : ""} interdit${banned.length > 1 ? "s" : ""} dans l'inventaire du Parc national (sans date) : ${banned.map((c) => `${c.nom}, ${c.interdit}`).join("\u00a0; ")}.`] : []),
+    ...(asked.length ? [`Soumis à autorisation d'après l'inventaire : ${asked.map((c) => c.nom).join(", ")}.`] : []),
+    canyons.AUTORISE,
+    `${canyons.SECURITE} Avant de partir : la vigilance (vigilance_meteo) et les rivières (crues_rivieres).`,
+    n
+      ? `${dans} : ${n} canyon${n > 1 ? "s" : ""} recensé${n > 1 ? "s" : ""} par le Parc national, inventaire sans date${banned.length ? `, dont ${banned.length} signalé${banned.length > 1 ? "s" : ""} interdit${banned.length > 1 ? "s" : ""}` : ""}${shut.length ? `${banned.length ? " et" : ", dont"} ${shut.length} qui longe${shut.length > 1 ? "nt" : ""} un sentier fermé par l'ONF` : ""}.`
+      : `${dans} : aucun canyon${filtering(filtre) ? " de cette longueur" : ""} dans l'inventaire du Parc national.`,
+    ...(island && n ? ["La liste se demande avec un lieu : un cirque, une commune (voir par_commune)."] : []),
+  ];
+  const byCommune = [...new Set(list.map(canyons.communeOf))].map((commune) => {
+    const here = list.filter((c) => canyons.communeOf(c) === commune);
+    return { commune, canyons: here.length, signales_interdits: here.filter((c) => c.interdit).length };
+  });
+  return text({
+    lieu: res ? placeBlock(lieu!, res) : undefined,
+    resume: parts.join(" "),
+    canyons: {
+      zone: dans,
+      nombre: n,
+      securite: canyons.SECURITE,
+      autorisation: canyons.AUTORISE,
+      inventaire_lu_le: day(canyons.LU_LE),
+      ...(island ? { par_commune: byCommune } : { canyons: rows }),
+    },
+    ...common,
+    sources: credits([canyons.SOURCE, onf.SOURCE]),
+  });
+}
+
+export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, now = new Date(), filtre?: Filtre, famille = false, canyon = false) {
   let carte: onf.Carte;
   // The fires seen by satellite, beside the trails: nothing without FIRMS's key (providers/feux.ts).
   const seen = feux.feuxNow(cache, now);
@@ -415,6 +495,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   };
   // Said after the trails on the island: a list of the closures is what was asked.
   const fireSentence = fires?.detections.length ? ` ${fire.vigilanceLine(fires, now)!.replace(" Détails avec sentiers_randonnee.", "")}` : "";
+  if (canyon) return canyonAnswer(carte, lieu, filtre, common);
   if (famille) return familleAnswer(carte, lieu, filtre, common);
 
   if (!lieu?.trim() && filtering(filtre)) {

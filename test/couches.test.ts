@@ -7,6 +7,7 @@ import * as dae from "../src/providers/dae.js";
 import * as irve from "../src/providers/irve.js";
 import { REGISTRY } from "../src/registre.js";
 import * as enfants from "../src/vie/enfants.js";
+import * as canyons from "../src/vie/canyons.js";
 import * as marmailles from "../src/vie/marmailles.js";
 import * as monuments from "../src/vie/monuments.js";
 import * as seismes from "../src/providers/seismes.js";
@@ -40,10 +41,10 @@ const DIRECTES = COUCHES.filter((c) => c.lire);
 
 describe("the layers of /carte", () => {
   it("are the weather, nature, the fixed lists, the places for children one layer for each of their sources", () => {
-    expect(COUCHES.map((c) => c.id)).toEqual(["stations", "pluie", "rivieres", "seismes", "sentiers", "defibrillateurs", "bornes", "enfants-osm", "enfants-data-es", "enfants-basilic", "marmailles", "monuments"]);
+    expect(COUCHES.map((c) => c.id)).toEqual(["stations", "pluie", "rivieres", "seismes", "sentiers", "defibrillateurs", "bornes", "enfants-osm", "enfants-data-es", "enfants-basilic", "marmailles", "canyons", "monuments"]);
     expect(new Set(COUCHES.map((c) => c.id)).size).toBe(COUCHES.length);
-    // The walks for families are lines, as the closed trails.
-    for (const c of FIXES) expect([c.nature, c.forme], c.id).toEqual(["fixe", c.id === "marmailles" ? "traces" : "points"]);
+    // The walks for families and the canyons are lines, as the closed trails.
+    for (const c of FIXES) expect([c.nature, c.forme], c.id).toEqual(["fixe", c.id === "marmailles" || c.id === "canyons" ? "traces" : "points"]);
     // Each a file of its own, read from a page's copy or built from the bundle; the radar's rain is /meteo's file.
     for (const c of COUCHES) expect([!!c.donnees, !!c.lire, !!c.fichier].filter(Boolean).length, c.id).toBe(1);
     expect(COUCHES.find((c) => c.id === "pluie")!.fichier).toBe("/meteo/pluie-radar.json");
@@ -64,7 +65,7 @@ describe("the layers of /carte", () => {
   });
 
   it("give every object its nature, its precision and the time of its source", async () => {
-    const heures: Record<string, string> = { defibrillateurs: dae.BUILT, bornes: irve.BUILT, "enfants-osm": enfants.BUILT, "enfants-data-es": enfants.BUILT, "enfants-basilic": enfants.BUILT, marmailles: marmailles.LU_LE, monuments: monuments.FICHIER_DU };
+    const heures: Record<string, string> = { defibrillateurs: dae.BUILT, bornes: irve.BUILT, "enfants-osm": enfants.BUILT, "enfants-data-es": enfants.BUILT, "enfants-basilic": enfants.BUILT, marmailles: marmailles.LU_LE, canyons: canyons.LU_LE, monuments: monuments.FICHIER_DU };
     for (const c of FIXES) {
       const j = c.donnees!();
       expect(j.heure, c.id).toBe(heures[c.id]);

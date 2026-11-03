@@ -25,6 +25,7 @@ import * as traces from "../providers/traces.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import type { SourceInfo } from "../types.js";
 import * as enfants from "../vie/enfants.js";
+import * as canyons from "../vie/canyons.js";
 import * as marmailles from "../vie/marmailles.js";
 import * as monuments from "../vie/monuments.js";
 import type { BornesAnswer, CruesAnswer, HomeData } from "./data.js";
@@ -327,6 +328,32 @@ export function marmaillesCouche(list: marmailles.Marmaille[], lu: string): Couc
   return { id: "marmailles", nom: "Sentiers marmailles (Conseil Général de La Réunion / AGORAH)", nature: "fixe", precision: "adresse", source: marmailles.SOURCE, heure: lu, objets };
 }
 
+/**
+ * The canyons of the Parc national's inventory, each drawn as its longest piece, its dot in its middle. Those it marks
+ * forbidden carry `alerte`, drawn in red, with what it says of them as said; the others are never said allowed. Each
+ * leads to the page of the first ONF trail it runs along, else to the layer's page: the ONF's state is not in the file.
+ */
+export function canyonsCouche(list: canyons.Canyon[], lu: string): CoucheJson {
+  const objets = list.map((c): Objet => {
+    const [lon, lat] = canyons.milieu(c);
+    const along = c.sentiers_onf.find((nom) => traces.SENTIERS[nom]);
+    const said = canyons.signalement(c);
+    return {
+      nom: c.nom,
+      commune: canyons.communeOf(c),
+      lon: r5(lon),
+      lat: r5(lat),
+      nature: "fixe",
+      precision: "adresse",
+      heure: lu,
+      ...(along && { lien: `/sentiers/${traces.SENTIERS[along].slug}` }),
+      trace: tracer(canyons.points(c)),
+      infos: { type: canyons.longueur(c), ...(said && { signalement: said }), ...(c.interdit && { alerte: true }), ...(c.sentiers_onf.length && { sentiers_onf: c.sentiers_onf }) },
+    };
+  });
+  return { id: "canyons", nom: "Canyons (Parc national de La Réunion)", nature: "fixe", precision: "adresse", source: canyons.SOURCE, heure: lu, objets };
+}
+
 /** The trails the ONF closes, as its map draws them, with why and until when. */
 export function sentiersObjets(c: onf.Carte, heure: string): Objet[] {
   return c.sentiers.filter((t) => t.statut === "fermé" && t.points.length).map((t): Objet => {
@@ -401,6 +428,8 @@ export const COUCHES: Couche[] = [
   // No page of their own: each leads to its commune's monuments on /aujourdhui, the layer's panel to the communes.
   // Drawn as lines: each leads to its commune's walks on /enfants.
   { ...fixe({ id: "marmailles", nom: "Sentiers marmailles", long: "Sentiers marmailles (Conseil Général de La Réunion / AGORAH)", theme: "sortir", precision: "adresse", source: marmailles.SOURCE, page: "/enfants", donnees: () => marmaillesCouche(marmailles.SENTIERS, marmailles.LU_LE) }), forme: "traces" },
+  // Drawn as lines, those the inventory marks forbidden in red: no page of their own, the layer's is the hikes'.
+  { ...fixe({ id: "canyons", nom: "Canyons", long: "Canyons (Parc national de La Réunion)", theme: "sortir", precision: "adresse", source: canyons.SOURCE, page: "/sentiers", donnees: () => canyonsCouche(canyons.CANYONS, canyons.LU_LE) }), forme: "traces" },
   fixe({ id: "monuments", nom: "Monuments historiques", long: "Monuments historiques (base Mérimée)", theme: "sortir", precision: "lieu", source: monuments.SOURCE, page: "/communes", donnees: () => monumentsCouche(monuments.MONUMENTS, monuments.FICHIER_DU) }),
 ];
 

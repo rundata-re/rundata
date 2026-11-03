@@ -116,7 +116,8 @@ describe("the server's instructions", () => {
     // 41 762 on 2/11/2026 with that address « sur laquelle on s'interroge », the words said twice in the tool cut to make room.
     // 41 772 on 3/11/2026 with the points-justice and the help to victims in annuaire_services_publics (four words).
     // 41 959 the same day with the sentiers marmailles in sentiers_randonnee (one sentence, and its argument famille).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_959);
+    // 42 101 the same day with the canyons of the Parc national in sentiers_randonnee (one sentence, and its argument canyon).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(42_101);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

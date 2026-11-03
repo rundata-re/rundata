@@ -66,10 +66,41 @@ describe("the accidents' part of /trafic", () => {
     expect(html).toContain("n'est plus labellisé par la statistique publique depuis 2019");
     expect(html).toContain('<tr><th scope="row">Routes nationales</th><td>332</td><td>26</td></tr>');
     expect(html).toContain('<tr><th scope="row">Saint-Denis</th><td>284</td><td>3</td><td>361</td></tr>');
-    expect(html.match(/<tr><th scope="row">/g)).toHaveLength(4 + 24);
+    // The roads and the communes of the year, then the five years: the island and its total, the communes.
+    expect(html.match(/<tr><th scope="row">/g)).toHaveLength(4 + 24 + 5 + 1 + 24);
     expect(html).toContain("seuls les tués se comparent d'une commune à l'autre");
     expect(html).toContain("année 2025, publiée le 30/10/2026.");
     // Never a rank nor a colour.
     expect(html).not.toMatch(/dangereu|class="q-|vg\d/);
+  });
+});
+
+describe("the last five years (routes/accidents.ts, /trafic)", () => {
+  const html = accidentsSection();
+
+  it("are each year's file as read, the island's and the killed of each commune", () => {
+    expect(accidents.ANNEES).toEqual([2021, 2022, 2023, 2024, 2025]);
+    expect(accidents.MIS_EN_LIGNE).toEqual(["2022-10-24", "2026-10-30"]);
+    expect(accidents.serieIle().map(([, a]) => a.tues)).toEqual([42, 45, 30, 40, 42]);
+    expect(accidents.serieIle()[0]).toEqual([2021, { accidents: 814, tues: 42, hospitalises: 270, legers: 696, gravite_inconnue: 1 }]);
+    const t = Object.fromEntries(accidents.tuesParCommune());
+    expect(t["Saint-Paul"]).toEqual([12, 6, 4, 7, 4]);
+    expect(t["Salazie"]).toEqual([0, 0, 0, 0, 0]);
+    // Every year's killed, commune by commune, sum to the island's.
+    for (const [i, [, a]] of accidents.serieIle().entries()) expect(accidents.tuesParCommune().reduce((n, [, c]) => n + c[i], 0)).toBe(a.tues);
+    expect(accidents.tuesParCommune().map(([nom]) => nom)).toEqual(accidents.communes().map(([nom]) => nom));
+  });
+
+  it("says when the files were read, tables the years with their total, and the communes in alphabetical order", () => {
+    expect(html).toContain('<h3 id="h-accidents-serie">De 2021 à 2025</h3>');
+    expect(html).toContain(`dans sa version lue le ${accidents.jour(accidents.LU_LE)}. L'ONISR corrige ces fichiers après leur publication : une année peut encore changer de quelques unités.`);
+    expect(html).toContain('<tr><th scope="row">2022</th><td>748</td><td>45</td><td>233</td><td>681</td></tr>');
+    expect(html).toContain('<tfoot><tr><th scope="row">5 ans</th><td>4\u202f302</td><td>199</td><td>1\u202f387</td><td>3\u202f881</td></tr></tfoot>');
+    expect(html).toContain('<tr><th scope="row">Saint-Paul</th><td>12</td><td>6</td><td>4</td><td>7</td><td>4</td><td>33</td></tr>');
+    expect(html).toContain('<tr><th scope="row">Salazie</th><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>');
+    expect(html.match(/<div class="card table-wrap defile"><table class="drought histo passe colle">/g)).toHaveLength(2);
+    expect(html).toContain("Tués à 30 jours, relevés par les forces de l'ordre.");
+    expect(html).toContain("fichiers des accidents corporels de 2021 à 2025 (BAAC), Licence Ouverte : mis en ligne du 24/10/2022 au 30/10/2026.");
+    expect(html).not.toMatch(/tendance|[↑↓↗↘]/);
   });
 });

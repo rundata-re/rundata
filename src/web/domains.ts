@@ -1911,8 +1911,35 @@ export function accidentsSection(): string {
   <div class="card table-wrap"><table class="drought histo passe">${head("Route", false)}<tbody>${ROUTE_KINDS.map(([k, name]) => row(name, accidents.ROUTES[k], false)).join("")}</tbody></table></div>
   <div class="card table-wrap"><table class="drought histo passe">${head("Commune")}<tbody>${accidents.communes().map(([nom, b]) => row(nom, b)).join("")}</tbody></table>
   <p class="note">Relevés par les forces de l'ordre ; seuls les tués se comparent d'une commune à l'autre.</p></div>
-  <p class="note">Ministère de l'Intérieur, ONISR, fichier national des accidents corporels (BAAC), Licence Ouverte : année ${y}, publiée le ${accidents.PUBLIE_LE.split("-").reverse().join("/")}.</p>
+  <p class="note">Ministère de l'Intérieur, ONISR, fichier national des accidents corporels (BAAC), Licence Ouverte : année ${y}, publiée le ${accidents.jour(accidents.PUBLIE_LE)}.</p>
+  ${accidentsSerie()}
 </section>`;
+}
+
+/**
+ * The last five years: the island's, then the killed of each commune, year by year and together. Never a trend, an
+ * arrow nor a colour. Both tables scroll by themselves at 390 px, their first column kept in view.
+ */
+function accidentsSerie(): string {
+  const years = accidents.ANNEES;
+  const from = years[0];
+  const to = years[years.length - 1];
+  const ile = accidents.serieIle();
+  const sum = (k: keyof accidents.Annee) => ile.reduce((n, [, a]) => n + a[k], 0);
+  const cells = (a: accidents.Annee) => `<td>${nombre(a.accidents)}</td><td>${nombre(a.tues)}</td><td>${nombre(a.hospitalises)}</td><td>${nombre(a.legers)}</td>`;
+  const islandRows = ile.map(([year, a]) => `<tr><th scope="row">${year}</th>${cells(a)}</tr>`).join("");
+  const total = { accidents: sum("accidents"), tues: sum("tues"), hospitalises: sum("hospitalises"), legers: sum("legers") };
+  const communeRows = accidents.tuesParCommune()
+    .map(([nom, t]) => `<tr><th scope="row">${esc(nom)}</th>${t.map((n) => `<td>${n}</td>`).join("")}<td>${t.reduce((x, n) => x + n, 0)}</td></tr>`).join("");
+  const [du, au] = accidents.MIS_EN_LIGNE;
+  return `<div class="sec-h"><h3 id="h-accidents-serie">De ${from} à ${to}</h3></div>
+  <div class="card"><p>Les mêmes comptes sur cinq ans, d'après le fichier de chaque année, dans sa version lue le ${accidents.jour(accidents.LU_LE)}. L'ONISR corrige ces fichiers après leur publication : une année peut encore changer de quelques unités.</p></div>
+  <div class="card table-wrap defile"><table class="drought histo passe colle"><thead><tr><th scope="col">Année</th><th scope="col">Accidents</th><th scope="col">Tués</th><th scope="col">Blessés<br>hospitalisés</th><th scope="col">Blessés<br>légers</th></tr></thead>
+  <tbody>${islandRows}</tbody><tfoot><tr><th scope="row">5 ans</th>${cells(total)}</tr></tfoot></table></div>
+  <div class="card table-wrap defile"><table class="drought histo passe colle"><thead><tr><th scope="col">Commune</th>${years.map((year) => `<th scope="col">${year}</th>`).join("")}<th scope="col">5 ans</th></tr></thead>
+  <tbody>${communeRows}</tbody></table>
+  <p class="note">Tués à 30 jours, relevés par les forces de l'ordre.</p></div>
+  <p class="note">Ministère de l'Intérieur, ONISR, fichiers des accidents corporels de ${from} à ${to} (BAAC), Licence Ouverte : mis en ligne du ${accidents.jour(du)} au ${accidents.jour(au)}.</p>`;
 }
 
 export function traficLive(data: Cached<TraficAnswer> | null): Live | undefined {

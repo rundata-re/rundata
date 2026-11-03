@@ -51,6 +51,29 @@ export const bilan = (b: Bilan) => {
   return s.includes(`en ${ANNEE}`) ? s : `${s} en ${ANNEE}`;
 };
 
+/** A year of the island in the five years' series. */
+export interface Annee {
+  accidents: number;
+  tues: number;
+  hospitalises: number;
+  legers: number;
+}
+
+/** The last five years, each from its file as read on `LU_LE`: the ONISR corrects them after putting them online. */
+export const ANNEES: number[] = data.serie.annees;
+/** The day the files were read, « 2026-11-03 ». */
+export const LU_LE: string = data.construit;
+/** When the series' files were first put online: the oldest and the newest, « 2022-10-24 », « 2026-10-30 ». */
+export const MIS_EN_LIGNE = data.serie.mis_en_ligne as [string, string];
+/** The island's years, oldest first. */
+export const serieIle = (): [number, Annee][] => ANNEES.map((y) => [y, (data.serie.ile as Record<string, Annee>)[String(y)]]);
+/** The killed of each commune, a count per year of `ANNEES`, in alphabetical order. */
+export const tuesParCommune = (): [string, number[]][] =>
+  Object.keys(INSEE).sort((a, b) => a.localeCompare(b, "fr")).map((nom) => [nom, (data.serie.tues as Record<string, number[]>)[INSEE[nom]]]);
+
+/** « 03/11/2026 ». */
+export const jour = (iso: string) => iso.split("-").reverse().join("/");
+
 export const SOURCE: SourceInfo = {
   id: "onisr_accidents",
   nom: "Bases de données annuelles des accidents corporels de la circulation routière",

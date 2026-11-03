@@ -117,7 +117,8 @@ describe("the server's instructions", () => {
     // 41 772 on 3/11/2026 with the points-justice and the help to victims in annuaire_services_publics (four words).
     // 41 959 the same day with the sentiers marmailles in sentiers_randonnee (one sentence, and its argument famille).
     // 42 101 the same day with the canyons of the Parc national in sentiers_randonnee (one sentence, and its argument canyon).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(42_101);
+    // 42 322 the same day with the formations eligible to the CPF in emploi (one sentence, a few words of example).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(42_322);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

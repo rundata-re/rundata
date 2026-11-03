@@ -23,6 +23,7 @@ import { KINDS as CANDHIS_KINDS, REFRESH_EVERY as CANDHIS_EVERY, REFRESH_OFFSET 
 import { IMAGE_OFFSET as CMRS_IMAGE_OFFSET, LISTE_OFFSET as CMRS_LISTE_OFFSET, REFRESH_EVERY as CMRS_EVERY } from "./providers/cmrs-carte.js";
 import { REFRESH_EVERY as AIR_EVERY, REFRESH_OFFSET as AIR_OFFSET } from "./providers/air-mesures.js";
 import { FIRST_HOUR as HS_FIRST, REFRESH_OFFSET as HS_OFFSET } from "./providers/sites-hs.js";
+import { FIRST_HOUR as CPF_FIRST, REFRESH_OFFSET as CPF_OFFSET } from "./providers/cpf.js";
 import { REFRESH_EVERY as CAPTEURS_EVERY, REFRESH_OFFSET as CAPTEURS_OFFSET } from "./providers/capteurs.js";
 import { REFRESH_EVERY as MARCHES_EVERY, REFRESH_OFFSET as MARCHES_OFFSET, TEXTES_OFFSET as MARCHES_TEXTES_OFFSET } from "./providers/marches-publics.js";
 import { EVENEMENT_MINUTES as EMPLOI_FICHE_EVERY, REFRESH_EVERY as EMPLOI_EVERY, REFRESH_OFFSET as EMPLOI_OFFSET } from "./providers/emploi.js";
@@ -328,6 +329,22 @@ const SCHEDULED: Entry[] = [
     from: ["src/providers/sites-hs.ts"],
     basis: "estimé",
   },
+  // The copy read from KV, the count of La Réunion's lines in the Caisse des Dépôts' catalogue, those lines (about
+  // 780 Ko of JSON, the chosen fields only), the copy written (about 430 Ko): 4. Once a day: from 12:15 UTC, every hour
+  // at 15 past until 18:15 while the catalogue does not answer (the copy's read and the failed request each time), then
+  // the copy's read only. CPU measured in Node on the export of 03/11/2026, parse, keep and sort: 12 ms (median of 30),
+  // 46 the first time; rounded up for a Worker. Memory: 6 Mo of heap more in Node at its peak, the export's text (0.8 Mo)
+  // and the copy held besides; rounded up.
+  {
+    id: "cpf:formations",
+    trigger: "planifiée",
+    what: "formations CPF : les lignes de La Réunion du catalogue de Mon Compte Formation (Caisse des Dépôts, environ 780 Ko), écrites dans KV une fois par jour",
+    every: 24 * 60,
+    offset: CPF_FIRST * 60 + CPF_OFFSET,
+    run: { subrequests: 4, kvReads: 1, kvWrites: 1, cpuMs: 60, memoryMb: 10 },
+    from: ["src/providers/cpf.ts"],
+    basis: "estimé",
+  },
   // The copy read from KV, one request to Sensor.Community for the whole island, the copy written when its sensors
   // changed or an hour after: 3. Its answer is a list of a few sensors at most (none on 29/10/2026).
   {
@@ -596,9 +613,10 @@ const DOMAIN_PAGES: Record<string, Page> = {
   "/evenements/concerts": { subrequests: 36, cpuMs: 230, from: ["src/tools/agenda.ts"], what: "comme /evenements, une partie de sa copie" },
   "/actualites": { subrequests: 20, cpuMs: 160, from: ["src/tools/actualites.ts"] },
   "/enfants": { subrequests: 37, cpuMs: 350, from: ["src/tools/agenda.ts"] },
-  // The page's copy, the store's copy of the offers (KV, written each hour by the scheduled event) and the header's
+  // The page's copy, the store's copy of the offers (KV, written each hour by the scheduled event), the store's copy of
+  // the formations eligible to the CPF (KV, written once a day, about 430 Ko: 1 ms to parse in Node) and the header's
   // reads, as /eau: no read of the site on a view.
-  "/emploi": { subrequests: 11, cpuMs: 80, from: ["src/tools/emploi.ts"], basis: "code" },
+  "/emploi": { subrequests: 12, cpuMs: 90, from: ["src/tools/emploi.ts"], basis: "code" },
   // The page's copy, the store's copy of the notices (KV, written each hour by the scheduled event) and the header's
   // reads, as /emploi: no read of the BOAMP on a view.
   "/marches-publics": { subrequests: 11, cpuMs: 60, from: ["src/providers/marches-publics.ts"], basis: "code" },
@@ -752,8 +770,10 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   bornes_recharge: { subrequests: 3, cpuMs: 50, file: "bornes" },
   // The index (3), the copy of the measures at the stations (3), the copy of the sensors (1), test/capteurs.test.ts.
   qualite_air: { subrequests: 7, cpuMs: 50, file: "air", kvReads: 2 },
-  // The copy of the offers, written each hour by the scheduled event (KV): no read of the site.
-  emploi: { subrequests: 3, cpuMs: 40, file: "emploi", kvReads: 1, basis: "code" },
+  // The copy of the offers, written each hour by the scheduled event (KV): no read of the site. With words, the copy of
+  // the formations eligible to the CPF besides (KV, written once a day): 1 ms to parse, 14 ms to normalize its 1 176
+  // formations once per copy in the isolate, in Node (03/11/2026).
+  emploi: { subrequests: 4, cpuMs: 60, file: "emploi", kvReads: 2, basis: "code" },
   defibrillateurs: { subrequests: 0, cpuMs: 70, file: "dae" },
   // The decrees' rules in the code and the sun's hours computed: nothing read.
   peche_loisir: { subrequests: 0, cpuMs: 10, file: "peche", basis: "code" },

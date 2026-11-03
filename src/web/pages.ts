@@ -210,6 +210,7 @@ const ICON: Record<string, string> = {
   air: `<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h8"/>`,
   building: `<path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/>`,
   scale: `<path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7 2 14a3 3 0 0 0 6 0Z"/><path d="m19 7-3 7a3 3 0 0 0 6 0Z"/>`,
+  landmark: `<path d="M3 21h18M4 10h16M12 3l8 7H4Z"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8M4 18h16"/>`,
   calendar: `<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>`,
   map: `<path d="M3 7l6-3 6 3 6-3v13l-6 3-6-3-6 3Z"/><path d="M9 4v13M15 7v13"/>`,
   car: `<path d="M3 13l2.2-5.5A2 2 0 0 1 7.1 6h9.8a2 2 0 0 1 1.9 1.5L21 13v4H3Z"/><path d="M3 13h18"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>`,
@@ -450,6 +451,12 @@ background:none;color:var(--muted);cursor:pointer}
 .tile .rows.cols li:first-child{border-top:1px solid var(--line)}
 .rows.velos li{grid-template-columns:minmax(0,1fr) auto;align-items:center}
 .rows.velos small{display:block;font-size:.88rem;margin-top:.1rem}
+.rows.lieux li{grid-template-columns:minmax(0,1fr)}
+.rows.lieux small{font-size:.88rem;margin-top:.1rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile details.plus>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:.35rem;font-weight:600;color:var(--link);list-style:none}
+.tile details.plus>summary::-webkit-details-marker{display:none}
+.tile details.plus>summary::after{content:"▾"}
+.tile details.plus[open]>summary::after{content:"▴"}
 @media (max-width:46rem){.tile.odd{grid-column:span 2}}
 .tile{position:relative;display:flex;flex-direction:column;gap:.3rem;padding:.95rem;border-radius:22px;min-width:0;overflow:hidden;
 background:linear-gradient(155deg,color-mix(in srgb,var(--k) 13%,var(--surface)) 0%,var(--surface) 58%);

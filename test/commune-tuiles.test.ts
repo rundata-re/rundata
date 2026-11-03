@@ -32,7 +32,8 @@ const ago = (ms: number) => new Date(NOW.getTime() - ms);
 
 /** The tiles of « en ce moment », in order: their name and their span at each of COLUMNS (absent: one column). */
 function grid(page: string) {
-  const ul = page.match(/<ul class="tiles fit" aria-label="Catégories">(.*?)<\/ul>\s*<p class="note">/s)![1];
+  // The grid's own end, a line before its note: a tile may hold a list and a note of its own (« À découvrir »).
+  const ul = page.match(/<ul class="tiles fit" aria-label="Catégories">(.*?)<\/ul>\n\s*<p class="note">/s)![1];
   return [...ul.matchAll(/<li class="tile[^"]*"(?: style="([^"]*)")?>.*?<h3>(?:<a[^>]*>)?([^<]*)/gs)].map((m) => ({
     nom: m[2],
     span: COLUMNS.map((c) => Number(new RegExp(`--s${c}:(\\d)`).exec(m[1] ?? "")?.[1] ?? 1)),

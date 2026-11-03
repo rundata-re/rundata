@@ -148,6 +148,7 @@ export const FICHES: Record<string, Fiche> = {
   data_es: { famille: "licence_ouverte", producteurs: ["Ministère des Sports"] },
   basilic: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },
   merimee_monuments: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },
+  sit_lieux_remarquables: { famille: "licence_ouverte", producteurs: ["Système d'information touristique de La Réunion"] },
   region_sentiers_marmailles: { famille: "licence_ouverte", producteurs: ["Conseil Général de La Réunion", "AGORAH"] },
   // Calendar, transport, trails.
   education_calendrier: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },

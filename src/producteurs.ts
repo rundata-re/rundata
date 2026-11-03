@@ -126,6 +126,8 @@ export const FICHES: Record<string, Fiche> = {
   annuaire_education: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   carte_scolaire_colleges: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   esr_parcoursup: { famille: "licence_ouverte", producteurs: ["Ministère de l'Enseignement supérieur"] },
+  depp_ips: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
+  depp_valeur_ajoutee: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   annuaire_sante_ameli: { famille: "licence_ouverte", producteurs: ["Caisse nationale de l'Assurance Maladie"] },
   // The operators declare, the Arcep counts the premises and publishes.
   arcep_connexion: { famille: "licence_ouverte", producteurs: ["Arcep"] },

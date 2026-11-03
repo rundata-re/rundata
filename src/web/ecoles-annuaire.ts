@@ -9,6 +9,7 @@
 import { INSEE } from "../places/insee.js";
 import { de, nombre } from "../tools/format.js";
 import * as ecoles from "../vie/ecoles.js";
+import * as ips from "../vie/ips.js";
 import * as parcoursup from "../vie/parcoursup.js";
 import { parCommune } from "../vie/parcoursup-formations.js";
 import { CARTE, motsVoie, SOURCE as SOURCE_CARTE, trouve } from "../vie/carte-scolaire.js";
@@ -182,6 +183,60 @@ function list(): string {
   }).join("")}</ul>`;
 }
 
+// ---------------------------------------------------------------- the collèges' and lycées' social profile and results
+
+const R = {
+  eyebrow: "Ministère de l'Éducation nationale, DEPP",
+  h2: "Collèges et lycées\u00a0: profil social et résultats",
+  lead: (c: number, l: number, rentree: number, session: number) => `${nombre(c)} collèges et ${nombre(l)} lycées, publics et privés sous contrat : leur indice de position sociale à la rentrée ${rentree}, et leurs résultats au brevet et au bac ${session}, avec le taux attendu calculé par le ministère.`,
+  ips: "« L'indice de position sociale (IPS) permet d'appréhender le statut social des élèves à partir des professions et catégories sociales (PCS) de leurs parents. » (ministère de l'Éducation nationale) Il décrit les familles des élèves, pas la qualité de l'établissement. Le ministère conseille de ne pas sur-interpréter des différences de 3 points ou moins.",
+  attendu: "Le taux attendu est celui qu'aurait l'établissement s'il faisait réussir ses élèves ni plus ni moins que la moyenne des établissements qui lui ressemblent, compte tenu de l'âge des élèves, de leur niveau scolaire à l'entrée en sixième, de leur origine sociale et de leur sexe, et des caractéristiques du collège. Pour un lycée, on prend le niveau scolaire à l'entrée en seconde et les caractéristiques du lycée.",
+  va: "L'écart entre le taux constaté et le taux attendu est la valeur ajoutée de l'établissement. « La valeur ajoutée est une approche relative et non pas absolue. » (ministère de l'Éducation nationale)",
+  marge: "Le ministère ne publie pas de marge pour ces écarts. D'une année à l'autre, ils changent souvent de plusieurs points, et dans un collège de 50 candidats, un élève reçu de plus ou de moins fait 2 points.",
+  classement: "Un palmarès ou un classement des établissements n'a guère de sens, écrit le ministère : ils sont ici dans l'ordre alphabétique.",
+  credit: (rentree: number, session: number) => `Indices de position sociale (rentrée ${rentree}) et indicateurs de valeur ajoutée des collèges et des lycées (session ${session}), DEPP, ministère de l'Éducation nationale, Licence Ouverte.`,
+  jeux: "Les jeux de données",
+  plus: "Pour en savoir plus sur l'IPS : la Note d'information de la DEPP n° 23.16",
+  sansBac: "Pas encore de résultats au bac.",
+  gt: "Générale et technologique",
+  pro: "Professionnelle",
+};
+const NOTE_IPS = "https://doi.org/10.48464/ni-23-16";
+
+/** « 97,1 », as the ministry writes it. */
+const ipsText = (v: number) => v.toFixed(1).replaceAll(".", ",");
+/** « 95 % (attendu : 90 %) »: the rate with the terms of the comparison. */
+const tauxText = (t: ips.Taux | null, candidats: number, seuil: number) => {
+  if (!t) return "non calculé";
+  const attendu = t.attendu !== null ? `${t.attendu}\u00a0%` : candidats < seuil ? "non calculé, trop peu de candidats" : "non calculé";
+  return `${t.taux}\u00a0% (attendu\u00a0: ${attendu})`;
+};
+const compte = (n: number, un: string, des: string) => `${n} ${n > 1 ? des : un}`;
+
+/**
+ * The collèges and lycées of each commune with their IPS and their rates beside the expected ones, in alphabetical
+ * order: never sorted, coloured, averaged nor ranked, and nothing in the page to sort them by.
+ */
+function profileSection(): string {
+  const all = ips.parCommune();
+  const lyc = (e: ips.Lycee) => {
+    const rows = ([[R.gt, e.gt, ips.SEUIL.gt], [R.pro, e.pro, ips.SEUIL.pro]] as const).filter(([, v]) => v)
+      .map(([nom, v, seuil]) => `<tr><th scope="row">${esc(nom)}</th><td>${esc(tauxText(v!.acces, v!.presents, seuil))}</td><td>${esc(tauxText(v!.reussite, v!.presents, seuil))}</td><td>${nombre(v!.presents)}</td></tr>`);
+    return `<h5>${esc(e.nom)} <span class="note">IPS ${ipsText(e.ips)}</span></h5>` + (rows.length
+      ? `<div class="table-wrap defile"><table class="drought histo passe ipsva"><thead><tr><th scope="col">Voie</th><th scope="col">Accès de la seconde au bac</th><th scope="col">Réussite au bac</th><th scope="col">Présents au bac</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
+      : `<p class="note">${esc(R.sansBac)}</p>`);
+  };
+  return `<section id="colleges-lycees" aria-labelledby="h-colleges-lycees">
+  <div class="sec-h"><p class="eyebrow">${esc(R.eyebrow)}</p><h2 id="h-colleges-lycees">${esc(R.h2)}</h2><p>${esc(R.lead(ips.COLLEGES.length, ips.LYCEES.length, ips.RENTREE, ips.SESSION))}</p></div>
+  <div class="card"><p>${esc(R.ips)}</p><p>${esc(R.attendu)} ${esc(R.va)}</p><p>${esc(R.marge)}</p><p>${esc(R.classement)}</p></div>
+  <ul class="zones top" id="ipsl">${all.map(([c, cols, lycs]) => `<li class="card tgt" id="${anchorId("r", c)}"><details><summary><h3>${esc(c)} <span class="note">${esc([cols.length ? compte(cols.length, "collège", "collèges") : "", lycs.length ? compte(lycs.length, "lycée", "lycées") : ""].filter(Boolean).join(", "))}</span></h3></summary><div class="kinds">` +
+    (cols.length ? `<div class="kind"><h4>Collèges</h4><div class="table-wrap defile"><table class="drought histo passe ipsva"><thead><tr><th scope="col">Collège</th><th scope="col">IPS</th><th scope="col">Réussite au brevet, série générale</th><th scope="col">Candidats</th></tr></thead><tbody>` +
+      cols.map((e) => `<tr><th scope="row">${esc(e.nom)}</th><td>${ipsText(e.ips)}</td><td>${esc(tauxText(e.reussite, e.candidats, ips.SEUIL.college))}</td><td>${nombre(e.candidats)}</td></tr>`).join("") + `</tbody></table></div></div>` : "") +
+    (lycs.length ? `<div class="kind"><h4>Lycées</h4>${lycs.map(lyc).join("")}</div>` : "") + `</div></details></li>`).join("")}</ul>
+  <p class="note">${esc(R.credit(ips.RENTREE, ips.SESSION))} ${esc(R.jeux)} : ${ips.PAGES.map((j) => `<a href="${esc(j.page)}" rel="noopener">${esc(j.titre)}</a>`).join(", ")}. <a href="${NOTE_IPS}" rel="noopener">${esc(R.plus)}</a>.</p>
+</section>`;
+}
+
 // ---------------------------------------------------------------- after the bac: Parcoursup
 
 /**
@@ -226,6 +281,7 @@ ${list()}
 <p class="note">${esc(T.servicesNote)} ${esc(`Annuaire de l'Éducation nationale, lu le ${dayMonth(ecoles.BUILT)}.`)}</p>
 <p class="sources">Sources : ${credits([credit(ecoles.SOURCE), credit(SOURCE_CARTE)])}.</p>
 </section>
+${profileSection()}
 ${afterBacSection()}<script>${FILTER_SCRIPT}</script>`;
   return { band, body };
 }

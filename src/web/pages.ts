@@ -894,6 +894,9 @@ table.drought{width:100%;border-collapse:collapse;font-size:.92rem}section.guide
 table.histo small{display:block}table.colle th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
 /* An establishment's formations, a table each: the same columns from one table to the next. */
 table.psup{table-layout:fixed}table.psup thead th:nth-child(2){width:4.2rem}table.psup thead th:nth-child(3){width:5.4rem}
+/* A lycée's name and IPS above the table of its voies, in the commune's card of /ecoles. A card's details no wider
+   than the card, so that a table wider than a phone scrolls in it instead of widening the page. */
+.kind h5{margin:.8rem 0 .2rem;font:600 .9rem system-ui,sans-serif}.card>details{min-width:0}
 /* A table wider than its card: a shade on the right edge while there is more to scroll, covered at the end by the card's own colour. */
 .table-wrap.defile{background:linear-gradient(to right,transparent,var(--surface) 1.3rem) right/2.6rem 100% no-repeat local,linear-gradient(to left,var(--border),transparent) right/1rem 100% no-repeat scroll,var(--surface)}table.hours td,table.hours th{white-space:nowrap}details.table-wrap>summary{cursor:pointer;font-weight:600;padding:.2rem 0 .6rem}.ratio{display:block;position:relative;height:.45rem;margin-top:.3rem;border-radius:.3rem;background:var(--line);max-width:9rem}.ratio i{position:absolute;inset:0 auto 0 0;border-radius:.3rem}.ratio s{position:absolute;left:50%;top:-.15rem;bottom:-.15rem;width:2px;background:var(--ink);opacity:.5}
 table.drought th,table.drought td{text-align:left;padding:.45rem .5rem;border-top:1px solid var(--line)}

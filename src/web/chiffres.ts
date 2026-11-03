@@ -3,7 +3,7 @@
  * the user on 25/10/2026. Each figure leads to its page; a count not made yet is left out, never shown as 0, and one
  * kept from an earlier copy says its hour.
  */
-import type { Chiffres } from "../chiffres.js";
+import type { Chiffres, Inventaire } from "../chiffres.js";
 import { PATH } from "../chiffres.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
@@ -29,7 +29,26 @@ const item = (valeur: number, mots: string, page: string, after = "") =>
 /** « (Licence Ouverte, ODbL, DbCL, CC BY, domaine public) », from the open families present. */
 const parenthese = (familles: string[]) => familles.join(", ");
 
-export function chiffresPage(origin: string, c: Chiffres, alerte?: Alerte): string {
+/**
+ * « Toutes les sources »: each source counted, by domain, an anchor for each, one line each (chiffres.ts, `inventaire`).
+ * The table of « Par domaine », one cell under another on a phone.
+ */
+function toutesLesSources(inv: Inventaire): string {
+  const groupes = inv.map((d) => {
+    const lecture = d.la_plus_lue
+      ? `<p>Relue le plus souvent, ${esc(d.cadence!)}\u00a0: ${esc(d.la_plus_lue)}.</p>`
+      : d.cadence === "à chaque version du site" ? "<p>Mises à jour avec le site.</p>" : d.cadence ? `<p>Relues ${esc(d.cadence)}.</p>` : "";
+    return `<h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3>
+  ${lecture}<div class="card table-wrap"><table class="drought niveaux"><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
+    `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div>`;
+  });
+  return `<h2 id="sources">Toutes les sources</h2>
+  <p>Chaque source lue, par domaine\u00a0: son producteur, et sa licence ou les conditions de reprise de son site.</p>
+  <p>${inv.map((d) => `<a href="#sources-${esc(d.categorie)}">${esc(d.domaine)}</a>\u00a0(${n(d.sources.length)})`).join(" · ")}</p>
+  ${groupes.join("\n  ")}`;
+}
+
+export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alerte?: Alerte): string {
   const band = `${crumbBar(H1)}
 <div class="wrap intro solo"><div class="pitch">
   <h1>${H1}</h1>
@@ -38,7 +57,7 @@ export function chiffresPage(origin: string, c: Chiffres, alerte?: Alerte): stri
 
   const essentiel = `<h2 id="essentiel">L'essentiel</h2>
   <ul class="figs">${[
-    item(c.sources, "sources publiques lues", "#par-domaine"),
+    item(c.sources, "sources publiques lues", "#sources"),
     item(c.producteurs, "producteurs", "#par-domaine"),
     item(c.communes, "communes, une page du jour pour chacune", "/communes"),
     item(c.outils, "outils pour votre assistant IA", "/mcp"),
@@ -84,6 +103,7 @@ export function chiffresPage(origin: string, c: Chiffres, alerte?: Alerte): stri
   ${terrain.length ? `<h2 id="terrain">Sur le terrain</h2>\n  <ul class="figs">${terrain.join("")}</ul>` : ""}
   ${moment.length ? `<h2 id="en-ce-moment">En ce moment</h2>\n  <ul class="figs">${moment.join("")}</ul>` : ""}
   ${licences}
+  ${toutesLesSources(inv)}
   ${silence ? `<h2 id="manque">Ce qui manque</h2>\n  ${silence}` : ""}
   <h2 id="depuis">Depuis le début</h2>
   <p>Né en octobre 2026\u00a0: <a href="/nouveautes">${n(c.nouveautes)} nouveautés publiées</a>.</p>

@@ -131,7 +131,7 @@ import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
 import { PATH as SANS_REPONSE, sansReponsePage } from "./sans-reponse.js";
-import { chiffres, type Copie, KEY as CHIFFRES_KEY, PATH as CHIFFRES } from "../chiffres.js";
+import { chiffres, type Copie, inventaire, KEY as CHIFFRES_KEY, PATH as CHIFFRES } from "../chiffres.js";
 import { chiffresPage } from "./chiffres.js";
 import { toutesLesSources } from "../server.js";
 import { etat as sansReponse } from "../sans-reponse.js";
@@ -730,7 +730,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // rundata.re en chiffres: what the code counts, and the last copy of what the sources do (chiffres.ts); never a source.
   if (path === CHIFFRES || path === `${CHIFFRES}/`) {
     const [copie, a] = await Promise.all([cache.peek<Copie>(CHIFFRES_KEY).catch(() => undefined), alerte(cache, background, now)]);
-    return new Response(chiffresPage(origin, chiffres(toutesLesSources(), copie, now, toolCount(cache)), a), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
+    const sources = toutesLesSources();
+    return new Response(chiffresPage(origin, chiffres(sources, copie, now, toolCount(cache)), inventaire(sources), a), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
   }
   // The sites that do not answer: their rows read at most every 15 minutes (sans-reponse.ts), whatever the visits.
   if (path === SANS_REPONSE || path === `${SANS_REPONSE}/`) {

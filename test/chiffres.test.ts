@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { buildChiffres, buildEvenements, cadenceEnMots, chiffres, cle, clubs, type Copie, DOMAINES, EVENEMENTS_KEY, evenementsEvery, KEY, resume, SANS_MAX, sansAgendas } from "../src/chiffres.js";
+import { buildChiffres, buildEvenements, cadenceEnMots, chiffres, cle, clubs, type Copie, DOMAINES, EVENEMENTS_KEY, evenementsEvery, inventaire, KEY, resume, SANS_MAX, sansAgendas } from "../src/chiffres.js";
 import { compte, FICHES, producteursDe } from "../src/producteurs.js";
 import { AGENDAS } from "../src/providers/agenda.js";
 import { CONNECTEURS } from "../src/providers/agenda-connecteurs.js";
@@ -166,7 +166,7 @@ describe("the counts (chiffres.ts)", () => {
     const late = { value: { ...COPIE, construite_le: NOW.toISOString() }, fetchedAt: new Date(NOW.getTime() + 70_000), stale: false };
     const c = chiffres(sources, late, NOW, OUTILS_ICI);
     expect(c.compte_le).toBe("26/10 à 08:00");
-    const html = typo(chiffresPage("https://rundata.re", c));
+    const html = typo(chiffresPage("https://rundata.re", c, inventaire(sources)));
     expect(html).not.toContain("(compté le 26/10 à\u00a008:00)");
     expect(html).toContain("(compté le 26/10 à\u00a006:00)");
     // A copy written before the build's hour was kept: its write's hour, as before.
@@ -175,7 +175,7 @@ describe("the counts (chiffres.ts)", () => {
 });
 
 describe("the page /chiffres", () => {
-  const html = typo(chiffresPage("https://rundata.re", chiffres(sources, copie, NOW, OUTILS_ICI)));
+  const html = typo(chiffresPage("https://rundata.re", chiffres(sources, copie, NOW, OUTILS_ICI), inventaire(sources)));
 
   it("says marketing's words, and each figure leads to its page", () => {
     expect(html).toContain("<h1>rundata.re en chiffres</h1>");
@@ -189,7 +189,7 @@ describe("the page /chiffres", () => {
   });
 
   it("names the one or two agendas the events were counted without, or says the last whole count, in marketing's words", () => {
-    const page = (value: Copie) => typo(chiffresPage("https://rundata.re", chiffres(sources, { ...copie, value }, NOW, OUTILS_ICI)));
+    const page = (value: Copie) => typo(chiffresPage("https://rundata.re", chiffres(sources, { ...copie, value }, NOW, OUTILS_ICI), inventaire(sources)));
     const sans = (noms: string[]) => page({ ...COPIE, evenements: { ...COPIE.evenements!, sans: noms } });
     const fig = 'href="/evenements">214</a><span>événements dans les deux semaines qui viennent, ';
     expect(sans(["Mairie de Saint-Paul"])).toContain(`${fig}sans l&#39;agenda de la mairie de Saint-Paul, dont le site n&#39;a pas répondu à notre dernière lecture. <small>(compté le 26/10 à`);
@@ -223,7 +223,7 @@ describe("the page /chiffres", () => {
 
   it("says the hour of a count kept from an earlier copy, and never shows a count not made", () => {
     expect(html).toContain("(compté le 26/10 à\u00a006:00)");
-    const bare = typo(chiffresPage("https://rundata.re", chiffres(sources, undefined, NOW, OUTILS_ICI)));
+    const bare = typo(chiffresPage("https://rundata.re", chiffres(sources, undefined, NOW, OUTILS_ICI), inventaire(sources)));
     expect(bare).not.toContain("stations météo lues");
     expect(bare).not.toContain("En ce moment");
     expect(bare).not.toContain("Ce qui manque");
@@ -240,5 +240,54 @@ describe("the page /chiffres", () => {
 
   it("never names the data missing for want of an authorisation before its page is online", () => {
     expect(html).not.toContain("donnees-manquantes");
+  });
+});
+
+describe("« Toutes les sources » on /chiffres (chiffres.ts, inventaire)", () => {
+  const inv = inventaire(all);
+  const html = typo(chiffresPage("https://rundata.re", chiffres(sources, copie, NOW, OUTILS_ICI), inventaire(sources)));
+  const ligne = (id: string) => inv.flatMap((d) => d.sources).find((s) => s.url === all.find((x) => x.id === id)!.url && s.nom === all.find((x) => x.id === id)!.nom);
+
+  it("lists every source counted once, under its first domain, but pitonlive.com, counted and never named", () => {
+    const counted = all.filter((s) => FICHES[s.id] && !FICHES[s.id].horsCompte && s.id !== "pitonlive");
+    expect(inv.flatMap((d) => d.sources).length).toBe(counted.length);
+    for (const s of counted) expect(ligne(s.id), s.id).toEqual({ nom: s.nom, url: s.url, producteurs: producteursDe(s), licence: s.licence });
+    // The prefecture's press releases, shown by the news and the volcano: under the news only.
+    expect(inv.find((d) => d.categorie === "actualites")!.sources.map((s) => s.nom)).toContain(all.find((s) => s.id === "prefecture_communiques")!.nom);
+    expect(inv.find((d) => d.categorie === "volcan")!.sources.map((s) => s.nom)).not.toContain(all.find((s) => s.id === "prefecture_communiques")!.nom);
+    // The site's footer names it, as a last resort beside the OVPF: not this section.
+    expect(html.slice(html.indexOf('<h2 id="sources">'), html.indexOf("<h2", html.indexOf('<h2 id="sources">') + 1))).not.toMatch(/pitonlive/i);
+  });
+
+  it("gives each domain its anchor, linked from the list above, and how often its sources are read", () => {
+    expect(html).toContain('<h2 id="sources">Toutes les sources</h2>');
+    expect(html).toContain('<a class="fig" href="#sources">');
+    for (const d of inventaire(sources)) {
+      expect(html).toContain(`<h3 id="sources-${d.categorie}">`);
+      expect(html).toContain(`<a href="#sources-${d.categorie}">`);
+    }
+    const meteo = inv.find((d) => d.categorie === "meteo")!;
+    expect(meteo).toMatchObject({ cadence: "toutes les 2 min", la_plus_lue: all.find((s) => s.id === "meteofrance")!.nom });
+    expect(inv.find((d) => d.categorie === "terrain")).toMatchObject({ cadence: "à chaque question" });
+    expect(inv.find((d) => d.categorie === "dae")).toMatchObject({ cadence: "à chaque version du site" });
+    expect(html).toMatch(/Relues à chaque question\./);
+    // A list bundled with the site: words a reader understands (data-run, 03/11).
+    expect(html).toContain("<p>Mises à jour avec le site.</p>");
+    expect(html).not.toContain("Relues à chaque version du site");
+    // Météo-France's packets need its key: read in the Worker, not here.
+    const tout = typo(chiffresPage("https://rundata.re", chiffres(all, copie, NOW, OUTILS_ICI), inv));
+    expect(tout).toContain(`Relue le plus souvent, toutes les 2\u00a0min\u00a0: ${meteo.la_plus_lue}.`);
+  });
+
+  it("says a written agreement where the code has one, and the media's headlines and link only", () => {
+    expect(ligne("agenda_bras_panon")!.licence).toContain("repris avec son accord écrit du 28/10/2026");
+    expect(ligne("salles_spectacle")!.licence).toContain("Théâtre Luc Donat : repris avec son accord écrit du 27/10/2026");
+    expect(ligne("medias_locaux")!.licence).toMatch(/^Titres, .* et lien seulement/);
+  });
+
+  it("links each source, and stacks each line's cells on a phone", () => {
+    for (const s of inventaire(sources).flatMap((d) => d.sources)) expect(html).toContain(`<a href="${s.url.replace(/&/g, "&amp;")}" rel="noopener">`);
+    expect(html).toContain('<td data-label="Producteur">');
+    expect(html).toContain('<td data-label="Licence ou conditions">');
   });
 });

@@ -15,6 +15,7 @@ import * as ecoles from "../vie/ecoles.js";
 import * as medecins from "../vie/medecins.js";
 import * as accidents from "../routes/accidents.js";
 import * as creches from "../vie/creches.js";
+import * as parcoursup from "../vie/parcoursup.js";
 import * as decouvrir from "../vie/decouvrir.js";
 import * as enfants from "../vie/enfants.js";
 import * as dech from "../vie/decheteries.js";
@@ -434,6 +435,22 @@ function nursery(p: PlacePage): Live | undefined {
 }
 
 /**
+ * The formations after the bac in the commune, in Parcoursup (vie/parcoursup.ts): counts only, the list is on /ecoles.
+ * Never a taux d'accès here: one formation's does not say anything of another's.
+ */
+function afterBac(p: PlacePage): Live | undefined {
+  const c = parcoursup.ofCommune(p.nom);
+  if (!c) return undefined;
+  const s = (n: number) => (n > 1 ? "s" : "");
+  if (!c.formations) return { valeur: `Aucune formation Parcoursup dans la commune en ${parcoursup.SESSION}`, detail: "d'après Parcoursup", entier: true };
+  return {
+    valeur: `${nombre(c.formations)} formation${s(c.formations)}`,
+    detail: `dans Parcoursup · ${nombre(c.places)} place${s(c.places)} en ${parcoursup.SESSION}, dans ${nombre(c.etablissements)} établissement${s(c.etablissements)}`,
+    entier: true,
+  };
+}
+
+/**
  * The year's road accidents with casualties in the commune (routes/accidents.ts): the national file's counts, plainly,
  * never a rank nor a rate per inhabitant.
  */
@@ -599,6 +616,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),
     ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/#assistant">Votre adresse : demandez à votre IA →</a>` }] : []),
     ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `<a href="https://monenfant.fr" rel="noopener">Trouver une crèche\u00a0: monenfant.fr</a>` }] : []),
+    ...(afterBac(p) ? [{ icon: "book", nom: "Après le bac", href: `${ECOLES}#apres-bac`, live: afterBac(p) }] : []),
     ...(roadAccidents(p) ? [{ icon: "car", nom: "Accidents de la route", href: "/trafic#accidents", live: roadAccidents(p) }] : []),
   ];
   const island: Tile[] = [
@@ -684,6 +702,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(quartiers ? [credit(annexesSd.SOURCE)] : []),
     ...(rents(p) ? [credit(loyers.SOURCE)] : []),
     ...(nursery(p) ? [credit(creches.SOURCE)] : []),
+    ...(afterBac(p) ? [credit(parcoursup.SOURCE)] : []),
     ...(roadAccidents(p) ? [credit(accidents.SOURCE)] : []),
     ...(connexion(p) ? [credit(internet.SOURCE)] : []),
     ...(antennas(p) ? [antennes.SOURCE_MOBILE, ...(antennes.ofCommune(p.nom).emetteurs.length ? [antennes.SOURCE_RADIO] : []), ...(horsService(l.hs, p) ? [sitesHs.SOURCE] : [])].map(credit) : []),

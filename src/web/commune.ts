@@ -13,6 +13,7 @@ import * as mf from "../providers/vigilance.js";
 import * as sante from "../sante/etablissements.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as medecins from "../vie/medecins.js";
+import * as accidents from "../routes/accidents.js";
 import * as creches from "../vie/creches.js";
 import * as decouvrir from "../vie/decouvrir.js";
 import * as enfants from "../vie/enfants.js";
@@ -431,6 +432,20 @@ function nursery(p: PlacePage): Live | undefined {
   };
 }
 
+/**
+ * The year's road accidents with casualties in the commune (routes/accidents.ts): the national file's counts, plainly,
+ * never a rank nor a rate per inhabitant.
+ */
+function roadAccidents(p: PlacePage): Live | undefined {
+  const b = accidents.ofCommune(p.nom);
+  if (!b) return undefined;
+  return {
+    valeur: `${nombre(b.accidents)} accident${b.accidents > 1 ? "s" : ""} corporel${b.accidents > 1 ? "s" : ""}`,
+    detail: `${accidents.bilan(b)} · d'après le fichier national des accidents (ONISR)`,
+    entier: true,
+  };
+}
+
 /** How the premises can be connected (vie/internet.ts): the fibre's share; one release a quarter, never live. */
 function connexion(p: PlacePage): Live | undefined {
   const c = internet.ofCommune(p.nom);
@@ -571,6 +586,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),
     ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/#assistant">Votre adresse : demandez à votre IA →</a>` }] : []),
     ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `<a href="https://monenfant.fr" rel="noopener">Trouver une crèche\u00a0: monenfant.fr</a>` }] : []),
+    ...(roadAccidents(p) ? [{ icon: "car", nom: "Accidents de la route", href: "/trafic#accidents", live: roadAccidents(p) }] : []),
   ];
   const island: Tile[] = [
     { icon: "volcano", nom: "Volcan", href: "/volcan", live: volcanLive(l.volcan ?? null, now) },
@@ -654,6 +670,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(lieux ? [credit(decouvrir.SOURCE)] : []),
     ...(rents(p) ? [credit(loyers.SOURCE)] : []),
     ...(nursery(p) ? [credit(creches.SOURCE)] : []),
+    ...(roadAccidents(p) ? [credit(accidents.SOURCE)] : []),
     ...(connexion(p) ? [credit(internet.SOURCE)] : []),
     ...(antennas(p) ? [antennes.SOURCE_MOBILE, ...(antennes.ofCommune(p.nom).emetteurs.length ? [antennes.SOURCE_RADIO] : []), ...(horsService(l.hs, p) ? [sitesHs.SOURCE] : [])].map(credit) : []),
     ...(l.volcan?.value.sources ?? []),

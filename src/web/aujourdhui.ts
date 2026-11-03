@@ -10,8 +10,9 @@ import type * as annuaire from "../providers/annuaire.js";
 import { mentionCourte } from "../tools/agenda.js";
 import { type Resume, UPDATING } from "../tools/resume.js";
 import { MARCHES } from "../vie/marches.js";
+import * as monuments from "../vie/monuments.js";
 import { porte, SHEET as ALLER } from "./aller.js";
-import type { Alerte } from "./data.js";
+import { type Alerte, credit } from "./data.js";
 import { connectorCta, courantItem, silentItem, silentText, webPage } from "./domains.js";
 import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
@@ -82,6 +83,28 @@ export function descriptionOf(p: PlacePage, r: Resume): string {
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
+
+/** « 29/10/2026 ». */
+const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/**
+ * The commune's historic monuments (vie/monuments.ts), bundled: each name leads to its notice on POP, the ministry's
+ * platform. Folded, but for a few: Saint-Denis has more than 60. A commune with none says so, after the base.
+ */
+export function monumentsCard(nom: string): string {
+  const list = monuments.ofCommune(nom);
+  const base = "la base Mérimée du ministère de la Culture";
+  if (!list.length) return `<div class="card"><h3>Monuments historiques</h3><p>Aucun immeuble protégé au titre des monuments historiques ${esc(aCommune(nom))} dans ${base}.</p></div>`;
+  const item = (m: monuments.Monument) => {
+    // A monument on two communes says the other one.
+    const aussi = monuments.autres(m, nom);
+    const note = [monuments.protege(m), m.adresse, aussi.length ? `aussi ${aussi.map(aCommune).join(", ")}` : ""].filter(Boolean).join(" · ");
+    return `<li><a href="${esc(monuments.notice(m))}" rel="noopener"${fenetre(monuments.notice(m))}>${esc(m.nom)}</a> <span class="note">${esc(note)}</span></li>`;
+  };
+  return `<div class="card"><details${list.length <= 5 ? " open" : ""}><summary><h3>Monuments historiques</h3> <span class="note">${plural(list.length, "classé ou inscrit", "classés ou inscrits")}</span></summary>` +
+    `<ul class="plain">${list.map(item).join("")}</ul><p class="note">D'après ${base}, liste du ${jma(monuments.FICHIER_DU)}\u00a0: chaque nom mène à sa notice.</p></details></div>`;
+}
+
 const card = (ic: string, title: string, body: string, href?: string, cls = "") =>
   `<div class="card${cls}">${icon(ic)}<h3>${href ? `<a href="${href}">${esc(title)}</a>` : esc(title)}</h3>${body}</div>`;
 const li = (x: { titre: string; lien?: string; quand?: string; media?: string }) =>
@@ -209,9 +232,12 @@ ${cuts || events ? `<section aria-labelledby="h-eau-sorties"><div class="sec-h">
 <section aria-labelledby="h-pratique"><div class="sec-h"><h2 id="h-pratique">Vie pratique</h2></div>
   <div class="card"><ul class="plain">${practical}</ul>${powerNotRead ? `<p class="note np">${esc(powerNotRead)}${reprise(powerNotRead)}</p>` : ""}</div>
 </section>
+<section aria-labelledby="h-patrimoine"><div class="sec-h"><h2 id="h-patrimoine">Patrimoine</h2></div>
+  ${monumentsCard(p.nom)}
+</section>
 <section>${missing}
   <p class="note"><a href="/communes/${p.slug}">${esc(p.nom)} en direct : les bus, la mairie, toutes les rubriques →</a></p>
-  ${r.sources.length ? `<p class="sources">Sources : ${credits(r.sources)}.</p>` : ""}
+  <p class="sources">Sources : ${credits([...r.sources, credit(monuments.SOURCE)])}.</p>
 </section>
 ${connectorCta("resume_du_jour", `la journée ${deCommune(p.nom)}`)}`;
   return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, at)], alerte }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));

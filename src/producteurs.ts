@@ -147,6 +147,7 @@ export const FICHES: Record<string, Fiche> = {
   marches_saint_louis_2021: { famille: "information_publique", producteurs: [commune("Saint-Louis")] },
   data_es: { famille: "licence_ouverte", producteurs: ["Ministère des Sports"] },
   basilic: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },
+  merimee_monuments: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },
   // Calendar, transport, trails.
   education_calendrier: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   jours_feries: { famille: "licence_ouverte", producteurs: ["Etalab"] },

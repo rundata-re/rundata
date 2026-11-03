@@ -142,6 +142,10 @@ const DIT: Record<string, Dit> = {
     montre: "Les médiathèques et bibliothèques recensées par le ministère de la Culture (Basilic). Une même médiathèque peut aussi figurer dans « Jeux, parcs et musées » : les deux sources restent séparées.",
     rubrique: "Enfants", court: "Basilic", unite: ["lieu", "lieux"], organisme: "Basilic",
   },
+  monuments: {
+    montre: "Les immeubles protégés au titre des monuments historiques, classés ou inscrits, d'après la base Mérimée du ministère de la Culture. Beaucoup sont des propriétés privées : être protégé ne veut pas dire se visiter.",
+    rubrique: "Communes", court: "Base Mérimée", unite: ["monument", "monuments"], organisme: "la base Mérimée",
+  },
 };
 
 /** Where each source of the children's places is said, under its name in the list (marketing). */
@@ -151,7 +155,7 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
  * The order of drawing, from the bottom: the trails' lines, then the points from the most to the fewest, the rarest
  * and the stations' figures on top, so that a crowded layer never hides another. The rain is under the land's lines.
  */
-export const ORDRE = ["sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "seismes", "stations"];
+export const ORDRE = ["sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
 
 /**
  * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,

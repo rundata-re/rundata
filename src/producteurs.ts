@@ -146,6 +146,7 @@ export const FICHES: Record<string, Fiche> = {
   marches_sainte_marie: { famille: "information_publique", producteurs: [commune("Sainte-Marie")] },
   marches_saint_louis_2020: { famille: "information_publique", producteurs: [commune("Saint-Louis")] },
   marches_saint_louis_2021: { famille: "information_publique", producteurs: [commune("Saint-Louis")] },
+  saint_denis_mairies_annexes: { famille: "licence_ouverte", producteurs: [commune("Saint-Denis")] },
   data_es: { famille: "licence_ouverte", producteurs: ["Ministère des Sports"] },
   basilic: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },
   merimee_monuments: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },

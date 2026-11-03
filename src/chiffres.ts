@@ -27,7 +27,7 @@ import { RANDONNEES } from "./providers/traces.js";
 import * as transit from "./providers/transit.js";
 import * as velos from "./providers/velos.js";
 import { NOUVEAUTES } from "./nouveautes.js";
-import { compte, FAMILLES, FICHES, producteursDe, type Famille } from "./producteurs.js";
+import { compte, comptee, FAMILLES, FICHES, producteursDe, type Famille } from "./producteurs.js";
 import { etat, publiques } from "./sans-reponse.js";
 import { agenda, ofAgenda } from "./tools/agenda.js";
 import { ahead, type CourantAnswer, followed } from "./tools/courant.js";
@@ -350,6 +350,42 @@ export function chiffres(sources: SourceInfo[], copie: Cached<Copie> | undefined
 }
 
 export type Chiffres = ReturnType<typeof chiffres>;
+
+/**
+ * Every source counted, one line each, under the first domain of DOMAINES that shows it (a source shown by two domains,
+ * the prefecture's press releases, is listed once): its name and link, its producers, its licence or terms of reuse as
+ * the source declares them (a written agreement included, providers/agenda.ts). How often a source is read is declared by
+ * domain, not by source: said with its domain, naming the quickest source. From the code alone, at no cost to a view.
+ * pitonlive.com is counted, never listed (NON_NOMMES).
+ */
+export function inventaire(sources: SourceInfo[]): Inventaire {
+  const comptees = sources.filter(comptee);
+  const lues = new Set(sources.map((s) => s.id));
+  const placees = new Set<string>();
+  return DOMAINES.map((d) => {
+    const cat = CATEGORIES.find((x) => x.key === d.categorie)!;
+    const ici = comptees.filter((s) => d.sources().includes(s.id) && !placees.has(s.id));
+    for (const s of ici) placees.add(s.id);
+    const de = d.cadence && lues.has(d.cadence.de) ? sources.find((s) => s.id === d.cadence!.de) : undefined;
+    return {
+      categorie: d.categorie,
+      domaine: cat.nom,
+      ...(d.question ? { cadence: "à chaque question" } : !d.cadence ? { cadence: "à chaque version du site" } : de ? { cadence: cadenceEnMots(d.cadence.minutes), la_plus_lue: de.nom } : {}),
+      sources: ici.filter((s) => !NON_NOMMES.has(s.id)).map((s) => ({ nom: s.nom, url: s.url, producteurs: producteursDe(s), licence: s.licence })),
+    };
+  }).filter((d) => d.sources.length);
+}
+
+/** A domain of « Toutes les sources »: how often its sources are read, and its quickest when it is read here. */
+export interface GroupeDeSources {
+  categorie: string;
+  domaine: string;
+  cadence?: string;
+  la_plus_lue?: string;
+  sources: { nom: string; url: string; producteurs: string[]; licence: string }[];
+}
+
+export type Inventaire = GroupeDeSources[];
 
 const pluriel = (n: number, un: string, des: string) => `${n} ${n > 1 ? des : un}`;
 

@@ -27,7 +27,11 @@ export const SOURCE: SourceInfo = {
   id: "avis_eau",
   nom: "Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie, commune de Saint-Leu)",
   organisme: "Distributeurs d'eau et intercommunalités de La Réunion",
-  licence: "Information publique (avis aux abonnés)",
+  // Each one's terms, re-read on 26/10/2026. Dionéo, runéo and Eaux de La Possession forbid any reproduction not
+  // expressly allowed: kept while they answer the request for their agreement (the user's choice of 26/10).
+  licence:
+    "Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. " +
+    "CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite",
   attribution: "Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie / CISE Réunion, commune de Saint-Leu / Derichebourg Aqua OI",
   url: "https://www.cirest.fr/categorie/communique/communique-eau/",
 };

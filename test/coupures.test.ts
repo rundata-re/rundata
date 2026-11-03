@@ -296,6 +296,8 @@ describe("coupures d'eau", () => {
     expect(sp.distributeur).toBeUndefined();
     expect(sp.contact).toBeUndefined();
     expect(sp.sources).toHaveLength(1);
+    // Each distributor's own terms, never « Information publique » for those whose terms forbid the reproduction.
+    expect(sp.sources[0].licence).toBe("Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite");
     // runéo's feed is read: no notice for Saint-Pierre is no cut announced.
     expect(body(await coupuresEau(cache(), "Saint-Pierre", NOW)).resume).toBe("Aucun avis de coupure récent ou à venir à Saint-Pierre.");
   });

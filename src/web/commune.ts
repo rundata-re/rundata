@@ -13,6 +13,7 @@ import * as mf from "../providers/vigilance.js";
 import * as sante from "../sante/etablissements.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as medecins from "../vie/medecins.js";
+import * as decouvrir from "../vie/decouvrir.js";
 import * as enfants from "../vie/enfants.js";
 import * as dech from "../vie/decheteries.js";
 import * as antennes from "../vie/antennes.js";
@@ -294,6 +295,31 @@ function pharmacies(p: PlacePage): Live {
   };
 }
 
+/** How many of the commune's remarkable places are named, with their text, before the others fold. */
+export const DECOUVRIR_SHOWN = 4;
+
+function lieuLi(l: decouvrir.Lieu): string {
+  const texte = decouvrir.resume(l.texte);
+  return `<li><span><b>${esc(l.nom)}</b>${l.monument ? " · monument historique" : ""}${texte ? `<small>${esc(texte)}</small>` : ""}</span></li>`;
+}
+
+/**
+ * The commune's remarkable places, from the SIT's list (vie/decouvrir.ts): how many of each category, then the first
+ * ones with the first sentence of their text, the others folded. A list of the week, said so, never « en direct »; its
+ * hours may be old, so the page gives none and says to ask the place.
+ */
+function discover(p: PlacePage): { live: Live; more: string } | undefined {
+  const list = decouvrir.ofCommune(p.nom);
+  if (!list.length) return undefined;
+  const [shown, rest] = [list.slice(0, DECOUVRIR_SHOWN), list.slice(DECOUVRIR_SHOWN)];
+  return {
+    live: { valeur: `${list.length} lieu${list.length > 1 ? "x" : ""}`, detail: esc(decouvrir.counts(list).map(([c, n]) => `${n} ${c.toLowerCase()}`).join(" · ")) },
+    more: `<ul class="rows lieux cols">${shown.map(lieuLi).join("")}</ul>` +
+      (rest.length ? `<details class="plus"><summary>${rest.length === 1 ? "Un autre lieu" : `Les ${rest.length} autres lieux`}</summary><ul class="rows lieux cols">${rest.map(lieuLi).join("")}</ul></details>` : "") +
+      `<p class="note">Liste du SIT de La Réunion, mise à jour chaque semaine (version du ${dayMonth(decouvrir.LISTE_DU)}). Horaires et visites\u00a0: à demander au lieu.</p>`,
+  };
+}
+
 /** The places to go with children (vie/enfants.ts): how many, and of which kinds. */
 function children(p: PlacePage): Live | undefined {
   const list = enfants.inCommune(p.nom);
@@ -479,6 +505,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const toHall = o && mairie ? g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse }, "mairie") : "";
   const hikes = communeHikes(p, l.randonnees, now);
   const droit = justice(l.commune, g, now);
+  const lieux = discover(p);
   const fichePj = l.commune?.value.justice?.lieu.fiche;
 
   const tiles: Tile[] = [
@@ -511,6 +538,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(hikes ? [{ icon: "mountain", nom: "Randonnée", href: hikes.href, live: hikes.live, foot: hikes.foot }] : []),
     { icon: "music", nom: "Sorties", href: "/evenements", live: communeEvents(p, l.agenda) },
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),
+    ...(lieux ? [{ icon: "landmark", nom: "À découvrir", ...lieux, full: true }] : []),
     { icon: "calendar", nom: "Soleil et calendrier", href: "/calendrier", live: sunTimes(p, l.calendrier, now) },
     { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/#assistant">Demandez à votre IA →</a>`, wide: true },
   ];
@@ -599,6 +627,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(l.eau?.value.sources ?? []),
     ...(hikes?.live ? (l.randonnees?.value.sources ?? []) : []),
     ...(children(p) ? enfants.sourcesOf(enfants.inCommune(p.nom)).map(credit) : []),
+    ...(lieux ? [credit(decouvrir.SOURCE)] : []),
     ...(rents(p) ? [credit(loyers.SOURCE)] : []),
     ...(connexion(p) ? [credit(internet.SOURCE)] : []),
     ...(antennas(p) ? [antennes.SOURCE_MOBILE, ...(antennes.ofCommune(p.nom).emetteurs.length ? [antennes.SOURCE_RADIO] : []), ...(horsService(l.hs, p) ? [sitesHs.SOURCE] : [])].map(credit) : []),

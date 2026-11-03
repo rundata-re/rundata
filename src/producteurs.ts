@@ -151,6 +151,7 @@ export const FICHES: Record<string, Fiche> = {
   sit_lieux_remarquables: { famille: "licence_ouverte", producteurs: ["Système d'information touristique de La Réunion"] },
   region_sentiers_marmailles: { famille: "licence_ouverte", producteurs: ["Conseil Général de La Réunion", "AGORAH"] },
   parc_national_canyons: { famille: "licence_ouverte", producteurs: ["Parc national de La Réunion"] },
+  caf_accueil_jeune_enfant: { famille: "licence_ouverte", producteurs: ["Caisse nationale des Allocations familiales"] },
   // The layers « Vélo » and « Vitesses sur les routes nationales » of /carte.
   region_voie_velo: { famille: "licence_ouverte", producteurs: ["Région Réunion"] },
   saint_denis_pistes_cyclables: { famille: "licence_ouverte", producteurs: [commune("Saint-Denis")] },

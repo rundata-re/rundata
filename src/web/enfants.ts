@@ -7,6 +7,7 @@ import type { Cached } from "../cache.js";
 import { mentionOf } from "../mentions.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import * as traces from "../providers/traces.js";
+import * as creches from "../vie/creches.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as enfants from "../vie/enfants.js";
 import * as marmailles from "../vie/marmailles.js";
@@ -18,6 +19,7 @@ import { agendaHours, connectorCta, crumbBar, crumbs, eventGo, loading, webPage 
 import { communeMap, esc, islandMap, type Spot } from "./map.js";
 import { COUNT_COLOR, legende } from "./carte-legende.js";
 import { PATH as ECOLES } from "./ecoles-annuaire.js";
+import { nombre } from "../tools/format.js";
 import { anchorId, ask, dayMonth, FOLD_ROWS, folded, icon, layout, type Live } from "./pages.js";
 
 type Row = EnfantsAnswer["evenements"][number];
@@ -27,7 +29,7 @@ export const TITLE = "Avec les enfants à La Réunion : lieux et activités · 9
 export const H1 = "Avec les enfants à La Réunion";
 export const LEAD = typo("Aires de jeux, parcs, piscines, médiathèques, zoos, skateparks : les lieux où aller avec les enfants, commune par commune, et les activités pour eux ce week-end et dans les deux semaines qui viennent. De 0 à 17 ans, avec l'âge quand l'organisateur ou la carte le donne.");
 export const DESCRIPTION = "Où emmener les enfants à La Réunion : aires de jeux, parcs, piscines, médiathèques, zoos, skateparks, commune par commune, et les activités du week-end.";
-const MISSING = typo("<b>Ce que vous ne trouverez pas ici.</b> Les accueils de loisirs (centres aérés), les crèches et les relais petite enfance sont publiés par la CAF sur monenfant.fr, dont nous ne pouvons pas reprendre les données. Pour trouver un mode de garde ou un accueil de loisirs : <a href=\"https://monenfant.fr\" rel=\"noopener\">monenfant.fr</a>. Les activités privées qui ne figurent sur aucune carte ouverte manquent aussi. Un lieu oublié ? <a href=\"#avis\">Dites-le-nous</a>, ou ajoutez-le sur <a href=\"https://www.openstreetmap.org/\" rel=\"noopener\">OpenStreetMap</a> : il apparaîtra ici.");
+const MISSING = typo("<b>Ce que vous ne trouverez pas ici.</b> Les accueils de loisirs (centres aérés), les crèches et les relais petite enfance sont publiés par la CAF sur monenfant.fr, dont nous ne pouvons pas reprendre les données : nous donnons seulement, <a href=\"#creches\">plus bas</a>, le nombre de places en crèche de chaque commune, que la CAF publie en open data. Pour trouver un mode de garde ou un accueil de loisirs : <a href=\"https://monenfant.fr\" rel=\"noopener\">monenfant.fr</a>. Les activités privées qui ne figurent sur aucune carte ouverte manquent aussi. Un lieu oublié ? <a href=\"#avis\">Dites-le-nous</a>, ou ajoutez-le sur <a href=\"https://www.openstreetmap.org/\" rel=\"noopener\">OpenStreetMap</a> : il apparaîtra ici.");
 const CREDITS = typo("Lieux : © les contributeurs d'OpenStreetMap (ODbL) ; recensement des équipements sportifs (Data ES, ministère des Sports) et Basilic (ministère de la Culture), sous Licence Ouverte. Activités : les agendas des communes et des salles, chacun cité sur sa ligne.");
 export const ASK_KREOL = typo("Kosa néna pou fé ek marmay sé wikenn la ? Gèt si https://rundata.re/enfants é di amwin.");
 export const ASK_FRANCAIS = typo("Où aller avec les enfants ce week-end à La Réunion ? Lis https://rundata.re/enfants et propose-moi des lieux et des activités pour leur âge, près de chez moi.");
@@ -35,6 +37,19 @@ export const ASK_FRANCAIS = typo("Où aller avec les enfants ce week-end à La R
 const EMPTY = typo("Les agendas que nous lisons n'annoncent pas d'activité pour les enfants dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi les <a href=\"/evenements\">sorties</a>.");
 /** The agenda's kind, first in the filter and on the page. */
 const ACTIVITIES = "Activités et spectacles";
+
+/** The words of the crèches' part. */
+const CRECHES = {
+  titre: "Places en crèche, commune par commune",
+  creche: "En<br>crèche<br>pour 100",
+  global: "Tous<br>modes<br>pour 100",
+  places: "Places<br>en crèche",
+  ile: "La Réunion",
+  intro: (annee: number) => typo(`Combien de places la CAF compte pour 100 enfants de moins de 3 ans, fin ${annee} : en crèche, puis en comptant aussi les assistantes maternelles, la garde à domicile et l'école. C'est une offre théorique : une place peut être libre, ou partagée par plusieurs enfants.`),
+  sans: (noms: string[]) => typo(`La CAF ne donne le chiffre d'une commune qu'au-dessus de 10\u00a0000 habitants. ${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]} n'en ont pas : seul celui de leur intercommunalité, plus bas, les compte avec ses autres communes.`),
+  trouver: typo(`Pour trouver une crèche et ses places : <a href="https://monenfant.fr" rel="noopener">monenfant.fr</a>, de la CAF.`),
+  credit: (annee: number, le: string, an: string) => typo(`Caisse nationale des Allocations familiales (Cnaf), data.caf.fr, Licence Ouverte : chiffres de décembre ${annee}, publiés le ${le}/${an}.`),
+};
 
 /** The badge of an age: bold when the source gives it, « · indicatif » when it is rundata.re's (its note on hover, set by the script). */
 const badge = (a: enfants.Age) => `<span class="age${a.fait ? "" : a.texte === enfants.NO_AGE ? " i" : " i n"}">${esc(a.texte)}</span>`;
@@ -195,6 +210,7 @@ ${filter}
   <p class="note">${esc(CREDITS)}</p>
 </section>
 ${marmaillesSection()}
+${crechesSection()}
 <section aria-labelledby="h-ecoles">
   <div class="sec-h"><p class="eyebrow">À l'école</p><h2 id="h-ecoles">Écoles</h2></div>
   <div class="card"><p>${esc(ECOLES_TEXTE(ecoles.LIST.length))}</p><p><a href="${ECOLES}">Les écoles sur la carte →</a> · <a href="${ECOLES}#college">Quel collège pour votre adresse\u00a0? →</a></p></div>
@@ -203,6 +219,27 @@ ${marmaillesSection()}
 ${connectorCta("annuaire_services_publics", "les lieux pour les enfants")}`;
 
   return layout(origin, { title: TITLE, description: DESCRIPTION, path, jsonld: [crumbs(origin, "Enfants", path), webPage(origin, path, TITLE, DESCRIPTION, data)], alerte }, band, g.ligne + body);
+}
+
+/**
+ * The places for the children under 3, commune by commune (vie/creches.ts): the CAF's own figures, the island's from
+ * its file of the département, never a mean of rates; the communes below 10 000 inhabitants in their
+ * intercommunalité's line only. No crèche named: monenfant.fr does not allow it.
+ */
+export function crechesSection(): string {
+  const cells = (o: creches.Offre) =>
+    `<td>${creches.taux(o.creche)}</td><td>${creches.taux(o.global)}</td><td>${nombre(o.places_creche)}</td>`;
+  const head = (first: string) => `<thead><tr><th scope="col">${first}</th><th scope="col">${CRECHES.creche}</th><th scope="col">${CRECHES.global}</th><th scope="col">${CRECHES.places}</th></tr></thead>`;
+  const rows = creches.communes().map(([nom, o]) => `<tr><th scope="row">${esc(nom)}</th>${cells(o)}</tr>`).join("");
+  const ile = `<tr><th scope="row">${CRECHES.ile}</th>${cells(creches.ILE)}</tr>`;
+  const epci = creches.intercommunalites().map((e) => `<tr><th scope="row">${esc(e.nom[0].toUpperCase() + e.nom.slice(1))}<small>${esc(creches.nomsDe(e).join(", "))}</small></th>${cells(e)}</tr>`).join("");
+  return `<section id="creches" aria-labelledby="h-creches">
+  <div class="sec-h"><p class="eyebrow">Avant l'école</p><h2 id="h-creches">${CRECHES.titre}</h2></div>
+  <div class="card"><p>${esc(CRECHES.intro(creches.ANNEE))}</p><p>${esc(CRECHES.sans(creches.sansChiffre()))}</p><p>${CRECHES.trouver}</p></div>
+  <div class="card table-wrap"><table class="drought histo passe">${head("Commune")}<tbody>${ile}${rows}</tbody></table></div>
+  <div class="card table-wrap"><table class="drought histo passe">${head("Inter\u00adcommunalité")}<tbody>${epci}</tbody></table></div>
+  <p class="note">${esc(CRECHES.credit(creches.ANNEE, dayMonth(creches.PUBLIE_LE), creches.PUBLIE_LE.slice(0, 4)))}</p>
+</section>`;
 }
 
 /** The schools' part: what /ecoles has. */

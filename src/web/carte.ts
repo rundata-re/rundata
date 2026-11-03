@@ -98,6 +98,8 @@ interface Dit {
   unite: [string, string];
   /** The organisation named when the source is silent. */
   organisme: string;
+  /** Pages to read before going, linked in the panel after its page's. */
+  liens?: [string, string][];
 }
 
 const DIT: Record<string, Dit> = {
@@ -146,6 +148,11 @@ const DIT: Record<string, Dit> = {
     montre: "Les sentiers marmailles, balades pour toute la famille recensées par le Conseil Général et l'AGORAH, avec leur longueur et leur durée. Tracés sans date : un chemin a pu changer depuis. Leur état n'est pas ici : cochez aussi « Sentiers fermés » avant de partir.",
     rubrique: "Enfants", court: "Conseil Général / AGORAH", unite: ["sentier", "sentiers"], organisme: "le Conseil Général et l'AGORAH",
   },
+  canyons: {
+    montre: "Les canyons recensés par le Parc national, d'après son inventaire sans date, avec leur longueur. En rouge : signalé interdit dans l'inventaire. L'inventaire ne dit pas si un canyon est autorisé : une interdiction a pu être levée, ou décidée depuis. Jamais de canyon par temps de pluie ou de vigilance : l'eau monte vite. Cochez aussi « Sentiers fermés » avant de partir.",
+    rubrique: "Randonnée", court: "Parc national", unite: ["canyon", "canyons"], organisme: "le Parc national",
+    liens: [["/vigilance", "La vigilance"], ["/crues", "Les rivières"]],
+  },
   monuments: {
     montre: "Les immeubles protégés au titre des monuments historiques, classés ou inscrits, d'après la base Mérimée du ministère de la Culture. Beaucoup sont des propriétés privées : être protégé ne veut pas dire se visiter.",
     rubrique: "Communes", court: "Base Mérimée", unite: ["monument", "monuments"], organisme: "la base Mérimée",
@@ -159,7 +166,7 @@ const SOUS: Record<string, string> = { "enfants-osm": "OpenStreetMap", "enfants-
  * The order of drawing, from the bottom: the trails' lines, then the points from the most to the fewest, the rarest
  * and the stations' figures on top, so that a crowded layer never hides another. The rain is under the land's lines.
  */
-export const ORDRE = ["marmailles", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
+export const ORDRE = ["marmailles", "canyons", "sentiers", "rivieres", "enfants-basilic", "enfants-data-es", "enfants-osm", "defibrillateurs", "bornes", "monuments", "seismes", "stations"];
 
 /**
  * A view: its name on its button and in its address, what it shows (marketing's words), its layers, its frame (west,
@@ -255,7 +262,7 @@ function bloc(c: Couche): string {
   const src = `Source : ${esc(c.source.attribution)}, ${esc(c.source.licence)}${c.id === "rivieres" ? '<span class="kmaj"></span>' : ""}.`;
   return `<article class="kp" data-c="${esc(c.id)}" hidden><h3><i class="km kc-${esc(c.id)}" aria-hidden="true"></i>${esc(c.nom)} <span class="nat n-${c.nature}">${MOTS.natures[c.nature]}</span></h3>` +
     `<p class="kmo">${esc(d.montre)}</p><p class="kt"></p><p>${esc(MOTS.precisions[c.precision])}</p><p>${src}</p><p class="kn"></p><p class="ks" role="status"></p>` +
-    `<p class="kl2"><a href="${esc(c.page)}">${esc(MOTS.voir(d.rubrique))}</a><a href="${esc(fichierOf(c))}" download>${esc(MOTS.telecharger(c.source.licence))}</a></p></article>`;
+    `<p class="kl2"><a href="${esc(c.page)}">${esc(MOTS.voir(d.rubrique))}</a>${(d.liens ?? []).map(([href, t]) => `<a href="${esc(href)}">${esc(t)}</a>`).join("")}<a href="${esc(fichierOf(c))}" download>${esc(MOTS.telecharger(c.source.licence))}</a></p></article>`;
 }
 
 /** The page: built once per isolate, its layers' data asked by the script. */
@@ -325,13 +332,14 @@ else if(c.id==="sentiers"){const k=/éruption/i.test(i.cause||"")?"instable apr�
 else if(c.id==="defibrillateurs"){p2=K.acces[i.exterieur?0:i.horaires==="24 h/24, 7 j/7"?1:i.acces_libre?2:3]+(i.etage?" · "+i.etage:"");p3=src("liste du "+jm(j.heure))}
 else if(c.id==="bornes"){const kw=" · jusqu'à "+dec(i.kw_max)+"\\u00a0kW"+(i.gratuit?" · gratuit":"")+(i.acces_reserve?" · accès réservé":"");
 if(i.libres!=null){p2=(i.libres?nb(i.libres)+" libre"+(i.libres>1?"s":""):"aucun libre")+" sur "+nb(i.total)+kw;p3=src("état de "+hm(j.heure))}else{p2=un(i.points,["point de charge","points de charge"])+kw.replace(" · jusqu'à",", jusqu'à");p3=src("état non lu")}}
+else if(c.id==="canyons"){p2=[i.type,i.signalement].filter(Boolean).join(" · ");p3=src("inventaire sans date")}
 else{p2=[i.type,i.adresse].filter(Boolean).join(" · ");p3=src("liste du "+jm(j.heure))}
 return[o.nom+(o.commune?" · "+o.commune:""),p2,p3]};
 const lien=(c,o)=>c.id==="defibrillateurs"?"/defibrillateurs#"+(K.dae[o.commune]||""):c.id.startsWith("enfants-")?(K.enfants[o.commune]||c.page):o.lien||c.page;
 const point=(c,o,j)=>{const x=X(o.lon),y=Y(o.lat),l=lines(c,o,j),a=el("a",{class:"sp",href:lien(c,o),tabindex:"-1","aria-label":l.filter(Boolean).join(", "),"data-pt":"Voir la page "+c.rubrique+" →"});["pn","p2","p3"].forEach((k,n)=>{if(l[n])a.setAttribute("data-"+k,l[n])});
 const d="M"+x+" "+y+"h0",i=o.infos||{};a.append(el("circle",{class:"hit",cx:x,cy:y,r:"3"}),el("path",{class:"kr",d}),el("path",{class:"kd",d}));
 if(c.id==="seismes"){const w=Math.max(7,Math.min(40,8+7*i.magnitude));a.style.setProperty("--w",w+"px")}
-if(c.id==="bornes"&&i.libres===0)a.classList.add("k0");if(i.ancienne)a.classList.add("kv");
+if(c.id==="bornes"&&i.libres===0)a.classList.add("k0");if(i.alerte)a.classList.add("kti");if(i.ancienne)a.classList.add("kv");
 if(c.id==="stations"&&i.temperature!=null){const t=el("text",{x,y,dy:"-.75em",class:"kt"});t.textContent=Math.round(i.temperature)+"°";a.append(t)}return a};
 const rain=(j)=>{const cv=svg.querySelector(".kpluie canvas");if(!cv)return;cv.width=j.w;cv.height=j.h;const g=cv.getContext("2d"),im=g.createImageData(j.w,j.h),P=K.pluie.couleurs.map((s)=>s.match(/[\\d.]+/g).map(Number));
 for(let k=0;k<j.w*j.h;k++){const v=j.pluie.charCodeAt(k)-48,mal=j.mal_vu&&j.mal_vu[k]==="1",q=k*4;if(v>=1&&v<=8){const p=P[v-1];im.data[q]=p[0];im.data[q+1]=p[1];im.data[q+2]=p[2];im.data[q+3]=Math.round(p[3]*255)}
@@ -344,7 +352,7 @@ const wet=(o)=>{const i=o.infos||{};return!i.ancienne&&i.pluie_1h>0};
 const rings=(j)=>{pv.replaceChildren(...j.objets.filter(wet).flatMap((o)=>[el("circle",{class:"kpb",cx:X(o.lon),cy:Y(o.lat),r:"12"}),el("circle",{cx:X(o.lon),cy:Y(o.lat),r:"12"})]));place()};
 const draw=(c,j)=>{draw0(c,j);if(KC.on&&KC.frame&&(c.id==="pluie"||c.id==="stations"))KC.frame(true)};
 const draw0=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
-if(c.forme==="traces")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl",d}))});
+if(c.forme==="traces")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl"+((o.infos||{}).alerte?" kti":""),d}))});
 j.objets.forEach((o)=>g.append(point(c,o,j)));
 if(!wired&&j.objets.length){wired=true;svg.dispatchEvent(new Event("carte",{bubbles:true}))}};
 const said=(c,j)=>{const r=KC.said&&KC.said(c);if(r)return r;const o=j?j.objets||[]:[],hs=o.map((x)=>Date.parse(x.heure)).filter((t)=>t>0);
@@ -353,6 +361,7 @@ if(c.id==="pluie")return["image de "+hm(j.fin)];
 if(c.id==="rivieres")return[un(o.length,c.unite),hm(j.heure)];
 if(c.id==="seismes")return o.length?[nb(o.length)+" en 7\\u00a0jours","dernier "+quand(o[0].heure)]:["aucun localisé par l'OVPF-IPGP en 7\\u00a0jours"];
 if(c.id==="sentiers")return[nb(o.length),"carte de l'ONF du "+jm(j.heure)];
+if(c.id==="canyons"){const n=o.filter((x)=>(x.infos||{}).alerte).length;return[nb(o.length),"dont "+nb(n)+" en rouge","inventaire sans date"]}
 if(c.id==="bornes"){if(j.copie==="absente")return[nb(o.length),"état non lu"];const f=o.reduce((n,x)=>n+(x.infos.libres||0),0),t=o.reduce((n,x)=>n+(x.infos.total||0),0);return[nb(f)+" libre"+(f>1?"s":"")+" sur "+nb(t),"état de "+hm(j.heure)]}
 if(c.id.startsWith("enfants-"))return[un(o.length,c.unite),"liste du "+jm(j.heure)];return[nb(o.length),"liste du "+jm(j.heure)]};
 const etat=(c,j)=>!j||j==="err"||j.erreur||j.copie==="absente"&&c.id!=="bornes"?"echec":j.copie==="ancienne"?"vieux":"ok";

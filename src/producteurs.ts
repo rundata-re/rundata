@@ -150,6 +150,7 @@ export const FICHES: Record<string, Fiche> = {
   merimee_monuments: { famille: "licence_ouverte", producteurs: ["Ministère de la Culture"] },
   sit_lieux_remarquables: { famille: "licence_ouverte", producteurs: ["Système d'information touristique de La Réunion"] },
   region_sentiers_marmailles: { famille: "licence_ouverte", producteurs: ["Conseil Général de La Réunion", "AGORAH"] },
+  parc_national_canyons: { famille: "licence_ouverte", producteurs: ["Parc national de La Réunion"] },
   // Calendar, transport, trails.
   education_calendrier: { famille: "licence_ouverte", producteurs: ["Ministère de l'Éducation nationale"] },
   jours_feries: { famille: "licence_ouverte", producteurs: ["Etalab"] },

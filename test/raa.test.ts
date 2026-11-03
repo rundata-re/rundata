@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as raa from "../src/providers/raa.js";
 import { actualites, RAA_A_SAVOIR } from "../src/tools/actualites.js";
-import { ecarte, FILTRES, garder, parseListe, parseRecueil, prenoms } from "../scripts/raa-lire.js";
+import { couverture, ecarte, ecrire, FILTRES, garder, parseListe, parseRecueil, prenoms, suite } from "../scripts/raa-lire.js";
 
 // Every title and name here is made up: no act of a real recueil, no real person.
 const NOW = new Date("2026-11-03T08:00:00Z");
@@ -87,6 +87,37 @@ describe("the prefecture's recueil des actes administratifs", () => {
   });
 });
 
+describe("what the recueils read cover", () => {
+  const r = (n: number, date: string): raa.Recueil => ({ titre: `Spécial n° ${n}`, numero: n, date, lien: `https://www.reunion.gouv.fr/${n}` });
+  // Page 1 of the list, newest first; the 15 days from 19/10.
+  const liste = [r(5, "2026-11-03"), r(4, "2026-11-01"), r(3, "2026-10-28"), r(2, "2026-10-22"), r(1, "2026-10-15")];
+  const lus = (...n: number[]) => new Set(n.map((k) => `https://www.reunion.gouv.fr/${k}`));
+
+  it("writes nothing to the store while the first catch-up of the 15 days is not done", () => {
+    const debut = couverture(liste, false, lus(5, 4, 3), "2026-10-19");
+    expect(debut.a_lire.map((x) => x.numero)).toEqual([2]);
+    expect(debut.lus_depuis).toBe("2026-10-28");
+    expect(ecrire(false, debut)).toBe(false);
+    const fin = couverture(liste, false, lus(5, 4, 3, 2), "2026-10-19");
+    expect(fin).toEqual({ a_lire: [], lus_depuis: undefined, publiable: true });
+    expect(ecrire(false, fin)).toBe(true);
+  });
+
+  it("says since when the recueils are read without a gap once it lags again, and writes nothing while the newest is unread", () => {
+    // The site silent for hours: the 3 newest read again, n° 2 left to read.
+    const retard = couverture(liste, false, lus(5, 4, 3), "2026-10-19");
+    expect(ecrire(true, retard)).toBe(true);
+    expect(retard.lus_depuis).toBe("2026-10-28");
+    expect(ecrire(true, couverture(liste, false, lus(4, 3, 2), "2026-10-19"))).toBe(false);
+    // More recueils in 15 days than page 1 holds: covered since the oldest of page 1.
+    const page = liste.slice(0, 4);
+    expect(couverture(page, true, lus(5, 4, 3, 2), "2026-10-19").lus_depuis).toBe("2026-10-22");
+    expect(couverture(page, false, lus(5, 4, 3, 2), "2026-10-19").lus_depuis).toBeUndefined();
+    expect(suite('<a id=x class="fr-pagination__link fr-pagination__link--next" href="/RAA-2026/(offset)/10">')).toBe(true);
+    expect(suite('<a id=x class="fr-pagination__link fr-pagination__link--next">')).toBe(false);
+  });
+});
+
 describe("the acts in the news of a place", () => {
   const acte = (titre: string, communes: string[], date: string): raa.Acte => ({
     titre, service: "CABINET", date, recueil: { numero: 7, date, lien: "https://www.reunion.gouv.fr/r" }, pdf: `https://www.reunion.gouv.fr/${titre.length}.pdf`, communes, lieux: [],
@@ -139,6 +170,16 @@ describe("the acts in the news of a place", () => {
     const ile = body(await actualites(new Cache(new MemoryStore(), () => NOW.getTime()), undefined, undefined, undefined, NOW));
     expect(ile.arretes_prefecture).toBeUndefined();
     expect(reads).toBe(1);
+  });
+
+  it("says the acts and their absence of the recueils read since a day, when they do not cover the 15 days", async () => {
+    raa.configure(async () => ({ ...stored, lus_depuis: "2026-10-24" }));
+    const c = new Cache(new MemoryStore(), () => NOW.getTime());
+    const b = body(await actualites(c, "Saint-Denis", undefined, undefined, NOW));
+    expect(b.resume).toContain("1 acte des recueils lus depuis le 24/10 nomme Saint-Denis\u00a0:");
+    expect(b.arretes_prefecture.recueils_lus_depuis).toBe("2026-10-24");
+    const t = body(await actualites(c, "Le Tampon", undefined, undefined, NOW));
+    expect(t.arretes_prefecture.aucun).toBe("Aucun titre des recueils lus depuis le 24/10 ne nomme Le Tampon.");
   });
 
   it("is not given where nothing is configured (a local server)", async () => {

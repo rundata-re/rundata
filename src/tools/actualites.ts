@@ -99,6 +99,8 @@ export const RAA_A_SAVOIR =
   `des ${raa.DAYS} derniers jours sont lus, et un titre qui pourrait nommer une personne n'est pas repris.`;
 
 const jj = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
+/** « des 15 derniers jours », or « des recueils lus depuis le 24/10 » when the recueils read do not cover them all. */
+const periodeRaa = (c: raa.Copie) => (c.lus_depuis ? `des recueils lus depuis le ${jj(c.lus_depuis).slice(0, 5)}` : `des ${raa.DAYS} derniers jours`);
 const recueilDe = (r: raa.Acte["recueil"]) => `recueil${r.numero ? ` n°\u00a0${r.numero}` : ""} du ${jj(r.date)}`;
 
 /** The prefecture's acts that name the place asked, from the recueils the collector read (providers/raa.ts). */
@@ -112,8 +114,9 @@ export function arretesBlock(c: raa.Copie, actes: raa.Acte[], where: string) {
       lien_recueil: x.recueil.lien,
       pdf: x.pdf,
     })) : undefined,
-    aucun: actes.length ? undefined : `Aucun titre des recueils des ${raa.DAYS} derniers jours ne nomme ${where}.`,
+    aucun: actes.length ? undefined : `Aucun titre ${c.lus_depuis ? periodeRaa(c) : `des recueils des ${raa.DAYS} derniers jours`} ne nomme ${where}.`,
     dernier_recueil_lu: c.recueils[0]?.titre,
+    recueils_lus_depuis: c.lus_depuis,
     a_savoir: RAA_A_SAVOIR,
   };
 }
@@ -208,7 +211,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     silent,
     prefecture.length ? `Dernier communiqué de la préfecture, ${quand(prefecture[0], now)} : « ${prefecture[0].titre} ».` : "",
     arretes.length
-      ? `Au recueil des actes administratifs de la préfecture, ${arretes.length} acte${arretes.length > 1 ? "s" : ""} des ${raa.DAYS} derniers jours nomme${arretes.length > 1 ? "nt" : ""} ${where}\u00a0: « ${arretes[0].titre} » (${recueilDe(arretes[0].recueil)}).`
+      ? `Au recueil des actes administratifs de la préfecture, ${arretes.length} acte${arretes.length > 1 ? "s" : ""} ${periodeRaa(raaCopie!)} nomme${arretes.length > 1 ? "nt" : ""} ${where}\u00a0: « ${arretes[0].titre} » (${recueilDe(arretes[0].recueil)}).`
       : "",
   ].filter(Boolean).join(" ");
 

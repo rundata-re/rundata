@@ -57,6 +57,12 @@ export interface Copie {
   actes: Acte[];
   /** The recueils read (their page), newest first, with the number of their acts read and kept. */
   recueils: (Recueil & { actes: number; gardes: number })[];
+  /**
+   * The day of the oldest recueil read with none unread after it, when the recueils read do not cover the last DAYS:
+   * recueils left to read (the site silent for hours), or more recueils in those days than page 1 of the list holds.
+   * What is said absent is said of the recueils since that day.
+   */
+  lus_depuis?: string;
   /** When the collector wrote it (ISO, UTC): a run that changes nothing does not write. */
   lu_le: string;
 }

@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { office } from "../src/providers/annuaire.js";
+import { justice, office, type JusticePlace } from "../src/providers/annuaire.js";
 import { annuaireTool, hoursText, named, openNow } from "../src/tools/annuaire.js";
+import { JUSTICE } from "../src/tools/justice.js";
 import { withVide } from "../src/vide.js";
 
 // A search for « mairie » in the 974 entries of service-public.fr's directory, 23/10/2026.
@@ -73,5 +74,73 @@ describe("public services directory", () => {
     expect(body(none.value).resume).toBe("Aucun service public trouvé à La Réunion pour « observatoire ».");
     expect(none.vide).toBe(true);
     expect((await withVide("annuaire_services_publics", () => annuaireTool(cache, "mairie", undefined, now))).vide).toBe(false);
+  });
+});
+
+// The places of justice in the 974 entries, as justice() asks for them, 03/11/2026: 48, of which 5 points-justice in a prison or at the EPSMR.
+const justiceRows = JSON.parse(readFileSync(new URL("./fixtures/annuaire_justice.json", import.meta.url), "utf8")).results;
+
+describe("places of justice", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const read = async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ total_count: justiceRows.length, results: justiceRows }), { headers: { "content-type": "application/json" } })));
+    const now = new Date("2026-11-03T06:00:00Z"); // mardi 10:00
+    const cache = new Cache(new MemoryStore(), () => now.getTime());
+    return { cache, now, places: (await justice(cache)).value };
+  };
+
+  it("asks for every kind of place in one request, and reads each one's kind", async () => {
+    const { places } = await read();
+    const url = decodeURIComponent(String(vi.mocked(fetch).mock.calls[0][0]));
+    for (const t of ["point_justice", "cdad", "tgi", "ti", "te", "prudhommes", "cour_appel", "ta", "bav", "aav"]) expect(url).toContain(`pivot like "%\\"${t}\\"%"`);
+    expect(url).toContain('startswith(code_insee_commune,"974")');
+    expect(url).toContain("limit=100");
+    expect(places).toHaveLength(48);
+    expect(places.filter((o: JusticePlace) => o.type === "point_justice")).toHaveLength(32);
+  });
+
+  it("writes the courts' numbers as phones are written, and no hours where only a note is given", async () => {
+    const { places, now } = await read();
+    const at = (nom: string) => places.find((o: JusticePlace) => o.nom === nom)!;
+    expect(at("Tribunal judiciaire de Saint-Pierre").telephone).toBe("02 62 96 10 00");
+    const bav = at("Bureau d'aide aux victimes du tribunal judiciaire de St Denis");
+    expect(hoursText(bav)).toBe("lundi au dimanche (Permanences lors des audiences de comparution immédiate)");
+    expect(openNow(bav, now)).toBeNull();
+    expect(openNow(at("Tribunal judiciaire de Saint-Denis"), now)).toBe(true);
+  });
+
+  it("gives the nearest point-justice, and says most publish no hours", async () => {
+    const { cache, now } = await read();
+    const r = body(await annuaireTool(cache, "point-justice", "Cilaos", now));
+    expect(r.resume).toMatch(/^Point-justice le plus proche de Cilaos : Point-justice de Cilaos, 4 rue des Ecoles, 97413 CILAOS \(à [\d,]+ km\), horaires non publiés, tél\. 02 62 28 92 82\.$/);
+    expect(r.points_justice).toHaveLength(3);
+    expect(r.tribunaux).toBeUndefined();
+    expect(r.avertissements[0]).toBe("26 des 27 points-justice ne publient pas leurs horaires sur service-public.fr : appeler avant d'y aller.");
+    expect(r.page).toBe("https://rundata.re/communes/cilaos");
+  });
+
+  it("never gives the points-justice held in a prison or at the EPSMR", async () => {
+    const { cache, now } = await read();
+    const r = body(await annuaireTool(cache, "justice", undefined, now));
+    expect(r.resume).toBe("À La Réunion, d'après l'annuaire de service-public.fr : 27 points-justice et le conseil départemental de l'accès au droit, 10 juridictions, 5 lieux d'aide aux victimes. Donner une commune pour les plus proches.");
+    expect(JSON.stringify(r)).not.toMatch(/EPSMR de|détention|Pénitentiaire|Maison d'arrêt/);
+  });
+
+  it("gives only the court named, before the places for children", async () => {
+    const { cache, now } = await read();
+    const r = body(await annuaireTool(cache, "tribunal pour enfants", "Le Tampon", now));
+    expect(r.tribunaux.map((o: { type: string }) => o.type)).toEqual(["tribunal pour enfants", "tribunal pour enfants"]);
+    expect(r.tribunaux[0].nom).toBe("Tribunal pour enfants de Saint-Pierre");
+    expect(r.avertissements).toContain("La juridiction compétente dépend de l'affaire et de l'adresse : la plus proche n'est pas forcément celle-là.");
+    const v = body(await annuaireTool(cache, "aide aux victimes", "Saint-Benoît", now));
+    expect(v.aide_aux_victimes).toHaveLength(3);
+    expect(v.avertissements).toContain("En cas de danger immédiat : le 17.");
+  });
+
+  it("leaves the commissaires de justice and the victims of war to the directory's search", () => {
+    expect(JUSTICE.test("commissaire de justice")).toBe(false);
+    expect(JUSTICE.test("victimes de guerre")).toBe(false);
+    expect(["point justice", "Point-justice", "tribunal", "prud'hommes", "aide aux victimes", "accès au droit"].every((q) => JUSTICE.test(q))).toBe(true);
   });
 });

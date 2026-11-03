@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 3 novembre 2026
 
+- Connecteur : les points-justice, tribunaux et lieux d'aide aux victimes les plus proches, avec leur téléphone, d'après service-public.fr.
 - Claude : rundata.re est disponible dans l'annuaire des connecteurs de Claude ; on le branche depuis sa fiche, sans adresse.
 
 ## Dimanche 1 novembre 2026

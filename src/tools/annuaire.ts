@@ -11,6 +11,7 @@ import { COLLECTION, collecteAnswer } from "./collecte.js";
 import { decheteriesAnswer, WASTE } from "./decheteries.js";
 import { CHILDREN, enfantsAnswer } from "./enfants.js";
 import { collegeAnswer, ecolesAnswer, SCHOOL } from "./etablissements.js";
+import { JUSTICE, justiceAnswer } from "./justice.js";
 import { MARKET, marchesAnswer } from "./marches.js";
 import { DOCTOR, medecinsAnswer } from "./medecins.js";
 import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "./sante.js";
@@ -36,13 +37,15 @@ export function hoursText(o: annuaire.Office): string | undefined {
   if (!o.horaires.length) return undefined;
   const all = withMinutes(o);
   return o.horaires
-    .map((h) => `${h.de === h.a ? h.de : `${h.de} au ${h.a}`} ${h.plages.map(([d, f]) => span(d, f, all)).join(" et ")}${h.note ? ` (${h.note})` : ""}`)
-    .join("\u00a0; ");
+    .filter((h) => h.plages.length || h.note)
+    .map((h) => `${h.de === h.a ? h.de : `${h.de} au ${h.a}`}${h.plages.map(([d, f]) => ` ${span(d, f, all)}`).join(" et")}${h.note ? ` (${h.note})` : ""}`)
+    .join("\u00a0; ") || undefined;
 }
 
 /** Open at `now` (local time), from the published hours; null when no hours are published. */
 export function openNow(o: annuaire.Office, now: Date): boolean | null {
-  if (!o.horaires.length) return null;
+  // Days with only a note (« permanences lors des audiences »): no hours to tell.
+  if (!o.horaires.some((h) => h.plages.length)) return null;
   const local = new Date(now.getTime() + 4 * 3600_000);
   const day = local.getUTCDay();
   const hm = `${String(local.getUTCHours()).padStart(2, "0")}:${String(local.getUTCMinutes()).padStart(2, "0")}`;
@@ -80,7 +83,8 @@ export function named(list: annuaire.Office[], quoi: string): annuaire.Office[] 
 
 export async function annuaireTool(cache: Cache, quoi: string, lieu: string | undefined, now = new Date(), adresse?: string) {
   // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
-  // the fuel prices, the doctors, the schools, where to go with children.
+  // the fuel prices, the doctors, the schools, where to go with children; the places of justice first (« tribunal pour enfants »).
+  if (JUSTICE.test(quoi)) return justiceAnswer(cache, quoi, lieu, now);
   if (PHARMACY.test(quoi)) return pharmaciesAnswer(lieu);
   if (GARDE.test(quoi)) return gardeAnswer(quoi, lieu);
   if (EMERGENCY.test(quoi)) return urgencesAnswer(lieu);

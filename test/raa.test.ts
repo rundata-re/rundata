@@ -160,7 +160,8 @@ describe("the acts in the news of a place", () => {
     // The media of test/actualites.test.ts, which name none of these acts.
     const fixture = (f: string) => readFileSync(new URL(`./fixtures/actualites/${f}`, import.meta.url), "utf8");
     vi.stubGlobal("fetch", async (url: string) => {
-      const f = url.includes("clicanoo") ? "clicanoo.xml" : url.includes("freedom") ? "freedom.xml" : undefined;
+      const host = new URL(url).hostname;
+      const f = host === "www.clicanoo.re" ? "clicanoo.xml" : host === "freedom.fr" ? "freedom.xml" : undefined;
       return f ? new Response(fixture(f)) : new Response("", { status: 503 });
     });
     raa.configure(async () => (reads++, stored));

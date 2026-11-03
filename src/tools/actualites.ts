@@ -2,6 +2,7 @@ import type { Cache } from "../cache.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as src from "../providers/actualites.js";
 import * as copie from "../providers/prefecture-copie.js";
+import * as raa from "../providers/raa.js";
 import { ACCUEIL, NOTE_ACCUEIL } from "../providers/accueils-medias.js";
 import * as radars from "../routes/radars.js";
 import { localTime } from "../geo.js";
@@ -31,6 +32,7 @@ const MAX_HOURS = 72;
 const ARTICLES_MAX = 15;
 const LIVE_MAX = 8;
 const PREFECTURE_DAYS = 3;
+const ARRETES_MAX = 5;
 
 // The media read (providers/actualites.ts, LUS), Imaz Press with its live blog.
 const IMAZ_DIRECT = "Imaz Press (et son direct « l'actu en continu » les jours de mobilisation, de cyclone ou d'éruption)";
@@ -92,6 +94,30 @@ export function infoRow(i: src.Info, now: Date) {
 }
 export type InfoRow = ReturnType<typeof infoRow>;
 
+export const RAA_A_SAVOIR =
+  "Titres tels que publiés par la préfecture, le PDF fait foi. Une absence ne veut pas dire qu'il n'y a pas d'arrêté\u00a0: seuls les titres des recueils " +
+  `des ${raa.DAYS} derniers jours sont lus, et un titre qui pourrait nommer une personne n'est pas repris.`;
+
+const jj = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
+const recueilDe = (r: raa.Acte["recueil"]) => `recueil${r.numero ? ` n°\u00a0${r.numero}` : ""} du ${jj(r.date)}`;
+
+/** The prefecture's acts that name the place asked, from the recueils the collector read (providers/raa.ts). */
+export function arretesBlock(c: raa.Copie, actes: raa.Acte[], where: string) {
+  return {
+    actes: actes.length ? actes.slice(0, ARRETES_MAX).map((x) => ({
+      titre: x.titre,
+      service: x.service,
+      date: x.date,
+      recueil: recueilDe(x.recueil),
+      lien_recueil: x.recueil.lien,
+      pdf: x.pdf,
+    })) : undefined,
+    aucun: actes.length ? undefined : `Aucun titre des recueils des ${raa.DAYS} derniers jours ne nomme ${where}.`,
+    dernier_recueil_lu: c.recueils[0]?.titre,
+    a_savoir: RAA_A_SAVOIR,
+  };
+}
+
 /** How `sujet` is understood: one of the subjects, or else words that must all be in the headline or its first lines. */
 export function sujetMatcher(sujet: string | undefined): { nom: string; test: (i: src.Info) => boolean } | null {
   const q = normalize(sujet ?? "");
@@ -152,6 +178,9 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   if (said && !mine.length && data.infos.length) return notFound(lieu!);
   const prefecture = data.prefecture.filter((i) => i.publie >= new Date(now.getTime() - PREFECTURE_DAYS * 86_400_000).toISOString() && (!what || what.test(i))).slice(0, 3);
 
+  // The prefecture's acts that name the place: the store is read only when a place is asked.
+  const raaCopie = asked ? (await raa.copie(cache))?.value : undefined;
+  const arretes = raaCopie ? raa.actesDe(raaCopie, commune, place, now) : [];
   const kind = what ? ` (${what.nom})` : "";
   const latest = (i: src.Info) => `${quand(i, now)} (${i.media}${i.direct ? ", en direct" : ""}) : « ${i.titre} »`;
   // What an item says of the place asked for: its first sentence, the only text kept, when it names it.
@@ -178,6 +207,9 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     live.length ? `En direct sur l'île, ${latest(live[0])}.` : "",
     silent,
     prefecture.length ? `Dernier communiqué de la préfecture, ${quand(prefecture[0], now)} : « ${prefecture[0].titre} ».` : "",
+    arretes.length
+      ? `Au recueil des actes administratifs de la préfecture, ${arretes.length} acte${arretes.length > 1 ? "s" : ""} des ${raa.DAYS} derniers jours nomme${arretes.length > 1 ? "nt" : ""} ${where}\u00a0: « ${arretes[0].titre} » (${recueilDe(arretes[0].recueil)}).`
+      : "",
   ].filter(Boolean).join(" ");
 
   const roadAsked = road || littoral.ENDS.includes(commune ?? "") || /\b(?:routes?|circulation|trafic|littoral|radars?)\b/.test(normalize(sujet ?? ""));
@@ -193,6 +225,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     en_direct: live.length ? live.map((i) => ({ ...infoRow(i, now), mentionne_le_lieu: asked ? names(i) : undefined })) : undefined,
     prefecture: prefecture.length ? prefecture.map((i) => infoRow(i, now)) : undefined,
     prefecture_injoignable: prefSilent,
+    arretes_prefecture: raaCopie ? arretesBlock(raaCopie, arretes, where!) : undefined,
     sujet_non_compris: sujet?.trim() && !what ? `« ${sujet} » n'a pas été compris : toutes les informations sont données.` : undefined,
     sujets_possibles: src.SUJETS.map((s) => `${s.id} (${s.nom})`),
     indisponible: data.indisponible.length ? data.indisponible : undefined,
@@ -200,6 +233,6 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     a_savoir: A_SAVOIR,
     // Réunion La 1ère, not read (tools/non-repris.ts): said in an answer for the whole island.
     non_repris: asked ? undefined : mentionLa1ere("actualites"),
-    sources: credits([src.SOURCES.medias, src.SOURCES.prefecture, ...(cameras ? [radars.SOURCE] : [])]),
+    sources: credits([src.SOURCES.medias, src.SOURCES.prefecture, ...(raaCopie ? [raa.SOURCE] : []), ...(cameras ? [radars.SOURCE] : [])]),
   });
 }

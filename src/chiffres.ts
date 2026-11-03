@@ -69,7 +69,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "cyclones", sources: ids("gdacs_cyclones"), cadence: { minutes: 30, de: "gdacs_cyclones" } },
   // Written to D1 once a day (.github/workflows/climat.yml).
   { categorie: "historique", sources: ids("mf_climatologie", "mf_climatologie_horaire"), cadence: { minutes: DAY, de: "mf_climatologie" } },
-  { categorie: "actualites", sources: ids("medias_locaux", "prefecture_communiques"), cadence: { minutes: 5, de: "medias_locaux" } },
+  { categorie: "actualites", sources: ids("medias_locaux", "prefecture_communiques", "prefecture_raa"), cadence: { minutes: 5, de: "medias_locaux" } },
   // The OVPF's earthquakes every 10 minutes (providers/seismes.ts).
   { categorie: "volcan", sources: ids("ipgp_ovpf_seismes", "ovpf_bluesky", "prefecture_communiques", "pitonlive"), cadence: { minutes: 10, de: "ipgp_ovpf_seismes" } },
   // The tide gauges every 5 minutes (providers/maregraphes.ts).

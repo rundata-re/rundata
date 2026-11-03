@@ -105,14 +105,17 @@ const clean = (s: string | null | undefined) => s?.replace(/\s+/g, " ").trim() |
  * The first NSF themes the catalogue publishes misspelled (all of them, over the whole catalogue, on 03/11/2026), spelled
  * as the Insee's « Nomenclature des groupes de Spécialités de Formation (NSF : niveau 100) » spells the same group
  * (https://www.insee.fr/fr/statistiques/fichier/5351753/BFE_NSF_niveau_100.pdf, decree 94-522 of 21 June 1994): the
- * catalogue's wording is kept, only its misspelled words are corrected. A theme not here is shown as published.
+ * catalogue's wording is kept, only its misspelled words are corrected. One departure from the Insee's spelling: a capital
+ * takes its accent, as everywhere on the site (« Électricité », « Énergie »), where the nomenclature leaves it out. A
+ * theme not here is shown as published.
  */
 export const THEMES_NSF: Record<string, string> = {
   "Spécialites plurivalentes de l'agronomie et de l'agriculture": "Spécialités plurivalentes de l'agronomie et de l'agriculture", // 210
   "Forets, espaces naturels, faune sauvage, pêche": "Forêts, espaces naturels, faune sauvage, pêche", // 213
   "Spécialites pluritechnologiques matériaux souples": "Spécialités pluritechnologiques matériaux souples", // 240
   "Spécialites pluritechnologiques mécanique-electricite": "Spécialités pluritechnologiques mécanique-électricité", // 250
-  "Electricite, électronique": "Electricité, électronique", // 255
+  "Energie, génie climatique": "Énergie, génie climatique", // 227
+  "Electricite, électronique": "Électricité, électronique", // 255
   "Spécialites plurivalentes des services": "Spécialités plurivalentes des services", // 300
   "Comptabilite, gestion": "Comptabilité, gestion", // 314
   "Spécialites plurivalentes de la communication et de l'information": "Spécialités plurivalentes de la communication et de l'information", // 320

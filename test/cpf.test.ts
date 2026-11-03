@@ -82,12 +82,14 @@ describe("the formations eligible to the CPF", () => {
     expect(new URL(cpf.EXPORT_URL).searchParams.get("where")).toBe('code_departement="974" and nb_session_active>0');
   });
 
-  it("spells the misspelled NSF themes as the Insee's nomenclature, and keeps a theme it does not know as published", () => {
+  it("spells the misspelled NSF themes as the Insee's nomenclature, capitals accented, and keeps a theme it does not know as published", () => {
     expect(cpf.formation(ligne({ libelle_nsf_1: "Comptabilite, gestion" }))!.theme).toBe("Comptabilité, gestion");
     expect(cpf.formation(ligne({ libelle_nsf_1: "Accueil, hotellerie, tourisme" }))!.theme).toBe("Accueil, hôtellerie, tourisme");
     expect(cpf.formation(ligne({ libelle_nsf_1: "Developpement des capacités d orientation,d insertion ou de réinsertion sociales et professionnelles" }))!.theme)
       .toBe("Développement des capacités d'orientation, d'insertion ou de réinsertion sociales et professionnelles");
-    expect(cpf.formation(ligne({ libelle_nsf_1: "Energie, génie climatique" }))!.theme).toBe("Energie, génie climatique");
+    // A capital takes its accent, as on the rest of the site, where the Insee leaves it out.
+    expect(cpf.formation(ligne({ libelle_nsf_1: "Energie, génie climatique" }))!.theme).toBe("Énergie, génie climatique");
+    expect(cpf.formation(ligne({ libelle_nsf_1: "Electricite, électronique" }))!.theme).toBe("Électricité, électronique");
     expect(cpf.formation(ligne({ libelle_nsf_1: "Thème inconnu, sans accent" }))!.theme).toBe("Thème inconnu, sans accent");
     expect(cpf.formation(ligne({ libelle_nsf_1: null }))).not.toHaveProperty("theme");
     // A corrected theme is corrected once: none is itself a published spelling.

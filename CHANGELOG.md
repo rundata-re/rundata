@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 3 novembre 2026
 
+- Communes : les résultats de chaque élection depuis 1999 et la participation, commune par commune, d'après le ministère de l'Intérieur.
 - Écoles : l'indice de position sociale des collèges et des lycées, et leurs résultats au brevet et au bac 2025 avec le taux attendu.
 - Emploi : les formations éligibles au CPF à La Réunion, par thème sur la page Emploi, et dans le connecteur avec leurs frais et leur durée.
 - Connecteur : les points-justice, tribunaux et lieux d'aide aux victimes les plus proches, avec leur téléphone, d'après service-public.fr.

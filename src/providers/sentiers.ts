@@ -151,6 +151,17 @@ const query = (layer: number, fields: string) =>
 /** Shared through KV (web/partagees.ts): /volcan's copy, built by the scheduled event, read a data center's own map. */
 export const KEY = "onf:sentiers";
 
+/**
+ * The trails the ONF manages, by name: open or closed on its map somewhere. Not those « hors gestion ONF », nor those
+ * without a state, which a count of the trails it follows would say open (04/11/2026: 53 and 2 of 351).
+ */
+export const geres = (sentiers: Sentier[]): Set<string> => new Set(sentiers.filter((s) => s.statut === "ouvert" || s.statut === "fermé").map((s) => s.nom));
+/** The trails of its map it does not manage or gives no state for, by name. */
+export const sansEtat = (sentiers: Sentier[]): number => {
+  const g = geres(sentiers);
+  return new Set(sentiers.map((s) => s.nom).filter((n) => !g.has(n))).size;
+};
+
 /** The ONF's map, read now. */
 export async function lire(): Promise<Carte> {
   const [trails, roads, meta] = await Promise.all([

@@ -519,7 +519,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   if (!lieu?.trim()) {
     return text({
       // By name, as the pages count them: the ONF's map cuts some trails in several pieces.
-      resume: `${unique(closed.map((s) => s.nom)).length} sentiers fermés sur ${unique(carte.sentiers.map((s) => s.nom)).length} suivis par l'ONF à La Réunion` +
+      resume: `${unique(closed.map((s) => s.nom)).length} sentiers fermés sur ${onf.geres(carte.sentiers).size} suivis par l'ONF à La Réunion` +
         (roadsClosed.length ? `, et ${roadsClosed.length} route${roadsClosed.length > 1 ? "s" : ""} forestière${roadsClosed.length > 1 ? "s" : ""} interdite${roadsClosed.length > 1 ? "s" : ""} à la circulation` : "") + "." + fireSentence,
       fermes_par_commune: closedByCommune(carte.sentiers),
       routes_forestieres_fermees: roadsClosed.map(roadRow),
@@ -550,7 +550,10 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     };
   } else if (res && res.lieu.type === "commune") {
     const inCommune = (s: { points: [number, number][] }) => s.points.length > 0 && communeAt(...mid(s)) === res.lieu.commune;
-    zone = { nom: res.lieu.commune, dans: cap(a(res.lieu.commune)), sentiers: carte.sentiers.filter(inCommune), routes: carte.routes.filter(inCommune) };
+    // A trail of the commune said whole, all its sections wherever they lie (04/11/2026: the Piste DFCI de la Glacière,
+    // open in Les Trois-Bassins, closed over 1,8 km past its limit, was said open there).
+    const here = new Set(carte.sentiers.filter(inCommune).map((s) => s.nom));
+    zone = { nom: res.lieu.commune, dans: cap(a(res.lieu.commune)), sentiers: carte.sentiers.filter((s) => here.has(s.nom)), routes: carte.routes.filter(inCommune) };
   } else if (res) {
     const from = { lon: res.lieu.lon, lat: res.lieu.lat };
     zone = {
@@ -593,12 +596,18 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
           : undefined;
   const receptionSaid = reception?.nombre ? `${reception.nombre} aire${reception.nombre > 1 ? "s" : ""} d'accueil de l'ONF ${reception.ou} (voir aires_accueil).` : undefined;
   if (zone) {
+    // By trail, not by section: one closed anywhere is closed (« en partie » when another is open), never also open.
     const zClosed = zone.sentiers.filter((s) => s.statut === "fermé");
-    const zOpen = zone.sentiers.filter((s) => s.statut === "ouvert").length;
-    const zOther = zone.sentiers.length - zClosed.length - zOpen;
+    const shut = unique(zClosed.map((s) => s.nom));
+    const partly = shut.filter((n) => zone!.sentiers.some((s) => s.nom === n && s.statut === "ouvert"));
+    const openNames = unique(zone.sentiers.filter((s) => s.statut === "ouvert").map((s) => s.nom)).filter((n) => !shut.includes(n));
+    const zOpen = openNames.length;
+    // A section « hors gestion ONF » or without a state is said, even on a trail open elsewhere: that part has no state.
+    const others = unique(zone.sentiers.filter((s) => s.statut !== "ouvert" && s.statut !== "fermé").map((s) => s.nom)).filter((n) => !shut.includes(n));
+    const zOther = others.length;
     const zRoads = zone.routes.filter((r) => /interdit/i.test(r.circulation));
     parts.push(zone.sentiers.length
-      ? `${zone.dans} : ${zClosed.length} sentier${zClosed.length > 1 ? "s" : ""} fermé${zClosed.length > 1 ? "s" : ""}, ${zOpen} ouvert${zOpen > 1 ? "s" : ""}` +
+      ? `${zone.dans} : ${shut.length} sentier${shut.length > 1 ? "s" : ""} fermé${shut.length > 1 ? "s" : ""}${partly.length ? ` (dont ${partly.length} en partie)` : ""}, ${zOpen} ouvert${zOpen > 1 ? "s" : ""}` +
         (zOther ? `, ${zOther} hors gestion ONF (état non connu)` : "") + (zRoads.length ? `\u00a0; ${zRoads.length} route${zRoads.length > 1 ? "s" : ""} forestière${zRoads.length > 1 ? "s" : ""} interdite${zRoads.length > 1 ? "s" : ""}` : "") + "."
       : `${zone.dans} : aucun sentier suivi par l'ONF.`);
     if (receptionSaid) parts.push(receptionSaid);
@@ -609,13 +618,13 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     zoneOut = {
       zone: zone.nom,
       randonnees_avec_trace: around.length ? around.map((r) => routeBrief(r, carte)) : undefined,
-      sentiers_fermes: zClosed.map((s) => trailRow(s, zone!.from)),
-      sentiers_ouverts: unique(zone.sentiers.filter((s) => s.statut === "ouvert").map((s) => s.nom)).flatMap((nom) => {
+      sentiers_fermes: zClosed.map((s) => ({ ...trailRow(s, zone!.from), ...(partly.includes(s.nom) ? { ferme_en_partie: true } : {}) })),
+      sentiers_ouverts: openNames.flatMap((nom) => {
         const t = traces.SENTIERS[nom];
         if (filtering(filtre) && (!t || !fits(filtre, t.km, t.dplus))) return [];
         return [t ? { sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx` } : { sentier: nom }];
       }),
-      hors_gestion_onf: zOther ? zone.sentiers.filter((s) => s.statut !== "ouvert" && s.statut !== "fermé").map((s) => s.nom) : undefined,
+      hors_gestion_onf: zOther ? others : undefined,
       routes_forestieres: zone.routes.length ? zone.routes.map(roadRow) : undefined,
     };
   }

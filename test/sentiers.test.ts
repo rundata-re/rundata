@@ -4,6 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { motifs, nuance, parseRoads, parseTrails, raison } from "../src/providers/sentiers.js";
 import { sentiersRandonnee, trailsNamed, warning } from "../src/tools/sentiers.js";
 import { buildSentiers, type SentiersAnswer } from "../src/web/data.js";
+import { communeAt } from "../src/places/resolve.js";
 import { closedTrails, randonneesLive, randonneesPage, sentiersPage } from "../src/web/domains.js";
 
 // The ONF's map of the trails on 24/10/2026, last edited on 20/10: 56 trails closed out of 351 (389 pieces).
@@ -21,6 +22,33 @@ describe("sentiers de randonnée", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("says a trail of the commune closed in part, past its limit, closed and never open (Piste DFCI de la Glacière, 04/11/2026)", async () => {
+    type F = { attributes: Record<string, unknown>; geometry?: { paths?: [number, number][][] } };
+    const json = JSON.parse(fixture("sentiers.json")) as { features: F[] };
+    const at = (f: F) => { const p = (f.geometry?.paths ?? []).flat(); return p.length ? communeAt(...p[Math.floor(p.length / 2)]) : undefined; };
+    const open = json.features.find((f) => String(f.attributes.WS_Statut).includes("ouvert") && at(f) === "Les Trois-Bassins")!;
+    const elsewhere = json.features.find((f) => at(f) === "Saint-Paul")!;
+    const nom = String(open.attributes.WS_NomIti);
+    // Only this trail named so, its open section in Les Trois-Bassins, a closed one in Saint-Paul.
+    const features = [...json.features.filter((f) => f.attributes.WS_NomIti !== nom), open,
+      { attributes: { ...open.attributes, WS_Statut: "Sentier fermé", WS_InfCaus: "Travaux", WS_LongM: 1800 }, geometry: elsewhere.geometry }];
+    vi.stubGlobal("fetch", async (url: string) => new Response(url.includes("/5/query") ? JSON.stringify({ ...json, features }) : fixture(url.includes("/4/query") ? "routes.json" : "couche.json"), { headers: { "content-type": "application/json" } }));
+    const b = body(await sentiersRandonnee(cache(), "Les Trois-Bassins", NOW));
+    expect(b.autour.sentiers_ouverts.map((x: { sentier: string }) => x.sentier)).not.toContain(nom);
+    expect(b.autour.sentiers_fermes.find((x: { sentier: string }) => x.sentier === nom)).toMatchObject({ etat: "fermé", ferme_en_partie: true, longueur_km: 1.8 });
+    expect(b.resume).toMatch(/Dans Les Trois-Bassins|Aux Trois-Bassins/);
+    expect(b.resume).toMatch(/\d+ sentiers? fermés? \(dont 1 en partie\)/);
+  });
+
+  it("counts as followed by the ONF only the trails it manages, and says the others have no state", async () => {
+    const d = await buildSentiers(cache(), NOW);
+    expect(d.suivis).toBe(324);
+    expect(d.sans_etat).toBeGreaterThan(0);
+    const page = sentiersPage("https://rundata.re", { value: d, fetchedAt: NOW, stale: false } as never, NOW);
+    expect(page).toContain(`Les autres sentiers gérés par l'ONF sont ouverts sur sa carte\u00a0; les ${d.sans_etat} sentiers hors gestion ONF ou sans état n'ont pas d'état connu ici.`);
+    expect(page).not.toContain("Les autres sentiers suivis par l'ONF sont ouverts");
+  });
+
   it("reads each trail's state, cause and line", () => {
     const trails = parseTrails(JSON.parse(fixture("sentiers.json")).features);
     expect(trails).toHaveLength(389);
@@ -34,7 +62,7 @@ describe("sentiers de randonnée", () => {
 
   it("lists the closed trails of the island by commune", async () => {
     const b = body(await sentiersRandonnee(cache(), undefined, NOW));
-    expect(b.resume).toBe("56 sentiers fermés sur 351 suivis par l'ONF à La Réunion, et 4 routes forestières interdites à la circulation.");
+    expect(b.resume).toBe("56 sentiers fermés sur 324 suivis par l'ONF à La Réunion, et 4 routes forestières interdites à la circulation.");
     expect(b.carte_mise_a_jour).toBe("20/10/2026 (ONF)");
     expect(b.fermes_par_commune[0]).toMatchObject({ commune: "Sainte-Rose" });
     expect(b.fermes_par_commune.reduce((n: number, c: { sentiers_fermes: unknown[] }) => n + c.sentiers_fermes.length, 0)).toBe(56);
@@ -52,7 +80,7 @@ describe("sentiers de randonnée", () => {
     const monday = new Date("2026-11-01T20:01:00Z");
     for (const at of [NOW, sunday, monday]) {
       const at_ = () => new Cache(new MemoryStore(), () => at.getTime());
-      expect(body(await sentiersRandonnee(at_(), undefined, at)).resume).toMatch(/^56 sentiers fermés sur 351 /);
+      expect(body(await sentiersRandonnee(at_(), undefined, at)).resume).toMatch(/^56 sentiers fermés sur 324 /);
       expect(body(await sentiersRandonnee(at_(), "Sentier de Montplaisir est ouvert ?", at)).resume).toContain(`Sentier de Montplaisir : ${montplaisir} · Travaux d'exploitation forestière.`);
       const ici = body(await sentiersRandonnee(at_(), undefined, at)).fermes_par_commune.flatMap((c: { sentiers_fermes: { sentier: string }[] }) => c.sentiers_fermes);
       expect(ici.find((t: { sentier: string }) => t.sentier === "Sentier de la Onzième Ligne")).toMatchObject({ etat: "fermé", nuance: montplaisir });
@@ -91,7 +119,7 @@ describe("sentiers de randonnée", () => {
     const b = body(await sentiersRandonnee(cache(), "sentiers fermés à Mafate", NOW));
     // A hike of the cirque crosses a closed trail: said first.
     expect(b.resume).toBe("ATTENTION : PR25 emprunte 1 sentier fermé : La Nouvelle - Maison Laclos par PR (Éboulement). Un sentier fermé est interdit : ne pas s'y engager, prendre une variante ouverte ou renoncer. " +
-      "Dans le cirque de Mafate : 4 sentiers fermés, 59 ouverts, 3 hors gestion ONF (état non connu). 50 aires d'accueil de l'ONF dans le cirque de Mafate (voir aires_accueil).");
+      "Dans le cirque de Mafate : 4 sentiers fermés, 58 ouverts, 2 hors gestion ONF (état non connu). 50 aires d'accueil de l'ONF dans le cirque de Mafate (voir aires_accueil).");
     expect(b.avertissement.sentiers_fermes).toEqual([expect.objectContaining({ sentier: "La Nouvelle - Maison Laclos par PR", cause: "Éboulement", randonnees: ["PR25"] })]);
     expect(b.sentiers_nommes).toBeUndefined();
     // The cirque's sector, as on its page (/randonnees/mafate): Cap Noir is in it, the Maïdo's rim is not.

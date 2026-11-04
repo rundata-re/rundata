@@ -1719,7 +1719,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
 
   const body = `${burning ? fires : ""}<section aria-labelledby="h-fermes">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-fermes">Les sentiers fermés</h2>
-  <p>Les sentiers gérés par l'ONF fermés par arrêté préfectoral ou par décision de l'ONF, avec la cause et, quand elle est connue, la date de réouverture. Les autres sentiers suivis par l'ONF sont ouverts.</p>
+  <p>Les sentiers gérés par l'ONF fermés par arrêté préfectoral ou par décision de l'ONF, avec la cause et, quand elle est connue, la date de réouverture. Les autres sentiers gérés par l'ONF sont ouverts sur sa carte${d?.sans_etat ? `\u00a0; les ${d.sans_etat} sentiers hors gestion ONF ou sans état n'ont pas d'état connu ici` : ""}.</p>
   <p>Par secteur, avec les itinéraires, les accès et la météo :</p>${sectorLinks()}</div>
   ${byCommune}
   ${roads}

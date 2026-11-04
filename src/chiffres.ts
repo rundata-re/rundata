@@ -241,7 +241,7 @@ export async function buildChiffres(cache: Cache, now = new Date()): Promise<Cop
     const c = await onf.carte(cache);
     if (c.stale) return undefined;
     const noms = (s: onf.Sentier[]) => new Set(s.map((t) => t.nom)).size;
-    return { nombre: noms(c.value.sentiers), fermes: noms(c.value.sentiers.filter((t) => t.statut === "fermé")) };
+    return { nombre: onf.geres(c.value.sentiers).size, fermes: noms(c.value.sentiers.filter((t) => t.statut === "fermé")) };
   });
   out.coupures_eau = (await copie<CoupuresAnswer>("web:coupures", (v) => v.avis.filter((a) => a.coupure?.etat !== "terminée").length)) ?? before.coupures_eau;
   out.coupures_electricite = (await copie<CourantAnswer>("web:courant", (v, at) => v.avis.filter((a) => followed(a.commune) && ahead(a, at)).length)) ?? before.coupures_electricite;

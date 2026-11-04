@@ -2,7 +2,6 @@ import type { Cache, Cached } from "../cache.js";
 import { distanceKm, versant } from "../geo.js";
 import { resolvePlace, type Resolution } from "../places/resolve.js";
 import * as meteofrance from "../providers/meteofrance.js";
-import { STATIONS_EN_SERVICE } from "../providers/meteofrance-stations.js";
 import * as metar from "../providers/metar.js";
 import * as ffvl from "../providers/ffvl.js";
 import * as pioupiou from "../providers/pioupiou.js";
@@ -35,9 +34,10 @@ export function providers(): Provider[] {
   return ALL_PROVIDERS.filter((p) => p.enabled?.() ?? true);
 }
 
-export function coverage(): string {
+/** What the stations are; with `n`, how many measured in the answer's reading (sources_donnees reads none: no number). */
+export function coverage(n?: number): string {
   return meteofrance.enabled()
-    ? `Les quelque ${STATIONS_EN_SERVICE} stations Météo-France de l'île, de la côte aux sommets et dans les cirques (mesures toutes les ` +
+    ? `${n ? `Les ${n}\u00a0stations qui ont mesuré dans cette lecture\u00a0: celles` : "Les stations"} de Météo-France, de la côte aux sommets et dans les cirques (mesures toutes les ` +
         "6 min, publiées 5 à 10 min après : température, pluie, et pour une partie d'entre elles humidité et vent), " +
         "les observations des 2 aéroports (METAR, état du ciel), et des balises de vent : Cambaie à Saint-Paul (OpenWindMap)\u00a0; " +
         "Kélonia à Saint-Leu, le Trou d'Eau et le Maïdo à Saint-Paul, Matouta à Saint-Joseph (FFVL, quand elles émettent)."
@@ -131,6 +131,16 @@ function sentence(name: string, o: Observation, now: Date): string {
 }
 
 /** The tour of the island, without a place: the stations of TOUR_METEOFRANCE, then the other sources' own. */
+/**
+ * Every station that measured, an airport's METAR left out where Météo-France measures at the same spot: the stations
+ * /meteo counts in its title, the press page and the coverage of meteo_actuelle, one number for all (counted at each
+ * answer, never written in the code).
+ */
+export function toutes<T extends { o: Observation }>(obs: T[]): T[] {
+  const mf = obs.filter(({ o }) => o.station.source === "meteofrance");
+  return obs.filter(({ o }) => !(o.station.source === "metar" && mf.some((m) => sameSpot(o, m.o))));
+}
+
 export async function islandTour(cache: Cache, now = new Date()) {
   const list = providers();
   const { obs, down } = await collect(cache, now, list);
@@ -143,9 +153,7 @@ export async function islandTour(cache: Cache, now = new Date()) {
         : !(o.station.source === "metar" && mf.some((m) => sameSpot(o, m.o))),
     )
     .sort((a, b) => rank(a.o) - rank(b.o));
-  // Every station that measured, an airport's METAR left out where Météo-France measures at the same spot.
-  const all = obs.filter(({ o }) => !(o.station.source === "metar" && mf.some((m) => sameSpot(o, m.o))));
-  return { tour, all, down, sources: list.map((p) => p.source) };
+  return { tour, all: toutes(obs), down, sources: list.map((p) => p.source) };
 }
 
 // A METAR's sky now, its trend (TEMPO, BECMG) left out: broken or overcast clouds, drizzle, rain or showers nearby.
@@ -157,12 +165,12 @@ const LOADED_SKY = /\b(BKN|OVC)\d{3}|(^|\s)[-+]?(DZ|RA|SHRA)\b|\bVCSH\b/;
  */
 export async function meteoActuelle(cache: Cache, lieu: string | undefined, now = new Date(), recent: boolean | "jour" = true) {
   if (!lieu?.trim()) {
-    const { tour, down, sources } = await islandTour(cache, now);
+    const { tour, all, down, sources } = await islandTour(cache, now);
     return text({
       resume: tour.map(({ o }) => sentence(o.station.nom, o, now)).join("\u00a0; ") || "Aucune mesure disponible.",
       stations: tour.map(({ o, stale }) => ({ ...stationBlock(o, stale, now), versant: versant(o.station.lon, o.station.lat) })),
       sources_indisponibles: down.length ? down : undefined,
-      couverture: coverage(),
+      couverture: coverage(all.length),
       sources: credits(sources),
     });
   }
@@ -238,7 +246,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
     radar: rain?.bloc,
     pluie_recente: pluie && (({ resume: _, ...block }) => block)(pluie),
     sources_indisponibles: indisponibles,
-    couverture: coverage(),
+    couverture: coverage(toutes(obs).length),
     sources,
   });
 }

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mercredi 4 novembre 2026
 
+- Lieux des Hauts : le ciel prévu pour la nuit, la phase de la Lune et les heures de nuit noire, calculées, sur la page du lieu.
 - Mer : les règles d'approche des baleines et des dauphins, résumées d'après les arrêtés du préfet de La Réunion.
 
 ## Mardi 3 novembre 2026

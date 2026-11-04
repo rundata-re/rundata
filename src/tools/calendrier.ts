@@ -95,7 +95,8 @@ export function nuitOf(evening: string, lon: number, lat: number, altitude_m: nu
   const main = cal.nextPhases(new Date(Date.parse(`${evening}T18:00:00+04:00`)), 1).find((x) => x.at.getTime() < midnight.getTime() + 6 * 3600_000);
   const phase = main ? `${main.phase.charAt(0).toUpperCase()}${main.phase.slice(1)} à ${hm(main.at)}` : cal.between(light.angle);
   const events = n.lune.map((x) => `${x.lever ? "lever" : "coucher"} à ${hm(x.at)}`);
-  return { nuit_noire, lune: `${phase}, éclairée à ${lit}${events.length ? `, ${events.join(", ")}` : ""} (calcul astronomique).` };
+  // « à minuit » said, as /calendrier's card gives the part lit at the reading (marketing, 04/11); a main phase has its hour.
+  return { nuit_noire, lune: `${phase}, éclairée à ${lit}${main ? "" : " à minuit"}${events.length ? `, ${events.join(", ")}` : ""} (calcul astronomique).` };
 }
 
 export async function calendrier(cache: Cache, lieu: string | undefined, now = new Date()) {

@@ -214,14 +214,14 @@ describe("the dark night", () => {
     // The Moon rises in the night.
     expect(nuitOf("2026-11-04", lon, lat, alt)).toEqual({
       nuit_noire: "Nuit noire de 19:48 à 02:42, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).",
-      lune: "Lune décroissante, éclairée à 20\u00a0%, lever à 02:42 (calcul astronomique).",
+      lune: "Lune décroissante, éclairée à 20\u00a0% à minuit, lever à 02:42 (calcul astronomique).",
     });
     // It sets in the night.
     expect(nuitOf("2026-11-14", lon, lat, alt).nuit_noire).toBe("Nuit noire de 23:11 à 04:09, après le coucher de la Lune (calcul astronomique).");
     // Down all the night, set before it and risen after.
     expect(nuitOf("2026-11-09", lon, lat, alt)).toEqual({
       nuit_noire: "Nuit noire de 19:52 à 04:11, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).",
-      lune: "Lune croissante, éclairée à 0\u00a0%, coucher à 18:56, lever à 05:46 (calcul astronomique).",
+      lune: "Lune croissante, éclairée à 0\u00a0% à minuit, coucher à 18:56, lever à 05:46 (calcul astronomique).",
     });
     // Up all the night, a full moon in it.
     expect(nuitOf("2026-11-24", lon, lat, alt)).toEqual({

@@ -1,5 +1,5 @@
 import { ageMinutes, ageText, compass, localTime, versant } from "../geo.js";
-import { offIsland, type Resolution } from "../places/resolve.js";
+import { normalize, offIsland, type Resolution } from "../places/resolve.js";
 import { withMentions } from "../mentions.js";
 
 import { a as aCommune } from "../articles.js";
@@ -55,13 +55,24 @@ export function enumeration(xs: string[]): string {
 }
 
 /**
- * Where a station stands and how far, when that is another commune than the one `commune` the answer or the page is
- * about: « à Bras-Panon, à 8,5 km » for Salazie, whose nearest station with a temperature is Bellevue, 480 m up on the
- * windward side. Empty for a station of the commune itself, or one whose commune a copy of before does not hold.
+ * The commune to say beside a station: its own, when it is not `commune` (the one the answer or the page is about) and
+ * the station's name does not say it already (« Saint-Leu - CIRAD », « Bellevue Bras-Panon »). Undefined otherwise, and
+ * for a copy of before that does not hold it.
  */
-export function ailleurs(s: { commune?: string; distance_km?: number | null }, commune: string): string {
+export function communeDite(s: { station: string; commune?: string }, commune: string): string | undefined {
+  if (!s.commune || s.commune === commune) return undefined;
+  return ` ${normalize(s.station)} `.includes(` ${normalize(s.commune).replace(/^(?:le|la|les|l) /, "")} `) ? undefined : s.commune;
+}
+
+/**
+ * Where a station of another commune than `commune` stands and how far, to put after its name: « à Grand-Coude, à
+ * 9 km », or « , à 8,5 km » for « Bellevue Bras-Panon », whose name says it (Salazie, whose nearest station with a
+ * temperature is Bellevue, 480 m up on the windward side). Empty for a station of the commune itself.
+ */
+export function ailleurs(s: { station: string; commune?: string; distance_km?: number | null }, commune: string): string {
   if (!s.commune || s.commune === commune) return "";
-  return `${aCommune(s.commune)}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}`;
+  const dite = communeDite(s, commune);
+  return `${dite ? ` ${aCommune(dite)}` : ""}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}`;
 }
 
 export function show(r: Reading): string {
@@ -84,6 +95,7 @@ export function when(time: Date, now: Date) {
 export function placeWarning(asked: string, r: Resolution): string | undefined {
   if ((r.correspondance !== "partielle" || r.ignores) && r.correspondance !== "approchee") return undefined;
   const p = r.lieu;
+  if (r.tient_lieu) return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), un lieu de ce secteur, pas tout le secteur\u00a0: le dire à l'utilisateur.`;
   return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), dont le nom ne correspond ${r.correspondance === "approchee" ? "qu'à peu près" : "qu'en partie"}\u00a0: le dire à l'utilisateur.`;
 }
 

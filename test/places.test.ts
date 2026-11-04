@@ -90,6 +90,20 @@ describe("resolvePlace", () => {
     expect(placeBlock("Cilaos", resolvePlace("Cilaos")!).avertissement).toBeUndefined();
   });
 
+  it("gives for a cirque or the volcan one place of it, said so, not as the place's own name", () => {
+    for (const [q, nom] of [["Mafate", "La Nouvelle"], ["Cirque de Mafate", "La Nouvelle"], ["Volcan", "Pas de Bellecombe - Jacob"], ["Piton de la Fournaise", "Pas de Bellecombe - Jacob"]]) {
+      const r = resolvePlace(q)!;
+      expect([r.lieu.nom, r.correspondance, r.tient_lieu], q).toEqual([nom, "approchee", true]);
+    }
+    expect(placeWarning("Mafate", resolvePlace("Mafate")!)).toBe("«\u00a0Mafate\u00a0» compris comme La Nouvelle (quartier, La Possession), un lieu de ce secteur, pas tout le secteur\u00a0: le dire à l'utilisateur.");
+    // Said with words around it, the same.
+    expect(resolvePlace("volcan Sainte-Rose")).toMatchObject({ correspondance: "approchee", tient_lieu: true });
+    // A cirque named by its commune is that commune; a spelling of a place's name stays that place.
+    expect(resolvePlace("Cirque de Cilaos")).toMatchObject({ lieu: { nom: "Cilaos" }, correspondance: "exacte" });
+    expect(resolvePlace("Plage de l'Hermitage")).toMatchObject({ lieu: { nom: "Plage de l'Ermitage-les-Bains" }, correspondance: "exacte" });
+    expect(resolvePlace("La Nouvelle")!.tient_lieu).toBeUndefined();
+  });
+
   it("knows the altitude, so that Cilaos is not treated as a seaside town", () => {
     expect(resolvePlace("Cilaos")!.lieu.altitude_m).toBeGreaterThan(1100);
   });

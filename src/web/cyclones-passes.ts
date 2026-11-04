@@ -83,7 +83,7 @@ export function passePage(origin: string, p: Passe, alerte?: Alerte): string {
   const doc = `${link}, ${esc(p.document.auteur)}`;
   const band = `${crumbBar(`Cyclone ${p.nom}`)}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Cyclones passés</p>
+  <p class="pill">Cyclones passés · Archives de Météo-France</p>
   <h1>${esc(`Cyclone ${p.nom}, ${p.date}`)}</h1>
   <p class="lead">${nb(esc(p.passage))}</p>
   <p class="note">Source : ${doc}.</p>

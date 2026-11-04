@@ -79,7 +79,7 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
   const others = col.COMMUNES.filter((c) => c !== commune).map((c) => `<a href="/collecte/${communeSlug(c)}">${esc(c)}</a>`).join(" · ");
   const band = `${crumbBar(commune ? `Collecte ${a(commune)}` : "Collecte des déchets")}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Calendriers du TCO</p>
+  <p class="pill">Calendriers du TCO · ${col.YEAR}</p>
   <h1>${esc(commune ? h1Of(commune) : H1)}</h1>
   <p class="lead">${esc(LEAD)}</p>
   <label class="search">Votre rue <input id="rue" type="search" placeholder="Rue, chemin, impasse…" autocomplete="off"></label>

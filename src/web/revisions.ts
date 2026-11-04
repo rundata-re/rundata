@@ -15,7 +15,7 @@
  */
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   actualites: 12,
-  agenda: 26,
+  agenda: 27,
   air: 10,
   bornes: 3,
   bus: 7,
@@ -66,15 +66,18 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // With the time the prefecture's list shown was read (prefectureReussie), kept while its site does not answer.
   // The island's news only: France's and the world's left out (`local`).
   "actualites:fil": 5,
+  // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
+  // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
+  agenda: 1,
   // Read again with its written agreement of 28/10/2026, without the price and the sentence an older entry kept.
-  "agenda:bras_panon": 1,
+  "agenda:bras_panon": 2,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
-  "agenda:lrvb": 1,
-  "agenda:saint_paul": 1,
-  "agenda:le_port": 1,
-  "agenda:trois_bassins": 1,
-  "agenda:sainte_marie": 1,
-  "agenda:sechoir": 1,
+  "agenda:lrvb": 2,
+  "agenda:saint_paul": 2,
+  "agenda:le_port": 2,
+  "agenda:trois_bassins": 2,
+  "agenda:sainte_marie": 2,
+  "agenda:sechoir": 2,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without

@@ -105,28 +105,32 @@ export const annonceEvenement = (text: string) => !SERVICE.test(text) && (EVENT.
 /** A service's notice (« fermeture le 9 mai », « horaires »): never an event, whatever else it says. */
 export const avisDeService = (text: string) => SERVICE.test(text);
 
-/** At most this of a reused agenda's text: the cap of a « sentence » that has no full stop. */
+/** At most this of a reused agenda's text: a first sentence longer than this is not given. */
 export const LEAD_MAX = 200;
+/** The first sentence of a text, whole, however long: what an event is dated or titled by, never shown as it is. */
+export const premiere = (s: string): string => (/^.+?[.!?…](?=\s|$|\p{Lu})/u.exec(s)?.[0] ?? s).trim();
 /**
- * The first sentence of a text, short: all a reused agenda gives of it besides the facts (« Concert gratuit de l'école
- * de musique, ouvert à tous. »), cut at a word under LEAD_MAX when it never ends.
+ * The first sentence of a text, whole, or nothing when longer than LEAD_MAX: all a reused agenda gives of it besides
+ * the facts (« Concert gratuit de l'école de musique, ouvert à tous. »). Never a piece of it, nor a « … » of ours:
+ * several agendas ask that their texts not be changed, and a sentence cut reads as one changed.
  */
 export function lead(s: string): string {
-  const first = (/^.+?[.!?…](?=\s|$|\p{Lu})/u.exec(s)?.[0] ?? s).trim();
-  return first.length > LEAD_MAX ? `${first.slice(0, LEAD_MAX - 1).replace(/\s+\S*$/, "")}…` : first;
+  const first = premiere(s);
+  return first.length > LEAD_MAX ? "" : first;
 }
 
 /**
- * What is kept of an event's text: its first sentence, and the genres the rest of it names, never its words. The
- * search still finds a « concert » said in the third sentence of a programme (« Cirque et musique »).
+ * What is kept of an event's text: its first sentence (lead), and the genres the rest of it names, never its words.
+ * The search still finds a « concert » said in the third sentence of a programme (« Cirque et musique »), or in a
+ * first sentence too long to be given.
  */
 export function extrait(text: string): { description?: string; themes?: string[]; age?: string } {
+  if (!text.trim()) return {};
   const description = lead(text) || undefined;
-  if (!description) return {};
   const age = ageIn(text);
-  const shown = new Set(themesIn(description));
+  const shown = new Set(themesIn(description ?? ""));
   const themes = [...new Set([...themesIn(text), ...(age ? ["enfants"] : [])])].filter((g) => !shown.has(g));
-  return { description, ...(themes.length ? { themes } : {}), ...(age ? { age } : {}) };
+  return { ...(description ? { description } : {}), ...(themes.length ? { themes } : {}), ...(age ? { age } : {}) };
 }
 
 export type Statut = "annulé" | "reporté" | "complet";

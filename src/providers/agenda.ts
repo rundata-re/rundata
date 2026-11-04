@@ -29,7 +29,7 @@ import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import type { SourceInfo } from "../types.js";
 import { communesIn, strip } from "./avis-eau.js";
-import { annonceEvenement, avisDeService, extrait, lead, monthOf, statusOf, type Statut } from "./agenda-mots.js";
+import { annonceEvenement, avisDeService, extrait, lead, monthOf, premiere, statusOf, type Statut } from "./agenda-mots.js";
 import { SALLES, SOURCE as SALLES_SOURCE, TIMEOUT_MS, tokens } from "./salles.js";
 import { SOURCES as SPORT_SOURCES } from "./sport.js";
 import { PROPOSITIONS } from "./agenda-propositions.js";
@@ -593,7 +593,7 @@ export function parseSpipNews(xml: string, nom: string, commune: string, now: Da
     const titre = clean(tag(item, "title"));
     const texte = clean(tag(item, "description"));
     const published = new Date(tag(item, "dc:date") || tag(item, "pubDate"));
-    return newsEvent(titre, texte, `${titre} ${lead(texte)}`, clean(tag(item, "link")), published, now, nom, commune);
+    return newsEvent(titre, texte, `${titre} ${premiere(texte)}`, clean(tag(item, "link")), published, now, nom, commune);
   });
 }
 
@@ -631,7 +631,7 @@ export function parseSalazie(html: string, now: Date): Evenement[] {
  * no post: a day without its year is not placed in one (an epoch's publication puts it in the past), never guessed.
  */
 export function parseSalazieNews(html: string, now: Date): Evenement[] {
-  return salazieItems(html).flatMap((it) => newsEvent(it.titre, it.texte, `${it.titre} ${lead(it.texte)}`, it.lien, new Date(0), now, "Ville de Salazie", "Salazie"));
+  return salazieItems(html).flatMap((it) => newsEvent(it.titre, it.texte, `${it.titre} ${premiere(it.texte)}`, it.lien, new Date(0), now, "Ville de Salazie", "Salazie"));
 }
 
 /**
@@ -971,7 +971,7 @@ export function parseIcs(data: ArrayBuffer | string, nom: string, page: string, 
       lon: Number.isFinite(lon) && one(v, "GEO") ? lon : undefined,
       lat: Number.isFinite(lat) && one(v, "GEO") ? lat : undefined,
       categories: (v.get("CATEGORIES") ?? []).flatMap((c) => icsList(c.value)).slice(0, 5),
-      description: texte ? lead(texte) : undefined,
+      description: (texte && lead(texte)) || undefined,
       lien: httpUrl(one(v, "URL")?.value.trim()) ?? page,
       publie_par: nom,
     }];
@@ -1412,7 +1412,7 @@ const TITRE_MAX = 90;
 
 /** A title made of the start of a line: its first sentence, cut at a comma when longer than TITRE_MAX. */
 function titreDe(texte: string): string {
-  let t = lead(texte).replace(/[.…]$/u, "");
+  let t = premiere(texte).replace(/[.…]$/u, "");
   if (t.length > TITRE_MAX) t = t.slice(0, t.indexOf(", ") > 0 ? t.indexOf(", ") : TITRE_MAX).trim();
   return t.length > TITRE_MAX ? `${t.slice(0, TITRE_MAX - 1).replace(/\s+\S*$/, "")}…` : t;
 }

@@ -69,7 +69,7 @@ describe("a commune's page", () => {
     const html = communePage("https://rundata.re", pageOf("cilaos")!, { place: null }, NOW);
     expect(html).toContain('<section id="ecoles" aria-labelledby="h-ecoles">');
     expect(html).toContain("Écoles, collèges et lycées à Cilaos</h2>");
-    expect(html).toContain("5 écoles, 1 collège, publics et privés, avec la cantine, l&#39;internat ou l&#39;ULIS quand l&#39;établissement les déclare.");
+    expect(html).toContain("5 écoles, 1 collège, publics et privés, avec la cantine, l&#39;internat ou l&#39;<abbr title=\"unité localisée pour l&#39;inclusion scolaire\">ULIS</abbr> quand l&#39;établissement les déclare.");
     expect(html).toContain('<h3>Écoles <span class="note">5</span></h3>');
     expect(html).toContain('<a href="tel:0262317075">02 62 31 70 75</a>');
     expect(html).toContain("l&#39;établissement le plus proche n&#39;est pas forcément celui du secteur");

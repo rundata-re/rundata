@@ -85,7 +85,7 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(html).toContain(`<meta name="description" content="Requins\u00a0: baignade et surf interdits à moins de 300\u00a0m du rivage, sauf lagons, bassins, filets et ZONEX surveillés. Zones, drapeaux et arrêté en vigueur.">`);
     expect(html).toContain("<h1>Où se baigner à La Réunion\u00a0?</h1>");
     expect(html).toContain("<p>Le GIP Centre Sécurité Requin ne cite pas de zone dans les autres communes.</p>");
-    expect(html).toContain(`<a href="/eau">Qualité de l'eau\u00a0: les contrôles de l'ARS, plage par plage et bassin par bassin →</a>`);
+    expect(html).toContain(`<a href="/eau">Qualité de l'eau\u00a0: les contrôles de l'<abbr title="Agence régionale de santé">ARS</abbr>, plage par plage et bassin par bassin →</a>`);
     // Not cut at the end of a line.
     expect(html).toContain("Arrêté préfectoral n°\u00a0180 du 13/02/2026");
     expect(html).toContain("bande des 300\u00a0m de tout le littoral");

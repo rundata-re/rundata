@@ -85,7 +85,7 @@ describe("out of an alert, whether it erupts only with the official texts", () =
     expect(page).toContain(`<meta name="description" content="Piton de la Fournaise en direct\u00a0: niveau d&#39;alerte d&#39;après la préfecture, publications de l&#39;OVPF, accès à l&#39;Enclos, séismes localisés sous le volcan. · 974">`);
     expect(page).toContain("<title>Piton de la Fournaise : vigilance, pas d&#39;éruption annoncée · 974</title>");
     expect(page).toContain("<h1>Piton de la Fournaise : vigilance, pas d&#39;éruption annoncée</h1>");
-    expect(page).toContain("Niveau du dispositif ORSEC volcan : <b>Vigilance</b>.");
+    expect(page).toContain("Niveau du dispositif <abbr title=\"Organisation de la réponse de sécurité civile\">ORSEC</abbr> volcan : <b>Vigilance</b>.");
     expect(page).not.toContain('<p class="big">');
   });
 
@@ -157,7 +157,7 @@ describe("the Enclos, as the official texts say it", () => {
     expect(v.resume).toContain(rule);
     const page = volcanPage(O, copyOf(v), NOW);
     expect(page).toContain(`<h3>Accès à l&#39;Enclos</h3><p>${rule.replace(/'/g, "&#39;")}</p><p class="note"><a href="#monter">Puis-je monter au volcan ? →</a></p>`);
-    expect(trafic(v)).toContain("<p><b>Sentiers balisés seulement</b> (plan ORSEC, en vigilance).");
+    expect(trafic(v)).toContain('<p><b>Sentiers balisés seulement</b> (plan <abbr title="Organisation de la réponse de sécurité civile">ORSEC</abbr>, en vigilance).');
     expect(volcanLive(copyOf(v))!.detail).toContain("Enclos : Sentiers balisés seulement (plan ORSEC, en vigilance)");
     for (const t of [page, v.resume]) expect(t).not.toMatch(/« partiel »|2026-627|Résumé de pitonlive/);
   });
@@ -165,7 +165,7 @@ describe("the Enclos, as the official texts say it", () => {
   it("says on /trafic that the OVPF publishes the level, the prefect setting it (marketing)", async () => {
     const v = await answer(VIGILANCE);
     v.etat!.acces_enclos = { ovpf: { niveau: "Alerte 1", date: "25/10 08:00 heure de La Réunion", lien: "https://bsky.app/x" } };
-    expect(trafic(v).replace(/&#39;/g, "'")).toContain("<p><b>Interdit</b> (plan ORSEC en alerte 1, niveau publié par l'OVPF).");
+    expect(trafic(v).replace(/&#39;/g, "'")).toContain('<p><b>Interdit</b> (plan <abbr title="Organisation de la réponse de sécurité civile">ORSEC</abbr> en alerte 1, niveau publié par l\'OVPF).');
   });
 
   it("says the Enclos is to check when no official text says it", async () => {

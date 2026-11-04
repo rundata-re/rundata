@@ -6,7 +6,9 @@
 import { enLigne } from "./associations-drapeau.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
+import { esc } from "./map.js";
 import { GITHUB, layout } from "./pages.js";
+import { SIGLES } from "./sigles.js";
 
 export const PATH = "/a-propos";
 const TITLE = "Qui fait rundata.re ? Un projet bénévole à La Réunion";
@@ -39,6 +41,10 @@ export function aProposPage(origin: string, alerte?: Alerte): string {
   <p>Le site est né en octobre 2026. Son code est libre (licence MIT). Les contributions sont les bienvenues. Vous aimez les données, le code ou La Réunion, et vous voulez faire avancer le numérique de l'île\u00a0? Proposez une source, une correction ou une amélioration sur <a href="${GITHUB}">GitHub</a>, ou écrivez à <a href="mailto:contact@rundata.re">contact@rundata.re</a>. Chaque proposition est relue avant d'être mise en ligne.</p>
   <p>Les sources de chaque donnée sont citées en bas de chaque page.</p>
   <p>Voir aussi\u00a0: <a href="/valeurs">nos valeurs</a>, <a href="/ouvrir-ses-donnees">rendre ses données accessibles</a>, <a href="/presse">l'espace presse</a>,${enLigne() ? ` <a href="/associations">l'espace clubs et associations</a>,` : ""} <a href="/nouveautes">les nouveautés</a>, <a href="/chiffres">rundata.re en chiffres</a>, <a href="/sites-sans-reponse">les sites publics sans réponse</a>, <a href="/conditions#mentions-legales">les mentions légales</a> et <a href="/confidentialite">la confidentialité</a>.</p>
+</section>
+<section aria-labelledby="sigles" style="max-width:44rem;display:grid;gap:1rem">
+  <h2 id="sigles">Sigles</h2>
+  <ul>${Object.entries(SIGLES).map(([s, long]) => `<li><b>${s}</b>\u00a0: ${esc(long)}</li>`).join("")}<li><b>RECIL</b>\u00a0: le distributeur d'eau de Cilaos (d'après l'ARS)</li></ul>
 </section>`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, "Qui fait rundata.re ?", PATH), { ...webPage(origin, PATH, TITLE, DESCRIPTION, null), "@type": "AboutPage" }], alerte }, band, body);
 }

@@ -187,7 +187,7 @@ describe("the volcano put forward during an alert", () => {
   it("shows one volcano block per page: the card alone on the home page, the heading alone on /volcan, the banner elsewhere", async () => {
     const O = "https://rundata.re";
     for (const [titre, card] of [
-      [ALERT_1, "Alerte\u00a01 du préfet (communiqué du 24\u00a0octobre) : « éruption probable ou imminente », selon le dispositif ORSEC Volcan. Accès à l&#39;Enclos interdit. <b>Suivre en direct\u00a0→</b>"],
+      [ALERT_1, "Alerte\u00a01 du préfet (communiqué du 24\u00a0octobre) : « éruption probable ou imminente », selon le dispositif <abbr title=\"Organisation de la réponse de sécurité civile\">ORSEC</abbr> Volcan. Accès à l&#39;Enclos interdit. <b>Suivre en direct\u00a0→</b>"],
       [ALERT_2, "Alerte\u00a02-1 du préfet (communiqué du 24\u00a0octobre). Accès à l&#39;Enclos interdit. <b>Suivre en direct\u00a0→</b>"],
     ]) {
       const v = await answer(titre);

@@ -54,7 +54,7 @@ describe("a tile with nothing to show", () => {
     expect(line("volcan")).toBe(`<p class="td all">Textes de l&#39;OVPF et de la préfecture lus à 18:39 : état du volcan à lire sur la page.</p>`);
     expect(line("velos")).toBe(`<p class="td all">Disponibilités Altervélo absentes de la lecture de 18:39.</p>`);
     expect(line("bornes")).toBe(`<p class="td all">État des bornes absent de la lecture de 18:39.</p>`);
-    expect(line("eau")).toBe(`<p class="td all">Résultats de l&#39;ARS absents de la lecture de 18:39.</p>`);
+    expect(line("eau")).toBe(`<p class="td all">Résultats de l&#39;<abbr title="Agence régionale de santé">ARS</abbr> absents de la lecture de 18:39.</p>`);
     expect(line("historique")).toBe(`<p class="td all">Rapport à la normale pas encore calculé pour les 30 derniers jours (lecture de 18:39).</p>`);
     expect(line("air")).toBe(`<p class="td all">Indice ATMO du jour pas encore dans la lecture de 18:39.</p>`);
     expect(line("electricite")).toBe(`<p class="td all">Production d&#39;EDF absente de la lecture de 18:39.</p>`);

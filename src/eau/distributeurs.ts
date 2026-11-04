@@ -54,6 +54,12 @@ export const BUILT = data.construit;
 export const SOURCE = data.source;
 
 /** The distributors the ARS names for a commune whose samples name more than one: none is chosen. */
+/**
+ * A distributor named in a sentence of a page: RECIL, as the ARS names it, without a spelled-out form anywhere, says what
+ * it is instead (marketing, 04/11/2026).
+ */
+export const nomDit = (d: Distributeur) => (d.nom === "RECIL" ? "RECIL, le distributeur d'eau de Cilaos (d'après l'ARS)," : d.nom);
+
 export function plusieurs(commune: string): string[] | undefined {
   return (data.plusieurs as Record<string, string[]>)[commune]?.map((x) => NAMES[x] ?? x);
 }

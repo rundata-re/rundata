@@ -55,8 +55,8 @@ function liveNote(t: TripRun): string {
   if (t.direct.etat === "muet") return `Le flux en direct de ${n} ne répond pas pour le moment${NBSP}: horaires publiés seulement.`;
   const at = feedTime(t.direct.flux);
   return t.direct.etat === "suivi"
-    ? `Prévu${NBSP}: horaires publiés par ${n}. Annoncé${NBSP}: heure donnée en direct par ${n}, flux de ${at}. Un bus en retard l'est souvent depuis sa course précédente.`
-    : `Ce bus ne figure pas dans le flux en direct de ${n} (flux de ${at})${NBSP}: horaires publiés seulement, sans les retards ni les déviations.`;
+    ? `Prévu${NBSP}: horaires publiés par ${n}. Annoncé${NBSP}: heure donnée en direct par ${n}, données du réseau lues à ${at}. Un bus en retard l'est souvent depuis sa course précédente.`
+    : `Ce bus ne figure pas dans les données en direct de ${n} (lues à ${at})${NBSP}: horaires publiés seulement, sans les retards ni les déviations.`;
 }
 
 /** The page of a trip; `chosen`, the stop clicked on (island-wide index), marked when the trip stops there. */
@@ -82,7 +82,7 @@ export function tripPage(origin: string, path: string, t: TripRun, chosen: numbe
 </div>`;
 
   const cut = t.supprime && t.direct && t.direct.etat !== "muet"
-    ? `<p class="card"><b class="rt">Départ supprimé, annoncé en direct par ${esc(t.nom_reseau)} (flux de ${esc(feedTime(t.direct.flux))}).</b></p>`
+    ? `<p class="card"><b class="rt">Départ supprimé, annoncé en direct par ${esc(t.nom_reseau)} (données du réseau lues à ${esc(feedTime(t.direct.flux))}).</b></p>`
     : "";
   const stops = t.arrets
     ? `<ol class="rows trajet">${t.arrets.map((s) => {

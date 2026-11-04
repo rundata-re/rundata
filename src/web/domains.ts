@@ -684,6 +684,14 @@ export function courantItem(x: Pick<CourantRow, "texte" | "lien" | "nature" | "p
   return `${li}${esc(x.texte.slice(0, end.index))}<a class="tap" href="${esc(x.lien)}" rel="noopener">${esc(end[1])} (PDF) →</a></li>`;
 }
 
+/** EDF's words that a resident does not know, said once on /electricite (marketing, UX review of 04/11/2026). */
+const FILIERES_DITES: Record<string, string> = {
+  bioliquide: "bioliquide (combustible d'origine végétale)",
+  "turbines à combustion": "turbines à combustion (centrales de pointe, démarrées quand la demande monte)",
+};
+/** « optimal (le réseau électrique a de la marge) »; EDF's other states keep its words. */
+export const signalDit = (signal: string) => (signal.toLowerCase() === "optimal" ? "optimal (le réseau électrique a de la marge)" : signal.toLowerCase());
+
 export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const p = d?.production;
@@ -694,11 +702,11 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
     ? loading("La production d'électricité")
     : p
       ? `<div class="now"><span class="big">${fr(Math.round(p.renouvelable_pct))} %</span><p>de l'électricité de l'île vient en ce moment de sources <b>renouvelables</b>, sur <b>${esc(fr(Math.round(p.total_mw)))} MW</b> produits (${esc(p.heure_mesure.replace(" heure de La Réunion", ""))}).</p></div>` +
-        (m?.maintenant ? `<p class="lead">Signal d'EDF pour cette heure : <b>${esc(m.maintenant.signal.toLowerCase())}</b>${m.mis_a_jour ? ` (annoncé par EDF le ${esc(m.mis_a_jour.replace(" ", " à "))})` : ""}.</p>` : "")
+        (m?.maintenant ? `<p class="lead">Signal d'EDF pour cette heure : <b>${esc(signalDit(m.maintenant.signal))}</b>${m.mis_a_jour ? ` (annoncé par EDF le ${esc(m.mis_a_jour.replace(" ", " à "))})` : ""}.</p>` : "")
       : `<p class="lead">${esc(d.resume)}</p>`;
 
   const bars = p
-    ? `<ul class="bars">${p.parts.map((x) => `<li><span>${esc(x.filiere)}</span><b>${esc(fr(x.part_pct))} %</b><i class="${x.renouvelable ? "ren" : ""}" style="width:${Math.max(1, x.part_pct)}%"></i></li>`).join("")}</ul>` +
+    ? `<ul class="bars">${p.parts.map((x) => `<li><span>${esc(FILIERES_DITES[x.filiere] ?? x.filiere)}</span><b>${esc(fr(x.part_pct))} %</b><i class="${x.renouvelable ? "ren" : ""}" style="width:${Math.max(1, x.part_pct)}%"></i></li>`).join("")}</ul>` +
       `<p class="note">En vert, les filières renouvelables. ${esc(p.statut[0].toUpperCase() + p.statut.slice(1))}.</p>`
     : "";
 
@@ -1014,7 +1022,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
             : `<p>Pas de départ prévu dans les prochaines heures.</p>`) +
         `</li>`;
       }).join("")}</ul>` +
-      `<p class="note">${d!.temps_reel?.length ? `${esc(d!.temps_reel.map((t) => t.reseau).join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (flux de ${esc(d!.temps_reel[0].heure)}). ` : ""}` +
+      `<p class="note">${d!.temps_reel?.length ? `${esc(d!.temps_reel.map((t) => t.reseau).join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues à ${esc(d!.temps_reel[0].heure)}). ` : ""}` +
       `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour à ${hm(data!.fetchedAt)}.</p>`
     : `<p class="card">Les prochains départs à n'importe quel arrêt de l'île sont donnés par le connecteur : demandez à votre assistant « le prochain bus à la gare de Saint-Pierre ? ».</p>`;
 

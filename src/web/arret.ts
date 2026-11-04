@@ -92,7 +92,7 @@ export function stopPage(origin: string, p: transit.StopPage, d: Departures, now
     ? `<ul class="rows departs">${d.departs.map((x) => departureLi(x, waitText(x.dans_min, x.heure_annoncee ?? x.heure))).join("")}</ul>`
     : `<p>Pas de départ prévu dans les prochaines heures.</p>`;
   const flux = d.flux ? localTime(new Date(d.flux * 1000)).split(" ")[1] : undefined;
-  const note = `<p class="note">${d.direct.length && flux ? `${esc(d.direct.join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (flux de ${esc(flux)}). ` : ""}` +
+  const note = `<p class="note">${d.direct.length && flux ? `${esc(d.direct.join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues à ${esc(flux)}). ` : ""}` +
     `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour à ${esc(localTime(now).split(" ")[1])}.</p>`;
 
   const body = `<section>

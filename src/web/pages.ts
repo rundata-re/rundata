@@ -44,6 +44,7 @@ import { LEGENDE_CSS, legende } from "./carte-legende.js";
 import { ELECTRICITE_CSS } from "./electricite-carte.js";
 import { typo } from "./typo.js";
 import { mentionLinks } from "../mentions.js";
+import { withSigles } from "./sigles.js";
 import { bannerHtml, ENCLOS, volcanBanner } from "./volcan-alerte.js";
 import { AVIS_CSS, avisForm } from "./avis.js";
 import { aide, AIDE_CSS, SIGNAL_SCRIPT } from "./signaux.js";
@@ -1281,6 +1282,8 @@ export function layout(origin: string, head: Head, band: string, body: string): 
   // length is unchanged. Not the titles, nor the JSON-LD's other values (marketing, 25/10).
   const d = typo(esc(head.description));
   const image = ogImage(origin, head.path);
+  // Each acronym spelled out at its first occurrence, from the title's band to the end of the main text (web/sigles.ts).
+  const [top, text] = withSigles([withHook(band, head.path, head.volcan, head.hook), mentionLinks(main)]);
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -1318,9 +1321,9 @@ ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head
 ${header(head.path, origin, urgent(head))}
 ${head.shell ? "" : `${banner(head.alerte, head.path)}
 ${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}`}
-<div class="band">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${withHook(band, head.path, head.volcan, head.hook)}</div>
+<div class="band">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${top}</div>
 <main class="wrap">
-${mentionLinks(main)}
+${text}
 </main>
 ${head.shell ? "" : `${head.sansPartage ? "" : share(origin, head)}
 ${head.sansAvis ? "" : `${aide()}

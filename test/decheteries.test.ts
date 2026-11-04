@@ -121,9 +121,9 @@ describe("the déchèteries outside the TCO, from the ADEME's directory", () => 
     for (const c of ELSEWHERE_COMMUNES) expect(page).toContain(`<section id="${anchorOf(c)}"`);
     expect(page).toContain('<h3>Déchèterie Saint-Pierre Palama</h3><p>2 Chemin Palama</p>');
     expect(page).toContain('Horaires\u00a0: voir le site de <a href="https://www.civis.re/" rel="noopener">la CIVIS</a>.');
-    expect(page).toContain("Déchèteries selon l&#39;annuaire des déchèteries de l&#39;ADEME (enquête 2026, mis à jour le ");
+    expect(page).toContain("Déchèteries selon l&#39;annuaire des déchèteries de l&#39;<abbr title=\"Agence de la transition écologique\">ADEME</abbr> (enquête 2026, mis à jour le ");
     const pierre = communePage("https://rundata.re", pageOf("saint-pierre")!, { place: null }, NOW);
-    expect(pierre).toContain('<h3><a href="/decheteries#saint-pierre">Déchèteries</a></h3><p class="tv">4 déchèteries</p><p class="td">horaires\u00a0: voir le site de la CIVIS</p>');
+    expect(pierre).toContain('<h3><a href="/decheteries#saint-pierre">Déchèteries</a></h3><p class="tv">4 déchèteries</p><p class="td">horaires\u00a0: voir le site de la <abbr title="Communauté intercommunale des villes solidaires">CIVIS</abbr></p>');
     expect(communePage("https://rundata.re", pageOf("saint-philippe")!, { place: null }, NOW)).not.toContain("Déchèteries</a></h3>");
   });
 });

@@ -34,6 +34,8 @@ const SATELLITES: Record<string, string> = { VIIRS_SNPP_NRT: "Suomi NPP", VIIRS_
 export const COST = Object.keys(SATELLITES).length;
 const FRESH_SECONDS = 30 * 60;
 const DAY_MS = 24 * 3600_000;
+// FIRMS's day_range counts UTC dates: today's alone starts at 04:00 at La Réunion; two cover the last 24 hours.
+const DAYS = 2;
 
 let mapKey: string | undefined;
 
@@ -90,7 +92,9 @@ export function parse(csv: string, satellite: string): Detection[] {
 
 async function island(cache: Cache): Promise<Cached<Feux>> {
   return cache.island("feux:ile", FRESH_SECONDS, async () => {
-    const lists = await Promise.allSettled(Object.entries(SATELLITES).map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/1`), nom)));
+    // Two days: one is the UTC date only, since 04:00 at La Réunion, which would lose the night's passes (04/11/2026).
+    // The 24 hours are kept by `load`.
+    const lists = await Promise.allSettled(Object.entries(SATELLITES).map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/${DAYS}`), nom)));
     const ok = lists.flatMap((r, i) => (r.status === "fulfilled" ? [{ nom: Object.values(SATELLITES)[i], list: r.value }] : []));
     if (!ok.length) throw (lists[0] as PromiseRejectedResult).reason ?? new UpstreamError(SOURCE.id, "aucun satellite");
     const detections = ok.flatMap((x) => x.list).sort((x, y) => y.t.localeCompare(x.t));

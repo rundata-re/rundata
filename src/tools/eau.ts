@@ -95,12 +95,22 @@ async function notice(cache: Cache, commune: string, now: Date) {
   }
 }
 
+/** Marks a tap-water part made of the distributor's notice alone, the analyses not having come (never written out). */
+const SANS_ANALYSES = Symbol("sans analyses");
+
 async function robinet(cache: Cache, res: Resolution, now: Date) {
   const commune = res.lieu.commune;
   const insee = INSEE[commune];
   if (!insee) return { resume: "Commune introuvable pour l'eau du robinet." };
-  const [{ value }, avis] = await Promise.all([potable.commune(cache, insee, now), notice(cache, commune, now)]);
+  const [tap, avis] = await Promise.all([potable.commune(cache, insee, now).then((c) => ({ ok: true as const, value: c.value }), (err: unknown) => ({ ok: false as const, err })), notice(cache, commune, now)]);
   const warn = avis ? { resume_avis: `EAU À NE PAS BOIRE ${a(commune)} d'après l'avis du distributeur du ${avis.publie_le} : « ${avis.titre} ».`, avis_ne_pas_boire: avis } : {};
+  // Hub'Eau silent: the notice already read is still said, never lost behind an error (04/11/2026, Saint-Benoît).
+  if (!tap.ok) {
+    if (!avis) throw tap.err;
+    console.error(`source ${potable.SOURCE.id} indisponible:`, why(tap.err));
+    return { resume: warn.resume_avis, ...warn, [SANS_ANALYSES]: true };
+  }
+  const { value } = tap;
   const rows = value.reseaux.map((r) => networkRow(r, value.prelevements));
   const own = res.lieu.type === "commune" ? null : networkFor(value.reseaux, res.lieu.nom, commune);
   if (own) {
@@ -201,7 +211,6 @@ export const COMMON = {
 };
 
 export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?: Sujet, now = new Date()) {
-  const sources = credits([potable.SOURCE, baignades.SOURCE]);
   if (!lieu?.trim()) {
     return text({
       resume: "Préciser une commune, un quartier, une plage ou un bassin : la qualité de l'eau du robinet dépend du réseau, celle de la baignade du site.",
@@ -221,6 +230,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     try {
       const part = w === "robinet" ? await robinet(cache, res, now) : await baignade(cache, res, now, lieu);
       parts[w === "robinet" ? "eau_du_robinet" : "baignade"] = part;
+      if (SANS_ANALYSES in part) failed.push(w);
     } catch (err) {
       const src = w === "robinet" ? potable.SOURCE : baignades.SOURCE;
       console.error(`source ${src.id} indisponible:`, why(err));
@@ -252,6 +262,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     },
     ...(sea ? { risque_requin: requin.requinBlock(now, res.lieu) } : {}),
     consulter: wanted.map((w) => (w === "robinet" ? "https://www.reunion.ars.sante.fr" : baignades.SOURCE.url)),
-    sources: sea ? credits([potable.SOURCE, baignades.SOURCE, requin.SOURCE]) : sources,
+    // The distributor's notice, when the answer gives it: credited with the rest.
+    sources: credits([potable.SOURCE, baignades.SOURCE, ...(sea ? [requin.SOURCE] : []), ...((parts.eau_du_robinet as { avis_ne_pas_boire?: unknown } | undefined)?.avis_ne_pas_boire ? [notices.SOURCE] : [])]),
   });
 }

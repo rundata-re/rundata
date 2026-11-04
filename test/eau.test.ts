@@ -6,6 +6,7 @@ import { networkName } from "../src/providers/eaupotable.js";
 import { SOURCE } from "../src/eau/requin.js";
 import { COMMON, qualiteEau, tapNote, siteNamed, sujetOf } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
+import * as notices from "../src/providers/avis-eau.js";
 
 // Hub'Eau for Saint-Pierre and the ministry's page of the plage de l'Hermitage centre, read on 24/10/2026: the latest
 // analyses date from late August (tap) and mid-September (bathing).
@@ -89,6 +90,23 @@ describe("qualité de l'eau", () => {
     expect(COMMON.eau_du_robinet).toContain("Sainte-Suzanne et Salazie)\u00a0: dans cette réponse quand une commune est demandée, et par l'outil coupures_eau.");
     expect(tapNote("page")).toContain("Il est repris sur la page des coupures d'eau pour les communes dont nous lisons les avis (Bras-Panon,");
     expect(tapNote("page")).not.toContain("coupures_eau");
+  });
+
+  it("still says not to drink the water when Hub'Eau does not answer, from the distributor's notice already read", async () => {
+    vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const store = new MemoryStore();
+    const avis = { distributeur: "CIREST", titre: "Saint-Benoît : eau impropre à la consommation", communes: ["Saint-Benoît"], publie: "2026-10-23T06:47:00.000Z", secteurs: [], secteurs_complets: false, ne_pas_boire: true, texte: "Ne pas boire l'eau du robinet.", lien: "https://www.cirest.fr/" };
+    void store.put("avis-eau:flux", { value: [{ de: "de la CIREST", site: "https://www.cirest.fr/", avis: [avis] }], fetchedAt: NOW.getTime() });
+    const b = body(await qualiteEau(new Cache(store, () => NOW.getTime()), "Saint-Benoît", "robinet", NOW));
+    expect(b.erreur).toBeUndefined();
+    expect(b.resume).toMatch(/^EAU À NE PAS BOIRE à Saint-Benoît d'après l'avis du distributeur du 23\/10\/2026 à 10:47/);
+    expect(b.eau_du_robinet.avis_ne_pas_boire.titre).toBe(avis.titre);
+    // The analyses said missing, the notice's source credited.
+    expect(b.indisponible).toEqual(["eau du robinet"]);
+    expect(b.sources.map((x: { source: string }) => x.source)).toContain(notices.SOURCE.nom);
+    // Without a notice, still the error it was.
+    expect((await qualiteEau(cache(), "Saint-Benoît", "robinet", NOW) as { isError?: boolean }).isError).toBe(true);
   });
 
   it("tells which water a question is about", () => {

@@ -66,7 +66,8 @@ describe("fires seen by satellite", () => {
     const c = cache();
     const f = (await feux.feuxNow(c, NOW))!;
     expect(asked).toHaveLength(feux.COST);
-    expect(asked[0]).toBe("https://firms.modaps.eosdis.nasa.gov/api/area/csv/key/VIIRS_SNPP_NRT/55.2,-21.4,55.85,-20.85/1");
+    // Two UTC days: one would start at 04:00 at La Réunion and lose the night's passes, as the one of 23/10 21:50 UTC.
+    expect(asked[0]).toBe("https://firms.modaps.eosdis.nasa.gov/api/area/csv/key/VIIRS_SNPP_NRT/55.2,-21.4,55.85,-20.85/2");
     expect(f.satellites).toEqual(["Suomi NPP", "NOAA-20", "NOAA-21"]);
     // The one of 22/10 is past the day; the newest first, its hour read from « 230 ».
     expect(f.detections.map((d) => [d.t, d.confiance, d.commune])).toEqual([

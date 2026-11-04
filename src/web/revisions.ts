@@ -37,9 +37,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   "marches-publics": 3,
   mer: 5,
   meteo: 8,
-  randonnees: 10,
+  randonnees: 11,
   secheresse: 1,
-  sentiers: 8,
+  sentiers: 9,
   sport: 16,
   station: 2,
   trafic: 3,
@@ -77,6 +77,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "agenda:sechoir": 1,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
+  // Two UTC days of detections, not the UTC day only: an older entry lacks the night's passes.
+  "feux:ile": 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's. */

@@ -118,9 +118,21 @@ export function communesIn(text: string): string[] {
 }
 
 const local = (d: string, hm: string) => `${d.slice(6, 10)}-${d.slice(3, 5)}-${d.slice(0, 2)}T${hm}`;
-const DRINK = /ne pas boire|impropre (?:à|a) la consommation|eau embouteill|bouillie|faire bouillir|restriction d.usage/i;
-/** The notice that lifts a « ne pas boire » (« les résultats sont conformes », « de nouveau potable »), not the one that awaits it. */
-export const BACK = /(?<!information de )retour (?:à|a) la (?:normale|conformit)|lev[ée]e de la restriction|de nouveau (?:potable|garantie|consommable)|à nouveau (?:potable|consommable)|(?:sont|est) conformes?\b|redevenue? potable/i;
+const DRINK = /ne pas boire|impropre (?:à|a) la consommation|eau embouteill|bouillie|faire bouillir|restrictions? d.usage/i;
+/**
+ * The notice that lifts a « ne pas boire » (« les résultats sont conformes », « de nouveau potable »), not the one that
+ * awaits it: « jusqu'à l'annonce d'un retour à la normale » (Dionéo and runéo, 03 and 04/11/2026), « jusqu'à nouvelle
+ * information de retour à la conformité » (CISE Réunion), « le retour à la normale est prévu en fin de journée ».
+ */
+export const BACK = /(?<!(?:annonce|attente|information|confirmation) d(?:['’]un|u|e) |jusqu['’](?:au|à un|a un) )retour (?:à|a) la (?:normale|conformit)(?!\p{L}* (?:est |sera )?(?:prévu|attendu|annoncé))|lev[ée]e de la restriction|de nouveau (?:potable|garantie|consommable)|à nouveau (?:potable|consommable)|(?:sont|est) conformes?\b|redevenue? potable/iu;
+/**
+ * A notice that lifts the advice for some sectors and keeps it for others: « retour à la normale … sur le secteur alimenté
+ * par le forage Bras Piton. Pour les secteurs de premier village et deuxième village, les restrictions d’usage sont
+ * maintenues » (CISE Réunion, La Plaine-des-Palmistes, 03/11/2026). It still says not to drink, where it keeps it.
+ */
+const KEPT = /(?:restrictions? d.usage|consignes?|dispositions?|recommandations?) (?:sanitaires? )?(?:sont |restent )?(?:maintenues?|toujours en vigueur)/i;
+/** Whether a notice lifts the advice not to drink: it says the water is back, and keeps the advice nowhere. */
+export const lifts = (texte: string) => BACK.test(texte) && !KEPT.test(texte);
 
 /** One notice of the shared platform's feed, in its usual words. */
 export function parseNotice(text: string): Pick<Avis, "debut" | "fin"> {
@@ -240,7 +252,7 @@ export function parseRss(xml: string, feed: (typeof FEEDS)[number]): Avis[] {
       publie: new Date(tag("pubDate")).toISOString(),
       ...parseNotice(texte),
       ...sectorList(texte, true),
-      ne_pas_boire: DRINK.test(texte) && !BACK.test(texte) && !/peut être impropre à la consommation durant quelques heures/i.test(texte),
+      ne_pas_boire: DRINK.test(texte) && !lifts(texte) && !/peut être impropre à la consommation durant quelques heures/i.test(texte),
       ...cut(texte.replace(/^Communiqué N°[^\n]*\n/, "").replace(/^Diffusion :\n(?:(?:dans la presse|à la radio)[^\n]*\n)*/, "")),
       lien: httpUrl(tag("link")),
     };
@@ -282,7 +294,7 @@ export function parseCirest(posts: Post[]): Avis[] {
       publie: new Date(`${p.date}+04:00`).toISOString(),
       ...times(body),
       ...sectorList(body, false),
-      ne_pas_boire: DRINK.test(texte) && !BACK.test(texte),
+      ne_pas_boire: DRINK.test(texte) && !lifts(texte),
       ...cut(body),
       lien: httpUrl(p.link),
     };
@@ -295,7 +307,7 @@ const DRINK_WORDS = /ne pas boire|ne pas consommer l.eau|impropre (?:à|a) la co
 const AFTER_CUT = /remise en eau|(?:rétablissement|reprise) de la distribution|après le rétablissement/i;
 const CUT = /interruption|coupure|travaux|fermer la distribution/i;
 const drinkSaid = (titre: string, texte: string) =>
-  DRINK_WORDS.test(texte) && !BACK.test(texte) && !(CUT.test(`${titre} ${texte}`) && AFTER_CUT.test(texte));
+  DRINK_WORDS.test(texte) && !lifts(texte) && !(CUT.test(`${titre} ${texte}`) && AFTER_CUT.test(texte));
 const lines = (html: string) => strip(html).replace(/\r\n?/g, "\n").replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 const ddmmyyyy = (d: string) => `${d.slice(6, 10)}-${d.slice(3, 5)}-${d.slice(0, 2)}`;
 

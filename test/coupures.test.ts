@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { communesIn, cut, extract, operatorOf, parseCirest, parseCreole, parseNotice, parseRss, parseSaintLeu, parseSainteMarie, sectorList, textOf } from "../src/providers/avis-eau.js";
+import { communesIn, cut, extract, lifts, operatorOf, parseCirest, parseCreole, parseNotice, parseRss, parseSaintLeu, parseSainteMarie, sectorList, textOf } from "../src/providers/avis-eau.js";
 import { coupuresEau, noticeRow } from "../src/tools/coupures.js";
 import { coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { buildCoupures } from "../src/web/data.js";
@@ -226,6 +226,48 @@ describe("coupures d'eau", () => {
     const b = body(await coupuresEau(cache(), "Plaine des Palmistes", NOW));
     expect(b.resume).toMatch(/^EAU À NE PAS BOIRE à La Plaine-des-Palmistes \(secteurs dans l'avis\), d'après l'avis du 23\/10\/2026 à 21:49/);
     expect(b.ne_pas_boire.titre).toMatch(/RESTRICTION D’USAGE DE L’EAU/);
+  });
+
+  // The notices of 03 and 04/11/2026, word for word: « jusqu'à l'annonce d'un retour à la normale » awaits the return of
+  // the water, and a return in one sector keeps the advice where it says so.
+  const DIONEO_0411 = "Dionéo informe ses clients de SAINT DENIS, que suite aux dernières intempéries, l'eau distribuée peut devenir trouble (augmentation de la turbidité) dans les secteurs suivants :\nTRAITEMENT ST FRANCOIS\nLes abonnés doivent prendre la précaution de ne pas consommer l'eau du robinet, et notamment de ne pas utiliser l'eau pour la boisson ou la préparation des aliments ; privilégier les usages non alimentaires (toilette, WC, ménage...) ; et préférer la consommation d'eau embouteillée ou à défaut, faire bouillir au préalable l'eau du robinet au moins 3 minutes.\nCes dispositions restent valables jusqu'à l'annonce d'un retour à la normale par nos équipes.\nDionéo remercie ses clients pour leur compréhension et les tiendra informés de l'évolution de la situation.";
+  const RUNEO_0311 = DIONEO_0411.replace("Dionéo informe ses clients de SAINT DENIS", "runéo informe ses clients de SAINTE-SUZANNE").replace("TRAITEMENT ST FRANCOIS", "RESERVOIR VALERY").replace("Dionéo remercie", "runéo remercie");
+  const PLAINE_0311 = "<p>CISE Réunion informe ses abonnés de la commune de La Plaine-des-Palmistes, du retour à la normale concernant de la qualité de l’eau sur le secteur alimenté par le forage Bras Piton.</p><p>Pour les secteurs de premier village et deuxième village, les restrictions d’usage sont maintenues pour le moment, le temps de pouvoir procéder à toutes les vérifications nécessaires.</p><p>Les usagers sont invités à suivre attentivement les prochaines communications du service d’eau potable.</p><p>CISE Réunion vous remercie pour votre confiance et votre compréhension.</p>";
+  const rssItem = (title: string, date: string, text: string) =>
+    `<item><title>${title}</title><link>https://dioneo.re/flash-info/qualite-de-leau-14</link><pubDate>${date}</pubDate><description>${text.replace(/'/g, "&#039;")}</description></item>`;
+
+  it("keeps « ne pas boire » until a notice says the water is back, not one that awaits it, nor one that keeps it in some sectors", () => {
+    const feed = (communes: string[], nom: string) => ({ nom, url: "", communes });
+    const rss = (text: string, nom: string, communes: string[]) => parseRss(`<rss><channel>${rssItem("Qualité de l'eau", "Wed, 04 Nov 2026 11:15:00 +0400", text)}</channel></rss>`, feed(communes, nom))[0];
+    expect(rss(DIONEO_0411, "Dionéo", ["Saint-Denis"])).toMatchObject({ communes: ["Saint-Denis"], ne_pas_boire: true });
+    expect(rss(RUNEO_0311, "runéo", ["Sainte-Suzanne", "Saint-Pierre"])).toMatchObject({ communes: ["Sainte-Suzanne"], ne_pas_boire: true });
+    const post = (title: string, html: string) => ({ date: "2026-11-03T15:00:00", title: { rendered: title }, link: "https://www.cirest.fr/x/", categories: [], content: { rendered: html } });
+    expect(parseCirest([post("La Plaine des Palmistes, qualité de l’eau (03/11/2026)", PLAINE_0311)])[0]).toMatchObject({ communes: ["La Plaine-des-Palmistes"], ne_pas_boire: true });
+    // Awaited or planned, the return lifts nothing.
+    expect(lifts("les abonnés doivent prendre la précaution de ne pas boire l’eau du réseau jusqu’à nouvelle information de retour à la conformité.")).toBe(false);
+    expect(lifts("Ne pas boire l'eau jusqu'au retour à la normale.")).toBe(false);
+    expect(lifts("Le retour à la normale est prévu en fin de journée.")).toBe(false);
+    // A real lifting: CISE Réunion at Sainte-Marie, and the CIREST at Saint-Benoît (15/10/2026), whose water is drinkable again.
+    expect(lifts("CISE Réunion informe ses abonnés de la commune de Sainte-Marie, du retour à la normale de la qualité de l’eau sur les secteurs suivants : Espérance les Hauts")).toBe(true);
+    const benoit = parseCirest(JSON.parse(fixture("cirest.json"))).find((n) => n.titre.startsWith("Saint-Benoit : qualité de l"))!;
+    expect(benoit.texte).toMatch(/Les résultats sont connus/);
+    expect(benoit.ne_pas_boire).toBe(false);
+  });
+
+  it("says first, in the tool, the day of the commune and its page, the water not to drink of a notice that awaits the return to normal", async () => {
+    const now = new Date("2026-11-04T10:30:00Z");
+    // Dionéo's feed with the notice of 04/11, the other sources as before.
+    const others = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string) => new URL(url).hostname === "dioneo.re"
+      ? new Response(fixture("dioneo.xml").replace("</channel>", `${rssItem("Qualité de l'eau", "Wed, 04 Nov 2026 11:15:00 +0400", DIONEO_0411)}</channel>`))
+      : others(url));
+    expect(body(await coupuresEau(cache(now), "Saint-Denis", now)).resume).toMatch(/^EAU À NE PAS BOIRE à Saint-Denis \(secteurs dans l'avis\), d'après l'avis du 04\/11\/2026 à 11:15/);
+    const coupures = { value: await buildCoupures(cache(now), now), fetchedAt: now };
+    expect(coupures.value.ne_pas_boire).toContain("Saint-Denis");
+    const day = resume(pageOf("saint-denis")!, { coupures } as never, now);
+    expect(day.resume).toContain("1 avis d'eau à ne pas boire dans les secteurs de l'avis");
+    expect(descriptionOf(pageOf("saint-denis")!, day).replace(/[\u00a0\u202f]/g, " ")).toMatch(/^Aujourd'hui à Saint-Denis \(974\) : eau à ne pas boire/);
+    expect(aujourdhuiPage("https://rundata.re", pageOf("saint-denis")!, day, null)).toContain("<b>Eau à ne pas boire</b>");
   });
 
   it("reads La Créole's page: the day it gives, the start it writes, and the advice after a cut is not « ne pas boire »", () => {

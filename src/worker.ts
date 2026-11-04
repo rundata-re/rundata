@@ -425,6 +425,9 @@ export default {
     // Its own budget, enough for every copy that is due: past it a subrequest is refused here (budget.ts).
     const reads = counted(SCHEDULED_BUDGET, async () => {
       scheduled();
+      // The Météo-France token renewed before it is due, here rather than by a question (providers/mf-auth.ts): its
+      // log line says when.
+      await meteofrance.keepFresh("cron").catch((err) => (console.error("jeton Météo-France : renouvellement impossible", why(err)), null));
       const arome = await prefetchForecasts(c).catch((err) => (console.error("préchargement AROME impossible", why(err)), null));
       const aromeUsed = spent();
       // One listing of KV for both.

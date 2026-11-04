@@ -1,4 +1,4 @@
-import { left } from "../budget.js";
+import { later, left } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { compass, localTime, sinceMidnight } from "../geo.js";
 import { normalize, resolvePlace, type Place } from "../places/resolve.js";
@@ -24,6 +24,24 @@ export function coverage(): string {
 
 const REUNION_OFFSET_MS = 4 * 3600 * 1000; // UTC+4 all year
 const ENS_MIN_LEFT = 2;
+/**
+ * How long the tool waits for AROME (server.ts). Past it, the answer gives Open-Meteo's forecast, said as such
+ * (« prévision AROME pas encore chargée »), and AROME's grids go on loading after the response, into the run's bundle
+ * that the next question reads. On 03/11 three questions waited 17 to 19 s for it (a token, a run not out yet), with
+ * 26 to 59 ms of CPU; over the 14 days before, half the answers took under 0.3 s and 95 % under 2.6 s.
+ */
+export const AROME_WAIT_MS = 4_000;
+const LATE = Symbol("late");
+
+/** `work`'s result if it settles within `ms`, else LATE: the work then goes on after the response (`later`). */
+async function inTime<T>(work: Promise<T>, ms: number): Promise<T | typeof LATE> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<typeof LATE>((resolve) => (timer = setTimeout(() => resolve(LATE), ms)));
+  const r = await Promise.race([work, late]);
+  clearTimeout(timer);
+  if (r === LATE) later(work);
+  return r;
+}
 
 /** "2026-10-23" in Réunion time. */
 export function localDate(d: Date): string {
@@ -232,11 +250,15 @@ interface Got {
   ens: ensemble.Ensemble | null;
   /** Why AROME is missing from answers it should be in. */
   aromeDown?: string;
-  /** AROME is wanted and up, but none of its grids is stored yet and the invocation had no room to download them. */
+  /**
+   * AROME is wanted and up, but none of its grids is stored yet and the invocation had no room to download them, or
+   * they were not ready within the time the tool waits (AROME_WAIT_MS).
+   */
   aromeLater?: boolean;
 }
 
-async function forecasts(cache: Cache, places: Place[], starts: Date[], now: Date): Promise<Got> {
+/** `aromeWaitMs`: how long AROME is waited for (AROME_WAIT_MS for the tool); Infinity for the pages' copies. */
+async function forecasts(cache: Cache, places: Place[], starts: Date[], now: Date, aromeWaitMs = Infinity): Promise<Got> {
   // Not even the run list is asked for when the period is beyond AROME's 48 hours.
   const wanted = starts.filter((t) => t.getTime() < now.getTime() + 48 * HOUR);
   // Set aside what the ECMWF answers may cost cold (each read, fetched and stored at the edge), plus its run time
@@ -252,7 +274,10 @@ async function forecasts(cache: Cache, places: Place[], starts: Date[], now: Dat
     console.error(`source ${uv.SOURCE.id} indisponible:`, why(err));
     return null;
   });
-  const [a, ecmwf, uvi] = await Promise.all([aromeP, Promise.allSettled(places.map((p) => openmeteo.forecast(cache, p))), uvP]);
+  const timely = wanted.length && Number.isFinite(aromeWaitMs) ? inTime(aromeP, aromeWaitMs) : aromeP;
+  const [a, ecmwf, uvi] = await Promise.all([timely, Promise.allSettled(places.map((p) => openmeteo.forecast(cache, p))), uvP]);
+  const late = a === LATE;
+  if (late) console.log(`source ${arome.SOURCE.id} : pas prête en ${aromeWaitMs} ms, prévision d'Open-Meteo cette fois, grilles chargées après la réponse`);
   // The ensemble's copy last, one read, and only when the forecast leaves room for it and for the rest of a page.
   const ens = left() >= ENS_MIN_LEFT
     ? await ensemble.island(cache, now).catch((err) => {
@@ -260,14 +285,14 @@ async function forecasts(cache: Cache, places: Place[], starts: Date[], now: Dat
         return null;
       })
     : null;
-  const data = a instanceof Error ? null : a;
+  const data = a instanceof Error || late ? null : a;
   const results = places.map((p, i): PromiseSettledResult<Cached<Forecast>> => {
     const e = ecmwf[i].status === "fulfilled" ? ecmwf[i].value : null;
     const f = merge(e?.value ?? null, data ? arome.atPlace(data, p) : null);
     if (!f) return ecmwf[i] as PromiseRejectedResult;
     return { status: "fulfilled", value: { value: ahead(f, now), fetchedAt: e?.fetchedAt ?? now, stale: e?.stale ?? false } };
   });
-  return { results, uv: uvi, ens, aromeDown: a instanceof Error ? a.message : undefined, aromeLater: wanted.length > 0 && a === null && arome.enabled() };
+  return { results, uv: uvi, ens, aromeDown: a instanceof Error ? a.message : undefined, aromeLater: wanted.length > 0 && (a === null || late) && arome.enabled() };
 }
 
 /**
@@ -505,14 +530,15 @@ function unavailable() {
 
 const aromeDownWarning = "Le modèle AROME de Météo-France n'a pas répondu : prévision du modèle mondial, moins fine sur l'île.";
 
-export async function previsionMeteo(cache: Cache, lieu: string | undefined, quand: string | undefined, now = new Date()) {
+/** `aromeWaitMs`: how long AROME is waited for, AROME_WAIT_MS for the tool (server.ts); the pages wait for it. */
+export async function previsionMeteo(cache: Cache, lieu: string | undefined, quand: string | undefined, now = new Date(), aromeWaitMs = Infinity) {
   const period = parsePeriod(quand, now);
   const today = localDate(now);
 
   if (!lieu?.trim()) {
     const places = TOUR.map((n) => resolvePlace(n)!.lieu);
     const wanted = period.defaut ? [today, addDays(today, 1)] : [...new Set(period.slots.map((s) => s.jour))];
-    const { results, uv: u, ens, aromeDown, aromeLater } = await forecasts(cache, places, stepStarts(wanted, now), now);
+    const { results, uv: u, ens, aromeDown, aromeLater } = await forecasts(cache, places, stepStarts(wanted, now), now, aromeWaitMs);
     const ok = places.flatMap((p, i) => (results[i].status === "fulfilled" ? [{ p, c: (results[i] as PromiseFulfilledResult<Cached<Forecast>>).value }] : []));
     if (!ok.length) return unavailable();
     const lieux = ok.map(({ p, c }) => ({
@@ -554,7 +580,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   const nightDay = period.defaut ? undefined : evening;
   const starts = [...new Map([...shown, ...(hauts ? nuages.morningStarts(now, cloudDay) : []), ...(nightWanted ? nuages.nightStarts(now, nightDay) : [])]
     .map((t) => [t.getTime(), t])).values()].sort((a, b) => a.getTime() - b.getTime());
-  const { results, uv: u, ens, aromeDown, aromeLater } = await forecasts(cache, [r.lieu], starts, now);
+  const { results, uv: u, ens, aromeDown, aromeLater } = await forecasts(cache, [r.lieu], starts, now, aromeWaitMs);
   const uvOf = uvAt(u, r.lieu);
   const confOf = confAt(ens, r.lieu, now);
   if (results[0].status === "rejected") {

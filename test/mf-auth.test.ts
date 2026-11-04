@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted } from "../src/budget.js";
-import { configure, download, session, share, tokensIssued, type Token, type TokenStore } from "../src/providers/mf-auth.js";
+import { configure, download, keepFresh, RENEW_BEFORE_MS, session, share, tokensIssued, type Token, type TokenStore } from "../src/providers/mf-auth.js";
 import { UpstreamError } from "../src/types.js";
 
 // The Worker's KV as seen by one isolate, while other isolates write to it too.
@@ -161,5 +161,47 @@ describe("one Météo-France token for every isolate, kept in KV", () => {
     accepted.add("n");
     expect(await ask()).toEqual({ value: "image", used: 1, issued: 1 });
     expect(logs).toEqual(["jeton Météo-France pris (sans KV, mf_radar)"]);
+  });
+});
+
+describe("the token renewed by the scheduled event before it is due", () => {
+  const MIN = 60_000;
+  const renew = async () => {
+    const before = tokensIssued();
+    const { value, used } = await counted(Infinity, () => keepFresh("cron"));
+    return { value, used, issued: tokensIssued() - before };
+  };
+
+  it("takes the next one when KV's is due within 15 minutes, writes it there and says so", async () => {
+    kv.token = { value: "a", until: Date.now() + RENEW_BEFORE_MS - MIN };
+    portal.push("n");
+    // A KV read, the portal, a KV write.
+    expect(await renew()).toEqual({ value: "renouvelé", used: 3, issued: 1 });
+    expect(kv.token?.value).toBe("n");
+    expect(logs).toEqual(["jeton Météo-France pris (renouvelé avant son échéance, cron)"]);
+    // A question in this isolate then uses it without reading KV.
+    accepted.add("n");
+    expect(await ask()).toEqual({ value: "image", used: 0, issued: 0 });
+  });
+
+  it("takes one when KV holds none: no question waits for the portal afterwards", async () => {
+    portal.push("n");
+    expect((await renew()).value).toBe("renouvelé");
+    expect(logs).toEqual(["jeton Météo-France pris (aucun jeton dans KV, cron)"]);
+  });
+
+  it("keeps KV's token while it is good for more than 15 minutes, and reads KV no more once it holds it", async () => {
+    kv.token = { value: "a", until: Date.now() + RENEW_BEFORE_MS + 10 * MIN };
+    expect(await renew()).toEqual({ value: "gardé", used: 1, issued: 0 });
+    expect(await renew()).toEqual({ value: "gardé", used: 0, issued: 0 });
+    expect(kv.writes).toBe(0);
+  });
+
+  it("does nothing without the application's id or without KV", async () => {
+    configure({ apiKey: "k" });
+    expect(await renew()).toEqual({ value: null, used: 0, issued: 0 });
+    configure({ applicationId: `app${++app}` });
+    share(undefined);
+    expect(await renew()).toEqual({ value: null, used: 0, issued: 0 });
   });
 });

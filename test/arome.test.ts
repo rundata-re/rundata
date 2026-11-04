@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { resolvePlace } from "../src/places/resolve.js";
 import * as arome from "../src/providers/arome.js";
@@ -8,7 +9,7 @@ import { configure } from "../src/providers/mf-auth.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
 import * as uv from "../src/providers/uv.js";
 import { readTiff } from "../src/tiff.js";
-import { previsionMeteo } from "../src/tools/prevision.js";
+import { AROME_WAIT_MS, previsionMeteo } from "../src/tools/prevision.js";
 
 // Grids recorded from the AROME outre-mer run of 21/10/2026 18:00 UTC: the step starting 22/10 08:00 UTC
 // (12:00 in Réunion), and the run's first hour for the terrain height.
@@ -134,6 +135,33 @@ describe("prevision_meteo with AROME", () => {
     expect(r.resume).toMatch(/^PRÉVISION \(modèle AROME/);
   });
 
+  it("answers from ECMWF, said as such, when AROME is not ready in time, and loads its grids after the response", async () => {
+    configure({ token: "test" });
+    const grid = tif("t2m");
+    let slow = true;
+    vi.stubGlobal("fetch", async (url: string) => {
+      if (!String(url).includes("GetCoverage") || !slow) throw new Error("no network in tests");
+      await new Promise((r) => setTimeout(r, 300));
+      return new Response(grid);
+    });
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const c = await offlineCache();
+    const t0 = Date.now();
+    const { value, settled } = await counted(200, () => previsionMeteo(c, "Cilaos", undefined, NOW, 50));
+    expect(Date.now() - t0).toBeLessThan(250);
+    const r = body(value);
+    expect(r.resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée, modèle IFS HRES/);
+    expect(r.avertissements.join(" ")).not.toMatch(/n'a pas répondu/);
+    // The grids keep loading after the response, within the same invocation: the next question has them.
+    await settled();
+    slow = false;
+    const next = body(await previsionMeteo(c, "Cilaos", undefined, NOW, 50));
+    expect(next.resume).toMatch(/^PRÉVISION \(modèle AROME/);
+    expect(next.pas_de_3h[0]).toMatchObject({ heures: "jeudi 22/10 9\u00a0h–12\u00a0h", modele: "AROME outre-mer de Météo-France" });
+    expect(AROME_WAIT_MS).toBe(4000);
+    vi.restoreAllMocks();
+  });
+
   it("falls back to ECMWF alone, saying so, when AROME does not answer", async () => {
     configure({ token: "test" });
     noNetwork();
@@ -198,12 +226,13 @@ describe("a run listed before all its hours are out", () => {
     const r = body(await previsionMeteo(await cacheAt(clock), "Cilaos", "demain", new Date(START)));
     expect(r.resume).toMatch(/^PRÉVISION \(modèle AROME outre-mer de Météo-France, maille de 2,5 km, calcul de 22\/10 04:00, et de 21\/10 22:00 pour la suite/);
     expect(r.modele.calculs_suivants).toEqual([{ run_du_modele: "21/10 22:00", a_partir_de: "23/10 06:00" }]);
-    // Midnight to 6h from the newest run, then the run before, then ECMWF. Cold, the question's 40 grids reach 15h:
-    // the steps of the night and of the morning take two more each for the cloud layer (the prefetch fills the rest).
+    // Midnight to 6h from the newest run, then the run before, then ECMWF. Cold, the question's 40 grids reach 18h,
+    // the run not out yet costing one try (the 15h step had none left when each grid in flight was tried): the steps of
+    // the night and of the morning take two more each for the cloud layer (the prefetch fills the rest).
     const models = r.pas_de_3h.map((s: { heures: string; modele: string }) => s.modele);
     expect(models).toHaveLength(8);
-    expect(models.slice(0, 5).every((m: string) => m.startsWith("AROME"))).toBe(true);
-    expect(models.slice(5).every((m: string) => /^IFS/.test(m))).toBe(true);
+    expect(models.slice(0, 6).every((m: string) => m.startsWith("AROME"))).toBe(true);
+    expect(models.slice(6).every((m: string) => /^IFS/.test(m))).toBe(true);
     expect(r.avertissements.join(" ")).toMatch(/calcul d'AROME de 22\/10 04:00 n'est pas encore entièrement publié .* à partir de 23\/10 06:00, les valeurs viennent du calcul de 21\/10 22:00/);
     expect(asked.some((a) => a.run === BEFORE)).toBe(true);
   });
@@ -215,8 +244,8 @@ describe("a run listed before all its hours are out", () => {
     await previsionMeteo(c, "Cilaos", "demain", new Date(START));
     const late = () => asked.filter((a) => a.run === NEWEST && a.time >= MISSING_FROM).length;
     const first = late();
-    expect(first).toBeGreaterThan(0);
-    expect(first).toBeLessThanOrEqual(6); // the grids already in flight when the first 404 came back
+    // One try of the step's latest grid, not the grids in flight when the first 404 came back (7 on 03/11).
+    expect(first).toBe(1);
 
     clock.now = START + 10 * 60_000;
     const before = asked.length;
@@ -235,7 +264,8 @@ describe("a run listed before all its hours are out", () => {
     const logs = vi.spyOn(console, "log").mockImplementation(() => {});
     await previsionMeteo(await cacheAt({ now: START }), "Cilaos", "demain", new Date(START));
     expect(errors).not.toHaveBeenCalled();
-    expect(logs).toHaveBeenCalledWith(expect.stringMatching(/pas encore publié à partir de 2026-10-23T03:00:00Z/));
+    // The hour tried: the latest grid of the first step not out (03:00 is missing, so 05:00 is).
+    expect(logs).toHaveBeenCalledWith(expect.stringMatching(/pas encore publié à partir de 2026-10-23T05:00:00Z/));
     errors.mockRestore();
     logs.mockRestore();
   });

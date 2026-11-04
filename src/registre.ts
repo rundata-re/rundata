@@ -400,7 +400,7 @@ const SCHEDULED: Entry[] = [
   {
     id: "meteofrance:jeton",
     trigger: "planifiée",
-    what: "jeton Météo-France commun à tous les isolats : lu dans KV au premier besoin d'un isolat, à son échéance ou après un refus (401), au plus une fois par invocation qui lit Météo-France",
+    what: "jeton Météo-France commun à tous les isolats : lu dans KV au premier besoin d'un isolat, à son échéance, après un refus (401) ou par le passage planifié quand son isolat n'en tient pas un bon pour 15 minutes de plus, au plus une fois par invocation",
     every: 1,
     offset: 0,
     run: { subrequests: 1, kvReads: 1, cpuMs: 0 },
@@ -410,8 +410,8 @@ const SCHEDULED: Entry[] = [
   {
     id: "meteofrance:jeton:nouveau",
     trigger: "planifiée",
-    what: "jeton Météo-France commun à tous les isolats : un nouveau jeton demandé au portail et écrit dans KV, environ une fois par heure",
-    every: 30,
+    what: "jeton Météo-France commun à tous les isolats : un nouveau jeton demandé au portail et écrit dans KV par le passage planifié, 15 minutes avant l'échéance du précédent, soit environ toutes les 40 minutes",
+    every: 40,
     offset: 0,
     run: { subrequests: 2, kvWrites: 1, cpuMs: 0 },
     from: ["src/providers/mf-auth.ts"],

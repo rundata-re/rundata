@@ -121,6 +121,30 @@ async function first(source: string): Promise<string> {
   return newToken(source, !store ? "sans KV" : kept ? "jeton de KV échu" : "aucun jeton dans KV");
 }
 
+/**
+ * How long before KV's token is due the scheduled event takes the next one (`keepFresh`): more than the 5 minutes
+ * between two events, and than the 15 minutes the AROME run list is kept.
+ */
+export const RENEW_BEFORE_MS = 15 * 60_000;
+
+/**
+ * For the Worker's scheduled event: the next token taken before KV's is due, so that a question never waits for the
+ * portal (about 16 s for « aucun jeton dans KV » on 03/11 at 23:00). The new token voids the one other isolates hold:
+ * their next request answers 401 and they read KV's (`after401`), as when a question took it. One KV read when this
+ * isolate holds no token good for 15 minutes more; a token and a KV write about every 40 minutes.
+ */
+export async function keepFresh(source: string): Promise<"gardé" | "renouvelé" | null> {
+  if (!credentials.applicationId || !store) return null;
+  if (oauth && oauth.until - Date.now() > RENEW_BEFORE_MS) return "gardé";
+  const kept = await stored();
+  if (kept && kept.until - Date.now() > RENEW_BEFORE_MS) {
+    oauth = kept;
+    return "gardé";
+  }
+  await newToken(source, kept ? "renouvelé avant son échéance" : "aucun jeton dans KV");
+  return "renouvelé";
+}
+
 /** After a 401 with `failed`: KV's token when another isolate wrote a newer one, else a new one. */
 async function after401(source: string, failed: string, fresh: () => Promise<string>): Promise<string> {
   const kept = await stored();

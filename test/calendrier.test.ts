@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { breaks, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
-import { calendrier, longDate, moonOf } from "../src/tools/calendrier.js";
+import { astronomicalNight, breaks, darkNight, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
+import { calendrier, longDate, moonOf, nuitOf } from "../src/tools/calendrier.js";
 import { buildCalendrier } from "../src/web/data.js";
 import { calendrierLive, calendrierPage } from "../src/web/domains.js";
 
@@ -171,5 +171,64 @@ describe("calendar", () => {
     expect(html).toContain(`lever du soleil à <b>${s.lever}</b>, coucher à <b>${s.coucher}</b>.</p>`);
     expect(html).toContain(`<p>Lever ${s.lever}, coucher ${s.coucher} : `);
     expect(calendrierLive({ ...data, stale: false }, now)!.detail).toContain(`soleil ${s.lever}–${s.coucher}`);
+  });
+});
+
+describe("the dark night", () => {
+  // The Maïdo (2 197 m), as resolvePlace gives it.
+  const [lon, lat, alt] = [55.38757, -21.06885, 2197];
+  const hm = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(11, 16);
+  const gap = (a: string, b: string) => {
+    const m = (s: string) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3));
+    return Math.min(Math.abs(m(a) - m(b)), 1440 - Math.abs(m(a) - m(b)));
+  };
+  // PyEphem 4.2 (pressure 0, the Sun's centre at -18°, the Moon's upper limb under the horizon lowered by the altitude),
+  // local times: the night's start and end, then the spans without the Moon.
+  const EPHEM: [string, string, string, [string, string][]][] = [
+    ["2026-11-04", "19:49", "04:14", [["19:49", "02:42"]]],
+    ["2026-11-09", "19:52", "04:11", [["19:52", "04:11"]]],
+    ["2026-11-14", "19:56", "04:08", [["23:11", "04:08"]]],
+    ["2026-11-24", "20:04", "04:05", []],
+    ["2027-04-23", "19:15", "05:18", [["19:15", "19:34"]]],
+    ["2027-06-17", "19:04", "05:34", []],
+  ];
+
+  it("finds the astronomical night and its spans without the Moon within two minutes of an ephemeris", () => {
+    for (const [day, debut, fin, spans] of EPHEM) {
+      const n = darkNight(day, lon, lat, alt);
+      expect(gap(hm(n.debut), debut), `${day} début`).toBeLessThanOrEqual(2);
+      expect(gap(hm(n.fin), fin), `${day} fin`).toBeLessThanOrEqual(2);
+      expect(n.noire.length, day).toBe(spans.length);
+      n.noire.forEach((x, i) => {
+        expect(gap(hm(x.de), spans[i][0]), `${day} de`).toBeLessThanOrEqual(2);
+        expect(gap(hm(x.a), spans[i][1]), `${day} à`).toBeLessThanOrEqual(2);
+      });
+    }
+    // The night starts the evening of its date and ends the next morning.
+    const n = astronomicalNight("2026-11-04", lon, lat);
+    expect(n.debut.toISOString().slice(0, 10)).toBe("2026-11-04");
+    expect(n.fin.toISOString().slice(0, 10)).toBe("2026-11-05");
+  });
+
+  it("says the dark night and the Moon of the night, each as a calculation (marketing's words of 04/11)", () => {
+    // The Moon rises in the night.
+    expect(nuitOf("2026-11-04", lon, lat, alt)).toEqual({
+      nuit_noire: "Nuit noire de 19:48 à 02:42, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).",
+      lune: "Lune décroissante, éclairée à 20\u00a0% à minuit, lever à 02:42 (calcul astronomique).",
+    });
+    // It sets in the night.
+    expect(nuitOf("2026-11-14", lon, lat, alt).nuit_noire).toBe("Nuit noire de 23:11 à 04:09, après le coucher de la Lune (calcul astronomique).");
+    // Down all the night, set before it and risen after.
+    expect(nuitOf("2026-11-09", lon, lat, alt)).toEqual({
+      nuit_noire: "Nuit noire de 19:52 à 04:11, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).",
+      lune: "Lune croissante, éclairée à 0\u00a0% à minuit, coucher à 18:56, lever à 05:46 (calcul astronomique).",
+    });
+    // Up all the night, a full moon in it.
+    expect(nuitOf("2026-11-24", lon, lat, alt)).toEqual({
+      nuit_noire: "Pas de nuit noire cette nuit\u00a0: la Lune, éclairée à 100\u00a0%, reste au-dessus de l'horizon de 18:35 à 05:51 (calcul astronomique).",
+      lune: "Pleine lune à 18:57, éclairée à 100\u00a0%, lever à 18:35, coucher à 05:51 (calcul astronomique).",
+    });
+    // Under an hour, said all the same with its hours.
+    expect(nuitOf("2027-04-23", lon, lat, alt).nuit_noire).toBe("Nuit noire de 19:15 à 19:33, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).");
   });
 });

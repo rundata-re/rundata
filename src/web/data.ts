@@ -7,7 +7,7 @@
  * seconds at most, and is otherwise sent without its live block while the build goes on.
  */
 import * as nuages from "../tools/nuages.js";
-import type { MerDeNuages } from "../tools/nuages.js";
+import type { CielDeNuit, MerDeNuages } from "../tools/nuages.js";
 import type { Jour } from "../tools/volcan.js";
 import * as arome from "../providers/arome.js";
 import { left, measured, unmeasured } from "../budget.js";
@@ -207,6 +207,8 @@ export interface PrevisionAnswer {
   modele?: { nom: string; maille_km: number; run_du_modele?: string };
   /** In the Hauts: the cloud sea of the coming morning (tools/nuages.ts). */
   mer_de_nuages?: MerDeNuages;
+  /** The sky of the coming night, from 18 h to 6 h (tools/nuages.ts); missing on a copy made before it. */
+  ciel_de_nuit?: CielDeNuit;
   avertissements?: string[];
   sources: Credit[];
 }

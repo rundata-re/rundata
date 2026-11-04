@@ -6,6 +6,7 @@ import * as arome from "../src/providers/arome.js";
 import { configure } from "../src/providers/mf-auth.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
 import { BEYOND, CAVEAT, LABEL, cielDeNuit, etat, merDeNuages, morning, morningStarts, night, nightStarts, softened } from "../src/tools/nuages.js";
+import { nuitOf } from "../src/tools/calendrier.js";
 import { previsionMeteo, stepSky } from "../src/tools/prevision.js";
 import type { Forecast, ForecastHour } from "../src/types.js";
 import { randonneesPage } from "../src/web/domains.js";
@@ -271,6 +272,27 @@ describe("the cloud sea on the site", () => {
     expect(html).toContain("Prévision du modèle AROME de Météo-France (carrés de 2,5 km).");
     // Tomorrow's morning: a reading of now says nothing of it.
     expect(html).not.toContain("selon le modèle, mais");
+  });
+
+  it("has the sky of the night after it in the Hauts, the forecast first, the dark night and the Moon computed at the view", () => {
+    const p = pageOf("maido")!;
+    const steps = ["2026-10-24T14:00:00Z", "2026-10-24T17:00:00Z", "2026-10-24T20:00:00Z", "2026-10-24T23:00:00Z"];
+    const ciel = cielDeNuit(forecast(steps.map((s) => hour(s, 10, null, null))), MAIDO, EVENING)!;
+    const page = (prevision: object, now: Date, at = pageOf("maido")!) =>
+      placePage("https://rundata.re", at, { value: { prevision: { resume: "", sources: [], ...prevision } }, fetchedAt: EVENING, stale: false }, now);
+    const html = page({ mer_de_nuages: mn, ciel_de_nuit: ciel }, EVENING, p);
+    const n = nuitOf("2026-10-24", MAIDO.lon, MAIDO.lat, MAIDO.altitude_m!);
+    expect(html).toContain('<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">Ciel ce soir et cette nuit</h3>' +
+      `<p>De 18\u00a0h à 6\u00a0h, dégagé.</p><p>${n.nuit_noire.replaceAll("'", "&#39;")}</p><p>${n.lune}</p>`);
+    expect(html.indexOf("mer-de-nuages")).toBeLessThan(html.indexOf("ciel-cette-nuit"));
+    expect(html).toContain(`<p class="note">Ciel\u00a0: ${LABEL}. Prévision, pas une mesure.`);
+    expect(html).toContain("Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles");
+    // After 21 h, « cette nuit ».
+    expect(page({ ciel_de_nuit: ciel }, new Date("2026-10-24T18:30:00Z"))).toContain('<h3 id="h-ciel">Ciel cette nuit</h3>');
+    // The next morning, the copy's night is over: no card. Nor without the forecast, nor below the Hauts.
+    expect(page({ ciel_de_nuit: ciel }, new Date("2026-10-25T03:00:00Z"))).not.toContain("ciel-cette-nuit");
+    expect(page({ mer_de_nuages: mn }, EVENING)).not.toContain("ciel-cette-nuit");
+    expect(page({ ciel_de_nuit: ciel }, EVENING, pageOf("saint-denis")!)).not.toContain("ciel-cette-nuit");
   });
 
   it("lists the Hauts on /randonnees, each name linked to its weather page", () => {

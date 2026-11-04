@@ -269,6 +269,7 @@ p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
 
 /* A section's colour is never one of the alert scale (yellow, orange, red, purple) nor a red: those say a real state
    (kit.md). The sections of risks share one neutral colour. */

@@ -1625,11 +1625,17 @@ export const LISIBLES: Agenda[] = [
 ];
 
 /**
+ * Not read at all, with nothing said in their place, until they agree. The OTI Est: reunionest.fr's robots.txt closes
+ * its site to the AI crawlers (04/11/2026); its agreement is to be asked first.
+ */
+export const SUSPENDUS: ReadonlySet<string> = new Set(["oti_est"]);
+
+/**
  * The agendas read: not those of a commune's site, a hall's or the clubs' calendar whose terms ask its authorisation,
  * until it is given (src/providers/autorisations.ts, `agenda:<id>`). One left out is not read, and its copies, already
  * kept, are not served.
  */
-export const AGENDAS: Agenda[] = LISIBLES.filter((a) => autorisee(`agenda:${a.id}`));
+export const AGENDAS: Agenda[] = LISIBLES.filter((a) => autorisee(`agenda:${a.id}`) && !SUSPENDUS.has(a.id));
 
 // The mairies' agendas credited by name: those read only, one left out until it agrees no longer named.
 const mairiesLues = AGENDAS.filter((a) => a.source === SOURCES.mairies).map((a) => a.commune!);

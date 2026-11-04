@@ -621,7 +621,9 @@ const hostOf = (lien: string | undefined) => {
  * copy (one built before, by another revision, can still be served while it is rebuilt: tools/resume.ts, readCopies).
  */
 export const repris = (r: Pick<EventRow, "source" | "publie_par" | "lien">) =>
-  r.publie_par !== RETIRE.publie_par && !NON_LUS.some((x) => r.publie_par === x.nom || (!!x.site_commune && !!r.source?.startsWith(`${x.site_commune}, `))) &&
+  r.publie_par !== RETIRE.publie_par && !NON_LUS.some((x) => r.publie_par === x.nom || (!!x.site_commune && !!r.source?.startsWith(`${x.site_commune}, `)) ||
+    // A suspended agenda whose events carry its credit rather than its name (the OTI Est's « … — Droits réservés »).
+    (src.SUSPENDUS.has(x.id) && r.publie_par === x.source.attribution)) &&
   !(clubsNonLus && hostOf(r.lien)?.endsWith(".sportsregions.fr"));
 
 /** The credits of a copy, as they read now: none of a source not read, the mairies' agendas and the halls named as now (SOURCES). */

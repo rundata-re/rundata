@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { mention } from "../src/tools/non-repris.js";
 import { resume } from "../src/tools/resume.js";
-import { aCommune, aujourdhuiPage, descriptionOf, H1, HOOK, LINK, titleOf } from "../src/web/aujourdhui.js";
+import { aCommune, aujourdhuiPage, dayLines, descriptionOf, H1, HOOK, LINK, stationCommune, titleOf, urgent } from "../src/web/aujourdhui.js";
+import type { Resume } from "../src/tools/resume.js";
+import { CYCLONE_STEPS } from "../src/tools/vigilance.js";
 import { esc } from "../src/web/map.js";
 import { pageOf, PAGES } from "../src/web/places.js";
 
@@ -114,5 +116,59 @@ describe("the town hall in the page of a commune's day", () => {
     const hall = { nom: "Mairie - Ville A", insee: "97415", adresse: "Rue A", lon: null, lat: null, horaires: [], fiche: "https://lannuaire.service-public.fr/x" };
     const html = aujourdhuiPage("https://rundata.re", p, resume(p, { ...full(p.nom), commune: copy({ sources: [], mairie: hall }) } as never, NOW), null);
     expect(html).toContain("<li>Mairie : <b>horaires absents de l'annuaire</b>");
+  });
+});
+
+describe("the top of the page of a commune's day", () => {
+  const p = pageOf("salazie")!;
+  const vigil = (maintenant: string, above: boolean, alerte_cyclonique?: string) => ({ maintenant, au_dessus_du_vert: above, alerte_cyclonique });
+  const day = (x: object) => ({ pharmacie_de_garde: { site: "https://www.3237.fr/" }, ...x }) as unknown as Resume;
+  const green = vigil("Vigilance météo : verte pour l'Est (Météo-France), la zone de Salazie.", false);
+
+  it("says first what asks to act, with the zone of Météo-France and never the commune, red only for orange or red", () => {
+    const water = { avis: [{ titre: "Avis", ne_pas_boire: true }, { titre: "Coupure" }] };
+    const top = urgent(p, day({ coupures_eau: water, vigilance: vigil("Vigilance météo : jaune fortes pluies pour l'Est (Météo-France), la zone de Salazie.", true) }));
+    expect(top).toBe('<ul class="urgence" aria-label="À savoir d\'abord">' +
+      '<li>Eau à ne pas boire\u00a0: 1 avis en cours à Salazie, dans les secteurs nommés par l\'avis. <a href="/coupures-eau/salazie">Voir l\'avis</a></li>' +
+      "<li>Vigilance jaune fortes pluies pour l&#39;Est (Météo-France). <a href=\"/vigilance\">Voir les consignes</a></li></ul>");
+    // The kit's orange for orange, never red; red for red and violet; the highest level named gives the colour.
+    expect(urgent(p, day({ vigilance: vigil("Vigilance météo : orange vent violent pour l'Est (Météo-France), la zone de Salazie.", true) }))).toContain('<li class="orange">Vigilance orange vent violent pour l&#39;Est');
+    expect(urgent(p, day({ vigilance: vigil("Vigilance météo : jaune fortes pluies, rouge vent violent pour l'Est (Météo-France), la zone de Salazie.", true) }))).toContain('<li class="rouge">Vigilance jaune fortes pluies, rouge vent violent');
+    const step = (n: number) => `ALERTE CYCLONIQUE ${CYCLONE_STEPS[n]}.`;
+    expect(urgent(p, day({ vigilance: vigil("", false, step(3)) }))).toBe('<ul class="urgence" aria-label="À savoir d\'abord"><li class="orange">ALERTE CYCLONIQUE orange, « je me prépare » : danger dans les 24 heures (Météo-France). <a href="/vigilance">Voir les consignes</a></li></ul>');
+    expect(urgent(p, day({ vigilance: vigil("", false, step(4)) }))).toContain('<li class="rouge">ALERTE CYCLONIQUE rouge');
+    expect(urgent(p, day({ vigilance: vigil("", false, step(5)) }))).toContain('<li class="rouge">ALERTE CYCLONIQUE violette');
+    expect(urgent(p, day({ vigilance: vigil("", false, step(2)) }))).toContain("<li>ALERTE CYCLONIQUE pré-alerte");
+    expect(urgent(p, day({ coupures_eau: { avis: [{ ne_pas_boire: true }, { ne_pas_boire: true }] } }))).toContain("2 avis en cours à Salazie, dans les secteurs nommés par les avis. <a href=\"/coupures-eau/salazie\">Voir les avis</a>");
+    // Nothing to act on: no banner, the green vigilance said among the lines.
+    expect(urgent(p, day({ coupures_eau: { avis: [{ titre: "Coupure" }] }, vigilance: green }))).toBe("");
+  });
+
+  it("gives a short line by subject, the station with its commune and distance, none when its data is missing", () => {
+    expect(stationCommune("Bellevue Bras-Panon")).toBe("Bras-Panon");
+    expect(stationCommune("Une station inconnue")).toBeUndefined();
+    const meteo = {
+      mesure: { station: "Bellevue Bras-Panon", altitude_m: 480, distance_km: 8.5, heure_mesure: "04/11 14:00", mesures: { temperature: "24,8 °C" } },
+      prevision: { aujourd_hui: { jour: "mercredi 04/11", temperature_min: "19,1 °C", temperature_max: "24,8 °C", ciel_en_journee: "pluie" } },
+    };
+    const lines = dayLines(p, day({ meteo, vigilance: green, evenements_du_jour: { liste: [] }, carburants: { prix_maximum: "sans plomb 2,11 €/L, gazole 1,69 €/L" } })).replace(/\u202f/g, " ");
+    expect(lines).toBe('<ul class="jour">' +
+      "<li><b>Météo\u00a0:</b> 24,8 °C mesurés à 14:00 à la station Bellevue Bras-Panon (Bras-Panon, à 8,5\u00a0km). Prévision du jour\u00a0: 19,1 °C à 24,8 °C, pluie.</li>" +
+      "<li><b>Vigilance\u00a0:</b> verte pour l&#39;Est (Météo-France).</li>" +
+      "<li><b>Sorties\u00a0:</b> aucun événement trouvé aujourd'hui dans les agendas lus.</li>" +
+      "<li><b>Carburants\u00a0:</b> prix maximum du mois\u00a0: sans plomb 2,11 €/L, gazole 1,69 €/L.</li>" +
+      '<li><b>Pharmacie de garde\u00a0:</b> <a href="https://www.3237.fr/" rel="noopener">3237.fr</a></li></ul>');
+    // An event count; no weather nor fuel line without their data, no green line under a banner.
+    const few = dayLines(p, day({ vigilance: vigil("Vigilance météo : jaune fortes pluies pour l'Est (Météo-France), la zone de Salazie.", true), evenements_du_jour: { liste: [{}, {}], autres: 1 } }));
+    expect(few).toContain("<li><b>Sorties\u00a0:</b> 3 événements aujourd'hui.</li>");
+    expect(few).not.toMatch(/Météo\u00a0:|Vigilance\u00a0:|Carburants/);
+  });
+
+  it("puts the banner under the title and the lines in place of the paragraph", () => {
+    const html = aujourdhuiPage("https://rundata.re", p, resume(p, full(p.nom) as never, NOW), null);
+    expect(html).not.toContain('class="lead"');
+    expect(html.indexOf("<h1>")).toBeLessThan(html.indexOf('class="hook"'));
+    expect(html.indexOf('class="hook"')).toBeLessThan(html.indexOf('<ul class="jour">'));
+    expect(html).toContain("<li><b>Sorties\u00a0:</b> 12 événements aujourd'hui.</li>");
   });
 });

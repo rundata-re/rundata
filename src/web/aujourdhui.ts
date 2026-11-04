@@ -11,6 +11,8 @@ import { mentionCourte } from "../tools/agenda.js";
 import { type Resume, UPDATING } from "../tools/resume.js";
 import { MARCHES } from "../vie/marches.js";
 import * as monuments from "../vie/monuments.js";
+import { STATIONS_974 } from "../providers/meteofrance-stations.js";
+import { INSEE } from "../places/insee.js";
 import { porte, SHEET as ALLER } from "./aller.js";
 import { type Alerte, credit } from "./data.js";
 import { connectorCta, courantItem, silentItem, silentText, webPage } from "./domains.js";
@@ -38,6 +40,69 @@ export const HOOK = (p: PlacePage) => `Ce qui compte aujourd'hui ${aCommune(p.no
 
 type Markets = NonNullable<Resume["marches_du_jour"]>;
 type Aller = ReturnType<typeof porte>["aller"];
+
+/** « verte pour l'Est », « jaune fortes pluies pour l'Est »: the zone's level as the summary words it, without the commune. */
+function vigilanceLevel(maintenant: string): string {
+  const head = "Vigilance météo : ";
+  const end = maintenant.indexOf(" (Météo-France)");
+  return maintenant.startsWith(head) && end > 0 ? maintenant.slice(head.length, end) : "";
+}
+/**
+ * The banner's colour for a level, the highest named (kit.md): red for red and violet, the kit's orange for orange (never
+ * red, which would read as the red alert), the site's alert colour otherwise.
+ */
+export const levelClass = (s: string) => (/\b(rouge|violette?)\b/.test(s) ? ' class="rouge"' : /\borange\b/.test(s) ? ' class="orange"' : "");
+
+/**
+ * The top of /aujourdhui, what asks to act first (marketing, UX review of 04/11/2026): the water not to drink, the
+ * vigilance above green with the zone of Météo-France, never the commune, the cyclone alert in its official words.
+ * Nothing when there is nothing; orange and red in their own colours (levelClass).
+ */
+export function urgent(p: PlacePage, r: Resume): string {
+  const items: string[] = [];
+  const dry = r.coupures_eau?.avis.filter((n) => n.ne_pas_boire).length ?? 0;
+  if (dry) {
+    const s = dry > 1;
+    items.push(`<li>Eau à ne pas boire\u00a0: ${dry} avis en cours ${esc(aCommune(p.nom))}, dans les secteurs nommés par ${s ? "les avis" : "l'avis"}. <a href="/coupures-eau/${p.slug}">Voir ${s ? "les avis" : "l'avis"}</a></li>`);
+  }
+  const v = r.vigilance;
+  const level = v?.au_dessus_du_vert ? vigilanceLevel(v.maintenant) : "";
+  if (level) items.push(`<li${levelClass(level)}>Vigilance ${esc(level)} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
+  if (v?.alerte_cyclonique) items.push(`<li${levelClass(v.alerte_cyclonique)}>${esc(v.alerte_cyclonique.replace(/\.$/, ""))} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
+  if (v?.ecoles) items.push(`<li><a href="/ecoles-cyclone">${esc(v.ecoles)}</a></li>`);
+  return items.length ? `<ul class="urgence" aria-label="À savoir d'abord">${items.join("")}</ul>` : "";
+}
+
+/** The commune of a Météo-France station, from its number (its first five digits are the commune's INSEE code). */
+export function stationCommune(nom: string): string | undefined {
+  const id = STATIONS_974.find((s) => s[1] === nom)?.[0];
+  return id ? Object.entries(INSEE).find(([, code]) => code === id.slice(0, 5))?.[0] : undefined;
+}
+
+/** Then a short line by subject, its label in bold, absent when its data is missing (marketing, 04/11/2026). */
+export function dayLines(p: PlacePage, r: Resume): string {
+  const line = (label: string, text: string) => `<li><b>${label}\u00a0:</b> ${text}</li>`;
+  const m = r.meteo;
+  const s = m?.mesure;
+  const f = m?.prevision?.aujourd_hui;
+  const where = s ? [stationCommune(s.station), s.distance_km != null ? `à ${String(s.distance_km).replace(".", ",")}\u00a0km` : ""].filter(Boolean).join(", ") : "";
+  const measured = s?.mesures.temperature
+    ? `${esc(thin(s.mesures.temperature))} mesurés à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)} à la station ${esc(s.station)}${where ? ` (${esc(where)})` : ""}.`
+    : "";
+  const forecast = f?.temperature_min && f.temperature_max ? `Prévision du jour\u00a0: ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}${f.ciel_en_journee ? `, ${esc(f.ciel_en_journee)}` : ""}.` : "";
+  const v = r.vigilance;
+  const level = v && !v.au_dessus_du_vert && !v.alerte_cyclonique ? vigilanceLevel(v.maintenant) : "";
+  const ev = r.evenements_du_jour;
+  const n = ev ? ev.liste.length + (ev.autres ?? 0) : 0;
+  const lines = [
+    measured || forecast ? line("Météo", [measured, forecast].filter(Boolean).join(" ")) : "",
+    level ? line("Vigilance", `${esc(level)} (Météo-France).`) : "",
+    ev ? line("Sorties", n ? `${plural(n, "événement")} aujourd'hui.` : "aucun événement trouvé aujourd'hui dans les agendas lus.") : "",
+    r.carburants?.prix_maximum ? line("Carburants", `prix maximum du mois\u00a0: ${esc(r.carburants.prix_maximum)}.`) : "",
+    line("Pharmacie de garde", `<a href="${esc(r.pharmacie_de_garde.site)}" rel="noopener">3237.fr</a>`),
+  ].filter(Boolean);
+  return `<ul class="jour">${lines.join("")}</ul>`;
+}
 
 /**
  * The commune's markets on /aujourdhui: those held today, those open all week apart (never « the market of the day »),
@@ -213,8 +278,9 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   <div class="pitch">
     <p class="pill"><span class="dot"></span>${esc(r.resume.split("\u00a0; ")[0])}</p>
     <h1>${esc(H1(p))}</h1>
+    ${urgent(p, r)}
     <p class="hook">${esc(HOOK(p))}</p>
-    ${r.resume.includes("\u00a0; ") ? `<p class="lead">${esc(r.resume.split("\u00a0; ").slice(1).join("\u00a0; ").replace(/^\p{L}/u, (x) => x.toUpperCase()))}</p>` : ""}
+    ${dayLines(p, r)}
     ${ask(`Kosa i spas ${p.nom} jordi ? Gèt si ${url} é di amwin.`, `Que se passe-t-il ${aCommune(p.nom)} aujourd'hui ? Lis ${url} et résume-moi la journée.`)}
   </div>
   <figure class="card mapcard nophone">${islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>

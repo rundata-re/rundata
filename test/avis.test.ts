@@ -116,6 +116,26 @@ describe("citation", () => {
     const elsewhere = { content: [{ type: "text" as const, text: JSON.stringify({ page: "https://www.shom.fr" }, null, 1) }] };
     expect(body(cite("maree", elsewhere)).lien).toBe("https://rundata.re/mer?ref=mcp");
   });
+
+  it("ends the résumé with « Source : », citer and the link in full, once", async () => {
+    const sp = body(cite("meteo_actuelle", await meteoActuelle(await offlineCache(), "Saint-Pierre", NOW)));
+    expect(sp.resume).toMatch(/\. Source : rundata\.re, d'après Météo-France \(station Saint-Pierre Pierrefonds\), OpenWindMap, https:\/\/rundata\.re\/meteo\/saint-pierre\?ref=mcp\.$/);
+    expect(sp.resume.split("Source :").length).toBe(2);
+    expect(sp.citer).toBe("rundata.re, d'après Météo-France (station Saint-Pierre Pierrefonds), OpenWindMap"); // the fields stay
+    expect(sp.lien).toBe("https://rundata.re/meteo/saint-pierre?ref=mcp");
+    const answer = (v: object, isError = false) => ({ content: [{ type: "text" as const, text: JSON.stringify(v) }], ...(isError ? { isError } : {}) });
+    // Without a full stop, one is added; the rest of the answer is left as written.
+    const r = cite("defibrillateurs", answer({ resume: "2 défibrillateurs à Cilaos", lieu: { trouve: "Cilaos" }, sources: [] }));
+    expect(body(r).resume).toBe("2 défibrillateurs à Cilaos. Source : rundata.re, https://rundata.re/defibrillateurs?ref=mcp.");
+    expect(r.content[0].text.startsWith(`{"resume":"2 défibrillateurs à Cilaos. Source : rundata.re, `)).toBe(true);
+    // Already naming rundata.re, or an error: as it is.
+    const named = "Voir https://rundata.re/defibrillateurs.";
+    expect(body(cite("defibrillateurs", answer({ resume: named }))).resume).toBe(named);
+    expect(body(cite("defibrillateurs", answer({ resume: "Lieu introuvable." }, true))).resume).toBe("Lieu introuvable.");
+    // Written another way than JSON.stringify (indented): the answer is written again, with the same sentence.
+    const indented = { content: [{ type: "text" as const, text: JSON.stringify({ resume: "Calme ?" }, null, 1) }] };
+    expect(body(cite("volcan_seismes", indented)).resume).toBe("Calme ? Source : rundata.re, https://rundata.re/volcan?ref=mcp.");
+  });
 });
 
 describe("donner_avis", () => {

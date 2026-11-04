@@ -82,6 +82,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "avis-eau:flux": 1,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
+  // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).
+  onf: 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's. */

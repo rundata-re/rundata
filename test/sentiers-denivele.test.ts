@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { Cache, MemoryStore } from "../src/cache.js";
+import { buildTrail } from "../src/web/data.js";
 import type { Carte } from "../src/providers/sentiers.js";
-import { RANDONNEES, SENTIERS } from "../src/providers/traces.js";
+import { parseTrace, RANDONNEES, SENTIERS } from "../src/providers/traces.js";
 import { climb, fits, relief, routeRow } from "../src/tools/sentiers.js";
 import { avis, parseTrails } from "../src/providers/sentiers.js";
 import { readFileSync } from "node:fs";
@@ -154,5 +156,33 @@ describe("listes de /randonnees et /sentiers", () => {
     const html = randonneesPage("https://rundata.re", { value: { randonnees: [], secteurs: [], lignes: [], fermes: 0, suivis: 0, sources: [], hauts: [] } as never, fetchedAt: new Date("2026-11-04T10:00:00Z"), stale: false });
     expect(html).toContain("<label>Dénivelé <select name=\"dp\">");
     expect(html).not.toContain("Dénivelé positif <select");
+  });
+});
+
+describe("page /sentiers/sentier-bayonne : la trace du sentier, lue à part", () => {
+  // Its own trace from the ONF (onf:trace:<slug>), not the island's map: the fields as the ONF gives them (relevé de test).
+  const feature = JSON.parse(readFileSync(new URL("./fixtures/onf/sentiers.json", import.meta.url), "utf8")).features
+    .find((f: { attributes: { WS_NomIti: string } }) => f.attributes.WS_NomIti === "Sentier Bayonne");
+  const said = "Fermé le 02/06/26 · Désordres constatés, glissements de terrain incompatibles avec la présence de randonneurs";
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("la trace lue garde « · » entre la date et la cause", () => {
+    const trace = parseTrace("Sentier Bayonne", [{ attributes: feature.attributes, geometry: { paths: [[[55.5, -21.2], [55.51, -21.21]]] } }]);
+    expect(trace.troncons[0]).toMatchObject({ statut: "hors gestion ONF", cause: said });
+    expect(trace.troncons[0].info).toBeUndefined();
+  });
+
+  it("l'aperçu et la page disent l'avis avec « · »", async () => {
+    // The trail's trace answers; the map and the IGN do not (the page does without them).
+    vi.stubGlobal("fetch", async (url: string) => String(url).includes("returnGeometry=true")
+      ? new Response(JSON.stringify({ features: [{ attributes: feature.attributes, geometry: { paths: [[[55.5, -21.2], [55.51, -21.21]]] } }] }), { headers: { "content-type": "application/json" } })
+      : new Response("", { status: 503 }));
+    const at = new Date("2026-11-04T14:00:00Z");
+    const d = await buildTrail(new Cache(new MemoryStore(), () => at.getTime()), { nom: "Sentier Bayonne", ...SENTIERS["Sentier Bayonne"] });
+    expect(d.troncons).toContainEqual(expect.objectContaining({ cause: said }));
+    const html = tracePage("https://rundata.re", "sentier", "sentier-bayonne", "Sentier Bayonne", { value: d, fetchedAt: at, stale: false }, at);
+    expect(meta(html, "og:description")).toContain(said);
+    expect(html.replace(/&#39;/g, "'")).toContain(said);
+    expect(html).not.toContain("02/06/26 Désordres");
   });
 });

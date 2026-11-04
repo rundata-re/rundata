@@ -20,6 +20,8 @@ export interface Place {
 export interface Resolution {
   lieu: Place;
   correspondance: "exacte" | "partielle" | "approchee" | "coordonnees";
+  /** A place given for a whole area the text names (« Mafate », La Nouvelle): « approchee », said so. */
+  tient_lieu?: true;
   /** Other places the text could mean, when the match is not exact. */
   autres: Place[];
   /** The words of the text left aside around the name found, but its commune's (« parc », « palmiers » around « Saint-Pierre »). */
@@ -74,7 +76,13 @@ interface Entry {
   tokens: string[];
   key: string;
   alias: boolean;
+  /** An alias of an area for one place of it (STAND_INS). */
+  standIn?: boolean;
 }
+
+// Aliases that name an area, a cirque or the volcan, for the one place of it that answers stand for: a match, but not
+// that place's name (« Mafate » is the cirque, La Nouvelle one of its îlets).
+const STAND_INS = new Set(["Cirque de Mafate", "Mafate", "Volcan", "Piton de la Fournaise"]);
 
 const PLACES = [...gazetteer.places, ...gazetteer.places_ign] as Place[];
 const byName = new Map(PLACES.map((p) => [p.nom, p]));
@@ -84,6 +92,7 @@ const INDEX: Entry[] = [
     place: byName.get(target)!,
     tokens: tokens(alias),
     alias: true,
+    standIn: STAND_INS.has(alias),
   })),
 ]
   .filter((e) => e.tokens.length > 0)
@@ -209,15 +218,15 @@ function resolve(text: string): Resolution | null {
   const listed = /\s[–—-]\s/.test(text) && !EXACT.get(q.join(" "))?.some((e) => bare(e.place.nom) === asked);
   const exact = listed ? undefined : EXACT.get(q.join(" "));
   if (exact) {
-    const best = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place })).sort(order)[0];
-    return { lieu: best.place, correspondance: "exacte", autres: [] };
+    const best = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place, standIn: e.standIn })).sort(order)[0];
+    return best.standIn ? { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true } : { lieu: best.place, correspondance: "exacte", autres: [] };
   }
   if (q.every((t) => KIND_WORDS.has(t))) return null;
   if (offIsland(text)) return null;
 
   const matches = INDEX.flatMap((e) => {
     const s = listed && e.key === q.join(" ") ? null : score(q, e);
-    return s ? [{ ...s, place: e.place }] : [];
+    return s ? [{ ...s, place: e.place, standIn: e.standIn && s.kind === "exacte" }] : [];
   }).sort(order);
   if (matches.length === 0) return null;
 
@@ -233,6 +242,7 @@ function resolve(text: string): Resolution | null {
       }
     }
   }
+  if (best.standIn) return { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true };
   return { lieu: best.place, correspondance: best.kind, autres, ...(best.rest && { ignores: best.rest }) };
 }
 

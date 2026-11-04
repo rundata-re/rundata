@@ -18,7 +18,7 @@ import { type Alerte, credit } from "./data.js";
 import { connectorCta, courantItem, silentItem, silentText, webPage } from "./domains.js";
 import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
-import { a, de } from "../tools/format.js";
+import { a, communeDite, de } from "../tools/format.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin } from "./pages.js";
 import type { PlacePage } from "./places.js";
 
@@ -190,7 +190,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
 
   const weather = m
     ? card("thermo", `Météo ${p.nom}`,
-        (m.mesure ? `<p><b>${esc(thin(m.mesure.mesures.temperature ?? ""))}</b> mesurés à ${esc(m.mesure.heure_mesure.split(" ")[1] ?? m.mesure.heure_mesure)} par la station ${esc(m.mesure.station)}${m.mesure.commune && m.mesure.commune !== p.nom ? ` ${esc(a(m.mesure.commune))}` : ""} (${m.mesure.altitude_m.toLocaleString("fr-FR")} m${m.mesure.distance_km != null ? `, à ${String(m.mesure.distance_km).replace(".", ",")} km` : ""}).</p>` : "") +
+        (m.mesure ? `<p><b>${esc(thin(m.mesure.mesures.temperature ?? ""))}</b> mesurés à ${esc(m.mesure.heure_mesure.split(" ")[1] ?? m.mesure.heure_mesure)} par la station ${esc(m.mesure.station)}${communeDite(m.mesure, p.nom) ? ` ${esc(a(communeDite(m.mesure, p.nom)!))}` : ""} (${m.mesure.altitude_m.toLocaleString("fr-FR")} m${m.mesure.distance_km != null ? `, à ${String(m.mesure.distance_km).replace(".", ",")} km` : ""}).</p>` : "") +
         (f ? `<p>Prévision, pas une mesure : ${dayForecast(f)}${m.prevision?.demain ? ` ; ${dayForecast(m.prevision.demain)}` : ""}.</p>` : ""),
         `/meteo/${p.slug}`)
     : "";

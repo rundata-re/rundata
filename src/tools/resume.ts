@@ -382,7 +382,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const bins = col.COMMUNES.includes(nom);
   const resumeText = [
     `${nom}, ${DAY_FR.format(now)}`,
-    t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom) ? ` ${ailleurs(meteo!.mesure!, nom)}` : ""})` : "",
+    t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom)})` : "",
     f?.temperature_min && f.temperature_max ? `prévision du jour ${f.temperature_min} à ${f.temperature_max}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}` : "",
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",

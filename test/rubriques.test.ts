@@ -18,7 +18,7 @@ describe("each section's name", () => {
     { path: "/bornes", nom: "Bornes de recharge", h1: "Bornes de recharge à La Réunion", page: bornesPage(O, null, NOW) },
     { path: "/eau", nom: "Qualité de l'eau", h1: "Qualité de l'eau à La Réunion", page: eauPage(O, null, NOW) },
     { path: "/air", nom: "Qualité de l'air", h1: "Qualité de l'air à La Réunion", page: airPage(O, null, NOW) },
-    { path: "/mer", nom: "Mer", h1: "Mer à La Réunion : température et houle", page: seaPage(O, null, NOW) },
+    { path: "/mer", nom: "Mer", h1: "Mer à La Réunion\u00a0: température et houle", page: seaPage(O, null, NOW) },
     { path: "/trafic", nom: "Circulation", page: traficPage(O, null, NOW) },
   ];
 

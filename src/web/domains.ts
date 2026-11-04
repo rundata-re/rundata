@@ -619,7 +619,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>${top ? "Mesuré aux stations" : "Prévision du jour"}</p>
-    <h1>Qualité de l'air <span class="n974">974</span></h1>
+    <h1>Qualité de l'air à La Réunion <span class="n974">974</span></h1>
     ${status}
     ${ask(`Lèr lé bon La Rényon zordi ? Gèt si ${url} é di amwin pou mon komine.`,
       `L'air est-il bon aujourd'hui à La Réunion ? Lis ${url} et dis-moi la qualité de l'air dans ma commune.`)}
@@ -1438,11 +1438,11 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
     ? describe(`Bornes de recharge à La Réunion (974) en ce moment : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
     : short;
 
-  const band = `${crumbBar("Recharge")}
+  const band = `${crumbBar("Bornes de recharge")}
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>En direct</p>
-    <h1>Bornes de recharge <span class="n974">974</span></h1>
+    <h1>Bornes de recharge à La Réunion <span class="n974">974</span></h1>
     ${status}
     ${ask(`Ousa mi pé roshar mon loto élèktrik vitman koté Sin-Pyèr ? Gèt si ${url} é di amwin.`,
       `Où recharger rapidement ma voiture électrique à Saint-Pierre ? Lis ${url} et dis-le-moi.`)}
@@ -1467,7 +1467,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
 </section>
 ${connectorCta("bornes_recharge", "les bornes de recharge")}${d ? g.feuille : ""}`;
 
-  return layout(origin, { title, description, path: "/bornes", jsonld: [crumbs(origin, "Recharge", "/bornes"), webPage(origin, "/bornes", title, description, data)], alerte }, band, g.ligne + body);
+  return layout(origin, { title, description, path: "/bornes", jsonld: [crumbs(origin, "Bornes de recharge", "/bornes"), webPage(origin, "/bornes", title, description, data)], alerte }, band, g.ligne + body);
 }
 
 export function bornesLive(data: Cached<BornesAnswer> | null, now = new Date()): Live | undefined {
@@ -1558,7 +1558,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill">Analyses de l'ARS${firstSample && lastSample ? ` · ${esc(duAu(firstSample, lastSample))}` : ""}</p>
-    <h1>Qualité de l'eau <span class="n974">974</span></h1>
+    <h1>Qualité de l'eau à La Réunion <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dlo lé bon pou bengn La Rényon ? Gèt si ${url} é di amwin pou la plaj l'Ermitaz é pou dlo robinè Sin-Pyèr.`,
       `L'eau est-elle bonne pour se baigner à La Réunion ? Lis ${url} et dis-moi pour la plage de l'Hermitage et l'eau du robinet à Saint-Pierre.`)}

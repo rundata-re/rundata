@@ -50,6 +50,13 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
   Cilaos: { par: "la ville de Cilaos", site: "https://ville-cilaos.fr/?s=coupure+d%27eau", libelle: "Les avis de coupure d'eau sur le site de la ville de Cilaos" },
   "L'Étang-Salé": { par: "la mairie de L'Étang-Salé", site: "https://www.letangsale.fr/", libelle: "Le site de la mairie de L'Étang-Salé" },
 };
+/**
+ * A distributor's own site, linked only, by the name the page says: its notices are not read here. CISE Réunion (site
+ * edited by Saur, read on 05/11/2026): its « L'eau dans ma commune » gives each commune's water quality and works after
+ * a form, with no address per commune, so its home page; its legal notice says nothing of links.
+ */
+export const SITES_DISTRIBUTEURS: Readonly<Record<string, string>> = { "CISE Réunion": "https://www.cise-reunion.re/" };
+
 export const BUILT = data.construit;
 export const SOURCE = data.source;
 

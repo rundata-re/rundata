@@ -371,6 +371,19 @@ describe("coupures d'eau", () => {
     expect(body(await coupuresEau(cache(), "Saint-Pierre", NOW)).resume).toBe("Aucun avis de coupure récent ou à venir à Saint-Pierre.");
   });
 
+  it("links CISE Réunion's site at Les Avirons, whose notices are not read, and nowhere its notices are", async () => {
+    const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
+    const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
+    const av = page("les-avirons");
+    expect(av).toContain(`Les avis de coupure de CISE Réunion ne sont pas lus par rundata.re : voir <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique « L'eau dans ma commune », ou la mairie.`);
+    expect(av).toContain(`Ses avis de coupure ne sont pas lus par rundata.re : voir <a href="https://www.cise-reunion.re/" rel="noopener">le site de CISE Réunion</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique « L'eau dans ma commune »), ou la mairie.`);
+    expect(av).not.toContain("avis aux abonnés");
+    // Sainte-Marie and Saint-Benoît, also CISE Réunion's, have their notices read: no link to its site.
+    for (const slug of ["sainte-marie", "saint-benoit"]) expect(page(slug)).not.toContain("cise-reunion.re");
+    // Another distributor not read keeps its words (Sudéau, at Le Tampon).
+    expect(page("le-tampon")).toContain("ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.");
+  });
+
   it("gives each commune its page: its notices, or none at the time of the copy, and who distributes its water", async () => {
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);

@@ -13,6 +13,12 @@ import * as meteofrance from "../src/providers/meteofrance.js";
 import * as metar from "../src/providers/metar.js";
 import * as pioupiou from "../src/providers/pioupiou.js";
 import * as radar from "../src/providers/radar.js";
+import * as atmo from "../src/providers/atmo.js";
+import * as airMesures from "../src/providers/air-mesures.js";
+import * as capteurs from "../src/providers/capteurs.js";
+import * as houle from "../src/providers/houle.js";
+import * as maregraphes from "../src/providers/maregraphes.js";
+import { PRODUCTS as SEA_PRODUCTS } from "../src/tools/mer.js";
 import { buildAir, buildPlace } from "../src/web/data.js";
 import { pageOf } from "../src/web/places.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
@@ -191,6 +197,36 @@ describe("the summary of a day", () => {
     const unknown = resume(SAINT_PAUL, { ...copies, meteo: copy({ ...meteo, meteo: { ...meteo.meteo, stations } }) } as never, NOW);
     expect(unknown.meteo!.mesure).toBeTruthy();
     for (const s of [meteofrance.SOURCE, metar.SOURCE, pioupiou.SOURCE, radar.SOURCE]) expect(named(unknown)).toContain(s.nom);
+  });
+
+  it("credits for the air the commune's index only, for the sea the satellites only (rule 3)", () => {
+    const named = (r: { sources: { source: string }[] }) => r.sources.map((x) => x.source);
+    const sat = SEA_PRODUCTS[0].source;
+    const air = copy({ ...COPIES.air.value, sources: credits([atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE]) });
+    const mer = copy({ ...COPIES.mer.value, sources: credits([sat, houle.SOURCE, maregraphes.SOURCE]) });
+    const copies = { ...COPIES, air, mer };
+    const r = resume(SAINT_PAUL, copies as never, NOW);
+    expect(r.air?.indice_atmo).toBe(2);
+    expect(r.mer?.temperature_eau).toBe("25 °C");
+    expect(named(r)).toContain(atmo.SOURCE.nom);
+    expect(named(r)).toContain(sat.nom);
+    for (const s of [airMesures.SOURCE, capteurs.SOURCE, houle.SOURCE, maregraphes.SOURCE]) expect(named(r)).not.toContain(s.nom);
+    expect(named(court(r))).toEqual(named(r));
+    // No index for the commune in the copy: no air said, none credited.
+    const noIndex = copy({ ...air.value, communes: [] });
+    const r2 = resume(SAINT_PAUL, { ...copies, air: noIndex } as never, NOW);
+    expect(r2.air).toBeUndefined();
+    expect(named(r2)).not.toContain(atmo.SOURCE.nom);
+    // A list that names neither the index nor a satellite: kept whole, never a value credited to no one.
+    const odd = resume(SAINT_PAUL, { ...copies, air: copy({ ...air.value, sources: credits([airMesures.SOURCE]) }), mer: copy({ ...mer.value, sources: credits([houle.SOURCE]) }) } as never, NOW);
+    expect(named(odd)).toContain(airMesures.SOURCE.nom);
+    expect(named(odd)).toContain(houle.SOURCE.nom);
+    // The sea from the weather page's reading, without the sea's page: that copy's satellite, not its waves.
+    const place = { ...COPIES.meteo.value, mer: { resume: "", sources: credits([sat, houle.SOURCE]), mesure: { temperature_eau: "24,7 °C", jour_mesure: "2026-10-23", distance_km: 3 } } };
+    const r3 = resume(SAINT_PAUL, { ...copies, meteo: copy(place), mer: undefined } as never, NOW);
+    expect(r3.mer?.temperature_eau).toBe("24,7 °C");
+    expect(named(r3)).toContain(sat.nom);
+    expect(named(r3)).not.toContain(houle.SOURCE.nom);
   });
 
   it("leaves out what it has no copy of, and says so", () => {

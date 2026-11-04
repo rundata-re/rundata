@@ -2207,6 +2207,46 @@ function traceLegend(kind: "sentier" | "randonnee", etats: string[]): string {
 }
 
 /** `summit`: the summit the trace reaches, when the page its link leads to tells the morning's cloud sea (site.ts). */
+/**
+ * What a closed (or partly closed) trail's preview opens with, short enough to leave room for its name: « Fermé »,
+ * « En partie fermé », the ONF's weekend notice, the notice of a trail outside its management, or the closed sections of a
+ * hike. `undefined` for a trail the ONF says open or whose state is not known: those keep their name first.
+ */
+export function stateHead(d: TraceAnswer): string | undefined {
+  if (d.genre === "randonnee") return d.fermes.length ? `${plural(d.fermes.length, "tronçon fermé", "tronçons fermés")} sur cet itinéraire` : undefined;
+  const shut = d.troncons.filter((t) => t.etat === "fermé");
+  const open = d.troncons.some((t) => t.etat === "ouvert");
+  if (shut.length) {
+    const weekend = onf.nuance(shut[0]);
+    return weekend ? weekend.split("\u00a0: «")[0] : open ? "En partie fermé" : "Fermé";
+  }
+  if (open) return undefined;
+  const x = d.troncons.find((t) => t.cause || t.precision);
+  const notice = x?.cause ?? x?.precision;
+  return notice ? `Hors gestion ONF\u00a0; sur la carte de l'ONF\u00a0: “${notice}”` : undefined;
+}
+
+/**
+ * A trail's preview (og:description). A closed one says so before anything else, in full when it fits, else its short state,
+ * and never offers the GPX: a link to a dangerous trail arrives in a group without an invitation to take its trace. The
+ * others: name, figures, state, as before.
+ */
+export function traceDescription(d: TraceAnswer, nom: string, where: string, short: string): string {
+  const figures = `${kmFr(d.km)} km${d.dplus != null ? `, ${d.dplus} m de dénivelé positif` : ""}`;
+  const head = stateHead(d);
+  if (!head) {
+    return describe(`${nom} (${where}) : ${figures}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`,
+      describe(`${nom} (La Réunion) : ${figures}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`, short));
+  }
+  const said = [d.etat, head];
+  const tries = said.flatMap((s) => [`${s}. ${nom} (${where}) : ${figures}.`, `${s}. ${nom} (La Réunion) : ${figures}.`, `${s}. ${nom} (La Réunion).`]);
+  const fit = tries.find((t) => t.length <= DESCRIPTION_MAX);
+  if (fit) return fit;
+  // A name too long even after the short state: the state stays whole, the name is cut.
+  const cut = `${head}. ${nom}`;
+  return cut.length <= DESCRIPTION_MAX ? cut : `${cut.slice(0, DESCRIPTION_MAX - 1).replace(/\s+\S*$/, "")}…`;
+}
+
 export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: string, nom: string, data: Cached<TraceAnswer> | null, now = new Date(), alerte?: Alerte, summit?: Summit): string {
   const d = data?.value;
   const path = `/${kind === "sentier" ? "sentiers" : "randonnees"}/${slug}`;
@@ -2279,10 +2319,7 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
     .find((t) => t.length <= TITLE_MAX) ?? `${nom} : trace GPX · 974`;
   const short = `${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`;
   const where = sector ? `${sector.nom}, La Réunion` : "La Réunion";
-  const description = d
-    ? describe(`${nom} (${where}) : ${kmFr(d.km)} km${d.dplus != null ? `, ${d.dplus} m de dénivelé positif` : ""}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`,
-        describe(`${nom} (La Réunion) : ${kmFr(d.km)} km${d.dplus != null ? `, ${d.dplus} m de dénivelé positif` : ""}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`, short))
-    : short;
+  const description = d ? traceDescription(d, nom, where, short) : short;
   const trail = sector ? sectorTrail(origin, sector, { name: nom, path }) : { bar: hikeCrumbBar(nom), jsonld: hikeCrumbs(origin, nom, path) };
   const jsonld = [trail.jsonld, webPage(origin, path, title, description, data)];
 

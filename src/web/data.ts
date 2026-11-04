@@ -826,6 +826,17 @@ export function toLineM(lon: number, lat: number, line: [number, number][]): num
   return best;
 }
 
+/**
+ * A trail neither open nor closed on the ONF's map whose section still carries a notice there (« Fermé le 02/06/26 »
+ * beside « hors gestion ONF »): the notice in the state, quoted, so that the lead and the preview do not say « état non
+ * connu » under a line that says « Fermé ».
+ */
+export function noticeOf(troncons: { cause?: string; info?: string }[]): string | undefined {
+  const x = troncons.find((t) => t.cause || t.info);
+  const said = x && [x.cause, x.info].filter((v): v is string => !!v).join(" · ");
+  return said ? `Hors gestion ONF\u00a0; sur la carte de l'ONF\u00a0: “${said}”` : undefined;
+}
+
 /** An ONF trail: its line and state read from the ONF, its altitudes from the IGN. */
 export async function buildTrail(cache: Cache, t: { nom: string } & traces.SentierStats): Promise<TraceAnswer> {
   // The whole map only for its date: the island's pages share it (onf.KEY), its trail is read on its own.
@@ -846,7 +857,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
     alt_max: t.alt_max ?? m.alt_max,
     etat: shut.length
       ? `${onf.nuance(shut[0]) ? onf.motifs(shut[0]).join(" · ") : `Fermé${shut[0].cause ? ` : ${shut[0].cause}` : ""}${shut[0].info ? ` (${shut[0].info})` : ""}`}${open ? ", en partie" : ""}`
-      : open ? "Ouvert d'après l'ONF" : "Hors gestion ONF : état non connu",
+      : open ? "Ouvert d'après l'ONF" : noticeOf(tr.troncons) ?? "Hors gestion ONF : état non connu",
     ferme: shut.length > 0,
     troncons: states,
     lignes: tr.troncons.map((x) => lineOf(x.points, x.statut)),

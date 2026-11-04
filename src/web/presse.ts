@@ -130,7 +130,7 @@ export function pressePage(origin: string, figures: Figure[]): string {
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Presse</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Espace presse</p>
+    <p class="pill">Espace presse</p>
     <h1>rundata.re, pour la presse</h1>
     <p class="lead">Le communiqué, les chiffres clés comptés en direct et des visuels à télécharger, libres d'utilisation avec la mention rundata.re. Une question, une interview : <a href="mailto:${CONTACT}">${CONTACT}</a>.</p>
     <p class="hero-cta"><a class="btn sun" href="#visuels">${icon("map")}Les visuels</a><a class="btn glass" href="mailto:${CONTACT}">Contact presse</a></p>

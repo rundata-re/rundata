@@ -1507,6 +1507,15 @@ function tapCard(c: EauAnswer["communes"][number]): string {
     `<span class="q-mauvaise">${r.non_conformes_6_mois} non conforme${r.non_conformes_6_mois > 1 ? "s" : ""}</span></li>`).join("")}</ul></li>`;
 }
 
+/**
+ * « du 15 au 22/09 », « du 28/08 au 22/09 », « du 22/09 »: the days of the samples a page shows, from two ISO days. No
+ * green dot goes with it: an analysis is weeks old, never a reading of the day (marketing, 04/11/2026).
+ */
+export function duAu(from: string, to: string): string {
+  if (from === to) return `du ${dayMonth(from)}`;
+  return `du ${from.slice(0, 7) === to.slice(0, 7) ? Number(from.slice(8, 10)) : dayMonth(from)} au ${dayMonth(to)}`;
+}
+
 export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const d = data?.value;
@@ -1548,7 +1557,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   const band = `${crumbBar("Qualité de l'eau")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Analyses de l'ARS</p>
+    <p class="pill">Analyses de l'ARS${firstSample && lastSample ? ` · ${esc(duAu(firstSample, lastSample))}` : ""}</p>
     <h1>Qualité de l'eau <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dlo lé bon pou bengn La Rényon ? Gèt si ${url} é di amwin pou la plaj l'Ermitaz é pou dlo robinè Sin-Pyèr.`,
@@ -2667,7 +2676,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   const band = `${crumbBar("Défibrillateurs")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Base nationale Géo'DAE</p>
+    <p class="pill">Base nationale Géo'DAE</p>
     <h1>Défibrillateurs <span class="n974">974</span></h1>
     ${status}
     ${d ? `<p class="lead"><b>${esc(d.urgence)}</b></p>` : ""}
@@ -3047,7 +3056,7 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
   const band = `${crumbBar("Historique météo")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Mesures jusqu'${d ? `au ${esc(d.periode.au.slice(0, 5))}` : "à hier"}</p>
+    <p class="pill">Mesures jusqu'${d ? `au ${esc(d.periode.au.slice(0, 5))}` : "à hier"}</p>
     <h1>Historique météo <span class="n974">974</span></h1>
     ${status}
     ${ask(`La pli i tonb Sin-Bénoi ? Lé normal ? Gèt si ${url} é di amwin konbien la tonbé sé dernié zour.`,

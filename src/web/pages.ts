@@ -2275,7 +2275,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Mer</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Mesure satellite</p>
+    <p class="pill">Mesure satellite${day ? ` · ${esc(dayMonth(day))}` : ""}</p>
     <h1>Température de la mer et houle <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dolo la mèr lé sho ? Gèt si ${url} é di amwin pou chak plaj.`,

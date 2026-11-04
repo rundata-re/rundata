@@ -186,7 +186,7 @@ export function enfantsPage(origin: string, data: Cached<EnfantsAnswer> | null, 
   const band = `${crumbBar("Enfants")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>De 0 à 17 ans</p>
+    <p class="pill">De 0 à 17 ans</p>
     <h1>${esc(H1)} <span class="n974">974</span></h1>
     <p class="lead">${esc(LEAD)}</p>
     ${ask(ASK_KREOL, ASK_FRANCAIS)}
@@ -403,7 +403,7 @@ export function enfantsCommunePage(origin: string, p: PlacePage, data: Cached<En
   const band = `${crumbBar(c, { name: "Enfants", path: "/enfants" })}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>De 0 à 17 ans</p>
+    <p class="pill">De 0 à 17 ans</p>
     <h1>${esc(MOTS.h1(c))} <span class="n974">974</span></h1>
     <p class="lead">${esc(MOTS.lead(c, list.length))}</p>
   </div>

@@ -66,6 +66,10 @@ describe("the déchèteries of the West", () => {
     expect(descriptionOf(sitesNow(etats, NOW))).toBe("Déchèteries de La Réunion (974) à 17:00 : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).");
     expect(descriptionOf(sitesNow(etats, NEXT_MORNING))).toBe("Déchèteries de La Réunion (974) : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).");
     expect(decheteriesPage("https://rundata.re", copy, NEXT_MORNING)).toContain("Mise à jour il y a plus de 6 h : à vérifier sur place.");
+    // The green dot only with a state the staff filled in today, read in direct; the next morning, none.
+    expect(page).toContain('<p class="pill"><span class="dot"></span>État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
+    expect(decheteriesPage("https://rundata.re", copy, NEXT_MORNING)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
+    expect(decheteriesPage("https://rundata.re", null, NOW)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
   });
 
   it("have a tile on the West's commune pages, with the state of their skips", () => {

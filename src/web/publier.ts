@@ -158,7 +158,7 @@ function list(lines: string[], start: number, done: (next: number) => void): str
 export function publierPage(origin: string, alerte?: Alerte): string {
   const band = `${crumbBar("Publier ses données")}
 <div class="wrap intro solo"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Guide gratuit</p>
+  <p class="pill">Guide gratuit</p>
   <h1>${esc(H1)}</h1>
   <p class="slogan" lang="${brand.slogan_lang}">${esc(KREOL)}</p>
   <p class="lead">${inline(INTRO[0])}</p>

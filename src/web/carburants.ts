@@ -49,7 +49,7 @@ export function carburantsPage(origin: string, data: Cached<carburants.Prix> | n
 
   const band = `${crumbBar("Prix des carburants")}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Arrêté du préfet</p>
+  <p class="pill">Arrêté du préfet${s?.vigueur ? ` · Prix depuis le ${esc(firstOf(s.vigueur.depuis).replace(/ \d{4}$/, ""))}` : ""}</p>
   <h1>${esc(h1)}</h1>
   ${lead}
 </div></div>`;

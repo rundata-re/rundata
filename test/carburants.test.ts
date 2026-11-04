@@ -194,6 +194,8 @@ describe("the prefect's fuel prices", () => {
     // A figure the order does not give is left out, not printed empty.
     expect(descriptionOf({ ...prix, produits: prix.produits.filter((x) => x.produit !== "Gazole") })).toBe("Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), bouteille de gaz 20,81 €. Fixés par le préfet, partout sur l'île.");
     expect(page).toContain("<td><b>1,26 €</b></td>");
+    // No green dot: the order's month, not a reading of the day.
+    expect(page).toContain('<p class="pill">Arrêté du préfet · Prix depuis le 1er octobre</p>');
     expect(page).toContain('content="https://rundata.re/og/carburants.');
     expect(page).not.toContain("pas encore publiés");
     // On the 2nd of November, before the new order: October's, said to be in force since the 1st of October.

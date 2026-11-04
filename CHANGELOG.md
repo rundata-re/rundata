@@ -6,7 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mercredi 4 novembre 2026
 
-- Mer : les règles d'approche des baleines et des dauphins, d'après les arrêtés du préfet, sur la page Mer et dans le connecteur.
+- Mer : les règles d'approche des baleines et des dauphins, résumées d'après les arrêtés du préfet de La Réunion.
 
 ## Mardi 3 novembre 2026
 

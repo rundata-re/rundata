@@ -47,12 +47,16 @@ function vigilanceLevel(maintenant: string): string {
   const end = maintenant.indexOf(" (Météo-France)");
   return maintenant.startsWith(head) && end > 0 ? maintenant.slice(head.length, end) : "";
 }
-const severe = (s: string) => /\b(orange|rouge)\b/.test(s);
+/**
+ * The banner's colour for a level, the highest named (kit.md): red for red and violet, the kit's orange for orange (never
+ * red, which would read as the red alert), the site's alert colour otherwise.
+ */
+export const levelClass = (s: string) => (/\b(rouge|violette?)\b/.test(s) ? ' class="rouge"' : /\borange\b/.test(s) ? ' class="orange"' : "");
 
 /**
  * The top of /aujourdhui, what asks to act first (marketing, UX review of 04/11/2026): the water not to drink, the
  * vigilance above green with the zone of Météo-France, never the commune, the cyclone alert in its official words.
- * Nothing when there is nothing; red only for orange or red.
+ * Nothing when there is nothing; orange and red in their own colours (levelClass).
  */
 export function urgent(p: PlacePage, r: Resume): string {
   const items: string[] = [];
@@ -63,8 +67,8 @@ export function urgent(p: PlacePage, r: Resume): string {
   }
   const v = r.vigilance;
   const level = v?.au_dessus_du_vert ? vigilanceLevel(v.maintenant) : "";
-  if (level) items.push(`<li${severe(level) ? ' class="rouge"' : ""}>Vigilance ${esc(level)} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
-  if (v?.alerte_cyclonique) items.push(`<li${severe(v.alerte_cyclonique) ? ' class="rouge"' : ""}>${esc(v.alerte_cyclonique.replace(/\.$/, ""))} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
+  if (level) items.push(`<li${levelClass(level)}>Vigilance ${esc(level)} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
+  if (v?.alerte_cyclonique) items.push(`<li${levelClass(v.alerte_cyclonique)}>${esc(v.alerte_cyclonique.replace(/\.$/, ""))} (Météo-France). <a href="/vigilance">Voir les consignes</a></li>`);
   if (v?.ecoles) items.push(`<li><a href="/ecoles-cyclone">${esc(v.ecoles)}</a></li>`);
   return items.length ? `<ul class="urgence" aria-label="À savoir d'abord">${items.join("")}</ul>` : "";
 }

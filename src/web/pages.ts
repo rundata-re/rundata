@@ -350,7 +350,7 @@ padding:.3rem .8rem;border-radius:999px;background:rgb(255 255 255/.1);border:1p
 .n974{color:var(--sun)}
 .slogan{font:italic 700 clamp(1.15rem,3vw,1.5rem)/1.3 Bricolage,system-ui,sans-serif;color:var(--sun)}
 .lead{font-size:1.14rem;color:var(--on-night-muted);max-width:36rem}
-.urgence{list-style:none;margin:0;padding:0;display:grid;gap:.45rem;max-width:40rem}.urgence li{border-radius:8px;border-left:4px solid var(--lave);padding:.55rem .75rem;background:var(--warn-bg);color:var(--lave);font-weight:600}.urgence li.rouge{background:var(--vg4);border-color:#fff;color:#fff}.urgence a{color:inherit;font-weight:800}
+.urgence{list-style:none;margin:0;padding:0;display:grid;gap:.45rem;max-width:40rem}.urgence li{border-radius:8px;border-left:4px solid var(--lave);padding:.55rem .75rem;background:var(--warn-bg);color:var(--lave);font-weight:600}.urgence li.orange{background:#ff8c1a;border-color:#0b1f36;color:#0b1f36}.urgence li.rouge{background:var(--vg4);border-color:#fff;color:#fff}.urgence a{color:inherit;font-weight:800}
 .jour{list-style:none;margin:0;padding:0;display:grid;gap:.3rem;color:var(--on-night-muted);max-width:40rem}.jour b{color:var(--on-night)}.jour a{color:inherit}
 .lead b{color:var(--on-night)}
 .share{padding-bottom:1.2rem}.share .card{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;max-width:44rem}.share p{margin:0}

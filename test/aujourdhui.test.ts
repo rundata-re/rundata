@@ -3,6 +3,7 @@ import { mention } from "../src/tools/non-repris.js";
 import { resume } from "../src/tools/resume.js";
 import { aCommune, aujourdhuiPage, dayLines, descriptionOf, H1, HOOK, LINK, stationCommune, titleOf, urgent } from "../src/web/aujourdhui.js";
 import type { Resume } from "../src/tools/resume.js";
+import { CYCLONE_STEPS } from "../src/tools/vigilance.js";
 import { esc } from "../src/web/map.js";
 import { pageOf, PAGES } from "../src/web/places.js";
 
@@ -130,7 +131,14 @@ describe("the top of the page of a commune's day", () => {
     expect(top).toBe('<ul class="urgence" aria-label="À savoir d\'abord">' +
       '<li>Eau à ne pas boire\u00a0: 1 avis en cours à Salazie, dans les secteurs nommés par l\'avis. <a href="/coupures-eau/salazie">Voir l\'avis</a></li>' +
       "<li>Vigilance jaune fortes pluies pour l&#39;Est (Météo-France). <a href=\"/vigilance\">Voir les consignes</a></li></ul>");
-    expect(urgent(p, day({ vigilance: vigil("Vigilance météo : orange vent violent pour l'Est (Météo-France), la zone de Salazie.", true) }))).toContain('<li class="rouge">Vigilance orange vent violent pour l&#39;Est');
+    // The kit's orange for orange, never red; red for red and violet; the highest level named gives the colour.
+    expect(urgent(p, day({ vigilance: vigil("Vigilance météo : orange vent violent pour l'Est (Météo-France), la zone de Salazie.", true) }))).toContain('<li class="orange">Vigilance orange vent violent pour l&#39;Est');
+    expect(urgent(p, day({ vigilance: vigil("Vigilance météo : jaune fortes pluies, rouge vent violent pour l'Est (Météo-France), la zone de Salazie.", true) }))).toContain('<li class="rouge">Vigilance jaune fortes pluies, rouge vent violent');
+    const step = (n: number) => `ALERTE CYCLONIQUE ${CYCLONE_STEPS[n]}.`;
+    expect(urgent(p, day({ vigilance: vigil("", false, step(3)) }))).toBe('<ul class="urgence" aria-label="À savoir d\'abord"><li class="orange">ALERTE CYCLONIQUE orange, « je me prépare » : danger dans les 24 heures (Météo-France). <a href="/vigilance">Voir les consignes</a></li></ul>');
+    expect(urgent(p, day({ vigilance: vigil("", false, step(4)) }))).toContain('<li class="rouge">ALERTE CYCLONIQUE rouge');
+    expect(urgent(p, day({ vigilance: vigil("", false, step(5)) }))).toContain('<li class="rouge">ALERTE CYCLONIQUE violette');
+    expect(urgent(p, day({ vigilance: vigil("", false, step(2)) }))).toContain("<li>ALERTE CYCLONIQUE pré-alerte");
     expect(urgent(p, day({ coupures_eau: { avis: [{ ne_pas_boire: true }, { ne_pas_boire: true }] } }))).toContain("2 avis en cours à Salazie, dans les secteurs nommés par les avis. <a href=\"/coupures-eau/salazie\">Voir les avis</a>");
     // Nothing to act on: no banner, the green vigilance said among the lines.
     expect(urgent(p, day({ coupures_eau: { avis: [{ titre: "Coupure" }] }, vigilance: green }))).toBe("");

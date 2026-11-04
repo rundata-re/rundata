@@ -6,6 +6,13 @@ import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { COURT, court, readCopies, resume, resumeDuJour, UPDATING } from "../src/tools/resume.js";
+import { citation } from "../src/tools/citer.js";
+import { credits } from "../src/tools/format.js";
+import { AGENDAS } from "../src/providers/agenda.js";
+import * as meteofrance from "../src/providers/meteofrance.js";
+import * as metar from "../src/providers/metar.js";
+import * as pioupiou from "../src/providers/pioupiou.js";
+import * as radar from "../src/providers/radar.js";
 import { buildAir, buildPlace } from "../src/web/data.js";
 import { pageOf } from "../src/web/places.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
@@ -157,6 +164,28 @@ describe("the summary of a day", () => {
     const r = resume(SAINT_PAUL, none as never, NOW);
     expect(r.evenements_du_jour!.liste).toEqual([]);
     expect(named(r)).not.toContain("Agendas");
+  });
+
+  it("credits only the sources of what it shows: the station's network and the agendas of its events (rule 3)", () => {
+    const named = (r: { sources: { source: string }[] }) => r.sources.map((x) => x.source);
+    const port = AGENDAS.find((a) => a.id === "le_port")!;
+    const paul = AGENDAS.find((a) => a.id === "saint_paul")!;
+    const meteo = { ...COPIES.meteo.value, meteo: { ...COPIES.meteo.value.meteo, sources: credits([meteofrance.SOURCE, metar.SOURCE, pioupiou.SOURCE, radar.SOURCE]) } };
+    const agenda = { ...COPIES.agenda.value, sources: credits([paul.source, port.source]), evenements: COPIES.agenda.value.evenements.map((e) => ({ ...e, publie_par: paul.nom })) };
+    const copies = { ...COPIES, meteo: copy(meteo), agenda: copy(agenda) };
+    const r = resume(SAINT_PAUL, copies as never, NOW);
+    expect(r.meteo!.mesure!.station).toBe("Saint-Paul");
+    expect(named(r)).toContain(meteofrance.SOURCE.nom);
+    for (const s of [metar.SOURCE, pioupiou.SOURCE, radar.SOURCE, port.source]) expect(named(r)).not.toContain(s.nom);
+    // The forecast shown keeps its own; the agenda of the events listed, as /evenements names it.
+    expect(named(r)).toContain("Open-Meteo");
+    expect(named(r)).toContain(paul.source.nom);
+    // The same rule in the short answer, and `citer` names the producer of the measure first.
+    expect(named(court(r))).toEqual(named(r));
+    expect(citation(court(r))).toMatch(/^rundata\.re, d'après Météo-France/);
+    // An event whose agenda is not told (proposed, read on a platform): the whole list, never fewer sources than it holds.
+    const other = { ...agenda, evenements: [{ ...agenda.evenements[0], publie_par: "Association des amis" }, ...agenda.evenements.slice(1)] };
+    expect(named(resume(SAINT_PAUL, { ...copies, agenda: copy(other) } as never, NOW))).toContain(port.source.nom);
   });
 
   it("leaves out what it has no copy of, and says so", () => {

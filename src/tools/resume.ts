@@ -20,6 +20,7 @@ import * as col from "../vie/collecte.js";
 import * as dech from "../vie/decheteries.js";
 import * as marches from "../vie/marches.js";
 import * as mf from "../providers/vigilance.js";
+import { AGENDAS } from "../providers/agenda.js";
 import { why } from "../types.js";
 import {
   type ActualitesAnswer,
@@ -67,6 +68,7 @@ import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText }
 import type { InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
 import { enTete } from "./representativeness.js";
+import { NETWORKS } from "./meteo.js";
 
 // How old an announcement of the route du Littoral may be to be told in a summary.
 const LITTORAL_SUMMARY_HOURS = 12;
@@ -251,6 +253,30 @@ function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefine
 
 const newsRow = (i: ActualitesAnswer["infos"][number]) => ({ quand: i.quand, media: i.media, titre: i.titre, lien: i.lien });
 
+/**
+ * The sources of the weather shown, never those of what the summary does not say: the network of the station given
+ * (Météo-France for a station of Météo-France, not the airports' METAR nor the wind beacons), and the forecast's when a
+ * day of it is given. The radar is not in the summary. Rule 3: what is credited is what the answer holds.
+ */
+function weatherSources(d: PlaceData | undefined, w: ReturnType<typeof weather>): Credit[] {
+  if (!d || !w) return [];
+  const s = w.mesure ? enTete(d.meteo?.stations) : undefined;
+  const network = s && NETWORKS.find((n) => n.id === s.source)?.nom;
+  return [...(network ? (d.meteo?.sources ?? []).filter((c) => c.source === network) : []), ...(w.prevision ? (d.prevision?.sources ?? []) : [])];
+}
+
+/**
+ * The agendas of the events the summary gives, not every agenda of the island read for /evenements: an event is
+ * credited to the agenda that publishes it (its `publie_par`). One whose agenda is not told (proposed on rundata.re, read
+ * on an association's platform, its state from the news) keeps the whole list, never fewer sources than the answer holds.
+ */
+function agendaSources(events: { publie_par: string; statut_d_apres?: unknown }[], all: Credit[] | undefined): Credit[] | undefined {
+  if (!events.length) return undefined;
+  const of = events.map((e) => (e.statut_d_apres ? [] : AGENDAS.filter((a) => a.nom === e.publie_par)));
+  if (of.some((x) => !x.length)) return sourcesServies(all);
+  return sourcesServies(credits(of.flat().map((a) => a.source)));
+}
+
 /** Every source the parts used, once each. */
 function sourcesOf(lists: (Credit[] | undefined)[]): Credit[] {
   const seen = new Set<string>();
@@ -408,8 +434,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     pharmacie_de_garde: { site: sante.GARDE.site, telephone: sante.GARDE.telephone, quand: sante.GARDE.quand, a_savoir: NO_DUTY },
     non_inclus: out.length ? out : undefined,
     sources: sourcesOf([
-      l.meteo?.value.meteo?.sources, l.meteo?.value.prevision?.sources, l.vigilance ? credits([mf.SOURCE]) : undefined, l.air?.value.sources, l.mer?.value.sources,
-      l.electricite?.value.sources, l.actualites?.value.sources, l.trafic?.value.sources, l.coupures?.value.sources, events.length ? sourcesServies(l.agenda?.value.sources) : undefined, l.calendrier?.value.sources,
+      weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, l.air?.value.sources, l.mer?.value.sources,
+      l.electricite?.value.sources, l.actualites?.value.sources, l.trafic?.value.sources, l.coupures?.value.sources, agendaSources(events, l.agenda?.value.sources), l.calendrier?.value.sources,
       l.commune?.value.sources, l.dechets?.value.sources, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
     ]),
   };

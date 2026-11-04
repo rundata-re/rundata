@@ -28,6 +28,9 @@ const ALL_PROVIDERS: Provider[] = [
   { source: ffvl.SOURCE, observations: ffvl.observations },
 ];
 
+/** Every network a station can come from, keyed or not: what a station's `source` names (resume.ts credits by it). */
+export const NETWORKS: SourceInfo[] = ALL_PROVIDERS.map((p) => p.source);
+
 export function providers(): Provider[] {
   return ALL_PROVIDERS.filter((p) => p.enabled?.() ?? true);
 }

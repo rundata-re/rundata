@@ -13,6 +13,7 @@ import { communePage } from "../src/web/commune.js";
 import { esc } from "../src/web/map.js";
 import { placePage } from "../src/web/pages.js";
 import { PAGES } from "../src/web/places.js";
+import { a } from "../src/tools/format.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-18T19:20:00Z");
@@ -260,7 +261,12 @@ describe("meteo_actuelle with the Météo-France stations", () => {
       const head = r.meteo?.mesure?.station;
       expect(head, p.nom).toBeDefined();
       expect(named(placePage("https://rundata.re", p, copy, MF_NOW)), `/meteo/${p.slug}`).toBe(esc(head!));
-      expect(aujourdhuiPage("https://rundata.re", p, r, copy), `/aujourdhui/${p.slug}`).toContain(`par la station ${esc(head!)} (`);
+      // A station of another commune says where it stands (« Bellevue Bras-Panon à Bras-Panon » for Salazie).
+      const there = r.meteo!.mesure!.commune;
+      const at = there && there !== p.nom ? ` ${esc(a(there))}` : "";
+      expect(aujourdhuiPage("https://rundata.re", p, r, copy), `/aujourdhui/${p.slug}`).toContain(`par la station ${esc(head!)}${at} (`);
+      const km = String(r.meteo!.mesure!.distance_km).replace(".", ",");
+      expect(r.resume, p.nom).toContain(`(station ${head}${at ? ` ${a(there!)}, à ${km} km` : ""})`);
       expect(named(communePage("https://rundata.re", p, { place: copy } as never, MF_NOW)), `/communes/${p.slug}`).toBe(esc(head!));
       // The tool's summary says it too, in its first two stations.
       expect(meteo.stations.slice(0, 2).map((s: { station: string }) => s.station), p.nom).toContain(head);
@@ -269,6 +275,25 @@ describe("meteo_actuelle with the Météo-France stations", () => {
       const rank = (s: { pertinence: string }) => ["bonne", "moyenne", "faible"].indexOf(s.pertinence);
       expect(rank(warm.find((s: { station: string }) => s.station === head)), p.nom).toBe(Math.min(...warm.map(rank)));
     }
+  });
+
+  it("says, for Salazie, that its station with a temperature stands in Bras-Panon, and how far", async () => {
+    // Seen on /aujourdhui/salazie on 04/11/2026: « 24,6 °C mesurés à 14:18 (station Bellevue Bras-Panon) », without its commune.
+    const p = PAGES.find((x) => x.slug === "salazie")!;
+    const meteo = body(await meteoActuelle(await mfCache(true), p.lieu, MF_NOW, false));
+    expect(meteo.stations.map((s: { station: string; commune: string }) => [s.station, s.commune])).toContainEqual(["Bellevue Bras-Panon", "Bras-Panon"]);
+    const copy = { value: { meteo }, fetchedAt: MF_NOW, stale: false };
+    const r = resume(p, { meteo: copy } as never, MF_NOW);
+    expect(r.meteo!.mesure).toMatchObject({ station: "Bellevue Bras-Panon", commune: "Bras-Panon", distance_km: 8.5 });
+    expect(r.resume).toMatch(/ mesurés à \d\d:\d\d \(station Bellevue Bras-Panon à Bras-Panon, à 8,5 km\)/);
+    expect(aujourdhuiPage("https://rundata.re", p, r, copy)).toContain("par la station Bellevue Bras-Panon à Bras-Panon (480 m, à 8,5 km)");
+    expect(communePage("https://rundata.re", p, { place: copy } as never, MF_NOW)).toContain("par la station <b>Bellevue Bras-Panon</b> à Bras-Panon, à 8,5 km");
+    expect(placePage("https://rundata.re", p, copy, MF_NOW)).toContain("par la station <b>Bellevue Bras-Panon</b> à Bras-Panon (");
+    // A station of the commune itself says nothing more (Météo-France gives the commune by the id: 97415590 is in Saint-Paul).
+    const sp = PAGES.find((x) => x.slug === "saint-paul")!;
+    const spMeteo = body(await meteoActuelle(await mfCache(true), sp.lieu, MF_NOW, false));
+    const spDay = resume(sp, { meteo: { value: { meteo: spMeteo }, fetchedAt: MF_NOW, stale: false } } as never, MF_NOW);
+    expect(spDay.resume).not.toMatch(/\(station [^)]* (?:à|au) Saint-Paul,/);
   });
 
   it("tours the island with a fixed selection, without the airport twice", async () => {

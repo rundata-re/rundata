@@ -26,7 +26,7 @@ import * as loyers from "../vie/loyers.js";
 import * as annexesSd from "../vie/mairies-annexes.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
-import { a, de, fr, nombre } from "../tools/format.js";
+import { a, ailleurs, de, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
 import { coastText, cyclone, cycloneLevel, feminine, forZone, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
@@ -153,7 +153,7 @@ function weather(p: PlacePage, data: Cached<PlaceData> | null, now: Date): Live 
   const f = (evening && jours[1]) || jours[0];
   return {
     valeur: esc(thin(s.mesures.temperature!)),
-    detail: `station ${esc(s.station)} (${metres(s.altitude_m)}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}), mesuré à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}` +
+    detail: `station ${esc(s.station)}${s.commune && s.commune !== p.nom ? ` ${esc(a(s.commune))}` : ""} (${metres(s.altitude_m)}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}), mesuré à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}` +
       (f?.temperature_min && f.temperature_max ? ` · prévision ${esc(f.jour.toLowerCase())} : ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}` : ""),
   };
 }
@@ -696,7 +696,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const s = enTete(l.place?.value.meteo?.stations);
   const headline = s
     ? `<div class="now"><span class="big">${esc(thin(s.mesures.temperature!))}</span>` +
-      `<p>mesurés à <b>${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}</b> par la station <b>${esc(s.station)}</b>${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
+      `<p>mesurés à <b>${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}</b> par la station <b>${esc(s.station)}</b>${ailleurs(s, p.nom) ? ` ${esc(ailleurs(s, p.nom))}` : ""}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 
   const title = `${p.nom} 974 en direct : météo, bus, air, mairie`;

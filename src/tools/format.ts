@@ -54,6 +54,16 @@ export function enumeration(xs: string[]): string {
   return xs.length > 1 ? `${xs.slice(0, -1).join(", ")} et ${xs.at(-1)}` : xs.join("");
 }
 
+/**
+ * Where a station stands and how far, when that is another commune than the one `commune` the answer or the page is
+ * about: « à Bras-Panon, à 8,5 km » for Salazie, whose nearest station with a temperature is Bellevue, 480 m up on the
+ * windward side. Empty for a station of the commune itself, or one whose commune a copy of before does not hold.
+ */
+export function ailleurs(s: { commune?: string; distance_km?: number | null }, commune: string): string {
+  if (!s.commune || s.commune === commune) return "";
+  return `${aCommune(s.commune)}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}`;
+}
+
 export function show(r: Reading): string {
   if (r.variable === "vent_direction" && typeof r.valeur === "number") return `${compass(r.valeur)} (${r.valeur}°)`;
   const v = typeof r.valeur === "number" ? fr(r.valeur) : r.valeur;

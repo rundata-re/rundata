@@ -1,6 +1,7 @@
 import type { Cache, Cached } from "../cache.js";
 import { distanceKm, versant } from "../geo.js";
-import { resolvePlace, type Resolution } from "../places/resolve.js";
+import { INSEE } from "../places/insee.js";
+import { communeAt, resolvePlace, type Resolution } from "../places/resolve.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import * as metar from "../providers/metar.js";
 import * as ffvl from "../providers/ffvl.js";
@@ -76,6 +77,12 @@ async function collect(cache: Cache, now: Date, list: Provider[]) {
   return { obs, down };
 }
 
+// The commune of each INSEE code. A station of Météo-France has its commune's code first in its id (97422445, Bras-Sec,
+// is in Le Tampon, not in Cilaos with the îlet of that name); another, the commune of the nearest named place.
+const BY_INSEE = new Map(Object.entries(INSEE).map(([nom, code]) => [code, nom]));
+const stationCommune = (s: Observation["station"]) =>
+  (s.source === "meteofrance" && BY_INSEE.get(s.id.slice(0, 5))) || communeAt(s.lon, s.lat);
+
 function stationBlock(o: Observation, stale: boolean, now: Date) {
   const mesures: Record<string, string> = {};
   for (const r of o.readings) mesures[r.variable] = show(r);
@@ -85,6 +92,8 @@ function stationBlock(o: Observation, stale: boolean, now: Date) {
   if (stale) avertissements.push("Source momentanément injoignable : dernière valeur connue.");
   return {
     station: o.station.nom,
+    // Said wherever the station stands in another commune than the place's (« Bellevue Bras-Panon » for Salazie).
+    commune: stationCommune(o.station),
     source: o.station.source,
     altitude_m: o.station.altitude_m,
     ...t,

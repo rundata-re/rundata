@@ -1758,6 +1758,7 @@ function stationCard(s: StationAnswer): string {
     .join("");
   const t = parseFloat((m.temperature ?? "").replace(",", "."));
   const meta = [
+    s.commune,
     s.distance_km != null ? `à ${fr(s.distance_km)} km${s.direction ? ` (${s.direction})` : ""}` : undefined,
     `${s.altitude_m.toLocaleString("fr-FR")} m d'altitude`,
     s.pertinence ? `pertinence ${s.pertinence}` : undefined,
@@ -1805,7 +1806,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
 
   const headline = first
     ? `<div class="now"><span class="big">${esc(thin(first.mesures.temperature!))}</span>` +
-      `<p>mesurés à <b>${esc(first.heure_mesure.split(" ")[1] ?? first.heure_mesure)}</b> par la station <b>${esc(first.station)}</b> ` +
+      `<p>mesurés à <b>${esc(first.heure_mesure.split(" ")[1] ?? first.heure_mesure)}</b> par la station <b>${esc(first.station)}</b>${first.commune && first.commune !== (place.commune || p.nom) ? ` ${esc(a(first.commune))}` : ""} ` +
       `(${metres(first.altitude_m)}${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
     : "";
 

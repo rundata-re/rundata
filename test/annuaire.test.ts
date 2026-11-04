@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { justice, office, type JusticePlace } from "../src/providers/annuaire.js";
-import { annuaireTool, hoursText, named, openNow } from "../src/tools/annuaire.js";
+import { annuaireTool, COUVERT, hoursText, named, openNow } from "../src/tools/annuaire.js";
 import { JUSTICE } from "../src/tools/justice.js";
 import { withVide } from "../src/vide.js";
 
@@ -62,6 +62,29 @@ describe("public services directory", () => {
     const cache = new Cache(store, () => now.getTime());
     expect(body(await annuaireTool(cache, "défibrillateur", undefined, now)).page).toBe("https://rundata.re/defibrillateurs");
     expect(body(await annuaireTool(cache, "mairie", undefined, now)).page).toBeUndefined();
+  });
+
+  it("never gives another service for a word it does not know: « aucun service », what it covers, the hits apart", async () => {
+    const now = new Date("2026-11-04T06:00:00Z");
+    const store = new MemoryStore();
+    const commissaires = { ...saintPaul, nom: "Chambre régionale des commissaires de justice de La Réunion", types: ["huissiers_justice"] };
+    const cgss = { ...saintPaul, nom: "Caisse générale de sécurité sociale (CGSS) de La Réunion - accueil de Saint-Denis", types: ["cpam"] };
+    void store.put("annuaire:974:élections", { value: [commissaires], fetchedAt: now.getTime() });
+    void store.put("annuaire:974:cpam", { value: [cgss], fetchedAt: now.getTime() });
+    void store.put("annuaire:974:caf", { value: [{ ...commissaires, types: undefined }], fetchedAt: now.getTime() });
+    const cache = new Cache(store, () => now.getTime());
+    const none = await withVide("annuaire_services_publics", () => annuaireTool(cache, "élections", undefined, now));
+    const b = body(none.value);
+    expect(b.resume).toBe("Aucun service public trouvé à La Réunion pour « élections ».");
+    expect(b.resultats).toBeUndefined();
+    expect(b.couvert).toBe(COUVERT);
+    expect(b.couvert).not.toMatch(/médecin de garde/);
+    expect(b.proches.noms).toEqual([commissaires.nom]);
+    expect(none.vide).toBe(true);
+    // Its kind says it: the CGSS's offices for « CPAM », whose names do not.
+    expect(body(await annuaireTool(cache, "CPAM", undefined, now)).resultats[0].nom).toBe(cgss.nom);
+    // A copy read before the kinds were kept: answered as before, until it is read again.
+    expect(body(await annuaireTool(cache, "caf", undefined, now)).resultats[0].nom).toBe(commissaires.nom);
   });
 
   it("counts a word that finds no service as a question left without an answer, and only that", async () => {

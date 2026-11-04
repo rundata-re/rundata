@@ -45,6 +45,20 @@ export const COMMUNES = ["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", 
 /** « saint-paul », « trois-bassins »: the page of a commune. */
 export const communeSlug = (c: string) => normalize(c.replace(/^Les /, "")).replace(/ /g, "-");
 
+/**
+ * The other communes, by the intercommunality that collects their waste (geo.api.gouv.fr, EPCI of each commune, read on
+ * 04/11/2026), with its home page (200 that day, no deep link). Their calendars are not read.
+ */
+export const AILLEURS: { nom: string; site: string; communes: string[] }[] = [
+  { nom: "la CINOR", site: "https://www.cinor.re/", communes: ["Saint-Denis", "Sainte-Marie", "Sainte-Suzanne"] },
+  { nom: "la CIREST", site: "https://www.cirest.fr/", communes: ["Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes", "Sainte-Rose"] },
+  { nom: "la CIVIS", site: "https://www.civis.re/", communes: ["Saint-Pierre", "Saint-Louis", "L'Étang-Salé", "Petite-Île", "Cilaos", "Les Avirons"] },
+  { nom: "la CASUD", site: "https://www.casud.re/", communes: ["Le Tampon", "Saint-Joseph", "Entre-Deux", "Saint-Philippe"] },
+];
+// Marketing's words (04/11/2026), for a commune outside the TCO: never a street to spell again.
+export const ailleurs = (commune: string, epci: { nom: string }) =>
+  `${commune} : la collecte des déchets y est assurée par ${epci.nom}, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu). Voir le site de ${epci.nom}.`;
+
 // Marketing's words, said by the tool and the pages.
 export const NOT_FOUND = "Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, ou essayez le nom du quartier.";
 // A street the TCO lists without a calendar: nothing is inferred, its contact page is the link of the arrow.

@@ -5,7 +5,7 @@ import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.j
 import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
-import { agenda, COUVERTURE, type EventRow, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when } from "../src/tools/agenda.js";
+import { agenda, COUVERTURE, type EventRow, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { buildAgenda } from "../src/web/data.js";
 import { agendaHours, agendaPage } from "../src/web/domains.js";
@@ -973,6 +973,16 @@ describe("agenda", () => {
     expect(vide).toBe(true);
     expect(b.resume).toMatch(/^Aucun événement trouvé à Saint-Pierre ce week-end .*la page agenda de la mairie de Saint-Pierre est vide et le Kerveguen n'est pas encore lu\u00a0;.* ailleurs sur l'île\.$/);
     expect(b.ailleurs_sur_l_ile.length).toBeGreaterThan(0);
+  });
+
+  it("sends a market asked to the directory, which has the markets held each week", async () => {
+    const b = body(await agenda(cache(), "Saint-Paul", "aujourd_hui", "marché", NOW));
+    expect(b.marches_reguliers).toBe(MARCHES_REGULIERS);
+    if (!b.nombre) expect(b.resume).toContain(MARCHES_REGULIERS);
+    const none = body(await agenda(cache(), "Saint-Paul", "aujourd_hui", "zzz marché zzz", NOW));
+    expect(none.nombre).toBe(0);
+    expect(none.resume).toContain(MARCHES_REGULIERS);
+    expect(body(await agenda(cache(), "Saint-Paul", "aujourd_hui", "concert", NOW)).marches_reguliers).toBeUndefined();
   });
 
   it("answers without the agendas that fail, and names them", async () => {

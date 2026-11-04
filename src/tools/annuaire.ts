@@ -75,11 +75,30 @@ export function hoursOn(o: annuaire.Office, now: Date): string | undefined {
 }
 
 /**
+ * Keeps the offices whose kind of service holds every word asked (« CPAM » for the CGSS's offices, whose name does not
+ * say it). A copy read before the kinds were kept: every office, as before.
+ */
+export function ofKind(list: annuaire.Office[], quoi: string): annuaire.Office[] {
+  const words = wordsOf(quoi);
+  return list.filter((o) => !o.types || words.every((w) => o.types!.some((t) => t.split("_").some((x) => x === w || x === `${w}s`))));
+}
+
+/** Said with « aucun service »: what the tool does answer, in marketing's words (04/11/2026). */
+export const COUVERT =
+  "Cet outil donne\u00a0: les services de l'annuaire de l'administration (mairie, préfecture, CAF, CGSS, impôts, France Travail, tribunal, gendarmerie…)\u00a0; " +
+  "les pharmacies et les hôpitaux les plus proches (pharmacie de garde\u00a0: 3237.fr ou le 32\u00a037\u00a0; urgence et garde médicale\u00a0: le 15)\u00a0; " +
+  "les marchés forains et couverts\u00a0; les déchèteries\u00a0; le jour de collecte des déchets dans l'Ouest (TCO)\u00a0; les prix maximum des carburants et du gaz\u00a0; " +
+  "le nombre de médecins libéraux par commune\u00a0; les écoles, collèges et lycées\u00a0; les lieux où aller avec les enfants.";
+export const PROCHES = "Trouvés par la recherche de l'annuaire, mais sans le mot demandé ni dans leur nom ni dans leur type\u00a0: sans doute d'autres services. Ne pas les donner comme réponse.";
+
+/**
  * Keeps the offices whose name holds every word asked (as a whole word, plural or not): the API's full-text search
  * also matches inside words, so « CAF » near Le Tampon finds the gendarmerie of La Plaine-des-Cafres.
  */
+const wordsOf = (quoi: string) => normalize(quoi).split(" ").filter((w) => w.length > 1).map((w) => (w.length > 3 ? w.replace(/s$/, "") : w));
+
 export function named(list: annuaire.Office[], quoi: string): annuaire.Office[] {
-  const words = normalize(quoi).split(" ").filter((w) => w.length > 1).map((w) => (w.length > 3 ? w.replace(/s$/, "") : w));
+  const words = wordsOf(quoi);
   return list.filter((o) => {
     const name = ` ${normalize(o.nom)} `;
     return words.every((w) => new RegExp(` ${w}s? `).test(name));
@@ -109,12 +128,16 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   const annexes = res?.lieu.commune === annexesSd.COMMUNE && TOWN_HALL.test(quoi);
   const asked = annexes && ANNEX.test(quoi) ? "mairie" : quoi;
   let found: annuaire.Office[];
+  // The directory's own hits that neither name nor kind say the words of: never the answer (04/11/2026, « élections »
+  // gave the commissaires de justice, « La Poste » a France services), only shown as such.
+  let others: annuaire.Office[] = [];
   try {
     // The place's commune first; the whole island when it has no such office (one CAF, one prefecture…).
     found = code ? named((await annuaire.search(cache, asked, code)).value, asked) : [];
     if (!found.length) {
       const island = (await annuaire.search(cache, asked)).value;
-      found = named(island, asked).length ? named(island, asked) : island;
+      found = named(island, asked).length ? named(island, asked) : ofKind(island, asked);
+      if (!found.length) others = island;
     }
   } catch (err) {
     console.error(`source ${annuaire.SOURCE.id} indisponible:`, why(err));
@@ -125,6 +148,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
     return text({
       resume: `Aucun service public trouvé à La Réunion pour « ${quoi} ».`,
       conseil: "Essayer un autre mot : mairie, CAF, préfecture, impôts, France Travail, tribunal, CPAM…",
+      couvert: COUVERT,
+      proches: others.length ? { note: PROCHES, noms: [...new Set(others.map((o) => o.nom))].slice(0, 3) } : undefined,
       page: DEFIBRILLATOR.test(quoi) ? "https://rundata.re/defibrillateurs" : undefined,
       sources: credits([annuaire.SOURCE]),
     });

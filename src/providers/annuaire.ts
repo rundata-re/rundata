@@ -34,6 +34,8 @@ export interface Office {
   courriel?: string;
   site?: string;
   fiche: string;
+  /** Its kinds of service (`type_service_local`, « cpam » for the CGSS's offices); missing on a copy read before. */
+  types?: string[];
 }
 
 const json = <T>(s: unknown, fallback: T): T => {
@@ -76,6 +78,7 @@ export function office(r: Row): Office {
     courriel: (r.adresse_courriel as string) || undefined,
     site: json<{ valeur: string }[]>(r.site_internet, [])[0]?.valeur,
     fiche: String(r.url_service_public ?? ""),
+    ...(r.pivot !== undefined ? { types: json<{ type_service_local: string }[]>(r.pivot, []).map((p) => p.type_service_local) } : {}),
   };
 }
 
@@ -85,7 +88,7 @@ export async function search(cache: Cache, what: string, insee?: string): Promis
   const scope = insee && /^974\d\d$/.test(insee) ? `code_insee_commune="${insee}"` : `startswith(code_insee_commune,"974")`;
   return cache.get(`annuaire:${insee ?? "974"}:${q.toLowerCase()}`, FRESH_SECONDS, async () => {
     const where = `${scope} and search("${q}")`;
-    const url = `${URL}?where=${encodeURIComponent(where)}&limit=20&select=${FIELDS}`;
+    const url = `${URL}?where=${encodeURIComponent(where)}&limit=20&select=${FIELDS},pivot`;
     return (await getJson<{ results: Row[] }>(SOURCE.id, url)).results.map(office);
   });
 }

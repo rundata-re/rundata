@@ -1131,7 +1131,7 @@ const inCategory = (path: string, category: string) => path === category || path
 
 /**
  * One sentence under each page's title that says what it is good for before its data (« Avant de partir : les
- * sentiers fermés ce matin par l'ONF, et pourquoi. »): the page's own, else its category's, the longest match first.
+ * sentiers fermés d'après la carte de l'ONF, et pourquoi. »): the page's own, else its category's, the longest match first.
  */
 const HOOKS: [string, string][] = [
   ["/", "Les sorties, les randos, le temps et les routes de l'île en ce moment, pour vous et votre IA."],
@@ -1141,7 +1141,7 @@ const HOOKS: [string, string][] = [
   ["/mer", "Avant la plage : la température de l'eau au large de chaque plage."],
   ["/volcan", "Éruption ou pas, Enclos ouvert ou fermé : l'état du volcan avant de monter."],
   ["/bus", "Votre prochain bus, à l'heure annoncée par le réseau, sans appli à installer."],
-  ["/trafic", "Avant de prendre la route : la carte des bouchons et ce que signalent les médias."],
+  ["/trafic", "Avant de prendre la route : la carte officielle des bouchons et des travaux, et ce que signalent les médias."],
   ["/actualites", "Ce qui se passe sur l'île en ce moment, commune par commune."],
   ["/air", "Sport dehors ou pas : la qualité de l'air dans votre commune aujourd'hui."],
   ["/electricite", "Quand recharger la voiture ou lancer la machine : l'électricité de l'île en ce moment."],
@@ -1149,8 +1149,8 @@ const HOOKS: [string, string][] = [
   ["/velos", "Un vélo à prendre ou une place pour le rendre, avant de vous déplacer."],
   ["/bornes", "Une borne libre près de vous, avant de faire le détour."],
   ["/eau", "Baignade ou robinet : la dernière analyse de l'ARS près de chez vous."],
-  ["/randonnees", "Choisir une rando ouverte aujourd'hui, avec sa trace GPS et son dénivelé."],
-  ["/sentiers", "Avant de partir : les sentiers fermés ce matin par l'ONF, et pourquoi."],
+  ["/randonnees", "Choisir une rando ouverte d'après la carte de l'ONF, avec sa trace GPS et son dénivelé."],
+  ["/sentiers", "Avant de partir : les sentiers fermés d'après la carte de l'ONF, et pourquoi."],
   ["/secheresse", "Arrosage, lavage, piscine : ce qui est interdit dans votre commune en ce moment."],
   ["/coupures-eau", "Coupure d'eau ou eau à ne pas boire : les avis en cours des distributeurs."],
   ["/defibrillateurs", "En cas d'arrêt cardiaque : le défibrillateur le plus proche, et s'il est accessible."],
@@ -1161,7 +1161,7 @@ const HOOKS: [string, string][] = [
   ["/communes", "Tout ce qui compte aujourd'hui dans votre commune, sur une seule page."],
 ];
 // A trail's or a hike's own page: one trace, not the list of the day's closures.
-const TRACE_HOOK = "La trace à télécharger et l'état du sentier ce matin, avant de partir.";
+const TRACE_HOOK = "La trace à télécharger et l'état du sentier d'après la carte de l'ONF, avant de partir.";
 // A past cyclone's page: measures, not the tracking of the moment.
 const PASSE_HOOK = "Ce que les stations de Météo-France ont mesuré pendant son passage.";
 

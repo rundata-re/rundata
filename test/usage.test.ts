@@ -109,8 +109,9 @@ describe("MCP endpoint, as recorded", () => {
         const { hits } = await hitsOf(call(id, lieu));
         expect(hits).toHaveLength(1);
         expect(hits[0]).toMatchObject({ kind: "mcp", name: "annuaire_services_publics", place: "adresse", args: "adresse,lieu,quoi", outcome: "ok" });
-        // What Analytics Engine receives (metrics.ts), and every line logged.
-        const written = JSON.stringify([hits, point(hits[0], { who: "assistant", country: "RE", from: "", audience: "assistant", language: "" })]);
+        // What Analytics Engine receives (metrics.ts), and every line logged. Measured numbers (duration, size) are
+        // blanked: a request that took 41 ms is not the house number.
+        const written = JSON.stringify([hits, point(hits[0], { who: "assistant", country: "RE", from: "", audience: "assistant", language: "" })], (_k, v: unknown) => (typeof v === "number" ? 0 : v));
         for (const part of ["41", "Commune de Paris", "avenue"]) expect(written).not.toContain(part);
       }
       const logged = JSON.stringify(logs.flatMap((l) => l.mock.calls));

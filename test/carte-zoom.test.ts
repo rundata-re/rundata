@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 import { SECTEURS } from "../src/traces/secteurs.js";
 import { DOUBLE_SCRIPT, DOUBLE_STEP, DOUBLE_WAIT_MS, HIKES_REACH, MAX_ZOOM, MOTS, REACH_PX, WHEEL_SCRIPT, WHEEL_STEP, zoomControls } from "../src/web/carte-zoom.js";
 import type { RandonneesAnswer } from "../src/web/data.js";
-import { randonneesPage, tracePage, traceSource } from "../src/web/domains.js";
+import { NOT_ON_ONF, onfDay, onfRead, randonneesPage, sentiersPage, tracePage, traceSource } from "../src/web/domains.js";
+import { OUVERT_ONF } from "../src/web/data.js";
 import { CSS } from "../src/web/pages.js";
 import island from "../src/places/island.json" with { type: "json" };
-import { FONDS_SCRIPT, FOND_ZOOM, H, NOMS_SCRIPT, traceMap, W } from "../src/web/map.js";
+import { esc, FONDS_SCRIPT, FOND_ZOOM, H, NOMS_SCRIPT, traceMap, W } from "../src/web/map.js";
 import routes from "../src/web/routes.json" with { type: "json" };
 import { secteurPage } from "../src/web/randonnees.js";
 
@@ -181,5 +182,44 @@ describe("the source under a map of trails", () => {
     expect(tracePage(O, "sentier", "x", "X", trace("sentier", edited), NOW)).toContain(`<span><i class="sw st"></i>départ</span>${traceSource(edited, false)}</figcaption>`);
     expect(tracePage(O, "randonnee", "x", "X", trace("randonnee", edited), NOW)).toContain(`<span><i class="sw st"></i>départ</span>${traceSource(edited, true)}</figcaption>`);
     expect(CSS).toContain(".legend .mls{flex-basis:100%;white-space:normal}");
+  });
+});
+
+describe("the one formula of the trails' state", () => {
+  // The ONF's map edited on 27/10 in La Réunion, read by rundata.re at 14:05 on 04/11.
+  const edited = "2026-10-27T05:00:00.000Z";
+  const read = "2026-11-04T10:05:00.000Z";
+
+  it("says the map's date and when it was read, never « aujourd'hui » nor « ce matin »", () => {
+    expect(onfDay(edited)).toBe("27/10");
+    expect(onfDay("27/10/2026 (ONF)")).toBe("27/10");
+    expect(onfRead(edited, read)).toBe("Carte de l'ONF du 27/10, relue le 04/11 à 14:05");
+    expect(onfRead(undefined, undefined)).toBe("Carte de l'ONF");
+    expect(traceSource(edited, true, read)).toBe(`<span class="mls">Carte de l'ONF du 27/10, relue le 04/11 à 14:05\u00a0; itinéraires d'OpenStreetMap.</span>`);
+  });
+
+  it("dates the pill, the hook and the count of /randonnees and its sectors", () => {
+    const dated = { ...data, value: { ...answer, carte_mise_a_jour: edited, carte_lue: read } };
+    for (const html of [randonneesPage(O, dated, NOW), secteurPage(O, mafate, dated, null, NOW)]) {
+      expect(html).toContain('<p class="pill"><span class="dot"></span>État ONF · carte du 27/10</p>');
+      expect(html).toContain('<p class="hook">Choisir une rando ouverte d&#39;après la carte de l&#39;ONF du 27/10, avec sa trace GPS et son dénivelé.</p>');
+      expect(html).toContain("relue le 04/11 à 14:05");
+      expect(html).not.toMatch(/état ONF du jour|ouverte aujourd/);
+    }
+    expect(randonneesPage(O, dated, NOW)).toContain("D'après la carte de l'ONF du 27/10, <b>");
+  });
+
+  it("dates /sentiers and a trace, and says when a hike follows no trail of the ONF", () => {
+    const s = sentiersPage(O, { value: { resume: "", fermes_par_commune: [], routes_forestieres_fermees: [], carte_mise_a_jour: "27/10/2026 (ONF)", carte_lue: read, a_savoir: [], sources: [], points: [], suivis: 351, randonnees: [] }, fetchedAt: NOW, stale: false } as never, NOW);
+    expect(s).toContain('<p class="hook">Avant de partir : les sentiers fermés d&#39;après la carte de l&#39;ONF du 27/10, et pourquoi.</p>');
+    expect(s).toContain("Carte de l&#39;ONF du 27/10, relue le 04/11 à 14:05.");
+    const trace = (genre: "sentier" | "randonnee", etat: string, troncons: object[]) =>
+      ({ value: { nom: "x", slug: "x", genre, km: 2, etat, ferme: false, troncons, lignes: [], profil: [], randonnees: [], fermes: [], inconnus: [], carte_mise_a_jour: edited, carte_lue: read, sources: [] }, fetchedAt: NOW, stale: false }) as never;
+    const open = tracePage(O, "sentier", "x", "X", trace("sentier", OUVERT_ONF, [{ etat: "ouvert" }]), NOW);
+    expect(open).toContain('<p class="lead">Ouvert d&#39;après la carte de l&#39;ONF du 27/10</p>');
+    expect(open).toContain('<p class="hook">La trace à télécharger et l&#39;état du sentier d&#39;après la carte de l&#39;ONF du 27/10, avant de partir.</p>');
+    const alone = tracePage(O, "randonnee", "x", "X", trace("randonnee", "État non suivi par l'ONF", []), NOW);
+    expect(alone).toContain(`<p class="hook">${esc(NOT_ON_ONF)}</p>`);
+    expect(NOT_ON_ONF).toBe("Ce sentier n'est pas sur la carte de l'ONF : rundata.re n'a pas son état d'ouverture.");
   });
 });

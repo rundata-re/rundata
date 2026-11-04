@@ -13,6 +13,7 @@ import { distributeur } from "../eau/distributeurs.js";
 import { localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
+import * as atmo from "../providers/atmo.js";
 import * as cal from "../providers/calendrier.js";
 import { phases } from "../providers/carburants.js";
 import * as sante from "../sante/etablissements.js";
@@ -69,6 +70,7 @@ import type { InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
 import { enTete } from "./representativeness.js";
 import { NETWORKS } from "./meteo.js";
+import { PRODUCTS as SEA_PRODUCTS } from "./mer.js";
 
 // How old an announcement of the route du Littoral may be to be told in a summary.
 const LITTORAL_SUMMARY_HOURS = 12;
@@ -240,15 +242,38 @@ function vigilance(p: PlacePage, v: mf.Vigilance, now: Date) {
   };
 }
 
+/** The water's temperature off the commune, and the sources of that copy (the sea's page, or else the weather page's). */
 function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefined) {
   const beaches = mer?.plages.filter((b) => b.commune === p.nom && b.valeur != null) ?? [];
   if (beaches.length) {
     const v = beaches.map((b) => b.valeur!);
     const [lo, hi] = [Math.round(Math.min(...v)), Math.round(Math.max(...v))];
-    return { temperature_eau: lo === hi ? `${lo} °C` : `${lo} à ${hi} °C`, au_large_de: beaches.map((b) => b.nom), jour_mesure: beaches.map((b) => b.jour!).sort().pop(), mesure: "satellite" };
+    const row = { temperature_eau: lo === hi ? `${lo} °C` : `${lo} à ${hi} °C`, au_large_de: beaches.map((b) => b.nom), jour_mesure: beaches.map((b) => b.jour!).sort().pop(), mesure: "satellite" };
+    return { row, sources: seaSources(mer!.sources) };
   }
   const m = place?.mer?.mesure;
-  return m ? { temperature_eau: m.temperature_eau, jour_mesure: m.jour_mesure, mesure: "satellite, au large" } : undefined;
+  return m ? { row: { temperature_eau: m.temperature_eau, jour_mesure: m.jour_mesure, mesure: "satellite, au large" }, sources: seaSources(place!.mer!.sources) } : undefined;
+}
+
+const SATELLITES = SEA_PRODUCTS.map((x) => x.source.nom);
+
+/**
+ * The summary gives the water's temperature only, a measure by satellite: the satellites' sources, not the forecast of
+ * the waves nor the tide gauges of /mer. A copy whose list names no satellite keeps it whole (rule 3, never fewer).
+ */
+function seaSources(all: Credit[] | undefined): Credit[] | undefined {
+  const own = all?.filter((c) => SATELLITES.includes(c.source)) ?? [];
+  return own.length ? own : all;
+}
+
+/**
+ * The commune's ATMO index only: Atmo Réunion's, not the measures at the stations nor the amateur sensors, which the
+ * summary does not give; nothing when the commune has no index in the copy. A list without the index's keeps it whole.
+ */
+function airSources(shown: boolean, all: Credit[] | undefined): Credit[] | undefined {
+  if (!shown) return undefined;
+  const own = all?.filter((c) => c.source === atmo.SOURCE.nom) ?? [];
+  return own.length ? own : all;
 }
 
 const newsRow = (i: ActualitesAnswer["infos"][number]) => ({ quand: i.quand, media: i.media, titre: i.titre, lien: i.lien });
@@ -326,7 +351,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const c = l.calendrier?.value;
   const v = l.vigilance ? vigilance(commune, l.vigilance.value, now) : undefined;
   // Without the sea's page, the weather page's own reading of the sea, when it has one: then the sea is not left out.
-  const mer = coastal(commune) ? sea(commune, l.mer?.value, l.meteo?.value) : undefined;
+  const seaPart = coastal(commune) ? sea(commune, l.mer?.value, l.meteo?.value) : undefined;
+  const mer = seaPart?.row;
   const out = mer ? leftOut.filter((x) => x.partie !== SEA) : leftOut;
   // Held today, then those open all week, then those whose days no source gives, with the town hall's page.
   const markets = marches.heldOn(nom, now);
@@ -438,7 +464,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     pharmacie_de_garde: { site: sante.GARDE.site, telephone: sante.GARDE.telephone, quand: sante.GARDE.quand, a_savoir: NO_DUTY },
     non_inclus: out.length ? out : undefined,
     sources: sourcesOf([
-      weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, l.air?.value.sources, l.mer?.value.sources,
+      weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, airSources(!!airHere, l.air?.value.sources), seaPart?.sources,
       l.electricite?.value.sources, l.actualites?.value.sources, l.trafic?.value.sources, l.coupures?.value.sources, agendaSources(events, l.agenda?.value.sources), l.calendrier?.value.sources,
       l.commune?.value.sources, l.dechets?.value.sources, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
     ]),

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { avis } from "../src/providers/sentiers.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
 import { noticeOf, type TraceAnswer } from "../src/web/data.js";
 import { stateHead, traceDescription, tracePage } from "../src/web/domains.js";
@@ -32,9 +33,12 @@ describe("aperçu d'un sentier fermé", () => {
     expect(traceDescription(LAVES, LAVES.nom, "Volcan, La Réunion", "repli")).toBe("Fermé : Sentier traversé par la coulée de lave de 2026. Sentier des Laves (Volcan, La Réunion) : 6,4 km, 412 m de dénivelé positif.");
     // Kapor's notice is long: it stays whole, the figures go.
     expect(traceDescription(KAPOR, KAPOR.nom, "Volcan, La Réunion", "repli")).toBe("Fermé : Éruption en cours (Sentier instable pour cause d'éruption récente, risques d'intoxication et de brulures). Sentier Kapor (La Réunion).");
-    // Longer still: « Fermé » alone, then the name and the figures.
+    // Longer: the notice alone, the page's title names the trail.
     const longer = { ...KAPOR, etat: `${KAPOR.etat}, et encore quelques mots de l'avis de l'ONF` };
-    expect(traceDescription(longer, KAPOR.nom, "Volcan, La Réunion", "repli")).toBe("Fermé. Sentier Kapor (Volcan, La Réunion) : 6,4 km, 412 m de dénivelé positif.");
+    expect(traceDescription(longer, KAPOR.nom, "Volcan, La Réunion", "repli")).toBe(`${longer.etat}.`);
+    // Longer than a preview: « Fermé » alone, then the name and the figures.
+    const longest = { ...KAPOR, etat: `${longer.etat}, puis d'autres encore, assez pour dépasser la place d'un aperçu` };
+    expect(traceDescription(longest, KAPOR.nom, "Volcan, La Réunion", "repli")).toBe("Fermé. Sentier Kapor (Volcan, La Réunion) : 6,4 km, 412 m de dénivelé positif.");
   });
 
   it("fermé sur un tronçon et ouvert sur un autre : « En partie fermé »", () => {
@@ -51,20 +55,31 @@ describe("aperçu d'un sentier fermé", () => {
     expect(stateHead(d)).toBe("Fermé sur la carte de l'ONF ; ouvert le samedi et le dimanche d'après l'avis de l'ONF");
   });
 
-  it("un nom trop long garde l'état entier et se coupe", () => {
+  it("un nom trop long : l'état entier seul, le titre nomme le sentier", () => {
     const d = trail("Sentier ".repeat(30).trim(), "sentier-kapor", KAPOR.etat, KAPOR.troncons);
+    expect(traceDescription(d, d.nom, "La Réunion", "repli")).toBe(`${KAPOR.etat}.`);
+  });
+
+  it("un état plus long qu'un aperçu se coupe entre deux mots, jamais « .… »", () => {
+    // Outside the ONF's management, the state is the notice itself: nothing shorter to fall back on.
+    const troncons = [{ etat: "hors gestion ONF", cause: "Avis de l'ONF très long. ".repeat(10).trim() }];
+    const d = trail("Sentier ".repeat(30).trim(), "sentier-kapor", noticeOf(troncons)!, troncons);
     const said = traceDescription(d, d.nom, "La Réunion", "repli");
-    expect(said).toMatch(/^Fermé\. Sentier/);
     expect(said.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    expect(said).toMatch(/[^\s.,;:]…$/);
   });
 
   it("hors gestion ONF avec un avis de fermeture (Bayonne) : l'avis, jamais « état non connu »", () => {
-    const troncons = [{ etat: "hors gestion ONF", cause: "Fermé le 02/06/26", info: "Désordres constatés, glissements de terrain incompatibles avec la présence de randonneurs" }];
+    // As the ONF's map writes it (04/11/2026): the date and the cause in one field, a space between them.
+    const cause = avis("Fermé le 02/06/26 Désordres constatés, glissements de terrain incompatibles avec la présence de randonneurs");
+    expect(cause).toBe("Fermé le 02/06/26 · Désordres constatés, glissements de terrain incompatibles avec la présence de randonneurs");
+    const troncons = [{ etat: "hors gestion ONF", cause, info: undefined }];
     const etat = noticeOf(troncons)!;
     expect(etat).toBe("Hors gestion ONF ; sur la carte de l'ONF : “Fermé le 02/06/26 · Désordres constatés, glissements de terrain incompatibles avec la présence de randonneurs”");
     const d = trail("Sentier Bayonne", "sentier-bayonne", etat, troncons.map(({ etat, cause, info }) => ({ etat, cause, precision: info })));
     const said = page(d);
     expect(said).toMatch(/^Hors gestion ONF ; sur la carte de l'ONF : “Fermé le 02\/06\/26/);
+    expect(said).toBe(`${etat}.`);
     expect(said).not.toContain("état non connu");
     expect(said.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
   });

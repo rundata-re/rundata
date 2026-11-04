@@ -37,9 +37,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   "marches-publics": 3,
   mer: 5,
   meteo: 9,
-  randonnees: 11,
+  randonnees: 12,
   secheresse: 1,
-  sentiers: 10,
+  sentiers: 12,
   sport: 16,
   station: 2,
   trafic: 3,
@@ -80,6 +80,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without
   // a blank line is kept (« TRAITEMENT ST FRANCOIS »).
   "avis-eau:flux": 1,
+  // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
+  "onf:sentiers": 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's. */

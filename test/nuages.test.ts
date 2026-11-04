@@ -283,7 +283,7 @@ describe("the cloud sea on the site", () => {
     const html = page({ mer_de_nuages: mn, ciel_de_nuit: ciel }, EVENING, p);
     const n = nuitOf("2026-10-24", MAIDO.lon, MAIDO.lat, MAIDO.altitude_m!);
     expect(html).toContain('<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">Ciel ce soir et cette nuit</h3>' +
-      `<p>De 18\u00a0h à 6\u00a0h, dégagé.</p><p>${n.nuit_noire.replace("'", "&#39;")}</p><p>${n.lune}</p>`);
+      `<p>De 18\u00a0h à 6\u00a0h, dégagé.</p><p>${n.nuit_noire.replaceAll("'", "&#39;")}</p><p>${n.lune}</p>`);
     expect(html.indexOf("mer-de-nuages")).toBeLessThan(html.indexOf("ciel-cette-nuit"));
     expect(html).toContain(`<p class="note">Ciel\u00a0: ${LABEL}. Prévision, pas une mesure.`);
     expect(html).toContain("Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles");

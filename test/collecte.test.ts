@@ -89,6 +89,21 @@ describe("the tool and the pages", () => {
     expect(body(collecteAnswer("Saint-Paul", NOW)).resume).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul.");
   });
 
+  it("says who collects in a commune outside the TCO, never a street to spell again", () => {
+    const sd = body(collecteAnswer("12 rue de Paris, Saint-Denis", NOW));
+    expect(sd.resume).toBe("Saint-Denis : la collecte des déchets y est assurée par la CINOR, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu). Voir le site de la CINOR.");
+    expect(sd.intercommunalite).toEqual({ nom: "CINOR", site: "https://www.cinor.re/" });
+    expect(body(collecteAnswer("Saint-Denis", NOW)).intercommunalite.nom).toBe("CINOR");
+    expect(body(collecteAnswer("chemin Bœuf Mort, Le Tampon 97430", NOW)).resume).toMatch(/^Le Tampon : la collecte des déchets y est assurée par la CASUD,/);
+    expect(body(collecteAnswer("L'Étang-Salé", NOW)).intercommunalite.nom).toBe("CIVIS");
+    // Every commune of the island once: the TCO's five, the others in one intercommunality each.
+    const others = col.AILLEURS.flatMap((e) => e.communes);
+    expect(new Set([...others, ...col.COMMUNES]).size).toBe(24);
+    expect(others.length + col.COMMUNES.length).toBe(24);
+    // A street of the West named after a town of the East is still a street of the West.
+    expect(body(collecteAnswer("rue Victoria, La Possession", NOW)).intercommunalite).toBeUndefined();
+  });
+
   it("is what annuaire_services_publics answers about the bins, not the déchèteries", async () => {
     const cache = new Cache(new MemoryStore(), () => NOW.getTime());
     const r = body(await annuaireTool(cache, "collecte des déchets verts", "rue Victoria, La Possession", NOW));

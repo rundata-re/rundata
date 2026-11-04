@@ -20,6 +20,10 @@ import { type Injoignable, injoignable } from "./injoignable.js";
 import { dayMonth, mention, mentionIle as ileMention, mentionReunionFr, mentionSalles, mentionSports, RESUME_REUNION_FR } from "./non-repris.js";
 import { quand as dayText, derniereLecture, duAu } from "./sport.js";
 import { rienTrouve } from "../vide.js";
+import { MARKET } from "./marches.js";
+
+// The markets held each week are in the directory, not in an agenda (04/11/2026: « marché » at Saint-Paul, none found).
+export const MARCHES_REGULIERS = "Les marchés forains et couverts réguliers, avec leurs jours et horaires, sont dans annuaire_services_publics (quoi = «\u00a0marché\u00a0»).";
 
 const AHEAD_DAYS = 14;
 const SOON_DAYS = 30;
@@ -729,6 +733,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const where = commune ? a(commune) : "à La Réunion";
   const kind = what?.nom ? ` (${what.nom})` : "";
   const n = mine.length;
+  const market = !!quoi && MARKET.test(quoi);
   if (!n) rienTrouve("evenements");
   const covered = !commune || src.COVERED.includes(commune);
   // A commune read only through its mairie's news: said, so that a short list is not taken for its whole agenda.
@@ -746,6 +751,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     irt ? RESUME_REUNION_FR : "",
     partly ? `${commune} : ${partly.partiel}${besides(commune!)}` : "",
     commune && !n && all.length ? `${all.length} ailleurs sur l'île` : "",
+    !n && market ? MARCHES_REGULIERS : "",
     // Said in the summary, not only in `indisponible`: a partial list must not be read as the whole of it.
     failed.length ? `${failed.length} agenda${failed.length > 1 ? "s" : ""} non lu${failed.length > 1 ? "s" : ""} cette fois : ${failed.join(", ")} (liste peut-être incomplète, à redemander dans une minute)` : "",
     // The commune's own agendas, where silence would read as « nothing »; the island's are in `non_lus`.
@@ -762,6 +768,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     evenements: n ? mine.slice(0, listed).map((x) => eventRow(x.e, x.seances, place)) : undefined,
     autres: n > listed ? `${n - listed} autres événements : préciser le lieu, le jour ou le genre (quoi).` : undefined,
     ailleurs_sur_l_ile: commune && !n && all.length ? all.slice(0, ELSEWHERE_MAX).map((x) => eventRow(x.e, x.seances)) : undefined,
+    marches_reguliers: market ? MARCHES_REGULIERS : undefined,
     cinemas: what?.nom?.includes("cinéma") || /cin[ée]|film/i.test(quoi ?? "") ? { seances: "Les séances des cinémas sont sur leurs sites :", salles: CINEMAS } : undefined,
     indisponible: failed.length ? failed : undefined,
     // Those of `indisponible` left to the next question for want of subrequests; the others did not answer.

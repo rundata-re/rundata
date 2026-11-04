@@ -70,7 +70,6 @@ export const SITE = "rundata.re";
 export const FONT_PATH = "/font/titres-1.woff2";
 // The tagline, in Réunion Creole (« l'île en direct »); also on the og:image (scripts/build-og.py).
 export const SLOGAN = `<p class="slogan" lang="${brand.slogan_lang}">${esc(brand.slogan)}</p>`;
-const OG_ALT = "Symbole rundata.re et relief de l'île : La Réunion 974 en direct, Lo péï an dirèk";
 
 // Temperatures shown as white on a colour: every stop keeps a contrast of at least 5:1.
 export const STOPS: [number, number[]][] = [
@@ -1274,7 +1273,7 @@ function ogImage(origin: string, path: string, key?: string): { src: string; alt
   const near = NEAREST.find(([p]) => inCategory(path, p))?.[1] ?? (path.startsWith("/aujourdhui/") ? "communes" : undefined);
   const want = key ?? near;
   const r = (want && pictureOf(want)) || rubriques.find((x) => x.pages.some((p) => inCategory(path, p)));
-  return r ? { src: `${origin}${r.png}`, alt: r.alt } : { src: `${origin}/og.png?v=${og.v}`, alt: OG_ALT };
+  return r ? { src: `${origin}${r.png}`, alt: r.alt } : { src: `${origin}/og.png?v=${og.v}`, alt: og.alt };
 }
 
 /** What the page's banners say is in force, or its own alert block: the offline page, kept for days, says nothing. */

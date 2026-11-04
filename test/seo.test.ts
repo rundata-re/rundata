@@ -220,6 +220,22 @@ describe("link previews", () => {
     expect(rubriques.find((r) => r.pages.includes("/enfants"))).toMatchObject({ png: expect.stringMatching(/^\/og\/enfants\.[0-9a-f]{10}\.png$/), alt: expect.stringContaining("Enfants 974") });
   });
 
+  it("are the IGN's contour lines, 1200×630 and under 300 KB, credited in their text, /vigilance's its own", () => {
+    for (const png of ["/og.png", ...rubriques.map((r) => r.png)]) {
+      const data = readFileSync(new URL(`../public${png}`, import.meta.url));
+      expect([data.readUInt32BE(16), data.readUInt32BE(20)], png).toEqual([1200, 630]);
+      expect(data.length, png).toBeLessThan(300 * 1024);
+    }
+    for (const alt of [og.alt, ...rubriques.map((r) => r.alt)]) expect(alt).toMatch(/^Symbole rundata\.re et courbes de niveau (de l'île|du Piton de la Fournaise) \(altitudes IGN RGE ALTI\)\u00a0: /);
+    const meta = (path: string) => layout(O, { title: "t", description: "d", path, jsonld: [] }, "", "");
+    const vigilance = rubriques.find((r) => r.pages.includes("/vigilance"))!;
+    expect(meta("/vigilance")).toContain(`<meta property="og:image" content="https://rundata.re${vigilance.png}">`);
+    // Météo-France's sentence, on the picture and in its text.
+    expect(vigilance.alt).toContain("Consulter le site officiel de Météo-France\u00a0: vigilance.meteofrance.fr");
+    expect(rubriques.find((r) => r.pages.includes("/cyclones"))!.alt).toContain("Consulter le site officiel de Météo-France\u00a0: meteofrance.re/fr/cyclone");
+    expect(meta("/a-propos")).toContain(`<meta property="og:image:alt" content="${og.alt.replaceAll("'", "&#39;")}">`);
+  });
+
   it("have a 4:5 picture for the posts on Instagram, beside each, that no page links", () => {
     // The home page's, from its share picture.
     for (const r of [...rubriques, { png: "/og/accueil.png", png_4x5: og.png_4x5 }]) {
@@ -228,6 +244,7 @@ describe("link previews", () => {
       // Width and height, in the PNG's header.
       const png = readFileSync(new URL(`../public${r.png_4x5}`, import.meta.url));
       expect([png.readUInt32BE(16), png.readUInt32BE(20)], r.png_4x5).toEqual([1080, 1350]);
+      expect(png.length, r.png_4x5).toBeLessThan(320 * 1024);
     }
     for (const html of [agendaPage(O, null, NOW), cyclonesPage(O, null, NOW), daePage(O, null, NOW), homePage(O, null, NOW)]) expect(html).not.toContain("-4x5");
   });

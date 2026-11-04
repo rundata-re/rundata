@@ -161,7 +161,7 @@ export function pressePage(origin: string, figures: Figure[]): string {
     <figcaption>Le logo, sur fond sombre.<a class="dl" href="${icons["lockup-nuit"]}" download="rundata-logo-fond-sombre.svg">Télécharger (SVG)</a><span class="note">SVG, à toute taille</span></figcaption></figure>
     <figure class="card vis"><a href="${icons["lockup-sable"]}"><img class="lockup sable" src="${icons["lockup-sable"]}" width="1421" height="230" loading="lazy" decoding="async" alt="Le logo de rundata.re sur fond clair"></a>
     <figcaption>Le logo, sur fond clair.<a class="dl" href="${icons["lockup-sable"]}" download="rundata-logo-fond-clair.svg">Télécharger (SVG)</a><span class="note">SVG, à toute taille</span></figcaption></figure>
-    <figure class="card vis"><a href="/og.png?v=${og.v}"><img src="/og.png?v=${og.v}" width="1200" height="630" loading="lazy" decoding="async" alt="L'image de partage de rundata.re : le logo, La Réunion 974 en direct et le relief de l'île"></a>
+    <figure class="card vis"><a href="/og.png?v=${og.v}"><img src="/og.png?v=${og.v}" width="1200" height="630" loading="lazy" decoding="async" alt="L'image de partage de rundata.re : le logo, La Réunion 974 en direct et les courbes de niveau de l'île (altitudes IGN RGE ALTI)"></a>
     <figcaption>L'image de partage des liens.<a class="dl" href="/og.png?v=${og.v}" download="rundata-partage.png">Télécharger (PNG)</a><span class="note">PNG 1 200 × 630</span></figcaption></figure>
   </div>
 </section>`;

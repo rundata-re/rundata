@@ -31,6 +31,7 @@ import * as capteurs from "../providers/capteurs.js";
 import * as accidents from "../routes/accidents.js";
 import * as radars from "../routes/radars.js";
 import * as fire from "../tools/feux.js";
+import { climb, relief } from "../tools/sentiers.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { LATE_MIN, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
@@ -1994,8 +1995,11 @@ const closedLi = (x: { sentier: string; slug?: string; page?: string; cause?: st
 };
 
 /** What the filter reads on a hike or a trail. */
-const dataOf = (x: { k: string; km: number; dplus?: number; boucle: boolean }, etat: "o" | "f" | "i") =>
-  `data-k="${x.k}" data-km="${x.km}" data-dp="${x.dplus ?? ""}" data-e="${etat}" data-b="${x.boucle ? 1 : 0}"`;
+// The filter's dénivelé is the bigger of the two (climb): a trail drawn downhill is not a flat one.
+const dataOf = (x: { k: string; km: number; dplus?: number; dmoins?: number; boucle: boolean }, etat: "o" | "f" | "i") =>
+  `data-k="${x.k}" data-km="${x.km}" data-dp="${climb(x) ?? ""}" data-e="${etat}" data-b="${x.boucle ? 1 : 0}"`;
+/** « +412 m », and the descent beside it when the trace goes down more than it climbs: « +0 m · −1 131 m ». */
+const upDown = (x: { dplus: number; dmoins?: number }) => `+${meters(x.dplus)}${(x.dmoins ?? 0) > x.dplus ? ` · −${meters(x.dmoins!)}` : ""}`;
 
 function hikeCard(h: HikeCard): string {
   const etat = h.fermes.length ? "f" : h.onf > h.inconnus.length ? "o" : "i";
@@ -2006,9 +2010,11 @@ function hikeCard(h: HikeCard): string {
       : `<p class="note">État non suivi par l'ONF : se renseigner avant de partir.</p>`;
   // Never counted as open: said apart.
   const unknown = etat !== "i" && h.inconnus.length ? `<p class="note">${plural(h.inconnus.length, "tronçon hors gestion ONF", "tronçons hors gestion ONF")} : état non connu.</p>` : "";
-  const facts = [`${kmFr(h.km)} km`, `+${meters(h.dplus)}`, h.alt_max != null ? `jusqu'à ${meters(h.alt_max)}` : "", h.boucle ? "boucle" : "", h.secteur].filter(Boolean).join(" · ");
+  // A notice on one of them (« Fermé le 02/06/26 »): said, whatever the rest.
+  const noted = h.avis?.length ? `<p class="note"><b>${h.avis.map((x) => esc(x)).join("\u00a0; ")}.</b></p>` : "";
+  const facts = [`${kmFr(h.km)} km`, upDown(h), h.alt_max != null ? `jusqu'à ${meters(h.alt_max)}` : "", h.boucle ? "boucle" : "", h.secteur].filter(Boolean).join(" · ");
   return `<li class="card hike${h.fermes.length ? " closed" : ""}" ${dataOf(h, etat)}>
-<h3><a href="/randonnees/${esc(h.slug)}">${esc(h.nom)}</a></h3><p class="note">${esc(facts)}</p>${state}${unknown}
+<h3><a href="/randonnees/${esc(h.slug)}">${esc(h.nom)}</a></h3><p class="note">${esc(facts)}</p>${state}${unknown}${noted}
 <p class="links"><a href="/randonnees/${esc(h.slug)}">Carte et profil</a><a href="/randonnees/${esc(h.slug)}.gpx" download>GPX</a></p></li>`;
 }
 
@@ -2016,7 +2022,7 @@ function trailLi(t: TrailItem): string {
   const e = t.etat === "fermé" ? "f" : t.etat === "ouvert" ? "o" : "i";
   const cls = e === "f" ? "q-mauvaise" : e === "o" ? "q-bonne" : "q-none";
   const label = e === "f" ? (t.partiel ? "fermé en partie" : "fermé") : e === "o" ? "ouvert" : "état inconnu";
-  const small = [`${t.commune ? `${esc(t.commune)} · ` : ""}${kmFr(t.km)} km${t.dplus != null ? ` · +${meters(t.dplus)}` : ""}${t.boucle ? " · boucle" : ""}`, why_(t)].filter(Boolean).join(" · ");
+  const small = [`${t.commune ? `${esc(t.commune)} · ` : ""}${kmFr(t.km)} km${t.dplus != null ? ` · ${upDown({ dplus: t.dplus, dmoins: t.dmoins })}` : ""}${t.boucle ? " · boucle" : ""}`, why_(t)].filter(Boolean).join(" · ");
   const on = t.randonnees.length ? `<small>Sur : ${t.randonnees.map((r) => `<a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a>`).join(", ")}</small>` : "";
   return `<li ${dataOf(t, e)}><span>${t.slug ? `<a href="/sentiers/${esc(t.slug)}">${esc(t.nom)}</a>` : esc(t.nom)}<small>${small}</small>${on}</span><span class="${cls}">${label}</span></li>`;
 }
@@ -2025,7 +2031,7 @@ function trailLi(t: TrailItem): string {
 const FILTER = `<form id="rf" class="card filter" hidden role="search" aria-label="Filtrer les randonnées et les sentiers">
 <label class="q">Chercher <input name="q" type="search" placeholder="Mafate, Piton des Neiges, GR R2…" autocomplete="off"></label>
 <label>Distance <select name="km"><option value="0-1e9">toutes</option><option value="0-5">moins de 5 km</option><option value="5-10">5 à 10 km</option><option value="10-20">10 à 20 km</option><option value="20-1e9">plus de 20 km</option></select></label>
-<label>Dénivelé positif <select name="dp"><option value="0-1e9">tous</option><option value="0-300">moins de 300 m</option><option value="300-800">300 à 800 m</option><option value="800-1500">800 à 1 500 m</option><option value="1500-1e9">plus de 1 500 m</option></select></label>
+<label>Dénivelé <select name="dp"><option value="0-1e9">tous</option><option value="0-300">moins de 300 m</option><option value="300-800">300 à 800 m</option><option value="800-1500">800 à 1 500 m</option><option value="1500-1e9">plus de 1 500 m</option></select></label>
 <label>Parcours <select name="bo"><option value="">tous</option><option value="1">en boucle</option><option value="0">aller simple</option></select></label>
 <label class="chk"><input name="ouv" type="checkbox"> Ouverts seulement</label>
 <p class="note" id="rf-n" aria-live="polite"></p></form>`;
@@ -2215,14 +2221,30 @@ function traceLegend(kind: "sentier" | "randonnee", etats: string[]): string {
   return [...marks, ["st", "départ"]].map(([c, t]) => `<span><i class="sw ${c}"></i>${t}</span>`).join("");
 }
 
-/** `summit`: the summit the trace reaches, when the page its link leads to tells the morning's cloud sea (site.ts). */
+/**
+ * « sentier ONF » or « itinéraire » for a name that has both pages (9 on 04/11/2026: Sentier Bayonne, Sentier Scout…),
+ * else nothing: the two traces differ, and two titles alike in one group would contradict each other.
+ */
+export function twinOf(kind: "sentier" | "randonnee", nom: string): string | undefined {
+  const both = !!traces.SENTIERS[nom] && traces.RANDONNEES.some((r) => r.nom === nom);
+  return both ? (kind === "sentier" ? "sentier ONF" : "itinéraire") : undefined;
+}
+
 /**
  * What a closed (or partly closed) trail's preview opens with, short enough to leave room for its name: « Fermé »,
  * « En partie fermé », the ONF's weekend notice, the notice of a trail outside its management, or the closed sections of a
  * hike. `undefined` for a trail the ONF says open or whose state is not known: those keep their name first.
  */
 export function stateHead(d: TraceAnswer): string | undefined {
-  if (d.genre === "randonnee") return d.fermes.length ? `${plural(d.fermes.length, "tronçon fermé", "tronçons fermés")} sur cet itinéraire` : undefined;
+  if (d.genre === "randonnee") {
+    if (d.fermes.length) return `${plural(d.fermes.length, "tronçon fermé", "tronçons fermés")} sur cet itinéraire`;
+    // A section outside the ONF's management that its map still marks (Sentier Bayonne): quoted, as routeRow says it.
+    const noted = d.troncons.find((t) => t.etat !== "ouvert" && t.etat !== "fermé" && (t.cause || t.precision));
+    if (!noted) return undefined;
+    // The section named as the hike: its title names it already, the notice keeps the room.
+    const where = noted.sentier === d.nom ? "Hors gestion ONF\u00a0;" : `${noted.sentier} (hors gestion ONF),`;
+    return `${where} sur la carte de l'ONF\u00a0: “${noted.cause ?? noted.precision}”`;
+  }
   const shut = d.troncons.filter((t) => t.etat === "fermé");
   const open = d.troncons.some((t) => t.etat === "ouvert");
   if (shut.length) {
@@ -2241,21 +2263,24 @@ export function stateHead(d: TraceAnswer): string | undefined {
  * others: name, figures, state, as before.
  */
 export function traceDescription(d: TraceAnswer, nom: string, where: string, short: string): string {
-  const figures = `${kmFr(d.km)} km${d.dplus != null ? `, ${d.dplus} m de dénivelé positif` : ""}`;
+  const figures = `${kmFr(d.km)} km${relief(d) ? `, ${relief(d)}` : ""}`;
   const head = stateHead(d);
   if (!head) {
     return describe(`${nom} (${where}) : ${figures}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`,
       describe(`${nom} (La Réunion) : ${figures}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`, short));
   }
   const said = [d.etat, head];
-  const tries = said.flatMap((s) => [`${s}. ${nom} (${where}) : ${figures}.`, `${s}. ${nom} (La Réunion) : ${figures}.`, `${s}. ${nom} (La Réunion).`]);
+  // Last for each, the state alone: the page's title names the trail.
+  const tries = said.flatMap((s) => [`${s}. ${nom} (${where}) : ${figures}.`, `${s}. ${nom} (La Réunion) : ${figures}.`, `${s}. ${nom} (La Réunion).`, `${s}.`]);
   const fit = tries.find((t) => t.length <= DESCRIPTION_MAX);
   if (fit) return fit;
-  // A name too long even after the short state: the state stays whole, the name is cut.
-  const cut = `${head}. ${nom}`;
-  return cut.length <= DESCRIPTION_MAX ? cut : `${cut.slice(0, DESCRIPTION_MAX - 1).replace(/\s+\S*$/, "")}…`;
+  // A state longer than a preview: cut between two words, « … » after a word, never after a full stop.
+  let cut = head.slice(0, DESCRIPTION_MAX - 1).replace(/\s+\S*$/, "");
+  while (/[\s.,;:]$/.test(cut)) cut = cut.slice(0, -1);
+  return `${cut}…`;
 }
 
+/** `summit`: the summit the trace reaches, when the page its link leads to tells the morning's cloud sea (site.ts). */
 export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: string, nom: string, data: Cached<TraceAnswer> | null, now = new Date(), alerte?: Alerte, summit?: Summit): string {
   const d = data?.value;
   const path = `/${kind === "sentier" ? "sentiers" : "randonnees"}/${slug}`;
@@ -2323,9 +2348,14 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
   const route = kind === "randonnee" ? traces.randonnee(slug) : undefined;
   const sector = secteurNamed(kind === "sentier" ? traces.sentier(slug)?.secteur : route?.secteur);
   const named = sector && !normalize(nom).includes(normalize(sector.nom)) ? ` (${sector.nom})` : "";
+  // A name that is both an ONF trail and a hike (Sentier Bayonne): two pages, two traces, two sets of figures. Their titles
+  // say which is which, and the twin keeps that word before the sector.
+  const twin = twinOf(kind, nom);
+  const which = twin ? `${nom} (${twin}${sector ? `, ${sector.nom}` : ""})` : `${nom}${named}`;
+  const bare = twin ? `${nom} (${twin})` : nom;
   // Within the 60 characters a search engine shows: the sector, then « état ONF », give way to a long name.
-  const title = [`${nom}${named} : trace GPX, état ONF · 974`, `${nom}${named} : trace GPX · 974`, `${nom} : trace GPX, état ONF · 974`, `${nom} : trace GPX · 974`]
-    .find((t) => t.length <= TITLE_MAX) ?? `${nom} : trace GPX · 974`;
+  const title = [`${which} : trace GPX, état ONF · 974`, `${which} : trace GPX · 974`, `${bare} : trace GPX, état ONF · 974`, `${bare} : trace GPX · 974`]
+    .find((t) => t.length <= TITLE_MAX) ?? `${bare} : trace GPX · 974`;
   const short = `${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`;
   const where = sector ? `${sector.nom}, La Réunion` : "La Réunion";
   const description = d ? traceDescription(d, nom, where, short) : short;

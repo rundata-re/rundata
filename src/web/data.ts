@@ -51,7 +51,7 @@ import { COMMON as EAU_COMMON } from "../tools/eau.js";
 import { credits } from "../tools/format.js";
 import * as onf from "../providers/sentiers.js";
 import * as feux from "../providers/feux.js";
-import { routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
+import { horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
 import { restrictionsEau } from "../tools/secheresse.js";
@@ -589,6 +589,12 @@ export const hikesThrough = (nom: string) => traces.RANDONNEES.filter((r) => r.s
 // ---------------------------------------------------------------- the hikers' page: every hike and trail, filterable
 
 type Etat = "ouvert" | "fermé" | "inconnu";
+/** The notices of a hike's trails outside the ONF's management, or nothing. */
+function noticesOf(troncons: { sentier: string; etat: string; cause?: string; precision?: string }[]): { avis?: string[] } {
+  const avis = troncons.filter((t) => t.etat !== "fermé" && t.etat !== "ouvert" && (t.cause || t.precision)).map((t) => `${t.sentier} (hors gestion ONF), ${horsGestion(t)}`);
+  return avis.length ? { avis } : {};
+}
+
 const etatOf = (s: onf.Statut): Etat => (s === "ouvert" || s === "fermé" ? s : "inconnu");
 
 export interface HikeCard {
@@ -606,6 +612,8 @@ export interface HikeCard {
   fermes: { sentier: string; slug?: string; cause?: string; precision?: string }[];
   /** Its ONF trails outside the ONF's management: state unknown. */
   inconnus: string[];
+  /** Their notices on the ONF's map, quoted (« Sentier Bayonne (hors gestion ONF), sur la carte de l'ONF : “Fermé le …” »). */
+  avis?: string[];
   /** How many ONF trails it follows. */
   onf: number;
 }
@@ -617,6 +625,7 @@ export interface TrailItem {
   commune: string;
   km: number;
   dplus?: number;
+  dmoins?: number;
   etat: Etat;
   /** Closed in part only: some of its pieces are open. */
   partiel?: boolean;
@@ -698,6 +707,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
       secteur: r.secteur ?? (r.secteurs && r.secteurs.length > 1 ? "plusieurs secteurs" : r.km >= CROSSING_KM ? "plusieurs secteurs" : middle ? secteur(...middle).secteur : ""),
       fermes: (row.troncons_onf ?? []).filter((t) => t.etat === "fermé").map((t) => ({ sentier: t.sentier, slug: traces.SENTIERS[t.sentier]?.slug, cause: t.cause, precision: t.precision })),
       inconnus: (row.troncons_onf ?? []).filter((t) => t.etat !== "fermé" && t.etat !== "ouvert").map((t) => t.sentier),
+      ...noticesOf(row.troncons_onf ?? []),
       onf: r.sentiers_onf.length,
     };
   });
@@ -720,6 +730,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
       secteur: where.secteur,
       km: stats?.km ?? Math.round(parts.reduce((t, x) => t + x.longueur_km, 0) * 10) / 10,
       dplus: stats?.dplus,
+      dmoins: stats?.dmoins,
       etat: shut ? "fermé" : open ? "ouvert" : "inconnu",
       ...(shut && open ? { partiel: true } : {}),
       cause: shut?.cause,

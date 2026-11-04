@@ -126,7 +126,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.220";
+export const VERSION = "1.0.221";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -714,7 +714,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .describe("Un sentier ou une randonnée (« sentier de la Roche Pendue », « Piton des Neiges », « GR R2 »), un lieu (« Maïdo »), un cirque (« Mafate ») ou une commune\u00a0; vide = toute l'île."),
         longueur_min_km: z.number().min(0).optional().describe("Longueur minimale en km d'une randonnée proposée (« une rando de 10 km » : 8)."),
         longueur_max_km: z.number().min(0).optional().describe("Longueur maximale en km (« une rando de 10 km » : 12\u00a0; « une petite balade » : 5)."),
-        denivele_max_m: z.number().min(0).optional().describe("Dénivelé positif maximal en m (« sans trop de dénivelé » : 400)."),
+        denivele_max_m: z.number().min(0).optional().describe("Dénivelé maximal en m (« sans trop de dénivelé » : 400)."),
         famille: z.boolean().optional().describe("Balade avec des enfants."),
         canyon: z.boolean().optional().describe("Canyonisme."),
       },

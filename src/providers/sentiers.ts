@@ -65,6 +65,11 @@ interface Feature {
 }
 
 const clean = (v: unknown) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "") || undefined;
+/**
+ * A notice of the map: the ONF writes the date and the cause in one field, a space between them (« Fermé le 02/06/26
+ * Désordres constatés… », Sentier Bayonne on 04/11/2026). A date followed by a capital starts a new part: « · » between.
+ */
+export const avis = (v: unknown) => clean(v)?.replace(/(\d{1,2}\/\d{1,2}\/\d{2,4}) (?=\p{Lu})/gu, "$1 · ");
 
 function statut(v: unknown): Statut {
   const s = String(v ?? "").toLowerCase();
@@ -110,8 +115,8 @@ export function parseTrails(features: Feature[]): Sentier[] {
       return {
         nom: clean(a.WS_NomIti)!.replace(/\s*\(hors gestion ONF\)\s*$/i, ""),
         statut: statut(a.WS_Statut),
-        cause: clean(a.WS_InfCaus),
-        info: clean(a.WS_InfDate),
+        cause: avis(a.WS_InfCaus),
+        info: avis(a.WS_InfDate),
         longueur_km: Math.round(Number(a.WS_LongM ?? 0) / 100) / 10,
         points: line(f),
       };
@@ -127,8 +132,8 @@ export function parseRoads(features: Feature[]): Route[] {
         nom: clean(a.WR_NomRF)!,
         // « Circulation autorisé » on some rows.
         circulation: (clean(a.WR_Circ) ?? "inconnue").replace(/^Circulation autorisé$/, "Circulation autorisée"),
-        cause: clean(a.WR_InfCaus),
-        info: clean(a.WR_InfDate),
+        cause: avis(a.WR_InfCaus),
+        info: avis(a.WR_InfDate),
         vitesse_max: clean(a.WR_InfVMax),
         reglementation: clean(a.WR_IntRegl),
         longueur_km: Math.round(Number(a.WR_LongKm ?? 0) * 10) / 10,

@@ -1,7 +1,7 @@
 import type { Cache, Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
-import type { Fil } from "../providers/actualites.js";
+import { type Fil, type Info, LUS, SOURCES as ACTU } from "../providers/actualites.js";
 import { httpUrl } from "../http.js";
 import { type Agenda, AGENDAS, type Evenement, LIGUE_VOLLEY, LISIBLES, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
 import { autorisee, nonAutorisee } from "../providers/autorisations.js";
@@ -10,6 +10,7 @@ import * as avis from "../providers/sport-avis.js";
 import { type Club, clubOf, clubsNamed, type ClubSport, zoneOf } from "../sport/clubs.js";
 import { type SourceInfo, why } from "../types.js";
 import { a, credits, de, enumeration, notFound, placeBlock, text } from "./format.js";
+import { deNom } from "../articles.js";
 import { mentionLa1ere, mentionSports } from "./non-repris.js";
 import { injoignable } from "./injoignable.js";
 import { rienTrouve } from "../vide.js";
@@ -37,6 +38,35 @@ const NEWS_ONLY: Partial<Record<Sport, string>> = {
   football: "Les résultats officiels du football (FFF, Ligue réunionnaise) ne sont pas lisibles par ce service.",
   basket: "Le calendrier et les résultats officiels du basket (FFBB) ne sont pas encore lus par ce service.",
 };
+
+/**
+ * Football's headlines in the island's news, until the league's results can be read: those of Le Quotidien and Imaz
+ * Press, from the copy `actualites` keeps (its last three days), never read again for this. Their headline, time,
+ * medium and link only: the article is on the medium's site.
+ */
+const FOOT_MEDIAS = LUS.filter((m) => m.media === "Le Quotidien" || m.media === "Imaz Press");
+const FOOT = /(?<![a-z])(?<!baby )(?:foot|football\w*|futsal|ballon rond)(?![a-z])/;
+const FOOT_MAX = 15;
+/** « du Quotidien et d'Imaz Press ». */
+const FOOT_DE = enumeration(FOOT_MEDIAS.map((m) => (m.media.startsWith("Le ") ? de(m.media) : deNom(m.media))));
+const TITRES_FOOT: SourceInfo = {
+  ...ACTU.medias,
+  nom: `Titres football de la presse de La Réunion : ${enumeration(FOOT_MEDIAS.map((m) => m.media))}`,
+  attribution: FOOT_MEDIAS.map((m) => m.credit).join(", "),
+};
+
+/** The football headlines of `infos`, newest first: the medium's own, never another's title under its name. */
+export function titresFootball(infos: Info[] | undefined, max = FOOT_MAX): { titre: string; media: string; publie: string; lien: string }[] {
+  const medias = new Set<string>(FOOT_MEDIAS.map((m) => m.media));
+  return (infos ?? [])
+    .filter((i) => medias.has(i.media) && FOOT.test(normalize(`${i.titre} ${i.resume ?? ""}`)))
+    .sort((x, y) => y.publie.localeCompare(x.publie))
+    .slice(0, max)
+    .map((i) => {
+      const local = localClock(new Date(i.publie));
+      return { titre: i.titre, media: i.media, publie: quand(i.heure ? local : local.slice(0, 10)), lien: i.lien };
+    });
+}
 
 const AHEAD_DAYS = 14;
 const BACK_DAYS = 7;
@@ -281,7 +311,7 @@ export async function gather(cache: Cache, sport: Sport | undefined, now: Date, 
     want("golf") ? attempt(src.SOURCES.ffgolf, () => src.golf(cache, now)) : undefined,
     want("sport_auto") ? attempt(src.SOURCES.lsar, () => src.sportAuto(cache)) : undefined,
     league ? attempt(avis.SOURCE, () => avis.avisLigue(cache, now)) : undefined,
-    want("volley") || want("handball") ? cache.peek<Fil>("actualites:fil").catch(() => undefined) : undefined,
+    want("volley") || want("handball") || sport === "football" ? cache.peek<Fil>("actualites:fil").catch(() => undefined) : undefined,
     // The communes' programmes, of every sport, only when none is asked; the volley league's tournaments; the clubs'
     // events.
     agendasWanted
@@ -523,6 +553,14 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   // No match, event, result or programme: a club playing away, or a sport given by the news alone, is an answer.
   if (!aheadAll.length && !results.length && !programmes.length && !showRaid && !nextBeach && sport !== "grand_raid" && !(sport && NEWS_ONLY[sport])) rienTrouve("sport");
 
+  // Football: the news' headlines, the copy `actualites` last kept; said when there is none.
+  const foot = sport === "football" ? titresFootball(data.presse?.value.infos) : undefined;
+  const footText = !foot ? "" : !data.presse
+    ? " Les titres de la presse ne sont pas disponibles pour le moment."
+    : foot.length
+      ? ` ${foot.length} titre${foot.length > 1 ? "s" : ""} football ${FOOT_DE} depuis trois jours (voir titres_football)\u00a0: le titre, l'heure et le lien seulement, l'article est sur le site du média.`
+      : ` Aucun titre football ${FOOT_DE} depuis trois jours.`;
+
   const what = sport ? NAMES[sport] : "sport";
   const place = w ? w.label : " à La Réunion";
   const ahead = q === "aujourd_hui" || q === "demain" || q === "samedi" || q === "dimanche"
@@ -553,7 +591,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const resume = federation
     ? federation
     : sport && NEWS_ONLY[sport]
-    ? NEWS_ONLY[sport]
+    ? NEWS_ONLY[sport] + footText
     : sport === "grand_raid"
       ? gr ? `${gr.edition} : ${gr.courses.map((c) => `${c.nom} ${c.statut}${c.podium[0] ? `, vainqueur ${c.podium[0].nom} en ${c.podium[0].temps}` : ""}`).join("\u00a0; ")}.` : "Le suivi du Grand Raid ne répond pas pour le moment."
       : [
@@ -576,7 +614,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
       lien: n.lien,
     }));
 
-  const used = [...new Set([...got.filter((g) => g.value).map((g) => g.source), ...programmes.map((p) => p.agenda.source)])];
+  const used = [...new Set([...got.filter((g) => g.value).map((g) => g.source), ...programmes.map((p) => p.agenda.source), ...(foot?.length ? [TITRES_FOOT] : [])])];
   const matches = !sport || sport === "volley" || sport === "handball";
   return text({
     lieu: w?.kind === "communes" && w.res && lieu ? placeBlock(lieu, w.res) : w && lieu ? { demande: lieu, trouve: w.label.trim(), communes: w.kind === "communes" ? w.communes : undefined } : undefined,
@@ -591,6 +629,8 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
     resultats: results.length ? results.map(strip) : undefined,
     avis: cited.length ? cited : undefined,
     a_verifier: check.length ? check : undefined,
+    titres_football: foot?.length ? foot : undefined,
+    titres_football_lus: foot?.length ? quand(localClock(data.presse!.fetchedAt)) : undefined,
     programmes_communes: programmes.length ? programmes.map(({ date: _d, agenda: _a, ...p }) => p) : undefined,
     programmes_a_savoir: programmes.length ? PROGRAMMES : undefined,
     // Réunion La 1ère's sport news, not read (tools/non-repris.ts), for the whole island or the sports it covered; the

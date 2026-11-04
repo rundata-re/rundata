@@ -326,7 +326,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /secheresse | providers/vigieau |
 | /coupures-eau | providers/avis-eau, providers/eaupotable |
 | /defibrillateurs |  |
-| /sport | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport-avis, providers/sport |
+| /sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/salles, providers/sport-avis, providers/sport |
 | /decheteries | providers/tco |
 | /cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | /crues | providers/actualites, providers/avis-eau, providers/vigicrues |
@@ -341,7 +341,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | resume_du_jour | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/volcan |
 | meteo_actuelle | providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/pioupiou, providers/radar |
 | evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/salles, providers/sport-avis, providers/sport |
-| sport | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport-avis, providers/sport |
+| sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/salles, providers/sport-avis, providers/sport |
 | volcan_seismes | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
 | fiche_terrain | providers/terrain |
 | prevision_meteo | providers/arome, providers/ensemble, providers/mf-auth, providers/openmeteo, providers/uv |

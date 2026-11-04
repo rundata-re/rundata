@@ -389,6 +389,8 @@ describe("actualités", () => {
   it("makes a page of it, with the live blog first", async () => {
     const data = await buildActualites(cache(), NOW);
     expect(data.chaud).toBe(true);
+    // The news the home's tile says under « mobilisation en cours »: of a mobilisation, the newest of the last six hours.
+    expect((data.mobilisation as { sujets?: string[] } | undefined)?.sujets).toContain("mobilisation");
     const html = actualitesPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain("<h1>Actualités <span class=\"n974\">974</span></h1>");
     expect(html).toContain("Le direct d'Imaz Press");

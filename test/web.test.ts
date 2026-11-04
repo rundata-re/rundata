@@ -212,6 +212,8 @@ describe("home page", () => {
     const { text } = await serve(isolate(edge), "/meteo");
     expect(text).toMatch(/<li><span>Saint-Leu<\/span><b>26,4[^<]*°C<\/b><\/li>/);
     expect(text).toContain("Par satellite, le 19/10.");
+    // Under the section's h2 « La mer au large », never a second heading of the same words, white on the white card.
+    expect(text.match(/La mer au large</g)).toHaveLength(1);
     expect(satellites()).toEqual([]);
     // The page of a place on the coast reads the shared grids too.
     const place = await serve(isolate(edge), "/meteo/saint-leu");

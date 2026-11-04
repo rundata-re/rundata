@@ -77,8 +77,15 @@ export const widget = (action: FormAction) =>
     ? `<div class="cf-turnstile" data-sitekey="${esc(TURNSTILE_SITEKEY)}" data-action="${action}" data-language="fr" data-size="flexible"></div>
   <p class="note">La vérification anti-robot de Cloudflare garde une donnée dans votre navigateur (pas un cookie)\u00a0: <a href="/confidentialite#abus">ce que c'est</a>.</p>`
     : "";
-/** Cloudflare's script, once on a page with a form. */
-export const TURNSTILE_SCRIPT = TURNSTILE_SITEKEY ? `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>` : "";
+/**
+ * Cloudflare's script, once on a page with a form, after its forms. The flexible widget is 300 px wide at least: on a
+ * screen narrower than 360 px, it widened the page (338 px at 320, /associations and /publier, 04/11/2026). There, the
+ * compact one (150 px), chosen before Cloudflare's script reads the widgets.
+ */
+export const TURNSTILE_SCRIPT = TURNSTILE_SITEKEY
+  ? `<script>if(innerWidth<360)for(const e of document.querySelectorAll(".cf-turnstile"))e.dataset.size="compact"</script>` +
+    `<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>`
+  : "";
 
 // ---------------------------------------------------------------- the forms' parts
 

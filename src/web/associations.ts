@@ -142,8 +142,10 @@ function preuveSection(p: Preuve): string {
   const count = p.clubs >= CLUBS_MIN
     ? `<p>${p.clubs} clubs et associations lus par rundata.re\u00a0; ${p.evenements} de leurs événements dans les deux prochaines semaines.</p>`
     : "";
+  // Dates over several days (« du mercredi 04/11 à 18:00 au samedi 07/11 à 23:00 ») go under the title on a phone
+  // (.fin, as on /evenements): beside it, they left the title a column of 110 px, its words over the date.
   const list = p.prochains.length
-    ? `<ul class="rows eau">${p.prochains.map(({ e, quand }) => `<li><span>${e.lien ? `<a href="${esc(e.lien)}" rel="noopener">${esc(e.titre)}</a>` : esc(e.titre)}<small>${[e.commune, e.publie_par].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span>${esc(quand)}</span></li>`).join("")}</ul>`
+    ? `<ul class="rows eau">${p.prochains.map(({ e, quand }) => `<li><span>${e.lien ? `<a href="${esc(e.lien)}" rel="noopener">${esc(e.titre)}</a>` : esc(e.titre)}<small>${[e.commune, e.publie_par].filter(Boolean).map((x) => esc(x!)).join(" · ")}</small></span><span${quand.startsWith("du ") ? ' class="fin"' : ""}>${esc(quand)}</span></li>`).join("")}</ul>`
     : `<p>Les premiers événements de clubs et d'associations arrivent\u00a0: <a href="${PROPOSER_PATH}">proposez le vôtre</a>.</p>`;
   return `<section aria-labelledby="h-preuve">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-preuve">Les prochains événements de clubs et d'associations</h2></div>

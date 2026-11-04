@@ -7,14 +7,16 @@ import type { Cached } from "../cache.js";
 import type * as mf from "../providers/vigilance.js";
 import { PATH as A_PROPOS, QUI } from "./a-propos.js";
 import icons from "./icons.json" with { type: "json" };
-import { byUse, CATEGORIES, type Category, FIRST, type Urgent, urgentKeys } from "./categories.js";
+import { byUse, CATEGORIES, type Category, type Urgent } from "./categories.js";
 import type { ActualitesAnswer, AgendaAnswer, AirAnswer, Alerte, BusData, CalendrierAnswer, CruesAnswer, ElectriciteAnswer, HomeData, VelosAnswer, VolcanAnswer, BornesAnswer, CoupuresAnswer, EauAnswer, SecheresseAnswer, SentiersAnswer, SportAnswer, CyclonesAnswer, HistoriqueAnswer, TraficAnswer } from "./data.js";
-import { actualitesLive, airLive, atDay, bornesLive, cruesLive, floodRaised, imageLinks, busLive, coupuresLive, daeLive, eauLive, secheresseLive, randonneesLive, traficLive, sportLive, cyclonesLive, historiqueLive, agendaLive, calendrierLive, electriciteLive, velosLive, volcanLive, saidNow, stillToCome } from "./domains.js";
+import { actualitesLive, airLive, atDay, bornesLive, cruesLive, feuxLive, floodRaised, imageLinks, busLive, coupuresLive, daeLive, eauLive, secheresseLive, randonneesLive, traficLive, sportLive, cyclonesLive, historiqueLive, agendaLive, calendrierLive, electriciteLive, velosLive, volcanLive, saidNow, stillToCome } from "./domains.js";
 import type { InfoRow } from "../tools/actualites.js";
 import { a, de } from "../tools/format.js";
 import { enImagesApres, enImagesLuesAilleurs, jusquALecture, NON_ANNONCEE } from "../tools/volcan.js";
 import { libelle } from "../tools/volcan-acces.js";
 import { enfantsLive } from "./enfants.js";
+import { enLigne } from "./associations-drapeau.js";
+import { CHAMP, champScript } from "./menu.js";
 import { esc, fenetre, islandMap, type Marker } from "./map.js";
 import {
   ask,
@@ -25,7 +27,6 @@ import {
   copies,
   DATAGOUV_REUSE,
   deg,
-  follow,
   followed,
   GLAMA,
   hm,
@@ -41,14 +42,11 @@ import {
   shortName,
   stationId,
   SITE,
-  SLOGAN,
   thin,
   vigilanceLive,
   windText,
   withTemp,
 } from "./pages.js";
-import { compte } from "../producteurs.js";
-import { toutesLesSources } from "../server.js";
 
 /** The last copy of each category page, as the home page found it; null or missing when there is none yet. */
 export interface HomeLive {
@@ -101,6 +99,7 @@ function lives(h: HomeLive | null, now: Date): Record<string, Live | undefined> 
     // (the skateparks and city stadiums).
     enfants: enfantsLive(undefined, ["aire_de_jeux", "parc", "piscine"]),
     dae: daeLive(),
+    feux: feuxLive(h?.sentiers ?? null),
   };
 }
 
@@ -195,39 +194,19 @@ export function sky(now: Date): "nuit" | "aube" | "jour" | "soir" {
 }
 
 /**
- * Under the follow line, as small: what rundata.re reads and what it holds to. The count is that of /chiffres (« sources
- * publiques lues », chiffres() takes it from compte()), from the code alone, so the view reads nothing more for it.
+ * The field « Aller à une rubrique, une commune ou un lieu », above the tiles (ux's mock-up, marketing's words, approved
+ * by the user on 04/11/2026): it leads to a page, from the names alone, in the browser (menu.ts). Shown with the script
+ * only: without it, the field would do nothing.
  */
-export function behind(): string {
-  return `<p class="hero-follow"><a href="/chiffres">${compte(toutesLesSources()).sources} sources publiques</a> · <a href="/valeurs">nos valeurs</a></p>`;
-}
-
-/**
- * The figures of the moment under the title, two by two: the vigilance and the volcano while in force, then the
- * events, the hikes, the weather and the air, an even number with both alerts or none. One missing for want of its
- * data, or one alert alone: the last box is as wide as the grid, as high as the others.
- */
-function facts(live: Record<string, Live | undefined>, u: Urgent): string {
-  const shown = [...urgentKeys(u), ...FIRST, "air"]
-    .map((k) => ({ c: CATEGORIES.find((c) => c.key === k)!, l: live[k] }))
-    .filter((x) => x.l && !x.l.vide);
-  if (!shown.length) return "";
-  return `<ul class="facts-live" aria-label="En ce moment">${shown
-    .map((x) => `<li class="k-${x.c.key}"><a href="${x.c.path}">${icon(x.c.icon)}<span>${esc(x.c.nom)}</span><b>${x.l!.valeur}</b>${x.l!.source ? `<small>${x.l!.source}</small>` : ""}</a></li>`)
-    .join("")}</ul>`;
+function champ(): string {
+  return `<section class="champ" data-js hidden><label for="aller-q">${esc(CHAMP.libelle)}</label>` +
+    `<span class="search">${icon("search")}<input id="aller-q" type="search" placeholder="${esc(CHAMP.exemple)}" autocomplete="off" enterkeyhint="go"></span>` +
+    `<ul class="chips" id="aller-r" hidden></ul>` +
+    `<p class="note" id="aller-rien" hidden>${esc(CHAMP.rienAvant)}<span id="aller-s"></span>${esc(CHAMP.rienApres)}<a href="/mcp">${esc(CHAMP.rienLien)}</a>${esc(CHAMP.rienFin)}</p>` +
+    `</section><script>${champScript(enLigne())}</script>`;
 }
 
 /** The island with the temperatures measured now, as on the weather page. */
-/**
- * The hero's badge says when the stations measured, never « en direct » at a time that may be past: the page is a copy
- * up to a few minutes old. With the script, the time at La Réunion now and the age of the measures, counted again.
- */
-function livePill(at: string | undefined, now: Date): string {
-  if (!at) return `<p class="live-pill"><span class="dot"></span>La Réunion en direct</p>`;
-  return `<p class="live-pill"><span class="dot"></span><span data-nojs>Mesures de <b>${hm(at)}</b> à La Réunion</span>` +
-    `<span data-js hidden><b data-clock>${hm(now)}</b> à La Réunion · mesuré ${since(at, now)}</span></p>`;
-}
-
 function heroMap(h: HomeLive | null): string {
   const l = withTemp(h?.meteo ?? null);
   const at = h?.meteo?.value.stations.reduce((m, s) => (s.time > m ? s.time : m), "");
@@ -400,25 +379,19 @@ export function homePage(origin: string, h: HomeLive | null, now = new Date(), a
       inLanguage: "fr-FR",
     },
   ];
-  const at = h?.meteo?.value.stations.reduce((m, st) => (st.time > m ? st.time : m), "");
   // An alert at the volcano goes first, above the weather, in place of the banner of the other pages; the banner's own
   // read when the home page's copy of /volcan is missing.
   const fire = alerteVolcan(h?.volcan?.value) ?? volcanBanner();
   const u = { vigilance: !!alerte, crues: floodRaised(h?.crues?.value).length > 0, volcan: !!fire };
   const band = `${fire ? homeCard(fire) : ""}<div class="hero sky-${sky(now)}"><div class="wrap hero-in">
   <div class="hero-txt">
-    ${livePill(at, now)}
     <h1>La Réunion <span class="n974">974</span> en direct</h1>
-    ${SLOGAN}
-    <p class="lead">Sorties, randos, météo, routes : la donnée publique du moment, datée et sourcée, pour vous et pour <b>votre assistant IA</b>.</p>
-    <p class="hero-cta"><a class="btn sun" href="#en-ce-moment">Voir l'île</a><a class="btn glass" href="#assistant">${icon("spark")}Brancher mon IA</a></p>
-    ${follow(undefined, "social hero-follow")}
-    ${behind()}
-    ${facts(live, u)}
+    <p class="hero-cta"><a class="btn sun" href="#en-ce-moment">Voir l'île</a><a class="btn glass" href="/mcp">${icon("spark")}Brancher mon IA</a></p>
   </div>
   ${heroMap(h)}
 </div></div>`;
-  const body = `${tiles(live, u, happening(h, now))}
+  const body = `${champ()}
+${tiles(live, u, happening(h, now))}
 ${assistant(origin, h, now)}
 <section id="communes" aria-labelledby="h-communes">
   <div class="sec-h"><p class="eyebrow">Partout sur l'île</p><h2 id="h-communes">Votre commune en direct</h2>

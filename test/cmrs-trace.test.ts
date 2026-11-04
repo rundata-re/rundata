@@ -237,7 +237,8 @@ describe("once Météo-France agrees", () => {
     expect(page).toContain("Positions : Météo-France, CMRS de La Réunion (bulletins WTIO31 FMEE), avec son accord écrit du 02/11/2026, dernière position le 03/02 à 10:00 (heure de La Réunion).");
     expect(page).not.toContain("Cette carte ne montre aucun système, ni sa position ni sa trajectoire.");
     // Nothing of the bulletin's forecasts, winds or pressure, nor a distance to the island.
-    expect(page).not.toMatch(/18\.0|19\.5|990 hPa|45 KT|km de La Réunion/);
+    // In the page's own part: the menu's icons have numbers of their own (the book's « 19.5 »).
+    expect(page.slice(page.indexOf("<main"))).not.toMatch(/18\.0|19\.5|990 hPa|45 KT|km de La Réunion/);
     // The past tracks stay off while a system is watched.
     expect(page).not.toContain('class="trc"');
   });

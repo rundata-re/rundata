@@ -2150,6 +2150,20 @@ function hautsBlock(hauts: RandonneesAnswer["hauts"]): string {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/**
+ * The fires seen by satellite in the 24 hours before the copy was built, from the hikes' copy (its `feux`): none said as
+ * « aucun point chaud détecté » with the hour of the read, never « aucun feu » (marketing, 04/11/2026).
+ */
+export function feuxLive(data: Cached<SentiersAnswer> | null): Live | undefined {
+  const f = data?.value.feux;
+  if (!f) return undefined;
+  const n = f.detections.length;
+  const lu = f.lu ? `, lu à\u00a0${hm(f.lu)}` : "";
+  return n
+    ? { valeur: `${n} point${n > 1 ? "s" : ""} chaud${n > 1 ? "s" : ""}`, detail: `ces dernières 24\u00a0h, par satellite (NASA FIRMS)${lu} · faux positifs possibles` }
+    : { valeur: "aucun point chaud détecté", detail: `ces dernières 24\u00a0h, par satellite (NASA FIRMS)${lu}` };
+}
+
 export function randonneesLive(data: Cached<SentiersAnswer> | null): Live | undefined {
   const d = data?.value;
   if (!d) return undefined;
@@ -2542,8 +2556,8 @@ export function coupuresLive(data: Cached<CoupuresAnswer> | null): Live | undefi
  */
 export function daeLive(): Live {
   const communes = new Set(DAES.map((d) => d.commune)).size;
-  // A hyphen where the word may break: too long for a tile two by two on a phone.
-  return { valeur: `${nombre(DAES.length)} défibril&shy;lateurs`, detail: `dans les ${communes} communes, avec leur accès · Géo'DAE du ${esc(dayMonth(DAE_BUILT))}`, entier: true };
+  // The number and the word never apart, the word never cut (marketing, 04/11/2026).
+  return { valeur: `${nombre(DAES.length)}\u00a0<span class="nw">défibrillateurs</span>`, detail: `dans les ${communes} communes, avec leur accès · Géo'DAE du ${esc(dayMonth(DAE_BUILT))}`, entier: true };
 }
 
 /**

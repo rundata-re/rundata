@@ -4,6 +4,11 @@ import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { reprise } from "../src/web/ouvrir-donnees.js";
 import { DESCRIPTION_MAX, GITHUB } from "../src/web/pages.js";
+import { compte } from "../src/producteurs.js";
+import { toutesLesSources } from "../src/server.js";
+
+// The footer's count of public sources, that of /chiffres.
+const sourcesLues = compte(toutesLesSources()).sources;
 
 const BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 const get = (path: string) => new Request(`https://rundata.re${path}`, { headers: { accept: BROWSER } });
@@ -81,7 +86,7 @@ describe("/ouvrir-ses-donnees, the guide to making one's information reusable", 
   });
 
   it("is linked from the footer, /a-propos, /valeurs, /sites-sans-reponse and the sitemap", async () => {
-    expect(await text("/")).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · `);
+    expect(await text("/")).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · `);
     expect(await text("/a-propos")).toContain('<a href="/valeurs">nos valeurs</a>, <a href="/ouvrir-ses-donnees">rendre ses données accessibles</a>, ');
     expect((await text("/valeurs")).split("<footer")[0].match(/href="\/ouvrir-ses-donnees"/g)).toHaveLength(2);
     expect(await text("/sites-sans-reponse")).toContain('Et pour rendre ses informations faciles à reprendre\u00a0: <a href="/ouvrir-ses-donnees">notre guide</a>.</p>');

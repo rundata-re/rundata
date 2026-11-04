@@ -173,10 +173,9 @@ describe("home page", () => {
     expect(cold.text).toMatch(/meteo_actuelle\(lieu: "[^"]+"\)<\/p>\s*<p class="bubble ai">\d+(,\d)?\u202f°C, mesurés à\u00a0\d\d:\d\d/);
     expect(cold.text).toContain("Piton Maïdo");
     expect(cold.text).toMatch(/mesuré à\u00a0\d\d:\d\d/);
-    // The badge says when the stations measured, never « en direct » at a time already past; the script counts the age
-    // again in the browser, from the time of the data.
+    // No badge above the title since the top was made lighter (04/11/2026): the map's caption says when they measured.
     expect(cold.text).not.toContain("En direct · <b>");
-    expect(cold.text).toMatch(/<span data-nojs>Mesures de <b>\d\d:\d\d<\/b> à La Réunion<\/span><span data-js hidden><b data-clock>\d\d:\d\d<\/b> à La Réunion · mesuré <span data-age="[\dT:.-]+Z">il y a \d+\u00a0(min|h)<\/span>/);
+    expect(cold.text).toMatch(/<figcaption><span class="dot"><\/span>Températures mesurées à[\u00a0 ]\d\d:\d\d · /);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     // Another isolate of the same data center: the weather from the edge, and the oldest of the other tiles brought up
     // to date afterwards, still within the limit.
@@ -298,7 +297,7 @@ describe("home page", () => {
     const ld = page.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)![1];
     expect(JSON.parse(ld).map((x: { "@type": string }) => x["@type"])).toEqual(["WebSite", "Organization", "SoftwareApplication"]);
     // Every category: a tile, and a link in the menu.
-    for (const name of ["Météo", "Vigilance", "Mer", "Volcan", "Bus", "Air", "Électricité", "Calendrier", "Services publics", "Terrain et risques"]) {
+    for (const name of ["Météo", "Vigilance", "Mer", "Volcan", "Bus", "Qualité de l&#39;air", "Électricité", "Calendrier", "Services publics", "Terrain et risques"]) {
       expect(page).toContain(`${name}</`);
     }
     expect(page).toContain('<li><a href="/electricite">Électricité</a></li>');

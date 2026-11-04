@@ -136,7 +136,7 @@ const DIT: Record<string, Dit> = {
   bornes: {
     montre: "Les bornes de recharge de la base nationale, avec le nombre de points libres à l'heure de la dernière lecture de leur état.",
     montreSans: "L'état des bornes n'a pas pu être lu : la carte montre la liste des bornes, sans dire lesquelles sont libres.",
-    rubrique: "Recharge", court: "Base nationale des IRVE", unite: ["borne", "bornes"], organisme: "la base nationale des IRVE",
+    rubrique: "Bornes de recharge", court: "Base nationale des IRVE", unite: ["borne", "bornes"], organisme: "la base nationale des IRVE",
   },
   "enfants-osm": {
     montre: "Les aires de jeux, parcs, musées, médiathèques et quelques zoos et parcs de loisirs cartographiés par les contributeurs d'OpenStreetMap. Les horaires viennent d'OpenStreetMap : vérifiez auprès du lieu avant de vous déplacer.",

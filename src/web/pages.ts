@@ -2250,7 +2250,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: SITE, item: `${origin}/` },
-        { "@type": "ListItem", position: 2, name: "Température de la mer", item: `${origin}/mer` },
+        { "@type": "ListItem", position: 2, name: "Mer", item: `${origin}/mer` },
       ],
     },
     {
@@ -2277,7 +2277,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill">Mesure satellite${day ? ` · ${esc(dayMonth(day))}` : ""}</p>
-    <h1>Température de la mer et houle <span class="n974">974</span></h1>
+    <h1>Mer à La Réunion\u00a0: température et houle <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dolo la mèr lé sho ? Gèt si ${url} é di amwin pou chak plaj.`,
       `Quelle est la température de l'eau à La Réunion ? Lis ${url} et donne-moi la température plage par plage, avec la date de la mesure.`)}

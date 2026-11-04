@@ -776,7 +776,7 @@ describe("vigilance and sea pages", () => {
     await edge.put(SATELLITES, { value: (await counted(PAGE_BUDGET, () => buildSatellites(isolate(), NOW))).value, fetchedAt: NOW.getTime() });
     const cache = isolate(edge);
     const { text, used } = await serve(cache, "/mer");
-    expect(text).toContain("Température de la mer et houle <span class=\"n974\">974</span>");
+    expect(text).toContain("Mer à La Réunion\u00a0: température et houle <span class=\"n974\">974</span>");
     expect(text).toMatch(/<title>Mer Réunion\u00a0: houle, température de l(&#39;|')eau et marée · 974<\/title>/);
     expect(text).toContain("Boucan-Canot");
     expect(text).toContain('href="/meteo/saint-paul"');

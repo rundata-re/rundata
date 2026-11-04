@@ -100,7 +100,7 @@ async function robinet(cache: Cache, res: Resolution, now: Date) {
   const insee = INSEE[commune];
   if (!insee) return { resume: "Commune introuvable pour l'eau du robinet." };
   const [{ value }, avis] = await Promise.all([potable.commune(cache, insee, now), notice(cache, commune, now)]);
-  const warn = avis ? { resume_avis: `EAU À NE PAS BOIRE ${a(commune)} d'après l'avis du distributeur du ${avis.publie_le} : « ${avis.titre} ».`, avis_ne_pas_boire: avis } : {};
+  const warn = avis ? { resume_avis: `EAU À NE PAS BOIRE ${a(commune)} d'après l'avis du distributeur du ${avis.publie_le ?? avis.date_de_l_avis} : « ${avis.titre} ».`, avis_ne_pas_boire: avis } : {};
   const rows = value.reseaux.map((r) => networkRow(r, value.prelevements));
   const own = res.lieu.type === "commune" ? null : networkFor(value.reseaux, res.lieu.nom, commune);
   if (own) {

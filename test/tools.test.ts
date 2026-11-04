@@ -131,7 +131,9 @@ describe("temperature_mer", () => {
     expect(place.mesure).toMatchObject({ nature: "mesure_satellite", jour_mesure: "2026-10-16" });
     const tour = body(await inWorker(() => temperatureMer(cache, undefined, NOW)));
     expect(tour.resume).toMatch(/^Eau de mer, MESURÉE par satellite : Plage de Boucan-Canot : \d+(,\d)? °C \(le 16\/10, il y a 2 jours\)/);
-    expect(tour.mis_a_jour).toBe("18/10 16:20");
+    // Dated by the day measured, not by rundata.re's read of the copy (18/10 16:20), which fraicheur says as the read.
+    expect(tour.mis_a_jour).toBeUndefined();
+    expect(tour.jour_mesure).toBe("2026-10-16");
     // Without a copy, no measure rather than a wait on NOAA.
     const bare = new Cache(new MemoryStore(), () => NOW.getTime());
     expect((await inWorker(() => temperatureMer(bare, "Saint-Leu", NOW))).isError).toBe(true);

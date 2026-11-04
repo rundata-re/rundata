@@ -336,6 +336,20 @@ describe("fraicheur", () => {
     expect(fraicheur({ vigilance: { emise: "24/10 15:25" } }, lectures, now, { donnee: false }).donnee_du).toBeUndefined();
   });
 
+  it("never dates the data after now, nor by rundata.re's read of a satellite's grid", () => {
+    // 04/11/2026: coupures_eau gave « donnée du 05/11/2026, aujourd'hui », a notice dated by the day of its cut.
+    const now = new Date("2026-11-04T13:12:00+04:00");
+    const lectures = [{ key: "eau:avis", fetchedAt: Date.parse("2026-11-04T13:10:00+04:00"), stale: false, freshSeconds: 900 }];
+    const cuts = { resume: "…", avis: [{ publie_le: "05/11/2026" }, { publie_le: "04/11/2026 à 11:15" }] };
+    expect(fraicheur(cuts, lectures, now)).toMatchObject({ donnee_du: "04/11 11:15", lue_a: "04/11 13:10", age: "il y a 2 h" });
+    // Only dates after now: no date at all, the read's age.
+    expect(fraicheur({ avis: [{ publie_le: "05/11/2026" }] }, lectures, now).donnee_du).toBeUndefined();
+    // temperature_mer gave the hour of its read of the waves (« 04/11 13:03 ») over a measure of the day before.
+    const sea = { lieu: {}, mesure: { temperature_eau: "25,2 °C", jour_mesure: "2026-11-03" }, etat_de_la_mer: { mis_a_jour: "04/11 13:03" } };
+    expect(fraicheur(sea, lectures, now)).toMatchObject({ donnee_du: "03/11/2026", age: "hier" });
+    expect(instantOf("2026-11-03", now)).toBe(Date.parse("2026-11-03T00:00:00+04:00"));
+  });
+
   it("names each source served from its last copy, in marketing's words, and the rest only when it is up to date", () => {
     const now = new Date("2026-10-25T23:00:00+04:00");
     const t = (hhmm: string) => Date.parse(`2026-10-25T${hhmm}:00+04:00`);

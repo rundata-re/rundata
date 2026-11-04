@@ -4,7 +4,7 @@ import { DAES } from "../src/providers/dae.js";
 import { CATEGORIES } from "../src/web/categories.js";
 import { communePage } from "../src/web/commune.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
-import { meteoPage } from "../src/web/pages.js";
+import { CSS, meteoPage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 
 const NOW = new Date("2026-10-23T14:40:00Z");
@@ -30,7 +30,8 @@ const EMPTY: HomeLive = {
   historique: cached({ stations: [] }),
 };
 // The categories whose copy is not given above: they wait for it.
-const NO_COPY = ["vigilance", "trafic", "sentiers", "secheresse", "coupures", "sport", "cyclones", "agenda", "actualites", "crues"];
+// The fires come with the hikes' copy.
+const NO_COPY = ["vigilance", "trafic", "sentiers", "feux", "secheresse", "coupures", "sport", "cyclones", "agenda", "actualites", "crues"];
 // Nothing to fetch: the lists bundled with the server.
 const BUNDLED = ["dae", "enfants"];
 // From the weather's copy.
@@ -78,7 +79,10 @@ describe("a tile with nothing to show", () => {
 
   it("gives the bundled lists a value even with no copy at all", () => {
     const tiles = homeTiles(homePage(ORIGIN, null, NOW));
-    expect(tiles.dae).toContain(`<p class="tv">${DAES.length.toLocaleString("fr-FR").replace(/\s/g, " ")} défibril&shy;lateurs</p>`);
+    expect(tiles.dae).toContain(`<p class="tv">${DAES.length.toLocaleString("fr-FR").replace(/\s/g, " ")}\u00a0<span class="nw">défibrillateurs</span></p>`);
+    // The number and the word never apart, the word never cut, not even where it would overflow.
+    expect(tiles.dae).not.toContain("&shy;");
+    expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal}");
     expect(tiles.dae).toMatch(/<p class="td all">dans les 24 communes, avec leur accès · Géo'DAE du \d\d\/\d\d<\/p>/);
     expect(tiles.enfants).toContain(`<p class="tv">`);
     for (const k of BUNDLED) expect(tiles[k], k).not.toContain(WAIT);
@@ -89,13 +93,6 @@ describe("a tile with nothing to show", () => {
     expect(tiles.historique).toContain(`<p class="td all">Rapport à la normale`);
     expect(tiles.dae).toContain(`<p class="td all">dans les 24 communes`);
     expect(tiles.bus).toContain(`<p class="td">aux gares`);
-  });
-
-  it("keeps an empty copy out of the figures under the home page's title", () => {
-    const page = homePage(ORIGIN, EMPTY, NOW);
-    const facts = page.match(/<ul class="facts-live"[^>]*>(.*?)<\/ul>/s)?.[1] ?? "";
-    expect(facts).not.toContain("Pas de mesure");
-    expect(facts).not.toContain("Pas d'indice");
   });
 
   it("leaves the weather page's figure out when its copy has no temperature", () => {

@@ -119,7 +119,7 @@ describe("the address typed is never kept nor sent", () => {
 });
 
 describe("the page /ecoles", () => {
-  it("has the 24 communes, the filters, a dot on the map and a row per establishment, and no entry in the main menu", async () => {
+  it("has the 24 communes, the filters, a dot on the map and a row per establishment, in the menu's group « Vie pratique » only", async () => {
     const res = await handle(new Request("https://rundata.re/ecoles"), new Cache());
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -128,7 +128,9 @@ describe("the page /ecoles", () => {
     expect(html.match(/<li id="e-/g)).toHaveLength(ecoles.LIST.length);
     expect(html.match(/<li class="card tgt" id="c-/g)).toHaveLength(24);
     for (const v of ["c", "i", "u"]) expect(html).toContain(`<input type="checkbox" name="es" id="es-${v}" value="${v}">`);
-    for (const nav of ['<nav class="quick"', '<nav class="sheet"']) expect(between(html, nav, "</nav>")).not.toContain('href="/ecoles"');
+    // In the menu's group « Vie pratique » (marketing's menu of 04/11), not in the quick bar.
+    expect(between(html, '<nav class="quick"', "</nav>")).not.toContain('href="/ecoles"');
+    expect(between(between(html, '<nav class="sheet"', "</nav>"), "Vie pratique", "</ul>")).toContain('href="/ecoles"');
     expect(html).toContain("le secteur est fixé par chaque mairie, et il n&#39;est pas publié en données ouvertes");
     // A collège that declares a canteen and an ULIS is found by both.
     const e = ecoles.LIST.find((x) => x.type === "college" && x.cantine && x.ulis && !x.internat)!;

@@ -17,8 +17,11 @@ const VOLCAN: VolcanAlerte = { niveau: "Alerte 1", eruption: false };
 
 // The keys in the bar on wide screens and in the menu's grid, in their order.
 const bar = (html: string) => [...html.match(/<nav class="quick"[^>]*>(.*?)<\/nav>/s)![1].matchAll(/class="k-([a-z]+)"/g)].map((m) => m[1]);
-const menu = (html: string) => [...html.match(/<ul class="grid">(.*?)<\/ul>/s)![1].matchAll(/class="k-([a-z]+)"/g)].map((m) => m[1]);
-const facts = (html: string) => [...(html.match(/<ul class="facts-live"[^>]*>(.*?)<\/ul>/s)?.[1] ?? "").matchAll(/<li class="k-([a-z]+)"/g)].map((m) => m[1]);
+const sheet = (html: string) => html.match(/<nav class="sheet"[^>]*>(.*?)<\/nav>/s)![1];
+const menu = (html: string) => [...sheet(html).matchAll(/<a class="(?:kcomm )?k-([a-z]+)"/g)].map((m) => m[1]);
+// The menu's five groups: their names and the pages of each, in their order.
+const groupes = (html: string) =>
+  [...sheet(html).matchAll(/<p class="sheet-h">([^<]+)<\/p>\s*<ul class="grid groupe">(.*?)<\/ul>/gs)].map((m) => [m[1], [...m[2].matchAll(/ href="([^"]+)"/g)].map((h) => h[1])]);
 const tiles = (html: string) => [...html.match(/<ul class="tiles"[^>]*>(.*?)<\/ul>/s)![1].matchAll(/<li class="tile k-([a-z]+)/g)].map((m) => m[1]);
 
 describe("the order of the pages", () => {
@@ -26,9 +29,17 @@ describe("the order of the pages", () => {
     const page = meteoPage(O, null, NOW);
     expect(bar(page)).toEqual(["agenda", "sentiers", "meteo", "communes"]);
     expect(page).toContain('<a class="k-sentiers" href="/randonnees">');
-    // The children's page right after the events in the menu, not in the bar.
-    expect(menu(page).slice(0, 4)).toEqual(["agenda", "enfants", "sentiers", "meteo"]);
-    expect(menu(page).slice(-3)).toEqual(["communes", "mer", "bus"]);
+    // The menu: « Communes » first, then the five groups in marketing's order (04/11/2026).
+    expect(menu(page)[0]).toBe("communes");
+    expect(groupes(page)).toEqual([
+      ["Sécurité", ["/vigilance", "/cyclones", "/crues", "/volcan", "/feux", "/defibrillateurs"]],
+      ["Météo et mer", ["/meteo", "/carte", "/historique", "/mer", "/baignade", "/air"]],
+      ["Se déplacer", ["/trafic", "/bus", "/velos", "/bornes", "/carburants"]],
+      ["Vie pratique", ["/actualites", "/eau", "/coupures-eau", "/secheresse", "/electricite", "/collecte", "/decheteries", "/ecoles", "/enfants", "/emploi", "/marches-publics", "/antennes", "/calendrier"]],
+      ["Sortir", ["/evenements", "/randonnees", "/sentiers", "/sport", "/associations?ref=menu", "/peche"]],
+    ]);
+    // Under « Sécurité », the cyclone's three pages on one line.
+    expect(sheet(page)).toContain(`<p class="cyc">Cyclone\u00a0: <a href="/kit-cyclone">kit</a> · <a href="/alerte-cyclone">alerte</a> · <a href="/ecoles-cyclone">écoles</a></p>`);
   });
 
   it("puts the vigilance first while it is above green, the volcano first while in alert, both when both are", () => {
@@ -36,15 +47,17 @@ describe("the order of the pages", () => {
     expect(bar(withVolcan(VOLCAN, () => meteoPage(O, null, NOW)))).toEqual(["volcan", "agenda", "sentiers", "meteo", "communes"]);
     const both = withVolcan(VOLCAN, () => meteoPage(O, null, NOW, VIGILANCE));
     expect(bar(both)).toEqual(["vigilance", "volcan", "agenda", "sentiers", "meteo", "communes"]);
-    expect(menu(both).slice(0, 6)).toEqual(["vigilance", "volcan", "agenda", "enfants", "sentiers", "meteo"]);
+    // The menu's groups stay as they are: the bar and the banners carry the alerts.
+    expect(groupes(both)).toEqual(groupes(meteoPage(O, null, NOW)));
     // The home page shows the volcano's alert itself, without the banner: the bar still has it first.
     expect(bar(withVolcan(VOLCAN, () => homePage(O, null, NOW)))[0]).toBe("volcan");
   });
 
   it("keeps every page in the menu, quiet or not", () => {
-    const all = [...WITH_PAGE.map((c) => c.key), "associations", "carte", "communes"].sort();
+    const all = [...WITH_PAGE.map((c) => c.key), "associations", "carte", "communes"];
     for (const page of [meteoPage(O, null, NOW), withVolcan(VOLCAN, () => meteoPage(O, null, NOW, VIGILANCE))]) {
-      expect([...menu(page)].sort()).toEqual(all);
+      for (const k of all) expect(menu(page), k).toContain(k);
+      for (const c of WITH_PAGE) expect(sheet(page), c.key).toContain(` href="${c.path}"`);
     }
   });
 
@@ -58,7 +71,6 @@ describe("the order of the pages", () => {
     const page = meteoPage(O, null, NOW);
     const keys = menu(page);
     expect(keys[keys.indexOf("sport") + 1]).toBe("associations");
-    expect(keys.indexOf("associations")).toBeLessThan(keys.indexOf("calendrier"));
     expect(page).toContain(`<li><a class="k-associations" href="/associations?ref=menu"><span class="kb"><svg class="ic"`);
     expect(page).toContain(`<span class="gn">Associations</span>`);
     expect(CSS).toContain(".k-associations{--k:#f472d0}");
@@ -75,10 +87,9 @@ describe("the order of the pages", () => {
   it("orders the home page's tiles as the menu, the traffic and a quiet vigilance and volcano with the sea and the buses at the end", () => {
     const quiet = homePage(O, null, NOW);
     expect(tiles(quiet)).toEqual(["agenda", "enfants", "sentiers", "meteo", "actualites", "historique", "cyclones", "peche", "velos", "bornes", "coupures", "dae",
-      "secheresse", "sport", "eau", "air", "electricite", "calendrier", "antennes", "emploi", "marches", "trafic", "vigilance", "crues", "volcan", "mer", "bus", "services", "terrain"]);
-    // Nothing hidden, and the menu keeps its order.
+      "feux", "secheresse", "sport", "eau", "air", "electricite", "calendrier", "antennes", "emploi", "marches", "trafic", "vigilance", "crues", "volcan", "mer", "bus", "services", "terrain"]);
+    // Nothing hidden.
     expect([...tiles(quiet)].sort()).toEqual([...tiles(homePage(O, null, NOW, VIGILANCE))].sort());
-    expect(menu(quiet).slice(-3)).toEqual(["communes", "mer", "bus"]);
   });
 
   it("puts the home page's vigilance and volcano tiles back first while in force, the other one still at the end", () => {
@@ -102,63 +113,18 @@ describe("the order of the pages", () => {
     expect(tile).not.toContain("rechargez la page");
   });
 
-  it("puts the events and the hikes in « En ce moment », the volcano only in alert, never the sea", () => {
-    const quiet = { value: JSON.parse(readFileSync(new URL("./fixtures/pages/volcan_seismes.json", import.meta.url), "utf8")), fetchedAt: NOW, stale: false };
-    const live = {
-      // The sea measured, no station's temperature: the sea is still not in the boxes.
-      meteo: { value: { stations: [], mer: [{ nom: "Plage de Saint-Leu", valeur: 25.2, jour: "2026-10-21", distance_km: 3 }], sources: [], indisponibles: [] }, fetchedAt: NOW, stale: false },
-      volcan: quiet,
-      agenda: { value: { nombre: 42, ce_week_end: [] }, fetchedAt: NOW, stale: false },
-      sentiers: { value: { points: [], suivis: 120, randonnees: [] }, fetchedAt: NOW, stale: false },
-    } as unknown as HomeLive;
-    const page = homePage(O, live, NOW);
-    expect(facts(page)).toEqual(["agenda", "sentiers"]);
-    expect(page).toContain("<b>42 événements</b>");
-    // A volcano in alert in the copy of /volcan: first.
-    const etat = { ...quiet.value.etat, niveau_orsec: "Alerte 1" };
-    expect(facts(homePage(O, { ...live, volcan: { ...quiet, value: { ...quiet.value, etat } } } as HomeLive, NOW))).toEqual(["volcan", "agenda", "sentiers"]);
-  });
-
-  it("gives the boxes of « En ce moment » one height, their content centred, a box alone on the last row the grid's width", () => {
-    expect(homePage(O, null, NOW)).toContain(`<link rel="stylesheet" href="${STYLE_PATH}">`);
-    expect(CSS).toContain(".facts-live{list-style:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;");
-    expect(CSS).toContain(".facts-live li{display:flex}.facts-live a{flex:1;display:grid;");
-    expect(CSS).toContain("align-content:center;");
-    expect(CSS).toContain(".facts-live li:last-child:nth-child(odd){grid-column:1/-1}");
-    // Lower on a phone (80 px at 390 px, measured): less padding, a smaller icon, label and detail.
-    expect(CSS).toContain("@media (max-width:599.98px){.facts-live a{padding:.45rem .6rem;column-gap:.45rem}.facts-live .ic{width:1.2rem;height:1.2rem}");
-    expect(CSS).toContain(".facts-live a>span{font-size:.7rem}.facts-live small{font-size:.7rem;line-height:1.2}}");
-  });
-
-  it("puts the air of the day last in « En ce moment », as on its tile, for an even number of boxes", () => {
-    const air = { value: JSON.parse(readFileSync(new URL("./fixtures/pages/qualite_air.json", import.meta.url), "utf8")), fetchedAt: NOW, stale: false };
-    const live = {
-      agenda: { value: { nombre: 42, ce_week_end: [] }, fetchedAt: NOW, stale: false },
-      sentiers: { value: { points: [], suivis: 120, randonnees: [] }, fetchedAt: NOW, stale: false },
-      air,
-    } as unknown as HomeLive;
-    const page = homePage(O, live, NOW);
-    expect(facts(page)).toEqual(["agenda", "sentiers", "air"]);
-    // The words of the air's tile further down, its badge included.
-    const value = /<li class="tile k-air">.*?<p class="tv">(.*?)<\/p>/s.exec(page)![1];
-    expect(value).toMatch(/<span class="aq aq\d">/);
-    expect(page).toContain(`<li class="k-air"><a href="/air">`);
-    expect(page).toContain(`<span>Air</span><b>${value}</b></a></li></ul>`);
-    // Without its copy, no box.
-    expect(facts(homePage(O, { ...live, air: null } as HomeLive, NOW))).toEqual(["agenda", "sentiers"]);
-  });
-
-  it("links rundata.re's accounts from the bar, the menu and the home page's hero, counted as visits from the site", () => {
+  it("links rundata.re's accounts from the bar, the menu and the footer, counted as visits from the site", () => {
     const page = meteoPage(O, null, NOW);
     const header = page.match(/<header class="top">(.*?)<\/header>/s)![1];
     const top = header.match(/<nav class="follow-top"[^>]*>(.*?)<\/nav>/s)![1];
     const sheet = header.match(/<nav class="sheet"[^>]*>(.*?)<\/nav>/s)![1];
-    const hero = homePage(O, null, NOW).match(/<p class="social hero-follow">(.*?)<\/p>/s)![1];
+    // Out of the home page's top since it was made lighter (04/11/2026): in the footer of every page.
+    const foot = homePage(O, null, NOW).split('<footer class="foot">')[1];
     for (const s of SOCIAL) {
       const link = `<a href="${s.nom === "GitHub" ? s.url : `${s.url}?ref=site`}" rel="noopener" aria-label="rundata.re sur ${s.nom}">`;
       expect(top).toContain(`${link}${s.svg}</a>`);
       expect(sheet).toContain(`${link}${s.svg}${s.nom}</a>`);
-      expect(hero).toContain(`${link}${s.svg}${s.nom}</a>`);
+      expect(foot).toContain(`${link}${s.svg}${s.nom}</a>`);
     }
   });
 });

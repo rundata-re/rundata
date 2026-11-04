@@ -127,7 +127,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     key: "bornes",
-    nom: "Recharge",
+    nom: "Bornes de recharge",
     path: "/bornes",
     icon: "plug",
     tools: ["bornes_recharge"],
@@ -148,6 +148,14 @@ export const CATEGORIES: Category[] = [
     icon: "heart",
     tools: ["defibrillateurs"],
     about: "Les défibrillateurs les plus proches d'un lieu, avec leur adresse, leur emplacement et s'ils sont accessibles à toute heure.",
+  },
+  {
+    key: "feux",
+    nom: "Feux",
+    path: "/feux",
+    icon: "flame",
+    tools: ["sentiers_randonnee", "vigilance_meteo"],
+    about: "Les points chauds repérés par satellite (NASA FIRMS) ces dernières 24 h, avec leur lieu et leur heure : faux positifs possibles.",
   },
   {
     key: "secheresse",
@@ -191,7 +199,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     key: "eau",
-    nom: "Eau",
+    nom: "Qualité de l'eau",
     path: "/eau",
     icon: "drop",
     tools: ["qualite_eau"],
@@ -199,7 +207,7 @@ export const CATEGORIES: Category[] = [
   },
   {
     key: "air",
-    nom: "Air",
+    nom: "Qualité de l'air",
     path: "/air",
     icon: "air",
     tools: ["qualite_air"],

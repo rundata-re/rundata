@@ -17,7 +17,8 @@ import { HAUTS_MIN_M, softened } from "../tools/nuages.js";
 import { NUIT_NOTE, nuitOf } from "../tools/calendrier.js";
 import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
-import { VERSION } from "../server.js";
+import { toutesLesSources, VERSION } from "../server.js";
+import { compte } from "../producteurs.js";
 import { a, de, fr } from "../tools/format.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
@@ -37,6 +38,7 @@ import icons from "./icons.json" with { type: "json" };
 import { hikesAround } from "./liens.js";
 import rubriques from "./og-rubriques.json" with { type: "json" };
 import { byUse, FIRST, type Urgent, urgentKeys, WITH_PAGE } from "./categories.js";
+import { COMMUNES, CYCLONE, type Entree, GROUPES } from "./menu.js";
 import { FLAG_INNER } from "./flag.js";
 import { logo } from "./logo.js";
 import { esc, H as MAP_H, islandMap, mapCredit, type Marker, NOMS_SCRIPT, W as MAP_W } from "./map.js";
@@ -202,6 +204,10 @@ export const metres = (m: number) => thin(`${m.toLocaleString("fr-FR")} m`);
 const ICON: Record<string, string> = {
   thermo: `<path d="M14 14.8V4a2 2 0 1 0-4 0v10.8a4 4 0 1 0 4 0Z"/><path d="M12 9v8"/>`,
   cloud: `<path d="M17.5 19H8a5 5 0 1 1 1.1-9.9A6 6 0 0 1 20.5 12a3.5 3.5 0 0 1-3 7Z"/><path d="M9 22l1-2M13 22l1-2"/>`,
+  // A flame, for the fires seen by satellite: not the vigilance's triangle (ux, 04/11/2026).
+  // A fuel pump, for the prices at the pump in the menu: not the floods' gauge (04/11/2026).
+  fuel: `<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12M4 10h10"/><path d="M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>`,
+  flame: `<path d="M12 3c.5 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2.3 1.2-3.6 2.2-4.6.3 1.6 1.1 2.6 2.3 3 0-2.8-.6-5.5 0-8.4Z"/>`,
   wave: `<path d="M2 10c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>`,
   book: `<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14Z"/><path d="M20 17v4H6.5A2.5 2.5 0 0 1 4 19.5"/>`,
   mountain: `<path d="m2 20 7-12 4 6 3-4 6 10Z"/>`,
@@ -274,7 +280,7 @@ p,ul,ol,table,figure{margin:0}
 
 /* A section's colour is never one of the alert scale (yellow, orange, red, purple) nor a red: those say a real state
    (kit.md). The sections of risks share one neutral colour. */
-.k-meteo{--k:#ff9f43}.k-vigilance,.k-crues,.k-volcan,.k-cyclones,.k-secheresse{--k:#4fd1c5}.k-actualites{--k:#a5d8ff}.k-mer{--k:#22b8cf}.k-bus{--k:#4dabf7}.k-velos{--k:#51cf66}.k-bornes{--k:#94d82d}.k-eau{--k:#3bc9db}.k-coupures{--k:#74c0fc}.k-dae{--k:#40c057}.k-sentiers{--k:#69db7c}.k-sport{--k:#ffa94d}.k-historique{--k:#e599f7}.k-agenda{--k:#da77f2}.k-enfants{--k:#f06595}.k-emploi{--k:#20c997}.k-peche{--k:#66d9e8}.k-antennes{--k:#ced4da}.k-marches{--k:#748ffc}
+.k-meteo{--k:#ff9f43}.k-vigilance,.k-crues,.k-volcan,.k-cyclones,.k-secheresse,.k-feux{--k:#4fd1c5}.k-actualites{--k:#a5d8ff}.k-mer{--k:#22b8cf}.k-bus{--k:#4dabf7}.k-velos{--k:#51cf66}.k-bornes{--k:#94d82d}.k-eau{--k:#3bc9db}.k-coupures{--k:#74c0fc}.k-dae{--k:#40c057}.k-sentiers{--k:#69db7c}.k-sport{--k:#ffa94d}.k-historique{--k:#e599f7}.k-agenda{--k:#da77f2}.k-enfants{--k:#f06595}.k-emploi{--k:#20c997}.k-peche{--k:#66d9e8}.k-antennes{--k:#ced4da}.k-marches{--k:#748ffc}
 .k-air{--k:#38d9a9}.k-electricite{--k:#fab005}.k-calendrier{--k:#b197fc}.k-associations{--k:#f472d0}.k-communes{--k:#f783ac}.k-services{--k:#74c0fc}.k-trafic{--k:#91a7ff}.k-terrain{--k:#d8a65a}
 .kb{display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:12px;flex:none;color:var(--k);
 background:linear-gradient(155deg,color-mix(in srgb,var(--k) 20%,transparent),color-mix(in srgb,var(--k) 9%,transparent));
@@ -327,6 +333,15 @@ text-align:center;background:#0f1d2c;border:1px solid rgb(255 255 255/.07);trans
 .grid a:focus-visible{outline:2px solid #ffcf1f;outline-offset:2px}
 .grid a[aria-current]{background:color-mix(in srgb,var(--k) 14%,#0f1d2c);border-color:color-mix(in srgb,var(--k) 45%,transparent)}
 @media (max-width:30rem){.grid a{font-size:.82rem;letter-spacing:-.005em}}
+/* The menu in five groups (ux's mock-up, 04/11/2026): two columns, the icon beside the name; « Communes » above them. */
+.sheet .groupe{grid-template-columns:repeat(auto-fill,minmax(min(10rem,calc((100% - .5rem) / 2)),1fr));gap:.5rem;margin:0}
+.sheet .groupe a,.sheet .kcomm{display:flex;align-items:center;gap:.55rem;min-height:44px;height:auto;padding:.3rem .55rem;border-radius:12px;text-align:left;font-size:.88rem;line-height:1.15}
+.sheet .kcomm{text-decoration:none;color:var(--on-night);font-weight:600;font-size:1rem;background:#0f1d2c;border:1px solid rgb(255 255 255/.07)}
+.sheet .kcomm[aria-current]{background:color-mix(in srgb,var(--k) 14%,#0f1d2c);border-color:color-mix(in srgb,var(--k) 45%,transparent)}
+.sheet .groupe .kb,.sheet .kcomm .kb{width:1.75rem;height:1.75rem;border-radius:9px}
+.sheet .groupe .kb .ic,.sheet .kcomm .kb .ic{width:1.05rem;height:1.05rem}
+.sheet .groupe .gn{display:block;text-align:left}
+.sheet .cyc{margin:-.45rem 0 0;font-size:.88rem;color:var(--on-night-muted)}.sheet .cyc a{color:var(--on-night);font-weight:600}
 @media (prefers-reduced-motion:reduce){.grid a,.grid a:hover,.grid a:active{transform:none;transition:none}}
 .sheet .connect{background:rgb(255 255 255/.06);border-color:rgb(255 255 255/.1);box-shadow:none}
 .sheet .connect code{color:var(--on-night)}
@@ -479,7 +494,7 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 .tile h3 a{color:inherit;text-decoration:none}
 .tile h3 a::after{content:"";position:absolute;inset:0;border-radius:22px;z-index:1}
 .tile h3 a:focus-visible{outline:none}.tile:has(h3 a:focus-visible){outline:2px solid var(--link);outline-offset:2px}
-.tv{font:800 clamp(1.15rem,4.6vw,1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}
+.tv{font:800 clamp(1.15rem,4.6vw,1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}.tv .nw{white-space:nowrap;overflow-wrap:normal}
 .tv .vg,.tv .aq{font:inherit;font-size:.95rem;padding:.15rem .6rem;vertical-align:.12em}
 .td{font-size:.84rem;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.td.all{display:block;overflow:visible}
 .tq{font-size:.92rem;font-style:italic;align-self:flex-start;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}
@@ -506,28 +521,13 @@ radial-gradient(1px 1px at 6% 42%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .hero h1{font-size:clamp(2.6rem,10vw,4.6rem);line-height:.98;letter-spacing:-.04em;text-shadow:0 2px 30px rgb(0 0 0/.25)}
 .hero .lead{color:rgb(255 255 255/.82);font-size:clamp(1.02rem,3.6vw,1.2rem);max-width:32rem}
 .hero .lead b{color:#fff}
-.live-pill{display:inline-flex;align-items:center;gap:.5rem;font-size:.85rem;padding:.35rem .85rem;border-radius:999px;
-background:rgb(255 255 255/.12);border:1px solid rgb(255 255 255/.2);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;width:100%;max-width:30rem}.hero-cta .btn{flex:1 1 auto;justify-content:center}
-.hero-follow{font-size:.9rem;color:rgb(255 255 255/.78)}.hero-follow a{color:#fff}
 .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.25rem;border-radius:16px;font:800 1rem/1 system-ui,sans-serif;text-decoration:none;transition:transform .15s,box-shadow .15s}
 .btn .ic{width:1.15rem;height:1.15rem}
 .btn:hover{transform:translateY(-2px)}
 .btn.sun,.band .btn.sun{background:var(--sun);color:var(--sun-ink);box-shadow:0 12px 30px -10px rgb(255 207 31/.7)}
 .clubs{border-left:4px solid var(--sun)}.clubs h2{font-size:clamp(1.15rem,3.2vw,1.4rem);line-height:1.2}.clubs p{margin:0}.clubs-go{display:flex;flex-wrap:wrap;align-items:center;gap:.7rem 1.2rem}.clubs-top a{color:var(--sun);font-weight:700}
 .btn.glass,.band .btn.glass{color:#fff;background:rgb(255 255 255/.12);border:1px solid rgb(255 255 255/.25);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-.facts-live{list-style:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr;gap:.5rem;width:100%;max-width:34rem}
-.facts-live li{display:flex}
-.facts-live a{flex:1;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;align-content:center;column-gap:.55rem;align-items:center;padding:.6rem .75rem;border-radius:16px;
-text-decoration:none;color:#fff;background:rgb(255 255 255/.09);border:1px solid rgb(255 255 255/.14);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
-.facts-live .ic{grid-row:span 2;color:var(--k);width:1.4rem;height:1.4rem}
-.facts-live a>span{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:rgb(255 255 255/.7)}
-.facts-live b{font:800 .98rem/1.2 Bricolage,system-ui,sans-serif;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
-.facts-live b .vg,.facts-live b .aq{font-size:.8rem;padding:0 .45rem}
-.facts-live small{grid-column:2;font-size:.74rem;line-height:1.25;color:rgb(255 255 255/.7)}
-.facts-live li:last-child:nth-child(odd){grid-column:1/-1}
-@media (max-width:599.98px){.facts-live a{padding:.45rem .6rem;column-gap:.45rem}.facts-live .ic{width:1.2rem;height:1.2rem}
-.facts-live a>span{font-size:.7rem}.facts-live small{font-size:.7rem;line-height:1.2}}
 .hero-map{position:relative;display:grid;gap:.6rem;min-width:0;width:100%;max-width:30rem;justify-self:center}
 @media (min-width:66rem){.hero-map{max-width:36rem}}
 .hero-map .map{filter:drop-shadow(0 30px 40px rgb(0 0 0/.35))}
@@ -685,6 +685,8 @@ padding:.2rem 1rem;max-width:28rem;box-shadow:var(--shadow);color:var(--muted)}
 .search input{flex:1;min-width:0;font:inherit;border:0;background:transparent;color:var(--ink);padding:.5rem 0;outline:none}
 .search:focus-within{outline:2px solid var(--link);outline-offset:2px}
 .chips{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.45rem}
+/* The home page's field « Aller à… » (menu.ts), not the button « Y aller » (.aller): its label above it, the pages found below it. */
+.champ{display:block}.champ label{display:block;font-weight:700;margin-bottom:.4rem}.champ .search{margin:0}.champ .chips{margin:.7rem 0 0}.champ .note{margin:.6rem 0 0}
 .chips a{display:block;padding:.4rem .9rem;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);
 text-decoration:none;font-size:.95rem;transition:border-color .15s,transform .15s}
 .chips a:hover{border-color:var(--accent);color:var(--link);transform:translateY(-1px)}
@@ -1188,6 +1190,13 @@ ${head.sansInstallation ? "" : INSTALL}
 }
 
 /** The hook goes right under the page's title; not on /volcan during an alert, whose heading and lines say it (marketing). */
+/**
+ * The count of /chiffres (« sources publiques lues », from compte()), in the footer since the home page's top was made
+ * lighter (04/11/2026): from the code alone, counted once per isolate.
+ */
+let lues: number | undefined;
+const sourcesLues = () => (lues ??= compte(toutesLesSources()).sources);
+
 const withHook = (band: string, path: string, volcan?: boolean, own?: string) => {
   const h = volcan && path === "/volcan" ? undefined : own ?? hook(path);
   return h ? band.replace("</h1>", `</h1>\n    <p class="hook">${esc(h)}</p>`) : band;
@@ -1215,7 +1224,13 @@ function header(path: string, origin: string, u: Urgent): string {
   const menu = byUse(MENU.filter((m) => m.key !== "associations" || enLigne()), u);
   const quick = [...urgentKeys(u), ...FIRST, "communes"].map((k) => menu.find((m) => m.key === k)!)
     .map((m) => `<a class="k-${m.key}" href="${m.path}"${current(m.path)}>${icon(m.icon)}${esc(m.nom)}</a>`).join("");
-  const grid = menu.map((m) => `<li><a class="k-${m.key}" href="${m.path}"${current(m.path)}><span class="kb">${icon(m.icon)}</span><span class="gn">${esc(m.nom)}</span></a></li>`).join("");
+  // The menu in five groups, « Communes » above them (menu.ts); the cyclone's three pages under « Sécurité ».
+  const link = (m: Entree, cls = `k-${m.key}`) => `<a class="${cls}" href="${m.path}"${current(m.path)}><span class="kb">${icon(m.icon)}</span><span class="gn">${esc(m.nom)}</span></a>`;
+  const groups = GROUPES.map((g) => {
+    const list = g.entrees.filter((m) => m.key !== "associations" || enLigne());
+    const cyc = g.nom === "Sécurité" ? `\n      <p class="cyc">Cyclone\u00a0: ${CYCLONE.map((c) => `<a href="${c.path}"${current(c.path)}>${esc(c.nom)}</a>`).join(" · ")}</p>` : "";
+    return `<p class="sheet-h">${esc(g.nom)}</p>\n      <ul class="grid groupe">${list.map((m) => `<li>${link(m)}</li>`).join("")}</ul>${cyc}`;
+  }).join("\n      ");
   // The accounts in the bar on wide screens; on a phone, in the menu, so that the bar keeps to the brand and two buttons.
   const top = accountLinks(SOCIAL, true);
   const sheet = accountLinks();
@@ -1226,8 +1241,8 @@ function header(path: string, origin: string, u: Urgent): string {
   <a class="cta-ia" href="/#assistant">${icon("spark")}<span>Mon IA</span></a>
   <details class="menu"><summary aria-label="Toutes les catégories"><span class="g">${icon("grid")}</span><span class="x">${icon("close")}</span></summary>
     <nav class="sheet" aria-label="Catégories"><div class="wrap">
-      <p class="sheet-h">Toute l'île en direct</p>
-      <ul class="grid">${grid}</ul>
+      ${link(COMMUNES, "kcomm k-communes")}
+      ${groups}
       ${sheet.length ? `<p class="sheet-h">Suivre rundata.re</p>\n      <p class="social sheet-follow">${paired(sheet)}</p>` : ""}
       <p class="sheet-h">Le connecteur pour votre IA</p>
       ${connector(origin, "mcp-url-menu")}
@@ -1334,7 +1349,7 @@ ${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n`
     ${SLOGAN}
     <p>La Réunion 974 en direct, pour vous et votre assistant IA.</p>
     ${head.rss ? `<p><a href="${esc(head.rss.href)}" title="${esc(head.rss.hint)}">${esc(head.rss.link)}</a></p>` : ""}
-    <p>reunion-temps-reel ${VERSION} · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">nos valeurs</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a> · contact@rundata.re</p>
+    <p>reunion-temps-reel ${VERSION} · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues()} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a> · contact@rundata.re</p>
     <p>Référencé sur <a href="${DATAGOUV_REUSE}">data.gouv.fr</a>, la plateforme des données publiques françaises, et sur <a href="${GLAMA}">Glama</a>, l'annuaire des serveurs MCP.</p>
     ${follow()}
     <ul class="pages" aria-label="Catégories">${WITH_PAGE.map((c) => `<li><a href="${c.path}">${esc(c.nom)}</a></li>`).join("")}<li><a href="/communes">Communes</a></li><li><a href="/meteo#communes">Météo par commune</a></li>${enLigne() ? `<li><a href="/associations">Clubs et associations</a></li>` : ""}</ul>

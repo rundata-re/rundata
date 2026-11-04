@@ -2,6 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
+import { compte } from "../src/producteurs.js";
+import { toutesLesSources } from "../src/server.js";
+
+// The footer's count of public sources, that of /chiffres.
+const sourcesLues = compte(toutesLesSources()).sources;
 import { SECTIONS } from "../src/web/pwa.js";
 
 const BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
@@ -55,7 +60,7 @@ describe("/application, rundata.re on the home screen", () => {
     const page = await text("/valeurs");
     expect(page).toContain(`<a href="/application">Autre téléphone ou autre navigateur : les étapes pour chacun →</a>`);
     expect(page).toContain(`<p class="sheet-h">Sur votre téléphone</p>\n      <p><a class="sheet-app" href="/application">Mettre rundata.re sur l'écran d'accueil →</a></p>`);
-    expect(page).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/application">sur votre écran d'accueil</a> · `);
+    expect(page).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · `);
     expect(await text("/sitemap.xml")).toContain("<loc>https://rundata.re/application</loc>");
   });
 });

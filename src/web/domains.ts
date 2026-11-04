@@ -326,7 +326,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   // Out of an alert, timeless: search engines keep it for days, a state in it would go stale (marketing).
   const description = a
     ? volcanMeta(a)
-    : "Piton de la Fournaise en direct : niveau d'alerte d'après la préfecture, publications de l'OVPF, accès à l'Enclos, séismes localisés sous le volcan. · 974";
+    : "Piton de la Fournaise en direct : niveau d'alerte d'après la préfecture, publications de l'OVPF, accès à l'Enclos, séismes localisés sous le volcan.";
 
   const question = ask(`Volkan la pété ? Gèt si ${url} é di amwin si lanklo lé ouvèr.`,
     `Le Piton de la Fournaise est-il en éruption ? Lis ${url} et dis-moi aussi si l'Enclos est ouvert.`);

@@ -13,6 +13,8 @@ import { layout } from "./pages.js";
 export const PATH = "/sites-sans-reponse";
 const H1 = "Sites publics sans réponse";
 const TITLE = "Sites publics de La Réunion sans réponse · rundata.re";
+// Shorter than the lead, for the previews and the search engines (marketing, within DESCRIPTION_MAX).
+const DESCRIPTION = "Les sites publics de La Réunion qui ne répondent pas en ce moment, depuis quand, et ce qui manque alors sur rundata.re. Revérifiés chaque jour.";
 const CHAPEAU = "Certains sites publics de La Réunion ne répondent pas en ce moment. Ce qu'ils publient manque alors sur rundata.re. Cette page dit lesquels, depuis quand, et ce qui manque ici. Chaque site est revérifié chaque jour et quitte la liste dès qu'il répond.";
 const BLOQUES = "Ces sites s'affichent dans un navigateur, mais ne répondent pas aux lectures de rundata.re. Cela peut venir d'un réglage de leur hébergeur.";
 const OPEN_DATA = "Une donnée publique déposée en fichier ouvert sur data.gouv.fr reste lisible même quand le site de son éditeur ne répond pas.";
@@ -60,5 +62,5 @@ export function sansReponsePage(origin: string, rows: Ligne[], passage: number |
   <p>Revérifié chaque jour${passage ? `, dernier passage le ${jourHeure(passage)}` : ""}. Un site de cette liste répond pour vous ? Écrivez-nous : <a href="mailto:contact@rundata.re">contact@rundata.re</a>. Et pour rendre ses informations faciles à reprendre\u00a0: <a href="${GUIDE}">notre guide</a>.</p>
   <p>Voir aussi : <a href="/chiffres">rundata.re en chiffres</a>.</p>
 </section>`;
-  return layout(origin, { title: TITLE, description: CHAPEAU, path: PATH, jsonld: [crumbs(origin, H1, PATH), webPage(origin, PATH, TITLE, CHAPEAU, null)], alerte }, band, body);
+  return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, H1, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);
 }

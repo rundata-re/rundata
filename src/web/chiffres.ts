@@ -13,7 +13,8 @@ import { PATH as SANS_REPONSE } from "./sans-reponse.js";
 
 export { PATH };
 const H1 = "rundata.re en chiffres";
-const TITLE = "rundata.re en chiffres\u00a0: sources, producteurs, licences · rundata.re";
+// Without « · rundata.re »: the name is already its first word, and the preview names the site (og:site_name).
+const TITLE = "rundata.re en chiffres\u00a0: sources, producteurs, licences";
 const CHAPEAU = "Ce que rundata.re lit pour vous, compté en direct\u00a0: les sources publiques, leurs producteurs et leurs licences, ce qui est couvert sur l'île et ce qui manque encore. Chaque chiffre mène à sa page.";
 
 const n = (x: number) => x.toLocaleString("fr-FR").replace(/\s/g, "\u00a0");

@@ -26,8 +26,8 @@ const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 152;
 
 /** « à Saint-Paul », « au Port », « aux Avirons », « à l'Entre-Deux ». */
-export const aCommune = (nom: string) => (nom === "Entre-Deux" ? "à l'Entre-Deux" : a(nom));
-export const deCommune = (nom: string) => (nom === "Entre-Deux" ? "de l'Entre-Deux" : de(nom));
+export const aCommune = a;
+export const deCommune = de;
 
 // The texts of the page, worded by marketing.
 export const titleOf = (p: PlacePage) =>

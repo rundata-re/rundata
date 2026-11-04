@@ -140,5 +140,5 @@ export function passePage(origin: string, p: Passe, alerte?: Alerte): string {
   const foot = `<section><p class="note">Mesures : <a href="${esc(SOURCE.url)}" rel="noopener">données climatologiques de base quotidiennes</a> de Météo-France (${esc(SOURCE.licence)}). Passage : ${doc}.</p>
 <p><a href="/cyclones">Les cyclones du bassin en ce moment →</a> · <a href="/alerte-cyclone">Alerte cyclonique : ce qui ferme, ce qui continue →</a></p></section>`;
   const body = `${measured}\n${gustList}\n${recs}\n${extraits}\n${alert}\n${foot}`;
-  return layout(origin, { title, description: meta, path, jsonld: [crumbs(origin, `Cyclone ${p.nom}`, path), webPage(origin, path, title, meta, null)], alerte }, band, body);
+  return layout(origin, { title, description: meta, path, jsonld: [crumbs(origin, `Cyclone ${p.nom}`, path), webPage(origin, path, title, meta, null)], alerte, image: "historique" }, band, body);
 }

@@ -1006,6 +1006,9 @@ interface Head {
   vert?: boolean;
   /** The page's own hook, in place of its category's: a station's page, which says since when it measures. */
   hook?: string;
+  /** The picture of another section in link previews (scripts/build-og.py's key): a past cyclone, a station that no
+   * longer measures, show the history's, not the « en direct » of their section's. */
+  image?: string;
 }
 
 /**
@@ -1253,9 +1256,19 @@ function header(path: string, origin: string, u: Urgent): string {
 </div></header>`;
 }
 
+// Pages outside a section that show the picture of the nearest one, rather than the site's: the cyclone alert's, the
+// sea's, a commune's day. /aujourdhui itself, the island's day, keeps the site's.
+const NEAREST: [string, string][] = [
+  ["/alerte-cyclone", "cyclones"], ["/ecoles-cyclone", "cyclones"], ["/kit-cyclone", "cyclones"],
+  ["/baignade", "mer"], ["/peche", "mer"],
+];
+const pictureOf = (key: string) => rubriques.find((x) => x.png.startsWith(`/og/${key}.`));
+
 /** The picture of the page's section in link previews (scripts/build-og.py, served from public/og/), else the site's. */
-function ogImage(origin: string, path: string): { src: string; alt: string } {
-  const r = rubriques.find((x) => x.pages.some((p) => inCategory(path, p)));
+function ogImage(origin: string, path: string, key?: string): { src: string; alt: string } {
+  const near = NEAREST.find(([p]) => inCategory(path, p))?.[1] ?? (path.startsWith("/aujourdhui/") ? "communes" : undefined);
+  const want = key ?? near;
+  const r = (want && pictureOf(want)) || rubriques.find((x) => x.pages.some((p) => inCategory(path, p)));
   return r ? { src: `${origin}${r.png}`, alt: r.alt } : { src: `${origin}/og.png?v=${og.v}`, alt: OG_ALT };
 }
 
@@ -1296,7 +1309,7 @@ export function layout(origin: string, head: Head, band: string, body: string): 
   // The descriptions in French typography like the page's text, with the no-break space itself, never « &nbsp; »: their
   // length is unchanged. Not the titles, nor the JSON-LD's other values (marketing, 25/10).
   const d = typo(esc(head.description));
-  const image = ogImage(origin, head.path);
+  const image = ogImage(origin, head.path, head.image);
   // Each acronym spelled out at its first occurrence, from the title's band to the end of the main text (web/sigles.ts).
   const [top, text] = withSigles([withHook(band, head.path, head.volcan, head.hook), mentionLinks(main)]);
   return `<!doctype html>

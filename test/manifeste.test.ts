@@ -50,6 +50,16 @@ describe("on a phone's home screen", () => {
     expect(new DataView(png.buffer).getUint32(20)).toBe(48);
   });
 
+  it("sends /apple-touch-icon.png, asked at the root by tools that do not read the page, to the tile at 180", async () => {
+    const cache = new Cache(new MemoryStore(), () => NOW.getTime());
+    for (const path of ["/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"]) {
+      const r = await site(new Request(`${O}${path}`), cache, () => {}, NOW);
+      expect(r!.status, path).toBe(302);
+      expect(r!.headers.get("location")).toMatch(/^\/icons\/logo-180\.[0-9a-f]{10}\.png$/);
+      expect(r!.headers.get("cache-control")).toBe("public, max-age=86400");
+    }
+  });
+
   it("puts the symbol in the header and the footer, never the flag", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const top = html.slice(html.indexOf(`<header class="top">`), html.indexOf("</header>"));

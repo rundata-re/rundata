@@ -3,6 +3,7 @@
  * trip; and the search for a stop (/bus/arret?q=), which goes straight to the page when one stop answers. Built at each
  * view from the timetables, as the tool answers for a stop, never kept: some 4 900 pages, a few hundred indexed.
  */
+import { deNom } from "../articles.js";
 import * as transit from "../providers/transit.js";
 import { distanceKm, localTime } from "../geo.js";
 import { porte, type Porte } from "./aller.js";
@@ -33,7 +34,7 @@ function titled(p: transit.StopPage): string {
  */
 function described(p: transit.StopPage, lignes: string[]): string {
   const live = p.groups.some((g) => transit.NETWORKS[g.reseau]?.temps_reel);
-  const nets = ` ${live ? "de" : "par"} ${list(networksOf(p))}`;
+  const nets = ` ${live ? deNom(list(networksOf(p))) : `par ${list(networksOf(p))}`}`;
   const say = (cut: number, shown: string[], more: number) =>
     `Prochains bus à l'arrêt ${p.nom}${cut >= 1 && titled(p) === `Arrêt ${p.nom}` ? "" : ` (${p.commune})`}, tous réseaux : ` +
     (shown.length ? `ligne${shown.length + more > 1 ? "s" : ""} ${shown.join(", ")}${more ? ` et ${more} autres` : ""}, ` : "") +

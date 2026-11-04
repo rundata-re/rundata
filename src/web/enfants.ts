@@ -259,7 +259,7 @@ const pathOf = (commune: string) => {
  * and a commune with a single place is said in the singular.
  */
 const MOTS = {
-  title: (c: string) => typo(`Avec les enfants ${aCommune(c)} : aires de jeux, parcs, piscines · 974`),
+  title: (c: string) => typo(`Avec les enfants ${aCommune(c)} : où aller · 974`),
   description: (c: string, n: number) =>
     typo(`Aires de jeux, parcs, piscines, médiathèques : ${n === 1 ? "le lieu" : `les ${n} lieux`} où aller avec les enfants ${aCommune(c)}, sur une carte, et les activités du week-end.`),
   h1: (c: string) => `Avec les enfants ${aCommune(c)}`,

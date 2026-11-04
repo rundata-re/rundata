@@ -950,6 +950,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // A PNG, 48 px: the favicon services (Google's, which claude.ai asks for a connector's icon) read it better than SVG.
     return new Response((icoBytes ??= bytes(icons.ico)), { headers: { "content-type": "image/png", "cache-control": STATIC } });
   }
+  if (path === "/apple-touch-icon.png" || path === "/apple-touch-icon-precomposed.png") {
+    // Asked at the root by tools that do not read the page's <link rel="apple-touch-icon">: the tile at 180. Not for
+    // ever (302, a day): the tile's name changes with its content.
+    return new Response(null, { status: 302, headers: { location: icons["180"], "cache-control": "public, max-age=86400" } });
+  }
   return null;
 }
 

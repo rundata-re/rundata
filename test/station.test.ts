@@ -171,5 +171,19 @@ describe("a station's page", () => {
     expect(html).toContain(`<p>Du ${year(h.trente.du)} au ${year(h.trente.au)} : `);
     expect(html).toContain(`content="L&#39;historique de la station Météo-France Gillot aéroport (Sainte-Marie, 8\u202fm d&#39;altitude), de ${h.depuis} au ${year(h.jusqu_au)}."`);
     expect(html).not.toContain("Mesure en direct");
+    expect(html).toMatch(/<meta property="og:image" content="https:\/\/rundata\.re\/og\/historique\.[0-9a-f]{10}\.png">/);
+  });
+
+  it("dates the history of a station silent since this year with its year too, and keeps the weather's picture while it sends", async () => {
+    plug();
+    const d = await data({ derniere: undefined, heures: [] });
+    const h = d.historique!;
+    const soon = new Date(Date.parse(h.jusqu_au) + 12 * 3_600_000);
+    const html = stationPage("https://rundata.re", { value: d, fetchedAt: soon, stale: false }, d.id, soon);
+    const full = h.jusqu_au.split("-").reverse().join("/");
+    expect(html).toContain(`<p class="hook">L&#39;historique de cette station, de ${h.depuis} au ${full}.</p>`);
+    expect(html).toContain(`de ${h.depuis} au ${full}."`);
+    const live = page(await data({}));
+    expect(live).toMatch(/<meta property="og:image" content="https:\/\/rundata\.re\/og\/meteo\.[0-9a-f]{10}\.png">/);
   });
 });

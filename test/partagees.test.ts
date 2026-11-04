@@ -145,8 +145,9 @@ describe("the shared copies after a deploy", () => {
     // Every copy in KV and in the data center's cache, written by the previous version 15 seconds apart, none due by its
     // rate (the earthquakes' every 10 minutes) nor at its slot (all within their margin, a sixth of their rate, before it).
     // Their families renamed, out of the revisions' table (web/revisions.ts): « web:chiffres:evenements » as « web:chiffres-version:evenements »,
-    // a source's key (« actualites:fil ») as « actualites:fil-version ».
-    const versioned = (key: string) => (key.startsWith("web:") && key.indexOf(":", 4) > 0 ? key.replace(/^(web:[^:]+)/, "$1-version") : `${key}-version`);
+    // a source's key (« actualites:fil ») as « actualites-version:fil », its first part too: the table's family entries
+    // (« onf ») are looked up by it.
+    const versioned = (key: string) => (!key.startsWith("web:") ? key.replace(/^([^:]+)/, "$1-version") : key.indexOf(":", 4) > 0 ? key.replace(/^(web:[^:]+)/, "$1-version") : `${key}-version`);
     const list: Shared[] = SHARED.map((s) => ({ ...s, key: versioned(s.key), build: async () => (count(s.cold ?? 25), { at: now }) }));
     const writtenAt = new Map<string, number>();
     for (const [i, s] of list.entries()) {
@@ -189,7 +190,7 @@ describe("the shared copies after a deploy", () => {
       expect(e.rest + 2 * e.written.length).toBeGreaterThanOrEqual(AFTER_DEPLOY_RESERVE);
     }
     // Each written once more, with the new version in its metadata.
-    expect((kv.metadata.get(kvKey(`${SATELLITES_KEY}-version`)) as { version?: string }).version).not.toBe("2.0.0");
+    expect((kv.metadata.get(kvKey(versioned(SATELLITES_KEY))) as { version?: string }).version).not.toBe("2.0.0");
     for (const s of pages) {
       expect(kv.writes.get(kvKey(s.key)), s.key).toBe(2);
       expect((kv.metadata.get(kvKey(s.key)) as { version?: string }).version).toBe("2.0.0");

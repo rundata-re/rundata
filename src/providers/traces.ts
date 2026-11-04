@@ -13,7 +13,7 @@ import { getJson, postJson } from "../http.js";
 import type { SourceInfo } from "../types.js";
 import { ALTIMETRIE } from "./ign.js";
 import data from "../traces/traces.json" with { type: "json" };
-import { SOURCE as ONF_SOURCE, type Statut } from "./sentiers.js";
+import { avis, SOURCE as ONF_SOURCE, type Statut } from "./sentiers.js";
 
 export const SOURCES = {
   osm: {
@@ -167,7 +167,6 @@ interface Feature {
   geometry?: { paths?: [number, number][][] };
 }
 
-const clean = (v: unknown) => (typeof v === "string" ? v.replace(/\s+/g, " ").trim() : "") || undefined;
 function statut(v: unknown): Statut {
   const s = String(v ?? "").toLowerCase();
   if (s.includes("hors gestion")) return "hors gestion ONF";
@@ -182,8 +181,9 @@ export function parseTrace(nom: string, features: Feature[]): TraceOnf {
     troncons: features.flatMap((f) =>
       (f.geometry?.paths ?? []).filter((p) => p.length > 1).map((p) => ({
         statut: statut(f.attributes.WS_Statut),
-        cause: clean(f.attributes.WS_InfCaus),
-        info: clean(f.attributes.WS_InfDate),
+        // As on the island's map (onf:sentiers): « · » between the date and the cause of a notice.
+        cause: avis(f.attributes.WS_InfCaus),
+        info: avis(f.attributes.WS_InfDate),
         points: p.map(([lon, lat]) => ({ lon, lat })),
       }))),
   };

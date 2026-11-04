@@ -56,6 +56,8 @@ function pack(span: number[], c: number): number[][] {
 const tile = (page: string, nom: string) => page.match(new RegExp(`<li class="tile[^>]*>(?:(?!<li class="tile).)*?>${nom}(?:</a>)?</h3>.*?(?=<li class="tile)`, "s"))![0];
 
 describe("a commune's tiles", () => {
+  // A page built for each commune in three states: about 3 s alone, over vitest's 5 s by default when the whole suite
+  // loads the machine. Its own time, so a busy machine is not taken for a hole in the grid.
   it("leave no hole in the grid, on a phone, a tablet or a computer, in every commune", () => {
     for (const c of COMMUNES)
       for (const data of [commune(ago(60_000)), commune(ago(60_000), {}), commune(ago(BIKES_STALE_MS + 60_000))]) {
@@ -64,7 +66,7 @@ describe("a commune's tiles", () => {
           for (const row of pack(g.map((t) => t.span[k]), n)) expect(row.filter((x) => x < 0), `${c.nom}, ${n} colonnes`).toEqual([]);
         });
       }
-  });
+  }, 30_000);
 
   it("give the buses and the bikes a whole row, beside no other tile", () => {
     const g = grid(communePage(ORIGIN, p, commune(ago(60_000)), NOW));

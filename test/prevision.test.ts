@@ -146,13 +146,14 @@ describe("today, from the hours still to come", () => {
     const at = new Date("2026-10-22T06:00:00Z"); // 10:00 in La Réunion
     const r = body(await previsionMeteo(await wetCache(at), "Cilaos", undefined, at));
     expect(r.jours[0]).toMatchObject({ jour: "jeudi 22/10", pluie: "1,6 mm de pluie de 10\u00a0h à minuit", ciel_en_journee: "ciel dégagé" });
-    expect(r.resume).toContain("aujourd'hui : ciel dégagé, ");
-    expect(r.resume).toContain(", 1,6 mm de pluie de 10\u00a0h à minuit");
+    // The hours are said once, before all of today's figures.
+    expect(r.resume).toContain("aujourd'hui : de 10\u00a0h à minuit, ciel dégagé, ");
+    expect(r.resume).toContain(", 1,6 mm de pluie, ");
     expect(r.resume).not.toMatch(/11,2 mm|averses/);
-    // The day's lowest and highest temperatures, the night's included.
-    const dry = body(await previsionMeteo(await offlineCache(), "Cilaos", undefined, NOW)).jours[0];
-    expect([r.jours[0].temperature_min, r.jours[0].temperature_max]).toEqual([dry.temperature_min, dry.temperature_max]);
-    expect(dry.temperature_min).toMatch(/^11 /);
+    // The lowest and highest temperatures of the hours left too, said as such: the night's 11 °C is over at 10:00.
+    expect(r.jours[0].periode).toBe("de 10\u00a0h à minuit");
+    expect(r.jours[0].temperature_min).toBe("12,3 °C");
+    expect(r.jours[1].periode).toBeUndefined();
     // Tomorrow is the model's day, untouched.
     expect(r.jours[1].pluie).toBe(body(await previsionMeteo(await offlineCache(), "Cilaos", "demain", NOW)).jours[0].pluie);
   });
@@ -169,7 +170,7 @@ describe("today, from the hours still to come", () => {
     const at = new Date("2026-10-22T06:00:00Z");
     const r = body(await previsionMeteo(await wetCache(at), undefined, undefined, at));
     expect(r.lieux[0].jours[0].pluie).toBe("1,6 mm de pluie de 10\u00a0h à minuit");
-    expect(r.resume).toContain("Cilaos : aujourd'hui ciel dégagé, ");
+    expect(r.resume).toContain("Cilaos : aujourd'hui de 10\u00a0h à minuit, ciel dégagé, ");
   });
 
   // Rain in the morning only: 9,6 mm from 7 h to 11 h, nothing after.
@@ -192,7 +193,7 @@ describe("today, from the hours still to come", () => {
     const at = new Date("2026-10-22T11:00:00Z"); // 15:00 in La Réunion
     const r = body(await previsionMeteo(await morningCache(at), "Cilaos", undefined, at));
     expect(r.jours[0].pluie).toBe("pas de pluie prévue de 15\u00a0h à minuit");
-    expect(r.resume).toContain("aujourd'hui : ciel dégagé, 11 à 21,6 °C, pas de pluie prévue de 15\u00a0h à minuit, ");
+    expect(r.resume).toContain("aujourd'hui : de 15\u00a0h à minuit, ciel dégagé, 12,3 à 19,6 °C, pas de pluie prévue, ");
     expect(r.resume).not.toMatch(/9,6 mm|pluie faible/);
     // The other days are whole days: no hour.
     expect(r.jours.slice(1).map((j: { pluie?: string }) => j.pluie).join(" ")).not.toMatch(/minuit/);
@@ -203,7 +204,7 @@ describe("today, from the hours still to come", () => {
     expect(placePage("https://rundata.re", p, copyOf({ prevision: r }, at), at)).toContain("<p>Pluie : pas de pluie prévue de 15\u00a0h à minuit</p>");
     const day = resume(p, { meteo: copyOf({ prevision: r }, at) } as never, at);
     expect(day.meteo?.prevision?.aujourd_hui?.pluie).toBe("pas de pluie prévue de 15\u00a0h à minuit");
-    expect(aujourdhuiPage("https://rundata.re", p, day, null)).toContain("ciel dégagé, pas de pluie prévue de 15\u00a0h à minuit.</p>");
+    expect(aujourdhuiPage("https://rundata.re", p, day, null)).toContain("jeudi 22/10 de 15\u00a0h à minuit : 12,3\u202f°C à 19,6\u202f°C, ciel dégagé, pas de pluie prévue.</p>");
   });
 
   it("keeps the hour of the answer in a copy read later in the day", async () => {
@@ -221,6 +222,9 @@ describe("today, from the hours still to come", () => {
     const at = new Date("2026-10-21T20:00:00Z"); // 00:00 on 22/10
     const r = body(await previsionMeteo(await morningCache(at), "Cilaos", undefined, at));
     expect(r.jours[0]).toMatchObject({ jour: "jeudi 22/10", pluie: "9,6 mm de pluie" });
+    // The whole day's lowest temperature, that of the night.
+    expect(r.jours[0].periode).toBeUndefined();
+    expect(r.jours[0].temperature_min).toMatch(/^11 /);
   });
 });
 

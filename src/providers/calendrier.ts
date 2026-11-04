@@ -3,6 +3,7 @@
  * holidays, 20 December included (calendrier.api.gouv.fr). Sunrise and sunset, and the Moon, are computed here.
  */
 import type { Cache, Cached } from "../cache.js";
+import { versant } from "../geo.js";
 import { getJson } from "../http.js";
 import type { SourceInfo } from "../types.js";
 
@@ -75,6 +76,15 @@ export async function holidays(cache: Cache, year: number): Promise<Cached<Recor
 }
 
 const RAD = Math.PI / 180;
+
+/**
+ * The height from which a place sees its horizon, for sun() and moon(): its altitude where the horizon is the sea below,
+ * on the coast and its slopes, a summit or a viewpoint; 0 in the cirques and the high plains (versant « centre »), whose
+ * horizon is the relief, higher than the sea's. Lowering it there for the altitude gave Cilaos (1 209 m) 9 more minutes
+ * of day than Saint-Pierre, the sun rising earlier at the bottom of the cirque instead of later.
+ */
+export const horizonDe = (p: { type: string; lon: number; lat: number; altitude_m: number | null }) =>
+  p.type === "sommet" || p.type === "point_de_vue" || !versant(p.lon, p.lat).startsWith("centre") ? Math.max(0, p.altitude_m ?? 0) : 0;
 
 /**
  * Sunrise and sunset (upper limb, with refraction) on a local date at a place, by the usual sunrise equation;

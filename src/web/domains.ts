@@ -23,6 +23,7 @@ import * as airMesures from "../providers/air-mesures.js";
 import * as traces from "../providers/traces.js";
 import { SUJETS } from "../providers/actualites.js";
 import * as littoral from "../tools/littoral.js";
+import { horizonDe } from "../providers/calendrier.js";
 import { longDate, moonOf, UNPUBLISHED } from "../tools/calendrier.js";
 import type { CourantRow } from "../tools/courant.js";
 import { a, a as aLieu, de, enumeration, fr, heure, nombre, tranche } from "../tools/format.js";
@@ -839,7 +840,7 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
   // The Moon where the sun is said, computed at each view (a pure calculation, no source): its phase and how much is lit
   // stay those of the hour of the view, whatever the age of the copy.
   const moonAt = resolvePlace(d?.soleil?.lieu ?? "Saint-Denis")?.lieu;
-  const lune = moonAt && moonOf(new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10), now, moonAt.lon, moonAt.lat, moonAt.altitude_m ?? 0).champs;
+  const lune = moonAt && moonOf(new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10), now, moonAt.lon, moonAt.lat, horizonDe(moonAt)).champs;
   const upper = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
   // Rising and setting in the order they come in the day; a day without one says so after the other.
   const moonTimes = lune

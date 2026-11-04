@@ -14,7 +14,7 @@ import * as monuments from "../vie/monuments.js";
 import { STATIONS_974 } from "../providers/meteofrance-stations.js";
 import { INSEE } from "../places/insee.js";
 import { porte, SHEET as ALLER } from "./aller.js";
-import { type Alerte, credit } from "./data.js";
+import { type Alerte, credit, sansPeriode } from "./data.js";
 import { connectorCta, courantItem, silentItem, silentText, webPage } from "./domains.js";
 import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
@@ -89,7 +89,7 @@ export function dayLines(p: PlacePage, r: Resume): string {
   const measured = s?.mesures.temperature
     ? `${esc(thin(s.mesures.temperature))} mesurés à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)} à la station ${esc(s.station)}${where ? ` (${esc(where)})` : ""}.`
     : "";
-  const forecast = f?.temperature_min && f.temperature_max ? `Prévision du jour\u00a0: ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}${f.ciel_en_journee ? `, ${esc(f.ciel_en_journee)}` : ""}.` : "";
+  const forecast = f?.temperature_min && f.temperature_max ? `Prévision ${esc(f.periode ?? "du jour")}\u00a0: ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}${f.ciel_en_journee ? `, ${esc(f.ciel_en_journee)}` : ""}.` : "";
   const v = r.vigilance;
   const level = v && !v.au_dessus_du_vert && !v.alerte_cyclonique ? vigilanceLevel(v.maintenant) : "";
   const ev = r.evenements_du_jour;
@@ -185,8 +185,9 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const url = `${origin}${path}`;
   const m = r.meteo;
   const f = m?.prevision?.aujourd_hui;
-  // The rain says itself (« 1,6 mm de pluie de 15\u00a0h à minuit », « pas de pluie prévue »): no « pluie » before it.
-  const dayForecast = (j?: typeof f) => (j ? `${esc(j.jour)} : ${j.temperature_min && j.temperature_max ? `${esc(thin(j.temperature_min))} à ${esc(thin(j.temperature_max))}` : ""}${j.ciel_en_journee ? `, ${esc(j.ciel_en_journee)}` : ""}${j.pluie ? `, ${esc(thin(j.pluie))}` : ""}` : "");
+  // The rain says itself (« 1,6 mm de pluie », « pas de pluie prévue »): no « pluie » before it. Today's hours (« de 15\u00a0h
+  // à minuit ») are said once after the day, not again after the rain.
+  const dayForecast = (j?: typeof f) => (j ? `${esc(j.jour)}${j.periode ? ` ${esc(j.periode)}` : ""} : ${j.temperature_min && j.temperature_max ? `${esc(thin(j.temperature_min))} à ${esc(thin(j.temperature_max))}` : ""}${j.ciel_en_journee ? `, ${esc(j.ciel_en_journee)}` : ""}${j.pluie ? `, ${esc(thin(sansPeriode(j.pluie, j.periode)))}` : ""}` : "");
 
   const weather = m
     ? card("thermo", `Météo ${p.nom}`,

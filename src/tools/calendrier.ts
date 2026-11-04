@@ -63,6 +63,11 @@ export function moonOf(day: string, now: Date, lon: number, lat: number, altitud
   };
 }
 
+/** Said with every sunrise and sunset: computed for a clear horizon, which the relief often is not (cal.horizonDe). */
+export const SOLEIL_NOTE =
+  "Calculé pour un horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le soleil plus longtemps\u00a0: " +
+  "il s'y lève plus tard et s'y couche plus tôt.";
+
 /** Under the sky of the night (web/pages.ts, a place of the Hauts): what of it is computed, said as such (marketing, 04/11). */
 export const NUIT_NOTE =
   "Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles, à quelques minutes près, pour " +
@@ -139,11 +144,11 @@ export async function calendrier(cache: Cache, lieu: string | undefined, now = n
     };
   }
   const p = res.lieu;
-  const s = cal.sun(day, p.lon, p.lat, p.altitude_m ?? 0);
+  const s = cal.sun(day, p.lon, p.lat, cal.horizonDe(p));
   const hm = (d: Date) => localTime(d).split(" ")[1];
   const length = Math.round((s.coucher.getTime() - s.lever.getTime()) / 60_000);
   parts.push(`À ${p.nom}, lever du soleil à ${hm(s.lever)}, coucher à ${hm(s.coucher)}.`);
-  const lune = moonOf(day, now, p.lon, p.lat, p.altitude_m ?? 0);
+  const lune = moonOf(day, now, p.lon, p.lat, cal.horizonDe(p));
   parts.push(lune.phrase);
 
   return text({
@@ -155,7 +160,7 @@ export async function calendrier(cache: Cache, lieu: string | undefined, now = n
       lever: hm(s.lever),
       coucher: hm(s.coucher),
       duree_du_jour: `${Math.floor(length / 60)} h ${String(length % 60).padStart(2, "0")}`,
-      note: "Calculé pour l'horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le soleil plus tôt.",
+      note: SOLEIL_NOTE,
     },
     lune: { lieu: p.nom, ...lune.champs },
     sources: credits([...(feries ? [cal.HOLIDAYS] : []), ...(schools ? [cal.SCHOOL] : [])]),

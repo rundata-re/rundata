@@ -14,6 +14,7 @@ import { resolvePlace } from "../places/resolve.js";
 import { enLigne } from "./associations-drapeau.js";
 import { enLigne as connecteursEnLigne } from "./connecteurs-drapeau.js";
 import { HAUTS_MIN_M, softened } from "../tools/nuages.js";
+import { horizonDe } from "../providers/calendrier.js";
 import { NUIT_NOTE, nuitOf } from "../tools/calendrier.js";
 import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
@@ -1417,6 +1418,18 @@ export const shortName = (n: string) =>
 export const seaName = (n: string) => n.replace(/^Plage (de |du )?/, "").replace(/^\p{Ll}/u, (c) => c.toUpperCase());
 export const dayMonth = (ymd: string) => ymd.split("-").reverse().slice(0, 2).join("/");
 
+/**
+ * The days of satellite readings shown together, after « par satellite »: « le 03/11 », « les 02 et 03/11 », « du 31/10
+ * au 02/11 ». The newest alone said « le 03/11 » over a list with two beaches of 02/11.
+ */
+export function lesJours(days: string[]): string {
+  const d = [...new Set(days)].sort();
+  if (d.length <= 1) return `le ${dayMonth(d[0] ?? "")}`;
+  const [first, last] = [d[0], d[d.length - 1]];
+  if (d.length > 2) return `du ${dayMonth(first)} au ${dayMonth(last)}`;
+  return first.slice(0, 7) === last.slice(0, 7) ? `les ${first.slice(8, 10)} et ${dayMonth(last)}` : `les ${dayMonth(first)} et ${dayMonth(last)}`;
+}
+
 /** The row of a station on /meteo, where its marker on the maps leads. */
 export const stationId = (nom: string) => `st-${slugify(nom)}`;
 /** The row or card of a place on a page, where the map's marker or commune leads: « c-saint-pierre ». */
@@ -1487,6 +1500,11 @@ export function connector(origin: string, id: string): string {
 }
 
 export const withTemp = (data: Cached<HomeData> | null) => data?.value.stations.filter((x) => x.temperature != null && !x.stale) ?? [];
+/**
+ * Every station's temperature, for the island's range (« 14 à 30 °C… de Piton Maïdo à Gillot »): the tour's alone left
+ * out Bois-Rouge at 30,7 °C, given in the list of the same page. The tour's on a copy made before every station was kept.
+ */
+const withTempAll = (data: Cached<HomeData> | null) => (data?.value.toutes ?? data?.value.stations)?.filter((x) => x.temperature != null && !x.stale) ?? [];
 export const coldest = (l: StationNow[]) => l.reduce((a, b) => (b.temperature! < a.temperature! ? b : a));
 export const warmest = (l: StationNow[]) => l.reduce((a, b) => (b.temperature! > a.temperature! ? b : a));
 
@@ -1584,12 +1602,12 @@ export const empty = (line: string): Live => ({ valeur: "", detail: esc(line), v
 const range = (lo: number, hi: number) => `${fr(Math.round(lo))} à ${thin(deg(Math.round(hi)))}`;
 
 export function meteoLive(data: Cached<HomeData> | null, now = new Date()): Live | undefined {
-  const l = withTemp(data);
+  const l = withTempAll(data);
   if (!data) return undefined;
   if (!l.length) return empty(`Aucune température dans la lecture des stations ${readAt(data.fetchedAt, now).de}.`);
   const lo = coldest(l);
   const hi = warmest(l);
-  const latest = data.value.stations.reduce((m, s) => (s.time > m ? s.time : m), "");
+  const latest = l.reduce((m, s) => (s.time > m ? s.time : m), "");
   return {
     valeur: range(lo.temperature!, hi.temperature!),
     detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) ${esc(a(shortName(hi.nom)))}, mesuré à ${hm(latest)}`,
@@ -1603,7 +1621,7 @@ export function merLive(data: Cached<HomeData> | null, now = new Date()): Live |
   const v = mer.map((m) => m.valeur);
   return {
     valeur: Math.round(Math.min(...v)) === Math.round(Math.max(...v)) ? thin(deg(Math.round(v[0]))) : range(Math.min(...v), Math.max(...v)),
-    detail: `au large des plages, par satellite le ${esc(dayMonth(mer.map((m) => m.jour).sort().pop()!))}`,
+    detail: `au large des plages, par satellite ${esc(lesJours(mer.map((m) => m.jour)))}`,
   };
 }
 
@@ -1642,12 +1660,12 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
 
 /** The island's weather: every station, from the coast to the summits, the sea, and a page per commune or place. */
 export function meteoPage(origin: string, data: Cached<HomeData> | null, now = new Date(), alerte?: Alerte): string {
-  const l = withTemp(data);
+  const l = withTempAll(data);
   const all = data?.value.toutes ?? [];
   // The page's figure, not a tile's line for a copy with no temperature (`vide`).
   const live = l.length ? meteoLive(data) : undefined;
   const url = `${origin}/meteo`;
-  const latest = data?.value.stations.reduce((m, s) => (s.time > m ? s.time : m), "");
+  const latest = l.reduce((m, s) => (s.time > m ? s.time : m), "");
 
   const status = live
     ? `<div class="now"><span class="big span">${live.valeur}</span><p>mesurés sous abri par les stations de l'île, de <b>${esc(shortName(coldest(l).nom))}</b> (${metres(coldest(l).altitude_m)}) à <b>${esc(shortName(warmest(l).nom))}</b>. Dernière mesure à <b>${hm(latest!)}</b>.</p></div>`
@@ -1658,7 +1676,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   const sea = (titled: boolean) => data?.value.mer.length
     ? `<figure class="card mapcard">${titled ? `<h3 style="color:var(--on-night)">La mer au large</h3>` : ""}<ul class="bars">` +
       data.value.mer.map((m) => `<li><span>${esc(seaName(m.nom))}</span><b>${thin(deg(m.valeur))}</b></li>`).join("") +
-      `</ul><p class="note">Par satellite, le ${esc(dayMonth(data.value.mer.map((m) => m.jour).sort().pop()!))}. <a href="/mer">Toutes les plages →</a></p></figure>`
+      `</ul><p class="note">Par satellite, ${esc(lesJours(data.value.mer.map((m) => m.jour)))}. <a href="/mer">Toutes les plages →</a></p></figure>`
     : "";
 
   const title = "Météo Réunion 974 en direct : stations et prévisions";
@@ -1855,7 +1873,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const cn = d?.prevision?.ciel_de_nuit;
   const nightCard = cn && data && (place.altitude_m ?? 0) >= HAUTS_MIN_M && evening(data.fetchedAt) === evening(now)
     ? (() => {
-        const n = nuitOf(evening(now), place.lon, place.lat, place.altitude_m ?? 0);
+        const n = nuitOf(evening(now), place.lon, place.lat, horizonDe(place));
         const h = new Date(now.getTime() + 4 * 3600_000).getUTCHours();
         return `<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">${h >= 21 || h < 6 ? "Ciel cette nuit" : "Ciel ce soir et cette nuit"}</h3>` +
           `<p>${esc(cn.ligne)}</p><p>${esc(n.nuit_noire)}</p><p>${esc(n.lune)}</p>` +
@@ -1893,7 +1911,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const forecast = f?.jours?.length
     ? `<section aria-labelledby="h-prev"><div class="hb"><h2 id="h-prev">Prévision météo ${esc(p.nom)}</h2><span class="badge">Prévision, pas une mesure</span></div>` +
       `<ul class="days">` +
-      f.jours.map((j) => `<li class="card day"><h3>${esc(j.jour)}</h3><p class="range">${esc(range(j.temperature_min, j.temperature_max))}</p>` +
+      f.jours.map((j) => `<li class="card day"><h3>${esc(j.jour)}</h3>${j.periode ? `<p>${esc(j.periode)}</p>` : ""}<p class="range">${esc(range(j.temperature_min, j.temperature_max))}</p>` +
         `<p>${esc(j.ciel_en_journee ?? "—")}</p><p>Pluie : ${esc(thin(j.pluie ?? "—"))}</p><p>Rafales : ${esc(thin(j.rafales_max ?? "—"))}</p>` +
         (j.indice_uv_max ? `<p>UV : ${esc(j.indice_uv_max)}</p>` : "") +
         (j.confiance ? `<p>Confiance : <b>${esc(j.confiance)}</b></p>` + whyNot(j.confiance_pourquoi) : "") + `</li>`).join("") +
@@ -2205,7 +2223,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 
   const status = warm && cool
     ? `<div class="now"><span class="big span">${esc(fr(Math.round(cool.valeur! * 10) / 10))} à ${esc(thin(deg(warm.valeur!)))}</span>` +
-      `<p>Température de surface de la mer autour de l'île, mesurée par satellite le <b>${esc(dayMonth(day!))}</b>. ` +
+      `<p>Température de surface de la mer autour de l'île, mesurée par satellite <b>${esc(lesJours(seen.map((b) => b.jour!)))}</b>. ` +
       `Plus chaude à <b>${esc(seaName(warm.nom))}</b>, plus fraîche à <b>${esc(seaName(cool.nom))}</b>.</p></div>`
     : `<p class="lead">Les mesures satellite se chargent : rechargez la page dans quelques secondes.</p>`;
 
@@ -2258,7 +2276,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 
   const title = "Mer Réunion : houle, température de l'eau et marée · 974";
   const description = warm && cool
-    ? `La mer à La Réunion (974) plage par plage : l'eau de ${deg(cool.valeur!)} à ${deg(warm.valeur!)}, mesurée par satellite le ${dayMonth(day!)}${top ? `, et la houle prévue, jusqu'à ${top.houle!.max}` : ""}.`
+    ? `La mer à La Réunion (974) plage par plage : l'eau de ${deg(cool.valeur!)} à ${deg(warm.valeur!)}, mesurée par satellite ${lesJours(seen.map((b) => b.jour!))}${top ? `, et la houle prévue, jusqu'à ${top.houle!.max}` : ""}.`
     : "La mer à La Réunion (974), plage par plage : la température mesurée par satellite, la houle prévue. Saint-Gilles, Saint-Leu, Saint-Pierre…";
 
   const jsonld = [
@@ -2293,14 +2311,14 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Mer</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill">Mesure satellite${day ? ` · ${esc(dayMonth(day))}` : ""}</p>
+    <p class="pill">Mesure satellite${day ? ` · ${esc(lesJours(seen.map((b) => b.jour!)).replace(/^(le|les|du) /, ""))}` : ""}</p>
     <h1>Mer à La Réunion\u00a0: température et houle <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dolo la mèr lé sho ? Gèt si ${url} é di amwin pou chak plaj.`,
       `Quelle est la température de l'eau à La Réunion ? Lis ${url} et donne-moi la température plage par plage, avec la date de la mesure.`)}
   </div>
   <figure class="card mapcard">${islandMap({ markers, apart: true, label: "Carte de La Réunion (974) avec la température de la mer au large de chaque plage" })}
-  ${day ? `<figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(`Mesure par satellite (NOAA CoastWatch et NASA), moyenne du ${dayMonth(day)}.`))}</figcaption>` : ""}</figure>
+  ${day ? `<figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(`Mesure par satellite (NOAA CoastWatch et NASA), ${new Set(seen.map((b) => b.jour)).size > 1 ? `moyenne de chaque jour, ${lesJours(seen.map((b) => b.jour!))}` : `moyenne du ${dayMonth(day)}`}.`))}</figcaption>` : ""}</figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-plages">

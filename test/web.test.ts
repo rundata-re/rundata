@@ -210,7 +210,8 @@ describe("home page", () => {
     await edge.put("web:mer", { value: sea, fetchedAt: NOW.getTime() - 3 * 3600_000 });
     const { text } = await serve(isolate(edge), "/meteo");
     expect(text).toMatch(/<li><span>Saint-Leu<\/span><b>26,4[^<]*°C<\/b><\/li>/);
-    expect(text).toContain("Par satellite, le 19/10.");
+    // Every day of the readings shown, not the newest alone: the other beaches are of 18 October.
+    expect(text).toContain("Par satellite, les 18 et 19/10.");
     // Under the section's h2 « La mer au large », never a second heading of the same words, white on the white card.
     expect(text.match(/La mer au large</g)).toHaveLength(1);
     expect(satellites()).toEqual([]);

@@ -467,7 +467,11 @@ function sentence(where: string, p: Period, s: Record<string, unknown>, names: {
 function oneDay(where: string, d: string, s: Record<string, unknown>, names: { rain?: string; temp?: string; sun?: string }): string {
   const parts: string[] = [];
   const pl = s.pluie as { total_mm: number; jours_mesures: number; normale_mm?: number } | undefined;
-  if (pl?.jours_mesures) parts.push(`${fr(pl.total_mm)} mm de pluie ${a(names.rain!)}`);
+  // Météo-France's day of rain, said where it is given: the 0,4 mm « du 03/11 » at Cilaos fell on 04/11 between 0 h and 1 h, which
+  // the hours of 03/11 given after (« pas de pluie ») seemed to deny.
+  const next = new Date(Date.parse(`${d}T12:00:00Z`) + 86400_000).toISOString().slice(0, 10);
+  const dm = (x: string) => `${x.slice(8, 10)}/${x.slice(5, 7)}`;
+  if (pl?.jours_mesures) parts.push(`${fr(pl.total_mm)} mm de pluie ${a(names.rain!)}, du ${dm(d)} 10\u00a0h au ${dm(next)} 10\u00a0h`);
   const t = s.temperatures as { maximales_moyenne?: number; minimales_moyenne?: number; maximales_normale?: number } | undefined;
   if (t?.maximales_moyenne != null || t?.minimales_moyenne != null) {
     parts.push(`minimale ${t.minimales_moyenne != null ? `${fr(t.minimales_moyenne)} °C` : "non mesurée"}, maximale ${t.maximales_moyenne != null ? `${fr(t.maximales_moyenne)} °C` : "non mesurée"}${t.maximales_normale != null ? ` (normale du mois ${fr(t.maximales_normale)} °C)` : ""} ${a(names.temp!)}`);

@@ -20,12 +20,26 @@ export interface Fit {
   score: number;
 }
 
+// The sides of the coast, in their order around the island: two neighbours meet on a line drawn from the centre.
+const RING: Versant[] = ["nord", "est (au vent)", "sud", "ouest (sous le vent)"];
+
+/**
+ * Neighbouring sides of the coast, less than 10 km apart: one coast across the line between two sides, not two climates.
+ * The beach of L'Étang-Salé (« ouest », just past 230°) and Pont-Mathurin, 5,4 km away in the same commune (« sud »).
+ * The centre stays apart: a cirque is not the coast below it.
+ */
+function sameCoast(a: Versant, b: Versant, km: number): boolean {
+  const i = RING.indexOf(a);
+  const j = RING.indexOf(b);
+  return km < 10 && i >= 0 && j >= 0 && (Math.abs(i - j) === 1 || Math.abs(i - j) === 3);
+}
+
 export function fit(place: Place, station: Station): Fit {
   const d = distanceKm(place.lon, place.lat, station.lon, station.lat);
   const dAlt = place.altitude_m == null ? null : station.altitude_m - place.altitude_m;
   const vPlace = versant(place.lon, place.lat);
   const vStation = versant(station.lon, station.lat);
-  const sameSide = vPlace === vStation;
+  const sameSide = vPlace === vStation || sameCoast(vPlace, vStation, d);
   const absAlt = Math.abs(dAlt ?? 0);
 
   const avertissements: string[] = [];

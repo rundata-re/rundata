@@ -26,7 +26,7 @@ import * as loyers from "../vie/loyers.js";
 import * as annexesSd from "../vie/mairies-annexes.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
-import { a, ailleurs, communeDite, de, fr, nombre } from "../tools/format.js";
+import { a, ailleurs, communeDite, de, ecartsCourts, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
 import { coastText, cyclone, cycloneLevel, feminine, forZone, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
@@ -38,7 +38,7 @@ import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAI
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
-import { ask, connector, credits, cycloneVg, dayMonth, deg, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg } from "./pages.js";
+import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
@@ -153,8 +153,9 @@ function weather(p: PlacePage, data: Cached<PlaceData> | null, now: Date): Live 
   const f = (evening && jours[1]) || jours[0];
   return {
     valeur: esc(thin(s.mesures.temperature!)),
-    detail: `station ${esc(s.station)}${communeDite(s, p.nom) ? ` ${esc(a(communeDite(s, p.nom)!))}` : ""} (${metres(s.altitude_m)}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}), mesuré à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}` +
-      (f?.temperature_min && f.temperature_max ? ` · prévision ${esc(f.jour.toLowerCase())} : ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}` : ""),
+    // What makes it speak less well for the commune, as the tools say it in full: « 249 m plus haut », « autre versant\u00a0: est ».
+    detail: `station ${esc(s.station)}${communeDite(s, p.nom) ? ` ${esc(a(communeDite(s, p.nom)!))}` : ""} (${[metres(s.altitude_m), ...(s.distance_km != null ? [`à ${fr(s.distance_km)} km`] : []), ...ecartsCourts(s).map(esc)].join(", ")}), mesuré à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}` +
+      (f?.temperature_min && f.temperature_max ? ` · prévision ${esc(f.jour.toLowerCase())}${f.periode ? ` ${esc(f.periode)}` : ""} : ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}` : ""),
   };
 }
 
@@ -208,7 +209,7 @@ function sea(p: PlacePage, mer: Cached<SeaData> | null | undefined, place: Cache
     const hi = Math.round(Math.max(...v));
     return {
       valeur: lo === hi ? thin(deg(lo)) : `${lo} à ${thin(deg(hi))}`,
-      detail: `au large ${beaches.length > 1 ? "des plages" : "de la plage"} ${esc(beaches.map((b) => seaName(b.nom)).join(", "))}, par satellite le ${esc(dayMonth(beaches.map((b) => b.jour!).sort().pop()!))}${prevue}${tide}`,
+      detail: `au large ${beaches.length > 1 ? "des plages" : "de la plage"} ${esc(beaches.map((b) => seaName(b.nom)).join(", "))}, par satellite ${esc(lesJours(beaches.map((b) => b.jour!)))}${prevue}${tide}`,
     };
   }
   const m = place?.value.mer?.mesure;
@@ -616,7 +617,7 @@ function justice(data: Cached<CommuneData> | null | undefined, g: Porte, now: Da
 
 function sunTimes(p: PlacePage, calendrier: Cached<CalendrierAnswer> | null | undefined, now: Date): Live {
   const day = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
-  const s = cal.sun(day, p.place.lon, p.place.lat, p.place.altitude_m ?? 0);
+  const s = cal.sun(day, p.place.lon, p.place.lat, cal.horizonDe(p.place));
   const t = (d: Date) => localTime(d).split(" ")[1];
   // The island's calendar, without its sunrise and sunset (those of Saint-Denis).
   const c = calendrierLive(calendrier ?? null, now);
@@ -696,7 +697,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const s = enTete(l.place?.value.meteo?.stations);
   const headline = s
     ? `<div class="now"><span class="big">${esc(thin(s.mesures.temperature!))}</span>` +
-      `<p>mesurés à <b>${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
+      `<p>mesurés à <b>${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 
   const title = `${p.nom} 974 en direct : météo, bus, air, mairie`;

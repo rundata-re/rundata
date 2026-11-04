@@ -74,7 +74,8 @@ describe("historique_meteo", () => {
     plug();
     const a = json(await historiqueMeteo(new Cache(), "Sainte-Marie", { du: "24/10/2006" }, NOW));
     expect(a.jours).toEqual([{ date: "24/10/2006", pluie_mm: 0.6, tmin: 21.4, tmax: 27.3, soleil_h: 7.8, soleil_pct: 62, rafale_max_kmh: 40 }]);
-    expect(a.resume).toMatch(/le 24\/10\/2006 : 0,6 mm de pluie à Saint-Denis Gillot \(aéroport\)\u00a0; minimale 21,4 °C, maximale 27,3 °C/);
+    // Météo-France's day of rain, from 10 h to 10 h the next day, said: the hours of the day may show none of it.
+    expect(a.resume).toMatch(/le 24\/10\/2006 : 0,6 mm de pluie à Saint-Denis Gillot \(aéroport\), du 24\/10 10\u00a0h au 25\/10 10\u00a0h\u00a0; minimale 21,4 °C, maximale 27,3 °C/);
   });
 
   it("goes month by month over a longer period, each against its normal", async () => {

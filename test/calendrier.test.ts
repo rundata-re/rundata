@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { astronomicalNight, breaks, darkNight, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
+import { astronomicalNight, breaks, darkNight, horizonDe, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
+import { resolvePlace } from "../src/places/resolve.js";
 import { calendrier, longDate, moonOf, nuitOf } from "../src/tools/calendrier.js";
 import { buildCalendrier } from "../src/web/data.js";
 import { calendrierLive, calendrierPage } from "../src/web/domains.js";
@@ -171,6 +172,29 @@ describe("calendar", () => {
     expect(html).toContain(`lever du soleil à <b>${s.lever}</b>, coucher à <b>${s.coucher}</b>.</p>`);
     expect(html).toContain(`<p>Lever ${s.lever}, coucher ${s.coucher} : `);
     expect(calendrierLive({ ...data, stale: false }, now)!.detail).toContain(`soleil ${s.lever}–${s.coucher}`);
+  });
+});
+
+describe("the horizon of a place", () => {
+  const p = (q: string) => resolvePlace(q)!.lieu;
+  const hm = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(11, 16);
+
+  it("is the sea below on the coast and from a summit, the relief in the cirques: no day longer at Cilaos than at Saint-Pierre", async () => {
+    expect(horizonDe(p("Saint-Denis"))).toBe(34);
+    expect(horizonDe(p("Piton des Neiges"))).toBe(p("Piton des Neiges").altitude_m);
+    expect(horizonDe(p("Cilaos"))).toBe(0);
+    const len = (q: string) => {
+      const s = sun("2026-11-04", p(q).lon, p(q).lat, horizonDe(p(q)));
+      return s.coucher.getTime() - s.lever.getTime();
+    };
+    // Lowered for its 1 209 m, Cilaos had 05:28–18:35, 9 more minutes than Saint-Pierre.
+    expect(len("Cilaos")).toBeLessThanOrEqual(len("Saint-Pierre") + 60_000);
+    const c = sun("2026-11-04", p("Cilaos").lon, p("Cilaos").lat, horizonDe(p("Cilaos")));
+    expect([hm(c.lever), hm(c.coucher)]).toEqual(["05:33", "18:29"]);
+    // Said with the answer: the relief makes it rise later and set earlier there.
+    const now = new Date("2026-11-04T08:00:00Z");
+    const r = JSON.parse((await calendrier(new Cache(new MemoryStore(), () => now.getTime()), "Cilaos", now)).content[0].text);
+    expect(r.soleil.note).toContain("il s'y lève plus tard et s'y couche plus tôt");
   });
 });
 

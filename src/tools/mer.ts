@@ -3,6 +3,7 @@ import { distanceKm, localTime } from "../geo.js";
 import { resolvePlace, type Place } from "../places/resolve.js";
 import * as acspo from "../providers/acspo.js";
 import * as coraux from "../providers/coraux.js";
+import * as cetaces from "./cetaces.js";
 import * as houle from "../providers/houle.js";
 import * as modis from "../providers/modis.js";
 import * as requin from "../eau/requin.js";
@@ -352,8 +353,10 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       avertissements: [...(t ? CAVEATS : []), ...(t?.used.flatMap(staleWarning) ?? []), ...(w ? WAVE_WARNINGS : [])],
       risque_requin: requin.requinBlock(now),
       ...(reef ? { coraux: reef } : {}),
+      // The rules of approach of whales and dolphins, from the decrees in the code: nothing read.
+      cetaces: cetaces.cetacesBlock(now),
       couverture: COVERAGE,
-      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(w ? [houle.SOURCE] : []), requin.SOURCE, ...(reef ? [coraux.SOURCE] : [])]),
+      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(w ? [houle.SOURCE] : []), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
       mis_a_jour: t?.used.length ? localTime(t.used[0].cached.fetchedAt) : undefined,
     });
   }
@@ -394,8 +397,10 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     ...(m || v ? { risque_requin: requin.requinBlock(now, r.lieu) } : {}),
     // On the coast only too: the three points of the island, the reef's first.
     ...((m || v) && reef ? { coraux: reef } : {}),
+    // On the coast only too: the rules of approach of whales and dolphins.
+    ...(m || v ? { cetaces: cetaces.cetacesBlock(now) } : {}),
     couverture: COVERAGE,
-    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [houle.SOURCE] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : [])]),
+    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [houle.SOURCE] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : [])]),
   });
 }
 

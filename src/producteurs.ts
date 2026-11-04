@@ -178,6 +178,7 @@ export const FICHES: Record<string, Fiche> = {
   // The prefect signs both decrees; the DMSOI consolidates the first, the DEAL publishes the second.
   dmsoi_peche_loisir: { famille: "licence_ouverte", producteurs: ["DMSOI"] },
   deal_bichiques: { famille: "licence_ouverte", producteurs: ["DEAL Réunion"] },
+  dmsoi_cetaces: { famille: "licence_ouverte", producteurs: ["DMSOI"] },
   boamp_api: { famille: "licence_ouverte", producteurs: ["DILA"] },
   // The operators of La Réunion's stations, from the copy of the national base bundled with the site (irve/stations.json).
   irve: { famille: "licence_ouverte", producteurs: operateurs() },

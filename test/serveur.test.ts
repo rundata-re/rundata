@@ -119,7 +119,8 @@ describe("the server's instructions", () => {
     // 42 101 the same day with the canyons of the Parc national in sentiers_randonnee (one sentence, and its argument canyon).
     // 42 322 the same day with the formations eligible to the CPF in emploi (one sentence, a few words of example).
     // 42 512 on 4/11/2026 with « hier » sent from meteo_actuelle to historique_meteo (one sentence, an example, its English line).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(42_512);
+    // 42 575 the same day with the rules of approach of whales and dolphins in temperature_mer (a few words, its block cetaces).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(42_575);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

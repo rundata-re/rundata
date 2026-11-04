@@ -75,15 +75,15 @@ describe("on a phone's home screen", () => {
 
 describe("each page's hook", () => {
   it("says what the page is good for, right under its title", () => {
-    expect(hook("/sentiers")).toBe("Avant de partir : les sentiers fermés ce matin par l'ONF, et pourquoi.");
+    expect(hook("/sentiers")).toBe("Avant de partir : les sentiers fermés d'après la carte de l'ONF, et pourquoi.");
     expect(hook("/coupures-eau")).toBe("Coupure d'eau ou eau à ne pas boire : les avis en cours des distributeurs.");
     expect(hook("/evenements/concerts")).toBe(hook("/evenements"));
     expect(hook("/meteo/cilaos")).toBe(hook("/meteo"));
     // A trail's page is about its trace, not the day's list.
-    expect(hook("/sentiers/le-bloc-piton-des-neiges")).toBe("La trace à télécharger et l'état du sentier ce matin, avant de partir.");
+    expect(hook("/sentiers/le-bloc-piton-des-neiges")).toBe("La trace à télécharger et l'état du sentier d'après la carte de l'ONF, avant de partir.");
     expect(hook("/randonnees/gr-r2")).toBe(hook("/sentiers/le-bloc-piton-des-neiges"));
     expect(hook("/presse")).toBeUndefined();
-    expect(sentiersPage(O, null, NOW)).toMatch(/<\/h1>\s*<p class="hook">Avant de partir : les sentiers fermés ce matin par l&#39;ONF, et pourquoi\.<\/p>/);
+    expect(sentiersPage(O, null, NOW)).toMatch(/<\/h1>\s*<p class="hook">Avant de partir : les sentiers fermés d&#39;après la carte de l&#39;ONF, et pourquoi\.<\/p>/);
   });
 });
 

@@ -93,7 +93,7 @@ describe("links between the weather, the hikes and the communes", () => {
     expect(weekendPage(O, agenda, NOW)).toContain(`Prévision météo : <a href="/meteo/saint-paul">Saint-Paul</a>`);
   });
 
-  it("say « bouchons » in the traffic page's title", () => {
-    expect(traficPage(O, null, NOW)).toContain(`<h1>Bouchons et circulation à La Réunion <span class="n974">974</span></h1>`);
+  it("say « bouchons » right under the traffic page's title", () => {
+    expect(traficPage(O, null, NOW)).toContain(`<h1>Circulation à La Réunion <span class="n974">974</span></h1>\n    <p class="hook">Avant de prendre la route : la carte officielle des bouchons et des travaux, et ce que signalent les médias.</p>`);
   });
 });

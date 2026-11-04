@@ -34,7 +34,7 @@ import * as fire from "../tools/feux.js";
 import { climb, relief } from "../tools/sentiers.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
-import { LATE_MIN, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
+import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
 import { daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW } from "../tools/bornes.js";
@@ -1618,20 +1618,43 @@ export const fireMarkers = (f: feux.Feux | undefined, now: Date): Marker[] =>
 
 const FIRE_COLOR = "#7c2d12";
 const CLOSED_COLOR = "#e3262d";
+/** The hook of /randonnees and its sectors, with the map's date. */
+export const randoHook = (miseAJour: string | undefined) => `Choisir une rando ouverte d'après ${onfCarte(miseAJour)}, avec sa trace GPS et son dénivelé.`;
+/** The hook of a hike no trail of the ONF is on (marketing). */
+export const NOT_ON_ONF = "Ce sentier n'est pas sur la carte de l'ONF : rundata.re n'a pas son état d'ouverture.";
+
 /** The two marks of the maps of fires and trails, in their legend (marketing's words). */
 export const CLE_FEU: Cle = { forme: "triangle", couleur: FIRE_COLOR, dit: "Point chaud détecté par satellite, pas forcément un feu." };
 export const CLE_FERME: Cle = { forme: "rond", couleur: CLOSED_COLOR, texte: "×", dit: "Sentier fermé" };
-/** « Carte de l'ONF du 20/10 », from the copy's « 20/10/2026 (ONF) ». */
-export const onfMap = (d?: SentiersAnswer) => `Carte de l'ONF${d?.carte_mise_a_jour ? ` du ${d.carte_mise_a_jour.slice(0, 5)}` : ""}`;
+/** « 20/10 »: the day the ONF edited its map, from the tool's « 20/10/2026 (ONF) » or the ISO time the copies keep (data.ts). */
+export function onfDay(miseAJour: string | undefined): string {
+  if (!miseAJour) return "";
+  if (/^\d\d\/\d\d\//.test(miseAJour)) return miseAJour.slice(0, 5);
+  const t = Date.parse(miseAJour);
+  return Number.isFinite(t) ? new Date(t + 4 * 3600_000).toISOString().slice(5, 10).split("-").reverse().join("/") : "";
+}
+
+/** « la carte de l'ONF du 27/10 », the one formula of the trails' state (marketing, UX review of 04/11/2026): never « aujourd'hui » nor « ce matin ». */
+export const onfCarte = (miseAJour: string | undefined) => `la carte de l'ONF${onfDay(miseAJour) ? ` du ${onfDay(miseAJour)}` : ""}`;
+
+/** « Carte de l'ONF du 27/10, relue le 04/11 à 14:05 »: the map's date and when rundata.re read it. */
+export function onfRead(miseAJour: string | undefined, lue: string | undefined): string {
+  const at = lue && Number.isFinite(Date.parse(lue)) ? localTime(new Date(lue)).split(" ") : undefined;
+  return `Carte de l'ONF${onfDay(miseAJour) ? ` du ${onfDay(miseAJour)}` : ""}${at ? `, relue le ${at[0]} à ${at[1]}` : ""}`;
+}
+
+/** « Carte de l'ONF du 20/10, relue le 04/11 à 14:05 », for the map of /sentiers and the fires'. */
+export const onfMap = (d?: SentiersAnswer) => onfRead(d?.carte_mise_a_jour, d?.carte_lue);
+
+/** « État ONF · carte du 27/10 »: the pill of the hikes' pages. */
+export const onfPill = (miseAJour: string | undefined) => (onfDay(miseAJour) ? `État ONF · carte du ${onfDay(miseAJour)}` : "Traces GPS · carte de l'ONF");
 
 /**
- * The source under a map of trails (charte § 3 F), on its own line after the legend: the ONF's map and its date, from
- * the ISO time the hikes' and the traces' answers keep (data.ts), then OpenStreetMap when the map draws its hikes.
+ * The source under a map of trails (charte § 3 F), on its own line after the legend: the ONF's map, its date and when
+ * it was read, then OpenStreetMap when the map draws its hikes.
  */
-export function traceSource(miseAJour: string | undefined, osm: boolean): string {
-  const t = Date.parse(miseAJour ?? "");
-  const day = Number.isFinite(t) ? new Date(t + 4 * 3600_000).toISOString().slice(5, 10).split("-").reverse().join("/") : "";
-  return `<span class="mls">Carte de l'ONF${day ? ` du ${day}` : ""}${osm ? "\u00a0; itinéraires d'OpenStreetMap" : ""}.</span>`;
+export function traceSource(miseAJour: string | undefined, osm: boolean, lue?: string): string {
+  return `<span class="mls">${onfRead(miseAJour, lue)}${osm ? "\u00a0; itinéraires d'OpenStreetMap" : ""}.</span>`;
 }
 
 /** A fire's line in the list of the page, where its marker leads: the list and the markers follow the same order. */
@@ -1701,7 +1724,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
 
   const hikes = `<section aria-labelledby="h-traces">
   <div class="card cta"><h2 id="h-traces">Choisir une randonnée</h2>
-  <p>Les ${d?.randonnees.length ?? ""} itinéraires complets (GR R1, R2, R3, sommets, boucles) et les sentiers de l'ONF, avec leur trace GPS, leur distance, leur dénivelé et l'état du jour, sur une carte de l'île et filtrables : <a href="/randonnees">la page randonnée</a>.</p></div>
+  <p>Les ${d?.randonnees.length ?? ""} itinéraires complets (GR R1, R2, R3, sommets, boucles) et les sentiers de l'ONF, avec leur trace GPS, leur distance, leur dénivelé et leur état d'après la carte de l'ONF, sur une carte de l'île et filtrables : <a href="/randonnees">la page randonnée</a>.</p></div>
 </section>`;
 
   const title = "Sentiers fermés Réunion aujourd'hui : liste ONF · 974";
@@ -1740,7 +1763,7 @@ ${burning ? "" : fires}
 ${hikes}
 ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 
-  return layout(origin, { title, description, path: "/sentiers", jsonld: [hikeCrumbs(origin, "Sentiers fermés", "/sentiers"), webPage(origin, "/sentiers", title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: "/sentiers", hook: `Avant de partir : les sentiers fermés d'après ${onfCarte(d?.carte_mise_a_jour)}, et pourquoi.`, jsonld: [hikeCrumbs(origin, "Sentiers fermés", "/sentiers"), webPage(origin, "/sentiers", title, description, data)], alerte }, band, body);
 }
 
 // ---------------------------------------------------------------- circulation
@@ -1781,12 +1804,11 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
 <div class="wrap intro solo">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Bouchons, accidents, travaux : infotrafic.re</p>
-    <h1>Bouchons et circulation à La Réunion <span class="n974">974</span></h1>
+    <h1>Circulation à La Réunion <span class="n974">974</span></h1>
     <p class="lead">Les bouchons, accidents et travaux en direct sont sur la carte officielle d'<a href="${INFOTRAFIC}">infotrafic.re</a>, le site de la Région, qui ne s'affiche que chez elle. Plus bas, la carte de Waze les montre aussi. rundata.re n'a pas la mesure des bouchons : la Région ne la rend pas réutilisable pour l'instant.</p>
     <p class="lead">La route du Littoral est basculée ou fermée ? L'état officiel est sur <a href="${INFOTRAFIC}">infotrafic.re</a>.</p>
     <p class="hero-cta"><a class="btn sun" href="${INFOTRAFIC}">${icon("car")}Carte officielle (infotrafic.re) ↗</a></p>
-    ${ask(`Lé bouché si la kat-voi astèr ? Gèt si ${url} é di amwin sak ou koné, é ousa mi pé gèt lo trafik.`,
-      `Ça bouchonne sur la quatre-voies en ce moment ? Lis ${url} : dis-moi ce que tu sais (bus, routes forestières, vigilance) et où regarder le trafic en direct.`)}
+    ${ask(`Néna in rout koupé oubien travo zordi\u00a0? Gèt si ${url} é di amwin.`, `Y a-t-il des routes coupées ou des travaux à La Réunion d'après les médias\u00a0? Lis ${url} et résume-moi.`)}
   </div>
 </div>`;
 
@@ -1889,7 +1911,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
 
   const crash = accidentsSection();
 
-  const title = "Info trafic Réunion : bouchons, routes, bus en direct · 974";
+  const title = "Circulation et trafic Réunion : routes, bus, médias · 974";
   const short = "Circulation à La Réunion (974) : carte officielle des bouchons, accidents et travaux sur infotrafic.re, retards des bus et routes forestières fermées.";
   // An announcement of the last hours leads the description; otherwise, what the page has.
   const fresh = lit && lit.annonces.length === 1 && lit.age_h < littoral.RECENT_HOURS ? lit.annonces[0] : undefined;
@@ -2061,17 +2083,17 @@ export function randonneesPage(origin: string, data: Cached<RandonneesAnswer> | 
   const status = !d
     ? loading("La carte des randonnées")
     : `<div class="now"><span class="big">${nRoutes}</span><p>itinéraires et <b>${d.suivis}</b> sentiers de l'ONF avec leur trace GPS, leur distance et leur dénivelé. ` +
-      `Aujourd'hui, <b>${plural(d.fermes, "sentier fermé", "sentiers fermés")}</b>${cut.length ? `, sur ${plural(cut.length, "itinéraire")}` : ""}.</p></div>`;
+      `D'après ${onfCarte(d.carte_mise_a_jour)}, <b>${plural(d.fermes, "sentier fermé", "sentiers fermés")}</b>${cut.length ? `, sur ${plural(cut.length, "itinéraire")}` : ""}.</p></div>`;
 
   const map = d
     ? `<figure class="card mapcard">${hikesMap(d.lignes, "Carte de La Réunion (974) : les itinéraires de randonnée et les sentiers de l'ONF, ouverts ou fermés")}
-  <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span><span><i class="sw ouvert"></i>sentier ouvert</span><span><i class="sw ferme"></i>fermé</span><span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true)}</figcaption></figure>`
+  <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span><span><i class="sw ouvert"></i>sentier ouvert</span><span><i class="sw ferme"></i>fermé</span><span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true, d.carte_lue)}</figcaption></figure>`
     : "";
 
   const band = `${crumbBar("Randonnée")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Traces GPS · état ONF du jour</p>
+    <p class="pill"><span class="dot"></span>${esc(onfPill(d?.carte_mise_a_jour))}</p>
     <h1>Randonnée à La Réunion <span class="n974">974</span></h1>
     ${status}
     <p class="hero-cta"><a class="btn sun" href="#itineraires">${icon("mountain")}Choisir une rando</a><a class="btn glass" href="/sentiers">${icon("alert")}Sentiers fermés${d ? ` (${d.fermes})` : ""}</a></p>
@@ -2143,7 +2165,7 @@ ${trails}
 ${safety}
 ${connectorCta("sentiers_randonnee", "la randonnée")}
 <script>${FILTER_SCRIPT}</script>`;
-  return layout(origin, { title, description, path: "/randonnees", jsonld: [crumbs(origin, "Randonnée", "/randonnees"), webPage(origin, "/randonnees", title, description, data), ...list], alerte }, band, body);
+  return layout(origin, { title, description, path: "/randonnees", hook: randoHook(d?.carte_mise_a_jour), jsonld: [crumbs(origin, "Randonnée", "/randonnees"), webPage(origin, "/randonnees", title, description, data), ...list], alerte }, band, body);
 }
 
 /** Where the cloud sea will be in the coming morning, for each summit and village of the Hauts (tools/nuages.ts). */
@@ -2293,7 +2315,8 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
       (d.alt_max != null ? `<div><dt>Altitudes</dt><dd>${nombre(d.alt_min ?? 0)} – ${meters(d.alt_max)}</dd></div>` : "") + `</dl>`
     : loading("La trace");
 
-  const state = d ? `<p class="lead">${d.ferme ? "<b>" : ""}${esc(d.etat)}${d.ferme ? "</b>" : ""}</p>` : "";
+  const etat = d?.etat === OUVERT_ONF ? `Ouvert d'après ${onfCarte(d.carte_mise_a_jour)}` : d?.etat;
+  const state = d ? `<p class="lead">${d.ferme ? "<b>" : ""}${esc(etat!)}${d.ferme ? "</b>" : ""}</p>` : "";
   // A hike crossing a closed trail says so before anything else: above the map and the download.
   const alarm = d?.fermes.length
     ? `<div class="alarm-band" role="alert">${icon("alert")}<div><p><b>Attention : ${plural(d.fermes.length, "tronçon fermé", "tronçons fermés")} sur cet itinéraire.</b> S'y engager est interdit, même avec la trace : prendre une variante ouverte ou renoncer.</p>
@@ -2319,7 +2342,7 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
 
   const map = d?.lignes.length
     ? `<figure class="card mapcard">${traceMap({ lines: d.lignes, label: `Carte : la trace de ${nom}` })}
-  <figcaption class="note legend" style="color:var(--on-night-muted)">${traceLegend(kind, d.lignes.map((l) => l.etat))}${traceSource(d.carte_mise_a_jour, kind === "randonnee")}</figcaption></figure>`
+  <figcaption class="note legend" style="color:var(--on-night-muted)">${traceLegend(kind, d.lignes.map((l) => l.etat))}${traceSource(d.carte_mise_a_jour, kind === "randonnee", d.carte_lue)}</figcaption></figure>`
     : "";
 
   const profileBlock = d?.profil.length
@@ -2404,7 +2427,9 @@ ${stateBlock}
 </section>
 ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 
-  return layout(origin, { title, description, path, jsonld, alerte }, band, go ? body + ALLER : body);
+  // A hike that follows no trail of the ONF has no state here: its hook says so, instead of « l'état du sentier ».
+  const hook = !d ? undefined : kind === "randonnee" && !d.troncons.length ? NOT_ON_ONF : `La trace à télécharger et l'état du sentier d'après ${onfCarte(d.carte_mise_a_jour)}, avant de partir.`;
+  return layout(origin, { title, description, path, hook, jsonld, alerte }, band, go ? body + ALLER : body);
 }
 
 // ---------------------------------------------------------------- sécheresse

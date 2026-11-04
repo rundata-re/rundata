@@ -549,6 +549,8 @@ export interface SentiersAnswer {
   fermes_par_commune: { commune: string; sentiers_fermes: { sentier: string; cause?: string; precision?: string; longueur_km?: number; page?: string; randonnees?: { nom: string; slug: string }[] }[] }[];
   routes_forestieres_fermees: { route: string; circulation: string; cause?: string; precision?: string }[];
   carte_mise_a_jour?: string;
+  /** When rundata.re read the ONF's map (ISO), said beside the map's own date: « relue le 04/11 à 14:05 ». */
+  carte_lue?: string;
   a_savoir: string[];
   sources: Credit[];
   /** The middle of each closed trail, for the map (not in the tool's answer). */
@@ -568,7 +570,8 @@ export async function buildSentiers(cache: Cache, now = new Date()): Promise<Sen
   const a = needed<Omit<SentiersAnswer, "points" | "suivis" | "randonnees" | "feux">>(await sentiersRandonnee(cache, undefined, now), "sentiers");
   // The answer's fires again (once per invocation), as points for the map.
   const fires = await feux.feuxNow(cache, now);
-  const carte = (await onf.carte(cache)).value;
+  const read = await onf.carte(cache);
+  const carte = read.value;
   const points = carte.sentiers
     .filter((t) => t.statut === "fermé" && t.points.length)
     .map((t) => {
@@ -580,7 +583,7 @@ export async function buildSentiers(cache: Cache, now = new Date()): Promise<Sen
     .map((r) => ({ nom: r.nom, slug: r.slug, km: r.km, dplus: r.dplus, boucle: r.boucle }));
   // Each closed trail with the hikes it cuts.
   const fermes_par_commune = a.fermes_par_commune.map((c) => ({ ...c, sentiers_fermes: c.sentiers_fermes.map((t) => ({ ...t, randonnees: hikesThrough(t.sentier) })) }));
-  return { ...a, fermes_par_commune, points, suivis: onf.geres(carte.sentiers).size, sans_etat: onf.sansEtat(carte.sentiers), randonnees, ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites, lu: fires.fetchedAt.toISOString() } } : {}) };
+  return { ...a, carte_lue: read.fetchedAt.toISOString(), fermes_par_commune, points, suivis: onf.geres(carte.sentiers).size, sans_etat: onf.sansEtat(carte.sentiers), randonnees, ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites, lu: fires.fetchedAt.toISOString() } } : {}) };
 }
 
 /** The hikes that follow an ONF trail, by its name. */
@@ -643,6 +646,8 @@ export interface RandonneesAnswer {
   fermes: number;
   suivis: number;
   carte_mise_a_jour?: string;
+  /** When rundata.re read the ONF's map (ISO), said beside the map's own date: « relue le 04/11 à 14:05 ». */
+  carte_lue?: string;
   sources: Credit[];
   /** The fires seen by satellite in the 24 hours before the build, for the communes' tiles; missing without FIRMS. */
   feux?: feux.Feux;
@@ -685,7 +690,8 @@ const CROSSING_KM = 40;
 
 /** Every hike with its trace and every ONF trail, with their state now and where they are; and the island's map of them. */
 export async function buildRandonnees(cache: Cache, now = new Date()): Promise<RandonneesAnswer> {
-  const [carte, fires, hauts] = await Promise.all([onf.carte(cache).then((c) => c.value), feux.feuxNow(cache, now), hautsNow(cache, now)]);
+  const [read, fires, hauts] = await Promise.all([onf.carte(cache), feux.feuxNow(cache, now), hautsNow(cache, now)]);
+  const carte = read.value;
   const byName = new Map<string, onf.Sentier[]>();
   for (const s of carte.sentiers) byName.set(s.nom, [...(byName.get(s.nom) ?? []), s]);
 
@@ -760,6 +766,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
     fermes: items.filter((t) => t.etat === "fermé").length,
     suivis: items.length,
     carte_mise_a_jour: carte.mise_a_jour,
+    carte_lue: read.fetchedAt.toISOString(),
     sources: credits([traces.SOURCES.osm, onf.SOURCE, traces.SOURCES.ign, ...(fires ? [feux.SOURCE] : [])]),
     ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites } } : {}),
   };
@@ -814,6 +821,8 @@ export interface TraceAnswer {
   routes_fermees?: { routes: { route: string; cause?: string }[]; lu: string };
   /** When the ONF last edited its map (ISO), for the line under the trace's map; missing when it was not read. */
   carte_mise_a_jour?: string;
+  /** When rundata.re read the ONF's map (ISO), said beside the map's own date: « relue le 04/11 à 14:05 ». */
+  carte_lue?: string;
   sources: Credit[];
 }
 
@@ -839,6 +848,9 @@ export function toLineM(lon: number, lat: number, line: [number, number][]): num
   return best;
 }
 
+/** An open trail's state in its copy; the page adds the map's date (web/domains.ts, tracePage). */
+export const OUVERT_ONF = "Ouvert d'après l'ONF";
+
 /**
  * A trail neither open nor closed on the ONF's map whose section still carries a notice there (« Fermé le 02/06/26 »
  * beside « hors gestion ONF »): the notice in the state, quoted, so that the lead and the preview do not say « état non
@@ -853,7 +865,8 @@ export function noticeOf(troncons: { cause?: string; info?: string }[]): string 
 /** An ONF trail: its line and state read from the ONF, its altitudes from the IGN. */
 export async function buildTrail(cache: Cache, t: { nom: string } & traces.SentierStats): Promise<TraceAnswer> {
   // The whole map only for its date: the island's pages share it (onf.KEY), its trail is read on its own.
-  const [tr, carte] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value), onf.carte(cache).then((x) => x.value).catch(() => null)]);
+  const [tr, read] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value), onf.carte(cache).catch(() => null)]);
+  const carte = read?.value;
   const pieces = tr.troncons.map((x) => x.points);
   const m = traces.measure(pieces);
   const shut = tr.troncons.filter((x) => x.statut === "fermé");
@@ -870,7 +883,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
     alt_max: t.alt_max ?? m.alt_max,
     etat: shut.length
       ? `${onf.nuance(shut[0]) ? onf.motifs(shut[0]).join(" · ") : `Fermé${shut[0].cause ? ` : ${shut[0].cause}` : ""}${shut[0].info ? ` (${shut[0].info})` : ""}`}${open ? ", en partie" : ""}`
-      : open ? "Ouvert d'après l'ONF" : noticeOf(tr.troncons) ?? "Hors gestion ONF : état non connu",
+      : open ? OUVERT_ONF : noticeOf(tr.troncons) ?? "Hors gestion ONF : état non connu",
     ferme: shut.length > 0,
     troncons: states,
     lignes: tr.troncons.map((x) => lineOf(x.points, x.statut)),
@@ -879,6 +892,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
     fermes: [],
     inconnus: [],
     carte_mise_a_jour: carte?.mise_a_jour,
+    carte_lue: read?.fetchedAt.toISOString(),
     sources: credits([onf.SOURCE, traces.SOURCES.ign]),
   };
 }
@@ -924,6 +938,7 @@ export async function buildRoute(cache: Cache, r: traces.Randonnee): Promise<Tra
       ? { routes: roads.map((x) => ({ route: x.nom, cause: x.cause })), lu: sportDay(new Date(read.fetchedAt.getTime() + 4 * 3600_000).toISOString().slice(0, 16)) }
       : undefined,
     carte_mise_a_jour: carte?.mise_a_jour,
+    carte_lue: read?.fetchedAt.toISOString(),
     sources: credits([traces.SOURCES.osm, onf.SOURCE, traces.SOURCES.ign]),
   };
 }

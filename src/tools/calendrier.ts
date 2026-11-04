@@ -63,6 +63,41 @@ export function moonOf(day: string, now: Date, lon: number, lat: number, altitud
   };
 }
 
+/** Under the sky of the night (web/pages.ts, a place of the Hauts): what of it is computed, said as such (marketing, 04/11). */
+export const NUIT_NOTE =
+  "Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles, à quelques minutes près, pour " +
+  "l'horizon dégagé\u00a0; dans les cirques et les ravines, le relief cache le ciel plus bas.";
+
+/**
+ * The night that starts on the evening of `evening` at a place: when it is dark, without the Sun nor the Moon above the
+ * horizon, and the Moon of that night, its phase at midnight (the main phase when it falls from 18 h to 6 h), how much
+ * is lit then, its rising and setting in the night. Computed, never read anywhere.
+ */
+export function nuitOf(evening: string, lon: number, lat: number, altitude_m: number): { nuit_noire: string; lune: string } {
+  const hm = (d: Date) => localTime(d).split(" ")[1];
+  const n = cal.darkNight(evening, lon, lat, altitude_m);
+  const midnight = new Date(Date.parse(`${evening}T00:00:00+04:00`) + 24 * 3600_000);
+  const light = cal.moonLight(midnight);
+  const lit = `${Math.round(light.fraction * 100)}\u00a0%`;
+  const spans = n.noire.map((x) => `de ${hm(x.de)} à ${hm(x.a)}`).join(" et ");
+  let nuit_noire: string;
+  if (!n.noire.length) {
+    // Up all the astronomical night: from its rising that evening to its setting the next morning.
+    const lever = cal.moon(evening, lon, lat, altitude_m).lever;
+    const coucher = cal.moon(today(new Date(n.fin.getTime())), lon, lat, altitude_m).coucher;
+    const when = lever && lever < n.debut && coucher && coucher > n.fin ? `de ${hm(lever)} à ${hm(coucher)}` : "toute la nuit";
+    nuit_noire = `Pas de nuit noire cette nuit\u00a0: la Lune, éclairée à ${lit}, reste au-dessus de l'horizon ${when} (calcul astronomique).`;
+  } else if (n.noire.length === 1 && n.noire[0].de > n.debut && n.noire[0].a.getTime() === n.fin.getTime()) {
+    nuit_noire = `Nuit noire ${spans}, après le coucher de la Lune (calcul astronomique).`;
+  } else {
+    nuit_noire = `Nuit noire ${spans}, sans Soleil ni Lune au-dessus de l'horizon (calcul astronomique).`;
+  }
+  const main = cal.nextPhases(new Date(Date.parse(`${evening}T18:00:00+04:00`)), 1).find((x) => x.at.getTime() < midnight.getTime() + 6 * 3600_000);
+  const phase = main ? `${main.phase.charAt(0).toUpperCase()}${main.phase.slice(1)} à ${hm(main.at)}` : cal.between(light.angle);
+  const events = n.lune.map((x) => `${x.lever ? "lever" : "coucher"} à ${hm(x.at)}`);
+  return { nuit_noire, lune: `${phase}, éclairée à ${lit}${events.length ? `, ${events.join(", ")}` : ""} (calcul astronomique).` };
+}
+
 export async function calendrier(cache: Cache, lieu: string | undefined, now = new Date()) {
   const res = lieu?.trim() ? resolvePlace(lieu) : resolvePlace("Saint-Denis");
   if (!res) return notFound(lieu!);

@@ -81,6 +81,11 @@ const RAD = Math.PI / 180;
  * within a minute or two of the almanacs. `altitude_m` lowers the horizon a little.
  */
 export function sun(date: string, lon: number, lat: number, altitude_m = 0): { lever: Date; coucher: Date } {
+  return sunAt(date, lon, lat, -0.833 - (2.076 * Math.sqrt(Math.max(0, altitude_m))) / 60);
+}
+
+/** When the Sun's centre is at `height` (°) in the morning and in the evening of a local date, by the same equation. */
+function sunAt(date: string, lon: number, lat: number, height: number): { lever: Date; coucher: Date } {
   // Local noon in Réunion (UTC+4) as a Julian day.
   const noonUtc = Date.parse(`${date}T08:00:00Z`);
   const jd = noonUtc / 86_400_000 + 2440587.5;
@@ -92,11 +97,22 @@ export function sun(date: string, lon: number, lat: number, altitude_m = 0): { l
   const transit = 2451545.0 + jStar + 0.0053 * Math.sin(m * RAD) - 0.0069 * Math.sin(2 * lambda * RAD);
   const sinDecl = Math.sin(lambda * RAD) * Math.sin(23.4397 * RAD);
   const decl = Math.asin(sinDecl);
-  const h0 = (-0.833 - (2.076 * Math.sqrt(Math.max(0, altitude_m))) / 60) * RAD;
+  const h0 = height * RAD;
   const cosW = (Math.sin(h0) - Math.sin(lat * RAD) * sinDecl) / (Math.cos(lat * RAD) * Math.cos(decl));
   const w = Math.acos(Math.max(-1, Math.min(1, cosW))) / RAD;
   const toDate = (j: number) => new Date((j - 2440587.5) * 86_400_000);
   return { lever: toDate(transit - w / 360), coucher: toDate(transit + w / 360) };
+}
+
+/** The local date after `date`. */
+const nextDay = (date: string) => new Date(Date.parse(`${date}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * The astronomical night that starts on the evening of `date`: from the end of the evening twilight to the start of the
+ * next dawn, the Sun 18° below the horizon, when it no longer lights the sky at all.
+ */
+export function astronomicalNight(date: string, lon: number, lat: number): { debut: Date; fin: Date } {
+  return { debut: sunAt(date, lon, lat, -18).coucher, fin: sunAt(nextDay(date), lon, lat, -18).lever };
 }
 
 // ---------------------------------------------------------------- the Moon
@@ -164,18 +180,21 @@ export function moonLight(t: Date): { fraction: number; angle: number } {
   return { fraction: (1 + Math.cos(phase)) / 2, angle };
 }
 
+/** How far (°) the Moon's upper limb stands above the horizon at a place: under 0, it is hidden. */
+function moonAbove(t: number, lon: number, lat: number, altitude_m: number): number {
+  const dip = (2.076 * Math.sqrt(Math.max(0, altitude_m))) / 60;
+  const { h, km } = moonHeight(new Date(t), lon, lat);
+  // Above the horizon by more than this, the upper limb shows: parallax less semi-diameter and refraction.
+  return h - (0.7275 * Math.asin(6378.14 / km) / RAD - 0.5667 - dip);
+}
+
 /**
  * Moonrise and moonset (upper limb, with refraction and the Moon's parallax) on a local date at a place, or null for the
  * one that does not happen that day (about once a month each). `altitude_m` lowers the horizon a little, as for the Sun.
  */
 export function moon(date: string, lon: number, lat: number, altitude_m = 0): { lever: Date | null; coucher: Date | null } {
   const start = Date.parse(`${date}T00:00:00+04:00`);
-  const dip = (2.076 * Math.sqrt(Math.max(0, altitude_m))) / 60;
-  // Above the horizon by more than this, the upper limb shows: parallax less semi-diameter and refraction.
-  const above = (t: number) => {
-    const { h, km } = moonHeight(new Date(t), lon, lat);
-    return h - (0.7275 * Math.asin(6378.14 / km) / RAD - 0.5667 - dip);
-  };
+  const above = (t: number) => moonAbove(t, lon, lat, altitude_m);
   const STEP = 10 * 60_000;
   let lever: Date | null = null;
   let coucher: Date | null = null;
@@ -230,4 +249,29 @@ export function nextPhases(from: Date, n: number): { phase: MoonPhase; at: Date 
 /** The Moon between the main phases, from its angle to the Sun: waxing or waning, said with how much is lit. */
 export function between(angle: number): string {
   return angle < 180 ? "Lune croissante" : "Lune décroissante";
+}
+
+/**
+ * The dark night that starts on the evening of `date`: the spans of the astronomical night when the Moon is below the
+ * horizon too, none when it stays up all along. With the night's bounds, and the Moon's rising and setting from 18 h
+ * to 6 h, in order.
+ */
+export function darkNight(date: string, lon: number, lat: number, altitude_m = 0) {
+  const nuit = astronomicalNight(date, lon, lat);
+  const from = Date.parse(`${date}T18:00:00+04:00`);
+  const to = from + 12 * 3600_000;
+  const lune = [moon(date, lon, lat, altitude_m), moon(nextDay(date), lon, lat, altitude_m)]
+    .flatMap((x) => [...(x.lever ? [{ at: x.lever, lever: true }] : []), ...(x.coucher ? [{ at: x.coucher, lever: false }] : [])])
+    .filter((x) => x.at.getTime() >= from && x.at.getTime() < to)
+    .sort((a, b) => a.at.getTime() - b.at.getTime());
+  const noire: { de: Date; a: Date }[] = [];
+  let up = moonAbove(nuit.debut.getTime(), lon, lat, altitude_m) > 0;
+  let start = nuit.debut;
+  for (const x of lune.filter((x) => x.at > nuit.debut && x.at < nuit.fin)) {
+    if (!up && x.lever) noire.push({ de: start, a: x.at });
+    if (!x.lever) start = x.at;
+    up = x.lever;
+  }
+  if (!up) noire.push({ de: start, a: nuit.fin });
+  return { ...nuit, noire, lune };
 }

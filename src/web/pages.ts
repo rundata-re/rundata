@@ -13,7 +13,8 @@ import { porte } from "./aller.js";
 import { resolvePlace } from "../places/resolve.js";
 import { enLigne } from "./associations-drapeau.js";
 import { enLigne as connecteursEnLigne } from "./connecteurs-drapeau.js";
-import { softened } from "../tools/nuages.js";
+import { HAUTS_MIN_M, softened } from "../tools/nuages.js";
+import { NUIT_NOTE, nuitOf } from "../tools/calendrier.js";
 import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { VERSION } from "../server.js";
@@ -1806,6 +1807,21 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
       `<p class="note">${esc(mn.prevision.charAt(0).toUpperCase() + mn.prevision.slice(1))}. ${esc(mn.mise_en_garde)}</p></section>`
     : "";
 
+  // In the Hauts, the sky of the night: the forecast's, from the copy, only while it speaks of the night of the view (the
+  // evening of before 6 h is yesterday's), and the dark night and the Moon computed at the view. Without the forecast,
+  // no card: the computed lines alone would not say whether the stars will show.
+  const evening = (t: Date) => new Date(t.getTime() - 2 * 3600_000).toISOString().slice(0, 10);
+  const cn = d?.prevision?.ciel_de_nuit;
+  const nightCard = cn && data && (place.altitude_m ?? 0) >= HAUTS_MIN_M && evening(data.fetchedAt) === evening(now)
+    ? (() => {
+        const n = nuitOf(evening(now), place.lon, place.lat, place.altitude_m ?? 0);
+        const h = new Date(now.getTime() + 4 * 3600_000).getUTCHours();
+        return `<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">${h >= 21 || h < 6 ? "Ciel cette nuit" : "Ciel ce soir et cette nuit"}</h3>` +
+          `<p>${esc(cn.ligne)}</p><p>${esc(n.nuit_noire)}</p><p>${esc(n.lune)}</p>` +
+          `<p class="note">Ciel\u00a0: ${esc(cn.prevision)}. ${esc(cn.mise_en_garde)} ${esc(NUIT_NOTE)}</p></section>`;
+      })()
+    : "";
+
   // The next tides at the nearest gauge, computed at the view: no request, whatever the copy's age.
   const tides = coastal(p) ? tidesNear(p.place.lon, p.place.lat, now) : undefined;
   // Away from the gauges, no times: they are not the place's.
@@ -1894,6 +1910,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   ${measured}
 </section>
 ${cloudSea}
+${nightCard}
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur la météo ${esc(de(p.nom))}</h2>
   <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « il pleut ${esc(a(p.nom))} ? », il ira chercher lui-même la mesure, avec son heure et sa source. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>

@@ -421,6 +421,36 @@ describe("sport", () => {
     expect(b.a_venir).toBeUndefined();
   });
 
+  it("gives football's headlines of Le Quotidien and Imaz Press, from the news' copy, until the league's results are read", async () => {
+    const info = (media: string, titre: string, publie: string, heure = true): Info =>
+      ({ titre, media, lien: `https://exemple.re/${encodeURIComponent(titre)}`, publie, heure, communes: [], lieux: [], sujets: ["sport"] });
+    const c = await withNews([
+      info("Imaz Press", "Saint-Denis : le club de futsal remporte la Coupe de France", "2026-10-22T22:00:00Z"),
+      info("Le Quotidien", "Football : la finale de la coupe régionale dimanche", "2026-10-24T02:00:00Z"),
+      info("Le Quotidien", "Football : le calendrier de la Régionale 1", "2026-10-22T08:00:00Z", false),
+      // Another medium, another sport, a game in a bar: not football's headlines of these two.
+      info("Clicanoo", "Football : un derby à Saint-Pierre", "2026-10-24T01:00:00Z"),
+      info("Imaz Press", "Handball : la D1 reprend", "2026-10-24T01:00:00Z"),
+      info("Imaz Press", "Saint-Paul : un tournoi de baby-foot au front de mer", "2026-10-24T01:00:00Z"),
+    ]);
+    const b = body(await sportTool(c, "football", undefined, undefined, NOW));
+    expect(b.titres_football).toEqual([
+      { titre: "Football : la finale de la coupe régionale dimanche", media: "Le Quotidien", publie: "samedi 24/10 à 06:00", lien: expect.any(String) },
+      { titre: "Saint-Denis : le club de futsal remporte la Coupe de France", media: "Imaz Press", publie: "vendredi 23/10 à 02:00", lien: expect.any(String) },
+      { titre: "Football : le calendrier de la Régionale 1", media: "Le Quotidien", publie: "jeudi 22/10", lien: expect.any(String) },
+    ]);
+    expect(b.resume).toBe(
+      "Les résultats officiels du football (FFF, Ligue réunionnaise) ne sont pas lisibles par ce service. 3 titres football du Quotidien et d'Imaz Press depuis trois jours (voir titres_football) : le titre, l'heure et le lien seulement, l'article est sur le site du média.",
+    );
+    expect(b.titres_football_lus).toBe("samedi 24/10 à 08:00");
+    expect(b.sources).toContainEqual(expect.objectContaining({ source: "Titres football de la presse de La Réunion : Le Quotidien et Imaz Press", attribution: "Le Quotidien de La Réunion, Imaz Press Réunion" }));
+    // None in the copy, or no copy: said, never an empty list.
+    const none = body(await sportTool(await withNews([info("Imaz Press", "Handball : la D1 reprend", "2026-10-24T01:00:00Z")]), "football", undefined, undefined, NOW));
+    expect(none.resume).toMatch(/ Aucun titre football du Quotidien et d'Imaz Press depuis trois jours\.$/);
+    expect(none.titres_football).toBeUndefined();
+    expect(body(await sportTool(cache(), "football", undefined, undefined, NOW)).resume).toMatch(/ Les titres de la presse ne sont pas disponibles pour le moment\.$/);
+  });
+
   it("keeps a championship whose page did not answer, said with the hour it was read, never left out", async () => {
     let t = NOW.getTime();
     const c = new Cache(new MemoryStore(), () => t);

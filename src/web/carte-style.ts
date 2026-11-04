@@ -71,7 +71,7 @@ body:has(.kcarte){overflow-x:clip}.kcarte:not(.pe-on){row-gap:0}.pe-on .kdir{dis
 .kaff .kp p{margin:.2rem 0}.kaff .kp p:empty{display:none}.kaff .ks{font-weight:600}.kaff .kl2{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;margin-top:.45rem}
 .kcur{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin:0;padding:.5rem max(16px,calc(50vw - 36rem + 16px)) 0}
 .kcur[hidden],.kcur [hidden],.kcur-m[hidden]{display:none}
-.kcur fieldset{border:0;margin:0;padding:0;gap:.25rem;align-items:center}.kcur legend{float:left;padding:0;margin-right:.2rem;font-weight:700}
+.kcur .tabs{gap:.25rem;align-items:center}.kcur .tabs-n{margin-right:.2rem;font-weight:700}
 .kcur button{min-height:44px;padding:.35rem .95rem;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:inherit;font:inherit;font-weight:700;cursor:pointer}
 .kcur button:disabled{cursor:wait;opacity:.7}.kcur input[type=range]{flex:1 1 12rem;min-height:44px;accent-color:var(--ink)}
 .kcur-m{position:absolute;z-index:2;margin:0;pointer-events:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 .4em;line-height:1.1;color:#fff;text-shadow:0 1px 3px rgb(11 31 54/.9),0 0 2px rgb(11 31 54/.9)}

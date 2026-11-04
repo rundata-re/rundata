@@ -24,10 +24,10 @@ export const curseurConf = () => ({
   ms: Object.fromEntries(LONGUEURS.map((d) => [d, PLAY_MS[d]])),
 });
 
-/** The bar, under the map's buttons; hidden without a script. */
+/** The bar, under the map's buttons; hidden without a script. Its lengths are a radiogroup, as /meteo's (replayBar). */
 export function curseurBar(): string {
   const radios = LONGUEURS.map((d) => `<input type="radio" name="kcd" id="kcd-${d}" value="${d}"><label for="kcd-${d}">${REVOIR[d][0]}</label>`).join("");
-  return `<div class="kcur" data-cur="${curseurScriptPath()}" hidden><fieldset class="tabs"><legend>Revoir :</legend>${radios}</fieldset>` +
+  return `<div class="kcur" data-cur="${curseurScriptPath()}" hidden><div class="tabs" role="radiogroup" aria-labelledby="kcur-n"><span class="tabs-n" id="kcur-n">Revoir :</span>${radios}</div>` +
     `<button type="button" class="kcur-b" aria-label="${REVOIR["6h"][1]}">▶ Lire</button>${vitesseBouton("kcur-v")}` +
     `<input type="range" min="0" max="1" step="1" value="1" aria-label="Moment affiché sur la carte" hidden>` +
     `<span class="kcur-ko" hidden>L'historique n'a pas pu être chargé : la carte reste sur la dernière mesure. <button type="button">Réessayer</button></span>` +

@@ -130,6 +130,12 @@ describe("tide gauges", () => {
     expect(r.maregraphes[0].heure_mesure).toMatch(/^24\/10 03:4\d$/);
   });
 
+  it("says first that a place up in the island is not by the sea, then the tide of the nearest coast", async () => {
+    const r = body(await maree(cache(), "Cilaos", NOW));
+    expect(r.resume).toMatch(/^Cilaos est à 1\u202f209\u00a0m d'altitude, pas au bord de la mer\u00a0: marée de la côte la plus proche\. Pas d'heures de marée calculées pour Cilaos : /);
+    expect(body(await maree(cache(), "Saint-Paul", NOW)).resume).toMatch(/^Marée au marégraphe le plus proche de Saint-Paul/);
+  });
+
   it("links to the SHOM's site where it has no port, and says when the gauge is silent", async () => {
     vi.stubGlobal("fetch", async () => { throw new Error("no network in tests"); });
     vi.spyOn(console, "error").mockImplementation(() => {});

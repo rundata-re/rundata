@@ -144,6 +144,25 @@ function score(q: string[], e: Entry): { score: number; kind: Resolution["corres
   return null;
 }
 
+// Places off the island that a word of its own names would give otherwise (« Paris », Le Petit Paris ; « Maurice », Fond
+// Maurice, Les Avirons ; « Saint-Pierre et Miquelon », Saint-Pierre): no place of La Réunion, rather than the wrong one. Only
+// when the text says nothing else and no name of the island is written so.
+const ELSEWHERE = [
+  "maurice", "port louis", "curepipe", "rodrigues", "mayotte", "mamoudzou", "madagascar", "antananarivo", "tananarive",
+  "tamatave", "comores", "moroni", "seychelles", "maldives", "tromelin", "afrique sud", "paris", "marseille", "lyon",
+  "toulouse", "nice", "nantes", "bordeaux", "lille", "strasbourg", "montpellier", "rennes", "metropole", "hexagone",
+  "france metropolitaine", "martinique", "guadeloupe", "guyane", "nouvelle caledonie", "tahiti", "polynesie", "miquelon",
+  "saint pierre et miquelon",
+].map(tokens);
+
+/** Whether a text names a place off the island alone (« Paris », « l'île Maurice », « Port-Louis, Maurice »). */
+export function offIsland(text: string): boolean {
+  const q = tokens(text);
+  if (!q.length || EXACT.has(q.join(" "))) return false;
+  const hits = ELSEWHERE.filter((n) => n.every((t) => q.includes(t)));
+  return hits.length > 0 && q.every((t) => hits.some((n) => n.includes(t)));
+}
+
 const COORDS = /^\s*(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)\s*$/;
 
 // The last texts asked and what they gave: a question's place is resolved by its tool, then again by the metrics.
@@ -194,6 +213,7 @@ function resolve(text: string): Resolution | null {
     return { lieu: best.place, correspondance: "exacte", autres: [] };
   }
   if (q.every((t) => KIND_WORDS.has(t))) return null;
+  if (offIsland(text)) return null;
 
   const matches = INDEX.flatMap((e) => {
     const s = listed && e.key === q.join(" ") ? null : score(q, e);

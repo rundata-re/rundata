@@ -43,15 +43,20 @@ export function parseQuery(asked: string): { reseau?: string; commune?: string; 
   return { reseau, commune: c?.c, words: q.split(" ").filter((w) => w && !FILLER.has(w)) };
 }
 
+/** Beyond this distance from the place a question names whole, a stop matching some of its words only is not that place's. */
+const FAR_FROM_PLACE_KM = 2;
+
 const matches = (g: transit.StopGroup, w: string) => g.words.has(w) || (w.length >= 4 && [...g.words].some((x) => x.startsWith(w)));
 
 /**
  * The stops a question is about. Its words are matched against stop names (a word of 4 letters or more also
  * matches the start of a word), within the network and the commune it names; at least half must match. The best
  * stop comes with the other networks' stops of the same name a few steps away. A question naming no stop (« car
- * jaune à Saint-Leu », « plage de Boucan ») gets the stops nearest the place.
+ * jaune à Saint-Leu », « plage de Boucan ») gets the stops nearest the place. So does one whose stop matches some of
+ * its words only and lies far from the place it names whole: « plage de Boucan » is not the stop « Plage » of
+ * Saint-Pierre, 30 km away. Such a stop, kept for want of a place, comes with the words its name lacks (`manque`).
  */
-export function findStops(asked: string): { groups: transit.StopGroup[]; near: { g: transit.StopGroup; m: number }[] } {
+export function findStops(asked: string): { groups: transit.StopGroup[]; near: { g: transit.StopGroup; m: number }[]; manque?: string[] } {
   const { reseau, commune, words } = parseQuery(asked);
   const pool = transit.GROUPS.filter((g) => (!reseau || g.reseau === reseau) && (!commune || g.commune === commune));
   if (words.length) {
@@ -68,7 +73,15 @@ export function findStops(asked: string): { groups: transit.StopGroup[]; near: {
       const best = Math.max(...scored.map((s) => s.n));
       const top = scored.filter((s) => s.n === best).sort((a, b) => a.extra - b.extra);
       const first = top[0].g;
-      return { groups: top.filter((s) => distanceKm(first.lon, first.lat, s.g.lon, s.g.lat) < 0.4).slice(0, 4).map((s) => s.g), near: [] };
+      const groups = top.filter((s) => distanceKm(first.lon, first.lat, s.g.lon, s.g.lat) < 0.4).slice(0, 4).map((s) => s.g);
+      if (best === words.length) return { groups, near: [] };
+      const place = resolvePlace(asked);
+      const at = place?.correspondance === "exacte" ? place.lieu : undefined;
+      // At the place named (« plage de Boucan Canot », the stop Boucan Canot): that place's stop.
+      if (at && distanceKm(first.lon, first.lat, at.lon, at.lat) <= FAR_FROM_PLACE_KM) return { groups, near: [] };
+      const near = at ? nearStops(at.lon, at.lat, reseau) : [];
+      if (near.length) return { groups: near.map((x) => x.g), near };
+      return { groups, near: [], manque: words.filter((w) => !matches(first, w)) };
     }
   }
   // A small network named alone (« le téléphérique »): all its stops.
@@ -481,7 +494,7 @@ export async function transports(asked: string | undefined, ligne: string | unde
 
 /** The next departures at the stops a question names, or near the place it names. */
 async function stopAnswer(asked: string, ligne: string | undefined, now: Date, cache?: Cache) {
-  const { groups, near } = findStops(asked);
+  const { groups, near, manque } = findStops(asked);
   if (!groups.length) {
     rienTrouve("transports");
     return text({ resume: `Aucun arrêt de bus trouvé pour « ${asked} ».`, conseil: STOP_HELP, sources: credits([transit.SOURCE]) });
@@ -506,6 +519,8 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
   const resume = [off?.text, next].filter(Boolean).join(" ");
   const used = live.length > 0 || alertes.length > 0 || !!off?.alertes;
   return text({
+    // Said first: a stop found on some words only may be in another commune than the one meant.
+    ...(manque?.length ? { avertissement: `Aucun arrêt n'a tous les mots de «${NBSP}${asked}${NBSP}»${NBSP}: ${where}, sans «${NBSP}${manque.join(" ")}${NBSP}». Le dire à l'utilisateur, et vérifier la commune.` } : {}),
     resume,
     arrets: stops,
     ...(near.length ? { note: `Arrêts les plus proches de « ${asked} » : préciser le nom de l'arrêt pour un résultat exact.` } : {}),

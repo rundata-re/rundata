@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import gazetteer from "../src/places/gazetteer.json" with { type: "json" };
-import { resolvePlace, wholeIsland } from "../src/places/resolve.js";
-import { placeBlock } from "../src/tools/format.js";
+import { offIsland, resolvePlace, wholeIsland } from "../src/places/resolve.js";
+import { notFound, placeBlock, placeWarning } from "../src/tools/format.js";
 
 const name = (q: string) => resolvePlace(q)?.lieu.nom;
 
@@ -58,6 +58,36 @@ describe("resolvePlace", () => {
   it("rejects places outside Réunion and nonsense", () => {
     expect(resolvePlace("48.85, 2.35")).toBeNull();
     expect(resolvePlace("zzzzqqq")).toBeNull();
+  });
+
+  it("finds no place of the island for a place off it, which a word of an island's name would give otherwise", () => {
+    // Before: Le Petit Paris, Camp de Marseille, Fond Maurice (Les Avirons), Saint-Pierre, Le Port, « échelles ».
+    for (const q of ["Paris", "Marseille", "Maurice", "l'île Maurice", "Saint-Pierre et Miquelon", "Port-Louis, Maurice", "Les Seychelles", "Mayotte", "la Métropole"]) {
+      expect(offIsland(q)).toBe(true);
+      expect(resolvePlace(q)).toBeNull();
+    }
+    const r = JSON.parse(notFound("Maurice").content[0].text);
+    expect(r.erreur).toBe("«\u00a0Maurice\u00a0» n'est pas à La Réunion\u00a0: ces données ne couvrent que La Réunion.");
+    expect(JSON.parse(notFound("Tombouctou").content[0].text).erreur).toBe("Lieu introuvable à La Réunion : « Tombouctou ».");
+    // The places of the island that bear those names stay found, alone or with their commune.
+    expect(resolvePlace("Le Petit Paris")).toMatchObject({ lieu: { nom: "Le Petit Paris", commune: "Saint-Pierre" }, correspondance: "exacte" });
+    expect(resolvePlace("Petit Paris, Saint-Pierre")).toMatchObject({ lieu: { nom: "Le Petit Paris" }, correspondance: "exacte" });
+    expect(resolvePlace("Camp de Marseille")).toMatchObject({ lieu: { nom: "Camp de Marseille" }, correspondance: "exacte" });
+    expect(resolvePlace("Fond Maurice")).toMatchObject({ lieu: { nom: "Fond Maurice", commune: "Les Avirons" }, correspondance: "exacte" });
+    expect(resolvePlace("Saint-Pierre")).toMatchObject({ lieu: { nom: "Saint-Pierre" }, correspondance: "exacte" });
+  });
+
+  it("says, first, what a word that is only part of a name was taken for", () => {
+    const r = resolvePlace("France")!;
+    expect([r.lieu.nom, r.correspondance]).toEqual(["Petite France", "partielle"]);
+    const said = "«\u00a0France\u00a0» compris comme Petite France (localite, Saint-Paul), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur.";
+    expect(placeWarning("France", r)).toBe(said);
+    expect(Object.entries(placeBlock("France", r))[0]).toEqual(["avertissement", said]);
+    expect(placeWarning("Bellecombe", resolvePlace("Bellecombe")!)).toMatch(/^«\u00a0Bellecombe\u00a0» compris comme Rempart de Bellecombe \(lieu_dit, Sainte-Rose\)/);
+    // A name found whole, or found with words left aside (said by mots_ignores), gets no such warning.
+    expect(placeWarning("Cilaos", resolvePlace("Cilaos")!)).toBeUndefined();
+    expect(placeWarning("Square des Lilas, Saint-Pierre", resolvePlace("Square des Lilas, Saint-Pierre")!)).toBeUndefined();
+    expect(placeBlock("Cilaos", resolvePlace("Cilaos")!).avertissement).toBeUndefined();
   });
 
   it("knows the altitude, so that Cilaos is not treated as a seaside town", () => {

@@ -7,7 +7,7 @@ import * as ensemble from "../providers/ensemble.js";
 import * as openmeteo from "../providers/openmeteo.js";
 import * as uv from "../providers/uv.js";
 import { type Forecast, type ForecastDay, type ForecastHour, why } from "../types.js";
-import { credits, de, fr, heure, nombre, notFound, paire, placeBlock, text, tranche } from "./format.js";
+import { credits, de, fr, heure, nombre, notFound, paire, placeBlock, placeWarning, text, tranche } from "./format.js";
 import * as nuages from "./nuages.js";
 
 const TOUR = ["Saint-Denis", "Saint-Pierre", "Saint-Gilles-les-Bains", "Saint-Benoît", "Cilaos", "Plaine des Cafres"];
@@ -567,6 +567,8 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
 
   const r = resolvePlace(lieu);
   if (!r) return notFound(lieu);
+  // A place found on part of its name, said before the forecast (« Paris », Le Petit Paris).
+  const first = placeWarning(lieu, r) ? `${placeWarning(lieu, r)} ` : "";
   // The steps AROME is asked for: those the answer shows first, and in the Hauts the morning of the cloud sea.
   const hauts = (r.lieu.altitude_m ?? 0) >= nuages.HAUTS_MIN_M;
   const shown = period.defaut
@@ -613,7 +615,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
       return text({
         nature: "prevision",
         lieu: placeBlock(lieu, r),
-        resume: `Pas de prévision pour ${period.libelle} : le modèle ${furthest.nom} ne va que jusqu'au ${dayLabel(last)}.`,
+        resume: `${first}Pas de prévision pour ${period.libelle} : le modèle ${furthest.nom} ne va que jusqu'au ${dayLabel(last)}.`,
         modele: modelBlock(c),
         avertissements: hauts ? [...avertissements, nuages.BEYOND] : avertissements,
         sources: sourcesOf(f),
@@ -645,7 +647,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     lieu: placeBlock(lieu, r),
     periode: period.libelle,
     // The cloud sea after the days, labelled: a forecast of the model's cell.
-    resume: `${resume}${mer ? ` Mer de nuages, ${nuages.LABEL} : ${mer.resume}` : ""}${ciel ? ` Ciel de nuit, ${nuages.LABEL} : ${ciel.resume}` : ""}`,
+    resume: `${first}${resume}${mer ? ` Mer de nuages, ${nuages.LABEL} : ${mer.resume}` : ""}${ciel ? ` Ciel de nuit, ${nuages.LABEL} : ${ciel.resume}` : ""}`,
     jours,
     pas_de_3h: pas,
     ...(mer ? { mer_de_nuages: mer } : {}),

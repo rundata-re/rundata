@@ -64,7 +64,7 @@ import { muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
-import { a, credits, de, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, notFound, placeBlock, placeWarning, text } from "./format.js";
 import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import type { InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
@@ -592,5 +592,8 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   const meteo = await snapshot(cache, `web:lieu:${place.slug}`, () => buildPlace(cache, place, now), background ?? (() => undefined), now, undefined, true, withoutForecast);
   const { copies, leftOut } = await readCopies(cache, commune, place, now, background, vigilance, { meteo });
   const r = resume(commune, copies, now, leftOut);
-  return text({ lieu: placeBlock(lieu, res), ...(detail ? r : court(r)) });
+  // A place found on part of its name, said before the day (« Maurice », Fond Maurice at Les Avirons).
+  const said = placeWarning(lieu, res);
+  const day = said ? { ...r, resume: `${said} ${r.resume}` } : r;
+  return text({ lieu: placeBlock(lieu, res), ...(detail ? day : court(day)) });
 }

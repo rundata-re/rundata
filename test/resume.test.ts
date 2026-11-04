@@ -443,6 +443,17 @@ describe("reading the copies", () => {
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
   });
 
+  it("says a place off the island is not in La Réunion, and first what a word taken for part of a name was taken for", async () => {
+    const maurice = await resumeDuJour(isolate(await edgeWith()), "Maurice", NOW, () => undefined);
+    expect(maurice.isError).toBe(true);
+    expect(body(maurice).erreur).toBe("«\u00a0Maurice\u00a0» n'est pas à La Réunion\u00a0: ces données ne couvrent que La Réunion.");
+    const pending: Promise<unknown>[] = [];
+    const r = body(await resumeDuJour(isolate(await edgeWith()), "France", NOW, (p) => pending.push(p)));
+    await Promise.all(pending);
+    expect(r.resume).toMatch(/^«\u00a0France\u00a0» compris comme Petite France \(localite, Saint-Paul\), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur\. /);
+    expect(r.commune).toBe("Saint-Paul");
+  });
+
   it("brings a copy kept but older than FRESH_SECONDS up to date after the answer, as the tiles", async () => {
     // 31/10/2026: the electricity of 05:45 still in the summary at 06:12, its page at 06:05.
     const edge = await edgeWith();

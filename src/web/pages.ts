@@ -510,9 +510,13 @@ background:radial-gradient(120% 70% at 80% 100%,var(--glow),transparent 60%),lin
 background:radial-gradient(120% 70% at 80% 100%,var(--glow),transparent 60%),linear-gradient(180deg,var(--sky1) 0%,#1170ab 55%,var(--sky2) 100%)}
 .sky-soir{--sky1:#231a52;--sky2:#e0703f;--glow:rgb(255 140 80/.5)}
 .sky-nuit::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.7;
-background-image:radial-gradient(1.2px 1.2px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 28% 8%,#fff,transparent),radial-gradient(1.4px 1.4px at 46% 22%,#fff,transparent),
-radial-gradient(1px 1px at 63% 12%,#fff,transparent),radial-gradient(1.3px 1.3px at 82% 26%,#fff,transparent),radial-gradient(1px 1px at 92% 6%,#fff,transparent),
-radial-gradient(1px 1px at 6% 42%,#fff,transparent),radial-gradient(1.2px 1.2px at 38% 38%,#fff,transparent),radial-gradient(1px 1px at 74% 44%,#fff,transparent)}
+background-image:radial-gradient(1.2px 1.2px at 6% 56%,#fff,transparent),radial-gradient(1px 1px at 94% 53%,#fff,transparent),radial-gradient(1.4px 1.4px at 96% 68%,#fff,transparent),
+radial-gradient(1px 1px at 4% 74%,#fff,transparent),radial-gradient(1.3px 1.3px at 95% 84%,#fff,transparent),radial-gradient(1px 1px at 8% 90%,#fff,transparent),
+radial-gradient(1.2px 1.2px at 14% 97%,#fff,transparent),radial-gradient(1px 1px at 92% 97%,#fff,transparent),radial-gradient(1px 1px at 97% 60%,#fff,transparent)}
+@media (min-width:58rem){.sky-nuit::before{
+background-image:radial-gradient(1.2px 1.2px at 12% 8%,#fff,transparent),radial-gradient(1px 1px at 28% 4%,#fff,transparent),radial-gradient(1.4px 1.4px at 46% 11%,#fff,transparent),
+radial-gradient(1px 1px at 63% 5%,#fff,transparent),radial-gradient(1.3px 1.3px at 82% 3%,#fff,transparent),radial-gradient(1px 1px at 96% 14%,#fff,transparent),
+radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px at 34% 95%,#fff,transparent),radial-gradient(1px 1px at 98% 80%,#fff,transparent)}}
 @media (prefers-reduced-motion:no-preference){.sky-nuit::before{animation:twinkle 6s ease-in-out infinite alternate}}
 @keyframes twinkle{to{opacity:.35}}
 .band:has(.hero)::before{display:none}

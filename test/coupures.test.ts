@@ -43,6 +43,15 @@ describe("coupures d'eau", () => {
     expect(communesIn("abonnés de La Plaine-des-Palmistes")).toEqual(["La Plaine-des-Palmistes"]);
   });
 
+  it("keeps the sector of a notice on the quality of the water, followed by the advice without a blank line", () => {
+    // Dionéo's notice of 04/11/2026, word for word.
+    const text = "Dionéo informe ses clients de SAINT DENIS, que suite aux dernières intempéries, l'eau distribuée peut devenir trouble (augmentation de la turbidité) dans les secteurs suivants :\nTRAITEMENT ST FRANCOIS\nLes abonnés doivent prendre la précaution de ne pas consommer l'eau du robinet, et notamment de ne pas utiliser l'eau pour la boisson ou la préparation des aliments ; privilégier les usages non alimentaires (toilette, WC, ménage...) ; et préférer la consommation d'eau embouteillée ou à défaut, faire bouillir au préalable l'eau du robinet au moins 3 minutes.\nCes dispositions restent valables jusqu'à l'annonce d'un retour à la normale par nos équipes.\nDionéo remercie ses clients pour leur compréhension et les tiendra informés de l'évolution de la situation.";
+    expect(sectorList(text, true)).toEqual({ secteurs: ["TRAITEMENT ST FRANCOIS"], secteurs_complets: true });
+    expect(sectorList(text.replace("SAINT DENIS", "SAINTE-SUZANNE").replace("TRAITEMENT ST FRANCOIS", "RESERVOIR VALERY"), true)).toEqual({ secteurs: ["RESERVOIR VALERY"], secteurs_complets: true });
+    // A long line that is no such sentence still leaves the list unread, rather than cut short.
+    expect(sectorList("dans les secteurs suivants :\nRUE A\nRD13, Quartier Bras Mouton et rues adjacentes jusqu'au carrefour de la rue des Lilas\nRUE B\n\nFin.", true)).toEqual({ secteurs: [], secteurs_complets: false });
+  });
+
   it("cuts each notice's text once, right after the colon that opens a list, else at the end of a word", () => {
     const dioneo = parseRss(fixture("dioneo.xml"), { nom: "Dionéo", url: "", communes: ["Saint-Denis"] })[0];
     // The tool's text was the whole notice (436 characters, under 700): the start of the cut stays, and the return of the water follows the « […] ».

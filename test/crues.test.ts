@@ -56,6 +56,17 @@ describe("Vigicrues Réunion", () => {
     expect(r.stations).toHaveLength(STATIONS.length);
   });
 
+  it("gives the tool the reference floods of the rising gauges only, out of a vigilance; the page keeps them all", async () => {
+    const page = body(await crues(cache(), undefined, NOW));
+    const tool = body(await crues(cache(), undefined, NOW, true));
+    type Row = { station: string; tendance_30_min?: string; crues_de_reference?: unknown };
+    const onPage = (name: string) => !!(page.stations as Row[]).find((p) => p.station === name)!.crues_de_reference;
+    for (const st of tool.stations as Row[]) expect(!!st.crues_de_reference, st.station).toBe(st.tendance_30_min === "en hausse" && onPage(st.station));
+    expect((page.stations as Row[]).filter((st) => st.crues_de_reference).length).toBeGreaterThan((tool.stations as Row[]).filter((st) => st.crues_de_reference).length);
+    // Nothing else is left out.
+    expect(tool.stations.map((s: { station: string }) => s.station)).toEqual(page.stations.map((s: { station: string }) => s.station));
+  });
+
   it("says the island's levels from the stations measured lately only, the others apart, their trend never said", () => {
     const at = (hhmm: string) => Date.parse(`2026-10-23T${hhmm}:00+04:00`);
     const now = new Date(at("03:50"));

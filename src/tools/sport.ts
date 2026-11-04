@@ -73,6 +73,9 @@ const BACK_DAYS = 7;
 // For one sport, back to its last round: the regional championships often pause for three weeks.
 const BACK_DAYS_ONE = 30;
 const UPCOMING_MAX = 40;
+// The tool's answer: 20 (40 were 13,6 KB of a 28 KB answer, 5/11/2026), the cancelled or postponed ones past them kept.
+// The page /sport keeps UPCOMING_MAX.
+export const UPCOMING_OUTIL = 20;
 const RESULTS_MAX = 30;
 const DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 
@@ -462,7 +465,7 @@ function freshness(got: { value?: Cached<unknown>; source: SourceInfo }[]) {
 }
 
 /** `adherent`: the user says they are a club's member: its sessions for the members are told too, said so. */
-export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: Quand, now = new Date(), adherent = false) {
+export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: Quand, now = new Date(), adherent = false, max = UPCOMING_MAX) {
   let w: Where | null = null;
   if (lieu?.trim()) {
     w = where(lieu, sport);
@@ -497,7 +500,9 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const aheadAll = q === "resultats" ? [] : rows
     .filter((i) => inWindow(i) && !i.score && (i.fin ?? i.date).slice(0, 10) >= today)
     .sort((x, y) => x.date.localeCompare(y.date));
-  const upcoming = aheadAll.slice(0, UPCOMING_MAX);
+  const isOff = (i: Item) => i.etat === "annulée" || i.etat === "reportée";
+  const upcoming = [...aheadAll.slice(0, max), ...aheadAll.slice(max).filter(isOff)];
+  const offLater = upcoming.length - Math.min(aheadAll.length, max);
   // Beach volley has a few events a year: with none in the period, its next one, and the league's calendar.
   const beach = sport === "beach_volley";
   const nextBeach = beach && !aheadAll.length && q !== "resultats"
@@ -573,7 +578,9 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const offBy = [...new Set(off.map((i) => i.selon!.split(",")[0]))].join(", ");
   const upcomingText = [
     (here ? `${here} rendez-vous de ${what}${place} ${ahead}` : `Aucun rendez-vous de ${what} trouvé${place} ${ahead}`) +
-      (aheadAll.length > upcoming.length ? ` (les ${upcoming.length} premiers ci-dessous)` : ""),
+      (aheadAll.length > upcoming.length
+        ? ` (les ${max} premiers ci-dessous${offLater ? `, et ${offLater} annulé${offLater > 1 ? "s" : ""} ou reporté${offLater > 1 ? "s" : ""} plus loin` : ""})`
+        : ""),
     away ? `${away} match${away > 1 ? "s" : ""} de club${away > 1 ? "s" : ""}${w?.kind === "communes" ? ` ${w.zone ? ZONE_DE[w.zone] : de(w.communes[0])}` : ""} à l'extérieur` : "",
     !off.length ? "" : off.length === upcoming.length && off.length > 1
       ? `tous annulés ou reportés d'après ${offBy}`

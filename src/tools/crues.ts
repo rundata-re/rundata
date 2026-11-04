@@ -185,7 +185,12 @@ async function read(cache: Cache, ids: string[] | undefined, now: Date) {
   return { v: v as vc.Vigilance | null, h, q, failed, readAt };
 }
 
-export async function crues(cache: Cache, lieu: string | undefined, now = new Date()) {
+/**
+ * `outil`: the tool's answer for the whole island, out of a vigilance, gives the reference floods only for a gauge on the
+ * rise (they were 4,6 KB of 15, said for 29 gauges where nothing rises, 5/11/2026); a river or a place asked keeps them,
+ * and the page /crues reads them all.
+ */
+export async function crues(cache: Cache, lieu: string | undefined, now = new Date(), outil = false) {
   const sources = credits([vc.SOURCE]);
   const down = () => ({ ...text({ erreur: "Vigicrues Réunion ne répond pas pour le moment.", consulter: vc.SOURCE.url, sources }), isError: true });
   // A vigilance in force, or a source that did not answer, is said first; out of both, the levels measured first.
@@ -206,7 +211,12 @@ export async function crues(cache: Cache, lieu: string | undefined, now = new Da
     return text({
       resume: say(islandLevels(levels, now, readAt)),
       ...(v ? { vigilance_crues: vigilanceBlock(v) } : {}),
-      stations: levels.map((l) => levelRow(l, now)),
+      stations: levels.map((l) => {
+        const row = levelRow(l, now);
+        if (!outil || v?.active || l.hauteur?.tendance === "en hausse") return row;
+        const { crues_de_reference: _r, ...rest } = row;
+        return rest;
+      }),
       ...common,
     });
   }

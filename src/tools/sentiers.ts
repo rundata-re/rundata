@@ -5,6 +5,7 @@ import * as feux from "../providers/feux.js";
 import * as onf from "../providers/sentiers.js";
 import * as traces from "../providers/traces.js";
 import * as aires from "../traces/aires.js";
+import { secteurNamed } from "../traces/secteurs.js";
 import * as canyons from "../vie/canyons.js";
 import * as marmailles from "../vie/marmailles.js";
 import { why } from "../types.js";
@@ -15,6 +16,8 @@ const NEAR_KM = 4;
 // A fire this close to the place asked is said first.
 const FIRE_KM = 10;
 const NAMED_MAX = 8;
+// The open trails of a zone said in the answer: Mafate has 58, 11 KB of a 20 KB answer. The closed ones are all said.
+const OPEN_MAX = 10;
 const ROUTES_MAX = 10;
 /** Where the traces and the trails' pages are served. */
 export const SITE_URL = "https://rundata.re";
@@ -640,15 +643,34 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
       const n = around.length;
       parts.push(n ? `${n} itinéraire${n > 1 ? "s" : ""} complet${n > 1 ? "s" : ""} avec trace GPS correspond${n > 1 ? "ent" : ""} à la longueur ou au dénivelé demandés.` : "Aucun itinéraire complet avec trace ne correspond à la longueur ou au dénivelé demandés : voir les sentiers ouverts de la zone, à combiner.");
     }
+    // Around a precise place the nearest open trails, in a cirque or a commune the first by name: past OPEN_MAX, the
+    // answer says how many there are, in which order, and where the whole list is (words of marketing, 26/10/2026).
+    const from = zone.from;
+    const kept = openNames.filter((nom) => {
+      const t = traces.SENTIERS[nom];
+      return !filtering(filtre) || (t && fits(filtre, t.km, climb(t)));
+    });
+    const ordered = from
+      ? kept.map((nom) => ({ nom, km: Math.min(...zone!.sentiers.filter((s) => s.nom === nom && s.points.length).map((s) => near(s, from.lon, from.lat)), Infinity) })).sort((x, y) => x.km - y.km).map((x) => x.nom)
+      : [...kept].sort((x, y) => x.localeCompare(y, "fr"));
+    const cut = ordered.length > OPEN_MAX;
+    if (cut) {
+      const sect = cirque ? secteurNamed(cirque.secteur) : undefined;
+      const all = sect ? `${SITE_URL}/randonnees/${sect.slug}#h-sentiers` : `${SITE_URL}/randonnees#h-secteurs`;
+      const where = zone.dans.charAt(0).toLowerCase() + zone.dans.slice(1);
+      parts.push(from
+        ? `${ordered.length} sentiers ouverts ${where} : les ${OPEN_MAX} plus proches ici, avec tous les sentiers fermés. La liste complète : ${all}`
+        : `${ordered.length} sentiers ouverts ${where} : ${OPEN_MAX} d'entre eux ici, par ordre alphabétique, avec tous les sentiers fermés. La liste complète : ${all}`);
+    }
     zoneOut = {
       zone: zone.nom,
       randonnees_avec_trace: around.length ? around.map((r) => routeBrief(r, carte)) : undefined,
       sentiers_fermes: zClosed.map((s) => ({ ...trailRow(s, zone!.from), ...(partly.includes(s.nom) ? { ferme_en_partie: true } : {}) })),
-      sentiers_ouverts: openNames.flatMap((nom) => {
+      sentiers_ouverts: ordered.slice(0, OPEN_MAX).map((nom) => {
         const t = traces.SENTIERS[nom];
-        if (filtering(filtre) && (!t || !fits(filtre, t.km, climb(t)))) return [];
-        return [t ? { sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, denivele_negatif_m: t.dmoins, trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx` } : { sentier: nom }];
+        return t ? { sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, denivele_negatif_m: t.dmoins, trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx` } : { sentier: nom };
       }),
+      sentiers_ouverts_en_tout: cut ? ordered.length : undefined,
       hors_gestion_onf: zOther ? others : undefined,
       routes_forestieres: zone.routes.length ? zone.routes.map(roadRow) : undefined,
     };

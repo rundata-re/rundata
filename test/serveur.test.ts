@@ -6,7 +6,7 @@ import { withLectures } from "../src/lectures.js";
 import { INDEX, NOUVEAUTES, OUTILS, outilsRecents, serveur } from "../src/nouveautes.js";
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { existsSync } from "node:fs";
-import { listeAllegee, nomDeSource, SERVER_ICONS, VERSION } from "../src/server.js";
+import { listeAllegee, nomDeSource, SERVER_ICONS, SOURCES_COURT, VERSION } from "../src/server.js";
 import { cite } from "../src/tools/citer.js";
 import { dataDate, fraicheur, instantOf, sourceMuette } from "../src/tools/fraicheur.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
@@ -120,7 +120,9 @@ describe("the server's instructions", () => {
     // 42 322 the same day with the formations eligible to the CPF in emploi (one sentence, a few words of example).
     // 42 512 on 4/11/2026 with « hier » sent from meteo_actuelle to historique_meteo (one sentence, an example, its English line).
     // 42 575 the same day with the rules of approach of whales and dolphins in temperature_mer (a few words, its block cetaces).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(42_575);
+    // 39 291 on 5/11/2026: the annotations without their second title nor idempotentHint (implied by readOnlyHint), the
+    // descriptions without the fields the answers list and the producers they credit, sources_donnees' argument detail.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_291);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 
@@ -209,7 +211,7 @@ describe("the serveur block", () => {
   });
 
   it("sources_donnees names each source once", async () => {
-    const ids: string[] = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: {} })).sources.map((s: { id: string }) => s.id);
+    const ids: string[] = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: { detail: true } })).sources.map((s: { id: string }) => s.id);
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
     // Given by two modules each, listed once.
     for (const id of ["lrvb_tournois", "ign_altimetrie"]) expect(ids).toContain(id);
@@ -218,7 +220,7 @@ describe("the serveur block", () => {
   });
 
   it("sources_donnees counts the very sources it lists, and lists apart what rundata.re is sent", async () => {
-    const r = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: {} }));
+    const r = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: { detail: true } }));
     expect(r.chiffres.sources).toBe(r.sources.length);
     expect(r.resume).toContain(`rundata.re lit ${r.sources.length} sources publiques`);
     const ids = (l: { id: string }[]) => l.map((s) => s.id);
@@ -226,6 +228,21 @@ describe("the serveur block", () => {
     expect(ids(r.sources)).not.toContain("propositions_associations");
     expect(ids(r.envoyees_a_rundata)).toEqual(["propositions_associations"]);
     expect(r.envoyees_a_rundata[0].licence).toBe("Licence Ouverte Etalab 2.0");
+  });
+
+  it("sources_donnees is short by default: each producer once under its licence, the whole list with detail", async () => {
+    const short = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: {} }));
+    const full = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: { detail: true } }));
+    expect(short.sources).toBeUndefined();
+    expect(short.detail.replace(/[\u00a0\u202f]/g, " ")).toBe(SOURCES_COURT);
+    expect(full.detail).toBeUndefined();
+    // Every licence and producer of the whole list, each once.
+    const by: { licence: string; producteurs: string[] }[] = short.producteurs_par_licence;
+    expect(new Set(by.map((x) => x.licence))).toEqual(new Set(full.sources.map((x: { licence: string }) => x.licence)));
+    for (const x of full.sources) expect(by.find((y) => y.licence === x.licence)!.producteurs).toContain(x.organisme);
+    for (const y of by) expect(new Set(y.producteurs).size).toBe(y.producteurs.length);
+    expect(short.chiffres.sources).toBe(full.sources.length);
+    expect(JSON.stringify(short).length).toBeLessThan(JSON.stringify(full).length / 2);
   });
 });
 

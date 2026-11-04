@@ -28,6 +28,9 @@ export const MARCHES_REGULIERS = "Les marchés forains et couverts réguliers, a
 const AHEAD_DAYS = 14;
 const SOON_DAYS = 30;
 const LISTED = 40;
+// The tool's answer: 25 events (40 were 22 KB of a 30 KB answer, 5/11/2026); the cancelled or postponed ones are all
+// named in its summary all the same. The pages keep LISTED.
+export const LISTED_OUTIL = 25;
 const NEXT_MAX = 4;
 const ELSEWHERE_MAX = 6;
 const DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];

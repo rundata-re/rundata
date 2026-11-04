@@ -176,6 +176,14 @@ describe("sport", () => {
     expect(b.classements.map((c: { competition: string }) => c.competition)).toHaveLength(5);
   });
 
+  it("lists the first matches only when asked for fewer, every called-off one past them kept and counted", async () => {
+    // The tool asks for 20 (UPCOMING_OUTIL), the page /sport for 40: here 2, on a week-end of 10 called off and 3 played.
+    const b = body(await sportTool(cache(), "volley", undefined, "ce_week_end", NOW, false, 2));
+    expect(b.a_venir).toHaveLength(10);
+    expect(b.a_venir.every((r: { etat?: string }) => r.etat === "annulée")).toBe(true);
+    expect(b.resume).toContain("(les 2 premiers ci-dessous, et 8 annulés ou reportés plus loin)");
+  });
+
   it("marks the matches the league called off, with its notice", async () => {
     const b = body(await sportTool(cache(), "volley", undefined, "samedi", NOW));
     expect(b.a_venir).toHaveLength(10);

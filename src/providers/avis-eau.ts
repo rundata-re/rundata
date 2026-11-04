@@ -145,8 +145,9 @@ export function parseNotice(text: string): Pick<Avis, "debut" | "fin"> {
 }
 
 const LIST_START = /secteurs? suivants?\s*:[ \t]*\n/i;
-// The lines that close a list of streets: none of them is a street.
-const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations)/i;
+// The lines that close a list of streets: none of them is a street. « Les abonnés doivent prendre la précaution de ne pas
+// consommer l'eau du robinet… » follows the list of a notice on the quality of the water (Dionéo and runéo, 03 and 04/11/2026).
+const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) )/i;
 // Longer, a line is a sentence or a street with its limits (« RD13, Quartier Bras Mouton et rues adjacentes jusque … »).
 const STREET_MAX = 60;
 

@@ -83,8 +83,9 @@ export const LOOK = `const look=(d,o,g,m)=>{const has=(x)=>g.length?g.some((y)=>
 if(!on&&!r.some(([,a,p])=>has(a+p)))return null;if(m==="o"){const w=d.filter(([,a,p])=>has(a+p));return[!on,w.length>1?"m":w[0][0]]}
 const a=r.map((x)=>x[1]).join(""),x=Math.max(...[...(a||r.map((y)=>y[2]).join(""))].map(Number));return[!on,x===5?"5":x===4?"4":"2"]};`;
 
-/** The colours, marketing's (Okabe-Ito, never an operator's brand colour): by operator, then by generation. */
-export const COULEURS: Record<string, string> = { o: "#56b4e9", s: "#f0e442", f: "#b0508a", z: "#2563d8", m: "#0b1f36", 5: "#f0e442", 4: "#56b4e9", 2: "#b4c6d8", r: "#b0508a" };
+/** The colours, marketing's (Okabe-Ito, never an operator's brand colour): by operator, then by generation; radio and TV
+ * have one of their own, shared with no operator (it was Free's magenta). */
+export const COULEURS: Record<string, string> = { o: "#56b4e9", s: "#f0e442", f: "#b0508a", z: "#2563d8", m: "#0b1f36", 5: "#f0e442", 4: "#56b4e9", 2: "#b4c6d8", r: "#6a3d9a" };
 
 // The words of the filters and of the legends, marketing's.
 const MOTS = {

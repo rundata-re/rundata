@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Mercredi 4 novembre 2026
+
+- Mer : les règles d'approche des baleines et des dauphins, résumées d'après les arrêtés du préfet de La Réunion.
+
 ## Mardi 3 novembre 2026
 
 - Communes : les résultats de chaque élection depuis 1999 et la participation, commune par commune, d'après le ministère de l'Intérieur.

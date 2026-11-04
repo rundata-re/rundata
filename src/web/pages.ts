@@ -28,6 +28,7 @@ import og from "./og.json" with { type: "json" };
 import * as traces from "../providers/traces.js";
 import { GAUGES } from "../providers/maregraphes.js";
 import * as coraux from "../providers/coraux.js";
+import * as cetaces from "../tools/cetaces.js";
 import { cardReason } from "../providers/ensemble.js";
 import { CITATION as TIDE_CITATION, LABEL as TIDE_LABEL } from "../maree/calcul.js";
 import { farFrom, NEAR_KM, nextText, shomPort, tidesAt, tidesNear } from "../tools/maree.js";
@@ -2116,6 +2117,23 @@ export function reefSection(c: Cached<coraux.Coraux> | null): string {
 </section>`;
 }
 
+/**
+ * The rules of approach of whales and dolphins, from the decrees in the code (tools/cetaces.ts), in marketing's words:
+ * the day's state (the humpback whales' period of rules or not), then the twelve rules with their articles. Computed
+ * at each view, nothing read.
+ */
+export function whaleSection(now: Date): string {
+  const rows = cetaces.REGLES.map((r) => `<tr><td data-label="Règle">${esc(r.regle)}</td><td data-label="Texte">${esc(r.article.charAt(0).toUpperCase() + r.article.slice(1))}</td></tr>`).join("");
+  const links = cetaces.LIENS.map((l) => `<a href="${esc(l.pdf)}">${esc(l.texte)}</a> (<a href="${esc(l.page)}">sa page</a>)`).join("\u00a0; ");
+  return `<section aria-labelledby="h-cetaces">
+  <div class="sec-h"><p class="eyebrow">${esc(cetaces.T.surtitre)}</p><h2 id="h-cetaces">${esc(cetaces.T.titre)}</h2>
+  <p>${esc(cetaces.etatDuJour(now))} ${esc(cetaces.T.presence)}</p></div>
+  <div class="card"><table class="drought niveaux"><thead><tr><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${rows}</tbody></table>
+  <p class="note">${esc(cetaces.T.foi)} ${links}.</p>
+  <p class="sources">Source\u00a0: ${esc(cetaces.T.source)}.</p></div>
+</section>`;
+}
+
 export function seaPage(origin: string, data: Cached<SeaData> | null, now = new Date(), alerte?: Alerte, reef?: Cached<coraux.Coraux> | null): string {
   const g = porte(alerte);
   const d = data?.value;
@@ -2233,6 +2251,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <div class="card">${list}</div>
 </section>
 ${reef !== undefined ? reefSection(reef) : ""}
+${whaleSection(now)}
 ${swell}
 ${tide}
 ${bathingBlock(now, undefined, g)}${g.feuille}

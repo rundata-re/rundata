@@ -123,9 +123,10 @@ import * as emploiSource from "./providers/emploi.js";
 import * as marchesPublics from "./providers/marches-publics.js";
 import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
+import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.192";
+export const VERSION = "1.0.193";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -224,7 +225,7 @@ export const toutesLesSources = (inactives = false) =>
     // page /marches-publics).
     emploiSource.SOURCE, cpfFormations.SOURCE, marchesPublics.SOURCE,
     // The decrees of recreational fishing, bundled (peche_loisir).
-    ...peche.SOURCES]);
+    ...peche.SOURCES, cetaces.SOURCE]);
 /** A source's name from its id, for one served from its last copy (fraicheur.ts). */
 export const nomDeSource = (id: string) => toutesLesSources().find((s) => s.id === id)?.nom;
 
@@ -363,7 +364,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« la mer est à combien à Saint-Leu ? », « l'eau est bonne à Boucan ? »\u00a0; houle et vagues PRÉVUES (modèle, 4 jours) : " +
         "« la houle à Saint-Leu ? », « ça surfe à Saint-Pierre demain ? », « la mer est grosse à Saint-Gilles ? ». " +
         "La mesure (avec sa date et sa distance) et la prévision des vagues (hauteur, période, direction) sont dans deux blocs séparés. " +
-        "Aussi le risque de blanchissement des coraux selon NOAA (bloc coraux).",
+        "Aussi le risque de blanchissement des coraux selon NOAA (bloc coraux) et les règles d'approche des baleines, dauphins (bloc cetaces).",
       inputSchema: { lieu },
       annotations: { title: "Température de la mer et houle à La Réunion", ...READ_ONLY },
     },

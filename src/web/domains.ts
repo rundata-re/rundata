@@ -2415,13 +2415,16 @@ export function nobreak(text: string): string {
   return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span style="white-space:nowrap">${w}</span>`);
 }
 
+/** « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading « avis daté du 05/11/2026 ». */
+const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publié le ${esc(n.publie_le)}` : `avis daté du ${esc(n.date_de_l_avis ?? "")}`);
+
 function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // An image or a PDF: nothing is read from it, the link only.
-  if (n.forme) return `<li class="card"><h3>${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, publié le ${esc(n.publie_le)}</span></h3>` +
+  if (n.forme) return `<li class="card"><h3>${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${n.lien ? `<a href="${esc(n.lien)}" rel="noopener">${esc(n.titre)} →</a>` : esc(n.titre)}</p></li>`;
   // Only the start written (La Créole): said as a start, not as the hour of the cut.
   const cut = n.coupure?.de ? `<p><b>${n.coupure.a ? `${esc(n.coupure.de ?? "")} → ${esc(n.coupure.a)}` : `À partir du ${esc(n.coupure.de ?? "")}`}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
-  return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, publié le ${esc(n.publie_le)}</span></h3>` +
+  return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(n.secteurs.join(", "))}</p>` : ""}` +
     `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"} →</a>` : ""}</p></li>`;
 }

@@ -9,8 +9,8 @@ import type { Lecture } from "../lectures.js";
 // Entries fresh for this long or more are reference data (stations, lists of places), not what the answer measures.
 const REFERENCE_SECONDS = 6 * 3600;
 // The answer's own date of its data: a measurement, a model run, a bulletin, a notice, a list rebuilt from its file, a
-// daily check. Without one, the age is the read's: « à l'instant » for a list of defibrillators a week old (31/10/2026).
-const DATED = ["heure_mesure", "run_du_modele", "emise", "mis_a_jour", "publie_le", "derniere_analyse", "derniere_verification"];
+// daily check, the day of a measure by satellite. Without one, the age is the read's: « à l'instant » for a list of defibrillators a week old (31/10/2026).
+const DATED = ["heure_mesure", "jour_mesure", "run_du_modele", "emise", "mis_a_jour", "publie_le", "derniere_analyse", "derniere_verification"];
 // Lists of notices and publications beside the data (the mairies' power cuts, the OVPF's posts, the media's
 // headlines): dated, but not what the answer measures. Read last, when no other block carries a date.
 const NOTICES = new Set(["sources", "serveur", "avis", "coupures_annoncees", "publications_ovpf", "alertes_precedentes", "infos", "en_direct", "prefecture", "actualites", "evenements_du_jour", "actualite"]);
@@ -26,13 +26,22 @@ type Dated = { du: string; cle: string; age?: string };
 const ageOf = (o: Payload): string | undefined =>
   typeof o.age_texte === "string" ? o.age_texte : typeof o.age_min === "number" ? (o.age_min < 1 ? "à l'instant" : ageText(o.age_min)) : undefined;
 
-const dated = (o: Payload): Dated | undefined => {
-  for (const k of DATED) if (typeof o[k] === "string" && o[k]) return { du: o[k] as string, cle: k, age: ageOf(o) };
+// A date after now is not the data's: a cut announced for tomorrow dated by its day, never « donnée du » tomorrow
+// (04/11/2026: a notice of La Créole dated 05/11). The next dated field is taken instead.
+const SKEW_MS = 60_000;
+const dated = (o: Payload, now?: Date): Dated | undefined => {
+  for (const k of DATED) {
+    const v = o[k];
+    if (typeof v !== "string" || !v) continue;
+    const at = now && instantOf(v, now);
+    if (at != null && at > now!.getTime() + SKEW_MS) continue;
+    return { du: v, cle: k, age: ageOf(o) };
+  }
   return undefined;
 };
 
 /** The first dated field inside `x` (breadth first, four levels), with the age it states beside it, if any. */
-function dateIn(x: unknown): Dated | undefined {
+function dateIn(x: unknown, now?: Date): Dated | undefined {
   let level: unknown[] = [x];
   for (let depth = 0; depth < 4 && level.length; depth++) {
     const next: unknown[] = [];
@@ -42,7 +51,7 @@ function dateIn(x: unknown): Dated | undefined {
         next.push(...o.slice(0, 3));
         continue;
       }
-      const d = dated(o as Payload);
+      const d = dated(o as Payload, now);
       if (d) return d;
       for (const [k, v] of Object.entries(o as Payload)) if (!NOTICES.has(k) && v && typeof v === "object") next.push(v);
     }
@@ -55,16 +64,16 @@ function dateIn(x: unknown): Dated | undefined {
  * The date the answer gives its data: at its top level first, then block by block in the answer's own order (the
  * measurement before the forecast, the production before the power cuts), the lists of notices last.
  */
-export function dataDate(p: Payload): Dated | undefined {
-  const top = dated(p);
+export function dataDate(p: Payload, now?: Date): Dated | undefined {
+  const top = dated(p, now);
   if (top) return top;
   const blocks = Object.entries(p).filter(([, v]) => v && typeof v === "object");
   for (const [k, v] of blocks) if (!NOTICES.has(k)) {
-    const d = dateIn(v);
+    const d = dateIn(v, now);
     if (d) return d;
   }
   for (const [k, v] of blocks) if (NOTICES.has(k) && !BESIDE.has(k)) {
-    const d = dateIn(v);
+    const d = dateIn(v, now);
     if (d) return d;
   }
   return undefined;
@@ -72,10 +81,12 @@ export function dataDate(p: Payload): Dated | undefined {
 
 /**
  * The instant a date of the answer names, Réunion time: « 25/10 02:12 », « 18/08/2026 », « vendredi 23/10 à 10:00 »,
- * « 23/10/2026 à 21:49 ». Undefined when the text has no day/month. Without a year, the latest such day not well
+ * « 23/10/2026 à 21:49 », or a day as the satellites give it, « 2026-11-03 ». Undefined when the text has no day/month. Without a year, the latest such day not well
  * after today (a December date read in January is last year's).
  */
 export function instantOf(du: string, now: Date): number | undefined {
+  const iso = /^(\d{4})-(\d\d)-(\d\d)$/.exec(du);
+  if (iso) return Date.UTC(+iso[1], +iso[2] - 1, +iso[3]) - 4 * 3600_000;
   const m = /(\d\d)\/(\d\d)(?:\/(\d{4}))?(?:\D{1,4}(\d\d)[:h](\d\d))?/.exec(du);
   if (!m) return undefined;
   const at = (year: number) => Date.UTC(year, +m[2] - 1, +m[1], m[4] ? +m[4] : 0, m[5] ? +m[5] : 0) - 4 * 3600_000;
@@ -207,7 +218,7 @@ export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { do
   // never older than one of them (31/10/2026: « lue à 06:25 » over a weather measured at 07:00, read again for it).
   const reads = basis.map((l) => l.fetchedAt);
   let read = reads.length ? (opts.donnee === false ? Math.max(...reads) : Math.min(...reads)) : now.getTime();
-  const data = opts.donnee === false ? undefined : dataDate(p);
+  const data = opts.donnee === false ? undefined : dataDate(p, now);
   const at = data ? instantOf(data.du, now) : undefined;
   // Read before it was measured: the oldest read is another entry's (a reference, the radar). The entry that carries
   // the date was read after it: the newest read, or the date itself, never later than now.

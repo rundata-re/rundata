@@ -117,8 +117,8 @@ function waterItems(p: PlacePage, c: CoupuresAnswer): Item[] {
         n.lien ? `Avis de ${n.distributeur} : ${n.lien}` : `Avis de ${n.distributeur}.`,
       ].filter(Boolean).join(" "),
       path: `/coupures-eau/${p.slug}`,
-      guid: `eau/${n.lien ?? n.publie_le}/${n.titre}`,
-      date: published(n.publie_le),
+      guid: `eau/${n.lien ?? n.publie_le ?? n.date_de_l_avis}/${n.titre}`,
+      date: n.publie_le ? published(n.publie_le) : undefined,
     }));
 }
 

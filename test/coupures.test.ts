@@ -123,6 +123,16 @@ describe("coupures d'eau", () => {
     expect(noticeRow(leak, NOW).coupure).toEqual({ de: undefined, a: "mercredi 29/07 à 18:00", etat: undefined });
   });
 
+  it("never says « publié le » for a notice dated after now: the date it bears (La Créole, by the day of the cut)", () => {
+    const leak = parseSainteMarie(JSON.parse(fixture("saintemarie.json")))[2];
+    const tomorrow = { ...leak, distributeur: "La Créole", publie: new Date(NOW.getTime() + 86_400_000).toISOString(), jour: true };
+    const row = noticeRow(tomorrow, NOW);
+    expect(row.publie_le).toBeUndefined();
+    expect(row.date_de_l_avis).toMatch(/^\d\d\/\d\d\/\d{4}$/);
+    expect(noticeRow(leak, NOW).publie_le).toBeTruthy();
+    expect(noticeRow(leak, NOW).date_de_l_avis).toBeUndefined();
+  });
+
   it("gives a list of streets only when it was read whole", () => {
     const cirest = parseCirest(JSON.parse(fixture("cirest.json")));
     const of = (titre: RegExp) => cirest.find((n) => titre.test(n.titre))!;
@@ -374,6 +384,10 @@ describe("coupures d'eau", () => {
     const sp = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: night }, NIGHT);
     expect(sp).toContain("Interruption nocturne de la distribution du 23/10/2026");
     expect(sp).toContain("La Créole, publié le 23/10/2026</span>");
+    // Read the evening before, the notice bears the day of its cut: not « publié le » a day still to come.
+    const eve = new Date("2026-10-22T18:00:00+04:00");
+    const before = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: { value: await buildCoupures(cache(eve), eve), fetchedAt: eve } }, eve);
+    expect(before).toContain("La Créole, avis daté du 23/10/2026</span>");
     expect(sp).toContain("<b>vendredi 23/10 à 22:00 → samedi 24/10 à 06:00</b>");
     expect(sp).toContain(`les avis de <a href="https://lacreole.re/flash-infos" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.`);
     expect(sp).not.toContain("Ses avis de coupure ne sont pas lus");

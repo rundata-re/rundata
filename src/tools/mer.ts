@@ -357,7 +357,8 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       cetaces: cetaces.cetacesBlock(now),
       couverture: COVERAGE,
       sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(w ? [houle.SOURCE] : []), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
-      mis_a_jour: t?.used.length ? localTime(t.used[0].cached.fetchedAt) : undefined,
+      // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
+      jour_mesure: points.flatMap((p) => (p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
     });
   }
 

@@ -45,12 +45,15 @@ export function doNotDrink(list: notices.Avis[], commune: string): notices.Avis 
 export function noticeRow(n: notices.Avis, now: Date, current = n.ne_pas_boire) {
   const here = nowLocal(now);
   const state = n.debut && n.fin ? (n.fin < here ? "terminée" : n.debut <= here ? "en cours" : "à venir") : undefined;
+  // A notice dated after now (La Créole dates some by the day of the cut): the date it bears, not a publication.
+  const future = n.publie > now.toISOString();
   return {
     titre: n.titre,
     communes: n.communes,
     precision: n.precision,
     distributeur: n.distributeur,
-    publie_le: published(n),
+    publie_le: future ? undefined : published(n),
+    date_de_l_avis: future ? published(n) : undefined,
     // Only the end, when the notice writes no start hour (« dès maintenant »): the end is never lost.
     coupure: n.debut || n.fin ? { de: when(n.debut), a: when(n.fin), etat: state } : undefined,
     // The whole list, or none: a list read in part would let one conclude a street is not concerned.

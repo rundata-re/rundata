@@ -4,7 +4,7 @@ import * as calc from "../maree/calcul.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as mg from "../providers/maregraphes.js";
 import { why } from "../types.js";
-import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, nombre, notFound, placeBlock, text } from "./format.js";
 import { dayLabel, localDate } from "./prevision.js";
 
 // Past this, the gauge has stopped sending (Sainte-Marie does, for hours at a time): its level is given as old.
@@ -246,6 +246,12 @@ const ISLAND_NOTE =
   `Ces heures valent près des deux marégraphes, à ${NEAR_KM} km au plus. Plus loin, à Saint-Leu, à Saint-Pierre, dans le Sud et dans l'Est, ` +
   `la marée arrive à une autre heure : voir les horaires officiels du SHOM (${SHOM}).`;
 
+/** From this height, a place is not by the sea (Cilaos, the Plaine des Palmistes, the town of Les Trois-Bassins). */
+const INLAND_M = 150;
+/** Said first for a place up in the island: the tide given is the sea's at a gauge, not anything to see there. */
+const inland = (p: { nom: string; altitude_m: number | null }) =>
+  (p.altitude_m ?? 0) >= INLAND_M ? `${p.nom} est à ${nombre(p.altitude_m!)}\u00a0m d'altitude, pas au bord de la mer\u00a0: marée de la côte la plus proche. ` : "";
+
 function far(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace>>, all: GaugeNow[], now: Date, sources: ReturnType<typeof credits>) {
   const p = res.lieu;
   const f = farFrom(p.lon, p.lat, p.commune)!;
@@ -258,6 +264,7 @@ function far(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace>>, al
       `Ne donner aucune heure de marée pour ${p.nom} : les heures calculées au marégraphe ${de(f.nom)} n'y valent pas, la marée y arrive à une autre heure. ` +
       `Renvoyer aux horaires officiels du SHOM : ${f.lien}.`,
     resume:
+      inland(p) +
       `Pas d'heures de marée calculées pour ${p.nom} : nous les calculons d'après les marégraphes du Port et de Sainte-Marie, et la marée n'arrive pas à la même heure partout sur la côte. ` +
       (r
         ? `Hauteur mesurée au marégraphe ${de(f.nom)}, à ${km} km : ${m(r.h)} à ${hm(r.t)} (${at}, pas ${a(p.nom)}). `
@@ -301,6 +308,7 @@ export async function maree(cache: Cache, lieu: string | undefined, now = new Da
   return text({
     lieu: placeBlock(lieu, res),
     resume:
+      inland(p) +
       `Marée au marégraphe le plus proche ${de(p.nom)}, ${best.g.gauge.nom} (${best.g.gauge.commune}, à ${fr(Math.round(best.km))} km) : ` +
       `${sentence(best.g, now)}.`,
     maregraphes: by.map((x) => row(x.g, now, x.km)),

@@ -86,6 +86,15 @@ describe("prevision_meteo", () => {
     expect(r.avertissements.join(" ")).toMatch(/altitude de Cilaos \(1\u202f209 m\)/);
   });
 
+  it("says first what a word taken for part of a name was taken for, and that a place off the island is not in La Réunion", async () => {
+    // The forecast kept offline is Cilaos's: a name close to it, said so first.
+    const r = body(await previsionMeteo(await offlineCache(), "Cilos", "demain", NOW));
+    expect(r.resume).toMatch(/^«\u00a0Cilos\u00a0» compris comme Cilaos \(commune, Cilaos\), dont le nom ne correspond qu'à peu près\u00a0: le dire à l'utilisateur\. .*Cilaos, demain/);
+    const marseille = await previsionMeteo(await offlineCache(), "Marseille", undefined, NOW);
+    expect(marseille.isError).toBe(true);
+    expect(body(marseille).erreur).toMatch(/^«\u00a0Marseille\u00a0» n'est pas à La Réunion/);
+  });
+
   it("gives the next 24 hours and the following days without a time", async () => {
     const r = body(await previsionMeteo(await offlineCache(), "Cilaos", undefined, NOW));
     always(r);

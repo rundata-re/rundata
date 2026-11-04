@@ -1,5 +1,5 @@
 import { ageMinutes, ageText, compass, localTime, versant } from "../geo.js";
-import type { Resolution } from "../places/resolve.js";
+import { offIsland, type Resolution } from "../places/resolve.js";
 import { withMentions } from "../mentions.js";
 
 import { a as aCommune } from "../articles.js";
@@ -67,9 +67,20 @@ export function when(time: Date, now: Date) {
   return { heure_mesure: localTime(time), fuseau: "heure de La Réunion (UTC+4)", age_min: age, age_texte: ageText(age) };
 }
 
+/**
+ * A place found on part of its name only, or on a name close to the one asked: said first in the answer, so that
+ * « Bellecombe » read as the Rempart de Bellecombe is not taken for the place meant. Undefined for a name found whole.
+ */
+export function placeWarning(asked: string, r: Resolution): string | undefined {
+  if ((r.correspondance !== "partielle" || r.ignores) && r.correspondance !== "approchee") return undefined;
+  const p = r.lieu;
+  return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), dont le nom ne correspond ${r.correspondance === "approchee" ? "qu'à peu près" : "qu'en partie"}\u00a0: le dire à l'utilisateur.`;
+}
+
 export function placeBlock(asked: string, r: Resolution) {
   const p = r.lieu;
   return {
+    avertissement: placeWarning(asked, r),
     demande: asked,
     trouve: p.nom,
     type: p.type,
@@ -103,7 +114,8 @@ export function text(payload: unknown) {
 export function notFound(asked: string) {
   return {
     ...text({
-      erreur: `Lieu introuvable à La Réunion : « ${asked} ».`,
+      // « Paris », « Maurice »: not to be read as a place of the island that was not found.
+      erreur: offIsland(asked) ? `«\u00a0${asked.trim()}\u00a0» n'est pas à La Réunion\u00a0: ces données ne couvrent que La Réunion.` : `Lieu introuvable à La Réunion : « ${asked} ».`,
       conseil:
         "Donner une commune (Saint-Paul, Cilaos…), une plage (Boucan Canot, l'Hermitage…), un quartier, un sommet, " +
         "ou des coordonnées « latitude, longitude » (ex. « -21.05, 55.22 »).",

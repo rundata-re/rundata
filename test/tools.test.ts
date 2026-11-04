@@ -58,6 +58,15 @@ describe("meteo_actuelle", () => {
     expect(r.stations).toHaveLength(3);
   });
 
+  it("says a place off the island is not in La Réunion, and a word taken for part of a name first", async () => {
+    const paris = await meteoActuelle(await offlineCache(), "Paris", NOW);
+    expect(paris.isError).toBe(true);
+    expect(body(paris).erreur).toBe("«\u00a0Paris\u00a0» n'est pas à La Réunion\u00a0: ces données ne couvrent que La Réunion.");
+    const r = body(await meteoActuelle(await offlineCache(), "France", NOW));
+    expect(r.resume).toMatch(/^«\u00a0France\u00a0» compris comme Petite France \(localite, Saint-Paul\), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur\. Mesures les plus proches de Petite France/);
+    expect(r.lieu.avertissement).toMatch(/^«\u00a0France\u00a0» compris comme Petite France/);
+  });
+
   it("says when a place is unknown", async () => {
     const r = await meteoActuelle(await offlineCache(), "Tombouctou", NOW);
     expect(r.isError).toBe(true);

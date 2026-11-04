@@ -98,6 +98,8 @@ function daylight(d: StationData, fin: string): boolean {
 }
 
 /** A day, with its year when it is not this year's: « 28/10 », « 30/06/2025 ». */
+// « 30/08/2026 »: the year in full beside another (« de 1952 au 30/08/2026 », marketing).
+const full = (ymd: string) => ymd.split("-").reverse().join("/");
 const dated = (ymd: string, now: Date) => (ymd.slice(0, 4) === local(now.toISOString()).slice(0, 4) ? dayMonth(ymd) : ymd.split("-").reverse().join("/"));
 /** Whether the station sent something in the last 24 hours: else its page is its history (a station that has stopped sending). */
 const live = (d: StationData) => !!d.derniere || d.heures.length > 0;
@@ -259,7 +261,7 @@ export function stationPage(origin: string, data: Cached<StationData> | null, id
   const told = (where: string) =>
     on || !h
       ? `Ce que mesure la station ${who}${where} en ce moment${what ? ` : ${what}` : ""}${h ? `, et son historique depuis ${h.depuis}` : ""}.`
-      : `L'historique de la station ${who}${where}, de ${h.depuis} au ${dated(h.jusqu_au, now)}.`;
+      : `L'historique de la station ${who}${where}, de ${h.depuis} au ${full(h.jusqu_au)}.`;
   // Its commune and altitude when it fits in what search engines show.
   const description = describe(told(commune ? ` (${commune}, ${metres(d.altitude_m)} d'altitude)` : ""), told(""));
   const none = !h ? `<p class="note">${d.derniere && !d.heures.length ? "Dernière mesure seulement : rundata.re n'a pas l'historique de cette station." : "rundata.re n'a pas l'historique de cette station."}</p>` : "";
@@ -268,7 +270,9 @@ ${h ? archive(h, now) : none}
 <p class="sources">Sources : ${credits(SOURCES)}.</p>`;
   return layout(origin, {
     title, description, path, alerte,
-    hook: on ? `Ce que mesure cette station en ce moment${h ? `, et son historique depuis ${h.depuis}` : ""}.` : h ? `L'historique de cette station, de ${h.depuis} au ${dated(h.jusqu_au, now)}.` : "",
+    hook: on ? `Ce que mesure cette station en ce moment${h ? `, et son historique depuis ${h.depuis}` : ""}.` : h ? `L'historique de cette station, de ${h.depuis} au ${full(h.jusqu_au)}.` : "",
+    // A station that no longer measures: the history's picture, not « Mesurée aux stations, en direct ».
+    ...(!on && h && { image: "historique" }),
     jsonld: [crumbs(origin, name, path, { name: "Météo", path: "/meteo" }), webPage(origin, path, title, description, data)],
   }, band(d, now), body);
 }

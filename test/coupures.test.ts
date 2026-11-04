@@ -229,6 +229,14 @@ describe("coupures d'eau", () => {
     const day = (slug: string) => resume(pageOf(slug)!, { coupures } as never, NOW).resume;
     expect(day("salazie")).toContain("\u00a0; 2 avis de coupure d'eau, et 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day("saint-denis")).toContain("\u00a0; 1 avis de coupure d'eau\u00a0;");
+    // Who published it, with its article in the description: « des Eaux de La Possession », « de la CIREST », « de Dionéo ».
+    const one = (commune: string, distributeur: string) => ({ value: { ...coupures.value, avis: [{ ...coupures.value.avis[0], communes: [commune], distributeur, ne_pas_boire: undefined }] }, fetchedAt: NOW });
+    const said = (slug: string, commune: string, distributeur: string) =>
+      coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures: one(commune, distributeur) }, NOW).match(/<meta name="description" content="([^"]*)">/)![1];
+    expect(said("la-possession", "La Possession", "Eaux de La Possession")).toContain("1 avis des Eaux de La Possession en cours");
+    expect(said("saint-andre", "Saint-André", "CIREST")).toContain("1 avis de la CIREST en cours");
+    expect(said("saint-denis", "Saint-Denis", "Dionéo")).toContain("1 avis de Dionéo en cours");
+    expect(coupuresCommunePage("https://rundata.re", pageOf("entre-deux")!, { coupures: null }, NOW)).toContain(`<meta name="description" content="Coupures d&#39;eau à l&#39;Entre-Deux (974)`);
     // The page of the day: « eau à ne pas boire » first in its description, and a cut counted only as a cut.
     expect(descriptionOf(pageOf("salazie")!, resume(pageOf("salazie")!, { coupures } as never, NOW)).replace(/[\u00a0\u202f]/g, " ")).toMatch(/^Aujourd'hui à Salazie \(974\) : eau à ne pas boire, 2 coupures d'eau\. /);
     // The home page's tile: the cuts only, beside the communes not to drink the water of.

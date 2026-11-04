@@ -8,7 +8,9 @@ import { feuxPage } from "../src/web/feux.js";
 import { homePage } from "../src/web/home.js";
 import og from "../src/web/og.json" with { type: "json" };
 import rubriques from "../src/web/og-rubriques.json" with { type: "json" };
-import { meteoPage, placePage } from "../src/web/pages.js";
+import { layout, meteoPage, placePage } from "../src/web/pages.js";
+import { passePage } from "../src/web/cyclones-passes.js";
+import { PASSES } from "../src/historique/cyclones-passes.js";
 import { pageOf, PAGES } from "../src/web/places.js";
 import { site } from "../src/web/site.js";
 import { BUILT as DAE_BUILT } from "../src/providers/dae.js";
@@ -195,6 +197,22 @@ describe("link previews", () => {
     expect(img(feuxPage(O, { fires: null }, NOW))).toMatch(/\/og\/feux\./);
     expect(img(homePage(O, null, NOW))).toMatch(/\/og\.png\?v=/);
     expect(agendaPage(O, null, NOW)).toMatch(/<meta name="twitter:image" content="https:\/\/rundata\.re\/og\/evenements\.[0-9a-f]{10}\.png">/);
+  });
+
+  it("show the nearest section's picture on the pages outside one, and the history's on a past cyclone", () => {
+    const img = (html: string) => html.match(/<meta property="og:image" content="https:\/\/rundata\.re([^"]+)">/)![1];
+    const at = (path: string) => img(layout(O, { title: "t", description: "d", path, jsonld: [] }, "", ""));
+    for (const p of ["/alerte-cyclone", "/ecoles-cyclone", "/kit-cyclone"]) expect(at(p), p).toMatch(/^\/og\/cyclones\.[0-9a-f]{10}\.png$/);
+    for (const p of ["/baignade", "/peche"]) expect(at(p), p).toMatch(/^\/og\/mer\./);
+    expect(at("/aujourdhui/saint-paul")).toMatch(/^\/og\/communes\./);
+    // The island's day, and a page of no section, keep the site's.
+    expect(at("/aujourdhui")).toMatch(/^\/og\.png\?v=/);
+    expect(at("/a-propos")).toMatch(/^\/og\.png\?v=/);
+    // A page of a section keeps its own, and the alt follows the picture.
+    expect(at("/cyclones")).toMatch(/^\/og\/cyclones\./);
+    const past = passePage(O, PASSES[0]);
+    expect(img(past)).toMatch(/^\/og\/historique\.[0-9a-f]{10}\.png$/);
+    expect(past).toContain(`<meta property="og:image:alt" content="${rubriques.find((r) => r.png.startsWith("/og/historique."))!.alt.replace(/'/g, "&#39;")}">`);
   });
 
   it("have every picture they name in public/og/, /enfants's ready for its page", () => {

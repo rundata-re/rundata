@@ -8,6 +8,7 @@ import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MA
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { muetPour } from "../tools/coupures.js";
+import { deNom } from "../articles.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
@@ -42,6 +43,9 @@ export function waterOf(commune: string, w: WaterCopies) {
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
+/** « des Eaux de La Possession », « de la CIREST », « d'un distributeur » : who published the notices, after « avis ». */
+const ofBy = (by: string) =>
+  by.startsWith("Eaux de La Possession") ? `des ${by}` : by.startsWith("CIREST") ? `de la ${by}` : by === "le distributeur" ? "du distributeur" : deNom(by);
 
 /** The commune's page's tile: a cut or not, its drought level, its tap water. */
 export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
@@ -130,7 +134,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const description = !d
     ? short
     : x.avis.length
-      ? describe(`${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} de ${by} en cours ou à venir, avec les rues, les heures et les consignes.`, short)
+      ? describe(`${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, avec les rues, les heures et les consignes.`, short)
       : dist?.avis && !x.muet
         ? describe(`Aucune coupure d'eau annoncée par ${publisher}${publisher!.includes(p.nom) ? "" : ` ${where}`} (974) à ${at}. Restrictions sécheresse, qualité de l'eau du robinet et contact du distributeur.`, short)
         : short;

@@ -77,6 +77,15 @@ describe("the stop pages", () => {
     expect(html).toContain(`<title>Arrêt ${quiet.nom}, ${quiet.commune} : prochains bus · 974</title>`.replace(/'/g, "&#39;"));
     expect(html).toContain("Pas de départ prévu dans les prochaines heures.");
   });
+
+  it("elide « de » before a network whose name starts with a vowel: « d'Alternéo »", () => {
+    const live = (p: transit.StopPage) => p.groups.every((g) => transit.NETWORKS[g.reseau]?.nom === "Alternéo" && transit.NETWORKS[g.reseau]?.temps_reel);
+    const sud = [...transit.stopPages().values()].find((p) => live(p) && p.nom.length < 12)!;
+    const html = stopPage(O, sud, { departs: [], alertes: [], lignes: ["1"], direct: [], sources: [transit.SOURCE] }, NOW);
+    const description = html.match(/<meta name="description" content="([^"]*)">/)![1];
+    expect(description).toMatch(/les annonces en direct d&#39;Alternéo\.$/);
+    expect(description).not.toContain("de Alternéo");
+  });
 });
 
 describe("the search for a stop", () => {

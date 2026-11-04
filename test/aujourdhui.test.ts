@@ -1,3 +1,4 @@
+import { a, de, deNom } from "../src/articles.js";
 import { describe, expect, it } from "vitest";
 import { mention } from "../src/tools/non-repris.js";
 import { resume } from "../src/tools/resume.js";
@@ -19,6 +20,8 @@ const full = (nom: string) => ({
 describe("the page of a commune's day", () => {
   it("names the commune with the right preposition, in titles that fit", () => {
     expect(COMMUNES.map((p) => aCommune(p.nom))).toEqual(expect.arrayContaining(["au Port", "au Tampon", "aux Avirons", "aux Trois-Bassins", "à l'Entre-Deux", "à L'Étang-Salé", "à La Possession", "à Saint-Paul"]));
+    // The same in every sentence of the site and the tools (articles.ts), and « de » elided before a vowel.
+    expect([a("Entre-Deux"), de("Entre-Deux"), de("Le Port"), deNom("Alternéo"), deNom("Citalis")]).toEqual(["à l'Entre-Deux", "de l'Entre-Deux", "du Port", "d'Alternéo", "de Citalis"]);
     for (const p of COMMUNES) {
       expect(titleOf(p).length, titleOf(p)).toBeLessThanOrEqual(60);
       expect(H1(p)).not.toMatch(/à Les? /);

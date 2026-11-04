@@ -145,7 +145,7 @@ describe("annuaire_services_publics, asked about children", () => {
 
   it("answers a kind asked alone, the nearest when the commune has none", () => {
     const b = body(enfantsAnswer("ludothèque", "Saint-Denis", NOW));
-    expect(b.resume).toMatch(/^Aucun lieu de ce type à Saint-Denis dans les sources\. Les plus proches : Case à jeux, à Entre-Deux, à \d+/);
+    expect(b.resume).toMatch(/^Aucun lieu de ce type à Saint-Denis dans les sources\. Les plus proches : Case à jeux, à l'Entre-Deux, à \d+/);
     expect(b.lieux[0].distance_km).toBeGreaterThan(0);
     const all = body(enfantsAnswer("piscine", undefined, NOW));
     expect(all.resume).toMatch(/^Piscines dans les sources : \d+, dans \d+ communes\. Donner une commune/);
@@ -295,7 +295,7 @@ describe("a commune's children's page", () => {
 
   it("says marketing's words, with French spacing", () => {
     const n = enfants.inCommune("Saint-Denis").length;
-    expect(html).toContain(`<title>Avec les enfants à Saint-Denis${NBSP}: aires de jeux, parcs, piscines · 974</title>`);
+    expect(html).toContain(`<title>Avec les enfants à Saint-Denis${NBSP}: où aller · 974</title>`);
     expect(flat(html)).toContain(`Aires de jeux, parcs, piscines, médiathèques : les ${n} lieux où aller avec les enfants à Saint-Denis, sur une carte, et les activités du week-end.`);
     expect(html).toContain(`<p class="lead">Les ${n} lieux pour les enfants de Saint-Denis, sur la carte${NBSP}: choisissez un type, ou un point pour voir sa fiche.</p>`);
     expect(html).toContain('aria-label="Choisir un type de lieu"');

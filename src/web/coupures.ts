@@ -4,7 +4,7 @@
  * commune's own page. Cut from the copies of /coupures-eau, /secheresse and /eau: nothing more is fetched.
  */
 import type { Cached } from "../cache.js";
-import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { muetPour } from "../tools/coupures.js";
@@ -78,6 +78,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 
   // Its feed silent: what was read before, said with its hour, the site linked; or that its read failed.
   const silent = x.muet ? `<p class="note">${silentText(x.muet)}</p>` : "";
+  // The site of a distributor whose notices are not read, linked only (CISE Réunion at Les Avirons).
+  const siteDist = dist && !dist.avis ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
   const status = !d
     ? loading("Les avis des distributeurs")
     : x.muet && !x.avis.length
@@ -87,6 +89,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
         ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} à ${esc(at)}.</p>`
+        : siteDist
+        ? `<p class="lead">Les avis de coupure de ${esc(nomDit(dist!))} ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.${lienA}</p>`
         : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`;
 
   const list = !d
@@ -109,6 +113,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
             : dist.site === CREOLE.url
             ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.</p>`
             : `<p>Ses avis sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
+          : siteDist
+          ? `<p>Ses avis de coupure ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">le site de ${esc(dist.nom)}</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique «\u00a0L'eau dans ma commune\u00a0»), ou la mairie.${lienA}</p>`
           : `<p>Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.${lienA}</p>`)
       : `<p>Le distributeur de la commune n'est pas connu ici : voir la mairie.${lienA}</p>`) +
     `<p class="note">Son numéro d'urgence (fuite, coupure non annoncée) est sur la facture d'eau. <a href="/communes/${p.slug}">${esc(p.nom)} en direct : la mairie, ses horaires et son téléphone →</a></p></div>`;

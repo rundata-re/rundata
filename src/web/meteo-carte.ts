@@ -299,11 +299,12 @@ export const REVOIR: Record<(typeof DUREES)[number], [string, string]> = {
  * Under the map, the replay bar: a length to choose, a button to play and pause, the slider of the moment shown; more
  * images to ask (the radar every 5 minutes over 24 hours, every quarter of an hour over 7 days), and with them a day to
  * replay. Hidden without a script; the page's own (METEO_SCRIPT) shows it, and asks REJEU_JS and the length's file on the
- * first touch. `fin`: the latest measure, where the bar ends.
+ * first touch. `fin`: the latest measure, where the bar ends. Its lengths are a radiogroup named by « Revoir : », not a
+ * fieldset's legend: WebKit (Safari) puts a legend on a line of its own above the choices, even floated.
  */
 function replayBar(fin: string): string {
   const radios = DUREES.map((d) => `<input type="radio" name="rjd" id="rjd-${d}" value="${d}"><label for="rjd-${d}">${REVOIR[d][0]}</label>`).join("");
-  return `<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${esc(fin)}" hidden><fieldset class="tabs"><legend>Revoir :</legend>${radios}</fieldset>` +
+  return `<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${esc(fin)}" hidden><div class="tabs" role="radiogroup" aria-labelledby="rjd-n"><span class="tabs-n" id="rjd-n">Revoir :</span>${radios}</div>` +
     `<button type="button" class="rj-b" aria-label="${REVOIR["6h"][1]}">▶ Lire</button>${vitesseBouton("rj-v")}` +
     `<input type="range" min="0" max="1" step="any" value="1" aria-label="Moment affiché sur la carte" hidden>` +
     `<label class="rj-plus"><input type="checkbox"> Plus d'images</label><select class="rj-j" aria-label="Choisir un jour" hidden><option value="">Choisir un jour</option></select><span class="rj-q" hidden></span>` +

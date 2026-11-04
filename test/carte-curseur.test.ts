@@ -20,7 +20,7 @@ describe("/carte's time cursor", () => {
   it("is a bar under the map, hidden without a script, in « Revoir »'s words, with /meteo's files of 6 and 24 hours", async () => {
     const { html, used } = await serve("/carte");
     expect(used).toBe(0);
-    const bar = html.indexOf(`<div class="kcur" data-cur="${curseurScriptPath()}" hidden><fieldset class="tabs"><legend>Revoir\u00a0:</legend>`);
+    const bar = html.indexOf(`<div class="kcur" data-cur="${curseurScriptPath()}" hidden><div class="tabs" role="radiogroup" aria-labelledby="kcur-n"><span class="tabs-n" id="kcur-n">Revoir\u00a0:</span>`);
     expect(bar).toBeGreaterThan(html.indexOf('<svg id="kmap"'));
     expect(bar).toBeLessThan(html.indexOf('<figcaption class="note"><ul class="klg"'));
     for (const w of ['<label for="kcd-6h">6 h</label>', '<label for="kcd-24h">24 h</label>', 'aria-label="Lire les 6 dernières heures">▶ Lire</button>', 'aria-label="Moment affiché sur la carte"',

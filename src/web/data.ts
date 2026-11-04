@@ -551,8 +551,10 @@ export interface SentiersAnswer {
   sources: Credit[];
   /** The middle of each closed trail, for the map (not in the tool's answer). */
   points: { nom: string; lon: number; lat: number }[];
-  /** How many trails the ONF follows, open or not. */
+  /** How many trails the ONF manages, open or closed (providers/sentiers.ts, `geres`). */
   suivis: number;
+  /** How many trails of its map it does not manage or gives no state for; missing on an older copy. */
+  sans_etat?: number;
   /** The hikes with a GPS trace, from the bundle. */
   randonnees: { nom: string; slug: string; km: number; dplus: number; boucle: boolean }[];
   /** The fires seen by satellite in the 24 hours before the build, and when they were read; missing without FIRMS (providers/feux.ts). */
@@ -576,7 +578,7 @@ export async function buildSentiers(cache: Cache, now = new Date()): Promise<Sen
     .map((r) => ({ nom: r.nom, slug: r.slug, km: r.km, dplus: r.dplus, boucle: r.boucle }));
   // Each closed trail with the hikes it cuts.
   const fermes_par_commune = a.fermes_par_commune.map((c) => ({ ...c, sentiers_fermes: c.sentiers_fermes.map((t) => ({ ...t, randonnees: hikesThrough(t.sentier) })) }));
-  return { ...a, fermes_par_commune, points, suivis: new Set(carte.sentiers.map((t) => t.nom)).size, randonnees, ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites, lu: fires.fetchedAt.toISOString() } } : {}) };
+  return { ...a, fermes_par_commune, points, suivis: onf.geres(carte.sentiers).size, sans_etat: onf.sansEtat(carte.sentiers), randonnees, ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites, lu: fires.fetchedAt.toISOString() } } : {}) };
 }
 
 /** The hikes that follow an ONF trail, by its name. */

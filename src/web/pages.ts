@@ -506,7 +506,8 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 background:radial-gradient(120% 70% at 80% 100%,var(--glow),transparent 60%),linear-gradient(180deg,var(--sky1) 0%,var(--sky2) 100%)}
 .sky-nuit{--sky1:#030a14;--sky2:#0c2a4a;--glow:rgb(76 110 245/.25)}
 .sky-aube{--sky1:#1b2452;--sky2:#d96b5a;--glow:rgb(255 190 120/.55)}
-.sky-jour{--sky1:#0a5b9c;--sky2:#20a4c8;--glow:rgb(255 236 170/.35)}
+.sky-jour{--sky1:#0a5b9c;--sky2:#20a4c8;--glow:rgb(255 236 170/.35);
+background:radial-gradient(120% 70% at 80% 100%,var(--glow),transparent 60%),linear-gradient(180deg,var(--sky1) 0%,#1170ab 55%,var(--sky2) 100%)}
 .sky-soir{--sky1:#231a52;--sky2:#e0703f;--glow:rgb(255 140 80/.5)}
 .sky-nuit::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.7;
 background-image:radial-gradient(1.2px 1.2px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 28% 8%,#fff,transparent),radial-gradient(1.4px 1.4px at 46% 22%,#fff,transparent),

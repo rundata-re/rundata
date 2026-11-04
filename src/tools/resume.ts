@@ -260,9 +260,13 @@ const newsRow = (i: ActualitesAnswer["infos"][number]) => ({ quand: i.quand, med
  */
 function weatherSources(d: PlaceData | undefined, w: ReturnType<typeof weather>): Credit[] {
   if (!d || !w) return [];
+  const all = d.meteo?.sources ?? [];
   const s = w.mesure ? enTete(d.meteo?.stations) : undefined;
   const network = s && NETWORKS.find((n) => n.id === s.source)?.nom;
-  return [...(network ? (d.meteo?.sources ?? []).filter((c) => c.source === network) : []), ...(w.prevision ? (d.prevision?.sources ?? []) : [])];
+  const own = network ? all.filter((c) => c.source === network) : [];
+  // A measure shown whose network is not told (no station, an id NETWORKS lacks, a list without it): every network, as
+  // for an agenda not told, never a measure credited to no one.
+  return [...(w.mesure ? (own.length ? own : all) : []), ...(w.prevision ? (d.prevision?.sources ?? []) : [])];
 }
 
 /**

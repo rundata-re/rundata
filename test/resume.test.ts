@@ -186,6 +186,11 @@ describe("the summary of a day", () => {
     // An event whose agenda is not told (proposed, read on a platform): the whole list, never fewer sources than it holds.
     const other = { ...agenda, evenements: [{ ...agenda.evenements[0], publie_par: "Association des amis" }, ...agenda.evenements.slice(1)] };
     expect(named(resume(SAINT_PAUL, { ...copies, agenda: copy(other) } as never, NOW))).toContain(port.source.nom);
+    // A measure whose network is not told (an id no network has): every network kept, never a measure credited to no one.
+    const stations = meteo.meteo.stations.map((x) => ({ ...x, source: "inconnu" }));
+    const unknown = resume(SAINT_PAUL, { ...copies, meteo: copy({ ...meteo, meteo: { ...meteo.meteo, stations } }) } as never, NOW);
+    expect(unknown.meteo!.mesure).toBeTruthy();
+    for (const s of [meteofrance.SOURCE, metar.SOURCE, pioupiou.SOURCE, radar.SOURCE]) expect(named(unknown)).toContain(s.nom);
   });
 
   it("leaves out what it has no copy of, and says so", () => {

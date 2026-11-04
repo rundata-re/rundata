@@ -352,8 +352,27 @@ export async function prepare(cache: Cache, starts: Date[], reserve = 0, listing
         chosen.push({ start: t, ...pick });
       }
       if (!chosen.length && !got.size && !hasRelief) return null; // no step this time: not even the terrain is worth fetching
-      const tasks = chosen.flatMap((c) => fieldsOf(c.start).map((f) => () => fetchGrid(c.run, c.b, f, c.start)));
-      const [results, r] = await Promise.all([pool(tasks, CONCURRENCY), reliefValue ?? reliefGrid(reliefFrom.b, s, reliefFrom.run, nb)]);
+      // A step of the newest run not known to be out is tried with its latest grid first (the hours of a run come out in
+      // order), and these tries one after the other: a run not out yet then costs one request answered 404, not one per
+      // grid in flight (7 on 03/11 at 11:13). The rest of a step waits for its try; the steps known to be out go first in
+      // the pool, the tries beside it.
+      let gate: Promise<unknown> = Promise.resolve();
+      const tasks = chosen.flatMap((c) => {
+        const fields = fieldsOf(c.start);
+        const unsure = c.run === newest && frontier === Infinity && missing(c.b, c.start) === fields.length;
+        if (!unsure) return fields.map((f) => ({ sure: true, run: () => fetchGrid(c.run, c.b, f, c.start) }));
+        const last = fields.reduce((a, f) => (FIELDS[f].at > FIELDS[a].at ? f : a));
+        const tried = gate.then(() => fetchGrid(c.run, c.b, last, c.start));
+        gate = tried.catch(() => null);
+        return fields.map((f) => ({
+          sure: false,
+          run: f === last ? () => tried : () => tried.then((g) => (g ? fetchGrid(c.run, c.b, f, c.start) : null), () => null),
+        }));
+      });
+      const order = [...tasks.keys()].sort((x, y) => Number(tasks[y].sure) - Number(tasks[x].sure));
+      const [settled, r] = await Promise.all([pool(order.map((i) => tasks[i].run), CONCURRENCY), reliefValue ?? reliefGrid(reliefFrom.b, s, reliefFrom.run, nb)]);
+      const results: PromiseSettledResult<Grid | null>[] = new Array(tasks.length);
+      order.forEach((i, k) => (results[i] = settled[k]));
       reliefValue = r;
       const carried = !nb.has(RELIEF) && reliefFrom.b.peek(RELIEF);
       if (carried) nb.set(RELIEF, carried.value); // so that it is there when this run is the one before

@@ -8,12 +8,11 @@ import * as actuSources from "../providers/actualites.js";
 import { DAES } from "../providers/dae.js";
 import { IDS as CHARGE_POINTS, STATIONS as CHARGE_STATIONS } from "../providers/irve.js";
 import { SITES as BATHING_SITES } from "../providers/baignades.js";
-import { STATIONS_EN_SERVICE } from "../providers/meteofrance-stations.js";
 import { RANDONNEES, SENTIERS } from "../providers/traces.js";
 import { GROUPS as STOP_GROUPS, NETWORKS } from "../providers/transit.js";
 import { createServer } from "../server.js";
 import { COMMUNES } from "./commune.js";
-import type { AgendaAnswer, RandonneesAnswer } from "./data.js";
+import type { AgendaAnswer, HomeData, RandonneesAnswer } from "./data.js";
 import { enLigne } from "./associations-drapeau.js";
 import { esc } from "./map.js";
 import icons from "./icons.json" with { type: "json" };
@@ -52,11 +51,17 @@ const n = (x: number) => x.toLocaleString("fr-FR").replace(/ /g, " ");
  * counts of the day. Nothing is fetched for them.
  */
 export async function pressFigures(cache: Cache): Promise<Figure[]> {
-  const [hikes, agenda] = await Promise.all([cache.peek<RandonneesAnswer>("web:randonnees").catch(() => undefined), cache.peek<AgendaAnswer>("web:agenda").catch(() => undefined)]);
+  const [hikes, agenda, meteo] = await Promise.all([
+    cache.peek<RandonneesAnswer>("web:randonnees").catch(() => undefined),
+    cache.peek<AgendaAnswer>("web:agenda").catch(() => undefined),
+    cache.peek<HomeData>("web:meteo").catch(() => undefined),
+  ]);
+  // The stations /meteo counts in its title, from its copy: never a number written in the code, left out without it.
+  const stations = meteo?.value.toutes?.length;
   const figures: Figure[] = [
     { valeur: toolCount(cache), label: "outils dans le connecteur pour les assistants IA", detail: "météo, volcan, bus, eau, sentiers, terrain…" },
     { valeur: COMMUNES.length, label: "communes, chacune avec sa page" },
-    { valeur: STATIONS_EN_SERVICE, label: "stations Météo-France en direct", detail: "une mesure toutes les 6 minutes, du littoral aux sommets" },
+    ...(stations ? [{ valeur: stations, label: "stations météo en direct", detail: "du littoral aux sommets" }] : []),
     { valeur: STOP_GROUPS.length, label: "arrêts de bus et de car", detail: `${Object.keys(NETWORKS).length} réseaux, prochains départs, et les retards quand le réseau les publie` },
     { valeur: CHARGE_POINTS.size, label: "points de recharge pour voiture électrique", detail: `dans ${CHARGE_STATIONS.length} stations, libres ou occupés en direct` },
     { valeur: DAES.length, label: "défibrillateurs", detail: "avec leur accès et leurs horaires" },

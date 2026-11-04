@@ -92,7 +92,7 @@ describe("the map of every station on /meteo", () => {
     const html = stationsMap(ALL);
     const l = links(html);
     expect(l.map((x) => x.href).sort()).toEqual(ALL.map((s) => `#${stationId(s.nom)}`).sort());
-    expect(html).toContain("les 5 stations météo et leur dernière mesure, à 09:18");
+    expect(html).toContain("la dernière mesure de 5 des 5 stations météo, à 09:18");
     const of = (href: string) => l.find((x) => x.href === href)!.cls;
     expect(of("#st-plaine-des-cafres")).toBe(" has-t has-p has-v");
     expect(of("#st-belouve")).toBe(" has-p");
@@ -332,7 +332,7 @@ describe("the map of every station on /meteo", () => {
     expect(html).toContain(`<canvas class="voile" `);
     expect(html).not.toContain("data:");
     // The legend's words are the page's own, written as they are (no value of a source in them).
-    expect(html).toContain("3 stations, température mesurée sous abri, la plus récente à 09:18. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.");
+    expect(html).toContain("Température mesurée sous abri à 3 des 5\u00a0stations, la plus récente à 09:18. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.");
   });
 
   it("says one station in the singular, and leaves out the tab of a measure no station has", () => {

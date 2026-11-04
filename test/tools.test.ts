@@ -6,7 +6,7 @@ import { parseAscii, parseCsv } from "../src/providers/acspo.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { SATELLITES, satellitesEvery, temperatureMer } from "../src/tools/mer.js";
-import { meteoActuelle } from "../src/tools/meteo.js";
+import { coverage, meteoActuelle } from "../src/tools/meteo.js";
 import { resume } from "../src/tools/resume.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import { communePage } from "../src/web/commune.js";
@@ -230,7 +230,10 @@ describe("meteo_actuelle with the Météo-France stations", () => {
     const r = body(await meteoActuelle(await mfCache(), "Cilaos", MF_NOW));
     expect(r.stations[0]).toMatchObject({ station: "Cilaos", source: "meteofrance", pertinence: "bonne", age_min: 7 });
     expect(r.resume).toMatch(/il pleut \(0,2 mm en 6 min, 1 mm en 1 h\)/);
-    expect(r.couverture).toMatch(/56 stations Météo-France/);
+    // Counted in the answer's reading, as /meteo counts them in its title: never a number written in the code.
+    expect(r.couverture).toMatch(/^Les 56\u00a0stations qui ont mesuré dans cette lecture\u00a0: celles de Météo-France, de la côte aux sommets/);
+    // sources_donnees reads no station: no number.
+    expect(coverage()).toMatch(/^Les stations de Météo-France, de la côte aux sommets/);
   });
 
   it("answers for a summit from the highest stations, not from the coast", async () => {

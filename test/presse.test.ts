@@ -66,8 +66,8 @@ describe("press page", () => {
     expect(html).toContain(`<span class="fig">${insecables(fr(DAES.length))}</span><span>défibrillateurs`);
     expect(html).toContain(`<span class="fig">${fr(IDS.size)}</span><span>points de recharge`);
     expect(html).toMatch(/<span class="fig">\d+<\/span><span>outils dans le connecteur/);
-    // The stations that publish, the count the connector gives too.
-    expect(html).toContain(`<span class="fig">${STATIONS_EN_SERVICE}</span><span>stations Météo-France en direct`);
+    // The stations: counted on /meteo's copy only, never a number written in the code.
+    expect(html).not.toContain("stations météo en direct");
     expect(html).toContain("et les retards quand le réseau les publie");
     // The counts of the day only once this data center has them: nothing is fetched for this page.
     expect(html).not.toContain("événements dans les deux semaines");
@@ -78,7 +78,10 @@ describe("press page", () => {
     const c = cache();
     await c.get("web:agenda", 600, async () => ({ nombre: 37 }));
     await c.get("web:randonnees", 600, async () => ({ fermes: 56 }));
+    // The stations that measured, the number /meteo says in its title.
+    await c.get("web:meteo", 600, async () => ({ stations: [], toutes: Array.from({ length: 61 }, () => ({})), mer: [], sources: [], indisponibles: [] }));
     const html = await page(c);
+    expect(html).toContain(`<span class="fig">61</span><span>stations météo en direct`);
     expect(html).toContain(`<span class="fig">37</span><span>événements dans les deux semaines qui viennent`);
     expect(html).toContain("dont 56 fermés aujourd");
   });

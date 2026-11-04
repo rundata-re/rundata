@@ -265,7 +265,7 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   const n = (k: number, one: string, many: string) => `${k} ${k > 1 ? many : one}`;
   // A tab and a legend per measure that at least one station has; the first shown without a choice.
   const layers = [
-    t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>${n(t.length, "station", "stations")}, température mesurée sous abri, la plus récente à ${hm(latest)}. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.` },
+    t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>Température mesurée sous abri à ${t.length} des ${list.length}\u00a0stations, la plus récente à ${hm(latest)}. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.` },
     // « Pluie » alone (the user, 01/11/2026): the legend says over how long, and the radar is in the same layer.
     nRain && { id: "p", tab: "Pluie", legend: `${n(nRain, "pluviomètre", "pluviomètres")}, ${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente à ${hm(latest)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}. Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
     w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>${n(w.length, "anémomètre", "anémomètres")}, vent moyen mesuré en km/h, le plus récent à ${hm(latest)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.` },
@@ -280,7 +280,7 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   // screen (the user, 01/11/2026, as /electricite).
   // The tabs in a bar, which the full screen's button joins (pages.ts).
   return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}</div>` +
-    islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : les ${drawn.length} stations météo et leur dernière mesure, à ${hm(latest)}` }) +
+    islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, à ${hm(latest)}` }) +
     bubble + `<figcaption class="note">${replay}${legend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
 

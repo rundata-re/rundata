@@ -125,7 +125,7 @@ import { emploi } from "./tools/emploi.js";
 import * as peche from "./tools/peche.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.188";
+export const VERSION = "1.0.189";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -309,6 +309,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Renvoie des mesures datées avec la station, sa distance, son altitude, et un avertissement " +
         "quand le lieu a un autre microclimat (altitude, versant au vent ou sous le vent). " +
         "Pour plus tard (demain, ce soir, ce week-end), utiliser prevision_meteo. " +
+        "Pas pour hier ni les jours passés\u00a0: historique_meteo. " +
         "/ Current MEASURED weather in Réunion Island (air temperature, rain, humidity, wind, pressure, present weather) " +
         "at the most representative station for a place, and with a place the rain of the last 12 to 24 hours hour by hour, " +
         "the time of the last rain and the total since midnight, and the max and min temperature since midnight. " +
@@ -868,8 +869,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "par mois ou par année au-delà, comparés à la normale 1991-2020 de la station, avec ses records (chaleur, froid, pluie en un jour, rafale). " +
         "Sur 3 jours ou moins (7 avec detail « heure »), depuis 2000, aussi HEURE PAR HEURE, nuit dernière comprise : à quelle heure il a plu, quand le soleil s'est caché, rafale max et à quelle heure. " +
         "Pour toute question sur le temps qu'il a fait : « il a beaucoup plu ce mois-ci à Saint-Benoît ? », « record de chaleur à Saint-Denis ? », " +
-        "« à quelle heure a-t-il plu hier à Cilaos ? ». " +
-        "Pour maintenant et aujourd'hui depuis minuit (max, min, pluie), meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo.",
+        "« à quelle heure a-t-il plu hier à Cilaos ? », « il a plu combien hier au Tampon ? ». " +
+        "Pour maintenant et aujourd'hui depuis minuit (max, min, pluie), meteo_actuelle\u00a0; pour les jours à venir, prevision_meteo. " +
+        "/ Past MEASURED weather in Réunion Island: yesterday, last week, a month or a year, and records.",
       inputSchema: {
         lieu,
         jours: z.number().int().min(1).max(3650).optional()

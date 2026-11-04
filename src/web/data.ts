@@ -145,6 +145,8 @@ export interface PlaceData {
 
 export interface StationAnswer {
   station: string;
+  /** Where it stands; absent from a copy built before it was given. */
+  commune?: string;
   source: string;
   altitude_m: number;
   heure_mesure: string;

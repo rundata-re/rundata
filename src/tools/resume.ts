@@ -64,7 +64,7 @@ import { muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
-import { a, credits, de, notFound, placeBlock, placeWarning, text } from "./format.js";
+import { a, ailleurs, credits, de, notFound, placeBlock, placeWarning, text } from "./format.js";
 import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import type { InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
@@ -214,7 +214,7 @@ function weather(d: PlaceData, fetchedAt: Date, now: Date) {
   if (!s && !jours.length) return undefined;
   return {
     mesure: s
-      ? { station: s.station, altitude_m: s.altitude_m, distance_km: s.distance_km, heure_mesure: s.heure_mesure, mesures: s.mesures, avertissements: s.avertissements.length ? s.avertissements : undefined }
+      ? { station: s.station, commune: s.commune, altitude_m: s.altitude_m, distance_km: s.distance_km, heure_mesure: s.heure_mesure, mesures: s.mesures, avertissements: s.avertissements.length ? s.avertissements : undefined }
       : undefined,
     prevision: jours.length
       ? { avertissement: "PRÉVISION de modèle, pas une mesure.", aujourd_hui: jours[0], demain: evening ? jours[1] : undefined, modele: d.prevision?.modele?.nom }
@@ -382,7 +382,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const bins = col.COMMUNES.includes(nom);
   const resumeText = [
     `${nom}, ${DAY_FR.format(now)}`,
-    t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station})` : "",
+    t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom) ? ` ${ailleurs(meteo!.mesure!, nom)}` : ""})` : "",
     f?.temperature_min && f.temperature_max ? `prévision du jour ${f.temperature_min} à ${f.temperature_max}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}` : "",
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",

@@ -4,7 +4,7 @@
  * commune's own page. Cut from the copies of /coupures-eau, /secheresse and /eau: nothing more is fetched.
  */
 import type { Cached } from "../cache.js";
-import { CIREST, distributeur, LIENS, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { muetPour } from "../tools/coupures.js";
@@ -83,7 +83,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
         ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} à ${esc(at)}.</p>`
-        : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(dist.nom)}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`;
+        : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`;
 
   const list = !d
     ? `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`

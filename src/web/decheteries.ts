@@ -52,7 +52,7 @@ export function decheteriesPage(origin: string, data: Cached<DechetsAnswer> | nu
   const description = descriptionOf(data ? sites : []);
   const band = `${crumbBar("Déchèteries")}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Météo des déchèteries du TCO</p>
+  <p class="pill"><span class="dot"></span>État des bennes · déchèteries du TCO</p>
   <h1>${esc(H1)}</h1>
   <p class="lead">${esc(LEAD)}</p>
   ${data ? "" : loading("L'état des bennes")}

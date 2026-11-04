@@ -170,7 +170,7 @@ describe("measures at Atmo Réunion's stations", () => {
     const band = page.slice(page.indexOf('<p class="pill">'), page.indexOf('<figure class="card mapcard airmap">'));
     expect(band).toContain('<span class="dot"></span>Mesuré aux stations</p>');
     const top = `<p class="big">PM10 : 12 µg/m³</p><p class="lead">${esc("Particules PM10 mesurées de 7\u00a0h à 8\u00a0h à la station Lycée Lislet Geoffroy (Saint-Denis).")}</p>` +
-      `<p class="note">Mesure brute, non validée, publiée par le LCSQA.`;
+      `<p class="note">Mesure brute, non validée, publiée par le <abbr title="Laboratoire central de surveillance de la qualité de l&#39;air">LCSQA</abbr>.`;
     expect(band).toContain(top);
     const forecast = `<div class="status forecast"><p class="lead"><b>${esc("Prévision d'Atmo Réunion pour la journée : moyen.")}</b>`;
     expect(band.indexOf(top)).toBeLessThan(band.indexOf(forecast));

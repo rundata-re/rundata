@@ -1618,8 +1618,10 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
     ? `<div class="now"><span class="big span">${live.valeur}</span><p>mesurés sous abri par les stations de l'île, de <b>${esc(shortName(coldest(l).nom))}</b> (${metres(coldest(l).altitude_m)}) à <b>${esc(shortName(warmest(l).nom))}</b>. Dernière mesure à <b>${hm(latest!)}</b>.</p></div>`
     : `<p class="lead">Les mesures se chargent : rechargez la page dans quelques secondes. Les stations Météo-France publient toutes les 6 minutes.</p>`;
 
-  const sea = data?.value.mer.length
-    ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">La mer au large</h3><ul class="bars">` +
+  // Its own title in the night band only (a copy made before every station was kept): in the section « La mer au
+  // large », its h2 says it, and the light of the night band was white on the white card.
+  const sea = (titled: boolean) => data?.value.mer.length
+    ? `<figure class="card mapcard">${titled ? `<h3 style="color:var(--on-night)">La mer au large</h3>` : ""}<ul class="bars">` +
       data.value.mer.map((m) => `<li><span>${esc(seaName(m.nom))}</span><b>${thin(deg(m.valeur))}</b></li>`).join("") +
       `</ul><p class="note">Par satellite, le ${esc(dayMonth(data.value.mer.map((m) => m.jour).sort().pop()!))}. <a href="/mer">Toutes les plages →</a></p></figure>`
     : "";
@@ -1672,7 +1674,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
     ${ask(`I fé koman lo tan La Rényon astèr ? Gèt bann mézir an dirèk si ${url} é di amwin lèr la mézir.`,
       `Quel temps fait-il en ce moment à La Réunion ? Lis les mesures en direct sur ${url} et donne-moi l'heure des mesures.`)}
   </div>
-  ${all.length ? `<div class="wxbox">${stationsMap(all)}</div>${pleinEcran({ boite: ".wxbox", carte: ".wxmap", barre: ".wxbar", panneau: [], legende: ".wxmap>figcaption" })}` : sea}
+  ${all.length ? `<div class="wxbox">${stationsMap(all)}</div>${pleinEcran({ boite: ".wxbox", carte: ".wxmap", barre: ".wxbar", panneau: [], legende: ".wxmap>figcaption" })}` : sea(true)}
 </div>`;
 
   const body = all.length ? `<section id="stations" aria-labelledby="h-stations">
@@ -1682,7 +1684,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   <p class="sources">Sources : ${credits([...data!.value.sources, ALTITUDES_CREDIT, RADAR_CREDIT])}.</p>
 </section><script>${METEO_SCRIPT}</script>
 ${cumulsSection()}<script>${CUMULS_LOADER}</script>
-${sea ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p class="eyebrow">La mer</p><h2 id="h-mer">La mer au large</h2></div>${sea}</section>` : ""}
+${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p class="eyebrow">La mer</p><h2 id="h-mer">La mer au large</h2></div>${sea(false)}</section>` : ""}
 <section id="communes" aria-labelledby="h-communes">
   <div class="sec-h"><p class="eyebrow">Prévisions</p><h2 id="h-communes">Prévision par commune et par lieu</h2>
   <p>Pour chaque commune, les cirques, le volcan et les plages : la mesure de la station qui représente le mieux le lieu (proche, à une altitude voisine, du même versant) et la prévision sur 7 jours, aujourd'hui compris (une <b>prévision</b> de modèle, pas une mesure).</p></div>

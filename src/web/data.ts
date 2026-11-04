@@ -1200,6 +1200,9 @@ export interface ActualitesAnswer {
   prefecture_injoignable?: { texte: string; site: string };
   /** Whether people are in the streets or roads blocked: a live blog, or news of it in the last hours. */
   chaud: boolean;
+  /** The newest news of a mobilisation in the last HOT_HOURS hours, said by the home's tile under « mobilisation en cours »:
+   * `chaud` alone can come from a live blog on anything else (an accident on the road, 04/11/2026). */
+  mobilisation?: InfoRow;
   indisponible: string[];
   couverture: string;
   a_savoir: string;
@@ -1230,6 +1233,7 @@ export async function buildActualites(cache: Cache, now = new Date()): Promise<A
     prefecture: f.prefecture.slice(0, 4).map((i) => infoRow(i, now)),
     prefecture_injoignable: prefectureSilent(f, now),
     chaud: day.some((i) => i.publie >= recent && (i.direct || i.sujets.includes("mobilisation"))),
+    mobilisation: ((m) => (m ? infoRow(m, now) : undefined))(day.find((i) => i.publie >= recent && i.sujets.includes("mobilisation"))),
     indisponible: f.indisponible,
     couverture: ACTU_COUVERTURE,
     a_savoir: ACTU_A_SAVOIR,

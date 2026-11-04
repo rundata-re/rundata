@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { type Info, parseImazLive } from "../src/providers/actualites.js";
 import { infoRow } from "../src/tools/actualites.js";
 import type { ActualitesAnswer } from "../src/web/data.js";
+import { actualitesLive } from "../src/web/domains.js";
 import { homePage } from "../src/web/home.js";
 
 const NOW = new Date("2026-10-29T05:30:00Z");
@@ -80,5 +81,25 @@ describe("home page, « En ce moment sur l'île »", () => {
 
   it("is not shown without a headline of the last six hours", () => {
     expect(block(INFOS, { now: new Date("2026-10-29T12:00:00Z") }).cls).toBeUndefined();
+  });
+});
+
+describe("home page, the tile of the news", () => {
+  // 04/11/2026 at 13:15: « mobilisation en cours » above « La Possession : un homme mortellement fauché sur la quatre voies ».
+  const accident = article("La Possession : un homme mortellement fauché sur la quatre voies", "Imaz Press", "https://imazpress.com/faits-divers/la-possession-pieton", "2026-10-29T05:20:00.000Z", ["route", "securite"], ["La Possession"]);
+  const blocage = article("Saint-Paul : les transporteurs bloquent le rond-point de Savanna", "Freedom", "https://www.freedom.fr/blocage", "2026-10-29T04:40:00.000Z", ["route", "mobilisation"], ["Saint-Paul"]);
+  const tile = (d: ActualitesAnswer) => actualitesLive({ value: d, fetchedAt: NOW, stale: false })!;
+
+  it("never says « mobilisation en cours » above news of anything else: a day hot from a live blog alone gives the count", () => {
+    const t = tile({ ...answer([accident, ...INFOS], [], NOW, true) });
+    expect(t.valeur).toBe(`${INFOS.length + 1} informations`);
+    expect(t.detail).toContain("un homme mortellement fauché");
+  });
+
+  it("says « mobilisation en cours » above the news of that mobilisation, not above the newest", () => {
+    const t = tile({ ...answer([accident, blocage, ...INFOS], [], NOW, true), mobilisation: infoRow(blocage, NOW) });
+    expect(t.valeur).toBe("mobilisation en cours");
+    expect(t.detail).toContain("Freedom : Saint-Paul : les transporteurs bloquent");
+    expect(t.detail).not.toContain("fauché");
   });
 });

@@ -769,6 +769,25 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     expect(html).toContain("Tournoi 1");
   });
 
+  it("asks Cloudflare for its compact widget on a screen narrower than 360 px, before its script reads the widgets", async () => {
+    const { TURNSTILE_SCRIPT } = await import("../src/web/propositions.js");
+    // The flexible widget is 300 px wide at least: at 320, the page was 338 px wide.
+    const small = TURNSTILE_SCRIPT.indexOf('if(innerWidth<360)for(const e of document.querySelectorAll(".cf-turnstile"))e.dataset.size="compact"');
+    expect(small).toBeGreaterThan(-1);
+    expect(TURNSTILE_SCRIPT.indexOf("turnstile/v0/api.js")).toBeGreaterThan(small);
+  });
+
+  it("puts dates over several days under the title on a phone, never beside it", async () => {
+    const { associationsPage } = await import("../src/web/associations.js");
+    const e = (titre: string) => ({ titre, lien: "https://example.org/e", commune: "Saint-Pierre", publie_par: "Club A" }) as never;
+    const html = associationsPage("https://rundata.re", { clubs: 1, evenements: 2, prochains: [
+      { e: e("Saison"), quand: "du mercredi 04/11 à 18:00 au samedi 07/11 à 23:00" },
+      { e: e("Tournoi"), quand: "samedi 07/11 de 09:00 à 12:00" },
+    ] });
+    expect(html).toContain('<span class="fin">du mercredi 04/11 à 18:00 au samedi 07/11 à 23:00</span>');
+    expect(html).toContain("<span>samedi 07/11 de 09:00 à 12:00</span>");
+  });
+
   it("finds the agendas the scheduled event alone reads in its own copies", async () => {
     const { preuve } = await import("../src/web/associations.js");
     const { PLANIFIES } = await import("../src/providers/agenda.js");

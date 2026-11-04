@@ -45,6 +45,14 @@ describe("restrictions d'eau", () => {
     expect(page).not.toContain('<span style="color:');
   });
 
+  it("writes each level's pill in a text readable on its official colour, at least 4.5:1, the colour unchanged", async () => {
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    // White on the purple of « crise » (7.28:1), black on the red of « alerte renforcée » (5.46:1); the sheet's dark ink elsewhere.
+    expect(page).toContain('<span class="lvl" style="--c:#862e9c;color:#fff">crise</span>');
+    expect(page).toContain('<span class="lvl" style="--c:#f03e3e;color:#000">alerte renforcée</span>');
+    expect(page).toContain('<span class="lvl" style="--c:#ff922b">alerte</span>');
+  });
+
   it("says what a private person may not do in a commune", async () => {
     const b = body(await restrictionsEau(cache(), "Saint-Joseph"));
     expect(b.resume).toBe("Restrictions d'eau à Saint-Joseph : crise pour l'eau du robinet\u00a0; crise pour les nappes souterraines, alerte renforcée pour les rivières et sources.");

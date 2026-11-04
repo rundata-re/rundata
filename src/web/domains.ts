@@ -2313,7 +2313,14 @@ ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 
 const DROUGHT_COLOR: Record<string, string> = { vigilance: "#ffd43b", alerte: "#ff922b", "alerte renforcée": "#f03e3e", crise: "#862e9c" };
 const DROUGHT_ORDER = ["crise", "alerte renforcée", "alerte", "vigilance"];
-const droughtBadge = (n?: string) => (n ? `<span class="lvl" style="--c:${DROUGHT_COLOR[n] ?? "#868e96"}">${esc(n)}</span>` : `<span class="note">aucune</span>`);
+/**
+ * The text of a pill where the sheet's dark ink is not readable on the official colour, which never changes (marketing,
+ * 04/11/2026): white on the purple of « crise » (7.28:1, the dark ink gave 2.27), black on the red of « alerte renforcée »
+ * (5.46:1, the dark ink gave 4.30).
+ */
+const DROUGHT_INK: Record<string, string> = { "alerte renforcée": "#000", crise: "#fff" };
+const droughtBadge = (n?: string) =>
+  n ? `<span class="lvl" style="--c:${DROUGHT_COLOR[n] ?? "#868e96"}${DROUGHT_INK[n] ? `;color:${DROUGHT_INK[n]}` : ""}">${esc(n)}</span>` : `<span class="note">aucune</span>`;
 
 export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
@@ -3401,9 +3408,11 @@ ${connectorCta("actualites", "l'actualité de l'île")}
 export function actualitesLive(data: Cached<ActualitesAnswer> | null): Live | undefined {
   const d = data?.value;
   if (!d) return undefined;
-  const first = d.en_direct[0] ?? d.infos[0];
+  // « mobilisation en cours » above the news of that mobilisation only, never above the first news of the day, which
+  // can be anything else (a man killed on the road under « mobilisation en cours », 04/11/2026).
+  const first = d.mobilisation ?? d.en_direct[0] ?? d.infos[0];
   return {
-    valeur: d.chaud ? "mobilisation en cours" : `${d.infos.length} informations`,
+    valeur: d.mobilisation ? "mobilisation en cours" : `${d.infos.length} informations`,
     detail: first ? `${esc(newsTime(first))}, ${esc(first.media)} : ${esc(first.titre)}` : "depuis 24 h",
   };
 }

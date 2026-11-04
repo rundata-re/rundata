@@ -90,11 +90,14 @@ describe("the dates of an event", () => {
 describe("agenda", () => {
   let down: RegExp | undefined;
   let asked: string[];
+  let read: string[];
   beforeEach(() => {
     down = undefined;
     asked = [];
+    read = [];
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       asked.push(new Headers(init?.headers).get("User-Agent") ?? "");
+      read.push(String(url));
       const f = file(url, typeof init?.body === "string" ? init.body : undefined);
       return f && !down?.test(url) ? new Response(bytes(f)) : new Response("", { status: 503 });
     });
@@ -828,6 +831,12 @@ describe("agenda", () => {
     expect(list.find((e) => e.titre.startsWith("Urban Konection"))!.seances).toEqual([{ debut: "2026-11-28" }]);
   });
 
+  it("reads nothing of the tourist office of the East, suspended, and serves none of its events from an older copy", () => {
+    expect(AGENDAS.some((x) => x.id === "oti_est")).toBe(false);
+    expect(repris({ publie_par: OTI_EST, source: "Agenda de l'Office de tourisme intercommunal de l'Est (Côté Est Réunion)", lien: "https://www.reunionest.fr/agenda/x" })).toBe(false);
+    expect(repris({ publie_par: "CINOR", source: "CINOR", lien: undefined })).toBe(true);
+  });
+
   it("reads the tourist office of the East, its titles as written and its terms on each event", () => {
     const list = parseOtiEst(fixture("oti-est.html"), NOW);
     expect(list).toHaveLength(10);
@@ -876,7 +885,8 @@ describe("agenda", () => {
     expect(b.resume).toBe(`40 événements à La Réunion dans les deux semaines qui viennent (du samedi 24/10 au samedi 07/11)\u00a0; ${RESUME_REUNION_FR}.`.replace("40", String(b.nombre)));
     // Without the sports programmes of La Possession, L'Étang-Salé and Saint-Benoît: the sport tool's.
     // Nor Saint-Benoît's 7, whose site is never linked (src/liens.ts).
-    expect(b.nombre).toBe(93);
+    // Nor the OTI Est's 8, suspended (its robots.txt closes it to the AI crawlers).
+    expect(b.nombre).toBe(85);
     expect(b.evenements).toHaveLength(40);
     expect(b.evenements.filter((e: { titre: string }) => e.titre === "Visite guidée de la Maison Carrère")).toHaveLength(1);
     // Petite-Île's, which gives the place.
@@ -885,13 +895,14 @@ describe("agenda", () => {
     const all = body(await agenda(c, undefined, undefined, undefined, NOW, 300));
     expect(new Set(all.evenements.map((e: { publie_par: string }) => e.publie_par))).toEqual(new Set(["Ville du Tampon", "Ville du Port", "Mairie des Trois-Bassins", "CINOR", "Mairie de Saint-Paul", "Ville de Saint-André",
       "Le Séchoir", "TÉAT La Réunion", "Cité des Arts", "Kabardock", "Bisik", "Théâtre Luc Donat", "CDNOI", "Léspas", "Ville de La Possession", "Ville de L'Étang-Salé",
-      "Ville de Petite-Île", "Ville de Bras-Panon", "OTI EST REUNION — Droits réservés"]));
+      "Ville de Petite-Île", "Ville de Bras-Panon"]));
     // Last year's posts of Saint-Louis are past; nothing of theirs.
     expect(b.evenements.some((e: { publie_par: string }) => e.publie_par === "Ville de Saint-Louis")).toBe(false);
     expect(asked.every((ua) => ua === "rundata.re (contact@rundata.re)")).toBe(true);
     // Twenty-six agendas (two pages for Bras-Panon and for the Théâtre Luc Donat), and the pages of the four shows on both
     // TÉAT stages.
-    expect(asked).toHaveLength(31);
+    expect(asked).toHaveLength(30);
+    expect(read.some((u) => u.includes("reunionest.fr"))).toBe(false);
   });
 
   it("says which commune's site each event of a mairie comes from and when it was read, keeping what each site's terms allow", async () => {
@@ -945,16 +956,15 @@ describe("agenda", () => {
 
   it("answers tonight, with the hours", async () => {
     const b = body(await agenda(cache(), undefined, "ce_soir", "concert", NOW));
-    expect(b.resume).toBe(`5 événements (concerts et musique) à La Réunion ce soir\u00a0; ${RESUME_REUNION_FR}.`);
-    // A day without hours may be tonight: the musical of the East is.
+    expect(b.resume).toBe(`4 événements (concerts et musique) à La Réunion ce soir\u00a0; ${RESUME_REUNION_FR}.`);
     // The DKLO at Tan Rouge says « Cirque et musique » only after its first sentence: that text is not kept, the genre
     // it names is (`themes`), so the search still finds it.
-    expect(b.evenements.map((e: { titre: string }) => e.titre)).toEqual(["Calogero", "Olivier Ker Ourio", "Une nouvelle comédie musicale indienne signée Sivayanama", "DKLO Tan Rouge", "Somèn kréol – Plato Zartis"]);
+    expect(b.evenements.map((e: { titre: string }) => e.titre)).toEqual(["Calogero", "Olivier Ker Ourio", "DKLO Tan Rouge", "Somèn kréol – Plato Zartis"]);
     expect(b.evenements[0]).toMatchObject({ lieu: "TÉAT Plein Air", commune: "Saint-Paul", genres: ["concert"], publie_par: "TÉAT La Réunion" });
-    expect(b.evenements[4]).toMatchObject({ quand: "samedi 24/10 de 18:00 à 23:00", commune: "Les Trois-Bassins" });
+    expect(b.evenements[3]).toMatchObject({ quand: "samedi 24/10 de 18:00 à 23:00", commune: "Les Trois-Bassins" });
     // The genres are never returned as words of the source: no `themes` in a row.
-    expect(b.evenements[3]).not.toHaveProperty("themes");
-    expect(b.evenements[3].description).toBe("14h30 & 17h Les contes Calumet – Contes 2×30 min Les Contes Calumet, spectacle ZINZIN de Jean Bernard Ifanohiza.");
+    expect(b.evenements[2]).not.toHaveProperty("themes");
+    expect(b.evenements[2].description).toBe("14h30 & 17h Les contes Calumet – Contes 2×30 min Les Contes Calumet, spectacle ZINZIN de Jean Bernard Ifanohiza.");
   });
 
   it("answers for a commune, with what its agenda gives", async () => {

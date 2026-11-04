@@ -201,7 +201,6 @@ export const FICHES: Record<string, Fiche> = {
   prefecture_communiques: { famille: "licence_ouverte", producteurs: [PREFECTURE] },
   prefecture_raa: { famille: "licence_ouverte", producteurs: [PREFECTURE] },
   openagenda: { famille: "licence_ouverte", producteurs: ["CINOR", "Office de tourisme intercommunal du Nord"] },
-  agenda_oti_est: { famille: "information_publique", producteurs: ["Office de tourisme intercommunal de l'Est"] },
   // Its texts reusable « pour tout usage » with the source: no licence named, not said open.
   agenda_cirest: { famille: "information_publique", producteurs: ["CIREST"] },
   agenda_departement: { famille: "information_publique", producteurs: ["Département de La Réunion"] },

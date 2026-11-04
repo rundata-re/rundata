@@ -2,7 +2,7 @@ import type { Cache, Cached } from "../cache.js";
 import { distributeur, LIENS, lues, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as notices from "../providers/avis-eau.js";
-import { BACK } from "../providers/avis-eau.js";
+import { BACK, lifts } from "../providers/avis-eau.js";
 import * as potable from "../providers/eaupotable.js";
 import { localTime } from "../geo.js";
 import { why } from "../types.js";
@@ -38,7 +38,7 @@ export function current(list: notices.Avis[], now: Date): notices.Avis[] {
 export function doNotDrink(list: notices.Avis[], commune: string): notices.Avis | null {
   const latest = list.filter((n) => n.communes.includes(commune) && (QUALITY.test(n.titre + n.texte) || BACK.test(n.texte)))
     .sort((x, y) => y.publie.localeCompare(x.publie))[0];
-  return latest && latest.ne_pas_boire && !BACK.test(latest.texte) ? latest : null;
+  return latest && latest.ne_pas_boire && !lifts(latest.texte) ? latest : null;
 }
 
 /** `current`: whether it is the notice that says not to drink the water now; older ones are superseded. */

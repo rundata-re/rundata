@@ -22,7 +22,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   calendrier: 3,
   chiffres: 17,
   commune: 14,
-  coupures: 5,
+  coupures: 6,
   courant: 6,
   crues: 3,
   cyclones: 4,
@@ -77,6 +77,9 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "agenda:sechoir": 1,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
+  // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without
+  // a blank line is kept (« TRAITEMENT ST FRANCOIS »).
+  "avis-eau:flux": 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's. */

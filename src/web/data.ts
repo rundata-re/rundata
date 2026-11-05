@@ -1339,6 +1339,10 @@ export interface ElectriciteAnswer {
   coupures_annoncees?: ReturnType<typeof courantBlock>;
   production?: {
     heure_mesure: string;
+    age_min: number;
+    /** With `avertissement`, when the line was older than PERIMEE_MIN at the copy's build (tools/electricite.ts). */
+    perimee?: true;
+    avertissement?: string;
     total_mw: number;
     parts: { filiere: string; mw: number; part_pct: number; renouvelable: boolean }[];
     renouvelable_pct: number;

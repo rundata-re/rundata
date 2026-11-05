@@ -5,8 +5,9 @@ import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.j
 import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
-import { agenda, COUVERTURE, type EventRow, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
+import { agenda, COUVERTURE, type EventRow, LISTED_OUTIL, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
+import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
 import { agendaHours, agendaPage } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
@@ -896,6 +897,24 @@ describe("agenda", () => {
     // Nor the OTI Est's 8, suspended (its robots.txt closes it to the AI crawlers).
     expect(b.nombre).toBe(85);
     expect(b.evenements).toHaveLength(40);
+    // The tool asks for 25 (LISTED_OUTIL, server.ts), the pages keep 40: the first 25 of the same list, the count whole.
+    expect(LISTED_OUTIL).toBe(25);
+    const short = body(await agenda(c, undefined, undefined, undefined, NOW, LISTED_OUTIL));
+    expect(short.nombre).toBe(85);
+    expect(short.evenements).toEqual(b.evenements.slice(0, 25));
+    // Through the MCP endpoint, at the same hour.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "evenements", arguments: {} } }) });
+      const tool = JSON.parse((await (await handle(rpc, c)).json()).result.content[0].text);
+      expect(tool.nombre).toBe(85);
+      // The endpoint puts no-break spaces before « : ; ? ! » (insecables): compared without them.
+      const titles = (l: EventRow[]) => l.map((e) => e.titre.replace(/[\u00a0\u202f]/g, " "));
+      expect(titles(tool.evenements)).toEqual(titles(b.evenements.slice(0, 25)));
+    } finally {
+      vi.useRealTimers();
+    }
     expect(b.evenements.filter((e: { titre: string }) => e.titre === "Visite guidée de la Maison Carrère")).toHaveLength(1);
     // Petite-Île's, which gives the place.
     expect(b.evenements.find((e: { titre: string }) => /^Fête de l'ail/.test(e.titre))).toMatchObject({ titre: "Fête de l'ail 2026", quand: "du vendredi 23/10 au dimanche 25/10", lieu: "Domaine du Relais", commune: "Petite-Île", publie_par: "Ville de Petite-Île", lu_le: "samedi 24/10 à 08:00" });

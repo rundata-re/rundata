@@ -13,6 +13,7 @@
  * release of their end found; the end of 13/07/2018 and 21/02/2020, no release of their start found.
  */
 import { localTime } from "../geo.js";
+import type { ReleveEntree } from "../providers/prefecture-copie.js";
 
 export interface Communique {
   /** The day the page gives, ISO. */
@@ -22,6 +23,8 @@ export interface Communique {
   copie: string;
   /** The page gives the day of an update only, after the event. */
   mis_a_jour?: true;
+  /** Added by the collector's record (`episodesDuReleve`): `copie` is then the release on the prefecture's site. */
+  releve?: true;
 }
 
 export interface Moment {
@@ -206,6 +209,11 @@ export const CHAPEAU =
   "Les phrases sont citées telles quelles. Leur fin est celle de la préfecture, qui lève l'alerte par un communiqué, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. " +
   "Ce n'est pas un historique complet\u00a0: un épisode dont il manque l'un des deux communiqués n'y figure pas.";
 export const NOTE = "Liens vers les copies des communiqués conservées par la Wayback Machine (archive.org).";
+/** Said after NOTE when the list holds episodes of the record: their links are the prefecture's site. */
+export const noteReleve = () =>
+  `Les épisodes après le ${date(FIN_DE_LISTE)} sont relevés au fil des communiqués de la préfecture : leurs liens mènent à son site.`;
+/** NOTE, and noteReleve when the list holds episodes of the record. */
+export const note = (list: Episode[] = EPISODES) => (list.some((e) => e.fin.communique.releve) ? `${NOTE} ${noteReleve()}` : NOTE);
 export const avantTitre = (n: number) => `De 2016 à novembre 2021 (${n}\u00a0épisodes)`;
 export const PUIS = "Le même jour, nouvelle";
 export const SANS_FIN = "Sa fin n'est pas dans les communiqués que nous avons retrouvés.";
@@ -221,10 +229,10 @@ export const momentText = (m: Moment) => `${date(m.jour)}, ${quoi(m)} : « ${m.d
 const quoi = (m: Moment) => (m.selon ? `${m.quoi} (${m.selon})` : m.quoi);
 
 /** For volcan_seismes: the episodes, and what the list is. */
-export function precedentes() {
+export function precedentes(list: Episode[] = EPISODES) {
   return {
-    note: `${CHAPEAU} ${AVANT_2021} ${NOTE}`,
-    episodes: EPISODES.map((e) => ({
+    note: `${CHAPEAU} ${AVANT_2021} ${note(list)}`,
+    episodes: list.map((e) => ({
       debut: e.debut.map(momentText),
       fin: momentText(e.fin),
       ...(e.puis && { puis: `${PUIS} ${e.puis.quoi} : « ${e.puis.dit} » (${label(e.puis.communique)} : ${e.puis.communique.copie}). ${SANS_FIN}` }),
@@ -233,22 +241,64 @@ export function precedentes() {
 }
 
 /** The last day the list tells, its end or a new alert the same day. */
-export const FIN_DE_LISTE = EPISODES.flatMap((e) => [e.fin.jour, ...(e.puis ? [e.puis.jour] : [])]).sort().at(-1)!;
+export const finDeListe = (list: Episode[]) => list.flatMap((e) => [e.fin.jour, ...(e.puis ? [e.puis.jour] : [])]).sort().at(-1)!;
+/** The last day the list written by hand tells: the record's episodes start after it. */
+export const FIN_DE_LISTE = finDeListe(EPISODES);
 
 /**
  * The prefecture's release in force, newer than the list: said, so that the list is not read as the latest alerts.
  * « Cette liste s'arrête au 07/05/2026 : les communiqués publiés depuis n'y sont pas encore, le dernier « Retour en
  * phase de vigilance » du 26/10/2026 (lien). »
  */
-export function depuis(c?: { titre?: string; jour?: string; lien?: string }): string | undefined {
-  if (!c?.jour || !c.titre || c.jour <= FIN_DE_LISTE) return undefined;
-  return `Cette liste s'arrête au ${date(FIN_DE_LISTE)} : les communiqués publiés depuis n'y sont pas encore, le dernier « ${c.titre} » du ${date(c.jour)}${c.lien ? ` (${c.lien})` : ""}.`;
+export function depuis(c?: { titre?: string; jour?: string; lien?: string }, list: Episode[] = EPISODES): string | undefined {
+  const fin = finDeListe(list);
+  if (!c?.jour || !c.titre || c.jour <= fin) return undefined;
+  return `Cette liste s'arrête au ${date(fin)} : les communiqués publiés depuis n'y sont pas encore, le dernier « ${c.titre} » du ${date(c.jour)}${c.lien ? ` (${c.lien})` : ""}.`;
 }
 
 /** One sentence for the summary: the days and what they were, newest first; the newest `n` only in the short answer. */
-export const resumeText = (n = EPISODES.length) =>
-  `Alertes précédentes dont le début et la fin sont écrits dans un communiqué de la préfecture (liste partielle, depuis 2016\u00a0; avant novembre 2021, les niveaux du plan précédent) : ${EPISODES.slice(0, n).map((e) =>
-    `${e.debut.map((m) => `${date(m.jour)} ${quoi(m)}`).join(", ")} → ${date(e.fin.jour)} ${e.fin.quoi}${e.puis ? ` (${PUIS.toLowerCase()} ${e.puis.quoi} : ${SANS_FIN[0].toLowerCase()}${SANS_FIN.slice(1, -1)})` : ""}`).join("\u00a0; ")}${EPISODES.length > n ? `\u00a0; ${EPISODES.length - n} autres, plus anciennes, avec detail` : ""}.`;
+export const resumeText = (n?: number, list: Episode[] = EPISODES) =>
+  `Alertes précédentes dont le début et la fin sont écrits dans un communiqué de la préfecture (liste partielle, depuis 2016\u00a0; avant novembre 2021, les niveaux du plan précédent) : ${list.slice(0, n ?? list.length).map((e) =>
+    `${e.debut.map((m) => `${date(m.jour)} ${quoi(m)}`).join(", ")} → ${date(e.fin.jour)} ${e.fin.quoi}${e.puis ? ` (${PUIS.toLowerCase()} ${e.puis.quoi} : ${SANS_FIN[0].toLowerCase()}${SANS_FIN.slice(1, -1)})` : ""}`).join("\u00a0; ")}${list.length > (n ?? list.length) ? `\u00a0; ${list.length - n!} autres, plus anciennes, avec detail` : ""}.`;
+
+const ORDRE = (niveau: string) => (niveau === "Vigilance" ? 9 : niveau === "Sauvegarde" ? 8 : 0);
+// What the title says, as it writes it, for `quoi`: « alerte 1 », « retour en phase de vigilance ».
+const QUOI = /retour en phase de vigilance|passage en alerte\s*[12](?:[\s.-]*\d)?|fin de l['’]alerte\s*[12](?:[\s.-]*\d)?/i;
+
+/**
+ * The episodes the collector's record tells after the list written by hand (FIN_DE_LISTE), newest first: from a
+ * release that declares an alert, the alerts that follow, to the first release that declares a return to vigilance.
+ * Each quote is the release's title in the list, as written. An episode without its end yet is not one of the alerts
+ * before this one: left out. The phase « Sauvegarde » (the eruption over, the Enclos still closed) neither starts nor
+ * ends one.
+ */
+export function episodesDuReleve(entrees: ReleveEntree[] | undefined): Episode[] {
+  const out: Episode[] = [];
+  let open: Moment[] | undefined;
+  let level = "";
+  const moment = (e: ReleveEntree): Moment => {
+    const said = QUOI.exec(e.titre)?.[0];
+    const quoi = /^passage en /i.test(said ?? "") ? e.niveau.toLowerCase() : said ? said.charAt(0).toLowerCase() + said.slice(1) : e.niveau.toLowerCase();
+    return { jour: e.jour, quoi, dit: e.titre, communique: { jour: e.jour, titre: e.titre, copie: e.lien, releve: true } };
+  };
+  const sorted = [...(entrees ?? [])].filter((e) => e.jour > FIN_DE_LISTE)
+    .sort((a, b) => a.jour.localeCompare(b.jour) || ORDRE(a.niveau) - ORDRE(b.niveau) || a.niveau.localeCompare(b.niveau));
+  for (const e of sorted) {
+    if (/^Alerte/.test(e.niveau)) {
+      if (!open) open = [moment(e)];
+      else if (level !== e.niveau) open.push(moment(e));
+      level = e.niveau;
+    } else if (e.niveau === "Vigilance" && open) {
+      out.push({ debut: open, fin: moment(e) });
+      open = undefined;
+      level = "";
+    }
+  }
+  return out.reverse();
+}
+
+/** The alerts before this one: the record's episodes, then the list written by hand. */
+export const liste = (entrees?: ReleveEntree[]): Episode[] => [...episodesDuReleve(entrees), ...EPISODES];
 
 /**
  * The last eruption, as the OVPF dates it in its posts, in place of pitonlive.com's date: kept by hand,

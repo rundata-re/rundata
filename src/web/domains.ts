@@ -302,11 +302,12 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
     `<p>${esc(historique.PUIS)} ${esc(m.quoi)} : « ${esc(m.dit)} » (<a href="${esc(m.communique.copie)}">${esc(historique.label(m.communique))} →</a>). ${esc(historique.SANS_FIN)}</p>`;
   // Before the plan of 2021, folded: as many cards again at 390 px, under the levels of the plan then.
   // A release of the prefecture newer than the list's last day, said under its title.
-  const depuisListe = historique.depuis(e?.communique_prefecture);
+  const alertes = historique.liste(d?.releve);
+  const depuisListe = historique.depuis(e?.communique_prefecture, alertes);
   const before = `<section id="alertes-precedentes" aria-labelledby="h-alertes"><div class="sec-h"><h2 id="h-alertes">${esc(historique.TITRE)}</h2><p>${esc(historique.CHAPEAU)}</p>${depuisListe ? `<p class="note">${esc(depuisListe)}</p>` : ""}</div>
-  ${episodes(historique.EPISODES.filter((e) => !historique.avant2021(e)))}
-  <details><summary>${esc(historique.avantTitre(historique.EPISODES.filter(historique.avant2021).length))}</summary><p class="note">${esc(historique.AVANT_2021)}</p>${episodes(historique.EPISODES.filter(historique.avant2021))}</details>
-  <p class="note">${esc(historique.NOTE)}</p></section>
+  ${episodes(alertes.filter((e) => !historique.avant2021(e)))}
+  <details><summary>${esc(historique.avantTitre(alertes.filter(historique.avant2021).length))}</summary><p class="note">${esc(historique.AVANT_2021)}</p>${episodes(alertes.filter(historique.avant2021))}</details>
+  <p class="note">${esc(historique.note(alertes))}</p></section>
 `;
 
   // The text read in a post's first image, folded under what it is (draft, marketing); open on the first card during an

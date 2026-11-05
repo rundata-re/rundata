@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { decodeText, textOf } from "../src/providers/avis-eau.js";
-import { AVANT_2021, avant2021, CHAPEAU, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, depuis, EPISODES, FIN_DE_LISTE, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
+import type { Info } from "../src/providers/actualites.js";
+import { ajouter } from "../src/providers/prefecture-copie.js";
+import { type Page, volcanReleases } from "../src/providers/volcan.js";
+import { AVANT_2021, avant2021, CHAPEAU, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, depuis, EPISODES, episodesDuReleve, FIN_DE_LISTE, liste as listeAlertes, NOTE, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
 import { volcanPage } from "../src/web/domains.js";
 import type { VolcanAnswer } from "../src/web/data.js";
 
@@ -200,5 +203,80 @@ describe("the last eruption, the OVPF's dates", () => {
     expect(derniereEruptionDates({ debut: "2026-10-30", fin: "2026-11-01" })).toBe("du 30 octobre au 1er novembre 2026");
     // The end post is newer than the end it tells of: posted the next morning.
     expect(Date.parse(DERNIERE_ERUPTION.publiee)).toBeGreaterThan(Date.parse(`${DERNIERE_ERUPTION.fin}T00:00:00+04:00`));
+  });
+});
+
+describe("the collector's record of the alerts after the list", () => {
+  // The prefecture's list as the collector read it on 05/11/2026: the two releases of October 2026, and others.
+  const info = (titre: string, lien: string, jour: string): Info => ({ titre, lien, publie: `${jour}T08:00:00.000Z`, heure: false, media: "Préfecture de La Réunion", communes: [] });
+  const GOUV = "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/";
+  const alerte1 = info("Piton de la Fournaise : passage en alerte 1, fermeture de l’enclos", `${GOUV}Piton-de-la-Fournaise-passage-en-alerte-1-fermeture-de-l-enclos5`, "2026-10-24");
+  const vigilance = info("Retour en phase de vigilance", `${GOUV}Retour-en-phase-de-vigilance`, "2026-10-26");
+  const liste = [
+    info("Contrôle sur le domaine public maritime", `${GOUV}Controle-sur-le-domaine-public-maritime`, "2026-11-03"),
+    info("Sécurisation des activités nautiques", `${GOUV}Securisation-des-activites-nautiques`, "2026-10-28"),
+    vigilance,
+    info("Violences urbaines à La Réunion : bilan de la nuit", `${GOUV}Violences-urbaines`, "2026-10-25"),
+    alerte1,
+    info("Piton de la Fournaise : le préfet rappelle les règles d'accès", `${GOUV}Piton-de-la-Fournaise-rappel`, "2026-10-20"),
+  ];
+  // « Retour en phase de vigilance »: its page alone names the volcano (26/10/2026).
+  const pages = new Map<string, Page>([[vigilance.lien, { titre: "Piton de la Fournaise : réouverture partielle de l’enclos", phrases: ["Le préfet de La Réunion décide le retour en phase de vigilance du Piton de la Fournaise."] }]]);
+  const NOW5 = new Date("2026-11-05T02:30:00Z");
+
+  it("keeps the releases about the volcano that declare a phase, oldest first, and leaves out those that declare none", () => {
+    const { phases, sans_phase } = volcanReleases(liste, pages);
+    expect(phases.map((p) => [p.jour, p.niveau, p.titre])).toEqual([["2026-10-24", "Alerte 1", alerte1.titre], ["2026-10-26", "Vigilance", "Retour en phase de vigilance"]]);
+    expect(sans_phase.map((r) => r.titre)).toEqual(["Piton de la Fournaise : le préfet rappelle les règles d'accès"]);
+  });
+
+  it("only ever adds: an entry is never removed nor written again, even when the list says otherwise", () => {
+    const { phases } = volcanReleases(liste, pages);
+    const found = phases.map((p) => ({ jour: p.jour, titre: p.titre, lien: p.lien, niveau: p.niveau }));
+    const first = ajouter([], found, NOW5);
+    expect(first.added).toHaveLength(2);
+    expect(first.entrees[0]).toEqual({ jour: "2026-10-24", titre: alerte1.titre, lien: alerte1.lien, niveau: "Alerte 1", releve_le: "2026-11-05T02:30:00.000Z" });
+    // Read again: nothing added. Its title changed on the site, then gone from the list: the entry kept as it was.
+    const again = ajouter(first.entrees, [{ ...found[0], titre: "Autre titre" }], new Date("2026-11-06T00:00:00Z"));
+    expect(again.added).toEqual([]);
+    expect(again.entrees).toEqual(first.entrees);
+    expect(ajouter(first.entrees, [], NOW5).entrees).toEqual(first.entrees);
+  });
+
+  it("tells October 2026 after the list written by hand, the titles quoted as written, the links the prefecture's", () => {
+    const { entrees } = ajouter([], volcanReleases(liste, pages).phases.map((p) => ({ jour: p.jour, titre: p.titre, lien: p.lien, niveau: p.niveau })), NOW5);
+    const [oct] = episodesDuReleve(entrees);
+    expect(oct).toEqual({
+      debut: [{ jour: "2026-10-24", quoi: "alerte 1", dit: alerte1.titre, communique: { jour: "2026-10-24", titre: alerte1.titre, copie: alerte1.lien, releve: true } }],
+      fin: { jour: "2026-10-26", quoi: "retour en phase de vigilance", dit: "Retour en phase de vigilance", communique: { jour: "2026-10-26", titre: "Retour en phase de vigilance", copie: vigilance.lien, releve: true } },
+    });
+    const all = listeAlertes(entrees);
+    expect(all).toHaveLength(EPISODES.length + 1);
+    expect(all[1]).toBe(EPISODES[0]);
+    expect(resumeText(3, all)).toMatch(/: 24\/10\/2026 alerte 1 → 26\/10\/2026 retour en phase de vigilance ; 13\/02\/2026 alerte 2-1 → 07\/05\/2026 retour en phase de vigilance ; 18\/01\/2026 /);
+    expect(precedentes(all).episodes[0].debut[0]).toBe(`24/10/2026, alerte 1 : « ${alerte1.titre} » (communiqué du 24/10/2026 : ${alerte1.lien})`);
+    expect(precedentes(all).note).toContain(`${NOTE} Les épisodes après le 07/05/2026 sont relevés au fil des communiqués de la préfecture : leurs liens mènent à son site.`);
+    expect(precedentes().note).not.toContain("relevés au fil");
+    // The release in force is the end of the list now: nothing said after it.
+    expect(depuis({ titre: vigilance.titre, jour: "2026-10-26", lien: vigilance.lien }, all)).toBeUndefined();
+    const html = volcanPage("https://rundata.re", { value: { resume: "", sources: [], avertissements: [], etat: { eruption_en_cours: false, niveau_orsec: "Vigilance", communique_prefecture: { niveau: "Vigilance", ...vigilance, jour: "2026-10-26" } }, releve: entrees } as unknown as VolcanAnswer, fetchedAt: NOW, stale: false }, NOW);
+    // The page's spaces before « : » and inside « » are no-break ones (typo).
+    expect(html.replace(/[\u00a0\u202f]/g, " ")).toContain(`<li><b>24/10/2026</b>, alerte 1 : « Piton de la Fournaise : passage en alerte 1, fermeture de l’enclos » <a href="${alerte1.lien}">communiqué du 24/10/2026 →</a></li>`);
+    expect(html).not.toContain("Cette liste s&#39;arrête au");
+    expect(html).toContain("leurs liens mènent à son site.");
+  });
+
+  it("leaves out an alert without its end yet, and what the list written by hand already tells", () => {
+    const e = (jour: string, niveau: string, titre: string) => ({ jour, titre, lien: `${GOUV}${jour}`, niveau, releve_le: "2026-11-05T00:00:00Z" });
+    expect(episodesDuReleve([e("2026-05-07", "Vigilance", "Retour en phase de vigilance"), e("2026-11-10", "Alerte 1", "Piton de la Fournaise : passage en alerte 1")])).toEqual([]);
+    // An eruption the same day as its alert 1, then the phase de sauvegarde, then the return to vigilance: one episode.
+    const [one] = episodesDuReleve([
+      e("2026-12-02", "Vigilance", "Piton de la Fournaise : retour en phase de vigilance"),
+      e("2026-11-20", "Sauvegarde", "Piton de la Fournaise : passage en phase de sauvegarde"),
+      e("2026-11-10", "Alerte 2-1", "Piton de la Fournaise : passage en alerte 2-1, éruption dans l'enclos"),
+      e("2026-11-10", "Alerte 1", "Piton de la Fournaise : passage en alerte 1"),
+    ]);
+    expect(one.debut.map((m) => `${m.jour} ${m.quoi}`)).toEqual(["2026-11-10 alerte 1", "2026-11-10 alerte 2-1"]);
+    expect(`${one.fin.jour} ${one.fin.quoi}`).toBe("2026-12-02 retour en phase de vigilance");
   });
 });

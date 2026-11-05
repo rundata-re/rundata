@@ -18,6 +18,11 @@ export interface Copie {
   liste: Info[];
   /** The cyclone's section, linked by the menu, did not answer: its releases are missing from `liste`. */
   rubrique_non_lue?: true;
+  /**
+   * The record of the volcano's alerts (RELEVE_KV_KEY) as the collector read it before this run, carried here so that
+   * the Worker reads it with the list, without a read of its own.
+   */
+  releve?: ReleveEntree[];
   /** When the collector read the site (ISO, UTC). */
   lu_le: string;
 }
@@ -65,4 +70,47 @@ export async function copie(): Promise<Copie | null> {
 /** The stored copy of a release's page; null when the store has none or nothing is configured. */
 export async function page(lien: string): Promise<PageCopie | null> {
   return pageReader ? pageReader(lien) : null;
+}
+
+/**
+ * The releases about the volcano that declare a phase of its ORSEC plan, as the collector reads them in the list
+ * (scripts/prefecture.ts), kept so that the alerts after the list written by hand (tools/volcan-historique.ts) are told
+ * without anyone adding them: the list of the site keeps its latest 20 releases only. Only ever added to: an entry is
+ * never removed nor written again, even if its page changes later. No expiry. Only the collector reads this key: it
+ * copies the record into the list's copy (`Copie.releve`), which the Worker reads.
+ */
+export const RELEVE_KV_KEY = "volcan:alertes:releve";
+
+/** A release kept: its list's words, as written. */
+export interface ReleveEntree {
+  /** The day of the release, La Réunion's, « 2026-10-24 ». */
+  jour: string;
+  /** Its title in the list, as written: the words quoted. */
+  titre: string;
+  lien: string;
+  /** The phase its title declares (providers/volcan.ts `declared`): « Alerte 1 », « Vigilance »… */
+  niveau: string;
+  /** When the collector added it (ISO, UTC). */
+  releve_le: string;
+}
+
+export interface Releve {
+  entrees: ReleveEntree[];
+  /** When the collector read the list it last added from (ISO, UTC). */
+  lu_le: string;
+}
+
+/**
+ * The record with the releases not yet in it, by their link: never an entry removed nor rewritten (the one kept wins,
+ * even when the list now says otherwise). `added`: the entries new to it.
+ */
+export function ajouter(entrees: ReleveEntree[], found: Omit<ReleveEntree, "releve_le">[], now: Date): { entrees: ReleveEntree[]; added: ReleveEntree[] } {
+  const known = new Set(entrees.map((e) => e.lien));
+  const added: ReleveEntree[] = [];
+  for (const f of found) {
+    if (known.has(f.lien)) continue;
+    known.add(f.lien);
+    added.push({ jour: f.jour, titre: f.titre, lien: f.lien, niveau: f.niveau, releve_le: now.toISOString() });
+  }
+  return { entrees: [...entrees, ...added], added };
 }

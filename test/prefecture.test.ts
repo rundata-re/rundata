@@ -144,6 +144,34 @@ describe("reading the prefecture, which can fail", () => {
     }
   });
 
+  it("reads the record of the volcano's alerts with the collector's copy of the list, never a read of its own", async () => {
+    const list = [release("Retour en phase de vigilance", "2026-10-26")];
+    const releve: copie.ReleveEntree[] = [
+      { jour: "2026-10-24", titre: "Piton de la Fournaise : passage en alerte 1, fermeture de l’enclos", lien: "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-passage-en-alerte-1-fermeture-de-l-enclos5", niveau: "Alerte 1", releve_le: "2026-11-05T03:00:00.000Z" },
+    ];
+    // Not configured (the tests, a local server): no record, the list written by hand alone.
+    expect(await pref.releveDuVolcan(new Cache(new MemoryStore(), () => NOW.getTime()))).toEqual([]);
+    let reads = 0;
+    let stored: copie.Copie | null = { liste: list, releve, lu_le: new Date(Date.now() - 10 * 60_000).toISOString() };
+    copie.configure(async () => (reads++, stored));
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const c = new Cache(new MemoryStore(), () => NOW.getTime());
+      expect((await pref.releases(c)).value).toEqual(list);
+      expect(await pref.releveDuVolcan(c)).toEqual(releve);
+      expect(reads).toBe(1);
+      // A copy without a record (written before it existed): none.
+      stored = { liste: list, lu_le: stored.lu_le };
+      expect(await pref.releveDuVolcan(new Cache(new MemoryStore(), () => NOW.getTime()))).toEqual([]);
+      // No copy at all: none, and the volcano is told from the list written by hand.
+      stored = null;
+      expect(await pref.releveDuVolcan(new Cache(new MemoryStore(), () => NOW.getTime()))).toEqual([]);
+    } finally {
+      copie.configure(undefined);
+      logged.mockRestore();
+    }
+  });
+
   it("reads the site page by page for the collector (scripts/prefecture.ts)", async () => {
     const menu = '<a href="/Actualites/Cyclone-Test">Cyclone Test</a>';
     const pages: string[] = [];

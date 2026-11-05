@@ -280,6 +280,23 @@ export function phaseOf(releases: Info[], pages: ReadonlyMap<string, Page> = new
   return undefined;
 }
 
+/**
+ * Every release of the list about the volcano (by its list, or by its page when read), split between those that
+ * declare a phase (`declared`) and those that declare none (a visit, a reminder): for the collector's record of the
+ * alerts (prefecture-copie.ts RELEVE_KV_KEY). Oldest first.
+ */
+export function volcanReleases(releases: Info[], pages: ReadonlyMap<string, Page> = new Map()): { phases: Phase[]; sans_phase: Info[] } {
+  const about = (r: Info) => volcanicByList(r) || (pages.has(r.lien) && volcanicPage(pages.get(r.lien)!));
+  const phases: Phase[] = [];
+  const sans_phase: Info[] = [];
+  for (const r of releases.filter(about).sort((a, b) => a.publie.localeCompare(b.publie))) {
+    const p = declared(r, pages.get(r.lien));
+    if (p) phases.push(p);
+    else sans_phase.push(r);
+  }
+  return { phases, sans_phase };
+}
+
 // The pages of releases read at most at each reading of the list, to know whether they are about the volcano.
 const DOUBTFUL_MAX = 2;
 

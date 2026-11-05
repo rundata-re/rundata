@@ -40,6 +40,7 @@ import { named } from "../tools/annuaire.js";
 import { alertsFor, applyRealtime, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures } from "../tools/transports.js";
 import * as prefecture from "../providers/prefecture.js";
 import type { Cyclone } from "../providers/prefecture.js";
+import type { ReleveEntree } from "../providers/prefecture-copie.js";
 import { ecoles, type ecolesBlock } from "../tools/ecoles.js";
 import { current, cyclone, cycloneLevel, highest, raised } from "../tools/vigilance.js";
 import { COMMUNES as BIKE_COMMUNES, velosLibreService } from "../tools/velos.js";
@@ -412,6 +413,8 @@ export interface VolcanAnswer {
   };
   /** The episodes whose start and end a release writes (tools/volcan-historique.ts), as the AI reads them. */
   alertes_precedentes?: { note: string; episodes: { debut: string[]; fin: string }[] };
+  /** The collector's record of the alerts (buildVolcan only, for /volcan): the page's copy, not the tool's answer. */
+  releve?: ReleveEntree[];
   /** `texte_lu_dans_l_image`: the text read in the first image (providers/ovpf-ocr.ts), its paragraphs separated by a blank line. */
   publications_ovpf?: { date: string; texte: string; lien?: string; image?: boolean; images?: number; texte_lu_dans_l_image?: string; a_lire?: string }[];
   seismes?: {
@@ -437,7 +440,11 @@ export interface VolcanAnswer {
   sources: Credit[];
 }
 
-export const buildVolcan = async (cache: Cache, now = new Date()) => needed<VolcanAnswer>(await volcanSeismes(cache, now), "volcan");
+// With the collector's record of the alerts, which /volcan tells after the list written by hand.
+export const buildVolcan = async (cache: Cache, now = new Date()): Promise<VolcanAnswer> => ({
+  ...needed<VolcanAnswer>(await volcanSeismes(cache, now), "volcan"),
+  releve: await prefecture.releveDuVolcan(cache),
+});
 
 export interface AirAnswer {
   resume: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { configurerEquipe, handle, JETON_EQUIPE } from "../src/app.js";
+import { configurerEquipe, handle, JETON_EQUIPE, sansBalise } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { AGENT, checkAnswer, checkPage, MAX_BYTES, PAGES, parseTime, TOOLS } from "../src/bin/check-sources.js";
 import type { Hit } from "../src/metrics.js";
@@ -131,6 +131,28 @@ describe("the daily check of the sources", () => {
       expect(hits).toEqual([]);
       await get({});
       expect(hits).toHaveLength(1);
+    } finally {
+      configurerEquipe(undefined);
+    }
+  });
+
+  it("keeps a page asked with the team's secret out of Cloudflare's Web Analytics: no-transform, private, its max-age kept", async () => {
+    // Cloudflare's edge writes its beacon into every HTML page unless it says no-transform: the team's browsers counted
+    // as visits (666 loads of the beacon on 04/11/2026, 13:15-14:00).
+    const get = (path: string, headers: Record<string, string> = {}) => handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html", "user-agent": AGENT, ...headers } }), new Cache());
+    configurerEquipe(SECRET);
+    try {
+      const team = await get("/nouveautes", { [JETON_EQUIPE]: SECRET });
+      const visitor = await get("/nouveautes");
+      expect(visitor.headers.get("cache-control")).toMatch(/^public, max-age=\d+$/);
+      expect(team.headers.get("cache-control")).toBe(visitor.headers.get("cache-control")!.replace("public", "private") + ", no-transform");
+      // Never « no-store », which the daily check reads as a page without its live block.
+      expect(checkPage(PAGES[0], 200, team.headers.get("cache-control")!, "", NOW).map((x) => x.motif)).not.toContain("servie sans son bloc en direct");
+      // A wrong secret is a visitor.
+      expect((await get("/nouveautes", { [JETON_EQUIPE]: SECRET.slice(0, -1) + "x" })).headers.get("cache-control")).toBe(visitor.headers.get("cache-control"));
+      // What is not a page keeps its headers: a feed, the endpoint's answer.
+      expect(sansBalise(new Response("{}", { headers: { "content-type": "application/json", "cache-control": "no-store" } })).headers.get("cache-control")).toBe("no-store");
+      expect(sansBalise(new Response("<p>", { headers: { "content-type": "text/html", "cache-control": "no-store" } })).headers.get("cache-control")).toBe("no-store, no-transform");
     } finally {
       configurerEquipe(undefined);
     }

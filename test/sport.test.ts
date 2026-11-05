@@ -7,7 +7,7 @@ import { parseSportsregions } from "../src/providers/agenda.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { quand, sportTool, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
+import { quand, sportTool, RESULTS_OUTIL, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { sportPage } from "../src/web/domains.js";
@@ -201,6 +201,35 @@ describe("sport", () => {
       const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "sport", arguments: { quand: "a_venir" } } }) });
       const tool = JSON.parse((await (await handle(rpc, c)).json()).result.content[0].text);
       expect(tool.a_venir).toHaveLength(short.a_venir.length);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives the tool the 15 most recent results and the page 30, counting them all, through the MCP endpoint too", async () => {
+    expect(RESULTS_OUTIL).toBe(15);
+    const c = cache();
+    // Volley-ball over 30 days: more results than the page lists.
+    const all = body(await sportTool(c, "volley", undefined, "resultats", NOW, false, 20, 1000));
+    const n = all.resultats.length;
+    expect(n).toBeGreaterThan(30);
+    expect(all.resultats_en_tout).toBeUndefined();
+    expect(all.resume).toMatch(new RegExp(`^${n} résultats depuis le [^(]+\\.`));
+    // The page: the 30 most recent, and the count of all (5/11/2026: « 30 résultats » said for more).
+    const page = body(await sportTool(c, "volley", undefined, "resultats", NOW));
+    expect(page.resultats).toEqual(all.resultats.slice(0, 30));
+    expect(page.resultats_en_tout).toBe(n);
+    expect(page.resume).toMatch(new RegExp(`^${n} résultats depuis le .+ \\(les 30 plus récents ci-dessous\\)\\.`));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "sport", arguments: { sport: "volley", quand: "resultats" } } }) });
+      const tool = JSON.parse((await (await handle(rpc, c)).json()).result.content[0].text);
+      // The server's typography puts non-breaking spaces in the hours: the same rows otherwise.
+      const plain = (v: unknown) => JSON.stringify(v).replace(/[\u00a0\u202f]/g, " ");
+      expect(plain(tool.resultats)).toBe(plain(all.resultats.slice(0, 15)));
+      expect(tool.resultats_en_tout).toBe(n);
+      expect(tool.resume.replace(/[\u00a0\u202f]/g, " ")).toMatch(new RegExp(`^${n} résultats depuis le .+ \\(les 15 plus récents ci-dessous\\)\\.`));
     } finally {
       vi.useRealTimers();
     }

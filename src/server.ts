@@ -97,7 +97,7 @@ import { coupuresEau } from "./tools/coupures.js";
 import * as dae from "./providers/dae.js";
 import { defibrillateurs } from "./tools/dae.js";
 import * as sportSources from "./providers/sport.js";
-import { QUANDS, SPORTS, sportTool, UPCOMING_OUTIL, type Quand, type Sport } from "./tools/sport.js";
+import { QUANDS, RESULTS_OUTIL, SPORTS, sportTool, UPCOMING_OUTIL, type Quand, type Sport } from "./tools/sport.js";
 import * as gdacs from "./providers/cyclones.js";
 import { cyclones, PASSES_LIST } from "./tools/cyclones.js";
 import * as climat from "./providers/climat.js";
@@ -126,7 +126,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.257";
+export const VERSION = "1.0.258";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -842,7 +842,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       },
       annotations: { ...READ_ONLY },
     },
-    track("sport", (args: { sport?: Sport; lieu?: string; quand?: Quand; adherent?: boolean }) => sportTool(cache, args.sport, args.lieu, args.quand, undefined, args.adherent, UPCOMING_OUTIL)),
+    track("sport", (args: { sport?: Sport; lieu?: string; quand?: Quand; adherent?: boolean }) => sportTool(cache, args.sport, args.lieu, args.quand, undefined, args.adherent, UPCOMING_OUTIL, RESULTS_OUTIL)),
   );
 
   server.registerTool(

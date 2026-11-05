@@ -77,6 +77,9 @@ const UPCOMING_MAX = 40;
 // The page /sport keeps UPCOMING_MAX.
 export const UPCOMING_OUTIL = 20;
 const RESULTS_MAX = 30;
+// The tool's answer: the 15 most recent (30 were 10,6 KB of a 22 KB answer, 5/11/2026), with how many there are.
+// The page /sport keeps RESULTS_MAX.
+export const RESULTS_OUTIL = 15;
 const DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 
 const localDay = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
@@ -465,7 +468,7 @@ function freshness(got: { value?: Cached<unknown>; source: SourceInfo }[]) {
 }
 
 /** `adherent`: the user says they are a club's member: its sessions for the members are told too, said so. */
-export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: Quand, now = new Date(), adherent = false, max = UPCOMING_MAX) {
+export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: Quand, now = new Date(), adherent = false, max = UPCOMING_MAX, maxResults = RESULTS_MAX) {
   let w: Where | null = null;
   if (lieu?.trim()) {
     w = where(lieu, sport);
@@ -508,10 +511,10 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const nextBeach = beach && !aheadAll.length && q !== "resultats"
     ? rows.filter((i) => i.date.slice(0, 10) > au && i.etat !== "annulée").sort((x, y) => x.date.localeCompare(y.date))[0]
     : undefined;
-  const results = q === "a_venir" ? [] : rows
+  const resultsAll = q === "a_venir" ? [] : rows
     .filter((i) => inWindow(i) && (i.score || (i.etat === "résultats publiés" && (i.fin ?? i.date) < today)))
-    .sort((x, y) => y.date.localeCompare(x.date))
-    .slice(0, RESULTS_MAX);
+    .sort((x, y) => y.date.localeCompare(x.date));
+  const results = resultsAll.slice(0, maxResults);
   const strip = ({ date: _d, fin: _f, communes: _c, clubs: _k, ...i }: Row): SportRow => i;
 
   // The news that says competitions are called off on a day shown, without saying which: check with the club.
@@ -603,7 +606,11 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
       ? gr ? `${gr.edition} : ${gr.courses.map((c) => `${c.nom} ${c.statut}${c.podium[0] ? `, vainqueur ${c.podium[0].nom} en ${c.podium[0].temps}` : ""}`).join("\u00a0; ")}.` : "Le suivi du Grand Raid ne répond pas pour le moment."
       : [
           q === "resultats" ? "" : upcomingText,
-          results.length ? `${results.length} résultat${results.length > 1 ? "s" : ""} depuis le ${quand(du)}` : q === "resultats" ? `Aucun résultat de ${what}${place} depuis le ${quand(du)}` : "",
+          // All of them, not only the ones listed (5/11/2026: « 30 » said for more).
+          results.length
+            ? `${resultsAll.length} résultat${resultsAll.length > 1 ? "s" : ""} depuis le ${quand(du)}` +
+              (resultsAll.length > results.length ? ` (les ${results.length} plus récents ci-dessous)` : "")
+            : q === "resultats" ? `Aucun résultat de ${what}${place} depuis le ${quand(du)}` : "",
           programmes.length ? `${programmes.length} programme${programmes.length > 1 ? "s" : ""} sportif${programmes.length > 1 ? "s" : ""} de commune (${programmes.map((p) => p.commune).join(", ")}), en lien seulement` : "",
           nextBeach ? `Prochain rendez-vous de beach-volley : ${nextBeach.epreuve}, ${nextBeach.quand}` : "",
           ...silent.map((x) => `Championnat de ${x.competition.replace(", ", " ")} : ${x.court} (voir injoignable)`),
@@ -634,6 +641,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
     sports_a_venir: aheadAll.length > upcoming.length ? [...new Set(aheadAll.map((i) => i.sport))] : undefined,
     prochain: nextBeach ? strip(nextBeach) : undefined,
     resultats: results.length ? results.map(strip) : undefined,
+    resultats_en_tout: resultsAll.length > results.length ? resultsAll.length : undefined,
     avis: cited.length ? cited : undefined,
     a_verifier: check.length ? check : undefined,
     titres_football: foot?.length ? foot : undefined,

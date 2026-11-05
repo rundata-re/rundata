@@ -18,9 +18,9 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 508 | 550 |
+| pire passage planifié, sous-requêtes | 509 | 550 |
 | pire passage planifié, appels KV et D1 | 112 | 1 000 |
-| pire passage planifié, CPU (ms) | 3 636 | 30 000 |
+| pire passage planifié, CPU (ms) | 3 666 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 200 | 550 |
 | vue la plus chère, sous-requêtes | 86 | 200 |
@@ -28,19 +28,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | construction de copie la plus chère, sous-requêtes | 56 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 508 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 492, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 200 (cadences les plus courtes).
+- Marge : le pire passage planifié est à 509 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 491, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 200 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 132 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:50 UTC, 200 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, web:volcan, web:courant, web:chiffres, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 386 sous-requêtes à 00:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 387 sous-requêtes à 00:00 UTC.
 - Vue la plus chère : /communes/*, 86. Question la plus chère : resume_du_jour, 72. Construction la plus chère : web:chiffres:evenements, 56.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 508 | 32 | 56 | 24 | 1 164 | 284 | 3 636 |
-| tâche planifiée, par jour | 31 288 | 4 514 | 3 939 | 2 407 | 102 914 | 58 511 | 234 096 |
-| tâche planifiée, par jour, cadences les plus courtes | 47 916 | 5 954 | 5 835 | 2 887 | 107 954 | 58 511 | 282 456 |
-| tâche planifiée, par mois (30 jours) | 938 627 | 135 420 | 118 170 | 72 223 | 3 087 411 | 1 755 321 | 7 022 867 |
+| pire passage planifié | 509 | 32 | 56 | 24 | 1 164 | 284 | 3 666 |
+| tâche planifiée, par jour | 31 312 | 4 514 | 3 939 | 2 407 | 102 914 | 58 511 | 234 816 |
+| tâche planifiée, par jour, cadences les plus courtes | 47 940 | 5 954 | 5 835 | 2 887 | 107 954 | 58 511 | 283 176 |
+| tâche planifiée, par mois (30 jours) | 939 347 | 135 420 | 118 170 | 72 223 | 3 087 411 | 1 755 321 | 7 044 467 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -78,6 +78,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | agendas:planifies | agendas lus par la tâche planifiée : leur copie commune (KV), lue à chaque passage, écrite après une lecture | 5 min | 00:00 | 1 | 1 |  |  |  |  |  | code |
 | agendas:planifies:ecriture | agendas lus par la tâche planifiée : l'écriture de leur copie commune | 60 min | 00:00 | 1 |  | 1 |  |  |  |  | code |
 | agenda:salazie | agenda lu par la tâche planifiée : Ville de Salazie | 60 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
+| agenda:saint_louis | agenda lu par la tâche planifiée : Ville de Saint-Louis | 60 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
 | agenda:cirest | agenda lu par la tâche planifiée : Médiathèques de Bras-Panon et de La Plaine-des-Palmistes | 360 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
 | agenda:departement | agenda lu par la tâche planifiée : Département de La Réunion | 720 min | 06:00 | 7 |  |  |  |  |  | 30 | mesuré |
 | agenda:lrvb | agenda lu par la tâche planifiée : Ligue réunionnaise de volley-ball | 60 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
@@ -255,6 +256,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | cmrs:liste | providers/cmrs-carte, providers/cyclones |
 | cmrs:image | providers/cmrs-carte, providers/cyclones |
 | agenda:salazie | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
+| agenda:saint_louis | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:cirest | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:departement | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | agenda:lrvb | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |

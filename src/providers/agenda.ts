@@ -1602,8 +1602,11 @@ export const LISIBLES: Agenda[] = [
   { ...tribe("sainte_marie", "Ville de Sainte-Marie", "https://www.ville-saintemarie.re", "Sainte-Marie", SAINTE_MARIE), site_commune: "site de la commune de Sainte-Marie", faits: true },
   { ...salazie, site_commune: "site de la commune de Salazie", faits: true },
   { ...rss("le_tampon", "Ville du Tampon", "https://letampon.fr/agenda/feed/", "Le Tampon"), site_commune: "site de la commune du Tampon", faits: true, accueil: "https://letampon.fr/" },
-  // Its whole agenda, all its categories: « /agenda/evenements » has had nothing to come since September 2026.
-  { ...rss("saint_louis", "Ville de Saint-Louis", "https://saintlouis.re/agenda?format=feed&type=rss", "Saint-Louis", SAINT_LOUIS), site_commune: "site de la commune de Saint-Louis" },
+  // Its whole agenda, all its categories: « /agenda/evenements » has had nothing to come since September 2026. Read by
+  // the scheduled event, as its news are: read by the questions from every data center, about 5 % of its reads were
+  // refused (HTTP 403, 29/10-05/11/2026) and some data centers served a copy two or three days old; its news, read by
+  // the scheduled event on the same site, had no failure.
+  { ...rss("saint_louis", "Ville de Saint-Louis", "https://saintlouis.re/agenda?format=feed&type=rss", "Saint-Louis", SAINT_LOUIS), site_commune: "site de la commune de Saint-Louis", planifie: true },
   { ...rss("saint_andre", "Ville de Saint-André", "https://www.saint-andre.re/category/agenda/feed/", "Saint-André"), site_commune: "site de la commune de Saint-André", faits: true },
   tribe("sechoir", "Le Séchoir", "https://www.lesechoir.com", "Saint-Leu", SALLES_SOURCE, "Le Séchoir"),
   { ...rss("etang_sale", "Ville de L'Étang-Salé", "https://www.letangsale.fr/mes-acces-rapides/telechargements/l-agenda-des-manifestations?format=feed&type=rss", "L'Étang-Salé", ETANG_SALE), site_commune: "site de la commune de L'Étang-Salé", faits: true, programmes: true },

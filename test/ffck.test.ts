@@ -259,4 +259,36 @@ describe("the island's events", () => {
       ffck.configure(undefined);
     }
   });
+
+  it("are said to be read still, with how many, while rows that may be on the island have their page to read", async () => {
+    site({});
+    const read = etatLu();
+    const day = new Date("2026-11-05T04:30:00Z");
+    const today = day.toISOString().slice(0, 10);
+    // The morning after the first list: no page read yet.
+    const first = { ...read, fiches: {} };
+    const ask = async (etat: ffck.Etat) => {
+      ffck.configure(async () => etat);
+      try {
+        return JSON.parse((await sportTool(new Cache(new MemoryStore(), () => day.getTime()), "canoe_kayak", undefined, "a_venir", day)).content[0].text).resume as string;
+      } finally {
+        ffck.configure(undefined);
+      }
+    };
+    const n = ffck.aLire(first, today).length;
+    expect(n).toBeGreaterThan(1);
+    const said = await ask(first);
+    expect(said).toContain(`Rendez-vous de canoë-kayak et va'a à La Réunion d'ici le jeudi 19/11\u00a0: lecture en cours\u00a0; ${n} épreuves du calendrier de la FFCK dont le lieu peut être à La Réunion restent à lire, une par demi-heure.`);
+    expect(said).not.toContain("Aucun rendez-vous");
+    // The last page to read, in the next pass.
+    const one = first.candidates.filter((r) => r.fin >= today);
+    const last = { ...first, fiches: Object.fromEntries(one.slice(1).map((r) => [r.codex, { ...ffck.parseFiche(AILLEURS), ligne: [r.nom, r.type, r.debut, r.fin, r.lieu].join("|"), lue: day.getTime() }])) };
+    expect(await ask(last)).toContain("\u00a0; 1 épreuve du calendrier de la FFCK dont le lieu peut être à La Réunion reste à lire, dans la demi-heure.");
+    // Every page read: none of them on the island in the fortnight, said as before.
+    const all = { ...read, fiches: Object.fromEntries(first.candidates.map((r) => [r.codex, { ...ffck.parseFiche(AILLEURS), ligne: [r.nom, r.type, r.debut, r.fin, r.lieu].join("|"), lue: day.getTime() }])) };
+    expect(ffck.aLire(all, today)).toEqual([]);
+    const done = await ask(all);
+    expect(done).toContain("Aucun rendez-vous de canoë-kayak et va'a trouvé à La Réunion d'ici le jeudi 19/11");
+    expect(done).not.toContain("à lire");
+  });
 });

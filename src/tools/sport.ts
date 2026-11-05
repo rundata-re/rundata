@@ -317,6 +317,8 @@ export interface SportData {
   programmes?: Awaited<ReturnType<typeof programmesSportifs>>;
   /** The tournaments and the clubs' events wanted whose copy is not served, with why (src.nonServie). */
   nonLus: string[];
+  /** The FFCK's rows that may be on the island whose page is still to be read: their events are not known yet. */
+  ffckALire?: number;
   /** The matches of the volley league's calendar, to set beside the FFVB's (dateLigue). */
   matchsLigue?: MatchLigue[];
 }
@@ -336,7 +338,7 @@ export async function gather(cache: Cache, sport: Sport | undefined, now: Date, 
     want("voile") ? attempt(src.SOURCES.ffvoile, () => src.regates(cache, now)) : undefined,
     want("golf") ? attempt(src.SOURCES.ffgolf, () => src.golf(cache, now)) : undefined,
     want("sport_auto") ? attempt(src.SOURCES.lsar, () => src.sportAuto(cache)) : undefined,
-    want("canoe_kayak") ? attempt(ffck.SOURCE, () => ffck.epreuves(cache)) : undefined,
+    want("canoe_kayak") ? attempt(ffck.SOURCE, () => ffck.epreuves(cache, now)) : undefined,
     league ? attempt(avis.SOURCE, () => avis.avisLigue(cache, now)) : undefined,
     want("volley") || want("handball") || sport === "football" ? cache.peek<Fil>("actualites:fil").catch(() => undefined) : undefined,
     // The communes' programmes, of every sport, only when none is asked; the volley league's tournaments; the clubs'
@@ -363,6 +365,8 @@ export async function gather(cache: Cache, sport: Sport | undefined, now: Date, 
     avis: notices,
     presse,
     programmes: agendas?.programmes,
+    // The FFCK's rows that may be on the island whose page is still to be read (providers/ffck.ts `aLire`).
+    ffckALire: (canoe?.value as { a_lire?: number } | undefined)?.a_lire ?? 0,
     nonLus: [
       league ? nonLu(LIGUE_VOLLEY, agendas?.nonServies.tournois) : undefined,
       clubsWanted && autorisee(`agenda:${SPORTSREGIONS.id}`) ? nonLu(SPORTSREGIONS, agendas?.nonServies.clubs) : undefined,
@@ -584,8 +588,10 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
 
   const gr = data.grandRaid?.value?.value;
   const showRaid = gr && (sport === "grand_raid" || (!sport && !w && grandRaidNow(gr, now)));
+  // The FFCK's events whose page is still to be read: not « none found » while they are (one page a pass).
+  const ffckALire = data.ffckALire ?? 0;
   // No match, event, result or programme: a club playing away, or a sport given by the news alone, is an answer.
-  if (!aheadAll.length && !results.length && !programmes.length && !showRaid && !nextBeach && sport !== "grand_raid" && !(sport && NEWS_ONLY[sport])) rienTrouve("sport");
+  if (!ffckALire && !aheadAll.length && !results.length && !programmes.length && !showRaid && !nextBeach && sport !== "grand_raid" && !(sport && NEWS_ONLY[sport])) rienTrouve("sport");
 
   // Football: the news' headlines, the copy `actualites` last kept; said when there is none.
   const foot = sport === "football" ? titresFootball(data.presse?.value.infos) : undefined;
@@ -606,7 +612,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const off = upcoming.filter((i) => i.competition && (i.etat === "annulée" || i.etat === "reportée"));
   const offBy = [...new Set(off.map((i) => i.selon!.split(",")[0]))].join(", ");
   const upcomingText = [
-    (here ? `${here} rendez-vous de ${what}${place} ${ahead}` : `Aucun rendez-vous de ${what} trouvé${place} ${ahead}`) +
+    (here ? `${here} rendez-vous de ${what}${place} ${ahead}` : ffckALire && sport === "canoe_kayak" ? `Rendez-vous de ${what}${place} ${ahead}\u00a0: lecture en cours` : `Aucun rendez-vous de ${what} trouvé${place} ${ahead}`) +
       (aheadAll.length > upcoming.length
         ? ` (les ${max} premiers ci-dessous${offLater ? `, et ${offLater} annulé${offLater > 1 ? "s" : ""} ou reporté${offLater > 1 ? "s" : ""} plus loin` : ""})`
         : ""),
@@ -615,6 +621,9 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
       ? `tous annulés ou reportés d'après ${offBy}`
       : `${off.length} annulé${off.length > 1 ? "s" : ""} ou reporté${off.length > 1 ? "s" : ""} d'après ${offBy}`,
     check.length ? "des reports sont annoncés dans l'actualité : vérifier auprès du club" : "",
+    ffckALire
+      ? `${ffckALire} épreuve${ffckALire > 1 ? "s" : ""} du calendrier de la FFCK dont le lieu peut être à La Réunion ${ffckALire > 1 ? "restent à lire, une par demi-heure" : "reste à lire, dans la demi-heure"}`
+      : "",
   ].filter(Boolean).join("\u00a0; ");
   // A competition whose page did not answer: what was read before, said with its hour, or that its read failed.
   const silent = data.championnats.flatMap((g) => (g.value?.value ?? []).filter((c) => c.muet).map((c) => ({

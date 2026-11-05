@@ -185,14 +185,15 @@ export const refreshDue = (now: Date) => (((now.getUTCMinutes() - REFRESH_OFFSET
  * nothing is written when nothing was due. Returns what was done, for the logs; throws after writing when the read
  * failed.
  */
+/** The rows whose page is still to be read, or read again (its row changed): the events that may be on the island. */
+export const aLire = (etat: Etat, today: string) => etat.candidates.filter((r) => r.fin >= today && etat.fiches[r.codex]?.ligne !== signature(r));
+
 export async function refresh(before: Etat | null, write: (etat: Etat) => Promise<void>, now = new Date()): Promise<string> {
   const t = now.getTime();
   const today = now.toISOString().slice(0, 10);
   const etat: Etat = { listes: { ...before?.listes }, candidates: [...(before?.candidates ?? [])], fiches: { ...before?.fiches }, essai: t, ...(before?.lu ? { lu: before.lu } : {}) };
   const saison = seasonsOf(now).find((s) => !(t - (etat.listes[s] ?? 0) < LIST_HOURS * HOUR));
-  const pending = etat.candidates
-    .filter((r) => r.fin >= today && etat.fiches[r.codex]?.ligne !== signature(r))
-    .sort((a, b) => a.debut.localeCompare(b.debut))[0];
+  const pending = aLire(etat, today).sort((a, b) => a.debut.localeCompare(b.debut))[0];
   if (saison == null && !pending) return "rien à lire";
   try {
     let done: string;
@@ -249,12 +250,15 @@ export function configure(read: (() => Promise<Etat | null>) | undefined) {
   reader = read;
 }
 
-/** The island's events, from the state the scheduled event keeps, dated by its last read: none outside the Worker. */
-export async function epreuves(cache: Cache): Promise<Cached<Epreuve[]>> {
+/**
+ * The island's events, from the state the scheduled event keeps, dated by its last read: none outside the Worker. With
+ * `a_lire`, how many rows that may be on the island still have their page to read (one a pass, `refreshDue`).
+ */
+export async function epreuves(cache: Cache, now = new Date()): Promise<Cached<Epreuve[]> & { a_lire: number }> {
   const got = await cache.get(KEY, READ_SECONDS, async () => {
     const v = reader ? await reader() : null;
     if (!v?.candidates || !v.lu) throw new UpstreamError(SOURCE.id, "calendrier de la FFCK absent du stockage");
     return v;
   });
-  return { ...got, value: epreuvesDe(got.value), fetchedAt: new Date(got.value.lu!) };
+  return { ...got, value: epreuvesDe(got.value), fetchedAt: new Date(got.value.lu!), a_lire: aLire(got.value, now.toISOString().slice(0, 10)).length };
 }

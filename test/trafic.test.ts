@@ -87,6 +87,17 @@ describe("circulation", () => {
     expect(page).not.toContain("Signalé par les médias");
   });
 
+  it("calls a forest road open only when the ONF's map says it is allowed", async () => {
+    const d = await buildTrafic(cache(), NOW);
+    const [first, second] = d.routes_forestieres!.principales;
+    const rf = { ...d.routes_forestieres!, principales: [{ ...first, circulation: "inconnue", cause: undefined, precision: undefined }, { ...second, circulation: "Circulation autorisée de 5h à 22h", cause: undefined, precision: undefined }] };
+    const page = traficPage("https://rundata.re", { value: { ...d, routes_forestieres: rf }, fetchedAt: NOW }, NOW);
+    const row = (route: string) => page.slice(page.indexOf(`<li><span>${route.replaceAll("'", "&#39;")}`), page.indexOf("</li>", page.indexOf(`<li><span>${route.replaceAll("'", "&#39;")}`)));
+    expect(row(first.route)).toContain(`<span class="note">état non publié par l'ONF</span>`);
+    expect(row(first.route)).not.toContain("ouverte");
+    expect(row(second.route)).toContain(`<span class="q-bonne">ouverte</span>`);
+  });
+
   it("lists the fixed speed cameras by commune, each on the map, with the day of the ministry's file", async () => {
     const page = traficPage("https://rundata.re", { value: await buildTrafic(cache(), NOW), fetchedAt: NOW }, NOW);
     const card = page.slice(page.indexOf('<div class="card" id="radars">'), page.indexOf("</div>", page.indexOf('id="radars"')));

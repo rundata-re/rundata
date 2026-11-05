@@ -111,10 +111,22 @@ describe("tide gauges", () => {
     expect(tile).toContain(" · basse mer vers 06:00 (marée calculée, pas le SHOM)");
   });
 
+  // A commune with a shore, whatever the altitude of its centre: the sea and the waves-submersion vigilance are its own.
+  it("counts as coastal the 19 communes on the sea, by name, and the other places by their altitude", () => {
+    const communes = PAGES.filter((p) => p.commune);
+    expect(communes).toHaveLength(24);
+    expect(communes.filter((p) => !coastal(p)).map((p) => p.nom).sort()).toEqual(["Cilaos", "Entre-Deux", "La Plaine-des-Palmistes", "Le Tampon", "Salazie"]);
+    for (const nom of ["Saint-André", "Petite-Île", "Les Avirons", "Les Trois-Bassins"]) expect(coastal(PAGES.find((p) => p.nom === nom)!)).toBe(true);
+    expect(PAGES.filter((p) => !p.commune && coastal(p)).map((p) => p.nom).sort()).toEqual(["L'Hermitage", "Saint-Gilles-les-Bains"]);
+    const sea = `<h3><a href="/mer">Mer</a></h3>`;
+    expect(communePage("https://rundata.re", PAGES.find((p) => p.slug === "les-trois-bassins")!, {} as never, NOW)).toContain(sea);
+    expect(communePage("https://rundata.re", PAGES.find((p) => p.slug === "cilaos")!, {} as never, NOW)).not.toContain(sea);
+  });
+
   // Along the coast the tide turns at other times than at the gauges.
   it("keeps the computed times within 15 km of a gauge only", () => {
     const near = PAGES.filter(coastal).filter((p) => nearest(p.place.lon, p.place.lat).km <= NEAR_KM).map((p) => p.nom).sort();
-    expect(near).toEqual(["La Possession", "Le Port", "Saint-Denis", "Saint-Gilles-les-Bains", "Saint-Paul", "Sainte-Marie", "Sainte-Suzanne"]);
+    expect(near).toEqual(["La Possession", "Le Port", "Saint-André", "Saint-Denis", "Saint-Gilles-les-Bains", "Saint-Paul", "Sainte-Marie", "Sainte-Suzanne"]);
   });
 
   it("gives no tide times away from the gauges, only the gauge's height and the SHOM's page", async () => {

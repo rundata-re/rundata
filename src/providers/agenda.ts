@@ -408,6 +408,17 @@ export function parseTribe(body: { events: TribeEvent[] }, nom: string, commune:
   });
 }
 
+/**
+ * The events of a WordPress agenda (The Events Calendar) not yet over at `now`, up to AHEAD_DAYS: `ends_after` with
+ * the time, La Réunion's, so that an event begun before today stays (`start_date` left out the volley league's
+ * championships from 04/11 18:00 to 07/11 23:00 from 05/11 on), and one ending later today too (the date alone is
+ * taken as its 23:59:59).
+ */
+export function tribeUrl(site: string, now: Date): string {
+  const at = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 19).replace("T", " ");
+  return `${site}/wp-json/tribe/events/v1/events?ends_after=${encodeURIComponent(at)}&end_date=${addDays(localDay(now), AHEAD_DAYS)}&per_page=50`;
+}
+
 function tribe(id: string, nom: string, site: string, commune: string | undefined, source: SourceInfo = SOURCES.mairies, home?: string): Agenda {
   return {
     id,
@@ -415,11 +426,8 @@ function tribe(id: string, nom: string, site: string, commune: string | undefine
     source,
     commune,
     load: (cache, now) =>
-      cache.get(`agenda:${id}`, FRESH_SECONDS, async () => {
-        const day = localDay(now);
-        const url = `${site}/wp-json/tribe/events/v1/events?start_date=${day}&end_date=${addDays(day, AHEAD_DAYS)}&per_page=50`;
-        return parseTribe(JSON.parse(await getText(source.id, url, TIMEOUT_MS, HEADERS)), nom, commune, home);
-      }),
+      cache.get(`agenda:${id}`, FRESH_SECONDS, async () =>
+        parseTribe(JSON.parse(await getText(source.id, tribeUrl(site, now), TIMEOUT_MS, HEADERS)), nom, commune, home)),
   };
 }
 

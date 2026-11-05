@@ -440,6 +440,21 @@ function steps(f: Forecast, keep: (h: ForecastHour) => boolean, now: Date) {
 
 const km = (m: { maille_km: number }) => fr(m.maille_km);
 
+/**
+ * AROME's daily maximum against the measures, beside the days when their figures come from it: measured from 29/10 to
+ * 04/11/2026 at the 49 Météo-France stations, the run of the day before as the tool serves it (interpolated, brought to
+ * the station's altitude, the highest of its 3-hour steps). The figures are not corrected: said, with their bias.
+ */
+export const MAXIMALES_AROME =
+  "Les maximales prévues par AROME sont en général plus basses que les mesures : 1,8 °C de moins en moyenne, 3 à 4,5 °C " +
+  "sur la côte ouest et à Cilaos (49 stations Météo-France, du 29/10 au 04/11/2026). Les minimales sont justes à 1 °C près.";
+
+/** MAXIMALES_AROME when one of `dates` has hours of AROME, not only those of the model that relays it. */
+export function maximalesArome(f: Forecast, dates: string[]): string | undefined {
+  const own = (h: ForecastHour) => (h.modele ?? f.model) === arome.MODEL;
+  return f.model === arome.MODEL && f.hours.some((h) => own(h) && dates.includes(localDate(h.time))) ? MAXIMALES_AROME : undefined;
+}
+
 /** Always given, whatever the question: the forecast must never pass for a measurement. */
 function warnings(f: Forecast, place?: Place): string[] {
   const names = [f.model, ...(f.relais ?? []).map((r) => r.model)].map((m) => m.nom).join(", puis ");
@@ -583,6 +598,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
           .map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} ${daySentence(c.value, d, now, uvAt(u, p), confAt(ens, p, now))}`).join("\u00a0; ")).join(" | "),
       periode: period.defaut ? "aujourd'hui et demain" : period.libelle,
       lieux,
+      maximales_arome: maximalesArome(ok[0].c.value, wanted),
       modele: modelBlock(ok[0].c),
       avertissements,
       couverture: coverage(),
@@ -626,10 +642,13 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   let jours: ReturnType<typeof dayBlock>[];
   let pas: ReturnType<typeof stepBlock>[];
   let resume: string;
+  // The days shown: AROME's word on its maxima goes with them when their figures are its own.
+  let dates: string[];
   if (period.defaut) {
     const horizon = now.getTime() + 24 * HOUR;
     pas = steps(f, (h) => h.time.getTime() < horizon, now);
     const days = f.days.filter((d) => d.date >= today);
+    dates = days.map((d) => d.date);
     jours = days.map((d) => dayBlock(f, d, now, uvOf, confOf));
     resume = `${HEADER} pour ${r.lieu.nom} — ` +
       days.map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} : ${daySentence(f, d, now, uvOf, confOf)}`).join("\u00a0; ") + ".";
@@ -647,6 +666,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
       });
     }
     const days = f.days.filter((d) => inRange.some((s) => s.jour === d.date));
+    dates = days.map((d) => d.date);
     jours = days.map((d) => dayBlock(f, d, now, uvOf, confOf));
     pas = steps(f, (h) => inRange.some((s) => s.jour === localDate(h.time) && localHour(h.time) >= s.de && localHour(h.time) < s.a), now);
     const partial = inRange.some((s) => s.de > 0 || s.a < 24);
@@ -674,6 +694,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     // The cloud sea after the days, labelled: a forecast of the model's cell.
     resume: `${first}${resume}${mer ? ` Mer de nuages, ${nuages.LABEL} : ${mer.resume}` : ""}${ciel ? ` Ciel de nuit, ${nuages.LABEL} : ${ciel.resume}` : ""}`,
     jours,
+    maximales_arome: maximalesArome(f, dates),
     pas_de_3h: pas,
     ...(mer ? { mer_de_nuages: mer } : {}),
     ...(ciel ? { ciel_de_nuit: ciel } : {}),

@@ -42,7 +42,7 @@ export const MODEL: ForecastModel = {
   nom: "AROME outre-mer de Météo-France",
   maille_km: 2.5,
   echeance_jours: 2,
-  mise_a_jour: "4 calculs par jour, disponibles plusieurs heures après",
+  mise_a_jour: "4 calculs par jour (0, 6, 12 et 18 h UTC), disponibles environ 7 heures après",
 };
 
 const BASE = "https://public-api.meteofrance.fr/public/arome/1.0/wcs/MF-NWP-HIGHRES-AROME-OM-0025-INDIEN-WCS";

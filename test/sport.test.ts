@@ -8,7 +8,7 @@ import * as ffck from "../src/providers/ffck.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { dateLigue, sportTool, RESULTS_OUTIL, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
+import { dateLigue, liensCommuns, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { sportPage } from "../src/web/domains.js";
@@ -208,12 +208,45 @@ describe("sport", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     try {
-      const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "sport", arguments: { quand: "a_venir" } } }) });
-      const tool = JSON.parse((await (await handle(rpc, c)).json()).result.content[0].text);
-      expect(tool.a_venir).toHaveLength(short.a_venir.length);
+      const call = async (args: object) => JSON.parse((await (await handle(new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "sport", arguments: args } }) }), c)).json()).result.content[0].text);
+      // Without a sport asked, 10 (UPCOMING_TOUS), with how many there are; with one, 20.
+      expect(UPCOMING_TOUS).toBe(10);
+      const tous = await call({ quand: "a_venir" });
+      const names = (l: { epreuve: string }[]) => l.map((r) => r.epreuve);
+      expect(names(tous.a_venir.slice(0, 10))).toEqual(names(page.a_venir.slice(0, 10)));
+      expect(played(tous.a_venir).length).toBeLessThanOrEqual(10);
+      expect(tous.a_venir_en_tout).toBe(page.a_venir_en_tout ?? page.a_venir.length);
+      const volley = await call({ sport: "volley", quand: "a_venir" });
+      const pageVolley = body(await sportTool(c, "volley", undefined, "a_venir", NOW));
+      expect(volley.a_venir).toHaveLength(Math.min(20, pageVolley.a_venir.length));
+      expect(volley.liens_competitions).toBeUndefined();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("gives the links that matches of one competition share once, without a sport asked, each match still to its own page", async () => {
+    const c = cache();
+    const page = body(await sportTool(c, undefined, undefined, undefined, NOW, false, UPCOMING_TOUS, RESULTS_TOUS));
+    const tool = body(await sportTool(c, undefined, undefined, undefined, NOW, false, UPCOMING_TOUS, RESULTS_TOUS, true));
+    expect(RESULTS_TOUS).toBe(10);
+    const rows = (b: { a_venir?: SportRow[]; resultats?: SportRow[] }) => [...(b.a_venir ?? []), ...(b.resultats ?? [])];
+    expect(tool.liens_competitions.length).toBeGreaterThan(0);
+    expect(rows(tool).filter((r) => !r.lien).length).toBeGreaterThan(tool.liens_competitions.length);
+    // Each match without its link finds it, one only, under its sport and competition: the same as the page's.
+    rows(tool).forEach((r, i) => {
+      const found = tool.liens_competitions.filter((l: { sport: string; competition: string }) => l.sport === r.sport && l.competition === r.competition);
+      expect(found.length, r.epreuve).toBe(r.lien ? 0 : 1);
+      expect(r.lien ?? found[0].lien).toBe(rows(page)[i].lien);
+    });
+    expect(JSON.stringify(tool).length).toBeLessThan(JSON.stringify(page).length);
+    // A competition whose matches link to two pages keeps each link; a match alone or without a competition, its own.
+    const m = (competition: string | undefined, lien: string) => ({ sport: "volley-ball", ...(competition ? { competition } : {}), quand: "x", epreuve: "A – B", lien }) as SportRow;
+    const r = liensCommuns([[m("R1 masculine", "u1"), m("R1 masculine", "u1"), m("R2 féminine", "u2"), m("R2 féminine", "u3")], [m("R3 masculine", "u4"), m(undefined, "u5"), m(undefined, "u5")]]);
+    expect(r.liens).toEqual([{ sport: "volley-ball", competition: "R1 masculine", lien: "u1" }]);
+    expect(r.lists.flat().map((x) => x.lien)).toEqual([undefined, undefined, "u2", "u3", "u4", "u5", "u5"]);
+    // The same competition in another sport is another key.
+    expect(liensCommuns([[m("D1", "u1"), { ...m("D1", "u2"), sport: "handball" }]]).liens).toEqual([]);
   });
 
   it("gives the tool the 15 most recent results and the page 30, counting them all, through the MCP endpoint too", async () => {

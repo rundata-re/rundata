@@ -76,13 +76,15 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "agenda:bras_panon": 2,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
   // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
-  "agenda:lrvb": 3,
-  "agenda:saint_paul": 2,
-  "agenda:le_port": 2,
-  "agenda:trois_bassins": 2,
-  "agenda:sainte_marie": 2,
-  // A show without a venue in its field placed where its text says (lieuDit, « Bouches Cousues »).
-  "agenda:sechoir": 3,
+  // The events not yet over (tribeUrl, `ends_after`): one begun before today kept, as the league's weekend of 04-07/11.
+  "agenda:lrvb": 4,
+  "agenda:saint_paul": 3,
+  "agenda:le_port": 3,
+  "agenda:trois_bassins": 3,
+  "agenda:sainte_marie": 3,
+  // A show without a venue in its field placed where its text says (lieuDit, « Bouches Cousues »); the events not yet
+  // over, as the WordPress agendas above.
+  "agenda:sechoir": 4,
   // Two sessions of a show at two venues kept as two events (KiLLT).
   "agenda:luc_donat": 2,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.

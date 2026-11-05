@@ -247,13 +247,14 @@ describe("a run listed before all its hours are out", () => {
     // One try of the step's latest grid, not the grids in flight when the first 404 came back (7 on 03/11).
     expect(first).toBe(1);
 
-    clock.now = START + 10 * 60_000;
+    clock.now = START + 5 * 60_000;
     const before = asked.length;
     await previsionMeteo(c, "Cilaos", "demain", new Date(clock.now));
     expect(late()).toBe(first); // the missing hours not tried again
     expect(asked.length - before).toBeLessThanOrEqual(12); // at most the steps the first question had no room for, 15h and 18h
 
-    clock.now = START + 30 * 60_000;
+    // Tried again 10 minutes later: the hours of a run come out over an hour and a half.
+    clock.now = START + 11 * 60_000;
     await previsionMeteo(c, "Cilaos", "demain", new Date(clock.now));
     expect(late()).toBeGreaterThan(first);
   });

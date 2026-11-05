@@ -67,7 +67,15 @@ const BUNDLE_SYNC_SECONDS = 60;
 const RELIEF = "relief";
 // The first hour a run does not have yet (ISO), in that run's bundle; asked again once this old.
 const FRONTIER = "manquant_a_partir_de";
-const PENDING_RETRY_MS = 25 * 60_000;
+/**
+ * A run is listed about 6 h 20 after it starts, and its 48 hours come out over the next hour and a half, about 18 hours
+ * of forecast every half hour (03/11 to 05/11/2026). Tried again every 10 minutes, the grids come in passes of a few
+ * steps, each one try answered 404 at most while the rest is not out, rather than in three or four passes of up to 40
+ * half an hour apart, between which the questions downloaded them themselves.
+ */
+export const PENDING_RETRY_MS = 10 * 60_000;
+/** Minutes after the start of a run (0, 6, 12, 18 h UTC) at which its first grids came out, at the earliest (03/11 to 05/11/2026). */
+export const LISTED_AFTER_MIN = 6 * 60 + 20;
 /**
  * Grids downloaded per invocation at most: the API allows 100 requests a minute. Within that, the Worker's
  * subrequests left decide (budget.ts); steps not fetched yet are answered by the other model this time.

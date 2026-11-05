@@ -15,7 +15,7 @@
  */
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   actualites: 15,
-  agenda: 30,
+  agenda: 31,
   air: 11,
   bornes: 4,
   bus: 8,

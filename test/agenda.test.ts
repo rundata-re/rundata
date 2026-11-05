@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
 import { agenda, COUVERTURE, type EventRow, LISTED_OUTIL, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
@@ -154,6 +154,22 @@ describe("agenda", () => {
     expect(matchsLigue("Concert du King, vendredi 06/11/26 à 20:30 au kiosque")).toEqual([]);
     const other = parseTribe(JSON.parse(fixture("sechoir.json")), "Le Séchoir", "Saint-Leu", "Le Séchoir");
     expect(other.every((x) => x.matchs === undefined)).toBe(true);
+  });
+
+  it("asks a WordPress agenda for the events not yet over: the league's weekend begun on 04/11 is still read on 05/11", async () => {
+    // Thursday 05/11/2026 at 07:30, La Réunion's time: the time itself, so that an event ending tonight stays too.
+    const at = new Date("2026-11-05T03:30:00Z");
+    const url = tribeUrl("https://lrvb.re", at);
+    expect(url).toBe("https://lrvb.re/wp-json/tribe/events/v1/events?ends_after=2026-11-05%2007%3A30%3A00&end_date=2026-12-20&per_page=50");
+    expect(url).not.toContain("start_date");
+    // The league's site as it answers that query: its championships from 04/11 18:00 to 07/11 23:00, with their matches.
+    const urls: string[] = [];
+    vi.stubGlobal("fetch", async (u: string) => (urls.push(String(u)), String(u).includes("ends_after=") ? new Response(bytes("lrvb_championnats.json")) : new Response("", { status: 503 })));
+    const got = await LIGUE_VOLLEY.load(new Cache(new MemoryStore(), () => at.getTime()), at);
+    expect(urls).toEqual([url]);
+    expect(got.value).toHaveLength(1);
+    expect(got.value[0].seances[0]).toEqual({ debut: "2026-11-04T18:00", fin: "2026-11-07T23:00" });
+    expect(got.value[0].matchs).toContainEqual({ poule: "R1F", date: "2026-11-06T20:30", domicile: "TGV", exterieur: "VBC SD", gymnase: "12 ÈME KM" });
   });
 
   it("keeps a venue's position when a WordPress agenda gives one, and only the pages' copies carry it", async () => {

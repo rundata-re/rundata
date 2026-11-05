@@ -10,7 +10,7 @@
 import { costOf, left, measured } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { distributeur } from "../eau/distributeurs.js";
-import { localTime } from "../geo.js";
+import { distanceKm, localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as atmo from "../providers/atmo.js";
@@ -22,6 +22,7 @@ import * as col from "../vie/collecte.js";
 import * as dech from "../vie/decheteries.js";
 import * as marches from "../vie/marches.js";
 import * as mf from "../providers/vigilance.js";
+import * as volcanSrc from "../providers/volcan.js";
 import { AGENDAS } from "../providers/agenda.js";
 import { why } from "../types.js";
 import {
@@ -41,6 +42,7 @@ import {
   buildPlace,
   buildSea,
   buildTrafic,
+  buildVolcan,
   type CalendrierAnswer,
   type CommuneData,
   type CoupuresAnswer,
@@ -53,12 +55,13 @@ import {
   type SeaData,
   snapshot,
   type TraficAnswer,
+  type VolcanAnswer,
   withoutForecast,
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
 import { coastal, PAGES, type PlacePage } from "../web/places.js";
 import { mentionCommune, occurrences, repris, sourcesServies } from "./agenda.js";
-import { hoursOn, openNow } from "./annuaire.js";
+import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
 import { ecoles, resumeLine } from "./ecoles.js";
 import { muetPour } from "./coupures.js";
@@ -72,6 +75,7 @@ import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } fr
 import { enTete } from "./representativeness.js";
 import { NETWORKS } from "./meteo.js";
 import { PRODUCTS as SEA_PRODUCTS } from "./mer.js";
+import { alerteVolcan, releaseDay } from "../web/volcan-alerte.js";
 
 // How old an announcement of the route du Littoral may be to be told in a summary.
 const LITTORAL_SUMMARY_HOURS = 12;
@@ -91,6 +95,7 @@ export interface ResumeCopies {
   calendrier?: Cached<CalendrierAnswer> | null;
   dechets?: Cached<DechetsAnswer> | null;
   courant?: Cached<CourantAnswer> | null;
+  volcan?: Cached<VolcanAnswer> | null;
 }
 type Part = Exclude<keyof ResumeCopies, "vigilance">;
 /** A part left out of the summary, why, and the tool that answers it. */
@@ -140,8 +145,16 @@ function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | und
     courant: followed(commune.nom)
       ? { key: "web:courant", build: (cache) => buildCourant(cache), max: 6 * H, nom: "coupures d'électricité relayées par la mairie", outil: "electricite", page: "/electricite#coupures" }
       : undefined,
+    // The communes of the volcano: the Enclos and the RN2 of the lava flows (Sainte-Rose, Saint-Philippe), the road of
+    // the volcano (Le Tampon), the south flank (Saint-Joseph). Elsewhere the volcano is not the day's news.
+    volcan: VOLCANO_COMMUNES.includes(commune.nom)
+      ? { key: "web:volcan", build: buildVolcan, max: 3 * H, nom: "volcan", outil: "volcan_seismes", page: "/volcan" }
+      : undefined,
   };
 }
+
+/** The communes whose summary says the volcano's state (copiesOf). */
+export const VOLCANO_COMMUNES = ["Sainte-Rose", "Saint-Philippe", "Le Tampon", "Saint-Joseph"];
 
 const COMMUNES = PAGES.filter((p) => p.commune);
 const localDay = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
@@ -277,6 +290,52 @@ function airSources(shown: boolean, all: Credit[] | undefined): Credit[] | undef
   return own.length ? own : all;
 }
 
+/**
+ * The volcano's state for a commune of the volcano (VOLCANO_COMMUNES), from the copy of /volcan, whose level and
+ * eruption are the official texts' alone (tools/volcan.ts): the ORSEC level and who gives it, the eruption when one is
+ * under way, the prefecture's release. pitonlive.com is never here, as on the banner of the pages (web/volcan-alerte.ts).
+ */
+function volcano(v: VolcanAnswer) {
+  const e = v.etat;
+  if (!e || typeof e !== "object") return undefined;
+  const a = alerteVolcan(v);
+  const niveau = e.niveau_inconnu ? undefined : e.niveau_orsec;
+  const by = e.niveau_ovpf ? "OVPF" : "préfecture";
+  const eruption = a?.eruption === true;
+  const eruptionBy = e.eruption_ovpf?.en_cours ? "OVPF" : "préfecture";
+  const c = e.communique_prefecture;
+  return {
+    texte: `volcan : ${eruption ? `éruption en cours (${eruptionBy}), ` : ""}${niveau ? `niveau ${niveau} du plan ORSEC (${by})` : `niveau du plan ORSEC ${e.niveau_orsec}`}`,
+    bloc: {
+      niveau_orsec: e.niveau_orsec,
+      niveau_d_apres: niveau ? (by === "OVPF" ? volcanSrc.OVPF.organisme : "préfecture de La Réunion") : undefined,
+      eruption_en_cours: eruption ? `oui, d'après ${eruptionBy === "OVPF" ? "l'OVPF" : "la préfecture"}` : undefined,
+      alerte: !!a,
+      communique_prefecture: c ? { titre: c.titre, lien: c.lien, jour: releaseDay(c) } : undefined,
+      ovpf: e.niveau_ovpf ?? (e.eruption_ovpf?.en_cours ? { date: e.eruption_ovpf.date, lien: e.eruption_ovpf.lien } : undefined),
+      page: `${SITE_URL}/volcan`,
+    },
+  };
+}
+
+/** The volcano's sources: the prefecture's and the OVPF's texts, not the seismic catalogue nor pitonlive.com. */
+function volcanoSources(all: Credit[] | undefined): Credit[] | undefined {
+  const own = all?.filter((c) => c.source === volcanSrc.PREFECTURE.nom || c.source === volcanSrc.OVPF.nom) ?? [];
+  return own.length ? own : all;
+}
+
+// The ATMO index of the summary is Atmo Réunion's forecast for the day (qualite_air says the same).
+const AIR_NATURE = "PRÉVISION du jour, calculée par Atmo Réunion : pas une mesure.";
+
+/**
+ * Today is a holiday: the town hall's published hours are a week's, so it is said probably closed, never « ouverte »
+ * (11/11/2026 would have said it open at 10:00 in the 24 communes).
+ */
+const holidayText = (nom: string) => `Aujourd'hui est férié (${nom}) : la mairie est sans doute fermée, à vérifier auprès d'elle.`;
+
+/** « 1,5 km », « 11 km ». */
+const km = (d: number) => (d < 10 ? `${d.toFixed(1).replace(".", ",")}\u00a0km` : `${Math.round(d)}\u00a0km`);
+
 const newsRow = (i: ActualitesAnswer["infos"][number]) => ({ quand: i.quand, media: i.media, titre: i.titre, lien: i.lien });
 
 /**
@@ -318,11 +377,19 @@ export type Resume = ReturnType<typeof resume>;
 /**
  * The summary of one commune, from the copies given (each recent enough, or missing): what the tool answers and the
  * page shows. The weather is that of the place asked when it has its own page (Maïdo, Hell-Bourg), else the commune's.
+ * `lieu`: the place asked when it is not the commune and has no weather page of its own (a beach, a quarter): the
+ * weather given is the commune's centre's, said with how far it is from the place (Boucan Canot, 04/11/2026: the
+ * station and its distance were the centre of Saint-Paul's, 11 km away, and the forecast's rain 8 times the beach's).
  */
-export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: LeftOut[] = []) {
+export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: LeftOut[] = [], lieu?: { nom: string; lon: number; lat: number }) {
   const today = localDay(now);
   const nom = commune.nom;
-  const meteo = l.meteo ? weather(l.meteo.value, l.meteo.fetchedAt, now) : undefined;
+  const w = l.meteo ? weather(l.meteo.value, l.meteo.fetchedAt, now) : undefined;
+  const away = lieu && w ? distanceKm(commune.place.lon, commune.place.lat, lieu.lon, lieu.lat) : 0;
+  const centre = lieu && away >= 1 ? `météo du centre ${de(nom)}, à ${km(away)} de ${lieu.nom}` : undefined;
+  const meteo = w && centre
+    ? { ...w, lieu: `centre ${de(nom)}`, avertissement: `Météo du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom} : la station, sa distance et la prévision sont celles du centre. Pour ${lieu!.nom} même : meteo_actuelle et prevision_meteo.` }
+    : w;
   const news = [...(l.actualites?.value.en_direct ?? []), ...(l.actualites?.value.infos ?? [])]
     .filter((i) => i.communes?.includes(nom) && now.getTime() - Date.parse(i.publie) < NEWS_HOURS * 3600_000);
   const roads = news.filter((i) => i.sujets?.some((s) => ROADS.includes(s)));
@@ -346,6 +413,10 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const events = (l.agenda?.value.evenements ?? []).filter((r) => r.commune === nom && repris(r) && occurrences(r).some((o) => o.du <= today && today <= o.au));
   const mairie = l.commune?.value.mairie;
   const open = mairie ? openNow(mairie, now) : null;
+  // Today's holiday, from the calendar's copy of today (sameDay); none known without it.
+  const ferie = l.calendrier?.value.jours_feries?.aujourd_hui ?? undefined;
+  const volc = l.volcan && VOLCANO_COMMUNES.includes(nom) ? volcano(l.volcan.value) : undefined;
+  const notRead = mentionCommune(nom);
   const sun = cal.sun(today, commune.place.lon, commune.place.lat, cal.horizonDe(commune.place));
   const prod = l.electricite?.value.production;
   const airHere = l.air?.value.communes?.find((x) => normalize(x.commune) === normalize(nom));
@@ -383,14 +454,21 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const bins = col.COMMUNES.includes(nom);
   const resumeText = [
     `${nom}, ${DAY_FR.format(now)}`,
+    centre ?? "",
     t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom)})` : "",
     f?.temperature_min && f.temperature_max
       ? `${f.periode ? `prévision ${f.periode}\u00a0: ` : "prévision du jour "}${f.temperature_min} à ${f.temperature_max}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}`
       : "",
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",
+    volc?.texte ?? "",
     l.coupures ? (avis.length ? `${waterCount(avis)}${waterSilent ? ` (${waterSilent.court})` : ""}` : waterSilent ? `coupures d'eau : ${waterSilent.court}` : dist?.avis ? "pas de coupure d'eau annoncée" : "") : "",
-    l.agenda ? `${events.length} événement${events.length > 1 ? "s" : ""} aujourd'hui` : "",
+    // None found is not none held: the agendas read are not all of them, the commune's own site may not be read at all.
+    l.agenda
+      ? events.length
+        ? `${events.length} événement${events.length > 1 ? "s" : ""} aujourd'hui`
+        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets${notRead ? ", sans le site de la commune" : ""})`
+      : "",
     roads.length ? `${roads.length} info${roads.length > 1 ? "s" : ""} sur les routes ou des blocages` : "",
     power.length ? shortOf(power[0], now) : "",
     markets.length ? `marché aujourd'hui : ${markets.map((m) => `${m.nom} ${m.horaires_aujourd_hui}`).join(", ")}` : "",
@@ -406,7 +484,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     meteo,
     vigilance: v,
     mer,
-    air: airHere ? { indice_atmo: airHere.niveau, qualite: airHere.qualite, polluants: airHere.polluants.length ? airHere.polluants : undefined } : undefined,
+    volcan: volc?.bloc,
+    air: airHere ? { nature: AIR_NATURE, jour: `${today.slice(8, 10)}/${today.slice(5, 7)}`, diffusion: l.air!.value.diffusion, indice_atmo: airHere.niveau, qualite: airHere.qualite, polluants: airHere.polluants.length ? airHere.polluants : undefined } : undefined,
     electricite: prod
       ? { heure: prod.heure_mesure, renouvelable_pct: prod.renouvelable_pct, total_mw: prod.total_mw, signal: l.electricite!.value.meteo_electricite?.maintenant?.signal, signal_mis_a_jour: l.electricite!.value.meteo_electricite?.mis_a_jour }
       : undefined,
@@ -431,13 +510,21 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
       ? {
           liste: events.slice(0, EVENTS_MAX).map((r) => ({ titre: r.titre, quand: r.quand, lieu: r.lieu, prix: r.prix, statut: r.statut, lien: r.lien, source: r.source })),
           autres: events.length > EVENTS_MAX ? events.length - EVENTS_MAX : undefined,
-          non_repris: mentionCommune(nom),
+          aucun: events.length ? undefined : "Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.",
+          non_repris: notRead,
         }
       : undefined,
     calendrier: c ? calendrierDuJour(c) : undefined,
     soleil: { lever: hhmm(sun.lever), coucher: hhmm(sun.coucher), note: SOLEIL_NOTE },
     mairie: mairie
-      ? { ouverte: open, horaires_aujourd_hui: hoursOn(mairie, now) ?? (open === null ? undefined : "fermée aujourd'hui"), adresse: mairie.adresse, telephone: mairie.telephone }
+      ? {
+          ouverte: ferie ? null : open,
+          jour_ferie: ferie ? holidayText(ferie) : undefined,
+          horaires_aujourd_hui: ferie ? undefined : hoursOn(mairie, now) ?? (open === null ? undefined : "fermée aujourd'hui"),
+          adresse: mairie.adresse,
+          telephone: mairie.telephone,
+          avertissement: HORAIRES_A_SAVOIR,
+        }
       : undefined,
     coupures_electricite: power.length || powerSilent ? { avis: power.length ? power : undefined, injoignable: powerSilent && { texte: powerSilent.texte, site: powerSilent.site } } : powerNotRead ? { non_repris: powerNotRead } : undefined,
     marches_du_jour: markets.length || allWeek.length || noDays.length || townHall
@@ -469,7 +556,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     sources: sourcesOf([
       weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, airSources(!!airHere, l.air?.value.sources), seaPart?.sources,
       l.electricite?.value.sources, l.actualites?.value.sources, l.trafic?.value.sources, l.coupures?.value.sources, agendaSources(events, l.agenda?.value.sources), l.calendrier?.value.sources,
-      l.commune?.value.sources, l.dechets?.value.sources, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
+      l.commune?.value.sources, l.dechets?.value.sources, volc ? volcanoSources(l.volcan!.value.sources) : undefined, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
     ]),
   };
 }
@@ -594,7 +681,9 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   const vigilance = vigilanceOf(cache);
   const meteo = await snapshot(cache, `web:lieu:${place.slug}`, () => buildPlace(cache, place, now), background ?? (() => undefined), now, undefined, true, withoutForecast);
   const { copies, leftOut } = await readCopies(cache, commune, place, now, background, vigilance, { meteo });
-  const r = resume(commune, copies, now, leftOut);
+  // A place without a weather page of its own (a beach, a quarter): the weather is the commune's centre's, said so.
+  const asked = place === commune && normalize(res.lieu.nom) !== normalize(commune.nom) ? res.lieu : undefined;
+  const r = resume(commune, copies, now, leftOut, asked);
   // A place found on part of its name, said before the day (« Maurice », Fond Maurice at Les Avirons).
   const said = placeWarning(lieu, res);
   const day = said ? { ...r, resume: `${said} ${r.resume}` } : r;

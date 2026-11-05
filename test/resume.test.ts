@@ -5,7 +5,10 @@ import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../sr
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { COURT, court, readCopies, resume, resumeDuJour, UPDATING } from "../src/tools/resume.js";
+import { COURT, court, readCopies, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { mentionCommune } from "../src/tools/agenda.js";
+import * as volcanSrc from "../src/providers/volcan.js";
+import * as seismes from "../src/providers/seismes.js";
 import { citation } from "../src/tools/citer.js";
 import { credits } from "../src/tools/format.js";
 import { AGENDAS } from "../src/providers/agenda.js";
@@ -440,6 +443,8 @@ describe("reading the copies", () => {
     expect(r.lieu.commune).toBe("Saint-Paul");
     expect(r.commune).toBe("Saint-Paul");
     expect(r.coupures_eau.avis).toHaveLength(1);
+    // A beach without a weather page of its own: the centre's weather, said so (audit of 04/11/2026).
+    expect(r.meteo.avertissement).toBe("Météo du centre de Saint-Paul, à 6,2\u00a0km de Boucan-Canot : la station, sa distance et la prévision sont celles du centre. Pour Boucan-Canot même : meteo_actuelle et prevision_meteo.");
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
   });
 
@@ -538,5 +543,98 @@ describe("the summary's calendar", () => {
     const plain = resume(SAINT_PAUL, { ...COPIES, calendrier: cal([{ date: "mercredi 11 novembre 2026", nom: "Armistice 1918", dans_jours: 11 }]) } as never, NOW);
     expect(plain.calendrier).toBeUndefined();
     expect(resume(SAINT_PAUL, COPIES as never, NOW).calendrier).toEqual({ vacances_scolaires: "Vacances de la Toussaint" });
+  });
+});
+
+describe("the summary after the audit of 04/11/2026", () => {
+  const SAINTE_ROSE = pageOf("sainte-rose")!;
+  // Wednesday 11/11/2026, 10:00 at La Réunion: a holiday, a weekday the town hall's hours say it is open.
+  const ARMISTICE = new Date("2026-11-11T06:00:00Z");
+  const holiday = (aujourd_hui: string | null) =>
+    ({ value: { ...COPIES.calendrier.value, jours_feries: { aujourd_hui, prochains: [], note: "" } }, fetchedAt: new Date(ARMISTICE.getTime() - 60_000), stale: false });
+
+  it("never says the town hall open on a holiday, and says its hours ignore holidays", () => {
+    const r = resume(SAINT_PAUL, { ...COPIES, calendrier: holiday("Armistice 1918") } as never, ARMISTICE);
+    expect(r.mairie).toMatchObject({ ouverte: null, jour_ferie: "Aujourd'hui est férié (Armistice 1918) : la mairie est sans doute fermée, à vérifier auprès d'elle.", telephone: "0262 45 90 00" });
+    expect(r.mairie!.horaires_aujourd_hui).toBeUndefined();
+    expect(r.mairie!.avertissement).toMatch(/jours fériés et fermetures exceptionnelles non pris en compte/);
+    expect(aujourdhuiPage("https://rundata.re", SAINT_PAUL, r, null)).toContain("Mairie : <b>sans doute fermée, jour férié</b>");
+    // The same Wednesday without a holiday: open by its hours, the warning still said.
+    const plain = resume(SAINT_PAUL, { ...COPIES, calendrier: holiday(null) } as never, ARMISTICE);
+    expect(plain.mairie).toMatchObject({ ouverte: true, jour_ferie: undefined });
+    expect(plain.mairie!.avertissement).toMatch(/jours fériés/);
+  });
+
+  it("gives a beach the weather of the commune's centre said as such, with how far it is", () => {
+    const r = resume(SAINT_PAUL, COPIES as never, NOW, [], { nom: "Boucan Canot", lon: 55.2265, lat: -21.0289 });
+    expect(r.meteo).toMatchObject({ lieu: "centre de Saint-Paul" });
+    expect(r.meteo!.avertissement).toMatch(/^Météo du centre de Saint-Paul, à \d+(,\d)? km de Boucan Canot : la station, sa distance et la prévision sont celles du centre\. Pour Boucan Canot même : meteo_actuelle et prevision_meteo\.$/);
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre ; météo du centre de Saint-Paul, à \d+(,\d)? km de Boucan Canot ; 27,4 °C mesurés/);
+    // The commune itself, or a place a few hundred metres from its centre: nothing to say.
+    const centre = resume(SAINT_PAUL, COPIES as never, NOW, [], { nom: "Mairie", lon: SAINT_PAUL.place.lon + 0.001, lat: SAINT_PAUL.place.lat });
+    expect(centre.meteo).not.toHaveProperty("avertissement");
+    expect(resume(SAINT_PAUL, COPIES as never, NOW).resume).not.toMatch(/météo du centre/);
+  });
+
+  it("says no event found is from incomplete agendas, and when the commune's own site is not read", () => {
+    const none = { ...COPIES, agenda: copy({ ...COPIES.agenda.value, evenements: [] }) };
+    const sp = resume(SAINT_PAUL, none as never, NOW);
+    expect(sp.resume).not.toMatch(/0 événement/);
+    expect(sp.evenements_du_jour!.aucun).toBe("Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.");
+    const pierre = pageOf("saint-pierre")!;
+    const notRead = mentionCommune("Saint-Pierre");
+    expect(notRead).toBeTruthy();
+    const r = resume(pierre, none as never, NOW);
+    expect(r.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets, sans le site de la commune) ;");
+    expect(r.evenements_du_jour!.non_repris).toBe(notRead);
+    expect(resume(SAINT_PAUL, COPIES as never, NOW).evenements_du_jour!.aucun).toBeUndefined();
+  });
+
+  it("says the air index is Atmo Réunion's forecast, of which day, diffused when", () => {
+    const air = copy({ ...COPIES.air.value, diffusion: "Prévision diffusée par Atmo Réunion la veille, le 23/10 à 11:44." });
+    const r = resume(SAINT_PAUL, { ...COPIES, air } as never, NOW);
+    expect(r.air).toEqual({ nature: "PRÉVISION du jour, calculée par Atmo Réunion : pas une mesure.", jour: "24/10", diffusion: "Prévision diffusée par Atmo Réunion la veille, le 23/10 à 11:44.", indice_atmo: 2, qualite: "moyen", polluants: ["PM10"] });
+  });
+
+  const volcan = (etat: object) => copy({ resume: "", etat, avertissements: [], sources: credits([volcanSrc.PREFECTURE, volcanSrc.OVPF, seismes.SOURCE, volcanSrc.PITONLIVE]) });
+  const release = { niveau: "Vigilance", titre: "Piton de la Fournaise : passage en vigilance", lien: "https://www.reunion.gouv.fr/vigilance", jour: "2026-10-26" };
+
+  it("says the volcano's ORSEC level in the communes of the volcano, from the official texts only", () => {
+    const quiet = volcan({ eruption_en_cours: false, niveau_orsec: "Vigilance", communique_prefecture: release });
+    const r = resume(SAINTE_ROSE, { volcan: quiet } as never, NOW);
+    expect(r.resume).toContain("volcan : niveau Vigilance du plan ORSEC (préfecture) ;");
+    expect(r.volcan).toEqual({ niveau_orsec: "Vigilance", niveau_d_apres: "préfecture de La Réunion", alerte: false, communique_prefecture: { titre: release.titre, lien: release.lien, jour: "2026-10-26" }, page: "https://rundata.re/volcan" });
+    const named = r.sources.map((s) => s.source);
+    expect(named).toEqual(expect.arrayContaining([volcanSrc.PREFECTURE.nom, volcanSrc.OVPF.nom]));
+    expect(named).not.toContain(seismes.SOURCE.nom);
+    expect(named).not.toContain(volcanSrc.PITONLIVE.nom);
+    // Far from the volcano, nothing of it, even with the copy.
+    const sp = resume(SAINT_PAUL, { volcan: quiet } as never, NOW);
+    expect(sp.volcan).toBeUndefined();
+    expect(sp.resume).not.toMatch(/volcan/);
+  });
+
+  it("says an eruption under way first, with who says it", () => {
+    const fire = volcan({ eruption_en_cours: true, niveau_orsec: "Alerte 2-1", eruption_ovpf: { en_cours: true, date: "24/10 08:00 heure de La Réunion", lien: "https://bsky.app/x" }, communique_prefecture: { ...release, niveau: "Alerte 2-1" } });
+    const r = resume(SAINTE_ROSE, { volcan: fire } as never, NOW);
+    expect(r.resume).toContain("volcan : éruption en cours (OVPF), niveau Alerte 2-1 du plan ORSEC (préfecture) ;");
+    expect(r.volcan).toMatchObject({ alerte: true, eruption_en_cours: "oui, d'après l'OVPF", ovpf: { date: "24/10 08:00 heure de La Réunion", lien: "https://bsky.app/x" } });
+    // A level the prefecture's page did not give: said to be checked, never guessed.
+    const unknown = resume(SAINTE_ROSE, { volcan: volcan({ eruption_en_cours: false, niveau_orsec: "à vérifier sur reunion.gouv.fr", niveau_inconnu: true }) } as never, NOW);
+    expect(unknown.resume).toContain("volcan : niveau du plan ORSEC à vérifier sur reunion.gouv.fr ;");
+    expect(unknown.volcan!.niveau_d_apres).toBeUndefined();
+  });
+
+  it("reads the volcano's copy for the communes of the volcano only, and names it when it has none", async () => {
+    expect(VOLCANO_COMMUNES).toEqual(["Sainte-Rose", "Saint-Philippe", "Le Tampon", "Saint-Joseph"]);
+    const edge = new EdgeLike();
+    await edge.put("web:volcan", { value: volcan({ eruption_en_cours: false, niveau_orsec: "Vigilance" }).value, fetchedAt: ago(10).getTime() });
+    const rose = await readCopies(isolate(edge), SAINTE_ROSE, SAINTE_ROSE, NOW);
+    expect(rose.copies.volcan).toBeTruthy();
+    const paul = await readCopies(isolate(edge), SAINT_PAUL, SAINT_PAUL, NOW);
+    expect(paul.copies.volcan).toBeUndefined();
+    expect(paul.leftOut.map((x) => x.outil)).not.toContain("volcan_seismes");
+    const none = await readCopies(isolate(new EdgeLike()), SAINTE_ROSE, SAINTE_ROSE, NOW);
+    expect(none.leftOut).toContainEqual({ partie: "volcan", raison: "pas de copie récente", outil: "volcan_seismes", page: "https://rundata.re/volcan" });
   });
 });

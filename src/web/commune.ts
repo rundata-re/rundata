@@ -572,9 +572,16 @@ function antennas(p: PlacePage, hs?: Cached<sitesHs.Copie> | null): Live | undef
 /** The commune's mobile sites out of service, by its INSEE code. */
 const horsService = (hs: Cached<sitesHs.Copie> | null | undefined, p: PlacePage) => ligneTuile(hs ?? null, INSEE[p.nom]);
 
-function townHall(data: Cached<CommuneData> | null | undefined, now: Date): Live | undefined {
+/**
+ * The town hall now. On a holiday, from the calendar's copy of today, said probably closed: its published hours are a
+ * week's (11/11/2026 would have shown it open).
+ */
+function townHall(data: Cached<CommuneData> | null | undefined, now: Date, calendrier?: Cached<CalendrierAnswer> | null): Live | undefined {
   const o = data?.value.mairie;
   if (!o) return undefined;
+  const day = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
+  const ferie = calendrier && day(calendrier.fetchedAt) === day(now) ? calendrier.value.jours_feries?.aujourd_hui : undefined;
+  if (ferie) return { valeur: "Sans doute fermée", detail: `jour férié (${esc(ferie)}) · ${esc(o.adresse)}${o.telephone ? ` · ${esc(o.telephone)}` : ""}` };
   const open = openNow(o, now);
   const today = hoursOn(o, now);
   return {
@@ -632,7 +639,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const w = weather(p, l.place, now);
   const bus = buses(p, l.commune, now);
   const velos = bikes(l.commune, g, now);
-  const mairie = townHall(l.commune, now);
+  const mairie = townHall(l.commune, now, l.calendrier);
   const fiche = l.commune?.value.mairie?.fiche;
   // « Y aller » under the town hall's address, where the directory gives its position.
   const o = l.commune?.value.mairie;

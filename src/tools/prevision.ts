@@ -90,9 +90,13 @@ function rain(mm: number | null): string | undefined {
  * other days, nor just after midnight. The time is that of the answer, which a copy of the page keeps with it.
  */
 function restOfDay(d: ForecastDay, now: Date): string | undefined {
-  const from = Math.floor(sinceMidnight(now) / 60);
-  return from && d.date === localDate(now) ? `de ${heure(from)} à minuit` : undefined;
+  // The hour under way, whose part left is counted (ahead): « de 4 h » at 04:09, never the minute of the question.
+  const from = hourOfDay(now);
+  return from && d.date === localDate(now) ? `de ${heure(from * 60)} à minuit` : undefined;
 }
+
+/** The hour under way in La Réunion, 0 to 23. */
+const hourOfDay = (now: Date) => Math.floor(sinceMidnight(now) / 3600);
 
 /** A day's rain; today's says from when (restOfDay): « 1,6 mm de pluie de 15\u00a0h à minuit ». */
 function dayRain(d: ForecastDay, now: Date): string | undefined {
@@ -247,7 +251,7 @@ function ahead(f: Forecast, now: Date): Forecast {
     return [{ ...h, pluie_mm: (h.pluie_mm * (end - t)) / (end - start) }];
   });
   // In the first hour, said as the whole day (restOfDay): the model's own lowest and highest.
-  const whole = Math.floor(sinceMidnight(now) / 60) === 0;
+  const whole = hourOfDay(now) === 0;
   return {
     ...f,
     days: f.days.map((d) => (d.date !== today ? d : whole ? { ...dayFromHours(today, hours), tmin: d.tmin, tmax: d.tmax } : dayFromHours(today, hours))),

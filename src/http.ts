@@ -16,6 +16,27 @@ export function httpUrl(raw: string | undefined): string | undefined {
 }
 
 /**
+ * The ticket offices that count who sends them buyers, by a « ref » in the address: each host was checked on a real
+ * event page on 05/11/2026, which answered 200 with the same page with « ?ref=rundata ». A link to one of them leaves
+ * rundata.re with it; any other link, a commune's site included, is left as it is.
+ */
+export const BILLETTERIES: readonly string[] = ["www.monticket.re", "www.sportpro.re", "my.weezevent.com", "www.billetweb.fr"];
+
+/** A link with « ref=rundata » added when it goes to one of BILLETTERIES in https and carries no « ref » yet. */
+export function versBilletterie<T extends string | undefined>(lien: T): T {
+  if (!lien) return lien;
+  let u: URL;
+  try {
+    u = new URL(lien);
+  } catch {
+    return lien;
+  }
+  if (u.protocol !== "https:" || !BILLETTERIES.includes(u.host) || u.searchParams.has("ref")) return lien;
+  u.searchParams.set("ref", "rundata");
+  return u.href as T;
+}
+
+/**
  * Whether a link found in a third party's page may be followed: in https, to one of `hosts`. A page of that site gone
  * bad (a hacked site, a link planted in it) must never send the Worker to read elsewhere. A link refused is said in the
  * log, by its host only.

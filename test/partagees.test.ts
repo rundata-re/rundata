@@ -456,8 +456,10 @@ describe("the scheduled refresh of the shared copies", () => {
     // What the planned agendas may take after them, at the most: more than they need (the 5 pages of Sportsregions the
     // dearest, 17 when all are due together, BUDGET.md), and than the counts of /chiffres and their events, 85 with their
     // lookups, the earthquakes and the ONF's map, 10 with theirs, all three together (112), built too. 130 before the
-    // news was read every 5 minutes (actualites:fil, 13 with its lookup), 117 since.
-    expect(run.value.rest).toBeGreaterThan(112);
+    // news was read every 5 minutes (actualites:fil, 13 with its lookup), 117 since. 105 since the cold costs were
+    // checked against the builds (05/11/2026, test/couts-froid.test.ts: /chiffres's 45, not 25) and the budget raised to
+    // 550: still far more than the agendas need, no longer the copies of /chiffres built a second time with them.
+    expect(run.value.rest).toBeGreaterThan(100);
     expect(run.used).toBeLessThanOrEqual(SCHEDULED_BUDGET);
   });
 

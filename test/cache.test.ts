@@ -295,9 +295,9 @@ describe("a page's copy of a family without revision, after a deploy", () => {
     const store = new MemoryStore();
     const cache = new Cache(store, undefined, false, undefined, "2.0.0");
     await cache.get("web:essai", 300, async () => "liste");
-    await cache.get("agenda:petite_ile", 300, async () => "lue");
+    await cache.get("meteofrance:veille", 300, async () => "lue");
     expect((await store.get("web:essai"))!.version).toBe("2.0.0");
-    expect((await store.get("agenda:petite_ile"))!.version).toBeUndefined();
+    expect((await store.get("meteofrance:veille"))!.version).toBeUndefined();
   });
 
   it("is built again at its first view when another version built it, however fresh", async () => {
@@ -305,14 +305,14 @@ describe("a page's copy of a family without revision, after a deploy", () => {
     const store = new MemoryStore();
     await new Cache(store, c.now, false, undefined, "1.0.0").get("web:essai", 300, async () => "ancienne");
     // A source's entry is the source's, whatever the code: kept.
-    await new Cache(store, c.now, false, undefined, "1.0.0").get("agenda:petite_ile", 300, async () => "lue");
+    await new Cache(store, c.now, false, undefined, "1.0.0").get("meteofrance:veille", 300, async () => "lue");
     c.advance(10);
     const cache = new Cache(store, c.now, false, undefined, "2.0.0");
     let builds = 0;
     expect((await cache.get("web:essai", 300, async () => (builds++, "nouvelle"))).value).toBe("nouvelle");
     expect((await cache.get("web:essai", 300, async () => (builds++, "encore"))).value).toBe("nouvelle");
     expect(builds).toBe(1);
-    expect((await cache.get("agenda:petite_ile", 300, async () => "relue")).value).toBe("lue");
+    expect((await cache.get("meteofrance:veille", 300, async () => "relue")).value).toBe("lue");
   });
 
   it("stays the copy served when its build fails", async () => {
@@ -362,10 +362,10 @@ describe("a page's copy kept across the deploys that leave its family's revision
     const cache = new Cache(store, undefined, false, undefined, "2.0.0");
     await cache.get("web:lieu:le-port", 300, async () => "copie");
     await cache.get("web:essai", 300, async () => "copie");
-    await cache.get("agenda:petite_ile", 300, async () => "lue");
+    await cache.get("meteofrance:veille", 300, async () => "lue");
     expect((await store.get("web:lieu:le-port"))!.version).toBe(`rendu-${RENDU_REVISION.lieu}`);
     expect((await store.get("web:essai"))!.version).toBe("2.0.0");
-    expect((await store.get("agenda:petite_ile"))!.version).toBeUndefined();
+    expect((await store.get("meteofrance:veille"))!.version).toBeUndefined();
     expect(stampOf("web:lieu:le-port", "2.0.0")).toBe(stampOf("web:lieu:le-port", "1.0.0"));
   });
 
@@ -403,9 +403,9 @@ describe("a source's entry listed in SOURCE_REVISION, after a deploy", () => {
     const store = new MemoryStore();
     const cache = new Cache(store, undefined, false, undefined, "2.0.0");
     await cache.get(fil, 300, async () => "lu");
-    await cache.get("agenda:petite_ile", 300, async () => "lue");
+    await cache.get("meteofrance:veille", 300, async () => "lue");
     expect((await store.get(fil))!.version).toBe(`source-${n}`);
-    expect((await store.get("agenda:petite_ile"))!.version).toBeUndefined();
+    expect((await store.get("meteofrance:veille"))!.version).toBeUndefined();
     expect(stampOf(fil, "2.0.0")).toBe(stampOf(fil, "1.0.0"));
     expect(stampOf(fil, undefined)).toBeUndefined();
   });
@@ -413,14 +413,17 @@ describe("a source's entry listed in SOURCE_REVISION, after a deploy", () => {
   it("is named by its key, or by the first part of its key", () => {
     expect(sourceRevision(fil)).toBe(n);
     expect(sourceRevision("actualites:autre")).toBeUndefined();
-    expect(sourceRevision("agenda:petite_ile")).toBeUndefined();
+    expect(sourceRevision("meteofrance:veille")).toBeUndefined();
+    // An agenda without a key of its own: the agendas' key.
+    expect(sourceRevision("agenda:petite_ile")).toBe(SOURCE_REVISION.agenda);
+    expect(sourceRevision("agenda:le_port")).toBe(SOURCE_REVISION["agenda:le_port"]);
   });
 
   it("is kept across a deploy that leaves its number, and read again at its first ask after one that raises it, once", async () => {
     const c = clock();
     const store = new MemoryStore();
     await new Cache(store, c.now, false, undefined, "1.0.0").get(fil, 300, async () => "ancien");
-    await new Cache(store, c.now, false, undefined, "1.0.0").get("agenda:petite_ile", 300, async () => "lue");
+    await new Cache(store, c.now, false, undefined, "1.0.0").get("meteofrance:veille", 300, async () => "lue");
     c.advance(10);
     let reads = 0;
     const next = new Cache(store, c.now, false, undefined, "2.0.0");
@@ -433,7 +436,7 @@ describe("a source's entry listed in SOURCE_REVISION, after a deploy", () => {
     expect((await next.get(fil, 300, async () => (reads++, "encore"))).value).toBe("nouveau");
     expect(reads).toBe(1);
     // A source not listed: its entry, however written, is kept.
-    expect((await next.get("agenda:petite_ile", 300, async () => (reads++, "relue"))).value).toBe("lue");
+    expect((await next.get("meteofrance:veille", 300, async () => (reads++, "relue"))).value).toBe("lue");
     expect(reads).toBe(1);
   });
 

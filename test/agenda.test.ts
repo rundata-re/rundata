@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
 import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
-import { annonceEvenement, extrait } from "../src/providers/agenda-mots.js";
+import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
 import { agenda, COUVERTURE, type EventRow, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
@@ -729,11 +729,19 @@ describe("agenda", () => {
     expect(lead("Du 23 au 25 octobre l’ail est en fête au Domaine du Relais !Ouverture de la fête foraine dès le vendredi.")).toBe("Du 23 au 25 octobre l’ail est en fête au Domaine du Relais !");
   });
 
-  it("keeps only the first sentence of every agenda's text, capped when it never ends", () => {
+  it("keeps only the first sentence of every agenda's text, whole, or nothing when it is too long: never a piece of it", () => {
     expect(lead("Concert gratuit de l'école de musique, ouvert à tous. Buvette sur place. Venez nombreux !")).toBe("Concert gratuit de l'école de musique, ouvert à tous.");
-    const endless = `Grand bal la kour ${"avec les groupes du quartier ".repeat(12)}`;
-    expect(lead(endless).length).toBeLessThanOrEqual(200);
-    expect(lead(endless)).toMatch(/^Grand bal la kour avec les groupes du quartier .*\S…$/);
+    const s150 = `Grand bal la kour ${"avec les groupes ".repeat(8)}du quartier.`.slice(0, 149) + ".";
+    expect(s150).toHaveLength(150);
+    expect(lead(s150)).toBe(s150);
+    // 250 characters and no full stop: nothing, never a cut sentence with a « … » of ours.
+    const endless = `Grand bal la kour ${"avec les groupes du quartier ".repeat(12)}`.slice(0, 250);
+    expect(lead(endless)).toBe("");
+    // A long first sentence, then a short one: nothing, not the second.
+    expect(lead(`${endless}. Entrée libre.`)).toBe("");
+    // The genres and the age still come from the whole text, for the search; the date from the whole first sentence.
+    expect(extrait(`${endless} et un concert pour les enfants dès 6 ans.`)).toEqual({ themes: expect.arrayContaining(["concert", "enfants"]), age: expect.any(String) });
+    expect(premiere(`${endless} le samedi 7 novembre 2026. Entrée libre.`)).toMatch(/le samedi 7 novembre 2026\.$/);
     const read = [
       parseTribe(JSON.parse(fixture("tribe_le-port.json")), "Ville du Port", "Le Port"),
       parseTribe(JSON.parse(fixture("sechoir.json")), "Le Séchoir", "Saint-Leu"),

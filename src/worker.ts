@@ -142,7 +142,7 @@ interface D1Statement {
 interface D1Database {
   prepare(sql: string): { bind(...values: unknown[]): D1Statement };
   /** Several statements in one call, in one transaction. */
-  batch(statements: D1Statement[]): Promise<unknown[]>;
+  batch(statements: D1Statement[]): Promise<{ meta: { changes: number } }[]>;
 }
 
 /** The part of a Workers Analytics Engine binding used here. */
@@ -354,6 +354,7 @@ function setup(env: Env): Cache {
     avisRun,
     avisDb && (async <T>(sql: string, ...params: unknown[]) => (count(), (await avisDb.prepare(sql).bind(...params).all<T>()).results)),
     env.EMAIL && propositions.envoiCloudflare(env.EMAIL),
+    avisDb && (async (statements) => (count(1, true), (await avisDb.batch(statements.map(([sql, ...params]) => avisDb.prepare(sql).bind(...params)))).map((r) => r.meta.changes))),
   );
   // The clubs' own space, in the same database (scripts/clubs.sql): its link e-mailed like a proposal's, to the club's
   // official address only.

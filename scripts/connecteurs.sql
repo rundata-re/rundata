@@ -85,3 +85,18 @@ BEGIN
   DELETE FROM connexions WHERE etat = 'a_confirmer' AND t < NEW.t - 172800;
   DELETE FROM connexions WHERE etat IN ('refuse', 'expire') AND COALESCE(modere_le, lu_le, t) < NEW.t - 2592000;
 END;
+
+-- scelles_utilises: the seals « C'est bien nous » used (src/connecteurs/connexions.ts, `enregistrer`), so that a sealed
+-- page sent again writes no second link nor e-mail, even after its link was withdrawn or replaced. nonce: the seal's
+-- random part, never its content; t: when it was used, Unix seconds; jeton: the SHA-256 of the link it made, as in
+-- connexions. A seal lives 30 minutes: each new row forgets those older (and the daily scheduled event the same).
+-- Made after the table above: running this whole file again adds it, nothing else changes.
+CREATE TABLE IF NOT EXISTS scelles_utilises (
+  nonce TEXT PRIMARY KEY,
+  t INTEGER NOT NULL,
+  jeton TEXT NOT NULL
+) WITHOUT ROWID;
+CREATE TRIGGER IF NOT EXISTS scelles_oubli AFTER INSERT ON scelles_utilises
+BEGIN
+  DELETE FROM scelles_utilises WHERE t < NEW.t - 1800;
+END;

@@ -18,8 +18,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 510 | 550 |
-| pire passage planifié, appels KV et D1 | 114 | 1 000 |
+| pire passage planifié, sous-requêtes | 508 | 550 |
+| pire passage planifié, appels KV et D1 | 112 | 1 000 |
 | pire passage planifié, CPU (ms) | 3 636 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 200 | 550 |
@@ -28,19 +28,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | construction de copie la plus chère, sous-requêtes | 56 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 510 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 490, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 200 (cadences les plus courtes).
+- Marge : le pire passage planifié est à 508 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 492, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 200 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 132 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:50 UTC, 200 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, web:volcan, web:courant, web:chiffres, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 388 sous-requêtes à 00:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 386 sous-requêtes à 00:00 UTC.
 - Vue la plus chère : /communes/*, 86. Question la plus chère : resume_du_jour, 72. Construction la plus chère : web:chiffres:evenements, 56.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 510 | 32 | 56 | 26 | 1 164 | 284 | 3 636 |
-| tâche planifiée, par jour | 31 290 | 4 514 | 3 939 | 2 409 | 102 914 | 58 511 | 234 096 |
-| tâche planifiée, par jour, cadences les plus courtes | 47 918 | 5 954 | 5 835 | 2 889 | 107 954 | 58 511 | 282 456 |
-| tâche planifiée, par mois (30 jours) | 938 687 | 135 420 | 118 170 | 72 283 | 3 087 411 | 1 755 321 | 7 022 867 |
+| pire passage planifié | 508 | 32 | 56 | 24 | 1 164 | 284 | 3 636 |
+| tâche planifiée, par jour | 31 288 | 4 514 | 3 939 | 2 407 | 102 914 | 58 511 | 234 096 |
+| tâche planifiée, par jour, cadences les plus courtes | 47 916 | 5 954 | 5 835 | 2 887 | 107 954 | 58 511 | 282 456 |
+| tâche planifiée, par mois (30 jours) | 938 627 | 135 420 | 118 170 | 72 223 | 3 087 411 | 1 755 321 | 7 022 867 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -109,7 +109,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | propositions:purge | propositions des clubs : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 1 |  |  | 1 |  | 10 | 5 | estimé |
 | clubs:annuaire | espace club : les clubs de handball de l'île, relus une fois par semaine sur la carte de MonClub (environ 2,2 Mo), à 04:00 heure de La Réunion | 10080 min | 00:00 | 4 |  |  | 3 | 40 | 40 | 60 | code |
 | clubs:purge | espace club : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 3 |  |  | 3 |  | 5 | 2 | estimé |
-| connecteurs:purge | plateformes des associations : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 3 |  |  | 3 |  | 5 | 2 | estimé |
+| connecteurs:purge | plateformes des associations : la purge quotidienne (D1, ses quatre instructions en un seul appel), à 04:00 heure de La Réunion | 1440 min | 00:00 | 1 |  |  | 1 |  | 5 | 2 | estimé |
 
 ## Tâches GitHub
 

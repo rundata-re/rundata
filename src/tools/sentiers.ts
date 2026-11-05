@@ -103,6 +103,14 @@ const day = (iso: string) => iso.slice(0, 10).split("-").reverse().join("/");
 
 const mid = (s: { points: [number, number][] }) => s.points[Math.floor(s.points.length / 2)];
 
+/**
+ * The communes of a trail, given all its sections: those where the middle of one of them lies, in the sections' order. One
+ * rule for the tool, the communes' pages and their feeds, and the closed trails by commune: a trail of the commune is said
+ * whole, a section closed past its limit included (04/11/2026: the Piste DFCI de la Glacière, open in Les Trois-Bassins,
+ * closed over 1,8 km past its limit, was said open there).
+ */
+export const communesOf = (sections: { points: [number, number][] }[]) => unique(sections.filter((s) => s.points.length).map((s) => communeAt(...mid(s))));
+
 /** Distance from a point to the nearest point of a trail, in km. */
 function near(s: onf.Sentier | onf.Route, lon: number, lat: number): number {
   let best = Infinity;
@@ -314,12 +322,13 @@ function roadsAnswer(asked: RoadsAsked, routes: onf.Route[], common: Record<stri
   });
 }
 
-/** The closed trails by commune (where their middle is), the communes with the most first. */
+/** The closed trails by commune (communesOf: in each of a trail's communes, once), the communes with the most first. */
 export function closedByCommune(sentiers: onf.Sentier[]) {
   const by = new Map<string, onf.Sentier[]>();
-  for (const s of sentiers.filter((x) => x.statut === "fermé" && x.points.length)) {
-    const c = communeAt(...mid(s));
-    by.set(c, [...(by.get(c) ?? []), s]);
+  for (const nom of unique(sentiers.filter((x) => x.statut === "fermé").map((x) => x.nom))) {
+    const sections = sentiers.filter((x) => x.nom === nom);
+    const shut = sections.find((x) => x.statut === "fermé")!;
+    for (const c of communesOf(sections)) by.set(c, [...(by.get(c) ?? []), shut]);
   }
   return [...by.entries()]
     .sort((x, y) => y[1].length - x[1].length || x[0].localeCompare(y[0], "fr"))
@@ -578,8 +587,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     };
   } else if (res && res.lieu.type === "commune") {
     const inCommune = (s: { points: [number, number][] }) => s.points.length > 0 && communeAt(...mid(s)) === res.lieu.commune;
-    // A trail of the commune said whole, all its sections wherever they lie (04/11/2026: the Piste DFCI de la Glacière,
-    // open in Les Trois-Bassins, closed over 1,8 km past its limit, was said open there).
+    // A trail of the commune said whole, all its sections wherever they lie (communesOf).
     const here = new Set(carte.sentiers.filter(inCommune).map((s) => s.nom));
     zone = { nom: res.lieu.commune, dans: cap(a(res.lieu.commune)), sentiers: carte.sentiers.filter((s) => here.has(s.nom)), routes: carte.routes.filter(inCommune) };
   } else if (res) {

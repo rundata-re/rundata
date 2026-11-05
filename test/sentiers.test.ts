@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { motifs, nuance, parseRoads, parseTrails, raison } from "../src/providers/sentiers.js";
 import { sentiersRandonnee, trailsNamed, warning } from "../src/tools/sentiers.js";
-import { buildSentiers, type SentiersAnswer } from "../src/web/data.js";
+import { buildRandonnees, buildSentiers, type SentiersAnswer } from "../src/web/data.js";
+import { communeHikes } from "../src/web/liens.js";
+import { pageOf, slugify } from "../src/web/places.js";
 import { communeAt } from "../src/places/resolve.js";
 import { closedTrails, randonneesLive, randonneesPage, sentiersPage } from "../src/web/domains.js";
 
@@ -65,7 +67,11 @@ describe("sentiers de randonnée", () => {
     expect(b.resume).toBe("56 sentiers fermés sur 324 suivis par l'ONF à La Réunion, et 4 routes forestières interdites à la circulation.");
     expect(b.carte_mise_a_jour).toBe("20/10/2026 (ONF)");
     expect(b.fermes_par_commune[0]).toMatchObject({ commune: "Sainte-Rose" });
-    expect(b.fermes_par_commune.reduce((n: number, c: { sentiers_fermes: unknown[] }) => n + c.sentiers_fermes.length, 0)).toBe(56);
+    // 56 trails, two of them closed in each of their two communes (the Piste DFCI de la Glacière, the Point de vue sur
+    // Grand Étang).
+    const rows = b.fermes_par_commune.flatMap((c: { sentiers_fermes: { sentier: string }[] }) => c.sentiers_fermes.map((t) => t.sentier));
+    expect(rows).toHaveLength(58);
+    expect(new Set(rows).size).toBe(56);
   });
 
   it("keeps a trail closed on weekdays as the map classes it, its notice beside it, the same words on Sunday 23:59 and Monday 00:01", async () => {
@@ -221,6 +227,30 @@ describe("sentiers de randonnée", () => {
     expect(ile.aires_accueil).toBeUndefined();
     // Camping is named only to say the map does not tell it (a forest road's « circulation autorisée » is not ours).
     for (const x of [b, cilaos, paul]) expect(JSON.stringify([x.aires_accueil, x.resume]).replace(x.aires_accueil.a_savoir, "")).not.toMatch(/bivouac|camping|camper|autoris/i);
+  });
+
+  it("ties a trail to its communes by one rule: the tool, the commune's tile and the closed trails by commune give the same numbers", async () => {
+    const c = cache();
+    const hikes = { value: await buildRandonnees(c, NOW), fetchedAt: NOW, stale: false };
+    const island = body(await sentiersRandonnee(c, undefined, NOW));
+    const trails = hikes.value.secteurs.flatMap((z) => z.sentiers);
+    // Two communes each: open in Les Trois-Bassins, closed in Saint-Paul; hors gestion in Le Tampon, open in Entre-Deux.
+    expect(trails.find((t) => t.nom === "Piste DFCI de la Glacière")?.communes).toEqual(["Les Trois-Bassins", "Saint-Paul"]);
+    expect(trails.find((t) => t.nom === "Sentier du Voile de la Mariée de Grand Bassin")?.communes.sort()).toEqual(["Entre-Deux", "Le Tampon"]);
+    for (const commune of ["Le Tampon", "Entre-Deux", "Saint-Paul", "Les Trois-Bassins", "Sainte-Suzanne"]) {
+      const said = body(await sentiersRandonnee(c, commune, NOW)).resume as string;
+      const [, shut, open] = said.match(/ : (\d+) sentiers? fermés?(?: \(dont \d+ en partie\))?, (\d+) ouverts?/)!.map(Number);
+      const tile = communeHikes(pageOf(slugify(commune))!, hikes, NOW)!;
+      expect(tile.live?.detail, commune).toContain(`sur ${shut + open} sentiers de l'ONF dans la commune`);
+      expect(tile.live?.valeur, commune).toBe(shut ? `${shut} sentier${shut > 1 ? "s" : ""} fermé${shut > 1 ? "s" : ""}` : "Sentiers ouverts");
+      const listed = island.fermes_par_commune.find((x: { commune: string }) => x.commune === commune)?.sentiers_fermes ?? [];
+      expect(listed, commune).toHaveLength(shut);
+    }
+    // The Glacière closed in both its communes' lists, once in each.
+    for (const commune of ["Saint-Paul", "Les Trois-Bassins"]) {
+      const listed = island.fermes_par_commune.find((x: { commune: string }) => x.commune === commune).sentiers_fermes.map((t: { sentier: string }) => t.sentier);
+      expect(listed.filter((n: string) => n === "Piste DFCI de la Glacière"), commune).toHaveLength(1);
+    }
   });
 });
 

@@ -818,7 +818,7 @@ describe("a commune's RSS feed", () => {
     // The pages' copies there (another isolate of the data center): read, and nothing else is fetched.
     const cache = isolate(edge);
     await cache.get("web:coupures", 300, answer({ resume: "", avis: [], couverture: "", a_savoir: "", sources: [], communes_suivies: [] }));
-    await cache.get("web:randonnees", 300, answer({ randonnees: [], secteurs: [{ secteur: "Ouest", communes: ["Saint-Paul"], sentiers: [{ k: "s1", nom: "Sentier du Maïdo", commune: "Saint-Paul", km: 3, etat: "fermé", cause: "Éboulis", boucle: false, randonnees: [] }] }], lignes: [], fermes: 1, suivis: 1, sources: [] }));
+    await cache.get("web:randonnees", 300, answer({ randonnees: [], secteurs: [{ secteur: "Ouest", communes: ["Saint-Paul"], sentiers: [{ k: "s1", nom: "Sentier du Maïdo", commune: "Saint-Paul", communes: ["Saint-Paul"], km: 3, etat: "fermé", cause: "Éboulis", boucle: false, randonnees: [] }] }], lignes: [], fermes: 1, suivis: 1, sources: [] }));
     await cache.get("web:volcan", 300, answer({ resume: "", etat: { eruption_en_cours: false, niveau_orsec: "Alerte 1" }, avertissements: [], sources: [] }));
     vi.stubGlobal("fetch", async (url: string) => {
       throw new Error(`the feed fetched ${url}`);

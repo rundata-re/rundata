@@ -51,7 +51,7 @@ import { COMMON as EAU_COMMON } from "../tools/eau.js";
 import { credits } from "../tools/format.js";
 import * as onf from "../providers/sentiers.js";
 import * as feux from "../providers/feux.js";
-import { horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
+import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
 import { restrictionsEau } from "../tools/secheresse.js";
@@ -639,7 +639,10 @@ export interface TrailItem {
   k: string;
   nom: string;
   slug?: string;
+  /** The commune of its first section, said beside its name in the lists. */
   commune: string;
+  /** Every commune it runs through (communesOf, the tool's rule): its communes' pages and feeds count it. */
+  communes: string[];
   km: number;
   dplus?: number;
   dmoins?: number;
@@ -747,6 +750,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
       nom,
       slug: stats?.slug,
       commune: where.commune,
+      communes: communesOf(parts),
       secteur: where.secteur,
       km: stats?.km ?? Math.round(parts.reduce((t, x) => t + x.longueur_km, 0) * 10) / 10,
       dplus: stats?.dplus,

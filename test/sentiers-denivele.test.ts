@@ -121,7 +121,7 @@ describe("listes de /randonnees et /sentiers", () => {
   const plain = (html: string) => html.replace(/[\u00a0\u202f]/g, " ");
   const dp = (html: string) => html.match(/data-dp="([^"]*)"/)?.[1];
   const trail = (x: { dplus?: number; dmoins?: number }) =>
-    trailLi({ k: "s1", nom: "Sentier de la Roche Écrite", slug: "sentier-de-la-roche-ecrite", commune: "Saint-Denis", km: 9.9, etat: "ouvert", boucle: false, randonnees: [], ...x });
+    trailLi({ k: "s1", nom: "Sentier de la Roche Écrite", slug: "sentier-de-la-roche-ecrite", commune: "Saint-Denis", communes: ["Saint-Denis"], km: 9.9, etat: "ouvert", boucle: false, randonnees: [], ...x });
   const hike = (x: { dplus: number; dmoins: number; avis?: string[] }) =>
     hikeCard({ k: "h1", nom: "Boucle A", slug: "boucle-a", km: 9.9, boucle: false, secteur: "Saint-Denis", fermes: [], inconnus: [], onf: 1, ...x });
 

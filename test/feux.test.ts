@@ -223,7 +223,7 @@ describe("fires on the site", () => {
   });
 
   it("are on the commune's hiking tile, with the emergency numbers", () => {
-    const hikes = { value: { randonnees: [], secteurs: [{ secteur: "Hauts de l'Ouest", communes: ["Saint-Paul"], sentiers: [{ k: "s1", nom: "Sentier du Maïdo", commune: "Saint-Paul", km: 3, etat: "ouvert", boucle: false, randonnees: [] }] }], lignes: [], fermes: 0, suivis: 1, sources: [], feux: seen } as RandonneesAnswer, fetchedAt: NOW, stale: false };
+    const hikes = { value: { randonnees: [], secteurs: [{ secteur: "Hauts de l'Ouest", communes: ["Saint-Paul"], sentiers: [{ k: "s1", nom: "Sentier du Maïdo", commune: "Saint-Paul", communes: ["Saint-Paul"], km: 3, etat: "ouvert", boucle: false, randonnees: [] }] }], lignes: [], fermes: 0, suivis: 1, sources: [], feux: seen } as RandonneesAnswer, fetchedAt: NOW, stale: false };
     const tile = communeHikes(pageOf("saint-paul")!, hikes, NOW)!;
     expect(tile.live!.detail).toMatch(/^2 feux détectés par satellite, le dernier à 06:30 \(faux positifs possibles\) · <b>Vous voyez un feu \? Appelez le 18 ou le 112\.<\/b> · sur 1 sentiers/);
     // A commune with no trail of the ONF still says its fire.

@@ -32,8 +32,12 @@ export interface Kv {
 export interface Shared {
   key: string;
   build: (cache: Cache, now: Date) => Promise<unknown>;
-  /** How often its copy in KV is refreshed, in minutes: each refresh is one KV write. Given the last copy, if it depends on it. */
-  every: number | ((last: unknown) => number);
+  /**
+   * How often its copy in KV is refreshed, in minutes: each refresh is one KV write. Given the last copy, if it depends on
+   * it, and the event's time, never the clock's (the air's rate changes from 10 h to 14 h: a test running at those hours
+   * saw it every 15 minutes in a day simulated at night).
+   */
+  every: number | ((last: unknown, now: Date) => number);
   /** The subrequests its build takes from a cold cache, as measured: what an isolate that has not built it yet expects. */
   cold?: number;
   /** Its build's CPU time, ms, as measured: required by the budget's registry (src/registre.ts). */
@@ -108,9 +112,9 @@ export const SHARED: Shared[] = [
   // of the sensors (1: KV, kept in memory).
   // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes
   // an hour more until it is, 12 a day at most.
-  { key: "web:air", build: buildAir, every: (last) => airEvery(last), cold: 8, cpu: 40, range: { usual: 60, shortest: 15 }, offset: 40 },
+  { key: "web:air", build: buildAir, every: (last, now) => airEvery(last, now), cold: 8, cpu: 40, range: { usual: 60, shortest: 15 }, offset: 40 },
   // Built only here: the copy of /mer, the pages and temperature_mer read it, never the satellites.
-  { key: SATELLITES, build: buildSatellites, every: (last) => satellitesEvery(last), cold: 10, cpu: 110, range: { usual: 3 * 60, shortest: 30 }, offset: 55 },
+  { key: SATELLITES, build: buildSatellites, every: (last, now) => satellitesEvery(last, now), cold: 10, cpu: 110, range: { usual: 3 * 60, shortest: 30 }, offset: 55 },
   { key: "web:mer", build: buildSea, every: 3 * 60, cold: 13, cpu: 110, offset: 75 },
   { key: "web:calendrier", build: buildCalendrier, every: 6 * 60, cold: 8, cpu: 40, offset: 130 },
   // The earthquakes and the ONF's map, which /volcan's copy embeds: built in the data center of the event, it read that
@@ -155,9 +159,9 @@ const KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
  * How often the scheduled event refreshes the copy of `key`, in minutes, given that copy; undefined for a copy it does
  * not keep (a page's own, built by its views).
  */
-export function scheduledEvery(key: string, value: unknown): number | undefined {
+export function scheduledEvery(key: string, value: unknown, now = new Date()): number | undefined {
   const s = [...SHARED, ...SHARED_AFTER].find((x) => x.key === key);
-  return s && everyOf(s, value);
+  return s && everyOf(s, value, now);
 }
 // The calendar's copy, the least often refreshed, outlives its next refresh by far.
 const KV_TTL_SECONDS = 24 * 3600;
@@ -290,7 +294,7 @@ export class SharedFallback implements CacheStore {
   }
   /** Past its rate, its margin and one event: the scheduled event did not refresh it. */
   private late(key: string, e: CacheEntry): boolean {
-    const every = scheduledEvery(key, e.value);
+    const every = scheduledEvery(key, e.value, new Date(this.now()));
     return every != null && this.now() - e.fetchedAt > every * 60_000 + margin(every) + EVENT_MS;
   }
 }
@@ -321,7 +325,7 @@ export function slotStart(now: number, every: number, offset = 0): number {
 }
 
 /** How often `s` is refreshed, given its copy's value. */
-const everyOf = (s: Shared, value: unknown) => (typeof s.every === "number" ? s.every : s.every(value));
+const everyOf = (s: Shared, value: unknown, now: Date) => (typeof s.every === "number" ? s.every : s.every(value, now));
 
 /** One listing of the copies in KV, for the event's two calls of warmShared (worker.ts): one subrequest, not two. */
 export const listShared = (kv: Kv) => kvList(kv);
@@ -339,10 +343,10 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
   const ages = await Promise.all(list.map(async (s): Promise<{ s: Shared; at?: number; kept?: number; every: number; old: boolean }> => {
     const k = kvKey(s.key);
     const meta = wrote.get(k) ?? listed?.get(k);
-    if (meta) return { s, at: meta.fetchedAt, kept: meta.cost, every: meta.every ?? everyOf(s, undefined), old: outdated(s.key, meta, cache.version) };
-    if (listed && !listed.has(k)) return { s, every: everyOf(s, undefined), old: false };
+    if (meta) return { s, at: meta.fetchedAt, kept: meta.cost, every: meta.every ?? everyOf(s, undefined, now), old: outdated(s.key, meta, cache.version) };
+    if (listed && !listed.has(k)) return { s, every: everyOf(s, undefined, now), old: false };
     const e = await kvGet(kv, s.key);
-    return { s, at: e?.fetchedAt, kept: e?.cost, every: everyOf(s, e?.value), old: outdated(s.key, e, cache.version) };
+    return { s, at: e?.fetchedAt, kept: e?.cost, every: everyOf(s, e?.value, now), old: outdated(s.key, e, cache.version) };
   }));
   // A copy of another revision (cache.ts, `outdated`) is due at once, by its age: after a deploy they are all due, and
   // go the oldest first, over as many events as their builds take within the budget, less what the agendas keep.
@@ -426,7 +430,7 @@ async function warmOne(cache: Cache, kv: Kv, now: Date, s: Shared, at: number | 
     const version = stampOf(s.key, cache.version);
     // With the source it was read from: its last copy, served in another data center, says whose it is (fraicheur.ts).
     const entry: KvEntry = { value: got.value, fetchedAt: got.fetchedAt.getTime(), cost: costOf(s.key) ?? kept, ...(version && { version }), ...(got.from && { from: got.from }) };
-    const meta: KvMeta = { fetchedAt: entry.fetchedAt, cost: entry.cost, every: everyOf(s, got.value), ...(version && { version }) };
+    const meta: KvMeta = { fetchedAt: entry.fetchedAt, cost: entry.cost, every: everyOf(s, got.value, now), ...(version && { version }) };
     await kv.put(kvKey(s.key), JSON.stringify(entry), { expirationTtl: KV_TTL_SECONDS, metadata: meta });
     wrote.set(kvKey(s.key), meta);
     out.written.push(s.key);

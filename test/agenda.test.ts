@@ -4,8 +4,10 @@ import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
 import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
-import { parseBisik } from "../src/providers/salles.js";
-import { agenda, COUVERTURE, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
+import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
+import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
+import { ID as PROPOSITIONS_ID } from "../src/providers/agenda-propositions.js";
+import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
@@ -776,7 +778,10 @@ describe("agenda", () => {
       const union = b.evenements.find((e: { titre: string }) => e.titre.startsWith("« Union »"));
       expect(parseWpNews(JSON.parse(fixture("actus_saint-philippe.json")), "Mairie de Saint-Philippe", "Saint-Philippe", NOW).find((e) => e.titre.startsWith("« Union »"))?.description).toBeTruthy();
       expect(union.description).toBeUndefined();
-      expect(union.source).toBe("site de la commune de Saint-Philippe, lu le samedi 24/10 à 08:00");
+      // The tool says it by publie_par and lu_le; the pages, in a line (« site de la commune de … »).
+      expect([union.source, union.publie_par, union.lu_le]).toEqual([undefined, "Mairie de Saint-Philippe", "samedi 24/10 à 08:00"]);
+      const surPage = body(await agenda(c, "Saint-Philippe", undefined, undefined, NOW, undefined, false, true)).evenements.find((e: { titre: string }) => e.titre.startsWith("« Union »"));
+      expect(surPage.source).toBe("site de la commune de Saint-Philippe, lu le samedi 24/10 à 08:00");
       expect(union.lien).toContain("saintphilippe.re/");
       expect(COUVERTURE).toContain("Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date (pas un agenda complet) : Saint-Philippe, Cilaos, Saint-Joseph, Saint-Louis, Saint-Leu, La Plaine-des-Palmistes, Sainte-Marie, Salazie.");
       expect(MAIRIES_LUES).not.toContain("Saint-Philippe");
@@ -1021,8 +1026,42 @@ describe("agenda", () => {
     expect(read.some((u) => u.includes("reunionest.fr"))).toBe(false);
   });
 
+  it("gives the tool a short coverage, its numbers counted from the list the page /evenements gives whole, and the sources of the events it shows", async () => {
+    // From the list of agendas: the agendas and halls read, the communes read through their mairie's news.
+    const read = AGENDAS.filter((a) => !a.partiel && a.id !== PROPOSITIONS_ID && a.id !== CONNECTEURS_ID);
+    expect(AGENDAS_LUS).toBe(read.length);
+    expect(read.filter((a) => a.source === SALLES_SOURCE).length).toBeGreaterThan(0);
+    const news = new Set(AGENDAS.filter((a) => a.partiel).map((a) => a.commune));
+    expect(MAIRIES_ACTUALITES).toBe(news.size);
+    // The same communes as the page's coverage names.
+    expect(/Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date \(pas un agenda complet\) : ([^.]+)\./.exec(COUVERTURE)![1].split(", ").length).toBe(MAIRIES_ACTUALITES);
+    expect(COUVERTURE_OUTIL).toBe(
+      `${AGENDAS_LUS} agendas et programmes de salles lus, et les actualités de ${MAIRIES_ACTUALITES} mairies : la liste, les communes sans agenda lu et les sites non repris sur https://rundata.re/evenements#h-couv. ` +
+        "Pas encore lus : les bars et les clubs, les billetteries privées. Un événement absent ici peut quand même avoir lieu (voir le site ou la page Facebook de la salle ou de la mairie). Chaque événement dit qui le publie, renvoie à sa page et dit quand rundata.re l'a lu.",
+    );
+    // The page the link names, and its anchor, with the whole coverage.
+    const c = cache();
+    await refreshPlanned(c, NOW);
+    const html = await (await handle(new Request("https://rundata.re/evenements"), c)).text();
+    expect(html).toContain('<h2 id="h-couv">');
+    const tool = body(await agenda(c, "Saint-Philippe", undefined, undefined, NOW));
+    const page = body(await agenda(c, "Saint-Philippe", undefined, undefined, NOW, undefined, false, true));
+    expect([tool.couverture, page.couverture]).toEqual([COUVERTURE_OUTIL, COUVERTURE]);
+    // The sites not taken stay in non_repris, the same in both.
+    expect(tool.non_repris).toBe(page.non_repris);
+    // The sources: those of the events shown, licence and attribution with them; the page keeps every agenda read.
+    const names = (b: { sources: { source: string }[] }) => b.sources.map((x) => x.source);
+    expect(tool.evenements.length).toBeGreaterThan(0);
+    expect(names(tool).length).toBeLessThan(names(page).length);
+    expect(names(page)).toEqual(expect.arrayContaining(names(tool)));
+    expect(tool.sources.every((x: { licence?: string; attribution?: string }) => x.licence && x.attribution)).toBe(true);
+    expect(new Set(tool.evenements.map((e: { publie_par: string }) => e.publie_par))).toEqual(new Set(["Mairie de Saint-Philippe"]));
+    expect(names(tool)).toHaveLength(1);
+  });
+
   it("says which commune's site each event of a mairie comes from and when it was read, keeping what each site's terms allow", async () => {
-    const all = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300));
+    // The pages: every event's line. The tool's answer below.
+    const all = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300, false, true));
     type Row = { publie_par: string; source?: string; description?: string; lien?: string };
     const by = (p: string): Row[] => all.evenements.filter((e: Row) => e.publie_par === p);
     const tampon = by("Ville du Tampon");
@@ -1045,6 +1084,14 @@ describe("agenda", () => {
     expect(by("Ville de Bras-Panon").every((e) => e.lien?.startsWith("https://www.braspanon.re/fr/ev/"))).toBe(true);
     // Not a commune's site: no such line.
     expect(all.evenements.filter((e: Row) => ["CINOR", "TÉAT La Réunion", "OTI EST REUNION — Droits réservés"].includes(e.publie_par)).every((e: Row) => e.source === undefined)).toBe(true);
+    // The tool: a line only where a site's terms or agreement ask a mention with each event (Le Port's « © »), the others
+    // said by publie_par and lu_le; no picture.
+    const tool = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300));
+    const inTool = (p: string): (Row & { lu_le?: string; image?: string })[] => tool.evenements.filter((e: Row) => e.publie_par === p);
+    expect(inTool("Ville du Port").every((e) => e.source === "site de la commune du Port (©\u00a0www.ville-port.re), lu le samedi 24/10 à 08:00")).toBe(true);
+    expect(inTool("Ville du Tampon").every((e) => e.source === undefined && e.lu_le === "samedi 24/10 à 08:00")).toBe(true);
+    expect(inTool("Mairie de Saint-Paul").every((e) => e.source === undefined)).toBe(true);
+    expect(tool.evenements.some((e: { image?: string }) => e.image)).toBe(false);
   });
 
   it("leaves the communes' sports programmes to the sport tool, not the sports events", async () => {

@@ -131,6 +131,8 @@ export interface Evenement {
   site_commune?: string;
   /** « Théâtre Luc Donat », when its agreement asks to name it: set by the tool from its agenda (`credit`). */
   credit?: string;
+  /** The source of the agenda it was read from: set by the tool, for the sources of the events it shows. */
+  source_agenda?: SourceInfo;
   /**
    * The club that publishes it, and the commune of its address (Sportsregions): for the sport tool, never said as the
    * event's place.

@@ -481,7 +481,15 @@ export function inPeriod(e: src.Evenement, p: Periode, now: Date): src.Seance[] 
 /** Its last good reading, and that the platform did not answer since, when so (marketing's words). */
 const luVia = (v: NonNullable<src.Evenement["via"]>) => (v.sans_reponse ? `lu sur ${v.plateforme} le ${dayText(v.lu)}, pas de réponse depuis` : `lu le ${dayText(v.lu)}`);
 
-export function eventRow(e: src.Evenement, seances: src.Seance[], place = false) {
+/**
+ * Whether an event's `source` says what its agenda's terms or agreement ask to show with each of its events (Le Port's
+ * « © www.ville-port.re », the Département's mention, the name of a hall that agreed): kept in the tool's answer then.
+ * Otherwise it says what publie_par and lu_le say, and the tool leaves it out (the pages keep it).
+ */
+const mentionDue = (e: src.Evenement) => !!e.credit || !!e.site_commune?.includes("©");
+
+/** `place`: for the pages, which place it on the map; `outil`: the tool's answer, without its picture and its source when not due. */
+export function eventRow(e: src.Evenement, seances: src.Seance[], place = false, outil = false) {
   const [first, ...others] = seances;
   return {
     /** All in capitals in its agenda, in the case of a sentence (casse.ts). */
@@ -516,9 +524,11 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false)
      * Donat (site lu le mardi 27/10 à 10:30) », when its agreement asks to name it (marketing); « l'association X, via
      * HelloAsso, lu le … », when read on the platform an association linked.
      */
-    source: e.via
-      ? `l'association ${e.publie_par}, via ${e.via.plateforme}, ${luVia(e.via)}`
-      : !e.lu_le ? undefined : e.site_commune ? `${e.site_commune}, lu le ${dayText(e.lu_le)}` : e.credit ? `${e.credit} (site lu le ${dayText(e.lu_le)})` : undefined,
+    source: outil && !mentionDue(e)
+      ? undefined
+      : e.via
+        ? `l'association ${e.publie_par}, via ${e.via.plateforme}, ${luVia(e.via)}`
+        : !e.lu_le ? undefined : e.site_commune ? `${e.site_commune}, lu le ${dayText(e.lu_le)}` : e.credit ? `${e.credit} (site lu le ${dayText(e.lu_le)})` : undefined,
     /** The platform an association linked, and its last reading: for the page's « via HelloAsso » and its logo. */
     via: e.via ? { plateforme: e.via.plateforme, lu: luVia(e.via) } : undefined,
     /** Proposed by its organiser on rundata.re: said so, with the day, never « checked ». */
@@ -527,8 +537,8 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false)
     contact: e.propose?.contact,
     /** Who organises it, as the site's agenda names them. */
     organise_par: e.organise_par,
-    /** OpenAgenda's picture under the Licence Ouverte, for the search engines (JSON-LD of the pages). */
-    image: e.image,
+    /** OpenAgenda's picture under the Licence Ouverte, for the search engines (JSON-LD of the pages): not in the tool's answer. */
+    image: outil ? undefined : e.image,
     /** Where it is, when its source gives it: for the pages' « Y aller » only (`place`), never in the tool's answer. */
     position: place && e.lat != null && e.lon != null && inReunion(e.lon, e.lat) ? { lat: e.lat, lon: e.lon } : undefined,
   };
@@ -686,6 +696,17 @@ export const COUVERTURE =
   "Aussi : les événements que les clubs et associations proposent sur rundata.re (https://rundata.re/associations), relus avant publication. " +
   "Pas encore lus : les bars et les clubs, les billetteries privées. Un événement absent ici peut quand même avoir lieu (voir le site ou la " +
   "page Facebook de la salle ou de la mairie). Chaque événement dit qui le publie, renvoie à sa page et dit quand rundata.re l'a lu.";
+/** The agendas and halls' programmes read, and the communes whose mairie's news is read for its events (COUVERTURE_OUTIL). */
+export const AGENDAS_LUS = towns.length + halls.length;
+export const MAIRIES_ACTUALITES = new Set(partial.map((x) => x.commune)).size;
+/**
+ * The tool's coverage, lighter than COUVERTURE (2 KB in every answer, 5/11/2026): the numbers, the page that lists them,
+ * and its last sentences word for word. The sites not taken stay in the answer's non_repris.
+ */
+export const COUVERTURE_OUTIL =
+  `${AGENDAS_LUS} agendas et programmes de salles lus, et les actualités de ${MAIRIES_ACTUALITES} mairies : la liste, les communes sans agenda lu et les sites non repris sur https://rundata.re/evenements#h-couv. ` +
+  "Pas encore lus : les bars et les clubs, les billetteries privées. Un événement absent ici peut quand même avoir lieu (voir le site ou la " +
+  "page Facebook de la salle ou de la mairie). Chaque événement dit qui le publie, renvoie à sa page et dit quand rundata.re l'a lu.";
 /** The cinemas' showtimes are on their own sites, not here. */
 export const CINEMAS = [
   { nom: "Ciné Cambaie (Saint-Paul), Ciné Grand Sud (Saint-Pierre), Ciné Lacaze (Saint-Denis), Le Plaza (Saint-Louis)", lien: "https://cine-reunion.com/" },
@@ -737,7 +758,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const p = periode(quand, now);
   const what = matcher(quoi);
   // The communes' sports programmes go to the sport tool (src.programmesSportifs).
-  const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit })) : [])), news?.value.infos, now)
+  const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit, source_agenda: g.agenda.source })) : [])), news?.value.infos, now)
     .map((e) => ({ e, seances: inPeriod(e, p, now) }))
     .filter((x) => x.seances.length && (!what || what.test(x.e)))
     .sort((x, y) => Number(spanDays(x.seances[0]) > LONG_DAYS) - Number(spanDays(y.seances[0]) > LONG_DAYS) ||
@@ -774,15 +795,20 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   ].filter(Boolean).join("\u00a0; ") + ".";
 
   const used = [...new Set(got.filter((g) => g.value && (!DE_LA_BASE.has(g.agenda.id) || g.value.value.length)).map((g) => g.agenda.source))] as SourceInfo[];
+  const listedEvents = n ? mine.slice(0, listed) : [];
+  const elsewhere = commune && !n && all.length ? all.slice(0, ELSEWHERE_MAX) : [];
+  // The tool credits the agendas of the events it shows (every agenda read when it shows none: what « none » rests on).
+  const shownFrom = new Set([...listedEvents, ...elsewhere].map((x) => x.e.source_agenda).filter(Boolean));
+  const credited = place || !shownFrom.size ? used : used.filter((s) => shownFrom.has(s));
   return text({
     lieu: res && lieu ? placeBlock(lieu, res) : undefined,
     resume,
     periode: { du: dayText(p.du), au: dayText(p.au), soir: p.soir || undefined },
     nombre: n,
     quand_non_compris: p.incompris ? `« ${quand} » n'a pas été compris : les deux semaines qui viennent sont données. Dire « aujourd_hui », « ce_soir », « demain », « ce_week_end », « cette_semaine », un jour (« samedi ») ou une date (« 2026-10-31 »).` : undefined,
-    evenements: n ? mine.slice(0, listed).map((x) => eventRow(x.e, x.seances, place)) : undefined,
+    evenements: n ? listedEvents.map((x) => eventRow(x.e, x.seances, place, !place)) : undefined,
     autres: n > listed ? `${n - listed} autres événements : préciser le lieu, le jour ou le genre (quoi).` : undefined,
-    ailleurs_sur_l_ile: commune && !n && all.length ? all.slice(0, ELSEWHERE_MAX).map((x) => eventRow(x.e, x.seances)) : undefined,
+    ailleurs_sur_l_ile: elsewhere.length ? elsewhere.map((x) => eventRow(x.e, x.seances, false, !place)) : undefined,
     marches_reguliers: market ? MARCHES_REGULIERS : undefined,
     cinemas: what?.nom?.includes("cinéma") || /cin[ée]|film/i.test(quoi ?? "") ? { seances: "Les séances des cinémas sont sur leurs sites :", salles: CINEMAS } : undefined,
     indisponible: failed.length ? failed : undefined,
@@ -791,9 +817,9 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     non_lus: unread.length ? unread.map((x) => `${x.nom} : ${x.etat}`) : undefined,
     // Where a commune's site is not read until it agrees: to be said with the answer.
     non_repris: nonRepris,
-    couverture: COUVERTURE,
+    couverture: place ? COUVERTURE : COUVERTURE_OUTIL,
     a_savoir: A_SAVOIR,
-    sources: credits(used),
+    sources: credits(credited),
     // For the pages only (`place`): when the oldest of the agendas served was read, the time /evenements says, as the
     // tool's fraicheur does, not the time its copy was built (04/11/2026: « lus à 14:05 » for agendas read at 13:09).
     lus_le: place ? oldestRead(got) : undefined,

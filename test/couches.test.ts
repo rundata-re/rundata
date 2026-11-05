@@ -188,8 +188,12 @@ describe("the figures of /carte's « En direct » band", () => {
   it("gives a point given with few decimals the precision it has", () => {
     // EZDrive, Saint-Louis: 0.9 km from its address, said « à quelques mètres près » before.
     expect(precisionDe(55.39, -21.29)).toBe("commune");
-    expect(precisionDe(55.446, -21.3213)).toBe("lieu");
+    expect(precisionDe(55.446, -21.321)).toBe("lieu");
     expect(precisionDe(55.39855, -21.29014)).toBe("adresse");
+    // Both coordinates are asked: one may end on a zero by chance (Freshmile, Saint-Pierre, given to 4 decimals; a
+    // point to 5 decimals on 55.45000).
+    expect(precisionDe(55.446, -21.3213)).toBe("adresse");
+    expect(precisionDe(55.45, -21.29014)).toBe("adresse");
     const ez = irve.STATIONS.find((s) => s.adresse.startsWith("2 Rue Benoite Boulard"))!;
     const layer = COUCHES.find((c) => c.id === "bornes")!;
     expect(layer).toBeTruthy();

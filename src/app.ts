@@ -117,12 +117,32 @@ export function failed(path: string, err: unknown): Response {
  * `record`: told of each MCP message and each page served (metrics.ts, usage.ts).
  */
 export async function handle(request: Request, cache: Cache, background: Background = () => {}, record: Recorder = () => {}): Promise<Response> {
+  // The team's scripts are not visitors: neither counted here nor by Cloudflare's Web Analytics (sansBalise).
+  if (!equipe(request.headers)) return answer(request, cache, background, record);
+  return sansBalise(await answer(request, cache, background, () => {}));
+}
+
+/**
+ * A page for the team, kept out of Cloudflare's Web Analytics: the beacon is written into every HTML page by
+ * Cloudflare's edge, after the Worker, unless the response says `no-transform`. The browsers of the team's checks
+ * otherwise counted as visits (666 loads of the beacon on 04/11/2026 between 13:15 and 14:00). `private`, so that no
+ * shared cache serves this copy without the beacon to a visitor; its max-age kept, and never `no-store`, which the
+ * daily check reads as a page served without its live block (bin/check-sources.ts).
+ */
+export function sansBalise(r: Response): Response {
+  if (!(r.headers.get("content-type") ?? "").startsWith("text/html")) return r;
+  const cc = (r.headers.get("cache-control") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  if (cc.includes("no-transform")) return r;
+  const headers = new Headers(r.headers);
+  headers.set("cache-control", [...cc.map((x) => (x === "public" ? "private" : x)), "no-transform"].join(", "));
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers });
+}
+
+async function answer(request: Request, cache: Cache, background: Background, record: Recorder): Promise<Response> {
   const url = new URL(request.url);
   // « /ig », « /ig/ » and « /IG » alike: typed by hand as often as clicked.
   const shortcut = SHORTCUTS[url.pathname.replace(/(.)\/$/, "$1").toLowerCase()];
   if (shortcut) return new Response(null, { status: 302, headers: { location: `/?ref=${shortcut}` } });
-  // The team's scripts are not visitors: not counted.
-  if (equipe(request.headers)) record = () => {};
   // What a page's browser tells the statistics (web/signaux.ts): a point each, never a page view.
   if (url.pathname === SIGNAL_PATH) return signal(request, record);
   // A browser opening the connector's address gets the page that explains it (web/connecteur.ts); the clients, the endpoint.

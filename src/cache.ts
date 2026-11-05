@@ -177,9 +177,9 @@ const MAX_BUNDLES = 8;
  * it uses. In the Worker every read or write of a shared store is a subrequest, and subrequests are limited.
  */
 export interface Bundle {
-  /** Whether the entry is there, however old. No I/O. */
+  /** Whether the entry is there, however old, unless stamped with another revision (`outdated`). No I/O. */
   has(key: string): boolean;
-  /** The entry and how long ago it was stored, in ms, however old. No I/O. */
+  /** The entry and how long ago it was stored, in ms, however old, unless stamped with another revision. No I/O. */
   peek(key: string): (CacheEntry & { ageMs: number }) | undefined;
   /** Stores `value` under `key` (written by `save`). */
   set(key: string, value: unknown): void;
@@ -333,15 +333,21 @@ export class Cache {
     }
     const s = state;
     let added = false;
+    // An entry is kept under `key|entry` for its revision (SOURCE_REVISION of the entry's own key, `sourceRevision`):
+    // one stamped otherwise than this code stamps it is not there for `has` and `peek`, and is read again by `get`
+    // (served while that read fails, as `Cache.get` does), as an entry outside a bundle.
+    const full = (k: string) => `${key}|${k}`;
+    const current = (k: string) => k in s.entries && !outdated(full(k), s.entries[k], this.version);
     return {
-      has: (k) => k in s.entries,
-      peek: (k) => (k in s.entries ? { ...s.entries[k], ageMs: this.now() - s.entries[k].fetchedAt } : undefined),
+      has: (k) => current(k),
+      peek: (k) => (current(k) ? { ...s.entries[k], ageMs: this.now() - s.entries[k].fetchedAt } : undefined),
       set: (k, value) => {
-        s.entries[k] = { value, fetchedAt: this.now() };
+        const version = stampOf(full(k), this.version);
+        s.entries[k] = { value, fetchedAt: this.now(), ...(version != null && { version }) };
         added = true;
       },
       get: async <T>(k: string, freshSeconds: number, load: () => Promise<T>) =>
-        this.noted(`${key}|${k}`, freshSeconds, await this.serve(`${key}|${k}`, s.entries[k], freshSeconds, load, async (e) => {
+        this.noted(full(k), freshSeconds, await this.serve(full(k), s.entries[k], freshSeconds, load, async (e) => {
           s.entries[k] = e;
           added = true;
         })),

@@ -90,5 +90,10 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   onf: 1,
 };
 
-/** The revision of the source whose entry is kept under `key`: its own, else its first part's. */
-export const sourceRevision = (key: string): number | undefined => SOURCE_REVISION[key] ?? SOURCE_REVISION[key.split(":")[0]];
+/** The revision of the source whose entry is kept under `key`: its own, else its first part's; for a bundle's entry, its entry's. */
+export const sourceRevision = (key: string): number | undefined => {
+  // An entry of a bundle (cache.ts `bundle`) is kept under « bundle|entry »: the entry's own key says its revision
+  // (« agendas|agenda:trois_bassins » is agenda:trois_bassins'), which « agendas|agenda » never matched (05/11/2026).
+  const own = key.slice(key.lastIndexOf("|") + 1);
+  return SOURCE_REVISION[own] ?? SOURCE_REVISION[own.split(":")[0]];
+};

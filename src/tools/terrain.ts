@@ -306,6 +306,25 @@ async function settle<T>(source: string, p: Promise<{ value: T }>): Promise<T | 
 
 const DOWN = "service momentanément indisponible : réessayer dans un instant";
 
+// Why a street's sales were not read (words validated on 05/11).
+const NON_RETROUVEE = "la voie n'a pas été retrouvée avec certitude dans DVF";
+const DVF_MUET = "DVF ne répond pas pour l'instant";
+
+/**
+ * The sales on the street asked: by its land registry code; or, for a street the address base names on its own, by its
+ * name, when no other street of the commune has that name in the address base, and the code DVF gives that name is no
+ * other street's there. null: the street not found for sure in DVF (nor its sales given); undefined: DVF did not answer.
+ */
+async function streetSalesOf(cache: Cache, voie: { nom: string; code?: string; insee: string }, fromYear: number, toYear: number) {
+  if (voie.code) return settle(terrain.SOURCES.dvfVoie.id, terrain.salesOnStreet(cache, voie.insee, { code: voie.code }, fromYear, toYear));
+  // One after the other, DVF's files not read for a name two streets share. The address base not answering leaves the
+  // street unsure as well.
+  if ((await settle(terrain.SOURCES.ban.id, terrain.homonymes(cache, voie.nom, voie.insee))) !== 1) return null;
+  const found = await settle(terrain.SOURCES.dvfVoie.id, terrain.salesOnStreet(cache, voie.insee, { nom: voie.nom }, fromYear, toYear));
+  if (!found) return found;
+  return (await settle(terrain.SOURCES.ban.id, terrain.codePris(cache, voie.insee, found.code))) === false ? found : null;
+}
+
 // The commune named after the last comma, or the commune of the quarter named there (« …, Bois de Nèfles »): only that
 // part, a street may carry the name of another commune (« rue de Saint-Denis, Saint-Paul »).
 export function communeOf(adresse: string): string | undefined {
@@ -323,8 +342,9 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   }
   // A street address goes to the national address base; a place name to the gazetteer first.
   let where: { label: string; lon: number; lat: number; precision: string; insee?: string } | null = null;
-  // The street asked, found in the address base with its land registry code: its own sales besides the area's.
-  let voie: { nom: string; code: string; insee: string } | undefined;
+  // The street asked, found in the address base: its own sales besides the area's, by its land registry code, or by its
+  // name for a street the address base names on its own.
+  let voie: { nom: string; code?: string; insee: string } | undefined;
   const place = resolvePlace(adresse);
   if (place?.correspondance === "coordonnees") {
     where = { label: `point ${place.lieu.nom}`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "coordonnées données" };
@@ -358,7 +378,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
       };
     }
     const code = a && street ? terrain.codeVoie(a.id) : undefined;
-    if (a && street && code) voie = { nom: street, code, insee: a.insee };
+    if (a && street) voie = { nom: street, insee: a.insee, ...(code ? { code } : {}) };
     if (a) where = { label: a.label, lon: a.lon, lat: a.lat, precision: a.type === "housenumber" ? "adresse exacte" : a.type === "street" ? "milieu de la rue" : "centre de la commune", insee: a.insee };
     else if (place) where = { label: `${place.lieu.nom} (${place.lieu.type}, ${place.lieu.commune})`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit", insee: INSEE[place.lieu.commune] };
   }
@@ -384,7 +404,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
     inseeP.then((c) => (c ? settle(terrain.SOURCES.georisques.id, terrain.catnat(cache, c)) : undefined)),
     settle(terrain.SOURCES.georisques.id, terrain.landslides(cache, lon, lat)),
     inseeP,
-    voie ? settle(terrain.SOURCES.dvfVoie.id, terrain.salesOnStreet(cache, voie.insee, voie.code, fromYear, year)) : undefined,
+    voie ? streetSalesOf(cache, voie, fromYear, year) : undefined,
   ]);
 
   const parts = [`${where.label} (${where.precision})`];
@@ -396,7 +416,10 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   const risks = ppr ? riskLine(ppr) : undefined;
   if (risks) parts.push(risks);
   const onStreet = voie && sv ? streetMarket(voie.nom, fromYear, sv.ventes) : undefined;
+  // Never « no sale » for a street not read: DVF may have some under another name, or DVF did not answer.
+  const notRead = voie && !sv ? (sv === null ? NON_RETROUVEE : DVF_MUET) : undefined;
   if (onStreet) parts.push(streetLine(onStreet));
+  else if (voie && notRead) parts.push(`${voie.nom} : ventes de la voie non lues, ${notRead}`);
   const area = m ? [prixMedian("maisons", m.maisons), prixMedian("appartements", m.appartements)].filter(Boolean) : [];
   if (area.length) parts.push(`${SECTEUR}, depuis ${fromYear} : ${area.join(", ")}`);
   const r = insee ? rents(insee) : undefined;
@@ -440,7 +463,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
           perimetre: "environ 600 m × 600 m autour du point",
           depuis: fromYear,
           ...m,
-          ...(voie ? { sur_la_voie: onStreet ?? DOWN } : {}),
+          ...(voie ? { sur_la_voie: onStreet ?? { voie: voie.nom, non_lues: notRead } } : {}),
           note: "Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.",
         }
       : DOWN,

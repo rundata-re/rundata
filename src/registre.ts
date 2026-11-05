@@ -747,8 +747,11 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   // Measured 26, before it read the list of the silent sites, as /volcan; 6 more for two releases' pages, as /volcan.
   volcan_seismes: { subrequests: 36, cpuMs: 90, file: "volcan", d1: SANS_REPONSE_D1 },
   // 24 measured, and the street's sales from the code: for a street not copied yet, one file a year of DVF géolocalisées
-  // (6, each redirected once to its storage) and about 10 ms to read them; copied 7 days.
-  fiche_terrain: { subrequests: 36, cpuMs: 80, file: "terrain", basis: "estimé" },
+  // (6, each redirected once to its storage) and about 10 ms to read them; copied 7 days. For a street the address base
+  // names on its own, 2 more to the address base: another street of that name in the commune, a street of the code
+  // found; and about 20 ms more to find its name in the files (Saint-Paul's 5 years, the first run of a process); each
+  // copied 7 days.
+  fiche_terrain: { subrequests: 38, cpuMs: 100, file: "terrain", basis: "estimé" },
   prevision_meteo: { subrequests: 20, cpuMs: 100, file: "prevision" },
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
   // 14, and 5 from the code for the corals' grid, as /mer.

@@ -119,13 +119,26 @@ describe("French typography on the pages", () => {
     expect(html).not.toMatch(/<meta name="description" content="[^"]* [:;?!][^"]*">/);
   });
 
-  it("takes a fraction of a millisecond on a page of the site", () => {
+  it("takes a fraction of a millisecond on a page of the site, and twice as long on twice the page", () => {
     const html = homePage(ORIGIN, null, NOW);
-    for (let i = 0; i < 20; i++) typo(html);
-    const t = performance.now();
-    for (let i = 0; i < 100; i++) typo(html);
-    // About 0.3 ms on a 120 kB page (a regular expression took twice as long): a tenfold margin for slower machines.
-    expect((performance.now() - t) / 100).toBeLessThan(3);
+    const twice = html + html;
+    for (let i = 0; i < 20; i++) typo(twice);
+    // The fastest of 15 batches of 10: other work on the machine (the whole suite in parallel) only ever adds time, so
+    // the minimum is the cost of typo itself, where a mean over one batch read 3.7 ms under load.
+    const fastest = (s: string) => {
+      let best = Infinity;
+      for (let b = 0; b < 15; b++) {
+        const t = performance.now();
+        for (let i = 0; i < 10; i++) typo(s);
+        best = Math.min(best, (performance.now() - t) / 10);
+      }
+      return best;
+    };
+    const one = fastest(html);
+    // From 0.3 ms to 1.6 ms on the 130 kB home page, depending on the machine (a regular expression took twice as long).
+    expect(one).toBeLessThan(3);
+    // Linear in the page's length: twice the page about twice the time (a quadratic pass would take four times).
+    expect(fastest(twice) / one).toBeLessThan(3);
   });
 });
 

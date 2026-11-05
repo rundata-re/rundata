@@ -3,6 +3,7 @@ import type { Cached } from "../src/cache.js";
 import type * as mf from "../src/providers/vigilance.js";
 import type { CoupuresAnswer, RandonneesAnswer, VolcanAnswer } from "../src/web/data.js";
 import { pageOf } from "../src/web/places.js";
+import { communeHikes } from "../src/web/liens.js";
 import { communeRss, rssItems, rssLink } from "../src/web/rss.js";
 
 const NOW = new Date("2026-10-24T06:00:00Z");
@@ -83,6 +84,16 @@ describe("a commune's RSS feed", () => {
     const items = rssItems(CILAOS, { randonnees }, NOW);
     expect(items).toEqual([{ title: "Sentier fermé : Bord Salazie", description: "Cause : Dangers majeurs, sentier dégradé. Précision de l'ONF : Réouverture 2026. D'après la carte des sentiers de l'ONF La Réunion.", path: "/sentiers/bord-salazie", guid: "sentier/Bord Salazie/Dangers majeurs, sentier dégradé" }]);
     expect(rssItems(SAINT_PAUL, { randonnees }, NOW)).toEqual([]);
+  });
+
+  it("reads a copy built before its trails had all their communes, by their first section's commune (feed and tile)", () => {
+    // A copy of revision 14, as five commune pages and feeds were served after #786 (05/11/2026): `commune` only.
+    const old = copy({ ...randonnees.value, secteurs: randonnees.value.secteurs.map((z) => ({ ...z, sentiers: z.sentiers.map(({ communes: _, ...t }) => t) })) } as unknown as RandonneesAnswer);
+    expect(rssItems(CILAOS, { randonnees: old }, NOW)).toEqual(rssItems(CILAOS, { randonnees }, NOW));
+    expect(rssItems(SAINT_PAUL, { randonnees: old }, NOW)).toEqual([]);
+    expect(communeHikes(CILAOS, old, NOW)!.live).toEqual(communeHikes(CILAOS, randonnees, NOW)!.live);
+    expect(communeHikes(CILAOS, old, NOW)!.live!.valeur).toBe("1 sentier fermé");
+    expect(communeHikes(SAINT_PAUL, old, NOW)).toBeUndefined();
   });
 
   it("has the volcano only above « Vigilance »", () => {

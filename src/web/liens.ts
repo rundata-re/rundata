@@ -126,8 +126,9 @@ export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | nul
   const href = sector ? `/randonnees/${sector.slug}` : "/randonnees";
   if (!hikes) return { href };
   // Its ONF trails as the tool counts them: every trail that runs through it, without those out of the ONF's hands or
-  // without a state, which have no state to give.
-  const trails = hikes.value.secteurs.flatMap((z) => z.sentiers).filter((t) => t.communes.includes(p.nom) && t.etat !== "inconnu");
+  // without a state, which have no state to give. A copy built before #786 has no `communes`, only its first section's
+  // `commune` (revisions.ts RENDU_LISIBLE no longer serves it): read as before, never a throw.
+  const trails = hikes.value.secteurs.flatMap((z) => z.sentiers).filter((t) => (t.communes ?? [t.commune]).includes(p.nom) && t.etat !== "inconnu");
   const fires = hikes.value.feux?.detections.filter((d) => d.commune === p.nom) ?? [];
   const burning = fires.length ? `${esc(fire.tileLine(fires, now))} · <b>${esc(fire.URGENCE)}</b>` : "";
   const foot = burning ? `<a href="/feux">Voir la carte des feux →</a>` : undefined;

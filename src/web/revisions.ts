@@ -50,6 +50,19 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   volcan: 13,
 };
 
+/**
+ * The oldest revision of a family whose copy its code can still read (cache.ts, `unreadable`). A copy of another
+ * revision is served until its build is done (`outdated`), and while that build fails or is too slow for the view: the
+ * code that reads it must then accept the shape an older build gave it. A copy stamped below its family's floor has a
+ * shape the code no longer reads: it is never served, and the page is built as if it had none. Set the floor in the PR
+ * that makes the code unable to read the copies of before, rather than CACHE_FORMAT, which builds every family again.
+ */
+export const RENDU_LISIBLE: Readonly<Record<string, number>> = {
+  // Each trail with all its communes (`communes`, #786): read by the communes' tiles and feeds, whose copies of
+  // revision 14 broke five commune pages and feeds after that deploy (05/11/2026).
+  randonnees: 15,
+};
+
 /** `web:lieu:le-port` → `lieu`. */
 export const familyOf = (key: string) => key.slice("web:".length).split(":")[0];
 

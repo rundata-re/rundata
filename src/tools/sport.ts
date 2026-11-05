@@ -5,6 +5,7 @@ import { type Fil, type Info, LUS, SOURCES as ACTU } from "../providers/actualit
 import { httpUrl, versBilletterie } from "../http.js";
 import { type Agenda, AGENDAS, type Evenement, LIGUE_VOLLEY, type MatchLigue, LISIBLES, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
 import { autorisee, nonAutorisee } from "../providers/autorisations.js";
+import * as ffck from "../providers/ffck.js";
 import * as src from "../providers/sport.js";
 import * as avis from "../providers/sport-avis.js";
 import { type Club, clubOf, clubsNamed, type ClubSport, zoneOf } from "../sport/clubs.js";
@@ -15,10 +16,10 @@ import { mentionLa1ere, mentionSports } from "./non-repris.js";
 import { injoignable } from "./injoignable.js";
 import { rienTrouve } from "../vide.js";
 
-export type Sport = "grand_raid" | "handball" | "volley" | "beach_volley" | "basket" | "voile" | "golf" | "sport_auto" | "football";
+export type Sport = "grand_raid" | "handball" | "volley" | "beach_volley" | "basket" | "voile" | "golf" | "sport_auto" | "canoe_kayak" | "football";
 export type Quand = "aujourd_hui" | "demain" | "samedi" | "dimanche" | "ce_week_end" | "a_venir" | "resultats";
 
-export const SPORTS: Sport[] = ["grand_raid", "handball", "volley", "beach_volley", "basket", "voile", "golf", "sport_auto", "football"];
+export const SPORTS: Sport[] = ["grand_raid", "handball", "volley", "beach_volley", "basket", "voile", "golf", "sport_auto", "canoe_kayak", "football"];
 export const QUANDS: Quand[] = ["aujourd_hui", "demain", "samedi", "dimanche", "ce_week_end", "a_venir", "resultats"];
 const NAMES: Record<Sport, string> = {
   grand_raid: "Grand Raid",
@@ -29,10 +30,11 @@ const NAMES: Record<Sport, string> = {
   voile: "voile",
   golf: "golf",
   sport_auto: "sport automobile",
+  canoe_kayak: "canoë-kayak et va'a",
   football: "football",
 };
 // The sports read from a federation's site, by the key of src/providers/autorisations.ts.
-const FEDERATION: Partial<Record<Sport, string>> = { voile: "ffvoile", golf: "ffgolf" };
+const FEDERATION: Partial<Record<Sport, string>> = { voile: "ffvoile", golf: "ffgolf", canoe_kayak: "ffck" };
 // Sports with no official source read.
 const NEWS_ONLY: Partial<Record<Sport, string>> = {
   football: "Les résultats officiels du football (FFF, Ligue réunionnaise) ne sont pas lisibles par ce service.",
@@ -327,13 +329,14 @@ export async function gather(cache: Cache, sport: Sport | undefined, now: Date, 
   // The volley league's calendar: its events on the sand are the beach volley's (« beach »), the others the volley's.
   const league = want("volley") || want("beach_volley");
   const agendasWanted = league || clubsWanted;
-  const [grandRaid, handball, volley, voile, golfs, auto, notices, presse, agendas] = await Promise.all([
+  const [grandRaid, handball, volley, voile, golfs, auto, canoe, notices, presse, agendas] = await Promise.all([
     want("grand_raid") ? attempt(src.SOURCES.livetrail, () => src.grandRaid(cache, now)) : undefined,
     want("handball") ? attempt(src.SOURCES.ffhb, () => src.championnats(cache, "handball")) : undefined,
     want("volley") ? attempt(src.SOURCES.ffvb, () => src.championnats(cache, "volley")) : undefined,
     want("voile") ? attempt(src.SOURCES.ffvoile, () => src.regates(cache, now)) : undefined,
     want("golf") ? attempt(src.SOURCES.ffgolf, () => src.golf(cache, now)) : undefined,
     want("sport_auto") ? attempt(src.SOURCES.lsar, () => src.sportAuto(cache)) : undefined,
+    want("canoe_kayak") ? attempt(ffck.SOURCE, () => ffck.epreuves(cache)) : undefined,
     league ? attempt(avis.SOURCE, () => avis.avisLigue(cache, now)) : undefined,
     want("volley") || want("handball") || sport === "football" ? cache.peek<Fil>("actualites:fil").catch(() => undefined) : undefined,
     // The communes' programmes, of every sport, only when none is asked; the volley league's tournaments; the clubs'
@@ -353,6 +356,7 @@ export async function gather(cache: Cache, sport: Sport | undefined, now: Date, 
       voile,
       golfs,
       auto,
+      canoe,
       ligue ? { source: src.SOURCES.lrvb_tournois, value: { ...ligue, value: ligue.value.filter((e) => want(surSable(e) ? "beach_volley" : "volley")).flatMap(tournoi) } } : undefined,
     ].filter((x): x is Got<src.Epreuve[]> => !!x),
     clubs: ofSport?.length ? { source: src.SOURCES.sportsregions, value: { ...agendas!.clubs!, value: ofSport } } : undefined,

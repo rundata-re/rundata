@@ -42,7 +42,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.
   sentiers: 17,
-  sport: 21,
+  sport: 22,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,

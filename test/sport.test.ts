@@ -4,6 +4,7 @@ import { PAGE_BUDGET, count, counted } from "../src/budget.js";
 import { Cache, MemoryStore, type CacheEntry } from "../src/cache.js";
 import { parseRss, type Info } from "../src/providers/actualites.js";
 import { parseSportsregions } from "../src/providers/agenda.js";
+import * as ffck from "../src/providers/ffck.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
@@ -73,12 +74,18 @@ describe("sport", () => {
   let down: RegExp | undefined;
   beforeEach(() => {
     down = undefined;
+    // The FFCK's calendar comes from the state the Worker's scheduled event keeps (test/ffck.test.ts): read, with no
+    // event of the island this fortnight.
+    ffck.configure(async () => ({ listes: {}, candidates: [], fiches: {}, essai: NOW.getTime(), lu: NOW.getTime() - 3_600_000 }));
     vi.stubGlobal("fetch", async (url: string) => {
       const f = file(url);
       return f && !down?.test(url) ? new Response(fixture(f)) : new Response("", { status: 503 });
     });
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    ffck.configure(undefined);
+  });
 
   it("reads the dates of each source in local time", () => {
     expect(parisDay("2026-10-24T22:00:00Z")).toBe("2026-10-25");

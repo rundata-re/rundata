@@ -384,7 +384,7 @@ export async function championnats(cache: Cache, which: "handball" | "volley"): 
 // ---------------------------------------------------------------- events (sailing, golf, motor sport)
 
 export interface Epreuve {
-  sport: "voile" | "golf" | "sport auto" | "volley-ball" | "beach-volley";
+  sport: "voile" | "golf" | "sport auto" | "volley-ball" | "beach-volley" | "canoë-kayak";
   nom: string;
   /** YYYY-MM-DD, local. */
   debut: string;

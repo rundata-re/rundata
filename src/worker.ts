@@ -26,6 +26,7 @@ import * as marchesPublics from "./providers/marches-publics.js";
 import * as ovpfOcr from "./providers/ovpf-ocr.js";
 import * as meteofrance from "./providers/meteofrance.js";
 import * as candhis from "./providers/candhis.js";
+import * as ffck from "./providers/ffck.js";
 import * as radar from "./providers/radar.js";
 import * as vigilanceCarte from "./providers/vigilance-carte.js";
 import * as cmrsCarte from "./providers/cmrs-carte.js";
@@ -208,6 +209,11 @@ function setup(env: Env): Cache {
   candhis.configure(kv && env.CANDHIS_API_KEY, kv && (async () => {
     count();
     return (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
+  }));
+  // The FFCK's calendar, read by the scheduled event below and kept in KV (src/providers/ffck.ts).
+  ffck.configure(kv && (async () => {
+    count();
+    return (await kv.get(ffck.KEY, "json")) as ffck.Etat | null;
   }));
   // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart, its week
   // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
@@ -479,6 +485,20 @@ export default {
       }))
         .then(({ value, used, reads }) => console.log(`bouées Candhis : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("bouées Candhis : lecture impossible", why(err))));
+    }
+    // Every 30 minutes, at 25 and 55 past the hour: one page of the FFCK's calendar at most, a season's list once a day or
+    // the page of an event of the island, kept in KV (src/providers/ffck.ts), once the reads above are done.
+    if (kv && ffck.refreshDue(now)) {
+      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
+        count();
+        const before = (await kv.get(ffck.KEY, "json")) as ffck.Etat | null;
+        return ffck.refresh(before, async (etat) => {
+          count(1, true);
+          await kv.put(ffck.KEY, JSON.stringify(etat), { expirationTtl: ffck.TTL_SECONDS });
+        }, now);
+      }))
+        .then(({ value, used, reads }) => console.log(`calendrier FFCK : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
+        .catch((err) => console.error("calendrier FFCK : lecture impossible", why(err))));
     }
     // Every run: the radar's latest image added to its last 6 hours in KV when it is new, or a gap when it cannot be
     // read or is too old (web/pluie-retro.ts), once the reads above are done. One read of KV; one write when it changed.

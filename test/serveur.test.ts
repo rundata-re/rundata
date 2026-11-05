@@ -122,7 +122,8 @@ describe("the server's instructions", () => {
     // 42 575 the same day with the rules of approach of whales and dolphins in temperature_mer (a few words, its block cetaces).
     // 39 291 on 5/11/2026: the annotations without their second title nor idempotentHint (implied by readOnlyHint), the
     // descriptions without the fields the answers list and the producers they credit, sources_donnees' argument detail.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_291);
+    // 39 333 the same day with the canoë-kayak and va'a of the FFCK in sport (a few words, and its value canoe_kayak).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_333);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

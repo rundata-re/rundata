@@ -23,6 +23,7 @@ import { IDS as POINTS_DE_CHARGE, STATIONS as BORNES } from "./providers/irve.js
 import { GAUGES } from "./providers/maregraphes.js";
 import * as onf from "./providers/sentiers.js";
 import { SOURCES as SPORT_SOURCES } from "./providers/sport.js";
+import { SOURCE as FFCK } from "./providers/ffck.js";
 import { RANDONNEES } from "./providers/traces.js";
 import * as transit from "./providers/transit.js";
 import * as velos from "./providers/velos.js";
@@ -86,7 +87,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "eau", sources: ids("eau_potable", "eaux_baignade", "risque_requin"), cadence: { minutes: 6 * 60, de: "eau_potable" } },
   { categorie: "sentiers", sources: ids("onf_sentiers", "onf_aires_accueil", "osm_randonnees", "nasa_firms", "parc_national_canyons"), cadence: { minutes: 60, de: "onf_sentiers" } },
   // The Grand Raid's runners every 30 minutes (providers/sport.ts).
-  { categorie: "sport", sources: () => Object.values(SPORT_SOURCES).map((s) => s.id), cadence: { minutes: 30, de: "livetrail" } },
+  { categorie: "sport", sources: () => [...Object.values(SPORT_SOURCES).map((s) => s.id), FFCK.id], cadence: { minutes: 30, de: "livetrail" } },
   // Every agenda read (providers/agenda.ts), the scheduled ones every hour.
   { categorie: "agenda", sources: () => SOURCES_LUES.map((s) => s.id), cadence: { minutes: 60, de: "agenda_mairies" } },
   { categorie: "enfants", sources: ids("osm_enfants", "data_es", "basilic", "region_sentiers_marmailles", "caf_accueil_jeune_enfant") },

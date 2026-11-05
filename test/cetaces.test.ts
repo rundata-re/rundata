@@ -11,7 +11,7 @@ const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].tex
 const at = (iso: string) => new Date(iso);
 // The page escapes the apostrophes.
 const h = (t: string) => t.replace(/'/g, "&#39;");
-const ALL = () => [cetaces.T.surtitre, cetaces.T.titre, cetaces.T.pendant, cetaces.T.hors, cetaces.T.presence, cetaces.T.foi, cetaces.COMMENT_LE_DIRE, ...cetaces.REGLES.flatMap((r) => [r.regle, r.article]), ...cetaces.LIENS.map((l) => l.texte)];
+const ALL = () => [cetaces.T.surtitre, cetaces.T.titre, cetaces.T.pendant, cetaces.T.hors, cetaces.T.presence, cetaces.T.foi, cetaces.T.regles, cetaces.COMMENT_LE_DIRE, ...cetaces.REGLES.flatMap((r) => [r.regle, r.article]), ...cetaces.LIENS.map((l) => l.texte)];
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -49,7 +49,7 @@ describe("cétacés", () => {
     }
   });
 
-  it("gives temperature_mer a block « cetaces », read from nothing, credited to the DMSOI", async () => {
+  it("gives temperature_mer a short block « cetaces », read from nothing, credited to the DMSOI: the rules are on /mer", async () => {
     const asked: string[] = [];
     vi.stubGlobal("fetch", async (url: string) => {
       asked.push(String(url));
@@ -60,8 +60,11 @@ describe("cétacés", () => {
     const r = body(await temperatureMer(new Cache(undefined, () => now.getTime()), undefined, now));
     expect(r.cetaces.etat).toBe(cetaces.T.pendant);
     expect(r.cetaces.presence).toBe(cetaces.T.presence);
-    expect(r.cetaces.regles).toHaveLength(12);
-    expect(r.cetaces.textes.arrete_1098.lien).toBe(cetaces.PDF_1098);
+    expect(r.cetaces.regles).toBe(cetaces.T.regles);
+    expect(r.cetaces.regles).toMatch(/: https:\/\/rundata\.re\/mer#h-cetaces$/);
+    expect(r.cetaces.textes).toBeUndefined();
+    // The state, the warning and the link: under 600 bytes, where the twelve rules weighed 4,7 KB.
+    expect(new TextEncoder().encode(JSON.stringify(r.cetaces)).length).toBeLessThan(600);
     expect(r.cetaces.textes_lus_le).toBe("04/11/2026");
     // The day the decrees were read is not the date of the sea's measure.
     expect(r.cetaces.derniere_verification).toBeUndefined();

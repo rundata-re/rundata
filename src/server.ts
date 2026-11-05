@@ -107,7 +107,7 @@ import * as agendaSources from "./providers/agenda.js";
 import { autorisee } from "./providers/autorisations.js";
 import { SOURCE as CONNECTEURS_SOURCE } from "./providers/agenda-connecteurs.js";
 import { enLigne as connecteursEnLigne } from "./web/connecteurs-drapeau.js";
-import { agenda, COUVERTURE as AGENDA_COVERAGE, LISTED_OUTIL, MAIRIES_LUES, PROGRAMMES_SALLES } from "./tools/agenda.js";
+import { agenda, LISTED_OUTIL, MAIRIES_LUES, PROGRAMMES_SALLES } from "./tools/agenda.js";
 import * as traceSources from "./providers/traces.js";
 import * as actuSources from "./providers/actualites.js";
 import * as raaPrefecture from "./providers/raa.js";
@@ -127,7 +127,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.285";
+export const VERSION = "1.0.286";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -171,13 +171,16 @@ type Extra = { requestId?: string | number; requestInfo?: { headers?: Record<str
 
 // The three hints are said outright, destructiveHint too, though implied by readOnlyHint: the ChatGPT apps review asks
 // for them on every tool (test/serveur.test.ts checks it).
-export const SOURCES_COURT = "Réponse courte : les producteurs par licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
+export const SOURCES_COURT = "Réponse courte : le nombre de producteurs par licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
 
-/** Each licence once, with the producers whose sources it covers, the most used licence first. */
-export function parLicence(sources: { organisme: string; licence: string }[]): { licence: string; producteurs: string[] }[] {
+/**
+ * Each licence once, with the number of producers whose sources it covers, the most used licence first. Their names are
+ * in the answer with detail and on /chiffres#sources: they were 9 KB of a 27 KB answer (5/11/2026).
+ */
+export function parLicence(sources: { organisme: string; licence: string }[]): { licence: string; producteurs: number }[] {
   const by = new Map<string, Set<string>>();
   for (const x of sources) by.set(x.licence, (by.get(x.licence) ?? new Set()).add(x.organisme));
-  return [...by].map(([licence, p]) => ({ licence, producteurs: [...p].sort((a, b) => a.localeCompare(b, "fr")) })).sort((a, b) => b.producteurs.length - a.producteurs.length || a.licence.localeCompare(b.licence, "fr"));
+  return [...by].map(([licence, p]) => ({ licence, producteurs: p.size })).sort((a, b) => b.producteurs - a.producteurs || a.licence.localeCompare(b.licence, "fr"));
 }
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: true } as const;
@@ -1036,7 +1039,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Sources de données utilisées par ce serveur (organisme, licence, attribution à citer), " +
         "la liste à jour de tous les outils, les dernières nouveautés, et rundata.re en chiffres (sources, producteurs, licences, stations, défibrillateurs, sentiers). " +
         "Pour : « d'où viennent tes données ? », « combien de sources lit rundata.re ? », « c'est open data ? ». " +
-        "Réponse courte par défaut (les producteurs par licence)\u00a0; detail pour chaque source avec son attribution et son lien. " +
+        "Réponse courte par défaut (producteurs par licence)\u00a0; detail pour chaque source avec son attribution et son lien. " +
         `Liste du ${listeDu()}. / List of ${listeDu()}.`,
       inputSchema: {
         detail: z.boolean().optional().describe("true : la réponse complète."),
@@ -1061,8 +1064,10 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         // taking their information without their accord: not read (tools/non-repris.ts).
         non_reprises: [FICHE_LA1ERE, FICHE_REUNION_FR, ...fichesNonReprises()],
         lieux: GAZETTEER_ATTRIBUTION,
-        couverture: { meteo: weatherCoverage(), mer: SEA_COVERAGE, previsions: forecastCoverage(), evenements: AGENDA_COVERAGE },
-        chiffres: c,
+        // The agendas read are told by evenements, which answers on them.
+        couverture: { meteo: weatherCoverage(), mer: SEA_COVERAGE, previsions: forecastCoverage() },
+        // The producers of each domain are named on /chiffres and with detail; the short answer gives their domains only.
+        chiffres: args.detail === true ? c : { ...c, par_domaine: c.par_domaine.map(({ producteurs: _, ...d }) => d) },
         version: VERSION,
         // Every tool and the latest changes, for a client whose list of tools is older than the server.
         ...catalogue(),

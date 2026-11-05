@@ -486,9 +486,16 @@ export function parseLucDonat(html: string, now: Date): Evenement[] {
     const lien = abs("https://www.theatrelucdonat.re/", link);
     if (!lien) continue;
     const seance: Seance = { debut: `${dayOf(Number(m[1]), month, today)}T${hm(m[3], m[4])}` };
-    const same = shows.get(lien);
+    // A show given in two places (KiLLT, at the Médiathèque Centre-ville then at that of the 23e Km): an event per
+    // place, each with its own dates, never the first place for all (04/11/2026).
+    const key = `${lien}|${lieu}`;
+    const same = shows.get(key);
     if (same) same.seances.push(seance);
-    else shows.set(lien, event({ id: `lucdonat:${lien}`, titre, seances: [seance], lieu, commune: "Le Tampon", lien }, "Théâtre Luc Donat"));
+    else {
+      // Its first place keeps the id it had; another one is told apart by its place.
+      const elsewhere = [...shows.keys()].some((k) => k.startsWith(`${lien}|`));
+      shows.set(key, event({ id: elsewhere ? `lucdonat:${lien}:${lieu}` : `lucdonat:${lien}`, titre, seances: [seance], lieu, commune: "Le Tampon", lien }, "Théâtre Luc Donat"));
+    }
   }
   return [...shows.values()];
 }

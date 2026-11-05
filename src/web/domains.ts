@@ -2800,7 +2800,8 @@ const shortWhen = (q: string) =>
   q.startsWith("du ") ? q.replace(/^du \S+ (\S+) au \S+ (\S+)$/, "$1 → $2") : q.replace(/^(\S{3})\S* /, "$1. ").replace(" à ", ", ");
 
 function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? T : never, withScore: boolean): string {
-  const small = [r.competition, withScore ? shortWhen(r.quand) : "", r.lieu, r.detail && !withScore ? r.detail : ""].filter(Boolean).map((x) => esc(x!)).join(" · ");
+  // A date the volley league gives otherwise, said under the match (« La Ligue … annonce ce match le … »).
+  const small = [r.competition, withScore ? shortWhen(r.quand) : "", r.lieu, r.detail && !withScore ? r.detail : "", withScore ? "" : r.autre_date].filter(Boolean).map((x) => esc(x!)).join(" · ");
   const right = withScore
     ? `<span class="score">${esc(r.score ?? "")}</span>`
     : r.etat === "annulée" || r.etat === "reportée" ? `<span class="q-mauvaise">${esc(r.etat)}</span>` : `<span class="q-none">${esc(shortWhen(r.quand))}</span>`;
@@ -3379,7 +3380,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
     : "";
   // The map of tonight, tomorrow and the weekend (evenements-carte.ts): it filters, so it is in the content, under the band.
   const carte = d && data
-    ? eventsMap(d.evenements ?? [], d.ce_week_end, GENRES, now, esc(`Annonces des salles, des mairies et des offices de tourisme, d'après les agendas lus ${readAt(data.fetchedAt, now).a}.`))
+    ? eventsMap(d.evenements ?? [], d.ce_week_end, GENRES, now, esc(`Annonces des salles, des mairies et des offices de tourisme, d'après les agendas lus ${readAt(d.lus_le ? new Date(d.lus_le) : data.fetchedAt, now).a}.`))
     : "";
 
   // The days after tomorrow folded when the list is long (FOLD_ROWS); today and tomorrow open, and folding with a tap.

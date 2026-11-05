@@ -1224,6 +1224,8 @@ export interface AgendaAnswer {
   a_savoir: string;
   sources: Credit[];
   ce_week_end: EventRow[];
+  /** When the oldest of the agendas served was read, ISO (tools/agenda.ts `oldestRead`). */
+  lus_le?: string;
 }
 
 // The page lists every event of the two weeks, the connector at most 40 an answer.

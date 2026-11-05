@@ -101,10 +101,13 @@ describe("halls' programmes", () => {
 
   it("reads the Théâtre Luc Donat without its school performances", () => {
     const list = parseLucDonat(iso88591("luc-donat.html"), NOW);
-    const killt = list.find((e) => e.titre.startsWith("KiLLT"));
-    expect(killt).toMatchObject({ lieu: "Médiathèque Centre-ville", commune: "Le Tampon" });
-    // 9:30 and 13:30 are « Scolaire »: only the public ones.
-    expect(killt?.seances.map((s) => s.debut)).toEqual(["2026-11-10T18:00", "2026-11-25T17:00"]);
+    const killt = list.filter((e) => e.titre.startsWith("KiLLT"));
+    // 9:30 and 13:30 are « Scolaire »: only the public ones, each at its own place (04/11/2026: both said at the first).
+    expect(killt.map((e) => [e.lieu, e.commune, e.seances.map((s) => s.debut)])).toEqual([
+      ["Médiathèque Centre-ville", "Le Tampon", ["2026-11-10T18:00"]],
+      ["Médiathèque du 23e Km", "Le Tampon", ["2026-11-25T17:00"]],
+    ]);
+    expect(new Set(killt.map((e) => e.id)).size).toBe(2);
     expect(list.find((e) => e.titre === "Le journal des voleurs")?.seances).toEqual([{ debut: "2026-11-07T20:00" }]);
     // Only what its agreement covers: no text, no picture, no booking link.
     expect(list.every((e) => !e.description && !e.image && !e.billetterie)).toBe(true);

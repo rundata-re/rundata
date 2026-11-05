@@ -14,14 +14,14 @@
  * is settled. A change that makes the new code unable to read an old copy raises `CACHE_FORMAT` instead (cache.ts).
  */
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
-  actualites: 14,
-  agenda: 29,
+  actualites: 15,
+  agenda: 30,
   air: 11,
   bornes: 4,
   bus: 8,
   calendrier: 4,
   chiffres: 22,
-  commune: 17,
+  commune: 18,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 12,
   courant: 6,
@@ -42,7 +42,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.
   sentiers: 17,
-  sport: 20,
+  sport: 21,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,
@@ -75,12 +75,16 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Read again with its written agreement of 28/10/2026, without the price and the sentence an older entry kept.
   "agenda:bras_panon": 2,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
-  "agenda:lrvb": 2,
+  // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
+  "agenda:lrvb": 3,
   "agenda:saint_paul": 2,
   "agenda:le_port": 2,
   "agenda:trois_bassins": 2,
   "agenda:sainte_marie": 2,
-  "agenda:sechoir": 2,
+  // A show without a venue in its field placed where its text says (lieuDit, « Bouches Cousues »).
+  "agenda:sechoir": 3,
+  // Two sessions of a show at two venues kept as two events (KiLLT).
+  "agenda:luc_donat": 2,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without

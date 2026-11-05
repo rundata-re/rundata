@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
 import { agenda, COUVERTURE, type EventRow, LISTED_OUTIL, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
@@ -127,6 +127,33 @@ describe("agenda", () => {
     expect(e.seances).toEqual([{ debut: "2026-10-27T08:00", fin: "2026-10-27T12:00" }]);
     expect(communeOf("TROIS BASSINS")).toBe("Les Trois-Bassins");
     expect(communeOf("St Paul")).toBe("Saint-Paul");
+  });
+
+  it("places a show without a venue in its field where its text says, not at the site's own hall", () => {
+    // Le Séchoir's evening session of « Bouches Cousues », 05/11/2026: no venue in the API, the Théâtre des Sables in the text.
+    const read = parseTribe(JSON.parse(fixture("sechoir.json")), "Le Séchoir", "Saint-Leu", "Le Séchoir");
+    const evening = read.find((e) => /BOUCHES COUSUES/i.test(e.titre) && e.seances[0].debut.endsWith("T20:00"))!;
+    expect(evening).toMatchObject({ lieu: "Théâtre des Sables", commune: "L'Étang-Salé" });
+    // A venue in its field is kept (Le K, Saint-Leu).
+    expect(read.filter((e) => e.lieu?.startsWith("Le K"))).not.toHaveLength(0);
+    expect(read.filter((e) => e.lieu?.startsWith("Le K")).every((e) => e.commune === "Saint-Leu")).toBe(true);
+    expect(lieuDit("Jeudi 05 novanm à 20h Théâtre des Sables (L’Étang-Salé) 1h Tout public")).toEqual({ lieu: "Théâtre des Sables", commune: "L'Étang-Salé" });
+    expect(lieuDit("Concert à 20h au kiosque (gratuit)")).toBeUndefined();
+    expect(lieuDit("Un spectacle (L'Étang-Salé) à voir")).toBeUndefined();
+  });
+
+  it("reads the matches the volley league's weekend text lists, each under its pool, and none from another text", () => {
+    // The league's championships of 06-07/11/2026 (one event, no organizer nor venue).
+    const [e] = parseTribe(JSON.parse(fixture("lrvb_championnats.json")), LIGUE_VOLLEY.nom, undefined);
+    expect(e.matchs).toHaveLength(22);
+    expect(e.matchs).toContainEqual({ poule: "R1F", date: "2026-11-06T20:30", domicile: "TGV", exterieur: "VBC SD", gymnase: "12 ÈME KM" });
+    expect(e.matchs).toContainEqual({ poule: "R1F", date: "2026-11-07T20:30", domicile: "VBC ST LEU", exterieur: "RCO", gymnase: "CENTRE VILLE" });
+    expect(new Set(e.matchs!.map((m) => m.poule)).size).toBeGreaterThan(1);
+    // A match before any pool, and another event's text: none.
+    expect(matchsLigue("Samedi 07/11/26 à 20:30 — VBC ST LEU // RCO au gymnase: CENTRE VILLE")).toEqual([]);
+    expect(matchsLigue("Concert du King, vendredi 06/11/26 à 20:30 au kiosque")).toEqual([]);
+    const other = parseTribe(JSON.parse(fixture("sechoir.json")), "Le Séchoir", "Saint-Leu", "Le Séchoir");
+    expect(other.every((x) => x.matchs === undefined)).toBe(true);
   });
 
   it("keeps a venue's position when a WordPress agenda gives one, and only the pages' copies carry it", async () => {
@@ -1097,6 +1124,18 @@ describe("agenda", () => {
     expect(said).toMatch(/<p class="np">Les mentions légales de reunion\.fr[^<]*https:\/\/www\.reunion\.fr\/organisez\/actualites-de-l-ile\/agenda\//);
     expect(CSS).toContain(".np{overflow-wrap:anywhere}");
     expect(html.match(/<meta name="description" content="([^"]*)">/)![1]).not.toContain("reunion.fr");
+    // The time the agendas were read, not the copy's: read at 08:00, the copy built again at 08:50 says 08:00.
+    let t = NOW.getTime();
+    const clocked = new Cache(new MemoryStore(), () => t);
+    await buildAgenda(clocked, NOW);
+    t += 50 * 60_000;
+    const again = await buildAgenda(clocked, new Date(t));
+    expect(again.lus_le).toBe(NOW.toISOString());
+    const shown = agendaPage("https://rundata.re", { value: again, fetchedAt: new Date(t), stale: false }, new Date(t));
+    expect(shown).toContain("d&#39;après les agendas lus le 24/10 à 08:00.");
+    expect(shown).not.toContain("agendas lus le 24/10 à 08:50");
+    // Not in the tool's answer.
+    expect(body(await agenda(cache(), undefined, undefined, undefined, NOW)).lus_le).toBeUndefined();
     // A copy built before: its events and its credit left out.
     expect(repris({ publie_par: "reunion.fr" })).toBe(false);
     expect(sourcesServies([{ source: "Agenda de reunion.fr, site officiel du tourisme de La Réunion" }])).toEqual([]);

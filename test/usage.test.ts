@@ -218,23 +218,25 @@ describe("Page views and the data point", () => {
     expect(audience(new Headers({ "user-agent": `${android} rundata-interne`, ...browser }), META_ASN)).toBe("interne");
   });
 
-  it("counts a browser from Amazon's cloud in the United States as a probable robot, and a person elsewhere", () => {
+  it("counts a browser from a cloud network as a probable robot, in any country", () => {
     // As on 30/10/2026 after the 11:30 Facebook post: Meta's checker, Chrome on Windows 10, from AS16509.
     const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
     const h = new Headers({ "user-agent": ua, "accept-language": "en-US,en;q=0.9", "sec-fetch-mode": "navigate", referer: "https://www.facebook.com/" });
-    expect(HEBERGEURS).toEqual([16509, 14618]);
-    expect([visitor(ua, 16509), audience(h, 16509, "US")]).toEqual(["navigateur", "robot probable"]);
-    expect([visitor(ua, 14618), audience(h, 14618, "US")]).toEqual(["navigateur", "robot probable"]);
-    // A home network stays a person (AS37002, Réunicable), in La Réunion or in the United States.
-    expect(audience(h, 37002, "RE")).toBe("humain");
-    expect(audience(h, 37002, "US")).toBe("humain");
-    // Amazon's cloud outside the United States: a person, as the visit from France of 28/10 (a VPN or a hosted browser).
+    expect(HEBERGEURS).toEqual([16509, 14618, 45102]);
+    expect([visitor(ua, 16509), audience(h, 16509)]).toEqual(["navigateur", "robot probable"]);
+    expect([visitor(ua, 14618), audience(h, 14618)]).toEqual(["navigateur", "robot probable"]);
+    // Amazon's cloud outside the United States too, as the visit from France of 28/10 (a VPN or a hosted browser).
     const fr = new Headers({ "user-agent": ua, "accept-language": "fr-FR,fr;q=0.9", "sec-fetch-mode": "navigate", referer: "https://www.weezevent.com/" });
-    expect(audience(fr, 16509, "FR")).toBe("humain");
-    expect(audience(fr, 16509)).toBe("humain");
+    expect(audience(fr, 16509)).toBe("robot probable");
+    // As on 04/11/2026: Chrome from Alibaba's cloud in Singapore, in English, without a referer.
+    const sg = new Headers({ "user-agent": ua, "accept-language": "en-US,en;q=0.9", "sec-fetch-mode": "navigate" });
+    expect([visitor(ua, 45102), audience(sg, 45102)]).toEqual(["navigateur", "robot probable"]);
+    // A home network stays a person (AS37002, Réunicable), and so does a browser whose network is unknown.
+    expect(audience(h, 37002)).toBe("humain");
+    expect(audience(fr)).toBe("humain");
     // The team and Meta's network keep their answer.
-    expect(audience(new Headers({ "user-agent": `${ua} rundata-interne` }), 16509, "US")).toBe("interne");
-    expect(audience(h, META_ASN, "US")).toBe("robot");
+    expect(audience(new Headers({ "user-agent": `${ua} rundata-interne` }), 16509)).toBe("interne");
+    expect(audience(h, META_ASN)).toBe("robot");
   });
 
   it("writes the team's visits « interne »: its scripts, its marked phones and the address that marks them", () => {

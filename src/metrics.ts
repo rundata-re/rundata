@@ -96,14 +96,18 @@ const AGENTS: [RegExp, string][] = [
 export const META_ASN = 32934;
 
 /**
- * Amazon's cloud networks (AWS: AS16509, AS14618). On 30/10/2026, after #546, the 4 « humains » from the United States
- * still left on ref:fb* after the 11:30 Facebook post (and one on ref:threads) came from AS16509, with the same Chrome,
- * English, fbclid and seconds as Meta's checker; over 27-30/10, 35 of the 43 « humain » page views from these networks
- * were that shape. Nothing proves they are Meta's: a browser from these networks in the United States is « robot
- * probable », not « Meta ». Outside the United States it stays a person (28/10, a visit from France on AS16509, from
- * weezevent.com, reading two pages: a VPN or a hosted browser). No other network without proof in the logs.
+ * Cloud networks whose browsers are « robot probable » whatever their country, with the proof found in the logs:
+ * - Amazon's (AWS: AS16509, AS14618). On 30/10/2026, after #546, the 4 « humains » from the United States still left on
+ *   ref:fb* after the 11:30 Facebook post (and one on ref:threads) came from AS16509, with the same Chrome, English,
+ *   fbclid and seconds as Meta's checker; over 27-30/10, 35 of the 43 « humain » page views from these networks were
+ *   that shape. Nothing proves they are Meta's: they are « robot probable », not « Meta ».
+ * - Alibaba's (AS45102). On 04/11/2026, a Chrome from Singapore, in English, without a referer, asked about 9 000 trips
+ *   that robots.txt forbids (/bus/trajet/…), counted as 8 816 « humain » visits.
+ * A person behind a VPN of these networks is counted with them; over 22/10-05/11, one browser request from AWS out of 614
+ * came from outside the United States. No other network without proof in the logs. They are also refused what robots.txt
+ * forbids every robot, unless they come from a page of the site (robots.ts).
  */
-export const HEBERGEURS = [16509, 14618];
+export const HEBERGEURS = [16509, 14618, 45102];
 
 /** The visitor and the audience of the team's own visits, which the figures leave out (teamVisit). */
 export const TEAM = "interne";
@@ -158,16 +162,16 @@ const ASSISTANTS = new Set(["ChatGPT", "ChatGPT (connecteur)", "Claude", "Perple
  * Who a page view is for: « humain », « assistant » (an AI fetching the page for someone), « robot » (a declared crawler
  * or a script), or « robot probable »: a browser's User-Agent without what every current browser sends with a page
  * (a preferred language and the sec-fetch-mode header), the mark of a script dressed as Chrome, or a browser from a
- * cloud network in the United States (`asn`, `country`: request.cf, HEBERGEURS).
+ * cloud network (`asn`: request.cf.asn, HEBERGEURS).
  */
-export function audience(headers: Headers, asn?: number, country?: string): string {
+export function audience(headers: Headers, asn?: number): string {
   const ua = headers.get("user-agent") ?? "";
   const who = visitor(ua, asn);
   if (who === TEAM) return TEAM;
   if (ASSISTANTS.has(who)) return "assistant";
   if (who !== "navigateur") return "robot";
   if (/Headless|Lighthouse|PageSpeed|PTST|Chrome-Lighthouse/i.test(ua)) return "robot";
-  if (asn !== undefined && HEBERGEURS.includes(asn) && country === "US") return "robot probable";
+  if (asn !== undefined && HEBERGEURS.includes(asn)) return "robot probable";
   return headers.has("accept-language") && headers.has("sec-fetch-mode") ? "humain" : "robot probable";
 }
 

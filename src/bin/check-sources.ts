@@ -180,28 +180,28 @@ export const TOOLS: ToolCheck[] = [
 
 /**
  * How big each answer may grow, in bytes of its text: the whole answer enters the model's context. Set on the sizes
- * of 26/10/2026 (rundata.re 0.203.17) plus a quarter, 10 000 at least, rounded up; lowered when an answer is made
- * lighter. None for the vigilance and the cyclones: their length follows the alert in force, and a long answer during
- * a cyclone is what it must be.
+ * read on rundata.re on 5/11/2026 (1.0.242 to 1.0.248, the check's own arguments) plus a tenth, rounded up to 500;
+ * lowered each time an answer is made lighter, so that it cannot grow back unseen. None for the vigilance and the
+ * cyclones: their length follows the alert in force, and a long answer during a cyclone is what it must be.
  */
 export const MAX_BYTES: Record<string, number> = {
-  volcan_seismes: 36_000, // 28 460
-  "meteo_actuelle (Saint-Denis)": 10_000, // 6 166
-  "prevision_meteo (Saint-Denis)": 16_000, // 12 253
-  "temperature_mer (Saint-Gilles)": 10_000, // 7 552
-  qualite_air: 10_000, // 4 325
-  electricite: 10_000, // 6 940
-  crues_rivieres: 24_000, // 19 049
-  "maree (Saint-Pierre)": 10_000, // 2 922
-  "transports (gare de Saint-Denis)": 10_000, // 5 300
-  "actualites (routes)": 10_000, // 7 540
-  carburants: 10_000, // 2 976
-  coupures_eau: 17_000, // 13 077
-  sources_donnees: 62_000, // 49 130
-  "sentiers_randonnee (Mafate)": 34_000, // 26 787
-  sport: 34_000, // 26 842
-  evenements: 43_000, // 33 818
-  "resume_du_jour (Saint-Paul)": 26_000, // 20 569
+  volcan_seismes: 11_000, // 9 644
+  "meteo_actuelle (Saint-Denis)": 6_500, // 5 822
+  "prevision_meteo (Saint-Denis)": 13_000, // 11 410
+  "temperature_mer (Saint-Gilles)": 12_000, // 14 827, then 10 671 with the whales' rules on /mer only
+  qualite_air: 8_500, // 7 589
+  electricite: 5_500, // 4 933
+  crues_rivieres: 12_000, // 10 651
+  "maree (Saint-Pierre)": 3_000, // 2 579
+  "transports (gare de Saint-Denis)": 6_500, // 5 746
+  "actualites (routes)": 10_500, // 9 373
+  carburants: 3_000, // 2 558
+  coupures_eau: 12_500, // 11 007
+  sources_donnees: 30_500, // 27 508
+  "sentiers_randonnee (Mafate)": 12_500, // 11 305
+  sport: 24_500, // 22 151
+  evenements: 25_500, // 22 750
+  "resume_du_jour (Saint-Paul)": 9_500, // 8 454
 };
 
 const ko = (bytes: number) => `${(bytes / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}\u00a0Ko`;

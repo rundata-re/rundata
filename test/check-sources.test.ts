@@ -104,11 +104,21 @@ describe("the daily check of the sources", () => {
     expect(Object.keys(MAX_BYTES).filter((k) => !TOOLS.some((c) => c.point === k))).toEqual([]);
     expect(TOOLS.filter((c) => !(c.point in MAX_BYTES)).map((c) => c.point)).toEqual(["vigilance_meteo", "cyclones"]);
     const big = { resume: "x".repeat(40_000) };
-    expect(motifs("volcan_seismes", big)).toContain("réponse de 40\u00a0Ko, au-delà de 36\u00a0Ko");
-    expect(motifs("volcan_seismes", { resume: "x".repeat(30_000) }).some((m) => m.startsWith("réponse de"))).toBe(false);
+    expect(motifs("volcan_seismes", big)).toContain("réponse de 40\u00a0Ko, au-delà de 11\u00a0Ko");
+    expect(motifs("volcan_seismes", { resume: "x".repeat(10_000) }).some((m) => m.startsWith("réponse de"))).toBe(false);
     // Counted in bytes, as it travels: an accented letter weighs two.
     expect(motifs("electricite", { resume: "é".repeat(5_500) }).some((m) => m.startsWith("réponse de"))).toBe(true);
     expect(motifs("cyclones", big)).toEqual([]);
+  });
+
+  it("holds each answer to its own cap: at it, nothing; one byte over, the problem", () => {
+    for (const [point, max] of Object.entries(MAX_BYTES)) {
+      // {"resume":""} is 13 bytes around the text.
+      const at = motifs(point, { resume: "x".repeat(max - 13) });
+      expect(at.filter((m) => m.startsWith("réponse de")), point).toEqual([]);
+      const over = motifs(point, { resume: "x".repeat(max - 12) });
+      expect(over.filter((m) => m.startsWith("réponse de")), point).toHaveLength(1);
+    }
   });
 
   it("checks a page: its live block, no source down, its data's day", () => {

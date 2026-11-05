@@ -52,6 +52,8 @@ export const T = {
   presence: "Ces règles ne disent pas s'il y a des baleines en ce moment.",
   foi: `rundata.re résume les arrêtés${NB}: seul leur texte fait foi.`,
   source: "Préfecture de La Réunion, Direction de la mer Sud océan Indien (Licence Ouverte 2.0)",
+  /** temperature_mer's pointer to the rules, which only the page gives. */
+  regles: `Les douze règles d'approche, article par article, et les deux arrêtés${NB}: https://rundata.re/mer#h-cetaces`,
 };
 
 /** A rule and its article. */
@@ -136,19 +138,16 @@ const jourLocal = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOStr
 /** The state of the day, then the warning that the rules say nothing of the whales' presence. */
 export const etatDuJour = (now: Date) => (enPeriode(jourLocal(now)) ? T.pendant : T.hors);
 
-/** The block of temperature_mer: nothing read, the same for every place. */
+/**
+ * The block of temperature_mer: nothing read, the same for every place. The day's state and a pointer to /mer: the
+ * twelve rules weighed 4,7 KB in every answer about the sea, where few questions are about the whales.
+ */
 export function cetacesBlock(now = new Date()) {
   return {
     titre: T.titre,
     etat: etatDuJour(now),
     presence: T.presence,
-    comment_le_dire: COMMENT_LE_DIRE,
-    regles: REGLES.map((r) => ({ regle: r.regle, texte: r.article })),
-    a_savoir: T.foi,
-    textes: {
-      arrete_944: { lien: PDF_944, page_dmsoi: PAGE_944 },
-      arrete_1098: { lien: PDF_1098, page_dmsoi: PAGE_1098, objet: "réécrit l'article 6 de l'arrêté n° 944 (vitesse sur la côte ouest)" },
-    },
+    regles: T.regles,
     // Not « derniere_verification »: the answer's date is the measure's, never the day the decrees were read (fraicheur.ts).
     textes_lus_le: LUES_LE.split("-").reverse().join("/"),
   };

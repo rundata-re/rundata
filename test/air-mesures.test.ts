@@ -86,7 +86,7 @@ describe("measures at Atmo Réunion's stations", () => {
     expect(m.nature).toBe("MESURES brutes, non validées, aux stations d'Atmo Réunion, publiées par le LCSQA : ce n'est pas l'indice ATMO, qui est une prévision.");
     // The tool says them a station each, its hour, unit and « mesure brute, non validée » once.
     expect(m.valeurs[0]).toEqual({
-      unite: "µg/m³", heure: "de 7\u00a0h à 8\u00a0h", station: "Lycée Lislet Geoffroy", type: "fond", commune: "Saint-Denis", statut: "mesure brute, non validée",
+      unite: "µg/m³", heure: "le 29/10, de 7\u00a0h à 8\u00a0h", station: "Lycée Lislet Geoffroy", type: "fond", commune: "Saint-Denis", statut: "mesure brute, non validée",
       valeurs: { "dioxyde d'azote": 6.8, ozone: 30.5, "particules PM10": 11.6 },
     });
     expect(m.valeurs.every((v: { statut: string }) => v.statut === "mesure brute, non validée")).toBe(true);
@@ -125,7 +125,7 @@ describe("measures at Atmo Réunion's stations", () => {
     const at = page.indexOf('id="h-mesures-air"');
     const section = page.slice(at, page.indexOf("</section>", at));
     expect(section).toContain("<h3>Lycée Lislet Geoffroy · Saint-Denis</h3>");
-    expect(section).toContain("<li><b>ozone</b> : 30,5 µg/m³ <span class=\"note\">de 7\u00a0h à 8\u00a0h, station de type fond, mesure brute, non validée</span></li>");
+    expect(section).toContain("<li><b>ozone</b> : 30,5 µg/m³ <span class=\"note\">le 29/10, de 7\u00a0h à 8\u00a0h, station de type fond, mesure brute, non validée</span></li>");
     expect(section).toContain("mesurée il y a 9 h");
     expect(section.match(/<li>/g)).toHaveLength(7);
     expect(section.match(/mesure brute, non validée/g)).toHaveLength(7);
@@ -148,10 +148,10 @@ describe("measures at Atmo Réunion's stations", () => {
     const pm10 = map.slice(map.indexOf('<g class="ly ly-pm10 on">'), map.indexOf('<g class="ly ly-o3">'));
     expect([...pm10.matchAll(/<a class="mk" href="([^"]+)" aria-label="([^"]+)"/g)].map((m) => [m[1], m[2]])).toEqual([
       ["#st-lycee-lislet-geoffroy", "Lycée Lislet Geoffroy : 11,6 µg/m³, voir le détail"],
-      ["#st-luther-king", "Luther King : 22,1 µg/m³, de 0\u00a0h à 1\u00a0h, voir le détail"],
+      ["#st-luther-king", "Luther King : 22,1 µg/m³, le 29/10, de 0\u00a0h à 1\u00a0h, voir le détail"],
     ]);
     expect(map).not.toMatch(/var\(--aq\d\)/);
-    expect(map).toContain('<span class="lg lg-pm10 on">Particules PM10, en µg/m³ : mesure brute, non validée, de 7\u00a0h à 8\u00a0h, 1 station à une autre heure (voir la liste).</span>');
+    expect(map).toContain('<span class="lg lg-pm10 on">Particules PM10, en µg/m³ : mesure brute, non validée, le 29/10, de 7\u00a0h à 8\u00a0h, 1 station à une autre heure (voir la liste).</span>');
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
     // Without measures, the forecast in each commune, as a dot, said a forecast.
@@ -169,7 +169,7 @@ describe("measures at Atmo Réunion's stations", () => {
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
     const band = page.slice(page.indexOf('<p class="pill">'), page.indexOf('<figure class="card mapcard airmap">'));
     expect(band).toContain('<span class="dot"></span>Mesuré aux stations</p>');
-    const top = `<p class="big">PM10 : 12 µg/m³</p><p class="lead">${esc("Particules PM10 mesurées de 7\u00a0h à 8\u00a0h à la station Lycée Lislet Geoffroy (Saint-Denis).")}</p>` +
+    const top = `<p class="big">PM10 : 12 µg/m³</p><p class="lead">${esc("Particules PM10 mesurées le 29/10, de 7\u00a0h à 8\u00a0h à la station Lycée Lislet Geoffroy (Saint-Denis).")}</p>` +
       `<p class="note">Mesure brute, non validée, publiée par le <abbr title="Laboratoire central de surveillance de la qualité de l&#39;air">LCSQA</abbr>.`;
     expect(band).toContain(top);
     const forecast = `<div class="status forecast"><p class="lead"><b>${esc("Prévision d'Atmo Réunion pour la journée : moyen.")}</b>`;

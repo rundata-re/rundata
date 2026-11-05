@@ -7,12 +7,15 @@ import { parseSportsregions } from "../src/providers/agenda.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { quand, sportTool, RESULTS_OUTIL, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
+import { sportTool, RESULTS_OUTIL, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { sportPage } from "../src/web/domains.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
+
+// « 2026-10-24T12:05 » → « le 24/10 à 12:05 », the form of the reads.
+const leLocal = (l: string) => `le ${l.slice(8, 10)}/${l.slice(5, 7)} à ${l.slice(11, 16)}`;
 
 // The communes' sites read, as once they have agreed (test/autorisations.test.ts for what is said until then).
 vi.mock("../src/providers/autorisations.js", () => import("./autorisees.js"));
@@ -379,8 +382,8 @@ describe("sport", () => {
     await store.put("agendas:planifies", { value: { "agenda:lrvb": { value: [tournoi], fetchedAt: at }, "echec:sportsregions": { value: true, fetchedAt: NOW.getTime() } }, fetchedAt: NOW.getTime() });
     const b = body(await sportTool(new Cache(store, () => NOW.getTime()), "volley", undefined, "a_venir", NOW));
     expect(b.a_venir?.map((r: { epreuve: string }) => r.epreuve) ?? []).not.toContain("King Saison 6 Solo étape 2");
-    const since = `dernière lecture le ${quand(new Date(at + 4 * 3600_000).toISOString().slice(0, 16))}`;
-    const tried = `dernière lecture sans succès (${quand(new Date(NOW.getTime() + 4 * 3600_000).toISOString().slice(0, 16))})`;
+    const since = `dernière lecture ${leLocal(new Date(at + 4 * 3600_000).toISOString().slice(0, 16))}`;
+    const tried = `dernière lecture sans succès (${leLocal(new Date(NOW.getTime() + 4 * 3600_000).toISOString().slice(0, 16))})`;
     expect(b.non_lus).toEqual([`Ligue réunionnaise de volley-ball : ${since}`, `Clubs sportifs (Sportsregions) : ${tried}`]);
     // Handball: the clubs' calendar only. The Grand Raid: neither.
     expect(body(await sportTool(new Cache(store, () => NOW.getTime()), "handball", undefined, "a_venir", NOW)).non_lus).toEqual([`Clubs sportifs (Sportsregions) : ${tried}`]);
@@ -518,11 +521,11 @@ describe("sport", () => {
     t += 3 * 3600_000 + 60_000;
     down = /feminin/;
     const b = body(await sportTool(c, "handball", undefined, undefined, new Date(t)));
-    expect(b.injoignable).toEqual([{ competition: "handball, D1 féminine", texte: "Lu aujourd'hui à 08:00 : le site de la Fédération française de handball n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", site: expect.stringContaining("feminin") }]);
-    expect(b.resume).toContain("Championnat de handball D1 féminine : lu aujourd'hui à 08:00, sans réponse depuis (voir injoignable).");
+    expect(b.injoignable).toEqual([{ competition: "handball, D1 féminine", texte: "Lu le 24/10 à 08:00 : le site de la Fédération française de handball n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", site: expect.stringContaining("feminin") }]);
+    expect(b.resume).toContain("Championnat de handball D1 féminine : lu le 24/10 à 08:00, sans réponse depuis (voir injoignable).");
     // Nothing read before: its read said failed.
     const b2 = body(await sportTool(cache(), "handball", undefined, undefined, NOW));
-    expect(b2.injoignable[0].texte).toBe("Le site de la Fédération française de handball n'a pas répondu à notre dernière lecture (aujourd'hui à 08:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(b2.injoignable[0].texte).toBe("Le site de la Fédération française de handball n'a pas répondu à notre dernière lecture (le 24/10 à 08:00) : nous ne savons pas ce qu'il annonce en ce moment.");
   });
 
   it("answers without a source that is down, and names it", async () => {

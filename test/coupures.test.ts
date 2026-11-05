@@ -461,8 +461,8 @@ describe("coupures d'eau", () => {
     expect(pdp).toMatch(/<meta name="description" content="La Plaine-des-Palmistes \(974\)\u00a0: eau à ne pas boire\u00a0; \d+ avis de /);
     expect(pdp).toContain("les avis de la CIREST");
     // runéo's feed is read, and has nothing for Saint-Pierre: said with the time of the copy.
-    expect(page("saint-pierre")).toContain("Aucun avis de coupure publié par runéo à Saint-Pierre à 08:00.");
-    expect(page("saint-pierre")).toContain(`content="Aucune coupure d&#39;eau annoncée par runéo à Saint-Pierre (974) à\u00a008:00.`);
+    expect(page("saint-pierre")).toContain("Aucun avis de coupure publié par runéo à Saint-Pierre le 24/10 à 08:00.");
+    expect(page("saint-pierre")).toContain(`content="Aucune coupure d&#39;eau annoncée par runéo à Saint-Pierre (974) le 24/10 à\u00a008:00.`);
     // La Créole's page is read: its notice, dated to the day without an hour, during the night of its cut.
     const night = { value: await buildCoupures(cache(NIGHT), NIGHT), fetchedAt: NIGHT };
     const sp = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: night }, NIGHT);
@@ -505,26 +505,26 @@ describe("coupures d'eau", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const sd = body(await coupuresEau(at(), "Saint-Denis", now));
     expect(sd.avis.length).toBeGreaterThan(0);
-    expect(sd.injoignable).toEqual([{ texte: "Lu aujourd'hui à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu aujourd'hui à 08:00, sans réponse depuis", de: "de Dionéo", site: "https://dioneo.re/" }]);
-    expect(sd.resume).toContain("Lu aujourd'hui à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
+    expect(sd.injoignable).toEqual([{ texte: "Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu le 24/10 à 08:00, sans réponse depuis", de: "de Dionéo", site: "https://dioneo.re/" }]);
+    expect(sd.resume).toContain("Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
     // runéo had nothing for Saint-Pierre at the first read: no notice kept, its read said failed.
     const sp = body(await coupuresEau(at(), "Saint-Pierre", now));
     expect(sp.resume).not.toContain("Aucun avis");
-    expect(sp.injoignable[0].texte).toBe("Le site de runéo n'a pas répondu à notre dernière lecture (aujourd'hui à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(sp.injoignable[0].texte).toBe("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
     // The page, the tile and the day's summary say it too.
     const coupures = { value: await buildCoupures(at(), now), fetchedAt: now };
     const page = coupuresCommunePage("https://rundata.re", pageOf("saint-pierre")!, { coupures }, now);
     expect(page).toContain("Le site de runéo n&#39;a pas répondu à notre dernière lecture");
     expect(page).not.toMatch(/Aucun avis|Aucune coupure/);
     expect(coupuresCommunePage("https://rundata.re", pageOf("saint-denis")!, { coupures }, now)).toContain('voir <a href="https://dioneo.re/" rel="noopener">son site</a>.');
-    expect(waterLive(pageOf("saint-pierre")!, { coupures })).toMatchObject({ valeur: "Site sans réponse", detail: expect.stringContaining("site sans réponse à notre dernière lecture (10:00)") });
+    expect(waterLive(pageOf("saint-pierre")!, { coupures })).toMatchObject({ valeur: "Site sans réponse", detail: expect.stringContaining("site sans réponse à notre dernière lecture (le 24/10 à 10:00)") });
     const day = resume(pageOf("saint-pierre")!, { coupures } as never, now);
     expect(day.coupures_eau?.injoignable?.texte).toBe(sp.injoignable[0].texte);
     expect(JSON.stringify(day)).not.toContain("pas de coupure d'eau annoncée");
     // The island: both said, in a few words.
     const ile = body(await coupuresEau(at(), undefined, now));
     expect(ile.injoignable.map((f: { de: string }) => f.de)).toEqual(["de Dionéo", "de runéo"]);
-    expect(ile.resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (aujourd'hui à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(ile.resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
     vi.restoreAllMocks();
   });
 
@@ -566,7 +566,7 @@ describe("coupures d'eau", () => {
     // coloured word (marketing's charter of the maps), then when the notices were read.
     expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>pas d&#39;avis lu en ce moment</span>`);
     expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:var(--land)"/></svg>avis non lus\u00a0: voir la mairie ou le distributeur</span>`);
-    expect(page).toContain(`<span class="mls">Avis des distributeurs, lus à 08:00.</span>`);
+    expect(page).toContain(`<span class="mls">Avis des distributeurs, lus le 24/10 à 08:00.</span>`);
     expect(page).not.toContain('<span style="color:');
     // A commune not followed: said as the legend says, with its page.
     expect(page).toContain(`<a class="zn" href="/coupures-eau/saint-joseph" aria-label="Saint-Joseph : avis non lus\u00a0: voir la mairie ou le distributeur, voir le détail" data-pn="Saint-Joseph" data-p2="avis non lus\u00a0: voir la mairie ou le distributeur" data-pv="commune">`);
@@ -613,13 +613,13 @@ describe("coupures d'eau", () => {
     // No notice of Saint-Leu at the time: said of the commune that publishes them, not of its distributor.
     const later = new Date("2026-10-24T04:00:00Z");
     const now = { value: await buildCoupures(cache(), later), fetchedAt: later };
-    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/Aucun avis de coupure publié par la commune de Saint-Leu à \d\d:\d\d\./);
-    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/content="Aucune coupure d&#39;eau annoncée par la commune de Saint-Leu \(974\) à\u00a0\d\d:\d\d\./);
+    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/Aucun avis de coupure publié par la commune de Saint-Leu le \d\d\/\d\d à \d\d:\d\d\./);
+    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toContain('content="Coupures d&#39;eau à Saint-Leu (974)\u00a0: avis du distributeur, restrictions sécheresse');
     // The east: the CIREST publishes the notices read, not O2LEST, which the ARS names as the distributor.
     const sa = coupuresCommunePage("https://rundata.re", pageOf("saint-andre")!, { coupures: now }, later);
-    expect(sa).toMatch(/content="Aucune coupure d&#39;eau annoncée par la CIREST à Saint-André \(974\) à\u00a0\d\d:\d\d\./);
+    expect(sa).toContain('content="Coupures d&#39;eau à Saint-André (974)\u00a0: avis du distributeur, restrictions sécheresse');
     expect(sa).toContain("<b>O2LEST</b> distribue l'eau à Saint-André, d'après le contrôle sanitaire de l'ARS.");
-    expect(coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures: now }, later)).toMatch(/content="Aucune coupure d&#39;eau annoncée par la ville de Sainte-Marie \(974\) à\u00a0\d\d:\d\d\./);
+    expect(coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures: now }, later)).toContain('content="Coupures d&#39;eau à Sainte-Marie (974)\u00a0: avis du distributeur, restrictions sécheresse');
   });
 
   it("gives, for a commune whose mairie is only linked to, where its notices are", async () => {

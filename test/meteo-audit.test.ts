@@ -39,7 +39,7 @@ describe("a station that speaks less well for a commune", () => {
   it("on the commune's page, in the weather tile and the headline, as the tools say it", () => {
     const html = communePage("https://rundata.re", pageOf("salazie")!, { place: copy({ meteo: { resume: "", stations: [bellevue], sources: [] } } as unknown as PlaceData) }, NOW);
     // The spaces as the page sets them (typoPage): any of them between a figure and its unit, before a colon.
-    expect(html).toMatch(/station Bellevue Bras-Panon \(480\sm, à 8,5\skm, autre versant\s: est\), mesuré à 13:48/);
+    expect(html).toMatch(/station Bellevue Bras-Panon \(480\sm, à 8,5\skm, autre versant\s: est\), mesuré le 04\/11 à 13:48/);
     expect(html).toMatch(/par la station <b>Bellevue Bras-Panon<\/b>, à 8,5\skm, autre versant\s: est\./);
   });
 });

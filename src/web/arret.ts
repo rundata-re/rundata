@@ -5,13 +5,13 @@
  */
 import { deNom } from "../articles.js";
 import * as transit from "../providers/transit.js";
-import { distanceKm, localTime } from "../geo.js";
+import { distanceKm } from "../geo.js";
 import { porte, type Porte } from "./aller.js";
 import type { stopPageDepartures } from "../tools/transports.js";
 import { alertList, crumbBar, crumbs, departureLi, STOP_PATH, stopSearch, waitText } from "./domains.js";
 import { esc } from "./map.js";
 import { type Alerte, credit } from "./data.js";
-import { credits, DESCRIPTION_MAX, layout } from "./pages.js";
+import { credits, DESCRIPTION_MAX, layout, leAt } from "./pages.js";
 
 type Departures = Awaited<ReturnType<typeof stopPageDepartures>>;
 
@@ -92,9 +92,9 @@ export function stopPage(origin: string, p: transit.StopPage, d: Departures, now
     // The wait under the direction (.rows.departs, as on /bus and the communes): beside it, a delay announced leaves the direction no room on a phone.
     ? `<ul class="rows departs">${d.departs.map((x) => departureLi(x, waitText(x.dans_min, x.heure_annoncee ?? x.heure))).join("")}</ul>`
     : `<p>Pas de départ prévu dans les prochaines heures.</p>`;
-  const flux = d.flux ? localTime(new Date(d.flux * 1000)).split(" ")[1] : undefined;
-  const note = `<p class="note">${d.direct.length && flux ? `${esc(d.direct.join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues à ${esc(flux)}). ` : ""}` +
-    `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour à ${esc(localTime(now).split(" ")[1])}.</p>`;
+  const flux = d.flux ? leAt(new Date(d.flux * 1000)) : undefined;
+  const note = `<p class="note">${d.direct.length && flux ? `${esc(d.direct.join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues ${esc(flux)}). ` : ""}` +
+    `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour ${esc(leAt(now))}.</p>`;
 
   const body = `<section>
   <div class="card">${d.aucun ? `<p>${esc(d.aucun)}</p>` : ""}${rows}</div>

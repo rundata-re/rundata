@@ -141,7 +141,7 @@ describe("a mairie that does not answer", () => {
     const block = courantBlock({ value: now, fetchedAt: NOW, stale: false }, "Sainte-Marie", NOW);
     expect(block.avis!.map((x) => x.publie_le)).toEqual(["21/10 10:00"]);
     // Read this morning: « aujourd'hui », the site as subject, never the mairie.
-    expect(block.injoignable).toEqual([{ commune: "Sainte-Marie", texte: "Lu aujourd'hui à 10:00 : le site de la mairie de Sainte-Marie n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu aujourd'hui à 10:00, sans réponse depuis", site: "https://www.ville-saintemarie.re/" }]);
+    expect(block.injoignable).toEqual([{ commune: "Sainte-Marie", texte: "Lu le 24/10 à 10:00 : le site de la mairie de Sainte-Marie n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu le 24/10 à 10:00, sans réponse depuis", site: "https://www.ville-saintemarie.re/" }]);
     expect(injoignable(now, "Sainte-Marie", "25/10 14:00", new Date("2026-10-25T10:00:00Z"))?.texte).toMatch(/^Lu le 24\/10 à 10:00 : /);
     // Kept again at the next failure, with the hour of the read, not of the copy that kept them.
     const again = await courantCopy({ value: now, fetchedAt: new Date("2026-10-24T07:30:00Z"), stale: false }, new Date("2026-10-24T07:45:00Z"));
@@ -151,14 +151,14 @@ describe("a mairie that does not answer", () => {
     const late = await courantCopy({ value: again, fetchedAt: new Date("2026-10-24T07:45:00Z"), stale: false }, new Date("2026-10-24T08:00:00Z"));
     expect([late.gardes, late.avis.some((a) => a.commune === "Sainte-Marie")]).toEqual([[kept], false]);
     const lateBlock = courantBlock({ value: late, fetchedAt: new Date("2026-10-24T08:00:00Z"), stale: false }, "Sainte-Marie", new Date("2026-10-24T08:00:00Z"));
-    expect([lateBlock.avis, lateBlock.injoignable?.[0].texte]).toEqual([[], "Lu aujourd'hui à 10:00 : le site de la mairie de Sainte-Marie n'a pas répondu depuis."]);
+    expect([lateBlock.avis, lateBlock.injoignable?.[0].texte]).toEqual([[], "Lu le 24/10 à 10:00 : le site de la mairie de Sainte-Marie n'a pas répondu depuis."]);
     expect((await courantCopy({ value: late, fetchedAt: new Date("2026-10-24T08:00:00Z"), stale: false }, new Date("2026-10-24T08:30:00Z"))).gardes).toEqual([kept]);
     // Island: its notices still there, and said kept.
     const ile = courantBlock({ value: now, fetchedAt: NOW, stale: false }, undefined, NOW);
     expect(ile.avis!.some((x) => x.commune === "Sainte-Marie")).toBe(true);
     expect(ile.injoignable).toEqual(block.injoignable);
     const tool = body(await electricite(withCopy(now), NOW, "Sainte-Marie"));
-    expect(tool.resume).toContain("Lu aujourd'hui à 10:00 : le site de la mairie de Sainte-Marie n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
+    expect(tool.resume).toContain("Lu le 24/10 à 10:00 : le site de la mairie de Sainte-Marie n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
     const page = electricitePage("https://rundata.re", { value: { resume: "", avertissements: [], sources: [], coupures_annoncees: ile }, fetchedAt: NOW, stale: false } as never, NOW);
     expect(page).toContain('voir <a href="https://www.ville-saintemarie.re/" rel="noopener">son site</a>.');
     expect(page.indexOf("n&#39;a pas répondu depuis")).toBeLessThan(page.indexOf("Rue des Jésuites"));
@@ -167,7 +167,7 @@ describe("a mairie that does not answer", () => {
     // Nothing kept: its read said failed.
     const bare = await courantCopy();
     const unread = courantBlock({ value: bare, fetchedAt: NOW, stale: false }, "Sainte-Marie", NOW);
-    expect(unread.injoignable?.[0]).toMatchObject({ texte: "Le site de la mairie de Sainte-Marie n'a pas répondu à notre dernière lecture (aujourd'hui à 14:00) : nous ne savons pas ce qu'il annonce en ce moment.", court: "site sans réponse à notre dernière lecture (14:00)" });
+    expect(unread.injoignable?.[0]).toMatchObject({ texte: "Le site de la mairie de Sainte-Marie n'a pas répondu à notre dernière lecture (le 24/10 à 14:00) : nous ne savons pas ce qu'il annonce en ce moment.", court: "site sans réponse à notre dernière lecture (le 24/10 à 14:00)" });
     expect(unread.note).toBeUndefined();
     expect(JSON.stringify(unread)).not.toMatch(/Sainte-Marie ne publie pas|Aucun avis/);
     // The day's summary says it too, instead of nothing.

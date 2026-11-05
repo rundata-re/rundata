@@ -79,12 +79,12 @@ describe("links between the weather, the hikes and the communes", () => {
     expect(communeEvents(pageOf("cilaos")!, agenda)).toMatchObject({ valeur: "Actualités non reprises" });
     // Its own agenda did not answer this time: its site named in the detail.
     const silent = { ...agenda, value: { ...agenda.value, evenements: [], indisponible: ["Ville du Port"] } as unknown as AgendaAnswer };
-    expect(communeEvents(pageOf("le-port")!, silent, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville du Port sans réponse (10:00)", title: "Le site de la Ville du Port n'a pas répondu à notre dernière lecture (aujourd'hui à 10:00) : nous ne savons pas ce qu'il annonce en ce moment." });
+    expect(communeEvents(pageOf("le-port")!, silent, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville du Port sans réponse (le 27/10 à 10:00)", title: "Le site de la Ville du Port n'a pas répondu à notre dernière lecture (le 27/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment." });
     const show = { titre: "Concert", quand: "samedi 31/10 à 20:00", commune: "Le Port", lien: "https://example.re" };
-    expect(communeEvents(pageOf("le-port")!, { ...silent, value: { ...silent.value, evenements: [show] } } as never, NOW)?.detail).toBe("site de la Ville du Port sans réponse (10:00) · le prochain : Concert, samedi 31/10 à 20:00");
+    expect(communeEvents(pageOf("le-port")!, { ...silent, value: { ...silent.value, evenements: [show] } } as never, NOW)?.detail).toBe("site de la Ville du Port sans réponse (le 27/10 à 10:00) · le prochain : Concert, samedi 31/10 à 20:00");
     expect(communeEvents(pageOf("saint-leu")!, silent, NOW)).toMatchObject({ valeur: "Rien d'annoncé" });
     const page = agendaPage(O, { ...silent, stale: false } as never, NOW);
-    expect(page).toContain("<li>Sans réponse à notre dernière lecture (aujourd&#39;hui à 10:00) : Ville du Port. Ses événements peuvent manquer ici.</li>");
+    expect(page).toContain("<li>Sans réponse à notre dernière lecture (le 27/10 à 10:00) : Ville du Port. Ses événements peuvent manquer ici.</li>");
     expect(page).not.toContain("en panne");
     // From a commune's site: said with the event.
     const fromSite = { value: { ...agenda.value, evenements: [{ ...rows[0], source: "site de la commune de Saint-Paul, lu le samedi 24/10 à 08:00" }] } as unknown as AgendaAnswer, fetchedAt: NOW };

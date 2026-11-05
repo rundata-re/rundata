@@ -129,12 +129,12 @@ describe("the page of a trip", () => {
     expect(t.direct).toEqual({ etat: "suivi", flux: t0 - 30 });
     const html = tripPage(ORIGIN, "/x", t, d.stop, NOW);
     expect(html).toMatch(/<b class="rt" title="Heure annoncée en direct par le réseau">annoncé \d\d:\d\d \(\+5 min\)<\/b>/);
-    expect(html).toContain("Prévu : horaires publiés par Car Jaune. Annoncé : heure donnée en direct par Car Jaune, données du réseau lues à ");
+    expect(html).toContain("Prévu : horaires publiés par Car Jaune. Annoncé : heure donnée en direct par Car Jaune, données du réseau lues le ");
 
     // A feed that does not speak of it; one that is too old.
     store.put("rt:carjaune", { value: { at: t0 - 30, trips: {}, cancelled: [], alerts: [], vehicles: [] }, fetchedAt: NOW.getTime() });
     const absent = (await tripRun("carjaune", local, d.trip, 20261023, NOW, new Cache(store)))!;
-    expect(tripPage(ORIGIN, "/x", absent, undefined, NOW)).toContain("Ce bus ne figure pas dans les données en direct de Car Jaune (lues à ");
+    expect(tripPage(ORIGIN, "/x", absent, undefined, NOW)).toContain("Ce bus ne figure pas dans les données en direct de Car Jaune (lues le ");
     store.put("rt:carjaune", { value: { at: t0 - 3600, trips: {}, cancelled: [d.trip], alerts: [], vehicles: [] }, fetchedAt: NOW.getTime() });
     const old = (await tripRun("carjaune", local, d.trip, 20261023, NOW, new Cache(store)))!;
     expect(old.supprime).toBeUndefined();
@@ -146,13 +146,13 @@ describe("the page of a trip", () => {
     const before = (await tripRun("carjaune", local, d.trip, 20261023, early, new Cache(store)))!;
     expect(before.direct).toEqual({ etat: "absent", flux: t0 - 30 });
     expect(before.arrets!.some((s) => s.annonce !== undefined)).toBe(false);
-    expect(tripPage(ORIGIN, "/x", before, undefined, early)).toContain("Ce bus ne figure pas dans les données en direct de Car Jaune (lues à ");
+    expect(tripPage(ORIGIN, "/x", before, undefined, early)).toContain("Ce bus ne figure pas dans les données en direct de Car Jaune (lues le ");
 
     // Cancelled: said above the stops, their times struck.
     store.put("rt:carjaune", { value: { at: t0 - 30, trips: {}, cancelled: [d.trip], alerts: [], vehicles: [] }, fetchedAt: NOW.getTime() });
     const cut = (await tripRun("carjaune", local, d.trip, 20261023, NOW, new Cache(store)))!;
     const page = tripPage(ORIGIN, "/x", cut, undefined, NOW);
-    expect(page).toContain("Départ supprimé, annoncé en direct par Car Jaune (données du réseau lues à ");
+    expect(page).toContain("Départ supprimé, annoncé en direct par Car Jaune (données du réseau lues le ");
     expect(page).toContain("<s>");
   });
 

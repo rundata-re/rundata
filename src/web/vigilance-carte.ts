@@ -15,11 +15,8 @@ const leA = (iso: string) => {
   const [day, time] = localTime(new Date(iso)).split(" ");
   return `le ${day} à ${time}`;
 };
-/** « 17:30 » the same day as `now`, « le 26/10 à 22:10 » another day. */
-const aOuLe = (iso: string, now: Date) => {
-  const [day, time] = localTime(new Date(iso)).split(" ");
-  return day === localTime(now).split(" ")[0] ? `à ${time}` : leA(iso);
-};
+/** « le 26/10 à 22:10 », with its day even today. */
+const aOuLe = (iso: string, _now?: Date) => leA(iso);
 
 const pdfLink = (b: NonNullable<carte.Carte["bulletin"]>) =>
   `<p class="note"><a href="${carte.pdfPath(b.empreinte)}" type="application/pdf">Le bulletin complet de Météo-France en PDF, émis ${leA(b.emis)}</a></p>`;

@@ -65,8 +65,8 @@ describe("a station's page", () => {
     expect(html).toContain(`<li aria-current="page">Gillot aéroport</li>`);
     expect(html).toContain(`<h1>Gillot <span class="n974">aéroport</span></h1>\n    <p class="hook">Ce que mesure cette station en ce moment, et son historique depuis 1953.</p>`);
     expect(html).toContain("<title>Gillot aéroport : station météo en direct et historique");
-    expect(html).toContain(`<span class="big span">27,9 °C</span><p>mesurés sous abri à <b>12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8 m d'altitude.</p>`);
-    expect(html).toContain("<h3>La dernière mesure, à 12:18</h3>");
+    expect(html).toContain(`<span class="big span">27,9 °C</span><p>mesurés sous abri <b>le 25/10 à 12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8 m d'altitude.</p>`);
+    expect(html).toContain("<h3>La dernière mesure, le 25/10 à 12:18</h3>");
     for (const k of ["Vent moyen", "Humidité", "Point de rosée", "Pluie", "Pression (niveau de la mer)", "Soleil"]) expect(html).toContain(`<li><span>${k}</span>`);
     // Rain and sunshine of the last round hour of the package.
     expect(html).toContain("<li><span>Pluie</span><b>0 mm en 6 min, 0 mm de 11:00 à 12:00</b></li>");
@@ -110,7 +110,7 @@ describe("a station's page", () => {
 
   it("says a rain gauge's rain, and since when a silent station has said nothing, never that it is broken", async () => {
     const pluie = page(await data({ derniere: { time: "2026-10-25T08:18:00Z", mesures: { pluie_6min: 0.2 } }, historique: undefined }));
-    expect(pluie).toContain("<p>Pluie mesurée à <b>12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8\u202fm d'altitude.</p>");
+    expect(pluie).toContain("<p>Pluie mesurée <b>le 25/10 à 12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8\u202fm d'altitude.</p>");
     expect(pluie).toContain(`<meta name="description" content="Ce que mesure la station Météo-France Gillot aéroport (Sainte-Marie, 8\u202fm d&#39;altitude) en ce moment\u00a0: température, pluie, vent.">`);
     expect(page(await data({ derniere: undefined, historique: undefined }))).toContain("rundata.re n&#39;a pas de mesure de cette station depuis le 25/10 à 12:00. <a href=\"/meteo#stations\">Les autres stations →</a>");
     expect(page(await data({ derniere: undefined, heures: [], historique: undefined }))).toContain("rundata.re n&#39;a reçu aucune mesure de cette station.");
@@ -152,7 +152,7 @@ describe("a station's page", () => {
     const cirad = STATIONS.find((s) => / - CIRAD$/.test(s.nom))!;
     const html = page({ ...(await data({ historique: undefined })), id: cirad.id, nom: "La Mare - CIRAD", altitude_m: 68 });
     expect(html).toContain(`<h1>La Mare <span class="n974">CIRAD</span></h1>`);
-    expect(html).toMatch(/<p>mesurés à <b>\d\d:\d\d<\/b> par la station du CIRAD, (?:à|au|aux) /);
+    expect(html).toMatch(/<p>mesurés <b>le \d\d\/\d\d à \d\d:\d\d<\/b> par la station du CIRAD, (?:à|au|aux) /);
     expect(html).toContain("Mesures du CIRAD, diffusées par Météo-France, toutes les 6\u202fminutes.");
     expect(html).toContain(`<meta name="description" content="Ce que mesure la station La Mare du CIRAD (`);
   });

@@ -14,7 +14,7 @@ import type { Alerte, CoupuresAnswer, EauAnswer, SecheresseAnswer } from "./data
 import { cycloneWater } from "./eau-cyclone.js";
 import { connectorCta, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
-import { ask, hm, icon, layout, type Live, SITE } from "./pages.js";
+import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
 
 const TITLE_MAX = 60;
@@ -68,7 +68,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const url = `${origin}${path}`;
   const x = waterOf(p.nom, w);
   const dist = x.distributeur;
-  const at = w.coupures ? hm(w.coupures.fetchedAt) : "";
+  const at = w.coupures ? leAt(w.coupures.fetchedAt) : "";
   const by = [...new Set(x.avis.map((n) => n.distributeur))].join(", ") || dist?.nom || "le distributeur";
   const where = a(p.nom);
   // Who publishes the notices read (the CIREST, a mairie), else the distributor; a mairie only linked to (LIENS).
@@ -89,7 +89,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       ? noticesHead(x.avis, where)
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
-        ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} à ${esc(at)}.</p>`
+        ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} ${esc(at)}.</p>`
         : siteDist
         ? `<p class="lead">Les avis de coupure de ${esc(nomDit(dist!))} ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.${lienA}</p>`
         : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`;
@@ -99,7 +99,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.avis.length
       ? `${silent}<ul class="zones">${x.avis.map(noticeCard).join("")}</ul>`
       : x.muet ? ""
-      : `<p class="card">${dist?.avis ? `Aucun avis publié à ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : `Pas d'avis en ligne lisible pour ${esc(p.nom)}.`}</p>`;
+      : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : `Pas d'avis en ligne lisible pour ${esc(p.nom)}.`}</p>`;
 
   const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +
     (dist
@@ -143,7 +143,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.avis.length
       ? describe(`${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, avec les rues, les heures et les consignes.`, short)
       : dist?.avis && !x.muet
-        ? describe(`Aucune coupure d'eau annoncée par ${publisher}${publisher!.includes(p.nom) ? "" : ` ${where}`} (974) à ${at}. Restrictions sécheresse, qualité de l'eau du robinet et contact du distributeur.`, short)
+        ? describe(`Aucune coupure d'eau annoncée par ${publisher}${publisher!.includes(p.nom) ? "" : ` ${where}`} (974) ${at}. Restrictions sécheresse, qualité de l'eau du robinet et contact du distributeur.`, short)
         : short;
   const trail = {
     "@context": "https://schema.org",

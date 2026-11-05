@@ -88,7 +88,7 @@ describe("the Vélos tile", () => {
   it("lists four stations on a line each, « Y aller » beside them", () => {
     const t = tile(communePage(ORIGIN, p, commune(ago(60_000)), NOW), "Vélos");
     expect(t).toContain('<p class="tv">9 vélos</p>');
-    expect(t).toContain("électriques en libre-service dans 6 stations Altervélo, relevé à 01:12");
+    expect(t).toContain("électriques en libre-service dans 6 stations Altervélo, relevé le 31/10 à 01:12");
     expect(t.match(/<li>/g)).toHaveLength(4);
     expect(t).toContain('<li><span>Station A<small><b>5</b> vélos · 6 places</small></span><span class="ya"><a class="aller"');
     expect(t).not.toContain("Station E");
@@ -97,14 +97,14 @@ describe("the Vélos tile", () => {
   it("says « hier » for a count of the day before", () => {
     // Read at 23:50, seen at 00:05.
     const t = tile(communePage(ORIGIN, p, commune(new Date("2026-10-30T19:50:00Z")), new Date("2026-10-30T20:05:00Z")), "Vélos");
-    expect(t).toContain("relevé hier à 23:50");
+    expect(t).toContain("relevé le 30/10 à 23:50");
   });
 
   it("no longer gives the bikes counted as those of the moment once the count is old", () => {
     const t = tile(communePage(ORIGIN, p, commune(new Date("2026-10-30T11:35:00Z")), NOW), "Vélos");
     expect(t).toContain('<p class="tv">6 stations</p>');
     // The instruction first, never cut.
-    expect(t).toContain('<p class="td all">Rechargez la page dans quelques secondes\u00a0: vélos libres comptés hier à 15:35.</p>');
+    expect(t).toContain('<p class="td all">Rechargez la page dans quelques secondes\u00a0: vélos libres comptés le 30/10 à 15:35.</p>');
     expect(tile(communePage(ORIGIN, p, commune(new Date("2026-10-29T11:35:00Z")), NOW), "Vélos")).toContain("vélos libres comptés le 29/10 à 15:35.");
     expect(t).not.toMatch(/\d vélos?<|<li>/);
     // Just under the limit, the count is still given.

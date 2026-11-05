@@ -92,7 +92,7 @@ describe("the map of every station on /meteo", () => {
     const html = stationsMap(ALL);
     const l = links(html);
     expect(l.map((x) => x.href).sort()).toEqual(ALL.map((s) => `#${stationId(s.nom)}`).sort());
-    expect(html).toContain("la dernière mesure de 5 des 5 stations météo, à 09:18");
+    expect(html).toContain("la dernière mesure de 5 des 5 stations météo, le 22/10 à 09:18");
     const of = (href: string) => l.find((x) => x.href === href)!.cls;
     expect(of("#st-plaine-des-cafres")).toBe(" has-t has-p has-v");
     expect(of("#st-belouve")).toBe(" has-p");
@@ -102,8 +102,8 @@ describe("the map of every station on /meteo", () => {
     expect(html).toContain(`data-tvt="${esc("17,2 °C")}"`);
     expect(html).toContain(`data-tvp="${esc("2,4 mm en 1 h")}"`);
     expect(html).toContain(`data-tvp="${esc("pas de pluie mesurée en 1 h")}"`);
-    expect(html).toContain(`data-td="${esc("mesurée à 09:18 par Météo-France")}"`);
-    expect(html).toContain(esc("Plaine des Cafres · 1 560 m : 17,2 °C, 2,4 mm en 1 h, vent d'est 12 km/h, mesures de 09:18 par Météo-France, voir le détail"));
+    expect(html).toContain(`data-td="${esc("mesurée le 22/10 à 09:18 par Météo-France")}"`);
+    expect(html).toContain(esc("Plaine des Cafres · 1 560 m : 17,2 °C, 2,4 mm en 1 h, vent d'est 12 km/h, mesures du 22/10 à 09:18 par Météo-France, voir le détail"));
     expect(ventText(PLAINE)).toBe("vent d'est 12\u202fkm/h");
     expect(html).toContain(`data-tvv="${esc(ventText(PLAINE)!)}"`);
   });
@@ -124,7 +124,7 @@ describe("the map of every station on /meteo", () => {
     expect(html).not.toContain("data:");
     // The measure in a pill: an arrow where the wind goes (from 200°, towards 20°) and the speed.
     expect(html).toMatch(/<g class="sh l-v wv">[^]*?rotate\(20\)"\/><text [^>]*>22<\/text><\/g>/);
-    expect(html).toContain("3 anémomètres, vent moyen mesuré en km/h, le plus récent à 09:18. La flèche montre où va le vent (un vent d'est vient de l'est). Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.");
+    expect(html).toContain("3 anémomètres, vent moyen mesuré en km/h, le plus récent le 22/10 à 09:18. La flèche montre où va le vent (un vent d'est vient de l'est). Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.");
     // The rain layer asks the radar's grid when first shown, with a place in its legend for what the radar sees.
     expect(html).toContain(`<canvas class="voile" data-pluie="/meteo/pluie-radar.json" data-alt="${ALT_PATH}" `);
     expect(html).toContain(`Point blanc : pas de pluie mesurée. <span data-radar hidden></span>`);
@@ -332,7 +332,7 @@ describe("the map of every station on /meteo", () => {
     expect(html).toContain(`<canvas class="voile" `);
     expect(html).not.toContain("data:");
     // The legend's words are the page's own, written as they are (no value of a source in them).
-    expect(html).toContain("Température mesurée sous abri à 3 des 5\u00a0stations, la plus récente à 09:18. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.");
+    expect(html).toContain("Température mesurée sous abri à 3 des 5\u00a0stations, la plus récente le 22/10 à 09:18. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.");
   });
 
   it("says one station in the singular, and leaves out the tab of a measure no station has", () => {
@@ -347,11 +347,11 @@ describe("the map of every station on /meteo", () => {
   it("says the rain of the last 6 minutes in the legend, while no station has the hour yet; the tab « Pluie » either way", () => {
     const hour = stationsMap(ALL);
     expect(hour).toContain(`<label for="wxl-p">Pluie</label>`);
-    expect(hour).toContain("4 pluviomètres, pluie de la dernière heure en mm, la plus récente à 09:18. Point blanc : pas de pluie mesurée.");
+    expect(hour).toContain("4 pluviomètres, pluie de la dernière heure en mm, la plus récente le 22/10 à 09:18. Point blanc : pas de pluie mesurée.");
     const six = stationsMap(ALL.map((s) => ({ ...s, pluie_6min: s.pluie_1h, pluie_1h: undefined })));
     expect(six).toContain(`<label for="wxl-p">Pluie</label>`);
     expect(six).not.toContain("Pluie 6");
-    expect(six).toContain("4 pluviomètres, pluie des 6 dernières minutes seulement, en mm, la plus récente à 09:18 : l'heure complète n'est pas encore disponible.");
+    expect(six).toContain("4 pluviomètres, pluie des 6 dernières minutes seulement, en mm, la plus récente le 22/10 à 09:18 : l'heure complète n'est pas encore disponible.");
     expect(six).toContain(`data-tvp="${esc("2,4 mm en 6 min")}"`);
   });
 });

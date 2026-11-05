@@ -81,8 +81,8 @@ describe("bornes de recharge", () => {
     expect(page).toContain("Recharge rapide");
     // The legend drawn as on the map (charter of the maps): a free point, none free, then the state's nature and time.
     expect(page).toContain('<circle r="34" fill="#2b8a3e"/><text y="11">3</text></svg>points de charge libres dans la commune</span>');
-    // The state is that of the latest change in the national file, said beside its reading.
-    expect(page).toMatch(/<span class="mls">D&#39;après les opérateurs de recharge \(transport\.data\.gouv\.fr\), état jusqu&#39;à \d\d:\d\d, lu à 04:40\.<\/span>/);
+    // The state is that of the latest change in the national file, said beside its reading, each with its day.
+    expect(page).toMatch(/<span class="mls">D&#39;après les opérateurs de recharge \(transport\.data\.gouv\.fr\), état jusqu&#39;au \d\d\/\d\d à \d\d:\d\d, lu le 24\/10 à 04:40\.<\/span>/);
     expect(page).toMatch(/<details><summary><h3>Sainte-Marie\u00a0<span class="note">·\u00a045\u00a0libres sur\u00a0103, 18\u00a0stations<\/span><\/h3><\/summary>/);
     // Each commune's marker leads to its card.
     expect(mapLinks(page).find((l) => l.label.startsWith("Sainte-Marie :"))).toEqual({ kind: "mk", href: "#c-sainte-marie", label: "Sainte-Marie : 45 points de charge libres sur 103, voir le détail" });

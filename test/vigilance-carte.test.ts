@@ -188,7 +188,7 @@ describe("the map on /vigilance", () => {
   });
 
   it("says when a bulletin could not be read, the time of the try, the day too when it is not today", () => {
-    expect(carteHtml({ illisible: "2026-10-22T13:30:00.000Z" }, now)).toContain(`La carte officielle de Météo-France n'a pas pu être lue à 17:30. <a href="${mf.OFFICIEL_VIGILANCE}"`);
+    expect(carteHtml({ illisible: "2026-10-22T13:30:00.000Z" }, now)).toContain(`La carte officielle de Météo-France n'a pas pu être lue le 22/10 à 17:30. <a href="${mf.OFFICIEL_VIGILANCE}"`);
     const html = carteHtml({ bulletin: b, illisible: "2026-10-21T18:10:00.000Z" }, now);
     expect(html).toContain("n'a pas pu être lue le 21/10 à 22:10.");
     // The bulletin kept before the unreadable one has been replaced: no link to it.

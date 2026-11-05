@@ -58,7 +58,7 @@ export async function velosLibreService(cache: Cache, lieu: string | undefined, 
   }
   const common = {
     ...COMMON,
-    donnees: `En direct, d'après les stations (relevé de ${localTime(fetchedAt).split(" ")[1]}, heure de La Réunion)\u00a0; un vélo peut être pris entre-temps.`,
+    donnees: `En direct, d'après les stations (relevé le ${localTime(fetchedAt).replace(" ", " à ")}, heure de La Réunion)\u00a0; un vélo peut être pris entre-temps.`,
     sources: credits([velos.SOURCE]),
   };
   const open = list.filter((s) => s.location);

@@ -121,7 +121,7 @@ describe("home page tiles", () => {
     const page = homePage(ORIGIN, live, NOW);
     const tile = (name: string) => page.match(new RegExp(`<h3><a href="/[a-z]+">${name}</a></h3>(.*?)</li>`))![1];
     expect(tile("Volcan")).toContain(`<p class="tv">Pas d'éruption annoncée</p>`);
-    expect(tile("Volcan")).toContain("OVPF et préfecture, textes lus à ");
+    expect(tile("Volcan")).toContain("OVPF et préfecture, textes lus le ");
     expect(tile("Volcan")).toContain("Enclos : « réouverture partielle » (préfecture, 07/05)");
     expect(tile("Qualité de l&#39;air")).toContain(`<span class="aq aq2">moyen</span>`);
     expect(tile("Électricité")).toContain(`<p class="tv">100\u202f% renouvelable</p>`);

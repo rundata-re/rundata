@@ -275,7 +275,7 @@ export function productionChart(j: Journee): string {
   const tl = t0 + last[0] * 60_000;
   const lows = Math.min(...pts.map((p) => pct(p[1], p[2])));
   const highs = Math.max(...pts.map((p) => pct(p[1], p[2])));
-  const label = `Production d'électricité de l'île sur 24\u00a0h, de ${hm(t0)} à ${hm(tl)}\u00a0: part renouvelable de ${lows}\u00a0% à ${highs}\u00a0%.`;
+  const label = `Production d'électricité de l'île sur 24\u00a0h, du ${dm(t0)} à ${hm(t0)} au ${dm(tl)} à ${hm(tl)}\u00a0: part renouvelable de ${lows}\u00a0% à ${highs}\u00a0%.`;
   const svg = `<svg class="ech" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}">` +
     `<g class="cg">${grid}</g><path class="ar ar-non" d="${area((p) => p[1] + p[2])}"/><path class="ar ar-ren" d="${area((p) => p[1])}"/>` +
     `<line class="cur" x1="${X(last[0])}" x2="${X(last[0])}" y1="0" y2="${CH}" vector-effect="non-scaling-stroke"/></svg>`;

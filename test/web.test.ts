@@ -168,14 +168,14 @@ describe("home page", () => {
     // The hero's island carries the temperatures measured now.
     // Each temperature leads to its station's row on the weather page; its bubble, said the same way to a screen
     // reader, gives the station, its altitude, the value to the tenth, and when and by whom it was measured.
-    expect(cold.text).toMatch(/<figure class="hero-map"><svg class="map relief" viewBox="[^"]+" role="group"[^]*?<a class="mk" href="\/meteo#st-[a-z0-9-]+" aria-label="[^"]+ · [\d\u202f]+\u202fm : \d+(,\d)?\u202f°C, mesurée à\u00a0\d\d:\d\d par [^"]+, voir le détail" data-tp="[^"]+ · [\d\u202f]+\u202fm" data-tv="\d+(,\d)?\u202f°C" data-td="mesurée à\u00a0\d\d:\d\d par [^"]+"><circle class="hit"[^>]+\/><title>[^<]+<\/title><circle class="sh"/);
+    expect(cold.text).toMatch(/<figure class="hero-map"><svg class="map relief" viewBox="[^"]+" role="group"[^]*?<a class="mk" href="\/meteo#st-[a-z0-9-]+" aria-label="[^"]+ · [\d\u202f]+\u202fm : \d+(,\d)?\u202f°C, mesurée le \d\d\/\d\d à[\s\u00a0]\d\d:\d\d par [^"]+, voir le détail" data-tp="[^"]+ · [\d\u202f]+\u202fm" data-tv="\d+(,\d)?\u202f°C" data-td="mesurée le \d\d\/\d\d à[\s\u00a0]\d\d:\d\d par [^"]+"><circle class="hit"[^>]+\/><title>[^<]+<\/title><circle class="sh"/);
     expect(cold.text).toContain('<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="/meteo">');
-    expect(cold.text).toMatch(/meteo_actuelle\(lieu: "[^"]+"\)<\/p>\s*<p class="bubble ai">\d+(,\d)?\u202f°C, mesurés à\u00a0\d\d:\d\d/);
+    expect(cold.text).toMatch(/meteo_actuelle\(lieu: "[^"]+"\)<\/p>\s*<p class="bubble ai">\d+(,\d)?\u202f°C, mesurés le \d\d\/\d\d à\u00a0\d\d:\d\d/);
     expect(cold.text).toContain("Piton Maïdo");
-    expect(cold.text).toMatch(/mesuré à\u00a0\d\d:\d\d/);
+    expect(cold.text).toMatch(/mesuré le \d\d\/\d\d à\u00a0\d\d:\d\d/);
     // No badge above the title since the top was made lighter (04/11/2026): the map's caption says when they measured.
     expect(cold.text).not.toContain("En direct · <b>");
-    expect(cold.text).toMatch(/<figcaption><span class="dot"><\/span>Températures mesurées à[\u00a0 ]\d\d:\d\d · /);
+    expect(cold.text).toMatch(/<figcaption><span class="dot"><\/span>Températures mesurées le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d · /);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     // Another isolate of the same data center: the weather from the edge, and the oldest of the other tiles brought up
     // to date afterwards, still within the limit.
@@ -404,7 +404,7 @@ describe("commune pages", () => {
     expect(cold.text).toContain('<link rel="canonical" href="https://rundata.re/aujourdhui/saint-leu">');
     expect(cold.text).toContain('href="/communes/saint-leu"');
     // The weather is built at once; the rest only read, and named with its page while it has no copy.
-    expect(cold.text).toMatch(/mesurés à\u00a0\d\d:\d\d par la station/);
+    expect(cold.text).toMatch(/mesurés le \d\d\/\d\d à\u00a0\d\d:\d\d par la station/);
     expect(cold.text).toContain("rundata.re ne mesure pas les bouchons");
     expect(cold.text).toMatch(/Pas de copie récente pour\u00a0: .*<a href="\/coupures-eau\/saint-leu">coupures d&#39;eau<\/a>/);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
@@ -901,7 +901,7 @@ describe("the maps lead to what they show", () => {
     expect(here.length).toBeGreaterThan(40);
     const rows = ids(meteo);
     expect(here.filter((a) => !rows.has(a.href.slice(1)))).toEqual([]);
-    expect(here.filter((a) => !/^[^:]+\s·\s[\d\s]+m\s:\s.+, mesures de \d\d:\d\d par .+, voir le détail$/.test(a.label))).toEqual([]);
+    expect(here.filter((a) => !/^[^:]+\s·\s[\d\s]+m\s:\s.+, mesures du \d\d\/\d\d à \d\d:\d\d par .+, voir le détail$/.test(a.label))).toEqual([]);
     // The rows can be reached under the sticky header, and say so for a moment when reached.
     expect(meteo).toMatch(/<li class="st tgt" id="st-[a-z0-9-]+" /);
 

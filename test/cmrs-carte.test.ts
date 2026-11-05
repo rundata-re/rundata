@@ -207,15 +207,15 @@ describe("the map on /cyclones (marketing's words, 27/10)", () => {
   it("shows the image whole, opening Météo-France's site, with its caption and our time of reading, named as such", () => {
     const h = carteHtml({ image: i }, NOW);
     expect(h).toContain(`<a href="https://meteofrance.re/fr/cyclone" rel="noopener"><img src="/cyclones/carte/0123456789abcdef.png" width="760" height="1122"`);
-    expect(h).toContain("Source : Météo-France. Carte de prévision de trajectoire du CMRS de La Réunion ; son heure d'émission est écrite sur la carte. Lue sur le site de Météo-France à 18:30 (heure de La Réunion). ");
+    expect(h).toContain("Source : Météo-France. Carte de prévision de trajectoire du CMRS de La Réunion ; son heure d'émission est écrite sur la carte. Lue sur le site de Météo-France le 03/02 à 18:30 (heure de La Réunion). ");
     expect(h).toContain(`<a href="https://meteofrance.re/fr/cyclone" rel="noopener">Consulter le site officiel de Météo-France</a>`);
-    expect(h).toContain(`alt="Carte de prévision de trajectoire publiée par le CMRS de La Réunion (Météo-France), lue sur son site à 18:30 (heure de La Réunion). Son heure d&#39;émission est écrite sur l&#39;image et n&#39;est pas reprise ici. Le nom des systèmes suivis et l&#39;heure du dernier avis sont écrits en texte sur cette page."`);
+    expect(h).toContain(`alt="Carte de prévision de trajectoire publiée par le CMRS de La Réunion (Météo-France), lue sur son site le 03/02 à 18:30 (heure de La Réunion). Son heure d&#39;émission est écrite sur l&#39;image et n&#39;est pas reprise ici. Le nom des systèmes suivis et l&#39;heure du dernier avis sont écrits en texte sur cette page."`);
     expect(h).not.toContain("émise le");
     expect(carteHtml({ image: i }, new Date("2026-02-04T08:00:00Z"))).toContain("Lue sur le site de Météo-France le 03/02 à 18:30 (heure de La Réunion).");
   });
 
   it("keeps the last image when Météo-France does not answer, with the line that says so", () => {
-    expect(carteHtml({ image: i, sans_reponse: true }, NOW)).toContain("Météo-France n'a pas répondu depuis 18:30 : c'est la dernière carte que nous avons lue.");
+    expect(carteHtml({ image: i, sans_reponse: true }, NOW)).toContain("Météo-France n'a pas répondu depuis le 03/02 à 18:30 : c'est la dernière carte que nous avons lue.");
     expect(carteHtml({ image: i, sans_reponse: true }, new Date("2026-02-04T08:00:00Z"))).toContain("Météo-France n'a pas répondu depuis le 03/02 à 18:30 : c'est la dernière carte que nous avons lue.");
   });
 
@@ -224,7 +224,7 @@ describe("the map on /cyclones (marketing's words, 27/10)", () => {
     expect(held).toContain("La carte de prévision de trajectoire du CMRS n'est pas affichée ici : nous n'avons pas pu vérifier qu'elle suit le dernier avis. ");
     expect(held).not.toContain("<img");
     const failed = carteHtml({ illisible: "2026-02-03T13:30:00.000Z" }, NOW);
-    expect(failed).toContain("La carte de prévision de trajectoire du CMRS n'a pas pu être lue à 17:30. ");
+    expect(failed).toContain("La carte de prévision de trajectoire du CMRS n'a pas pu être lue le 03/02 à 17:30. ");
     expect(failed).toContain("Consulter le site officiel de Météo-France</a>");
     expect(carteHtml(undefined, NOW)).toBe("");
   });

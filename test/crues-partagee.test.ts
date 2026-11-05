@@ -89,7 +89,7 @@ describe("the rivers kept by the scheduled event", () => {
     const { copy, live } = await tile(center(await builtThere(122), new FakeKv(), NOW));
     expect(asked).toBe(0);
     expect(copy?.fetchedAt).toEqual(new Date(NOW.getTime() - 122 * 60_000));
-    expect(live?.detail).toMatch(/ · lue à 09:40, sans réponse depuis$/);
+    expect(live?.detail).toMatch(/ · lue le 26\/10 à 09:40, sans réponse depuis$/);
   });
 
   it("is read from Vigicrues as before when KV has no copy", async () => {

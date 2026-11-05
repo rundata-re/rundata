@@ -29,10 +29,12 @@ import {
   deg,
   followed,
   GLAMA,
-  hm,
   icon,
   layout,
   type Live,
+  leAt,
+  leDeA,
+  leJour,
   LOBEHUB,
   merLive,
   meteoLive,
@@ -128,7 +130,7 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
     out.push({
       question: `Il fait combien ${esc(a(where))} en ce moment ?`,
       call: `meteo_actuelle(lieu: "${esc(where)}")`,
-      answer: `${thin(deg(s.temperature!))}, mesurés à ${hm(s.time)} (${since(s.time, now)}) par ${by} ${esc(s.nom)}, ` +
+      answer: `${thin(deg(s.temperature!))}, mesurés ${leAt(s.time)} (${since(s.time, now)}) par ${by} ${esc(s.nom)}, ` +
         `à ${metres(s.altitude_m)} d'altitude.${windText(s) ? ` ${esc(thin(windText(s)!.replace(/^vent/, "Vent")))}.` : ""}`,
     });
   }
@@ -145,7 +147,7 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
         : e.eruption_en_cours
         ? `Oui, le Piton de la Fournaise est en éruption (niveau ORSEC : ${esc(e.niveau_orsec)}).`
         // What the texts read say, with when, never « Non » on our word nor pitonlive's (marketing).
-        : `Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (${hm(h!.volcan!.fetchedAt)}).${e.niveau_inconnu ? "" : ` Niveau ORSEC : ${esc(e.niveau_orsec)}.`}`) +
+        : `Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (${leAt(h!.volcan!.fetchedAt)}).${e.niveau_inconnu ? "" : ` Niveau ORSEC : ${esc(e.niveau_orsec)}.`}`) +
         (q ? ` L'observatoire a localisé ${q.sous_le_volcan["7_jours"]} séisme${q.sous_le_volcan["7_jours"] > 1 ? "s" : ""} sous le volcan en 7 jours${q.lus_jusqu_au ? `, ${esc(jusquALecture(q.lus_jusqu_au))}` : ""}.` : ""),
     });
   }
@@ -166,7 +168,7 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
     out.push({
       question: "L'électricité vient d'où en ce moment ?",
       call: "electricite()",
-      answer: `${Math.round(p.renouvelable_pct)}\u202f% de sources renouvelables, sur ${Math.round(p.total_mw)} MW produits à ${esc(p.heure_mesure.split(" ")[1] ?? p.heure_mesure)}. ` +
+      answer: `${Math.round(p.renouvelable_pct)}\u202f% de sources renouvelables, sur ${Math.round(p.total_mw)} MW produits ${esc(leJour(p.heure_mesure))}. ` +
         `En tête : ${top.map((x) => `${esc(x.filiere.split(" (")[0])} (${Math.round(x.part_pct)}\u202f%)`).join(" et ")}, d'après EDF.`,
     });
   }
@@ -210,17 +212,17 @@ function champ(): string {
 function heroMap(h: HomeLive | null): string {
   const l = withTemp(h?.meteo ?? null);
   // The times of the temperatures shown, not the latest of every station read (a beacon at 14:05 for temperatures of
-  // 13:48 to 14:00, 04/11/2026): « à 14:00 », or « de 13:48 à 14:00 ».
+  // 13:48 to 14:00, 04/11/2026), with their day: « le 05/11 à 14:00 », or « le 05/11 de 13:48 à 14:00 ».
   const times = l.map((s) => s.time).sort();
   const [first, at] = [times[0], times[times.length - 1]];
-  const when = at && hm(first) !== hm(at) ? `de ${hm(first)} à ${hm(at)}` : at ? `à ${hm(at)}` : "";
+  const when = at ? leDeA(first, at) : "";
   // Each temperature leads to its station's row on the weather page; its bubble says the station, its altitude, the
   // value to the tenth as measured, and when and by whom.
   const by = (s: { source: string }) => (s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par la station de l'aéroport" : "");
   const markers: Marker[] = l.map((s) => ({
     lon: s.lon, lat: s.lat, label: `${Math.round(s.temperature!)}°`, say: `${Math.round(s.temperature!)} °C`, name: shortName(s.nom),
     color: chip(s.temperature!), round: true, href: `/meteo#${stationId(s.nom)}`,
-    tip: { place: `${shortName(s.nom)} · ${metres(s.altitude_m)}`, value: thin(deg(s.temperature!)), detail: `mesurée à\u00a0${hm(s.time)}${by(s)}` },
+    tip: { place: `${shortName(s.nom)} · ${metres(s.altitude_m)}`, value: thin(deg(s.temperature!)), detail: `mesurée ${leAt(s.time)}${by(s)}` },
   }));
   // The bubble of the marker hovered, tapped or focused, filled and placed by the page's script; hidden without it.
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="/meteo"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir le détail →</span></a>`;
@@ -277,9 +279,9 @@ function happening(h: HomeLive | null, now: Date): string {
   if (!shown.length && !news.length) return "";
   const link = (r: InfoRow, text: string) => `<a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${text}</a>`;
   const line = (r: InfoRow) =>
-    `<li><b>${hm(r.publie)}</b> ${link(r, esc(r.titre))} <span class="note">${esc(r.media)}${r.communes?.length ? ` · ${esc(r.communes.join(", "))}` : ""}</span></li>`;
+    `<li><b>${leAt(r.publie)}</b> ${link(r, esc(r.titre))} <span class="note">${esc(r.media)}${r.communes?.length ? ` · ${esc(r.communes.join(", "))}` : ""}</span></li>`;
   // Not how many are left: the copy keeps twelve entries of the day only (data.ts `buildActualites`).
-  const follow = more ? `<li><b>${hm(more.publie)}</b> ${link(more, "Toutes les entrées du direct")} <span class="note">${esc(more.media)}</span></li>` : "";
+  const follow = more ? `<li><b>${leAt(more.publie)}</b> ${link(more, "Toutes les entrées du direct")} <span class="note">${esc(more.media)}</span></li>` : "";
   return `<div class="card${d.chaud ? " warn" : ""} now-news"><h3>${icon("news")} En ce moment sur l'île</h3><ul class="plain">${shown.map(line).join("")}${follow}${news.map(line).join("")}</ul>` +
     `<p class="note"><a href="/actualites">Toute l'actualité, commune par commune →</a></p></div>`;
 }

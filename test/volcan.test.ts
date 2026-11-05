@@ -230,7 +230,7 @@ describe("volcano", () => {
     const copy = { "prefecture:communiques:copie": { liste: [], lu_le: new Date(NOW.getTime() - 2 * 3600_000).toISOString() } };
     copie.configure(async () => null);
     try {
-      expect(body(await volcanSeismes(cacheWith(undefined, { ...ipgp("injoignable"), ...copy }), NOW)).injoignable).toBe("Le site de l'OVPF-IPGP n'a pas répondu depuis le 21/10 (dernier essai le 22/10 à 06:02). Un communiqué ou un bulletin de l'observatoire publié depuis peut manquer ici\u00a0; ses publications sur Bluesky, elles, sont lues\u00a0; dernière lecture du site de la préfecture\u00a0: aujourd'hui à 01:20.");
+      expect(body(await volcanSeismes(cacheWith(undefined, { ...ipgp("injoignable"), ...copy }), NOW)).injoignable).toBe("Le site de l'OVPF-IPGP n'a pas répondu depuis le 21/10 (dernier essai le 22/10 à 06:02). Un communiqué ou un bulletin de l'observatoire publié depuis peut manquer ici\u00a0; ses publications sur Bluesky, elles, sont lues\u00a0; dernière lecture du site de la préfecture\u00a0: le 23/10 à 01:20.");
     } finally {
       copie.configure(undefined);
     }

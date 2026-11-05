@@ -356,8 +356,10 @@ function nonLu(agenda: Agenda, r: ReturnType<typeof nonServie>): string | undefi
 
 /** Why a copy of the scheduled event is not served (src.nonServie), in words: shared with `evenements`. */
 export function derniereLecture(r: NonNullable<ReturnType<typeof nonServie>>): string {
-  if ("depuis" in r) return `dernière lecture le ${quand(r.depuis)}`;
-  return r.essai ? `dernière lecture sans succès (${quand(r.essai)})` : "première lecture dans quelques minutes";
+  // « le 22/10 à 10:00 », the form of every read on the pages: no weekday.
+  const le = (local: string) => `le ${local.slice(8, 10)}/${local.slice(5, 7)}${local.length > 10 ? ` à ${local.slice(11, 16)}` : ""}`;
+  if ("depuis" in r) return `dernière lecture ${le(r.depuis)}`;
+  return r.essai ? `dernière lecture sans succès (${le(r.essai)})` : "première lecture dans quelques minutes";
 }
 
 /**

@@ -11,7 +11,7 @@ import { injoignable } from "../tools/injoignable.js";
 import { crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { hm, layout, readAt } from "./pages.js";
+import { hm, layout, readAt, leAt } from "./pages.js";
 
 export const PATH = "/marches-publics";
 export const NOM = "Marchés publics";
@@ -103,10 +103,10 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
     : d.prochaine
       ? `<p class="card">Les avis ne sont pas encore lus : prochaine lecture prévue à ${hm(d.prochaine)}.</p>`
       : triage
-      ? `<p class="card">${plural(d.enLecture!, "avis lu", "avis lus")} au BOAMP à ${hm(d.lu ?? data.fetchedAt)} ${d.enLecture! > 1 ? "sont" : "est"} en cours de tri, pour ne garder que ceux de l'île.</p>`
+      ? `<p class="card">${plural(d.enLecture!, "avis lu", "avis lus")} au BOAMP ${leAt(d.lu ?? data.fetchedAt)} ${d.enLecture! > 1 ? "sont" : "est"} en cours de tri, pour ne garder que ceux de l'île.</p>`
       : d.avis.length
       ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="avis">${d.avis.map((a) => row(a, now)).join("")}</ul>`
-      : `<p class="card">Aucun avis de marché ouvert pour La Réunion sur le BOAMP à ${hm(data.fetchedAt)}.</p>`;
+      : `<p class="card">Aucun avis de marché ouvert pour La Réunion sur le BOAMP ${leAt(data.fetchedAt)}.</p>`;
 
   const title = "Marchés publics Réunion : avis de marché et appels d'offres en cours · 974";
   const description = "Les avis de marché publiés au BOAMP pour La Réunion (974) : travaux, services et fournitures des collectivités, de l'État et des hôpitaux, avec la date limite et le lien vers l'avis.";

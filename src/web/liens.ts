@@ -155,7 +155,7 @@ export function communeEvents(p: PlacePage, agenda: Cached<AgendaAnswer> | null 
   // title; the value follows the other sources, which answered (marketing; tools/injoignable.ts).
   const at = localTime(agenda.fetchedAt);
   const silent = silentOf(agenda.value.indisponible, p.nom, at, now);
-  const hour = at.split(" ")[0] === localTime(now).split(" ")[0] ? at.split(" ")[1] : at;
+  const hour = `le ${at.split(" ")[0]} à ${at.split(" ")[1]}`;
   const said = silent.length > 1 ? `${silent.length} sites sans réponse (${hour})` : silent.length ? `${silent[0].site.replace(/^le /, "")} sans réponse (${hour})` : undefined;
   const whole = silent.length ? silent.map((x) => x.texte).join(" ") : undefined;
   if (!rows.length && said) return { valeur: "Rien d'annoncé", detail: esc(said), title: whole };

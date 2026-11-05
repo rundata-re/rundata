@@ -10,10 +10,10 @@ import { localTime } from "../geo.js";
 import { esc } from "./map.js";
 import { officielHtml } from "./pages.js";
 
-/** « 17:30 » the same day as `now`, « le 26/10 à 22:10 » another day. */
-const heure = (iso: string, now: Date) => {
+/** « le 26/10 à 22:10 », with its day even today. */
+const heure = (iso: string, _now?: Date) => {
   const [day, time] = localTime(new Date(iso)).split(" ");
-  return day === localTime(now).split(" ")[0] ? time : `le ${day} à ${time}`;
+  return `le ${day} à ${time}`;
 };
 const aOuLe = (iso: string, now: Date) => {
   const h = heure(iso, now);

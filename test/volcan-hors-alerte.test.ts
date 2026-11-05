@@ -94,13 +94,13 @@ describe("out of an alert, whether it erupts only with the official texts", () =
     const copy = { value: v, fetchedAt: NOW, stale: false };
     expect(volcanLive(copy)).toEqual({
       valeur: "Pas d'éruption annoncée",
-      detail: expect.stringMatching(/^OVPF et préfecture, textes lus à 18:00 · Enclos : « réouverture partielle » \(préfecture, 20\/10\) · \d+ séismes? localisés? par l'OVPF sous le volcan en 7 jours$/),
-      source: "OVPF et préfecture, textes lus à 18:00",
+      detail: expect.stringMatching(/^OVPF et préfecture, textes lus le 23\/10 à 18:00 · Enclos : « réouverture partielle » \(préfecture, 20\/10\) · \d+ séismes? localisés? par l'OVPF sous le volcan en 7 jours$/),
+      source: "OVPF et préfecture, textes lus le 23/10 à 18:00",
     });
     const home = homePage(O, { volcan: copy } as unknown as HomeLive, NOW);
-    expect(home).toContain(`<p class="tv">Pas d'éruption annoncée</p><p class="td">OVPF et préfecture, textes lus à 18:00 · `);
+    expect(home).toContain(`<p class="tv">Pas d'éruption annoncée</p><p class="td">OVPF et préfecture, textes lus le 23/10 à 18:00 · `);
     const demo = demos({ volcan: copy } as unknown as HomeLive, NOW).find((d) => d.call === "volcan_seismes()")!.answer.replace(/&#39;/g, "'");
-    expect(demo.startsWith("Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (18:00). Niveau ORSEC : Vigilance.")).toBe(true);
+    expect(demo.startsWith("Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (le 23/10 à 18:00). Niveau ORSEC : Vigilance.")).toBe(true);
   });
 });
 

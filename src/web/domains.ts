@@ -58,7 +58,7 @@ import { T as FERRY } from "../tools/ferries.js";
 import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
 import * as atmo from "../providers/atmo.js";
-import { anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, officielHtml, readAt, SITE, vg } from "./pages.js";
+import { anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater } from "./eau-cyclone.js";
@@ -104,7 +104,7 @@ const crumbBar = (label: string, parent?: { name: string; path: string }) =>
 const loading = (what: string) => `<p class="lead">${esc(what)} se charge : rechargez la page dans quelques secondes.</p>`;
 
 const sourcesNote = (list: { source: string; licence: string; attribution: string }[], data: Cached<unknown>) =>
-  `<p class="note">Mis à jour à ${hm(data.fetchedAt)}.</p><p class="sources">Sources : ${credits(list)}.</p>`;
+  `<p class="note">Mis à jour ${leAt(data.fetchedAt)}.</p><p class="sources">Sources : ${credits(list)}.</p>`;
 
 /**
  * The agendas of the scheduled event not read lately (tools/agenda.ts, `non_lus`: « Ville de Saint-Leu : dernière
@@ -424,7 +424,7 @@ export function volcanLive(data: Cached<VolcanAnswer> | null, now = new Date()):
   const q = typeof data!.value.seismes === "object" ? data!.value.seismes : undefined;
   const enclos = enclosShort(e.acces_enclos);
   // What the texts read say, never « no eruption » on our word, nor pitonlive's (marketing).
-  const lus = `OVPF et préfecture, textes lus à ${hm(data!.fetchedAt)}`;
+  const lus = `OVPF et préfecture, textes lus ${leAt(data!.fetchedAt)}`;
   return {
     valeur: "Pas d'éruption annoncée",
     detail: [
@@ -496,9 +496,8 @@ function airMeasured(l: AirLayer, lu: string, now: Date): string {
   // Worded by marketing (29/10/2026): the verb says it is a measure; the legend's name of the pollutant.
   const name = `${l.polluant[0].toUpperCase()}${l.polluant.slice(1)} ${l.polluant.startsWith("particules") ? "mesurées" : "mesuré"} ${l.heure}`;
   const lead = at.length > 1 ? `${name} à ${at.length} stations d'Atmo Réunion : le plus haut ${aLieu(where(hi))}.` : `${name} à la station ${where(hi)}.`;
-  // The day only when the reading is not today's, as the forecast's note under it.
-  const [le, a] = lu.split(" ");
-  const when = le === localTime(now).split(" ")[0] ? `à ${a}` : `le ${le} à ${a}`;
+  // With its day, as every reading.
+  const when = leJour(lu);
   return `<div class="status"><p class="big">${esc(big)}</p><p class="lead">${esc(lead)}</p>` +
     `<p class="note">Mesure brute, non validée, publiée par le LCSQA. Lue par rundata.re ${esc(when)}.</p></div>`;
 }
@@ -741,7 +740,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
 
   const title = "Électricité Réunion en direct : part renouvelable · 974";
   const description = p
-    ? describe(`Électricité à La Réunion (974) à ${p.heure_mesure.split(" ")[1]} : ${fr(Math.round(p.total_mw))} MW produits, dont ${fr(Math.round(p.renouvelable_pct))} % renouvelable. Filière par filière, et les heures où le réseau est chargé.`,
+    ? describe(`Électricité à La Réunion (974) ${leJour(p.heure_mesure)} : ${fr(Math.round(p.total_mw))} MW produits, dont ${fr(Math.round(p.renouvelable_pct))} % renouvelable. Filière par filière, et les heures où le réseau est chargé.`,
         `Électricité à La Réunion (974) : ${fr(Math.round(p.renouvelable_pct))} % renouvelable en ce moment. Filière par filière, et les heures où le réseau est chargé.`)
     : "Électricité à La Réunion (974) en direct : d'où vient le courant, la part renouvelable et les heures où le réseau est chargé.";
 
@@ -793,7 +792,7 @@ export function electriciteLive(data: Cached<ElectriciteAnswer> | null, now = ne
   const jeu = data!.value.meteo_electricite?.mis_a_jour;
   return {
     valeur: `${fr(Math.round(p.renouvelable_pct))}\u202f% renouvelable`,
-    detail: `${esc(fr(Math.round(p.total_mw)))} MW produits à ${esc(p.heure_mesure.split(" ")[1] ?? p.heure_mesure)}${signal ? ` · signal EDF ${esc(signal.toLowerCase())}${jeu ? ` (annoncé le ${esc(jeu.replace(" ", " à "))})` : ""}` : ""}`,
+    detail: `${esc(fr(Math.round(p.total_mw)))} MW produits ${esc(leJour(p.heure_mesure))}${signal ? ` · signal EDF ${esc(signal.toLowerCase())}${jeu ? ` (annoncé le ${esc(jeu.replace(" ", " à "))})` : ""}` : ""}`,
     // Never cut before the date EDF's terms ask for (three lines at 390 px are not enough for it).
     ...(signal && jeu && { entier: true }),
   };
@@ -1030,8 +1029,8 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
             : `<p>Pas de départ prévu dans les prochaines heures.</p>`) +
         `</li>`;
       }).join("")}</ul>` +
-      `<p class="note">${d!.temps_reel?.length ? `${esc(d!.temps_reel.map((t) => t.reseau).join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues à ${esc(d!.temps_reel[0].heure)}). ` : ""}` +
-      `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour à ${hm(data!.fetchedAt)}.</p>`
+      `<p class="note">${d!.temps_reel?.length ? `${esc(d!.temps_reel.map((t) => t.reseau).join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues ${esc(leJour(d!.temps_reel[0].heure))}). ` : ""}` +
+      `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour ${leAt(data!.fetchedAt)}.</p>`
     : `<p class="card">Les prochains départs à n'importe quel arrêt de l'île sont donnés par le connecteur : demandez à votre assistant « le prochain bus à la gare de Saint-Pierre ? ».</p>`;
 
   const title = "Horaires bus Réunion : prochains départs en gare · 974";
@@ -1231,11 +1230,13 @@ function floodLevels(stations: CruesStation[], read: string): string {
   const others = stations.filter((s) => !upToDate(s) && !unpublished(s));
   const end = (none.length ? ` ${esc(vigicrues.NONE_PUBLISHED[0].toUpperCase() + vigicrues.NONE_PUBLISHED.slice(1))} : ${none.map((s) => esc(s.station)).join(", ")}.` : "") +
     (others.length > 1 ? ` ${none.length ? `${others.length} autres stations` : `Les ${others.length} autres`} n'ont pas de mesure récente.` : others.length ? ` Une station n'a pas de mesure récente : ${esc(others[0].station)}.` : "");
-  const at = fresh.map(measuredHm).sort().at(-1);
+  // The newest measure, with its day (« du 05/11 à 04:50 »).
+  const newest = [...fresh].sort((x, y) => measuredHm(x).localeCompare(measuredHm(y))).at(-1);
+  const at = newest?.heure_mesure ? duJour(newest.heure_mesure) : "";
   const rising = fresh.filter((s) => s.tendance_30_min === "en hausse");
-  if (rising.length) return `<p class="lead">En hausse sur la dernière demi-heure (mesures de ${at}) : ${rising.map((s) => `${esc(s.station)} (${esc(s.riviere)}, ${esc(s.commune)}), ${metres(s.hauteur_m!)}`).join(" ; ")}.${end}</p>`;
-  if (fresh.length === 1) return `<p class="lead">Mesure de ${at} : la seule station à jour n'est pas en hausse sur la dernière demi-heure.${end}</p>`;
-  return `<p class="lead">Mesures de ${at} : aucune des ${fresh.length} stations à jour n'est en hausse sur la dernière demi-heure.${end}</p>`;
+  if (rising.length) return `<p class="lead">En hausse sur la dernière demi-heure (mesures ${at}) : ${rising.map((s) => `${esc(s.station)} (${esc(s.riviere)}, ${esc(s.commune)}), ${metres(s.hauteur_m!)}`).join(" ; ")}.${end}</p>`;
+  if (fresh.length === 1) return `<p class="lead">Mesure ${at} : la seule station à jour n'est pas en hausse sur la dernière demi-heure.${end}</p>`;
+  return `<p class="lead">Mesures ${at} : aucune des ${fresh.length} stations à jour n'est en hausse sur la dernière demi-heure.${end}</p>`;
 }
 
 /** What a gauge measured, as its line says it (text, not HTML); without a level, null. */
@@ -1243,8 +1244,8 @@ const gaugeValue = (s: CruesStation): string | null =>
   s.hauteur_m == null
     ? null
     : s.avertissement
-      ? `${metres(s.hauteur_m)} à ${measuredHm(s)} · pas de mesure plus récente`
-      : [`${metres(s.hauteur_m)}, ${s.tendance_30_min ?? ""}`, ...(s.debit_m3s != null ? [flow(s.debit_m3s)] : []), `mesurée à ${measuredHm(s)}`].join(" · ");
+      ? `${metres(s.hauteur_m)} ${leJour(s.heure_mesure ?? "")} · pas de mesure plus récente`
+      : [`${metres(s.hauteur_m)}, ${s.tendance_30_min ?? ""}`, ...(s.debit_m3s != null ? [flow(s.debit_m3s)] : []), `mesurée ${leJour(s.heure_mesure ?? "")}`].join(" · ");
 
 /** A gauge's line in its river's group: up to date, late, or without a level in our read. */
 function gaugeRow(s: CruesStation, read: string): string {
@@ -1459,7 +1460,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "rond", couleur: "#2b8a3e", texte: "3", dit: "points de charge libres dans la commune" },
     { forme: "rond", couleur: "#868e96", texte: "0", dit: "aucun libre" },
-  ], data ? esc(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'à ${hm(new Date(d.etat_jusqu_a))}` : ""}, lu à ${hm(data.fetchedAt)}.`) : undefined)}</figcaption></figure>
+  ], data ? esc(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'${leAt(new Date(d.etat_jusqu_a)).replace(/^le /, "au ")}` : ""}, lu ${leAt(data.fetchedAt)}.`) : undefined)}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-rapide">
@@ -1772,7 +1773,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
       `Le sentier de Roche Plate est-il ouvert ? Lis ${url} et dis-moi si je peux descendre dans Mafate.`)}
   </div>
   <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : les sentiers de randonnée fermés" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende([CLE_FERME, ...(burning ? [CLE_FEU] : [])], esc(`${onfMap(d)}.${burning ? ` Points chauds : satellites de la NASA (FIRMS)${d?.feux?.lu ? `, lus à ${hm(d.feux.lu)}` : ""}.` : ""}`))}</figcaption></figure>
+  <figcaption class="note" style="color:var(--on-night-muted)">${legende([CLE_FERME, ...(burning ? [CLE_FEU] : [])], esc(`${onfMap(d)}.${burning ? ` Points chauds : satellites de la NASA (FIRMS)${d?.feux?.lu ? `, lus ${leAt(d.feux.lu)}` : ""}.` : ""}`))}</figcaption></figure>
 </div>`;
 
   const body = `${burning ? fires : ""}<section aria-labelledby="h-fermes">
@@ -1875,7 +1876,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
     ? `<ul class="rows eau">${b.retards.slice(0, 12).map((r) => `<li><span>${esc(r.reseau)} ${esc(r.ligne)} vers ${esc(r.direction)}<small>gare ${esc(de(r.gare))}, départ prévu ${esc(atDay(saidNow(r.heure, data!.fetchedAt.getTime(), now)))}</small></span><span class="score">${r.retard_min} min</span></li>`).join("")}</ul>`
     : `<p>${b.suivis ? `Aucun des ${b.suivis} départs suivis en direct n'a plus de ${LATE_MIN} min de retard.` : "Pas de départ suivi en direct en ce moment."}</p>`}
   ${b.alertes.length ? `<h4>Déviations et avis des réseaux</h4>${alertList(b.alertes)}` : ""}
-  ${b.temps_reel.length ? `<p class="note">Flux en direct : ${b.temps_reel.map((t) => `${esc(t.reseau)} à ${esc(t.heure)}`).join(", ")}. <a href="/bus">Les prochains départs</a>.</p>` : `<p class="note"><a href="/bus">Les prochains départs</a>.</p>`}</div>`;
+  ${b.temps_reel.length ? `<p class="note">Flux en direct : ${b.temps_reel.map((t) => `${esc(t.reseau)} ${esc(leJour(t.heure))}`).join(", ")}. <a href="/bus">Les prochains départs</a>.</p>` : `<p class="note"><a href="/bus">Les prochains départs</a>.</p>`}</div>`;
 
   const rf = d?.routes_forestieres;
   const roadsCard = !d
@@ -2223,7 +2224,7 @@ export function feuxLive(data: Cached<SentiersAnswer> | null): Live | undefined 
   const f = data?.value.feux;
   if (!f) return undefined;
   const n = f.detections.length;
-  const lu = f.lu ? `, lu à\u00a0${hm(f.lu)}` : "";
+  const lu = f.lu ? `, lu ${leAt(f.lu)}` : "";
   return n
     ? { valeur: `${n} point${n > 1 ? "s" : ""} chaud${n > 1 ? "s" : ""}`, detail: `ces dernières 24\u00a0h, par satellite (NASA FIRMS)${lu} · faux positifs possibles` }
     : { valeur: "aucun point chaud détecté", detail: `ces dernières 24\u00a0h, par satellite (NASA FIRMS)${lu}` };
@@ -3459,12 +3460,14 @@ export { agendaRow, connectorCta, crumbBar, crumbs, describe, GENRE_SCRIPT, GENR
 
 type NewsRow = ActualitesAnswer["infos"][number];
 /** « 11:33 » today, « hier à 18:20 », « jeudi 22/10 à 09:11 ». */
-const newsTime = (r: NewsRow) => r.quand.replace(/^aujourd'hui à /, "");
+// With its day even today (« le 05/11 à 04:49 »), and the day alone for a source that gives no time (« le 04/11 »): a
+// relative « hier à 22:05 » misleads on a page copied or read the next day.
+const newsTime = (r: Pick<NewsRow, "publie" | "il_y_a">) => (r.il_y_a ? leAt(r.publie) : `le ${localTime(new Date(r.publie)).split(" ")[0]}`);
 
 function newsRow(r: NewsRow): string {
   const small = [r.media + (r.aussi?.length ? ` (aussi ${r.aussi.map((x) => x.media).join(", ")})` : ""), r.communes?.join(", ")].filter(Boolean).map((x) => esc(x!)).join(" · ");
   return `<li data-k="${esc(r.lien)}" data-c="${esc((r.communes ?? []).join("|"))}" data-s="${esc((r.sujets ?? []).join("|"))}"><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>` +
-    `${r.resume ? `<small>${esc(r.resume)}</small>` : ""}<small>${small}</small></span><span class="q-none">${esc(newsTime(r))}</span></li>`;
+    `${r.resume ? `<small>${esc(r.resume)}</small>` : ""}<small>${small}<span class="nt">${small ? " · " : ""}${esc(newsTime(r))}</span></small></span><span class="q-none">${esc(newsTime(r))}</span></li>`;
 }
 
 const NEWS_FILTER = `<form id="nf" class="card filter" hidden role="search" aria-label="Filtrer les informations">
@@ -3492,7 +3495,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     // All of them, as actualites counts them; the list keeps the newest (26/10/2026: 40 here, 103 in the tool).
     : `<div class="now"><span class="big">${d.total ?? d.infos.length}</span><p>informations des médias de l'île depuis 24 h` +
       `${(d.total ?? 0) > d.infos.length ? `\u00a0; les ${d.infos.length} plus récentes ci-dessous` : ""}` +
-      `${d.en_direct.length ? ` ; <b>${esc(d.en_direct[0].media)} suit la journée en direct</b> (dernière entrée à ${esc(newsTime(d.en_direct[0]))})` : ""}.</p></div>`;
+      `${d.en_direct.length ? ` ; <b>${esc(d.en_direct[0].media)} suit la journée en direct</b> (dernière entrée ${esc(newsTime(d.en_direct[0]))})` : ""}.</p></div>`;
 
   const top = d ? (d.en_direct.length ? d.en_direct : d.infos).slice(0, 6) : [];
   const side = d
@@ -3503,7 +3506,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
 
   const list = d
     ? d.infos.length
-      ? `${NEWS_FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="news">${d.infos.map(newsRow).join("")}</ul>`
+      ? `${NEWS_FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau news" id="news">${d.infos.map(newsRow).join("")}</ul>`
       : d.indisponible.length ? "" : `<p class="card">Aucune information des médias lus depuis 24 h.</p>`
     : `<p class="card">L'actualité se charge : rechargez la page dans quelques secondes.</p>`;
 
@@ -3511,8 +3514,8 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     ? `<section aria-labelledby="h-direct">
   <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-direct">Le direct ${/^[aeiouyéèêiî]/i.test(d.en_direct[0].media) ? "d'" : "de "}${esc(d.en_direct[0].media)}</h2>
   <p>Les entrées du direct, la plus récente en haut, avec leur première phrase et ce qu'elles disent des communes. Le texte complet est sur le site du média.</p></div>
-  <ul class="rows eau">${d.en_direct.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>${r.resume ? `<small>${esc(r.resume)}</small>` : ""}` +
-    `${r.communes?.length ? `<small>${esc(r.communes.join(", "))}</small>` : ""}</span><span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+  <ul class="rows eau news">${d.en_direct.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)}>${esc(r.titre)}</a>${r.resume ? `<small>${esc(r.resume)}</small>` : ""}` +
+    `${r.communes?.length ? `<small>${esc(r.communes.join(", "))}</small>` : ""}<small class="nt">${esc(newsTime(r))}</small></span><span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
 </section>`
     : "";
 
@@ -3520,7 +3523,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
     ? `<section aria-labelledby="h-pref">
   <div class="sec-h"><p class="eyebrow">Officiel</p><h2 id="h-pref">Communiqués de la préfecture</h2><p>Mesures de sécurité, interdictions, routes, eau : les consignes officielles priment.</p></div>
   ${d.prefecture_injoignable ? `<p class="note">${silentText(d.prefecture_injoignable)}</p>` : ""}
-  <ul class="rows eau">${d.prefecture.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener">${esc(r.titre)}</a></span><span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
+  <ul class="rows eau news">${d.prefecture.map((r) => `<li><span><a href="${esc(r.lien)}" rel="noopener">${esc(r.titre)}</a><small class="nt">${esc(newsTime(r))}</small></span><span class="q-none">${esc(newsTime(r))}</span></li>`).join("")}</ul>
 </section>`
     : "";
 

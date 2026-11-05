@@ -30,15 +30,20 @@ export const CONNEXIONS_EN_TOUT_JOUR = 50;
 /** How long the verified keys wait for « C'est bien nous ». */
 export const ATTENTE_SECONDES = 30 * 60;
 
+/** Statements run together, all or none (D1's batch): the rows each one changed. */
+export type Batch = (statements: [sql: string, ...params: unknown[]][]) => Promise<number[]>;
+
 let run: Run | undefined;
 let all: All | undefined;
 let envoi: Envoi | undefined;
+let batch: Batch | undefined;
 
-/** The table's doors, to write and to read (worker.ts, the feedback's database), and how the e-mails go. */
-export function configure(db: Run | undefined, select?: All, send?: Envoi) {
+/** The table's doors, to write and to read (worker.ts, the feedback's database), how the e-mails go, and a batch. */
+export function configure(db: Run | undefined, select?: All, send?: Envoi, together?: Batch) {
   run = db;
   all = select;
   envoi = send;
+  batch = together;
 }
 
 /** Whether a link can be made: the table, the e-mail and the encryption key. */
@@ -98,14 +103,17 @@ export async function sceller(a: Attente): Promise<string> {
   return `${nonce}.${await chiffre.chiffrer(JSON.stringify(a), chiffre.lien("attente", nonce, ""))}`;
 }
 
+/** A verification opened, with its seal's nonce: « C'est bien nous » uses it once (`enregistrer`). */
+export type Ouverte = Attente & { nonce: string };
+
 /** The verification back; undefined when it was changed, comes from elsewhere, or waited too long. */
-export async function ouvrir(scelle: string, now = new Date()): Promise<Attente | undefined> {
+export async function ouvrir(scelle: string, now = new Date()): Promise<Ouverte | undefined> {
   const at = scelle.indexOf(".");
   if (at < 1 || scelle.length > 8192) return undefined;
   try {
     const a = JSON.parse(await chiffre.dechiffrer(scelle.slice(at + 1), chiffre.lien("attente", scelle.slice(0, at), ""))) as Attente;
     const age = Math.floor(now.getTime() / 1000) - a.t;
-    return age >= 0 && age <= ATTENTE_SECONDES && PLATEFORMES[a.plateforme] ? a : undefined;
+    return age >= 0 && age <= ATTENTE_SECONDES && PLATEFORMES[a.plateforme] ? { ...a, nonce: scelle.slice(0, at) } : undefined;
   } catch {
     return undefined;
   }
@@ -116,20 +124,28 @@ export async function ouvrir(scelle: string, now = new Date()): Promise<Attente 
 // A verification already written: a link of the same association to the same address, started since it was verified.
 // The sealed page can be sent again for 30 minutes; it makes one link, and one e-mail, once.
 const DEJA_ECRITE = "SELECT 1 FROM connexions WHERE plateforme = ? AND organisation = ? AND email = ? AND t >= ?";
+// The seal used once, even when its link is gone since (withdrawn, or replaced by a newer one): its nonce is kept, with
+// the hash of the link this « C'est bien nous » makes, for as long as a seal lives (scripts/connecteurs.sql). The link
+// is written only when this attempt is the one that kept the nonce; a nonce whose link was refused (the day's limits)
+// is given back, so that the same page can be sent again.
+const SCELLE_PRIS = "INSERT OR IGNORE INTO scelles_utilises (nonce, t, jeton) VALUES (?, ?, ?)";
+const SCELLE_A_NOUS = "EXISTS (SELECT 1 FROM scelles_utilises WHERE nonce = ? AND jeton = ?)";
+const SCELLE_RENDU = "DELETE FROM scelles_utilises WHERE nonce = ? AND jeton = ? AND NOT EXISTS (SELECT 1 FROM connexions WHERE jeton = ?)";
 const INSERT = `INSERT INTO connexions (t, plateforme, organisation, nom, commune, code_postal, lien, secret, email, jeton, etat, source, ouvert)
 SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'a_confirmer', ?, ?
 WHERE (SELECT COUNT(*) FROM connexions WHERE source = ? AND t > ?) < ? AND (SELECT COUNT(*) FROM connexions WHERE t > ?) < ?
-AND NOT EXISTS (${DEJA_ECRITE})`;
+AND NOT EXISTS (${DEJA_ECRITE}) AND ${SCELLE_A_NOUS}`;
 
 /**
  * Writes the link waiting for its confirmation, its secret encrypted for this row, and e-mails the link: `base`
  * followed by the link's secret. Refused in the same statement when its sender, or everyone together, started too
  * many today, or when this verification was already written (« C'est bien nous » sent twice, or the sealed page
- * replayed): then nothing more is written nor sent, and the e-mail already sent is the answer. A link whose e-mail
- * could not be sent stays unconfirmed, and goes after 48 hours like any other.
+ * replayed, its link since withdrawn or replaced included): then nothing more is written nor sent, and the e-mail
+ * already sent is the answer. A link whose e-mail could not be sent stays unconfirmed, and goes after 48 hours like any
+ * other.
  */
-export async function enregistrer(a: Attente, adresse: string, base: string, now = new Date()): Promise<Issue> {
-  if (!enabled()) return "indisponible";
+export async function enregistrer(a: Ouverte, adresse: string, base: string, now = new Date()): Promise<Issue> {
+  if (!enabled() || !batch) return "indisponible";
   const t = Math.floor(now.getTime() / 1000);
   const source = await empreinte(adresse, now);
   const secretLien = jetonNeuf();
@@ -137,7 +153,12 @@ export async function enregistrer(a: Attente, adresse: string, base: string, now
   const o = a.organisation;
   try {
     const secret = await chiffre.chiffrer(a.secret, chiffre.lien(a.plateforme, o.id, jeton));
-    const changed = await run!(INSERT, t, a.plateforme, o.id, o.nom, o.commune ?? null, o.code_postal ?? null, o.lien, secret, a.email, jeton, source, a.ouvert ? 1 : 0, source, t - 86400, CONNEXIONS_PAR_JOUR, t - 86400, CONNEXIONS_EN_TOUT_JOUR, a.plateforme, o.id, a.email, a.t);
+    const [pris, changed] = await batch([
+      [SCELLE_PRIS, a.nonce, t, jeton],
+      [INSERT, t, a.plateforme, o.id, o.nom, o.commune ?? null, o.code_postal ?? null, o.lien, secret, a.email, jeton, source, a.ouvert ? 1 : 0, source, t - 86400, CONNEXIONS_PAR_JOUR, t - 86400, CONNEXIONS_EN_TOUT_JOUR, a.plateforme, o.id, a.email, a.t, a.nonce, jeton],
+      [SCELLE_RENDU, a.nonce, jeton, jeton],
+    ]);
+    if (pris === 0) return "ok";
     if (changed === 0) return (await all!(DEJA_ECRITE, a.plateforme, o.id, a.email, a.t)).length ? "ok" : "limite";
   } catch (err) {
     console.error("connecteurs : écriture impossible", err instanceof Error ? err.message : String(err));
@@ -223,13 +244,16 @@ export async function retirer(secretLien: string): Promise<{ nom: string; ouvert
  */
 export async function purger(now = new Date()): Promise<number> {
   // Before the flag, no link to forget, and maybe no table yet.
-  if (!run || !enLigne()) return 0;
+  if (!batch || !enLigne()) return 0;
   const t = Math.floor(now.getTime() / 1000);
-  let n = 0;
-  n += await run("UPDATE connexions SET source = NULL WHERE source IS NOT NULL AND t < ?", t - 86400);
-  n += await run("DELETE FROM connexions WHERE etat = 'a_confirmer' AND t < ?", t - 172800);
-  n += await run("DELETE FROM connexions WHERE etat IN ('refuse', 'expire') AND COALESCE(modere_le, lu_le, t) < ?", t - 2592000);
-  return n;
+  // One call to D1 for the four (src/registre.ts, connecteurs:purge).
+  const changed = await batch([
+    ["UPDATE connexions SET source = NULL WHERE source IS NOT NULL AND t < ?", t - 86400],
+    ["DELETE FROM connexions WHERE etat = 'a_confirmer' AND t < ?", t - 172800],
+    ["DELETE FROM connexions WHERE etat IN ('refuse', 'expire') AND COALESCE(modere_le, lu_le, t) < ?", t - 2592000],
+    ["DELETE FROM scelles_utilises WHERE t < ?", t - ATTENTE_SECONDES],
+  ]);
+  return changed.reduce((a, b) => a + b, 0);
 }
 
 // ---------------------------------------------------------------- the e-mails (marketing's words)

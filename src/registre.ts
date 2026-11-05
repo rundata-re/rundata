@@ -544,10 +544,10 @@ const SCHEDULED: Entry[] = [
   {
     id: "connecteurs:purge",
     trigger: "planifiée",
-    what: "plateformes des associations : la purge quotidienne (D1), à 04:00 heure de La Réunion",
+    what: "plateformes des associations : la purge quotidienne (D1, ses quatre instructions en un seul appel), à 04:00 heure de La Réunion",
     every: 24 * 60,
     offset: 0,
-    run: { subrequests: 3, d1Calls: 3, d1RowsWritten: 5, cpuMs: 2 },
+    run: { subrequests: 1, d1Calls: 1, d1RowsWritten: 5, cpuMs: 2 },
     from: [],
     basis: "estimé",
   },

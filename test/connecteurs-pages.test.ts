@@ -35,6 +35,18 @@ beforeEach(() => {
     async (sql, ...params) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes),
     async <T>(sql: string, ...params: unknown[]) => db.prepare(sql).all(...(params as (string | number | null)[])) as T[],
     async (m) => (sent.push(m), true),
+    async (statements) => {
+      // D1's batch: one transaction, all or none.
+      db.exec("BEGIN");
+      try {
+        const n = statements.map(([sql, ...params]) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes));
+        db.exec("COMMIT");
+        return n;
+      } catch (err) {
+        db.exec("ROLLBACK");
+        throw err;
+      }
+    },
   );
   formulaires.ouvrir(true);
   connecteurs.ouvrir(true);
@@ -200,6 +212,94 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     await relie();
     expect(rows("SELECT etat FROM connexions ORDER BY id")).toEqual([{ etat: "a_moderer" }, { etat: "a_confirmer" }]);
     expect(sent).toHaveLength(2);
+  });
+
+  it("writes nothing more when the sealed page is sent again after its link was withdrawn", async () => {
+    const r = await post(connecteurs.RELIER_PATH, CLES);
+    const scelle = /name="attente" value="([^"]+)"/.exec(await r.text())![1];
+    await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" });
+    const secret = /\/associations\/connexion\/([\w-]+)\n/.exec(sent[0].text)![1];
+    await post(`${connecteurs.CONNEXION_PATH}${secret}/retirer`, {});
+    expect(rows("SELECT * FROM connexions")).toEqual([]);
+    expect(sent).toHaveLength(2);
+    const again = await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" });
+    expect(again.status).toBe(200);
+    expect(plain(await again.text())).toContain("Un e-mail est parti à club@example.org.");
+    expect(rows("SELECT * FROM connexions")).toEqual([]);
+    expect(sent).toHaveLength(2);
+  });
+
+  it("writes nothing more when the sealed page is sent again after a newer link replaced its link", async () => {
+    const r = await post(connecteurs.RELIER_PATH, { ...CLES, email: "ancien@example.org" });
+    const scelle = /name="attente" value="([^"]+)"/.exec(await r.text())![1];
+    await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" });
+    await post(`${connecteurs.CONNEXION_PATH}${/\/associations\/connexion\/([\w-]+)\n/.exec(sent[0].text)![1]}`, {});
+    const second = await relie("nouveau@example.org");
+    await post(`${connecteurs.CONNEXION_PATH}${second}`, {});
+    expect(rows("SELECT email, etat FROM connexions")).toEqual([{ email: "nouveau@example.org", etat: "a_moderer" }]);
+    const n = sent.length;
+    await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" });
+    expect(rows("SELECT email, etat FROM connexions")).toEqual([{ email: "nouveau@example.org", etat: "a_moderer" }]);
+    expect(sent).toHaveLength(n);
+  });
+
+  it("gives the seal back when the day's limits refused its link, so that the same page can be sent again", async () => {
+    const r = await post(connecteurs.RELIER_PATH, CLES);
+    const scelle = /name="attente" value="([^"]+)"/.exec(await r.text())![1];
+    const t = Math.floor(Date.now() / 1000);
+    for (let i = 0; i < connexions.CONNEXIONS_EN_TOUT_JOUR; i++) {
+      db.prepare("INSERT INTO connexions (t, plateforme, organisation, nom, lien, jeton, etat) VALUES (?, 'helloasso', ?, 'Autre', 'https://x', ?, 'a_moderer')").run(t, `autre-${i}`, `j-${i}`);
+    }
+    expect((await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" })).status).toBe(429);
+    expect(rows("SELECT * FROM scelles_utilises")).toEqual([]);
+    db.prepare("DELETE FROM connexions").run();
+    expect((await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" })).status).toBe(200);
+    expect(rows("SELECT organisation FROM connexions")).toEqual([{ organisation: "club-de-petanque" }]);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("forgets a used seal once no sealed page can be that old (30 minutes), on the next one and once a day", async () => {
+    await relie();
+    const [{ t }] = rows<{ t: number }>("SELECT t FROM scelles_utilises");
+    expect(await connexions.purger(new Date((t + 10 * 60) * 1000))).toBe(0);
+    expect(rows("SELECT COUNT(*) AS n FROM scelles_utilises")).toEqual([{ n: 1 }]);
+    expect(await connexions.purger(new Date((t + 31 * 60) * 1000))).toBe(1);
+    expect(rows("SELECT * FROM scelles_utilises")).toEqual([]);
+    db.prepare("INSERT INTO scelles_utilises (nonce, t, jeton) VALUES ('vieux', ?, 'j')").run(t - 31 * 60);
+    db.prepare("INSERT INTO scelles_utilises (nonce, t, jeton) VALUES ('neuf', ?, 'k')").run(t);
+    expect(rows("SELECT nonce FROM scelles_utilises")).toEqual([{ nonce: "neuf" }]);
+  });
+
+  it("purges once a day in one call to D1: old fingerprints, unconfirmed links, refused ones and used seals", async () => {
+    const t = Math.floor(Date.now() / 1000);
+    const add = db.prepare("INSERT INTO connexions (t, plateforme, organisation, nom, lien, jeton, etat, source, modere_le) VALUES (?, 'helloasso', ?, 'N', 'https://x', ?, ?, ?, ?)");
+    // The newest first: each insertion forgets the older rows (connexions_oubli), the daily purge is for the days without.
+    add.run(t, "d", "j-d", "a_confirmer", "empreinte", null);
+    add.run(t - 2 * 86400, "a", "j-a", "a_moderer", "empreinte", null);
+    add.run(t - 3 * 86400, "b", "j-b", "a_confirmer", null, null);
+    add.run(t - 40 * 86400, "c", "j-c", "refuse", null, t - 31 * 86400);
+    db.prepare("INSERT INTO scelles_utilises (nonce, t, jeton) VALUES ('vieux', ?, 'j')").run(t - 31 * 60);
+    let calls = 0;
+    let batches = 0;
+    const one = async (sql: string, ...params: unknown[]) => (calls++, Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes));
+    connexions.configure(
+      one,
+      async <T>(sql: string, ...params: unknown[]) => (calls++, db.prepare(sql).all(...(params as (string | number | null)[])) as T[]),
+      async () => true,
+      async (statements) => (batches++, statements.map(([sql, ...params]) => Number(db.prepare(sql).run(...(params as (string | number | null)[])).changes))),
+    );
+    expect(await connexions.purger()).toBe(4);
+    expect([calls, batches]).toEqual([0, 1]);
+    expect(rows("SELECT organisation, source FROM connexions ORDER BY organisation")).toEqual([{ organisation: "a", source: null }, { organisation: "d", source: "empreinte" }]);
+    expect(rows("SELECT * FROM scelles_utilises")).toEqual([]);
+  });
+
+  it("never touches the seals' table while the connectors are closed, so that production runs without it", async () => {
+    db.exec("DROP TABLE scelles_utilises");
+    connecteurs.ouvrir(false);
+    expect(await connexions.purger()).toBe(0);
+    expect((await post(connecteurs.CONFIRMER_PATH, { attente: "x.y", choix: "oui" })).status).toBe(404);
+    expect(logged.filter((l) => l.includes("scelles_utilises"))).toEqual([]);
   });
 
   it("confirms only on the button: opening the link changes nothing", async () => {

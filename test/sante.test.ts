@@ -162,3 +162,12 @@ describe("the doctor on duty", () => {
     expect(body(await annuaireTool(new Cache(), "médecin", "Saint-Pierre")).resume).toMatch(/médecins généralistes et \d+ médecins spécialistes libéraux à Saint-Pierre/);
   });
 });
+
+describe("the points of the health establishments", () => {
+  it("are at their address, not at the commune's centre FINESS gives for some (Mont-Vert-les-Hauts, 04/11/2026)", () => {
+    const chon = ETABLISSEMENTS.find((e) => e.nom === "Pharmacie Chon-Sen")!;
+    // Mont-Vert-les-Hauts, not the centre of Saint-Pierre (55.47784, -21.3418).
+    expect(chon.lon).toBeGreaterThan(55.53);
+    expect(chon.lat).toBeGreaterThan(-21.33);
+  });
+});

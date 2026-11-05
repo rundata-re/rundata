@@ -249,7 +249,7 @@ describe("the tool emploi and the page /emploi", () => {
     const c = await copie();
     emploiSource.configure(async () => c);
     const r = body(await emploi(cache(), undefined, undefined, NOW));
-    expect(r.resume).toBe("20 offres ouvertes à la candidature à La Réunion sur Choisir le service public, la plus récente publiée le 29/10 : Assistant(e) de direction.");
+    expect(r.resume).toBe("20 offres ouvertes à la candidature à La Réunion, suivies par rundata.re sur Choisir le service public, la plus récente publiée le 29/10 : Assistant(e) de direction.");
     expect(r.offres[1]).toEqual({
       intitule: "Adjoint au chef de division*K-OI/EXPL",
       employeur: "Direction Générale de l'Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI)",
@@ -304,7 +304,7 @@ describe("the tool emploi and the page /emploi", () => {
     // The page's copy built 4 minutes after the feed's read: the feed's time is said.
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(Date.parse(c.lu) + 4 * 60_000), stale: false }, NOW);
     expect(page).toContain("<h1>Offres d'emploi public à La Réunion</h1>");
-    expect(page).toContain("20 offres ouvertes à la candidature sur Choisir le service public, dernière lecture à 12:45.");
+    expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture à 12:45\u00a0; le site peut en compter davantage.");
     const first = page.indexOf('<ul class="rows eau" id="offres">');
     expect(first).toBeGreaterThan(page.indexOf("</h1>"));
     expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel · Emploi ouvert aux titulaires et aux contractuels · Saint-Denis</small></span><span class="q-none">jusqu&#39;au 20/11</span>');

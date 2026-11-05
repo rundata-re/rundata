@@ -138,6 +138,15 @@ export function daeCouche(list: dae.Dae[], built: string): CoucheJson {
 }
 
 /** The charging stations of the national base, as /bornes lists them, without their live state. */
+/**
+ * How close a point given with few decimals is: 2 or fewer (about 1 km) say the commune (EZDrive, Saint-Louis, 0.9 km
+ * from its address), 3 (about 100 m) the place, 4 and more the address.
+ */
+export function precisionDe(lon: number, lat: number): Precision {
+  const at = (n: number) => [lon, lat].some((x) => Math.round(x * 10 ** n) / 10 ** n === x);
+  return at(2) ? "commune" : at(3) ? "lieu" : "adresse";
+}
+
 export function bornesCouche(list: irve.Station[], built: string): CoucheJson {
   const objets = list.map((s): Objet => ({
     nom: s.nom || s.reseau,
@@ -145,7 +154,7 @@ export function bornesCouche(list: irve.Station[], built: string): CoucheJson {
     lon: r5(s.lon),
     lat: r5(s.lat),
     nature: "fixe",
-    precision: "adresse",
+    precision: precisionDe(s.lon, s.lat),
     heure: built,
     infos: {
       ...(s.adresse && { adresse: s.adresse }),
@@ -451,7 +460,8 @@ export function bornesObjets(d: BornesAnswer, heure: string): Objet[] {
     const st = s.id ? irve.STATIONS.find((x) => x.id === s.id) : irve.STATIONS.find((x) => x.lon === s.lon && x.lat === s.lat);
     if (!st) return [];
     const o = fixe[irve.STATIONS.indexOf(st)] ?? fixe[i];
-    return [{ ...o, nature: "mesure", heure, lien: `/bornes#s-${st.id}`, infos: { ...o.infos, libres: s.libres, total: s.total } } satisfies Objet];
+    const parts: Record<string, number> = s.occupes == null ? {} : { occupes: s.occupes, hors_service: s.hors_service ?? 0, inconnus: s.inconnus ?? 0 };
+    return [{ ...o, nature: "mesure", heure, lien: `/bornes#s-${st.id}`, infos: { ...o.infos, libres: s.libres, total: s.total, ...parts } } satisfies Objet];
   });
 }
 
@@ -462,7 +472,7 @@ export const COUCHES: Couche[] = [
     maxAge: DIRECT_MAX_AGE, vieille: 30,
     lire: (cache, now) => deCopie<HomeData>(cache, now, "web:meteo", { id: "stations", nom: "Stations météo (Météo-France)", nature: "mesure", precision: "adresse", source: mfStations.SOURCE, vieille: 30 }, stationsObjets),
   },
-  // The radar's grid, a kilometre a cell: /meteo's file, kept 5 minutes.
+  // The radar's grid, about 550 m a cell (125 × 112 over the island, from Météo-France's 500 m mosaic): /meteo's file, kept 5 minutes.
   { id: "pluie", nom: "Pluie au radar", long: "Pluie au radar (Météo-France)", theme: "meteo", forme: "champ", nature: "mesure", precision: "lieu", source: radar.SOURCE, page: "/meteo", maxAge: 300, fichier: PLUIE_RADAR },
   {
     id: "rivieres", nom: "Rivières", long: "Hauteur des rivières (DEAL Réunion, © VIGICRUES)", theme: "nature", forme: "points", nature: "mesure", precision: "adresse", source: vigicrues.SOURCE, page: "/crues",

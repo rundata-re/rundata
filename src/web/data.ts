@@ -515,7 +515,11 @@ export interface CruesAnswer {
 export const buildCrues = async (cache: Cache, now = new Date()) => needed<CruesAnswer>(await crues(cache, undefined, now), "crues");
 
 /** `id`: the station's in the national base, its row's anchor on /bornes (missing on a copy made before it). */
-export type BorneStation = ReturnType<typeof stationRow> & { id?: string; lon: number; lat: number; adresse?: string; libres: number; total: number };
+export type BorneStation = ReturnType<typeof stationRow> & {
+  id?: string; lon: number; lat: number; adresse?: string; libres: number; total: number;
+  /** Missing on a copy made before them: the points neither free nor counted in `total` alone (« aucun libre » said only of a station whose points are taken). */
+  occupes?: number; hors_service?: number; inconnus?: number;
+};
 
 export interface BornesAnswer {
   resume: string;
@@ -525,6 +529,8 @@ export interface BornesAnswer {
   stations: BorneStation[];
   recharge: string;
   donnees: string;
+  /** The latest change of state in the national file (ISO): its state is that of then, not of its reading. */
+  etat_jusqu_a?: string;
   avertissement?: string;
   sources: Credit[];
 }
@@ -536,7 +542,10 @@ export async function buildBornes(cache: Cache, now = new Date()): Promise<Borne
   const live = (await irve.live(cache)).value;
   const stations = irve.STATIONS.map((s) => {
     const c = countPoints([s], live);
-    return { ...stationRow(s, live, now, undefined, false), id: s.id, lon: s.lon, lat: s.lat, ...(s.adresse ? { adresse: s.adresse } : {}), libres: c.libres, total: c.total };
+    return {
+      ...stationRow(s, live, now, undefined, false), id: s.id, lon: s.lon, lat: s.lat, ...(s.adresse ? { adresse: s.adresse } : {}),
+      libres: c.libres, total: c.total, occupes: c.occupes, hors_service: c.hors_service, inconnus: c.autres,
+    };
   });
   return { ...a, stations };
 }

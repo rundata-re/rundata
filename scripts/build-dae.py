@@ -134,8 +134,10 @@ def main():
 
 
 def reach(d):
-    """0 outside, 1 open day and night, 2 free access at the place's hours, 3 reserved: as src/tools/dae.ts."""
-    return 0 if d["exterieur"] else 1 if d.get("horaires") == "24 h/24, 7 j/7" else 2 if d["acces_libre"] else 3
+    """0 outside and open day and night, 1 open day and night, 2 free access or outside at the place's hours (outside
+    is not « at any hour » without Géo'DAE's « 24/7 »), 3 reserved: as src/tools/dae.ts and ACCES (src/web/domains.ts)."""
+    all_day = d.get("horaires") == "24 h/24, 7 j/7"
+    return 0 if d["exterieur"] and all_day else 1 if all_day else 2 if d["acces_libre"] or d["exterieur"] else 3
 
 
 def compact(devices):

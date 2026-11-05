@@ -209,7 +209,11 @@ function champ(): string {
 /** The island with the temperatures measured now, as on the weather page. */
 function heroMap(h: HomeLive | null): string {
   const l = withTemp(h?.meteo ?? null);
-  const at = h?.meteo?.value.stations.reduce((m, s) => (s.time > m ? s.time : m), "");
+  // The times of the temperatures shown, not the latest of every station read (a beacon at 14:05 for temperatures of
+  // 13:48 to 14:00, 04/11/2026): « à 14:00 », or « de 13:48 à 14:00 ».
+  const times = l.map((s) => s.time).sort();
+  const [first, at] = [times[0], times[times.length - 1]];
+  const when = at && hm(first) !== hm(at) ? `de ${hm(first)} à ${hm(at)}` : at ? `à ${hm(at)}` : "";
   // Each temperature leads to its station's row on the weather page; its bubble says the station, its altitude, the
   // value to the tenth as measured, and when and by whom.
   const by = (s: { source: string }) => (s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par la station de l'aéroport" : "");
@@ -220,8 +224,8 @@ function heroMap(h: HomeLive | null): string {
   }));
   // The bubble of the marker hovered, tapped or focused, filled and placed by the page's script; hidden without it.
   const bubble = `<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="/meteo"><span class="mt-p"></span><b class="mt-v"></b><span class="mt-d"></span><span class="mt-go">Voir le détail →</span></a>`;
-  return `<figure class="hero-map">${islandMap({ markers, relief: true, label: `Carte de La Réunion (974)${at ? ` avec les températures mesurées à ${hm(at)}` : ""}` })}${bubble}` +
-    `<figcaption>${at ? `<span class="dot"></span>Températures mesurées à ${hm(at)} · <a href="/meteo">toutes les stations →</a>` : "Les stations publient toutes les 6 minutes."}</figcaption></figure>`;
+  return `<figure class="hero-map">${islandMap({ markers, relief: true, label: `Carte de La Réunion (974)${when ? ` avec les températures mesurées ${when}` : ""}` })}${bubble}` +
+    `<figcaption>${when ? `<span class="dot"></span>Températures mesurées ${when} · <a href="/meteo">toutes les stations →</a>` : "Les stations publient toutes les 6 minutes."}</figcaption></figure>`;
 }
 
 function tile(c: Category, l: Live | undefined, odd = false): string {

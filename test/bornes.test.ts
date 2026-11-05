@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure, IDS, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
-import { bornesRecharge } from "../src/tools/bornes.js";
+import { bornesRecharge, lastChange } from "../src/tools/bornes.js";
 import { bornesPage } from "../src/web/domains.js";
 import { buildBornes } from "../src/web/data.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
@@ -81,7 +81,8 @@ describe("bornes de recharge", () => {
     expect(page).toContain("Recharge rapide");
     // The legend drawn as on the map (charter of the maps): a free point, none free, then the state's nature and time.
     expect(page).toContain('<circle r="34" fill="#2b8a3e"/><text y="11">3</text></svg>points de charge libres dans la commune</span>');
-    expect(page).toContain('<span class="mls">En ce moment, d&#39;après les opérateurs de recharge (transport.data.gouv.fr), lu à 04:40.</span>');
+    // The state is that of the latest change in the national file, said beside its reading.
+    expect(page).toMatch(/<span class="mls">D&#39;après les opérateurs de recharge \(transport\.data\.gouv\.fr\), état jusqu&#39;à \d\d:\d\d, lu à 04:40\.<\/span>/);
     expect(page).toMatch(/<details><summary><h3>Sainte-Marie\u00a0<span class="note">·\u00a045\u00a0libres sur\u00a0103, 18\u00a0stations<\/span><\/h3><\/summary>/);
     // Each commune's marker leads to its card.
     expect(mapLinks(page).find((l) => l.label.startsWith("Sainte-Marie :"))).toEqual({ kind: "mk", href: "#c-sainte-marie", label: "Sainte-Marie : 45 points de charge libres sur 103, voir le détail" });
@@ -92,5 +93,18 @@ describe("bornes de recharge", () => {
     expect(doubleIds(page)).toEqual([]);
     const description = page.match(/<meta name="description" content="([^"]+)"/)?.[1] ?? "";
     expect(description.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+  });
+
+  it("says the time of the latest change in the national file, never one after its reading", async () => {
+    const live: Live = { lu: "2026-11-04T09:50:00.000Z", points: { a: ["en_service", "libre", "2026-11-04T08:42:00.000Z"], b: ["en_service", "occupe", "2026-11-04T07:00:00.000Z"], c: ["en_service", "libre", "2026-11-05T00:00:00.000Z"] } };
+    expect(lastChange(live)).toBe("2026-11-04T08:42:00.000Z");
+    const r = body(await bornesRecharge(cache(LIVE), undefined, false, NOW));
+    expect(r.etat_jusqu_a).toBe(lastChange(LIVE));
+    expect(r.donnees).toMatch(/^État de chaque point d'après son opérateur, dans le fichier national lu à 04:37 \(heure de La Réunion\), dont le changement d'état le plus récent est de \d\d:\d\d\u00a0: ce fichier se remplit par lots et peut être en retard\./);
+  });
+
+  it("keeps each station apart, with an id of its own, when the base has no roaming id for it", () => {
+    expect(STATIONS.some((s) => !/^FR[A-Z0-9]{3}/.test(s.id))).toBe(false);
+    expect(new Set(STATIONS.map((s) => s.id)).size).toBe(STATIONS.length);
   });
 });

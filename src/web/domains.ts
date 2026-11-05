@@ -1459,7 +1459,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "rond", couleur: "#2b8a3e", texte: "3", dit: "points de charge libres dans la commune" },
     { forme: "rond", couleur: "#868e96", texte: "0", dit: "aucun libre" },
-  ], data ? esc(`En ce moment, d'après les opérateurs de recharge (transport.data.gouv.fr), lu à ${hm(data.fetchedAt)}.`) : undefined)}</figcaption></figure>
+  ], data ? esc(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'à ${hm(new Date(d.etat_jusqu_a))}` : ""}, lu à ${hm(data.fetchedAt)}.`) : undefined)}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-rapide">
@@ -2694,7 +2694,7 @@ export function daeLive(): Live {
  * Reserved, with whom to ask: in an emergency, the staff can bring it (marketing).
  */
 export const ACCES = ["dehors, 24 h/24", "24 h/24", "horaires du lieu", "accès réservé · demander à l'accueil"];
-const shortAccess = (a: string) => ACCES[a.includes("extérieur") ? 0 : a.includes("24 h") ? 1 : a.includes("accès libre") ? 2 : 3];
+const shortAccess = (a: string) => ACCES[a.includes("toute heure") ? 0 : a.includes("24 h") ? 1 : a.includes("accès libre") || a.includes("extérieur") ? 2 : 3];
 
 /**
  * « Autour de moi »: the position asked of the phone, and the nearest devices worked out there, from the compact list

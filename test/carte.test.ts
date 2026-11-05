@@ -41,6 +41,11 @@ describe("/carte", () => {
     for (const v of VUES) expect(html, v.id).toContain(`<a href="#${v.id}" data-v="${v.id}">`);
     expect(conf.vues.map((v: { id: string }) => v.id)).toEqual(VUES.map((v) => v.id));
     expect(html.indexOf('className="pe-b"')).toBeGreaterThan(html.indexOf('id="k-conf"'));
+    // A fixed list's chip: the date of its data when its producer gives one, else the day it was read, never « liste du ».
+    expect(html).not.toMatch(/<span class="kh" data-c="[^"]+"> · liste du/);
+    expect(html).toMatch(/<span class="kh" data-c="vitesses"> · mise à jour d'août 2024<\/span>/);
+    expect(html).toMatch(/<span class="kh" data-c="canyons"> · inventaire sans date<\/span>/);
+    expect(html).toMatch(/<span class="kh" data-c="defibrillateurs"> · lue le \d\d\/\d\d<\/span>/);
   });
 
   it("in full screen on a phone, puts the map's buttons in their place, never over it, and the legend over the panel", async () => {

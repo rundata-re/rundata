@@ -23,7 +23,12 @@ describe("défibrillateurs", () => {
   });
 
   it("says how a device can be reached", () => {
-    expect(access({ nom: "", adresse: "", commune: "", lon: 0, lat: 0, exterieur: true, acces_libre: true })).toBe("à l'extérieur, accessible à toute heure");
+    expect(access({ nom: "", adresse: "", commune: "", lon: 0, lat: 0, exterieur: true, acces_libre: true, horaires: "24 h/24, 7 j/7" })).toBe("à l'extérieur, accessible à toute heure");
+    // Outside without Géo'DAE's « 24/7 »: maybe at the reception of a site that closes (Hibiscus, La Saline-les-Bains).
+    expect(access({ nom: "", adresse: "", commune: "", lon: 0, lat: 0, exterieur: true, acces_libre: true })).toBe("à l'extérieur, horaires d'accès non déclarés");
+    const hibiscus = DAES.find((d) => d.nom.includes("Hibiscus"))!;
+    expect([hibiscus.exterieur, hibiscus.horaires]).toEqual([true, undefined]);
+    expect(access(hibiscus)).not.toMatch(/toute heure|24 h/);
     expect(access({ nom: "", adresse: "", commune: "", lon: 0, lat: 0, exterieur: false, acces_libre: false, horaires: "24 h/24, 7 j/7" })).toBe("accessible 24 h/24");
     expect(access({ nom: "", adresse: "", commune: "", lon: 0, lat: 0, exterieur: false, acces_libre: true })).toBe("en accès libre aux heures d'ouverture du lieu");
   });

@@ -70,6 +70,16 @@ export const plugs = (s: irve.Station) => [...new Set(s.points.flatMap((p) => p.
 /** The station as a driver would look for it: the place when known, else the network and the address. */
 export const label = (s: irve.Station) => (s.nom ? `${s.nom}, ${s.adresse}` : `${s.reseau}, ${s.adresse}`);
 
+/**
+ * The latest change of state of the island's points in the national file (ISO), never after its reading: the file is
+ * filled by batches, and its state at the time it was read may be behind (12:42 at most, read at 13:50, on 04/11/2026).
+ */
+export function lastChange(live: irve.Live): string | undefined {
+  let last: string | undefined;
+  for (const [, , at] of Object.values(live.points)) if (at && at <= live.lu && (!last || at > last)) last = at;
+  return last;
+}
+
 /** « 04:12 » today, « 23/10 18:40 » this year, « 2024 » before. */
 function since(iso: string, now: Date): string {
   const d = new Date(iso);
@@ -122,11 +132,15 @@ export async function bornesRecharge(cache: Cache, lieu: string | undefined, rap
     console.error(`source ${irve.SOURCE.id} indisponible:`, why(err));
   }
   const old = lu && ageMinutes(lu, now) > OLD_LIVE_MIN;
+  const latest = live && lastChange(live);
   const common = {
     ...COMMON,
     donnees: live
-      ? `État de chaque point d'après son opérateur, relevé à ${localTime(lu!).split(" ")[1]} (heure de La Réunion)\u00a0; « depuis » est l'heure de son dernier changement d'état. Un point peut être pris entre-temps.`
+      ? `État de chaque point d'après son opérateur, dans le fichier national lu à ${localTime(lu!).split(" ")[1]} (heure de La Réunion)` +
+        (latest ? `, dont le changement d'état le plus récent est de ${since(latest, lu!)}\u00a0: ce fichier se remplit par lots et peut être en retard` : "") +
+        `. « depuis » est l'heure du dernier changement d'état de chaque point. Un point peut être pris entre-temps.`
       : "L'état en direct des bornes est indisponible pour le moment : seule la liste des stations est donnée.",
+    ...(latest ? { etat_jusqu_a: latest } : {}),
     ...(old ? { avertissement: `État relevé ${ageText(ageMinutes(lu!, now))} : il a pu changer depuis.` } : {}),
     sources: credits([irve.SOURCE]),
   };

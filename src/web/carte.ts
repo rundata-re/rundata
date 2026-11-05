@@ -85,6 +85,9 @@ export const MOTS = {
   // The bike lanes' and the speeds' last words in the legend and the list.
   sansEtat: "sans l'état du jour",
   vitessesDu: "mise à jour d'août 2024",
+  // A fixed list's chip: the date of its data when its producer gives one, else the day rundata.re read it (« liste du
+  // 03/11 » was taken for the data's date: Vitesses are of August 2024).
+  datesDonnees: { vitesses: "mise à jour d'août 2024", canyons: "inventaire sans date", marmailles: "tracés sans date" } as Record<string, string>,
   // The stations' line of the legend, when rings show where it rained.
   cercles: "cercle bleu\u00a0: pluie mesurée dans l'heure",
 };
@@ -114,7 +117,7 @@ const DIT: Record<string, Dit> = {
     rubrique: "Météo", court: "Météo-France", unite: ["station", "stations"], organisme: "Météo-France",
   },
   pluie: {
-    montre: "La pluie estimée par le radar de Météo-France, sur une grille d'un kilomètre, une nouvelle image toutes les 5 minutes. Hachures : zones que le radar voit mal, où la pluie peut être manquée.",
+    montre: "La pluie estimée par le radar de Météo-France, sur une grille d'environ 550 m, une nouvelle image toutes les 5 minutes. Hachures : zones que le radar voit mal, où la pluie peut être manquée.",
     rubrique: "Météo", court: "Radar de Météo-France", unite: ["image", "images"], organisme: "Météo-France",
   },
   rivieres: {
@@ -257,7 +260,7 @@ const jm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 function caseOf(c: Couche): string {
   const sous = SOUS[c.id] ? ` · ${esc(SOUS[c.id])}` : "";
   return `<li><label class="kc-${esc(c.id)}"><input type="checkbox" name="c" value="${esc(c.id)}"><i class="km" aria-hidden="true"></i>` +
-    `<span><b>${esc(c.nom)}</b><small><span class="nat n-${c.nature}">${MOTS.natures[c.nature]}</span>${sous}<span class="kh" data-c="${esc(c.id)}">${c.donnees ? ` · liste du ${jm(c.donnees().heure)}` : ""}</span></small></span></label></li>`;
+    `<span><b>${esc(c.nom)}</b><small><span class="nat n-${c.nature}">${MOTS.natures[c.nature]}</span>${sous}<span class="kh" data-c="${esc(c.id)}">${c.donnees ? ` · ${MOTS.datesDonnees[c.id] ?? `lue le ${jm(c.donnees().heure)}`}` : ""}</span></small></span></label></li>`;
 }
 
 /** The list of layers, by theme; the children's three under « Avec les enfants ». */
@@ -345,13 +348,14 @@ if(c.id==="stations"){p2=[i.temperature!=null&&dec(i.temperature)+"\\u00a0°C",i
 else if(c.id==="rivieres"){p2=i.hauteur_m!=null?dec(i.hauteur_m)+"\\u00a0m"+(i.tendance?", "+i.tendance:""):"";p3=src("mesure de "+(i.heure_mesure||hm(o.heure)))}
 else if(c.id==="seismes"){p2="Magnitude "+dec(i.magnitude)+" · "+quand(o.heure)+(i.profondeur_km!=null?" · profondeur "+dec(i.profondeur_km)+"\\u00a0km":"");p3=c.court}
 else if(c.id==="sentiers"){const k=/éruption/i.test(i.cause||"")?"instable après l'éruption récente, selon l'ONF":i.cause;p2=k?"Fermé\u00a0: "+k:"Fermé";p3=src("carte du "+jm(j.heure))}
-else if(c.id==="defibrillateurs"){p2=K.acces[i.exterieur?0:i.horaires==="24 h/24, 7 j/7"?1:i.acces_libre?2:3]+(i.etage?" · "+i.etage:"");p3=src("liste du "+jm(j.heure))}
+else if(c.id==="defibrillateurs"){const t=i.horaires==="24 h/24, 7 j/7";p2=K.acces[i.exterieur&&t?0:t?1:i.acces_libre||i.exterieur?2:3]+(i.etage?" · "+i.etage:"");p3=src("lue le "+jm(j.heure))}
 else if(c.id==="bornes"){const kw=" · jusqu'à "+dec(i.kw_max)+"\\u00a0kW"+(i.gratuit?" · gratuit":"")+(i.acces_reserve?" · accès réservé":"");
-if(i.libres!=null){p2=(i.libres?nb(i.libres)+" libre"+(i.libres>1?"s":""):"aucun libre")+" sur "+nb(i.total)+kw;p3=src("état de "+hm(j.heure))}else{p2=un(i.points,["point de charge","points de charge"])+kw.replace(" · jusqu'à",", jusqu'à");p3=src("état non lu")}}
+if(i.libres!=null){const pts=nb(i.total)+(i.total>1?" points":" point"),parts=[i.occupes&&nb(i.occupes)+" occupé"+(i.occupes>1?"s":""),i.hors_service&&nb(i.hors_service)+" hors service",i.inconnus&&nb(i.inconnus)+" sans information"].filter(Boolean).join(", ");
+p2=(i.libres||i.occupes==null?(i.libres?nb(i.libres)+" libre"+(i.libres>1?"s":""):"aucun libre")+" sur "+nb(i.total):i.hors_service===i.total?"hors service ("+pts+")":i.inconnus===i.total?"état inconnu ("+pts+")":"aucun libre sur "+nb(i.total)+(i.hors_service||i.inconnus?" ("+parts+")":""))+kw;p3=src("état de "+hm(j.heure))}else{p2=un(i.points,["point de charge","points de charge"])+kw.replace(" · jusqu'à",", jusqu'à");p3=src("état non lu")}}
 else if(c.id==="velo"){p2=[i.type,i.sens,i.annee&&"mise en service en "+i.annee,i.etat,i.accroches&&un(i.accroches,["accroche vélo","accroches vélo"])].filter(Boolean).join(" · ");p3=i.source+", "+i.liste}
 else if(c.id==="vitesses"){p2=i.annee?"tronçon mis à jour en "+i.annee:"";p3=c.court}
 else if(c.id==="canyons"){p2=[i.type,i.signalement].filter(Boolean).join(" · ");p3=src("inventaire sans date")}
-else{p2=[i.type,i.adresse].filter(Boolean).join(" · ");p3=src("liste du "+jm(j.heure))}
+else{p2=[i.type,i.adresse].filter(Boolean).join(" · ");p3=src("lue le "+jm(j.heure))}
 return[o.nom+(o.commune?" · "+o.commune:""),p2,p3]};
 const lien=(c,o)=>c.id==="defibrillateurs"?"/defibrillateurs#"+(K.dae[o.commune]||""):c.id.startsWith("enfants-")?(K.enfants[o.commune]||c.page):o.lien||c.page;
 const point=(c,o,j)=>{const x=X(o.lon),y=Y(o.lat),l=lines(c,o,j),a=el("a",{class:"sp",href:lien(c,o),tabindex:"-1","aria-label":l.filter(Boolean).join(", "),"data-pt":"Voir la page "+c.rubrique+" →"});["pn","p2","p3"].forEach((k,n)=>{if(l[n])a.setAttribute("data-"+k,l[n])});
@@ -381,9 +385,9 @@ if(c.id==="seismes")return o.length?[nb(o.length)+" en 7\\u00a0jours","dernier "
 if(c.id==="sentiers")return[nb(o.length),"carte de l'ONF du "+jm(j.heure)];
 if(c.id==="canyons"){const n=o.filter((x)=>(x.infos||{}).alerte).length;return[nb(o.length),"dont "+nb(n)+" en rouge","inventaire sans date"]}
 if(c.id==="bornes"){if(j.copie==="absente")return[nb(o.length),"état non lu"];const f=o.reduce((n,x)=>n+(x.infos.libres||0),0),t=o.reduce((n,x)=>n+(x.infos.total||0),0);return[nb(f)+" libre"+(f>1?"s":"")+" sur "+nb(t),"état de "+hm(j.heure)]}
-if(c.id.startsWith("enfants-"))return[un(o.length,c.unite),"liste du "+jm(j.heure)];
+if(c.id.startsWith("enfants-"))return[un(o.length,c.unite),"lue le "+jm(j.heure)];
 if(c.id==="velo"){const v=o.filter((x)=>x.trace).length,n=o.reduce((k,x)=>k+(x.infos.accroches||0),0);return[un(v,c.unite),un(n,["accroche vélo","accroches vélo"]),M.sansEtat]}
-if(c.id==="vitesses")return[un(o.length,c.unite),M.vitessesDu];return[nb(o.length),"liste du "+jm(j.heure)]};
+if(c.id==="vitesses")return[un(o.length,c.unite),M.vitessesDu];return[nb(o.length),M.datesDonnees[c.id]||"lue le "+jm(j.heure)]};
 const etat=(c,j)=>!j||j==="err"||j.erreur||j.copie==="absente"&&c.id!=="bornes"?"echec":j.copie==="ancienne"?"vieux":"ok";
 const show=(c)=>{const on=boxes.find((b)=>b.value===c.id).checked,j=got.get(c.id),p=aff.querySelector('.kp[data-c="'+c.id+'"]'),g=c.id==="pluie"?svg.querySelector(".kpluie"):svg.querySelector('.kl[data-c="'+c.id+'"]');
 p.hidden=!on;if(c.id==="stations")pv.style.display=on&&etat(c,j)==="ok"&&pv.childElementCount?"":"none";if(g){g.style.display=on?"":"none";g.classList.toggle("vieux",etat(c,j)==="vieux")}let li=lg.querySelector('[data-c="'+c.id+'"]');

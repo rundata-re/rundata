@@ -12,9 +12,14 @@ export const URGENCE =
   "Arrêt cardiaque : appeler le 15 (SAMU) ou le 112, commencer tout de suite le massage cardiaque et envoyer quelqu'un chercher le défibrillateur. " +
   "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";
 
+/**
+ * Outside is not « at any hour » by itself: Géo'DAE says so only with its hours « 24/7 ». An outside device without
+ * them may be at the reception of a site that closes (Hibiscus, La Saline-les-Bains, 04/11/2026).
+ */
 export function access(d: Dae): string {
-  if (d.exterieur) return "à l'extérieur, accessible à toute heure";
-  if (d.horaires === "24 h/24, 7 j/7") return "accessible 24 h/24";
+  const allDay = d.horaires === "24 h/24, 7 j/7";
+  if (d.exterieur) return allDay ? "à l'extérieur, accessible à toute heure" : d.horaires ? `à l'extérieur, ${d.horaires}` : "à l'extérieur, horaires d'accès non déclarés";
+  if (allDay) return "accessible 24 h/24";
   return d.acces_libre ? "en accès libre aux heures d'ouverture du lieu" : "accès réservé (demander à l'accueil ou au personnel)";
 }
 
@@ -33,11 +38,11 @@ export function daeRow(d: Dae, from?: { lon: number; lat: number }) {
   };
 }
 
-/** Reachable at any hour: outside, or open day and night. */
-export const anyHour = (d: Dae) => d.exterieur || d.horaires === "24 h/24, 7 j/7";
+/** Reachable at any hour: declared open day and night, outside or not. */
+export const anyHour = (d: Dae) => d.horaires === "24 h/24, 7 j/7";
 
-/** Outside first, then free access: what can be reached now. */
-const reach = (d: Dae) => (anyHour(d) ? 0 : d.acces_libre ? 1 : 2);
+/** At any hour first, then free access or outside: what can be reached now. */
+const reach = (d: Dae) => (anyHour(d) ? 0 : d.acces_libre || d.exterieur ? 1 : 2);
 
 export function byCommune() {
   const by = new Map<string, Dae[]>();

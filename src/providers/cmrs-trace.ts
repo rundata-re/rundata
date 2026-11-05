@@ -19,7 +19,7 @@
 import type { Cache } from "../cache.js";
 import { count, perInvocation } from "../budget.js";
 import { getText } from "../http.js";
-import { why } from "../types.js";
+import { type SourceInfo, why } from "../types.js";
 import * as gdacs from "./cyclones.js";
 import type { Store } from "./vigilance-carte.js";
 
@@ -32,8 +32,18 @@ export function ouvrir(v: boolean) {
   ouvert = v;
 }
 
-const SOURCE_ID = "meteofrance_cmrs_wtio31";
 export const URL = "https://tgftp.nws.noaa.gov/data/raw/wt/wtio31.fmee..txt";
+
+/** In sources_donnees, on /chiffres and in the catalogue's check, while the agreement holds (server.ts). */
+export const SOURCE: SourceInfo = {
+  id: "meteofrance_cmrs_wtio31",
+  nom: "Bulletins d'avis de cyclone du CMRS de La Réunion (WTIO31 FMEE), copie de la NOAA",
+  organisme: "Météo-France, CMRS de La Réunion",
+  licence: "Repris avec l'accord écrit de Météo-France La Réunion du 02/11/2026\u00a0: numéro du bulletin, stade, nom et position du système seulement, jamais la prévision",
+  attribution: "Météo-France, CMRS de La Réunion",
+  url: URL,
+};
+const SOURCE_ID = SOURCE.id;
 
 /** The minutes after each synoptic hour (00, 06, 12, 18 UTC) the scheduled event reads the bulletin: from 25 to 150. */
 export const FROM_MINUTE = 25;

@@ -8,8 +8,14 @@ const STATUTS = { injoignable: "sans réponse", bloque: "répond, mais pas à no
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[’']/g, " ").replace(/\s+/g, " ").trim();
 
-/** A row asked for by « volcan », « eau », « Saint-Joseph », « OVPF »: its editor, theme, host or what it is missing. */
-const matches = (l: Public, quoi: string) => [l.nom, l.theme, l.hote, l.manque ?? ""].some((x) => plain(x).includes(plain(quoi)));
+/**
+ * A row asked for by « volcan », « eau », « Saint-Joseph », « OVPF »: its editor, theme, host or what it is missing, by
+ * whole words (a plural too: « eau » finds « Eaux de La Possession »). As a part of a word, « eau » found « réseau ».
+ */
+export const matches = (l: Public, quoi: string) => {
+  const mot = new RegExp(`(?:^|[^\\p{L}\\p{N}])${plain(quoi).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[sx]?(?:$|[^\\p{L}\\p{N}])`, "u");
+  return [l.nom, l.theme, l.hote, l.manque ?? ""].some((x) => mot.test(plain(x)));
+};
 
 const accueil = (l: Public) => {
   try {

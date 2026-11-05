@@ -44,7 +44,7 @@ export const SOURCES = {
     id: "ffvb",
     nom: "Volley-ball : championnats régionaux de la Ligue de La Réunion (FFVB)",
     organisme: "Fédération française de volley",
-    licence: "Information publique (résultats officiels)",
+    licence: "Résultats officiels\u00a0: faits seulement, sans licence de réutilisation (mentions légales de ffvb.org)",
     attribution: "FFVB, Ligue réunionnaise de volley-ball",
     url: "https://www.ffvbbeach.org/ffvbapp/resu/vbspo_calendrier.php?saison=2026/2027&codent=LIRE",
   },

@@ -43,6 +43,7 @@ import * as connexions from "./connecteurs/connexions.js";
 import * as lecture from "./connecteurs/lecture.js";
 import * as propositions from "./propositions.js";
 import * as sansReponse from "./sans-reponse.js";
+import { themesDesSources } from "./chiffres.js";
 import { whenFailed, whenRead } from "./http.js";
 import * as formulaires from "./web/propositions.js";
 import { rafraichirConnecteurs, refreshPlanned } from "./tools/agenda.js";
@@ -376,7 +377,7 @@ function setup(env: Env): Cache {
     avisDb && (async <T>(sql: string, ...params: unknown[]) => (await avisDb.prepare(sql).bind(...params).all<T>()).results),
     avisDb && (async (statements) => void (await avisDb.batch(statements.map((x) => avisDb.prepare(x.sql).bind(...x.params))))),
   );
-  sansReponse.inscrire(toutesLesSources());
+  sansReponse.inscrire(toutesLesSources(), themesDesSources());
   whenFailed((source, url, err) => {
     const constat = sansReponse.constatDe(err);
     if (constat) later(sansReponse.noter(source, url, constat));

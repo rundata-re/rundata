@@ -43,7 +43,7 @@ export const SANTE_FR: SourceInfo = {
   id: "sante_fr_urgences",
   nom: "Urgences : les numéros utiles à La Réunion (Santé.fr)",
   organisme: "Santé.fr, service public d'information en santé",
-  licence: "Information publique",
+  licence: "Faits seulement (horaires et adresses), sans licence de réutilisation",
   attribution: "Santé.fr",
   url: "https://www.sante.fr/ocean-indien-numeros-utiles-en-cas-durgence",
 };

@@ -230,6 +230,31 @@ export async function getLines(source: string, url: string, timeoutMs: number, l
   });
 }
 
+/**
+ * The first match of `motif` in a page read as it comes, never whole: the read stops there, the rest is not downloaded
+ * and nothing of the page is kept but the match (the count of Choisir le service public's search, at 95 % of a page of
+ * 4,5 Mo, src/providers/emploi.ts). null when the page ends without it. `motif` has no `g` flag and matches within
+ * 200 characters, the part of a piece kept for the next.
+ */
+export async function getMatch(source: string, url: string, timeoutMs: number, motif: RegExp): Promise<RegExpExecArray | null> {
+  return get(source, url, timeoutMs, async (res) => {
+    const pieces = res.body!.pipeThrough(new TextDecoderStream()).getReader();
+    let rest = "";
+    try {
+      for (;;) {
+        const { done, value } = await pieces.read();
+        if (done) return null;
+        const t = rest + value;
+        const m = motif.exec(t);
+        if (m) return m;
+        rest = t.slice(-200);
+      }
+    } finally {
+      await pieces.cancel().catch(() => {});
+    }
+  });
+}
+
 /** A file's bytes with the time it was written, as its server says it (Last-Modified), when it says it. */
 export async function getFile(
   source: string,

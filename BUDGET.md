@@ -20,7 +20,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 |---|---:|---:|
 | pire passage planifié, sous-requêtes | 509 | 550 |
 | pire passage planifié, appels KV et D1 | 112 | 1 000 |
-| pire passage planifié, CPU (ms) | 3 666 | 30 000 |
+| pire passage planifié, CPU (ms) | 3 686 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 200 | 550 |
 | vue la plus chère, sous-requêtes | 86 | 200 |
@@ -37,10 +37,10 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 509 | 32 | 56 | 24 | 1 164 | 284 | 3 666 |
-| tâche planifiée, par jour | 31 312 | 4 514 | 3 939 | 2 407 | 102 914 | 58 511 | 234 816 |
-| tâche planifiée, par jour, cadences les plus courtes | 47 940 | 5 954 | 5 835 | 2 887 | 107 954 | 58 511 | 283 176 |
-| tâche planifiée, par mois (30 jours) | 939 347 | 135 420 | 118 170 | 72 223 | 3 087 411 | 1 755 321 | 7 044 467 |
+| pire passage planifié | 509 | 32 | 56 | 24 | 1 164 | 284 | 3 686 |
+| tâche planifiée, par jour | 31 312 | 4 514 | 3 939 | 2 407 | 102 914 | 58 511 | 235 296 |
+| tâche planifiée, par jour, cadences les plus courtes | 47 940 | 5 954 | 5 835 | 2 887 | 107 954 | 58 511 | 283 656 |
+| tâche planifiée, par mois (30 jours) | 939 347 | 135 420 | 118 170 | 72 223 | 3 087 411 | 1 755 321 | 7 058 867 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -102,6 +102,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | meteofrance:jeton:nouveau | jeton Météo-France commun à tous les isolats : un nouveau jeton demandé au portail et écrit dans KV par le passage planifié, 15 minutes avant l'échéance du précédent, soit environ toutes les 40 minutes | 40 min | 00:00 | 2 |  | 1 |  |  |  |  | estimé |
 | emploi:offres | emploi public : la page d'une offre de Choisir le service public à chaque événement, la plus récente pas encore lue, sinon chaque offre ouverte à son tour, écrites dans KV quand elles changent | 5 min | 00:00 | 3 | 1 | 1 |  |  |  | 15 | estimé |
 | emploi:flux | emploi public : le flux des 20 dernières offres de Choisir le service public pour La Réunion | 60 min | 00:25 | 1 |  |  |  |  |  | 5 | estimé |
+| emploi:total | emploi public : le compte de la recherche de Choisir le service public pour La Réunion, lu en flux à la place de la page d'offre du même événement | 60 min | 00:25 | 0 |  |  |  |  |  | 20 | mesuré |
 | marches-publics:liste | marchés publics : la liste des avis de marché ouverts publiés au BOAMP pour La Réunion, écrite dans KV quand elle change | 60 min | 00:35 | 3 | 1 | 1 |  |  |  | 10 | estimé |
 | marches-publics:textes | marchés publics : le texte des nouveaux avis, pour savoir s'ils sont de l'île et leur commune, écrit dans KV | 60 min | 00:40 | 3 | 1 | 1 |  |  |  | 550 | estimé |
 | candhis:etat | bouées Candhis du Cerema : la dernière mesure de chaque bouée de La Réunion, une requête par type de bouée, gardée dans KV | 30 min | 00:10 | 5 | 1 | 1 |  |  |  | 10 | code |
@@ -279,6 +280,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | meteofrance:jeton:nouveau | providers/mf-auth |
 | emploi:offres | providers/emploi |
 | emploi:flux | providers/emploi |
+| emploi:total | providers/emploi |
 | marches-publics:liste | providers/marches-publics |
 | marches-publics:textes | providers/marches-publics |
 | candhis:etat | providers/candhis |

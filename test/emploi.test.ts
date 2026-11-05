@@ -17,6 +17,8 @@ const DGAC = fixture("offre-dgac.html");
 const DEPUBLIEE = fixture("offre-depubliee.html");
 /** An offer's page as the site serves it, whole: menus, forms and scripts (CHU, 29/10/2026). */
 const CHU_COMPLETE = fixture("offre-chu-complete.html");
+/** The site's search for La Réunion on 05/11/2026 at 04:23, cut: its head, its first filters, then its count. */
+const RECHERCHE = fixture("recherche-compte.html");
 // 12:45 in La Réunion.
 const NOW = new Date("2026-10-29T08:45:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -28,12 +30,13 @@ afterEach(() => {
 });
 
 /** The site as the Worker reads it: the feed, and each offer's page (the CHU's for the two without a place, the DGAC's for the others). */
-function site(fiche: (ref: string) => string | undefined = (ref) => (ref.startsWith("2026-") ? CHU : DGAC)) {
+function site(fiche: (ref: string) => string | undefined = (ref) => (ref.startsWith("2026-") ? CHU : DGAC), recherche: string | null = RECHERCHE) {
   const asked: string[] = [];
   vi.stubGlobal("fetch", async (url: string) => {
     const u = new URL(url);
-    asked.push(u.hostname === "place-ep-recrute.talent-soft.com" ? "flux" : decodeURIComponent(u.pathname.split("/")[2]));
+    asked.push(u.hostname === "place-ep-recrute.talent-soft.com" ? "flux" : u.pathname.startsWith("/nos-offres/") ? "recherche" : decodeURIComponent(u.pathname.split("/")[2]));
     if (u.hostname === "place-ep-recrute.talent-soft.com") return new Response(FEED);
+    if (u.pathname.startsWith("/nos-offres/")) return recherche === null ? new Response("", { status: 503 }) : new Response(recherche);
     const html = fiche(decodeURIComponent(u.pathname.split("/")[2]));
     return html === undefined ? new Response("", { status: 503 }) : new Response(html);
   });
@@ -116,28 +119,32 @@ describe("the public sector's offers of Choisir le service public", () => {
     expect(emploiSource.ouverte({ ...o, limite: "2026-11-10" }, new Date("2026-11-10T20:00:00Z"))).toBe(false);
   });
 
-  it("reads one offer's page an event, the newest not read yet, then each in turn, and writes what changed and each read of the feed", async () => {
+  it("reads the feed and the site's count at 25 past, one offer's page at the other events, the newest not read yet, then each in turn, and writes what changed and each read of the feed", async () => {
     const asked = site();
     const writes: emploiSource.Copie[] = [];
     const write = async (c: emploiSource.Copie) => void writes.push(c);
     const { value, used } = await counted(100, () => emploiSource.collect(null, write, NOW, true));
-    expect(value).toBe("20 offres, 20 nouvelles, page de l'offre 2026-2416372 lue : écrites");
-    // The feed and one page: never two pages at once on the site; the registry's, besides the copy read and written.
+    expect(value).toBe("20 offres, 20 nouvelles, 628 offres dans la recherche du site : écrites");
+    // The feed and the site's search in place of an offer's page: never two pages at once on the site; the registry's,
+    // besides the copy read and written.
+    expect(asked).toEqual(["flux", "recherche"]);
     expect(used).toBe(2);
     const run = (id: string) => REGISTRY.find((e) => e.id === id)!.run.subrequests;
-    expect(run("emploi:flux") + run("emploi:offres") - 2).toBe(used);
-    // Newest first.
-    expect(writes[0].offres[0]).toMatchObject({ ref: "2026-2416372", fiche: "lue" });
-    expect(writes[0].offres.filter((o) => o.fiche === "lue")).toHaveLength(1);
+    expect(run("emploi:flux") + run("emploi:offres") + run("emploi:total") - 2).toBe(used);
+    expect(writes[0].total).toEqual({ nombre: 628, lu: NOW.toISOString() });
+    expect(writes[0].offres.filter((o) => o.fiche === "lue")).toHaveLength(0);
 
     // The next events, without the feed: one page each, the newest not read yet, until all are.
-    for (let k = 1; k < 20; k++) {
+    for (let k = 1; k <= 20; k++) {
       asked.length = 0;
       await emploiSource.collect(writes.at(-1)!, write, new Date(NOW.getTime() + k * 300_000), false);
       expect(asked).toHaveLength(1);
+      // Newest first.
+      if (k === 1) expect(writes.at(-1)!.offres[0]).toMatchObject({ ref: "2026-2416372", fiche: "lue" });
     }
     const c = writes.at(-1)!;
-    expect(writes).toHaveLength(20);
+    expect(writes).toHaveLength(21);
+    expect(c.total).toEqual({ nombre: 628, lu: NOW.toISOString() });
     expect(c.lu).toBe(NOW.toISOString());
     expect(c.offres.every((o) => o.fiche === "lue")).toBe(true);
     expect(c.offres.find((o) => o.ref === "2026-2454752")).toMatchObject({ employeur: "Centre Hospitalier Universitaire de la Réunion", limite: "2026-11-10", lieu: "CHU SITES SUD" });
@@ -150,14 +157,14 @@ describe("the public sector's offers of Choisir le service public", () => {
     const later = new Date(NOW.getTime() + 3600_000);
     // The feed read again, the same offers: written again, with the time of this read (31/10/2026: « dernière lecture
     // le 30/10 à 16:25 » for a feed read every hour).
-    expect(await emploiSource.collect(c, write, later, true)).toBe(`20 offres, 0 nouvelles, page de l'offre ${emploiSource.prochaineFiche(c.offres, later)!.ref} relue : écrites`);
-    expect(asked).toEqual(["flux", emploiSource.prochaineFiche(c.offres, later)!.ref]);
-    expect(writes).toHaveLength(21);
-    expect(writes.at(-1)).toEqual({ lu: later.toISOString(), offres: c.offres });
+    expect(await emploiSource.collect(c, write, later, true)).toBe("20 offres, 0 nouvelles, 628 offres dans la recherche du site : écrites");
+    expect(asked).toEqual(["flux", "recherche"]);
+    expect(writes).toHaveLength(22);
+    expect(writes.at(-1)).toEqual({ lu: later.toISOString(), offres: c.offres, total: { nombre: 628, lu: later.toISOString() } });
     // The same offers without a read of the feed: not written.
     const after = new Date(later.getTime() + 300_000);
     expect(await emploiSource.collect(writes.at(-1)!, write, after, false)).toMatch(/: inchangées, non réécrites$/);
-    expect(writes).toHaveLength(21);
+    expect(writes).toHaveLength(22);
     // A store still empty between two feeds: nothing read.
     expect(await emploiSource.collect(null, write, later, false)).toBe("aucune copie, flux lu à la prochaine heure");
 
@@ -245,11 +252,48 @@ describe("the tool emploi and the page /emploi", () => {
     return c;
   }
 
+  it("keeps the site's count when its search does not answer or no longer holds it, says it a day, and the island's only", async () => {
+    const c = await copie();
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const later = new Date(NOW.getTime() + 3600_000);
+    let after: emploiSource.Copie | undefined;
+    site(undefined, null);
+    expect(await emploiSource.collect(c, async (x) => void (after = x), later, true)).toBe("20 offres, 0 nouvelles, recherche du site sans réponse : écrites");
+    expect(after!.total).toEqual({ nombre: 628, lu: NOW.toISOString() });
+    site(undefined, "<p>la recherche, sans son compte</p>");
+    expect(await emploiSource.collect(c, async (x) => void (after = x), later, true)).toBe("20 offres, 0 nouvelles, compte du site introuvable : écrites");
+    expect(after!.total).toEqual({ nombre: 628, lu: NOW.toISOString() });
+    expect(log).toHaveBeenCalledWith("offres d'emploi : le compte de la recherche du site est introuvable dans sa page");
+    vi.unstubAllGlobals();
+
+    // The count of the hour before, said with its time, on the page too.
+    emploiSource.configure(async () => after!);
+    const r = body(await emploi(cache(), undefined, undefined, later));
+    expect(r.resume).toContain(", qui en affiche 628 pour La Réunion (compte lu le 29/10 à 12:45), la plus récente");
+    const page = emploiPage("https://rundata.re", await buildEmploi(cache(), later).then((value) => ({ value, fetchedAt: later, stale: false })), later);
+    expect(page).toContain("dernière lecture le 29/10 à 13:45. Le site en affiche 628 pour La Réunion (compte lu le 29/10 à 12:45).</p>");
+    // Not a commune's nor a search's.
+    expect(body(await emploi(cache(), "Saint-Pierre", undefined, later))).not.toHaveProperty("total_site");
+    expect(body(await emploi(cache(), undefined, "infirmier", later)).resume).not.toContain("en affiche");
+    // A day after its read: no more said.
+    const lendemain = new Date(NOW.getTime() + 24 * 3600_000 + 60_000);
+    emploiSource.configure(async () => ({ ...after!, lu: lendemain.toISOString() }));
+    const old = body(await emploi(cache(), undefined, undefined, lendemain));
+    expect(old).not.toHaveProperty("total_site");
+    expect(old.couverture).toContain("le site peut en compter davantage, sa recherche fait foi pour le total.");
+    // No more than the offers followed here: not « davantage ».
+    emploiSource.configure(async () => ({ ...after!, total: { nombre: 20, lu: later.toISOString() } }));
+    expect(body(await emploi(cache(), undefined, undefined, later)).couverture).toContain("le site en affiche 20, compte lu le 29/10 à 13:45\u00a0; sa recherche fait foi pour le total.");
+    log.mockRestore();
+  });
+
   it("gives the island's offers newest first, each with its link, one line for a post published under several references, and says what is not taken", async () => {
     const c = await copie();
     emploiSource.configure(async () => c);
     const r = body(await emploi(cache(), undefined, undefined, NOW));
-    expect(r.resume).toBe("20 offres ouvertes à la candidature à La Réunion, suivies par rundata.re sur Choisir le service public, la plus récente publiée le 29/10 : Assistant(e) de direction.");
+    expect(r.resume).toBe("20 offres ouvertes à la candidature à La Réunion, suivies par rundata.re sur Choisir le service public, qui en affiche 628 pour La Réunion (compte lu le 29/10 à 12:45), la plus récente publiée le 29/10 : Assistant(e) de direction.");
+    expect(r.total_site).toEqual({ nombre: 628, lu_a: "29/10 12:45", lien: emploiSource.SOURCE.url });
+    expect(r.couverture).toContain("le site en affiche davantage (628, compte lu le 29/10 à 12:45)\u00a0: sa recherche fait foi pour le total.");
     expect(r.offres[1]).toEqual({
       intitule: "Adjoint au chef de division*K-OI/EXPL",
       employeur: "Direction Générale de l'Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI)",
@@ -304,7 +348,7 @@ describe("the tool emploi and the page /emploi", () => {
     // The page's copy built 4 minutes after the feed's read: the feed's time is said.
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(Date.parse(c.lu) + 4 * 60_000), stale: false }, NOW);
     expect(page).toContain("<h1>Offres d'emploi public à La Réunion</h1>");
-    expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture le 29/10 à 12:45\u00a0; le site peut en compter davantage.");
+    expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture le 29/10 à 12:45. Le site en affiche 628 pour La Réunion.</p>");
     const first = page.indexOf('<ul class="rows eau" id="offres">');
     expect(first).toBeGreaterThan(page.indexOf("</h1>"));
     expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel · Emploi ouvert aux titulaires et aux contractuels · Saint-Denis</small></span><span class="q-none">jusqu&#39;au 20/11</span>');

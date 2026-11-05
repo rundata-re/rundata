@@ -199,7 +199,7 @@ export const MAX_BYTES: Record<string, number> = {
   coupures_eau: 12_500, // 11 007
   sources_donnees: 30_500, // 27 508
   "sentiers_randonnee (Mafate)": 12_500, // 11 305
-  sport: 24_500, // 22 151
+  sport: 19_000, // 22 151, then 16 984 with the 15 most recent results only (1.0.258)
   evenements: 25_500, // 22 750
   "resume_du_jour (Saint-Paul)": 9_500, // 8 454
 };

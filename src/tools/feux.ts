@@ -8,7 +8,7 @@ import { distanceKm, localTime } from "../geo.js";
 import * as feux from "../providers/feux.js";
 
 export const URGENCE = "Vous voyez un feu ? Appelez le 18 ou le 112.";
-export const INTRO = "Points chauds repérés par les satellites VIIRS de la NASA ces dernières 24 h, en 4 à 6 passages par jour. Détection satellite, faux positifs possibles : toit chaud, site industriel, brûlage autorisé.";
+export const INTRO = "Points chauds repérés par les satellites VIIRS de la NASA ces dernières 24 h, chaque satellite passant deux fois par jour. Détection satellite, faux positifs possibles : toit chaud, site industriel, brûlage autorisé.";
 export const QUIET = "Aucun feu détecté par satellite ces dernières 24 h. Les nuages et les heures entre deux passages peuvent en masquer.";
 
 const localDay = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
@@ -56,7 +56,14 @@ export function block(f: feux.Feux, now: Date, from?: { lon: number; lat: number
     resume: n ? `${n} point${n > 1 ? "s" : ""} chaud${n > 1 ? "s" : ""} détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près ${de(f.detections[0].lieu)} (${f.detections[0].commune}) ${when(f.detections[0].t, now)}.` : QUIET,
     detections: n ? f.detections.map((d) => row(d, now, from)) : undefined,
     satellites: f.satellites,
+    satellites_muets: muets(f),
   };
+}
+
+/** « Suomi NPP ne publie plus depuis le 02/11. »: a satellite left out, so that its silence is not read as no fire. */
+export function muets(f: feux.Feux): string | undefined {
+  if (!f.muets?.length) return undefined;
+  return f.muets.map((m) => `${m.nom} ne publie plus depuis le ${m.dernier_jour.slice(8, 10)}/${m.dernier_jour.slice(5, 7)}`).join("\u00a0; ") + ".";
 }
 
 /** The vigilance's line: only when something was seen. */

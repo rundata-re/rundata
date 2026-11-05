@@ -680,7 +680,8 @@ const OTHER_PAGES: Record<string, Page> = {
   "/coupures-eau/*": { subrequests: 27, cpuMs: 70, from: ["src/tools/coupures.ts"], what: "les coupures d'une commune" },
   // The copy of /enfants, its agenda kept to the commune: the same reads as /enfants when it builds it.
   "/enfants/*": { subrequests: 37, cpuMs: 350, from: ["src/tools/agenda.ts"], what: "les lieux pour les enfants d'une commune, sur sa carte", basis: "code" },
-  "/feux": { subrequests: 20, cpuMs: 90, from: ["src/tools/feux.ts"] },
+  // FIRMS: the days each satellite has data for, then one list per satellite (providers/feux.ts COST).
+  "/feux": { subrequests: 21, cpuMs: 90, from: ["src/tools/feux.ts"] },
   "/ecoles-cyclone": { subrequests: 12, cpuMs: 50, from: ["src/tools/ecoles.ts"] },
   "/carburants": { subrequests: 13, cpuMs: 30, from: ["src/tools/carburants.ts"] },
   "/associations": { subrequests: 10, cpuMs: 40, from: ["src/web/propositions.ts"], what: "l'espace des associations et leurs propositions (D1)" },
@@ -836,17 +837,17 @@ export function reached(from: string[]): string[] {
 }
 
 /**
- * The sources read for the whole island (cache.ts `island`: NASA FIRMS's fires, CAMS's UV, the OVPF's posts, Piton
+ * The sources read for the whole island (cache.ts `island`: NASA FIRMS's fires and the days it has data for, CAMS's UV, the OVPF's posts, Piton
  * Live, the water notices, the prefecture's list, Vigicrues Réunion's vigilance, heights and flows, a trail's altitudes from the IGN) that each entry reads, from the imports of its files (not their
  * helpers'). From cold, each is asked of KV as well and written there, beyond what the entry measured: a read and a
  * write more, two subrequests.
  */
 export const ISLAND_READS: Record<string, number> = {
   "web:volcan": 3, "/volcan": 3, volcan_seismes: 3,
-  resume_du_jour: 3, "/aujourdhui/*": 3,
-  "/": 2, "/communes/*": 2, "/meteo": 2, "/meteo/*": 2,
-  cyclones: 1, "/cyclones": 1, "/ecoles-cyclone": 1,
-  "/feux": 1, sentiers_randonnee: 1, "/sentiers": 1, "/sentiers/*": 2, "/randonnees": 1, "/randonnees/*": 1, vigilance_meteo: 1,
+  resume_du_jour: 4, "/aujourdhui/*": 4,
+  "/": 3, "/communes/*": 3, "/meteo": 3, "/meteo/*": 3,
+  cyclones: 2, "/cyclones": 2, "/ecoles-cyclone": 2,
+  "/feux": 2, sentiers_randonnee: 2, "/sentiers": 2, "/sentiers/*": 3, "/randonnees": 2, "/randonnees/*": 2, vigilance_meteo: 2,
   prevision_meteo: 1,
   "web:crues": 3, crues_rivieres: 3, "/crues": 3,
   "web:coupures": 1, coupures_eau: 1, "/coupures-eau": 1, "/coupures-eau/*": 1, qualite_eau: 1, "/eau": 1,

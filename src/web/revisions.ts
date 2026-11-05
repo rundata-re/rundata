@@ -37,14 +37,14 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   "marches-publics": 3,
   mer: 5,
   meteo: 9,
-  randonnees: 13,
+  randonnees: 14,
   secheresse: 1,
-  sentiers: 14,
+  sentiers: 15,
   sport: 16,
   station: 2,
   trafic: 3,
   velos: 5,
-  volcan: 9,
+  volcan: 11,
 };
 
 /** `web:lieu:le-port` → `lieu`. */

@@ -8,6 +8,11 @@
  *
  * The API takes one satellite per request and a free MAP_KEY (configure()). Without one, nothing is fetched, shown
  * or logged. NASA data, full and open sharing; credit NASA FIRMS.
+ *
+ * Two days are asked (`/2`): FIRMS's « 1 » is the current UTC day only, from 04:00 at La Réunion, which would drop the
+ * night's passes each morning; the 24 hours are cut here (load). A satellite that stops publishing answers an empty
+ * list, which reads as « no fire »: the last day each one has data for (FIRMS's data_availability, read a few times
+ * a day) leaves out one silent for more than a day, said apart (`muets`).
  */
 import { left, perInvocation } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
@@ -27,12 +32,14 @@ export const SOURCE: SourceInfo = {
 export const LABEL = "détection satellite, faux positifs possibles";
 
 const API = "https://firms.modaps.eosdis.nasa.gov/api/area/csv";
+const AVAILABILITY = "https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv";
 // The island, west, south, east, north.
 const AREA = "55.2,-21.4,55.85,-20.85";
 const SATELLITES: Record<string, string> = { VIIRS_SNPP_NRT: "Suomi NPP", VIIRS_NOAA20_NRT: "NOAA-20", VIIRS_NOAA21_NRT: "NOAA-21" };
-/** One request per satellite. */
-export const COST = Object.keys(SATELLITES).length;
+/** One request per satellite, and the days they have data for. */
+export const COST = Object.keys(SATELLITES).length + 1;
 const FRESH_SECONDS = 30 * 60;
+const AVAILABILITY_SECONDS = 6 * 3600;
 const DAY_MS = 24 * 3600_000;
 
 let mapKey: string | undefined;
@@ -66,6 +73,23 @@ export interface Feux {
   detections: Detection[];
   /** The satellites whose list came back. */
   satellites: string[];
+  /** The satellites left out, FIRMS having nothing of theirs for more than a day: their last day, YYYY-MM-DD (UTC). */
+  muets?: { nom: string; dernier_jour: string }[];
+}
+
+/** FIRMS's data_availability: « data_id,min_date,max_date », one line per product. The last day of each one. */
+export function parseAvailability(csv: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const row of csv.trim().split(/\r?\n/).slice(1)) {
+    const [id, , last] = row.split(",").map((x) => x.trim());
+    if (id && /^\d{4}-\d{2}-\d{2}$/.test(last ?? "")) out[id] = last;
+  }
+  return out;
+}
+
+/** Silent: its last day of data before yesterday (UTC), when FIRMS said it. */
+export function silent(lastDay: string | undefined, now: Date): boolean {
+  return !!lastDay && lastDay < new Date(now.getTime() - DAY_MS).toISOString().slice(0, 10);
 }
 
 /** One satellite's CSV: latitude,longitude,bright_ti4,scan,track,acq_date,acq_time,satellite,instrument,confidence,… */
@@ -88,13 +112,26 @@ export function parse(csv: string, satellite: string): Detection[] {
   });
 }
 
-async function island(cache: Cache): Promise<Cached<Feux>> {
+/** The last day of data of each satellite, or {} when FIRMS does not say: then every satellite is asked. */
+async function availability(cache: Cache): Promise<Record<string, string>> {
+  try {
+    return (await cache.island("feux:dispo", AVAILABILITY_SECONDS, async () => parseAvailability(await getText(SOURCE.id, `${AVAILABILITY}/${mapKey}/ALL`)))).value;
+  } catch (err) {
+    console.error(`source ${SOURCE.id} : jours disponibles non lus:`, scrub(why(err)));
+    return {};
+  }
+}
+
+async function island(cache: Cache, now: Date): Promise<Cached<Feux>> {
   return cache.island("feux:ile", FRESH_SECONDS, async () => {
-    const lists = await Promise.allSettled(Object.entries(SATELLITES).map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/1`), nom)));
-    const ok = lists.flatMap((r, i) => (r.status === "fulfilled" ? [{ nom: Object.values(SATELLITES)[i], list: r.value }] : []));
-    if (!ok.length) throw (lists[0] as PromiseRejectedResult).reason ?? new UpstreamError(SOURCE.id, "aucun satellite");
+    const days = await availability(cache);
+    const asked = Object.entries(SATELLITES).filter(([id]) => !silent(days[id], now));
+    const muets = Object.entries(SATELLITES).filter(([id]) => silent(days[id], now)).map(([id, nom]) => ({ nom, dernier_jour: days[id] }));
+    const lists = await Promise.allSettled(asked.map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/2`), nom)));
+    const ok = lists.flatMap((r, i) => (r.status === "fulfilled" ? [{ nom: asked[i][1], list: r.value }] : []));
+    if (!ok.length) throw (lists[0] as PromiseRejectedResult | undefined)?.reason ?? new UpstreamError(SOURCE.id, "aucun satellite");
     const detections = ok.flatMap((x) => x.list).sort((x, y) => y.t.localeCompare(x.t));
-    return { detections, satellites: ok.map((x) => x.nom) };
+    return { detections, satellites: ok.map((x) => x.nom), ...(muets.length ? { muets } : {}) };
   });
 }
 
@@ -112,9 +149,9 @@ export function feuxNow(cache: Cache, now: Date): Promise<(Feux & { fetchedAt: D
 async function load(cache: Cache, now: Date): Promise<(Feux & { fetchedAt: Date }) | null> {
   if (left() < 2 * COST) return null;
   try {
-    const c = await island(cache);
+    const c = await island(cache, now);
     const since = now.getTime() - DAY_MS;
-    return { detections: c.value.detections.filter((d) => Date.parse(d.t) >= since), satellites: c.value.satellites, fetchedAt: c.fetchedAt };
+    return { detections: c.value.detections.filter((d) => Date.parse(d.t) >= since), satellites: c.value.satellites, ...(c.value.muets ? { muets: c.value.muets } : {}), fetchedAt: c.fetchedAt };
   } catch (err) {
     console.error(`source ${SOURCE.id} indisponible:`, scrub(why(err)));
     return null;

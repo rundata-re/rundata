@@ -7,7 +7,7 @@
 import type { Cached } from "../cache.js";
 import * as feux from "../providers/feux.js";
 import * as mf from "../providers/vigilance.js";
-import { listLine, QUIET, URGENCE, when } from "../tools/feux.js";
+import { listLine, muets, QUIET, URGENCE, when } from "../tools/feux.js";
 import { credits as creditOf, de } from "../tools/format.js";
 import { cyclone, islandGreen, NONE_ISSUED_SAID, raised } from "../tools/vigilance.js";
 import type { Alerte, SentiersAnswer } from "./data.js";
@@ -107,7 +107,7 @@ export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?:
   const body = `<section aria-labelledby="h-feux">
   <h2 id="h-feux">Les feux des dernières 24 h</h2>
   <div class="card">${firesList(l.fires, now)}</div>
-  ${l.fires ? `<p class="note">Satellites lus : ${esc(l.fires.satellites.join(", "))}, à ${hm(l.fires.fetchedAt)}.</p><p class="sources">Sources : ${credits(creditOf([feux.SOURCE]))}.</p>` : ""}
+  ${l.fires ? `<p class="note">Satellites lus : ${esc(l.fires.satellites.join(", "))}, à ${hm(l.fires.fetchedAt)}.${muets(l.fires) ? ` ${esc(muets(l.fires)!)}` : ""}</p><p class="sources">Sources : ${credits(creditOf([feux.SOURCE]))}.</p>` : ""}
 </section>
 <section aria-labelledby="h-sentiers">
   <h2 id="h-sentiers">Les sentiers fermés par l'ONF</h2>

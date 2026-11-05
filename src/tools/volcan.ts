@@ -152,6 +152,15 @@ export function perDay(volcano: seismes.Seisme[], now: Date, lu?: Date): Jour[] 
 }
 
 /**
+ * The depth as the OVPF counts it, from the sea level: under the summit (about 2,6 km up) a quake can be above it, its
+ * depth then negative. « 0,3 km sous le niveau de la mer », « 1,2 km au-dessus du niveau de la mer ».
+ */
+export function depthText(km: number): string {
+  const d = Math.round(Math.abs(km) * 10) / 10;
+  return `${d.toLocaleString("fr-FR")}\u00a0km ${km < 0 && d > 0 ? "au-dessus du" : "sous le"} niveau de la mer`;
+}
+
+/**
  * Counts and the most notable events of the last 30 days, under the volcano and elsewhere. `lu`: served from the last
  * copy, read then: the counts are of the 7 and 30 days before that read, `lus_jusqu_au` says it.
  */
@@ -160,11 +169,12 @@ export function quakeSummary(list: seismes.Seisme[], now: Date, lu?: Date) {
   const recent = (s: seismes.Seisme, days: number) => at - Date.parse(s.time) <= days * DAY;
   const volcano = list.filter(seismes.underSummit);
   const elsewhere = list.filter((s) => !seismes.underSummit(s));
-  const max = (l: seismes.Seisme[]) => (l.length ? Math.max(...l.map((s) => s.magnitude)) : null);
+  const max = (l: seismes.Seisme[]) => (l.length ? Math.round(Math.max(...l.map((s) => s.magnitude)) * 10) / 10 : null);
   const one = (s: seismes.Seisme) => ({
     heure: `${localTime(new Date(s.time))} heure de La Réunion`,
     magnitude: Math.round(s.magnitude * 10) / 10,
     profondeur_km: Math.round(s.profondeur_km * 10) / 10,
+    profondeur: depthText(s.profondeur_km),
     lieu: seismes.where(s.lon, s.lat),
   });
   return {
@@ -307,7 +317,7 @@ function enclosOf(o: Officiel) {
 }
 
 /** The short answer, the tool's default (Claude's directory asks for frugal answers): what it leaves out, and where. */
-export const COURT = "Réponse courte : les 3 dernières alertes, les séismes des 7 derniers jours et les 3 derniers. L'historique des alertes depuis 2016 et les séismes jour par jour sur 30 jours : rappeler l'outil avec detail, ou https://rundata.re/volcan.";
+export const COURT = "Réponse courte : les 3 dernières alertes de la liste, les séismes des 7 derniers jours et les 3 derniers. L'historique des alertes depuis 2016 et les séismes jour par jour sur 30 jours : rappeler l'outil avec detail, ou https://rundata.re/volcan.";
 const COURT_ALERTES = 3;
 const COURT_JOURS = 7;
 const COURT_SEISMES = 3;
@@ -431,6 +441,9 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   }
   // How the last alerts went: only those whose start and end a release writes (volcan-historique.ts).
   parts.push(historique.resumeText(detail ? undefined : COURT_ALERTES));
+  // A release newer than the list: « les 3 dernières alertes » would be wrong without it.
+  const newer = historique.depuis(given);
+  if (newer) parts.push(newer);
 
   // pitonlive.com credited only when a line of it is said, last (marketing).
   const pitonSaid = !!piton2;

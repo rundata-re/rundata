@@ -4,7 +4,7 @@ import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as feux from "../src/providers/feux.js";
 import { configure as configureMf } from "../src/providers/mf-auth.js";
-import { QUIET, URGENCE } from "../src/tools/feux.js";
+import { block, muets, QUIET, URGENCE } from "../src/tools/feux.js";
 import { sentiersRandonnee } from "../src/tools/sentiers.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
 import type { RandonneesAnswer, SentiersAnswer } from "../src/web/data.js";
@@ -25,10 +25,14 @@ const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
 const FILES: Record<string, string> = { VIIRS_NOAA20_NRT: "firms_viirs_noaa20.csv", VIIRS_NOAA21_NRT: "firms_viirs_noaa21.csv", VIIRS_SNPP_NRT: "firms_viirs_snpp.csv" };
 
 let asked: string[] = [];
+// FIRMS's last day of data of each product: every satellite publishing, unless a test says otherwise.
+const ALL_LIVE = "data_id,min_date,max_date\nVIIRS_SNPP_NRT,2026-08-01,2026-10-24\nVIIRS_NOAA20_NRT,2026-08-01,2026-10-24\nVIIRS_NOAA21_NRT,2026-08-01,2026-10-24\n";
+let dispo = ALL_LIVE;
 function upstream(url: string, quiet = false): Response {
   const host = new URL(url).hostname;
   if (host === "firms.modaps.eosdis.nasa.gov") {
     asked.push(url);
+    if (url.includes("/data_availability/")) return new Response(dispo);
     const source = Object.keys(FILES).find((s) => url.includes(`/${s}/`))!;
     return new Response(quiet ? fixture(FILES.VIIRS_SNPP_NRT) : fixture(FILES[source]));
   }
@@ -41,6 +45,7 @@ function upstream(url: string, quiet = false): Response {
 
 beforeEach(() => {
   asked = [];
+  dispo = ALL_LIVE;
   vi.stubGlobal("fetch", async (url: string) => upstream(String(url)));
 });
 afterEach(() => {
@@ -66,7 +71,9 @@ describe("fires seen by satellite", () => {
     const c = cache();
     const f = (await feux.feuxNow(c, NOW))!;
     expect(asked).toHaveLength(feux.COST);
-    expect(asked[0]).toBe("https://firms.modaps.eosdis.nasa.gov/api/area/csv/key/VIIRS_SNPP_NRT/55.2,-21.4,55.85,-20.85/1");
+    expect(asked[0]).toBe("https://firms.modaps.eosdis.nasa.gov/api/data_availability/csv/key/ALL");
+    // Two days: FIRMS's « 1 » is the UTC day only, from 04:00 at La Réunion; the 24 hours are cut here.
+    expect(asked[1]).toBe("https://firms.modaps.eosdis.nasa.gov/api/area/csv/key/VIIRS_SNPP_NRT/55.2,-21.4,55.85,-20.85/2");
     expect(f.satellites).toEqual(["Suomi NPP", "NOAA-20", "NOAA-21"]);
     // The one of 22/10 is past the day; the newest first, its hour read from « 230 ».
     expect(f.detections.map((d) => [d.t, d.confiance, d.commune])).toEqual([
@@ -88,6 +95,34 @@ describe("fires seen by satellite", () => {
     vi.stubGlobal("fetch", async (url: string) => (new URL(String(url)).pathname.includes("/VIIRS_NOAA21_NRT/") ? new Response("", { status: 500 }) : upstream(String(url))));
     const f = (await feux.feuxNow(cache(), NOW))!;
     expect(f.satellites).toEqual(["Suomi NPP", "NOAA-20"]);
+  });
+
+  it("leaves out a satellite FIRMS has nothing of for more than a day, said apart, and asks all when it cannot tell", async () => {
+    feux.configure("key");
+    dispo = ALL_LIVE.replace("VIIRS_SNPP_NRT,2026-08-01,2026-10-24", "VIIRS_SNPP_NRT,2026-08-01,2026-10-21");
+    const f = (await feux.feuxNow(cache(), NOW))!;
+    expect(asked.some((u) => u.includes("/VIIRS_SNPP_NRT/"))).toBe(false);
+    expect(f.satellites).toEqual(["NOAA-20", "NOAA-21"]);
+    expect(f.muets).toEqual([{ nom: "Suomi NPP", dernier_jour: "2026-10-21" }]);
+    // Said in the tool's block, in sentiers_randonnee's answer as built, and on /feux beside the satellites read.
+    expect(muets(f)).toBe("Suomi NPP ne publie plus depuis le 21/10.");
+    expect(block(f, NOW).satellites_muets).toBe("Suomi NPP ne publie plus depuis le 21/10.");
+    expect(block({ ...f, muets: undefined }, NOW).satellites_muets).toBeUndefined();
+    const hikes = body(await sentiersRandonnee(cache(), undefined, NOW));
+    expect(hikes.feux_detectes.satellites).toEqual(["NOAA-20", "NOAA-21"]);
+    expect(hikes.feux_detectes.satellites_muets).toBe("Suomi NPP ne publie plus depuis le 21/10.");
+    const page = feuxPage("https://rundata.re", { fires: f, sentiers: null } as never, NOW);
+    expect(page).toMatch(/<p class="note">Satellites lus : NOAA-20, NOAA-21, à \d\d:\d\d\. Suomi NPP ne publie plus depuis le 21\/10\.<\/p>/);
+    // Yesterday's data (UTC) is not silent: the day's passes may not be out yet.
+    expect(feux.silent("2026-10-23", NOW)).toBe(false);
+    expect(feux.silent("2026-10-22", NOW)).toBe(true);
+    expect(feux.silent(undefined, NOW)).toBe(false);
+    asked = [];
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubGlobal("fetch", async (url: string) => (String(url).includes("/data_availability/") ? new Response("", { status: 500 }) : upstream(String(url))));
+    const all = (await feux.feuxNow(cache(), NOW))!;
+    expect(all.satellites).toEqual(["Suomi NPP", "NOAA-20", "NOAA-21"]);
+    expect(all.muets).toBeUndefined();
   });
 
   it("go first in the hikers' answer near them, with the label and the emergency numbers", async () => {

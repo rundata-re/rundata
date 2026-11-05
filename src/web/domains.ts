@@ -6,7 +6,7 @@
  */
 import { enLigne } from "./associations-drapeau.js";
 import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
-import { BULLETIN_QUOTIDIEN, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
+import { BULLETIN_QUOTIDIEN, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
 import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
 import { SOMMET } from "../providers/seismes.js";
@@ -263,17 +263,19 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
       `</div>`
     : "";
 
+  const ABOVE_SEA = "Profondeur comptée depuis le niveau de la mer\u00a0; «\u00a0−\u00a0» : au-dessus, sous le sommet (vers 2,6\u00a0km d'altitude).";
   // During an alert, five at most, one line each at 390 px: « 24/10 16:55 · magnitude 1,2 · sommet, 0 km », the
   // section saying « sous le volcan » already (marketing).
   // « sommet, 0,1 km » kept whole, the line breaking before it, never inside (marketing); a longer place breaks as words.
   const where = (s: NonNullable<typeof q>["derniers"][number]) => {
-    const at = `${s.lieu === SOMMET ? "sommet" : s.lieu}, ${fr(Math.max(0, s.profondeur_km))}\u00a0km`;
+    // Counted from the sea level (note under the list): above it under the summit, « −1,2 km ».
+    const at = `${s.lieu === SOMMET ? "sommet" : s.lieu}, ${s.profondeur_km < 0 ? "−" : ""}${fr(Math.abs(s.profondeur_km))}\u00a0km`;
     return at.length <= PLACE_WHOLE ? at.replace(/ /g, "\u00a0") : at;
   };
   const quakeRow = (s: NonNullable<typeof q>["derniers"][number]) =>
     a
       ? `<li>${esc(s.heure.replace(" heure de La Réunion", ""))} · magnitude\u00a0<b>${esc(md(s.magnitude))}</b> · ${esc(where(s))}</li>`
-      : `<li><b>${esc(md(s.magnitude))}</b><span>${esc(s.lieu)}, ${esc(fr(Math.max(0, s.profondeur_km)))} km de profondeur</span><span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
+      : `<li><b>${esc(md(s.magnitude))}</b><span>${esc(s.lieu)}, ${esc(depthText(s.profondeur_km))}</span><span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
   const quakes = q
     ? `<div class="card">${icon("gauge")}<h3>Séismes localisés par l'OVPF</h3>` +
       quakeDays(q.par_jour_sous_le_volcan, e?.image_ovpf_plus_recente && !folded && !a ? apres : undefined) +
@@ -283,6 +285,8 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
         : `<p class="facts"><span>Sous le volcan${esc(jusqua)} : <b>${q.sous_le_volcan["30_jours"]}</b> en 30 jours, magnitude max ${md(q.sous_le_volcan.magnitude_max_30j)}</span>` +
           `<span>Ailleurs sur l'île : <b>${q.ailleurs_sur_l_ile["30_jours"]}</b>, magnitude max ${md(q.ailleurs_sur_l_ile.magnitude_max_30j)}</span></p>`) +
       (q.derniers.length ? `<ul class="rows${a ? " seismes" : ""}">${q.derniers.slice(0, a ? 5 : undefined).map(quakeRow).join("")}</ul>` : "") +
+      // The short rows give a depth above the sea level as « −1,2 km »: said once under them.
+      (a && q.derniers.slice(0, 5).some((s) => s.profondeur_km < 0) ? `<p class="note">${esc(ABOVE_SEA)}</p>` : "") +
       // LOCALISES once, under the day counts (marketing).
       `<p class="note">${q.copie ? `${esc(q.copie)} ` : ""}${esc(q.note.replace(` ${LOCALISES}`, ""))}</p></div>`
     : "";
@@ -297,7 +301,9 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const then = (m: historique.Moment) =>
     `<p>${esc(historique.PUIS)} ${esc(m.quoi)} : « ${esc(m.dit)} » (<a href="${esc(m.communique.copie)}">${esc(historique.label(m.communique))} →</a>). ${esc(historique.SANS_FIN)}</p>`;
   // Before the plan of 2021, folded: as many cards again at 390 px, under the levels of the plan then.
-  const before = `<section id="alertes-precedentes" aria-labelledby="h-alertes"><div class="sec-h"><h2 id="h-alertes">${esc(historique.TITRE)}</h2><p>${esc(historique.CHAPEAU)}</p></div>
+  // A release of the prefecture newer than the list's last day, said under its title.
+  const depuisListe = historique.depuis(e?.communique_prefecture);
+  const before = `<section id="alertes-precedentes" aria-labelledby="h-alertes"><div class="sec-h"><h2 id="h-alertes">${esc(historique.TITRE)}</h2><p>${esc(historique.CHAPEAU)}</p>${depuisListe ? `<p class="note">${esc(depuisListe)}</p>` : ""}</div>
   ${episodes(historique.EPISODES.filter((e) => !historique.avant2021(e)))}
   <details><summary>${esc(historique.avantTitre(historique.EPISODES.filter(historique.avant2021).length))}</summary><p class="note">${esc(historique.AVANT_2021)}</p>${episodes(historique.EPISODES.filter(historique.avant2021))}</details>
   <p class="note">${esc(historique.NOTE)}</p></section>

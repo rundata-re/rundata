@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as rt from "../src/providers/gtfsrt.js";
 import * as transit from "../src/providers/transit.js";
-import { applyRealtime, departureRow, departures, findStops, realtimeFeeds, transports, withPositions } from "../src/tools/transports.js";
+import type { Fil, Info } from "../src/providers/actualites.js";
+import { applyRealtime, busNews, departureRow, departures, findStops, realtimeFeeds, transports, withPositions } from "../src/tools/transports.js";
 
 // 40 trips, 2 vehicles and the 3 alerts of the Car Jaune feed of 23/10/2026 at 20:55 (La Réunion).
 const FEED = new Uint8Array(readFileSync(new URL("./fixtures/gtfs_rt_carjaune.pb", import.meta.url)));
@@ -77,7 +78,8 @@ describe("GTFS-RT feed", () => {
 
 describe("departures in real time", () => {
   it("take the announced time, a skipped stop and a cancelled trip, and come in the order the buses are expected", async () => {
-    const list = (await departures(findStops("gare routière Saint-Pierre").groups, NOW)).filter((d) => d.reseau === "carjaune").slice(0, 3);
+    // Still to come: on a network with a feed, departures are also looked for an hour back.
+    const list = (await departures(findStops("gare routière Saint-Pierre").groups, NOW)).filter((d) => d.reseau === "carjaune" && d.in >= 0).slice(0, 3);
     expect(list).toHaveLength(3);
     const [late, skipped, cancelled] = list;
     const feed: rt.Realtime = {
@@ -122,8 +124,50 @@ describe("departures in real time", () => {
     expect(later.bus).toBeUndefined();
   });
 
+  it("keep a bus late beyond its time while it is still to come, and only then", async () => {
+    // Alternéo LI2 at the Gare de Saint-Pierre, audit of 04/11/2026: due at 13:33, announced at 13:55, it was left out
+    // before the feed was read. On a network with a feed, departures are looked for an hour back.
+    const all = await departures(findStops("gare routière Saint-Pierre").groups, NOW);
+    // Due 15 to 25 minutes ago: announced in 2 minutes, under the half hour believed with no bus seen.
+    const d = all.find((x) => x.reseau === "carjaune" && x.in <= -15 * 60 && x.in >= -25 * 60)!;
+    const gone = all.find((x) => x.reseau === "carjaune" && x.in < -60 && x !== d)!;
+    expect(d && gone).toBeTruthy();
+    const feeds = new Map([["carjaune", { at: T0 - 20, trips: { [d.trip]: { [gtfsStop(d.stop)]: T0 + 120 } }, cancelled: [], alerts: [] } as rt.Realtime]]);
+    const out = applyRealtime(all.filter((x) => x === d || x === gone), feeds, NOW);
+    expect(out.map((x) => x.trip)).toEqual([d.trip]);
+    expect(departureRow(out[0]).retard_min).toBeGreaterThanOrEqual(20);
+    // Without a feed, a departure gone by is not given.
+    expect(applyRealtime([d, gone], new Map(), NOW)).toEqual([]);
+  });
+
+  it("do not believe a bus early at the first stop of its trip, where it waits", async () => {
+    // Alternéo at the Gare du Tampon, audit of 04/11/2026: the waiting bus given the time of each read, « 16 min d'avance ».
+    const list = (await departures(findStops("gare routière Saint-Pierre").groups, NOW)).filter((x) => x.reseau === "carjaune" && x.in >= 20 * 60);
+    const first = list.find((x) => x.premier)!;
+    const on = list.find((x) => !x.premier)!;
+    const feeds = new Map([["carjaune", { at: T0 - 20, trips: { [first.trip]: { [gtfsStop(first.stop)]: T0 }, [on.trip]: { [gtfsStop(on.stop)]: T0 + on.in - 5 * 60 } }, cancelled: [], alerts: [] } as rt.Realtime]]);
+    const out = applyRealtime([first, on], feeds, NOW);
+    expect(departureRow(out.find((x) => x.trip === first.trip)!)).not.toHaveProperty("heure_annoncee");
+    // Further along its way, a bus may well be early.
+    expect(departureRow(out.find((x) => x.trip === on.trip)!).retard_min).toBe(-5);
+  });
+
+  it("say a bus within a minute of its timetable on time, never a minute early for 13 seconds", async () => {
+    const [d] = (await departures(findStops("gare routière Saint-Pierre").groups, NOW)).filter((x) => x.reseau === "carjaune" && x.in >= 10 * 60);
+    const at = (late: number) => {
+      const feeds = new Map([["carjaune", { at: T0 - 20, trips: { [d.trip]: { [gtfsStop(d.stop)]: T0 + d.in + late } }, cancelled: [], alerts: [] } as rt.Realtime]]);
+      return departureRow(applyRealtime([d], feeds, NOW)[0]);
+    };
+    for (const late of [-13, -59, 40]) {
+      const row = at(late);
+      expect(row.retard_min, String(late)).toBe(0);
+      expect(row.heure_annoncee, String(late)).toBe(row.heure);
+    }
+    expect(at(-75).retard_min).toBeLessThan(0);
+  });
+
   it("are given by the tool with the alerts about these lines, and say so", async () => {
-    const list = (await departures(findStops("gare routière Saint-Pierre").groups, NOW)).filter((d) => d.reseau === "carjaune");
+    const list = (await departures(findStops("gare routière Saint-Pierre").groups, NOW)).filter((d) => d.reseau === "carjaune" && d.in >= 0);
     const d = list[0];
     const route = cj.temps_reel!.lignes[d.route - cj.first_route];
     const feed: rt.Realtime = {
@@ -155,5 +199,34 @@ describe("departures in real time", () => {
     const r = body(await transports("gare routière Saint-Pierre", undefined, NOW));
     expect(r.horaires).toMatch(/^théoriques/);
     expect(r.departs.every((x: { retard_min?: number }) => x.retard_min === undefined)).toBe(true);
+  });
+});
+
+describe("the media's headlines about the buses", () => {
+  const ago = (min: number) => new Date(NOW.getTime() - min * 60_000).toISOString();
+  const info = (titre: string, min: number, communes: string[] = [], resume?: string): Info => ({ titre, ...(resume ? { resume } : {}), media: "Freedom", lien: `https://www.freedom.fr/${min}`, publie: ago(min), heure: true, communes, lieux: [], sujets: [] });
+  // Freedom, 04/11/2026 at 13:24: what the timetable of a network without a feed cannot say (audit of 04/11/2026).
+  const fil = { infos: [
+    info("Saint-André : des jets de projectiles sur les bus, deux départs suspendus", 60, ["Saint-André"], "Le réseau Estival suspend les deux dernières rotations de la ligne 43."),
+    info("Estival : la ligne 12 déviée à cause de travaux", 30),
+    info("Le festival du film de Saint-André a commencé", 20, ["Saint-André"]),
+    info("Car Jaune : grève sur le réseau ce matin", 90),
+    info("Estival : la ligne 43 ne roulait pas hier soir", 13 * 60),
+  ], prefecture: [] } as unknown as Fil;
+
+  it("are those of the networks and lines asked, or about the buses of the commune, of the last 12 hours", () => {
+    expect(busNews(fil, ["estival"], ["43"], ["Saint-André"], NOW).map((x) => x.titre)).toEqual(["Saint-André : des jets de projectiles sur les bus, deux départs suspendus"]);
+    expect(busNews(fil, ["carjaune"], ["S1"], [], NOW).map((x) => x.titre)).toEqual(["Car Jaune : grève sur le réseau ce matin"]);
+    expect(busNews(fil, ["estival"], ["12"], [], NOW)[0]).toMatchObject({ titre: "Estival : la ligne 12 déviée à cause de travaux", media: "Freedom", heure: "aujourd'hui à 07:00", lien: "https://www.freedom.fr/30" });
+    expect(busNews(undefined, ["estival"], ["43"], [], NOW)).toEqual([]);
+  });
+
+  it("are given by the tool after the departures, with their medium and time, read from the news copy only", async () => {
+    const store = new MemoryStore();
+    store.put("actualites:fil", { value: fil, fetchedAt: NOW.getTime() });
+    const r = body(await transports("gare routière Saint-Pierre", undefined, NOW, new Cache(store, () => NOW.getTime(), false)));
+    expect(r.resume).toMatch(/ Dans les médias\u00a0: «\u00a0Car Jaune : grève sur le réseau ce matin\u00a0» \(Freedom, aujourd'hui à 06:00\)\.$/);
+    expect(r.dans_les_medias).toHaveLength(1);
+    expect(JSON.stringify(r.sources)).toMatch(/médias|Médias/);
   });
 });

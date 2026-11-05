@@ -66,8 +66,12 @@ export function parse(json: { results?: Record<string, unknown>[] }): Etat[] {
   });
 }
 
-// The dataset is republished every hour.
-const FRESH_SECONDS = 30 * 60;
+/**
+ * The dataset is republished every hour, each site's state when its staff changes it: a copy of 30 minutes said
+ * papers and cardboard « benne pleine » at Plateau Caillou at 14:07, put back to « accepté » at 13:35 (audit of
+ * 04/11/2026). Ten minutes: at most six reads an hour, and only when it is asked.
+ */
+export const FRESH_SECONDS = 10 * 60;
 
 export function meteo(cache: Cache): Promise<Cached<Etat[]>> {
   return cache.get("tco:meteo", FRESH_SECONDS, async () => parse(await getJson(SOURCE.id, URL, 15_000)));

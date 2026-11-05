@@ -297,8 +297,8 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
 | /randonnees/* | providers/feux, providers/sentiers, providers/traces |
 | /sentiers/* | providers/feux, providers/sentiers, providers/traces |
-| /bus/arret/* | providers/calendrier, providers/gtfsrt |
-| /bus/trajet/* | providers/calendrier, providers/gtfsrt |
+| /bus/arret/* | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
+| /bus/trajet/* | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | /coupures-eau/* | providers/avis-eau, providers/eaupotable |
 | /enfants/* | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/salles, providers/sport-avis, providers/sport |
 | /feux | providers/feux |
@@ -316,7 +316,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /air | providers/air-mesures, providers/atmo, providers/capteurs |
 | /electricite | providers/avis-eau, providers/coupures-courant, providers/edf |
 | /calendrier | providers/calendrier |
-| /bus | providers/calendrier, providers/gtfsrt |
+| /bus | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | /trafic | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | /velos | providers/velos |
 | /bornes | providers/irve |
@@ -347,7 +347,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | prevision_meteo | providers/arome, providers/ensemble, providers/mf-auth, providers/openmeteo, providers/uv |
 | qualite_eau | providers/avis-eau, providers/baignades, providers/eaupotable |
 | temperature_mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
-| transports | providers/calendrier, providers/gtfsrt |
+| transports | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | actualites | providers/actualites, providers/avis-eau |
 | historique_meteo |  |

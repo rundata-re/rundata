@@ -114,11 +114,17 @@ const STOP = new Set(["des", "les", "une", "pour", "avec", "quoi", "faire", "sor
 
 /** How `quoi` is understood: themes, or else words that must all be in the event. */
 // The venue's name is left out of the genre: a concert at the « Théâtre Luc Donat » is not a play.
-const about = (e: src.Evenement) => `${e.titre} ${e.categories.join(" ")} ${e.description ?? ""}`.toLowerCase();
+/**
+ * The source's categories, unless it ticked a whole list: « Culture, Education, Enquête, Santé, Sport » made the
+ * Dipavali of Les Trois-Bassins a sport (audit of 04/11/2026). Its title and text say then what it is.
+ */
+const CATEGORIES_MAX = 3;
+const categoriesOf = (e: src.Evenement) => (e.categories.length > CATEGORIES_MAX ? [] : e.categories);
+const about = (e: src.Evenement) => `${e.titre} ${categoriesOf(e).join(" ")} ${e.description ?? ""}`.toLowerCase();
 const body = (e: src.Evenement) => `${about(e)} ${e.lieu ?? ""}`.toLowerCase();
 // What the title and the source's own category say comes first: « Concert » at Bisik is a concert even if the text
 // mentions a dance contest.
-const head = (e: src.Evenement) => `${e.titre} ${e.categories.join(" ")}`.toLowerCase();
+const head = (e: src.Evenement) => `${e.titre} ${categoriesOf(e).join(" ")}`.toLowerCase();
 
 const kindsOf = (text: string) => THEMES.filter((t) => names(t, text)).map((t) => t.genre);
 /** The genres of its title, categories and first sentence, and those the rest of its text named (`themes`), in THEMES' order. */
@@ -424,16 +430,20 @@ const DE_LA_BASE = new Set([PROPOSITIONS_ID, CONNECTEURS_ID]);
 /**
  * The same event published twice (by the CINOR and the tourist office, a mairie and the tourist office of the East, a hall and the town)
  * is told once: same first words of the title (« CÉDRIC "ANALYSE" & SES INVITÉS », « Cédric « Analyse » et ses
- * invités ») on the same day, in the same commune when both say it.
+ * invités ») on the same day, in the same commune when both say it. A commune has one night market an evening: two
+ * titles that say « marché de nuit » there on the same day are one (« Nout' Marché de Nuit à Bras-Panon » of the town,
+ * « Marché de nuit spécial Dipavali 2026 » of the tourist office, both on 10/11/2026: audit of 04/11/2026).
  */
 export function unique(list: src.Evenement[]): src.Evenement[] {
   const out: src.Evenement[] = [];
   const seen = new Map<string, src.Evenement>();
-  const key = (e: src.Evenement) => `${titleKey(e.titre)}|${e.seances[0]?.debut.slice(0, 10)}`;
+  const day = (e: src.Evenement) => e.seances[0]?.debut.slice(0, 10);
+  const nightMarket = (e: src.Evenement) => (e.commune && /\bmarches? (?:de nuit|nocturnes?)\b/.test(normalize(e.titre)) ? `marché de nuit|${e.commune}|${day(e)}` : undefined);
+  const key = (e: src.Evenement) => `${titleKey(e.titre)}|${day(e)}`;
   const timed = (e: src.Evenement) => e.seances.some((s) => s.debut.length > 10);
   const better = (x: src.Evenement, y: src.Evenement) => Number(timed(x)) - Number(timed(y)) || Number(!!x.lieu) - Number(!!y.lieu);
   for (const e of list) {
-    const same = seen.get(e.id) ?? seen.get(key(e));
+    const same = seen.get(e.id) ?? seen.get(key(e)) ?? (nightMarket(e) ? seen.get(nightMarket(e)!) : undefined);
     if (same && same.commune && e.commune && same.commune !== e.commune && same.id !== e.id) {
       out.push(e);
       seen.set(e.id, e);
@@ -446,7 +456,7 @@ export function unique(list: src.Evenement[]): src.Evenement[] {
     }
     if (same) out[out.indexOf(same)] = { ...e, statut: e.statut ?? same.statut };
     else out.push(e);
-    for (const k of [e.id, key(e), ...(same ? [same.id, key(same)] : [])]) seen.set(k, out.find((x) => x.id === e.id) ?? e);
+    for (const k of [e.id, key(e), nightMarket(e), ...(same ? [same.id, key(same), nightMarket(same)] : [])]) if (k) seen.set(k, out.find((x) => x.id === e.id) ?? e);
   }
   return out;
 }

@@ -330,8 +330,8 @@ describe("where the bus is", () => {
     store.put("rt:carjaune", { value: { at: T0 - 30, trips: {}, cancelled: [], alerts: [], vehicles }, fetchedAt: NOW.getTime() });
     return new Cache(store, () => NOW.getTime(), false);
   };
-  /** The next S1 at Manapany les Bains, whose bus is on its way. */
-  const nextS1 = async () => (await departures(findStops("Manapany les Bains").groups, NOW)).filter((d) => d.route === s1)[0];
+  /** The next S1 at Manapany les Bains, whose bus is on its way: still to come (`departures` also looks back an hour on a network with a feed). */
+  const nextS1 = async () => (await departures(findStops("Manapany les Bains").groups, NOW)).filter((d) => d.route === s1 && d.in >= 0)[0];
 
   beforeEach(() => vi.stubGlobal("fetch", async () => new Response("down", { status: 503 })));
   afterEach(() => vi.unstubAllGlobals());
@@ -364,5 +364,36 @@ describe("where the bus is", () => {
     expect(r.departs.some((x: { position_du_bus?: unknown }) => x.position_du_bus)).toBe(false);
     expect(r.bus_en_circulation).toBeUndefined();
     expect(r.resume).toMatch(/Aucun bus de la ligne ne donne sa position en ce moment, ce qui ne veut pas dire qu'aucun ne circule\./);
+  });
+});
+
+describe("a stop no trip stops at", () => {
+  // Alternéo's « Mairie de Saint Pierre » is in its list of stops, but no trip of its timetables stops there (audit of
+  // 04/11/2026): « Lourdes », at 99 m, and « Mail », at 189 m, are served. Here Lourdes is given the passes of a stop
+  // the fixtures have, Mail none: only Lourdes is served.
+  const alt = transit.NETWORKS.alterneo;
+  const lourdes = transit.GROUPS.find((g) => g.reseau === "alterneo" && g.nom === "Lourdes" && g.commune === "Saint-Pierre")!;
+  const served = rows[alt.feed]!.passes![0];
+  const withLourdes: transit.TransitDb = {
+    all: async <T>(sql: string, keys: unknown) => {
+      const asked = JSON.parse(String(keys)) as [string, number][];
+      const found = (await fake.all<{ id: number }>(sql, keys)) as T[];
+      if (!/FROM passes/.test(sql)) return found;
+      return [...found, ...asked.filter(([f, id]) => f === alt.feed && lourdes.ids.includes(alt.first_stop + id)).map(([feed, id]) => ({ ...served, feed, id }))] as T[];
+    },
+  };
+
+  it("is said to have none, and the served stops nearest it are given, with how far", async () => {
+    transit.configure(withLourdes);
+    const r = body(await transports("Mairie de Saint Pierre", undefined, NOW));
+    expect(r.resume).toMatch(/^L'arrêt Mairie de Saint Pierre \(Saint-Pierre, Alternéo\) n'a aucun passage dans les horaires publiés : voici les arrêts desservis les plus proches, Lourdes à 100 m\./);
+    expect(r.arrets.map((s: { nom: string }) => s.nom)).toEqual(["Lourdes"]);
+    expect(r.resume).not.toMatch(/Aucun départ prévu dans les prochaines heures/);
+    expect(r).not.toHaveProperty("note");
+  });
+
+  it("says so when no served stop is near", async () => {
+    const r = body(await transports("Mairie de Saint Pierre", undefined, NOW));
+    expect(r.resume).toBe("L'arrêt Mairie de Saint Pierre (Saint-Pierre, Alternéo) n'a aucun passage dans les horaires publiés, et aucun arrêt desservi n'est à moins de 600 m.");
   });
 });

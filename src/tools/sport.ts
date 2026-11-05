@@ -3,7 +3,7 @@ import { localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { type Fil, type Info, LUS, SOURCES as ACTU } from "../providers/actualites.js";
 import { httpUrl, versBilletterie } from "../http.js";
-import { type Agenda, AGENDAS, type Evenement, LIGUE_VOLLEY, LISIBLES, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
+import { type Agenda, AGENDAS, type Evenement, LIGUE_VOLLEY, type MatchLigue, LISIBLES, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
 import { autorisee, nonAutorisee } from "../providers/autorisations.js";
 import * as src from "../providers/sport.js";
 import * as avis from "../providers/sport-avis.js";
@@ -140,6 +140,8 @@ export interface Item {
   /** Who says it is called off, and its words. */
   selon?: string;
   lien_avis?: string;
+  /** The volley league's calendar gives this match another day or hour than the FFVB (`dateLigue`): said, to check with the club. */
+  autre_date?: string;
   lien?: string;
   /** « réservé aux adhérents de <club> »: a club's session, told only to who says they are a member. */
   acces?: string;
@@ -163,8 +165,21 @@ function full(team: string, club: Club | undefined): string {
   return rest ? `${club.nom} (${rest})` : club.nom;
 }
 
-function matchRow(c: src.Championnat, m: src.Match, calledOff: avis.Avis[]): Row {
+const team = (t: string) => normalize(t).replace(/\s+/g, " ").trim();
+
+/**
+ * The same match, not played yet, at another day or hour in the volley league's calendar: same pool, same teams
+ * (04/11/2026: TGV – VBC SD, R1 féminine, Saturday 07/11 at 16:00 for the FFVB, Friday 06/11 at 20:30 for the league).
+ */
+export function dateLigue(m: Pick<src.Match, "date" | "domicile" | "exterieur" | "poule" | "score">, ligue: MatchLigue[]): MatchLigue | undefined {
+  if (m.score || !m.poule) return undefined;
+  const same = ligue.find((l) => l.poule === m.poule && team(l.domicile) === team(m.domicile) && team(l.exterieur) === team(m.exterieur));
+  return same && same.date !== m.date ? same : undefined;
+}
+
+function matchRow(c: src.Championnat, m: src.Match, calledOff: avis.Avis[], ligue: MatchLigue[] = []): Row {
   const cs = CLUB_SPORTS[c.sport]!;
+  const other = c.sport === "volley" ? dateLigue(m, ligue) : undefined;
   const home = clubOf(cs, m.domicile);
   const away = clubOf(cs, m.exterieur);
   const salle = m.salle ? title(m.salle) : undefined;
@@ -183,6 +198,7 @@ function matchRow(c: src.Championnat, m: src.Match, calledOff: avis.Avis[]): Row
     etat: off ? (off.statut === "annulé" ? "annulée" : "reportée") : undefined,
     selon: off ? `${off.source}${off.reporte_au ? `, reporté au ${quand(off.reporte_au)}` : off.a_rejouer ? ", à rejouer à une date à fixer" : ""}` : undefined,
     lien_avis: off?.lien,
+    autre_date: other ? `La Ligue réunionnaise de volley-ball annonce ce match le ${quand(other.date)} : vérifier auprès du club.` : undefined,
     lien: c.lien,
     communes: [home?.commune, away?.commune],
     clubs: [home, away],
@@ -299,6 +315,8 @@ export interface SportData {
   programmes?: Awaited<ReturnType<typeof programmesSportifs>>;
   /** The tournaments and the clubs' events wanted whose copy is not served, with why (src.nonServie). */
   nonLus: string[];
+  /** The matches of the volley league's calendar, to set beside the FFVB's (dateLigue). */
+  matchsLigue?: MatchLigue[];
 }
 
 /** What `sport` needs, read in parallel; a source that fails is left out and named. */
@@ -329,6 +347,8 @@ export async function gather(cache: Cache, sport: Sport | undefined, now: Date, 
   return {
     grandRaid,
     championnats: [handball, volley].filter((x): x is Got<src.Championnat[]> => !!x),
+    // The matches of the league's calendar, to set beside the FFVB's (dateLigue).
+    matchsLigue: league ? (agendas?.tournois?.value ?? []).flatMap((e) => e.matchs ?? []) : [],
     epreuves: [
       voile,
       golfs,
@@ -493,7 +513,7 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
   const press = avis.avisPresse(data.presse?.value.infos, now);
   const calledOff = [...(data.avis?.value?.value ?? []), ...press.avis];
   const rows: Row[] = [
-    ...data.championnats.flatMap((g) => (g.value?.value ?? []).flatMap((c) => c.matchs.filter((m) => m.date).map((m) => matchRow(c, m, calledOff)))),
+    ...data.championnats.flatMap((g) => (g.value?.value ?? []).flatMap((c) => c.matchs.filter((m) => m.date).map((m) => matchRow(c, m, calledOff, data.matchsLigue ?? [])))),
     ...data.epreuves.flatMap((g) => (g.value?.value ?? []).map((e) => eventRow(e, calledOff))),
     ...(data.clubs?.value?.value ?? []).flatMap(clubRow),
   ].flatMap((r) => {

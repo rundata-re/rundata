@@ -1,0 +1,138 @@
+{
+ "events": [
+  {
+   "id": 8929,
+   "global_id": "lrvb.re?id=8929",
+   "global_id_lineage": [
+    "lrvb.re?id=8929"
+   ],
+   "author": "2",
+   "status": "publish",
+   "date": "2026-11-01 20:18:57",
+   "date_utc": "2026-11-01 16:18:57",
+   "modified": "2026-11-01 20:19:25",
+   "modified_utc": "2026-11-01 16:19:25",
+   "url": "https://lrvb.re/calendrier2/saison-2026-2027-championnats-senior-06-07-novembre/",
+   "rest_url": "https://lrvb.re/wp-json/tribe/events/v1/events/8929",
+   "title": "Saison 2026-2027 Championnats Senior 06-07 novembre",
+   "description": "<p><!-- Programme du 02 au 08 November 2026 --><br />\n<!-- Programme généré le 01/11/2026 à 20:02 --></p>\n<h3 style=\"color: #DD3333;\">R1F</h3>\n<ul>\n<li><strong>Journée 05</strong></li>\n<li>Samedi 07/11/26 à 20:30 —  VBC ST LEU // RCO au gymnase: CENTRE VILLE</li>\n<li>Vendredi 06/11/26 à 20:30 —  ALN BP VB // SMVB au gymnase: ISABELLE BEGUE</li>\n<li>Vendredi 06/11/26 à 20:30 —  TGV // VBC SD au gymnase: 12 ÈME KM</li>\n<li>Samedi 07/11/26 à 20:00 —  SDOVB // VBSP au gymnase: SAINT-FRANCOIS</li>\n<li>Vendredi 06/11/26 à 20:30 —  MVP // VB2CO au gymnase: GANOFSKY</li>\n</ul>\n<h3 style=\"color: #DD3333;\">R1M</h3>\n<ul>\n<li><strong>Journée 03</strong></li>\n<li>Mercredi 04/11/26 à 20:30 —  VB2CO // SVB au gymnase: PLATEAU CAILLOU</li>\n<li><strong>Journée 05</strong></li>\n<li>Samedi 07/11/26 à 20:00 —  VB2CO // RCO au gymnase: PLATEAU CAILLOU</li>\n<li>Samedi 07/11/26 à 20:30 —  SVB // MVP au gymnase: COMPLEXE SPORTIF DE VUE BELLE</li>\n<li>Samedi 07/11/26 à 18:00 —  TGV // VBSP au gymnase: 12 ÈME KM</li>\n<li>Vendredi 06/11/26 à 20:30 —  SDOVB // VBC SD au gymnase: SAINT-FRANCOIS</li>\n<li>Vendredi 06/11/26 à 20:30 —  VBC ST LEU // USAB au gymnase: CENTRE VILLE</li>\n</ul>\n<h3 style=\"color: #DD3333;\">R2F</h3>\n<ul>\n<li><strong>Journée 05</strong></li>\n<li>Samedi 07/11/26 à 18:00 —  VBC ST LEU 2 // PAC au gymnase: CENTRE VILLE</li>\n<li>Samedi 07/11/26 à 16:00 —  SDOVB 2 // VBC SD 2 au gymnase: SAINT-FRANCOIS</li>\n<li>Vendredi 06/11/26 à 21:00 —  SVB // VBSP 2 au gymnase: COMPLEXE SPORTIF DE VUE BELLE</li>\n<li>Samedi 07/11/26 à 16:00 —  TGV 2B // USAB au gymnase: 12 ÈME KM</li>\n</ul>\n<h3 style=\"color: #DD3333;\">2MA</h3>\n<ul>\n<li><strong>Journée 02</strong></li>\n<li>Mercredi 04/11/26 à 20:30 —  TGV 2 // SLPV au gymnase: 12 ÈME KM</li>\n<li><strong>Journée 05</strong></li>\n<li>Samedi 07/11/26 à 20:00 —  USAB 3 // VBC SD 2 au gymnase: CENTRE VILLE</li>\n<li>Samedi 07/11/26 à 20:00 —  TGV 2 // PAC au gymnase: 12 ÈME KM</li>\n<li>Vendredi 06/11/26 à 20:30 —  SLPV // ALN BP VB au gymnase: GYMNASE DE ROCHE MAIGRES</li>\n</ul>\n<h3 style=\"color: #DD3333;\">2MB</h3>\n<ul>\n<li><strong>Journée 05</strong></li>\n<li>Samedi 07/11/26 à 17:00 —  USAB 2 // VBC ST LEU 2 au gymnase: CENTRE VILLE</li>\n<li>Samedi 07/11/26 à 14:00 —  TGV 3 // SDOVB 2 au gymnase: 12 ÈME KM</li>\n<li>Samedi 07/11/26 à 19:00 —  AVED // VBC PI au gymnase: GYMNASE PIERRE DE COUBERTIN</li>\n</ul>",
+   "excerpt": "",
+   "slug": "saison-2026-2027-championnats-senior-06-07-novembre",
+   "image": {
+    "url": "https://lrvb.re/wp-content/uploads/2026/09/visuel-site-lrvb-saison-2027.jpg",
+    "id": 8833,
+    "extension": "jpg",
+    "width": 1200,
+    "height": 630,
+    "filesize": 607058,
+    "sizes": {
+     "medium": {
+      "width": 300,
+      "height": 158,
+      "mime-type": "image/jpeg",
+      "filesize": 20017,
+      "url": "https://lrvb.re/wp-content/uploads/2026/09/visuel-site-lrvb-saison-2027-300x158.jpg"
+     },
+     "large": {
+      "width": 1024,
+      "height": 538,
+      "mime-type": "image/jpeg",
+      "filesize": 95347,
+      "url": "https://lrvb.re/wp-content/uploads/2026/09/visuel-site-lrvb-saison-2027-1024x538.jpg"
+     },
+     "thumbnail": {
+      "width": 150,
+      "height": 150,
+      "mime-type": "image/jpeg",
+      "filesize": 13962,
+      "url": "https://lrvb.re/wp-content/uploads/2026/09/visuel-site-lrvb-saison-2027-150x150.jpg"
+     },
+     "medium_large": {
+      "width": 768,
+      "height": 403,
+      "mime-type": "image/jpeg",
+      "filesize": 63981,
+      "url": "https://lrvb.re/wp-content/uploads/2026/09/visuel-site-lrvb-saison-2027-768x403.jpg"
+     }
+    }
+   },
+   "all_day": false,
+   "start_date": "2026-11-04 18:00:00",
+   "start_date_details": {
+    "year": "2026",
+    "month": "11",
+    "day": "04",
+    "hour": "18",
+    "minutes": "00",
+    "seconds": "00"
+   },
+   "end_date": "2026-11-07 23:00:00",
+   "end_date_details": {
+    "year": "2026",
+    "month": "11",
+    "day": "07",
+    "hour": "23",
+    "minutes": "00",
+    "seconds": "00"
+   },
+   "utc_start_date": "2026-11-04 14:00:00",
+   "utc_start_date_details": {
+    "year": "2026",
+    "month": "11",
+    "day": "04",
+    "hour": "14",
+    "minutes": "00",
+    "seconds": "00"
+   },
+   "utc_end_date": "2026-11-07 19:00:00",
+   "utc_end_date_details": {
+    "year": "2026",
+    "month": "11",
+    "day": "07",
+    "hour": "19",
+    "minutes": "00",
+    "seconds": "00"
+   },
+   "timezone": "Indian/Reunion",
+   "timezone_abbr": "+04",
+   "cost": "",
+   "cost_details": {
+    "currency_symbol": "€",
+    "currency_code": "USD",
+    "currency_position": "prefix",
+    "values": []
+   },
+   "website": "",
+   "show_map": false,
+   "show_map_link": true,
+   "hide_from_listings": false,
+   "sticky": false,
+   "featured": false,
+   "categories": [
+    {
+     "name": "CHAMPIONNATS",
+     "slug": "championnats",
+     "term_group": 0,
+     "term_taxonomy_id": 29,
+     "taxonomy": "tribe_events_cat",
+     "description": "",
+     "parent": 0,
+     "count": 6,
+     "filter": "raw",
+     "id": 29,
+     "urls": {
+      "self": "https://lrvb.re/wp-json/tribe/events/v1/categories/29",
+      "collection": "https://lrvb.re/wp-json/tribe/events/v1/categories"
+     }
+    }
+   ],
+   "tags": [],
+   "venue": [],
+   "organizer": [],
+   "custom_fields": [],
+   "is_virtual": false,
+   "virtual_url": null,
+   "virtual_video_source": ""
+  }
+ ]
+}

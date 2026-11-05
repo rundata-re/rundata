@@ -74,11 +74,25 @@ function ilYA(iso: string, now: Date): string {
   return h < 48 ? `il y a ${h} h${min % 60 >= 10 && h < 6 ? ` ${String(min % 60).padStart(2, "0")}` : ""}` : `il y a ${Math.round(h / 24)} jours`;
 }
 
+/**
+ * The day alone, La Réunion's, of a piece of news its source dates by the day (Le Quotidien without « il y a N
+ * minutes », the prefecture): never a time it did not give (04/11/2026: « 2026-11-04T08:55:40.957Z », the time of our
+ * reading less an hour).
+ */
+const jourSeul = (iso: string) => new Date(Date.parse(iso) + 4 * 3600_000).toISOString().slice(0, 10);
+
+/**
+ * A `publie` of `infoRow` as an instant again, for the comparisons: the day alone at noon, La Réunion's time, not after
+ * `now`, as the provider dates it.
+ */
+export const instant = (publie: string, now: Date) =>
+  publie.length === 10 ? new Date(Math.min(Date.parse(`${publie}T08:00:00.000Z`), now.getTime())).toISOString() : publie;
+
 export function infoRow(i: src.Info, now: Date) {
   return {
     quand: quand(i, now),
-    /** ISO, UTC. */
-    publie: i.publie,
+    /** ISO, UTC, when the source gives the time; else the day alone, « 2026-11-04 » (La Réunion's). */
+    publie: i.heure ? i.publie : jourSeul(i.publie),
     il_y_a: i.heure ? ilYA(i.publie, now) : undefined,
     media: i.media,
     titre: i.titre,

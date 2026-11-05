@@ -70,7 +70,7 @@ import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
 import { a, ailleurs, credits, de, notFound, placeBlock, placeWarning, text } from "./format.js";
 import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
-import type { InfoRow } from "./actualites.js";
+import { instant, type InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
 import { enTete } from "./representativeness.js";
 import { NETWORKS } from "./meteo.js";
@@ -397,14 +397,15 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     ? { ...w, lieu: `centre ${de(nom)}`, avertissement: `Météo du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom} : la station, sa distance et la prévision sont celles du centre. Pour ${lieu!.nom} même : meteo_actuelle et prevision_meteo.` }
     : w;
   const news = [...(l.actualites?.value.en_direct ?? []), ...(l.actualites?.value.infos ?? [])]
-    .filter((i) => i.communes?.includes(nom) && now.getTime() - Date.parse(i.publie) < NEWS_HOURS * 3600_000);
+    .filter((i) => i.communes?.includes(nom) && now.getTime() - Date.parse(instant(i.publie, now)) < NEWS_HOURS * 3600_000);
   const roads = news.filter((i) => i.sujets?.some((s) => ROADS.includes(s)));
   const others = news.filter((i) => !roads.includes(i));
   // At either end of the route du Littoral, its announcement of the last hours: from the news already read, none older.
-  const asRead = (r: InfoRow) => ({ ...r, heure: r.il_y_a != null });
+  // A day alone (`instant`) taken as its noon for the comparisons, as the provider dates it.
+  const asRead = (r: InfoRow) => ({ ...r, publie: instant(r.publie, now), heure: r.il_y_a != null });
   const read = l.actualites && {
     infos: [...l.actualites.value.en_direct, ...l.actualites.value.infos].map(asRead),
-    prefecture: l.actualites.value.prefecture.map((r) => ({ ...r, heure: false })),
+    prefecture: l.actualites.value.prefecture.map((r) => ({ ...r, publie: instant(r.publie, now), heure: false })),
   };
   // None in the last hours: said so (marketing's words) when the copy reaches that far back, a copy cut short
   // (NEWS_LISTED, web/data.ts) could have left one out; and not when an older one was read, which is not « none ».

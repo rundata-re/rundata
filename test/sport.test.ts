@@ -7,7 +7,7 @@ import { parseSportsregions } from "../src/providers/agenda.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { sportTool, RESULTS_OUTIL, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
+import { dateLigue, sportTool, RESULTS_OUTIL, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { sportPage } from "../src/web/domains.js";
@@ -251,6 +251,38 @@ describe("sport", () => {
     // No FFVB match is lost: every match of the pools is there, called off or not.
     const all = ["ffvb_r1m.html", "ffvb_r1f.html", "ffvb_r2f.html", "ffvb_2ma.html", "ffvb_2mb.html"].flatMap((f) => parseVolley(latin1(f)).matchs);
     expect(w.a_venir.length + (w.resultats?.length ?? 0)).toBe(all.filter((m) => m.date >= "2026-10-24" && m.date < "2026-10-26").length);
+  });
+
+  it("says when the volley league's weekend text gives a match another date than the FFVB's", async () => {
+    // FFVB R1F: TGV // VBC SD on Friday 06/11 at 20:30, not played yet.
+    const tgv = parseVolley(latin1("ffvb_r1f.html"), "R1F").matchs.find((m) => m.domicile === "TGV" && m.exterieur === "VBC SD" && m.date.startsWith("2026-11-06"))!;
+    expect(tgv).toMatchObject({ date: "2026-11-06T20:30", poule: "R1F" });
+    expect(tgv.score).toBeUndefined();
+    const moved = { poule: "R1F", date: "2026-11-07T16:00", domicile: "TGV", exterieur: "VBC SD", gymnase: "12 ÈME KM" };
+    expect(dateLigue(tgv, [moved])).toBe(moved);
+    // The same date, a match played, another pool or other teams: nothing to say.
+    expect(dateLigue(tgv, [{ ...moved, date: tgv.date }])).toBeUndefined();
+    expect(dateLigue({ ...tgv, score: "3-1" }, [moved])).toBeUndefined();
+    expect(dateLigue(tgv, [{ ...moved, poule: "R1M" }])).toBeUndefined();
+    expect(dateLigue(tgv, [{ ...moved, exterieur: "RCO" }])).toBeUndefined();
+    // Through the tool: the league's weekend, in the agendas' scheduled copy.
+    const store = new MemoryStore();
+    const eve = new Date("2026-11-05T04:00:00Z");
+    const at = eve.getTime() - 3600_000;
+    const weekend = { id: "Ligue réunionnaise de volley-ball:9001", titre: "Saison 2026-2027 Championnats Senior 06-07 novembre", seances: [{ debut: "2026-11-06" }], lieu: "lieu à venir (voir la page de la Ligue)", categories: ["CHAMPIONNATS"], lien: "https://lrvb.re/calendrier2/", publie_par: "Ligue réunionnaise de volley-ball", matchs: [moved] };
+    await store.put("agendas:planifies", { value: { "agenda:lrvb": { value: [weekend], fetchedAt: at } }, fetchedAt: at });
+    // On Thursday 05/11, the eve of the match.
+    const b = body(await sportTool(new Cache(store, () => eve.getTime()), "volley", undefined, "a_venir", eve));
+    const row = b.a_venir.find((r: { epreuve?: string; quand?: string }) => r.epreuve === "TGV – VBC SD" && r.quand?.startsWith("vendredi 06/11"));
+    expect(row.autre_date).toBe("La Ligue réunionnaise de volley-ball annonce ce match le samedi 07/11 à 16:00 : vérifier auprès du club.");
+    expect(b.a_venir.filter((r: { autre_date?: string }) => r.autre_date)).toHaveLength(1);
+    // And on the page, under the match.
+    const page = sportPage("https://rundata.re", { value: { ...b, a_venir: [row], classements: [] } as SportAnswer, fetchedAt: eve, stale: false }, eve);
+    expect(page).toMatch(/TGV – VBC SD<small>[^<]*La Ligue réunionnaise de volley-ball annonce ce match le samedi 07\/11 à 16:00 : vérifier auprès du club\.<\/small>/);
+    // Without the league's text, no such line.
+    const none = body(await sportTool(new Cache(new MemoryStore(), () => eve.getTime()), "volley", undefined, "a_venir", eve));
+    expect(none.a_venir.find((r: { epreuve?: string; quand?: string }) => r.epreuve === "TGV – VBC SD" && r.quand?.startsWith("vendredi 06/11"))).toBeDefined();
+    expect(none.a_venir.some((r: { autre_date?: string }) => r.autre_date)).toBe(false);
   });
 
   it("crosses the news: a match it calls off, or a day to check with the club", async () => {

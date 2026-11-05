@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { fil, firstSentence, lire, local, LUS, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, SOURCES, SUSPENDUS, type Info } from "../src/providers/actualites.js";
-import { actualites, COUVERTURE, NOM_SEUL, quand } from "../src/tools/actualites.js";
+import { actualites, COUVERTURE, infoRow, instant, NOM_SEUL, quand } from "../src/tools/actualites.js";
 import { actualitesPage } from "../src/web/domains.js";
 import { buildActualites } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
@@ -139,6 +139,14 @@ describe("actualités", () => {
     expect(quand(find("La Rivière des Galets : un enfant de 5 ans"), at)).toBe("hier");
     // No time on the page: the day of its address, at noon.
     expect(find("Braconnage dans la réserve naturelle")).toMatchObject({ publie: "2026-10-23T08:00:00.000Z", heure: false });
+    // In the answer, the day alone when the source gives no time, never ours: the time when it gives it.
+    expect(infoRow(find("Facturation électronique à La Réunion"), at).publie).toBe("2026-10-25");
+    expect(infoRow(find("Braconnage dans la réserve naturelle"), at).publie).toBe("2026-10-23");
+    expect(infoRow(find("Saint-André : au Velli"), at).publie).toBe("2026-10-25T11:05:16.000Z");
+    // Taken back as its noon for the comparisons, not after now.
+    expect(instant("2026-10-23", at)).toBe("2026-10-23T08:00:00.000Z");
+    expect(instant("2026-10-25", new Date("2026-10-25T03:00:00Z"))).toBe("2026-10-25T03:00:00.000Z");
+    expect(instant("2026-10-25T11:05:16.000Z", at)).toBe("2026-10-25T11:05:16.000Z");
     // The whole title, not the one the page cuts, nor its « Article : » label; no France-monde, no readers' letters.
     expect(find("Grand Raid : «Judicaël").titre).toBe("Grand Raid : «Judicaël peut faire encore mieux!»");
     expect(list.some((i) => /^Article\b|\.\.\.$/.test(i.titre))).toBe(false);

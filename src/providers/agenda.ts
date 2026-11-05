@@ -120,6 +120,11 @@ export interface Evenement {
   reporte_au?: string;
   /** Where to book, when it is not the event's own page. */
   billetterie?: string;
+  /**
+   * The championship matches its text lists, the volley league's weekends (`matchsLigue`): for the sport tool, to set
+   * beside the FFVB's, never shown nor returned.
+   */
+  matchs?: MatchLigue[];
   /** When rundata.re read it, in local time: set by the tool from the agenda's copy, not by the source. */
   lu_le?: string;
   /** « site de la commune du Tampon », when it comes from a commune's site: set by the tool from its agenda. */
@@ -331,6 +336,43 @@ function organisers(o: TribeEvent["organizer"]): { organise_par?: string[] } {
   return names.length ? { organise_par: names } : {};
 }
 
+/** A match of the volley league's calendar: « Vendredi 06/11/26 à 20:30 — TGV // VBC SD au gymnase: 12 ÈME KM ». */
+export interface MatchLigue {
+  /** The pool, as the league and the FFVB name it: « R1F », « 2MA ». */
+  poule: string;
+  /** Local, « 2026-11-06T20:30 ». */
+  date: string;
+  domicile: string;
+  exterieur: string;
+  gymnase?: string;
+}
+
+const JOURS = "(?:Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche)";
+// A pool's heading, « R1F Journée 05 », « 2MA Journée 02 »; a second « Journée 05 » under the same pool has none.
+const POULE = /(?:^|\s)(R?\d[FM][AB]?) Journ[ée]e\b/g;
+const MATCH = new RegExp(`${JOURS} (\\d\\d)/(\\d\\d)/(\\d\\d) à (\\d\\d):(\\d\\d) [—–-] (.+?) // (.+?) au gymnase ?: (.+?)(?= ${JOURS} \\d\\d/| Journ[ée]e\\b| R?\\d[FM][AB]? Journ|$)`, "g");
+
+/** The matches the league's text of a weekend lists, each under its pool; none in another text. */
+export function matchsLigue(text: string): MatchLigue[] {
+  const heads = [...text.matchAll(POULE)].map((m) => ({ at: m.index!, poule: m[1] }));
+  if (!heads.length) return [];
+  return [...text.matchAll(MATCH)].flatMap((m) => {
+    const poule = heads.filter((h) => h.at < m.index!).pop()?.poule;
+    return poule ? [{ poule, date: `20${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}`, domicile: m[6].trim(), exterieur: m[7].trim(), gymnase: m[8].trim() || undefined }] : [];
+  });
+}
+
+/**
+ * The venue an event's text names at its head, when the site's field is empty: « Jeudi 05 novanm à 20h Théâtre des Sables
+ * (L'Étang-Salé) » (Le Séchoir, 04/11/2026: a show of its partner placed at Le Séchoir, Saint-Leu, by default). Only
+ * with an hour before it and a commune in the brackets.
+ */
+export function lieuDit(description: string): { lieu: string; commune: string } | undefined {
+  const m = /(?:^|\s)à \d{1,2}h(?:\d\d)? ([^()]{3,60}?) \(([^()]{3,40})\)/.exec(description.slice(0, 200));
+  const c = m ? communeOf(m[2]) : undefined;
+  return m && c ? { lieu: m[1].trim(), commune: c } : undefined;
+}
+
 export function parseTribe(body: { events: TribeEvent[] }, nom: string, commune: string | undefined, home?: string): Evenement[] {
   // A venue's school performances (« Scolaires ») are not open to the public.
   return body.events.filter((e) => !e.categories.some((c) => /^scolaires?$/i.test(c.name.trim()))).map((e) => {
@@ -343,18 +385,23 @@ export function parseTribe(body: { events: TribeEvent[] }, nom: string, commune:
     // cut short by the source.
     const description = clean(e.description).replace(/\[\/?[a-z][\w-]*(?:\s[^\]]*)?(?:\]|$)/g, " ").replace(/\s+/g, " ").trim();
     const statut = statusOf(clean(e.title), description);
+    const matchs = matchsLigue(description);
+    const own = [venue.venue, venue.address].map((x) => x && clean(x)).filter(Boolean).join(", ");
+    // No venue in its field: the one its text names, before the site's own hall.
+    const said = own ? undefined : lieuDit(description);
     return {
       ...(statut ? { statut } : {}),
       id: `${nom}:${e.id}`,
       titre: clean(e.title),
       seances: [{ debut, fin: fin !== debut ? fin : undefined }],
-      lieu: [venue.venue, venue.address].map((x) => x && clean(x)).filter(Boolean).join(", ") || home,
-      commune: communeOf(venue.city) ?? awayAt(e.title) ?? commune,
+      lieu: own || said?.lieu || home,
+      commune: communeOf(venue.city) ?? said?.commune ?? awayAt(e.title) ?? commune,
       ...(inReunion(lon, lat) ? { lon, lat } : {}),
       prix: clean(e.cost ?? "") || undefined,
       ...organisers(e.organizer),
       categories: e.categories.map((c) => clean(c.name)),
       ...extrait(description),
+      ...(matchs.length ? { matchs } : {}),
       lien: e.url,
       publie_par: nom,
     };

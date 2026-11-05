@@ -794,5 +794,14 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     couverture: COUVERTURE,
     a_savoir: A_SAVOIR,
     sources: credits(used),
+    // For the pages only (`place`): when the oldest of the agendas served was read, the time /evenements says, as the
+    // tool's fraicheur does, not the time its copy was built (04/11/2026: « lus à 14:05 » for agendas read at 13:09).
+    lus_le: place ? oldestRead(got) : undefined,
   });
+}
+
+/** The oldest reading of the agendas whose events are served, ISO; none when none is. */
+function oldestRead(got: Got[]): string | undefined {
+  const at = got.filter((g) => g.value?.value.length).map((g) => g.value!.fetchedAt.getTime());
+  return at.length ? new Date(Math.min(...at)).toISOString() : undefined;
 }

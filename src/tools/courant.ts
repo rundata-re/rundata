@@ -88,12 +88,16 @@ export function liveCommunes(c: CourantAnswer, now: Date): string[] {
 }
 
 /**
- * Marketing's honesty line. It names every mairie read, with or without a recent notice, the same whether its site
+ * Marketing's honesty line. EDF does publish its cuts for works on reunion.edf.fr, and its robots.txt lets the page be
+ * read: its legal notice forbids taking the content (« EDF interdit expressément toute réutilisation, reproduction ou
+ * extraction d'éléments de ces bases de données », read on 03/11/2026), so the line says that, never that EDF publishes
+ * nothing readable. It names every mairie read, with or without a recent notice, the same whether its site
  * answered or not (that is said apart, `injoignable`); those not read are said apart too (non_repris).
  */
 export function honesty(): string {
   const read = cc.MAIRIES.map((m) => m.commune);
-  return `EDF ne publie pas ses avis de coupure dans un format que nous pouvons lire. Nous reprenons ceux que relaient les mairies dont le site ne l'interdit pas${read.length ? ` : aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
+  return `EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). ` +
+    `Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
 }
 
 /**

@@ -90,7 +90,7 @@ describe("the power cuts the mairies relay", () => {
     expect(none("Le Port")).toBe("rundata.re ne lit pas d'avis de coupure d'électricité pour Le Port : nous ne savons pas si une coupure est prévue.");
     expect(none("Sainte-Marie")).toBe("rundata.re n'a lu aucun avis de coupure d'électricité pour Sainte-Marie : nous ne savons pas si une coupure est prévue.");
     // The communes of the honesty line: every mairie read, with or without a recent notice (all agreed here).
-    expect(honesty()).toBe("EDF ne publie pas ses avis de coupure dans un format que nous pouvons lire. Nous reprenons ceux que relaient les mairies dont le site ne l'interdit pas : aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
+    expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas\u00a0: aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
     const cached = { value: copy, fetchedAt: NOW, stale: false };
     expect(courantBlock(cached, "Le Port", NOW)).toMatchObject({ avis: [], note: none("Le Port") });
     expect(courantBlock(cached, "Sainte-Marie", NOW).avis.map((x) => x.publie_le)).toEqual(["21/10 10:00"]);
@@ -193,7 +193,7 @@ describe("the tool electricite and the cuts", () => {
   it("answers for the place's commune, and says when its mairie publishes nothing", async () => {
     const r = body(await electricite(new Cache(new MemoryStore(), () => NOW.getTime()), NOW, "Sainte-Marie"));
     expect(r.resume).toMatch(/^Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21\/10 : /);
-    expect(r.coupures_annoncees.a_savoir).toMatch(/^EDF ne publie pas ses avis/);
+    expect(r.coupures_annoncees.a_savoir).toMatch(/^EDF publie ses coupures pour travaux sur son site, mais ses mentions légales/);
     const port = body(await electricite(new Cache(new MemoryStore(), () => NOW.getTime()), NOW, "Le Port"));
     expect(port.resume).toMatch(/^rundata\.re ne lit pas d'avis de coupure d'électricité pour Le Port/);
   });

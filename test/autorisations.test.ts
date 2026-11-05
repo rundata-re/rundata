@@ -338,7 +338,7 @@ describe("the notices of power cuts of the mairies whose site's terms ask for th
     const ile = courantBlock(kept, undefined, NOW);
     expect(ile.avis!.map((a) => a.commune)).toEqual(["Sainte-Marie"]);
     expect([ile.non_repris, ile.indisponibles]).toEqual([BLOC, undefined]);
-    expect(honesty()).toBe("EDF ne publie pas ses avis de coupure dans un format que nous pouvons lire. Nous reprenons ceux que relaient les mairies dont le site ne l'interdit pas : aujourd'hui Sainte-Marie, quand ses avis sont lisibles.");
+    expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas\u00a0: aujourd'hui Sainte-Marie, quand ses avis sont lisibles.");
     expect(courantBlock(kept, "Sainte-Marie", NOW).non_repris).toBeUndefined();
     expect(courantBlock(undefined, "Cilaos", NOW).non_repris).toBe(CILAOS);
   });

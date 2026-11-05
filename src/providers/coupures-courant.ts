@@ -1,6 +1,7 @@
 /**
- * The power cuts EDF announces, as the mairies relay them on their WordPress sites: EDF Réunion publishes none in a
- * form that can be read (its page of planned works refuses robots, its open data has no cut). Only the facts are kept
+ * The power cuts EDF announces, as the mairies relay them on their WordPress sites: EDF Réunion publishes its cuts for works on
+ * reunion.edf.fr, whose robots.txt lets the page be read, but its legal notice forbids taking its content (read on
+ * 03/11/2026), and its open data has no cut: the page is never read. Only the facts are kept
  * (the days, the hours, the streets, whether the cut is happening now), with the title and the link of the mairie's
  * post: never the notice's text, worded by EDF. Read by the scheduled event into a shared copy (web/partagees.ts).
  */

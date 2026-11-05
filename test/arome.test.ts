@@ -9,7 +9,7 @@ import { configure } from "../src/providers/mf-auth.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
 import * as uv from "../src/providers/uv.js";
 import { readTiff } from "../src/tiff.js";
-import { AROME_WAIT_MS, previsionMeteo } from "../src/tools/prevision.js";
+import { AROME_WAIT_MS, MAXIMALES_AROME, previsionMeteo } from "../src/tools/prevision.js";
 
 // Grids recorded from the AROME outre-mer run of 21/10/2026 18:00 UTC: the step starting 22/10 08:00 UTC
 // (12:00 in Réunion), and the run's first hour for the terrain height.
@@ -114,6 +114,17 @@ describe("prevision_meteo with AROME", () => {
     expect(r.jours[0].indice_uv_max).toMatch(/^\d+ \((faible|modéré|élevé|très élevé|extrême)\)$/);
     expect(w).toMatch(/Indice UV : PRÉVISION du service européen Copernicus/);
     expect(r.sources.map((s: { source: string }) => s.source)).toEqual([arome.SOURCE.nom, openmeteo.SOURCE.nom, uv.SOURCE.nom]);
+    // AROME's maxima run low: said beside the days, measured, not among the warnings, and the figures not corrected.
+    expect(r.maximales_arome).toBe(MAXIMALES_AROME);
+    expect(MAXIMALES_AROME).toMatch(/^Les maximales prévues par AROME sont en général plus basses que les mesures : 1,8 °C de moins/);
+    expect(r.avertissements).not.toContain(MAXIMALES_AROME);
+    // A day past AROME's 48 hours: its figures are ECMWF's, nothing said of AROME's maxima.
+    const sunday = body(await previsionMeteo(await offlineCache(), "Cilaos", "dimanche", NOW));
+    expect(sunday.jours.map((j: { jour: string }) => j.jour)).toEqual(["dimanche 25/10"]);
+    expect(sunday.maximales_arome).toBeUndefined();
+    // The tour of the island, from AROME too.
+    expect(body(await previsionMeteo(await offlineCache(), undefined, "cet après-midi", NOW)).maximales_arome).toBe(MAXIMALES_AROME);
+    expect(r.couverture).toContain("4 calculs par jour (0, 6, 12 et 18 h UTC), disponibles environ 7 heures après");
   });
 
   it("downloads at most the budget of grids for one question, nearest steps first", async () => {
@@ -151,6 +162,8 @@ describe("prevision_meteo with AROME", () => {
     expect(Date.now() - t0).toBeLessThan(250);
     const r = body(value);
     expect(r.resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée, modèle IFS HRES/);
+    // ECMWF's figures: nothing said of AROME's maxima.
+    expect(r.maximales_arome).toBeUndefined();
     expect(r.avertissements.join(" ")).not.toMatch(/n'a pas répondu/);
     // The grids keep loading after the response, within the same invocation: the next question has them.
     await settled();

@@ -302,9 +302,13 @@ async function forecasts(cache: Cache, places: Place[], starts: Date[], now: Dat
       })
     : null;
   const data = a instanceof Error || late ? null : a;
+  // AROME is asked for the period's steps only: when it has them all, where its run ends is not known here, and the end
+  // of the period was said as its own (« après 05/11 06:00 » for today, « après 06/11 03:00 » for the week, 04/11/2026).
+  const askedEnd = starts.length ? Math.max(...starts.map((t) => t.getTime())) + 3 * HOUR : 0;
   const results = places.map((p, i): PromiseSettledResult<Cached<Forecast>> => {
     const e = ecmwf[i].status === "fulfilled" ? ecmwf[i].value : null;
-    const f = merge(e?.value ?? null, data ? arome.atPlace(data, p) : null);
+    const merged = merge(e?.value ?? null, data ? arome.atPlace(data, p) : null);
+    const f = merged?.relais?.every((r) => r.from.getTime() >= askedEnd) ? { ...merged, relais: undefined } : merged;
     if (!f) return ecmwf[i] as PromiseRejectedResult;
     return { status: "fulfilled", value: { value: ahead(f, now), fetchedAt: e?.fetchedAt ?? now, stale: e?.stale ?? false } };
   });

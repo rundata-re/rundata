@@ -1607,10 +1607,13 @@ export function meteoLive(data: Cached<HomeData> | null, now = new Date()): Live
   if (!l.length) return empty(`Aucune température dans la lecture des stations ${readAt(data.fetchedAt, now).de}.`);
   const lo = coldest(l);
   const hi = warmest(l);
-  const latest = l.reduce((m, s) => (s.time > m ? s.time : m), "");
+  // The times of the two values said, in the order of time, not the latest of every station (Gillot's 29,9 °C of 13:48
+  // said « à 14:05 », 04/11/2026).
+  const [t1, t2] = [lo.time, hi.time].sort();
+  const when = hm(t1) === hm(t2) ? hm(t1) : `${hm(t1)} et ${hm(t2)}`;
   return {
     valeur: range(lo.temperature!, hi.temperature!),
-    detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) ${esc(a(shortName(hi.nom)))}, mesuré à ${hm(latest)}`,
+    detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) ${esc(a(shortName(hi.nom)))}, mesuré à ${when}`,
   };
 }
 

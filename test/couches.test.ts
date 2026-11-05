@@ -16,7 +16,7 @@ import * as seismes from "../src/providers/seismes.js";
 import * as vigicrues from "../src/providers/vigicrues.js";
 import * as mfStations from "../src/providers/meteofrance-stations.js";
 import * as onf from "../src/providers/sentiers.js";
-import { COUCHES, couchePath, type CoucheJson, MAX_GZIP, RESUME_PATH, type Resume } from "../src/web/couches.js";
+import { COUCHES, couchePath, type CoucheJson, MAX_GZIP, precisionDe, RESUME_PATH, type Resume } from "../src/web/couches.js";
 
 const NOW = new Date("2026-10-31T18:00:00Z");
 
@@ -183,5 +183,16 @@ describe("the figures of /carte's « En direct » band", () => {
     const sans = await serve(RESUME_PATH, store);
     expect(sans.r.status).toBe(200);
     expect(Number.isFinite(Date.parse((JSON.parse(sans.text) as Resume).stations!.heure))).toBe(true);
+  });
+
+  it("gives a point given with few decimals the precision it has", () => {
+    // EZDrive, Saint-Louis: 0.9 km from its address, said « à quelques mètres près » before.
+    expect(precisionDe(55.39, -21.29)).toBe("commune");
+    expect(precisionDe(55.446, -21.3213)).toBe("lieu");
+    expect(precisionDe(55.39855, -21.29014)).toBe("adresse");
+    const ez = irve.STATIONS.find((s) => s.adresse.startsWith("2 Rue Benoite Boulard"))!;
+    const layer = COUCHES.find((c) => c.id === "bornes")!;
+    expect(layer).toBeTruthy();
+    expect(precisionDe(ez.lon, ez.lat)).toBe("commune");
   });
 });

@@ -6,7 +6,10 @@ data.gouv.fr, Licence Ouverte): the establishments of La Réunion (département 
 a hospital (CHU sites, centres hospitaliers: 101, 355) or a clinic (365, 128), without the psychiatric sites, the
 rehabilitation sites and the hospital pharmacies. FINESS says neither the opening hours nor which have an emergency
 department: the tool says so, and sends to the 15. Coordinates are given in RGR92 / UTM 40S (EPSG:2975).
-Usage: python3 -I scripts/build-sante.py [--csv etalab-cs1100507-stock.csv]
+A point more than MAX_KM from its address, geocoded by the Géoplateforme (IGN, etalab-2.0), is put at the address: FINESS
+placed a pharmacy of Mont-Vert-les-Hauts in the centre of Saint-Pierre, 7.8 km away (04/11/2026).
+Usage: python3 -I scripts/build-sante.py [--csv etalab-cs1100507-stock.csv | --recaler]
+  --recaler: only the check of the points against their addresses, on the list as it is, without reading FINESS again.
 """
 import argparse
 import csv
@@ -23,6 +26,10 @@ DATASET = "https://www.data.gouv.fr/api/1/datasets/53699569a3a729239d2046eb/"
 UA = {"User-Agent": "reunion-temps-reel (open source MCP server, real-time data for Reunion Island)"}
 PHARMACY, HOSPITALS, CLINICS = {"620"}, {"101", "355"}, {"365", "128"}
 NOT_ACUTE = re.compile(r"\b(PSY|PUI|SSR|USLD|EHPAD)\b")
+GEOCODE = "https://data.geopf.fr/geocodage/search/csv"
+# As scripts/build-decheteries-ademe.py: past this, the point is not at its address; below that score, another street.
+MAX_KM = 1
+MIN_SCORE = 0.7
 
 STREETS = {"R": "rue", "AV": "avenue", "BD": "boulevard", "CHE": "chemin", "CHEM": "chemin", "RTE": "route", "PL": "place",
            "ALL": "allée", "IMP": "impasse", "LOT": "lotissement", "RES": "résidence", "QUA": "quartier", "QU": "quai", "CRS": "cours",
@@ -78,10 +85,53 @@ def phone(s):
     return " ".join(d[i:i + 2] for i in range(0, 10, 2)) if len(d) == 10 else None
 
 
+def km(a, b):
+    x = math.radians(b["lon"] - a["lon"]) * math.cos(math.radians((a["lat"] + b["lat"]) / 2))
+    return 6371 * math.hypot(x, math.radians(b["lat"] - a["lat"]))
+
+
+def geocoded(sites, codes):
+    """Each address placed by the Géoplateforme, in one request for them all: only one found to its number or its street,
+    surely enough (as scripts/build-decheteries-ademe.py)."""
+    body = io.StringIO()
+    w = csv.writer(body)
+    w.writerow(["adresse", "citycode"])
+    for s in sites:
+        w.writerow([s["adresse"], codes.get(s["commune"], "")])
+    boundary = "etablissements"
+    data = (f'--{boundary}\r\nContent-Disposition: form-data; name="data"; filename="sites.csv"\r\nContent-Type: text/csv\r\n\r\n'
+            f'{body.getvalue()}\r\n--{boundary}\r\nContent-Disposition: form-data; name="columns"\r\n\r\nadresse\r\n'
+            f'--{boundary}\r\nContent-Disposition: form-data; name="citycode"\r\n\r\ncitycode\r\n--{boundary}--\r\n').encode()
+    req = urllib.request.Request(GEOCODE, data=data, headers={**UA, "Content-Type": f"multipart/form-data; boundary={boundary}"})
+    rows = list(csv.DictReader(io.StringIO(urllib.request.urlopen(req, timeout=120).read().decode("utf-8-sig"))))
+    return [{"lon": float(r["longitude"]), "lat": float(r["latitude"]), "label": r["result_label"]}
+            if r["result_type"] in ("housenumber", "street") and float(r["result_score"] or 0) >= MIN_SCORE else None for r in rows]
+
+
+def placed(out, names):
+    """The points more than MAX_KM from their address put at it; what was moved, said."""
+    codes = {nom: code for code, nom in names.items()}
+    moved = []
+    for e, at in zip(out, geocoded(out, codes)):
+        if at and km(e, at) > MAX_KM:
+            moved.append(f"{e['nom']} ({e['commune']}) : {km(e, at):.1f} km de « {at['label']} »")
+            e["lon"], e["lat"] = round(at["lon"], 5), round(at["lat"], 5)
+    print("placés à leur adresse :", moved)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv", help="the file etalab-cs1100507-stock-*.csv, else downloaded")
+    ap.add_argument("--recaler", action="store_true", help="only check the current list's points against their addresses")
     args = ap.parse_args()
+    # The communes by INSEE code, as the server spells them (src/places/insee.ts).
+    names = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
+    dest = ROOT / "src/sante/etablissements.json"
+    if args.recaler:
+        doc = json.loads(dest.read_text())
+        placed(doc["etablissements"], names)
+        dest.write_text(json.dumps(doc, ensure_ascii=False, indent=0) + "\n")
+        return
     if args.csv:
         text = Path(args.csv).read_text(encoding="utf-8")
     else:
@@ -91,8 +141,6 @@ def main():
     rows = list(csv.reader(io.StringIO(text), delimiter=";"))
     made = rows[0][3] if rows and rows[0][0] == "finess" else None
     where = {r[1]: (float(r[2]), float(r[3])) for r in rows if r and r[0] == "geolocalisation" and r[1].startswith("970") and r[2] and r[3]}
-    # The communes by INSEE code, as the server spells them (src/places/insee.ts).
-    names = {code: nom for nom, code in re.findall(r'"([^"]+)": "(974\d\d)"', (ROOT / "src/places/insee.ts").read_text())}
     out = []
     for r in rows:
         if not r or r[0] != "structureet" or r[13] != "9D":
@@ -120,7 +168,7 @@ def main():
             "lat": lat,
         })
     out.sort(key=lambda e: (e["type"], e["commune"], e["nom"]))
-    dest = ROOT / "src/sante/etablissements.json"
+    placed(out, names)
     dest.write_text(json.dumps({"construit": date.today().isoformat(), "extraction": made, "source": "FINESS (ministère de la Santé), Licence Ouverte 2.0", "etablissements": out}, ensure_ascii=False, indent=0) + "\n")
     print(dest, {k: sum(e["type"] == k for e in out) for k in ("pharmacie", "hopital", "clinique")})
 

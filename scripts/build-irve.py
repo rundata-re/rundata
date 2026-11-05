@@ -20,6 +20,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+# A roaming id: « FR » and the operator's code (FRFR1E…, FREZD…, FRAEH…).
+ITINERANCE = re.compile(r"^FR[A-Z0-9]{3}")
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = "https://transport.data.gouv.fr/resources/84013/download"
 COMMUNE_AT = "https://geo.api.gouv.fr/communes?fields=nom&format=json&"
@@ -104,7 +106,10 @@ def main():
     stations = {}
     for r, lon, lat in rows:
         sid = r["id_station_itinerance"]
-        s = stations.setdefault(sid, {
+        # « Non concerné » for a station outside the roaming network (EZDrive, Saint-Louis): its address and point instead,
+        # never one station for all of them, and its first point's id later, for its anchor on /bornes.
+        key = sid if ITINERANCE.match(sid) else ("", r["adresse_station"], lon, lat)
+        s = stations.setdefault(key, {
             "id": sid,
             "nom": place_name(r),
             "reseau": network(r),
@@ -126,9 +131,12 @@ def main():
             "kw": round(kw, 1) if kw % 1 else int(kw),
             "prises": [name for col, name in PLUGS if r[col] == "true"],
         })
+    for s in stations.values():
+        s["points"].sort(key=lambda p: p["id"])
+        if not ITINERANCE.match(s["id"]):
+            s["id"] = s["points"][0]["id"]
     out = sorted(stations.values(), key=lambda s: s["id"])
     for s in out:
-        s["points"].sort(key=lambda p: p["id"])
         found = json.load(opened(COMMUNE_AT + urllib.parse.urlencode({"lon": s["lon"], "lat": s["lat"]})))
         s["commune"] = found[0]["nom"] if found else ""
     target = ROOT / "src/irve/stations.json"

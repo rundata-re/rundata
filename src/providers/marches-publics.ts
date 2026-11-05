@@ -65,6 +65,11 @@ export interface Avis {
   communeAcheteur?: string;
   /** The notices it corrects, or cancels and replaces: they are not shown. */
   corrige?: string[];
+  /**
+   * The notices an initial notice is linked to (`annonce_lie`): one of the same subject is the same contract published
+   * again, which it replaces (CINOR, 26-99434 of 15/10 linked to 26-97961 of 11/10, both listed on 04/11/2026).
+   */
+  lie?: string[];
 }
 
 export interface Copie {
@@ -203,6 +208,12 @@ export function prochaineLecture(now: Date): Date {
 /** The notices shown: a correction in the list takes the place of the notice it corrects. */
 export function affiches(avis: Avis[]): Avis[] {
   const corrected = new Set(avis.flatMap((a) => a.corrige ?? []));
+  const sujet = (a: Avis) => a.objet.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const byId = new Map(avis.map((a) => [a.id, a]));
+  for (const a of avis) for (const id of a.lie ?? []) {
+    const old = byId.get(id);
+    if (old && sujet(old) === sujet(a) && old.parution <= a.parution) corrected.add(id);
+  }
   return avis.filter((a) => !corrected.has(a.id));
 }
 
@@ -220,6 +231,7 @@ function fromLigne(l: Ligne, had?: Avis): (Avis & { departements: string[] }) | 
     ...(had?.commune ? { commune: had.commune } : {}),
     ...(had?.communeAcheteur ? { communeAcheteur: had.communeAcheteur } : {}),
     ...((l.etat === "RECTIFICATIF" || l.etat === "ANNULATION") && l.annonce_lie?.length ? { corrige: l.annonce_lie } : {}),
+    ...(l.etat === "INITIAL" && l.annonce_lie?.length ? { lie: l.annonce_lie } : {}),
     departements: l.code_departement ?? [],
   };
 }

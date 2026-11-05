@@ -92,6 +92,16 @@ describe("the counts (chiffres.ts)", () => {
     // pitonlive.com counted among the producers, never named.
     expect(c.par_domaine.flatMap((d) => d.producteurs).join()).not.toMatch(/pitonlive/i);
     expect(k.producteurs.join()).toMatch(/pitonlive/i);
+    // A source of two domains counted in both is said, and the column then adds up to the total.
+    const deja = c.par_domaine.reduce((n, d) => n + (d.deja_comptees_plus_haut ?? 0), 0);
+    expect(c.par_domaine.reduce((n, d) => n + d.sources, 0) - deja).toBe(c.sources);
+    // pitonlive.com counted, never listed: said under the list, which holds one fewer.
+    expect(c.non_nommees).toBe(1);
+    const listees = inventaire(sources).reduce((n, d) => n + d.sources.length, 0);
+    expect(listees + c.non_nommees).toBe(c.sources);
+    const html = typo(chiffresPage("https://rundata.re", c, inventaire(sources)));
+    expect(html).toContain("Plus 1 site non officiel, compté dans les sources sans être nommé ici.");
+    if (deja) expect(html).toMatch(/<small>dont \d+ déjà comptées? plus haut<\/small>/);
   });
 
   it("say how often each domain is read: in words, « à chaque version du site » for a bundled list, nothing when not known here", () => {

@@ -34,7 +34,7 @@ const parenthese = (familles: string[]) => familles.join(", ");
  * « Toutes les sources »: each source counted, by domain, an anchor for each, one line each (chiffres.ts, `inventaire`).
  * The table of « Par domaine », one cell under another on a phone.
  */
-function toutesLesSources(inv: Inventaire): string {
+function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
   const groupes = inv.map((d) => {
     const lecture = d.la_plus_lue
       ? `<p>Relue le plus souvent, ${esc(d.cadence!)}\u00a0: ${esc(d.la_plus_lue)}.</p>`
@@ -46,6 +46,7 @@ function toutesLesSources(inv: Inventaire): string {
   return `<h2 id="sources">Toutes les sources</h2>
   <p>Chaque source lue, par domaine\u00a0: son producteur, et sa licence ou les conditions de reprise de son site.</p>
   <p>${inv.map((d) => `<a href="#sources-${esc(d.categorie)}">${esc(d.domaine)}</a>\u00a0(${n(d.sources.length)})`).join(" · ")}</p>
+  ${nonNommees ? `<p>Plus ${nonNommees > 1 ? `${n(nonNommees)} sites non officiels, comptés` : "1 site non officiel, compté"} dans les sources sans être nommé${nonNommees > 1 ? "s" : ""} ici.</p>` : ""}
   ${groupes.join("\n  ")}`;
 }
 
@@ -66,7 +67,7 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
 
   const domaines = `<h2 id="par-domaine">Par domaine</h2>
   <div class="card table-wrap"><table class="drought niveaux"><thead><tr><th scope="col">Domaine</th><th scope="col">Sources</th><th scope="col">Producteurs</th><th scope="col">Lecture</th></tr></thead><tbody>${c.par_domaine.map((d) =>
-    `<tr><th scope="row">${d.page ? `<a href="${esc(d.page)}">${esc(d.domaine)}</a>` : esc(d.domaine)}</th><td data-label="Sources">${n(d.sources)}</td><td data-label="Producteurs">${d.producteurs.length ? esc(d.producteurs.join(", ")) : "—"}</td>${d.cadence ? `<td data-label="Lecture">${esc(d.cadence)}</td>` : "<td></td>"}</tr>`).join("")}</tbody></table></div>`;
+    `<tr><th scope="row">${d.page ? `<a href="${esc(d.page)}">${esc(d.domaine)}</a>` : esc(d.domaine)}</th><td data-label="Sources">${n(d.sources)}${d.deja_comptees_plus_haut ? ` <small>dont ${n(d.deja_comptees_plus_haut)} déjà comptée${d.deja_comptees_plus_haut > 1 ? "s" : ""} plus haut</small>` : ""}</td><td data-label="Producteurs">${d.producteurs.length ? esc(d.producteurs.join(", ")) : "—"}</td>${d.cadence ? `<td data-label="Lecture">${esc(d.cadence)}</td>` : "<td></td>"}</tr>`).join("")}</tbody></table></div>`;
 
   const t = c.terrain;
   const terrain = [
@@ -104,7 +105,7 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
   ${terrain.length ? `<h2 id="terrain">Sur le terrain</h2>\n  <ul class="figs">${terrain.join("")}</ul>` : ""}
   ${moment.length ? `<h2 id="en-ce-moment">En ce moment</h2>\n  <ul class="figs">${moment.join("")}</ul>` : ""}
   ${licences}
-  ${toutesLesSources(inv)}
+  ${toutesLesSources(inv, c.non_nommees)}
   ${silence ? `<h2 id="manque">Ce qui manque</h2>\n  ${silence}` : ""}
   <h2 id="depuis">Depuis le début</h2>
   <p>Né en octobre 2026\u00a0: <a href="/nouveautes">${n(c.nouveautes)} nouveautés publiées</a>.</p>

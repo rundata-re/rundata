@@ -261,4 +261,14 @@ describe("the page /marches-publics", () => {
     expect(marchesPage(O, { value: empty, fetchedAt: now, stale: false }, now)).toContain("Les avis ne sont pas encore lus : prochaine lecture prévue à 13:35.");
     expect(marchesPage(O, null, now)).toContain("Les avis se chargent : rechargez la page dans quelques secondes.");
   });
+
+  it("shows once a contract published again, its initial notice linked to the first one of the same subject", () => {
+    const avis = (id: string, objet: string, parution: string, lie?: string[]): boamp.Avis => ({ id, objet, acheteur: "CINOR", types: [], parution, limite: "2026-11-17", lien: `https://www.boamp.fr/pages/avis/?q=idweb:${id}`, ...(lie ? { lie } : {}) });
+    const first = avis("26-97961", "PRESTATION DE MAINTENANCES DES ESPACES VERTS ET MINERALISES", "2026-10-11");
+    const again = avis("26-99434", "Prestation de maintenances des espaces verts et minéralisés", "2026-10-15", ["26-97961"]);
+    // Not the same subject (accents aside, the words differ): both kept.
+    const other = avis("26-99999", "Travaux de voirie", "2026-10-16", ["26-97961"]);
+    expect(boamp.affiches([first, again]).map((a) => a.id)).toEqual(["26-99434"]);
+    expect(boamp.affiches([first, other]).map((a) => a.id)).toEqual(["26-97961", "26-99999"]);
+  });
 });

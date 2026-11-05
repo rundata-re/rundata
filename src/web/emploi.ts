@@ -105,7 +105,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
   const communes = [...new Set((d?.offres ?? []).flatMap((o) => ("commune" in o && o.commune ? [o.commune] : [])))].sort((x, y) => x.localeCompare(y, "fr"));
 
   const status = d && data && !d.prochaine
-    ? `<p>${plural(d.nombre, "offre ouverte", "offres ouvertes")} à la candidature sur Choisir le service public, dernière lecture ${readAt(d.lu ? new Date(d.lu) : data.fetchedAt, now).a}.</p>`
+    ? `<p>${plural(d.nombre, "offre ouverte", "offres ouvertes")} à la candidature suivie${d.nombre > 1 ? "s" : ""} par rundata.re sur Choisir le service public, dernière lecture ${readAt(d.lu ? new Date(d.lu) : data.fetchedAt, now).a}\u00a0; le site peut en compter davantage.</p>`
     : "";
   const list = !d || !data
     ? `<p class="card">Les offres se chargent : rechargez la page dans quelques secondes.</p>`

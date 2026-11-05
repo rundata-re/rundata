@@ -31,7 +31,7 @@ import { compte, comptee, FAMILLES, FICHES, producteursDe, type Famille } from "
 import { etat, publiques } from "./sans-reponse.js";
 import { agenda, ofAgenda } from "./tools/agenda.js";
 import { ahead, type CourantAnswer, followed } from "./tools/courant.js";
-import { providers as weatherProviders } from "./tools/meteo.js";
+import { toutes, providers as weatherProviders } from "./tools/meteo.js";
 import { type SourceInfo, why } from "./types.js";
 import type { CoupuresAnswer } from "./web/data.js";
 import { CATEGORIES } from "./web/categories.js";
@@ -189,7 +189,9 @@ async function stationsMeteo(cache: Cache, now: Date): Promise<number | undefine
   const got = await Promise.all(weatherProviders().map((p) => p.observations(cache, now)));
   if (got.some((g) => g.stale)) return undefined;
   const recent = got.flatMap((g) => g.value).filter((o) => now.getTime() - o.time.getTime() <= OBSERVATION_MS);
-  return new Set(recent.map((o) => `${o.station.source}:${o.station.id}`)).size || undefined;
+  // An airport is both a Météo-France station and a METAR: one place of measurement, as meteo_actuelle merges them.
+  const lieux = toutes(recent.map((o) => ({ o }))).map(({ o }) => o);
+  return new Set(lieux.map((o) => `${o.station.source}:${o.station.id}`)).size || undefined;
 }
 
 /**
@@ -302,12 +304,18 @@ export function chiffres(sources: SourceInfo[], copie: Cached<Copie> | undefined
   const k = copie?.value ?? {};
   const lues = new Set(sources.map((s) => s.id));
   const familles = (Object.keys(FAMILLES) as Famille[]).filter((f) => c.licences[f]);
+  // A source of two domains is counted in both (the prefecture's press releases): said, so that the column is not read
+  // as adding up to the total (130 against 126 on 04/11/2026).
+  const vues = new Set<string>();
   const par_domaine = DOMAINES.map((d) => {
     const cat = CATEGORIES.find((x) => x.key === d.categorie)!;
     const ici = sources.filter((s) => d.sources().includes(s.id) && FICHES[s.id] && !FICHES[s.id].horsCompte);
+    const deja = ici.filter((s) => vues.has(s.id)).length;
+    for (const s of ici) vues.add(s.id);
     return {
       domaine: cat.nom,
       sources: ici.length,
+      ...(deja ? { deja_comptees_plus_haut: deja } : {}),
       producteurs: [...new Set(ici.filter((s) => !NON_NOMMES.has(s.id)).flatMap((s) => producteursDe(s)))].sort((a, b) => a.localeCompare(b, "fr")),
       ...(d.question ? { cadence: "à chaque question" } : !d.cadence ? { cadence: "à chaque version du site" } : lues.has(d.cadence.de) ? { cadence: cadenceEnMots(d.cadence.minutes) } : {}),
       ...(cat.path ? { page: cat.path } : {}),
@@ -316,6 +324,8 @@ export function chiffres(sources: SourceInfo[], copie: Cached<Copie> | undefined
   const sentiers = k.sentiers ? { ...nombre(k.sentiers)!, fermes: k.sentiers.fermes } : undefined;
   return {
     sources: c.sources,
+    /** Counted in `sources`, never named (NON_NOMMES): said under the list, which holds one fewer. */
+    non_nommees: sources.filter((s) => comptee(s) && NON_NOMMES.has(s.id)).length,
     // The clubs' count comes with the copy: without it, the producers the code names.
     producteurs: c.producteurs.length + (k.clubs?.nombre ?? 0),
     licences: Object.fromEntries(familles.map((f) => [FAMILLES[f].nom, c.licences[f]])) as Record<string, number>,

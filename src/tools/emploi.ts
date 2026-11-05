@@ -17,7 +17,9 @@ export const ENTREPRISES = [
 /** The user's line, word for word, with no link to them. */
 export const NON_REPRIS = "Les sites qui n'autorisent pas la reprise de leurs données : HelloWork, Meteojob, Domtomjob, APEC, Indeed, LinkedIn, leboncoin, Jooble.";
 /** What is covered, in marketing's words; the second sentence while some offer has no closing date. */
-export const COUVERTURE = "Les offres de La Réunion publiées sur Choisir le service public, lues chaque heure. Une offre reste ici jusqu'à sa date limite de candidature. Elle peut être pourvue avant : la page de l'offre fait foi.";
+// The site's own search counts more than the offers followed here (614 against 474 on 04/11/2026): its total is not said
+// as ours.
+export const COUVERTURE = "Les offres de La Réunion que rundata.re suit sur Choisir le service public, lues chaque heure dans le flux de ses 20 dernières offres\u00a0: le site peut en compter davantage, sa recherche fait foi pour le total. Une offre reste ici jusqu'à sa date limite de candidature. Elle peut être pourvue avant : la page de l'offre fait foi.";
 export const SANS_LIMITE = `Sans date limite, elle reste ${emploiSource.GARDE_JOURS} jours après sa publication, la durée médiane des offres de La Réunion en 2026.`;
 // The tool's answer lists this many offers at most; the rest are counted.
 const MAX = 40;
@@ -105,7 +107,7 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
 
   const resume = !c.offres.length
     ? `Aucune offre publiée sur Choisir le service public pour La Réunion à ${at.split(" ")[1]}.`
-    : `${plural(all.length, "offre ouverte", "offres ouvertes")} à la candidature${commune ? ` ${a(commune)}` : " à La Réunion"}${what} sur Choisir le service public` +
+    : `${plural(all.length, "offre ouverte", "offres ouvertes")} à la candidature${commune ? ` ${a(commune)}` : " à La Réunion"}${what}, suivie${all.length > 1 ? "s" : ""} par rundata.re sur Choisir le service public` +
       `${all[0] ? `, la plus récente publiée le ${dayMonth(all[0].publiee)} : ${all[0].intitule}` : ""}.` +
       (sansCommune ? ` ${plural(sansCommune, "autre offre de La Réunion ne précise pas sa commune", "autres offres de La Réunion ne précisent pas leur commune")}${what}.` : "");
 

@@ -456,3 +456,58 @@ describe("a source's entry listed in SOURCE_REVISION, after a deploy", () => {
   });
 });
 
+// An agenda read by the questions is kept in the bundle « agendas », under « agendas|agenda:<id> »: its source's revision
+// was looked up as « agendas|agenda », listed nowhere, so that no revision reached it (05/11/2026, Trois-Bassins' text
+// cut by the code before #752 still served after it).
+describe("an entry of a bundle, after a deploy that raises its source's revision", () => {
+  const k = "agenda:le_port";
+  const n = SOURCE_REVISION[k];
+
+  it("is named by its own key, not by the bundle's", () => {
+    expect(sourceRevision(`agendas|${k}`)).toBe(n);
+    expect(sourceRevision("agendas:planifies|agenda:petite_ile")).toBe(SOURCE_REVISION.agenda);
+    expect(sourceRevision("agendas|echec:le_port")).toBeUndefined();
+    expect(sourceRevision("arome:calculs|liste")).toBeUndefined();
+    expect(sourceRevision("meteofrance:6min|horaire")).toBeUndefined();
+  });
+
+  it("is stamped when set or read, not seen by has and peek once stamped otherwise, and read again by get, once", async () => {
+    const c = clock();
+    const store = new MemoryStore();
+    const old = new Cache(store, c.now, false, undefined, "1.0.0");
+    const b = await old.bundle("agendas", 60);
+    b.set("agenda:petite_ile", ["posé"]);
+    await b.get(k, 3600, async () => ["lu"]);
+    await b.save();
+    const kept = (await store.get("agendas"))!.value as Record<string, { version?: string }>;
+    expect(kept["agenda:petite_ile"].version).toBe(`source-${SOURCE_REVISION.agenda}`);
+    expect(kept[k].version).toBe(`source-${n}`);
+    // Read by the code before the one that raised the number, and one written before the bundles were stamped.
+    await store.put("agendas", { value: { [k]: { value: ["avant"], fetchedAt: c.now(), version: `source-${n - 1}` }, "agenda:petite_ile": { value: ["sans"], fetchedAt: c.now() } }, fetchedAt: c.now() });
+    c.advance(10);
+    let reads = 0;
+    const next = await new Cache(store, c.now, false, undefined, "2.0.0").bundle("agendas", 60);
+    expect(next.has(k)).toBe(false);
+    expect(next.peek(k)).toBeUndefined();
+    expect(next.peek("agenda:petite_ile")).toBeUndefined();
+    expect((await next.get(k, 3600, async () => (reads++, ["nouveau"]))).value).toEqual(["nouveau"]);
+    expect((await next.get(k, 3600, async () => (reads++, ["encore"]))).value).toEqual(["nouveau"]);
+    expect(reads).toBe(1);
+    expect(next.peek(k)?.value).toEqual(["nouveau"]);
+  });
+
+  it("stays the entry served, dated, when its source does not answer", async () => {
+    const c = clock();
+    const store = new MemoryStore();
+    await store.put("agendas", { value: { [k]: { value: ["avant"], fetchedAt: c.now(), version: `source-${n - 1}` } }, fetchedAt: c.now() });
+    c.advance(10);
+    const b = await new Cache(store, c.now, false, undefined, "2.0.0").bundle("agendas", 60);
+    expect(await b.get(k, 3600, async () => { throw new UpstreamError("agenda", "pas de réponse"); })).toMatchObject({ value: ["avant"], stale: true });
+  });
+
+  it("is never said outdated where the code has no version (Node, tests)", async () => {
+    const store = new MemoryStore();
+    await store.put("agendas", { value: { [k]: { value: ["avant"], fetchedAt: Date.now(), version: "source-0" } }, fetchedAt: Date.now() });
+    expect((await new Cache(store).bundle("agendas", 60)).peek(k)?.value).toEqual(["avant"]);
+  });
+});

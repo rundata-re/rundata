@@ -13,6 +13,7 @@ import { agendaHours, agendaPage } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
 import { mesure } from "../src/web/mesure.js";
 import { quand } from "../src/tools/sport.js";
+import { SOURCE_REVISION } from "../src/web/revisions.js";
 import { withVide } from "../src/vide.js";
 
 // The communes' sites read, as once they have agreed (test/autorisations.test.ts for what is said until then).
@@ -214,6 +215,26 @@ describe("agenda", () => {
       // La Plaine-des-Palmistes' agenda and news, one source name: named once.
       const plaine = body(await agenda(at(), "La Plaine-des-Palmistes", undefined, undefined, new Date(t)));
       expect(plaine.non_lus.filter((x: string) => x.startsWith("Ville de La Plaine-des-Palmistes"))).toHaveLength(1);
+    });
+
+    it("is not served from a copy read under another revision of its source, and read again at the next scheduled event", async () => {
+      let t = NOW.getTime();
+      const store = new MemoryStore();
+      // The Worker's caches carry the code's version: the copies are stamped with their source's revision.
+      const at = () => new Cache(store, () => t, false, undefined, "2.0.0");
+      await refreshPlanned(at(), NOW);
+      const n = SOURCE_REVISION["agenda:lrvb"] ?? SOURCE_REVISION.agenda;
+      expect((await entry(store))?.version).toBe(`source-${n}`);
+      // The copy as the code before the one that raised the revision left it, half an hour ago.
+      const bundle = (await store.get("agendas:planifies"))!;
+      const stale = { ...(bundle.value as Record<string, CacheEntry>)["agenda:lrvb"], version: `source-${n - 1}` };
+      await store.put("agendas:planifies", { ...bundle, value: { ...(bundle.value as Record<string, CacheEntry>), "agenda:lrvb": stale } });
+      t += 30 * 60_000;
+      expect(titles(body(await agenda(at(), undefined, undefined, "King", new Date(t))))).not.toContain(KING);
+      // Within the hour, only it is read again; then served.
+      expect((await refreshPlanned(at(), new Date(t))).lus).toEqual(["lrvb"]);
+      expect((await entry(store))?.version).toBe(`source-${n}`);
+      expect(titles(body(await agenda(at(), undefined, undefined, "King", new Date(t))))).toContain(KING);
     });
 
     it("says its last reading failed, and when, when it has no copy to keep", async () => {

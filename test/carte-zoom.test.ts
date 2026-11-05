@@ -201,7 +201,8 @@ describe("the one formula of the trails' state", () => {
   it("dates the pill, the hook and the count of /randonnees and its sectors", () => {
     const dated = { ...data, value: { ...answer, carte_mise_a_jour: edited, carte_lue: read } };
     for (const html of [randonneesPage(O, dated, NOW), secteurPage(O, mafate, dated, null, NOW)]) {
-      expect(html).toContain('<p class="pill"><span class="dot"></span>État ONF · carte du 27/10</p>');
+      // A map of 27/10 on 04/11: its date, without the green dot read « en direct » (the rule of the pills).
+      expect(html).toContain('<p class="pill">État ONF · carte du 27/10</p>');
       expect(html).toContain('<p class="hook">Choisir une rando ouverte d&#39;après la carte de l&#39;ONF du 27/10, avec sa trace GPS et son dénivelé.</p>');
       expect(html).toContain("relue le 04/11 à 14:05");
       expect(html).not.toMatch(/état ONF du jour|ouverte aujourd/);

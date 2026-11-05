@@ -113,7 +113,7 @@ function formulaire(e: Formulaire): string {
 function bandeau(titre: string, lead?: string): string {
   return `${crumbBar(titre, PARENT)}
 <div class="wrap intro solo"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Clubs et associations</p>
+  <p class="pill">Clubs et associations</p>
   <h1>${esc(titre)}</h1>
   ${lead ? `<p class="lead">${esc(lead)}</p>` : ""}
 </div></div>`;

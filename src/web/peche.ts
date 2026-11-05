@@ -35,7 +35,7 @@ export function pechePage(origin: string, alerte?: Alerte, now = new Date()): st
   const especes = especesDuJour(day);
   const band = `${crumbBar(NOM)}
 <div class="wrap intro solo"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Arrêtés du préfet</p>
+  <p class="pill">Arrêtés du préfet</p>
   <h1>${esc(H1)}</h1>
   <p class="lead">${esc(LEAD)}</p>
 </div></div>`;

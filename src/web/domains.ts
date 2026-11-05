@@ -1648,6 +1648,21 @@ export function onfRead(miseAJour: string | undefined, lue: string | undefined):
 export const onfMap = (d?: SentiersAnswer) => onfRead(d?.carte_mise_a_jour, d?.carte_lue);
 
 /** « État ONF · carte du 27/10 »: the pill of the hikes' pages. */
+/** The day of the ONF's map, « 2026-10-27 », from « 27/10/2026 (ONF) » or an ISO time; "" when it is not given. */
+function onfIsoDay(miseAJour: string | undefined): string {
+  const m = miseAJour?.match(/^(\d\d)\/(\d\d)\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  const t = Date.parse(miseAJour ?? "");
+  return Number.isFinite(t) ? new Date(t + 4 * 3600_000).toISOString().slice(0, 10) : "";
+}
+
+/**
+ * The pill's green dot, read « en direct »: only for an ONF map of today, the rule of the pills (#739); a map of
+ * 27/10 on 05/11 is said by its date alone.
+ */
+export const onfDot = (miseAJour: string | undefined, now: Date) =>
+  onfIsoDay(miseAJour) && onfIsoDay(miseAJour) === new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10) ? `<span class="dot"></span>` : "";
+
 export const onfPill = (miseAJour: string | undefined) => (onfDay(miseAJour) ? `État ONF · carte du ${onfDay(miseAJour)}` : "Traces GPS · carte de l'ONF");
 
 /**
@@ -1740,7 +1755,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
   const band = `${hikeCrumbBar("Sentiers fermés")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Carte de l'ONF</p>
+    <p class="pill">${onfDot(d?.carte_mise_a_jour, now)}Carte de l'ONF</p>
     <h1>Sentiers fermés <span class="n974">974</span></h1>
     ${status}
     <p class="hero-cta"><a class="btn sun" href="/randonnees">${icon("mountain")}Randonnées et traces GPS</a></p>
@@ -2094,7 +2109,7 @@ export function randonneesPage(origin: string, data: Cached<RandonneesAnswer> | 
   const band = `${crumbBar("Randonnée")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>${esc(onfPill(d?.carte_mise_a_jour))}</p>
+    <p class="pill">${onfDot(d?.carte_mise_a_jour, now)}${esc(onfPill(d?.carte_mise_a_jour))}</p>
     <h1>Randonnée à La Réunion <span class="n974">974</span></h1>
     ${status}
     <p class="hero-cta"><a class="btn sun" href="#itineraires">${icon("mountain")}Choisir une rando</a><a class="btn glass" href="/sentiers">${icon("alert")}Sentiers fermés${d ? ` (${d.fermes})` : ""}</a></p>

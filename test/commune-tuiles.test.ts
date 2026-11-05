@@ -121,6 +121,19 @@ describe("the town hall's tile", () => {
     expect(page).toContain(`<p class="tv">Horaires absents de l'annuaire</p>`);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie/i);
   });
+
+  it("says the town hall probably closed on a holiday, never open by its weekday hours", () => {
+    // Wednesday 11/11/2026, 10:00: a holiday, the hours of an invented town hall open on weekdays.
+    const at = new Date("2026-11-11T06:00:00Z");
+    const open = { ...hall, horaires: [{ de: "lundi", a: "vendredi", plages: [["08:00", "16:00"]] as [string, string][] }] };
+    const cal = (aujourd_hui: string | null, fetchedAt = at) => ({ value: { jours_feries: { aujourd_hui, prochains: [], note: "" } }, fetchedAt, stale: false }) as never;
+    const page = (c?: never) => communePage(ORIGIN, p, { ...commune(at, { mairie: open }), calendrier: c }, at);
+    expect(tile(page(cal("Armistice 1918")), "Mairie")).toContain(`<p class="tv">Sans doute fermée</p>`);
+    expect(tile(page(cal("Armistice 1918")), "Mairie")).toContain("jour férié (Armistice 1918)");
+    expect(tile(page(cal(null)), "Mairie")).toContain(`<p class="tv">Ouverte</p>`);
+    // A calendar of another day says nothing of today.
+    expect(tile(page(cal("Armistice 1918", new Date("2026-11-10T06:00:00Z"))), "Mairie")).toContain(`<p class="tv">Ouverte</p>`);
+  });
 });
 
 describe("the point-justice's tile", () => {

@@ -47,6 +47,9 @@ export function hoursText(o: annuaire.Office): string | undefined {
     .join("\u00a0; ") || undefined;
 }
 
+/** What the published hours do not account for, said wherever they are. */
+export const HORAIRES_A_SAVOIR = "Horaires publiés par chaque service sur service-public.fr : jours fériés et fermetures exceptionnelles non pris en compte.";
+
 /** Open at `now` (local time), from the published hours; null when no hours are published. */
 export function openNow(o: annuaire.Office, now: Date): boolean | null {
   // Days with only a note (« permanences lors des audiences »): no hours to tell.
@@ -198,7 +201,7 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
         lieux: near.map((l) => ({ nature: l.nature, nom: l.nom, quartier: l.quartier, adresse: l.adresse, distance_km: Math.round(l.km * 10) / 10 })),
       }
       : undefined,
-    avertissements: ["Horaires publiés par chaque service sur service-public.fr : jours fériés et fermetures exceptionnelles non pris en compte."],
+    avertissements: [HORAIRES_A_SAVOIR],
     page: town?.commune ? `https://rundata.re/communes/${town.slug}` : undefined,
     sources: credits([annuaire.SOURCE, ...(near.length ? [annexesSd.SOURCE] : [])]),
   });

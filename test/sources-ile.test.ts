@@ -67,7 +67,8 @@ describe("a source read for the whole island (cache.ts `island`)", () => {
   it("counts, in the budget's registry, their KV read and write for the entries that read them", () => {
     const ids = new Set(REGISTRY.map((e) => e.id));
     for (const id of Object.keys(ISLAND_READS)) expect(ids.has(id), id).toBe(true);
-    expect(REGISTRY.find((e) => e.id === "/feux")?.run).toMatchObject({ kvReads: 1, kvWrites: 1 });
+    // /feux: the fires and the days each satellite has data for (providers/feux.ts), two copies for the island.
+    expect(REGISTRY.find((e) => e.id === "/feux")?.run).toMatchObject({ kvReads: 2, kvWrites: 2 });
   });
 
   it("takes, of the same copy in two stores, the one that says a failed refresh", async () => {

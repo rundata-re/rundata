@@ -23,8 +23,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | pire passage planifié, CPU (ms) | 3 636 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 173 | 500 |
-| vue la plus chère, sous-requêtes | 84 | 200 |
-| question la plus chère, sous-requêtes | 70 | 200 |
+| vue la plus chère, sous-requêtes | 86 | 200 |
+| question la plus chère, sous-requêtes | 72 | 200 |
 | construction de copie la plus chère, sous-requêtes | 56 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
@@ -33,7 +33,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 - Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 130 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 173 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, web:volcan, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture).
 - Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 335 sous-requêtes à 00:00 UTC.
-- Vue la plus chère : /communes/*, 84. Question la plus chère : resume_du_jour, 70. Construction la plus chère : web:chiffres:evenements, 56.
+- Vue la plus chère : /communes/*, 86. Question la plus chère : resume_du_jour, 72. Construction la plus chère : web:chiffres:evenements, 56.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -124,10 +124,10 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 82 | 10 | 2 | 2 | 840 |  | 110 | mesuré |
-| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 84 | 9 | 2 |  |  |  | 160 | mesuré |
-| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 70 | 12 | 3 |  |  |  | 130 | mesuré |
-| /meteo/* | la météo d'un lieu | à chaque vue |  | 56 | 2 | 2 |  |  |  | 130 | mesuré |
+| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 84 | 11 | 3 | 2 | 840 |  | 110 | mesuré |
+| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 86 | 10 | 3 |  |  |  | 160 | mesuré |
+| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 72 | 13 | 4 |  |  |  | 130 | mesuré |
+| /meteo/* | la météo d'un lieu | à chaque vue |  | 58 | 3 | 3 |  |  |  | 130 | mesuré |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h-5min.json | la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 40 | code |
@@ -140,14 +140,14 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /ecoles | la page des écoles : la carte et la liste (dans le paquet), avec la vigilance et la version de l'en-tête ; le collège de secteur cherché dans le navigateur, dans le fichier de la commune (public/carte-scolaire/), servi par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1 | à chaque vue |  | 7 |  |  |  |  |  | 60 | code |
 | /carte | la carte des couches : la page seule, avec la vigilance et la version de l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 40 | code |
 | /mer | la page /mer | à chaque vue |  | 28 |  |  |  |  |  | 120 | mesuré |
-| /randonnees/* | une randonnée et sa trace | à chaque vue |  | 25 | 1 | 1 |  |  |  | 130 | mesuré |
-| /sentiers/* | un sentier et sa trace | à chaque vue |  | 20 | 2 | 2 |  |  |  | 30 | mesuré |
+| /randonnees/* | une randonnée et sa trace | à chaque vue |  | 27 | 2 | 2 |  |  |  | 130 | mesuré |
+| /sentiers/* | un sentier et sa trace | à chaque vue |  | 22 | 3 | 3 |  |  |  | 30 | mesuré |
 | /bus/arret/* | la page d'un arrêt de bus : ses prochains départs | à chaque vue |  | 16 |  |  | 3 | 150 |  | 60 | code |
 | /bus/trajet/* | le trajet d'un bus, arrêt par arrêt | à chaque vue |  | 11 |  |  | 2 | 6 |  | 30 | code |
 | /coupures-eau/* | les coupures d'une commune | à chaque vue |  | 29 | 1 | 1 |  |  |  | 70 | mesuré |
 | /enfants/* | les lieux pour les enfants d'une commune, sur sa carte | à chaque vue |  | 37 |  |  |  |  |  | 350 | code |
-| /feux | la page /feux | à chaque vue |  | 22 | 1 | 1 |  |  |  | 90 | mesuré |
-| /ecoles-cyclone | la page /ecoles-cyclone | à chaque vue |  | 14 | 1 | 1 |  |  |  | 50 | mesuré |
+| /feux | la page /feux | à chaque vue |  | 25 | 2 | 2 |  |  |  | 90 | mesuré |
+| /ecoles-cyclone | la page /ecoles-cyclone | à chaque vue |  | 16 | 2 | 2 |  |  |  | 50 | mesuré |
 | /carburants | la page /carburants | à chaque vue |  | 13 |  |  |  |  |  | 30 | mesuré |
 | /associations | l'espace des associations et leurs propositions (D1) | à chaque vue |  | 10 |  |  |  |  |  | 40 | mesuré |
 | /associations/relier | relier sa plateforme : les clés vérifiées par HelloAsso, puis la connexion écrite (D1) et l'e-mail | à chaque vue |  | 14 |  |  | 2 | 2 |  | 40 | code |
@@ -161,7 +161,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /antennes | la page des antennes : la carte et le tableau (dans le paquet), et la copie des sites mobiles hors service | à chaque vue |  | 8 | 1 |  |  |  |  | 80 | code |
 | /chiffres | rundata.re en chiffres : la copie de ses comptes, avec la vigilance et la version de l'en-tête | à chaque vue |  | 9 | 1 |  |  |  |  | 40 | code |
 | * | toute autre adresse : la vigilance et la version, lues pour l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 70 | mesuré |
-| /meteo | la page /meteo | à chaque vue |  | 47 | 2 | 2 |  |  |  | 80 | mesuré |
+| /meteo | la page /meteo | à chaque vue |  | 49 | 3 | 3 |  |  |  | 80 | mesuré |
 | /volcan | la page /volcan | à chaque vue |  | 55 | 4 | 3 | 2 | 21 |  | 60 | mesuré |
 | /air | la page /air | à chaque vue |  | 14 | 1 |  |  |  |  | 40 | mesuré |
 | /electricite | la page /electricite | à chaque vue |  | 17 | 1 |  |  |  |  | 30 | mesuré |
@@ -171,14 +171,14 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /velos | la page /velos | à chaque vue |  | 14 |  |  |  |  |  | 50 | mesuré |
 | /bornes | la page /bornes | à chaque vue |  | 12 |  |  |  |  |  | 40 | mesuré |
 | /eau | la page /eau | à chaque vue |  | 13 | 1 | 1 |  |  |  | 30 | mesuré |
-| /randonnees | la page /randonnees | à chaque vue |  | 24 | 1 | 1 |  |  |  | 210 | mesuré |
-| /sentiers | la page /sentiers | à chaque vue |  | 21 | 1 | 1 |  |  |  | 60 | mesuré |
+| /randonnees | la page /randonnees | à chaque vue |  | 26 | 2 | 2 |  |  |  | 210 | mesuré |
+| /sentiers | la page /sentiers | à chaque vue |  | 23 | 2 | 2 |  |  |  | 60 | mesuré |
 | /secheresse | la page /secheresse | à chaque vue |  | 12 |  |  |  |  |  | 70 | mesuré |
 | /coupures-eau | la page /coupures-eau | à chaque vue |  | 22 | 2 | 1 |  |  |  | 100 | mesuré |
 | /defibrillateurs | la page /defibrillateurs ; « Autour de moi » charge au clic la liste compacte (public/dae/), servie par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1 | à chaque vue |  | 6 |  |  |  |  |  | 40 | mesuré |
 | /sport | la page /sport | à chaque vue |  | 42 |  |  |  |  |  | 120 | mesuré |
 | /decheteries | la page /decheteries | à chaque vue |  | 12 |  |  |  |  |  | 30 | mesuré |
-| /cyclones | la page /cyclones | à chaque vue |  | 30 | 1 | 1 |  |  |  | 50 | mesuré |
+| /cyclones | la page /cyclones | à chaque vue |  | 32 | 2 | 2 |  |  |  | 50 | mesuré |
 | /crues | la page /crues | à chaque vue |  | 36 | 4 | 3 |  |  |  | 120 | estimé |
 | /historique | la page /historique | à chaque vue |  | 16 |  |  |  |  |  | 70 | estimé |
 | /evenements | la page /evenements | à chaque vue |  | 54 |  |  |  |  |  | 200 | mesuré |
@@ -193,7 +193,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 70 | 3 | 3 |  |  |  | 130 | estimé |
+| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 72 | 4 | 4 |  |  |  | 130 | estimé |
 | meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 38 |  |  |  |  |  | 120 | mesuré |
 | evenements | l'outil evenements | à chaque vue |  | 33 |  |  |  |  |  | 190 | mesuré |
 | sport | l'outil sport | à chaque vue |  | 33 |  |  |  |  |  | 160 | mesuré |
@@ -203,11 +203,11 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | qualite_eau | l'outil qualite_eau | à chaque vue |  | 17 | 1 | 1 |  |  |  | 90 | mesuré |
 | temperature_mer | l'outil temperature_mer | à chaque vue |  | 19 |  |  |  |  |  | 50 | mesuré |
 | transports | l'outil transports | à chaque vue |  | 13 |  |  | 2 | 840 |  | 80 | mesuré |
-| cyclones | l'outil cyclones | à chaque vue |  | 16 | 1 | 1 |  |  |  | 70 | mesuré |
+| cyclones | l'outil cyclones | à chaque vue |  | 18 | 2 | 2 |  |  |  | 70 | mesuré |
 | actualites | l'outil actualites | à chaque vue |  | 10 |  |  |  |  |  | 180 | mesuré |
 | historique_meteo | l'outil historique_meteo | à chaque vue |  | 11 |  |  | 3 | 300 |  | 60 | estimé |
-| sentiers_randonnee | l'outil sentiers_randonnee | à chaque vue |  | 12 | 1 | 1 |  |  |  | 60 | mesuré |
-| vigilance_meteo | l'outil vigilance_meteo | à chaque vue |  | 12 | 1 | 1 |  |  |  | 50 | mesuré |
+| sentiers_randonnee | l'outil sentiers_randonnee | à chaque vue |  | 14 | 2 | 2 |  |  |  | 60 | mesuré |
+| vigilance_meteo | l'outil vigilance_meteo | à chaque vue |  | 14 | 2 | 2 |  |  |  | 50 | mesuré |
 | coupures_eau | l'outil coupures_eau | à chaque vue |  | 11 | 1 | 1 |  |  |  | 110 | mesuré |
 | electricite | l'outil electricite | à chaque vue |  | 9 |  |  |  |  |  | 60 | mesuré |
 | crues_rivieres | l'outil crues_rivieres | à chaque vue |  | 15 | 3 | 3 |  |  |  | 30 | mesuré |

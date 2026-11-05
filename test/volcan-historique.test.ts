@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { decodeText, textOf } from "../src/providers/avis-eau.js";
-import { AVANT_2021, avant2021, CHAPEAU, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, EPISODES, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
+import { AVANT_2021, avant2021, CHAPEAU, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, depuis, EPISODES, FIN_DE_LISTE, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
 import { volcanPage } from "../src/web/domains.js";
 import type { VolcanAnswer } from "../src/web/data.js";
 
@@ -174,6 +174,20 @@ describe("the alerts before this one", () => {
     expect(feb2019.puis).toBe("Le même jour, nouvelle alerte 2-2 : « le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce mardi 19 février à 18h30 » (communiqué du 19/02/2019 : https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html). Sa fin n'est pas dans les communiqués que nous avons retrouvés.");
     expect(p.episodes.filter((e) => "puis" in e)).toHaveLength(1);
     expect(older).toContain(`<li><b>26/05/2016</b>, alerte 2-2\u00a0: «\u00a0le préfet de la Réunion a déclenché ce jour (jeudi 26 mai 2016) à 8h30 l’alerte 2-2\u00a0» <a href="https://web.archive.org/web/20160530083219/http://www.reunion.gouv.fr/piton-de-la-fournaise-eruption-en-cours-dans-l-a1635.html">communiqué du 26/05/2016 →</a></li>`);
+  });
+});
+
+describe("a release newer than the list", () => {
+  const release = { niveau: "Vigilance", titre: "Retour en phase de vigilance", lien: "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Retour-en-phase-de-vigilance", jour: "2026-10-26" };
+
+  it("is said after the list, in the short answer and on the page, so that the list is not read as the latest alerts", () => {
+    expect(FIN_DE_LISTE).toBe("2026-05-07");
+    expect(depuis(release)).toBe("Cette liste s'arrête au 07/05/2026 : les communiqués publiés depuis n'y sont pas encore, le dernier « Retour en phase de vigilance » du 26/10/2026 (https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Retour-en-phase-de-vigilance).");
+    // A release the list already tells, or none: nothing.
+    expect(depuis({ ...release, jour: "2026-05-07" })).toBeUndefined();
+    expect(depuis(undefined)).toBeUndefined();
+    const html = volcanPage("https://rundata.re", { value: { resume: "", sources: [], avertissements: [], etat: { eruption_en_cours: false, niveau_orsec: "Vigilance", communique_prefecture: release } } as unknown as VolcanAnswer, fetchedAt: NOW, stale: false }, NOW);
+    expect(html).toContain("<p class=\"note\">Cette liste s&#39;arrête au 07/05/2026 : les communiqués publiés depuis n&#39;y sont pas encore, le dernier « Retour en phase de vigilance » du 26/10/2026");
   });
 });
 

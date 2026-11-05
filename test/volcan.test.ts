@@ -5,7 +5,7 @@ import { parse, where } from "../src/providers/seismes.js";
 import type { Info } from "../src/providers/actualites.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import * as copie from "../src/providers/prefecture-copie.js";
-import { A_LIRE, COURT, quakeSummary, volcanSeismes } from "../src/tools/volcan.js";
+import { A_LIRE, COURT, depthText, quakeSummary, volcanSeismes } from "../src/tools/volcan.js";
 import { buildVolcan } from "../src/web/data.js";
 import { volcanPage } from "../src/web/domains.js";
 import { esc } from "../src/web/map.js";
@@ -49,6 +49,18 @@ describe("earthquakes", () => {
     expect(q.sous_le_volcan["30_jours"]).toBe(11);
     expect(q.ailleurs_sur_l_ile["30_jours"]).toBe(7);
     expect(q.derniers[0].heure).toBe("21/10 21:45 heure de La Réunion");
+    // The largest magnitude to a tenth, as each event's.
+    for (const m of [q.sous_le_volcan.magnitude_max_30j, q.ailleurs_sur_l_ile.magnitude_max_30j]) expect(m).toBe(Math.round(m! * 10) / 10);
+    // The depth from the sea level: above it under the summit, said in words beside the signed number.
+    const above = q.derniers.find((s) => s.profondeur_km < 0)!;
+    expect(above.profondeur).toBe(`${String(-above.profondeur_km).replace(".", ",")}\u00a0km au-dessus du niveau de la mer`);
+  });
+
+  it("says a depth from the sea level, in words", () => {
+    expect(depthText(-1.20703125)).toBe("1,2\u00a0km au-dessus du niveau de la mer");
+    expect(depthText(0.3)).toBe("0,3\u00a0km sous le niveau de la mer");
+    expect(depthText(-0.02)).toBe("0\u00a0km sous le niveau de la mer");
+    expect(depthText(12)).toBe("12\u00a0km sous le niveau de la mer");
   });
 });
 

@@ -232,6 +232,19 @@ export function precedentes() {
   };
 }
 
+/** The last day the list tells, its end or a new alert the same day. */
+export const FIN_DE_LISTE = EPISODES.flatMap((e) => [e.fin.jour, ...(e.puis ? [e.puis.jour] : [])]).sort().at(-1)!;
+
+/**
+ * The prefecture's release in force, newer than the list: said, so that the list is not read as the latest alerts.
+ * « Cette liste s'arrête au 07/05/2026 : les communiqués publiés depuis n'y sont pas encore, le dernier « Retour en
+ * phase de vigilance » du 26/10/2026 (lien). »
+ */
+export function depuis(c?: { titre?: string; jour?: string; lien?: string }): string | undefined {
+  if (!c?.jour || !c.titre || c.jour <= FIN_DE_LISTE) return undefined;
+  return `Cette liste s'arrête au ${date(FIN_DE_LISTE)} : les communiqués publiés depuis n'y sont pas encore, le dernier « ${c.titre} » du ${date(c.jour)}${c.lien ? ` (${c.lien})` : ""}.`;
+}
+
 /** One sentence for the summary: the days and what they were, newest first; the newest `n` only in the short answer. */
 export const resumeText = (n = EPISODES.length) =>
   `Alertes précédentes dont le début et la fin sont écrits dans un communiqué de la préfecture (liste partielle, depuis 2016\u00a0; avant novembre 2021, les niveaux du plan précédent) : ${EPISODES.slice(0, n).map((e) =>

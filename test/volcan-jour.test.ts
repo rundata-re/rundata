@@ -78,6 +78,8 @@ describe("the day of the prefecture's release, never an hour made up", () => {
     expect(v.etat?.niveau_orsec).toBe("Alerte 1");
     expect(v.etat?.communique_prefecture).toEqual({ niveau: "Alerte 1", titre: TITRE, lien: LIEN, jour: "2026-10-24" });
     expect(v.resume).toContain(`Communiqué de la préfecture du 24/10 : « ${TITRE} »`);
+    // Newer than the list of past alerts: said after it, with its link.
+    expect(v.resume).toContain(`Cette liste s'arrête au 07/05/2026 : les communiqués publiés depuis n'y sont pas encore, le dernier « ${TITRE} » du 24/10/2026 (${LIEN}).`);
     expect(JSON.stringify(v)).not.toMatch(/2026-10-24T0?8:00|12:00/);
     const html = volcanPage("https://rundata.re", { value: v, fetchedAt: now, stale: false }, now);
     expect(html).toContain('<p class="note">publié le 24 octobre</p>');

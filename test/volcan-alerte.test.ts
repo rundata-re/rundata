@@ -104,11 +104,14 @@ describe("the volcano put forward during an alert", () => {
     const rows = main.match(/<ul class="rows seismes">(.*?)<\/ul>/)![1].match(/<li>.*?<\/li>/g)!;
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.length).toBeLessThanOrEqual(5);
-    for (const r of rows) expect(r).toMatch(/^<li>\d\d\/\d\d \d\d:\d\d · magnitude\u00a0<b>[\d,—]+<\/b> · [^<]+,[ \u00a0][\d,]+\u00a0km<\/li>$/);
+    // A depth above the sea level, under the summit, « −0,4 km », said once under the rows.
+    for (const r of rows) expect(r).toMatch(/^<li>\d\d\/\d\d \d\d:\d\d · magnitude\u00a0<b>[\d,—]+<\/b> · [^<]+,[ \u00a0]−?[\d,]+\u00a0km<\/li>$/);
+    expect(rows.some((r) => r.includes("−"))).toBe(true);
+    expect(main).toContain("<p class=\"note\">Profondeur comptée depuis le niveau de la mer\u00a0; «\u00a0−\u00a0» : au-dessus, sous le sommet (vers 2,6\u00a0km d&#39;altitude).</p>");
     // « sommet, 0 km » never broken inside: the line breaks before it, whole (marketing, seen at 390 px).
     const summit = rows.filter((r) => r.includes("· sommet,"));
     expect(summit.length).toBeGreaterThan(0);
-    for (const r of summit) expect(r).toMatch(/· sommet,\u00a0[\d,]+\u00a0km<\/li>$/);
+    for (const r of summit) expect(r).toMatch(/· sommet,\u00a0−?[\d,]+\u00a0km<\/li>$/);
     expect(main).not.toContain("sous le sommet du Piton de la Fournaise");
     expect(main.split("ne localise qu&#39;une partie des séismes")).toHaveLength(2);
     expect(main).toContain("<h2 id=\"h-volcan\">Séismes sous le volcan</h2>");

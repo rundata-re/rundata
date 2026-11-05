@@ -172,7 +172,7 @@ function recorder(env: Env, request: Request) {
     try {
       // A signal comes from a page's browser: read as a page view is (web/signaux.ts).
       const page = hit.kind === "page" || hit.kind === "signal";
-      usage.writeDataPoint(point(hit, { who, country, from, audience: page ? (team ? TEAM : audience(headers, asn, country)) : "", language: page ? language(headers.get("accept-language")) : "", mode: page && headers.get("rundata-mode") === "app" ? "app" : "", device: page ? device(headers, asn) : "" }));
+      usage.writeDataPoint(point(hit, { who, country, from, audience: page ? (team ? TEAM : audience(headers, asn)) : "", language: page ? language(headers.get("accept-language")) : "", mode: page && headers.get("rundata-mode") === "app" ? "app" : "", device: page ? device(headers, asn) : "" }));
     } catch (err) {
       console.error("analytics : écriture impossible", why(err));
     }
@@ -389,7 +389,8 @@ const DEMO_HEADERS = { "cache-control": "public, max-age=31536000, immutable", "
 export default {
   async fetch(request: Request, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
     const arrived = Date.now();
-    // A named robot on an address robots.txt forbids it, before anything is read or built (robots.ts).
+    // A named robot, or a browser of a hosting network, on an address robots.txt forbids, before anything is read or
+    // built (robots.ts).
     const robot = refusRobot(request);
     if (robot) return robot;
     // A connection past its threshold is answered before anything is read or built.

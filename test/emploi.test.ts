@@ -4,7 +4,7 @@ import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as emploiSource from "../src/providers/emploi.js";
 import { REGISTRY } from "../src/registre.js";
-import { emploi, lignes, NON_REPRIS } from "../src/tools/emploi.js";
+import { emploi, lignes, NON_REPRIS, pourOutil, type OffreRow } from "../src/tools/emploi.js";
 import { buildEmploi, emploiPage } from "../src/web/emploi.js";
 
 // The feed of La Réunion read on 29/10/2026 at 12:20, two offers' pages and the first search page read at 12:26-12:28,
@@ -299,15 +299,15 @@ describe("the tool emploi and the page /emploi", () => {
       employeur: "Direction Générale de l'Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI)",
       commune: "Saint-Denis",
       metier: "Responsable sectorielle / sectoriel",
-      nature: "Emploi ouvert aux titulaires et aux contractuels",
       publiee_le: "29/10",
       date_limite: "20/11",
       nombre_offres: 2,
-      references: [
-        { reference: "DGAC-AVE-128697-CAT-A", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128697-CAT-A/" },
-        { reference: "DGAC-AVE-128697-CAT-B", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128697-CAT-B/" },
-      ],
+      // Each reference by its link, which holds its number, on the line's day.
+      references: [{ lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128697-CAT-A/" }, { lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128697-CAT-B/" }],
     });
+    // The nature every line shares, said once.
+    expect(r.nature).toBe("ouvert aux titulaires et contractuels, sauf mention à l'offre");
+    expect(r.offres.some((o: object) => "nature" in o)).toBe(false);
     // Every offer once: in a line of its own or among a line's references.
     const refs = r.offres.flatMap((o: { lien?: string; references?: { lien: string }[] }) => o.references?.map((x) => x.lien) ?? [o.lien]);
     expect(refs).toHaveLength(20);
@@ -330,7 +330,10 @@ describe("the tool emploi and the page /emploi", () => {
     expect(words.nombre).toBe(4);
     expect(words.offres).toHaveLength(1);
     expect(words.offres[0]).toMatchObject({ intitule: "Gestionnaire finances*SG/SIR/OI/FIN", nombre_offres: 4 });
-    expect(words.offres[0].references.map((x: { reference: string }) => x.reference)).toEqual(["DGAC-AVE-128051-CAT-B", "DGAC-AVE-128051-CAT-C", "DGAC-AVE-128096-CAT-B", "DGAC-AVE-128096-CAT-C"]);
+    expect(words.offres[0].references.map((x: { lien: string }) => x.lien.split("/").at(-2))).toEqual(["DGAC-AVE-128051-CAT-B", "DGAC-AVE-128051-CAT-C", "DGAC-AVE-128096-CAT-B", "DGAC-AVE-128096-CAT-C"]);
+    // One line: its nature on it, none said once.
+    expect(words).not.toHaveProperty("nature");
+    expect(words.offres[0].nature).toBe("ouvert aux titulaires et contractuels");
     expect(words.offres[0]).not.toHaveProperty("lien");
     expect(body(await emploi(cache(), "Nulle-Part-Ici", undefined, NOW)).erreur).toBeDefined();
   });
@@ -359,6 +362,34 @@ describe("the tool emploi and the page /emploi", () => {
     // Empty: marketing's sentence, with the hour.
     const none = emploiPage("https://rundata.re", { value: { ...d, nombre: 0, offres: [] }, fetchedAt: NOW, stale: false }, NOW);
     expect(none).toContain("Aucune offre publiée sur Choisir le service public pour La Réunion le 29/10 à 12:45.");
+  });
+
+  it("says once in the tool the nature most lines share, and only the others on their line, the page keeping each", async () => {
+    const line = (intitule: string, nature?: string): OffreRow => ({ intitule, ...(nature ? { nature } : {}), publiee_le: "29/10", lien: `https://choisirleservicepublic.gouv.fr/offre-emploi/${intitule}/` });
+    const ouvert = "Emploi ouvert aux titulaires et aux contractuels";
+    const reserve = "Emploi réservé aux fonctionnaires et lauréats d’un concours territorial";
+    // One line apart: it says its own, in short; the others none.
+    const one = pourOutil([line("A", ouvert), line("B", reserve), line("C", ouvert)]);
+    expect(one.nature).toBe("ouvert aux titulaires et contractuels, sauf mention à l'offre");
+    expect(one.offres.map((o) => (o as { nature?: string }).nature)).toEqual([undefined, "réservé aux fonctionnaires et lauréats de concours", undefined]);
+    // Any other nature as the site writes it, said once too.
+    expect(pourOutil([line("A", "Emploi ouvert aux contractuels"), line("B", "Emploi ouvert aux contractuels")]).nature).toBe("Emploi ouvert aux contractuels, sauf mention à l'offre");
+    // Nothing said once: a single line, no nature shared by more than half, or a line without one.
+    for (const rows of [[line("A", ouvert)], [line("A", ouvert), line("B", reserve)], [line("A", ouvert), line("B", ouvert), line("C", reserve), line("D", "Autre")], [line("A", ouvert), line("B", ouvert), line("C")]]) {
+      const r = pourOutil(rows);
+      expect(r).not.toHaveProperty("nature");
+      expect(r.offres.map((o) => (o as { nature?: string }).nature)).toEqual(rows.map((x) => (x.nature ? (x.nature === ouvert ? "ouvert aux titulaires et contractuels" : x.nature === reserve ? "réservé aux fonctionnaires et lauréats de concours" : x.nature) : undefined)));
+    }
+    // A reference whose link does not hold its number keeps it, and its day when the line has none.
+    const refs = pourOutil([{ intitule: "X", nature: ouvert, nombre_offres: 2, references: [{ reference: "R-1", publiee_le: "28/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/R-1/" }, { reference: "R-2", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/autre/" }] }]);
+    expect((refs.offres[0] as { references: unknown }).references).toEqual([{ publiee_le: "28/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/R-1/" }, { reference: "R-2", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/autre/" }]);
+    // The page lists every line whole: nature and references as the site writes them.
+    const c = await copie();
+    emploiSource.configure(async () => c);
+    const page = body(await emploi(cache(), undefined, undefined, NOW, Infinity));
+    expect(page).not.toHaveProperty("nature");
+    expect(page.offres.every((o: { nature?: string }) => o.nature === ouvert)).toBe(true);
+    expect(page.offres.find((o: { references?: { reference: string }[] }) => o.references)!.references[0]).toHaveProperty("reference");
   });
 
   it("shows a post published under several references as one line, a link to each, the days of each when the line has no closing date", async () => {

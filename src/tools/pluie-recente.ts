@@ -36,6 +36,22 @@ const dayWord = (ms: number, now: number) =>
   day(ms) === day(now) ? "aujourd'hui" : day(ms) === day(now) - 1 ? "hier" : new Date(ms + LOCAL_MS).toISOString().slice(8, 10) + "/" + new Date(ms + LOCAL_MS).toISOString().slice(5, 7);
 const mm = (x: number) => `${fr(Math.round(x * 10) / 10)} mm`;
 
+/**
+ * When the hours listed, the newest ending at `end`, reach into yesterday without covering all of it: where they start
+ * and end in it, read from those hours (the last ending at midnight, « 24:00 »), and that its whole day is in
+ * historique_meteo. Undefined when none is of yesterday, or when yesterday is whole.
+ */
+export function hierPartiel(end: number, listed: number, now: number): string | undefined {
+  const ends = Array.from({ length: listed }, (_, k) => end - k * HOUR_MS).filter((e) => day(e - HOUR_MS) === day(now) - 1);
+  if (!ends.length) return undefined;
+  const last = Math.max(...ends);
+  const from = mins(Math.min(...ends) - HOUR_MS);
+  const to = day(last) > day(last - HOUR_MS) ? 24 * 60 : mins(last);
+  if (from === 0 && to === 24 * 60) return undefined;
+  const [x, y] = paire(from, to, true);
+  return `Les heures d'hier ci-dessus ne vont que de ${x} à ${y} : pour la pluie de toute la journée d'hier, historique_meteo.`;
+}
+
 export interface StationRain {
   id: string;
   nom: string;
@@ -105,6 +121,8 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
     const prefix = day(e - HOUR_MS) < day(t) ? `${dayWord(e - HOUR_MS, t)} ` : "";
     return `${prefix}${span(e - HOUR_MS, e)} : ${v == null ? "non mesurée" : mm(v)}`;
   });
+  // Yesterday's hours listed cover part of it only: their sum is not yesterday's rain (« il a plu combien hier ? »).
+  const hier = hierPartiel(end, listed, t);
   if (stuck) lines.unshift(`${day(end) < day(t) ? `${dayWord(end, t)} ` : ""}${span(end, from)} : non lue (notre lecture n'a pas abouti)`);
   if (newest) lines.unshift(`${span(from, newest)} : ${partialWhole ? "" : "au moins "}${mm(partial)} (${stuck ? "dernières mesures lues, toutes les 6 minutes" : "heure en cours"})`);
 
@@ -124,6 +142,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
     derniere_pluie: derniere,
     cumul_depuis_minuit: cumul,
     par_heure: lines,
+    hier_partiel: hier,
     convention: CONVENTION,
     bruine,
     avertissements,

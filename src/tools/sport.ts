@@ -82,6 +82,9 @@ const RESULTS_MAX = 30;
 // The tool's answer: the 15 most recent (30 were 10,6 KB of a 22 KB answer, 5/11/2026), with how many there are.
 // The page /sport keeps RESULTS_MAX.
 export const RESULTS_OUTIL = 15;
+// Without a sport asked: 10 of each (20 and 15 were 12,8 KB of a 17 KB answer, 5/11/2026), with how many there are.
+export const UPCOMING_TOUS = 10;
+export const RESULTS_TOUS = 10;
 const DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 
 const localDay = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
@@ -420,6 +423,36 @@ function grandRaidNow(g: src.GrandRaid, now: Date): boolean {
 /** A row of an answer, as the tool gives it. */
 export type SportRow = Omit<Item, "date" | "fin">;
 
+/** A competition's link, given once for the matches that share it (liensCommuns). */
+export interface LienCompetition {
+  sport: string;
+  competition: string;
+  lien: string;
+}
+
+/**
+ * The links that several matches of one competition share (a pool's calendar), given once in `liens`, the matches
+ * without theirs: a match's link is the one of its sport and competition there. A competition whose matches link to
+ * different pages keeps each match's link, and so does a match without a competition.
+ */
+export function liensCommuns(lists: SportRow[][]): { liens: LienCompetition[]; lists: SportRow[][] } {
+  const key = (r: SportRow) => (r.competition && r.lien ? JSON.stringify([r.sport, r.competition]) : undefined);
+  const seen = new Map<string, { liens: Set<string>; n: number; row: SportRow }>();
+  for (const r of lists.flat()) {
+    const k = key(r);
+    if (!k) continue;
+    const e = seen.get(k) ?? { liens: new Set<string>(), n: 0, row: r };
+    e.liens.add(r.lien!);
+    e.n++;
+    seen.set(k, e);
+  }
+  const shared = new Map([...seen].filter(([, e]) => e.liens.size === 1 && e.n > 1));
+  return {
+    liens: [...shared.values()].map(({ row }) => ({ sport: row.sport, competition: row.competition!, lien: row.lien! })),
+    lists: lists.map((l) => l.map((r) => (shared.has(key(r) ?? "") ? (({ lien: _, ...rest }) => rest)(r) : r))),
+  };
+}
+
 export function grandRaidRow(g: src.GrandRaid) {
   return {
     edition: g.edition,
@@ -498,7 +531,11 @@ function freshness(got: { value?: Cached<unknown>; source: SourceInfo }[]) {
 }
 
 /** `adherent`: the user says they are a club's member: its sessions for the members are told too, said so. */
-export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: Quand, now = new Date(), adherent = false, max = UPCOMING_MAX, maxResults = RESULTS_MAX) {
+/**
+ * The answer of the tool `sport`, and of the page /sport (max and maxResults: how many are listed; partages: the links
+ * that matches share given once, liensCommuns, for the tool without a sport asked).
+ */
+export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: Quand, now = new Date(), adherent = false, max = UPCOMING_MAX, maxResults = RESULTS_MAX, partages = false) {
   let w: Where | null = null;
   if (lieu?.trim()) {
     w = where(lieu, sport);
@@ -665,18 +702,22 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
 
   const used = [...new Set([...got.filter((g) => g.value).map((g) => g.source), ...programmes.map((p) => p.agenda.source), ...(foot?.length ? [TITRES_FOOT] : [])])];
   const matches = !sport || sport === "volley" || sport === "handball";
+  const shared = partages ? liensCommuns([upcoming.map(strip), results.map(strip)]) : undefined;
+  const [aVenir, resultats] = shared ? shared.lists : [upcoming.map(strip), results.map(strip)];
   return text({
     lieu: w?.kind === "communes" && w.res && lieu ? placeBlock(lieu, w.res) : w && lieu ? { demande: lieu, trouve: w.label.trim(), communes: w.kind === "communes" ? w.communes : undefined } : undefined,
     resume,
     periode: sport === "grand_raid" || federation || (sport && NEWS_ONLY[sport]) ? undefined : { du: quand(du), au: quand(au) },
-    a_venir: upcoming.length ? upcoming.map(strip) : undefined,
+    a_venir: aVenir.length ? aVenir : undefined,
     // When it lists only the first: how many there are, the page's count.
     a_venir_en_tout: aheadAll.length > upcoming.length ? aheadAll.length : undefined,
     // And their sports, those beyond the first too: the ones the page names.
     sports_a_venir: aheadAll.length > upcoming.length ? [...new Set(aheadAll.map((i) => i.sport))] : undefined,
     prochain: nextBeach ? strip(nextBeach) : undefined,
-    resultats: results.length ? results.map(strip) : undefined,
+    resultats: resultats.length ? resultats : undefined,
     resultats_en_tout: resultsAll.length > results.length ? resultsAll.length : undefined,
+    // The link of the matches above that have none: the one of their sport and competition.
+    liens_competitions: shared?.liens.length ? shared.liens : undefined,
     avis: cited.length ? cited : undefined,
     a_verifier: check.length ? check : undefined,
     titres_football: foot?.length ? foot : undefined,

@@ -409,14 +409,16 @@ export function parseTribe(body: { events: TribeEvent[] }, nom: string, commune:
 }
 
 /**
- * The events of a WordPress agenda (The Events Calendar) not yet over at `now`, up to AHEAD_DAYS: `ends_after` with
- * the time, La Réunion's, so that an event begun before today stays (`start_date` left out the volley league's
- * championships from 04/11 18:00 to 07/11 23:00 from 05/11 on), and one ending later today too (the date alone is
- * taken as its 23:59:59).
+ * The events of a WordPress agenda (The Events Calendar) ending today or later, up to AHEAD_DAYS: `ends_after` the day
+ * before today, La Réunion's. The API rounds `ends_after` to 23:59:59 of the day it is given and ignores the time
+ * (the site echoes `ends_after=2026-11-05 23:59:59` for `2026-11-05 10:05:00`), which misled #791: with today's date
+ * and time, a show ending tonight was left out (Bouches Cousues, 05/11 20:00). The day before keeps it, and keeps an
+ * event begun before today (`start_date` left out the volley league's championships from 04/11 18:00 to 07/11 23:00
+ * from 05/11 on). A session already over today comes back as with `start_date`: the tools leave it out (`inPeriod`).
  */
 export function tribeUrl(site: string, now: Date): string {
-  const at = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 19).replace("T", " ");
-  return `${site}/wp-json/tribe/events/v1/events?ends_after=${encodeURIComponent(at)}&end_date=${addDays(localDay(now), AHEAD_DAYS)}&per_page=50`;
+  const veille = addDays(localDay(now), -1);
+  return `${site}/wp-json/tribe/events/v1/events?ends_after=${veille}&end_date=${addDays(localDay(now), AHEAD_DAYS)}&per_page=50`;
 }
 
 function tribe(id: string, nom: string, site: string, commune: string | undefined, source: SourceInfo = SOURCES.mairies, home?: string): Agenda {

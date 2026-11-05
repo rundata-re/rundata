@@ -5,7 +5,7 @@ import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.j
 import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik } from "../src/providers/salles.js";
-import { agenda, COUVERTURE, type EventRow, LISTED_OUTIL, gather, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
+import { agenda, COUVERTURE, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
@@ -156,11 +156,17 @@ describe("agenda", () => {
     expect(other.every((x) => x.matchs === undefined)).toBe(true);
   });
 
-  it("asks a WordPress agenda for the events not yet over: the league's weekend begun on 04/11 is still read on 05/11", async () => {
-    // Thursday 05/11/2026 at 07:30, La Réunion's time: the time itself, so that an event ending tonight stays too.
+  it("asks a WordPress agenda for the events ending from today on: the day before, as the API ignores the time", async () => {
+    // The API rounds `ends_after` to 23:59:59 of the day it is given: with today, a show ending tonight was left out.
+    // The day before, La Réunion's, in the morning as in the evening (01:30 and 21:30 there on Thursday 05/11/2026).
+    const tail = "&end_date=2026-12-20&per_page=50";
+    expect(tribeUrl("https://www.lesechoir.com", new Date("2026-11-04T21:30:00Z"))).toBe(`https://www.lesechoir.com/wp-json/tribe/events/v1/events?ends_after=2026-11-04${tail}`);
+    expect(tribeUrl("https://www.lesechoir.com", new Date("2026-11-05T17:30:00Z"))).toBe(`https://www.lesechoir.com/wp-json/tribe/events/v1/events?ends_after=2026-11-04${tail}`);
+    // Still Wednesday 04/11 at 23:30 in La Réunion (19:30 UTC): the day before is Tuesday.
+    expect(tribeUrl("https://www.lesechoir.com", new Date("2026-11-04T19:30:00Z"))).toContain("ends_after=2026-11-03&");
     const at = new Date("2026-11-05T03:30:00Z");
     const url = tribeUrl("https://lrvb.re", at);
-    expect(url).toBe("https://lrvb.re/wp-json/tribe/events/v1/events?ends_after=2026-11-05%2007%3A30%3A00&end_date=2026-12-20&per_page=50");
+    expect(url).toBe("https://lrvb.re/wp-json/tribe/events/v1/events?ends_after=2026-11-04&end_date=2026-12-20&per_page=50");
     expect(url).not.toContain("start_date");
     // The league's site as it answers that query: its championships from 04/11 18:00 to 07/11 23:00, with their matches.
     const urls: string[] = [];
@@ -170,6 +176,22 @@ describe("agenda", () => {
     expect(got.value).toHaveLength(1);
     expect(got.value[0].seances[0]).toEqual({ debut: "2026-11-04T18:00", fin: "2026-11-07T23:00" });
     expect(got.value[0].matchs).toContainEqual({ poule: "R1F", date: "2026-11-06T20:30", domicile: "TGV", exterieur: "VBC SD", gymnase: "12 ÈME KM" });
+  });
+
+  it("shows a WordPress agenda's show of tonight until it is over, and no session already over today", () => {
+    // Le Séchoir as read on 05/11/2026: « Bouches Cousues » at 13:30 for schools (left out) and at 20:00 for all.
+    const read = parseTribe(JSON.parse(fixture("sechoir.json")), "Le Séchoir", "Saint-Leu", "Le Séchoir");
+    const bouches = read.filter((e) => /BOUCHES COUSUES/i.test(e.titre));
+    expect(bouches.map((e) => e.seances[0].debut)).toEqual(["2026-11-05T20:00"]);
+    const today = (utc: string) => inPeriod(bouches[0], periode("aujourd'hui", new Date(utc)), new Date(utc));
+    // 16:00, 20:30 and 21:30 in La Réunion.
+    expect(today("2026-11-05T12:00:00Z")).toEqual([{ debut: "2026-11-05T20:00", fin: "2026-11-05T21:00" }]);
+    expect(today("2026-11-05T16:30:00Z")).toHaveLength(1);
+    expect(today("2026-11-05T17:30:00Z")).toEqual([]);
+    // An event over before today, as the site may still send it: never shown.
+    const past = read.find((e) => /TAN ROUGE/i.test(e.titre))!;
+    const now = new Date("2026-11-05T12:00:00Z");
+    expect(inPeriod(past, periode(undefined, now), now)).toEqual([]);
   });
 
   it("keeps a venue's position when a WordPress agenda gives one, and only the pages' copies carry it", async () => {

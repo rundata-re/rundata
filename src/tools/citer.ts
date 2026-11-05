@@ -10,7 +10,9 @@
  * - `signaler`, only when the answer found nothing or did not understand: a pointer to the tool donner_avis (its own
  *   name, since several answers have a field `avis` of their own: the water distributors' notices);
  * - `serveur`: the version and the newest tools, for a client whose list of tools is old (nouveautes.ts).
- * The fields are spliced into the JSON text as it is, a few dozen tokens in all.
+ * The fields are spliced into the JSON text as it is, a few dozen tokens in all. The answer's `resume`, when it has one,
+ * also ends with « Source : » and the same `citer` and `lien` (`sourced`): a model retells the résumé and often leaves
+ * the separate fields out.
  */
 import type { Lecture } from "../lectures.js";
 import type { SourceInfo } from "../types.js";
@@ -132,6 +134,17 @@ export function wanting(p: Payload, isError: boolean): boolean {
   return !!main && (main[1] as unknown[]).length === 0;
 }
 
+/**
+ * The résumé ending with where it comes from, « … Source : rundata.re, d'après Météo-France (station Le Port),
+ * https://rundata.re/meteo/le-port?ref=mcp. », in the words of `citer` and `lien`; as it is when it already names
+ * rundata.re. The address in full and bare: clients make it a link, and it survives being retold.
+ */
+export function sourced(resume: string, citer: string, url: string): string {
+  if (resume.includes("rundata.re")) return resume;
+  const r = resume.trimEnd();
+  return `${r}${/[.!?…]$/.test(r) ? "" : "."} Source : ${citer}, ${url}.`;
+}
+
 /** What the server adds besides the citation (server.ts): the entries the call read, and the `serveur` block. */
 export interface Around {
   lectures?: Lecture[];
@@ -168,8 +181,17 @@ export function cite<R extends object>(tool: string, r: R, around: Around = {}):
   const warned = !!(f as { avertissement?: string }).avertissement;
   const field = ([k, v]: [string, unknown]) => `${JSON.stringify(k)}:${JSON.stringify(v)}`;
   const fields = Object.entries(warned ? after : extra).map(field).join(",");
-  // The answer's own fields as written, between its braces, when it has any: not written again.
-  const body = /^{".*}$/s.test(t) ? t.slice(1, -1) : undefined;
+  // The answer's own fields as written, between its braces, when it has any: not written again, but for the résumé.
+  let body = /^{".*}$/s.test(t) ? t.slice(1, -1) : undefined;
+  if (!isError && typeof p.resume === "string") {
+    const resume = sourced(p.resume, extra.citer as string, extra.lien as string);
+    const was = field(["resume", p.resume]);
+    if (resume !== p.resume) {
+      p = { ...p, resume };
+      // Written as JSON.stringify writes it, it is replaced where it stands; else the whole answer is written again.
+      body = body?.includes(was) ? body.replace(was, () => field(["resume", resume])) : undefined;
+    }
+  }
   const text = body != null
     ? `{${warned ? `${field(["fraicheur", f])},` : ""}${body},${fields}}`
     : JSON.stringify(warned ? { fraicheur: f, ...p, ...after } : { ...p, ...extra });

@@ -118,10 +118,28 @@ export const FOND_CSS = `
 /** The brand kit's words, beside every picture made by AI. */
 export const MENTION = "Illustration générée par IA";
 
-const sansFond = new AsyncLocalStorage<boolean>();
+/** Whether the request asks to save data, and whether a page built for it put or left out its picture for that reason. */
+const sansFond = new AsyncLocalStorage<{ saveData: boolean; varie: boolean }>();
 
-/** Runs `fn` with the pages it builds left without their picture when `request` asks to save data. */
-export const withSaveData = <T>(request: Request, fn: () => T): T => sansFond.run(request.headers.get("save-data")?.trim().toLowerCase() === "on", fn);
+/**
+ * Runs `fn` with the pages it builds left without their picture when `request` asks to save data. `varie`: a page it
+ * built would have been otherwise with the other value of `Save-Data`, so that its response says `Vary: Save-Data`:
+ * kept a minute by a shared cache (`public, max-age=60`), it would otherwise be served to a browser asking the other.
+ */
+export async function withSaveData<T>(request: Request, fn: () => T | Promise<T>): Promise<{ value: T; varie: boolean }> {
+  const state = { saveData: request.headers.get("save-data")?.trim().toLowerCase() === "on", varie: false };
+  const value = await sansFond.run(state, fn);
+  return { value, varie: state.varie };
+}
+
+/** `r` with `Save-Data` added to its `Vary`, the values already there kept. */
+export function varySaveData(r: Response): Response {
+  const vary = r.headers.get("vary");
+  if (vary && /(^|,)\s*(save-data|\*)\s*(,|$)/i.test(vary)) return r;
+  const headers = new Headers(r.headers);
+  headers.set("vary", vary ? `${vary}, Save-Data` : "Save-Data");
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers });
+}
 
 /** Whether the vigilance or the volcano rules out every picture: orange or red, any cyclone alert, the volcano's alert. */
 export const enAlerte = (alerte: Alerte | undefined, volcan: boolean): boolean => volcan || (!!alerte && ("cyclone" in alerte.court || alerte.couleur >= 3));
@@ -133,7 +151,11 @@ export const enAlerte = (alerte: Alerte | undefined, volcan: boolean): boolean =
  */
 export function fond(path: string, alerte: Alerte | undefined, volcan: boolean, vert = false): string {
   const fond = FONDS[path];
-  if (!fond || sansFond.getStore() || enAlerte(alerte, volcan) || (SEULEMENT_VERT.has(path) && !vert)) return "";
+  if (!fond || enAlerte(alerte, volcan) || (SEULEMENT_VERT.has(path) && !vert)) return "";
+  // From here the picture depends on Save-Data alone: the response says so (withSaveData).
+  const state = sansFond.getStore();
+  if (state) state.varie = true;
+  if (state?.saveData) return "";
   const f = files[fond.nom];
   return `<img class="fond" style="--y:${fond.y}%" src="/fonds/${f["480"]}" srcset="/fonds/${f["480"]} 480w, /fonds/${f["1024"]} 1024w" sizes="(min-width: 48rem) 100vw, 50vw" alt="" decoding="async" fetchpriority="low"><p class="fond-ia">${MENTION}</p>`;
 }

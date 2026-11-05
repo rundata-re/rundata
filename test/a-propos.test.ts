@@ -47,7 +47,8 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const r = await handle(get("/mcp", BROWSER), new Cache(), () => {}, (h) => hits.push(h));
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toContain("text/html");
-    expect(r.headers.get("vary")).toBe("accept");
+    // The page depends on the Accept header (the MCP clients get the endpoint) and on Save-Data (its picture).
+    expect(r.headers.get("vary")).toBe("accept, Save-Data");
     const page = await r.text();
     expect(page).toContain("<h1>Brancher rundata.re à votre IA</h1>");
     expect(page).toContain('<code id="mcp-url">https://rundata.re/<wbr>mcp</code>');

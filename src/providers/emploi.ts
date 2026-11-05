@@ -11,7 +11,7 @@
  * site's weekly file on data.gouv.fr (offres-datagouv-20261004.csv, read on 29/10/2026: p25 30, p75 32, p90 36 days).
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText } from "../http.js";
+import { getMatch, getText } from "../http.js";
 import { communeDe } from "../places/codes-postaux.js";
 import type { SourceInfo } from "../types.js";
 
@@ -69,6 +69,8 @@ export interface Offre {
 export interface Copie {
   /** When the feed last answered (ISO, UTC). */
   lu: string;
+  /** The count the site's search gives for La Réunion, and when it was read (ISO, UTC); absent before its first read. */
+  total?: { nombre: number; lu: string };
   /** Newest first. */
   offres: Offre[];
   /** When the feed first failed to answer since `lu`; absent while it answers. */
@@ -189,6 +191,17 @@ export function parseFiche(html: string): Pick<Offre, "employeur" | "limite" | "
 }
 
 /**
+ * The count of the site's search for La Réunion: « <span class="number">628</span> offres d'emploi trouvées » (05/11/2026),
+ * at 95 % of a page of 4,5 Mo whose first part holds the search's 2 850 filters. Read as it comes (`getMatch`), in the
+ * hour's event in place of an offer's page: one page in 5 minutes on the site still.
+ */
+export const TOTAL = /<span class="number">([\d\s\u00a0\u202f.]+)<\/span>\s*offres? d(?:'|’|&#0?39;)emploi trouv/;
+/** How long the count is said after its last read: then the answer says only that the site may count more. */
+export const TOTAL_GARDE_MS = 24 * 3600_000;
+/** The count kept when it was read no more than a day before `now`. */
+export const totalRecent = (c: Copie, now: Date) => (c.total && now.getTime() - Date.parse(c.total.lu) <= TOTAL_GARDE_MS ? c.total : undefined);
+
+/**
  * The page the site answers for an offer it no longer shows: a redirect to /offre-depubliee/, « L'offre a été dépubliée,
  * elle n'est donc plus accessible » (an unknown reference, 30/10/2026). Its canonical link or its sentence only: a link
  * to /offre-depubliee/ elsewhere in an offer's page (a menu, a script) would drop an open offer at each read. The offer
@@ -262,8 +275,8 @@ export function prochaineFiche(offres: Offre[], now: Date): Offre | undefined {
 }
 
 /**
- * The scheduled event's read, every 5 minutes: the feed when `flux` (every hour at 25 past), and one offer's page
- * (`prochaineFiche`), never two at once; the offers past their closing date dropped, and those the site took down
+ * The scheduled event's read, every 5 minutes: the feed and the site's count (`TOTAL`) when `flux` (every hour at 25
+ * past), else one offer's page (`prochaineFiche`), never two pages at once; the offers past their closing date dropped, and those the site took down
  * (`depubliee`). Writes the copy when it changed, and after each read of the feed, so that its time is the last read,
  * not the last change (31/10/2026: « dernière lecture le 30/10 à 16:25 » for a feed read every hour): 24 writes a day
  * more at most. When the feed does not answer, the copy stays, with when it first failed (written once), and the read
@@ -288,9 +301,23 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   // As many new offers as the feed holds: others may have been published and pushed out between two reads.
   if (before?.offres.length && nouvelles.length >= FEED_SIZE) console.log(`offres d'emploi : ${nouvelles.length} nouvelles références sur ${feed.length} dans le flux, des offres ont pu passer entre deux lectures`);
   for (const o of nouvelles) kept.set(o.ref, o);
-  const o = prochaineFiche([...kept.values()], now);
+  let total = before?.total;
+  const o = flux ? undefined : prochaineFiche([...kept.values()], now);
   let page = "aucune page d'offre à lire";
-  if (o) {
+  if (flux) {
+    try {
+      const m = await getMatch(SOURCE.id, SOURCE.url, 20_000, TOTAL);
+      if (m) {
+        total = { nombre: Number(m[1].replace(/\D/g, "")), lu: now.toISOString() };
+        page = `${total.nombre} offres dans la recherche du site`;
+      } else {
+        console.log("offres d'emploi : le compte de la recherche du site est introuvable dans sa page");
+        page = "compte du site introuvable";
+      }
+    } catch {
+      page = "recherche du site sans réponse";
+    }
+  } else if (o) {
     const again = o.fiche === "lue";
     try {
       const html = await getText(SOURCE.id, o.lien, 15_000);
@@ -313,7 +340,7 @@ export async function collect(before: Copie | null, write: (copie: Copie) => Pro
   const said = `${offres.length} offres, ${flux ? `${nouvelles.length} nouvelles` : "flux non lu"}, ${page}${closes ? `, ${closes} closes retirées` : ""}`;
   // The same offers and no read of the feed: not written again.
   if (before && !flux && JSON.stringify(offres) === JSON.stringify(before.offres)) return `${said} : inchangées, non réécrites`;
-  const next: Copie = flux ? { lu: now.toISOString(), offres } : { ...before!, offres };
+  const next: Copie = flux ? { lu: now.toISOString(), offres, ...(total ? { total } : {}) } : { ...before!, offres };
   if (depubliees.length) next.depubliees = depubliees;
   else delete next.depubliees;
   await write(next);

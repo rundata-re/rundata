@@ -20,6 +20,17 @@ export const NON_REPRIS = "Les sites qui n'autorisent pas la reprise de leurs do
 // The site's own search counts more than the offers followed here (614 against 474 on 04/11/2026): its total is not said
 // as ours.
 export const COUVERTURE = "Les offres de La Réunion que rundata.re suit sur Choisir le service public, lues chaque heure dans le flux de ses 20 dernières offres\u00a0: le site peut en compter davantage, sa recherche fait foi pour le total. Une offre reste ici jusqu'à sa date limite de candidature. Elle peut être pourvue avant : la page de l'offre fait foi.";
+/** « 05/11 05:25 » → « le 05/11 à 05:25 ». */
+const leAt = (local: string) => `le ${local.split(" ")[0]} à ${local.split(" ")[1]}`;
+/**
+ * The coverage with the site's count when it was read within a day: « davantage » only when it counts more than the
+ * offers followed here.
+ */
+export function couverture(total: { nombre: number; lu_a: string } | undefined, suivies: number): string {
+  if (!total) return COUVERTURE;
+  const compte = `${total.nombre}, compte lu ${leAt(total.lu_a)}`;
+  return COUVERTURE.replace("le site peut en compter davantage, sa recherche fait foi pour le total", total.nombre > suivies ? `le site en affiche davantage (${compte})\u00a0: sa recherche fait foi pour le total` : `le site en affiche ${compte}\u00a0; sa recherche fait foi pour le total`);
+}
 export const SANS_LIMITE = `Sans date limite, elle reste ${emploiSource.GARDE_JOURS} jours après sa publication, la durée médiane des offres de La Réunion en 2026.`;
 // The tool's answer lists this many offers at most; the rest are counted.
 const MAX = 40;
@@ -104,10 +115,15 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
   const all = c.offres.filter((o) => (!commune || o.commune === commune) && matches(o, words));
   const sansCommune = commune ? c.offres.filter((o) => !o.commune && matches(o, words)).length : 0;
   const what = words.length ? ` pour « ${motCle!.trim()} »` : "";
+  const recent = emploiSource.totalRecent(c, now);
+  const total = recent ? { nombre: recent.nombre, lu_a: localTime(new Date(recent.lu)), lien: emploiSource.SOURCE.url } : undefined;
+  // The site's count is the island's: said beside the island's offers only, never a commune's nor a search's.
+  const ile = !commune && !words.length;
 
   const resume = !c.offres.length
     ? `Aucune offre publiée sur Choisir le service public pour La Réunion à ${at.split(" ")[1]}.`
     : `${plural(all.length, "offre ouverte", "offres ouvertes")} à la candidature${commune ? ` ${a(commune)}` : " à La Réunion"}${what}, suivie${all.length > 1 ? "s" : ""} par rundata.re sur Choisir le service public` +
+      (ile && total ? `, qui en affiche ${total.nombre} pour La Réunion (compte lu ${leAt(total.lu_a)})` : "") +
       `${all[0] ? `, la plus récente publiée le ${dayMonth(all[0].publiee)} : ${all[0].intitule}` : ""}.` +
       (sansCommune ? ` ${plural(sansCommune, "autre offre de La Réunion ne précise pas sa commune", "autres offres de La Réunion ne précisent pas leur commune")}${what}.` : "");
 
@@ -119,10 +135,11 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
     ...(place && lieu ? { lieu: placeBlock(lieu, place) } : {}),
     resume,
     nombre: all.length,
+    ...(ile && total ? { total_site: total } : {}),
     offres: rows,
     ...(all.length > shown ? { autres: `${plural(all.length - shown, "autre offre", "autres offres")}, sur ${emploiSource.SOURCE.url}` } : {}),
     ...(c.echec ? { injoignable: injoignable("le site de Choisir le service public", at, localTime(new Date(c.echec)), now).texte } : {}),
-    couverture: c.offres.some((o) => !o.limite && !emploiSource.enAttente(o)) ? `${COUVERTURE} ${SANS_LIMITE}` : COUVERTURE,
+    couverture: `${couverture(total, c.offres.length)}${c.offres.some((o) => !o.limite && !emploiSource.enAttente(o)) ? ` ${SANS_LIMITE}` : ""}`,
     entreprises: `Les offres des entreprises ne sont pas reprises ici : vous les trouvez sur ${ENTREPRISES.map((e) => `${e.nom} (${e.lien})`).join(" et sur ")}, le portail emploi et formation de La Réunion.`,
     non_repris: NON_REPRIS,
     ...(formations ? { formations_cpf: formations } : {}),

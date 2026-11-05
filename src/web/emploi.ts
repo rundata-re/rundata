@@ -6,6 +6,7 @@
  * a body's name nor a fee (03/11/2026); the tool gives them for words asked.
  */
 import type { Cache, Cached } from "../cache.js";
+import { localTime } from "../geo.js";
 import { offres, prochaineLecture } from "../providers/emploi.js";
 import { SITE as CPF_SITE } from "../providers/cpf.js";
 import { A_SAVOIR as CPF_A_SAVOIR, themesCpf } from "../tools/cpf.js";
@@ -30,6 +31,8 @@ export interface EmploiAnswer {
    * When the feed was last read (ISO), said as the last read: not the page's copy's time, up to 5 minutes later.
    */
   lu?: string;
+  /** The count of the site's search for La Réunion, read within a day (the tool's `total_site`). */
+  total_site?: { nombre: number; lu_a: string; lien: string };
   /** No copy of the offers yet: when the scheduled event reads them next (ISO). */
   prochaine?: string;
   /** The formations eligible to the CPF, counted by theme; absent without a copy. */
@@ -44,10 +47,10 @@ export async function buildEmploi(cache: Cache, now = new Date()): Promise<Emplo
   const r = await emploi(cache, undefined, undefined, now, Infinity);
   const cpf = (await themesCpf(cache)) ?? undefined;
   if ("isError" in r && r.isError) return { resume: "", nombre: 0, offres: [], couverture: COUVERTURE, sources: [], prochaine: prochaineLecture(now).toISOString(), ...(cpf ? { cpf } : {}) };
-  const { resume, nombre, offres: list, injoignable, couverture, sources } = JSON.parse(r.content[0].text) as EmploiAnswer;
+  const { resume, nombre, offres: list, injoignable, couverture, sources, total_site } = JSON.parse(r.content[0].text) as EmploiAnswer;
   // The copy the tool has just read, from memory: its time.
   const lu = (await offres(cache, now).catch(() => null))?.value.lu;
-  return { resume, nombre, offres: list, ...(lu ? { lu } : {}), ...(injoignable ? { injoignable } : {}), couverture, sources, ...(cpf ? { cpf } : {}) };
+  return { resume, nombre, offres: list, ...(total_site ? { total_site } : {}), ...(lu ? { lu } : {}), ...(injoignable ? { injoignable } : {}), couverture, sources, ...(cpf ? { cpf } : {}) };
 }
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
@@ -104,8 +107,10 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
   const d = data?.value;
   const communes = [...new Set((d?.offres ?? []).flatMap((o) => ("commune" in o && o.commune ? [o.commune] : [])))].sort((x, y) => x.localeCompare(y, "fr"));
 
+  const lu = d?.lu ? new Date(d.lu) : data?.fetchedAt ?? now;
+  const lecture = readAt(lu, now).a;
   const status = d && data && !d.prochaine
-    ? `<p>${plural(d.nombre, "offre ouverte", "offres ouvertes")} à la candidature suivie${d.nombre > 1 ? "s" : ""} par rundata.re sur Choisir le service public, dernière lecture ${readAt(d.lu ? new Date(d.lu) : data.fetchedAt, now).a}\u00a0; le site peut en compter davantage.</p>`
+    ? `<p>${plural(d.nombre, "offre ouverte", "offres ouvertes")} à la candidature suivie${d.nombre > 1 ? "s" : ""} par rundata.re sur Choisir le service public, dernière lecture ${lecture}${d.total_site ? `. Le site en affiche ${d.total_site.nombre} pour La Réunion${d.total_site.lu_a === localTime(lu) ? "" : ` (compte lu le ${d.total_site.lu_a.replace(" ", " à ")})`}.` : "\u00a0; le site peut en compter davantage."}</p>`
     : "";
   const list = !d || !data
     ? `<p class="card">Les offres se chargent : rechargez la page dans quelques secondes.</p>`

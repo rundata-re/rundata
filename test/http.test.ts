@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { counted, PAGE_BUDGET } from "../src/budget.js";
-import { getText, IN_FLIGHT, patiently, permis } from "../src/http.js";
+import { getMatch, getText, IN_FLIGHT, patiently, permis } from "../src/http.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -106,5 +106,41 @@ describe("a link found in a third party's page", () => {
     expect(String(warn.mock.calls[1][0])).toBe("s : lien hors de www.teat.re ignoré (teat.re.pirate.example)");
     expect(warn.mock.calls.map((c) => String(c[0])).join(" ")).not.toContain("/x");
     warn.mockRestore();
+  });
+});
+
+describe("a page read until a pattern", () => {
+  /** A page served in pieces, counting those the reader pulled. */
+  function pieces(parts: string[]) {
+    const pulled: number[] = [];
+    let cancelled = false;
+    vi.stubGlobal("fetch", async () => {
+      let i = 0;
+      const body = new ReadableStream<Uint8Array>({
+        pull(c) {
+          pulled.push(i);
+          if (i < parts.length) c.enqueue(new TextEncoder().encode(parts[i++]));
+          else c.close();
+        },
+        cancel() {
+          cancelled = true;
+        },
+      });
+      return new Response(body);
+    });
+    return { pulled, cancelled: () => cancelled };
+  }
+
+  it("finds it across two pieces, stops there and cancels the rest, never pulled", async () => {
+    const p = pieces(["<p>filtres…</p>".repeat(50), '<span class="num', 'ber">628</span> offres', "<li>la suite</li>", "<li>et plus</li>"]);
+    const m = await getMatch("t", "https://example.org/", 1000, /<span class="number">(\d+)<\/span> offres/);
+    expect(m?.[1]).toBe("628");
+    expect(p.cancelled()).toBe(true);
+    expect(Math.max(...p.pulled)).toBeLessThan(4);
+  });
+
+  it("gives null when the page ends without it", async () => {
+    pieces(["<p>rien</p>", "<p>toujours rien</p>"]);
+    expect(await getMatch("t", "https://example.org/", 1000, /<span class="number">(\d+)/)).toBeNull();
   });
 });

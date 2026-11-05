@@ -443,6 +443,19 @@ const SCHEDULED: Entry[] = [
     from: ["src/providers/emploi.ts"],
     basis: "estimé",
   },
+  // In the same event, at 25 past, in place of the offer's page above (no request more): the site's search read as it
+  // comes until its count, at 95 % of its 4,5 Mo, then cancelled, nothing of it kept (getMatch, http.ts). Measured in
+  // Node on the page of 05/11/2026, 30 runs in pieces of 16 Ko: 10 ms (median), 20 ms at most.
+  {
+    id: "emploi:total",
+    trigger: "planifiée",
+    what: "emploi public : le compte de la recherche de Choisir le service public pour La Réunion, lu en flux à la place de la page d'offre du même événement",
+    every: EMPLOI_EVERY,
+    offset: EMPLOI_OFFSET,
+    run: { subrequests: 0, cpuMs: 20 },
+    from: ["src/providers/emploi.ts"],
+    basis: "mesuré",
+  },
   // The copy read from KV, the list of the open notices (one request, about 80 Ko), the copy written when it changed.
   {
     id: "marches-publics:liste",

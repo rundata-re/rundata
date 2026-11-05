@@ -7,7 +7,7 @@ import { INDEX, NOUVEAUTES, OUTILS, outilsRecents, serveur } from "../src/nouvea
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { existsSync } from "node:fs";
 import { listeAllegee, nomDeSource, SERVER_ICONS, SOURCES_COURT, VERSION } from "../src/server.js";
-import { cite } from "../src/tools/citer.js";
+import { citation, cite } from "../src/tools/citer.js";
 import { dataDate, fraicheur, instantOf, sourceMuette } from "../src/tools/fraicheur.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 
@@ -243,6 +243,20 @@ describe("the serveur block", () => {
     for (const y of by) expect(new Set(y.producteurs).size).toBe(y.producteurs.length);
     expect(short.chiffres.sources).toBe(full.sources.length);
     expect(JSON.stringify(short).length).toBeLessThan(JSON.stringify(full).length / 2);
+    // The short answer has no `sources`: citer names the producers of its list, the first three in its order.
+    const names = [...new Set(by.flatMap((y) => y.producteurs))];
+    expect(short.citer).toBe(`rundata.re, d'après ${names.slice(0, 3).join(", ")} et d'autres`);
+  });
+
+  it("cites the producers by licence of a short answer, each once, and only without sources", () => {
+    const groups = [{ licence: "Licence Ouverte 2.0", producteurs: ["Météo-France", "ONF"] }, { licence: "ODbL", producteurs: ["ONF", "OpenStreetMap"] }];
+    expect(citation({ producteurs_par_licence: groups })).toBe("rundata.re, d'après Météo-France, ONF, OpenStreetMap");
+    expect(citation({ producteurs_par_licence: [...groups, { licence: "CC BY 4.0", producteurs: ["OVPF-IPGP"] }] })).toBe("rundata.re, d'après Météo-France, ONF, OpenStreetMap et d'autres");
+    // Anything else than names is skipped; nothing left, rundata.re alone.
+    expect(citation({ producteurs_par_licence: [{ licence: "x", producteurs: [3, null, ""] }, null, "ONF"] })).toBe("rundata.re");
+    expect(citation({ producteurs_par_licence: "ONF" })).toBe("rundata.re");
+    // An answer that credits its sources is cited from them, not from such a list.
+    expect(citation({ sources: [{ id: "onf", nom: "ONF", attribution: "ONF La Réunion" }], producteurs_par_licence: groups })).toBe("rundata.re, d'après ONF La Réunion");
   });
 });
 

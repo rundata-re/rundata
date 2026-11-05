@@ -85,9 +85,14 @@ describe("electricity", () => {
     expect(page).toContain("de l'électricité de l'île venait de sources <b>renouvelables</b> le 31/10 à 05:20, sur <b>281 MW</b> produits.</p>");
     expect(page).not.toContain("vient en ce moment");
     expect(page).not.toContain("Dernière mesure de production");
+    expect(page).toContain(`<p class="pill"><span class="dot"></span>Production en direct</p>`);
+    expect(electricitePage("https://rundata.re", fresh, after(PERIMEE_MIN))).toContain(`<p class="pill"><span class="dot"></span>Production en direct</p>`);
     // The same copy kept two hours while EDF does not answer: its age at this view, above the figure, a neutral note.
     const kept = electricitePage("https://rundata.re", fresh, after(125));
     expect(kept).toContain(`<p class="note">Dernière mesure de production lue chez EDF : le 31/10 à 05:20, il y a 2 h. Ce n&#39;est pas la production de maintenant.</p><div class="now">`);
+    // Its pill no longer says « en direct », without the live dot.
+    expect(kept).toContain(`<p class="pill">Dernière mesure lue chez EDF</p>`);
+    expect(kept).not.toContain("Production en direct");
     // A copy built late says it as the tool did.
     const built = { value: old, fetchedAt: after(23 * 60), stale: false };
     expect(electricitePage("https://rundata.re", built, after(23 * 60))).toContain(`<p class="note">${warned.replace("'", "&#39;")}</p><div class="now">`);

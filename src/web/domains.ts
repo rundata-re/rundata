@@ -708,10 +708,12 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   const url = `${origin}/electricite`;
 
   // The line's time and its age at this view, not at the copy's build: a copy kept while EDF does not answer grows old
-  // too. Past PERIMEE_MIN, the tool's sentence above the figure, a neutral note: red is for the alerts.
+  // too. Past PERIMEE_MIN, the tool's sentence above the figure, a neutral note (red is for the alerts), and the pill no
+  // longer says « en direct », nor its live dot.
   const mesure = p?.heure_mesure.replace(" heure de La Réunion", "");
   const age = p ? ageMinutes(new Date(data!.fetchedAt.getTime() - p.age_min * 60_000), now) : 0;
-  const perimee = p && age > PERIMEE_MIN ? `<p class="note">${esc(perimeeTexte(mesure!, age))}</p>` : "";
+  const stale = !!p && age > PERIMEE_MIN;
+  const perimee = stale ? `<p class="note">${esc(perimeeTexte(mesure!, age))}</p>` : "";
   // Its time with its day, never « en ce moment »: a copy kept by a search engine said it beside yesterday's value
   // (05/11/2026).
   const status = !d
@@ -756,7 +758,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   const band = `${crumbBar("Électricité")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Production en direct</p>
+    ${stale ? `<p class="pill">Dernière mesure lue chez EDF</p>` : `<p class="pill"><span class="dot"></span>Production en direct</p>`}
     <h1>Électricité <span class="n974">974</span></h1>
     ${status}
     ${ask(`Kouran la koupé dann mon kartié ? Gèt si ${url} é di amwin, é d'ousa i sort lo kouran astèr.`,

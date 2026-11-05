@@ -350,6 +350,32 @@ describe("coupures d'eau", () => {
     expect(parseCreole(li("Interruption le 31/10/2026 à partir de 23h00, remise en eau en fin de matinée."))[0].fin).toBeUndefined();
   });
 
+  it("reads the day, the hours and the streets of a La Créole notice that writes them (05/11/2026)", () => {
+    // The page as read on 05/11/2026 at 05:51: Les Trois-Bassins on the 5th, Saint-Paul on the 4th.
+    const [lavage, raccordement, ...more] = parseCreole(fixture("lacreole-0511.html"));
+    expect(more).toHaveLength(0);
+    // « interrompue le mercredi 4 novembre 2026, de 8h à 15h, sauf incident sur le secteur suivant : »
+    expect(raccordement).toMatchObject({
+      titre: "INTERRUPTION DE LA DISTRIBUTION", communes: ["Saint-Paul"], debut: "2026-11-04T08:00", fin: "2026-11-04T15:00",
+      // The list ends at « La régie La Créole remercie… »; a street with the part concerned is one street, its comma not.
+      secteurs: ["Chemin Summer n°2 la portion comprise entre rue Balafon et rue Cymbale", "Rue Piker", "Rue Balafon", "Rue Cymbale"], secteurs_complets: true,
+    });
+    // « le jeudi 5 novembre 2026 entre 9h et 17h »; its streets in a sentence, not a list: none said.
+    expect(lavage).toMatchObject({ titre: "lavage réservoir Cocatre", communes: ["Les Trois-Bassins"], debut: "2026-11-05T09:00", fin: "2026-11-05T17:00", secteurs: [], secteurs_complets: false });
+    // In the tools' answer (coupures_eau, resume_du_jour), at 10:00 on the 4th: the cut, going on, and its streets.
+    const row = noticeRow(raccordement, new Date("2026-11-04T06:00:00Z"));
+    expect(row.coupure).toMatchObject({ etat: "en cours" });
+    expect(row.coupure?.de).toMatch(/08:00/);
+    expect(row.coupure?.a).toMatch(/15:00/);
+    expect(row).toMatchObject({ secteurs: raccordement.secteurs, secteurs_complets: true });
+    const li = (text: string) => `<div id="infos-flash"><ul><li>24/10/2026 - <i>x</i> <br><span class="text-uppercase">Interruption</span><br><span>${text}</span></li></ul>`;
+    // Two such days: neither said, not to give the first alone.
+    expect(parseCreole(li("Interruption le lundi 9 novembre 2026, de 8h à 12h, et le mardi 10 novembre 2026, de 8h à 12h."))[0]).toMatchObject({ debut: undefined, fin: undefined });
+    // A list that runs to the end of the text, or with a sentence in it, is not whole: no street said.
+    expect(parseCreole(li("Interruption sur le secteur suivant : <br><br>Rue Piker<br>Rue Balafon"))[0]).toMatchObject({ secteurs: [], secteurs_complets: false });
+    expect(parseCreole(li(`Interruption sur le secteur suivant : <br><br>Rue Piker<br>${"Les travaux de raccordement du réseau se poursuivront dans la semaine selon les conditions météo".padEnd(110, ".")}<br><br>La régie La Créole remercie ses usagers.`))[0].secteurs).toEqual([]);
+  });
+
   it("puts a La Créole notice under the commune of its place, or under both when the place does not say", () => {
     // « La Plaine – Bois-de-Nèfles » is in Saint-Paul: the notice of the 23rd goes there only, with nothing to add.
     expect(parseCreole(fixture("lacreole.html"))[0]).toMatchObject({ communes: ["Saint-Paul"] });

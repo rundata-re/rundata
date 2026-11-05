@@ -157,7 +157,8 @@ export function parseNotice(text: string): Pick<Avis, "debut" | "fin"> {
 const LIST_START = /secteurs? suivants?\s*:[ \t]*\n/i;
 // The lines that close a list of streets: none of them is a street. « Les abonnés doivent prendre la précaution de ne pas
 // consommer l'eau du robinet… » follows the list of a notice on the quality of the water (Dionéo and runéo, 03 and 04/11/2026).
-const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) |communiqu[ée] )/i;
+// « La régie La Créole remercie ses usagers… » follows La Créole's (04/11/2026).
+const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) |communiqu[ée] |la régie )/i;
 // The same sentences run on after the last street, on its line (« CHEMIN DAMBREVILLE Des perturbations dans… », runéo's
 // leaks, 04/11/2026): the street is what comes before.
 const RUN_ON = /\s(?:des perturbations|la remise en (?:eau|service)|le rétablissement)\b/i;
@@ -171,7 +172,7 @@ const STREET_MAX = 60;
  * was left out. A list that runs to the end of the text (the source cut short) or to a long line, or that another list
  * follows (« également sur le secteur suivant : »), is not whole: nothing of it is said, the notice is.
  */
-export function sectorList(text: string, blankEnds: boolean): Pick<Avis, "secteurs" | "secteurs_complets"> {
+export function sectorList(text: string, blankEnds: boolean, max = STREET_MAX): Pick<Avis, "secteurs" | "secteurs_complets"> {
   const m = LIST_START.exec(text);
   if (!m) return { secteurs: [], secteurs_complets: false };
   const none = { secteurs: [], secteurs_complets: false };
@@ -182,15 +183,16 @@ export function sectorList(text: string, blankEnds: boolean): Pick<Avis, "secteu
     const on = RUN_ON.exec(l);
     if (on && on.index > 0) {
       const street = l.slice(0, on.index).trim();
-      if (street.length > STREET_MAX) return none;
+      if (street.length > max) return none;
       out.push(street);
       return !LIST_START.test(rest.slice(i + 1).join("\n")) ? { secteurs: out, secteurs_complets: true } : none;
     }
     if ((!l && blankEnds && out.length) || (l && CLOSING.test(l))) {
       return out.length && !LIST_START.test(rest.slice(i).join("\n")) ? { secteurs: out, secteurs_complets: true } : none;
     }
-    if (l.length > STREET_MAX) return none;
-    if (l) out.push(l);
+    if (l.length > max) return none;
+    // A comma after a street, as in a sentence (« Rue Balafon, », La Créole, 04/11/2026), is not the street's.
+    if (l) out.push(l.replace(/\s*[,;]$/, ""));
   }
   return none;
 }
@@ -346,10 +348,17 @@ function creoleCommunes(titre: string, texte: string): Pick<Avis, "communes" | "
   return { communes: CREOLE.communes, precision: `La Créole ne précise pas la commune${lieu ? ` (lieu écrit dans l'avis : ${lieu})` : ""}.` };
 }
 
+// One day, from one hour to another: « le mercredi 4 novembre 2026, de 8h à 15h », « le jeudi 5 novembre 2026 entre 9h et 17h ».
+const SPAN = new RegExp(`\\b(\\d{1,2})(?:er)?\\s+(${MONTHS.join("|")})\\s+(\\d{4}),?\\s+(?:de|entre)\\s+([01]?\\d|2[0-3])h(\\d\\d)?\\s+(?:à|et)\\s+([01]?\\d|2[0-3])h(\\d\\d)?\\b`, "gi");
+// La Créole writes a street with the part of it concerned on one line (« Chemin Summer n°2 la portion comprise entre
+// rue Balafon et rue Cymbale », 04/11/2026), its list ended by « La régie La Créole remercie… ».
+const CREOLE_STREET_MAX = 100;
+
 /**
  * La Créole's page: each `<li>` is « 23/10/2026 - category », the title, then the text. The start is read when written
  * with its own date and hour (« 23/10/2026 à partir de 22h00 »); the end when « jusqu'à 6h00 demain », the day after
- * the start (else after the notice's date). No other end is guessed (« en fin de matinée »).
+ * the start (else after the notice's date). Else both from one day written with its two hours (« le mercredi 4 novembre
+ * 2026, de 8h à 15h »), only when the notice writes one such day. No other end is guessed (« en fin de matinée »).
  */
 export function parseCreole(html: string): Avis[] {
   const box = /<div id="infos-flash">([\s\S]*?)<\/ul>/.exec(html)?.[1] ?? "";
@@ -362,17 +371,20 @@ export function parseCreole(html: string): Avis[] {
     const start = /(\d\d\/\d\d\/\d{4}) à partir de (\d{1,2})h(\d\d)?/.exec(texte);
     const tomorrow = /jusqu['’]à (\d{1,2})h(\d\d)? demain\b/.exec(texte);
     const next = new Date(Date.parse(`${ddmmyyyy(start?.[1] ?? date)}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+    const spans = [...texte.matchAll(SPAN)];
+    const span = !start && !tomorrow && spans.length === 1 ? spans[0] : undefined;
+    const day = span && `${span[3]}-${pad(MONTHS.indexOf(span[2].toLowerCase()) + 1)}-${pad(span[1])}`;
     return [{
       distributeur: "La Créole",
       titre,
       ...creoleCommunes(titre, texte),
       publie: new Date(`${ddmmyyyy(date)}T00:00:00+04:00`).toISOString(),
       jour: true,
-      debut: start ? `${ddmmyyyy(start[1])}T${start[2].padStart(2, "0")}:${start[3] ?? "00"}` : undefined,
-      fin: tomorrow ? `${next}T${tomorrow[1].padStart(2, "0")}:${tomorrow[2] ?? "00"}` : undefined,
-      // Its places are zones with their limits (« sa limite haute : le chemin de La Giroday … »), not a list of streets.
-      secteurs: [],
-      secteurs_complets: false,
+      debut: start ? `${ddmmyyyy(start[1])}T${start[2].padStart(2, "0")}:${start[3] ?? "00"}` : span ? `${day}T${pad(span[4])}:${span[5] ?? "00"}` : undefined,
+      fin: tomorrow ? `${next}T${tomorrow[1].padStart(2, "0")}:${tomorrow[2] ?? "00"}` : span ? `${day}T${pad(span[6])}:${span[7] ?? "00"}` : undefined,
+      // Its places are most often zones with their limits (« sa limite haute : le chemin de La Giroday … »): a list only
+      // after « secteur suivant : », ended by its closing line.
+      ...sectorList(body, false, CREOLE_STREET_MAX),
       ne_pas_boire: drinkSaid(titre, texte),
       ...cut(body),
       lien: CREOLE.url,

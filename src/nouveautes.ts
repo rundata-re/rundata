@@ -244,12 +244,24 @@ export function outilsRecents(now: Date): Record<string, string> | undefined {
 }
 
 /** What every answer says of the server: enough for a model to see that its list of tools is old. */
+/**
+ * The day of the list of tools, as a client keeps it: said at the end of sources_donnees' description and in every
+ * answer's `serveur`. An assistant whose list says another day, or none, knows it is old (ChatGPT relists the tools
+ * about once in five conversations). Kept by hand, here only: put up when a change of a description changes which tool
+ * an assistant picks (05/11/2026: « hier » sent to historique_meteo, #754), not for a rewording; a test checks it is
+ * not in the future and that both places say it.
+ */
+export const LISTE_DU = "2026-11-05";
+
+/** LISTE_DU as it is said: « 05/11 ». */
+export const listeDu = () => `${LISTE_DU.slice(8, 10)}/${LISTE_DU.slice(5, 7)}`;
+
 export function serveur(version: string, count: number, now: Date) {
   return {
     version,
     nombre_outils: count,
     outils_recents: outilsRecents(now),
-    si_outil_absent: "Un de ces outils manque à votre liste ? Elle est ancienne : le dire à l'utilisateur.",
+    si_outil_absent: `Liste d'outils du ${listeDu()} : si la vôtre porte une autre date ou qu'un de ces outils y manque, elle est ancienne, le dire à l'utilisateur.`,
   };
 }
 

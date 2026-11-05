@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
+import { listeDu } from "../src/nouveautes.js";
 import { insecables } from "../src/typographie.js";
 
 const rpc = (method: string, params: unknown) =>
@@ -68,7 +69,7 @@ describe("the assistants' side", () => {
   it("says every text of an answer with them, its fixed parts as well (serveur.si_outil_absent)", async () => {
     const r = await rpcResult("tools/call", { name: "sources_donnees", arguments: {} });
     const answer = JSON.parse(r.content[0].text);
-    expect(answer.serveur.si_outil_absent).toContain("liste ?");
+    expect(answer.serveur.si_outil_absent).toContain(`du ${listeDu()}\u00a0: si`);
     expect(strings(answer).filter((x) => PLAIN.test(x))).toEqual([]);
   });
 });

@@ -46,7 +46,7 @@ import * as feux from "./providers/feux.js";
 import * as avis from "./avis.js";
 import { withLectures } from "./lectures.js";
 import { withVide } from "./vide.js";
-import { catalogue, INDEX, serveur } from "./nouveautes.js";
+import { catalogue, INDEX, listeDu, serveur } from "./nouveautes.js";
 import { cite, SITE_URL } from "./tools/citer.js";
 import { marquerTiers, OUTILS_TIERS } from "./tools/tiers.js";
 import { FICHE_LA1ERE, FICHE_REUNION_FR, fichesNonReprises } from "./tools/non-repris.js";
@@ -127,7 +127,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.283";
+export const VERSION = "1.0.284";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -1033,10 +1033,11 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Sources des données",
       description:
         "À appeler avant de dire qu'un sujet n'est pas couvert, même à la première question : la liste à jour de ce que rundata.re couvre. " +
-        "Sources de données utilisées par ce serveur (organisme, licence, attribution à citer), ce qui est couvert ou pas encore, " +
+        "Sources de données utilisées par ce serveur (organisme, licence, attribution à citer), " +
         "la liste à jour de tous les outils, les dernières nouveautés, et rundata.re en chiffres (sources, producteurs, licences, stations, défibrillateurs, sentiers). " +
         "Pour : « d'où viennent tes données ? », « combien de sources lit rundata.re ? », « c'est open data ? ». " +
-        "Réponse courte par défaut (les producteurs par licence)\u00a0; detail pour chaque source avec son attribution et son lien.",
+        "Réponse courte par défaut (les producteurs par licence)\u00a0; detail pour chaque source avec son attribution et son lien. " +
+        `Liste du ${listeDu()}. / List of ${listeDu()}.`,
       inputSchema: {
         detail: z.boolean().optional().describe("true : la réponse complète."),
       },

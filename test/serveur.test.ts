@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { withLectures } from "../src/lectures.js";
-import { INDEX, NOUVEAUTES, OUTILS, outilsRecents, serveur } from "../src/nouveautes.js";
+import { INDEX, LISTE_DU, listeDu, NOUVEAUTES, OUTILS, outilsRecents, serveur } from "../src/nouveautes.js";
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { existsSync } from "node:fs";
 import { listeAllegee, nomDeSource, SERVER_ICONS, SOURCES_COURT, VERSION } from "../src/server.js";
@@ -123,7 +123,9 @@ describe("the server's instructions", () => {
     // 39 291 on 5/11/2026: the annotations without their second title nor idempotentHint (implied by readOnlyHint), the
     // descriptions without the fields the answers list and the producers they credit, sources_donnees' argument detail.
     // 39 333 the same day with the canoë-kayak and va'a of the FFCK in sport (a few words, and its value canoe_kayak).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_333);
+    // 39 332 the same day with the day of the list at the end of sources_donnees (« Liste du 05/11. / List of 05/11. »),
+    // its « ce qui est couvert ou pas encore » left out (its first sentence says it).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_332);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 
@@ -178,6 +180,22 @@ describe("the server's instructions", () => {
 
 describe("the serveur block", () => {
   afterEach(() => expect(fetched).toEqual([]));
+
+  it("says the day of the list of tools at the end of sources_donnees' description and in every answer, the same", async () => {
+    // Put up by hand (nouveautes.ts): never a day not come yet, in Réunion.
+    expect(LISTE_DU).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(Date.parse(`${LISTE_DU}T00:00:00+04:00`)).toBeLessThanOrEqual(Date.now());
+    const day = listeDu();
+    expect(day).toBe(`${LISTE_DU.slice(8, 10)}/${LISTE_DU.slice(5, 7)}`);
+    const tools: { name: string; description: string }[] = (await rpcResult("tools/list")).tools;
+    const description = tools.find((t) => t.name === "sources_donnees")!.description;
+    expect(description.endsWith(`Liste du ${day}. / List of ${day}.`)).toBe(true);
+    // Once each, and in no other tool's description: one place to compare.
+    expect(description.split(`Liste du ${day}`)).toHaveLength(2);
+    expect(tools.filter((t) => /Liste du \d{2}\/\d{2}/.test(t.description)).map((t) => t.name)).toEqual(["sources_donnees"]);
+    const r = body(await rpcResult("tools/call", { name: "defibrillateurs", arguments: { lieu: "Cilaos" } }));
+    expect(r.serveur.si_outil_absent).toBe(`Liste d'outils du ${day}\u00a0: si la vôtre porte une autre date ou qu'un de ces outils y manque, elle est ancienne, le dire à l'utilisateur.`);
+  });
 
   it("names the newest tools in every answer, for a client whose list is old", async () => {
     const s = serveur(VERSION, 29, NOW);

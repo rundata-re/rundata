@@ -207,4 +207,29 @@ describe("events' state and kind", () => {
     expect(list).toHaveLength(3);
     expect(list[0]).toMatchObject({ lieu: "Kabardock", statut: "reporté" });
   });
+
+  it("tells a commune's night market of an evening once, by the town and by the tourist office", () => {
+    // Bras-Panon, 10/11/2026 (audit of 04/11/2026): the town's « Nout' Marché de Nuit » and the tourist office's.
+    const list = unique([
+      ev("Nout' Marché de Nuit à Bras-Panon", "2026-11-10T17:00", { commune: "Bras-Panon" }),
+      ev("Marché de nuit spécial Dipavali 2026", "2026-11-10", { commune: "Bras-Panon" }),
+      ev("Marché de nuit", "2026-11-10T17:00", { commune: "Saint-Benoît" }),
+      ev("Marché de nuit", "2026-11-17T17:00", { commune: "Bras-Panon" }),
+    ]);
+    expect(list.map((e) => `${e.titre}|${e.commune}|${e.seances[0].debut}`)).toEqual([
+      "Nout' Marché de Nuit à Bras-Panon|Bras-Panon|2026-11-10T17:00",
+      "Marché de nuit|Saint-Benoît|2026-11-10T17:00",
+      "Marché de nuit|Bras-Panon|2026-11-17T17:00",
+    ]);
+  });
+
+  it("reads the genre from the title and text when the source ticked a whole list of categories", () => {
+    // Les Trois-Bassins, Dipavali 2026 (audit of 04/11/2026): every category of the site ticked, « sport » the only theme among them.
+    const dipavali = ev("Dipavali 2026", "2026-11-06T18:00", { categories: ["Culture", "Education", "Enquête", "Santé", "Sport"], description: "LE DIPAVALI FAIT SON GRAND RETOUR" });
+    expect(genres(dipavali)).toEqual(["festival"]);
+    expect(matcher("fête")!.test(dipavali)).toBe(true);
+    expect(matcher("sport")!.test(dipavali)).toBe(false);
+    // A category or two of its own still say what it is.
+    expect(genres(ev("Les Foulées", "2026-11-08T07:00", { categories: ["Sport"] }))).toEqual(["sport"]);
+  });
 });

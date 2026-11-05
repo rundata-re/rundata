@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Cache } from "../src/cache.js";
+import { Cache, MemoryStore } from "../src/cache.js";
 import * as tco from "../src/providers/tco.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
 import { WASTE } from "../src/tools/decheteries.js";
@@ -75,6 +75,23 @@ describe("the déchèteries of the West", () => {
   it("have a tile on the West's commune pages, with the state of their skips", () => {
     const paul = communePage("https://rundata.re", pageOf("saint-paul")!, { place: null, dechets: copy }, NOW);
     expect(paul).toMatch(/<h3><a href="\/decheteries#saint-paul">Déchèteries<\/a><\/h3><p class="tv">5 déchèteries<\/p><p class="td">d'après les agents : déchets verts acceptés dans \d sur 5, encombrants dans \d sur 5<\/p>/);
+  });
+});
+
+describe("the TCO's state of the déchèteries", () => {
+  it("is read again after 10 minutes: a copy of 30 kept a full bin the TCO had emptied", async () => {
+    let t = Date.parse("2026-11-04T10:07:00Z");
+    let reads = 0;
+    vi.stubGlobal("fetch", async () => (reads++, Response.json(FIXTURE)));
+    const cache = new Cache(new MemoryStore(), () => t, false);
+    await tco.meteo(cache);
+    t += 9 * 60_000;
+    await tco.meteo(cache);
+    expect(reads).toBe(1);
+    t += 2 * 60_000;
+    await tco.meteo(cache);
+    expect(reads).toBe(2);
+    expect(tco.FRESH_SECONDS).toBe(600);
   });
 });
 

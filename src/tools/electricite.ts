@@ -1,6 +1,6 @@
 import { left } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
-import { ageMinutes, ageText, localTime } from "../geo.js";
+import { ageMinutes, ageText, daysApart, localTime } from "../geo.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as cc from "../providers/coupures-courant.js";
 import * as edf from "../providers/edf.js";
@@ -94,6 +94,24 @@ async function cuts(cache: Cache) {
   return cache.get("web:courant", 3600, () => courantCopy()).catch((err) => (console.error(`source ${cc.SOURCE.id} indisponible:`, why(err)), undefined));
 }
 
+/**
+ * Past this age EDF's latest line is no longer the production of now. EDF publishes a line every 5 minutes, about
+ * 5 minutes after its time (17:45 put online at 17:50 on 05/11/2026); in the 24 hours it kept that day, two lines were
+ * at most 15 minutes apart. An hour is several lines missed, never a line late.
+ */
+export const PERIMEE_MIN = 60;
+
+/** The time of a line, with its day when it is not today's, a line of 23:55 read at 00:05 included: « à 17:35 », « le 04/11 à 23:55 ». */
+const quand = (t: Date, now: Date) => (daysApart(t, now) === 0 ? `à ${localTime(t).split(" ")[1]}` : `le ${localTime(t).replace(" ", " à ")}`);
+
+/**
+ * Said first when EDF's latest line is older than PERIMEE_MIN, in marketing's words (05/11/2026): never that EDF
+ * published nothing since, which is not known (our reading may be what fails). « Dernière mesure de production lue chez
+ * EDF : le 04/11 à 04:35, il y a 23 h. Ce n'est pas la production de maintenant. » From the line's « 04/11 04:35 ».
+ */
+export const perimeeTexte = (dayTime: string, age: number) =>
+  `Dernière mesure de production lue chez EDF : le ${dayTime.replace(" ", " à ")}, ${ageText(age)}. Ce n'est pas la production de maintenant.`;
+
 /** « 30/10 à 22:00 », when EDF last updated the signal's dataset. */
 const annonce = (iso: string) => localTime(new Date(iso)).replace(" ", " à ");
 
@@ -113,11 +131,22 @@ export async function electricite(cache: Cache, now = new Date(), lieu?: string,
     const b = breakdown(m);
     const t = new Date(m.date);
     const age = ageMinutes(t, now);
+    const filieres = `Principales filières : ${b.parts.slice(0, 4).map((p) => `${p.filiere} ${fr(p.part_pct)} %`).join(", ")}.`;
+    // A line of yesterday said « à 04:35 » was read as this morning's (05/11/2026): its age first, the value in the past.
+    const avertissement = age > PERIMEE_MIN ? perimeeTexte(localTime(t), age) : undefined;
     parts.push(
-      `Production d'électricité à ${localTime(t).split(" ")[1]} (${ageText(age)}) : ${fr(Math.round(m.total))} MW, dont ${fr(b.renouvelable_pct)} % renouvelable. ` +
-        `Principales filières : ${b.parts.slice(0, 4).map((p) => `${p.filiere} ${fr(p.part_pct)} %`).join(", ")}.`,
+      avertissement
+        ? `${avertissement} La production était alors de ${fr(Math.round(m.total))} MW, dont ${fr(b.renouvelable_pct)} % renouvelable. ${filieres}`
+        : `Production d'électricité ${quand(t, now)} (${ageText(age)}) : ${fr(Math.round(m.total))} MW, dont ${fr(b.renouvelable_pct)} % renouvelable. ${filieres}`,
     );
-    production = { heure_mesure: `${localTime(t)} heure de La Réunion`, age_min: age, total_mw: Math.round(m.total * 10) / 10, ...b, statut: m.statut === "Estimé" ? "estimé (télémesures, consolidé chaque mois)" : m.statut };
+    production = {
+      heure_mesure: `${localTime(t)} heure de La Réunion`,
+      age_min: age,
+      ...(avertissement && { perimee: true, avertissement }),
+      total_mw: Math.round(m.total * 10) / 10,
+      ...b,
+      statut: m.statut === "Estimé" ? "estimé (télémesures, consolidé chaque mois)" : m.statut,
+    };
   }
   let signal;
   if (hours) {

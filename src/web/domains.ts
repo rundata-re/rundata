@@ -26,6 +26,7 @@ import * as littoral from "../tools/littoral.js";
 import { horizonDe } from "../providers/calendrier.js";
 import { longDate, moonOf, UNPUBLISHED } from "../tools/calendrier.js";
 import type { CourantRow } from "../tools/courant.js";
+import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
 import { a, a as aLieu, de, enumeration, fr, heure, nombre, tranche } from "../tools/format.js";
 import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
 import * as capteurs from "../providers/capteurs.js";
@@ -36,7 +37,7 @@ import { climb, relief } from "../tools/sentiers.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
-import { daysApart, localTime } from "../geo.js";
+import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW } from "../tools/bornes.js";
 import { fuelSay, keep } from "../tools/carburants.js";
@@ -706,10 +707,19 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   const m = d?.meteo_electricite;
   const url = `${origin}/electricite`;
 
+  // The line's time and its age at this view, not at the copy's build: a copy kept while EDF does not answer grows old
+  // too. Past PERIMEE_MIN, the tool's sentence above the figure, a neutral note (red is for the alerts), and the pill no
+  // longer says « en direct », nor its live dot.
+  const mesure = p?.heure_mesure.replace(" heure de La Réunion", "");
+  const age = p ? ageMinutes(new Date(data!.fetchedAt.getTime() - p.age_min * 60_000), now) : 0;
+  const stale = !!p && age > PERIMEE_MIN;
+  const perimee = stale ? `<p class="note">${esc(perimeeTexte(mesure!, age))}</p>` : "";
+  // Its time with its day, never « en ce moment »: a copy kept by a search engine said it beside yesterday's value
+  // (05/11/2026).
   const status = !d
     ? loading("La production d'électricité")
     : p
-      ? `<div class="now"><span class="big">${fr(Math.round(p.renouvelable_pct))} %</span><p>de l'électricité de l'île vient en ce moment de sources <b>renouvelables</b>, sur <b>${esc(fr(Math.round(p.total_mw)))} MW</b> produits (${esc(p.heure_mesure.replace(" heure de La Réunion", ""))}).</p></div>` +
+      ? `${perimee}<div class="now"><span class="big">${fr(Math.round(p.renouvelable_pct))} %</span><p>de l'électricité de l'île venait de sources <b>renouvelables</b> ${esc(leJour(mesure!))}, sur <b>${esc(fr(Math.round(p.total_mw)))} MW</b> produits.</p></div>` +
         (m?.maintenant ? `<p class="lead">Signal d'EDF pour cette heure : <b>${esc(signalDit(m.maintenant.signal))}</b>${m.mis_a_jour ? ` (annoncé par EDF le ${esc(m.mis_a_jour.replace(" ", " à "))})` : ""}.</p>` : "")
       : `<p class="lead">${esc(d.resume)}</p>`;
 
@@ -748,7 +758,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   const band = `${crumbBar("Électricité")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Production en direct</p>
+    ${stale ? `<p class="pill">Dernière mesure lue chez EDF</p>` : `<p class="pill"><span class="dot"></span>Production en direct</p>`}
     <h1>Électricité <span class="n974">974</span></h1>
     ${status}
     ${ask(`Kouran la koupé dann mon kartié ? Gèt si ${url} é di amwin, é d'ousa i sort lo kouran astèr.`,

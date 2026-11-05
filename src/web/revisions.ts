@@ -31,7 +31,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   dae: 4,
   dechets: 2,
   eau: 3,
-  electricite: 17,
+  // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
+  electricite: 18,
   emploi: 7,
   enfants: 15,
   historique: 5,

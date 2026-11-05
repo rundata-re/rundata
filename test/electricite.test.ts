@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { breakdown, constraints, electricite, produced } from "../src/tools/electricite.js";
+import { breakdown, constraints, electricite, PERIMEE_MIN, produced } from "../src/tools/electricite.js";
 import { electriciteLive, electricitePage } from "../src/web/domains.js";
 
 const fixture = (f: string) => JSON.parse(readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8"));
@@ -52,6 +52,50 @@ describe("electricity", () => {
     const r = body(await electricite(new Cache(store, () => at.getTime()), at));
     expect(r.production).toMatchObject({ total_mw: 281, renouvelable_pct: 95.1 });
     expect(r.resume).toMatch(/^Production d'électricité à 05:20 \(il y a 5 min\) : 281 MW, dont 95,1 % renouvelable\./);
+  });
+
+  it("says a line older than an hour first, as not the production of now, in the tool and above the page's figure", async () => {
+    const read = async (value: typeof line, at: Date) => {
+      const store = new MemoryStore();
+      void store.put("edf:mix", { value, fetchedAt: at.getTime() });
+      return body(await electricite(new Cache(store, () => at.getTime()), at));
+    };
+    const after = (min: number) => new Date(Date.parse(line.date) + min * 60_000);
+    // The line of 05:20 read 23 hours later: its age first, the value in the past.
+    const warned = "Dernière mesure de production lue chez EDF : le 31/10 à 05:20, il y a 23 h. Ce n'est pas la production de maintenant.";
+    const old = await read(line, after(23 * 60));
+    expect(old.resume.startsWith(`${warned} La production était alors de 281 MW, dont 95,1 % renouvelable. Principales filières : `)).toBe(true);
+    expect(old.production).toMatchObject({ heure_mesure: "31/10 05:20 heure de La Réunion", age_min: 1380, perimee: true, avertissement: warned });
+    // The age as everywhere: in minutes up to 90, in days from 48 hours.
+    expect((await read(line, after(PERIMEE_MIN + 1))).production.avertissement).toBe(
+      "Dernière mesure de production lue chez EDF : le 31/10 à 05:20, il y a 61 min. Ce n'est pas la production de maintenant.");
+    expect((await read(line, after(3 * 1440))).resume).toMatch(/^Dernière mesure de production lue chez EDF : le 31\/10 à 05:20, il y a 3 jours\. /);
+    // An hour is not late yet: EDF puts a line every 5 minutes, about 5 minutes after its time.
+    const hour = await read(line, after(PERIMEE_MIN));
+    expect(hour.resume).toMatch(/^Production d'électricité à 05:20 \(il y a 60 min\) : 281 MW/);
+    expect(hour.production).not.toHaveProperty("perimee");
+    expect(hour.production).not.toHaveProperty("avertissement");
+    // A line of yesterday is said with its day, even fresh: 23:55 read at 00:05.
+    const late = { ...line, date: "2026-10-31T23:55:00+04:00" };
+    expect((await read(late, new Date("2026-10-31T20:05:00Z"))).resume).toMatch(/^Production d'électricité le 31\/10 à 23:55 \(il y a 10 min\) : 281 MW/);
+
+    // The page: the figure with its day and its time, never « en ce moment ».
+    const fresh = { value: await read(line, after(5)), fetchedAt: after(5), stale: false };
+    const page = electricitePage("https://rundata.re", fresh, after(5));
+    expect(page).toContain("de l'électricité de l'île venait de sources <b>renouvelables</b> le 31/10 à 05:20, sur <b>281 MW</b> produits.</p>");
+    expect(page).not.toContain("vient en ce moment");
+    expect(page).not.toContain("Dernière mesure de production");
+    expect(page).toContain(`<p class="pill"><span class="dot"></span>Production en direct</p>`);
+    expect(electricitePage("https://rundata.re", fresh, after(PERIMEE_MIN))).toContain(`<p class="pill"><span class="dot"></span>Production en direct</p>`);
+    // The same copy kept two hours while EDF does not answer: its age at this view, above the figure, a neutral note.
+    const kept = electricitePage("https://rundata.re", fresh, after(125));
+    expect(kept).toContain(`<p class="note">Dernière mesure de production lue chez EDF : le 31/10 à 05:20, il y a 2 h. Ce n&#39;est pas la production de maintenant.</p><div class="now">`);
+    // Its pill no longer says « en direct », without the live dot.
+    expect(kept).toContain(`<p class="pill">Dernière mesure lue chez EDF</p>`);
+    expect(kept).not.toContain("Production en direct");
+    // A copy built late says it as the tool did.
+    const built = { value: old, fetchedAt: after(23 * 60), stale: false };
+    expect(electricitePage("https://rundata.re", built, after(23 * 60))).toContain(`<p class="note">Dernière mesure de production lue chez EDF : le 31/10 à 05:20, il y a 23 h. Ce n&#39;est pas la production de maintenant.</p><div class="now">`);
   });
 
   it("runs the strained hours together", () => {

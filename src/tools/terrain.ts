@@ -278,16 +278,20 @@ export function antennas(lon: number, lat: number) {
   };
 }
 
-/** The street's line of the summary, named as the address base writes it (marketing's words, 25/10). */
+/**
+ * One kind's price in the summary: « maisons 2 650 €/m² (prix médian, 8 ventes) ». Each price says it is a median, as
+ * an assistant often quotes one piece alone (marketing's words, 05/11).
+ */
+const prixMedian = (name: string, k: { ventes: number; prix_m2_median?: string; dont_vefa?: number } | undefined) =>
+  k?.prix_m2_median ? `${name} ${k.prix_m2_median} (prix médian, ${ventes(k)})` : undefined;
+
+/** The street's line of the summary, its name first, as the address base writes it (marketing's words, 05/11). */
 export function streetLine(v: ReturnType<typeof streetMarket>): string {
-  const voie = `sur la voie (${v.voie})`;
-  if (!v.ventes) return `${voie}, aucune vente enregistrée dans DVF depuis ${v.depuis}`;
-  if (v.note !== undefined) return `${voie}, ${enregistrees(v.ventes)} dans DVF depuis ${v.depuis}, trop peu pour une médiane`;
-  const kind = (name: string, k: { ventes: number; prix_m2_median?: string; dont_vefa?: number } | undefined) => (k?.prix_m2_median ? `${name} ${k.prix_m2_median} en médiane (${ventes(k)})` : undefined);
-  const kinds = [kind("maisons", v.maisons), kind("appartements", v.appartements), kind("terrains nus", v.terrains_nus)].filter(Boolean);
-  return kinds.length
-    ? `${voie} depuis ${v.depuis} : ${kinds.join(", ")}`
-    : `${voie}, ${enregistrees(v.ventes)} dans DVF depuis ${v.depuis}, trop peu par type de bien pour une médiane`;
+  const voie = `${v.voie}, depuis ${v.depuis} :`;
+  if (!v.ventes) return `${voie} aucune vente enregistrée dans DVF`;
+  if (v.note !== undefined) return `${voie} ${enregistrees(v.ventes)} dans DVF, trop peu pour une médiane`;
+  const kinds = [prixMedian("maisons", v.maisons), prixMedian("appartements", v.appartements), prixMedian("terrains nus", v.terrains_nus)].filter(Boolean);
+  return kinds.length ? `${voie} ${kinds.join(", ")}` : `${voie} ${enregistrees(v.ventes)} dans DVF, trop peu par type de bien pour une médiane`;
 }
 
 /** The value, or undefined when the source failed (null stays "nothing at this point"). */
@@ -393,8 +397,8 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   if (risks) parts.push(risks);
   const onStreet = voie && sv ? streetMarket(voie.nom, fromYear, sv.ventes) : undefined;
   if (onStreet) parts.push(streetLine(onStreet));
-  if (m && "prix_m2_median" in m.maisons) parts.push(`${SECTEUR}, maisons vendues depuis ${fromYear} : ${m.maisons.prix_m2_median} en médiane (${ventes(m.maisons)})`);
-  if (m && "prix_m2_median" in m.appartements) parts.push(`${"prix_m2_median" in m.maisons ? "" : `${SECTEUR}, `}appartements : ${m.appartements.prix_m2_median} (${ventes(m.appartements)})`);
+  const area = m ? [prixMedian("maisons", m.maisons), prixMedian("appartements", m.appartements)].filter(Boolean) : [];
+  if (area.length) parts.push(`${SECTEUR}, depuis ${fromYear} : ${area.join(", ")}`);
   const r = insee ? rents(insee) : undefined;
   if (r?.ligne) parts.push(r.ligne);
   const net = insee ? connexion(insee) : undefined;

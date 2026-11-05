@@ -99,7 +99,7 @@ describe("fiche terrain", () => {
     const v = streetMarket("Rue des Tamarins", 2021, sales);
     // 5 of them off plan: said, but 2 others are too few for a median of their own.
     expect(v.appartements).toEqual({ ventes: 7, prix_median: "340\u202f000\u00a0€", prix_m2_median: "6\u202f550\u00a0€/m²", dont_vefa: 5, ventes_hors_vefa: 2 });
-    expect(streetLine(v)).toBe("sur la voie (Rue des Tamarins) depuis 2021 : appartements 6\u202f550\u00a0€/m² en médiane (7 ventes dont 5 de neuf sur plan)");
+    expect(streetLine(v)).toBe("Rue des Tamarins, depuis 2021 : appartements 6\u202f550\u00a0€/m² (prix médian, 7 ventes dont 5 de neuf sur plan)");
     // Another price for the same lots is another sale.
     expect(streetSales(csv.replace(/2021-B3,(.*?),788000/g, "2021-B3,$1,790000"), "0999")).toHaveLength(8);
   });
@@ -117,6 +117,16 @@ describe("fiche terrain", () => {
     // Three sales in all, of three kinds: the count, no median of one sale.
     const mixed = streetMarket("Rue de la Buse", 2021, [house(250_000), { ...house(200_000), type: "appartement" }, { annee: 2022, type: "terrain", valeur: 90_000, surface_bati: 0, surface_terrain: 600 }]);
     expect([mixed.maisons, mixed.appartements, mixed.terrains_nus]).toEqual([{ ventes: 1 }, { ventes: 1 }, { ventes: 1 }]);
+    // In the summary, the street named first, then the count: as many words for each case.
+    expect(streetLine(streetMarket("Rue Hubert Delisle", 2021, []))).toBe("Rue Hubert Delisle, depuis 2021 : aucune vente enregistrée dans DVF");
+    expect(streetLine(streetMarket("Rue Hubert Delisle", 2021, [house(250_000), house(300_000)]))).toBe("Rue Hubert Delisle, depuis 2021 : 2 ventes enregistrées dans DVF, trop peu pour une médiane");
+    expect(streetLine(streetMarket("Rue Hubert Delisle", 2021, [house(250_000), { ...house(200_000), type: "appartement" }, { annee: 2022, type: "terrain", valeur: 90_000, surface_bati: 0, surface_terrain: 600 }]))).toBe(
+      "Rue Hubert Delisle, depuis 2021 : 3 ventes enregistrées dans DVF, trop peu par type de bien pour une médiane",
+    );
+    // Several kinds: each price says it is a median.
+    expect(streetLine(streetMarket("Rue Hubert Delisle", 2021, [...[250_000, 300_000, 320_000].map(house), ...[90_000, 100_000, 120_000].map((v) => ({ annee: 2022, type: "terrain" as const, valeur: v, surface_bati: 0, surface_terrain: 300 }))]))).toBe(
+      "Rue Hubert Delisle, depuis 2021 : maisons 3\u202f000\u00a0€/m² (prix médian, 3 ventes), terrains nus 333\u00a0€/m² (prix médian, 3 ventes)",
+    );
   });
 
   it("counts the sales off plan apart, the median of the others only from 3 of each", () => {
@@ -125,8 +135,8 @@ describe("fiche terrain", () => {
     const offPlan = [300_000, 320_000, 340_000].map((x) => flat(x, true));
     const mixed = streetMarket("Rue des Tamarins", 2021, [...others, ...offPlan]);
     expect(mixed.appartements).toEqual({ ventes: 6, prix_median: "235\u202f000\u00a0€", prix_m2_median: "4\u202f700\u00a0€/m²", dont_vefa: 3, ventes_hors_vefa: 3, prix_m2_median_hors_vefa: "3\u202f200\u00a0€/m²" });
-    expect(streetLine(mixed)).toBe("sur la voie (Rue des Tamarins) depuis 2021 : appartements 4\u202f700\u00a0€/m² en médiane (6 ventes dont 3 de neuf sur plan, 3\u202f200\u00a0€/m² sans elles)");
-    expect(streetLine(streetMarket("Rue des Tamarins", 2021, offPlan))).toBe("sur la voie (Rue des Tamarins) depuis 2021 : appartements 6\u202f400\u00a0€/m² en médiane (3 ventes, toutes de neuf sur plan)");
+    expect(streetLine(mixed)).toBe("Rue des Tamarins, depuis 2021 : appartements 4\u202f700\u00a0€/m² (prix médian, 6 ventes dont 3 de neuf sur plan, 3\u202f200\u00a0€/m² sans elles)");
+    expect(streetLine(streetMarket("Rue des Tamarins", 2021, offPlan))).toBe("Rue des Tamarins, depuis 2021 : appartements 6\u202f400\u00a0€/m² (prix médian, 3 ventes, toutes de neuf sur plan)");
     // None off plan: nothing more said.
     expect(streetMarket("Rue des Tamarins", 2021, others).appartements).toEqual({ ventes: 3, prix_median: "160\u202f000\u00a0€", prix_m2_median: "3\u202f200\u00a0€/m²" });
   });
@@ -138,7 +148,7 @@ describe("fiche terrain", () => {
       const v = streetMarket("Rue des Tamarins", 2021, [...others, ...offPlan]);
       expect(v.appartements).toMatchObject({ dont_vefa: offPlan.length, ventes_hors_vefa: 4 });
       expect(JSON.stringify(v)).not.toContain("prix_m2_median_hors_vefa");
-      expect(streetLine(v)).toMatch(new RegExp(`\\(${4 + offPlan.length} ventes dont ${offPlan.length} de neuf sur plan\\)$`));
+      expect(streetLine(v)).toMatch(new RegExp(`\\(prix médian, ${4 + offPlan.length} ventes dont ${offPlan.length} de neuf sur plan\\)$`));
       expect(streetLine(v)).not.toContain("sans elles");
     }
     // The same rule around: 2 flats off plan among 5, the count alone.
@@ -151,7 +161,7 @@ describe("fiche terrain", () => {
   it("says a street's few sales as a count, attributed to DVF, before the area's figures", async () => {
     files = { ...files, geocodage: "geocode-temple.json" };
     const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "rue du Temple, Saint-Pierre", NOW));
-    expect(r.resume).toContain("\u00a0; sur la voie (Rue du Temple), 2 ventes enregistrées dans DVF depuis 2021, trop peu pour une médiane\u00a0; dans le secteur alentour (environ 600 m sur 600 m), maisons vendues depuis 2021 : ");
+    expect(r.resume).toContain(`\u00a0; ${r.marche_immobilier.sur_la_voie.voie}, depuis 2021 : 2 ventes enregistrées dans DVF, trop peu pour une médiane\u00a0; dans le secteur alentour (environ 600 m sur 600 m), depuis 2021 : maisons `);
     expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Rue du Temple", depuis: 2021, ventes: 2, note: "2 ventes enregistrées dans DVF sur la voie depuis 2021, trop peu pour une médiane" });
     expect(urls.filter((u) => u.includes("geo-dvf"))[0]).toBe("https://files.data.gouv.fr/geo-dvf/latest/csv/2021/communes/974/97416.csv");
   });
@@ -165,9 +175,11 @@ describe("fiche terrain", () => {
     expect(r.urbanisme.approuve_le).toBe("27/09/2012");
     expect(urls[0]).toContain("geocodage");
     // The street's own sales first, then the area's, named before its figures.
-    expect(r.resume).toContain("\u00a0; sur la voie (Rue de la Buse) depuis 2021 : maisons 2\u202f500\u00a0€/m² en médiane (7 ventes)\u00a0; dans le secteur alentour (environ 600 m sur 600 m), maisons vendues depuis 2021 : ");
+    expect(r.resume).toContain("\u00a0; Rue de la Buse, depuis 2021 : maisons 2\u202f500\u00a0€/m² (prix médian, 7 ventes)\u00a0; dans le secteur alentour (environ 600 m sur 600 m), depuis 2021 : maisons ");
     expect(r.marche_immobilier.sur_la_voie).toMatchObject({ voie: "Rue de la Buse", depuis: 2021, ventes: 10, maisons: { ventes: 7, prix_m2_median: "2\u202f500\u00a0€/m²" }, appartements: { ventes: 2 } });
-    expect(r.resume).toContain(" : 5\u202f130\u00a0€/m² en médiane (16 ventes)\u00a0; appartements : 5\u202f120\u00a0€/m² (63 ventes dont 30 de neuf sur plan, 3\u202f810\u00a0€/m² sans elles)\u00a0; ");
+    // Each price says it is a median: an assistant often quotes one piece alone.
+    expect(r.resume).toContain(" : maisons 5\u202f130\u00a0€/m² (prix médian, 16 ventes), appartements 5\u202f120\u00a0€/m² (prix médian, 63 ventes dont 30 de neuf sur plan, 3\u202f810\u00a0€/m² sans elles)\u00a0; ");
+    expect(r.resume).not.toMatch(/sur la voie|en médiane/);
     expect(r.marche_immobilier.note).toBe("Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.");
     // Then the commune's rents asked in ads, from the bundled map of rents.
     expect(r.resume).toContain("\u00a0; loyer d'annonce d'un appartement type à Saint-Paul\u00a0: 18,86\u00a0€/m² charges comprises, d'après les annonces du 3e trimestre 2025 (Estimations ANIL, à partir des données du Groupe SeLoger et de leboncoin)\u00a0; 95,1\u00a0% des logements");

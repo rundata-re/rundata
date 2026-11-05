@@ -128,7 +128,7 @@ const sentence = (s: string) => `${s.trim().replace(/[.\s]+$/, "")}.`;
 function trailItems(p: PlacePage, r: RandonneesAnswer): Item[] {
   return r.secteurs
     .flatMap((z) => z.sentiers)
-    .filter((t) => t.commune === p.nom && t.etat === "fermé")
+    .filter((t) => t.communes.includes(p.nom) && t.etat === "fermé")
     .map((t) => ({
       title: `Sentier ${t.partiel ? "fermé en partie" : "fermé"} : ${t.nom}`,
       description: [t.cause ? `Cause : ${sentence(t.cause)}` : "", t.precision ? `Précision de l'ONF : ${sentence(t.precision)}` : "", "D'après la carte des sentiers de l'ONF La Réunion."].filter(Boolean).join(" "),

@@ -28,7 +28,7 @@ const coupures = (etat: string): Cached<CoupuresAnswer> =>
     communes_suivies: [],
   } as CoupuresAnswer);
 
-const trail = (nom: string, commune: string, etat: "ouvert" | "fermé", cause?: string) => ({ k: nom, nom, slug: "bord-salazie", commune, km: 12, etat, cause, precision: "Réouverture 2026", boucle: false, randonnees: [] });
+const trail = (nom: string, commune: string, etat: "ouvert" | "fermé", cause?: string) => ({ k: nom, nom, slug: "bord-salazie", commune, communes: [commune], km: 12, etat, cause, precision: "Réouverture 2026", boucle: false, randonnees: [] });
 const randonnees = copy({
   randonnees: [],
   secteurs: [{ secteur: "Cilaos", communes: ["Cilaos"], sentiers: [trail("Bord Salazie", "Cilaos", "fermé", "Dangers majeurs, sentier dégradé"), trail("Roche Merveilleuse", "Cilaos", "ouvert")] }],

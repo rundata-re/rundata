@@ -15,7 +15,7 @@ const NOW = new Date("2026-10-31T04:00:00Z");
 const mafate = SECTEURS.find((s) => s.nom === "Mafate")!;
 const answer = {
   randonnees: [],
-  secteurs: [{ secteur: mafate.nom, communes: ["La Possession"], sentiers: [{ k: "s1", nom: "La Nouvelle - Maison Laclos", commune: "La Possession", km: 0.9, etat: "fermé", boucle: false, randonnees: [] }] }],
+  secteurs: [{ secteur: mafate.nom, communes: ["La Possession"], sentiers: [{ k: "s1", nom: "La Nouvelle - Maison Laclos", commune: "La Possession", communes: ["La Possession"], km: 0.9, etat: "fermé", boucle: false, randonnees: [] }] }],
   lignes: [{ k: "s1", genre: "sentier", etat: "fermé", d: "M350 380l5 4", href: "", nom: "La Nouvelle - Maison Laclos" }],
   fermes: 1,
   suivis: 1,

@@ -412,7 +412,7 @@ export interface VolcanAnswer {
     communique_prefecture?: { niveau: string; titre: string; lien: string; jour: string; publie?: string };
   };
   /** The episodes whose start and end a release writes (tools/volcan-historique.ts), as the AI reads them. */
-  alertes_precedentes?: { note: string; episodes: { debut: string[]; fin: string }[] };
+  alertes_precedentes?: { note: string; episodes: { debut: string; fin: string; niveau: string; lien: string; puis?: string; citations?: { debut: string[]; fin: string } }[] };
   /** The collector's record of the alerts (buildVolcan only, for /volcan): the page's copy, not the tool's answer. */
   releve?: ReleveEntree[];
   /** `texte_lu_dans_l_image`: the text read in the first image (providers/ovpf-ocr.ts), its paragraphs separated by a blank line. */

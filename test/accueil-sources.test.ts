@@ -16,7 +16,7 @@ describe("the footer's line to /chiffres, and the home page's lighter top", () =
     const lues = chiffresPage(ORIGIN, chiffres(toutesLesSources(), undefined, NOW, 0), inventaire(toutesLesSources())).match(/>(\d+)<\/a><span>sources publiques lues/)![1];
     expect(Number(lues)).toBe(n);
     for (const page of [homePage(ORIGIN, null, NOW), meteoPage(ORIGIN, null, NOW)]) {
-      const foot = page.split('<footer class="foot">')[1];
+      const foot = page.split('<footer class="foot')[1];
       expect(foot).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${n} sources publiques</a> · `);
       // The sites that do not answer, beside the guide to opening one's data (marketing, 04/11/2026).
       expect(foot).toContain(`<a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · `);

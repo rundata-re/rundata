@@ -111,9 +111,9 @@ describe("press page", () => {
 
   it("is linked from every footer and listed in the sitemap, not on the home page's tiles", async () => {
     const home = await (await handle(new Request("https://rundata.re/", { headers: { accept: "text/html" } }), cache())).text();
-    const foot = home.slice(home.indexOf(`<footer class="foot">`));
+    const foot = home.slice(home.indexOf(`<footer class="foot`));
     expect(foot).toContain(`<a href="/presse">presse</a>`);
-    expect(home.slice(0, home.indexOf(`<footer class="foot">`))).not.toContain(`href="/presse"`);
+    expect(home.slice(0, home.indexOf(`<footer class="foot`))).not.toContain(`href="/presse"`);
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), cache())).text();
     expect(map).toContain("<loc>https://rundata.re/presse</loc>");
   });

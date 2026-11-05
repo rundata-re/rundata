@@ -63,7 +63,7 @@ describe("on a phone's home screen", () => {
   it("puts the symbol in the header and the footer, never the flag", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const top = html.slice(html.indexOf(`<header class="top">`), html.indexOf("</header>"));
-    const foot = html.slice(html.indexOf(`<footer class="foot">`));
+    const foot = html.slice(html.indexOf(`<footer class="foot`));
     for (const part of [top, foot]) {
       expect(part).toContain(`<a class="brand" href="/"><svg class="logo" viewBox="0 0 48 48" role="img" aria-label="rundata.re"><title>rundata.re</title><rect width="48" height="48" rx="11" fill="#2563d8"/>`);
       expect(part).not.toContain("Lo Mahavéli");
@@ -129,7 +129,7 @@ describe("rundata.re's accounts", () => {
 
   it("are in every footer, with their logo, their name and ?ref=site", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
-    const foot = html.slice(html.indexOf('<footer class="foot">'));
+    const foot = html.slice(html.indexOf('<footer class="foot'));
     expect(foot).toContain(`<p class="social">Suivre rundata.re : <span><span class="pair"><a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Facebook"><svg`);
     expect(foot).toContain(`<a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener" aria-label="rundata.re sur Instagram"><svg`);
     expect(foot).toContain(`<a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Threads"><svg`);

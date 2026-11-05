@@ -47,7 +47,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,
   velos: 6,
-  volcan: 12,
+  volcan: 13,
 };
 
 /** `web:lieu:le-port` → `lieu`. */

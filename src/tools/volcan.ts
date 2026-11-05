@@ -440,9 +440,10 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
     );
   }
   // How the last alerts went: only those whose start and end a release writes (volcan-historique.ts).
-  parts.push(historique.resumeText(detail ? undefined : COURT_ALERTES));
+  const alertes = historique.liste(await prefecture.releveDuVolcan(cache));
+  parts.push(historique.resumeText(detail ? undefined : COURT_ALERTES, alertes));
   // A release newer than the list: « les 3 dernières alertes » would be wrong without it.
-  const newer = historique.depuis(given);
+  const newer = historique.depuis(given, alertes);
   if (newer) parts.push(newer);
 
   // pitonlive.com credited only when a line of it is said, last (marketing).
@@ -470,7 +471,7 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
       ...(given && { communique_prefecture: { niveau: given.niveau, titre: given.titre, lien: given.lien, jour: given.jour } }),
       source: "préfecture de La Réunion (communiqués) et OVPF-IPGP (publications)",
     },
-    ...(detail && { alertes_precedentes: historique.precedentes() }),
+    ...(detail && { alertes_precedentes: historique.precedentes(alertes) }),
     // The release's PDF stays out of the answer until what it is read for is shown (ovpf-pdf.ts, SHOW).
     publications_ovpf: posts
       ? posts.slice(0, 3).map(({ pdf: _, mots, ...p }) => ({

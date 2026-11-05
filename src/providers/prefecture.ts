@@ -89,6 +89,22 @@ export async function derniereLecture(cache: Cache, now: Date): Promise<string |
   return now.getTime() - at > copie.SILENT_MS ? when(localTime(new Date(at)), now) : undefined;
 }
 
+/**
+ * The collector's record of the volcano's alerts (prefecture-copie.ts RELEVE_KV_KEY), carried by its copy of the list:
+ * read with it, nothing more. None elsewhere (the site's list has no record), when the copy has none, or when it cannot
+ * be read: then the list written by hand alone (tools/volcan-historique.ts).
+ */
+export async function releveDuVolcan(cache: Cache): Promise<copie.ReleveEntree[]> {
+  if (!copie.configured()) return [];
+  try {
+    // In the Worker, communiques serves the collector's copy itself.
+    return ((await communiques(cache)).value as copie.Copie).releve ?? [];
+  } catch (err) {
+    console.error("volcan : relevé des alertes non lu", err);
+    return [];
+  }
+}
+
 /** The latest releases, newest first (`communiques`). */
 export async function releases(cache: Cache): Promise<Cached<Info[]>> {
   const c = await communiques(cache);

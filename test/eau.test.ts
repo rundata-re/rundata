@@ -4,8 +4,11 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { parsePage, quality, season } from "../src/providers/baignades.js";
 import { networkName } from "../src/providers/eaupotable.js";
 import { SOURCE } from "../src/eau/requin.js";
-import { COMMON, qualiteEau, tapNote, siteNamed, sujetOf } from "../src/tools/eau.js";
+import { COMMON, noteBaignade, qualiteEau, sansPrelevement, tapNote, siteNamed, sujetOf } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
+import { gather } from "../src/eau/ile.js";
+import { eauPage } from "../src/web/domains.js";
+import { esc } from "../src/web/map.js";
 
 // Hub'Eau for Saint-Pierre and the ministry's page of the plage de l'Hermitage centre, read on 24/10/2026: the latest
 // analyses date from late August (tap) and mid-September (bathing).
@@ -91,11 +94,72 @@ describe("qualité de l'eau", () => {
     expect(tapNote("page")).not.toContain("coupures_eau");
   });
 
+  it("says, beside a beach's last sample, that none was published for weeks, and drops « toutes les deux semaines »", async () => {
+    const b = body(await qualiteEau(cache(), "plage de l'Hermitage", undefined, NOW));
+    const gap = "Aucun prélèvement publié par l'ARS depuis le 15/09/2026 (5 semaines), ni aucun pour la saison commencée le 01/10/2026.";
+    expect(b.baignade.sites[0].prelevements_en_retard).toBe(gap);
+    expect(b.resume).toMatch(/^Plage de l'Hermitage centre : eau de bonne qualité au dernier prélèvement \(15\/09\/2026\)/);
+    expect(b.resume.endsWith(`. ${gap}`)).toBe(true);
+    expect(b.a_savoir.eau_de_baignade).toBe(noteBaignade(true));
+    expect(noteBaignade(true)).toMatch(/^Seuils par prélèvement \(germes pour 100 mL\)/);
+    expect(noteBaignade(true)).not.toContain("deux semaines");
+    expect(noteBaignade(false)).toBe(COMMON.eau_de_baignade);
+    expect(COMMON.eau_de_baignade).toMatch(/^Prélèvement toutes les deux semaines environ\u00a0; seuils par prélèvement/);
+    // Under four weeks, nothing is said; a gap within the season does not speak of the season.
+    expect(sansPrelevement("2026-09-30", NOW)).toBeUndefined();
+    expect(sansPrelevement("2026-10-02", new Date("2026-11-05T04:00:00Z"))).toBe("Aucun prélèvement publié par l'ARS depuis le 02/10/2026 (4 semaines).");
+    expect(sansPrelevement(undefined, NOW)).toBeUndefined();
+  });
+
+  it("says on /eau, under the count, that no sample was published for weeks, and gives the note without « toutes les deux semaines »", async () => {
+    const ile = await gather(cache(), NOW);
+    const data = { value: { ...ile, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false };
+    const late = eauPage("https://rundata.re", data, NOW);
+    const gap = sansPrelevement("2026-09-15", NOW)!;
+    expect(late).toContain(`<p class="note">${esc(gap)}</p>`);
+    expect(late.indexOf(esc(gap))).toBeGreaterThan(late.indexOf('<div class="now">'));
+    expect(late).toContain(`<p class="note">${esc(noteBaignade(true))}</p>`);
+    expect(late).not.toContain("toutes les deux semaines");
+    // Two weeks after the last sample: neither the sentence nor another note.
+    const soon = eauPage("https://rundata.re", data, new Date("2026-09-29T04:00:00Z"));
+    expect(soon).not.toContain("Aucun prélèvement publié");
+    expect(soon).toContain(`<p class="note">${esc(COMMON.eau_de_baignade)}</p>`);
+  });
+
+  it("dates a commune's tap water by its newest analysis, of any network", async () => {
+    const b = body(await qualiteEau(cache(), "eau du robinet à Saint-Pierre", undefined, NOW));
+    const dates = b.eau_du_robinet.reseaux.map((r: { derniere_analyse?: string }) => r.derniere_analyse).filter(Boolean)
+      .map((d: string) => d.split("/").reverse().join("-")).sort();
+    expect(b.eau_du_robinet.derniere_analyse).toBe(dates.at(-1).split("-").reverse().join("/"));
+    expect(b.eau_du_robinet.derniere_analyse).not.toBe(b.eau_du_robinet.reseaux[0].derniere_analyse);
+  });
+
+  it("gives a distributor's « ne pas boire » notice when the ARS analyses do not answer", async () => {
+    vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
+    const c = cache();
+    const avis = {
+      distributeur: "CIREST", titre: "Qualité de l'eau : ne pas consommer l'eau du robinet", communes: ["Saint-Benoît"], publie: "2026-10-23T06:47:00.000Z",
+      secteurs: [], secteurs_complets: false, ne_pas_boire: true, texte: "Qualité de l'eau dégradée : ne pas boire l'eau du robinet dans les secteurs de l'avis.",
+    };
+    await c.island("avis-eau:flux", 3600, async () => [{ de: "de la CIREST", site: "https://www.cirest.fr", avis: [avis] }]);
+    const b = body(await qualiteEau(c, "eau du robinet à Saint-Benoît", "robinet", NOW));
+    expect(b.resume).toMatch(/^EAU À NE PAS BOIRE à Saint-Benoît d'après l'avis du distributeur du .* : « Qualité de l'eau : ne pas consommer l'eau du robinet ». Les analyses du contrôle sanitaire de l'ARS \(Hub'Eau\) ne répondent pas pour le moment\.$/);
+    expect(b.eau_du_robinet.avis_ne_pas_boire.titre).toBe(avis.titre);
+    expect(b.indisponible).toEqual(["eau du robinet"]);
+    expect(b.erreur).toBeUndefined();
+    // Without a notice, the error stays the answer.
+    const none = await qualiteEau(cache(), "eau du robinet à Saint-Benoît", "robinet", NOW);
+    expect(body(none).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
+  });
+
   it("tells which water a question is about", () => {
     expect(sujetOf("l'eau est potable à Cilaos ?", null)).toEqual(["robinet"]);
     expect(sujetOf("on peut se baigner à Boucan ?", null)).toEqual(["baignade"]);
     expect(sujetOf("Saint-Leu", null)).toEqual(["robinet", "baignade"]);
     expect(siteNamed("bassin Bleu")?.commune).toBe("Saint-Benoît");
+    // A name of common words only: found by them, not left for two other beaches of the commune.
+    expect(siteNamed("plage du centre-ville de Saint-Pierre")?.nom).toBe("Plage du centre-ville de Saint-Pierre");
+    expect(siteNamed("Saint-Pierre")).toBeNull();
     expect(networkName("RESEAU ILET A CORDES")).toBe("Ilet à Cordes");
     expect(networkName("RESEAU MARE A POULE D'EAU")).toBe("Mare à Poule D'Eau");
   });

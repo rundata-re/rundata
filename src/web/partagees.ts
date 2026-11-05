@@ -15,6 +15,7 @@ import * as onf from "../providers/sentiers.js";
 import * as mf from "../providers/vigilance.js";
 import { why } from "../types.js";
 import { buildActualites, buildAir, buildCalendrier, buildCoupures, buildCourant, buildCrues, buildElectricite, buildSea, buildTrafic, buildVolcan, type CruesAnswer, FRESH_SECONDS, type VolcanAnswer } from "./data.js";
+import { airEvery } from "../tools/air.js";
 import { floodRaised } from "./domains.js";
 import { alerteVolcan } from "./volcan-alerte.js";
 import { type CourantAnswer, followed } from "../tools/courant.js";
@@ -56,7 +57,7 @@ export interface Shared {
   alongside?: boolean;
 }
 
-// About 1 180 KV writes a day in all: 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 48 a day for each of the five every 30 minutes, 24 for the air and 24 for the counts
+// About 1 180 KV writes a day in all: 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 48 a day for each of the five every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
 // of /chiffres (4 more for their events, 24 while an agenda does not answer), 12 for the power
 // cuts the mairies relay (48 while the site of one of them does not answer), 8 for the sea, 8 for the satellites' grids (48 while ACSPO lacks a day it should have), 4 for the calendar; the volcano's, every 5 minutes during an alert, adds up to 240 more while it lasts (the banner
 // of every page reads it). The events stay out: their build takes most of an invocation (they will come in a bundle).
@@ -99,7 +100,9 @@ export const SHARED: Shared[] = [
   { key: "web:coupures", build: buildCoupures, every: 30, cold: 7, cpu: 60, offset: 25 },
   // The index (3), the copy of the measures at the stations (3: the data center's cache, KV, written back), the copy
   // of the sensors (1: KV, kept in memory).
-  { key: "web:air", build: buildAir, every: 60, cold: 8, cpu: 40, offset: 40 },
+  // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes
+  // an hour more until it is, 12 a day at most.
+  { key: "web:air", build: buildAir, every: (last) => airEvery(last), cold: 8, cpu: 40, range: { usual: 60, shortest: 15 }, offset: 40 },
   // Built only here: the copy of /mer, the pages and temperature_mer read it, never the satellites.
   { key: SATELLITES, build: buildSatellites, every: (last) => satellitesEvery(last), cold: 10, cpu: 110, range: { usual: 3 * 60, shortest: 30 }, offset: 55 },
   { key: "web:mer", build: buildSea, every: 3 * 60, cold: 13, cpu: 110, offset: 75 },

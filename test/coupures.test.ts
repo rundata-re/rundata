@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { communesIn, cut, extract, lifts, operatorOf, parseCirest, parseCreole, parseNotice, parseRss, parseSaintLeu, parseSainteMarie, sectorList, textOf } from "../src/providers/avis-eau.js";
-import { coupuresEau, noticeRow } from "../src/tools/coupures.js";
+import { annonceCoupure, compteAvis, coupuresEau, noticeRow } from "../src/tools/coupures.js";
 import { coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { buildCoupures } from "../src/web/data.js";
 import { coupuresLive, coupuresPage, noticesHead } from "../src/web/domains.js";
@@ -41,6 +41,18 @@ describe("coupures d'eau", () => {
     expect(parseNotice("perturbée le 28/10/2026 à partir de 08:00 pour les secteurs suivants :\nCHEMIN LEGROS\n\nLa remise en eau est prévue à partir de 20:00 le 28/10/2026, sauf incident.")).toEqual({ debut: "2026-10-28T08:00", fin: "2026-10-28T20:00" });
     expect(communesIn("clients de SAINT DENIS")).toEqual(["Saint-Denis"]);
     expect(communesIn("abonnés de La Plaine-des-Palmistes")).toEqual(["La Plaine-des-Palmistes"]);
+  });
+
+  it("finds a commune written without its article, never a lone word of its name", () => {
+    // La Créole's notice of 05/11/2026, as read: for Trois-Bassins only, not Saint-Paul.
+    const text = "La régie La Créole informe ses abonnés de la commune de Trois-Bassins, qu'un lavage du réservoir Cocâtre est programmé le jeudi 5 novembre 2026.";
+    expect(communesIn(text)).toEqual(["Les Trois-Bassins"]);
+    const html = `<div id="infos-flash"><ul><li>05/11/2026 - Travaux <span class="text-uppercase">Lavage réservoir Cocâtre</span><span>${text}</span></li></ul>`;
+    const [n] = parseCreole(html);
+    expect(n.communes).toEqual(["Les Trois-Bassins"]);
+    expect(n.precision).toBeUndefined();
+    expect(communesIn("abonnés de Plaine des Palmistes")).toEqual(["La Plaine-des-Palmistes"]);
+    for (const t of ["le bassin tampon du réseau", "au port de pêche", "possession d'un compteur"]) expect(communesIn(t)).toEqual([]);
   });
 
   it("keeps the sector of a notice on the quality of the water, followed by the advice without a blank line", () => {
@@ -150,6 +162,31 @@ describe("coupures d'eau", () => {
     // In a WordPress post a blank line parts the streets; in a feed it ends the list.
     expect(sectorList("secteurs suivants :\n\nRue A\n\nRue B\n\nLa remise en service", false).secteurs).toEqual(["Rue A", "Rue B"]);
     expect(sectorList("secteurs suivants :\nRue A\n\nUne phrase.", true).secteurs).toEqual(["Rue A"]);
+    // The sentence after the list run on the last street's line (runéo), or the next post's title (Sainte-Marie).
+    expect(sectorList("secteurs suivants :\nRUE A\nCHEMIN B Des perturbations dans la distribution de l'eau sont à prévoir.", true)).toEqual({ secteurs: ["RUE A", "CHEMIN B"], secteurs_complets: true });
+    expect(sectorList("secteurs suivants :\nRue A\nRue B\nCommuniqué Cise 202611373", false)).toEqual({ secteurs: ["Rue A", "Rue B"], secteurs_complets: true });
+  });
+
+  it("counts as cuts only the notices that announce one", async () => {
+    const n = (titre: string, more: { coupure?: unknown; ne_pas_boire?: boolean } = {}) => ({ titre, ...more });
+    const quality = n("Qualité de l'eau");
+    const back = n("Distribution de l'eau, retour à la normale, lundi 02 novembre 2026");
+    const cut = n("Interruption de la distribution d'eau à Bras-Panon");
+    const timed = n("Bras-Panon : avis aux abonnés", { coupure: { debut: "2026-11-05T08:00" } });
+    const dry = n("Dégradation de la qualité de l'eau", { ne_pas_boire: true });
+    expect([quality, back, cut, timed, dry].map(annonceCoupure)).toEqual([false, false, true, true, false]);
+    expect(annonceCoupure(n("Salazie : Dégradation de la qualité de l’eau et fermeture préventive de la distribution"))).toBe(true);
+    expect(compteAvis([quality, back, cut, timed, dry])).toEqual({ coupures: 2, autres: 2, ne_pas_boire: 1 });
+    expect(compteAvis([])).toEqual({ coupures: 0, autres: 0, ne_pas_boire: 0 });
+    // A quality notice alone: « avis sur l'eau » on the tile and in the day's summary, never « avis de coupure ».
+    const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
+    const only = (avis: object[]) => ({ value: { ...coupures.value, avis: avis.map((x) => ({ ...coupures.value.avis[0], communes: ["Saint-Denis"], coupure: undefined, ne_pas_boire: undefined, ...x })) }, fetchedAt: NOW });
+    const alone = only([{ titre: "Qualité de l'eau" }]);
+    expect(waterLive(pageOf("saint-denis")!, { coupures: alone })).toMatchObject({ valeur: "1 avis sur l'eau" });
+    expect(resume(pageOf("saint-denis")!, { coupures: alone } as never, NOW).resume).toContain("\u00a0; 1 avis sur l'eau\u00a0;");
+    const both = only([{ titre: "Coupure d'eau rue A" }, { titre: "Qualité de l'eau" }, { titre: "Retour à la normale" }]);
+    expect(waterLive(pageOf("saint-denis")!, { coupures: both })).toMatchObject({ valeur: "1 avis de coupure" });
+    expect(resume(pageOf("saint-denis")!, { coupures: both } as never, NOW).resume).toContain("\u00a0; 1 avis de coupure d'eau, et 2 autres avis sur l'eau\u00a0;");
   });
 
   it("shows a list read whole, else sends to the notice for the streets, on the page and in the tool", async () => {

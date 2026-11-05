@@ -52,8 +52,20 @@ const URL =
   "https://data.atmo-france.org/geoserver/ind/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=ind_atmo_2021" +
   "&outputFormat=application/json&cql_filter=" + encodeURIComponent("code_zone LIKE '974%'") +
   "&propertyName=code_zone,lib_zone,date_ech,code_qual,code_no2,code_o3,code_pm10,code_pm25,code_so2,date_dif";
-// Diffused once a day (date_dif), at 12 h local time at the latest by the guide; read every hour.
+// Diffused once a day (date_dif), at 12 h local time at the latest by the guide, 14 h at the latest when late: read
+// every hour, and every quarter of an hour from 10 h to 14 h while the day's diffusion is not in the layer (04/11: the
+// day's, put in the layer after 13:41, served until 14:41 in place of the day before's).
 const FRESH_SECONDS = 60 * 60;
+const AWAITED_SECONDS = 15 * 60;
+
+/** True from 10 h to 14 h, La Réunion's time, while none of these indices was diffused that day. */
+export function diffusionAttendue(v: Index[], now: Date): boolean {
+  const local = new Date(now.getTime() + 4 * 3600_000);
+  const h = local.getUTCHours();
+  if (h < 10 || h >= 14) return false;
+  const today = local.toISOString().slice(0, 10);
+  return !v.some((i) => i.diffuse_le && new Date(Date.parse(i.diffuse_le) + 4 * 3600_000).toISOString().slice(0, 10) === today);
+}
 
 export const LEVELS = ["", "bon", "moyen", "dégradé", "mauvais", "très mauvais", "extrêmement mauvais"];
 /** A level or sub-index in words; by the guide, 0 when it is missing and 7 for an event (an accident's emissions). */
@@ -94,6 +106,10 @@ export function parse(json: { features: { properties: Props }[] }): Index[] {
   }));
 }
 
-export async function indices(cache: Cache): Promise<Cached<Index[]>> {
-  return cache.get("atmo:974", FRESH_SECONDS, async () => parse(await getJson(SOURCE.id, URL, 20_000)));
+export async function indices(cache: Cache, now = new Date()): Promise<Cached<Index[]>> {
+  const load = async () => parse(await getJson(SOURCE.id, URL, 20_000));
+  const c = await cache.get("atmo:974", FRESH_SECONDS, load);
+  // Read again only when the copy is older than a quarter of an hour: a copy just read is not asked of the store twice.
+  const old = now.getTime() - c.fetchedAt.getTime() >= AWAITED_SECONDS * 1000;
+  return old && diffusionAttendue(c.value, now) ? cache.get("atmo:974", AWAITED_SECONDS, load) : c;
 }

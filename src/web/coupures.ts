@@ -7,7 +7,7 @@ import type { Cached } from "../cache.js";
 import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
-import { muetPour } from "../tools/coupures.js";
+import { compteAvis, muetPour } from "../tools/coupures.js";
 import { deNom } from "../articles.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, EauAnswer, SecheresseAnswer } from "./data.js";
@@ -51,7 +51,8 @@ const ofBy = (by: string) =>
 export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   if (!w.coupures) return undefined;
   const x = waterOf(p.nom, w);
-  const valeur = x.dry ? "Eau à ne pas boire" : x.avis.length ? plural(x.avis.length, "avis de coupure", "avis de coupure") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Avis non lus";
+  const cuts = compteAvis(x.avis).coupures;
+  const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Avis non lus";
   const detail = [
     x.muet ? esc(x.muet.court) : "",
     x.distributeur ? `distributeur ${esc(x.distributeur.nom)}` : "",

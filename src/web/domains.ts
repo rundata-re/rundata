@@ -62,7 +62,7 @@ import { anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater } from "./eau-cyclone.js";
-import { tapNote } from "../tools/eau.js";
+import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
 import { journeyForm } from "./itineraire.js";
@@ -1528,11 +1528,14 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   const firstSample = samples[0];
   const lastSample = samples.at(-1);
   const tapBad = d?.communes.filter((c) => c.non_conformes_6_mois) ?? [];
+  const gap = sansPrelevement(lastSample, now);
 
   const status = !d
     ? loading("La qualité de l'eau")
     : `<div class="now"><span class="big">${good}</span><p>plage${good > 1 ? "s" : ""} et bassin${good > 1 ? "s" : ""} sur <b>${d.baignades.length}</b> contrôlés par l'ARS en bonne qualité au dernier prélèvement` +
-      `${lastSample ? ` (${esc(dayFr(lastSample))})` : ""}${notGood.length ? ` ; à surveiller : ${esc(notGood.map((s) => s.site).join(", "))}` : ""}.</p></div>`;
+      `${lastSample ? ` (${esc(dayFr(lastSample))})` : ""}${notGood.length ? ` ; à surveiller : ${esc(notGood.map((s) => s.site).join(", "))}` : ""}.</p></div>` +
+      // No sample published for weeks (04/11/2026: none since 22/09): said under the count, never left to the dates alone.
+      (gap ? `<p class="note">${esc(gap)}</p>` : "");
 
   const rank = (q?: string) => ["bonne", "moyenne", "mauvaise"].indexOf(q ?? "");
   // The worse last, drawn over the good ones next to them.
@@ -1574,7 +1577,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   <div class="sec-h"><p class="eyebrow">Plages et bassins</p><h2 id="h-baignade">L'eau de baignade</h2>
   <p>${esc(EAU_TEXT.baignade)}</p></div>
   ${sites}
-  ${d ? `<p class="note">${esc(d.a_savoir.eau_de_baignade)}</p>` : ""}
+  ${d ? `<p class="note">${esc(noteBaignade(!!gap))}</p>` : ""}
   <p class="note">${BAIGNADE_LINE}</p>
 </section>
 <section aria-labelledby="h-robinet">

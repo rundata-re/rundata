@@ -2,7 +2,7 @@ import type { Cache, Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { type Fil, type Info, LUS, SOURCES as ACTU } from "../providers/actualites.js";
-import { httpUrl } from "../http.js";
+import { httpUrl, versBilletterie } from "../http.js";
 import { type Agenda, AGENDAS, type Evenement, LIGUE_VOLLEY, LISIBLES, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
 import { autorisee, nonAutorisee } from "../providers/autorisations.js";
 import * as src from "../providers/sport.js";
@@ -201,7 +201,7 @@ function eventRow(e: src.Epreuve, calledOff: avis.Avis[] = []): Row {
     etat: off ? (off.statut === "annulé" ? "annulée" : "reportée") : e.etat,
     selon: off?.source,
     lien_avis: off?.lien,
-    lien: e.lien,
+    lien: versBilletterie(e.lien),
     communes: [e.commune],
     clubs: [],
   };
@@ -228,7 +228,7 @@ const clubRow = (e: Evenement): Row[] =>
     lieu: e.lieu ?? LIEU_CLUB,
     commune: e.commune,
     etat: e.statut === "annulé" ? "annulée" : e.statut === "reporté" ? "reportée" : undefined,
-    lien: e.lien,
+    lien: versBilletterie(e.lien),
     acces: e.reserve_adherents ? reserve(e) : undefined,
     site_du_club: e.reserve_adherents ? httpUrl(e.organisateur?.site) : undefined,
     communes: [e.commune],
@@ -374,7 +374,7 @@ function tournoi(e: Evenement): src.Epreuve[] {
     commune: e.commune,
     detail: "Ligue réunionnaise de volley-ball",
     etat: e.statut === "annulé" ? ("annulée" as const) : e.statut === "reporté" ? ("reportée" as const) : undefined,
-    lien: e.lien,
+    lien: versBilletterie(e.lien),
   }));
 }
 

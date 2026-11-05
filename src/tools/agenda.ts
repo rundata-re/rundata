@@ -1,7 +1,7 @@
 import { isScheduled, later, left, perInvocation } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { inReunion } from "../geo.js";
-import { httpUrl, patiently, places, whenPlaced } from "../http.js";
+import { httpUrl, patiently, places, versBilletterie, whenPlaced } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import type { Fil } from "../providers/actualites.js";
@@ -502,12 +502,12 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false)
     acces: e.reserve_adherents ? src.reserve(e) : undefined,
     site_du_club: e.reserve_adherents ? httpUrl(e.organisateur?.site) : undefined,
     reporte_au: e.reporte_au ? dayText(e.reporte_au) : undefined,
-    billetterie: httpUrl(e.billetterie),
+    billetterie: versBilletterie(httpUrl(e.billetterie)),
     description: e.description,
     /** The children's ages the organiser gives, in its words: « dès 10 ans ». */
     age: e.age,
     /** Absent when the source gives no http(s) link. */
-    lien: httpUrl(e.lien),
+    lien: versBilletterie(httpUrl(e.lien)),
     publie_par: e.publie_par,
     /** When rundata.re read the agenda this comes from; not for an event its organiser proposed, never read elsewhere. */
     lu_le: e.lu_le && !e.propose && !e.via ? dayText(e.lu_le) : undefined,

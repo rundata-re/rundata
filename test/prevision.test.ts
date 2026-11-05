@@ -161,7 +161,11 @@ describe("today, from the hours still to come", () => {
   it("counts the hour under way for the part left of it", async () => {
     const at = new Date("2026-10-22T06:30:00Z"); // 10:30: half of 10h–11h's 1,2 mm is still to come
     const r = body(await previsionMeteo(await wetCache(at), "Cilaos", "aujourd'hui", at));
-    expect(r.jours[0].pluie).toBe("1 mm de pluie de 10:30 à minuit");
+    // Said from the hour under way, never from the minute of the question.
+    expect(r.jours[0].pluie).toBe("1 mm de pluie de 10\u00a0h à minuit");
+    expect(r.jours[0].periode).toBe("de 10\u00a0h à minuit");
+    const odd = new Date("2026-10-22T00:09:00Z"); // 04:09
+    expect(body(await previsionMeteo(await wetCache(odd), "Cilaos", "aujourd'hui", odd)).jours[0].periode).toBe("de 4\u00a0h à minuit");
     const late = new Date("2026-10-22T12:00:00Z"); // 16:00: nothing left
     expect(body(await previsionMeteo(await wetCache(late), "Cilaos", "aujourd'hui", late)).jours[0].pluie).toBe("pas de pluie prévue de 16\u00a0h à minuit");
   });
@@ -225,6 +229,11 @@ describe("today, from the hours still to come", () => {
     // The whole day's lowest temperature, that of the night.
     expect(r.jours[0].periode).toBeUndefined();
     expect(r.jours[0].temperature_min).toMatch(/^11 /);
+    // The same all through the first hour.
+    const half = new Date("2026-10-21T20:30:00Z"); // 00:30 on 22/10
+    const h = body(await previsionMeteo(await morningCache(half), "Cilaos", undefined, half));
+    expect(h.jours[0].periode).toBeUndefined();
+    expect(h.jours[0].temperature_min).toMatch(/^11 /);
   });
 });
 

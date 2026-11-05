@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { breakerMs, Cache, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
+import { breakerMs, Cache, MemoryStore, stampOf, TieredStore, unreadable } from "../src/cache.js";
 import { noteSource, withLectures } from "../src/lectures.js";
 import { UpstreamError } from "../src/types.js";
-import { familyOf, RENDU_REVISION, SOURCE_REVISION, sourceRevision } from "../src/web/revisions.js";
+import { familyOf, RENDU_LISIBLE, RENDU_REVISION, SOURCE_REVISION, sourceRevision } from "../src/web/revisions.js";
 
 function clock() {
   let t = 1_000_000;
@@ -395,6 +395,39 @@ describe("a page's copy kept across the deploys that leave its family's revision
 
 // The news feed's entry, read by the old code a few minutes before a deploy that changed one of its links, made the
 // page built again after it show the old links until its next turn (26/10/2026, Freedom's).
+describe("a page's copy below its family's floor (RENDU_LISIBLE)", () => {
+  const floor = RENDU_LISIBLE.randonnees;
+
+  it("is never served: not by peek, not while its build fails, and built again as if there were none", async () => {
+    const store = new MemoryStore();
+    await store.put("web:randonnees", { value: "avant #786", fetchedAt: Date.now(), version: `rendu-${floor - 1}` });
+    const cache = new Cache(store, undefined, false, undefined, "2.0.0");
+    expect(await cache.peek("web:randonnees")).toBeUndefined();
+    await expect(cache.get("web:randonnees", 300, async () => { throw new Error("carte muette"); })).rejects.toThrow("carte muette");
+    // The next process (the failure is remembered in this one) builds it.
+    expect((await new Cache(store, undefined, false, undefined, "2.0.0").get("web:randonnees", 300, async () => "après")).value).toBe("après");
+    expect((await store.get("web:randonnees"))!.version).toBe(`rendu-${RENDU_REVISION.randonnees}`);
+  });
+
+  it("serves a copy at the floor or above, of another revision or not, and a copy of any family without a floor", async () => {
+    const store = new MemoryStore();
+    await store.put("web:randonnees", { value: "au plancher", fetchedAt: Date.now(), version: `rendu-${floor}` });
+    await store.put("web:lieu:le-port", { value: "ancienne", fetchedAt: Date.now(), version: "rendu-0" });
+    const cache = new Cache(store, undefined, false, undefined, "2.0.0");
+    expect((await cache.peek("web:randonnees"))!.value).toBe("au plancher");
+    expect((await cache.peek("web:lieu:le-port"))!).toMatchObject({ value: "ancienne", outdated: true });
+    expect(floor).toBeLessThanOrEqual(RENDU_REVISION.randonnees);
+  });
+
+  it("says unstamped copies of a family with a floor unreadable, never where the code has no version nor a source's entry", () => {
+    expect(unreadable("web:randonnees", { version: "1.0.264" }, "2.0.0")).toBe(true);
+    expect(unreadable("web:randonnees", {}, "2.0.0")).toBe(true);
+    expect(unreadable("web:randonnees", { version: `rendu-${floor - 1}` }, undefined)).toBe(false);
+    expect(unreadable("randonnees", { version: "rendu-0" }, "2.0.0")).toBe(false);
+    expect(unreadable("web:randonnees", undefined, "2.0.0")).toBe(false);
+  });
+});
+
 describe("a source's entry listed in SOURCE_REVISION, after a deploy", () => {
   const fil = "actualites:fil";
   const n = SOURCE_REVISION[fil];

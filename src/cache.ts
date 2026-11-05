@@ -12,7 +12,7 @@ import { cacheTally } from "./metrics.js";
 
 import { callDeadline, noteLecture, withSource } from "./lectures.js";
 import { UpstreamError, why } from "./types.js";
-import { familyOf, RENDU_REVISION, sourceRevision } from "./web/revisions.js";
+import { familyOf, RENDU_LISIBLE, RENDU_REVISION, sourceRevision } from "./web/revisions.js";
 
 /**
  * The shape of what the stores keep (a source's answer, a page's copy), in the keys of the data center's cache and of
@@ -69,6 +69,17 @@ export const stampOf = (key: string, version: string | undefined) => {
  */
 export const outdated = (key: string, entry: { version?: string } | undefined, version: string | undefined) =>
   entry != null && stampOf(key, version) != null && entry.version !== stampOf(key, version);
+
+/**
+ * Whether `entry`, a page's copy kept under `key`, is of a revision below its family's floor (RENDU_LISIBLE), or has no
+ * stamp where its family has one: never served, not even while its build fails. Never where the code has no version.
+ */
+export const unreadable = (key: string, entry: { version?: string } | undefined, version: string | undefined) => {
+  const floor = isCopy(key) ? RENDU_LISIBLE[familyOf(key)] : undefined;
+  if (entry == null || version == null || floor == null) return false;
+  const revision = /^rendu-(\d+)$/.exec(entry.version ?? "")?.[1];
+  return revision == null || Number(revision) < floor;
+};
 
 /** Where entries live: process memory on Node; memory in front of the Cloudflare cache in the Worker. */
 export interface CacheStore {
@@ -297,6 +308,7 @@ export class Cache {
    */
   async peek<T>(key: string, freshAfter?: number): Promise<Cached<T> | undefined> {
     const hit = await this.store.get(key, freshAfter);
+    if (unreadable(key, hit, this.version)) return undefined;
     return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.cost != null && { cost: hit.cost }), ...(outdated(key, hit, this.version) && { outdated: true, ...(hit.version && { stamp: hit.version }) }) };
   }
 
@@ -370,6 +382,8 @@ export class Cache {
     put: (e: CacheEntry) => Promise<void>,
     backoffSeconds = FAILURE_BACKOFF_SECONDS,
   ): Promise<Cached<T>> {
+    // A copy the code can no longer read is not one: built as if there were none, and nothing to serve if that fails.
+    if (unreadable(key, hit, this.version)) hit = undefined;
     if (hit && this.now() - hit.fetchedAt < freshSeconds * 1000 && !outdated(key, hit, this.version)) {
       cacheTally().hits++;
       return { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.from && { from: hit.from }) };

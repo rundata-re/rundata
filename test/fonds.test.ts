@@ -25,7 +25,7 @@ import { ecolesPage } from "../src/web/ecoles.js";
 import { enfantsPage } from "../src/web/enfants.js";
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
 import { feuxPage } from "../src/web/feux.js";
-import { fond, FONDS, MENTION, SANS_FOND, withSaveData } from "../src/web/fonds.js";
+import { fond, FONDS, MENTION, SANS_FOND, varySaveData, withSaveData } from "../src/web/fonds.js";
 import files from "../src/web/fonds.json" with { type: "json" };
 import { homePage } from "../src/web/home.js";
 import { kitPage } from "../src/web/kit-cyclone.js";
@@ -171,10 +171,41 @@ describe("the illustrations behind the band", () => {
     }
   });
 
-  it("are not written when the browser asks to save data", () => {
+  it("are not written when the browser asks to save data, and say the page depends on it", async () => {
     const ask = (h: Record<string, string>) => new Request(`${O}/mer`, { headers: h });
-    expect(picture(withSaveData(ask({ "save-data": "on" }), () => seaPage(O, null, NOW)))).toBeUndefined();
-    expect(picture(withSaveData(ask({}), () => seaPage(O, null, NOW)))).toBeDefined();
+    const saving = await withSaveData(ask({ "save-data": "on" }), () => seaPage(O, null, NOW));
+    expect(picture(saving.value)).toBeUndefined();
+    expect(saving.varie).toBe(true);
+    const plain = await withSaveData(ask({}), () => seaPage(O, null, NOW));
+    expect(picture(plain.value)).toBeDefined();
+    expect(plain.varie).toBe(true);
+    // A page without a picture is the same either way: nothing to vary on.
+    expect((await withSaveData(ask({ "save-data": "on" }), () => homePage(O, null, NOW))).varie).toBe(false);
+  });
+
+  it("answer with « Vary: Save-Data » where the page depends on it, so that a shared cache keeps one copy per variant", async () => {
+    // Kept a minute by a shared cache (public, max-age=60): without Vary, the copy without the picture asked by one
+    // browser would be served to every other one, or the other way round.
+    const get = (path: string, h: Record<string, string> = {}) => handle(new Request(`${O}${path}`, { headers: h }), new Cache());
+    for (const h of [{}, { "save-data": "on" }]) {
+      const r = await get("/kit-cyclone", h);
+      expect(r.status).toBe(200);
+      expect(r.headers.get("cache-control")).toBe("public, max-age=60");
+      expect(r.headers.get("vary")).toMatch(/(^|,\s*)Save-Data$/);
+    }
+    expect(picture(await (await get("/kit-cyclone", { "save-data": "on" })).text())).toBeUndefined();
+    expect(picture(await (await get("/kit-cyclone")).text())).toBeDefined();
+    // A page without a picture: no Vary on Save-Data.
+    expect((await get("/a-propos")).headers.get("vary") ?? "").not.toMatch(/save-data/i);
+  });
+
+  it("add Save-Data to a Vary already there, once", async () => {
+    const r = (vary?: string) => new Response("x", { status: 200, headers: { "content-type": "text/html", ...(vary && { vary }) } });
+    expect(varySaveData(r()).headers.get("vary")).toBe("Save-Data");
+    expect(varySaveData(r("accept")).headers.get("vary")).toBe("accept, Save-Data");
+    expect(varySaveData(r("accept, save-data")).headers.get("vary")).toBe("accept, save-data");
+    expect(varySaveData(r("*")).headers.get("vary")).toBe("*");
+    expect(await varySaveData(r("accept")).text()).toBe("x");
   });
 
   it("fade out, stay out of print, and never add height to the band", () => {

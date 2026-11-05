@@ -228,14 +228,35 @@ export const label = (c: Communique) => (c.mis_a_jour ? `communiqué mis à jour
 export const momentText = (m: Moment) => `${date(m.jour)}, ${quoi(m)} : « ${m.dit} » (${label(m.communique)} : ${m.communique.copie})`;
 const quoi = (m: Moment) => (m.selon ? `${m.quoi} (${m.selon})` : m.quoi);
 
-/** For volcan_seismes: the episodes, and what the list is. */
+/**
+ * The tool's CHAPEAU: the phrases are quoted for the last episode only, the others reduced to their days, level and
+ * link (the answer's size, 05/11/2026); the page /volcan quotes them all.
+ */
+export const CHAPEAU_OUTIL =
+  "Voici, depuis 2016, les épisodes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture que nous avons retrouvé\u00a0: " +
+  "pour chacun, le jour de son début et de sa fin, son niveau et le lien du communiqué qui l'ouvre. " +
+  "Pour le dernier, les phrases des communiqués sont citées telles quelles\u00a0; celles des autres sont sur https://rundata.re/volcan#alertes-precedentes. " +
+  "Leur fin est celle de la préfecture, qui lève l'alerte par un communiqué, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. " +
+  "Ce n'est pas un historique complet\u00a0: un épisode dont il manque l'un des deux communiqués n'y figure pas.";
+
+/** An episode reduced: « alerte 1, puis alerte 2-1 », a later start with its day. */
+const court = (e: Episode) => ({
+  debut: date(e.debut[0].jour),
+  fin: `${date(e.fin.jour)}, ${e.fin.quoi}`,
+  niveau: e.debut.map((m, i) => (i && m.jour !== e.debut[0].jour ? `${quoi(m)} le ${date(m.jour)}` : quoi(m))).join(", puis "),
+  lien: e.debut[0].communique.copie,
+});
+const puisText = (m: Moment, cite: boolean) =>
+  `${PUIS} ${m.quoi}${cite ? ` : « ${m.dit} »` : ""} (${label(m.communique)} : ${m.communique.copie}). ${SANS_FIN}`;
+
+/** For volcan_seismes: the episodes, the last one with its quotes, and what the list is. */
 export function precedentes(list: Episode[] = EPISODES) {
   return {
-    note: `${CHAPEAU} ${AVANT_2021} ${note(list)}`,
-    episodes: list.map((e) => ({
-      debut: e.debut.map(momentText),
-      fin: momentText(e.fin),
-      ...(e.puis && { puis: `${PUIS} ${e.puis.quoi} : « ${e.puis.dit} » (${label(e.puis.communique)} : ${e.puis.communique.copie}). ${SANS_FIN}` }),
+    note: `${CHAPEAU_OUTIL} ${AVANT_2021} ${note(list)}`,
+    episodes: list.map((e, i) => ({
+      ...court(e),
+      ...(e.puis && { puis: puisText(e.puis, !i) }),
+      ...(!i && { citations: { debut: e.debut.map(momentText), fin: momentText(e.fin) } }),
     })),
   };
 }

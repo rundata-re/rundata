@@ -4,7 +4,7 @@ import { decodeText, textOf } from "../src/providers/avis-eau.js";
 import type { Info } from "../src/providers/actualites.js";
 import { ajouter } from "../src/providers/prefecture-copie.js";
 import { type Page, volcanReleases } from "../src/providers/volcan.js";
-import { AVANT_2021, avant2021, CHAPEAU, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, depuis, EPISODES, episodesDuReleve, FIN_DE_LISTE, liste as listeAlertes, NOTE, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
+import { AVANT_2021, avant2021, CHAPEAU, CHAPEAU_OUTIL, type Communique, DERNIERE_ERUPTION, derniereEruptionDates, derniereEruptionText, depuis, EPISODES, episodesDuReleve, FIN_DE_LISTE, liste as listeAlertes, NOTE, PLAN_2021, precedentes, resumeText } from "../src/tools/volcan-historique.js";
 import { volcanPage } from "../src/web/domains.js";
 import type { VolcanAnswer } from "../src/web/data.js";
 
@@ -138,11 +138,29 @@ describe("the alerts before this one", () => {
     expect(EPISODES[2].fin.dit).toBe("le préfet de La Réunion décide de revenir en phase de vigilance […] à compter de ce vendredi 2 janvier 2026 midi");
   });
 
+  it("gives the AI each episode reduced to its days, level and link, the last one quoted (answer's size)", () => {
+    const p = precedentes();
+    expect(p.note.startsWith(CHAPEAU_OUTIL)).toBe(true);
+    expect(p.note).toContain("Pour le dernier, les phrases des communiqués sont citées telles quelles\u00a0; celles des autres sont sur https://rundata.re/volcan#alertes-precedentes.");
+    expect(p.episodes[0]).toMatchObject({ debut: "13/02/2026", fin: "07/05/2026, retour en phase de vigilance", niveau: "alerte 2-1", lien: EPISODES[0].debut[0].communique.copie });
+    expect(p.episodes[0].citations!.fin).toContain("(communiqué du 07/05/2026 : https://web.archive.org/");
+    expect(p.episodes.slice(1).every((e) => !("citations" in e) && !/«/.test(JSON.stringify(e)))).toBe(true);
+    expect(p.episodes[1]).toEqual({ debut: "18/01/2026", fin: "27/01/2026, réouverture des sentiers", niveau: "alerte 2-1", lien: EPISODES[1].debut[0].communique.copie });
+    // Two starts the same day, then on two days; the start dated by the next day's release.
+    expect(p.episodes.find((e) => e.debut === "02/07/2023")!.niveau).toBe("alerte 1, puis alerte 2-1");
+    const fev2019 = p.episodes.find((e) => e.debut === "16/02/2019")!;
+    expect(fev2019.niveau).toBe("alerte 1, puis alerte 2-2 le 18/02/2019");
+    // A new alert the day of the end, without its end: still said, with its release.
+    expect(fev2019.puis).toMatch(/^Le même jour, nouvelle alerte 2-2 \(communiqué du 19\/02\/2019 : https:\/\/web\.archive\.org\/.+\)\. Sa fin n'est pas dans les communiqués que nous avons retrouvés\.$/);
+    expect(p.episodes.find((e) => e.debut === "03/04/2018")!.niveau).toBe("éruption débutée (selon le communiqué du 04/04/2018)");
+    expect(p.episodes).toHaveLength(EPISODES.length);
+  });
+
   it("tells the AI and the page what the list is, with the copies' links", async () => {
     const p = precedentes();
     expect(p.note).toContain("Ce n'est pas un historique complet");
     expect(p.note).toContain(AVANT_2021);
-    expect(p.episodes[0].debut[0]).toBe("13/02/2026, alerte 2-1 : « L’observatoire volcanologique du piton de la Fournaise (OPVF) a enregistré à 09h25 une crise sismique, le trémor volcanique synonyme d’arrivée du magma à proximité de la surface a été enregistré depuis 10h00 (heure locale). » (communiqué du 13/02/2026 : https://web.archive.org/web/20260215235752/https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos2?utm_source=chatgpt.com)");
+    expect(p.episodes[0].citations!.debut[0]).toBe("13/02/2026, alerte 2-1 : « L’observatoire volcanologique du piton de la Fournaise (OPVF) a enregistré à 09h25 une crise sismique, le trémor volcanique synonyme d’arrivée du magma à proximité de la surface a été enregistré depuis 10h00 (heure locale). » (communiqué du 13/02/2026 : https://web.archive.org/web/20260215235752/https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos2?utm_source=chatgpt.com)");
     expect(resumeText()).toBe(
       "Alertes précédentes dont le début et la fin sont écrits dans un communiqué de la préfecture (liste partielle, depuis 2016\u00a0; avant novembre 2021, les niveaux du plan précédent) : " +
         "13/02/2026 alerte 2-1 → 07/05/2026 retour en phase de vigilance\u00a0; 18/01/2026 alerte 2-1 → 27/01/2026 réouverture des sentiers\u00a0; " +
@@ -174,7 +192,7 @@ describe("the alerts before this one", () => {
     expect(older).toContain(`<p>Le même jour, nouvelle alerte 2-2\u00a0: «\u00a0le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce mardi 19 février à 18h30\u00a0» (<a href="https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html">communiqué du 19/02/2019 →</a>). Sa fin n&#39;est pas dans les communiqués que nous avons retrouvés.</p></li>`);
     expect(older.match(/Le même jour/g)).toHaveLength(1);
     const feb2019 = p.episodes.find((e) => e.fin.startsWith("19/02/2019"))!;
-    expect(feb2019.puis).toBe("Le même jour, nouvelle alerte 2-2 : « le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce mardi 19 février à 18h30 » (communiqué du 19/02/2019 : https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html). Sa fin n'est pas dans les communiqués que nous avons retrouvés.");
+    expect(feb2019.puis).toBe("Le même jour, nouvelle alerte 2-2 (communiqué du 19/02/2019 : https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html). Sa fin n'est pas dans les communiqués que nous avons retrouvés.");
     expect(p.episodes.filter((e) => "puis" in e)).toHaveLength(1);
     expect(older).toContain(`<li><b>26/05/2016</b>, alerte 2-2\u00a0: «\u00a0le préfet de la Réunion a déclenché ce jour (jeudi 26 mai 2016) à 8h30 l’alerte 2-2\u00a0» <a href="https://web.archive.org/web/20160530083219/http://www.reunion.gouv.fr/piton-de-la-fournaise-eruption-en-cours-dans-l-a1635.html">communiqué du 26/05/2016 →</a></li>`);
   });
@@ -254,7 +272,7 @@ describe("the collector's record of the alerts after the list", () => {
     expect(all).toHaveLength(EPISODES.length + 1);
     expect(all[1]).toBe(EPISODES[0]);
     expect(resumeText(3, all)).toMatch(/: 24\/10\/2026 alerte 1 → 26\/10\/2026 retour en phase de vigilance ; 13\/02\/2026 alerte 2-1 → 07\/05\/2026 retour en phase de vigilance ; 18\/01\/2026 /);
-    expect(precedentes(all).episodes[0].debut[0]).toBe(`24/10/2026, alerte 1 : « ${alerte1.titre} » (communiqué du 24/10/2026 : ${alerte1.lien})`);
+    expect(precedentes(all).episodes[0].citations!.debut[0]).toBe(`24/10/2026, alerte 1 : « ${alerte1.titre} » (communiqué du 24/10/2026 : ${alerte1.lien})`);
     expect(precedentes(all).note).toContain(`${NOTE} Les épisodes après le 07/05/2026 sont relevés au fil des communiqués de la préfecture : leurs liens mènent à son site.`);
     expect(precedentes().note).not.toContain("relevés au fil");
     // The release in force is the end of the list now: nothing said after it.

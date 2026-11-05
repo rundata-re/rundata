@@ -16,6 +16,7 @@ import json
 import math
 import re
 import tempfile
+import time
 import unicodedata
 import urllib.parse
 import urllib.request
@@ -139,6 +140,8 @@ ALIASES = {
 def fetch(url, cache, name, data=None):
     path = cache / name
     if not path.exists():
+        # At a low pace: the sources are open data services, read once to build.
+        time.sleep(2)
         req = urllib.request.Request(url, data=data, headers=UA)
         with urllib.request.urlopen(req, timeout=180) as r:
             path.write_bytes(r.read())
@@ -248,11 +251,17 @@ def bdtopo_places(cache):
     return out
 
 
+# Points per call to the altimetry: from about 50 points, the service answers from a coarser grid (Piton des Neiges,
+# the same point: 3 068,75 m alone or among 30 points, 3 062,05 m among 50 or 100, 3 032 m among 100 across the
+# island, 05/11/2026).
+ALTI_CHUNK = 25
+
+
 def altitudes(points, cache):
-    """IGN altimetry, 100 points per call. Sea and out-of-coverage points come back as -99999."""
+    """IGN altimetry, ALTI_CHUNK points per call. Sea and out-of-coverage points come back as -99999."""
     out = []
-    for i in range(0, len(points), 100):
-        chunk = points[i:i + 100]
+    for i in range(0, len(points), ALTI_CHUNK):
+        chunk = points[i:i + ALTI_CHUNK]
         q = urllib.parse.urlencode({"lon": "|".join(f"{p[0]:.5f}" for p in chunk),
                                     "lat": "|".join(f"{p[1]:.5f}" for p in chunk),
                                     "resource": "ign_rge_alti_wld", "zonly": "true"})
@@ -264,6 +273,45 @@ def altitudes(points, cache):
             raise SystemExit(f"altimetry returned {len(zs)} values for {len(chunk)} points")
         out += zs
     return [None if z < -1000 else max(0, round(z)) for z in out]
+
+
+# A summit's altitude: the ground under the point of its name is not always its top (the name's point is placed to
+# 30 m, and the ground is read to the metre). OSM's « ele » of the summit of the same name within 1 km, kept
+# when the ground under OSM's node, which is in principle the top, agrees within ELE_AGREES, and when it is not below
+# the ground under the point of the name: no summit is lower than its slopes.
+ELE_NEAR_KM = 1.0
+ELE_AGREES = 15
+ELE = re.compile(r"^(-?\d+(?:[.,]\d+)?)\s*m?$")
+
+
+def summit_heights(kept, osm, cache):
+    """Puts OSM's « ele » on the summits it checks, as above; prints how many were kept and why the others were not."""
+    peaks = []
+    for e in osm:
+        t = e["tags"]
+        m = ELE.match((t.get("ele") or "").replace(" ", "").strip())
+        if t.get("natural") in ("peak", "volcano") and t.get("name") and m:
+            c = e.get("center") or e
+            peaks.append((norm(t["name"]), c["lon"], c["lat"], round(float(m[1].replace(",", ".")))))
+    found = []
+    for p in kept:
+        if p["type"] != "sommet" or p["altitude_m"] is None:
+            continue
+        near = [q for q in peaks if q[0] == norm(p["nom"]) and math.hypot((q[1] - p["lon"]) * 104, (q[2] - p["lat"]) * 111) < ELE_NEAR_KM]
+        if len({q[3] for q in near}) == 1:
+            found.append((p, near[0]))
+    count = {"sommets": sum(p["type"] == "sommet" for p in kept), "sans ele OSM": 0, "retenus": 0,
+             f"refusés, plus de {ELE_AGREES} m du sol au nœud OSM": 0, "refusés, plus bas que le sol au point du nom": 0}
+    count["sans ele OSM"] = count["sommets"] - len(found)
+    for (p, (_, lon, lat, ele)), z in zip(found, altitudes([(q[1], q[2]) for _, q in found], cache)):
+        if z is None or abs(ele - z) > ELE_AGREES:
+            count[f"refusés, plus de {ELE_AGREES} m du sol au nœud OSM"] += 1
+        elif ele < p["altitude_m"]:
+            count["refusés, plus bas que le sol au point du nom"] += 1
+        else:
+            count["retenus"] += 1
+            p["altitude_m"] = ele
+    print("altitudes des sommets :", count)
 
 
 def main():
@@ -322,6 +370,8 @@ def main():
         p["lon"], p["lat"] = round(p["lon"], 5), round(p["lat"], 5)
         ign[id(p)] = p.pop("importance", None) is not None and not p.pop("osm", False)
         p.pop("osm", None)
+
+    summit_heights(kept, osm, cache)
 
     names = {norm(p["nom"]) for p in kept}
     aliases = {}

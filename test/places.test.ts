@@ -108,11 +108,17 @@ describe("resolvePlace", () => {
     expect(resolvePlace("Cilaos")!.lieu.altitude_m).toBeGreaterThan(1100);
   });
 
+  it("gives a summit its height, not the ground of a coarse grid (scripts/build-gazetteer.py, 25 points per altimetry call)", () => {
+    // Read alone at each point on 05/11/2026: 3 068,75 m and 2 628,63 m at the top; 3 032 m and 2 264 m before.
+    const alt = (nom: string) => gazetteer.places.find((p) => p.type === "sommet" && p.nom === nom)?.altitude_m;
+    expect([alt("Piton des Neiges"), alt("Piton de la Fournaise")]).toEqual([3070, 2632]);
+  });
+
   it("knows the parc des Palmiers of Le Tampon, alone or with its commune, at its own altitude (IGN BD TOPO, RGE ALTI)", () => {
     for (const q of ["Parc des Palmiers", "Parc des Palmiers, Le Tampon"]) {
       const r = resolvePlace(q)!;
       expect([r.lieu.nom, r.lieu.commune, r.correspondance, r.autres]).toEqual(["Parc des Palmiers du Monde", "Le Tampon", "exacte", []]);
-      expect([r.lieu.type, r.lieu.lon, r.lieu.lat, r.lieu.altitude_m]).toEqual(["parc", 55.49519, -21.25297, 576]);
+      expect([r.lieu.type, r.lieu.lon, r.lieu.lat, r.lieu.altitude_m]).toEqual(["parc", 55.49519, -21.25297, 577]);
     }
     // Its name as the BD TOPO writes it.
     expect(name("Parc des Palmiers du Monde")).toBe("Parc des Palmiers du Monde");

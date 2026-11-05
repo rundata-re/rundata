@@ -2,11 +2,13 @@
  * The island as an inline SVG: coastline and communes from src/places/island.json (scripts/build-island.py), with
  * markers placed by the same projection. Colours come from the page's CSS, so the maps follow its light and dark themes.
  */
+import gazetteer from "../places/gazetteer.json" with { type: "json" };
 import island from "../places/island.json" with { type: "json" };
 import relief from "./relief.json" with { type: "json" };
 import routes from "./routes.json" with { type: "json" };
 import { ACCUEILS } from "../providers/accueils-medias.js";
 import { HIKES_REACH, MAX_ZOOM, zoomControls } from "./carte-zoom.js";
+import { nombre } from "../tools/format.js";
 
 const [LON0, LAT0, LON1, LAT1] = island.bbox;
 export const W = island.w;
@@ -117,9 +119,20 @@ function spaced(at: number[][], linked: boolean[], max: number, min: number): nu
   });
 }
 
+/**
+ * A summit's altitude as the tools say it, from the gazetteer (scripts/build-gazetteer.py: the summit's height checked
+ * against the ground at its top), so that the map and the tools never give two (« 3 032 m » against « 3 070 m »).
+ */
+function altitudeOf(name: string): string {
+  const p = gazetteer.places.find((x) => x.type === "sommet" && x.nom === name);
+  if (!p?.altitude_m) throw new Error(`summit missing from the gazetteer: ${name}`);
+  return `${nombre(p.altitude_m)}\u00a0m`;
+}
+
+// Where the summit is drawn: its top, not the point of its name.
 const PEAKS = [
-  { name: "Piton des Neiges", alt: "3 070 m", lon: 55.4783, lat: -21.0989 },
-  { name: "Piton de la Fournaise", alt: "2 632 m", lon: 55.7083, lat: -21.2444 },
+  { name: "Piton des Neiges", alt: altitudeOf("Piton des Neiges"), lon: 55.4783, lat: -21.0989 },
+  { name: "Piton de la Fournaise", alt: altitudeOf("Piton de la Fournaise"), lon: 55.7083, lat: -21.2444 },
 ];
 
 /** A pill's width for its label, and its height. */

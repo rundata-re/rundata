@@ -247,9 +247,12 @@ describe("meteo_actuelle with the Météo-France stations", () => {
     expect(r.resume).not.toMatch(/Gillot/);
   });
 
-  it("answers for Sainte-Rose from a « bonne » station first, before a lower score that is only « moyenne »", async () => {
+  it("answers for Sainte-Rose with its stations by relevance first, never a « moyenne » before a « bonne »", async () => {
+    // The order itself is fixed on a place at a given altitude (representativeness.test.ts).
     const r = body(await meteoActuelle(await mfCache(), "Sainte-Rose", MF_NOW));
-    expect(r.stations.slice(0, 2)).toMatchObject([{ station: "Gros Piton Sainte-Rose", pertinence: "bonne" }, { station: "Saint-Benoît", pertinence: "moyenne" }]);
+    const rank = r.stations.map((s: { pertinence: string }) => ["bonne", "moyenne", "faible"].indexOf(s.pertinence));
+    expect(rank.length).toBeGreaterThan(2);
+    expect(rank).toEqual([...rank].sort((a: number, b: number) => a - b));
   });
 
   it("names the same station first on /meteo, /aujourdhui, the commune's page and in the summary, for the 24 communes", async () => {

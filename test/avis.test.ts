@@ -77,7 +77,7 @@ describe("citation", () => {
     expect(dae.citer).toBe("rundata.re, d'après Géo'DAE (ministère chargé de la santé)");
     expect(dae.lien).toBe("https://rundata.re/defibrillateurs?ref=mcp");
     const sources = JSON.parse((await call("sources_donnees", {})).text);
-    expect(sources.citer).toMatch(/^rundata\.re, d'après .* et d'autres$/);
+    expect(sources.citer.replace(/[\u00a0\u202f]/g, " ")).toMatch(/^rundata\.re, d'après \d+ producteurs de données publiques \(liste : https:\/\/rundata\.re\/chiffres#sources\)$/);
     expect(sources.lien).toBe("https://rundata.re/?ref=mcp");
   });
 

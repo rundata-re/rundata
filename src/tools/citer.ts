@@ -97,9 +97,10 @@ export function citation(p: Payload): string {
     const n = shortName(s);
     if (!names.some((x) => x.startsWith(n))) names.push(names.length === 0 && station ? `${n} (${station})` : n);
   }
-  // sources_donnees' short answer: its producers by licence, the most used licence first.
-  if (!names.length && Array.isArray(p.producteurs_par_licence)) {
-    for (const g of p.producteurs_par_licence as { producteurs?: unknown }[]) for (const x of Array.isArray(g?.producteurs) ? g.producteurs : []) if (typeof x === "string" && x && !names.includes(x)) names.push(x);
+  // sources_donnees' short answer gives the number of its producers, not their names: their list.
+  const producteurs = p.chiffres && typeof p.chiffres === "object" ? (p.chiffres as { producteurs?: unknown }).producteurs : undefined;
+  if (!names.length && Array.isArray(p.producteurs_par_licence) && typeof producteurs === "number" && producteurs > 0) {
+    return `rundata.re, d'après ${producteurs} producteurs de données publiques (liste : ${SITE_URL}/chiffres#sources)`;
   }
   if (!names.length) return "rundata.re";
   return `rundata.re, d'après ${names.slice(0, 3).join(", ")}${names.length > 3 ? " et d'autres" : ""}`;

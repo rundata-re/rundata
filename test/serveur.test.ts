@@ -249,33 +249,36 @@ describe("the serveur block", () => {
     expect(r.envoyees_a_rundata[0].licence).toBe("Licence Ouverte Etalab 2.0");
   });
 
-  it("sources_donnees is short by default: each producer once under its licence, the whole list with detail", async () => {
+  it("sources_donnees is short by default: the number of producers under each licence, the whole list with detail", async () => {
     const short = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: {} }));
     const full = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: { detail: true } }));
     expect(short.sources).toBeUndefined();
     expect(short.detail.replace(/[\u00a0\u202f]/g, " ")).toBe(SOURCES_COURT);
     expect(full.detail).toBeUndefined();
-    // Every licence and producer of the whole list, each once.
-    const by: { licence: string; producteurs: string[] }[] = short.producteurs_par_licence;
+    // Every licence of the whole list, each once, with the number of its producers.
+    const by: { licence: string; producteurs: number }[] = short.producteurs_par_licence;
     expect(new Set(by.map((x) => x.licence))).toEqual(new Set(full.sources.map((x: { licence: string }) => x.licence)));
-    for (const x of full.sources) expect(by.find((y) => y.licence === x.licence)!.producteurs).toContain(x.organisme);
-    for (const y of by) expect(new Set(y.producteurs).size).toBe(y.producteurs.length);
+    expect(by.map((x) => x.licence).length).toBe(new Set(by.map((x) => x.licence)).size);
+    for (const y of by) expect(y.producteurs).toBe(new Set(full.sources.filter((x: { licence: string }) => x.licence === y.licence).map((x: { organisme: string }) => x.organisme)).size);
     expect(short.chiffres.sources).toBe(full.sources.length);
-    expect(JSON.stringify(short).length).toBeLessThan(JSON.stringify(full).length / 2);
-    // The short answer has no `sources`: citer names the producers of its list, the first three in its order.
-    const names = [...new Set(by.flatMap((y) => y.producteurs))];
-    expect(short.citer).toBe(`rundata.re, d'après ${names.slice(0, 3).join(", ")} et d'autres`);
+    // The producers of each domain and the agendas read: with detail and on /chiffres, not in the short answer.
+    expect(short.chiffres.par_domaine.every((d: object) => !("producteurs" in d))).toBe(true);
+    expect(full.chiffres.par_domaine.every((d: { producteurs: unknown }) => Array.isArray(d.producteurs))).toBe(true);
+    expect(short.couverture.evenements).toBeUndefined();
+    expect(full.couverture.evenements).toBeUndefined();
+    expect(JSON.stringify(short).length).toBeLessThan(JSON.stringify(full).length / 3);
   });
 
-  it("cites the producers by licence of a short answer, each once, and only without sources", () => {
-    const groups = [{ licence: "Licence Ouverte 2.0", producteurs: ["Météo-France", "ONF"] }, { licence: "ODbL", producteurs: ["ONF", "OpenStreetMap"] }];
-    expect(citation({ producteurs_par_licence: groups })).toBe("rundata.re, d'après Météo-France, ONF, OpenStreetMap");
-    expect(citation({ producteurs_par_licence: [...groups, { licence: "CC BY 4.0", producteurs: ["OVPF-IPGP"] }] })).toBe("rundata.re, d'après Météo-France, ONF, OpenStreetMap et d'autres");
-    // Anything else than names is skipped; nothing left, rundata.re alone.
-    expect(citation({ producteurs_par_licence: [{ licence: "x", producteurs: [3, null, ""] }, null, "ONF"] })).toBe("rundata.re");
-    expect(citation({ producteurs_par_licence: "ONF" })).toBe("rundata.re");
-    // An answer that credits its sources is cited from them, not from such a list.
-    expect(citation({ sources: [{ id: "onf", nom: "ONF", attribution: "ONF La Réunion" }], producteurs_par_licence: groups })).toBe("rundata.re, d'après ONF La Réunion");
+  it("cites sources_donnees' short answer by the number of producers that /chiffres gives, with the link to their list", async () => {
+    const short = body(await rpcResult("tools/call", { name: "sources_donnees", arguments: {} }));
+    const page = await (await handle(new Request("https://rundata.re/chiffres"), new Cache())).text();
+    const onPage = Number(/<a class="fig" href="#par-domaine">([\d\u202f\u00a0]+)<\/a><span>producteurs/.exec(page)![1].replace(/\D/g, ""));
+    expect(short.chiffres.producteurs).toBe(onPage);
+    expect(short.citer.replace(/[\u00a0\u202f]/g, " ")).toBe(`rundata.re, d'après ${onPage} producteurs de données publiques (liste : https://rundata.re/chiffres#sources)`);
+    // Without a count, or with detail (its sources cited by name), not this sentence.
+    expect(citation({ producteurs_par_licence: [{ licence: "x", producteurs: 3 }] })).toBe("rundata.re");
+    expect(citation({ producteurs_par_licence: [{ licence: "x", producteurs: 3 }], chiffres: { producteurs: 0 } })).toBe("rundata.re");
+    expect(citation({ sources: [{ id: "onf", nom: "ONF", attribution: "ONF La Réunion" }], chiffres: { producteurs: 85 } })).toBe("rundata.re, d'après ONF La Réunion");
   });
 });
 

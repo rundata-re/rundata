@@ -28,8 +28,9 @@ describe("fit", () => {
     expect(fit(p, pierrefonds).score).toBeLessThan(fit(p, gillot).score);
   });
 
-  it("puts the better relevance first, then the lower score: Gros Piton before Saint-Benoît for Sainte-Rose", () => {
-    const p = place("Sainte-Rose");
+  it("puts the better relevance first, then the lower score: Gros Piton before Saint-Benoît for a place of Sainte-Rose at 31 m", () => {
+    // At a given altitude, not the gazetteer's (30 m since 05/11/2026): Gros Piton (181 m) is then 150 m higher, « bonne ».
+    const p = { ...place("Sainte-Rose"), altitude_m: 31 };
     const mf = (nom: string) => mfStations().find((s) => s.nom === nom)!;
     const piton = fit(p, mf("Gros Piton Sainte-Rose"));
     const benoit = fit(p, mf("Saint-Benoît"));

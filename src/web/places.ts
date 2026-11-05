@@ -60,7 +60,7 @@ export function pageOf(slug: string): PlacePage | undefined {
 
 /**
  * The 19 communes that have a shore, each touching one of Météo-France's 8 coastal zones (VIGI974-51 to 58). Not
- * from the altitude of their centre: Saint-André (96 m), Petite-Île, Les Avirons and Les Trois-Bassins (785 m) are
+ * from the altitude of their centre: Saint-André (97 m), Petite-Île, Les Avirons and Les Trois-Bassins (783 m) are
  * on the sea too. Cilaos, Salazie, La Plaine-des-Palmistes, Le Tampon and Entre-Deux are not.
  */
 export const COMMUNES_COTIERES: ReadonlySet<string> = new Set([

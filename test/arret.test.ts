@@ -62,7 +62,7 @@ describe("the stop pages", () => {
     expect(description).toMatch(/^Prochains bus à l&#39;arrêt Gare de St-Pierre, tous réseaux\u00a0: lignes [^,]+(, [^,]+)*( et \d+ autres)?, (directions et heures de passage, )?d&#39;après les horaires et les annonces en direct( de Car Jaune et Alternéo)?\.$/);
     expect(html).toContain(`<link rel="canonical" href="${O}/bus/arret/saint-pierre/gare-de-saint-pierre">`);
     expect(html).not.toContain(`content="noindex"`);
-    expect(html).toContain("Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour à 07:30.");
+    expect(html).toContain("Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour le 23/10 à 07:30.");
   });
 
   it("are not indexed below the threshold, and say the commune unless the name has it", async () => {

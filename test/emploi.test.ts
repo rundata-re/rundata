@@ -294,7 +294,7 @@ describe("the tool emploi and the page /emploi", () => {
   it("says the site's silence with the time of the offers shown", async () => {
     const c = await copie();
     emploiSource.configure(async () => ({ ...c, echec: "2026-10-29T08:25:00Z" }));
-    expect(body(await emploi(cache(), undefined, undefined, NOW)).injoignable).toBe("Lu aujourd'hui à 12:45 : le site de Choisir le service public n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
+    expect(body(await emploi(cache(), undefined, undefined, NOW)).injoignable).toBe("Lu le 29/10 à 12:45 : le site de Choisir le service public n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
   });
 
   it("shows on /emploi the first offer under the title, its employer first and its closing date, without a link to the sites not taken", async () => {
@@ -304,7 +304,7 @@ describe("the tool emploi and the page /emploi", () => {
     // The page's copy built 4 minutes after the feed's read: the feed's time is said.
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(Date.parse(c.lu) + 4 * 60_000), stale: false }, NOW);
     expect(page).toContain("<h1>Offres d'emploi public à La Réunion</h1>");
-    expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture à 12:45\u00a0; le site peut en compter davantage.");
+    expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture le 29/10 à 12:45\u00a0; le site peut en compter davantage.");
     const first = page.indexOf('<ul class="rows eau" id="offres">');
     expect(first).toBeGreaterThan(page.indexOf("</h1>"));
     expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel · Emploi ouvert aux titulaires et aux contractuels · Saint-Denis</small></span><span class="q-none">jusqu&#39;au 20/11</span>');
@@ -314,7 +314,7 @@ describe("the tool emploi and the page /emploi", () => {
     expect(page).toContain('<a href="https://monemploi-lareunion.francetravail.fr/" rel="noopener">Mon emploi la Réunion</a>');
     // Empty: marketing's sentence, with the hour.
     const none = emploiPage("https://rundata.re", { value: { ...d, nombre: 0, offres: [] }, fetchedAt: NOW, stale: false }, NOW);
-    expect(none).toContain("Aucune offre publiée sur Choisir le service public pour La Réunion à 12:45.");
+    expect(none).toContain("Aucune offre publiée sur Choisir le service public pour La Réunion le 29/10 à 12:45.");
   });
 
   it("shows a post published under several references as one line, a link to each, the days of each when the line has no closing date", async () => {

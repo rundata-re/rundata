@@ -111,7 +111,7 @@ describe("air quality: what the index is and where it comes from", () => {
     const answer = body(await qualiteAir(cache(diffused(YESTERDAY)), undefined, NOW, true));
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
     const status = page.slice(page.indexOf('<div class="status">'), page.indexOf("</div>", page.indexOf('<div class="status">')));
-    expect(status).toContain("Une prévision d'Atmo Réunion pour la journée, pas une mesure. Prévision diffusée par Atmo Réunion la veille, le 22/10 à 10:45. Lue par rundata.re à 09:00.");
+    expect(status).toContain("Une prévision d'Atmo Réunion pour la journée, pas une mesure. Prévision diffusée par Atmo Réunion la veille, le 22/10 à 10:45. Lue par rundata.re le 23/10 à 09:00.");
     expect(page).toContain("Prévision du jour</p>");
     expect(page).toContain(`${'<span class="aq aq2">moyen</span>'} prévu dans 24 communes`);
     expect(page).not.toContain("Mis à jour à");
@@ -120,7 +120,7 @@ describe("air quality: what the index is and where it comes from", () => {
     expect(source).toContain(`<a href="${atmo.DIFFUSION}" rel="noopener">`);
     expect(source).toContain(`<a href="${atmo.ODBL}" rel="noopener">ODbL 1.0</a>`);
     expect(source).toContain(`<a href="${esc(atmo.GUIDE)}" rel="noopener">guide de calcul de l'indice ATMO</a>`);
-    expect(source).toContain("Prévision diffusée par Atmo Réunion la veille, le 22/10 à 10:45. Lue par rundata.re à 09:00.</p>");
+    expect(source).toContain("Prévision diffusée par Atmo Réunion la veille, le 22/10 à 10:45. Lue par rundata.re le 23/10 à 09:00.</p>");
     for (const step of atmo.METHODE) expect(source).toContain(esc(step));
     // The sub-indices, a row per commune.
     expect(page.match(/<td data-label="ozone"><span class="aq aq2">moyen<\/span><\/td>/g)).toHaveLength(24);

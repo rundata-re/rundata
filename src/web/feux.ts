@@ -14,7 +14,7 @@ import type { Alerte, SentiersAnswer } from "./data.js";
 import { CLE_FERME, CLE_FEU, closedMarkers, closedTrails, connectorCta, crumbBar, crumbs, fireId, fireMarkers, onfMap, sourcesNote, webPage } from "./domains.js";
 import { legende } from "./carte-legende.js";
 import { esc, islandMap } from "./map.js";
-import { ask, credits, DESCRIPTION_MAX, hm, layout, officielHtml } from "./pages.js";
+import { ask, credits, DESCRIPTION_MAX, layout, officielHtml, leAt } from "./pages.js";
 
 export const FEUX_PATH = "/feux";
 
@@ -44,7 +44,7 @@ export function feuxDescription(fires: feux.Feux | null, now: Date): string {
   const make = (where: string) =>
     n === 1
       ? `1 feu vu par satellite en 24 h à La Réunion (974), ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`
-      : `${n} feux vus par satellite en 24 h à La Réunion (974), le dernier ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`;
+      : `${n} feux vus par satellite en 24 h à La Réunion (974), le dernier vu ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`;
   const full = make(` près ${de(last.lieu)}`);
   return full.length <= DESCRIPTION_MAX ? full : make("");
 }
@@ -78,8 +78,8 @@ function firesLine(l: FeuxLive): string {
   const trails = l.sentiers ? ` Sentiers : ${onfMap(l.sentiers.value).replace(/^C/, "c")}.` : "";
   if (!feux.enabled() || !l.fires) return trails.trim();
   return (l.fires.detections.length
-    ? `Points chauds : satellites de la NASA (FIRMS), lus à ${hm(l.fires.fetchedAt)}.`
-    : `Aucun point chaud détecté par satellite (NASA FIRMS, lu à ${hm(l.fires.fetchedAt)}).`) + trails;
+    ? `Points chauds : satellites de la NASA (FIRMS), lus ${leAt(l.fires.fetchedAt)}.`
+    : `Aucun point chaud détecté par satellite (NASA FIRMS, lu ${leAt(l.fires.fetchedAt)}).`) + trails;
 }
 
 export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?: Alerte): string {
@@ -107,7 +107,7 @@ export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?:
   const body = `<section aria-labelledby="h-feux">
   <h2 id="h-feux">Les feux des dernières 24 h</h2>
   <div class="card">${firesList(l.fires, now)}</div>
-  ${l.fires ? `<p class="note">Satellites lus : ${esc(l.fires.satellites.join(", "))}, à ${hm(l.fires.fetchedAt)}.${muets(l.fires) ? ` ${esc(muets(l.fires)!)}` : ""}</p><p class="sources">Sources : ${credits(creditOf([feux.SOURCE]))}.</p>` : ""}
+  ${l.fires ? `<p class="note">Satellites lus : ${esc(l.fires.satellites.join(", "))}, ${leAt(l.fires.fetchedAt)}.${muets(l.fires) ? ` ${esc(muets(l.fires)!)}` : ""}</p><p class="sources">Sources : ${credits(creditOf([feux.SOURCE]))}.</p>` : ""}
 </section>
 <section aria-labelledby="h-sentiers">
   <h2 id="h-sentiers">Les sentiers fermés par l'ONF</h2>

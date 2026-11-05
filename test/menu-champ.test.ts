@@ -105,7 +105,7 @@ describe("the fires' tile", () => {
   it("says « aucun point chaud détecté » with the hour of the read, never « aucun feu »", () => {
     const l = feuxLive(copy({ detections: [], satellites: ["VIIRS_SNPP_NRT"], lu: "2026-11-04T09:52:00Z" }))!;
     expect(l.valeur).toBe("aucun point chaud détecté");
-    expect(l.detail).toBe("ces dernières 24 h, par satellite (NASA FIRMS), lu à 13:52");
+    expect(l.detail).toBe("ces dernières 24 h, par satellite (NASA FIRMS), lu le 04/11 à 13:52");
     expect(JSON.stringify(l)).not.toMatch(/aucun feu/i);
   });
 

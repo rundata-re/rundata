@@ -35,7 +35,7 @@ describe("the page of a commune's day", () => {
   it("says the day's figures in its description, each only when there is one", () => {
     const p = pageOf("saint-paul")!;
     // The site's narrow space before the unit.
-    expect(descriptionOf(p, resume(p, full(p.nom) as never, NOW)).replace(/\u202f/g, " ")).toBe("Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés à 15:10, 12 sorties, 1 coupure d'eau. Routes, actu, vigilance, mairie : le résumé du jour.");
+    expect(descriptionOf(p, resume(p, full(p.nom) as never, NOW)).replace(/\u202f/g, " ")).toBe("Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés le 24/10 à 15:10, 12 sorties, 1 coupure d'eau. Routes, actu, vigilance, mairie : le résumé du jour.");
     expect(descriptionOf(p, resume(p, {}, NOW))).toBe("Aujourd'hui à Saint-Paul (974) : Routes, actu, vigilance, mairie : le résumé du jour.");
     for (const c of COMMUNES) expect(descriptionOf(c, resume(c, full(c.nom) as never, NOW)).length).toBeLessThanOrEqual(152);
   });
@@ -156,7 +156,7 @@ describe("the top of the page of a commune's day", () => {
     };
     const lines = dayLines(p, day({ meteo, vigilance: green, evenements_du_jour: { liste: [] }, carburants: { prix_maximum: "sans plomb 2,11 €/L, gazole 1,69 €/L" } })).replace(/\u202f/g, " ");
     expect(lines).toBe('<ul class="jour">' +
-      "<li><b>Météo\u00a0:</b> 24,8 °C mesurés à 14:00 à la station Bellevue Bras-Panon (Bras-Panon, à 8,5\u00a0km). Prévision du jour\u00a0: 19,1 °C à 24,8 °C, pluie.</li>" +
+      "<li><b>Météo\u00a0:</b> 24,8 °C mesurés le 04/11 à 14:00 à la station Bellevue Bras-Panon (Bras-Panon, à 8,5\u00a0km). Prévision du jour\u00a0: 19,1 °C à 24,8 °C, pluie.</li>" +
       "<li><b>Vigilance\u00a0:</b> verte pour l&#39;Est (Météo-France).</li>" +
       "<li><b>Sorties\u00a0:</b> aucun événement trouvé aujourd'hui dans les agendas lus.</li>" +
       "<li><b>Carburants\u00a0:</b> prix maximum du mois\u00a0: sans plomb 2,11 €/L, gazole 1,69 €/L.</li>" +

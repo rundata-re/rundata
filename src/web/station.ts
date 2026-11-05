@@ -15,7 +15,7 @@ import { crumbBar, crumbs, describe, webPage } from "./domains.js";
 import { chart, known } from "./graphe.js";
 import { esc } from "./map.js";
 import { inseeCommune, ventText } from "./meteo-carte.js";
-import { credits, dayMonth, deg, hm, layout, metres, shortName, thin } from "./pages.js";
+import { credits, dayMonth, deg, hm, layout, metres, shortName, thin, leAt, duAt } from "./pages.js";
 import { a, fr } from "../tools/format.js";
 
 export const STATION_PATH = "/meteo/station";
@@ -119,14 +119,14 @@ function band(d: StationData, now: Date): string {
   const airport = / \(aéroport\)$/.test(d.nom);
   const commune = inseeCommune(d.id);
   const m = d.derniere?.mesures ?? {};
-  const at = d.derniere ? hm(d.derniere.time) : "";
+  const at = d.derniere ? leAt(d.derniere.time) : "";
   const where = `par la station ${cirad(d.nom) ? "du CIRAD" : "Météo-France"}${airport ? " de l'aéroport" : ""}${commune ? `, ${esc(a(commune))}` : ""}, ${metres(d.altitude_m)} d'altitude`;
   const said = !d.derniere
     ? ""
     : m.temperature != null
-      ? `<div class="now"><span class="big span">${thin(deg(m.temperature))}</span><p>mesurés ${cirad(d.nom) ? "" : "sous abri "}à <b>${at}</b> ${where}.</p></div>`
+      ? `<div class="now"><span class="big span">${thin(deg(m.temperature))}</span><p>mesurés ${cirad(d.nom) ? "" : "sous abri "}<b>${at}</b> ${where}.</p></div>`
       // A rain gauge says what it measures; another station without a thermometer, its measures (marketing).
-      : `<div class="now"><p>${Object.keys(m).every((k) => k.startsWith("pluie")) ? "Pluie mesurée à" : "Mesures de"} <b>${at}</b> ${where}.</p></div>`;
+      : `<div class="now"><p>${Object.keys(m).every((k) => k.startsWith("pluie")) ? `Pluie mesurée <b>${at}</b>` : `Mesures <b>${duAt(d.derniere!.time)}</b>`} ${where}.</p></div>`;
   // The last round hour, in the box only when it ends before the last measure, and not long before.
   const h = d.heures[0] && d.derniere && Date.parse(d.heures[0].fin) <= Date.parse(d.derniere.time) && Date.parse(d.derniere.time) - Date.parse(d.heures[0].fin) <= 2 * HOUR_MS ? d.heures[0] : undefined;
   const span = h && `de ${hm(new Date(Date.parse(h.fin) - HOUR_MS))} à ${hm(h.fin)}`;
@@ -140,7 +140,7 @@ function band(d: StationData, now: Date): string {
   // Not the sunshine of an hour wholly at night.
   if (h?.ins != null && (h.ins > 0 || daylight(d, h.fin))) rows.push(["Soleil", `${h.ins}${T}min ${span}`]);
   const box = d.derniere
-    ? `<figure class="card mapcard sta-now"><h3>La dernière mesure, à ${at}</h3>
+    ? `<figure class="card mapcard sta-now"><h3>La dernière mesure, ${at}</h3>
     <ul class="bars">${rows.map(([k, v]) => `<li><span>${k}</span><b>${esc(v)}</b></li>`).join("")}</ul>
     <p class="note">${cirad(d.nom) ? "Mesures du CIRAD, diffusées par Météo-France" : "Mesures de Météo-France"}, toutes les 6${T}minutes. <a href="/meteo#stations">Les autres stations →</a></p>
   </figure>`

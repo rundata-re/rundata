@@ -38,7 +38,7 @@ import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAI
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
-import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg } from "./pages.js";
+import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
@@ -154,7 +154,7 @@ function weather(p: PlacePage, data: Cached<PlaceData> | null, now: Date): Live 
   return {
     valeur: esc(thin(s.mesures.temperature!)),
     // What makes it speak less well for the commune, as the tools say it in full: « 249 m plus haut », « autre versant\u00a0: est ».
-    detail: `station ${esc(s.station)}${communeDite(s, p.nom) ? ` ${esc(a(communeDite(s, p.nom)!))}` : ""} (${[metres(s.altitude_m), ...(s.distance_km != null ? [`à ${fr(s.distance_km)} km`] : []), ...ecartsCourts(s).map(esc)].join(", ")}), mesuré à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}` +
+    detail: `station ${esc(s.station)}${communeDite(s, p.nom) ? ` ${esc(a(communeDite(s, p.nom)!))}` : ""} (${[metres(s.altitude_m), ...(s.distance_km != null ? [`à ${fr(s.distance_km)} km`] : []), ...ecartsCourts(s).map(esc)].join(", ")}), mesuré ${esc(leJour(s.heure_mesure))}` +
       (f?.temperature_min && f.temperature_max ? ` · prévision ${esc(f.jour.toLowerCase())}${f.periode ? ` ${esc(f.periode)}` : ""} : ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}` : ""),
   };
 }
@@ -248,7 +248,7 @@ export const BIKES_STALE_MS = 30 * 60_000;
 const BIKES_SHOWN = 4;
 
 /** « à 15:35 » the same day, « hier à 15:35 » the day before, « le 29/10 à 15:35 » before. */
-const readOn = (at: Date, now: Date) => (daysApart(at, now) === 1 ? `hier à ${hm(at)}` : readAt(at, now).a);
+const readOn = (at: Date, now: Date) => readAt(at, now).a;
 
 /** A station on one line: its name and its bikes, « Y aller » beside them when its copy kept its position. */
 function bikeLine(s: NonNullable<CommuneData["velos"]>[number], g: Porte): string {
@@ -704,12 +704,12 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const s = enTete(l.place?.value.meteo?.stations);
   const headline = s
     ? `<div class="now"><span class="big">${esc(thin(s.mesures.temperature!))}</span>` +
-      `<p>mesurés à <b>${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
+      `<p>mesurés <b>${esc(leJour(s.heure_mesure))}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 
   const title = `${p.nom} 974 en direct : météo, bus, air, mairie`;
   const facts = [
-    s && `${thin(s.mesures.temperature!)} à ${s.heure_mesure.split(" ")[1]}`,
+    s && `${thin(s.mesures.temperature!)} ${leJour(s.heure_mesure)}`,
     airOf(p, l.air) && `air ${airOf(p, l.air)!.qualite}`,
     mairie && mairie.valeur !== "Horaires absents de l'annuaire" && `mairie ${mairie.valeur.toLowerCase()}`,
   ].filter(Boolean);

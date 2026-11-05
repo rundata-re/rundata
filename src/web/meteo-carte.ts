@@ -12,7 +12,7 @@ import { fr } from "../tools/format.js";
 import type { StationNow } from "./data.js";
 import { apart, esc, H, islandMap, KM, project, W } from "./map.js";
 import { CLASSES, PATH as PLUIE_RADAR } from "./pluie-radar.js";
-import { chip, deg, hm, metres, shortName, stationId, STOPS, thin } from "./pages.js";
+import { chip, deg, metres, shortName, stationId, STOPS, thin, leAt, duAt } from "./pages.js";
 import { hash } from "./pwa.js";
 import { PREMIER_JOUR } from "./radar-semaine.js";
 import { DUREES, FINS, jourPath, JOURS, joursOf, PATHS as REJEU_PATHS } from "./rejeu.js";
@@ -189,13 +189,13 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
   };
   const has = Object.entries(v).filter(([, x]) => x).map(([k]) => ` has-${k}`).join("");
   const place = `${shortName(s.nom)} · ${metres(s.altitude_m)}`;
-  const said = `${place} : ${[v.t, v.p, v.v].filter(Boolean).join(", ")}, mesures de ${hm(s.time)}${by(s)}, voir le détail`;
+  const said = `${place} : ${[v.t, v.p, v.v].filter(Boolean).join(", ")}, mesures ${duAt(s.time)}${by(s)}, voir le détail`;
   const shapes =
     (s.temperature != null ? dot("t", x, y, chip(s.temperature), named ? `${Math.round(s.temperature)}°` : undefined) : "") +
     (rain != null ? (rain > 0 ? dot("p", rx, ry, rainColor(rain), rainSaid(rain, named) ? rainFigure(rain) : undefined) : dot("p", x, y, RAIN_DRY, undefined, true)) : "") +
     (s.vent != null ? windMark(x, y, s, windAt) : "");
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
-  return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée à\u00a0${hm(s.time)}${esc(by(s))}"${data}>` +
+  return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data}>` +
     `<circle class="hit" cx="${x}" cy="${y}" r="${named ? HIT : HIT / 2}" style="fill:transparent;stroke:none"/>${shapes}</a>`;
 }
 
@@ -265,10 +265,10 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   const n = (k: number, one: string, many: string) => `${k} ${k > 1 ? many : one}`;
   // A tab and a legend per measure that at least one station has; the first shown without a choice.
   const layers = [
-    t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>Température mesurée sous abri à ${t.length} des ${list.length}\u00a0stations, la plus récente à ${hm(latest)}. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.` },
+    t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>Température mesurée sous abri à ${t.length} des ${list.length}\u00a0stations, la plus récente ${leAt(latest)}. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.` },
     // « Pluie » alone (the user, 01/11/2026): the legend says over how long, and the radar is in the same layer.
-    nRain && { id: "p", tab: "Pluie", legend: `${n(nRain, "pluviomètre", "pluviomètres")}, ${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente à ${hm(latest)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}. Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
-    w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>${n(w.length, "anémomètre", "anémomètres")}, vent moyen mesuré en km/h, le plus récent à ${hm(latest)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.` },
+    nRain && { id: "p", tab: "Pluie", legend: `${n(nRain, "pluviomètre", "pluviomètres")}, ${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente ${leAt(latest)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}. Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
+    w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>${n(w.length, "anémomètre", "anémomètres")}, vent moyen mesuré en km/h, le plus récent ${leAt(latest)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.` },
   ].filter((l): l is { id: string; tab: string; legend: string } => !!l);
   const tabs = `<div class="tabs aqtabs" role="radiogroup" aria-label="Mesure affichée sur la carte">` +
     layers.map((l, i) => `<input type="radio" name="wxl" id="wxl-${l.id}"${i ? "" : ' class="on" checked'}><label for="wxl-${l.id}">${l.tab}</label>`).join("") + `</div>`;
@@ -280,7 +280,7 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   // screen (the user, 01/11/2026, as /electricite).
   // The tabs in a bar, which the full screen's button joins (pages.ts).
   return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}</div>` +
-    islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, à ${hm(latest)}` }) +
+    islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` }) +
     bubble + `<figcaption class="note">${replay}${legend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
 

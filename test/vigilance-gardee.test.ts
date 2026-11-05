@@ -83,19 +83,19 @@ describe("the vigilance while Météo-France is late", () => {
 
   it("says when the reading kept was read beyond 15 min, in full on a phone", async () => {
     const { a, tile, banner, commune } = await late(30);
-    expect(a?.lue).toBe("lue à 03:40");
-    expect(tile).toContain(`<p class="td all">fortes pluies / orages (Est) · lue à 03:40. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
-    expect(commune).toContain(`<p class="td all">pour l&#39;Est (Météo-France), la zone de Saint-Benoît · lue à 03:40. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
+    expect(a?.lue).toBe("lue le 26/10 à 03:40");
+    expect(tile).toContain(`<p class="td all">fortes pluies / orages (Est) · lue le 26/10 à 03:40. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
+    expect(commune).toContain(`<p class="td all">pour l&#39;Est (Météo-France), la zone de Saint-Benoît · lue le 26/10 à 03:40. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
     expect(commune).toContain(`<p class="tv">Vigilance météo : <span class="vg vg2">jaune</span> fortes pluies / orages</p>`);
-    for (const s of said(" · lue à 03:40")) expect(banner).toContain(s);
+    for (const s of said(" · lue le 26/10 à 03:40")) expect(banner).toContain(s);
   });
 
   it("says Météo-France has not answered since, beyond an hour, however old the reading kept", async () => {
     const { v, tile, banner, logs } = await late(120);
     expect(v?.stale).toBe(true);
     expect(logs[0]).toMatch(/^source mf_vigilance trop lente : lecture gardée du 26\/10 02:10 servie, lue après/);
-    expect(tile).toContain(`<p class="td all">fortes pluies / orages (Est) · lue à 02:10, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
-    for (const s of said(" · lue à 02:10, sans réponse depuis")) expect(banner).toContain(s);
+    expect(tile).toContain(`<p class="td all">fortes pluies / orages (Est) · lue le 26/10 à 02:10, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
+    for (const s of said(" · lue le 26/10 à 02:10, sans réponse depuis")) expect(banner).toContain(s);
     // Read another day: the day too.
     expect((await late(26 * 60)).tile).toContain(` · lue le 25/10 à 02:10, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
   });
@@ -105,8 +105,8 @@ describe("the vigilance while Météo-France is late", () => {
       String(url).includes("/token") ? Response.json({ access_token: "t", expires_in: 3600 }) : new Response("", { status: 503 }));
     const { v, tile, banner } = await late(180);
     expect(v?.stale).toBe(true);
-    expect(tile).toContain(` · lue à 01:10, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
-    for (const s of said(" · lue à 01:10, sans réponse depuis")) expect(banner).toContain(s);
+    expect(tile).toContain(` · lue le 26/10 à 01:10, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
+    for (const s of said(" · lue le 26/10 à 01:10, sans réponse depuis")) expect(banner).toContain(s);
   });
 
   it("says it is updating when nothing was kept", async () => {

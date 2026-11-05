@@ -20,7 +20,7 @@ import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { a, communeDite, de } from "../tools/format.js";
 import { compteAvis } from "../tools/coupures.js";
-import { ask, credits, icon, layout, officielHtml, SITE, thin } from "./pages.js";
+import { ask, credits, icon, layout, officielHtml, SITE, thin, leJour } from "./pages.js";
 import type { PlacePage } from "./places.js";
 
 const TITLE_MAX = 60;
@@ -37,7 +37,7 @@ export const H1 = (p: PlacePage) => `Aujourd'hui ${aCommune(p.nom)}`;
 export const LINK = (p: PlacePage) => `Aujourd'hui ${aCommune(p.nom)} : le résumé de la journée →`;
 export const HOOK = (p: PlacePage) => `Ce qui compte aujourd'hui ${aCommune(p.nom)}, sur une page : la mesure, les routes, l'actu, les coupures, les sorties et la vie pratique.`;
 
-/** « Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés à 15:10, 12 sorties, 1 coupure d'eau. Routes, actu… », each figure only when there is one. */
+/** « Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés le 05/11 à 15:10, 12 sorties, 1 coupure d'eau. Routes, actu… », each figure only when there is one. */
 
 type Markets = NonNullable<Resume["marches_du_jour"]>;
 type Aller = ReturnType<typeof porte>["aller"];
@@ -88,7 +88,7 @@ export function dayLines(p: PlacePage, r: Resume): string {
   const f = m?.prevision?.aujourd_hui;
   const where = s ? [stationCommune(s.station), s.distance_km != null ? `à ${String(s.distance_km).replace(".", ",")}\u00a0km` : ""].filter(Boolean).join(", ") : "";
   const measured = s?.mesures.temperature
-    ? `${esc(thin(s.mesures.temperature))} mesurés à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)} à la station ${esc(s.station)}${where ? ` (${esc(where)})` : ""}.`
+    ? `${esc(thin(s.mesures.temperature))} mesurés ${esc(leJour(s.heure_mesure))} à la station ${esc(s.station)}${where ? ` (${esc(where)})` : ""}.`
     : "";
   const forecast = f?.temperature_min && f.temperature_max ? `Prévision ${esc(f.periode ?? "du jour")}\u00a0: ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}${f.ciel_en_journee ? `, ${esc(f.ciel_en_journee)}` : ""}.` : "";
   const v = r.vigilance;
@@ -140,7 +140,7 @@ export function descriptionOf(p: PlacePage, r: Resume): string {
   const dry = r.coupures_eau?.avis.some((n) => n.ne_pas_boire);
   const figures = [
     dry ? "eau à ne pas boire" : "",
-    t ? `${thin(t)} mesurés à ${m!.heure_mesure.split(" ")[1] ?? m!.heure_mesure}` : "",
+    t ? `${thin(t)} mesurés ${leJour(m!.heure_mesure)}` : "",
     events ? plural(events, "sortie") : "",
     cuts ? plural(cuts, "coupure d'eau", "coupures d'eau") : "",
   ].filter(Boolean);
@@ -192,7 +192,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
 
   const weather = m
     ? card("thermo", `Météo ${p.nom}`,
-        (m.mesure ? `<p><b>${esc(thin(m.mesure.mesures.temperature ?? ""))}</b> mesurés à ${esc(m.mesure.heure_mesure.split(" ")[1] ?? m.mesure.heure_mesure)} par la station ${esc(m.mesure.station)}${communeDite(m.mesure, p.nom) ? ` ${esc(a(communeDite(m.mesure, p.nom)!))}` : ""} (${m.mesure.altitude_m.toLocaleString("fr-FR")} m${m.mesure.distance_km != null ? `, à ${String(m.mesure.distance_km).replace(".", ",")} km` : ""}).</p>` : "") +
+        (m.mesure ? `<p><b>${esc(thin(m.mesure.mesures.temperature ?? ""))}</b> mesurés ${esc(leJour(m.mesure.heure_mesure))} par la station ${esc(m.mesure.station)}${communeDite(m.mesure, p.nom) ? ` ${esc(a(communeDite(m.mesure, p.nom)!))}` : ""} (${m.mesure.altitude_m.toLocaleString("fr-FR")} m${m.mesure.distance_km != null ? `, à ${String(m.mesure.distance_km).replace(".", ",")} km` : ""}).</p>` : "") +
         (f ? `<p>Prévision, pas une mesure : ${dayForecast(f)}${m.prevision?.demain ? ` ; ${dayForecast(m.prevision.demain)}` : ""}.</p>` : ""),
         `/meteo/${p.slug}`)
     : "";

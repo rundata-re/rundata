@@ -206,7 +206,7 @@ describe("the formations in the tool emploi and on /emploi", () => {
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: NOW, stale: false }, NOW);
     const section = page.slice(page.indexOf('<section id="cpf"'), page.indexOf("</section>", page.indexOf('<section id="cpf"')));
     expect(section).toContain("Se former avec le CPF");
-    expect(section).toContain("3 formations éligibles au CPF ont une session ouverte à La Réunion dans le catalogue de Mon Compte Formation, lu à 16:15.");
+    expect(section).toContain("3 formations éligibles au CPF ont une session ouverte à La Réunion dans le catalogue de Mon Compte Formation, lu le 03/11 à 16:15.");
     expect(section).toContain(`href="${cpf.SITE}"`);
     expect(section).not.toMatch(/€|CENTRE EXEMPLE|Martin/);
     expect(section).not.toMatch(/aucune formation/i);

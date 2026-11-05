@@ -6,12 +6,14 @@
  * The subject is always the site, as the source shows its name (« le site de la mairie de Sainte-Marie », « le site de
  * la CIREST »), never the institution alone, which would read as ignoring a request.
  */
-import { localTime } from "../geo.js";
 
-/** « 24/10 10:00 » → « aujourd'hui à 10:00 » the same day at La Réunion, else « le 24/10 à 10:00 » (as lu_le). */
-export function when(at: string, now: Date): string {
+/**
+ * « 24/10 10:00 » → « le 24/10 à 10:00 », with its day even today: « aujourd'hui » misleads on a page copied or read
+ * the next day (as lu_le).
+ */
+export function when(at: string, _now?: Date): string {
   const [day, hour] = at.split(" ");
-  return day === localTime(now).split(" ")[0] ? `aujourd'hui à ${hour}` : `le ${day} à ${hour}`;
+  return `le ${day} à ${hour}`;
 }
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -36,7 +38,7 @@ export function injoignable(site: string, keptAt: string | undefined, readAt: st
   const hour = when(readAt, now);
   return {
     texte: `${capital(site)} n'a pas répondu à notre dernière lecture (${hour}) : nous ne savons pas ce qu'il annonce en ce moment.`,
-    court: `site sans réponse à notre dernière lecture (${hour.startsWith("aujourd'hui") ? readAt.split(" ")[1] : readAt})`,
+    court: `site sans réponse à notre dernière lecture (${hour})`,
   };
 }
 

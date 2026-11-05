@@ -12,9 +12,11 @@ import { buildAgenda } from "../src/web/data.js";
 import { agendaHours, agendaPage } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
 import { mesure } from "../src/web/mesure.js";
-import { quand } from "../src/tools/sport.js";
 import { SOURCE_REVISION } from "../src/web/revisions.js";
 import { withVide } from "../src/vide.js";
+
+// « 2026-10-24T12:05 » → « le 24/10 à 12:05 », the form of the reads.
+const leLocal = (l: string) => `le ${l.slice(8, 10)}/${l.slice(5, 7)} à ${l.slice(11, 16)}`;
 
 // The communes' sites read, as once they have agreed (test/autorisations.test.ts for what is said until then).
 vi.mock("../src/providers/autorisations.js", () => import("./autorisees.js"));
@@ -203,7 +205,7 @@ describe("agenda", () => {
       const late = body(await agenda(at(), undefined, undefined, "King", new Date(t)));
       expect(titles(late)).not.toContain(KING);
       expect(late.indisponible).toBeUndefined();
-      const since = `dernière lecture le ${quand(toLocal(NOW.toISOString()))}`;
+      const since = `dernière lecture ${leLocal(toLocal(NOW.toISOString()))}`;
       expect(late.non_lus).toContain(`Ligue réunionnaise de volley-ball : ${since}`);
       // In the summary, only a commune's own: the whole island's are in the field.
       expect(late.resume).not.toContain("sans lecture récente");
@@ -243,7 +245,7 @@ describe("agenda", () => {
       league = () => new Response("", { status: 503 });
       expect((await refreshPlanned(at(), NOW)).gardes).toEqual(["lrvb"]);
       const b = body(await agenda(at(), undefined, undefined, undefined, NOW));
-      expect(b.non_lus).toEqual([`Ligue réunionnaise de volley-ball : dernière lecture sans succès (${quand(toLocal(NOW.toISOString()))})`]);
+      expect(b.non_lus).toEqual([`Ligue réunionnaise de volley-ball : dernière lecture sans succès (${leLocal(toLocal(NOW.toISOString()))})`]);
     });
 
     it("keeps its copy and its time when the reading fails or finds nothing", async () => {
@@ -309,7 +311,7 @@ describe("agenda", () => {
       t += 10 * 60_000;
       const late = await said();
       expect(titles(late)).not.toContain(AVC);
-      expect(late.non_lus).toContain(`${CILAOS.nom} : dernière lecture le ${quand(toLocal(NOW.toISOString()))}`);
+      expect(late.non_lus).toContain(`${CILAOS.nom} : dernière lecture ${leLocal(toLocal(NOW.toISOString()))}`);
       // A page that is not its list of articles (a maintenance page) is no reading: the copy kept.
       site = () => new Response("<html><body>Site en maintenance</body></html>");
       t += 10 * 60_000;

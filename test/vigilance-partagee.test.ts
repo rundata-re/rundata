@@ -137,6 +137,6 @@ describe("the vigilance kept by the scheduled event", () => {
     const { v, asked, tile } = await view(new MemoryStore(), await keptInKv(2 * 60));
     expect(asked).toBeGreaterThan(0);
     expect(v?.stale).toBe(true);
-    expect(tile).toContain(`<p class="td all">fortes pluies / orages (Est) · lue à 06:48, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
+    expect(tile).toContain(`<p class="td all">fortes pluies / orages (Est) · lue le 26/10 à 06:48, sans réponse depuis. <a href="https://vigilance.meteofrance.fr/fr/la-reunion" rel="noopener">Consulter le site officiel de Météo-France</a></p>`);
   });
 });

@@ -38,7 +38,7 @@ describe("the /crues page", () => {
     expect(w).toMatch(/Crues des rivières 974/);
     expect(w).toContain("Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert.");
     expect(w).toContain("Dernier bulletin le 07/08 à 06:22 : Vigicrues Réunion n'en publie qu'en vigilance jaune ou plus.");
-    expect(w).toMatch(/En hausse sur la dernière demi-heure \(mesures de 03:45\) : Cabris - RN3 \([^)]+\), 0,06 m[^.]*\. Aucune mesure publiée par Vigicrues depuis au moins 3 h : [^.]+\./);
+    expect(w).toMatch(/En hausse sur la dernière demi-heure \(mesures du 24\/10 à 03:45\) : Cabris - RN3 \([^)]+\), 0,06 m[^.]*\. Aucune mesure publiée par Vigicrues depuis au moins 3 h : [^.]+\./);
     // The gauges Vigicrues answered for with no level are not said late.
     expect(w).not.toContain("n'ont pas de mesure récente");
     // Never said of the rivers by the page itself.
@@ -70,8 +70,8 @@ describe("the /crues page", () => {
     expect(w).toContain(`${silent.station} · ${silent.commune} Aucune mesure publiée par Vigicrues depuis au moins 3 h.`);
     // Without a level and without that warning (a batch that did not answer, no copy before): not read, said so.
     const unread = data.value.stations.map((s) => (s === silent ? { ...s, avertissement: undefined } : s));
-    expect(words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations: unread } }, NOW))).toContain(`${silent.station} · ${silent.commune} Pas de mesure dans notre lecture de 03:51.`);
-    expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis -?\d+,?\d* m, (stable|en hausse|en baisse) · [\d,]+ m³\/s · mesurée à \d\d:\d\d/);
+    expect(words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations: unread } }, NOW))).toContain(`${silent.station} · ${silent.commune} Pas de mesure dans notre lecture du 24/10 à 03:51.`);
+    expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis -?\d+,?\d* m, (stable|en hausse|en baisse) · [\d,]+ m³\/s · mesurée le \d\d\/\d\d à \d\d:\d\d/);
     expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis [^]*?Crues de référence [^]*?1,5 m · 43 m³\/s · Cyclone Dumile \(janvier 2013\)/);
     // The hour of the reading by the rivers; the producer and its licence at the bottom of the page.
     expect(w).toContain("Lu le 24/10 à 03:51. Le site officiel : vigicrues-reunion.re ↗.");
@@ -106,7 +106,7 @@ describe("the /crues page", () => {
     const { html, data } = await page();
     const silent = data.value.stations.find((s) => s.hauteur_m == null)!;
     expect(html).toContain(`aria-label="${silent.station} · ${silent.commune} : aucune mesure publiée par Vigicrues depuis au moins 3 h, voir le détail"`);
-    expect(html).toMatch(/aria-label="Cabris - RN3 · Saint-Pierre : 0,06\u00a0m, en hausse · 0\u00a0m³\/s · mesurée à 03:45, voir le détail"/);
+    expect(html).toMatch(/aria-label="Cabris - RN3 · Saint-Pierre : 0,06\u00a0m, en hausse · 0\u00a0m³\/s · mesurée le 24\/10 à 03:45, voir le détail"/);
     expect(html.match(/style="fill:none;stroke:#868e96;stroke-width:6"/g)).toHaveLength(data.value.stations.filter((s) => s.hauteur_m == null || s.avertissement).length);
     // The legend drawn as on the map (charter of the maps), then the latest measure.
     // A rise is the bigger night disc with a thick white edge, drawn last; never red, which would read as a vigilance.
@@ -127,7 +127,7 @@ describe("the /crues page", () => {
     const late = { ...data.value.stations[0], hauteur_m: 0.18, tendance_30_min: "en hausse" as const, heure_mesure: "24/10 02:00", avertissement: "Dernière mesure il y a 112 min." };
     const value = { ...data.value, stations: [late, ...data.value.stations.slice(1)] };
     const w = words(cruesPage(ORIGIN, { ...data, value }, NOW));
-    expect(w).toContain(`${late.station} · ${late.commune} 0,18 m à 02:00 · pas de mesure plus récente`);
+    expect(w).toContain(`${late.station} · ${late.commune} 0,18 m le 24/10 à 02:00 · pas de mesure plus récente`);
     expect(w).not.toMatch(new RegExp(`${late.station} \\(`));
   });
 
@@ -149,8 +149,8 @@ describe("the /crues page", () => {
     const { data } = await page();
     const silent = data.value.stations.map((s) => ({ ...s, hauteur_m: null, avertissement: undefined }));
     const w = words(cruesPage(ORIGIN, { ...data, value: { ...data.value, vigilance_crues: undefined, stations: silent } }, NOW));
-    expect(w).toContain("Vigilance crues absente de notre lecture de 03:51 : voir vigicrues-reunion.re ↗.");
-    expect(w).toContain("Aucune des 29 stations n'a de mesure de moins de 30 minutes dans notre lecture de 03:51 : nous ne savons pas pour l'instant si les rivières montent.");
+    expect(w).toContain("Vigilance crues absente de notre lecture du 24/10 à 03:51 : voir vigicrues-reunion.re ↗.");
+    expect(w).toContain("Aucune des 29 stations n'a de mesure de moins de 30 minutes dans notre lecture du 24/10 à 03:51 : nous ne savons pas pour l'instant si les rivières montent.");
   });
 
   it("gives the home page its tile: the vigilance's colour, then what the gauges measured lately", async () => {
@@ -164,7 +164,7 @@ describe("the /crues page", () => {
     expect(cruesLive({ ...data, value: silent }, NOW)!.detail).toBe("Aucune station n&#39;a de mesure récente");
     expect(cruesLive({ ...data, value: { ...data.value, vigilance_crues: undefined } }, NOW)).toMatchObject({ valeur: "Vigilance non lue", detail: "En hausse : Cabris - RN3" });
     // Read more than 15 minutes ago: said, as on the vigilance's tile.
-    expect(cruesLive(data, new Date(NOW.getTime() + 30 * 60_000))!.detail).toMatch(/ · lue à 03:51$/);
+    expect(cruesLive(data, new Date(NOW.getTime() + 30 * 60_000))!.detail).toMatch(/ · lue le 24\/10 à 03:51$/);
     expect(cruesLive(null, NOW)).toBeUndefined();
   });
 
@@ -200,7 +200,7 @@ describe("the /crues page", () => {
     expect(html).toContain('href="https://www.infotrafic.re/"');
     // Nothing announced: never « open », the official state where it is.
     const none = words(cruesPage(ORIGIN, data, NOW, undefined, { annonces: [], lue }));
-    expect(none).toContain("Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture de 03:50. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re.");
+    expect(none).toContain("Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture du 24/10 à 03:50. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re.");
     expect(none).not.toMatch(/radiers? (sont )?ouverts?\b|pas de radier fermé|Nous avons demandé à la Région/i);
     // The news not read: the instruction and the link, no « aucune annonce ».
     const unread = words(cruesPage(ORIGIN, data, NOW));

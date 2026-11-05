@@ -1478,7 +1478,8 @@ function allAlerts(feeds: Map<string, rt.Realtime>, now: Date) {
 }
 
 const feedTimes = (feeds: Map<string, rt.Realtime>) =>
-  [...feeds].map(([n, f]) => ({ reseau: transit.NETWORKS[n].nom, heure: localTime(new Date(f.at * 1000)).split(" ")[1] }));
+  // « 05/11 05:04 »: the page says it with its day (« le 05/11 à 05:04 »).
+  [...feeds].map(([n, f]) => ({ reseau: transit.NETWORKS[n].nom, heure: localTime(new Date(f.at * 1000)) }));
 
 /**
  * The networks, always; the next departures at the main bus stations where the timetables are at hand (the Worker),
@@ -1818,7 +1819,7 @@ export function vigilanceLue(at: Date, now: Date): string | undefined {
   const age = now.getTime() - at.getTime();
   if (age <= LUE_AFTER_MS) return undefined;
   const [day, time] = localTime(at).split(" ");
-  const when = day === localTime(now).split(" ")[0] ? `à ${time}` : `le ${day} à ${time}`;
+  const when = `le ${day} à ${time}`;
   return `lue ${when}${age > SANS_REPONSE_AFTER_MS ? ", sans réponse depuis" : ""}`;
 }
 

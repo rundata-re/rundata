@@ -102,13 +102,32 @@ export const folded = (fold: boolean, head: string, body: string, open = false) 
   (fold ? `<details${open ? " open" : ""}><summary>${head}</summary>${body}</details>` : head + body);
 export const hm = (iso: string | Date) => localTime(new Date(iso)).split(" ")[1];
 
+/** « le 05/11 à 05:02 » from « 05/11 05:02 »; a time alone (« 05:02 ») said « à 05:02 ». */
+const dit = (word: "le" | "du", dayTime: string) => {
+  const [day, time] = dayTime.split(" ");
+  return time ? `${word} ${day} à ${time}` : `à ${day}`;
+};
+
 /**
- * When a copy was read, said after « de » or « à »: « de 03:12 », « à 03:12 »; another day, « du 25/10 à 03:12 »,
- * « le 25/10 à 03:12 ».
+ * The time of a measure or of a reading, with its day even today: « le 05/11 à 05:02 ». A page copied by a search
+ * engine, or read the next day, then never gives yesterday's measure for today's (05/11/2026: « 15,9 °C à 20:48 »
+ * taken for the evening's by an assistant). `duAt`: after « de », « du 05/11 à 05:02 ».
  */
-export function readAt(at: Date, now: Date): { de: string; a: string } {
-  const [day, time] = localTime(at).split(" ");
-  return day === localTime(now).split(" ")[0] ? { de: `de ${time}`, a: `à ${time}` } : { de: `du ${day} à ${time}`, a: `le ${day} à ${time}` };
+export const leAt = (at: string | Date) => dit("le", localTime(new Date(at)));
+export const duAt = (at: string | Date) => dit("du", localTime(new Date(at)));
+/** The same from the tools' « 05/11 05:02 » (`heure_mesure`). */
+export const leJour = (dayTime: string) => dit("le", dayTime);
+export const duJour = (dayTime: string) => dit("du", dayTime);
+/** The day of a time, « 05/11 ». */
+const jourDe = (at: string | Date) => localTime(new Date(at)).split(" ")[0];
+/** Two times of measures, with their day: « le 05/11 à 14:00 », « le 05/11 de 13:48 à 14:00 », « du 04/11 à 23:58 au 05/11 à 00:04 ». */
+export const leDeA = (first: string | Date, last: string | Date) =>
+  jourDe(first) !== jourDe(last) ? `${duAt(first)} au ${jourDe(last)} à ${hm(last)}`
+    : hm(first) === hm(last) ? leAt(last) : `le ${jourDe(last)} de ${hm(first)} à ${hm(last)}`;
+
+/** When a copy was read, said after « de » or « à », with its day: « du 25/10 à 03:12 », « le 25/10 à 03:12 ». */
+export function readAt(at: Date, _now?: Date): { de: string; a: string } {
+  return { de: duAt(at), a: leAt(at) };
 }
 
 /**
@@ -885,6 +904,9 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 @media (max-width:37.49rem){.mapcard.nophone{display:none}}
 .mapcard .sit{aspect-ratio:${MAP_W}/${MAP_H}}
 .rows.eau small{display:block;color:var(--muted);font-size:.82rem}
+/* The news on a phone: the date in the grey line under the title, the title the whole width; its column on a wide screen. */
+.rows.news .nt{display:none}
+@media (max-width:480px){.rows.news li{grid-template-columns:minmax(0,1fr)}.rows.news li>.q-none{display:none}.rows.news span.nt{display:inline}.rows.news small.nt{display:block}}
 .rows.eau .du{max-width:6.5rem;text-align:right}
 .rows.eau li>.refs{grid-column:1/-1}
 .rows.eau .refs small{color:inherit}
@@ -1393,7 +1415,7 @@ export function credits(list: Credit[]): string {
 }
 
 function age(iso: string, now: Date): string {
-  return `${hm(iso)}, ${since(iso, now)}`;
+  return `${leAt(iso)}, ${since(iso, now)}`;
 }
 
 export function windText(s: StationNow): string | undefined {
@@ -1442,7 +1464,7 @@ function stationItem(s: StationNow, now: Date): string {
   const details = [s.humidite != null ? `humidité ${s.humidite} %` : undefined, windText(s), rainText(s)].filter(Boolean).join(" · ");
   const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (mesure ancienne)" : "";
   return `<li class="st tgt" id="${stationId(s.nom)}">${t}<h4>${esc(s.nom)} <small>${metres(s.altitude_m)}</small></h4>` +
-    `<p>${esc(thin(details || "température seulement"))} · <span class="when">mesuré à ${age(s.time, now)}${old}</span></p></li>`;
+    `<p>${esc(thin(details || "température seulement"))} · <span class="when">mesuré ${age(s.time, now)}${old}</span></p></li>`;
 }
 
 export const EXTERNAL = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>`;
@@ -1522,7 +1544,7 @@ function weatherLive(data: Cached<HomeData> | null, now: Date): string {
       : { lon: s.lon, lat: s.lat - 0.022, label: `${s.vent ?? "—"} km/h`, say: s.vent != null ? `vent ${s.vent} km/h` : "pas de mesure", name: s.nom.split(" ").pop()!, color: "#44555a", href: `#${stationId(s.nom)}` },
   );
   return `<div class="live"><figure class="card mapcard">` +
-    islandMap({ markers, peaks: true, label: `Carte de La Réunion (974) avec les températures mesurées à ${hm(latest || data.fetchedAt.toISOString())}` }) +
+    islandMap({ markers, peaks: true, label: `Carte de La Réunion (974) avec les températures mesurées ${leAt(latest || data.fetchedAt.toISOString())}` }) +
     `<figcaption class="legend">8 °C<i></i>33 °C · températures mesurées sous abri</figcaption></figure>` +
     `<div class="card"><h3>Station par station</h3><ul class="stations">${sorted.map((s) => stationItem(s, now)).join("")}</ul>` +
     `${d.indisponibles.length ? `<p class="note">Momentanément indisponible : ${esc(d.indisponibles.join(", "))}.</p>` : ""}</div></div><p class="sources">Sources : ${credits(d.sources)}.</p>`;
@@ -1610,10 +1632,10 @@ export function meteoLive(data: Cached<HomeData> | null, now = new Date()): Live
   // The times of the two values said, in the order of time, not the latest of every station (Gillot's 29,9 °C of 13:48
   // said « à 14:05 », 04/11/2026).
   const [t1, t2] = [lo.time, hi.time].sort();
-  const when = hm(t1) === hm(t2) ? hm(t1) : `${hm(t1)} et ${hm(t2)}`;
+  const when = hm(t1) === hm(t2) ? leAt(t2) : jourDe(t1) === jourDe(t2) ? `${leAt(t1)} et ${hm(t2)}` : `${leAt(t1)} et ${leAt(t2)}`;
   return {
     valeur: range(lo.temperature!, hi.temperature!),
-    detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) ${esc(a(shortName(hi.nom)))}, mesuré à ${when}`,
+    detail: `${esc(shortName(lo.nom))} (${metres(lo.altitude_m)}) ${esc(a(shortName(hi.nom)))}, mesuré ${when}`,
   };
 }
 
@@ -1671,7 +1693,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   const latest = l.reduce((m, s) => (s.time > m ? s.time : m), "");
 
   const status = live
-    ? `<div class="now"><span class="big span">${live.valeur}</span><p>mesurés sous abri par les stations de l'île, de <b>${esc(shortName(coldest(l).nom))}</b> (${metres(coldest(l).altitude_m)}) à <b>${esc(shortName(warmest(l).nom))}</b>. Dernière mesure à <b>${hm(latest!)}</b>.</p></div>`
+    ? `<div class="now"><span class="big span">${live.valeur}</span><p>mesurés sous abri par les stations de l'île, de <b>${esc(shortName(coldest(l).nom))}</b> (${metres(coldest(l).altitude_m)}) à <b>${esc(shortName(warmest(l).nom))}</b>. Dernière mesure <b>${leAt(latest!)}</b>.</p></div>`
     : `<p class="lead">Les mesures se chargent : rechargez la page dans quelques secondes. Les stations Météo-France publient toutes les 6 minutes.</p>`;
 
   // Its own title in the night band only (a copy made before every station was kept): in the section « La mer au
@@ -1684,7 +1706,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
 
   const title = "Météo Réunion 974 en direct : stations et prévisions";
   const description = live
-    ? fit(`Météo à La Réunion (974) en direct : de ${thin(deg(coldest(l).temperature!))} ${a(shortName(coldest(l).nom))} à ${thin(deg(warmest(l).temperature!))} ${a(shortName(warmest(l).nom))}, mesurés à ${hm(latest!)}.`,
+    ? fit(`Météo à La Réunion (974) en direct : de ${thin(deg(coldest(l).temperature!))} ${a(shortName(coldest(l).nom))} à ${thin(deg(warmest(l).temperature!))} ${a(shortName(warmest(l).nom))}, mesurés ${leAt(latest!)}.`,
         " Pluie, vent, mer et prévisions par commune.")
     : "Météo à La Réunion (974) en direct : température, pluie et vent mesurés par les stations de l'île, mer et prévisions par commune.";
 
@@ -1735,7 +1757,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
 
   const body = all.length ? `<section id="stations" aria-labelledby="h-stations">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-stations">Les ${all.length} stations, de la côte aux sommets</h2>
-  <p>La dernière mesure de chaque station, avec son heure. Les stations de Météo-France publient toutes les 6 minutes.</p></div>
+  <p>La dernière mesure de chaque station, avec son heure ; sans autre date, c'est le ${localTime(now).split(" ")[0]}. Les stations de Météo-France publient toutes les 6 minutes.</p></div>
   ${stationsList(all, now)}
   <p class="sources">Sources : ${credits([...data!.value.sources, ALTITUDES_CREDIT, RADAR_CREDIT])}.</p>
 </section><script>${METEO_SCRIPT}</script>
@@ -1804,7 +1826,7 @@ function stationCard(s: StationAnswer): string {
   return `<div class="card stcard"><h3>${esc(s.station)}</h3><p class="note">${esc(thin(meta))}</p>` +
     (main ? `<p><span class="t" style="background:${Number.isFinite(t) ? chip(t) : "#44555a"}">${esc(thin(main))}</span></p>` : "") +
     (rows ? `<ul>${rows}</ul>` : "") +
-    `<p class="note">Mesuré à ${esc(s.heure_mesure.split(" ")[1] ?? s.heure_mesure)} heure de La Réunion.</p>` +
+    `<p class="note">Mesuré ${esc(leJour(s.heure_mesure))}, heure de La Réunion.</p>` +
     (s.avertissements.length ? `<p class="note">⚠ ${esc(s.avertissements.join(" "))}</p>` : "") +
     `</div>`;
 }
@@ -1836,15 +1858,15 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const title = `Météo ${p.nom} en direct et prévisions · 974`.length <= 60 ? `Météo ${p.nom} en direct et prévisions · 974` : `Météo ${p.nom} en direct · 974`;
   const description = fit(
     first
-      ? `Météo ${a(p.nom)} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés ${a(first.station)} à ` +
-        `${first.heure_mesure.split(" ")[1]}.`
+      ? `Météo ${a(p.nom)} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés ${a(first.station)} ` +
+        `${leJour(first.heure_mesure)}.`
       : `Météo ${a(p.nom)} (La Réunion, 974) en direct : température, pluie et vent mesurés par la station la plus proche.`,
     first ? ` Pluie, vent${coastal(p) ? ", mer" : ""} et prévision.` : ` ${coastal(p) ? "Mer et prévision" : "Prévision"} des prochains jours.`,
   );
 
   const headline = first
     ? `<div class="now"><span class="big">${esc(thin(first.mesures.temperature!))}</span>` +
-      `<p>mesurés à <b>${esc(first.heure_mesure.split(" ")[1] ?? first.heure_mesure)}</b> par la station <b>${esc(first.station)}</b>${communeDite(first, place.commune || p.nom) ? ` ${esc(a(communeDite(first, place.commune || p.nom)!))}` : ""} ` +
+      `<p>mesurés <b>${esc(leJour(first.heure_mesure))}</b> par la station <b>${esc(first.station)}</b>${communeDite(first, place.commune || p.nom) ? ` ${esc(a(communeDite(first, place.commune || p.nom)!))}` : ""} ` +
       `(${metres(first.altitude_m)}${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
     : "";
 
@@ -1854,7 +1876,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     ? `<p class="card">Les mesures se chargent : rechargez la page dans quelques secondes.</p>`
     : stations.length
       ? `<div class="two">${stations.map(stationCard).join("")}</div>` + (jour ? sinceMidnightCard(jour) : "") +
-        `<p class="note">Mis à jour à ${hm(data.fetchedAt)} (${since(data.fetchedAt, now)}). Sources : ${credits(d!.meteo!.sources)}.</p>`
+        `<p class="note">Mis à jour ${leAt(data.fetchedAt)} (${since(data.fetchedAt, now)}). Sources : ${credits(d!.meteo!.sources)}.</p>`
       : `<p class="card">Aucune mesure disponible pour le moment.</p>`;
 
   // In the Hauts, the coming morning's cloud sea, high on the page: « dégagé au Maïdo demain matin ? ». Said less firmly
@@ -2074,7 +2096,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
         ? `<p class="vstate">Aucune vigilance particulière à La Réunion dans les 24 heures du bulletin.</p>`
         : "";
     status = `<div class="status vig">${head}${state}${rest}${alert ? "" : `<p class="cyc">Pas d'alerte cyclonique · ${cyclones}</p>`}` +
-      `<p class="note when">Bulletin de Météo-France émis le ${esc(emise!.replace(" ", " à "))} (heure de La Réunion), lu à ${hm(data!.fetchedAt)}${data!.stale ? " : Météo-France ne répond pas, c'est le dernier bulletin connu" : ""}.</p>` +
+      `<p class="note when">Bulletin de Météo-France émis le ${esc(emise!.replace(" ", " à "))} (heure de La Réunion), lu ${leAt(data!.fetchedAt)}${data!.stale ? " : Météo-France ne répond pas, c'est le dernier bulletin connu" : ""}.</p>` +
       `<p class="off"><b>${officielHtml(mf.OFFICIEL_VIGILANCE)}</b></p>` +
       (alert ? `<ul class="chips"><li><a href="/ecoles-cyclone">Cyclone : les écoles sont-elles fermées ? →</a></li><li><a href="/alerte-cyclone">Alerte cyclonique : ce qui ferme, ce qui continue →</a></li></ul>` : "") + `</div>`;
   }
@@ -2237,7 +2259,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
           : `<b>—</b><span>pas de mesure (nuages)</span>`) +
         // « Y aller » to a beach, not to the centre of a town listed for its coast (Saint-Denis, Le Port…).
         `<a href="/meteo/${slugify(b.commune)}">Météo ${esc(b.commune)} →</a>${resolvePlace(b.nom)?.lieu.type === "commune" ? "" : g.aller({ nom: seaName(b.nom), lat: b.lat, lon: b.lon }, "baignade")}</li>`).join("")}</ul>` +
-      `<p class="note">Mis à jour à ${hm(data!.fetchedAt)}.</p><p class="sources">Sources : ${credits(d.sources)}.</p>`
+      `<p class="note">Mis à jour ${leAt(data!.fetchedAt)}.</p><p class="sources">Sources : ${credits(d.sources)}.</p>`
     : `<p class="card">Les mesures satellite se chargent : rechargez la page dans quelques secondes.</p>`;
 
   const waves = d?.plages.filter((b) => b.houle) ?? [];
@@ -2268,7 +2290,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <p>Hauteur d'eau au-dessus du zéro des cartes marines, aux deux marégraphes du SHOM. Les dernières pleine et basse mer sont mesurées ; les prochaines, plus bas, sont calculées par rundata.</p></div>
   <ul class="seas">${(d?.maree ?? []).map((g) => `<li><span>${esc(g.maregraphe)}</span>` +
       ("hauteur_m" in g && g.hauteur_m != null
-        ? `<b>${esc(thin(`${fr(g.hauteur_m)} m`))}</b><span>${g.tendance === "étale" ? "mer étale" : `marée ${esc(g.tendance!)}`}, mesurée à ${esc(g.heure_mesure!.split(" ")[1])}</span>` +
+        ? `<b>${esc(thin(`${fr(g.hauteur_m)} m`))}</b><span>${g.tendance === "étale" ? "mer étale" : `marée ${esc(g.tendance!)}`}, mesurée ${esc(leJour(g.heure_mesure!))}</span>` +
           g.derniers_extremes!.slice().reverse().map((e) => `<span>${esc(e.type)} vers ${esc(e.heure)} (${esc(fr(e.hauteur_m))} m)</span>`).join("") +
           ("avertissement" in g && g.avertissement ? `<span>pas de mesure depuis ${esc(g.age_texte!.replace(/^il y a /, ""))}</span>` : "")
         : `<b>—</b><span>marégraphe muet pour le moment</span>`) +

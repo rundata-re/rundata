@@ -77,7 +77,8 @@ const minutes = (iso: string, end = false) => {
 export function hourMeasured(m: airMesures.Mesure, now: Date): string {
   const [from, to] = paire(minutes(m.debut), minutes(m.fin, true));
   const hours = `de ${from} à ${to}`;
-  return m.debut.slice(0, 10) === today(now) ? hours : `le ${m.debut.slice(8, 10)}/${m.debut.slice(5, 7)}, ${hours}`;
+  // With its day even today: a page or an answer read the next day never gives it for that day's.
+  return `le ${m.debut.slice(8, 10)}/${m.debut.slice(5, 7)}, ${hours}`;
 }
 
 /**

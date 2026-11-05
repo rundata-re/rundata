@@ -267,7 +267,7 @@ describe("actualités", () => {
       await fil(c, NOW);
       t += 50 * 60_000;
       const now = new Date(t);
-      const said = "Dernière lecture du site de la préfecture : aujourd'hui à 11:55.";
+      const said = "Dernière lecture du site de la préfecture : le 24/10 à 11:55.";
       expect(body(await actualites(c, undefined, undefined, undefined, now)).prefecture_injoignable).toBe(said);
       expect((await buildActualites(c, now)).prefecture_injoignable).toEqual({ texte: said, site: "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse" });
       expect(asked.filter((a) => a.includes("reunion.gouv.fr"))).toEqual([]);
@@ -284,7 +284,7 @@ describe("actualités", () => {
     t += 20 * 60_000;
     const now = new Date(t);
     const b = body(await actualites(c, undefined, undefined, undefined, now));
-    const said = "Lu aujourd'hui à 12:05 : le site de la préfecture n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.";
+    const said = "Lu le 24/10 à 12:05 : le site de la préfecture n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.";
     expect([b.prefecture_injoignable, b.prefecture.length, b.indisponible]).toEqual([said, 3, undefined]);
     const html = actualitesPage("https://rundata.re", { value: await buildActualites(c, now), fetchedAt: now, stale: false }, now);
     expect(html).toContain('voir <a href="https://www.reunion.gouv.fr/Actualites/Communiques-de-presse" rel="noopener">son site</a>.</p>');
@@ -367,7 +367,7 @@ describe("actualités", () => {
     down = /^(?!.*reunion\.gouv\.fr)/;
     const b = body(await actualites(cache(), "Saint-Pierre", undefined, undefined, NOW));
     expect(b.resume).not.toMatch(/Aucune information/);
-    expect(b.resume).toMatch(/Non lus cette fois : .*Clicanoo.*Freedom.*\. Leur site n'a pas répondu à notre dernière lecture \(aujourd'hui à 12:05\) : nous ne savons pas ce qu'ils annoncent en ce moment\./);
+    expect(b.resume).toMatch(/Non lus cette fois : .*Clicanoo.*Freedom.*\. Leur site n'a pas répondu à notre dernière lecture \(le 24\/10 à 12:05\) : nous ne savons pas ce qu'ils annoncent en ce moment\./);
     const html = actualitesPage("https://rundata.re", { value: await buildActualites(cache(), NOW), fetchedAt: NOW, stale: false }, NOW);
     expect(html).not.toContain("Aucune information des médias lus");
     expect(html).toMatch(/Non lus cette fois(\u00a0|&nbsp;| ): [^<]*Clicanoo/);

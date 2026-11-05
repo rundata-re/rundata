@@ -14,7 +14,7 @@ import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../t
 import { connectorCta, crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { hm, layout, readAt } from "./pages.js";
+import { hm, layout, readAt, leAt } from "./pages.js";
 
 export const PATH = "/emploi";
 export const NOM = "Emploi public";
@@ -113,7 +113,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
       ? `<p class="card">Les offres ne sont pas encore lues : prochaine lecture prévue à ${hm(d.prochaine)}.</p>`
       : d.offres.length
       ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="offres">${d.offres.map(row).join("")}</ul>`
-      : `<p class="card">Aucune offre publiée sur Choisir le service public pour La Réunion à ${hm(d.lu ?? data.fetchedAt)}.</p>`;
+      : `<p class="card">Aucune offre publiée sur Choisir le service public pour La Réunion ${leAt(d.lu ?? data.fetchedAt)}.</p>`;
 
   const title = "Emploi public Réunion : offres de l'État, des communes et des hôpitaux · 974";
   const description = "Les offres d'emploi de la fonction publique à La Réunion (974) : État, collectivités, hôpitaux, avec la commune et le lien pour postuler.";

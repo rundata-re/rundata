@@ -11,7 +11,7 @@ import * as dech from "../vie/decheteries.js";
 import type { Alerte, DechetsAnswer } from "./data.js";
 import { connectorCta, crumbBar, crumbs, loading, sourcesNote, webPage } from "./domains.js";
 import { esc } from "./map.js";
-import { DESCRIPTION_MAX, icon, layout } from "./pages.js";
+import { DESCRIPTION_MAX, icon, layout, leJour } from "./pages.js";
 
 // The texts of the page, worded by marketing.
 export const TITLE = "Déchèteries 974 : adresses, bennes en direct dans l'Ouest";
@@ -23,15 +23,16 @@ export const anchorOf = (commune: string) => slugify(commune);
 
 /** « Déchèteries de La Réunion (974) à 17:00 : … », the time of the West's latest update while it is recent. */
 export function descriptionOf(sites: dech.SiteNow[]): string {
-  const fresh = sites.filter((s) => s.a_jour && s.mis_a_jour).map((s) => s.mis_a_jour!.split(" ")[1]).sort();
-  const at = fresh.length ? ` à ${fresh[fresh.length - 1]}` : "";
+  // The newest update by its time, said with its day (« le 05/11 à 05:07 »).
+  const fresh = sites.filter((s) => s.a_jour && s.mis_a_jour).map((s) => s.mis_a_jour!).sort((x, y) => (x.split(" ")[1] ?? "").localeCompare(y.split(" ")[1] ?? ""));
+  const at = fresh.length ? ` ${leJour(fresh[fresh.length - 1])}` : "";
   const text = (at: string) => `Déchèteries de La Réunion (974)${at} : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).`;
   return text(at).length <= DESCRIPTION_MAX ? text(at) : text("");
 }
 
 function siteCard(s: dech.SiteNow, g: Porte): string {
   const state = s.a_jour
-    ? `<p class="note">Mis à jour à ${esc(s.mis_a_jour!.split(" ")[1])} par les agents.</p>` +
+    ? `<p class="note">Mis à jour ${esc(leJour(s.mis_a_jour!))} par les agents.</p>` +
       (s.refuse.length ? `<p><b>Benne pleine :</b> ${esc(s.refuse.join(", "))}.</p>` : `<p><b>Toutes les bennes acceptent.</b></p>`) +
       (s.accepte.length ? `<p><b>Accepté :</b> ${esc(s.accepte.join(", "))}.</p>` : "")
     : `<p class="note">${esc(CHECK)}${s.mis_a_jour ? ` Dernière mise à jour : ${esc(s.mis_a_jour)}.` : ""}</p>`;

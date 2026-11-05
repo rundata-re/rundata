@@ -138,10 +138,10 @@ describe("the concerts", () => {
 
   it("say, in one card, the agendas that did not answer and those not read lately", () => {
     const d = data(ROWS);
-    const notes = { ...d, value: { ...d.value, indisponible: ["CINOR", "Ville du Port"], remises: ["Ville du Port"], non_lus: ["Ville de Saint-Leu : dernière lecture le jeudi 22/10 à 10:00", "Ligue réunionnaise de volley-ball : dernière lecture sans succès (dimanche 25/10 à 22:05)"] } };
+    const notes = { ...d, value: { ...d.value, indisponible: ["CINOR", "Ville du Port"], remises: ["Ville du Port"], non_lus: ["Ville de Saint-Leu : dernière lecture le 22/10 à 10:00", "Ligue réunionnaise de volley-ball : dernière lecture sans succès (le 25/10 à 22:05)"] } };
     for (const html of [agendaPage("https://rundata.re", notes, TUESDAY), weekendPage("https://rundata.re", notes, TUESDAY), concertsPage("https://rundata.re", notes, TUESDAY)]) {
-      expect(html).toContain("<li>Agendas sans lecture récente : Ville de Saint-Leu, dernière lecture le jeudi 22/10 à 10:00\u00a0; Ligue réunionnaise de volley-ball, dernière lecture sans succès (dimanche 25/10 à 22:05). Leurs événements peuvent manquer ici.</li>");
-      expect(html).toContain("<li>Sans réponse à notre dernière lecture (aujourd&#39;hui à 10:00) : CINOR. Lecture remise à la suivante : Ville du Port. Leurs événements peuvent manquer ici.</li>");
+      expect(html).toContain("<li>Agendas sans lecture récente : Ville de Saint-Leu, dernière lecture le 22/10 à 10:00\u00a0; Ligue réunionnaise de volley-ball, dernière lecture sans succès (le 25/10 à 22:05). Leurs événements peuvent manquer ici.</li>");
+      expect(html).toContain("<li>Sans réponse à notre dernière lecture (le 27/10 à 10:00) : CINOR. Lecture remise à la suivante : Ville du Port. Leurs événements peuvent manquer ici.</li>");
       expect(html.match(/<h3>À savoir<\/h3>/g)).toHaveLength(1);
     }
     expect(agendaPage("https://rundata.re", data(ROWS), TUESDAY)).not.toContain("sans lecture récente");
@@ -186,7 +186,7 @@ describe("the map of /evenements", () => {
     expect(layerOf(html, "we-0")).toContain('fill="#14202b"');
     expect(html).toContain('<circle r="34" fill="#14202b"/><text y="11">3</text></svg>événements de la commune</span>');
     expect(html).toContain('<circle r="17" fill="#56b4e9" style="paint-order:stroke"/></svg>lieu de l&#39;événement, d&#39;après l&#39;annonce</span>');
-    expect(html).toContain('<span class="mls">Annonces des salles, des mairies et des offices de tourisme, d&#39;après les agendas lus à 10:00.</span>');
+    expect(html).toContain('<span class="mls">Annonces des salles, des mairies et des offices de tourisme, d&#39;après les agendas lus le 27/10 à 10:00.</span>');
     // Read another day: the day too.
     const yesterday = agendaPage("https://rundata.re", { value: { ...data(ROWS).value, ce_week_end: [] }, fetchedAt: new Date(TUESDAY.getTime() - 86400_000) }, TUESDAY);
     expect(yesterday).toContain("d&#39;après les agendas lus le 26/10 à 10:00.</span>");

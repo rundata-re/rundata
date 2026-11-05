@@ -19,8 +19,11 @@ export function at(t: string, now: Date): string {
   const hm = localTime(d).split(" ")[1];
   return localDay(d) === localDay(now) ? hm : `hier à ${hm}`;
 }
-/** « à 14:20 », « hier à 14:20 ». */
-export const when = (t: string, now: Date) => (at(t, now).startsWith("hier") ? at(t, now) : `à ${at(t, now)}`);
+/** « le 05/11 à 14:20 », with its day even today: a page copied or read the next day never takes it for that day's. */
+export const when = (t: string, _now?: Date) => {
+  const [day, time] = localTime(new Date(t)).split(" ");
+  return `le ${day} à ${time}`;
+};
 
 /** A point of the list on the site: « Feu détecté près de Bois-de-Nèfles, à 14:20 · confiance forte ». */
 export const listLine = (d: feux.Detection, now: Date) => `Feu détecté près ${de(d.lieu)}, ${when(d.t, now)} · confiance ${d.confiance}`;
@@ -29,7 +32,7 @@ export const listLine = (d: feux.Detection, now: Date) => `Feu détecté près $
 export function tileLine(list: feux.Detection[], now: Date): string {
   return list.length === 1
     ? `feu détecté par satellite ${when(list[0].t, now)} (faux positifs possibles)`
-    : `${list.length} feux détectés par satellite, le dernier ${when(list[0].t, now)} (faux positifs possibles)`;
+    : `${list.length} feux détectés par satellite, le dernier détecté ${when(list[0].t, now)} (faux positifs possibles)`;
 }
 
 /** A detection in a tool's answer, with its distance to the place asked. */

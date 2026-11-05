@@ -85,6 +85,8 @@ function tapSentence(row: ReturnType<typeof networkRow>, where: string): string 
   return `Eau du robinet, réseau ${row.reseau} ${where} : ${last}\u00a0; ${bad}.`;
 }
 
+const ANALYSES_MUETTES = "Les analyses du contrôle sanitaire de l'ARS (Hub'Eau) ne répondent pas pour le moment.";
+
 /** A distributor's « ne pas boire » notice in force for the commune, if its feed is read; never fails the answer. */
 async function notice(cache: Cache, commune: string, now: Date) {
   try {
@@ -99,8 +101,15 @@ async function robinet(cache: Cache, res: Resolution, now: Date) {
   const commune = res.lieu.commune;
   const insee = INSEE[commune];
   if (!insee) return { resume: "Commune introuvable pour l'eau du robinet." };
-  const [{ value }, avis] = await Promise.all([potable.commune(cache, insee, now), notice(cache, commune, now)]);
+  const [analyses, avis] = await Promise.all([potable.commune(cache, insee, now).catch((err: unknown) => err as Error), notice(cache, commune, now)]);
   const warn = avis ? { resume_avis: `EAU À NE PAS BOIRE ${a(commune)} d'après l'avis du distributeur du ${avis.publie_le ?? avis.date_de_l_avis} : « ${avis.titre} ».`, avis_ne_pas_boire: avis } : {};
+  if (analyses instanceof Error) {
+    // Hub'Eau down: the distributor's « ne pas boire » notice, read apart, is still the answer (04/11/2026, Saint-Benoît).
+    if (!avis) throw analyses;
+    console.error(`source ${potable.SOURCE.id} indisponible:`, why(analyses));
+    return { resume: `${warn.resume_avis} ${ANALYSES_MUETTES}`, ...warn, analyses_indisponibles: true };
+  }
+  const { value } = analyses;
   const rows = value.reseaux.map((r) => networkRow(r, value.prelevements));
   const own = res.lieu.type === "commune" ? null : networkFor(value.reseaux, res.lieu.nom, commune);
   if (own) {
@@ -115,7 +124,10 @@ async function robinet(cache: Cache, res: Resolution, now: Date) {
       ? `\u00a0; non-conformités sur ${badNets.map((r) => `${r.reseau} (${r.non_conformes_6_mois})`).join(", ")}.`
       : total ? ", toutes conformes." : ".") +
     (value.reseaux.length > 1 ? " La qualité dépend du réseau qui dessert le quartier : préciser le quartier." : "");
-  return { resume: [warn.resume_avis, resume].filter(Boolean).join(" "), ...warn, reseaux: ordered };
+  // The commune's newest analysis, of any network: the age of the answer, not the first network's (ranked by its
+  // non-conformities). A notice in force dates it instead, as before.
+  const newest = value.prelevements[0];
+  return { resume: [warn.resume_avis, resume].filter(Boolean).join(" "), ...warn, ...(!avis && newest ? { derniere_analyse: day(newest.date) } : {}), reseaux: ordered };
 }
 
 export function siteRow(r: baignades.Results, now: Date, from?: { lon: number; lat: number }) {
@@ -135,14 +147,33 @@ export function siteRow(r: baignades.Results, now: Date, from?: { lon: number; l
       e_coli_100ml: s.e_coli,
     })),
     mauvais_sur_12_mois: year.filter((s) => s.qualite === "mauvaise").length || undefined,
+    prelevements_en_retard: sansPrelevement(last?.date, now),
     classement: r.classement && !/non class/i.test(r.classement.texte) ? `${r.classement.texte} (saison ${r.classement.saison})` : undefined,
   };
+}
+
+/** Two samples missed (one every two weeks): from four weeks without one, the gap is said. */
+const GAP_DAYS = 28;
+
+/**
+ * What a last sample this old means, said beside it: « Aucun prélèvement publié par l'ARS depuis le 15/09/2026 (7
+ * semaines), ni aucun pour la saison commencée le 01/10/2026. » (04/11/2026: none published for six weeks, the page of
+ * the new season still the old one's). `last`: « YYYY-MM-DD ».
+ */
+export function sansPrelevement(last: string | undefined, now: Date): string | undefined {
+  if (!last) return undefined;
+  const days = Math.floor((now.getTime() + 4 * 3600_000 - Date.parse(`${last}T00:00:00Z`)) / 86400_000);
+  if (days < GAP_DAYS) return undefined;
+  const start = `${baignades.season(now) - 1}-10-01`;
+  return `Aucun prélèvement publié par l'ARS depuis le ${day(last)} (${Math.floor(days / 7)} semaines)` +
+    (last < start ? `, ni aucun pour la saison commencée le ${day(start)}` : "") + ".";
 }
 
 function bathSentence(row: ReturnType<typeof siteRow>): string {
   if (!row.qualite_dernier_prelevement) return `${row.site} : pas de prélèvement publié.`;
   return `${row.site} : eau de ${row.qualite_dernier_prelevement} qualité au dernier prélèvement (${row.dernier_prelevement})` +
-    (row.mauvais_sur_12_mois ? `, ${row.mauvais_sur_12_mois} mauvais résultat${row.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") + ".";
+    (row.mauvais_sur_12_mois ? `, ${row.mauvais_sur_12_mois} mauvais résultat${row.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") + "." +
+    (row.prelevements_en_retard ? ` ${row.prelevements_en_retard}` : "");
 }
 
 /** A supervised site whose name the question carries (« bassin Bleu » is the one of Saint-Benoît, not another). */
@@ -151,7 +182,9 @@ export function siteNamed(lieu: string): baignades.Site | null {
   const scored = baignades.SITES.map((s) => {
     // The words of the site's own name: not « plage », not its commune (« Plage du centre-ville de Saint-Leu »).
     const common = new Set([...words(s.commune), "plage", "bassin", "saint", "sainte", "ville", "centre"]);
-    const own = words(s.nom).filter((t) => !common.has(t));
+    // A name made of common words only (« Plage du centre-ville de Saint-Pierre ») is found by all of them but « plage ».
+    const distinct = words(s.nom).filter((t) => !common.has(t));
+    const own = distinct.length ? distinct : words(s.nom).filter((t) => t !== "plage" && t !== "bassin");
     return { s, n: own.length && own.every((t) => q.has(t)) ? own.length : 0 };
   }).filter((x) => x.n).sort((x, y) => y.n - x.n);
   return scored[0]?.s ?? null;
@@ -193,12 +226,17 @@ export function tapNote(where: "outil" | "page"): string {
   return `Analyses du contrôle sanitaire de l'ARS, publiées un à deux mois après le prélèvement. Un avis temporaire «${NB}ne pas boire l'eau${NB}» (après de fortes pluies, une panne de chloration…) est publié par le distributeur, la mairie ou l'ARS. ${taken} Pour les autres communes, un avis peut être en cours sans apparaître ici${NB}: voir la mairie ou le distributeur.`;
 }
 
+const SEUILS =
+  "euils par prélèvement (germes pour 100 mL) : bonne jusqu'à 100 entérocoques et 100 E. coli, " +
+  "mauvaise au-delà de 370 entérocoques ou 1 000 E. coli. Après de fortes pluies, l'eau est souvent polluée pendant un à trois jours (ravines, rejets).";
+
 export const COMMON = {
   eau_du_robinet: tapNote("outil"),
-  eau_de_baignade:
-    "Prélèvement toutes les deux semaines environ\u00a0; seuils par prélèvement (germes pour 100 mL) : bonne jusqu'à 100 entérocoques et 100 E. coli, " +
-    "mauvaise au-delà de 370 entérocoques ou 1 000 E. coli. Après de fortes pluies, l'eau est souvent polluée pendant un à trois jours (ravines, rejets).",
+  eau_de_baignade: `Prélèvement toutes les deux semaines environ\u00a0; s${SEUILS}`,
 };
+
+/** The bathing note, without « toutes les deux semaines » when no sample was published for weeks (sansPrelevement). */
+export const noteBaignade = (enRetard: boolean) => (enRetard ? `S${SEUILS}` : COMMON.eau_de_baignade);
 
 export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?: Sujet, now = new Date()) {
   const sources = credits([potable.SOURCE, baignades.SOURCE]);
@@ -221,6 +259,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     try {
       const part = w === "robinet" ? await robinet(cache, res, now) : await baignade(cache, res, now, lieu);
       parts[w === "robinet" ? "eau_du_robinet" : "baignade"] = part;
+      if ((part as { analyses_indisponibles?: boolean }).analyses_indisponibles) failed.push(w);
     } catch (err) {
       const src = w === "robinet" ? potable.SOURCE : baignades.SOURCE;
       console.error(`source ${src.id} indisponible:`, why(err));
@@ -248,7 +287,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     indisponible: failed.length ? failed.map((f) => (f === "robinet" ? "eau du robinet" : "eau de baignade")) : undefined,
     a_savoir: {
       ...(wanted.includes("robinet") ? { eau_du_robinet: COMMON.eau_du_robinet } : {}),
-      ...(wanted.includes("baignade") ? { eau_de_baignade: COMMON.eau_de_baignade } : {}),
+      ...(wanted.includes("baignade") ? { eau_de_baignade: noteBaignade(!!(parts.baignade as { sites?: { prelevements_en_retard?: string }[] } | undefined)?.sites?.some((r) => r.prelevements_en_retard)) } : {}),
     },
     ...(sea ? { risque_requin: requin.requinBlock(now, res.lieu) } : {}),
     consulter: wanted.map((w) => (w === "robinet" ? "https://www.reunion.ars.sante.fr" : baignades.SOURCE.url)),

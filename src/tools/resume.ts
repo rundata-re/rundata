@@ -64,7 +64,7 @@ import { mentionCommune, occurrences, repris, sourcesServies } from "./agenda.js
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
 import { ecoles, resumeLine } from "./ecoles.js";
-import { muetPour } from "./coupures.js";
+import { compteAvis, muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
@@ -169,12 +169,18 @@ const EVENTS_MAX = 10;
 // does the same).
 const COST_UNKNOWN = 25;
 
-/** « 1 avis de coupure d'eau », the notices saying not to drink the water apart: one of them is not a cut. */
-function waterCount(avis: { ne_pas_boire?: boolean }[]): string {
-  const bad = avis.filter((n) => n.ne_pas_boire).length;
-  const cuts = avis.length - bad;
-  const dry = `${bad} avis d'eau à ne pas boire dans les secteurs ${bad > 1 ? "des avis" : "de l'avis"}`;
-  return !bad ? `${cuts} avis de coupure d'eau` : !cuts ? dry : `${cuts} avis de coupure d'eau, et ${dry}`;
+/**
+ * « 1 avis de coupure d'eau », the other notices (quality, return to normal) and those saying not to drink the water
+ * apart: neither is a cut (tools/coupures.ts, compteAvis).
+ */
+function waterCount(avis: { titre: string; coupure?: unknown; ne_pas_boire?: boolean }[]): string {
+  const c = compteAvis(avis);
+  const parts = [
+    c.coupures ? `${c.coupures} avis de coupure d'eau` : "",
+    c.autres ? `${c.autres} ${c.coupures ? `autre${c.autres > 1 ? "s" : ""} ` : ""}avis sur l'eau` : "",
+    c.ne_pas_boire ? `${c.ne_pas_boire} avis d'eau à ne pas boire dans les secteurs ${c.ne_pas_boire > 1 ? "des avis" : "de l'avis"}` : "",
+  ].filter(Boolean);
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")}, et ${parts.at(-1)}` : parts.join("");
 }
 
 const MARKETS_NOT_ALL = "D'après OpenStreetMap et les sites des mairies qui permettent de les reprendre : tous les marchés n'y sont pas, et les jours peuvent avoir changé.";

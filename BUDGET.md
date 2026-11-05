@@ -39,7 +39,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 |---|---:|---:|---:|---:|---:|---:|---:|
 | pire passage planifié | 457 | 32 | 56 | 26 | 1 164 | 284 | 3 636 |
 | tâche planifiée, par jour | 28 594 | 4 514 | 3 939 | 2 409 | 102 914 | 58 511 | 234 096 |
-| tâche planifiée, par jour, cadences les plus courtes | 39 486 | 5 810 | 5 763 | 2 889 | 107 954 | 58 511 | 279 576 |
+| tâche planifiée, par jour, cadences les plus courtes | 40 134 | 5 954 | 5 835 | 2 889 | 107 954 | 58 511 | 282 456 |
 | tâche planifiée, par mois (30 jours) | 857 807 | 135 420 | 118 170 | 72 283 | 3 087 411 | 1 755 321 | 7 022 867 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
@@ -60,7 +60,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | web:trafic | copie partagée (KV) | 30 min | 00:05 | 31 |  | 1 | 2 | 840 |  | 160 | mesuré |
 | web:electricite | copie partagée (KV) | 30 min | 00:20 | 8 | 1 | 2 |  |  |  | 80 | mesuré |
 | web:coupures | copie partagée (KV) | 30 min | 00:25 | 10 | 1 | 2 |  |  |  | 60 | mesuré |
-| web:air | copie partagée (KV) | 60 min | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
+| web:air | copie partagée (KV) | 60 min (15 au plus court) | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
 | mer:satellites | copie partagée (KV) | 180 min (30 au plus court) | 00:55 | 11 |  | 1 |  |  |  | 110 | estimé |
 | web:mer | copie partagée (KV) | 180 min | 01:15 | 14 |  | 1 |  |  |  | 110 | mesuré |
 | web:calendrier | copie partagée (KV) | 360 min | 02:10 | 9 |  | 1 |  |  |  | 40 | estimé |

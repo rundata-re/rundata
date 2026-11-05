@@ -73,6 +73,27 @@ const COMMON = {
   a_savoir: "Après une coupure, l'eau peut être trouble ou impropre à la boisson pendant quelques heures : la laisser couler avant de la boire. Quand un avis dit de ne pas boire l'eau, utiliser de l'eau en bouteille ou bouillie au moins 3 minutes pour boire, cuisiner et se brosser les dents. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.",
 };
 
+// A title that says the water is cut or disturbed, whether or not its hours were read (« fermeture préventive de la
+// distribution », Salazie, 22/10/2026; « lavage réservoir », La Créole).
+const CUT_TITLE = /interruption|coupure|travaux|(?:arr[êe]t|fermeture)(?: \p{L}+)? de (?:la )?distribution|perturbation|fuite|casse|lavage/iu;
+/**
+ * A notice that announces a cut: its hours read, or its title says so; never one saying not to drink the water, nor a
+ * quality notice (turbid water) or a return to normal, which were counted as « avis de coupure » (04/11/2026: Salazie,
+ * Sainte-Marie, Saint-Benoît, Saint-Denis).
+ */
+export const annonceCoupure = (n: { titre: string; coupure?: unknown; ne_pas_boire?: boolean }) =>
+  !n.ne_pas_boire && !BACK.test(n.titre) && (!!n.coupure || CUT_TITLE.test(n.titre));
+
+/**
+ * The notices of a commune counted by kind, the same everywhere: « 1 avis de coupure d'eau, 1 autre avis sur l'eau, et
+ * 1 avis d'eau à ne pas boire dans les secteurs de l'avis ». `autre`: « avis sur l'eau » alone when there is no cut.
+ */
+export function compteAvis(avis: { titre: string; coupure?: unknown; ne_pas_boire?: boolean }[]): { coupures: number; autres: number; ne_pas_boire: number } {
+  const ne_pas_boire = avis.filter((n) => n.ne_pas_boire).length;
+  const coupures = avis.filter(annonceCoupure).length;
+  return { coupures, autres: avis.length - coupures - ne_pas_boire, ne_pas_boire };
+}
+
 /** A feed that did not answer at the last read, said in marketing's words (tools/injoignable.ts), with its page. */
 export interface FluxMuet extends Injoignable {
   /** « de la CIREST ». */

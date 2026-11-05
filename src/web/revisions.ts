@@ -21,14 +21,14 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   bus: 7,
   calendrier: 4,
   chiffres: 19,
-  commune: 16,
-  coupures: 8,
+  commune: 17,
+  coupures: 9,
   courant: 6,
   crues: 3,
   cyclones: 4,
   dae: 2,
   dechets: 2,
-  eau: 2,
+  eau: 3,
   electricite: 15,
   emploi: 4,
   enfants: 14,
@@ -81,8 +81,9 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without
-  // a blank line is kept (« TRAITEMENT ST FRANCOIS »).
-  "avis-eau:flux": 1,
+  // a blank line is kept (« TRAITEMENT ST FRANCOIS »). A commune written without its article (« commune de
+  // Trois-Bassins »), and a list of streets ended by « Communiqué … » or by « Des perturbations » run on its last line.
+  "avis-eau:flux": 2,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).

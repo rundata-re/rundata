@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as atmo from "../src/providers/atmo.js";
 import { parse } from "../src/providers/atmo.js";
-import { qualiteAir } from "../src/tools/air.js";
+import { airEvery, qualiteAir } from "../src/tools/air.js";
 import { airPage } from "../src/web/domains.js";
 import { sourceRevision } from "../src/web/revisions.js";
 import { esc } from "../src/web/map.js";
@@ -125,4 +125,43 @@ describe("air quality: what the index is and where it comes from", () => {
     // The sub-indices, a row per commune.
     expect(page.match(/<td data-label="ozone"><span class="aq aq2">moyen<\/span><\/td>/g)).toHaveLength(24);
   });
+
+  it("rereads the layer every quarter of an hour from 10 h to 14 h while the day's diffusion is not in it", async () => {
+    const at = (iso: string) => new Date(iso);
+    const of = (diffuse_le: string) => list.map((x) => ({ ...x, diffuse_le }));
+    // 11:40 at La Réunion: the day before's diffusion only, then the day's.
+    expect(atmo.diffusionAttendue(of("2026-11-03T07:44:00Z"), at("2026-11-04T07:40:00Z"))).toBe(true);
+    expect(atmo.diffusionAttendue(of("2026-11-04T07:27:01Z"), at("2026-11-04T07:40:00Z"))).toBe(false);
+    // Before 10 h and from 14 h, the hour's reading.
+    expect(atmo.diffusionAttendue(of("2026-11-03T07:44:00Z"), at("2026-11-04T05:59:00Z"))).toBe(false);
+    expect(atmo.diffusionAttendue(of("2026-11-03T07:44:00Z"), at("2026-11-04T10:00:00Z"))).toBe(false);
+
+    const read: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      read.push(url);
+      return new Response(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url), "utf8"), { headers: { "content-type": "application/json" } });
+    });
+    let t = Date.parse("2026-11-04T07:00:00Z");
+    const store = new MemoryStore();
+    void store.put("atmo:974", { value: of("2026-11-03T07:44:00Z"), fetchedAt: t });
+    const c = new Cache(store, () => t);
+    // 11:20: read 20 minutes ago, the day's diffusion missing: read again. Once it is there, the hour holds.
+    t += 20 * 60_000;
+    await atmo.indices(c, new Date(t));
+    expect(read).toHaveLength(1);
+    void store.put("atmo:974", { value: of("2026-11-04T07:44:00Z"), fetchedAt: t });
+    t += 20 * 60_000;
+    await atmo.indices(c, new Date(t));
+    expect(read).toHaveLength(1);
+  });
+  it("builds the copy of /air every quarter of an hour from 10 h to 14 h while it lacks the day's diffusion, else every hour", () => {
+    const at = new Date("2026-11-04T07:40:00Z");
+    expect(airEvery({ diffusion: "Prévision diffusée par Atmo Réunion la veille, le 03/11 à 11:44." }, at)).toBe(15);
+    expect(airEvery({}, at)).toBe(15);
+    expect(airEvery(undefined, at)).toBe(15);
+    expect(airEvery({ diffusion: "Prévision diffusée par Atmo Réunion le 04/11 à 11:27." }, at)).toBe(60);
+    expect(airEvery({}, new Date("2026-11-04T05:59:00Z"))).toBe(60);
+    expect(airEvery({}, new Date("2026-11-04T10:00:00Z"))).toBe(60);
+  });
+  afterEach(() => vi.unstubAllGlobals());
 });

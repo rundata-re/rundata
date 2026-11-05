@@ -111,10 +111,20 @@ export function textOf(html: string): string {
 export const strip = (html: string) => decodeText(textOf(decode(html))).replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u25AA\u25AB]\s?/gu, "");
 
 const NAMES = Object.keys(INSEE).sort((a, b) => b.length - a.length);
-/** The communes a text names: « SAINT DENIS », « La Plaine-des-Palmistes ». */
+/**
+ * A commune's name as a text writes it: whole, or without its article when what is left is two words or more (« la
+ * commune de Trois-Bassins », La Créole, 04/11/2026); never « Port », « Possession » nor « Tampon » alone, which are
+ * words of their own (« bassin tampon »).
+ */
+const FORMS = NAMES.map((n) => {
+  const whole = normalize(n);
+  const bare = whole.replace(/^(?:les|le|la|l) /, "");
+  return { n, forms: bare !== whole && bare.includes(" ") ? [whole, bare] : [whole] };
+});
+/** The communes a text names: « SAINT DENIS », « La Plaine-des-Palmistes », « commune de Trois-Bassins ». */
 export function communesIn(text: string): string[] {
   const t = ` ${normalize(text)} `;
-  return NAMES.filter((n) => t.includes(` ${normalize(n)} `));
+  return FORMS.filter(({ forms }) => forms.some((f) => t.includes(` ${f} `))).map(({ n }) => n);
 }
 
 const local = (d: string, hm: string) => `${d.slice(6, 10)}-${d.slice(3, 5)}-${d.slice(0, 2)}T${hm}`;
@@ -147,7 +157,10 @@ export function parseNotice(text: string): Pick<Avis, "debut" | "fin"> {
 const LIST_START = /secteurs? suivants?\s*:[ \t]*\n/i;
 // The lines that close a list of streets: none of them is a street. « Les abonnés doivent prendre la précaution de ne pas
 // consommer l'eau du robinet… » follows the list of a notice on the quality of the water (Dionéo and runéo, 03 and 04/11/2026).
-const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) )/i;
+const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) |communiqu[ée] )/i;
+// The same sentences run on after the last street, on its line (« CHEMIN DAMBREVILLE Des perturbations dans… », runéo's
+// leaks, 04/11/2026): the street is what comes before.
+const RUN_ON = /\s(?:des perturbations|la remise en (?:eau|service)|le rétablissement)\b/i;
 // Longer, a line is a sentence or a street with its limits (« RD13, Quartier Bras Mouton et rues adjacentes jusque … »).
 const STREET_MAX = 60;
 
@@ -166,6 +179,13 @@ export function sectorList(text: string, blankEnds: boolean): Pick<Avis, "secteu
   const out: string[] = [];
   for (const [i, raw] of rest.entries()) {
     const l = raw.trim().replace(/^[•·–-]\s*/, "");
+    const on = RUN_ON.exec(l);
+    if (on && on.index > 0) {
+      const street = l.slice(0, on.index).trim();
+      if (street.length > STREET_MAX) return none;
+      out.push(street);
+      return !LIST_START.test(rest.slice(i + 1).join("\n")) ? { secteurs: out, secteurs_complets: true } : none;
+    }
     if ((!l && blankEnds && out.length) || (l && CLOSING.test(l))) {
       return out.length && !LIST_START.test(rest.slice(i).join("\n")) ? { secteurs: out, secteurs_complets: true } : none;
     }

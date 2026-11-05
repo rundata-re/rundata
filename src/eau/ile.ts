@@ -13,7 +13,7 @@ import { networkRow, siteRow } from "../tools/eau.js";
 export interface Ile {
   /** ISO time of the gathering. */
   lu: string;
-  baignades: (ReturnType<typeof siteRow> & { lon: number; lat: number })[];
+  baignades: (Omit<ReturnType<typeof siteRow>, "prelevements_en_retard"> & { lon: number; lat: number })[];
   communes: {
     commune: string;
     reseaux: number;
@@ -32,7 +32,9 @@ export async function gather(cache: Cache, now = new Date()): Promise<Ile> {
   const sites = await Promise.all(baignades.SITES.map(async (s) => {
     try {
       const r = await baignades.results(cache, s, now);
-      return { ...siteRow(r.value, now), lon: s.lon, lat: s.lat };
+      // Not the gap since the last sample: a sentence of the day, said by the page when it shows (eauPage).
+      const { prelevements_en_retard: _gap, ...row } = siteRow(r.value, now);
+      return { ...row, lon: s.lon, lat: s.lat };
     } catch {
       return null;
     }

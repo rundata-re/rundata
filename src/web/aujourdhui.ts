@@ -19,6 +19,7 @@ import { connectorCta, courantItem, silentItem, silentText, webPage } from "./do
 import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { a, communeDite, de } from "../tools/format.js";
+import { compteAvis } from "../tools/coupures.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin } from "./pages.js";
 import type { PlacePage } from "./places.js";
 
@@ -134,8 +135,8 @@ export function descriptionOf(p: PlacePage, r: Resume): string {
   const m = r.meteo?.mesure;
   const t = m?.mesures.temperature;
   const events = r.evenements_du_jour ? r.evenements_du_jour.liste.length + (r.evenements_du_jour.autres ?? 0) : 0;
-  // A notice saying not to drink the water is not a cut.
-  const cuts = r.coupures_eau?.avis.filter((n) => !n.ne_pas_boire).length ?? 0;
+  // Only the notices that announce a cut: not one saying not to drink the water, nor a quality notice (compteAvis).
+  const cuts = r.coupures_eau ? compteAvis(r.coupures_eau.avis).coupures : 0;
   const dry = r.coupures_eau?.avis.some((n) => n.ne_pas_boire);
   const figures = [
     dry ? "eau à ne pas boire" : "",

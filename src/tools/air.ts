@@ -51,6 +51,19 @@ export function diffusion(list: atmo.Index[], day: string): string | undefined {
   return `Prévision diffusée par Atmo Réunion ${before ? "la veille, " : ""}le ${date} à ${time}`;
 }
 
+/**
+ * How often the copy of /air is built, in minutes: every hour, and every quarter of an hour from 10 h to 14 h, La
+ * Réunion's time, while it does not have the day's diffusion (« le 05/11 à 11:27 »), diffused by 12 h, 14 h at the
+ * latest (04/11/2026: the day's, in the layer by 14:15, shown at 14:41).
+ */
+export function airEvery(last: unknown, now = new Date()): number {
+  const local = new Date(now.getTime() + 4 * 3600_000);
+  const h = local.getUTCHours();
+  if (h < 10 || h >= 14) return 60;
+  const day = `${String(local.getUTCDate()).padStart(2, "0")}/${String(local.getUTCMonth() + 1).padStart(2, "0")}`;
+  return ((last as { diffusion?: string } | undefined)?.diffusion ?? "").includes(`le ${day} à`) ? 60 : 15;
+}
+
 // A measure is said late once its hour ended this long ago.
 const LATE_MS = 3 * 3600_000;
 
@@ -226,7 +239,7 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
   let list: atmo.Index[];
   let readAt: Date;
   try {
-    ({ value: list, fetchedAt: readAt } = await atmo.indices(cache));
+    ({ value: list, fetchedAt: readAt } = await atmo.indices(cache, now));
   } catch (err) {
     console.error(`source ${atmo.SOURCE.id} indisponible:`, why(err));
     return { ...text({ erreur: "L'indice de qualité de l'air ne répond pas pour le moment.", consulter: atmo.SOURCE.url }), isError: true };

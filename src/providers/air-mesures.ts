@@ -200,8 +200,9 @@ export function configure(read: (() => Promise<Copie | null>) | undefined) {
   reader = read;
 }
 
-// The scheduled event writes once an hour at most: the copy is asked of the store once an hour.
-const FRESH_SECONDS = 60 * 60;
+// The scheduled event writes once an hour at most, at hh:45, but not at a time this isolate knows: the copy is asked of
+// the store every 10 minutes, so a new hour is served within 10 minutes of its writing, not up to an hour later (04/11).
+const FRESH_SECONDS = 10 * 60;
 
 /**
  * The stored measures, their time the collector's read; null where nothing is configured (a local server, the

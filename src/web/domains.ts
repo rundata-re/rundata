@@ -2790,10 +2790,14 @@ ${connectorCta("defibrillateurs", "les défibrillateurs")}
 // ---------------------------------------------------------------- sport
 
 const SPORT_LISTED = 8;
-const SPORT_ORDER = ["handball", "volley-ball", "beach-volley", "voile", "golf", "sport auto", "triathlon"];
+const SPORT_ORDER = ["handball", "volley-ball", "beach-volley", "voile", "golf", "sport auto", "canoë-kayak", "triathlon"];
 // The sports in the sentence of the count, as the page always named them.
-const SPORT_SAID: Record<string, string> = { "volley-ball": "volley", "sport auto": "sport automobile" };
-const sportName = (s: string) => (s === "sport auto" ? "Sport automobile" : s.charAt(0).toUpperCase() + s.slice(1));
+const SPORT_SAID: Record<string, string> = { "volley-ball": "volley", "sport auto": "sport automobile", "canoë-kayak": "canoë-kayak et va'a" };
+// Each sport's heading: the canoë-kayak with the va'a, half of it on the island (words of 05/11/2026).
+const SPORT_HEADING: Record<string, string> = { "sport auto": "Sport automobile", "canoë-kayak": "Canoë-kayak et va'a" };
+const sportName = (s: string) => SPORT_HEADING[s] ?? s.charAt(0).toUpperCase() + s.slice(1);
+// A next event's sport in its line: as the answer names it, the canoë-kayak with the va'a.
+const sportOf = (s: string) => (s === "canoë-kayak" ? SPORT_SAID[s] : s);
 
 /** « vendredi 30/10 à 20:30 » → « ven. 30/10, 20:30 » ; « du samedi 24/10 au dimanche 25/10 » → « 24/10 → 25/10 ». */
 const shortWhen = (q: string) =>
@@ -2844,7 +2848,7 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
 
   const next = soon.length
     ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Les prochains rendez-vous</h3><ul class="plain">${soon.map((r) =>
-        `<li><b>${esc(r.quand)}</b> : ${esc(r.epreuve)} <span class="note" style="color:var(--on-night-muted)">(${esc(r.competition ? `${r.sport}, ${r.competition}` : r.sport)})</span></li>`).join("")}</ul></figure>`
+        `<li><b>${esc(r.quand)}</b> : ${esc(r.epreuve)} <span class="note" style="color:var(--on-night-muted)">(${esc(r.competition ? `${sportOf(r.sport)}, ${r.competition}` : sportOf(r.sport))})</span></li>`).join("")}</ul></figure>`
     : "";
 
   // Each championship folded when they are long (FOLD_ROWS). Its name then leaves the line, which opens it: the

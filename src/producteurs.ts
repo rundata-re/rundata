@@ -191,6 +191,7 @@ export const FICHES: Record<string, Fiche> = {
   ffvb: { famille: "information_publique", producteurs: ["Fédération française de volley"] },
   ffvoile: { famille: "information_publique", producteurs: ["Fédération française de voile"] },
   ffgolf: { famille: "information_publique", producteurs: ["Fédération française de golf"] },
+  ffck: { famille: "information_publique", producteurs: ["Fédération française de canoë kayak et sports de pagaie"] },
   lrvb: { famille: "information_publique", producteurs: ["Ligue réunionnaise de volley-ball"] },
   lrvb_tournois: { famille: "information_publique", producteurs: ["Ligue réunionnaise de volley-ball"] },
   lsar: { famille: "information_publique", producteurs: ["Ligue du sport automobile de La Réunion"] },

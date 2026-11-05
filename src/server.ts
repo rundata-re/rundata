@@ -97,6 +97,7 @@ import { coupuresEau } from "./tools/coupures.js";
 import * as dae from "./providers/dae.js";
 import { defibrillateurs } from "./tools/dae.js";
 import * as sportSources from "./providers/sport.js";
+import * as ffck from "./providers/ffck.js";
 import { QUANDS, RESULTS_OUTIL, SPORTS, sportTool, UPCOMING_OUTIL, type Quand, type Sport } from "./tools/sport.js";
 import * as gdacs from "./providers/cyclones.js";
 import { cyclones, PASSES_LIST } from "./tools/cyclones.js";
@@ -126,7 +127,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.276";
+export const VERSION = "1.0.277";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -225,7 +226,7 @@ const lieuAvecExemples = z
  * for the registry of producers and licences (producteurs.ts).
  */
 export const toutesLesSources = (inactives = false) =>
-  oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, dae.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
+  oncePerId([...weatherProviders().map((p) => p.source), ...(inactives ? [meteofranceStations.SOURCE] : []), ...(inactives || vigilance.enabled() ? [vigilance.SOURCE] : []), acspo.SOURCE, modis.SOURCE, coraux.SOURCE, houle.SOURCE, seismes.SOURCE, volcanSources.OVPF, volcanSources.PITONLIVE, edf.SOURCE, calendar.SCHOOL, calendar.HOLIDAYS, atmo.SOURCE, airMesures.SOURCE, capteurs.SOURCE, annuaire.SOURCE, ...Object.values(terrain.SOURCES), ...(inactives || transit.enabled() ? [transit.SOURCE, gtfsrt.SOURCE] : []), velos.SOURCE, maregraphes.SOURCE, vigicrues.SOURCE, irve.SOURCE, eauPotable.SOURCE, baignades.SOURCE, requin.SOURCE, onf.SOURCE, airesOnf.SOURCE, vigieau.SOURCE, avisEau.SOURCE, dae.SOURCE, ffck.SOURCE, ...Object.values(sportSources.SOURCES).filter((x) => inactives || (autorisee(`sport:${x.id}`) && autorisee(`agenda:${x.id}`))), gdacs.SOURCE, ...agendaSources.SOURCES_LUES.filter((s) => inactives || connecteursEnLigne() || s !== CONNECTEURS_SOURCE), ...Object.values(actuSources.SOURCES), raaPrefecture.SOURCE, ...Object.values(traceSources.SOURCES), ...(inactives || climat.enabled() ? [climat.SOURCE] : []), ...(inactives || climat.hourlyEnabled() ? [climat.SOURCE_HORAIRE] : []), ...(inactives || arome.enabled() ? [arome.SOURCE] : []), openmeteo.SOURCE, uv.SOURCE, ensemble.SOURCE, ...(inactives || feux.enabled() ? [feux.SOURCE] : []),
     // The vie pratique's and the power cuts' (annuaire_services_publics, electricite).
     carburantsPrix.SOURCE, radarMf.SOURCE, radarsFixes.SOURCE, accidentsRoute.SOURCE, BDTOPO, PHOTOS, courantMairies.SOURCE, tcoDecheteries.SOURCE, decheteriesAdeme.ADEME, santeSources.FINESS, santeSources.ARS_GARDE, santeSources.SANTE_FR, gardeArs.PDSA, collecteTco.SOURCE, ...Object.values(lieuxEnfants.SOURCES), marchesOsm.OSM, ...Object.values(marchesOsm.MAIRIES), loyersAnil.SOURCE, ecolesAnnuaire.SOURCE, carteScolaire.SOURCE, parcoursupFormations.SOURCE, ipsDepp.SOURCE_IPS, ipsDepp.SOURCE_VA, medecinsAmeli.SOURCE, electionsCommunes.SOURCE, internetArcep.SOURCE, antennesAnfr.SOURCE_MOBILE, antennesAnfr.SOURCE_RADIO, sitesHs.SOURCE, monumentsMerimee.SOURCE, lieuxRemarquables.SOURCE, sentiersMarmailles.SOURCE, canyonsParc.SOURCE, mairiesAnnexesSd.SOURCE, accueilJeuneEnfant.SOURCE,
     // The bike lanes, the bike racks and the speeds of the routes nationales, of /carte only.
@@ -820,7 +821,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Sport à La Réunion (974) : matchs à venir et derniers résultats officiels des championnats régionaux de handball (D1) et de volley " +
         "(R1 et R2, hommes et femmes, toutes les poules), avec les clubs en toutes lettres et la commune où l'on joue, " +
         "les matchs annulés ou reportés (avis de la Ligue de volley, actualité locale), classements, " +
-        "beach-volley et sport auto (calendriers des ligues), Grand Raid (courses, partants, abandons, podiums), les programmes sportifs publiés par les communes " +
+        "beach-volley et sport auto (calendriers des ligues), canoë-kayak et va'a (FFCK), Grand Raid (courses, partants, abandons, podiums), les programmes sportifs publiés par les communes " +
         "(leur lien seulement). " +
         // Said while neither federation is read (providers/autorisations.ts), so that the answer's mention is read (marketing).
         (!autorisee("sport:ffvoile") && !autorisee("sport:ffgolf") ? "Les régates et le golf ne sont pas repris : la réponse dit pourquoi. " : "") +

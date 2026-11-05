@@ -28,6 +28,7 @@ import { REFRESH_EVERY as CAPTEURS_EVERY, REFRESH_OFFSET as CAPTEURS_OFFSET } fr
 import { REFRESH_EVERY as MARCHES_EVERY, REFRESH_OFFSET as MARCHES_OFFSET, TEXTES_OFFSET as MARCHES_TEXTES_OFFSET } from "./providers/marches-publics.js";
 import { EVENEMENT_MINUTES as EMPLOI_FICHE_EVERY, REFRESH_EVERY as EMPLOI_EVERY, REFRESH_OFFSET as EMPLOI_OFFSET } from "./providers/emploi.js";
 import { REFRESH_EVERY as IRVE_EVERY, REFRESH_OFFSET as IRVE_OFFSET } from "./providers/irve.js";
+import { REFRESH_EVERY as FFCK_EVERY, REFRESH_OFFSET as FFCK_OFFSET } from "./providers/ffck.js";
 import { SHARED, SHARED_AFTER, type Shared } from "./web/partagees.js";
 import { COMMUNE_TILES, DOMAINS, HOME_TILES } from "./web/site.js";
 
@@ -491,6 +492,21 @@ const SCHEDULED: Entry[] = [
     offset: CANDHIS_OFFSET,
     run: { subrequests: 2 + Object.keys(CANDHIS_KINDS).length, kvReads: 1, kvWrites: 1, cpuMs: 10 },
     from: ["src/providers/candhis.ts"],
+    basis: "code",
+  },
+  // The FFCK's calendar: the state read from KV, one page of app.ffck.org at most (a season's list once a day, else the
+  // page of an event of the island not read yet), the state written when a page was read. CPU measured in Node on the
+  // list of 05/11/2026 (651 events, 284 Ko): 12 ms to read it, and 262 ms in a new process to sort its places, all of it
+  // the gazetteer's index built at the first place resolved (places/resolve.ts), once per isolate and shared with the
+  // agendas; 7 ms after (median of 30). An event's page, under 1 ms. Counted with the index, rounded up.
+  {
+    id: "ffck:etat",
+    trigger: "planifiée",
+    what: "canoë-kayak et va'a : le calendrier de la FFCK, une page au plus par passage (la liste d'une saison une fois par jour, sinon la fiche d'une épreuve de l'île), gardé dans KV",
+    every: FFCK_EVERY,
+    offset: FFCK_OFFSET,
+    run: { subrequests: 3, kvReads: 1, kvWrites: 1, cpuMs: 300 },
+    from: ["src/providers/ffck.ts"],
     basis: "code",
   },
   // One association's platform per run, the one read the longest ago (each every 6 hours while there are fewer than

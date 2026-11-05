@@ -80,6 +80,59 @@ export async function geocode(cache: Cache, q: string, insee?: string): Promise<
   });
 }
 
+// DVF writes a street's name the land registry's way, shortened: « CHE DES CANNAS », « RUE DU GEN DE GAULLE (ST G) ».
+const ABREGES: Record<string, string> = {
+  GEN: "GENERAL", GAL: "GENERAL", ST: "SAINT", STE: "SAINTE", AV: "AVENUE", AVE: "AVENUE", BD: "BOULEVARD", BLD: "BOULEVARD",
+  CHE: "CHEMIN", CHEM: "CHEMIN", CH: "CHEMIN", IMP: "IMPASSE", ALL: "ALLEE", RTE: "ROUTE", LOT: "LOTISSEMENT", RES: "RESIDENCE",
+  PL: "PLACE", SQ: "SQUARE", PROM: "PROMENADE", DR: "DOCTEUR", MAL: "MARECHAL", PDT: "PRESIDENT", PROF: "PROFESSEUR",
+  CDT: "COMMANDANT", CNE: "CAPITAINE", LT: "LIEUTENANT", COL: "COLONEL", MGR: "MONSEIGNEUR", HAM: "HAMEAU", SENT: "SENTIER",
+  SEN: "SENTIER", QUA: "QUARTIER", QUAR: "QUARTIER", CTRE: "CENTRE", R: "RUE", ZA: "ZONE ARTISANALE", ZI: "ZONE INDUSTRIELLE",
+  RN: "ROUTE NATIONALE", RD: "ROUTE DEPARTEMENTALE", VC: "VOIE COMMUNALE", PTE: "PETITE", GDE: "GRANDE", GD: "GRAND", PT: "PETIT",
+};
+
+/**
+ * A street's name as the address base and DVF can be compared on: without the quarter in brackets, the accents, the case,
+ * the land registry's short words nor the spaces. « Chemin Champdemerle » and « CHE CHAMP DE MERLE » give the same.
+ */
+export function nomVoie(nom: string): string {
+  const words = nom.replace(/\([^)]*\)/g, " ").normalize("NFKD").replace(/[̀-ͯ]/g, "").toUpperCase().split(/[^A-Z0-9]+/);
+  return words.filter(Boolean).map((w) => ABREGES[w] ?? w).join("");
+}
+
+/**
+ * How many streets of the commune the address base names like `nom` (see nomVoie): one, or a street of the same name
+ * elsewhere in the commune (« Chemin Boyer » at Bois de Nèfles and at Tan Rouge), whose sales DVF cannot tell apart.
+ */
+export async function homonymes(cache: Cache, nom: string, insee: string): Promise<Cached<number>> {
+  const text = nom.replace(/\([^)]*\)/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+  const n = nomVoie(nom);
+  return cache.get(`ban-homonymes:${insee}:${n}`, 7 * DAY, async () => {
+    const r = await getJson<{ features: { properties: Record<string, string | number> }[] }>(
+      SOURCES.ban.id,
+      `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(text)}&citycode=${insee}&type=street&limit=10`,
+    );
+    return new Set(r.features.filter((x) => nomVoie(String(x.properties.name ?? "")) === n).map((x) => String(x.properties.id ?? x.properties.name))).size;
+  });
+}
+
+/**
+ * Whether the address base gives the land registry code `code` of commune `insee` to a street of its own: then DVF's
+ * street of that code is that one, not a street the address base names on its own whose name DVF also writes (« CHE DES
+ * CANNAS », code 0280 of Le Tampon, is « Chemin Communal des Canas » there, not « Chemin des Cannas »). Answered 404
+ * « La voie n'existe pas » for a code no street has.
+ */
+export async function codePris(cache: Cache, insee: string, code: string): Promise<Cached<boolean>> {
+  return cache.get(`ban-code:${insee}_${code}`, 7 * DAY, async () => {
+    try {
+      await getJson<unknown>(SOURCES.ban.id, `https://plateforme.adresse.data.gouv.fr/lookup/${insee}_${encodeURIComponent(code)}`);
+      return true;
+    } catch (err) {
+      if (err instanceof UpstreamError && err.status === 404) return false;
+      throw err;
+    }
+  });
+}
+
 /** Up to five streets of a commune whose names come close to `q`, best first, without the postcode: « Rue Juliette Dodu ». */
 export async function streets(cache: Cache, q: string, insee: string): Promise<Cached<string[]>> {
   const text = q.trim().slice(0, 200);
@@ -272,20 +325,69 @@ export function streetSales(csv: string, voie: string): StreetSale[] {
 }
 
 /**
- * The sales on the street `voie` (FANTOIR code) of commune `insee`, from `fromYear` to `toYear`: one file per year. A
- * year without a file yet (404) is left out; `annees` says which were read.
+ * The street codes DVF gives the street named `nom` (compared by nomVoie) in these year files of one commune. One code is
+ * the street; none or several, its sales cannot be told for sure.
  */
-export async function salesOnStreet(cache: Cache, insee: string, voie: string, fromYear: number, toYear: number): Promise<Cached<{ ventes: StreetSale[]; annees: number[] }>> {
+export function codesByName(csvs: string[], nom: string): Set<string> {
+  const want = nomVoie(nom);
+  const codes = new Set<string>();
+  for (const csv of csvs) {
+    const lines = csv.split("\n");
+    const head = cells(lines[0] ?? "");
+    const [NOM, CODE] = [head.indexOf("adresse_nom_voie"), head.indexOf("adresse_code_voie")];
+    if (NOM < 0 || CODE < 0) continue;
+    // A file has a few hundred street names for thousands of lines: each name normalized once. Only the two fields are
+    // cut out of a line without quotes (DVF's lines have none), the name's field and the code's after it.
+    const seen = new Map<string, boolean>();
+    const field = (line: string, n: number) => {
+      let start = 0;
+      for (let i = 0; i < n; i++) start = line.indexOf(",", start) + 1;
+      if (!start) return "";
+      const end = line.indexOf(",", start);
+      return end < 0 ? line.slice(start) : line.slice(start, end);
+    };
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const quoted = line.includes('"') ? cells(line) : undefined;
+      const name = quoted ? quoted[NOM] : field(line, NOM);
+      if (!name) continue;
+      let same = seen.get(name);
+      if (same === undefined) seen.set(name, (same = nomVoie(name) === want));
+      if (!same) continue;
+      const code = quoted ? quoted[CODE] : field(line, CODE);
+      if (code) codes.add(code);
+    }
+  }
+  return codes;
+}
+
+/**
+ * The sales on the street of commune `insee`, from `fromYear` to `toYear`: one file per year. The street is its FANTOIR
+ * code, or, for a street the address base names on its own, its name, then read only when DVF gives that name one code
+ * in all the years read; else null, its sales not read. A year without a file yet (404) is left out; `annees` says which
+ * were read; `code`, the street's code, found or given.
+ */
+export async function salesOnStreet(cache: Cache, insee: string, voie: { code: string } | { nom: string }, fromYear: number, toYear: number): Promise<Cached<{ ventes: StreetSale[]; annees: number[]; code: string } | null>> {
   // v3: each sale says whether it is off plan (an older entry does not).
-  return cache.get(`dvf-voie:v3:${insee}:${voie}:${fromYear}-${toYear}`, 7 * DAY, async () => {
+  const which = "code" in voie ? voie.code : `nom:${nomVoie(voie.nom)}`;
+  return cache.get(`dvf-voie:v3:${insee}:${which}:${fromYear}-${toYear}`, 7 * DAY, async () => {
     const years = Array.from({ length: toYear - fromYear + 1 }, (_, i) => fromYear + i);
     const files = await Promise.all(years.map((y) => getText(SOURCES.dvfVoie.id, GEO_DVF(y, insee), 25_000).catch((err) => {
       if (err instanceof UpstreamError && err.status === 404) return undefined;
       throw err;
     })));
+    const read = files.filter((f): f is string => f !== undefined);
+    let code: string;
+    if ("code" in voie) code = voie.code;
+    else {
+      const codes = codesByName(read, voie.nom);
+      if (codes.size !== 1) return null;
+      [code] = codes;
+    }
     return {
-      ventes: files.flatMap((f) => (f ? streetSales(f, voie) : [])),
+      ventes: read.flatMap((f) => streetSales(f, code)),
       annees: years.filter((_, i) => files[i] !== undefined),
+      code,
     };
   });
 }

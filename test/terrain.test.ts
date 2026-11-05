@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { codeVoie, latestAct, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
+import { codesByName, codeVoie, latestAct, nomVoie, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
 import { SOURCES as TRACES } from "../src/providers/traces.js";
 import { communeOf, ficheLieu, market, riskLine, sameStreet, streetLine, streetMarket } from "../src/tools/terrain.js";
 
@@ -269,7 +269,9 @@ describe("fiche terrain", () => {
     files = { ...files, geocodage: "geocode-regnault.json" };
     const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "rue Étienne Regnault, Saint-Paul", NOW));
     expect(r.resume).toMatch(/^Rue Étienne Regnault \(St Paul Centre\) 97460 Saint-Paul \(milieu de la rue\)\u00a0; /);
-    expect(urls.filter((u) => u.includes("geocodage"))).toHaveLength(1);
+    // No streets close by asked; a street the address base names on its own, its name looked for once more in the
+    // commune, for its sales.
+    expect(urls.filter((u) => u.includes("geocodage"))).toEqual([expect.stringContaining("&limit=5&citycode=97415"), expect.stringContaining("&citycode=97415&type=street&limit=10")]);
   });
 
   it("looks for the street in the commune named after the comma, and only there", async () => {
@@ -349,5 +351,125 @@ describe("fiche terrain", () => {
     vi.stubGlobal("fetch", async (url: string) => (String(url).includes("catnat") && fails-- > 0 ? new Response("", { status: 520 }) : inner(url)));
     const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "7 rue de la Buse, Saint-Paul", NOW));
     expect(r.risques.catastrophes_naturelles.arretes_dans_la_commune).toBeGreaterThan(5);
+  });
+});
+
+// A street the address base names on its own has no land registry code: its sales found by its name in DVF, only when
+// that name is one street's in the address base and one code's in DVF, a code no street of the address base has
+// (05/11/2026: 10,8 % of the island's addresses). Real answers of the address base of 05/11/2026, in Le Tampon.
+describe("fiche terrain, a street without a land registry code", () => {
+  // DVF's head and a line of a made-up sale on a street, in its layout.
+  const cols = raw("geo-dvf.csv").split("\n")[0].split(",");
+  const line = (id: string, valeur: number, nom: string, code: string) => {
+    const c: Record<string, string> = {
+      id_mutation: id, date_mutation: "2024-05-02", numero_disposition: "000001", nature_mutation: "Vente", valeur_fonciere: String(valeur),
+      adresse_nom_voie: nom, adresse_code_voie: code, code_commune: "97422", id_parcelle: `97422000AB${id.slice(-4)}`,
+      code_type_local: "1", type_local: "Maison", surface_reelle_bati: "90", code_nature_culture: "S", surface_terrain: "500",
+    };
+    return cols.map((k) => c[k] ?? "").join(",");
+  };
+  const csv = (...lines: string[]) => [cols.join(","), ...lines].join("\n") + "\n";
+  // DVF writes the names of the land registry, which change: « IMP GEORGES BIZET » in 2021, « ALL GEORGES BIZET » in 2025,
+  // one code. « CHE DES CANNAS » is code 0280, the address base's « Chemin Communal des Canas ».
+  const TAMPON = csv(
+    line("2024-C0001", 251_000, "IMP GEORGES BIZET", "0983"),
+    line("2024-C0002", 225_000, "ALL GEORGES BIZET", "0983"),
+    line("2024-C0003", 300_000, "CHE DES CANNAS", "0280"),
+    line("2024-C0004", 280_000, "RUE DES CRYPTOMERIAS(P DES C)", "0367"),
+  );
+  const fiche = (adresse: string) => ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), adresse, NOW).then(body);
+  const BIZET = { "type=street": "homonymes-bizet.json", geocodage: "geocode-bizet.json" };
+  // DVF's files and the address platform's street codes: 0280 is a street's, others none's (its real answers).
+  const answer = (dvf: (u: string) => Response, lookup = (u: string) => (u.endsWith("_0280") ? new Response(raw("lookup-0280.json")) : new Response(raw("lookup-libre.json"), { status: 404 }))) => {
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = String(url);
+      if (u.includes("geo-dvf")) return urls.push(u), dvf(u);
+      if (u.includes("plateforme.adresse")) return urls.push(u), lookup(u);
+      return inner(url);
+    });
+  };
+  const only2024 = (u: string) => (u.includes("/2024/") ? new Response(TAMPON) : new Response("", { status: 404 }));
+  const UNSURE = "la voie n'a pas été retrouvée avec certitude dans DVF";
+
+  it("compares the address base's names and DVF's the same way", () => {
+    expect(nomVoie("Allée Georges Bizet")).toBe(nomVoie("ALL GEORGES BIZET"));
+    expect(nomVoie("Chemin Champdemerle")).toBe(nomVoie("CHE CHAMP DE MERLE"));
+    expect(nomVoie("Impasse Maréchal Patrice de Mac Mahon")).toBe(nomVoie("IMP MAL PATRICE DE MACMAHON"));
+    // The quarter in brackets left out on both sides: the address base's homonyms are told apart elsewhere.
+    expect(nomVoie("Rue des Cryptomérias")).toBe(nomVoie("RUE DES CRYPTOMERIAS(P DES C)"));
+    // Never close enough: two streets.
+    expect(nomVoie("Allée des Palmistes")).not.toBe(nomVoie("ALLEE DES PALMIERS"));
+    expect(nomVoie("Impasse des Pêches")).not.toBe(nomVoie("IMP DES PENSEES"));
+  });
+
+  it("finds a street's one code by its name, and two when two streets of DVF share it", () => {
+    expect(codesByName([TAMPON], "Allée Georges Bizet")).toEqual(new Set(["0983"]));
+    expect(codesByName([TAMPON], "Chemin des Goyaviers")).toEqual(new Set());
+    expect(codesByName([TAMPON, csv(line("2023-C0005", 150_000, "ALLEE GEORGES BIZET", "0984"))], "Allée Georges Bizet")).toEqual(new Set(["0983", "0984"]));
+    // A quoted field, as CSV allows.
+    expect(codesByName([csv(line("2024-C0006", 150_000, '"ALL GEORGES BIZET"', "0983"))], "Allée Georges Bizet")).toEqual(new Set(["0983"]));
+  });
+
+  it("reads the sales of a street the address base names on its own, by its name, all the names of its code", async () => {
+    files = { ...files, ...BIZET };
+    answer(only2024);
+    const r = await fiche("Allée Georges Bizet, Le Tampon");
+    expect(r.resume).toContain("\u00a0; Allée Georges Bizet, depuis 2021 : 2 ventes enregistrées dans DVF, trop peu pour une médiane\u00a0; ");
+    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Allée Georges Bizet", depuis: 2021, ventes: 2, note: "2 ventes enregistrées dans DVF sur la voie depuis 2021, trop peu pour une médiane" });
+    expect(r.sources.map((x: { source: string }) => x.source)).toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
+    // Two more calls to the address base: another street of that name in the commune, a street of that code. The
+    // commune's files as for a street with a code.
+    expect(urls.filter((u) => /type=street|plateforme/.test(u))).toEqual([
+      "https://data.geopf.fr/geocodage/search?q=All%C3%A9e%20Georges%20Bizet&citycode=97422&type=street&limit=10",
+      "https://plateforme.adresse.data.gouv.fr/lookup/97422_0983",
+    ]);
+    expect(urls.filter((u) => u.includes("geo-dvf"))).toEqual([2021, 2022, 2023, 2024, 2025, 2026].map((y) => `https://files.data.gouv.fr/geo-dvf/latest/csv/${y}/communes/974/97422.csv`));
+  });
+
+  it("gives no street the sales of another: DVF's name of a street the address base knows by its code", async () => {
+    files = { ...files, "type=street": "homonymes-cannas.json", geocodage: "geocode-cannas.json" };
+    answer(only2024);
+    const r = await fiche("Chemin des Cannas, Le Tampon");
+    expect(r.resume).toContain(`\u00a0; Chemin des Cannas : ventes de la voie non lues, ${UNSURE}\u00a0; `);
+    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Chemin des Cannas", non_lues: UNSURE });
+    expect(urls).toContain("https://plateforme.adresse.data.gouv.fr/lookup/97422_0280");
+    expect(r.resume).not.toMatch(/aucune vente|ventes? enregistrées? dans DVF sur/);
+  });
+
+  it("says a street's sales were not read when another street of the commune has its name, never « no sale »", async () => {
+    files = { ...files, "type=street": "homonymes-cryptomerias.json", geocodage: "geocode-cryptomerias.json" };
+    answer(() => new Response(TAMPON));
+    const r = await fiche("Rue des Cryptomérias, Le Tampon");
+    const voie = r.marche_immobilier.sur_la_voie.voie;
+    expect(r.resume).toContain(`\u00a0; ${voie} : ventes de la voie non lues, ${UNSURE}\u00a0; `);
+    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie, non_lues: UNSURE });
+    expect(r.resume).not.toMatch(/aucune vente/);
+    // Nothing read from DVF for it.
+    expect(urls.filter((u) => /geo-dvf|plateforme/.test(u))).toEqual([]);
+  });
+
+  it("says the same when DVF gives the name two codes, or the address base does not answer", async () => {
+    files = { ...files, ...BIZET };
+    answer((u) => new Response(u.includes("/2024/") ? TAMPON : csv(line("2023-C0005", 150_000, "ALLEE GEORGES BIZET", "0984"))));
+    const two = await fiche("Allée Georges Bizet, Le Tampon");
+    expect(two.marche_immobilier.sur_la_voie).toEqual({ voie: "Allée Georges Bizet", non_lues: UNSURE });
+    expect(two.resume).toContain(`\u00a0; Allée Georges Bizet : ventes de la voie non lues, ${UNSURE}\u00a0; `);
+
+    // Neither the search of the streets of that name, nor the street of that code.
+    answer(only2024, () => new Response("", { status: 400 }));
+    expect((await fiche("Allée Georges Bizet, Le Tampon")).marche_immobilier.sur_la_voie).toEqual({ voie: "Allée Georges Bizet", non_lues: UNSURE });
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string) => (/type=street/.test(String(url)) ? new Response("", { status: 400 }) : inner(url)));
+    expect((await fiche("Allée Georges Bizet, Le Tampon")).marche_immobilier.sur_la_voie).toEqual({ voie: "Allée Georges Bizet", non_lues: UNSURE });
+  });
+
+  it("says a street's sales were not read when DVF does not answer, a street with a code as well", async () => {
+    answer(() => new Response("", { status: 400 }));
+    const r = await fiche("7 rue de la Buse, Saint-Paul");
+    expect(r.resume).toContain("\u00a0; Rue de la Buse : ventes de la voie non lues, DVF ne répond pas pour l'instant\u00a0; dans le secteur alentour ");
+    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Rue de la Buse", non_lues: "DVF ne répond pas pour l'instant" });
+    expect(r.sources.map((x: { source: string }) => x.source)).not.toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
+    expect(urls.filter((u) => /plateforme|type=street/.test(u))).toEqual([]);
   });
 });

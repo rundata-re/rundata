@@ -61,11 +61,15 @@ export interface Shared {
 // of /chiffres (4 more for their events, 24 while an agenda does not answer), 12 for the power
 // cuts the mairies relay (48 while the site of one of them does not answer), 8 for the sea, 8 for the satellites' grids (48 while ACSPO lacks a day it should have), 4 for the calendar; the volcano's, every 5 minutes during an alert, adds up to 240 more while it lasts (the banner
 // of every page reads it). The events stay out: their build takes most of an invocation (they will come in a bundle).
-// The cold costs: each build measured alone with `wrangler dev` from an empty cache, plus one. The traffic's: about 28
+// The cold costs: each build measured alone with `wrangler dev` from an empty cache, plus one; since 05/11/2026, checked
+// against each build alone from an empty cache, its sources given their fixtures, then none (test/couts-froid.test.ts),
+// and raised to the cost the Worker writes with the copy in KV when that is higher. The traffic's: about 28
 // in the event's logs at 21:20, 25 October 2026, its 8 bus stations' timetables read together (2 reads of D1 instead
 // of 16 to 32: 31 at 4 o'clock before), plus one, rounded up; the tests counted 19, their cache counting none of the
-// reads of the buses' feeds in real time. The volcano's: its four sources, each a
-// read, a fetch and a write, plus one, and the list of the silent sites (sans-reponse.ts: a read, 2 of D1 and a write). The power cuts': one fetch per mairie and one for Saint-André's PDF letters, plus one.
+// reads of the buses' feeds in real time. The volcano's: its sources, the earthquakes, the ONF's map and the
+// prefecture's list with their copies, built alone (25 in the test, 18 in an event that has built the earthquakes and
+// the map before), and the list of the silent sites (sans-reponse.ts: 2 of D1, which Node does not see): 27. The power
+// cuts': one fetch per mairie and one for Saint-André's PDF letters, plus one.
 // The sea's: 18 when it read the satellites, less the 5 they took (13 against 8 in the same test, 25 October 2026): the
 // grids are their own copy. The grids': ACSPO's four files, a read and a write, MODIS's three more where ACSPO sees
 // nothing near a beach, plus one.
@@ -81,7 +85,7 @@ export const SHARED: Shared[] = [
   { key: mf.KEY, build: () => mf.read(), every: 5, cold: 3, cpu: 70, offset: 0 },
   // The rivers, every 15 minutes, every 5 while a river is in yellow flood vigilance or above: the home page's tile
   // read a data center's own copy, which no view had brought up to date for two hours while Vigicrues Réunion answered
-  // (26 October 2026). Its cold cost: Vigicrues' vigilance, and its heights and flows in 4 batches each, plus one. Its CPU: parsing them, 43 ms
+  // (26 October 2026). Its cold cost: Vigicrues' vigilance, and its heights and flows in 4 batches each, 9 reads, with their copies: 24 in KV on 05/11/2026 (21 in the test), 10 declared before. Its CPU: parsing them, 43 ms
   // the first time in Node and 4 ms after, rounded up. At minutes 10, 25, 40 and 55, with the news, the water cuts, the
   // air and the satellites' grids: the lightest of the three series of events a rate of 15 minutes can take.
   // The news of the media and the prefecture, every 5 minutes, in every event: the tool actualites and /actualites read
@@ -91,13 +95,15 @@ export const SHARED: Shared[] = [
   // event in three, providers/actualites.ts, and kept from that copy in between), plus one. Its CPU: parsing them, 132
   // ms the first time in Node and 25 to 37 ms after, rounded up. Before /actualites's copy, which embeds it.
   { key: actu.KEY, build: async (cache, now) => actu.lire(now, (await cache.peek<actu.Fil>(actu.KEY).catch(() => undefined))?.value), every: 5, cold: 11, cpu: 140, offset: 0, before: ["web:actualites"] },
-  { key: "web:crues", build: buildCrues, every: (last) => (floodRaised(last as CruesAnswer | undefined).length ? 5 : 15), cold: 10, cpu: 50, range: { usual: 15, shortest: 5 }, offset: 10, alongside: true },
+  { key: "web:crues", build: buildCrues, every: (last) => (floodRaised(last as CruesAnswer | undefined).length ? 5 : 15), cold: 24, cpu: 50, range: { usual: 15, shortest: 5 }, offset: 10, alongside: true },
   { key: "web:actualites", build: buildActualites, every: 30, cold: 10, cpu: 190, offset: 10 },
   { key: "web:trafic", build: buildTrafic, every: 30, cold: 30, cpu: 160, offset: 5 },
   // The archive of EDF's production (providers/edf.ts `archiver`: a read of KV and, once an hour, a write) outside its
   // cost, with what is left, as the OVPF's PDF.
-  { key: "web:electricite", build: buildElectricite, every: 30, cold: 7, cpu: 80, offset: 20 },
-  { key: "web:coupures", build: buildCoupures, every: 30, cold: 7, cpu: 60, offset: 25 },
+  // Its cold cost: 9 in KV on 05/11/2026, 7 in the test.
+  { key: "web:electricite", build: buildElectricite, every: 30, cold: 9, cpu: 80, offset: 20 },
+  // Its cold cost: the 7 suppliers' and mairies' notices, with their copies: 13 in KV on 05/11/2026, 12 in the test.
+  { key: "web:coupures", build: buildCoupures, every: 30, cold: 13, cpu: 60, offset: 25 },
   // The index (3), the copy of the measures at the stations (3: the data center's cache, KV, written back), the copy
   // of the sensors (1: KV, kept in memory).
   // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes
@@ -121,16 +127,16 @@ export const SHARED: Shared[] = [
     const v = await buildVolcan(cache, now);
     await unmeasured(() => ovpfPdf.readNewest(cache, now.getTime()));
     return v;
-  }, every: (last) => (alerteVolcan(last as VolcanAnswer | undefined) ? 5 : 30), cold: 17, cpu: 110, range: { usual: 30, shortest: 5 }, offset: 15 },
+  }, every: (last) => (alerteVolcan(last as VolcanAnswer | undefined) ? 5 : 30), cold: 27, cpu: 110, range: { usual: 30, shortest: 5 }, offset: 15 },
   // Every 2 hours; every 30 minutes while a mairie followed did not answer, so that its notices come back soon after
   // its site does. The page of electricity carries this copy (web/data.ts): built after it.
   { key: "web:courant", build: buildCourant, every: (last) => ((last as CourantAnswer | undefined)?.indisponibles?.some(followed) ? 30 : 2 * 60), cold: 7, cpu: 30, range: { usual: 2 * 60, shortest: 30 }, offset: 20, before: ["web:electricite"] },
   // The counts of /chiffres and sources_donnees (chiffres.ts), beside the electricity's copy, of 7: the events of the
   // half hour's first minute are their events'. Its cold cost: its copy before, the weather sources' last observations
   // (Météo-France's packets, the airports', the beacon's), the bikes' stations, the ONF's map (3), the copies of the
-  // water and power cuts and of the events, the silent sites (a read, 2 of D1), the clubs' calendar, plus one; counted
-  // from the code.
-  { key: CHIFFRES, build: buildChiffres, every: 60, cold: 25, cpu: 60, offset: 50 },
+  // water and power cuts and of the events, the silent sites (a read, 2 of D1), the clubs' calendar: 45 in KV on 05/11/2026, 26 in
+  // the test, which sees neither D1 nor the copies read from KV (25 declared before, counted from the code).
+  { key: CHIFFRES, build: buildChiffres, every: 60, cold: 45, cpu: 60, offset: 50 },
   // Its events, the whole agenda as /evenements reads it (55 measured there): every 6 hours, in the half hour's first
   // event, which no copy every 30 minutes takes; every hour while an agenda did not answer (chiffres.ts).
   { key: EVENEMENTS_KEY, build: buildEvenements, every: evenementsEvery, cold: 56, cpu: 200, range: { usual: 6 * 60, shortest: 60 }, offset: 30, before: [CHIFFRES] },
@@ -140,8 +146,8 @@ export const SHARED: Shared[] = [
  * days (prevision_meteo, weather pages), read by questions and never fetched by them. Eight more writes a day.
  */
 export const SHARED_AFTER: Shared[] = [
-  // Its run time and the ensemble, plus one.
-  { key: ensemble.KEY, build: () => ensemble.build(), every: 3 * 60, cold: 3, cpu: 40, offset: 100 },
+  // Its run time and the ensemble, plus one; 4 when Open-Meteo does not answer, each read tried again once.
+  { key: ensemble.KEY, build: () => ensemble.build(), every: 3 * 60, cold: 4, cpu: 40, offset: 100 },
 ];
 const KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
 

@@ -10,7 +10,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 - 10 000 sous-requêtes par invocation, et 1 000 appels à KV, D1 et aux autres services liés, ensemble.
 - 5 lectures en vol à la fois par invocation (src/http.ts), sur les 6 connexions que la plateforme ouvre ensemble.
-- Tâche planifiée : toutes les 5 minutes, 500 sous-requêtes, 30 000 ms de CPU.
+- Tâche planifiée : toutes les 5 minutes, 550 sous-requêtes, 30 000 ms de CPU.
 - Mémoire : 128 Mo par isolat, pour toutes les invocations qu'il sert ensemble.
 - Une visite ou une question : 200 sous-requêtes. Une construction de copie : 100.
 
@@ -18,29 +18,29 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 457 | 500 |
+| pire passage planifié, sous-requêtes | 510 | 550 |
 | pire passage planifié, appels KV et D1 | 114 | 1 000 |
 | pire passage planifié, CPU (ms) | 3 636 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
-| passage le plus chargé (cadences les plus courtes), sous-requêtes | 173 | 500 |
+| passage le plus chargé (cadences les plus courtes), sous-requêtes | 200 | 550 |
 | vue la plus chère, sous-requêtes | 86 | 200 |
 | question la plus chère, sous-requêtes | 72 | 200 |
 | construction de copie la plus chère, sous-requêtes | 56 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 457 sous-requêtes sur 500. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus.
+- Marge : le pire passage planifié est à 510 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 490, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 200 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 130 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
-- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 173 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, web:volcan, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 335 sous-requêtes à 00:00 UTC.
+- Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 132 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
+- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:50 UTC, 200 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, web:volcan, web:courant, web:chiffres, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 388 sous-requêtes à 00:00 UTC.
 - Vue la plus chère : /communes/*, 86. Question la plus chère : resume_du_jour, 72. Construction la plus chère : web:chiffres:evenements, 56.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 457 | 32 | 56 | 26 | 1 164 | 284 | 3 636 |
-| tâche planifiée, par jour | 28 594 | 4 514 | 3 939 | 2 409 | 102 914 | 58 511 | 234 096 |
-| tâche planifiée, par jour, cadences les plus courtes | 40 134 | 5 954 | 5 835 | 2 889 | 107 954 | 58 511 | 282 456 |
-| tâche planifiée, par mois (30 jours) | 857 807 | 135 420 | 118 170 | 72 283 | 3 087 411 | 1 755 321 | 7 022 867 |
+| pire passage planifié | 510 | 32 | 56 | 26 | 1 164 | 284 | 3 636 |
+| tâche planifiée, par jour | 31 290 | 4 514 | 3 939 | 2 409 | 102 914 | 58 511 | 234 096 |
+| tâche planifiée, par jour, cadences les plus courtes | 47 918 | 5 954 | 5 835 | 2 889 | 107 954 | 58 511 | 282 456 |
+| tâche planifiée, par mois (30 jours) | 938 687 | 135 420 | 118 170 | 72 283 | 3 087 411 | 1 755 321 | 7 022 867 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -55,22 +55,22 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | partagees:liste | copies partagées : la liste des clés KV, une pour les copies et celles d'après | 5 min | 00:00 | 1 |  | 1 |  |  |  |  | code |
 | vigilance | copie partagée (KV) | 5 min | 00:00 | 4 |  | 1 |  |  |  | 70 | estimé |
 | actualites:fil | copie partagée (KV) | 5 min | 00:00 | 12 |  | 1 |  |  |  | 140 | mesuré |
-| web:crues | copie partagée (KV) | 15 min (5 au plus court) | 00:10 | 17 | 3 | 4 |  |  |  | 50 | estimé |
+| web:crues | copie partagée (KV) | 15 min (5 au plus court) | 00:10 | 31 | 3 | 4 |  |  |  | 50 | estimé |
 | web:actualites | copie partagée (KV) | 30 min | 00:10 | 11 |  | 1 |  |  |  | 190 | mesuré |
 | web:trafic | copie partagée (KV) | 30 min | 00:05 | 31 |  | 1 | 2 | 840 |  | 160 | mesuré |
-| web:electricite | copie partagée (KV) | 30 min | 00:20 | 8 | 1 | 2 |  |  |  | 80 | mesuré |
-| web:coupures | copie partagée (KV) | 30 min | 00:25 | 10 | 1 | 2 |  |  |  | 60 | mesuré |
+| web:electricite | copie partagée (KV) | 30 min | 00:20 | 10 | 1 | 2 |  |  |  | 80 | mesuré |
+| web:coupures | copie partagée (KV) | 30 min | 00:25 | 16 | 1 | 2 |  |  |  | 60 | mesuré |
 | web:air | copie partagée (KV) | 60 min (15 au plus court) | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
 | mer:satellites | copie partagée (KV) | 180 min (30 au plus court) | 00:55 | 11 |  | 1 |  |  |  | 110 | estimé |
 | web:mer | copie partagée (KV) | 180 min | 01:15 | 14 |  | 1 |  |  |  | 110 | mesuré |
 | web:calendrier | copie partagée (KV) | 360 min | 02:10 | 9 |  | 1 |  |  |  | 40 | estimé |
 | seismes | copie partagée (KV) | 10 min | 00:05 | 3 |  | 1 |  |  |  | 10 | estimé |
 | onf:sentiers | copie partagée (KV) | 60 min | 00:45 | 5 |  | 1 |  |  |  | 40 | estimé |
-| web:volcan | copie partagée (KV) | 30 min (5 au plus court) | 00:15 | 24 | 3 | 4 | 2 | 21 |  | 110 | mesuré |
+| web:volcan | copie partagée (KV) | 30 min (5 au plus court) | 00:15 | 34 | 3 | 4 | 2 | 21 |  | 110 | mesuré |
 | web:courant | copie partagée (KV) | 120 min (30 au plus court) | 00:20 | 8 |  | 1 |  |  |  | 30 | mesuré |
-| web:chiffres | copie partagée (KV) | 60 min | 00:50 | 26 |  | 1 | 2 | 21 |  | 60 | estimé |
+| web:chiffres | copie partagée (KV) | 60 min | 00:50 | 46 |  | 1 | 2 | 21 |  | 60 | estimé |
 | web:chiffres:evenements | copie partagée (KV) | 360 min (60 au plus court) | 00:30 | 57 |  | 1 |  |  |  | 200 | estimé |
-| ens:ile | copie partagée, avec ce que les autres ont laissé | 180 min | 01:40 | 4 |  | 1 |  |  |  | 40 | mesuré |
+| ens:ile | copie partagée, avec ce que les autres ont laissé | 180 min | 01:40 | 5 |  | 1 |  |  |  | 40 | mesuré |
 | vigilance:carte | carte officielle de la vigilance : son état (KV), lu à chaque copie de la vigilance | 5 min | 00:00 | 1 | 1 |  |  |  |  |  | code |
 | vigilance:carte:bulletin | carte officielle de la vigilance : un nouveau bulletin gardé (le PDF et l'état, KV), puis son image par le navigateur de Cloudflare (l'image et l'état), 24 images par jour au plus | 60 min | 00:00 | 5 |  | 4 |  |  |  | 40 | code |
 | cmrs:liste | carte de prévision de trajectoire du CMRS : la liste de ses bulletins (Météo-France), pendant un système actif | 30 min | 00:15 | 8 | 2 | 2 |  |  |  | 10 | code |

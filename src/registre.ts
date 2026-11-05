@@ -973,7 +973,7 @@ export function budget(entries = REGISTRY): string {
     `- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).\n` +
     // Past 85 % of its limit, the margin left is said, with the rule that keeps it (decided on 31/10/2026).
     (worst.subrequests > 0.85 * SCHEDULED_BUDGET
-      ? `- Marge : le pire passage planifié est à ${n(worst.subrequests)} sous-requêtes sur ${n(SCHEDULED_BUDGET)}. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus.\n`
+      ? `- Marge : le pire passage planifié est à ${n(worst.subrequests)} sous-requêtes sur ${n(SCHEDULED_BUDGET)}. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les ${n(SERVICE_OPS_LIMIT)} appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins ${n(SERVICE_OPS_LIMIT - worst.subrequests)}, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à ${n(short.run.subrequests)} (cadences les plus courtes).\n`
       : "") +
     `- Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (${scheduled(entries).filter((e) => e.run.memoryMb).map((e) => `${e.id}, ${n(e.run.memoryMb)} Mo au pic`).join(", ")}), face aux ${n(ISOLATE_MEMORY_MB)} Mo d'un isolat\u00a0; les autres ne la déclarent pas.\n` +
     `- Passage le plus chargé selon les décalages, cadences habituelles : ${hhmm(usual.minute)} UTC, ${n(usual.run.subrequests)} sous-requêtes (${usual.ids.join(", ")}).\n` +

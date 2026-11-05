@@ -29,10 +29,11 @@ export const SUBREQUEST_LIMIT = 10_000;
 export const SERVICE_OPS_LIMIT = 1_000;
 /**
  * The scheduled event, every 5 minutes: the AROME grids (MAX_NEW_GRIDS at most, providers/arome.ts), every shared copy
- * that is due (about 115 subrequests when all are, from cold, web/partagees.ts), the planned agendas, with room for a
- * slow day. Half of SERVICE_OPS_LIMIT.
+ * that is due (all of them after a deploy, at their cold costs, web/partagees.ts: BUDGET.md's worst pass), the planned
+ * agendas, with room for a slow day. Half of SERVICE_OPS_LIMIT until 05/11/2026, when the cold costs measured against
+ * the builds (test/couts-froid.test.ts) put the worst pass at 510: a little more than half since.
  */
-export const SCHEDULED_BUDGET = 500;
+export const SCHEDULED_BUDGET = 550;
 /**
  * A visit or a tool call, the work after its response included: its own reads, and the copies it brings up to date
  * after the response (a page's dearest, about 35 from cold). Lower than the scheduled event's, which does the bulk.

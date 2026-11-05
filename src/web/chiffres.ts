@@ -91,7 +91,7 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
   ].filter(Boolean);
 
   const licences = `<h2 id="licences">Les licences</h2>
-  <p>${n(c.sous_licence_ouverte)} des ${n(c.sources)} sources sont publiées sous une licence ouverte (${esc(parenthese(c.licences_ouvertes))}). Pour les autres, des informations publiques, rundata.re ne reprend que les faits, avec le lien de la source.</p>
+  <p>${n(c.sous_licence_ouverte)} des ${n(c.sources)} sources sont publiées sous une licence ouverte (${esc(parenthese(c.licences_ouvertes))}). Pour les autres, rundata.re ne reprend que des faits (une valeur, un état, un titre et son heure), avec le lien de la source\u00a0; pour les médias, le titre et parfois la première phrase. Certaines sont reprises avec l'accord écrit de leur producteur, ou en attendant sa réponse\u00a0: leur ligne le dit dans la liste des sources.</p>
   <ul>${Object.entries(c.licences).map(([nom, nombre]) => `<li>${esc(nom.charAt(0).toUpperCase() + nom.slice(1))}\u00a0: ${n(nombre)}</li>`).join("")}</ul>`;
 
   const s = c.manque.sites_sans_reponse;

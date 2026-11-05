@@ -38,7 +38,9 @@ export const PITONLIVE: SourceInfo = {
   id: "pitonlive",
   nom: "État du volcan (pitonlive.com, site non officiel)",
   organisme: "pitonlive.com, site non officiel",
-  licence: "Non précisée : cité avec son nom et son lien",
+  // Its notice (read on 26/10/2026): « Les contenus éditoriaux de PitonLive (textes, interface, éléments graphiques
+  // originaux) sont protégés » ; the data are their sources', credited there. No licence of reuse.
+  licence: "Contenus protégés, aucune licence de réutilisation\u00a0: seul son niveau d'alerte est cité, en dernier recours, avec son nom et son lien («\u00a0Selon pitonlive.com, site non officiel\u00a0»)",
   attribution: "pitonlive.com",
   url: "https://pitonlive.com",
 };

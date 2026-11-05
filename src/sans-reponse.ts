@@ -61,6 +61,7 @@ let run: Run | undefined;
 let all: All | undefined;
 let batch: Batch | undefined;
 const registre = new Map<string, SourceInfo>();
+const themes = new Map<string, string>();
 
 /** The database's calls (worker.ts), or none: nothing is written nor read. */
 export function configure(r?: Run, a?: All, b?: Batch) {
@@ -69,9 +70,13 @@ export function configure(r?: Run, a?: All, b?: Batch) {
   batch = b;
 }
 
-/** The sources the server knows (sources_donnees' list): a row's editor and what it is missing, when the row does not say. */
-export function inscrire(sources: SourceInfo[]) {
+/**
+ * The sources the server knows (sources_donnees' list): a row's editor and what it is missing, when the row does not
+ * say; and the part of the site each is shown in (chiffres.ts, themesDesSources), its theme.
+ */
+export function inscrire(sources: SourceInfo[], themesDes: Record<string, string> = {}) {
   for (const s of sources) if (!registre.has(s.id)) registre.set(s.id, s);
+  for (const [id, t] of Object.entries(themesDes)) if (!themes.has(id)) themes.set(id, t);
 }
 
 export const GARDE_REVENUS_JOURS = 7;
@@ -186,6 +191,9 @@ export async function noter(source: string, url: string, constat: string, now = 
  */
 const ADRESSES: Record<string, string> = {
   "public-api.meteofrance.fr": "https://public-api.meteofrance.fr/public/DPVigilance/v1/vigilanceom/flux/dernier",
+  // Its root answers 403 (« répond, mais pas à nos lectures » from 29/10/2026), while the API the sensors are read from
+  // answers: 200 in 1,6 s on 04/11 at 14:00, with no sensor at La Réunion that day (providers/capteurs.ts).
+  "data.sensor.community": "https://data.sensor.community/airrohr/v1/filter/box=-21.42,55.20,-20.85,55.87",
 };
 
 type Verdict = { issue: "repond" } | { issue: "bloque"; constat: string } | { issue: "echec"; constat: string };
@@ -368,7 +376,8 @@ export function publiques(rows: Ligne[]): Public[] {
       return {
         ...l,
         nom: l.nom ?? connues[0]?.organisme ?? l.hote,
-        theme: l.theme ?? "Autres sites",
+        // Sensor.Community's row, without a theme of its own, under « Qualité de l'air » rather than « Autres sites ».
+        theme: l.theme ?? l.sources.map((s) => themes.get(s)).find(Boolean) ?? "Autres sites",
         manque: l.manque ?? (connues.length ? connues.map((s) => s.nom).join("\u00a0; ") : null),
       };
     })

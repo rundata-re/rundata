@@ -60,6 +60,16 @@ export interface Domaine {
 }
 
 const ids = (...list: string[]) => () => list;
+
+/** The part of the site each source is shown in, by its name in the menu (« Qualité de l'air »): the theme of a site that does not answer (sans-reponse.ts). */
+export function themesDesSources(): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const d of DOMAINES) {
+    const nom = CATEGORIES.find((c) => c.key === d.categorie)?.nom;
+    if (nom) for (const id of d.sources()) out[id] ??= nom;
+  }
+  return out;
+}
 const DAY = 24 * 60;
 
 export const DOMAINES: Domaine[] = [
@@ -67,7 +77,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "meteo", sources: ids("meteofrance", "metar", "pioupiou", "ffvl", "mf_radar", "openmeteo", "arome", "openmeteo_ens", "cams_uv"), cadence: { minutes: 2, de: "meteofrance" } },
   // The floods with the vigilance: no category of their own; their levels every 5 minutes, as the vigilance.
   { categorie: "vigilance", sources: ids("mf_vigilance", "vigicrues"), cadence: { minutes: 5, de: "mf_vigilance" } },
-  { categorie: "cyclones", sources: ids("gdacs_cyclones"), cadence: { minutes: 30, de: "gdacs_cyclones" } },
+  { categorie: "cyclones", sources: ids("gdacs_cyclones", "meteofrance_cmrs_wtio31"), cadence: { minutes: 30, de: "gdacs_cyclones" } },
   // Written to D1 once a day (.github/workflows/climat.yml).
   { categorie: "historique", sources: ids("mf_climatologie", "mf_climatologie_horaire"), cadence: { minutes: DAY, de: "mf_climatologie" } },
   { categorie: "actualites", sources: ids("medias_locaux", "prefecture_communiques", "prefecture_raa"), cadence: { minutes: 5, de: "medias_locaux" } },

@@ -21,13 +21,13 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   bornes: 4,
   bus: 8,
   calendrier: 4,
-  chiffres: 22,
+  chiffres: 23,
   commune: 18,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 12,
   courant: 8,
   crues: 3,
-  cyclones: 5,
+  cyclones: 6,
   dae: 4,
   dechets: 2,
   eau: 3,
@@ -44,12 +44,12 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.
   sentiers: 17,
-  sport: 24,
+  sport: 25,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,
   velos: 6,
-  volcan: 13,
+  volcan: 14,
 };
 
 /**

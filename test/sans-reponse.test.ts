@@ -3,7 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache } from "../src/cache.js";
 import * as sr from "../src/sans-reponse.js";
-import { sitesSansReponse } from "../src/tools/sans-reponse.js";
+import { matches, sitesSansReponse } from "../src/tools/sans-reponse.js";
 import { sansReponsePage } from "../src/web/sans-reponse.js";
 import { typo } from "../src/web/typo.js";
 
@@ -172,6 +172,17 @@ describe("the morning's recheck", () => {
     expect(await sr.essayer(l, MORNING, api(503))).toEqual({ issue: "echec", constat: "http_503" });
   });
 
+  it("asks Sensor.Community at the API the sensors are read from, its root answering 403", async () => {
+    // From 29/10/2026 its row said « répond, mais pas à nos lectures »: the root's 403, while the API answered 200.
+    const asked: string[] = [];
+    const fetcher = (async (input: RequestInfo | URL) => {
+      asked.push(String(input));
+      return new Response("[]", { status: new URL(String(input)).pathname === "/" ? 403 : 200 });
+    }) as typeof fetch;
+    expect(await sr.essayer({ url: "https://data.sensor.community/", verifier: null }, MORNING, fetcher)).toEqual({ issue: "repond" });
+    expect(asked).toEqual(["https://data.sensor.community/airrohr/v1/filter/box=-21.42,55.20,-20.85,55.87"]);
+  });
+
   it("asks each row not « revenu » once, writes everything in one batch and dates the pass", async () => {
     const { db, row } = database();
     const asked: string[] = [];
@@ -304,5 +315,19 @@ describe("what is shown", () => {
     expect(volcan.sites.map((s: { site: string }) => s.site)).toEqual(["le site de l'OVPF-IPGP"]);
     const eau = JSON.parse((await sitesSansReponse(new Cache(), "eau", MORNING)).content[0].text);
     expect(eau.resume).toBe("Aucun site public sans réponse ce 26/10 pour « eau », d'après la revérification quotidienne.");
+  });
+
+  it("finds a row by whole words, and gives a row without a theme that of its sources", () => {
+    const row = (x: Partial<sr.Public>): sr.Public => ({ hote: "x.re", url: "https://x.re/", nom: "X", theme: "Autres sites", manque: null, page: null, sources: [], statut: "injoignable", premier_echec: 0, ...x } as sr.Public);
+    // « eau » found « réseau » as a part of a word; a plural is the same word.
+    expect(matches(row({ nom: "Réseau des médiathèques" }), "eau")).toBe(false);
+    expect(matches(row({ nom: "Eaux de La Possession" }), "eau")).toBe(true);
+    expect(matches(row({ theme: "Eau" }), "Eau")).toBe(true);
+    expect(matches(row({ hote: "data.sensor.community" }), "sensor")).toBe(true);
+    // The sensors of the air, under the menu's name of their part of the site.
+    sr.inscrire([], { sensor_community: "Qualité de l'air" });
+    const [l] = sr.publiques([{ ...row({}), theme: null, nom: "Sensor.Community", hote: "data.sensor.community", sources: ["sensor_community"], statut: "bloque" }]);
+    expect(l.theme).toBe("Qualité de l'air");
+    expect(matches(l, "air")).toBe(true);
   });
 });

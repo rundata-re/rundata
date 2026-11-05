@@ -137,16 +137,16 @@ export function daeCouche(list: dae.Dae[], built: string): CoucheJson {
   return { id: "defibrillateurs", nom: "Défibrillateurs (Géo'DAE)", nature: "fixe", precision: "adresse", source: dae.SOURCE, heure: built, objets };
 }
 
-/** The charging stations of the national base, as /bornes lists them, without their live state. */
 /**
- * How close a point given with few decimals is: 2 or fewer (about 1 km) say the commune (EZDrive, Saint-Louis, 0.9 km
- * from its address), 3 (about 100 m) the place, 4 and more the address.
+ * How close a point given with few decimals is, both its coordinates so cut: 2 or fewer (about 1 km) say the commune
+ * (EZDrive, Saint-Louis, 0.9 km from its address), 3 (about 100 m) the place, 4 and more the address.
  */
 export function precisionDe(lon: number, lat: number): Precision {
-  const at = (n: number) => [lon, lat].some((x) => Math.round(x * 10 ** n) / 10 ** n === x);
+  const at = (n: number) => [lon, lat].every((x) => Math.round(x * 10 ** n) / 10 ** n === x);
   return at(2) ? "commune" : at(3) ? "lieu" : "adresse";
 }
 
+/** The charging stations of the national base, as /bornes lists them, without their live state. */
 export function bornesCouche(list: irve.Station[], built: string): CoucheJson {
   const objets = list.map((s): Objet => ({
     nom: s.nom || s.reseau,

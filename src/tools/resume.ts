@@ -15,6 +15,7 @@ import { apart, noteLecture } from "../lectures.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as atmo from "../providers/atmo.js";
 import * as cal from "../providers/calendrier.js";
+import { SOLEIL_NOTE } from "./calendrier.js";
 import { phases } from "../providers/carburants.js";
 import * as sante from "../sante/etablissements.js";
 import * as col from "../vie/collecte.js";
@@ -345,7 +346,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const events = (l.agenda?.value.evenements ?? []).filter((r) => r.commune === nom && repris(r) && occurrences(r).some((o) => o.du <= today && today <= o.au));
   const mairie = l.commune?.value.mairie;
   const open = mairie ? openNow(mairie, now) : null;
-  const sun = cal.sun(today, commune.place.lon, commune.place.lat, commune.place.altitude_m ?? 0);
+  const sun = cal.sun(today, commune.place.lon, commune.place.lat, cal.horizonDe(commune.place));
   const prod = l.electricite?.value.production;
   const airHere = l.air?.value.communes?.find((x) => normalize(x.commune) === normalize(nom));
   const c = l.calendrier?.value;
@@ -383,7 +384,9 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const resumeText = [
     `${nom}, ${DAY_FR.format(now)}`,
     t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom)})` : "",
-    f?.temperature_min && f.temperature_max ? `prévision du jour ${f.temperature_min} à ${f.temperature_max}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}` : "",
+    f?.temperature_min && f.temperature_max
+      ? `${f.periode ? `prévision ${f.periode}\u00a0: ` : "prévision du jour "}${f.temperature_min} à ${f.temperature_max}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}`
+      : "",
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",
     l.coupures ? (avis.length ? `${waterCount(avis)}${waterSilent ? ` (${waterSilent.court})` : ""}` : waterSilent ? `coupures d'eau : ${waterSilent.court}` : dist?.avis ? "pas de coupure d'eau annoncée" : "") : "",
@@ -432,7 +435,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
         }
       : undefined,
     calendrier: c ? calendrierDuJour(c) : undefined,
-    soleil: { lever: hhmm(sun.lever), coucher: hhmm(sun.coucher) },
+    soleil: { lever: hhmm(sun.lever), coucher: hhmm(sun.coucher), note: SOLEIL_NOTE },
     mairie: mairie
       ? { ouverte: open, horaires_aujourd_hui: hoursOn(mairie, now) ?? (open === null ? undefined : "fermée aujourd'hui"), adresse: mairie.adresse, telephone: mairie.telephone }
       : undefined,

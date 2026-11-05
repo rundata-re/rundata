@@ -86,13 +86,19 @@ function rain(mm: number | null): string | undefined {
 }
 
 /**
- * A day's rain; today's counts the hours still to come only (ahead()), so it says from when: « 1,6 mm de pluie de 15\u00a0h
- * à minuit ». The time is that of the answer, which a copy of the page keeps with it.
+ * The hours today's figures cover, from the hours still to come only (ahead()): « de 15\u00a0h à minuit ». None for the
+ * other days, nor just after midnight. The time is that of the answer, which a copy of the page keeps with it.
  */
+function restOfDay(d: ForecastDay, now: Date): string | undefined {
+  const from = Math.floor(sinceMidnight(now) / 60);
+  return from && d.date === localDate(now) ? `de ${heure(from)} à minuit` : undefined;
+}
+
+/** A day's rain; today's says from when (restOfDay): « 1,6 mm de pluie de 15\u00a0h à minuit ». */
 function dayRain(d: ForecastDay, now: Date): string | undefined {
   const r = rain(d.pluie_mm);
-  const from = Math.floor(sinceMidnight(now) / 60);
-  return r && from && d.date === localDate(now) ? `${r} de ${heure(from)} à minuit` : r;
+  const rest = restOfDay(d, now);
+  return r && rest ? `${r} ${rest}` : r;
 }
 
 // --- When: free text → days and hours ---------------------------------------------------------------------------
@@ -225,8 +231,9 @@ export function merge(e: Forecast | null, a: Forecast | null): Forecast | null {
 /**
  * Today from the hours still to come only, in La Réunion time: the rain of the morning is no forecast at 15h, and a
  * total from midnight said « aujourd'hui » would announce it as to come. The stretch under way counts for the part of it
- * left, its rain shared out evenly. The lowest and highest temperatures stay the whole day's, as one expects of a day.
- * The other days are left as the model gives them.
+ * left, its rain shared out evenly. The lowest and highest temperatures too: the whole day's were shown beside a
+ * measurement since midnight already past them (Cilaos, 19,8 °C forecast, 23,7 °C measured at 10:00), so they are those
+ * of the hours left, said as such (restOfDay). The other days are left as the model gives them.
  */
 function ahead(f: Forecast, now: Date): Forecast {
   const today = localDate(now);
@@ -239,7 +246,12 @@ function ahead(f: Forecast, now: Date): Forecast {
     if (start >= t || h.pluie_mm == null) return [h];
     return [{ ...h, pluie_mm: (h.pluie_mm * (end - t)) / (end - start) }];
   });
-  return { ...f, days: f.days.map((d) => (d.date === today ? { ...dayFromHours(today, hours), tmin: d.tmin, tmax: d.tmax } : d)) };
+  // In the first hour, said as the whole day (restOfDay): the model's own lowest and highest.
+  const whole = Math.floor(sinceMidnight(now) / 60) === 0;
+  return {
+    ...f,
+    days: f.days.map((d) => (d.date !== today ? d : whole ? { ...dayFromHours(today, hours), tmin: d.tmin, tmax: d.tmax } : dayFromHours(today, hours))),
+  };
 }
 
 interface Got {
@@ -344,6 +356,8 @@ function dayBlock(f: Forecast, d: ForecastDay, now: Date, uvOf?: UvOf, confOf?: 
   const c = confOf?.(d.date);
   return {
     jour: dayLabel(d.date),
+    /** Today's figures are those of the hours left: « de 15\u00a0h à minuit » (ahead()). */
+    periode: restOfDay(d, now),
     ciel_en_journee: daySky(f, d.date, now),
     temperature_min: deg(d.tmin),
     temperature_max: deg(d.tmax),
@@ -356,8 +370,10 @@ function dayBlock(f: Forecast, d: ForecastDay, now: Date, uvOf?: UvOf, confOf?: 
   };
 }
 
+/** Today's starts with the hours it covers, said once for all its figures: « de 15\u00a0h à minuit, nuageux, 18 à 20 °C… ». */
 function daySentence(f: Forecast, d: ForecastDay, now: Date, uvOf?: UvOf, confOf?: ConfOf): string {
-  const parts = [daySky(f, d.date, now), d.tmin != null && d.tmax != null ? `${fr(d.tmin)} à ${fr(d.tmax)} °C` : undefined, dayRain(d, now)];
+  const rest = restOfDay(d, now);
+  const parts = [rest, daySky(f, d.date, now), d.tmin != null && d.tmax != null ? `${fr(d.tmin)} à ${fr(d.tmax)} °C` : undefined, rain(d.pluie_mm)];
   if (d.rafales_max_kmh != null) parts.push(`rafales jusqu'à ${Math.round(d.rafales_max_kmh)} km/h`);
   const u = uvOf?.(d.date);
   if (u != null) parts.push(`UV ${uvText(u)}`);
@@ -507,12 +523,13 @@ function ensWarnings(e: ensemble.Ensemble | null): string[] {
 }
 
 /** Said whenever the answer gives a UV index. */
-function uvWarnings(u: Cached<uv.UvCell[]> | null): string[] {
+export function uvWarnings(u: Cached<uv.UvCell[]> | null): string[] {
   if (!u) return [];
   return [
     `Indice UV : PRÉVISION du service européen Copernicus (${uv.MODEL.nom}, maille d'environ ${uv.MODEL.maille_km} km), ` +
       "nuages compris, au plus fort de la journée (vers midi)\u00a0; pas une mesure. Il est plus fort en altitude, d'environ 10 % " +
-      "par 1 000 m. Dès 3, se protéger\u00a0; à 8 et plus, éviter le soleil de 11\u00a0h à 15\u00a0h (échelle de l'OMS).",
+      "par 1 000 m. Dès 3, se protéger\u00a0; à 8 et plus, éviter le soleil autour de midi, de 10\u00a0h à 14\u00a0h environ à La Réunion " +
+      "(seuils de l'échelle de l'OMS, qui ne fixe pas d'heures).",
     ...(u.stale ? ["Indice UV : service momentanément injoignable, prévision précédente."] : []),
   ];
 }

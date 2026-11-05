@@ -183,6 +183,9 @@ export interface MerAnswer {
   sources: Credit[];
 }
 
+/** Today's rain without its hours (« 1,6 mm de pluie de 15\u00a0h à minuit » → « 1,6 mm de pluie »), where they are said once for the day. */
+export const sansPeriode = (pluie: string, periode?: string) => (periode && pluie.endsWith(` ${periode}`) ? pluie.slice(0, -periode.length - 1) : pluie);
+
 /**
  * A copy's forecast days from today's on, by their date (« mardi 27/10 »): a copy made the day before starts with a
  * day that is over. Days that carry no date of today are kept only from a copy made today.
@@ -197,6 +200,8 @@ export interface PrevisionAnswer {
   resume: string;
   jours?: {
     jour: string;
+    /** Today's: the hours its figures cover, « de 15\u00a0h à minuit » (tools/prevision.ts, restOfDay). */
+    periode?: string;
     ciel_en_journee?: string;
     temperature_min?: string;
     temperature_max?: string;

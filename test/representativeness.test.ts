@@ -43,4 +43,17 @@ describe("fit", () => {
     const [near, far] = g.score < pf.score ? [g, pf] : [pf, g];
     expect([far, near].sort(mieux)).toEqual([near, far]);
   });
+
+  it("takes one coast across the line between two sides: Pont-Mathurin for the beach of L'Étang-Salé, not Saint-Leu", () => {
+    const p = place("Plage de L'Étang-Salé");
+    const mf = (nom: string) => mfStations().find((s) => s.nom === nom)!;
+    // The beach is « ouest », just past the line; Pont-Mathurin, 5,4 km away in the same commune, « sud ».
+    const pm = fit(p, mf("Pont-Mathurin"));
+    const leu = fit(p, mf("Saint-Leu"));
+    expect([pm.versant, pm.pertinence, pm.avertissements]).toEqual(["sud", "bonne", []]);
+    expect([pm, leu].sort(mieux)[0]).toBe(pm);
+    // Further than 10 km, or from a cirque to the coast, the sides stay apart.
+    expect(fit(place("Saint-Benoît"), pierrefonds).avertissements.join(" ")).toMatch(/versant/);
+    expect(fit(place("Salazie"), mf("Bellevue Bras-Panon")).avertissements.join(" ")).toMatch(/versant est \(au vent\), Salazie sur le versant centre/);
+  });
 });

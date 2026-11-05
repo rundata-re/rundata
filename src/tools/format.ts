@@ -75,6 +75,22 @@ export function ailleurs(s: { station: string; commune?: string; distance_km?: n
   return `${dite ? ` ${aCommune(dite)}` : ""}${s.distance_km != null ? `, à ${fr(s.distance_km)} km` : ""}`;
 }
 
+/**
+ * What makes a station speak less well for the place, in a few words, from its warnings (tools/representativeness.ts,
+ * fit): « 249 m plus haut », « autre versant\u00a0: est ». The pages say it where they name the station, as the tools do in
+ * full. Nothing for a station of relevance « bonne ».
+ */
+export function ecartsCourts(s: { avertissements?: string[]; pertinence?: string }): string[] {
+  if (!s.pertinence || s.pertinence === "bonne") return [];
+  return (s.avertissements ?? []).flatMap((w) => {
+    const alt = /^La station est (\d+) m (plus haut|plus bas) que /.exec(w);
+    if (alt) return [`${nombre(Number(alt[1]))} m ${alt[2]}`];
+    const side = /^La station est sur le versant (\S+)/.exec(w);
+    if (side) return [`autre versant\u00a0: ${side[1] === "centre" ? "cirques et plaines" : side[1]}`];
+    return [];
+  });
+}
+
 export function show(r: Reading): string {
   if (r.variable === "vent_direction" && typeof r.valeur === "number") return `${compass(r.valeur)} (${r.valeur}°)`;
   const v = typeof r.valeur === "number" ? fr(r.valeur) : r.valeur;

@@ -34,7 +34,7 @@ function weather(s: Secteur, data: Cached<PlaceData> | null, now: Date): string 
   const range = (lo?: string, hi?: string) => (lo && hi ? `${thin(lo)} / ${thin(hi)}` : "");
   return `<div class="card">${icon("mountain")}<h3>Météo ${esc(p.nom)}</h3>` +
     (st ? `<p><b>${esc(thin(st.mesures.temperature!))}</b> mesurés à ${esc(st.heure_mesure.split(" ")[1] ?? st.heure_mesure)} par la station ${esc(st.station)} (${st.altitude_m.toLocaleString("fr-FR")} m${st.distance_km != null ? `, à ${String(st.distance_km).replace(".", ",")} km` : ""})${st.mesures.pluie_1h ? `, pluie sur une heure ${esc(thin(st.mesures.pluie_1h))}` : ""}.</p>` : "") +
-    (days.length ? `<p>Prévision, pas une mesure : ${days.map((j) => `${esc(j.jour)} ${esc(range(j.temperature_min, j.temperature_max))}${j.ciel_en_journee ? `, ${esc(j.ciel_en_journee)}` : ""}`).join(" ; ")}.</p>` : "") +
+    (days.length ? `<p>Prévision, pas une mesure : ${days.map((j) => `${esc(j.jour)}${j.periode ? ` (${esc(j.periode)})` : ""} ${esc(range(j.temperature_min, j.temperature_max))}${j.ciel_en_journee ? `, ${esc(j.ciel_en_journee)}` : ""}`).join(" ; ")}.</p>` : "") +
     `<p><a href="/meteo/${esc(p.slug)}">Météo ${esc(p.nom)} en direct et prévision →</a> · <a href="/vigilance">vigilance</a></p></div>`;
 }
 

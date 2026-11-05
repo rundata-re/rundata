@@ -1885,9 +1885,12 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
       : `<div class="card">${icon("mountain")}<h3>Routes forestières (ONF)</h3>
   <ul class="rows eau">${[...rf.principales, ...rf.interdites.filter((x) => !rf.principales.some((p) => p.route === x.route)).map((x) => ({ ...x, circulation: "Circulation interdite" }))].map((r) => {
     const shut = /interdit/i.test(r.circulation);
+    // Open only when the ONF says so: a road without a state on its map (« inconnue ») is not called open.
+    const open = !shut && /^Circulation autorisée/i.test(r.circulation);
     const hours = /de \d+ ?h à \d+ ?h/i.exec(r.circulation)?.[0];
     const small = [r.cause, r.precision].filter(Boolean).map((x) => esc(x!)).join(" · ") || (hours ? `circulation ${esc(hours)}${r.circulation.includes(";") ? " sur une partie" : ""}` : "");
-    return `<li><span>${esc(r.route)}${small ? `<small>${small}</small>` : ""}</span><span class="${shut ? "q-mauvaise" : "q-bonne"}">${shut ? "interdite" : "ouverte"}</span></li>`;
+    const etat = shut ? `<span class="q-mauvaise">interdite</span>` : open ? `<span class="q-bonne">ouverte</span>` : `<span class="note">état non publié par l'ONF</span>`;
+    return `<li><span>${esc(r.route)}${small ? `<small>${small}</small>` : ""}</span>${etat}</li>`;
   }).join("")}</ul>
   <p class="note">Les routes du volcan, du Maïdo et de Bébour-Bélouve, et toutes celles que l'ONF interdit à la circulation${rf.mise_a_jour ? `, d'après sa carte mise à jour le ${esc(dayOf(rf.mise_a_jour))}` : ""}. <a href="/sentiers">Sentiers fermés</a>.</p></div>`;
 

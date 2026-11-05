@@ -58,7 +58,22 @@ export function pageOf(slug: string): PlacePage | undefined {
   return BY_SLUG.get(slug);
 }
 
-/** Beaches and the coast get the sea temperature; the Hauts and the cirques do not. */
+/**
+ * The 19 communes that have a shore, each touching one of Météo-France's 8 coastal zones (VIGI974-51 to 58). Not
+ * from the altitude of their centre: Saint-André (96 m), Petite-Île, Les Avirons and Les Trois-Bassins (785 m) are
+ * on the sea too. Cilaos, Salazie, La Plaine-des-Palmistes, Le Tampon and Entre-Deux are not.
+ */
+export const COMMUNES_COTIERES: ReadonlySet<string> = new Set([
+  "Bras-Panon", "L'Étang-Salé", "La Possession", "Le Port", "Les Avirons", "Les Trois-Bassins", "Petite-Île",
+  "Saint-André", "Saint-Benoît", "Saint-Denis", "Saint-Joseph", "Saint-Leu", "Saint-Louis", "Saint-Paul",
+  "Saint-Philippe", "Saint-Pierre", "Sainte-Marie", "Sainte-Rose", "Sainte-Suzanne",
+]);
+
+/**
+ * Beaches and the coast get the sea temperature and the waves-submersion vigilance; the Hauts and the cirques do not.
+ * A commune by the list above; another place by its type or its altitude.
+ */
 export function coastal(p: PlacePage): boolean {
+  if (p.commune) return COMMUNES_COTIERES.has(p.nom);
   return p.place.type === "plage" || (p.place.altitude_m ?? 999) < 80;
 }

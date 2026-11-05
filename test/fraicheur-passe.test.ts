@@ -4,6 +4,7 @@ import { callDeadline, noteLecture, withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { refresh } from "../src/tools/resume.js";
 import { cite } from "../src/tools/citer.js";
+import dae from "../src/dae/dae.json" with { type: "json" };
 import { defibrillateurs } from "../src/tools/dae.js";
 import { sitesSansReponse } from "../src/tools/sans-reponse.js";
 
@@ -74,9 +75,12 @@ describe("the time an answer says it read its data", () => {
   it("dates a list rebuilt from its file, and a daily check, by their own date, not by the call", async () => {
     const now = new Date(t("2026-10-31T02:04:00"));
     const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
-    // Géo'DAE's list, rebuilt on 24/10/2026: it said « à l'instant ».
-    const dae = body(cite("defibrillateurs", defibrillateurs("Saint-Denis"), { lectures: [], now })).fraicheur;
-    expect(dae).toMatchObject({ donnee_du: "24/10/2026", lue_a: "31/10 02:04", age: "il y a 7 jours" });
+    // Géo'DAE's list, rebuilt on its own day: a week later, it said « à l'instant ».
+    const built = dae.construit;
+    const week = new Date(Date.parse(`${built}T02:04:00+04:00`) + 7 * 86_400_000);
+    const day = (d: Date) => d.toLocaleDateString("fr-FR", { timeZone: "Indian/Reunion", day: "2-digit", month: "2-digit" });
+    const f = body(cite("defibrillateurs", defibrillateurs("Saint-Denis"), { lectures: [], now: week })).fraicheur;
+    expect(f).toMatchObject({ donnee_du: built.split("-").reverse().join("/"), lue_a: `${day(week)} 02:04`, age: "il y a 7 jours" });
     // The day's check of the silent sites, run at 02:50 the day before: « il y a 5 min » was the copy's age.
     const store = new MemoryStore();
     await store.put("sans-reponse", { value: { lignes: [], passage: t("2026-10-30T02:50:00") / 1000 }, fetchedAt: t("2026-10-31T01:59:00") });

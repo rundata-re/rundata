@@ -76,7 +76,7 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
     item(t.points_de_recharge, "points de recharge pour voiture électrique", "/bornes", `<small>dans ${n(t.stations_de_recharge)} stations</small>`),
     t.stations_de_velos && item(t.stations_de_velos.nombre, "stations de vélos", "/velos", kept(c, t.stations_de_velos)),
     "lignes_de_bus" in t && t.lignes_de_bus !== undefined && item(t.lignes_de_bus, "lignes de bus", "/bus", `<small>${n(t.reseaux_de_bus!)} réseaux</small>`),
-    t.sentiers_onf && item(t.sentiers_onf.nombre, "sentiers suivis par l'ONF", "/sentiers", `<small>dont ${n(t.sentiers_onf.fermes)} fermés aujourd'hui selon l'ONF</small>${kept(c, t.sentiers_onf)}`),
+    t.sentiers_onf && item(t.sentiers_onf.nombre, "sentiers suivis par l'ONF", "/sentiers", `<small>dont ${n(t.sentiers_onf.fermes)} fermés d'après la carte de l'ONF</small>${kept(c, t.sentiers_onf)}`),
     item(t.randonnees_gps, "itinéraires de randonnée avec leur trace GPS", "/randonnees"),
   ].filter(Boolean);
 

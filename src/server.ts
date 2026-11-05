@@ -97,7 +97,7 @@ import { coupuresEau } from "./tools/coupures.js";
 import * as dae from "./providers/dae.js";
 import { defibrillateurs } from "./tools/dae.js";
 import * as sportSources from "./providers/sport.js";
-import { QUANDS, SPORTS, sportTool, type Quand, type Sport } from "./tools/sport.js";
+import { QUANDS, SPORTS, sportTool, UPCOMING_OUTIL, type Quand, type Sport } from "./tools/sport.js";
 import * as gdacs from "./providers/cyclones.js";
 import { cyclones, PASSES_LIST } from "./tools/cyclones.js";
 import * as climat from "./providers/climat.js";
@@ -106,7 +106,7 @@ import * as agendaSources from "./providers/agenda.js";
 import { autorisee } from "./providers/autorisations.js";
 import { SOURCE as CONNECTEURS_SOURCE } from "./providers/agenda-connecteurs.js";
 import { enLigne as connecteursEnLigne } from "./web/connecteurs-drapeau.js";
-import { agenda, COUVERTURE as AGENDA_COVERAGE, MAIRIES_LUES, PROGRAMMES_SALLES } from "./tools/agenda.js";
+import { agenda, COUVERTURE as AGENDA_COVERAGE, LISTED_OUTIL, MAIRIES_LUES, PROGRAMMES_SALLES } from "./tools/agenda.js";
 import * as traceSources from "./providers/traces.js";
 import * as actuSources from "./providers/actualites.js";
 import * as raaPrefecture from "./providers/raa.js";
@@ -126,7 +126,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.237";
+export const VERSION = "1.0.238";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -170,7 +170,16 @@ type Extra = { requestId?: string | number; requestInfo?: { headers?: Record<str
 
 // The three hints are said outright, destructiveHint too, though implied by readOnlyHint: the ChatGPT apps review asks
 // for them on every tool (test/serveur.test.ts checks it).
-const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } as const;
+export const SOURCES_COURT = "Réponse courte : les producteurs par licence. Chaque source avec son organisme, sa licence, l'attribution à citer et son lien : rappeler l'outil avec detail, ou https://rundata.re/chiffres#sources.";
+
+/** Each licence once, with the producers whose sources it covers, the most used licence first. */
+export function parLicence(sources: { organisme: string; licence: string }[]): { licence: string; producteurs: string[] }[] {
+  const by = new Map<string, Set<string>>();
+  for (const x of sources) by.set(x.licence, (by.get(x.licence) ?? new Set()).add(x.organisme));
+  return [...by].map(([licence, p]) => ({ licence, producteurs: [...p].sort((a, b) => a.localeCompare(b, "fr")) })).sort((a, b) => b.producteurs.length - a.producteurs.length || a.licence.localeCompare(b.licence, "fr"));
+}
+
+const READ_ONLY = { readOnlyHint: true, destructiveHint: false, openWorldHint: true } as const;
 
 /**
  * sources_donnees' list, each source once: several modules give the same one (the volleyball league and sportsregions,
@@ -315,9 +324,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "at the most representative station for a place, and with a place the rain of the last 12 to 24 hours hour by hour, " +
         "the time of the last rain and the total since midnight, and the max and min temperature since midnight. " +
         "Use for 'what is the weather like now in <place in Réunion>', 'when did it last rain', 'how hot was it today'; " +
-        "for later today or the coming days, use prevision_meteo.",
+        "for later today or the coming days, use prevision_meteo. Not for yesterday or earlier days: historique_meteo.",
       inputSchema: { lieu: lieuAvecExemples },
-      annotations: { title: "Météo mesurée à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("meteo_actuelle", (args) => withVigilance(cache, meteoActuelle(cache, args.lieu))),
   );
@@ -350,7 +359,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
               "/ When, free text (today, tonight, tomorrow, a weekday, weekend); empty = next 24 h and following days.",
           ),
       },
-      annotations: { title: "Prévision météo à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("prevision_meteo", (args) => withVigilance(cache, previsionMeteo(cache, args.lieu, args.quand, undefined, AROME_WAIT_MS))),
   );
@@ -366,7 +375,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "La mesure (avec sa date et sa distance) et la prévision des vagues (hauteur, période, direction) sont dans deux blocs séparés. " +
         "Aussi le risque de blanchissement des coraux selon NOAA (bloc coraux) et les règles d'approche des baleines, dauphins (bloc cetaces).",
       inputSchema: { lieu },
-      annotations: { title: "Température de la mer et houle à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("temperature_mer", (args) => withVigilance(cache, temperatureMer(cache, args.lieu))),
   );
@@ -384,7 +393,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           "Avec un lieu : la zone de vigilance de sa commune\u00a0; sans lieu : toute l'île." +
           (feux.enabled() ? " Une ligne feux_detectes quand un feu de végétation a été détecté par satellite ces dernières 24 h : faux positifs possibles, et un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
         inputSchema: { lieu },
-        annotations: { title: "Vigilance météo à La Réunion", ...READ_ONLY },
+        annotations: { ...READ_ONLY },
       },
       track("vigilance_meteo", (args) => vigilanceMeteo(cache, args.lieu)),
     );
@@ -402,9 +411,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« il y a eu un séisme ? ». Réponse courte par défaut (les 3 dernières alertes, les séismes des 7 derniers jours)\u00a0; " +
         "detail pour l'historique des alertes depuis 2016 et les séismes jour par jour sur 30 jours.",
       inputSchema: {
-        detail: z.boolean().optional().describe("true : la réponse complète (historique des alertes depuis 2016, séismes jour par jour sur 30 jours)."),
+        detail: z.boolean().optional().describe("true : la réponse complète."),
       },
-      annotations: { title: "Volcan et séismes à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("volcan_seismes", (args: { detail?: boolean }) => volcanSeismes(cache, new Date(), args.detail === true)),
   );
@@ -414,16 +423,16 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     {
       title: "Électricité à La Réunion en ce moment",
       description:
-        "Électricité à La Réunion (974) en direct, d'après EDF : production totale, part de chaque filière (solaire, " +
-        "bioénergies, biomasse, bioliquide, hydraulique, éolien) et part renouvelable, mises à jour toutes les 5 min\u00a0; " +
+        "Électricité à La Réunion (974) en direct, d'après EDF : production totale, part de chaque filière " +
+        "et part renouvelable, mises à jour toutes les 5 min\u00a0; " +
         "« météo de l'électricité » d'EDF pour les jours qui viennent (heures de pointe, réseau contraint, recharge conseillée " +
         "d'un véhicule électrique). Pour : « d'où vient l'électricité ? », " +
         "« quand recharger ma voiture électrique ? ». " +
         `Coupures de courant (électricité, pas l'eau : coupures_eau) : les avis d'EDF que relaient les mairies dont le site ne l'interdit pas (${courantMairies.MAIRIES.map((m) => m.commune).join(", ")}), ` +
-        "jours, heures et secteurs, avec le lien de l'avis\u00a0; ailleurs, l'outil le dit : aucun avis lu pour la commune, ou ses mentions légales en interdisent la reprise. " +
+        "jours, heures et secteurs, avec le lien de l'avis. " +
         "Pour : « coupure de courant à Sainte-Marie ? », « coupure EDF prévue dans ma commune ? ».",
       inputSchema: { lieu },
-      annotations: { title: "Électricité à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("electricite", (args) => electricite(cache, new Date(), args.lieu)),
   );
@@ -438,7 +447,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "au lieu demandé, et la Lune : phase, part éclairée, lever et coucher, prochaines phases (calculés). Pour : « c'est quand " +
         "les vacances ? », « le 20 décembre est férié ? », « la Lune se lève à quelle heure ce soir ? ».",
       inputSchema: { lieu },
-      annotations: { title: "Calendrier de La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("calendrier", (args) => calendrier(cache, args.lieu)),
   );
@@ -449,14 +458,13 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Qualité de l'air à La Réunion",
       description:
         "Qualité de l'air à La Réunion (974) par commune : indice ATMO du jour et du lendemain, une PRÉVISION calculée par " +
-        "Atmo Réunion et pas une mesure (1 bon à 6 extrêmement mauvais), avec le sous-indice de chaque polluant (particules, " +
-        "ozone, dioxyde d'azote, dioxyde de soufre), l'heure de diffusion et comment l'indice est calculé. " +
+        "Atmo Réunion et pas une mesure (1 bon à 6 extrêmement mauvais), avec le sous-indice de chaque polluant. " +
         "Capteurs amateurs (champ capteurs_amateurs) : donner d'abord l'indice d'Atmo Réunion, toujours dire que ces capteurs ne sont pas étalonnés, " +
         "ne jamais les comparer à un seuil ni en tirer de conclusion sur la santé. " +
         "Pour : « l'air est pollué à Saint-Louis ? », « qualité de l'air aujourd'hui à Saint-Denis ? », « je peux faire du sport dehors ? ». " +
         "Sans lieu : toute l'île.",
       inputSchema: { lieu },
-      annotations: { title: "Qualité de l'air à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("qualite_air", (args) => qualiteAir(cache, args.lieu)),
   );
@@ -468,23 +476,23 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       description:
         "Adresse, horaires d'ouverture (et si c'est ouvert), téléphone et site des services publics de La Réunion (974) : " +
         "mairies et mairies annexes, préfecture et sous-préfectures, CAF, CPAM, France Travail, impôts, tribunaux, points-justice, aide aux victimes, France services… " +
-        "d'après l'annuaire officiel de service-public.fr. Aussi les prix maximum des carburants et de la bouteille de gaz du mois, " +
-        "fixés par le préfet (quoi = « carburant », « essence », « gazole », « gaz »), les pharmacies et les hôpitaux les plus proches d'après FINESS " +
+        "Aussi les prix maximum des carburants et de la bouteille de gaz du mois, " +
+        "(quoi = « carburant », « essence », « gazole », « gaz »), les pharmacies et les hôpitaux les plus proches " +
         "(quoi = « pharmacie », « médecin de garde », « urgences », « hôpital ») : la pharmacie de garde n'est connue que de 3237.fr et du 32 37, l'urgence et la garde passent par le 15\u00a0; " +
-        "les marchés forains et couverts d'après OpenStreetMap (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), et les déchèteries de l'île (ADEME), avec les bennes pleines " +
+        "les marchés forains et couverts (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), et les déchèteries de l'île, avec les bennes pleines " +
         "en direct dans l'Ouest (TCO) (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue " +
-        "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »), d'après les calendriers du TCO\u00a0; " +
+        "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »)\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aussi parcs, zoos, " +
-        "parcs de loisirs, salles de jeux, escalade, musées, commune par commune, avec l'âge quand la carte le donne, d'après OpenStreetMap, Data ES et Basilic\u00a0; " +
-        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, adresse, téléphone, d'après l'annuaire de l'Éducation nationale, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
-        "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…), par secteur, d'après l'annuaire santé Ameli. " +
+        "parcs de loisirs, salles de jeux, escalade, musées\u00a0; " +
+        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
+        "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…). " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {
         quoi: z.string().describe("Le service cherché, en quelques mots : « mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, ou « carburant » pour les prix du mois, « pharmacie », « urgences », « enfants » pour les lieux où aller avec eux."),
         lieu,
         adresse: z.string().optional().describe("Collège de secteur (quoi = « collège ») : l'adresse sur laquelle on s'interroge, pas la position de l'utilisateur : numéro et voie, commune dans lieu. Ni gardée ni journalisée."),
       },
-      annotations: { title: "Services publics à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("annuaire_services_publics", (args: { quoi: string; lieu?: string; adresse?: string }) => annuaireTool(cache, args.quoi, args.lieu, undefined, args.adresse)),
   );
@@ -495,8 +503,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Cadastre, urbanisme, prix immobiliers et risques à une adresse de La Réunion",
       description:
         "Ce que disent les registres officiels du bien ou du lieu de La Réunion (974) sur lequel on s'interroge, pas la position de " +
-        "l'utilisateur : parcelle cadastrale (section, numéro, " +
-        "surface), zone du plan local d'urbanisme (U, AU, A, N : constructible ou non), altitude du sol, prix médians des maisons, " +
+        "l'utilisateur : parcelle cadastrale, " +
+        "zone du plan local d'urbanisme (U, AU, A, N : constructible ou non), altitude du sol, prix médians des maisons, " +
         "appartements et terrains vendus autour, et sur la voie demandée, depuis 5 ans (DVF), loyers d'annonce de la commune pour un logement type (carte des loyers de l'ANIL), part des logements et locaux de la commune éligibles à la fibre (Arcep), antennes mobiles (opérateurs, 2G à 5G) et émetteurs de radio et de télévision à moins de 500 m (ANFR), et risques : plan de prévention des risques (PPR inondation, " +
         "mouvements de terrain, littoral) au point, arrêtés de catastrophe naturelle de la commune, glissements et éboulements recensés " +
         "à moins de 500 m, sismicité, radon. Pour : « cette parcelle est constructible ? », " +
@@ -509,7 +517,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
               "ou lieu-dit (« Bois de Nèfles »).",
           ),
       },
-      annotations: { title: "Fiche terrain à La Réunion", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("fiche_terrain", (args: { adresse: string }) => ficheLieu(cache, args.adresse)),
   );
@@ -532,7 +540,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           arret: z.string().optional().describe("Nom de l'arrêt et sa commune (« Gare routière, Saint-Pierre »), ou un lieu (« plage de Boucan », « Manapany ») pour les arrêts les plus proches\u00a0; avec une ligne, dit si elle y passe, sinon son arrêt le plus proche. Une heure (« après 17 h ») donne les départs une par une. Facultatif avec une ligne."),
           ligne: z.string().optional().describe("Une ligne (« S1 », « O1X », « 2 », « S1 Car Jaune ») : seule, ses arrêts dans l'ordre pour chaque sens, ses départs du jour et ses bus en circulation qui donnent leur position\u00a0; avec un arrêt, ses prochains départs là."),
         },
-        annotations: { title: "Bus à La Réunion", ...READ_ONLY },
+        annotations: { ...READ_ONLY },
       },
       track("transports", (args: { arret?: string; ligne?: string }) => transports(args.arret, args.ligne, new Date(), cache)),
     );
@@ -552,7 +560,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Nom d'une station (« IUT », « Front de mer »), un lieu ou une commune (« Saint-Pierre », « plage de l'Étang-Salé »). Vide = tout le réseau."),
       },
-      annotations: { title: "Vélos Altervélo", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("velos_libre_service", (args: { lieu?: string }) => velosLibreService(cache, args.lieu)),
   );
@@ -563,8 +571,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Offres d'emploi public à La Réunion",
       description:
         "Offres d'emploi de la fonction publique à La Réunion (974), d'après Choisir le service public : État, communes, Département, Région, hôpitaux, université. " +
-        "Pour chaque offre ouverte : l'intitulé, l'employeur, la commune, la nature de l'emploi, la date de publication, la date limite de candidature et le lien pour postuler sur le site, la plus récente d'abord. " +
-        "Un poste publié sous plusieurs références : une ligne, nombre_offres et references (référence, date, lien). " +
+        "Pour chaque offre ouverte : l'employeur, la date limite de candidature et le lien pour postuler, la plus récente d'abord. " +
         "Donner le lien de chaque offre\u00a0; la page de l'offre fait foi (elle peut être pourvue avant sa date limite). Les offres des entreprises n'y sont pas : renvoyer à France Travail, sans en inventer. " +
         "Avec mot_cle, aussi les formations CPF de La Réunion (formations_cpf, sans commune ni formation à distance) : ne jamais dire qu'une formation n'existe pas, ni comparer les frais. " +
         "Pour : « offres d'emploi à la mairie de Saint-Paul ? », « le CHU recrute des infirmiers ? », « emploi public au Tampon ? », « formation cariste CPF ? ».",
@@ -578,7 +585,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Des mots de l'intitulé, du métier ou de l'employeur : « infirmier », « agent d'entretien », « CHU », « contractuel », « cariste »."),
       },
-      annotations: { title: "Emploi public", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("emploi", (args: { lieu?: string; mot_cle?: string }) => emploi(cache, args.lieu, args.mot_cle)),
   );
@@ -595,7 +602,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         espece: z.string().optional().describe("Langouste, bichiques, capucin nain, anguille marbrée. Vide = toutes."),
         date: z.string().optional().describe("AAAA-MM-JJ. Vide = aujourd'hui."),
       },
-      annotations: { title: "Pêche de loisir", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("peche_loisir", async (args: { espece?: string; date?: string }) => peche.pecheLoisir(args.espece, args.date)),
   );
@@ -608,7 +615,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Hauteur de la mer mesurée chaque minute par les marégraphes du SHOM au Port (Pointe des Galets) et à Sainte-Marie : niveau actuel, " +
         "marée montante ou descendante, dernières pleine et basse mer observées\u00a0; puis les prochaines pleines et basses mers sur deux jours, CALCULÉES par rundata " +
         "d'après les mesures (pas la prédiction officielle du SHOM), à environ 15 à 20 min et 5 cm près : le dire, avec la précision donnée, et au-delà de l'horizon renvoyer au SHOM. " +
-        "Les heures calculées ne valent que près des deux marégraphes, à 15 km au plus (Le Port, La Possession, Saint-Paul, Saint-Gilles-les-Bains, Saint-Denis, Sainte-Marie, Sainte-Suzanne). " +
+        "Les heures calculées ne valent que près des deux marégraphes, à 15 km au plus. " +
         "Plus loin, la marée arrive à une autre heure : l'outil donne alors la hauteur mesurée au marégraphe le plus proche, sans heures, et le lien vers les horaires officiels du SHOM. " +
         "Pour : « la marée monte ? », « c'est quand la marée basse demain ? », « niveau de la mer au Port ? ».",
       inputSchema: {
@@ -617,7 +624,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Un lieu de la côte (« Le Port », « Saint-Gilles », « Sainte-Marie ») pour le marégraphe le plus proche. Vide = les deux."),
       },
-      annotations: { title: "Marée", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("maree", (args: { lieu?: string }) => maree(cache, args.lieu)),
   );
@@ -636,9 +643,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Une rivière (« rivière des Galets », « ravine Saint-Gilles ») ou un lieu (« Salazie », « Saint-Benoît ») pour les stations proches. Vide = toute l'île."),
       },
-      annotations: { title: "Crues", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
-    track("crues_rivieres", (args: { lieu?: string }) => crues(cache, args.lieu)),
+    track("crues_rivieres", (args: { lieu?: string }) => crues(cache, args.lieu, undefined, true)),
   );
 
   server.registerTool(
@@ -646,8 +653,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     {
       title: "Bornes de recharge à La Réunion",
       description:
-        "Bornes de recharge publiques pour voiture électrique à La Réunion (136 stations, plus de 400 points de charge : Freshmile, EZDrive, E.Leclerc…) " +
-        "et l'état en direct de chaque point d'après son opérateur : libre, occupé ou hors service, avec sa puissance, ses prises, ses horaires et son réseau. " +
+        "Bornes de recharge publiques pour voiture électrique à La Réunion " +
+        "et l'état en direct de chaque point d'après son opérateur : libre, occupé ou hors service, avec sa puissance et ses prises. " +
         "Pour : « borne de recharge libre près de Saint-Gilles ? », « où recharger rapidement à Saint-Pierre ? », « bornes au Tampon ? ».",
       inputSchema: {
         lieu: z
@@ -659,7 +666,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Seulement la recharge rapide (50 kW ou plus)."),
       },
-      annotations: { title: "Bornes de recharge", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("bornes_recharge", (args: { lieu?: string; rapide?: boolean }) => bornesRecharge(cache, args.lieu, args.rapide)),
   );
@@ -670,8 +677,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Qualité de l'eau à La Réunion : robinet et baignade",
       description:
         "Qualité de l'eau à La Réunion (974), d'après les analyses de l'ARS : eau du robinet réseau par réseau (dernière analyse, conformité, " +
-        "germes ou paramètres au-dessus des limites sur 6 mois) et eau de baignade des plages et bassins contrôlés (Hermitage, Boucan Canot, " +
-        "La Saline, Saint-Pierre, Étang-Salé, Grande Anse, bassin Bleu, bassin Dinan…), prélèvement par prélèvement. " +
+        "germes ou paramètres au-dessus des limites sur 6 mois) et eau de baignade des plages et bassins contrôlés, prélèvement par prélèvement. " +
         "Pour : « l'eau du robinet est potable à Cilaos ? », « on peut se baigner à l'Hermitage ? », " +
         "« l'eau du bassin Dinan est propre ? ». Avec la baignade, la règle requin de l'arrêté préfectoral (bande des 300 m) et les zones permises : ne jamais dire qu'un endroit est sans requin ou sans risque, ni qu'une zone est ouverte aujourd'hui, renvoyer au drapeau sur place. Les avis « ne pas boire » en cours sont dans coupures_eau.",
       inputSchema: {
@@ -684,7 +690,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("« robinet » (eau potable) ou « baignade »\u00a0; vide = d'après la question et le lieu."),
       },
-      annotations: { title: "Qualité de l'eau", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("qualite_eau", (args: { lieu?: string; eau?: "robinet" | "baignade" }) => qualiteEau(cache, args.lieu, args.eau)),
   );
@@ -697,13 +703,13 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Sentiers de randonnée et routes forestières de La Réunion (974) ouverts ou fermés, d'après la carte de l'ONF tenue à jour avec les arrêtés " +
         "préfectoraux : cause de la fermeture (éboulement, sentier dégradé, travaux, coulée), date de réouverture prévue. Par nom de sentier, " +
         "autour d'un lieu (Maïdo, Piton des Neiges, Bélouve, Roche Plate…), dans un cirque (Mafate, Cilaos, Salazie) ou une commune\u00a0; sans lieu, " +
-        "tous les sentiers fermés de l'île. Chaque sentier et chaque randonnée a sa trace GPS (lien GPX), sa longueur et son dénivelé " +
-        "(altitudes de l'IGN)\u00a0; les itinéraires complets d'OpenStreetMap (GR R1, R2, R3, Piton des Neiges, Roche Écrite, Dolomieu…) sont " +
+        "tous les sentiers fermés de l'île. Chaque sentier et chaque randonnée a sa trace GPS (lien GPX), sa longueur et son dénivelé" +
+        "\u00a0; les itinéraires complets (GR R1, R2, R3, Piton des Neiges, Roche Écrite, Dolomieu…) sont " +
         "donnés avec l'état des sentiers de l'ONF qu'ils empruntent. Un sentier fermé est interdit, même avec la trace\u00a0; « hors gestion ONF » n'est pas dit ouvert\u00a0; donner le lien trace_gpx. Pour : « sentiers fermés à Mafate ? », " +
-        "« la trace GPS du Piton des Neiges ? », « une rando de 10 km à Cilaos ? » " +
-        "(longueur_min_km, longueur_max_km, denivele_max_m filtrent les itinéraires et sentiers proposés). Dès qu'un sentier de l'ONF d'un " +
+        "« la trace GPS du Piton des Neiges ? », « une rando de 10 km à Cilaos ? ». " +
+        "Dès qu'un sentier de l'ONF d'un " +
         "itinéraire est fermé, la réponse porte un champ avertissement, à donner en premier. " +
-        "Avec un lieu ou un sentier, aussi les aires d'accueil de l'ONF autour (champ aires_accueil), sous le nom que leur donne l'ONF. " +
+        "Avec un lieu ou un sentier, aussi les aires d'accueil de l'ONF autour (champ aires_accueil). " +
         "En famille (famille) : les sentiers marmailles, l'état des sentiers ONF qu'ils empruntent et l'avertissement à dire." +
         " Canyons (canyon) : l'inventaire du Parc national, ses interdits, la sécurité d'abord." +
         (feux.enabled() ? " Avec les feux de végétation détectés par satellite (NASA FIRMS) ces dernières 24 h, dans feux_detectes : faux positifs possibles, un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
@@ -718,7 +724,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         famille: z.boolean().optional().describe("Balade avec des enfants."),
         canyon: z.boolean().optional().describe("Canyonisme."),
       },
-      annotations: { title: "Sentiers de randonnée", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("sentiers_randonnee", (args: { lieu?: string; longueur_min_km?: number; longueur_max_km?: number; denivele_max_m?: number; famille?: boolean; canyon?: boolean }) =>
       sentiersRandonnee(cache, args.lieu, undefined, { longueur_min_km: args.longueur_min_km, longueur_max_km: args.longueur_max_km, denivele_max_m: args.denivele_max_m }, args.famille, args.canyon)),
@@ -730,7 +736,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Sécheresse : restrictions d'eau à La Réunion",
       description:
         "Restrictions d'eau en cas de sécheresse à La Réunion (974), d'après l'arrêté préfectoral en vigueur (VigiEau) : niveau par commune " +
-        "(vigilance, alerte, alerte renforcée, crise) pour l'eau du robinet, les rivières et sources, les nappes, et ce qui est interdit " +
+        "(vigilance, alerte, alerte renforcée, crise) et ce qui est interdit " +
         "(arrosage, lavage de voiture, piscine…) pour un particulier, une entreprise, une collectivité ou une exploitation agricole. " +
         "Pour : « restrictions d'eau à Saint-Joseph ? », « j'ai le droit d'arroser mon jardin au Port ? », « je peux remplir ma piscine ? ». " +
         "Sans lieu : toute l'île.",
@@ -741,7 +747,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Pour qui (« exploitation » = agriculteur)\u00a0; par défaut un particulier."),
       },
-      annotations: { title: "Restrictions d'eau", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("restrictions_eau", (args: { lieu?: string; profil?: "particulier" | "entreprise" | "collectivite" | "exploitation" }) => restrictionsEau(cache, args.lieu, args.profil)),
   );
@@ -761,7 +767,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Quand secteurs_complets vaut false, la liste des rues de l'avis n'a pas été lue en entier : ne jamais en conclure qu'une rue ou un quartier n'est pas concerné, donner le lien de l'avis complet. " +
         "Même quand la liste est complète, dire « cette rue n'est pas dans la liste de l'avis », jamais « pas de coupure chez vous ».",
       inputSchema: { lieu },
-      annotations: { title: "Coupures d'eau", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("coupures_eau", (args: { lieu?: string }) => coupuresEau(cache, args.lieu)),
   );
@@ -779,9 +785,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Réponse courte par défaut\u00a0; detail pour ce qu'accepte chaque déchèterie et le prix de chaque carburant.",
       inputSchema: {
         lieu: z.string().describe("Commune ou lieu de La Réunion (« Saint-Paul », « Boucan Canot », « Cilaos »), rapporté à sa commune."),
-        detail: z.boolean().optional().describe("true : la réponse complète (ce qu'accepte chaque déchèterie, le prix de chaque carburant)."),
+        detail: z.boolean().optional().describe("true : la réponse complète."),
       },
-      annotations: { title: "Résumé du jour", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("resume_du_jour", (args: { lieu: string; detail?: boolean }) => resumeDuJour(cache, args.lieu, new Date(), background, args.detail === true)),
   );
@@ -792,7 +798,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Défibrillateurs à La Réunion",
       description:
         "Défibrillateurs (DAE) les plus proches d'un lieu de La Réunion (974), d'après la base nationale Géo'DAE : adresse, distance et temps à pied, " +
-        "emplacement exact, accessible à toute heure ou aux heures d'ouverture. Plus de 1 200 appareils dans les 24 communes. " +
+        "emplacement exact, accessible à toute heure ou aux heures d'ouverture. " +
         "Pour : « où est le défibrillateur le plus proche de la plage de l'Hermitage ? », « défibrillateur à Cilaos ? ». " +
         "Dire d'abord d'appeler le 15 ou le 112 et de commencer le massage cardiaque.",
       inputSchema: {
@@ -801,7 +807,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Le lieu sur lequel on s'interroge, pas la position de l'utilisateur : commune, plage, quartier, cirque, sommet. Vide = toute l'île."),
       },
-      annotations: { title: "Défibrillateurs", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("defibrillateurs", async (args: { lieu?: string }) => defibrillateurs(args.lieu)),
   );
@@ -812,7 +818,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Sport à La Réunion : matchs, résultats, annulations, Grand Raid",
       description:
         "Sport à La Réunion (974) : matchs à venir et derniers résultats officiels des championnats régionaux de handball (D1) et de volley " +
-        "(R1 et R2, hommes et femmes, toutes les poules), avec les clubs en toutes lettres (VBSP = Volley-Ball de Saint-Pierre) et la commune où l'on joue, " +
+        "(R1 et R2, hommes et femmes, toutes les poules), avec les clubs en toutes lettres et la commune où l'on joue, " +
         "les matchs annulés ou reportés (avis de la Ligue de volley, actualité locale), classements, " +
         "beach-volley et sport auto (calendriers des ligues), Grand Raid (courses, partants, abandons, podiums), les programmes sportifs publiés par les communes " +
         "(leur lien seulement). " +
@@ -831,12 +837,12 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         quand: z
           .enum(QUANDS as [Quand, ...Quand[]])
           .optional()
-          .describe("« aujourd_hui », « demain », « samedi » ou « dimanche » (le prochain), « ce_week_end », « a_venir » (14 jours) ou « resultats »\u00a0; vide = les deux."),
+          .describe("« samedi » ou « dimanche » : le prochain\u00a0; « a_venir » : 14 jours\u00a0; vide = à venir et résultats."),
         ...ADHERENT_SI_LU,
       },
-      annotations: { title: "Sport", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
-    track("sport", (args: { sport?: Sport; lieu?: string; quand?: Quand; adherent?: boolean }) => sportTool(cache, args.sport, args.lieu, args.quand, undefined, args.adherent)),
+    track("sport", (args: { sport?: Sport; lieu?: string; quand?: Quand; adherent?: boolean }) => sportTool(cache, args.sport, args.lieu, args.quand, undefined, args.adherent, UPCOMING_OUTIL)),
   );
 
   server.registerTool(
@@ -855,7 +861,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe(`Un cyclone passé (« Garance », « Dina 2002 ») : la pluie et les rafales mesurées station par station pendant son passage, les records de station et sa page\u00a0; le champ selon_meteo_france cite Météo-France mot pour mot (records mondiaux de Gamède) : à attribuer à Météo-France, jamais à rundata.re. Disponibles : ${PASSES_LIST}.`),
       },
-      annotations: { title: "Cyclones", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("cyclones", (args: { lieu?: string; nom?: string }) => cyclones(cache, args.lieu, undefined, args.nom)),
   );
@@ -883,7 +889,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         detail: z.enum(["jour", "heure"]).optional()
           .describe("« heure » : heure par heure jusqu'à 7 jours (sinon automatique sur 3 jours ou moins)\u00a0; « jour » : sans le détail horaire."),
       },
-      annotations: { title: "Historique météo", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("historique_meteo", (args: { lieu?: string; jours?: number; du?: string; au?: string; detail?: "jour" | "heure" }) => historiqueMeteo(cache, args.lieu, { jours: args.jours, du: args.du, au: args.au, detail: args.detail })),
   );
@@ -896,7 +902,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Événements à venir à La Réunion (974) : concerts, théâtre, danse, humour, cirque, soirées, fêtes, festivals, marchés, cinéma en " +
         `plein air, animations municipales. D'après ${PROGRAMMES_SALLES}, les agendas des mairies (` +
         `${MAIRIES_LUES}), celui de l'office de tourisme de l'Est, et ceux de la CINOR et de l'office de tourisme du Nord (OpenAgenda). Chaque événement : ` +
-        "titre, date et heures (heure de La Réunion), salle, commune, genre, prix et lien de billetterie quand ils sont donnés, statut " +
+        "date et heures, salle, prix et lien de billetterie quand ils sont donnés, statut " +
         "(ANNULÉ, REPORTÉ, complet), y compris quand c'est un média de l'île qui l'annonce avant l'organisateur (statut_d_apres). " +
         "Pour : « que faire ce week-end à Saint-Paul ? », « concert ce soir ? », « c'est quand la fête de l'ail ? ».",
       inputSchema: {
@@ -914,9 +920,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .describe("Le genre (« concert », « spectacle », « théâtre », « danse », « humour », « soirée », « festival », « marché », « cinéma », « enfants », « sport », « exposition ») ou des mots du titre ou de la salle (« ail », « dragon boat », « Kabardock »)\u00a0; vide = tout."),
         ...ADHERENT_SI_LU,
       },
-      annotations: { title: "Événements", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
-    track("evenements", (args: { lieu?: string; quand?: string; quoi?: string; adherent?: boolean }) => agenda(cache, args.lieu, args.quand, args.quoi, undefined, undefined, args.adherent)),
+    track("evenements", (args: { lieu?: string; quand?: string; quoi?: string; adherent?: boolean }) => agenda(cache, args.lieu, args.quand, args.quoi, undefined, LISTED_OUTIL, args.adherent)),
   );
 
   server.registerTool(
@@ -926,8 +932,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       description:
         "Ce qui se passe en ce moment à La Réunion (974), d'après les médias de l'île (" +
         `${actuSources.LUS.map((m) => (m.media === "Imaz Press" ? "Imaz Press et son direct" : m.media)).join(", ")}) relus toutes les 5 minutes` +
-        ", et les communiqués de la préfecture : pour chaque information, l'heure (ou le jour seul quand le média ne donne pas l'heure), " +
-        "le média, le titre, la première phrase quand le média la donne, les communes et lieux nommés, le lien vers l'article. Par lieu (commune, quartier) " +
+        ", et les communiqués de la préfecture : pour chaque information, l'heure, " +
+        "le média, le titre et le lien vers l'article. Par lieu (commune, quartier) " +
         "et par sujet (manifestations et blocages, routes, météo, volcan, eau, faits divers, santé, politique, culture, sport). " +
         "Route du Littoral : champ route_du_littoral, une annonce des médias datée, pas une mesure. " +
         "Radars fixes (champ radars_fixes) : la liste publiée par le ministère de l'Intérieur, avec la vitesse limite de chacun, pour une question sur les routes ou les radars. Jamais les contrôles mobiles. " +
@@ -946,7 +952,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Depuis combien d'heures (1 à 72, 24 par défaut)."),
       },
-      annotations: { title: "Actualités", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("actualites", (args: { lieu?: string; sujet?: string; heures?: number }) => actualites(cache, args.lieu, args.sujet, args.heures)),
   );
@@ -963,7 +969,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "court et concret (quel outil, quel lieu, ce qui manquait), sans recopier la conversation et sans aucune donnée personnelle. " +
         "Les avis sont lus par une personne, sans réponse directe.",
       inputSchema: {
-        type: z.enum(avis.TYPES).describe("« manque » (donnée absente), « erreur » (valeur fausse ou périmée), « suggestion », « bravo »."),
+        type: z.enum(avis.TYPES),
         message: z.string().trim().min(3).max(avis.MESSAGE_MAX).describe(`L'avis, en quelques phrases (${avis.MESSAGE_MAX} caractères au plus), sans donnée personnelle.`),
         outil: z.string().max(avis.COURT_MAX).optional().describe("L'outil concerné (« meteo_actuelle », « transports »…)."),
         lieu: z.string().max(avis.COURT_MAX).optional().describe("Le lieu concerné (« Cilaos », « plage de l'Hermitage »)."),
@@ -973,7 +979,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe(`Le besoin résumé en quelques mots (« la pluie à Marla ce matin »), ${avis.BESOIN_MAX} caractères au plus : jamais le texte de la conversation, rien de personnel.`),
       },
-      annotations: { title: "Donner un avis", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
     track("donner_avis", async (args: { type: avis.TypeAvis; message: string; outil?: string; lieu?: string; besoin?: string }, extra) => {
       const message = avis.nettoie(args.message, avis.MESSAGE_MAX);
@@ -1006,7 +1012,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     {
       title: "Sites publics de La Réunion sans réponse",
       description:
-        "Sites publics de La Réunion (974) qui ne répondent pas en ce moment, revérifiés chaque jour : pour chacun, depuis quand, le dernier constat en mots simples (erreur du serveur, page de maintenance, pas de réponse dans le délai…) et ce qui manque donc sur rundata.re (avis de coupure d'eau, bulletins du volcan, houle…). " +
+        "Sites publics de La Réunion (974) qui ne répondent pas en ce moment, revérifiés chaque jour : pour chacun, depuis quand, le dernier constat en mots simples et ce qui manque donc sur rundata.re (avis de coupure d'eau, bulletins du volcan, houle…). " +
         "Un site qui répond de nouveau sort de la liste. Ne dit jamais pourquoi un site se tait. " +
         "Pour : « le site de l'OVPF marche ? », « pourquoi pas de bulletin du volcan ? », « le site de Sudéau ne répond plus ? ».",
       inputSchema: {
@@ -1015,7 +1021,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Un site, une commune ou un thème : « volcan », « eau », « Saint-Joseph ». Vide = toute la liste."),
       },
-      annotations: { title: "Sites publics sans réponse", ...READ_ONLY },
+      annotations: { ...READ_ONLY },
     },
     track("sites_sans_reponse", (args) => sitesSansReponse(cache, args.quoi)),
   );
@@ -1028,11 +1034,14 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "À appeler avant de dire qu'un sujet n'est pas couvert, même à la première question : la liste à jour de ce que rundata.re couvre. " +
         "Sources de données utilisées par ce serveur (organisme, licence, attribution à citer), ce qui est couvert ou pas encore, " +
         "la liste à jour de tous les outils, les dernières nouveautés, et rundata.re en chiffres (sources, producteurs, licences, stations, défibrillateurs, sentiers). " +
-        "Pour : « d'où viennent tes données ? », « combien de sources lit rundata.re ? », « c'est open data ? ».",
-      inputSchema: {},
-      annotations: { title: "Sources des données", ...READ_ONLY },
+        "Pour : « d'où viennent tes données ? », « combien de sources lit rundata.re ? », « c'est open data ? ». " +
+        "Réponse courte par défaut (les producteurs par licence)\u00a0; detail pour chaque source avec son attribution et son lien.",
+      inputSchema: {
+        detail: z.boolean().optional().describe("true : la réponse complète."),
+      },
+      annotations: { ...READ_ONLY },
     },
-    track("sources_donnees", async () => {
+    track("sources_donnees", async (args: { detail?: boolean }) => {
       // rundata.re en chiffres (chiffres.ts): what the code counts, and the last copy of what the sources do.
       const sources = toutesLesSources();
       const c = chiffres(sources, await cache.peek<Copie>(CHIFFRES).catch(() => undefined), new Date(), tools);
@@ -1040,7 +1049,11 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         resume: resumeChiffres(c),
         // The sources counted, so that the list and its count (chiffres.sources) say the same number; apart, what
         // rundata.re is sent rather than reads (the clubs' proposals), with its licence and attribution all the same.
-        sources: sources.filter(comptee),
+        // Short by default: each producer once under its licence (126 sources with their attribution and link were 43 KB of
+        // a 60 KB answer, 5/11/2026); the whole list with detail, as on /chiffres.
+        ...(args.detail === true
+          ? { sources: sources.filter(comptee) }
+          : { producteurs_par_licence: parLicence(sources.filter(comptee)), detail: SOURCES_COURT }),
         envoyees_a_rundata: sources.filter((s) => !comptee(s)),
         // The media and sites whose terms forbid reading them by a program, the halls and sports sites whose terms forbid
         // taking their information without their accord: not read (tools/non-repris.ts).

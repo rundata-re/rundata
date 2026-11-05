@@ -119,7 +119,13 @@ describe("sentiers de randonnée", () => {
     const b = body(await sentiersRandonnee(cache(), "sentiers fermés à Mafate", NOW));
     // A hike of the cirque crosses a closed trail: said first.
     expect(b.resume).toBe("ATTENTION : PR25 emprunte 1 sentier fermé : La Nouvelle - Maison Laclos par PR (Éboulement). Un sentier fermé est interdit : ne pas s'y engager, prendre une variante ouverte ou renoncer. " +
-      "Dans le cirque de Mafate : 4 sentiers fermés, 58 ouverts, 2 hors gestion ONF (état non connu). 50 aires d'accueil de l'ONF dans le cirque de Mafate (voir aires_accueil).");
+      "Dans le cirque de Mafate : 4 sentiers fermés, 58 ouverts, 2 hors gestion ONF (état non connu). 50 aires d'accueil de l'ONF dans le cirque de Mafate (voir aires_accueil). " +
+      "58 sentiers ouverts dans le cirque de Mafate : 10 d'entre eux ici, par ordre alphabétique, avec tous les sentiers fermés. La liste complète : https://rundata.re/randonnees/mafate#h-sentiers");
+    // 10 open trails out of 58, by name; every closed one stays (5/11/2026: the 58 were 11 KB of a 20 KB answer).
+    const ouverts: string[] = b.autour.sentiers_ouverts.map((t: { sentier: string }) => t.sentier);
+    expect(ouverts).toHaveLength(10);
+    expect(ouverts).toEqual([...ouverts].sort((x, y) => x.localeCompare(y, "fr")));
+    expect(b.autour.sentiers_ouverts_en_tout).toBe(58);
     expect(b.avertissement.sentiers_fermes).toEqual([expect.objectContaining({ sentier: "La Nouvelle - Maison Laclos par PR", cause: "Éboulement", randonnees: ["PR25"] })]);
     expect(b.sentiers_nommes).toBeUndefined();
     // The cirque's sector, as on its page (/randonnees/mafate): Cap Noir is in it, the Maïdo's rim is not.
@@ -127,6 +133,13 @@ describe("sentiers de randonnée", () => {
     expect(fermes).toContain("Sentier de Cap Noir");
     expect(fermes).not.toContain("Piste DFCI de la Glacière");
     expect(fermes).toHaveLength(4);
+  });
+
+  it("around a precise place, gives the nearest open trails first, and says so", async () => {
+    const b = body(await sentiersRandonnee(cache(), "Maïdo", NOW));
+    expect(b.autour.sentiers_ouverts).toHaveLength(10);
+    expect(b.autour.sentiers_ouverts_en_tout).toBe(42);
+    expect(b.resume).toContain("42 sentiers ouverts à moins de 4 km de Maïdo : les 10 plus proches ici, avec tous les sentiers fermés. La liste complète : https://rundata.re/randonnees#h-secteurs");
   });
 
   it("answers for the forest roads of the island, or one by its code or its name, never a place not found", async () => {

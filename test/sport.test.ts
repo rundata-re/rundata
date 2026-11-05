@@ -7,7 +7,8 @@ import { parseSportsregions } from "../src/providers/agenda.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { quand, sportTool, window } from "../src/tools/sport.js";
+import { quand, sportTool, UPCOMING_OUTIL, window } from "../src/tools/sport.js";
+import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { sportPage } from "../src/web/domains.js";
 import type { SportAnswer } from "../src/web/data.js";
@@ -174,6 +175,35 @@ describe("sport", () => {
     expect(b.a_venir.some((r: { etat?: string }) => r.etat)).toBe(false);
     expect(b.mise_a_jour[0]).toEqual({ source: "Volley-ball : championnats régionaux de la Ligue de La Réunion (FFVB)", lu: "samedi 24/10 à 08:00", dernier_resultat: "vendredi 23/10 à 21:00" });
     expect(b.classements.map((c: { competition: string }) => c.competition)).toHaveLength(5);
+  });
+
+  it("lists the first matches only when asked for fewer, every called-off one past them kept and counted", async () => {
+    // The tool asks for 20 (UPCOMING_OUTIL), the page /sport for 40: here 2, on a week-end of 10 called off and 3 played.
+    const b = body(await sportTool(cache(), "volley", undefined, "ce_week_end", NOW, false, 2));
+    expect(b.a_venir).toHaveLength(10);
+    expect(b.a_venir.every((r: { etat?: string }) => r.etat === "annulée")).toBe(true);
+    expect(b.resume).toContain("(les 2 premiers ci-dessous, et 8 annulés ou reportés plus loin)");
+  });
+
+  it("gives the tool 20 matches to come and the page 40, through the MCP endpoint too", async () => {
+    expect(UPCOMING_OUTIL).toBe(20);
+    const c = cache();
+    const page = body(await sportTool(c, undefined, undefined, "a_venir", NOW));
+    const played = (l: { etat?: string }[]) => l.filter((r) => !r.etat);
+    expect(played(page.a_venir).length).toBeGreaterThan(20);
+    expect(played(page.a_venir).length).toBeLessThanOrEqual(40);
+    const short = body(await sportTool(c, undefined, undefined, "a_venir", NOW, false, UPCOMING_OUTIL));
+    expect(short.a_venir.slice(0, 20)).toEqual(page.a_venir.slice(0, 20));
+    expect(played(short.a_venir).length).toBeLessThanOrEqual(20);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "sport", arguments: { quand: "a_venir" } } }) });
+      const tool = JSON.parse((await (await handle(rpc, c)).json()).result.content[0].text);
+      expect(tool.a_venir).toHaveLength(short.a_venir.length);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("marks the matches the league called off, with its notice", async () => {

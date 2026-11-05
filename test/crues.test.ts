@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { parseVigilance, STATIONS, type Vigilance } from "../src/providers/vigicrues.js";
 import { crues, islandLevels, levelRow, riverAsked, sentence, vigilanceText } from "../src/tools/crues.js";
@@ -54,6 +55,29 @@ describe("Vigicrues Réunion", () => {
     expect(r.vigilance_crues).toEqual({ active: false, aucun_bulletin_depuis: "07/08 à 06:22", pourquoi: expect.stringMatching(/^Vigicrues Réunion n'en publie que/), rivieres: expect.any(Array) });
     expect(r.vigilance_crues).not.toHaveProperty("date");
     expect(r.stations).toHaveLength(STATIONS.length);
+  });
+
+  it("gives the tool the reference floods of the rising gauges only, out of a vigilance; the page keeps them all", async () => {
+    const page = body(await crues(cache(), undefined, NOW));
+    const tool = body(await crues(cache(), undefined, NOW, true));
+    type Row = { station: string; tendance_30_min?: string; crues_de_reference?: unknown };
+    const onPage = (name: string) => !!(page.stations as Row[]).find((p) => p.station === name)!.crues_de_reference;
+    for (const st of tool.stations as Row[]) expect(!!st.crues_de_reference, st.station).toBe(st.tendance_30_min === "en hausse" && onPage(st.station));
+    expect((page.stations as Row[]).filter((st) => st.crues_de_reference).length).toBeGreaterThan((tool.stations as Row[]).filter((st) => st.crues_de_reference).length);
+    // Nothing else is left out.
+    expect(tool.stations.map((s: { station: string }) => s.station)).toEqual(page.stations.map((s: { station: string }) => s.station));
+    // The MCP endpoint answers as the tool, at the same hour.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "crues_rivieres", arguments: {} } }) });
+      const mcp = JSON.parse((await (await handle(rpc, cache())).json()).result.content[0].text);
+      const kept = (l: Row[]) => l.filter((st) => st.crues_de_reference).map((st) => st.station.replace(/[\u00a0\u202f]/g, " "));
+      expect(kept(mcp.stations)).toEqual(kept(tool.stations));
+      expect(kept(mcp.stations).length).toBeLessThan(kept(page.stations).length);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("says the island's levels from the stations measured lately only, the others apart, their trend never said", () => {

@@ -273,9 +273,12 @@ describe("the scheduled refresh of the shared copies", () => {
     const total = [...kv.writes.values()].reduce((a, b) => a + b, 0);
     // The vigilance and the news every 5 minutes, the earthquakes every 10, the rivers every 15, quiet here, the volcano's
     // copy, quiet too, every 30 minutes like four others, the ONF's map and the counts of /chiffres every hour, and the
-    // satellites' grids every 3 hours (about 1 180 a day, partagees.ts).
-    expect(total).toBeLessThanOrEqual(1176);
-    expect(total).toBeGreaterThanOrEqual(1133);
+    // satellites' grids every 3 hours (about 1 180 a day, partagees.ts). The air every hour, and every quarter of an hour
+    // from 10 h to 14 h, its copy here never having the day's forecast: 12 more, at the hours of the day simulated, never
+    // at those of the clock (the test went every 15 minutes all day when run from 10 h to 14 h).
+    expect(kv.writes.get(kvKey("web:air"))).toBe(36);
+    expect(total).toBeLessThanOrEqual(1188);
+    expect(total).toBeGreaterThanOrEqual(1145);
   });
 
   it("refreshes a copy at each of its slots, though written a few seconds into the event before", async () => {

@@ -66,7 +66,7 @@ export function kitPage(origin: string, alerte?: Alerte): string {
   const path = "/kit-cyclone";
   const band = `${crumbBar("Kit cyclone")}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Plan ORSEC Cyclones</p>
+  <p class="pill">Plan ORSEC Cyclones</p>
   <h1>${esc(H1)}</h1>
   <p class="lead">${esc(LEAD)}</p>
 </div></div>`;

@@ -253,7 +253,7 @@ const VIDE_SCRIPT = `<script>{const s=e=>e.classList.toggle("vide",!e.value);for
 export function proposerPage(origin: string, e: Etat = { kind: "vide" }, now = new Date(), alerte?: Alerte): string {
   const band = `${crumbBar("Proposer un événement", PARENT)}
 <div class="wrap intro solo"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Clubs et associations</p>
+  <p class="pill">Clubs et associations</p>
   <h1>Proposer un événement</h1>
   <p class="lead">Un match, une kermesse, une sortie, un concert\u00a0? Remplissez ce formulaire\u00a0: 2 minutes, sans compte. Après votre confirmation par e-mail, nous le relisons, en général sous 24 heures, puis il s'affiche sur rundata.re et dans les assistants IA qui l'utilisent, avec le nom de votre association.</p>
 </div></div>`;
@@ -412,7 +412,7 @@ function gererBody(l: propositions.Ligne, action: string, g: Extract<Gerer, { ki
 export function gererPage(origin: string, l: propositions.Ligne | undefined, action: string, g: Gerer, now = new Date(), alerte?: Alerte): string {
   const band = `${crumbBar("Votre événement", PARENT)}
 <div class="wrap intro solo"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Clubs et associations</p>
+  <p class="pill">Clubs et associations</p>
   <h1>Votre événement</h1>
   <p class="lead">Gardez ce lien\u00a0: il est le seul moyen de changer l'événement. Ne le partagez pas. Lien perdu\u00a0? Écrivez à contact@rundata.re.</p>
 </div></div>`;

@@ -8,7 +8,7 @@ import * as traces from "../providers/traces.js";
 import type { Secteur } from "../traces/secteurs.js";
 import type { Alerte, PlaceData, RandonneesAnswer } from "./data.js";
 import { joursDuJour } from "./data.js";
-import { closedLi, connectorCta, describe, hikeCard, loading, plural, sectorLinks, onfPill, randoHook, sectorTrail, sourcesNote, traceSource, trailLi, webPage } from "./domains.js";
+import { closedLi, connectorCta, describe, hikeCard, loading, plural, sectorLinks, onfDot, onfPill, randoHook, sectorTrail, sourcesNote, traceSource, trailLi, webPage } from "./domains.js";
 import { esc, hikesMap } from "./map.js";
 import { ask, icon, layout, thin } from "./pages.js";
 import { pageOf } from "./places.js";
@@ -103,7 +103,7 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
   const band = `${bar}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>${esc(onfPill(d?.carte_mise_a_jour))}</p>
+    <p class="pill">${onfDot(d?.carte_mise_a_jour, now)}${esc(onfPill(d?.carte_mise_a_jour))}</p>
     <h1>Randonnée ${esc(s.dans)}</h1>
     <p class="lead">${esc(s.quoi.replace(/^\p{L}/u, (c) => c.toUpperCase()))}.</p>
     ${status}

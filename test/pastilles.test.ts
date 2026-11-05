@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { COMMON } from "../src/tools/eau.js";
 import * as col from "../src/vie/collecte.js";
@@ -5,7 +6,7 @@ import { passeOf } from "../src/historique/cyclones-passes.js";
 import { collectePage } from "../src/web/collecte.js";
 import { passePage } from "../src/web/cyclones-passes.js";
 import type { EauAnswer, HistoriqueAnswer, SeaData } from "../src/web/data.js";
-import { daePage, duAu, eauPage, historiquePage } from "../src/web/domains.js";
+import { daePage, duAu, eauPage, historiquePage, onfDot, randonneesPage, sentiersPage } from "../src/web/domains.js";
 import { enfantsCommunePage, enfantsPage } from "../src/web/enfants.js";
 import { seaPage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
@@ -52,5 +53,31 @@ describe("the pills without a green dot", () => {
     };
     for (const [words, page] of Object.entries(pages)) expect(pill(page), words).toBe(`<p class="pill">${words}</p>`);
     expect(pill(enfantsCommunePage(O, pageOf("saint-paul")!, null, NOW))).toBe(`<p class="pill">De 0 à 17 ans</p>`);
+  });
+});
+
+describe("the pills of the ONF's map, the cyclone plan, the clubs and the fishing orders", () => {
+  it("carry the dot only for an ONF map of today", () => {
+    expect(onfDot("27/10/2026 (ONF)", NOW)).toBe("");
+    expect(onfDot("04/11/2026 (ONF)", NOW)).toBe(`<span class="dot"></span>`);
+    // The same day and month a year before is not today.
+    expect(onfDot("04/11/2025 (ONF)", NOW)).toBe("");
+    expect(onfDot("2026-11-04T05:00:00Z", NOW)).toBe(`<span class="dot"></span>`);
+    expect(onfDot(undefined, NOW)).toBe("");
+    expect(pill(randonneesPage(O, null, NOW))).toBe(`<p class="pill">Traces GPS · carte de l&#39;ONF</p>`);
+    expect(pill(sentiersPage(O, null, NOW))).toBe(`<p class="pill">Carte de l'ONF</p>`);
+    // The page with a map of 27/10, then one of today.
+    const sentiers = (carte_mise_a_jour: string) => cached({ resume: "", fermes_par_commune: [], routes_forestieres_fermees: [], carte_mise_a_jour, a_savoir: [], sources: [], points: [], suivis: 0, randonnees: [] }) as never;
+    expect(pill(sentiersPage(O, sentiers("27/10/2026 (ONF)"), NOW))).toBe(`<p class="pill">Carte de l'ONF</p>`);
+    expect(pill(sentiersPage(O, sentiers("04/11/2026 (ONF)"), NOW))).toBe(`<p class="pill"><span class="dot"></span>Carte de l'ONF</p>`);
+  });
+
+  it("keep their words without the dot where they carry no data of the day", () => {
+    const web = new URL("../src/web/", import.meta.url);
+    const src = readdirSync(web).filter((f) => f.endsWith(".ts")).map((f) => readFileSync(new URL(f, web), "utf8")).join("\n");
+    for (const words of ["Plan ORSEC Cyclones", "Clubs et associations", "Gratuit, sans compte", "Arrêtés du préfet"]) {
+      expect(src).toContain(`<p class="pill">${words}</p>`);
+      expect(src).not.toContain(`<span class="dot"></span>${words}`);
+    }
   });
 });

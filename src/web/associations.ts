@@ -158,7 +158,7 @@ function preuveSection(p: Preuve): string {
 export function associationsPage(origin: string, p: Preuve, alerte?: Alerte): string {
   const band = `${crumbBar("Clubs et associations")}
 <div class="wrap intro solo"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Gratuit, sans compte</p>
+  <p class="pill">Gratuit, sans compte</p>
   <h1>${esc(H1)}</h1>
   <p class="lead">${esc(ESPRIT)}</p>
   <p class="slogan" lang="${brand.slogan_lang}">${esc(KREOL)}</p>

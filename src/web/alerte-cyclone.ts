@@ -177,7 +177,7 @@ export function alertePage(origin: string, data: Cached<mf.Vigilance> | null, no
     : `<div class="status"><p class="lead">L'alerte en vigueur n'a pas pu être lue à l'instant : voir la préfecture (reunion.gouv.fr) et Météo-France.</p></div>`;
   const band = `${crumbBar("Alerte cyclonique")}
 <div class="wrap intro"><div class="pitch">
-  <p class="pill"><span class="dot"></span>Plan ORSEC Cyclones</p>
+  <p class="pill">Plan ORSEC Cyclones</p>
   <h1>${esc(H1)}</h1>
   <p class="lead">${esc(LEAD)}</p>
   ${state}

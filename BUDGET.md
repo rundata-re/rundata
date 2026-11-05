@@ -22,7 +22,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | pire passage planifié, appels KV et D1 | 114 | 1 000 |
 | pire passage planifié, CPU (ms) | 3 636 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
-| passage le plus chargé (cadences les plus courtes), sous-requêtes | 172 | 500 |
+| passage le plus chargé (cadences les plus courtes), sous-requêtes | 173 | 500 |
 | vue la plus chère, sous-requêtes | 84 | 200 |
 | question la plus chère, sous-requêtes | 70 | 200 |
 | construction de copie la plus chère, sous-requêtes | 56 | 100 |
@@ -30,9 +30,9 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
 - Marge : le pire passage planifié est à 457 sous-requêtes sur 500. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 00:00 UTC, 131 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, vigilance:carte, vigilance:carte:bulletin, agendas:planifies, agendas:planifies:ecriture, agenda:salazie, agenda:cirest, agenda:lrvb, agenda:saint_louis_actus, agenda:saint_leu, agenda:plaine_des_palmistes_agenda, agenda:plaine_des_palmistes_actus, agenda:sainte_marie_actus, agenda:salazie_actus, sans-reponse:echecs, copies:echecs, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, propositions:purge, clubs:annuaire, clubs:purge, connecteurs:purge).
-- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:00 UTC, 172 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:volcan, vigilance:carte, vigilance:carte:bulletin, agendas:planifies, agendas:planifies:ecriture, agenda:salazie, agenda:cirest, agenda:lrvb, agenda:saint_louis_actus, agenda:saint_leu, agenda:plaine_des_palmistes_agenda, agenda:plaine_des_palmistes_actus, agenda:sainte_marie_actus, agenda:salazie_actus, sans-reponse:echecs, copies:echecs, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, propositions:purge, clubs:annuaire, clubs:purge, connecteurs:purge).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 378 sous-requêtes à 00:00 UTC.
+- Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 130 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
+- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 173 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, web:volcan, web:courant, vigilance:carte, cmrs:image, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture).
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 335 sous-requêtes à 00:00 UTC.
 - Vue la plus chère : /communes/*, 84. Question la plus chère : resume_du_jour, 70. Construction la plus chère : web:chiffres:evenements, 56.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
@@ -51,7 +51,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | arome:veille | AROME : le dernier run publié, et les grilles qu'il reste à lire | 5 min | 00:00 | 3 | 1 |  |  |  |  | 15 | mesuré |
-| arome:grilles | AROME : les grilles d'un nouveau run, 40 au plus par passage, 3 de relief | 180 min | 00:00 | 43 |  | 2 |  |  |  | 60 | code |
+| arome:grilles | AROME : les grilles d'un nouveau run, 40 au plus par passage, 3 de relief | 180 min | 00:20 | 43 |  | 2 |  |  |  | 60 | code |
 | partagees:liste | copies partagées : la liste des clés KV, une pour les copies et celles d'après | 5 min | 00:00 | 1 |  | 1 |  |  |  |  | code |
 | vigilance | copie partagée (KV) | 5 min | 00:00 | 4 |  | 1 |  |  |  | 70 | estimé |
 | actualites:fil | copie partagée (KV) | 5 min | 00:00 | 12 |  | 1 |  |  |  | 140 | mesuré |

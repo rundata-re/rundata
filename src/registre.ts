@@ -18,7 +18,7 @@ import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, SERVICE_OPS_LIMIT, SUBREQU
 import { DETAILS_MAX as CONNECTEUR_DETAILS, PAGES_MAX as CONNECTEUR_PAGES } from "./connecteurs/helloasso.js";
 import { IN_FLIGHT } from "./http.js";
 import { AGENDAS } from "./providers/agenda.js";
-import { MAX_NEW_GRIDS } from "./providers/arome.js";
+import { LISTED_AFTER_MIN, MAX_NEW_GRIDS } from "./providers/arome.js";
 import { KINDS as CANDHIS_KINDS, REFRESH_EVERY as CANDHIS_EVERY, REFRESH_OFFSET as CANDHIS_OFFSET } from "./providers/candhis.js";
 import { IMAGE_OFFSET as CMRS_IMAGE_OFFSET, LISTE_OFFSET as CMRS_LISTE_OFFSET, REFRESH_EVERY as CMRS_EVERY } from "./providers/cmrs-carte.js";
 import { REFRESH_EVERY as AIR_EVERY, REFRESH_OFFSET as AIR_OFFSET } from "./providers/air-mesures.js";
@@ -158,8 +158,10 @@ const SCHEDULED: Entry[] = [
     id: "arome:grilles",
     trigger: "planifiée",
     what: `AROME : les grilles d'un nouveau run, ${MAX_NEW_GRIDS} au plus par passage, 3 de relief`,
+    // About 90 grids a run, one run every 6 hours: counted as two passes at the cap a run, for the day's total. The first ones come
+    // out LISTED_AFTER_MIN after the run's start, never at 00:00 UTC.
     every: 3 * 60,
-    offset: 0,
+    offset: LISTED_AFTER_MIN % (3 * 60),
     run: { subrequests: MAX_NEW_GRIDS + 3, kvWrites: 2, cpuMs: 60 },
     from: ["src/providers/arome.ts"],
     basis: "code",

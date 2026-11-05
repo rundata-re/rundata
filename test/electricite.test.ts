@@ -95,7 +95,7 @@ describe("electricity", () => {
     expect(kept).not.toContain("Production en direct");
     // A copy built late says it as the tool did.
     const built = { value: old, fetchedAt: after(23 * 60), stale: false };
-    expect(electricitePage("https://rundata.re", built, after(23 * 60))).toContain(`<p class="note">${warned.replace("'", "&#39;")}</p><div class="now">`);
+    expect(electricitePage("https://rundata.re", built, after(23 * 60))).toContain(`<p class="note">Dernière mesure de production lue chez EDF : le 31/10 à 05:20, il y a 23 h. Ce n&#39;est pas la production de maintenant.</p><div class="now">`);
   });
 
   it("runs the strained hours together", () => {

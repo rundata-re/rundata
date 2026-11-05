@@ -22,7 +22,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   calendrier: 4,
   chiffres: 22,
   commune: 17,
-  coupures: 9,
+  // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
+  coupures: 11,
   courant: 6,
   crues: 3,
   cyclones: 4,
@@ -83,7 +84,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without
   // a blank line is kept (« TRAITEMENT ST FRANCOIS »). A commune written without its article (« commune de
   // Trois-Bassins »), and a list of streets ended by « Communiqué … » or by « Des perturbations » run on its last line.
-  "avis-eau:flux": 2,
+  // A La Créole notice with its day and two hours, and its list of streets ended by « La régie La Créole remercie… ».
+  "avis-eau:flux": 3,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).

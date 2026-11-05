@@ -32,8 +32,8 @@ export function couverture(total: { nombre: number; lu_a: string } | undefined, 
   return COUVERTURE.replace("le site peut en compter davantage, sa recherche fait foi pour le total", total.nombre > suivies ? `le site en affiche davantage (${compte})\u00a0: sa recherche fait foi pour le total` : `le site en affiche ${compte}\u00a0; sa recherche fait foi pour le total`);
 }
 export const SANS_LIMITE = `Sans date limite, elle reste ${emploiSource.GARDE_JOURS} jours après sa publication, la durée médiane des offres de La Réunion en 2026.`;
-// The tool's answer lists this many offers at most; the rest are counted.
-const MAX = 40;
+// The tool's answer lists this many lines at most; the rest are counted, with the site's link (« autres »).
+const MAX = 20;
 
 const dayMonth = (iso: string) => localTime(new Date(iso)).split(" ")[0];
 /** « 2026-11-20 » → « 20/11 ». */
@@ -66,6 +66,36 @@ export interface Reference {
  * part them, as the page does not show it beside a closing date: said for each one; the closing date does.
  */
 export type OffreRow = Une | (Omit<Une, "lien" | "publiee_le"> & { publiee_le?: string; nombre_offres: number; references: Reference[] });
+
+/** The nature of an offer in the tool's answer: the two the site writes most, in short; any other as the site writes it. */
+const NATURES: Record<string, string> = {
+  "Emploi ouvert aux titulaires et aux contractuels": "ouvert aux titulaires et contractuels",
+  "Emploi réservé aux fonctionnaires et lauréats d'un concours territorial": "réservé aux fonctionnaires et lauréats de concours",
+};
+export const natureCourte = (n: string) => NATURES[n.replace(/’/g, "'")] ?? n;
+
+/**
+ * The lines as the tool gives them, lighter than the page's (web/emploi.ts lists the same lines whole): the nature most
+ * of the lines share said once, « sauf mention à l'offre », and only the others with theirs; a reference without its
+ * number when its link holds it, and without its day when the line has one. The nature is said once only when more than
+ * half of the lines, and at least two, share it, and every line has one: a line without would read as having it.
+ */
+export function pourOutil(rows: OffreRow[]): { nature?: string; offres: object[] } {
+  const counts = new Map<string, number>();
+  for (const r of rows) if (r.nature) counts.set(r.nature, (counts.get(r.nature) ?? 0) + 1);
+  const [top, n] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? ["", 0];
+  const commune = rows.length > 1 && n >= 2 && n * 2 > rows.length && rows.every((r) => r.nature) ? top : undefined;
+  const offres = rows.map((r) =>
+    Object.fromEntries(
+      Object.entries(r).flatMap(([k, v]): [string, unknown][] => {
+        if (k === "nature") return v === commune ? [] : [[k, natureCourte(v as string)]];
+        if (k !== "references" || !("references" in r)) return [[k, v]];
+        return [[k, r.references.map((x) => ({ ...(x.lien.includes(x.reference) ? {} : { reference: x.reference }), ...(r.publiee_le ? {} : { publiee_le: x.publiee_le }), lien: x.lien }))]];
+      }),
+    ),
+  );
+  return { ...(commune ? { nature: `${natureCourte(commune)}, sauf mention à l'offre` } : {}), offres };
+}
 
 /** The offers in lines, in the order of the first of each. */
 export function lignes(offres: Offre[]): OffreRow[] {
@@ -136,7 +166,8 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
     resume,
     nombre: all.length,
     ...(ile && total ? { total_site: total } : {}),
-    offres: rows,
+    // The page lists every line whole; the tool, its lines lighter (pourOutil).
+    ...(Number.isFinite(max) ? pourOutil(rows) : { offres: rows }),
     ...(all.length > shown ? { autres: `${plural(all.length - shown, "autre offre", "autres offres")}, sur ${emploiSource.SOURCE.url}` } : {}),
     ...(c.echec ? { injoignable: injoignable("le site de Choisir le service public", at, localTime(new Date(c.echec)), now).texte } : {}),
     couverture: `${couverture(total, c.offres.length)}${c.offres.some((o) => !o.limite && !emploiSource.enAttente(o)) ? ` ${SANS_LIMITE}` : ""}`,

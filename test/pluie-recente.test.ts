@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
-import { CONVENTION, recentRainBlock } from "../src/tools/pluie-recente.js";
+import { CONVENTION, hierPartiel, recentRainBlock } from "../src/tools/pluie-recente.js";
 import type { Fit } from "../src/tools/representativeness.js";
 import { placePage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
@@ -113,6 +113,24 @@ describe("the rain of the last hours", () => {
     expect(b.par_heure).toContain("hier 22:00–23:00 : 0,2 mm");
     expect(b.derniere_pluie).toBe("hier entre 22:00 et 23:00");
     expect(b.cumul_depuis_minuit).toBe("0 mm de 00:00 à 12:00");
+  });
+
+  it("says that yesterday's hours listed are part of it only, and where its whole day is, read from those hours", () => {
+    // Twenty-four hours back from noon: yesterday from 12:00 to midnight, never its sum given as yesterday's rain.
+    const b = recentRainBlock({ hourly: HOURLY, slots: () => [] }, { id: "97422440", nom: "Plaine des Cafres", fit: near }, "Plaine des Cafres", NOW, false)!;
+    expect(b.par_heure.at(-1)).toBe("hier 12:00–13:00 : 0 mm");
+    expect(b.hier_partiel).toBe("Les heures d'hier ci-dessus ne vont que de 12:00 à 24:00 : pour la pluie de toute la journée d'hier, historique_meteo.");
+    // Twelve hours back from noon, all of today: no field.
+    const today = recentRainBlock({ hourly: HOURLY, slots: () => [] }, { id: "97412356", nom: "La Crête", fit: near }, "Saint-Joseph", NOW, false)!;
+    expect(today.par_heure.some((l) => l.startsWith("hier"))).toBe(false);
+    expect(today.hier_partiel).toBeUndefined();
+    // Read from the hours, never written in: at 17:29, twelve hours back reach yesterday's 17:00 to midnight.
+    const evening = new Date("2026-10-25T13:29:00Z");
+    const end = Date.parse("2026-10-25T13:00:00Z");
+    expect(hierPartiel(end, 24, evening.getTime())).toBe("Les heures d'hier ci-dessus ne vont que de 17:00 à 24:00 : pour la pluie de toute la journée d'hier, historique_meteo.");
+    expect(hierPartiel(end, 12, evening.getTime())).toBeUndefined();
+    // Yesterday whole (24 hours back from midnight): nothing to say.
+    expect(hierPartiel(Date.parse("2026-10-24T20:00:00Z"), 24, Date.parse("2026-10-24T20:10:00Z"))).toBeUndefined();
   });
 
   it("answers « il a plu quand ? » at Saint-Joseph to the 6 minutes, the hour under way included", async () => {

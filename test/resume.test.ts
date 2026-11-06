@@ -673,6 +673,18 @@ describe("the summary after the audit of 04/11/2026", () => {
     expect(resume(SAINT_PAUL, COPIES as never, NOW).resume).not.toMatch(/météo du centre/);
   });
 
+  it("says a beach with its article when its weather is the centre's", () => {
+    // The gazetteer's beach: « la plage de l'Ermitage-les-Bains », never « de Plage de l'Ermitage-les-Bains ».
+    const plage = { nom: "Plage de l'Ermitage-les-Bains", lon: 55.22651, lat: -21.07427 };
+    const r = resume(SAINT_PAUL, COPIES as never, NOW, [], plage);
+    expect(r.meteo!.avertissement).toMatch(/^Météo du centre de Saint-Paul, à \d+(,\d)?\u00a0km de la plage de l'Ermitage-les-Bains : la station, sa distance et la prévision sont celles du centre\. Pour la plage de l'Ermitage-les-Bains même : meteo_actuelle et prevision_meteo\.$/);
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo du centre de Saint-Paul, à \d+(,\d)?\u00a0km de la plage de l'Ermitage-les-Bains\u00a0; /);
+    // Its own measure under the centre's forecast.
+    const mesure = resume(SAINT_PAUL, COPIES as never, NOW, [], plage, "mesure");
+    expect(mesure.meteo!.avertissement).toMatch(/^Prévision du centre de Saint-Paul, à \d+(,\d)?\u00a0km de la plage de l'Ermitage-les-Bains\u00a0: celle de la plage de l'Ermitage-les-Bains n'a pas pu être calculée cette fois\. La mesure est celle de la station la plus proche de la plage de l'Ermitage-les-Bains\.$/);
+    for (const t of [r.resume, r.meteo!.avertissement, mesure.resume, mesure.meteo!.avertissement]) expect(t).not.toMatch(/(?:de|à|pour) Plage/i);
+  });
+
   it("says no event found is from incomplete agendas, and when the commune's own site is not read", () => {
     const none = { ...COPIES, agenda: copy({ ...COPIES.agenda.value, evenements: [] }) };
     const sp = resume(SAINT_PAUL, none as never, NOW);

@@ -289,7 +289,7 @@ export const CSS = `
 *{box-sizing:border-box}
 html{scroll-padding-top:5rem;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+body{margin:0;background:var(--bg);color:var(--ink);font:1.0625rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 font-variant-numeric:tabular-nums}
 a{color:var(--link);text-underline-offset:var(--u974);text-decoration-thickness:1px}
 h1,h2,h3{font-family:Bricolage,"Avenir Next","Segoe UI Variable Display",system-ui,sans-serif;line-height:1.08;
@@ -345,7 +345,7 @@ background:rgb(255 255 255/.08);border:1px solid rgb(255 255 255/.12);color:#fff
 .menu summary::-webkit-details-marker{display:none}
 .menu summary .ic{width:1.3rem;height:1.3rem;display:block}.menu summary span{display:grid;place-items:center}
 /* « Menu » under the icon, in the same square (ux, 06/11/2026). */
-.menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 12px/1 system-ui,sans-serif}
+.menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 .75rem/1 system-ui,sans-serif}
 .menu summary .x,.menu[open] summary .g{display:none}.menu[open] summary .x{display:block}
 /* A closed menu's sheet not laid out at all: the browser contains a closed <details>'s content, so the sheet took the
    button's box for its width and ran past the screen's edge (to 425 px at 320 px with the text at 150 %). */
@@ -846,7 +846,7 @@ html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stm
 @media (prefers-reduced-motion:reduce){.wxmap :is(.rj-b,.rj-v){display:none}}
 .wxmap .rj-lg,.wxmap .rj-t,.wxmap .rj-st{display:none}.wxmap.rejeu .rj-t{display:inline}.wxmap.rejeu:not(.rj-fin) :is(.rj-lg,.rj-st){display:inline}.wxmap.rejeu:not(.rj-fin) :is(.lg-now,.sts,.mtip){display:none}
 .wxmap .rj-t text{text-anchor:start;font-weight:700;fill:var(--ink);stroke:var(--bg);stroke-width:10px;paint-order:stroke}.wxmap .rj-h{font-size:64px}.wxmap .rj-d,.wxmap .rj-s{font-size:40px}.wxmap .hsn{white-space:nowrap}
-.sttools{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;margin-bottom:.8rem}.sttools[hidden]{display:none}.sttools select{font:inherit;padding:.3rem .5rem;border-radius:.5rem}
+.sttools{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;margin-bottom:.8rem;min-width:0}.sttools[hidden]{display:none}.sttools label{min-width:0;max-width:100%}.sttools select{max-width:100%;font:inherit;padding:.3rem .5rem;border-radius:.5rem}
 .sttools button{font:inherit;padding:.25rem .6rem;border:1px solid var(--line);border-radius:99px;background:none;color:inherit;cursor:pointer}.sttools button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
 .airmap:has(#aqp-pm10:checked) .ly-pm10,.airmap:has(#aqp-pm10:checked) .lg-pm10,.airmap:has(#aqp-pm25:checked) .ly-pm25,.airmap:has(#aqp-pm25:checked) .lg-pm25,.airmap:has(#aqp-o3:checked) .ly-o3,.airmap:has(#aqp-o3:checked) .lg-o3,.airmap:has(#aqp-no2:checked) .ly-no2,.airmap:has(#aqp-no2:checked) .lg-no2{display:inline}
 .two{display:grid;gap:1rem}

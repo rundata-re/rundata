@@ -227,8 +227,8 @@ describe("fires on the site", () => {
     const tile = communeHikes(pageOf("saint-paul")!, hikes, NOW)!;
     expect(tile.live!.detail).toMatch(/^2 feux détectés par satellite, le dernier détecté le 24\/10 à 06:30 \(faux positifs possibles\) · <b>Vous voyez un feu \? Appelez le 18 ou le 112\.<\/b> · sur 1 dans la commune, d'après la carte de l'ONF/);
     // The map's date from the ONF, else when we read it.
-    expect(communeHikes(pageOf("saint-paul")!, { ...hikes, value: { ...hikes.value, carte_mise_a_jour: "2026-10-27T05:00:00.000Z" } }, NOW)!.live!.detail).toContain("sur 1 dans la commune, d'après la carte de l'ONF du 27/10 · ");
-    expect(communeHikes(pageOf("saint-paul")!, { ...hikes, value: { ...hikes.value, carte_lue: "2026-10-24T03:00:00.000Z" } }, NOW)!.live!.detail).toContain("d'après la carte de l'ONF lue le 24/10 · ");
+    expect(communeHikes(pageOf("saint-paul")!, { ...hikes, value: { ...hikes.value, carte_mise_a_jour: "2026-10-27T05:00:00.000Z" } }, NOW)!.live!.detail).toMatch(/sur 1 dans la commune, d'après la carte de l'ONF du 27\/10$/);
+    expect(communeHikes(pageOf("saint-paul")!, { ...hikes, value: { ...hikes.value, carte_lue: "2026-10-24T03:00:00.000Z" } }, NOW)!.live!.detail).toMatch(/d'après la carte de l'ONF lue le 24\/10$/);
     // A commune with no trail of the ONF still says its fire.
     const port = communeHikes(pageOf("le-port")!, { ...hikes, value: { ...hikes.value, feux: { satellites: [], detections: [{ ...seen.detections[0], commune: "Le Port" }] } } }, NOW)!;
     expect(port.live).toEqual({ valeur: "Feu détecté", detail: "feu détecté par satellite le 24/10 à 06:30 (faux positifs possibles) · <b>Vous voyez un feu ? Appelez le 18 ou le 112.</b>" });

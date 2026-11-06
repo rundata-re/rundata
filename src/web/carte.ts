@@ -130,7 +130,7 @@ const DIT: Record<string, Dit> = {
   },
   sentiers: {
     montre: "Les sentiers que l'Office national des forêts annonce fermés, avec la cause qu'il donne, tracés d'après sa carte. Sur place, l'arrêté et le panneau font foi.",
-    rubrique: "Randonnée", court: "ONF", unite: ["sentier fermé", "sentiers fermés"], organisme: "l'ONF",
+    rubrique: "Sentiers fermés", court: "ONF", unite: ["sentier fermé", "sentiers fermés"], organisme: "l'ONF",
   },
   defibrillateurs: {
     montre: "Les défibrillateurs déclarés dans Géo'DAE. La liste est déclarée par les exploitants : un appareil peut avoir été déplacé. En cas d'arrêt cardiaque, appelez le 15 ou le 112.",
@@ -167,7 +167,7 @@ const DIT: Record<string, Dit> = {
   },
   canyons: {
     montre: "Les canyons recensés par le Parc national, d'après son inventaire sans date, avec leur longueur. En rouge : signalé interdit dans l'inventaire. L'inventaire ne dit pas si un canyon est autorisé : une interdiction a pu être levée, ou décidée depuis. Jamais de canyon par temps de pluie ou de vigilance : l'eau monte vite. Cochez aussi « Sentiers fermés » avant de partir.",
-    rubrique: "Randonnée", court: "Parc national", unite: ["canyon", "canyons"], organisme: "le Parc national",
+    rubrique: "Sentiers fermés", court: "Parc national", unite: ["canyon", "canyons"], organisme: "le Parc national",
     liens: [["/vigilance", "La vigilance"], ["/crues", "Les rivières"]],
   },
   monuments: {

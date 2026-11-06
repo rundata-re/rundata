@@ -40,7 +40,7 @@ describe("the order of the pages", () => {
       ["Sortir", ["/evenements", "/randonnees", "/sentiers", "/sport", "/associations?ref=menu", "/peche"]],
     ]);
     // Under « Sécurité », the cyclone's three pages on one line.
-    expect(sheet(page)).toContain(`<p class="cyc">Cyclone\u00a0: <a href="/kit-cyclone">kit</a> · <a href="/alerte-cyclone">alerte</a> · <a href="/ecoles-cyclone">écoles</a></p>`);
+    expect(sheet(page)).toContain(`<p class="cyc">Cyclone\u00a0: <a href="/kit-cyclone">kit</a> · <a href="/alerte-cyclone">alerte</a> · <a href="/ecoles-cyclone">école fermée\u00a0?</a></p>`);
   });
 
   it("puts the vigilance first while it is above green, the volcano first while in alert, both when both are", () => {

@@ -148,7 +148,8 @@ describe("measures at Atmo Réunion's stations", () => {
     // Each value in its layer, at its station, leading to the station's card; never the index's colours.
     const pm10 = map.slice(map.indexOf('<g class="ly ly-pm10 on">'), map.indexOf('<g class="ly ly-o3">'));
     expect([...pm10.matchAll(/<a class="mk" href="([^"]+)" aria-label="([^"]+)"/g)].map((m) => [m[1], m[2]])).toEqual([
-      ["#st-lycee-lislet-geoffroy", "Lycée Lislet Geoffroy : 11,6 µg/m³, voir le détail"],
+      // Its name starts with its figure as shown, « 12 », when it does not hold it (WCAG 2.5.3).
+      ["#st-lycee-lislet-geoffroy", "12, Lycée Lislet Geoffroy : 11,6 µg/m³, voir le détail"],
       ["#st-luther-king", "Luther King : 22,1 µg/m³, le 29/10, de 0\u00a0h à 1\u00a0h, voir le détail"],
     ]);
     expect(map).not.toMatch(/var\(--aq\d\)/);

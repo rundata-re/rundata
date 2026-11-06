@@ -255,6 +255,25 @@ function ties(markers: Marker[], at: [number, number][]): string {
   return out ? `<g class="ties" aria-hidden="true">${out}</g>` : "";
 }
 
+/** The words of a text as a name is matched against what is shown: no accent, case or sign, nothing in brackets. */
+const words = (s: string) =>
+  s.normalize("NFKD").toLowerCase().replace(/\([^()]*\)/g, " ").replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").filter(Boolean);
+
+/**
+ * A link's name that holds what the link shows, word for word and in its order (WCAG 2.5.3): a voice command that says
+ * what is seen (« clique sur 26 degrés ») finds it. When it does not, what is shown comes first, as shown (« 26° »),
+ * then the name: « 26°, Saint-Denis : 25,7 °C… ». `shown`: the texts of the link, in their order.
+ */
+export function nameWithShown(shown: string[], said: string): string {
+  const seen = shown.filter((t) => words(t).length);
+  const [s, n] = [seen.flatMap(words), words(said)];
+  if (!s.length || n.some((_, i) => s.every((w, j) => w === n[i + j]))) return said;
+  // The last text shown, when the name already starts with it (the place under the figure), is not said twice.
+  const last = words(seen[seen.length - 1]);
+  const head = seen.length > 1 && last.every((w, j) => w === n[j]) ? seen.slice(0, -1) : seen;
+  return `${head.join(", ")}, ${said}`;
+}
+
 /** `at`: where it is drawn, when moved from its place (apart()). */
 function marker(m: Marker, hit = HIT, at?: [number, number], listed = false): string {
   const [x, y] = at ?? project(m.lon, m.lat);
@@ -273,7 +292,8 @@ function marker(m: Marker, hit = HIT, at?: [number, number], listed = false): st
     (m.big ? `<text x="${x}" y="${y + 15}" class="mv" style="font-size:42px">${esc(m.label)}</text>` : `<text x="${x}" y="${y + 11}" class="mv"${m.ink ? ` style="fill:${m.ink}"` : ""}>${esc(m.label)}</text>`) +
     (m.quiet ? "" : `<text x="${x}" y="${y + 66}" class="mn">${esc(m.name)}</text>`);
   if (!m.href) return `<g class="mk">${inner}</g>`;
-  const said = m.tip ? `${m.tip.place} : ${m.tip.value}, ${m.tip.detail}, voir le détail` : `${m.place ?? m.name} : ${m.say ?? m.label}, voir le détail`;
+  // Its name starts with what it shows when it does not hold it already: « 26° » over « 25,7 °C » (nameWithShown()).
+  const said = nameWithShown([m.label, m.quiet ? "" : m.name], m.tip ? `${m.tip.place} : ${m.tip.value}, ${m.tip.detail}, voir le détail` : `${m.place ?? m.name} : ${m.say ?? m.label}, voir le détail`);
   const tip = m.tip ? ` data-tp="${esc(m.tip.place)}" data-tv="${esc(m.tip.value)}" data-td="${esc(m.tip.detail)}"` : "";
   // What the bubble on hover says, and the list of close points on a tap (carte-points.ts); a marker with a bubble has its own.
   const lines = m.tip ? [] : [m.place ?? m.name, m.say ?? m.label];

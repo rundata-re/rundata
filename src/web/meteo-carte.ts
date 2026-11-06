@@ -10,7 +10,7 @@ import { sun } from "../providers/calendrier.js";
 import altitudes from "./altitudes.json" with { type: "json" };
 import { fr } from "../tools/format.js";
 import type { StationNow } from "./data.js";
-import { apart, esc, H, islandMap, KM, project, W } from "./map.js";
+import { apart, esc, H, islandMap, KM, nameWithShown, project, W } from "./map.js";
 import { CLASSES, PATH as PLUIE_RADAR } from "./pluie-radar.js";
 import { chip, deg, metres, shortName, stationId, STOPS, thin, leAt, duAt } from "./pages.js";
 import { hash } from "./pwa.js";
@@ -197,10 +197,20 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
   };
   const has = Object.entries(v).filter(([, x]) => x).map(([k]) => ` has-${k}`).join("");
   const place = `${shortName(s.nom)} · ${metres(s.altitude_m)}`;
-  const said = `${place} : ${[v.t, v.p, v.v].filter(Boolean).join(", ")}, mesures ${duAt(s.time)}${by(s)}, voir le détail`;
+  const figure = {
+    t: s.temperature != null && named ? `${Math.round(s.temperature)}°` : undefined,
+    p: rain != null && rain > 0 && rainSaid(rain, named) ? rainFigure(rain) : undefined,
+    v: s.vent != null ? String(s.vent) : undefined,
+  };
+  // One layer shown at a time: its figure, as shown, starts the name when the name does not hold it already (« 23° »
+  // over « 22,6 °C »), the temperature's first.
+  const said = [figure.v, figure.p, figure.t].reduce<string>(
+    (n, f) => (f ? nameWithShown([f], n) : n),
+    `${place} : ${[v.t, v.p, v.v].filter(Boolean).join(", ")}, mesures ${duAt(s.time)}${by(s)}, voir le détail`,
+  );
   const shapes =
-    (s.temperature != null ? dot("t", x, y, chip(s.temperature), named ? `${Math.round(s.temperature)}°` : undefined) : "") +
-    (rain != null ? (rain > 0 ? dot("p", rx, ry, rainColor(rain), rainSaid(rain, named) ? rainFigure(rain) : undefined) : dot("p", x, y, RAIN_DRY, undefined, true)) : "") +
+    (s.temperature != null ? dot("t", x, y, chip(s.temperature), figure.t) : "") +
+    (rain != null ? (rain > 0 ? dot("p", rx, ry, rainColor(rain), figure.p) : dot("p", x, y, RAIN_DRY, undefined, true)) : "") +
     (s.vent != null ? windMark(x, y, s, windAt) : "");
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
   return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +

@@ -7,7 +7,7 @@ import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mot
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
 import { ID as PROPOSITIONS_ID } from "../src/providers/agenda-propositions.js";
-import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
+import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, order, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
@@ -969,6 +969,38 @@ describe("agenda", () => {
     expect(periode("mardi", NOW)).toMatchObject({ du: "2026-10-27", au: "2026-10-27" });
     expect(periode("31/10", NOW)).toMatchObject({ du: "2026-10-31", au: "2026-10-31" });
     expect(periode("n'importe quand", NOW)).toMatchObject({ du: "2026-10-24", au: "2026-11-07", incompris: true });
+  });
+
+  it("counts this weekend as the page /evenements/ce-week-end does: Friday from 17:00, a holiday Monday with it", () => {
+    // Tuesday 03/11/2026, Friday 06/11/2026, and Thursday 25/03/2027 before Easter Monday 29/03/2027.
+    expect(periode("ce_week_end", new Date("2026-11-03T06:00:00Z"))).toMatchObject({ du: "2026-11-06", au: "2026-11-08", vendredi: "17:00" });
+    expect(periode("ce_week_end", new Date("2026-11-06T06:00:00Z"))).toMatchObject({ du: "2026-11-06", vendredi: "17:00" });
+    expect(periode("ce_week_end", new Date("2026-11-07T06:00:00Z"))).toMatchObject({ du: "2026-11-07", au: "2026-11-08", vendredi: undefined });
+    expect(periode("ce_week_end", new Date("2027-03-25T06:00:00Z"))).toMatchObject({ du: "2027-03-26", au: "2027-03-29" });
+    expect(periode("ce_week_end", new Date("2027-03-29T06:00:00Z"))).toMatchObject({ du: "2027-03-29", au: "2027-03-29" });
+    expect(periode("le week-end prochain", new Date("2026-11-07T06:00:00Z"))).toMatchObject({ du: "2026-11-13", au: "2026-11-15", vendredi: "17:00" });
+    const tuesday = new Date("2026-11-03T06:00:00Z");
+    const p = periode("ce_week_end", tuesday);
+    const at = (debut: string, fin?: string) => inPeriod({ titre: "x", seances: [{ debut, fin }] } as never, p, tuesday).length;
+    // Friday daytime is not the weekend yet; its evening, a Friday without hours and a fête into Saturday are.
+    expect([at("2026-11-06T08:00"), at("2026-11-06T09:00", "2026-11-06T16:00")]).toEqual([0, 0]);
+    expect([at("2026-11-06T18:00"), at("2026-11-06T14:00", "2026-11-06T22:00"), at("2026-11-06"), at("2026-11-06T10:00", "2026-11-07T18:00")]).toEqual([1, 1, 1, 1]);
+  });
+
+  it("puts first what begins this weekend, before a match running since Wednesday, and the seasons last", () => {
+    const tuesday = new Date("2026-11-03T06:00:00Z");
+    const row = (titre: string, debut: string, fin?: string) => ({ e: { titre }, seances: [{ debut, fin }] });
+    const rows = [
+      row("Volley depuis mercredi", "2026-11-04T09:00", "2026-11-07T18:00"),
+      row("Exposition", "2026-10-01", "2026-12-31"),
+      row("Concert du samedi", "2026-11-07T20:00"),
+      row("Marché du vendredi soir", "2026-11-06T17:00", "2026-11-06T22:00"),
+    ];
+    expect([...rows].sort(order(periode("ce_week_end", tuesday))).map((r) => r.e.titre))
+      .toEqual(["Marché du vendredi soir", "Concert du samedi", "Volley depuis mercredi", "Exposition"]);
+    // Over the two weeks, by their first day as before.
+    expect([...rows].sort(order(periode(undefined, tuesday))).map((r) => r.e.titre))
+      .toEqual(["Volley depuis mercredi", "Marché du vendredi soir", "Concert du samedi", "Exposition"]);
   });
 
   it("tells each date of the Théâtre Luc Donat as its agreement asks: its facts, its genre, its link, « Source : » and the hour read", async () => {

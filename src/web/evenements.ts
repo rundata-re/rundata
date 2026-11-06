@@ -6,7 +6,7 @@ import type { Cached } from "../cache.js";
 import type { AgendaAnswer, Alerte } from "./data.js";
 import { porte } from "./aller.js";
 import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, loading, longDay, sourcesNote, warnings, webPage } from "./domains.js";
-import { occurrences } from "../tools/agenda.js";
+import { occurrences, weekend, type Weekend } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
 import { esc } from "./map.js";
 import { holidays } from "../feries.js";
@@ -14,39 +14,11 @@ import { ask, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
 
 type Row = NonNullable<AgendaAnswer["evenements"]>[number];
 
-export { holidays, occurrences };
+export { holidays, occurrences, weekend };
 
 const localDay = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
-const weekday = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay();
 const upper = (s: string) => s.replace(/^\p{L}/u, (c) => c.toUpperCase());
-
-export interface Weekend {
-  /** The days, from Friday (or the holiday before it) to Sunday (or the holiday after it), local. */
-  du: string;
-  au: string;
-  /** From when the Friday counts: 17:00, or the whole day when it is a holiday. */
-  vendredi?: string;
-  /** The holidays among those days. */
-  feries: Map<string, string>;
-}
-
-/**
- * The weekend people mean: Friday from 17:00 to Sunday night, the coming one from Monday on. A holiday on the Friday
- * or the Monday next to it belongs to it (the 1st of November on a Sunday already does).
- */
-export function weekend(now: Date): Weekend {
-  const today = localDay(now);
-  const year = Number(today.slice(0, 4));
-  const off = new Map([...holidays(year - 1), ...holidays(year), ...holidays(year + 1)]);
-  const wd = weekday(today);
-  // A holiday Monday is still the weekend that ends with it.
-  const friday = wd === 1 && off.has(today) ? addDays(today, -3) : addDays(today, wd === 0 ? -2 : wd === 6 ? -1 : 5 - wd);
-  const monday = addDays(friday, 3);
-  const du = friday, au = off.has(monday) ? monday : addDays(friday, 2);
-  const feries = new Map([...off].filter(([d]) => d >= du && d <= au));
-  return { du, au, vendredi: off.has(friday) ? undefined : "17:00", feries };
-}
 
 /** The day of the weekend each occurrence of a row is listed on, with its hours; nothing when it is not that weekend. */
 export function inWeekend(r: Row, w: Weekend, now: Date): { day: string; date: string; quand: string; long: boolean }[] {
@@ -62,7 +34,7 @@ export function inWeekend(r: Row, w: Weekend, now: Date): { day: string; date: s
 /** « samedi 31 octobre », « dimanche 1er novembre ». */
 const dayName = (day: string) => longDay(day).replace(/ 1 /, " 1er ");
 
-/** « Samedi 31 octobre et dimanche 1er novembre (Toussaint) », from today when the weekend has begun. */
+/** « samedi 31 octobre et dimanche 1er novembre (Toussaint) », from today when the weekend has begun. */
 export function weekendText(w: Weekend, now: Date): string {
   const days: string[] = [];
   for (let d = [w.du, localDay(now)].sort()[1]; d <= w.au; d = addDays(d, 1)) {
@@ -71,7 +43,7 @@ export function weekendText(w: Weekend, now: Date): string {
     days.push(`${dayName(d)}${w.feries.has(d) ? ` (${w.feries.get(d)})` : ""}`);
   }
   if (!days.length) days.push(`${dayName(w.du)} soir`);
-  return upper(days.length > 1 ? `${days.slice(0, -1).join(", ")} et ${days.at(-1)}` : days[0]);
+  return days.length > 1 ? `${days.slice(0, -1).join(", ")} et ${days.at(-1)}` : days[0];
 }
 
 // The halls, for when the agenda has no concert in its two weeks: their own sites, even those it does not read.
@@ -127,7 +99,8 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   // As search engines get them: each event once, at its date that weekend.
   const dated: Row[] = [];
   const sorted: { day: string; long: boolean; time: string; html: string; commune?: string }[] = [];
-  for (const r of d?.evenements ?? []) {
+  // The tool's weekend (tools/agenda.ts): the same events and the same count as the connector's « ce_week_end ».
+  for (const r of d?.ce_week_end ?? []) {
     const here = inWeekend(r, w, now);
     if (!here.length) continue;
     listed.push(r);
@@ -162,7 +135,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
 
   const title = "Que faire ce week-end à La Réunion ? · 974";
   const short = "Que faire ce week-end à La Réunion (974) : concerts, fêtes, marchés et spectacles, commune par commune, avec le lien vers chaque organisateur.";
-  const base = `${when} : ${count(n, "sortie")} à La Réunion (974), concerts, fêtes, marchés et spectacles`;
+  const base = `${upper(when)} : ${count(n, "sortie")} à La Réunion (974), concerts, fêtes, marchés et spectacles`;
   const description = (d && [", commune par commune, avec le lien vers chaque organisateur.", ", commune par commune.", "."].map((t) => base + t).find((x) => x.length <= DESCRIPTION_MAX)) || short;
   const { bar, jsonld } = trail(origin, "Ce week-end", path);
 

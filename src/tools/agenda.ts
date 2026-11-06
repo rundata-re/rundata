@@ -1,5 +1,6 @@
 import { isScheduled, later, left, perInvocation } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
+import { holidays } from "../feries.js";
 import { inReunion } from "../geo.js";
 import { httpUrl, patiently, places, versBilletterie, whenPlaced } from "../http.js";
 import { INSEE } from "../places/insee.js";
@@ -52,11 +53,41 @@ export interface Periode {
   nom: string;
   /** The question's `quand` was not understood, so the default period is given. */
   incompris?: boolean;
+  /** From when its first day counts, a weekend's Friday: « 17:00 ». */
+  vendredi?: string;
+}
+
+export interface Weekend {
+  /** The days, from Friday (or the holiday before it) to Sunday (or the holiday after it), local. */
+  du: string;
+  au: string;
+  /** From when the Friday counts: 17:00, or the whole day when it is a holiday. */
+  vendredi?: string;
+  /** The holidays among those days. */
+  feries: Map<string, string>;
 }
 
 /**
- * The days a question means. This weekend is Friday to Sunday (Friday evening is the weekend's first outing), from
- * today when it has begun; a weekday is the next one, today included; a date is « 2026-10-31 », « 31/10 » or
+ * The weekend people mean: Friday from 17:00 to Sunday night, the coming one from Monday on. A holiday on the Friday
+ * or the Monday next to it belongs to it (the 1st of November on a Sunday already does). The tool and the page
+ * /evenements/ce-week-end both count it so.
+ */
+export function weekend(now: Date): Weekend {
+  const today = localDay(now);
+  const year = Number(today.slice(0, 4));
+  const off = new Map([...holidays(year - 1), ...holidays(year), ...holidays(year + 1)]);
+  const wd = weekday(today);
+  // A holiday Monday is still the weekend that ends with it.
+  const friday = wd === 1 && off.has(today) ? addDays(today, -3) : addDays(today, wd === 0 ? -2 : wd === 6 ? -1 : 5 - wd);
+  const monday = addDays(friday, 3);
+  const du = friday, au = off.has(monday) ? monday : addDays(friday, 2);
+  const feries = new Map([...off].filter(([d]) => d >= du && d <= au));
+  return { du, au, vendredi: off.has(friday) ? undefined : "17:00", feries };
+}
+
+/**
+ * The days a question means. This weekend is `weekend()`'s, Friday from 17:00 to Sunday with the holidays next to it,
+ * from today when it has begun; a weekday is the next one, today included; a date is « 2026-10-31 », « 31/10 » or
  * « 31/10/2026 ». Without `quand`, the next two weeks.
  */
 export function periode(q: string | undefined, now: Date): Periode {
@@ -70,10 +101,11 @@ export function periode(q: string | undefined, now: Date): Periode {
   if (/demain|tomorrow/.test(t)) return span(addDays(today, 1), addDays(today, 1), soir ? "demain soir" : "demain");
   if (/week ?end/.test(t)) {
     const wd = weekday(today);
-    const friday = wd === 0 ? addDays(today, -2) : wd === 6 ? addDays(today, -1) : addDays(today, 5 - wd);
     // « le week-end prochain » said from Friday on is the following one; earlier in the week, the coming one.
-    if (/prochain|suivant|next/.test(t) && (wd === 5 || wd === 6 || wd === 0)) return span(addDays(friday, 7), addDays(friday, 9), "le week-end prochain");
-    return span(wd === 0 || wd === 6 ? today : friday, addDays(friday, 2), "ce week-end");
+    const next = /prochain|suivant|next/.test(t) && (wd === 5 || wd === 6 || wd === 0);
+    const w = weekend(next ? new Date(now.getTime() + 7 * 86400_000) : now);
+    const du = [w.du, today].sort()[1];
+    return { ...span(du, w.au, next ? "le week-end prochain" : "ce week-end"), vendredi: du === w.du ? w.vendredi : undefined };
   }
   if (/semaine prochaine|next week/.test(t)) {
     const monday = addDays(today, ((8 - weekday(today)) % 7) || 7);
@@ -477,11 +509,25 @@ export function inPeriod(e: src.Evenement, p: Periode, now: Date): src.Seance[] 
     const end = s.fin ?? s.debut;
     if (s.debut.slice(0, 10) > p.au || end.slice(0, 10) < p.du) return false;
     if (end.length > 10 ? end < here : end < here.slice(0, 10)) return false;
+    // A weekend's Friday daytime is not the weekend yet: a market at 08:00, a talk until 16:00.
+    if (p.vendredi && s.debut.length > 10 && s.debut.slice(0, 10) === p.du && end.slice(0, 10) === p.du && end.slice(11, 16) < p.vendredi) return false;
     // In the evening: what starts from 17:00 or ends after 19:00; a day without hours, or a fête of a few days, may be.
     if (p.soir && spanDays(s) > LONG_DAYS) return false;
     if (p.soir && s.debut.length > 10 && end.slice(0, 10) === s.debut.slice(0, 10)) return s.debut.slice(11) >= "17:00" || end.slice(11) >= "19:00";
     return true;
   }).sort((x, y) => x.debut.localeCompare(y.debut));
+}
+
+/**
+ * The order of the answer: the dated events by their first occurrence, the seasons after them. Over a few days (a
+ * weekend, a day), what begins in them first: a match since Wednesday is not the weekend's first outing.
+ */
+export function order(p: Periode) {
+  const short = spanDays({ debut: p.du, fin: p.au }) <= 3;
+  const begun = (s: src.Seance) => Number(short && s.debut.slice(0, 10) < p.du);
+  return (x: { e: { titre: string }; seances: src.Seance[] }, y: { e: { titre: string }; seances: src.Seance[] }) =>
+    Number(spanDays(x.seances[0]) > LONG_DAYS) - Number(spanDays(y.seances[0]) > LONG_DAYS) || begun(x.seances[0]) - begun(y.seances[0]) ||
+    x.seances[0].debut.localeCompare(y.seances[0].debut) || x.e.titre.localeCompare(y.e.titre, "fr");
 }
 
 /** Its last good reading, and that the platform did not answer since, when so (marketing's words). */
@@ -768,8 +814,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit, mention: g.agenda.mention, source_agenda: g.agenda.source })) : [])), news?.value.infos, now)
     .map((e) => ({ e, seances: inPeriod(e, p, now) }))
     .filter((x) => x.seances.length && (!what || what.test(x.e)))
-    .sort((x, y) => Number(spanDays(x.seances[0]) > LONG_DAYS) - Number(spanDays(y.seances[0]) > LONG_DAYS) ||
-      x.seances[0].debut.localeCompare(y.seances[0].debut) || x.e.titre.localeCompare(y.e.titre, "fr"));
+    .sort(order(p));
   const mine = commune ? all.filter((x) => x.e.commune === commune) : all;
 
   const periodText = p.du === p.au ? p.nom : `${p.nom} (du ${dayText(p.du)} au ${dayText(p.au)})`;

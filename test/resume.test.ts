@@ -21,6 +21,12 @@ import * as airMesures from "../src/providers/air-mesures.js";
 import * as capteurs from "../src/providers/capteurs.js";
 import * as houle from "../src/providers/houle.js";
 import * as maregraphes from "../src/providers/maregraphes.js";
+import * as actuSource from "../src/providers/actualites.js";
+import * as annuaire from "../src/providers/annuaire.js";
+import * as carburants from "../src/providers/carburants.js";
+import * as edf from "../src/providers/edf.js";
+import * as rt from "../src/providers/gtfsrt.js";
+import * as transit from "../src/providers/transit.js";
 import { PRODUCTS as SEA_PRODUCTS } from "../src/tools/mer.js";
 import { buildAir, buildPlace } from "../src/web/data.js";
 import { pageOf } from "../src/web/places.js";
@@ -136,8 +142,8 @@ describe("the summary of a day", () => {
     expect(r.pharmacie_de_garde).toMatchObject({ site: "https://www.3237.fr/", a_savoir: expect.stringMatching(/ne sait pas quelle pharmacie est de garde/) });
     // The skips: only the sites filled in less than 6 h ago say what they take.
     const sites = Object.fromEntries(r.decheteries!.sites.map((x) => [x.nom, x]));
-    expect(sites["Déchèterie de Plateau Caillou"]).toMatchObject({ etat: "à jour", accepte: ["déchets verts"], benne_pleine: ["encombrants"] });
-    expect(sites["Déchèterie de l'Étang"]).toEqual({ nom: "Déchèterie de l'Étang", mis_a_jour: "24/10 06:30", etat: "dernière mise à jour à 24/10 06:30, à vérifier sur place" });
+    expect(sites["Déchèterie de Plateau Caillou"]).toMatchObject({ mis_a_jour: "24/10 13:00", etat: "à jour", accepte: ["déchets verts"], benne_pleine: ["encombrants"] });
+    expect(sites["Déchèterie de l'Étang"]).toEqual({ nom: "Déchèterie de l'Étang", etat: "dernière mise à jour à 24/10 06:30, à vérifier sur place" });
     expect(sites["Déchèterie de Carrosse-Roquefeuil"].etat).toBe("pas de mise à jour");
     expect(r.decheteries!.page).toBe("https://rundata.re/decheteries#saint-paul");
     expect(r.resume).toContain("déchets verts acceptés dans 1 déchèterie sur 2");
@@ -230,6 +236,32 @@ describe("the summary of a day", () => {
     expect(r3.mer?.temperature_eau).toBe("24,7 °C");
     expect(named(r3)).toContain(sat.nom);
     expect(named(r3)).not.toContain(houle.SOURCE.nom);
+  });
+
+  it("credits no source of a part it leaves empty: no news, no bus alert, no other commune's power cut, no calendar (rule 3)", () => {
+    const named = (r: { sources: { source: string }[] }) => r.sources.map((x) => x.source);
+    // 06/11/2026, Saint-Paul: 3,9 Ko of sources, a third of them for parts the answer did not hold.
+    const copies = {
+      ...COPIES,
+      electricite: copy({ ...COPIES.electricite.value, sources: [...credits([edf.SOURCE]), ...SOURCE("Mairie de Sainte-Marie")] }),
+      actualites: copy({ ...COPIES.actualites.value, infos: [COPIES.actualites.value.infos[3]], sources: credits([actuSource.SOURCES.medias, actuSource.SOURCES.prefecture]) }),
+      trafic: copy({ ...COPIES.trafic.value, medias: [], sources: [...SOURCE("Bus"), ...SOURCE("ONF"), ...credits([carburants.SOURCE])] }),
+      commune: copy({ ...COPIES.commune.value, bus: { ...COPIES.commune.value.bus, alertes: [] }, sources: credits([annuaire.SOURCE, transit.SOURCE, rt.SOURCE]) }),
+      calendrier: copy({ ...COPIES.calendrier.value, vacances_scolaires: { ...COPIES.calendrier.value.vacances_scolaires, en_cours: null } }),
+    };
+    const r = resume(SAINT_PAUL, copies as never, NOW);
+    expect(r.actualites).toEqual([]);
+    expect(r.circulation.infos_routes).toEqual([]);
+    expect(r.circulation.bus).toBeUndefined();
+    expect(r.calendrier).toBeUndefined();
+    for (const s of [actuSource.SOURCES.medias.nom, actuSource.SOURCES.prefecture.nom, "Mairie de Sainte-Marie", "Bus", "ONF", transit.SOURCE.nom, rt.SOURCE.nom, "Éducation nationale"]) expect(named(r)).not.toContain(s);
+    // What it holds keeps its own: the production, the fuel prices, the mairie.
+    for (const s of [edf.SOURCE.nom, carburants.SOURCE.nom, annuaire.SOURCE.nom]) expect(named(r)).toContain(s);
+    expect(named(court(r))).toEqual(named(r));
+    // A bus alert, a road news and a holiday said: their sources come back.
+    const full = resume(SAINT_PAUL, { ...copies, commune: copy({ ...copies.commune.value, bus: COPIES.commune.value.bus }), trafic: copy({ ...copies.trafic.value, medias: COPIES.trafic.value.medias }), calendrier: COPIES.calendrier } as never, NOW);
+    for (const s of [transit.SOURCE.nom, rt.SOURCE.nom, actuSource.SOURCES.medias.nom, "Éducation nationale"]) expect(named(full)).toContain(s);
+    expect(named(full)).not.toContain(actuSource.SOURCES.prefecture.nom);
   });
 
   it("leaves out what it has no copy of, and says so", () => {

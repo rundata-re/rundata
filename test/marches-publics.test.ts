@@ -284,4 +284,12 @@ describe("the page /marches-publics", () => {
     expect(boamp.affiches([first, again]).map((a) => a.id)).toEqual(["26-99434"]);
     expect(boamp.affiches([first, other]).map((a) => a.id)).toEqual(["26-97961", "26-99999"]);
   });
+
+  it("writes an object and a buyer in capitals as people read them, and as written otherwise", () => {
+    const now = new Date("2026-10-29T08:45:00Z");
+    const a = (id: string, objet: string, acheteur: string): boamp.Avis => ({ id, objet, acheteur, types: ["travaux"], commune: "Saint-Denis", parution: "2026-10-29", limite: "2026-11-30", lien: `https://www.boamp.fr/pages/avis/?q=idweb:${id}` });
+    const p = marchesPage(O, { value: { nombre: 2, avis: [a("1", "REQUALIFICATION DE LA RUE JEAN CHATEL - LOTS A,B ET C", "DEPARTEMENT DE LA REUNION"), a("2", "Travaux rue de Paris", "Commune de Saint-Denis")], sources: [] }, fetchedAt: now, stale: false }, now);
+    expect(p).toContain('rel="noopener">Requalification de la rue Jean Chatel - lots A,B et C</a><small>Département de La Réunion · travaux · à Saint-Denis</small>');
+    expect(p).toContain('rel="noopener">Travaux rue de Paris</a><small>Commune de Saint-Denis · travaux · à Saint-Denis</small>');
+  });
 });

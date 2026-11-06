@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { employeurs, intitule } from "../src/tools/employeurs.js";
+import { employeur, employeurs, intitule, objet } from "../src/tools/employeurs.js";
 import { offreRow } from "../src/tools/emploi.js";
 
 describe("the offers' titles and employers", () => {
@@ -12,6 +12,8 @@ describe("the offers' titles and employers", () => {
     expect(intitule("ANIMATEUR.TRICE CULTUREL.LE - COMMUNE DE SAINT LOUIS")).toBe("Animateur.trice culturel.le - Commune de Saint-Louis");
     // Its « (h/f) » in lowercase: still a title in capitals.
     expect(intitule("ASSISTANT DE SERVICE SOCIAL (h/f) - CTRE COM ACTION SOCIALE DE SAINT LOUIS")).toBe("Assistant de service social (H/F) - CCAS de Saint-Louis");
+    // An end the table names, though not all in capitals.
+    expect(intitule("Chef(.fe) de projet – Opérations - COMMUNAUTE AGGLO TERRITOIRE COTE OUEST Ile de la REUNION")).toBe("Chef(.fe) de projet – Opérations - Communauté d'agglomération du Territoire de la Côte Ouest (TCO)");
     // An end that names no employer: part of the title.
     expect(intitule("UN AGENT POLYVALENT - ENTRETIEN ET RESTAURATION (H/F) POUR LA BRIGADE VOLANTE")).toBe("Un agent polyvalent - entretien et restauration (H/F) pour la brigade volante");
   });
@@ -57,5 +59,48 @@ describe("the offers' titles and employers", () => {
       publiee: "2026-11-02T20:00:00.000Z",
     });
     expect(row).toMatchObject({ intitule: "Secrétaire F/H - Département de La Réunion", employeur: "Office National des Forêts (ONF), Office national des forêts" });
+  });
+});
+
+describe("the procurement notices' objects and buyers", () => {
+  it("writes an object in capitals in the case of a sentence, its sigles and accents of the closed list, « à » between words", () => {
+    expect(objet("MISE A DISPOSITION D'UNE SOLUTION DE GESTION DES MARCHES PUBLICS POUR LA CINOR")).toBe("Mise à disposition d'une solution de gestion des marchés publics pour la CINOR");
+    expect(objet("PRESTATIONS POUR LES SALARIES DE LA SPL AFPAR")).toBe("Prestations pour les salariés de la SPL AFPAR");
+    expect(objet("ACCORD-CADRE EN 3 LOTS A BONS DE COMMANDE")).toBe("Accord-cadre en 3 lots à bons de commande");
+    // Written with lowercase letters: as written.
+    expect(objet("Travaux rue de Paris")).toBe("Travaux rue de Paris");
+  });
+
+  it("keeps the lots' letters in capitals, in a list or alone before a punctuation", () => {
+    expect(objet("TRANSPORT SCOLAIRE - LOTS A,B,C ET D")).toBe("Transport scolaire - lots A,B,C et D");
+    expect(objet("TRAVAUX - LOT A - VOIRIE")).toBe("Travaux - lot A - voirie");
+  });
+
+  it("gives a road's or a structure's name its capitals, up to a punctuation or a word that ends it", () => {
+    expect(objet("REQUALIFICATION DE LA RUE JEAN CHATEL TRANCHE 2")).toBe("Requalification de la rue Jean Chatel tranche 2");
+    expect(objet("BOULEVARD SUD ET RUE DE PARIS A SAINT-DENIS")).toBe("Boulevard Sud et rue de Paris à Saint-Denis");
+    expect(objet("AMENAGEMENT DE L'AVENUE DU GENERAL DE GAULLE - LE TAMPON")).toBe("Aménagement de l'avenue du General de Gaulle - Le Tampon");
+    expect(objet("REFECTION DU CHEMIN DES ANTHURIUMS, SAINT-PAUL")).toBe("Refection du chemin des Anthuriums, Saint-Paul");
+  });
+
+  it("leaves a road's kind and the words that only start like a road's word as they are", () => {
+    expect(objet("ENTRETIEN DE LA ROUTE NATIONALE 1")).toBe("Entretien de la route nationale 1");
+    expect(objet("ROUTE DEPARTEMENTALE 3")).toBe("Route departementale 3");
+    expect(objet("ROUTE FORESTIERE DES TAMARINS")).toBe("Route forestiere des tamarins");
+    expect(objet("ENTRETIEN DES ROUTES COMMUNALES")).toBe("Entretien des routes communales");
+    expect(objet("VOIE DE CHEMIN DE FER")).toBe("Voie de chemin de fer");
+    expect(objet("MAINTENANCE DU PONT ROULANT")).toBe("Maintenance du pont roulant");
+    expect(objet("QUAI DE CHARGEMENT DU PORT")).toBe("Quai de chargement du port");
+    expect(objet("TRAVAUX DE MISE EN PLACE DE LA SIGNALISATION")).toBe("Travaux de mise en place de la signalisation");
+    expect(objet("PLACEMENT DE PERSONNEL")).toBe("Placement de personnel");
+  });
+
+  it("names a buyer in capitals as the offers' employers; one or two words, or lowercase letters, as written", () => {
+    expect(employeur("DEPARTEMENT DE LA REUNION")).toBe("Département de La Réunion");
+    expect(employeur("CONSEIL RÉGIONAL DE LA REUNION")).toBe("Conseil régional de La Réunion");
+    expect(employeur("COMMUNE DU TAMPON")).toBe("Commune du Tampon");
+    expect(employeur("SPL AFPAR (974)")).toBe("SPL AFPAR (974)");
+    expect(employeur("SEMTO")).toBe("SEMTO");
+    expect(employeur("Ville de Saint-Paul")).toBe("Ville de Saint-Paul");
   });
 });

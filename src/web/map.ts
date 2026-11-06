@@ -731,24 +731,6 @@ const LATER_SCRIPT = `(()=>{const t=document.currentScript&&document.currentScri
 const go=()=>{if(document.readyState==="loading"){addEventListener("DOMContentLoaded",go,{once:true});return}if(!t.isConnected)return;const s=t.content.firstElementChild;t.replaceWith(t.content);if(s)s.dispatchEvent(new Event("carte",{bubbles:true}))};
 if(!window.IntersectionObserver)return go();const o=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){o.disconnect();go()}},{rootMargin:"100% 0px"});o.observe(t.parentElement)})();`;
 
-/**
- * The relief's file for each map (reliefImage), once the page has loaded: RELIEF_LEGER when the map, at its width on
- * screen times the screen's density and its zoom (the island's width over its viewBox's), needs no more than
- * RELIEF_LEGER_W pixels, else RELIEF_PATH. Again when the map changes size or zooms, and for a map put in the page later
- * (laterMap(), the event `carte`); never back from RELIEF_PATH to the light one. RELIEF_PATH not there (offline, not
- * kept by the service worker): the light one.
- */
-export const RELIEF_SCRIPT = `(()=>{const F=${JSON.stringify(RELIEF_PATH)},L=${JSON.stringify(RELIEF_LEGER)},LW=${RELIEF_LEGER_W},W=${W},seen=new Set();
-const pick=(im)=>{const s=im.ownerSVGElement,h=im.getAttribute("href");if(!s||h===F)return;const c=s.clientWidth||s.getBoundingClientRect().width;if(!c)return;
-const v=s.viewBox.baseVal,u=im.dataset.ko||c*(window.devicePixelRatio||1)*W/(v&&v.width||W)<=LW?L:F;if(u!==h)im.setAttribute("href",u)};
-const again=(s)=>s.querySelectorAll("image[data-relief]").forEach(pick);
-const ro=window.ResizeObserver&&new window.ResizeObserver((es)=>es.forEach((e)=>again(e.target))),mo=window.MutationObserver&&new window.MutationObserver((ms)=>ms.forEach((m)=>again(m.target)));
-const take=(r)=>r.querySelectorAll("image[data-relief]").forEach((im)=>{const s=im.ownerSVGElement;if(seen.has(im)||!s)return;seen.add(im);
-im.addEventListener("error",()=>{if(im.getAttribute("href")===F){im.dataset.ko="1";im.setAttribute("href",L)}});
-if(!seen.has(s)){seen.add(s);if(ro)ro.observe(s);if(mo)mo.observe(s,{attributes:true,attributeFilter:["viewBox"]})}pick(im)});
-const go=()=>{take(document);document.addEventListener("carte",(e)=>{if(e.target.querySelectorAll)take(e.target)})};
-if(document.readyState==="complete")go();else addEventListener("load",go,{once:true})})();`;
-
 export const NOMS_SCRIPT = `(()=>{const P=${JSON.stringify(NUDGE).replace(/</g, "\\u003c")},A=[...Array(625)].map((_,k)=>[k%25-12,Math.floor(k/25)-12]).filter(([i,j])=>i*i+j*j<=144).sort((a,b)=>a[0]*a[0]+a[1]*a[1]-(b[0]*b[0]+b[1]*b[1])),NEAR=${NEAR},F=[...Array(12)].flatMap((_,k)=>{const g=(k+1)/4,c=1.1+g;return[[1,g,0],[-1,-g,0],[0,0,-c],[0,0,c],[1,g,-c],[-1,-g,-c],[1,g,c],[-1,-g,c]]}),hit=(a,b)=>a[0]<b[2]&&b[0]<a[2]&&a[1]<b[3]&&b[1]<a[3];
 const run=(svg)=>{const g=svg.querySelector(".nm"),vb=svg.viewBox.baseVal,cw=svg.clientWidth;if(!g||!vb||!vb.width||!cw)return;
 const u=vb.width/cw,wide=cw>=640,p=2*u,busy=[],kept=[],box=(b,r)=>[b.x-r-p,b.y-r-p,b.x+b.width+r+p,b.y+b.height+r+p],
@@ -1127,6 +1109,24 @@ function fondChoice(key: string): string {
 const UNSAFE: Record<string, string> = { "<": "\\u003c", ">": "\\u003e", "&": "\\u0026", "/": "\\u002f", "\u2028": "\\u2028", "\u2029": "\\u2029" };
 /** A value written as a JavaScript literal inside an inline <script>. */
 export const inScript = (v: unknown) => JSON.stringify(v).replace(/[<>&\/\u2028\u2029]/g, (c) => UNSAFE[c]);
+
+/**
+ * The relief's file for each map (reliefImage), once the page has loaded: RELIEF_LEGER when the map, at its width on
+ * screen times the screen's density and its zoom (the island's width over its viewBox's), needs no more than
+ * RELIEF_LEGER_W pixels, else RELIEF_PATH. Again when the map changes size or zooms, and for a map put in the page later
+ * (laterMap(), the event `carte`); never back from RELIEF_PATH to the light one. RELIEF_PATH not there (offline, not
+ * kept by the service worker): the light one.
+ */
+export const RELIEF_SCRIPT = `(()=>{const F=${inScript(RELIEF_PATH)},L=${inScript(RELIEF_LEGER)},LW=${RELIEF_LEGER_W},W=${W},seen=new Set();
+const pick=(im)=>{const s=im.ownerSVGElement,h=im.getAttribute("href");if(!s||h===F)return;const c=s.clientWidth||s.getBoundingClientRect().width;if(!c)return;
+const v=s.viewBox.baseVal,u=im.dataset.ko||c*(window.devicePixelRatio||1)*W/(v&&v.width||W)<=LW?L:F;if(u!==h)im.setAttribute("href",u)};
+const again=(s)=>s.querySelectorAll("image[data-relief]").forEach(pick);
+const ro=window.ResizeObserver&&new window.ResizeObserver((es)=>es.forEach((e)=>again(e.target))),mo=window.MutationObserver&&new window.MutationObserver((ms)=>ms.forEach((m)=>again(m.target)));
+const take=(r)=>r.querySelectorAll("image[data-relief]").forEach((im)=>{const s=im.ownerSVGElement;if(seen.has(im)||!s)return;seen.add(im);
+im.addEventListener("error",()=>{if(im.getAttribute("href")===F){im.dataset.ko="1";im.setAttribute("href",L)}});
+if(!seen.has(s)){seen.add(s);if(ro)ro.observe(s);if(mo)mo.observe(s,{attributes:true,attributeFilter:["viewBox"]})}pick(im)});
+const go=()=>{take(document);document.addEventListener("carte",(e)=>{if(e.target.querySelectorAll)take(e.target)})};
+if(document.readyState==="complete")go();else addEventListener("load",go,{once:true})})();`;
 
 // New tiles only once a pinch or a drag has stopped (250 ms): the Géoplateforme takes at most 40 requests a second
 // from one address, and a view asks for 96 tiles at most, a level lower if the screen's would take more (a wide map on

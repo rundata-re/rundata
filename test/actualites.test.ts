@@ -116,13 +116,12 @@ describe("actualités", () => {
     const { infos } = (await fil(cache(), NOW)).value;
     const all = infos.map((i) => i.titre);
     for (const t of ["Témoignages n°", "Trump-Poutine-XI", "L'Assemblée nationale rejette", "Fusillade de Trappes", "Jordanie :"]) expect(all.some((x) => x.startsWith(t)), t).toBe(false);
-    for (const m of ["Clicanoo", "Parallèle Sud", "Le Quotidien"]) expect(infos.some((i) => i.media === m || i.aussi?.some((a) => a.media === m)), m).toBe(true);
-    // Témoignages is not read until it agrees (SUSPENDUS): neither asked nor named.
-    expect(SUSPENDUS.has("Témoignages")).toBe(true);
-    expect(asked.some((a) => a.includes("temoignages"))).toBe(false);
-    expect(infos.some((i) => i.media === "Témoignages" || i.aussi?.some((a) => a.media === "Témoignages"))).toBe(false);
-    expect(`${SOURCES.medias.nom} ${SOURCES.medias.attribution} ${COUVERTURE}`).not.toMatch(/Témoignages/);
-    expect(LUS.map((m) => m.media)).toEqual(["Clicanoo", "Le Quotidien", "Imaz Press", "Freedom", "Parallèle Sud"]);
+    for (const m of ["Témoignages", "Clicanoo", "Parallèle Sud", "Le Quotidien"]) expect(infos.some((i) => i.media === m || i.aussi?.some((a) => a.media === m)), m).toBe(true);
+    // Témoignages read again with its newsroom's written agreement of 06/11/2026: asked, and named as read.
+    expect(SUSPENDUS.size).toBe(0);
+    expect(asked.some((a) => a.includes("temoignages"))).toBe(true);
+    for (const t of [SOURCES.medias.nom, SOURCES.medias.attribution, COUVERTURE]) expect(t).toMatch(/Témoignages/);
+    expect(LUS.map((m) => m.media)).toEqual(["Clicanoo", "Le Quotidien", "Imaz Press", "Freedom", "Parallèle Sud", "Témoignages"]);
   });
 
   it("reads Le Quotidien's home page: the titles, the day of each, the time only when given to the minute", () => {
@@ -413,7 +412,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

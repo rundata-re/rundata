@@ -6,8 +6,7 @@
  * - Clicanoo (Le Journal de l'île), Freedom, Parallèle Sud: their RSS; Freedom's terms allow a link to its home page
  *   only, so its items link there (src/providers/accueils-medias.ts);
  * - Imaz Press and Témoignages: their Google News sitemap (Imaz Press keeps its RSS from robots); Imaz Press's live
- *   blogs (« l'actu en continu »), read from the article page, each entry with its time; Témoignages is not read for
- *   now (SUSPENDUS);
+ *   blogs (« l'actu en continu »), read from the article page, each entry with its time;
  * - Le Quotidien de La Réunion: its home page (no feed, and a sitemap without titles), the time to the minute only when
  *   it says « il y a N minutes »;
  * - the prefecture: the list of its press releases.
@@ -39,11 +38,12 @@ export const MEDIAS = [
 ] as const;
 
 /**
- * Not read until they agree in writing. Témoignages: its robots.txt closes its site to ClaudeBot (since 01/10/2026),
- * and its headlines end in the answers of AI assistants; its legal notice asks its prior agreement to reproduce its
- * content, asked for on 26/10/2026 (interne/catalogue/actualites-conditions-0211.md).
+ * Not read until they agree in writing. None now. Témoignages was not read from 02/11/2026: its robots.txt closes its
+ * site to ClaudeBot (since 01/10/2026), its headlines end in the answers of AI assistants, and its legal notice asks
+ * its prior agreement to reproduce its content. Read again with the written agreement of its newsroom of 06/11/2026:
+ * its headlines with their time and a link to the article, on the site and in the connector's answers.
  */
-export const SUSPENDUS: ReadonlySet<string> = new Set(["Témoignages"]);
+export const SUSPENDUS: ReadonlySet<string> = new Set<string>();
 
 /** The media read, in the list's order. */
 export const LUS = MEDIAS.filter((m) => !SUSPENDUS.has(m.media));

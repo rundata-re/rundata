@@ -37,6 +37,7 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/freedom\.fr\/feed/, "actualites/freedom.xml"],
   [/parallelesud\.com\/feed/, "actualites/parallelesud.xml"],
   [/lequotidien\.re\/$/, "actualites/quotidien.html"],
+  [/temoignages\.re\/spip\.php\?page=sitemap-news/, "actualites/temoignages.xml"],
   [/reunion\.gouv\.fr\/Actualites\/Communiques-de-presse/, "actualites/prefecture.html"],
   [/reunion\.gouv\.fr\/Actualites\//, "actualites/prefecture-alerte1-enclos.html"],
   [/vigicrues\/vigilance\.php/, "vigicrues_vigilance.json"],

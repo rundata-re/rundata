@@ -7,6 +7,7 @@
  */
 import { count } from "../budget.js";
 import { normalize } from "../places/resolve.js";
+import { casseArret } from "../tools/casse.js";
 import network from "../transit/network.json" with { type: "json" };
 import type { SourceInfo } from "../types.js";
 
@@ -60,6 +61,16 @@ const tidy = (name: string) => name.replace(/\s{2,}/g, " ");
 export const ROUTES = (network.routes as unknown as [string, string, string][]).map(([net, short, long]) => [net, tidy(short), tidy(long)] as [string, string, string]);
 /** [network, name, lat, lon, commune] by stop index. */
 const STOPS = (network.stops as unknown as [string, string, number, number, string][]).map(([net, name, ...rest]) => [net, tidy(name), ...rest] as [string, string, number, number, string]);
+const shown = new Map<string, string>();
+/**
+ * A stop's name as people read it, the ones its network writes in capitals too (casseArret(): « GARE SAINT ANDRE »,
+ * « Gare Saint-André »); when it is read, once per name, rather than for the 9 952 stops when the module loads.
+ */
+export function stopName(name: string): string {
+  let v = shown.get(name);
+  if (v === undefined) shown.set(name, (v = casseArret(name)));
+  return v;
+}
 /** [days Monday first as 7 bits, first day, last day, added days, removed days], days as YYYYMMDD. */
 const SERVICES = network.services as unknown as Record<string, [number, number, number, number[], number[]][]>;
 /** [first start, last start, services…] of each pattern's trips, by pattern index: what it runs, without reading it. */
@@ -84,7 +95,7 @@ export interface Stop {
 /** A stop of the island-wide numbering, a bus station's bay named as the station. */
 export function stop(id: number): Stop {
   const [reseau, name, lat, lon, commune] = STOPS[id];
-  return { id, reseau, nom: name.replace(/\s+quai\s+\S+$/i, ""), commune, lat, lon };
+  return { id, reseau, nom: stopName(name.replace(/\s+quai\s+\S+$/i, "")), commune, lat, lon };
 }
 
 /** The stops of a network that share a name in one commune: both sides of the road, usually. */
@@ -114,7 +125,8 @@ export const GROUPS: StopGroup[] = (() => {
       g.lat += (lat - g.lat) / g.ids.length;
       g.lon += (lon - g.lon) / g.ids.length;
     } else {
-      by.set(key, { reseau: net, nom, commune, ids: [id], lat, lon, words: new Set(expand(nom).split(" ")) });
+      // Its name in capitals as people read it when it is read (stopName()); its words are the same in any case.
+      by.set(key, { reseau: net, get nom() { return stopName(nom); }, commune, ids: [id], lat, lon, words: new Set(expand(nom).split(" ")) });
     }
   });
   return [...by.values()];

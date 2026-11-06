@@ -21,10 +21,12 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   agenda: 35,
   air: 12,
   bornes: 5,
-  bus: 8,
+  // Stop names written all in capitals by their network, as people read them (« Gare Saint-André »).
+  bus: 9,
   calendrier: 4,
   chiffres: 23,
-  commune: 19,
+  // The commune's stops, named as on /bus (« Gare Saint-André »).
+  commune: 20,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 13,
   courant: 8,

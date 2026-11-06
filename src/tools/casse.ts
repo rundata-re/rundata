@@ -98,3 +98,85 @@ export function casse(titre: string): string {
   // The sentence starts with a capital, whatever its first word.
   return text.replace(/\p{L}/u, (c) => c.toLocaleUpperCase("fr"));
 }
+
+/** The sigles of the stop names kept in capitals: bodies, roads and sites the networks name (« ZAC N° 2 », « CD 29 »). */
+const STOP_SIGLES = new Set([
+  ...SIGLES, "AFPAR", "ASCPH", "CAT", "CD", "CFPPA", "CGSS", "CHD", "CHOR", "CIRAD", "CIROI", "CMPP", "DDASS", "DDE", "EPSMR",
+  "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SMA", "SRPP", "ZAC", "ZI",
+]);
+/** The small words of a stop name, in lowercase but at its head; « A » is the preposition (« MARE A CITRONS »). */
+const STOP_SMALL: Record<string, string> = { DE: "de", DU: "du", DES: "des", LA: "la", LE: "le", LES: "les", AU: "au", AUX: "aux", ET: "et", A: "à" };
+/** The common nouns of stop names whose accents the networks leave out in capitals: the only ones given back. */
+const STOP_NOUNS: Record<string, string> = {
+  ECOLE: "École", LYCEE: "Lycée", ALLEE: "Allée", RIVIERE: "Rivière", ILET: "Îlet", CITE: "Cité", EGLISE: "Église",
+  RESIDENCE: "Résidence", POLE: "Pôle", RAVINE: "Ravine",
+};
+
+/** The names of places the resolver knows (those casse() gives capitals back), by their folded words: as they are written. */
+let spelled: Map<string, string> | undefined;
+let longest = 1;
+function placeSpellings() {
+  if (spelled) return spelled;
+  spelled = new Map();
+  for (const p of gazetteer.places as { nom: string; type: string }[]) {
+    if (p.type !== "commune" && (p.type !== "localite" || COMMON.has(p.nom))) continue;
+    const words = (p.nom.match(WORD) ?? []).map(fold);
+    longest = Math.max(longest, words.length);
+    if (!spelled.has(words.join(" "))) spelled.set(words.join(" "), p.nom);
+  }
+  return spelled;
+}
+
+/**
+ * A stop's name written all in capitals by its network (« GARE SAINT ANDRE », « CHEMIN DE L'ETANG »), as people read it:
+ * « Gare Saint-André », « Chemin de l'Etang ». No word added or removed. Each word takes a capital, the
+ * small words (STOP_SMALL) none but at the head. Accents and hyphens come only from two closed lists: the names of places
+ * the resolver knows, written as it writes them (word for word: « ST ANDRE » stays « St Andre »), and STOP_NOUNS; any
+ * other word stays without accent, as the network writes it. Sigles of a closed list (STOP_SIGLES), roman numerals,
+ * single letters and words with a digit are left as written. A name with a lowercase letter is left as written.
+ */
+export function casseArret(nom: string): string {
+  if (/\p{Ll}/u.test(nom) || !/\p{L}/u.test(nom)) return nom;
+  const atoms = [...nom.matchAll(WORD)];
+  if (!atoms.length) return nom;
+  const between = (i: number) => nom.slice(atoms[i].index! + atoms[i][0].length, atoms[i + 1]?.index ?? nom.length);
+  const apostrophe = (i: number) => i >= 0 && i < atoms.length - 1 && /^['’]$/.test(between(i));
+  const places = placeSpellings();
+  const elided = (i: number) => apostrophe(i) && /^[DL]$/.test(atoms[i][0]);
+  const folded = atoms.map((m) => fold(m[0]));
+  // Where a name of a place may run on to the next word: only a space, a hyphen or an apostrophe between them.
+  const joined = atoms.map((_, i) => i < atoms.length - 1 && /^[\s'’-]+$/.test(between(i)));
+  const free = atoms.map((m) => !/\p{N}/u.test(m[0]) && !STOP_SIGLES.has(m[0]));
+  let text = nom.slice(0, atoms[0].index);
+  for (let i = 0; i < atoms.length; ) {
+    // The longest name of a place that starts here, its words joined only by spaces, hyphens or apostrophes; never a
+    // small word alone, a sigle or a word with a digit.
+    let span = 0;
+    let reach = i;
+    while (reach < atoms.length && free[reach] && reach - i < longest && (reach === i || joined[reach - 1])) reach++;
+    for (let n = reach - i; n >= 1 && !span; n--) {
+      if (n === 1 && atoms[i][0] in STOP_SMALL) continue;
+      const written = places.get(folded.slice(i, i + n).join(" "));
+      if (written) {
+        text += written + between(i + n - 1);
+        span = n;
+      }
+    }
+    if (span) {
+      i += span;
+      continue;
+    }
+    const w = atoms[i][0];
+    let word: string;
+    // « D'EAU », « L'ETANG »: the elided article, small but at the head.
+    if (elided(i)) word = i ? w.toLowerCase() : w;
+    else if (/\p{N}/u.test(w) || STOP_SIGLES.has(w) || ROMAN.test(w) || ([...w].length === 1 && !(w in STOP_SMALL))) word = w;
+    // « P'TIT »: the rest of one word.
+    else if (apostrophe(i - 1) && !elided(i - 1)) word = w.toLocaleLowerCase("fr");
+    else if (w in STOP_SMALL) word = i ? STOP_SMALL[w] : upperFirst(STOP_SMALL[w]);
+    else word = STOP_NOUNS[w] ?? upperFirst(w.toLocaleLowerCase("fr"));
+    text += word + between(i);
+    i++;
+  }
+  return text;
+}

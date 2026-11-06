@@ -34,6 +34,8 @@ describe("a stop name in capitals, as people read it", () => {
     expect(casseArret("DOS D'ANE")).toBe("Dos d'Âne");
     expect(casseArret("LA GLACIERE")).toBe("La Glacière");
     expect(casseArret("COLLEGE GASTON CROCHET")).toBe("Collège Gaston Crochet");
+    expect(casseArret("POLE D'ECHANGE")).toBe("Pôle d'Échange");
+    expect(casseArret("Pôle D'Echange Marché Couvert")).toBe("Pôle d'Échange Marché Couvert");
   });
 
   it("keeps the sigles of its list, the numbers and the single letters", () => {

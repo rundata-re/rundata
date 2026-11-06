@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { departures, findStops, searchStops, stopPageDepartures, tripRun } from "../src/tools/transports.js";
+import { departureRow, departures, findStops, searchStops, stopPageDepartures, tripRun, type Departure } from "../src/tools/transports.js";
 import { searchPage, SEARCH_MAX, stopPage } from "../src/web/arret.js";
 import { busPage } from "../src/web/domains.js";
 import { site } from "../src/web/site.js";
@@ -90,6 +90,13 @@ describe("the stop pages", () => {
     expect(html).toContain(">demain 05:15<");
     expect(html).toContain(">à 09:00<");
     expect(html).not.toMatch(/\d\u00a0h</);
+  });
+
+  it("are written the same in the connector's list: « demain 05:00 », « 09:00 »", () => {
+    const row = (at: number) => departureRow({ route: 0, headsign: "x", at, in: 0 } as unknown as Departure).heure;
+    expect(row(86400 + 5 * 3600)).toBe("demain 05:00");
+    expect(row(86400 + 5 * 3600 + 15 * 60)).toBe("demain 05:15");
+    expect(row(9 * 3600)).toBe("09:00");
   });
 
   it("elide « de » before a network whose name starts with a vowel: « d'Alternéo »", () => {

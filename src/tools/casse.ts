@@ -114,7 +114,7 @@ const STOP_SMALL: Record<string, string> = { DE: "de", DU: "du", DES: "des", LA:
 const STOP_ACCENTS: Record<string, string> = {
   ECOLE: "École", COLLEGE: "Collège", LYCEE: "Lycée", ALLEE: "Allée", RIVIERE: "Rivière", ILET: "Îlet", CITE: "Cité",
   EGLISE: "Église", RESIDENCE: "Résidence", POLE: "Pôle", RAVINE: "Ravine", GLACIERE: "Glacière", ANE: "Âne",
-  THERESE: "Thérèse", MAIDO: "Maïdo",
+  ECHANGE: "Échange", THERESE: "Thérèse", MAIDO: "Maïdo",
 };
 /** A word written without its accent, given them back from STOP_ACCENTS, in its case: « Ane » → « Âne ». */
 const accented = (w: string) => {

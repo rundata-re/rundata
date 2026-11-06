@@ -694,7 +694,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
         ...(fichePj ? { foot: `<a href="${esc(fichePj)}" rel="noopener">Fiche service-public.fr</a>` } : {}),
       }]
       : []),
-    ...(hikes ? [{ icon: "mountain", nom: "Randonnée", href: hikes.href, live: hikes.live, foot: hikes.foot }] : []),
+    ...(hikes ? [{ icon: "mountain", nom: hikes.nom, href: hikes.href, live: hikes.live, foot: hikes.foot }] : []),
     { icon: "music", nom: "Sorties", href: "/evenements", live: communeEvents(p, l.agenda) },
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),
     ...(lieux ? [{ icon: "landmark", nom: "À découvrir", ...lieux, full: true }] : []),

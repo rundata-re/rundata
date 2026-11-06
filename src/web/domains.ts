@@ -1851,7 +1851,7 @@ ${burning ? "" : fires}
 ${hikes}
 ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 
-  return layout(origin, { title, description, path: "/sentiers", hook: `Avant de partir : les sentiers fermés d'après ${onfCarte(d?.carte_mise_a_jour)}, et pourquoi.`, jsonld: [hikeCrumbs(origin, "Sentiers fermés", "/sentiers"), webPage(origin, "/sentiers", title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: "/sentiers", hook: `Avant de partir : les sentiers fermés d'après ${onfCarte(d?.carte_mise_a_jour)}, et pourquoi.`, jsonld: [hikeCrumbs(origin, "Sentiers fermés", "/sentiers"), webPage(origin, "/sentiers", title, description, data)], alerte }, band, etatOnf(body));
 }
 
 // ---------------------------------------------------------------- circulation
@@ -2101,6 +2101,15 @@ const hikeCrumbBar = (label: string) =>
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 const why_ = (x: { cause?: string; precision?: string }, now: Date) => onf.motifs(x, now).map(esc).join(" · ");
 
+/**
+ * A trail's name that leads to two pages in the same body: the hike's (/randonnees/<x>: map, profile, GPX) keeps the
+ * name alone, the ONF trail's (/sentiers/<x>) adds « , état ONF » (validated words), so that the two links read apart.
+ */
+export function etatOnf(body: string): string {
+  const hikes = new Set([...body.matchAll(/<a href="\/randonnees\/[a-z0-9-]+">([^<]+)<\/a>/g)].map((m) => m[1]));
+  return body.replace(/(<a href="\/sentiers\/[a-z0-9-]+">)([^<]+)<\/a>/g, (all, a: string, nom: string) => (hikes.has(nom) ? `${a}${nom}, état ONF</a>` : all));
+}
+
 /** A closed ONF trail, linked to its page, with why and until when. */
 const closedLi = (x: { sentier: string; slug?: string; page?: string; cause?: string; precision?: string }, now: Date) => {
   const href = x.page ?? (x.slug ? `/sentiers/${x.slug}` : undefined);
@@ -2256,7 +2265,7 @@ ${trails}
 ${safety}
 ${connectorCta("sentiers_randonnee", "la randonnée")}
 <script>${FILTER_SCRIPT}</script>`;
-  return layout(origin, { title, description, path: "/randonnees", hook: randoHook(d?.carte_mise_a_jour), jsonld: [crumbs(origin, "Randonnée", "/randonnees"), webPage(origin, "/randonnees", title, description, data), ...list], alerte }, band, body);
+  return layout(origin, { title, description, path: "/randonnees", hook: randoHook(d?.carte_mise_a_jour), jsonld: [crumbs(origin, "Randonnée", "/randonnees"), webPage(origin, "/randonnees", title, description, data), ...list], alerte }, band, etatOnf(body));
 }
 
 /** Where the cloud sea will be in the coming morning, for each summit and village of the Hauts (tools/nuages.ts). */
@@ -2299,10 +2308,13 @@ export function randonneesLive(data: Cached<SentiersAnswer> | null): Live | unde
   return { valeur: `${n} sentier${n > 1 ? "s" : ""} fermé${n > 1 ? "s" : ""}`, detail: `sur ${d.suivis} suivis par l'ONF ; traces GPS, distance et dénivelé de ${d.randonnees.length} randonnées et de chaque sentier` };
 }
 
-/** The sectors of the hikes as links, the page's own marked: on /randonnees, /sentiers and each sector's page. */
+/**
+ * The sectors of the hikes as links, the page's own marked: on /randonnees, /sentiers and each sector's page. Each says
+ * « Randonnée au Volcan » to screen readers, its name inside: told from « Volcan » (/volcan) or « Cilaos » (its weather).
+ */
 export function sectorLinks(current?: string): string {
   return `<nav class="parts" aria-label="Randonnée par secteur">${SECTEURS_RANDO.map((s) =>
-    `<a href="/randonnees/${s.slug}"${s.slug === current ? ` aria-current="page"` : ""}>${esc(s.nom)}</a>`).join("")}</nav>`;
+    `<a href="/randonnees/${s.slug}"${s.slug === current ? ` aria-current="page"` : ""} aria-label="${esc(`Randonnée ${s.dans}`)}">${esc(s.nom)}</a>`).join("")}</nav>`;
 }
 
 /** The trail of a page under a sector: rundata.re › Randonnée › Sector (› name), as links and for search engines. */
@@ -2531,7 +2543,7 @@ ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 
   // A hike that follows no trail of the ONF has no state here: its hook says so, instead of « l'état du sentier ».
   const hook = !d ? undefined : kind === "randonnee" && !d.troncons.length ? NOT_ON_ONF : `La trace à télécharger et l'état du sentier d'après ${onfCarte(d.carte_mise_a_jour)}, avant de partir.`;
-  return layout(origin, { title, description, path, hook, jsonld, alerte }, band, go ? body + ALLER : body);
+  return layout(origin, { title, description, path, hook, jsonld, alerte }, band, go ? etatOnf(body) + ALLER : etatOnf(body));
 }
 
 // ---------------------------------------------------------------- sécheresse

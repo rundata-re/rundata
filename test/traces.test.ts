@@ -304,10 +304,10 @@ describe("traces GPS", () => {
     expect(page).toContain(`<li><a href="/sentiers/aurere-ilet-a-malheur">Aurère - Îlet à Malheur</a>\u00a0: Éboulement · Réouverture prévue le 15/11/2026</li>`);
     expect(page).toContain(`href="/randonnees/gr-r3"`);
     expect(page).toContain("ravitaillés par hélicoptère");
-    expect(page).toContain(`<a href="/randonnees/mafate" aria-current="page">Mafate</a>`);
+    expect(page).toContain(`<a href="/randonnees/mafate" aria-current="page" aria-label="Randonnée à Mafate">Mafate</a>`);
     expect((await handle(new Request("https://rundata.re/randonnees/nulle-part", BOT), cache())).status).toBe(404);
     const hub = await (await handle(new Request("https://rundata.re/randonnees", BOT), cache())).text();
-    expect(hub).toContain(`<a href="/randonnees/sud-sauvage">Sud sauvage</a>`);
+    expect(hub).toContain(`<a href="/randonnees/sud-sauvage" aria-label="Randonnée dans le Sud sauvage">Sud sauvage</a>`);
   });
 
   it("says a trail's sector in its title, its trail and its first sentence", async () => {

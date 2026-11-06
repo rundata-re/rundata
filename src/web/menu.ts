@@ -52,7 +52,7 @@ export const GROUPES: { nom: string; entrees: Entree[] }[] = [
 export const CYCLONE = [
   { nom: "kit", path: "/kit-cyclone" },
   { nom: "alerte", path: "/alerte-cyclone" },
-  { nom: "écoles", path: "/ecoles-cyclone" },
+  { nom: "école fermée ?", path: "/ecoles-cyclone" },
 ];
 
 /** The field's words, marketing's (04/11/2026). */
@@ -124,7 +124,7 @@ export function cibles(avecAssociations: boolean): [string, string, string[]][] 
     ...menu.map((e): [string, string] => [e.nom, e.path]),
     ["Cyclone : kit", "/kit-cyclone"],
     ["Cyclone : alerte", "/alerte-cyclone"],
-    ["Cyclone : écoles", "/ecoles-cyclone"],
+    ["Cyclone : école fermée ?", "/ecoles-cyclone"],
     ["Sites sans réponse", "/sites-sans-reponse"],
     ...PAGES.map((p): [string, string] => [p.nom, `/${p.commune ? "communes" : "meteo"}/${p.slug}`]),
   ];

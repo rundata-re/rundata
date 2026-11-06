@@ -118,13 +118,14 @@ export function forecastLinks(communes: (string | undefined)[]): string {
 }
 
 /**
- * The commune's page's hiking tile: its ONF trails, those closed, and its sector's page; first, the fires seen by
- * satellite in the commune, with the emergency numbers (worded by marketing).
+ * The commune's page's hiking tile: its ONF trails, those closed, and its sector's page, which names it (« Randonnée
+ * dans le Sud »); first, the fires seen by satellite in the commune, with the emergency numbers (worded by marketing).
  */
-export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | null | undefined, now = new Date()): { live?: Live; href: string; foot?: string } | undefined {
+export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | null | undefined, now = new Date()): { nom: string; live?: Live; href: string; foot?: string } | undefined {
   const sector = secteurNamed(secteur(p.place.lon, p.place.lat).secteur);
   const href = sector ? `/randonnees/${sector.slug}` : "/randonnees";
-  if (!hikes) return { href };
+  const nom = sector ? `Randonnée ${sector.dans}` : "Randonnée";
+  if (!hikes) return { nom, href };
   // Its ONF trails as the tool counts them: every trail that runs through it, without those out of the ONF's hands or
   // without a state, which have no state to give. A copy built before #786 has no `communes`, only its first section's
   // `commune` (revisions.ts RENDU_LISIBLE no longer serves it): read as before, never a throw.
@@ -132,15 +133,16 @@ export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | nul
   const fires = hikes.value.feux?.detections.filter((d) => d.commune === p.nom) ?? [];
   const burning = fires.length ? `${esc(fire.tileLine(fires, now))} · <b>${esc(fire.URGENCE)}</b>` : "";
   const foot = burning ? `<a href="/feux">Voir la carte des feux →</a>` : undefined;
-  if (!trails.length) return burning ? { href: "/feux", live: { valeur: "Feu détecté", detail: burning }, foot } : undefined;
+  if (!trails.length) return burning ? { nom: "Randonnée", href: "/feux", live: { valeur: "Feu détecté", detail: burning }, foot } : undefined;
   const shut = trails.filter((t) => t.etat === "fermé").length;
   return {
+    nom,
     href,
     foot,
     live: {
       valeur: shut ? `${shut} sentier${shut > 1 ? "s" : ""} fermé${shut > 1 ? "s" : ""}` : "Sentiers ouverts",
       // The ONF's own date of its map, else when we read it: a copy never says the state of another day.
-      detail: `${burning ? `${burning} · ` : ""}sur ${trails.length} dans la commune, d'après la carte de l'ONF${onfWhen(hikes.value)}${sector ? ` · randonnée ${esc(sector.dans)}` : ""}`,
+      detail: `${burning ? `${burning} · ` : ""}sur ${trails.length} dans la commune, d'après la carte de l'ONF${onfWhen(hikes.value)}`,
     },
   };
 }

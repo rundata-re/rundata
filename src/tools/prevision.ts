@@ -3,6 +3,7 @@ import type { Cache, Cached } from "../cache.js";
 import { compass, localTime, sinceMidnight } from "../geo.js";
 import { normalize, resolvePlace, type Place } from "../places/resolve.js";
 import * as arome from "../providers/arome.js";
+import * as cal from "../providers/calendrier.js";
 import * as ensemble from "../providers/ensemble.js";
 import * as openmeteo from "../providers/openmeteo.js";
 import * as uv from "../providers/uv.js";
@@ -347,9 +348,17 @@ type UvOf = (date: string) => number | undefined;
 
 const uvText = (v: number) => `${v} (${uv.level(v)})`;
 
-function uvAt(u: Cached<uv.UvCell[]> | null, place: Place): UvOf {
+/**
+ * None for today when its hours left (restOfDay()) start at the place's sunset or after, as calendrier gives it: the
+ * day's highest is past, and « de 22 h à minuit, UV 13 » would read as a UV of the night.
+ */
+function uvAt(u: Cached<uv.UvCell[]> | null, place: Place, now: Date): UvOf {
   const cell = u ? uv.at(u.value, place.lon, place.lat) : undefined;
-  return (date) => cell?.max[date];
+  const today = localDate(now);
+  const from = hourOfDay(now);
+  const start = now.getTime() - (sinceMidnight(now) - from * 3600) * 1000;
+  const night = from > 0 && start >= cal.sun(today, place.lon, place.lat, cal.horizonDe(place)).coucher.getTime();
+  return (date) => (night && date === today ? undefined : cell?.max[date]);
 }
 
 /** The confidence of a day over a place, from the ensemble. */
@@ -584,7 +593,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     const lieux = ok.map(({ p, c }) => ({
       lieu: p.nom,
       altitude_m: p.altitude_m ?? undefined,
-      jours: c.value.days.filter((d) => wanted.includes(d.date)).map((d) => dayBlock(c.value, d, now, uvAt(u, p), confAt(ens, p, now))),
+      jours: c.value.days.filter((d) => wanted.includes(d.date)).map((d) => dayBlock(c.value, d, now, uvAt(u, p, now), confAt(ens, p, now))),
     }));
     const shown = lieux.some((l) => l.jours.some((j) => j.indice_uv_max)) ? u : null;
     const ensShown = lieux.some((l) => l.jours.some((j) => j.confiance)) ? ens : null;
@@ -595,7 +604,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
       resume:
         `${header(ok[0].c.value, aromeLater)}, tour de l'île — ` +
         ok.map(({ p, c }) => `${p.nom} : ` + c.value.days.filter((d) => wanted.includes(d.date))
-          .map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} ${daySentence(c.value, d, now, uvAt(u, p), confAt(ens, p, now))}`).join("\u00a0; ")).join(" | "),
+          .map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} ${daySentence(c.value, d, now, uvAt(u, p, now), confAt(ens, p, now))}`).join("\u00a0; ")).join(" | "),
       periode: period.defaut ? "aujourd'hui et demain" : period.libelle,
       lieux,
       maximales_arome: maximalesArome(ok[0].c.value, wanted),
@@ -624,7 +633,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   const starts = [...new Map([...shown, ...(hauts ? nuages.morningStarts(now, cloudDay) : []), ...(nightWanted ? nuages.nightStarts(now, nightDay) : [])]
     .map((t) => [t.getTime(), t])).values()].sort((a, b) => a.getTime() - b.getTime());
   const { results, uv: u, ens, aromeDown, aromeLater } = await forecasts(cache, [r.lieu], starts, now, aromeWaitMs);
-  const uvOf = uvAt(u, r.lieu);
+  const uvOf = uvAt(u, r.lieu, now);
   const confOf = confAt(ens, r.lieu, now);
   if (results[0].status === "rejected") {
     console.error("prévision indisponible:", why(results[0].reason));

@@ -246,7 +246,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | web:coupures | providers/avis-eau, providers/eaupotable |
 | web:air | providers/air-mesures, providers/atmo, providers/capteurs |
 | mer:satellites | providers/acspo, providers/modis |
-| web:mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
+| web:mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
 | web:calendrier | providers/calendrier |
 | seismes | providers/seismes |
 | onf:sentiers | providers/sentiers |
@@ -292,10 +292,10 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | connecteurs:lecture | connecteurs/helloasso |
 | meteofrance:veille | providers/meteofrance, providers/mf-auth |
 | clubs:annuaire | clubs/monclub |
-| / | providers/arome, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
-| /communes/* | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
+| / | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
+| /communes/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
 | /aujourdhui/* | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/volcan |
-| /meteo/* | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
+| /meteo/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
 | /meteo/pluie-radar.json | providers/mf-auth, providers/radar |
 | /meteo/rejeu-6h.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-24h.json | providers/meteofrance, providers/mf-auth, providers/radar |
@@ -304,7 +304,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /meteo/rejeu-jour-*.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-7j.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /electricite/historique.json | providers/avis-eau, providers/coupures-courant, providers/edf |
-| /mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
+| /mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
 | /randonnees/* | providers/feux, providers/sentiers, providers/traces |
 | /sentiers/* | providers/feux, providers/sentiers, providers/traces |
 | /bus/arret/* | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
@@ -321,7 +321,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /associations/club/demande | clubs/monclub, connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/volcan, web/propositions |
 | /sites-sans-reponse | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | /antennes | providers/sites-hs |
-| /meteo | providers/arome, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
+| /meteo | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
 | /volcan | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
 | /air | providers/air-mesures, providers/atmo, providers/capteurs |
 | /electricite | providers/avis-eau, providers/coupures-courant, providers/edf |
@@ -354,9 +354,9 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | volcan_seismes | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
 | fiche_terrain | providers/terrain |
-| prevision_meteo | providers/arome, providers/ensemble, providers/mf-auth, providers/openmeteo, providers/uv |
+| prevision_meteo | providers/arome, providers/calendrier, providers/ensemble, providers/mf-auth, providers/openmeteo, providers/uv |
 | qualite_eau | providers/avis-eau, providers/baignades, providers/eaupotable |
-| temperature_mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
+| temperature_mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
 | transports | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | actualites | providers/actualites, providers/avis-eau |
@@ -368,7 +368,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | crues_rivieres | providers/vigicrues |
 | calendrier | providers/calendrier |
 | velos_libre_service | providers/velos |
-| maree | providers/arome, providers/ensemble, providers/maregraphes, providers/mf-auth, providers/openmeteo, providers/uv |
+| maree | providers/arome, providers/calendrier, providers/ensemble, providers/maregraphes, providers/mf-auth, providers/openmeteo, providers/uv |
 | annuaire_services_publics | providers/annuaire, providers/carburants, providers/tco |
 | restrictions_eau | providers/vigieau |
 | bornes_recharge | providers/irve |

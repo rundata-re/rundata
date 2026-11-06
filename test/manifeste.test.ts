@@ -35,7 +35,7 @@ describe("on a phone's home screen", () => {
     // Without an id, a browser took start_url, query included.
     expect(m.id).toBe(m.start_url);
     expect(m.id).toBe("/?ref=pwa");
-    expect(m.screenshots.map((c) => c.label)).toEqual(["La Réunion en direct, avec la carte des températures mesurées"]);
+    expect(m.screenshots.map((c) => c.label)).toEqual(["La Réunion en direct, avec la carte des températures mesurées", "La météo mesurée aux stations de l'île"]);
     expect(m.screenshots.length).toBe(CAPTURES.length);
     for (const c of m.screenshots) {
       expect(c).toMatchObject({ sizes: "1080x1920", type: "image/webp", form_factor: "narrow" });

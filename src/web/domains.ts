@@ -2149,9 +2149,10 @@ const closedLi = (x: { sentier: string; slug?: string; page?: string; cause?: st
 };
 
 /** What the filter reads on a hike or a trail. */
-// The filter's dénivelé is the bigger of the two (climb): a trail drawn downhill is not a flat one.
+// The filter's dénivelé is the bigger of the two (climb): a trail drawn downhill is not a flat one. `data-b` only on a
+// loop: on the few hundred lines of /randonnees, a « 0 » on each would weigh more than its map's zoom.
 const dataOf = (x: { k: string; km: number; dplus?: number; dmoins?: number; boucle: boolean }, etat: "o" | "f" | "i") =>
-  `data-k="${x.k}" data-km="${x.km}" data-dp="${climb(x) ?? ""}" data-e="${etat}" data-b="${x.boucle ? 1 : 0}"`;
+  `data-k="${x.k}" data-km="${x.km}" data-dp="${climb(x) ?? ""}" data-e="${etat}"${x.boucle ? ' data-b="1"' : ""}`;
 /** « +412 m », and the descent beside it when the trace goes down more than it climbs: « +0 m · −1 131 m ». */
 const upDown = (x: { dplus: number; dmoins?: number }) => `+${meters(x.dplus)}${(x.dmoins ?? 0) > x.dplus ? ` · −${meters(x.dmoins!)}` : ""}`;
 
@@ -2200,7 +2201,7 @@ const range=(v)=>v.split("-").map(Number);
 const run=()=>{const q=norm(f.q.value).split(" ").filter(Boolean),[a,b]=range(f.km.value),[c,d]=range(f.dp.value),dpAll=f.dp.value==="0-1e9",open=f.ouv.checked,bo=f.bo.value;
 const active=q.length||f.km.value!=="0-1e9"||!dpAll||open||bo!=="";let nr=0,ns=0;
 for(const e of items){const x=e.dataset,km=+x.km,dp=x.dp===""?NaN:+x.dp;
-const ok=q.every((t)=>x.q.includes(t))&&km>=a&&km<b&&(dpAll||(dp>=c&&dp<d))&&(!open||x.e==="o")&&(bo===""||x.b===bo);
+const ok=q.every((t)=>x.q.includes(t))&&km>=a&&km<b&&(dpAll||(dp>=c&&dp<d))&&(!open||x.e==="o")&&(bo===""||(x.b||"0")===bo);
 e.hidden=!ok;for(const p of lines[x.k]||[])p.style.display=ok?"":"none";if(ok)x.k[0]==="r"?nr++:ns++}
 document.querySelectorAll("details.sect").forEach((s)=>{const n=s.querySelectorAll("li[data-k]:not([hidden])").length;s.hidden=!n;s.querySelector(".cnt").textContent=n;if(active)s.open=n>0&&n<=40});
 document.getElementById("rf-n").textContent=active?nr+" itinéraire"+(nr>1?"s":"")+" et "+ns+" sentier"+(ns>1?"s":"")+" correspondent.":"";};

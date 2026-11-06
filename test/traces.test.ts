@@ -269,7 +269,7 @@ describe("traces GPS", () => {
     expect(page.match(/<details class="card sect">/g)!.length).toBeGreaterThanOrEqual(8);
     // Every hike and trail is in the list, with what the filter reads.
     expect(page.match(/<li class="card hike/g)).toHaveLength(RANDONNEES.length);
-    expect(page).toMatch(/<li data-k="s\d+" data-km="[\d.]+" data-dp="\d*" data-e="[ofi]" data-b="[01]"><span><a href="\/sentiers\//);
+    expect(page).toMatch(/<li data-k="s\d+" data-km="[\d.]+" data-dp="\d*" data-e="[ofi]"( data-b="1")?><span><a href="\/sentiers\//);
     expect(page.length).toBeLessThan(300_000);
   });
 

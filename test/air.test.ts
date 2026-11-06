@@ -5,6 +5,7 @@ import * as atmo from "../src/providers/atmo.js";
 import { parse } from "../src/providers/atmo.js";
 import { airEvery, qualiteAir } from "../src/tools/air.js";
 import { airPage } from "../src/web/domains.js";
+import { CSS } from "../src/web/pages.js";
 import { sourceRevision } from "../src/web/revisions.js";
 import { esc } from "../src/web/map.js";
 
@@ -162,6 +163,13 @@ describe("air quality: what the index is and where it comes from", () => {
     expect(airEvery({ diffusion: "Prévision diffusée par Atmo Réunion le 04/11 à 11:27." }, at)).toBe(60);
     expect(airEvery({}, new Date("2026-11-04T05:59:00Z"))).toBe(60);
     expect(airEvery({}, new Date("2026-11-04T10:00:00Z"))).toBe(60);
+  });
+  it("writes « D'où vient l'indice » in the card's colours, the night ones kept for the dark band of a trail's page", () => {
+    // 06/11/2026: its dt and dd were in the band's colours, #f1f5f9 on a white card.
+    expect(airPage("https://rundata.re", null)).toContain(`<div class="card"><dl class="facts">`);
+    expect(CSS).toContain(".facts dt{font-size:.82rem;color:var(--muted)}");
+    expect(CSS).toContain("color:var(--ink)}.band .facts dt{color:var(--on-night-muted)}.band .facts dd{color:var(--on-night)}");
+    expect(CSS).not.toMatch(/(?:^|[}\n])\.facts d[td]\{[^}]*on-night/);
   });
   afterEach(() => vi.unstubAllGlobals());
 });

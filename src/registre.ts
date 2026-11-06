@@ -21,6 +21,7 @@ import { AGENDAS } from "./providers/agenda.js";
 import { LISTED_AFTER_MIN, MAX_NEW_GRIDS } from "./providers/arome.js";
 import { KINDS as CANDHIS_KINDS, REFRESH_EVERY as CANDHIS_EVERY, REFRESH_OFFSET as CANDHIS_OFFSET } from "./providers/candhis.js";
 import { IMAGE_OFFSET as CMRS_IMAGE_OFFSET, LISTE_OFFSET as CMRS_LISTE_OFFSET, REFRESH_EVERY as CMRS_EVERY } from "./providers/cmrs-carte.js";
+import { FROM_MINUTE as TRACE_FROM, QUIET_MINUTES as TRACE_EVERY } from "./providers/cmrs-trace.js";
 import { REFRESH_EVERY as AIR_EVERY, REFRESH_OFFSET as AIR_OFFSET } from "./providers/air-mesures.js";
 import { FIRST_HOUR as HS_FIRST, REFRESH_OFFSET as HS_OFFSET } from "./providers/sites-hs.js";
 import { FIRST_HOUR as CPF_FIRST, REFRESH_OFFSET as CPF_OFFSET } from "./providers/cpf.js";
@@ -223,6 +224,22 @@ const SCHEDULED: Entry[] = [
     offset: CMRS_IMAGE_OFFSET,
     run: { subrequests: 9, kvReads: 2, kvWrites: 3, cpuMs: 10 },
     from: ["src/providers/cmrs-carte.ts"],
+    basis: "code",
+  },
+  // The RSMC's last bulletin (WTIO31), from 25 minutes to 2 h 30 after each synoptic hour: GDACS's list through the
+  // cache (cold, 5), the state (KV), one request to the NOAA's copy, and the state written. While GDACS has no system,
+  // every QUIET_MINUTES; the state written then on a new position, or for the time of the read while a system is
+  // followed, at most once every QUIET_MINUTES (4 an hour). While GDACS has one, every 5 minutes, written on a new position.
+  // Counted all day, as if every hour were in those minutes, and each read written.
+  {
+    id: "cmrs:trace",
+    trigger: "planifiée",
+    what: "bulletin du CMRS (WTIO31, copie de la NOAA) : position et stade gardés dans KV, et l'heure de la lecture tant qu'un système est suivi",
+    every: TRACE_EVERY,
+    shortest: 5,
+    offset: TRACE_FROM,
+    run: { subrequests: 8, kvReads: 1, kvWrites: 1, cpuMs: 10 },
+    from: ["src/providers/cmrs-trace.ts"],
     basis: "code",
   },
   {

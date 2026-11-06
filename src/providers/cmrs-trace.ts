@@ -19,6 +19,7 @@
 import type { Cache } from "../cache.js";
 import { count, perInvocation } from "../budget.js";
 import { getText } from "../http.js";
+import { noteLecture } from "../lectures.js";
 import { type SourceInfo, why } from "../types.js";
 import * as gdacs from "./cyclones.js";
 import type { Store } from "./vigilance-carte.js";
@@ -99,7 +100,10 @@ export interface Trace {
 /** What the scheduled event keeps. */
 export interface Etat {
   traces: Trace[];
-  /** The last read that succeeded, and the last that failed since, ISO. */
+  /**
+   * The last read that succeeded (written at least every QUIET_MINUTES while a system is followed, for the tool's
+   * freshness), and the last that failed since, ISO.
+   */
   lu?: string;
   echec?: string;
 }
@@ -271,7 +275,14 @@ export async function kept(now = new Date()): Promise<Parcours[]> {
 export async function suivisKept(now = new Date()): Promise<Suivi[]> {
   if (!enLigne()) return [];
   const e = await lu();
-  return e ? suivis(e, now) : [];
+  const list = e ? suivis(e, now) : [];
+  // The answer that says them dates from this read too (tools/fraicheur.ts): the oldest of its reads, GDACS's or this one.
+  // A failure since the last success: its last copy, said as such.
+  if (list.length && e?.lu) {
+    const stale = !!e.echec && e.echec > e.lu;
+    noteLecture({ key: KEY, fetchedAt: Date.parse(e.lu), stale, freshSeconds: QUIET_MINUTES * 60, ...(stale && { source: SOURCE.id }), from: SOURCE.id });
+  }
+  return list;
 }
 
 /**
@@ -298,8 +309,12 @@ export async function passage(cache: Cache, now = new Date()): Promise<string> {
     after = { ...before, echec: now.toISOString() };
     dit = "bulletin sans réponse";
   }
-  // The time of a read alone is not worth a write: only a new position, or a failure after a success, or back.
-  const changed = JSON.stringify(after.traces) !== JSON.stringify(before.traces) || !!after.echec !== !!before.echec;
+  // The time of a read alone is worth a write only while a system is followed, the time the tool says (suivisKept), and
+  // at most once every QUIET_MINUTES: 4 an hour, in the minutes of `due`. Else only a new position, or a failure after a
+  // success, or back.
+  const verifie = !!after.lu && after.lu !== before.lu && suivis(after, now).length > 0
+    && (!before.lu || now.getTime() - Date.parse(before.lu) >= (QUIET_MINUTES - 1) * 60_000);
+  const changed = verifie || JSON.stringify(after.traces) !== JSON.stringify(before.traces) || !!after.echec !== !!before.echec;
   if (changed) {
     count(1, true);
     await store.put(KEY, JSON.stringify(after), TTL_SECONDS);

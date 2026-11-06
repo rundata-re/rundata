@@ -44,7 +44,7 @@ describe("touch targets and small texts", () => {
     }
     expect(small).toEqual([]);
     expect(CSS).toContain(".badge{display:inline-block;font:700 .75rem system-ui");
-    expect(CSS).toContain(".menu summary .m{font:700 12px/1 system-ui");
+    expect(CSS).toContain(".menu summary .m{font:700 .75rem/1 system-ui");
     expect(CSS).toContain("table.passe small{font-size:.75rem}");
     expect(CSS).toContain("section.guide pre code{overflow-wrap:normal;font-size:1em}");
   });

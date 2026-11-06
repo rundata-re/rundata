@@ -111,7 +111,7 @@ export const FOND_CSS = `
 .band>.fond{position:absolute;top:0;left:0;width:100%;height:220px;object-fit:cover;object-position:50% 25%;opacity:.35;pointer-events:none;
 -webkit-mask-image:linear-gradient(to bottom,rgb(0 0 0/.6) 0,rgb(0 0 0/.6) 3rem,#000 5.5rem,rgb(0 0 0/.55) 45%,transparent 100%);mask-image:linear-gradient(to bottom,rgb(0 0 0/.6) 0,rgb(0 0 0/.6) 3rem,#000 5.5rem,rgb(0 0 0/.55) 45%,transparent 100%)}
 @media (min-width:48rem){.band>.fond{height:300px;object-position:50% var(--y)}}
-.fond-ia{position:absolute;top:.4rem;right:16px;margin:0;font-size:12px;line-height:1.2;color:var(--on-night)}
+.fond-ia{position:absolute;top:.4rem;right:16px;margin:0;font-size:.75rem;line-height:1.2;color:var(--on-night)}
 @media print{.band>.fond,.fond-ia{display:none}}
 `.replace(/\n/g, "");
 

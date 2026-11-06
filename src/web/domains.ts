@@ -3114,6 +3114,12 @@ function basinFigure(d: CyclonesAnswer | undefined, active: number): string {
     `${sources}Côtes\u00a0: Natural Earth (domaine public).</p></details></figcaption></figure>${traces ? `<script>${TRACES_SCRIPT}</script>` : ""}`;
 }
 
+// The summary ends with Météo-France's address (tools/cyclones.ts), written out for the connector, which has no links: on
+// the page, the same words link to it.
+const OFFICIEL_CYCLONE_TEXTE = mf.officiel(mf.OFFICIEL_CYCLONE);
+const resumeHtml = (resume: string) =>
+  resume.endsWith(OFFICIEL_CYCLONE_TEXTE) ? esc(resume.slice(0, -OFFICIEL_CYCLONE_TEXTE.length)) + officielHtml(mf.OFFICIEL_CYCLONE) : esc(resume);
+
 export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/cyclones`;
@@ -3152,7 +3158,7 @@ export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null
   const shown = active.length + suivis.length;
   const body = `${d && !shown ? "" : `<section aria-labelledby="h-actifs">
   <div class="sec-h"><p class="eyebrow">En ce moment</p><h2 id="h-actifs">${suivis.length ? "Systèmes suivis" : "Systèmes actifs"}</h2>
-  <p>${d ? esc(d.resume) : ""}</p></div>
+  <p>${d ? resumeHtml(d.resume) : ""}</p></div>
   ${d ? active.map(activeCard).join("") : `<p class="card">Le suivi se charge : rechargez la page dans quelques secondes.</p>`}
   ${shown ? carteHtml(d?.carte, now) + basinFigure(d, shown) : ""}
 </section>`}

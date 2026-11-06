@@ -487,6 +487,35 @@ describe("fraicheur", () => {
     expect(said([fresh]).avertissement).toBeUndefined();
   });
 
+  it("says a collector's copy not read again in time in its own words, never as a slow source (06/11/2026, the prefecture's)", () => {
+    const now = new Date("2026-11-06T17:06:00+04:00");
+    const t = (hhmm: string) => Date.parse(`2026-11-06T${hhmm}:00+04:00`);
+    const fresh = { key: "gdacs", fetchedAt: t("17:05"), stale: false, freshSeconds: 900 };
+    const copy = { key: "prefecture:communiques:copie", fetchedAt: t("16:18"), stale: true, freshSeconds: 300, source: "prefecture_communiques", tardive: true as const, from: "prefecture_communiques", copie: true as const };
+    const said = (lectures: object[]) => fraicheur({}, lectures as never, now, { nom: nomDeSource });
+    // The mark stays out of the answer: only the sentence changes.
+    expect(said([fresh, copy])).toEqual(expect.objectContaining({
+      copies_de_secours: [{ source: "Communiqués de presse de la préfecture de La Réunion", lue_le: "06/11 16:18" }],
+      avertissement: "Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de notre lecture du 06/11 à 16:18 : notre copie plus récente n'a pas pu être relue à temps. Le reste de la réponse est à jour.",
+    }));
+    // A source read live and slow keeps its words, after it or not.
+    const slow = { key: "sport:actu", fetchedAt: t("16:40"), stale: true, freshSeconds: 1800, source: "prefecture_raa", tardive: true as const };
+    expect(said([copy, slow]).avertissement).toBe(
+      "Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de notre lecture du 06/11 à 16:18 : notre copie plus récente n'a pas pu être relue à temps. La source « Recueil des actes administratifs de la préfecture de La Réunion » a tardé à répondre : ce qui vient d'elle date de notre lecture du 06/11 à 16:40.",
+    );
+    // The same source also silent for another part: it did not answer, said as such.
+    expect(said([copy, { ...copy, key: "autre", fetchedAt: t("16:30"), tardive: undefined, copie: undefined }]).avertissement).toMatch(/^La source « Communiqués de presse de la préfecture de La Réunion » n'a pas répondu à notre dernière lecture/);
+    // A copy is the whole of what comes from its source: never « une partie ».
+    expect(said([{ ...fresh, from: "prefecture_communiques" }, copy]).avertissement).toMatch(/^Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de notre lecture du 06\/11 à 16:18 : notre copie plus récente/);
+  });
+
+  it("names a known producer for each collector's copy read from KV", async () => {
+    for (const m of ["air-mesures", "carburants", "cpf", "emploi", "irve", "marches-publics", "prefecture", "raa", "sites-hs"]) {
+      const { SOURCE } = (await import(`../src/providers/${m}.ts`)) as { SOURCE: { id: string; nom: string } };
+      expect(nomDeSource(SOURCE.id), m).toBe(SOURCE.nom);
+    }
+  });
+
   it("says a source too slow for the answer as late, not as silent, in the user's words", () => {
     const now = new Date("2026-10-25T23:00:00+04:00");
     const t = (hhmm: string) => Date.parse(`2026-10-25T${hhmm}:00+04:00`);

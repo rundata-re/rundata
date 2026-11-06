@@ -89,7 +89,7 @@ export async function copie(cache: Cache): Promise<Cached<Copie> | null> {
       const v = await read();
       if (!v) throw new Error("recueil des actes administratifs absent du stockage");
       return v;
-    }, (v) => v.lu_le);
+    }, (v) => v.lu_le, SOURCE.id);
   } catch {
     return null;
   }

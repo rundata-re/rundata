@@ -353,6 +353,6 @@ export async function avis(cache: Cache, now = new Date()): Promise<Cached<Copie
     const v = await read();
     if (!v) throw new Error("avis de marchés absents du stockage");
     return v;
-  }, (v) => v.lu);
+  }, (v) => v.lu, SOURCE.id);
   return { ...c, value: { ...c.value, avis: affiches(c.value.avis.filter((a) => ouvert(a, now))) }, fetchedAt: new Date(c.value.lu) };
 }

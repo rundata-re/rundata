@@ -377,6 +377,6 @@ export async function offres(cache: Cache, now = new Date()): Promise<Cached<Cop
     const v = await read();
     if (!v) throw new Error("offres d'emploi absentes du stockage");
     return v;
-  }, (v) => v.lu);
+  }, (v) => v.lu, SOURCE.id);
   return { ...c, value: { ...c.value, offres: c.value.offres.filter((o) => ouverte(o, now)) }, fetchedAt: new Date(c.value.lu) };
 }

@@ -218,7 +218,7 @@ export async function formations(cache: Cache): Promise<Cached<Copie> | null> {
       const v = await read();
       if (!v) throw new Error("formations CPF absentes du stockage");
       return v;
-    }, (v) => v.lu);
+    }, (v) => v.lu, SOURCE.id);
     return { ...c, fetchedAt: new Date(c.value.lu) };
   } catch {
     return null;

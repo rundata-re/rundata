@@ -70,7 +70,7 @@ async function communiques(cache: Cache): Promise<Cached<Communiques>> {
       const v = await copie.copie();
       if (!v?.liste.length) throw new UpstreamError(SOURCE.id, "copie des communiqués absente du stockage");
       return v;
-    }, (v) => v.lu_le);
+    }, (v) => v.lu_le, SOURCE.id);
     const late = Date.now() - Date.parse(c.value.lu_le) > copie.SILENT_MS;
     return { ...c, fetchedAt: new Date(c.value.lu_le), ...(late && { stale: true, source: SOURCE.id }) };
   }

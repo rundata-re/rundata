@@ -175,6 +175,33 @@ describe("Cache", () => {
     expect((await withLectures(() => new Cache(undefined, c.now).getCopy("k", 300, async () => ({ lu: later }), (v) => v.lu))).lectures[0].fetchedAt).toBe(c.now());
   });
 
+  it("names the producer of a collector's copy, and a copy not read again in time as such, not as a slow source", async () => {
+    const c = clock();
+    const cache = new Cache(undefined, c.now);
+    const lu = new Date(c.now() - 14 * 60_000).toISOString();
+    const fresh = await withLectures(() => cache.getCopy("copie", 300, async () => ({ lu }), (v) => v.lu, "producteur"));
+    expect(fresh.lectures).toEqual([{ key: "copie", fetchedAt: Date.parse(lu), stale: false, freshSeconds: 300, from: "producteur" }]);
+    // Its copy in KV renewed, but not read again within the answer's time: the copy held, named, marked as a copy.
+    c.advance(34 * 60);
+    const slow = () => new Promise<{ lu: string }>((resolve) => setTimeout(() => resolve({ lu: new Date(c.now()).toISOString() }), 150));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const late = await withLectures(() => cache.getCopy("copie", 300, slow, (v) => v.lu, "producteur"), 20);
+    log.mockRestore();
+    expect(late.value).toMatchObject({ value: { lu }, stale: true, tardive: true });
+    expect(late.value).not.toHaveProperty("source");
+    expect(late.lectures).toEqual([{ key: "copie", fetchedAt: Date.parse(lu), stale: true, freshSeconds: 300, source: "producteur", tardive: true, from: "producteur", copie: true }]);
+    await new Promise((r) => setTimeout(r, 200));
+    // Without a producer (a copy of several sources), unnamed as before.
+    c.advance(10 * 60);
+    const log2 = vi.spyOn(console, "log").mockImplementation(() => {});
+    const unnamed = await withLectures(() => cache.getCopy("copie", 300, slow, (v) => v.lu), 20);
+    log2.mockRestore();
+    expect(unnamed.lectures[0]).toMatchObject({ stale: true, tardive: true });
+    expect(unnamed.lectures[0]).not.toHaveProperty("source");
+    expect(unnamed.lectures[0]).not.toHaveProperty("copie");
+    await new Promise((r) => setTimeout(r, 200));
+  });
+
   it("says a slow source whose last read failed as not answering, not as slow", async () => {
     const c = clock();
     const cache = new Cache(undefined, c.now);

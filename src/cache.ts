@@ -242,12 +242,18 @@ export class Cache {
    * As `get`, for a copy a collector wrote in the Worker's KV with the time it read its source (`lu`: carburants:prix,
    * irve:etat, eau:ile, the prefecture's releases): the answer's freshness (lectures.ts) is that time, the data's, not
    * the time this store was read, which may be hours later when the collector stopped. What is returned is unchanged.
+   * `source`: the producer the collector read (its `SourceInfo.id`), none for a copy of several (eau:ile): the answer's
+   * warning names it when the copy is served for lack of time, as a copy, not as a slow source (fraicheur.ts).
    */
-  async getCopy<T>(key: string, freshSeconds: number, load: () => Promise<T>, lu: (value: T) => string | undefined): Promise<Cached<T>> {
+  async getCopy<T>(key: string, freshSeconds: number, load: () => Promise<T>, lu: (value: T) => string | undefined, source?: string): Promise<Cached<T>> {
     const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
     const c = await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e));
     const at = Date.parse(lu(c.value) ?? "");
-    this.noted(key, freshSeconds, Number.isNaN(at) ? c : { ...c, fetchedAt: new Date(Math.min(at, c.fetchedAt.getTime())) });
+    const said = Number.isNaN(at) ? c : { ...c, fetchedAt: new Date(Math.min(at, c.fetchedAt.getTime())) };
+    // Read from KV, the copy has no source of its own (`withSource` sees none): without `source`, a copy served for lack
+    // of time was said unnamed (06/11/2026, the prefecture's).
+    const late = c.stale && c.tardive && !c.source;
+    this.noted(key, freshSeconds, source ? { ...said, from: c.from ?? source, ...(late && { source }) } : said, late && !!source);
     return c;
   }
 
@@ -296,8 +302,8 @@ export class Cache {
   }
 
   /** Tells the tool call being answered, if any, what it was served (lectures.ts): its answer says how fresh it is. */
-  private noted<T>(key: string, freshSeconds: number, c: Cached<T>): Cached<T> {
-    noteLecture({ key, fetchedAt: c.fetchedAt.getTime(), stale: c.stale, freshSeconds, ...(c.source && { source: c.source }), ...(c.tardive && { tardive: true }), ...(c.from && { from: c.from }) });
+  private noted<T>(key: string, freshSeconds: number, c: Cached<T>, copie = false): Cached<T> {
+    noteLecture({ key, fetchedAt: c.fetchedAt.getTime(), stale: c.stale, freshSeconds, ...(c.source && { source: c.source }), ...(c.tardive && { tardive: true }), ...(c.from && { from: c.from }), ...(copie && { copie: true }) });
     return c;
   }
 

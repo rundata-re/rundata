@@ -215,7 +215,7 @@ export async function mesures(cache: Cache): Promise<Cached<Copie> | null> {
     const v = await read();
     if (!v?.mesures.length) throw new Error("mesures des stations absentes du stockage");
     return v;
-  }, (v) => v.lu);
+  }, (v) => v.lu, SOURCE.id);
   return { ...c, fetchedAt: new Date(c.value.lu) };
 }
 

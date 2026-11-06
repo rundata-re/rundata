@@ -131,10 +131,18 @@ export const agendaNotes = (data: Cached<AgendaAnswer> | null | undefined, now: 
 const warnings = (list: string[]) =>
   list.length ? `<div class="card warn">${icon("alert")}<h3>À savoir</h3><ul class="plain">${list.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>` : "";
 
-/** The connector, at the end of every domain page. */
+/**
+ * A tool's name or a layer's code that may be cut after each « . » and « _ » on a narrow screen (annuaire_services_ /
+ * publics, ind_atmo_ / 2021) rather than in the middle of a word, by overflow-wrap:anywhere (pages.ts): <wbr> holds no
+ * character, so a copy of the text is the text. Never in a link: Chrome names it with a space for each <wbr>
+ * (« data. gouv. fr »).
+ */
+export const coupable = (s: string) => esc(s).replaceAll(".", ".<wbr>").replaceAll("_", "_<wbr>");
+
+/** The connector, at the end of every domain page, the tool's name coupable(). */
 const connectorCta = (tool: string, what: string) => `<section aria-labelledby="h-ia">
   <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
-  <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${esc(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
+  <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${coupable(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
 </section>`;
 
 /**
@@ -694,7 +702,7 @@ ${amateurs}
   <div class="sec-h"><p class="eyebrow">Provenance</p><h2 id="h-source-air">D'où vient l'indice</h2></div>
   <div class="card"><dl class="facts">
     <div><dt>Calculé par</dt><dd><a href="${esc(atmo.PROVENANCE.site)}" rel="noopener">Atmo Réunion</a>, observatoire agréé de la qualité de l'air</dd></div>
-    <div><dt>Diffusé par</dt><dd>Atmo France, couche ouverte ind_atmo_2021 (<a href="${esc(atmo.PROVENANCE.fiche)}" rel="noopener">sa fiche sur data.gouv.fr</a>)</dd></div>
+    <div><dt>Diffusé par</dt><dd>Atmo France, couche ouverte ${coupable("ind_atmo_2021")} (<a href="${esc(atmo.PROVENANCE.fiche)}" rel="noopener">sa fiche sur data.gouv.fr</a>)</dd></div>
     <div><dt>Licence</dt><dd><a href="${esc(atmo.PROVENANCE.licence_lien)}" rel="noopener">${esc(atmo.PROVENANCE.licence)}</a></dd></div>
   </dl>${d && data ? `<p class="note">${d.diffusion ? `${esc(d.diffusion)} ` : ""}Lue par rundata.re ${readAt(data.fetchedAt, now).a}.</p>` : ""}</div>
   <div class="card"><h3>Comment l'indice est calculé</h3><ul class="plain">${atmo.METHODE.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>

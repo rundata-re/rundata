@@ -279,10 +279,35 @@ describe("the site's feedback form", () => {
   });
 
   it("refuses a message too long, empty, or posted from another site, and never redirects elsewhere", async () => {
-    expect((await post({ message: "x".repeat(avis.MESSAGE_MAX + 1), page: "/bus" })).headers.get("location")).toBe("https://rundata.re/bus#avis-erreur");
-    expect((await post({ message: " ", page: "/bus" })).headers.get("location")).toBe("https://rundata.re/bus#avis-erreur");
+    const long = await post({ message: "x".repeat(avis.MESSAGE_MAX + 1), page: "/bus" });
+    expect(long.status).toBe(422);
+    expect(long.headers.get("location")).toBeNull();
+    const empty = (await (await post({ message: " ", page: "/bus" })).text()).replaceAll("&#39;", "'").replaceAll("\u00a0", " ");
+    // Nothing typed: nothing said to be kept.
+    expect(empty).toContain("L'avis n'a pas pu être enregistré (vide ou trop long ?). Réessayez, ou écrivez à contact@rundata.re.");
     expect((await post({ message: "bonjour", page: "//evil.example/x" })).headers.get("location")).toBe("https://rundata.re/#avis-merci");
     expect((await post({ message: "bonjour" }, { origin: "https://evil.example" })).status).toBe(403);
     expect(rows).toHaveLength(1);
+  });
+
+  it("gives the form back with what was typed, on a page of its own, past the hour's cap", async () => {
+    avis.configure(async () => 0);
+    const r = await post({ message: "Il manque <la station> du Maïdo.", type: "manque", page: "/meteo/maido" });
+    expect(r.status).toBe(429);
+    expect(r.headers.get("cache-control")).toBe("no-store");
+    const html = (await r.text()).replaceAll("&#39;", "'");
+    expect(html).toContain("Beaucoup d'avis sont partis d'ici dans l'heure\u00a0: réessayez un peu plus tard. Votre saisie est gardée ci-dessous.");
+    expect(html).toMatch(/<p class="msg vu" id="avis-limite" role="alert">/);
+    expect(html).toContain(">Il manque &lt;la station&gt; du Maïdo.</textarea>");
+    expect(html).toContain('<option value="manque" selected>');
+    expect(html).toContain("<title>Erreur\u00a0: avis non enregistré · 974</title>");
+    expect(html).toContain('<a href="/meteo/maido">Retour à la page précédente</a>');
+    expect(html).toContain('<meta name="robots" content="noindex">');
+    // One feedback form on the page: the one given back.
+    expect(html.match(/action="\/avis"/g)).toHaveLength(1);
+    // The storage down: the same, with the error's words.
+    avis.configure(undefined);
+    const down = (await (await post({ message: "Une idée", page: "/" })).text()).replaceAll("&#39;", "'");
+    expect(down).toContain("L'avis n'a pas pu être enregistré (vide ou trop long\u00a0?). Votre saisie est gardée ci-dessous. Réessayez, ou écrivez à contact@rundata.re.");
   });
 });

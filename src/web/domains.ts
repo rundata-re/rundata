@@ -138,7 +138,7 @@ const connectorCta = (tool: string, what: string) => `<section aria-labelledby="
 
 /**
  * The note under the water notices (/coupures-eau, /coupures-eau/x): the tool's, with a link to /eau in place of the
- * name of the tool for the tap water (marketing, 06/11/2026).
+ * name of the tool for the tap water.
  */
 export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
 
@@ -1841,7 +1841,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
       `Le sentier de Roche Plate est-il ouvert ? Lis ${url} et dis-moi si je peux descendre dans Mafate.`)}
   </div>
   <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : les sentiers de randonnée fermés" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende([CLE_FERME, ...(burning ? [CLE_FEU] : [])], esc(`${onfMap(d)}.${burning ? ` Points chauds : satellites de la NASA (FIRMS)${d?.feux?.lu ? `, lus ${leAt(d.feux.lu)}` : ""}.` : ""}`))}</figcaption></figure>
+  <figcaption class="note" style="color:var(--on-night-muted)">${legende([CLE_FERME, ...(burning ? [CLE_FEU] : [])], esc(`${onfMap(d)}.${burning ? ` Points chauds : données des satellites de la NASA${d?.feux?.lu ? `, lues ${leAt(d.feux.lu)}` : ""}.` : ""}`))}</figcaption></figure>
 </div>`;
 
   const body = `${burning ? fires : ""}<section aria-labelledby="h-fermes">

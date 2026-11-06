@@ -298,7 +298,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     // The message in the page, its alert given by the script only: one there from the start is mostly not announced.
     expect(wrong).toContain('<p class="msg vu" id="p-erreur">Quelques champs sont à corriger, signalés ci-dessous.</p>');
     expect(wrong).not.toContain('role="alert"');
-    expect(wrong).toContain(`<script>document.addEventListener("DOMContentLoaded",()=>(${formulaires.erreurVue})(document,(f)=>setTimeout(f,100)))</script>`);
+    expect(wrong).toContain(`<script>(${formulaires.erreurAuChargement})(document,(f)=>setTimeout(f,100),${formulaires.erreurVue})</script>`);
     // Above the fields it focuses: it waits for the page to be read.
     expect(wrong.indexOf('id="p-erreur"')).toBeLessThan(wrong.indexOf('aria-invalid="true"'));
     const robot = await post("/associations/proposer", PROPOSITION, { origin: "https://rundata.re" });
@@ -325,6 +325,30 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect([msg.role, msg.textContent]).toEqual(["alert", ""]);
     later[0]();
     expect(msg.textContent).toBe("Champs à corriger.");
+
+    // Run while the page is still read, above its fields: nothing yet, then the field once the page is read (the
+    // defect seen in a browser on 06/11, where the script ran before the fields existed and never focused one).
+    const field = el("input");
+    const lu = { done: false };
+    const listeners: (() => void)[] = [];
+    const loading = {
+      get readyState() {
+        return lu.done ? "interactive" : "loading";
+      },
+      addEventListener: (type: string, f: () => void) => type === "DOMContentLoaded" && listeners.push(f),
+      getElementById: () => el("p"),
+      querySelector: () => (lu.done ? field : null),
+    } as unknown as Document;
+    formulaires.erreurAuChargement(loading, (f) => later.push(f), formulaires.erreurVue);
+    expect([field.focused, listeners.length]).toEqual([false, 1]);
+    lu.done = true;
+    listeners[0]();
+    expect(field.focused).toBe(true);
+    // Already read (the script moved below the fields one day): at once, no listener.
+    const now = el("input");
+    const ready = { readyState: "complete", addEventListener: () => listeners.push(() => {}), getElementById: () => el("p"), querySelector: () => now } as unknown as Document;
+    formulaires.erreurAuChargement(ready, (f) => later.push(f), formulaires.erreurVue);
+    expect([now.focused, listeners.length]).toEqual([true, 1]);
   });
 
   it("turns a business away politely, keeping nothing", async () => {

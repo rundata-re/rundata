@@ -11,7 +11,7 @@ import { injoignable } from "../tools/injoignable.js";
 import { crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { hm, layout, readAt, leAt } from "./pages.js";
+import { hm, layout, type Live, readAt, leAt } from "./pages.js";
 
 export const PATH = "/marches-publics";
 export const NOM = "Marchés publics";
@@ -89,6 +89,19 @@ const run=()=>{const q=norm(f.q.value).split(" ").filter(Boolean),c=f.c.value;le
 for(const e of items){const ok=q.every((t)=>e.dataset.q.includes(t))&&(!c||e.dataset.c===c);e.hidden=!ok;if(ok)n++}
 document.getElementById("of-n").textContent=q.length||c?n+" avis sur "+items.length+".":"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
+
+/**
+ * The home page's tile, from the page's copy: its count of open notices, when the BOAMP was read. Never a read of the
+ * BOAMP: the copy is rebuilt from the one the scheduled event keeps in KV (buildMarches). In the page's words otherwise.
+ */
+export function marchesLive(data: Cached<MarchesAnswer> | null): Live | undefined {
+  const d = data?.value;
+  if (!d || !data) return undefined;
+  if (d.prochaine) return { valeur: "", detail: `Les avis ne sont pas encore lus : prochaine lecture prévue à ${hm(d.prochaine)}.`, vide: true };
+  if (!d.avis.length && d.enLecture) return { valeur: "", detail: `${plural(d.enLecture, "avis lu", "avis lus")} au BOAMP ${leAt(d.lu ?? data.fetchedAt)} ${d.enLecture > 1 ? "sont" : "est"} en cours de tri, pour ne garder que ceux de l'île.`, vide: true };
+  if (!d.nombre) return { valeur: "", detail: `Aucun avis de marché ouvert pour La Réunion sur le BOAMP ${leAt(data.fetchedAt)}.`, vide: true };
+  return { valeur: `${d.nombre} avis`, detail: `de marché ${d.nombre > 1 ? "ouverts" : "ouvert"} aux réponses, BOAMP lu ${readAt(d.lu ? new Date(d.lu) : data.fetchedAt).a}` };
+}
 
 export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;

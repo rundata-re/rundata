@@ -674,8 +674,9 @@ const DOMAIN_PAGES: Record<string, Page> = {
 /** The other pages that read sources. */
 const OTHER_PAGES: Record<string, Page> = {
   // 75 measured, and one more read for the tile of the rivers (/crues).
-  // Measured 76, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
-  "/": { subrequests: 78, cpuMs: 110, from: METEO, what: "accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse", d1: BUS_D1 },
+  // Measured 76, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect); 2 more
+  // for the tiles of the public jobs and markets, their page's copy read from the data center's cache (06/11/2026).
+  "/": { subrequests: 80, cpuMs: 110, from: METEO, what: "accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse", d1: BUS_D1 },
   // Measured 78, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
   "/communes/*": { subrequests: 80, cpuMs: 160, from: [...METEO, "src/tools/mer.ts"], what: "page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse" },
   // Measured 62, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).

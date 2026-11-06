@@ -31,14 +31,11 @@ const EMPTY: HomeLive = {
 };
 // The categories whose copy is not given above: they wait for it.
 // The fires come with the hikes' copy.
-const NO_COPY = ["vigilance", "trafic", "sentiers", "feux", "secheresse", "coupures", "sport", "cyclones", "agenda", "actualites", "crues"];
-// Nothing to fetch: the lists bundled with the server.
-const BUNDLED = ["dae", "enfants"];
+const NO_COPY = ["vigilance", "trafic", "sentiers", "feux", "secheresse", "coupures", "sport", "cyclones", "agenda", "actualites", "crues", "emploi", "marches"];
+// Nothing to fetch: the lists bundled with the server, the fishing decrees.
+const BUNDLED = ["dae", "enfants", "antennes", "peche"];
 // From the weather's copy.
 const SEA = ["mer"];
-// A tile without a value (categories.ts, sansValeur): the jobs' would read their copy on every view; the antennas' figures
-// are on their page and the commune pages.
-const NO_VALUE = ["emploi", "antennes", "marches", "peche"];
 
 describe("a tile with nothing to show", () => {
   it("says « Se met à jour » on the home page only while its copy is missing", () => {
@@ -71,7 +68,7 @@ describe("a tile with nothing to show", () => {
   });
 
   it("covers every category with a page: a new one needs a value, or its copy listed here", () => {
-    const listed = [...Object.keys(EMPTY), ...SEA, ...NO_COPY, ...BUNDLED, ...NO_VALUE];
+    const listed = [...Object.keys(EMPTY), ...SEA, ...NO_COPY, ...BUNDLED];
     for (const c of CATEGORIES.filter((x) => x.path)) expect(listed, c.key).toContain(c.key);
     // Without a page, a question to ask; not for one off the home page (`horsAccueil`), which has no tile.
     for (const c of CATEGORIES.filter((x) => !x.path && !x.horsAccueil)) expect(c.exemple, c.key).toBeTruthy();

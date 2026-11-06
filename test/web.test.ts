@@ -261,7 +261,7 @@ describe("home page", () => {
   it("reads no tile from the data center's cache on a warm isolate whose copies are fresh", async () => {
     // Every tile's copy fresh in the data center's cache, as other isolates left them, and the weather's too.
     const edge = new ReadsByKey();
-    for (const key of ["web:meteo", "web:actualites", "web:volcan", "web:air", "web:electricite", "web:calendrier", "web:bus", "web:trafic", "web:velos", "web:bornes", "web:eau", "web:sentiers", "web:secheresse", "web:coupures", "web:sport", "web:cyclones", "web:historique", "web:agenda", "web:crues"]) {
+    for (const key of ["web:meteo", "web:actualites", "web:volcan", "web:air", "web:electricite", "web:calendrier", "web:bus", "web:trafic", "web:velos", "web:bornes", "web:eau", "web:sentiers", "web:secheresse", "web:coupures", "web:sport", "web:cyclones", "web:historique", "web:agenda", "web:crues", "web:emploi", "web:marches-publics"]) {
       await edge.put(key, { value: {}, fetchedAt: NOW.getTime() });
     }
     const cache = isolate(edge);
@@ -269,7 +269,8 @@ describe("home page", () => {
     await serve(cache, "/");
     // The weather's build reads the copy of /mer for the sea, as a source and not as a tile.
     const tileReads = () => [...edge.reads].filter(([k]) => k.startsWith("web:") && k !== "web:meteo" && k !== "web:mer").reduce((a, [, n]) => a + n, 0);
-    expect(tileReads()).toBe(18);
+    // Two of them for the public jobs and markets, their page's copy (06/11/2026).
+    expect(tileReads()).toBe(20);
     // The same isolate a minute later: the tiles from its memory.
     edge.reads.clear();
     await serve(cache, "/");

@@ -11,7 +11,7 @@ import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
 import { dateLigue, joursDuTitre, liensCommuns, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
-import { sportPage } from "../src/web/domains.js";
+import { sportLive, sportPage } from "../src/web/domains.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
 
@@ -659,6 +659,18 @@ describe("the count of /sport", () => {
     expect(beyond).toContain("quinze prochains jours\u00a0: handball, volley, golf et triathlon\u00a0; les 3 premiers ci-dessous.");
     const few = sportPage("https://rundata.re", { value: { ...answer, a_venir_en_tout: undefined }, fetchedAt: NOW, stale: false }, NOW);
     expect(few).toContain(`<span class="big">3</span><p>rendez-vous officiels dans les quinze prochains jours : handball, volley et triathlon.</p>`);
+  });
+
+  it("is the home page tile's too, the same word for the same number", () => {
+    // 06/11/2026: « 40 rendez-vous » on the home page, 68 on /sport.
+    expect(sportLive({ value: answer, fetchedAt: NOW, stale: false })).toEqual({
+      valeur: "77 rendez-vous",
+      detail: "officiels d'ici quinze jours ; prochain : Match A, samedi 31/10 à 18:00",
+    });
+    // All of them listed: their number, the cancelled one counted as on the page; the next one not cancelled.
+    const few = { ...answer, a_venir: [answer.a_venir![1], answer.a_venir![2]], a_venir_en_tout: undefined } as SportAnswer;
+    expect(sportLive({ value: few, fetchedAt: NOW, stale: false })!.valeur).toBe("2 rendez-vous");
+    expect(sportLive({ value: few, fetchedAt: NOW, stale: false })!.detail).toContain("prochain : Triathlon de Saint-Paul");
   });
 });
 

@@ -11,7 +11,7 @@ import {
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
-import { layout } from "./pages.js";
+import { layout, type Live } from "./pages.js";
 
 export const PATH = "/peche";
 export const NOM = "Pêche";
@@ -19,6 +19,22 @@ export const TITLE = "Pêche de loisir à La Réunion\u00a0: fermetures du jour,
 const META = "Langouste, bichiques, capucin nain, anguille marbrée\u00a0: ce qui est fermé aujourd'hui, les tailles et les quantités de la pêche de loisir, d'après les arrêtés du préfet.";
 const H1 = "Pêche de loisir à La Réunion";
 const LEAD = "Avant de partir pêcher\u00a0: ce qui est fermé aujourd'hui, les tailles minimales et les quantités, espèce par espèce, d'après les arrêtés du préfet.";
+
+/**
+ * The home page's tile: what is closed today, from the same decrees as the page, computed at each view (nothing read).
+ * A legal calendar, not a state seen: « d'après les arrêtés du préfet » always (data-run, 06/11/2026).
+ */
+export function pecheLive(now: Date): Live {
+  const day = jourLocal(now);
+  const especes = especesDuJour(day);
+  const fermees = especes.filter((e) => e.ferme);
+  const valeur = fermees.length === 1 ? `${esc(fermees[0].nom)} : pêche fermée` : fermees.length ? `Pêche fermée pour ${fermees.length} espèces` : "Pas de fermeture aujourd'hui";
+  const bichiques = especes.find((e) => e.cle === "bichiques" && !e.ferme && e.heures);
+  return {
+    valeur,
+    detail: `aujourd'hui ${day.slice(8, 10)}/${day.slice(5, 7)}, d'après les arrêtés du préfet${bichiques ? ` ; bichiques : pêche ouverte ${esc(bichiques.heures!)}` : ""}`,
+  };
+}
 
 const upper = (s: string) => s.replace(/^\p{L}/u, (c) => c.toUpperCase());
 

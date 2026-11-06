@@ -25,7 +25,7 @@ export const CARTE_CSS = `
 .kc-velo{--c:#0b8a9c;--w:6px}.kmapc .kc-velo .ktl,.kmapc .kc-vitesses .ktl{stroke-dasharray:none}.kmapc .kc-velo .ka .kr,.kmapc .kc-velo .ka .kd{stroke-linecap:square}.kmapc .kc-velo .ka{--w:8px}
 .kc-vitesses{--c:#435269;--w:5px}${PAR_VITESSE}.kc-velo .km,.kc-vitesses .km{height:.25rem;border-radius:0;box-shadow:none}
 .kgrad.kgv{background:linear-gradient(90deg,${GRIS.join(",")})}
-.kmapc .kl .kt{font:700 calc(var(--u,1)*12px) system-ui,sans-serif;fill:#0b1f36;stroke:#fff;stroke-width:calc(var(--u,1)*3px);paint-order:stroke;text-anchor:middle;pointer-events:none}
+.kmapc .kl .kt{font:700 calc(var(--u,1)*12px) system-ui,sans-serif;fill:#0b1f36;stroke:#fff;stroke-width:calc(var(--u,1)*3px);paint-order:stroke;text-anchor:middle;pointer-events:none}.kmapc .kt.kx{visibility:hidden}
 .kmapc .klg{list-style:none;margin:0 0 .35rem;padding:0;display:grid;gap:.25rem}.kmapc .klg li{display:flex;align-items:baseline;gap:.45rem}.kmapc .klg li>.km{position:relative;top:.1rem}.kmapc .klg li.vieux{opacity:.6}
 .km{flex:none;display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:var(--c);box-shadow:0 0 0 1.5px #fff,0 0 0 2.5px rgb(11 31 54/.3)}
 .kc-rivieres .km,.kc-bornes .km{border-radius:2px}.kc-sentiers .km{height:.25rem;border-radius:0;background:repeating-linear-gradient(90deg,var(--c) 0 6px,transparent 6px 9px);box-shadow:none}

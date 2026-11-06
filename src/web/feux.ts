@@ -14,7 +14,7 @@ import type { Alerte, SentiersAnswer } from "./data.js";
 import { CLE_FERME, CLE_FEU, closedMarkers, closedTrails, connectorCta, crumbBar, crumbs, fireId, fireMarkers, onfMap, sourcesNote, webPage } from "./domains.js";
 import { legende } from "./carte-legende.js";
 import { esc, islandMap } from "./map.js";
-import { ask, credits, DESCRIPTION_MAX, layout, officielHtml, leAt } from "./pages.js";
+import { credits, DESCRIPTION_MAX, layout, officielHtml, leAt } from "./pages.js";
 
 export const FEUX_PATH = "/feux";
 
@@ -124,8 +124,6 @@ export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?:
     <h1>${esc(H1)} <span class="n974">974</span></h1>
     ${heroLines(l, on)}
     <p class="lead"><b>${esc(URGENCE)}</b></p>
-    ${ask("Na difé dann bwa ? Maïdo i brul ? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.",
-      "Y a-t-il un feu de forêt à La Réunion en ce moment ? Lis https://rundata.re/feux et dis-moi où le satellite en a vu, à quelle heure, et quels sentiers sont fermés.")}
     <p class="note"><a href="/sentiers">Tous les sentiers fermés, commune par commune →</a></p>
   </div>
   <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : les feux détectés par satellite et les sentiers fermés" })}

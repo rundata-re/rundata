@@ -280,7 +280,8 @@ describe("the fires' page", () => {
     expect(html).toContain(`<h2 id="h-sentiers">Les sentiers fermés par l'ONF</h2>`);
     expect(html).toContain('<h2 id="h-vigilance">La vigilance Météo-France</h2>');
     expect(html).toContain("Votre IA, branchée sur les feux");
-    expect(html).toContain("Na difé dann bwa\u00a0? Maïdo i brul\u00a0? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.");
+    // No question to an assistant on this emergency page (UX review, 04/11/2026): the connector, at its foot, stays.
+    expect(html).not.toContain('class="askbox"');
     expect(html).toContain('fill="#7c2d12"/></svg>Point chaud détecté par satellite, pas forcément un feu.</span>');
     expect(html).toMatch(/<span class="mls">Croix\s: sentiers fermés par l&#39;ONF, pas des feux\. Points chauds\s: données des satellites de la NASA, lues le 24\/10 à\s08:00\.<\/span>/);
     // The first screen (marketing, 06/11/2026): the hot spots of 24 hours, when they were read, what a satellite sees.

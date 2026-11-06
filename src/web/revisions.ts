@@ -16,8 +16,8 @@
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   actualites: 15,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
-  // Les dates du Kabardock sans leur prix, que son accord ne couvre pas.
-  agenda: 34,
+  // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
+  agenda: 35,
   air: 11,
   bornes: 4,
   bus: 8,
@@ -45,7 +45,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.
   sentiers: 17,
-  sport: 25,
+  // Its copy says which commune sports plannings are not reused: L'Étang-Salé's now is, under its new title.
+  sport: 26,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,
@@ -90,6 +91,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   agenda: 1,
   // Read again with its written agreement of 28/10/2026, without the price and the sentence an older entry kept.
   "agenda:bras_panon": 2,
+  // Read again with its written agreement of 06/11/2026, from its list: an older entry, read from its feed, is not served.
+  "agenda:etang_sale": 2,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
   // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
   // The events not yet over (tribeUrl, `ends_after`): one begun before today kept, as the league's weekend of 04-07/11.

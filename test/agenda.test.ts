@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
@@ -64,7 +64,7 @@ function file(url: string, form?: string): string | undefined {
   if (url.includes("plainedespalmistes.fr/wp-json/wp/v2/agenda")) return "agenda_plaine-des-palmistes.json";
   if (url.includes("plainedespalmistes.fr/wp-json/wp/v2/actus")) return "actus_plaine-des-palmistes.json";
   if (url.includes("lapossession")) return "rss_la-possession.xml";
-  if (url.includes("letangsale")) return "rss_etang-sale.xml";
+  if (url.includes("letangsale")) return "etang-sale.html";
   if (url.includes("petite-ile")) return "petite-ile.html";
   if (url.includes("braspanon")) return url.endsWith("/2026/11") ? "bras-panon_2026-11.html" : url.endsWith("/2026/10") ? "bras-panon_2026-10.html" : undefined;
   if (url.includes("saint-benoit")) return "saint-benoit.html";
@@ -1005,6 +1005,51 @@ describe("agenda", () => {
     expect(servis({ ...kab, sans_prix: undefined }, [row])[0].prix).toBe("Gratuit");
   });
 
+  it("reads L'Étang-Salé's list as its agreement of 06/11 asks: title, day, hour, place when given, link; no category nor text", () => {
+    const list = parseEtangSale(fixture("etang-sale.html"), NOW);
+    expect(list).toHaveLength(11);
+    expect(list.map((e) => [e.titre, e.seances[0].debut, e.lieu])).toContainEqual(["Loto Quine Les Petits Flamboyants", "2026-11-13T18:00", "Blue Bayou"]);
+    expect(list.filter((e) => e.lieu).map((e) => e.lieu)).toEqual(["Blue Bayou", "Complexe sportif du Centenaire", "Blue Bayou", "Blue Bayou"]);
+    // Several days: said by its title.
+    expect(list[0]).toMatchObject({ titre: "Compétitions sportives : 06 - 08 novembre", seances: [{ debut: "2026-11-06", fin: "2026-11-08" }] });
+    expect(list.find((e) => e.titre === "CONCERT AURUS & MONIQUE B THOMAS")).toEqual({
+      id: "https://www.letangsale.fr/mes-acces-rapides/telechargements/l-agenda-des-manifestations/762-aurus-monique-b-thomas/2026-11-10-20-00",
+      titre: "CONCERT AURUS & MONIQUE B THOMAS",
+      seances: [{ debut: "2026-11-10T20:00" }],
+      lieu: undefined,
+      commune: "L'Étang-Salé",
+      categories: [],
+      lien: "https://www.letangsale.fr/mes-acces-rapides/telechargements/l-agenda-des-manifestations/762-aurus-monique-b-thomas/2026-11-10-20-00",
+      publie_par: "Ville de L'Étang-Salé",
+    });
+    expect(list.every((e) => !e.description && !e.prix && !e.image && !e.categories.length)).toBe(true);
+    // A page without its list: nothing, never guessed.
+    expect(parseEtangSale("<html><body>Maintenance</body></html>", NOW)).toEqual([]);
+  });
+
+  it("tells each date of L'Étang-Salé with « site de la commune de L'Étang-Salé » and the hour read, its sports programme left to the sport tool", async () => {
+    const b = body(await agenda(cache(), "L'Étang-Salé", "a_venir", undefined, NOW, 300));
+    const etang = b.evenements.filter((e: EventRow) => e.publie_par === "Ville de L'Étang-Salé");
+    // Its sports programme is the sport tool's; the titles in capitals said as every agenda's (tools/casse.ts).
+    expect(etang.map((e: EventRow) => e.titre)).toEqual(["Odyssea Réunion 2026", "Concert aurus & monique b thomas", "Loto Quine Les Petits Flamboyants", "Jazzrenyon live 2026", "Open 2K", "Ligue d'improvisation reunionnaise"]);
+    for (const e of etang) {
+      expect(e.source).toMatch(/^site de la commune de L'Étang-Salé, lu le \p{L}+ \d\d\/\d\d à\s\d\d:\d\d$/u);
+      expect(e.lien).toMatch(/^https:\/\/www\.letangsale\.fr\/mes-acces-rapides\/telechargements\/l-agenda-des-manifestations\//);
+      expect([e.description, e.billetterie, e.image, e.prix]).toEqual([undefined, undefined, undefined, undefined]);
+    }
+    expect(JSON.stringify(b.non_repris ?? "")).not.toContain("Étang-Salé");
+  });
+
+  it("tells each date of Bras-Panon with « site de la commune de Bras-Panon » in the tool too, as its agreement of 28/10 asks", async () => {
+    const b = body(await agenda(cache(), "Bras-Panon", "a_venir", undefined, NOW, 300));
+    const bp = b.evenements.filter((e: EventRow) => e.publie_par === "Ville de Bras-Panon");
+    expect(bp.length).toBeGreaterThan(0);
+    for (const e of bp) expect(e.source).toMatch(/^site de la commune de Bras-Panon, lu le \p{L}+ \d\d\/\d\d à\s\d\d:\d\d$/u);
+    // A commune without such an agreement: said by publie_par and lu_le only.
+    const tool = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300));
+    expect(tool.evenements.filter((e: EventRow) => e.publie_par === "Ville du Tampon").every((e: EventRow) => e.source === undefined)).toBe(true);
+  });
+
   it("reads quoi « Kabardock » as the hall's name, not as a kabar: only its dates, plays included; « kabar » still asks concerts and fêtes", async () => {
     expect(matcher("Kabardock")?.nom).toBe("« Kabardock »");
     for (const q of ["kabar", "kabars", "un kabar ce soir"]) expect(matcher(q)?.nom).toBe("concerts et musique, fêtes et festivals");
@@ -1128,10 +1173,10 @@ describe("agenda", () => {
   });
 
   it("leaves the communes' sports programmes to the sport tool, not the sports events", async () => {
-    for (const t of ["Agenda sportif", "Agenda sportif du 22 au 24 octobre", "Planning des compétitions sportives du 23 au 25 octobre 2026", "Programme sportif du week-end", "Le calendrier sportif de novembre", "Planning des rencontres sportives"]) {
+    for (const t of ["Agenda sportif", "Agenda sportif du 22 au 24 octobre", "Planning des compétitions sportives du 23 au 25 octobre 2026", "Programme sportif du week-end", "Le calendrier sportif de novembre", "Planning des rencontres sportives", "Compétitions sportives : 06 - 08 novembre", "Compétitions sportives du 13 au 15 novembre"]) {
       expect(programmeSportif({ titre: t }), t).toBe(true);
     }
-    for (const t of ["1er Rally National Grand Est", "Grand Raid 2026", "Match de gala : Saint-Pierre – Le Tampon", "Agenda culturel", "Sportifs à l'honneur", "Planning des vacances", "Programme sport-santé"]) {
+    for (const t of ["1er Rally National Grand Est", "Grand Raid 2026", "Match de gala : Saint-Pierre – Le Tampon", "Agenda culturel", "Sportifs à l'honneur", "Planning des vacances", "Programme sport-santé", "Compétitions sportives handisport"]) {
       expect(programmeSportif({ titre: t }), t).toBe(false);
     }
     const c = cache();
@@ -1141,7 +1186,7 @@ describe("agenda", () => {
     expect(titles).toContain("1er Rally National Grand Est");
     // Read with their agendas, kept in their copy for the sport tool.
     expect((await programmesSportifs(c)).map(({ e, agenda }) => [agenda.id, e.titre, e.seances])).toEqual([
-      ["etang_sale", "Planning des compétitions sportives du 23 au 25 octobre 2026", [{ debut: "2026-10-23", fin: "2026-10-25" }]],
+      ["etang_sale", "Compétitions sportives : 06 - 08 novembre", [{ debut: "2026-11-06", fin: "2026-11-08" }]],
       ["la_possession", "Agenda sportif du 22 au 24 octobre", [{ debut: "2026-10-22", fin: "2026-10-24" }]],
     ]);
     // By the same rules as the agenda tool: none of Saint-Benoît's, whose site is never linked; no sentence of the text.

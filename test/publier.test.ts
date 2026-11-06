@@ -67,11 +67,12 @@ describe("the guide for those who publish (/publier)", () => {
   });
 
   it("says it reads the agenda of no commune whose site forbids it until it says yes", () => {
-    // Le Tampon, Saint-André, L'Étang-Salé and La Possession were named as read on 31/10/2026; their agreement is asked.
+    // Le Tampon, Saint-André, L'Étang-Salé and La Possession were named as read on 31/10/2026; their agreement was asked
+    // (L'Étang-Salé's given on 06/11/2026, its list read, not its feed).
     const sentence = GUIDE.match(/rundata\.re lit ainsi [^.]+\./)![0];
     const list = GUIDE.slice(GUIDE.indexOf("## Ils publient déjà"), GUIDE.indexOf("## Les mots du guide"));
     const waiting = Object.entries(AUTORISATIONS).filter(([k, a]) => k.startsWith("agenda:") && !["accordee", "permise"].includes(a.etat)).map(([, a]) => a.commune!);
-    expect(waiting).toEqual(expect.arrayContaining(["Le Tampon", "Saint-André", "L'Étang-Salé", "La Possession"]));
+    expect(waiting).toEqual(expect.arrayContaining(["Le Tampon", "Saint-André", "La Possession"]));
     for (const c of waiting) {
       // « du Tampon », « de L'Étang-Salé »: the name without its article. A commune's own site, not its intercommunality's.
       const name = c.replace(/^(Le |La |L')/, "");

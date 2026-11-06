@@ -128,7 +128,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.297";
+export const VERSION = "1.0.298";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -906,7 +906,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       description:
         "Événements à venir à La Réunion (974) : concerts, théâtre, danse, humour, cirque, soirées, fêtes, festivals, marchés, cinéma en " +
         `plein air, animations municipales. D'après ${PROGRAMMES_SALLES}, les agendas des mairies (` +
-        `${MAIRIES_LUES}), celui de l'office de tourisme de l'Est, et ceux de la CINOR et de l'office de tourisme du Nord (OpenAgenda). Chaque événement : ` +
+        `${MAIRIES_LUES}), et ceux de la CINOR et de l'office de tourisme du Nord (OpenAgenda). Chaque événement : ` +
         "date et heures, salle, prix et lien de billetterie quand ils sont donnés, statut " +
         "(ANNULÉ, REPORTÉ, complet), même quand un média de l'île l'annonce avant l'organisateur (statut_d_apres). " +
         "Pour : « que faire ce week-end à Saint-Paul ? », « concert ce soir ? », « c'est quand la fête de l'ail ? ».",

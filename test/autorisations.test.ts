@@ -19,10 +19,10 @@ import { PAGES } from "../src/web/places.js";
 // Saturday 24/10/2026, 08:00 in La Réunion.
 const NOW = new Date("2026-10-24T04:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
-const NEUF = ["Cilaos", "L'Étang-Salé", "La Possession", "Le Tampon", "Petite-Île", "Saint-André", "Saint-Benoît", "Saint-Joseph", "Saint-Philippe"];
-// The same rule for every commune: three more, whose site is not read at all. Bras-Panon agreed on 28/10: read.
-const DOUZE = ["Cilaos", "L'Étang-Salé", "La Possession", "Le Tampon", "Petite-Île", "Saint-André", "Saint-Benoît", "Saint-Denis", "Saint-Joseph", "Saint-Philippe", "Saint-Pierre", "Sainte-Rose"];
-const SITES = ["ville-cilaos.fr", "letangsale.fr", "lapossession.re", "letampon.fr", "petite-ile.re", "saint-andre.re", "saint-benoit.re", "saintjoseph.re", "saintphilippe.re"];
+const HUIT = ["Cilaos", "La Possession", "Le Tampon", "Petite-Île", "Saint-André", "Saint-Benoît", "Saint-Joseph", "Saint-Philippe"];
+// The same rule for every commune: three more, whose site is not read at all. Bras-Panon agreed on 28/10, L'Étang-Salé on 06/11: read.
+const ONZE = ["Cilaos", "La Possession", "Le Tampon", "Petite-Île", "Saint-André", "Saint-Benoît", "Saint-Denis", "Saint-Joseph", "Saint-Philippe", "Saint-Pierre", "Sainte-Rose"];
+const SITES = ["ville-cilaos.fr", "lapossession.re", "letampon.fr", "petite-ile.re", "saint-andre.re", "saint-benoit.re", "saintjoseph.re", "saintphilippe.re"];
 const QUATRE = ["Cilaos", "Saint-André", "Saint-Philippe", "Sainte-Suzanne"];
 const TAMPON = "Les mentions légales du site de la commune du Tampon interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas les événements qu'elle y publie.";
 
@@ -47,20 +47,24 @@ const restore = () => {
 const unasked = () => {
   for (const a of Object.values(AUTORISATIONS)) if (a.etat !== "permise" && a.etat !== "accordee") Object.assign(a, { etat: "a_demander", demandee_le: undefined });
 };
-// Asked on 26/10: the agendas or news of the twelve communes, the notices of power cuts of the four.
-const DEMANDEES = ["agenda:cilaos", "agenda:etang_sale", "agenda:la_possession", "agenda:le_tampon", "agenda:petite_ile", "agenda:saint_andre", "agenda:saint_benoit", "agenda:saint_denis", "agenda:saint_joseph", "agenda:saint_philippe", "agenda:saint_pierre", "agenda:sainte_rose", "courant:Cilaos", "courant:Saint-André", "courant:Saint-Philippe", "courant:Sainte-Suzanne"];
+// Asked on 26/10: the agendas or news of the eleven communes, the notices of power cuts of the four.
+const DEMANDEES = ["agenda:cilaos", "agenda:la_possession", "agenda:le_tampon", "agenda:petite_ile", "agenda:saint_andre", "agenda:saint_benoit", "agenda:saint_denis", "agenda:saint_joseph", "agenda:saint_philippe", "agenda:saint_pierre", "agenda:sainte_rose", "courant:Cilaos", "courant:Saint-André", "courant:Saint-Philippe", "courant:Sainte-Suzanne"];
 
 describe("the setting, by source", () => {
-  it("lists the agendas and news of twelve communes, and the notices of power cuts of four, not agreed yet, all sixteen asked on 26/10; Bras-Panon agreed on 28/10", () => {
+  it("lists the agendas and news of eleven communes, and the notices of power cuts of four, not agreed yet, all fifteen asked on 26/10; Bras-Panon agreed on 28/10, L'Étang-Salé on 06/11", () => {
     // Those whose terms allow it on conditions (« permise ») apart, and those that agreed: they are read.
     expect(AUTORISATIONS["agenda:bras_panon"]).toEqual({ commune: "Bras-Panon", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-10-28" });
     expect(AGENDAS.find((a) => a.id === "bras_panon")!.source.licence).toBe("Information publique (agenda municipal)\u00a0; repris avec son accord écrit du 28/10/2026");
     // Its page no longer says its terms forbid it.
     expect(mentionCommune("Bras-Panon")).toBeUndefined();
     expect(mentionCourte("Bras-Panon")).toBeUndefined();
+    expect(AUTORISATIONS["agenda:etang_sale"]).toEqual({ commune: "L'Étang-Salé", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-06" });
+    expect(AGENDAS.find((a) => a.id === "etang_sale")!.source.licence).toBe("Information publique (agenda municipal)\u00a0; repris avec son accord écrit du 06/11/2026");
+    expect(mentionCommune("L'Étang-Salé")).toBeUndefined();
+    expect(mentionCourte("L'Étang-Salé")).toBeUndefined();
     const asked = Object.entries(AUTORISATIONS).filter(([, a]) => a.etat !== "permise" && a.etat !== "accordee");
     const of = (famille: string) => asked.filter(([k]) => k.startsWith(`${famille}:`)).map(([, a]) => a.commune);
-    expect(of("agenda")).toEqual(DOUZE);
+    expect(of("agenda")).toEqual(ONZE);
     expect(of("courant").sort()).toEqual(QUATRE);
     expect(Object.keys(AUTORISATIONS).filter((k) => !/^(agenda|courant):/.test(k))).toEqual([]);
     expect(asked.filter(([, a]) => a.etat === "demandee").map(([k]) => k).sort()).toEqual(DEMANDEES);
@@ -74,9 +78,9 @@ describe("the setting, by source", () => {
   it("says the communes asked, and the day, in one sentence after the block: each commune named once", () => {
     const agendas = mentionIle();
     expect(agendas).toHaveLength(1);
-    expect(agendas[0]).toMatch(/^Les mentions légales des sites de 12 communes [^]*qu'elles y publient\. Nous leur avons demandé cet accord le 26\/10 et attendons leur réponse\.$/);
+    expect(agendas[0]).toMatch(/^Les mentions légales des sites de 11 communes [^]*qu'elles y publient\. Nous leur avons demandé cet accord le 26\/10 et attendons leur réponse\.$/);
     // All asked the same day: each named in the block only.
-    for (const c of DOUZE) expect([c, agendas[0].split(c.replace(/^Le /, "")).length - 1]).toEqual([c, 1]);
+    for (const c of ONZE) expect([c, agendas[0].split(c.replace(/^Le /, "")).length - 1]).toEqual([c, 1]);
     expect(mentionCourte("Le Tampon")?.detail).toBe("ses mentions légales l'interdisent sans son accord, demandé le 26/10");
     expect(mentionCourte("Cilaos")?.detail).toBe("ses mentions légales l'interdisent sans son accord, demandé le 26/10");
     expect(ileMention("courant")).toEqual([expect.stringMatching(/^Les mentions légales des sites de 4 communes [^]*Ils restent consultables sur leurs sites\. Nous leur avons demandé cet accord le 26\/10 et attendons leur réponse\.$/)]);
@@ -109,8 +113,8 @@ describe("the communes whose site's terms ask for their authorisation, until the
   });
 
   it("are not read: no agenda nor news of their site, no fetch to it", async () => {
-    const theirs = LISIBLES.filter((a) => a.site_commune && NEUF.includes(a.commune!));
-    expect(theirs.map((a) => a.id).sort()).toEqual(["cilaos", "etang_sale", "la_possession", "le_tampon", "petite_ile", "saint_andre", "saint_benoit", "saint_joseph", "saint_philippe"]);
+    const theirs = LISIBLES.filter((a) => a.site_commune && HUIT.includes(a.commune!));
+    expect(theirs.map((a) => a.id).sort()).toEqual(["cilaos", "la_possession", "le_tampon", "petite_ile", "saint_andre", "saint_benoit", "saint_joseph", "saint_philippe"]);
     expect(AGENDAS.filter((a) => theirs.includes(a))).toEqual([]);
     const c = new Cache(new MemoryStore(), () => NOW.getTime());
     await refreshPlanned(c, NOW);
@@ -148,14 +152,14 @@ describe("the communes whose site's terms ask for their authorisation, until the
   });
 
   it("are said in one block for the whole island, the day of the request when it is the same for all", () => {
-    const block = "Les mentions légales des sites de 12 communes interdisent d'en reprendre le contenu sans leur accord : Cilaos, L'Étang-Salé, La Possession, Le Tampon, Petite-Île, Saint-André, Saint-Benoît, Saint-Denis, Saint-Joseph, Saint-Philippe, Saint-Pierre et Sainte-Rose. rundata.re n'affiche donc pas les événements et actualités qu'elles y publient.";
+    const block = "Les mentions légales des sites de 11 communes interdisent d'en reprendre le contenu sans leur accord : Cilaos, La Possession, Le Tampon, Petite-Île, Saint-André, Saint-Benoît, Saint-Denis, Saint-Joseph, Saint-Philippe, Saint-Pierre et Sainte-Rose. rundata.re n'affiche donc pas les événements et actualités qu'elles y publient.";
     expect(mentionIle()).toEqual([block]);
-    for (const c of DOUZE) set(c, { etat: "demandee", demandee_le: "2026-10-26" });
+    for (const c of ONZE) set(c, { etat: "demandee", demandee_le: "2026-10-26" });
     expect(mentionIle()).toEqual([`${block} Nous leur avons demandé cet accord le 26/10 et attendons leur réponse.`]);
     // Not all asked: those asked in one sentence after the block, each commune said once (marketing, 26/10).
     restore();
     set("Saint-Denis", { etat: "a_demander", demandee_le: undefined });
-    expect(mentionIle()).toEqual([`${block} Nous avons demandé cet accord le 26/10 à Cilaos, à L'Étang-Salé, à La Possession, au Tampon, à Petite-Île, à Saint-André, à Saint-Benoît, à Saint-Joseph, à Saint-Philippe, à Saint-Pierre et à Sainte-Rose, et attendons leur réponse.`]);
+    expect(mentionIle()).toEqual([`${block} Nous avons demandé cet accord le 26/10 à Cilaos, à La Possession, au Tampon, à Petite-Île, à Saint-André, à Saint-Benoît, à Saint-Joseph, à Saint-Philippe, à Saint-Pierre et à Sainte-Rose, et attendons leur réponse.`]);
     restore();
     expect(COUVERTURE).not.toMatch(/(?:à|de) Le Tampon/);
     unasked();
@@ -169,12 +173,12 @@ describe("the communes whose site's terms ask for their authorisation, until the
   });
 
   it("are left out of the agendas read and of those without one, and said in the coverage and the answer", async () => {
-    expect(MAIRIES_LUES).toBe("Saint-Paul, Le Port, Les Trois-Bassins, Sainte-Marie, Salazie, Saint-Louis, Bras-Panon");
+    expect(MAIRIES_LUES).toBe("Saint-Paul, Le Port, Les Trois-Bassins, Sainte-Marie, Salazie, Saint-Louis, L'Étang-Salé, Bras-Panon");
     expect(COUVERTURE).not.toMatch(/Ville du Tampon|Ville de Saint-André/);
     // The mairies' news read are only those of the communes whose terms allow it, or whose site writes no condition.
     expect(COUVERTURE).toContain("(pas un agenda complet) : Saint-Louis, Saint-Leu, La Plaine-des-Palmistes, Sainte-Marie, Salazie.");
     const without = /Sans agenda lu[^:]*: ([^.]*)\./.exec(COUVERTURE)![1];
-    expect(DOUZE.filter((c) => without.includes(c))).toEqual([]);
+    expect(ONZE.filter((c) => without.includes(c))).toEqual([]);
     expect(COUVERTURE).toContain(mentionIle()[0]);
     const c = await cacheWith();
     const tampon = body(await agenda(c, "Le Tampon", undefined, undefined, NOW));
@@ -192,10 +196,10 @@ describe("the communes whose site's terms ask for their authorisation, until the
   it("are said on the page of the events and in the outings of the commune's page, never « rien d'annoncé »", () => {
     const value = { resume: "", nombre: 0, evenements: [], non_repris: mentionIle().join(" "), couverture: COUVERTURE, a_savoir: "", sources: [], ce_week_end: [] } as AgendaAnswer;
     const html = agendaPage("https://rundata.re", { value, fetchedAt: NOW, stale: false }, NOW);
-    expect(html).toContain("Les mentions légales des sites de 12 communes interdisent");
+    expect(html).toContain("Les mentions légales des sites de 11 communes interdisent");
     const page = (slug: string) => PAGES.find((p) => p.slug === slug)!;
     // Each keeps its page, its tile of outings and all that comes from elsewhere: only its site is not read.
-    expect(DOUZE.filter((c) => !PAGES.some((p) => p.commune && p.nom === c))).toEqual([]);
+    expect(ONZE.filter((c) => !PAGES.some((p) => p.commune && p.nom === c))).toEqual([]);
     const copy = { value, fetchedAt: NOW, stale: false };
     expect(communeEvents(page("le-tampon"), copy)).toEqual({ valeur: "Agenda non repris", detail: "ses mentions légales l&#39;interdisent sans son accord", title: TAMPON });
     // With events from other sources (its theatre): their number, and the whole mention after the next one.
@@ -230,13 +234,13 @@ describe("the communes whose site's terms ask for their authorisation, until the
   });
 
   it("are said instead of the sports programmes of the communes that published some, on /sport and in the tool", async () => {
-    const three = "Les programmes sportifs de L'Étang-Salé, de La Possession et de Saint-Benoît ne sont pas repris : les mentions légales des sites de ces communes l'interdisent sans leur accord.";
+    const two = "Les programmes sportifs de La Possession et de Saint-Benoît ne sont pas repris : les mentions légales des sites de ces communes l'interdisent sans leur accord.";
     expect(LISIBLES.filter((a) => a.programmes).map((a) => a.commune)).toEqual(["L'Étang-Salé", "La Possession", "Saint-Benoît"]);
-    expect(mentionProgrammes()).toBe(three);
+    expect(mentionProgrammes()).toBe(two);
     expect(mentionProgrammes(["Saint-Benoît", "Saint-André"])).toBe("Les mentions légales du site de la commune de Saint-Benoît interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas le programme sportif qu'elle y publie.");
     expect(mentionProgrammes(["Saint-Paul"])).toBeUndefined();
-    for (const c of ["La Possession", "L'Étang-Salé", "Saint-Benoît"]) set(c, { etat: "demandee", demandee_le: "2026-10-26" });
-    expect(mentionProgrammes()).toBe(`${three} Nous leur avons demandé cet accord le 26/10 et attendons leur réponse.`);
+    for (const c of ["La Possession", "Saint-Benoît"]) set(c, { etat: "demandee", demandee_le: "2026-10-26" });
+    expect(mentionProgrammes()).toBe(`${two} Nous leur avons demandé cet accord le 26/10 et attendons leur réponse.`);
     set("Saint-Benoît", { etat: "refusee", refusee_le: "2026-11-03" });
     expect(mentionProgrammes(["Saint-Benoît"])).toBe("La commune de Saint-Benoît a refusé, le 03/11, que rundata.re reprenne le contenu de son site : le programme sportif qu'elle y publie ne s'affiche donc pas ici.");
     unasked();
@@ -246,13 +250,13 @@ describe("the communes whose site's terms ask for their authorisation, until the
     const b = body(await sportTool(c, undefined, undefined, "a_venir", NOW));
     // For the whole island, Réunion La 1ère's sport news not read is said first (test/la1ere.test.ts).
     // Then the sports sites not read until they agree (test/non-reprises.test.ts).
-    expect([b.non_repris, b.programmes_communes]).toEqual([`${mentionLa1ere("sport")} ${three} ${mentionSports(undefined, true).join(" ")}`, undefined]);
+    expect([b.non_repris, b.programmes_communes]).toEqual([`${mentionLa1ere("sport")} ${two} ${mentionSports(undefined, true).join(" ")}`, undefined]);
     // No programme said for a sport.
     expect(body(await sportTool(c, "handball", undefined, "a_venir", NOW)).non_repris).toBeUndefined();
     const html = sportPage("https://rundata.re", { value: { ...b, classements: [] }, fetchedAt: NOW, stale: false }, NOW);
     const section = html.slice(html.indexOf('id="h-prog"'));
     expect(section).toContain("Programmes sportifs des communes</h2>");
-    expect(section).toContain("Les programmes sportifs de L&#39;Étang-Salé, de La Possession et de Saint-Benoît ne sont pas repris");
+    expect(section).toContain("Les programmes sportifs de La Possession et de Saint-Benoît ne sont pas repris");
   });
 
   it("are said for the three communes whose site is not read at all, in marketing's words, their events from elsewhere kept", () => {

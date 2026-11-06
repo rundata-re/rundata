@@ -14,7 +14,7 @@ describe("the long words on a phone", () => {
   });
 
   it("puts a tile's value in a smaller size below 355 px, its word never cut", () => {
-    expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal}@media (max-width:22.2rem){.tv{font-size:1rem}}");
+    expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal;font-size:min(1em,12.5cqi)}@media (max-width:22.2rem){.tv{font-size:1rem}}");
   });
 
   it("cuts a course's long words in its narrow column, hyphenated where the browser can, so that none covers its places", () => {

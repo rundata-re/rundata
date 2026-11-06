@@ -40,4 +40,13 @@ describe("larger text on a narrow screen, on the pages of facts and of search", 
     expect(CSS).toContain(".menu:not([open])>.sheet{display:none}");
     expect(CSS).toContain(".tab a{font-weight:600;overflow-wrap:anywhere}");
   });
+
+  it("puts the open menu's names in one column on a narrow screen with the text larger, two from 320 px at 100 %", () => {
+    // In rem: 19.9 × 16 = 318 px at 100 %, so every phone keeps its two columns; 19.9 × 24 = 478 px at 150 %.
+    expect(CSS).toContain("@media (max-width:19.9rem){.sheet .groupe{grid-template-columns:1fr}}");
+    expect(19.9 * 16).toBeLessThan(320);
+    expect(19.9 * 24).toBeGreaterThan(390);
+    // After the two columns' rule, which it overrides at the same specificity.
+    expect(CSS.indexOf("@media (max-width:19.9rem)")).toBeGreaterThan(CSS.indexOf(".sheet .groupe{grid-template-columns:repeat(auto-fill,"));
+  });
 });

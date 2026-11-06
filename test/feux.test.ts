@@ -243,7 +243,8 @@ describe("the fires' page", () => {
     expect(feuxDescription({ satellites: [], detections: [at("2026-10-23T19:00:00Z")] }, NOW)).toBe("1 feu vu par satellite en 24 h à La Réunion (974), le 23/10 à 23:00 près du Maïdo. Faux positifs possibles. Un feu ? 18 ou 112.");
     const long = feuxDescription({ satellites: [], detections: [at("2026-10-24T02:30:00Z", "Ravine des Chèvres et Grand Bassin du Bras de la Plaine"), at("2026-10-24T01:00:00Z")] }, NOW);
     expect(long).toBe("2 feux vus par satellite en 24 h à La Réunion (974), le dernier vu le 24/10 à 06:30. Faux positifs possibles. Un feu ? 18 ou 112.");
-    expect(feuxDescription({ satellites: ["NOAA-20"], detections: [] }, NOW)).toMatch(/^Aucun feu détecté par satellite ces dernières 24 h à La Réunion \(974\)\./);
+    // A quiet day with the time it was read: the preview stays in the message it was sent in.
+    expect(feuxDescription({ satellites: ["NOAA-20"], detections: [], fetchedAt: NOW }, NOW)).toBe("Aucun feu détecté par satellite à La Réunion (974) dans les 24 h avant le 24/10 à 08:00. Les nuages peuvent en masquer. Un feu ? 18 ou 112.");
     expect(feuxDescription(null, NOW)).not.toMatch(/\b0\b|Aucun/);
   });
 

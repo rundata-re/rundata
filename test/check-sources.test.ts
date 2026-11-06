@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { configurerEquipe, handle, JETON_EQUIPE, sansBalise } from "../src/app.js";
 import { Cache } from "../src/cache.js";
-import { AGENT, checkAnswer, checkPage, MAX_BYTES, PAGES, parseTime, TOOLS } from "../src/bin/check-sources.js";
+import { AGENT, checkAnswer, checkPage, MAX_BYTES, PAGES, parseTime, RADAR_HISTORY, TOOLS } from "../src/bin/check-sources.js";
 import type { Hit } from "../src/metrics.js";
 
 // Saturday 24 October 2026, 07:11 in Réunion.
@@ -69,6 +69,35 @@ describe("the daily check of the sources", () => {
       "copie de secours de « CMRS » : date de lecture absente ou illisible",
       "copie de secours de « CMRS » : date de lecture absente ou illisible",
     ]);
+  });
+
+  it("judges the radar by its history in KV, not by the copy of the data center the check runs from (6/11)", () => {
+    // 6/11 08:14: Météo-France's radar answered HTTP 500; GitHub's data center served its copy of 5/11 11:25.
+    const at = new Date("2026-11-06T04:14:30Z");
+    const avertissement = "La source « Lame d'eau radar de La Réunion (Météo-France) » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 05/11 à 11:25.";
+    const stations = [{ heure_mesure: "06/11 08:12" }];
+    const radar = { source: "Lame d'eau radar de La Réunion (Météo-France)", lue_le: "05/11 11:25" };
+    expect(motifs("meteo_actuelle", { stations, fraicheur: { copies_de_secours: [radar], avertissement } }, at)).toEqual([]);
+    expect(motifs("resume_du_jour", { fraicheur: { copies_de_secours: [radar], avertissement } }, at)).toEqual([]);
+    // Another source's copy beside it is still judged.
+    expect(motifs("meteo_actuelle", { stations, fraicheur: { copies_de_secours: [radar, { source: "Observations aéroport (METAR)", lue_le: "06/11 04:00" }], avertissement } }, at))
+      .toEqual(["copie de secours de « Observations aéroport (METAR) », lue le 06/11 04:00, il y a 4,2 h (seuil 3 h)"]);
+
+    // The history: its newest image, the gaps left out (the one of 08:05, the radar answering HTTP 500).
+    const history = page(RADAR_HISTORY);
+    const rejeu = (entrees: unknown[]) => JSON.stringify({ radar: { w: 125, h: 100, entrees }, heures: null });
+    const image = (fin: string) => ({ fin, pannes: [], pluie: "0", mal_vu: "0" });
+    const trou = (de: string, a: string) => ({ trou: true, de, a });
+    const motifsOf = (body: string, now = at) => checkPage(history, 200, "public, max-age=300", body, now).map((x) => x.motif);
+    expect(motifsOf(rejeu([image("2026-11-06T04:00:00Z"), trou("2026-11-06T04:00:00Z", "2026-11-06T04:05:00Z"), image("2026-11-06T04:10:00Z")]))).toEqual([]);
+    expect(motifsOf(rejeu([image("2026-11-06T00:30:00Z"), trou("2026-11-06T00:30:00Z", "2026-11-06T04:10:00Z")])))
+      .toEqual(["dernière image radar d'il y a 3,7 h (seuil 3 h)"]);
+    expect(motifsOf(rejeu([trou("2026-11-06T00:30:00Z", "2026-11-06T04:10:00Z")]))).toEqual(["aucune image radar dans les 6 dernières heures"]);
+    expect(motifsOf(JSON.stringify({ radar: null, heures: null }))).toEqual(["aucune image radar dans les 6 dernières heures"]);
+    expect(motifsOf("<html>")).toEqual(["réponse illisible"]);
+    expect(checkPage(history, 503, "", "", at).map((x) => x.motif)).toEqual(["HTTP 503"]);
+    // A JSON file is not a page: no live block nor words of a page looked for.
+    expect(motifsOf(rejeu([image("2026-11-06T04:10:00Z")]).replace("0\"", "0\", \"note\": \"ne répond pas\""))).toEqual([]);
   });
 
   it("fails on the volcano's level unknown, and on an OVPF image left unread for a day", () => {

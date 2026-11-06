@@ -32,7 +32,7 @@ async function tool(c: ToolCheck): Promise<Probleme[]> {
 
 async function page(c: PageCheck): Promise<Probleme[]> {
   try {
-    const r = await fetch(`${origin}${c.path}`, { headers: { accept: "text/html", "user-agent": AGENT, ...JETON }, signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const r = await fetch(`${origin}${c.path}`, { headers: { accept: c.json ? "application/json" : "text/html", "user-agent": AGENT, ...JETON }, signal: AbortSignal.timeout(TIMEOUT_MS) });
     return checkPage(c, r.status, r.headers.get("cache-control") ?? "", await r.text(), new Date());
   } catch (err) {
     return [{ point: c.path, motif: `pas de réponse (${(err as Error).name})` }];

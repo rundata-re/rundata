@@ -424,7 +424,7 @@ const EDGE = 6;
  * name must not touch: points, pills and labels. A name is shown only if it touches nothing there nor a name already
  * shown, on its place or around it (NUDGE: a name stands for an area; a commune or a big quarter a little further, FAR),
  * so the lesser ones go first; a commune's name only on it, its middle and most of it (mostlyOn()), or at sea off its
- * coast, never on another, and on the island's map up to 6 times its size from its town, beyond 3 facing it (AROUND, coastNear()). On the island's map, a phone names only the six (SIX). `within`: the commune of the map
+ * coast, never on another, and on the island's map up to 6 times its size from its town, beyond 3 facing it (AROUND, coastNear()). On the island's map, a phone names only the six (SIX), while it shows the island nearly whole: zoomed in twice or more (a sector's map opened on its trails), NOMS_SCRIPT places the others as on a wide screen. `within`: the commune of the map
  * (`commune`), the places of importance 2 named only inside it, those of importance 3 only if far from all else
  * (isolated()), and the commune's own name always, first, at the free place inside it or off its coast nearest its
  * centre if none around is free (marketing). This is the placement for a phone and without a script: NOMS_SCRIPT does it again at the
@@ -761,7 +761,7 @@ look=(t)=>{t.classList.remove("nx");t.setAttribute("x",t.dataset.x);t.setAttribu
 for(let dx=vb.x-b0[0];b0[2]+dx<=vb.x+vb.width;dx+=st)for(let dy=vb.y-b0[1];b0[3]+dy<=vb.y+vb.height;dy+=st)ds.push([dx,dy]);ds.sort((a,b)=>a[0]*a[0]+a[1]*a[1]-b[0]*b[0]-b[1]*b[1]);
 for(const [dx,dy] of ds){const b=[b0[0]+dx,b0[1]+dy,b0[2]+dx,b0[3]+dy];if(free(b)&&home(b,t)){t.setAttribute("x",+t.dataset.x+dx);t.setAttribute("y",+t.dataset.y+dy);kept.push(b);return}}t.classList.add("nx")};
 let late=null;for(const t of g.children){if(late&&+t.dataset.r>1){look(late);late=null}const fs=(t.dataset.r==="0"?(cw>=400?14:12):11)*u;t.setAttribute("font-size",fs);t.classList.remove("nx");
-if(t.hasAttribute("data-w")&&!wide){t.classList.add("nx");continue}t.setAttribute("x",t.dataset.x);t.setAttribute("y",t.dataset.y);const h=t.getBBox().width/2+p;let ok=isle&&t.dataset.k!==undefined&&pt?town(t,fs):false;
+if(t.hasAttribute("data-w")&&!wide&&vb.width>${W / 2}){t.classList.add("nx");continue}t.setAttribute("x",t.dataset.x);t.setAttribute("y",t.dataset.y);const h=t.getBBox().width/2+p;let ok=isle&&t.dataset.k!==undefined&&pt?town(t,fs):false;
 if(!(isle&&t.dataset.k!==undefined&&pt))for(const [ka,kb,kc] of +t.dataset.r<2?[...P,...F]:P){t.setAttribute("x",+t.dataset.x+ka*h+kb*fs);t.setAttribute("y",+t.dataset.y+kc*fs);const b=box(t.getBBox(),0);if(free(b)&&home(b,t)){kept.push(b);ok=true;break}}
 if(!ok){t.classList.add("nx");if(t.hasAttribute("data-c"))late=t}}if(late)look(late)};
 const maps=[...document.querySelectorAll("svg.map")].filter((s)=>s.querySelector(".nm"));const wait=new Map(),later=(s)=>{clearTimeout(wait.get(s));wait.set(s,setTimeout(()=>run(s),120))};

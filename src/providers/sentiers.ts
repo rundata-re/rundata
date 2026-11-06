@@ -97,6 +97,23 @@ export function nuance(x: Avis): string | undefined {
   return avis && `Fermé sur la carte de l'ONF\u00a0; ouvert le samedi et le dimanche d'après l'avis de l'ONF\u00a0: « ${avis} »`;
 }
 
+// The last day of a notice, as the ONF writes it: « Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis… ».
+const JUSQU = /jusqu['’](?:au|à) (\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/i;
+
+/**
+ * The last day of a weekend notice (nuance()), when it gives one: as written (« 30/10/26 »), as a day (2026-10-30), and
+ * whether it has passed in La Réunion. The map keeps such a notice after its last day (Sentier de Montplaisir, map of
+ * 27/10/2026, still read on 06/11): past it, the notice opens nothing.
+ */
+export function finWeekEnd(x: Avis, now = new Date()): { dit: string; jour: string; passe: boolean } | undefined {
+  if (!nuance(x)) return undefined;
+  const m = [x.cause, x.info ?? x.precision].map((v) => v?.match(JUSQU)).find(Boolean);
+  if (!m) return undefined;
+  const jour = `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const today = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
+  return { dit: `${m[1]}/${m[2]}/${m[3]}`, jour, passe: jour < today };
+}
+
 /** Why a trail is closed and until when, as its notice says: nuance() first when there is one, then the rest of the notice. */
 export function motifs(x: Avis): string[] {
   const n = nuance(x);

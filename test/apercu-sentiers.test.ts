@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { avis } from "../src/providers/sentiers.js";
+import { avis, finWeekEnd, motifs } from "../src/providers/sentiers.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
 import { noticeOf, type TraceAnswer } from "../src/web/data.js";
 import { stateHead, traceDescription, tracePage } from "../src/web/domains.js";
@@ -11,7 +11,7 @@ const trail = (nom: string, slug: string, etat: string, troncons: TraceAnswer["t
 });
 const ENTITIES: Record<string, string> = { "&#39;": "'", "&quot;": '"', "&lt;": "<", "&gt;": ">", "&amp;": "&" };
 const og = (html: string) => (html.match(/<meta property="og:description" content="([^"]*)"/)?.[1] ?? "").replace(/&(?:#39|quot|lt|gt|amp);/g, (e) => ENTITIES[e]);
-const page = (d: TraceAnswer) => og(tracePage("https://rundata.re", d.genre, d.slug, d.nom, { value: d, fetchedAt: new Date("2026-11-04T10:00:00Z"), stale: false }));
+const page = (d: TraceAnswer, now = new Date()) => og(tracePage("https://rundata.re", d.genre, d.slug, d.nom, { value: d, fetchedAt: new Date("2026-11-04T10:00:00Z"), stale: false }, now));
 
 const KAPOR = trail("Sentier Kapor", "sentier-kapor", "Fermé : Éruption en cours (Sentier instable pour cause d'éruption récente, risques d'intoxication et de brulures)",
   [{ etat: "fermé", cause: "Éruption en cours", precision: "Sentier instable pour cause d'éruption récente, risques d'intoxication et de brulures" }]);
@@ -49,10 +49,50 @@ describe("aperçu d'un sentier fermé", () => {
     expect(page(d)).toMatch(/^(Fermé\s:\sTravaux|En partie fermé\.)/);
   });
 
-  it("ouvert le week-end : l'avis de l'ONF, pas « Fermé » seul", () => {
-    const d = trail("Sentier de Montplaisir", "sentier-de-montplaisir", "x",
-      [{ etat: "fermé", cause: "Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période" }]);
-    expect(stateHead(d)).toBe("Fermé sur la carte de l'ONF ; ouvert le samedi et le dimanche d'après l'avis de l'ONF");
+  // As the ONF's map of 27/10/2026 still wrote it on 06/11: the notice outlives its last day.
+  const MONTPLAISIR = { etat: "fermé", cause: "Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période" };
+  const montplaisir = trail("Sentier de Montplaisir", "sentier-de-montplaisir", motifs(MONTPLAISIR).join(" · "), [MONTPLAISIR]);
+  // 31/10 at 00:30 in La Réunion, and 30/10 at 23:30: the first minutes past the notice, and its last hour.
+  const AFTER = new Date("2026-10-30T20:30:00Z");
+  const LAST = new Date("2026-10-30T19:30:00Z");
+
+  it("ouvert le week-end jusqu'à une date à venir : l'avis de l'ONF avec sa date, pas « Fermé » seul", () => {
+    for (const now of [new Date("2026-10-24T08:00:00Z"), LAST]) {
+      expect(stateHead(montplaisir, now)).toBe("Fermé sur la carte de l'ONF\u00a0; avis\u00a0: ouvert le week-end jusqu'au 30/10/26");
+      const said = page(montplaisir, now);
+      expect(said).toMatch(/^Fermé sur la carte de l'ONF/);
+      expect(said).toContain("30/10/26");
+      expect(said.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+    }
+  });
+
+  it("l'avis du week-end passé sa date : fermé comme sur la carte, plus jamais « ouvert le samedi et le dimanche »", () => {
+    expect(stateHead(montplaisir, AFTER)).toBe("Fermé sur la carte de l'ONF");
+    expect(traceDescription(montplaisir, montplaisir.nom, "Ouest, La Réunion", "repli", AFTER))
+      .toBe("Fermé sur la carte de l'ONF. Sentier de Montplaisir (Ouest, La Réunion) : 6,4 km, 412 m de dénivelé positif.");
+    const said = page(montplaisir, new Date("2026-11-06T07:00:00Z"));
+    expect(said).toMatch(/^Fermé sur la carte de l'ONF\./);
+    expect(said).not.toMatch(/ouvert|samedi|dimanche|week-end/i);
+    expect(said).not.toMatch(/GPX|Trace GPS/);
+    // Partly closed past the date: the closed section, nothing of the weekend.
+    const partly = { ...montplaisir, troncons: [{ etat: "ouvert" }, MONTPLAISIR] };
+    expect(stateHead(partly, AFTER)).toBe("En partie fermé");
+    expect(traceDescription(partly, partly.nom, "La Réunion", "repli", AFTER)).not.toMatch(/ouvert|samedi|week-end/i);
+  });
+
+  it("un avis du week-end sans date de fin : ses mots, quel que soit le jour", () => {
+    const d = trail("Sentier X", "sentier-de-montplaisir", "x", [{ etat: "fermé", cause: "Fermé du lundi au vendredi, ouvert le week-end" }]);
+    for (const now of [LAST, AFTER, new Date("2027-06-01T08:00:00Z")]) {
+      expect(stateHead(d, now)).toBe("Fermé sur la carte de l'ONF\u00a0; ouvert le samedi et le dimanche d'après l'avis de l'ONF");
+    }
+  });
+
+  it("la date de fin d'un avis du week-end, telle que l'ONF l'écrit", () => {
+    expect(finWeekEnd(MONTPLAISIR, LAST)).toEqual({ dit: "30/10/26", jour: "2026-10-30", passe: false });
+    expect(finWeekEnd(MONTPLAISIR, AFTER)).toEqual({ dit: "30/10/26", jour: "2026-10-30", passe: true });
+    expect(finWeekEnd({ cause: "Travaux", info: "Fermé jusqu’à 5/1/2027, ouvert le samedi et le dimanche" }, AFTER)).toEqual({ dit: "5/1/2027", jour: "2027-01-05", passe: false });
+    // No weekend in the notice: no last day to read, the closure stays as the map says.
+    expect(finWeekEnd({ cause: "Fermée jusqu'au 18/12/26 inclus" }, AFTER)).toBeUndefined();
   });
 
   it("un nom trop long : l'état entier seul, le titre nomme le sentier", () => {

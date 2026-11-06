@@ -287,6 +287,44 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect(rows("SELECT * FROM propositions")).toHaveLength(0);
   });
 
+  it("after an error, says it first in the tab, then puts the focus on the first field to correct, or announces the message", async () => {
+    formulaires.ouvrir(true);
+    human();
+    const blank = await (await handle(new Request("https://rundata.re/associations/proposer", { headers: { accept: "text/html" } }), new Cache())).text();
+    expect(blank).toContain("<title>Proposer un événement gratuitement\u00a0: clubs et associations · 974</title>");
+    expect(blank).not.toContain('id="p-erreur"');
+    const wrong = await (await post("/associations/proposer", { ...PROPOSITION, email: "pas-une-adresse" }, { origin: "https://rundata.re" })).text();
+    expect(wrong).toContain("<title>Erreur\u00a0: Proposer un événement gratuitement\u00a0: clubs et associations · 974</title>");
+    // The message in the page, its alert given by the script only: one there from the start is mostly not announced.
+    expect(wrong).toContain('<p class="msg vu" id="p-erreur">Quelques champs sont à corriger, signalés ci-dessous.</p>');
+    expect(wrong).not.toContain('role="alert"');
+    expect(wrong).toContain(`<script>(${formulaires.erreurVue})(document,(f)=>setTimeout(f,100))</script>`);
+    const robot = await post("/associations/proposer", PROPOSITION, { origin: "https://rundata.re" });
+    expect(robot.status).toBe(503);
+    expect(await robot.text()).toContain("<title>Erreur\u00a0: Proposer");
+
+    // The script: the first field marked, the first choice of a fieldset; with none, the message emptied, made an alert,
+    // then said again.
+    const el = (tag: string, inside?: { focus: () => void }) => {
+      const e = { tag, focused: false, role: "", textContent: "Champs à corriger.", matches: (q: string) => q === tag, querySelector: () => inside ?? null, focus: () => (e.focused = true), setAttribute: (_: string, v: string) => (e.role = v) };
+      return e;
+    };
+    const doc = (msg: ReturnType<typeof el>, marked: ReturnType<typeof el> | null) => ({ getElementById: () => msg, querySelector: () => marked }) as unknown as Document;
+    const later: (() => void)[] = [];
+    const input = el("input");
+    let msg = el("p");
+    formulaires.erreurVue(doc(msg, input), (f) => later.push(f));
+    expect([input.focused, msg.role, later.length]).toEqual([true, "", 0]);
+    const radio = el("input");
+    formulaires.erreurVue(doc(msg, el("fieldset", radio)), (f) => later.push(f));
+    expect(radio.focused).toBe(true);
+    msg = el("p");
+    formulaires.erreurVue(doc(msg, null), (f) => later.push(f));
+    expect([msg.role, msg.textContent]).toEqual(["alert", ""]);
+    later[0]();
+    expect(msg.textContent).toBe("Champs à corriger.");
+  });
+
   it("turns a business away politely, keeping nothing", async () => {
     formulaires.ouvrir(true);
     human();

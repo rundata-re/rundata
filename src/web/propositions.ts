@@ -231,14 +231,16 @@ function proposerForm(e: Etat, now: Date, correction?: { action: string; f: URLS
   const note = (k: string) => (wrong.has(k) ? `<p class="faux" id="faux-${k}">${esc(FAUX[k])}</p>` : "");
   const today = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
   const repete = f.get("repete") ?? "";
-  const top =
+  const said =
     e.kind === "faux"
-      ? `<p class="msg vu" role="alert">Quelques champs sont à corriger, signalés ci-dessous.</p>`
+      ? "Quelques champs sont à corriger, signalés ci-dessous."
       : e.kind === "limite"
-        ? `<p class="msg vu" role="alert">Cinq événements ont déjà été proposés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à contact@rundata.re.</p>`
+        ? "Cinq événements ont déjà été proposés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à contact@rundata.re."
         : e.kind === "indisponible"
-          ? `<p class="msg vu" role="alert">La proposition n'a pas pu être enregistrée. Réessayez dans quelques minutes, ou écrivez à contact@rundata.re.</p>`
+          ? "La proposition n'a pas pu être enregistrée. Réessayez dans quelques minutes, ou écrivez à contact@rundata.re."
           : "";
+  // Without `role="alert"` in the page: one there from the start is mostly not announced. ERREUR_SCRIPT gives it.
+  const top = said ? `<p class="msg vu" id="p-erreur">${said}</p>${ERREUR_SCRIPT}` : "";
   return `<form class="card fo" method="post" action="${correction ? esc(correction.action) : PROPOSER_PATH}" aria-labelledby="h-proposer" novalidate>
   <h2 id="h-proposer">${correction ? "Corriger l'événement" : "Votre événement"}</h2>
   ${correction ? `<input type="hidden" name="action" value="corriger"><p class="note">${correction.affiche ? "Une fois corrigé, l'événement est relu à nouveau, en général sous 24 heures. En attendant, la version actuelle reste affichée." : "Une fois corrigé, l'événement est relu à nouveau avant de s'afficher, en général sous 24 heures."}</p>` : ""}
@@ -277,6 +279,27 @@ function proposerForm(e: Etat, now: Date, correction?: { action: string; f: URLS
 </form>`}`;
 }
 
+/**
+ * After an error, the focus on the first field to correct, which says its own message (`aria-describedby`); with no field
+ * to correct, the message put back into an alert once the page is there, so that it is announced. In the page's script
+ * as it is: self-contained, no function named inside (esbuild's keepNames).
+ */
+export const erreurVue = (d: Pick<Document, "getElementById" | "querySelector">, later: (f: () => void) => void): void => {
+  const m = d.getElementById("p-erreur");
+  const b = d.querySelector(".fo [aria-invalid=true]");
+  const c = b && (b.matches("fieldset") ? b.querySelector("input") : b);
+  if (c) (c as HTMLElement).focus();
+  else if (m) {
+    const t = m.textContent;
+    m.textContent = "";
+    m.setAttribute("role", "alert");
+    later(() => {
+      m.textContent = t;
+    });
+  }
+};
+const ERREUR_SCRIPT = `<script>(${erreurVue})(document,(f)=>setTimeout(f,100))</script>`;
+
 // « Jusqu'au » only for a repeated event, once the script runs; without it, the field stays.
 const REPETE_SCRIPT = `<script>{const r=document.getElementById("p-repete"),j=document.getElementById("p-jusqu");if(r&&j){const f=j.closest(".f"),s=()=>{f.hidden=!r.value};r.addEventListener("change",s);s()}}</script>`;
 // An empty date or time field shows today's date or the current time, pale (WebKit, Safari on an iPhone), as if filled:
@@ -302,7 +325,9 @@ export function proposerPage(origin: string, e: Etat = { kind: "vide" }, now = n
   <p class="note">Rien reçu\u00a0? Regardez dans les indésirables, ou écrivez à contact@rundata.re.</p>
   <p><a href="${PROPOSER_PATH}">Proposer un autre événement</a> · <a href="/associations">Retour à l'espace clubs et associations</a></p></section>`
       : `${proposerForm(e, now)}${REPETE_SCRIPT}${VIDE_SCRIPT}${TURNSTILE_SCRIPT}`;
-  return layout(origin, { title: TITLE, description: META, path: PROPOSER_PATH, jsonld: [crumbs(origin, "Proposer un événement", PROPOSER_PATH, PARENT), webPage(origin, PROPOSER_PATH, TITLE, META, null)], alerte, sansAvis: true }, band, body);
+  // The tab says the error first, the first words a screen reader gives of the page.
+  const title = e.kind === "faux" || e.kind === "limite" || e.kind === "indisponible" ? `Erreur\u00a0: ${TITLE}` : TITLE;
+  return layout(origin, { title, description: META, path: PROPOSER_PATH, jsonld: [crumbs(origin, "Proposer un événement", PROPOSER_PATH, PARENT), webPage(origin, PROPOSER_PATH, TITLE, META, null)], alerte, sansAvis: true }, band, body);
 }
 
 /** GET /associations/proposer: the empty form. POST: the proposal written and its link e-mailed, or the form again. */

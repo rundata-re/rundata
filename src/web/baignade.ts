@@ -58,7 +58,7 @@ export function bathingPage(origin: string, now = new Date(), alerte?: Alerte): 
     "Requins : baignade et surf interdits à moins de 300 m du rivage, sauf lagons, bassins, filets et ZONEX surveillés. Zones, drapeaux et arrêté en vigueur.";
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Baignade</li></ol></nav></div>
 <div class="wrap intro"><div class="pitch">
-  <h1>Où se baigner à La Réunion ?</h1>
+  <h1>Où se baigner à La Réunion ? <span class="n974">974</span></h1>
   <p class="lead">La règle de la préfecture face au risque requin, les zones où la baignade est permise et ce que disent les drapeaux. Ces zones réduisent le risque, elles ne le suppriment pas.</p>
 </div></div>`;
   const body = `<section aria-labelledby="h-regle"><h2 id="h-regle">La règle</h2><div class="card"><p>${say(ruleText(now))}</p></div></section>

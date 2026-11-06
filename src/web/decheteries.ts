@@ -54,7 +54,7 @@ export function decheteriesPage(origin: string, data: Cached<DechetsAnswer> | nu
   const band = `${crumbBar("Déchèteries")}
 <div class="wrap intro"><div class="pitch">
   <p class="pill">${data && sites.some((s) => s.a_jour) ? `<span class="dot"></span>` : ""}État des bennes · déchèteries du TCO</p>
-  <h1>${esc(H1)}</h1>
+  <h1>${esc(H1)} <span class="n974">974</span></h1>
   <p class="lead">${esc(LEAD)}</p>
   ${data ? "" : loading("L'état des bennes")}
 </div></div>`;

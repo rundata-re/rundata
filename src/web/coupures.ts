@@ -155,7 +155,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Avis des distributeurs</p>
-    <h1>Coupures d'eau ${esc(where)}</h1>
+    <h1>Coupures d'eau ${esc(where)} <span class="n974">974</span></h1>
     ${status}
     ${ask(`Dolo la koupé ${p.nom} ? Kansa i rovien ? Gèt si ${url} é di amwin.`,
       `Y a-t-il une coupure d'eau ${where} ? Lis ${url} et dis-moi quand l'eau revient.`)}

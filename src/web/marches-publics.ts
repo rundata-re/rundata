@@ -113,7 +113,7 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
 
   const band = `${crumbBar(NOM)}
 <div class="wrap intro solo"><div class="pitch">
-  <h1>Marchés publics à La Réunion</h1>
+  <h1>Marchés publics à La Réunion <span class="n974">974</span></h1>
   <p class="lead">Les avis de marché des collectivités, de l'État et des établissements publics de l'île, publiés au BOAMP, avec la date limite de réponse et le lien vers l'avis.</p>
   ${status}
 </div></div>`;

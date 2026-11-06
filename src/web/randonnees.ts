@@ -104,7 +104,7 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill">${onfDot(d?.carte_mise_a_jour, now)}${esc(onfPill(d?.carte_mise_a_jour))}</p>
-    <h1>Randonnée ${esc(s.dans)}</h1>
+    <h1>Randonnée ${esc(s.dans)} <span class="n974">974</span></h1>
     <p class="lead">${esc(s.quoi.replace(/^\p{L}/u, (c) => c.toUpperCase()))}.</p>
     ${status}
     ${ask(`Mi rod inn rando ${s.slug === "littoral" ? "lo long la mèr" : `koté ${s.nom}`}, lé ouvèr ? Gèt si ${url} é di amwin.`,

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { CATEGORIES } from "../src/web/categories.js";
 import { airPage, bornesPage, eauPage, traficPage } from "../src/web/domains.js";
+import { decheteriesPage } from "../src/web/decheteries.js";
 import { esc } from "../src/web/map.js";
+import { marchesPage } from "../src/web/marches-publics.js";
 import { seaPage } from "../src/web/pages.js";
 
 // One name per section, shared by the menu, the breadcrumb and the start of the H1 (marketing's words, 04/11/2026).
@@ -29,5 +31,12 @@ describe("each section's name", () => {
       expect(between(s.page, '"BreadcrumbList"', "]"), s.path).toContain(`"position":2,"name":"${s.nom}","item":"${O}${s.path}"`);
       if (s.h1) expect(between(s.page, "<h1>", "</h1>"), s.path).toBe(`<h1>${s.h1} <span class="n974">974</span></h1>`);
     }
+  });
+
+  // « Titre 974 » everywhere (marketing, 06/11/2026): the pages that had no « 974 » take it, none loses it. The others
+  // of the ten are checked in their own tests (peche, emploi, antennes, carburants, feux, requin, traces, coupures).
+  it("ends the H1 with « 974 » on the pages that had none", () => {
+    expect(between(decheteriesPage(O, null, NOW), "<h1>", "</h1>")).toBe(`<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest <span class="n974">974</span></h1>`);
+    expect(between(marchesPage(O, null, NOW), "<h1>", "</h1>")).toBe(`<h1>Marchés publics à La Réunion <span class="n974">974</span></h1>`);
   });
 });

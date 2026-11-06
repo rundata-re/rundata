@@ -95,7 +95,7 @@ export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?:
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>NASA FIRMS · 24 h</p>
-    <h1>${esc(H1)}</h1>
+    <h1>${esc(H1)} <span class="n974">974</span></h1>
     <p class="lead">${esc(LEAD)}</p>
     <p class="lead"><b>${esc(URGENCE)}</b></p>
     ${ask("Na difé dann bwa ? Maïdo i brul ? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.",

@@ -285,7 +285,7 @@ function build() {
   const lead = `${nombre(antennes.SUPPORTS.length)} supports d'antennes mobiles déclarés à l'ANFR au ${dateLongue(antennes.MOBILE_DU)}, et ${nombre(antennes.EMETTEURS.length)} supports d'émetteurs de radio et de télévision au ${dateLongue(antennes.RADIO_DU)}.`;
   const band = `${crumbBar("Antennes")}
 <div class="wrap intro"><div class="pitch">
-  <h1>${esc(T.h1)}</h1>
+  <h1>${esc(T.h1)} <span class="n974">974</span></h1>
   <p class="lead">${esc(lead)}</p>
 </div></div>`;
   const carte = `<section aria-labelledby="h-carte"><h2 id="h-carte">Sur la carte</h2>${map()}</section>`;

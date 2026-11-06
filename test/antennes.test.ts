@@ -135,7 +135,7 @@ describe("the antennas of the island (ANFR)", () => {
     // Served, and linked from the commune's tile.
     const res = await handle(new Request("https://rundata.re/antennes"), new Cache());
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("<h1>Les antennes de La Réunion</h1>");
+    expect(await res.text()).toContain('<h1>Les antennes de La Réunion <span class="n974">974</span></h1>');
     expect(communePage("https://rundata.re", pageOf("cilaos")!, { place: null })).toContain('<h3><a href="/antennes">Antennes</a></h3>');
   });
 

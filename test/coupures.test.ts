@@ -481,6 +481,12 @@ describe("coupures d'eau", () => {
     // Never said of a distributor that it does not publish (a notice may be on paper, at the mairie): only that rundata.re does not read it.
     expect(lt).not.toMatch(/ne publie pas/);
     expect(lt).not.toContain("Aucune coupure d&#39;eau annoncée");
+    // Not read: who has its notices, never « pas d'avis » (marketing, 06/11/2026); the mairie's site linked when known.
+    expect(lt).toMatch(/<p class="card">Nous ne lisons pas les avis de coupure du Tampon\u00a0: ils sont sur le site de la mairie ou du distributeur\.(?: <a href="[^"]+" rel="noopener"[^>]*>[^<]+ →<\/a>)?<\/p>/);
+    expect(lt).not.toContain("Pas d&#39;avis en ligne lisible");
+    // The connector asked a question, without the tool's name.
+    expect(lt).toContain(`<p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne au Tampon\u00a0?\u00a0»</p>`);
+    expect(lt).not.toContain("coupures_eau");
     expect(page("le-port")).toContain("<h1>Coupures d'eau au Port <span class=\"n974\">974</span></h1>");
     expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })).toMatchObject({ valeur: "1 avis de coupure" });
@@ -564,12 +570,17 @@ describe("coupures d'eau", () => {
     expect(links.find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : eau à ne pas boire, voir le détail");
     // The legend never says « aucun avis » where nothing is read, and tells what the others are: each colour drawn, never a
     // coloured word (marketing's charter of the maps), then when the notices were read.
-    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>pas d&#39;avis lu en ce moment</span>`);
-    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:var(--land)"/></svg>avis non lus\u00a0: voir la mairie ou le distributeur</span>`);
+    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#a5d8ff"/></svg>Aucun avis en cours (site lu)</span>`);
+    expect(page).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#adb5bd"/></svg>Site pas lu\u00a0: voir la mairie ou le distributeur</span>`);
     expect(page).toContain(`<span class="mls">Avis des distributeurs, lus le 24/10 à 08:00.</span>`);
     expect(page).not.toContain('<span style="color:');
+    expect(page).toContain("L'eau du robinet est-elle bonne à Saint-Denis\u00a0?\u00a0»</p>");
+    expect(page).not.toContain("<code>coupures_eau</code>");
     // A commune not followed: said as the legend says, with its page.
-    expect(page).toContain(`<a class="zn" href="/coupures-eau/saint-joseph" aria-label="Saint-Joseph : avis non lus\u00a0: voir la mairie ou le distributeur, voir le détail" data-pn="Saint-Joseph" data-p2="avis non lus\u00a0: voir la mairie ou le distributeur" data-pv="commune">`);
+    expect(page).toContain(`<a class="zn" href="/coupures-eau/saint-joseph" aria-label="Saint-Joseph : site pas lu\u00a0: voir la mairie ou le distributeur, voir le détail" data-pn="Saint-Joseph" data-p2="site pas lu\u00a0: voir la mairie ou le distributeur" data-pv="commune">`);
+    // Two colours far apart (ux, 06/11/2026): the commune not read in grey, no longer the land's colour.
+    const sj = island.paths.find((p: { nom: string }) => p.nom === "Saint-Joseph")!;
+    expect(page).toContain(`<path d="${sj.d}" style="fill:#adb5bd"/>`);
   });
 
   it("keeps Saint-Leu's posts about the water network, as a short extract with its link, an image as a link only", () => {

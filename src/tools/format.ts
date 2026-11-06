@@ -55,6 +55,15 @@ export function nombre(n: number): string {
   return n.toLocaleString("fr-FR", { maximumFractionDigits: 20 }).replace(/\s/g, "\u202f");
 }
 
+/**
+ * A tile's figure, in the bold of the titles: its narrow no-break spaces become plain no-break spaces. In that font at
+ * weight 800, the narrow one is 2.6 px wide at 24 px, and « 1\u202f151 » reads « 1151 » at 390 px. The running text
+ * keeps the narrow one.
+ */
+export function enGrand(html: string): string {
+  return html.replace(/\u202f/g, "\u00a0");
+}
+
 /** « Saint-Denis, Saint-Paul et Salazie ». */
 export function enumeration(xs: string[]): string {
   return xs.length > 1 ? `${xs.slice(0, -1).join(", ")} et ${xs.at(-1)}` : xs.join("");

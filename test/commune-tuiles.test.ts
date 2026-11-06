@@ -56,6 +56,21 @@ function pack(span: number[], c: number): number[][] {
 const tile = (page: string, nom: string) => page.match(new RegExp(`<li class="tile[^>]*>(?:(?!<li class="tile).)*?>${nom}(?:</a>)?</h3>.*?(?=<li class="tile)`, "s"))![0];
 
 describe("a commune's tiles", () => {
+  it("write their figure with plain no-break spaces, the narrow one being invisible in the bold of the titles", () => {
+    for (const c of COMMUNES) {
+      const page = communePage(ORIGIN, c, commune(ago(60_000)), NOW);
+      const tv = [...page.matchAll(/<p class="tv">(.*?)<\/p>/gs)].map((m) => m[1]);
+      expect(tv.length, c.nom).toBeGreaterThan(0);
+      expect(tv.filter((v) => v.includes("\u202f")), c.nom).toEqual([]);
+    }
+    // The measure at the head of the page, in the same bold: « 25,9 °C », not « 25,9°C ».
+    const station = { station: "Le Port", mesures: { temperature: "25,9 °C" }, altitude_m: 10, heure_mesure: ago(60_000).toISOString(), distance_km: 6.1, pertinence: "bonne" };
+    const place = { value: { meteo: { stations: [station] } }, fetchedAt: ago(60_000), stale: false };
+    const page = communePage(ORIGIN, COMMUNES[0], { ...commune(ago(60_000)), place } as unknown as Parameters<typeof communePage>[2], NOW);
+    const big = page.match(/<span class="big">(.*?)<\/span>/)?.[1];
+    expect(big).toMatch(/^\d+(,\d)?\u00a0°C$/);
+  });
+
   // A page built for each commune in three states: about 3 s alone, over vitest's 5 s by default when the whole suite
   // loads the machine. Its own time, so a busy machine is not taken for a hole in the grid.
   it("leave no hole in the grid, on a phone, a tablet or a computer, in every commune", () => {

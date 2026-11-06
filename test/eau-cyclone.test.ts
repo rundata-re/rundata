@@ -60,7 +60,7 @@ describe("after a cyclone, the tap water", () => {
     const island = (now: Date) => coupuresPage("https://rundata.re", null, now);
     const commune = (now: Date) => coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: null }, now);
     // The season: right after the notices, before the rest.
-    expect(pos(island(JANUARY), 'id="h-cyclone-eau"')).toBeGreaterThan(pos(island(JANUARY), 'id="h-avis"'));
+    expect(pos(island(JANUARY), 'id="h-cyclone-eau"')).toBeGreaterThan(pos(island(JANUARY), 'id="h-coupures-eau"'));
     expect(pos(commune(JANUARY), 'id="h-cyclone-eau"')).toBeLessThan(pos(commune(JANUARY), 'id="h-qui"'));
     // The rest of the year: after the page's own sections (the other communes, the AI's invitation).
     expect(pos(commune(OCTOBER), 'id="h-cyclone-eau"')).toBeGreaterThan(pos(commune(OCTOBER), 'id="h-autres"'));

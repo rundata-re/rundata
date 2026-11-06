@@ -11,7 +11,7 @@ import { pageOf } from "../src/web/places.js";
 import { resume } from "../src/tools/resume.js";
 import { site } from "../src/web/site.js";
 import { aujourdhuiPage, descriptionOf } from "../src/web/aujourdhui.js";
-import { mapLinks } from "./cartes.js";
+import { doubleIds, mapLinks } from "./cartes.js";
 
 // The distributors' notices on 24/10/2026 in the morning: a cut announced in Saint-Denis for Monday night, the water
 // of La Plaine-des-Palmistes and of Grand Ilet (Salazie) not to be drunk, Saint-Benoît back to normal since the 15th.
@@ -235,6 +235,12 @@ describe("coupures d'eau", () => {
     const isle = coupuresPage("https://rundata.re", coupures, later);
     expect(isle).toContain("<h3>Ne pas boire l'eau · Salazie");
     expect(isle).toContain(`<span class="big">2</span><p>avis en cours : <b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie).</p>`);
+    // Each id once, on the island's page and the commune's: the list of notices and the feedback form have their own titles.
+    for (const page of [isle, salazie]) {
+      expect(doubleIds(page)).toEqual([]);
+      expect(page).toContain('<section aria-labelledby="h-coupures-eau">');
+      expect(page).toContain('<aside class="avis wrap" id="avis" aria-labelledby="h-avis">');
+    }
     const day = resume(pageOf("salazie")!, { coupures } as never, later);
     expect(day.resume).toContain("\u00a0; 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day.resume).not.toContain("coupure d'eau");

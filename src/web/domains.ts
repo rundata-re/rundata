@@ -2711,8 +2711,8 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   ], d && data ? esc(`Avis des distributeurs, lus ${readAt(data.fetchedAt, now).a}.`) : undefined)}</figcaption></figure>
 </div>`;
 
-  const body = `<section aria-labelledby="h-avis">
-  <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-avis">Les avis</h2>
+  const body = `<section aria-labelledby="h-coupures-eau">
+  <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis</h2>
   <p>${d ? esc(d.couverture) : ""}</p></div>
   ${list}
   ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}

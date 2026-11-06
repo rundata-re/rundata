@@ -82,7 +82,7 @@ const FILTER = `<form id="of" class="card filter" hidden role="search" aria-labe
 <p class="note" id="of-n" aria-live="polite"></p></form>`;
 
 const SCRIPT = `(()=>{const f=document.getElementById("of");if(!f)return;f.hidden=false;
-const items=[...document.querySelectorAll("#avis li")];
+const items=[...document.querySelectorAll("#marches li")];
 const norm=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 for(const e of items)e.dataset.q=norm(e.textContent);
 const run=()=>{const q=norm(f.q.value).split(" ").filter(Boolean),c=f.c.value;let n=0;
@@ -105,7 +105,7 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
       : triage
       ? `<p class="card">${plural(d.enLecture!, "avis lu", "avis lus")} au BOAMP ${leAt(d.lu ?? data.fetchedAt)} ${d.enLecture! > 1 ? "sont" : "est"} en cours de tri, pour ne garder que ceux de l'île.</p>`
       : d.avis.length
-      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="avis">${d.avis.map((a) => row(a, now)).join("")}</ul>`
+      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="marches">${d.avis.map((a) => row(a, now)).join("")}</ul>`
       : `<p class="card">Aucun avis de marché ouvert pour La Réunion sur le BOAMP ${leAt(data.fetchedAt)}.</p>`;
 
   const title = "Marchés publics Réunion : avis de marché et appels d'offres en cours · 974";
@@ -118,8 +118,8 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
   ${status}
 </div></div>`;
 
-  const body = `<section aria-labelledby="h-avis">
-  <h2 id="h-avis" class="sr">Les avis</h2>
+  const body = `<section aria-labelledby="h-marches">
+  <h2 id="h-marches" class="sr">Les avis</h2>
   ${d?.injoignable ? warnings([d.injoignable]) : ""}
   ${list}
 </section>

@@ -12,6 +12,7 @@ import { crumbBar, crumbs, saidNow, STOP_PATH } from "./domains.js";
 import { esc } from "./map.js";
 import { type Alerte, credit } from "./data.js";
 import { credits, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
+import { casse } from "../tools/casse.js";
 
 const TITLE_MAX = 60;
 const NBSP = " ";
@@ -77,7 +78,7 @@ export function tripPage(origin: string, path: string, t: TripRun, chosen: numbe
   const band = `${crumbBar(`Ligne ${t.ligne}`, { name: "Bus", path: "/bus" })}
 <div class="wrap intro">
   <div class="pitch">
-    <h1>Ligne ${esc(t.ligne)} vers ${esc(t.direction)}</h1>
+    <h1>Ligne ${esc(t.ligne)} vers ${esc(casse(t.direction))}</h1>
     <p class="lead">${esc(t.nom_reseau)} · départ ${esc(de(t.origine))} à ${esc(start)}, ${esc(dayOf(t.depart, now))}</p>
   </div>
 </div>`;

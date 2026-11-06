@@ -780,6 +780,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const irt = !commune || !!what?.nom?.includes("fêtes et festivals");
   // The halls not read (tools/non-repris.ts), the commune's or the island's.
   const nonRepris = [...(commune ? [mentionCommune(commune)] : mentionIle()), ...mentionSalles(commune), irt ? mentionReunionFr() : undefined].filter(Boolean).join(" ") || undefined;
+  // Each part without its own final point (MARCHES_REGULIERS is a sentence): one point, at the end.
   const resume = [
     n ? `${n} événement${n > 1 ? "s" : ""}${kind} ${where} ${periodText}` : `Aucun événement${kind} trouvé ${where} ${periodText}`,
     off.length ? `ATTENTION : ${off.map((x) => `« ${casse(x.e.titre)} » ${x.e.statut}${x.e.reporte_au ? ` au ${dayText(x.e.reporte_au)}` : ""}${x.e.selon ? ` (d'après ${x.e.selon.media})` : ""}`).slice(0, 4).join(", ")}` : "",
@@ -793,7 +794,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     failed.length ? `${failed.length} agenda${failed.length > 1 ? "s" : ""} non lu${failed.length > 1 ? "s" : ""} cette fois : ${failed.join(", ")} (liste peut-être incomplète, à redemander dans une minute)` : "",
     // The commune's own agendas, where silence would read as « nothing »; the island's are in `non_lus`.
     unread.some((x) => x.propre) ? `sans lecture récente : ${unread.filter((x) => x.propre).map((x) => `${x.nom}, ${x.etat}`).join("\u00a0; ")} (voir non_lus)` : "",
-  ].filter(Boolean).join("\u00a0; ") + ".";
+  ].filter(Boolean).map((x) => x.replace(/\.$/, "")).join("\u00a0; ") + ".";
 
   const used = [...new Set(got.filter((g) => g.value && (!DE_LA_BASE.has(g.agenda.id) || g.value.value.length)).map((g) => g.agenda.source))] as SourceInfo[];
   const listedEvents = n ? mine.slice(0, listed) : [];

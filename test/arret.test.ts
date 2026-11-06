@@ -63,6 +63,10 @@ describe("the stop pages", () => {
     expect(html).toContain(`<link rel="canonical" href="${O}/bus/arret/saint-pierre/gare-de-saint-pierre">`);
     expect(html).not.toContain(`content="noindex"`);
     expect(html).toContain("Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour le 23/10 à 07:30.");
+    // Each wait says the time of the bus too, « 07:42, dans 12 min », and its direction in the case of a sentence.
+    const first = d.departs.find((x) => x.dans_min >= 1 && x.dans_min < 90)!;
+    expect(html).toContain(`<span class="note">${first.heure_annoncee ?? first.heure}, dans ${first.dans_min} min`);
+    expect(html.match(/vers [^<]*/g)!.filter((v) => !/\p{Ll}/u.test(v.slice(5)) && v.length > 12)).toEqual([]);
   });
 
   it("are not indexed below the threshold, and say the commune unless the name has it", async () => {

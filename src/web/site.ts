@@ -458,10 +458,30 @@ function cumulsFile(path: string): Response | null {
   });
 }
 
+/**
+ * Addresses typed or guessed for a page that has another name: the events page was first published as /agenda, the
+ * English address of who makes a site, the legal notice now in /conditions, the sources counted and listed on /chiffres.
+ */
+const ALIASES: Record<string, string> = {
+  "/agenda": "/evenements",
+  "/about": "/a-propos",
+  "/mentions-legales": "/conditions#mentions-legales",
+  "/sources": CHIFFRES,
+  "/randos": "/randonnees",
+};
+
 async function pages(request: Request, cache: Cache, background: Background, now: Date): Promise<Response | null> {
   const url = new URL(request.url);
   const origin = url.origin;
   const path = url.pathname;
+
+  // One address per page: « /a-propos/ » goes to « /a-propos », the search kept, and an alias to its page in one step.
+  // Slashes in front never make it another site's address: « //exemple.com/ » goes to « /exemple.com ». « /mcp/ » is the
+  // connector's address too, answered in place (app.ts): a client may not follow a redirect. The associations' short
+  // addresses go to their page in one step below, with their query.
+  const bare = path.length > 1 && path.endsWith("/") && path !== "/mcp/" ? `/${path.replace(/^\/+|\/+$/g, "")}` : path;
+  const to = Object.hasOwn(ALIASES, bare) ? ALIASES[bare] : bare !== path && !ASSOCIATIONS_ALIASES.includes(bare) ? `${bare}${url.search}` : undefined;
+  if (to) return new Response(null, { status: 301, headers: { location: to, "cache-control": STATIC } });
 
   // The feedback form at the bottom of every page (web/avis.ts).
   if (path === "/avis") return avisPost(request, now);
@@ -624,8 +644,6 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // Without what the satellites saw, the page is not kept: the next view should have it.
     return new Response(feuxPage(origin, { fires, sentiers, vigilance }, now, a), { headers: htmlFor(fires ?? (feux.enabled() ? null : true)) });
   }
-  // The events page was first published as /agenda.
-  if (path === "/agenda" || path === "/agenda/") return Response.redirect(`${origin}/evenements`, 301);
   if (path === "/volcan" || path === "/volcan/") {
     const [data, a] = await Promise.all([
       snapshot(cache, "web:volcan", () => buildVolcan(cache, now), background, now, waitFor(request), readerOf(request)),
@@ -698,13 +716,6 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === BAIGNADE || path === `${BAIGNADE}/`) {
     const a = await alerte(cache, background, now);
     return new Response(bathingPage(origin, now, a), { headers: HTML });
-  }
-  if (path === "/mentions-legales" || path === "/mentions-legales/") {
-    return new Response(null, { status: 301, headers: { location: "/conditions#mentions-legales", "cache-control": STATIC } });
-  }
-  // The English address, typed or guessed by those who look for who makes a site.
-  if (path === "/about" || path === "/about/") {
-    return new Response(null, { status: 301, headers: { location: "/a-propos", "cache-control": STATIC } });
   }
   // Who makes the site, and the connector's page for a browser (app.ts sends only those here): nothing read but the vigilance's banner.
   if (path === "/a-propos" || path === "/a-propos/") {

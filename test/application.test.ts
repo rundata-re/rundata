@@ -23,7 +23,9 @@ describe("/application, rundata.re on the home screen", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("has its title, its heading, its lead and a short description", async () => {
-    for (const path of ["/application", "/application/"]) expect((await handle(get(path), new Cache())).status).toBe(200);
+    expect((await handle(get("/application"), new Cache())).status).toBe(200);
+    const slash = await handle(get("/application/"), new Cache());
+    expect([slash.status, slash.headers.get("location")]).toEqual([301, "/application"]);
     const page = await text("/application");
     expect(page).toContain("<title>rundata.re sur l&#39;écran d&#39;accueil, comme une application · 974</title>");
     expect(page).toContain("<h1>rundata.re sur votre écran d'accueil</h1>");

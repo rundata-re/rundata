@@ -47,6 +47,7 @@ import { ligneTuile } from "./antennes.js";
 import { PATH as ECOLES, schoolLi } from "./ecoles-annuaire.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { enTete } from "../tools/representativeness.js";
+import { casse } from "../tools/casse.js";
 
 /** What a commune's page is made of, each part null or missing when there is no copy yet. */
 export interface CommuneLive {
@@ -232,7 +233,7 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   if (!left.length) return { live: { valeur: "Pas de départ", detail: `${where} dans les prochaines heures, d'après les horaires publiés` } };
   const first = left.find(({ x }) => !x.temps_reel) ?? left[0];
   return {
-    live: { valeur: esc(first.heure), detail: `prochain départ ${where} : ligne ${esc(first.x.ligne)} vers ${esc(first.x.direction)} (${esc(first.x.reseau)})` },
+    live: { valeur: esc(first.heure), detail: `prochain départ ${where} : ligne ${esc(first.x.ligne)} vers ${esc(casse(first.x.direction))} (${esc(first.x.reseau)})` },
     more: `<ul class="rows departs cols">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, heure))).join("")}</ul>` +
       (b.alertes?.length ? `<div class="note">Info trafic : ${alertList(b.alertes)}</div>` : ""),
   };

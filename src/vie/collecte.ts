@@ -113,8 +113,13 @@ function fortnightly(days: number[], today: number): number | undefined {
   return soon.filter((n) => wd(n) !== w).length <= 1 ? w : undefined;
 }
 
-/** What a collection's coming days say: its rhythm when it keeps one, else its next days. Undefined without any. */
-export function rhythm(days: number[] | undefined, today: number): string | undefined {
+/**
+ * What a collection's coming days say: its rhythm when it keeps one, else its next days. Undefined without any.
+ * `feries`, the calendar's holidays: a next day off the rhythm's weekday with no holiday in its week (one moves the days
+ * after it) is not moved by one, but the last of another rhythm, said apart (« le mardi 24/11, puis le lundi, une
+ * semaine sur deux »).
+ */
+export function rhythm(days: number[] | undefined, today: number, feries?: number[]): string | undefined {
   const next = (days ?? []).filter((n) => n >= today);
   if (!next.length) return undefined;
   const w = weekly(next, today);
@@ -122,6 +127,9 @@ export function rhythm(days: number[] | undefined, today: number): string | unde
   // Every other week, the same weekday: said with the next one, for the week it falls in.
   const f = fortnightly(next, today);
   const first = next[0] === today ? "aujourd'hui" : undefined;
+  if (f !== undefined && feries && wd(next[0]) !== f && !first && !feries.some((h) => h >= next[0] - 6 && h <= next[0] + 2)) {
+    return `le ${dayFr(next[0])}, puis le ${WEEKDAYS[f]}, une semaine sur deux`;
+  }
   if (f !== undefined) return `le ${WEEKDAYS[f]}, une semaine sur deux (prochain : ${first ?? (wd(next[0]) === f ? dm(next[0]) : dayFr(next[0]))})`;
   // The same weekday of the month, four months on.
   const months = next.filter((n) => n < today + 122);
@@ -130,7 +138,8 @@ export function rhythm(days: number[] | undefined, today: number): string | unde
     return `le ${NTH[nth(months[0])]} ${WEEKDAYS[wd(months[0])]} du mois (prochain : ${first ?? dm(months[0])})`;
   }
   const shown = next.slice(0, 3);
-  return shown.every((n) => wd(n) === wd(shown[0]))
+  // « les lundis 7/12, 21/12 », but « le lundi 7/12 » for one day.
+  return shown.length > 1 && shown.every((n) => wd(n) === wd(shown[0]))
     ? `les ${WEEKDAYS[wd(shown[0])]}s ${shown.map(dm).join(", ")}${next.length > 3 ? "…" : ""}`
     : `${list(shown.map((n) => `le ${dayFr(n)}`))}${next.length > 3 ? "…" : ""}`;
 }
@@ -142,7 +151,7 @@ export function rhythm(days: number[] | undefined, today: number): string | unde
 export function rhythmOf(c: Calendar, today: number): string | undefined {
   if (pastYear(today)) return undefined;
   return KINDS.flatMap(([k, name]) => {
-    const r = rhythm(c[k], today);
+    const r = rhythm(c[k], today, c.F ?? []);
     return r ? [`${name} ${r}`] : [];
   }).join("\u00a0; ");
 }

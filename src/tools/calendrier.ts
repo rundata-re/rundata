@@ -17,6 +17,12 @@ export function longDate(ymd: string, year = true): string {
 /** Shown instead of a date when the rectorat has not published the end of a holiday yet. */
 export const UNPUBLISHED = "pas encore publiée";
 
+/** Ordinals as the kit writes them: the academy's « Vacances après 3ème période » → « 3e », « 1ère » → « 1re ». */
+export const ordinaux = (s: string) => s.replace(/(\d)ère(?=\s|$)/g, "$1re").replace(/(\d)ème(?=\s|$)/g, "$1e");
+
+/** A holiday and its date, its name said once: « mercredi 11 novembre 2026 » for « 11 novembre », « Toussaint, dimanche 1er novembre 2026 ». */
+export const ferieDit = (nom: string, date: string) => (date.toLowerCase().includes(nom.toLowerCase()) ? date : `${nom}, ${date}`);
+
 const today = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 const daysBetween = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 
@@ -118,7 +124,7 @@ export async function calendrier(cache: Cache, lieu: string | undefined, now = n
   if (feries) {
     const next = Object.entries(feries).filter(([d]) => d >= day).sort().slice(0, 4);
     if (feries[day]) parts.push(`Aujourd'hui est férié : ${feries[day]}.`);
-    else if (next[0]) parts.push(`Prochain jour férié : ${next[0][1]}, ${longDate(next[0][0])} (dans ${daysBetween(day, next[0][0])} jours).`);
+    else if (next[0]) parts.push(`Prochain jour férié : ${ferieDit(next[0][1], longDate(next[0][0]))} (dans ${daysBetween(day, next[0][0])} jours).`);
     ferie = {
       aujourd_hui: feries[day] ?? null,
       prochains: next.map(([d, nom]) => ({ date: longDate(d), nom, dans_jours: daysBetween(day, d) })),
@@ -127,8 +133,9 @@ export async function calendrier(cache: Cache, lieu: string | undefined, now = n
   }
   let scolaire;
   if (schools) {
-    const current = schools.find((b) => b.debut <= day && b.reprise && day < b.reprise);
-    const upcoming = schools.filter((b) => b.debut > day).slice(0, 4);
+    const named = schools.map((b) => ({ ...b, nom: ordinaux(b.nom) }));
+    const current = named.find((b) => b.debut <= day && b.reprise && day < b.reprise);
+    const upcoming = named.filter((b) => b.debut > day).slice(0, 4);
     if (current) parts.push(`Vacances scolaires en cours (${current.nom}) : reprise des cours le ${longDate(current.reprise!)}.`);
     else if (upcoming[0]) parts.push(`Prochaines vacances scolaires : ${upcoming[0].nom}, à partir du ${longDate(upcoming[0].debut)}.`);
     const fmt = (b: cal.SchoolBreak) => ({

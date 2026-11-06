@@ -1113,7 +1113,8 @@ try{navigator.clipboard.writeText(a.dataset.copie||new URL(a.href).searchParams.
  */
 export const UNFOLD_SCRIPT = `(()=>{const unfold=()=>{const t=location.hash&&document.getElementById(location.hash.slice(1));const d=t&&(t.closest("details")||t.querySelector(":scope>details"));if(d)d.open=true};unfold();addEventListener("hashchange",unfold)})();`;
 
-const SCRIPT = `const menu=document.querySelector("details.menu");if(menu)document.addEventListener("click",(e)=>{if(menu.open&&!menu.contains(e.target))menu.open=false});
+const SCRIPT = `const menu=document.querySelector("details.menu");if(menu){document.addEventListener("click",(e)=>{if(menu.open&&!menu.contains(e.target))menu.open=false});
+document.addEventListener("keydown",(e)=>{if(e.key==="Escape"&&menu.open){menu.open=false;menu.querySelector("summary").focus()}})}
 ${UNFOLD_SCRIPT}
 document.querySelectorAll("[data-copy]").forEach((b)=>b.addEventListener("click",async()=>{const t=document.getElementById(b.dataset.copy);
 const o=b.textContent;if(b.dataset.signal&&location.pathname==="/mcp")sig("c");try{await navigator.clipboard.writeText(t.textContent);b.textContent="Copié ✓";setTimeout(()=>b.textContent=o,2500)}catch{getSelection().selectAllChildren(t)}}));
@@ -1398,7 +1399,7 @@ ${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n`
     ${SLOGAN}
     <p>La Réunion 974 en direct, pour vous et votre assistant IA.</p>
     ${head.rss ? `<p><a href="${esc(head.rss.href)}" title="${esc(head.rss.hint)}">${esc(head.rss.link)}</a></p>` : ""}
-    <p>reunion-temps-reel ${VERSION} · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues()} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a> · contact@rundata.re</p>
+    <p>rundata.re, version ${VERSION} · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues()} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a> · contact@rundata.re</p>
     <p>Référencé sur <a href="${DATAGOUV_REUSE}">data.gouv.fr</a>, la plateforme des données publiques françaises, et sur <a href="${GLAMA}">Glama</a>, l'annuaire des serveurs MCP.</p>
     ${follow()}
     <ul class="pages" aria-label="Catégories">${WITH_PAGE.map((c) => `<li><a href="${c.path}">${esc(c.nom)}</a></li>`).join("")}<li><a href="/communes">Communes</a></li><li><a href="/meteo#communes">Météo par commune</a></li>${enLigne() ? `<li><a href="/associations">Clubs et associations</a></li>` : ""}</ul>

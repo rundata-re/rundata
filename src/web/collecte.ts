@@ -17,11 +17,14 @@ const H1 = "Quel jour passent les poubelles ?";
 const META = `Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue à Saint-Paul, La Possession, Saint-Leu, Le Port et Trois-Bassins (974), calendriers ${col.YEAR} du TCO.`;
 const titleOf = (c: string) => `Collecte des déchets ${a(c)} : jours par rue · 974`;
 const h1Of = (c: string) => `Quel jour passent les poubelles ${a(c)} ?`;
+const COLLECTE = { name: "Collecte des déchets", path: "/collecte" };
 const metaOf = (c: string) => `Ordures ménagères, tri et déchets verts ${a(c)} (974) : le jour de collecte de votre rue, d'après le calendrier ${col.YEAR} du TCO. Cherchez votre rue.`;
 const LEAD = `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par le TCO.`;
 const { honesty, communeSlug } = col;
 // With the list just below (marketing), and the tool's first words of `a_savoir` (honesty): only the West is read.
-const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${honesty().split(" Calendriers")[0]}`;
+/** « Seulement les 5 communes de l'Ouest (TCO) pour l'instant. », the tool's words: under the field, and after a street not found. */
+const OUEST = honesty().split(" Calendriers")[0];
+const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${OUEST}`;
 /**
  * The communes of the other intercommunalities, for the search box: typed alone or ending what is typed (« rue de
  * Paris, Saint-Denis »), the same sentence as the tool's (vie/collecte.ts `ailleurs`, marketing's words of 04/11/2026),
@@ -103,12 +106,13 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
   const description = commune ? metaOf(commune) : META;
   const today = col.todayOf(now);
   const others = col.COMMUNES.filter((c) => c !== commune).map((c) => `<a href="/collecte/${communeSlug(c)}">${esc(c)}</a>`).join(" · ");
-  const band = `${crumbBar(commune ? `Collecte ${a(commune)}` : "Collecte des déchets")}
+  const band = `${crumbBar(commune ? `Collecte ${a(commune)}` : "Collecte des déchets", commune ? COLLECTE : undefined)}
 <div class="wrap intro"><div class="pitch">
   <p class="pill">Calendriers du TCO · ${col.YEAR}</p>
   <h1>${esc(commune ? h1Of(commune) : H1)}</h1>
   <p class="lead">${esc(LEAD)}</p>
-  <label class="search">Votre rue <input id="rue" type="search" placeholder="Rue, chemin, impasse…" autocomplete="off"></label>
+  <label class="search">Votre rue <input id="rue" type="search" placeholder="Rue, chemin, impasse…" autocomplete="off" aria-describedby="ouest"></label>
+  <p class="note" id="ouest">${esc(OUEST)}</p>
 </div></div>`;
   const body = `<section aria-label="Votre rue"><div id="trouve" aria-live="polite"></div><p id="rien" hidden>${esc(NOT_FOUND_HERE)}</p></section>
 <section aria-labelledby="h-voies">
@@ -120,5 +124,5 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
 <p><a href="/decheteries">Les déchèteries de l'Ouest et leurs bennes en direct →</a></p></section>
 ${connectorCta("annuaire_services_publics", "les jours de collecte")}
 <script>${SCRIPT}</script>`;
-  return layout(origin, { title, description, path, jsonld: [crumbs(origin, commune ? `Collecte ${a(commune)}` : "Collecte des déchets", path), webPage(origin, path, title, description, null)], alerte }, band, body);
+  return layout(origin, { title, description, path, jsonld: [crumbs(origin, commune ? `Collecte ${a(commune)}` : "Collecte des déchets", path, commune ? COLLECTE : undefined), webPage(origin, path, title, description, null)], alerte }, band, body);
 }

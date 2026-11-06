@@ -88,9 +88,14 @@ export function stopPage(origin: string, p: transit.StopPage, d: Departures, now
   </div>
 </div>`;
 
+  // The time of the bus beside the wait, « 13:40, dans 14 min »: to catch it, the time matters as much as the wait.
+  const atStop = (min: number, heure: string) => {
+    const w = waitText(min, heure);
+    return w.startsWith("dans ") || w === "maintenant" ? `${heure}, ${w}` : w;
+  };
   const rows = d.departs.length
     // The wait under the direction (.rows.departs, as on /bus and the communes): beside it, a delay announced leaves the direction no room on a phone.
-    ? `<ul class="rows departs">${d.departs.map((x) => departureLi(x, waitText(x.dans_min, x.heure_annoncee ?? x.heure))).join("")}</ul>`
+    ? `<ul class="rows departs">${d.departs.map((x) => departureLi(x, atStop(x.dans_min, x.heure_annoncee ?? x.heure))).join("")}</ul>`
     : `<p>Pas de départ prévu dans les prochaines heures.</p>`;
   const flux = d.flux ? leAt(new Date(d.flux * 1000)) : undefined;
   const note = `<p class="note">${d.direct.length && flux ? `${esc(d.direct.join(", "))} : heures annoncées en direct par le réseau quand le bus y figure (données du réseau lues ${esc(flux)}). ` : ""}` +

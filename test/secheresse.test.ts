@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { parse } from "../src/providers/vigieau.js";
+import { heuresDites } from "../src/tools/format.js";
 import { restrictionsEau } from "../src/tools/secheresse.js";
 import { buildSecheresse } from "../src/web/data.js";
 import { nobreak, secheresseLive, secheressePage } from "../src/web/domains.js";
@@ -36,6 +37,14 @@ describe("restrictions d'eau", () => {
     expect(mapLinks(page).find((l) => l.href === "#c-saint-joseph")?.label).toBe("Saint-Joseph : eau du robinet\u00a0: crise, voir le détail");
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
+  });
+
+  it("writes VigiEau's hours as the kit does: « de 18 h à 8 h », never « de 18h à 8h »", async () => {
+    expect(raw).toContain("arrosés de 18h à 8h");
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    expect(page).toMatch(/arrosés de 18\u00a0h à\s8\u00a0h</);
+    expect((page.match(/<small>[^<]*<\/small>/g) ?? []).filter((x) => /\dh\b|\dh\d/.test(x))).toEqual([]);
+    expect(heuresDites("entre 7h30 et 19h00, 24h/24, 8 heures")).toBe("entre 07:30 et 19\u00a0h, 24h/24, 8 heures");
   });
 
   it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, then the order's date", async () => {

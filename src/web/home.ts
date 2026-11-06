@@ -18,6 +18,7 @@ import { enfantsLive } from "./enfants.js";
 import { enLigne } from "./associations-drapeau.js";
 import { CHAMP, champScript } from "./menu.js";
 import { esc, fenetre, islandMap, type Marker } from "./map.js";
+import { casse } from "../tools/casse.js";
 import {
   ask,
   chip,
@@ -159,7 +160,7 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
     out.push({
       question: `Le prochain bus à la gare ${esc(de(g.commune))} ?`,
       call: `transports(arret: "gare routière ${esc(g.commune)}")`,
-      answer: `Ligne ${esc(a.ligne)} vers ${esc(a.direction)} ${esc(a.heure)}, puis ligne ${esc(b.ligne)} vers ${esc(b.direction)} ${esc(b.heure)} (${esc(a.reseau)}${b.reseau !== a.reseau ? `, ${esc(b.reseau)}` : ""}), d'après les horaires publiés.`,
+      answer: `Ligne ${esc(a.ligne)} vers ${esc(casse(a.direction))} ${esc(a.heure)}, puis ligne ${esc(b.ligne)} vers ${esc(casse(b.direction))} ${esc(b.heure)} (${esc(a.reseau)}${b.reseau !== a.reseau ? `, ${esc(b.reseau)}` : ""}), d'après les horaires publiés.`,
     });
   }
   const p = h?.electricite?.value.production;

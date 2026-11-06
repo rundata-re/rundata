@@ -32,7 +32,8 @@ describe("/valeurs, what rundata.re stands for", () => {
   });
 
   it("has its title, its crumb, a short description and its sections", async () => {
-    for (const path of ["/valeurs", "/valeurs/"]) expect((await handle(get(path), new Cache())).status).toBe(200);
+    expect((await handle(get("/valeurs"), new Cache())).status).toBe(200);
+    expect((await handle(get("/valeurs/"), new Cache())).headers.get("location")).toBe("/valeurs");
     const page = await text("/valeurs");
     expect(page).toContain("<title>Nos valeurs · rundata.re</title>");
     expect(page).toContain("<h1>Nos valeurs</h1>");
@@ -71,7 +72,8 @@ describe("/ouvrir-ses-donnees, the guide to making one's information reusable", 
   afterEach(() => vi.unstubAllGlobals());
 
   it("has its title, its crumb, a short description and its eight parts", async () => {
-    for (const path of ["/ouvrir-ses-donnees", "/ouvrir-ses-donnees/"]) expect((await handle(get(path), new Cache())).status).toBe(200);
+    expect((await handle(get("/ouvrir-ses-donnees"), new Cache())).status).toBe(200);
+    expect((await handle(get("/ouvrir-ses-donnees/"), new Cache())).headers.get("location")).toBe("/ouvrir-ses-donnees");
     const page = await text("/ouvrir-ses-donnees");
     expect(page).toContain("<title>Rendre ses données accessibles · rundata.re</title>");
     expect(page).toContain("<h1>Rendre ses données accessibles, à moindre coût et en toute sécurité</h1>");

@@ -73,7 +73,7 @@ import { compteAvis, muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
-import { a, ailleurs, credits, de, fourchette, notFound, placeBlock, placeWarning, text } from "./format.js";
+import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, text } from "./format.js";
 import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import { instant, type InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
@@ -400,13 +400,13 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const w = l.meteo ? weather(l.meteo.value, l.meteo.fetchedAt, now) : undefined;
   const away = lieu && w ? distanceKm(commune.place.lon, commune.place.lat, lieu.lon, lieu.lat) : 0;
   const far = !!lieu && away >= 1;
-  const centre = far && !meteoDuLieu ? `météo du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom}` : undefined;
+  const centre = far && !meteoDuLieu ? `météo du centre ${de(nom)}, à ${km(away)} ${de(lieu!.nom)}` : undefined;
   // The place's own measure under the centre's forecast: the forecast said as the centre's, where it is given.
   const forecastAway = far && meteoDuLieu === "mesure";
   const meteo = w && centre
-    ? { ...w, lieu: `centre ${de(nom)}`, avertissement: `Météo du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom} : la station, sa distance et la prévision sont celles du centre. Pour ${lieu!.nom} même : meteo_actuelle et prevision_meteo.` }
+    ? { ...w, lieu: `centre ${de(nom)}`, avertissement: `Météo du centre ${de(nom)}, à ${km(away)} ${de(lieu!.nom)} : la station, sa distance et la prévision sont celles du centre. Pour ${le(lieu!.nom)} même : meteo_actuelle et prevision_meteo.` }
     : w && forecastAway && w.prevision
-      ? { ...w, lieu: lieu!.nom, avertissement: `Prévision du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom}\u00a0: celle ${de(lieu!.nom)} n'a pas pu être calculée cette fois. La mesure est celle de la station la plus proche ${de(lieu!.nom)}.` }
+      ? { ...w, lieu: lieu!.nom, avertissement: `Prévision du centre ${de(nom)}, à ${km(away)} ${de(lieu!.nom)}\u00a0: celle ${de(lieu!.nom)} n'a pas pu être calculée cette fois. La mesure est celle de la station la plus proche ${de(lieu!.nom)}.` }
       : w && lieu && meteoDuLieu ? { ...w, lieu: lieu.nom } : w;
   const news = [...(l.actualites?.value.en_direct ?? []), ...(l.actualites?.value.infos ?? [])]
     .filter((i) => i.communes?.includes(nom) && now.getTime() - Date.parse(instant(i.publie, now)) < NEWS_HOURS * 3600_000);

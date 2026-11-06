@@ -16,7 +16,7 @@ import { chart, known } from "./graphe.js";
 import { esc } from "./map.js";
 import { inseeCommune, ventText } from "./meteo-carte.js";
 import { credits, dayMonth, deg, hm, layout, metres, shortName, thin, leAt, duAt } from "./pages.js";
-import { a, fr } from "../tools/format.js";
+import { a, enGrand, fr } from "../tools/format.js";
 
 export const STATION_PATH = "/meteo/station";
 export const stationPath = (id: string) => `${STATION_PATH}/${id}`;
@@ -124,7 +124,7 @@ function band(d: StationData, now: Date): string {
   const said = !d.derniere
     ? ""
     : m.temperature != null
-      ? `<div class="now"><span class="big span">${thin(deg(m.temperature))}</span><p>mesurés ${cirad(d.nom) ? "" : "sous abri "}<b>${at}</b> ${where}.</p></div>`
+      ? `<div class="now"><span class="big span">${enGrand(thin(deg(m.temperature)))}</span><p>mesurés ${cirad(d.nom) ? "" : "sous abri "}<b>${at}</b> ${where}.</p></div>`
       // A rain gauge says what it measures; another station without a thermometer, its measures (marketing).
       : `<div class="now"><p>${Object.keys(m).every((k) => k.startsWith("pluie")) ? `Pluie mesurée <b>${at}</b>` : `Mesures <b>${duAt(d.derniere!.time)}</b>`} ${where}.</p></div>`;
   // The last round hour, in the box only when it ends before the last measure, and not long before.

@@ -72,7 +72,7 @@ describe("a station's page", () => {
     expect(html).toContain(`<li aria-current="page">Gillot aéroport</li>`);
     expect(html).toContain(`<h1>Gillot <span class="n974">aéroport</span></h1>\n    <p class="hook">Ce que mesure cette station en ce moment, et son historique depuis 1953.</p>`);
     expect(html).toContain("<title>Gillot aéroport : station météo en direct et historique");
-    expect(html).toContain(`<span class="big span">27,9 °C</span><p>mesurés sous abri <b>le 25/10 à 12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8 m d'altitude.</p>`);
+    expect(html).toContain(`<span class="big span">27,9\u00a0°C</span><p>mesurés sous abri <b>le 25/10 à 12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8 m d'altitude.</p>`);
     expect(html).toContain("<h2>La dernière mesure, le 25/10 à 12:18</h2>");
     for (const k of ["Vent moyen", "Humidité", "Point de rosée", "Pluie", "Pression (niveau de la mer)", "Soleil"]) expect(html).toContain(`<li><span>${k}</span>`);
     // Rain and sunshine of the last round hour of the package.

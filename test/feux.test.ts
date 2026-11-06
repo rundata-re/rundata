@@ -9,7 +9,7 @@ import { sentiersRandonnee } from "../src/tools/sentiers.js";
 import { vigilanceMeteo } from "../src/tools/vigilance.js";
 import type { RandonneesAnswer, SentiersAnswer } from "../src/web/data.js";
 import { sentiersPage } from "../src/web/domains.js";
-import { feuxDescription, feuxPage } from "../src/web/feux.js";
+import { feuxDescription, feuxPage, heroFeux } from "../src/web/feux.js";
 import { site } from "../src/web/site.js";
 import { communeHikes } from "../src/web/liens.js";
 import { pageOf } from "../src/web/places.js";
@@ -274,7 +274,10 @@ describe("the fires' page", () => {
     expect(html).toContain("Votre IA, branchée sur les feux");
     expect(html).toContain("Na difé dann bwa\u00a0? Maïdo i brul\u00a0? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.");
     expect(html).toContain('fill="#7c2d12"/></svg>Point chaud détecté par satellite, pas forcément un feu.</span>');
-    expect(html).toMatch(/<span class="mls">Points chauds\s: satellites de la NASA \(FIRMS\), lus le 24\/10 à\s08:00\.<\/span>/);
+    expect(html).toMatch(/<span class="mls">Croix\s: sentiers fermés par l&#39;ONF, pas des feux\. Points chauds\s: satellites de la NASA \(FIRMS\), lus le 24\/10 à\s08:00\.<\/span>/);
+    // The first screen (marketing, 06/11/2026): the hot spots of 24 hours, when they were read, what a satellite sees.
+    expect(html).toContain('<p class="pill"><span class="dot"></span>Satellites de la NASA · 24\u00a0h</p>');
+    expect(html).toContain("<p class=\"lead\"><b>2 points chauds détectés par satellite depuis 24\u00a0h</b></p>\n    <p>Lu le 24/10 à\u00a008:00. Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.</p>\n    <p class=\"lead\"><b>Vous voyez un feu\u00a0? Appelez le 18 ou le 112.</b></p>");
     expect(await (await page("/sitemap.xml"))!.text()).toContain("<loc>https://rundata.re/feux</loc>");
     // The satellites not answering: said, not kept.
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -284,6 +287,12 @@ describe("the fires' page", () => {
     const downHtml = await down.text();
     expect(downHtml).toContain("Le service de la NASA ne répond pas pour le moment\u00a0: rechargez la page dans quelques minutes.");
     expect(downHtml).toContain("<b>Vous voyez un feu\u00a0? Appelez le 18 ou le 112.</b>");
+  });
+
+  it("says the hot spots as a satellite sees them, none with « détecté par satellite », never « pas de feu »", () => {
+    expect(heroFeux({ satellites: ["NOAA-20"], detections: [] })).toBe("Aucun point chaud détecté par satellite depuis 24 h");
+    expect(heroFeux({ satellites: ["NOAA-20"], detections: [at("2026-10-24T02:30:00Z")] })).toBe("1 point chaud détecté par satellite depuis 24 h");
+    expect(heroFeux({ satellites: ["NOAA-20"], detections: [at("2026-10-24T02:30:00Z"), at("2026-10-23T19:00:00Z")] })).toBe("2 points chauds détectés par satellite depuis 24 h");
   });
 
   it("is linked from /sentiers and from a commune's tile when there is a fire", () => {

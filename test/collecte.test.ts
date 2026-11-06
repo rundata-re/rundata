@@ -3,7 +3,8 @@ import { annuaireTool } from "../src/tools/annuaire.js";
 import { collecteAnswer, parseLieu } from "../src/tools/collecte.js";
 import { resume } from "../src/tools/resume.js";
 import * as col from "../src/vie/collecte.js";
-import { collectePage, communeOf } from "../src/web/collecte.js";
+import { insecables } from "../src/typographie.js";
+import { collectePage, communeOf, ELSEWHERE, horsTco } from "../src/web/collecte.js";
 import { pageOf } from "../src/web/places.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 
@@ -102,6 +103,28 @@ describe("the tool and the pages", () => {
     expect(others.length + col.COMMUNES.length).toBe(24);
     // A street of the West named after a town of the East is still a street of the West.
     expect(body(collecteAnswer("rue Victoria, La Possession", NOW)).intercommunalite).toBeUndefined();
+  });
+
+  it("says on the page, for a commune outside the TCO typed in the search box, the tool's sentence and its link", () => {
+    const page = collectePage("https://rundata.re", NOW);
+    const sd = horsTco("12 rue de Paris, Saint-Denis", ELSEWHERE)!;
+    // The tool's sentence, the site of who collects there a link on its last words.
+    expect(sd.avant + sd.lien + sd.apres).toBe(insecables(body(collecteAnswer("Saint-Denis", NOW)).resume));
+    expect([sd.lien, sd.url, sd.apres]).toEqual(["le site de la CINOR", "https://www.cinor.re/", "."]);
+    expect(sd.avant).toMatch(/^Saint-Denis\u00a0: la collecte/);
+    // As people type it: alone, accents or capitals left out, a postcode after it; the East's towns never in a street of the West.
+    expect(horsTco("saint denis", ELSEWHERE)?.c).toBe("Saint-Denis");
+    expect(horsTco("chemin Bœuf Mort, LE TAMPON 97430", ELSEWHERE)?.c).toBe("Le Tampon");
+    expect(horsTco("L'Etang-Salé", ELSEWHERE)?.c).toBe("L'Étang-Salé");
+    expect(horsTco("Saint-Paul", ELSEWHERE)).toBeUndefined();
+    expect(horsTco("rue de Saint-Denis, Le Port", ELSEWHERE)).toBeUndefined();
+    expect(ELSEWHERE.map((x) => x.c).sort()).toEqual(col.AILLEURS.flatMap((e) => e.communes).sort());
+    // In the page's script, with the data it reads; a street not found still says to spell it again, and that only the
+    // West is read, in the tool's words (its a_savoir).
+    expect(page).toContain(`hors=${horsTco}`);
+    expect(page).toContain(JSON.stringify(ELSEWHERE[0]).slice(0, 40));
+    expect(page).toContain("Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. Seulement les 5 communes de l'Ouest (TCO) pour l'instant.".replace(/'/g, "&#39;"));
+    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).a_savoir).toMatch(/^Seulement les 5 communes de l'Ouest \(TCO\) pour l'instant\. /);
   });
 
   it("is what annuaire_services_publics answers about the bins, not the déchèteries", async () => {

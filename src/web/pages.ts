@@ -518,6 +518,11 @@ background:none;color:var(--muted);cursor:pointer}
 .tile details.plus>summary::after{content:"▾"}
 .tile details.plus[open]>summary::after{content:"▴"}
 @media (max-width:46rem){.tile.odd{grid-column:span 2}}
+/* Text made larger (150 % on a 320 or 390 px phone): one tile per row, so that a title is never cut by the tile's edge.
+   In rem, which follows the root's size where a media query and the body's 17px do not: 280 px at 100 %, under the
+   288 px grid of a 320 px phone, so that two columns stay as they are. Every span back to one, so that no column is added. */
+section:has(>ul.tiles){container-type:inline-size}
+@container (max-width:17.5rem){.tiles{grid-template-columns:minmax(0,1fr)}.tiles>li.tile,.tiles.fit>li.tile{grid-column:auto}}
 .tile{position:relative;display:flex;flex-direction:column;gap:.3rem;padding:.95rem;border-radius:22px;min-width:0;overflow:hidden;
 background:linear-gradient(155deg,color-mix(in srgb,var(--k) 13%,var(--surface)) 0%,var(--surface) 58%);
 border:1px solid color-mix(in srgb,var(--k) 22%,var(--line));box-shadow:var(--shadow);transition:transform .18s,border-color .18s,box-shadow .18s}

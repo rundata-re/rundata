@@ -15,4 +15,15 @@ describe("larger text on a narrow screen, on the pages of facts and of search", 
     expect(CSS).toContain(".echelle{display:flex;gap:4px;margin:.2rem 0;min-width:0}");
     expect(CSS).toContain(".tile .rows.cols{grid-template-columns:repeat(auto-fill,minmax(min(15rem,100%),1fr));");
   });
+
+  it("puts one tile per row when the text is larger, in rem, and keeps two columns at 100 % on a 320 px phone", () => {
+    expect(CSS).toContain("section:has(>ul.tiles){container-type:inline-size}");
+    const rule = CSS.match(/@container \(max-width:([\d.]+)rem\)\{\.tiles\{grid-template-columns:minmax\(0,1fr\)\}\.tiles>li\.tile,\.tiles\.fit>li\.tile\{grid-column:auto\}\}/);
+    expect(rule).not.toBeNull();
+    // The grid of a 320 px phone is 288 px wide: at 16 px a rem, still two columns; at 24 px (150 %), one, even on a
+    // 390 px phone (a 358 px grid).
+    const px = Number(rule![1]) * 16;
+    expect(px).toBeLessThan(288);
+    expect(px * 1.5).toBeGreaterThan(390 - 32);
+  });
 });

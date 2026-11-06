@@ -2,7 +2,7 @@
  * peche_loisir and /peche: the rules of recreational fishing at La Réunion, day by day, from the prefect's two decrees:
  * what is closed today, the sizes and the quantities. The rules are bundled and dated (LUES_LE): no source is read, no
  * request is made. Every figure was read by researcher on the texts (31/10/2026): the decree n° 1743 of 15/07/2008 in
- * the consolidated version of the DMSOI at 1/1/2023 (no signed copy of 2008 is online), and the signed decree
+ * the consolidated version of the DMSOI of 1 January 2023 (no signed copy of 2008 is online), and the signed decree
  * n° 2026-1319 of 17/08/2026 on the bichiques, read on its pages' images. Never a link to the decree on the bichiques
  * of 2021, repealed by the latter (art. 23), though the DMSOI's page still offers it.
  *
@@ -32,7 +32,7 @@ export const SOURCE_1743: SourceInfo = {
   nom: "Arrêté n° 1743 du 15 juillet 2008 sur la pêche maritime de loisir (DMSOI)",
   organisme: "Préfecture de La Réunion, Direction de la mer Sud océan Indien (DMSOI)",
   licence: "Licence Ouverte 2.0",
-  attribution: "Arrêté préfectoral n° 1743 du 15 juillet 2008, version consolidée par la DMSOI au 1/1/2023",
+  attribution: "Arrêté préfectoral n° 1743 du 15 juillet 2008, version consolidée par la DMSOI au 1er janvier 2023",
   url: PDF_1743,
 };
 export const SOURCE_BICHIQUES: SourceInfo = {
@@ -45,7 +45,7 @@ export const SOURCE_BICHIQUES: SourceInfo = {
 };
 export const SOURCES = [SOURCE_1743, SOURCE_BICHIQUES];
 
-const AP_1743 = "l'arrêté n° 1743 du 15 juillet 2008, version consolidée par la DMSOI au 1/1/2023";
+const AP_1743 = "l'arrêté n° 1743 du 15 juillet 2008, version consolidée par la DMSOI au 1er janvier 2023";
 const AP_1743_COURT = "l'arrêté n° 1743";
 const AP_BICHIQUES = "l'arrêté n° 2026-1319 du 17 août 2026";
 

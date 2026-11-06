@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { justice, office, type JusticePlace } from "../src/providers/annuaire.js";
-import { annuaireTool, COUVERT, hoursText, named, openNow } from "../src/tools/annuaire.js";
+import { resolvePlace } from "../src/places/resolve.js";
+import { annuaireTool, COUVERT, hoursText, named, noteDite, openNow } from "../src/tools/annuaire.js";
 import { JUSTICE } from "../src/tools/justice.js";
 import { withVide } from "../src/vide.js";
 
@@ -40,6 +41,22 @@ describe("public services directory", () => {
     expect(r.resume).toMatch(/^Mairie - Saint-Paul, Place du Général-de-Gaulle, 97460 Saint-Paul \(à [\d,]+ km de Saint-Gilles/);
     expect(r.resume).toContain("Ouvert en ce moment");
     expect(r.page).toBe("https://rundata.re/communes/saint-paul");
+    // Asked for the commune, its town hall at less than 100 m from its centre: no « à 0 km de Saint-Paul » (06/11/2026: Saint-Pierre's).
+    const centre = resolvePlace("Saint-Paul")!.lieu;
+    const atCentre = offices.filter((o: { insee: string }) => o.insee === "97415").map((o: object) => ({ ...o, lon: centre.lon + 0.0003, lat: centre.lat }));
+    void store.put("annuaire:97415:mairie", { value: atCentre, fetchedAt: now.getTime() });
+    const own = body(await annuaireTool(new Cache(store, () => now.getTime()), "mairie", "Saint-Paul", now));
+    expect(own.resultats[0].distance_km).toBeLessThan(0.1);
+    expect(own.resume).toMatch(/^Mairie - Saint-Paul, Place du Général-de-Gaulle, 97460 Saint-Paul\. Horaires/);
+  });
+
+  it("writes a note of the hours as a parenthesis reads it, its hours as the connector does", () => {
+    expect(noteDite("Fermeture de l'état civil à 15h15.")).toBe("fermeture de l'état civil à 15:15");
+    expect(noteDite("Permanences lors des audiences de comparution immédiate")).toBe("permanences lors des audiences de comparution immédiate");
+    expect(noteDite("Ouvert jusqu'à 18h le mercredi")).toBe("ouvert jusqu'à 18:00 le mercredi");
+    expect(noteDite("Accueil de 8h à 12h30")).toBe("accueil de 08:00 à 12:30");
+    // A duration, a « 24 h/24 », an acronym: as written.
+    for (const t of ["Réponse sous 48h", "Borne 24h/24", "CCAS fermé le vendredi"]) expect(noteDite(t)).toBe(t.charAt(0) === "C" ? t : t.charAt(0).toLowerCase() + t.slice(1));
   });
 
   it("gives no link to the site of Saint-Benoît's town hall, whose terms submit any link to its agreement", async () => {
@@ -128,7 +145,7 @@ describe("places of justice", () => {
     const at = (nom: string) => places.find((o: JusticePlace) => o.nom === nom)!;
     expect(at("Tribunal judiciaire de Saint-Pierre").telephone).toBe("02 62 96 10 00");
     const bav = at("Bureau d'aide aux victimes du tribunal judiciaire de St Denis");
-    expect(hoursText(bav)).toBe("lundi au dimanche (Permanences lors des audiences de comparution immédiate)");
+    expect(hoursText(bav)).toBe("lundi au dimanche (permanences lors des audiences de comparution immédiate)");
     expect(openNow(bav, now)).toBeNull();
     expect(openNow(at("Tribunal judiciaire de Saint-Denis"), now)).toBe(true);
   });

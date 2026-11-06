@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure, IDS, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
-import { bornesRecharge, lastChange } from "../src/tools/bornes.js";
+import { bornesRecharge, lastChange, since } from "../src/tools/bornes.js";
 import { bornesPage } from "../src/web/domains.js";
 import { buildBornes } from "../src/web/data.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
@@ -22,6 +22,15 @@ function cache(live: Live | null) {
 afterEach(() => (configure(undefined), vi.unstubAllGlobals()));
 
 describe("bornes de recharge", () => {
+  it("says when a point last changed: its hour today, its day this year, its whole date before", () => {
+    const now = new Date("2026-11-06T18:00:00Z"); // 22:00 in La Réunion
+    expect(since("2026-11-06T15:10:00Z", now)).toBe("19:10");
+    expect(since("2026-10-28T10:14:00Z", now)).toBe("28/10 14:14");
+    expect(since("2024-03-12T06:00:00Z", now)).toBe("12/03/2024");
+    // The year of La Réunion: 31/12/2025 at 22:00 UTC is already 1 January 2026 there.
+    expect(since("2025-12-31T22:00:00Z", now)).toBe("01/01 02:00");
+  });
+
   it("keeps La Réunion's points only, their times in UTC", () => {
     expect(Object.keys(LIVE.points)).toHaveLength(407);
     expect(Object.keys(LIVE.points).every((id) => IDS.has(id))).toBe(true);

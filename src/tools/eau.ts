@@ -169,11 +169,23 @@ export function sansPrelevement(last: string | undefined, now: Date): string | u
     (last < start ? `, ni aucun pour la saison commencée le ${day(start)}` : "") + ".";
 }
 
-function bathSentence(row: ReturnType<typeof siteRow>): string {
+/**
+ * The sites' sentences, a gap the two share said once after them (06/11/2026: the same sentence after each of the two
+ * beaches of L'Hermitage): « Pour les deux sites : aucun prélèvement publié… ».
+ */
+export function bathSentences(rows: ReturnType<typeof siteRow>[]): string {
+  const gap = rows[0]?.prelevements_en_retard;
+  const shared = rows.length > 1 && !!gap && rows.every((r) => r.prelevements_en_retard === gap);
+  if (!shared) return rows.map((r) => bathSentence(r)).join(" ");
+  const pour = rows.length === 2 ? "les deux sites" : `les ${rows.length} sites`;
+  return `${rows.map((r) => bathSentence(r, false)).join(" ")} Pour ${pour}\u00a0: ${gap.charAt(0).toLowerCase()}${gap.slice(1)}`;
+}
+
+function bathSentence(row: ReturnType<typeof siteRow>, gap = true): string {
   if (!row.qualite_dernier_prelevement) return `${row.site} : pas de prélèvement publié.`;
   return `${row.site} : eau de ${row.qualite_dernier_prelevement} qualité au dernier prélèvement (${row.dernier_prelevement})` +
     (row.mauvais_sur_12_mois ? `, ${row.mauvais_sur_12_mois} mauvais résultat${row.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") + "." +
-    (row.prelevements_en_retard ? ` ${row.prelevements_en_retard}` : "");
+    (gap && row.prelevements_en_retard ? ` ${row.prelevements_en_retard}` : "");
 }
 
 /** A supervised site whose name the question carries (« bassin Bleu » is the one of Saint-Benoît, not another). */
@@ -209,7 +221,7 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
   }
   const results = await Promise.all(picked.map((x) => baignades.results(cache, x.s, now)));
   const rows = results.map((r) => siteRow(r.value, now, res.lieu));
-  return { resume: rows.map(bathSentence).join(" "), sites: rows };
+  return { resume: bathSentences(rows), sites: rows };
 }
 
 const NB = "\u00a0";

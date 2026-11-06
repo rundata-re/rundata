@@ -55,7 +55,8 @@ export function moonOf(day: string, now: Date, lon: number, lat: number, altitud
     ...(coucher ? [{ at: coucher, texte: `coucher à ${hm(coucher)}` }] : []),
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
   return {
-    phrase: `Lune : ${phase}, éclairée à ${lit} %${events.length ? `, ${events.map((e) => e.texte).join(", ")}` : ""} (calcul astronomique).`,
+    // Between the main phases, the phase names the Moon already: « Lune décroissante », not « Lune : Lune décroissante ».
+    phrase: `${main ? `Lune : ${phase}` : phase}, éclairée à ${lit} %${events.length ? `, ${events.map((e) => e.texte).join(", ")}` : ""} (calcul astronomique).`,
     champs: {
       phase,
       eclairee_pct: lit,

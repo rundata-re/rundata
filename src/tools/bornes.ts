@@ -80,11 +80,12 @@ export function lastChange(live: irve.Live): string | undefined {
   return last;
 }
 
-/** « 04:12 » today, « 23/10 18:40 » this year, « 2024 » before. */
-function since(iso: string, now: Date): string {
+/** « 04:12 » today, « 23/10 18:40 » this year, « 12/03/2024 » before (06/11/2026: the year alone, « 2024 »). */
+export function since(iso: string, now: Date): string {
   const d = new Date(iso);
-  if (d.getUTCFullYear() !== now.getUTCFullYear()) return String(d.getUTCFullYear());
   const [day, time] = localTime(d).split(" ");
+  const year = (t: Date) => new Date(t.getTime() + 4 * 3600_000).getUTCFullYear();
+  if (year(d) !== year(now)) return `${day}/${year(d)}`;
   return day === localTime(now).split(" ")[0] ? time : `${day} ${time}`;
 }
 

@@ -93,7 +93,8 @@ function groups(today: number, commune?: string): string {
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
   const rhythms = all.filter((g) => col.CALENDARS[g.c]).map((g) => {
     const parts = col.rhythmParts(col.CALENDARS[g.c], today);
-    return { g, parts: parts.map((p) => p.texte), byKind: new Map(parts.map((p) => [p.kind, p.texte])), apart: [] as string[] };
+    // A calendar with no day left in its year (29-31/12 for some): an empty rhythm, as before, never no part at all.
+    return { g, parts: parts.length ? parts.map((p) => p.texte) : [""], byKind: new Map(parts.map((p) => [p.kind, p.texte])), apart: [] as string[] };
   });
   const sharing = () => {
     const by = new Map<string, typeof rhythms>();

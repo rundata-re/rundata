@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { motifs, nuance, parseRoads, parseTrails, raison } from "../src/providers/sentiers.js";
+import { motifs, nuance, ouvertWeekEnd, parseRoads, parseTrails, raison } from "../src/providers/sentiers.js";
 import { sentiersRandonnee, trailsNamed, warning } from "../src/tools/sentiers.js";
 import { buildRandonnees, buildSentiers, type SentiersAnswer } from "../src/web/data.js";
 import { communeHikes } from "../src/web/liens.js";
@@ -82,8 +82,9 @@ describe("sentiers de randonnée", () => {
     expect(nuance({ cause: "Travaux", info: "Fermé jusqu'au 30/10/26 inclus" })).toBeUndefined();
     expect(motifs({ cause: "Travaux", precision: "Réouverture 2026" })).toEqual(["Travaux", "Réouverture 2026"]);
     const montplaisir = said("Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période");
-    const sunday = new Date("2026-11-01T19:59:00Z");
-    const monday = new Date("2026-11-01T20:01:00Z");
+    // Sunday 25/10 23:59 and Monday 26/10 00:01, before the notice's last day (30/10).
+    const sunday = new Date("2026-10-25T19:59:00Z");
+    const monday = new Date("2026-10-25T20:01:00Z");
     for (const at of [NOW, sunday, monday]) {
       const at_ = () => new Cache(new MemoryStore(), () => at.getTime());
       expect(body(await sentiersRandonnee(at_(), undefined, at)).resume).toMatch(/^56 sentiers fermés sur 324 /);
@@ -96,6 +97,41 @@ describe("sentiers de randonnée", () => {
     const html = sentiersPage("https://rundata.re", copy, monday);
     expect(html).toContain(`Sentier de Montplaisir</a><small>${montplaisir.replace(/'/g, "&#39;")} · Travaux d&#39;exploitation forestière</small>`);
     expect(html).not.toMatch(/ouvert aujourd/);
+  });
+
+  it("past a weekend notice's last day, quotes it as the trail's motif, without « ouvert », in the answer, its warning and /sentiers", async () => {
+    const avis = "Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période";
+    const x = { cause: "Travaux d'exploitation forestière", info: avis };
+    const active = `Fermé sur la carte de l'ONF ; ouvert le samedi et le dimanche d'après l'avis de l'ONF : « ${avis} »`;
+    const past = `Fermé sur la carte de l'ONF ; avis de l'ONF : « ${avis} »`;
+    // Its last day included, in La Réunion: open on Friday 30/10 23:59, no more on Saturday 31/10 00:01.
+    const [last, after] = [new Date("2026-10-30T19:59:00Z"), new Date("2026-10-30T20:01:00Z")];
+    expect([nuance(x, last), ouvertWeekEnd(x, last)]).toEqual([active, true]);
+    expect([nuance(x, after), ouvertWeekEnd(x, after)]).toEqual([past, false]);
+    expect(motifs(x, after)).toEqual([past, "Travaux d'exploitation forestière"]);
+    expect(raison(x, after)).toBe(`${past} · Travaux d'exploitation forestière`);
+    // A notice without a last day opens the trail every weekend, as before.
+    expect(ouvertWeekEnd({ cause: "Fermé du lundi au vendredi, ouvert le week-end", info: "02/01/27" }, after)).toBe(true);
+    expect(ouvertWeekEnd({ cause: "Travaux", info: "Fermé jusqu'au 30/10/26 inclus" }, last)).toBe(false);
+
+    const saturday = new Date("2026-10-31T04:00:00Z");
+    const at_ = () => new Cache(new MemoryStore(), () => saturday.getTime());
+    const named = body(await sentiersRandonnee(at_(), "Sentier de Montplaisir est ouvert ?", saturday));
+    expect(named.resume).toContain(`Sentier de Montplaisir : ${past} · Travaux d'exploitation forestière.`);
+    expect(named.avertissement.message).toContain(`Sentier de Montplaisir est fermé (${past} · Travaux d'exploitation forestière)`);
+    expect(named.avertissement.sentiers_fermes).toEqual([expect.objectContaining({ sentier: "Sentier de Montplaisir", nuance: past })]);
+    const all = body(await sentiersRandonnee(at_(), undefined, saturday));
+    const ici = all.fermes_par_commune.flatMap((c: { sentiers_fermes: { sentier: string }[] }) => c.sentiers_fermes);
+    expect(ici.find((t: { sentier: string }) => t.sentier === "Sentier de la Onzième Ligne")).toMatchObject({ etat: "fermé", nuance: past });
+    // The two notices past their last day; RF58's, without one, still opens it on weekends.
+    const two = ici.filter((t: { sentier: string }) => /Montplaisir|Onzième Ligne/.test(t.sentier));
+    expect(two).toHaveLength(2);
+    for (const b of [named, two]) expect(JSON.stringify(b)).not.toContain("ouvert le samedi et le dimanche");
+    expect(ici.find((t: { sentier: string }) => t.sentier === "Route Forestière de la Scierie (RF58)").nuance).toContain("ouvert le samedi et le dimanche");
+    const copy = { value: await buildSentiers(at_(), saturday), fetchedAt: saturday, stale: false };
+    const html = sentiersPage("https://rundata.re", copy, saturday);
+    expect(html).toContain(`Sentier de Montplaisir</a><small>${past.replace(/'/g, "&#39;")} · Travaux d&#39;exploitation forestière</small>`);
+    expect(html).not.toContain(active.replace(/'/g, "&#39;"));
   });
 
   it("keeps the notice's date between brackets after a trail open on weekends, and the cause alone for the others", () => {

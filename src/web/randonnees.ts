@@ -62,7 +62,7 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
     ? ""
     : closed.length || cut.length
       ? `<section aria-labelledby="h-fermes"><div class="card warn alarm">${icon("alert")}<h2 id="h-fermes">${closed.length ? plural(closed.length, "sentier fermé", "sentiers fermés") : "Itinéraires coupés"} ${esc(s.dans)}</h2>
-  ${closed.length ? `<ul class="plain">${closed.map((t) => closedLi({ sentier: t.nom, slug: t.slug, cause: t.cause, precision: t.precision })).join("")}</ul>` : ""}
+  ${closed.length ? `<ul class="plain">${closed.map((t) => closedLi({ sentier: t.nom, slug: t.slug, cause: t.cause, precision: t.precision }, now)).join("")}</ul>` : ""}
   ${cut.length ? `<p>Itinéraires coupés : ${cut.map((h) => `<a href="/randonnees/${esc(h.slug)}">${esc(h.nom)}</a>`).join(", ")}.</p>` : ""}
   <p class="note">Un sentier fermé est interdit, même avec la trace : prendre une variante ouverte ou choisir une autre randonnée.</p></div></section>`
       : `<p class="card okay">Aucun sentier de l'ONF fermé ${esc(s.dans)} en ce moment.</p>`;
@@ -70,13 +70,13 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
   const routeList = routes.length
     ? `<section aria-labelledby="h-itineraires"><div class="sec-h"><p class="eyebrow">GPX à télécharger</p><h2 id="h-itineraires">Les itinéraires avec trace GPS</h2>
   <p>Les randonnées complètes relevées par les contributeurs d'OpenStreetMap qui passent ${esc(s.dans)}, avec leur distance, leur dénivelé et l'état de leurs sentiers.</p></div>
-  <ul class="zones hikes">${routes.map(hikeCard).join("")}</ul></section>`
+  <ul class="zones hikes">${routes.map((h) => hikeCard(h, now)).join("")}</ul></section>`
     : "";
 
   const trailList = trails.length
     ? `<section aria-labelledby="h-sentiers"><div class="sec-h"><p class="eyebrow">Carte de l'ONF</p><h2 id="h-sentiers">Les ${trails.length} sentiers de l'ONF</h2>
   <p>Chacun a sa page, avec sa carte, son profil et sa trace GPS. Un sentier est rangé dans le secteur où passe la plus grande partie de son tracé.</p></div>
-  <div class="card"><ul class="rows eau">${trails.map(trailLi).join("")}</ul></div></section>`
+  <div class="card"><ul class="rows eau">${trails.map((t) => trailLi(t, now)).join("")}</ul></div></section>`
     : "";
 
   const access = `<section aria-labelledby="h-acces"><div class="sec-h"><h2 id="h-acces">Y aller</h2></div>

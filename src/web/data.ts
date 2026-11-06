@@ -721,7 +721,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
 
   const routes = [...traces.RANDONNEES].sort((x, y) => x.nom.localeCompare(y.nom, "fr"));
   const randonnees: HikeCard[] = routes.map((r, i) => {
-    const row = routeRow(r, carte);
+    const row = routeRow(r, carte, now);
     const longest = traces.decode([...r.lignes].sort((a, b) => b.length - a.length)[0] ?? "");
     const middle = longest[Math.floor(longest.length / 2)];
     return {
@@ -888,7 +888,7 @@ export function noticeOf(troncons: { cause?: string; info?: string }[]): string 
 }
 
 /** An ONF trail: its line and state read from the ONF, its altitudes from the IGN. */
-export async function buildTrail(cache: Cache, t: { nom: string } & traces.SentierStats): Promise<TraceAnswer> {
+export async function buildTrail(cache: Cache, t: { nom: string } & traces.SentierStats, now = new Date()): Promise<TraceAnswer> {
   // The whole map only for its date: the island's pages share it (onf.KEY), its trail is read on its own.
   const [tr, read] = await Promise.all([traces.traceOnf(cache, t).then((x) => x.value), onf.carte(cache).catch(() => null)]);
   const carte = read?.value;
@@ -907,7 +907,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
     alt_min: t.alt_min ?? m.alt_min,
     alt_max: t.alt_max ?? m.alt_max,
     etat: shut.length
-      ? `${onf.nuance(shut[0]) ? onf.motifs(shut[0]).join(" · ") : `Fermé${shut[0].cause ? ` : ${shut[0].cause}` : ""}${shut[0].info ? ` (${shut[0].info})` : ""}`}${open ? ", en partie" : ""}`
+      ? `${onf.nuance(shut[0], now) ? onf.motifs(shut[0], now).join(" · ") : `Fermé${shut[0].cause ? ` : ${shut[0].cause}` : ""}${shut[0].info ? ` (${shut[0].info})` : ""}`}${open ? ", en partie" : ""}`
       : open ? OUVERT_ONF : noticeOf(tr.troncons) ?? "Hors gestion ONF : état non connu",
     ferme: shut.length > 0,
     troncons: states,
@@ -923,10 +923,10 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
 }
 
 /** A hike of OpenStreetMap, from the bundle; the state of the ONF trails it follows, live. */
-export async function buildRoute(cache: Cache, r: traces.Randonnee): Promise<TraceAnswer> {
+export async function buildRoute(cache: Cache, r: traces.Randonnee, now = new Date()): Promise<TraceAnswer> {
   const read = await onf.carte(cache).catch(() => null);
   const carte = read?.value ?? null;
-  const row = carte ? routeRow(r, carte) : null;
+  const row = carte ? routeRow(r, carte, now) : null;
   const pieces = traces.routePieces(r);
   const slugOf = (nom: string) => traces.SENTIERS[nom]?.slug;
   const troncons = (row?.troncons_onf ?? r.sentiers_onf.map((sentier) => ({ sentier, etat: "inconnu" as const, cause: undefined, precision: undefined })))
@@ -980,7 +980,7 @@ export async function trailGpx(cache: Cache, origin: string, t: { nom: string } 
   const tr = (await traces.traceOnf(cache, t)).value;
   const shut = tr.troncons.filter((x) => x.statut === "fermé");
   const etat = shut.length
-    ? onf.nuance(shut[0]) ? onf.motifs(shut[0]).join(" · ") : `FERMÉ${shut[0].cause ? ` (${shut[0].cause})` : ""}${shut[0].info ? `, ${shut[0].info}` : ""}`
+    ? onf.nuance(shut[0], now) ? onf.motifs(shut[0], now).join(" · ") : `FERMÉ${shut[0].cause ? ` (${shut[0].cause})` : ""}${shut[0].info ? `, ${shut[0].info}` : ""}`
     : tr.troncons.some((x) => x.statut === "ouvert") ? "ouvert" : "hors gestion ONF, état non connu";
   return traces.gpx({
     nom: t.nom,
@@ -989,22 +989,25 @@ export async function trailGpx(cache: Cache, origin: string, t: { nom: string } 
     page: `${origin}/sentiers/${t.slug}`,
     auteur: "ONF La Réunion",
     pieces: tr.troncons.map((x) => x.points),
-    waypoints: shut.map((x) => closedPoint(t.nom, x.cause, x.info, x.points[0])),
+    waypoints: shut.map((x) => closedPoint(t.nom, x.cause, x.info, x.points[0], now)),
     now,
   });
 }
 
 /** Where a closed trail starts, as a GPX waypoint: its name says it in the hiker's GPS app. */
-function closedPoint(nom: string, cause: string | undefined, info: string | undefined, at: traces.Point): traces.Waypoint {
+function closedPoint(nom: string, cause: string | undefined, info: string | undefined, at: traces.Point, now: Date): traces.Waypoint {
   return {
     lon: at.lon,
     lat: at.lat,
     ele: at.ele,
     nom: `FERMÉ : ${nom}${cause ? ` – ${cause}` : ""}`,
-    // Open on weekends by its notice: said so, without « interdit », which a Saturday would make wrong.
-    description: onf.nuance({ cause, info })
-      ? `${onf.motifs({ cause, info }).join(" · ")}.`
-      : `Sentier fermé d'après la carte de l'ONF${cause ? ` : ${cause}` : ""}${info ? ` (${info})` : ""}. S'y engager est interdit.`,
+    // Open on weekends by its notice: said so, without « interdit », which a Saturday would make wrong. Past the
+    // notice's last day, the notice is quoted and « interdit » is back.
+    description: onf.ouvertWeekEnd({ cause, info }, now)
+      ? `${onf.motifs({ cause, info }, now).join(" · ")}.`
+      : onf.nuance({ cause, info }, now)
+        ? `${onf.motifs({ cause, info }, now).join(" · ")}. S'y engager est interdit.`
+        : `Sentier fermé d'après la carte de l'ONF${cause ? ` : ${cause}` : ""}${info ? ` (${info})` : ""}. S'y engager est interdit.`,
   };
 }
 
@@ -1027,12 +1030,12 @@ function entry(r: traces.Randonnee, pieces: traces.Point[][], nom: string, carte
 /** A hike's GPX, from the bundle: OpenStreetMap as author (ODbL), the ONF trails' state when downloaded, a waypoint where each closed one starts. */
 export async function routeGpx(cache: Cache, origin: string, r: traces.Randonnee, now = new Date()): Promise<string> {
   const carte = await onf.carte(cache).then((c) => c.value).catch(() => null);
-  const row = carte ? routeRow(r, carte) : null;
+  const row = carte ? routeRow(r, carte, now) : null;
   const etat = row ? row.etat : "état des sentiers de l'ONF indisponible au téléchargement";
   const pieces = traces.routePieces(r);
   const waypoints = (row?.troncons_onf ?? []).filter((t) => t.etat === "fermé").flatMap((t) => {
     const at = entry(r, pieces, t.sentier, carte!);
-    return at ? [closedPoint(t.sentier, t.cause, t.precision, at)] : [];
+    return at ? [closedPoint(t.sentier, t.cause, t.precision, at, now)] : [];
   });
   return traces.gpx({
     nom: r.nom,

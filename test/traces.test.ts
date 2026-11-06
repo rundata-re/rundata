@@ -23,6 +23,8 @@ describe("traces GPS", () => {
   let shut: RegExp | undefined;
   // The trail's own trace closed on weekdays, open on weekends by its notice.
   let weekend: boolean;
+  // The same, by a notice with its last day (30/10/26), as the Sentier de Montplaisir's.
+  let weekendFin: boolean;
   const map = () => {
     const m = JSON.parse(fixture("onf/sentiers.json"));
     for (const f of m.features) {
@@ -35,6 +37,7 @@ describe("traces GPS", () => {
     down = undefined;
     shut = undefined;
     weekend = false;
+    weekendFin = false;
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       asked.push(url);
       if (down?.test(url)) return new Response("", { status: 503 });
@@ -45,6 +48,7 @@ describe("traces GPS", () => {
       if (url.includes("/5/query") && url.includes("WS_NomIti+IN")) {
         const t = JSON.parse(fixture("traces/onf_le-bloc-piton-des-neiges.json"));
         for (const f of t.features) if (weekend) Object.assign(f.attributes, { WS_Statut: "Sentier fermé", WS_InfCaus: "Fermé du lundi au vendredi, ouvert le week-end", WS_InfDate: "02/01/27" });
+        for (const f of t.features) if (weekendFin) Object.assign(f.attributes, { WS_Statut: "Sentier fermé", WS_InfCaus: "Travaux d'exploitation forestière", WS_InfDate: "Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période" });
         return new Response(JSON.stringify(t));
       }
       if (url.includes("/5/query")) return new Response(map());
@@ -173,6 +177,24 @@ describe("traces GPS", () => {
     const undated = (g: string) => g.replace(/le \d\d\/\d\d\/\d{4} à \d\d:\d\d|<time>[^<]*<\/time>/g, "");
     expect(undated(gpx[0])).toBe(undated(gpx[1]));
     expect(gpx[0]).toContain(`<desc>${etat}.</desc>`);
+  });
+
+  it("past a weekend notice's last day, quotes it in the copy and the GPX, and its waypoint says the trail is forbidden again", async () => {
+    weekendFin = true;
+    const t = sentier("le-bloc-piton-des-neiges")!;
+    const avis = "« Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis et dimanches durant cette période » · Travaux d'exploitation forestière";
+    const active = `Fermé sur la carte de l'ONF\u00a0; ouvert le samedi et le dimanche d'après l'avis de l'ONF\u00a0: ${avis}`;
+    const past = `Fermé sur la carte de l'ONF\u00a0; avis de l'ONF\u00a0: ${avis}`;
+    // Friday 30/10 23:59 in La Réunion, its last day; Saturday 31/10 00:01.
+    const [last, after] = [new Date("2026-10-30T19:59:00Z"), new Date("2026-10-30T20:01:00Z")];
+    const at = (d: Date) => new Cache(new MemoryStore(), () => d.getTime());
+    expect(await buildTrail(at(last), t, last)).toMatchObject({ etat: active, ferme: true });
+    expect(await buildTrail(at(after), t, after)).toMatchObject({ etat: past, ferme: true });
+    const [before, then] = await Promise.all([last, after].map((d) => trailGpx(at(d), "https://rundata.re", t, d)));
+    expect(before).toContain(`<desc>${active}.</desc>`);
+    expect(then).toContain(` : ${past}.`);
+    expect(then).toContain(`<desc>${past}. S'y engager est interdit.</desc>`);
+    expect(then).not.toContain("ouvert le samedi et le dimanche");
   });
 
   it("warns first, everywhere, when a hike crosses a closed trail", async () => {

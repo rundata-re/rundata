@@ -26,7 +26,7 @@ import * as loyers from "../vie/loyers.js";
 import * as annexesSd from "../vie/mairies-annexes.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
-import { a, ailleurs, communeDite, de, ecartsCourts, fr, nombre } from "../tools/format.js";
+import { a, ailleurs, communeDite, de, ecartsCourts, enGrand, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
 import { coastText, cyclone, cycloneLevel, feminine, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
@@ -137,7 +137,7 @@ function tile(t: Tile, span: number[] = []): string {
   const body = t.live?.vide
     ? `<p class="td all">${t.live.detail}</p>`
     : t.live
-    ? `<p class="tv">${t.live.valeur}</p><p class="td${t.live.entier ? " all" : ""}"${t.live.title ? ` title="${esc(t.live.title)}"` : ""}>${t.live.detail}</p>`
+    ? `<p class="tv">${enGrand(t.live.valeur)}</p><p class="td${t.live.entier ? " all" : ""}"${t.live.title ? ` title="${esc(t.live.title)}"` : ""}>${t.live.detail}</p>`
     : t.question
       ? `<p class="tq">« ${esc(t.question)} »</p>`
       // No copy at all: the read is under way (a copy with nothing to show says so, `vide`).

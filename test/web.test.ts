@@ -402,7 +402,7 @@ describe("commune pages", () => {
     expect(cold.text).toContain(`<title>Saint-Leu 974\u00a0: mairie, écoles, médecins, élections</title>`);
     expect(cold.text).toContain(`<p class="hook">La fiche de Saint-Leu\u00a0: la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.</p>`);
     expect(cold.text).not.toMatch(/sur une (seule )?page/);
-    expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<span class="sr"> à Saint-Leu<\/span><\/a><\/h3><p class="tv">\d+(,\d)?\u202f°C<\/p>/);
+    expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<span class="sr"> à Saint-Leu<\/span><\/a><\/h3><p class="tv">\d+(,\d)?\u00a0°C<\/p>/);
     // The zone of Météo-France named, never the commune coloured, and « Vigilance » said once.
     expect(cold.text).toMatch(/<h3><a href="[^"]+">Vigilance(<span class="sr">[^<]*<\/span>)?<\/a><\/h3><p class="tv">Zone Ouest[ \u00a0]: /);
     expect(cold.text).toContain("Saint-Leu est dans cette zone de Météo-France");

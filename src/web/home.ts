@@ -11,7 +11,7 @@ import { byUse, CATEGORIES, type Category, type Urgent } from "./categories.js";
 import type { ActualitesAnswer, AgendaAnswer, AirAnswer, Alerte, BusData, CalendrierAnswer, CruesAnswer, ElectriciteAnswer, HomeData, VelosAnswer, VolcanAnswer, BornesAnswer, CoupuresAnswer, EauAnswer, SecheresseAnswer, SentiersAnswer, SportAnswer, CyclonesAnswer, HistoriqueAnswer, TraficAnswer } from "./data.js";
 import { actualitesLive, airLive, atDay, bornesLive, cruesLive, feuxLive, floodRaised, imageLinks, busLive, coupuresLive, daeLive, eauLive, secheresseLive, randonneesLive, traficLive, sportLive, cyclonesLive, historiqueLive, agendaLive, calendrierLive, electriciteLive, velosLive, volcanLive, saidNow, stillToCome } from "./domains.js";
 import type { InfoRow } from "../tools/actualites.js";
-import { a, de } from "../tools/format.js";
+import { a, de, enGrand } from "../tools/format.js";
 import { enImagesApres, enImagesLuesAilleurs, jusquALecture, NON_ANNONCEE } from "../tools/volcan.js";
 import { libelle } from "../tools/volcan-acces.js";
 import { enfantsLive } from "./enfants.js";
@@ -248,7 +248,7 @@ function tile(c: Category, l: Live | undefined, odd = false): string {
   const now = l?.vide
     ? `<p class="td all">${l.detail}</p>`
     : l
-    ? `<p class="tv">${l.valeur}</p><p class="td${l.entier ? " all" : ""}">${l.detail}</p>`
+    ? `<p class="tv">${enGrand(l.valeur)}</p><p class="td${l.entier ? " all" : ""}">${l.detail}</p>`
     : c.exemple
       ? `<p class="tq">« ${esc(c.exemple)} »</p>`
       // No copy at all: the read is under way (a copy with nothing to show says so, `vide`).

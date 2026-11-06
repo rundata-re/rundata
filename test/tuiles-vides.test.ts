@@ -76,7 +76,7 @@ describe("a tile with nothing to show", () => {
 
   it("gives the bundled lists a value even with no copy at all", () => {
     const tiles = homeTiles(homePage(ORIGIN, null, NOW));
-    expect(tiles.dae).toContain(`<p class="tv">${DAES.length.toLocaleString("fr-FR").replace(/\s/g, " ")}\u00a0<span class="nw">défibrillateurs</span></p>`);
+    expect(tiles.dae).toContain(`<p class="tv">${DAES.length.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}\u00a0<span class="nw">défibrillateurs</span></p>`);
     // The number and the word never apart, the word never cut, not even where it would overflow.
     expect(tiles.dae).not.toContain("&shy;");
     expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal}");

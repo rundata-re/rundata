@@ -138,7 +138,7 @@ describe("home page tiles", () => {
     expect(tile("Volcan")).toContain("OVPF et préfecture, textes lus le ");
     expect(tile("Volcan")).toContain("Enclos : « réouverture partielle » (préfecture, 07/05)");
     expect(tile("Qualité de l&#39;air")).toContain(`<span class="aq aq2">moyen</span>`);
-    expect(tile("Électricité")).toContain(`<p class="tv">100\u202f% renouvelable</p>`);
+    expect(tile("Électricité")).toContain(`<p class="tv">100\u00a0% renouvelable</p>`);
     expect(tile("Calendrier")).toContain(`<p class="tv">Vacances scolaires</p>`);
     expect(tile("Calendrier")).toContain("Toussaint dans 9 j");
     // The Région's official map; Waze only on /trafic, beside its own map.
@@ -235,7 +235,7 @@ describe("routes", () => {
     const r = (await site(new Request(`${ORIGIN}/`), cache, (p) => pending.push(p), NOW))!;
     const text = await r.text();
     expect(text).toContain(`<p class="tv">Pas d'éruption annoncée</p>`);
-    expect(text).toContain(`<p class="tv">25\u202f°C</p>`); // the sea, from the weather's copy
+    expect(text).toContain(`<p class="tv">25\u00a0°C</p>`); // the sea, from the weather's copy
     // The tiles never built come first: one of them is being built, the volcano's copy is left as it is.
     expect(pending.length).toBe(1);
     await Promise.all(pending);

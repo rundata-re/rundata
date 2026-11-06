@@ -56,6 +56,15 @@ function pack(span: number[], c: number): number[][] {
 const tile = (page: string, nom: string) => page.match(new RegExp(`<li class="tile[^>]*>(?:(?!<li class="tile).)*?>${nom}(?:</a>)?</h3>.*?(?=<li class="tile)`, "s"))![0];
 
 describe("a commune's tiles", () => {
+  it("write their figure with plain no-break spaces, the narrow one being invisible in the bold of the titles", () => {
+    for (const c of COMMUNES) {
+      const page = communePage(ORIGIN, c, commune(ago(60_000)), NOW);
+      const tv = [...page.matchAll(/<p class="tv">(.*?)<\/p>/gs)].map((m) => m[1]);
+      expect(tv.length, c.nom).toBeGreaterThan(0);
+      expect(tv.filter((v) => v.includes("\u202f")), c.nom).toEqual([]);
+    }
+  });
+
   // A page built for each commune in three states: about 3 s alone, over vitest's 5 s by default when the whole suite
   // loads the machine. Its own time, so a busy machine is not taken for a hole in the grid.
   it("leave no hole in the grid, on a phone, a tablet or a computer, in every commune", () => {

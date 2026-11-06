@@ -414,7 +414,7 @@ padding:.3rem .8rem;border-radius:999px;background:rgb(255 255 255/.1);border:1p
 
 .connect{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
 border-radius:18px;padding:.4rem .4rem .4rem 1rem;max-width:100%;box-shadow:var(--shadow)}
-.connect code{font:600 1.05rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);overflow-wrap:break-word;flex:1 1 12rem;min-width:0}
+.connect code{font:600 1.05rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);overflow-wrap:anywhere;flex:1 1 12rem;min-width:0}
 .connect button{font:700 1rem system-ui,sans-serif;background:var(--sun);color:var(--sun-ink);border:0;border-radius:14px;
 padding:.65rem 1.2rem;cursor:pointer;transition:transform .15s}
 .connect button:hover{transform:translateY(-1px)}
@@ -507,7 +507,7 @@ background:none;color:var(--muted);cursor:pointer}
 .tiles.fit>.tile{grid-column:span var(--s2,1)}
 @media (min-width:46rem){.tiles.fit>.tile{grid-column:span var(--s3,1)}}
 @media (min-width:66rem){.tiles.fit>.tile{grid-column:span var(--s4,1)}}
-.tile .rows.cols{grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));column-gap:1.5rem}
+.tile .rows.cols{grid-template-columns:repeat(auto-fill,minmax(min(15rem,100%),1fr));column-gap:1.5rem}
 .tile .rows.cols li:first-child{border-top:1px solid var(--line)}
 .rows.velos li{grid-template-columns:minmax(0,1fr) auto;align-items:center}
 .rows.velos small{display:block;font-size:.88rem;margin-top:.1rem}
@@ -726,7 +726,7 @@ border:solid rgb(241 245 249/.12);border-width:0 1px 1px 0;transform:translateX(
 
 .search{display:flex;align-items:center;gap:.6rem;background:var(--surface);border:1px solid var(--line);border-radius:999px;
 padding:.2rem 1rem;max-width:28rem;box-shadow:var(--shadow);color:var(--muted)}
-.search input{flex:1;min-width:0;font:inherit;border:0;background:transparent;color:var(--ink);padding:.5rem 0;outline:none}
+.search input{flex:1;min-width:0;width:100%;font:inherit;border:0;background:transparent;color:var(--ink);padding:.5rem 0;outline:none}
 .search:focus-within{outline:2px solid var(--link);outline-offset:2px}
 .chips{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.45rem}
 /* The home page's field « Aller à… » (menu.ts), not the button « Y aller » (.aller): its label above it, the pages found below it. */
@@ -890,10 +890,10 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .suivi{display:grid;gap:1rem}
 .suivi p{max-width:65ch}
 .seas a{color:#fff;font-size:.85rem}
-.reefs{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(14rem,1fr));gap:.6rem;--echelle:var(--night-2)}
+.reefs{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(14rem,100%),1fr));gap:.6rem;--echelle:var(--night-2)}
 .reefs li{display:grid;gap:.25rem;align-content:start;padding:.8rem 1rem;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}
 .reefs b{font:800 1.05rem/1.3 Bricolage,system-ui,sans-serif}.reefs span{font-size:.9rem;color:var(--muted)}.reefs .lieu{color:var(--ink);font-weight:600}
-.echelle{display:flex;gap:4px;margin:.2rem 0}.echelle i{width:1.6rem;height:.7rem;border:1.5px solid var(--echelle);border-radius:3px}.echelle i.on{background:var(--echelle)}
+.echelle{display:flex;gap:4px;margin:.2rem 0;min-width:0}.echelle i{width:1.6rem;height:.7rem;border:1.5px solid var(--echelle);border-radius:3px}.echelle i.on{background:var(--echelle)}
 @media (prefers-color-scheme:dark){.reefs{--echelle:var(--link)}}
 .seas li{align-content:start}
 .seas .aller{justify-self:start;margin-top:.3rem}
@@ -1020,6 +1020,10 @@ table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
 .social a,.hike .links a{padding-block:2px;margin-block:-2px}
 :is(.rows,.plain,table,.crumbs,.cyc) a:not([class]){padding-block:max(0px,calc(12.5px - .55em))}.cyc a{padding-inline:4px;margin-inline:-4px}
 summary{min-height:24px}
+/* Larger text on a narrow screen (320 px at 150 %, 280 px at 100 %): a word, an address or a tool's name longer than its
+   line is cut rather than pushing the page wider; a search field (.search input), a reef's scale (.echelle) and the columns
+   of /mer's reefs and of a tile's list (min(…, 100%)) shrink with their container. Nothing moves when it fits. */
+.sec-h h2,.pitch h1,.askq,.cta code{overflow-wrap:anywhere}
 /* The link alone under an opened commune's title (/ecoles, /enfants): the title's tap area, 44 px tall, is extended above
    it only, never over the link; the link grows downwards by padding, which moves no line around an inline box. */
 .card>details[open]>summary:has(+.kinds>p:first-child>a){padding-block:1rem 0;margin-block:-1rem 0}

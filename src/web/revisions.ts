@@ -18,14 +18,14 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   agenda: 35,
-  air: 11,
-  bornes: 4,
+  air: 12,
+  bornes: 5,
   bus: 8,
   calendrier: 4,
   chiffres: 23,
   commune: 18,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
-  coupures: 12,
+  coupures: 13,
   courant: 8,
   crues: 3,
   cyclones: 6,
@@ -47,13 +47,13 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copy keeps the trail pages' previews, which drop a weekend notice past its last day (web/domains.ts stateHead).
   // Its copies keep the notices' words (providers/sentiers.ts nuance): past its last day, a weekend notice is quoted, without « ouvert ».
   // Its copies keep a closed trail's state (web/data.ts closedState): « En partie fermé : … » first, « Fermé » said once.
-  sentiers: 21,
+  sentiers: 22,
   // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
   sport: 27,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,
-  velos: 6,
+  velos: 7,
   volcan: 14,
 };
 

@@ -41,6 +41,7 @@ import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAn
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW } from "../tools/bornes.js";
+import { muetPour } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
 import island from "../places/island.json" with { type: "json" };
@@ -654,10 +655,11 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   const scale = `<ul class="scale">${[1, 2, 3, 4, 5, 6].map((n) => `<li>${aq(n)}<p>Indice ${n} sur 6.</p></li>`).join("")}</ul>`;
 
   const title = "Qualité de l'air Réunion aujourd'hui, par commune · 974";
-  const description = d && worst != null
-    ? describe(`Qualité de l'air à La Réunion (974) aujourd'hui, indice ATMO prévu par Atmo Réunion : ${d.resume.replace(/^Qualité de l'air prévue aujourd'hui à La Réunion : /, "")}`,
-        "Qualité de l'air à La Réunion (974) aujourd'hui : l'indice ATMO d'Atmo Réunion dans chaque commune, avec le polluant en cause.")
-    : "Qualité de l'air à La Réunion (974) aujourd'hui : l'indice ATMO d'Atmo Réunion dans chaque commune, avec le polluant en cause.";
+  // Dated by the day the index is forecast for, never by the hour of the reading nor of the view.
+  const airShort = "Qualité de l'air à La Réunion (974) : l'indice ATMO d'Atmo Réunion dans chaque commune, avec le polluant en cause.";
+  const description = d?.echeance && worst != null
+    ? describe(`Qualité de l'air à La Réunion (974) le ${d.echeance.slice(8, 10)}/${d.echeance.slice(5, 7)}, indice ATMO prévu par Atmo Réunion : ${d.resume.replace(/^Qualité de l'air prévue aujourd'hui à La Réunion : /, "")}`, airShort)
+    : airShort;
 
   const band = `${crumbBar("Qualité de l'air")}
 <div class="wrap intro">
@@ -1152,7 +1154,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
 
   const status = !d
     ? loading("L'état des stations")
-    : `<div class="now"><span class="big">${total}</span><p>vélo${total > 1 ? "s" : ""} à assistance électrique disponible${total > 1 ? "s" : ""} en ce moment dans les <b>${d.stations.length}\u00a0stations</b> Altervélo de ${esc(BIKE_COMMUNES.join(", ").replace(/, ([^,]+)$/, " et $1"))}.</p></div>`;
+    : `<div class="now"><span class="big">${total}</span><p>vélo${total > 1 ? "s" : ""} à assistance électrique disponible${total > 1 ? "s" : ""} ${esc(leAt(data!.fetchedAt))} dans les <b>${d.stations.length}\u00a0stations</b> Altervélo de ${esc(BIKE_COMMUNES.join(", ").replace(/, ([^,]+)$/, " et $1"))}.</p></div>`;
 
   // The communes served in a yellow that stands out from the others' land in both themes (--zone-on: the highlight's
   // brown, in the dark theme, hardly did, marketing's review).
@@ -1462,7 +1464,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
 
   const status = !d
     ? loading("L'état des bornes")
-    : `<div class="now"><span class="big">${libres}</span><p>point${libres > 1 ? "s" : ""} de charge libre${libres > 1 ? "s" : ""} en ce moment, sur <b>${total}</b> dans les ${d.stations.length} stations publiques de l'île.</p></div>`;
+    : `<div class="now"><span class="big">${libres}</span><p>point${libres > 1 ? "s" : ""} de charge libre${libres > 1 ? "s" : ""} ${esc(leAt(data!.fetchedAt))}, sur <b>${total}</b> dans les ${d.stations.length} stations publiques de l'île.</p></div>`;
 
   // One marker per commune, where its stations are: how many points are free there.
   const markers = (d?.communes ?? []).map((c) => {
@@ -1490,7 +1492,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   const title = "Bornes de recharge Réunion : points libres en direct · 974";
   const short = "Bornes de recharge pour voiture électrique à La Réunion (974) : points libres, occupés ou hors service, en direct, station par station.";
   const description = d
-    ? describe(`Bornes de recharge à La Réunion (974) en ce moment : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
+    ? describe(`Bornes de recharge à La Réunion (974) ${leAt(data!.fetchedAt)} : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
     : short;
 
   const band = `${crumbBar("Bornes de recharge")}
@@ -1799,7 +1801,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
   <p>Les ${d?.randonnees.length ?? ""} itinéraires complets (GR R1, R2, R3, sommets, boucles) et les sentiers de l'ONF, avec leur trace GPS, leur distance, leur dénivelé et leur état d'après la carte de l'ONF, sur une carte de l'île et filtrables : <a href="/randonnees">la page randonnée</a>.</p></div>
 </section>`;
 
-  const title = "Sentiers fermés Réunion aujourd'hui : liste ONF · 974";
+  const title = "Sentiers fermés Réunion : liste de l'ONF · 974";
   const short = "Sentiers de randonnée fermés à La Réunion (974) : la liste de l'ONF commune par commune, avec la cause de chaque fermeture.";
   const base = d
     ? describe(`Sentiers fermés à La Réunion (974) : ${closed} sentiers fermés sur ${d.suivis} d'après la carte de l'ONF, commune par commune, avec la cause (éboulement, sentier dégradé, travaux).`, short)
@@ -2633,25 +2635,30 @@ function noticeCard(n: CoupuresAnswer["avis"][number]): string {
 /**
  * The head of a page of notices (/coupures-eau, /coupures-eau/<commune>): the notices of cuts or works counted apart
  * from those saying not to drink the water, so that a notice about the water's quality is never read as a cut. `where`:
- * « à Salazie » on a commune's page; `dry`: the communes not to drink the water of, on the island's.
+ * « à Salazie » on a commune's page; `dry`: the communes not to drink the water of, on the island's. `lus`: when the
+ * notices were read, « le 06/11 à 14:15 », so that a copy of the page kept by a search engine never says them current;
+ * `muet`: a feed did not answer, the sites read then said those that answered.
  */
-export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry: string[] = []): string {
+export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry: string[] = [], lus = "", muet = false): string {
   const bad = avis.filter((n) => n.ne_pas_boire).length;
   const cuts = avis.length - bad;
   const sectors = `dans les secteurs ${bad > 1 ? "des avis" : "de l'avis"}${dry.length ? ` (${esc(dry.join(", "))})` : ""}`;
   const at = where ? ` ${esc(where)}` : "";
+  const read = lus ? `, ${(cuts || bad) === 1 ? "lu" : "lus"} ${esc(lus)}` : "";
   const text = !bad
-    ? `avis de coupure ou de travaux en cours, récents ou à venir${at}.`
+    ? `avis de coupure ou de travaux en cours, récents ou à venir${at}${!cuts && lus ? `, sur les sites des distributeurs ${muet ? "qui ont répondu" : "lus"} ${esc(lus)}` : read}.`
     : !cuts
-      ? `avis en cours${at} : <b>eau à ne pas boire</b> ${sectors}.`
-      : `avis de coupure ou de travaux, et ${bad} avis d'<b>eau à ne pas boire</b> ${sectors}.`;
+      ? `avis en cours${at}${read} : <b>eau à ne pas boire</b> ${sectors}.`
+      : `avis de coupure ou de travaux, et ${bad} avis d'<b>eau à ne pas boire</b>${lus ? `, lus ${esc(lus)},` : ""} ${sectors}.`;
   return `<div class="now"><span class="big">${cuts || bad}</span><p>${text}</p></div>`;
 }
 
 /** The colours of the communes followed on the map of /coupures-eau, drawn the same in its legend. */
 // A commune read with nothing announced and one not read, in two colours far apart (ux, 06/11/2026): a pale blue, a grey.
-const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd" };
+// A followed commune whose feed did not answer at the last read: a darker grey, never the blue of « aucun avis » (588).
+const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd", muet: "#868e96" };
 const CALME = "Aucun avis en cours (site lu)";
+const SANS_REPONSE_LUE = "Site sans réponse à la dernière lecture";
 const SITE_NON_LU = "Site pas lu\u00a0: voir la mairie ou le distributeur";
 const lower = (s: string) => s[0].toLowerCase() + s.slice(1);
 
@@ -2662,13 +2669,19 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
 
   const fills: Record<string, string> = {};
   const links: Record<string, ZoneLink> = {};
+  const mute = new Set<string>();
   for (const c of d?.communes_suivies ?? []) {
     const nm = MAP_NAME.get(normalize(c));
     if (!nm) continue;
-    fills[nm] = dry.includes(c) ? WATER_CUT.dry : d!.avis.some((n) => n.communes.includes(c)) ? WATER_CUT.avis : WATER_CUT.calme;
+    const [fill, say] = dry.includes(c) ? [WATER_CUT.dry, "eau à ne pas boire"]
+      : d!.avis.some((n) => n.communes.includes(c)) ? [WATER_CUT.avis, "avis en cours"]
+      // Its feed silent, nothing kept: not known, never « aucun avis » (rule 3 ter).
+      : muetPour(d!.injoignable, c) ? (mute.add(c), [WATER_CUT.muet, lower(SANS_REPONSE_LUE)])
+      : [WATER_CUT.calme, lower(CALME)];
+    fills[nm] = fill;
     // Each followed commune leads to its own page of notices.
     const p = pageOf(slugify(nm));
-    if (p) links[nm] = { href: `/coupures-eau/${p.slug}`, say: dry.includes(c) ? "eau à ne pas boire" : d!.avis.some((n) => n.communes.includes(c)) ? "avis en cours" : lower(CALME) };
+    if (p) links[nm] = { href: `/coupures-eau/${p.slug}`, say };
   }
   // The communes whose notices are not read: said as the legend says, and their page, which tells where to ask.
   if (d) for (const p of island.paths as { nom: string }[]) {
@@ -2677,19 +2690,23 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
     fills[p.nom] ??= WATER_CUT.nonLu;
   }
 
+  // A feed that did not answer: its notices kept were read before, so no hour of reading over them; and said under the
+  // head, each with its hours, as on a commune's page (never « aucun avis » for a site that did not answer).
+  const silent = d?.injoignable ?? [];
   const status = !d
     ? loading("Les avis des distributeurs")
-    : noticesHead(d.avis, "", dry);
+    : noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(data!.fetchedAt), silent.length > 0) +
+      silent.map((f) => `<p class="note">${silentText(f)}</p>`).join("");
 
   const list = d
     ? d.avis.length
       ? `<ul class="zones">${[...d.avis].sort((x, y) => Number(!!y.ne_pas_boire) - Number(!!x.ne_pas_boire)).map(noticeCard).join("")}</ul>`
-      : `<p class="card">Aucun avis de coupure récent ou à venir dans les communes suivies.</p>`
+      : `<p class="card">Aucun avis de coupure récent ou à venir ${silent.length ? "sur les sites des distributeurs qui ont répondu" : "dans les communes suivies"}.</p>`
     : `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`;
 
   // Up the page in the cyclone season, at its foot the rest of the year.
   const cyclone = cycloneWater(now);
-  const title = "Coupure d'eau Réunion aujourd'hui : avis en cours · 974";
+  const title = "Coupure d'eau Réunion : avis des distributeurs · 974";
   const short = "Coupures d'eau à La Réunion (974) : les avis de Dionéo, runéo, La Créole, la CIREST, CISE Réunion et des Eaux de La Possession, heures et rues concernées.";
   const description = d ? describe(`${d.resume} Coupures d'eau à La Réunion (974) : heures, rues concernées et avis « ne pas boire l'eau ».`, short) : short;
 
@@ -2707,6 +2724,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
     { forme: "aplat", couleur: WATER_CUT.dry, dit: "eau à ne pas boire" },
     { forme: "aplat", couleur: WATER_CUT.avis, dit: "avis en cours" },
     { forme: "aplat", couleur: WATER_CUT.calme, dit: CALME },
+    ...(mute.size ? [{ forme: "aplat" as const, couleur: WATER_CUT.muet, dit: SANS_REPONSE_LUE }] : []),
     { forme: "aplat", couleur: WATER_CUT.nonLu, dit: SITE_NON_LU },
   ], d && data ? esc(`Avis des distributeurs, lus ${readAt(data.fetchedAt, now).a}.`) : undefined)}</figcaption></figure>
 </div>`;

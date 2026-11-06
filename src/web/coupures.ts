@@ -86,7 +86,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.muet && !x.avis.length
       ? `<p class="lead">${esc(x.muet.texte)}</p>`
       : x.avis.length
-      ? noticesHead(x.avis, where)
+      ? noticesHead(x.avis, where, [], x.muet ? "" : at)
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
         ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} ${esc(at)}.</p>`
@@ -135,15 +135,24 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
   <p class="note"><a href="/coupures-eau">Tous les avis de l'île</a>, sur une carte.</p></section>`;
 
-  const title = [`Coupure d'eau ${p.nom} aujourd'hui : avis en cours · 974`, `Coupure d'eau ${p.nom} : avis en cours · 974`, `Coupure d'eau ${p.nom} · 974`]
+  const title = [`Coupure d'eau ${p.nom} : avis du distributeur · 974`, `Coupure d'eau ${p.nom} · 974`]
     .find((t) => t.length <= TITLE_MAX) ?? `Coupure d'eau ${p.nom} · 974`;
   const short = `Coupures d'eau ${where} (974) : avis du distributeur, restrictions sécheresse et qualité de l'eau du robinet.`;
   const description = !d
     ? short
+    : x.avis.length && x.muet
+      // Its feed silent: the notices kept were read before this copy, and the page says when; here no hour, and only the
+      // water not to drink, which is never dropped (cut first: the site that did not answer).
+      ? x.dry
+        ? describe(`${p.nom} (974) : eau à ne pas boire selon le dernier avis lu ; le site ${x.muet.de} n'a pas répondu à notre dernière lecture.`,
+            `${p.nom} (974) : eau à ne pas boire selon le dernier avis lu.`)
+        : short
     : x.avis.length
-      ? describe(`${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, avec les rues, les heures et les consignes.`, short)
+      // Dated always (588): too long with a distributor's long name, without « avec les rues… », never without its date.
+      ? ((dated: string) => describe(`${dated}, avec les rues, les heures et les consignes.`, describe(`${dated}.`, short)))(
+          `${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, ${x.avis.length > 1 ? "lus" : "lu"} ${at}`)
       : dist?.avis && !x.muet
-        ? describe(`Aucune coupure d'eau annoncée par ${publisher}${publisher!.includes(p.nom) ? "" : ` ${where}`} (974) ${at}. Restrictions sécheresse, qualité de l'eau du robinet et contact du distributeur.`, short)
+        ? describe(`Aucune coupure d'eau annoncée par ${publisher}${publisher!.includes(p.nom) ? "" : ` ${where}`} (974) ${at}. Sécheresse, eau du robinet et contact du distributeur.`, short)
         : short;
   const trail = {
     "@context": "https://schema.org",

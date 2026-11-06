@@ -74,8 +74,7 @@ function trails(s: Cached<SentiersAnswer> | null | undefined): string {
   if (!d) return `<p>L'état des sentiers se charge : <a href="/sentiers">voir les sentiers fermés</a>.</p>`;
   const closed = closedTrails(d);
   return `<p><b>${closed}</b> sentier${closed > 1 ? "s" : ""} fermé${closed > 1 ? "s" : ""} sur ${d.suivis} suivis par l'ONF${d.carte_mise_a_jour ? `, d'après sa carte mise à jour le ${esc(d.carte_mise_a_jour.replace(" (ONF)", ""))}` : ""}.</p>` +
-    (d.fermes_par_commune.length ? `<ul class="chips">${d.fermes_par_commune.map((c) => `<li>${esc(c.commune)} (${c.sentiers_fermes.length})</li>`).join("")}</ul>` : "") +
-    `<p class="note"><a href="/sentiers">Tous les sentiers fermés, commune par commune →</a></p>`;
+    (d.fermes_par_commune.length ? `<ul class="chips">${d.fermes_par_commune.map((c) => `<li>${esc(c.commune)} (${c.sentiers_fermes.length})</li>`).join("")}</ul>` : "");
 }
 
 function vigilance(v: Cached<mf.Vigilance> | null | undefined, now: Date): string {
@@ -119,8 +118,9 @@ export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?:
     <p class="lead"><b>${esc(URGENCE)}</b></p>
     ${ask("Na difé dann bwa ? Maïdo i brul ? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.",
       "Y a-t-il un feu de forêt à La Réunion en ce moment ? Lis https://rundata.re/feux et dis-moi où le satellite en a vu, à quelle heure, et quels sentiers sont fermés.")}
+    <p class="note"><a href="/sentiers">Tous les sentiers fermés, commune par commune →</a></p>
   </div>
-  <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : les feux détectés par satellite et les sentiers fermés" })}
+  <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : les feux détectés par satellite et les sentiers fermés" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([...(l.fires?.detections.length ? [CLE_FEU] : []), CLE_FERME], esc(`${CROIX} ${firesLine(l)}`.trim()))}</figcaption></figure>
 </div>`;
 

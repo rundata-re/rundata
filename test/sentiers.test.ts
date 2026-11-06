@@ -8,6 +8,7 @@ import { communeHikes } from "../src/web/liens.js";
 import { pageOf, slugify } from "../src/web/places.js";
 import { communeAt } from "../src/places/resolve.js";
 import { closedTrails, randonneesLive, randonneesPage, sentiersPage } from "../src/web/domains.js";
+import { mapPoints, tabStops } from "./cartes.js";
 
 // The ONF's map of the trails on 24/10/2026, last edited on 20/10: 56 trails closed out of 351 (389 pieces).
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/onf/${f}`, import.meta.url), "utf8");
@@ -47,6 +48,9 @@ describe("sentiers de randonnée", () => {
     expect(d.suivis).toBe(324);
     expect(d.sans_etat).toBeGreaterThan(0);
     const page = sentiersPage("https://rundata.re", { value: d, fetchedAt: NOW, stale: false } as never, NOW);
+    // Each closed trail is a row of the list below: its cross on the map a link, out of the Tab order.
+    expect(mapPoints(page)).toBeGreaterThan(50);
+    expect(tabStops(page)).toBe(0);
     expect(page).toContain(`Les autres sentiers gérés par l'ONF sont ouverts sur sa carte\u00a0; les ${d.sans_etat} sentiers hors gestion ONF ou sans état n'ont pas d'état connu ici.`);
     expect(page).not.toContain("Les autres sentiers suivis par l'ONF sont ouverts");
     // The title says the list, not « aujourd'hui »: the list is the ONF's map of its day, dated in the page.

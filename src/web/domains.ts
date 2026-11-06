@@ -536,7 +536,7 @@ function airMap(d: AirAnswer | undefined, layers: AirLayer[]): string {
     const legend = layers.map((l) => `<span class="lg lg-${l.id}${l.id === on ? " on" : ""}">${esc(`${l.polluant[0].toUpperCase()}${l.polluant.slice(1)}, en µg/m³ : mesure brute, non validée, ${l.heure}`)}` +
       `${l.others ? esc(`, ${l.others} station${l.others > 1 ? "s" : ""} à une autre heure (voir la liste)`) : ""}.</span>`).join("");
     return `<figure class="card mapcard airmap">${tabs}` +
-      islandMap({ layers: layers.map((l) => ({ id: l.id, markers: l.markers, on: l.id === on })), peaks: true, apart: true, label: "Carte de La Réunion (974) : les mesures aux stations d'Atmo Réunion, un polluant à la fois" }) +
+      islandMap({ layers: layers.map((l) => ({ id: l.id, markers: l.markers, on: l.id === on })), peaks: true, apart: true, listed: true, label: "Carte de La Réunion (974) : les mesures aux stations d'Atmo Réunion, un polluant à la fois" }) +
       `<figcaption class="note">${legend}</figcaption></figure>`;
   }
   // No measure stored: the forecast, a dot at each commune's centre.
@@ -547,7 +547,7 @@ function airMap(d: AirAnswer | undefined, layers: AirLayer[]): string {
       ? [{ lon: place.lon, lat: place.lat, label: String(c.niveau), say: `indice ${c.niveau} sur 6, ${AQ_NAMES[c.niveau]}`, place: name, name: `${name}\u00a0: indice ${c.niveau} sur 6, ${AQ_NAMES[c.niveau]}`, color: `var(--aq${c.niveau})`, round: true, quiet: true, href: `#${anchorId("c", name)}` }]
       : [];
   });
-  return `<figure class="card mapcard">${islandMap({ markers, peaks: true, apart: true, label: "Carte de La Réunion (974) : l'indice ATMO prévu dans chaque commune" })}` +
+  return `<figure class="card mapcard">${islandMap({ markers, peaks: true, apart: true, listed: true, label: "Carte de La Réunion (974) : l'indice ATMO prévu dans chaque commune" })}` +
     `<figcaption class="note">Indice ATMO prévu pour aujourd'hui dans chaque commune, de 1 (bon) à 6 (extrêmement mauvais) : une prévision, pas une mesure.</figcaption></figure>`;
 }
 
@@ -1206,7 +1206,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
     ${ask(`Néna in vélo Altervélo i rès dan la stasion IUT ? Gèt si ${url} é di amwin.`,
       `Reste-t-il des vélos Altervélo à la station IUT de Saint-Pierre ? Lis ${url} et dis-le-moi.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ fills, links, label: "Carte de La Réunion (974) : les communes où circulent les vélos Altervélo" })}
+  <figure class="card mapcard">${islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) : les communes où circulent les vélos Altervélo" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "aplat", couleur: "var(--zone-on)", dit: "commune desservie par Altervélo" }],
     d && data ? esc(`Vélos disponibles d'après les stations, relevé ${readAt(data.fetchedAt, now).de}.`) : undefined)}</figcaption></figure>
 </div>`;
@@ -1407,7 +1407,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
     ${ask(`Larivyèr i mont Sin-Bénoi ? Gèt si ${url} é di amwin.`,
       `La rivière monte-t-elle à Saint-Benoît ? Lis ${url} et dis-moi si l'eau monte.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : les stations de mesure des rivières de la DEAL" })}
+  <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : les stations de mesure des rivières de la DEAL" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "rond", couleur: GAUGE_COLOR.hausse, texte: "↑", dit: "en hausse", grand: true },
     { forme: "rond", couleur: GAUGE_COLOR.calme, dit: "stable ou en baisse" },
@@ -1637,7 +1637,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
     ${ask(`Dlo lé bon pou bengn La Rényon ? Gèt si ${url} é di amwin pou la plaj l'Ermitaz é pou dlo robinè Sin-Pyèr.`,
       `L'eau est-elle bonne pour se baigner à La Réunion ? Lis ${url} et dis-moi pour la plage de l'Hermitage et l'eau du robinet à Saint-Pierre.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : la qualité de l'eau au dernier prélèvement de chaque plage et bassin contrôlé" })}
+  <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : la qualité de l'eau au dernier prélèvement de chaque plage et bassin contrôlé" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende(["bonne", "moyenne", "mauvaise"].map((q): Cle => ({ forme: "rond", couleur: WATER_COLOR[q], texte: WATER_MARK[q], dit: q })),
     firstSample && lastSample ? esc(`Qualité au dernier prélèvement de l'ARS, ${firstSample === lastSample ? `le ${dayFr(lastSample)}` : `du ${dayFr(firstSample).slice(0, 5)} au ${dayFr(lastSample)}`}.`) : undefined)}</figcaption></figure>
 </div>`;
@@ -1834,7 +1834,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
     ${ask(`Lo santyé Roche Plate lé ouvèr ? Gèt si ${url} é di amwin si mi pé désann Mafate.`,
       `Le sentier de Roche Plate est-il ouvert ? Lis ${url} et dis-moi si je peux descendre dans Mafate.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : les sentiers de randonnée fermés" })}
+  <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : les sentiers de randonnée fermés" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([CLE_FERME, ...(burning ? [CLE_FEU] : [])], esc(`${onfMap(d)}.${burning ? ` Points chauds : satellites de la NASA (FIRMS)${d?.feux?.lu ? `, lus ${leAt(d.feux.lu)}` : ""}.` : ""}`))}</figcaption></figure>
 </div>`;
 
@@ -2602,7 +2602,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
     ${ask(`Mi gingn arouz mon zardin Sin-Zozèf ? Gèt si ${url} é di amwin sak lé défandi.`,
       `Ai-je le droit d'arroser mon jardin à Saint-Joseph ? Lis ${url} et dis-moi ce qui est interdit.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ fills, links, label: "Carte de La Réunion (974) colorée par le niveau de restriction de l'eau du robinet de chaque commune" })}
+  <figure class="card mapcard">${islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) colorée par le niveau de restriction de l'eau du robinet de chaque commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende(["vigilance", "alerte", "alerte renforcée", "crise"].map((n): Cle => ({ forme: "aplat", couleur: DROUGHT_COLOR[n], dit: n })),
     esc(`Eau du robinet, d'après l'arrêté préfectoral en vigueur${d?.arrete_du ? ` depuis le\u00a0${d.arrete_du}` : ""}.`))}</figcaption></figure>
 </div>`;
@@ -3274,7 +3274,7 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
     ${ask(`La pli i tonb Sin-Bénoi ? Lé normal ? Gèt si ${url} é di amwin konbien la tonbé sé dernié zour.`,
       `Il a plu combien ces derniers jours à Saint-Benoît, et c'est normal ? Lis ${url} et dis-le-moi.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : la pluie des 30 derniers jours à six stations, en pourcentage de la normale" })}
+  <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : la pluie des 30 derniers jours à six stations, en pourcentage de la normale" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende(RAIN_CLASSES.map((c) => ({ forme: "pastille", encre: COUNT_COLOR, ...c })), esc(`Pluie mesurée par Météo-France${d ? ` du ${d.periode.du.slice(0, 5)} au ${d.periode.au.slice(0, 5)}` : " ces 30 derniers jours"}, en % de la normale 1991-2020.`))}</figcaption></figure>
 </div>`;
 

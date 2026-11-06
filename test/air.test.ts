@@ -8,6 +8,7 @@ import { airPage } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
 import { sourceRevision } from "../src/web/revisions.js";
 import { esc } from "../src/web/map.js";
+import { mapPoints, tabStops } from "./cartes.js";
 
 // The ATMO index of the 24 communes for 22 and 23/10/2026: "moyen" everywhere, set by ozone.
 const list = parse(JSON.parse(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url), "utf8")));
@@ -111,6 +112,9 @@ describe("air quality: what the index is and where it comes from", () => {
   it("shows on /air the forecast by its value, its diffusion, our reading, the source and the method", async () => {
     const answer = body(await qualiteAir(cache(diffused(YESTERDAY)), undefined, NOW, true));
     const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
+    // Each commune and station is a row below: their points on the maps out of the Tab order.
+    expect(mapPoints(page)).toBeGreaterThanOrEqual(24);
+    expect(tabStops(page)).toBe(0);
     const status = page.slice(page.indexOf('<div class="status">'), page.indexOf("</div>", page.indexOf('<div class="status">')));
     expect(status).toContain("Une prévision d'Atmo Réunion pour la journée, pas une mesure. Prévision diffusée par Atmo Réunion la veille, le 22/10 à 10:45. Lue par rundata.re le 23/10 à 09:00.");
     expect(page).toContain("Prévision du jour</p>");

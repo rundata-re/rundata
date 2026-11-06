@@ -9,6 +9,7 @@ import { distributeur } from "../src/eau/distributeurs.js";
 import { gather } from "../src/eau/ile.js";
 import { eauPage } from "../src/web/domains.js";
 import { esc } from "../src/web/map.js";
+import { mapPoints, tabStops } from "./cartes.js";
 
 // Hub'Eau for Saint-Pierre and the ministry's page of the plage de l'Hermitage centre, read on 24/10/2026: the latest
 // analyses date from late August (tap) and mid-September (bathing).
@@ -115,6 +116,9 @@ describe("qualité de l'eau", () => {
     const ile = await gather(cache(), NOW);
     const data = { value: { ...ile, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false };
     const late = eauPage("https://rundata.re", data, NOW);
+    // Each beach and pool is a row below: its point on the map out of the Tab order.
+    expect(mapPoints(late)).toBeGreaterThan(0);
+    expect(tabStops(late)).toBe(0);
     const gap = sansPrelevement("2026-09-15", NOW)!;
     expect(late).toContain(`<p class="note">${esc(gap)}</p>`);
     expect(late.indexOf(esc(gap))).toBeGreaterThan(late.indexOf('<div class="now">'));

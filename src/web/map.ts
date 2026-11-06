@@ -291,14 +291,14 @@ const pointData = (lines: (string | undefined)[]) =>
  * `data-p2`) and its link's words (`data-pv`, « Voir la commune → »). One without `href` has its bubble only, and is
  * not said: the map's legend says it.
  */
-function zoneLinks(links: Record<string, ZoneLink>, named = false): string {
+function zoneLinks(links: Record<string, ZoneLink>, named = false, listed = false): string {
   const out = island.paths
     .filter((p) => links[p.nom])
     .map((p) => {
       const l = links[p.nom];
       const said = l.say ? `${p.nom} : ${l.say}, voir le détail` : `${p.nom}, voir sa page`;
       const a11y = !l.href || named ? ' tabindex="-1" aria-hidden="true"' : ` aria-label="${esc(said)}"`;
-      return `<a class="zn"${l.href ? ` href="${esc(l.href)}"` : ""}${a11y}${pointData([p.nom, l.say])}${l.href ? ' data-pv="commune"' : ""}><title>${esc(p.nom)}</title><path d="${p.d}"/></a>`;
+      return `<a class="zn"${l.href ? ` href="${esc(l.href)}"` : ""}${a11y}${pointData([p.nom, l.say])}${l.href ? ' data-pv="commune"' : ""}${l.href && !named && listed ? ' tabindex="-1"' : ""}><title>${esc(p.nom)}</title><path d="${p.d}"/></a>`;
     })
     .join("");
   return out ? `<g class="zones">${out}</g>` : "";
@@ -753,8 +753,8 @@ export function islandMap(opts: {
   /** The key of the IGN's backgrounds drawn over the relief once picked (fondChoice()): their layer `fd-<key>`. */
   fond?: string;
   /**
-   * The page lists the same places, each row with its links: the markers are then out of the Tab order (`tabindex="-1"`,
-   * as /ecoles' and /carte's points), still a link for the mouse, a finger and a screen reader. Each would otherwise
+   * The page lists the same places, each row with its links: the markers, and the communes' links, are then out of the
+   * Tab order (`tabindex="-1"`, as /ecoles' and /carte's points), still a link for the mouse, a finger and a screen reader. Each would otherwise
    * cost three stops of Tab (the point, its bubble's link, the point again: 195 to cross /evenements' map, 06/11/2026).
    */
   listed?: boolean;
@@ -770,7 +770,7 @@ export function islandMap(opts: {
   // Links drawn by the page itself count too (the schools' dots), even out of the Tab order: an image may hold none.
   const linked = !!opts.links || !!opts.top || !!opts.overlay?.includes("<a ") || [...(opts.markers ?? []), ...(opts.layers ?? []).flatMap((l) => l.markers)].some((m) => m.href);
   const role = linked ? `role="group"` : `role="img"`;
-  const zones = opts.links ? zoneLinks(opts.links, !!opts.names) : "";
+  const zones = opts.links ? zoneLinks(opts.links, !!opts.names, opts.listed) : "";
   // What the names of places must not touch (namesLayer()).
   const busy: Box[] = [];
   const draw = (list: Marker[]) => {
@@ -1082,7 +1082,7 @@ const PHONE_PX = 340;
  * wider than half the way to the next one. The frame is the commune's and its spots', 1:1 to 4:3, in `data-box`. Under
  * it, the zoom (carte-zoom.ts, up to 12 times closer), then the backgrounds, the order of every zoomed map.
  */
-export function communeMap(opts: { commune: string; spots: Spot[]; label: string; id?: string }): string {
+export function communeMap(opts: { commune: string; spots: Spot[]; label: string; id?: string; listed?: boolean }): string {
   const shape = island.paths.find((p) => p.nom === opts.commune);
   if (!shape) return "";
   // A tenth of the map's unit is 7 m: enough for a dot.
@@ -1101,7 +1101,7 @@ export function communeMap(opts: { commune: string; spots: Spot[]; label: string
   const dots = opts.spots.map((s, k) => {
     const [x, y] = at[k];
     // Its title names the link, aloud and on hover.
-    return `<a class="sp" href="#lieu-${s.i}" data-i="${s.i}" data-t="${esc(s.t)}"${pointData(s.tip ? [s.tip.name, s.tip.kind, s.tip.address] : [s.name])}><title>${esc(s.name)}</title>` +
+    return `<a class="sp" href="#lieu-${s.i}" data-i="${s.i}" data-t="${esc(s.t)}"${pointData(s.tip ? [s.tip.name, s.tip.kind, s.tip.address] : [s.name])}${opts.listed ? ' tabindex="-1"' : ""}><title>${esc(s.name)}</title>` +
       `<circle class="hit" cx="${x}" cy="${y}" r="${r2(radii[k])}"/><path class="rg" d="M${x} ${y}h0"/><path class="pt f-${esc(s.f)}" d="M${x} ${y}h0"/></a>`;
   }).join("");
   const fd = esc(opts.id ?? "c");

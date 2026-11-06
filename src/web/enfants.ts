@@ -191,7 +191,7 @@ export function enfantsPage(origin: string, data: Cached<EnfantsAnswer> | null, 
     <p class="lead">${esc(LEAD)}</p>
     ${ask(ASK_KREOL, ASK_FRANCAIS)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, apart: true, label: "Carte de La Réunion (974) : le nombre de lieux pour les enfants par commune" })}
+  <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : le nombre de lieux pour les enfants par commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: COUNT_COLOR, texte: "12", dit: "lieux pour les enfants dans la commune" }], esc(`Lieux d'OpenStreetMap, Data ES et Basilic, liste lue le ${dayMonth(enfants.BUILT)}.`))}</figcaption></figure>
 </div>`;
 
@@ -412,7 +412,7 @@ export function enfantsCommunePage(origin: string, p: PlacePage, data: Cached<En
   const body = `<div id="enfc">
 <section aria-label="${esc(MOTS.carte(c))}" class="ecarte">
   ${chips}
-  <figure class="card mapcard">${communeMap({ commune: c, spots, label: MOTS.carte(c), id: "ecm" })}${legend}</figure>
+  <figure class="card mapcard">${communeMap({ commune: c, spots, label: MOTS.carte(c), id: "ecm", listed: true })}${legend}</figure>
   ${sheet}
 </section>
 <section aria-labelledby="h-lieux">

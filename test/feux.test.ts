@@ -13,7 +13,7 @@ import { feuxDescription, feuxPage, heroFeux } from "../src/web/feux.js";
 import { site } from "../src/web/site.js";
 import { communeHikes } from "../src/web/liens.js";
 import { pageOf } from "../src/web/places.js";
-import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 // Three VIIRS lists in FIRMS's column format: NOAA-20 saw two hot pixels above Saint-Paul (06:30 and 01:50, Réunion
 // time), NOAA-21 one two days old, Suomi NPP nothing.
@@ -208,6 +208,11 @@ describe("fires on the site", () => {
     feux.configure("key");
     const page = feuxPage("https://rundata.re", { fires: { ...seen, fetchedAt: NOW }, sentiers: s }, NOW);
     expect(mapLinks(page).map((l) => l.href)).toEqual(["/sentiers#t-sentier-de-la-glaciere", "#f-1", "#f-2"]);
+    // Out of the Tab order: the fires are listed below, and the closed trails reached by the link above the map.
+    expect(tabStops(page)).toBe(0);
+    const all = '<a href="/sentiers">Tous les sentiers fermés, commune par commune →</a>';
+    expect(page.split(all)).toHaveLength(2);
+    expect(page.indexOf(all)).toBeLessThan(page.indexOf('<svg class="map'));
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
   });

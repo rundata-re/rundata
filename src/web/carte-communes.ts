@@ -63,8 +63,11 @@ export function nameBox(nom: string): [number, number, number, number] {
 /** The point of the box nearest `t`: where a name's line leaves it towards its town. */
 const nearest = (b: [number, number, number, number], t: [number, number]): [number, number] => [Math.min(Math.max(t[0], b[0]), b[2]), Math.min(Math.max(t[1], b[1]), b[3])];
 
-/** The layer of names, over the communes' links: `href` gives each commune's page. */
-export function communeNames(href: (nom: string) => string): string {
+/**
+ * The layer of names, over the communes' links: `href` gives each commune's page. `listed`: the page lists the same
+ * communes, each with its link, so the names are out of the Tab order (`tabindex="-1"`), still links for the mouse.
+ */
+export function communeNames(href: (nom: string) => string, listed = false): string {
   const ties: string[] = [];
   const names = ORDER.map((nom) => {
     const p = PLACES[nom];
@@ -78,7 +81,7 @@ export function communeNames(href: (nom: string) => string): string {
     const first = p.y - ((lines.length - 1) * NAME_UNITS * 1.05) / 2;
     const text = lines.map((l, i) => `<tspan x="${p.x}" y="${Math.round(first + i * NAME_UNITS * 1.05)}">${esc(l)}</tspan>`).join("");
     // The box, invisible, takes the finger and the mouse between the letters; carte-points.ts reads its middle.
-    return `<a class="sp" href="${esc(href(nom))}" aria-label="${esc(nom)}, voir sa page" data-pn="${esc(nom)}" data-pv="commune">` +
+    return `<a class="sp" href="${esc(href(nom))}" aria-label="${esc(nom)}, voir sa page" data-pn="${esc(nom)}" data-pv="commune"${listed ? ' tabindex="-1"' : ""}>` +
       `<rect class="hit" x="${Math.round(b[0])}" y="${Math.round(b[1])}" width="${Math.round(b[2] - b[0])}" height="${Math.round(b[3] - b[1])}"/><text>${text}</text></a>`;
   });
   return `<g class="cn" font-size="${NAME_UNITS}"><g class="tie" aria-hidden="true">${ties.join("")}</g>${names.join("")}</g>`;

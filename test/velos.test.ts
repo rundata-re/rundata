@@ -5,7 +5,7 @@ import { merge, parseInfo } from "../src/providers/velos.js";
 import { velosLibreService } from "../src/tools/velos.js";
 import { velosPage } from "../src/web/domains.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
-import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 // Eight Altervélo stations on the night of 23 to 24/10/2026 (the operator's test station among them); one is set not
 // renting, and one given a scooter, to cover both.
@@ -70,9 +70,10 @@ describe("Altervélo", () => {
     expect(html).toContain(`<span class="big">19</span><p>vélos à assistance électrique disponibles le 24/10 à 00:35 dans les <b>`);
     // Each commune served leads to its stations.
     expect(mapLinks(html).map((l) => l.href)).toEqual(["#c-l-etang-sale", "#c-saint-louis", "#c-saint-pierre"]);
+    expect(tabStops(html)).toBe(0);
     // Each commune has its bubble (marketing's charter of the maps): those served, their bikes and their link; the others,
     // no station. The legend draws the colour, then when the stations were read.
-    expect(html).toMatch(/<a class="zn" href="#c-saint-pierre" aria-label="Saint-Pierre : 7\u00a0vélos disponibles, voir le détail" data-pn="Saint-Pierre" data-p2="7\u00a0vélos disponibles" data-pv="commune">/);
+    expect(html).toMatch(/<a class="zn" href="#c-saint-pierre" aria-label="Saint-Pierre : 7\u00a0vélos disponibles, voir le détail" data-pn="Saint-Pierre" data-p2="7\u00a0vélos disponibles" data-pv="commune" tabindex="-1">/);
     expect(html).toContain('<a class="zn" tabindex="-1" aria-hidden="true" data-pn="Le Tampon" data-p2="pas de station Altervélo">');
     expect(html).toContain('<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:var(--zone-on)"/></svg>commune desservie par Altervélo</span>');
     expect(html).toContain('<span class="mls">Vélos disponibles d&#39;après les stations, relevé du 24/10 à 00:35.</span>');

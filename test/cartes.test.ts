@@ -3,7 +3,7 @@ import { COMMON } from "../src/tools/eau.js";
 import type { EauAnswer, HistoriqueAnswer, SeaData } from "../src/web/data.js";
 import { eauPage, historiquePage } from "../src/web/domains.js";
 import { seaPage } from "../src/web/pages.js";
-import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 const NOW = new Date("2026-10-24T06:00:00Z");
 const cached = <T>(value: T) => ({ value, fetchedAt: NOW, stale: false });
@@ -40,6 +40,7 @@ describe("the maps of the pages read from a bundle or a database", () => {
     };
     const page = historiquePage("https://rundata.re", cached(value), NOW);
     expect(mapLinks(page).map((l) => l.href)).toEqual(["#s-saint-denis-gillot", "#s-plaine-des-cafres"]);
+    expect(tabStops(page)).toBe(0);
     expect(mapLinks(page)[0].label).toBe("Saint-Denis-Gillot : 33\u00a0% de la pluie normale en 30\u00a0jours, voir le détail");
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
@@ -55,6 +56,7 @@ describe("the maps of the pages read from a bundle or a database", () => {
     } as SeaData;
     const page = seaPage("https://rundata.re", cached(value), NOW);
     expect(mapLinks(page).map((l) => l.href)).toEqual(["#p-plage-de-boucan-canot", "#p-plage-de-grande-anse"]);
+    expect(tabStops(page)).toBe(0);
     expect(mapLinks(page)[0].label).toMatch(/ : eau à 25 °C, voir le détail$/);
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);

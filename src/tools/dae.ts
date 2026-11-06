@@ -57,6 +57,29 @@ const saint = (part: string) => {
 export const nomDae = (nom: string) =>
   /\p{Ll}/u.test(nom) && nom.includes(" - ") ? nom.split(" - ").map((part) => saint(part) ?? enCapitales(part)).join(" - ") : enCapitales(nom);
 
+/** A text written all in capitals, of one word or more, as people read it, a word glued to its number parted from it
+ * (« NIVEAU1 » → « Niveau 1 »); as written otherwise. */
+const libre = (s: string) => (/\p{Lu}/u.test(s) && !/\p{Ll}/u.test(s) ? casseArret(s.replace(/(\p{Lu}{3,})(\d)/gu, "$1 $2"), daeSigle) : s);
+/**
+ * A device's floor as people read it, in the tool, on /defibrillateurs, « Autour de moi » and /carte. Géo'DAE's field is
+ * free text: a number is the floor (« 1 » → « 1er étage », « 2ème étage » → « 2e étage », « 0 » → « rez-de-chaussée »,
+ * « -1 » → « niveau -1 »), the ground floor however written (« RDC », « REZ DE CHAUSEE ») « rez-de-chaussée » and what
+ * follows it (« RDC - Bât B » → « rez-de-chaussée - Bât B »); any other text as written, without « étage » before it
+ * (« quelques marches »), or as people read it when in capitals.
+ */
+export function etage(s: string | undefined): string | undefined {
+  const t = s?.replace(/\s+/g, " ").trim();
+  if (!t) return undefined;
+  const n = /^(-?\d+) ?(?:er|ère|e|ème|eme)?(?: étage)?$/iu.exec(t);
+  if (n) {
+    const k = Number(n[1]);
+    return k === 0 ? "rez-de-chaussée" : k < 0 ? `niveau ${k}` : `${k}${k === 1 ? "er" : "e"} étage`;
+  }
+  const rdc = /^(?:rdc|rez[ -]de[ -]chauss?[ée]e)(?![\p{L}\d])[\s-]*(.*)$/iu.exec(t);
+  if (rdc) return ["rez-de-chaussée", libre(rdc[1])].filter(Boolean).join(" - ");
+  return libre(t);
+}
+
 /** Said after the emergency call, in the tool and on /defibrillateurs. */
 export const SANS_FORMATION = "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";
 
@@ -84,7 +107,7 @@ export function daeRow(d: Dae, from?: { lon: number; lat: number }) {
     a_pied_min: km !== undefined ? walk(km) : undefined,
     acces: access(d),
     emplacement: d.emplacement,
-    etage: d.etage,
+    etage: etage(d.etage),
     horaires: d.horaires,
     carte: `https://www.openstreetmap.org/?mlat=${d.lat}&mlon=${d.lon}#map=19/${d.lat}/${d.lon}`,
   };

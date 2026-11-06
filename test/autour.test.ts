@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import liste from "../src/dae/liste.json" with { type: "json" };
 import { DAES } from "../src/providers/dae.js";
 import { buildDae } from "../src/web/data.js";
-import { nomDae } from "../src/tools/dae.js";
+import { etage, nomDae } from "../src/tools/dae.js";
 import { nombre } from "../src/tools/format.js";
 import { AUTOUR_SCRIPT, daePage } from "../src/web/domains.js";
 
@@ -74,6 +74,8 @@ describe("« Autour de moi » on /defibrillateurs", () => {
     // [lat, lon, name…], in the bundle's order: the same name for the same device, « FEAR - Saint-Paul », not « FEAR - SAINT PAUL ».
     expect(d.d.map((r: unknown[]) => [r[0], r[1], r[2]])).toEqual(DAES.map((x) => [x.lat, x.lon, nomDae(x.nom)]));
     expect(d.d.map((r: unknown[]) => r[2])).toContain("FEAR - Saint-Paul");
+    // Its floor too, last of the row: « 1er étage », never « 1 » for the page to put « étage » before.
+    expect(d.d.map((r: unknown[]) => r[8] ?? "")).toEqual(DAES.map((x) => etage(x.etage) ?? ""));
   });
 
   it("puts the button after the emergency call, and its script on the page", async () => {

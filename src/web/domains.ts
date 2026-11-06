@@ -2867,7 +2867,7 @@ const far=(k)=>k<1?Math.max(10,Math.round(k*100)*10)+" m":(Math.round(k*10)/10).
 const xy=(la,lo)=>[(lo-BOX[0])/(BOX[2]-BOX[0])*W,(BOX[3]-la)/(BOX[3]-BOX[1])*H];
 let list=null;
 const show=(la,lo)=>{const near=list.d.map((d)=>({d,k:km(la,lo,d[0],d[1])})).sort((a,b)=>a.k-b.k).slice(0,N);
-ul.innerHTML=near.map(({d,k},i)=>"<li><span><b>"+(i+1)+".</b> "+e(d[2])+"<small>"+[far(k),[d[4],list.communes[d[5]]].filter(Boolean).join(", "),d[6],d[8]?"étage "+d[8]:"",d[7]].filter(Boolean).map(e).join(" · ")+"</small><a class=\\"aller\\" href=\\""+e(route(d[0],d[1]))+"\\" rel=\\"noopener\\" data-go=\\""+d[0]+","+d[1]+"\\""+(d[4]?" data-a=\\""+e([d[4],list.communes[d[5]]].filter(Boolean).join(", "))+"\\"":"")+" data-m=\\"pied\\" aria-label=\\""+e(T.label+d[2])+"\\">"+e(T.route)+"</a></span><span class=\\""+(d[3]<2?"q-bonne":"q-none")+"\\">"+e(ACCES[d[3]])+"</span></li>").join("");
+ul.innerHTML=near.map(({d,k},i)=>"<li><span><b>"+(i+1)+".</b> "+e(d[2])+"<small>"+[far(k),[d[4],list.communes[d[5]]].filter(Boolean).join(", "),d[6],d[8],d[7]].filter(Boolean).map(e).join(" · ")+"</small><a class=\\"aller\\" href=\\""+e(route(d[0],d[1]))+"\\" rel=\\"noopener\\" data-go=\\""+d[0]+","+d[1]+"\\""+(d[4]?" data-a=\\""+e([d[4],list.communes[d[5]]].filter(Boolean).join(", "))+"\\"":"")+" data-m=\\"pied\\" aria-label=\\""+e(T.label+d[2])+"\\">"+e(T.route)+"</a></span><span class=\\""+(d[3]<2?"q-bonne":"q-none")+"\\">"+e(ACCES[d[3]])+"</span></li>").join("");
 res.hidden=false;const svg=document.querySelector(".mapcard svg");if(!svg)return;
 const old=svg.querySelector("#autour-g");if(old)old.remove();
 const pts=near.map(({d})=>xy(d[0],d[1])),me=xy(la,lo),all=[...pts,me],xs=all.map((p)=>p[0]),ys=all.map((p)=>p[1]);
@@ -2897,7 +2897,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
         `<li class="card tgt" id="${anchorId("c", c.commune)}">${folded(foldDae,
           `<h3>${esc(c.commune)}${foldDae ? "\u00a0" : " "}<span class="note">${foldDae ? "·\u00a0" : ""}${c.nombre}\u00a0défibrillateur${c.nombre > 1 ? "s" : ""}${c.toute_heure ? `, dont ${c.toute_heure}\u00a0accessible${c.toute_heure > 1 ? "s" : ""} à toute heure` : ""}</span></h3>`,
           `<ul class="rows eau dae">` +
-        c.liste.map((x) => `<li><span>${esc(x.lieu)}<small>${[x.adresse, x.emplacement, x.etage ? `étage ${x.etage}` : ""].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
+        c.liste.map((x) => `<li><span>${esc(x.lieu)}<small>${[x.adresse, x.emplacement, x.etage].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
           // The normal route, not on foot as « Autour de moi »: a device of the commune may be kilometres away.
           `${aller({ nom: x.lieu, lat: x.lat ?? NaN, lon: x.lon ?? NaN, adresse: x.adresse })}</span>` +
           `<span class="${x.acces.includes("toute heure") || x.acces.includes("24 h") ? "q-bonne" : "q-none"}">${esc(shortAccess(x.acces))}</span></li>`).join("") +

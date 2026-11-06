@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DAES } from "../src/providers/dae.js";
-import { access, aPied, defibrillateurs, loin, nomDae } from "../src/tools/dae.js";
+import { access, aPied, defibrillateurs, daeRow, etage, loin, nomDae } from "../src/tools/dae.js";
+import { daeCouche } from "../src/web/couches.js";
 import { buildDae } from "../src/web/data.js";
 import { daePage } from "../src/web/domains.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
@@ -59,6 +60,31 @@ describe("défibrillateurs", () => {
     expect(nomDae("Siège social - BAT A")).toBe("Siège social - BAT A");
     // All in capitals: the name as a whole, its last word too.
     expect(nomDae("ECOLE DES FLAMBOYANTS - ACCUEIL")).toBe("École des Flamboyants - Accueil");
+  });
+
+  it("writes a device's floor as people read it, never « étage » before a text that says it", () => {
+    // A number: the floor, the ground floor, a level below ground.
+    expect([etage("1"), etage("1 er"), etage("1er étage"), etage("1 er étage"), etage("5"), etage("2ème étage")]).toEqual(
+      ["1er étage", "1er étage", "1er étage", "1er étage", "5e étage", "2e étage"]);
+    expect([etage("0"), etage("-1")]).toEqual(["rez-de-chaussée", "niveau -1"]);
+    // The ground floor however written, and what follows it.
+    expect([etage("RDC"), etage("REZ DE CHAUSEE"), etage("rez de chaussée"), etage("rez-de-chaussée")]).toEqual(Array(4).fill("rez-de-chaussée"));
+    expect([etage("RDC - Bât B"), etage("RDC Salle commune"), etage("RDC PHARMACIE")]).toEqual(
+      ["rez-de-chaussée - Bât B", "rez-de-chaussée - Salle commune", "rez-de-chaussée - Pharmacie"]);
+    // Any other text as written; in capitals as people read it, its sigles kept, a word parted from its number.
+    expect([etage("quelques marches"), etage("Bureau Administratif")]).toEqual(["quelques marches", "Bureau Administratif"]);
+    expect([etage("BUREAU BAT A"), etage("NIVEAU2 ACCUEIL")]).toEqual(["Bureau BAT A", "Niveau 2 Accueil"]);
+    expect([etage(undefined), etage(" ")]).toEqual([undefined, undefined]);
+    // The tool, the list by commune and the map's layer say it so.
+    const d = DAES.find((x) => x.etage === "1")!;
+    expect(daeRow(d).etage).toBe("1er étage");
+    expect(daeCouche([d], "2026-11-07").objets[0].infos).toMatchObject({ etage: "1er étage" });
+  });
+
+  it("puts no « étage » before the floor on /defibrillateurs", async () => {
+    const page = daePage("https://rundata.re", { value: await buildDae(), fetchedAt: new Date(), stale: false });
+    expect(page).not.toMatch(/étage (?:\d|1er|rez|REZ|RDC)/);
+    expect(page).toContain(" · 1er étage</small>");
   });
 
   it("says a distance from 1 km in kilometres and a walk from an hour in hours", () => {

@@ -238,9 +238,14 @@ describe("coupures d'eau", () => {
     // Each id once, on the island's page and the commune's: the list of notices and the feedback form have their own titles.
     for (const page of [isle, salazie]) {
       expect(doubleIds(page)).toEqual([]);
+      // The tap water: a link to /eau on the pages, never the tool's name.
+      expect(page).toMatch(/se brosser les dents\. La conformité de l'eau du robinet, d'après les analyses de l'<abbr[^>]*>ARS<\/abbr>\s:\svoir <a href="\/eau">la qualité de l'eau<\/a>\.<\/p>/);
+      expect(page).not.toContain("qualite_eau");
       expect(page).toContain('<section aria-labelledby="h-coupures-eau">');
       expect(page).toContain('<aside class="avis wrap" id="avis" aria-labelledby="h-avis">');
     }
+    // The tool still names the tool for the tap water, for the assistant.
+    expect(body(await coupuresEau(cache(later), "Salazie", later)).a_savoir).toMatch(/se brosser les dents\. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau\.$/);
     const day = resume(pageOf("salazie")!, { coupures } as never, later);
     expect(day.resume).toContain("\u00a0; 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day.resume).not.toContain("coupure d'eau");
@@ -515,7 +520,7 @@ describe("coupures d'eau", () => {
     expect(waterLive(pageOf("le-tampon")!, { coupures })!.detail).not.toContain("avis lus");
     // The notice of the 23rd is in Saint-Paul: not on Les Trois-Bassins' page.
     expect(waterLive(pageOf("les-trois-bassins")!, { coupures: night })).toMatchObject({ valeur: "Pas de coupure annoncée" });
-    expect(waterLive(pageOf("le-tampon")!, { coupures })).toMatchObject({ valeur: "Avis non lus" });
+    expect(waterLive(pageOf("le-tampon")!, { coupures })).toMatchObject({ valeur: "Site pas lu" });
   });
 
   it("says a feed that does not answer: its notices kept with the hour they were read, else its read failed, never « no cut »", async () => {
@@ -667,7 +672,7 @@ describe("coupures d'eau", () => {
     const es = page("l-etang-sale");
     expect(es).toContain("Le distributeur de la commune n'est pas connu ici : voir la mairie. <a href=\"https://www.letangsale.fr/\" rel=\"noopener\">Le site de la mairie de L&#39;<span style=\"white-space:nowrap\">Étang-Salé</span> →</a>");
     expect(es).not.toContain("Coupure d’eau");
-    expect(waterLive(pageOf("cilaos")!, { coupures })).toMatchObject({ valeur: "Avis non lus" });
+    expect(waterLive(pageOf("cilaos")!, { coupures })).toMatchObject({ valeur: "Site pas lu" });
     // No notice of Saint-Leu at the time: said of the commune that publishes them, not of its distributor.
     const later = new Date("2026-10-24T04:00:00Z");
     const now = { value: await buildCoupures(cache(), later), fetchedAt: later };

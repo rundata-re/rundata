@@ -63,6 +63,12 @@ describe("a commune's tiles", () => {
       expect(tv.length, c.nom).toBeGreaterThan(0);
       expect(tv.filter((v) => v.includes("\u202f")), c.nom).toEqual([]);
     }
+    // The measure at the head of the page, in the same bold: « 25,9 °C », not « 25,9°C ».
+    const station = { station: "Le Port", mesures: { temperature: "25,9 °C" }, altitude_m: 10, heure_mesure: ago(60_000).toISOString(), distance_km: 6.1, pertinence: "bonne" };
+    const place = { value: { meteo: { stations: [station] } }, fetchedAt: ago(60_000), stale: false };
+    const page = communePage(ORIGIN, COMMUNES[0], { ...commune(ago(60_000)), place } as unknown as Parameters<typeof communePage>[2], NOW);
+    const big = page.match(/<span class="big">(.*?)<\/span>/)?.[1];
+    expect(big).toMatch(/^\d+(,\d)?\u00a0°C$/);
   });
 
   // A page built for each commune in three states: about 3 s alone, over vitest's 5 s by default when the whole suite

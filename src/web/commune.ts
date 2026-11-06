@@ -723,7 +723,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
 
   const s = enTete(l.place?.value.meteo?.stations);
   const headline = s
-    ? `<div class="now"><span class="big">${esc(thin(s.mesures.temperature!))}</span>` +
+    ? `<div class="now"><span class="big">${enGrand(esc(thin(s.mesures.temperature!)))}</span>` +
       `<p>mesurés <b>${esc(leJour(s.heure_mesure))}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 

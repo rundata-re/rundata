@@ -75,11 +75,14 @@ describe("« Autour de moi » on /defibrillateurs", () => {
       `Il s&#39;utilise sans formation : il guide par la voix et ne délivre un choc que si c&#39;est nécessaire.</p>`;
     expect(page).toContain(call);
     expect(page).toContain(`<button type="button" class="btn sun" id="autour-btn">Défibrillateurs autour de moi</button>`);
-    const count = page.indexOf(`<p class="dae-compte">${nombre(DAES.length)} défibrillateurs déclarés à La Réunion, d&#39;après la base nationale Géo&#39;DAE, lus le `);
+    const count = page.indexOf(`<p class="dae-compte">${nombre(DAES.length)} défibrillateurs déclarés à La Réunion.</p>`);
     const order = [page.indexOf(call), page.indexOf(`id="autour-btn"`), page.indexOf('<figure class="card mapcard">'), count, page.indexOf('class="ask', count)];
     expect(order.every((x) => x > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(page).not.toContain('<span class="big">');
+    // The source and its date once, in the map's legend just above the count.
+    expect(page.split("Géo&#39;DAE, lue le ").length).toBe(2);
+    expect(page).not.toContain("Géo&#39;DAE, lus le ");
     expect(page).toContain("Votre position ne quitte pas votre appareil.");
     expect(page).toContain("<h3>Les 10 plus proches, à vol d'oiseau</h3>");
     expect(page).toContain(`<script>${AUTOUR_SCRIPT}</script>`);

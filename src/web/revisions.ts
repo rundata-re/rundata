@@ -23,7 +23,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   bus: 8,
   calendrier: 4,
   chiffres: 23,
-  commune: 18,
+  commune: 19,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 13,
   courant: 8,

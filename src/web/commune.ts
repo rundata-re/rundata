@@ -6,7 +6,7 @@
  */
 import { porte, type Porte, SHEET as ALLER } from "./aller.js";
 import type { Cached } from "../cache.js";
-import { daysApart, localTime } from "../geo.js";
+import { localTime } from "../geo.js";
 import { normalize } from "../places/resolve.js";
 import * as cal from "../providers/calendrier.js";
 import * as mf from "../providers/vigilance.js";
@@ -34,11 +34,11 @@ import { credit, joursDuJour } from "./data.js";
 import { aCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
-import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, stillToCome, volcanLive, waitText } from "./domains.js";
+import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
-import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour } from "./pages.js";
+import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
@@ -182,15 +182,31 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
   }, data!, now), mf.OFFICIEL_VIGILANCE);
 }
 
+const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+/** The day of a time, with its name, « vendredi 06/11 »: a copy of the page never says « aujourd'hui » of another day (588). */
+const jourDit = (at: Date) => {
+  const l = new Date(at.getTime() + 4 * 3600_000);
+  return `${JOURS[l.getUTCDay()]} ${String(l.getUTCDate()).padStart(2, "0")}/${String(l.getUTCMonth() + 1).padStart(2, "0")}`;
+};
+/** The time of a measure, « 06/11 14:18 » (`heure_mesure`, no year), as a date: the year of `now`, or the one before at New Year. */
+export function measuredAt(dayTime: string, now: Date): Date | undefined {
+  const m = /^(\d\d)\/(\d\d) (\d\d):(\d\d)$/.exec(dayTime);
+  if (!m) return undefined;
+  const y = new Date(now.getTime() + 4 * 3600_000).getUTCFullYear();
+  const at = (year: number) => new Date(Date.UTC(year, +m[2] - 1, +m[1], +m[3] - 4, +m[4]));
+  return at(y).getTime() > now.getTime() + 86_400_000 ? at(y - 1) : at(y);
+}
+/** The day the commune's air index is forecast for, « 06/11 »: the index's own (`echeance`), else the day of its reading. */
+const airDay = (data: Cached<AirAnswer>) => (data.value.echeance ? dayMonth(data.value.echeance) : localTime(data.fetchedAt).split(" ")[0]);
+
 const airOf = (p: PlacePage, data: Cached<AirAnswer> | null | undefined) => data?.value.communes?.find((x) => normalize(x.commune) === normalize(p.nom));
 
 function air(p: PlacePage, data: Cached<AirAnswer> | null | undefined, now: Date): Live | undefined {
   if (!data) return undefined;
   const c = airOf(p, data);
   if (!c) return empty(`${p.nom} n'est pas dans l'indice ATMO lu ${readAt(data.fetchedAt, now).a}.`);
-  // A copy made before midnight, until its rebuild: the day it was made for, which is no longer today.
-  const day = daysApart(data.fetchedAt, now) > 0 ? `le ${localTime(data.fetchedAt).split(" ")[0]}` : "aujourd'hui";
-  return { valeur: aq(c.niveau), detail: `indice ATMO prévu pour ${day}${c.polluants.length ? ` (${esc(c.polluants.join(", "))})` : ""}, d'Atmo Réunion` };
+  // Always its day, never « aujourd'hui » (588): a copy of the page read the next day says which day it was for.
+  return { valeur: aq(c.niveau), detail: `indice ATMO prévu pour le ${airDay(data)}${c.polluants.length ? ` (${esc(c.polluants.join(", "))})` : ""}, d'Atmo Réunion` };
 }
 
 function sea(p: PlacePage, mer: Cached<SeaData> | null | undefined, place: Cached<PlaceData> | null, now: Date): Live | undefined {
@@ -234,7 +250,8 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   const first = left.find(({ x }) => !x.temps_reel) ?? left[0];
   return {
     live: { valeur: esc(first.heure), detail: `prochain départ ${where} : ligne ${esc(first.x.ligne)} vers ${esc(casse(first.x.direction))} (${esc(first.x.reseau)})` },
-    more: `<ul class="rows departs cols">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, heure))).join("")}</ul>` +
+    // The hour, never « dans 1 min », which a copy of the page would keep (588); /bus and the stops count the wait.
+    more: `<ul class="rows departs cols">${left.map(({ x, heure }) => departureLi(x, heure.startsWith("demain") ? heure : `à ${heure}`)).join("")}</ul>` +
       (b.alertes?.length ? `<div class="note">Info trafic : ${alertList(b.alertes)}</div>` : ""),
   };
 }
@@ -577,17 +594,19 @@ const horsService = (hs: Cached<sitesHs.Copie> | null | undefined, p: PlacePage)
  * The town hall now. On a holiday, from the calendar's copy of today, said probably closed: its published hours are a
  * week's (11/11/2026 would have shown it open).
  */
-function townHall(data: Cached<CommuneData> | null | undefined, now: Date, calendrier?: Cached<CalendrierAnswer> | null): Live | undefined {
+function townHall(data: Cached<CommuneData> | null | undefined, now: Date, calendrier?: Cached<CalendrierAnswer> | null): (Live & { etat?: string }) | undefined {
   const o = data?.value.mairie;
   if (!o) return undefined;
   const day = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
   const ferie = calendrier && day(calendrier.fetchedAt) === day(now) ? calendrier.value.jours_feries?.aujourd_hui : undefined;
-  if (ferie) return { valeur: "Sans doute fermée", detail: `jour férié (${esc(ferie)}) · ${esc(o.adresse)}${o.telephone ? ` · ${esc(o.telephone)}` : ""}` };
+  if (ferie) return { valeur: "Sans doute fermée", etat: "sans doute fermée", detail: `jour férié (${esc(ferie)}) · ${esc(o.adresse)}${o.telephone ? ` · ${esc(o.telephone)}` : ""}` };
   const open = openNow(o, now);
   const today = hoursOn(o, now);
+  // Its state with the hour it was worked out, and the day of its hours (588): a copy never says « ouverte » of another time.
   return {
-    valeur: open === null ? "Horaires absents de l'annuaire" : open ? "Ouverte" : "Fermée",
-    detail: `${open === null ? "" : today ? `aujourd'hui ${esc(today)} · ` : "fermée aujourd'hui · "}${esc(o.adresse)}${o.telephone ? ` · ${esc(o.telephone)}` : ""}`,
+    valeur: open === null ? "Horaires absents de l'annuaire" : `${open ? "Ouverte" : "Fermée"} à ${hm(now)}`,
+    ...(open !== null && { etat: open ? "ouverte" : "fermée" }),
+    detail: `${open === null ? "" : today ? `${jourDit(now)}, ${esc(today)} · ` : `fermée le ${jourDit(now)} · `}${esc(o.adresse)}${o.telephone ? ` · ${esc(o.telephone)}` : ""}`,
   };
 }
 
@@ -614,7 +633,7 @@ function justice(data: Cached<CommuneData> | null | undefined, g: Porte, now: Da
   const today = hoursOn(o, now);
   const n = j.dans_la_commune;
   const where = n > 1 ? "le plus proche du centre\u00a0: " : n ? "" : "le plus proche\u00a0: ";
-  const hours = open === null ? "horaires non publiés" : today ? `${open ? "ouvert" : "fermé"} en ce moment, aujourd'hui ${today}` : "fermé aujourd'hui";
+  const hours = open === null ? "horaires non publiés" : today ? `${open ? "ouvert" : "fermé"} à ${hm(now)} · ${jourDit(now)}, ${today}` : `fermé le ${jourDit(now)}`;
   const tel = o.telephone ? ` · tél. <a href="tel:${esc(o.telephone.replace(/\s/g, ""))}">${esc(o.telephone.replace(/ /g, "\u00a0"))}</a>` : "";
   const go = g.aller({ nom: o.nom, lat: o.lat ?? NaN, lon: o.lon ?? NaN, adresse: o.adresse });
   return {
@@ -630,7 +649,7 @@ function sunTimes(p: PlacePage, calendrier: Cached<CalendrierAnswer> | null | un
   // The island's calendar, without its sunrise and sunset (those of Saint-Denis).
   const c = calendrierLive(calendrier ?? null, now);
   const rest = c && !c.vide ? [c.valeur, ...c.detail.split(" · ").filter((x) => !x.startsWith("soleil"))].join(" · ") : "";
-  return { valeur: `${t(s.lever)}–${t(s.coucher)}`, detail: `lever et coucher du soleil aujourd'hui${rest ? ` · ${rest}` : ""}` };
+  return { valeur: `${t(s.lever)}–${t(s.coucher)}`, detail: `lever et coucher du soleil le ${jourDit(now)}${rest ? ` · ${rest}` : ""}` };
 }
 
 export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = new Date(), alerte?: Alerte): string {
@@ -709,15 +728,18 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     : "";
 
   const title = `${p.nom} 974 en direct : météo, bus, air, mairie`;
-  const facts = [
-    s && `${thin(s.mesures.temperature!)} ${leJour(s.heure_mesure)}`,
-    airOf(p, l.air) && `air ${airOf(p, l.air)!.qualite}`,
-    mairie && mairie.valeur !== "Horaires absents de l'annuaire" && `mairie ${mairie.valeur.toLowerCase()}`,
-  ].filter(Boolean);
-  const description = fit(
-    `${p.nom} (La Réunion, 974) en direct${facts.length ? ` : ${facts.join(", ")}` : ""}.`,
-    " Vigilance, prochains bus, soleil, chaque donnée datée et sourcée.",
-  );
+  // Dated by its measure, the whole sentence true at that time (588): the town hall's state worked out then, the air
+  // said only when forecast for that day. Without a measure, no value and no hour.
+  const at = s ? measuredAt(s.heure_mesure, now) : undefined;
+  const hallThen = at && townHall(l.commune, at, l.calendrier);
+  const facts = s && at ? [
+    thin(s.mesures.temperature!),
+    l.air && airOf(p, l.air) && airDay(l.air) === s.heure_mesure.split(" ")[0] && `air ${airOf(p, l.air)!.qualite}`,
+    hallThen?.etat && `mairie ${hallThen.etat}`,
+  ].filter(Boolean) : [];
+  const description = facts.length
+    ? fit(`${p.nom} (La Réunion, 974) ${leJour(s!.heure_mesure)} : ${facts.join(", ")}.`, " Vigilance, prochains bus, soleil, chaque donnée datée et sourcée.")
+    : `${p.nom} (La Réunion, 974) : météo, vigilance, air, prochains bus, mairie et soleil, chaque donnée datée et sourcée.`;
 
   const jsonld = [
     {

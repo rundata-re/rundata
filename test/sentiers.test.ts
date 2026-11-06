@@ -279,7 +279,7 @@ describe("sentiers de randonnée", () => {
       const said = body(await sentiersRandonnee(c, commune, NOW)).resume as string;
       const [, shut, open] = said.match(/ : (\d+) sentiers? fermés?(?: \(dont \d+ en partie\))?, (\d+) ouverts?/)!.map(Number);
       const tile = communeHikes(pageOf(slugify(commune))!, hikes, NOW)!;
-      expect(tile.live?.detail, commune).toContain(`sur ${shut + open} sentiers de l'ONF dans la commune`);
+      expect(tile.live?.detail, commune).toContain(`sur ${shut + open} dans la commune, d'après la carte de l'ONF`);
       expect(tile.live?.valeur, commune).toBe(shut ? `${shut} sentier${shut > 1 ? "s" : ""} fermé${shut > 1 ? "s" : ""}` : "Sentiers ouverts");
       const listed = island.fermes_par_commune.find((x: { commune: string }) => x.commune === commune)?.sentiers_fermes ?? [];
       expect(listed, commune).toHaveLength(shut);

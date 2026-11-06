@@ -180,13 +180,17 @@ describe("commune page", () => {
     const page = communePage(ORIGIN, p, live({ mairie, bus: { gare: true, arrets: [], departs }, velos, sources: [] }), NOW);
     expect(tile(page, "Air")).toContain(`<span class="aq aq2">moyen</span>`);
     // 18h40 on a Friday.
-    expect(tile(page, "Mairie")).toContain(`<p class="tv">Fermée</p><p class="td">aujourd'hui 8\u00a0h–16\u00a0h`);
+    // Its state with the hour it was worked out, and the day of its hours, never « aujourd'hui » (588).
+    expect(tile(page, "Mairie")).toContain(`<p class="tv">Fermée à 18:40</p><p class="td">vendredi 23/10, 8\u00a0h–16\u00a0h`);
     // « Y aller » under its address, from the directory's position, and the sheet once.
     expect(tile(page, "Mairie")).toContain(`<p class="ya"><a class="aller" href="https://www.google.com/maps/dir/?api=1&amp;destination=${mairie.lat},${mairie.lon}" rel="noopener" data-a="${mairie.adresse}"`);
     expect(page.match(/<dialog id="aller"/g)).toHaveLength(1);
     expect(communePage(ORIGIN, p, live({ mairie: { ...mairie, lat: null, lon: null }, bus: { gare: true, arrets: [], departs }, velos, sources: [] }), NOW)).not.toContain('<dialog id="aller"');
     expect(tile(page, "Bus")).toContain(`<p class="tv">18:50</p>`);
-    expect(tile(page, "Bus")).toContain("dans 10 min"); // built a minute ago
+    expect(tile(page, "Bus")).toContain("à 18:50");
+    // The sun's day named, never « aujourd'hui » (588).
+    expect(tile(page, "Soleil et calendrier")).toContain("lever et coucher du soleil le vendredi 23/10");
+    expect(tile(page, "Bus")).not.toContain("dans 10 min");
     expect(tile(page, "Bus")).not.toContain("S1");
     expect(tile(page, "Vélos")).toContain(`<p class="tv">6 vélos</p>`);
     expect(tile(page, "Vélos")).toContain("<li><span>ZAC Maxime Rivière<small><b>6</b>\u00a0vélos · 4\u00a0places</small></span>");

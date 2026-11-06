@@ -41,6 +41,7 @@ import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAn
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW } from "../tools/bornes.js";
+import { muetPour } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
 import island from "../places/island.json" with { type: "json" };
@@ -2654,8 +2655,10 @@ export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry:
 
 /** The colours of the communes followed on the map of /coupures-eau, drawn the same in its legend. */
 // A commune read with nothing announced and one not read, in two colours far apart (ux, 06/11/2026): a pale blue, a grey.
-const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd" };
+// A followed commune whose feed did not answer at the last read: a darker grey, never the blue of « aucun avis » (588).
+const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd", muet: "#868e96" };
 const CALME = "Aucun avis en cours (site lu)";
+const SANS_REPONSE_LUE = "Site sans réponse à la dernière lecture";
 const SITE_NON_LU = "Site pas lu\u00a0: voir la mairie ou le distributeur";
 const lower = (s: string) => s[0].toLowerCase() + s.slice(1);
 
@@ -2666,13 +2669,19 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
 
   const fills: Record<string, string> = {};
   const links: Record<string, ZoneLink> = {};
+  const mute = new Set<string>();
   for (const c of d?.communes_suivies ?? []) {
     const nm = MAP_NAME.get(normalize(c));
     if (!nm) continue;
-    fills[nm] = dry.includes(c) ? WATER_CUT.dry : d!.avis.some((n) => n.communes.includes(c)) ? WATER_CUT.avis : WATER_CUT.calme;
+    const [fill, say] = dry.includes(c) ? [WATER_CUT.dry, "eau à ne pas boire"]
+      : d!.avis.some((n) => n.communes.includes(c)) ? [WATER_CUT.avis, "avis en cours"]
+      // Its feed silent, nothing kept: not known, never « aucun avis » (rule 3 ter).
+      : muetPour(d!.injoignable, c) ? (mute.add(c), [WATER_CUT.muet, lower(SANS_REPONSE_LUE)])
+      : [WATER_CUT.calme, lower(CALME)];
+    fills[nm] = fill;
     // Each followed commune leads to its own page of notices.
     const p = pageOf(slugify(nm));
-    if (p) links[nm] = { href: `/coupures-eau/${p.slug}`, say: dry.includes(c) ? "eau à ne pas boire" : d!.avis.some((n) => n.communes.includes(c)) ? "avis en cours" : lower(CALME) };
+    if (p) links[nm] = { href: `/coupures-eau/${p.slug}`, say };
   }
   // The communes whose notices are not read: said as the legend says, and their page, which tells where to ask.
   if (d) for (const p of island.paths as { nom: string }[]) {
@@ -2715,6 +2724,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
     { forme: "aplat", couleur: WATER_CUT.dry, dit: "eau à ne pas boire" },
     { forme: "aplat", couleur: WATER_CUT.avis, dit: "avis en cours" },
     { forme: "aplat", couleur: WATER_CUT.calme, dit: CALME },
+    ...(mute.size ? [{ forme: "aplat" as const, couleur: WATER_CUT.muet, dit: SANS_REPONSE_LUE }] : []),
     { forme: "aplat", couleur: WATER_CUT.nonLu, dit: SITE_NON_LU },
   ], d && data ? esc(`Avis des distributeurs, lus ${readAt(data.fetchedAt, now).a}.`) : undefined)}</figcaption></figure>
 </div>`;

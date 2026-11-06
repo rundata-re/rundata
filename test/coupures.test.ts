@@ -557,6 +557,12 @@ describe("coupures d'eau", () => {
     const isle = coupuresPage("https://rundata.re", coupures, now);
     expect(isle).toContain(`</p></div><p class="note">Lu le 24/10 à 08:00 : le site de Dionéo n&#39;a pas répondu depuis. Ce qui suit peut avoir changé : voir <a href="https://dioneo.re/" rel="noopener">son site</a>.</p><p class="note">Le site de runéo n&#39;a pas répondu`);
     expect(head(isle)).not.toMatch(/\blus? le /);
+    // On its map, a commune of a silent feed with nothing kept is not known: grey, said so, never « aucun avis » (588).
+    const spPath = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
+    expect(isle).toContain(`<path d="${spPath.d}" style="fill:#868e96"/>`);
+    expect(mapLinks(isle).find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : site sans réponse à la dernière lecture, voir le détail");
+    expect(isle).toContain(`<rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#868e96"/></svg>Site sans réponse à la dernière lecture</span>`);
+    expect(mapLinks(isle).find((l) => l.href === "/coupures-eau/saint-pierre")?.label).not.toMatch(/aucun avis/i);
     const sdPage = coupuresCommunePage("https://rundata.re", pageOf("saint-denis")!, { coupures }, now);
     expect(head(sdPage)).not.toMatch(/\blus? le /);
     expect(sdPage).toContain('<meta name="description" content="Coupures d&#39;eau à Saint-Denis (974)\u00a0: avis du distributeur, restrictions sécheresse et qualité de l&#39;eau du robinet.">');
@@ -595,6 +601,8 @@ describe("coupures d'eau", () => {
     // Its title says what the page gives, not a state (588): never « avis en cours » on a day without any.
     expect(page).toContain("<title>Coupure d&#39;eau Réunion : avis des distributeurs · 974</title>");
     expect(page).not.toContain("aujourd&#39;hui : avis en cours");
+    // Every site answered: no grey of a site without answer, nor its legend.
+    expect(page).not.toContain("Site sans réponse");
     // Each commune leads to its own page of notices: a followed one's notices, the others' where to ask (marketing's charter).
     const links = mapLinks(page);
     expect(links).toHaveLength(24);

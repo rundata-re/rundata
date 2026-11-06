@@ -615,24 +615,6 @@ function markerBox(m: Marker, at?: [number, number]): Box {
   return [x - hw, y - hh, x + hw, y + hh];
 }
 
-/**
- * The page's script for the names of places (namesLayer()), on every map that has them: each name at its size on
- * screen, then shown only if it touches no point, trail (`.trk-halo`), label or name already shown, on its place or around it (NUDGE, and
- * FAR for a commune or a big quarter), a commune's name on it, its middle and 14 of 27 points of it, or at sea off its coast (`home`, the outlines
- * of `#isl` by `data-k`), the commune's own name (`data-c`) after the big ones if nothing around its place is free
- * (`look`), and on the island's map (`data-i`) a commune's name up to 6 times its size from its town, beyond 3 facing it (`face`), at sea only
- * where the nearest coast is the commune's (`town`, AROUND), as the server does for a phone. First the summits (`peaks`), whatever the map's width a mark 13 px wide and its name and height in 12 px (marketing's charter, § 2.4), the name below the summit, else above, on the right, on the
- * left, then aslant on either side, the first that touches no point; else, inside the frame (never cut by its edge: « Piton de la Fournaise » at 1280, marketing's review of 31/10), the one that covers the least of the lines and dots and no marker's shape; else the name is not shown, the summit's mark is, as a name that would cover a marker (« 3 070 m » under « 13,1 », review n° 457); the name
- * moves, never the station. What is hidden takes no room (the wind's pills under the temperatures, the summits'
- * names on a phone). Again when the map changes size, when a map zooms (its viewBox) and when a tab
- * changes the points shown. A map put in the page later (laterMap()) is placed when it comes.
- */
-/**
- * A map far under the hero, put in the page only when it nears the screen: in a `<template>` until then, so that the
- * first paint neither builds nor draws it (the island's shapes cost about 400 ms on a slow phone, 31/10/2026). Once
- * in, it says so (the event `carte`), and the scripts of the points and of the names take it as one of theirs.
- * Without a script, it is not shown: what it shows must be in the page besides (a list).
- */
 /** The ids a map gives its own drawing: its island, the clip of its relief, the coast's glow, its roads, a commune's clip. */
 const OWN_IDS = ["isl", "isl-clip", "glow", "rd-d", "rd-a", "com-clip"];
 const OWN_REF = new RegExp(`( id="|href="#|url\\(#)(${OWN_IDS.join("|")})(?=[")])`, "g");
@@ -656,6 +638,24 @@ export function ownIds(parts: string[]): string[] {
   }));
 }
 
+/**
+ * The page's script for the names of places (namesLayer()), on every map that has them: each name at its size on
+ * screen, then shown only if it touches no point, trail (`.trk-halo`), label or name already shown, on its place or around it (NUDGE, and
+ * FAR for a commune or a big quarter), a commune's name on it, its middle and 14 of 27 points of it, or at sea off its coast (`home`, the outlines
+ * of `#isl` by `data-k`), the commune's own name (`data-c`) after the big ones if nothing around its place is free
+ * (`look`), and on the island's map (`data-i`) a commune's name up to 6 times its size from its town, beyond 3 facing it (`face`), at sea only
+ * where the nearest coast is the commune's (`town`, AROUND), as the server does for a phone. First the summits (`peaks`), whatever the map's width a mark 13 px wide and its name and height in 12 px (marketing's charter, § 2.4), the name below the summit, else above, on the right, on the
+ * left, then aslant on either side, the first that touches no point; else, inside the frame (never cut by its edge: « Piton de la Fournaise » at 1280, marketing's review of 31/10), the one that covers the least of the lines and dots and no marker's shape; else the name is not shown, the summit's mark is, as a name that would cover a marker (« 3 070 m » under « 13,1 », review n° 457); the name
+ * moves, never the station. What is hidden takes no room (the wind's pills under the temperatures, the summits'
+ * names on a phone). Again when the map changes size, when a map zooms (its viewBox) and when a tab
+ * changes the points shown. A map put in the page later (laterMap()) is placed when it comes.
+ */
+/**
+ * A map far under the hero, put in the page only when it nears the screen: in a `<template>` until then, so that the
+ * first paint neither builds nor draws it (the island's shapes cost about 400 ms on a slow phone, 31/10/2026). Once
+ * in, it says so (the event `carte`), and the scripts of the points and of the names take it as one of theirs.
+ * Without a script, it is not shown: what it shows must be in the page besides (a list).
+ */
 export function laterMap(svg: string): string {
   return `<template class="carte">${svg}</template><script>${LATER_SCRIPT}</script>`;
 }

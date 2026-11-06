@@ -1,7 +1,8 @@
 import { distanceKm } from "../geo.js";
+import { INSEE } from "../places/insee.js";
 import { resolvePlace } from "../places/resolve.js";
 import { BUILT, DAES, type Dae, SOURCE } from "../providers/dae.js";
-import { casseArret, NO_VOWEL, STOP_SIGLES } from "./casse.js";
+import { casseArret, lieuEcrit, NO_VOWEL, STOP_SIGLES } from "./casse.js";
 import { credits, fr, notFound, placeBlock, text } from "./format.js";
 
 const NEAR_KM = 2;
@@ -29,20 +30,32 @@ export function aPied(min: number): string {
  * without a vowel is one too (« CRR », « BK »).
  */
 const DAE_SIGLES = new Set([
-  "AAD", "AATI", "ADAPEI", "AED", "AEMO", "ALEFPA", "ANFH", "CA", "CC", "CCR", "CERP", "CFA", "CHRS", "CNAM", "CROS",
+  "AAD", "AATI", "AC", "ADAPEI", "AED", "AEMO", "ALEFPA", "ANFH", "BAT", "CA", "CC", "CCR", "CERP", "CFA", "CHRS", "CNAM", "CROS",
   "CSAPA", "CSC", "DAE", "EGB", "EHPAD", "EMAP", "EPEI", "EPHAD", "EPS", "ERP", "ESAR", "EURL", "FEAR", "FEI", "FJT",
   "FO", "GHER", "GIE", "GLEM", "GTOI", "IAE", "ID", "IME", "IMP", "IMPRO", "INSPE", "MDSI", "MGEN", "OI", "OLA", "OM",
   "PTU", "SAMSAH", "SARL", "SAS", "SATP", "SAVS", "SCI", "SEBV", "SELARL", "SESSAD", "SIDR", "SIP", "SMOI", "SPL",
   "SRA", "SUMPPS", "UD", "UEAJ",
 ]);
 const daeSigle = { has: (w: string) => DAE_SIGLES.has(w) || STOP_SIGLES.has(w) || NO_VOWEL.test(w) };
+/** A name, or a part of one, written all in capitals and of two words or more: as people read it (nomDae()). */
+const enCapitales = (nom: string) => (/\s/.test(nom.trim()) && !/\p{Ll}/u.test(nom) ? casseArret(nom, daeSigle) : nom);
+/** A part « ST » or « STE » and a commune, written out as INSEE writes the commune (« ST ANDRE » → « Saint-André »). */
+const saint = (part: string) => {
+  const m = /^(STE?)\s+(\p{Lu}[\p{Lu}\s'’-]*)$/u.exec(part.trim());
+  const nom = m && lieuEcrit(`${m[1] === "ST" ? "SAINT" : "SAINTE"} ${m[2]}`);
+  return nom && nom in INSEE ? nom : undefined;
+};
 /**
  * A device's name as people read it: written all in capitals in the base (« FEAR - SAINT PAUL »), each word with its
  * capital and its place's name as the resolver writes it, its sigles kept (« FEAR - Saint-Paul »); as written otherwise
  * (« CEVA LA REUNION Cambaie », « College Roquefeuil »: the operator's own writing), and when it is one word, a sigle or
- * a brand more often than not (« INSPE », « BRINKS »).
+ * a brand more often than not (« INSPE », « BRINKS »). A name with lowercase letters is so written part by part, its
+ * parts between « - »: « LYCEE POLYVALENT PAUL MOREAU - Loge » → « Lycée Polyvalent Paul Moreau - Loge »; a part
+ * « ST » and a commune as INSEE writes the commune (« Cabinet AGCR - ST ANDRE » → « Cabinet AGCR - Saint-André »), « St »
+ * and its other words otherwise.
  */
-export const nomDae = (nom: string) => (/\s/.test(nom.trim()) && !/\p{Ll}/u.test(nom) ? casseArret(nom, daeSigle) : nom);
+export const nomDae = (nom: string) =>
+  /\p{Ll}/u.test(nom) && nom.includes(" - ") ? nom.split(" - ").map((part) => saint(part) ?? enCapitales(part)).join(" - ") : enCapitales(nom);
 
 /** Said after the emergency call, in the tool and on /defibrillateurs. */
 export const SANS_FORMATION = "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";

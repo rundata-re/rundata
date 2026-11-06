@@ -47,6 +47,18 @@ describe("défibrillateurs", () => {
     // Written with lowercase letters by its operator: as written.
     expect(nomDae("OLA Energy Moulin Joli")).toBe("OLA Energy Moulin Joli");
     expect(nomDae("CEVA LA REUNION Cambaie")).toBe("CEVA LA REUNION Cambaie");
+    // Part by part between « - »: a part in capitals of two words or more as above, the others as written.
+    expect(nomDae("LYCEE POLYVALENT LES TAMARINS - Loge")).toBe("Lycée Polyvalent Les Tamarins - Loge");
+    expect(nomDae("SELARL DUPONT-MARTIN - Accueil")).toBe("SELARL Dupont-Martin - Accueil");
+    expect(nomDae("Mairie annexe - ACCUEIL")).toBe("Mairie annexe - ACCUEIL");
+    // « ST » and a commune: as INSEE writes it; « St » and its words otherwise.
+    expect(nomDae("Cabinet AGCR - ST ANDRE")).toBe("Cabinet AGCR - Saint-André");
+    expect(nomDae("Cabinet AGCR - STE MARIE")).toBe("Cabinet AGCR - Sainte-Marie");
+    expect(nomDae("Pharmacie - ST TROPEZ")).toBe("Pharmacie - St Tropez");
+    // « BAT », a building: kept as written.
+    expect(nomDae("Siège social - BAT A")).toBe("Siège social - BAT A");
+    // All in capitals: the name as a whole, its last word too.
+    expect(nomDae("ECOLE DES FLAMBOYANTS - ACCUEIL")).toBe("École des Flamboyants - Accueil");
   });
 
   it("says a distance from 1 km in kilometres and a walk from an hour in hours", () => {

@@ -38,8 +38,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
-  // part of it after « - » (« Station Service - Les Sables »).
-  dae: 6,
+  // part of it after « - » (« Station Service - Les Sables »), each part in capitals of a name with lowercase letters
+  // (« Lycée Polyvalent Paul Moreau - Loge »).
+  dae: 7,
   dechets: 2,
   eau: 3,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».

@@ -180,3 +180,11 @@ export function notFound(asked: string) {
     isError: true,
   };
 }
+
+/**
+ * A range, said once when its two ends read the same: « 26,2 °C », not « 26,2 °C à 26,2 °C ». The ends are compared
+ * as they are written, so that two values rounded alike count as one.
+ */
+export function fourchette(bas: string, haut: string, entre = " à "): string {
+  return bas === haut ? haut : `${bas}${entre}${haut}`;
+}

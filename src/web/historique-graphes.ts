@@ -57,7 +57,10 @@ function temperatures(r: Row): string {
   if (!known(tx).length) return "";
   const n = r.normale_jour;
   const band: [(number | null)[], (number | null)[]] | undefined = n?.tmin && n.tmax ? [n.tmin, n.tmax] : undefined;
-  const range = (xs: (number | null)[]) => `de ${num(Math.min(...known(xs)))} à ${num(Math.max(...known(xs)))} °C`;
+  const range = (xs: (number | null)[]) => {
+    const lo = num(Math.min(...known(xs))), hi = num(Math.max(...known(xs)));
+    return lo === hi ? `${hi} °C` : `de ${lo} à ${hi} °C`;
+  };
   const mean = (xs?: number[]) => xs && num(xs.reduce((a, b) => a + b, 0) / xs.length);
   const said = `Températures de chaque jour mesurées par Météo-France ${a(r.station)} du ${ddmm(days[0].date)} au ${ddmm(lastOf(days, (j) => j.tmax != null)!)}\u00a0: maximales ${range(tx)}, minimales ${range(tn)}` +
     `${band ? `\u00a0; normale 1991-2020\u00a0: maximales ${mean(n!.tmax)} °C, minimales ${mean(n!.tmin)} °C` : ""}.`;

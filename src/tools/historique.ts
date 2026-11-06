@@ -664,7 +664,7 @@ function provisoire(kept: Veille, place: Place) {
   const two = !!rain && !!temp && rain.s.id !== temp.s.id;
   const said = [
     rain ? `pluie ${fr(rr!)} mm${two ? ` ${a(rain.s.nom)}` : ""}` : "",
-    t ? `températures de ${fr(t.tn!)} °C à ${fr(t.tx!)} °C${two ? ` ${a(temp!.s.nom)}` : ""}` : "",
+    t ? `${fr(t.tn!) === fr(t.tx!) ? `température de ${fr(t.tx!)} °C` : `températures de ${fr(t.tn!)} °C à ${fr(t.tx!)} °C`}${two ? ` ${a(temp!.s.nom)}` : ""}` : "",
   ].filter(Boolean).join(", ") + (two ? "" : ` ${a((rain ?? temp)!.s.nom)}`);
   return {
     etiquette: `Hier, ${frDate(kept.jour)} de 0 h à 24 h (heure de La Réunion), ${VEILLE_NATURE} de Météo-France, pas la valeur quotidienne officielle\u00a0: ${said}.`,

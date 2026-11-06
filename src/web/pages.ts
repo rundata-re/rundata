@@ -20,7 +20,7 @@ import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { toutesLesSources, VERSION } from "../server.js";
 import { compte } from "../producteurs.js";
-import { a, communeDite, de, fr } from "../tools/format.js";
+import { a, communeDite, de, fourchette, fr } from "../tools/format.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
@@ -2082,7 +2082,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   };
   // The tool's own words on the confidence index, said once under the days.
   const confidenceNote = f?.jours?.some((j) => j.confiance) ? f.avertissements?.find((w) => w.startsWith("Confiance :")) : undefined;
-  const range = (lo?: string, hi?: string) => (lo && hi ? `${lo.replace(/ °C$/, "°")} / ${hi.replace(/ °C$/, "°")}` : "—");
+  const range = (lo?: string, hi?: string) => (lo && hi ? fourchette(lo.replace(/ °C$/, "°"), hi.replace(/ °C$/, "°"), " / ") : "—");
   const forecast = f?.jours?.length
     ? `<section aria-labelledby="h-prev"><div class="hb"><h2 id="h-prev">Prévision météo ${esc(p.nom)}</h2><span class="badge">Prévision, pas une mesure</span></div>` +
       `<ul class="days">` +

@@ -36,6 +36,7 @@ import * as accidents from "../routes/accidents.js";
 import * as radars from "../routes/radars.js";
 import * as fire from "../tools/feux.js";
 import { climb, relief } from "../tools/sentiers.js";
+import { SCALE as DROUGHT_SCALE } from "../tools/secheresse.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
@@ -2565,6 +2566,15 @@ const DROUGHT_INK: Record<string, string> = { "alerte renforcée": "#000", crise
 const droughtBadge = (n?: string) =>
   n ? `<span class="lvl" style="--c:${DROUGHT_COLOR[n] ?? "#868e96"}${DROUGHT_INK[n] ? `;color:${DROUGHT_INK[n]}` : ""}">${esc(n)}</span>` : `<span class="note">aucune</span>`;
 
+/**
+ * The scale above the table of /secheresse: one line per level, from the least to the most severe, each with its pill
+ * and what it means when the tool says it. The count per level is said by the hero, the map, the table and « Ce qui est
+ * interdit »; the order's date by the map's legend.
+ */
+function droughtScale(): string {
+  return `<ul class="plain">${DROUGHT_SCALE.map(([n, what]) => `<li>${droughtBadge(n)}${what ? ` ${esc(what)}` : ""}</li>`).join("")}</ul>`;
+}
+
 export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/secheresse`;
@@ -2615,7 +2625,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
 
   const body = `<section aria-labelledby="h-communes-eau">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-communes-eau">Les niveaux de restriction</h2>
-  <p>${d ? esc(d.resume) : ""} ${d ? esc(d.echelle) : ""}</p></div>
+  ${d ? droughtScale() : ""}</div>
   ${table || (d ? "" : `<p class="card">Les restrictions se chargent : rechargez la page dans quelques secondes.</p>`)}
 </section>
 ${rules ? `<section aria-labelledby="h-interdits">
@@ -3241,6 +3251,18 @@ function rainBar(total: number, normal?: number, ratio?: number): string {
 const vsNormal = (v?: number, n?: number, unit = "\u00a0°C") =>
   v == null ? "—" : `<b>${fr(v)}${unit}</b>${n != null ? `<small class="note">normale ${fr(n)}${unit}</small>` : ""}`;
 
+/** A small count in letters, as « six stations »; the figure past ten. */
+const enLettres = (n: number) => ["zéro", "une", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf", "dix"][n] ?? String(n);
+
+/**
+ * The big words of /historique: how many of the stations with a normal had clearly less rain than it, « 3 stations sur
+ * 6 », « 1 station sur 6 », « Aucune des 6 stations »; the lead says the rest, its verb agreeing.
+ */
+export function heroHistorique(below: number, withNormal: number): string {
+  if (!below) return withNormal > 1 ? `Aucune des ${withNormal} stations` : "Aucune station";
+  return `${below} station${below > 1 ? "s" : ""} sur ${withNormal}`;
+}
+
 export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/historique`;
@@ -3256,9 +3278,14 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
       say: `${x}\u00a0% de la pluie normale en 30\u00a0jours`, href: `#${anchorId("s", r.station)}` }];
   });
 
+  // The 30 days, without their year: the pill already says up to which day.
+  const span = d ? `du ${d.periode.du.slice(0, 5)} au ${d.periode.au.slice(0, 5)}` : "";
+  const measured = `Pluie, températures et soleil mesurés par Météo-France à ${enLettres(rows.length)} station${rows.length > 1 ? "s" : ""} de référence, ${span}, comparés à la normale 1991-2020.`;
   const status = !d
     ? loading("L'historique des mesures")
-    : `<div class="now"><span class="big">${below}<small>/${withNormal}</small></span><p>stations de référence ont reçu nettement moins de pluie que la normale du ${esc(d.periode.du)} au ${esc(d.periode.au)} (moins de ${RAIN_LOW} % de leur moyenne 1991-2020).</p></div>`;
+    : withNormal
+      ? `<div class="status"><p class="big">${esc(heroHistorique(below, withNormal))}</p><p class="lead">${esc(`${below === 0 ? "n'a" : below === 1 ? "a" : "ont"} reçu nettement moins de pluie que la normale ${span} (moins de ${RAIN_LOW} % de leur moyenne 1991-2020).`)}</p></div>`
+      : `<p class="lead">${esc(measured)}</p>`;
 
   const table = rows.length
     ? `<div class="card table-wrap"><table class="drought histo"><caption class="sr">Les 30 derniers jours</caption><thead><tr><th>Station</th><th>Pluie, 30 jours</th><th>Maximales</th><th>Minimales</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) => {
@@ -3291,7 +3318,7 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
 
   const body = `<section aria-labelledby="h-trente">
   <div class="sec-h"><p class="eyebrow">Six climats, six stations</p><h2 id="h-trente">Les 30 derniers jours</h2>
-  <p>${d ? esc(d.resume) : ""}</p></div>
+  ${d ? `<p>${esc(measured)}</p>` : ""}</div>
   ${table}
 </section>
 ${charts ? `${charts}<script>${GRAPHES_SCRIPT}</script>` : ""}

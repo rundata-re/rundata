@@ -8,7 +8,7 @@ import chaud from "../src/historique/plus-chaud.json" with { type: "json" };
 import * as climat from "../src/providers/climat.js";
 import { historiqueMeteo } from "../src/tools/historique.js";
 import type { HistoriqueAnswer } from "../src/web/data.js";
-import { historiquePage } from "../src/web/domains.js";
+import { heroHistorique, historiquePage } from "../src/web/domains.js";
 import { GRAPHES_SCRIPT, graphes, warmer } from "../src/web/historique-graphes.js";
 import { CSS } from "../src/web/pages.js";
 
@@ -84,7 +84,7 @@ describe("the days of /historique", () => {
     expect(d.resume).toMatch(/Dernier jour disponible\s:\s23\/10\/2026\./);
     const html = historiquePage("https://rundata.re", at(d), morning);
     expect(html).toContain("Mesures jusqu'au 23/10</p>");
-    expect(html).toContain("du 24/09/2026 au 23/10/2026 (moins de 80 %");
+    expect(html).toContain("du 24/09 au 23/10 (moins de 80 %");
     expect(html).toContain('<span class="mls">Pluie mesurée par Météo-France du 24/09 au 23/10, en % de la normale 1991-2020.</span>');
     for (const s of svgs(html, "h-g-pluie")) expect(s).toMatch(/data-d="24\/09,[^"]*,23\/10"/);
     for (const s of [...svgs(html, "h-g-pluie"), ...svgs(html, "h-g-temp"), ...svgs(html, "h-g-soleil")]) expect(s).not.toContain("24/10");
@@ -109,6 +109,19 @@ describe("the days of /historique", () => {
   });
 });
 
+describe("the hero of /historique", () => {
+  it("says the count in words, its verb agreeing in the lead", () => {
+    expect(heroHistorique(3, 6)).toBe("3 stations sur 6");
+    expect(heroHistorique(1, 6)).toBe("1 station sur 6");
+    expect(heroHistorique(0, 6)).toBe("Aucune des 6 stations");
+    expect(heroHistorique(0, 1)).toBe("Aucune station");
+    const row = (station: string, rapport: string) => ({ zone: "Nord", station, altitude_m: 10, lon: 55.4, lat: -21, pluie: { total_mm: 20, jours_de_pluie: 3, normale_mm: 60, rapport_a_la_normale: rapport } });
+    const page = (rates: string[]) => historiquePage("https://rundata.re", at({ resume: "", periode: { du: "01/10/2026", au: "30/10/2026", jours: 30 }, stations: rates.map((r, i) => row(`Station ${i}`, r)), a_savoir: [], sources: [] } as unknown as HistoriqueAnswer), NOW);
+    expect(page(["90 %", "100 %"])).toContain('<p class="big">Aucune des 2 stations</p><p class="lead">n&#39;a reçu nettement moins de pluie');
+    expect(page(["50 %", "100 %"])).toContain('<p class="big">1 station sur 2</p><p class="lead">a reçu nettement moins de pluie');
+  });
+});
+
 describe("the classes of the rain of /historique", () => {
   it("shares one set of classes between the header's count, the map and the table, all three in the legend", () => {
     const row = (station: string, lon: number, rapport: string) => ({ zone: "Nord", station, altitude_m: 10, lon, lat: -21, pluie: { total_mm: 20, jours_de_pluie: 3, normale_mm: 60, rapport_a_la_normale: rapport } });
@@ -116,7 +129,12 @@ describe("the classes of the rain of /historique", () => {
     const rates = ["53 %", "79 %", "80 %", "125 %", "126 %", "12 %"];
     const d = { resume: "", periode: { du: "01/10/2026", au: "30/10/2026", jours: 30 }, stations: rates.map((r, i) => row(`Station ${i}`, 55.3 + i * 0.1, r)), a_savoir: [], sources: [] } as unknown as HistoriqueAnswer;
     const html = historiquePage("https://rundata.re", at(d), NOW);
-    expect(html).toContain('<span class="big">3<small>/6</small></span><p>stations de référence ont reçu nettement moins de pluie que la normale du 01/10/2026 au 30/10/2026 (moins de 80 % de leur moyenne 1991-2020).</p>');
+    // The count in words, before the map; the 30 days without their year, the pill saying up to which day.
+    expect(html).toContain('<div class="status"><p class="big">3 stations sur 6</p><p class="lead">ont reçu nettement moins de pluie que la normale du 01/10 au 30/10 (moins de 80 % de leur moyenne 1991-2020).</p></div>');
+    expect(html.indexOf('<p class="big">')).toBeLessThan(html.indexOf('<svg class="map'));
+    expect(html).not.toContain("<small>/6</small>");
+    // Above the table, what it holds, not the table again in one line.
+    expect(html).toContain("<p>Pluie, températures et soleil mesurés par Météo-France à six stations de référence, du 01/10 au 30/10, comparés à la normale 1991-2020.</p>");
     const colour = { "#ff922b": "orange", "#69db7c": "vert", "#4dabf7": "bleu" } as Record<string, string>;
     const map = [...html.matchAll(/fill="(#[0-9a-f]{6})"\/><text x="[\d.]+" y="[\d.]+" class="mv"[^>]*>(\d+)\u00a0%<\/text>/g)].map((m) => `${m[2]} ${colour[m[1]]}`);
     expect(map.sort()).toEqual(["12 orange", "125 vert", "126 bleu", "53 orange", "79 orange", "80 vert"]);

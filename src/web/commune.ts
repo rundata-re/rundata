@@ -38,7 +38,7 @@ import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAI
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
-import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour } from "./pages.js";
+import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour, jourDit } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
@@ -184,12 +184,6 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
   }, data!, now), mf.OFFICIEL_VIGILANCE);
 }
 
-const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-/** The day of a time, with its name, « vendredi 06/11 »: a copy of the page never says « aujourd'hui » of another day. */
-const jourDit = (at: Date) => {
-  const l = new Date(at.getTime() + 4 * 3600_000);
-  return `${JOURS[l.getUTCDay()]} ${String(l.getUTCDate()).padStart(2, "0")}/${String(l.getUTCMonth() + 1).padStart(2, "0")}`;
-};
 /** The time of a measure, « 06/11 14:18 » (`heure_mesure`, no year), as a date: the year of `now`, or the one before at New Year. */
 export function measuredAt(dayTime: string, now: Date): Date | undefined {
   const m = /^(\d\d)\/(\d\d) (\d\d):(\d\d)$/.exec(dayTime);

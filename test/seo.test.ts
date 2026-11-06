@@ -254,6 +254,6 @@ describe("headings", () => {
   it("keep the Mesure and Prévision badges out of the place pages' H2", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     for (const h2 of html.match(/<h2[^>]*>.*?<\/h2>/g)!) expect(h2).not.toContain("badge");
-    expect(html).toContain('<div class="hb"><h2 id="h-now">Mesuré en ce moment près de Cilaos</h2><span class="badge m">Mesure</span></div>');
+    expect(html).toContain('<div class="hb"><h2 id="h-now">Dernière mesure près de Cilaos</h2><span class="badge m">Mesure</span></div>');
   });
 });

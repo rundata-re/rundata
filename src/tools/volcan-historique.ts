@@ -249,8 +249,20 @@ const court = (e: Episode) => ({
 const puisText = (m: Moment, cite: boolean) =>
   `${PUIS} ${m.quoi}${cite ? ` : « ${m.dit} »` : ""} (${label(m.communique)} : ${m.communique.copie}). ${SANS_FIN}`;
 
-/** For volcan_seismes: the episodes, the last one with its quotes, and what the list is. */
-export function precedentes(list: Episode[] = EPISODES) {
+/** The short answer's note: its last `n` episodes, the rest with detail. */
+export const noteCourte = (n: number, total: number) =>
+  `Les ${n} dernières des ${total} alertes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture que nous avons retrouvé (liste partielle). ` +
+  "Leur fin est celle de la préfecture, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. " +
+  "Les autres, depuis 2016, et les phrases des communiqués\u00a0: rappeler l'outil avec detail.";
+
+/**
+ * For volcan_seismes: the episodes, the last one with its quotes, and what the list is. `n`: the short answer's, its
+ * newest `n` without the quotes.
+ */
+export function precedentes(list: Episode[] = EPISODES, n?: number) {
+  if (n !== undefined && n < list.length) {
+    return { note: noteCourte(n, list.length), episodes: list.slice(0, n).map((e) => ({ ...court(e), ...(e.puis && { puis: puisText(e.puis, false) }) })) };
+  }
   return {
     note: `${CHAPEAU_OUTIL} ${AVANT_2021} ${note(list)}`,
     episodes: list.map((e, i) => ({

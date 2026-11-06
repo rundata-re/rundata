@@ -148,6 +148,16 @@ export function firstSentence(text: string): string | undefined {
   return s.length > SUMMARY_MAX ? `${s.slice(0, SUMMARY_MAX - 1).replace(/\s+\S*$/, "")}…` : s;
 }
 
+/**
+ * A text without the section a medium puts before it in capitals (06/11/2026: « LIBRE EXPRESSION Sous le bruit… »,
+ * « KWAFÉ ZORDI Alors que… »): a run of words in capitals followed by a word that starts a sentence. Only when the run
+ * holds 8 capitals or more, so that acronyms that start the text stay (« EDF Réunion annonce… », « CGTR FO Les… »).
+ */
+export function sansRubrique(text: string): string {
+  const m = /^((?:[A-ZÀ-ÖØ-Þ][A-ZÀ-ÖØ-Þ'’-]+\s+)+)(?=[A-ZÀ-ÖØ-Þ][a-zà-öø-ÿ])/u.exec(text);
+  return m && m[1].replace(/[^A-ZÀ-ÖØ-Þ]/gu, "").length >= 8 ? text.slice(m[1].length) : text;
+}
+
 // ---------------------------------------------------------------- places and subjects
 
 interface Name {
@@ -343,7 +353,7 @@ function info(media: string, titre: string, raw: string, publie: Date, whole = "
   const lien = httpUrl(raw);
   if (!titre || !lien || Number.isNaN(publie.getTime())) return null;
   const body = whole.length > BODY_MAX ? whole.slice(0, whole.lastIndexOf(" ", BODY_MAX)) : whole;
-  const resume = firstSentence(body);
+  const resume = firstSentence(sansRubrique(body.trim()));
   const found = hits(`${titre} ${resume ?? ""}`);
   return {
     titre,

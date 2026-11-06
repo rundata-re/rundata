@@ -319,6 +319,8 @@ function enclosOf(o: Officiel) {
 /** The short answer, the tool's default (Claude's directory asks for frugal answers): what it leaves out, and where. */
 export const COURT = "Réponse courte : les 3 dernières alertes de la liste, les séismes des 7 derniers jours et les 3 derniers. L'historique des alertes depuis 2016 et les séismes jour par jour sur 30 jours : rappeler l'outil avec detail, ou https://rundata.re/volcan.";
 const COURT_ALERTES = 3;
+/** Where the access is in the short answer: the trails and the road, line by line, with their sources. */
+export const MONTER_COURT = "Sentiers et route du volcan, ouverts ou fermés : dans puis_je_monter.";
 const COURT_JOURS = 7;
 const COURT_SEISMES = 3;
 
@@ -406,7 +408,10 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   parts.push(unknown ? NIVEAU_ILLISIBLE : `Niveau du dispositif ORSEC volcan : ${niveau}.`);
   // pitonlive.com, after the official source, as its own (marketing).
   if (piton2) parts.push(...pitonLines(piton2, unknown, volcan.OVPF.url));
-  if (defini) parts.push(`Définition : ${defini}`);
+  // The short answer (the tool's default): whether it erupts, the level, the access, the last eruption, the quakes of 7
+  // days (06/11/2026: 2 740 characters with the ban's lines, the definition and every past alert). The rest is in its fields.
+  const court = !detail;
+  if (defini && !court) parts.push(`Définition : ${defini}`);
   const monterAt = parts.length;
   // The last eruption, the OVPF's dates (volcan-historique.ts), unless the OVPF has posted a newer end since: then
   // nothing until the dates are brought up to date, and check-sources says so.
@@ -419,14 +424,15 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
   else if (enclos?.communique?.mots) parts.push(`${enclosWordsSaid(enclos.communique.mots, `communiqué de la préfecture du ${du}`)}.`);
   else if (enclos?.communique?.niveau) parts.push(`Niveau : ${enclos.communique.niveau.toLowerCase()} selon le communiqué de la préfecture du ${du}. Accès à l'Enclos interdit à ce niveau du dispositif ORSEC Volcan.`);
   else if (enclos?.vigilance) parts.push(VIGILANCE_ENCLOS);
-  // Under an alert, the post in images already named in the sentence on the texts read: not again (marketing).
-  if (last && !folded) {
+  // Under an alert, the post in images already named in the sentence on the texts read: not again (marketing). In the
+  // short answer, only a post in images newer than the state, which the state may not account for.
+  if (last && !folded && (!court || imageAfter)) {
     parts.push(last.image
       // The time of the post, never the one written in the images, even when read.
       ? `Dernière publication de l'OVPF, le ${jour} à ${heure} : ${volcan.imagesSaid(last.images, last.mots, false, !!lu)}. ${lu ? `${LU_DANS_L_IMAGE} : « ${extrait(lu)} » (${last.lien}).` : `rundata.re ne lit pas les images : à voir sur ${last.lien}.`}`
       : `Dernière publication de l'OVPF sur l'activité (${day(last.date)}) : « ${last.texte.slice(0, 220)}${last.texte.length > 220 ? "…" : ""} »`);
     if (imageAfter) parts.push(lu ? IMAGE_LUE_APRES : IMAGE_APRES);
-  } else if (lu) parts.push(`${LU_DANS_L_IMAGE} : « ${extrait(lu)} »`);
+  } else if (lu && !court) parts.push(`${LU_DANS_L_IMAGE} : « ${extrait(lu)} »`);
   // The catalogue silent: its counts are of its last copy, said with the time of that read.
   const q = quakes ? quakeSummary(quakes, now, seen?.stale ? seen.fetchedAt : undefined) : null;
   if (q) {
@@ -434,23 +440,26 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
     parts.push(
       q.lus_jusqu_au
         ? `Séismes localisés par l'OVPF ${jusquALecture(q.lus_jusqu_au)} : ${q.sous_le_volcan["7_jours"]} sous le volcan en 7 jours et ${q.sous_le_volcan["30_jours"]} en 30 jours${max}\u00a0; ${q.ailleurs_sur_l_ile["30_jours"]} ailleurs sur l'île en 30 jours. ${JOURS_NON_COMPTES}`
-        : `Séismes localisés par l'OVPF en 30 jours : ${q.sous_le_volcan["30_jours"]} sous le volcan${max}, dont ${q.sous_le_volcan["7_jours"]} ces 7 derniers jours\u00a0; ${q.ailleurs_sur_l_ile["30_jours"]} ailleurs sur l'île.`,
-      `Séismes localisés par l'OVPF sous le volcan, par jour (heure de La Réunion) : ${q.par_jour_sous_le_volcan.slice(-7).map((j) => `${day(`${j.jour}T12:00:00+04:00`)} ${jourDit(j)}`).join(", ")}.`,
-      LOCALISES,
+        : court
+          ? `Séismes localisés par l'OVPF sous le volcan : ${q.sous_le_volcan["7_jours"]} ces 7 derniers jours (${q.sous_le_volcan["30_jours"]} en 30 jours${max ? `, ${max.slice(2, -1)}` : ""}).`
+          : `Séismes localisés par l'OVPF en 30 jours : ${q.sous_le_volcan["30_jours"]} sous le volcan${max}, dont ${q.sous_le_volcan["7_jours"]} ces 7 derniers jours\u00a0; ${q.ailleurs_sur_l_ile["30_jours"]} ailleurs sur l'île.`,
+      ...(court ? [] : [`Séismes localisés par l'OVPF sous le volcan, par jour (heure de La Réunion) : ${q.par_jour_sous_le_volcan.slice(-7).map((j) => `${day(`${j.jour}T12:00:00+04:00`)} ${jourDit(j)}`).join(", ")}.`, LOCALISES]),
     );
   }
   // How the last alerts went: only those whose start and end a release writes (volcan-historique.ts).
   const alertes = historique.liste(await prefecture.releveDuVolcan(cache));
-  parts.push(historique.resumeText(detail ? undefined : COURT_ALERTES, alertes));
+  // In the short answer, in its field only: alertes_precedentes, its last COURT_ALERTES.
+  if (!court) parts.push(historique.resumeText(undefined, alertes));
   // A release newer than the list: « les 3 dernières alertes » would be wrong without it.
   const newer = historique.depuis(given, alertes);
-  if (newer) parts.push(newer);
+  if (newer && !court) parts.push(newer);
 
   // pitonlive.com credited only when a line of it is said, last (marketing).
   const pitonSaid = !!piton2;
   const sources = [...(given ? [volcan.PREFECTURE] : []), ...(posts ? [volcan.OVPF] : []), ...(quakes ? [seismes.SOURCE] : []), ...(pitonSaid ? [volcan.PITONLIVE] : [])];
   // Right after whether it erupts and the level: the question of the hikers, first in the answer's fields too.
-  parts.splice(monterAt, 0, `${monter.titre} ${monter.avant ? `${monter.avant} ` : ""}${monter.lignes.map(lineText).join(" ")} ${monter.pied}`);
+  // In the short answer, the Enclos's line above, and where the rest of the access is.
+  parts.splice(monterAt, 0, court ? MONTER_COURT : `${monter.titre} ${monter.avant ? `${monter.avant} ` : ""}${monter.lignes.map(lineText).join(" ")} ${monter.pied}`);
   const pub = (x: Publication) => ({ date: `${localTime(new Date(x.date))} heure de La Réunion`, lien: x.lien });
   return text({
     puis_je_monter: monter,
@@ -471,7 +480,8 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
       ...(given && { communique_prefecture: { niveau: given.niveau, titre: given.titre, lien: given.lien, jour: given.jour } }),
       source: "préfecture de La Réunion (communiqués) et OVPF-IPGP (publications)",
     },
-    ...(detail && { alertes_precedentes: historique.precedentes(alertes) }),
+    // In the short answer, the last COURT_ALERTES here, no longer in the summary.
+    alertes_precedentes: { ...historique.precedentes(alertes, detail ? undefined : COURT_ALERTES), ...(!detail && newer && { plus_recente: newer }) },
     // The release's PDF stays out of the answer until what it is read for is shown (ovpf-pdf.ts, SHOW).
     publications_ovpf: posts
       ? posts.slice(0, 3).map(({ pdf: _, mots, ...p }) => ({

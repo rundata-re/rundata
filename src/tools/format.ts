@@ -188,3 +188,6 @@ export function notFound(asked: string) {
 export function fourchette(bas: string, haut: string, entre = " à "): string {
   return bas === haut ? haut : `${bas}${entre}${haut}`;
 }
+
+/** A sentence's first letter in capital: « aujourd'hui à 18:00 » after a full stop. */
+export const majuscule = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);

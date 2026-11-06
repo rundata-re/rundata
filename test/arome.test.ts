@@ -95,7 +95,11 @@ describe("prevision_meteo with AROME", () => {
     noNetwork();
     const r = body(await previsionMeteo(await offlineCache(), "Cilaos", "cet après-midi", NOW));
     expect(r.nature).toBe("prevision");
-    expect(r.resume).toMatch(/^PRÉVISION \(modèle AROME outre-mer de Météo-France, maille de 2,5 km, calcul de 21\/10 22:00, relayé ensuite par IFS/);
+    // The resume says a forecast and nothing more: the model, its run and its relay are in modele and avertissements.
+    expect(r.resume).toMatch(/^PRÉVISION \(pas une mesure\) pour Cilaos/);
+    expect(r.modele).toMatchObject({ nom: "AROME outre-mer de Météo-France", maille_km: 2.5, run_du_modele: "21/10 22:00" });
+    expect(r.modele.relais[0].nom).toMatch(/^IFS/);
+    expect(r.avertissements[0]).toMatch(/\(AROME outre-mer de Météo-France, puis IFS/);
     expect(r.pas_de_3h.map((s: { heures: string; modele: string }) => [s.heures, s.modele])).toEqual([
       ["jeudi 22/10 12\u00a0h–15\u00a0h", "AROME outre-mer de Météo-France"],
       ["jeudi 22/10 15\u00a0h–18\u00a0h", "IFS HRES du Centre européen (ECMWF)"],
@@ -143,7 +147,7 @@ describe("prevision_meteo with AROME", () => {
     // The step under way (9h) and the next ones; 12h was cached already.
     expect(urls.some((u) => u.includes("time(2026-10-22T05:00:00Z)"))).toBe(true);
     expect(r.pas_de_3h[0]).toMatchObject({ heures: "jeudi 22/10 9\u00a0h–12\u00a0h", modele: "AROME outre-mer de Météo-France" });
-    expect(r.resume).toMatch(/^PRÉVISION \(modèle AROME/);
+    expect(r.modele.nom).toBe("AROME outre-mer de Météo-France");
   });
 
   it("answers from ECMWF, said as such, when AROME is not ready in time, and loads its grids after the response", async () => {
@@ -161,7 +165,8 @@ describe("prevision_meteo with AROME", () => {
     const { value, settled } = await counted(200, () => previsionMeteo(c, "Cilaos", undefined, NOW, 50));
     expect(Date.now() - t0).toBeLessThan(250);
     const r = body(value);
-    expect(r.resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée, modèle IFS HRES/);
+    expect(r.resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée\u00a0; pas une mesure\)/);
+    expect(r.modele.nom).toMatch(/^IFS HRES/);
     // ECMWF's figures: nothing said of AROME's maxima.
     expect(r.maximales_arome).toBeUndefined();
     expect(r.avertissements.join(" ")).not.toMatch(/n'a pas répondu/);
@@ -169,7 +174,7 @@ describe("prevision_meteo with AROME", () => {
     await settled();
     slow = false;
     const next = body(await previsionMeteo(c, "Cilaos", undefined, NOW, 50));
-    expect(next.resume).toMatch(/^PRÉVISION \(modèle AROME/);
+    expect(next.modele.nom).toBe("AROME outre-mer de Météo-France");
     expect(next.pas_de_3h[0]).toMatchObject({ heures: "jeudi 22/10 9\u00a0h–12\u00a0h", modele: "AROME outre-mer de Météo-France" });
     expect(AROME_WAIT_MS).toBe(4000);
     vi.restoreAllMocks();
@@ -181,7 +186,7 @@ describe("prevision_meteo with AROME", () => {
     const store = new MemoryStore();
     await store.put(openmeteo.cacheKey(resolvePlace("Cilaos")!.lieu), { value: json("openmeteo_cilaos.json"), fetchedAt: NOW.getTime() });
     const r = body(await previsionMeteo(new Cache(store, () => NOW.getTime()), "Cilaos", "demain", NOW));
-    expect(r.resume).toMatch(/^PRÉVISION \(modèle IFS HRES/);
+    expect(r.modele.nom).toMatch(/^IFS HRES/);
     expect(r.avertissements.join(" ")).toMatch(/AROME de Météo-France n'a pas répondu/);
   });
 
@@ -193,7 +198,7 @@ describe("prevision_meteo with AROME", () => {
       throw new Error("no network in tests");
     });
     const r = body(await previsionMeteo(await offlineCache(), "Cilaos", "dans 3 jours", NOW));
-    expect(r.resume).toMatch(/^PRÉVISION \(modèle IFS HRES/);
+    expect(r.modele.nom).toMatch(/^IFS HRES/);
     expect(urls).toEqual([]);
   });
 });
@@ -237,7 +242,8 @@ describe("a run listed before all its hours are out", () => {
     partialRun();
     const clock = { now: START };
     const r = body(await previsionMeteo(await cacheAt(clock), "Cilaos", "demain", new Date(START)));
-    expect(r.resume).toMatch(/^PRÉVISION \(modèle AROME outre-mer de Météo-France, maille de 2,5 km, calcul de 22\/10 04:00, et de 21\/10 22:00 pour la suite/);
+    expect(r.resume).toMatch(/^PRÉVISION \(pas une mesure\) pour Cilaos/);
+    expect(r.modele).toMatchObject({ nom: "AROME outre-mer de Météo-France", run_du_modele: "22/10 04:00" });
     expect(r.modele.calculs_suivants).toEqual([{ run_du_modele: "21/10 22:00", a_partir_de: "23/10 06:00" }]);
     // Midnight to 6h from the newest run, then the run before, then ECMWF. Cold, the question's 40 grids reach 18h,
     // the run not out yet costing one try (the 15h step had none left when each grid in flight was tried): the steps of
@@ -293,7 +299,7 @@ describe("the run list", () => {
     });
     // Two hours old: past the questions' freshness, so they ask, fail, and keep it.
     const r = body(await previsionMeteo(await offlineCache(2 * H), "Cilaos", "cet après-midi", NOW));
-    expect(r.resume).toMatch(/^PRÉVISION \(modèle AROME/);
+    expect(r.modele.nom).toBe("AROME outre-mer de Météo-France");
   });
 
   it("says which request failed when there is none to fall back on", async () => {

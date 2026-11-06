@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { fil, firstSentence, lire, local, LUS, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, SOURCES, SUSPENDUS, type Info } from "../src/providers/actualites.js";
+import { fil, firstSentence, lire, sansRubrique, local, LUS, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, SOURCES, SUSPENDUS, type Info } from "../src/providers/actualites.js";
 import { actualites, COUVERTURE, infoRow, instant, NOM_SEUL, quand } from "../src/tools/actualites.js";
 import { actualitesPage } from "../src/web/domains.js";
 import { buildActualites } from "../src/web/data.js";
@@ -79,6 +79,10 @@ describe("actualités", () => {
     expect(pref[0]).toMatchObject({ titre: "Violences urbaines : bilan de la nuit", heure: false, lien: "https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Violences-urbaines-bilan-de-la-nuit" });
     expect(quand(pref[0], NOW)).toBe("aujourd'hui");
     expect(firstSentence("Dès 6 heures, une convergence des mouvements appelle à la mobilisation. Puis la suite.")).toBe("Dès 6 heures, une convergence des mouvements appelle à la mobilisation.");
+    // A section in capitals before the text, left out; acronyms that start it kept (06/11/2026).
+    expect(sansRubrique("LIBRE EXPRESSION Sous le bruit généré par la crise.")).toBe("Sous le bruit généré par la crise.");
+    expect(sansRubrique("KWAFÉ ZORDI Alors que la grève se poursuit.")).toBe("Alors que la grève se poursuit.");
+    for (const t of ["EDF Réunion annonce une coupure.", "CGTR FO Les syndicats appellent à la grève.", "CINOR La collecte reprend.", "Le CHU de La Réunion recrute."]) expect(sansRubrique(t)).toBe(t);
   });
 
   it("keeps the island's news only: not France's or the world's, even when they name a place of the island in passing", async () => {
@@ -185,8 +189,11 @@ describe("actualités", () => {
     const c = cache();
     const m = body(await actualites(c, "Sainte-Marie", undefined, undefined, NOW));
     expect(m.resume).toMatch(/^2 informations des dernières 24 h mentionnent Sainte-Marie\./);
-    // The first sentence quoted, the only text kept, when it names the commune.
-    expect(m.resume).toMatch(/« Plusieurs rassemblements annoncés sur l'ensemble de l'île ce samedi » : « Dès 6 heures, une convergence des mouvements/);
+    // The headlines only, a capital at the head of the sentence (06/11/2026: 1 344 to 1 381 characters with the first
+    // sentences). The first sentence quoted, the only text kept when it names the commune, stays in the fields.
+    expect(m.resume).toMatch(/mentionnent Sainte-Marie\. Aujourd'hui \(Le Quotidien\) : « Grand Raid : Sainte-Marie célèbre Judicaël Sautron, quatrième de la Diagonale des Fous »\u00a0; aujourd'hui à 09:35 \(Imaz Press, en direct\) : « Plusieurs rassemblements annoncés sur l'ensemble de l'île ce samedi »\. /);
+    expect(m.resume).not.toContain("Dès 6 heures");
+    expect(m.en_direct.find((r: { titre: string }) => r.titre.startsWith("Plusieurs rassemblements")).resume).toMatch(/^Dès 6 heures, une convergence des mouvements/);
     expect(m.resume).toMatch(/En direct sur l'île, aujourd'hui à 11:33 \(Imaz Press, en direct\)/);
     const duparc = m.en_direct.find((r: { titre: string }) => r.titre.startsWith("Plusieurs rassemblements annoncés"));
     expect(duparc.mentionne_le_lieu).toBe(true);
@@ -322,17 +329,17 @@ describe("actualités", () => {
     // In the gazetteer (OpenStreetMap's business zone): the commune's news, what names the place itself first.
     const cambaie = body(await actualites(cache(), "Cambaie", undefined, undefined, NOW));
     expect([cambaie.lieu.trouve, cambaie.lieu.commune]).toEqual(["Cambaie", "Saint-Paul"]);
-    // The commune's said as such: the place is named only by what names it (Grand Coude, 06/11/2026).
-    expect(cambaie.resume).toMatch(/^2 informations des dernières 24 h mentionnent Saint-Paul, la commune de Cambaie, dont 1 qui nomme Cambaie\. aujourd'hui à 11:40 \(Freedom\) : « Incendie à Cambaie/);
+    // The commune's said as such: the place is named only by what names it (Grand Coude, 06/11/2026). Their titles only.
+    expect(cambaie.resume).toMatch(/^2 informations des dernières 24 h mentionnent Saint-Paul, la commune de Cambaie, dont 1 qui nomme Cambaie\. Aujourd'hui à 11:40 \(Freedom\) : « Incendie à Cambaie : fumées importantes dans le secteur »\u00a0; aujourd'hui à 11:55/);
     expect(cambaie.infos.map((r: { titre: string }) => r.titre.split(" ")[0])).toEqual(["Incendie", "Saint-Paul"]);
     // None names the place: the commune's only, never the place (Grand Coude, 06/11/2026: articles on Manapany and Vincendo).
     const nefles = body(await actualites(cache(), "Bois de Nèfles", undefined, undefined, NOW));
-    expect(nefles.resume).toMatch(/^2 informations des dernières 24 h mentionnent Saint-Paul, la commune de Bois de Nèfles\. aujourd'hui à 11:55 /);
+    expect(nefles.resume).toMatch(/^2 informations des dernières 24 h mentionnent Saint-Paul, la commune de Bois de Nèfles\. Aujourd'hui à 11:55 /);
 
     // Not in the gazetteer, but in an article: that article, said as found by its name only.
     const rondPoint = body(await actualites(cache(), "la Jardinerie", undefined, undefined, NOW));
     expect(rondPoint.lieu).toEqual({ demande: "la Jardinerie", trouve: null, note: NOM_SEUL });
-    expect(rondPoint.resume).toMatch(/^1 information des dernières 24 h mentionne « la Jardinerie »\. aujourd'hui à 11:30 \(Freedom\) : « Circulation ralentie/);
+    expect(rondPoint.resume).toMatch(/^1 information des dernières 24 h mentionne « la Jardinerie »\. Aujourd'hui à 11:30 \(Freedom\) : « Circulation ralentie/);
     expect(rondPoint.infos).toHaveLength(1);
 
     // Neither: unknown, as before.
@@ -416,7 +423,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

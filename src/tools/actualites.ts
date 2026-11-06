@@ -7,7 +7,7 @@ import { ACCUEIL, NOTE_ACCUEIL } from "../providers/accueils-medias.js";
 import * as radars from "../routes/radars.js";
 import { localTime } from "../geo.js";
 import { why } from "../types.js";
-import { a, credits, de, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, majuscule, notFound, placeBlock, text } from "./format.js";
 import { injoignable, mediasNonLus, when } from "./injoignable.js";
 import { mentionLa1ere } from "./non-repris.js";
 import * as littoral from "./littoral.js";
@@ -205,10 +205,6 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   const namesPlace = (a: raa.Acte) => !!place && ` ${normalize(`${a.lieux.join(" ")} ${a.titre}`)} `.includes(` ${place} `);
   const kind = what ? ` (${what.nom})` : "";
   const latest = (i: src.Info) => `${quand(i, now)} (${i.media}${i.direct ? ", en direct" : ""}) : « ${i.titre} »`;
-  // What an item says of the place asked for: its first sentence, the only text kept, when it names it.
-  const about = (i: src.Info) => !i.resume ? undefined : said
-    ? ` ${normalize(i.resume)} `.includes(` ${said} `) ? i.resume : undefined
-    : src.placesIn(i.resume).communes.includes(commune!) ? i.resume : undefined;
   // Media that did not answer: said, and no « aucune information » when none of them answered (a site that does not
   // answer is neither gone nor empty).
   const silent = data.indisponible.length ? mediasNonLus(data.indisponible, localTime(readAt), now) : "";
@@ -221,7 +217,8 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     blind ? "" : asked
       ? mine.length
         ? `${mine.length} information${mine.length > 1 ? "s" : ""}${kind} des dernières ${h} h mentionne${mine.length > 1 ? "nt" : ""} ${whom(mine.length, mine.filter(own).length)}. ` +
-          mine.slice(0, 4).map((i) => `${latest(i)}${about(i) ? ` : « ${about(i)} »` : ""}`).join("\u00a0; ") + "."
+          // Their titles only, the first one starting a sentence: their first sentences are in `infos`.
+          mine.slice(0, 4).map((i, n) => (n ? latest(i) : majuscule(latest(i)))).join("\u00a0; ") + "."
         : `Aucune information${kind} des médias lus ne mentionne ${where} depuis ${quand({ publie: since, heure: true }, now)}.`
       : pool.length
         ? `${articles.length} information${articles.length > 1 ? "s" : ""}${kind} des médias de La Réunion depuis ${h} h\u00a0; la plus récente, ${articles[0] ? latest(articles[0]) : "—"}.`

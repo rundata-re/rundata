@@ -1008,13 +1008,19 @@ table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
 .posts details>summary{cursor:pointer}.posts details>p{margin:.6rem 0 0;padding-left:.8rem;border-left:3px solid var(--line)}
 .warn ul{padding:0}
 .social,.social>span{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}.social a{display:inline-flex;align-items:center;gap:.35rem}.social svg{width:1.1rem;height:1.1rem;flex:none}
-.social .pair{display:inline-flex;align-items:center;gap:inherit}
+/* Two accounts kept on one line while they fit; on a narrow screen or with larger text, the second goes under the first
+   rather than widening the footer's column, and the whole page with it. */
+.social .pair{display:inline-flex;flex-wrap:wrap;align-items:center;gap:inherit}
 /* Touch targets of 24 px at least (WCAG 2.5.8), the page unmoved: an account link or a hike's grows by padding that its
    margin takes back; a link alone in a list, a table, the crumbs or the cyclone line grows by vertical padding, which
    moves no line around an inline box (« kit » also in width, taken back by its margin); a summary is never shorter. */
 .social a,.hike .links a{padding-block:2px;margin-block:-2px}
 :is(.rows,.plain,table,.crumbs,.cyc) a:not([class]){padding-block:max(0px,calc(12.5px - .55em))}.cyc a{padding-inline:4px;margin-inline:-4px}
 summary{min-height:24px}
+/* The link alone under an opened commune's title (/ecoles, /enfants): the title's tap area, 44 px tall, is extended above
+   it only, never over the link; the link grows downwards by padding, which moves no line around an inline box. */
+.card>details[open]>summary:has(+.kinds>p:first-child>a){padding-block:1rem 0;margin-block:-1rem 0}
+.kinds>p:first-child>a{padding-bottom:max(0px,calc(25px - 1.1em))}
 .pages{list-style:none;padding:0;margin-top:1rem;display:flex;flex-wrap:wrap;gap:.4rem}.pages a{display:block;padding:.3rem .75rem;border-radius:999px;background:rgb(255 255 255/.06);border:1px solid rgb(255 255 255/.1);text-decoration:none;font-size:.86rem}
 footer.foot{background:var(--night);color:var(--on-night-muted);font-size:.86rem;line-height:1.55;padding-block:2.5rem 3rem;border-top:1px solid rgb(255 255 255/.06)}
 footer.foot .wrap{display:grid;gap:1.5rem}

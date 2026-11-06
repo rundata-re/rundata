@@ -63,6 +63,7 @@ import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
 import { crumbBar, crumbs } from "./domains.js";
 import { PASSES } from "../historique/cyclones-passes.js";
+import { OLD_MINUTES } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
 
 export const SITE = "rundata.re";
@@ -1452,6 +1453,12 @@ export const shortName = (n: string) =>
   n.replace(/ \(aéroport\)$/, "").replace(/^Saint-Denis Gillot$/, "Gillot").replace(/^Gros Piton Sainte-Rose$/, "Sainte-Rose");
 // « Plage de la Saline les Bains » → « La Saline les Bains »: a name in a tile or a sentence starts with a capital.
 export const seaName = (n: string) => n.replace(/^Plage (de |du )?/, "").replace(/^\p{Ll}/u, (c) => c.toUpperCase());
+const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+/** The day of a time, with its name, « vendredi 06/11 »: a copy of the page never says « aujourd'hui » or « ce soir » of another day. */
+export const jourDit = (at: Date) => {
+  const l = new Date(at.getTime() + 4 * 3600_000);
+  return `${JOURS[l.getUTCDay()]} ${String(l.getUTCDate()).padStart(2, "0")}/${String(l.getUTCMonth() + 1).padStart(2, "0")}`;
+};
 export const dayMonth = (ymd: string) => ymd.split("-").reverse().slice(0, 2).join("/");
 
 /**
@@ -1571,9 +1578,13 @@ function stationsList(all: StationNow[], now: Date): string {
     const t = s.temperature != null ? `<span class="t" style="background:${chip(s.temperature)}">${thin(deg(s.temperature))}</span>` : `<span class="t na">—</span>`;
     const pills = windPill(s) + rainPill(s);
     const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (ancienne)" : "";
-    const day = localTime(new Date(s.time)).split(" ")[0] !== localTime(now).split(" ")[0] ? `${dayMonth(localTime(new Date(s.time)).split(" ")[0].split("/").reverse().join("-"))} ` : "";
+    // Its day said to a screen reader and to a page read as text, even today's: a copy kept by a search engine gave
+    // « 11,9 °C à 20 h 30 » for the evening of another day (06/11/2026). Seen, the time alone: « 06/11 · 14:06 »
+    // pushes it under the temperature on 9 cards of 12 at 390 px. The day seen too when it is not today's.
+    const [day, time] = localTime(new Date(s.time)).split(" ");
+    const when = day === localTime(now).split(" ")[0] ? `<span class="sr">mesurée le ${day} à </span>${time}` : `<span class="sr">mesurée le </span>${day}<span class="sr"> à</span> ${time}`;
     return `<li class="st tgt" id="${stationId(s.nom)}" data-c="${esc(c)}" data-z="${s.altitude_m}" data-t="${s.temperature ?? ""}" data-n="${esc(s.nom)}">` +
-      `<p class="th">${t}<span class="when">${day}${hm(s.time)}${old}</span></p><h3>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h3><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
+      `<p class="th">${t}<span class="when">${when}${old}</span></p><h3>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h3><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
       `${pills ? `<p class="pls">${pills}</p>` : ""}</li>`;
   }).join("");
   const communes = [...new Set(all.map((s) => communeOf(s, all)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
@@ -1886,8 +1897,15 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     first ? ` Pluie, vent${coastal(p) ? ", mer" : ""} et prévision.` : ` ${coastal(p) ? "Mer et prévision" : "Prévision"} des prochains jours.`,
   );
 
+  // The figure's measure older than OLD_MINUTES at this view, not at the copy's build (a copy given at once to a visitor
+  // after a quiet hour, kept up to a day; a source that does not answer): a neutral note above it, as /electricite's.
+  // Its day and time, no « il y a » that a copy kept by a search engine would make false an hour later.
+  const figureAt = first && data ? new Date(data.fetchedAt.getTime() - first.age_min * 60_000) : undefined;
+  const perimee = figureAt && ageMinutes(figureAt, now) > OLD_MINUTES
+    ? `<p class="note">${esc(`Dernière mesure lue à la station ${first!.station} : ${leJour(first!.heure_mesure)}. Ce n'est pas le temps qu'il fait maintenant.`)}</p>`
+    : "";
   const headline = first
-    ? `<div class="now"><span class="big">${esc(thin(first.mesures.temperature!))}</span>` +
+    ? `${perimee}<div class="now"><span class="big">${esc(thin(first.mesures.temperature!))}</span>` +
       `<p>mesurés <b>${esc(leJour(first.heure_mesure))}</b> par la station <b>${esc(first.station)}</b>${communeDite(first, place.commune || p.nom) ? ` ${esc(a(communeDite(first, place.commune || p.nom)!))}` : ""} ` +
       `(${metres(first.altitude_m)}${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
     : "";
@@ -1915,14 +1933,15 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
 
   // In the Hauts, the sky of the night: the forecast's, from the copy, only while it speaks of the night of the view (the
   // evening of before 6 h is yesterday's), and the dark night and the Moon computed at the view. Without the forecast,
-  // no card: the computed lines alone would not say whether the stars will show.
+  // no card: the computed lines alone would not say whether the stars will show. Its title says the evening's day: a
+  // copy kept by a search engine would give « ce soir » for another evening (06/11/2026).
   const evening = (t: Date) => new Date(t.getTime() - 2 * 3600_000).toISOString().slice(0, 10);
   const cn = d?.prevision?.ciel_de_nuit;
   const nightCard = cn && data && (place.altitude_m ?? 0) >= HAUTS_MIN_M && evening(data.fetchedAt) === evening(now)
     ? (() => {
         const n = nuitOf(evening(now), place.lon, place.lat, horizonDe(place));
         const h = new Date(now.getTime() + 4 * 3600_000).getUTCHours();
-        return `<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">${h >= 21 || h < 6 ? "Ciel cette nuit" : "Ciel ce soir et cette nuit"}</h3>` +
+        return `<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">${h >= 21 || h < 6 ? "Ciel cette nuit" : "Ciel ce soir et cette nuit"}, ${jourDit(new Date(now.getTime() - 6 * 3600_000))}</h3>` +
           `<p>${esc(cn.ligne)}</p><p>${esc(n.nuit_noire)}</p><p>${esc(n.lune)}</p>` +
           `<p class="note">Ciel\u00a0: ${esc(cn.prevision)}. ${esc(cn.mise_en_garde)} ${esc(NUIT_NOTE)}</p></section>`;
       })()
@@ -2011,8 +2030,10 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   <figure class="card mapcard">${islandMap({ highlight: p.commune ? p.nom : place.commune, pin: { lon: place.lon, lat: place.lat, name: p.nom }, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
 </div>`;
 
+  // « Dernière mesure », never « en ce moment » above the values: a copy kept by a search engine says it still, beside
+  // the measure of another evening, which an AI gave as the weather of now (06/11/2026). Each card says its day and time.
   const body = `<section aria-labelledby="h-now">
-  <div class="hb"><h2 id="h-now">Mesuré en ce moment près ${esc(de(p.nom))}</h2><span class="badge m">Mesure</span></div>
+  <div class="hb"><h2 id="h-now">Dernière mesure près ${esc(de(p.nom))}</h2><span class="badge m">Mesure</span></div>
   ${measured}
 </section>
 ${cloudSea}

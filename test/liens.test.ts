@@ -26,7 +26,7 @@ describe("links between the weather, the hikes and the communes", () => {
   it("contract the article before a place's name on its weather page: « au Port », never « à Le Port »", () => {
     const html = placePage(O, pageOf("le-port")!, null, NOW);
     expect(html).toContain(`<h1>Météo au Port <span class="n974">974</span></h1>`);
-    expect(html).toContain("Mesuré en ce moment près du Port");
+    expect(html).toContain("Dernière mesure près du Port");
     expect(html).toContain("branchée sur la météo du Port");
     expect(html).toContain("« il pleut au Port ? »");
     expect(html).toContain(`<h2 id="h-rando">Randonner autour du Port</h2>`);

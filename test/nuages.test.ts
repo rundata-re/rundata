@@ -282,13 +282,14 @@ describe("the cloud sea on the site", () => {
       placePage("https://rundata.re", at, { value: { prevision: { resume: "", sources: [], ...prevision } }, fetchedAt: EVENING, stale: false }, now);
     const html = page({ mer_de_nuages: mn, ciel_de_nuit: ciel }, EVENING, p);
     const n = nuitOf("2026-10-24", MAIDO.lon, MAIDO.lat, MAIDO.altitude_m!);
-    expect(html).toContain('<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">Ciel ce soir et cette nuit</h3>' +
+    expect(html).toContain('<section id="ciel-cette-nuit" class="card" aria-labelledby="h-ciel"><h3 id="h-ciel">Ciel ce soir et cette nuit, samedi 24/10</h3>' +
       `<p>De 18\u00a0h à 6\u00a0h, dégagé.</p><p>${n.nuit_noire.replaceAll("'", "&#39;")}</p><p>${n.lune}</p>`);
     expect(html.indexOf("mer-de-nuages")).toBeLessThan(html.indexOf("ciel-cette-nuit"));
     expect(html).toContain(`<p class="note">Ciel\u00a0: ${LABEL}. Prévision, pas une mesure.`);
     expect(html).toContain("Nuit noire et Lune\u00a0: calculées, pas mesurées, par les formules astronomiques usuelles");
-    // After 21 h, « cette nuit ».
-    expect(page({ ciel_de_nuit: ciel }, new Date("2026-10-24T18:30:00Z"))).toContain('<h3 id="h-ciel">Ciel cette nuit</h3>');
+    // After 21 h, « cette nuit »; after midnight, still the evening's day, the night it began.
+    expect(page({ ciel_de_nuit: ciel }, new Date("2026-10-24T18:30:00Z"))).toContain('<h3 id="h-ciel">Ciel cette nuit, samedi 24/10</h3>');
+    expect(page({ ciel_de_nuit: ciel }, new Date("2026-10-24T22:00:00Z"))).toContain('<h3 id="h-ciel">Ciel cette nuit, samedi 24/10</h3>');
     // The next morning, the copy's night is over: no card. Nor without the forecast, nor below the Hauts.
     expect(page({ ciel_de_nuit: ciel }, new Date("2026-10-25T03:00:00Z"))).not.toContain("ciel-cette-nuit");
     expect(page({ mer_de_nuages: mn }, EVENING)).not.toContain("ciel-cette-nuit");

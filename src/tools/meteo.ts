@@ -61,7 +61,12 @@ const TOUR_METEOFRANCE = [
   "97415566", // Piton Maïdo
 ];
 
-const OLD_MINUTES = 90;
+/**
+ * Past this age a station's measure is said old (« Mesure ancienne »), here and on the place's page (web/pages.ts). A
+ * station that sends its hour at once (Mare à Vieille Place) reaches 63 min before its next hour, without a fault;
+ * one that misses more leaves the readings (SLOTS, providers/meteofrance.ts). /meteo read 19 times, 06/11/2026.
+ */
+export const OLD_MINUTES = 90;
 
 async function collect(cache: Cache, now: Date, list: Provider[]) {
   const results = await Promise.allSettled(list.map((p) => p.observations(cache, now)));

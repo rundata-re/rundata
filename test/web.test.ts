@@ -346,7 +346,7 @@ describe("place pages", () => {
     const edge = new EdgeLike();
     const cold = await serve(isolate(edge), "/meteo/cilaos");
     expect(cold.text).toContain("<h1>Météo à Cilaos <span class=\"n974\">974</span></h1>");
-    expect(cold.text).toContain("Mesuré en ce moment près de Cilaos");
+    expect(cold.text).toContain("Dernière mesure près de Cilaos");
     expect(cold.text).not.toContain("Température de la mer à Cilaos");
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     // Cold, the budget holds the stations and the forecast too (FORECAST_MIN_LEFT in web/data.ts no longer bites).
@@ -354,7 +354,7 @@ describe("place pages", () => {
     const next = await counted(PAGE_BUDGET, () => buildPlace(isolate(edge), pageOf("cilaos")!, NOW));
     expect(next.used).toBeLessThanOrEqual(PAGE_BUDGET);
     const built = placePage("https://rundata.re", pageOf("cilaos")!, { value: next.value, fetchedAt: NOW, stale: false }, NOW);
-    expect(built).toContain("Mesuré en ce moment près de Cilaos");
+    expect(built).toContain("Dernière mesure près de Cilaos");
     expect(built).toContain("Prévision, pas une mesure");
     // The UV index of each day, from its own forecast (CAMS), credited with the others.
     expect(built).toMatch(/<p>UV : \d+ \((faible|modéré|élevé|très élevé|extrême)\)<\/p>/);
@@ -362,6 +362,18 @@ describe("place pages", () => {
     const warm = await serve(isolate(edge), "/meteo/cilaos");
     // Its copy, the vigilance, the hikers' page's copy for the state of the hikes around, and the volcano's banner.
     expect(warm.used).toBeLessThanOrEqual(4);
+  });
+
+  it("says above the figure a measure older than 90 min at the view, with its day and time, never its age", () => {
+    // The copy built at 10:00 with a measure of 9:54 (06:00Z), read at once and 2 h later.
+    const station = { station: "Cilaos", source: "Météo-France", altitude_m: 1197, heure_mesure: "22/10 09:54", age_min: 6, mesures: { temperature: "17,2 °C" }, avertissements: [] };
+    const page = (now: Date) => placePage("https://rundata.re", pageOf("cilaos")!, { value: { meteo: { resume: "", stations: [station], sources: [] } }, fetchedAt: NOW, stale: false } as never, now);
+    const note = "<p class=\"note\">Dernière mesure lue à la station Cilaos : le 22/10 à 09:54. Ce n&#39;est pas le temps qu&#39;il fait maintenant.</p><div class=\"now\">";
+    expect(page(NOW)).not.toContain("Dernière mesure lue");
+    // 90 min exactly: not yet.
+    expect(page(new Date(NOW.getTime() + 84 * 60_000))).not.toContain("Dernière mesure lue");
+    expect(page(new Date(NOW.getTime() + 2 * 3600_000))).toContain(note);
+    expect(page(new Date(NOW.getTime() + 2 * 3600_000))).not.toMatch(/Dernière mesure lue[^<]*il y a/);
   });
 
   it("give the sea temperature on the coast", async () => {

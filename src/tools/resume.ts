@@ -629,21 +629,32 @@ export interface Stale {
 }
 
 /**
+ * What the builds one view starts after its answer (`refresh`) may take together, estimated. A view of the home page
+ * after deploys that raised several families started five tiles' builds together (sport, events, buses, cyclones,
+ * bikes: about 100 subrequests after the answer, 06/11/2026 21:06), and the handball's pages were refused for the
+ * budget. The other builds wait for the next views, their copy served meanwhile.
+ */
+export const AFTER_ANSWER_CAP = 60;
+
+/**
  * Brings these copies up to date after the answer: every one of another revision, then the oldest of the others. After
  * a deploy that raised several families, a page seldom seen would otherwise take a view for each: on 26/10/2026, the
  * first view of /aujourdhui/le-tampon after the deploy rebuilt the electricity's copy, and the events stayed « Se met à
- * jour » until the next one, eleven minutes later. Each only while what its build took last time (`costOf`, else its
- * copy's, else `unknown`) is left, counted with the builds started before it: one that does not fit waits for a later
- * view. The keys of the builds started.
+ * jour » until the next one, eleven minutes later. Each only while what its build took (the most of `costOf` and its
+ * copy's, else `unknown`) is left, counted with the builds started before it, and within AFTER_ANSWER_CAP with them:
+ * one that does not fit waits for a later view. The first always goes within what is left, past the cap if it is
+ * dearer, so that none waits for ever. The keys of the builds started.
  */
 export function refresh(cache: Cache, stale: Stale[], background: Background, unknown: number): string[] {
   const oldest = stale.filter((s) => !s.outdated).sort((a, b) => b.age - a.age)[0];
   let room = left();
+  let planned = 0;
   const started: string[] = [];
   for (const s of [...stale.filter((x) => x.outdated), ...(oldest ? [oldest] : [])]) {
-    const cost = costOf(s.key) ?? s.cost ?? unknown;
-    if (cost > room) continue;
+    const cost = Math.max(costOf(s.key) ?? 0, s.cost ?? 0) || unknown;
+    if (cost > room || (started.length > 0 && planned + cost > AFTER_ANSWER_CAP)) continue;
     room -= cost;
+    planned += cost;
     started.push(s.key);
     background(apart(() => cache.get(s.key, FRESH_SECONDS, () => measured(s.key, s.build))).catch((err) => console.error(`page ${s.key} : rafraîchissement impossible`, why(err))));
   }

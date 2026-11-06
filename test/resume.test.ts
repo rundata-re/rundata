@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { count, counted, measured, PAGE_BUDGET } from "../src/budget.js";
+import { costOf, count, counted, measured, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { COURT, court, readCopies, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { AFTER_ANSWER_CAP, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
 import { mentionCommune } from "../src/tools/agenda.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
@@ -600,6 +600,32 @@ describe("reading the copies", () => {
     // Within FRESH_SECONDS, the copy as it is; 25 min old, the stations read again (their file in the fixtures).
     expect(await answer(2)).toBe("24/10 13:54");
     expect(await answer(25)).toBe("22/10 09:18");
+  });
+
+  it("starts after one view's answer no more builds than AFTER_ANSWER_CAP lets, and the next views take the others", async () => {
+    // The home page after the deploys of 06/11/2026: five tiles of another revision, each with what its page's build
+    // took at most over three days (Loki), kept with its copy.
+    const COSTS: Record<string, number> = { "web:sport": 40, "web:agenda": 32, "web:cyclones": 21, "web:bus": 20, "web:velos": 13 };
+    const due = new Set(Object.keys(COSTS));
+    const cache = new Cache(new MemoryStore(), () => NOW.getTime());
+    const view = async () => {
+      const pending: Promise<unknown>[] = [];
+      const stale = [...due].map((key) => ({ key, age: Infinity, outdated: true, cost: COSTS[key], build: async () => (due.delete(key), {}) }));
+      const started = refresh(cache, stale, (p) => pending.push(p), 25);
+      await Promise.all(pending);
+      return started;
+    };
+    const views = [await view(), await view(), await view()];
+    expect(views).toEqual([["web:sport", "web:bus"], ["web:agenda", "web:cyclones"], ["web:velos"]]);
+    expect(due.size).toBe(0);
+    for (const v of views) expect(v.reduce((n, k) => n + COSTS[k], 0)).toBeLessThanOrEqual(AFTER_ANSWER_CAP);
+    // A build dearer than the cap still goes, first and alone: none waits for ever.
+    const dear = { key: "web:trafic", age: Infinity, outdated: true, cost: 75, build: async () => ({}) };
+    expect(refresh(cache, [dear, { ...dear, key: "web:volcan", cost: 5 }], () => {}, 25)).toEqual(["web:trafic"]);
+    // What this isolate measured (here, nothing) does not hide what the build took where its copy was built.
+    await counted(PAGE_BUDGET, () => measured("web:trafic", async () => ({})));
+    expect(costOf("web:trafic")).toBe(0);
+    expect(refresh(cache, [{ ...dear, cost: 50 }, { ...dear, key: "web:volcan", cost: 11 }], () => {}, 25)).toEqual(["web:trafic"]);
   });
 
   it("says when the place is not found", async () => {

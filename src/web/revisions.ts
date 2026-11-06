@@ -44,7 +44,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   randonnees: 15,
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.
-  sentiers: 17,
+  // Its copy keeps the trail pages' previews, which drop a weekend notice past its last day (web/domains.ts stateHead).
+  sentiers: 19,
   // Its copy says which commune sports plannings are not reused: L'Étang-Salé's now is, under its new title.
   sport: 26,
   station: 2,

@@ -11,7 +11,7 @@ import { homePage } from "../src/web/home.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 import { site } from "../src/web/site.js";
-import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { deadAnchors, doubleIds, mapLinks, sautsDeTitre } from "./cartes.js";
 import { casse } from "../src/tools/casse.js";
 
 const NOW = new Date("2026-10-23T14:40:00Z");
@@ -65,6 +65,11 @@ describe("domain pages", () => {
     expect(pages.calendrier).toContain("reprise des cours le <b>lundi 26 octobre 2026</b>");
   });
 
+  it("title the card beside the page's title as a section, a h2, never a h3 under the h1", () => {
+    expect(pages.electricite).toContain(`<figure class="card mapcard"><h2 style="color:var(--on-night)">Filière par filière</h2>`);
+    for (const [name, page] of Object.entries(pages)) expect(sautsDeTitre(page), name).toEqual([]);
+  });
+
   it("keep their descriptions within what search engines show, with a breadcrumb", () => {
     for (const page of Object.values(pages)) {
       expect(desc(page).length, desc(page)).toBeLessThanOrEqual(DESCRIPTION_MAX);
@@ -92,6 +97,8 @@ describe("bus page", () => {
     expect(sp.departs.length).toBeGreaterThan(3);
     const page = busPage(ORIGIN, cached(data), NOW);
     expect(page).toContain("Gare de Saint-Pierre");
+    expect(page).toContain(`<figure class="card mapcard"><h2 style="color:var(--on-night)">Les réseaux</h2>`);
+    expect(sautsDeTitre(page)).toEqual([]);
     expect(page).toContain("Horaires théoriques");
     // The wait under the direction, as on a stop's page: beside it, a delay announced left the direction 85 px on a phone.
     expect(page).toContain(`<ul class="rows departs"><li><b>`);

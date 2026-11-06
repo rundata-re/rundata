@@ -11,6 +11,20 @@ export function deadAnchors(page: string): string[] {
   return mapLinks(page).filter((l) => l.href.startsWith("#") && !ids.has(l.href.slice(1))).map((l) => l.href);
 }
 
+/**
+ * The headings that skip a level, as « h1→h3 Les réseaux »: a screen reader's list of headings then shows a section
+ * under nothing. Each heading against the one before it in the page.
+ */
+export function sautsDeTitre(page: string): string[] {
+  let before = 0;
+  return [...page.matchAll(/<h([1-6])[ >]([^<]*)/g)].flatMap(([, n, text]) => {
+    const level = Number(n);
+    const jump = before > 0 && level > before + 1 ? [`h${before}→h${level} ${text.trim()}`] : [];
+    before = level;
+    return jump;
+  });
+}
+
 /** The ids given twice: a link would only ever reach the first. */
 export function doubleIds(page: string): string[] {
   const seen = new Set<string>();

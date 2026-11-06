@@ -10,6 +10,7 @@ import { inseeCommune } from "../src/web/meteo-carte.js";
 import { esc } from "../src/web/map.js";
 import { meteoPage } from "../src/web/pages.js";
 import { type StationData, STATIONS, stationOf, stationPage, stationPath, stationTitle } from "../src/web/station.js";
+import { sautsDeTitre } from "./cartes.js";
 
 // Real rows: the 6-minute and hourly packages of the tests, and the archive's days (scripts/build-climat.py) up to 23 October 2026.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -57,6 +58,12 @@ describe("a station's page", () => {
     expect(stationTitle("La Mare - CIRAD")).toBe("La Mare CIRAD");
   });
 
+  it("titles the box of its last measure as a section under the page's title, a h2", async () => {
+    const html = page(await data());
+    expect(html).toContain(`<figure class="card mapcard sta-now"><h2>La dernière mesure, `);
+    expect(sautsDeTitre(html)).toEqual([]);
+  });
+
   it("says its last measure: the temperature, where it was measured, then the box", async () => {
     plug();
     const d = await data();
@@ -66,7 +73,7 @@ describe("a station's page", () => {
     expect(html).toContain(`<h1>Gillot <span class="n974">aéroport</span></h1>\n    <p class="hook">Ce que mesure cette station en ce moment, et son historique depuis 1953.</p>`);
     expect(html).toContain("<title>Gillot aéroport : station météo en direct et historique");
     expect(html).toContain(`<span class="big span">27,9 °C</span><p>mesurés sous abri <b>le 25/10 à 12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8 m d'altitude.</p>`);
-    expect(html).toContain("<h3>La dernière mesure, le 25/10 à 12:18</h3>");
+    expect(html).toContain("<h2>La dernière mesure, le 25/10 à 12:18</h2>");
     for (const k of ["Vent moyen", "Humidité", "Point de rosée", "Pluie", "Pression (niveau de la mer)", "Soleil"]) expect(html).toContain(`<li><span>${k}</span>`);
     // Rain and sunshine of the last round hour of the package.
     expect(html).toContain("<li><span>Pluie</span><b>0 mm en 6 min, 0 mm de 11:00 à 12:00</b></li>");
@@ -144,8 +151,10 @@ describe("a station's page", () => {
     const cirad = STATIONS.find((s) => / - CIRAD$/.test(s.nom))!;
     const st = (id: string, nom: string) => ({ nom, id, source: "meteofrance", lon: 55.5, lat: -21.1, altitude_m: 10, time: "2026-10-24T07:54:00Z", stale: false, temperature: 25 });
     const html = meteoPage("https://rundata.re", { value: { stations: [], toutes: [st(GILLOT, "Saint-Denis Gillot (aéroport)"), st(cirad.id, cirad.nom)], mer: [], sources: [], indisponibles: [] }, fetchedAt: NOW, stale: false }, NOW);
-    expect(html).toContain(`<h4><a href="/meteo/station/97418110">Saint-Denis Gillot (aéroport)</a></h4>`);
-    expect(html).toContain(`<h4><a href="${stationPath(cirad.id)}">${esc(cirad.nom)}</a></h4>`);
+    expect(html).toContain(`<h3><a href="/meteo/station/97418110">Saint-Denis Gillot (aéroport)</a></h3>`);
+    expect(html).toContain(`<h3><a href="${stationPath(cirad.id)}">${esc(cirad.nom)}</a></h3>`);
+    // Each station a h3 under « Les N stations », the h2 of the list: never a h4 straight under it.
+    expect(sautsDeTitre(html)).toEqual([]);
   });
 
   it("says a CIRAD station's owner, and Météo-France as who sends its measures", async () => {

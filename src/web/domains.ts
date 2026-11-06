@@ -802,7 +802,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
     ${ask(`Kouran la koupé dann mon kartié ? Gèt si ${url} é di amwin, é d'ousa i sort lo kouran astèr.`,
       `D'où vient l'électricité de La Réunion en ce moment ? Lis ${url} et dis-moi la part renouvelable.`)}
   </div>
-  ${p ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Filière par filière</h3>${bars}</figure>` : ""}
+  ${p ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Filière par filière</h2>${bars}</figure>` : ""}
 </div>`;
 
   // The 24 hours (the page's copy, journee) and the map of the power installed (electricite-carte.ts), its replay on them.
@@ -1095,7 +1095,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
     ${ask(`Kansa i pas lo prochin bis la gar Sin-Pyèr ? Gèt si ${url} é di amwin.`,
       `Quand passe le prochain bus à la gare routière de Saint-Pierre ? Lis ${url} et dis-le-moi.`)}
   </div>
-  ${d ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Les réseaux</h3>${networks}</figure>` : ""}
+  ${d ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Les réseaux</h2>${networks}</figure>` : ""}
 </div>`;
 
   const body = `<section aria-labelledby="h-trajet"><div class="sec-h"><h2 id="h-trajet">Préparer un trajet</h2>
@@ -2935,7 +2935,7 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
       `${listedRows < total ? `\u00a0; les ${listedRows} premiers ci-dessous` : ""}.</p></div>`;
 
   const next = soon.length
-    ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Les prochains rendez-vous</h3><ul class="plain">${soon.map((r) =>
+    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Les prochains rendez-vous</h2><ul class="plain">${soon.map((r) =>
         `<li><b>${esc(r.quand)}</b> : ${esc(r.epreuve)} <span class="note" style="color:var(--on-night-muted)">(${esc(r.competition ? `${sportOf(r.sport)}, ${r.competition}` : sportOf(r.sport))})</span></li>`).join("")}</ul></figure>`
     : "";
 
@@ -3471,7 +3471,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
     : `<div class="now"><span class="big">${d.nombre}</span><p>événement${d.nombre > 1 ? "s" : ""} dans les deux semaines qui viennent : concerts, spectacles, fêtes, festivals, marchés et animations des mairies.</p></div>`;
 
   const weekend = d?.ce_week_end.length
-    ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Ce week-end</h3><ul class="plain">${d.ce_week_end.slice(0, AGENDA_WEEKEND).map((r) =>
+    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Ce week-end</h2><ul class="plain">${d.ce_week_end.slice(0, AGENDA_WEEKEND).map((r) =>
         `<li><b>${esc(r.quand)}</b> : ${r.statut && r.statut !== "complet" ? `<b>${esc(r.statut)}</b> ` : ""}${esc(r.titre)}${r.commune || r.source ? ` <span class="note" style="color:var(--on-night-muted)">${esc([r.commune && `(${r.commune})`, r.source && `Source\u00a0: ${r.source}`].filter(Boolean).join(" · "))}</span>` : ""}</li>`).join("")}</ul>` +
       `<p class="note"><a href="/evenements/ce-week-end" style="color:var(--on-night)">${d.ce_week_end.length > AGENDA_WEEKEND ? `Et ${d.ce_week_end.length - AGENDA_WEEKEND} autres : tout` : "Tout"} le week-end →</a></p></figure>`
     : "";
@@ -3598,7 +3598,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
 
   const top = d ? (d.en_direct.length ? d.en_direct : d.infos).slice(0, 6) : [];
   const side = d
-    ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">${d.en_direct.length ? "En direct" : "À la une"}</h3><ul class="plain">${top.map((r) =>
+    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">${d.en_direct.length ? "En direct" : "À la une"}</h2><ul class="plain">${top.map((r) =>
         `<li><b style="color:var(--on-night)">${esc(newsTime(r))}</b> <a href="${esc(r.lien)}" rel="noopener"${fenetre(r.lien)} style="color:var(--on-night)">${esc(r.titre)}</a>` +
         `<span class="note" style="color:var(--on-night-muted)"> · ${esc(r.media)}${r.communes?.length ? ` · ${esc(r.communes.join(", "))}` : ""}</span></li>`).join("")}</ul></figure>`
     : "";

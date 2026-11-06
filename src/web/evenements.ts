@@ -150,7 +150,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   const kinds = ([["concert", "concert"], ["festival", "fête ou festival", "fêtes ou festivals"], ["marché", "marché"], ["théâtre", "pièce de théâtre", "pièces de théâtre"], ["danse", "spectacle de danse", "spectacles de danse"], ["enfants", "sortie pour les enfants", "sorties pour les enfants"], ["sport", "rendez-vous sportif", "rendez-vous sportifs"]] as [string, string, string?][])
     .map(([g, one, many]) => [of(g), count(of(g), one, many)] as const).filter(([k]) => k > 0);
   const brief = d && kinds.length
-    ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Au programme</h3><ul class="plain">${kinds.map(([, t]) => `<li>${esc(t)}</li>`).join("")}</ul>` +
+    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Au programme</h2><ul class="plain">${kinds.map(([, t]) => `<li>${esc(t)}</li>`).join("")}</ul>` +
       `<p class="note" style="color:var(--on-night-muted)">D'après les agendas des salles, des mairies et de l'office de tourisme.</p></figure>`
     : "";
 
@@ -216,7 +216,7 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
     : `<div class="now"><span class="big">${n}</span><p>concert${n > 1 ? "s" : ""} dans les deux semaines qui viennent${tonight.length ? `, dont ${tonight.length} ce soir` : ""}.</p></div>`;
 
   const side = tonight.length
-    ? `<figure class="card mapcard"><h3 style="color:var(--on-night)">Ce soir</h3><ul class="plain">${tonight.slice(0, 7).map((r) =>
+    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Ce soir</h2><ul class="plain">${tonight.slice(0, 7).map((r) =>
         `<li><b>${esc(r.date.length > 10 ? r.date.slice(11, 16) : "")}</b> ${r.statut && r.statut !== "complet" ? `<b>${esc(r.statut)}</b> ` : ""}${esc(r.titre)}${r.commune ? ` <span class="note" style="color:var(--on-night-muted)">(${esc(r.commune)})</span>` : ""}</li>`).join("")}</ul>` +
       (tonight.length > 7 ? `<p class="note" style="color:var(--on-night-muted)">et ${tonight.length - 7} autres.</p>` : "") + `</figure>`
     : "";

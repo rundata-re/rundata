@@ -47,3 +47,14 @@ describe("the orange of an average water quality", () => {
     expect(ratio(token(dark, "q-moyenne"), token(dark, "surface"))).toBeGreaterThan(4.5);
   });
 });
+
+describe("the grey of an unknown ATMO index", () => {
+  it("is the grey of « pas de vigilance », over 4.5:1 under its white text in both themes (3.54:1 before)", () => {
+    expect(CSS).toContain(".aq{display:inline-block;font-weight:700;font-size:.9rem;border-radius:8px;padding:.1rem .6rem;background:var(--aq0);color:#fff}");
+    expect(CSS).toContain("--aq0:var(--vg0);");
+    expect(dark).not.toContain("--aq0:");
+    expect(token(CSS, "aq0")).toBe("#5f6b75");
+    expect(ratio("#7d8a94", "#ffffff")).toBeLessThan(4.5);
+    expect(ratio(token(CSS, "aq0"), "#ffffff")).toBeGreaterThan(5.4);
+  });
+});

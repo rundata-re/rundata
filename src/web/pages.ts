@@ -20,7 +20,7 @@ import type { Cached } from "../cache.js";
 import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { toutesLesSources, VERSION } from "../server.js";
 import { compte } from "../producteurs.js";
-import { a, communeDite, de, fourchette, fr } from "../tools/format.js";
+import { a, communeDite, de, enGrand, fourchette, fr } from "../tools/format.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
@@ -1768,7 +1768,7 @@ export interface Live {
 /** A tile's line for a copy read with nothing to show (`vide`), in plain text. */
 export const empty = (line: string): Live => ({ valeur: "", detail: esc(line), vide: true });
 
-const range = (lo: number, hi: number) => `${fr(Math.round(lo))} à ${thin(deg(Math.round(hi)))}`;
+const range = (lo: number, hi: number) => thin(`${fourchette(fr(Math.round(lo)), fr(Math.round(hi)))} °C`);
 
 export function meteoLive(data: Cached<HomeData> | null, now = new Date()): Live | undefined {
   const l = withTempAll(data);
@@ -1840,7 +1840,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
   const latest = l.reduce((m, s) => (s.time > m ? s.time : m), "");
 
   const status = live
-    ? `<div class="now"><span class="big span">${live.valeur}</span><p>mesurés sous abri par les stations de l'île, de <b>${esc(shortName(coldest(l).nom))}</b> (${metres(coldest(l).altitude_m)}) à <b>${esc(shortName(warmest(l).nom))}</b>. Dernière mesure <b>${leAt(latest!)}</b>.</p></div>`
+    ? `<div class="now"><span class="big span">${enGrand(live.valeur)}</span><p>mesurés sous abri par les stations de l'île, de <b>${esc(shortName(coldest(l).nom))}</b> (${metres(coldest(l).altitude_m)}) à <b>${esc(shortName(warmest(l).nom))}</b>. Dernière mesure <b>${leAt(latest!)}</b>.</p></div>`
     : `<p class="lead">Les mesures se chargent : rechargez la page dans quelques secondes. Les stations Météo-France publient toutes les 6 minutes.</p>`;
 
   // Its own title in the night band only (a copy made before every station was kept): in the section « La mer au
@@ -2019,7 +2019,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     ? `<p class="note">${esc(`Dernière mesure lue à la station ${first!.station} : ${leJour(first!.heure_mesure)}. Ce n'est pas le temps qu'il fait maintenant.`)}</p>`
     : "";
   const headline = first
-    ? `${perimee}<div class="now"><span class="big">${esc(thin(first.mesures.temperature!))}</span>` +
+    ? `${perimee}<div class="now"><span class="big">${enGrand(esc(thin(first.mesures.temperature!)))}</span>` +
       `<p>mesurés <b>${esc(leJour(first.heure_mesure))}</b> par la station <b>${esc(first.station)}</b>${communeDite(first, place.commune || p.nom) ? ` ${esc(a(communeDite(first, place.commune || p.nom)!))}` : ""} ` +
       `(${metres(first.altitude_m)}${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
     : "";
@@ -2402,7 +2402,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const markers: Marker[] = seen.filter((b) => !CROWDED.has(b.nom)).map((b) => ({ lon: b.lon, lat: b.lat, label: `${Math.round(b.valeur!)}°`, say: `eau à ${Math.round(b.valeur!)} °C`, name: seaName(b.nom), color: chip(b.valeur!), round: true, href: `#${anchorId("p", b.nom)}` }));
 
   const status = warm && cool
-    ? `<div class="now"><span class="big span">${esc(fr(Math.round(cool.valeur! * 10) / 10))} à ${esc(thin(deg(warm.valeur!)))}</span>` +
+    ? `<div class="now"><span class="big span">${enGrand(esc(thin(`${fourchette(fr(Math.round(cool.valeur! * 10) / 10), fr(Math.round(warm.valeur! * 10) / 10))} °C`)))}</span>` +
       `<p>Température de surface de la mer autour de l'île, mesurée par satellite <b>${esc(lesJours(seen.map((b) => b.jour!)))}</b>. ` +
       `Plus chaude à <b>${esc(seaName(warm.nom))}</b>, plus fraîche à <b>${esc(seaName(cool.nom))}</b>.</p></div>`
     : `<p class="lead">Les mesures satellite se chargent : rechargez la page dans quelques secondes.</p>`;
@@ -2457,7 +2457,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const title = "Mer Réunion : houle, température de l'eau et marée · 974";
   // The swell forecast from the copy's day: its day counts more than its height, which goes first when the description
   // does not fit; undated, as before, only when even that does not fit.
-  const seaSays = (du: string, max = true) => `La mer à La Réunion (974) plage par plage : l'eau de ${deg(cool!.valeur!)} à ${deg(warm!.valeur!)}, mesurée par satellite ${lesJours(seen.map((b) => b.jour!))}${top ? `, et la houle prévue${du}${max ? `, jusqu'à ${top.houle!.max}` : ""}` : ""}.`;
+  const seaSays = (du: string, max = true) => `La mer à La Réunion (974) plage par plage : l'eau ${deg(cool!.valeur!) === deg(warm!.valeur!) ? `à ${deg(warm!.valeur!)}` : `de ${deg(cool!.valeur!)} à ${deg(warm!.valeur!)}`}, mesurée par satellite ${lesJours(seen.map((b) => b.jour!))}${top ? `, et la houle prévue${du}${max ? `, jusqu'à ${top.houle!.max}` : ""}` : ""}.`;
   const description = warm && cool
     ? [seaSays(` à partir du ${jourDe(data!.fetchedAt)}`), seaSays(` à partir du ${jourDe(data!.fetchedAt)}`, false), seaSays("")].find((x) => x.length <= DESCRIPTION_MAX) ?? seaSays("")
     : "La mer à La Réunion (974), plage par plage : la température mesurée par satellite, la houle prévue. Saint-Gilles, Saint-Leu, Saint-Pierre…";

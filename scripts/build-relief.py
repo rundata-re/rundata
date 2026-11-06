@@ -8,6 +8,11 @@ exaggerated so that the cirques and the volcano read at a few hundred pixels acr
 Same bounds and proportions as src/places/island.json, so the image falls exactly under the map's coastline and
 markers: the IGN serves the elevation for that box in plain longitude and latitude, which is the map's projection.
 
+With --leger, the island's picture LIGHT_W wide, made from the one in public/ (no request to the IGN): the map at its
+size on a phone, laid by the pages' script after the page has loaded (src/web/map.ts, RELIEF_SCRIPT), the picture of
+1200 kept for the maps wider on screen or zoomed. Written as public/relief-leger-<fingerprint>.webp, its fingerprint in
+src/web/relief.json (« leger »). A new island's picture writes its light one too.
+
 With --fin, the same relief 4 times finer, for the maps zoomed in: the island cut in FIN × FIN tiles, each computed on
 the same grid as the island (so 4 times finer), with a margin all round that is cut off afterwards, so that the slopes
 and the blur at a tile's edge are those of its neighbour's and no seam shows. Written as public/relief-fin-<fingerprint>-
@@ -19,8 +24,9 @@ aériennes »); for the finer tiles, the BD ORTHO by name, brought to the island
 to the Géoplateforme.
 Resized and written as WebP by ImageMagick (`convert`).
 
-Usage: python3 -I scripts/build-relief.py [--fin] [--cache DIR] [--out DIR] [--sat S] [--earth E] [--gamma G] …
+Usage: python3 -I scripts/build-relief.py [--fin | --leger] [--cache DIR] [--out DIR] [--sat S] [--earth E] [--gamma G] …
   --fin writes the tiles of the finer relief, and leaves the island's picture alone;
+  --leger writes the light picture from the island's picture in public/, and leaves that one alone;
   --cache keeps the IGN's answers in DIR, to try other settings without asking again;
   --out writes the pictures there, leaving public/ alone; the other options try other settings than those below.
 """
@@ -56,6 +62,12 @@ PHOTO_FIN = "&LAYERS=ORTHOIMAGERY.ORTHOPHOTOS.BDORTHO&FORMAT=image/jpeg"
 # The finer relief: FIN × FIN tiles, a margin of FIN_MARGIN of a tile's size on each side computed then cut off.
 FIN, FIN_MARGIN = 4, 0.04
 FIN_MAX_BYTES = 230 * 1024  # a tile, fetched only when the map is zoomed in on it
+# The light picture: the island's map at most LIGHT_W pixels of screen wide (a phone of 390 px at a density of 2 shows
+# it about 630 wide), no heavier than LIGHT_BYTES. Measured on /randonnees at 390 px, 4G slow and CPU × 4 (07/11/2026):
+# the picture of 1200 (166 Ko) shared the bandwidth with the style sheet, the page's text came 0.85 s later than without
+# it. At 800 wide and 45 000 bytes aimed at, the map on a phone is as sharp as with the picture of 1200 (SSIM 0.956
+# against it, 0.948 at 640 wide).
+LIGHT_W, LIGHT_BYTES = 800, 45000
 ATTRIBUTION = "Relief : IGN, RGE ALTI, couche Photographies aériennes de la Géoplateforme et BD ORTHO (Licence Ouverte 2.0)"
 
 EXAGGERATION = 2.2
@@ -307,9 +319,32 @@ def webp(rgba, crop, max_bytes):
             size = ["-define", f"webp:target-size={aim}"]
 
 
+def light(data):
+    """The light picture (LIGHT_W wide, LIGHT_BYTES aimed at), made from the island's picture as WebP."""
+    with tempfile.TemporaryDirectory() as tmp:
+        src, dst = Path(tmp) / "relief.webp", Path(tmp) / "leger.webp"
+        src.write_bytes(data)
+        # ImageMagick's « -quality » does nothing to this WebP: the size aimed at is what makes it lighter.
+        subprocess.run(["convert", str(src), "-resize", f"{LIGHT_W}x", "-define", f"webp:target-size={LIGHT_BYTES}",
+                        str(dst)], check=True)
+        return dst.read_bytes()
+
+
+def write_light(out, data, kept):
+    """The light picture of `data` in `out`, named by its fingerprint; the older ones removed, its name in kept."""
+    lw = light(data)
+    f = hashlib.sha256(lw).hexdigest()[:8]
+    for old in out.glob("relief-leger-*.webp"):
+        old.unlink()
+    (out / f"relief-leger-{f}.webp").write_bytes(lw)
+    print(f"{out}/relief-leger-{f}.webp: {len(lw) // 1024} Ko")
+    return {**kept, "leger": f}
+
+
 def main():
     args = argparse.ArgumentParser()
     args.add_argument("--fin", action="store_true")
+    args.add_argument("--leger", action="store_true")
     args.add_argument("--cache", type=Path)
     args.add_argument("--out", type=Path)
     for name, default in (("sat", SAT), ("earth", EARTH), ("gamma", GAMMA), ("contrast", CONTRAST), ("warm", WARM),
@@ -320,6 +355,12 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     target = ROOT / "src/web/relief.json"
     kept = json.loads(target.read_text())
+    if a.leger:
+        data = (ROOT / "public" / f"relief-{kept['v']}.webp").read_bytes()
+        kept = write_light(out, data, kept)
+        if not a.out:
+            target.write_text(json.dumps(kept) + "\n")
+        return
     if a.fin:
         # Each tile on the island's grid, its box widened by FIN_MARGIN on each side, the margin cut off after.
         dl, db = (LON1 - LON0) / FIN, (LAT1 - LAT0) / FIN
@@ -355,7 +396,7 @@ def main():
         if re.fullmatch(r"relief-[0-9a-f]{8}\.webp", old.name):
             old.unlink()
     (out / f"relief-{v}.webp").write_bytes(data)
-    target.write_text(json.dumps({**kept, "attribution": ATTRIBUTION, "v": v}) + "\n")
+    target.write_text(json.dumps(write_light(out, data, {**kept, "attribution": ATTRIBUTION, "v": v})) + "\n")
     print(f"public/relief-{v}.webp: {len(data) // 1024} Ko")
 
 

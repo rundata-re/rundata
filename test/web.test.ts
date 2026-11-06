@@ -23,7 +23,7 @@ import { RANDONNEES, SENTIERS } from "../src/providers/traces.js";
 import { SECTEURS as SECTEURS_RANDO } from "../src/traces/secteurs.js";
 import { PASSES } from "../src/historique/cyclones-passes.js";
 import { STATIONS } from "../src/web/station.js";
-import { esc } from "../src/web/map.js";
+import { esc, islandMap, RELIEF_LEGER, RELIEF_LEGER_W, RELIEF_PATH, RELIEF_SCRIPT } from "../src/web/map.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const NOW = new Date("2026-10-22T06:00:00Z");
@@ -544,15 +544,28 @@ describe("what crawlers and previews fetch", () => {
     expect(await icon.text()).toContain("#e3262d");
   });
 
-  it("lays the island's relief under the hero map, a WebP kept for good", async () => {
+  it("lays the island's relief under the hero map, a WebP kept for good, light on a phone", async () => {
     const page = homePage("https://rundata.re", null);
-    const path = page.match(/<image href="(\/relief-[0-9a-f]{8}\.webp)"/)?.[1];
-    expect(path).toBeDefined();
-    const webp = asset(path!);
-    expect(new TextDecoder().decode(webp.slice(8, 12))).toBe("WEBP");
-    expect(webp.length).toBeLessThan(250_000);
+    // The light file named in the page, the home page's first screen; the pages' script takes the full one for a wider
+    // screen (RELIEF_SCRIPT). Any other map: no file in the page, the script names it once the page has loaded.
+    expect(page).toMatch(new RegExp(`<image data-relief width="1000"[^>]* href="${RELIEF_LEGER}"/>`));
+    expect(page).not.toMatch(/<image href="\/relief-/);
+    expect(page).toContain(RELIEF_SCRIPT);
+    const other = islandMap({ label: "La Réunion" });
+    expect(other).toContain('<image data-relief width="1000"');
+    expect(other).not.toContain("/relief-");
+    for (const [path, most] of [[RELIEF_PATH, 250_000], [RELIEF_LEGER, 60_000]] as const) {
+      const webp = asset(path);
+      expect(new TextDecoder().decode(webp.slice(8, 12))).toBe("WEBP");
+      expect(webp.length).toBeLessThan(most);
+      expect(await site(new Request(`https://rundata.re${path}`), new Cache(), () => {})).toBeNull();
+    }
+    // The light one as wide as RELIEF_SCRIPT says (VP8 or VP8L header: the width is read where each format keeps it).
+    const light = asset(RELIEF_LEGER);
+    const chunk = new TextDecoder().decode(light.slice(12, 16));
+    const width = chunk === "VP8X" ? 1 + (light[24] | (light[25] << 8) | (light[26] << 16)) : chunk === "VP8 " ? (light[26] | (light[27] << 8)) & 0x3fff : 1 + ((light[21] | (light[22] << 8)) & 0x3fff);
+    expect(width).toBe(RELIEF_LEGER_W);
     expect(headers).toContain("/relief-*\n  Cache-Control: public, max-age=31536000, immutable\n");
-    expect(await site(new Request(`https://rundata.re${path}`), new Cache(), () => {})).toBeNull();
   });
 
   it("has the headings' font where the pages ask for it, kept for good", async () => {

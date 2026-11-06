@@ -44,7 +44,7 @@ import { byUse, FIRST, type Urgent, urgentKeys, WITH_PAGE } from "./categories.j
 import { COMMUNES, CYCLONE, type Entree, GROUPES } from "./menu.js";
 import { FLAG_INNER } from "./flag.js";
 import { logo } from "./logo.js";
-import { esc, H as MAP_H, islandMap, mapCredit, type Marker, NOMS_SCRIPT, ownIds, W as MAP_W } from "./map.js";
+import { esc, H as MAP_H, islandMap, mapCredit, type Marker, NOMS_SCRIPT, ownIds, RELIEF_SCRIPT, W as MAP_W } from "./map.js";
 import { LEGENDE_CSS, legende } from "./carte-legende.js";
 import { ELECTRICITE_CSS } from "./electricite-carte.js";
 import { typo } from "./typo.js";
@@ -1193,6 +1193,7 @@ a.href=h.replace(encodeURIComponent(u),encodeURIComponent(u+"?maj="+t.getUTCHour
 ${COPIE_SCRIPT}
 ${POINTS_SCRIPT}
 ${NOMS_SCRIPT}
+${RELIEF_SCRIPT}
 const hhmm=(t)=>{const d=new Date(t+144e5);return String(d.getUTCHours()).padStart(2,"0")+":"+String(d.getUTCMinutes()).padStart(2,"0")};
 const tick=()=>{const n=Date.now();document.querySelectorAll("[data-clock]").forEach((e)=>{e.textContent=hhmm(n)});
 document.querySelectorAll("[data-age]").forEach((e)=>{const m=Math.max(0,Math.round((n-Date.parse(e.dataset.age))/6e4));

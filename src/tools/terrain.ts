@@ -305,6 +305,15 @@ async function settle<T>(source: string, p: Promise<{ value: T }>): Promise<T | 
 }
 
 const DOWN = "service momentanément indisponible : réessayer dans un instant";
+const MARCHE_NOTE = "Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.";
+
+// A place without an address nor a point: its centre is no one's land.
+const VAGUE = new Set(["centre du lieu-dit ou de la commune", "centre du lieu-dit", "centre de la commune"]);
+const SANS_POINT = "lieu-dit ou commune, sans adresse ni point précis\u00a0: ni parcelle cadastrale, ni zone du PLU, ni risques au point, qui changent d'un terrain à l'autre";
+const SECTEUR_CENTRE = "autour du centre du lieu (environ 600 m sur 600 m)";
+const CONSEIL_POINT = "Pour un terrain, demander à l'utilisateur son adresse (numéro, rue, commune) ou sa position (coordonnées), puis redemander. Ne pas donner la parcelle, la zone du PLU ni les risques d'un autre point pour ce lieu.";
+/** A place of the gazetteer: its name, and its commune when it is not the commune itself. */
+const placeLabel = (l: { nom: string; commune: string }) => (l.commune && l.commune !== l.nom ? `${l.nom} (${l.commune})` : l.nom);
 
 // Why a street's sales were not read (words validated on 05/11).
 const NON_RETROUVEE = "la voie n'a pas été retrouvée avec certitude dans DVF";
@@ -349,7 +358,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   if (place?.correspondance === "coordonnees") {
     where = { label: `point ${place.lieu.nom}`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "coordonnées données" };
   } else if (place && place.correspondance === "exacte" && !ADDRESS.test(adresse)) {
-    where = { label: `${place.lieu.nom} (${place.lieu.type}, ${place.lieu.commune})`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit ou de la commune", insee: INSEE[place.lieu.commune] };
+    where = { label: placeLabel(place.lieu), lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit ou de la commune", insee: INSEE[place.lieu.commune] };
   } else {
     const asked = communeOf(adresse);
     const a = await settle(terrain.SOURCES.ban.id, terrain.geocode(cache, adresse, asked));
@@ -380,7 +389,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
     const code = a && street ? terrain.codeVoie(a.id) : undefined;
     if (a && street) voie = { nom: street, insee: a.insee, ...(code ? { code } : {}) };
     if (a) where = { label: a.label, lon: a.lon, lat: a.lat, precision: a.type === "housenumber" ? "adresse exacte" : a.type === "street" ? "milieu de la rue" : "centre de la commune", insee: a.insee };
-    else if (place) where = { label: `${place.lieu.nom} (${place.lieu.type}, ${place.lieu.commune})`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit", insee: INSEE[place.lieu.commune] };
+    else if (place) where = { label: placeLabel(place.lieu), lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit", insee: INSEE[place.lieu.commune] };
   }
   if (!where) {
     return {
@@ -389,25 +398,28 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
     };
   }
   const { lon, lat } = where;
+  // No address nor point: nothing of one parcel, which would be any parcel of the place (« parcelle AZ 0083, zone N » for
+  // Bois de Nèfles, 06/11/2026); what holds for the whole commune, and the sales around the place's centre, stay.
+  const vague = VAGUE.has(where.precision);
   const year = new Date(now.getTime() + 4 * 3600_000).getUTCFullYear();
   const fromYear = year - 5;
   const known = where.insee?.startsWith("974") ? where.insee : undefined;
-  const parcelP = settle(terrain.SOURCES.cadastre.id, terrain.parcel(cache, lon, lat));
+  const parcelP = vague ? Promise.resolve(undefined) : settle(terrain.SOURCES.cadastre.id, terrain.parcel(cache, lon, lat));
   // Given coordinates name no commune: the parcel's id starts with its INSEE code.
   const inseeP = known ? Promise.resolve(known) : parcelP.then((x) => (x?.idu.startsWith("974") ? x.idu.slice(0, 5) : undefined));
   const [p, z, alt, s, ppr, cat, mvt, insee, sv] = await Promise.all([
     parcelP,
-    settle(terrain.SOURCES.gpu.id, terrain.zone(cache, lon, lat)),
-    settle(terrain.SOURCES.alti.id, terrain.altitude(cache, lon, lat)),
+    vague ? undefined : settle(terrain.SOURCES.gpu.id, terrain.zone(cache, lon, lat)),
+    vague ? undefined : settle(terrain.SOURCES.alti.id, terrain.altitude(cache, lon, lat)),
     settle(terrain.SOURCES.dvf.id, terrain.sales(cache, lon, lat, fromYear)),
-    settle(terrain.SOURCES.ppr.id, terrain.plans(cache, lon, lat)),
+    vague ? undefined : settle(terrain.SOURCES.ppr.id, terrain.plans(cache, lon, lat)),
     inseeP.then((c) => (c ? settle(terrain.SOURCES.georisques.id, terrain.catnat(cache, c)) : undefined)),
-    settle(terrain.SOURCES.georisques.id, terrain.landslides(cache, lon, lat)),
+    vague ? undefined : settle(terrain.SOURCES.georisques.id, terrain.landslides(cache, lon, lat)),
     inseeP,
     voie ? streetSalesOf(cache, voie, fromYear, year) : undefined,
   ]);
 
-  const parts = [`${where.label} (${where.precision})`];
+  const parts = [vague ? `${where.label}\u00a0: ${SANS_POINT}` : `${where.label} (${where.precision})`];
   if (alt != null) parts.push(`altitude ${nombre(alt)}\u00a0m`);
   if (p) parts.push(`parcelle cadastrale ${p.section} ${p.numero} (${nombre(p.contenance_m2)}\u00a0m²)`);
   const zt = z ? ZONE_TYPES[z.typezone] ?? (z.typezone ? `zone ${z.typezone}` : undefined) : undefined;
@@ -421,13 +433,13 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   if (onStreet) parts.push(streetLine(onStreet));
   else if (voie && notRead) parts.push(`${voie.nom} : ventes de la voie non lues, ${notRead}`);
   const area = m ? [prixMedian("maisons", m.maisons), prixMedian("appartements", m.appartements)].filter(Boolean) : [];
-  if (area.length) parts.push(`${SECTEUR}, depuis ${fromYear} : ${area.join(", ")}`);
+  if (area.length) parts.push(`${vague ? SECTEUR_CENTRE : SECTEUR}, depuis ${fromYear} : ${area.join(", ")}`);
   const r = insee ? rents(insee) : undefined;
   if (r?.ligne) parts.push(r.ligne);
   const net = insee ? connexion(insee) : undefined;
   if (net) parts.push(net.ligne);
-  const ant = antennas(lon, lat);
-  parts.push(ant.ligne);
+  const ant = vague ? undefined : antennas(lon, lat);
+  if (ant) parts.push(ant.ligne);
 
   const used = [
     terrain.SOURCES.ban,
@@ -440,9 +452,23 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
     ...(cat || mvt ? [terrain.SOURCES.georisques] : []),
     ...(r ? [loyers.SOURCE] : []),
     ...(net ? [internet.SOURCE] : []),
-    antennes.SOURCE_MOBILE,
-    ...(ant.bloc.radio_et_television.supports ? [antennes.SOURCE_RADIO] : []),
+    ...(ant ? [antennes.SOURCE_MOBILE] : []),
+    ...(ant?.bloc.radio_et_television.supports ? [antennes.SOURCE_RADIO] : []),
   ];
+  if (vague) {
+    const r_ = risksBlock(lon, lat, insee, undefined, cat, undefined);
+    return text({
+      resume: `${parts.join("\u00a0; ")}.`,
+      conseil: CONSEIL_POINT,
+      lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },
+      marche_immobilier: m ? { perimetre: "environ 600 m × 600 m autour du centre du lieu, pas d'un terrain", depuis: fromYear, ...m, note: MARCHE_NOTE } : DOWN,
+      ...(r ? { loyers_d_annonce: r.bloc } : {}),
+      ...(net ? { internet_dans_la_commune: net.bloc } : {}),
+      risques_dans_la_commune: { catastrophes_naturelles: r_.catastrophes_naturelles, seisme: r_.seisme, radon: r_.radon, cyclone_et_volcan: r_.cyclone_et_volcan, pour_aller_plus_loin: r_.pour_aller_plus_loin },
+      sources: credits(used),
+    });
+  }
+  const point = ant!;
   return text({
     resume: `${parts.join("\u00a0; ")}.`,
     lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },
@@ -464,12 +490,12 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
           depuis: fromYear,
           ...m,
           ...(voie ? { sur_la_voie: onStreet ?? { voie: voie.nom, non_lues: notRead } } : {}),
-          note: "Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.",
+          note: MARCHE_NOTE,
         }
       : DOWN,
     ...(r ? { loyers_d_annonce: r.bloc } : {}),
     ...(net ? { internet_dans_la_commune: net.bloc } : {}),
-    antennes_a_moins_de_500_m: ant.bloc,
+    antennes_a_moins_de_500_m: point.bloc,
     risques: risksBlock(lon, lat, insee, ppr, cat, mvt),
     avertissements: [
       "Le cadastre est un document fiscal : il ne prouve pas la propriété ni les limites exactes (bornage par un géomètre).",

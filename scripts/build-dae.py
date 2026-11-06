@@ -17,6 +17,7 @@ import math
 import json
 from datetime import date
 import re
+import subprocess
 import urllib.request
 from pathlib import Path
 
@@ -140,12 +141,24 @@ def reach(d):
     return 0 if d["exterieur"] and all_day else 1 if all_day else 2 if d["acces_libre"] or d["exterieur"] else 3
 
 
+def names(devices):
+    """The names as the tool and the list by commune write them (« FEAR - Saint-Paul »): nomDae() of src/tools/dae.ts,
+    through scripts/noms-dae.ts, so that the two lists of the page never part."""
+    out = subprocess.run(["npx", "--no-install", "tsx", "scripts/noms-dae.ts"], cwd=ROOT, check=True, capture_output=True,
+                         input=json.dumps([d["nom"] for d in devices], ensure_ascii=False).encode()).stdout
+    shown = json.loads(out)
+    if len(shown) != len(devices):
+        raise SystemExit("noms-dae.ts : pas autant de noms que d'appareils")
+    return shown
+
+
 def compact(devices):
-    """[lat, lon, name, reach, address, commune's index, place, hours, floor], the empty ends left out."""
+    """[lat, lon, name, reach, address, commune's index, place, hours, floor], the empty ends left out; the name as the
+    tool writes it."""
     communes = sorted({d["commune"] for d in devices})
     rows = []
-    for d in devices:
-        r = [d["lat"], d["lon"], d["nom"], reach(d), d["adresse"], communes.index(d["commune"]), d.get("emplacement", ""),
+    for d, nom in zip(devices, names(devices)):
+        r = [d["lat"], d["lon"], nom, reach(d), d["adresse"], communes.index(d["commune"]), d.get("emplacement", ""),
              d.get("horaires", "") if reach(d) >= 2 else "", d.get("etage", "")]
         while r[-1] == "":
             r.pop()

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import liste from "../src/dae/liste.json" with { type: "json" };
 import { DAES } from "../src/providers/dae.js";
 import { buildDae } from "../src/web/data.js";
+import { nomDae } from "../src/tools/dae.js";
 import { nombre } from "../src/tools/format.js";
 import { AUTOUR_SCRIPT, daePage } from "../src/web/domains.js";
 
@@ -66,6 +67,13 @@ describe("« Autour de moi » on /defibrillateurs", () => {
     const d = JSON.parse(readFileSync(file, "utf8"));
     expect(d.d.length).toBe(DAES.length);
     expect(readFileSync(new URL("../public/_headers", import.meta.url), "utf8")).toMatch(/\/dae\/\*\n {2}Cache-Control: public, max-age=31536000, immutable/);
+  });
+
+  it("names each device as the tool and the list by commune do", () => {
+    const d = JSON.parse(readFileSync(file, "utf8"));
+    // [lat, lon, name…], in the bundle's order: the same name for the same device, « FEAR - Saint-Paul », not « FEAR - SAINT PAUL ».
+    expect(d.d.map((r: unknown[]) => [r[0], r[1], r[2]])).toEqual(DAES.map((x) => [x.lat, x.lon, nomDae(x.nom)]));
+    expect(d.d.map((r: unknown[]) => r[2])).toContain("FEAR - Saint-Paul");
   });
 
   it("puts the button after the emergency call, and its script on the page", async () => {

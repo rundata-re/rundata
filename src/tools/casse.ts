@@ -196,9 +196,9 @@ export function casseArret(nom: string): string {
     else if (/\p{N}/u.test(w) || STOP_SIGLES.has(w) || ROMAN.test(w) || initial(i) || ([...w].length === 1 && !small(i))) word = w;
     // « P'TIT »: the rest of one word.
     else if (apostrophe(i - 1) && !elided(i - 1)) word = titled ? w : w.toLocaleLowerCase("fr");
-    // « LE », « LA », « LES » after a full word start a name (« Agence Les Cuves », « Rue La Fontaine »); after a small
-    // word, an article (« Chemin de la Ravine »).
-    else if (ARTICLE.has(up[i]) && !(i && up[i - 1] in STOP_SMALL && !ARTICLE.has(up[i - 1]) && /^\s+$/.test(between(i - 1)))) word = upperFirst(STOP_SMALL[up[i]]);
+    // « LE », « LA », « LES » after a space and a full word start a name (« Agence Les Cuves », « Rue La Fontaine »);
+    // after a small word, or held by a hyphen (« GILLES-LES-HAUTS »), an article (« Chemin de la Ravine »).
+    else if (ARTICLE.has(up[i]) && i && /^\s+$/.test(between(i - 1)) && !(up[i - 1] in STOP_SMALL && !ARTICLE.has(up[i - 1]))) word = upperFirst(STOP_SMALL[up[i]]);
     else if (small(i)) word = i ? STOP_SMALL[up[i]] : upperFirst(STOP_SMALL[up[i]]);
     else word = accented(titled ? w : upperFirst(w.toLocaleLowerCase("fr")));
     text += word + between(i);

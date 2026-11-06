@@ -23,6 +23,9 @@ describe("a stop name in capitals, as people read it", () => {
     expect(casseArret("RUE LA FONTAINE")).toBe("Rue La Fontaine");
     expect(casseArret("ZAC LA MARE")).toBe("ZAC La Mare");
     expect(casseArret("Chemin Les Hauts")).toBe("Chemin Les Hauts");
+    // Held by a hyphen, still an article.
+    expect(casseArret("TOTAL ST GILLES-LES-HAUTS")).toBe("Total St Gilles-les-Hauts");
+    expect(casseArret("HOTEL LE CILAOS")).toBe("Hotel Le Cilaos");
     expect(casseArret("A LA CROISEE")).toBe("À la Croisee");
     expect(casseArret("CHATEAU D'EAU LES BAS")).toBe("Chateau d'Eau Les Bas");
     expect(casseArret("P'TIT KIOSQUE")).toBe("P'tit Kiosque");

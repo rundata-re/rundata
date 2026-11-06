@@ -127,8 +127,11 @@ export interface CopieDeSecours {
   partielle?: true;
 }
 
-/** As said in the warning, not in the answer: `tardive`, the source did not fail, it was too slow for the answer. */
-type Copie = CopieDeSecours & { tardive?: true };
+/**
+ * As said in the warning, not in the answer: `tardive`, the source did not fail, it was too slow for the answer; with it
+ * `copie`, a collector's copy our newer copy of which could not be read again in time (lectures.ts), the source not slow.
+ */
+type Copie = CopieDeSecours & { tardive?: true; copie?: true };
 
 /**
  * The parts served from their last copy, each source once with its oldest copy, the oldest first: named when the
@@ -137,7 +140,7 @@ type Copie = CopieDeSecours & { tardive?: true };
 function copies(pool: Lecture[], nom: (id: string) => string | undefined): Copie[] {
   // The sources also read fresh for this answer (the stations' latest slots beside their hourly rain kept from before).
   const fresh = new Set(pool.filter((l) => !l.stale && l.from).map((l) => l.from));
-  const oldest = new Map<string, { source?: string; at: number; partielle: boolean; tardive: boolean }>();
+  const oldest = new Map<string, { source?: string; at: number; partielle: boolean; tardive: boolean; copie: boolean }>();
   for (const l of pool.filter((l) => l.stale)) {
     const source = l.source && nom(l.source);
     // A part without a name is said for each copy: one key, one read.
@@ -145,12 +148,15 @@ function copies(pool: Lecture[], nom: (id: string) => string | undefined): Copie
     const was = oldest.get(k);
     // Slow only when none of its copies is one of a failure: one that did not answer is said as such.
     const tardive = !!l.tardive && (!was || was.tardive);
-    if (!was || l.fetchedAt < was.at) oldest.set(k, { source, at: l.fetchedAt, partielle: !!source && fresh.has(l.source), tardive });
-    else was.tardive = tardive;
+    // A collector's copy, only when every copy of it is one: a source read live too is said as such.
+    const copie = tardive && !!l.copie && (!was || was.copie);
+    // A collector's copy is the whole of what comes from its source (its readers read nothing else of it): never in part.
+    if (!was || l.fetchedAt < was.at) oldest.set(k, { source, at: l.fetchedAt, partielle: !!source && !copie && fresh.has(l.source), tardive, copie });
+    else Object.assign(was, { tardive, copie });
   }
   return [...oldest.values()]
     .sort((a, b) => a.at - b.at)
-    .map((c) => ({ ...(c.source && { source: c.source }), lue_le: localTime(new Date(c.at)), ...(c.partielle && { partielle: true as const }), ...(c.tardive && { tardive: true as const }) }));
+    .map((c) => ({ ...(c.source && { source: c.source }), lue_le: localTime(new Date(c.at)), ...(c.partielle && { partielle: true as const }), ...(c.tardive && { tardive: true as const }), ...(c.copie && c.source && { copie: true as const }) }));
 }
 
 // « 25/10 22:22 » as said in a sentence: « 25/10 à 22:22 », the day again only when it changes (« et à 22:22 »).
@@ -162,7 +168,8 @@ const quoted = (s: string) => `« ${s} »`;
 
 /**
  * Marketing's words: the sources that did not answer named, each with its last read; then those too slow for the
- * answer, each in a sentence of its own; then each source only part of which is old, in a sentence of its own (it did
+ * answer, each in a sentence of its own, a collector's copy not read again in time with its own words (data-run, 06/11/2026:
+ * « a tardé à répondre » would blame a source that was not slow); then each source only part of which is old, in a sentence of its own (it did
  * answer for the rest), or too slow for the answer for a part of it; then the parts whose read did not succeed, without
  * a cause, then those too slow; « le reste » only when every other part was read at its own pace.
  */
@@ -179,7 +186,11 @@ function avertissement(list: Copie[], rest: boolean): string {
     const each = named.map((c) => `${quoted(c.source!)}, lue le ${c.lue_le.replace(" ", " à ")}`).join("\u00a0; ");
     out.push(`Ces sources n'ont pas répondu à notre dernière lecture : ${each}. Ce qui vient d'elles date de ces lectures${closed && rest ? "\u00a0; le reste de la réponse est à jour." : "."}`);
   }
-  for (const c of tardy) out.push(`La source ${quoted(c.source!)} a tardé à répondre : ce qui vient d'elle date de notre lecture ${dits([c.lue_le])}.`);
+  for (const c of tardy) {
+    out.push(c.copie
+      ? `Ce qui vient de la source ${quoted(c.source!)} date de notre lecture ${dits([c.lue_le])} : notre copie plus récente n'a pas pu être relue à temps.`
+      : `La source ${quoted(c.source!)} a tardé à répondre : ce qui vient d'elle date de notre lecture ${dits([c.lue_le])}.`);
+  }
   for (const c of partial) {
     out.push(c.tardive
       ? `La source ${quoted(c.source!)} a tardé à répondre pour une partie de ce qui vient d'elle : cette partie date de notre lecture ${dits([c.lue_le])}.`
@@ -234,7 +245,7 @@ export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { do
     lue_a: localTime(when),
     fuseau: FUSEAU,
     age: data?.age ?? (data && at != null ? ageFrom(data, at, now) : ageMinutes(when, now) < 1 ? "à l'instant" : ageText(ageMinutes(when, now))),
-    copies_de_secours: secours.length ? secours.map(({ tardive: _, ...c }) => c) : undefined,
+    copies_de_secours: secours.length ? secours.map(({ tardive: _, copie: __, ...c }) => c) : undefined,
     avertissement: secours.length ? avertissement(secours, rest) : undefined,
   };
 }

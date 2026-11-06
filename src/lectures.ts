@@ -18,6 +18,11 @@ export interface Lecture {
   tardive?: true;
   /** The source the entry was read from (`SourceInfo.id`), when it was one, fresh or not (`withSource`). */
   from?: string;
+  /**
+   * With `tardive`: a collector's copy in the Worker's KV (cache.ts `getCopy`), not a source read live: the source was
+   * not slow, our newer copy of it could not be read again within the answer's time.
+   */
+  copie?: true;
 }
 
 const current = new AsyncLocalStorage<Lecture[]>();

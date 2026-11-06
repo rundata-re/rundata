@@ -161,5 +161,5 @@ export async function live(cache: Cache) {
       return v;
     }
     return parseLive(await getText(SOURCE.id, LIVE_URL, 60_000));
-  }, (v) => v.lu);
+  }, (v) => v.lu, SOURCE.id);
 }

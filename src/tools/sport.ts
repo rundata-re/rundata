@@ -103,6 +103,37 @@ export function duAu(debut: string, fin: string, at: (local: string, annee: bool
   return `du ${at(debut, annee)} au ${at(fin, annee)}`;
 }
 const span = (e: { debut: string; fin: string }) => (e.debut === e.fin ? quand(e.debut) : duAu(e.debut, e.fin));
+/**
+ * A tournament of the volley league (marketing, 06/11/2026): the days of its matches as its title gives them, two days
+ * running as « vendredi 06/11 et samedi 07/11 »; the span the league posted it over said as the league's.
+ */
+const spanLigue = (e: { debut: string; fin: string; dates?: "titre" | "ligue" }) =>
+  e.dates === "titre" && e.fin === addDays(e.debut, 1) ? `${quand(e.debut)} et ${quand(e.fin)}`
+  : e.dates === "ligue" && e.fin !== e.debut ? `${span(e)} (dates données par la Ligue)`
+  : span(e);
+
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/**
+ * The days a title gives, « 06-07 novembre », « 6 et 7 novembre », « 7 novembre », within the span `debut`–`fin`
+ * (YYYY-MM-DD) the event was posted over; else undefined.
+ */
+export function joursDuTitre(titre: string, debut: string, fin: string): { debut: string; fin: string } | undefined {
+  const m = new RegExp(`\\b(\\d{1,2})(?:\\s*(?:-|–|au|et)\\s*(\\d{1,2}))?\\s+(${MOIS.join("|")})\\b`, "i").exec(titre);
+  // « 30 décembre au 2 janvier »: two months, not read.
+  if (!m || /^\s*(?:-|–|au|et)\s*\d/.test(titre.slice(m.index + m[0].length))) return undefined;
+  const month = MOIS.indexOf(m[3].toLowerCase()) + 1;
+  const day = (d: string) => {
+    for (const y of new Set([debut.slice(0, 4), fin.slice(0, 4)])) {
+      const iso = `${y}-${String(month).padStart(2, "0")}-${d.padStart(2, "0")}`;
+      if (iso >= debut && iso <= fin) return iso;
+    }
+    return undefined;
+  };
+  const a = day(m[1]);
+  const b = day(m[2] ?? m[1]);
+  return a && b && a <= b ? { debut: a, fin: b } : undefined;
+}
 
 /** The days a question means: this weekend is Friday to Sunday, the coming one from Monday on; « samedi » is the next one, today included. */
 export function window(q: Quand | undefined, now: Date, back = BACK_DAYS): { du: string; au: string } {
@@ -215,7 +246,7 @@ function eventRow(e: src.Epreuve, calledOff: avis.Avis[] = []): Row {
   const off = e.sport === "beach-volley" && !e.etat ? avis.avisBeach(calledOff, e) : undefined;
   return {
     sport: e.sport,
-    quand: span(e),
+    quand: spanLigue(e),
     date: e.debut,
     fin: e.fin,
     epreuve: e.nom,
@@ -401,17 +432,21 @@ export const surSable = (e: Pick<Evenement, "categories">) => e.categories.some(
 
 /** A tournament of the volley league, as `evenements` read it: its place as the league gives it, or « à venir ». */
 function tournoi(e: Evenement): src.Epreuve[] {
-  return e.seances.slice(0, 1).map((s) => ({
+  return e.seances.slice(0, 1).map((s) => {
+    const posted = { debut: s.debut.slice(0, 10), fin: (s.fin ?? s.debut).slice(0, 10) };
+    const titre = joursDuTitre(e.titre, posted.debut, posted.fin);
+    return {
     sport: surSable(e) ? ("beach-volley" as const) : ("volley-ball" as const),
     nom: e.titre,
-    debut: s.debut.slice(0, 10),
-    fin: (s.fin ?? s.debut).slice(0, 10),
+    ...(titre ?? posted),
+    dates: titre ? ("titre" as const) : ("ligue" as const),
     lieu: e.lieu,
     commune: e.commune,
     detail: "Ligue réunionnaise de volley-ball",
     etat: e.statut === "annulé" ? ("annulée" as const) : e.statut === "reporté" ? ("reportée" as const) : undefined,
     lien: versBilletterie(e.lien),
-  }));
+    };
+  });
 }
 
 /** The Grand Raid is told around its dates (a week before to a fortnight after), or when asked. */

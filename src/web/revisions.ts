@@ -48,8 +48,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copies keep the notices' words (providers/sentiers.ts nuance): past its last day, a weekend notice is quoted, without « ouvert ».
   // Its copies keep a closed trail's state (web/data.ts closedState): « En partie fermé : … » first, « Fermé » said once.
   sentiers: 21,
-  // Its copy says which commune sports plannings are not reused: L'Étang-Salé's now is, under its new title.
-  sport: 26,
+  // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
+  sport: 27,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,

@@ -8,7 +8,7 @@ import * as ffck from "../src/providers/ffck.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { dateLigue, liensCommuns, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
+import { dateLigue, joursDuTitre, liensCommuns, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { sportPage } from "../src/web/domains.js";
@@ -325,6 +325,34 @@ describe("sport", () => {
     expect(none.a_venir.some((r: { autre_date?: string }) => r.autre_date)).toBe(false);
   });
 
+  it("says the days of the league's tournament as its title gives them, else the span as the league's", async () => {
+    // « 06-07 novembre », « 6 et 7 novembre », « 7 novembre »: within the span posted, else nothing.
+    expect(joursDuTitre("Saison 2026-2027 Championnats Senior 06-07 novembre", "2026-11-04", "2026-11-07")).toEqual({ debut: "2026-11-06", fin: "2026-11-07" });
+    expect(joursDuTitre("Coupe 6 et 7 Novembre", "2026-11-04", "2026-11-07")).toEqual({ debut: "2026-11-06", fin: "2026-11-07" });
+    expect(joursDuTitre("Tournoi du 7 novembre", "2026-11-04", "2026-11-07")).toEqual({ debut: "2026-11-07", fin: "2026-11-07" });
+    expect(joursDuTitre("Tournoi du 12 novembre", "2026-11-04", "2026-11-07")).toBeUndefined();
+    expect(joursDuTitre("Saison 2026-2027", "2026-11-04", "2026-11-07")).toBeUndefined();
+    expect(joursDuTitre("Open 30 décembre au 2 janvier", "2026-12-28", "2027-01-03")).toBeUndefined();
+    const eve = new Date("2026-11-03T04:00:00Z");
+    const at = eve.getTime() - 3600_000;
+    const posted = (titre: string) => ({ id: `Ligue réunionnaise de volley-ball:${titre.length}`, titre, seances: [{ debut: "2026-11-04", fin: "2026-11-07" }], lieu: "lieu à venir (voir la page de la Ligue)", categories: ["CHAMPIONNATS"], lien: "https://lrvb.re/calendrier2/", publie_par: "Ligue réunionnaise de volley-ball" });
+    const run = async (titre: string) => {
+      const store = new MemoryStore();
+      await store.put("agendas:planifies", { value: { "agenda:lrvb": { value: [posted(titre)], fetchedAt: at } }, fetchedAt: at });
+      const b = body(await sportTool(new Cache(store, () => eve.getTime()), "volley", undefined, "a_venir", eve));
+      const row = b.a_venir.find((r: { epreuve?: string }) => r.epreuve === titre);
+      return { row, page: sportPage("https://rundata.re", { value: { ...b, a_venir: [row], classements: [] } as SportAnswer, fetchedAt: eve, stale: false }, eve) };
+    };
+    // The title keeps the league's words; the date is the matches' days.
+    const days = await run("Saison 2026-2027 Championnats Senior 06-07 novembre");
+    expect(days.row.quand).toBe("vendredi 06/11 et samedi 07/11");
+    expect(days.page).toContain(`<span class="q-none">06/11 et 07/11</span>`);
+    // No day in the title: the span posted, said as the league's.
+    const span = await run("Saison 2026-2027 Championnats Senior");
+    expect(span.row.quand).toBe("du mercredi 04/11 au samedi 07/11 (dates données par la Ligue)");
+    expect(span.page).toContain(`<span class="q-none">04/11 → 07/11 (dates données par la Ligue)</span>`);
+  });
+
   it("crosses the news: a match it calls off, or a day to check with the club", async () => {
     down = /lrvb/;
     // Clicanoo on Saturday morning: « les ligues sportives préfèrent reporter les compétitions ce samedi », no sport named.
@@ -417,8 +445,8 @@ describe("sport", () => {
     const sept = new Date("2026-09-01T04:00:00Z");
     const early = body(await sportTool(ligue(sept), "beach_volley", undefined, undefined, sept));
     expect(early.a_venir).toBeUndefined();
-    expect(early.prochain).toMatchObject({ epreuve: "FINALES RÉGIONALES BEACH-VOLLEY 2026", quand: "du samedi 19/09 au dimanche 20/09" });
-    expect(early.resume).toContain("Prochain rendez-vous de beach-volley : FINALES RÉGIONALES BEACH-VOLLEY 2026, du samedi 19/09 au dimanche 20/09");
+    expect(early.prochain).toMatchObject({ epreuve: "FINALES RÉGIONALES BEACH-VOLLEY 2026", quand: "du samedi 19/09 au dimanche 20/09 (dates données par la Ligue)" });
+    expect(early.resume).toContain("Prochain rendez-vous de beach-volley : FINALES RÉGIONALES BEACH-VOLLEY 2026, du samedi 19/09 au dimanche 20/09 (dates données par la Ligue)");
     // After the last one: the league's calendar is read from today on and has no results, so the period starts today,
     // where the volley's goes back 30 days for its results.
     const late = new Date("2026-10-30T23:00:00Z");

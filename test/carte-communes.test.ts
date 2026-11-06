@@ -62,7 +62,7 @@ describe("the names on the map of /communes", () => {
   it("light a commune's name while it is hovered, and the commune while its name is", () => {
     expect(communesPage(ORIGIN)).toContain(`</figure><script>${SURVOL_SCRIPT}</script>`);
     // Its legend's line (marketing's charter of the maps): a tap on a name or a commune opens its page.
-    expect(communesPage(ORIGIN)).toContain(`<figcaption class="note" style="color:var(--on-night-muted)">Touchez une commune pour ouvrir sa page.</figcaption></figure>`);
+    expect(communesPage(ORIGIN)).toContain(`<figcaption class="note" style="color:var(--on-night-muted)">Choisissez une commune pour ouvrir sa page.</figcaption></figure>`);
     expect(CSS).toContain(".map .cn a.on text");
     expect(CSS).toContain(".map .zn.on path");
     // The names in the order of the communes' links, so that the script pairs them by rank.

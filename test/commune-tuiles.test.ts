@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, type Cached, MemoryStore } from "../src/cache.js";
-import { BIKES_STALE_MS, COLUMNS, COMMUNES, communePage, spans } from "../src/web/commune.js";
+import { BIKES_STALE_MS, COLUMNS, COMMUNES, communePage, measuredAt, spans } from "../src/web/commune.js";
 import { type CommuneData, pointJustice } from "../src/web/data.js";
 import { H, W } from "../src/web/map.js";
 import { CSS } from "../src/web/pages.js";
@@ -112,6 +112,15 @@ describe("the Vélos tile", () => {
   });
 });
 
+describe("the time of a measure, as a date", () => {
+  it("reads « 06/11 14:18 » at La Réunion, in the year of the view, or the one before at New Year", () => {
+    expect(measuredAt("06/11 14:18", new Date("2026-11-06T10:30:00Z"))?.toISOString()).toBe("2026-11-06T10:18:00.000Z");
+    expect(measuredAt("31/12 23:50", new Date("2026-12-31T20:05:00Z"))?.toISOString()).toBe("2026-12-31T19:50:00.000Z");
+    expect(measuredAt("31/12 23:50", new Date("2027-01-01T00:05:00Z"))?.toISOString()).toBe("2026-12-31T19:50:00.000Z");
+    expect(measuredAt("14:18", NOW)).toBeUndefined();
+  });
+});
+
 describe("the town hall's tile", () => {
   // An invented town hall whose entry of the directory gives no hours.
   const hall = { nom: "Mairie - Ville A", insee: "97416", adresse: "Rue A", lon: null, lat: null, horaires: [], fiche: "https://lannuaire.service-public.fr/x" };
@@ -119,7 +128,9 @@ describe("the town hall's tile", () => {
   it("says the hours are absent from the directory, and leaves them out of the description", () => {
     const page = communePage(ORIGIN, p, commune(ago(60_000), { mairie: hall }), NOW);
     expect(page).toContain(`<p class="tv">Horaires absents de l'annuaire</p>`);
-    expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie/i);
+    expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie (ouverte|fermée)/i);
+    // No measure here, so no hour to give: no value either (588).
+    expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).toBe("Saint-Pierre (La Réunion, 974)\u00a0: météo, vigilance, air, prochains bus, mairie et soleil, chaque donnée datée et sourcée.");
   });
 
   it("says the town hall probably closed on a holiday, never open by its weekday hours", () => {
@@ -130,9 +141,9 @@ describe("the town hall's tile", () => {
     const page = (c?: never) => communePage(ORIGIN, p, { ...commune(at, { mairie: open }), calendrier: c }, at);
     expect(tile(page(cal("Armistice 1918")), "Mairie")).toContain(`<p class="tv">Sans doute fermée</p>`);
     expect(tile(page(cal("Armistice 1918")), "Mairie")).toContain("jour férié (Armistice 1918)");
-    expect(tile(page(cal(null)), "Mairie")).toContain(`<p class="tv">Ouverte</p>`);
+    expect(tile(page(cal(null)), "Mairie")).toContain(`<p class="tv">Ouverte à 10:00</p>`);
     // A calendar of another day says nothing of today.
-    expect(tile(page(cal("Armistice 1918", new Date("2026-11-10T06:00:00Z"))), "Mairie")).toContain(`<p class="tv">Ouverte</p>`);
+    expect(tile(page(cal("Armistice 1918", new Date("2026-11-10T06:00:00Z"))), "Mairie")).toContain(`<p class="tv">Ouverte à 10:00</p>`);
   });
 });
 

@@ -510,6 +510,9 @@ describe("coupures d'eau", () => {
     expect(page("le-port")).toContain("<h1>Coupures d'eau au Port <span class=\"n974\">974</span></h1>");
     expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })).toMatchObject({ valeur: "1 avis de coupure" });
+    // When its notices were read (588), never for a commune whose notices are not read.
+    expect(waterLive(pageOf("saint-paul")!, { coupures: night })!.detail).toMatch(/^avis lus le \d\d\/\d\d à \d\d:\d\d · distributeur /);
+    expect(waterLive(pageOf("le-tampon")!, { coupures })!.detail).not.toContain("avis lus");
     // The notice of the 23rd is in Saint-Paul: not on Les Trois-Bassins' page.
     expect(waterLive(pageOf("les-trois-bassins")!, { coupures: night })).toMatchObject({ valeur: "Pas de coupure annoncée" });
     expect(waterLive(pageOf("le-tampon")!, { coupures })).toMatchObject({ valeur: "Avis non lus" });

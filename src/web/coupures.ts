@@ -54,7 +54,8 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   const cuts = compteAvis(x.avis).coupures;
   const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Avis non lus";
   const detail = [
-    x.muet ? esc(x.muet.court) : "",
+    // When its notices were read (588), unless its site did not answer: that says its own hour.
+    x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(w.coupures.fetchedAt))}` : "",
     x.distributeur ? `distributeur ${esc(x.distributeur.nom)}` : "",
     x.secheresse ? `sécheresse : ${esc(x.secheresse.eau_du_robinet ?? "aucune restriction")}` : "",
     x.robinet ? (x.robinet.non_conformes_6_mois ? `robinet : ${plural(x.robinet.non_conformes_6_mois, "analyse non conforme", "analyses non conformes")} en 6 mois` : x.robinet.analyses_6_mois ? "robinet : analyses conformes" : "") : "",

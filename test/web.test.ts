@@ -387,11 +387,16 @@ describe("commune pages", () => {
     expect(cold.text).toContain(`<h1>Saint-Leu <span class="n974">974</span> en direct</h1>`);
     expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<\/a><\/h3><p class="tv">\d+(,\d)?\u202f°C<\/p>/);
     expect(cold.text).toContain("pour l&#39;Ouest (Météo-France), la zone de Saint-Leu");
-    expect(cold.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée)<\/p>/);
+    expect(cold.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée) à[ \u00a0]\d\d:\d\d<\/p>/);
     expect(cold.text).toContain("Mer"); // on the coast
+    // Its description dated by its measure, the town hall's state worked out at that time (588), within 160 characters.
+    const meta = cold.text.match(/<meta name="description" content="([^"]*)"/)![1];
+    expect(meta).toMatch(/^Saint-Leu \(La Réunion, 974\) le \d\d\/\d\d à[ \u00a0]\d\d:\d\d[ \u00a0]: \d+(,\d)?\u202f°C(, air [a-zé ]+)?, mairie (ouverte|fermée)\. Vigilance, prochains bus, soleil, chaque donnée datée et sourcée\.$/);
+    expect(meta).not.toContain("en direct");
+    expect(meta.length).toBeLessThanOrEqual(160);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     const warm = await serve(isolate(edge), "/communes/saint-leu");
-    expect(warm.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée)<\/p>/);
+    expect(warm.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée) à[ \u00a0]\d\d:\d\d<\/p>/);
     // One read per tile's copy, the hikes and the outings included, and the volcano's banner.
     expect(warm.used).toBeLessThanOrEqual(18);
   });

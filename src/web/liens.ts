@@ -139,10 +139,17 @@ export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | nul
     foot,
     live: {
       valeur: shut ? `${shut} sentier${shut > 1 ? "s" : ""} fermé${shut > 1 ? "s" : ""}` : "Sentiers ouverts",
-      detail: `${burning ? `${burning} · ` : ""}sur ${trails.length} sentiers de l'ONF dans la commune${sector ? ` · randonnée ${esc(sector.dans)}` : ""}`,
+      // The ONF's own date of its map, else when we read it (588): a copy never says the state of another day.
+      detail: `${burning ? `${burning} · ` : ""}sur ${trails.length} dans la commune, d'après la carte de l'ONF${onfWhen(hikes.value)}${sector ? ` · randonnée ${esc(sector.dans)}` : ""}`,
     },
   };
 }
+
+const onfWhen = (v: RandonneesAnswer) => {
+  // ISO, or « 27/10/2026 (ONF) » in a copy from the tool.
+  const day = (iso?: string) => (!iso ? "" : /^\d\d\/\d\d\//.test(iso) ? iso.slice(0, 5) : Number.isFinite(Date.parse(iso)) ? localTime(new Date(iso)).split(" ")[0] : "");
+  return day(v.carte_mise_a_jour) ? ` du ${day(v.carte_mise_a_jour)}` : day(v.carte_lue) ? ` lue le ${day(v.carte_lue)}` : "";
+};
 
 /** The commune's page's tile of outings: what its agendas announce in the two weeks. */
 export function communeEvents(p: PlacePage, agenda: Cached<AgendaAnswer> | null | undefined, now = new Date()): Live | undefined {

@@ -42,7 +42,9 @@ describe("« demain » decided at the view, from the day at La Réunion, never k
   it("on the commune page, a view at 00:10 and at 03:00 of a read made at 23:50", () => {
     const night = busTile(commune(at("2026-10-27T00:10")));
     expect(night).toContain(`<p class="tv">00:20</p>`);
-    expect(night).toContain("dans 10 min");
+    // The hour, never the wait, which a copy of the page would keep (588).
+    expect(night).toContain("à 00:20");
+    expect(night).not.toContain("dans 10 min");
     expect(night).toContain("à 04:30");
     expect(night).not.toContain("demain");
     expect(night).not.toContain("<b>S1</b>");
@@ -57,7 +59,7 @@ describe("« demain » decided at the view, from the day at La Réunion, never k
   it("before midnight, at 23:55, keeps « demain »; the next evening at 23:55, nothing is left of that read", () => {
     const evening = busTile(commune(at("2026-10-26T23:55")));
     expect(evening).toContain(`<p class="tv">23:58</p>`);
-    expect(evening).toContain("dans 3 min");
+    expect(evening).toContain("à 23:58");
     expect(evening).toContain("demain 00:20");
     expect(evening).toContain("demain 04:30");
     expect(busTile(commune(at("2026-10-27T23:55")))).toContain(`<p class="tv">Pas de départ</p>`);

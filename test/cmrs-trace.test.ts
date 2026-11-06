@@ -95,7 +95,7 @@ describe("the bulletin, read", () => {
   it("keeps its number, the system's stage and name, and the position of « 2.A », never a forecast", () => {
     expect(trace.parse(B7)).toEqual({
       numero: 7, systeme: 4, saison: "20252026", nom: "Opale", stade: "tempête tropicale modérée",
-      heure: "2026-02-03T06:00:00.000Z", lon: 52.4, lat: -17,
+      heure: "2026-02-03T06:00:00.000Z", emis: "2026-02-03T06:45:00.000Z", lon: 52.4, lat: -17,
     });
     expect(trace.parse(B6)).toMatchObject({ numero: 6, nom: "système n° 4 (non baptisé)", stade: "dépression tropicale", lat: -16.4 });
     expect(trace.parse(B7.replace(/\n/g, "\r\n"))).toMatchObject({ numero: 7, lat: -17 });
@@ -289,5 +289,75 @@ describe("once Météo-France agrees", () => {
     kv.data.set("cmrs:trace", JSON.stringify(trace.ajoute({ traces: [] }, trace.parse(B7)!, AT)));
     const r = await cyclones(cache(AT), undefined, AT);
     expect(r.content[0].text).not.toMatch(/parcours|52\.4/);
+  });
+});
+
+// Two bulletins as the RSMC sent them, cut after their analysis (no forecast, no comment, but the sentence of a last
+// bulletin): the disturbance n° 2 of 06/11/2026 (NOAA's copy, read at 15:25), Agueda's last of 23/10/2026 (the RSMC's PDF).
+const ZP2 = readFileSync(new URL("./fixtures/cmrs/wtio31_zp2_2026110606.txt", import.meta.url), "utf8");
+const AGUEDA_FIN = readFileSync(new URL("./fixtures/cmrs/wtio31_agueda_fin_2026102312.txt", import.meta.url), "utf8");
+// 15:00 at La Réunion on 06/11/2026; 07:25 UTC, a quiet reading minute (85 after 06 UTC), 07:30 not one.
+const NOV6 = new Date("2026-11-06T11:00:00Z");
+
+describe("a system the RSMC follows before GDACS lists it", () => {
+  beforeEach(() => trace.ouvrir(true));
+
+  it("reads its number, stage and the bulletin's own time, and the RSMC's words of a last bulletin", () => {
+    expect(trace.parse(ZP2)).toEqual({
+      numero: 2, systeme: 2, saison: "20262027", nom: "système n° 2 (non baptisé)", stade: "zone perturbée",
+      heure: "2026-11-06T06:00:00.000Z", emis: "2026-11-06T06:54:00.000Z", lon: 56.6, lat: -13.3,
+    });
+    expect(trace.parse(AGUEDA_FIN)).toMatchObject({ numero: 15, systeme: 1, nom: "Agueda", stade: "dépression résiduelle", emis: "2026-10-23T12:42:00.000Z", fin: true });
+    // A bulletin sent after midnight on the 1st, about a position of the 31st: the next month.
+    const late = ZP2.replace("FMEE 060654", "FMEE 010054").replace("LE 06/11/2026", "LE 31/10/2026").replace("A 0600 UTC", "A 1800 UTC");
+    expect(trace.parse(late)?.emis).toBe("2026-11-01T00:54:00.000Z");
+  });
+
+  it("is read with GDACS empty, at the quiet minutes only, and an old bulletin adds nothing", async () => {
+    const calls = stubFetch(() => new Response(ZP2));
+    expect(await trace.passage(cache(NOV6), new Date("2026-11-06T07:30:00Z"))).toBe("aucun système actif");
+    expect(calls.some((u) => u === trace.URL)).toBe(false);
+    expect(await trace.passage(cache(NOV6), new Date("2026-11-06T07:25:00Z"))).toBe("bulletin 2/2 (système n° 2 (non baptisé))");
+    expect(kv.puts).toBe(1);
+    expect(await trace.passage(cache(NOV6), new Date("2026-11-06T07:40:00Z"))).toBe("bulletin 2/2 (système n° 2 (non baptisé))");
+    expect(kv.puts).toBe(1);
+    // The file keeps its last bulletin for weeks: 31 days after it, nothing added back, nothing written.
+    kv.data.clear();
+    expect(await trace.passage(cache(NOV6), new Date("2026-12-07T07:25:00Z"))).toBe("bulletin ancien");
+    expect(kv.puts).toBe(1);
+  });
+
+  it("is said by the tool and the page, with the bulletin's time and source, never its position", async () => {
+    stubFetch(() => new Response(ZP2));
+    await trace.passage(cache(NOV6), new Date("2026-11-06T07:25:00Z"));
+    const r = await cyclones(cache(NOV6), undefined, NOV6);
+    const b = JSON.parse(r.content[0].text);
+    const SAID = "1 système suivi par le CMRS de La Réunion\u00a0: zone perturbée n° 2, d'après son avis du 06/11 à 10:54 (heure de La Réunion). Une zone perturbée est le stade le plus faible\u00a0: ce n'est pas une tempête.";
+    expect(b.resume).toContain(SAID);
+    expect(b.resume).not.toContain("Aucun système tropical actif");
+    expect(b.suivi_cmrs).toEqual([{ systeme: "zone perturbée n° 2", stade: "zone perturbée", dernier_avis: "06/11 à 10:54 (heure de La Réunion)", source: "Météo-France, CMRS de La Réunion, bulletin WTIO31 FMEE n° 2" }]);
+    expect(b.systemes_actifs).toBeUndefined();
+    expect(b.sources.map((x: { source: string }) => x.source).join(" ")).toContain("WTIO31");
+    // Neither its position, its movement nor its pressure.
+    expect(JSON.stringify(b)).not.toMatch(/13\.3|56\.6|10 KT|1007/);
+    const a = await buildCyclones(cache(NOV6), NOV6);
+    const page = cyclonesPage("https://rundata.re", { value: a, fetchedAt: NOV6, stale: false }, NOV6);
+    expect(page).toContain(`<span class="big">1</span><p>${SAID.slice(2).replaceAll("'", "&#39;")}</p>`);
+    expect(page).not.toContain("système tropical actif dans");
+    expect(page).toContain("consulter le site officiel de Météo-France");
+    expect(page.slice(page.indexOf("<main"))).not.toMatch(/13\.3|56\.6|1007 hPa/);
+    expect(page).not.toContain('class="cur"');
+  });
+
+  it("is no longer followed 24 hours after its bulletin, nor after the RSMC's last one", async () => {
+    stubFetch(() => new Response(ZP2));
+    await trace.passage(cache(NOV6), new Date("2026-11-06T07:25:00Z"));
+    const day = new Date("2026-11-07T07:00:00Z");
+    const later = JSON.parse((await cyclones(cache(day), undefined, day)).content[0].text);
+    expect(later.resume).toContain("Aucun système tropical actif");
+    expect(later.suivi_cmrs).toBeUndefined();
+    const e = trace.ajoute({ traces: [] }, trace.parse(AGUEDA_FIN)!, new Date("2026-10-23T13:00:00Z"));
+    expect(trace.suivis(e, new Date("2026-10-23T14:00:00Z"))).toEqual([]);
+    expect(trace.suivis(trace.ajoute({ traces: [] }, trace.parse(ZP2)!, NOV6), NOV6)).toEqual([{ systeme: 2, saison: "20262027", stade: "zone perturbée", numero: 2, emis: "2026-11-06T06:54:00.000Z" }]);
   });
 });

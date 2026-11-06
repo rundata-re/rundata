@@ -10,9 +10,9 @@
  *   forecasts (« 1.B » and after), its winds nor its comments.
  * - That bulletin is not open data: nothing is read, kept nor shown before `ACCORD`, the date of Météo-France's written
  *   agreement, is set. Until then, no request and no read of KV.
- * - Read by the scheduled event only, and only while GDACS (cyclones.ts) has an active system: every 5 minutes from 25
- *   minutes to 2 h 30 after each synoptic hour (00, 06, 12 and 18 UTC), the RSMC's bulletins being out about an hour
- *   after it. With two systems, their bulletins come one after the other into the same file: read this often, each is
+ * - Read by the scheduled event only, every 5 minutes from 25 minutes to 2 h 30 after each synoptic hour (00, 06, 12
+ *   and 18 UTC), the RSMC's bulletins being out about an hour after it; also while GDACS (cyclones.ts) has no system,
+ *   whose list comes later and leaves out a disturbance the RSMC already follows (« zone perturbée », 05/11/2026). With two systems, their bulletins come one after the other into the same file: read this often, each is
  *   seen. A bulletin missed leaves a gap, said by its number.
  * - The positions are kept in KV, one list per system, written only when a new bulletin comes (about 4 a day each).
  */
@@ -77,8 +77,12 @@ export interface Avis {
   stade: string;
   /** The position's time, ISO, UTC. */
   heure: string;
+  /** The bulletin's own time (« WTIO31 FMEE 060654 »: the 6th at 06:54 UTC), ISO, UTC. */
+  emis: string;
   lon: number;
   lat: number;
+  /** Its last bulletin on this system, in the RSMC's words (`FIN`). */
+  fin?: true;
 }
 
 /** A system's positions, oldest first. */
@@ -87,6 +91,9 @@ export interface Trace {
   systeme: number;
   nom: string;
   points: { numero: number; heure: string; lon: number; lat: number; stade: string }[];
+  /** The newest bulletin's own time, and whether it was the last on this system (Avis). */
+  emis?: string;
+  fin?: true;
 }
 
 /** What the scheduled event keeps. */
@@ -125,25 +132,36 @@ export function stade(s: string): string {
 }
 
 /**
+ * How the RSMC writes its last bulletin on a system, in its comments (Agueda's, n° 15 of 23/10/2026): « DERNIER
+ * BULLETIN EMIS PAR LE CMRS DE LA REUNION CONCERNANT CE SYSTEME ». Only looked for, never shown.
+ */
+const FIN = /DERNIER BULLETIN EMIS PAR LE CMRS DE LA REUNION CONCERNANT CE SYSTEME/;
+
+/**
  * The advisory of a bulletin WTIO31 FMEE: its number (« 0.A »), its system's stage and name (« 1.A ») and its position
  * (« 2.A »), nothing else. Undefined when one is missing or not as expected.
  */
 export function parse(raw: string): Avis | undefined {
   const text = raw.replace(/\r/g, "");
-  if (!/^WTIO31 FMEE \d{6}/m.test(text)) return undefined;
+  const head = /^WTIO31 FMEE (\d\d)(\d\d)(\d\d)/m.exec(text);
+  if (!head) return undefined;
   const num = /^0\.A NUMERO DU BULLETIN\s*:\s*(\d+)\s*\/\s*(\d+)\s*\/\s*(\d{8})\s*$/m.exec(text);
   const sys = /^1\.A (.+?) (\d+)(?: \(([A-Z' -]+)\))?\s*$/m.exec(text);
   const pos = /^2\.A POSITION A (\d\d)(\d\d) UTC LE (\d\d)\/(\d\d)\/(\d{4})\s*:\s*\n.*?POINT (\d+(?:\.\d+)?) ([NS]) \/ (\d+(?:\.\d+)?) ([EW])/m.exec(text);
   if (!num || !sys || !pos || +sys[2] !== +num[2]) return undefined;
   const t = new Date(Date.UTC(+pos[5], +pos[4] - 1, +pos[3], +pos[1], +pos[2]));
   if (Number.isNaN(t.getTime()) || t.getUTCDate() !== +pos[3] || t.getUTCHours() !== +pos[1]) return undefined;
+  // The bulletin's day, after its position's: in the position's month, or the next one when it is past its end.
+  let emis = new Date(Date.UTC(+pos[5], +pos[4] - 1, +head[1], +head[2], +head[3]));
+  if (emis.getTime() < t.getTime() - 86_400_000) emis = new Date(Date.UTC(+pos[5], +pos[4], +head[1], +head[2], +head[3]));
   const lat = +pos[6] * (pos[7] === "S" ? -1 : 1);
   const lon = +pos[8] * (pos[9] === "W" ? -1 : 1);
   if (!gdacs.inBasin(lon, Math.min(lat, 0))) return undefined;
   const nom = sys[3]
     ? sys[3].toLowerCase().replace(/(^|[ '-])\p{L}/gu, (c) => c.toUpperCase())
     : `système n° ${+sys[2]} (non baptisé)`;
-  return { numero: +num[1], systeme: +num[2], saison: num[3], nom, stade: stade(sys[1]), heure: t.toISOString(), lon, lat };
+  const fin = FIN.test(text.replace(/\s+/g, " "));
+  return { numero: +num[1], systeme: +num[2], saison: num[3], nom, stade: stade(sys[1]), heure: t.toISOString(), emis: emis.toISOString(), lon, lat, ...(fin && { fin: true as const }) };
 }
 
 /** The state with an advisory added: once per number, in order; a named system's name given to all its positions. */
@@ -156,8 +174,10 @@ export function ajoute(e: Etat, a: Avis, now: Date): Etat {
     .sort((x, y) => x.numero - y.numero)
     .slice(-MAX_POINTS);
   // The newest bulletin names the system: a disturbance named once it is a storm.
-  const nom = points[points.length - 1].numero === a.numero ? a.nom : old.nom;
-  const t = { ...old, nom, points };
+  const newest = points[points.length - 1].numero === a.numero;
+  const nom = newest ? a.nom : old.nom;
+  const { emis: _e, fin: _f, ...rest } = old as Trace;
+  const t: Trace = newest ? { ...rest, nom, points, emis: a.emis, ...(a.fin && { fin: true as const }) } : { ...old, nom, points };
   return { ...e, traces: i >= 0 ? keep.map((x, k) => (k === i ? t : x)) : [...keep, t] };
 }
 
@@ -181,10 +201,45 @@ export function parcours(e: Etat, now: Date): Parcours[] {
     .sort((a, b) => b.heure.localeCompare(a.heure));
 }
 
+/**
+ * A system the RSMC follows, by its newest bulletin: issued less than SUIVI_HOURS ago, and not its last on the system.
+ * Only its number, stage, name and the bulletin's time: what the pages say while GDACS has no system (tools/cyclones.ts).
+ */
+export interface Suivi {
+  systeme: number;
+  saison: string;
+  /** Its name, once it has one; none while « non baptisé ». */
+  nom?: string;
+  stade: string;
+  numero: number;
+  /** The bulletin's own time, ISO, UTC. */
+  emis: string;
+}
+export const SUIVI_HOURS = 24;
+const UNNAMED = /^système n° \d+ \(non baptisé\)$/;
+
+/** The systems the RSMC follows at `now`, newest bulletin first. */
+export function suivis(e: Etat, now: Date): Suivi[] {
+  return e.traces
+    .filter((t) => t.points.length && !t.fin && t.emis && now.getTime() - Date.parse(t.emis) < SUIVI_HOURS * HOUR)
+    .map((t) => {
+      const last = t.points[t.points.length - 1];
+      return { systeme: t.systeme, saison: t.saison, ...(!UNNAMED.test(t.nom) && { nom: t.nom }), stade: last.stade, numero: last.numero, emis: t.emis! };
+    })
+    .sort((a, b) => b.emis.localeCompare(a.emis));
+}
+
 /** Whether the scheduled event at `now` (every 5 minutes) reads the bulletin. */
 export function due(now: Date): boolean {
   const m = (now.getUTCHours() % 6) * 60 + now.getUTCMinutes();
   return m >= FROM_MINUTE && m < TO_MINUTE;
+}
+
+/** Without a system in GDACS: once every QUIET_MINUTES of those minutes only (25, 40… 145), 9 reads by synoptic hour. */
+export const QUIET_MINUTES = 15;
+export function dueQuiet(now: Date): boolean {
+  const m = (now.getUTCHours() % 6) * 60 + now.getUTCMinutes();
+  return due(now) && (m - FROM_MINUTE) % QUIET_MINUTES === 0;
 }
 
 async function etat(): Promise<Etat | undefined> {
@@ -193,36 +248,51 @@ async function etat(): Promise<Etat | undefined> {
   return ((await store.json(KEY)) as Etat | null) ?? undefined;
 }
 
-/** The systems to draw, for a page: one read of KV per invocation, none before the agreement. Never throws. */
-export function kept(now = new Date()): Promise<Parcours[]> {
-  if (!enLigne()) return Promise.resolve([]);
+/** The state kept, for a page: one read of KV per invocation, whatever is asked of it. Never throws. */
+function lu(): Promise<Etat | undefined> {
   return perInvocation("cmrs:trace", async () => {
     try {
-      const e = await etat();
-      return e ? parcours(e, now) : [];
+      return await etat();
     } catch (err) {
       console.error("trace du CMRS : état illisible", why(err));
-      return [];
+      return undefined;
     }
   });
 }
 
+/** The systems to draw, for a page: none before the agreement. Never throws. */
+export async function kept(now = new Date()): Promise<Parcours[]> {
+  if (!enLigne()) return [];
+  const e = await lu();
+  return e ? parcours(e, now) : [];
+}
+
+/** The systems the RSMC follows, for a page or a tool: none before the agreement. Never throws. */
+export async function suivisKept(now = new Date()): Promise<Suivi[]> {
+  if (!enLigne()) return [];
+  const e = await lu();
+  return e ? suivis(e, now) : [];
+}
+
 /**
- * The scheduled event's turn: nothing before the agreement, outside the minutes of `due` or without an active system;
- * else one read of the bulletin, and the state written if it changed. Returns what it did, for the log.
+ * The scheduled event's turn: nothing before the agreement or outside the minutes of `due`, and without an active
+ * system in GDACS only at those of `dueQuiet`; else one read of the bulletin, and the state written if it changed. A
+ * bulletin older than the state's keeping (the file keeps the last one for weeks) adds nothing. Returns what it did.
  */
 export async function passage(cache: Cache, now = new Date()): Promise<string> {
   if (!enLigne()) return "pas d'accord";
   if (!store || !due(now)) return "rien à lire";
   const list = (await gdacs.systemes(cache, now)).value;
-  if (!list.some((s) => gdacs.isActive(s, now))) return "aucun système actif";
+  if (!list.some((s) => gdacs.isActive(s, now)) && !dueQuiet(now)) return "aucun système actif";
   const before = (await etat()) ?? { traces: [] };
   let after: Etat, dit: string;
   try {
-    const a = parse(await getText(SOURCE_ID, URL, TIMEOUT_MS));
+    const read = parse(await getText(SOURCE_ID, URL, TIMEOUT_MS));
+    const a = read && now.getTime() - Date.parse(read.emis) < TTL_SECONDS * 1000 ? read : undefined;
     const { echec: _, ...rest } = before;
-    after = a ? { ...ajoute(rest, a, now), lu: now.toISOString() } : { ...before, echec: now.toISOString() };
-    dit = a ? `bulletin ${a.numero}/${a.systeme} (${a.nom})` : "bulletin illisible";
+    // An old bulletin read is no failure: nothing to add, nothing to write.
+    after = a ? { ...ajoute(rest, a, now), lu: now.toISOString() } : read ? before : { ...before, echec: now.toISOString() };
+    dit = a ? `bulletin ${a.numero}/${a.systeme} (${a.nom})` : read ? "bulletin ancien" : "bulletin illisible";
   } catch (err) {
     console.error("trace du CMRS : bulletin indisponible", why(err));
     after = { ...before, echec: now.toISOString() };

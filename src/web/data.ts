@@ -66,7 +66,7 @@ import { type NonOfficiel, volcanSeismes } from "../tools/volcan.js";
 import type { Acces } from "../tools/volcan-acces.js";
 import * as sportSource from "../providers/sport.js";
 import { grandRaidRow, mentionProgrammes, quand as sportDay, sportTool, type SportRow } from "../tools/sport.js";
-import { cyclones, type activeRow, type carteOfficielle, type seasonRow } from "../tools/cyclones.js";
+import { cyclones, type activeRow, type carteOfficielle, type seasonRow, type suiviRow } from "../tools/cyclones.js";
 import * as cmrs from "../providers/cmrs-carte.js";
 import * as cmrsTrace from "../providers/cmrs-trace.js";
 import { historiqueMeteo } from "../tools/historique.js";
@@ -1158,6 +1158,8 @@ export interface CyclonesAnswer {
   vie_quotidienne?: string;
   ecoles?: ReturnType<typeof ecolesBlock>;
   systemes_actifs?: ReturnType<typeof activeRow>[];
+  /** While GDACS has none: the systems the RSMC follows, from its bulletins (providers/cmrs-trace.ts). */
+  suivi_cmrs?: ReturnType<typeof suiviRow>[];
   carte_officielle?: ReturnType<typeof carteOfficielle>;
   /** The page's own: what to show of the RSMC's map (providers/cmrs-carte.ts), while a system is active. */
   carte?: cmrs.Carte;

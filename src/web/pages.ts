@@ -291,6 +291,7 @@ text-wrap:balance;margin:0;font-weight:800}
 h1{font-size:clamp(2.2rem,6.4vw,4rem);letter-spacing:-.03em}
 h2{font-size:clamp(1.6rem,4vw,2.4rem);letter-spacing:-.02em}
 h3{font-size:1.12rem;font-weight:700;letter-spacing:-.005em}
+.mapcard>h2{font-size:1.12rem;font-weight:700;letter-spacing:-.005em}
 p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
@@ -779,7 +780,7 @@ html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stm
 #stl .st{display:flex;flex-direction:column;gap:.15rem;padding:.75rem .85rem .7rem;border:1px solid var(--line);border-radius:1rem;background:var(--surface)}
 #stl .th{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.4rem}
 #stl .t{width:auto;padding:.3rem .55rem;border-radius:.6rem;font:700 1.2rem/1.1 Bricolage,system-ui,sans-serif}
-#stl h4{font-size:1rem;line-height:1.25}#stl p{font-size:.84rem;line-height:1.35}#stl .when{font-size:.78rem;color:var(--muted)}
+#stl h3{font-family:inherit;font-size:1rem;font-weight:700;line-height:1.25;letter-spacing:normal;text-wrap:wrap}#stl p{font-size:.84rem;line-height:1.35}#stl .when{font-size:.78rem;color:var(--muted)}
 #stl .pls{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:auto;padding-top:.45rem}
 #stl .pl{display:inline-flex;padding:.12rem .5rem;border:1px solid var(--line);border-radius:99px;background:var(--surface-2);color:var(--ink);font-size:.8rem;white-space:nowrap}
 #stl .pl>span{display:inline-flex;align-items:center;gap:.22rem}#stl .pl svg{width:.85rem;height:.85rem}
@@ -971,7 +972,7 @@ table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
 .qdays .axis{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin:.2rem 0 0}
 .bars li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.2rem .6rem;font-size:.92rem}
 /* A station's page (web/station.ts): its last measure, its charts drawn on the server, its months and its records. */
-.sta-now h3{color:var(--on-night)}.sta-now .bars li{grid-template-columns:auto minmax(0,1fr);gap:.2rem 1rem}.sta-now .bars li b{text-align:right}
+.sta-now h2{color:var(--on-night)}.sta-now .bars li{grid-template-columns:auto minmax(0,1fr);gap:.2rem 1rem}.sta-now .bars li b{text-align:right}
 .sta-grid{display:grid;gap:1rem;align-items:start;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr))}.sta-grid .card{padding:1rem}
 .sta-grid h3{font-size:1rem;margin-bottom:.4rem}.sta-grid h3 small{font-weight:400;color:var(--muted)}.sta-0{color:var(--muted);padding:1rem 0}
 .ch{width:100%;height:auto;display:block}.ch .gr{stroke:var(--line);stroke-width:1}.ch .ax{font-size:20px;fill:var(--muted)}
@@ -1572,7 +1573,7 @@ function stationsList(all: StationNow[], now: Date): string {
     const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (ancienne)" : "";
     const day = localTime(new Date(s.time)).split(" ")[0] !== localTime(now).split(" ")[0] ? `${dayMonth(localTime(new Date(s.time)).split(" ")[0].split("/").reverse().join("-"))} ` : "";
     return `<li class="st tgt" id="${stationId(s.nom)}" data-c="${esc(c)}" data-z="${s.altitude_m}" data-t="${s.temperature ?? ""}" data-n="${esc(s.nom)}">` +
-      `<p class="th">${t}<span class="when">${day}${hm(s.time)}${old}</span></p><h4>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h4><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
+      `<p class="th">${t}<span class="when">${day}${hm(s.time)}${old}</span></p><h3>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h3><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
       `${pills ? `<p class="pls">${pills}</p>` : ""}</li>`;
   }).join("");
   const communes = [...new Set(all.map((s) => communeOf(s, all)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));

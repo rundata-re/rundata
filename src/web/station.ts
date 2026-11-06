@@ -140,7 +140,7 @@ function band(d: StationData, now: Date): string {
   // Not the sunshine of an hour wholly at night.
   if (h?.ins != null && (h.ins > 0 || daylight(d, h.fin))) rows.push(["Soleil", `${h.ins}${T}min ${span}`]);
   const box = d.derniere
-    ? `<figure class="card mapcard sta-now"><h3>La dernière mesure, ${at}</h3>
+    ? `<figure class="card mapcard sta-now"><h2>La dernière mesure, ${at}</h2>
     <ul class="bars">${rows.map(([k, v]) => `<li><span>${k}</span><b>${esc(v)}</b></li>`).join("")}</ul>
     <p class="note">${cirad(d.nom) ? "Mesures du CIRAD, diffusées par Météo-France" : "Mesures de Météo-France"}, toutes les 6${T}minutes. <a href="/meteo#stations">Les autres stations →</a></p>
   </figure>`

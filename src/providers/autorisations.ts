@@ -40,7 +40,7 @@ export interface Autorisation {
 export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:bras_panon": { commune: "Bras-Panon", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-10-28" },
   "agenda:cilaos": { commune: "Cilaos", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
-  "agenda:etang_sale": { commune: "L'Étang-Salé", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:etang_sale": { commune: "L'Étang-Salé", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-06" },
   "agenda:la_possession": { commune: "La Possession", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:le_tampon": { commune: "Le Tampon", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:petite_ile": { commune: "Petite-Île", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },

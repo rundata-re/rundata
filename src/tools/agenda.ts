@@ -483,10 +483,11 @@ const luVia = (v: NonNullable<src.Evenement["via"]>) => (v.sans_reponse ? `lu su
 
 /**
  * Whether an event's `source` says what its agenda's terms or agreement ask to show with each of its events (Le Port's
- * « © www.ville-port.re », the Département's mention, the name of a hall that agreed): kept in the tool's answer then.
+ * « © www.ville-port.re », the Département's mention, the name of a hall that agreed, the site of a commune whose
+ * agreement asks it with each event): kept in the tool's answer then.
  * Otherwise it says what publie_par and lu_le say, and the tool leaves it out (the pages keep it).
  */
-const mentionDue = (e: src.Evenement) => !!e.credit || !!e.site_commune?.includes("©");
+const mentionDue = (e: src.Evenement) => !!e.credit || !!e.mention || !!e.site_commune?.includes("©");
 
 /** `place`: for the pages, which place it on the map; `outil`: the tool's answer, without its picture and its source when not due. */
 export function eventRow(e: src.Evenement, seances: src.Seance[], place = false, outil = false) {
@@ -758,7 +759,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const p = periode(quand, now);
   const what = matcher(quoi);
   // The communes' sports programmes go to the sport tool (src.programmesSportifs).
-  const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit, source_agenda: g.agenda.source })) : [])), news?.value.infos, now)
+  const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit, mention: g.agenda.mention, source_agenda: g.agenda.source })) : [])), news?.value.infos, now)
     .map((e) => ({ e, seances: inPeriod(e, p, now) }))
     .filter((x) => x.seances.length && (!what || what.test(x.e)))
     .sort((x, y) => Number(spanDays(x.seances[0]) > LONG_DAYS) - Number(spanDays(y.seances[0]) > LONG_DAYS) ||

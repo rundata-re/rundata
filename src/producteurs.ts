@@ -217,6 +217,8 @@ export const FICHES: Record<string, Fiche> = {
   agenda_saint_louis: { famille: "information_publique", agendas: true },
   // Read with its written agreement of 28/10/2026 (providers/autorisations.ts).
   agenda_bras_panon: { famille: "information_publique", agendas: true },
+  // Read with its written agreement of 06/11/2026 (providers/autorisations.ts).
+  agenda_etang_sale: { famille: "information_publique", agendas: true },
   actus_saint_louis_actus: { famille: "information_publique", agendas: true },
   actus_saint_leu: { famille: "information_publique", agendas: true },
   actus_plaine_des_palmistes_agenda: { famille: "information_publique", agendas: true },

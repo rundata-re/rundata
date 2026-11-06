@@ -131,6 +131,8 @@ export interface Evenement {
   site_commune?: string;
   /** « Théâtre Luc Donat », when its agreement asks to name it: set by the tool from its agenda (`credit`). */
   credit?: string;
+  /** Its commune's agreement asks its `site_commune` with each event, in the tool too: set by the tool from its agenda. */
+  mention?: true;
   /** The source of the agenda it was read from: set by the tool, for the sources of the events it shows. */
   source_agenda?: SourceInfo;
   /**
@@ -161,10 +163,11 @@ export interface Evenement {
 
 /**
  * A commune's sports programme (« Agenda sportif du 22 au 24 octobre », « Planning des compétitions sportives du 23 au
- * 25 octobre 2026 »): the matches of all its clubs in one document, not an event. Read with its agenda, it is told by
- * the sport tool, not by evenements (tools/sport.ts); a sports event with its own title (a rally, a match) stays.
+ * 25 octobre 2026 », L'Étang-Salé's « Compétitions sportives : 06 - 08 novembre » since November 2026): the matches of
+ * all its clubs in one document, not an event. Read with its agenda, it is told by the sport tool, not by evenements
+ * (tools/sport.ts); a sports event with its own title (a rally, a match) stays.
  */
-export const PROGRAMME_SPORTIF = /^(?:(?:le|la|l['’])\s*)?(?:agenda|planning|programme|calendrier)s?\s+(?:sporti(?:f|ve)s?|des\s+(?:comp[ée]titions|manifestations|rencontres|matchs)\s+sportives?)(?![\p{L}])/iu;
+export const PROGRAMME_SPORTIF = /^(?:(?:le|la|l['’])\s*)?(?:(?:agenda|planning|programme|calendrier)s?\s+(?:sporti(?:f|ve)s?|des\s+(?:comp[ée]titions|manifestations|rencontres|matchs)\s+sportives?)(?![\p{L}])|comp[ée]titions\s+sportives\s*(?::|du\s))/iu;
 export const programmeSportif = (e: Pick<Evenement, "titre">) => PROGRAMME_SPORTIF.test(e.titre);
 
 /**
@@ -275,6 +278,11 @@ export interface Agenda {
    * read, and anything the site's terms ask to show with it (Le Port's « © www.ville-port.re »).
    */
   site_commune?: string;
+  /**
+   * Its commune's written agreement asks « Source : <site_commune> » with the day read on each event: said in the tool's
+   * answer too, not only on the pages (L'Étang-Salé's of 06/11/2026).
+   */
+  mention?: true;
   /**
    * Read with its written agreement, which asks each of its events to name it: « Théâtre Luc Donat », said as
    * « Source : Théâtre Luc Donat (site lu le mardi 27/10 à 10:30) » (marketing; src/providers/autorisations.ts).
@@ -1182,6 +1190,66 @@ const petiteIle: Agenda = {
 // ---------------------------------------------------------------- Bras-Panon, Saint-Benoît
 
 /**
+ * L'Étang-Salé's agenda (iCagenda), its whole list in one page (`?limit=50`): for each event its day, month, year and
+ * hour, its category, the link to its page and its title, then the start of its text and « Lieu: » with the place when
+ * the site gives one. Only what its written agreement of 06/11/2026 covers is kept: the title, the day, the hour, the
+ * place and the link; neither the category nor the text, read only for a cancellation it says. An event of several
+ * days says them in its title (« Compétitions sportives : 06 - 08 novembre »).
+ */
+export function parseEtangSale(html: string, now: Date, nom = "Ville de L'Étang-Salé"): Evenement[] {
+  const from = html.indexOf('class="ic-list-events');
+  if (from < 0) return [];
+  const to = html.indexOf("</form>", from);
+  const t = tokens(html.slice(from, to > 0 ? to : undefined));
+  const isEvent = (x?: { href?: string }) => !!x?.href && /\/l-agenda-des-manifestations\/\d+-/.test(x.href);
+  // An event's date comes before its link: day, month, year, the hour when there is one, the category when there is one.
+  const yearOf = (i: number) => [i - 1, i - 2, i - 3].find((k) => /^\d{4}$/.test(t[k]?.t ?? ""));
+  const out: Evenement[] = [];
+  for (let i = 0; i < t.length; i++) {
+    if (!isEvent(t[i]) || !t[i + 1]?.t) continue;
+    const y = yearOf(i);
+    if (y === undefined || y < 2) continue;
+    const month = monthOf((t[y - 1].t ?? "").toLowerCase());
+    const d = Number(t[y - 2].t);
+    if (!month || !(d >= 1 && d <= 31)) continue;
+    const day = `${t[y].t}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const hour = /^\d\d:\d\d$/.test(t[y + 1]?.t ?? "") ? t[y + 1].t : undefined;
+    const titre = clean(t[i + 1].t!);
+    // What comes after its title, up to the next event's date: the start of its text, then « Lieu: » and the place.
+    let next = i + 2;
+    while (next < t.length && !isEvent(t[next])) next++;
+    const ny = next < t.length ? yearOf(next) : undefined;
+    const after = t.slice(i + 2, ny === undefined ? next : Math.max(i + 2, ny - 2)).map((x) => x.t ?? "");
+    const at = after.indexOf("Lieu:");
+    const lieu = at >= 0 ? clean(after[at + 1] ?? "") : "";
+    const texte = (at >= 0 ? after.slice(0, at) : after).join(" ");
+    const span = datesIn(titre, now).find((s) => s.debut === day && s.fin);
+    const lien = `https://www.letangsale.fr${t[i].href}`;
+    const statut = statusOf(titre, texte);
+    out.push({
+      ...(statut ? { statut } : {}),
+      id: lien,
+      titre,
+      seances: [span ?? { debut: hour ? `${day}T${hour}` : day }],
+      lieu: lieu || undefined,
+      commune: "L'Étang-Salé",
+      categories: [],
+      lien,
+      publie_par: nom,
+    });
+  }
+  return out;
+}
+
+const etangSale: Agenda = {
+  id: "etang_sale",
+  nom: "Ville de L'Étang-Salé",
+  source: ETANG_SALE,
+  commune: "L'Étang-Salé",
+  load: (cache, now) => cache.get("agenda:etang_sale", FRESH_SECONDS, async () => parseEtangSale(await getText(ETANG_SALE.id, `${ETANG_SALE.url}?limit=50`, TIMEOUT_MS, HEADERS), now)),
+};
+
+/**
  * Bras-Panon's agenda, a page a month: for each event its link, its title, the days and hours (« 24 Octobre 2026
  * (09:00 - 10:00) », « 24 - 25 Octobre 2026 (09:00) »), « location_on » and the place, « account_balance_wallet » and
  * the price, then a sentence. Only what its written agreement of 28/10/2026 covers is kept: the title, the days and
@@ -1671,7 +1739,8 @@ export const LISIBLES: Agenda[] = [
   { ...rss("saint_louis", "Ville de Saint-Louis", "https://saintlouis.re/agenda?format=feed&type=rss", "Saint-Louis", SAINT_LOUIS), site_commune: "site de la commune de Saint-Louis", planifie: true },
   { ...rss("saint_andre", "Ville de Saint-André", "https://www.saint-andre.re/category/agenda/feed/", "Saint-André"), site_commune: "site de la commune de Saint-André", faits: true },
   tribe("sechoir", "Le Séchoir", "https://www.lesechoir.com", "Saint-Leu", SALLES_SOURCE, "Le Séchoir"),
-  { ...rss("etang_sale", "Ville de L'Étang-Salé", "https://www.letangsale.fr/mes-acces-rapides/telechargements/l-agenda-des-manifestations?format=feed&type=rss", "L'Étang-Salé", ETANG_SALE), site_commune: "site de la commune de L'Étang-Salé", faits: true, programmes: true },
+  // Its list rather than its feed: the feed gives each event's day only as a stamp before its text, and no place.
+  { ...etangSale, site_commune: "site de la commune de L'Étang-Salé", mention: true, faits: true, programmes: true },
   { ...intraMuros("la_possession", "Ville de La Possession", "https://www.lapossession.re/agenda/rss", "La Possession", LA_POSSESSION), site_commune: "site de la commune de La Possession", faits: true, programmes: true },
   { ...petiteIle, site_commune: "site de la commune de Petite-Île", faits: true, accueil: PETITE_ILE.url },
   { ...brasPanon, site_commune: "site de la commune de Bras-Panon", faits: true },

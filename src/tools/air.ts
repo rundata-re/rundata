@@ -104,16 +104,20 @@ export function measured(m: airMesures.Mesure, now: Date) {
 export type Measured = ReturnType<typeof measured>;
 
 /**
- * The measures of the answer, a station each: its hour, type, commune, unit, « mesure brute, non validée » and lateness
- * said once, then each pollutant's value. The same values as `measured()`, a third of the size (41 values, 17 stations).
+ * The measures of the answer, an hour each: its hour, its lateness and its unit said once, then each station of that
+ * hour with its type, commune and the value of each pollutant. « mesure brute, non validée » is the block's `nature`.
+ * The same values as `measured()`: a station whose pollutants are published at two hours (the particles late, LCSQA)
+ * is under each hour, not a row each with every field again (9 373 bytes for 25 rows on 06/11/2026, 7 038 an hour each).
  */
-export function byStation(list: Measured[]) {
-  const out = new Map<string, Omit<Measured, "polluant" | "valeur"> & { valeurs: Record<string, number> }>();
-  for (const { polluant, valeur, ...rest } of list) {
-    const key = JSON.stringify(rest);
-    const at = out.get(key) ?? { ...rest, valeurs: {} };
-    at.valeurs[polluant] = valeur;
+export function byHour(list: Measured[]) {
+  const out = new Map<string, { heure: string; retard?: string; unite: string; stations: { station: string; type: string; commune?: string; valeurs: Record<string, number> }[] }>();
+  for (const { polluant, valeur, unite, heure, retard, station, type, commune } of list) {
+    const key = JSON.stringify([heure, retard, unite]);
+    const at = out.get(key) ?? { heure, ...(retard && { retard }), unite, stations: [] };
     out.set(key, at);
+    let st = at.stations.find((x) => x.station === station && x.type === type && x.commune === commune);
+    if (!st) at.stations.push((st = { station, type, ...(commune && { commune }), valeurs: {} }));
+    st.valeurs[polluant] = valeur;
   }
   return [...out.values()];
 }
@@ -233,7 +237,7 @@ const methode = (all: boolean) => ({
 
 /**
  * The answer of the tool. `page`: the island's answer as /air reads it (web/data.ts), a commune and a value each;
- * the tool says the measures a station each (byStation()) and, for the island, the communes a level each, their
+ * the tool says the measures an hour each (byHour()) and, for the island, the communes a level each, their
  * sub-indices with a place.
  */
 export async function qualiteAir(cache: Cache, lieu: string | undefined, now = new Date(), page = false) {
@@ -279,7 +283,7 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
       ...common,
       // A place's answer and /air give every step.
       ...(!page && { comment_c_est_fait: methode(false) }),
-      ...(mesures && { mesures_aux_stations: page ? mesures : { ...mesures, valeurs: byStation(mesures.valeurs) } }),
+      ...(mesures && { mesures_aux_stations: page ? mesures : { ...mesures, valeurs: byHour(mesures.valeurs) } }),
       ...(amateur && { capteurs_amateurs: amateur }),
       sources: sourcesOf(mesures, amateur),
     });
@@ -303,7 +307,7 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
       sous_indices: subIndices(x),
     })),
     ...common,
-    ...(mesures && { mesures_aux_stations: { ...mesures, valeurs: byStation(mesures.valeurs) } }),
+    ...(mesures && { mesures_aux_stations: { ...mesures, valeurs: byHour(mesures.valeurs) } }),
     ...(amateur && { capteurs_amateurs: amateur }),
     sources: sourcesOf(mesures, amateur),
   });

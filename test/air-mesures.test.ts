@@ -84,20 +84,21 @@ describe("measures at Atmo Réunion's stations", () => {
     const r = body(await qualiteAir(cache(), undefined, NOW));
     const m = r.mesures_aux_stations;
     expect(m.nature).toBe("MESURES brutes, non validées, aux stations d'Atmo Réunion, publiées par le LCSQA : ce n'est pas l'indice ATMO, qui est une prévision.");
-    // The tool says them a station each, its hour, unit and « mesure brute, non validée » once.
+    // The tool says them an hour each, its hour, lateness and unit once, then its stations; the block says « non validées ».
     expect(m.valeurs[0]).toEqual({
-      unite: "µg/m³", heure: "le 29/10, de 7\u00a0h à 8\u00a0h", station: "Lycée Lislet Geoffroy", type: "fond", commune: "Saint-Denis", statut: "mesure brute, non validée",
-      valeurs: { "dioxyde d'azote": 6.8, ozone: 30.5, "particules PM10": 11.6 },
+      heure: "le 29/10, de 7\u00a0h à 8\u00a0h", unite: "µg/m³",
+      stations: expect.arrayContaining([{ station: "Lycée Lislet Geoffroy", type: "fond", commune: "Saint-Denis", valeurs: { "dioxyde d'azote": 6.8, ozone: 30.5, "particules PM10": 11.6 } }]),
     });
-    expect(m.valeurs.every((v: { statut: string }) => v.statut === "mesure brute, non validée")).toBe(true);
+    expect(JSON.stringify(m.valeurs)).not.toContain("statut");
     // Every value of /air's form is in the tool's, with its station, hour, unit, status and lateness: none lost.
-    const flat = (list: { valeurs: Record<string, number> }[]) => list.flatMap(({ valeurs, ...at }) => Object.entries(valeurs).map(([polluant, valeur]) => ({ polluant, valeur, ...at })));
+    type Hour = { heure: string; retard?: string; unite: string; stations: { valeurs: Record<string, number> }[] };
+    const flat = (list: Hour[]) => list.flatMap(({ stations, ...at }) => stations.flatMap(({ valeurs, ...st }) => Object.entries(valeurs).map(([polluant, valeur]) => ({ polluant, valeur, ...at, ...st, statut: "mesure brute, non validée" }))));
     const each = body(await qualiteAir(cache(), undefined, NOW, true)).mesures_aux_stations.valeurs;
     expect(each).toHaveLength(7);
     expect(flat(m.valeurs)).toHaveLength(each.length);
     expect(flat(m.valeurs)).toEqual(expect.arrayContaining(each));
-    // Ended at 07:00, 3 h before: not late. At 01:00 and 06:00: late.
-    expect(m.valeurs.filter((v: { retard?: string }) => v.retard).map((v: { station: string; retard: string }) => `${v.station} ${v.retard}`)).toEqual(["Luther King mesurée il y a 9 h", "Grand Fond mesurée il y a 4 h"]);
+    // Ended at 07:00, 3 h before: not late. At 01:00 and 06:00: late, said once for their hour.
+    expect(m.valeurs.filter((v: Hour) => v.retard).map((v: Hour & { stations: { station: string }[] }) => `${v.stations.map((s) => s.station).join(", ")} ${v.retard}`)).toEqual(["Luther King mesurée il y a 9 h", "Grand Fond mesurée il y a 4 h"]);
     expect(m.lu_par_rundata).toBe("29/10 09:40");
     expect(r.sources.map((s: { source: string }) => s.source)).toContain(airMesures.SOURCE.nom);
     // The forecast's words never name a measure.
@@ -107,11 +108,11 @@ describe("measures at Atmo Réunion's stations", () => {
   it("gives a place its commune's stations, else the nearest one with its distance", async () => {
     airMesures.configure(async () => copie);
     const denis = body(await qualiteAir(cache(), "Saint-Denis", NOW)).mesures_aux_stations;
-    expect(new Set(denis.valeurs.map((v: { commune: string }) => v.commune))).toEqual(new Set(["Saint-Denis"]));
+    expect(new Set(denis.valeurs.flatMap((v: { stations: { commune: string }[] }) => v.stations.map((s) => s.commune)))).toEqual(new Set(["Saint-Denis"]));
     expect(denis).not.toHaveProperty("station_la_plus_proche_km");
     const cilaos = body(await qualiteAir(cache(), "Cilaos", NOW)).mesures_aux_stations;
     expect(cilaos.station_la_plus_proche_km).toBeGreaterThan(0);
-    expect(new Set(cilaos.valeurs.map((v: { station: string }) => v.station)).size).toBe(1);
+    expect(new Set(cilaos.valeurs.flatMap((v: { stations: { station: string }[] }) => v.stations.map((s) => s.station))).size).toBe(1);
   });
 
   it("has none where the store is not configured: the Worker alone reads them", async () => {

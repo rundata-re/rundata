@@ -16,7 +16,12 @@ import { normalize, resolvePlace } from "../places/resolve.js";
 import * as atmo from "../providers/atmo.js";
 import * as cal from "../providers/calendrier.js";
 import { SOLEIL_NOTE } from "./calendrier.js";
-import { phases } from "../providers/carburants.js";
+import * as actuSource from "../providers/actualites.js";
+import * as annuaire from "../providers/annuaire.js";
+import { phases, SOURCE as FUEL_SOURCE } from "../providers/carburants.js";
+import * as edf from "../providers/edf.js";
+import * as rt from "../providers/gtfsrt.js";
+import * as transit from "../providers/transit.js";
 import * as sante from "../sante/etablissements.js";
 import * as col from "../vie/collecte.js";
 import * as dech from "../vie/decheteries.js";
@@ -485,6 +490,33 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     "pharmacie de garde : 3237.fr",
   ].filter(Boolean).join("\u00a0; ") + ".";
 
+  const routesIle = l.trafic?.value.medias?.length ? l.trafic.value.medias.slice(0, 3) : undefined;
+  const busAlerts = l.commune?.value.bus?.alertes?.length ? l.commune.value.bus.alertes : undefined;
+  const calendrier = c ? calendrierDuJour(c) : undefined;
+  // Rule 3, part by part: the sources of what the answer holds, never those of a part it leaves empty (06/11/2026,
+  // Saint-Paul: the news, the buses, the forest roads, Sainte-Marie's power cuts and the calendar credited, none shown).
+  // The commune's copy, its mairie's or its buses' only; a list that names neither is kept whole, never a value credited to no one.
+  const commune_ = (keep: string[]) => {
+    const all = l.commune?.value.sources ?? [];
+    const own = all.filter((x) => keep.includes(x.source));
+    return own.length ? own : all;
+  };
+  const shownSources = [
+    weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, airSources(!!airHere, l.air?.value.sources), seaPart?.sources,
+    prod ? credits([edf.SOURCE]) : undefined,
+    road || roads.length || others.length ? l.actualites?.value.sources : undefined,
+    routesIle
+      ? credits([
+          ...(routesIle.some((m) => m.source !== actuSource.SOURCES.prefecture.organisme) ? [actuSource.SOURCES.medias] : []),
+          ...(routesIle.some((m) => m.source === actuSource.SOURCES.prefecture.organisme) ? [actuSource.SOURCES.prefecture] : []),
+        ])
+      : undefined,
+    prices ? credits([FUEL_SOURCE]) : undefined,
+    l.coupures?.value.sources, agendaSources(events, l.agenda?.value.sources), calendrier ? l.calendrier?.value.sources : undefined,
+    mairie ? commune_([annuaire.SOURCE.nom]) : undefined, busAlerts ? commune_([transit.SOURCE.nom, rt.SOURCE.nom]) : undefined,
+    sites?.length ? l.dechets?.value.sources : undefined, volc ? volcanoSources(l.volcan!.value.sources) : undefined, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
+  ];
+
   return {
     commune: nom,
     resume: resumeText,
@@ -501,8 +533,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
       carte_officielle: "https://www.infotrafic.re/",
       route_du_littoral: road,
       infos_routes: l.actualites ? roads.slice(0, NEWS_MAX).map(newsRow) : undefined,
-      routes_ile: l.trafic?.value.medias?.length ? l.trafic.value.medias.slice(0, 3) : undefined,
-      bus: l.commune?.value.bus?.alertes?.length ? l.commune.value.bus.alertes : undefined,
+      routes_ile: routesIle,
+      bus: busAlerts,
     },
     actualites: l.actualites ? others.slice(0, 3).map(newsRow) : undefined,
     coupures_eau: l.coupures
@@ -521,7 +553,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           non_repris: notRead,
         }
       : undefined,
-    calendrier: c ? calendrierDuJour(c) : undefined,
+    calendrier,
     soleil: { lever: hhmm(sun.lever), coucher: hhmm(sun.coucher), note: SOLEIL_NOTE },
     mairie: mairie
       ? {
@@ -547,7 +579,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
       ? {
           sites: sites.map((s) => ({
             nom: s.nom,
-            mis_a_jour: s.mis_a_jour,
+            // An old state says its time in `etat`: not twice.
+            mis_a_jour: s.a_jour ? s.mis_a_jour : undefined,
             etat: s.a_jour ? "à jour" : s.mis_a_jour ? `dernière mise à jour à ${s.mis_a_jour}, à vérifier sur place` : "pas de mise à jour",
             accepte: s.a_jour ? s.accepte : undefined,
             benne_pleine: s.a_jour ? s.refuse : undefined,
@@ -560,11 +593,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     carburants: prices ? { prix_maximum: fuelShort(prices) || undefined, prix_maximums: prices.produits.map(priceLine), depuis: prices.depuis, a_savoir: FUEL_NOTE, lien: fuel!.lien } : undefined,
     pharmacie_de_garde: { site: sante.GARDE.site, telephone: sante.GARDE.telephone, quand: sante.GARDE.quand, a_savoir: NO_DUTY },
     non_inclus: out.length ? out : undefined,
-    sources: sourcesOf([
-      weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, airSources(!!airHere, l.air?.value.sources), seaPart?.sources,
-      l.electricite?.value.sources, l.actualites?.value.sources, l.trafic?.value.sources, l.coupures?.value.sources, agendaSources(events, l.agenda?.value.sources), l.calendrier?.value.sources,
-      l.commune?.value.sources, l.dechets?.value.sources, volc ? volcanoSources(l.volcan!.value.sources) : undefined, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
-    ]),
+    sources: sourcesOf(shownSources),
   };
 }
 

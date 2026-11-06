@@ -201,7 +201,10 @@ export const MAX_BYTES: Record<string, number> = {
   "sentiers_randonnee (Mafate)": 12_500, // 11 305
   sport: 19_000, // 22 151, then 16 984 with the 15 most recent results only (1.0.258)
   evenements: 25_500, // 22 750
-  "resume_du_jour (Saint-Paul)": 9_500, // 8 454
+  // 8 454 on 5/11 at 05:xx. Its size follows the parts whose copy is recent: on 6/11, 7 919 at 07:48 without the
+  // weather, the events and the skips (copies too old), 10 776 at 07:50 with all, about 9 500 with the sources of the
+  // parts shown only (rule 3).
+  "resume_du_jour (Saint-Paul)": 10_500,
 };
 
 const ko = (bytes: number) => `${(bytes / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}\u00a0Ko`;

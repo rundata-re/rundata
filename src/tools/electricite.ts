@@ -163,7 +163,8 @@ export async function electricite(cache: Cache, now = new Date(), lieu?: string,
     );
     if (cyclone) parts.push("EDF signale une situation cyclonique.");
     signal = {
-      maintenant: nowHour ? { signal: nowHour.signal_horaire_texte, couleur: nowHour.signal_horaire_couleur, recharge_conseillee_pct: nowHour.signal_horaire_taux_recharge_conseille } : undefined,
+      // The hour it is for, « 06/11 14:00 »: the page says its day and its hour, never « cette heure ».
+      maintenant: nowHour ? { de: localTime(new Date(nowHour.dateheure)), signal: nowHour.signal_horaire_texte, couleur: nowHour.signal_horaire_couleur, recharge_conseillee_pct: nowHour.signal_horaire_taux_recharge_conseille } : undefined,
       periodes_de_tension: next,
       jusqu_au: hours.length ? localTime(new Date(hours[hours.length - 1].dateheure)).split(" ")[0] : undefined,
       mis_a_jour: sig?.mis_a_jour ? localTime(new Date(sig.mis_a_jour)) : undefined,

@@ -263,7 +263,7 @@ describe("coupures d'eau", () => {
     expect(noticesHead([row(true), row(true)], "", both)).toBe(head(2, "avis en cours : <b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
     expect(noticesHead([row(), row(), row(), row(true), row(true)], "", both)).toBe(head(3, "avis de coupure ou de travaux, et 2 avis d'<b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
     expect(noticesHead([row()])).toBe(head(1, "avis de coupure ou de travaux en cours, récents ou à venir."));
-    // Dated by the reading of the notices (588): a copy of the page never says them current. « lu » for one notice.
+    // Dated by the reading of the notices: a copy of the page never says them current. « lu » for one notice.
     const lus = "le 06/11 à 14:15";
     expect(noticesHead([row(), row(), row(), row(true), row(true)], "", both, lus)).toBe(head(3, "avis de coupure ou de travaux, et 2 avis d'<b>eau à ne pas boire</b>, lus le 06/11 à 14:15, dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
     expect(noticesHead([row(), row(), row()], "", [], lus)).toBe(head(3, "avis de coupure ou de travaux en cours, récents ou à venir, lus le 06/11 à 14:15."));
@@ -510,7 +510,7 @@ describe("coupures d'eau", () => {
     expect(page("le-port")).toContain("<h1>Coupures d'eau au Port <span class=\"n974\">974</span></h1>");
     expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })).toMatchObject({ valeur: "1 avis de coupure" });
-    // When its notices were read (588), never for a commune whose notices are not read.
+    // When its notices were read, never for a commune whose notices are not read.
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })!.detail).toMatch(/^avis lus le \d\d\/\d\d à \d\d:\d\d · distributeur /);
     expect(waterLive(pageOf("le-tampon")!, { coupures })!.detail).not.toContain("avis lus");
     // The notice of the 23rd is in Saint-Paul: not on Les Trois-Bassins' page.
@@ -555,12 +555,12 @@ describe("coupures d'eau", () => {
     expect(ile.injoignable.map((f: { de: string }) => f.de)).toEqual(["de Dionéo", "de runéo"]);
     expect(ile.resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
     // The island's page says them under its head, as a commune's does; and no hour of reading over notices kept from
-    // before (588): the head is never dated by a reading the silent sites were not part of.
+    // before: the head is never dated by a reading the silent sites were not part of.
     const head = (html: string) => html.slice(html.indexOf('<div class="now">'), html.indexOf("</div>", html.indexOf('<div class="now">')));
     const isle = coupuresPage("https://rundata.re", coupures, now);
     expect(isle).toContain(`</p></div><p class="note">Lu le 24/10 à 08:00 : le site de Dionéo n&#39;a pas répondu depuis. Ce qui suit peut avoir changé : voir <a href="https://dioneo.re/" rel="noopener">son site</a>.</p><p class="note">Le site de runéo n&#39;a pas répondu`);
     expect(head(isle)).not.toMatch(/\blus? le /);
-    // On its map, a commune of a silent feed with nothing kept is not known: grey, said so, never « aucun avis » (588).
+    // On its map, a commune of a silent feed with nothing kept is not known: grey, said so, never « aucun avis ».
     const spPath = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
     expect(isle).toContain(`<path d="${spPath.d}" style="fill:#868e96"/>`);
     expect(mapLinks(isle).find((l) => l.href === "/coupures-eau/saint-pierre")?.label).toBe("Saint-Pierre : site sans réponse à la dernière lecture, voir le détail");
@@ -605,7 +605,7 @@ describe("coupures d'eau", () => {
     const sp = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
     const page = coupuresPage("https://rundata.re", { value, fetchedAt: NOW }, NOW);
     expect(page).toContain(`<path d="${sp.d}" style="fill:#f03e3e"/>`);
-    // Its title says what the page gives, not a state (588): never « avis en cours » on a day without any.
+    // Its title says what the page gives, not a state: never « avis en cours » on a day without any.
     expect(page).toContain("<title>Coupure d&#39;eau Réunion : avis des distributeurs · 974</title>");
     expect(page).not.toContain("aujourd&#39;hui : avis en cours");
     // Every site answered: no grey of a site without answer, nor its legend.

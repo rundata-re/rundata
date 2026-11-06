@@ -139,7 +139,7 @@ export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | nul
     foot,
     live: {
       valeur: shut ? `${shut} sentier${shut > 1 ? "s" : ""} fermé${shut > 1 ? "s" : ""}` : "Sentiers ouverts",
-      // The ONF's own date of its map, else when we read it (588): a copy never says the state of another day.
+      // The ONF's own date of its map, else when we read it: a copy never says the state of another day.
       detail: `${burning ? `${burning} · ` : ""}sur ${trails.length} dans la commune, d'après la carte de l'ONF${onfWhen(hikes.value)}${sector ? ` · randonnée ${esc(sector.dans)}` : ""}`,
     },
   };

@@ -123,7 +123,7 @@ describe("electricity", () => {
     expect(r.resume).toContain("Météo de l'électricité EDF pour cette heure : optimal (annoncée par EDF le 22/10 à 22:00).");
     expect(r.meteo_electricite.mis_a_jour).toBe("22/10 22:00");
     const data = { value: r, fetchedAt: NOW, stale: false };
-    expect(electricitePage("https://rundata.re", data, NOW)).toContain("Signal d'EDF pour cette heure : <b>optimal (le réseau électrique a de la marge)</b> (annoncé par EDF le 22/10 à 22:00).");
+    expect(electricitePage("https://rundata.re", data, NOW)).toContain("Signal d'EDF pour le 23/10 de 3\u00a0h à 4\u00a0h : <b>optimal (le réseau électrique a de la marge)</b> (annoncé par EDF le 22/10 à 22:00).");
     expect(electriciteLive(data, NOW)?.detail).toContain("· signal EDF optimal (annoncé le 22/10 à 22:00)");
     // A copy of the signal kept from before: the hours alone, said without a date rather than not at all.
     const before = new MemoryStore();

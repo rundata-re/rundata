@@ -74,7 +74,7 @@ describe("the volcano put forward during an alert", () => {
     expect(page).not.toContain("très brève");
     // The top: no eruption announced (whose words), the Enclos and the way to the detail, whose the level is, the OVPF's
     // accounts; each fact once (marketing, 26/10/2026). The hook is not said: the heading and these lines say it.
-    expect(page).toContain("<p class=\"lead\"><b>L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus.</b></p>");
+    expect(page).toContain("<p class=\"lead\"><b>L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus jusqu&#39;au 24/10 à 18:00.</b></p>");
     expect(page).toContain("<p class=\"lead\"><b>Accès à l&#39;Enclos interdit.</b> <a href=\"#monter\">Routes et sentiers, lieu par lieu ↓</a></p>");
     expect(page).toContain("<p class=\"note\">Alerte\u00a01 du préfet, communiqué du 24\u00a0octobre.</p>");
     expect(page).toContain(`<p class="note">Suivre l'OVPF\u00a0: <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">Facebook ↗</a> · <a href="https://bsky.app/profile/ovpf.bsky.social">Bluesky ↗</a> · <a href="https://x.com/obsfournaise">X ↗</a></p>`);

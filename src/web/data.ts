@@ -1248,6 +1248,8 @@ export interface AgendaAnswer {
   ce_week_end: EventRow[];
   /** When the oldest of the agendas served was read, ISO (tools/agenda.ts `oldestRead`). */
   lus_le?: string;
+  /** The days it covers, « vendredi 06/11 » to « jeudi 19/11 » (tools/agenda.ts `periode`). */
+  periode?: { du: string; au: string; soir?: boolean };
 }
 
 // The page lists every event of the two weeks, the connector at most 40 an answer.
@@ -1371,7 +1373,7 @@ export interface ElectriciteAnswer {
     statut: string;
   };
   meteo_electricite?: {
-    maintenant?: { signal: string; recharge_conseillee_pct?: number };
+    maintenant?: { /** « 06/11 14:00 », the hour the signal is for; missing on an older copy. */ de?: string; signal: string; recharge_conseillee_pct?: number };
     periodes_de_tension: { quand: string; signal: string; recharge_conseillee_pct?: number }[];
     jusqu_au?: string;
     /** When EDF last updated the signal's dataset, « 30/10 22:00 ». */

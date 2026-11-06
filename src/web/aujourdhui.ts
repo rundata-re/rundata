@@ -227,7 +227,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
         (r.coupures_eau.avis.length
           ? `<ul class="plain">${r.coupures_eau.avis.map((n) => `<li>${n.ne_pas_boire ? "<b>Eau à ne pas boire</b> · " : ""}${li({ titre: n.titre, lien: n.lien }).slice(4, -5)}${n.coupure ? ` <span class="note">${esc(n.coupure.a ? `${n.coupure.de} → ${n.coupure.a}` : `à partir du ${n.coupure.de}`)}${n.coupure.etat ? `, ${esc(n.coupure.etat)}` : ""}</span>` : ""}</li>`).join("")}</ul>`
           : r.coupures_eau.injoignable ? ""
-          : `<p>${esc(r.coupures_eau.note ?? `Aucune coupure annoncée${r.coupures_eau.distributeur ? ` par ${r.coupures_eau.distributeur}` : ""}.`)}</p>`),
+          : `<p>${esc(r.coupures_eau.note ?? `Aucune coupure annoncée${r.coupures_eau.distributeur ? ` par ${r.coupures_eau.distributeur}` : ""}${r.coupures_eau.lus_le ? ` ${leJour(r.coupures_eau.lus_le)}` : ""}.`)}</p>`),
         `/coupures-eau/${p.slug}`, r.coupures_eau.avis.some((n) => n.ne_pas_boire) ? " warn" : "")
     : "";
   const ev = r.evenements_du_jour;

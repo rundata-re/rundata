@@ -129,7 +129,7 @@ describe("the town hall's tile", () => {
     const page = communePage(ORIGIN, p, commune(ago(60_000), { mairie: hall }), NOW);
     expect(page).toContain(`<p class="tv">Horaires absents de l'annuaire</p>`);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie (ouverte|fermée)/i);
-    // No measure here, so no hour to give: no value either (588).
+    // No measure here, so no hour to give: no value either.
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).toBe("Saint-Pierre (La Réunion, 974)\u00a0: météo, vigilance, air, prochains bus, mairie et soleil, chaque donnée datée et sourcée.");
   });
 

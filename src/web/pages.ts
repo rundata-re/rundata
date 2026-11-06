@@ -2323,8 +2323,11 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
     : "";
 
   const title = "Mer Réunion : houle, température de l'eau et marée · 974";
+  // The swell forecast from the copy's day: its day counts more than its height, which goes first when the description
+  // does not fit; undated, as before, only when even that does not fit.
+  const seaSays = (du: string, max = true) => `La mer à La Réunion (974) plage par plage : l'eau de ${deg(cool!.valeur!)} à ${deg(warm!.valeur!)}, mesurée par satellite ${lesJours(seen.map((b) => b.jour!))}${top ? `, et la houle prévue${du}${max ? `, jusqu'à ${top.houle!.max}` : ""}` : ""}.`;
   const description = warm && cool
-    ? `La mer à La Réunion (974) plage par plage : l'eau de ${deg(cool.valeur!)} à ${deg(warm.valeur!)}, mesurée par satellite ${lesJours(seen.map((b) => b.jour!))}${top ? `, et la houle prévue, jusqu'à ${top.houle!.max}` : ""}.`
+    ? [seaSays(` à partir du ${jourDe(data!.fetchedAt)}`), seaSays(` à partir du ${jourDe(data!.fetchedAt)}`, false), seaSays("")].find((x) => x.length <= DESCRIPTION_MAX) ?? seaSays("")
     : "La mer à La Réunion (974), plage par plage : la température mesurée par satellite, la houle prévue. Saint-Gilles, Saint-Leu, Saint-Pierre…";
 
   const jsonld = [

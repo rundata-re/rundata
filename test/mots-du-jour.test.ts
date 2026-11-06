@@ -112,7 +112,7 @@ describe("a copy made before midnight, read after it", () => {
     const value = { resume: "", nature: "", avertissements: [], sources: [], communes: [{ commune: "Saint-Pierre", niveau: 2, qualite: "moyen", polluants: ["ozone"] }] } as AirAnswer;
     const air = (fetchedAt: Date): Cached<AirAnswer> => ({ value, fetchedAt, stale: false });
     const page = (fetchedAt: Date, now: Date) => communePage("https://rundata.re", p, { place: null, commune: null, air: air(fetchedAt) }, now);
-    // Its day always (588), the same before and after midnight.
+    // Its day always, the same before and after midnight.
     expect(page(EVE, at("2026-10-31T23:59:30"))).toContain("indice ATMO prévu pour le 31/10 (ozone)");
     expect(page(EVE, AFTER)).toContain("indice ATMO prévu pour le 31/10 (ozone)");
     expect(page(EVE, AFTER)).not.toContain("prévu pour aujourd'hui");

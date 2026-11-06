@@ -116,7 +116,7 @@ describe("air quality: what the index is and where it comes from", () => {
     expect(page).toContain("Prévision du jour</p>");
     expect(page).toContain(`${'<span class="aq aq2">moyen</span>'} prévu dans 24 communes`);
     expect(page).not.toContain("Mis à jour à");
-    // The description dated by the day the index is forecast for (588), never « aujourd'hui »; an old copy without that
+    // The description dated by the day the index is forecast for, never « aujourd'hui »; an old copy without that
     // day, the sentence without a value.
     expect(answer.echeance).toBe("2026-10-23");
     expect(page).toContain(`<meta name="description" content="Qualité de l&#39;air à La Réunion (974) le 23/10, indice ATMO prévu par Atmo Réunion\u00a0: au pire moyen (2/6)`);

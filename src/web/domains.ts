@@ -205,6 +205,8 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const d = data?.value;
   const a = alerteVolcan(d);
   const e = d?.etat;
+  // « … dans les textes que nous avons lus jusqu'au 06/11 à 14:27. »: a copy of the page never says it of another day.
+  const nonAnnoncee = data ? NON_ANNONCEE.replace(/\.$/, ` jusqu'au ${leAt(data.fetchedAt).replace(/^le /, "")}.`) : NON_ANNONCEE;
   // « indisponible » when the OVPF's catalogue did not answer (tools/volcan.ts).
   const q = typeof d?.seismes === "object" ? d.seismes : undefined;
   // The catalogue silent: the counts are of its last copy, said with the time of that read.
@@ -234,7 +236,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   // (marketing, 26/10/2026). The level's words are in the heading, the decree in « Les niveaux du dispositif ».
   const [jour, heure] = (p0?.date.split(" ") ?? []) as [string, string];
   const top = (a: VolcanAlerte) =>
-    `<p class="lead"><b>${esc(!a.eruption && !a.arret ? NON_ANNONCEE : volcanLead(a))}</b></p>` +
+    `<p class="lead"><b>${esc(!a.eruption && !a.arret ? nonAnnoncee : volcanLead(a))}</b></p>` +
     `<p class="lead"><b>${esc(ENCLOS)}</b>${m ? ` <a href="#monter">Routes et sentiers, lieu par lieu ↓</a>` : ""}</p>` +
     (a.niveau ? `<p class="note">${esc(levelSaid(a))}</p>` : "") +
     ovpf + piton +
@@ -253,8 +255,8 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
         : e
         ? (e.niveau_inconnu
             // No official level read nor kept: why, then pitonlive as a last resort (marketing).
-            ? `<p class="lead">${esc(NON_ANNONCEE)} ${esc(NIVEAU_ILLISIBLE).replace("reunion.gouv.fr", GOUV)}</p>`
-            : `<p class="lead">${esc(NON_ANNONCEE)} Niveau du dispositif ORSEC volcan : <b>${esc(e.niveau_orsec)}</b>.` +
+            ? `<p class="lead">${esc(nonAnnoncee)} ${esc(NIVEAU_ILLISIBLE).replace("reunion.gouv.fr", GOUV)}</p>`
+            : `<p class="lead">${esc(nonAnnoncee)} Niveau du dispositif ORSEC volcan : <b>${esc(e.niveau_orsec)}</b>.` +
               (e.niveau_definition ? ` <span class="note">${esc(e.niveau_definition)}</span>` : "") +
               (!e.eruption_en_cours && e.derniere_eruption ? ` Dernière éruption : <b>${esc(historique.derniereEruptionDates(e.derniere_eruption))}</b>, selon l'<a href="${esc(e.derniere_eruption.lien)}" rel="noopener">OVPF</a>.` : "") +
               `</p>`) +
@@ -739,6 +741,14 @@ const FILIERES_DITES: Record<string, string> = {
 /** « optimal (le réseau électrique a de la marge) »; EDF's other states keep its words. */
 export const signalDit = (signal: string) => (signal.toLowerCase() === "optimal" ? "optimal (le réseau électrique a de la marge)" : signal.toLowerCase());
 
+/** « le 06/11 de 14 h à 15 h », the hour of EDF's signal from « 06/11 14:00 », « minuit » never « 0 h »; a copy without
+ * it, « cette heure ». */
+export const signalHeure = (de?: string) => {
+  const m = de && /^(\d\d\/\d\d) (\d\d):00$/.exec(de);
+  const h = (n: number) => (n % 24 === 0 ? "minuit" : `${n}\u00a0h`);
+  return m ? `le ${m[1]} de ${h(+m[2])} à ${h(+m[2] + 1)}` : "cette heure";
+};
+
 export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const p = d?.production;
@@ -758,7 +768,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
     ? loading("La production d'électricité")
     : p
       ? `${perimee}<div class="now"><span class="big">${fr(Math.round(p.renouvelable_pct))} %</span><p>de l'électricité de l'île venait de sources <b>renouvelables</b> ${esc(leJour(mesure!))}, sur <b>${esc(fr(Math.round(p.total_mw)))} MW</b> produits.</p></div>` +
-        (m?.maintenant ? `<p class="lead">Signal d'EDF pour cette heure : <b>${esc(signalDit(m.maintenant.signal))}</b>${m.mis_a_jour ? ` (annoncé par EDF le ${esc(m.mis_a_jour.replace(" ", " à "))})` : ""}.</p>` : "")
+        (m?.maintenant ? `<p class="lead">Signal d'EDF pour ${esc(signalHeure(m.maintenant.de))} : <b>${esc(signalDit(m.maintenant.signal))}</b>${m.mis_a_jour ? ` (annoncé par EDF le ${esc(m.mis_a_jour.replace(" ", " à "))})` : ""}.</p>` : "")
       : `<p class="lead">${esc(d.resume)}</p>`;
 
   const bars = p
@@ -2656,7 +2666,7 @@ export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry:
 
 /** The colours of the communes followed on the map of /coupures-eau, drawn the same in its legend. */
 // A commune read with nothing announced and one not read, in two colours far apart (ux, 06/11/2026): a pale blue, a grey.
-// A followed commune whose feed did not answer at the last read: a darker grey, never the blue of « aucun avis » (588).
+// A followed commune whose feed did not answer at the last read: a darker grey, never the blue of « aucun avis ».
 const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd", muet: "#868e96" };
 const CALME = "Aucun avis en cours (site lu)";
 const SANS_REPONSE_LUE = "Site sans réponse à la dernière lecture";
@@ -3468,7 +3478,8 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
 
   const status = !d
     ? loading("L'agenda")
-    : `<div class="now"><span class="big">${d.nombre}</span><p>événement${d.nombre > 1 ? "s" : ""} dans les deux semaines qui viennent : concerts, spectacles, fêtes, festivals, marchés et animations des mairies.</p></div>`;
+    // Its days (the copy's period), never « les deux semaines qui viennent » of another day; an older copy, as before.
+    : `<div class="now"><span class="big">${d.nombre}</span><p>événement${d.nombre > 1 ? "s" : ""} ${d.periode?.du && d.periode.au ? esc(`du ${d.periode.du} au ${d.periode.au}`) : "dans les deux semaines qui viennent"} : concerts, spectacles, fêtes, festivals, marchés et animations des mairies.</p></div>`;
 
   const weekend = d?.ce_week_end.length
     ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Ce week-end</h2><ul class="plain">${d.ce_week_end.slice(0, AGENDA_WEEKEND).map((r) =>

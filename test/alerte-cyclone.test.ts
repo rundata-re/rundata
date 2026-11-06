@@ -26,7 +26,7 @@ describe("/alerte-cyclone, the plan step by step", () => {
     const html = page(bulletin([]));
     expect(html).toContain(`<title>${TITLE}</title>`);
     expect(html).toContain("<h1>Alerte cyclonique : ce qui ferme, ce qui continue</h1>");
-    expect(html).toContain("Pas d&#39;alerte cyclonique en cours à La Réunion.");
+    expect(html).toContain("Pas d&#39;alerte cyclonique en cours à La Réunion d&#39;après le bulletin de Météo-France du 24/10 à 06:00.");
     expect(html).toContain(`<a href="${PDF}#page=20" rel="noopener">p. 20</a>`);
     expect(html).toContain("« NE SORTEZ EN AUCUN CAS »");
     expect(html).toContain("<h3>Les bus roulent-ils pendant une alerte cyclonique ?</h3>");
@@ -37,7 +37,7 @@ describe("/alerte-cyclone, the plan step by step", () => {
 
   it("says the step in force, linked to its section, from Météo-France's bulletin", () => {
     const html = page(bulletin([[9, "2026-10-24T06:00:00"]]));
-    expect(html).toContain('Alerte rouge en vigueur à La Réunion (bulletin de Météo-France).</b> <a href="#rouge">Ce que prévoit ce niveau ↓</a>');
+    expect(html).toContain('Alerte rouge en vigueur à La Réunion (bulletin de Météo-France du 24/10 à 06:00).</b> <a href="#rouge">Ce que prévoit ce niveau ↓</a>');
   });
 
   it("gives the tool one line in an alert, in marketing's words, and none outside one", () => {
@@ -90,7 +90,7 @@ describe("/alerte-cyclone when the alert is lifted", () => {
 
   it("shows the phase de sauvegarde, not the end, while the bulletin gives it", () => {
     const html = page(bulletin([[6, "2026-10-24T06:00:00"]]), lifted());
-    expect(html).toContain('Phase de sauvegarde en vigueur à La Réunion (bulletin de Météo-France).</b> <a href="#sauvegarde">Ce que prévoit ce niveau ↓</a>');
+    expect(html).toContain('Phase de sauvegarde en vigueur à La Réunion (bulletin de Météo-France du 24/10 à 06:00).</b> <a href="#sauvegarde">Ce que prévoit ce niveau ↓</a>');
     expect(html).not.toContain("Alerte levée");
   });
 });

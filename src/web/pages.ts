@@ -1220,7 +1220,7 @@ const HOOKS: [string, string][] = [
   ["/evenements", "Ce week-end : concerts, fêtes et marchés, commune par commune."],
   ["/cyclones", "Un cyclone dans l'océan Indien ? Son stade selon le CMRS de Météo-France, et le lien vers son site officiel."],
   ["/historique", "Normal pour la saison ? Le temps qu'il a fait, comparé à la normale."],
-  ["/communes", "Tout ce qui compte aujourd'hui dans votre commune, sur une seule page."],
+  ["/communes", "Les 24 communes de l'île : pour chacune, sa fiche et sa journée."],
 ];
 // A trail's or a hike's own page: one trace, not the list of the day's closures.
 const TRACE_HOOK = "La trace à télécharger et l'état du sentier d'après la carte de l'ONF, avant de partir.";

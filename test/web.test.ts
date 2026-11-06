@@ -397,15 +397,20 @@ describe("commune pages", () => {
     const edge = new EdgeLike();
     const cold = await serve(isolate(edge), "/communes/saint-leu");
     expect(cold.r.status).toBe(200);
-    expect(cold.text).toContain(`<h1>Saint-Leu <span class="n974">974</span> en direct</h1>`);
+    expect(cold.text).toContain(`<h1>Saint-Leu <span class="n974">974</span>\u00a0: la fiche de la commune</h1>`);
+    expect(cold.text).toContain(`<p class="pill">Fiche de la commune</p>`);
+    expect(cold.text).toContain(`<title>Saint-Leu 974\u00a0: mairie, écoles, médecins, élections</title>`);
+    expect(cold.text).toContain(`<p class="hook">La fiche de Saint-Leu\u00a0: la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.</p>`);
+    expect(cold.text).not.toMatch(/sur une (seule )?page/);
     expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<span class="sr"> à Saint-Leu<\/span><\/a><\/h3><p class="tv">\d+(,\d)?\u202f°C<\/p>/);
-    expect(cold.text).toContain("pour l&#39;Ouest (Météo-France), la zone de Saint-Leu");
+    // The zone of Météo-France named, never the commune coloured, and « Vigilance » said once.
+    expect(cold.text).toMatch(/<h3><a href="[^"]+">Vigilance(<span class="sr">[^<]*<\/span>)?<\/a><\/h3><p class="tv">Zone Ouest[ \u00a0]: /);
+    expect(cold.text).toContain("Saint-Leu est dans cette zone de Météo-France");
     expect(cold.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée) à[ \u00a0]\d\d:\d\d<\/p>/);
     expect(cold.text).toContain("Mer"); // on the coast
-    // Its description dated by its measure, the town hall's state worked out at that time, within 160 characters.
+    // Its description says its role, the lasting record, within 160 characters.
     const meta = cold.text.match(/<meta name="description" content="([^"]*)"/)![1];
-    expect(meta).toMatch(/^Saint-Leu \(La Réunion, 974\) le \d\d\/\d\d à[ \u00a0]\d\d:\d\d[ \u00a0]: \d+(,\d)?\u202f°C(, air [a-zé ]+)?, mairie (ouverte|fermée)\. Vigilance, prochains bus, soleil, chaque donnée datée et sourcée\.$/);
-    expect(meta).not.toContain("en direct");
+    expect(meta.replace(/\u00a0/g, " ")).toBe("Saint-Leu (La Réunion, 974) : la mairie et ses horaires, les écoles, les médecins, les élections, le logement ; météo, air et bus en direct.");
     expect(meta.length).toBeLessThanOrEqual(160);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     const warm = await serve(isolate(edge), "/communes/saint-leu");
@@ -419,7 +424,7 @@ describe("commune pages", () => {
     const cold = await serve(isolate(edge), "/aujourdhui/saint-leu");
     console.log("DEBUG used", cold.used, (cold.text.match(/<section[^>]*>[^]{0,300}/g) ?? []).slice(0, 3).join("\n---\n"));
     expect(cold.r.status).toBe(200);
-    expect(cold.text).toContain("<h1>Aujourd&#39;hui à Saint-Leu</h1>");
+    expect(cold.text).toContain("<h1>La journée à Saint-Leu</h1>");
     expect(cold.text).toContain('<link rel="canonical" href="https://rundata.re/aujourdhui/saint-leu">');
     expect(cold.text).toContain('href="/communes/saint-leu"');
     // The weather is built at once; the rest only read, and named with its page while it has no copy.
@@ -431,7 +436,12 @@ describe("commune pages", () => {
     const warm = await serve(isolate(edge), "/aujourdhui/saint-leu");
     expect(warm.used).toBeLessThanOrEqual(20);
     expect((await serve(isolate(), "/aujourdhui/maido")).r.status).toBe(404);
-    expect((await serve(isolate(edge), "/communes/saint-leu")).text).toContain('<a class="btn glass" href="/aujourdhui/saint-leu">Aujourd&#39;hui à Saint-Leu\u00a0: le résumé de la journée →</a>');
+    expect((await serve(isolate(edge), "/communes/saint-leu")).text).toContain('<a class="btn glass" href="/aujourdhui/saint-leu">La journée à Saint-Leu\u00a0: eau, vigilance, météo, sorties →</a>');
+    // Without a commune: the list of the communes, to the address it had always.
+    const bare = await serve(isolate(), "/aujourdhui");
+    expect(bare.r.status).toBe(301);
+    expect(bare.r.headers.get("location")).toBe("/communes");
+    expect((await serve(isolate(), "/aujourdhui/")).r.headers.get("location")).toBe("/communes");
   });
 
   it("leave the sea out in the Hauts, and only exist for the 24 communes", async () => {

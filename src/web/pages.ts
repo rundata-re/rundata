@@ -859,6 +859,8 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .mf-haut{display:none}
 @media (min-width:58rem){.intro .mf-haut{display:block;margin:0;justify-self:end;max-width:100%;padding:.75rem}.intro .mf-haut img{display:block;width:auto;max-width:100%;height:auto;max-height:min(40rem,78vh);background:#fff}
 .intro .mf-haut figcaption,.intro .mf-haut .note{font-size:.82rem;color:var(--on-night-muted);max-width:28rem;margin-top:.5rem}.mf-bas{display:none}}
+/* /defibrillateurs: the count and the AI under the map (in the left column on a wide screen). */
+.dae-sous{min-width:0}.dae-compte{margin:0 0 .9rem;font-size:1rem}
 /* /air: the forecast under the measure, apart and smaller. */
 .status.forecast{margin-top:.2rem;padding-top:.7rem;border-top:1px solid rgb(255 255 255/.2)}.status.forecast .lead{font-size:1rem}.status.forecast .aqindex{margin:.35rem 0 0;font-size:.95rem}
 .zones{list-style:none;padding:0;display:grid;gap:1rem}
@@ -1183,7 +1185,6 @@ const HOOKS: [string, string][] = [
   ["/sentiers", "Avant de partir : les sentiers fermés d'après la carte de l'ONF, et pourquoi."],
   ["/secheresse", "Arrosage, lavage, piscine : ce qui est interdit dans votre commune en ce moment."],
   ["/coupures-eau", "Coupure d'eau ou eau à ne pas boire : les avis en cours des distributeurs."],
-  ["/defibrillateurs", "En cas d'arrêt cardiaque : le défibrillateur le plus proche, et s'il est accessible."],
   ["/sport", "Les matchs du week-end et les derniers résultats de l'île."],
   ["/evenements", "Ce week-end : concerts, fêtes et marchés, commune par commune."],
   ["/cyclones", "Un cyclone dans l'océan Indien ? Son stade selon le CMRS de Météo-France, et le lien vers son site officiel."],

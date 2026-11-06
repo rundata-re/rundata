@@ -20,9 +20,9 @@ describe("défibrillateurs", () => {
     expect(mapLinks(page).find((l) => l.href === "#c-cilaos")?.label).toMatch(/^Cilaos : \d+ défibrillateurs, voir le détail$/);
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
-    // The island's total as the home page writes it, « 1\u202f271 », never « 1271 ».
+    // The island's total under the map, as the home page writes it, « 1\u202f271 », never « 1271 ».
     expect(DAES.length).toBeGreaterThan(999);
-    expect(page).toContain(`<span class="big">${String(DAES.length).replace(/(\d)(?=(\d{3})+$)/g, "$1\u202f")}</span>`);
+    expect(page).toContain(`<p class="dae-compte">${String(DAES.length).replace(/(\d)(?=(\d{3})+$)/g, "$1\u202f")} défibrillateurs déclarés`);
   });
 
   it("says how a device can be reached", () => {

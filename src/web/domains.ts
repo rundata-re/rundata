@@ -58,6 +58,7 @@ import { cloudSeaLink, type Summit, weatherForTrace } from "./liens.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { T as FERRY } from "../tools/ferries.js";
 import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
+import { SANS_FORMATION as DAE_SANS_FORMATION } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
 import * as atmo from "../providers/atmo.js";
 import { anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
@@ -2797,9 +2798,11 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   const markers = (d?.communes ?? []).map((c) => ({ lon: c.lon, lat: c.lat, label: String(c.nombre), name: `${c.commune}\u00a0: ${c.nombre} défibrillateurs`, round: true, color: COUNT_COLOR, quiet: true,
     place: c.commune, say: `${c.nombre} défibrillateur${c.nombre > 1 ? "s" : ""}`, href: `#${anchorId("c", c.commune)}` }));
 
-  const status = !d
-    ? loading("La liste des défibrillateurs")
-    : `<div class="now"><span class="big">${nombre(d.total)}</span><p>défibrillateurs déclarés en service dans les 24 communes de l'île.</p></div>`;
+  // The first screen in the order of a rescue (marketing's words, 06/11/2026): the call, the button, the map, then the count.
+  const consigne = `<p class="lead"><b>Arrêt cardiaque : appelez le <a href="tel:15">15</a> ou le <a href="tel:112">112</a>, massez, et envoyez quelqu'un chercher un défibrillateur.</b> ${esc(DAE_SANS_FORMATION)}</p>`;
+  const compte = d
+    ? `<p class="dae-compte">${esc(`${nombre(d.total)} défibrillateurs déclarés à La Réunion, d'après la base nationale Géo'DAE, lus le ${dayMonth(DAE_BUILT)}.`)}</p>`
+    : "";
 
   const foldDae = !!d && d.communes.reduce((n, c) => n + c.liste.length, 0) > FOLD_ROWS && d.communes.length > 1;
   const list = d
@@ -2823,16 +2826,17 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   <div class="pitch">
     <p class="pill">Base nationale Géo'DAE</p>
     <h1>Défibrillateurs <span class="n974">974</span></h1>
-    ${status}
-    ${d ? `<p class="lead"><b>${esc(d.urgence)}</b></p>` : ""}
-    <div class="autour" id="autour" hidden><button type="button" class="btn sun" id="autour-btn">Autour de moi</button>
+    ${consigne}
+    ${d ? "" : loading("La liste des défibrillateurs")}
+    <div class="autour" id="autour" hidden><button type="button" class="btn sun" id="autour-btn">Défibrillateurs autour de moi</button>
     <p class="note">Votre position ne quitte pas votre appareil.</p><p class="note" id="autour-msg" role="status" hidden></p>
     <div id="autour-res" hidden><h3>Les 10 plus proches, à vol d'oiseau</h3><ul class="rows eau dae" id="autour-list"></ul></div></div>
-    ${ask(`Ousa néna in défibrilatèr pli prés la plaj l'Ermitaz ? Gèt si ${url} é di amwin.`,
-      `Où est le défibrillateur le plus proche de la plage de l'Hermitage ? Lis ${url} et dis-le-moi.`)}
   </div>
   <figure class="card mapcard">${islandMap({ markers, apart: true, label: "Carte de La Réunion (974) : le nombre de défibrillateurs par commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: COUNT_COLOR, texte: "52", dit: "défibrillateurs de la commune" }], esc(`Liste nationale Géo'DAE, lue le ${dayMonth(DAE_BUILT)}.`))}</figcaption></figure>
+  <div class="dae-sous">${compte}
+    ${ask(`Ousa néna in défibrilatèr pli prés la plaj l'Ermitaz ? Gèt si ${url} é di amwin.`,
+      `Où est le défibrillateur le plus proche de la plage de l'Hermitage ? Lis ${url} et dis-le-moi.`)}</div>
 </div>`;
 
   const body = `<section aria-labelledby="h-dae">

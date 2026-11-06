@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import liste from "../src/dae/liste.json" with { type: "json" };
 import { DAES } from "../src/providers/dae.js";
 import { buildDae } from "../src/web/data.js";
+import { nombre } from "../src/tools/format.js";
 import { AUTOUR_SCRIPT, daePage } from "../src/web/domains.js";
 
 const ORIGIN = "https://rundata.re";
@@ -69,8 +70,16 @@ describe("« Autour de moi » on /defibrillateurs", () => {
 
   it("puts the button after the emergency call, and its script on the page", async () => {
     const page = daePage(ORIGIN, { value: await buildDae(), fetchedAt: NOW, stale: false } as never, NOW);
-    expect(page.indexOf("appeler le 15")).toBeLessThan(page.indexOf(`id="autour-btn"`));
-    expect(page).toContain(`<button type="button" class="btn sun" id="autour-btn">Autour de moi</button>`);
+    // In the order of a rescue: the call (15 and 112 to tap), the phrase on its use, the button, the map, the count, then the AI.
+    const call = `<p class="lead"><b>Arrêt cardiaque : appelez le <a href="tel:15">15</a> ou le <a href="tel:112">112</a>, massez, et envoyez quelqu'un chercher un défibrillateur.</b> ` +
+      `Il s&#39;utilise sans formation : il guide par la voix et ne délivre un choc que si c&#39;est nécessaire.</p>`;
+    expect(page).toContain(call);
+    expect(page).toContain(`<button type="button" class="btn sun" id="autour-btn">Défibrillateurs autour de moi</button>`);
+    const count = page.indexOf(`<p class="dae-compte">${nombre(DAES.length)} défibrillateurs déclarés à La Réunion, d&#39;après la base nationale Géo&#39;DAE, lus le `);
+    const order = [page.indexOf(call), page.indexOf(`id="autour-btn"`), page.indexOf('<figure class="card mapcard">'), count, page.indexOf('class="ask', count)];
+    expect(order.every((x) => x > 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(page).not.toContain('<span class="big">');
     expect(page).toContain("Votre position ne quitte pas votre appareil.");
     expect(page).toContain("<h3>Les 10 plus proches, à vol d'oiseau</h3>");
     expect(page).toContain(`<script>${AUTOUR_SCRIPT}</script>`);

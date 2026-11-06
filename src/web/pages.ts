@@ -431,7 +431,7 @@ section{display:grid;gap:1.4rem;min-width:0}
 .eyebrow{font-size:.8rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lave)}
 .sec-h p:not(.eyebrow){color:var(--muted);font-size:1.05rem}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.3rem;display:grid;gap:.8rem;min-width:0;box-shadow:var(--shadow)}
-.note{font-size:.86rem;color:var(--muted)}
+.note{font-size:.86rem;color:var(--muted);overflow-wrap:anywhere}
 /* On the band's night, its own grey: --muted is the grey of a white page. */
 .band .note{color:var(--on-night-muted)}
 .sources{margin:0 0 .3rem;font-size:.75rem;line-height:1.35;color:var(--muted)}

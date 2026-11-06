@@ -26,7 +26,7 @@ import * as loyers from "../vie/loyers.js";
 import * as annexesSd from "../vie/mairies-annexes.js";
 import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
-import { a, ailleurs, communeDite, de, ecartsCourts, enGrand, fr, nombre } from "../tools/format.js";
+import { a, ailleurs, communeDite, de, ecartsCourts, enGrand, fourchette, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
 import { coastText, cyclone, cycloneLevel, feminine, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
@@ -158,7 +158,7 @@ function weather(p: PlacePage, data: Cached<PlaceData> | null, now: Date): Live 
     valeur: esc(thin(s.mesures.temperature!)),
     // What makes it speak less well for the commune, as the tools say it in full: « 249 m plus haut », « autre versant\u00a0: est ».
     detail: `station ${esc(s.station)}${communeDite(s, p.nom) ? ` ${esc(a(communeDite(s, p.nom)!))}` : ""} (${[metres(s.altitude_m), ...(s.distance_km != null ? [`à ${fr(s.distance_km)} km`] : []), ...ecartsCourts(s).map(esc)].join(", ")}), mesuré ${esc(leJour(s.heure_mesure))}` +
-      (f?.temperature_min && f.temperature_max ? ` · prévision ${esc(f.jour.toLowerCase())}${f.periode ? ` ${esc(f.periode)}` : ""} : ${esc(thin(f.temperature_min))} à ${esc(thin(f.temperature_max))}` : ""),
+      (f?.temperature_min && f.temperature_max ? ` · prévision ${esc(f.jour.toLowerCase())}${f.periode ? ` ${esc(f.periode)}` : ""} : ${esc(thin(fourchette(f.temperature_min, f.temperature_max)))}` : ""),
   };
 }
 

@@ -5,6 +5,7 @@ import { resolvePlace } from "../src/places/resolve.js";
 import { counted, PAGE_BUDGET } from "../src/budget.js";
 import * as ensemble from "../src/providers/ensemble.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
+import { fourchette } from "../src/tools/format.js";
 import { parsePeriod, previsionMeteo } from "../src/tools/prevision.js";
 import { resume } from "../src/tools/resume.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
@@ -209,6 +210,23 @@ describe("today, from the hours still to come", () => {
     const day = resume(p, { meteo: copyOf({ prevision: r }, at) } as never, at);
     expect(day.meteo?.prevision?.aujourd_hui?.pluie).toBe("pas de pluie prévue de 15\u00a0h à minuit");
     expect(aujourdhuiPage("https://rundata.re", p, day, null)).toContain("jeudi 22/10 de 15\u00a0h à minuit : 12,3\u202f°C à 19,6\u202f°C, ciel dégagé, pas de pluie prévue.</p>");
+  });
+
+  it("says a range once when its two ends are the same: on the place's page, the day's page and in the summary of the day", async () => {
+    expect(fourchette("12,3 °C", "19,6 °C")).toBe("12,3 °C à 19,6 °C");
+    expect(fourchette("26,2 °C", "26,2 °C")).toBe("26,2 °C");
+    expect(fourchette("26°", "26°", " / ")).toBe("26°");
+    const at = new Date("2026-10-22T11:00:00Z"); // 15:00 in La Réunion
+    const r = body(await previsionMeteo(await morningCache(at), "Cilaos", undefined, at));
+    const same = { ...r, jours: r.jours.map((j: { temperature_max: string }, i: number) => (i === 0 ? { ...j, temperature_min: j.temperature_max } : j)) };
+    const p = pageOf("cilaos")!;
+    expect(placePage("https://rundata.re", p, copyOf({ prevision: same }, at), at)).toContain(`<p class="range">19,6°</p>`);
+    const day = resume(p, { meteo: copyOf({ prevision: same }, at) } as never, at);
+    const page = aujourdhuiPage("https://rundata.re", p, day, null);
+    expect(page).toContain("jeudi 22/10 de 15\u00a0h à minuit : 19,6\u202f°C, ciel dégagé, pas de pluie prévue.</p>");
+    expect(page).toContain("Prévision de 15\u00a0h à minuit\u00a0: 19,6\u202f°C");
+    expect(page).not.toMatch(/19,6\u202f°C à 19,6/);
+    expect(day.resume).toContain("prévision de 15\u00a0h à minuit\u00a0: 19,6 °C");
   });
 
   it("keeps the hour of the answer in a copy read later in the day", async () => {

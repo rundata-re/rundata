@@ -7,7 +7,7 @@ import * as ensemble from "../providers/ensemble.js";
 import * as openmeteo from "../providers/openmeteo.js";
 import * as uv from "../providers/uv.js";
 import { type Forecast, type ForecastDay, type ForecastHour, why } from "../types.js";
-import { credits, de, fr, heure, nombre, notFound, paire, placeBlock, placeWarning, text, tranche } from "./format.js";
+import { credits, de, fourchette, fr, heure, nombre, notFound, paire, placeBlock, placeWarning, text, tranche } from "./format.js";
 import * as nuages from "./nuages.js";
 
 const TOUR = ["Saint-Denis", "Saint-Pierre", "Saint-Gilles-les-Bains", "Saint-Benoît", "Cilaos", "Plaine des Cafres"];
@@ -381,7 +381,7 @@ function dayBlock(f: Forecast, d: ForecastDay, now: Date, uvOf?: UvOf, confOf?: 
 /** Today's starts with the hours it covers, said once for all its figures: « de 15\u00a0h à minuit, nuageux, 18 à 20 °C… ». */
 function daySentence(f: Forecast, d: ForecastDay, now: Date, uvOf?: UvOf, confOf?: ConfOf): string {
   const rest = restOfDay(d, now);
-  const parts = [rest, daySky(f, d.date, now), d.tmin != null && d.tmax != null ? `${fr(d.tmin)} à ${fr(d.tmax)} °C` : undefined, rain(d.pluie_mm)];
+  const parts = [rest, daySky(f, d.date, now), d.tmin != null && d.tmax != null ? `${fourchette(fr(d.tmin), fr(d.tmax))} °C` : undefined, rain(d.pluie_mm)];
   if (d.rafales_max_kmh != null) parts.push(`rafales jusqu'à ${Math.round(d.rafales_max_kmh)} km/h`);
   const u = uvOf?.(d.date);
   if (u != null) parts.push(`UV ${uvText(u)}`);

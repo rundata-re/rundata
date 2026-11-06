@@ -165,7 +165,10 @@ function lastDay(d: StationData): string {
   const t = hs.map((h) => h.t), rr = hs.map((h) => h.rr), ff = hs.map((h) => h.ff), raf = hs.map((h) => h.raf);
   const parts: string[] = [];
   const ts = known(t);
-  if (ts.length) parts.push(thin(`de ${deg(Math.min(...ts))} à ${deg(Math.max(...ts))}`));
+  if (ts.length) {
+    const lo = deg(Math.min(...ts)), hi = deg(Math.max(...ts));
+    parts.push(thin(lo === hi ? hi : `de ${lo} à ${hi}`));
+  }
   const rain = known(rr);
   const total = Math.round(rain.reduce((a, b) => a + b, 0) * 10) / 10;
   if (rain.length) parts.push(thin(`${num(total)} mm de pluie`));

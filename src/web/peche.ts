@@ -32,7 +32,8 @@ export function pecheLive(now: Date): Live {
   const bichiques = especes.find((e) => e.cle === "bichiques" && !e.ferme && e.heures);
   return {
     valeur,
-    detail: `aujourd'hui ${day.slice(8, 10)}/${day.slice(5, 7)}, d'après les arrêtés du préfet${bichiques ? ` ; bichiques : pêche ouverte ${esc(bichiques.heures!)}` : ""}`,
+    // In their season, the bichiques' hours first: the tile shows three lines of its detail (data-run, 06/11/2026).
+    detail: `${bichiques ? `bichiques : pêche ouverte ${esc(bichiques.heures!)} ; ` : ""}aujourd'hui ${day.slice(8, 10)}/${day.slice(5, 7)}, d'après les arrêtés du préfet`,
   };
 }
 

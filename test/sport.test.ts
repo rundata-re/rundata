@@ -11,7 +11,7 @@ import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
 import { dateLigue, joursDuTitre, liensCommuns, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
-import { sportLive, sportPage } from "../src/web/domains.js";
+import { libelleProchain, sportLive, sportPage } from "../src/web/domains.js";
 import type { SportAnswer } from "../src/web/data.js";
 import { withVide } from "../src/vide.js";
 
@@ -665,12 +665,30 @@ describe("the count of /sport", () => {
     // 06/11/2026: « 40 rendez-vous » on the home page, 68 on /sport.
     expect(sportLive({ value: answer, fetchedAt: NOW, stale: false })).toEqual({
       valeur: "77 rendez-vous",
-      detail: "officiels d'ici quinze jours ; prochain : Match A, samedi 31/10 à 18:00",
+      detail: "officiels d'ici quinze jours ; prochain : Match A (volley-ball), samedi 31/10 à 18:00",
+      entier: true,
     });
     // All of them listed: their number, the cancelled one counted as on the page; the next one not cancelled.
     const few = { ...answer, a_venir: [answer.a_venir![1], answer.a_venir![2]], a_venir_en_tout: undefined } as SportAnswer;
     expect(sportLive({ value: few, fetchedAt: NOW, stale: false })!.valeur).toBe("2 rendez-vous");
-    expect(sportLive({ value: few, fetchedAt: NOW, stale: false })!.detail).toContain("prochain : Triathlon de Saint-Paul");
+    expect(sportLive({ value: few, fetchedAt: NOW, stale: false })!.detail).toContain("prochain : Triathlon de Saint-Paul (triathlon)");
+  });
+
+  it("gives the source's name of the next event without a leading season nor a date its « quand » already says", () => {
+    // The Ligue de volley's calendar, read on 06/11/2026.
+    expect(libelleProchain("Saison 2026-2027 Championnats Senior 06-07 novembre", "vendredi 06/11 et samedi 07/11")).toBe("Championnats Senior");
+    const live = sportLive({ value: { ...answer, a_venir: [{ ...answer.a_venir![0], epreuve: "Saison 2026-2027 Championnats Senior 06-07 novembre", quand: "vendredi 06/11 et samedi 07/11" }] }, fetchedAt: NOW, stale: false });
+    expect(live!.detail).toBe("officiels d'ici quinze jours ; prochain : Championnats Senior (volley-ball), vendredi 06/11 et samedi 07/11");
+    // Not a season in that form: untouched, its double space kept.
+    expect(libelleProchain("King Saison 6  Duo étape 2", "dimanche 06/12")).toBe("King Saison 6  Duo étape 2");
+    // A closing date not in its « quand », or only one of its days: kept.
+    expect(libelleProchain("Championnats Senior 13-14 novembre", "vendredi 06/11 et samedi 07/11")).toBe("Championnats Senior 13-14 novembre");
+    expect(libelleProchain("Championnats Senior 06-08 novembre", "vendredi 06/11 et samedi 07/11")).toBe("Championnats Senior 06-08 novembre");
+    expect(libelleProchain("Tournoi 8 novembre", "dimanche 08/11")).toBe("Tournoi");
+    // Nothing else rewritten.
+    for (const s of ["Green 3X3 Etape 4", "Hand Ball Club Est Dionysien – Jeunesse Sportive Benedictine Handball", "SDOVB – VBC SD", "Epreuve d'accélération RUN 200 - Finale", "Course pédagogique – FFSA/EFK"])
+      expect(libelleProchain(s, "dimanche 08/11")).toBe(s);
+    expect(libelleProchain("Saison 2026-2027", "dimanche 08/11")).toBe("Saison 2026-2027");
   });
 });
 

@@ -27,7 +27,7 @@ afterEach(() => {
 
 describe("the home page's tile of fishing", () => {
   it("says what is closed today, after the prefect's decrees, and the hours of the bichiques in their season", () => {
-    expect(pecheLive(NOW)).toEqual({ valeur: "Capucin nain : pêche fermée", detail: "aujourd'hui 06/11, d'après les arrêtés du préfet ; bichiques : pêche ouverte de 05:04 à 19:00" });
+    expect(pecheLive(NOW)).toEqual({ valeur: "Capucin nain : pêche fermée", detail: "bichiques : pêche ouverte de 05:04 à 19:00 ; aujourd'hui 06/11, d'après les arrêtés du préfet" });
     // Two closed or more: their number.
     expect(pecheLive(at("2026-12-05T08:00:00Z")).valeur).toBe("Pêche fermée pour 2 espèces");
     // The bichiques out of their season: closed, and no hours.

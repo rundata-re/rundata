@@ -43,16 +43,18 @@ describe("the fetches of an invocation", () => {
   const sites = Array.from({ length: 12 }, (_, i) => `https://agenda-${i}.example/`);
 
   it("wait for their place before their timeout starts: twelve slow sites, none cut while queued", async () => {
-    // Each site answers in 60 ms, under its 100 ms timeout; twelve at once on six connections used to cut six of them.
-    const p = platform(60);
+    // Each site answers in 300 ms, under its 450 ms timeout; twelve at once on six connections used to cut six of them,
+    // queued 300 ms then read 300 ms. Half an answer of margin each way: a timer late by up to 150 ms under the load of
+    // the whole suite cuts nothing (60 ms in 100 ms cut one, 06/11/2026), and a timeout started in the queue still cuts.
+    const p = platform(300);
     const { value } = await counted(PAGE_BUDGET, () =>
-      Promise.all(sites.map((u) => getText("agenda", u, 100).then(() => "lu", (err: Error) => err.message))),
+      Promise.all(sites.map((u) => getText("agenda", u, 450).then(() => "lu", (err: Error) => err.message))),
     );
     expect(value).toEqual(sites.map(() => "lu"));
     expect(p.most()).toBeLessThanOrEqual(IN_FLIGHT);
     // Read in turns, not all at the same instant.
     const starts = Object.values(p.started).sort((a, b) => a - b);
-    expect(starts.at(-1)! - starts[0]).toBeGreaterThanOrEqual(100);
+    expect(starts.at(-1)! - starts[0]).toBeGreaterThanOrEqual(300);
   });
 
   it("keep a place for the stores: at most IN_FLIGHT under the platform's six", () => {

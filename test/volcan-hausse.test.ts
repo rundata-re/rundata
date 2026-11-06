@@ -73,10 +73,12 @@ describe("pitonlive higher than the prefecture's release: the release's level, p
     const home = withVolcan(a, () => homePage("https://rundata.re", { volcan: copy } as unknown as HomeLive, NOW));
     const html = volcanPage("https://rundata.re", copy, NOW);
     const meteo = withVolcan(a, () => meteoPage("https://rundata.re", null, NOW));
-    for (const t of [bannerText(a), volcanH1(a), volcanTitle(a), volcanMeta(a), homeCard(a), JSON.stringify(volcanLive(copy)), home.replace(/<footer[\s\S]*<\/footer>/, ""), meteo.replace(/<footer[\s\S]*<\/footer>/, ""), html.slice(0, html.indexOf("</h1>"))]) {
+    for (const t of [bannerText(a), volcanH1(a), volcanTitle(a, NOW), volcanMeta(a), homeCard(a), JSON.stringify(volcanLive(copy)), home.replace(/<footer[\s\S]*<\/footer>/, ""), meteo.replace(/<footer[\s\S]*<\/footer>/, ""), html.slice(0, html.indexOf("</h1>"))]) {
       expect(t).not.toMatch(/pitonlive|alerte\W2-1/i);
     }
-    expect(volcanTitle(a)).toBe("Piton de la Fournaise : alerte 1, éruption probable · 974");
+    expect(volcanTitle(a, NOW)).toBe("Piton de la Fournaise au 24/10 : alerte 1, éruption probable · 974");
+    // Every state in the title says the day of its copy, the eruption's too.
+    expect(volcanTitle({ eruption: true }, NOW)).toBe("Piton de la Fournaise au 24/10 : éruption en cours · 974");
     // On /volcan, under the level, its line whole.
     const top = html.slice(html.indexOf('<div class="status">'), html.indexOf('id="h-volcan"'));
     expect(top).toContain(`<p class="lead">${LIGNE.replace(/'/g, "&#39;")}</p>`);

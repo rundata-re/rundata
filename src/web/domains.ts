@@ -332,7 +332,11 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   // the volcano, the reason right under it (marketing).
   const vigilance = !a && !!e && !e.niveau_inconnu && e.niveau_orsec === "Vigilance";
   const heading = a ? volcanH1(a) : vigilance ? "Piton de la Fournaise : vigilance, pas d'éruption annoncée" : e?.niveau_inconnu ? "Piton de la Fournaise : état du volcan" : undefined;
-  const title = a ? volcanTitle(a) : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, Enclos, séismes · 974";
+  // A state in the title says the day it was read (volcanTitle); « état du volcan » and the default say none.
+  const read = data?.fetchedAt ?? now;
+  const title = a
+    ? volcanTitle(a, read)
+    : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance, pas d'éruption annoncée · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, Enclos, séismes · 974";
   // Out of an alert, timeless: search engines keep it for days, a state in it would go stale (marketing).
   const description = a
     ? volcanMeta(a)

@@ -105,7 +105,7 @@ describe("the day of the prefecture's release, never an hour made up", () => {
     expect(enclos).toMatchObject({ source: "communiqué de la préfecture du 24/10", lien: LIEN });
     expect(enclos.texte).toMatch(/^Enclos : interdit/);
     const html = volcanPage("https://rundata.re", { value: v, fetchedAt: now, stale: false }, now);
-    expect(html).toContain("<title>Piton de la Fournaise : alerte 1, éruption probable · 974</title>");
+    expect(html).toContain("<title>Piton de la Fournaise au 25/10 : alerte 1, éruption probable · 974</title>");
     for (const page of [JSON.stringify(v), html]) {
       expect(page).not.toContain("antérieur au niveau affiché");
       expect(page).not.toMatch(/eruption probable ou imminente/);

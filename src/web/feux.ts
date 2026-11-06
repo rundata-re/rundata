@@ -28,17 +28,18 @@ export interface FeuxLive {
 const TITLE = "Feux de forêt Réunion : détections satellite 24 h · 974";
 const H1 = "Feux de végétation à La Réunion, vus par satellite";
 const LEAD = "Les points chauds repérés par les satellites VIIRS de la NASA ces dernières 24 h, sur une carte et en liste, avec les sentiers fermés et la vigilance du jour. Détection satellite, faux positifs possibles : toit chaud, site industriel, brûlage autorisé.";
-const QUIET_META = "Aucun feu détecté par satellite ces dernières 24 h à La Réunion (974). Les nuages peuvent en masquer. Sentiers fermés et vigilance du jour. Un feu ? 18 ou 112.";
+// A preview stays in the message it was sent in: each state says its day and time, never « ces dernières 24 h » alone.
+const QUIET_META = (at: Date) => `Aucun feu détecté par satellite à La Réunion (974) dans les 24 h avant ${leAt(at)}. Les nuages peuvent en masquer. Un feu ? 18 ou 112.`;
 // When the satellites could not be read: nothing said of the fires, never « 0 ».
 const BLIND_META = "Feux de végétation à La Réunion (974) vus par satellite : la carte des dernières 24 h, les sentiers fermés et la vigilance du jour. Un feu ? 18 ou 112.";
 const OFF = "La détection des feux par satellite n'est pas encore active sur rundata.re.";
 const DOWN = "Le service de la NASA ne répond pas pour le moment : rechargez la page dans quelques minutes.";
 
 /** The description: the count and the newest, without its place when that makes it too long. */
-export function feuxDescription(fires: feux.Feux | null, now: Date): string {
+export function feuxDescription(fires: (feux.Feux & { fetchedAt?: Date }) | null, now: Date): string {
   if (!fires) return BLIND_META;
   const n = fires.detections.length;
-  if (!n) return QUIET_META;
+  if (!n) return QUIET_META(fires.fetchedAt ?? now);
   const last = fires.detections[0];
   const at = when(last.t, now);
   const make = (where: string) =>

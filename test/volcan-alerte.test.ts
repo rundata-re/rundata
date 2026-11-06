@@ -67,7 +67,7 @@ describe("the volcano put forward during an alert", () => {
   it("dresses /volcan for the alert: title, heading, the Enclos forbidden, never « partiellement »", async () => {
     const v = await answer(ALERT_1);
     const page = volcanPage("https://rundata.re", { value: v, fetchedAt: NOW, stale: false }, NOW);
-    expect(page).toContain("<title>Piton de la Fournaise : alerte 1, éruption probable · 974</title>");
+    expect(page).toContain("<title>Piton de la Fournaise au 24/10 : alerte 1, éruption probable · 974</title>");
     expect(page).toContain("<h1>Piton de la Fournaise : alerte 1, éruption probable ou imminente</h1>");
     expect(page).toContain(`<meta name="description" content="Alerte\u00a01 du préfet (communiqué du 24\u00a0octobre)\u00a0: «\u00a0éruption probable ou imminente\u00a0». Accès à l&#39;Enclos interdit. Communiqués de l&#39;OVPF en direct · 974">`);
     // The plan's words only, never a release's of the day nor ours.
@@ -146,7 +146,7 @@ describe("the volcano put forward during an alert", () => {
     void store.put("volcan:prefecture:phase", { value: may, fetchedAt: t });
     const v = await buildVolcan(new Cache(store, () => t), NOW);
     const page = volcanPage("https://rundata.re", { value: v, fetchedAt: NOW, stale: false }, NOW);
-    expect(page).toContain("<title>Piton de la Fournaise : vigilance, pas d&#39;éruption annoncée · 974</title>");
+    expect(page).toContain("<title>Piton de la Fournaise au 24/10 : vigilance, pas d&#39;éruption annoncée · 974</title>");
     expect(page).toContain("<h1>Piton de la Fournaise : vigilance, pas d&#39;éruption annoncée</h1>");
     // Only in the folded list of the plan's levels.
     expect(page.replace(/<details>[\s\S]*?<\/details>/, "")).not.toMatch(/éruption probable/);

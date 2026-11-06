@@ -7,6 +7,7 @@
  */
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { Cache } from "../cache.js";
+import { localTime } from "../geo.js";
 import type { ActualitesAnswer, VolcanAnswer } from "./data.js";
 import { esc, fenetre } from "./map.js";
 import { DESCRIPTION_MAX, ligne } from "./pages.js";
@@ -135,8 +136,14 @@ export function bannerHtml(a: VolcanAlerte | undefined, path: string): string {
   return `<div class="alerte volcan"${short ? " data-court" : ""} role="status">${short}<div class="wrap"><span>${esc(bannerText(a))}</span>${more}</div></div>`;
 }
 
-export const volcanTitle = (a: VolcanAlerte) =>
-  a.eruption ? "Éruption du Piton de la Fournaise en direct · 974" : a.arret ? `Piton de la Fournaise : ${level(a)} · 974` : `Piton de la Fournaise : ${level(a)}, éruption probable · 974`;
+/**
+ * The tab's and the preview's title, its state with the day of the copy it was read in (« au 06/11 »): a title shared
+ * stays in the message, a state without its day would be read as today's (05/11/2026, data-run).
+ */
+export const volcanTitle = (a: VolcanAlerte, at: Date) => {
+  const au = `Piton de la Fournaise au ${localTime(at).slice(0, 5)}`;
+  return a.eruption ? `${au} : éruption en cours · 974` : a.arret ? `${au} : ${level(a)} · 974` : `${au} : ${level(a)}, éruption probable · 974`;
+};
 
 export const volcanH1 = (a: VolcanAlerte) =>
   a.eruption ? "Éruption en cours au Piton de la Fournaise" : `Piton de la Fournaise : ${level(a)}${!a.arret && plan(a) ? `, ${plan(a)}` : ""}`;

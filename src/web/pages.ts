@@ -378,6 +378,10 @@ text-align:center;background:#0f1d2c;border:1px solid rgb(255 255 255/.07);trans
 @media (max-width:30rem){.grid a{font-size:.82rem;letter-spacing:-.005em}}
 /* The menu in five groups (ux's mock-up, 04/11/2026): two columns, the icon beside the name; « Communes » above them. */
 .sheet .groupe{grid-template-columns:repeat(auto-fill,minmax(min(10rem,calc((100% - .5rem) / 2)),1fr));gap:.5rem;margin:0}
+/* One column on a narrow screen once the text is larger: in rem, a media query follows the text size the reader chose.
+   19.9rem is 318 px at 100 %, under any phone (two columns from 320 px, as before), and 478 px at 150 %, where two
+   columns left three letters a line to a name (« Vigil/anc/e », 07/11/2026). */
+@media (max-width:19.9rem){.sheet .groupe{grid-template-columns:1fr}}
 .sheet .groupe a,.sheet .kcomm{display:flex;align-items:center;gap:.55rem;min-height:44px;height:auto;padding:.3rem .55rem;border-radius:12px;text-align:left;font-size:.88rem;line-height:1.15}
 .sheet .kcomm{text-decoration:none;color:var(--on-night);font-weight:600;font-size:1rem;background:#0f1d2c;border:1px solid rgb(255 255 255/.07)}
 .sheet .kcomm[aria-current]{background:color-mix(in srgb,var(--k) 14%,#0f1d2c);border-color:color-mix(in srgb,var(--k) 45%,transparent)}

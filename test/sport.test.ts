@@ -638,7 +638,7 @@ describe("sport", () => {
     expect(b2.injoignable[0].texte).toBe("Le site de la Fédération française de handball n'a pas répondu à notre dernière lecture (le 24/10 à 08:00) : nous ne savons pas ce qu'il annonce en ce moment.");
   });
 
-  it("never keeps a championship refused for the budget as silent: the copy before is served, and read at the next visit", async () => {
+  it("keeps a championship refused for the budget as silent only past twice its freshness: before, the copy before is served", async () => {
     let t = NOW.getTime();
     const c = new Cache(new MemoryStore(), () => t);
     const asked: string[] = [];
@@ -657,6 +657,15 @@ describe("sport", () => {
     const next = await championnats(c, "handball");
     expect(asked.length).toBe(before + pages);
     expect([next.fetchedAt.getTime(), next.value.some((x) => x.muet)]).toEqual([t, false]);
+    // A copy more than twice its freshness old (six hours): the reading short of budget is kept as it is, its
+    // competitions said silent with the hour they were read, so that a reading always short at the same place still
+    // replaces its copy.
+    const read = t;
+    t += 6 * 3600_000 + 60_000;
+    const { value: late } = await counted(0, () => championnats(c, "handball"));
+    expect([late.fetchedAt.getTime(), late.stale, late.value.every((x) => x.muet)]).toEqual([t, false, true]);
+    expect((await c.peek<unknown>("sport:handball"))?.fetchedAt.getTime()).toBe(t);
+    expect(late.value[0].lu_a).toBe(`24/10 ${new Date(read + 4 * 3600_000).toISOString().slice(11, 16)}`);
   });
 
   it("answers without a source that is down, and names it", async () => {

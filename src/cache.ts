@@ -7,7 +7,7 @@
  * stays down for days) so that an outage does not turn every question into a new request against a server that is
  * already struggling.
  */
-import { costOf, isScheduled, later } from "./budget.js";
+import { costOf, isScheduled, later, partOfLoad } from "./budget.js";
 import { cacheTally } from "./metrics.js";
 
 import { callDeadline, noteLecture, withSource } from "./lectures.js";
@@ -404,7 +404,7 @@ export class Cache {
     }
     let pending = this.dedupe ? this.inflight.get(key) : undefined;
     if (!pending) {
-      pending = this.refresh(key, hit, load, put);
+      pending = this.refresh(key, hit, freshSeconds, load, put);
       if (this.dedupe) this.inflight.set(key, pending);
     }
     // A tool call past its time (lectures.ts) does not wait for a source it has a copy of: the copy is its answer, said
@@ -425,11 +425,18 @@ export class Cache {
   private async refresh<T>(
     key: string,
     hit: CacheEntry | undefined,
+    freshSeconds: number,
     load: () => Promise<T>,
     put: (e: CacheEntry) => Promise<void>,
   ): Promise<Cached<T>> {
     try {
-      const { value, from } = await withSource(load);
+      const { value: read, spent } = await partOfLoad(() => withSource(load));
+      const { value, from } = read;
+      // A part of the reading refused for the budget (budget.ts `unlessSpent`): the copy before, if it is less than
+      // twice its freshness old, served as it is rather than replaced by one with that part missing for as long as it
+      // is fresh. Older, the reading is kept as it is: a reading always short of budget at the same place still
+      // replaces its copy, which is never served for ever.
+      if (spent && hit && this.now() - hit.fetchedAt < 2 * freshSeconds * 1000) throw new Error(`Too many subrequests: a part of ${key} refused, the copy before served`);
       // A page's build is measured under its key (budget.ts `measured`): what it took goes with its copy.
       const cost = costOf(key);
       const entry: CacheEntry = { value, fetchedAt: this.now(), ...(cost != null && { cost }), ...(stampOf(key, this.version) != null && { version: stampOf(key, this.version) }), ...(from && { from }) };

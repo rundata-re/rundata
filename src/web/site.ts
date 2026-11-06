@@ -355,6 +355,13 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  * would not be.
  */
 function sitemap(origin: string, now: Date, fuelDay?: string): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    siteUrls(now, fuelDay).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
+    `\n</urlset>\n`;
+}
+
+/** The pages of the sitemap, each with its day and how often it changes. */
+function siteUrls(now: Date, fuelDay?: string): Url[] {
   const today = localDay(now);
   const live = (u: string): Url => [u, undefined, "hourly"];
   const fixed = (u: string): Url => [u, undefined, "monthly"];
@@ -369,9 +376,36 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
     ["/nouveautes", localDay(NOUVEAUTES[0].date), "daily"], [ANTENNES, undefined, "weekly"], [SANS_REPONSE, undefined, "daily"], live(CHIFFRES), ["/carburants", fuelDay ? (fuelDay < today ? fuelDay : today) : undefined, "daily"],
     // The fires' page only once FIRMS's key is there: before, it says the detection is not active.
     ...(feux.enabled() ? [live(FEUX_PATH)] : [])];
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
-    `\n</urlset>\n`;
+  return urls;
+}
+
+// The sitemap's pages as a set, made at the first address not found, again only when a page comes in or goes out.
+let known: { cle: string; chemins: Set<string> } | undefined;
+const pagesConnues = (now: Date) => {
+  const cle = `${feux.enabled()} ${formulaires.enLigne()}`;
+  if (known?.cle !== cle) known = { cle, chemins: new Set(siteUrls(now).map(([u]) => u)) };
+  return known.chemins;
+};
+
+/**
+ * The page meant by an address not found, written another way: in capitals, with accents, « _ » for « - », « st- » and
+ * « ste- » for « saint- » and « sainte- », an apostrophe (« aujourd'hui »), or the section in the singular (« /randonnee »).
+ * Only a page of the sitemap, never the address asked itself: no redirect to another 404, no loop. Not /mcp, the
+ * connector's address, answered in place (app.ts).
+ */
+export function proche(path: string, now = new Date()): string | undefined {
+  if (path === "/" || /^\/mcp(\/|$)/i.test(path)) return undefined;
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(path);
+  } catch {
+    return undefined;
+  }
+  const n = decoded.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/['’]/g, "").replace(/_/g, "-")
+    .split("/").map((x) => x.replace(/(^|-)st(e?)-/g, (_, a: string, e: string) => `${a}saint${e}-`)).join("/").replace(/\/+$/, "") || "/";
+  const pages = pagesConnues(now);
+  const [, first, ...rest] = n.split("/");
+  return [n, `/${[`${first}s`, ...rest].join("/")}`].find((c) => c !== path && pages.has(c));
 }
 
 /** The site's pages, each with the volcano's banner while the volcano is in alert (web/volcan-alerte.ts), in French typography (web/typo.ts). */
@@ -385,6 +419,12 @@ export async function site(request: Request, cache: Cache, background: Backgroun
   if (copie) return copie;
   const volcan = await volcanNow(cache, now);
   const built = await withVolcan(volcan, () => withSaveData(request, () => pages(request, cache, background, now)));
+  // An address not found, near a page's (« /Meteo/Saint-Paul », « /randonnee »): that page, the search kept.
+  if ((!built.value || built.value.status === 404) && (request.method === "GET" || request.method === "HEAD")) {
+    const url = new URL(request.url);
+    const to = proche(url.pathname, now);
+    if (to) return new Response(null, { status: 301, headers: { location: `${to}${url.search}`, "cache-control": STATIC } });
+  }
   const typed = await typoPage(built.value);
   // A page whose picture depends on Save-Data says so to the shared caches that keep it a minute.
   const r = typed && built.varie ? varySaveData(typed) : typed;

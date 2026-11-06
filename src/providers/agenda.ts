@@ -1194,7 +1194,7 @@ const petiteIle: Agenda = {
  * hour, its category, the link to its page and its title, then the start of its text and « Lieu: » with the place when
  * the site gives one. Only what its written agreement of 06/11/2026 covers is kept: the title, the day, the hour, the
  * place and the link; neither the category nor the text, read only for a cancellation it says. An event of several
- * days says them in its title (« Compétitions sportives : 06 - 08 novembre »).
+ * days says them in its title (« Compétitions sportives : 06 - 08 novembre »), or on its page (`finEtangSale`).
  */
 export function parseEtangSale(html: string, now: Date, nom = "Ville de L'Étang-Salé"): Evenement[] {
   const from = html.indexOf('class="ic-list-events');
@@ -1241,12 +1241,48 @@ export function parseEtangSale(html: string, now: Date, nom = "Ville de L'Étang
   return out;
 }
 
+/**
+ * The last day an event's page gives when it lasts several (« Début : 7 Novembre 2026 », « Fin : 8 Novembre 2026 »),
+ * « 2026-11-08 »; nothing for an event of one day (« Date : 13 Novembre 2026 ») nor for a page without its dates.
+ */
+export function finEtangSale(html: string): string | undefined {
+  const t = tokens(html);
+  const at = t.findIndex((x) => x.t === "Fin :");
+  const m = at >= 0 ? /^(\d{1,2}) (\S+) (\d{4})$/.exec(clean(t[at + 1]?.t ?? "")) : null;
+  const month = m && monthOf(m[2].toLowerCase());
+  const d = m ? Number(m[1]) : 0;
+  return m && month && d >= 1 && d <= 31 ? `${m[3]}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}` : undefined;
+}
+
+// An event of its list over a period (iCagenda: its link without a day, « /758-odyssea-reunion-2026 », where one on
+// given days has it, « /762-aurus-monique-b-thomas/2026-11-10-20-00 ») may last several days, which the list does not
+// say: its page gives its last day. Read for the ETANG_SALE_PAGES soonest of them whose title gives none, each kept
+// ETANG_SALE_PAGE_SECONDS beside the agenda's copy (`agenda:etang_sale|<link>`): a page read once a week, not at
+// each reading of the list. Without its page (no answer, no subrequest left), the event keeps the first day.
+export const ETANG_SALE_PAGES = 3;
+export const ETANG_SALE_PAGE_SECONDS = 7 * 86400;
+const ETANG_SALE_SITE = "https://www.letangsale.fr/";
+const surPeriode = (e: Evenement) => e.lien.startsWith(ETANG_SALE_SITE) && !/\/\d{4}-\d\d-\d\d-\d\d-\d\d$/.test(e.lien) && !e.seances[0]?.fin;
+
 const etangSale: Agenda = {
   id: "etang_sale",
   nom: "Ville de L'Étang-Salé",
   source: ETANG_SALE,
   commune: "L'Étang-Salé",
-  load: (cache, now) => cache.get("agenda:etang_sale", FRESH_SECONDS, async () => parseEtangSale(await getText(ETANG_SALE.id, `${ETANG_SALE.url}?limit=50`, TIMEOUT_MS, HEADERS), now)),
+  load: (cache, now) => cache.get("agenda:etang_sale", FRESH_SECONDS, async () => {
+    const list = parseEtangSale(await getText(ETANG_SALE.id, `${ETANG_SALE.url}?limit=50`, TIMEOUT_MS, HEADERS), now);
+    const lus = list.filter(surPeriode).sort((x, y) => x.seances[0].debut.localeCompare(y.seances[0].debut)).slice(0, ETANG_SALE_PAGES);
+    const fins = new Map<string, string>();
+    await Promise.all(lus.map(async (e) => {
+      try {
+        const { value } = await cache.get(`agenda:etang_sale|${e.lien}`, ETANG_SALE_PAGE_SECONDS, async () => ({ fin: finEtangSale(await getText(ETANG_SALE.id, e.lien, TIMEOUT_MS, HEADERS)) ?? null }));
+        if (value.fin && value.fin > e.seances[0].debut.slice(0, 10)) fins.set(e.id, value.fin);
+      } catch {
+        // Its first day only, as the list gives it.
+      }
+    }));
+    return list.map((e) => (fins.has(e.id) ? { ...e, seances: [{ ...e.seances[0], fin: fins.get(e.id)! }] } : e));
+  }),
 };
 
 /**

@@ -203,6 +203,10 @@ const RETRY_WINDOW_MS = 120_000;
 // later question.
 const KEEP_LEFT = 4;
 
+// How long what an agenda keeps beside its copy stays in the bundle once no longer read: twice the week a page of
+// L'Étang-Salé's agenda is kept (src.ETANG_SALE_PAGE_SECONDS).
+const ANNEXE_MS = 2 * src.ETANG_SALE_PAGE_SECONDS * 1000;
+
 // How often the scheduled event reads its agendas again, unless an agenda says otherwise (`relecture`).
 const PLANNED_FRESH_SECONDS = 3600;
 
@@ -341,8 +345,10 @@ async function read(cache: Cache, now: Date, deadlineMs: number, graceMs: number
   m.agendas = Date.now() - agendasFrom;
   m.enCours = pending.length;
   m.places = places();
-  // An agenda no longer read here is not kept (nor the scheduled event's copies, once kept in this bundle).
-  bundle.drop((k) => src.AGENDAS.some((a) => !a.planifie && (key(a) === k || echec(a) === k)));
+  // An agenda no longer read here is not kept (nor the scheduled event's copies, once kept in this bundle). What an
+  // agenda keeps beside its copy (`agenda:<id>|…`, L'Étang-Salé's event pages) is kept while younger than ANNEXE_MS.
+  const annexe = (a: src.Agenda, k: string) => k.startsWith(`${key(a)}|`) && (bundle.peek(k)?.ageMs ?? Infinity) < ANNEXE_MS;
+  bundle.drop((k) => src.AGENDAS.some((a) => !a.planifie && (key(a) === k || echec(a) === k || annexe(a, k))));
   const save = () => bundle.save().catch((err) => console.error("agendas : copie impossible", why(err)));
   if (pending.length) later(Promise.allSettled(pending).then(save));
   else await save();

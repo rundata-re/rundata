@@ -52,9 +52,16 @@ function inline(md: string): string {
     .replace(/\{\{(etat|court):([a-z]+)\}\}/g, (_, how: string, kind: string) => etat(kind, how === "court"));
 }
 
+/** The sections folded whole under their title and their number of words: the glossary, 4 000 px on a phone. */
+const FOLDED = new Set(["glossaire"]);
+
 const heading = (line: string) => /^(#{2,3}) (.+?)(?: \[#([a-z0-9-]+)\])?$/.exec(line);
 
-/** The guide's Markdown, as the page shows it: sections and tutorials with their anchors, lists, the table, the code. */
+/**
+ * The guide's Markdown, as the page shows it: sections and tutorials with their anchors, lists, the table, the code.
+ * Each tutorial (###) folded under its title, which holds its anchor: the three levels made 17 000 px on a phone. A link
+ * of the table opens its tutorial (UNFOLD_SCRIPT, in every page), a search in the page too.
+ */
 export function render(md: string): string {
   const lines = md.split("\n");
   const out: string[] = [];
@@ -68,7 +75,18 @@ export function render(md: string): string {
   let open = false;
   // The last heading shown, the name of a table under it for a screen reader.
   let titre = "";
+  // A tutorial or a section folded, closed before the next heading.
+  let folding = false;
+  // A run of folded tutorials, in one list (.plis) up to the next section.
+  let run = false;
+  const unfold = () => {
+    if (folding) out.push("</details>");
+    folding = false;
+  };
   const close = () => {
+    unfold();
+    if (run) out.push("</div>");
+    run = false;
     if (open) out.push("</section>");
     open = false;
   };
@@ -80,9 +98,22 @@ export function render(md: string): string {
       titre = h[2];
       if (h[1] === "##") {
         close();
-        out.push(`<section${h[3] ? ` id="${h[3]}"` : ""} class="guide">`, `<h2>${inline(h[2])}</h2>`);
+        out.push(`<section${h[3] ? ` id="${h[3]}"` : ""} class="guide">`);
+        if (h[3] && FOLDED.has(h[3])) {
+          // Its words: the items of its list, up to the next section.
+          let n = 0;
+          for (let j = i + 1; j < lines.length && !/^## /.test(lines[j]); j++) if (/^- /.test(lines[j])) n++;
+          out.push(`<details class="pli"><summary><h2>${inline(h[2])} <small>·\u00a0${n}\u00a0mots</small></h2></summary>`);
+          folding = true;
+        } else out.push(`<h2>${inline(h[2])}</h2>`);
         open = true;
-      } else out.push(`<h3${h[3] ? ` id="${h[3]}"` : ""}>${inline(h[2])}</h3>`);
+      } else {
+        unfold();
+        if (!run) out.push(`<div class="plis">`);
+        run = true;
+        out.push(`<details class="pli"><summary><h3${h[3] ? ` id="${h[3]}"` : ""}>${inline(h[2])}</h3></summary>`);
+        folding = true;
+      }
       i++;
       continue;
     }

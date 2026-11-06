@@ -32,22 +32,25 @@ const parenthese = (familles: string[]) => familles.join(", ");
 
 /**
  * « Toutes les sources »: each source counted, by domain, an anchor for each, one line each (chiffres.ts, `inventaire`).
- * The table of « Par domaine », one cell under another on a phone.
+ * The table of « Par domaine », one cell under another on a phone. Each domain folded under its title: the 25 tables
+ * made 28 000 px on a phone. A link to a domain opens it (UNFOLD_SCRIPT), a search in the page too.
  */
 function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
   const groupes = inv.map((d) => {
     const lecture = d.la_plus_lue
       ? `<p>Relue le plus souvent, ${esc(d.cadence!)}\u00a0: ${esc(d.la_plus_lue)}.</p>`
       : d.cadence === "à chaque version du site" ? "<p>Mises à jour avec le site.</p>" : d.cadence ? `<p>Relues ${esc(d.cadence)}.</p>` : "";
-    return `<h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3>
+    return `<details class="pli"><summary><h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>·\u00a0${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3></summary>
   ${lecture}<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">${esc(d.domaine)}</caption><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
-    `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div>`;
+    `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div></details>`;
   });
   return `<h2 id="sources">Toutes les sources</h2>
   <p>Chaque source lue, par domaine\u00a0: son producteur, et sa licence ou les conditions de reprise de son site.</p>
   <p>${inv.map((d) => `<a href="#sources-${esc(d.categorie)}">${esc(d.domaine)}</a>\u00a0(${n(d.sources.length)})`).join(" · ")}</p>
   ${nonNommees ? `<p>Plus ${nonNommees > 1 ? `${n(nonNommees)} sites non officiels, comptés` : "1 site non officiel, compté"} dans les sources sans être nommé${nonNommees > 1 ? "s" : ""} ici.</p>` : ""}
-  ${groupes.join("\n  ")}`;
+  <div class="plis">
+  ${groupes.join("\n  ")}
+  </div>`;
 }
 
 export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alerte?: Alerte): string {

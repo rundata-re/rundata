@@ -278,9 +278,14 @@ describe("« Toutes les sources » on /chiffres (chiffres.ts, inventaire)", () =
     expect(html).toContain('<h2 id="sources">Toutes les sources</h2>');
     expect(html).toContain('<a class="fig" href="#sources">');
     for (const d of inventaire(sources)) {
-      expect(html).toContain(`<h3 id="sources-${d.categorie}">`);
+      // Folded under its title, which holds the anchor: a link to it opens it (UNFOLD_SCRIPT, in every page).
+      expect(html).toContain(`<details class="pli"><summary><h3 id="sources-${d.categorie}">`);
       expect(html).toContain(`<a href="#sources-${d.categorie}">`);
     }
+    const tables = html.slice(html.indexOf('<h2 id="sources">'));
+    expect(tables.match(/<details class="pli">/g)!.length).toBe(inventaire(sources).length);
+    expect(tables).not.toMatch(/<details class="pli" open/);
+    expect(html).toContain('t.closest("details")');
     const meteo = inv.find((d) => d.categorie === "meteo")!;
     expect(meteo).toMatchObject({ cadence: "toutes les 2 min", la_plus_lue: all.find((s) => s.id === "meteofrance")!.nom });
     expect(inv.find((d) => d.categorie === "terrain")).toMatchObject({ cadence: "à chaque question" });

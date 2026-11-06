@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import { weekendPage } from "../src/web/evenements.js";
-import { DESCRIPTION_MAX } from "../src/web/pages.js";
+import { DESCRIPTION_MAX, UNFOLD_SCRIPT } from "../src/web/pages.js";
 import { ETATS, MAILTO, META, publierPage, render, TITLE } from "../src/web/publier.js";
 import { GUIDE } from "../src/web/publier-texte.js";
 import { AUTORISATIONS } from "../src/providers/autorisations.js";
@@ -26,6 +26,23 @@ describe("the guide for those who publish (/publier)", () => {
     for (const [, id] of page.matchAll(/href="#([a-z0-9-]+)"/g)) expect(ids, id).toContain(id);
     // The table of the levels leads to each tutorial.
     expect(page).toContain('<a href="#google-agenda">1 · Agenda Google public</a>');
+  });
+
+  it("folds each tutorial under its title, which a link of the table opens, and the glossary under its number of words", () => {
+    const page = html();
+    const table = page.slice(page.indexOf('id="niveaux"'), page.indexOf('id="niveau-1"'));
+    const links = [...table.matchAll(/<th scope="row"><a href="#([a-z0-9-]+)">/g)].map((m) => m[1]);
+    expect(links).toEqual(["google-agenda", "outlook-nextcloud", "openagenda", "the-events-calendar", "rss", "tableur-csv", "data-gouv", "schema-org"]);
+    // Each lands on the title of a folded tutorial: the page's script opens the details around it (UNFOLD_SCRIPT).
+    for (const id of links) expect(page, id).toMatch(new RegExp(`<details class="pli"><summary><h3 id="${id}">[^<]*</h3></summary>`));
+    expect(page).toContain(UNFOLD_SCRIPT);
+    expect(UNFOLD_SCRIPT).toContain('t.closest("details")');
+    expect(page.match(/<details class="pli">/g)).toHaveLength(10);
+    expect(page).not.toMatch(/<details class="pli" open/);
+    // The levels stay open, their title and their first lines above the tutorials.
+    for (const n of [1, 2, 3]) expect(page).toMatch(new RegExp(`<section id="niveau-${n}" class="guide">\\n<h2>`));
+    expect(page).toContain('<section id="glossaire" class="guide">\n<details class="pli"><summary><h2>Les mots du guide <small>·\u00a010\u00a0mots</small></h2></summary>');
+    expect(GUIDE.slice(GUIDE.indexOf("## Les mots du guide")).match(/^- /gm)).toHaveLength(10);
   });
 
   it("says what rundata.re reads, from the code: iCalendar read since its reader is live", () => {

@@ -135,7 +135,15 @@ describe("long lists folded, the second pages", () => {
     const page = collectePage(O, NOW);
     const groups = count(page, /<div class="card groupe"/g);
     expect(groups).toBeGreaterThan(100);
-    expect(count(page, /<div class="card groupe"[^>]*><details><summary><h3>/g)).toBe(groups);
+    // On the island's page, under their commune, folded under its name, its calendars and its streets (h4 under its h3);
+    // the streets without a calendar after them, each commune's a group.
+    expect(count(page, /<div class="card groupe"[^>]*><details><summary><h[34]>/g)).toBe(groups);
+    const communes = [...page.matchAll(/<details class="pli commune"><summary><h3>([^<]+) <small>·\u00a0(\d+)\u00a0calendriers?, ([\d\u202f\u00a0]+)\u00a0rues?<\/small><\/h3><\/summary>/g)];
+    expect(communes.map((m) => m[1]).sort()).toEqual([...col.COMMUNES].sort());
+    expect(communes.reduce((n, m) => n + Number(m[2]), 0)).toBe(count(page, /<div class="card groupe"[^>]*><details><summary><h4>/g));
+    expect(page).not.toMatch(/<details class="pli commune" open/);
+    expect(page).toContain('d.hidden=!k;if(t.length>=3&&k)d.open=true');
+    expect(collectePage(O, NOW, "Saint-Paul")).not.toContain('<details class="pli commune"');
     expect(page).toContain(`if(t.length>=3)document.querySelectorAll(".groupe>details").forEach((d)=>{if(!d.parentNode.hidden)d.open=true})`);
     // Every street still in the page, for the search.
     expect(count(page, /<ul class="voies plain">/g)).toBe(groups);
@@ -148,7 +156,7 @@ describe("long lists folded, the second pages", () => {
       expect(whole.startsWith(`${line}\u00a0; `)).toBe(true);
     }
     // On the island's page, the commune after it, its article kept with its name.
-    expect(page).toMatch(/<h3>Ordures ménagères [^<]*\u00a0<span class="note">·\u00a0Le\u00a0Port, \d+\u00a0rues<\/span><\/h3>/);
+    expect(page).toMatch(/<h4>Ordures ménagères [^<]*\u00a0<span class="note">·\u00a0Le\u00a0Port, \d+\u00a0rues<\/span><\/h4>/);
     // A commune's page: its streets without a calendar in one group, not folded.
     const port = collectePage(O, NOW, "Le Port");
     expect(port).toMatch(/<div class="card groupe" data-c="Le Port" data-r="[^"]*"><ul class="voies plain">/);

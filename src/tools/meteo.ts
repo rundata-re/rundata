@@ -12,7 +12,7 @@ import { recentRainBlock } from "./pluie-recente.js";
 import { hasExtremes, todayTemperatureBlock } from "./temperature-du-jour.js";
 import { type Observation, type SourceInfo, why } from "../types.js";
 import { fit, mieux } from "./representativeness.js";
-import { credits, de, fr, notFound, placeBlock, placeWarning, show, text, when } from "./format.js";
+import { credits, de, fr, notFound, phrases, placeBlock, placeWarning, show, text, when } from "./format.js";
 
 interface Provider {
   source: SourceInfo;
@@ -241,7 +241,8 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
         .join("\u00a0; ") +
       (warnings.length ? `. Attention : ${warnings.join(" ")}` : "")
     : "Aucune mesure disponible pour le moment.";
-  const resumeAll = [placeWarning(lieu, r), resume, jour?.resume, rain?.resume, pluie?.resume].filter(Boolean).join(" ");
+  // Each piece a sentence: the stations' end with their time in brackets, and « Depuis minuit » starts a new one.
+  const resumeAll = phrases([placeWarning(lieu, r), resume, jour?.resume, rain?.resume, pluie?.resume]);
 
   return text({
     lieu: placeBlock(lieu, r),

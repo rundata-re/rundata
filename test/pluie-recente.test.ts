@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
+import { phrases } from "../src/tools/format.js";
 import { CONVENTION, hierPartiel, recentRainBlock } from "../src/tools/pluie-recente.js";
 import type { Fit } from "../src/tools/representativeness.js";
 import { placePage } from "../src/web/pages.js";
@@ -163,6 +164,21 @@ describe("the rain of the last hours", () => {
       avertissements: [],
     });
     expect(r.resume).toContain("Depuis minuit (de 00:00 à 12:54) à Saint-Pierre Pierrefonds (aéroport), à 5,9 km : 26,5 °C au plus (entre 09:00 et 10:00), 22,9 °C au moins (entre 00:00 et 01:00).");
+  });
+
+  it("ends the stations' sentence with a point before « Depuis minuit », never two points nor one after « ? »", async () => {
+    // Two stations, the max and min since midnight, the radar left out (not configured here) and the gauge.
+    const r = body(await meteoActuelle(await cache(), "Saint-Pierre", NOW));
+    expect(r.resume).toMatch(/^Mesures les plus proches de Saint-Pierre — [^;]+\) ; [^;]+\)\. Depuis minuit \(de 00:00 à 12:54\)/);
+    // A station far or on the other side: its warning after the stations, then the next sentence.
+    const far = body(await meteoActuelle(await cache(), "Piton des Neiges", NOW));
+    expect(far.resume).toContain(". Attention : ");
+    for (const s of [r.resume, far.resume]) {
+      expect(s).not.toMatch(/\) [A-ZÀ-Ý]/);
+      expect(s).not.toMatch(/\.\./);
+      expect(s).not.toMatch(/[?!]\./);
+    }
+    expect(phrases(["Que faire ?", "Mesures (à 12:54)", "Depuis minuit.", undefined, " "])).toBe("Que faire ? Mesures (à 12:54). Depuis minuit.");
   });
 
   it("says when the gauge is not at the place, so that no one says it did not rain there", async () => {

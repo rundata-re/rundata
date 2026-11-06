@@ -45,7 +45,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   electricite: 19,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
-  emploi: 8,
+  emploi: 9,
   enfants: 15,
   historique: 5,
   lieu: 20,

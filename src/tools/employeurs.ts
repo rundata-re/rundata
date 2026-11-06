@@ -18,6 +18,8 @@ import { casse, casseArret, SIGLES, STOP_SIGLES } from "./casse.js";
 const TITRE_SIGLES = new Set([
   ...SIGLES, "ASA", "ASE", "ASEM", "ATSEM", "ATTEE", "CDG", "CLS", "DGA", "F", "FEDER", "FSE", "GEMAPI", "H", "MDE", "PEDT",
   "PI", "PILHI", "PRE", "QVCS", "SAFT", "SIGF", "SIRH", "SPIEP", "TS", "TU", "UTR",
+  // The procurement notices' objects: the buyers and the schemes they name.
+  "AFPAR", "MOE", "NPNRU", "SEMTO", "SPL", "SYDNE", "TRANSREO",
 ]);
 
 /** A text folded to compare: no accent, no case, no apostrophe nor hyphen, « ST » and « STE » written out. */
@@ -34,11 +36,14 @@ const plie = (s: string) =>
  */
 const NOMS: Record<string, string> = {
   "conseil departemental de la reunion": "Département de La Réunion",
+  "departement de la reunion": "Département de La Réunion",
   "region ile de la reunion": "Conseil régional de La Réunion",
+  "conseil regional de la reunion": "Conseil régional de La Réunion",
   "communaute d agglo villes solidaires": "CIVIS (Communauté Intercommunale des Villes Solidaires)",
   "communaute d agglomeration du sud": "Communauté d'agglomération du Sud",
   "communaute intercommunale reunion est": "Communauté intercommunale Réunion Est (CIREST)",
   "communaute intercommunale nord reunion": "Communauté intercommunale du Nord de La Réunion (CINOR)",
+  "communaute agglo territoire cote ouest ile de la reunion": "Communauté d'agglomération du Territoire de la Côte Ouest (TCO)",
   "centre gestion fonction pub territor": "Centre de gestion de la fonction publique territoriale de La Réunion",
   "office de l eau de la reunion": "Office de l'eau Réunion",
   "sidelec reunion": "Sidélec Réunion",
@@ -75,13 +80,16 @@ function connu(nom: string): string | undefined {
   return undefined;
 }
 
+/** The sigles of the employers' names, beside the stops': the local public companies (« SPL AFPAR »). */
+const EMPLOYEUR_SIGLES = new Set([...STOP_SIGLES, "SPL"]);
+
 /**
  * One employer written all in capitals, as named (« CCAS de Saint-Paul »); as written otherwise, and when it is one
  * word or two, which may be sigles (« OFII », « SIR/OI (SIR/OI) »).
  */
 export function employeur(nom: string): string {
   if (/\p{Ll}/u.test(nom)) return nom;
-  return connu(nom) ?? (nom.trim().split(/\s+/).length > 2 ? casseArret(nom, STOP_SIGLES) : nom);
+  return connu(nom) ?? (nom.trim().split(/\s+/).length > 2 ? casseArret(nom, EMPLOYEUR_SIGLES) : nom);
 }
 
 /**
@@ -100,7 +108,10 @@ export function intitule(titre: string): string {
   const at = titre.lastIndexOf(" - ");
   if (at > 0) {
     const [tete, fin] = [titre.slice(0, at), titre.slice(at + 3)];
-    if (!/\p{Ll}/u.test(fin) && /\p{L}/u.test(fin) && (connu(fin) || /\p{Ll}/u.test(sansHF(tete)))) return `${phrase(tete)} - ${employeur(fin)}`;
+    // « … - COMMUNAUTE AGGLO TERRITOIRE COTE OUEST Ile de la REUNION »: named by the table, though not all in capitals.
+    const nomme = connu(fin);
+    if (nomme) return `${phrase(tete)} - ${nomme}`;
+    if (!/\p{Ll}/u.test(fin) && /\p{L}/u.test(fin) && /\p{Ll}/u.test(sansHF(tete))) return `${phrase(tete)} - ${employeur(fin)}`;
   }
   return phrase(titre);
 }
@@ -124,6 +135,11 @@ const ACCENTS: Record<string, string> = {
   referente: "référente", remplacant: "remplaçant", remplacante: "remplaçante", reseau: "réseau", reseaux: "réseaux",
   secretaire: "secrétaire", secretaires: "secrétaires", solidarite: "solidarité", specialise: "spécialisé",
   specialisee: "spécialisée", specialite: "spécialité", systeme: "système", systemes: "systèmes",
+  // The procurement notices' objects read on 06/11/2026.
+  accompagnee: "accompagnée", benefice: "bénéfice", complementaire: "complémentaire", constitue: "constitué",
+  dechets: "déchets", deportes: "déportés", elagage: "élagage", evenements: "événements", hebergement: "hébergement",
+  insemination: "insémination", interet: "intérêt", marche: "marché", marches: "marchés", mineralises: "minéralisés",
+  prevoyance: "prévoyance", salaries: "salariés", sante: "santé",
 };
 /** The feminine ending of a title written for both (« CONSEILLER.ERE », « CONSEILLER(ERE) »): only after its point. */
 const ERE = /(?<=[.(])ere(?![\p{L}])/gu;
@@ -139,3 +155,33 @@ const accents = (s: string) =>
 /** A title in capitals, its « h/f » with them, in the case of a sentence; as written otherwise. */
 const phrase = (s: string) =>
   /\p{Ll}/u.test(sansHF(s)) ? s : accents(casse(s.replace(HF, (x) => x.toUpperCase()), TITRE_SIGLES, false));
+
+/**
+ * The lots' letters (« LOTS A,B,C ET K », « LOT A - VOIRIE »): kept in capitals, never read as the preposition « à ».
+ * A list of them, or one alone before a punctuation or the end.
+ */
+const LOTS = /(?<![\p{L}])(lots?\s+)(\p{L}(?:\s*,\s*\p{L})+(?:\s+et\s+\p{L})?|\p{L}\s+et\s+\p{L}|\p{L}(?=\s*(?:[-–—:,;()/]|$)))(?![\p{L}'’])/giu;
+/** « A » between two words of a title in capitals: the preposition (« MISE A DISPOSITION », « USINE A THE »). */
+const A = /(?<=\p{L}\s)a(?=\s+\p{L})/gu;
+/** The words of a road or a structure whose name follows, in the case of a sentence. */
+const VOIE =
+  /(?<!\ben\s)(?<![\p{L}])(rue|avenue|boulevard|chemin|allée|allee|route|impasse|place|tunnel|pont|quai|zac)((?:\s+(?:de|du|des|la|le|les)(?=\s)|\s+[ld]['’])*\s*?)(\s+\p{L}[^,;:()/–—]*?|(?<=['’])\p{L}[^,;:()/–—]*?)(?=\s+-\s|\s*[,;:()/–—]|\s+(?:tranche|tranches|lot|lots|phase|secteur|et|pour|dans|sur|au|aux|entre|à|a)(?![\p{L}])|$)/giu;
+/** After a road's word, the words that make it a kind and not a name: « route nationale », « chemin de fer ». */
+const PAS_UN_NOM = new Set(["chargement", "communale", "departementale", "départementale", "fer", "forestiere", "forestière", "nationale", "roulant"]);
+const PETITS = new Set(["de", "du", "des", "la", "le", "les", "d", "l", "et"]);
+/** A road's name, each word with its capital but its small words (« général de gaulle » → « Général de Gaulle »). */
+const nom = (s: string) =>
+  s.replace(/(^|[\s'’-])(\p{Ll}+)/gu, (m, a: string, w: string) => (PETITS.has(w) && a !== "" && a !== "-" ? m : a + w[0].toLocaleUpperCase("fr") + w.slice(1)));
+const voies = (s: string) =>
+  s.replace(VOIE, (m, v: string, petits: string, n: string) => (PAS_UN_NOM.has(n.trim().split(/[\s'’]/)[0].toLowerCase()) ? m : v + petits + nom(n)));
+
+/**
+ * A procurement notice's object as people read it: written all in capitals, in the case of a sentence as the offers'
+ * titles (phrase()), its lots' letters in capitals, « A » between words the preposition, the names of the roads and
+ * structures with their capitals (« REQUALIFICATION DE L'AVENUE PASTEUR » → « Requalification de l'avenue Pasteur »).
+ * As written otherwise.
+ */
+export function objet(s: string): string {
+  if (/\p{Ll}/u.test(s)) return s;
+  return voies(phrase(s).replace(LOTS, (_, l: string, x: string) => l + x.replace(/(?<![\p{L}])\p{L}(?![\p{L}])/gu, (c) => c.toUpperCase())).replace(A, "à"));
+}

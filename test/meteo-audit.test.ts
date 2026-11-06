@@ -70,3 +70,13 @@ describe("the days of the satellite readings", () => {
     expect(lesJours(["2026-10-31", "2026-11-01", "2026-11-02"])).toBe("du 31/10 au 02/11");
   });
 });
+
+describe("the weather's field (marketing, 06/11/2026)", () => {
+  it("has its label above it, its example inside, and no « 2 000 lieux » when no page has the name", () => {
+    const page = meteoPage("https://rundata.re", null, NOW);
+    expect(page).toContain(`<label class="champ-m" for="filtre">Météo d'un lieu : commune, quartier, sommet</label><span class="search">`);
+    expect(page).toContain(`<input id="filtre" type="search" placeholder="Ex. : Cilaos, le Maïdo" autocomplete="off">`);
+    expect(page).toContain(`<p class="note" id="rien" hidden>Pas de page météo pour « <span id="rien-q"></span> ». Essayez une commune proche, ou posez la question à votre IA avec le <a href="/mcp">connecteur rundata.re</a>.</p>`);
+    expect(page).not.toContain("2 000 lieux");
+  });
+});

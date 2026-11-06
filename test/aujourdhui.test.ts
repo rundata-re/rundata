@@ -44,6 +44,8 @@ describe("the page of a commune's day", () => {
     const p = pageOf("entre-deux")!;
     const html = aujourdhuiPage("https://rundata.re", p, resume(p, full(p.nom) as never, NOW, [{ partie: "électricité", raison: "pas de copie récente", outil: "electricite", page: "https://rundata.re/electricite" }]), null);
     expect(html).toContain("<h1>Aujourd&#39;hui à l&#39;Entre-Deux</h1>");
+    // The card's link names the commune for screen readers: the menu has a « Coupures d'eau » too, to the island's page.
+    expect(html).toContain(`<a href="/coupures-eau/entre-deux">Coupures d&#39;eau<span class="sr"> à l&#39;Entre-Deux</span></a>`);
     expect(html).toContain('<p class="hook">Ce qui compte aujourd&#39;hui à l&#39;Entre-Deux, sur une page');
     expect(html).toContain("Fête 0");
     expect(html).toContain('<a href="/electricite">électricité</a>');

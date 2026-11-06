@@ -74,7 +74,7 @@ describe("the déchèteries of the West", () => {
 
   it("have a tile on the West's commune pages, with the state of their skips", () => {
     const paul = communePage("https://rundata.re", pageOf("saint-paul")!, { place: null, dechets: copy }, NOW);
-    expect(paul).toMatch(/<h3><a href="\/decheteries#saint-paul">Déchèteries<\/a><\/h3><p class="tv">5 déchèteries<\/p><p class="td">d'après les agents : déchets verts acceptés dans \d sur 5, encombrants dans \d sur 5<\/p>/);
+    expect(paul).toMatch(/<h3><a href="\/decheteries#saint-paul">Déchèteries<span class="sr"> à Saint-Paul<\/span><\/a><\/h3><p class="tv">5 déchèteries<\/p><p class="td">d'après les agents : déchets verts acceptés dans \d sur 5, encombrants dans \d sur 5<\/p>/);
   });
 });
 
@@ -144,7 +144,7 @@ describe("the déchèteries outside the TCO, from the ADEME's directory", () => 
     expect(page).toContain('Horaires\u00a0: voir le site de <a href="https://www.civis.re/" rel="noopener">la CIVIS</a>.');
     expect(page).toContain("Déchèteries selon l&#39;annuaire des déchèteries de l&#39;<abbr title=\"Agence de la transition écologique\">ADEME</abbr> (enquête 2026, mis à jour le ");
     const pierre = communePage("https://rundata.re", pageOf("saint-pierre")!, { place: null }, NOW);
-    expect(pierre).toContain('<h3><a href="/decheteries#saint-pierre">Déchèteries</a></h3><p class="tv">4 déchèteries</p><p class="td">horaires\u00a0: voir le site de la <abbr title="Communauté intercommunale des villes solidaires">CIVIS</abbr></p>');
-    expect(communePage("https://rundata.re", pageOf("saint-philippe")!, { place: null }, NOW)).not.toContain("Déchèteries</a></h3>");
+    expect(pierre).toContain('<h3><a href="/decheteries#saint-pierre">Déchèteries<span class="sr"> à Saint-Pierre</span></a></h3><p class="tv">4 déchèteries</p><p class="td">horaires\u00a0: voir le site de la <abbr title="Communauté intercommunale des villes solidaires">CIVIS</abbr></p>');
+    expect(communePage("https://rundata.re", pageOf("saint-philippe")!, { place: null }, NOW)).not.toMatch(/Déchèteries(<span class="sr">[^<]*<\/span>)?<\/a><\/h3>/);
   });
 });

@@ -109,7 +109,7 @@ describe("a tile with nothing to show", () => {
       volcan: cached({}),
       electricite: cached({}),
     }, NOW);
-    const tile = (name: string) => page.match(new RegExp(`<h3>(?:<a href="[^"]+">)?${name}(?:</a>)?</h3>(.*?)</li>`, "s"))![1];
+    const tile = (name: string) => page.match(new RegExp(`<h3>(?:<a href="[^"]+">)?${name}(?:<span class="sr">[^<]*</span>)?(?:</a>)?</h3>(.*?)</li>`, "s"))![1];
     for (const name of ["Météo", "Air", "Mer", "Bus", "Volcan", "Électricité"]) expect(tile(name), name).not.toContain(WAIT);
     expect(tile("Météo")).toContain(`<p class="td all">Aucune température près de Saint-Paul dans la lecture du 23/10 à 18:39.</p>`);
     expect(tile("Air")).toContain(`<p class="td all">Saint-Paul n&#39;est pas dans l&#39;indice ATMO lu le 23/10 à 18:39.</p>`);

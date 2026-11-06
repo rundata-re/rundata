@@ -79,6 +79,8 @@ interface Tile {
   nom: string;
   /** The category page, or none (the town hall, the land). */
   href?: string;
+  /** Words after the link's name for screen readers only (« à Saint-Paul »), when the link leads to the island's page. */
+  sr?: string;
   live?: Live;
   /** HTML after the figure: a list of departures. */
   more?: string;
@@ -131,7 +133,7 @@ const spanStyle = (s: number[]) => {
 };
 
 function tile(t: Tile, span: number[] = []): string {
-  const head = t.href ? `<h3><a href="${t.href}">${esc(t.nom)}</a></h3>` : `<h3>${esc(t.nom)}</h3>`;
+  const head = t.href ? `<h3><a href="${t.href}">${esc(t.nom)}${t.sr ? `<span class="sr"> ${esc(t.sr)}</span>` : ""}</a></h3>` : `<h3>${esc(t.nom)}</h3>`;
   const body = t.live?.vide
     ? `<p class="td all">${t.live.detail}</p>`
     : t.live
@@ -251,7 +253,7 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   return {
     live: { valeur: esc(first.heure), detail: `prochain départ ${where} : ligne ${esc(first.x.ligne)} vers ${esc(casse(first.x.direction))} (${esc(first.x.reseau)})` },
     // The hour, never « dans 1 min », which a copy of the page would keep; /bus and the stops count the wait.
-    more: `<ul class="rows departs cols">${left.map(({ x, heure }) => departureLi(x, heure.startsWith("demain") ? heure : `à ${heure}`)).join("")}</ul>` +
+    more: `<ul class="rows departs cols">${left.map(({ x, heure }) => departureLi(x, heure.startsWith("demain") ? heure : `à ${heure}`, heure)).join("")}</ul>` +
       (b.alertes?.length ? `<div class="note">Info trafic : ${alertList(b.alertes)}</div>` : ""),
   };
 }
@@ -671,7 +673,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const fichePj = l.commune?.value.justice?.lieu.fiche;
 
   const tiles: Tile[] = [
-    { icon: "thermo", nom: "Météo", href: `/meteo/${p.slug}`, live: w },
+    { icon: "thermo", nom: "Météo", href: `/meteo/${p.slug}`, sr: aCommune(p.nom), live: w },
     { icon: "alert", nom: "Vigilance", href: "/vigilance", live: vigilance(p, l.vigilance, now) },
     { icon: "air", nom: "Air", href: "/air", live: air(p, l.air, now) },
     ...(coastal(p) ? [{ icon: "wave", nom: "Mer", href: "/mer", live: sea(p, l.mer, l.place, now) }] : []),
@@ -687,8 +689,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       question: `La mairie ${de(p.nom)} est ouverte ?`,
       foot: fiche ? `<a href="${esc(fiche)}" rel="noopener">Fiche service-public.fr</a>` : `<a href="/#assistant">Demandez à votre IA →</a>`,
     },
-    ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, live: wasteLive(p, l.dechets, now) }] : []),
-    ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, live: elsewhereLive(p) }] : []),
+    ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
+    ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: elsewhereLive(p) }] : []),
     { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `<a href="${sante.GARDE.site}" rel="noopener">Pharmacie de garde : 3237.fr</a>` },
     ...(droit
       ? [{

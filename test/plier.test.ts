@@ -101,7 +101,7 @@ describe("long lists folded, the second pages", () => {
     expect(venir).not.toContain("<details><summary>");
     expect(venir).toContain(`<h3>Handball <span class="note">6\u00a0rendez-vous</span></h3>`);
     expect(page).toContain(`<li class="card"><details><summary><h3>Handball\u00a0<span class="note">·\u00a06\u00a0résultats</span></h3></summary>`);
-    expect(page).toContain(`<details><summary><h3>Handball, D1 masculine\u00a0<span class="note">·\u00a06\u00a0équipes</span></h3></summary><p class="note"><a href="https://example.org/22" rel="noopener">Le classement sur le site de la fédération ↗</a></p>`);
+    expect(page).toContain(`<details><summary><h3>Handball, D1 masculine\u00a0<span class="note">·\u00a06\u00a0équipes</span></h3></summary><p class="note"><a href="https://example.org/22" rel="noopener">Le classement sur le site de la fédération<span class="sr"> : Handball, D1 masculine</span> ↗</a></p>`);
     // One championship: as it was, its name the link.
     const one = sportPage(O, cached({ ...answer, classements: [table("Handball, D1 masculine")] }), NOW);
     expect(one).toContain(`<li class="card"><h3><a href="https://example.org/22" rel="noopener">Handball, D1 masculine</a></h3>`);

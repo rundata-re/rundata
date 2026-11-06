@@ -171,8 +171,9 @@ export function monumentsCard(nom: string): string {
     `<ul class="plain">${list.map(item).join("")}</ul><p class="note">D'après ${base}, liste du ${jma(monuments.FICHIER_DU)}\u00a0: chaque nom mène à sa notice.</p></details></div>`;
 }
 
-const card = (ic: string, title: string, body: string, href?: string, cls = "") =>
-  `<div class="card${cls}">${icon(ic)}<h3>${href ? `<a href="${href}">${esc(title)}</a>` : esc(title)}</h3>${body}</div>`;
+// `sr`: words after the title's link for screen readers only (« à Saint-Paul »), when the page links the same title elsewhere.
+const card = (ic: string, title: string, body: string, href?: string, cls = "", sr = "") =>
+  `<div class="card${cls}">${icon(ic)}<h3>${href ? `<a href="${href}">${esc(title)}${sr ? `<span class="sr"> ${esc(sr)}</span>` : ""}</a>` : esc(title)}</h3>${body}</div>`;
 const li = (x: { titre: string; lien?: string; quand?: string; media?: string }) =>
   `<li>${x.lien ? `<a href="${esc(x.lien)}" rel="noopener"${fenetre(x.lien)}>${esc(x.titre)}</a>` : esc(x.titre)}${x.quand || x.media ? ` <span class="note">${esc([x.quand, x.media].filter(Boolean).join(" · "))}</span>` : ""}</li>`;
 
@@ -228,7 +229,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
           ? `<ul class="plain">${r.coupures_eau.avis.map((n) => `<li>${n.ne_pas_boire ? "<b>Eau à ne pas boire</b> · " : ""}${li({ titre: n.titre, lien: n.lien }).slice(4, -5)}${n.coupure ? ` <span class="note">${esc(n.coupure.a ? `${n.coupure.de} → ${n.coupure.a}` : `à partir du ${n.coupure.de}`)}${n.coupure.etat ? `, ${esc(n.coupure.etat)}` : ""}</span>` : ""}</li>`).join("")}</ul>`
           : r.coupures_eau.injoignable ? ""
           : `<p>${esc(r.coupures_eau.note ?? `Aucune coupure annoncée${r.coupures_eau.distributeur ? ` par ${r.coupures_eau.distributeur}` : ""}${r.coupures_eau.lus_le ? ` ${leJour(r.coupures_eau.lus_le)}` : ""}.`)}</p>`),
-        `/coupures-eau/${p.slug}`, r.coupures_eau.avis.some((n) => n.ne_pas_boire) ? " warn" : "")
+        `/coupures-eau/${p.slug}`, r.coupures_eau.avis.some((n) => n.ne_pas_boire) ? " warn" : "", aCommune(p.nom))
     : "";
   const ev = r.evenements_du_jour;
   const notRead = mentionCourte(p.nom);

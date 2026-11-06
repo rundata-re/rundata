@@ -144,6 +144,16 @@ describe("the layers of /carte", () => {
     const bo = JSON.parse((await serve(couchePath("bornes"), store)).text) as CoucheJson;
     expect(bo.objets).toMatchObject([{ lien: `/bornes#s-${s.id}`, infos: { libres: 2, total: 4 } }]);
   });
+
+  it("give a station's wind its direction, which the bubble says in words, and none it did not measure", async () => {
+    const store = new MemoryStore();
+    const at = { source: mfStations.SOURCE.id, lon: 55.65, lat: -21.0, altitude_m: 500, time: "2026-10-31T17:48:00.000Z", stale: false };
+    const stations = [{ ...at, nom: "Bellevue", vent: 12, direction: 95 }, { ...at, nom: "Plaine des Palmistes", vent: 4 }];
+    await store.put("web:meteo", { value: { stations }, fetchedAt: NOW.getTime() - 60_000 });
+    const j = JSON.parse((await serve(couchePath("stations"), store)).text) as CoucheJson;
+    expect(j.objets.map((o) => o.infos)).toMatchObject([{ vent: 12, direction: 95 }, { vent: 4 }]);
+    expect(j.objets[1].infos).not.toHaveProperty("direction");
+  });
 });
 
 describe("the figures of /carte's « En direct » band", () => {

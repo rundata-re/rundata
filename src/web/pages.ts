@@ -373,7 +373,7 @@ text-align:center;background:#0f1d2c;border:1px solid rgb(255 255 255/.07);trans
 .sheet .kcomm[aria-current]{background:color-mix(in srgb,var(--k) 14%,#0f1d2c);border-color:color-mix(in srgb,var(--k) 45%,transparent)}
 .sheet .groupe .kb,.sheet .kcomm .kb{width:1.75rem;height:1.75rem;border-radius:9px}
 .sheet .groupe .kb .ic,.sheet .kcomm .kb .ic{width:1.05rem;height:1.05rem}
-.sheet .groupe .gn{display:block;text-align:left;hyphens:auto;-webkit-hyphens:auto}
+.sheet .groupe .gn{display:block;text-align:left;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}
 .sheet .cyc{margin:-.45rem 0 0;font-size:.88rem;color:var(--on-night-muted)}.sheet .cyc a{color:var(--on-night);font-weight:600}
 @media (prefers-reduced-motion:reduce){.grid a,.grid a:hover,.grid a:active{transform:none;transition:none}}
 .sheet .connect{background:rgb(255 255 255/.06);border-color:rgb(255 255 255/.1);box-shadow:none}

@@ -37,11 +37,19 @@ const by = (s: StationNow) =>
 // Where the wind comes from, in words: abbreviations read badly (« vent O » as « vent 0 »).
 export const VENT_DE = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
 
+/**
+ * Where the wind comes from and a space (« d'est »), from `mots` (VENT_DE), or nothing: without a direction in degrees
+ * (missing, null, a METAR's « variable ») or with no wind, the speed goes alone, never « vent undefined » nor a north
+ * read from a null (/carte's stations, 06/11/2026). Put as is in /carte's script: expressions only.
+ */
+export const ventDe = (direction: unknown, vent: unknown, mots: string[]): string =>
+  typeof direction === "number" && Number.isFinite(direction) && typeof vent === "number" && vent > 0 ? mots[((Math.round(direction / 45) % 8) + 8) % 8] + " " : "";
+
 /** A tile's wind: an arrow where it goes, the speed; the whole said to a screen reader and on hover. */
 export function windPill(s: StationNow): string {
   const said = ventText(s);
   if (!said) return "";
-  const arrow = s.direction != null && s.vent ? `<svg class="ar" viewBox="0 0 16 16" style="transform:rotate(${(s.direction + 180) % 360}deg)"><path d="M8 14V3M4 7l4-4 4 4"/></svg>` : "";
+  const arrow = ventDe(s.direction, s.vent, VENT_DE) ? `<svg class="ar" viewBox="0 0 16 16" style="transform:rotate(${(s.direction! + 180) % 360}deg)"><path d="M8 14V3M4 7l4-4 4 4"/></svg>` : "";
   return `<span class="pl" title="${esc(said)}"><span aria-hidden="true">${arrow}${thin(`${s.vent} km/h`)}</span><span class="sr">${esc(said)}</span></span>`;
 }
 
@@ -57,8 +65,7 @@ export function rainPill(s: StationNow): string {
 /** « vent d'est 12 km/h, rafales 20 km/h ». */
 export function ventText(s: StationNow): string | undefined {
   if (s.vent == null) return undefined;
-  const from = s.direction != null ? `${VENT_DE[Math.round(s.direction / 45) % 8]} ` : "";
-  return thin(`vent ${from}${s.vent} km/h${s.rafales != null ? `, rafales ${s.rafales} km/h` : ""}`);
+  return thin(`vent ${ventDe(s.direction, s.vent, VENT_DE)}${s.vent} km/h${s.rafales != null ? `, rafales ${s.rafales} km/h` : ""}`);
 }
 
 // Rain of the last hour: deeper blue as it rains harder, from these mm (the replay's script draws the same).

@@ -255,6 +255,8 @@ export function stationsObjets(d: HomeData): Objet[] {
       altitude_m: s.altitude_m,
       ...(s.temperature != null && { temperature: s.temperature }),
       ...(s.vent != null && { vent: s.vent }),
+      // Where it comes from, in degrees: the bubble says it in words (VENT_DE).
+      ...(s.direction != null && { direction: s.direction }),
       ...(s.rafales != null && { rafales: s.rafales }),
       ...(s.pluie_1h != null && { pluie_1h: s.pluie_1h }),
       ...(s.stale && { ancienne: true }),

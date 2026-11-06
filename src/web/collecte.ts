@@ -115,6 +115,15 @@ function groups(today: number, commune?: string): string {
     const said = x.apart.filter(Boolean).join(", ");
     return said ? `<br><span class="note">${esc(said)}</span>` : "";
   };
+  // The calendars' PDFs: in a row up to three; past that (12 of them at Saint-Paul on 28/12, calendars that differ
+  // no more by the year's last days), folded under their number.
+  const pdfs = (g: { cals: number[]; commune: string }) => {
+    const where = commune ? "" : `${esc(g.commune)} · `;
+    const links = g.cals.map((c) => `<a href="${esc(col.CALENDARS[c].pdf)}" rel="noopener">calendrier ${esc(col.CALENDARS[c].code)} du TCO (PDF)</a>`).join(" · ");
+    return g.cals.length > 3
+      ? `<details class="note"><summary>${where}${g.cals.length}\u00a0calendriers du TCO (PDF)</summary><p>${links}</p></details>`
+      : `<p class="note">${where}${links}</p>`;
+  };
   const dated = rhythms
     .map((x) => {
       const { g } = x;
@@ -126,7 +135,7 @@ function groups(today: number, commune?: string): string {
         `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">·\u00a0${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span>${apart(x)}</${hx}>`,
         `<p>${esc(cap(r))}.</p>${feries.map((f) => `<p>${f}</p>`).join("")}
 ${list(g)}
-<p class="note">${commune ? "" : `${esc(g.commune)} · `}${g.cals.map((c) => `<a href="${esc(col.CALENDARS[c].pdf)}" rel="noopener">calendrier ${esc(col.CALENDARS[c].code)} du TCO (PDF)</a>`).join(" · ")}</p>`)}</div>`;
+${pdfs(g)}`)}</div>`;
     });
   // The streets without a calendar, after the others: the plural above their list, the singular in a street's line.
   const without = all.filter((g) => !col.CALENDARS[g.c]);

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as cmrs from "../src/providers/cmrs-carte.js";
 import * as trace from "../src/providers/cmrs-trace.js";
+import * as mf from "../src/providers/vigilance.js";
 import type { Store } from "../src/providers/vigilance-carte.js";
 import { cyclones } from "../src/tools/cyclones.js";
 import { buildCyclones } from "../src/web/data.js";
@@ -101,6 +102,10 @@ describe("the RSMC's map of a system it follows before GDACS lists it", () => {
     expect(page).not.toContain("Aucun système dans le bassin en ce moment");
     expect(page).not.toContain('class="trcs"');
     expect(page).not.toContain('<h2 id="h-actifs">Systèmes actifs</h2>');
+    // The summary's last words link to Météo-France's site, whose address the connector writes out.
+    expect(b.resume.endsWith(`${mf.OFFICIEL} : ${mf.OFFICIEL_CYCLONE}`)).toBe(true);
+    expect(page).toContain(`<a href="${mf.OFFICIEL_CYCLONE}" rel="noopener">${mf.OFFICIEL}</a></p></div>`);
+    expect(page).not.toContain(`: ${mf.OFFICIEL_CYCLONE}`);
   });
 
   it("without a map that follows the bulletin, says it is followed and sends to Météo-France's site", async () => {

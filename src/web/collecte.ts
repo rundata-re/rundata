@@ -5,6 +5,7 @@
  */
 import * as col from "../vie/collecte.js";
 import { a, de } from "../tools/format.js";
+import { insecables } from "../typographie.js";
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
@@ -19,19 +20,44 @@ const h1Of = (c: string) => `Quel jour passent les poubelles ${a(c)} ?`;
 const metaOf = (c: string) => `Ordures ménagères, tri et déchets verts ${a(c)} (974) : le jour de collecte de votre rue, d'après le calendrier ${col.YEAR} du TCO. Cherchez votre rue.`;
 const LEAD = `Tapez le nom de votre rue : le jour de passage pour les ordures ménagères, le tri et les déchets verts, d'après les calendriers ${col.YEAR} publiés par le TCO.`;
 const { honesty, communeSlug } = col;
-// With the list just below (marketing).
-const NOT_FOUND_HERE = "Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous.";
+// With the list just below (marketing), and the tool's first words of `a_savoir` (honesty): only the West is read.
+const NOT_FOUND_HERE = `Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. ${honesty().split(" Calendriers")[0]}`;
+/**
+ * The communes of the other intercommunalities, for the search box: typed alone or ending what is typed (« rue de
+ * Paris, Saint-Denis »), the same sentence as the tool's (vie/collecte.ts `ailleurs`, marketing's words of 04/11/2026),
+ * its last words a link to the site of who collects there, rather than a street to spell again.
+ */
+const ELSEWHERE = col.AILLEURS.flatMap((e) => e.communes.map((c) => {
+  const said = col.ailleurs(c, e);
+  const link = `le site de ${e.nom}`;
+  const at = said.lastIndexOf(link);
+  // Typed by the script, out of typoPage's reach: its no-break spaces put here.
+  return { c, avant: insecables(said.slice(0, at)), lien: link, apres: insecables(said.slice(at + link.length)), url: e.site };
+}));
+
+/**
+ * The commune of ELSEWHERE that ends what is typed, compared without accents, case or punctuation, as the tool does
+ * (tools/collecte.ts `elsewhere`). Put in the page's script as it is: self-contained.
+ */
+export const horsTco = <T extends { c: string }>(typed: string, list: T[]): T | undefined => {
+  // No function named inside: the build would wrap it in a helper the page does not have (esbuild's keepNames).
+  const t = " " + typed.replace(/\b974\d\d\b/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return list.find((x) => t.endsWith(" " + x.c.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()));
+};
+export { ELSEWHERE };
 export const communeOf = (slug: string) => col.COMMUNES.find((c) => communeSlug(c) === slug);
 
 // Shows the full line of the streets typed (3 letters at least, 20 at most), hides the groups without a match. In a
 // block: the page's own script has names of its own.
 const SCRIPT = `{const q=document.getElementById("rue");if(q){const n=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();const out=document.getElementById("trouve");
+const rien=document.getElementById("rien"),dit=rien.textContent,AI=${JSON.stringify(ELSEWHERE).replace(/</g, "\\u003c")},hors=${horsTco};
 q.addEventListener("input",()=>{const t=n(q.value.trim());const hits=[];document.querySelectorAll(".voies li").forEach((li)=>{const ok=t.length<3||n(li.textContent).includes(t);li.hidden=!ok;if(ok&&t.length>=3)hits.push(li)});
 document.querySelectorAll(".groupe").forEach((g)=>{g.hidden=![...g.querySelectorAll("li")].some((li)=>!li.hidden)});
 if(t.length>=3)document.querySelectorAll(".groupe>details").forEach((d)=>{if(!d.parentNode.hidden)d.open=true});
 document.querySelectorAll(".sans").forEach((s)=>{s.hidden=![...s.querySelectorAll(".groupe")].some((g)=>!g.hidden)});
 out.className=hits.length?"card":"";out.replaceChildren(...hits.slice(0,20).map((li)=>{const p=document.createElement("p");const g=li.closest(".groupe");p.textContent=li.textContent+", "+g.dataset.c+" : "+g.dataset.r;return p}));
-document.getElementById("rien").hidden=t.length<3||hits.length>0})}}`;
+const o=hits.length?null:hors(q.value,AI);if(o){const l=document.createElement("a");l.href=o.url;l.rel="noopener";l.textContent=o.lien;rien.replaceChildren(o.avant,l,o.apres)}else rien.textContent=dit;
+rien.hidden=t.length<3||hits.length>0})}}`;
 
 function groups(today: number, commune?: string): string {
   const streets = commune ? col.STREETS.filter((s) => s.commune === commune) : col.STREETS;

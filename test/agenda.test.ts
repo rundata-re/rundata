@@ -1040,6 +1040,16 @@ describe("agenda", () => {
     expect(JSON.stringify(b.non_repris ?? "")).not.toContain("Étang-Salé");
   });
 
+  it("tells each date of Bras-Panon with « site de la commune de Bras-Panon » in the tool too, as its agreement of 28/10 asks", async () => {
+    const b = body(await agenda(cache(), "Bras-Panon", "a_venir", undefined, NOW, 300));
+    const bp = b.evenements.filter((e: EventRow) => e.publie_par === "Ville de Bras-Panon");
+    expect(bp.length).toBeGreaterThan(0);
+    for (const e of bp) expect(e.source).toMatch(/^site de la commune de Bras-Panon, lu le \p{L}+ \d\d\/\d\d à\s\d\d:\d\d$/u);
+    // A commune without such an agreement: said by publie_par and lu_le only.
+    const tool = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300));
+    expect(tool.evenements.filter((e: EventRow) => e.publie_par === "Ville du Tampon").every((e: EventRow) => e.source === undefined)).toBe(true);
+  });
+
   it("reads quoi « Kabardock » as the hall's name, not as a kabar: only its dates, plays included; « kabar » still asks concerts and fêtes", async () => {
     expect(matcher("Kabardock")?.nom).toBe("« Kabardock »");
     for (const q of ["kabar", "kabars", "un kabar ce soir"]) expect(matcher(q)?.nom).toBe("concerts et musique, fêtes et festivals");

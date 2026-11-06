@@ -280,7 +280,7 @@ export interface Agenda {
   site_commune?: string;
   /**
    * Its commune's written agreement asks « Source : <site_commune> » with the day read on each event: said in the tool's
-   * answer too, not only on the pages (L'Étang-Salé's of 06/11/2026).
+   * answer too, not only on the pages (Bras-Panon's of 28/10/2026, L'Étang-Salé's of 06/11/2026).
    */
   mention?: true;
   /**
@@ -1743,7 +1743,7 @@ export const LISIBLES: Agenda[] = [
   { ...etangSale, site_commune: "site de la commune de L'Étang-Salé", mention: true, faits: true, programmes: true },
   { ...intraMuros("la_possession", "Ville de La Possession", "https://www.lapossession.re/agenda/rss", "La Possession", LA_POSSESSION), site_commune: "site de la commune de La Possession", faits: true, programmes: true },
   { ...petiteIle, site_commune: "site de la commune de Petite-Île", faits: true, accueil: PETITE_ILE.url },
-  { ...brasPanon, site_commune: "site de la commune de Bras-Panon", faits: true },
+  { ...brasPanon, site_commune: "site de la commune de Bras-Panon", mention: true, faits: true },
   { ...saintBenoit, site_commune: "site de la commune de Saint-Benoît", faits: true, programmes: true },
   otiEst,
   CIREST,

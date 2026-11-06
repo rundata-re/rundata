@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { ics, parseIcs } from "../src/providers/agenda.js";
+import { ics, LISIBLES, parseIcs } from "../src/providers/agenda.js";
 import type { SourceInfo } from "../src/types.js";
 
 // Saturday 24/10/2026 in the morning; the days read run to 08/12.
@@ -99,5 +99,40 @@ describe("iCalendar agendas", () => {
     await agenda.load(cache, NOW);
     expect(first.value).toHaveLength(6);
     expect(asked).toEqual(["https://asso.example/remote.php/dav/public-calendars/abc?export rundata.re (contact@rundata.re)"]);
+  });
+
+  it("reads Saint-Paul's iCalendar export while its site's API answers 404, its copy dated by its reading", async () => {
+    const asked: string[] = [];
+    let api = 404, export_ = 200;
+    vi.stubGlobal("fetch", async (url: string) => {
+      asked.push(String(url));
+      if (String(url).includes("/wp-json/tribe/")) return new Response("<html>Page non trouvée</html>", { status: api });
+      return export_ === 200 ? new Response(bytes("ics_saint-paul.ics")) : new Response("", { status: export_ });
+    });
+    const agenda = LISIBLES.find((a) => a.id === "saint_paul")!;
+    let t = NOW.getTime();
+    const cache = new Cache(new MemoryStore(), () => t);
+    const first = await agenda.load(cache, NOW);
+    expect(asked.map((u) => u.replace(/\?.*/, "?…"))).toEqual(["https://www.mairie-saintpaul.re/wp-json/tribe/events/v1/events?…", "https://www.mairie-saintpaul.re/evenements/?…"]);
+    expect(asked[1]).toBe("https://www.mairie-saintpaul.re/evenements/?ical=1");
+    expect((first.value as { titre: string }[]).map((e) => e.titre)).toEqual([
+      "La Koupe Kartié - Saint-Paul Centre",
+      "La Koupe Kartié - Plateau Caillou",
+      "La Koupe Kartié - Saint-Gilles-les-Bains",
+      "Journée Portes Ouvertes France Services Tan Rouge",
+      "Matinées agricole",
+    ]);
+    expect(first.fetchedAt.getTime()).toBe(NOW.getTime());
+    // A day on, the export down too: the copy, with the hour it was read at, not the hour it is served at.
+    t += 24 * 3600_000;
+    export_ = 503;
+    const later = await agenda.load(cache, new Date(t));
+    expect([later.fetchedAt.getTime(), later.stale]).toEqual([NOW.getTime(), true]);
+    // Another failure of the API than a 404 (a 503, a timeout): no export read, as before.
+    asked.length = 0;
+    api = 503;
+    export_ = 200;
+    await agenda.load(new Cache(new MemoryStore(), () => t), new Date(t)).catch(() => undefined);
+    expect(asked.filter((u) => u.includes("ical=1"))).toEqual([]);
   });
 });

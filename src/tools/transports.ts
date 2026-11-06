@@ -451,7 +451,8 @@ export const completeMinutes = (all: Departure[], kept: Departure[], horizon: nu
 
 const lineName = (r: number) => {
   const [net, short, long] = transit.ROUTES[r];
-  return { ligne: short || long, nom_ligne: short && long ? long : undefined, reseau: transit.NETWORKS[net]?.nom ?? net };
+  // Its long name as people read it, like its stops' (« Cambourg - Gare Saint-Benoît »); the short one as the network writes it.
+  return { ligne: short || long, nom_ligne: short && long ? transit.stopName(long) : undefined, reseau: transit.NETWORKS[net]?.nom ?? net };
 };
 
 export interface DepartureRow {

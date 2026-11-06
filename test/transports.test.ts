@@ -100,7 +100,7 @@ describe("transports", () => {
 
   it("runs the cable car every minute from its frequencies, each departure once", async () => {
     const r = body(await transports("téléphérique Bancoul", undefined, NOW));
-    const mer = r.departs.filter((d: { direction: string }) => d.direction === "MER");
+    const mer = r.departs.filter((d: { direction: string }) => d.direction === "Mer");
     expect(mer.map((d: { heure: string }) => d.heure)).toEqual(["07:29", "07:30", "07:31"]);
   });
 
@@ -115,7 +115,7 @@ describe("transports", () => {
     const r = body(await transports("Hell-Bourg", undefined, new Date("2026-10-23T14:30:00Z")));
     expect(r.departs[0].heure).toBe("demain 05:51");
     expect(r.departs[0].dans_min).toBeGreaterThan(11 * 60);
-    expect(r.resume).toMatch(/vers GARE SAINT ANDRE demain à 05:51 \(dans 11 h \d\d\)/);
+    expect(r.resume).toMatch(/vers Gare Saint-André demain à 05:51 \(dans 11 h \d\d\)/);
   });
 
   it("reads only the patterns that may stop at the station in the next hours", async () => {

@@ -230,7 +230,8 @@ export async function patterns(ids: number[]): Promise<Map<number, Pattern>> {
     rows.map((r) => {
       const n = byFeed.get(r.feed)!;
       const id = n.first_pattern + r.id;
-      return [id, { id, route: n.first_route + r.route, headsign: tidy(r.headsign), trips: JSON.parse(r.trips) }];
+      // Its headsign as people read it, like the stops' names (stopName()): « Gare Saint-André », not « GARE SAINT ANDRE ».
+      return [id, { id, route: n.first_route + r.route, headsign: stopName(tidy(r.headsign)), trips: JSON.parse(r.trips) }];
     }),
   );
 }

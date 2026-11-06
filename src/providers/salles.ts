@@ -388,9 +388,10 @@ const kabardock: Agenda = {
   source: SOURCE,
   commune: "Le Port",
   // Its written agreement of 06/11/2026 (providers/autorisations.ts): the title, the day and hour, the hall and the
-  // genre, linking to its page, with « Source : Kabardock »; no text nor picture.
+  // genre, linking to its page, with « Source : Kabardock »; no text, price nor picture.
   credit: "Kabardock",
   faits: true,
+  sans_prix: true,
   load: (cache, now) => cache.get("agenda:kabardock", FRESH_SECONDS, async () => parseKabardock(await getText(SOURCE.id, "https://kabardock.com/", TIMEOUT_MS, HEADERS), now)),
 };
 

@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
 import { ID as PROPOSITIONS_ID } from "../src/providers/agenda-propositions.js";
-import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
+import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
@@ -989,10 +989,30 @@ describe("agenda", () => {
     for (const e of kab) {
       expect(e.source).toMatch(/^Kabardock \(site lu le \p{L}+ \d\d\/\d\d à \d\d:\d\d\)$/u);
       expect(e.lien).toMatch(/^https:\/\/kabardock\.com\/spectacle\//);
-      expect([e.description, e.billetterie, e.image]).toEqual([undefined, undefined, undefined]);
+      // Its agreement covers neither text nor picture nor price, « Gratuit » included.
+      expect([e.description, e.billetterie, e.image, e.prix]).toEqual([undefined, undefined, undefined, undefined]);
     }
     expect(kab.find((e: EventRow) => e.titre === "Dock Session")).toMatchObject({ categories: ["Scène découverte"], lieu: "Kabardock", commune: "Le Port" });
     expect(JSON.stringify(b.non_repris ?? "")).not.toContain("Kabardock");
+  });
+
+  it("serves an agenda whose agreement leaves out the price without it, « Gratuit » included; the others keep theirs", () => {
+    const kab = AGENDAS.find((a) => a.id === "kabardock")!;
+    const row = { id: "x", titre: "Dock Session", seances: [{ debut: "2026-11-06" }], lieu: "Kabardock", commune: "Le Port", prix: "Gratuit", lien: "https://kabardock.com/spectacle/dock-session-5/" } as Parameters<typeof servis>[1][number];
+    expect(kab.sans_prix).toBe(true);
+    expect(servis(kab, [row])[0].prix).toBeUndefined();
+    expect(row.prix).toBe("Gratuit");
+    expect(servis({ ...kab, sans_prix: undefined }, [row])[0].prix).toBe("Gratuit");
+  });
+
+  it("reads quoi « Kabardock » as the hall's name, not as a kabar: only its dates, plays included; « kabar » still asks concerts and fêtes", async () => {
+    expect(matcher("Kabardock")?.nom).toBe("« Kabardock »");
+    for (const q of ["kabar", "kabars", "un kabar ce soir"]) expect(matcher(q)?.nom).toBe("concerts et musique, fêtes et festivals");
+    const b = body(await agenda(cache(), undefined, "a_venir", "Kabardock", NOW, 300));
+    expect(b.evenements.length).toBeGreaterThan(1);
+    for (const e of b.evenements) expect(e.lieu).toBe("Kabardock");
+    expect(b.evenements.map((e: EventRow) => e.titre)).toContain("Dock Session");
+    expect(b.resume).not.toMatch(/concerts et musique/);
   });
 
   it("gives the island's next two weeks, the same event once, from every agenda", async () => {

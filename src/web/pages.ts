@@ -2251,7 +2251,7 @@ export function whaleSection(now: Date): string {
   return `<section aria-labelledby="h-cetaces">
   <div class="sec-h"><p class="eyebrow">${esc(cetaces.T.surtitre)}</p><h2 id="h-cetaces">${esc(cetaces.T.titre)}</h2>
   <p>${esc(cetaces.etatDuJour(now))} ${esc(cetaces.T.presence)}</p></div>
-  <div class="card"><table class="drought niveaux"><thead><tr><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="card"><table class="drought niveaux"><caption class="sr">${esc(cetaces.T.titre)}</caption><thead><tr><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${rows}</tbody></table>
   <p class="note">${esc(cetaces.T.foi)} ${links}.</p>
   <p class="sources">Source\u00a0: ${esc(cetaces.T.source)}.</p></div>
 </section>`;

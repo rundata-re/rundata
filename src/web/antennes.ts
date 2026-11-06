@@ -205,7 +205,7 @@ function table(): string {
     const ops = antennes.OPERATEURS.map((o) => `${o} ${nombre(supports.filter((s) => s.ops[o]).length)}`).join(", ");
     return `<tr><th scope="row">${esc(nom)}</th><td data-label="Supports mobiles">${nombre(supports.length)}</td><td data-label="Dont 5G techniquement opérationnelle">${nombre(g5)}</td><td data-label="Supports par opérateur">${esc(ops)}</td><td data-label="Supports radio et TV">${nombre(emetteurs.length)}</td></tr>`;
   }).join("");
-  return `<div class="card table-wrap"><table class="drought niveaux"><thead><tr><th scope="col">Commune</th><th scope="col">Supports mobiles</th><th scope="col">Dont 5G techniquement opérationnelle</th><th scope="col">Supports par opérateur</th><th scope="col">Supports radio et TV</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">Par commune</caption><thead><tr><th scope="col">Commune</th><th scope="col">Supports mobiles</th><th scope="col">Dont 5G techniquement opérationnelle</th><th scope="col">Supports par opérateur</th><th scope="col">Supports radio et TV</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 // The words of the mobile sites out of service, marketing's.

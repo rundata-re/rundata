@@ -236,8 +236,8 @@ export function crechesSection(): string {
   return `<section id="creches" aria-labelledby="h-creches">
   <div class="sec-h"><p class="eyebrow">Avant l'école</p><h2 id="h-creches">${CRECHES.titre}</h2></div>
   <div class="card"><p>${esc(CRECHES.intro(creches.ANNEE))}</p><p>${esc(CRECHES.sans(creches.sansChiffre()))}</p><p>${CRECHES.trouver}</p></div>
-  <div class="card table-wrap"><table class="drought histo passe">${head("Commune")}<tbody>${ile}${rows}</tbody></table></div>
-  <div class="card table-wrap"><table class="drought histo passe">${head("Inter\u00adcommunalité")}<tbody>${epci}</tbody></table></div>
+  <div class="card table-wrap"><table class="drought histo passe"><caption class="sr">Crèches, par commune</caption>${head("Commune")}<tbody>${ile}${rows}</tbody></table></div>
+  <div class="card table-wrap"><table class="drought histo passe"><caption class="sr">Crèches, par intercommunalité</caption>${head("Inter\u00adcommunalité")}<tbody>${epci}</tbody></table></div>
   <p class="note">${esc(CRECHES.credit(creches.ANNEE, dayMonth(creches.PUBLIE_LE), creches.PUBLIE_LE.slice(0, 4)))}</p>
 </section>`;
 }

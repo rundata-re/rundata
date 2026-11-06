@@ -336,7 +336,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /defibrillateurs |  |
 | /sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | /decheteries | providers/tco |
-| /cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
+| /cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | /crues | providers/actualites, providers/avis-eau, providers/vigicrues |
 | /historique |  |
 | /evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
@@ -356,7 +356,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | qualite_eau | providers/avis-eau, providers/baignades, providers/eaupotable |
 | temperature_mer | providers/acspo, providers/arome, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv |
 | transports | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
-| cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
+| cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | actualites | providers/actualites, providers/avis-eau |
 | historique_meteo |  |
 | sentiers_randonnee | providers/feux, providers/sentiers, providers/traces |

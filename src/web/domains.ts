@@ -14,6 +14,7 @@ import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
 import { CINEMAS } from "../tools/agenda.js";
+import { suiviPhrase } from "../tools/cyclones.js";
 import { ACCUEILS, AGENDAS } from "../providers/agenda.js";
 import { SOURCE as SALLES_SOURCE } from "../providers/salles.js";
 import type { Cached } from "../cache.js";
@@ -3090,9 +3091,12 @@ export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null
   const d = data?.value;
   const url = `${origin}/cyclones`;
   const active = d?.systemes_actifs ?? [];
+  const suivis = active.length ? [] : d?.suivi_cmrs ?? [];
 
   const status = !d
     ? loading("Le suivi des cyclones")
+    : suivis.length
+    ? `<div class="now"><span class="big">${suivis.length}</span><p>${esc(suiviPhrase(suivis, false))}</p></div>`
     : `<div class="now"><span class="big">${active.length}</span><p>système${active.length > 1 ? "s" : ""} tropica${active.length > 1 ? "ux" : "l"} actif${active.length > 1 ? "s" : ""} dans le sud-ouest de l'océan Indien.</p></div>`;
   // No track of ours: the official map is on Météo-France's site, and above the basin's map while a system is active.
   const official = `<p class="lead">Trajectoire et bulletins officiels : <a href="${mf.OFFICIEL_CYCLONE}" rel="noopener">consulter le site officiel de Météo-France</a>.</p>`;
@@ -3166,6 +3170,8 @@ export function cyclonesLive(data: Cached<CyclonesAnswer> | null): Live | undefi
     const r = active[0];
     return { valeur: `${active.length} système${active.length > 1 ? "s" : ""} actif${active.length > 1 ? "s" : ""}`, detail: `${esc(capital(r.nom))}${r.stade ? `, ${esc(r.stade)}` : ""}${plan}` };
   }
+  const suivis = d.suivi_cmrs ?? [];
+  if (suivis.length) return { valeur: `${suivis.length} système${suivis.length > 1 ? "s" : ""} suivi${suivis.length > 1 ? "s" : ""}`, detail: `${esc(suivis[0].systeme)}, d'après le CMRS${plan}` };
   const last = d.saison_en_cours.systemes[0] ?? d.saison_precedente?.systemes[0];
   return { valeur: "aucun système actif", detail: `saison ${esc(d.saison_en_cours.nom)}${last ? ` ; dernier : ${esc(capital(last.nom))} (${esc(last.du)} – ${esc(last.au)})` : ""}` };
 }

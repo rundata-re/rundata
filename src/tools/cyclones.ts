@@ -2,6 +2,7 @@ import type { Cache } from "../cache.js";
 import { localTime } from "../geo.js";
 import * as gdacs from "../providers/cyclones.js";
 import * as cmrs from "../providers/cmrs-carte.js";
+import * as cmrsTrace from "../providers/cmrs-trace.js";
 import { SITE_URL } from "./citer.js";
 import * as mf from "../providers/vigilance.js";
 import { why } from "../types.js";
@@ -48,6 +49,35 @@ export function activeRow(s: gdacs.Systeme, avis: gdacs.Avis | undefined) {
     centre: s.centre,
     rapport: s.rapport,
   };
+}
+
+/**
+ * A system the RSMC follows while GDACS has none (providers/cmrs-trace.ts): « zone perturbée n° 2 », or its stage and
+ * name once named, and its bulletin's time and number. Never its position nor its forecast (agreement of 02/11/2026).
+ */
+export function suiviRow(s: cmrsTrace.Suivi) {
+  return {
+    systeme: s.nom ? `${s.stade} ${s.nom}` : `${s.stade} n° ${s.systeme}`,
+    stade: s.stade,
+    dernier_avis: `${at(s.emis)} (heure de La Réunion)`,
+    source: `Météo-France, CMRS de La Réunion, bulletin WTIO31 FMEE n° ${s.numero}`,
+  };
+}
+
+/** What a stage is, said after it where it could be read as a storm. */
+const STADE_DIT: Record<string, string> = {
+  "zone perturbée": "Une zone perturbée est le stade le plus faible\u00a0: ce n'est pas une tempête.",
+};
+
+/**
+ * « 1 système suivi par le CMRS de La Réunion : zone perturbée n° 2, d'après son avis du 06/11 à 10:54 (heure de La
+ * Réunion). Une zone perturbée est… »; without its count, for the page, whose figure says it.
+ */
+export function suiviPhrase(rows: ReturnType<typeof suiviRow>[], compte = true): string {
+  const n = rows.length;
+  const head = `${compte ? `${n} ` : ""}système${n > 1 ? "s" : ""} suivi${n > 1 ? "s" : ""} par le CMRS de La Réunion\u00a0: `;
+  const items = rows.map((r) => `${r.systeme}, d'après son avis du ${r.dernier_avis}`).join("\u00a0; ");
+  return [`${head}${items}.`, ...new Set(rows.map((r) => STADE_DIT[r.stade]).filter(Boolean))].join(" ");
 }
 
 export function seasonRow(s: gdacs.Systeme) {
@@ -161,6 +191,8 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
   const [active, a] = await Promise.all([gdacs.actifs(cache, list, now), alert(cache, now)]);
   const alerte = a?.texte;
   const rows = active.map((x) => activeRow(x.systeme, x.avis));
+  // GDACS lists a system hours or days after the RSMC follows it: meanwhile, the RSMC's own bulletins say it.
+  const suivis = rows.length ? [] : (await cmrsTrace.suivisKept(now)).map(suiviRow);
   // The RSMC's map, kept by the scheduled event while a system is active: only when it follows the newest bulletin.
   const carte = rows.length ? carteOfficielle(await cmrs.kept()) : undefined;
   const season = gdacs.seasonOf(now);
@@ -179,6 +211,8 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
       const when = r.dernier_avis.replace(" (heure de La Réunion)", "");
       parts.push(r.stade ? `${name} : ${r.stade}, d'après l'avis du CMRS du ${when}.` : `${name} : dernier avis du CMRS le ${when}.`);
     }
+  } else if (suivis.length) {
+    parts.push(suiviPhrase(suivis));
   } else {
     parts.push("Aucun système tropical actif dans le sud-ouest de l'océan Indien.");
     parts.push(
@@ -198,6 +232,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
     vie_quotidienne: a?.vie_quotidienne,
     ecoles: a?.ecoles,
     systemes_actifs: rows.length ? rows : undefined,
+    suivi_cmrs: suivis.length ? suivis : undefined,
     carte_officielle: carte,
     saison_en_cours: { nom: season.nom, systemes: thisSeason.map(seasonRow) },
     saison_precedente: rows.length ? undefined : { nom: previous, systemes: lastSeason.map(seasonRow) },
@@ -207,6 +242,6 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
     ...COMMON,
     officiel,
     consulter: OFFICIAL,
-    sources: credits([gdacs.SOURCE, ...(alerte ? [mf.SOURCE] : [])]),
+    sources: credits([gdacs.SOURCE, ...(suivis.length ? [cmrsTrace.SOURCE] : []), ...(alerte ? [mf.SOURCE] : [])]),
   });
 }

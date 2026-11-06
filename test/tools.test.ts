@@ -85,7 +85,7 @@ describe("temperature_mer", () => {
   it("gives the satellite reading with its date and its caveats", async () => {
     const r = body(await temperatureMer(await offlineCache(), "Hermitage", NOW));
     expect(r.mesure).toMatchObject({ nature: "mesure_satellite", jour_mesure: "2026-10-16", age_jours: 2 });
-    expect(r.resume).toMatch(/^Eau de mer près de Plage de l'Ermitage-les-Bains\u00a0: \d+(,\d)? °C, mesurée par satellite le 16\/10, il y a 2 jours \(moyenne du jour, point de mesure à \d+(,\d)? km\)\./);
+    expect(r.resume).toMatch(/^Eau de mer près de la plage de l'Ermitage-les-Bains\u00a0: \d+(,\d)? °C, mesurée par satellite le 16\/10, il y a 2 jours \(moyenne du jour, point de mesure à \d+(,\d)? km\)\./);
     expect(r.avertissements).toContain(
       "Mesure du 16/10, il y a 2 jours\u00a0: ce n'est pas la température d'aujourd'hui. Une mesure par satellite paraît le lendemain, " +
         "et les jours de nuages il n'y en a pas\u00a0: la dernière peut donc dater de plusieurs jours.",

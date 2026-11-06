@@ -128,7 +128,7 @@ describe("fires seen by satellite", () => {
   it("go first in the hikers' answer near them, with the label and the emergency numbers", async () => {
     feux.configure("key");
     const r = body(await sentiersRandonnee(cache(), "Maïdo", NOW));
-    expect(r.resume).toMatch(/^Feu de végétation détecté par satellite près de [^,]+, le 24\/10 à 06:30 \(2 détections dans le secteur\) : détection satellite, faux positifs possibles\. Vous voyez un feu \? Appelez le 18 ou le 112\./);
+    expect(r.resume).toMatch(/^Feu de végétation détecté par satellite près (?:du|de la|de l'|des|de) [^,]+, le 24\/10 à 06:30 \(2 détections dans le secteur\) : détection satellite, faux positifs possibles\. Vous voyez un feu \? Appelez le 18 ou le 112\./);
     expect(r.feux_detectes.urgence).toBe(URGENCE);
     expect(r.feux_detectes.detections[0]).toMatchObject({ quand: "06:30", commune: "Saint-Paul", confiance: "forte", satellite: "NOAA-20" });
     expect(r.feux_detectes.detections[0].distance_km).toBeLessThan(10);
@@ -153,7 +153,7 @@ describe("fires seen by satellite", () => {
     };
     feux.configure("key");
     const r = body(await vigilanceMeteo(withVigilance(), undefined, NOW));
-    expect(r.feux_detectes).toMatch(/^2 feux de végétation détectés par satellite ces dernières 24 h, le dernier près de .+ \(Saint-Paul\) le 24\/10 à 06:30 : détection satellite, faux positifs possibles\. Vous voyez un feu \? Appelez le 18 ou le 112\./);
+    expect(r.feux_detectes).toMatch(/^2 feux de végétation détectés par satellite ces dernières 24 h, le dernier près (?:du|de la|de l'|des|de) .+ \(Saint-Paul\) le 24\/10 à 06:30 : détection satellite, faux positifs possibles\. Vous voyez un feu \? Appelez le 18 ou le 112\./);
     vi.stubGlobal("fetch", async (url: string) => upstream(String(url), true));
     expect(body(await vigilanceMeteo(withVigilance(), undefined, NOW)).feux_detectes).toBeUndefined();
   });
@@ -274,9 +274,9 @@ describe("the fires' page", () => {
     expect(html).toContain("<title>Feux de forêt Réunion\u00a0: détections satellite 24\u00a0h · 974</title>");
     expect(html).toContain('<h1>Feux de végétation à La Réunion, vus par satellite <span class="n974">974</span></h1>');
     expect(html).not.toContain("noindex");
-    expect(html).toContain('<meta name="description" content="2 feux vus par satellite en 24\u00a0h à La Réunion (974), le dernier vu le 24/10 à\u00a006:30 près de');
+    expect(html).toContain('<meta name="description" content="2 feux vus par satellite en 24\u00a0h à La Réunion (974), le dernier vu le 24/10 à\u00a006:30 près du Maïdo.');
     expect(html).toContain('<h2 id="h-feux">Les feux des dernières 24\u00a0h</h2>');
-    expect(html).toContain("Feu détecté près de");
+    expect(html).toContain("Feu détecté près du Maïdo");
     expect(html).toContain(`<h2 id="h-sentiers">Les sentiers fermés par l'ONF</h2>`);
     expect(html).toContain('<h2 id="h-vigilance">La vigilance Météo-France</h2>');
     expect(html).toContain("Votre IA, branchée sur les feux");

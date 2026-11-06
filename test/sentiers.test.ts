@@ -187,7 +187,7 @@ describe("sentiers de randonnée", () => {
     const b = body(await sentiersRandonnee(cache(), "Maïdo", NOW));
     expect(b.autour.sentiers_ouverts).toHaveLength(10);
     expect(b.autour.sentiers_ouverts_en_tout).toBe(42);
-    expect(b.resume).toContain("42 sentiers ouverts à moins de 4 km de Maïdo : les 10 plus proches ici, avec tous les sentiers fermés. La liste complète : https://rundata.re/randonnees#h-secteurs");
+    expect(b.resume).toContain("42 sentiers ouverts à moins de 4 km du Maïdo : les 10 plus proches ici, avec tous les sentiers fermés. La liste complète : https://rundata.re/randonnees#h-secteurs");
   });
 
   it("answers for the forest roads of the island, or one by its code or its name, never a place not found", async () => {
@@ -248,8 +248,8 @@ describe("sentiers de randonnée", () => {
 
   it("gives the ONF's reception areas of a zone, or along a trail asked by its name, under the ONF's names only", async () => {
     const b = body(await sentiersRandonnee(cache(), "Maïdo", NOW));
-    expect(b.resume).toContain(" 48 aires d'accueil de l'ONF à moins de 4 km de Maïdo (voir aires_accueil).");
-    expect(b.aires_accueil).toMatchObject({ ou: "à moins de 4 km de Maïdo", rayon_km: 4, nombre: 48 });
+    expect(b.resume).toContain(" 48 aires d'accueil de l'ONF à moins de 4 km du Maïdo (voir aires_accueil).");
+    expect(b.aires_accueil).toMatchObject({ ou: "à moins de 4 km du Maïdo", rayon_km: 4, nombre: 48 });
     expect(b.aires_accueil.aires).toHaveLength(10);
     expect(b.aires_accueil.aires[0]).toEqual({ nom: "Site du Maïdo", distance_km: 0.2, carte: expect.stringMatching(/^https:\/\/www\.openstreetmap\.org\/\?mlat=-21\.\d+&mlon=55\.\d+/) });
     expect(b.aires_accueil.a_savoir).toBe("Aires d'accueil de l'ONF, sous le nom que leur donne sa carte des sentiers (mise à jour le 20/05/2026), codes compris : « RF » désigne une route forestière, et « pk » le point kilométrique sur cette route. La carte ne dit pas ce qu'on trouve sur chaque aire, ni ce qu'on a le droit d'y faire (camper, faire du feu) : se renseigner auprès de l'ONF.");

@@ -3,7 +3,7 @@ import { localTime } from "../geo.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as cal from "../providers/calendrier.js";
 import { why } from "../types.js";
-import { credits, notFound, text } from "./format.js";
+import { a, credits, majuscule, notFound, text } from "./format.js";
 
 const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
@@ -155,7 +155,7 @@ export async function calendrier(cache: Cache, lieu: string | undefined, now = n
   const s = cal.sun(day, p.lon, p.lat, cal.horizonDe(p));
   const hm = (d: Date) => localTime(d).split(" ")[1];
   const length = Math.round((s.coucher.getTime() - s.lever.getTime()) / 60_000);
-  parts.push(`À ${p.nom}, lever du soleil à ${hm(s.lever)}, coucher à ${hm(s.coucher)}.`);
+  parts.push(`${majuscule(a(p.nom))}, lever du soleil à ${hm(s.lever)}, coucher à ${hm(s.coucher)}.`);
   const lune = moonOf(day, now, p.lon, p.lat, cal.horizonDe(p));
   parts.push(lune.phrase);
 

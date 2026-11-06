@@ -8,7 +8,7 @@ import * as ensemble from "../providers/ensemble.js";
 import * as openmeteo from "../providers/openmeteo.js";
 import * as uv from "../providers/uv.js";
 import { type Forecast, type ForecastDay, type ForecastHour, why } from "../types.js";
-import { credits, de, fourchette, fr, heure, nombre, notFound, paire, placeBlock, placeWarning, text, tranche } from "./format.js";
+import { credits, de, fourchette, le, fr, heure, nombre, notFound, paire, placeBlock, placeWarning, text, tranche } from "./format.js";
 import * as nuages from "./nuages.js";
 
 const TOUR = ["Saint-Denis", "Saint-Pierre", "Saint-Gilles-les-Bains", "Saint-Benoît", "Cilaos", "Plaine des Cafres"];
@@ -662,7 +662,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     dates = days.map((d) => d.date);
     jours = days.map((d) => dayBlock(f, d, now, uvOf, confOf));
     // The summary's first days only: all of them in `jours`.
-    resume = `${HEADER} pour ${r.lieu.nom} — ` +
+    resume = `${HEADER} pour ${le(r.lieu.nom)} — ` +
       days.slice(0, RESUME_JOURS).map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} : ${daySentence(f, d, now, uvOf, confOf)}`).join("\u00a0; ") + ".";
   } else {
     const inRange = period.slots.filter((s) => s.jour <= last);
@@ -683,12 +683,12 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     pas = steps(f, (h) => inRange.some((s) => s.jour === localDate(h.time) && localHour(h.time) >= s.de && localHour(h.time) < s.a), now);
     const partial = inRange.some((s) => s.de > 0 || s.a < 24);
     resume = partial && pas.length
-      ? `${HEADER} pour ${r.lieu.nom}, ${period.libelle} : ` +
+      ? `${HEADER} pour ${le(r.lieu.nom)}, ${period.libelle} : ` +
         pas.map((s) => `${s.heures.split(" ").pop()} ${[s.ciel, s.temperature, s.pluie].filter(Boolean).join(", ")}`).join("\u00a0; ") + "."
       : days.length === 1
-        ? `${HEADER} pour ${r.lieu.nom}, ${period.libelle === dayLabel(days[0].date) ? period.libelle : `${period.libelle} (${dayLabel(days[0].date)})`} : ` +
+        ? `${HEADER} pour ${le(r.lieu.nom)}, ${period.libelle === dayLabel(days[0].date) ? period.libelle : `${period.libelle} (${dayLabel(days[0].date)})`} : ` +
           `${daySentence(f, days[0], now, uvOf, confOf)}.`
-        : `${HEADER} pour ${r.lieu.nom}, ${period.libelle} — ` +
+        : `${HEADER} pour ${le(r.lieu.nom)}, ${period.libelle} — ` +
           days.map((d) => `${dayLabel(d.date)} : ${daySentence(f, d, now, uvOf, confOf)}`).join("\u00a0; ") + ".";
     if (inRange.length < period.slots.length) avertissements.push(`Le modèle ne va que jusqu'au ${dayLabel(last)}.`);
     if (hauts && inRange.some((s) => s.jour > addDays(today, 2))) avertissements.push(nuages.BEYOND);

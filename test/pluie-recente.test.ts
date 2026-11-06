@@ -185,7 +185,7 @@ describe("the rain of the last hours", () => {
     const r = body(await meteoActuelle(await cache(), "Piton des Neiges", NOW));
     expect(r.pluie_recente.pertinence).not.toBe("bonne");
     expect(r.pluie_recente.station).toBe("Cilaos");
-    expect(r.pluie_recente.avertissements[1]).toBe("Pluie mesurée à Cilaos, pas à Piton des Neiges : elle peut y être très différente. Ne pas dire qu'il a plu ou non à Piton des Neiges sans le préciser.");
+    expect(r.pluie_recente.avertissements[1]).toBe("Pluie mesurée à Cilaos, pas au Piton des Neiges : elle peut y être très différente. Ne pas dire qu'il a plu ou non au Piton des Neiges sans le préciser.");
   });
 
   it("warns that a light drizzle may not be measured when the gauge and the radar see nothing under a loaded sky", async () => {

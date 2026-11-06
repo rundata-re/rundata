@@ -78,7 +78,7 @@ describe("sentiers_randonnee for a family", () => {
     expect(all.sentiers.filter((s: { etat: string }) => s.etat === "fermé")).toHaveLength(5);
     for (const s of all.sentiers) expect(["fermé", "ouvert sur les sentiers de l'ONF", "en partie suivi par l'ONF", "non suivi par l'ONF"], s.sentier).toContain(s.etat);
     const maido = body(await sentiersRandonnee(cache(), "Maïdo", NOW, undefined, true)).sentiers_marmailles;
-    expect(maido.zone).toBe("À moins de 10 km de Maïdo");
+    expect(maido.zone).toBe("À moins de 10 km du Maïdo");
     expect(maido.sentiers[0]).toMatchObject({ sentier: "La boucle de Grand Bord", distance_km: 1.2 });
     // A length asked, as for the hikes.
     const short = body(await sentiersRandonnee(cache(), undefined, NOW, { longueur_max_km: 1 }, true)).sentiers_marmailles;

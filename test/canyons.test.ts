@@ -81,7 +81,7 @@ describe("sentiers_randonnee for canyoning", () => {
     expect(all.canyons.par_commune.reduce((n: number, x: { canyons: number }) => n + x.canyons, 0)).toBe(214);
     expect(all.resume).toContain("29 canyons signalés interdits dans l'inventaire du Parc national (sans date) : chacun se dit avec un lieu.");
     const maido = await canyon("Maïdo");
-    expect(maido.canyons.zone).toBe("À moins de 10 km de Maïdo");
+    expect(maido.canyons.zone).toBe("À moins de 10 km du Maïdo");
     expect(maido.canyons.canyons[0].distance_km).toBeLessThanOrEqual(maido.canyons.canyons[1].distance_km);
     expect((await canyon("Zzyzx")).erreur).toBe("Lieu introuvable à La Réunion : « Zzyzx ».");
   });

@@ -48,7 +48,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   emploi: 9,
   enfants: 15,
   historique: 5,
-  lieu: 20,
+  // A place said with its article (« Mesures les plus proches du Maïdo », « PRÉVISION … pour le Piton de la Fournaise »).
+  lieu: 21,
   "marches-publics": 5,
   mer: 5,
   meteo: 9,

@@ -16,6 +16,7 @@ import type { SourceInfo } from "../types.js";
 import type { Agenda, AgendaStore, Evenement, Seance } from "./agenda.js";
 import { extrait, monthOf, statusOf } from "./agenda-mots.js";
 import { communesIn } from "./avis-eau.js";
+import { unlessSpent } from "../budget.js";
 
 /** Its name, credit and link are those of the halls read, once their authorisations are known (providers/agenda.ts). */
 export const SOURCE: SourceInfo = {
@@ -529,10 +530,10 @@ const lucDonat: Agenda = {
   requetes: 2,
   load: (cache, now) =>
     cache.get("agenda:luc_donat", FRESH_SECONDS, async () => {
-      const [agenda, saison] = await Promise.allSettled([
+      const [agenda, saison] = unlessSpent(await Promise.allSettled([
         getBytes(SOURCE.id, "https://www.theatrelucdonat.re/tld_agenda", TIMEOUT_MS, HEADERS),
         getBytes(SOURCE.id, "https://www.theatrelucdonat.re/prog", TIMEOUT_MS, HEADERS),
-      ]);
+      ]));
       if (agenda.status === "rejected") throw agenda.reason;
       // Without its season's page, the dates are told without their genre.
       const genres = saison.status === "fulfilled" ? parseLucDonatGenres(latin1(saison.value)) : new Map<string, string[]>();

@@ -14,7 +14,7 @@
  * list, which reads as « no fire »: the last day each one has data for (FIRMS's data_availability, read a few times
  * a day) leaves out one silent for more than a day, said apart (`muets`).
  */
-import { left, perInvocation } from "../budget.js";
+import { left, perInvocation, unlessSpent } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { getText } from "../http.js";
 import { placeAt } from "../places/resolve.js";
@@ -127,7 +127,7 @@ async function island(cache: Cache, now: Date): Promise<Cached<Feux>> {
     const days = await availability(cache);
     const asked = Object.entries(SATELLITES).filter(([id]) => !silent(days[id], now));
     const muets = Object.entries(SATELLITES).filter(([id]) => silent(days[id], now)).map(([id, nom]) => ({ nom, dernier_jour: days[id] }));
-    const lists = await Promise.allSettled(asked.map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/2`), nom)));
+    const lists = unlessSpent(await Promise.allSettled(asked.map(async ([id, nom]) => parse(await getText(SOURCE.id, `${API}/${mapKey}/${id}/${AREA}/2`), nom))));
     const ok = lists.flatMap((r, i) => (r.status === "fulfilled" ? [{ nom: asked[i][1], list: r.value }] : []));
     if (!ok.length) throw (lists[0] as PromiseRejectedResult | undefined)?.reason ?? new UpstreamError(SOURCE.id, "aucun satellite");
     const detections = ok.flatMap((x) => x.list).sort((x, y) => y.t.localeCompare(x.t));

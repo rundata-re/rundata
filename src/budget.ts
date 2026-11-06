@@ -81,6 +81,31 @@ export class OutOfBudget extends Error {
   }
 }
 
+/** Whether `err` is a subrequest refused for the budget, this one's or the platform's: never the source's fault (cache.ts). */
+export const outOfBudget = (err: unknown) => err instanceof OutOfBudget || /Too many subrequests/.test(String((err as Error)?.message ?? err));
+
+// The entry of the cache being read (cache.ts `refresh`), and whether a part of its reading was refused for the budget.
+const loading = new AsyncLocalStorage<{ spent: boolean }>();
+
+/**
+ * The results of reads made together for one entry of the cache, as they are; one refused for the budget is said to
+ * the entry's reading (`partOfLoad`). Kept with that part missing, the entry would say its source silent (`muet`), or
+ * leave it out, for as long as it is fresh (three hours for the handball's tables, 06/11/2026), when the next visit,
+ * with its own budget, would have read it: cache.ts serves the copy before instead, while it is young enough.
+ */
+export function unlessSpent<T>(results: PromiseSettledResult<T>[]): PromiseSettledResult<T>[] {
+  const l = loading.getStore();
+  if (l && results.some((r) => r.status === "rejected" && outOfBudget(r.reason))) l.spent = true;
+  return results;
+}
+
+/** Runs the reading of an entry of the cache; `spent`: whether one of its parts was refused for the budget (unlessSpent). */
+export async function partOfLoad<T>(fn: () => Promise<T>): Promise<{ value: T; spent: boolean }> {
+  const l = { spent: false };
+  const value = await loading.run(l, fn);
+  return { value, spent: l.spent };
+}
+
 /**
  * Runs `fn` with its own tally; returns its result, the number of subrequests it made by then, and `settled`: the
  * numbers once the work handed to `later` is done too, since that work counts against the same budget.

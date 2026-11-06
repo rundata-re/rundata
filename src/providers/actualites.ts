@@ -23,6 +23,7 @@ import { type SourceInfo, UpstreamError } from "../types.js";
 import { ACCUEIL, ACCUEILS } from "./accueils-medias.js";
 import { strip } from "./avis-eau.js";
 import * as copie from "./prefecture-copie.js";
+import { unlessSpent } from "../budget.js";
 
 /**
  * The media, by the name their items carry (`media`), their name in the credits and as a producer. One in SUSPENDUS is
@@ -630,7 +631,7 @@ export async function lire(now = new Date(), avant?: Fil): Promise<Fil> {
   const lue = avant?.prefectureLue ? Date.parse(avant.prefectureLue) : NaN;
   const kept = avant && now.getTime() - lue < PREFECTURE_DUE_MS ? avant : undefined;
   const [feeds, got] = await Promise.all([
-    Promise.allSettled(feedsRead.map(async (f) => f.parse(await read(f.url), now))),
+    Promise.allSettled(feedsRead.map(async (f) => f.parse(await read(f.url), now))).then(unlessSpent),
     kept ? undefined : prefectureList(read, now),
   ]);
   // The list read now, or the collector's copy; else the last one read, said with its time, two days at most. A copy
@@ -641,7 +642,7 @@ export async function lire(now = new Date(), avant?: Fil): Promise<Fil> {
   const reussie = at && now.getTime() - Date.parse(at) < PREFECTURE_KEPT_MS ? at : undefined;
   const pref = !reussie ? null : fresh ? fresh.liste : avant!.prefecture;
   const items = feeds.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
-  const lives = await Promise.allSettled(liveCandidates(items, now).map(async (u) => parseImazLive(await read(u), u, now)));
+  const lives = unlessSpent(await Promise.allSettled(liveCandidates(items, now).map(async (u) => parseImazLive(await read(u), u, now))));
   const all = [...items, ...lives.flatMap((r) => (r.status === "fulfilled" ? r.value : []))];
   const down = [...new Set(feedsRead.filter((_, k) => feeds[k].status === "rejected").map((f) => f.media))];
   if (!all.length && !pref && feeds.every((r) => r.status === "rejected")) throw new Error("aucun média ne répond");

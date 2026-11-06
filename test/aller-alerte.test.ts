@@ -45,7 +45,7 @@ function level(c: number, prevue = false): Alerte {
 // The pages: an event with its place (a concert on Saturday: the week-end's and the concerts' pages too), a station, the beaches and bathing zones, a recycling centre, children's places,
 // a bus stop, the town hall and the day's markets, a hike's start, the defibrillators.
 const ev = { titre: "Atelier d'échecs", date: "2026-10-31T19:00", quand: "samedi 31/10 à 19:00", genres: ["concert"], commune: "Saint-Denis", lien: "https://example.org", publie_par: "CINOR", lieu: "Bibliothèque Alain Lorraine", position: { lat: -20.8927, lon: 55.4513 } };
-const agenda = cached({ resume: "", nombre: 1, evenements: [ev], ce_week_end: [], couverture: "", a_savoir: "", sources: [] } as unknown as AgendaAnswer);
+const agenda = cached({ resume: "", nombre: 1, evenements: [ev], ce_week_end: [ev], couverture: "", a_savoir: "", sources: [] } as unknown as AgendaAnswer);
 const velos = cached({ stations: [{ nom: "IUT", commune: "Saint-Pierre", velos_electriques: 3, maj: "07:55", lat: -21.34, lon: 55.49 }], communes: [], service: "Altervélo", donnees: "", sources: [] } as never);
 const sea = cached({ plages: [{ nom: "Plage de Boucan-Canot", commune: "Saint-Paul", lon: 55.22, lat: -21.03, valeur: 25, jour: "2026-10-29", distance_km: 3 }], sources: [] } as unknown as SeaData);
 const stop = { slug: "saint-paul/mairie", nom: "Mairie", commune: "Saint-Paul", indexe: true, groups: [{ reseau: "carjaune", nom: "Mairie", commune: "Saint-Paul", ids: [1], lat: -21.0096, lon: 55.27, words: new Set<string>() }] } as unknown as transit.StopPage;

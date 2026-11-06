@@ -1256,13 +1256,13 @@ export interface AgendaAnswer {
   periode?: { du: string; au: string; soir?: boolean };
 }
 
-// The page lists every event of the two weeks, the connector at most 40 an answer.
+// The pages list every event of the two weeks and of the weekend, the connector at most 25 an answer.
 const PAGE_EVENTS = 300;
 
 /** The next two weeks for the whole island, and this weekend's apart: the same agendas, read once. */
 export async function buildAgenda(cache: Cache, now = new Date()): Promise<AgendaAnswer> {
   const a = needed<Omit<AgendaAnswer, "ce_week_end">>(await agenda(cache, undefined, undefined, undefined, now, PAGE_EVENTS, false, true), "agenda");
-  const weekend = answer<{ evenements?: EventRow[] }>(await agenda(cache, undefined, "ce_week_end", undefined, now, undefined, false, true));
+  const weekend = answer<{ evenements?: EventRow[] }>(await agenda(cache, undefined, "ce_week_end", undefined, now, PAGE_EVENTS, false, true));
   // reunion.fr's agenda, not read, is the page's own note under its sources (noteReunionFr): not in its description.
   const resume = a.resume.replace(`\u00a0; ${RESUME_REUNION_FR}`, "");
   return { ...a, resume, non_repris: [...agendaNonRepris(), ...mentionSalles()].join(" ") || undefined, ce_week_end: weekend?.evenements ?? [] };

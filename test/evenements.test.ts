@@ -23,8 +23,9 @@ const ROWS: Row[] = [
   row("Théâtre", "2026-11-07T20:00", "samedi 07/11 à 20:00", { genres: ["théâtre"] }),
   row("Pique-nique créole", "2026-11-01T11:00", "dimanche 01/11 à 11:00", { genres: ["festival"] }),
 ];
+// The weekend's copy as the tool cuts it (tools/agenda.ts, periode « ce_week_end »).
 const data = (rows: Row[], fetchedAt = TUESDAY) => ({
-  value: { resume: "", nombre: rows.length, evenements: rows, couverture: "Agendas lus.", a_savoir: "Heures de La Réunion.", sources: [], ce_week_end: [] } as AgendaAnswer,
+  value: { resume: "", nombre: rows.length, evenements: rows, couverture: "Agendas lus.", a_savoir: "Heures de La Réunion.", sources: [], ce_week_end: rows.filter((r) => inWeekend(r, weekend(TUESDAY), TUESDAY).length) } as AgendaAnswer,
   fetchedAt,
 });
 
@@ -46,8 +47,8 @@ describe("the weekend's events", () => {
     // Easter Monday belongs to the weekend before it, even on the day.
     expect(weekend(new Date("2027-03-24T06:00:00Z"))).toMatchObject({ du: "2027-03-26", au: "2027-03-29" });
     expect(weekend(new Date("2027-03-29T06:00:00Z")).du).toBe("2027-03-26");
-    expect(weekendText(weekend(TUESDAY), TUESDAY)).toBe("Samedi 31 octobre et dimanche 1er novembre (Toussaint)");
-    expect(weekendText(weekend(new Date("2026-11-01T06:00:00Z")), new Date("2026-11-01T06:00:00Z"))).toBe("Dimanche 1er novembre (Toussaint)");
+    expect(weekendText(weekend(TUESDAY), TUESDAY)).toBe("samedi 31 octobre et dimanche 1er novembre (Toussaint)");
+    expect(weekendText(weekend(new Date("2026-11-01T06:00:00Z")), new Date("2026-11-01T06:00:00Z"))).toBe("dimanche 1er novembre (Toussaint)");
   });
 
   it("reads the dates of a row as the agenda writes them", () => {
@@ -82,6 +83,8 @@ describe("the weekend's events", () => {
     expect(html).toContain(`<li><a href="/evenements">Événements</a></li><li aria-current="page">Ce week-end</li>`);
     expect(html).toContain(`"position":3,"name":"Ce week-end","item":"https://rundata.re/evenements/ce-week-end"`);
     expect(html).toContain("Vendredi 30 octobre soir");
+    // The day small in the sentence, as the connector's « ce_week_end » counts them.
+    expect(html).toContain(`<span class="big">4</span><p>événements : samedi 31 octobre et dimanche 1er novembre (Toussaint), et dès le vendredi soir.</p>`);
     expect(html).toContain("Dimanche 1er novembre (Toussaint, férié)");
     // The other date of a row, with its hours.
     expect(html).toMatch(/Kabar du mardi<\/a>.*?<span class="q-none">19\u00a0h<\/span>/s);

@@ -48,6 +48,17 @@ describe("restrictions d'eau", () => {
     expect(heuresDites("entre 7h30 et 19h00, 24h/24, 8 heures")).toBe("entre 07:30 et 19\u00a0h, 24h/24, 8 heures");
   });
 
+  it("keeps the word after an hour: « entre 6 h et 20 h », never « 6 het 20 h »", async () => {
+    expect(heuresDites("Interdiction entre 6h et 20h")).toBe("Interdiction entre 6\u00a0h et 20\u00a0h");
+    expect(heuresDites("Interdiction entre 6 h et 20 h")).toBe("Interdiction entre 6\u00a0h et 20\u00a0h");
+    expect(heuresDites("à partir de 6h30")).toBe("à partir de 06:30");
+    expect(heuresDites("avant 20 h")).toBe("avant 20\u00a0h");
+    expect(heuresDites("de 8h-12h")).toBe("de 8\u00a0h-12\u00a0h");
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    expect(page).toMatch(/Arrosage des jardins potagers<small>Interdiction entre 6\u00a0h et 20\u00a0h<\/small>/);
+    expect(page).not.toMatch(/\d\u00a0h(?:et|à|de)\b/);
+  });
+
   it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, then the order's date", async () => {
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
     expect(page).toContain('<span><svg viewBox="-37 -37 74 74" aria-hidden="true"><rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#862e9c"/></svg>crise</span>');

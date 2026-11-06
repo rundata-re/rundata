@@ -22,6 +22,20 @@ describe("a map link's name holds what it shows (WCAG 2.5.3)", () => {
     expect(nameWithShown(["24°", "Saint-Benoît"], "Saint-Benoît · 43 m : 24 °C, voir le détail")).toBe("24°, Saint-Benoît · 43 m : 24 °C, voir le détail");
   });
 
+  it("does not find a figure shown in the time or the date of the measure", () => {
+    expect(nameWithShown(["24°"], "Saint-Benoît · 43 m : 23,6 °C, mesures du 06/11 à 19:24, voir le détail"))
+      .toBe("24°, Saint-Benoît · 43 m : 23,6 °C, mesures du 06/11 à 19:24, voir le détail");
+    expect(nameWithShown(["19°"], "Cilaos · 1197 m : 18,6 °C, mesures du 06/11 à 19:24, voir le détail"))
+      .toBe("19°, Cilaos · 1197 m : 18,6 °C, mesures du 06/11 à 19:24, voir le détail");
+    expect(nameWithShown(["11°"], "Piton Maïdo · 2156 m : 10,6 °C, mesures du 06/11/2026 à 19:24, voir le détail"))
+      .toBe("11°, Piton Maïdo · 2156 m : 10,6 °C, mesures du 06/11/2026 à 19:24, voir le détail");
+    // A time or a date shown is still found in the name.
+    for (const [shown, said] of [
+      [["19:24"], "Saint-Denis : marée haute à 19:24, voir le détail"],
+      [["06/11"], "Saint-Paul : fermé le 06/11, voir le détail"],
+    ] as [string[], string][]) expect(nameWithShown(shown, said)).toBe(said);
+  });
+
   it("says the place shown too, when the name does not start with it", () => {
     expect(nameWithShown(["3", "Gare"], "Saint-Pierre : 3 vélos, voir le détail")).toBe("3, Gare, Saint-Pierre : 3 vélos, voir le détail");
   });
@@ -69,5 +83,13 @@ describe("a map link's name holds what it shows (WCAG 2.5.3)", () => {
       for (const [, t] of inner.matchAll(/<text[^>]*>([^<]*)<\/text>/g)) expect(holds(unesc(said), unesc(t)), `${said} / ${t}`).toBe(true);
     // A station whose figure is not drawn (not on the tour): its name as before.
     expect(unesc(links.find((l) => l[1] === "#st-le-tevelave")![2])).toMatch(/^Le Tévelave · 9\u202fm : 22\u202f°C, mesures/);
+  });
+
+  it("starts a station's name with its figure when the time of its measure holds the same number (19:27, 27°)", () => {
+    const html = stationsMap([
+      { nom: "Le Port", id: "97407520", source: "meteofrance", altitude_m: 9, time: "2026-11-06T15:27:00Z", stale: false, lon: 55.29, lat: -20.94, temperature: 26.6 },
+    ] as StationNow[]);
+    const said = unesc([...html.matchAll(/<a class="mk[^"]*" href="#st-le-port" aria-label="([^"]+)"/g)][0][1]);
+    expect(said).toMatch(/^27°, Le Port · 9\u202fm : 26,6\u202f°C, mesures du 06\/11 à 19:27/);
   });
 });

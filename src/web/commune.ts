@@ -685,7 +685,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       ...(toHall || quartiers ? { more: `${toHall ? `<p class="ya">${toHall}</p>` : ""}${quartiers}` } : {}),
       ...(quartiers ? { full: true } : {}),
       question: `La mairie ${de(p.nom)} est ouverte ?`,
-      foot: fiche ? `<a href="${esc(fiche)}" rel="noopener">Fiche service-public.fr</a>` : `<a href="/#assistant">Demandez à votre IA →</a>`,
+      foot: fiche ? `<a href="${esc(fiche)}" rel="noopener">Fiche service-public.fr</a>` : `<a href="/mcp">Demandez à votre IA →</a>`,
     },
     ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
     ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: elsewhereLive(p) }] : []),
@@ -703,13 +703,13 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),
     ...(lieux ? [{ icon: "landmark", nom: "À découvrir", ...lieux, full: true }] : []),
     { icon: "calendar", nom: "Soleil et calendrier", href: "/calendrier", live: sunTimes(p, l.calendrier, now) },
-    { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/#assistant">Demandez à votre IA →</a>`, wide: true },
+    { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/mcp">Demandez à votre IA →</a>`, wide: true },
   ];
   // Figures of a year or a quarter, out of the grid that says « en ce moment » (marketing, 26/10).
   const habiter: Tile[] = [
     ...(rents(p) ? [{ icon: "key", nom: "Loyers d'annonce", live: rents(p), foot: `<a href="${loyers.SOURCE.url}" rel="noopener">La carte des loyers de l'ANIL</a>` }] : []),
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),
-    ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/#assistant">Votre adresse : demandez à votre IA →</a>` }] : []),
+    ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/mcp">Votre adresse : demandez à votre IA →</a>` }] : []),
     ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `<a href="https://monenfant.fr" rel="noopener">Trouver une crèche\u00a0: monenfant.fr</a>` }] : []),
     ...(afterBac(p) ? [{ icon: "book", nom: "Après le bac", href: `${ECOLES}#apres-bac`, live: afterBac(p) }] : []),
     ...(roadAccidents(p) ? [{ icon: "car", nom: "Accidents de la route", href: "/trafic#accidents", live: roadAccidents(p) }] : []),
@@ -816,7 +816,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
 </section>
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur ${esc(p.nom)}</h2>
-  <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « le prochain bus ${esc(de(p.nom))} ? » ou « il pleut ${esc(a(p.nom))} ? », il ira chercher lui-même la donnée, avec son heure et sa source. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
+  <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « le prochain bus ${esc(de(p.nom))} ? » ou « il pleut ${esc(a(p.nom))} ? », il ira chercher lui-même la donnée, avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 <section aria-labelledby="h-autres">

@@ -142,7 +142,7 @@ export const coupable = (s: string) => esc(s).replaceAll(".", ".<wbr>").replaceA
 /** The connector, at the end of every domain page, the tool's name coupable(). */
 const connectorCta = (tool: string, what: string) => `<section aria-labelledby="h-ia">
   <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
-  <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${coupable(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
+  <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${coupable(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p></div>
 </section>`;
 
 /**

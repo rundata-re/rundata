@@ -6,7 +6,7 @@ import { NOT_ON_ONF, onfDay, onfRead, randonneesPage, sentiersPage, tracePage, t
 import { OUVERT_ONF } from "../src/web/data.js";
 import { CSS } from "../src/web/pages.js";
 import island from "../src/places/island.json" with { type: "json" };
-import { esc, FONDS_SCRIPT, FOND_ZOOM, H, NOMS_SCRIPT, traceMap, W } from "../src/web/map.js";
+import { esc, FONDS_SCRIPT, FOND_ZOOM, FRAME_MARGIN, FRAME_MOST, frameOf, H, NOMS_SCRIPT, traceMap, W } from "../src/web/map.js";
 import routes from "../src/web/routes.json" with { type: "json" };
 import { secteurPage } from "../src/web/randonnees.js";
 
@@ -123,6 +123,54 @@ describe("the zoom of every map that zooms", () => {
     expect(CSS).toContain(".map.hikes.zoomed .trk.ferme{stroke-width:3.4px;stroke-dasharray:7 4}");
     expect(CSS).toMatch(/\.map \.trk\{[^}]*vector-effect:non-scaling-stroke\}/);
     expect(CSS).toMatch(/\.map\.hikes \.rte\{[^}]*vector-effect:non-scaling-stroke\}/);
+  });
+});
+
+describe("a sector's map", () => {
+  const box = (html: string) => /<svg id="hmap"[^>]*viewBox="([^"]+)"/.exec(html)![1].split(" ").map(Number);
+  it("opens on the sector's own trails with a margin, at the island's proportions, and zooms out to the whole island", () => {
+    // Two trails of Mafate, and an itinerary that runs on to the coast: the frame is the trails'.
+    const lignes = [
+      { k: "s1", genre: "sentier", etat: "ouvert", d: "M300 400l40 10", href: "", nom: "a" },
+      { k: "s2", genre: "sentier", etat: "fermé", d: "M320 380l10-20 10 5", href: "", nom: "b" },
+      { k: "r1", genre: "randonnee", etat: "", d: "M330 390l400 300", href: "", nom: "c" },
+    ];
+    const sentier = (k: string) => ({ ...answer.secteurs[0].sentiers[0], k });
+    const two = { ...answer, lignes, secteurs: [{ ...answer.secteurs[0], sentiers: [sentier("s1"), sentier("s2")] }] } as unknown as RandonneesAnswer;
+    const html = secteurPage(O, mafate, { value: two, fetchedAt: NOW, stale: false }, null, NOW);
+    const [x, y, w, h] = box(html);
+    expect(w / h).toBeCloseTo(W / H, 2);
+    expect(w).toBeCloseTo(Math.max(40 * FRAME_MARGIN, W / FRAME_MOST, (50 * FRAME_MARGIN * W) / H), 1);
+    for (const [px, py] of [[300, 360], [340, 410]]) {
+      expect(px).toBeGreaterThan(x);
+      expect(px).toBeLessThan(x + w);
+      expect(py).toBeGreaterThan(y);
+      expect(py).toBeLessThan(y + h);
+    }
+    expect(html).toContain(`data-box="0 0 ${W} ${H}"`);
+    // The island's map stays whole.
+    const ile = randonneesPage(O, data, NOW);
+    expect(box(ile)).toEqual([0, 0, W, H]);
+    expect(ile).not.toContain("data-box");
+  });
+
+  it("reads the lines as drawn, a step from the last point, never more than FRAME_MOST times closer, within the island", () => {
+    expect(frameOf(["M100 100l100 0 0 100"])).toEqual(frameOf(["M100 100l100 100"]));
+    const [x, y, w, h] = frameOf(["M100 100l100 0 0 100"])!;
+    expect(w / h).toBeCloseTo(W / H, 2);
+    expect(x + w / 2).toBeCloseTo(150, 0);
+    expect(y + h / 2).toBeCloseTo(150, 0);
+    // A trail of a few units gets the closest a frame opens; one near the edge is moved in, not cut.
+    expect(frameOf(["M10 10l2-1"])![2]).toBeCloseTo(W / FRAME_MOST, 1);
+    expect(frameOf(["M10 10l2-1"])!.slice(0, 2)).toEqual([0, 0]);
+    // Lines across the island: no frame, the island whole.
+    expect(frameOf([`M0 0l${W} ${H}`])).toBeUndefined();
+    expect(frameOf([])).toBeUndefined();
+  });
+
+  it("is zoomed from the start in the page's script, which starts from the map's viewBox", () => {
+    expect(script).toContain('let v=svg.getAttribute("viewBox").split(" ").map(Number);');
+    expect(script).toContain("if(v.some((x,i)=>Math.abs(x-B[i])>.01))put();");
   });
 });
 

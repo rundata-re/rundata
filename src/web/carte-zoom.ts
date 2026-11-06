@@ -2,13 +2,14 @@
  * One zoom for every map of the island that zooms (`svg[data-zoom]`): the hikes' map (/randonnees and each sector's
  * page), a trail's map, a commune's map of /enfants. Pinch, the wheel (WHEEL_SCRIPT), the double click (DOUBLE_SCRIPT),
  * the buttons + and − under the map, and « Recentrer » for its whole frame; once zoomed, a finger or the mouse moves it.
- * It moves the map's viewBox within its frame (`data-box`, else its first viewBox), up to `data-zoom` times closer, or
+ * It moves the map's viewBox within its frame (`data-box`, else its first viewBox), from its first viewBox (a map opened
+ * on part of its frame, a sector's trails, is zoomed from the start), up to `data-zoom` times closer, or
  * `data-zoom-fd` times once an IGN background is picked (web/map.ts, FONDS_SCRIPT): the lines and the dots keep their
  * width on screen (vector-effect) and the names are placed again at their size (NOMS_SCRIPT, on the viewBox's change).
  * A tap that ended a drag or a pinch opens nothing. A page's own script brings a point into the frame with the event
  * `zshow` (its detail: x and y, in the map's units), and frames it with `zbox` (x, y and the width; none, the whole
  * frame); carte-points.ts zooms where a finger covers too many points with
- * `pzoom974`. A button that can do nothing more is greyed. Without the script, the map stays whole and the buttons hidden.
+ * `pzoom974`. A button that can do nothing more is greyed. Without the script, the map stays as drawn and the buttons hidden.
  */
 export const MOTS = {
   zoomIn: "Rapprocher",
@@ -58,9 +59,10 @@ export const REACH_PX = 22;
 // looked for when they change, and when the map zooms.
 const SCRIPT = `(()=>{document.querySelectorAll("svg[data-zoom]:not([data-zon])").forEach((svg)=>{svg.dataset.zon="1";const key=svg.dataset.fd,z=document.querySelector('.kzoom[data-fd="'+key+'"]'),fd='.fonds[data-fd="'+key+'"]';if(z)z.hidden=false;
 const most=()=>+(svg.dataset.zoomFd&&document.querySelector(fd+" input:checked:not([value=relief])")?svg.dataset.zoomFd:svg.dataset.zoom)||1,bt=(k)=>z&&z.querySelector('[data-z="'+k+'"]');
-const B=(svg.dataset.box||svg.getAttribute("viewBox")).split(" ").map(Number);let v=B.slice();const put=()=>{svg.setAttribute("viewBox",v.map((x)=>Math.round(x*100)/100).join(" "));svg.classList.toggle("zoomed",v[2]<B[2]-.01);
+const B=(svg.dataset.box||svg.getAttribute("viewBox")).split(" ").map(Number);let v=svg.getAttribute("viewBox").split(" ").map(Number);const put=()=>{svg.setAttribute("viewBox",v.map((x)=>Math.round(x*100)/100).join(" "));svg.classList.toggle("zoomed",v[2]<B[2]-.01);
 if(z){bt("+").disabled=v[2]<=B[2]/most()+.01;bt("-").disabled=bt("0").disabled=v[2]>=B[2]-.01}};
 const clamp=()=>{v[2]=Math.min(B[2],Math.max(B[2]/most(),v[2]));v[3]=v[2]*B[3]/B[2];v[0]=Math.min(B[0]+B[2]-v[2],Math.max(B[0],v[0]));v[1]=Math.min(B[1]+B[3]-v[3],Math.max(B[1],v[1]));put()};
+if(v.some((x,i)=>Math.abs(x-B[i])>.01))put();
 const zoom=(k,cx,cy)=>{if(cx===undefined){cx=v[0]+v[2]/2;cy=v[1]+v[3]/2}const w=v[2]/k;v=[cx-(cx-v[0])/k,cy-(cy-v[1])/k,w,w*B[3]/B[2]];clamp()};
 const pt=(x,y)=>{const m=svg.getScreenCTM().inverse(),p=new DOMPoint(x,y).matrixTransform(m);return[p.x,p.y]};
 const ps=new Map();let moved=0,last=null;

@@ -940,9 +940,10 @@ export interface HikeLine {
  * The island in relief with every hike and ONF trail: the trails open or unknown first, the hikes over them, the
  * closed trails on top so that no closure is hidden. `data-k` ties each line to its entry in the list below the map,
  * for the filter and for a click on it. Under it, the zoom (carte-zoom.ts, up to MAX_ZOOM: the lines are thinned to the
- * island's scale, pathOf()) and the backgrounds.
+ * island's scale, pathOf()) and the backgrounds. With `cadre`, the lines it frames first (a sector's own trails): the map
+ * opens on them with a margin, at the island's proportions, and still zooms out to the whole island.
  */
-export function hikesMap(lines: HikeLine[], label: string): string {
+export function hikesMap(lines: HikeLine[], label: string, cadre?: HikeLine[]): string {
   const cls = (l: HikeLine) => (l.genre === "randonnee" ? "rte" : `trk ${l.etat === "fermé" ? "ferme" : l.etat || "inconnu"}`);
   // A link and a name on each of the few hundred lines would weigh more than the lines: the hikes get a name, and the
   // page's script opens the page of the line clicked, from the list.
@@ -951,14 +952,48 @@ export function hikesMap(lines: HikeLine[], label: string): string {
   const routes = lines.filter((l) => l.genre === "randonnee");
   const closed = lines.filter((l) => l.genre === "sentier" && l.etat === "fermé");
   const svg = islandMap({ label, overlay: `<g class="lines">${[...under, ...routes, ...closed].map(draw).join("")}</g>`, fond: "h" });
-  return zoomIsland(svg, "h", { id: "hmap", cls: "hikes" }) + `<script>${HIKES_REACH}</script>`;
+  const box = cadre?.length ? frameOf(cadre.map((l) => l.d)) : undefined;
+  return zoomIsland(svg, "h", { id: "hmap", cls: "hikes", box }) + `<script>${HIKES_REACH}</script>`;
+}
+
+/** How much wider than the lines a frame is: a fifth of their width on each side. */
+export const FRAME_MARGIN = 1.4;
+
+/** How much closer than the island a frame opens, at most: closer, the relief blurs and no commune's name is left in it. */
+export const FRAME_MOST = 4;
+
+/**
+ * The frame of lines drawn by pathOf() (« M x y l dx dy… »), in the island's units: their box with FRAME_MARGIN, at the
+ * island's proportions, never more than FRAME_MOST times closer than the island, and kept within the island's frame.
+ */
+export function frameOf(paths: string[]): [number, number, number, number] | undefined {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const d of paths) {
+    const n = (d.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
+    let x = 0, y = 0;
+    for (let i = 0; i + 1 < n.length; i += 2) {
+      // The first pair is where the line starts, the others each a step from the last point.
+      [x, y] = i ? [x + n[i], y + n[i + 1]] : [n[0], n[1]];
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+  }
+  if (!(x1 >= x0)) return undefined;
+  let w = Math.max((x1 - x0) * FRAME_MARGIN, W / FRAME_MOST);
+  let h = (y1 - y0) * FRAME_MARGIN;
+  if (w / h < W / H) w = (h * W) / H;
+  else h = (w * H) / W;
+  if (w >= W) return undefined;
+  const clampTo = (c: number, size: number, most: number) => Math.min(Math.max(c - size / 2, 0), most - size);
+  return [clampTo((x0 + x1) / 2, w, W), clampTo((y0 + y1) / 2, h, H), w, h].map((v) => Math.round(v * 100) / 100) as [number, number, number, number];
 }
 
 /**
  * A map of the whole island (islandMap() with `fond: key`) that zooms, as every such map does: up to MAX_ZOOM, or
  * `mostFd` times once an IGN background is picked (carte-zoom.ts), with the buttons and the backgrounds under it.
  */
-export function zoomIsland(svg: string, key: string, opts: { id?: string; cls?: string; mostFd?: number } = {}): string {
+export function zoomIsland(svg: string, key: string, opts: { id?: string; cls?: string; mostFd?: number; box?: number[] } = {}): string {
+  // A map opened on part of the island keeps the whole island as its frame (`data-box`): it zooms out to it.
+  if (opts.box) svg = svg.replace(`viewBox="0 0 ${W} ${H}"`, `viewBox="${opts.box.join(" ")}" data-box="0 0 ${W} ${H}"`);
   return svg.replace('<svg class="map terrain"', `<svg${opts.id ? ` id="${opts.id}"` : ""} class="map terrain${opts.cls ? ` ${opts.cls}` : ""}" data-fd="${key}" data-zoom="${MAX_ZOOM}"${opts.mostFd ? ` data-zoom-fd="${opts.mostFd}"` : ""}`) +
     zoomControls(key, "ile") + fondChoice(key);
 }

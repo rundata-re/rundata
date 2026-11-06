@@ -102,14 +102,27 @@ export function casse(titre: string): string {
 /** The sigles of the stop names kept in capitals: bodies, roads and sites the networks name (« ZAC N° 2 », « CD 29 »). */
 const STOP_SIGLES = new Set([
   ...SIGLES, "AFPAR", "ASCPH", "CAT", "CD", "CFPPA", "CGSS", "CHD", "CHOR", "CIRAD", "CIROI", "CMPP", "DDASS", "DDE", "EPSMR",
-  "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SMA", "SRPP", "ZAC", "ZI",
+  "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SAS", "SMA", "SRPP", "ZAC", "ZI",
 ]);
 /** The small words of a stop name, in lowercase but at its head; « A » is the preposition (« MARE A CITRONS »). */
 const STOP_SMALL: Record<string, string> = { DE: "de", DU: "du", DES: "des", LA: "la", LE: "le", LES: "les", AU: "au", AUX: "aux", ET: "et", PAR: "par", A: "à" };
-/** The common nouns of stop names whose accents the networks leave out in capitals: the only ones given back. */
-const STOP_NOUNS: Record<string, string> = {
-  ECOLE: "École", LYCEE: "Lycée", ALLEE: "Allée", RIVIERE: "Rivière", ILET: "Îlet", CITE: "Cité", EGLISE: "Église",
-  RESIDENCE: "Résidence", POLE: "Pôle", RAVINE: "Ravine",
+/** The articles of STOP_SMALL: small only after another of its words (« de la »), a name's start otherwise (« Les Cuves »). */
+const ARTICLE = new Set(["LE", "LA", "LES"]);
+/**
+ * The words of stop names whose accents the networks leave out: common nouns, and the words of a few names of places
+ * the resolver does not hold or writes without them (« SAINTE-THERESE », « ROUTE DU MAIDO », « Dos d'Ane »). The only
+ * accents given back.
+ */
+const STOP_ACCENTS: Record<string, string> = {
+  ECOLE: "École", COLLEGE: "Collège", LYCEE: "Lycée", ALLEE: "Allée", RIVIERE: "Rivière", ILET: "Îlet", CITE: "Cité",
+  EGLISE: "Église", RESIDENCE: "Résidence", POLE: "Pôle", RAVINE: "Ravine", GLACIERE: "Glacière", ANE: "Âne",
+  ECHANGE: "Échange", THERESE: "Thérèse", MAIDO: "Maïdo",
+};
+/** A word written without its accent, given them back from STOP_ACCENTS, in its case: « Ane » → « Âne ». */
+const accented = (w: string) => {
+  const a = STOP_ACCENTS[w.toLocaleUpperCase("fr")];
+  if (!a || fold(w) !== w.toLowerCase()) return w;
+  return w === w.toLocaleUpperCase("fr") || /^\p{Lu}/u.test(w) ? a : a.toLocaleLowerCase("fr");
 };
 
 /** The names of places the resolver knows (those casse() gives capitals back), by their folded words: as they are written. */
@@ -131,16 +144,26 @@ function placeSpellings() {
  * A stop's name written all in capitals by its network (« GARE SAINT ANDRE », « CHEMIN DE L'ETANG »), as people read it:
  * « Gare Saint-André », « Chemin de l'Etang ». No word added or removed. Each word takes a capital, the
  * small words (STOP_SMALL) none but at the head. Accents and hyphens come only from two closed lists: the names of places
- * the resolver knows, written as it writes them (word for word: « ST ANDRE » stays « St Andre »), and STOP_NOUNS; any
+ * the resolver knows, written as it writes them (word for word: « ST ANDRE » stays « St Andre »), and STOP_ACCENTS; any
  * other word stays without accent, as the network writes it. Sigles of a closed list (STOP_SIGLES), roman numerals,
- * single letters and words with a digit are left as written. A name with a lowercase letter is left as written.
+ * single letters, initials (« A. HOARAU ») and words with a digit are left as written. A name written with a capital
+ * on every word (« Gare De Saint Pierre ») gets the same small words, names of places and accents, its other words left
+ * as written (« Gare de Saint-Pierre »); any other name with a lowercase letter is left as written (« Mairie de La Possession »).
  */
 export function casseArret(nom: string): string {
-  if (/\p{Ll}/u.test(nom) || !/\p{L}/u.test(nom)) return nom;
+  if (!/\p{L}/u.test(nom)) return nom;
   const atoms = [...nom.matchAll(WORD)];
   if (!atoms.length) return nom;
   const between = (i: number) => nom.slice(atoms[i].index! + atoms[i][0].length, atoms[i + 1]?.index ?? nom.length);
   const apostrophe = (i: number) => i >= 0 && i < atoms.length - 1 && /^['’]$/.test(between(i));
+  // Written with a capital on every word but those after an apostrophe (« Dos D'âne »): its words are kept as written.
+  const titled = /\p{Ll}/u.test(nom);
+  if (titled && atoms.some((m, i) => !apostrophe(i - 1) && /^\p{Ll}/u.test(m[0]))) return nom;
+  const up = atoms.map((m) => m[0].toLocaleUpperCase("fr"));
+  // « A. HOARAU », « Z.A. »: a letter and its point.
+  const initial = (i: number) => [...atoms[i][0]].length === 1 && between(i).startsWith(".");
+  // « A » is the preposition only before another word: « QUAI A » is a letter.
+  const small = (i: number) => up[i] in STOP_SMALL && (up[i] !== "A" || i < atoms.length - 1);
   const places = placeSpellings();
   const elided = (i: number) => apostrophe(i) && /^[DL]$/.test(atoms[i][0]);
   const folded = atoms.map((m) => fold(m[0]));
@@ -155,10 +178,10 @@ export function casseArret(nom: string): string {
     let reach = i;
     while (reach < atoms.length && free[reach] && reach - i < longest && (reach === i || joined[reach - 1])) reach++;
     for (let n = reach - i; n >= 1 && !span; n--) {
-      if (n === 1 && atoms[i][0] in STOP_SMALL) continue;
+      if (n === 1 && small(i)) continue;
       const written = places.get(folded.slice(i, i + n).join(" "));
       if (written) {
-        text += written + between(i + n - 1);
+        text += written.replace(WORD, accented) + between(i + n - 1);
         span = n;
       }
     }
@@ -170,11 +193,14 @@ export function casseArret(nom: string): string {
     let word: string;
     // « D'EAU », « L'ETANG »: the elided article, small but at the head.
     if (elided(i)) word = i ? w.toLowerCase() : w;
-    else if (/\p{N}/u.test(w) || STOP_SIGLES.has(w) || ROMAN.test(w) || ([...w].length === 1 && !(w in STOP_SMALL))) word = w;
+    else if (/\p{N}/u.test(w) || STOP_SIGLES.has(w) || ROMAN.test(w) || initial(i) || ([...w].length === 1 && !small(i))) word = w;
     // « P'TIT »: the rest of one word.
-    else if (apostrophe(i - 1) && !elided(i - 1)) word = w.toLocaleLowerCase("fr");
-    else if (w in STOP_SMALL) word = i ? STOP_SMALL[w] : upperFirst(STOP_SMALL[w]);
-    else word = STOP_NOUNS[w] ?? upperFirst(w.toLocaleLowerCase("fr"));
+    else if (apostrophe(i - 1) && !elided(i - 1)) word = titled ? w : w.toLocaleLowerCase("fr");
+    // « LE », « LA », « LES » after a full word start a name (« Agence Les Cuves », « Rue La Fontaine »); after a small
+    // word, an article (« Chemin de la Ravine »).
+    else if (ARTICLE.has(up[i]) && !(i && up[i - 1] in STOP_SMALL && !ARTICLE.has(up[i - 1]) && /^\s+$/.test(between(i - 1)))) word = upperFirst(STOP_SMALL[up[i]]);
+    else if (small(i)) word = i ? STOP_SMALL[up[i]] : upperFirst(STOP_SMALL[up[i]]);
+    else word = accented(titled ? w : upperFirst(w.toLocaleLowerCase("fr")));
     text += word + between(i);
     i++;
   }

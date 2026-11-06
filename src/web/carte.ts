@@ -321,6 +321,21 @@ export function cartePage(origin: string, alerte?: Alerte): string {
 }
 
 /**
+ * Which station figures to hide at this zoom: each box (left, top, right, bottom, on screen; `null` for a figure not
+ * drawn) that crosses one already kept is hidden, the others kept, in the order given (the order of the map's layers,
+ * then of the file). Its point stays, and its figure comes back when a zoom pulls them apart. Pure, for the page's script.
+ */
+export const recouvertes = (bs: (number[] | null)[]): boolean[] => {
+  const kept: number[][] = [];
+  return bs.map((b) => {
+    if (!b) return false;
+    if (kept.some((o) => o[0] < b[2] && b[0] < o[2] && o[1] < b[3] && b[1] < o[3])) return true;
+    kept.push(b);
+    return false;
+  });
+};
+
+/**
  * The page's script. A box ticked asks for its layer's file once, draws it in its group and shows its line of the
  * legend and its block; unticked, it hides them (the file kept). Each point is a link (`a.sp`) with the bubble's lines
  * (carte-points.ts: `data-pn`, `data-p2`, `data-p3`, its link's words in `data-pt`), out of the keyboard's way: the
@@ -373,7 +388,8 @@ Object.assign(pv.style,{left:a.left-b.left-fig.clientLeft+"px",top:a.top-b.top-f
 if(window.ResizeObserver){const ro=new ResizeObserver(place);ro.observe(svg);ro.observe(fig)}new MutationObserver(place).observe(svg,{attributes:true,attributeFilter:["viewBox"]});
 const wet=(o)=>{const i=o.infos||{};return!i.ancienne&&i.pluie_1h>0};
 const rings=(j)=>{pv.replaceChildren(...j.objets.filter(wet).flatMap((o)=>[el("circle",{class:"kpb",cx:X(o.lon),cy:Y(o.lat),r:"12"}),el("circle",{cx:X(o.lon),cy:Y(o.lat),r:"12"})]));place()};
-const draw=(c,j)=>{draw0(c,j);if(KC.on&&KC.frame&&(c.id==="pluie"||c.id==="stations"))KC.frame(true)};
+const hide=${recouvertes},tidy=()=>{tq=0;const ts=[...svg.querySelectorAll("text.kt")],h=hide(ts.map((t)=>{const r=t.getBoundingClientRect();return r.width?[r.left,r.top,r.right,r.bottom]:null}));ts.forEach((t,i)=>t.classList.toggle("kx",h[i]))};let tq=0;const later=()=>{if(!tq)tq=requestAnimationFrame(tidy)};new MutationObserver(later).observe(svg,{attributes:true,attributeFilter:["viewBox"]});addEventListener("resize",later);
+const draw=(c,j)=>{draw0(c,j);if(KC.on&&KC.frame&&(c.id==="pluie"||c.id==="stations"))KC.frame(true);later()};
 const draw0=(c,j)=>{if(c.id==="pluie"){rain(j);return}if(c.id==="stations")rings(j);const g=svg.querySelector('.kl[data-c="'+c.id+'"]');g.replaceChildren();
 if(c.forme==="traces")j.objets.forEach((o)=>{if(!o.trace||o.trace.length<2)return;const d="M"+o.trace.map((p)=>X(p[0])+" "+Y(p[1])).join("L");g.append(el("path",{class:"kth",d}),el("path",{class:"ktl"+((o.infos||{}).alerte?" kti":"")+(c.id==="vitesses"?" v"+o.infos.vitesse_kmh:""),d}))});
 j.objets.forEach((o)=>g.append(point(c,o,j)));
@@ -391,7 +407,7 @@ if(c.id==="velo"){const v=o.filter((x)=>x.trace).length,n=o.reduce((k,x)=>k+(x.i
 if(c.id==="vitesses")return[un(o.length,c.unite),M.vitessesDu];return[nb(o.length),M.datesDonnees[c.id]||"lue le "+jm(j.heure)]};
 const etat=(c,j)=>!j||j==="err"||j.erreur||j.copie==="absente"&&c.id!=="bornes"?"echec":j.copie==="ancienne"?"vieux":"ok";
 const show=(c)=>{const on=boxes.find((b)=>b.value===c.id).checked,j=got.get(c.id),p=aff.querySelector('.kp[data-c="'+c.id+'"]'),g=c.id==="pluie"?svg.querySelector(".kpluie"):svg.querySelector('.kl[data-c="'+c.id+'"]');
-p.hidden=!on;if(c.id==="stations")pv.style.display=on&&etat(c,j)==="ok"&&pv.childElementCount?"":"none";if(g){g.style.display=on?"":"none";g.classList.toggle("vieux",etat(c,j)==="vieux")}let li=lg.querySelector('[data-c="'+c.id+'"]');
+p.hidden=!on;if(c.id==="stations"||c.id==="pluie")later();if(c.id==="stations")pv.style.display=on&&etat(c,j)==="ok"&&pv.childElementCount?"":"none";if(g){g.style.display=on?"":"none";g.classList.toggle("vieux",etat(c,j)==="vieux")}let li=lg.querySelector('[data-c="'+c.id+'"]');
 if(!on){if(li)li.remove();return}if(!li){li=document.createElement("li");li.dataset.c=c.id;li.className="kc-"+c.id;lg.append(li);[...lg.children].sort((a,b)=>K.couches.findIndex((x)=>x.id===a.dataset.c)-K.couches.findIndex((x)=>x.id===b.dataset.c)).forEach((x)=>lg.append(x))}
 const s=etat(c,j),q=(k)=>p.querySelector(k),h=aff.querySelector('.kh[data-c="'+c.id+'"]');
 const tx=document.createElement("span");if(j===undefined){tx.textContent=c.nom+" · "+M.chargement;li.replaceChildren(el2("i","km"),tx);return}

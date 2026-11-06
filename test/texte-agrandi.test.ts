@@ -11,6 +11,6 @@ describe("larger text on a narrow screen", () => {
   });
 
   it("breaks a word of a fact that does not fit on its line", () => {
-    expect(CSS).toContain(".facts dd{margin:0;font:800 1.45rem/1.15 system-ui,sans-serif;color:var(--ink);overflow-wrap:anywhere}");
+    expect(CSS).toContain(".facts dd{margin:0;font:800 1.45rem/1.15 system-ui,sans-serif;overflow-wrap:anywhere;color:var(--ink)}");
   });
 });

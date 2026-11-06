@@ -282,10 +282,10 @@ describe("the fires' page", () => {
     expect(html).toContain("Votre IA, branchée sur les feux");
     expect(html).toContain("Na difé dann bwa\u00a0? Maïdo i brul\u00a0? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.");
     expect(html).toContain('fill="#7c2d12"/></svg>Point chaud détecté par satellite, pas forcément un feu.</span>');
-    expect(html).toMatch(/<span class="mls">Croix\s: sentiers fermés par l&#39;ONF, pas des feux\. Points chauds\s: satellites de la NASA \(FIRMS\), lus le 24\/10 à\s08:00\.<\/span>/);
+    expect(html).toMatch(/<span class="mls">Croix\s: sentiers fermés par l&#39;ONF, pas des feux\. Points chauds\s: données des satellites de la NASA, lues le 24\/10 à\s08:00\.<\/span>/);
     // The first screen (marketing, 06/11/2026): the hot spots of 24 hours, when they were read, what a satellite sees.
     expect(html).toContain('<p class="pill"><span class="dot"></span>Satellites de la NASA · 24\u00a0h</p>');
-    expect(html).toContain("<p class=\"lead\"><b>2 points chauds détectés par satellite depuis 24\u00a0h</b></p>\n    <p>Lu le 24/10 à\u00a008:00. Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.</p>\n    <p class=\"lead\"><b>Vous voyez un feu\u00a0? Appelez le 18 ou le 112.</b></p>");
+    expect(html).toContain("<div class=\"now\"><span class=\"big\">2</span><p>points chauds détectés par satellite dans les 24\u00a0h avant le 24/10 à\u00a008:00.</p></div>\n    <p>Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.</p>\n    <p class=\"lead\"><b>Vous voyez un feu\u00a0? Appelez le 18 ou le 112.</b></p>");
     expect(await (await page("/sitemap.xml"))!.text()).toContain("<loc>https://rundata.re/feux</loc>");
     // The satellites not answering: said, not kept.
     vi.spyOn(console, "error").mockImplementation(() => {});
@@ -298,9 +298,17 @@ describe("the fires' page", () => {
   });
 
   it("says the hot spots as a satellite sees them, none with « détecté par satellite », never « pas de feu »", () => {
-    expect(heroFeux({ satellites: ["NOAA-20"], detections: [] })).toBe("Aucun point chaud détecté par satellite depuis 24 h");
-    expect(heroFeux({ satellites: ["NOAA-20"], detections: [at("2026-10-24T02:30:00Z")] })).toBe("1 point chaud détecté par satellite depuis 24 h");
-    expect(heroFeux({ satellites: ["NOAA-20"], detections: [at("2026-10-24T02:30:00Z"), at("2026-10-23T19:00:00Z")] })).toBe("2 points chauds détectés par satellite depuis 24 h");
+    const read = { satellites: ["NOAA-20"], fetchedAt: NOW };
+    expect(heroFeux({ ...read, detections: [] })).toEqual({ big: "Aucun point chaud", then: "détecté par satellite dans les 24 h avant le 24/10 à 08:00." });
+    expect(heroFeux({ ...read, detections: [at("2026-10-24T02:30:00Z")] })).toEqual({ big: "1", then: "point chaud détecté par satellite dans les 24 h avant le 24/10 à 08:00." });
+    expect(heroFeux({ ...read, detections: [at("2026-10-24T02:30:00Z"), at("2026-10-23T19:00:00Z")] })).toEqual({ big: "2", then: "points chauds détectés par satellite dans les 24 h avant le 24/10 à 08:00." });
+    // A quiet day: « Aucun point chaud » in big, before the map; the legend says it again beside the crosses.
+    feux.configure("key");
+    const quiet = feuxPage("https://rundata.re", { fires: { ...read, detections: [] }, sentiers: null }, NOW);
+    expect(quiet).toMatch(/<div class="status"><p class="big">Aucun point chaud<\/p><p class="lead">détecté par satellite dans les 24\sh avant le 24\/10 à\s08:00\.<\/p><\/div>/);
+    expect(quiet.indexOf('<p class="big">')).toBeLessThan(quiet.indexOf('<svg class="map'));
+    expect(quiet).toMatch(/Croix\s: sentiers fermés par l&#39;ONF, pas des feux\. Aucun point chaud détecté par satellite \(données des satellites de la NASA, lues le 24\/10 à\s08:00\)\./);
+    expect(quiet).not.toContain("Lu le");
   });
 
   it("is linked from /sentiers and from a commune's tile when there is a fire", () => {

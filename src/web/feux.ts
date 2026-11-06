@@ -40,11 +40,15 @@ const PILL = "Satellites de la NASA · 24 h";
 const SEES = "Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.";
 const CROIX = "Croix : sentiers fermés par l'ONF, pas des feux.";
 
-/** The hero: the count of the hot spots of 24 hours, said as the satellites see them. */
-export function heroFeux(fires: feux.Feux): string {
+/**
+ * The hero, as the satellites see the 24 hours before their data was read: in big the count of the hot spots, or
+ * « Aucun point chaud » cut from the preview's sentence; then the rest of the sentence, with its day and time.
+ */
+export function heroFeux(fires: feux.Feux & { fetchedAt: Date }): { big: string; then: string } {
   const n = fires.detections.length;
-  if (!n) return "Aucun point chaud détecté par satellite depuis 24 h";
-  return n === 1 ? "1 point chaud détecté par satellite depuis 24 h" : `${n} points chauds détectés par satellite depuis 24 h`;
+  const before = `par satellite dans les 24 h avant ${leAt(fires.fetchedAt)}.`;
+  if (!n) return { big: "Aucun point chaud", then: `détecté ${before}` };
+  return { big: String(n), then: `${n === 1 ? "point chaud détecté" : "points chauds détectés"} ${before}` };
 }
 
 /** The description: the count and the newest, without its place when that makes it too long. */
@@ -90,15 +94,19 @@ function firesLine(l: FeuxLive): string {
   const trails = l.sentiers ? ` Sentiers : ${onfMap(l.sentiers.value).replace(/^C/, "c")}.` : "";
   if (!feux.enabled() || !l.fires) return trails.trim();
   return (l.fires.detections.length
-    ? `Points chauds : satellites de la NASA (FIRMS), lus ${leAt(l.fires.fetchedAt)}.`
-    : `Aucun point chaud détecté par satellite (NASA FIRMS, lu ${leAt(l.fires.fetchedAt)}).`) + trails;
+    ? `Points chauds : données des satellites de la NASA, lues ${leAt(l.fires.fetchedAt)}.`
+    : `Aucun point chaud détecté par satellite (données des satellites de la NASA, lues ${leAt(l.fires.fetchedAt)}).`) + trails;
 }
 
-/** Under the hero: when the satellites were read, and what they see; without them, the page's lead as before. */
+/** The hero, as on /cyclones, then what a satellite sees; without the satellites' data, the page's lead as before. */
 function heroLines(l: FeuxLive, on: boolean): string {
   if (!on || !l.fires) return `<p class="lead">${esc(LEAD)}</p>`;
-  return `<p class="lead"><b>${esc(heroFeux(l.fires))}</b></p>
-    <p>${esc(`Lu ${leAt(l.fires.fetchedAt)}. ${SEES}`)}</p>`;
+  const { big, then } = heroFeux(l.fires);
+  const hero = l.fires.detections.length
+    ? `<div class="now"><span class="big">${esc(big)}</span><p>${esc(then)}</p></div>`
+    : `<div class="status"><p class="big">${esc(big)}</p><p class="lead">${esc(then)}</p></div>`;
+  return `${hero}
+    <p>${esc(SEES)}</p>`;
 }
 
 export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?: Alerte): string {

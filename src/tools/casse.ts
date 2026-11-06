@@ -105,7 +105,7 @@ const STOP_SIGLES = new Set([
   "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SMA", "SRPP", "ZAC", "ZI",
 ]);
 /** The small words of a stop name, in lowercase but at its head; « A » is the preposition (« MARE A CITRONS »). */
-const STOP_SMALL: Record<string, string> = { DE: "de", DU: "du", DES: "des", LA: "la", LE: "le", LES: "les", AU: "au", AUX: "aux", ET: "et", A: "à" };
+const STOP_SMALL: Record<string, string> = { DE: "de", DU: "du", DES: "des", LA: "la", LE: "le", LES: "les", AU: "au", AUX: "aux", ET: "et", PAR: "par", A: "à" };
 /** The common nouns of stop names whose accents the networks leave out in capitals: the only ones given back. */
 const STOP_NOUNS: Record<string, string> = {
   ECOLE: "École", LYCEE: "Lycée", ALLEE: "Allée", RIVIERE: "Rivière", ILET: "Îlet", CITE: "Cité", EGLISE: "Église",

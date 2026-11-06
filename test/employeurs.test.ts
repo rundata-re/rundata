@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { employeur, employeurs, intitule, objet } from "../src/tools/employeurs.js";
+import { acheteur, employeur, employeurs, intitule, objet } from "../src/tools/employeurs.js";
 import { offreRow } from "../src/tools/emploi.js";
 
 describe("the offers' titles and employers", () => {
@@ -71,6 +71,12 @@ describe("the procurement notices' objects and buyers", () => {
     expect(objet("Travaux rue de Paris")).toBe("Travaux rue de Paris");
   });
 
+  it("reads an object as written in capitals word by word: a letter alone in lowercase does not keep it as written, a word does", () => {
+    expect(objet("CONSTRUCTION D'UN GYMNASE l'ETANG-SALE-LES-BAINS")).toBe("Construction d'un gymnase L'Étang-Salé-les-Bains");
+    expect(objet("TITRES RESTAURANT DU CCAS DE SAINT-ANDRE")).toBe("Titres restaurant du CCAS de Saint-André");
+    expect(objet("Travaux CINOR")).toBe("Travaux CINOR");
+  });
+
   it("keeps the lots' letters in capitals, in a list or alone before a punctuation", () => {
     expect(objet("TRANSPORT SCOLAIRE - LOTS A,B,C ET D")).toBe("Transport scolaire - lots A,B,C et D");
     expect(objet("TRAVAUX - LOT A - VOIRIE")).toBe("Travaux - lot A - voirie");
@@ -102,5 +108,13 @@ describe("the procurement notices' objects and buyers", () => {
     expect(employeur("SPL AFPAR (974)")).toBe("SPL AFPAR (974)");
     expect(employeur("SEMTO")).toBe("SEMTO");
     expect(employeur("Ville de Saint-Paul")).toBe("Ville de Saint-Paul");
+  });
+
+  it("names each part of a buyer in capitals, keeps a part with lowercase words, and writes the places in capitals it holds", () => {
+    expect(acheteur("COMMUNE DE SAINT-JOSEPH - Service de la Commande Publique")).toBe("Commune de Saint-Joseph - Service de la Commande Publique");
+    expect(acheteur("Mairie de L'ETANG-SALE")).toBe("Mairie de L'Étang-Salé");
+    expect(acheteur("DEPARTEMENT DE LA REUNION")).toBe("Département de La Réunion");
+    expect(acheteur("Ville de Saint-Paul")).toBe("Ville de Saint-Paul");
+    expect(acheteur("Syndicat Mixte Parc Routier de la Réunion")).toBe("Syndicat Mixte Parc Routier de la Réunion");
   });
 });

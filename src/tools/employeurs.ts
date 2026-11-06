@@ -9,7 +9,7 @@
  */
 import { de } from "../articles.js";
 import { INSEE } from "../places/insee.js";
-import { casse, casseArret, SIGLES, STOP_SIGLES } from "./casse.js";
+import { casse, casseArret, lieuEcrit, SIGLES, STOP_SIGLES } from "./casse.js";
 
 /**
  * The sigles of the offers' titles kept in capitals, beside the island's bodies: « H/F », the services and schemes the
@@ -176,12 +176,36 @@ const voies = (s: string) =>
   s.replace(VOIE, (m, v: string, petits: string, n: string) => (PAS_UN_NOM.has(n.trim().split(/[\s'’]/)[0].toLowerCase()) ? m : v + petits + nom(n)));
 
 /**
- * A procurement notice's object as people read it: written all in capitals, in the case of a sentence as the offers'
- * titles (phrase()), its lots' letters in capitals, « A » between words the preposition, the names of the roads and
- * structures with their capitals (« REQUALIFICATION DE L'AVENUE PASTEUR » → « Requalification de l'avenue Pasteur »).
+ * Written in capitals, word by word: each word of two letters or more, beside « h/f ». A letter alone may be in
+ * lowercase (« … MULTISPORT l'ETANG-SALE-LES-BAINS »); one word in lowercase is enough for a text in the case of a
+ * sentence, sigles and all (« Travaux CINOR »).
+ */
+const capitales = (s: string) => {
+  const mots = sansHF(s).match(/\p{L}{2,}/gu) ?? [];
+  return mots.length > 0 && mots.every((m) => !/\p{Ll}/u.test(m));
+};
+/** Its letters alone in capitals: « l'ETANG » → « L'ETANG », for a text written in capitals (capitales()). */
+const lettres = (s: string) => s.replace(/(?<![\p{L}])\p{Ll}(?![\p{L}])/gu, (c) => c.toUpperCase());
+
+/**
+ * A procurement notice's object as people read it: written in capitals (capitales()), in the case of a sentence as the
+ * offers' titles (phrase()), its lots' letters in capitals, « A » between words the preposition, the names of the roads
+ * and structures with their capitals (« REQUALIFICATION DE L'AVENUE PASTEUR » → « Requalification de l'avenue Pasteur »).
  * As written otherwise.
  */
 export function objet(s: string): string {
-  if (/\p{Ll}/u.test(s)) return s;
-  return voies(phrase(s).replace(LOTS, (_, l: string, x: string) => l + x.replace(/(?<![\p{L}])\p{L}(?![\p{L}])/gu, (c) => c.toUpperCase())).replace(A, "à"));
+  if (!capitales(s)) return s;
+  return voies(phrase(lettres(s)).replace(LOTS, (_, l: string, x: string) => l + x.replace(/(?<![\p{L}])\p{L}(?![\p{L}])/gu, (c) => c.toUpperCase())).replace(A, "à"));
 }
+
+/** The words in capitals of a name otherwise in lowercase, joined by spaces, hyphens or apostrophes (« L'ETANG-SALE »). */
+const EN_CAPITALES = /(?<![\p{L}'’-])\p{Lu}+(?:[\s'’-]+\p{Lu}+)*(?![\p{L}])/gu;
+
+/**
+ * A procurement notice's buyer as people read it: each part between « - » written in capitals named as an employer
+ * (employeur(): « COMMUNE DE SAINT-JOSEPH » → « Commune de Saint-Joseph »); a part with words in lowercase kept as
+ * written, but for the names of places in capitals it holds, written as the resolver writes them (« Mairie de
+ * L'ETANG-SALE » → « Mairie de L'Étang-Salé »).
+ */
+export const acheteur = (nom: string) =>
+  nom.split(" - ").map((part) => (capitales(part) ? employeur(lettres(part)) : part.replace(EN_CAPITALES, (m) => lieuEcrit(m) ?? m))).join(" - ");

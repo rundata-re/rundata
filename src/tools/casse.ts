@@ -3,9 +3,11 @@
  * (marketing, /evenements): « Atelier de gestion budgetaire ». A title with one lowercase letter is left as written, and
  * so is one too short not to be a sigle. Kept in capitals: the sigles of the island's bodies (CCAS, CINOR…), a word
  * without a vowel (« LRGR »), a short one no French word starts like (« DKLO »), the roman numerals and the words with a
- * digit. A commune or a village the resolver knows gets its capitals back (« Le
- * rallye Grand Est fait étape à St-André »). A title of one or two words is a name more often than a sentence (an
- * artist, a show: « NAWELL MADANI »): each of its words takes a capital.
+ * digit. A commune or a village the resolver knows gets its capitals back (« Le rallye Grand Est fait étape à
+ * St-André »), and its accents with them when it is a commune or a name of two words or more, as the resolver writes
+ * it (the communes as INSEE: « SAINT-ANDRE » → « Saint-André »); its punctuation stays as written. A village of one
+ * word gets no accent: « PAUSE » is a word before it is Pausé. A title of one or two words is a name more often than a
+ * sentence (an artist, a show: « NAWELL MADANI »): each of its words takes a capital.
  */
 import gazetteer from "../places/gazetteer.json" with { type: "json" };
 
@@ -46,17 +48,23 @@ const fold = (w: string) => w.toLowerCase().normalize("NFD").replace(/\p{M}/gu, 
 const key = (w: string) => SHORT[fold(w)] ?? fold(w);
 const upperFirst = (w: string) => w.charAt(0).toLocaleUpperCase("fr") + w.slice(1);
 
-/** Each name the resolver knows, as its folded words, with whether each word takes a capital (« les » in « Saint-Gilles-les-Bains » does not). */
-let names: Map<string, { words: string[]; caps: boolean[] }[]> | undefined;
+/**
+ * Each name the resolver knows, as its folded words, with whether each word takes a capital (« les » in
+ * « Saint-Gilles-les-Bains » does not), and the words as the resolver writes them when their accents are given back.
+ */
+let names: Map<string, { words: string[]; caps: boolean[]; written?: string[] }[]> | undefined;
 function placeNames() {
   if (names) return names;
   names = new Map();
   const places = (gazetteer.places as { nom: string; type: string }[]).filter((p) => p.type === "commune" || (p.type === "localite" && !COMMON.has(p.nom)));
   for (const p of places) {
     const parts = p.nom.match(WORD) ?? [];
-    const one = { words: parts.map(key), caps: parts.map((w) => w !== w.toLowerCase()) };
+    const written = p.type === "commune" || parts.length > 1 ? parts : undefined;
+    const one = { words: parts.map(key), caps: parts.map((w) => w !== w.toLowerCase()), written };
     // « Trois-Bassins » for « Les Trois-Bassins »: without its article, when more than one word is left (« Port » alone is a word).
-    const all = ARTICLES.has(one.words[0]) && one.words.length > 2 ? [one, { words: one.words.slice(1), caps: one.caps.slice(1) }] : [one];
+    const all = ARTICLES.has(one.words[0]) && one.words.length > 2
+      ? [one, { words: one.words.slice(1), caps: one.caps.slice(1), written: written?.slice(1) }]
+      : [one];
     for (const n of all) names.set(n.words[0], [...(names.get(n.words[0]) ?? []), n].sort((x, y) => y.words.length - x.words.length));
   }
   return names;
@@ -87,7 +95,14 @@ export function casse(titre: string, sigles: { has(w: string): boolean } = SIGLE
       const span = n.words.length;
       if (i + span > words.length) continue;
       if (!n.words.every((w, j) => key(words[i + j][0]) === w && (j === 0 || /^[\s'’-]+$/.test(between(i + j - 1))))) continue;
-      for (let j = 0; j < span; j++) if (n.caps[j] && !sigles.has(words[i + j][0])) out[i + j] = upperFirst(out[i + j]);
+      for (let j = 0; j < span; j++) {
+        const w = words[i + j][0];
+        if (sigles.has(w)) continue;
+        // « ANDRE » → « André »: the word as the resolver writes it, when it is the same word (« ST » stays « St »).
+        const as = n.written?.[j];
+        if (as && fold(as) === fold(w)) out[i + j] = as;
+        else if (n.caps[j]) out[i + j] = upperFirst(out[i + j]);
+      }
       i += span - 1;
       break;
     }
@@ -142,6 +157,19 @@ function placeSpellings() {
     if (!spelled.has(words.join(" "))) spelled.set(words.join(" "), p.nom);
   }
   return spelled;
+}
+
+/** The communes, as the resolver writes them. */
+let communes: Set<string> | undefined;
+/**
+ * A name of a place the resolver knows, word for word, as it writes it (« L'ETANG-SALE » → « L'Étang-Salé »): a commune,
+ * or a name of two words or more, as casse() gives its accents back; undefined for any other.
+ */
+export function lieuEcrit(s: string): string | undefined {
+  const words = (s.match(WORD) ?? []).map(fold);
+  const as = placeSpellings().get(words.join(" "));
+  communes ??= new Set((gazetteer.places as { nom: string; type: string }[]).filter((p) => p.type === "commune").map((p) => p.nom));
+  return as && (words.length > 1 || communes.has(as)) ? as : undefined;
 }
 
 /**

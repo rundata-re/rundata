@@ -221,6 +221,20 @@ describe("once Météo-France agrees", () => {
     expect(p.points).toHaveLength(2);
   });
 
+  it("writes the time of a read that changes nothing at most once every 15 minutes, read every 5 with GDACS active", async () => {
+    stubFetch(() => new Response(B6));
+    const at = (m: number) => new Date(AT.getTime() + m * 60_000);
+    await trace.passage(cache(AT), AT);
+    expect(kv.puts).toBe(1);
+    await trace.passage(cache(AT), at(5));
+    await trace.passage(cache(AT), at(10));
+    expect(kv.puts).toBe(1);
+    await trace.passage(cache(AT), at(15));
+    expect(kv.puts).toBe(2);
+    await trace.passage(cache(AT), at(20));
+    expect(kv.puts).toBe(2);
+  });
+
   it("draws the path on the basin's map under the RSMC's, its last position named, and no forecast", async () => {
     stubFetch(() => new Response(B7));
     let e = trace.ajoute({ traces: [] }, trace.parse(B6)!, AT);
@@ -321,12 +335,13 @@ describe("a system the RSMC follows before GDACS lists it", () => {
     expect(calls.some((u) => u === trace.URL)).toBe(false);
     expect(await trace.passage(cache(NOV6), new Date("2026-11-06T07:25:00Z"))).toBe("bulletin 2/2 (système n° 2 (non baptisé))");
     expect(kv.puts).toBe(1);
+    // The same bulletin 15 minutes later: written again for the time of the read alone, the system being followed.
     expect(await trace.passage(cache(NOV6), new Date("2026-11-06T07:40:00Z"))).toBe("bulletin 2/2 (système n° 2 (non baptisé))");
-    expect(kv.puts).toBe(1);
+    expect(kv.puts).toBe(2);
     // The file keeps its last bulletin for weeks: 31 days after it, nothing added back, nothing written.
     kv.data.clear();
     expect(await trace.passage(cache(NOV6), new Date("2026-12-07T07:25:00Z"))).toBe("bulletin ancien");
-    expect(kv.puts).toBe(1);
+    expect(kv.puts).toBe(2);
   });
 
   it("is said by the tool and the page, with the bulletin's time and source, never its position", async () => {
@@ -368,6 +383,21 @@ describe("a system the RSMC follows before GDACS lists it", () => {
     const later = await withLectures(() => cyclones(cache(day), undefined, day));
     expect(later.lectures.some((l) => l.key === "cmrs:trace")).toBe(false);
     expect(JSON.parse(cite("cyclones", later.value, { lectures: later.lectures, now: day }).content[0].text).citer).toBe("rundata.re, d'après CMRS de La Réunion (Météo-France), via GDACS");
+  });
+
+  it("dates the answer by the last read of the bulletin, the state unchanged since: read again 6 hours later", async () => {
+    stubFetch(() => new Response(ZP2));
+    await trace.passage(cache(NOV6), new Date("2026-11-06T07:25:00Z"));
+    expect(kv.puts).toBe(1);
+    // 13:25 UTC, a quiet minute: the same bulletin, no new position, the time of the read written.
+    await trace.passage(cache(NOV6), new Date("2026-11-06T13:25:00Z"));
+    expect(kv.puts).toBe(2);
+    expect(JSON.parse(kv.data.get("cmrs:trace") as string).lu).toBe("2026-11-06T13:25:00.000Z");
+    const at = new Date("2026-11-06T13:30:00Z");
+    const { value: r, lectures } = await withLectures(() => cyclones(cache(at), undefined, at));
+    const b = JSON.parse(cite("cyclones", r, { lectures, now: at }).content[0].text);
+    expect(b.fraicheur.lue_a).toBe("06/11 17:25");
+    expect(b.fraicheur.avertissement).toBeUndefined();
   });
 
   it("is no longer followed 24 hours after its bulletin, nor after the RSMC's last one", async () => {

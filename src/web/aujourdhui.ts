@@ -31,13 +31,22 @@ export const aCommune = a;
 export const deCommune = de;
 
 // The texts of the page, worded by marketing.
+// Each of the commune's two pages says its role (UX review of 04/11/2026, words validated by data-run on 06/11): this
+// one the day, /communes/<commune> the lasting record.
 export const titleOf = (p: PlacePage) =>
-  [`${p.nom} aujourd'hui : météo, routes, sorties · 974`, `${p.nom} aujourd'hui : météo, sorties · 974`].find((t) => t.length <= TITLE_MAX)!;
-export const H1 = (p: PlacePage) => `Aujourd'hui ${aCommune(p.nom)}`;
-export const LINK = (p: PlacePage) => `Aujourd'hui ${aCommune(p.nom)} : le résumé de la journée →`;
-export const HOOK = (p: PlacePage) => `Ce qui compte aujourd'hui ${aCommune(p.nom)}, sur une page : la mesure, les routes, l'actu, les coupures, les sorties et la vie pratique.`;
+  [`La journée ${aCommune(p.nom)} : eau, météo, sorties · 974`, `La journée ${aCommune(p.nom)} · 974`].find((t) => t.length <= TITLE_MAX)!;
+export const H1 = (p: PlacePage) => `La journée ${aCommune(p.nom)}`;
+/** The link from the commune's page, saying what is here. */
+export const LINK = (p: PlacePage) => `La journée ${aCommune(p.nom)} : eau, vigilance, météo, sorties →`;
+/** The link to the commune's page, saying what is there. */
+export const FICHE = (p: PlacePage) => `La fiche ${deCommune(p.nom)} : mairie, écoles, médecins, élections →`;
+export const HOOK = (p: PlacePage) => `Aujourd'hui ${aCommune(p.nom)} : la mesure, la vigilance, l'eau, les routes, l'actu, les sorties et la vie pratique.`;
 
-/** « Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés le 05/11 à 15:10, 12 sorties, 1 coupure d'eau. Routes, actu… », each figure only when there is one. */
+/**
+ * « Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés le 05/11 à 15:10, 12 sorties, 1 coupure d'eau. Eau, vigilance… »,
+ * each figure only when there is one, the last ones left out when too long; without any, « La journée à Saint-Paul
+ * (974) : eau, vigilance… ».
+ */
 
 type Markets = NonNullable<Resume["marches_du_jour"]>;
 type Aller = ReturnType<typeof porte>["aller"];
@@ -144,8 +153,12 @@ export function descriptionOf(p: PlacePage, r: Resume): string {
     events ? plural(events, "sortie") : "",
     cuts ? plural(cuts, "coupure d'eau", "coupures d'eau") : "",
   ].filter(Boolean);
-  const long = `Aujourd'hui ${aCommune(p.nom)} (974) : ${figures.length ? `${figures.join(", ")}. ` : ""}Routes, actu, vigilance, mairie : le résumé du jour.`;
-  return long.length <= DESCRIPTION_MAX ? long : `Aujourd'hui ${aCommune(p.nom)} (974) : Routes, actu, vigilance, mairie : le résumé du jour.`;
+  // Too long: the last figures left out first, the water not to drink kept as long as it fits.
+  for (let n = figures.length; n > 0; n--) {
+    const long = `Aujourd'hui ${aCommune(p.nom)} (974) : ${figures.slice(0, n).join(", ")}. Eau, vigilance, routes, sorties : la journée de la commune.`;
+    if (long.length <= DESCRIPTION_MAX) return long;
+  }
+  return `La journée ${aCommune(p.nom)} (974) : eau, vigilance, météo, routes, sorties.`;
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
@@ -271,12 +284,12 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const trail = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [[SITE, "/"], ["Communes", "/communes"], [p.nom, `/communes/${p.slug}`], ["Aujourd'hui", path]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: `${origin}${u}` })),
+    itemListElement: [[SITE, "/"], ["Communes", "/communes"], [p.nom, `/communes/${p.slug}`], ["La journée", path]].map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: `${origin}${u}` })),
   };
   // The island situating the commune, as on its page (commune.ts). Not on a phone (nophone), where it would come under
   // the text, out of sight: drawing it there delayed the text's first paint by about 340 ms on slow 4G at 390 px, and by
   // 250 ms still with content-visibility (median of 9, 31/10/2026); hidden, nothing moved.
-  const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li><a href="/communes/${p.slug}">${esc(p.nom)}</a></li><li aria-current="page">Aujourd'hui</li></ol></nav></div>
+  const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li><a href="/communes/${p.slug}">${esc(p.nom)}</a></li><li aria-current="page">La journée</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
     <p class="pill"><span class="dot"></span>${esc(r.resume.split("\u00a0; ")[0])}</p>
@@ -305,7 +318,7 @@ ${cuts || events ? `<section aria-labelledby="h-eau-sorties"><div class="sec-h">
   ${monumentsCard(p.nom)}
 </section>
 <section>${missing}
-  <p class="note"><a href="/communes/${p.slug}">${esc(p.nom)} en direct : les bus, la mairie, toutes les rubriques →</a></p>
+  <p class="note"><a href="/communes/${p.slug}">${esc(FICHE(p))}</a></p>
   <p class="sources">Sources : ${credits([...r.sources, credit(monuments.SOURCE)])}.</p>
 </section>
 ${connectorCta("resume_du_jour", `la journée ${deCommune(p.nom)}`)}`;

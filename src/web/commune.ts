@@ -28,17 +28,17 @@ import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
 import { a, ailleurs, communeDite, de, ecartsCourts, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
-import { coastText, cyclone, cycloneLevel, feminine, forZone, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
+import { coastText, cyclone, cycloneLevel, feminine, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
 import { credit, joursDuJour } from "./data.js";
-import { aCommune, LINK } from "./aujourdhui.js";
+import { aCommune, deCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
 import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
-import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, fit, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour, jourDit } from "./pages.js";
+import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour, jourDit } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
@@ -162,6 +162,9 @@ function weather(p: PlacePage, data: Cached<PlaceData> | null, now: Date): Live 
   };
 }
 
+/** Past it, a search engine cuts the title: the shorter form, for La Plaine-des-Palmistes. */
+const TITLE_MAX = 60;
+
 function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, now: Date): Live | undefined {
   const v = data?.value;
   if (!v) return undefined;
@@ -178,9 +181,10 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
   const said = above.length ? above.map((x) => `${colour(x.couleur)} ${esc(x.phenomene.toLowerCase())}`).join(", ") : issued ? colour(1) : esc(NONE_ISSUED);
   const coast = coastal(p) ? coastText(v) : undefined;
   return officielLive(lue({
-    // As /aujourdhui says it (tools/resume.ts): « Vigilance météo : verte » / « pour l'Ouest (Météo-France), la zone de Saint-Paul ».
-    valeur: `Vigilance météo : ${said}`,
-    detail: esc(`${forZone(name)} (Météo-France), la zone ${de(p.nom)}`) + (coast ? ` · ${esc(coast)}` : ""),
+    // The zone named, under the tile's title « Vigilance », never said twice (UX review of 04/11/2026, data-run 06/11):
+    // « Zone Ouest : verte » / « Saint-Paul est dans cette zone de Météo-France ».
+    valeur: `Zone ${esc(name)} : ${said}`,
+    detail: esc(`${p.nom} est dans cette zone de Météo-France`) + (coast ? ` · ${esc(coast)}` : ""),
   }, data!, now), mf.OFFICIEL_VIGILANCE);
 }
 
@@ -723,19 +727,10 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       `<p>mesurés <b>${esc(leJour(s.heure_mesure))}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 
-  const title = `${p.nom} 974 en direct : météo, bus, air, mairie`;
-  // Dated by its measure, the whole sentence true at that time: the town hall's state worked out then, the air
-  // said only when forecast for that day. Without a measure, no value and no hour.
-  const at = s ? measuredAt(s.heure_mesure, now) : undefined;
-  const hallThen = at && townHall(l.commune, at, l.calendrier);
-  const facts = s && at ? [
-    thin(s.mesures.temperature!),
-    l.air && airOf(p, l.air) && airDay(l.air) === s.heure_mesure.split(" ")[0] && `air ${airOf(p, l.air)!.qualite}`,
-    hallThen?.etat && `mairie ${hallThen.etat}`,
-  ].filter(Boolean) : [];
-  const description = facts.length
-    ? fit(`${p.nom} (La Réunion, 974) ${leJour(s!.heure_mesure)} : ${facts.join(", ")}.`, " Vigilance, prochains bus, soleil, chaque donnée datée et sourcée.")
-    : `${p.nom} (La Réunion, 974) : météo, vigilance, air, prochains bus, mairie et soleil, chaque donnée datée et sourcée.`;
+  // Each of the commune's two pages says its role (UX review of 04/11/2026, words validated by data-run on 06/11): this
+  // one the lasting record, /aujourdhui/<commune> the day.
+  const title = [`${p.nom} 974 : mairie, écoles, médecins, élections`, `${p.nom} 974 : mairie, écoles, élections`].find((x) => x.length <= TITLE_MAX)!;
+  const description = `${p.nom} (La Réunion, 974) : la mairie et ses horaires, les écoles, les médecins, les élections, le logement ; météo, air et bus en direct.`;
 
   const jsonld = [
     {
@@ -769,8 +764,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li aria-current="page">${esc(p.nom)}</li></ol></nav></div>
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>En direct</p>
-    <h1>${esc(p.nom)} <span class="n974">974</span> en direct</h1>
+    <p class="pill">Fiche de la commune</p>
+    <h1>${esc(p.nom)} <span class="n974">974</span> : la fiche de la commune</h1>
     ${SLOGAN}
     ${headline}
     <p class="hero-cta"><a class="btn glass" href="/aujourdhui/${p.slug}">${esc(LINK(p))}</a></p>
@@ -829,7 +824,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <ul class="chips">${COMMUNES.filter((x) => x.slug !== p.slug).map((x) => `<li><a href="${hub(x)}">${esc(x.nom)}</a></li>`).join("")}</ul>
 </section>`;
   const rss = { href: rssPath(p), title: rssTitle(p), link: rssLink(p), hint: RSS_HINT };
-  return layout(origin, { title, description, path: hub(p), jsonld, alerte, rss }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
+  return layout(origin, { title, description, path: hub(p), jsonld, alerte, rss, hook: `La fiche ${deCommune(p.nom)} : la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.` }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
 }
 
 /** The 24 communes, by vigilance zone: the island's own way of splitting itself (Nord, Est, Sud, Ouest). */

@@ -504,6 +504,8 @@ function cumulsFile(path: string): Response | null {
  */
 const ALIASES: Record<string, string> = {
   "/agenda": "/evenements",
+  // The day of one commune is at /aujourdhui/<commune>: without one, the list of the communes (UX review of 04/11/2026).
+  "/aujourdhui": "/communes",
   "/about": "/a-propos",
   "/mentions-legales": "/conditions#mentions-legales",
   "/sources": CHIFFRES,

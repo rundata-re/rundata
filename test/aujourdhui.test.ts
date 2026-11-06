@@ -2,7 +2,7 @@ import { a, de, deNom } from "../src/articles.js";
 import { describe, expect, it } from "vitest";
 import { mention } from "../src/tools/non-repris.js";
 import { resume } from "../src/tools/resume.js";
-import { aCommune, aujourdhuiPage, dayLines, descriptionOf, H1, HOOK, LINK, stationCommune, titleOf, urgent } from "../src/web/aujourdhui.js";
+import { aCommune, aujourdhuiPage, dayLines, descriptionOf, FICHE, H1, HOOK, LINK, stationCommune, titleOf, urgent } from "../src/web/aujourdhui.js";
 import type { Resume } from "../src/tools/resume.js";
 import { CYCLONE_STEPS } from "../src/tools/vigilance.js";
 import { esc } from "../src/web/map.js";
@@ -27,26 +27,38 @@ describe("the page of a commune's day", () => {
       expect(H1(p)).not.toMatch(/à Les? /);
       expect(HOOK(p).length, HOOK(p)).toBeLessThanOrEqual(144);
     }
-    expect(titleOf(pageOf("saint-paul")!)).toBe("Saint-Paul aujourd'hui : météo, routes, sorties · 974");
-    expect(titleOf(pageOf("la-plaine-des-palmistes")!)).toBe("La Plaine-des-Palmistes aujourd'hui : météo, sorties · 974");
-    expect(LINK(pageOf("le-port")!)).toBe("Aujourd'hui au Port : le résumé de la journée →");
+    // One form for every commune, the short one where it would not fit (UX review of 04/11/2026).
+    expect(titleOf(pageOf("saint-paul")!)).toBe("La journée à Saint-Paul : eau, météo, sorties · 974");
+    expect(titleOf(pageOf("le-port")!)).toBe("La journée au Port : eau, météo, sorties · 974");
+    expect(titleOf(pageOf("la-plaine-des-palmistes")!)).toBe("La journée à La Plaine-des-Palmistes · 974");
+    expect(COMMUNES.filter((p) => titleOf(p).endsWith(" : eau, météo, sorties · 974")).length).toBe(23);
+    expect(H1(pageOf("le-port")!)).toBe("La journée au Port");
+    // Each link says what is on the other side.
+    expect(LINK(pageOf("le-port")!)).toBe("La journée au Port : eau, vigilance, météo, sorties →");
+    expect(FICHE(pageOf("le-port")!)).toBe("La fiche du Port : mairie, écoles, médecins, élections →");
+    for (const p of COMMUNES) expect(HOOK(p)).not.toMatch(/sur une (seule )?page|tout ce qui compte/i);
   });
 
   it("says the day's figures in its description, each only when there is one", () => {
     const p = pageOf("saint-paul")!;
     // The site's narrow space before the unit.
-    expect(descriptionOf(p, resume(p, full(p.nom) as never, NOW)).replace(/\u202f/g, " ")).toBe("Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés le 24/10 à 15:10, 12 sorties, 1 coupure d'eau. Routes, actu, vigilance, mairie : le résumé du jour.");
-    expect(descriptionOf(p, resume(p, {}, NOW))).toBe("Aujourd'hui à Saint-Paul (974) : Routes, actu, vigilance, mairie : le résumé du jour.");
+    expect(descriptionOf(p, resume(p, full(p.nom) as never, NOW)).replace(/\u202f/g, " ")).toBe("Aujourd'hui à Saint-Paul (974) : 24,5 °C mesurés le 24/10 à 15:10, 12 sorties. Eau, vigilance, routes, sorties : la journée de la commune.");
+    expect(descriptionOf(p, resume(p, {}, NOW))).toBe("La journée à Saint-Paul (974) : eau, vigilance, météo, routes, sorties.");
+    // Too long for all its figures: the last ones left out, never all of them.
+    const long = descriptionOf(pageOf("la-plaine-des-palmistes")!, resume(pageOf("la-plaine-des-palmistes")!, full("La Plaine-des-Palmistes") as never, NOW));
+    expect(long).toMatch(/^Aujourd'hui à La Plaine-des-Palmistes \(974\) : 24,5\u202f°C mesurés le 24\/10 à 15:10[,.]/);
     for (const c of COMMUNES) expect(descriptionOf(c, resume(c, full(c.nom) as never, NOW)).length).toBeLessThanOrEqual(152);
   });
 
   it("shows what it has, links what it has not, and never the tap water's analyses", () => {
     const p = pageOf("entre-deux")!;
     const html = aujourdhuiPage("https://rundata.re", p, resume(p, full(p.nom) as never, NOW, [{ partie: "électricité", raison: "pas de copie récente", outil: "electricite", page: "https://rundata.re/electricite" }]), null);
-    expect(html).toContain("<h1>Aujourd&#39;hui à l&#39;Entre-Deux</h1>");
+    expect(html).toContain("<h1>La journée à l&#39;Entre-Deux</h1>");
+    expect(html).toContain('<li aria-current="page">La journée</li>');
+    expect(html).toContain('<a href="/communes/entre-deux">La fiche de l&#39;Entre-Deux : mairie, écoles, médecins, élections →</a>');
     // The card's link names the commune for screen readers: the menu has a « Coupures d'eau » too, to the island's page.
     expect(html).toContain(`<a href="/coupures-eau/entre-deux">Coupures d&#39;eau<span class="sr"> à l&#39;Entre-Deux</span></a>`);
-    expect(html).toContain('<p class="hook">Ce qui compte aujourd&#39;hui à l&#39;Entre-Deux, sur une page');
+    expect(html).toContain('<p class="hook">Aujourd&#39;hui à l&#39;Entre-Deux : la mesure, la vigilance, l&#39;eau, les routes, l&#39;actu, les sorties et la vie pratique.</p>');
     expect(html).toContain("Fête 0");
     expect(html).toContain('<a href="/electricite">électricité</a>');
     expect(html).not.toMatch(/conforme/);

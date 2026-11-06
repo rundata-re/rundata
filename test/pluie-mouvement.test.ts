@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blurOf, downOf, flowOf, matchOf, METEO_SCRIPT, sadOf, upOf } from "../src/web/meteo-carte.js";
+import { blurOf, downOf, flowOf, flowStage, matchOf, METEO_SCRIPT, sadOf, upOf } from "../src/web/meteo-carte.js";
 
 // The radar's grid: 125 × 112 cells of about 1 km, classes 0 to 8.
 const w = 125, h = 112;
@@ -70,15 +70,38 @@ describe("the rain moved between two images of the radar", () => {
   });
 
   it("mixes the two images as amounts of rain, then cuts them in blues as one image, on the map", () => {
-    expect(METEO_SCRIPT).toContain(`const downOf=${downOf},sadOf=${sadOf},matchOf=${matchOf},blurOf=${blurOf},upOf=${upOf},flowOf=${flowOf};`);
+    expect(METEO_SCRIPT).toContain(`const downOf=${downOf},sadOf=${sadOf},matchOf=${matchOf},blurOf=${blurOf},upOf=${upOf},flowStage=${flowStage};`);
     // Each image's smooth field pushed along the way, forward for the first and back for the second, mixed by its share.
     expect(METEO_SCRIPT).toContain(`return(texture2D(A,q-f*m).r*(1.-f)+texture2D(Z,q+(1.-f)*m).r*f)*255.;`);
     // Then the blues and the line around the rain, as bands draws them (the class at 28, the cut at 0.4 of the first).
     expect(METEO_SCRIPT).toContain(`float d=(v-28.*cut)/max(length(vec2(gx,gy)),1e-3)+.5;`);
     expect(METEO_SCRIPT).toContain(`gl.uniform1f(gl.getUniformLocation(p,"cut"),0.4)`);
-    expect(METEO_SCRIPT).toContain(`for(const[i,c]of[[0,soft(A)],[1,soft(Z)]])`);
+    expect(METEO_SCRIPT).toContain(`for(const[i,j]of[[0,A],[1,Z]]){const t=tex(j);gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,t)}`);
+    // Each image's field uploaded once, its red alone, and kept for the frames after (the 16 last used).
+    expect(METEO_SCRIPT).toContain(`gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,j.w*4,j.h*4,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,soft(j))`);
+    expect(METEO_SCRIPT).toContain(`if(TX.size>16){const[k,v]=TX.entries().next().value;gl.deleteTexture(v);TX.delete(k)}`);
     // Faded as before without WebGL, or with the rain gauges' estimate.
-    expect(METEO_SCRIPT).toContain(`const F=mx[0]!==mx[1]&&!mx[0].pg&&!mx[1].pg&&glInit()&&flow(mx[0],mx[1]);`);
+    expect(METEO_SCRIPT).toContain(`const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&glInit();`);
+    expect(METEO_SCRIPT).toContain(`const F=way(mx[0],mx[1])&&flow(mx[0],mx[1]);`);
     expect(METEO_SCRIPT).toContain(`if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{`);
+  });
+});
+
+describe("the way between two images found a step at a time", () => {
+  it("finds it in four steps, the same as all at once", () => {
+    const a = grid([40, 50, 14, 6], [90, 30, 9, 3]), z = grid([46, 53, 14, 6], [95, 33, 9, 3]);
+    const s = { a, z, w, h, dt: 15, k: 0 } as Parameters<typeof flowStage>[0];
+    const done = [];
+    for (let i = 0; i < 4; i++) done.push(flowStage(s));
+    expect(done).toEqual([false, false, false, true]);
+    const f = flowOf(a, z, w, h, 15);
+    expect(s.r!.w).toBe(f.w);
+    expect(s.r!.U).toEqual(f.U);
+    expect(s.r!.V).toEqual(f.V);
+    expect(s.r!.t).toEqual(f.t);
+    // The showers moved by about (6, 3) cells.
+    const [u, v] = at(f, 40, 50);
+    expect(u).toBeGreaterThan(3);
+    expect(v).toBeGreaterThan(1);
   });
 });

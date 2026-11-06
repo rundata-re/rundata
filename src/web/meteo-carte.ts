@@ -344,11 +344,8 @@ for(const[px,py,r]of p){const q=1/((px-x)**2+(py-y)**2+.5);sw+=q;sr+=q*r}T[i]=k+
 const o=g.createImageData(w,h),M=new Float32Array(w*h),paint=(T)=>{for(let i=0;i<w*h;i++){if(!a[i*4])continue;if(!T){o.data[i*4+3]=0;continue}const[R,G,B]=col(T[i]);o.data[i*4]=R;o.data[i*4+1]=G;o.data[i*4+2]=B;o.data[i*4+3]=215}g.putImageData(o,0,0)};
 const now=grid(st);paint(now);RJ.t={live:st,now,grid,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M[i]=A[i]+(B[i]-A[i])*f;paint(M)},back:()=>paint(now)}};im.src=vo.dataset.alt}`;
 
-/** One frame of the animations and of the replay, in ms: 30 frames a second. */
-const FRAME_MS = 1000 / 30;
-
 /**
- * A frame every FRAME_MS (1000 / 30, written out: the page's scripts take this function as its text), for a rAF
+ * A frame every 1000 / 30 ms, 30 a second (written out: the page's scripts take this function as its text), for a rAF
  * callback at the time `t`, `last` the previous frame's time and `nx` the next's: null when it is too soon, else the
  * time gone by in frames, how far things move, and the next frame's time. A frame is drawn as soon as its time is
  * within 8 ms, so that a screen's 60 Hz, never quite even, gives every other frame of its own (a frame at 32 ms at
@@ -467,10 +464,15 @@ export const ago = (m: number) =>
  * `cut` of the first class), its outer side smoothed by how far each pixel is from there (the user, 31/10/2026,
  * « délimiter plus franchement les zones de pluie »). The page's script takes it as its text.
  */
-export const bands = (s: Uint8ClampedArray, o: Uint8ClampedArray, w: number, h: number, pal: number[][], edge: number[], step: number, cut: number) => {
-  for (let i = 0, y = 0, x = 0; i < w * h; i++, x++) {
-    if (x === w) { x = 0; y++; }
-    const v = s[i * 4];
+export const bands = (s: Uint8ClampedArray, o: Uint8ClampedArray, w: number, h: number, pal: number[][], edge: number[], step: number, cut: number) =>
+  bandsRows(s, o, w, h, pal, edge, step, cut, 0, h);
+/**
+ * The rows y0 to y1 (y1 left out) of bands: the replay draws an image's blues a few rows at a time between its frames,
+ * never in one long task. The page's script takes it as its text.
+ */
+export const bandsRows = (s: Uint8ClampedArray, o: Uint8ClampedArray, w: number, h: number, pal: number[][], edge: number[], step: number, cut: number, y0: number, y1: number) => {
+  for (let y = y0; y < Math.min(h, y1); y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x, v = s[i * 4];
     if (v < (step * cut) / 2) continue;
     const gx = (s[(x < w - 1 ? i + 1 : i) * 4] - s[(x > 0 ? i - 1 : i) * 4]) / 2;
     const gy = (s[(y < h - 1 ? i + w : i) * 4] - s[(y > 0 ? i - w : i) * 4]) / 2;
@@ -491,21 +493,28 @@ export const bands = (s: Uint8ClampedArray, o: Uint8ClampedArray, w: number, h: 
  */
 export const soften = (a: Uint8ClampedArray, w: number, h: number, r: number) => {
   const t = new Float32Array(w * h);
-  for (let pass = 0; pass < 4; pass++) {
-    const across = pass % 2 === 0, n = across ? w : h, m = across ? h : w;
-    for (let j = 0; j < m; j++) {
-      // The line's first cell and the step between two (no inner function: the page's copy of it would not run).
-      const o = across ? j * w : j, st = across ? 1 : w;
-      let sum = 0;
-      for (let i = -r; i <= r; i++) sum += a[(o + Math.max(0, Math.min(n - 1, i)) * st) * 4];
-      for (let i = 0; i < n; i++) {
-        t[o + i * st] = sum / (2 * r + 1);
-        sum += a[(o + Math.min(n - 1, i + r + 1) * st) * 4] - a[(o + Math.max(0, i - r) * st) * 4];
-      }
-    }
-    for (let k = 0; k < w * h; k++) a[k * 4] = t[k];
-  }
+  for (let pass = 0; pass < 4; pass++) softenRows(a, t, w, h, r, pass, 0, Infinity);
   return a;
+};
+/**
+ * The lines j0 to j1 (j1 left out) of one of soften's 4 passes (`pass`: rows on even passes, columns on odd ones), `t`
+ * the pass's sums (w × h); the pass's last line writes them back into `a`. The replay spreads an image a few lines at a
+ * time between its frames, never in one long task. The page's script takes it as its text.
+ */
+export const softenRows = (a: Uint8ClampedArray, t: Float32Array, w: number, h: number, r: number, pass: number, j0: number, j1: number) => {
+  const across = pass % 2 === 0, n = across ? w : h, m = across ? h : w;
+  for (let j = j0; j < Math.min(m, j1); j++) {
+    // The line's first cell and the step between two (no inner function: the page's copy of it would not run).
+    const o = across ? j * w : j, st = across ? 1 : w;
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += a[(o + Math.max(0, Math.min(n - 1, i)) * st) * 4];
+    for (let i = 0; i < n; i++) {
+      t[o + i * st] = sum / (2 * r + 1);
+      sum += a[(o + Math.min(n - 1, i + r + 1) * st) * 4] - a[(o + Math.max(0, i - r) * st) * 4];
+    }
+  }
+  if (j1 >= m) for (let k = 0; k < w * h; k++) a[k * 4] = t[k];
+  return j1 >= m;
 };
 /**
  * Where the rain went between two images of the radar, for the replay to move it rather than fade it (the user,
@@ -588,46 +597,84 @@ export const upOf = (U: Float32Array, BW: number, BH: number, BW2: number, BH2: 
  * block (w, h), and as an image for the page's WebGL (t: red and green 128 + 4 × the way, quarter cells).
  */
 export const flowOf = (a: Float32Array, z: Float32Array, w: number, h: number, dt: number) => {
-  const [a4, W4, H4] = downOf(a, w, h, 4), [z4] = downOf(z, w, h, 4), [a2, W2, H2] = downOf(a, w, h, 2), [z2] = downOf(z, w, h, 2);
-  const R = Math.max(2, Math.min(6, Math.ceil((dt / 15) * 3))), all = Math.max(W4, H4);
-  // The whole image's way: what the blocks are held to, unless staying is nearly as good.
-  let gu = 0, gv = 0, gb = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, 0, 0, Infinity);
-  const g0 = gb;
-  for (let v = -R; v <= R; v++) for (let u = -R; u <= R; u++) {
-    const s = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, u, v, gb);
-    if (s < gb) { gb = s; gu = u; gv = v; }
-  }
-  if (gb > 0.9 * g0) gu = gv = 0;
-  let BW = 16, BH = 14, U = new Float32Array(BW * BH).fill(gu), V = new Float32Array(BW * BH).fill(gv);
-  const S = matchOf(a4, z4, W4, H4, BW, BH, 3, R, U, V, true);
-  for (let pass = 0; pass < 6; pass++) {
-    const S2 = S.slice();
-    for (let i = 0; i < S.length; i++) {
-      if (S[i]) continue;
-      let su = 0, sv = 0, c = 0;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const x = (i % BW) + dx, y = ((i / BW) | 0) + dy;
-        if (x < 0 || y < 0 || x >= BW || y >= BH || !S[y * BW + x]) continue;
-        su += U[y * BW + x]; sv += V[y * BW + x]; c++;
-      }
-      if (c) { U[i] = su / c; V[i] = sv / c; S2[i] = 1; }
+  const s: FlowState = { a, z, w, h, dt, k: 0 };
+  while (!flowStage(s));
+  return s.r!;
+};
+/** What flowOf has found so far between two grids (flowStage), and what it gives once done (r). */
+export type FlowState = {
+  a: Float32Array; z: Float32Array; w: number; h: number; dt: number; k: number;
+  R?: number; U?: Float32Array; V?: Float32Array; BW?: number; BH?: number; a2?: Float32Array; z2?: Float32Array; W2?: number; H2?: number;
+  r?: { U: Float32Array; V: Float32Array; w: number; h: number; t: Uint8Array };
+};
+/**
+ * One step of flowOf (s.k, 0 to 3, then 4 once done): the whole image's way and the blocks at a quarter of the grid's size, then the half
+ * size, the full size and the image for the WebGL; true once done (s.r). The replay finds the way between two images a
+ * step at a time between its frames, never in one long task. The page's script takes it as its text.
+ */
+export const flowStage = (s: FlowState): boolean => {
+  const { a, z, w, h } = s;
+  if (s.k === 0) {
+    const [a4, W4, H4] = downOf(a, w, h, 4), [z4] = downOf(z, w, h, 4);
+    const R = Math.max(2, Math.min(6, Math.ceil((s.dt / 15) * 3))), all = Math.max(W4, H4);
+    // The whole image's way: what the blocks are held to, unless staying is nearly as good.
+    let gu = 0, gv = 0, gb = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, 0, 0, Infinity);
+    const g0 = gb;
+    for (let v = -R; v <= R; v++) for (let u = -R; u <= R; u++) {
+      const d = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, u, v, gb);
+      if (d < gb) { gb = d; gu = u; gv = v; }
     }
-    S.set(S2);
+    if (gb > 0.9 * g0) gu = gv = 0;
+    const BW = 16, BH = 14, U = new Float32Array(BW * BH).fill(gu), V = new Float32Array(BW * BH).fill(gv);
+    const S = matchOf(a4, z4, W4, H4, BW, BH, 3, R, U, V, true);
+    for (let pass = 0; pass < 6; pass++) {
+      const S2 = S.slice();
+      for (let i = 0; i < S.length; i++) {
+        if (S[i]) continue;
+        let su = 0, sv = 0, c = 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const x = (i % BW) + dx, y = ((i / BW) | 0) + dy;
+          if (x < 0 || y < 0 || x >= BW || y >= BH || !S[y * BW + x]) continue;
+          su += U[y * BW + x]; sv += V[y * BW + x]; c++;
+        }
+        if (c) { U[i] = su / c; V[i] = sv / c; S2[i] = 1; }
+      }
+      S.set(S2);
+    }
+    blurOf(U, V, BW, BH, 3);
+    Object.assign(s, { R, U, V, BW, BH, k: 1 });
+    return false;
   }
-  blurOf(U, V, BW, BH, 3);
-  for (const [ga, gz, GW, GH] of [[a2, z2, W2, H2], [a, z, w, h]] as [Float32Array, Float32Array, number, number][]) {
-    const BW2 = Math.ceil(GW / 2), BH2 = Math.ceil(GH / 2);
-    U = upOf(U, BW, BH, BW2, BH2, 2); V = upOf(V, BW, BH, BW2, BH2, 2); BW = BW2; BH = BH2;
-    matchOf(ga, gz, GW, GH, BW, BH, 2, 1, U, V, false);
-    blurOf(U, V, BW, BH, 2);
+  if (s.k === 1 || s.k === 2) {
+    if (s.k === 1) { const [a2, W2, H2] = downOf(a, w, h, 2), [z2] = downOf(z, w, h, 2); Object.assign(s, { a2, z2, W2, H2 }); }
+    const [ga, gz, GW, GH] = s.k === 1 ? [s.a2!, s.z2!, s.W2!, s.H2!] : [a, z, w, h];
+    const BW2 = Math.ceil(GW / 2), BH2 = Math.ceil(GH / 2), U = upOf(s.U!, s.BW!, s.BH!, BW2, BH2, 2), V = upOf(s.V!, s.BW!, s.BH!, BW2, BH2, 2);
+    matchOf(ga, gz, GW, GH, BW2, BH2, 2, 1, U, V, false);
+    blurOf(U, V, BW2, BH2, 2);
+    Object.assign(s, { U, V, BW: BW2, BH: BH2, k: s.k + 1 });
+    return false;
   }
-  const t = new Uint8Array(BW * BH * 4);
-  for (let i = 0; i < BW * BH; i++) {
+  const U = s.U!, V = s.V!, n = s.BW! * s.BH!, t = new Uint8Array(n * 4);
+  for (let i = 0; i < n; i++) {
     t[i * 4] = Math.max(0, Math.min(255, Math.round(128 + U[i] * 4)));
     t[i * 4 + 1] = Math.max(0, Math.min(255, Math.round(128 + V[i] * 4)));
     t[i * 4 + 3] = 255;
   }
-  return { U, V, w: BW, h: BH, t };
+  s.r = { U, V, w: s.BW!, h: s.BH!, t };
+  s.k = 4;
+  return true;
+};
+/**
+ * The order in which the rain's script makes n images ready ahead of the play, from the next one shown: each image read
+ * (g) and its smooth field (s), then the way between it and the one before (p). The page's script takes it as its text.
+ */
+export const prepPlan = (n: number): [string, number][] => {
+  const o: [string, number][] = [];
+  for (let i = 0; i < n; i++) {
+    o.push(["g", i], ["s", i]);
+    if (i) o.push(["p", i]);
+  }
+  return o;
 };
 /**
  * The wind at (x, y) on the map, from the anemometers `ws` ([x, y, u, v], km/h, y down) less than `r` away, by inverse
@@ -755,42 +802,63 @@ const smooth=(x)=>{x.imageSmoothingEnabled=true;x.imageSmoothingQuality="high"};
 const lin=(x)=>{x.imageSmoothingEnabled=true;x.imageSmoothingQuality="low"};
 // Where the radars see badly, on the radar's grid with one cell of margin: each cell's share of bad cells around it, a
 // veil from 0 to 1 past half; counted once an image (z: nowhere).
-const BG=new Map(),bad=(j)=>{let a=BG.get(j);if(a)return a;const w=j.w,h=j.h,W2=w+2,v=(i,k)=>i>=0&&k>=0&&i<w&&k<h&&j.mal_vu[k*w+i]==="1"?1:0;a=new Float32Array(W2*(h+2));a.z=!j.mal_vu.includes("1");
+const bad=(j)=>{let a=j.bd;if(a)return a;const w=j.w,h=j.h,W2=w+2,v=(i,k)=>i>=0&&k>=0&&i<w&&k<h&&j.mal_vu[k*w+i]==="1"?1:0;a=new Float32Array(W2*(h+2));a.z=!j.mal_vu.includes("1");
 if(!a.z)for(let k=-1;k<=h;k++)for(let i=-1;i<=w;i++){let s=0;for(let q=-1;q<2;q++)for(let b=-1;b<2;b++)s+=v(i+q,k+b);a[(k+1)*W2+i+1]=Math.max(0,Math.min(1,(s/9-.3)/.4))}
-BG.set(j,a);if(BG.size>16)BG.delete(BG.keys().next().value);return a};
+j.bd=a;return a};
 // The veil and its hatches in the map's two tones at the map's size, drawn once; shown through a veil of the radar's
 // grid spread smoothly, its edges soft.
-let VC=null,WC=null,M=null;
+let VC=null,WC=null,M=null,MI=null;
 const veil=()=>{if(VC&&VC.width===cw&&VC.height===ch)return VC;VC=document.createElement("canvas");VC.width=cw;VC.height=ch;const c=VC.getContext("2d");c.fillStyle="rgba(255,255,255,.3)";c.fillRect(0,0,cw,ch);
 const t=document.createElement("canvas");t.width=t.height=12;const tg=t.getContext("2d");for(const[s,lw,o]of[["rgba(11,31,54,.62)",1.4,0],["rgba(255,255,255,.6)",1,6]]){tg.lineWidth=lw;tg.strokeStyle=s;tg.beginPath();for(const k of[-12,0,12]){tg.moveTo(k+o-1,13);tg.lineTo(k+o+13,-1)}tg.stroke()}
 c.fillStyle=c.createPattern(t,"repeat");c.fillRect(0,0,cw,ch);return VC};
-const badly=(x,a,w,h)=>{const W2=w+2,H2=h+2;if(!M)M=document.createElement("canvas");M.width=W2;M.height=H2;const mg=M.getContext("2d"),e=mg.createImageData(W2,H2);for(let i=0;i<a.length;i++){e.data[i*4]=e.data[i*4+1]=e.data[i*4+2]=255;e.data[i*4+3]=a[i]*255}mg.putImageData(e,0,0);
+const badly=(x,a,w,h)=>{const W2=w+2,H2=h+2;if(!M)M=document.createElement("canvas");if(!MI||M.width!==W2||M.height!==H2){M.width=W2;M.height=H2;MI=M.getContext("2d").createImageData(W2,H2);MI.data.fill(255)}const mg=M.getContext("2d"),e=MI;for(let i=0;i<a.length;i++)e.data[i*4+3]=a[i]*255;mg.putImageData(e,0,0);
 if(!WC||WC.width!==cw||WC.height!==ch){WC=document.createElement("canvas");WC.width=cw;WC.height=ch}const c=WC.getContext("2d");c.globalCompositeOperation="copy";c.drawImage(veil(),0,0);
 c.globalCompositeOperation="destination-in";smooth(c);c.drawImage(M,-cw/w,-ch/h,W2*cw/w,H2*ch/h);c.globalCompositeOperation="source-over";x.drawImage(WC,0,0)};
 // The veil between two images (blend), in one array kept.
 let O=null;const blend=${blend},veils=(A,Z,f,tr)=>{const za=bad(Z);if(!O||O.length!==za.length)O=new Float32Array(za.length);
 return blend(bad(A),za,A===Z,f,tr&&tr.map(([j,w])=>[bad(j),w]),O)};
-// A grid's classes spread smoothly (soft, kept with the grid: also what the replay moves), then to the map's size, drawn
-// in clear-cut blues (bands).
-const bands=${bands},soften=${soften};
-const soft=(j)=>{if(j.sf)return j.sf;const t=document.createElement("canvas");t.width=j.w*4;t.height=j.h*4;const tg=c2d(t),e=tg.createImageData(j.w,j.h);
-for(let k=0;k<j.w*j.h;k++){e.data[k*4]=(+j.pluie[k]||0)*28;e.data[k*4+3]=255}tg.putImageData(e,0,0);lin(tg);tg.drawImage(t,0,0,j.w,j.h,0,0,t.width,t.height);
-const b=tg.getImageData(0,0,t.width,t.height);tg.putImageData(soften(b.data,t.width,t.height,${RAIN_SOFT})&&b,0,0);return j.sf=t};
-const wash=(x,j)=>{const u=document.createElement("canvas");u.width=cw;u.height=ch;const ug=c2d(u);lin(ug);ug.drawImage(soft(j),0,0,cw,ch);
-const o=x.createImageData(cw,ch);bands(ug.getImageData(0,0,cw,ch).data,o.data,cw,ch,KA[dark()?1:0],[...INK[dark()?1:0],1],28,${RAIN_CUT});x.putImageData(o,0,0)};
-// Each image washed once on a canvas of its own; the layer's, the image drawn, or the two moved one into the other, or
-// faded where they cannot be (added, each by its share: no dip half way).
+const bands=${bands},soften=${soften};const bandsRows=${bandsRows},softenRows=${softenRows};
+// The replay's work between its frames (AQ), a slice at a time, about 7 ms (never a long task), when the browser is idle,
+// else as soon as it can (Safari has no requestIdleCallback); each step says when it is done.
+let AQ=[],AT=0,HP=null,NK="";const idle=(f)=>self.requestIdleCallback?requestIdleCallback(f,{timeout:120}):setTimeout(f,0);
+const work=()=>{AT=0;const dl=performance.now()+7;while(AQ.length&&performance.now()<dl){const f=AQ[0];if(f(dl)){const i=AQ.indexOf(f);if(i>=0)AQ.splice(i,1)}}if(AQ.length)AT=idle(work)},kick=()=>{if(!AT&&AQ.length)AT=idle(work)};
+// A grid's classes spread smoothly (soft, kept with the grid: also what the replay moves), a few lines at a time until
+// dl (softStep), kept as its red alone (sf); then to the map's size, drawn in clear-cut blues (bands).
+const softStep=(j,dl)=>{if(j.sf)return true;let q=j.sq;if(!q){const t=document.createElement("canvas");t.width=j.w*4;t.height=j.h*4;const tg=c2d(t),e=tg.createImageData(j.w,j.h);
+for(let k=0;k<j.w*j.h;k++){e.data[k*4]=(+j.pluie[k]||0)*28;e.data[k*4+3]=255}tg.putImageData(e,0,0);lin(tg);tg.drawImage(t,0,0,j.w,j.h,0,0,t.width,t.height);j.sq=q={t,tg,b:null,s:null,p:0,r:0};return false}
+const W=q.t.width,H=q.t.height;if(!q.b){q.b=q.tg.getImageData(0,0,W,H);q.s=new Float32Array(W*H);return false}
+while(q.p<4){const m=q.p%2?W:H,r=Math.min(m,q.r+16);softenRows(q.b.data,q.s,W,H,${RAIN_SOFT},q.p,q.r,r);q.r=r;if(r>=m){q.p++;q.r=0}if(q.p<4&&performance.now()>dl)return false}
+const f=new Uint8Array(W*H);for(let k=0;k<W*H;k++)f[k]=q.b.data[k*4];j.sf=f;j.sq=null;return true};
+const soft=(j)=>{while(!softStep(j,Infinity));return j.sf};
+// Each image washed once on a canvas of its own (cvStep, a few rows at a time), the 6 last; the layer's, the image drawn,
+// or the two moved one into the other, or faded where they cannot be (added, each by its share: no dip half way).
 // The rain gauges' estimate (pg) hatched over its blues: never read as the radar's.
-const C=new Map(),cv=(j)=>{let c=C.get(j);if(c&&c.width===cw&&c.height===ch&&c.dk===dark())return c;c=document.createElement("canvas");c.width=cw;c.height=ch;c.dk=dark();const x=c.getContext("2d");wash(x,j);
-if(j.pg){x.globalCompositeOperation="source-atop";x.strokeStyle="rgba("+INK[c.dk?1:0].join(",")+",.45)";x.lineWidth=1;x.beginPath();for(let k=-ch;k<cw;k+=6){x.moveTo(k,ch);x.lineTo(k+ch,0)}x.stroke();x.globalCompositeOperation="source-over"}C.set(j,c);if(C.size>4)C.delete(C.keys().next().value);return c};
+const C=new Map(),cvOk=(j)=>{const c=C.get(j);return!!c&&c.width===cw&&c.height===ch&&c.dk===dark()};
+const cvStep=(j,dl)=>{if(cvOk(j))return true;if(!softStep(j,dl))return false;const dk=dark();let q=j.cq;
+if(!q||q.w!==cw||q.h!==ch||q.dk!==dk){const W=j.w*4,H=j.h*4,t=document.createElement("canvas");t.width=W;t.height=H;const e=new ImageData(W,H);for(let k=0;k<W*H;k++){e.data[k*4]=j.sf[k];e.data[k*4+3]=255}c2d(t).putImageData(e,0,0);
+const u=document.createElement("canvas");u.width=cw;u.height=ch;const ug=c2d(u);lin(ug);ug.drawImage(t,0,0,cw,ch);j.cq=q={w:cw,h:ch,dk,ug,s:null,o:null,y:0};return false}
+if(!q.s){q.s=q.ug.getImageData(0,0,cw,ch).data;q.o=new ImageData(cw,ch);return false}
+while(q.y<ch){const y=Math.min(ch,q.y+24);bandsRows(q.s,q.o.data,cw,ch,KA[dk?1:0],[...INK[dk?1:0],1],28,${RAIN_CUT},q.y,y);q.y=y;if(q.y<ch&&performance.now()>dl)return false}
+const c=document.createElement("canvas");c.width=cw;c.height=ch;c.dk=dk;const x=c.getContext("2d");x.putImageData(q.o,0,0);
+if(j.pg){x.globalCompositeOperation="source-atop";x.strokeStyle="rgba("+INK[dk?1:0].join(",")+",.45)";x.lineWidth=1;x.beginPath();for(let k=-ch;k<cw;k+=6){x.moveTo(k,ch);x.lineTo(k+ch,0)}x.stroke();x.globalCompositeOperation="source-over"}
+C.delete(j);C.set(j,c);if(C.size>6)C.delete(C.keys().next().value);j.cq=null;return true};
+const cv=(j)=>{while(!cvStep(j,Infinity));return C.get(j)};
 // Between two images of the radar, the rain moved rather than faded (flowOf): the two images' smooth fields (before their
 // blues) pushed along the way found and mixed as amounts of rain, then cut in blues as one image (WebGL), as bands does:
 // no image seen through the other, rain that forms or ends grows or shrinks. The sea cut by the map's outline as before.
-const downOf=${downOf},sadOf=${sadOf},matchOf=${matchOf},blurOf=${blurOf},upOf=${upOf},flowOf=${flowOf};
-const FL=new Map(),gv=(j)=>{if(!j.v){const v=new Float32Array(j.w*j.h);for(let k=0;k<v.length;k++)v[k]=+j.pluie[k]||0;j.v=v}return j.v};
-const flow=(A,Z)=>{const key=A.fin+" "+Z.fin;let r=FL.get(key);if(!r){r=flowOf(gv(A),gv(Z),A.w,A.h,(Date.parse(Z.fin)-Date.parse(A.fin))/6e4);FL.set(key,r);if(FL.size>32)FL.delete(FL.keys().next().value)}return r};
-let GC=null,GL=null,GQ=null;const GU=[null,null,null];
+// The way found a step at a time (flowStep), kept for as many pairs as images are kept (KP).
+const downOf=${downOf},sadOf=${sadOf},matchOf=${matchOf},blurOf=${blurOf},upOf=${upOf},flowStage=${flowStage};
+const FL=new Map(),FQ=new Map(),gv=(j)=>{if(!j.v){const v=new Float32Array(j.w*j.h);for(let k=0;k<v.length;k++)v[k]=+j.pluie[k]||0;j.v=v}return j.v};
+const fk=(A,Z)=>A.fin+" "+Z.fin,flowStep=(A,Z,dl)=>{const key=fk(A,Z);if(FL.has(key))return true;let s=FQ.get(key);if(!s){if(FQ.size>4)FQ.clear();s={a:gv(A),z:gv(Z),w:A.w,h:A.h,dt:(Date.parse(Z.fin)-Date.parse(A.fin))/6e4,k:0};FQ.set(key,s)}
+while(!flowStage(s))if(performance.now()>dl)return false;FQ.delete(key);FL.set(key,s.r);if(FL.size>KP(A))FL.delete(FL.keys().next().value);return true};
+const flow=(A,Z)=>{const key=fk(A,Z);flowStep(A,Z,Infinity);const r=FL.get(key);FL.delete(key);FL.set(key,r);return r};
+// The images kept from one play to the next: as many as about 40 MB hold (26 bytes a cell: the grid read, its veil and
+// its smooth field), never fewer than 16.
+const KP=(j)=>Math.max(16,Math.floor(4e7/(26*j.w*j.h)));
+let GC=null,GL=null,GQ=null,GX=0;const GU=[null,null,null];
 const glInit=()=>{if(GL!==null)return GL;GC=document.createElement("canvas");const gl=GC.getContext("webgl",{premultipliedAlpha:true,antialias:false});if(!gl)return GL=false;
+// A context lost (the GPU reset): its textures gone with it, a new one at the next frame, the fade after the third.
+GC.addEventListener("webglcontextlost",(e)=>{e.preventDefault();TX.clear();GU[2]=null;GL=++GX>2?false:null});
 const sh=(t,src)=>{const o=gl.createShader(t);gl.shaderSource(o,src);gl.compileShader(o);return o},p=gl.createProgram();
 gl.attachShader(p,sh(gl.VERTEX_SHADER,"attribute vec2 q;varying vec2 u;void main(){u=vec2(q.x*.5+.5,.5-q.y*.5);gl_Position=vec4(q,0.,1.);}"));
 // The amount of rain at q, the two fields pushed and mixed; then the blues and the line of bands, as the page draws them.
@@ -804,14 +872,20 @@ gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());gl.bufferData(gl.ARRAY_BUFFER,n
 for(let i=0;i<3;i++){gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,gl.createTexture());for(const[k,v]of[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v)}
 gl.uniform1i(gl.getUniformLocation(p,"A"),0);gl.uniform1i(gl.getUniformLocation(p,"Z"),1);gl.uniform1i(gl.getUniformLocation(p,"F"),2);gl.uniform1f(gl.getUniformLocation(p,"cut"),${RAIN_CUT});
 GQ={f:gl.getUniformLocation(p,"f"),n:gl.getUniformLocation(p,"n"),px:gl.getUniformLocation(p,"px"),P:gl.getUniformLocation(p,"P[0]"),E:gl.getUniformLocation(p,"E")};return GL=gl};
+// Each image's smooth field a texture of its own (tex), the 16 last used kept; the way between two (F) on the third.
+const TX=new Map(),tex=(j)=>{const gl=GL;let t=TX.get(j);if(t){TX.delete(j);TX.set(j,t);return t}t=gl.createTexture();gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,t);
+for(const[k,v]of[[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,j.w*4,j.h*4,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,soft(j));TX.set(j,t);
+if(TX.size>16){const[k,v]=TX.entries().next().value;gl.deleteTexture(v);TX.delete(k)}return t};
 const warp=(A,Z,F,f)=>{const gl=GL;if(GC.width!==cw||GC.height!==ch){GC.width=cw;GC.height=ch;gl.viewport(0,0,cw,ch)}
-for(const[i,c]of[[0,soft(A)],[1,soft(Z)]])if(GU[i]!==c){gl.activeTexture(gl.TEXTURE0+i);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,c);GU[i]=c}
+for(const[i,j]of[[0,A],[1,Z]]){const t=tex(j);gl.activeTexture(gl.TEXTURE0+i);gl.bindTexture(gl.TEXTURE_2D,t)}
 if(GU[2]!==F){gl.activeTexture(gl.TEXTURE2);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,F.w,F.h,0,gl.RGBA,gl.UNSIGNED_BYTE,F.t);GU[2]=F}
 const k=dark()?1:0;gl.uniform3fv(GQ.P,KA[k].flatMap((c)=>c.slice(0,3).map((x)=>x/255)));gl.uniform3fv(GQ.E,INK[k].map((x)=>x/255));
 gl.uniform1f(GQ.f,f);gl.uniform2f(GQ.n,A.w,A.h);gl.uniform2f(GQ.px,1/cw,1/ch);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4)};
+// Moved where the browser draws with WebGL and neither image is the rain gauges' estimate (way); faded otherwise.
+const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&glInit();
 const paint=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);if(!mx){if(d){x.drawImage(cv(d),0,0);const a=bad(d);if(!a.z)badly(x,a,d.w,d.h)}return}
-// Moved where the browser draws with WebGL and neither image is the rain gauges' estimate; faded otherwise.
-const F=mx[0]!==mx[1]&&!mx[0].pg&&!mx[1].pg&&glInit()&&flow(mx[0],mx[1]);
+const F=way(mx[0],mx[1])&&flow(mx[0],mx[1]);
 if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{
 x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over"}
 const a=veils(...mx);if(a)badly(x,a,mx[1].w,mx[1].h)};
@@ -856,13 +930,27 @@ if(RJ.on){say_(j,"");RJ.redraw();return}say_(j,use(j));go()}).catch(()=>{})};
 const ago=${ago};
 const none=(w,h)=>({fin:"",pannes:[],w,h,pluie:"0".repeat(w*h),mal_vu:"0".repeat(w*h)});
 const un=(s)=>s.split(",").map((r)=>r?r[0].repeat(parseInt(r.slice(1),36)):"").join("");
-const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(!j){j={fin:e.fin,pg:e.pg,pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>16)Dg.delete(Dg.keys().next().value)}return j};
+// Kept as long as they can be (KP), the last used last: a second play draws them again without reading them again.
+const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(j){Dg.delete(e);Dg.set(e,j);return j}j={fin:e.fin,pg:e.pg,pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>KP(j))Dg.delete(Dg.keys().next().value);return j};
+// What the two images need to be drawn without a long task, made ready or not (fit); made ready first (need), the
+// picture then drawn again (HP). The next images, made ready in the order of prepPlan (ahead, from the replay's script).
+const fit=(A,Z)=>!!(A.bd&&Z.bd)&&(A===Z?cvOk(A):way(A,Z)?!!(A.sf&&Z.sf&&FL.has(fk(A,Z))&&TX.has(A)&&TX.has(Z)):cvOk(A)&&cvOk(Z));
+const pair=(A,Z,dl)=>A===Z?cvStep(A,dl):way(A,Z)?softStep(A,dl)&&softStep(Z,dl)&&flowStep(A,Z,dl)&&!!(tex(A)&&tex(Z)):cvStep(A,dl)&&cvStep(Z,dl);
+const need=(A,Z)=>{const key=fk(A,Z);if(NK===key&&AQ.length)return;NK=key;AQ.unshift((dl)=>{bad(A);bad(Z);if(!pair(A,Z,dl))return false;if(HP){const h=HP;HP=null;RJ.p.mix(...h)}return true});kick()};
+const prepPlan=${prepPlan};
 const ok=(gr)=>L&&L.length===gr.w*gr.h,empty=(w,h)=>{mx=null;use(none(w,h));turn(true,true)};
 RJ.p={prep:land,dims:()=>L&&{w:LW,h:LH,L},wind:(ws,t)=>{WS=ws||[];WT=ws?t:null},
 // Between two images (f of the way), with the trail of those before as [image, share left], over wm minutes.
-mix:(a,z,f,el,gr,tr,wm)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr),n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg];d=n;P=[dist(A),dist(Z),f];
+// Playing on from the picture shown, two images not ready yet leave it there while they are made ready (need): the
+// play never waits for them.
+mix:(a,z,f,el,gr,tr,wm)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr);if(RJ.pl&&mx&&(A.fin===mx[0].fin||A.fin===mx[1].fin)&&!fit(A,Z)){HP=[a,z,f,el,gr,tr,wm];need(A,Z);return}HP=null;
+const n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg];d=n;P=[dist(A),dist(Z),f];
 turn(was,nw)},
 gap:(e,el,gr)=>{if(ok(gr))empty(gr.w,gr.h)},
+// The images xs (or what gives each, a rain gauges' estimate) from the next one shown, made ready in the order of
+// prepPlan; the textures and the work left when the layer changes (flush).
+ahead:(xs,gr)=>{if(!ok(gr))return;const js=[];AQ=prepPlan(xs.length).map(([k,i])=>k==="g"?()=>{js[i]=grid(typeof xs[i]==="function"?xs[i]():xs[i],gr);bad(js[i]);return true}:k==="s"?(dl)=>softStep(js[i],dl):(dl)=>pair(js[i-1],js[i],dl));NK="";kick()},
+flush:()=>{AQ=[];HP=null;NK="";FQ.clear();if(GL)for(const t of TX.values())GL.deleteTexture(t);TX.clear()},
 clear:()=>{if(d)empty(d.w,d.h)},
 // The replay's legend, written once for the file played (the user, 01/11/2026: « garde le même texte pour la légende,
 // c'est inutile de changer le texte selon l'image »): the time is on the map. o: radar images (r), each the strongest
@@ -920,6 +1008,33 @@ type At = { m?: { t: number }; a?: { t: number }; z?: { t: number }; f?: number 
  */
 export const shownAt = (T: number, r: At, l: string): number =>
   r && r.m ? r.m.t : r && r.a && r.z && l === "p" ? ((r.f ?? 0) < 0.5 ? r.a : r.z).t : T;
+/**
+ * A layer's moment at T among its moments k (time t, in order): on one, within sn of it (null before the first by more),
+ * or between two (f of the way), or none across a hole longer than gap. Playing, sn is 0: the rain or the temperature
+ * held on each image a few minutes either side, then moved a fifth of the way at once, stopped the play at every image
+ * (the user, 06/11/2026: « la vidéo ralentit à chaque passage sur une image radar »); paused, the slider lands on an
+ * image within sn. The replay's script takes it as its text.
+ */
+export const momentAt = <K extends { t: number }>(k: K[] | null | undefined, T: number, sn: number, gap: number): { m: K } | { a: K; z: K; f: number } | null => {
+  if (!k || !k.length || T < k[0].t - sn) return null;
+  let i = 0;
+  while (i < k.length - 1 && k[i + 1].t <= T) i++;
+  const a = k[i], z = k[i + 1];
+  if (!z || T - a.t <= sn) return { m: a };
+  if (z.t - T <= sn) return { m: z };
+  if (z.t - a.t > gap) return null;
+  return { a, z, f: (T - a.t) / (z.t - a.t) };
+};
+/** The moment z and the n after it in k, for the rain's images to be made ready before the play reaches them. The replay's script takes it as its text. */
+export const aheadOf = <K>(k: K[] | null | undefined, z: K, n: number): K[] => {
+  const i = k ? k.indexOf(z) : -1;
+  return i < 0 || !k ? [] : k.slice(i, i + n + 1);
+};
+/**
+ * The play's time between two frames at t and was, in ms: the time gone by, up to 250 ms (a tab put back after a while
+ * starts again where it was); 0 for the first. The replay's script takes it as its text.
+ */
+export const lapse = (t: number, was: number) => (was ? Math.min(t - was, 250) : 0);
 /**
  * A full play: 12 s (data-run, 29/10); 24 s over 24 hours and 7 days, whose images follow each other every quarter of an
  * hour and every hour (01/11/2026: in 12 s, a slow phone drew the rain's 8 and 14 new images a second at 11 and 6 frames).
@@ -986,7 +1101,7 @@ let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],RT=Infinity,LT=new Map(),
 // device that keeps up, measured in the first seconds of a play of the rain (MS: the time of the frames with a new image
 // and their number, of the others and theirs, all the frames, the time of the first measured; CW: the time of a new
 // image, of another frame, the frames a second), never on a connection that saves data or is slow.
-let DK="",WK="",DY="",J0=0,FINE=box.checked,USER=FINE,MZ=false,NWF=false,PK=0,CW=null;const MS=[0,0,0,0,0,0],cx=navigator.connection,
+let DK="",WK="",DY="",J0=0,FINE=box.checked,USER=FINE,MZ=false,NWF=false,PK=0,AZ=null,CW=null;const MS=[0,0,0,0,0,0],cx=navigator.connection,
 slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=${KEEPS_UP_FPS}&&ne(nps(m))*CW[0]+30*CW[1]<${KEEPS_UP * 1000},
 fine=(x)=>!!FI[x]&&FINE&&(USER||can(FI[x]));
 const lx=(t)=>new Date(t+144e5),hmm=(t)=>{const x=lx(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())},dm=(t)=>{const x=lx(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
@@ -1001,8 +1116,8 @@ out.push({s,big,c:mk("circle",{cx:s.x,cy:s.y,r:big?34:17},g),t:big?mk("text",{cl
 // A layer's moments at T: on one, or between two (f of the way), or none (before its first, or across a long hole).
 // Playing faster than its images can follow, one in n of them, the last kept (sub); paused, every one.
 const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l)):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){c=[n,k.filter((x,i)=>i%n===0||i===k.length-1)];KS.set(k,c)}return c[1]};
-const at=(l)=>{const k=sub(l),n=k===K[l]?1:KS.get(K[l])[0];if(!k||!k.length||T<k[0].t-SN[d])return null;let i=0;while(i<k.length-1&&k[i+1].t<=T)i++;const a=k[i],z=k[i+1];
-if(!z||T-a.t<=SN[d])return{m:a};if(z.t-T<=SN[d])return{m:z};if(z.t-a.t>((l==="p"&&GP[d]||72e5)+6e4)*n)return null;return{a,z,f:(T-a.t)/(z.t-a.t)}};
+// Playing, never held on a moment (momentAt): the time written moves on with the picture.
+const moment=${momentAt},at=(l)=>{const k=sub(l),n=k===K[l]?1:KS.get(K[l])[0];return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)};
 // The stations of an hour, as the page's scripts take them: [x, y, altitude, °C], or [x, y, u, v] in km/h (y down).
 const sx=(l,i)=>l==="t"?st.filter((s)=>s.t[i]!=null).map((s)=>[s.x,s.y,s.alt,s.t[i]]):st.filter((s)=>s.ff[i]!=null&&(s.dd[i]!=null||s.ff[i]===0)).map((s)=>{const a=(s.dd[i]||0)*Math.PI/180,v=s.ff[i];return[s.x,s.y,-Math.sin(a)*v,Math.cos(a)*v]});
 const gridOf=(l,k)=>{if(k.i<0)return RJ[l].now;const key=l+k.i;let g=G.get(key);if(!g){g=RJ[l].grid(sx(l,k.i));G.set(key,g);if(G.size>16)G.delete(G.keys().next().value)}return g};
@@ -1010,7 +1125,7 @@ const tv=(s,k)=>k.i<0?LT.get(s.x+","+s.y)??null:s.t[k.i];
 const once=(k,f)=>{if(cur!==k){cur=k;f()}};
 // The radar's images of the trail at T (trailOf), lingering TRAIL of a play: none for those who ask for less motion.
 // An hour of the radar in the finer files of 24 hours and of a day, as over 6 hours.
-const keep=${trailOf},tw=()=>d==="6h"?DU[d]*TRAIL/PL[d]:d==="24h+"||d==="jour"?36e5:0,trail=(s)=>rm||!tw()?null:keep(sub("p"),T,s,tw()),wm=()=>Math.round(tw()/6e4);
+const ahead=${aheadOf};const keep=${trailOf},tw=()=>d==="6h"?DU[d]*TRAIL/PL[d]:d==="24h+"||d==="jour"?36e5:0,trail=(s)=>rm||!tw()?null:keep(sub("p"),T,s,tw()),wm=()=>Math.round(tw()/6e4);
 // The wind the drops follow (RJ.p.wind): the anemometers of the round hour nearest t, within 1 h 30 min; none without.
 let WH=0;const blow=(t)=>{if(!RJ.p)return;let b=null;for(const x of K.v||[])if(Math.abs(x.t-t)<=54e5&&(!b||Math.abs(x.t-t)<Math.abs(b.t-t)))b=x;const key=b?b.t:-1;if(key===WH)return;WH=key;
 RJ.p.wind(b?(b.i<0?RJ.v&&RJ.v.live:sx("v",b.i)):null,b&&b.t)};
@@ -1022,11 +1137,14 @@ e={fin:new Date(k.end).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
 if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
-const r=at("p"),pk=r?(r.m||r.z).t:0;if(pk!==PK){PK=pk;NWF=true}if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
+const r=at("p"),pk=r?(r.m||r.z).t:0;if(pk!==PK){PK=pk;NWF=true}
+// Playing, the next images made ready before the play reaches them (RJ.p.ahead; a page kept from before has none).
+const nz=r&&(r.z||r.m);if(playing&&RJ.p.ahead&&nz&&nz!==AZ){AZ=nz;RJ.p.ahead(ahead(sub("p"),nz,3).map((x)=>x.e),gr)}if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
 // 7 days, until the radar's week is whole (rejeu.ts; then its 3 hours an hour apart, as the 24 hours above): the rain
 // gauges' 3 hours spread between them (rain), faded from one to the next, without their dots (the
 // user, 01/11/2026: « beaucoup trop chargé »); the time and the legend those of the 3 hours shown (k), switched half way.
 if(l==="p"){const gr=RJ.p&&RJ.p.dims(),el=lg("p"),r=at("g");const k=r?r.m||(r.f<.5?r.a:r.z):null;if(gr){blow(k?k.t:T);
+const gz=r&&(r.z||r.m);if(playing&&RJ.p.ahead&&gz&&gz!==AZ){AZ=gz;RJ.p.ahead(ahead(sub("g"),gz,3).map((x)=>()=>rain(x)),gr)}
 if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(rain(r.m),rain(r.m),0,el,gr,null,0));else{cur="";RJ.p.mix(rain(r.a),rain(r.z),r.f,el,gr,null,0)}}
 return k?{h:k}:null}
 const r=at(l);if(!RJ[l])return r;if(!r)once("x"+l,()=>RJ[l].show(null));else if(r.m)once(l+r.m.t,()=>RJ[l].show(gridOf(l,r.m)));else{cur="";RJ[l].mix(gridOf(l,r.a),gridOf(l,r.z),r.f)}
@@ -1080,10 +1198,10 @@ fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.lengt
 const gauge=(ms)=>{const n=++MS[4];if(n===11)MS[5]=performance.now();if(n>10){const i=NWF?0:2;MS[i]+=ms;MS[i+1]++}NWF=false;if(MS[1]<6||MS[3]<30)return;MZ=false;const o=MS[2]/MS[3];
 CW=[Math.max(0,MS[0]/MS[1]-o),o,(n-11)*1e3/Math.max(1,performance.now()-MS[5])];
 if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",true)}};
-const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=was?k*${FRAME_MS}:0;T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
+const lapse=${lapse};const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=lapse(t,was);T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
 // The measure, in a play of the rain over 6 or 24 hours, until it is known or more images are asked.
-const play=()=>{if(T>=E)T=S;playing=true;last=nx=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
-const stop=(say)=>{playing=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show()};
+const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
+const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show()};
 // Back to the live map when the file cannot come: the bar says so.
 const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};
 // A length (x), with its finer file when more images are shown (fine), or the day DY. With swap, the file shown is swapped
@@ -1103,7 +1221,7 @@ b.addEventListener("click",()=>{if(J)playing?stop(true):play()});vbind([rb.query
 rng.addEventListener("input",()=>{if(playing)stop(false);T=S+(+rng.value)*ST[d];show();btn()});rng.addEventListener("change",()=>{ann.textContent=show()});
 rng.addEventListener("keydown",(e)=>{const v=+rng.value,m=+rng.max;let x=null;if(e.key==="ArrowRight"||e.key==="ArrowUp")x=Math.floor(v+1e-6)+1;else if(e.key==="ArrowLeft"||e.key==="ArrowDown")x=Math.ceil(v-1e-6)-1;
 else if(e.key==="Home")x=0;else if(e.key==="End")x=m;else if(e.key===" "){e.preventDefault();b.click();return}else return;e.preventDefault();if(playing)stop(false);T=S+Math.max(0,Math.min(m,x))*ST[d];ann.textContent=show();btn()});
-document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",()=>{MZ=false;if(J){cur="";range();show()}}));
+document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",()=>{MZ=false;AZ=null;if(RJ.p&&RJ.p.flush)RJ.p.flush();if(J){cur="";range();show()}}));
 if(RJ.want)RJ.go(RJ.want)})()`;
 }
 

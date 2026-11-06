@@ -566,6 +566,10 @@ describe("coupures d'eau", () => {
     const sdPage = coupuresCommunePage("https://rundata.re", pageOf("saint-denis")!, { coupures }, now);
     expect(head(sdPage)).not.toMatch(/\blus? le /);
     expect(sdPage).toContain('<meta name="description" content="Coupures d&#39;eau à Saint-Denis (974)\u00a0: avis du distributeur, restrictions sécheresse et qualité de l&#39;eau du robinet.">');
+    // A silent feed whose last notice said not to drink the water: said, without the hour of a reading it was not part of.
+    const cirest = { texte: "Le site de la CIREST n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.", court: "sans réponse", de: "de la CIREST", site: "https://www.cirest.fr/" };
+    const pdp = coupuresCommunePage("https://rundata.re", pageOf("la-plaine-des-palmistes")!, { coupures: { ...coupures, value: { ...coupures.value, injoignable: [...coupures.value.injoignable!, cirest] } } }, now);
+    expect(pdp).toContain('<meta name="description" content="La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire selon le dernier avis lu\u00a0; le site de la CIREST n&#39;a pas répondu à notre dernière lecture.">');
     vi.restoreAllMocks();
   });
 

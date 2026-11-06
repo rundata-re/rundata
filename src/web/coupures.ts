@@ -141,8 +141,12 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const description = !d
     ? short
     : x.avis.length && x.muet
-      // Its feed silent: the notices kept were read before this copy, and the page says when; here, no value.
-      ? short
+      // Its feed silent: the notices kept were read before this copy, and the page says when; here no hour, and only the
+      // water not to drink, which is never dropped (cut first: the site that did not answer).
+      ? x.dry
+        ? describe(`${p.nom} (974) : eau à ne pas boire selon le dernier avis lu ; le site ${x.muet.de} n'a pas répondu à notre dernière lecture.`,
+            `${p.nom} (974) : eau à ne pas boire selon le dernier avis lu.`)
+        : short
     : x.avis.length
       // Dated always (588): too long with a distributor's long name, without « avec les rues… », never without its date.
       ? ((dated: string) => describe(`${dated}, avec les rues, les heures et les consignes.`, describe(`${dated}.`, short)))(

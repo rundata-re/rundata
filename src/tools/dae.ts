@@ -8,9 +8,12 @@ const SHOWN = 5;
 // Walking in town: about 80 m a minute, the streets a third longer than the straight line.
 const walk = (km: number) => Math.max(1, Math.round((km * 1000 * 1.3) / 80));
 
+/** Said after the emergency call, in the tool and on /defibrillateurs. */
+export const SANS_FORMATION = "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";
+
 export const URGENCE =
   "Arrêt cardiaque : appeler le 15 (SAMU) ou le 112, commencer tout de suite le massage cardiaque et envoyer quelqu'un chercher le défibrillateur. " +
-  "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";
+  SANS_FORMATION;
 
 /**
  * Outside is not « at any hour » by itself: Géo'DAE says so only with its hours « 24/7 ». An outside device without

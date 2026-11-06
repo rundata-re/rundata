@@ -15,8 +15,11 @@ export function heure(minutes: number): string {
   return m ? `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` : `${h}\u00a0h`;
 }
 
-/** The hours of a source's text as the kit writes them: « de 18h à 8h » → « de 18 h à 8 h », « 7h30 » → « 07:30 ». */
-export const heuresDites = (s: string) => s.replace(/\b(\d{1,2}) ?h ?(\d\d)?\b/g, (x, h: string, m?: string) => (Number(h) < 24 && Number(m ?? 0) < 60 ? heure(Number(h) * 60 + Number(m ?? 0)) : x));
+/**
+ * The hours of a source's text as the kit writes them: « de 18h à 8h » → « de 18 h à 8 h », « 7h30 » → « 07:30 ». The
+ * space after « h » belongs to the text when no minutes follow: « entre 6 h et 20 h » keeps its « et ».
+ */
+export const heuresDites = (s: string) => s.replace(/\b(\d{1,2}) ?h(?: ?(\d\d))?\b/g, (x, h: string, m?: string) => (Number(h) < 24 && Number(m ?? 0) < 60 ? heure(Number(h) * 60 + Number(m ?? 0)) : x));
 
 /**
  * Two times said together (a span, « entre … et … »): « 18\u00a0h » and « 21\u00a0h », or both « 12:00 », « 12:54 » when

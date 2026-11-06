@@ -6,6 +6,7 @@
  * Nothing here asks a source directly: what is checked is what a visitor gets.
  */
 import { decodeText, textOf } from "../providers/avis-eau.js";
+import { SOURCE as RADAR } from "../providers/radar.js";
 
 /** Who the check is, for the Worker: served like a crawler that waits for the data, and not counted in the usage. */
 export const AGENT = "rundata-check/1 (+github actions)";
@@ -216,10 +217,18 @@ const ko = (bytes: number) => `${(bytes / 1000).toLocaleString("fr-FR", { maximu
 export const SECOURS_MAX_HOURS: Record<string, number> = { "meteo_actuelle (Saint-Denis)": 3, evenements: 24 };
 const SECOURS_DEFAULT_HOURS = 6;
 
+/**
+ * The sources whose last copy is not judged here: the radar's is kept by each data center only (providers/radar.ts,
+ * not in KV), and the check runs from GitHub's, where hardly anyone reads it. On 6/11/2026, Météo-France answering
+ * HTTP 500 at 08:13 and 08:14, the data center of La Réunion served its copy of 08:02, GitHub's one of 5/11 11:25.
+ * The radar is checked instead by its history in KV (RADAR_HISTORY), the same in every data center.
+ */
+const NOT_JUDGED = new Set([RADAR.nom]);
+
 /** The copies older than the point's threshold, each with its source; a copy whose read time cannot be read is one. */
 function oldCopies(point: string, copies: { source?: string; lue_le?: unknown }[], now: Date): Probleme[] {
   const max = SECOURS_MAX_HOURS[point] ?? SECOURS_DEFAULT_HOURS;
-  return copies.flatMap((copy) => {
+  return copies.filter((copy) => !copy.source || !NOT_JUDGED.has(copy.source)).flatMap((copy) => {
     const of = copy.source ? `de « ${copy.source} »` : "d'une partie de la réponse";
     const t = parseTime(copy.lue_le, now);
     if (!t) return [{ point, motif: `copie de secours ${of} : date de lecture absente ou illisible` }];
@@ -252,7 +261,30 @@ export interface PageCheck {
   path: string;
   /** How old the page's data may be (its JSON-LD dateModified), in hours. */
   max?: number;
+  /** A JSON file, not a page: only its status and its own check. */
+  json?: boolean;
   check?: (html: string, now: Date) => Probleme[];
+}
+
+/**
+ * The radar's 6 hours, written in KV by the scheduled event every 5 minutes (web/pluie-retro.ts), read by /meteo's
+ * replay: its newest image no older than 3 hours, as the measurement of meteo_actuelle. A gap is an image the event
+ * could not read; only images count.
+ */
+export const RADAR_HISTORY = "/meteo/rejeu-6h.json";
+const RADAR_MAX_HOURS = 3;
+
+function radarHistory(body: string, now: Date): Probleme[] {
+  const point = RADAR_HISTORY;
+  let entrees: unknown;
+  try {
+    entrees = JSON.parse(body)?.radar?.entrees;
+  } catch {
+    return [{ point, motif: "réponse illisible" }];
+  }
+  const images = (Array.isArray(entrees) ? entrees : []).filter((e) => e && !e.trou);
+  if (!images.length) return [{ point, motif: "aucune image radar dans les 6 dernières heures" }];
+  return fresh(point, "dernière image radar", images[images.length - 1].fin, RADAR_MAX_HOURS, now);
 }
 
 export const PAGES: PageCheck[] = [
@@ -276,6 +308,7 @@ export const PAGES: PageCheck[] = [
   },
   { path: "/trafic", max: 2 },
   { path: "/cyclones" },
+  { path: RADAR_HISTORY, json: true, check: radarHistory },
 ];
 
 // What a page says of a source that did not answer (web/pages.ts, web/domains.ts).
@@ -285,6 +318,7 @@ const DOWN = /ne répond(?:ent)? pas|Momentanément indisponible|indisponible po
 export function checkPage(c: PageCheck, status: number, cacheControl: string, html: string, now: Date): Probleme[] {
   const point = c.path;
   if (status !== 200) return [{ point, motif: `HTTP ${status}` }];
+  if (c.json) return c.check?.(html, now) ?? [];
   // A page without its live block is never kept (web/site.ts): « no-store ».
   if (/no-store/.test(cacheControl)) return [{ point, motif: "servie sans son bloc en direct" }];
   const out: Probleme[] = [];

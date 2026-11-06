@@ -34,6 +34,18 @@ const QUIET_META = (at: Date) => `Aucun feu détecté par satellite à La Réuni
 const BLIND_META = "Feux de végétation à La Réunion (974) vus par satellite : la carte des dernières 24 h, les sentiers fermés et la vigilance du jour. Un feu ? 18 ou 112.";
 const OFF = "La détection des feux par satellite n'est pas encore active sur rundata.re.";
 const DOWN = "Le service de la NASA ne répond pas pour le moment : rechargez la page dans quelques minutes.";
+// The first screen (marketing, 06/11/2026): a satellite sees hot spots, not fires; « aucun point chaud » always with
+// « détecté par satellite » and the time it was read, never « pas de feu ».
+const PILL = "Satellites de la NASA · 24 h";
+const SEES = "Un satellite voit des points chauds (feu, brûlage, toit très chaud), pas forcément des feux. Les nuages et les heures entre deux passages peuvent en cacher.";
+const CROIX = "Croix : sentiers fermés par l'ONF, pas des feux.";
+
+/** The hero: the count of the hot spots of 24 hours, said as the satellites see them. */
+export function heroFeux(fires: feux.Feux): string {
+  const n = fires.detections.length;
+  if (!n) return "Aucun point chaud détecté par satellite depuis 24 h";
+  return n === 1 ? "1 point chaud détecté par satellite depuis 24 h" : `${n} points chauds détectés par satellite depuis 24 h`;
+}
 
 /** The description: the count and the newest, without its place when that makes it too long. */
 export function feuxDescription(fires: (feux.Feux & { fetchedAt?: Date }) | null, now: Date): string {
@@ -83,6 +95,13 @@ function firesLine(l: FeuxLive): string {
     : `Aucun point chaud détecté par satellite (NASA FIRMS, lu ${leAt(l.fires.fetchedAt)}).`) + trails;
 }
 
+/** Under the hero: when the satellites were read, and what they see; without them, the page's lead as before. */
+function heroLines(l: FeuxLive, on: boolean): string {
+  if (!on || !l.fires) return `<p class="lead">${esc(LEAD)}</p>`;
+  return `<p class="lead"><b>${esc(heroFeux(l.fires))}</b></p>
+    <p>${esc(`Lu ${leAt(l.fires.fetchedAt)}. ${SEES}`)}</p>`;
+}
+
 export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?: Alerte): string {
   const on = feux.enabled();
   const description = on ? feuxDescription(l.fires, now) : BLIND_META;
@@ -94,15 +113,15 @@ export function feuxPage(origin: string, l: FeuxLive, now = new Date(), alerte?:
   const band = `${crumbBar("Feux")}
 <div class="wrap intro">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>NASA FIRMS · 24 h</p>
+    <p class="pill"><span class="dot"></span>${esc(PILL)}</p>
     <h1>${esc(H1)} <span class="n974">974</span></h1>
-    <p class="lead">${esc(LEAD)}</p>
+    ${heroLines(l, on)}
     <p class="lead"><b>${esc(URGENCE)}</b></p>
     ${ask("Na difé dann bwa ? Maïdo i brul ? Gèt si https://rundata.re/feux é di amwin ousa lé, é si néna santyé fèrmé.",
       "Y a-t-il un feu de forêt à La Réunion en ce moment ? Lis https://rundata.re/feux et dis-moi où le satellite en a vu, à quelle heure, et quels sentiers sont fermés.")}
   </div>
   <figure class="card mapcard">${islandMap({ markers, label: "Carte de La Réunion (974) : les feux détectés par satellite et les sentiers fermés" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende([...(l.fires?.detections.length ? [CLE_FEU] : []), CLE_FERME], esc(firesLine(l)))}</figcaption></figure>
+  <figcaption class="note" style="color:var(--on-night-muted)">${legende([...(l.fires?.detections.length ? [CLE_FEU] : []), CLE_FERME], esc(`${CROIX} ${firesLine(l)}`.trim()))}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-feux">

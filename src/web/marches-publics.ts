@@ -11,7 +11,7 @@ import { injoignable } from "../tools/injoignable.js";
 import { crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { hm, layout, type Live, readAt, leAt } from "./pages.js";
+import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
 
 export const PATH = "/marches-publics";
 export const NOM = "Marchés publics";
@@ -76,6 +76,23 @@ function row(a: Avis, now: Date): string {
     `<span class="q-none">${esc(`jusqu'au ${jour(a.limite, now)}`)}</span></li>`;
 }
 
+/**
+ * The notices by commune (the place of the work, else the buyer's), the one with the most first and those without a
+ * commune last, each folded under its name and its number of notices: 103 notices in one list made a page of 22 000 px
+ * on a phone. Each line keeps its place, which tells the work's from the buyer's. The filter opens the groups it finds.
+ */
+function groups(avis: Avis[], now: Date): string {
+  const by = new Map<string, Avis[]>();
+  for (const a of avis) {
+    const c = a.commune ?? a.communeAcheteur ?? "";
+    by.set(c, [...(by.get(c) ?? []), a]);
+  }
+  return [...by]
+    .sort(([a, x], [b, y]) => +!a - +!b || y.length - x.length || a.localeCompare(b, "fr"))
+    .map(([c, l]) => `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">·\u00a0${l.length}\u00a0avis</span></h3>`,
+      `<ul class="rows eau">${l.map((a) => row(a, now)).join("")}</ul>`)}</div>`).join("");
+}
+
 const FILTER = `<form id="of" class="card filter" hidden role="search" aria-label="Filtrer les avis">
 <label class="q">Chercher <input name="q" type="search" placeholder="voirie, restauration scolaire, nettoyage…" autocomplete="off"></label>
 <label>Commune <select name="c"><option value="">toutes</option>COMMUNES</select></label>
@@ -87,6 +104,7 @@ const norm=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase(
 for(const e of items)e.dataset.q=norm(e.textContent);
 const run=()=>{const q=norm(f.q.value).split(" ").filter(Boolean),c=f.c.value;let n=0;
 for(const e of items){const ok=q.every((t)=>e.dataset.q.includes(t))&&(!c||e.dataset.c===c);e.hidden=!ok;if(ok)n++}
+const on=q.length>0||!!c;for(const g of document.querySelectorAll("#marches .groupe")){const k=!!g.querySelector("li:not([hidden])");g.hidden=on&&!k;g.firstElementChild.open=on&&k}
 document.getElementById("of-n").textContent=q.length||c?n+" avis sur "+items.length+".":"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
 
@@ -118,7 +136,7 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
       : triage
       ? `<p class="card">${plural(d.enLecture!, "avis lu", "avis lus")} au BOAMP ${leAt(d.lu ?? data.fetchedAt)} ${d.enLecture! > 1 ? "sont" : "est"} en cours de tri, pour ne garder que ceux de l'île.</p>`
       : d.avis.length
-      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="marches">${d.avis.map((a) => row(a, now)).join("")}</ul>`
+      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<div id="marches" class="plis">${groups(d.avis, now)}</div>`
       : `<p class="card">Aucun avis de marché ouvert pour La Réunion sur le BOAMP ${leAt(data.fetchedAt)}.</p>`;
 
   const title = "Marchés publics Réunion : avis de marché et appels d'offres en cours · 974";

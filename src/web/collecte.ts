@@ -4,7 +4,7 @@
  * line of the streets typed. Built from the bundled calendars and the day: no source is read.
  */
 import * as col from "../vie/collecte.js";
-import { a, de } from "../tools/format.js";
+import { a, de, nombre } from "../tools/format.js";
 import { insecables } from "../typographie.js";
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
@@ -50,12 +50,13 @@ export const horsTco = <T extends { c: string }>(typed: string, list: T[]): T | 
 export { ELSEWHERE };
 export const communeOf = (slug: string) => col.COMMUNES.find((c) => communeSlug(c) === slug);
 
-// Shows the full line of the streets typed (3 letters at least, 20 at most), hides the groups without a match. In a
-// block: the page's own script has names of its own.
+// Shows the full line of the streets typed (3 letters at least, 20 at most), hides the groups without a match, and
+// the communes of /collecte without one; opens those it finds. In a block: the page's own script has names of its own.
 const SCRIPT = `{const q=document.getElementById("rue");if(q){const n=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();const out=document.getElementById("trouve");
 const rien=document.getElementById("rien"),dit=rien.textContent,AI=${JSON.stringify(ELSEWHERE).replace(/</g, "\\u003c")},hors=${horsTco};
 q.addEventListener("input",()=>{const t=n(q.value.trim());const hits=[];document.querySelectorAll(".voies li").forEach((li)=>{const ok=t.length<3||n(li.textContent).includes(t);li.hidden=!ok;if(ok&&t.length>=3)hits.push(li)});
 document.querySelectorAll(".groupe").forEach((g)=>{g.hidden=![...g.querySelectorAll("li")].some((li)=>!li.hidden)});
+document.querySelectorAll("details.commune").forEach((d)=>{const k=[...d.querySelectorAll(".groupe")].some((g)=>!g.hidden);d.hidden=!k;if(t.length>=3&&k)d.open=true});
 if(t.length>=3)document.querySelectorAll(".groupe>details").forEach((d)=>{if(!d.parentNode.hidden)d.open=true});
 document.querySelectorAll(".sans").forEach((s)=>{s.hidden=![...s.querySelectorAll(".groupe")].some((g)=>!g.hidden)});
 out.className=hits.length?"card":"";out.replaceChildren(...hits.slice(0,20).map((li)=>{const p=document.createElement("p");const g=li.closest(".groupe");p.textContent=li.textContent+", "+g.dataset.c+" : "+g.dataset.r;return p}));
@@ -81,11 +82,12 @@ function groups(today: number, commune?: string): string {
   const dated = rhythms
     .map((x) => {
       const { g } = x;
+      const hx = commune ? "h3" : "h4";
       const cal = col.CALENDARS[g.c];
       const r = x.parts.join("\u00a0; ");
       const feries = col.holidays(cal, today).map((h) => (h.reportee ? esc(col.holidayLine(h)) : `Jour férié : vérifiez <a href="${esc(cal.pdf)}" rel="noopener">le calendrier du TCO (PDF) →</a>`));
       return `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(`${r}.`)}">${folded(true,
-        `<h3>${esc(cap(x.parts[0]))}\u00a0<span class="note">·\u00a0${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span></h3>`,
+        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">·\u00a0${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span></${hx}>`,
         `<p>${esc(cap(r))}.</p>${feries.map((f) => `<p>${f}</p>`).join("")}
 ${list(g)}
 <p class="note">${commune ? "" : `${esc(g.commune)} · `}<a href="${esc(cal.pdf)}" rel="noopener">calendrier ${esc(cal.code)} du TCO (PDF)</a></p>`)}</div>`;
@@ -97,7 +99,15 @@ ${list(g)}
     ? `<div class="sans"><h3>Voies sans calendrier du TCO</h3><p>${said}<a href="${col.TCO_CONTACT}" rel="noopener">Renseignez-vous auprès du TCO →</a></p>
 ${without.map((g) => `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(col.NO_CALENDAR)}">${commune ? list(g) : folded(true, `<h3>${esc(g.commune)}\u00a0<span class="note">·\u00a0${count(g)}</span></h3>`, list(g))}</div>`).join("\n")}</div>`
     : "";
-  return [...dated, nc].join("\n");
+  // On /collecte, the calendars by commune, each folded under its name, its number of calendars and of streets: the
+  // 130 calendars' lines made 16 000 px on a phone. The search opens the ones it finds (SCRIPT).
+  const byCommune = commune ? dated : [...new Set(rhythms.map((x) => x.g.commune))].map((c) => {
+    const mine = rhythms.flatMap((x, i) => (x.g.commune === c ? [i] : []));
+    const rues = new Set(mine.flatMap((i) => rhythms[i].g.noms)).size;
+    return `<details class="pli commune"><summary><h3>${esc(c)} <small>·\u00a0${mine.length}\u00a0calendrier${mine.length > 1 ? "s" : ""}, ${nombre(rues)}\u00a0rue${rues > 1 ? "s" : ""}</small></h3></summary>
+${mine.map((i) => dated[i]).join("\n")}</details>`;
+  });
+  return [commune ? byCommune.join("\n") : `<div class="plis">\n${byCommune.join("\n")}\n</div>`, nc].join("\n");
 }
 
 export function collectePage(origin: string, now: Date, commune?: string, alerte?: Alerte): string {

@@ -6,6 +6,7 @@ import * as emploiSource from "../src/providers/emploi.js";
 import { REGISTRY } from "../src/registre.js";
 import { emploi, lignes, NON_REPRIS, pourOutil, type OffreRow } from "../src/tools/emploi.js";
 import { buildEmploi, emploiPage } from "../src/web/emploi.js";
+import { esc } from "../src/web/map.js";
 
 // The feed of La Réunion read on 29/10/2026 at 12:20, two offers' pages and the first search page read at 12:26-12:28,
 // cut to what is read of them (and without the recruiters' names).
@@ -352,10 +353,11 @@ describe("the tool emploi and the page /emploi", () => {
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(Date.parse(c.lu) + 4 * 60_000), stale: false }, NOW);
     expect(page).toContain("<h1>Offres d'emploi public à La Réunion <span class=\"n974\">974</span></h1>");
     expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture le 29/10 à 12:45. Le site en affiche 628 pour La Réunion.</p>");
-    const first = page.indexOf('<ul class="rows eau" id="offres">');
+    const first = page.indexOf('<div id="offres" class="plis">');
     expect(first).toBeGreaterThan(page.indexOf("</h1>"));
-    expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel · Emploi ouvert aux titulaires et aux contractuels · Saint-Denis</small></span><span class="q-none">jusqu&#39;au 20/11</span>');
-    expect(page).toContain("· Assistante / Assistant de direction · Emploi ouvert aux titulaires et aux contractuels · commune non précisée</small>");
+    expect(page).toContain('<small>Direction Générale de l&#39;Aviation Civile (DGAC), Service navigation aérienne Océan Indien (SNA/OI) · Responsable sectorielle / sectoriel</small></span><span class="q-none">jusqu&#39;au 20/11</span>');
+    expect(page).toContain("· Assistante / Assistant de direction</small>");
+    expect(page).toContain("<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>");
     expect(page).toContain("<option>Sainte-Marie</option>");
     expect(page).not.toMatch(/href="https?:\/\/[^"]*(hellowork|meteojob|domtomjob|apec|indeed|linkedin|leboncoin|jooble)/i);
     expect(page).toContain('<a href="https://monemploi-lareunion.francetravail.fr/" rel="noopener">Mon emploi la Réunion</a>');
@@ -390,6 +392,31 @@ describe("the tool emploi and the page /emploi", () => {
     expect(page).not.toHaveProperty("nature");
     expect(page.offres.every((o: { nature?: string }) => o.nature === ouvert)).toBe(true);
     expect(page.offres.find((o: { references?: { reference: string }[] }) => o.references)!.references[0]).toHaveProperty("reference");
+  });
+
+  it("folds the offers by commune on /emploi, the most first, and keeps on its line any nature but the one said once", () => {
+    const ouvert = "Emploi ouvert aux titulaires et aux contractuels";
+    const natures = ["Emploi ouvert uniquement aux contractuels", "Emploi réservé aux fonctionnaires et lauréats d’un concours territorial"];
+    const line = (intitule: string, commune?: string, nature?: string): OffreRow => ({ intitule, employeur: "Communes", ...(commune ? { commune } : {}), ...(nature ? { nature } : {}), publiee_le: "29/10", lien: `https://choisirleservicepublic.gouv.fr/offre-emploi/${intitule}/` });
+    const rows = [line("A", "Saint-Denis", ouvert), line("B", "Le Port", natures[1]), line("C", undefined, ouvert), line("D", "Saint-Denis", natures[0]), line("E", "Bras-Panon", ouvert)];
+    const page = (offres: OffreRow[]) => emploiPage("https://rundata.re", { value: { nombre: offres.length, offres, lu: NOW.toISOString(), couverture: "", sources: [] } as never, fetchedAt: NOW, stale: false }, NOW);
+    const html = page(rows);
+    expect(html).toContain("<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>");
+    // Each other nature as the site writes it, on its line; the one said once on none.
+    for (const n of natures) expect(html).toContain(`<small>Communes · ${esc(n)}</small>`);
+    expect(html.match(/<small>Communes<\/small>/g)).toHaveLength(3);
+    expect(html).not.toContain(`· ${ouvert}`);
+    // By commune, the most offers first, then the alphabet, those without a commune last; folded, the commune not on the line.
+    const heads = [...html.matchAll(/<summary><h3>([^<]+)\u00a0<span class="note">·\u00a0([^<]+)<\/span><\/h3><\/summary>/g)].map((m) => `${m[1]} · ${m[2]}`);
+    expect(heads).toEqual(["Saint-Denis · 2\u00a0offres", "Bras-Panon · 1\u00a0offre", "Le Port · 1\u00a0offre", "Commune non précisée · 1\u00a0offre"]);
+    expect(html).not.toMatch(/<details open/);
+    expect(html).not.toContain("commune non précisée");
+    // A line without a nature: nothing said once, every nature on its line.
+    const without = page([...rows, line("F", "Saint-Paul")]);
+    expect(without).not.toContain("Sauf mention");
+    expect(without.match(new RegExp(`<small>Communes · ${ouvert}</small>`, "g"))).toHaveLength(3);
+    // The filter opens the groups it finds and hides the others.
+    expect(html).toContain('g.hidden=on&&!k;g.firstElementChild.open=on&&k');
   });
 
   it("shows a post published under several references as one line, a link to each, the days of each when the line has no closing date", async () => {

@@ -72,6 +72,31 @@ describe("the déchèteries of the West", () => {
     expect(decheteriesPage("https://rundata.re", null, NOW)).toContain('<p class="pill">État des bennes · déchèteries du <abbr title="Territoire de la Côte Ouest">TCO</abbr></p>');
   });
 
+  it("fold each commune under its name, its number of sites and its full skips, never « aucune » deduced", () => {
+    const heads = (html: string) => new Map([...html.matchAll(/<summary><h2 id="h-([a-z-]+)">[^<]+ <small>·\u00a0([^<]+)<\/small><\/h2><\/summary>/g)].map((m) => [m[1], m[2]]));
+    const now = sitesNow(etats, NOW);
+    const page = heads(decheteriesPage("https://rundata.re", copy, NOW));
+    expect(page.size).toBe(TCO_COMMUNES.length + ELSEWHERE_COMMUNES.length);
+    for (const c of TCO_COMMUNES) {
+      const here = now.filter((x) => x.commune === c);
+      const full = here.reduce((n, x) => n + (x.a_jour ? x.refuse.length : 0), 0);
+      const sites = `${here.length}\u00a0déchèterie${here.length > 1 ? "s" : ""}`;
+      expect(page.get(anchorOf(c)), c).toBe(full ? `${sites} ·\u00a0${full}\u00a0benne${full > 1 ? "s" : ""} pleine${full > 1 ? "s" : ""}` : sites);
+    }
+    for (const c of ELSEWHERE_COMMUNES) expect(page.get(anchorOf(c))).toMatch(/^\d+\u00a0déchèteries?$/);
+    // The fixture has full skips somewhere; the next morning, nothing recent: no count, and never « aucune ».
+    expect([...page.values()].some((v) => v.includes("pleine"))).toBe(true);
+    const late = decheteriesPage("https://rundata.re", copy, NEXT_MORNING);
+    expect([...heads(late).values()].some((v) => v.includes("benne"))).toBe(false);
+    expect(late).not.toMatch(/aucune benne/i);
+    expect(heads(decheteriesPage("https://rundata.re", null, NOW)).size).toBe(TCO_COMMUNES.length + ELSEWHERE_COMMUNES.length);
+    // Folded, the commune's anchor on its section: the page's script opens the details inside (UNFOLD_SCRIPT).
+    const html = decheteriesPage("https://rundata.re", copy, NOW);
+    expect(html).toContain('<section id="saint-paul" aria-labelledby="h-saint-paul">\n  <details class="pli"><summary>');
+    expect(html).not.toMatch(/<details class="pli" open/);
+    expect(html).toContain('t.querySelector(":scope>details")');
+  });
+
   it("have a tile on the West's commune pages, with the state of their skips", () => {
     const paul = communePage("https://rundata.re", pageOf("saint-paul")!, { place: null, dechets: copy }, NOW);
     expect(paul).toMatch(/<h3><a href="\/decheteries#saint-paul">Déchèteries<span class="sr"> à Saint-Paul<\/span><\/a><\/h3><p class="tv">5 déchèteries<\/p><p class="td">d'après les agents : déchets verts acceptés dans \d sur 5, encombrants dans \d sur 5<\/p>/);

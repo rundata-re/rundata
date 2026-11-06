@@ -47,6 +47,10 @@ describe("the points of the maps, with a mouse and with a finger", () => {
     expect(POINTS_SCRIPT).toContain("c[0]>=b.left&&c[0]<=b.right&&c[1]>=b.top&&c[1]<=b.bottom");
     // A drag or a pinch is not a tap.
     expect(POINTS_SCRIPT).toContain("if(Math.hypot(u[0]-d[0],u[1]-d[1])>10)return;");
+    // Never a point of a layer the page hides: Chrome gives it its size, and /evenements' list named each venue four
+    // times, from the other times and genres (06/11/2026).
+    expect(POINTS_SCRIPT).toContain(`const shown=(a)=>{for(let e=a;e&&e.tagName!=="svg";e=e.parentElement)if(getComputedStyle(e).display==="none")return false;return true};`);
+    expect(POINTS_SCRIPT).toContain("near=pts().filter(shown).map((a)=>[a,mid(a)])");
   });
 
   it("zooms a commune's map on too many points under a finger, and lists them otherwise", () => {

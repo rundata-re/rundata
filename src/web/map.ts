@@ -725,6 +725,11 @@ export function islandMap(opts: {
   under?: string;
   /** Drawn over the land and the roads, under the markers: lines, points of a layer. */
   overlay?: string;
+  /**
+   * Drawn over the markers, under `top`: points of a layer beside the markers, which a click reaches before a marker's
+   * hit area around them (/evenements' venues beside their commune's round).
+   */
+  above?: string;
   /** Drawn over everything, the summits included: markers the page draws itself. */
   top?: string;
   /** Pills that would cover each other moved apart, each tied to its place (apart()). */
@@ -823,7 +828,7 @@ export function islandMap(opts: {
     `<defs><g id="isl">${paths}</g>${terrain ? `<clipPath id="isl-clip">${paths}</clipPath>` : ""}</defs>` +
     `<rect class="sea" width="${W}" height="${H}" rx="28"/>` +
     `<use href="#isl" class="coast"/>${land}<use href="#isl" class="borders"/>` +
-    (opts.under ?? "") + roadsLayer() + (opts.overlay ?? "") + zones + extra + names + markers + (opts.top ?? "") + `</svg>`;
+    (opts.under ?? "") + roadsLayer() + (opts.overlay ?? "") + zones + extra + names + markers + (opts.above ?? "") + (opts.top ?? "") + `</svg>`;
 }
 
 // ---------------------------------------------------------------- every hike and trail of the island

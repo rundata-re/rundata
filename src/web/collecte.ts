@@ -65,20 +65,55 @@ rien.hidden=t.length<3||hits.length>0})}}`;
 
 function groups(today: number, commune?: string): string {
   const streets = commune ? col.STREETS.filter((s) => s.commune === commune) : col.STREETS;
-  const byCal = new Map<string, { c: number; commune: string; noms: string[] }>();
+  const byCal = new Map<string, { c: number; cals: number[]; commune: string; noms: string[] }>();
   for (const s of streets) {
     const k = `${s.calendrier}|${s.commune}`;
-    const g = byCal.get(k) ?? { c: s.calendrier, commune: s.commune, noms: [] };
+    const g = byCal.get(k) ?? { c: s.calendrier, cals: [s.calendrier], commune: s.commune, noms: [] };
     g.noms.push(s.nom.replace(/\s*\([^)]*\)$/, ""));
     byCal.set(k, g);
   }
+  // Two calendars of a commune with the same days to the end of the year: one group, their streets together, both PDFs
+  // (their codes, « 2026_SP2a_07 », tell nothing to whom reads them).
+  const groupsOf: { c: number; cals: number[]; commune: string; noms: string[] }[] = [];
+  for (const g of byCal.values()) {
+    const cal = col.CALENDARS[g.c];
+    const same = cal && groupsOf.find((o) => o.commune === g.commune && col.CALENDARS[o.c] && col.sameDays(col.CALENDARS[o.c], cal, today));
+    if (same) {
+      same.cals.push(g.c);
+      same.noms.push(...g.noms);
+    } else groupsOf.push(g);
+  }
   const list = (g: { noms: string[] }) => `<ul class="voies plain">${[...new Set(g.noms)].sort((x, y) => x.localeCompare(y, "fr")).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>`;
-  // Each group folded under its rhythm's first part and its number of streets (marketing): two groups may share that
-  // line, their whole rhythms told apart inside. A search opens the groups it finds (SCRIPT).
+  // Each group folded under its rhythm's first part and its number of streets (marketing). Groups of a commune that
+  // share that line get, under it, what tells them apart: the next collection whose rhythm differs, then the one
+  // after while two still share it, or the first day that parts calendars said alike. A search opens the groups it
+  // finds (SCRIPT).
   const count = (g: { noms: string[] }) => { const n = new Set(g.noms).size; return `${n}\u00a0rue${n > 1 ? "s" : ""}`; };
-  const all = [...byCal.values()];
+  const all = groupsOf;
   const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
-  const rhythms = all.filter((g) => col.CALENDARS[g.c]).map((g) => ({ g, parts: (col.rhythmOf(col.CALENDARS[g.c], today) ?? "").split("\u00a0; ") }));
+  const rhythms = all.filter((g) => col.CALENDARS[g.c]).map((g) => {
+    const parts = col.rhythmParts(col.CALENDARS[g.c], today);
+    return { g, parts: parts.map((p) => p.texte), byKind: new Map(parts.map((p) => [p.kind, p.texte])), apart: [] as string[] };
+  });
+  const sharing = () => {
+    const by = new Map<string, typeof rhythms>();
+    for (const x of rhythms) {
+      const k = [x.g.commune, x.parts[0], count(x.g), ...x.apart].join("|");
+      by.set(k, [...(by.get(k) ?? []), x]);
+    }
+    return [...by.values()].filter((xs) => xs.length > 1);
+  };
+  for (const kind of ["CS", "DV", "EN"] as const) {
+    for (const xs of sharing()) if (new Set(xs.map((x) => x.byKind.get(kind))).size > 1) for (const x of xs) x.apart.push(x.byKind.get(kind) ?? "");
+  }
+  for (const xs of sharing()) {
+    for (const x of xs) x.apart.push(col.firstApart(col.CALENDARS[x.g.c], xs.filter((o) => o !== x).map((o) => col.CALENDARS[o.g.c]), today) ?? "");
+  }
+  // On a line of its own under the heading, inside it: the heading is inline on a commune's page.
+  const apart = (x: (typeof rhythms)[number]) => {
+    const said = x.apart.filter(Boolean).join(", ");
+    return said ? `<br><span class="note">${esc(said)}</span>` : "";
+  };
   const dated = rhythms
     .map((x) => {
       const { g } = x;
@@ -87,10 +122,10 @@ function groups(today: number, commune?: string): string {
       const r = x.parts.join("\u00a0; ");
       const feries = col.holidays(cal, today).map((h) => (h.reportee ? esc(col.holidayLine(h)) : `Jour férié : vérifiez <a href="${esc(cal.pdf)}" rel="noopener">le calendrier du TCO (PDF) →</a>`));
       return `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(`${r}.`)}">${folded(true,
-        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">·\u00a0${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span></${hx}>`,
+        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">·\u00a0${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span>${apart(x)}</${hx}>`,
         `<p>${esc(cap(r))}.</p>${feries.map((f) => `<p>${f}</p>`).join("")}
 ${list(g)}
-<p class="note">${commune ? "" : `${esc(g.commune)} · `}<a href="${esc(cal.pdf)}" rel="noopener">calendrier ${esc(cal.code)} du TCO (PDF)</a></p>`)}</div>`;
+<p class="note">${commune ? "" : `${esc(g.commune)} · `}${g.cals.map((c) => `<a href="${esc(col.CALENDARS[c].pdf)}" rel="noopener">calendrier ${esc(col.CALENDARS[c].code)} du TCO (PDF)</a>`).join(" · ")}</p>`)}</div>`;
     });
   // The streets without a calendar, after the others: the plural above their list, the singular in a street's line.
   const without = all.filter((g) => !col.CALENDARS[g.c]);

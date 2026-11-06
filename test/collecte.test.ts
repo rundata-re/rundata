@@ -164,6 +164,40 @@ describe("the tool and the pages", () => {
     expect(collectePage("https://rundata.re", NOW, "Le Port")).toContain("Les rues du Port");
   });
 
+  it("tells apart, under their heading, the groups of a commune that share it: the collection that parts them", () => {
+    const page = collectePage("https://rundata.re", new Date("2026-11-08T08:00:00Z"));
+    // Saint-Paul: two calendars of 39 streets, their household waste on the same days, their sorting not.
+    const head = "Ordures ménagères le samedi 14/11, le vendredi 20/11 et le vendredi 27/11…\u00a0<span class=\"note\">·\u00a0Saint-Paul, 39\u00a0rues</span>";
+    expect(page).toContain(`${head}<br><span class="note">tri le lundi, une semaine sur deux (prochain : 16/11)</span></h4>`);
+    expect(page).toContain(`${head}<br><span class="note">tri le mardi, une semaine sur deux (prochain : 17/11)</span></h4>`);
+    // A heading no other group shares stays as it was.
+    expect(page).toContain("Ordures ménagères le jeudi\u00a0<span class=\"note\">·\u00a0La\u00a0Possession, 26\u00a0rues</span></h4>");
+    const heads = page.split('class="card groupe"').slice(1).map((g) => g.split("</summary>")[0]);
+    expect(heads.length).toBeGreaterThan(100);
+    expect(new Set(heads).size).toBe(heads.length);
+  });
+
+  it("makes one group of two calendars of a commune with the same days to the end of the year, both PDFs kept", () => {
+    const page = collectePage("https://rundata.re", new Date("2026-11-08T08:00:00Z"));
+    const groups = page.split('class="card groupe"').slice(1);
+    const both = groups.filter((g) => g.includes("calendrier 2026_POSS_11 du TCO") || g.includes("calendrier 2026_POSS_56 du TCO"));
+    expect(both).toHaveLength(1);
+    for (const s of ["Impasse des Becs Roses", "Rue Hippolyte Piot", "calendrier 2026_POSS_11 du TCO (PDF)</a> · <a", "calendrier 2026_POSS_56 du TCO (PDF)"]) expect(both[0]).toContain(s);
+  });
+
+  it("parts two calendars said alike by the first day that tells them apart, later in the year", () => {
+    // From Monday 2 November: the household waste every Monday, the green waste every other Thursday, then the last on
+    // Wednesday 30 December for one, Thursday 31 for the other, past the eight weeks the rhythm reads.
+    const today = day("2026-11-02");
+    const cal = (last: string) => ({ code: last, pdf: "", OM: weekdays("2026-11-02", 7, 9), DV: [...days("2026-11-05", "2026-11-19", "2026-12-03", "2026-12-17"), day(last)] });
+    const [a, b] = [cal("2026-12-31"), cal("2026-12-30")];
+    expect(col.rhythmOf(a, today)).toBe(col.rhythmOf(b, today));
+    expect(col.sameDays(a, b, today)).toBe(false);
+    expect(col.sameDays(a, cal("2026-12-31"), today)).toBe(true);
+    expect(col.firstApart(a, [b], today)).toBe("déchets verts le jeudi 31/12");
+    expect(col.firstApart(b, [a], today)).toBe("déchets verts le mercredi 30/12");
+  });
+
   it("sends the day's summary of a commune of the West to its page, never a day without a street", () => {
     const sp = resume(pageOf("saint-paul")!, {} as never, NOW);
     expect(sp.collecte_dechets?.texte).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul.");

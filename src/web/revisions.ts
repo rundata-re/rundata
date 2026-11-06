@@ -21,13 +21,13 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   agenda: 35,
   air: 12,
   bornes: 5,
-  // Stop names, directions and lines' long names written all in capitals by their network, as people read them
-  // (« Gare Saint-André », « Pichette par Sainte-Therese »).
-  bus: 10,
+  // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
+  // network, as people read them (« Gare Saint-André », « Pichette par Sainte-Thérèse », « Rue des Amphiboles »).
+  bus: 11,
   calendrier: 4,
   chiffres: 23,
-  // The commune's stops, named as on /bus (« Gare Saint-André »).
-  commune: 20,
+  // The commune's stops, named as on /bus (« Gare Saint-André », « Rue des Amphiboles »).
+  commune: 21,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 13,
   courant: 8,

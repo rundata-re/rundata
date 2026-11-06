@@ -71,7 +71,7 @@ describe("the journeys", () => {
 
   it("go up to Mont-Vert-les-Hauts on a Sunday to arrive before 14:00 (the 12:30 bus, line 5)", async () => {
     const r = await journeys(endOf("Pôle d'échange Marché couvert, Saint-Pierre")!, endOf("Chemin des Bambous")!, 20261101, 14 * 3600, true);
-    expect(r.trajets.map(said)).toContain("12:30 5 Pôle D'Echange Marché Couvert 12:30-Chemin Des Bambous 13:01 13:01");
+    expect(r.trajets.map(said)).toContain("12:30 5 Pôle d'Echange Marché Couvert 12:30-Chemin des Bambous 13:01 13:01");
   });
 
   it("are none after the last bus of the day, never the next morning's bus as if it were that day's", async () => {

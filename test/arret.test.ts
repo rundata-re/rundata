@@ -82,6 +82,16 @@ describe("the stop pages", () => {
     expect(html).toContain("Pas de départ prévu dans les prochaines heures.");
   });
 
+  it("write each time of their list with its minutes, « demain 05:00 » beside « demain 05:15 »", () => {
+    const row = (heure: string, dans_min: number) => ({ heure, dans_min, ligne: "S2", direction: "Gare de Saint-Pierre", reseau: "Car Jaune", arret: "Gare de St-Pierre" });
+    const departs = [row("demain 5\u00a0h", 1290), row("demain 05:15", 1305), row("9\u00a0h", 90)] as unknown as Parameters<typeof stopPage>[2]["departs"];
+    const html = stopPage(O, station(), { departs, alertes: [], lignes: ["S2"], direct: [], sources: [transit.SOURCE] }, NOW);
+    expect(html).toContain(">demain 05:00<");
+    expect(html).toContain(">demain 05:15<");
+    expect(html).toContain(">à 09:00<");
+    expect(html).not.toMatch(/\d\u00a0h</);
+  });
+
   it("elide « de » before a network whose name starts with a vowel: « d'Alternéo »", () => {
     const live = (p: transit.StopPage) => p.groups.every((g) => transit.NETWORKS[g.reseau]?.nom === "Alternéo" && transit.NETWORKS[g.reseau]?.temps_reel);
     const sud = [...transit.stopPages().values()].find((p) => live(p) && p.nom.length < 12)!;

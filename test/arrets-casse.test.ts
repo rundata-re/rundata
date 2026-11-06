@@ -5,8 +5,9 @@ import * as transit from "../src/providers/transit.js";
 import { casseArret } from "../src/tools/casse.js";
 import { departureRow, findStops, type Departure } from "../src/tools/transports.js";
 
-// Estival writes most of its stop names in capitals (« GARE SAINT ANDRE »): they are shown as people read them, no
-// word added or removed, accents and hyphens only from the names of places and a closed list of common nouns.
+// Estival writes most of its stop names in capitals (« GARE SAINT ANDRE »), Alternéo and CarSud many with a capital on
+// every word (« Rue Des Amphiboles »): they are shown as people read them, no word added or removed, accents and
+// hyphens only from the names of places and a closed list of words.
 describe("a stop name in capitals, as people read it", () => {
   it("gives each word a capital, the small words none but at the head", () => {
     expect(casseArret("LES GLOXINIAS")).toBe("Les Gloxinias");
@@ -27,16 +28,41 @@ describe("a stop name in capitals, as people read it", () => {
     expect(casseArret("CHEMIN DE L'ETANG")).toBe("Chemin de l'Etang");
     expect(casseArret("ST ANDRE MAIRIE")).toBe("St Andre Mairie");
     expect(casseArret("EC CLG STE GENEVIEVE")).toBe("Ec Clg Ste Genevieve");
+    // The list's words, names of places among them that the resolver does not hold or writes without accent.
+    expect(casseArret("PICHETTE PAR SAINTE-THERESE")).toBe("Pichette par Sainte-Thérèse");
+    expect(casseArret("ROUTE DU MAIDO")).toBe("Route du Maïdo");
+    expect(casseArret("DOS D'ANE")).toBe("Dos d'Âne");
+    expect(casseArret("LA GLACIERE")).toBe("La Glacière");
+    expect(casseArret("COLLEGE GASTON CROCHET")).toBe("Collège Gaston Crochet");
   });
 
   it("keeps the sigles of its list, the numbers and the single letters", () => {
     for (const n of ["ZAC N° 2", "Z.I. II", "55 CD 29", "CHD", "IUT"]) expect(casseArret(n)).toBe(n);
+    // « A » with a point is an initial, alone at the end a letter, not « à ».
+    expect(casseArret("CHEMIN A. HOARAU")).toBe("Chemin A. Hoarau");
+    expect(casseArret("GARE ROUTIERE QUAI A")).toBe("Gare Routiere Quai A");
     expect(casseArret("CENTRE AFPAR")).toBe("Centre AFPAR");
     expect(casseArret("RUE DE LA ZAC")).toBe("Rue de la ZAC");
   });
 
-  it("leaves a name with a lowercase letter as written", () => {
-    expect(casseArret("Gare Routière Du Tampon")).toBe("Gare Routière Du Tampon");
+  it("gives a name with a capital on every word its small words in lowercase, its other words as written", () => {
+    expect(casseArret("Rue Des Amphiboles")).toBe("Rue des Amphiboles");
+    expect(casseArret("Gare Routière Du Tampon Quai E")).toBe("Gare Routière du Tampon Quai E");
+    expect(casseArret("Fruit A Pain Baril")).toBe("Fruit à Pain Baril");
+    expect(casseArret("Chemin Ligne D'Equerre")).toBe("Chemin Ligne d'Equerre");
+    // A place written as the resolver writes it, as in capitals.
+    expect(casseArret("Gare De Saint Pierre")).toBe("Gare de Saint-Pierre");
+    expect(casseArret("Gare De La Plaine Des Cafres Quai A")).toBe("Gare de La Plaine des Cafres Quai A");
+    expect(casseArret("Dos D'âne (Poteau Vert)")).toBe("Dos d'Âne (Poteau Vert)");
+    // The same accents as in capitals, and a word in capitals or with a point left as written.
+    expect(casseArret("Ecole Primaire Du Grand Tampon")).toBe("École Primaire du Grand Tampon");
+    expect(casseArret("PE.La Saline (Prisami)")).toBe("PE.La Saline (Prisami)");
+    expect(casseArret("Cambaie Z.A.")).toBe("Cambaie Z.A.");
+  });
+
+  it("leaves a name with a word in lowercase as written", () => {
+    expect(casseArret("Mairie de La Possession")).toBe("Mairie de La Possession");
+    expect(casseArret("Allée des Palmiers")).toBe("Allée des Palmiers");
     expect(casseArret("Barachois")).toBe("Barachois");
   });
 
@@ -63,7 +89,7 @@ describe("a stop name in capitals, as people read it", () => {
     transit.configure({ all });
     try {
       const [pattern] = (await transit.patterns([net.first_pattern])).values();
-      expect(pattern.headsign).toBe("Pichette par Sainte-Therese");
+      expect(pattern.headsign).toBe("Pichette par Sainte-Thérèse");
     } finally {
       transit.configure(undefined);
     }

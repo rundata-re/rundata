@@ -35,16 +35,16 @@ describe("finding the stop", () => {
   it("finds a bus station under each network's name for it", () => {
     const { groups } = findStops("gare routière Saint-Pierre");
     expect(groups.map((g) => `${g.reseau}:${g.nom}`).sort()).toEqual([
-      "alterneo:Gare De Saint Pierre",
+      "alterneo:Gare de Saint-Pierre",
       "carjaune:Gare de St-Pierre",
-      "carsud:Gare Routière De St Pierre",
+      "carsud:Gare Routière de St Pierre",
     ]);
   });
 
   it("takes a bus station's bays as one stop", () => {
     const { groups } = findStops("gare routière du Tampon, CarSud");
     expect(groups).toHaveLength(1);
-    expect(groups[0].nom).toBe("Gare Routière Du Tampon");
+    expect(groups[0].nom).toBe("Gare Routière du Tampon");
     expect(groups[0].ids.length).toBeGreaterThan(10);
   });
 
@@ -57,11 +57,11 @@ describe("finding the stop", () => {
   it("gives the stops of the place a question names whole, not a stop far away that has one of its words", () => {
     // The example of the tool's description: before, the stop « Plage » of Saint-Pierre (Alternéo), 30 km away.
     const { groups, near, manque } = findStops("plage de Boucan");
-    expect(groups.map((g) => [g.nom, g.commune])).toEqual([["Boucan Canot", "Saint-Paul"], ["Boucan Canot", "Saint-Paul"]]);
+    expect(groups.map((g) => [g.nom, g.commune])).toEqual([["Boucan-Canot", "Saint-Paul"], ["Boucan-Canot", "Saint-Paul"]]);
     expect(near.every((x) => x.m < 600)).toBe(true);
     expect(manque).toBeUndefined();
     // At the place named, its stop without a warning; a stop that lacks a word, with no place to fall back on, says which.
-    expect(findStops("plage de Boucan Canot")).toMatchObject({ groups: [{ nom: "Boucan Canot" }, { nom: "Boucan Canot" }], near: [] });
+    expect(findStops("plage de Boucan Canot")).toMatchObject({ groups: [{ nom: "Boucan-Canot" }, { nom: "Boucan-Canot" }], near: [] });
     expect(findStops("plage de Boucan Canot").manque).toBeUndefined();
     expect(findStops("gare Toto").manque).toEqual(["toto"]);
   });
@@ -75,7 +75,7 @@ describe("transports", () => {
   it("says first that no stop has every word asked, naming the stop given and the words it lacks", async () => {
     const r = body(await transports("gare Toto", undefined, NOW));
     expect(Object.keys(r)[0]).toBe("avertissement");
-    expect(r.avertissement).toBe("Aucun arrêt n'a tous les mots de «\u00a0gare Toto\u00a0»\u00a0: Gare des Avirons (Les Avirons, Car Jaune), Gare Des Avirons (Les Avirons, Alternéo), sans «\u00a0toto\u00a0». Le dire à l'utilisateur, et vérifier la commune.");
+    expect(r.avertissement).toBe("Aucun arrêt n'a tous les mots de «\u00a0gare Toto\u00a0»\u00a0: Gare des Avirons (Les Avirons, Car Jaune), Gare des Avirons (Les Avirons, Alternéo), sans «\u00a0toto\u00a0». Le dire à l'utilisateur, et vérifier la commune.");
     expect(body(await transports("plage de Boucan", undefined, NOW)).avertissement).toBeUndefined();
   });
 

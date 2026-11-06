@@ -25,6 +25,8 @@ import {
   soften,
   stationsMap,
   trailOf,
+  VENT_DE,
+  ventDe,
   ventText,
   windAt,
   windPill,
@@ -58,6 +60,20 @@ describe("the wind and the commune of a station", () => {
     // Calm: no direction measured, the speed alone.
     expect(ventText({ ...GILLOT, vent: 0, direction: undefined, rafales: undefined })).toBe("vent 0 km/h");
     expect(ventText(PLUVIO)).toBeUndefined();
+  });
+
+  it("says no direction it does not have, nor one for a calm: never « undefined » nor a north read from a null", () => {
+    expect(ventDe(95, 12, VENT_DE)).toBe("d'est ");
+    expect(ventDe(359, 12, VENT_DE)).toBe("du nord ");
+    expect(ventDe(-45, 12, VENT_DE)).toBe("du nord-ouest ");
+    for (const d of [undefined, null, Number.NaN, "variable"]) expect(ventDe(d, 12, VENT_DE)).toBe("");
+    // A calm has no direction, even when a beacon gives one.
+    expect(ventDe(90, 0, VENT_DE)).toBe("");
+    expect(ventDe(90, undefined, VENT_DE)).toBe("");
+    expect(ventText({ ...GILLOT, direction: null as never, rafales: undefined })).toBe("vent 18\u202fkm/h");
+    expect(ventText({ ...GILLOT, direction: "variable" as never, rafales: undefined })).toBe("vent 18\u202fkm/h");
+    expect(ventText({ ...BALISE, vent: 0 })).toBe("vent 0\u202fkm/h");
+    expect(windPill({ ...GILLOT, direction: undefined })).not.toContain('class="ar"');
   });
 
   it("puts the wind and the rain of a tile in small pills, said in full to a screen reader and on hover", () => {

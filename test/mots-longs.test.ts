@@ -7,7 +7,9 @@ import { CSS } from "../src/web/pages.js";
 // home tile, the value smaller below 355 px, so that « 1 271 défibrillateurs » keeps its word whole (#737).
 describe("the long words on a phone", () => {
   it("hyphenates a menu entry that no longer fits beside its icon, « Défibrilla-teurs »", () => {
-    expect(CSS).toContain(".sheet .groupe .gn{display:block;text-align:left;hyphens:auto;-webkit-hyphens:auto}");
+    // A browser without a French dictionary breaks the word anywhere, rather than letting it run past the screen's edge
+    // (ux at 320 px, 06/11/2026: « Défibrillateurs » to 324 px in a tile that ends at 304).
+    expect(CSS).toContain(".sheet .groupe .gn{display:block;text-align:left;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}");
     expect(daePage("https://rundata.re", null)).toContain('<html lang="fr">');
   });
 

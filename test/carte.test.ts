@@ -9,6 +9,7 @@ import { CARTE_CSS } from "../src/web/carte-style.js";
 import { PLEIN_ECRAN_CSS, pleinEcran } from "../src/web/plein-ecran.js";
 import { COUCHES, RESUME_PATH } from "../src/web/couches.js";
 import { borneRow } from "../src/web/domains.js";
+import { VENT_DE, ventDe } from "../src/web/meteo-carte.js";
 
 beforeEach(() => {
   vi.stubGlobal("fetch", vi.fn(async (url: unknown) => { throw new Error(`lu : ${String(url)}`); }));
@@ -46,6 +47,16 @@ describe("/carte", () => {
     expect(html).toMatch(/<span class="kh" data-c="vitesses"> · mise à jour d'août 2024<\/span>/);
     expect(html).toMatch(/<span class="kh" data-c="canyons"> · inventaire sans date<\/span>/);
     expect(html).toMatch(/<span class="kh" data-c="defibrillateurs"> · lue le \d\d\/\d\d<\/span>/);
+  });
+
+  it("says a station's wind with its direction in words when there is one, never « vent undefined »", async () => {
+    const { html } = await serve("/carte");
+    const conf = JSON.parse(/<script type="application\/json" id="k-conf">(.*?)<\/script>/.exec(html)![1]);
+    expect(conf.vent).toEqual(VENT_DE);
+    // The bubble's words come from the function of /meteo's tiles, put in the script as is.
+    expect(html).toContain(`ventd=${ventDe};`);
+    expect(html).toContain(`"vent "+ventd(i.direction,i.vent,K.vent)+Math.round(i.vent)`);
+    expect(html).not.toContain("i.direction??-1");
   });
 
   it("in full screen on a phone, puts the map's buttons in their place, never over it, and the legend over the panel", async () => {

@@ -26,7 +26,7 @@ import { COUCHE_PATH, COUCHES, type Couche, type Nature, type Precision, RESUME_
 import type { Alerte } from "./data.js";
 import { ACCES, crumbBar, crumbs, webPage } from "./domains.js";
 import { esc, FOND_ZOOM, H, islandMap, W, zoomIsland } from "./map.js";
-import { RAIN_WASH, VENT_DE } from "./meteo-carte.js";
+import { RAIN_WASH, VENT_DE, ventDe } from "./meteo-carte.js";
 import { anchorId, layout } from "./pages.js";
 import { CLASSES } from "./pluie-radar.js";
 import { VITESSES } from "./carte-style.js";
@@ -338,14 +338,14 @@ const X=(o)=>Math.round((o-A)/(C-A)*W*10)/10,Y=(a)=>Math.round((D-a)/(D-B)*H*10)
 const TZ={timeZone:"Indian/Reunion"},hm=(t)=>new Date(t).toLocaleTimeString("fr-FR",{...TZ,hour:"2-digit",minute:"2-digit"}),jm=(t)=>new Date(t).toLocaleDateString("fr-FR",{...TZ,day:"2-digit",month:"2-digit"}),
 an=(t)=>new Date(t).toLocaleDateString("fr-FR",{...TZ,day:"2-digit",month:"2-digit",year:"numeric"}),jr=(t)=>new Date(t).toLocaleDateString("fr-CA",TZ),
 quand=(t)=>jr(t)===jr(Date.now())?hm(t):"le "+jm(t)+" à "+hm(t),nb=(n)=>n.toLocaleString("fr-FR"),dec=(v)=>v.toLocaleString("fr-FR",{maximumFractionDigits:1}),
-un=(n,u)=>nb(n)+"\\u00a0"+(n>1?u[1]:u[0]),put=(s,o)=>s.replace(/\\{(\\w)\\}/g,(_,k)=>o[k]);
+un=(n,u)=>nb(n)+"\\u00a0"+(n>1?u[1]:u[0]),put=(s,o)=>s.replace(/\\{(\\w)\\}/g,(_,k)=>o[k]),ventd=${ventDe};
 const list=document.querySelector(".kch"),aff=document.querySelector(".kaff"),boxes=[...list.querySelectorAll("input[name=c]")],lg=document.querySelector(".klg"),cr=document.querySelector(".kcr");
 list.hidden=false;aff.hidden=false;
 const got=new Map(),asked=new Map();let wired=false;
 const u=()=>{const v=svg.viewBox.baseVal;if(v&&svg.clientWidth)svg.style.setProperty("--u",v.width/svg.clientWidth)};u();
 new MutationObserver(u).observe(svg,{attributes:true,attributeFilter:["viewBox"]});addEventListener("resize",u);
 const lines=(c,o,j)=>{const i=o.infos||{},src=(h)=>c.court+", "+h;let p2="",p3="";
-if(c.id==="stations"){p2=[i.temperature!=null&&dec(i.temperature)+"\\u00a0°C",i.vent!=null&&"vent "+(K.vent[Math.round((i.direction??-1)/45)%8]?K.vent[Math.round(i.direction/45)%8]+" ":"")+Math.round(i.vent)+"\\u00a0km/h"+(i.rafales!=null?", rafales "+Math.round(i.rafales)+"\\u00a0km/h":""),i.pluie_1h!=null&&dec(i.pluie_1h)+"\\u00a0mm en 1\\u00a0h"].filter(Boolean).join(" · ");p3=src("mesure de "+hm(o.heure))}
+if(c.id==="stations"){p2=[i.temperature!=null&&dec(i.temperature)+"\\u00a0°C",i.vent!=null&&"vent "+ventd(i.direction,i.vent,K.vent)+Math.round(i.vent)+"\\u00a0km/h"+(i.rafales!=null?", rafales "+Math.round(i.rafales)+"\\u00a0km/h":""),i.pluie_1h!=null&&dec(i.pluie_1h)+"\\u00a0mm en 1\\u00a0h"].filter(Boolean).join(" · ");p3=src("mesure de "+hm(o.heure))}
 else if(c.id==="rivieres"){p2=i.hauteur_m!=null?dec(i.hauteur_m)+"\\u00a0m"+(i.tendance?", "+i.tendance:""):"";p3=src("mesure de "+(i.heure_mesure||hm(o.heure)))}
 else if(c.id==="seismes"){p2="Magnitude "+dec(i.magnitude)+" · "+quand(o.heure)+(i.profondeur_km!=null?" · profondeur "+dec(i.profondeur_km)+"\\u00a0km":"");p3=c.court}
 else if(c.id==="sentiers"){const k=/éruption/i.test(i.cause||"")?"instable après l'éruption récente, selon l'ONF":i.cause;p2=k?"Fermé\u00a0: "+k:"Fermé";p3=src("carte du "+jm(j.heure))}

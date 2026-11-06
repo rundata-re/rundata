@@ -142,10 +142,10 @@ def reach(d):
 
 
 def names(devices):
-    """The names as the tool and the list by commune write them (« FEAR - Saint-Paul »): nomDae() of src/tools/dae.ts,
-    through scripts/noms-dae.ts, so that the two lists of the page never part."""
+    """The names and floors as the tool and the list by commune write them (« FEAR - Saint-Paul », « 1er étage »): nomDae()
+    and etage() of src/tools/dae.ts, through scripts/noms-dae.ts, so that the two lists of the page never part."""
     out = subprocess.run(["npx", "--no-install", "tsx", "scripts/noms-dae.ts"], cwd=ROOT, check=True, capture_output=True,
-                         input=json.dumps([d["nom"] for d in devices], ensure_ascii=False).encode()).stdout
+                         input=json.dumps([[d["nom"], d.get("etage", "")] for d in devices], ensure_ascii=False).encode()).stdout
     shown = json.loads(out)
     if len(shown) != len(devices):
         raise SystemExit("noms-dae.ts : pas autant de noms que d'appareils")
@@ -153,13 +153,13 @@ def names(devices):
 
 
 def compact(devices):
-    """[lat, lon, name, reach, address, commune's index, place, hours, floor], the empty ends left out; the name as the
-    tool writes it."""
+    """[lat, lon, name, reach, address, commune's index, place, hours, floor], the empty ends left out; the name and the
+    floor as the tool writes them."""
     communes = sorted({d["commune"] for d in devices})
     rows = []
-    for d, nom in zip(devices, names(devices)):
+    for d, (nom, floor) in zip(devices, names(devices)):
         r = [d["lat"], d["lon"], nom, reach(d), d["adresse"], communes.index(d["commune"]), d.get("emplacement", ""),
-             d.get("horaires", "") if reach(d) >= 2 else "", d.get("etage", "")]
+             d.get("horaires", "") if reach(d) >= 2 else "", floor]
         while r[-1] == "":
             r.pop()
         rows.append(r)

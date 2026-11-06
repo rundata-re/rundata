@@ -25,6 +25,7 @@ import * as seismes from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as traces from "../providers/traces.js";
 import * as vigicrues from "../providers/vigicrues.js";
+import { etage } from "../tools/dae.js";
 import type { SourceInfo } from "../types.js";
 import * as enfants from "../vie/enfants.js";
 import * as canyons from "../vie/canyons.js";
@@ -130,7 +131,7 @@ export function daeCouche(list: dae.Dae[], built: string): CoucheJson {
     infos: {
       exterieur: d.exterieur,
       acces_libre: d.acces_libre,
-      ...(d.etage && { etage: d.etage }),
+      ...(d.etage && { etage: etage(d.etage) }),
       ...(d.horaires && { horaires: d.horaires }),
     },
   }));

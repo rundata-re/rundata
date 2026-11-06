@@ -183,7 +183,7 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
 }
 
 const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-/** The day of a time, with its name, « vendredi 06/11 »: a copy of the page never says « aujourd'hui » of another day (588). */
+/** The day of a time, with its name, « vendredi 06/11 »: a copy of the page never says « aujourd'hui » of another day. */
 const jourDit = (at: Date) => {
   const l = new Date(at.getTime() + 4 * 3600_000);
   return `${JOURS[l.getUTCDay()]} ${String(l.getUTCDate()).padStart(2, "0")}/${String(l.getUTCMonth() + 1).padStart(2, "0")}`;
@@ -205,7 +205,7 @@ function air(p: PlacePage, data: Cached<AirAnswer> | null | undefined, now: Date
   if (!data) return undefined;
   const c = airOf(p, data);
   if (!c) return empty(`${p.nom} n'est pas dans l'indice ATMO lu ${readAt(data.fetchedAt, now).a}.`);
-  // Always its day, never « aujourd'hui » (588): a copy of the page read the next day says which day it was for.
+  // Always its day, never « aujourd'hui »: a copy of the page read the next day says which day it was for.
   return { valeur: aq(c.niveau), detail: `indice ATMO prévu pour le ${airDay(data)}${c.polluants.length ? ` (${esc(c.polluants.join(", "))})` : ""}, d'Atmo Réunion` };
 }
 
@@ -250,7 +250,7 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   const first = left.find(({ x }) => !x.temps_reel) ?? left[0];
   return {
     live: { valeur: esc(first.heure), detail: `prochain départ ${where} : ligne ${esc(first.x.ligne)} vers ${esc(casse(first.x.direction))} (${esc(first.x.reseau)})` },
-    // The hour, never « dans 1 min », which a copy of the page would keep (588); /bus and the stops count the wait.
+    // The hour, never « dans 1 min », which a copy of the page would keep; /bus and the stops count the wait.
     more: `<ul class="rows departs cols">${left.map(({ x, heure }) => departureLi(x, heure.startsWith("demain") ? heure : `à ${heure}`)).join("")}</ul>` +
       (b.alertes?.length ? `<div class="note">Info trafic : ${alertList(b.alertes)}</div>` : ""),
   };
@@ -602,7 +602,7 @@ function townHall(data: Cached<CommuneData> | null | undefined, now: Date, calen
   if (ferie) return { valeur: "Sans doute fermée", etat: "sans doute fermée", detail: `jour férié (${esc(ferie)}) · ${esc(o.adresse)}${o.telephone ? ` · ${esc(o.telephone)}` : ""}` };
   const open = openNow(o, now);
   const today = hoursOn(o, now);
-  // Its state with the hour it was worked out, and the day of its hours (588): a copy never says « ouverte » of another time.
+  // Its state with the hour it was worked out, and the day of its hours: a copy never says « ouverte » of another time.
   return {
     valeur: open === null ? "Horaires absents de l'annuaire" : `${open ? "Ouverte" : "Fermée"} à ${hm(now)}`,
     ...(open !== null && { etat: open ? "ouverte" : "fermée" }),
@@ -728,7 +728,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     : "";
 
   const title = `${p.nom} 974 en direct : météo, bus, air, mairie`;
-  // Dated by its measure, the whole sentence true at that time (588): the town hall's state worked out then, the air
+  // Dated by its measure, the whole sentence true at that time: the town hall's state worked out then, the air
   // said only when forecast for that day. Without a measure, no value and no hour.
   const at = s ? measuredAt(s.heure_mesure, now) : undefined;
   const hallThen = at && townHall(l.commune, at, l.calendrier);

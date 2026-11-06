@@ -11,7 +11,7 @@ import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { citesHtml } from "./ecoles.js";
 import { esc } from "./map.js";
-import { layout, officielHtml } from "./pages.js";
+import { duAt, layout, officielHtml } from "./pages.js";
 
 export const TITLE = "Alerte cyclone orange, rouge : ce qui change · Réunion 974";
 const H1 = "Alerte cyclonique : ce qui ferme, ce qui continue";
@@ -163,9 +163,11 @@ function stateOf(v: mf.Vigilance | undefined, now: Date, decision?: Cyclone | nu
   if (!v) return undefined;
   const e = withPrefecture(ecoles(v, now), decision, v, now);
   if (e.etat === "levee") return { texte: e.cites ? e.texte : "Alerte levée (bulletin de Météo-France).", ancre: "fin", label: "Ce que prévoit la fin d'alerte ↓", cites: e.cites };
-  if (e.niveau < 2) return { texte: NONE };
+  // The bulletin's own time: a copy of the page never says « pas d'alerte » of another day, in the cyclone season.
+  const du = Number.isFinite(Date.parse(v.emise)) ? ` ${duAt(v.emise)}` : "";
+  if (e.niveau < 2) return { texte: du ? `${NONE.slice(0, -1)} d'après le bulletin de Météo-France${du}.` : NONE };
   const step = STEPS.find((s) => s.code === e.niveau);
-  return { texte: e.depuis ?? `${step?.titre ?? mf.cycloneName(e.niveau)} en vigueur à La Réunion (bulletin de Météo-France).`, ancre: step?.id, label: THIS_STEP };
+  return { texte: e.depuis ?? `${step?.titre ?? mf.cycloneName(e.niveau)} en vigueur à La Réunion (bulletin de Météo-France${du}).`, ancre: step?.id, label: THIS_STEP };
 }
 
 /** `rubrique`: the cyclone's section of the prefecture not read (providers/prefecture.ts, rubriqueNonLue). */

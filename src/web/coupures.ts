@@ -54,7 +54,7 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   const cuts = compteAvis(x.avis).coupures;
   const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Avis non lus";
   const detail = [
-    // When its notices were read (588), unless its site did not answer: that says its own hour.
+    // When its notices were read, unless its site did not answer: that says its own hour.
     x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(w.coupures.fetchedAt))}` : "",
     x.distributeur ? `distributeur ${esc(x.distributeur.nom)}` : "",
     x.secheresse ? `sécheresse : ${esc(x.secheresse.eau_du_robinet ?? "aucune restriction")}` : "",
@@ -149,7 +149,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
             `${p.nom} (974) : eau à ne pas boire selon le dernier avis lu.`)
         : short
     : x.avis.length
-      // Dated always (588): too long with a distributor's long name, without « avec les rues… », never without its date.
+      // Dated always: too long with a distributor's long name, without « avec les rues… », never without its date.
       ? ((dated: string) => describe(`${dated}, avec les rues, les heures et les consignes.`, describe(`${dated}.`, short)))(
           `${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, ${x.avis.length > 1 ? "lus" : "lu"} ${at}`)
       : dist?.avis && !x.muet

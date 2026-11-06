@@ -44,7 +44,7 @@ describe("domain pages", () => {
   };
 
   it("show what the tool answers right now", () => {
-    expect(pages.volcan).toContain("L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus.");
+    expect(pages.volcan).toContain("L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus jusqu&#39;au 23/10 à 18:39.");
     expect(pages.volcan).toContain(`Enclos : <b>« réouverture partielle »</b> selon le <a href="https://www.reunion.gouv.fr/x">communiqué de la préfecture du 07/05</a>.`);
     expect(pages.air).toMatch(/<p class="big">moyen<\/p>/);
     expect(pages.air).toContain("var(--aq2)"); // the map without a measure: the forecast, a dot in each commune
@@ -187,7 +187,7 @@ describe("commune page", () => {
     const page = communePage(ORIGIN, p, live({ mairie, bus: { gare: true, arrets: [], departs }, velos, sources: [] }), NOW);
     expect(tile(page, "Air")).toContain(`<span class="aq aq2">moyen</span>`);
     // 18h40 on a Friday.
-    // Its state with the hour it was worked out, and the day of its hours, never « aujourd'hui » (588).
+    // Its state with the hour it was worked out, and the day of its hours, never « aujourd'hui ».
     expect(tile(page, "Mairie")).toContain(`<p class="tv">Fermée à 18:40</p><p class="td">vendredi 23/10, 8\u00a0h–16\u00a0h`);
     // « Y aller » under its address, from the directory's position, and the sheet once.
     expect(tile(page, "Mairie")).toContain(`<p class="ya"><a class="aller" href="https://www.google.com/maps/dir/?api=1&amp;destination=${mairie.lat},${mairie.lon}" rel="noopener" data-a="${mairie.adresse}"`);
@@ -195,7 +195,7 @@ describe("commune page", () => {
     expect(communePage(ORIGIN, p, live({ mairie: { ...mairie, lat: null, lon: null }, bus: { gare: true, arrets: [], departs }, velos, sources: [] }), NOW)).not.toContain('<dialog id="aller"');
     expect(tile(page, "Bus")).toContain(`<p class="tv">18:50</p>`);
     expect(tile(page, "Bus")).toContain("à 18:50");
-    // The sun's day named, never « aujourd'hui » (588).
+    // The sun's day named, never « aujourd'hui ».
     expect(tile(page, "Soleil et calendrier")).toContain("lever et coucher du soleil le vendredi 23/10");
     expect(tile(page, "Bus")).not.toContain("dans 10 min");
     expect(tile(page, "Bus")).not.toContain("S1");

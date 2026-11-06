@@ -750,7 +750,14 @@ describe("the secret link's page (web/propositions.ts)", () => {
     const secret = await propose();
     await propositions.agir(secret, { kind: "confirmer" }, NOW);
     publish();
-    expect((await act(secret, { action: "annuler" })).status).toBe(409);
+    const refused = await act(secret, { action: "annuler" });
+    expect(refused.status).toBe(409);
+    // Said in the tab, and announced by the page's script once it is there: no `role="alert"` in the page from the start.
+    const said = plain(await refused.text());
+    expect(said).toContain("<title>Erreur : Votre événement proposé · rundata.re</title>");
+    expect(said).toContain('<p class="msg vu" id="p-erreur">Ce changement n\'est plus possible pour cet événement.');
+    expect(said).not.toContain('role="alert"');
+    expect(said.match(/id="p-erreur"/g)).toHaveLength(1);
     const cache = new Cache();
     expect((await act(secret, { action: "annuler", sur: "oui" }, cache)).status).toBe(303);
     const { BUNDLE, BUNDLE_SYNC_SECONDS } = await import("../src/providers/agenda.js");

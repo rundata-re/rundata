@@ -298,7 +298,7 @@ export const erreurVue = (d: Pick<Document, "getElementById" | "querySelector">,
     });
   }
 };
-const ERREUR_SCRIPT = `<script>(${erreurVue})(document,(f)=>setTimeout(f,100))</script>`;
+export const ERREUR_SCRIPT = `<script>(${erreurVue})(document,(f)=>setTimeout(f,100))</script>`;
 
 // « Jusqu'au » only for a repeated event, once the script runs; without it, the field stays.
 const REPETE_SCRIPT = `<script>{const r=document.getElementById("p-repete"),j=document.getElementById("p-jusqu");if(r&&j){const f=j.closest(".f"),s=()=>{f.hidden=!r.value};r.addEventListener("change",s);s()}}</script>`;
@@ -429,7 +429,7 @@ function gererBody(l: propositions.Ligne, action: string, g: Extract<Gerer, { ki
   const head = `<section class="card fo" aria-labelledby="h-gerer">
   <h2 id="h-gerer">${esc(l.titre)}</h2>
   ${g.fait && FAIT[g.fait] ? `<p class="msg vu ok" role="status">${FAIT[g.fait]}</p>` : ""}
-  ${g.refuse ? `<p class="msg vu" role="alert">Ce changement n'est plus possible pour cet événement. Pour toute question, écrivez à contact@rundata.re.</p>` : ""}
+  ${g.refuse ? `<p class="msg vu" id="p-erreur">Ce changement n'est plus possible pour cet événement. Pour toute question, écrivez à contact@rundata.re.</p>${ERREUR_SCRIPT}` : ""}
   <p><span class="badge${TEINTE[l.etat]}">${esc(ETAT[l.etat])}</span> ${esc(quandOu(l))}.</p>
   <p class="note">Organisé par ${esc(l.organisateur)}.${l.contact_public ? ` Contact public\u00a0: ${esc(l.contact_public)}.` : ""}${l.etat === "refuse" ? `${l.motif ? ` Motif\u00a0: ${esc(l.motif)}.` : ""} Pour toute question, écrivez à contact@rundata.re.` : ""}</p>
   ${l.correction && open ? `<p class="note">Votre correction attend la relecture, en général sous 24 heures\u00a0; en attendant, la version ci-dessus reste affichée.</p>` : ""}
@@ -481,7 +481,8 @@ export function gererPage(origin: string, l: propositions.Ligne | undefined, act
   <p>Une proposition non confirmée sous 48 heures est effacée, et un événement l'est un an après sa dernière date. Vous pouvez <a href="${PROPOSER_PATH}">proposer l'événement à nouveau</a>, ou écrire à contact@rundata.re.</p></section>`;
   // The secret is never in the canonical address, nor sent to another site, nor indexed; nothing to share here, where a
   // volunteer would think they share their link.
-  return layout(origin, { title: GERER_TITLE, description: GERER_META, path: PROPOSER_PATH, jsonld: [], alerte, sansAvis: true, sansPartage: true, noindex: true, referrer: "no-referrer" }, band, body);
+  const title = l && g.kind === "page" && (g.refuse || g.faux) ? `Erreur\u00a0: ${GERER_TITLE}` : GERER_TITLE;
+  return layout(origin, { title, description: GERER_META, path: PROPOSER_PATH, jsonld: [], alerte, sansAvis: true, sansPartage: true, noindex: true, referrer: "no-referrer" }, band, body);
 }
 
 export const SECRET_HEADERS = { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "x-robots-tag": "noindex" };

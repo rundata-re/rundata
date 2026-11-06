@@ -209,7 +209,7 @@ export function gaugeRow({ gauge, reading, offset, error }: GaugeNow, now: Date,
 const COMMON = {
   donnees:
     "Hauteur d'eau mesurée chaque minute par les marégraphes du SHOM, données brutes non validées, en mètres au-dessus du zéro des cartes marines. " +
-    "Les dernières pleine et basse mer sont celles observées. Les prochaines (prochaines_marees) sont un calcul de rundata d'après plusieurs années de " +
+    "Les dernières pleine et basse mer sont celles observées. Les prochaines (prochaines_marees) sont un calcul de rundata.re d'après plusieurs années de " +
     "ces mesures (analyse harmonique), pas la prédiction officielle du SHOM, qui n'est pas en données ouvertes\u00a0; pas de coefficient.",
   bon_a_savoir:
     "La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation\u00a0; " +

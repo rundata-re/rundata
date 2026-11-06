@@ -9,7 +9,7 @@
  */
 import data from "./constantes.json" with { type: "json" };
 
-export const LABEL = "calcul de rundata d'après les mesures, pas la prédiction officielle du SHOM";
+export const LABEL = "calcul de rundata.re d'après les mesures, pas la prédiction officielle du SHOM";
 export const CITATION = data.citation;
 
 const D = Math.PI / 180;

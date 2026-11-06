@@ -7,7 +7,7 @@ import { INDEX, LISTE_DU, listeDu, NOUVEAUTES, OUTILS, outilsRecents, serveur } 
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { existsSync } from "node:fs";
 import { listeAllegee, nomDeSource, SERVER_ICONS, SOURCES_COURT, VERSION } from "../src/server.js";
-import { citation, cite } from "../src/tools/citer.js";
+import { citation, citerOf, cite } from "../src/tools/citer.js";
 import { dataDate, fraicheur, instantOf, sourceMuette } from "../src/tools/fraicheur.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 
@@ -281,6 +281,24 @@ describe("the serveur block", () => {
     expect(citation({ producteurs_par_licence: [{ licence: "x", producteurs: 3 }] })).toBe("rundata.re");
     expect(citation({ producteurs_par_licence: [{ licence: "x", producteurs: 3 }], chiffres: { producteurs: 0 } })).toBe("rundata.re");
     expect(citation({ sources: [{ id: "onf", nom: "ONF", attribution: "ONF La Réunion" }], chiffres: { producteurs: 85 } })).toBe("rundata.re, d'après ONF La Réunion");
+  });
+
+  it("cites five tools in short French words, once each producer, their exact attributions kept in sources", () => {
+    const onf = { source: "Sentiers et routes forestières ouverts ou fermés (ONF La Réunion)", licence: "Information publique", attribution: "ONF La Réunion" };
+    const firms = { source: "Feux actifs détectés par les satellites VIIRS", licence: "Données de la NASA", attribution: "We acknowledge the use of data and/or imagery from NASA's FIRMS (https://earthdata.nasa.gov/firms)" };
+    expect(citerOf("sentiers_randonnee", { sources: [onf, firms] })).toBe("rundata.re, d'après l'ONF et la NASA");
+    expect(citerOf("sentiers_randonnee", { sources: [onf] })).toBe("rundata.re, d'après l'ONF");
+    expect(citerOf("fiche_terrain", { sources: [{ source: "Base adresse nationale", attribution: "BAN, IGN" }] })).toBe("rundata.re, d'après l'IGN, la DGFiP et la Base adresse nationale");
+    expect(citerOf("qualite_eau", { sources: [{ source: "Contrôle sanitaire", attribution: "ARS La Réunion, données Hub'Eau" }] })).toBe("rundata.re, d'après l'ARS La Réunion");
+    expect(citerOf("crues_rivieres", { sources: [{ source: "Vigicrues Réunion", attribution: "© VIGICRUES, DEAL Réunion" }] })).toBe("rundata.re, d'après Vigicrues");
+    expect(citerOf("resume_du_jour", { sources: [{ source: "Vigilance météo" }] })).toBe("rundata.re, d'après Météo-France et d'autres sources (liste dans sources)");
+    // No source credited (an error): « rundata.re » alone, as for every tool.
+    expect(citerOf("crues_rivieres", { erreur: "x" })).toBe("rundata.re");
+    // Through the server's splice: the short words in `citer`, the NASA's whole attribution still in `sources`.
+    const r = cite("sentiers_randonnee", { content: [{ type: "text", text: JSON.stringify({ resume: "Sentiers.", sources: [onf, firms] }) }] });
+    const a = JSON.parse(r.content[0].text);
+    expect(a.citer).toBe("rundata.re, d'après l'ONF et la NASA");
+    expect(a.sources[1].attribution).toBe(firms.attribution);
   });
 });
 

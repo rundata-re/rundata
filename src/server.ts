@@ -128,7 +128,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.319";
+export const VERSION = "1.0.320";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -215,7 +215,7 @@ const lieuAvecExemples = z
   .describe(
     "Lieu à La Réunion, en texte libre : commune (« Saint-Paul »), plage (« plage de l'Hermitage », « Boucan Canot »), " +
       "quartier, cirque (« Cilaos », « Mafate »), sommet (« Maïdo », « volcan »), ou coordonnées « -21.05, 55.22 ». " +
-      "Vide = tour de l'île. / Place in Réunion, free text or 'lat, lon'; empty = whole island.",
+      "Vide = toute l'île. / Place in Réunion, free text or 'lat, lon'; empty = whole island.",
   );
 
 /**
@@ -493,7 +493,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…). " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {
-        quoi: z.string().describe("Le service cherché, en quelques mots : « mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, ou « carburant » pour les prix du mois, « pharmacie », « urgences », « enfants » pour les lieux où aller avec eux."),
+        quoi: z.string().describe("« mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, « carburant » pour les prix du mois, « pharmacie », « urgences », « collecte », « école », « marché », « enfants » (lieux où aller avec eux)."),
         lieu,
         adresse: z.string().optional().describe("Collège de secteur (quoi = « collège ») : l'adresse sur laquelle on s'interroge, pas la position de l'utilisateur : numéro et voie, commune dans lieu. Ni gardée ni journalisée."),
       },

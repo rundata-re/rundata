@@ -75,6 +75,25 @@ function stationsOf(p: Payload): { station?: unknown; source?: unknown }[] {
   return Array.isArray(p.stations) ? (p.stations as { station?: unknown; source?: unknown }[]).filter((s) => s && typeof s === "object") : [];
 }
 
+/**
+ * The tools whose producers' names do not make a short sentence (English, the same producer twice, a long list): their
+ * `citer` in the words of marketing (06/11/2026), when the answer credits any source. `sources` keeps each one's exact
+ * attribution, the NASA's whole.
+ */
+const CITER: Partial<Record<string, (p: Payload) => string>> = {
+  sentiers_randonnee: (p) => `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
+  fiche_terrain: () => "rundata.re, d'après l'IGN, la DGFiP et la Base adresse nationale",
+  qualite_eau: () => "rundata.re, d'après l'ARS La Réunion",
+  crues_rivieres: () => "rundata.re, d'après Vigicrues",
+  resume_du_jour: () => "rundata.re, d'après Météo-France et d'autres sources (liste dans sources)",
+};
+
+/** The `citer` of a tool's answer: its own words (CITER) when it credits a source, else made from the sources. */
+export function citerOf(tool: string, p: Payload): string {
+  const own = CITER[tool];
+  return own && Array.isArray(p.sources) && p.sources.length ? own(p) : citation(p);
+}
+
 /** « rundata.re, d'après Météo-France (station Le Port), OpenWindMap » from the sources an answer credits. */
 export function citation(p: Payload): string {
   // Each credit as credits() writes it (format.ts), or a source given whole (sources_donnees).
@@ -178,7 +197,7 @@ export function cite<R extends object>(tool: string, r: R, around: Around = {}):
   }
   if (!p || typeof p !== "object" || Array.isArray(p)) return r;
   const isError = "isError" in r && !!r.isError;
-  const extra: Payload = { citer: citation(p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, nom: around.nom }) };
+  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, nom: around.nom }) };
   if (wanting(p, isError)) extra.signaler = AVIS_HINT;
   if (around.serveur) extra.serveur = around.serveur;
   // A last copy in the answer: its freshness first, the rest at the end as always.

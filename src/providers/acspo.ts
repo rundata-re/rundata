@@ -7,6 +7,7 @@ import type { Cache } from "../cache.js";
 import { BBOX, distanceKm } from "../geo.js";
 import { getText } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
+import { unlessSpent } from "../budget.js";
 
 export const SOURCE: SourceInfo = {
   id: "acspo",
@@ -153,7 +154,7 @@ export async function grid(cache: Cache, now = new Date()) {
       new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1 - k)).toISOString().slice(0, 10),
     );
     // The day before is missing until the morning (UTC) it is published: the others answer for it.
-    const got = await Promise.allSettled(dates.map(async (d) => parseAscii(await getText(SOURCE.id, dayUrl(d), TIMEOUT_MS), d)));
+    const got = unlessSpent(await Promise.allSettled(dates.map(async (d) => parseAscii(await getText(SOURCE.id, dayUrl(d), TIMEOUT_MS), d))));
     const days = got.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
     if (!days.length) throw (got[0] as PromiseRejectedResult).reason;
     // The days due and newer than those that came: said, since the answer then gives an older day.

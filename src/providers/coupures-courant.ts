@@ -9,6 +9,7 @@ import { getJson } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { strip } from "./avis-eau.js";
 import { autorisee } from "./autorisations.js";
+import { unlessSpent } from "../budget.js";
 
 /**
  * The mairies that relay EDF's notices through an open API, checked on 24/10/2026. `pdf`: the mairie puts EDF's
@@ -235,7 +236,7 @@ export function parsePosts(posts: Post[], commune: string): AvisCourant[] {
  * the copy that holds them (web:courant, tools/courant.ts) then keeps its notices read before, or says its read failed.
  */
 export async function coupures(): Promise<{ avis: AvisCourant[]; lues: string[]; indisponibles: string[] }> {
-  const parts = await Promise.allSettled(
+  const parts = unlessSpent(await Promise.allSettled(
     MAIRIES.map(async (m) => {
       // A mairie of PDF letters is read in full or not at all: half of it would hide a cut.
       const [posts, media] = await Promise.all([
@@ -244,7 +245,7 @@ export async function coupures(): Promise<{ avis: AvisCourant[]; lues: string[];
       ]);
       return [...parsePosts(posts, m.commune), ...parseMedia(media, m.commune)].sort((x, y) => y.publie.localeCompare(x.publie)).slice(0, PER_COMMUNE);
     }),
-  );
+  ));
   parts.forEach((p, i) => p.status === "rejected" && console.error(`source ${SOURCE.id} indisponible (${MAIRIES[i].commune}):`, why(p.reason)));
   return {
     avis: parts.flatMap((p) => (p.status === "fulfilled" ? p.value : [])),

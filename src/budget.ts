@@ -81,6 +81,21 @@ export class OutOfBudget extends Error {
   }
 }
 
+/** Whether `err` is a subrequest refused for the budget, this one's or the platform's: never the source's fault (cache.ts). */
+export const outOfBudget = (err: unknown) => err instanceof OutOfBudget || /Too many subrequests/.test(String((err as Error)?.message ?? err));
+
+/**
+ * The results of reads made together for one entry of the cache, unless one was refused for the budget: then that
+ * error, thrown. Kept with that part missing, the entry would say its source silent (`muet`), or leave it out, for as
+ * long as it is fresh (three hours for the handball's tables, 06/11/2026), when the next visit, with its own budget,
+ * would have read it; thrown, the entry before is served and the failure is not held against the source (cache.ts).
+ */
+export function unlessSpent<T>(results: PromiseSettledResult<T>[]): PromiseSettledResult<T>[] {
+  const refused = results.find((r): r is PromiseRejectedResult => r.status === "rejected" && outOfBudget(r.reason));
+  if (refused) throw refused.reason;
+  return results;
+}
+
 /**
  * Runs `fn` with its own tally; returns its result, the number of subrequests it made by then, and `settled`: the
  * numbers once the work handed to `later` is done too, since that work counts against the same budget.

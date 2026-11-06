@@ -22,6 +22,7 @@ import { localTime } from "../geo.js";
 import { getBytes, getJson, getText } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { textOf } from "./avis-eau.js";
+import { unlessSpent } from "../budget.js";
 
 export const SOURCES = {
   livetrail: {
@@ -367,7 +368,7 @@ export async function championnats(cache: Cache, which: "handball" | "volley"): 
     const key = `sport:${which}`;
     const before = await cache.peek<Championnat[]>(key).catch(() => undefined);
     const list = which === "handball" ? HANDBALL.map((c) => ({ nom: c.nom, lien: `${HB_BASE}/${c.slug}/`, read: () => handballOne(c) })) : VOLLEY.map((c) => ({ nom: c.nom, lien: VB_BASE + c.poule, read: () => volleyOne(c) }));
-    const parts = await Promise.allSettled(list.map((c) => c.read()));
+    const parts = unlessSpent(await Promise.allSettled(list.map((c) => c.read())));
     // A competition whose page did not answer keeps what was read before, said with its hour; never left out.
     const all = list.map((c, i): Championnat => {
       const r = parts[i];

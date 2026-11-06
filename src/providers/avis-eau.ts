@@ -22,6 +22,7 @@ import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { localTime } from "../geo.js";
 import { type SourceInfo, why } from "../types.js";
+import { unlessSpent } from "../budget.js";
 
 export const SOURCE: SourceInfo = {
   id: "avis_eau",
@@ -490,7 +491,7 @@ const FLUX = "avis-eau:flux";
 export async function lecture(cache: Cache): Promise<Cached<Flux[]>> {
   return cache.island(FLUX, FRESH_SECONDS, async () => {
     const before = await cache.peek<Flux[]>(FLUX).catch(() => undefined);
-    const parts = await Promise.allSettled(PARTS.map((p) => p.load()));
+    const parts = unlessSpent(await Promise.allSettled(PARTS.map((p) => p.load())));
     const flux = PARTS.map((p, i): Flux => {
       const r = parts[i];
       if (r.status === "fulfilled") return { de: p.de, site: p.site, avis: r.value };

@@ -5,7 +5,7 @@ import { Cache, MemoryStore, type CacheEntry } from "../src/cache.js";
 import { parseRss, type Info } from "../src/providers/actualites.js";
 import { parseSportsregions } from "../src/providers/agenda.js";
 import * as ffck from "../src/providers/ffck.js";
-import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
+import { championnats, frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
 import { dateLigue, joursDuTitre, liensCommuns, sets, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
@@ -636,6 +636,27 @@ describe("sport", () => {
     // Nothing read before: its read said failed.
     const b2 = body(await sportTool(cache(), "handball", undefined, undefined, NOW));
     expect(b2.injoignable[0].texte).toBe("Le site de la Fédération française de handball n'a pas répondu à notre dernière lecture (le 24/10 à 08:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+  });
+
+  it("never keeps a championship refused for the budget as silent: the copy before is served, and read at the next visit", async () => {
+    let t = NOW.getTime();
+    const c = new Cache(new MemoryStore(), () => t);
+    const asked: string[] = [];
+    const base = globalThis.fetch;
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => (asked.push(String(url)), base(url, init)));
+    await championnats(c, "handball");
+    const pages = asked.length;
+    // Past its three hours, a visit whose budget is spent (06/11/2026, a cold home page): no page of the FFHB read.
+    t += 3 * 3600_000 + 60_000;
+    const before = asked.length;
+    const { value: got } = await counted(0, () => championnats(c, "handball"));
+    expect(asked.length).toBe(before);
+    expect([got.fetchedAt.getTime(), got.stale, got.value.some((x) => x.muet)]).toEqual([NOW.getTime(), true, false]);
+    // Not stored as read now with its competitions silent: the next visit, with its own budget, reads them.
+    expect((await c.peek<unknown>("sport:handball"))?.fetchedAt.getTime()).toBe(NOW.getTime());
+    const next = await championnats(c, "handball");
+    expect(asked.length).toBe(before + pages);
+    expect([next.fetchedAt.getTime(), next.value.some((x) => x.muet)]).toEqual([t, false]);
   });
 
   it("answers without a source that is down, and names it", async () => {

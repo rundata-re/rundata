@@ -197,6 +197,19 @@ describe("the tool and the pages", () => {
     }
   });
 
+  it("gives a group's PDFs in a row up to three calendars, folded under their number past that", () => {
+    const group = (iso: string, code: string) => collectePage("https://rundata.re", new Date(`${iso}T08:00:00Z`)).split('class="card groupe"').slice(1).filter((g) => g.includes(`calendrier ${code} du TCO`));
+    // La Possession on 18/12: three calendars, three links in a row.
+    const [three] = group("2026-12-18", "2026_POSS_29");
+    for (const c of ["2026_POSS_40", "2026_POSS_29", "2026_POSS_32"]) expect(three).toContain(`calendrier ${c} du TCO (PDF)</a>`);
+    expect(three).toContain('<p class="note">La Possession · <a');
+    expect(three).not.toContain("calendriers du TCO (PDF)</summary>");
+    // Saint-Paul on 05/12: four calendars, folded under « 4 calendriers du TCO (PDF) ».
+    const [four] = group("2026-12-05", "2026_SP1_34");
+    expect(four).toContain('<details class="note"><summary>Saint-Paul · 4\u00a0calendriers du TCO (PDF)</summary><p><a');
+    for (const c of ["2026_SP1_34", "2026_SP1_18", "2026_SP1_22", "2026_SP1_20"]) expect(four).toContain(`calendrier ${c} du TCO (PDF)</a>`);
+  });
+
   it("parts two calendars said alike by the first day that tells them apart, later in the year", () => {
     // From Monday 2 November: the household waste every Monday, the green waste every other Thursday, then the last on
     // Wednesday 30 December for one, Thursday 31 for the other, past the eight weeks the rhythm reads.

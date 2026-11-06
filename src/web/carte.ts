@@ -288,10 +288,11 @@ function bloc(c: Couche): string {
 let built: string | undefined;
 
 function corps(): string {
-  // The rain's canvas under the roads, a group per layer over them in ORDRE's order.
+  // The rain's canvas under the roads, a group per layer in ORDRE's order over the communes' names: a measure is read
+  // before a name of the background, which no longer covers a station's figure.
   const under = `<foreignObject class="kpluie" x="0" y="0" width="${W}" height="${H}"><div xmlns="http://www.w3.org/1999/xhtml" class="kpw"><canvas width="1" height="1"></canvas></div></foreignObject>`;
   const overlay = `<g class="kcs">${ORDRE.map((id) => `<g class="kl kc-${id}" data-c="${id}"></g>`).join("")}</g>`;
-  const svg = islandMap({ under, overlay, peaks: true, fond: "k", label: "Carte de La Réunion (974) : les couches cochées dans la liste sous la carte" });
+  const svg = islandMap({ under, above: overlay, peaks: true, fond: "k", label: "Carte de La Réunion (974) : les couches cochées dans la liste sous la carte" });
   // A group, not an image: the script draws its points as links (an image may hold none).
   const map = zoomIsland(svg, "k", { id: "kmap", mostFd: (MAX_ZOOM * FOND_ZOOM) / 2 }).replace('<svg id="kmap" class="map terrain', '<svg id="kmap" data-kc="" class="map terrain').replace('role="img"', 'role="group"');
   const pages = [...new Map(COUCHES.map((c) => [c.page, DIT[c.id].rubrique])).entries()].map(([p, r]) => `<a href="${esc(p)}">${esc(r)}</a>`).join(", ");

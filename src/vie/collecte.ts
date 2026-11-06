@@ -150,10 +150,44 @@ export function rhythm(days: number[] | undefined, today: number, feries?: numbe
  */
 export function rhythmOf(c: Calendar, today: number): string | undefined {
   if (pastYear(today)) return undefined;
+  return rhythmParts(c, today).map((p) => p.texte).join("\u00a0; ");
+}
+
+/** Each collection's part of rhythmOf, in marketing's order: « tri le lundi, une semaine sur deux (prochain : 16/11) ». */
+export function rhythmParts(c: Calendar, today: number): { kind: Kind; texte: string }[] {
   return KINDS.flatMap(([k, name]) => {
     const r = rhythm(c[k], today, c.F ?? []);
-    return r ? [`${name} ${r}`] : [];
-  }).join("\u00a0; ");
+    return r ? [{ kind: k, texte: `${name} ${r}` }] : [];
+  });
+}
+
+const ahead = (days: number[] | undefined, today: number) => (days ?? []).filter((n) => n >= today);
+
+/** Whether two calendars collect on the same days from today to the end of their year, every collection and holiday alike. */
+export function sameDays(a: Calendar, b: Calendar, today: number): boolean {
+  return ([...KINDS.map(([k]) => k), "F"] as const).every((k) => ahead(a[k], today).join() === ahead(b[k], today).join());
+}
+
+/**
+ * The first collection from today where a calendar's days part from another's, said with its own day of it: for
+ * calendars that their rhythms say alike, but that part later in the year (« déchets verts le jeudi 14/1 »). Undefined
+ * when it has no day of that collection left, or when only holidays part them.
+ */
+export function firstApart(c: Calendar, others: Calendar[], today: number): string | undefined {
+  let first: { day: number; kind: Kind; name: string } | undefined;
+  for (const [k, name] of KINDS) {
+    const mine = new Set(ahead(c[k], today));
+    for (const o of others) {
+      const theirs = new Set(ahead(o[k], today));
+      const apart = [...mine].filter((n) => !theirs.has(n)).concat([...theirs].filter((n) => !mine.has(n)));
+      const day = Math.min(...apart);
+      if (apart.length && (!first || day < first.day)) first = { day, kind: k, name };
+    }
+  }
+  if (!first) return undefined;
+  const { day, kind, name } = first;
+  const own = ahead(c[kind], day)[0];
+  return own === undefined ? undefined : `${name} le ${dayFr(own)}`;
 }
 
 /**

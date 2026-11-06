@@ -147,9 +147,10 @@ describe("long lists folded, the second pages", () => {
     expect(page).toContain(`if(t.length>=3)document.querySelectorAll(".groupe>details").forEach((d)=>{if(!d.parentNode.hidden)d.open=true})`);
     // Every street still in the page, for the search.
     expect(count(page, /<ul class="voies plain">/g)).toBe(groups);
-    // Its line, the rhythm's first part; the whole rhythm the first line inside.
+    // Its line, the rhythm's first part (with, under it, what parts it from a group that shares it); the whole rhythm
+    // the first line inside.
     const sp = collectePage(O, NOW, "Saint-Paul");
-    const lines = [...sp.matchAll(/<details><summary><h3>([^<]*)\u00a0<span class="note">·\u00a0\d+\u00a0rues?<\/span><\/h3><\/summary><p>([^<]*)\.<\/p>/g)];
+    const lines = [...sp.matchAll(/<details><summary><h3>([^<]*)\u00a0<span class="note">·\u00a0\d+\u00a0rues?<\/span>(?:<br><span class="note">[^<]+<\/span>)?<\/h3><\/summary><p>([^<]*)\.<\/p>/g)];
     expect(lines.length).toBe(count(sp, /<div class="card groupe"[^>]*><details>/g));
     for (const [, line, whole] of lines) {
       expect(line).not.toContain(";");

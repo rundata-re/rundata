@@ -16,8 +16,8 @@
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   actualites: 15,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
-  // Le programme du Kabardock repris avec son accord écrit du 06/11/2026 : sa couverture et ses dates.
-  agenda: 33,
+  // Les dates du Kabardock sans leur prix, que son accord ne couvre pas.
+  agenda: 34,
   air: 11,
   bornes: 4,
   bus: 8,

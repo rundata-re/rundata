@@ -216,17 +216,18 @@ export function nonServie(bundle: Pick<Bundle, "peek">, agenda: Agenda): { depui
 }
 
 /**
- * An agenda's events as they may be shown, from its copy whatever its age: without their sentence (`faits`), linking to
- * the home page (`accueil`), and none whose link would lead to a site that submits any link to its agreement
+ * An agenda's events as they may be shown, from its copy whatever its age: without their sentence (`faits`) nor their
+ * price (`sans_prix`), linking to the home page (`accueil`), and none whose link would lead to a site that submits any link to its agreement
  * (src/liens.ts, Saint-Benoît's), since an event is shown with its link. Applied where a copy is served, not where it is
  * read, so that a copy read before its site's terms were known is served as they ask too.
  */
 export function servis(agenda: Agenda, events: Evenement[]): Evenement[] {
   const linked = events.filter((e) => !sansLien(agenda.accueil ?? e.lien));
-  if (!agenda.faits && !agenda.accueil) return linked;
+  if (!agenda.faits && !agenda.sans_prix && !agenda.accueil) return linked;
   return linked.map((e) => {
     const out = { ...e };
     if (agenda.faits) delete out.description;
+    if (agenda.sans_prix) delete out.prix;
     if (agenda.accueil) out.lien = agenda.accueil;
     return out;
   });
@@ -281,6 +282,8 @@ export interface Agenda {
   credit?: string;
   /** Its site's terms ask for an authorisation to reproduce it: its events keep their facts, without their sentence. */
   faits?: boolean;
+  /** Its agreement does not cover the price: its events are shown without it, not even « Gratuit ». */
+  sans_prix?: true;
   /** Its site's terms allow a link to its home page only: this page, for each of its events. */
   accueil?: string;
   /** It publishes its clubs' sports programmes (`programmeSportif`), which the tool sport links to: said when not read. */

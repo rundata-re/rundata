@@ -98,6 +98,19 @@ describe("the elections of each commune (vie/elections.ts)", () => {
   });
 });
 
+describe("the tables of a commune's page", () => {
+  it("each have a name for a screen reader, the titles shown above them", () => {
+    const html = page("saint-paul");
+    const tables = html.match(/<table[^>]*>/g) ?? [];
+    expect(tables.length).toBeGreaterThan(50);
+    expect(html.match(/<table[^>]*><caption class="sr">/g)).toHaveLength(tables.length);
+    // The scrutin, then its round and its part where it has several, as its headings say.
+    expect(html).toContain('<caption class="sr">Municipales 2020, 1er tour</caption>');
+    expect(html).toMatch(/<caption class="sr">Législatives 2024, 1er tour, [^<]+<\/caption>/);
+    expect(html).toContain('<caption class="sr">Participation</caption>');
+  });
+});
+
 describe("the part « Élections » of a commune's page", () => {
   it("comes after the doctors and before what holds for the whole island", () => {
     const html = page("saint-paul");

@@ -411,16 +411,16 @@ function figures(b: elections.Bloc): string {
  * A block's ballot lines in the order of their panels, each with its voix and its share of the exprimés: no mark on any.
  * Four short columns, to fit a phone without scrolling; no panel column where the file has none.
  */
-function ballot(b: elections.Bloc, type: elections.Type): string {
+function ballot(b: elections.Bloc, type: elections.Type, nom: string): string {
   const panneaux = b.lignes.some((l) => l.panneau !== null);
   const rows = b.lignes.map((l) => `<tr>${panneaux ? `<td>${l.panneau}</td>` : ""}<td>${esc(l.nom ?? `Liste conduite par ${l.tete}`)}${l.nom && l.tete ? `<small>${esc(`Tête de liste\u00a0: ${l.tete}`)}</small>` : ""}</td><td>${nombre(l.voix)}</td><td>${elections.pourcent(l.voix, b.exprimes)}</td></tr>`);
-  return `<div class="table-wrap"><table class="drought histo votes"><thead><tr>${panneaux ? `<th scope="col">N°</th>` : ""}<th scope="col">${esc(elections.TYPES[type].ligne)}</th><th scope="col">Voix</th><th scope="col">%</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+  return `<div class="table-wrap"><table class="drought histo votes"><caption class="sr">${esc(nom)}</caption><thead><tr>${panneaux ? `<th scope="col">N°</th>` : ""}<th scope="col">${esc(elections.TYPES[type].ligne)}</th><th scope="col">Voix</th><th scope="col">%</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
 }
 
 /** One scrutin, folded: round by round, each block's figures and ballot, a heading for each block of a split commune. */
 function scrutin(s: elections.Scrutin): string {
   const rounds = s.tours.map((blocs, t) => blocs.length
-    ? `<div class="kind">${s.tours.length > 1 ? `<h5>${TOURS[t]}</h5>` : ""}${blocs.map((b, i) => (blocs.length > 1 ? `<h6>${esc(elections.partie(s.type, b, i, blocs.length))}</h6>` : "") + figures(b) + ballot(b, s.type)).join("")}</div>`
+    ? `<div class="kind">${s.tours.length > 1 ? `<h5>${TOURS[t]}</h5>` : ""}${blocs.map((b, i) => (blocs.length > 1 ? `<h6>${esc(elections.partie(s.type, b, i, blocs.length))}</h6>` : "") + figures(b) + ballot(b, s.type, [s.nom, s.tours.length > 1 ? TOURS[t] : "", blocs.length > 1 ? elections.partie(s.type, b, i, blocs.length) : ""].filter(Boolean).join(", "))).join("")}</div>`
     : "").join("");
   return `<details><summary><h4>${esc(s.nom)}</h4></summary>${rounds}</details>`;
 }
@@ -438,7 +438,7 @@ function votes(p: PlacePage): string {
     : ""}</li>`).join("");
   const series = elections.participation(p.nom);
   const serie = series.length
-    ? `<li class="card" data-k><h3>Participation</h3><details><summary><h4>${esc(`Au 1er tour, depuis ${elections.DEBUT}`)}</h4></summary><div class="table-wrap"><table class="drought votes"><thead><tr><th scope="col">Scrutin</th><th scope="col">Inscrits</th><th scope="col">Votants</th><th scope="col">%</th></tr></thead><tbody>${
+    ? `<li class="card" data-k><h3>Participation</h3><details><summary><h4>${esc(`Au 1er tour, depuis ${elections.DEBUT}`)}</h4></summary><div class="table-wrap"><table class="drought votes"><caption class="sr">Participation</caption><thead><tr><th scope="col">Scrutin</th><th scope="col">Inscrits</th><th scope="col">Votants</th><th scope="col">%</th></tr></thead><tbody>${
       series.flatMap((x) => x.tours.map((t) => `<tr><td>${esc(`${x.nom} ${t.annee}`)}</td><td>${nombre(t.inscrits)}</td><td>${nombre(t.votants)}</td><td>${elections.pourcent(t.votants, t.inscrits)}</td></tr>`)).join("")
     }</tbody></table></div><p class="note">${esc(`La participation ${aCommune(p.nom)} au 1er tour de chaque scrutin depuis ${elections.DEBUT}, sauf les cantonales, où seule une partie des cantons votait\u00a0: les votants et leur % des inscrits. Les bureaux de vote changent de périmètre d'une élection à l'autre\u00a0: la série est donnée pour la commune entière.`)}</p></details></li>`
     : "";

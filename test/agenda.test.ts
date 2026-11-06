@@ -1058,9 +1058,16 @@ describe("agenda", () => {
     expect(page(758)).toBe(1);
     // A page that does not answer: the event keeps its first day, the list is served.
     down = /\/758-/;
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const sans = (await etang.load(new Cache(new MemoryStore(), () => NOW.getTime()), NOW)).value;
     expect(sans.find((e) => e.titre === "Odyssea Réunion 2026")!.seances).toEqual([{ debut: "2026-11-07T09:18" }]);
     expect(sans).toHaveLength(11);
+    // Said in the logs, with the source and the reason, never the page's address.
+    const said = err.mock.calls.map((c) => String(c[0])).filter((m) => m.includes("fiche non lue"));
+    expect(said).toHaveLength(1);
+    expect(said[0]).toMatch(/^source agenda_etang_sale : fiche non lue, l'événement garde son premier jour \(agenda_etang_sale: .+\)$/);
+    expect(said[0]).not.toContain("letangsale");
+    err.mockRestore();
     // Through the tool: said with both days, and its page kept in the agendas' copy from one reading of the list to the next.
     down = undefined;
     let u = NOW.getTime();

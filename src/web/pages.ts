@@ -42,7 +42,7 @@ import { byUse, FIRST, type Urgent, urgentKeys, WITH_PAGE } from "./categories.j
 import { COMMUNES, CYCLONE, type Entree, GROUPES } from "./menu.js";
 import { FLAG_INNER } from "./flag.js";
 import { logo } from "./logo.js";
-import { esc, H as MAP_H, islandMap, mapCredit, type Marker, NOMS_SCRIPT, W as MAP_W } from "./map.js";
+import { esc, H as MAP_H, islandMap, mapCredit, type Marker, NOMS_SCRIPT, ownIds, W as MAP_W } from "./map.js";
 import { LEGENDE_CSS, legende } from "./carte-legende.js";
 import { ELECTRICITE_CSS } from "./electricite-carte.js";
 import { typo } from "./typo.js";
@@ -1347,7 +1347,8 @@ export function layout(origin: string, head: Head, band: string, body: string): 
   const d = typo(esc(head.description));
   const image = ogImage(origin, head.path, head.image);
   // Each acronym spelled out at its first occurrence, from the title's band to the end of the main text (web/sigles.ts).
-  const [top, text] = withSigles([withHook(band, head.path, head.volcan, head.hook), mentionLinks(main)]);
+  // Each map with its own ids, when a page has two (ownIds()).
+  const [top, text] = ownIds(withSigles([withHook(band, head.path, head.volcan, head.hook), mentionLinks(main)]));
   // The contour lines of the decor (web/fonds.ts), in the footer of every page from 1200 px and in the band of a few.
   const decor = !head.shell && motif(head.alerte, !!urgent(head).volcan);
   return `<!doctype html>

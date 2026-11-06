@@ -1101,7 +1101,7 @@ let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],RT=Infinity,LT=new Map(),
 // device that keeps up, measured in the first seconds of a play of the rain (MS: the time of the frames with a new image
 // and their number, of the others and theirs, all the frames, the time of the first measured; CW: the time of a new
 // image, of another frame, the frames a second), never on a connection that saves data or is slow.
-let DK="",WK="",DY="",J0=0,FINE=box.checked,USER=FINE,MZ=false,NWF=false,PK=0,AZ=null,CW=null;const MS=[0,0,0,0,0,0],cx=navigator.connection,
+let DK="",WK="",DY="",J0=0,FINE=box.checked,USER=FINE,MZ=false,NWF=false,PK=0,AZ=null,CW=null,SW=0;const MS=[0,0,0,0,0,0],cx=navigator.connection,
 slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=${KEEPS_UP_FPS}&&ne(nps(m))*CW[0]+30*CW[1]<${KEEPS_UP * 1000},
 fine=(x)=>!!FI[x]&&FINE&&(USER||can(FI[x]));
 const lx=(t)=>new Date(t+144e5),hmm=(t)=>{const x=lx(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())},dm=(t)=>{const x=lx(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
@@ -1194,23 +1194,25 @@ legend("v","ff","anémomètre","anémomètres",(x)=>"Vent moyen sur 10 minutes 
 if(RJ.p&&RJ.p.say)RJ.p.say(lg("p"),{r:K.p.length>0,de:K.p.some((k)=>k.e.de),g:K.g.length>0,wm:rm?0:wm(),pannes:[...new Set(K.p.flatMap((k)=>k.e.pannes||[]))]});
 fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length||K.g.length};
 // The time of a frame, after the first 10 of the measure: once 6 with a new image of the rain and 30 others are known,
-// more images for a device that keeps up with those of 24 hours, and the file of 24 hours played swapped for its finer.
+// more images for a device that keeps up with those of 24 hours, and the file of 24 hours played swapped for its finer
+// once the play stops, at its end or paused: a play keeps its pace (PL) to the end.
 const gauge=(ms)=>{const n=++MS[4];if(n===11)MS[5]=performance.now();if(n>10){const i=NWF?0:2;MS[i]+=ms;MS[i+1]++}NWF=false;if(MS[1]<6||MS[3]<30)return;MZ=false;const o=MS[2]/MS[3];
 CW=[Math.max(0,MS[0]/MS[1]-o),o,(n-11)*1e3/Math.max(1,performance.now()-MS[5])];
-if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",true)}};
+if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",2)}};
 const lapse=${lapse};const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=lapse(t,was);T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
 // The measure, in a play of the rain over 6 or 24 hours, until it is known or more images are asked.
 const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
-const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show()};
+const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show();if(SW){SW=0;RJ.go(BA(d),2)}};
 // Back to the live map when the file cannot come: the bar says so.
 const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};
 // A length (x), with its finer file when more images are shown (fine), or the day DY. With swap, the file shown is swapped
-// for this one once it is here, at the same moment, playing on; kept when it has no radar.
+// for this one once it is here, at the same moment (the end kept at the end), playing on; kept when it has no radar. With
+// swap 2, it waits for the play to stop (SW).
 RJ.go=(x,swap)=>{const m=x==="jour"?x:fine(x)?FI[x]:x,key=m==="jour"?m+DY:m;if(swap&&(!J||key===DK))return;WK=key;
-if(!swap){stop(false);d=m;for(const c of rb.querySelectorAll("[name=rjd]"))c.checked=c.value===x;if(x!=="jour")sel.value="";b.textContent="Chargement…";b.disabled=true;b.removeAttribute("aria-label")}
-(F[key]||(F[key]=Promise.all([fetch(m==="jour"?JP.replace("JOUR",DY):P[m]).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),RJ.p?RJ.p.prep():0]).then(([j])=>j))).then((j)=>{if(WK!==key||swap&&!j.radar)return;
-const t=T,old=[J,d,DK];d=m;DK=key;J=j;if(m==="jour")J0=Date.parse(DY+"T20:00:00Z")-864e5;if(!setup()){if(!swap)throw new Error("vide");[J,d,DK]=old;setup();T=t;return}
-if(swap){T=Math.max(S,Math.min(E,t));cur="";show();btn()}else{T=S;if(rm){btn();ann.textContent=show()}else{show();play()}}}).catch(()=>{delete F[key];if(WK===key&&!swap)fail()})};
+if(!swap){SW=0;stop(false);d=m;for(const c of rb.querySelectorAll("[name=rjd]"))c.checked=c.value===x;if(x!=="jour")sel.value="";b.textContent="Chargement…";b.disabled=true;b.removeAttribute("aria-label")}
+(F[key]||(F[key]=Promise.all([fetch(m==="jour"?JP.replace("JOUR",DY):P[m]).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),RJ.p?RJ.p.prep():0]).then(([j])=>j))).then((j)=>{if(WK!==key||swap&&!j.radar)return;if(swap===2&&playing){SW=1;return}
+const t=T,te=T>=E,old=[J,d,DK];d=m;DK=key;J=j;if(m==="jour")J0=Date.parse(DY+"T20:00:00Z")-864e5;if(!setup()){if(!swap)throw new Error("vide");[J,d,DK]=old;setup();T=t;return}
+if(swap){T=te?E:Math.max(S,Math.min(E,t));cur="";show();btn()}else{T=S;if(rm){btn();ann.textContent=show()}else{show();play()}}}).catch(()=>{delete F[key];if(WK===key&&!swap)fail()})};
 // More images, asked or not: the same length, swapped at the same moment; a day, back to 24 hours without them.
 box.addEventListener("change",()=>{USER=true;MZ=false;FINE=box.checked;sel.hidden=!FINE;if(!J)return;if(d==="jour"&&!FINE)RJ.go("24h");else if(d!=="jour")RJ.go(BA(d),true)});
 // The days one can replay (joursOf), as the map writes them: « dim. 01/11 ».

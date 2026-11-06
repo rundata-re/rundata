@@ -813,12 +813,19 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(js).toContain(`slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=25&&ne(nps(m))*CW[0]+30*CW[1]<600,`);
     // Measured in a play of the rain over 6 or 24 hours only, unless more images were asked or refused.
     expect(js).toContain(`MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p"`);
-    expect(js).toContain(`if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",true)}`);
+    // The finer file asked at once, swapped in once the play stops (at its end or paused): a play never changes its pace.
+    expect(js).toContain(`if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",2)}`);
+    expect(js).toContain(`.then((j)=>{if(WK!==key||swap&&!j.radar)return;if(swap===2&&playing){SW=1;return}`);
+    expect(js).toContain(`if(say)ann.textContent=show();if(SW){SW=0;RJ.go(BA(d),2)}};`);
+    // Another length or day asked forgets the waiting swap, before its stop can ask it.
+    expect(js).toContain(`if(!swap){SW=0;stop(false);d=m;`);
     // A page kept from before has neither the box nor the days: the script still runs.
     expect(js).toContain(`box=rb.querySelector(".rj-plus input")||document.createElement("input"),sel=rb.querySelector(".rj-j")||document.createElement("select"),`);
     // The box, asked: the same length swapped at the same moment.
     expect(js).toContain(`box.addEventListener("change",()=>{USER=true;MZ=false;FINE=box.checked;`);
-    expect(js).toContain(`if(swap){T=Math.max(S,Math.min(E,t));`);
+    // At the end of a play, the end of the finer file: « Relire » stays, never a last bit to play.
+    expect(js).toContain(`const t=T,te=T>=E,old=[J,d,DK];`);
+    expect(js).toContain(`if(swap){T=te?E:Math.max(S,Math.min(E,t));`);
     // A day: from its midnight, without the live map at its end.
     expect(js).toContain(`lo=d==="jour"?J0:E-DU[d]`);
     expect(js).toContain(`const end=T>=E&&d!=="jour";`);

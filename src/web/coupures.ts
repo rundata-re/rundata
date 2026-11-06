@@ -12,7 +12,7 @@ import { de, deNom } from "../articles.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
-import { connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
+import { afterCutNote, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
 import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
@@ -52,7 +52,7 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   if (!w.coupures) return undefined;
   const x = waterOf(p.nom, w);
   const cuts = compteAvis(x.avis).coupures;
-  const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Avis non lus";
+  const valeur = x.dry ? "Eau à ne pas boire" : cuts ? plural(cuts, "avis de coupure", "avis de coupure") : x.avis.length ? plural(x.avis.length, "avis sur l'eau", "avis sur l'eau") : x.muet ? "Site sans réponse" : x.distributeur?.avis ? "Pas de coupure annoncée" : "Site pas lu";
   const detail = [
     // When its notices were read, unless its site did not answer: that says its own hour.
     x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(w.coupures.fetchedAt))}` : "",
@@ -178,7 +178,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const body = `<section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
   ${list}
-  ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}
+  ${d ? afterCutNote : ""}
 </section>
 ${cyclone.lead ? cyclone.html : ""}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>

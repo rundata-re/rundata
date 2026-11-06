@@ -42,7 +42,7 @@ import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAn
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW } from "../tools/bornes.js";
-import { muetPour } from "../tools/coupures.js";
+import { AFTER_CUT, muetPour } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
 import island from "../places/island.json" with { type: "json" };
@@ -135,6 +135,12 @@ const connectorCta = (tool: string, what: string) => `<section aria-labelledby="
   <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
   <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${esc(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
 </section>`;
+
+/**
+ * The note under the water notices (/coupures-eau, /coupures-eau/x): the tool's, with a link to /eau in place of the
+ * name of the tool for the tap water (marketing, 06/11/2026).
+ */
+export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
 
 /**
  * The connector on the water's pages (/coupures-eau, /coupures-eau/x, /eau): a question to ask, without the tool's name
@@ -2759,7 +2765,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis</h2>
   <p>${d ? esc(d.couverture) : ""}</p></div>
   ${list}
-  ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}
+  ${d ? afterCutNote : ""}
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>
 ${cyclone.lead ? cyclone.html : ""}

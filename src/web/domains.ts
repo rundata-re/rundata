@@ -1006,6 +1006,9 @@ export function calendrierLive(data: Cached<CalendrierAnswer> | null, now = new 
 
 // ---------------------------------------------------------------- bus
 
+/** A time in a list of departures, with its minutes everywhere: « demain 5\u00a0h » → « demain 05:00 », beside « demain 05:15 ». */
+export const listClock = (heure: string) => heure.replace(/\b(\d{1,2})[\u00a0 ]h$/, (_, h: string) => `${h.padStart(2, "0")}:00`);
+
 export const waitText = (min: number, heure: string) =>
   heure.startsWith("demain") ? heure : min < 1 ? "maintenant" : min < 90 ? `dans ${fr(min)} min` : `à ${heure}`;
 
@@ -1100,7 +1103,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
         return `<li class="card"><h3>Gare ${esc(de(g.commune))}</h3>` +
         `<p class="note">${g.arrets.map((a) => `${esc(a.reseau)} : ${a.page ? `<a href="${STOP_PATH}/${esc(a.page)}">${esc(a.nom)}</a>` : esc(a.nom)}`).join(" · ")}</p>` +
         (left.length
-          ? `<ul class="rows departs">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, heure), heure)).join("")}</ul>`
+          ? `<ul class="rows departs">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, listClock(heure)), listClock(heure))).join("")}</ul>`
           : busOutran(g, now.getTime() - data!.fetchedAt.getTime())
             ? `<p>${HORAIRES_CHARGENT}</p>`
             : `<p>Pas de départ prévu dans les prochaines heures.</p>`) +

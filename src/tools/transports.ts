@@ -106,8 +106,14 @@ export function nearStops(lon: number, lat: number, reseau?: string): { g: trans
 }
 
 const clock = (s: number) => heure(Math.floor((((s % 86400) + 86400) % 86400) / 60));
-/** « 07:05 », or « demain 05:51 » for a departure after midnight. */
-const hm = (s: number) => `${s >= 86400 ? "demain " : ""}${clock(s)}`;
+/**
+ * « 07:05 », or « demain 05:51 » for a departure after midnight: a time of a list of departures, with its minutes even
+ * on the hour (« demain 05:00 » beside « demain 05:15 »), as on the stop's page (web/domains.ts listClock()).
+ */
+const hm = (s: number) => {
+  const m = Math.floor((((s % 86400) + 86400) % 86400) / 60);
+  return `${s >= 86400 ? "demain " : ""}${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+};
 /** « à 07:05 », « demain à 05:51 ». */
 const atTime = (s: number) => `${s >= 86400 ? "demain " : ""}à ${clock(s)}`;
 const minutes = (d: Departure) => Math.max(0, Math.round(expected(d) / 60));

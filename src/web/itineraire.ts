@@ -61,7 +61,7 @@ const walkMin = (s: number) => Math.max(1, Math.round(s / 60));
 
 /**
  * « Église Petite-Île », « Mairie, Saint-Leu »: the commune said when the name does not say it, the name written as in
- * our sentences (prose()). The lines' directions stay as their network writes them.
+ * our sentences (prose()). The lines' directions as the stops' names are shown (transit.stopName()).
  */
 function stopName(id: number): string {
   const s = transit.stop(id);

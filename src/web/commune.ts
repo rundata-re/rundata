@@ -34,7 +34,7 @@ import { credit, joursDuJour } from "./data.js";
 import { aCommune, deCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
-import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, stillToCome, volcanLive } from "./domains.js";
+import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, listClock, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
@@ -251,7 +251,7 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   return {
     live: { valeur: esc(first.heure), detail: `prochain départ ${where} : ligne ${esc(first.x.ligne)} vers ${esc(casse(first.x.direction))} (${esc(first.x.reseau)})` },
     // The hour, never « dans 1 min », which a copy of the page would keep; /bus and the stops count the wait.
-    more: `<ul class="rows departs cols">${left.map(({ x, heure }) => departureLi(x, heure.startsWith("demain") ? heure : `à ${heure}`, heure)).join("")}</ul>` +
+    more: `<ul class="rows departs cols">${left.map(({ x, heure }) => departureLi(x, heure.startsWith("demain") ? listClock(heure) : `à ${listClock(heure)}`, listClock(heure))).join("")}</ul>` +
       (b.alertes?.length ? `<div class="note">Info trafic : ${alertList(b.alertes)}</div>` : ""),
   };
 }

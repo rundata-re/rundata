@@ -316,7 +316,7 @@ box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k) 32%,transparent)}
 .kb .ic{width:1.35rem;height:1.35rem}
 header.top{position:sticky;top:0;z-index:20;background:rgb(7 22 38/.78);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);
 border-bottom:1px solid rgb(255 255 255/.07);color:var(--on-night)}
-.bar{display:flex;align-items:center;gap:.6rem;min-height:3.6rem;padding-block:.45rem}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;min-height:3.6rem;padding-block:.45rem}
 .brand{display:flex;align-items:center;gap:.6rem;font:800 1.2rem/1 Bricolage,system-ui,sans-serif;color:inherit;text-decoration:none;letter-spacing:-.02em;margin-right:auto}
 .brand .tld{color:var(--sun)}
 .logo{width:1.55rem;height:1.55rem;flex:none}
@@ -332,6 +332,9 @@ font:800 .95rem/1 system-ui,sans-serif;text-decoration:none;box-shadow:0 6px 18p
 /* The page's own name from 430 px; below, « Mon IA », the whole name in its aria-label (ux, 06/11/2026: the whole name
    widened the page by 12 px at 390 px and 82 px at 320 px). */
 .cta-ia .ia-l{display:none}@media (min-width:430px){.cta-ia .ia-l{display:inline}.cta-ia .ia-c{display:none}}
+/* The « Menu » button never shrinks: at 320 px it ended 14 px past the margin, cut with a fallback font, off the screen
+   with larger text (ux, 06/11/2026). Tighter below 352 px keeps the bar on one line at 320 px; the wrap catches the rest. */
+@media (max-width:351px){.bar{gap:.35rem}.cta-ia{padding-inline:.6rem}}
 .menu{position:static}
 .menu summary{list-style:none;display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:14px;cursor:pointer;
 background:rgb(255 255 255/.08);border:1px solid rgb(255 255 255/.12);color:#fff}

@@ -10,7 +10,7 @@
  */
 import { esc, H, inScript, islandMap, KM, project, W } from "./map.js";
 import { GH, GW, MM_CHARS, MM_MIN, MM_STEP } from "./pluie-radar.js";
-import { de } from "../articles.js";
+import { de, deNom } from "../articles.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { hash } from "./pwa.js";
 import { CUMULS_PATH } from "./rejeu.js";
@@ -116,11 +116,14 @@ export const autour = (cx: number, cy: number, w: number, h: number, r: number):
 /** RAYON_KM in cells of the radar's grid. */
 const RAYON = Math.round((RAYON_KM / ((KM * W) / GW)) * 100) / 100;
 
+/** A station with « de » before it: « du Port », « des Avirons », and elided before a vowel, « d'Aurère », « d'Îlet à Cordes ». */
+export const deStation = (nom: string): string => (/^(Le|Les) /.test(nom) ? de(nom) : deNom(nom));
+
 /** The map and its controls, written by the script: the Météo-France stations to choose from, those without hours of rain left out then. */
 function figure(): string {
   const options = meteofrance.stations().sort((a, b) => a.nom.localeCompare(b.nom, "fr")).map((s) => {
     const [x, y] = project(s.lon, s.lat);
-    return `<option value="${esc(s.id)}" data-de="${esc(de(s.nom))}" data-x="${Math.round(x)}" data-y="${Math.round(y)}">${esc(s.nom)}</option>`;
+    return `<option value="${esc(s.id)}" data-de="${esc(deStation(s.nom))}" data-x="${Math.round(x)}" data-y="${Math.round(y)}">${esc(s.nom)}</option>`;
   }).join("");
   const radios = [`<input type="radio" name="cud" id="cud-a" value="a"><label for="cud-a">Début de l'averse</label>`,
     ...DUREES_H.map((h) => `<input type="radio" name="cud" id="cud-${h}" value="${h}"><label for="cud-${h}">${h}\u00a0h</label>`)].join("");

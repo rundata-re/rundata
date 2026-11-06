@@ -19,7 +19,7 @@ import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
-import { hp, human, received, SECRET_HEADERS, TURNSTILE_SCRIPT, widget } from "./propositions.js";
+import { ERREUR_SCRIPT, hp, human, received, SECRET_HEADERS, TURNSTILE_SCRIPT, widget } from "./propositions.js";
 
 export { CONNECTEURS_EN_LIGNE, enLigne, ouvrir } from "./connecteurs-drapeau.js";
 
@@ -81,7 +81,9 @@ function formulaire(e: Formulaire): string {
   const v = (k: string) => (k === "client_secret" ? "" : esc(f.get(k) ?? ""));
   const bad = (k: string) => (wrong.has(k) ? ` aria-invalid="true" aria-describedby="faux-${k}"` : "");
   const note = (k: string) => (wrong.has(k) ? `<p class="faux" id="faux-${k}">${esc(FAUX[k])}</p>` : "");
-  const top = e.erreur ? `<p class="msg vu" role="alert">${esc(ERREURS[e.erreur])}</p>` : wrong.size ? `<p class="msg vu" role="alert">Quelques champs sont à corriger, signalés ci-dessous.</p>` : "";
+  // Without `role="alert"` in the page: one there from the start is mostly not announced. ERREUR_SCRIPT gives it.
+  const said = e.erreur ? esc(ERREURS[e.erreur]) : wrong.size ? "Quelques champs sont à corriger, signalés ci-dessous." : "";
+  const top = said ? `<p class="msg vu" id="p-erreur">${said}</p>${ERREUR_SCRIPT}` : "";
   return `<form class="card fo" method="post" action="${RELIER_PATH}" novalidate>
   ${top}
   <div class="f"><label for="r-plateforme">Votre plateforme</label><select id="r-plateforme" name="plateforme" required><option value="helloasso" selected>HelloAsso</option></select>
@@ -121,8 +123,9 @@ function bandeau(titre: string, lead?: string): string {
 
 const INTRO = "Vos événements publics s'afficheront sur rundata.re et dans les assistants IA, avec le nom de votre association, et seront relus toutes les 6 heures. Réservé aux associations à but non lucratif de La Réunion.";
 
-function relierPage(origin: string, body: string, alerte?: Alerte): string {
-  return layout(origin, { title: TITLE, description: META, path: RELIER_PATH, jsonld: [crumbs(origin, "Relier votre plateforme", RELIER_PATH, PARENT), webPage(origin, RELIER_PATH, TITLE, META, null)], alerte, sansAvis: true }, bandeau("Relier votre plateforme à rundata.re", INTRO), body);
+/** `erreur`: a page that says an error (its status 4xx or 5xx), « Erreur : » first in its title. */
+function relierPage(origin: string, body: string, alerte?: Alerte, erreur = false): string {
+  return layout(origin, { title: erreur ? `Erreur\u00a0: ${TITLE}` : TITLE, description: META, path: RELIER_PATH, jsonld: [crumbs(origin, "Relier votre plateforme", RELIER_PATH, PARENT), webPage(origin, RELIER_PATH, TITLE, META, null)], alerte, sansAvis: true }, bandeau("Relier votre plateforme à rundata.re", INTRO), body);
 }
 
 // ---------------------------------------------------------------- « C'est bien votre association ? »
@@ -155,7 +158,7 @@ const section = (...p: string[]) => `<section class="card fo">
 /** GET /associations/relier: the empty form. POST: the keys asked to the platform. */
 export async function relier(request: Request, now = new Date(), alerte?: Alerte): Promise<Response> {
   const origin = new URL(request.url).origin;
-  const html = (body: string, status = 200) => new Response(relierPage(origin, body, alerte), { status, headers: HTML_HEADERS });
+  const html = (body: string, status = 200) => new Response(relierPage(origin, body, alerte, status >= 400), { status, headers: HTML_HEADERS });
   const form = (e: Formulaire, status = 200) => html(`${formulaire(e)}${TURNSTILE_SCRIPT}`, status);
   if (request.method === "GET" || request.method === "HEAD") return form({});
   const f = await received(request, "Le formulaire «\u00a0Relier votre plateforme\u00a0»");
@@ -180,7 +183,7 @@ export async function relier(request: Request, now = new Date(), alerte?: Alerte
 /** POST /associations/relier/confirmer: « C'est bien nous » writes the link and e-mails it; « Ce n'est pas nous », nothing. */
 export async function confirmerRelier(request: Request, now = new Date(), alerte?: Alerte): Promise<Response> {
   const url = new URL(request.url);
-  const html = (body: string, status = 200) => new Response(relierPage(url.origin, body, alerte), { status, headers: HTML_HEADERS });
+  const html = (body: string, status = 200) => new Response(relierPage(url.origin, body, alerte, status >= 400), { status, headers: HTML_HEADERS });
   const f = await received(request, "Cette page");
   if (f instanceof Response) return f;
   if (f.get("choix") === "non") return html(section("<p>Rien n'a été gardé. Si ces clés ne sont pas celles de votre association, vérifiez le compte HelloAsso avec lequel vous les avez copiées.</p>", `<p><a href="${RELIER_PATH}">Relier votre plateforme</a> · <a href="/associations">Retour à l'espace clubs et associations</a></p>`));

@@ -139,6 +139,11 @@ describe("« Relier votre plateforme »", () => {
     expect(r.status).toBe(422);
     let html = plain(await r.text());
     expect(html).toContain('id="faux-client_id"');
+    // Said in the tab, and announced by the page's script once it is there: no `role="alert"` in the page from the start.
+    expect(html).toContain("<title>Erreur : Relier votre compte HelloAsso à rundata.re : clubs et associations · 974</title>");
+    expect(html).toContain('<p class="msg vu" id="p-erreur">Quelques champs sont à corriger, signalés ci-dessous.</p><script>');
+    expect(html).not.toContain('role="alert"');
+    expect(plain(await (await get(connecteurs.RELIER_PATH)).text())).toContain("<title>Relier votre compte HelloAsso");
     expect(html).toContain('id="faux-email"');
     expect(html).not.toContain("le-secret-client");
     token = { status: 400, body: { error: "invalid_client" } };
@@ -154,7 +159,9 @@ describe("« Relier votre plateforme »", () => {
     token = { status: 503, body: {} };
     r = await post(connecteurs.RELIER_PATH, CLES);
     expect(r.status).toBe(503);
-    expect(plain(await r.text())).toContain("La vérification n'a pas pu se faire pour l'instant. Rien n'a été gardé.");
+    html = plain(await r.text());
+    expect(html).toContain('<p class="msg vu" id="p-erreur">La vérification n\'a pas pu se faire pour l\'instant. Rien n\'a été gardé.');
+    expect(html).toContain("<title>Erreur : Relier");
     // A robot, or no Turnstile: nothing asked to HelloAsso.
     expect((await post(connecteurs.RELIER_PATH, { ...CLES, "cf-turnstile-response": "robot" })).status).toBe(503);
     expect(rows("SELECT * FROM connexions")).toEqual([]);
@@ -167,7 +174,9 @@ describe("« Relier votre plateforme »", () => {
     const changed = `${scelle.slice(0, -4)}AAAA`;
     const r = await post(connecteurs.CONFIRMER_PATH, { attente: changed, choix: "oui" });
     expect(r.status).toBe(410);
-    expect(plain(await r.text())).toContain("La vérification a expiré. Rien n'a été gardé");
+    const expire = plain(await r.text());
+    expect(expire).toContain("La vérification a expiré. Rien n'a été gardé");
+    expect(expire).toContain("<title>Erreur : Relier");
     expect(await connexions.ouvrir(scelle, new Date(Date.now() + 31 * 60_000))).toBeUndefined();
     expect(await connexions.ouvrir(scelle)).toMatchObject({ plateforme: "helloasso", organisation: { id: "club-de-petanque" }, secret: REFRESH });
     expect(rows("SELECT * FROM connexions")).toEqual([]);

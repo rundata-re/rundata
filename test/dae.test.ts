@@ -39,6 +39,9 @@ describe("défibrillateurs", () => {
     expect(nomDae("SUEZ AGENCE LES CUVES")).toBe("Suez Agence Les Cuves");
     expect(nomDae("ECOLE MONTESSORI LES VACOAS")).toBe("École Montessori Les Vacoas");
     expect(nomDae("SAS LE FOUQUET")).toBe("SAS Le Fouquet");
+    // And after « - »: it starts a part of the name.
+    expect(nomDae("STATION SERVICE - LES SABLES")).toBe("Station Service - Les Sables");
+    expect(nomDae("LECLERC - LE PORTAIL ST LEU")).toBe("Leclerc - Le Portail St Leu");
     // One word: a sigle or a brand, as written.
     expect(nomDae("INSPE")).toBe("INSPE");
     // Written with lowercase letters by its operator: as written.

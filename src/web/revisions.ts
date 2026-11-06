@@ -24,21 +24,22 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   air: 12,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
-  // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article held by a hyphen stays
-  // small (« St Gilles-les-Hauts »).
-  bus: 12,
+  // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays
+  // small (« St Gilles-les-Hauts »), and starts a part of the name after « - » or « <> » (« Les Jacarandas - La Plaine »).
+  bus: 13,
   // The Moon between its main phases said once in the summary: « Lune décroissante », not « Lune : Lune décroissante ».
   calendrier: 5,
   chiffres: 23,
-  // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts »).
-  commune: 22,
+  // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
+  commune: 23,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 13,
   courant: 8,
   crues: 3,
   cyclones: 11,
-  // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »).
-  dae: 5,
+  // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
+  // part of it after « - » (« Station Service - Les Sables »).
+  dae: 6,
   dechets: 2,
   eau: 3,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».

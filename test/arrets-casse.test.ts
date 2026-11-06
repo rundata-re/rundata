@@ -23,9 +23,17 @@ describe("a stop name in capitals, as people read it", () => {
     expect(casseArret("RUE LA FONTAINE")).toBe("Rue La Fontaine");
     expect(casseArret("ZAC LA MARE")).toBe("ZAC La Mare");
     expect(casseArret("Chemin Les Hauts")).toBe("Chemin Les Hauts");
-    // Held by a hyphen, still an article.
+    // Between two hyphens, still an article.
     expect(casseArret("TOTAL ST GILLES-LES-HAUTS")).toBe("Total St Gilles-les-Hauts");
     expect(casseArret("HOTEL LE CILAOS")).toBe("Hotel Le Cilaos");
+    // At the head of a part of the name, after « - », « <> » or a hyphen and a space, the start of a name.
+    expect(casseArret("Bagatelle<>Le Verger")).toBe("Bagatelle<>Le Verger");
+    expect(casseArret("Les Jacarandas - La Plaine")).toBe("Les Jacarandas - La Plaine");
+    expect(casseArret("Lastic-La Mare")).toBe("Lastic-La Mare");
+    expect(casseArret("LASTIC-LA MARE")).toBe("Lastic-La Mare");
+    expect(casseArret("Grand Déffriché - La Passerelle - Gare St Jo")).toBe("Grand Déffriché - La Passerelle - Gare St Jo");
+    expect(casseArret("Quatorzième - Gare Du Tampon - La Pointe")).toBe("Quatorzième - Gare du Tampon - La Pointe");
+    expect(casseArret("Gare Routière Tampon - Petit Tampon - La Bergerie")).toBe("Gare Routière Tampon - Petit-Tampon - La Bergerie");
     expect(casseArret("A LA CROISEE")).toBe("À la Croisee");
     expect(casseArret("CHATEAU D'EAU LES BAS")).toBe("Chateau d'Eau Les Bas");
     expect(casseArret("P'TIT KIOSQUE")).toBe("P'tit Kiosque");

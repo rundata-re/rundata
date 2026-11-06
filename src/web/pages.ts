@@ -480,7 +480,10 @@ text-decoration:none;background:var(--sun);color:var(--sun-ink);box-shadow:var(-
 .askn{font-size:.85rem;color:var(--muted);max-width:34rem}
 .copie{font-size:.9rem;font-weight:700;max-width:34rem}
 .band .askq,.band .askn{color:var(--on-night-muted)}
-.lang{display:inline-flex;gap:.2rem;padding:.2rem;border-radius:999px;border:1px solid var(--line)}
+/* The two languages on one line while they fit; with larger text on a narrow screen, the second goes under the first
+   rather than pushing the block out of the screen. A radius over half the one-line height draws the same pill, and
+   follows the buttons' corners on two lines. */
+.lang{display:inline-flex;flex-wrap:wrap;gap:.2rem;padding:.2rem;border-radius:calc(1.1rem + 1px);border:1px solid var(--line)}
 .band .lang{border-color:rgb(255 255 255/.22)}
 .lang button{display:inline-flex;align-items:center;gap:.4rem;font:600 .88rem/1 system-ui,sans-serif;padding:.4rem .8rem;border:0;border-radius:999px;
 background:none;color:var(--muted);cursor:pointer}
@@ -675,7 +678,7 @@ details.sect{margin-bottom:.8rem}details.sect>summary{cursor:pointer}details.sec
 .vis figcaption{display:grid;gap:.35rem;font-size:.92rem}.shot img{display:block;width:100%;height:auto;border-radius:14px}.vis .dl{font-weight:800}
 .profile{width:100%;height:auto;display:block}.profile .fill{fill:color-mix(in srgb,var(--accent) 22%,transparent)}.profile .line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
 .profile .grid{stroke:var(--border);stroke-width:1}.profile .ax{fill:var(--muted);font:12px system-ui,sans-serif}
-.facts{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;margin:.6rem 0 1.2rem}.facts dt{font-size:.82rem;color:var(--muted)}.facts dd{margin:0;font:800 1.45rem/1.15 system-ui,sans-serif;color:var(--ink)}.band .facts dt{color:var(--on-night-muted)}.band .facts dd{color:var(--on-night)}
+.facts{display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;margin:.6rem 0 1.2rem}.facts dt{font-size:.82rem;color:var(--muted)}.facts dd{margin:0;font:800 1.45rem/1.15 system-ui,sans-serif;color:var(--ink);overflow-wrap:anywhere}.band .facts dt{color:var(--on-night-muted)}.band .facts dd{color:var(--on-night)}
 .map.terrain .mk{filter:drop-shadow(0 4px 6px rgb(0 0 0/.3))}.map.terrain .mk circle,.map.terrain .mk rect,.map.terrain .mk path.sh,.map.terrain .rj-st circle{stroke:#fff;stroke-width:4;stroke-linejoin:round}
 .map text{font-family:system-ui,sans-serif;text-anchor:middle}
 .map .mv{fill:#fff;font-weight:700;font-size:30px}

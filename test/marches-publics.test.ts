@@ -198,7 +198,7 @@ describe("the page /marches-publics", () => {
     const d = await buildMarches(new Cache(new MemoryStore(), () => now.getTime()), now);
     expect(d.nombre).toBe(7);
     const p = marchesPage(O, { value: d, fetchedAt: TEXTES_AT, stale: false }, now);
-    expect(p).toContain("<title>Marchés publics Réunion : avis de marché et appels d&#39;offres en cours · 974</title>");
+    expect(p).toContain("<title>Marchés publics, appels d&#39;offres en cours · La Réunion (974)</title>");
     expect(p).toContain("7 avis de marché ouverts aux réponses sur le BOAMP, dernière lecture le 29/10 à 14:35.");
     expect(p).toContain("Commune de SaintJoseph · services · à Saint-Joseph");
     expect(p).toContain("Syndicat Mixte Parc Routier de la Réunion · fournitures · acheteur à Saint-Denis");

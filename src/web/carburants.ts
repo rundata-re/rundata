@@ -19,7 +19,7 @@ const find = (p: carburants.Prix, re: RegExp) => p.produits.find((x) => re.test(
 const say = (s: string) => esc(keep(s));
 
 // The texts of the page, worded by marketing.
-export const TITLE = "Prix carburants Réunion : essence, gazole, gaz · 974";
+export const TITLE = "Prix carburants : essence, gazole, gaz · La Réunion (974)";
 
 /** « Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), gazole 1,80 €/L (+0,12 €), bouteille de gaz 20,81 €. … » */
 export function descriptionOf(p: carburants.Prix | undefined): string {

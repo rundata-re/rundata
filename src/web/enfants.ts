@@ -22,10 +22,13 @@ import { PATH as ECOLES } from "./ecoles-annuaire.js";
 import { nombre } from "../tools/format.js";
 import { anchorId, ask, dayMonth, FOLD_ROWS, folded, icon, layout, type Live } from "./pages.js";
 
+// What a search engine shows of a title: the tab's title takes the first of its forms that fits.
+const TITLE_MAX = 60;
+
 type Row = EnfantsAnswer["evenements"][number];
 const { typo } = enfants;
 
-export const TITLE = "Avec les enfants à La Réunion : lieux et activités · 974";
+export const TITLE = "Avec les enfants à La Réunion (974) : lieux et activités";
 export const H1 = "Avec les enfants à La Réunion";
 export const LEAD = typo("Aires de jeux, parcs, piscines, médiathèques, zoos, skateparks : les lieux où aller avec les enfants, commune par commune, et les activités pour eux ce week-end et dans les deux semaines qui viennent. De 0 à 17 ans, avec l'âge quand l'organisateur ou la carte le donne.");
 export const DESCRIPTION = "Où emmener les enfants à La Réunion : aires de jeux, parcs, piscines, médiathèques, zoos, skateparks, commune par commune, et les activités du week-end.";
@@ -259,7 +262,8 @@ const pathOf = (commune: string) => {
  * and a commune with a single place is said in the singular.
  */
 const MOTS = {
-  title: (c: string) => typo(`Avec les enfants ${aCommune(c)} : où aller · 974`),
+  title: (c: string) => typo([`Avec les enfants ${aCommune(c)} : où aller · La Réunion (974)`, `Avec les enfants ${aCommune(c)} · La Réunion (974)`]
+    .find((t) => t.length <= TITLE_MAX) ?? `Avec les enfants ${aCommune(c)} · 974`),
   description: (c: string, n: number) =>
     typo(`Aires de jeux, parcs, piscines, médiathèques : ${n === 1 ? "le lieu" : `les ${n} lieux`} où aller avec les enfants ${aCommune(c)}, sur une carte, et les activités du week-end.`),
   h1: (c: string) => `Avec les enfants ${aCommune(c)}`,

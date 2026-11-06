@@ -15,7 +15,7 @@ import { layout, type Live } from "./pages.js";
 
 export const PATH = "/peche";
 export const NOM = "Pêche";
-export const TITLE = "Pêche de loisir à La Réunion\u00a0: fermetures du jour, tailles et quantités · 974";
+export const TITLE = "Pêche de loisir à La Réunion (974)\u00a0: fermetures, tailles";
 const META = "Langouste, bichiques, capucin nain, anguille marbrée\u00a0: ce qui est fermé aujourd'hui, les tailles et les quantités de la pêche de loisir, d'après les arrêtés du préfet.";
 const H1 = "Pêche de loisir à La Réunion";
 const LEAD = "Avant de partir pêcher\u00a0: ce qui est fermé aujourd'hui, les tailles minimales et les quantités, espèce par espèce, d'après les arrêtés du préfet.";

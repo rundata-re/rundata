@@ -80,7 +80,7 @@ describe("the antennas of the island (ANFR)", () => {
 
   it("has its page, /antennes: the map filtered by operator and type, the counts read from the files, the 5G as the ANFR says it", async () => {
     const html = antennesPage("https://rundata.re");
-    expect(html).toContain("<title>Antennes Réunion : 4G, 5G, TNT et radio sur la carte · 974</title>");
+    expect(html).toContain("<title>Antennes 4G, 5G, TNT et radio · La Réunion (974)</title>");
     // Counted from the files, never written: the next file changes them.
     expect(html).toContain("<p class=\"lead\">1\u202f151 supports d&#39;antennes mobiles déclarés à l&#39;ANFR au 22 octobre 2026, et 173 supports d&#39;émetteurs de radio et de télévision au 30 septembre 2026.</p>");
     // Two rows of boxes that combine, several at once, and the colours, one; their values are the page's address

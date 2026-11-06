@@ -14,7 +14,7 @@ import { esc } from "./map.js";
 import { DESCRIPTION_MAX, icon, layout, leJour } from "./pages.js";
 
 // The texts of the page, worded by marketing.
-export const TITLE = "Déchèteries 974 : adresses, bennes en direct dans l'Ouest";
+export const TITLE = "Déchèteries : adresses, bennes en direct dans l'Ouest · 974";
 const H1 = "Les déchèteries de l'île, et les bennes en direct dans l'Ouest";
 const LEAD = "Pour chaque déchèterie du TCO, les bennes qui acceptent encore vos déchets et celles qui sont pleines, d'après les agents sur place (mise à jour toutes les 2 heures environ). Ouvertes 7 jours sur 7.";
 const CHECK = "Mise à jour il y a plus de 6 h : à vérifier sur place.";

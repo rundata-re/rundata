@@ -296,7 +296,7 @@ describe("traces GPS", () => {
     const res = await handle(new Request("https://rundata.re/randonnees/mafate", BOT), cache());
     expect(res.status).toBe(200);
     const page = await res.text();
-    expect(page).toContain("<title>Randonnée Mafate\u00a0: traces GPS et sentiers ouverts · 974</title>");
+    expect(page).toContain("<title>Randonnée Mafate\u00a0: traces GPS · La Réunion (974)</title>");
     expect(page).toContain('<h1>Randonnée à Mafate <span class="n974">974</span></h1>');
     expect(page).toContain(`<li><a href="/randonnees">Randonnée</a></li><li aria-current="page">Mafate</li>`);
     // The map of the day has 4 closed there; the one closed here is among them, with why.
@@ -312,7 +312,7 @@ describe("traces GPS", () => {
 
   it("says a trail's sector in its title, its trail and its first sentence", async () => {
     const page = await (await handle(new Request("https://rundata.re/sentiers/aurere-ilet-a-malheur", BOT), cache())).text();
-    expect(page).toContain("<title>Aurère - Îlet à Malheur (Mafate)\u00a0: trace GPX, état ONF · 974</title>");
+    expect(page).toContain("<title>Aurère - Îlet à Malheur (Mafate) · La Réunion (974)</title>");
     expect(page).toContain(`<li><a href="/randonnees/mafate">Mafate</a></li><li aria-current="page">Aurère - Îlet à Malheur</li>`);
     expect(page).toMatch(/<p class="lead part-of">Sentier de l'ONF à Mafate, sur le <a href="\/randonnees\/gr-r2">GR R2<\/a> et le <a href="\/randonnees\/gr-r3">GR R3<\/a>\./);
   });

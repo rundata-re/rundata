@@ -192,7 +192,7 @@ export async function lienPost(request: Request, now = new Date()): Promise<Resp
 
 // ---------------------------------------------------------------- « Proposer un événement »
 
-const TITLE = "Proposer un événement gratuitement\u00a0: clubs et associations · 974";
+const TITLE = "Proposer un événement gratuitement · La Réunion (974)";
 const META = "Club ou association\u00a0? Proposez votre événement en 2 minutes, gratuitement et sans compte\u00a0: après relecture, il s'affiche sur rundata.re et dans les assistants IA.";
 
 const VOUS_ETES = [["association", "Une association à but non lucratif (dont les clubs)"], ["public", "Une mairie ou un organisme public"], ["commerce", "Un commerce ou une entreprise"]] as const;

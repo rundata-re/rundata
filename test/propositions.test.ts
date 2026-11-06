@@ -291,10 +291,10 @@ describe("the forms on the site (web/propositions.ts)", () => {
     formulaires.ouvrir(true);
     human();
     const blank = await (await handle(new Request("https://rundata.re/associations/proposer", { headers: { accept: "text/html" } }), new Cache())).text();
-    expect(blank).toContain("<title>Proposer un événement gratuitement\u00a0: clubs et associations · 974</title>");
+    expect(blank).toContain("<title>Proposer un événement gratuitement · La Réunion (974)</title>");
     expect(blank).not.toContain('id="p-erreur"');
     const wrong = await (await post("/associations/proposer", { ...PROPOSITION, email: "pas-une-adresse" }, { origin: "https://rundata.re" })).text();
-    expect(wrong).toContain("<title>Erreur\u00a0: Proposer un événement gratuitement\u00a0: clubs et associations · 974</title>");
+    expect(wrong).toContain("<title>Erreur\u00a0: Proposer un événement gratuitement · La Réunion (974)</title>");
     // The message in the page, its alert given by the script only: one there from the start is mostly not announced.
     expect(wrong).toContain('<p class="msg vu" id="p-erreur">Quelques champs sont à corriger, signalés ci-dessous.</p>');
     expect(wrong).not.toContain('role="alert"');

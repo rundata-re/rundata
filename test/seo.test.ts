@@ -75,14 +75,14 @@ describe("search engines", () => {
   });
 
   it("see the query first in titles that fit in 60 characters", () => {
-    expect(title(agendaPage(O, null, NOW))).toBe("Que faire à La Réunion ? Concerts, fêtes, sorties · 974");
-    expect(title(busPage(O, null, NOW))).toBe("Horaires bus Réunion : prochains départs en gare · 974");
-    expect(title(daePage(O, null, NOW))).toBe("Défibrillateurs Réunion : où trouver un DAE · 974");
-    expect(title(traficPage(O, null, NOW))).toBe("Circulation et trafic Réunion : routes, bus, médias · 974");
-    expect(title(placePage(O, pageOf("cilaos")!, null, NOW))).toBe("Météo Cilaos en direct et prévisions · 974");
-    // The sector first (§8), then « état ONF » when the name leaves room.
-    expect(title(tracePage(O, "randonnee", "sentier-du-piton-des-neiges", "Sentier du Piton des Neiges", null, NOW))).toBe("Sentier du Piton des Neiges (Cilaos) : trace GPX · 974");
-    expect(title(tracePage(O, "randonnee", "pr25", "PR25", null, NOW))).toBe("PR25 (Mafate) : trace GPX, état ONF · 974");
+    expect(title(agendaPage(O, null, NOW))).toBe("Que faire à La Réunion (974) ? Concerts, fêtes, sorties");
+    expect(title(busPage(O, null, NOW))).toBe("Horaires bus, prochains départs en gare · La Réunion (974)");
+    expect(title(daePage(O, null, NOW))).toBe("Défibrillateurs : où trouver un DAE · La Réunion (974)");
+    expect(title(traficPage(O, null, NOW))).toBe("Circulation, trafic : routes, bus, médias · La Réunion (974)");
+    expect(title(placePage(O, pageOf("cilaos")!, null, NOW))).toBe("Météo Cilaos en direct et prévisions · La Réunion (974)");
+    // « La Réunion (974) » with « trace GPX » when it fits, then without; the short « · 974 » for a long name.
+    expect(title(tracePage(O, "randonnee", "sentier-du-piton-des-neiges", "Sentier du Piton des Neiges", null, NOW))).toBe("Sentier du Piton des Neiges (Cilaos) · La Réunion (974)");
+    expect(title(tracePage(O, "randonnee", "pr25", "PR25", null, NOW))).toBe("PR25 (Mafate) : trace GPX · La Réunion (974)");
     expect(title(tracePage(O, "sentier", "x", "Sentier panoramique de Bois Rouge (ancien sentier Bassin Bleu)", null, NOW))).toBe("Sentier panoramique de Bois Rouge (ancien sentier Bassin Bleu) : trace GPX · 974");
     // The school year: from July, the one that starts in August.
     expect(title(calendrierPage(O, null, new Date("2027-03-01T04:00:00Z")))).toContain("2026-2027");
@@ -90,7 +90,7 @@ describe("search engines", () => {
     for (const html of [meteoPage(O, null, NOW), busPage(O, null, NOW), coupuresPage(O, null, NOW), daePage(O, null, NOW), historiquePage(O, null, NOW),
       ...PAGES.map((p) => placePage(O, p, null, NOW))]) {
       expect(title(html).length, title(html)).toBeLessThanOrEqual(60);
-      expect(title(html)).toContain("974");
+      expect(title(html)).toContain("La Réunion (974)");
     }
   });
 });

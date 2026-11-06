@@ -417,7 +417,7 @@ ${assistant(origin, h, now)}
 </section>
 ${PRINCIPLES}`;
   return layout(origin, {
-    title: "La Réunion 974 en direct : météo, routes, rando, sorties",
+    title: "La Réunion (974) en direct : météo, routes, rando, sorties",
     description:
       "Sorties, randos, météo mesurée, routes\u00a0: les données publiques de La Réunion 974 en direct, datées et sourcées. " +
       "Gratuit, sans compte, aussi dans votre IA.",

@@ -13,7 +13,7 @@ import { lienForm, TURNSTILE_SCRIPT } from "./propositions.js";
 import { GUIDE, INTRO, KREOL, REFERENCER_FORMULAIRE } from "./publier-texte.js";
 
 export const PATH = "/publier";
-export const TITLE = "Publier son agenda et ses données en open data · guide gratuit · La Réunion 974";
+export const TITLE = "Publier agenda et données en open data · guide gratuit";
 export const META = "Mairies, associations, organisateurs\u00a0: publiez votre agenda en flux ouvert, gratuitement, avec nos tutos pas à pas. Google, assistants IA, rundata.re.";
 const H1 = "Publiez votre agenda et vos données\u00a0: le guide";
 export const MAILTO = "mailto:contact@rundata.re?subject=Flux%20%C3%A0%20r%C3%A9f%C3%A9rencer";

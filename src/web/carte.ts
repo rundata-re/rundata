@@ -41,7 +41,7 @@ export const PATH = "/carte";
 
 /** The page's words, marketing's. */
 export const MOTS = {
-  title: "Carte de La Réunion : croisez les données publiques · 974",
+  title: "Carte de La Réunion (974) : croisez les données publiques",
   description: "La Réunion en direct sur une même carte : pluie au radar, stations météo, rivières, séismes, sentiers fermés, défibrillateurs… Source et heure de chaque couche.",
   h1: "La Réunion, couche par couche",
   accroche:

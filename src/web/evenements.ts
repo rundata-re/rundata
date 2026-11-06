@@ -133,7 +133,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
       ? dayList(days, listed, (day) => `${upper(dayName(day))}${day === w.du && w.vendredi ? " soir" : ""}${w.feries.has(day) ? ` (${w.feries.get(day)}, férié)` : ""}`, (day) => forecastLinks(where.get(day) ?? []))
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour ce week-end. Voir <a href="/evenements">les deux semaines qui viennent</a>.</p>`;
 
-  const title = "Que faire ce week-end à La Réunion ? · 974";
+  const title = "Que faire ce week-end à La Réunion (974) ?";
   const short = "Que faire ce week-end à La Réunion (974) : concerts, fêtes, marchés et spectacles, commune par commune, avec le lien vers chaque organisateur.";
   const base = `${upper(when)} : ${count(n, "sortie")} à La Réunion (974), concerts, fêtes, marchés et spectacles`;
   const description = (d && [", commune par commune, avec le lien vers chaque organisateur.", ", commune par commune.", "."].map((t) => base + t).find((x) => x.length <= DESCRIPTION_MAX)) || short;
@@ -208,7 +208,7 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
       ? dayList(days, rows, (day) => `${day === today ? "Aujourd'hui, " : ""}${dayName(day)}`.replace(/^\p{L}/u, (c) => c.toUpperCase()))
       : `<div class="card"><p>Aucun concert trouvé dans les agendas lus pour les deux semaines qui viennent. Les salles annoncent leurs dates plus loin sur leur site :</p>${halls}</div>`;
 
-  const title = "Concerts à La Réunion : ce soir et les deux semaines à venir · 974";
+  const title = "Concerts à La Réunion (974) : ce soir et dans les 15 jours";
   // The same window and sources as the line under the title (CONCERTS_HOOK), in words reviewed before they went in.
   const description = "Concerts à La Réunion ce soir et dans les deux semaines à venir : salles, mairies et offices de tourisme.";
   const { bar, jsonld } = trail(origin, "Concerts", path);

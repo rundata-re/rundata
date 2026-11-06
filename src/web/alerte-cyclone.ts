@@ -13,7 +13,7 @@ import { citesHtml } from "./ecoles.js";
 import { esc } from "./map.js";
 import { duAt, layout, officielHtml } from "./pages.js";
 
-export const TITLE = "Alerte cyclone orange, rouge : ce qui change · Réunion 974";
+export const TITLE = "Alerte cyclone orange, rouge · La Réunion (974)";
 const H1 = "Alerte cyclonique : ce qui ferme, ce qui continue";
 const META = "Alerte orange, rouge ou violette à La Réunion : travail, écoles, marchés, circulation, ce que prévoit le plan ORSEC Cyclones de la préfecture.";
 const LEAD = "Ce que prévoit le dispositif ORSEC Cyclones de la préfecture (arrêté 2026-182) à chaque niveau d'alerte, cité page par page. Seuls les communiqués de la préfecture disent le niveau en cours et les décisions du moment.";

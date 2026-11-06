@@ -54,7 +54,7 @@ describe("sentiers de randonnée", () => {
     expect(page).toContain(`Les autres sentiers gérés par l'ONF sont ouverts sur sa carte\u00a0; les ${d.sans_etat} sentiers hors gestion ONF ou sans état n'ont pas d'état connu ici.`);
     expect(page).not.toContain("Les autres sentiers suivis par l'ONF sont ouverts");
     // The title says the list, not « aujourd'hui »: the list is the ONF's map of its day, dated in the page.
-    expect(page).toContain("<title>Sentiers fermés Réunion : liste de l&#39;ONF · 974</title>");
+    expect(page).toContain("<title>Sentiers fermés : liste de l&#39;ONF · La Réunion (974)</title>");
   });
 
   it("reads each trail's state, cause and line", () => {

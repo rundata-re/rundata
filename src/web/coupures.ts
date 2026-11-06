@@ -136,8 +136,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
   <p class="note"><a href="/coupures-eau">Tous les avis de l'île</a>, sur une carte.</p></section>`;
 
-  const title = [`Coupure d'eau ${p.nom} : avis du distributeur · 974`, `Coupure d'eau ${p.nom} · 974`]
-    .find((t) => t.length <= TITLE_MAX) ?? `Coupure d'eau ${p.nom} · 974`;
+  const title = [`Coupure d'eau ${p.nom} · La Réunion (974)`].find((t) => t.length <= TITLE_MAX) ?? `Coupure d'eau ${p.nom} · 974`;
   const short = `Coupures d'eau ${where} (974) : avis du distributeur, restrictions sécheresse et qualité de l'eau du robinet.`;
   const description = !d
     ? short

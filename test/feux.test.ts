@@ -271,7 +271,7 @@ describe("the fires' page", () => {
     const r = (await page("/feux"))!;
     const html = await r.text();
     expect(r.headers.get("cache-control")).toBe("public, max-age=60");
-    expect(html).toContain("<title>Feux de forêt Réunion\u00a0: détections satellite 24\u00a0h · 974</title>");
+    expect(html).toContain("<title>Feux de forêt\u00a0: détections satellite 24\u00a0h · La Réunion (974)</title>");
     expect(html).toContain('<h1>Feux de végétation à La Réunion, vus par satellite <span class="n974">974</span></h1>');
     expect(html).not.toContain("noindex");
     expect(html).toContain('<meta name="description" content="2 feux vus par satellite en 24\u00a0h à La Réunion (974), le dernier vu le 24/10 à\u00a006:30 près du Maïdo.');

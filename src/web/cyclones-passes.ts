@@ -10,6 +10,9 @@ import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
 
+// What a search engine shows of a title: the tab's title takes the first of its forms that fits.
+const TITLE_MAX = 60;
+
 const CYCLONES = { name: "Cyclones", path: "/cyclones" };
 /** How many stations show before the « autres stations » fold. */
 const SHOWN = 15;
@@ -28,7 +31,11 @@ const gustCount = (p: Passe) => {
   return stations.filter((s) => rafale(s, jours)).length;
 };
 
-export const titleOf = (p: Passe) => `Cyclone ${p.nom} ${p.annee} : ${gustCount(p) < RAIN_ONLY ? "pluie mesurée" : "pluie et vent mesurés"} · Réunion 974`;
+export const titleOf = (p: Passe) => {
+  const [long, short] = gustCount(p) < RAIN_ONLY ? ["pluie mesurée", "pluie"] : ["pluie, vent mesurés", "pluie, vent"];
+  return [`Cyclone ${p.nom} ${p.annee} : ${long} · La Réunion (974)`, `Cyclone ${p.nom} ${p.annee} : ${short} · La Réunion (974)`]
+    .find((t) => t.length <= TITLE_MAX) ?? `Cyclone ${p.nom} ${p.annee} : ${short} · 974`;
+};
 export const metaOf = (p: Passe) =>
   p.meta ??
   `Cyclone ${p.nom} (${p.mois}) à La Réunion (974) : ${gustCount(p) < RAIN_ONLY ? "pluie mesurée" : "pluie et rafales mesurées"} station par station par Météo-France${records(p).length ? ", et les records de station" : ""}.`;

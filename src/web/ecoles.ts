@@ -12,7 +12,7 @@ import { esc } from "./map.js";
 import { ask, layout, officielHtml } from "./pages.js";
 
 // The texts of the page, worded by marketing.
-export const TITLE = "École fermée ? Cyclone et alerte orange Réunion · 974";
+export const TITLE = "École fermée ? Cyclone et alerte orange · La Réunion (974)";
 const H1 = "Cyclone : les écoles sont-elles fermées ?";
 const LEAD = "Ce que prévoit le plan ORSEC Cyclones de la préfecture pour les crèches, les écoles, les collèges, les lycées et les universités, et l'alerte en vigueur à La Réunion en ce moment.";
 const META = "Alerte orange cyclonique : crèches, écoles, collèges et lycées fermés pour l'ensemble du département. La règle du plan ORSEC de la préfecture et l'alerte en cours à La Réunion (974).";

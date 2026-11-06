@@ -161,7 +161,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
       ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}${once ? `<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>` : ""}<div id="offres" class="plis">${groups(d.offres, once)}</div>`
       : `<p class="card">Aucune offre publiée sur Choisir le service public pour La Réunion ${leAt(d.lu ?? data.fetchedAt)}.</p>`;
 
-  const title = "Emploi public Réunion : offres de l'État, des communes et des hôpitaux · 974";
+  const title = "Emploi public à La Réunion (974) : État, communes, hôpitaux";
   const description = "Les offres d'emploi de la fonction publique à La Réunion (974) : État, collectivités, hôpitaux, avec la commune et le lien pour postuler.";
 
   const band = `${crumbBar(NOM)}

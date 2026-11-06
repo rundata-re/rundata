@@ -38,7 +38,7 @@ import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAI
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
-import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, SLOGAN, thin, vg, leJour, jourDit } from "./pages.js";
+import { ask, connector, credits, cycloneVg, dayMonth, deg, lesJours, empty, hm, icon, ISLAND, layout, type Live, lue, metres, officielLive, readAt, seaName, SITE, thin, vg, leJour, jourDit } from "./pages.js";
 import { coastal, PAGES, type PlacePage } from "./places.js";
 import { LINE as BAIGNADE_LINE } from "./baignade.js";
 import { RSS_HINT, rssLink, rssPath, rssTitle } from "./rss.js";
@@ -729,7 +729,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
 
   // Each of the commune's two pages says its role (UX review of 04/11/2026, words validated by data-run on 06/11): this
   // one the lasting record, /aujourdhui/<commune> the day.
-  const title = [`${p.nom} 974 : mairie, écoles, médecins, élections`, `${p.nom} 974 : mairie, écoles, élections`].find((x) => x.length <= TITLE_MAX)!;
+  const title = [`${p.nom}, La Réunion (974) : mairie, écoles, élections`, `${p.nom}, La Réunion (974) : mairie, écoles`]
+    .find((x) => x.length <= TITLE_MAX) ?? `${p.nom} 974 : mairie, écoles`;
   const description = `${p.nom} (La Réunion, 974) : la mairie et ses horaires, les écoles, les médecins, les élections, le logement ; météo, air et bus en direct.`;
 
   const jsonld = [
@@ -766,7 +767,6 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   <div class="pitch">
     <p class="pill">Fiche de la commune</p>
     <h1>${esc(p.nom)} <span class="n974">974</span> : la fiche de la commune</h1>
-    ${SLOGAN}
     ${headline}
     <p class="hero-cta"><a class="btn glass" href="/aujourdhui/${p.slug}">${esc(LINK(p))}</a></p>
     ${ask(`Kosa i spas ${p.nom} astèr ? Gèt si ${url} é di amwin.`,
@@ -830,7 +830,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
 /** The 24 communes, by vigilance zone: the island's own way of splitting itself (Nord, Est, Sud, Ouest). */
 export function communesPage(origin: string, alerte?: Alerte): string {
   const zones = ["VIGI974-11", "VIGI974-12", "VIGI974-13", "VIGI974-14", "VIGI974-15"];
-  const title = "Les 24 communes de La Réunion 974 en direct";
+  const title = "Les 24 communes de La Réunion (974) en direct";
   const description = "Les 24 communes de La Réunion (974) en direct : météo, vigilance, air, mer, prochains bus, mairie ouverte ou non, soleil.";
   const jsonld = [
     {
@@ -847,7 +847,6 @@ export function communesPage(origin: string, alerte?: Alerte): string {
 <div class="wrap intro">
   <div class="pitch">
     <h1>Les 24 communes <span class="n974">974</span></h1>
-    ${SLOGAN}
     <p class="lead">Une page par commune, avec tout ce qui la concerne en ce moment : la météo de sa station, la vigilance de sa zone, la qualité de son air, la mer sur la côte, les prochains bus, sa mairie ouverte ou non, le lever et le coucher du soleil.</p>
   </div>
   <figure class="card mapcard noms">${islandMap({ links: Object.fromEntries(COMMUNES.map((c) => [c.nom, { href: hub(c) }])), names: communeNames((nom) => hub(COMMUNES.find((c) => c.nom === nom)!), true), label: "Carte des 24 communes de La Réunion (974)" })}

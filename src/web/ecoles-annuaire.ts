@@ -32,7 +32,7 @@ const jma = (ymd: string) => ymd.split("-").reverse().join("/");
 
 // The words of the page.
 const T = {
-  title: "Écoles à La Réunion : collège de secteur, cantine, internat, ULIS · 974",
+  title: "Écoles à La Réunion (974) : collège de secteur, cantine",
   description: "Les écoles, collèges et lycées des 24 communes de La Réunion sur une carte, avec la cantine, l'internat et l'ULIS, et le collège de secteur d'une adresse.",
   h1: "Écoles, collèges et lycées",
   lead: (n: number) => `${nombre(n)} établissements publics et privés dans les 24 communes, avec la cantine, l'internat et l'ULIS quand ils les déclarent. Et le collège de secteur de votre adresse.`,

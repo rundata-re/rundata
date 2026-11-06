@@ -7,7 +7,7 @@ import { connectorCta, crumbBar, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { FOLD_ROWS, folded, GITHUB, layout, SITE } from "./pages.js";
 
-export const TITLE = "Nouveautés de rundata.re, La Réunion en direct · 974";
+export const TITLE = "Nouveautés de rundata.re, La Réunion en direct";
 export const DESCRIPTION = "Les dernières données et pages ajoutées à rundata.re, La Réunion (974) en direct : météo, mer, sentiers, bus, sorties. Mis à jour à chaque nouveauté.";
 
 export function nouveautesPage(origin: string): string {

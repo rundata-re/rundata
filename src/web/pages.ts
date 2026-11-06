@@ -6,7 +6,8 @@
  * rest is HTML and CSS.
  *
  * The weather is one category among others, but the one people search for: « météo réunion 974 », « météo cilaos
- * 974 ». « 974 » sorts La Réunion from meetings, so titles and headings carry it.
+ * 974 ». « 974 » sorts La Réunion from meetings, so the tab's title carries it, « La Réunion (974) » when it fits in
+ * 60 characters; the headings stay as people say them.
  */
 import { CUMULS_LOADER, cumulsSection } from "./pluie-cumuls.js";
 import { porte } from "./aller.js";
@@ -66,6 +67,9 @@ import { crumbBar, crumbs } from "./domains.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
+
+// What a search engine shows of a title: the tab's title takes the first of its forms that fits.
+const TITLE_MAX = 60;
 
 export const SITE = "rundata.re";
 // The headings' typeface (scripts/build-font.py), a file of public/. Bump the number when the font changes: browsers
@@ -1267,7 +1271,7 @@ export function hook(path: string): string | undefined {
  * outings on Friday on the WhatsApp channel, named « chaîne WhatsApp » so as not to read as the share link.
  */
 function share(origin: string, head: Head): string {
-  const text = `${head.title.replace(/ · 974$/, "")} : ${origin}${head.path}?ref=wa`;
+  const text = `${head.title.replace(/ · (?:La Réunion \(974\)|974)$/, "")} : ${origin}${head.path}?ref=wa`;
   const link = (s: Social, label = s.nom) => `<a href="${esc(fromSite(s.url))}" rel="noopener">${esc(label)}</a>`;
   // The info of each morning is Facebook's; no rhythm is promised for Instagram or Threads, so they are named without one (marketing).
   // The code is not an account to follow for news: GitHub stays out of this sentence.
@@ -1865,7 +1869,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
       `</ul><p class="note">Par satellite, ${esc(lesJours(data.value.mer.map((m) => m.jour)))}. <a href="/mer">Toutes les plages →</a></p></figure>`
     : "";
 
-  const title = "Météo Réunion 974 en direct : stations et prévisions";
+  const title = "Météo en direct : stations et prévisions · La Réunion (974)";
   const description = live
     ? fit(`Météo à La Réunion (974) en direct : de ${thin(deg(coldest(l).temperature!))} ${a(shortName(coldest(l).nom))} à ${thin(deg(warmest(l).temperature!))} ${a(shortName(warmest(l).nom))}, mesurés ${leAt(latest!)}.`,
         " Pluie, vent, mer et prévisions par commune.")
@@ -2016,7 +2020,8 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const alt = place.altitude_m != null ? `, à ${place.altitude_m.toLocaleString("fr-FR")} m d'altitude` : "";
   const commune = place.commune && place.commune !== p.nom ? ` (commune ${esc(de(place.commune))})` : "";
   const v = versant(place.lon, place.lat);
-  const title = `Météo ${p.nom} en direct et prévisions · 974`.length <= 60 ? `Météo ${p.nom} en direct et prévisions · 974` : `Météo ${p.nom} en direct · 974`;
+  const title = [`Météo ${p.nom} en direct et prévisions · La Réunion (974)`, `Météo ${p.nom} en direct · La Réunion (974)`]
+    .find((t) => t.length <= TITLE_MAX) ?? `Météo ${p.nom} en direct · 974`;
   const description = fit(
     first
       ? `Météo ${a(p.nom)} (La Réunion, 974) en direct : ${first.mesures.temperature} mesurés ${a(first.station)} ` +
@@ -2148,7 +2153,6 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Météo en direct</p>
     <h1>Météo ${esc(a(p.nom))} <span class="n974">974</span></h1>
-    ${SLOGAN}
     ${headline}
     ${ask(`I fé koman lo tan ${p.nom} astèr ? Gèt la mézir an dirèk si ${origin}/meteo/${p.slug} é di amwin lèr la mézir é la stasion.`,
       `Quel temps fait-il en ce moment ${a(p.nom)} ? Lis la mesure en direct sur ${origin}/meteo/${p.slug} et donne-moi l'heure de la mesure et la station.`)}
@@ -2300,7 +2304,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
       `<p class="note">Texte de Météo-France, repris tel quel. Source : ${esc(mf.SOURCE.nom)} (${esc(mf.SOURCE.licence)}).</p></div></section>`
     : "";
 
-  const title = "Vigilance météo Réunion 974 en direct";
+  const title = "Vigilance météo à La Réunion (974) en direct";
   const description = v
     ? `Vigilance Météo-France à La Réunion (974) : ${cyclone(v, now)} ${r.length ? `Au-dessus du vert : ${r.map((x) => `${x.couleur_max} ${x.phenomene.toLowerCase()} (${x.zone.split(" :")[0]})`).join(", ")}.` : "Tout est vert."} Bulletin du ${emise}.`
     : "Vigilance Météo-France à La Réunion (974) en direct : fortes pluies, orages, vents forts, vagues-submersion, zone par zone.";
@@ -2468,7 +2472,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 </section>`
     : "";
 
-  const title = "Mer Réunion : houle, température de l'eau et marée · 974";
+  const title = "Mer : houle, température de l'eau, marée · La Réunion (974)";
   // The swell forecast from the copy's day: its day counts more than its height, which goes first when the description
   // does not fit; undated, as before, only when even that does not fit.
   const seaSays = (du: string, max = true) => `La mer à La Réunion (974) plage par plage : l'eau ${deg(cool!.valeur!) === deg(warm!.valeur!) ? `à ${deg(warm!.valeur!)}` : `de ${deg(cool!.valeur!)} à ${deg(warm!.valeur!)}`}, mesurée par satellite ${lesJours(seen.map((b) => b.jour!))}${top ? `, et la houle prévue${du}${max ? `, jusqu'à ${top.houle!.max}` : ""}` : ""}.`;

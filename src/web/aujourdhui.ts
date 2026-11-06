@@ -34,7 +34,8 @@ export const deCommune = de;
 // Each of the commune's two pages says its role (UX review of 04/11/2026, words validated by data-run on 06/11): this
 // one the day, /communes/<commune> the lasting record.
 export const titleOf = (p: PlacePage) =>
-  [`La journée ${aCommune(p.nom)} : eau, météo, sorties · 974`, `La journée ${aCommune(p.nom)} · 974`].find((t) => t.length <= TITLE_MAX)!;
+  [`La journée ${aCommune(p.nom)} : eau, météo, sorties · La Réunion (974)`, `La journée ${aCommune(p.nom)} · La Réunion (974)`]
+    .find((t) => t.length <= TITLE_MAX) ?? `La journée ${aCommune(p.nom)} · 974`;
 export const H1 = (p: PlacePage) => `La journée ${aCommune(p.nom)}`;
 /** The link from the commune's page, saying what is here. */
 export const LINK = (p: PlacePage) => `La journée ${aCommune(p.nom)} : eau, vigilance, météo, sorties →`;

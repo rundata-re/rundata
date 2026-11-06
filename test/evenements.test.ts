@@ -77,7 +77,7 @@ describe("the weekend's events", () => {
 
   it("has its own page, title and trail, from the events page's copy", () => {
     const html = weekendPage("https://rundata.re", data(ROWS), TUESDAY);
-    expect(html).toContain("<title>Que faire ce week-end à La Réunion ? · 974</title>");
+    expect(html).toContain("<title>Que faire ce week-end à La Réunion (974) ?</title>");
     expect(html).toContain("<h1>Ce week-end à La Réunion</h1>");
     expect(html).toContain(`content="Samedi 31 octobre et dimanche 1er novembre (Toussaint)\u00a0: 4 sorties à La Réunion (974), concerts, fêtes, marchés et spectacles, commune par commune.`);
     expect(html).toContain(`<li><a href="/evenements">Événements</a></li><li aria-current="page">Ce week-end</li>`);
@@ -105,7 +105,7 @@ describe("the weekend's events", () => {
 describe("the concerts", () => {
   it("are the agenda's concerts, tonight's apart", () => {
     const html = concertsPage("https://rundata.re", data(ROWS), TUESDAY);
-    expect(html).toContain("<title>Concerts à La Réunion : ce soir et les deux semaines à venir · 974</title>");
+    expect(html).toContain("<title>Concerts à La Réunion (974) : ce soir et dans les 15 jours</title>");
     expect(html).toContain("<h1>Concerts à La Réunion</h1>");
     expect(html).toContain("dont 1 ce soir");
     expect(html).toContain("Concert de maloya");
@@ -120,7 +120,7 @@ describe("the concerts", () => {
     expect(html).toContain(`<p class="hook">Ce soir et dans les deux semaines à venir : les concerts annoncés par les salles, les mairies et les offices de tourisme.</p>`);
     expect(html).not.toContain("concerts, fêtes et marchés");
     // The title says the same window, in the page's head and in its JSON-LD.
-    expect(html.match(/"name":"Concerts à La Réunion : ce soir et les deux semaines à venir · 974"/g)?.length).toBeGreaterThan(0);
+    expect(html.match(/"name":"Concerts à La Réunion \(974\) : ce soir et dans les 15 jours"/g)?.length).toBeGreaterThan(0);
     expect(html).not.toContain("ce soir et ce week-end · 974");
     // The weekend's page keeps the events page's, which says it.
     expect(weekendPage("https://rundata.re", data(ROWS), TUESDAY)).toContain(`<p class="hook">Ce week-end : concerts, fêtes et marchés, commune par commune.</p>`);

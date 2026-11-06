@@ -366,7 +366,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const read = data?.fetchedAt ?? now;
   const title = a
     ? volcanTitle(a, read)
-    : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance, pas d'éruption annoncée · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, Enclos, séismes · 974";
+    : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance, pas d'éruption annoncée · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, séismes · 974";
   // Out of an alert, timeless: search engines keep it for days, a state in it would go stale (marketing).
   const description = a
     ? volcanMeta(a)
@@ -672,7 +672,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
 
   const scale = `<ul class="scale">${[1, 2, 3, 4, 5, 6].map((n) => `<li>${aq(n)}<p>Indice ${n} sur 6.</p></li>`).join("")}</ul>`;
 
-  const title = "Qualité de l'air Réunion aujourd'hui, par commune · 974";
+  const title = "Qualité de l'air aujourd'hui par commune · La Réunion (974)";
   // Dated by the day the index is forecast for, never by the hour of the reading nor of the view.
   const airShort = "Qualité de l'air à La Réunion (974) : l'indice ATMO d'Atmo Réunion dans chaque commune, avec le polluant en cause.";
   const description = d?.echeance && worst != null
@@ -812,7 +812,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
 </section>`
     : "";
 
-  const title = "Électricité Réunion en direct : part renouvelable · 974";
+  const title = "Électricité en direct : part renouvelable · La Réunion (974)";
   const description = p
     ? describe(`Électricité à La Réunion (974) ${leJour(p.heure_mesure)} : ${fr(Math.round(p.total_mw))} MW produits, dont ${fr(Math.round(p.renouvelable_pct))} % renouvelable. Filière par filière, et les heures où le réseau est chargé.`,
         `Électricité à La Réunion (974) : ${fr(Math.round(p.renouvelable_pct))} % renouvelable en ce moment. Filière par filière, et les heures où le réseau est chargé.`)
@@ -1113,7 +1113,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
       `Sinon, horaires théoriques publiés par chaque réseau, sans les retards ni les déviations. Mis à jour ${leAt(data!.fetchedAt)}.</p>`
     : `<p class="card">Les prochains départs à n'importe quel arrêt de l'île sont donnés par le connecteur : demandez à votre assistant « le prochain bus à la gare de Saint-Pierre ? ».</p>`;
 
-  const title = "Horaires bus Réunion : prochains départs en gare · 974";
+  const title = "Horaires bus, prochains départs en gare · La Réunion (974)";
   const description = "Bus à La Réunion (974) : prochains départs dans les gares routières, d'après les horaires de Car Jaune, Citalis, Kar'Ouest, Alternéo, CarSud et Estival.";
 
   const band = `${crumbBar("Bus")}
@@ -1217,7 +1217,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
       `<p class="note">${esc(d.donnees)}</p>`
     : `<p class="card">L'état des stations se charge : rechargez la page dans quelques secondes.</p>`;
 
-  const title = "Vélos Altervélo en direct : stations libres · 974";
+  const title = "Vélos Altervélo libres en direct · La Réunion (974)";
   const description = d
     ? describe(`Vélos électriques Altervélo en libre-service (974) en ce moment : ${total} vélos disponibles, et les places libres de chaque station à Saint-Pierre, Saint-Louis et L'Étang-Salé.`,
         "Vélos électriques Altervélo en libre-service (974) : vélos et places libres de chaque station, en direct.")
@@ -1424,7 +1424,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
       place: where, say: line, href: `#${anchorId("s", s.station)}` }];
   });
 
-  const title = "Crues Réunion en direct : rivières et vigilance · 974";
+  const title = "Crues en direct : rivières et vigilance · La Réunion (974)";
   const short = "Crues à La Réunion (974) : vigilance de Vigicrues Réunion rivière par rivière, hauteur et débit mesurés aux stations de la DEAL toutes les 5 minutes.";
   const vigilanceSaid = !v ? undefined : !v.active ? "Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert." : undefined;
   const description = vigilanceSaid ? describe(`${vigilanceSaid} ${short}`, short) : short;
@@ -1535,7 +1535,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
       `<p class="note">${esc(d.donnees)}${d.avertissement ? ` ${esc(d.avertissement)}` : ""}</p>`
     : `<p class="card">L'état des bornes se charge : rechargez la page dans quelques secondes.</p>`;
 
-  const title = "Bornes de recharge Réunion : points libres en direct · 974";
+  const title = "Bornes de recharge libres en direct · La Réunion (974)";
   const short = "Bornes de recharge pour voiture électrique à La Réunion (974) : points libres, occupés ou hors service, en direct, station par station.";
   const description = d
     ? describe(`Bornes de recharge à La Réunion (974) ${leAt(data!.fetchedAt)} : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
@@ -1654,7 +1654,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
       }).join("")}</ul>`
     : `<p class="card">La qualité de l'eau se charge : rechargez la page dans quelques secondes.</p>`;
 
-  const title = "Qualité de l'eau Réunion : baignade et robinet · 974";
+  const title = "Qualité de l'eau : baignade et robinet · La Réunion (974)";
   const short = "Qualité de l'eau à La Réunion (974) : les plages et bassins contrôlés par l'ARS et l'eau du robinet de chaque commune, réseau par réseau.";
   const description = d
     ? describe(`Qualité de l'eau à La Réunion (974) : ${good} plages et bassins sur ${d.baignades.length} en bonne qualité au dernier prélèvement de l'ARS, et l'eau du robinet des 24 communes, réseau par réseau.`, short)
@@ -1847,7 +1847,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
   <p>Les ${d?.randonnees.length ?? ""} itinéraires complets (GR R1, R2, R3, sommets, boucles) et les sentiers de l'ONF, avec leur trace GPS, leur distance, leur dénivelé et leur état d'après la carte de l'ONF, sur une carte de l'île et filtrables : <a href="/randonnees">la page randonnée</a>.</p></div>
 </section>`;
 
-  const title = "Sentiers fermés Réunion : liste de l'ONF · 974";
+  const title = "Sentiers fermés : liste de l'ONF · La Réunion (974)";
   const short = "Sentiers de randonnée fermés à La Réunion (974) : la liste de l'ONF commune par commune, avec la cause de chaque fermeture.";
   const base = d
     ? describe(`Sentiers fermés à La Réunion (974) : ${closed} sentiers fermés sur ${d.suivis} d'après la carte de l'ONF, commune par commune, avec la cause (éboulement, sentier dégradé, travaux).`, short)
@@ -2034,7 +2034,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
 
   const crash = accidentsSection();
 
-  const title = "Circulation et trafic Réunion : routes, bus, médias · 974";
+  const title = "Circulation, trafic : routes, bus, médias · La Réunion (974)";
   const short = "Circulation à La Réunion (974) : carte officielle des bouchons, accidents et travaux sur infotrafic.re, retards des bus et routes forestières fermées.";
   // An announcement of the last hours leads the description; otherwise, what the page has.
   const fresh = lit && lit.annonces.length === 1 && lit.age_h < littoral.RECENT_HOURS ? lit.annonces[0] : undefined;
@@ -2279,7 +2279,7 @@ export function randonneesPage(origin: string, data: Cached<RandonneesAnswer> | 
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>`;
 
-  const title = "Randonnée Réunion : traces GPS et sentiers ouverts · 974";
+  const title = "Randonnée : traces GPS, sentiers ouverts · La Réunion (974)";
   const short = "Randonnée à La Réunion (974) : itinéraires et sentiers de l'ONF avec trace GPS (GPX), distance, dénivelé et état du jour.";
   const description = d
     ? describe(`Randonnée à La Réunion (974) : ${nRoutes} itinéraires (GR R1, R2, R3, Piton des Neiges…) et ${d.suivis} sentiers de l'ONF avec trace GPS (GPX), distance, dénivelé et état du jour : ${d.fermes} fermés.`, short)
@@ -2524,7 +2524,8 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
   const which = twin ? `${nom} (${twin}${sector ? `, ${sector.nom}` : ""})` : `${nom}${named}`;
   const bare = twin ? `${nom} (${twin})` : nom;
   // Within the 60 characters a search engine shows: the sector, then « état ONF », give way to a long name.
-  const title = [`${which} : trace GPX, état ONF · 974`, `${which} : trace GPX · 974`, `${bare} : trace GPX, état ONF · 974`, `${bare} : trace GPX · 974`]
+  const title = [`${which} : trace GPX · La Réunion (974)`, `${which} · La Réunion (974)`, `${which} : trace GPX · 974`,
+    `${which} : trace GPX, état ONF · 974`, `${bare} : trace GPX, état ONF · 974`, `${bare} : trace GPX · 974`]
     .find((t) => t.length <= TITLE_MAX) ?? `${bare} : trace GPX · 974`;
   const short = `${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`;
   const where = sector ? `${sector.nom}, La Réunion` : "La Réunion";
@@ -2631,7 +2632,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
     (x.restrictions.length ? x.restrictions.map((r) => `<li><span>${esc(r.usage)}<small>${esc(heuresDites(r.restriction))}</small></span><span></span></li>`).join("") : `<li><span>Économiser l'eau : pas d'interdiction pour un particulier.</span><span></span></li>`) +
     `</ul></li>`).join("");
 
-  const title = "Restrictions d'eau Réunion : sécheresse par commune · 974";
+  const title = "Sécheresse, restrictions d'eau · La Réunion (974)";
   const short = "Restrictions d'eau à La Réunion (974) : le niveau de sécheresse de chaque commune et ce qui est interdit (arrosage, lavage, piscine), d'après l'arrêté préfectoral.";
   const description = d ? describe(`${d.resume}`, short) : short;
 
@@ -2774,7 +2775,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
 
   // Up the page in the cyclone season, at its foot the rest of the year.
   const cyclone = cycloneWater(now);
-  const title = "Coupure d'eau Réunion : avis des distributeurs · 974";
+  const title = "Coupure d'eau : avis des distributeurs · La Réunion (974)";
   const short = "Coupures d'eau à La Réunion (974) : les avis de Dionéo, runéo, La Créole, la CIREST, CISE Réunion et des Eaux de La Possession, heures et rues concernées.";
   const description = d ? describe(`${d.resume} Coupures d'eau à La Réunion (974) : heures, rues concernées et avis « ne pas boire l'eau ».`, short) : short;
 
@@ -2904,7 +2905,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
         `</ul>`)}</li>`).join("")}</ul>`
     : "";
 
-  const title = "Défibrillateurs Réunion : où trouver un DAE · 974";
+  const title = "Défibrillateurs : où trouver un DAE · La Réunion (974)";
   const description = "Défibrillateurs (DAE) à La Réunion (974) : plus de 1 200 appareils dans les 24 communes, d'après la base nationale Géo'DAE, et le plus proche d'un lieu avec votre IA.";
 
   const band = `${crumbBar("Défibrillateurs")}
@@ -3033,7 +3034,7 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
     : "";
 
 
-  const title = "Sport Réunion : matchs, résultats, Grand Raid · 974";
+  const title = "Sport : matchs, résultats, Grand Raid · La Réunion (974)";
   const description = "Sport à La Réunion (974) : matchs à venir et résultats du handball et du volley régionaux, classements, rallyes et podiums du Grand Raid.";
 
   const band = `${crumbBar("Sport")}
@@ -3192,7 +3193,7 @@ export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null
   // No track of ours: the official map is on Météo-France's site, and above the basin's map while a system is active.
   const official = `<p class="lead">Trajectoire et bulletins officiels : <a href="${mf.OFFICIEL_CYCLONE}" rel="noopener">consulter le site officiel de Météo-France</a>.</p>`;
 
-  const title = "Cyclone Réunion en ce moment : systèmes actifs, alerte · 974";
+  const title = "Cyclone en ce moment : trajectoire, alerte · 974";
   const short = "Cyclones autour de La Réunion (974) : systèmes actifs et leur stade selon le CMRS de Météo-France, alerte cyclonique, saisons passées, lien officiel.";
   const description = d ? describe(`${d.resume}`, short) : short;
 
@@ -3342,7 +3343,7 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
     : "";
 
   const charts = d ? graphes(d) : "";
-  const title = "Historique météo Réunion : relevés depuis 1900 · 974";
+  const title = "Historique météo : relevés depuis 1900 · La Réunion (974)";
   const short = "Le temps qu'il a fait à La Réunion (974) : pluie, températures et soleil mesurés par Météo-France jour par jour depuis 1900, comparés à la normale.";
   const description = d ? describe(`${d.resume}`, short) : short;
 
@@ -3607,7 +3608,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
             `<ul class="rows eau">${rows.map((r) => agendaRow(r, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour les deux semaines qui viennent.</p>`;
 
-  const title = "Que faire à La Réunion ? Concerts, fêtes, sorties · 974";
+  const title = "Que faire à La Réunion (974) ? Concerts, fêtes, sorties";
   const short = "Que faire à La Réunion (974) : concerts, théâtre, danse, festivals, fêtes et marchés des deux semaines, programmes des salles et des mairies.";
   const description = d ? describe(`${d.resume} Concerts, spectacles, fêtes, festivals et marchés, avec les heures, le lieu et le lien.`, short) : short;
 
@@ -3737,7 +3738,7 @@ export function actualitesPage(origin: string, data: Cached<ActualitesAnswer> | 
 </section>`
     : "";
 
-  const title = "Actualités Réunion en direct, commune par commune · 974";
+  const title = "Actualités en direct, par commune · La Réunion (974)";
   const short = "Ce qui se passe en ce moment à La Réunion (974) : les titres des médias de l'île, leurs directs et les communiqués de la préfecture, commune par commune, mis à jour toutes les 5 minutes.";
   const description = d && d.infos[0] ? describe(`À La Réunion, ${newsTime(d.infos[0])} : ${d.infos[0].titre}. Les titres des médias de l'île et leurs directs, commune par commune.`, short) : short;
 

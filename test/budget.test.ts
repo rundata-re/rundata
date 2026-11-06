@@ -116,18 +116,20 @@ describe("subrequests of a cold question in the Worker", () => {
     const { value, used } = await counted(40, () => previsionMeteo(isolate(), "Cilaos", "demain", NOW));
     expect(value.isError).toBeFalsy();
     // It says why: AROME is up, its grids not loaded yet.
-    expect(body(value).resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée, modèle IFS HRES du Centre européen \(ECMWF\), maille de 9 km, pas une mesure\)/);
+    expect(body(value).resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée\u00a0; pas une mesure\)/);
+    expect(body(value).modele).toMatchObject({ nom: "IFS HRES du Centre européen (ECMWF)", maille_km: 9 });
     expect(coverages.length).toBe(0);
     expect(used).toBeLessThanOrEqual(40);
     // The tour of the island says it too.
     const tour = await counted(40, () => previsionMeteo(isolate(), undefined, undefined, NOW));
-    expect(body(tour.value).resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée, modèle IFS/);
+    expect(body(tour.value).resume).toMatch(/^PRÉVISION \(prévision AROME pas encore chargée\u00a0; pas une mesure\), tour de l'île/);
   });
 
   it("does not say AROME is coming when it is not plugged in, nor beyond its 48 hours", async () => {
     configure({});
     const off = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "demain", NOW));
-    expect(body(off.value).resume).toMatch(/^PRÉVISION \(modèle IFS HRES/);
+    expect(body(off.value).resume).toMatch(/^PRÉVISION \(pas une mesure\)/);
+    expect(body(off.value).modele.nom).toMatch(/^IFS HRES/);
     configure({ applicationId: "test" });
     const far = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "dans 5 jours", NOW));
     expect(body(far.value).resume).not.toContain("AROME pas encore chargée");
@@ -135,7 +137,7 @@ describe("subrequests of a cold question in the Worker", () => {
 
   it("forecasts from AROME cold within a page's budget, downloading no more grids than a question's share", async () => {
     const { value, used } = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(), "Cilaos", "demain", NOW));
-    expect(body(value).resume).toMatch(/^PRÉVISION \(modèle AROME/);
+    expect(body(value).modele.nom).toBe("AROME outre-mer de Météo-France");
     // The rest of the run's grids are the scheduled prefetch's (providers/arome.ts QUESTION_NEW_GRIDS); the terrain's
     // three, once per run, come apart.
     expect(coverages.length).toBeGreaterThan(3);
@@ -254,7 +256,7 @@ describe("a run not all out yet, in the Worker", () => {
     const r = await counted(PAGE_BUDGET, () => previsionMeteo(isolate(kv), "Cilaos", "demain", NOW));
     expect(coverages.length).toBe(prefetched);
     const res = body(r.value);
-    expect(res.resume).toMatch(/calcul de 22\/10 04:00, et de 21\/10 22:00 pour la suite/);
+    expect(res.modele).toMatchObject({ run_du_modele: "22/10 04:00", calculs_suivants: [{ run_du_modele: "21/10 22:00" }] });
     expect(res.pas_de_3h.filter((s: { modele: string }) => s.modele.startsWith("AROME")).length).toBe(7);
   });
 });

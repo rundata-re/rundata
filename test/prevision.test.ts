@@ -104,6 +104,11 @@ describe("prevision_meteo", () => {
     expect(r.jours.map((j: { jour: string }) => j.jour)).toEqual([
       "jeudi 22/10", "vendredi 23/10", "samedi 24/10", "dimanche 25/10", "lundi 26/10", "mardi 27/10", "mercredi 28/10",
     ]);
+    // The summary says today and the next two days, the week stays in jours (06/11/2026: up to 1 674 characters). It
+    // opens on the forecast said so, the model in modele and avertissements.
+    expect(r.resume).toMatch(/^PRÉVISION \(pas une mesure\) pour Cilaos — aujourd'hui : .*\u00a0; vendredi 23\/10 : .*\u00a0; samedi 24\/10 : [^;]*\.$/);
+    expect(r.resume).not.toMatch(/dimanche 25\/10|modèle|maille/);
+    expect(r.avertissements[0]).toMatch(/^Ceci est une PRÉVISION calculée par un modèle numérique \(IFS HRES/);
   });
 
   it("says when the day is past the model's range", async () => {

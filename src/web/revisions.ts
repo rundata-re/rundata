@@ -15,7 +15,8 @@
  */
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026: named in the sources and the coverage.
-  actualites: 16,
+  // A rubric in capitals at the head of a first sentence left out (« LIBRE EXPRESSION Sous le bruit… »).
+  actualites: 17,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   agenda: 35,
@@ -93,7 +94,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // With the time the prefecture's list shown was read (prefectureReussie), kept while its site does not answer.
   // The island's news only: France's and the world's left out (`local`).
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026.
-  "actualites:fil": 6,
+  // A rubric in capitals at the head of a first sentence left out (sansRubrique).
+  "actualites:fil": 7,
   // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   agenda: 1,

@@ -343,6 +343,9 @@ function daySky(f: Forecast, date: string, now: Date): string | undefined {
   return mean < 25 ? "ciel dégagé" : mean < 60 ? "partiellement nuageux" : mean < 85 ? "nuageux" : "couvert";
 }
 
+/** The days of the default summary (today and the next two): the week stays in `jours`. */
+const RESUME_JOURS = 3;
+
 /** The day's highest UV index over a place, from its own forecast. */
 type UvOf = (date: string) => number | undefined;
 
@@ -510,13 +513,12 @@ function warnings(f: Forecast, place?: Place): string[] {
   return out;
 }
 
-/** `later`: AROME not loaded yet (Got.aromeLater), said in the header of the model that stands in for it. */
-function header(f: Forecast, later = false): string {
-  if (f.model !== arome.MODEL) return `PRÉVISION (${later ? "prévision AROME pas encore chargée, " : ""}modèle ${f.model.nom}, maille de ${km(f.model)} km, pas une mesure)`;
-  const suite = (f.suite ?? []).map((x) => `, et de ${localTime(x.runAt)} pour la suite`).join("");
-  const run = f.runAt ? `, calcul de ${localTime(f.runAt)}${suite}` : "";
-  const relais = f.relais?.length ? `, relayé ensuite par ${f.relais.map((r) => `${r.model.nom}, maille de ${km(r.model)} km`).join(", ")}` : "";
-  return `PRÉVISION (modèle ${f.model.nom}, maille de ${km(f.model)} km${run}${relais}\u00a0; pas une mesure)`;
+/**
+ * The summary's opening: a forecast, said so, and nothing more. Its model, mesh and run are in `avertissements` and
+ * `modele` (06/11/2026: some 250 characters before the first figure). `later`: AROME not loaded yet (Got.aromeLater).
+ */
+function header(later = false): string {
+  return `PRÉVISION (${later ? "prévision AROME pas encore chargée\u00a0; " : ""}pas une mesure)`;
 }
 
 function modelBlock(c: Cached<Forecast>) {
@@ -602,7 +604,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     return text({
       nature: "prevision",
       resume:
-        `${header(ok[0].c.value, aromeLater)}, tour de l'île — ` +
+        `${header(aromeLater)}, tour de l'île — ` +
         ok.map(({ p, c }) => `${p.nom} : ` + c.value.days.filter((d) => wanted.includes(d.date))
           .map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} ${daySentence(c.value, d, now, uvAt(u, p, now), confAt(ens, p, now))}`).join("\u00a0; ")).join(" | "),
       periode: period.defaut ? "aujourd'hui et demain" : period.libelle,
@@ -641,7 +643,7 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
   }
   const c = results[0].value;
   const f = c.value;
-  const HEADER = header(f, aromeLater);
+  const HEADER = header(aromeLater);
   const last = f.days[f.days.length - 1]?.date;
   const avertissements = warnings(f, r.lieu);
   if (aromeDown) avertissements.push(aromeDownWarning);
@@ -659,8 +661,9 @@ export async function previsionMeteo(cache: Cache, lieu: string | undefined, qua
     const days = f.days.filter((d) => d.date >= today);
     dates = days.map((d) => d.date);
     jours = days.map((d) => dayBlock(f, d, now, uvOf, confOf));
+    // The summary's first days only: all of them in `jours`.
     resume = `${HEADER} pour ${r.lieu.nom} — ` +
-      days.map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} : ${daySentence(f, d, now, uvOf, confOf)}`).join("\u00a0; ") + ".";
+      days.slice(0, RESUME_JOURS).map((d) => `${d.date === today ? "aujourd'hui" : dayLabel(d.date)} : ${daySentence(f, d, now, uvOf, confOf)}`).join("\u00a0; ") + ".";
   } else {
     const inRange = period.slots.filter((s) => s.jour <= last);
     if (!inRange.length) {

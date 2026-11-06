@@ -5,7 +5,8 @@ import { parse, where } from "../src/providers/seismes.js";
 import type { Info } from "../src/providers/actualites.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import * as copie from "../src/providers/prefecture-copie.js";
-import { A_LIRE, COURT, depthText, quakeSummary, volcanSeismes } from "../src/tools/volcan.js";
+import { A_LIRE, COURT, depthText, MONTER_COURT, quakeSummary, volcanSeismes } from "../src/tools/volcan.js";
+import { noteCourte } from "../src/tools/volcan-historique.js";
 import { buildVolcan } from "../src/web/data.js";
 import { volcanPage } from "../src/web/domains.js";
 import { esc } from "../src/web/map.js";
@@ -200,12 +201,22 @@ describe("volcano", () => {
     const short = await volcanSeismes(cacheWith(), NOW, false);
     const [f, r] = [body(full), body(short)];
     expect(short.content[0].text.length).toBeLessThan(full.content[0].text.length / 2);
-    expect(r.alertes_precedentes).toBeUndefined();
     expect(f.alertes_precedentes.episodes.length).toBeGreaterThan(3);
     expect(r.detail).toBe(COURT);
     expect(f.detail).toBeUndefined();
-    // The 3 newest alerts in the summary, the count of the others said.
-    expect(r.resume).toMatch(/\d+ autres, plus anciennes, avec detail\./);
+    // The summary: whether it erupts, the level, the access, the last eruption, the quakes of 7 days (06/11/2026: 2 740
+    // characters). The past alerts in their field only, the 3 newest, without their quotes.
+    expect(r.resume.length).toBeLessThan(800);
+    expect(r.resume).not.toMatch(/Alertes précédentes|Définition|avec detail/);
+    expect(r.resume).toContain(`Niveau du dispositif ORSEC volcan : Vigilance. ${MONTER_COURT} Dernière éruption : du 13 février au 12 avril 2026, selon l'OVPF`);
+    expect(r.resume).toMatch(/Séismes localisés par l'OVPF sous le volcan : 2 ces 7 derniers jours \(11 en 30 jours, magnitude max [\d,]+\)\.$/);
+    expect(r.alertes_precedentes.episodes).toEqual(f.alertes_precedentes.episodes.slice(0, 3).map(({ citations: _, ...e }: { citations?: unknown }) => e));
+    expect(r.alertes_precedentes.note).toBe(noteCourte(3, f.alertes_precedentes.episodes.length));
+    expect(r.alertes_precedentes.plus_recente).toBeUndefined();
+    // The full answer, as before: every alert in the summary, the access line by line, the quakes day by day.
+    expect(f.resume).toMatch(/Alertes précédentes dont le début et la fin/);
+    expect(f.resume).not.toContain(MONTER_COURT);
+    expect(f.resume).toContain("par jour (heure de La Réunion)");
     expect(f.resume).not.toContain("avec detail");
     expect(r.seismes.par_jour_sous_le_volcan).toEqual(f.seismes.par_jour_sous_le_volcan.slice(-7));
     expect(r.seismes.derniers).toEqual(f.seismes.derniers.slice(0, 3));

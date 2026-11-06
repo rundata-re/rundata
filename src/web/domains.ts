@@ -2801,7 +2801,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   // The first screen in the order of a rescue (marketing's words, 06/11/2026): the call, the button, the map, then the count.
   const consigne = `<p class="lead"><b>Arrêt cardiaque : appelez le <a href="tel:15">15</a> ou le <a href="tel:112">112</a>, massez, et envoyez quelqu'un chercher un défibrillateur.</b> ${esc(DAE_SANS_FORMATION)}</p>`;
   const compte = d
-    ? `<p class="dae-compte">${esc(`${nombre(d.total)} défibrillateurs déclarés à La Réunion, d'après la base nationale Géo'DAE, lus le ${dayMonth(DAE_BUILT)}.`)}</p>`
+    ? `<p class="dae-compte">${esc(`${nombre(d.total)} défibrillateurs déclarés à La Réunion.`)}</p>`
     : "";
 
   const foldDae = !!d && d.communes.reduce((n, c) => n + c.liste.length, 0) > FOLD_ROWS && d.communes.length > 1;

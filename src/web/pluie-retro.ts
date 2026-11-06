@@ -78,6 +78,16 @@ const sansMm = (e: Entree): Entree => {
   const { mm: _, ...x } = e;
   return x;
 };
+/**
+ * The latest image of the history as the live layer's grid (pluie-radar.ts), without its lame d'eau; null when it holds
+ * none. Its 5 minutes are the radar's: they end at `fin`.
+ */
+export function derniere(h: Historique | null): RainGrid | null {
+  const last = [...(h?.entrees ?? [])].reverse().find((e): e is Image => !isTrou(e));
+  if (!h || !last) return null;
+  return { debut: iso(Date.parse(last.fin) - STEP_MS), fin: last.fin, pannes: last.pannes, w: h.w, h: h.h, pluie: unrle(last.pluie), mal_vu: unrle(last.mal_vu) };
+}
+
 /** The history without the lame d'eau (`mm`): what the replay bar's files show. */
 export const sansLame = (h: Historique): Historique => ({ ...h, entrees: h.entrees.map(sansMm) });
 export const endOf = (e: Entree) => Date.parse(isTrou(e) ? e.a : e.fin);

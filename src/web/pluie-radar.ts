@@ -3,7 +3,12 @@
  * resampled on the map's own grid (the altitudes' one, scripts/build-altitudes.py), one character a cell. The page's
  * script asks for it when the layer is first shown and lets drops fall where it rains. Nothing of its own is stored:
  * the image is the one the tools read, kept 4 minutes by each data center, and this answer 5 minutes by the browser.
+ *
+ * When Météo-France does not answer, each data center serves the last image it read itself, which can be hours old
+ * where few people come (20 hours on 05/11/2026 in a data center of the United States). The radar's history in KV,
+ * written every 5 minutes by the scheduled event (pluie-retro.ts), then often holds a newer one: that one is served.
  */
+import { count } from "../budget.js";
 import type { Cache } from "../cache.js";
 import * as radar from "../providers/radar.js";
 import { H, W } from "./map.js";
@@ -122,14 +127,27 @@ export function grid(img: radar.RadarImage, lame = false): RainGrid {
   return { debut: img.debut, fin: img.fin, pannes: img.pannes, w: GW, h: GH, pluie, mal_vu: mal, ...(lame ? { mm } : {}) };
 }
 
-/** The answer of PATH: the grid, or 503 when the radar cannot be read (never an empty grid passed off as no rain). */
+let latest: (() => Promise<RainGrid | null>) | undefined;
+
+/** Set by worker.ts: the latest image of the radar's history in KV (pluie-retro.ts `derniere`). Without it, none. */
+export function configure(read?: () => Promise<RainGrid | null>) {
+  latest = read;
+}
+
+/**
+ * The answer of PATH: the grid, or 503 when the radar cannot be read (never an empty grid passed off as no rain). When
+ * this data center's image is a copy kept because Météo-France did not answer, or there is none, the history's latest
+ * image if it is newer: one read of KV, only then.
+ */
 export async function rainGrid(cache: Cache): Promise<Response> {
   const headers = { "content-type": "application/json; charset=utf-8", "x-content-type-options": "nosniff" };
-  try {
-    if (!radar.enabled()) throw new Error("radar non configuré");
-    const img = await radar.image(cache);
-    return new Response(JSON.stringify(grid(img.value)), { headers: { ...headers, "cache-control": "public, max-age=300" } });
-  } catch {
-    return new Response(JSON.stringify({ erreur: "image radar indisponible" }), { status: 503, headers: { ...headers, "cache-control": "no-store" } });
+  const img = radar.enabled() ? await radar.image(cache).catch(() => undefined) : undefined;
+  let g = img && grid(img.value);
+  if ((!img || img.stale) && latest) {
+    count();
+    const kept = await latest().catch(() => null);
+    if (kept && (!g || Date.parse(kept.fin) > Date.parse(g.fin))) g = kept;
   }
+  if (!g) return new Response(JSON.stringify({ erreur: "image radar indisponible" }), { status: 503, headers: { ...headers, "cache-control": "no-store" } });
+  return new Response(JSON.stringify(g), { headers: { ...headers, "cache-control": "public, max-age=300" } });
 }

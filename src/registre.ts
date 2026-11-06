@@ -203,26 +203,27 @@ const SCHEDULED: Entry[] = [
     from: ["src/providers/vigilance-carte.ts"],
     basis: "code",
   },
-  // The RSMC's forecast track map, while GDACS has an active system: GDACS's list through the cache (cold: the copy
-  // looked for, 2 pages, the copy written, 5), the state (KV), one request to Météo-France, and the state written; for
-  // the image, the image written too (KV). Outside an active system, the list of GDACS alone.
+  // The RSMC's forecast track map, while GDACS has an active system or the RSMC follows one: GDACS's list through the
+  // cache (cold: the copy looked for, 2 pages, the copy written, 5), the RSMC's bulletins kept (KV, when GDACS has none),
+  // the state (KV), one request to Météo-France, and the state written; for the image, the image written too (KV).
+  // Outside a system, the list of GDACS and the bulletins kept alone.
   {
     id: "cmrs:liste",
     trigger: "planifiée",
-    what: "carte de prévision de trajectoire du CMRS : la liste de ses bulletins (Météo-France), pendant un système actif",
+    what: "carte de prévision de trajectoire du CMRS : la liste de ses bulletins (Météo-France), pendant un système actif ou suivi par le CMRS",
     every: CMRS_EVERY,
     offset: CMRS_LISTE_OFFSET,
-    run: { subrequests: 8, kvReads: 2, kvWrites: 2, cpuMs: 10 },
+    run: { subrequests: 9, kvReads: 3, kvWrites: 2, cpuMs: 10 },
     from: ["src/providers/cmrs-carte.ts"],
     basis: "code",
   },
   {
     id: "cmrs:image",
     trigger: "planifiée",
-    what: "carte de prévision de trajectoire du CMRS : l'image (Météo-France), gardée dans KV sous son empreinte, pendant un système actif",
+    what: "carte de prévision de trajectoire du CMRS : l'image (Météo-France), gardée dans KV sous son empreinte, pendant un système actif ou suivi par le CMRS",
     every: CMRS_EVERY,
     offset: CMRS_IMAGE_OFFSET,
-    run: { subrequests: 9, kvReads: 2, kvWrites: 3, cpuMs: 10 },
+    run: { subrequests: 10, kvReads: 3, kvWrites: 3, cpuMs: 10 },
     from: ["src/providers/cmrs-carte.ts"],
     basis: "code",
   },

@@ -1,6 +1,7 @@
 /**
- * The forecast track map of the RSMC of La Réunion (Météo-France), shown on /cyclones while a system is active, with the
- * written agreement of Météo-France La Réunion of 27/10/2026: the image as Météo-France publishes it, its logo kept,
+ * The forecast track map of the RSMC of La Réunion (Météo-France), shown on /cyclones while a system is active or
+ * followed by the RSMC, with the written agreement of Météo-France La Réunion of 27/10/2026 (its official maps of
+ * vigilance and cyclone watch; « while a system is active » was ours, not the agreement's): the image as Météo-France publishes it, its logo kept,
  * nothing cut out of it nor laid over it, and the link « Consulter le site officiel de Météo-France » beside it.
  *
  * - The image has one fixed address, in http only (`IMAGE_URL`), replaced at each new map. Its time of issue is printed
@@ -11,7 +12,8 @@
  *   than `GUARD_HOURS` after the newest. The map of a cycle is written before its bulletin (12:44 and 12:49 UTC on the
  *   two copies of web.archive.org, for bulletins of the list named 20 to 30 minutes past that hour): after the newest
  *   bulletin, it would be hidden most of the time. A map of an older cycle, or a list that no longer moves, is not shown.
- * - Read by the scheduled event only, and only while GDACS (cyclones.ts) has an active system: one request to
+ * - Read by the scheduled event only, and only while GDACS (cyclones.ts) has an active system or the RSMC's bulletins
+ *   follow one (cmrs-trace.ts, `suivisKept`: GDACS lists a system hours or days after the RSMC maps it): one request to
  *   Météo-France per event, the list at 15 and 45 past the hour, the image at 20 and 50, each every 30 minutes. The
  *   image is kept in KV under its fingerprint and served from rundata.re (web/cmrs-carte.ts), never linked at its http
  *   address.
@@ -21,6 +23,7 @@ import { count, perInvocation } from "../budget.js";
 import { getFile, getText } from "../http.js";
 import { why } from "../types.js";
 import * as gdacs from "./cyclones.js";
+import * as cmrsTrace from "./cmrs-trace.js";
 import { fingerprint, type Store } from "./vigilance-carte.js";
 
 const SOURCE_ID = "meteofrance_cmrs";
@@ -196,14 +199,15 @@ async function lireImage(e: Etat, now: Date): Promise<{ etat: Etat; dit: string 
 }
 
 /**
- * The scheduled event's turn: nothing outside the minutes of `due` or without an active system; else one read, the
- * list or the image, and the state written if it changed. Returns what it did, for the log.
+ * The scheduled event's turn: nothing outside the minutes of `due`, nor without a system active in GDACS or followed by
+ * the RSMC (one more read of KV, the RSMC's bulletins, when GDACS has none); else one read, the list or the image, and
+ * the state written if it changed. Returns what it did, for the log.
  */
 export async function passage(cache: Cache, now = new Date()): Promise<string> {
   const quoi = due(now);
   if (!store || !quoi) return "rien à lire";
   const list = (await gdacs.systemes(cache, now)).value;
-  if (!list.some((s) => gdacs.isActive(s, now))) return "aucun système actif";
+  if (!list.some((s) => gdacs.isActive(s, now)) && !(await cmrsTrace.suivisKept(now)).length) return "aucun système actif";
   const before = (await etat()) ?? {};
   const { etat: after, dit } = quoi === "liste" ? await lireListe(before) : await lireImage(before, now);
   if (JSON.stringify(after) !== JSON.stringify(before)) {

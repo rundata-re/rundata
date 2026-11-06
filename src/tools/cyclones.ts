@@ -196,8 +196,9 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
   const rows = active.map((x) => activeRow(x.systeme, x.avis));
   // GDACS lists a system hours or days after the RSMC follows it: meanwhile, the RSMC's own bulletins say it.
   const suivis = rows.length ? [] : (await cmrsTrace.suivisKept(now)).map(suiviRow);
-  // The RSMC's map, kept by the scheduled event while a system is active: only when it follows the newest bulletin.
-  const carte = rows.length ? carteOfficielle(await cmrs.kept()) : undefined;
+  // The RSMC's map, kept by the scheduled event while a system is active or followed by the RSMC: only when it follows
+  // the newest bulletin.
+  const carte = rows.length || suivis.length ? carteOfficielle(await cmrs.kept()) : undefined;
   const season = gdacs.seasonOf(now);
   const previous = `${Number(season.nom.slice(0, 4)) - 1}-${season.nom.slice(0, 4)}`;
   const thisSeason = list.filter((s) => s.debut >= season.debut);

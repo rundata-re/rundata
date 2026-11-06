@@ -1,5 +1,6 @@
 /**
- * The RSMC's forecast track map on /cyclones (providers/cmrs-carte.ts), while a system is active: the image whole, as
+ * The RSMC's forecast track map on /cyclones (providers/cmrs-carte.ts), while a system is active or followed by the
+ * RSMC: the image whole, as
  * Météo-France publishes it, with its caption and the link to its site; else the line that says why there is none
  * (règle 3 ter). Marketing's words of 27/10/2026 (marketing/mf-cartes-officielles-mots.md); the image is never in the
  * og:image nor on the home page, and opens Météo-France's site, never a page of ours.

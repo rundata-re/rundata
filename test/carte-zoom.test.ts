@@ -39,7 +39,7 @@ describe("the zoom of every map that zooms", () => {
       expect(html).toContain(`</svg>${zoom}<p class="fd-w" id="fd-w-h" role="status"></p><div class="tabs fonds" role="radiogroup" aria-label="Fond de la carte" data-fd="h" hidden>`);
       expect(html).toContain(`<script>${FONDS_SCRIPT}</script><script>${HIKES_REACH}</script>\n  <figcaption class="note legend">`);
       // The IGN's tiles over the relief, under the lines.
-      expect(html.indexOf('<g id="fd-h" class="fd"></g>')).toBeGreaterThan(html.indexOf("relief-"));
+      expect(html.indexOf('<g id="fd-h" class="fd"></g>')).toBeGreaterThan(html.indexOf("<image data-relief"));
       expect(html.indexOf('<g id="fd-h" class="fd"></g>')).toBeLessThan(html.indexOf('<g class="lines">'));
       expect(html.match(/class="kzoom"/g)).toHaveLength(1);
     }

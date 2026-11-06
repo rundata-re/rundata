@@ -73,7 +73,7 @@ import { coupuresCommunePage } from "./coupures.js";
 import { cloudSeaTold, hikesNear, summitOf } from "./liens.js";
 import { LOGO_PETIT_SVG } from "./logo.js";
 import { homePage } from "./home.js";
-import { RELIEF_PATH } from "./map.js";
+import { RELIEF_LEGER } from "./map.js";
 import { ligne, mesure } from "./mesure.js";
 import icons from "./icons.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
@@ -987,8 +987,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
     return new Response(sitemap(origin, now, fuel?.value.depuis), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
   }
   if (path === SW_PATH) {
-    // Checked again at each visit: a new version reaches the phones at once (web/pwa.ts).
-    return new Response((swText ??= serviceWorker([STYLE_PATH, FONT_PATH, RELIEF_PATH, ALLER_PATH, "/favicon.svg", icons["192"]])), {
+    // Checked again at each visit: a new version reaches the phones at once (web/pwa.ts). The light relief, the one
+    // a phone's maps take (RELIEF_SCRIPT): the full one, for a wider or zoomed map, kept by the browser's cache.
+    return new Response((swText ??= serviceWorker([STYLE_PATH, FONT_PATH, RELIEF_LEGER, ALLER_PATH, "/favicon.svg", icons["192"]])), {
       headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "no-cache", "x-content-type-options": "nosniff" },
     });
   }

@@ -15,6 +15,19 @@ export const W = island.w;
 export const H = island.h;
 /** The island in relief (scripts/build-relief.py), a file of public/; its address changes with its content. */
 export const RELIEF_PATH = `/relief-${relief.v}.webp`;
+/** The same, RELIEF_LEGER_W wide (scripts/build-relief.py --leger): the map at its size on a phone. */
+export const RELIEF_LEGER = `/relief-leger-${relief.leger}.webp`;
+export const RELIEF_LEGER_W = 800;
+/**
+ * The relief under a map, without its file: RELIEF_SCRIPT names it once the page has loaded. Its 166 Ko, found early in
+ * the page, shared a slow 4G with the style sheet, which the page's scripts wait for: on /randonnees at 390 px (4G slow,
+ * CPU × 4, 07/11/2026), the text came 0.85 s later than without it. Without a script, the island is in its flat colour.
+ * `href`: the file named in the page itself, for the home page's map, whose relief is the largest thing of its first
+ * screen (its LCP). Named after the load, it came 0.96 s later than the full file named in the page; the light one named
+ * in the page, 0.5 s sooner (same measure, 07/11/2026). RELIEF_SCRIPT still takes the full one for a wider screen.
+ */
+const reliefImage = (clip: string, href?: string) =>
+  `<image data-relief width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#${clip})"${href ? ` href="${href}"` : ""}/>`;
 /**
  * The relief 4 times finer (scripts/build-relief.py --fin): the island cut in RELIEF_FIN_N × RELIEF_FIN_N tiles, files
  * of public/ named `${RELIEF_FIN}<column>-<row>.webp`. A zoomed map holds their layer (`rf-<key>`, finLayer()), which
@@ -34,7 +47,7 @@ const finLayer = (key: string) => `<g id="rf-${key}" class="rf" clip-path="url(#
 export function mapCredit(html: string): string | undefined {
   if (!html.includes('<use href="#isl"')) return undefined;
   const ign = [
-    html.includes(RELIEF_PATH) && ["relief, photographies aériennes", `RGE ALTI, couche Photographies aériennes de la Géoplateforme${html.includes('class="rf"') ? ", BD ORTHO" : ""}`],
+    html.includes("<image data-relief") && ["relief, photographies aériennes", `RGE ALTI, couche Photographies aériennes de la Géoplateforme${html.includes('class="rf"') ? ", BD ORTHO" : ""}`],
     html.includes('<g class="rd"') && [html.includes('<g class="nm"') ? "routes et noms de lieux" : "routes", "BD TOPO"],
   ].filter((x): x is string[] => !!x);
   const what = ign.length === 2 ? `${ign[0][0]}, ${ign[1][0]}` : ign[0]?.[0];
@@ -869,12 +882,12 @@ export function islandMap(opts: {
     return `<svg class="map relief" viewBox="0 0 ${W} ${H}" ${role} aria-label="${esc(opts.label)}">` +
       `<defs><g id="isl">${paths}</g>${defs}</defs>` +
       `<use href="#isl" class="halo" filter="url(#glow)"/><use href="#isl" class="coast"/><use href="#isl" class="ground"/>` +
-      `<image href="${RELIEF_PATH}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#isl-clip)"/>` +
+      reliefImage("isl-clip", RELIEF_LEGER) +
       zones + peaks + markers + `</svg>`;
   }
   const terrain = !fills;
   const land = terrain
-    ? `<use href="#isl" class="land"/><image href="${RELIEF_PATH}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#isl-clip)"/>` +
+    ? `<use href="#isl" class="land"/>${reliefImage("isl-clip")}` +
       (opts.fond ? finLayer(esc(opts.fond)) + `<g id="fd-${esc(opts.fond)}" class="fd"></g>` : "")
     : `<use href="#isl" class="land"/>${fills}`;
   // The six names on every map of the whole island, the maps in colours (fills) too (marketing's charter, § 2.4).
@@ -1059,7 +1072,7 @@ export function traceMap(opts: { lines: TraceLine[]; label: string }): string {
     `<defs><g id="isl">${paths}</g><clipPath id="isl-clip">${paths}</clipPath></defs>` +
     `<rect class="sea" x="${x0 - w}" y="${y0 - h}" width="${w * 3}" height="${h * 3}"/>` +
     `<use href="#isl" class="coast"/><use href="#isl" class="land"/>` +
-    `<image href="${RELIEF_PATH}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#isl-clip)"/>` +
+    reliefImage("isl-clip") +
     finLayer("t") + `<g id="fd-t" class="fd"></g>` + roadsLayer(frame) + names +
     opts.lines.map((l) => `<path class="trk-halo" d="${d(l)}"/><path class="trk ${esc(l.etat)}" d="${d(l)}"/>`).join("") +
     // A dot of its size on screen at any zoom (a stroke that does not scale), white ringed with night.
@@ -1096,6 +1109,24 @@ function fondChoice(key: string): string {
 const UNSAFE: Record<string, string> = { "<": "\\u003c", ">": "\\u003e", "&": "\\u0026", "/": "\\u002f", "\u2028": "\\u2028", "\u2029": "\\u2029" };
 /** A value written as a JavaScript literal inside an inline <script>. */
 export const inScript = (v: unknown) => JSON.stringify(v).replace(/[<>&\/\u2028\u2029]/g, (c) => UNSAFE[c]);
+
+/**
+ * The relief's file for each map (reliefImage), once the page has loaded: RELIEF_LEGER when the map, at its width on
+ * screen times the screen's density and its zoom (the island's width over its viewBox's), needs no more than
+ * RELIEF_LEGER_W pixels, else RELIEF_PATH. Again when the map changes size or zooms, and for a map put in the page later
+ * (laterMap(), the event `carte`); never back from RELIEF_PATH to the light one. RELIEF_PATH not there (offline, not
+ * kept by the service worker): the light one.
+ */
+export const RELIEF_SCRIPT = `(()=>{const F=${inScript(RELIEF_PATH)},L=${inScript(RELIEF_LEGER)},LW=${RELIEF_LEGER_W},W=${W},seen=new Set();
+const pick=(im)=>{const s=im.ownerSVGElement,h=im.getAttribute("href");if(!s||h===F)return;const c=s.clientWidth||s.getBoundingClientRect().width;if(!c)return;
+const v=s.viewBox.baseVal,u=im.dataset.ko||c*(window.devicePixelRatio||1)*W/(v&&v.width||W)<=LW?L:F;if(u!==h)im.setAttribute("href",u)};
+const again=(s)=>s.querySelectorAll("image[data-relief]").forEach(pick);
+const ro=window.ResizeObserver&&new window.ResizeObserver((es)=>es.forEach((e)=>again(e.target))),mo=window.MutationObserver&&new window.MutationObserver((ms)=>ms.forEach((m)=>again(m.target)));
+const take=(r)=>r.querySelectorAll("image[data-relief]").forEach((im)=>{const s=im.ownerSVGElement;if(seen.has(im)||!s)return;seen.add(im);
+im.addEventListener("error",()=>{if(im.getAttribute("href")===F){im.dataset.ko="1";im.setAttribute("href",L)}});
+if(!seen.has(s)){seen.add(s);if(ro)ro.observe(s);if(mo)mo.observe(s,{attributes:true,attributeFilter:["viewBox"]})}pick(im)});
+const go=()=>{take(document);document.addEventListener("carte",(e)=>{if(e.target.querySelectorAll)take(e.target)})};
+if(document.readyState==="complete")go();else addEventListener("load",go,{once:true})})();`;
 
 // New tiles only once a pinch or a drag has stopped (250 ms): the Géoplateforme takes at most 40 requests a second
 // from one address, and a view asks for 96 tiles at most, a level lower if the screen's would take more (a wide map on
@@ -1198,10 +1229,10 @@ export function communeMap(opts: { commune: string; spots: Spot[]; label: string
     `<defs><g id="isl">${paths}</g><clipPath id="isl-clip">${paths}</clipPath><clipPath id="com-clip"><path d="${shape.d}"/></clipPath></defs>` +
     `<rect class="sea" x="${r2(box[0] - w)}" y="${r2(box[1] - h)}" width="${r2(w * 3)}" height="${r2(h * 3)}"/>` +
     `<use href="#isl" class="coast"/><use href="#isl" class="land"/>` +
-    `<image href="${RELIEF_PATH}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#isl-clip)"/>` +
+    reliefImage("isl-clip") +
     // The island dimmed, then the commune's relief again over it, clear; the finer relief and the IGN's tiles likewise.
     finLayer(fd) + `<g id="fd-${fd}" class="fd"></g>` +
-    `<use href="#isl" class="dim"/><image href="${RELIEF_PATH}" width="${W}" height="${H}" preserveAspectRatio="none" clip-path="url(#com-clip)"/>` +
+    `<use href="#isl" class="dim"/>${reliefImage("com-clip")}` +
     `<use href="#rf-${fd}" clip-path="url(#com-clip)"/>` +
     `<use href="#fd-${fd}" clip-path="url(#com-clip)"/>` +
     roadsLayer(box) + `<path class="hl" d="${shape.d}"/>` +

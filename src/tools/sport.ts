@@ -213,6 +213,12 @@ export function dateLigue(m: Pick<src.Match, "date" | "domicile" | "exterieur" |
   return same && same.date !== m.date ? same : undefined;
 }
 
+/**
+ * A volley match's sets as the score is written, « 26-28, 25-18, 17-25 »: the FFVB writes them « 26:28 », which reads as
+ * a time. The copy keeps the site's writing; the answer, the score's.
+ */
+export const sets = (detail: string | undefined) => detail?.replace(/\b(\d{1,2}):(\d{1,2})\b/g, "$1-$2");
+
 function matchRow(c: src.Championnat, m: src.Match, calledOff: avis.Avis[], ligue: MatchLigue[] = []): Row {
   const cs = CLUB_SPORTS[c.sport]!;
   const other = c.sport === "volley" ? dateLigue(m, ligue) : undefined;
@@ -228,7 +234,7 @@ function matchRow(c: src.Championnat, m: src.Match, calledOff: avis.Avis[], ligu
     epreuve: `${m.domicile} – ${m.exterieur}`,
     equipes: home?.sigle || away?.sigle ? `${full(m.domicile, home)} – ${full(m.exterieur, away)}` : undefined,
     score: m.score,
-    detail: m.detail,
+    detail: sets(m.detail),
     lieu: salle && home ? `${salle}, ${home.commune}` : salle,
     commune: home?.commune,
     etat: off ? (off.statut === "annulé" ? "annulée" : "reportée") : undefined,

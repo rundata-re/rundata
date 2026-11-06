@@ -34,12 +34,14 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   courant: 8,
   crues: 3,
   cyclones: 11,
-  dae: 4,
+  // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »).
+  dae: 5,
   dechets: 2,
   eau: 3,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   electricite: 19,
-  emploi: 7,
+  // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
+  emploi: 8,
   enfants: 15,
   historique: 5,
   lieu: 20,
@@ -54,7 +56,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copies keep a closed trail's state (web/data.ts closedState): « En partie fermé : … » first, « Fermé » said once.
   sentiers: 22,
   // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
-  sport: 27,
+  // A volley match's sets written as its score, « 26-28 ».
+  sport: 28,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   trafic: 4,

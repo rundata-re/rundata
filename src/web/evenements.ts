@@ -5,7 +5,7 @@
 import type { Cached } from "../cache.js";
 import type { AgendaAnswer, Alerte } from "./data.js";
 import { porte } from "./aller.js";
-import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, describe, GENRE_SCRIPT, GENRES, loading, longDay, sourcesNote, warnings, webPage } from "./domains.js";
+import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, loading, longDay, sourcesNote, warnings, webPage } from "./domains.js";
 import { occurrences } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
 import { esc } from "./map.js";
@@ -194,6 +194,13 @@ ${connectorCta("evenements", "les événements de l'île")}`;
   return layout(origin, { title, description, path, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(dated, origin)], alerte }, band, g.ligne + body);
 }
 
+/**
+ * The line under the concerts' title (the words reviewed before it went in): its own, not the events page's « Ce week-end : concerts,
+ * fêtes et marchés », which said another page. Two weeks: the agenda's (AHEAD_DAYS); halls, town halls and tourist
+ * offices: its sources (src/providers/agenda.ts).
+ */
+export const CONCERTS_HOOK = "Ce soir et dans les deux semaines à venir : les concerts annoncés par les salles, les mairies et les offices de tourisme.";
+
 export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const d = data?.value;
@@ -228,11 +235,9 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
       ? dayList(days, rows, (day) => `${day === today ? "Aujourd'hui, " : ""}${dayName(day)}`.replace(/^\p{L}/u, (c) => c.toUpperCase()))
       : `<div class="card"><p>Aucun concert trouvé dans les agendas lus pour les deux semaines qui viennent. Les salles annoncent leurs dates plus loin sur leur site :</p>${halls}</div>`;
 
-  const title = "Concerts à La Réunion : ce soir et ce week-end · 974";
-  // Marketing's words (26/10), while Le Séchoir is the only hall read (src/providers/autorisations.ts).
-  const programmes = "ce soir et ce week-end : le Séchoir, les agendas des mairies et des offices de tourisme.";
-  const short = `Les prochains concerts à La Réunion (974), ${programmes}`;
-  const description = d && n ? describe(`${n > 1 ? `Les ${n} prochains concerts` : "Le prochain concert"} à La Réunion (974), ${programmes}`, short) : short;
+  const title = "Concerts à La Réunion : ce soir et les deux semaines à venir · 974";
+  // The same window and sources as the line under the title (CONCERTS_HOOK), in words reviewed before they went in.
+  const description = "Concerts à La Réunion ce soir et dans les deux semaines à venir : salles, mairies et offices de tourisme.";
   const { bar, jsonld } = trail(origin, "Concerts", path);
 
   const band = `${bar}
@@ -260,5 +265,5 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
 </section>
 ${connectorCta("evenements", "les concerts et les sorties de l'île")}`;
 
-  return layout(origin, { title, description, path, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(rows, origin)], alerte }, band, g.ligne + body);
+  return layout(origin, { title, description, path, hook: CONCERTS_HOOK, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(rows, origin)], alerte }, band, g.ligne + body);
 }

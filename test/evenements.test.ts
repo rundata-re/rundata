@@ -102,14 +102,25 @@ describe("the weekend's events", () => {
 describe("the concerts", () => {
   it("are the agenda's concerts, tonight's apart", () => {
     const html = concertsPage("https://rundata.re", data(ROWS), TUESDAY);
-    expect(html).toContain("<title>Concerts à La Réunion : ce soir et ce week-end · 974</title>");
+    expect(html).toContain("<title>Concerts à La Réunion : ce soir et les deux semaines à venir · 974</title>");
     expect(html).toContain("<h1>Concerts à La Réunion</h1>");
     expect(html).toContain("dont 1 ce soir");
     expect(html).toContain("Concert de maloya");
     expect(html).not.toContain("Fête du chouchou");
     expect(html).toContain("Aujourd&#39;hui, mardi 27 octobre");
     expect(html.match(/"@type":"Event"/g)).toHaveLength(2);
-    expect(html).toMatch(/<meta name="description" content="Les 2 prochains concerts à La Réunion \(974\), ce soir et ce week-end\u00a0: le Séchoir, les agendas des mairies et des offices de tourisme/);
+    expect(html).toContain(`<meta name="description" content="Concerts à La Réunion ce soir et dans les deux semaines à venir\u00a0: salles, mairies et offices de tourisme.">`);
+  });
+
+  it("have their own line under the title, not the events page's", () => {
+    const html = concertsPage("https://rundata.re", data(ROWS), TUESDAY);
+    expect(html).toContain(`<p class="hook">Ce soir et dans les deux semaines à venir : les concerts annoncés par les salles, les mairies et les offices de tourisme.</p>`);
+    expect(html).not.toContain("concerts, fêtes et marchés");
+    // The title says the same window, in the page's head and in its JSON-LD.
+    expect(html.match(/"name":"Concerts à La Réunion : ce soir et les deux semaines à venir · 974"/g)?.length).toBeGreaterThan(0);
+    expect(html).not.toContain("ce soir et ce week-end · 974");
+    // The weekend's page keeps the events page's, which says it.
+    expect(weekendPage("https://rundata.re", data(ROWS), TUESDAY)).toContain(`<p class="hook">Ce week-end : concerts, fêtes et marchés, commune par commune.</p>`);
   });
 
   it("point to the halls' programmes when the agendas have none", () => {

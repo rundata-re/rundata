@@ -102,10 +102,12 @@ export function casse(titre: string): string {
 /** The sigles of the stop names kept in capitals: bodies, roads and sites the networks name (« ZAC N° 2 », « CD 29 »). */
 const STOP_SIGLES = new Set([
   ...SIGLES, "AFPAR", "ASCPH", "CAT", "CD", "CFPPA", "CGSS", "CHD", "CHOR", "CIRAD", "CIROI", "CMPP", "DDASS", "DDE", "EPSMR",
-  "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SMA", "SRPP", "ZAC", "ZI",
+  "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SAS", "SMA", "SRPP", "ZAC", "ZI",
 ]);
 /** The small words of a stop name, in lowercase but at its head; « A » is the preposition (« MARE A CITRONS »). */
 const STOP_SMALL: Record<string, string> = { DE: "de", DU: "du", DES: "des", LA: "la", LE: "le", LES: "les", AU: "au", AUX: "aux", ET: "et", PAR: "par", A: "à" };
+/** The articles of STOP_SMALL: small only after another of its words (« de la »), a name's start otherwise (« Les Cuves »). */
+const ARTICLE = new Set(["LE", "LA", "LES"]);
 /**
  * The words of stop names whose accents the networks leave out: common nouns, and the words of a few names of places
  * the resolver does not hold or writes without them (« SAINTE-THERESE », « ROUTE DU MAIDO », « Dos d'Ane »). The only
@@ -194,6 +196,9 @@ export function casseArret(nom: string): string {
     else if (/\p{N}/u.test(w) || STOP_SIGLES.has(w) || ROMAN.test(w) || initial(i) || ([...w].length === 1 && !small(i))) word = w;
     // « P'TIT »: the rest of one word.
     else if (apostrophe(i - 1) && !elided(i - 1)) word = titled ? w : w.toLocaleLowerCase("fr");
+    // « LE », « LA », « LES » after a full word start a name (« Agence Les Cuves », « Rue La Fontaine »); after a small
+    // word, an article (« Chemin de la Ravine »).
+    else if (ARTICLE.has(up[i]) && !(i && up[i - 1] in STOP_SMALL && !ARTICLE.has(up[i - 1]) && /^\s+$/.test(between(i - 1)))) word = upperFirst(STOP_SMALL[up[i]]);
     else if (small(i)) word = i ? STOP_SMALL[up[i]] : upperFirst(STOP_SMALL[up[i]]);
     else word = accented(titled ? w : upperFirst(w.toLocaleLowerCase("fr")));
     text += word + between(i);

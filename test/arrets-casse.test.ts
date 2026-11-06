@@ -14,8 +14,17 @@ describe("a stop name in capitals, as people read it", () => {
     expect(casseArret("RUE AUGUSTE BRUNET")).toBe("Rue Auguste Brunet");
     expect(casseArret("CHEMIN DES SŒURS")).toBe("Chemin des Sœurs");
     expect(casseArret("BOUTIQUE MARE A CITRONS")).toBe("Boutique Mare à Citrons");
+    // « LE », « LA », « LES » after a small word are articles; after a full word, they start a name.
+    expect(casseArret("CHEMIN DE LA RAVINE")).toBe("Chemin de la Ravine");
+    expect(casseArret("CHEMIN DE L'ETANG")).toBe("Chemin de l'Etang");
+    expect(casseArret("SUEZ AGENCE LES CUVES")).toBe("Suez Agence Les Cuves");
+    expect(casseArret("ECOLE MONTESSORI LES VACOAS")).toBe("École Montessori Les Vacoas");
+    expect(casseArret("SAS LE FOUQUET")).toBe("SAS Le Fouquet");
+    expect(casseArret("RUE LA FONTAINE")).toBe("Rue La Fontaine");
+    expect(casseArret("ZAC LA MARE")).toBe("ZAC La Mare");
+    expect(casseArret("Chemin Les Hauts")).toBe("Chemin Les Hauts");
     expect(casseArret("A LA CROISEE")).toBe("À la Croisee");
-    expect(casseArret("CHATEAU D'EAU LES BAS")).toBe("Chateau d'Eau les Bas");
+    expect(casseArret("CHATEAU D'EAU LES BAS")).toBe("Chateau d'Eau Les Bas");
     expect(casseArret("P'TIT KIOSQUE")).toBe("P'tit Kiosque");
     expect(casseArret("RUISSEAU BLANC PAR VIGIE")).toBe("Ruisseau Blanc par Vigie");
   });

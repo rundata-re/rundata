@@ -117,7 +117,9 @@ describe("calendar", () => {
     const later = new Date("2026-10-31T08:00:00Z");
     const l = body(await calendrier(cacheAt(later), "Saint-Denis", later));
     expect(l.lune.lever).toBe("pas de lever de Lune aujourd'hui");
-    expect(l.resume).toMatch(/Lune : Lune décroissante, éclairée à \d+ %, coucher à 10:1\d \(calcul astronomique\)\./);
+    expect(l.resume).toMatch(/Lune décroissante, éclairée à \d+ %, coucher à 10:1\d \(calcul astronomique\)\./);
+    // Its phase names the Moon already: not twice.
+    expect(l.resume).not.toContain("Lune : Lune");
     // The year of a next phase only when it is not the year of the day asked.
     const dec = moonOf("2026-12-28", new Date("2026-12-27T08:00:00Z"), 55.45, -20.88, 34).champs.prochaines_phases.map((x) => x.date);
     expect(dec.some((d) => d.endsWith(" janvier 2027"))).toBe(true);

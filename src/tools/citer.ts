@@ -162,13 +162,18 @@ export function wanting(p: Payload, isError: boolean): boolean {
 
 /**
  * The résumé ending with where it comes from, « … Source : rundata.re, d'après Météo-France (station Le Port),
- * https://rundata.re/meteo/le-port?ref=mcp. », in the words of `citer` and `lien`; as it is when it already names
- * rundata.re. The address in full and bare: clients make it a link, and it survives being retold.
+ * https://rundata.re/meteo/le-port?ref=mcp. », in the words of `citer` and `lien`; as it is when it already gives
+ * rundata.re's address or its source. The address in full and bare: clients make it a link, and it survives being retold.
  */
 export function sourced(resume: string, citer: string, url: string): string {
-  if (resume.includes("rundata.re")) return resume;
+  // Already giving rundata.re's address, or its source: as it is. Not for a mere path of the site in a sentence
+  // (06/11/2026: « le jour de votre rue sur rundata.re/collecte/saint-paul » left a beach's day without its source).
+  if (/https:\/\/rundata\.re|Source : rundata\.re/.test(resume)) return resume;
   const r = resume.trimEnd();
-  return `${r}${/[.!?…]$/.test(r) ? "" : "."} Source : ${citer}, ${url}.`;
+  // The station already named by the résumé, not again in its source (06/11/2026: « Par exemple : IMMODEX, 1 Av. des
+  // Oceanites, Saint-Pierre… (station IMMODEX, 1 Av. des Oceanites, Saint-Pierre) »). `citer` keeps it.
+  const source = citer.replace(/ \((?:station|balise) ([^()]+)\)/iu, (all, nom: string) => (r.includes(nom) ? "" : all));
+  return `${r}${/[.!?…]$/.test(r) ? "" : "."} Source : ${source}, ${url}.`;
 }
 
 /** What the server adds besides the citation (server.ts): the entries the call read, and the `serveur` block. */

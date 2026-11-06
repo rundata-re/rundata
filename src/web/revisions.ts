@@ -27,7 +27,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article held by a hyphen stays
   // small (« St Gilles-les-Hauts »).
   bus: 12,
-  calendrier: 4,
+  // The Moon between its main phases said once in the summary: « Lune décroissante », not « Lune : Lune décroissante ».
+  calendrier: 5,
   chiffres: 23,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts »).
   commune: 22,

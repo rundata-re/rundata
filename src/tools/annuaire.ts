@@ -37,13 +37,25 @@ const withMinutes = (o: annuaire.Office) => minutees(o.horaires.flatMap((h) => h
 /** A published span, « 08:00 » to « 16:00 »: « 8\u00a0h–16\u00a0h », « 08:30–12:00 », « 08:00–12:00 » beside « 13:30–16:30 ». */
 const span = (d: string, f: string, all: boolean) => tranche(m(d), m(f), all);
 
+/**
+ * A note of the hours as it reads inside a parenthesis, its hours as the connector writes them (06/11/2026: « (Fermeture
+ * de l'état civil à 15h15.) » → « (fermeture de l'état civil à 15:15) »). A first word in capitals stays (« CCAS »).
+ */
+export function noteDite(note: string): string {
+  const hh = (h: string) => h.padStart(2, "0");
+  return note.trim().replace(/\.$/, "")
+    .replace(/^\p{Lu}(?=\p{Ll})/u, (c) => c.toLowerCase())
+    .replace(/\b([01]?\d|2[0-3])\s?h\s?([0-5]\d)\b/g, (_, h: string, mn: string) => `${hh(h)}:${mn}`)
+    .replace(/\b(à|de|dès|jusqu'à|jusqu’à|avant|après|vers)\s([01]?\d|2[0-3])\s?h\b(?!\s?\/)/gu, (_, w: string, h: string) => `${w} ${hh(h)}:00`);
+}
+
 /** « lundi au jeudi 8\u00a0h–16\u00a0h ; vendredi 8\u00a0h–15\u00a0h », « lundi au vendredi 08:00–12:00 et 13:30–16:30 ». */
 export function hoursText(o: annuaire.Office): string | undefined {
   if (!o.horaires.length) return undefined;
   const all = withMinutes(o);
   return o.horaires
     .filter((h) => h.plages.length || h.note)
-    .map((h) => `${h.de === h.a ? h.de : `${h.de} au ${h.a}`}${h.plages.map(([d, f]) => ` ${span(d, f, all)}`).join(" et")}${h.note ? ` (${h.note})` : ""}`)
+    .map((h) => `${h.de === h.a ? h.de : `${h.de} au ${h.a}`}${h.plages.map(([d, f]) => ` ${span(d, f, all)}`).join(" et")}${h.note ? ` (${noteDite(h.note)})` : ""}`)
     .join("\u00a0; ") || undefined;
 }
 
@@ -175,7 +187,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   return text({
     resume:
       `${best.o.nom}, ${best.o.adresse}` +
-      (best.d != null ? ` (à ${fr(Math.round(best.d * 10) / 10)} km ${de(p!.nom)})` : "") +
+      // Under 100 m, no distance: « à 0 km de Saint-Pierre » for the town hall of Saint-Pierre (06/11/2026).
+      (best.d != null && best.d >= 0.1 ? ` (à ${fr(Math.round(best.d * 10) / 10)} km ${de(p!.nom)})` : "") +
       (h ? `. Horaires : ${h}` : "") +
       (open === null ? "" : open ? ". Ouvert en ce moment (d'après les horaires publiés)" : ". Fermé en ce moment (d'après les horaires publiés)") +
       (best.o.telephone ? `. Tél. ${best.o.telephone}` : "") +

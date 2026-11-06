@@ -53,10 +53,20 @@ export function level(station: vc.Station, h: vc.Readings, q: vc.Readings): Leve
 /** Measured more than LATE_MINUTES ago: its level is said with its time, its trend never. */
 const late = (l: Level, now: Date) => !!l.hauteur && ageMinutes(new Date(l.hauteur.t), now) > LATE_MINUTES;
 
-/** The smallest flood the DEAL keeps as a landmark: « 1,5 m lors du cyclone Dumile (janvier 2013) ». */
+/**
+ * A flood's name as the DEAL writes it, said inside a parenthesis: « Cyclone Felleng (février 2013) » → « cyclone Felleng,
+ * février 2013 », two floods of the same height joined by « et ». A name without its kind stays (« Belal »).
+ */
+export function crueDite(nom: string): string {
+  return nom.split(/\s*\/\s*/).map((n) => n
+    .replace(/^(Cyclone|Dépression|Forte|Fortes|Tempête)\b/u, (w) => w.toLowerCase())
+    .replace(/\s*\(([^()]+)\)$/, ", $1")).join(", et ");
+}
+
+/** The smallest flood the DEAL keeps as a landmark: « 1,5 m (cyclone Dumile, janvier 2013) ». */
 function landmark(s: vc.Station): string | undefined {
   const c = [...s.crues].sort((a, b) => a.hauteur_m - b.hauteur_m)[0];
-  return c ? `${fr(c.hauteur_m)} m (${c.nom})` : undefined;
+  return c ? `${fr(c.hauteur_m)} m (${crueDite(c.nom)})` : undefined;
 }
 
 /**

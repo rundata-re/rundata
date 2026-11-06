@@ -7,6 +7,8 @@ import type { Hit } from "../src/metrics.js";
 import { parseAscii, parseCsv } from "../src/providers/acspo.js";
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { AVIS_HINT, cite } from "../src/tools/citer.js";
+import { credits } from "../src/tools/format.js";
+import * as irve from "../src/providers/irve.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { SATELLITES, temperatureMer } from "../src/tools/mer.js";
 import { insecables } from "../src/typographie.js";
@@ -119,7 +121,9 @@ describe("citation", () => {
 
   it("ends the résumé with « Source : », citer and the link in full, once", async () => {
     const sp = body(cite("meteo_actuelle", await meteoActuelle(await offlineCache(), "Saint-Pierre", NOW)));
-    expect(sp.resume).toMatch(/\. Source : rundata\.re, d'après Météo-France \(station Saint-Pierre Pierrefonds\), OpenWindMap, https:\/\/rundata\.re\/meteo\/saint-pierre\?ref=mcp\.$/);
+    // The station named by the résumé, not again in its source (06/11/2026); citer keeps it.
+    expect(sp.resume).toContain("Saint-Pierre Pierrefonds");
+    expect(sp.resume).toMatch(/\. Source : rundata\.re, d'après Météo-France, OpenWindMap, https:\/\/rundata\.re\/meteo\/saint-pierre\?ref=mcp\.$/);
     expect(sp.resume.split("Source :").length).toBe(2);
     expect(sp.citer).toBe("rundata.re, d'après Météo-France (station Saint-Pierre Pierrefonds), OpenWindMap"); // the fields stay
     expect(sp.lien).toBe("https://rundata.re/meteo/saint-pierre?ref=mcp");
@@ -127,7 +131,14 @@ describe("citation", () => {
     // Without a full stop, one is added; the rest of the answer is left as written.
     const r = cite("defibrillateurs", answer({ resume: "2 défibrillateurs à Cilaos", lieu: { trouve: "Cilaos" }, sources: [] }));
     expect(body(r).resume).toBe("2 défibrillateurs à Cilaos. Source : rundata.re, https://rundata.re/defibrillateurs?ref=mcp.");
+    // A station the résumé does not name: in its source.
+    const other = (resume: string) => body(cite("bornes_recharge", answer({ resume, lieu: { trouve: "Saint-Pierre" }, sources: credits([irve.SOURCE]), stations: [{ station: "IMMODEX, 1 Av. des Oceanites, Saint-Pierre" }] }))).resume;
+    expect(other("Par exemple : IMMODEX, 1 Av. des Oceanites, Saint-Pierre, 8 libres sur 8.")).not.toContain("(station");
+    expect(other("21 stations de recharge à Saint-Pierre.")).toContain("(station IMMODEX, 1 Av. des Oceanites, Saint-Pierre)");
     expect(r.content[0].text.startsWith(`{"resume":"2 défibrillateurs à Cilaos. Source : rundata.re, `)).toBe(true);
+    // A path of the site in a sentence is not its source (06/11/2026, resume_du_jour for a beach of Saint-Paul).
+    const collecte = "Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul ; pharmacie de garde : 3237.fr.";
+    expect(body(cite("resume_du_jour", answer({ resume: collecte }))).resume).toBe(`${collecte} Source : rundata.re, https://rundata.re/?ref=mcp.`);
     // Already naming rundata.re, or an error: as it is.
     const named = "Voir https://rundata.re/defibrillateurs.";
     expect(body(cite("defibrillateurs", answer({ resume: named }))).resume).toBe(named);

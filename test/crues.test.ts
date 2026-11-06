@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { parseVigilance, STATIONS, type Vigilance } from "../src/providers/vigicrues.js";
-import { crues, islandLevels, levelRow, riverAsked, sentence, vigilanceText } from "../src/tools/crues.js";
+import { crues, crueDite, islandLevels, levelRow, riverAsked, sentence, vigilanceText } from "../src/tools/crues.js";
 
 // Vigicrues Réunion on 23/10/2026 at 23:45 UTC (03:45 in La Réunion): no flood vigilance, the ravine des Cabris
 // rising a few centimetres from dry.
@@ -133,12 +133,24 @@ describe("Vigicrues Réunion", () => {
     expect(levelRow(l, now).avertissement).toBe("Dernière mesure il y a 82 min.");
   });
 
+  it("says a flood's name inside a parenthesis without another one, its kind in lowercase", () => {
+    expect(crueDite("Cyclone Felleng (février 2013)")).toBe("cyclone Felleng, février 2013");
+    expect(crueDite("Cyclone intense Dina (janvier 2002)")).toBe("cyclone intense Dina, janvier 2002");
+    expect(crueDite("Cyclone Dumile (janvier 2013) / Cyclone Felleng (février 2013)")).toBe("cyclone Dumile, janvier 2013, et cyclone Felleng, février 2013");
+    expect(crueDite("Fortes pluies (février 1998)")).toBe("fortes pluies, février 1998");
+    expect(crueDite("Dumazile (mars 2018)")).toBe("Dumazile, mars 2018");
+    expect(crueDite("Belal")).toBe("Belal");
+    // Every name the stations keep: no parenthesis left, no kind in capitals.
+    for (const n of STATIONS.flatMap((s) => s.crues.map((c) => c.nom))) expect(crueDite(n)).not.toMatch(/[()]|^(Cyclone|Dépression|Tempête|Forte)/);
+  });
+
   it("asks only for the gauges near the place", async () => {
     const r = body(await crues(cache(), "Saint-Gilles", NOW));
     expect(r.stations[0]).toMatchObject({ station: "Saint-Gilles - RN1a", riviere: "ravine Saint-Gilles", hauteur_m: 0.177, tendance_30_min: "stable" });
     expect(r.stations[0].distance_km).toBeLessThan(2);
     expect(r.resume).toMatch(/^Rivières suivies près de Saint-Gilles-les-Bains, mesures de 03:45 : Saint-Gilles - RN1a/);
-    expect(r.resume).toMatch(/Pour repère, la plus petite crue de référence à Saint-Gilles - RN1a : 0,7 m/);
+    expect(r.resume).toMatch(/Pour repère, la plus petite crue de référence à Saint-Gilles - RN1a : 0,7 m \([a-zé]/);
+    expect(r.resume).not.toMatch(/\([^()]*\([^()]*\)\)/);
     expect(asked.filter((a) => a.startsWith("valeurs.php")).every((a) => Number(a.split(" ")[2]) <= 4)).toBe(true);
     expect(r.consignes).toMatch(/radier/);
   });

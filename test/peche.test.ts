@@ -84,7 +84,7 @@ describe("the tool peche_loisir", () => {
         "bichiques, saison ouverte (de 05:07 à 18:57) ; capucin nain, fermé aujourd'hui ; anguille marbrée, pas de fermeture aujourd'hui.",
     );
     expect(r.especes.map((e: { espece: string }) => e.espece)).toEqual(["Langouste", "Bichiques", "Capucin nain", "Anguille marbrée"]);
-    expect(r.especes[0]).toMatchObject({ texte: "d'après l'arrêté n° 1743 du 15 juillet 2008, version consolidée par la DMSOI au 1/1/2023, art. 8 et 11", lien: PDF_1743 });
+    expect(r.especes[0]).toMatchObject({ texte: "d'après l'arrêté n° 1743 du 15 juillet 2008, version consolidée par la DMSOI au 1er janvier 2023, art. 8 et 11", lien: PDF_1743 });
     expect(r.especes[1].lien).toBe(PDF_BICHIQUES);
     expect(r.tailles_et_quantites).toHaveLength(TAILLES.length);
     expect(r.interdits).toHaveLength(INTERDITS.length);

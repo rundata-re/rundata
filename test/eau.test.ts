@@ -4,7 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { parsePage, quality, season } from "../src/providers/baignades.js";
 import { networkName } from "../src/providers/eaupotable.js";
 import { SOURCE } from "../src/eau/requin.js";
-import { COMMON, noteBaignade, qualiteEau, sansPrelevement, tapNote, siteNamed, sujetOf } from "../src/tools/eau.js";
+import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
 import { gather } from "../src/eau/ile.js";
 import { eauPage } from "../src/web/domains.js";
@@ -101,6 +101,15 @@ describe("qualité de l'eau", () => {
     expect(b.baignade.sites[0].prelevements_en_retard).toBe(gap);
     expect(b.resume).toMatch(/^Plage de l'Hermitage centre : eau de bonne qualité au dernier prélèvement \(15\/09\/2026\)/);
     expect(b.resume.endsWith(`. ${gap}`)).toBe(true);
+    // Two beaches without a sample for the same weeks: said once, after both (06/11/2026, L'Hermitage).
+    const [row] = b.baignade.sites;
+    const two = bathSentences([row, { ...row, site: "Plage de l'Hermitage nord" }]);
+    expect(two.split("Aucun prélèvement").length + two.split("aucun prélèvement").length).toBe(3);
+    expect(two.endsWith(` Pour les deux sites\u00a0: aucun prélèvement publié par l'ARS depuis le 15/09/2026 (5 semaines), ni aucun pour la saison commencée le 01/10/2026.`)).toBe(true);
+    expect(two).toMatch(/^Plage de l'Hermitage centre : [^:]+\. Plage de l'Hermitage nord : /);
+    // Gaps of their own: each beside its beach.
+    const other = bathSentences([row, { ...row, site: "Plage de l'Hermitage nord", prelevements_en_retard: undefined }]);
+    expect(other).toBe(`${bathSentences([row])} ${bathSentences([{ ...row, site: "Plage de l'Hermitage nord", prelevements_en_retard: undefined }])}`);
     expect(b.a_savoir.eau_de_baignade).toBe(noteBaignade(true));
     expect(noteBaignade(true)).toMatch(/^Seuils par prélèvement \(germes pour 100 mL\)/);
     expect(noteBaignade(true)).not.toContain("deux semaines");

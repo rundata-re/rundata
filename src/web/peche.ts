@@ -78,7 +78,7 @@ export function pechePage(origin: string, alerte?: Alerte, now = new Date()): st
   const lues = LUES_LE.split("-").reverse().join("/");
   const sources = `<section aria-labelledby="h-textes">
   <div class="sec-h"><h2 id="h-textes">Les textes</h2></div>
-  <p class="sources">Sources\u00a0: arrêté préfectoral n° 1743 du 15 juillet 2008, <a href="${PDF_1743}" rel="noopener">version consolidée par la DMSOI</a> (Direction de la mer Sud océan Indien) au 1/1/2023, et <a href="${PAGE_DMSOI}" rel="noopener">la page de la DMSOI</a>. Arrêté préfectoral n° 2026-1319 du 17 août 2026 sur les bichiques (<a href="${PDF_BICHIQUES}" rel="noopener">arrêté signé</a>, <a href="${PAGE_DEAL}" rel="noopener">page de la DEAL de La Réunion</a>). Contenus sous Licence Ouverte 2.0 (etalab). Relus le ${lues}.</p>
+  <p class="sources">Sources\u00a0: arrêté préfectoral n° 1743 du 15 juillet 2008, <a href="${PDF_1743}" rel="noopener">version consolidée par la DMSOI</a> (Direction de la mer Sud océan Indien) au 1er janvier 2023, et <a href="${PAGE_DMSOI}" rel="noopener">la page de la DMSOI</a>. Arrêté préfectoral n° 2026-1319 du 17 août 2026 sur les bichiques (<a href="${PDF_BICHIQUES}" rel="noopener">arrêté signé</a>, <a href="${PAGE_DEAL}" rel="noopener">page de la DEAL de La Réunion</a>). Contenus sous Licence Ouverte 2.0 (etalab). Relus le ${lues}.</p>
 </section>`;
   const body = `${today}\n${sizes}\n${never}\n${lagons}\n${sources}\n${connectorCta("peche_loisir", "les règles de la pêche de loisir")}`;
   return layout(origin, { title: TITLE, description: META, path: PATH, jsonld: [crumbs(origin, NOM, PATH), webPage(origin, PATH, TITLE, META, null)], alerte }, band, body);

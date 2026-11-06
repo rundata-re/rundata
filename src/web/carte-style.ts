@@ -62,7 +62,7 @@ body:has(.kcarte){overflow-x:clip}.kcarte:not(.pe-on){row-gap:0}.pe-on .kdir{dis
 .kcarte:not(.pe-on) .kmapc>.fonds{top:calc(2.8rem + 3*44px)}.kcarte:not(.pe-on) .kmapc>.fd-w{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:4rem;width:var(--ks);padding:0}
 .kcarte:not(.pe-on) .kmapc>figcaption{margin-top:1rem}}
 .kch{margin:1rem 0}.kch>summary{display:inline-flex;align-items:center;min-height:44px;padding:0 1rem;border-radius:999px;border:1px solid var(--line);font-weight:600;cursor:pointer}
-.kths{display:grid;gap:.75rem;margin-top:.75rem}@media (min-width:48rem){.kths{grid-template-columns:repeat(auto-fill,minmax(15rem,1fr))}}
+.kths{display:grid;gap:.75rem;margin-top:.75rem}@media (min-width:48rem){.kths{grid-template-columns:repeat(2,minmax(0,1fr))}.kths fieldset:has(.ksg){grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:1.5rem}.kths fieldset:has(.ksg)>ul:first-of-type{grid-row:span 2}}@media (min-width:64rem){.kths{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .kths fieldset{margin:0;padding:.6rem .75rem;border:1px solid var(--line);border-radius:12px}.kths legend{padding:0 .3rem;font-weight:700}.kths ul{list-style:none;margin:0;padding:0}
 .kths label{display:flex;align-items:center;gap:.55rem;min-height:44px;cursor:pointer}.kths input{flex:none;width:1.15rem;height:1.15rem;accent-color:var(--accent)}
 .kths label>span{display:grid}.kths small{color:var(--muted);font-size:.8rem}.ksg{margin:.4rem 0 0;font-size:.85rem;color:var(--muted)}

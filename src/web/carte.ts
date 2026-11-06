@@ -292,7 +292,8 @@ function corps(): string {
   const under = `<foreignObject class="kpluie" x="0" y="0" width="${W}" height="${H}"><div xmlns="http://www.w3.org/1999/xhtml" class="kpw"><canvas width="1" height="1"></canvas></div></foreignObject>`;
   const overlay = `<g class="kcs">${ORDRE.map((id) => `<g class="kl kc-${id}" data-c="${id}"></g>`).join("")}</g>`;
   const svg = islandMap({ under, overlay, peaks: true, fond: "k", label: "Carte de La Réunion (974) : les couches cochées dans la liste sous la carte" });
-  const map = zoomIsland(svg, "k", { id: "kmap", mostFd: (MAX_ZOOM * FOND_ZOOM) / 2 }).replace('<svg id="kmap" class="map terrain', '<svg id="kmap" data-kc="" class="map terrain');
+  // A group, not an image: the script draws its points as links (an image may hold none).
+  const map = zoomIsland(svg, "k", { id: "kmap", mostFd: (MAX_ZOOM * FOND_ZOOM) / 2 }).replace('<svg id="kmap" class="map terrain', '<svg id="kmap" data-kc="" class="map terrain').replace('role="img"', 'role="group"');
   const pages = [...new Map(COUCHES.map((c) => [c.page, DIT[c.id].rubrique])).entries()].map(([p, r]) => `<a href="${esc(p)}">${esc(r)}</a>`).join(", ");
   const vues = VUES.map((v) => `<li><a href="#${esc(v.id)}" data-v="${esc(v.id)}">${esc(v.nom)}</a></li>`).join("");
   return `<section aria-labelledby="h-carte" class="kcarte"><h2 id="h-carte" class="sr">${esc(MOTS.h1)}</h2>

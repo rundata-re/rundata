@@ -100,7 +100,7 @@ describe("the sources of a page", () => {
       volcan: cached({ ...fixture("volcan_seismes"), sources: credits([seismes.SOURCE]) }),
       electricite: cached(fixture("electricite")),
     }, now);
-    const block = html.slice(html.indexOf('<div class="wrap fin-sources">'), html.indexOf("<footer"));
+    const block = html.slice(html.indexOf('<div class="wrap fin-sources"'), html.indexOf("<footer"));
     expect(block).toContain("Prévision des vagues du modèle WAM du Centre européen (ECMWF), via Open-Meteo (CC BY 4.0");
     expect(block).toContain("Séismes localisés par l&#39;Observatoire volcanologique du Piton de la Fournaise (OVPF-IPGP) (CC BY 4.0)");
     expect(block).toContain("cartographiés dans OpenStreetMap (ODbL 1.0)");

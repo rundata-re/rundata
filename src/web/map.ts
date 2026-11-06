@@ -767,7 +767,8 @@ export function islandMap(opts: {
     .map((p) => `<path d="${p.d}" style="fill:${opts.fills![p.nom]}"/>`)
     .join("");
   // An image hides what it holds from screen readers: a map with links is a group, so that each link is reached.
-  const linked = !!opts.links || !!opts.top || [...(opts.markers ?? []), ...(opts.layers ?? []).flatMap((l) => l.markers)].some((m) => m.href);
+  // Links drawn by the page itself count too (the schools' dots), even out of the Tab order: an image may hold none.
+  const linked = !!opts.links || !!opts.top || !!opts.overlay?.includes("<a ") || [...(opts.markers ?? []), ...(opts.layers ?? []).flatMap((l) => l.markers)].some((m) => m.href);
   const role = linked ? `role="group"` : `role="img"`;
   const zones = opts.links ? zoneLinks(opts.links, !!opts.names) : "";
   // What the names of places must not touch (namesLayer()).

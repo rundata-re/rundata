@@ -26,6 +26,7 @@ import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
 import type { Alerte, Credit, DepuisMinuit, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
 import { joursDuJour, vigilanceLue } from "./data.js";
+import { hasZones, ZONES_SCRIPT } from "./defilement.js";
 import brand from "./brand.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
 import * as traces from "../providers/traces.js";
@@ -297,6 +298,12 @@ p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* « Aller au contenu », the first stop of Tab on every page: seen only while it has the focus, over the bar; its target,
+   the main landmark, from the vigilance's band and the title's on. */
+.evite{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:.6rem;z-index:30;padding:.6rem 1rem;border-radius:12px;
+background:#fff;color:#0b1f36;font-weight:800;text-decoration:none;box-shadow:0 10px 30px -8px rgb(0 0 0/.5)}
+.evite:not(:focus){width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#contenu:focus{outline:none}
 [hidden]{display:none!important}
 
 /* A section's colour is never one of the alert scale (yellow, orange, red, purple) nor a red: those say a real state
@@ -427,7 +434,7 @@ border:1px solid rgb(255 255 255/.12)}
 .ticker b{font-weight:700;color:#fff}
 .ticker .vg,.ticker .aq{font-size:.82rem;padding:0 .45rem}
 
-main{display:grid;gap:clamp(3.5rem,8vw,6rem);padding-block:clamp(2.5rem,6vw,4.5rem)}
+.corps{display:grid;gap:clamp(3.5rem,8vw,6rem);padding-block:clamp(2.5rem,6vw,4.5rem)}
 section{display:grid;gap:1.4rem;min-width:0}
 .sec-h{display:grid;gap:.5rem;max-width:44rem}
 .eyebrow{font-size:.8rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lave)}
@@ -578,7 +585,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .duo{display:grid;gap:1rem;align-items:start}
 @media (min-width:58rem){.duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .duo .chat{box-shadow:var(--shadow);border:1px solid var(--line)}
-@media (max-width:40rem){main{gap:2.8rem}.sec-h p:not(.eyebrow){font-size:.98rem}}
+@media (max-width:40rem){.corps{gap:2.8rem}.sec-h p:not(.eyebrow){font-size:.98rem}}
 .facts{display:flex;flex-wrap:wrap;gap:.5rem}
 .facts span{font-size:.92rem;padding:.35rem .85rem;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
 .live{display:grid;gap:1rem;align-items:start}
@@ -1387,17 +1394,20 @@ ${head.rss ? `<link rel="alternate" type="application/rss+xml" title="${esc(head
 ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head.jsonld.length === 1 ? head.jsonld[0] : head.jsonld, frenchDescriptions).replace(/</g, "\\u003c")}</script>\n` : ""}<link rel="stylesheet" href="${STYLE_PATH}">
 </head>
 <body>
+<a class="evite" href="#contenu">Aller au contenu</a>
 ${header(head.path, origin, urgent(head))}
+<main id="contenu" tabindex="-1">
 ${head.shell ? "" : `${banner(head.alerte, head.path)}
 ${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}`}
 <div class="band${decor && (head.motif || MOTIF_PAGES.has(head.path)) ? " motif" : ""}">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${top}</div>
-<main class="wrap">
+<div class="wrap corps">
 ${text}
+</div>
 </main>
 ${head.shell ? "" : `${head.sansPartage ? "" : share(origin, head)}
 ${head.sansAvis ? "" : `${aide()}
 ${avisForm(head.path)}`}`}
-${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot${decor ? " motif" : ""}"><div class="wrap">
+${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot${decor ? " motif" : ""}"><div class="wrap">
   <div>
     <a class="brand" href="/">${logo()}<span>rundata.re</span></a>
     ${SLOGAN}
@@ -1416,7 +1426,7 @@ ${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n`
     <p><a href="/publier">Votre organisation publie un agenda ou des données ? Le guide pour les publier en flux ouvert →</a></p>
   </div>
 </div></footer>
-<script>${SCRIPT}</script>
+<script>${SCRIPT}${hasZones(text) ? `\n${ZONES_SCRIPT}` : ""}</script>
 </body>
 </html>`;
 }

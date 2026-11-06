@@ -4,10 +4,12 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import type { HomeData, StationNow } from "../src/web/data.js";
 import { apart, esc, KM, NOMS_SCRIPT, project, W } from "../src/web/map.js";
 import {
+  aheadOf,
   ago,
   ALT_PATH,
   badlyEnough,
   bands,
+  bandsRows,
   blend,
   communeOf,
   daysOf,
@@ -15,14 +17,18 @@ import {
   gaugeField,
   HACHURES_DITES,
   landBreeze,
+  lapse,
   METEO_SCRIPT,
+  momentAt,
   pace,
+  prepPlan,
   rainPill,
   rejeuScript,
   rejeuScriptPath,
   meteoVariant,
   shownAt,
   soften,
+  softenRows,
   stationsMap,
   trailOf,
   VENT_DE,
@@ -654,7 +660,7 @@ describe("the rain's animation and its replay", () => {
 
   it("spreads the radar's cells smoothly, never in steps, and veils where the radars see badly", () => {
     expect(METEO_SCRIPT).toContain(`tg.drawImage(t,0,0,j.w,j.h,0,0,t.width,t.height)`);
-    expect(METEO_SCRIPT).toContain(`soften(b.data,t.width,t.height,1)`);
+    expect(METEO_SCRIPT).toContain(`softenRows(q.b.data,q.s,W,H,1,q.p,q.r,r)`);
     expect(METEO_SCRIPT).toContain(`c.fillStyle="rgba(255,255,255,.3)"`);
     // Every 12 px, twice the hatches' former spacing, their dark line darker than at first (the user, 31/10/2026).
     expect(METEO_SCRIPT).toContain(`t.width=t.height=12`);
@@ -729,7 +735,7 @@ describe("the rain's edges, its drops and the wind", () => {
     // No inner named function in what the page embeds: the build would wrap it in a helper the page does not have.
     for (const m of ["M1", "M2", "M3"] as const) expect(meteoVariant(m)).not.toContain("__name");
     expect(rejeuScript()).not.toContain("__name");
-    expect(METEO_SCRIPT).toContain(`o.data,cw,ch,KA[dark()?1:0],[...INK[dark()?1:0],1],28,0.4)`);
+    expect(METEO_SCRIPT).toContain(`bandsRows(q.s,q.o.data,cw,ch,KA[dk?1:0],[...INK[dk?1:0],1],28,0.4,q.y,y)`);
   });
 
   it("rounds the radar's cells before cutting them, a lone cell kept", () => {
@@ -835,7 +841,7 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);
     // Faded from one image to the next all the time, never held then switched (the user, 01/11/2026).
     expect(rejeuScript()).not.toContain("ease");
-    expect(rejeuScript()).toContain(`if(z.t-a.t>((l==="p"&&GP[d]||72e5)+6e4)*n)return null`);
+    expect(rejeuScript()).toContain(`return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)`);
   });
 
   it("spreads the week's rain gauges between them by 3 hours, one every hour, said estimated, without their dots", () => {
@@ -860,5 +866,99 @@ e=" Entre deux pluviomètres, c'est une estimation, pas une mesure\u00a0: une av
     // No gauge's dot on the map while it plays (the user, 01/11/2026: « beaucoup trop chargé »), nor its sentence.
     expect(rejeuScript()).not.toContain(`ring("rr")`);
     expect(rejeuScript()).not.toContain("Point blanc");
+  });
+});
+
+describe("the replay played at an even pace", () => {
+  // Images of the radar 15 minutes apart, the snap of 24 hours (3 minutes) when paused.
+  const m = (x: number) => x * 6e4, k = [{ t: m(0) }, { t: m(15) }, { t: m(30) }, { t: m(45) }], SN = m(3), GAP = m(61);
+
+  it("moves the picture on through every image while playing, and lands on an image within its snap when paused", () => {
+    // Playing (snap 0): between two images all the way, f from 0 to 1 without a step at the image, never held on it.
+    const f = (T: number) => {
+      const r = momentAt(k, T, 0, GAP);
+      return r && "a" in r ? k.indexOf(r.a) + r.f : r ? k.indexOf(r.m) : NaN;
+    };
+    const steps = [];
+    for (let T = m(10); T < m(35); T += m(0.25)) steps.push(f(T + m(0.25)) - f(T));
+    for (const d of steps) expect(d).toBeCloseTo(1 / 60, 6);
+    expect(momentAt(k, m(16), 0, GAP)).toEqual({ a: k[1], z: k[2], f: 1 / 15 });
+    // Paused: on the image within 3 minutes either side of it, as the slider lands.
+    expect(momentAt(k, m(16), SN, GAP)).toEqual({ m: k[1] });
+    expect(momentAt(k, m(28), SN, GAP)).toEqual({ m: k[2] });
+    expect(momentAt(k, m(22.5), SN, GAP)).toEqual({ a: k[1], z: k[2], f: 0.5 });
+    // Before the first image by more than the snap, nothing; after the last, the last; across a long hole, nothing.
+    expect(momentAt(k, -m(4), SN, GAP)).toBeNull();
+    expect(momentAt(k, -m(2), SN, GAP)).toEqual({ m: k[0] });
+    expect(momentAt(k, m(50), 0, GAP)).toEqual({ m: k[3] });
+    expect(momentAt(k, m(20), 0, m(10))).toBeNull();
+    expect(momentAt([], m(20), 0, GAP)).toBeNull();
+    // The replay's script chooses its moments so, the snap only paused.
+    expect(rejeuScript()).toContain(`const moment=${momentAt},at=(l)=>{`);
+    expect(rejeuScript()).toContain(`return moment(k,T,playing?0:SN[d],`);
+  });
+
+  it("keeps the play's clock on the time gone by, a slow frame caught up", () => {
+    expect(lapse(1000, 0)).toBe(0);
+    expect(lapse(1033, 1000)).toBe(33);
+    // A frame of 180 ms moves the play by 180 ms (pace counted 100 at most: the play slowed at each slow frame).
+    expect(lapse(1180, 1000)).toBe(180);
+    expect(lapse(5000, 1000)).toBe(250);
+    expect(rejeuScript()).toContain(`const lapse=${lapse};`);
+    expect(rejeuScript()).toContain(`const dt=lapse(t,was);`);
+  });
+
+  it("makes the next images ready before the play reaches them, the next pair first", () => {
+    expect(aheadOf(k, k[1], 2)).toEqual([k[1], k[2], k[3]]);
+    expect(aheadOf(k, k[2], 3)).toEqual([k[2], k[3]]);
+    expect(aheadOf(k, { t: 1 }, 3)).toEqual([]);
+    expect(aheadOf(null, k[0], 3)).toEqual([]);
+    const p = prepPlan(4);
+    expect(p.slice(0, 5)).toEqual([["g", 0], ["s", 0], ["g", 1], ["s", 1], ["p", 1]]);
+    // Each image read and smoothed before the way to it, each once.
+    for (const [s, i] of p.filter(([s]) => s === "p")) {
+      expect(p.findIndex(([a, b]) => a === "s" && b === i)).toBeLessThan(p.findIndex(([a, b]) => a === s && b === i));
+      expect(p.findIndex(([a, b]) => a === "s" && b === i - 1)).toBeLessThan(p.findIndex(([a, b]) => a === s && b === i));
+    }
+    expect(new Set(p.map((x) => x.join())).size).toBe(p.length);
+    expect(p.filter(([s]) => s === "p")).toHaveLength(3);
+    // The replay asks for them as the image ahead changes, playing; a page kept from before has no ahead.
+    expect(rejeuScript()).toContain(`if(playing&&RJ.p.ahead&&nz&&nz!==AZ){AZ=nz;RJ.p.ahead(ahead(sub("p"),nz,3).map((x)=>x.e),gr)}`);
+    expect(rejeuScript()).toContain(`if(playing&&RJ.p.ahead&&gz&&gz!==AZ){AZ=gz;RJ.p.ahead(ahead(sub("g"),gz,3).map((x)=>()=>rain(x)),gr)}`);
+    expect(METEO_SCRIPT).toContain(`const prepPlan=${prepPlan};`);
+    // Playing on from the picture shown, two images not ready leave it there; the textures dropped with the layer.
+    expect(METEO_SCRIPT).toContain(`if(RJ.pl&&mx&&(A.fin===mx[0].fin||A.fin===mx[1].fin)&&!fit(A,Z)){HP=[a,z,f,el,gr,tr,wm];need(A,Z);return}`);
+    expect(rejeuScript()).toContain(`AZ=null;if(RJ.p&&RJ.p.flush)RJ.p.flush();`);
+    expect(METEO_SCRIPT).toContain(`flush:()=>{AQ=[];HP=null;NK="";FQ.clear();if(GL)for(const t of TX.values())GL.deleteTexture(t);TX.clear()}`);
+    // The work a slice of about 7 ms at a time, when idle, or as soon as it can without requestIdleCallback (Safari).
+    expect(METEO_SCRIPT).toContain(`self.requestIdleCallback?requestIdleCallback(f,{timeout:120}):setTimeout(f,0)`);
+    expect(METEO_SCRIPT).toContain(`const dl=performance.now()+7;`);
+  });
+
+  it("spreads and washes an image a few lines at a time as all at once", () => {
+    const W = 40, H = 36, a = new Uint8ClampedArray(W * H * 4);
+    for (let i = 0; i < W * H; i++) a[i * 4] = ((i * 7919) % 9) * 28;
+    const whole = soften(a.slice(), W, H, 1), part = a.slice(), t = new Float32Array(W * H);
+    for (let pass = 0; pass < 4; pass++) {
+      const n = pass % 2 ? W : H;
+      for (let j = 0; j < n; j += 5) expect(softenRows(part, t, W, H, 1, pass, j, j + 5)).toBe(j + 5 >= n);
+    }
+    expect(part).toEqual(whole);
+    const PAL = [[200, 220, 250, 0.4], [100, 150, 230, 0.6], [40, 80, 200, 0.8]], EDGE = [20, 40, 90, 1];
+    const all = bands(whole, new Uint8ClampedArray(W * H * 4), W, H, PAL, EDGE, 28, 0.4), rows = new Uint8ClampedArray(W * H * 4);
+    for (let y = 0; y < H; y += 7) bandsRows(whole, rows, W, H, PAL, EDGE, 28, 0.4, y, y + 7);
+    expect(rows).toEqual(all);
+    expect(all.some((v) => v > 0)).toBe(true);
+  });
+
+  it("keeps a play's images for the next, as many as about 40 MB hold", () => {
+    expect(METEO_SCRIPT).toContain(`const KP=(j)=>Math.max(16,Math.floor(4e7/(26*j.w*j.h)));`);
+    // The radar's grid, 125 × 112: 109 images, the 94 of 24 hours all kept.
+    expect(Math.max(16, Math.floor(4e7 / (26 * 125 * 112)))).toBe(109);
+    expect(METEO_SCRIPT).toContain(`if(j){Dg.delete(e);Dg.set(e,j);return j}`);
+    expect(METEO_SCRIPT).toContain(`if(Dg.size>KP(j))Dg.delete(Dg.keys().next().value)`);
+    // The veil kept with its image; a context lost, its textures gone with it.
+    expect(METEO_SCRIPT).toContain(`const bad=(j)=>{let a=j.bd;if(a)return a;`);
+    expect(METEO_SCRIPT).toContain(`GC.addEventListener("webglcontextlost",(e)=>{e.preventDefault();TX.clear();GU[2]=null;GL=++GX>2?false:null});`);
   });
 });

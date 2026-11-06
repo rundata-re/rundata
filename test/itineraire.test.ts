@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as transit from "../src/providers/transit.js";
-import { CHANGE_S, chosen, endOf, journeys, type Journey, ROWS_MAX, ZONE_MAX } from "../src/tools/itineraire.js";
+import { CHANGE_S, chosen, type End, endOf, journeys, type Journey, ROWS_MAX, ZONE_MAX } from "../src/tools/itineraire.js";
 import { answer, askedOf, itinerairePage, journeyForm } from "../src/web/itineraire.js";
 
 // Rows of the D1 database read by the searches below, from the networks' GTFS of 31/10/2026 (scripts/build-transit.py).
@@ -101,6 +101,9 @@ describe("the page", () => {
     expect(f).toContain('value="Petite-Île"');
     expect(f).toMatch(/value="arrivee" checked/);
     expect(f).not.toContain("<script");
+    // It sends to the results, and offers no day before today.
+    expect(f).toContain('action="/bus/itineraire#trajets"');
+    expect(journeyForm({}, "2026-10-31")).toContain('type="date" min="2026-10-31" value=""');
   });
 
   it("reads what the address asks, and nothing without a start and an end", () => {
@@ -112,11 +115,14 @@ describe("the page", () => {
 
   it("lists the journeys, says they are timetables, and that a commune stands for its main stops", async () => {
     const r = await answer({ de: "Petite-Île", a: "aéroport Roland-Garros", jour: "2026-11-02", heure: "18:00", arrivee: true }, NOW);
-    expect(r.quand).toBe("lundi 2 novembre, pour arriver avant 18 h");
+    expect(r.quand).toBe("lundi 2 novembre, pour arriver avant 18:00");
     const page = itinerairePage("https://rundata.re", r).replaceAll("&#39;", "'");
     expect(page).toContain("Résultats pour les principaux arrêts de Petite-Île : précisez l'arrêt pour un quartier.");
     expect(page).toContain("Horaires prévus par les réseaux, pas la position des bus en direct");
-    expect(page).toContain("De Petite-Île (principaux arrêts) à l'arrêt Aéroport Roland-Garros, lundi 2 novembre, pour arriver avant 18\u00a0h.");
+    expect(page).toContain("De Petite-Île (principaux arrêts) à l'arrêt Aéroport Roland-Garros, lundi 2 novembre, pour arriver avant 18:00.");
+    // The page opens on the results; the tab says the journey understood.
+    expect(page).toContain('<section id="trajets" tabindex="-1" aria-label="Trajets">');
+    expect(page).toContain("<title>Petite-Île → Aéroport Roland-Garros en bus · 974</title>");
     // The bus to take first: the one leaving last.
     expect(page.indexOf("14:22 → 17:39")).toBeLessThan(page.indexOf("12:15 → 15:16"));
     expect(page).toContain("1 correspondance");
@@ -146,7 +152,53 @@ describe("the page", () => {
 
   it("says which end it did not find", async () => {
     const r = await answer({ de: "xyzzy plugh", a: "aéroport", jour: "", heure: "", arrivee: false }, NOW);
-    expect(itinerairePage("https://rundata.re", r)).toContain("Départ non trouvé : « xyzzy plugh ».");
+    const page = itinerairePage("https://rundata.re", r, undefined, NOW);
+    expect(page).toContain("Départ non trouvé : « xyzzy plugh ».");
+    expect(page).toContain('<section id="trajets" tabindex="-1"');
+    // Never the text typed in the title: it stays in the browser's history.
+    expect(page).toContain("<title>Erreur : départ non trouvé · Trajet en bus · 974</title>");
     expect(reads).toBe(0);
+    const both = await answer({ de: "xyzzy", a: "plugh", jour: "", heure: "", arrivee: false }, NOW);
+    expect(itinerairePage("https://rundata.re", both, undefined, NOW)).toContain("<title>Erreur : départ et arrivée non trouvés · Trajet en bus · 974</title>");
+    const end = await answer({ de: "aéroport", a: "xyzzy", jour: "", heure: "", arrivee: false }, NOW);
+    expect(itinerairePage("https://rundata.re", end, undefined, NOW)).toContain("<title>Erreur : arrivée non trouvée · Trajet en bus · 974</title>");
+  });
+
+  it("does not search a day gone by, and keeps the form filled", async () => {
+    const r = await answer({ de: "Petite-Île", a: "aéroport", jour: "2020-01-01", heure: "08:00", arrivee: false }, NOW);
+    expect(r).toMatchObject({ passee: true });
+    expect(reads).toBe(0);
+    const page = itinerairePage("https://rundata.re", r, undefined, NOW).replaceAll("&#39;", "'");
+    expect(page).toContain("Cette date est passée : choisissez aujourd'hui ou un jour à venir.");
+    expect(page).toContain("<title>Erreur : date passée · Trajet en bus · 974</title>");
+    expect(page).toContain('value="Petite-Île"');
+    expect(page).toContain('type="date" min="2026-10-31" value="2020-01-01"');
+  });
+
+  it("says the time as HH:MM, and the year only for another year", async () => {
+    const r = await answer({ de: "xyzzy", a: "aéroport", jour: "2027-01-01", heure: "08:00", arrivee: false }, NOW);
+    expect(r.quand).toBe("vendredi 1er janvier 2027, à partir de 08:00");
+    expect((await answer({ de: "xyzzy", a: "aéroport", jour: "2026-11-02", heure: "08:00", arrivee: false }, NOW)).quand).toBe("lundi 2 novembre, à partir de 08:00");
+    expect((await answer({ de: "xyzzy", a: "aéroport", jour: "", heure: "", arrivee: false }, NOW)).quand).toBe("aujourd'hui, à partir de 14:00");
+  });
+
+  it("says the hours looked through as HH:MM", () => {
+    const de: End = { nom: "Église Petite-Île", sorte: "arret", stops: new Map() };
+    const a: End = { nom: "Aéroport Roland Garros", sorte: "arret", stops: new Map() };
+    const r = { asked: { de: "x", a: "y", jour: "", heure: "", arrivee: false }, quand: "aujourd'hui, à partir de 08:00", heure: "08:00", de, a, search: { trajets: [], lectures: { requetes: 0, lignes: 0 }, fenetre: { de: 8 * 3600, a: 11 * 3600 } } };
+    expect(itinerairePage("https://rundata.re", r, undefined, NOW)).toContain("entre 08:00 et 11:00.");
+  });
+
+  it("says in one line when both ends are communes", () => {
+    const town = (nom: string): End => ({ nom, sorte: "commune", commune: nom, stops: new Map() });
+    const r = (de: End, a: End) => ({ asked: { de: "x", a: "y", jour: "", heure: "", arrivee: false }, quand: "aujourd'hui, à partir de 08:00", heure: "08:00", de, a, search: { trajets: [], lectures: { requetes: 0, lignes: 0 }, fenetre: { de: 0, a: 86400 } } });
+    const notes = (p: string) => p.replaceAll("&#39;", "'").match(/<p class="note">Résultats pour[^<]*<\/p>/g);
+    expect(notes(itinerairePage("https://rundata.re", r(town("Saint-Denis"), town("Saint-Denis")), undefined, NOW))).toEqual([
+      `<p class="note">Résultats pour les principaux arrêts de Saint-Denis, au départ comme à l'arrivée : précisez l'arrêt pour un quartier.</p>`,
+    ]);
+    expect(notes(itinerairePage("https://rundata.re", r(town("Le Port"), town("Saint-Pierre")), undefined, NOW))).toEqual([
+      `<p class="note">Résultats pour les principaux arrêts du Port et de Saint-Pierre : précisez l'arrêt pour un quartier.</p>`,
+    ]);
+    expect(itinerairePage("https://rundata.re", r(town("Le Port"), town("Saint-Pierre")), undefined, NOW)).toContain("<title>Le Port → Saint-Pierre en bus · 974</title>");
   });
 });

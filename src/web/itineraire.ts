@@ -7,7 +7,7 @@ import * as transit from "../providers/transit.js";
 import { DAY_START_S, endOf, type End, type Journey, journeys, type Leg, type Search } from "../tools/itineraire.js";
 import { dayName } from "../tools/transports.js";
 import { why } from "../types.js";
-import { a as aCommune, de as deCommune, fr, heure } from "../tools/format.js";
+import { a as aCommune, de as deCommune, fr } from "../tools/format.js";
 import { crumbBar, crumbs } from "./domains.js";
 import { esc } from "./map.js";
 import { type Alerte, credit } from "./data.js";
@@ -30,24 +30,28 @@ export function nowAsked(now: Date): { jour: string; heure: string } {
   return { jour: local.slice(0, 10), heure: local.slice(11, 16) };
 }
 
-/** The form, filled with what was asked. */
-export function journeyForm(q: Partial<Asked> = {}): string {
+/**
+ * The form, filled with what was asked; `today` (YYYY-MM-DD, in La Réunion) is the first day it offers. It sends to the
+ * results (#trajets), so the page opens on them, not on the form again.
+ */
+export function journeyForm(q: Partial<Asked> = {}, today?: string): string {
   const v = (x?: string) => esc(x ?? "");
-  return `<form class="card fo trajet-form" action="${ITINERAIRE_PATH}" method="get">
+  return `<form class="card fo trajet-form" action="${ITINERAIRE_PATH}#trajets" method="get">
 <div class="f"><label for="it-de">Départ</label><input id="it-de" name="de" type="text" placeholder="Petite-Île, ou un arrêt" autocomplete="off" required value="${v(q.de)}"></div>
 <div class="f"><label for="it-a">Arrivée</label><input id="it-a" name="a" type="text" placeholder="Aéroport Roland-Garros" autocomplete="off" required value="${v(q.a)}"></div>
 <fieldset><legend>Quand</legend><label class="case"><input type="radio" name="sens" value="depart"${q.arrivee ? "" : " checked"}> Partir à</label><label class="case"><input type="radio" name="sens" value="arrivee"${q.arrivee ? " checked" : ""}> Arriver avant</label></fieldset>
-<div class="row court"><div class="f"><label for="it-jour">Date</label><input id="it-jour" name="jour" type="date" value="${v(q.jour)}"></div><div class="f"><label for="it-heure">Heure</label><input id="it-heure" name="heure" type="time" value="${v(q.heure)}"></div></div>
+<div class="row court"><div class="f"><label for="it-jour">Date</label><input id="it-jour" name="jour" type="date"${today ? ` min="${esc(today)}"` : ""} value="${v(q.jour)}"></div><div class="f"><label for="it-heure">Heure</label><input id="it-heure" name="heure" type="time" value="${v(q.heure)}"></div></div>
 <p class="aide">Sans date ni heure : aujourd'hui, maintenant.</p>
 <button type="submit">Chercher un trajet</button>
 </form>`;
 }
 
+/** « 08:00 », « 11:30 »: on this page every time is HH:MM, as the field above and the trips write it. */
+const hm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+/** The time of seconds after midnight of the day asked, HH:MM. */
+const heureOf = (s: number) => hm(Math.floor((((s % 86400) + 86400) % 86400) / 60));
 /** « 18:05 », « 00:20 le lendemain », of seconds after midnight of the day asked. */
-const at = (s: number) => {
-  const m = Math.floor((((s % 86400) + 86400) % 86400) / 60);
-  return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}${s >= 86400 ? " le lendemain" : s < 0 ? " la veille" : ""}`;
-};
+const at = (s: number) => `${heureOf(s)}${s >= 86400 ? " le lendemain" : s < 0 ? " la veille" : ""}`;
 /** « 1 h 35 », « 45 min ». */
 const lasting = (s: number) => {
   const m = Math.round(s / 60);
@@ -118,15 +122,15 @@ function none(arriveBy: boolean, w: Search["fenetre"], when: string): string {
   }
   return `${capital(what)} entre ${heureOf(w.de)} et ${heureOf(w.a)}. Essayez une heure plus ${arriveBy ? "tôt" : "tard"}, ou précisez le départ ou l'arrivée.`;
 }
-/** « 8 h », « 11:30 »: as the time asked is said. */
-const heureOf = (s: number) => heure(Math.floor((((s % 86400) + 86400) % 86400) / 60));
 
 export interface Answer {
   asked: Asked;
-  /** The day and time searched, said: « lundi 2 novembre, arriver avant 18 h ». */
+  /** The day and time searched, said: « lundi 2 novembre, pour arriver avant 18:00 ». */
   quand: string;
-  /** The time searched, said: « 18 h ». */
+  /** The time searched, said: « 18:00 ». */
   heure?: string;
+  /** The day asked is past: nothing searched. */
+  passee?: boolean;
   de?: End;
   a?: End;
   search?: Search;
@@ -147,13 +151,17 @@ export function askedOf(params: URLSearchParams): Asked | undefined {
 /** The search for what was asked: its ends understood, then the journeys, read from the timetables. */
 export async function answer(asked: Asked, now: Date): Promise<Answer> {
   const today = nowAsked(now);
+  // A day gone by, from an old link or typed in the address: no search, the form stays as it was filled.
+  if (asked.jour && asked.jour < today.jour) return { asked, quand: "", passee: true };
   const jour = asked.jour || today.jour;
   const time = asked.heure || today.heure;
   const ymd = Number(jour.replace(/-/g, ""));
   const d = new Date(`${jour}T00:00:00Z`);
-  const day = jour === today.jour ? "aujourd'hui" : dayName({ ymd, weekday: (d.getUTCDay() + 6) % 7 });
+  // The year only for another year than this one: « vendredi 1er janvier 2027 ».
+  const year = jour.slice(0, 4) === today.jour.slice(0, 4) ? "" : ` ${jour.slice(0, 4)}`;
+  const day = jour === today.jour ? "aujourd'hui" : `${dayName({ ymd, weekday: (d.getUTCDay() + 6) % 7 })}${year}`;
   const [h, m] = time.split(":").map(Number);
-  const spoken = heure(h * 60 + m);
+  const spoken = hm(h * 60 + m);
   const quand = `${day}, ${asked.arrivee ? "pour arriver avant" : "à partir de"} ${spoken}`;
   const de = endOf(asked.de);
   const a = endOf(asked.a);
@@ -166,9 +174,34 @@ export async function answer(asked: Asked, now: Date): Promise<Answer> {
   }
 }
 
-export function itinerairePage(origin: string, r: Answer | undefined, alerte?: Alerte): string {
+/**
+ * The tab's title: the journey understood (« Saint-Denis → Saint-Pierre en bus · 974 »), whatever was found, or the
+ * error. Never the text typed: it would stay in the browser's history.
+ */
+function titleOf(r: Answer | undefined): string {
+  const page = "Trajet en bus · 974";
+  if (!r) return "Trajet en bus à La Réunion · 974";
+  if (r.passee) return `Erreur : date passée · ${page}`;
+  if (!r.de && !r.a) return `Erreur : départ et arrivée non trouvés · ${page}`;
+  if (!r.de) return `Erreur : départ non trouvé · ${page}`;
+  if (!r.a) return `Erreur : arrivée non trouvée · ${page}`;
+  return `${prose(r.de.nom)} → ${prose(r.a.nom)} en bus · 974`;
+}
+
+/** The note over the results when an end is a commune: one line, for one commune or two. */
+function zonesOf(de: End, a: End): string {
+  const line = (x: string) => `<p class="note">Résultats pour les principaux arrêts ${esc(x)} : précisez l'arrêt pour un quartier.</p>`;
+  if (de.sorte === "commune" && a.sorte === "commune") {
+    return line(de.nom === a.nom ? `${deCommune(de.nom)}, au départ comme à l'arrivée` : `${deCommune(de.nom)} et ${deCommune(a.nom)}`);
+  }
+  return [de, a].filter((e) => e.sorte === "commune").map((e) => line(deCommune(e.nom))).join("");
+}
+
+export function itinerairePage(origin: string, r: Answer | undefined, alerte?: Alerte, now = new Date()): string {
   let result = "";
-  if (r) {
+  if (r?.passee) {
+    result = `<p>Cette date est passée : choisissez aujourd'hui ou un jour à venir.</p>`;
+  } else if (r) {
     const missing = [!r.de ? ["Départ", r.asked.de] : undefined, !r.a ? ["Arrivée", r.asked.a] : undefined].filter((x): x is string[] => !!x);
     if (missing.length) {
       result = missing.map(([what, text]) => `<p>${what} non ${what === "Arrivée" ? "trouvée" : "trouvé"} : « ${esc(text)} ». Donnez un arrêt, une commune ou un lieu (« Gare routière, Saint-Pierre », « aéroport »).</p>`).join("");
@@ -176,7 +209,7 @@ export function itinerairePage(origin: string, r: Answer | undefined, alerte?: A
       result = `<p>Les horaires de bus ne répondent pas pour le moment. Réessayer dans un instant.</p>`;
     } else {
       const { de, a, search } = r as Required<Pick<Answer, "de" | "a" | "search">>;
-      const zones = [de, a].filter((e) => e.sorte === "commune").map((e) => `<p class="note">Résultats pour les principaux arrêts ${esc(deCommune(e.nom))} : précisez l'arrêt pour un quartier.</p>`).join("");
+      const zones = zonesOf(de, a);
       const found = search.trop_large
         ? `<p>Trop d'arrêts et de lignes à parcourir : précisez le départ ou l'arrivée, avec un arrêt ou un quartier.</p>`
         : search.trajets.length
@@ -186,11 +219,12 @@ export function itinerairePage(origin: string, r: Answer | undefined, alerte?: A
     }
   }
   const band = `${crumbBar("Trajet en bus", { name: "Bus", path: "/bus" })}
-<div class="wrap intro"><div class="pitch"><h1>Trajet en bus</h1><p class="lead">Tous les réseaux de l'île, trajets directs ou avec une correspondance.</p>${journeyForm(r?.asked)}</div></div>`;
-  const body = `${result ? `<section aria-label="Trajets">${result}</section>` : ""}
+<div class="wrap intro"><div class="pitch"><h1>Trajet en bus</h1><p class="lead">Tous les réseaux de l'île, trajets directs ou avec une correspondance.</p>${journeyForm(r?.asked, nowAsked(now).jour)}</div></div>`;
+  // The form sends to #trajets: the page opens on the result or the error, focusable so that it is read first.
+  const body = `${result ? `<section id="trajets" tabindex="-1" aria-label="Trajets">${result}</section>` : ""}
 <section><p class="note">Horaires prévus par les réseaux, pas la position des bus en direct : un bus peut passer en retard, ou ne pas passer un jour férié que son réseau n'a pas signalé. Pour les heures en direct, ouvrez la ligne d'un trajet.</p>
 <p class="sources">Source : ${credits([credit(transit.SOURCE)])}.</p></section>`;
-  const title = "Trajet en bus à La Réunion · 974";
+  const title = titleOf(r);
   const description = "Préparer un trajet en bus à La Réunion (974) : départ, arrivée, date et heure, sur les horaires de tous les réseaux.";
   // Not /bus's hook (« à l'heure annoncée par le réseau »): this page reads the timetables, not the times of the moment.
   return layout(origin, { title, description, path: ITINERAIRE_PATH, noindex: !!r, hook: "", jsonld: [crumbs(origin, "Trajet en bus", ITINERAIRE_PATH, { name: "Bus", path: "/bus" })], alerte }, band, body);

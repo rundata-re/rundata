@@ -293,6 +293,30 @@ describe("fiche terrain", () => {
     expect(urls.some((u) => u.includes("geocodage"))).toBe(false);
   });
 
+  it("gives no parcel for a place without an address nor a point: what holds for the commune, and asks for the address", async () => {
+    // 06/11/2026: « Bois de Nèfles » gave « parcelle AZ 0083, zone N », a parcel at the place's centre.
+    const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "Bois de Nèfles", NOW));
+    expect(r.resume).toMatch(/^Bois de Nèfles \(Saint-Paul\)\u00a0: lieu-dit ou commune, sans adresse ni point précis\u00a0: ni parcelle cadastrale, ni zone du PLU, ni risques au point, qui changent d'un terrain à l'autre\u00a0; autour du centre du lieu \(environ 600 m sur 600 m\), depuis 2021 : maisons /);
+    expect(r.resume).toContain("\u00a0; loyer d'annonce d'un appartement type à Saint-Paul\u00a0: ");
+    expect(r.resume).not.toMatch(/parcelle cadastrale [A-Z]|zone \S+ du PLU|altitude|antennes|plans? de prévention/);
+    expect(r.conseil).toBe("Pour un terrain, demander à l'utilisateur son adresse (numéro, rue, commune) ou sa position (coordonnées), puis redemander. Ne pas donner la parcelle, la zone du PLU ni les risques d'un autre point pour ce lieu.");
+    expect(r).not.toHaveProperty("cadastre");
+    expect(r).not.toHaveProperty("urbanisme");
+    expect(r).not.toHaveProperty("altitude_m");
+    expect(r).not.toHaveProperty("antennes_a_moins_de_500_m");
+    expect(r).not.toHaveProperty("risques");
+    expect(r.marche_immobilier.perimetre).toBe("environ 600 m × 600 m autour du centre du lieu, pas d'un terrain");
+    expect(r.risques_dans_la_commune.catastrophes_naturelles.arretes_dans_la_commune).toBeGreaterThan(5);
+    expect(r.risques_dans_la_commune.radon).toMatch(/catégorie 1/);
+    expect(r.loyers_d_annonce).toMatchObject({ commune: "Saint-Paul" });
+    // Neither the parcel, the urban plan, the altitude, the risk plans nor the landslides at the centre are asked.
+    expect(urls.filter((u) => /cadastre|zone-urba|altimetrie|assiette-sup|api\/v1\/mvt|geocodage/.test(u))).toEqual([]);
+    expect(r.sources.map((x: { source: string }) => x.source)).not.toContain("Données sur les réseaux mobiles (antennes 2G, 3G, 4G, 5G)");
+    // A commune: its name alone.
+    const c = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "Cilaos", NOW));
+    expect(c.resume).toMatch(/^Cilaos\u00a0: lieu-dit ou commune, sans adresse ni point précis/);
+  });
+
   it("adds the risks: no plan at this address, CatNat of the commune, nothing slid around", async () => {
     const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "7 rue de la Buse, Saint-Paul", NOW));
     expect(r.resume).toContain("hors des zones réglementées des plans de prévention des risques");

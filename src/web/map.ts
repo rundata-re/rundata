@@ -255,9 +255,15 @@ function ties(markers: Marker[], at: [number, number][]): string {
   return out ? `<g class="ties" aria-hidden="true">${out}</g>` : "";
 }
 
-/** The words of a text as a name is matched against what is shown: no accent, case or sign, nothing in brackets. */
+/**
+ * The words of a text as a name is matched against what is shown: no accent, case or sign, nothing in brackets. A time
+ * (« 19:24 ») or a date (« 06/11 ») is one word, so that a figure shown (« 24° ») is not found in the time of the
+ * measure (« mesures du 06/11 à 19:24 »).
+ */
 const words = (s: string) =>
-  s.normalize("NFKD").toLowerCase().replace(/\([^()]*\)/g, " ").replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").filter(Boolean);
+  s.normalize("NFKD").toLowerCase().replace(/\([^()]*\)/g, " ")
+    .replace(/\b(\d{1,2}):(\d{2})\b/g, "$1h$2").replace(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g, (_, d, m, y) => `${d}d${m}${y ? `d${y}` : ""}`)
+    .replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").filter(Boolean);
 
 /**
  * A link's name that holds what the link shows, word for word and in its order (WCAG 2.5.3): a voice command that says
@@ -274,8 +280,35 @@ export function nameWithShown(shown: string[], said: string): string {
   return `${head.join(", ")}, ${said}`;
 }
 
-/** `at`: where it is drawn, when moved from its place (apart()). */
-function marker(m: Marker, hit = HIT, at?: [number, number], listed = false): string {
+/**
+ * Where a marker's name is written, 23 units high, inside the frame: under it, centred on it, or from the frame's edge
+ * inwards when centred it would go past the side (« L'Ermitage-les-Bains », « Anse des Cascades » on /mer's map, cut at
+ * 1280 px). When there it would go past the bottom (« Grande Anse ») or cover another marker of the map (`others`, their
+ * shapes: « Boucan-Canot » over L'Ermitage-les-Bains' disc): beside it, on its right then its left, then over it, the
+ * first place that covers none; else under it, or over it at the bottom. Its width is guessed from its letters, a little
+ * wide (the system font, its halo).
+ */
+function nameAt(name: string, x: number, y: number, others: Box[]): string {
+  const wide = name.length * 23 * 0.62 + 7;
+  const edge = 16;
+  const [x0, x1, at] = x - wide / 2 < edge ? [edge, edge + wide, `x="${edge}" style="text-anchor:start"`]
+    : x + wide / 2 > W - edge ? [W - edge - wide, W - edge, `x="${W - edge}" style="text-anchor:end"`]
+    : [x - wide / 2, x + wide / 2, `x="${x}"`];
+  // Each place: its box, then its attributes; the text's baseline is 18 under its top and 8 over its bottom.
+  const under: [Box, string] = [[x0, y + 48, x1, y + 74], `${at} y="${y + 66}"`];
+  const over: [Box, string] = [[x0, y - 72, x1, y - 46], `${at} y="${y - 54}"`];
+  const right: [Box, string] = [[x + 42, y - 10, x + 42 + wide, y + 16], `x="${x + 42}" y="${y + 8}" style="text-anchor:start"`];
+  const left: [Box, string] = [[x - 42 - wide, y - 10, x - 42, y + 16], `x="${x - 42}" y="${y + 8}" style="text-anchor:end"`];
+  const inside = (b: Box) => b[0] >= edge && b[1] >= edge && b[2] <= W - edge && b[3] <= H - edge;
+  const free = (b: Box) => inside(b) && !others.some((o) => touch(b, o));
+  return ([under, right, left, over].find(([b]) => free(b)) ?? (inside(under[0]) ? under : over))[1];
+}
+
+/**
+ * `at`: where it is drawn, when moved from its place (apart()). `others`: the shapes of the map's other markers, which
+ * its name does not cover where it can (nameAt()).
+ */
+function marker(m: Marker, hit = HIT, at?: [number, number], listed = false, others: Box[] = []): string {
   const [x, y] = at ?? project(m.lon, m.lat);
   const fill = m.color ?? "var(--ink)";
   const w = pillW(m);
@@ -290,7 +323,7 @@ function marker(m: Marker, hit = HIT, at?: [number, number], listed = false): st
     : `<rect class="sh" x="${x - w / 2}" y="${y - 24}" width="${w}" height="48" rx="24" fill="${fill}"/>`;
   const inner = `<title>${esc(m.name)}</title>${shape}` +
     (m.big ? `<text x="${x}" y="${y + 15}" class="mv" style="font-size:42px">${esc(m.label)}</text>` : `<text x="${x}" y="${y + 11}" class="mv"${m.ink ? ` style="fill:${m.ink}"` : ""}>${esc(m.label)}</text>`) +
-    (m.quiet ? "" : `<text x="${x}" y="${y + 66}" class="mn">${esc(m.name)}</text>`);
+    (m.quiet ? "" : `<text ${nameAt(m.name, x, y, others)} class="mn">${esc(m.name)}</text>`);
   if (!m.href) return `<g class="mk">${inner}</g>`;
   // Its name starts with what it shows when it does not hold it already: « 26° » over « 25,7 °C » (nameWithShown()).
   const said = nameWithShown([m.label, m.quiet ? "" : m.name], m.tip ? `${m.tip.place} : ${m.tip.value}, ${m.tip.detail}, voir le détail` : `${m.place ?? m.name} : ${m.say ?? m.label}, voir le détail`);
@@ -801,7 +834,8 @@ export function islandMap(opts: {
       busy.push(markerBox(m, at?.[i]));
       if (at && !onPlace(m, at[i])) busy.push(markerBox({ ...m, round: true }));
     });
-    return (at ? ties(list, at) : "") + list.map((m, i) => marker(m, radii[i], at?.[i], opts.listed)).join("");
+    const shapes = list.map((m, i) => markerBox(m, at?.[i]));
+    return (at ? ties(list, at) : "") + list.map((m, i) => marker(m, radii[i], at?.[i], opts.listed, shapes.filter((_, j) => j !== i))).join("");
   };
   const markers = draw(opts.markers ?? []) + (opts.layers ?? []).map((l) => `<g class="ly ly-${esc(l.id)}${l.on ? " on" : ""}">${draw(l.markers)}</g>`).join("");
   let extra = "";

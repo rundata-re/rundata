@@ -6,7 +6,8 @@ import * as carburants from "../src/providers/carburants.js";
 import type { Fil, Info } from "../src/providers/actualites.js";
 import { buildTrafic, roadNewsNow, withRoadNews } from "../src/web/data.js";
 import { traficPage } from "../src/web/domains.js";
-import { islandMap } from "../src/web/map.js";
+import { islandMap, ownIds } from "../src/web/map.js";
+import { doubleIds } from "./cartes.js";
 
 // The ONF's map of 24/10/2026 (test/fixtures/onf): 4 forest roads closed. The buses' timetables live in D1, absent here.
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/onf/${f}`, import.meta.url), "utf8");
@@ -143,6 +144,32 @@ describe("circulation", () => {
     expect(under).toEqual([]);
     // The same places at each build.
     expect(mapOf(traficPage("https://rundata.re", null, NOW))).toBe(map);
+  });
+
+  it("gives each of its two maps its own ids: the cameras' map draws its own island, relief and roads", () => {
+    const page = traficPage("https://rundata.re", null, NOW);
+    expect(doubleIds(page)).toEqual([]);
+    const maps = [...page.matchAll(/<svg class="map[\s\S]*?<\/svg>/g)].map((m) => m[0]);
+    expect(maps).toHaveLength(2);
+    // Waze's map first, as it was; the cameras' map with its ids numbered, and every reference inside it to its own.
+    expect(maps[0]).toContain('<g id="isl">');
+    expect(maps[0]).toContain('clip-path="url(#isl-clip)"');
+    expect(maps[1]).toContain('<g id="isl-2">');
+    expect(maps[1]).toContain('<clipPath id="isl-clip-2">');
+    expect(maps[1]).toContain('<path id="rd-a-2" ');
+    expect(maps[1]).toContain('<use href="#rd-a-2" class="rh"/>');
+    for (const ref of maps[1].matchAll(/(?:href="#|url\(#)([^")]+)/g)) expect(ref[1], ref[0]).toMatch(/-2$/);
+  });
+
+  it("numbers a map's ids only when the page already has them, and its references alone", () => {
+    const a = islandMap({ label: "a" }), b = islandMap({ label: "b" });
+    expect(ownIds([a])).toEqual([a]);
+    const [x, y] = ownIds([`<p>${a}</p>`, `<div>${b}</div><a href="#isl-clip">`]);
+    expect(x).toBe(`<p>${a}</p>`);
+    expect(y).toContain('<g id="isl-2">');
+    expect(y).not.toContain('id="isl"');
+    expect(y.endsWith('</svg></div><a href="#isl-clip">')).toBe(true);
+    expect(doubleIds(x + y)).toEqual([]);
   });
 
   it("leaves the other maps' markers where they are", () => {

@@ -615,6 +615,29 @@ function markerBox(m: Marker, at?: [number, number]): Box {
   return [x - hw, y - hh, x + hw, y + hh];
 }
 
+/** The ids a map gives its own drawing: its island, the clip of its relief, the coast's glow, its roads, a commune's clip. */
+const OWN_IDS = ["isl", "isl-clip", "glow", "rd-d", "rd-a", "com-clip"];
+const OWN_REF = new RegExp(`( id="|href="#|url\\(#)(${OWN_IDS.join("|")})(?=[")])`, "g");
+
+/**
+ * The maps of a page, each with its own ids: from the second map that repeats one, its ids and the references inside it
+ * get a number (`isl-2`, `url(#isl-clip-2)`). With the same ids, a second map's clip, island or roads would be the
+ * first's: its roads those of another frame, its relief cut along a hidden map. The parts are read in order, as one page.
+ */
+export function ownIds(parts: string[]): string[] {
+  const seen = new Set<string>();
+  let n = 1;
+  return parts.map((part) => part.replace(/<svg\b[^>]*\bclass="map\b[\s\S]*?<\/svg>/g, (svg) => {
+    const own = OWN_IDS.filter((id) => svg.includes(` id="${id}"`));
+    if (!own.some((id) => seen.has(id))) {
+      own.forEach((id) => seen.add(id));
+      return svg;
+    }
+    const k = ++n;
+    return svg.replace(OWN_REF, (_, at: string, id: string) => (own.includes(id) ? `${at}${id}-${k}` : `${at}${id}`));
+  }));
+}
+
 /**
  * The page's script for the names of places (namesLayer()), on every map that has them: each name at its size on
  * screen, then shown only if it touches no point, trail (`.trk-halo`), label or name already shown, on its place or around it (NUDGE, and
@@ -656,7 +679,7 @@ const s=4*u,cy=T.y+T.height/2-(B[1]+B[3])/2,hb=(B[3]-B[1])/2,R=T.x+T.width+s-B[0
 ds=[[0,0],[0,T.y-s-B[3]],[R,cy],[L,cy],[R,cy-hb],[L,cy-hb],[R,cy+hb],[L,cy+hb]],area=(a,l)=>l.reduce((n,o)=>n+Math.max(0,Math.min(a[2],o[2])-Math.max(a[0],o[0]))*Math.max(0,Math.min(a[3],o[3])-Math.max(a[1],o[1])),0),
 cut=(a,o)=>o.length===3?Math.hypot(Math.max(a[0]-o[0],0,o[0]-a[2]),Math.max(a[1]-o[1],0,o[1]-a[3]))<o[2]:hit(a,o),raw=(d)=>[B[0]+d[0]+u,B[1]+d[1]+u,B[2]+d[0]-u,B[3]+d[1]-u],ok=ds.filter((d)=>inn(at2(d))&&!hard.some((o)=>cut(raw(d),o))),go=ds.find((d)=>free(at2(d)))||(ok.length?ok.reduce((m,d)=>(area(at2(d),busy)<area(at2(m),busy)?d:m)):null);
 if(!go){ts.forEach((t)=>t.style.display="none");return}at(go);marks.push(at2(go))});busy.push(...marks);
-g.setAttribute("stroke-width",3*u);const isl=[...svg.querySelectorAll("#isl path")],pt=isl.length&&svg.createSVGPoint&&svg.createSVGPoint(),bx=isl.map((q)=>q.getBBox()),
+g.setAttribute("stroke-width",3*u);const isl=[...svg.querySelectorAll('g[id^="isl"] path')],pt=isl.length&&svg.createSVGPoint&&svg.createSVGPoint(),bx=isl.map((q)=>q.getBBox()),
 isle=g.hasAttribute("data-i"),near=(x,y,st)=>{for(let r=1;r<=12;r++){const s=new Set();for(let a=0;a<16;a++){const l=land(x+r*st*Math.cos(a*Math.PI/8),y+r*st*Math.sin(a*Math.PI/8));if(l>=0)s.add(l)}if(s.size)return s}return new Set()},
 on=(k,x,y)=>{const r=bx[k];if(r.width&&(x<r.x||y<r.y||x>r.x+r.width||y>r.y+r.height))return false;pt.x=x;pt.y=y;return isl[k].isPointInFill(pt)},land=(x,y)=>isl.findIndex((q,k)=>on(k,x,y)),
 home=(b,t)=>{if(t.dataset.k===undefined||!pt)return true;const k=+t.dataset.k,c=[[b[0],b[1]],[b[2],b[1]],[b[0],b[3]],[b[2],b[3]]],mx=(b[0]+b[2])/2,my=(b[1]+b[3])/2;

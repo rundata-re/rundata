@@ -78,6 +78,10 @@ describe("bornes de recharge", () => {
     const data = await buildBornes(cache(LIVE), NOW);
     const page = bornesPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false }, NOW);
     expect(page).toContain('<span class="big">268</span>');
+    // The count dated by the reading, never « en ce moment » (588): a copy kept by a search engine says its day.
+    expect(page).toContain(`<span class="big">268</span><p>points de charge libres le 24/10 à 04:40, sur <b>`);
+    expect(page).toMatch(/<meta name="description" content="Bornes de recharge à La Réunion \(974\) le 24\/10 à\u00a004:40\u00a0: 268 points libres sur \d+, la recharge rapide et chaque station, commune par commune\.">/);
+    expect(page).not.toContain("en ce moment");
     expect(page).toContain("Recharge rapide");
     // The legend drawn as on the map (charter of the maps): a free point, none free, then the state's nature and time.
     expect(page).toContain('<circle r="34" fill="#2b8a3e"/><text y="11">3</text></svg>points de charge libres dans la commune</span>');

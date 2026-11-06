@@ -227,14 +227,14 @@ describe("coupures d'eau", () => {
     // The commune's page: the notice's card, never « no notice ».
     const salazie = coupuresCommunePage("https://rundata.re", pageOf("salazie")!, { coupures }, later);
     expect(salazie).toContain("<h3>Ne pas boire l'eau · Salazie");
-    expect(salazie).toContain(`<div class="now"><span class="big">1</span><p>avis en cours à Salazie : <b>eau à ne pas boire</b> dans les secteurs de l'avis.</p></div>`);
+    expect(salazie).toContain(`<div class="now"><span class="big">1</span><p>avis en cours à Salazie, lu le 30/10 à 08:00 : <b>eau à ne pas boire</b> dans les secteurs de l'avis.</p></div>`);
     expect(salazie).not.toContain("Aucun avis");
     expect(salazie).not.toContain("ni avis « ne pas boire l'eau »");
     expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
     // The island's page, and the commune's day (tool and page).
     const isle = coupuresPage("https://rundata.re", coupures, later);
     expect(isle).toContain("<h3>Ne pas boire l'eau · Salazie");
-    expect(isle).toContain(`<span class="big">2</span><p>avis en cours : <b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie).</p>`);
+    expect(isle).toContain(`<span class="big">2</span><p>avis en cours, lus le 30/10 à 08:00 : <b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie).</p>`);
     // Each id once, on the island's page and the commune's: the list of notices and the feedback form have their own titles.
     for (const page of [isle, salazie]) {
       expect(doubleIds(page)).toEqual([]);
@@ -263,12 +263,26 @@ describe("coupures d'eau", () => {
     expect(noticesHead([row(true), row(true)], "", both)).toBe(head(2, "avis en cours : <b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
     expect(noticesHead([row(), row(), row(), row(true), row(true)], "", both)).toBe(head(3, "avis de coupure ou de travaux, et 2 avis d'<b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
     expect(noticesHead([row()])).toBe(head(1, "avis de coupure ou de travaux en cours, récents ou à venir."));
+    // Dated by the reading of the notices (588): a copy of the page never says them current. « lu » for one notice.
+    const lus = "le 06/11 à 14:15";
+    expect(noticesHead([row(), row(), row(), row(true), row(true)], "", both, lus)).toBe(head(3, "avis de coupure ou de travaux, et 2 avis d'<b>eau à ne pas boire</b>, lus le 06/11 à 14:15, dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
+    expect(noticesHead([row(), row(), row()], "", [], lus)).toBe(head(3, "avis de coupure ou de travaux en cours, récents ou à venir, lus le 06/11 à 14:15."));
+    expect(noticesHead([row()], "à Saint-Paul", [], lus)).toBe(head(1, "avis de coupure ou de travaux en cours, récents ou à venir à Saint-Paul, lu le 06/11 à 14:15."));
+    expect(noticesHead([row(true), row(true)], "", both, lus)).toBe(head(2, "avis en cours, lus le 06/11 à 14:15 : <b>eau à ne pas boire</b> dans les secteurs des avis (La Plaine-des-Palmistes, Salazie)."));
+    expect(noticesHead([], "", [], lus)).toBe(head(0, "avis de coupure ou de travaux en cours, récents ou à venir, sur les sites des distributeurs lus le 06/11 à 14:15."));
+    // A feed that did not answer: only the sites that answered are said read.
+    expect(noticesHead([], "", [], lus, true)).toBe(head(0, "avis de coupure ou de travaux en cours, récents ou à venir, sur les sites des distributeurs qui ont répondu le 06/11 à 14:15."));
 
     // On 24/10, Salazie had two notices of cuts besides the notice of Grand-Îlet; Saint-Denis, a cut only.
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
-    expect(page("salazie")).toContain(head(2, "avis de coupure ou de travaux, et 1 avis d'<b>eau à ne pas boire</b> dans les secteurs de l'avis."));
-    expect(page("saint-denis")).toContain(head(1, "avis de coupure ou de travaux en cours, récents ou à venir à Saint-Denis."));
+    expect(page("salazie")).toContain(head(2, "avis de coupure ou de travaux, et 1 avis d'<b>eau à ne pas boire</b>, lus le 24/10 à 08:00, dans les secteurs de l'avis."));
+    expect(page("saint-denis")).toContain(head(1, "avis de coupure ou de travaux en cours, récents ou à venir à Saint-Denis, lu le 24/10 à 08:00."));
+    // The description dated too, and at most 160 characters: a long name of distributors drops « avec les rues… », never the date.
+    const meta = (slug: string) => page(slug).match(/<meta name="description" content="([^"]*)">/)![1];
+    expect(meta("saint-denis")).toBe("Saint-Denis (974)\u00a0: 1 avis de Dionéo en cours ou à venir, lu le 24/10 à\u00a008:00, avec les rues, les heures et les consignes.");
+    expect(meta("la-plaine-des-palmistes")).toBe("La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire\u00a0; 5 avis de la CIREST / CISE Réunion en cours ou à venir, lus le 24/10 à\u00a008:00.");
+    for (const slug of ["saint-denis", "salazie", "la-plaine-des-palmistes", "saint-paul"]) expect(meta(slug).length).toBeLessThanOrEqual(160);
     const day = (slug: string) => resume(pageOf(slug)!, { coupures } as never, NOW).resume;
     expect(day("salazie")).toContain("\u00a0; 2 avis de coupure d'eau, et 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day("saint-denis")).toContain("\u00a0; 1 avis de coupure d'eau\u00a0;");
@@ -457,7 +471,7 @@ describe("coupures d'eau", () => {
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
     const sd = page("saint-denis");
-    expect(sd).toContain("<title>Coupure d&#39;eau Saint-Denis aujourd&#39;hui : avis en cours · 974</title>");
+    expect(sd).toContain("<title>Coupure d&#39;eau Saint-Denis : avis du distributeur · 974</title>");
     expect(sd).toContain("<h1>Coupures d'eau à Saint-Denis <span class=\"n974\">974</span></h1>");
     expect(sd).toContain("ROUTE DE BOIS DE NEFLES");
     expect(sd).toContain("<b>Dionéo</b> distribue l'eau à Saint-Denis");
@@ -537,6 +551,15 @@ describe("coupures d'eau", () => {
     const ile = body(await coupuresEau(at(), undefined, now));
     expect(ile.injoignable.map((f: { de: string }) => f.de)).toEqual(["de Dionéo", "de runéo"]);
     expect(ile.resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    // The island's page says them under its head, as a commune's does; and no hour of reading over notices kept from
+    // before (588): the head is never dated by a reading the silent sites were not part of.
+    const head = (html: string) => html.slice(html.indexOf('<div class="now">'), html.indexOf("</div>", html.indexOf('<div class="now">')));
+    const isle = coupuresPage("https://rundata.re", coupures, now);
+    expect(isle).toContain(`</p></div><p class="note">Lu le 24/10 à 08:00 : le site de Dionéo n&#39;a pas répondu depuis. Ce qui suit peut avoir changé : voir <a href="https://dioneo.re/" rel="noopener">son site</a>.</p><p class="note">Le site de runéo n&#39;a pas répondu`);
+    expect(head(isle)).not.toMatch(/\blus? le /);
+    const sdPage = coupuresCommunePage("https://rundata.re", pageOf("saint-denis")!, { coupures }, now);
+    expect(head(sdPage)).not.toMatch(/\blus? le /);
+    expect(sdPage).toContain('<meta name="description" content="Coupures d&#39;eau à Saint-Denis (974)\u00a0: avis du distributeur, restrictions sécheresse et qualité de l&#39;eau du robinet.">');
     vi.restoreAllMocks();
   });
 
@@ -569,6 +592,9 @@ describe("coupures d'eau", () => {
     const sp = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
     const page = coupuresPage("https://rundata.re", { value, fetchedAt: NOW }, NOW);
     expect(page).toContain(`<path d="${sp.d}" style="fill:#f03e3e"/>`);
+    // Its title says what the page gives, not a state (588): never « avis en cours » on a day without any.
+    expect(page).toContain("<title>Coupure d&#39;eau Réunion : avis des distributeurs · 974</title>");
+    expect(page).not.toContain("aujourd&#39;hui : avis en cours");
     // Each commune leads to its own page of notices: a followed one's notices, the others' where to ask (marketing's charter).
     const links = mapLinks(page);
     expect(links).toHaveLength(24);
@@ -631,12 +657,12 @@ describe("coupures d'eau", () => {
     const later = new Date("2026-10-24T04:00:00Z");
     const now = { value: await buildCoupures(cache(), later), fetchedAt: later };
     expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/Aucun avis de coupure publié par la commune de Saint-Leu le \d\d\/\d\d à \d\d:\d\d\./);
-    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toContain('content="Coupures d&#39;eau à Saint-Leu (974)\u00a0: avis du distributeur, restrictions sécheresse');
+    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toContain('content="Aucune coupure d&#39;eau annoncée par la commune de Saint-Leu (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
     // The east: the CIREST publishes the notices read, not O2LEST, which the ARS names as the distributor.
     const sa = coupuresCommunePage("https://rundata.re", pageOf("saint-andre")!, { coupures: now }, later);
-    expect(sa).toContain('content="Coupures d&#39;eau à Saint-André (974)\u00a0: avis du distributeur, restrictions sécheresse');
+    expect(sa).toContain('content="Aucune coupure d&#39;eau annoncée par la CIREST à Saint-André (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
     expect(sa).toContain("<b>O2LEST</b> distribue l'eau à Saint-André, d'après le contrôle sanitaire de l'ARS.");
-    expect(coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures: now }, later)).toContain('content="Coupures d&#39;eau à Sainte-Marie (974)\u00a0: avis du distributeur, restrictions sécheresse');
+    expect(coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures: now }, later)).toContain('content="Aucune coupure d&#39;eau annoncée par la ville de Sainte-Marie (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
   });
 
   it("gives, for a commune whose mairie is only linked to, where its notices are", async () => {

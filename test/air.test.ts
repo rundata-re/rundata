@@ -116,6 +116,14 @@ describe("air quality: what the index is and where it comes from", () => {
     expect(page).toContain("Prévision du jour</p>");
     expect(page).toContain(`${'<span class="aq aq2">moyen</span>'} prévu dans 24 communes`);
     expect(page).not.toContain("Mis à jour à");
+    // The description dated by the day the index is forecast for (588), never « aujourd'hui »; an old copy without that
+    // day, the sentence without a value.
+    expect(answer.echeance).toBe("2026-10-23");
+    expect(page).toContain(`<meta name="description" content="Qualité de l&#39;air à La Réunion (974) le 23/10, indice ATMO prévu par Atmo Réunion\u00a0: au pire moyen (2/6)`);
+    const old = airPage("https://rundata.re", { value: { ...answer, echeance: undefined }, fetchedAt: NOW, stale: false }, NOW);
+    expect(old).toContain(`<meta name="description" content="Qualité de l&#39;air à La Réunion (974)\u00a0: l&#39;indice ATMO d&#39;Atmo Réunion dans chaque commune, avec le polluant en cause.">`);
+    // The tool's answer, for a place or the island, keeps its fields: the day is the page's only.
+    expect(body(await qualiteAir(cache(diffused(YESTERDAY)), undefined, NOW)).echeance).toBeUndefined();
     const source = page.slice(page.indexOf('id="h-source-air"'), page.indexOf("</section>", page.indexOf('id="h-source-air"')));
     expect(source).toContain('<a href="https://www.atmo-reunion.net" rel="noopener">Atmo Réunion</a>');
     expect(source).toContain(`<a href="${atmo.DIFFUSION}" rel="noopener">`);

@@ -448,6 +448,8 @@ export const buildVolcan = async (cache: Cache, now = new Date()): Promise<Volca
 
 export interface AirAnswer {
   resume: string;
+  /** The day the index of `communes` is forecast for, « 2026-11-06 » (atmo.ts `date_ech`); for the pages only. */
+  echeance?: string;
   communes?: { commune: string; niveau: number; qualite: string; polluants: string[]; sous_indices?: Record<string, number> }[];
   nature: string;
   /** When Atmo Réunion diffused the day's forecast, in a sentence (tools/air.ts `diffusion`). */

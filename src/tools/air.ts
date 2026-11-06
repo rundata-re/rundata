@@ -278,7 +278,7 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
           (atWorst.length < todays.length ? `, à ${atWorst.join(", ")}` : " dans toutes les communes") + "."
         : "L'indice du jour n'est pas dans la dernière lecture de la couche d'Atmo France.",
       ...(page
-        ? { communes: todays.map((x) => ({ commune: x.commune, niveau: x.niveau, qualite: atmo.level(x.niveau), polluants: drivers(x), sous_indices: subIndices(x) })) }
+        ? { ...(todays.length && { echeance: day }), communes: todays.map((x) => ({ commune: x.commune, niveau: x.niveau, qualite: atmo.level(x.niveau), polluants: drivers(x), sous_indices: subIndices(x) })) }
         : { communes_par_niveau: byLevel(todays) }),
       ...common,
       // A place's answer and /air give every step.

@@ -66,6 +66,8 @@ describe("Altervélo", () => {
     const value = body(await velosLibreService(cache(), undefined, NOW));
     const html = velosPage("https://rundata.re", { value, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<span class="big">19</span>`);
+    // The count dated by the reading, never « en ce moment » (588).
+    expect(html).toContain(`<span class="big">19</span><p>vélos à assistance électrique disponibles le 24/10 à 00:35 dans les <b>`);
     // Each commune served leads to its stations.
     expect(mapLinks(html).map((l) => l.href)).toEqual(["#c-l-etang-sale", "#c-saint-louis", "#c-saint-pierre"]);
     // Each commune has its bubble (marketing's charter of the maps): those served, their bikes and their link; the others,

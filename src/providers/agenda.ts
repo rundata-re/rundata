@@ -1277,8 +1277,9 @@ const etangSale: Agenda = {
       try {
         const { value } = await cache.get(`agenda:etang_sale|${e.lien}`, ETANG_SALE_PAGE_SECONDS, async () => ({ fin: finEtangSale(await getText(ETANG_SALE.id, e.lien, TIMEOUT_MS, HEADERS)) ?? null }));
         if (value.fin && value.fin > e.seances[0].debut.slice(0, 10)) fins.set(e.id, value.fin);
-      } catch {
-        // Its first day only, as the list gives it.
+      } catch (err) {
+        // Its first day only, as the list gives it; said, without the page's address.
+        console.error(`source ${ETANG_SALE.id} : fiche non lue, l'événement garde son premier jour (${err instanceof Error ? err.message : String(err)})`);
       }
     }));
     return list.map((e) => (fins.has(e.id) ? { ...e, seances: [{ ...e.seances[0], fin: fins.get(e.id)! }] } : e));

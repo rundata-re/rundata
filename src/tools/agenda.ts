@@ -275,7 +275,7 @@ async function read(cache: Cache, now: Date, deadlineMs: number, graceMs: number
         return bundle.get(k, freshSeconds, load);
       }
       const old = last(k);
-      return old ? Promise.resolve(old as Cached<T>) : Promise.reject(new Postponed(a.nom));
+      return old ? Promise.resolve(old as Cached<T>) : Promise.reject(new Postponed(`${a.nom} : plus assez de sous-requêtes`));
     },
   });
   const pending: Promise<unknown>[] = [];

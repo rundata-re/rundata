@@ -871,7 +871,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .mf-haut{display:none}
 @media (min-width:58rem){.intro .mf-haut{display:block;margin:0;justify-self:end;max-width:100%;padding:.75rem}.intro .mf-haut img{display:block;width:auto;max-width:100%;height:auto;max-height:min(40rem,78vh);background:#fff}
 .intro .mf-haut figcaption,.intro .mf-haut .note{font-size:.82rem;color:var(--on-night-muted);max-width:28rem;margin-top:.5rem}.mf-bas{display:none}}
-/* /defibrillateurs: the count and the AI under the map (in the left column on a wide screen). */
+/* /defibrillateurs: the count under the map (in the left column on a wide screen). */
 .dae-sous{min-width:0}.dae-compte{margin:0 0 .9rem;font-size:1rem}
 /* /air: the forecast under the measure, apart and smaller. */
 .status.forecast{margin-top:.2rem;padding-top:.7rem;border-top:1px solid rgb(255 255 255/.2)}.status.forecast .lead{font-size:1rem}.status.forecast .aqindex{margin:.35rem 0 0;font-size:.95rem}

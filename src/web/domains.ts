@@ -2844,11 +2844,11 @@ navigator.geolocation.getCurrentPosition((p)=>(list?Promise.resolve(list):fetch(
 
 export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
-  const url = `${origin}/defibrillateurs`;
   const markers = (d?.communes ?? []).map((c) => ({ lon: c.lon, lat: c.lat, label: String(c.nombre), name: `${c.commune}\u00a0: ${c.nombre} défibrillateurs`, round: true, color: COUNT_COLOR, quiet: true,
     place: c.commune, say: `${c.nombre} défibrillateur${c.nombre > 1 ? "s" : ""}`, href: `#${anchorId("c", c.commune)}` }));
 
   // The first screen in the order of a rescue (marketing's words, 06/11/2026): the call, the button, the map, then the count.
+  // No « Domann out IA » here: in an emergency, every second counts (06/11/2026).
   const consigne = `<p class="lead"><b>Arrêt cardiaque : appelez le <a href="tel:15">15</a> ou le <a href="tel:112">112</a>, massez, et envoyez quelqu'un chercher un défibrillateur.</b> ${esc(DAE_SANS_FORMATION)}</p>`;
   const compte = d
     ? `<p class="dae-compte">${esc(`${nombre(d.total)} défibrillateurs déclarés à La Réunion.`)}</p>`
@@ -2884,9 +2884,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   </div>
   <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : le nombre de défibrillateurs par commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: COUNT_COLOR, texte: "52", dit: "défibrillateurs de la commune" }], esc(`Liste nationale Géo'DAE, lue le ${dayMonth(DAE_BUILT)}.`))}</figcaption></figure>
-  <div class="dae-sous">${compte}
-    ${ask(`Ousa néna in défibrilatèr pli prés la plaj l'Ermitaz ? Gèt si ${url} é di amwin.`,
-      `Où est le défibrillateur le plus proche de la plage de l'Hermitage ? Lis ${url} et dis-le-moi.`)}</div>
+  <div class="dae-sous">${compte}</div>
 </div>`;
 
   const body = `<section aria-labelledby="h-dae">

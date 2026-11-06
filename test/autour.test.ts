@@ -70,15 +70,17 @@ describe("« Autour de moi » on /defibrillateurs", () => {
 
   it("puts the button after the emergency call, and its script on the page", async () => {
     const page = daePage(ORIGIN, { value: await buildDae(), fetchedAt: NOW, stale: false } as never, NOW);
-    // In the order of a rescue: the call (15 and 112 to tap), the phrase on its use, the button, the map, the count, then the AI.
+    // In the order of a rescue: the call (15 and 112 to tap), the phrase on its use, the button, the map, then the count; no AI block.
     const call = `<p class="lead"><b>Arrêt cardiaque : appelez le <a href="tel:15">15</a> ou le <a href="tel:112">112</a>, massez, et envoyez quelqu'un chercher un défibrillateur.</b> ` +
       `Il s&#39;utilise sans formation : il guide par la voix et ne délivre un choc que si c&#39;est nécessaire.</p>`;
     expect(page).toContain(call);
     expect(page).toContain(`<button type="button" class="btn sun" id="autour-btn">Défibrillateurs autour de moi</button>`);
     const count = page.indexOf(`<p class="dae-compte">${nombre(DAES.length)} défibrillateurs déclarés à La Réunion.</p>`);
-    const order = [page.indexOf(call), page.indexOf(`id="autour-btn"`), page.indexOf('<figure class="card mapcard">'), count, page.indexOf('class="ask', count)];
+    const order = [page.indexOf(call), page.indexOf(`id="autour-btn"`), page.indexOf('<figure class="card mapcard">'), count];
     expect(order.every((x) => x > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(page).not.toContain("Domann out IA");
+    expect(page).not.toContain('class="askt"');
     expect(page).not.toContain('<span class="big">');
     // The source and its date once, in the map's legend just above the count.
     expect(page.split("Géo&#39;DAE, lue le ").length).toBe(2);

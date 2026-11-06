@@ -664,6 +664,11 @@ const OTHER_PAGES: Record<string, Page> = {
   "/aujourdhui/*": { subrequests: 64, cpuMs: 130, from: ["src/tools/resume.ts"], what: "la journée d'une commune (resume_du_jour)" },
   // Measured 50, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
   "/meteo/*": { subrequests: 52, cpuMs: 130, from: [...METEO, "src/tools/mer.ts"], what: "la météo d'un lieu" },
+  // The rain layer of /meteo's map (web/pluie-radar.ts), asked when the layer is first shown, kept 5 min by the browser:
+  // the radar's latest image (1, when this data center's copy is over 4 minutes old), Météo-France's token (1 read of
+  // KV, 2 more for a new one: providers/mf-auth.ts), and the history's latest image (KV, 1) only when the copy is one
+  // kept because Météo-France did not answer, or there is none. CPU as the radar's run at its first (HDF5 and grid).
+  "/meteo/pluie-radar.json": { subrequests: 5, cpuMs: 110, from: ["src/web/pluie-radar.ts", "src/providers/radar.ts"], what: "la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille", basis: "code" },
   // The replay bar's files (web/rejeu.ts), asked when the visitor plays, kept by the data center 5 min, 15 min and up
   // to the next hour: the radar's history (KV; for the week, its hours: radar-semaine.ts), the stations' week (KV,
   // written back when newer), the hourly package from the cache (its token and the package when it has none), the
@@ -755,7 +760,7 @@ const pageEntry = (path: string, p: Page, kvReads: number): Entry => ({
 const SHARED_KEYS = new Set([...SHARED, ...SHARED_AFTER].map((s) => s.key));
 const sharedIn = (keys: string[]) => new Set(keys.filter((k) => SHARED_KEYS.has(k))).size;
 // The commune pages and /antennes: the copy of the mobile sites out of service besides.
-const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/carte/resume.json": 4, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 2, "/meteo/rejeu-24h-5min.json": 4, "/meteo/rejeu-7j-15min.json": 9, "/meteo/rejeu-jour-*.json": 2, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
+const KV_READS: Record<string, number> = { "/chiffres": 1, "/antennes": 1, "/carte/couche/*.json": 1, "/carte/resume.json": 4, "/meteo/pluie-radar.json": 2, "/meteo/rejeu-6h.json": 2, "/meteo/rejeu-24h.json": 2, "/meteo/rejeu-7j.json": 2, "/meteo/rejeu-24h-5min.json": 4, "/meteo/rejeu-7j-15min.json": 9, "/meteo/rejeu-jour-*.json": 2, "/electricite/historique.json": 2, "/": sharedIn(HOME_TILES), "/communes/*": sharedIn(COMMUNE_TILES) + 1, "/aujourdhui/*": sharedIn([...COMMUNE_TILES, ...HOME_TILES]) };
 
 const VISITS: Entry[] = [
   ...Object.entries(OTHER_PAGES).map(([path, p]) => pageEntry(path, p, KV_READS[path] ?? 0)),

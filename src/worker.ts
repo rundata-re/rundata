@@ -51,6 +51,7 @@ import { prefetchForecasts } from "./tools/prevision.js";
 import { listShared, SHARED, SHARED_AFTER, SharedFallback, warmShared } from "./web/partagees.js";
 import { configurerDefiOpenai } from "./web/site.js";
 import * as pluieRetro from "./web/pluie-retro.js";
+import * as pluieRadar from "./web/pluie-radar.js";
 import * as radarSemaine from "./web/radar-semaine.js";
 import * as rejeu from "./web/rejeu.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
@@ -229,6 +230,8 @@ function setup(env: Env): Cache {
       put: (w) => kv.put(rejeu.SEMAINE_KV_KEY, JSON.stringify(w), { expirationTtl: rejeu.SEMAINE_KV_TTL_SECONDS }),
     },
   });
+  // The live rain layer, when this data center holds only an old copy of the radar: the history's latest image.
+  pluieRadar.configure(kv && (async () => pluieRetro.derniere((await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null)));
   // Filtered from the national file by the scheduled event below (src/providers/irve.ts).
   irve.configure(kv && (async () => {
     count();

@@ -15,7 +15,7 @@ import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../t
 import { connectorCta, crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { hm, layout, readAt, leAt } from "./pages.js";
+import { hm, layout, type Live, readAt, leAt } from "./pages.js";
 
 export const PATH = "/emploi";
 export const NOM = "Emploi public";
@@ -102,6 +102,19 @@ const all=items.reduce((t,e)=>t+(+e.dataset.n||1),0);
 for(const e of items){const ok=q.every((t)=>e.dataset.q.includes(t))&&(!c||e.dataset.c===c);e.hidden=!ok;if(ok)n+=+e.dataset.n||1}
 document.getElementById("of-n").textContent=q.length||c?n+" offre"+(n>1?"s":"")+" sur "+all+".":"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
+
+/**
+ * The home page's tile, from the page's copy: its count of offers, when the feed was read. Never a read of the site:
+ * the copy is rebuilt from the one the scheduled event keeps in KV (buildEmploi). In the page's words when it has none.
+ */
+export function emploiLive(data: Cached<EmploiAnswer> | null): Live | undefined {
+  const d = data?.value;
+  if (!d || !data) return undefined;
+  if (d.prochaine) return { valeur: "", detail: `Les offres ne sont pas encore lues : prochaine lecture prévue à ${hm(d.prochaine)}.`, vide: true };
+  const lu = readAt(d.lu ? new Date(d.lu) : data.fetchedAt).a;
+  if (!d.nombre) return { valeur: "", detail: `Aucune offre publiée sur Choisir le service public pour La Réunion ${lu}.`, vide: true };
+  return { valeur: plural(d.nombre, "offre", "offres"), detail: `${d.nombre > 1 ? "ouvertes" : "ouverte"} à la candidature, Choisir le service public lu ${lu}` };
+}
 
 export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;

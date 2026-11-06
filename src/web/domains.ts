@@ -3050,9 +3050,10 @@ ${connectorCta("sport", "le sport")}`;
 export function sportLive(data: Cached<SportAnswer> | null): Live | undefined {
   const d = data?.value;
   if (!d) return undefined;
-  const upcoming = (d.a_venir ?? []).filter((r) => r.etat !== "annulée");
-  const first = upcoming[0];
-  return { valeur: `${upcoming.length} rendez-vous`, detail: first ? `d'ici quinze jours ; prochain : ${esc(first.epreuve)}, ${esc(first.quand)}` : "d'ici quinze jours" };
+  // The page's count: all of them, not only those listed, cancelled ones included (06/11/2026: « 40 » here for 68).
+  const total = d.a_venir_en_tout ?? d.a_venir?.length ?? 0;
+  const first = (d.a_venir ?? []).find((r) => r.etat !== "annulée");
+  return { valeur: `${total} rendez-vous`, detail: first ? `officiels d'ici quinze jours ; prochain : ${esc(first.epreuve)}, ${esc(first.quand)}` : "officiels d'ici quinze jours" };
 }
 
 // ---------------------------------------------------------------- cyclones

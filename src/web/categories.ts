@@ -16,11 +16,6 @@ export interface Category {
   /** A question to ask an assistant, for a category without a page. */
   exemple?: string;
   /**
-   * A page whose tile shows no figure: its copy is not among those the home page reads at each view (HOME_TILES), so
-   * that it costs no read more.
-   */
-  sansValeur?: true;
-  /**
    * Not among the home page's tiles: a category neither a page nor a tool answers, there only for /chiffres to list its
    * sources (the historic monuments, on each commune's day and on /carte).
    */
@@ -91,7 +86,6 @@ export const CATEGORIES: Category[] = [
     icon: "fish",
     tools: ["peche_loisir"],
     about: "Pêche de loisir : ce qui est fermé aujourd'hui (langouste, bichiques, capucin nain, anguille marbrée), les tailles et les quantités, d'après les arrêtés du préfet.",
-    sansValeur: true,
   },
   {
     key: "volcan",
@@ -236,7 +230,6 @@ export const CATEGORIES: Category[] = [
     icon: "antenna",
     tools: ["fiche_terrain"],
     about: "Les supports d'antennes mobiles (Orange, SFR Réunion, Free, Zeop, de la 2G à la 5G) et les émetteurs de radio et de télévision déclarés à l'ANFR, sur la carte et par commune.",
-    sansValeur: true,
   },
   {
     key: "emploi",
@@ -245,7 +238,6 @@ export const CATEGORIES: Category[] = [
     icon: "briefcase",
     tools: ["emploi"],
     about: "Les offres d'emploi de la fonction publique à La Réunion (974) : État, collectivités, hôpitaux, avec la commune et le lien pour postuler.",
-    sansValeur: true,
   },
   {
     key: "marches",
@@ -254,7 +246,6 @@ export const CATEGORIES: Category[] = [
     icon: "doc",
     tools: [],
     about: "Les avis de marché publiés au BOAMP pour La Réunion (974) : travaux, services et fournitures, avec l'acheteur, la commune et la date limite de réponse.",
-    sansValeur: true,
   },
   {
     key: "services",

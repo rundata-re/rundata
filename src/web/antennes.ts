@@ -16,7 +16,7 @@ import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { MAX_ZOOM } from "./carte-zoom.js";
 import { esc, FOND_ZOOM, islandMap, project, zoomIsland } from "./map.js";
-import { credits, layout } from "./pages.js";
+import { credits, layout, type Live } from "./pages.js";
 
 export const PATH = "/antennes";
 
@@ -294,6 +294,11 @@ function build() {
 <section aria-labelledby="h-src"><h2 id="h-src">À savoir</h2>
   <p class="note">${esc(T.note)}<a href="https://www.cartoradio.fr" rel="noopener">cartoradio.fr</a>.</p>`;
   return { band, carte, reste };
+}
+
+/** The home page's tile: the mobile supports of the bundled file, with its day; nothing read. */
+export function antennesLive(): Live {
+  return { valeur: `${nombre(antennes.SUPPORTS.length)} supports`, detail: `d'antennes mobiles déclarés à l'ANFR, fichier du ${antennes.date(antennes.MOBILE_DU)}` };
 }
 
 const SOURCES = [antennes.SOURCE_MOBILE, antennes.SOURCE_RADIO, sitesHs.SOURCE].map((x) => ({ source: x.attribution, licence: x.licence, attribution: x.attribution }));

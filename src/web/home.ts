@@ -15,6 +15,10 @@ import { a, de } from "../tools/format.js";
 import { enImagesApres, enImagesLuesAilleurs, jusquALecture, NON_ANNONCEE } from "../tools/volcan.js";
 import { libelle } from "../tools/volcan-acces.js";
 import { enfantsLive } from "./enfants.js";
+import { antennesLive } from "./antennes.js";
+import { emploiLive, type EmploiAnswer } from "./emploi.js";
+import { marchesLive, type MarchesAnswer } from "./marches-publics.js";
+import { pecheLive } from "./peche.js";
 import { enLigne } from "./associations-drapeau.js";
 import { CHAMP, champScript } from "./menu.js";
 import { esc, fenetre, islandMap, type Marker } from "./map.js";
@@ -73,6 +77,8 @@ export interface HomeLive {
   agenda?: Cached<AgendaAnswer> | null;
   actualites?: Cached<ActualitesAnswer> | null;
   crues?: Cached<CruesAnswer> | null;
+  emploi?: Cached<EmploiAnswer> | null;
+  marches?: Cached<MarchesAnswer> | null;
 }
 
 function lives(h: HomeLive | null, now: Date): Record<string, Live | undefined> {
@@ -103,6 +109,12 @@ function lives(h: HomeLive | null, now: Date): Record<string, Live | undefined> 
     enfants: enfantsLive(undefined, ["aire_de_jeux", "parc", "piscine"]),
     dae: daeLive(),
     feux: feuxLive(h?.sentiers ?? null),
+    // From the decrees and the ANFR's files bundled with the server: nothing read.
+    peche: pecheLive(now),
+    antennes: antennesLive(),
+    // Their page's copy, rebuilt from the scheduled event's copy in KV, never from their site.
+    emploi: emploiLive(h?.emploi ?? null),
+    marches: marchesLive(h?.marches ?? null),
   };
 }
 
@@ -233,9 +245,7 @@ function heroMap(h: HomeLive | null): string {
 
 function tile(c: Category, l: Live | undefined, odd = false): string {
   const name = c.path ? `<h3><a href="${c.path}">${esc(c.nom)}</a></h3>` : `<h3>${esc(c.nom)}</h3>`;
-  const now = c.sansValeur
-    ? ""
-    : l?.vide
+  const now = l?.vide
     ? `<p class="td all">${l.detail}</p>`
     : l
     ? `<p class="tv">${l.valeur}</p><p class="td${l.entier ? " all" : ""}">${l.detail}</p>`

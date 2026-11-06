@@ -537,6 +537,27 @@ function airMap(d: AirAnswer | undefined, layers: AirLayer[]): string {
     `<figcaption class="note">Indice ATMO prévu pour aujourd'hui dans chaque commune, de 1 (bon) à 6 (extrêmement mauvais) : une prévision, pas une mesure.</figcaption></figure>`;
 }
 
+/** A pollutant with its article, after « surtout » (data-run, 06/11/2026): « l'ozone », « les particules PM10 », « le dioxyde d'azote ». */
+const withArticle = (p: string) => (p.startsWith("particules") ? `les ${p}` : /^[aeiouy]/i.test(p) ? `l'${p}` : `le ${p}`);
+
+/**
+ * The forecast under the measure at the top of /air (marketing's words, data-run's choices of 06/11/2026): one line
+ * always shown, « Air prévu aujourd'hui : moyen (prévision) » in the index's colour, or « de bon à moyen selon la
+ * commune »; under it the index out of 6, the pollutant most often in cause in the communes at the highest level, when
+ * Atmo Réunion diffused it and when rundata.re read it.
+ */
+function airForecastUnder(list: NonNullable<AirAnswer["communes"]>, worst: number, best: number, diffusion: string | undefined, lue: string): string {
+  const counts = new Map<string, number>();
+  for (const c of list) if (c.niveau === worst) for (const p of c.polluants) counts.set(p, (counts.get(p) ?? 0) + 1);
+  const cause = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "fr"))[0]?.[0];
+  const at = /le (\d{2}\/\d{2}) à (\d{2}:\d{2})/.exec(diffusion ?? "");
+  const word = best !== worst ? `de ${aq(best)} à ${aq(worst)} selon la commune` : aq(worst);
+  const index = esc(`Indice ${best !== worst ? `${best} à ${worst}` : worst} sur 6 (1 bon, 6 extrêmement mauvais)${cause ? `, surtout ${withArticle(cause)}` : ""}. ` +
+    `Prévision d'Atmo Réunion${at ? `, diffusée le ${at[1]} à ${at[2]}` : ""}.`);
+  return `<div class="status forecast"><p class="lead"><b>Air prévu aujourd'hui : ${word} (prévision)</b></p>` +
+    `<p class="aqindex">${index} <span class="note">${esc(`Lue par rundata.re ${lue}.`)}</span></p></div>`;
+}
+
 export function airPage(origin: string, data: Cached<AirAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const list = [...(d?.communes ?? [])].sort((a, b) => b.niveau - a.niveau || a.commune.localeCompare(b.commune, "fr"));
@@ -552,8 +573,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   const status = !d
     ? loading("L'indice de la qualité de l'air")
     : top && worst != null
-      ? `${top}<div class="status forecast"><p class="lead"><b>${esc(`Prévision d'Atmo Réunion pour la journée : ${levels}.`)}</b> ${esc(d.resume)}</p>` +
-        `<p class="note">Une prévision, pas une mesure.${forecastNote}</p></div>`
+      ? `${top}${airForecastUnder(list, worst, best!, d.diffusion, readAt(data!.fetchedAt, now).a)}`
       : worst != null
         ? `<div class="status"><p class="big">${esc(levels)}</p>` +
           `<p class="lead">${esc(d.resume)}</p><p class="note" style="color:var(--on-night-muted)">Une prévision d'Atmo Réunion pour la journée, pas une mesure.${forecastNote}</p></div>`

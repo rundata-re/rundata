@@ -27,7 +27,7 @@ import { getBytes, getText, httpUrl } from "../http.js";
 import { inReunion } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
-import type { SourceInfo } from "../types.js";
+import { type SourceInfo, UpstreamError } from "../types.js";
 import { communesIn, strip } from "./avis-eau.js";
 import { annonceEvenement, avisDeService, extrait, lead, monthOf, premiere, statusOf, type Statut } from "./agenda-mots.js";
 import { SALLES, SOURCE as SALLES_SOURCE, TIMEOUT_MS, tokens } from "./salles.js";
@@ -434,15 +434,28 @@ export function tribeUrl(site: string, now: Date): string {
   return `${site}/wp-json/tribe/events/v1/events?ends_after=${veille}&end_date=${addDays(localDay(now), AHEAD_DAYS)}&per_page=50`;
 }
 
-function tribe(id: string, nom: string, site: string, commune: string | undefined, source: SourceInfo = SOURCES.mairies, home?: string): Agenda {
+/**
+ * `ical`: the agenda's page, whose The Events Calendar export (`?ical=1`) is read when the site's API answers 404 while
+ * its page still shows the events (Saint-Paul's since 06/11/2026 about 10:00). The API stays the one read first, as
+ * long as it may come back: it gives the events begun before today and the venues' positions, the export does not.
+ */
+function tribe(id: string, nom: string, site: string, commune: string | undefined, source: SourceInfo = SOURCES.mairies, home?: string, ical?: string): Agenda {
   return {
     id,
     nom,
     source,
     commune,
     load: (cache, now) =>
-      cache.get(`agenda:${id}`, FRESH_SECONDS, async () =>
-        parseTribe(JSON.parse(await getText(source.id, tribeUrl(site, now), TIMEOUT_MS, HEADERS)), nom, commune, home)),
+      cache.get(`agenda:${id}`, FRESH_SECONDS, async () => {
+        try {
+          return parseTribe(JSON.parse(await getText(source.id, tribeUrl(site, now), TIMEOUT_MS, HEADERS)), nom, commune, home);
+        } catch (err) {
+          if (!ical || !(err instanceof UpstreamError && err.status === 404)) throw err;
+          const events = parseIcs(await getBytes(source.id, `${ical}?ical=1`, TIMEOUT_MS, HEADERS), nom, ical, now, commune);
+          console.log(`source ${source.id} (${id}) : API des événements en 404, export iCal lu (${events.length} événements)`);
+          return events;
+        }
+      }),
   };
 }
 
@@ -1762,7 +1775,7 @@ export const DEPARTEMENT_AGENDA: Agenda = {
 // those that allow a link to their home page only (`accueil`).
 /** Every agenda that can be read, before the communes' authorisations (AGENDAS). */
 export const LISIBLES: Agenda[] = [
-  { ...tribe("saint_paul", "Mairie de Saint-Paul", "https://www.mairie-saintpaul.re", "Saint-Paul"), site_commune: "site de la commune de Saint-Paul" },
+  { ...tribe("saint_paul", "Mairie de Saint-Paul", "https://www.mairie-saintpaul.re", "Saint-Paul", SOURCES.mairies, undefined, "https://www.mairie-saintpaul.re/evenements/"), site_commune: "site de la commune de Saint-Paul" },
   // Its terms ask for « www.ville-port.re » on what is taken from it.
   { ...tribe("le_port", "Ville du Port", "https://www.ville-port.re", "Le Port", LE_PORT), site_commune: "site de la commune du Port (©\u00a0www.ville-port.re)" },
   { ...tribe("trois_bassins", "Mairie des Trois-Bassins", "https://trois-bassins.re", "Les Trois-Bassins"), site_commune: "site de la commune des Trois-Bassins" },

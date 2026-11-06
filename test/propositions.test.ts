@@ -298,7 +298,9 @@ describe("the forms on the site (web/propositions.ts)", () => {
     // The message in the page, its alert given by the script only: one there from the start is mostly not announced.
     expect(wrong).toContain('<p class="msg vu" id="p-erreur">Quelques champs sont à corriger, signalés ci-dessous.</p>');
     expect(wrong).not.toContain('role="alert"');
-    expect(wrong).toContain(`<script>(${formulaires.erreurVue})(document,(f)=>setTimeout(f,100))</script>`);
+    expect(wrong).toContain(`<script>document.addEventListener("DOMContentLoaded",()=>(${formulaires.erreurVue})(document,(f)=>setTimeout(f,100)))</script>`);
+    // Above the fields it focuses: it waits for the page to be read.
+    expect(wrong.indexOf('id="p-erreur"')).toBeLessThan(wrong.indexOf('aria-invalid="true"'));
     const robot = await post("/associations/proposer", PROPOSITION, { origin: "https://rundata.re" });
     expect(robot.status).toBe(503);
     expect(await robot.text()).toContain("<title>Erreur\u00a0: Proposer");

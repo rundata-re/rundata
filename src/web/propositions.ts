@@ -298,7 +298,9 @@ export const erreurVue = (d: Pick<Document, "getElementById" | "querySelector">,
     });
   }
 };
-export const ERREUR_SCRIPT = `<script>(${erreurVue})(document,(f)=>setTimeout(f,100))</script>`;
+// Run once the whole page is read: written above the form's fields, the script would run before they exist, and never
+// find the first one to correct (seen in a browser, 06/11).
+export const ERREUR_SCRIPT = `<script>document.addEventListener("DOMContentLoaded",()=>(${erreurVue})(document,(f)=>setTimeout(f,100)))</script>`;
 
 // « Jusqu'au » only for a repeated event, once the script runs; without it, the field stays.
 const REPETE_SCRIPT = `<script>{const r=document.getElementById("p-repete"),j=document.getElementById("p-jusqu");if(r&&j){const f=j.closest(".f"),s=()=>{f.hidden=!r.value};r.addEventListener("change",s);s()}}</script>`;

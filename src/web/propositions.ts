@@ -298,7 +298,20 @@ export const erreurVue = (d: Pick<Document, "getElementById" | "querySelector">,
     });
   }
 };
-export const ERREUR_SCRIPT = `<script>(${erreurVue})(document,(f)=>setTimeout(f,100))</script>`;
+/**
+ * `vue` once the whole page is read, at once if it already is: written above the form's fields, the script would
+ * otherwise run before they exist and never find the first one to correct (seen in a browser, 06/11). Self-contained
+ * as `erreurVue`, which it is given rather than names.
+ */
+export const erreurAuChargement = (
+  d: Pick<Document, "readyState" | "addEventListener" | "getElementById" | "querySelector">,
+  later: (f: () => void) => void,
+  vue: typeof erreurVue,
+): void => {
+  if (d.readyState === "loading") d.addEventListener("DOMContentLoaded", () => vue(d, later));
+  else vue(d, later);
+};
+export const ERREUR_SCRIPT = `<script>(${erreurAuChargement})(document,(f)=>setTimeout(f,100),${erreurVue})</script>`;
 
 // « Jusqu'au » only for a repeated event, once the script runs; without it, the field stays.
 const REPETE_SCRIPT = `<script>{const r=document.getElementById("p-repete"),j=document.getElementById("p-jusqu");if(r&&j){const f=j.closest(".f"),s=()=>{f.hidden=!r.value};r.addEventListener("change",s);s()}}</script>`;

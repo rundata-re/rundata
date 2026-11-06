@@ -24,6 +24,13 @@ describe("touch targets and small texts", () => {
     }
   });
 
+  it("grow a trail's and a station's name, a closed trail and the footer's links, spaced so that no two areas overlap", () => {
+    expect(CSS).toContain(".hike>h3>a,.st>h3>a,.hike .shut li>a,footer.foot p:not(.social) a{padding-block:max(0px,calc(12.5px - .55em))}");
+    expect(CSS).toContain(".hike .shut ul,footer.foot p:not(.social):has(a){line-height:max(26px,1.5em)}");
+    // The accounts' links, flex boxes, keep their own rule above.
+    expect(CSS).not.toMatch(/footer\.foot p a\{/);
+  });
+
   it("let the second account of a pair go under the first rather than widen the footer", () => {
     expect(CSS).toContain(".social .pair{display:inline-flex;flex-wrap:wrap;align-items:center;gap:inherit}");
   });

@@ -1029,6 +1029,12 @@ summary{min-height:24px}
    it only, never over the link; the link grows downwards by padding, which moves no line around an inline box. */
 .card>details[open]>summary:has(+.kinds>p:first-child>a){padding-block:1rem 0;margin-block:-1rem 0}
 .kinds>p:first-child>a{padding-bottom:max(0px,calc(25px - 1.1em))}
+/* At least 24 px of tap height for the links set one under the other: a trail's or a station's name (/randonnees,
+   /meteo), a closed trail, the footer's links. Padding on an inline link moves no line; where the lines are closer than
+   that (the closed trails, the footer), they are spaced to 26 px so that two links' areas never overlap. The text
+   enlarged, the padding goes to 0 once the text is tall enough by itself. */
+.hike>h3>a,.st>h3>a,.hike .shut li>a,footer.foot p:not(.social) a{padding-block:max(0px,calc(12.5px - .55em))}
+.hike .shut ul,footer.foot p:not(.social):has(a){line-height:max(26px,1.5em)}
 .pages{list-style:none;padding:0;margin-top:1rem;display:flex;flex-wrap:wrap;gap:.4rem}.pages a{display:block;padding:.3rem .75rem;border-radius:999px;background:rgb(255 255 255/.06);border:1px solid rgb(255 255 255/.1);text-decoration:none;font-size:.86rem}
 footer.foot{background:var(--night);color:var(--on-night-muted);font-size:.86rem;line-height:1.55;padding-block:2.5rem 3rem;border-top:1px solid rgb(255 255 255/.06)}
 footer.foot .wrap{display:grid;gap:1.5rem}

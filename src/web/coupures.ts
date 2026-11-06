@@ -8,11 +8,11 @@ import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MA
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
-import { deNom } from "../articles.js";
+import { de, deNom } from "../articles.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
-import { connectorCta, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
+import { connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
 import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
@@ -99,7 +99,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.avis.length
       ? `${silent}<ul class="zones">${x.avis.map(noticeCard).join("")}</ul>`
       : x.muet ? ""
-      : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : `Pas d'avis en ligne lisible pour ${esc(p.nom)}.`}</p>`;
+      : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
 
   const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +
     (dist
@@ -178,7 +178,7 @@ ${tap}
 ${others}
 ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
-${connectorCta("coupures_eau", "les coupures d'eau")}`;
+${connectorAsk("les coupures d'eau", p.nom)}`;
 
   return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte }, band, body);
 }

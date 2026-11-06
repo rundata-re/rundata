@@ -133,6 +133,15 @@ const connectorCta = (tool: string, what: string) => `<section aria-labelledby="
   <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${esc(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
 </section>`;
 
+/**
+ * The connector on the water's pages (/coupures-eau, /coupures-eau/x, /eau): a question to ask, without the tool's name
+ * (marketing, 06/11/2026).
+ */
+export const connectorAsk = (what: string, commune: string) => `<section aria-labelledby="h-ia">
+  <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
+  <p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne ${esc(a(commune))}\u00a0?\u00a0»</p></div>
+</section>`;
+
 // ---------------------------------------------------------------- volcan
 
 const md = (m: number | null) => (m == null ? "—" : fr(Math.round(m * 10) / 10));
@@ -1628,7 +1637,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   <p>${d ? `${tapBad.length ? `Des analyses non conformes en 6 mois dans ${tapBad.length} commune${tapBad.length > 1 ? "s" : ""} sur ${d.communes.length}, sur un ou deux réseaux chacune.` : "Toutes les analyses des 6 derniers mois sont conformes."} ` : ""}${esc(EAU_TEXT.robinet)}</p></div>
   ${d ? `<ul class="zones">${d.communes.map(tapCard).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">Analyses rassemblées le ${esc(dayFr(d.lu))} à ${esc(hm(new Date(d.lu)))}.</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
 </section>
-${connectorCta("qualite_eau", "la qualité de l'eau")}${d?.baignades.length ? g.feuille : ""}`;
+${connectorAsk("la qualité de l'eau", "Saint-Denis")}${d?.baignades.length ? g.feuille : ""}`;
 
   return layout(origin, { title, description, path: "/eau", jsonld: [crumbs(origin, "Qualité de l'eau", "/eau"), webPage(origin, "/eau", title, description, data)], alerte }, band, g.ligne + body);
 }
@@ -2639,7 +2648,11 @@ export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry:
 }
 
 /** The colours of the communes followed on the map of /coupures-eau, drawn the same in its legend. */
-const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff" };
+// A commune read with nothing announced and one not read, in two colours far apart (ux, 06/11/2026): a pale blue, a grey.
+const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd" };
+const CALME = "Aucun avis en cours (site lu)";
+const SITE_NON_LU = "Site pas lu\u00a0: voir la mairie ou le distributeur";
+const lower = (s: string) => s[0].toLowerCase() + s.slice(1);
 
 export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
@@ -2654,12 +2667,13 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
     fills[nm] = dry.includes(c) ? WATER_CUT.dry : d!.avis.some((n) => n.communes.includes(c)) ? WATER_CUT.avis : WATER_CUT.calme;
     // Each followed commune leads to its own page of notices.
     const p = pageOf(slugify(nm));
-    if (p) links[nm] = { href: `/coupures-eau/${p.slug}`, say: dry.includes(c) ? "eau à ne pas boire" : d!.avis.some((n) => n.communes.includes(c)) ? "avis en cours" : "pas d'avis lu en ce moment" };
+    if (p) links[nm] = { href: `/coupures-eau/${p.slug}`, say: dry.includes(c) ? "eau à ne pas boire" : d!.avis.some((n) => n.communes.includes(c)) ? "avis en cours" : lower(CALME) };
   }
   // The communes whose notices are not read: said as the legend says, and their page, which tells where to ask.
   if (d) for (const p of island.paths as { nom: string }[]) {
     const page = pageOf(slugify(p.nom));
-    links[p.nom] ??= { href: page ? `/coupures-eau/${page.slug}` : undefined, say: "avis non lus\u00a0: voir la mairie ou le distributeur" };
+    links[p.nom] ??= { href: page ? `/coupures-eau/${page.slug}` : undefined, say: lower(SITE_NON_LU) };
+    fills[p.nom] ??= WATER_CUT.nonLu;
   }
 
   const status = !d
@@ -2691,8 +2705,8 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "aplat", couleur: WATER_CUT.dry, dit: "eau à ne pas boire" },
     { forme: "aplat", couleur: WATER_CUT.avis, dit: "avis en cours" },
-    { forme: "aplat", couleur: WATER_CUT.calme, dit: "pas d'avis lu en ce moment" },
-    { forme: "aplat", couleur: "var(--land)", dit: "avis non lus\u00a0: voir la mairie ou le distributeur" },
+    { forme: "aplat", couleur: WATER_CUT.calme, dit: CALME },
+    { forme: "aplat", couleur: WATER_CUT.nonLu, dit: SITE_NON_LU },
   ], d && data ? esc(`Avis des distributeurs, lus ${readAt(data.fetchedAt, now).a}.`) : undefined)}</figcaption></figure>
 </div>`;
 
@@ -2704,7 +2718,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>
 ${cyclone.lead ? cyclone.html : ""}
-${connectorCta("coupures_eau", "les coupures d'eau")}
+${connectorAsk("les coupures d'eau", "Saint-Denis")}
 ${cyclone.lead ? "" : cyclone.html}`;
 
   return layout(origin, { title, description, path: "/coupures-eau", jsonld: [crumbs(origin, "Coupures d'eau", "/coupures-eau"), webPage(origin, "/coupures-eau", title, description, data)], alerte }, band, body);

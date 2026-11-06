@@ -120,6 +120,9 @@ describe("qualité de l'eau", () => {
     expect(late.indexOf(esc(gap))).toBeGreaterThan(late.indexOf('<div class="now">'));
     expect(late).toContain(`<p class="note">${esc(noteBaignade(true))}</p>`);
     expect(late).not.toContain("toutes les deux semaines");
+    // The connector asked a question, without the tool's name (marketing, 06/11/2026).
+    expect(late).toContain(`<p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne à Saint-Denis\u00a0?\u00a0»</p>`);
+    expect(late).not.toContain("<code>qualite_eau</code>");
     // Two weeks after the last sample: neither the sentence nor another note.
     const soon = eauPage("https://rundata.re", data, new Date("2026-09-29T04:00:00Z"));
     expect(soon).not.toContain("Aucun prélèvement publié");

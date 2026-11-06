@@ -8,7 +8,7 @@ import * as ffck from "../src/providers/ffck.js";
 import { frenchDays, parisDay, parseGolf, parseLsar, parseVolley } from "../src/providers/sport.js";
 import { avisBeach, avisIn, avisOf, avisPresse, daysIn, parseLrvb } from "../src/providers/sport-avis.js";
 import { clubOf, clubsNamed, zoneOf } from "../src/sport/clubs.js";
-import { dateLigue, joursDuTitre, liensCommuns, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
+import { dateLigue, joursDuTitre, liensCommuns, sets, sportTool, RESULTS_OUTIL, RESULTS_TOUS, UPCOMING_OUTIL, UPCOMING_TOUS, window, type SportRow } from "../src/tools/sport.js";
 import { handle } from "../src/app.js";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { libelleProchain, sportLive, sportPage } from "../src/web/domains.js";
@@ -102,6 +102,16 @@ describe("sport", () => {
     expect(v.matchs.find((m) => m.domicile === "VBC ST LEU" && m.date === "2026-10-23T20:30")).toMatchObject({ exterieur: "VBSP", score: "0-3", detail: "21:25, 20:25, 22:25" });
     expect(v.matchs.find((m) => m.date === "2026-10-24T20:00" && m.domicile === "VB2CO")).toMatchObject({ salle: "PLATEAU CAILLOU", score: undefined });
     expect(v.classement[0]).toEqual({ place: 1, equipe: "VBSP", points: 9, joues: 3 });
+  });
+
+  it("writes a volley match's sets as its score, never as a time", async () => {
+    // The FFVB writes « 21:25 »: the copy keeps it, the answer says « 21-25 ».
+    expect(sets("26:28, 25:18, 17:25, 25:22, 7:15")).toBe("26-28, 25-18, 17-25, 25-22, 7-15");
+    expect(sets(undefined)).toBeUndefined();
+    const b = body(await sportTool(cache(), "volley", undefined, "resultats", NOW, false, 20, 1000));
+    const details = b.resultats.map((r: { detail?: string }) => r.detail).filter(Boolean);
+    expect(details.length).toBeGreaterThan(10);
+    expect(details.every((d: string) => /^\d{1,2}-\d{1,2}(, \d{1,2}-\d{1,2})*$/.test(d))).toBe(true);
   });
 
   it("reads the R2 pools, without the teams that rest", () => {

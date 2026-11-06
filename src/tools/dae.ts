@@ -1,12 +1,48 @@
 import { distanceKm } from "../geo.js";
 import { resolvePlace } from "../places/resolve.js";
 import { BUILT, DAES, type Dae, SOURCE } from "../providers/dae.js";
-import { credits, notFound, placeBlock, text } from "./format.js";
+import { casseArret, NO_VOWEL, STOP_SIGLES } from "./casse.js";
+import { credits, fr, notFound, placeBlock, text } from "./format.js";
 
 const NEAR_KM = 2;
 const SHOWN = 5;
 // Walking in town: about 80 m a minute, the streets a third longer than the straight line.
 const walk = (km: number) => Math.max(1, Math.round((km * 1000 * 1.3) / 80));
+
+/** How far, as it is said: « 640\u00a0m » to 10 m, from 1 000 m in kilometres to 100 m, « 6,4\u00a0km ». */
+export function loin(km: number): string {
+  const m = Math.round((km * 1000) / 10) * 10;
+  return m < 1000 ? `${m}\u00a0m` : `${fr(Math.round(km * 10) / 10)}\u00a0km`;
+}
+
+/** A walk, as it is said: « 25\u00a0min », from an hour « 1\u00a0h\u00a043 », « 2\u00a0h ». */
+export function aPied(min: number): string {
+  if (min < 60) return `${min}\u00a0min`;
+  const [h, m] = [Math.floor(min / 60), min % 60];
+  return `${h}\u00a0h${m ? `\u00a0${String(m).padStart(2, "0")}` : ""}`;
+}
+
+/**
+ * The sigles of the devices' names kept in capitals, beside the stops' (casse.ts): the device, the companies' forms, the
+ * operators and bodies the base names most (« FEAR », « OLA » for STAR GROUP's stations, which writes them so), and the
+ * medico-social ones (« SAMSAH », « SESSAD », « EHPAD », and « EPHAD » as one name misspells it). Any word
+ * without a vowel is one too (« CRR », « BK »).
+ */
+const DAE_SIGLES = new Set([
+  "AAD", "AATI", "ADAPEI", "AED", "AEMO", "ALEFPA", "ANFH", "CA", "CC", "CCR", "CERP", "CFA", "CHRS", "CNAM", "CROS",
+  "CSAPA", "CSC", "DAE", "EGB", "EHPAD", "EMAP", "EPEI", "EPHAD", "EPS", "ERP", "ESAR", "EURL", "FEAR", "FEI", "FJT",
+  "FO", "GHER", "GIE", "GLEM", "GTOI", "IAE", "ID", "IME", "IMP", "IMPRO", "INSPE", "MDSI", "MGEN", "OI", "OLA", "OM",
+  "PTU", "SAMSAH", "SARL", "SAS", "SATP", "SAVS", "SCI", "SEBV", "SELARL", "SESSAD", "SIDR", "SIP", "SMOI", "SPL",
+  "SRA", "SUMPPS", "UD", "UEAJ",
+]);
+const daeSigle = { has: (w: string) => DAE_SIGLES.has(w) || STOP_SIGLES.has(w) || NO_VOWEL.test(w) };
+/**
+ * A device's name as people read it: written all in capitals in the base (« FEAR - SAINT PAUL »), each word with its
+ * capital and its place's name as the resolver writes it, its sigles kept (« FEAR - Saint-Paul »); as written otherwise
+ * (« CEVA LA REUNION Cambaie », « College Roquefeuil »: the operator's own writing), and when it is one word, a sigle or
+ * a brand more often than not (« INSPE », « BRINKS »).
+ */
+export const nomDae = (nom: string) => (/\s/.test(nom.trim()) && !/\p{Ll}/u.test(nom) ? casseArret(nom, daeSigle) : nom);
 
 /** Said after the emergency call, in the tool and on /defibrillateurs. */
 export const SANS_FORMATION = "Il s'utilise sans formation : il guide par la voix et ne délivre un choc que si c'est nécessaire.";
@@ -29,7 +65,7 @@ export function access(d: Dae): string {
 export function daeRow(d: Dae, from?: { lon: number; lat: number }) {
   const km = from ? distanceKm(from.lon, from.lat, d.lon, d.lat) : undefined;
   return {
-    lieu: d.nom,
+    lieu: nomDae(d.nom),
     adresse: [d.adresse, d.commune].filter(Boolean).join(", "),
     distance_m: km !== undefined ? Math.round(km * 1000 / 10) * 10 : undefined,
     a_pied_min: km !== undefined ? walk(km) : undefined,
@@ -75,8 +111,8 @@ export function defibrillateurs(lieu: string | undefined) {
   return text({
     lieu: placeBlock(lieu, res),
     resume: `${URGENCE.split(" : ")[0]} : appeler le 15 ou le 112. Défibrillateur le plus proche (${res.lieu.nom}) : ` +
-      `${first.d.nom}${first.d.adresse ? `, ${first.d.adresse}` : ""} (${first.d.commune}), à ${Math.round(first.km * 1000 / 10) * 10} m, environ ${walk(first.km)} min à pied, ${access(first.d)}.` +
-      (anyHour && anyHour !== first ? ` Accessible à toute heure : ${anyHour.d.nom}, à ${Math.round(anyHour.km * 1000 / 10) * 10} m.` : "") +
+      `${nomDae(first.d.nom)}${first.d.adresse ? `, ${first.d.adresse}` : ""} (${first.d.commune}), à ${loin(first.km)}, environ ${aPied(walk(first.km))} à pied, ${access(first.d)}.` +
+      (anyHour && anyHour !== first ? ` Accessible à toute heure : ${nomDae(anyHour.d.nom)}, à ${loin(anyHour.km)}.` : "") +
       (near.length ? "" : ` Aucun à moins de ${NEAR_KM} km.`),
     defibrillateurs: picked.map((x) => daeRow(x.d, from)),
     a_savoir: "Liste déclarée par les exploitants dans la base nationale : un appareil peut avoir été déplacé, ou être dans un lieu fermé à cette heure.",

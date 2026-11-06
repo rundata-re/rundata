@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DAES } from "../src/providers/dae.js";
-import { access, defibrillateurs } from "../src/tools/dae.js";
+import { access, aPied, defibrillateurs, loin, nomDae } from "../src/tools/dae.js";
 import { buildDae } from "../src/web/data.js";
 import { daePage } from "../src/web/domains.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
@@ -23,6 +23,37 @@ describe("défibrillateurs", () => {
     // The island's total under the map, as the home page writes it, « 1\u202f271 », never « 1271 ».
     expect(DAES.length).toBeGreaterThan(999);
     expect(page).toContain(`<p class="dae-compte">${String(DAES.length).replace(/(\d)(?=(\d{3})+$)/g, "$1\u202f")} défibrillateurs déclarés`);
+  });
+
+  it("writes a name in capitals as people read it, its sigles, codes and places kept", () => {
+    expect(nomDae("FEAR - SAINT PAUL")).toBe("FEAR - Saint-Paul");
+    expect(nomDae("FRED PA-1")).toBe("Fred PA-1");
+    expect(nomDae("DAE-CASINO DE ST GILLES")).toBe("DAE-Casino de St Gilles");
+    expect(nomDae("DAE CRR SUD MUZIK")).toBe("DAE CRR Sud Muzik");
+    expect(nomDae("LECLERC - BRAS PANON")).toBe("Leclerc - Bras-Panon");
+    // The medico-social sigles, and the companies' forms.
+    expect(nomDae("DAE SAMSAH AUSTRAL")).toBe("DAE SAMSAH Austral");
+    expect(nomDae("CSAPA SAINT PAUL")).toBe("CSAPA Saint-Paul");
+    expect(nomDae("SELARL MAYER TANAPIN")).toBe("SELARL Mayer Tanapin");
+    // An article after a full word starts a name.
+    expect(nomDae("SUEZ AGENCE LES CUVES")).toBe("Suez Agence Les Cuves");
+    expect(nomDae("ECOLE MONTESSORI LES VACOAS")).toBe("École Montessori Les Vacoas");
+    expect(nomDae("SAS LE FOUQUET")).toBe("SAS Le Fouquet");
+    // One word: a sigle or a brand, as written.
+    expect(nomDae("INSPE")).toBe("INSPE");
+    // Written with lowercase letters by its operator: as written.
+    expect(nomDae("OLA Energy Moulin Joli")).toBe("OLA Energy Moulin Joli");
+    expect(nomDae("CEVA LA REUNION Cambaie")).toBe("CEVA LA REUNION Cambaie");
+  });
+
+  it("says a distance from 1 km in kilometres and a walk from an hour in hours", () => {
+    expect([loin(0.64), loin(0.995), loin(1.19), loin(6.36)]).toEqual(["640\u00a0m", "1\u00a0km", "1,2\u00a0km", "6,4\u00a0km"]);
+    expect([aPied(59), aPied(60), aPied(103), aPied(125)]).toEqual(["59\u00a0min", "1\u00a0h", "1\u00a0h\u00a043", "2\u00a0h\u00a005"]);
+    // Far from any device: its distance and its walk so, its name as people read it.
+    const r = body(defibrillateurs("Piton des Neiges"));
+    expect(r.resume).toMatch(/à \d+,\d\u00a0km, environ \d\u00a0h(\u00a0\d\d)? à pied/);
+    expect(r.resume).not.toMatch(/\d{4} m|\d{3} min/);
+    expect(r.defibrillateurs.every((d: { lieu: string }) => /\p{Ll}/u.test(d.lieu))).toBe(true);
   });
 
   it("says how a device can be reached", () => {

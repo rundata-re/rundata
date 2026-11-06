@@ -6,6 +6,7 @@ import * as emploiSource from "../providers/emploi.js";
 import type { Offre } from "../providers/emploi.js";
 import { why } from "../types.js";
 import { formationsCpf } from "./cpf.js";
+import { employeurs, intitule } from "./employeurs.js";
 import { injoignable } from "./injoignable.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
 
@@ -40,11 +41,11 @@ const dayMonth = (iso: string) => localTime(new Date(iso)).split(" ")[0];
 const limite = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const plural = (n: number, one: string, many: string) => `${fr(n)} ${n > 1 ? many : one}`;
 
-/** One offer, as the tool and the page say it. */
+/** One offer, as the tool and the page say it: its title and employer as people read them (employeurs.ts). */
 export function offreRow(o: Offre) {
   return {
-    intitule: o.intitule,
-    ...(o.employeur ? { employeur: o.employeur } : {}),
+    intitule: intitule(o.intitule),
+    ...(o.employeur ? { employeur: employeurs(o.employeur) } : {}),
     ...(o.commune ? { commune: o.commune } : o.lieu ? { lieu: o.lieu } : {}),
     ...(o.metier ? { metier: o.metier } : o.domaine ? { domaine: o.domaine } : {}),
     ...(o.nature ? { nature: o.nature } : {}),
@@ -154,7 +155,7 @@ export async function emploi(cache: Cache, lieu: string | undefined, motCle: str
     ? `Aucune offre publiée sur Choisir le service public pour La Réunion à ${at.split(" ")[1]}.`
     : `${plural(all.length, "offre ouverte", "offres ouvertes")} à la candidature${commune ? ` ${a(commune)}` : " à La Réunion"}${what}, suivie${all.length > 1 ? "s" : ""} par rundata.re sur Choisir le service public` +
       (ile && total ? `, qui en affiche ${total.nombre} pour La Réunion (compte lu ${leAt(total.lu_a)})` : "") +
-      `${all[0] ? `, la plus récente publiée le ${dayMonth(all[0].publiee)} : ${all[0].intitule}` : ""}.` +
+      `${all[0] ? `, la plus récente publiée le ${dayMonth(all[0].publiee)} : ${intitule(all[0].intitule)}` : ""}.` +
       (sansCommune ? ` ${plural(sansCommune, "autre offre de La Réunion ne précise pas sa commune", "autres offres de La Réunion ne précisent pas leur commune")}${what}.` : "");
 
   const rows = lignes(all).slice(0, max);

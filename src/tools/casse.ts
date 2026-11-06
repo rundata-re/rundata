@@ -10,13 +10,13 @@
 import gazetteer from "../places/gazetteer.json" with { type: "json" };
 
 /** The sigles kept in capitals: the island's bodies and what the agendas name most. */
-const SIGLES = new Set([
+export const SIGLES = new Set([
   "ARS", "CAF", "CASUD", "CCAS", "CCI", "CDNOI", "CHU", "CINOR", "CIREST", "CIVIS", "CMA", "CROUS", "DJ", "EDF", "FRAC",
   "IRT", "MJC", "ONF", "OTI", "SDIS", "SNSM", "TCO", "UNESCO",
 ]);
 const ROMAN = /^(?:X{1,3}(?:IX|IV|V?I{0,3})|IX|IV|V?I{1,3}|V)$/;
 /** A word without a vowel is a sigle: « LRGR », « DJ ». */
-const NO_VOWEL = /^(?!ST$)[^AEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸ]{2,}$/u;
+export const NO_VOWEL = /^(?!ST$)[^AEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸ]{2,}$/u;
 /**
  * The two consonants a French word may start with, and the loanwords the agendas use (« ski », « slam », « snack »). A
  * word of four letters at most that starts otherwise is a name or a brand (« DKLO »): left in capitals.
@@ -62,16 +62,20 @@ function placeNames() {
   return names;
 }
 
-/** The title as it should be shown: in the case of a sentence when written all in capitals, as written otherwise. */
-export function casse(titre: string): string {
+/**
+ * The title as it should be shown: in the case of a sentence when written all in capitals, as written otherwise.
+ * `sigles`: those kept in capitals, the island's bodies by default; a source adds its own (an offer's « F/H », « ATTEE »).
+ * `nomCourt`: whether a title of one or two words is read as a name; never for a job's title (« AGENT SOCIAL »).
+ */
+export function casse(titre: string, sigles: { has(w: string): boolean } = SIGLES, nomCourt = true): string {
   if (/\p{Ll}/u.test(titre)) return titre;
   const words = [...titre.matchAll(WORD)];
   const letters = words.reduce((n, w) => n + (w[0].match(/\p{L}/gu)?.length ?? 0), 0);
-  if (!words.length || (titre.trim().split(/\s+/).length === 1 && (letters <= SIGLE_MAX || SIGLES.has(titre.trim())))) return titre;
-  const short = titre.trim().split(/\s+/).length <= 2;
+  if (!words.length || (titre.trim().split(/\s+/).length === 1 && (letters <= SIGLE_MAX || sigles.has(titre.trim())))) return titre;
+  const short = nomCourt && titre.trim().split(/\s+/).length <= 2;
   const out = words.map((m) => {
     const w = m[0];
-    if (SIGLES.has(w) || ROMAN.test(w) || NO_VOWEL.test(w) || brand(w) || /\p{N}/u.test(w)) return w;
+    if (sigles.has(w) || ROMAN.test(w) || NO_VOWEL.test(w) || brand(w) || /\p{N}/u.test(w)) return w;
     const lower = w.toLocaleLowerCase("fr");
     return short ? upperFirst(lower) : lower;
   });
@@ -83,7 +87,7 @@ export function casse(titre: string): string {
       const span = n.words.length;
       if (i + span > words.length) continue;
       if (!n.words.every((w, j) => key(words[i + j][0]) === w && (j === 0 || /^[\s'’-]+$/.test(between(i + j - 1))))) continue;
-      for (let j = 0; j < span; j++) if (n.caps[j] && !SIGLES.has(words[i + j][0])) out[i + j] = upperFirst(out[i + j]);
+      for (let j = 0; j < span; j++) if (n.caps[j] && !sigles.has(words[i + j][0])) out[i + j] = upperFirst(out[i + j]);
       i += span - 1;
       break;
     }
@@ -100,7 +104,7 @@ export function casse(titre: string): string {
 }
 
 /** The sigles of the stop names kept in capitals: bodies, roads and sites the networks name (« ZAC N° 2 », « CD 29 »). */
-const STOP_SIGLES = new Set([
+export const STOP_SIGLES = new Set([
   ...SIGLES, "AFPAR", "ASCPH", "CAT", "CD", "CFPPA", "CGSS", "CHD", "CHOR", "CIRAD", "CIROI", "CMPP", "DDASS", "DDE", "EPSMR",
   "ESAT", "IRFA", "IRSAM", "IUT", "MFR", "RD", "RN", "SAFER", "SAS", "SMA", "SRPP", "ZAC", "ZI",
 ]);
@@ -145,12 +149,14 @@ function placeSpellings() {
  * « Gare Saint-André », « Chemin de l'Etang ». No word added or removed. Each word takes a capital, the
  * small words (STOP_SMALL) none but at the head. Accents and hyphens come only from two closed lists: the names of places
  * the resolver knows, written as it writes them (word for word: « ST ANDRE » stays « St Andre »), and STOP_ACCENTS; any
- * other word stays without accent, as the network writes it. Sigles of a closed list (STOP_SIGLES), roman numerals,
- * single letters, initials (« A. HOARAU ») and words with a digit are left as written. A name written with a capital
- * on every word (« Gare De Saint Pierre ») gets the same small words, names of places and accents, its other words left
- * as written (« Gare de Saint-Pierre »); any other name with a lowercase letter is left as written (« Mairie de La Possession »).
+ * other word stays without accent, as the network writes it. Sigles of a closed list (STOP_SIGLES, or `sigles` for
+ * another source's names: a defibrillator's place, an employer), roman numerals, single letters, initials
+ * (« A. HOARAU »), words with a digit and a code's letters joined to one (« PA-1 », « PA_1 ») are left as written. A
+ * name written with a capital on every word (« Gare De Saint Pierre ») gets the same small words, names of places and
+ * accents, its other words left as written (« Gare de Saint-Pierre »); any other name with a lowercase letter is left
+ * as written (« Mairie de La Possession »).
  */
-export function casseArret(nom: string): string {
+export function casseArret(nom: string, sigles: { has(w: string): boolean } = STOP_SIGLES): string {
   if (!/\p{L}/u.test(nom)) return nom;
   const atoms = [...nom.matchAll(WORD)];
   if (!atoms.length) return nom;
@@ -169,7 +175,9 @@ export function casseArret(nom: string): string {
   const folded = atoms.map((m) => fold(m[0]));
   // Where a name of a place may run on to the next word: only a space, a hyphen or an apostrophe between them.
   const joined = atoms.map((_, i) => i < atoms.length - 1 && /^[\s'’-]+$/.test(between(i)));
-  const free = atoms.map((m) => !/\p{N}/u.test(m[0]) && !STOP_SIGLES.has(m[0]));
+  // A code: a word with a digit, or the letters joined to one by a hyphen or an underscore (« PA-1 »).
+  const code = atoms.map((m, i) => /\p{N}/u.test(m[0]) || (i < atoms.length - 1 && /^[-_]$/.test(between(i)) && /\p{N}/u.test(atoms[i + 1][0])));
+  const free = atoms.map((m, i) => !code[i] && !sigles.has(m[0]));
   let text = nom.slice(0, atoms[0].index);
   for (let i = 0; i < atoms.length; ) {
     // The longest name of a place that starts here, its words joined only by spaces, hyphens or apostrophes; never a
@@ -193,7 +201,7 @@ export function casseArret(nom: string): string {
     let word: string;
     // « D'EAU », « L'ETANG »: the elided article, small but at the head.
     if (elided(i)) word = i ? w.toLowerCase() : w;
-    else if (/\p{N}/u.test(w) || STOP_SIGLES.has(w) || ROMAN.test(w) || initial(i) || ([...w].length === 1 && !small(i))) word = w;
+    else if (code[i] || sigles.has(w) || ROMAN.test(w) || initial(i) || ([...w].length === 1 && !small(i))) word = w;
     // « P'TIT »: the rest of one word.
     else if (apostrophe(i - 1) && !elided(i - 1)) word = titled ? w : w.toLocaleLowerCase("fr");
     // « LE », « LA », « LES » after a full word start a name (« Agence Les Cuves », « Rue La Fontaine »); after a small

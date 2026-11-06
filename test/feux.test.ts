@@ -183,7 +183,7 @@ describe("fires on the site", () => {
     // The hot spot's triangle in brown-red (charter of the maps), drawn in the legend as on the map, then the sources.
     expect(html).toMatch(/<path class="sh" d="M[\d.]+ [\d.]+L[\d.]+ [\d.]+H[\d.]+Z" fill="#7c2d12"\/>/);
     expect(html).toContain('<path d="M0 -36L35 28H-35Z" fill="#7c2d12"/></svg>Point chaud détecté par satellite, pas forcément un feu.</span>');
-    expect(html).toContain('<span class="mls">Carte de l&#39;ONF. Points chauds : satellites de la NASA (FIRMS), lus le 24/10 à 08:00.</span>');
+    expect(html).toContain('<span class="mls">Carte de l&#39;ONF. Points chauds : données des satellites de la NASA, lues le 24/10 à 08:00.</span>');
     // Their place in the bubble only: written on the map, it was cut by the frame and laid over the crosses.
     expect(html).not.toMatch(/class="mn">Feu détecté/);
     expect(html).not.toContain("#e8590c");

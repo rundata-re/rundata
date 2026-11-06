@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { annuaireEcolesPage } from "../src/web/ecoles-annuaire.js";
+import { enfantsPage } from "../src/web/enfants.js";
 import { CSS } from "../src/web/pages.js";
 
 // Touch targets of 24 px at least at 320 and 390 px (WCAG 2.5.8), and no text under 12 px, without moving the page.
@@ -11,6 +13,19 @@ describe("touch targets and small texts", () => {
   it("grow the accounts' links and a hike's by padding their margin takes back, and never a summary under 24 px", () => {
     expect(CSS).toContain(".social a,.hike .links a{padding-block:2px;margin-block:-2px}");
     expect(CSS).toMatch(/(^|[}\n])summary\{min-height:24px\}/);
+  });
+
+  it("grow the link under an opened commune's title downwards, the title's tap area extended above it only", () => {
+    expect(CSS).toContain(".card>details[open]>summary:has(+.kinds>p:first-child>a){padding-block:1rem 0;margin-block:-1rem 0}");
+    expect(CSS).toContain(".kinds>p:first-child>a{padding-bottom:max(0px,calc(25px - 1.1em))}");
+    // The rules hold for the link to the commune's page, first in the opened card, on /ecoles and on /enfants.
+    for (const page of [annuaireEcolesPage("https://rundata.re"), enfantsPage("https://rundata.re", null)]) {
+      expect(page).toMatch(/<\/summary><div class="kinds"><p><a href="\/(?:communes|enfants)\/saint-paul[#"]/);
+    }
+  });
+
+  it("let the second account of a pair go under the first rather than widen the footer", () => {
+    expect(CSS).toContain(".social .pair{display:inline-flex;flex-wrap:wrap;align-items:center;gap:inherit}");
   });
 
   it("set no font size under 12 px in the stylesheet", () => {

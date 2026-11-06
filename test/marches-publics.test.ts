@@ -6,6 +6,7 @@ import { communeAdresse } from "../src/places/codes-postaux.js";
 import * as boamp from "../src/providers/marches-publics.js";
 import { REGISTRY } from "../src/registre.js";
 import { buildMarches, marchesPage } from "../src/web/marches-publics.js";
+import { doubleIds } from "./cartes.js";
 
 // Ten notices of the BOAMP's list for La Réunion read on 29/10/2026 at 14:51, and their full texts read at 13:49, cut
 // to their places (no name of a person in them).
@@ -253,6 +254,11 @@ describe("the page /marches-publics", () => {
     const p = marchesPage(O, { value: { nombre: 1, avis: [a], sources: [] }, fetchedAt: now, stale: false }, now);
     expect(p).toContain("jusqu&#39;au 08/01/2027");
     expect(p).toContain("1 avis de marché ouvert aux réponses");
+    // Each id once: « laisser un avis » (#avis) leads to the form, not to the list, and the form keeps its own title.
+    expect(doubleIds(p)).toEqual([]);
+    expect(p).toContain('<ul class="rows eau" id="marches">');
+    expect(p).toContain('<aside class="avis wrap" id="avis" aria-labelledby="h-avis">');
+    expect(p).toContain('querySelectorAll("#marches li")');
     // The store empty: the next read, 35 past.
     const d = await buildMarches(new Cache(new MemoryStore(), () => now.getTime()), now);
     expect(d.prochaine).toBe("2026-10-29T09:35:00.000Z");

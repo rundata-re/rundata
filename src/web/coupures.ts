@@ -165,8 +165,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 
   // Up the page in the cyclone season, at its foot the rest of the year.
   const cyclone = cycloneWater(now, p.nom);
-  const body = `<section aria-labelledby="h-avis">
-  <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-avis">Les avis ${esc(where)}</h2></div>
+  const body = `<section aria-labelledby="h-coupures-eau">
+  <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
   ${list}
   ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}
 </section>

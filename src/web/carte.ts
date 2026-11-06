@@ -359,11 +359,11 @@ else if(c.id==="canyons"){p2=[i.type,i.signalement].filter(Boolean).join(" · ")
 else{p2=[i.type,i.adresse].filter(Boolean).join(" · ");p3=src("lue le "+jm(j.heure))}
 return[o.nom+(o.commune?" · "+o.commune:""),p2,p3]};
 const lien=(c,o)=>c.id==="defibrillateurs"?"/defibrillateurs#"+(K.dae[o.commune]||""):c.id.startsWith("enfants-")?(K.enfants[o.commune]||c.page):o.lien||c.page;
-const point=(c,o,j)=>{const x=X(o.lon),y=Y(o.lat),l=lines(c,o,j),a=el("a",{class:"sp",href:lien(c,o),tabindex:"-1","aria-label":l.filter(Boolean).join(", "),"data-pt":"Voir la page "+c.rubrique+" →"});["pn","p2","p3"].forEach((k,n)=>{if(l[n])a.setAttribute("data-"+k,l[n])});
+const point=(c,o,j)=>{const x=X(o.lon),y=Y(o.lat),l=lines(c,o,j),kt=c.id==="stations"&&(o.infos||{}).temperature!=null?Math.round(o.infos.temperature)+"°":"",a=el("a",{class:"sp",href:lien(c,o),tabindex:"-1","aria-label":[kt,...l].filter(Boolean).join(", "),"data-pt":"Voir la page "+c.rubrique+" →"});["pn","p2","p3"].forEach((k,n)=>{if(l[n])a.setAttribute("data-"+k,l[n])});
 const d="M"+x+" "+y+"h0",i=o.infos||{};a.append(el("circle",{class:"hit",cx:x,cy:y,r:"3"}),el("path",{class:"kr",d}),el("path",{class:"kd",d}));
 if(c.id==="seismes"){const w=Math.max(7,Math.min(40,8+7*i.magnitude));a.style.setProperty("--w",w+"px")}
 if(c.id==="bornes"&&i.libres===0)a.classList.add("k0");if(i.alerte)a.classList.add("kti");if(c.id==="vitesses")a.classList.add("v"+i.vitesse_kmh);if(c.id==="velo"&&!o.trace)a.classList.add("ka");if(i.ancienne)a.classList.add("kv");
-if(c.id==="stations"&&i.temperature!=null){const t=el("text",{x,y,dy:"-.75em",class:"kt"});t.textContent=Math.round(i.temperature)+"°";a.append(t)}return a};
+if(kt){const t=el("text",{x,y,dy:"-.75em",class:"kt"});t.textContent=kt;a.append(t)}return a};
 const rain=(j)=>{const cv=svg.querySelector(".kpluie canvas");if(!cv)return;cv.width=j.w;cv.height=j.h;const g=cv.getContext("2d"),im=g.createImageData(j.w,j.h),P=K.pluie.couleurs.map((s)=>s.match(/[\\d.]+/g).map(Number));
 for(let k=0;k<j.w*j.h;k++){const v=j.pluie.charCodeAt(k)-48,mal=j.mal_vu&&j.mal_vu[k]==="1",q=k*4;if(v>=1&&v<=8){const p=P[v-1];im.data[q]=p[0];im.data[q+1]=p[1];im.data[q+2]=p[2];im.data[q+3]=Math.round(p[3]*255)}
 else if(mal&&((k%j.w)+Math.floor(k/j.w))%3===0){im.data[q]=70;im.data[q+1]=80;im.data[q+2]=95;im.data[q+3]=90}}g.putImageData(im,0,0)};

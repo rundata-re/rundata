@@ -59,6 +59,13 @@ describe("/carte", () => {
     expect(html).not.toContain("i.direction??-1");
   });
 
+  it("names a station by its temperature as shown first, so that a voice command finds it (WCAG 2.5.3)", async () => {
+    const { html } = await serve("/carte");
+    expect(html).toContain('kt=c.id==="stations"&&(o.infos||{}).temperature!=null?Math.round(o.infos.temperature)+"°":""');
+    expect(html).toContain('"aria-label":[kt,...l].filter(Boolean).join(", ")');
+    expect(html).toContain("t.textContent=kt;");
+  });
+
   it("in full screen on a phone, puts the map's buttons in their place, never over it, and the legend over the panel", async () => {
     const { html } = await serve("/carte");
     // The buttons over the map only on a large screen, where they sit over the sea of its corner.

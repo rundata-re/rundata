@@ -114,7 +114,7 @@ import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placeP
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
 import { pageOf, PAGES } from "./places.js";
 import { pressePage, pressFigures, toolCount } from "./presse.js";
-import { avisPost } from "./avis.js";
+import { avisPost } from "./avis-envoi.js";
 import * as connecteurs from "./connecteurs.js";
 import * as espaceClub from "./club.js";
 import * as formulaires from "./propositions.js";

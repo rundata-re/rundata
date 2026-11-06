@@ -329,9 +329,33 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect(r.status).toBe(303);
     expect(r.headers.get("location")).toBe("https://rundata.re/publier#lien-merci");
     expect(rows("SELECT nom, commune, lien, contact, page FROM liens")).toEqual([{ nom: "Club de volley", commune: "Saint-Paul", lien: "https://club.example/agenda.ics", contact: null, page: "/publier" }]);
-    expect((await post("/associations/lien", { ...fields, agit: "" })).headers.get("location")).toBe("https://rundata.re/publier#lien-erreur");
+    const wrong = await post("/associations/lien", { ...fields, agit: "" });
+    expect(wrong.status).toBe(422);
+    expect(wrong.headers.get("location")).toBeNull();
     expect((await post("/associations/lien", { ...fields, page: "//evil.example/x" })).headers.get("location")).toBe("https://rundata.re/associations#lien-merci");
     expect((await handle(new Request("https://rundata.re/associations/lien"), new Cache())).status).toBe(405);
+  });
+
+  it("gives the link form back with what was typed, and says why: the fields, the robots' check, the day's cap", async () => {
+    formulaires.ouvrir(true);
+    const fields = { nom: "Club de volley", commune: "Saint-Paul", lien: "https://club.example/agenda.ics", contact: "0262 00 00 00", agit: "oui", page: "/publier" };
+    // The robots' check failed: its own words, not « vérifiez les champs ».
+    human();
+    const robot = await post("/associations/lien", { ...fields, "cf-turnstile-response": "autre" }, { origin: "https://rundata.re" });
+    expect(robot.status).toBe(503);
+    const html = plain(await robot.text());
+    expect(html).toContain('<p class="msg vu" id="lien-verif" role="alert">Le lien n\'a pas été enregistré : la vérification anti-robot n\'a pas pu se faire. Votre saisie est gardée ci-dessous. Réessayez dans un instant ; si ça dure, écrivez à contact@rundata.re.</p>');
+    expect(html).not.toContain("vérifiez les champs");
+    for (const v of ['value="Club de volley"', 'value="https://club.example/agenda.ics"', 'value="0262 00 00 00"', "<option selected>Saint-Paul</option>", 'value="oui" required checked', 'name="page" value="/publier"']) expect(html).toContain(v);
+    expect(html).toContain("<title>Erreur : lien non enregistré · Clubs et associations · 974</title>");
+    expect(html).toContain('class="cf-turnstile"');
+    expect(html).toContain("challenges.cloudflare.com/turnstile/v0/api.js");
+    expect(html).toContain('<a href="/publier">Retour à la page précédente</a>');
+    // A field wrong: « vérifiez les champs », the field marked.
+    const wrong = plain(await (await post("/associations/lien", { ...fields, lien: "club.example", "cf-turnstile-response": "jeton-turnstile" })).text());
+    expect(wrong).toContain('id="lien-erreur" role="alert">Le lien n\'a pas pu être enregistré : vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re. Votre saisie est gardée ci-dessous.</p>');
+    expect(wrong).toMatch(/name="lien" [^>]*value="club.example" aria-invalid="true"/);
+    expect(rows("SELECT * FROM liens")).toHaveLength(0);
   });
 
   it("keeps the date and time fields inside their column on a phone, each as tall as the others", () => {
@@ -350,9 +374,11 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect(html).toContain(`e.classList.toggle("vide",!e.value);for(const e of document.querySelectorAll(".fo input[type=date],.fo input[type=time]"))`);
   });
 
-  it("shows the link form's outcome by CSS alone", () => {
+  it("shows the link form's thanks by CSS alone", () => {
     const html = plain(formulaires.lienForm("/associations"));
-    for (const id of ["lien-merci", "lien-limite", "lien-erreur"]) expect(html).toContain(`id="${id}"`);
+    expect(html).toContain('id="lien-merci"');
+    // The refusals come with the form given back, filled (lienPage).
+    for (const id of ["lien-limite", "lien-erreur", "lien-verif"]) expect(html).not.toContain(`id="${id}"`);
     expect(FORMS_CSS).toContain(".fo .msg:target");
     expect(html).toContain("Merci. Nous vérifions que votre lien se lit bien ; vos événements apparaissent ensuite sur rundata.re, en général sous 48 h.");
   });

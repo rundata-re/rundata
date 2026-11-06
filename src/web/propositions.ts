@@ -1,8 +1,9 @@
 /**
  * The two forms of the clubs' and associations' space (marketing's spec, espace-associations.md §3 and §4), on plain
  * HTML, so they work without a script:
- * - « Nous donner votre lien », POST /associations/lien: the browser is sent back to its page, where #lien-merci (or
- *   #lien-limite, #lien-erreur) shows the outcome by CSS alone, like the feedback form (web/avis.ts);
+ * - « Nous donner votre lien », POST /associations/lien: once kept, the browser is sent back to its page, where
+ *   #lien-merci says so by CSS alone, like the feedback form (web/avis.ts); refused, the form comes back on a page of
+ *   its own with what was typed, and why: the fields (#lien-erreur), the day's cap, the robots' check (#lien-verif);
  * - « Proposer un événement », GET and POST /associations/proposer: its own page, given back with what was typed and
  *   the fields to correct, or with what happens next.
  * Rows go to src/propositions.ts. Against robots: Turnstile (Cloudflare's check, its script on these forms only), a
@@ -95,18 +96,37 @@ export const hp = `<div class="hp" aria-hidden="true"><label>Ne pas remplir <inp
 
 // ---------------------------------------------------------------- « Nous donner votre lien »
 
-/** The form, with the page it is on. */
-export function lienForm(path: string): string {
+/** Why a link was not kept, said over the form given back with what was typed. */
+export type LienRefus = { issue: "erreur"; erreurs: string[] } | { issue: "limite" | "verif" | "indisponible" };
+const GARDEE = "Votre saisie est gardée ci-dessous.";
+const LIEN_REFUS: Record<LienRefus["issue"], string> = {
+  // The fields only: the robots' check and the storage have their own.
+  erreur: `Le lien n'a pas pu être enregistré\u00a0: vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re. ${GARDEE}`,
+  limite: `Plusieurs liens ont déjà été envoyés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à contact@rundata.re. ${GARDEE}`,
+  verif: `Le lien n'a pas été enregistré\u00a0: la vérification anti-robot n'a pas pu se faire. ${GARDEE} Réessayez dans un instant\u00a0; si ça dure, écrivez à contact@rundata.re.`,
+  indisponible: `Le lien n'a pas pu être enregistré. ${GARDEE} Réessayez dans quelques minutes, ou écrivez à contact@rundata.re.`,
+};
+
+/**
+ * The form, with the page it is on; with `kept`, given back on its own page (lienPage()) with what was typed, the
+ * reason over it and the wrong fields marked.
+ */
+export function lienForm(path: string, kept?: { f: URLSearchParams; refus: LienRefus }): string {
+  const f = kept?.f ?? new URLSearchParams();
+  const wrong = new Set(kept?.refus.issue === "erreur" ? kept.refus.erreurs : []);
+  const v = (k: string) => (kept ? ` value="${esc(f.get(k) ?? "")}"` : "");
+  const bad = (k: string) => (wrong.has(k) ? ` aria-invalid="true"` : "");
+  const said = kept
+    ? `<p class="msg vu" id="lien-${kept.refus.issue === "indisponible" ? "erreur" : kept.refus.issue}" role="alert">${LIEN_REFUS[kept.refus.issue]}</p>`
+    : `<h2 id="h-lien">Nous donner votre lien</h2>
+  <p class="msg ok" id="lien-merci" role="status">Merci. Nous vérifions que votre lien se lit bien\u00a0; vos événements apparaissent ensuite sur rundata.re, en général sous 48 h.</p>`;
   return `<form class="card fo" id="lien" method="post" action="${LIEN_PATH}" aria-labelledby="h-lien">
-  <h2 id="h-lien">Nous donner votre lien</h2>
-  <p class="msg ok" id="lien-merci" role="status">Merci. Nous vérifions que votre lien se lit bien\u00a0; vos événements apparaissent ensuite sur rundata.re, en général sous 48 h.</p>
-  <p class="msg" id="lien-limite" role="status">Plusieurs liens ont déjà été envoyés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à contact@rundata.re.</p>
-  <p class="msg" id="lien-erreur" role="status">Le lien n'a pas pu être enregistré\u00a0: vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re.</p>
-  <div class="f"><label for="lien-nom">Nom de l'organisation</label><input id="lien-nom" name="nom" required minlength="2" maxlength="${propositions.NOM_MAX}" autocomplete="organization"></div>
-  <div class="f"><label for="lien-commune">Commune</label><select id="lien-commune" name="commune" required>${options(COMMUNES, "", "Choisir")}</select></div>
-  <div class="f"><label for="lien-lien">Lien de votre agenda ou de votre flux</label><input id="lien-lien" name="lien" type="url" required maxlength="${propositions.LIEN_MAX}" placeholder="https://" inputmode="url"></div>
-  <div class="f"><label for="lien-contact">E-mail ou téléphone de l'organisation <span class="aide">(facultatif, jamais publié\u00a0: pour vous prévenir si le lien ne répond plus)</span></label><input id="lien-contact" name="contact" maxlength="${propositions.CONTACT_MAX}"></div>
-  <label class="case"><input type="checkbox" name="agit" value="oui" required> J'agis pour cette organisation, et j'accepte que ce lien et les événements qu'on y lit soient publiés sous Licence Ouverte 2.0.</label>
+  ${said}
+  <div class="f"><label for="lien-nom">Nom de l'organisation</label><input id="lien-nom" name="nom" required minlength="2" maxlength="${propositions.NOM_MAX}" autocomplete="organization"${v("nom")}${bad("nom")}></div>
+  <div class="f"><label for="lien-commune">Commune</label><select id="lien-commune" name="commune" required${bad("commune")}>${options(COMMUNES, f.get("commune") ?? "", "Choisir")}</select></div>
+  <div class="f"><label for="lien-lien">Lien de votre agenda ou de votre flux</label><input id="lien-lien" name="lien" type="url" required maxlength="${propositions.LIEN_MAX}" placeholder="https://" inputmode="url"${v("lien")}${bad("lien")}></div>
+  <div class="f"><label for="lien-contact">E-mail ou téléphone de l'organisation <span class="aide">(facultatif, jamais publié\u00a0: pour vous prévenir si le lien ne répond plus)</span></label><input id="lien-contact" name="contact" maxlength="${propositions.CONTACT_MAX}"${v("contact")}${bad("contact")}></div>
+  <label class="case"><input type="checkbox" name="agit" value="oui" required${f.get("agit") === "oui" ? " checked" : ""}${bad("agit")}> J'agis pour cette organisation, et j'accepte que ce lien et les événements qu'on y lit soient publiés sous Licence Ouverte 2.0.</label>
   <input type="hidden" name="page" value="${esc(path)}">
   ${hp}
   ${widget("lien")}
@@ -139,21 +159,35 @@ export async function received(request: Request, what: string): Promise<URLSearc
 /** Whether Turnstile lets the form through: never without its key. */
 export const human = async (f: URLSearchParams, adresse: string, attendu: Attendu) => !!verif && (await verif(f.get("cf-turnstile-response") ?? "", adresse, attendu));
 
-/** POST /associations/lien: writes the link and sends the browser back to its page. */
+const LIEN_TITLE = "Erreur\u00a0: lien non enregistré · Clubs et associations · 974";
+const LIEN_META = "Le lien de votre agenda ou de votre flux n'a pas été enregistré\u00a0: votre saisie est gardée.";
+
+/** The link form given back, filled, on a page of its own: the page it was sent from cannot be rebuilt here. */
+export function lienPage(origin: string, page: string, kept: { f: URLSearchParams; refus: LienRefus }): string {
+  const band = `${crumbBar("Nous donner votre lien", PARENT)}
+<div class="wrap intro solo"><div class="pitch"><h1 id="h-lien">Nous donner votre lien</h1></div></div>`;
+  const body = `${lienForm(page, kept)}${TURNSTILE_SCRIPT}
+<p><a href="${esc(page)}">Retour à la page précédente</a></p>`;
+  return layout(origin, { title: LIEN_TITLE, description: LIEN_META, path: LIEN_PATH, jsonld: [], noindex: true, hook: "", sansAvis: true, sansPartage: true }, band, body);
+}
+
+/** POST /associations/lien: writes the link and sends the browser back to its page; or gives the form back, filled. */
 export async function lienPost(request: Request, now = new Date()): Promise<Response> {
   const f = await received(request, "Le formulaire «\u00a0Nous donner votre lien\u00a0»");
   if (f instanceof Response) return f;
   const origin = new URL(request.url).origin;
   const page = pageOf(f.get("page"));
-  const back = (outcome: "merci" | "limite" | "erreur") => new Response(null, { status: 303, headers: { location: `${origin}${page}#lien-${outcome}`, "cache-control": "no-store" } });
+  const merci = () => new Response(null, { status: 303, headers: { location: `${origin}${page}#lien-merci`, "cache-control": "no-store" } });
+  const refused = (refus: LienRefus, status: number) =>
+    new Response(lienPage(origin, page, { f, refus }), { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff" } });
   // Filled in by robots only: thanked, not kept.
-  if (f.get("site_web")) return back("merci");
+  if (f.get("site_web")) return merci();
   const read = propositions.lireLien(f, COMMUNES, page);
-  if ("erreurs" in read) return back("erreur");
+  if ("erreurs" in read) return refused({ issue: "erreur", erreurs: read.erreurs }, 422);
   const adresse = avis.adresseOf(request.headers);
-  if (!(await human(f, adresse, { hostname: new URL(request.url).hostname, action: "lien" }))) return back("erreur");
+  if (!(await human(f, adresse, { hostname: new URL(request.url).hostname, action: "lien" }))) return refused({ issue: "verif" }, 503);
   const issue = await propositions.enregistrerLien(read.lien, adresse, now);
-  return back(issue === "ok" ? "merci" : issue === "limite" ? "limite" : "erreur");
+  return issue === "ok" ? merci() : issue === "limite" ? refused({ issue: "limite" }, 429) : refused({ issue: "indisponible" }, 503);
 }
 
 // ---------------------------------------------------------------- « Proposer un événement »

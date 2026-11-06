@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Vendredi 6 novembre 2026
+
+- Cyclones : la carte de prévision de trajectoire de Météo-France, telle que publiée, dès qu'un système est suivi, même une zone perturbée.
+
 ## Mercredi 4 novembre 2026
 
 - Lieux des Hauts : le ciel prévu pour la nuit, la phase de la Lune et les heures de nuit noire, calculées, sur la page du lieu.

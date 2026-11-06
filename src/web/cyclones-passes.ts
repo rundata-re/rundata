@@ -10,6 +10,7 @@ import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
 
+const CYCLONES = { name: "Cyclones", path: "/cyclones" };
 /** How many stations show before the « autres stations » fold. */
 const SHOWN = 15;
 /** Below this many stations with a gust, the page says how few measured the wind then. */
@@ -81,7 +82,7 @@ export function passePage(origin: string, p: Passe, alerte?: Alerte): string {
   const gusts = stations.filter((s) => rafale(s, jours)).length;
   const link = `<a href="${esc(p.document.url)}" rel="noopener">${esc(p.document.titre)}</a>`;
   const doc = `${link}, ${esc(p.document.auteur)}`;
-  const band = `${crumbBar(`Cyclone ${p.nom}`)}
+  const band = `${crumbBar(`Cyclone ${p.nom}`, CYCLONES)}
 <div class="wrap intro"><div class="pitch">
   <p class="pill">Cyclones passés · Archives de Météo-France</p>
   <h1>${esc(`Cyclone ${p.nom}, ${p.date}`)}</h1>
@@ -140,5 +141,5 @@ export function passePage(origin: string, p: Passe, alerte?: Alerte): string {
   const foot = `<section><p class="note">Mesures : <a href="${esc(SOURCE.url)}" rel="noopener">données climatologiques de base quotidiennes</a> de Météo-France (${esc(SOURCE.licence)}). Passage : ${doc}.</p>
 <p><a href="/cyclones">Les cyclones du bassin en ce moment →</a> · <a href="/alerte-cyclone">Alerte cyclonique : ce qui ferme, ce qui continue →</a></p></section>`;
   const body = `${measured}\n${gustList}\n${recs}\n${extraits}\n${alert}\n${foot}`;
-  return layout(origin, { title, description: meta, path, jsonld: [crumbs(origin, `Cyclone ${p.nom}`, path), webPage(origin, path, title, meta, null)], alerte, image: "historique" }, band, body);
+  return layout(origin, { title, description: meta, path, jsonld: [crumbs(origin, `Cyclone ${p.nom}`, path, CYCLONES), webPage(origin, path, title, meta, null)], alerte, image: "historique" }, band, body);
 }

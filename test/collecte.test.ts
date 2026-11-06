@@ -40,6 +40,20 @@ describe("the bins' calendars of the West", () => {
     // The day itself: « aujourd'hui », not its date.
     expect(col.rhythm(days("2026-10-26", "2026-11-09", "2026-11-23"), today)).toBe("le lundi, une semaine sur deux (prochain : aujourd'hui)");
     expect(col.rhythm(days("2026-01-05"), today)).toBeUndefined();
+    // One day only: « le lundi 7/12 », never « les lundis 7/12 ».
+    expect(col.rhythm(days("2026-12-07"), today)).toBe("le lundi 7/12");
+  });
+
+  it("says apart a first day off the rhythm that no holiday of its week moved: the last of another rhythm", () => {
+    const today = day("2026-11-06");
+    // The TCO's calendar: a Tuesday, the 24/11, then every other Monday from December.
+    const dv = days("2026-11-24", "2026-12-07", "2026-12-21");
+    const feries = days("2026-11-11", "2026-12-25");
+    expect(col.rhythm(dv, today, feries)).toBe("le mardi 24/11, puis le lundi, une semaine sur deux");
+    // A holiday earlier in its week moves the day: the rhythm, its next day with its weekday, as before.
+    expect(col.rhythm(days("2026-11-13", "2026-11-26", "2026-12-10", "2026-12-24"), today, feries)).toBe("le jeudi, une semaine sur deux (prochain : vendredi 13/11)");
+    // Without the calendar's holidays, as before.
+    expect(col.rhythm(dv, today)).toBe("le lundi, une semaine sur deux (prochain : mardi 24/11)");
   });
 
   it("puts the calendar's holiday before the rule: the day it makes it up, or where to check", () => {
@@ -124,6 +138,8 @@ describe("the tool and the pages", () => {
     expect(page).toContain(`hors=${horsTco}`);
     expect(page).toContain(JSON.stringify(ELSEWHERE[0]).slice(0, 40));
     expect(page).toContain("Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. Seulement les 5 communes de l'Ouest (TCO) pour l'instant.".replace(/'/g, "&#39;"));
+    // Said under the field too, before anything is typed.
+    expect(page).toContain(`aria-describedby="ouest"></label>\n  <p class="note" id="ouest">Seulement les 5 communes de l&#39;Ouest (TCO) pour l&#39;instant.</p>`);
     expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).a_savoir).toMatch(/^Seulement les 5 communes de l'Ouest \(TCO\) pour l'instant\. /);
   });
 

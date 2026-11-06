@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { astronomicalNight, breaks, darkNight, horizonDe, moon, moonLight, nextPhases, parisDate, schoolBreaks, sun } from "../src/providers/calendrier.js";
 import { resolvePlace } from "../src/places/resolve.js";
-import { calendrier, longDate, moonOf, nuitOf } from "../src/tools/calendrier.js";
+import { calendrier, ferieDit, longDate, moonOf, nuitOf, ordinaux } from "../src/tools/calendrier.js";
 import { buildCalendrier } from "../src/web/data.js";
 import { calendrierLive, calendrierPage } from "../src/web/domains.js";
 
@@ -150,9 +150,26 @@ describe("calendar", () => {
     const r = body(await calendrier(cacheAt(now), "Maïdo", now));
     expect(r.resume).toContain("Nous sommes le vendredi 23 octobre 2026 à La Réunion.");
     expect(r.resume).toContain("Prochain jour férié : Toussaint, dimanche 1er novembre 2026 (dans 9 jours).");
-    expect(r.resume).toContain("Vacances scolaires en cours (Vacances après 1ère période) : reprise des cours le lundi 26 octobre 2026.");
+    expect(r.resume).toContain("Vacances scolaires en cours (Vacances après 1re période) : reprise des cours le lundi 26 octobre 2026.");
     expect(r.soleil.lieu).toMatch(/Maïdo/);
     expect(r.jours_feries.prochains.map((x: { nom: string }) => x.nom)).toContain("Abolition de l'esclavage");
+  });
+
+  it("writes ordinals as the kit does, and a holiday named by its date once", async () => {
+    expect(ordinaux("Vacances après 1ère période")).toBe("Vacances après 1re période");
+    expect(ordinaux("Vacances après 3ème période")).toBe("Vacances après 3e période");
+    expect(ordinaux("Vacances de Noël")).toBe("Vacances de Noël");
+    expect(ferieDit("11 novembre", "mercredi 11 novembre 2026")).toBe("mercredi 11 novembre 2026");
+    expect(ferieDit("Toussaint", "dimanche 1er novembre 2026")).toBe("Toussaint, dimanche 1er novembre 2026");
+    // The day after the Toussaint, the next holiday is the 11 novembre: said once in the tool and on the page.
+    const now = new Date("2026-11-05T08:00:00Z");
+    const r = body(await calendrier(cacheAt(now), "Saint-Denis", now));
+    expect(r.resume).toContain("Prochain jour férié : mercredi 11 novembre 2026 (dans 6 jours).");
+    const html = calendrierPage("https://rundata.re", { value: await buildCalendrier(cacheAt(now), now), fetchedAt: now }, now);
+    expect(html).toContain("Prochain jour férié : <b>mercredi 11 novembre 2026</b> (dans 6 jours).");
+    expect(html).toContain("<li><b>mercredi 11 novembre 2026</b> <span");
+    expect(html).not.toMatch(/\dème|\dère/);
+    expect(html).toContain("Vacances après 3e période");
   });
 
   it("lists every break of the school year on the page, aimed at « vacances scolaires Réunion 2026-2027 »", async () => {
@@ -164,7 +181,7 @@ describe("calendar", () => {
     expect(html).toContain("<h1>Vacances scolaires et jours fériés à La Réunion</h1>");
     expect(html).toContain(`<h2 id="h-vac-0">Vacances scolaires 2026-2027 (académie de La Réunion)</h2>`);
     expect(html).toContain(`content="Vacances scolaires 2026-2027 à La Réunion (974), calendrier austral\u00a0: vacances en cours du 10 octobre au 25 octobre. Jours fériés dont le 20 décembre.">`);
-    expect(html).toMatch(/Vacances après 1ère période <span class="badge m">en cours<\/span><\/th><td>samedi 10 octobre 2026<\/td><td>lundi 26 octobre 2026<\/td>/);
+    expect(html).toMatch(/Vacances après 1re période <span class="badge m">en cours<\/span><\/th><td>samedi 10 octobre 2026<\/td><td>lundi 26 octobre 2026<\/td>/);
     expect(html).toContain("Vacances d&#39;Été austral");
     // The sun as kit.md writes a time, « 06:12 », never « 6h12 »: in the lead, on its card and on the home page's tile.
     const s = data.value.soleil!;

@@ -24,10 +24,11 @@ import * as traces from "../providers/traces.js";
 import { SUJETS } from "../providers/actualites.js";
 import * as littoral from "../tools/littoral.js";
 import { horizonDe } from "../providers/calendrier.js";
-import { longDate, moonOf, UNPUBLISHED } from "../tools/calendrier.js";
+import { ferieDit, longDate, moonOf, ordinaux, UNPUBLISHED } from "../tools/calendrier.js";
 import type { CourantRow } from "../tools/courant.js";
 import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
-import { a, a as aLieu, de, enumeration, fr, heure, nombre, tranche } from "../tools/format.js";
+import { casse } from "../tools/casse.js";
+import { a, a as aLieu, de, enumeration, fr, heure, heuresDites, nombre, tranche } from "../tools/format.js";
 import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
 import * as capteurs from "../providers/capteurs.js";
 import * as accidents from "../routes/accidents.js";
@@ -840,12 +841,12 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
     : `<div class="status"><p class="big">${esc(today)}</p>` +
       (f?.aujourd_hui ? `<p class="lead">Aujourd'hui est férié : <b>${esc(f.aujourd_hui)}</b>.</p>` : "") +
       (v?.en_cours ? `<p class="lead">Vacances scolaires en cours, reprise des cours le <b>${esc(v.en_cours.reprise_des_cours)}</b>.</p>` : "") +
-      (next ? `<p class="lead">Prochain jour férié : <b>${esc(next.nom)}</b>, ${esc(next.date)} (dans ${next.dans_jours} jour${next.dans_jours > 1 ? "s" : ""}).</p>` : "") +
+      (next ? `<p class="lead">Prochain jour férié : ${ferieDit(next.nom, next.date) === next.date ? `<b>${esc(next.date)}</b>` : `<b>${esc(next.nom)}</b>, ${esc(next.date)}`} (dans ${next.dans_jours} jour${next.dans_jours > 1 ? "s" : ""}).</p>` : "") +
       (d.soleil ? `<p class="lead">À ${esc(d.soleil.lieu)}, lever du soleil à <b>${esc(d.soleil.lever)}</b>, coucher à <b>${esc(d.soleil.coucher)}</b>.</p>` : "") +
       `</div>`;
 
   const holidays = f
-    ? `<div class="card">${icon("calendar")}<h3>Jours fériés</h3><ul class="plain">${f.prochains.map((h) => `<li><b>${esc(h.nom)}</b> : ${esc(h.date)} <span class="note">(dans ${h.dans_jours} j)</span></li>`).join("")}</ul><p class="note">${esc(f.note)}</p></div>`
+    ? `<div class="card">${icon("calendar")}<h3>Jours fériés</h3><ul class="plain">${f.prochains.map((h) => `<li>${ferieDit(h.nom, h.date) === h.date ? `<b>${esc(h.date)}</b>` : `<b>${esc(h.nom)}</b> : ${esc(h.date)}`} <span class="note">(dans ${h.dans_jours} j)</span></li>`).join("")}</ul><p class="note">${esc(f.note)}</p></div>`
     : "";
   const school = v
     ? `<div class="card">${icon("book")}<h3>Vacances scolaires</h3><ul class="plain">` +
@@ -889,7 +890,7 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
     ? describe(`Vacances scolaires ${year} à La Réunion (974), calendrier austral : ${span}. Jours fériés dont le 20 décembre.`,
         `Vacances scolaires ${year} à La Réunion (974) : ${span}. Jours fériés dont le 20 décembre.`)
     : next
-      ? describe(`Vacances scolaires ${year} à La Réunion (974), calendrier austral ; prochain jour férié ${next.nom} (${next.date}). Le 20 décembre, lever et coucher du soleil.`,
+      ? describe(`Vacances scolaires ${year} à La Réunion (974), calendrier austral ; prochain jour férié ${ferieDit(next.nom, next.date) === next.date ? `le ${next.date}` : `${next.nom} (${next.date})`}. Le 20 décembre, lever et coucher du soleil.`,
           `Vacances scolaires ${year} à La Réunion (974), jours fériés dont le 20 décembre, lever et coucher du soleil.`)
       : `Vacances scolaires ${year} à La Réunion (974), calendrier austral : jours fériés dont le 20 décembre, lever et coucher du soleil.`;
 
@@ -899,7 +900,7 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
   <div class="card table-wrap"><table class="drought"><thead><tr><th>Vacances</th><th>Début</th><th>Reprise des cours</th></tr></thead><tbody>${a.vacances.map((b) => {
     const now_ = b.debut <= day && !!b.reprise && day < b.reprise;
     const past = !!b.reprise && b.reprise <= day;
-    return `<tr${past ? ` class="past"` : ""}><th scope="row">${esc(b.nom.replace(/^\p{L}/u, (c) => c.toUpperCase()))}${now_ ? ` <span class="badge m">en cours</span>` : ""}</th><td>${esc(longDate(b.debut))}</td><td>${b.reprise ? esc(longDate(b.reprise)) : "pas encore publiée"}</td></tr>`;
+    return `<tr${past ? ` class="past"` : ""}><th scope="row">${esc(ordinaux(b.nom).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${now_ ? ` <span class="badge m">en cours</span>` : ""}</th><td>${esc(longDate(b.debut))}</td><td>${b.reprise ? esc(longDate(b.reprise)) : "pas encore publiée"}</td></tr>`;
   }).join("")}</tbody></table></div>
   ${i ? "" : `<p class="note">Dates de l'académie de La Réunion, publiées par le ministère de l'Éducation nationale.</p>`}
 </section>`).join("\n");
@@ -1005,7 +1006,7 @@ export function liveText(x: Row): string {
 
 /** One departure as a row: line, direction, wait (from the real-time feed when there is one). */
 export const departureLi = (x: Row, wait: string) =>
-  `<li><b>${esc(x.ligne)}</b><span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(x.direction)}</a>` : `vers ${esc(x.direction)}`} <span class="note">(${esc(x.reseau)})</span></span><span class="note">${esc(wait)}${liveText(x)}</span></li>`;
+  `<li><b>${esc(x.ligne)}</b><span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(casse(x.direction))}</a>` : `vers ${esc(casse(x.direction))}`} <span class="note">(${esc(x.reseau)})</span></span><span class="note">${esc(wait)}${liveText(x)}</span></li>`;
 
 export const STOP_PATH = "/bus/arret";
 
@@ -1029,7 +1030,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
     : `<div class="now"><span class="big">${d.reseaux.length}</span><p>réseaux de bus et le téléphérique de Saint-Denis : <b>${esc(fr(lines))} lignes</b>, de Car Jaune qui fait le tour de l'île aux bus de chaque commune.</p></div>`;
 
   const networks = d
-    ? `<ul class="plain">${d.reseaux.map((r) => `<li><b>${esc(r.nom)}</b> : ${esc(fr(r.lignes))} ligne${r.lignes > 1 ? "s" : ""} <span class="note">(${esc(r.exploitant)})</span></li>`).join("")}</ul>`
+    ? `<ul class="plain">${d.reseaux.map((r) => `<li><b>${esc(r.nom)}</b> : ${esc(fr(r.lignes))} ligne${r.lignes > 1 ? "s" : ""} <span class="note">· ${esc(r.exploitant)}</span></li>`).join("")}</ul>`
     : "";
 
   const gares = d?.gares.length
@@ -1092,7 +1093,7 @@ export function busLive(data: Cached<BusData> | null, now = new Date()): Live | 
   return {
     // A time rather than « dans 3 min »: the page may be a few minutes old.
     valeur: esc(heure),
-    detail: `prochain départ de la gare ${esc(de(g.commune))} : ligne ${esc(x.ligne)} vers ${esc(x.direction)} (${esc(x.reseau)})`,
+    detail: `prochain départ de la gare ${esc(de(g.commune))} : ligne ${esc(x.ligne)} vers ${esc(casse(x.direction))} (${esc(x.reseau)})`,
   };
 }
 
@@ -1888,7 +1889,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
       : `<div class="card">${icon("bus")}<h3>Retards des bus au départ des gares</h3>
   <p class="note">Retards des bus, pas une mesure des bouchons : un car en retard l'est souvent depuis sa course précédente.</p>
   ${b.retards.length
-    ? `<ul class="rows eau">${b.retards.slice(0, 12).map((r) => `<li><span>${esc(r.reseau)} ${esc(r.ligne)} vers ${esc(r.direction)}<small>gare ${esc(de(r.gare))}, départ prévu ${esc(atDay(saidNow(r.heure, data!.fetchedAt.getTime(), now)))}</small></span><span class="score">${r.retard_min} min</span></li>`).join("")}</ul>`
+    ? `<ul class="rows eau">${b.retards.slice(0, 12).map((r) => `<li><span>${esc(r.reseau)} ${esc(r.ligne)} vers ${esc(casse(r.direction))}<small>gare ${esc(de(r.gare))}, départ prévu ${esc(atDay(saidNow(r.heure, data!.fetchedAt.getTime(), now)))}</small></span><span class="score">${r.retard_min} min</span></li>`).join("")}</ul>`
     : `<p>${b.suivis ? `Aucun des ${b.suivis} départs suivis en direct n'a plus de ${LATE_MIN} min de retard.` : "Pas de départ suivi en direct en ce moment."}</p>`}
   ${b.alertes.length ? `<h4>Déviations et avis des réseaux</h4>${alertList(b.alertes)}` : ""}
   ${b.temps_reel.length ? `<p class="note">Flux en direct : ${b.temps_reel.map((t) => `${esc(t.reseau)} ${esc(leJour(t.heure))}`).join(", ")}. <a href="/bus">Les prochains départs</a>.</p>` : `<p class="note"><a href="/bus">Les prochains départs</a>.</p>`}</div>`;
@@ -2527,7 +2528,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
 
   const rules = (d?.interdits ?? []).sort((x, y) => DROUGHT_ORDER.indexOf(x.niveau) - DROUGHT_ORDER.indexOf(y.niveau)).map((x) =>
     `<li class="card"><h3>${droughtBadge(x.niveau)} <span class="note">${esc(x.communes.join(", "))}</span></h3><ul class="rows eau">` +
-    (x.restrictions.length ? x.restrictions.map((r) => `<li><span>${esc(r.usage)}<small>${esc(r.restriction)}</small></span><span></span></li>`).join("") : `<li><span>Économiser l'eau : pas d'interdiction pour un particulier.</span><span></span></li>`) +
+    (x.restrictions.length ? x.restrictions.map((r) => `<li><span>${esc(r.usage)}<small>${esc(heuresDites(r.restriction))}</small></span><span></span></li>`).join("") : `<li><span>Économiser l'eau : pas d'interdiction pour un particulier.</span><span></span></li>`) +
     `</ul></li>`).join("");
 
   const title = "Restrictions d'eau Réunion : sécheresse par commune · 974";
@@ -2764,7 +2765,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
 
   const status = !d
     ? loading("La liste des défibrillateurs")
-    : `<div class="now"><span class="big">${d.total}</span><p>défibrillateurs déclarés en service dans les 24 communes de l'île.</p></div>`;
+    : `<div class="now"><span class="big">${nombre(d.total)}</span><p>défibrillateurs déclarés en service dans les 24 communes de l'île.</p></div>`;
 
   const foldDae = !!d && d.communes.reduce((n, c) => n + c.liste.length, 0) > FOLD_ROWS && d.communes.length > 1;
   const list = d

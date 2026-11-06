@@ -1229,10 +1229,14 @@ describe("agenda", () => {
   it("sends a market asked to the directory, which has the markets held each week", async () => {
     const b = body(await agenda(cache(), "Saint-Paul", "aujourd_hui", "marché", NOW));
     expect(b.marches_reguliers).toBe(MARCHES_REGULIERS);
-    if (!b.nombre) expect(b.resume).toContain(MARCHES_REGULIERS);
+    const sentence = MARCHES_REGULIERS.slice(0, -1);
+    if (!b.nombre) expect(b.resume).toContain(sentence);
     const none = body(await agenda(cache(), "Saint-Paul", "aujourd_hui", "zzz marché zzz", NOW));
     expect(none.nombre).toBe(0);
-    expect(none.resume).toContain(MARCHES_REGULIERS);
+    expect(none.resume).toContain(sentence);
+    // Its own point is not doubled by the summary's: « (quoi = « marché »). », never « »).. ».
+    expect(none.resume).not.toMatch(/\.\.|\.\u00a0;/);
+    expect(none.resume.endsWith(".")).toBe(true);
     expect(body(await agenda(cache(), "Saint-Paul", "aujourd_hui", "concert", NOW)).marches_reguliers).toBeUndefined();
   });
 

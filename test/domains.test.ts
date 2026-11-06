@@ -12,6 +12,7 @@ import { DESCRIPTION_MAX } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 import { site } from "../src/web/site.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { casse } from "../src/tools/casse.js";
 
 const NOW = new Date("2026-10-23T14:40:00Z");
 const ORIGIN = "https://rundata.re";
@@ -95,6 +96,12 @@ describe("bus page", () => {
     // The wait under the direction, as on a stop's page: beside it, a delay announced left the direction 85 px on a phone.
     expect(page).toContain(`<ul class="rows departs"><li><b>`);
     expect(page).not.toContain(`<ul class="rows"><li><b>`);
+    // Each network's operator after a point, never in parentheses that hold their own: « (CINOR (Saint-Denis…)) ».
+    expect(page).toMatch(/<li><b>Car Jaune<\/b> : \d+ lignes <span class="note">· /);
+    expect(page).not.toMatch(/<span class="note">\([^<]*\(/);
+    // A direction the timetables write in capitals, in the case of a sentence: « Les Gloxinias », not « LES GLOXINIAS ».
+    expect(casse("LES GLOXINIAS")).toBe("Les Gloxinias");
+    expect((page.match(/vers [^<]*/g) ?? []).filter((v) => v.length > 12 && !/\p{Ll}/u.test(v.slice(5)))).toEqual([]);
   });
 
   it("without the timetables, sends people to the connector", async () => {
@@ -196,12 +203,15 @@ describe("routes", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("serve each domain page, without its live block when the source is down", async () => {
-    for (const path of ["/meteo", "/volcan", "/air", "/electricite", "/calendrier", "/bus", "/velos", "/volcan/"]) {
+    for (const path of ["/meteo", "/volcan", "/air", "/electricite", "/calendrier", "/bus", "/velos"]) {
       const cache = new Cache(new MemoryStore(), () => NOW.getTime(), false);
       const r = (await site(new Request(`${ORIGIN}${path}`), cache, () => undefined, NOW))!;
       expect(r.status, path).toBe(200);
-      expect(await r.text()).toContain(`<link rel="canonical" href="${ORIGIN}${path.replace(/\/$/, "")}">`);
+      expect(await r.text()).toContain(`<link rel="canonical" href="${ORIGIN}${path}">`);
     }
+    // One address per page: the final slash goes.
+    const slash = (await site(new Request(`${ORIGIN}/volcan/`), new Cache(new MemoryStore(), () => NOW.getTime(), false), () => undefined, NOW))!;
+    expect([slash.status, slash.headers.get("location")]).toEqual([301, "/volcan"]);
   });
 
   it("give the home page each tile's last copy, and bring the oldest one up to date afterwards", async () => {

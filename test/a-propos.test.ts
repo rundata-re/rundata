@@ -145,6 +145,20 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     }
   });
 
+  it("gives each page one address: the final slash goes, an alias goes to its page in one step, never to another site", async () => {
+    const to = async (path: string) => {
+      const r = await handle(get(path, BROWSER), new Cache());
+      return [r.status, r.headers.get("location")];
+    };
+    expect(await to("/a-propos/")).toEqual([301, "/a-propos"]);
+    expect(await to("/evenements/?quand=demain")).toEqual([301, "/evenements?quand=demain"]);
+    expect(await to("/sources")).toEqual([301, "/chiffres"]);
+    expect(await to("/randos/")).toEqual([301, "/randonnees"]);
+    expect(await to("/agenda/")).toEqual([301, "/evenements"]);
+    expect(await to("//exemple.com/")).toEqual([301, "/exemple.com"]);
+    expect((await handle(get("/a-propos", BROWSER), new Cache())).status).toBe(200);
+  });
+
   it("sends /about to /a-propos", async () => {
     for (const path of ["/about", "/about/"]) {
       const r = await handle(get(path, BROWSER), new Cache());

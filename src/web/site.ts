@@ -1013,6 +1013,15 @@ async function pages(request: Request, cache: Cache, background: Background, now
 }
 
 /**
+ * The phone captures that the install window shows (1080×1920, WebP), in public/icons/ named after their content:
+ * taken on a calm page, no alert in big and nothing relative, and taken again when the page changes much, not at
+ * each version. Each label is also the picture's text for a screen reader.
+ */
+export const CAPTURES = [
+  { src: "/icons/capture-accueil.27c05f84ec.webp", label: "La Réunion en direct, avec la carte des températures mesurées" },
+];
+
+/**
  * What a phone needs to keep the site on its home screen, like an app: its name, its icons (scripts/build-icons.py)
  * and where it opens, `?ref=pwa` so that the visits from the icon are counted apart (src/metrics.ts); a long press
  * on the icon opens the pages most used away from network.
@@ -1024,6 +1033,9 @@ export function manifest() {
     description: "Météo mesurée, vigilance, volcan, routes, sentiers : La Réunion en direct, gratuit et sans compte.",
     lang: "fr",
     start_url: "/?ref=pwa",
+    // The app's identity. Without it a browser takes start_url, query included: the same value keeps the apps
+    // installed before as the same app, never a second one. Never changed after, even if start_url does.
+    id: "/?ref=pwa",
     scope: "/",
     display: "standalone",
     background_color: "#0b1f36",
@@ -1040,6 +1052,7 @@ export function manifest() {
       { name: "Vigilance", url: "/vigilance?ref=pwa" },
       { name: "Randonnées", url: "/randonnees?ref=pwa" },
     ].map((s) => ({ ...s, icons: [{ src: icons["192"], sizes: "192x192", type: "image/png" }] })),
+    screenshots: CAPTURES.map((c) => ({ ...c, sizes: "1080x1920", type: "image/webp", form_factor: "narrow" })),
   };
 }
 

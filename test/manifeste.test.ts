@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { follow, hook, placePage, SOCIAL, type Social } from "../src/web/pages.js";
 import { homePage } from "../src/web/home.js";
 import { pressePage } from "../src/web/presse.js";
 import { pageOf } from "../src/web/places.js";
-import { manifest, site } from "../src/web/site.js";
+import { CAPTURES, manifest, site } from "../src/web/site.js";
 import { LOGO_PETIT_SVG } from "../src/web/logo.js";
 import { sentiersPage } from "../src/web/domains.js";
 import { textOf } from "../src/providers/avis-eau.js";
@@ -27,6 +28,26 @@ describe("on a phone's home screen", () => {
     const r = await site(new Request(`${O}/manifest.webmanifest`), new Cache(new MemoryStore(), () => NOW.getTime()), () => {}, NOW);
     expect(r!.headers.get("content-type")).toBe("application/manifest+json; charset=utf-8");
     expect(JSON.parse(await r!.text()).start_url).toBe("/?ref=pwa");
+  });
+
+  it("keeps the identity the apps installed before have, and shows phone captures in the install window", () => {
+    const m = manifest();
+    // Without an id, a browser took start_url, query included.
+    expect(m.id).toBe(m.start_url);
+    expect(m.id).toBe("/?ref=pwa");
+    expect(m.screenshots.map((c) => c.label)).toEqual(["La Réunion en direct, avec la carte des températures mesurées"]);
+    expect(m.screenshots.length).toBe(CAPTURES.length);
+    for (const c of m.screenshots) {
+      expect(c).toMatchObject({ sizes: "1080x1920", type: "image/webp", form_factor: "narrow" });
+      // A file beside the Worker, named after its content (a year in the browsers' cache, public/_headers), light.
+      const bytes = readFileSync(new URL(`../public${c.src}`, import.meta.url));
+      expect(c.src).toMatch(/^\/icons\/capture-[a-z]+\.[0-9a-f]{10}\.webp$/);
+      expect(c.src).toContain(`.${createHash("sha256").update(bytes).digest("hex").slice(0, 10)}.webp`);
+      expect(bytes.length).toBeLessThan(160_000);
+      // A WebP (RIFF … WEBPVP8 ), 1080×1920 in its frame header.
+      expect(bytes.subarray(0, 4).toString("latin1") + bytes.subarray(8, 16).toString("latin1")).toBe("RIFFWEBPVP8 ");
+      expect([bytes.readUInt16LE(26) & 0x3fff, bytes.readUInt16LE(28) & 0x3fff]).toEqual([1080, 1920]);
+    }
   });
 
   it("is linked from every page, with the icon iOS asks for and a PNG for the favicon services", () => {

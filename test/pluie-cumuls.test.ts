@@ -2,7 +2,7 @@ import { Script } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { autour, averse, CUMULS_LOADER, cumulsScript, cumulsScriptPath, cumulsSection, phrases, pluvio, somme } from "../src/web/pluie-cumuls.js";
+import { autour, averse, CUMULS_LOADER, cumulsScript, cumulsScriptPath, cumulsSection, deStation, phrases, pluvio, somme } from "../src/web/pluie-cumuls.js";
 import { site } from "../src/web/site.js";
 
 const H = 3_600_000;
@@ -133,6 +133,13 @@ describe("the block's lines, the measure first", () => {
       "Cilaos : pas d'estimation du radar sur la dernière heure.",
       [" Le pluviomètre de Cilaos donne la pluie heure par heure : pas encore d'heure entière sur cette durée. Pas de pluie vue."],
     ]);
+  });
+
+  it("names the rain gauge with its article, elided before a vowel", () => {
+    expect(["Le Port", "Les Avirons - CIRAD", "Aurère", "Îlet à Cordes", "Étang Saint-Leu - CIRAD", "Cilaos", "La Nouvelle"].map(deStation))
+      .toEqual(["du Port", "des Avirons - CIRAD", "d'Aurère", "d'Îlet à Cordes", "d'Étang Saint-Leu - CIRAD", "de Cilaos", "de La Nouvelle"]);
+    // In the menu of the page's script, escaped as its other attributes (inScript).
+    expect(cumulsScript()).toContain(`data-de=\\"d\\u0026#39;Aurère\\"`);
   });
 
   it("is written into the page's script as it is", () => {

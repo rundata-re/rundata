@@ -173,9 +173,19 @@ describe("measures at Atmo Réunion's stations", () => {
     const top = `<p class="big">PM10 : 12 µg/m³</p><p class="lead">${esc("Particules PM10 mesurées le 29/10, de 7\u00a0h à 8\u00a0h à la station Lycée Lislet Geoffroy (Saint-Denis).")}</p>` +
       `<p class="note">Mesure brute, non validée, publiée par le <abbr title="Laboratoire central de surveillance de la qualité de l&#39;air">LCSQA</abbr>.`;
     expect(band).toContain(top);
-    const forecast = `<div class="status forecast"><p class="lead"><b>${esc("Prévision d'Atmo Réunion pour la journée : moyen.")}</b>`;
+    // Right under it, a line always shown: the forecast's word in the index's colour, then the index out of 6.
+    const forecast = `<div class="status forecast"><p class="lead"><b>Air prévu aujourd'hui : <span class="aq aq2">moyen</span> (prévision)</b></p>` +
+      `<p class="aqindex">Indice 2 sur 6 (1 bon, 6 extrêmement mauvais). Prévision d&#39;Atmo Réunion.`;
+    expect(band).toContain(forecast);
     expect(band.indexOf(top)).toBeLessThan(band.indexOf(forecast));
-    expect(band).toContain("Une prévision, pas une mesure.");
+    expect(band).not.toContain("<details");
+    // Communes that differ: the range, the pollutant most often in cause at the highest level, with its article, and the diffusion.
+    const two = { ...answer, diffusion: "Prévision diffusée par Atmo Réunion la veille, le 28/10 à 11:09.", communes: [
+      { commune: "Saint-Denis", niveau: 3, qualite: "dégradé", polluants: ["ozone"] }, { commune: "Le Port", niveau: 3, qualite: "dégradé", polluants: ["ozone", "particules PM10"] },
+      { commune: "Saint-Pierre", niveau: 3, qualite: "dégradé", polluants: ["particules PM10"] }, { commune: "Cilaos", niveau: 1, qualite: "bon", polluants: ["dioxyde d'azote", "dioxyde d'azote"] }] };
+    const range = airPage("https://rundata.re", { value: two, fetchedAt: NOW, stale: false }, NOW);
+    expect(range).toContain(`<b>Air prévu aujourd'hui : de <span class="aq aq1">bon</span> à <span class="aq aq3">dégradé</span> selon la commune (prévision)</b>`);
+    expect(range).toContain(`<p class="aqindex">${esc("Indice 1 à 3 sur 6 (1 bon, 6 extrêmement mauvais), surtout l'ozone. Prévision d'Atmo Réunion, diffusée le 28/10 à 11:09.")} <span class="note">Lue par rundata.re `);
     expect(page.indexOf('id="h-mesures-air"')).toBeLessThan(page.indexOf('id="h-communes-air"'));
     // Without measures, the forecast alone, as before.
     airMesures.configure(undefined);

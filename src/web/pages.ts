@@ -860,7 +860,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 @media (min-width:58rem){.intro .mf-haut{display:block;margin:0;justify-self:end;max-width:100%;padding:.75rem}.intro .mf-haut img{display:block;width:auto;max-width:100%;height:auto;max-height:min(40rem,78vh);background:#fff}
 .intro .mf-haut figcaption,.intro .mf-haut .note{font-size:.82rem;color:var(--on-night-muted);max-width:28rem;margin-top:.5rem}.mf-bas{display:none}}
 /* /air: the forecast under the measure, apart and smaller. */
-.status.forecast{margin-top:.2rem;padding-top:.7rem;border-top:1px solid rgb(255 255 255/.2)}.status.forecast .lead{font-size:1rem}
+.status.forecast{margin-top:.2rem;padding-top:.7rem;border-top:1px solid rgb(255 255 255/.2)}.status.forecast .lead{font-size:1rem}.status.forecast .aqindex{margin:.35rem 0 0;font-size:.95rem}
 .zones{list-style:none;padding:0;display:grid;gap:1rem}
 @media (min-width:40rem){.zones{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (min-width:66rem){.zones{grid-template-columns:repeat(3,minmax(0,1fr))}}

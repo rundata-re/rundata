@@ -37,6 +37,14 @@ describe("an agenda's title written all in capitals", () => {
     expect(casse("RANDONNÉE À HELL-BOURG")).toBe("Randonnée à Hell-Bourg");
   });
 
+  it("gives back the accents of a commune and of a name of two words or more, as the resolver writes them, never of a village of one word", () => {
+    expect(casse("MARCHÉ FORAIN DE SAINT-BENOIT")).toBe("Marché forain de Saint-Benoît");
+    expect(casse("BAL DE ST-ANDRE")).toBe("Bal de St-André");
+    expect(casse("FÊTE DE PETITE-ILE")).toBe("Fête de Petite-Île");
+    expect(casse("RANDONNÉE AU BOIS DE NEFLES")).toBe("Randonnée au Bois de Nèfles");
+    expect(casse("PAUSE AU JARDIN")).toBe("Pause au jardin");
+  });
+
   it("leaves in the sentence's case a village that is a common word, and « port » without its article", () => {
     expect(casse("MESSE À LA CHAPELLE")).toBe("Messe à la chapelle");
     expect(casse("FÊTE DE LA CROIX À BELLEVUE")).toBe("Fête de la croix à bellevue");

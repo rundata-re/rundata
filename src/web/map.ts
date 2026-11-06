@@ -256,7 +256,7 @@ function ties(markers: Marker[], at: [number, number][]): string {
 }
 
 /** `at`: where it is drawn, when moved from its place (apart()). */
-function marker(m: Marker, hit = HIT, at?: [number, number]): string {
+function marker(m: Marker, hit = HIT, at?: [number, number], listed = false): string {
   const [x, y] = at ?? project(m.lon, m.lat);
   const fill = m.color ?? "var(--ink)";
   const w = pillW(m);
@@ -278,7 +278,7 @@ function marker(m: Marker, hit = HIT, at?: [number, number]): string {
   // What the bubble on hover says, and the list of close points on a tap (carte-points.ts); a marker with a bubble has its own.
   const lines = m.tip ? [] : [m.place ?? m.name, m.say ?? m.label];
   // The hit area under the marker, painted but invisible, so that a tap a little beside it still counts.
-  return `<a class="mk" href="${esc(m.href)}" aria-label="${esc(said)}"${tip}${pointData(lines)}>` +
+  return `<a class="mk" href="${esc(m.href)}" aria-label="${esc(said)}"${tip}${pointData(lines)}${listed ? ' tabindex="-1"' : ""}>` +
     `<circle class="hit" cx="${x}" cy="${y}" r="${hit}" style="fill:transparent;stroke:none"/>${inner}</a>`;
 }
 
@@ -747,6 +747,12 @@ export function islandMap(opts: {
   first?: string[];
   /** The key of the IGN's backgrounds drawn over the relief once picked (fondChoice()): their layer `fd-<key>`. */
   fond?: string;
+  /**
+   * The page lists the same places, each row with its links: the markers are then out of the Tab order (`tabindex="-1"`,
+   * as /ecoles' and /carte's points), still a link for the mouse, a finger and a screen reader. Each would otherwise
+   * cost three stops of Tab (the point, its bubble's link, the point again: 195 to cross /evenements' map, 06/11/2026).
+   */
+  listed?: boolean;
   label: string;
 }): string {
   const paths = island.paths.map((p) => `<path d="${p.d}"/>`).join("");
@@ -769,7 +775,7 @@ export function islandMap(opts: {
       busy.push(markerBox(m, at?.[i]));
       if (at && !onPlace(m, at[i])) busy.push(markerBox({ ...m, round: true }));
     });
-    return (at ? ties(list, at) : "") + list.map((m, i) => marker(m, radii[i], at?.[i])).join("");
+    return (at ? ties(list, at) : "") + list.map((m, i) => marker(m, radii[i], at?.[i], opts.listed)).join("");
   };
   const markers = draw(opts.markers ?? []) + (opts.layers ?? []).map((l) => `<g class="ly ly-${esc(l.id)}${l.on ? " on" : ""}">${draw(l.markers)}</g>`).join("");
   let extra = "";

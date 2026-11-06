@@ -16,3 +16,11 @@ export function doubleIds(page: string): string[] {
   const seen = new Set<string>();
   return [...page.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]).filter((id) => seen.has(id) || !seen.add(id));
 }
+
+/**
+ * The stops of the Tab key inside the page's maps: each link with an address, field or button that does not say
+ * `tabindex="-1"`. Each point that is one costs three stops (the point, its bubble's link, the point again).
+ */
+export const tabStops = (page: string) =>
+  [...(page.match(/<svg class="map[^]*?<\/svg>/g) ?? []).join("").matchAll(/<(?:a\b[^>]*\bhref="|button\b|input\b|select\b|textarea\b|[a-z]+\b[^>]*\btabindex="0")[^>]*>/g)]
+    .filter(([tag]) => !tag.includes('tabindex="-1"')).length;

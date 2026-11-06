@@ -112,19 +112,32 @@ describe("the block's lines, the measure first", () => {
     expect(phrases("Cilaos", "de Cilaos", 1, "", [10, 0, H], 5, NaN, "", mm, span)[1]).toHaveLength(6);
   });
 
-  it("puts the radar in bold, with « estimés », when the gauge has no whole hour, misses one, or 1 mm fell since its last", () => {
+  it("puts the radar in bold, with « estimés », when the gauge has no whole hour or misses one", () => {
     expect(phrases("Le Port", "du Port", 2.4, " depuis le début de l'averse, aujourd'hui à 14:05", null, NaN, NaN, "", mm, span)).toEqual([
       "Le Port : 2,4 mm estimés par le radar depuis le début de l'averse, aujourd'hui à 14:05.",
       [" Une estimation, pas une mesure. Le pluviomètre du Port donne la pluie heure par heure : pas encore d'heure entière sur cette durée."],
     ]);
     expect(phrases("Le Port", "du Port", 2.4, "", [null, 9 * H, 12 * H], NaN, NaN, "", mm, span)[1]).toEqual([" Une estimation, pas une mesure. Le pluviomètre du Port n'a pas mesuré toutes les heures de cette durée."]);
-    const recent = phrases("Le Port", "du Port", 4, " sur les 3 dernières heures", [0.5, 9 * H, 11 * H], 0.4, 1, "", mm, span);
+  });
+
+  it("keeps the rain gauge in bold when rain fell after its last published hour, the radar's later millimetres below", () => {
+    const recent = phrases("Le Port", "du Port", 4, " sur les 3 dernières heures", [0.5, 9 * H, 11 * H], 0.4, 1, "", mm, span, 12 * H);
     expect(recent).toEqual([
-      "Le Port : 4 mm estimés par le radar sur les 3 dernières heures.",
-      [" Une estimation, pas une mesure. Le pluviomètre du Port a mesuré 0,5 mm de 9:00 à 11:00 ; pas encore d'heure entière depuis."],
+      "Le Port : 0,5 mm mesurés au pluviomètre de 9:00 à 11:00.",
+      [" Le radar de Météo-France estime 4 mm au même endroit sur les 3 dernières heures, dont 1 mm de 11:00 à 12:00, après la dernière heure publiée du pluviomètre : une estimation, pas une mesure."],
     ]);
-    // Less than 1 mm since: still the measure first.
-    expect(phrases("Le Port", "du Port", 4, "", [0.5, 9 * H, 11 * H], 0.4, 0.9, "", mm, span)[0]).toBe("Le Port : 0,5 mm mesurés au pluviomètre de 9:00 à 11:00.");
+    // Less than 1 mm since: no « dont ».
+    expect(phrases("Le Port", "du Port", 4, " sur les 3 dernières heures", [0.5, 9 * H, 11 * H], 0.4, 0.9, "", mm, span, 12 * H)[1])
+      .toEqual([" Le radar de Météo-France estime 4 mm au même endroit sur les 3 dernières heures : une estimation, pas une mesure."]);
+  });
+
+  it("leaves the radar's sentence at normal size, right under the measure, from 5 mm after the gauge's last published hour", () => {
+    const [gras, petit, sous] = phrases("Le Port", "du Port", 12, " sur les 3 dernières heures", [0.5, 9 * H, 11 * H], 0.4, 11.5, " Il manque 15 min d'images.", mm, span, 12 * H);
+    expect(gras).toBe("Le Port : 0,5 mm mesurés au pluviomètre de 9:00 à 11:00.");
+    expect(sous).toBe("Le radar de Météo-France estime 12 mm au même endroit sur les 3 dernières heures, dont 11,5 mm de 11:00 à 12:00, après la dernière heure publiée du pluviomètre : une estimation, pas une mesure.");
+    expect(petit).toEqual([" Il manque 15 min d'images."]);
+    // Just under 5 mm: the radar stays below, in small, and there is no third line.
+    expect(phrases("Le Port", "du Port", 6, "", [0.5, 9 * H, 11 * H], 0.4, 4.9, "", mm, span, 12 * H)).toHaveLength(2);
   });
 
   it("says when the radar has no estimate at the place, in either case", () => {

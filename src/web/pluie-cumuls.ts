@@ -80,26 +80,32 @@ export const pluvio = (rr: (number | null)[], fin: number, from: number, to: num
  * (« sur la dernière heure »…), `pv` the rain gauge's whole hours (pluvio), `yp` the radar over those same hours and `z`
  * the radar after the last of them (NaN without), `suite` the sentences said in any case (no rain seen, images missing).
  * Case 1, the gauge measured all the whole hours of the length: its mm in bold, the radar's estimate beside it, and when
- * one of the two is at least 5 mm and twice the other on the same hours, a sentence on why they differ. Case 2, no whole
- * hour, an hour not measured, or at least 1 mm seen by the radar since the gauge's last hour: the radar in bold, with
- * « estimés ». Written for the page's script (${phrases}): no name from outside, the formats are given.
+ * one of the two is at least 5 mm and twice the other on the same hours, a sentence on why they differ. When the radar
+ * saw at least 1 mm since the gauge's last hour (`to` the end of the length), the measure stays in bold and the radar's
+ * sentence says how much of its estimate came after it; from 5 mm after it, that sentence is the third item, said at
+ * the normal size under the measure, so that a shower going on is never hidden under a small figure in bold.
+ * Case 2, no whole hour or an hour not measured: the radar in bold, with « estimés ». Written for the page's script
+ * (${phrases}): no name from outside, the formats are given.
  */
 export const phrases = (nom: string, du: string, v: number, fin: string, pv: [number | null, number, number] | null, yp: number, z: number, suite: string,
-  mm: (v: number) => string, span: (a: number, b: number) => string): [string, (string | [string, string])[]] => {
+  mm: (v: number) => string, span: (a: number, b: number) => string, to = NaN): [string, (string | [string, string])[], string?] => {
   const radar = v === v ? mm(v) : "";
-  if (pv && pv[0] != null && !(z >= 1)) {
+  if (pv && pv[0] != null) {
     const x = pv[0], hi = Math.max(x, yp), lo = Math.min(x, yp);
-    const petit: (string | [string, string])[] = [(radar ? " Le radar de Météo-France estime " + radar + " au même endroit" + fin + " : une estimation, pas une mesure."
-      : " Le radar de Météo-France n'a pas d'estimation au même endroit" + fin + ".") + suite];
+    const since = radar && z >= 1 ? ", dont " + mm(z) + " " + span(pv[2], to) + ", après la dernière heure publiée du pluviomètre" : "";
+    const said = radar ? " Le radar de Météo-France estime " + radar + " au même endroit" + fin + since + " : une estimation, pas une mesure."
+      : " Le radar de Météo-France n'a pas d'estimation au même endroit" + fin + ".";
+    const fort = !!since && z >= 5;
+    const petit: (string | [string, string])[] = [(fort ? "" : said) + suite];
     if (yp === yp && hi >= 5 && hi >= 2 * lo) {
       petit.push(" Sur les mêmes heures, le pluviomètre a mesuré " + mm(x) + " et le radar estime " + mm(yp) + ". Le pluviomètre mesure en un point ; le radar estime d'en haut, par carrés d'environ 550 m. Un chiffre bas ne veut pas dire qu'il n'a pas plu fort tout près : avant de traverser une ravine ou un radier, voyez la ",
         ["vigilance", "/vigilance"], " et le ", ["niveau des rivières", "/crues"], ".");
     }
-    return [nom + " : " + mm(x) + " mesurés au pluviomètre " + span(pv[1], pv[2]) + ".", petit];
+    const gras = nom + " : " + mm(x) + " mesurés au pluviomètre " + span(pv[1], pv[2]) + ".";
+    return fort ? [gras, petit.filter((p) => p !== ""), said.trim()] : [gras, petit];
   }
   const gauge = !pv ? "Le pluviomètre " + du + " donne la pluie heure par heure : pas encore d'heure entière sur cette durée."
-    : pv[0] == null ? "Le pluviomètre " + du + " n'a pas mesuré toutes les heures de cette durée."
-    : "Le pluviomètre " + du + " a mesuré " + mm(pv[0]) + " " + span(pv[1], pv[2]) + " ; pas encore d'heure entière depuis.";
+    : "Le pluviomètre " + du + " n'a pas mesuré toutes les heures de cette durée.";
   return [nom + " : " + (radar ? radar + " estimés par le radar" : "pas d'estimation du radar") + fin + ".", [(radar ? " Une estimation, pas une mesure. " : " ") + gauge + suite]];
 };
 
@@ -131,7 +137,7 @@ function figure(): string {
   const canvas = `<foreignObject width="${W}" height="${H}" clip-path="url(#isl-clip)"><canvas class="voile" width="${GW}" height="${GH}"></canvas></foreignObject>`;
   const mark = `<circle class="cu-mk" r="${Math.round(RAYON_KM / KM)}" cx="-99" cy="-99"/>`;
   return `<div class="cu-c"><label for="cu-l">Lieu</label> <select id="cu-l">${options}</select></div>` +
-    `<fieldset class="tabs cu-d"><legend>Depuis\u00a0:</legend>${radios}</fieldset><p class="cu-t" aria-live="polite">Chargement…</p>` +
+    `<fieldset class="tabs cu-d"><legend>Depuis\u00a0:</legend>${radios}</fieldset><p class="cu-t" aria-live="polite">Chargement…</p><p class="cu-r" aria-live="polite" hidden></p>` +
     islandMap({ under: canvas, top: mark, label: "Carte de La Réunion (974) : la pluie estimée par le radar sur la durée choisie" }) +
     `<figcaption class="note"><span class="cu-lg">${legend}</span><span class="cu-n"></span></figcaption>`;
 }
@@ -147,7 +153,7 @@ export const cumulsSection = (): string => `<section id="pluie-tombee" aria-labe
 export const CUMULS_LOADER = `const cu=document.getElementById("pluie-tombee");if(cu){cu.hidden=false;const go=()=>{const s=document.createElement("script");s.src=cu.dataset.cumuls;document.head.append(s)};
 if("IntersectionObserver"in window){const io=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){io.disconnect();go()}},{rootMargin:"400px"});io.observe(cu)}else go()}`;
 
-const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee");cu.querySelector("figure").innerHTML=${inScript(figure())};const sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
+const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee");cu.querySelector("figure").innerHTML=${inScript(figure())};const sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cr=cu.querySelector(".cu-r"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
 const averse=${averse},somme=${somme},pluvio=${pluvio},autour=${autour},phrases=${phrases};
 const C=${inScript(MM_CHARS)},V=Array.from(C,(_,k)=>${MM_MIN}*${MM_STEP}**k),P=${inScript(PALIERS)},T=${inScript(TEINTES)},NB="\\u00a0";
 const p2=(n)=>String(n).padStart(2,"0"),loc=(ms)=>new Date(ms+144e5),hm=(ms)=>{const x=loc(ms);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())};
@@ -173,8 +179,8 @@ const fin=m==="a"?(av.de==null?" depuis "+quand(from)+", l'averse avait déjà c
 const hs=D.heures,g=hs&&hs.st.find((x)=>x.id===s.id),pv=(g&&pluvio(g.rr,Date.parse(hs.fin),from,to))||null,at=(a,b)=>somme(ims,w*h,a,b)[0][cy*w+cx];
 const suite=(m!=="a"&&!av?" Pas de pluie vue par le radar à moins de 2"+NB+"km.":m!=="a"&&!on?" Dernière pluie vue par le radar à moins de 2"+NB+"km "+quand(av.fin)+".":"")+
 (miss>=10?" Il manque "+(miss>=60?Math.floor(miss/60)+NB+"h"+(miss%60?NB+String(miss%60).padStart(2,"0"):""):miss+NB+"min")+" d'images du radar sur cette durée"+NB+": la pluie a pu être plus forte.":"");
-const[gras,petit]=phrases(s.nom,s.de,v,fin,pv,pv?at(pv[1],pv[2]):NaN,pv?at(pv[2],to):NaN,suite,mmTxt,span);
-t.textContent=gras;nt.replaceChildren(...petit.map((x)=>typeof x==="string"?x:Object.assign(document.createElement("a"),{href:x[1],textContent:x[0]})))};
+const[gras,petit,sous]=phrases(s.nom,s.de,v,fin,pv,pv?at(pv[1],pv[2]):NaN,pv?at(pv[2],to):NaN,suite,mmTxt,span,to);
+t.textContent=gras;cr.textContent=sous||"";cr.hidden=!sous;nt.replaceChildren(...petit.map((x)=>typeof x==="string"?x:Object.assign(document.createElement("a"),{href:x[1],textContent:x[0]})))};
 sel.addEventListener("change",()=>{try{localStorage.setItem("cumuls-lieu",sel.value)}catch(e){}choix=null;show()});
 cu.querySelectorAll("[name=cud]").forEach((r)=>r.addEventListener("change",()=>{choix=r.value;show()}));
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",show);

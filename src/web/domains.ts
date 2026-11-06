@@ -599,7 +599,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   // Each pollutant's sub-index, commune by commune, folded: the list above already gives the one in cause.
   const pollutants = Object.values(atmo.POLLUTANTS);
   const subs = list.some((c) => c.sous_indices)
-    ? `<details class="card"><summary>Sous-indice de chaque polluant, commune par commune</summary><div class="table-wrap"><table class="drought niveaux">` +
+    ? `<details class="card"><summary>Sous-indice de chaque polluant, commune par commune</summary><div class="table-wrap"><table class="drought niveaux"><caption class="sr">Sous-indice de chaque polluant, commune par commune</caption>` +
       `<thead><tr><th scope="col">Commune</th>${pollutants.map((p) => `<th scope="col">${esc(p)}</th>`).join("")}</tr></thead><tbody>` +
       [...list].sort((a, b) => a.commune.localeCompare(b.commune, "fr")).map((c) => `<tr><th scope="row">${esc(c.commune)}</th>` +
         pollutants.map((p) => `<td data-label="${esc(p)}">${c.sous_indices?.[p] != null ? subIndex(c.sous_indices[p]) : "—"}</td>`).join("") + `</tr>`).join("") +
@@ -927,7 +927,7 @@ export function calendrierPage(origin: string, data: Cached<CalendrierAnswer> | 
   // Every break of the school year, and of the next once the rectorat has published it.
   const years = (d?.annees_scolaires ?? []).map((a, i) => `<section aria-labelledby="h-vac-${i}">
   <div class="sec-h">${i ? "" : `<p class="eyebrow">Calendrier austral</p>`}<h2 id="h-vac-${i}">Vacances scolaires ${esc(a.annee)} (académie de La Réunion)</h2></div>
-  <div class="card table-wrap"><table class="drought"><thead><tr><th>Vacances</th><th>Début</th><th>Reprise des cours</th></tr></thead><tbody>${a.vacances.map((b) => {
+  <div class="card table-wrap"><table class="drought"><caption class="sr">Vacances scolaires ${esc(a.annee)} (académie de La Réunion)</caption><thead><tr><th>Vacances</th><th>Début</th><th>Reprise des cours</th></tr></thead><tbody>${a.vacances.map((b) => {
     const now_ = b.debut <= day && !!b.reprise && day < b.reprise;
     const past = !!b.reprise && b.reprise <= day;
     return `<tr${past ? ` class="past"` : ""}><th scope="row">${esc(ordinaux(b.nom).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${now_ ? ` <span class="badge m">en cours</span>` : ""}</th><td>${esc(longDate(b.debut))}</td><td>${b.reprise ? esc(longDate(b.reprise)) : "pas encore publiée"}</td></tr>`;
@@ -2023,8 +2023,8 @@ export function accidentsSection(): string {
   <div class="sec-h"><p class="eyebrow">Fichier national, ${y}</p><h2 id="h-accidents">Les accidents de la route en ${y}</h2></div>
   <div class="card"><p>Un accident corporel est un accident de la route qui fait au moins une victime. En ${y}, les forces de l'ordre en ont relevé ${nombre(i.accidents)} à La Réunion : ${accidents.tues(i.tues)}, ${nombre(i.hospitalises)} blessés hospitalisés et ${nombre(i.legers)} blessés légers.</p>
   <p>Selon l'ONISR, un tué est décédé sur le coup ou dans les 30 jours qui suivent l'accident ; un blessé hospitalisé est resté plus de 24 heures à l'hôpital ; un blessé léger a été soigné sans y rester plus de 24 heures. L'ONISR prévient que le chiffre des blessés hospitalisés n'est plus labellisé par la statistique publique depuis 2019.</p></div>
-  <div class="card table-wrap"><table class="drought histo passe">${head("Route", false)}<tbody>${ROUTE_KINDS.map(([k, name]) => row(name, accidents.ROUTES[k], false)).join("")}</tbody></table></div>
-  <div class="card table-wrap"><table class="drought histo passe">${head("Commune")}<tbody>${accidents.communes().map(([nom, b]) => row(nom, b)).join("")}</tbody></table>
+  <div class="card table-wrap"><table class="drought histo passe"><caption class="sr">Accidents en ${y}, par route</caption>${head("Route", false)}<tbody>${ROUTE_KINDS.map(([k, name]) => row(name, accidents.ROUTES[k], false)).join("")}</tbody></table></div>
+  <div class="card table-wrap"><table class="drought histo passe"><caption class="sr">Accidents en ${y}, par commune</caption>${head("Commune")}<tbody>${accidents.communes().map(([nom, b]) => row(nom, b)).join("")}</tbody></table>
   <p class="note">Relevés par les forces de l'ordre ; seuls les tués se comparent d'une commune à l'autre.</p></div>
   <p class="note">Ministère de l'Intérieur, ONISR, fichier national des accidents corporels (BAAC), Licence Ouverte : année ${y}, publiée le ${accidents.jour(accidents.PUBLIE_LE)}.</p>
   ${accidentsSerie()}
@@ -2049,9 +2049,9 @@ function accidentsSerie(): string {
   const [du, au] = accidents.MIS_EN_LIGNE;
   return `<div class="sec-h"><h3 id="h-accidents-serie">De ${from} à ${to}</h3></div>
   <div class="card"><p>Les mêmes comptes sur cinq ans, d'après le fichier de chaque année, dans sa version lue le ${accidents.jour(accidents.LU_LE)}. L'ONISR corrige ces fichiers après leur publication : une année peut encore changer de quelques unités.</p></div>
-  <div class="card table-wrap defile"><table class="drought histo passe colle"><thead><tr><th scope="col">Année</th><th scope="col">Accidents</th><th scope="col">Tués</th><th scope="col">Blessés<br>hospitalisés</th><th scope="col">Blessés<br>légers</th></tr></thead>
+  <div class="card table-wrap defile"><table class="drought histo passe colle"><caption class="sr">De ${from} à ${to}, par année</caption><thead><tr><th scope="col">Année</th><th scope="col">Accidents</th><th scope="col">Tués</th><th scope="col">Blessés<br>hospitalisés</th><th scope="col">Blessés<br>légers</th></tr></thead>
   <tbody>${islandRows}</tbody><tfoot><tr><th scope="row">5 ans</th>${cells(total)}</tr></tfoot></table></div>
-  <div class="card table-wrap defile"><table class="drought histo passe colle"><thead><tr><th scope="col">Commune</th>${years.map((year) => `<th scope="col">${year}</th>`).join("")}<th scope="col">5 ans</th></tr></thead>
+  <div class="card table-wrap defile"><table class="drought histo passe colle"><caption class="sr">De ${from} à ${to}, tués par commune</caption><thead><tr><th scope="col">Commune</th>${years.map((year) => `<th scope="col">${year}</th>`).join("")}<th scope="col">5 ans</th></tr></thead>
   <tbody>${communeRows}</tbody></table>
   <p class="note">Tués à 30 jours, relevés par les forces de l'ordre.</p></div>
   <p class="note">Ministère de l'Intérieur, ONISR, fichiers des accidents corporels de ${from} à ${to} (BAAC), Licence Ouverte : mis en ligne du ${accidents.jour(du)} au ${accidents.jour(au)}.</p>`;
@@ -2552,7 +2552,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
       : `<p class="lead">${esc(d.resume)}</p>`;
 
   const table = d?.communes.length
-    ? `<div class="card table-wrap"><table class="drought"><thead><tr><th>Commune</th><th>Eau du robinet</th><th>Rivières et sources</th><th>Nappes</th></tr></thead><tbody>${d.communes.map((c) =>
+    ? `<div class="card table-wrap"><table class="drought"><caption class="sr">Les niveaux de restriction</caption><thead><tr><th>Commune</th><th>Eau du robinet</th><th>Rivières et sources</th><th>Nappes</th></tr></thead><tbody>${d.communes.map((c) =>
         `<tr><th scope="row" class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${esc(c.commune)}</th><td>${droughtBadge(c.eau_du_robinet)}</td><td>${droughtBadge(c.rivieres_et_sources)}</td><td>${droughtBadge(c.nappes)}</td></tr>`).join("")}</tbody></table></div>`
     : "";
 
@@ -3019,7 +3019,7 @@ function activeCard(r: NonNullable<CyclonesAnswer["systemes_actifs"]>[number]): 
 
 function seasonTable(s: CyclonesAnswer["saison_en_cours"]): string {
   return s.systemes.length
-    ? `<div class="card table-wrap"><table class="drought"><thead><tr><th>Système</th><th>Dates</th></tr></thead><tbody>${s.systemes.map((x) =>
+    ? `<div class="card table-wrap"><table class="drought"><caption class="sr">${esc(`Saison ${s.nom}`)}</caption><thead><tr><th>Système</th><th>Dates</th></tr></thead><tbody>${s.systemes.map((x) =>
         `<tr><th scope="row"><a href="${esc(x.rapport)}" rel="noopener">${esc(capital(x.nom))}</a></th><td>${esc(x.du)} – ${esc(x.au)}</td></tr>`).join("")}</tbody></table></div>`
     : `<p class="card">Aucun système pour le moment.</p>`;
 }
@@ -3197,7 +3197,7 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
     : `<div class="now"><span class="big">${below}<small>/${withNormal}</small></span><p>stations de référence ont reçu nettement moins de pluie que la normale du ${esc(d.periode.du)} au ${esc(d.periode.au)} (moins de ${RAIN_LOW} % de leur moyenne 1991-2020).</p></div>`;
 
   const table = rows.length
-    ? `<div class="card table-wrap"><table class="drought histo"><thead><tr><th>Station</th><th>Pluie, 30 jours</th><th>Maximales</th><th>Minimales</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) => {
+    ? `<div class="card table-wrap"><table class="drought histo"><caption class="sr">Les 30 derniers jours</caption><thead><tr><th>Station</th><th>Pluie, 30 jours</th><th>Maximales</th><th>Minimales</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) => {
         const e = r.ensoleillement;
         return `<tr><th scope="row" class="tgt" id="${anchorId("s", r.station)}">${esc(r.station)}<small class="note">${esc(r.zone)}, ${nombre(r.altitude_m)}\u00a0m</small></th>` +
           `<td>${r.pluie ? rainBar(r.pluie.total_mm, r.pluie.normale_mm, pct(r.pluie.rapport_a_la_normale)) : "—"}</td>` +
@@ -3252,7 +3252,7 @@ function hourlySection(h: HourlyAnswer): string {
   <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-heures">Hier et cette nuit à Saint-Denis</h2>
   <p>${esc(h.resume.replace(/^.*?Heure par heure \([^)]*\) — /, ""))}</p></div>
   <details class="card table-wrap"><summary>Les ${rows.length} dernières heures publiées</summary>
-  <table class="drought histo hours"><thead><tr><th>Heure</th><th>Pluie</th><th>Température</th><th>Vent</th><th>Rafale</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) =>
+  <table class="drought histo hours"><caption class="sr">Les ${rows.length} dernières heures publiées</caption><thead><tr><th>Heure</th><th>Pluie</th><th>Température</th><th>Vent</th><th>Rafale</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) =>
     `<tr><th scope="row">${esc(r.heure)}</th><td>${cell(r.pluie_mm, " mm")}</td><td>${cell(r.temperature, " °C")}</td><td>${r.vent_kmh == null ? "—" : `${r.vent_kmh} km/h${r.vent_de ? ` ${esc(r.vent_de)}` : ""}`}</td><td>${cell(r.rafale_kmh, " km/h")}</td><td>${r.soleil_min == null ? "—" : `${r.soleil_min} min`}</td></tr>`).join("")}</tbody></table></details>
   <p class="note">Stations Météo-France : ${esc(used)}. Avec le connecteur, votre IA lit ces heures pour n'importe quelle station depuis 2000 : « à quelle heure a-t-il plu hier à Cilaos ? », « rafale max cette nuit à Saint-Pierre ? ».</p>
 </section>`;

@@ -41,16 +41,16 @@ export function pechePage(origin: string, alerte?: Alerte, now = new Date()): st
 </div></div>`;
   const today = `<section aria-labelledby="h-jour">
   <div class="sec-h"><h2 id="h-jour">Aujourd'hui, ${esc(longDate(day).replace(/ \d{4}$/, ""))}</h2></div>
-  <div class="card"><table class="drought niveaux"><thead><tr><th scope="col">Espèce</th><th scope="col">Aujourd'hui</th></tr></thead><tbody>${especes.map(especeRow).join("")}</tbody></table>
+  <div class="card"><table class="drought niveaux"><caption class="sr">Aujourd'hui, ${esc(longDate(day).replace(/ \d{4}$/, ""))}</caption><thead><tr><th scope="col">Espèce</th><th scope="col">Aujourd'hui</th></tr></thead><tbody>${especes.map(especeRow).join("")}</tbody></table>
   ${especes.some((e) => e.cle === "bichiques" && e.heures) ? `<p class="note">${esc(HEURES_NOTE)}</p>` : ""}</div>
 </section>`;
   const sizes = `<section aria-labelledby="h-tailles">
   <div class="sec-h"><h2 id="h-tailles">Les tailles et les quantités</h2></div>
-  <div class="card"><table class="drought niveaux"><thead><tr><th scope="col">Espèce</th><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${TAILLES.map(regleRow).join("")}</tbody></table></div>
+  <div class="card"><table class="drought niveaux"><caption class="sr">Les tailles et les quantités</caption><thead><tr><th scope="col">Espèce</th><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${TAILLES.map(regleRow).join("")}</tbody></table></div>
 </section>`;
   const never = `<section aria-labelledby="h-interdits">
   <div class="sec-h"><h2 id="h-interdits">Interdits à la pêche de loisir, d'après l'arrêté\u00a0:</h2></div>
-  <div class="card"><table class="drought niveaux"><thead><tr><th scope="col">Espèce</th><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${INTERDITS.map(regleRow).join("")}</tbody></table></div>
+  <div class="card"><table class="drought niveaux"><caption class="sr">Interdits à la pêche de loisir, d'après l'arrêté</caption><thead><tr><th scope="col">Espèce</th><th scope="col">Règle</th><th scope="col">Texte</th></tr></thead><tbody>${INTERDITS.map(regleRow).join("")}</tbody></table></div>
 </section>`;
   const lagons = `<section aria-labelledby="h-lagons">
   <div class="sec-h"><h2 id="h-lagons">Dans les lagons</h2></div>

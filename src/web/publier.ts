@@ -66,6 +66,8 @@ export function render(md: string): string {
     if (h?.[3] && n) TUTOS[n[1]] = h[3];
   }
   let open = false;
+  // The last heading shown, the name of a table under it for a screen reader.
+  let titre = "";
   const close = () => {
     if (open) out.push("</section>");
     open = false;
@@ -75,6 +77,7 @@ export function render(md: string): string {
     if (!line.trim()) { i++; continue; }
     const h = heading(line);
     if (h) {
+      titre = h[2];
       if (h[1] === "##") {
         close();
         out.push(`<section${h[3] ? ` id="${h[3]}"` : ""} class="guide">`, `<h2>${inline(h[2])}</h2>`);
@@ -101,7 +104,7 @@ export function render(md: string): string {
         const n = k === 0 && /^(\d) · /.exec(c);
         return n && TUTOS[n[1]] ? `<a href="#${TUTOS[n[1]]}">${inline(c)}</a>` : inline(c);
       };
-      out.push(`<div class="table-wrap"><table class="drought niveaux"><thead><tr>${head.map((c) => `<th scope="col">${inline(c)}</th>`).join("")}</tr></thead><tbody>${body
+      out.push(`<div class="table-wrap"><table class="drought niveaux">${titre ? `<caption class="sr">${inline(titre)}</caption>` : ""}<thead><tr>${head.map((c) => `<th scope="col">${inline(c)}</th>`).join("")}</tr></thead><tbody>${body
         // Each cell names its column: on a phone, a row reads as a card (« Coût : gratuit »).
         .map((r) => `<tr>${r.map((c, k) => (k === 0 ? `<th scope="row">${cell(c, k)}</th>` : `<td data-label="${esc(head[k])}">${cell(c, k)}</td>`)).join("")}</tr>`)
         .join("")}</tbody></table></div>`);

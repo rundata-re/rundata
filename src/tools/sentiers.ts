@@ -141,13 +141,13 @@ export function trailTrace(nom: string) {
   };
 }
 
-export function trailRow(s: onf.Sentier, from?: { lon: number; lat: number }) {
+export function trailRow(s: onf.Sentier, from?: { lon: number; lat: number }, now = new Date()) {
   return {
     sentier: s.nom,
     etat: s.statut,
     cause: s.cause,
     precision: s.info,
-    nuance: s.statut === "fermé" ? onf.nuance(s) : undefined,
+    nuance: s.statut === "fermé" ? onf.nuance(s, now) : undefined,
     longueur_km: s.longueur_km || undefined,
     distance_km: from && s.points.length ? Math.round(near(s, from.lon, from.lat) * 10) / 10 : undefined,
     ...trailTrace(s.nom),
@@ -169,7 +169,7 @@ export const horsGestion = (x: { cause?: string; precision?: string }) =>
   `sur la carte de l'ONF\u00a0: “${[x.cause, x.precision].filter((v): v is string => !!v).join(" · ")}”`;
 
 /** A hike with its trace, and the state of the ONF trails it follows, read live from the ONF's map. */
-export function routeRow(r: traces.Randonnee, carte: onf.Carte) {
+export function routeRow(r: traces.Randonnee, carte: onf.Carte, now = new Date()) {
   const states = r.sentiers_onf.map((nom) => {
     const parts = carte.sentiers.filter((s) => s.nom === nom);
     const shut = parts.find((s) => s.statut === "fermé");
@@ -177,7 +177,7 @@ export function routeRow(r: traces.Randonnee, carte: onf.Carte) {
     // Neither open nor closed, but a notice on the ONF's map (« Fermé le 02/06/26 » on the Sentier Bayonne): kept.
     const noted = shut ? shut : s && s.statut !== "ouvert" && (s.cause || s.info) ? s : undefined;
     const t = traces.SENTIERS[nom];
-    return { sentier: nom, etat: s?.statut ?? ("inconnu" as onf.Statut), cause: noted?.cause, precision: noted?.info, nuance: shut && onf.nuance(shut), page: t ? `${SITE_URL}/sentiers/${t.slug}` : undefined };
+    return { sentier: nom, etat: s?.statut ?? ("inconnu" as onf.Statut), cause: noted?.cause, precision: noted?.info, nuance: shut && onf.nuance(shut, now), page: t ? `${SITE_URL}/sentiers/${t.slug}` : undefined };
   });
   const closed = states.filter((s) => s.etat === "fermé");
   const notices = states.filter((s) => s.etat !== "fermé" && s.etat !== "ouvert" && (s.cause || s.precision)).map((s) => `${s.sentier} (hors gestion ONF), ${horsGestion(s)}`);
@@ -205,16 +205,16 @@ type RouteRow = ReturnType<typeof routeRow>;
  * The closed ONF trails on these hikes, each once with the hikes it cuts, and the sentence that says it: what an
  * answer must give first. Nothing when none is closed.
  */
-export function warning(rows: RouteRow[], trails: onf.Sentier[] = []) {
+export function warning(rows: RouteRow[], trails: onf.Sentier[] = [], now = new Date()) {
   const by = new Map<string, { sentier: string; cause?: string; reouverture?: string; nuance?: string; page?: string; randonnees: string[] }>();
   for (const s of trails.filter((x) => x.statut === "fermé")) {
     const t = traces.SENTIERS[s.nom];
-    by.set(s.nom, { sentier: s.nom, cause: s.cause, reouverture: s.info, nuance: onf.nuance(s), page: t ? `${SITE_URL}/sentiers/${t.slug}` : undefined, randonnees: [] });
+    by.set(s.nom, { sentier: s.nom, cause: s.cause, reouverture: s.info, nuance: onf.nuance(s, now), page: t ? `${SITE_URL}/sentiers/${t.slug}` : undefined, randonnees: [] });
   }
   for (const r of rows) {
     for (const t of r.troncons_onf ?? []) {
       if (t.etat !== "fermé") continue;
-      const w = by.get(t.sentier) ?? { sentier: t.sentier, cause: t.cause, reouverture: t.precision, nuance: onf.nuance(t), page: t.page, randonnees: [] };
+      const w = by.get(t.sentier) ?? { sentier: t.sentier, cause: t.cause, reouverture: t.precision, nuance: onf.nuance(t, now), page: t.page, randonnees: [] };
       w.randonnees.push(r.randonnee);
       by.set(t.sentier, w);
     }
@@ -226,17 +226,17 @@ export function warning(rows: RouteRow[], trails: onf.Sentier[] = []) {
     ...hit.map((r) => {
       const shut = r.troncons_onf!.filter((t) => t.etat === "fermé");
       return `${r.randonnee} emprunte ${shut.length} sentier${shut.length > 1 ? "s" : ""} fermé${shut.length > 1 ? "s" : ""} : ` +
-        shut.map((t) => `${t.sentier}${onf.raison(t) ? ` (${onf.raison(t)})` : ""}`).join(", ");
+        shut.map((t) => `${t.sentier}${onf.raison(t, now) ? ` (${onf.raison(t, now)})` : ""}`).join(", ");
     }),
-    ...alone.map((w) => { const why = onf.raison({ cause: w.cause, info: w.reouverture }); return `${w.sentier} est fermé${why ? ` (${why})` : ""}`; }),
+    ...alone.map((w) => { const why = onf.raison({ cause: w.cause, info: w.reouverture }, now); return `${w.sentier} est fermé${why ? ` (${why})` : ""}`; }),
   ].join("\u00a0; ") + ". Un sentier fermé est interdit : ne pas s'y engager, prendre une variante ouverte ou renoncer.";
   // Said first in the summary when a hike is cut; a trail asked by its name already opens it with its state.
   return { message, sentiers_fermes: [...by.values()], routes: hit.length > 0 };
 }
 
 /** A hike in a list: its figures, its state, its trace. */
-const routeBrief = (r: traces.Randonnee, carte: onf.Carte) => {
-  const row = routeRow(r, carte);
+const routeBrief = (r: traces.Randonnee, carte: onf.Carte, now = new Date()) => {
+  const row = routeRow(r, carte, now);
   return { randonnee: r.nom, longueur_km: r.km, denivele_positif_m: r.dplus, denivele_negatif_m: r.dmoins, boucle: row.boucle, etat: row.etat, trace_gpx: row.trace_gpx, page: row.page };
 };
 
@@ -323,7 +323,7 @@ function roadsAnswer(asked: RoadsAsked, routes: onf.Route[], common: Record<stri
 }
 
 /** The closed trails by commune (communesOf: in each of a trail's communes, once), the communes with the most first. */
-export function closedByCommune(sentiers: onf.Sentier[]) {
+export function closedByCommune(sentiers: onf.Sentier[], now = new Date()) {
   const by = new Map<string, onf.Sentier[]>();
   for (const nom of unique(sentiers.filter((x) => x.statut === "fermé").map((x) => x.nom))) {
     const sections = sentiers.filter((x) => x.nom === nom);
@@ -332,7 +332,7 @@ export function closedByCommune(sentiers: onf.Sentier[]) {
   }
   return [...by.entries()]
     .sort((x, y) => y[1].length - x[1].length || x[0].localeCompare(y[0], "fr"))
-    .map(([commune, list]) => ({ commune, sentiers_fermes: list.sort((x, y) => x.nom.localeCompare(y.nom, "fr")).map((s) => trailRow(s)) }));
+    .map(([commune, list]) => ({ commune, sentiers_fermes: list.sort((x, y) => x.nom.localeCompare(y.nom, "fr")).map((s) => trailRow(s, undefined, now)) }));
 }
 
 const COMMON = {
@@ -538,16 +538,16 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   if (!lieu?.trim() && filtering(filtre)) {
     // A hike of a given length or climb anywhere: the full routes first, then the ONF trails, open ones only.
     const routes = traces.RANDONNEES.filter((r) => fits(filtre, r.km, climb(r))).slice(0, PROPOSALS_MAX);
-    const rows = routes.map((r) => routeRow(r, carte));
+    const rows = routes.map((r) => routeRow(r, carte, now));
     const open = unique(carte.sentiers.filter((x) => x.statut === "ouvert").map((x) => x.nom))
       .map((nom) => ({ nom, t: traces.SENTIERS[nom] }))
       .filter((x) => x.t && fits(filtre, x.t.km, climb(x.t)))
       .slice(0, PROPOSALS_MAX);
-    const warn = warning(rows);
+    const warn = warning(rows, [], now);
     return text({
       ...(warn ? { avertissement: { message: warn.message, sentiers_fermes: warn.sentiers_fermes } } : {}),
       resume: `${warn ? `${warn.message} ` : ""}${routes.length} itinéraire${routes.length > 1 ? "s" : ""} complet${routes.length > 1 ? "s" : ""} et ${open.length} sentier${open.length > 1 ? "s" : ""} ouvert${open.length > 1 ? "s" : ""} de l'ONF correspondent (listes limitées à ${PROPOSALS_MAX}). Préciser un lieu (cirque, commune, sommet) pour choisir.`,
-      randonnees_avec_trace: routes.map((r) => routeBrief(r, carte)),
+      randonnees_avec_trace: routes.map((r) => routeBrief(r, carte, now)),
       sentiers_ouverts: open.map(({ nom, t }) => ({ sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, denivele_negatif_m: t.dmoins, secteur: (() => { const s = carte.sentiers.find((x) => x.nom === nom && x.points.length); return trailSecteur(nom, s && mid(s)); })(), trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx`, page: `${SITE_URL}/sentiers/${t.slug}` })),
       ...common,
     });
@@ -558,7 +558,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
       // By name, as the pages count them: the ONF's map cuts some trails in several pieces.
       resume: `${unique(closed.map((s) => s.nom)).length} sentiers fermés sur ${onf.geres(carte.sentiers).size} suivis par l'ONF à La Réunion` +
         (roadsClosed.length ? `, et ${roadsClosed.length} route${roadsClosed.length > 1 ? "s" : ""} forestière${roadsClosed.length > 1 ? "s" : ""} interdite${roadsClosed.length > 1 ? "s" : ""} à la circulation` : "") + "." + fireSentence,
-      fermes_par_commune: closedByCommune(carte.sentiers),
+      fermes_par_commune: closedByCommune(carte.sentiers, now),
       routes_forestieres_fermees: roadsClosed.map(roadRow),
       ...common,
     });
@@ -604,19 +604,19 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
   const parts: string[] = [];
   const center = zone ? cirque ?? (res ? { lon: res.lieu.lon, lat: res.lieu.lat, km: res.lieu.type === "commune" ? 6 : NEAR_KM } : null) : null;
   const around = center && !hikes.length ? routesNear(center.lon, center.lat, center.km).filter((r) => fits(filtre, r.km, climb(r))).slice(0, ROUTES_MAX) : [];
-  const warn = warning([...hikes, ...around].map((r) => routeRow(r, carte)), named);
+  const warn = warning([...hikes, ...around].map((r) => routeRow(r, carte, now)), named, now);
   // A fire seen near the place goes first, before the closures.
   const nearby = center && fires ? fires.detections.filter((d) => distanceKm(center.lon, center.lat, d.lon, d.lat) <= center.km + FIRE_KM) : [];
   if (nearby.length) parts.push(`Feu de végétation détecté par satellite près ${de(nearby[0].lieu)}, ${fire.when(nearby[0].t, now)}${nearby.length > 1 ? ` (${nearby.length} détections dans le secteur)` : ""} : ${feux.LABEL}. ${fire.URGENCE}`);
   if (warn?.routes) parts.push(warn.message);
   for (const h of hikes.slice(0, 3)) {
-    const row = routeRow(h, carte);
+    const row = routeRow(h, carte, now);
     parts.push(`${h.nom} (OpenStreetMap) : ${String(h.km).replace(".", ",")} km, ${relief(h)}${h.boucle ? ", en boucle" : ""}\u00a0; ${row.etat}\u00a0; trace GPS ${row.trace_gpx}.`);
   }
   if (named.length) {
     const shut = named.filter((s) => s.statut === "fermé");
     parts.push(named.length === 1
-      ? `${named[0].nom} : ${named[0].statut === "fermé" ? (onf.nuance(named[0]) ? onf.motifs(named[0]).join(" · ") : `FERMÉ${named[0].cause ? ` (${named[0].cause})` : ""}`) : named[0].statut === "ouvert" ? "ouvert" : "état non connu (hors gestion ONF)"}.`
+      ? `${named[0].nom} : ${named[0].statut === "fermé" ? (onf.nuance(named[0], now) ? onf.motifs(named[0], now).join(" · ") : `FERMÉ${named[0].cause ? ` (${named[0].cause})` : ""}`) : named[0].statut === "ouvert" ? "ouvert" : "état non connu (hors gestion ONF)"}.`
       : `${named.length} sentiers portent ce nom : ${shut.length ? `${shut.length} fermé${shut.length > 1 ? "s" : ""} (${shut.map((s) => s.nom).join(", ")})` : "aucun fermé"}.`);
   }
   let zoneOut: Record<string, unknown> | undefined;
@@ -672,8 +672,8 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     }
     zoneOut = {
       zone: zone.nom,
-      randonnees_avec_trace: around.length ? around.map((r) => routeBrief(r, carte)) : undefined,
-      sentiers_fermes: zClosed.map((s) => ({ ...trailRow(s, zone!.from), ...(partly.includes(s.nom) ? { ferme_en_partie: true } : {}) })),
+      randonnees_avec_trace: around.length ? around.map((r) => routeBrief(r, carte, now)) : undefined,
+      sentiers_fermes: zClosed.map((s) => ({ ...trailRow(s, zone!.from, now), ...(partly.includes(s.nom) ? { ferme_en_partie: true } : {}) })),
       sentiers_ouverts: ordered.slice(0, OPEN_MAX).map((nom) => {
         const t = traces.SENTIERS[nom];
         return t ? { sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, denivele_negatif_m: t.dmoins, trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx` } : { sentier: nom };
@@ -689,8 +689,8 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     ...(warn ? { avertissement: { message: warn.message, sentiers_fermes: warn.sentiers_fermes } } : {}),
     lieu: res ? placeBlock(lieu, res) : undefined,
     resume: parts.join(" "),
-    randonnees: hikes.length ? hikes.map((h) => routeRow(h, carte)) : undefined,
-    sentiers_nommes: named.length ? named.map((s) => trailRow(s)) : undefined,
+    randonnees: hikes.length ? hikes.map((h) => routeRow(h, carte, now)) : undefined,
+    sentiers_nommes: named.length ? named.map((s) => trailRow(s, undefined, now)) : undefined,
     ...(zoneOut ? { autour: zoneOut } : {}),
     aires_accueil: reception?.nombre ? reception : undefined,
     ...common,

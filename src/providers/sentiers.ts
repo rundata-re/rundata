@@ -87,15 +87,8 @@ const WEEKEND = /ouverte?s? (?:le week-end|les week-ends|les samedis et dimanche
 
 type Avis = { cause?: string; info?: string; precision?: string };
 
-/**
- * A trail closed on the ONF's map whose notice opens it on weekends: the map's state with the notice beside it, the
- * same words every day. The trail stays as the map classes it (counted, listed, drawn closed): a copy of a page, a
- * GPX kept, an answer read later outlive midnight, and a state of the day would then be wrong.
- */
-export function nuance(x: Avis): string | undefined {
-  const avis = [x.cause, x.info ?? x.precision].find((v) => v && WEEKEND.test(v));
-  return avis && `Fermé sur la carte de l'ONF\u00a0; ouvert le samedi et le dimanche d'après l'avis de l'ONF\u00a0: « ${avis} »`;
-}
+/** The words of a notice that open a closed trail on weekends, when it has them. */
+const weekendAvis = (x: Avis) => [x.cause, x.info ?? x.precision].find((v): v is string => !!v && WEEKEND.test(v));
 
 // The last day of a notice, as the ONF writes it: « Fermé jusqu'au 30/10/26 inclus - Sentier ouvert les samedis… ».
 const JUSQU = /jusqu['’](?:au|à) (\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/i;
@@ -106,7 +99,7 @@ const JUSQU = /jusqu['’](?:au|à) (\d{1,2})\/(\d{1,2})\/(\d{4}|\d{2})\b/i;
  * 27/10/2026, still read on 06/11): past it, the notice opens nothing.
  */
 export function finWeekEnd(x: Avis, now = new Date()): { dit: string; jour: string; passe: boolean } | undefined {
-  if (!nuance(x)) return undefined;
+  if (!weekendAvis(x)) return undefined;
   const m = [x.cause, x.info ?? x.precision].map((v) => v?.match(JUSQU)).find(Boolean);
   if (!m) return undefined;
   const jour = `${m[3].length === 2 ? `20${m[3]}` : m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
@@ -114,15 +107,33 @@ export function finWeekEnd(x: Avis, now = new Date()): { dit: string; jour: stri
   return { dit: `${m[1]}/${m[2]}/${m[3]}`, jour, passe: jour < today };
 }
 
+/** A weekend notice that still opens the trail on `now`: one without a last day, or whose last day has not passed. */
+export const ouvertWeekEnd = (x: Avis, now = new Date()) => !!weekendAvis(x) && !finWeekEnd(x, now)?.passe;
+
+/**
+ * A trail closed on the ONF's map whose notice opens it on weekends: the map's state with the notice beside it, the
+ * same words every day until the notice's last day. The trail stays as the map classes it (counted, listed, drawn
+ * closed): a copy of a page, a GPX kept, an answer read later outlive midnight, and a state of the day would then be
+ * wrong. Past its last day (finWeekEnd()), the notice opens nothing: it is quoted as it is, as the trail's motif,
+ * without « ouvert », which an assistant would repeat as an open trail on Saturday.
+ */
+export function nuance(x: Avis, now = new Date()): string | undefined {
+  const avis = weekendAvis(x);
+  if (!avis) return undefined;
+  return ouvertWeekEnd(x, now)
+    ? `Fermé sur la carte de l'ONF\u00a0; ouvert le samedi et le dimanche d'après l'avis de l'ONF\u00a0: « ${avis} »`
+    : `Fermé sur la carte de l'ONF\u00a0; avis de l'ONF\u00a0: « ${avis} »`;
+}
+
 /** Why a trail is closed and until when, as its notice says: nuance() first when there is one, then the rest of the notice. */
-export function motifs(x: Avis): string[] {
-  const n = nuance(x);
+export function motifs(x: Avis, now = new Date()): string[] {
+  const n = nuance(x, now);
   const rest = [x.cause, x.info ?? x.precision].filter((v): v is string => !!v);
   return n ? [n, ...rest.filter((v) => !WEEKEND.test(v))] : rest;
 }
 
-/** Between brackets after a trail name: the cause alone, or the whole notice when it says open at the weekend, with its date. */
-export const raison = (x: Avis) => (nuance(x) ? motifs(x).join(" · ") : x.cause);
+/** Between brackets after a trail name: the cause alone, or the whole notice when it is a weekend one, with its date. */
+export const raison = (x: Avis, now = new Date()) => (nuance(x, now) ? motifs(x, now).join(" · ") : x.cause);
 
 export function parseTrails(features: Feature[]): Sentier[] {
   return features

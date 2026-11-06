@@ -125,6 +125,7 @@ describe("the server's instructions", () => {
     // 39 333 the same day with the canoë-kayak and va'a of the FFCK in sport (a few words, and its value canoe_kayak).
     // 39 332 the same day with the day of the list at the end of sources_donnees (« Liste du 05/11. / List of 05/11. »),
     // its « ce qui est couvert ou pas encore » left out (its first sentence says it).
+    // 39 328 on 6/11/2026 with the Kabardock among the halls read in evenements (« même quand un média… », 14 shorter).
     expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_332);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import island from "../src/places/island.json" with { type: "json" };
-import { AROUND, communeMap, islandMap, mapCredit, NOMS_SCRIPT, project, traceMap } from "../src/web/map.js";
+import { AROUND, communeMap, islandMap, mapCredit, NOMS_SCRIPT, project, traceMap, W } from "../src/web/map.js";
 import { homePage } from "../src/web/home.js";
 import routes from "../src/web/routes.json" with { type: "json" };
 
@@ -50,8 +50,11 @@ describe("the roads and the names of places on the pages' maps", () => {
     const svg = islandMap({ markers: [{ lon: 55.45, lat: -20.88, label: "24°", name: "Saint-Denis", round: true }], highlight: "Saint-Paul", label: "x" });
     const order = ['<g class="rd"', '<path class="hl"', '<g class="nm"', '<g class="mk"'].map((s) => svg.indexOf(s));
     expect(order.every((i, k) => i > 0 && (!k || i > order[k - 1]))).toBe(true);
-    // On a phone, six names; the 18 others for a wider map, by the page's script.
+    // On a phone, six names; the 18 others for a wider map, by the page's script, or once zoomed in twice or more (a
+    // sector's map opened on its trails: Les Avirons, L'Étang-Salé and Saint-Louis on the Littoral's; the volcano's at
+    // twice exactly, Sainte-Rose and Saint-Philippe).
     expect(svg.match(/<text [^>]*data-w=""/g)).toHaveLength(18);
+    expect(NOMS_SCRIPT).toContain(`if(t.hasAttribute("data-w")&&!wide&&vb.width>${W / 2}){t.classList.add("nx");continue}`);
     expect(svg).toContain('<path id="rd-a" vector-effect="non-scaling-stroke" d="M');
   });
 

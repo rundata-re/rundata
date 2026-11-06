@@ -36,12 +36,12 @@ function siteCard(s: dech.SiteNow, g: Porte): string {
       (s.refuse.length ? `<p><b>Benne pleine :</b> ${esc(s.refuse.join(", "))}.</p>` : `<p><b>Toutes les bennes acceptent.</b></p>`) +
       (s.accepte.length ? `<p><b>Accepté :</b> ${esc(s.accepte.join(", "))}.</p>` : "")
     : `<p class="note">${esc(CHECK)}${s.mis_a_jour ? ` Dernière mise à jour : ${esc(s.mis_a_jour)}.` : ""}</p>`;
-  const go = g.aller({ nom: s.nom, lat: s.lat, lon: s.lon, adresse: s.adresse ? `${s.adresse}, ${s.commune}` : undefined });
+  const go = g.aller({ nom: s.nom, lat: s.lat, lon: s.lon, adresse: s.adresse ? `${s.adresse}, ${s.commune}` : undefined, ou: s.commune });
   return `<div class="card">${icon("pin")}<h3><a href="${esc(s.lien)}" rel="noopener">${esc(s.nom)}</a></h3>${s.adresse ? `<p>${esc(s.adresse)}</p>` : ""}${go ? `<p>${go}</p>` : ""}${state}</div>`;
 }
 
 function elsewhereCard(s: dech.Elsewhere, g: Porte): string {
-  const go = g.aller({ nom: s.nom, lat: s.lat, lon: s.lon, adresse: s.adresse ? `${s.adresse}, ${s.commune}` : undefined });
+  const go = g.aller({ nom: s.nom, lat: s.lat, lon: s.lon, adresse: s.adresse ? `${s.adresse}, ${s.commune}` : undefined, ou: s.commune });
   const hours = dech.hoursOf(s).replace(s.epci.nom, `<a href="${esc(s.epci.site)}" rel="noopener">${esc(s.epci.nom)}</a>`);
   return `<div class="card">${icon("pin")}<h3>${esc(s.nom)}</h3>${s.adresse ? `<p>${esc(s.adresse)}</p>` : ""}${go ? `<p>${go}</p>` : ""}<p class="note">${hours.charAt(0).toUpperCase()}${hours.slice(1)}.</p></div>`;
 }

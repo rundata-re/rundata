@@ -110,6 +110,8 @@ export interface Lieu {
   lat: number;
   lon: number;
   adresse?: string;
+  /** Where it is (« Sainte-Suzanne »), read after the name by screen readers only, for places of the same name on a page; the sheet shows the name alone. */
+  ou?: string;
 }
 
 /** The route to a place in Google Maps: the link without the script, the same on every device. */
@@ -118,13 +120,13 @@ export const route = (lat: number, lon: number, pied = false) =>
 
 /**
  * The button of a place; nothing for one without a position. As small as it can be, for the 649 rows of /enfants: the
- * position is read from the link, the name from its label, and the arrow is drawn by the style sheet. On foot (`pied`):
- * no Waze, the walking route elsewhere.
+ * position is read from the link, the name from its label (from `data-n` when the label adds where it is), and the arrow
+ * is drawn by the style sheet. On foot (`pied`): no Waze, the walking route elsewhere.
  */
 export function aller(l: Lieu, pied = false): string {
   if (!Number.isFinite(l.lat) || !Number.isFinite(l.lon)) return "";
   return `<a class="aller" href="${esc(route(l.lat, l.lon, pied))}" rel="noopener"${l.adresse ? ` data-a="${esc(l.adresse)}"` : ""}` +
-    `${pied ? ' data-m="pied"' : ""} aria-label="${esc(MOTS.label(l.nom))}">${MOTS.bouton}</a>`;
+    `${pied ? ' data-m="pied"' : ""}${l.ou ? ` data-n="${esc(l.nom)}"` : ""} aria-label="${esc(MOTS.label(l.ou ? `${l.nom}, ${l.ou}` : l.nom))}">${MOTS.bouton}</a>`;
 }
 
 /**
@@ -144,7 +146,7 @@ if(android)return[[T.choisir,"geo:0,0?q="+p+"("+q+")"],g,...w];
 return[g,["OpenStreetMap","https://www.openstreetmap.org/?mlat="+la+"&mlon="+lo+"#map=18/"+la+"/"+lo]]};
 document.addEventListener("click",(ev)=>{const a=ev.target.closest&&ev.target.closest("a.aller");if(!a)return;
 const go=a.dataset.go||new URL(a.href).searchParams.get("destination"),l=a.getAttribute("aria-label")||"";if(!go||!l.startsWith(T.titre))return;ev.preventDefault();
-const [la,lo]=go.split(","),n=l.slice(T.titre.length),ad=a.dataset.a,pied=a.dataset.m==="pied";
+const [la,lo]=go.split(","),n=a.dataset.n||l.slice(T.titre.length),ad=a.dataset.a,pied=a.dataset.m==="pied";
 h.textContent=T.titre+n;o.textContent=pied?T.ouvrirPied:T.ouvrir;
 ul.innerHTML=apps(la,lo,n,pied).map(([t,u])=>"<li><a href=\\""+e(u)+"\\" rel=\\"noopener\\""+(ios||android?"":" target=\\"_blank\\"")+">"+e(t)+"<span aria-hidden=\\"true\\">↗</span></a></li>").join("")+
 "<li><button type=\\"button\\" class=\\"cp\\">"+e(ad?T.copierAdresse:T.copierCoordonnees)+"</button></li>";

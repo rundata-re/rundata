@@ -385,7 +385,7 @@ describe("commune pages", () => {
     const cold = await serve(isolate(edge), "/communes/saint-leu");
     expect(cold.r.status).toBe(200);
     expect(cold.text).toContain(`<h1>Saint-Leu <span class="n974">974</span> en direct</h1>`);
-    expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<\/a><\/h3><p class="tv">\d+(,\d)?\u202f°C<\/p>/);
+    expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<span class="sr"> à Saint-Leu<\/span><\/a><\/h3><p class="tv">\d+(,\d)?\u202f°C<\/p>/);
     expect(cold.text).toContain("pour l&#39;Ouest (Météo-France), la zone de Saint-Leu");
     expect(cold.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée) à[ \u00a0]\d\d:\d\d<\/p>/);
     expect(cold.text).toContain("Mer"); // on the coast

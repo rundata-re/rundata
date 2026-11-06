@@ -1047,9 +1047,12 @@ export function liveText(x: Row): string {
   return ` <b class="rt" title="Heure annoncée en direct par le réseau">${m === 0 ? "à l'heure" : m > 0 ? `+${fr(m)} min` : `${fr(-m)} min d'avance`}</b>`;
 }
 
-/** One departure as a row: line, direction, wait (from the real-time feed when there is one). */
-export const departureLi = (x: Row, wait: string) =>
-  `<li><b>${esc(x.ligne)}</b><span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(casse(x.direction))}</a>` : `vers ${esc(casse(x.direction))}`} <span class="note">(${esc(x.reseau)})</span></span><span class="note">${esc(wait)}${liveText(x)}</span></li>`;
+/**
+ * One departure as a row: line, direction, wait (from the real-time feed when there is one). Its hour (`heure`, « 16:12 »)
+ * read after the direction by screen readers: the links of a station's list often go the same way (« vers St-Denis »).
+ */
+export const departureLi = (x: Row, wait: string, heure?: string) =>
+  `<li><b>${esc(x.ligne)}</b><span>${x.trajet ? `<a href="${esc(x.trajet)}">vers ${esc(casse(x.direction))}${heure && /^\d\d:\d\d$/.test(heure) ? `<span class="sr">, départ à ${heure}</span>` : ""}</a>` : `vers ${esc(casse(x.direction))}`} <span class="note">(${esc(x.reseau)})</span></span><span class="note">${esc(wait)}${liveText(x)}</span></li>`;
 
 export const STOP_PATH = "/bus/arret";
 
@@ -1082,7 +1085,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
         return `<li class="card"><h3>Gare ${esc(de(g.commune))}</h3>` +
         `<p class="note">${g.arrets.map((a) => `${esc(a.reseau)} : ${a.page ? `<a href="${STOP_PATH}/${esc(a.page)}">${esc(a.nom)}</a>` : esc(a.nom)}`).join(" · ")}</p>` +
         (left.length
-          ? `<ul class="rows departs">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, heure))).join("")}</ul>`
+          ? `<ul class="rows departs">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, heure), heure)).join("")}</ul>`
           : busOutran(g, now.getTime() - data!.fetchedAt.getTime())
             ? `<p>${HORAIRES_CHARGENT}</p>`
             : `<p>Pas de départ prévu dans les prochaines heures.</p>`) +
@@ -2125,7 +2128,7 @@ function hikeCard(h: HikeCard, now: Date): string {
   const facts = [`${kmFr(h.km)} km`, upDown(h), h.alt_max != null ? `jusqu'à ${meters(h.alt_max)}` : "", h.boucle ? "boucle" : "", h.secteur].filter(Boolean).join(" · ");
   return `<li class="card hike${h.fermes.length ? " closed" : ""}" ${dataOf(h, etat)}>
 <h3><a href="/randonnees/${esc(h.slug)}">${esc(h.nom)}</a></h3><p class="note">${esc(facts)}</p>${state}${unknown}${noted}
-<p class="links"><a href="/randonnees/${esc(h.slug)}">Carte et profil</a><a href="/randonnees/${esc(h.slug)}.gpx" download>GPX</a></p></li>`;
+<p class="links"><a href="/randonnees/${esc(h.slug)}">Carte et profil<span class="sr"> : ${esc(h.nom)}</span></a><a href="/randonnees/${esc(h.slug)}.gpx" download>GPX<span class="sr"> de ${esc(h.nom)}</span></a></p></li>`;
 }
 
 function trailLi(t: TrailItem, now: Date): string {
@@ -2640,7 +2643,7 @@ function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   const cut = n.coupure?.de ? `<p><b>${n.coupure.a ? `${esc(n.coupure.de ?? "")} → ${esc(n.coupure.a)}` : `À partir du ${esc(n.coupure.de ?? "")}`}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
   return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(n.secteurs.join(", "))}</p>` : ""}` +
-    `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"} →</a>` : ""}</p></li>`;
+    `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;
 }
 
 /**
@@ -2913,7 +2916,8 @@ function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? 
 }
 
 /** The link to a championship's page, inside it when it is folded (words from marketing). */
-const FEDERATION = "Le classement sur le site de la fédération ↗";
+/** The federation's page of a championship; its name for screen readers, as several are one under the other. */
+const federation = (competition: string) => `Le classement sur le site de la fédération<span class="sr"> : ${esc(competition)}</span> ↗`;
 
 /** The rows by sport, each sport folded when `fold` and the list is long (FOLD_ROWS): the results, not what is to come. */
 function bySport(rows: NonNullable<SportAnswer["a_venir"]>, withScore: boolean, fold = false): string {
@@ -2954,7 +2958,7 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
   const foldTables = !!d && d.classements.length > 1 && d.classements.reduce((n, c) => n + c.lignes.length, 0) > FOLD_ROWS;
   const standings = d?.classements.length
     ? `<ul class="zones">${d.classements.map((c) => {
-        const site = `<a href="${esc(c.lien)}" rel="noopener">${foldTables ? FEDERATION : esc(c.competition)}</a>`;
+        const site = `<a href="${esc(c.lien)}" rel="noopener">${foldTables ? federation(c.competition) : esc(c.competition)}</a>`;
         const head = foldTables
           ? `<h3>${esc(c.competition)}${c.lignes.length ? `\u00a0<span class="note">·\u00a0${c.lignes.length}\u00a0équipe${c.lignes.length > 1 ? "s" : ""}</span>` : ""}</h3>`
           : `<h3>${site}</h3>`;

@@ -194,11 +194,11 @@ describe("coupures d'eau", () => {
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
     const sd = page("saint-denis");
     expect(sd).toContain(`<p class="note">Secteurs : ROUTE DE BOIS DE NEFLES</p>`);
-    expect(sd).toContain("pour les secteurs suivants : […] La remise en eau est prévue à partir de 05:00 le 27/10/2026, sauf incident. <a href=\"https://dioneo.re/flash-info/travaux-sur-le-reseau-rd49\" rel=\"noopener\">L'avis complet →</a>");
+    expect(sd).toContain("pour les secteurs suivants : […] La remise en eau est prévue à partir de 05:00 le 27/10/2026, sauf incident. <a href=\"https://dioneo.re/flash-info/travaux-sur-le-reseau-rd49\" rel=\"noopener\">L'avis complet<span class=\"sr\"> : Saint-Denis</span> →</a>");
     const sr = page("sainte-rose");
     expect(sr).not.toContain("Secteurs :");
     expect(sr).toContain("Les secteurs concernés sont les suivants : […] <a href=");
-    expect(sr).toContain("Les secteurs concernés dans l'avis complet →</a>");
+    expect(sr).toMatch(/Les secteurs concernés dans l'avis complet<span class="sr"> : [^<]+<\/span> →<\/a>/);
     const tool = body(await coupuresEau(cache(), "Sainte-Rose", NOW));
     expect(tool.avis.every((n: { secteurs: string[]; secteurs_complets: boolean }) => n.secteurs.length === 0 && !n.secteurs_complets)).toBe(true);
     expect(body(await coupuresEau(cache(), "Saint-Denis", NOW)).avis[0]).toMatchObject({ secteurs: ["ROUTE DE BOIS DE NEFLES"], secteurs_complets: true, extrait_coupe: true });
@@ -659,7 +659,7 @@ describe("coupures d'eau", () => {
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, at);
     const sl = page("saint-leu");
     expect(sl).toContain("Coupure d’eau mercredi 26 août");
-    expect(sl).toContain(`<a href="https://www.saintleu.re/actualite/coupure-deau-mercredi-26-aout.php" rel="noopener">Les secteurs concernés dans l'avis complet →</a>`);
+    expect(sl).toContain(`<a href="https://www.saintleu.re/actualite/coupure-deau-mercredi-26-aout.php" rel="noopener">Les secteurs concernés dans l'avis complet<span class="sr"> : Saint-Leu</span> →</a>`);
     expect(sl).toContain("les avis de coupure publiés sur <a href=\"https://www.saintleu.re/?s=eau\" rel=\"noopener\">le site de la commune de Saint-Leu</a>");
     expect(coupures.value.communes_suivies).toContain("Saint-Leu");
     expect(page("cilaos")).toContain(`<a href="https://ville-cilaos.fr/?s=coupure+d%27eau" rel="noopener">Les avis de coupure d&#39;eau sur le site de la ville de Cilaos →</a>`);

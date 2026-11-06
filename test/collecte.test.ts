@@ -185,6 +185,18 @@ describe("the tool and the pages", () => {
     for (const s of ["Impasse des Becs Roses", "Rue Hippolyte Piot", "calendrier 2026_POSS_11 du TCO (PDF)</a> · <a", "calendrier 2026_POSS_56 du TCO (PDF)"]) expect(both[0]).toContain(s);
   });
 
+  it("renders /collecte and a commune's page every day of December, a calendar's days run out or not, then says on 1 January that the year's calendars are not out", () => {
+    for (let d = 1; d <= 31; d++) {
+      const now = new Date(Date.UTC(2026, 11, d, 8));
+      for (const commune of [undefined, "Saint-Paul"]) expect(collectePage("https://rundata.re", now, commune)).toContain("</html>");
+    }
+    for (const commune of [undefined, "Saint-Paul"]) {
+      const page = collectePage("https://rundata.re", new Date("2027-01-01T08:00:00Z"), commune);
+      expect(page).toContain(`<p class="card">${col.notYet()}</p>`);
+      expect(page).not.toContain('class="card groupe"');
+    }
+  });
+
   it("parts two calendars said alike by the first day that tells them apart, later in the year", () => {
     // From Monday 2 November: the household waste every Monday, the green waste every other Thursday, then the last on
     // Wednesday 30 December for one, Thursday 31 for the other, past the eight weeks the rhythm reads.

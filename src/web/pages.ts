@@ -715,7 +715,7 @@ padding:.2rem 1rem;max-width:28rem;box-shadow:var(--shadow);color:var(--muted)}
 .search:focus-within{outline:2px solid var(--link);outline-offset:2px}
 .chips{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.45rem}
 /* The home page's field « Aller à… » (menu.ts), not the button « Y aller » (.aller): its label above it, the pages found below it. */
-.champ{display:block}.champ label{display:block;font-weight:700;margin-bottom:.4rem}.champ .search{margin:0}.champ .chips{margin:.7rem 0 0}.champ .note{margin:.6rem 0 0}
+.champ{display:block}.champ label,.champ-m{display:block;font-weight:700;margin-bottom:.4rem}.champ .search{margin:0}.champ .chips{margin:.7rem 0 0}.champ .note{margin:.6rem 0 0}
 .chips a{display:block;padding:.4rem .9rem;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);
 text-decoration:none;font-size:.95rem;transition:border-color .15s,transform .15s}
 .chips a:hover{border-color:var(--accent);color:var(--link);transform:translateY(-1px)}
@@ -1120,7 +1120,7 @@ document.querySelectorAll("[data-copy]").forEach((b)=>b.addEventListener("click"
 const o=b.textContent;if(b.dataset.signal&&location.pathname==="/mcp")sig("c");try{await navigator.clipboard.writeText(t.textContent);b.textContent="Copié ✓";setTimeout(()=>b.textContent=o,2500)}catch{getSelection().selectAllChildren(t)}}));
 const f=document.getElementById("filtre");if(f){const n=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();
 f.addEventListener("input",()=>{const q=n(f.value.trim());let any=false;document.querySelectorAll(".places li").forEach((li)=>{const ok=n(li.textContent).includes(q);li.hidden=!ok;any||=ok});
-document.querySelectorAll(".places h3").forEach((h)=>{h.hidden=![...h.nextElementSibling.children].some((li)=>!li.hidden)});document.getElementById("rien").hidden=any})}
+document.querySelectorAll(".places h3").forEach((h)=>{h.hidden=![...h.nextElementSibling.children].some((li)=>!li.hidden)});const rq=document.getElementById("rien-q");if(rq)rq.textContent=f.value.trim();document.getElementById("rien").hidden=any})}
 const askl=(l)=>{document.querySelectorAll("[data-askl]").forEach((b)=>b.setAttribute("aria-pressed",b.dataset.askl===l));
 document.querySelectorAll(".askbox>[data-l]").forEach((d)=>{d.hidden=d.dataset.l!==l})};
 try{const l=localStorage.getItem("askl");if(l)askl(l)}catch{}
@@ -1587,11 +1587,19 @@ function stationsList(all: StationNow[], now: Date): string {
 export function placeLinks(except?: string, hubs = false): string {
   const li = (p: PlacePage) => `<li><a href="/${hubs && p.commune ? "communes" : "meteo"}/${p.slug}">${esc(p.nom)}</a></li>`;
   const others = PAGES.filter((p) => p.slug !== except);
-  return `<label class="search">${icon("search")}<span class="sr">Chercher une commune ou un lieu</span>` +
-    `<input id="filtre" type="search" placeholder="Saint-Leu, Cilaos, le volcan…" autocomplete="off"></label>` +
+  // The weather's field (marketing, 06/11/2026): its label above it, what was typed in the answer when no page has it.
+  const field = hubs
+    ? `<label class="search">${icon("search")}<span class="sr">Chercher une commune ou un lieu</span>` +
+      `<input id="filtre" type="search" placeholder="Saint-Leu, Cilaos, le volcan…" autocomplete="off"></label>`
+    : `<label class="champ-m" for="filtre">Météo d'un lieu\u00a0: commune, quartier, sommet</label>` +
+      `<span class="search">${icon("search")}<input id="filtre" type="search" placeholder="Ex.\u00a0: Cilaos, le Maïdo" autocomplete="off"></span>`;
+  const none = hubs
+    ? "Pas de page pour ce nom : votre assistant, lui, connaît plus de 2 000 lieux de l'île."
+    : `Pas de page météo pour «\u00a0<span id="rien-q"></span>\u00a0». Essayez une commune proche, ou posez la question à votre IA avec le <a href="/mcp">connecteur rundata.re</a>.`;
+  return field +
     `<div class="places"><h3>${except ? "Les communes" : "Les 24 communes"}</h3><ul class="chips">${others.filter((p) => p.commune).map(li).join("")}</ul>` +
     `<h3>Cirques, volcan, plages</h3><ul class="chips">${others.filter((p) => !p.commune).map(li).join("")}</ul>` +
-    `<p class="note" id="rien" hidden>Pas de page pour ce nom : votre assistant, lui, connaît plus de 2 000 lieux de l'île.</p></div>`;
+    `<p class="note" id="rien" hidden>${none}</p></div>`;
 }
 
 const WEATHER_NOTES = `<section aria-labelledby="h-lire">

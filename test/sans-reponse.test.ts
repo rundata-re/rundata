@@ -277,7 +277,7 @@ describe("what is shown", () => {
 
   it("says it on the page in marketing's words, never down, closed, empty or refusing", () => {
     const page = typo(sansReponsePage("https://rundata.re", rows, T));
-    expect(page).toContain("<title>Sites publics de La Réunion sans réponse · rundata.re</title>");
+    expect(page).toContain("<title>Sites publics sans réponse · La Réunion (974)</title>");
     expect(page).toContain("<h1>Sites publics sans réponse</h1>");
     expect(page).toContain("Chaque site est revérifié chaque jour et quitte la liste dès qu'il répond.");
     expect(page).toContain('<a href="https://www.ipgp.fr/" rel="nofollow noopener">le site de l&#39;OVPF-IPGP</a> : sans réponse depuis le 21/10');

@@ -140,7 +140,7 @@ describe("« Relier votre plateforme »", () => {
     let html = plain(await r.text());
     expect(html).toContain('id="faux-client_id"');
     // Said in the tab, and announced by the page's script once it is there: no `role="alert"` in the page from the start.
-    expect(html).toContain("<title>Erreur : Relier votre compte HelloAsso à rundata.re : clubs et associations · 974</title>");
+    expect(html).toContain("<title>Erreur : Relier votre compte HelloAsso à rundata.re</title>");
     expect(html).toContain('<p class="msg vu" id="p-erreur">Quelques champs sont à corriger, signalés ci-dessous.</p><script>');
     expect(html).not.toContain('role="alert"');
     expect(plain(await (await get(connecteurs.RELIER_PATH)).text())).toContain("<title>Relier votre compte HelloAsso");

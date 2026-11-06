@@ -53,7 +53,7 @@ export function bathingPage(origin: string, now = new Date(), alerte?: Alerte): 
   const g = porte(alerte);
   // Along the coast, from the west to the south, as the zones lie.
   const communes = ["Saint-Paul", "Les Trois-Bassins", "Saint-Leu", "L'Étang-Salé", "Saint-Pierre", "Petite-Île", "Saint-Joseph", "Saint-Philippe"];
-  const title = "Baignade et requins à La Réunion : où se baigner · 974";
+  const title = "Baignade et requins à La Réunion (974) : où se baigner";
   const description =
     "Requins : baignade et surf interdits à moins de 300 m du rivage, sauf lagons, bassins, filets et ZONEX surveillés. Zones, drapeaux et arrêté en vigueur.";
   const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li aria-current="page">Baignade</li></ol></nav></div>

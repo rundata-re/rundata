@@ -28,10 +28,12 @@ describe("the page of a commune's day", () => {
       expect(HOOK(p).length, HOOK(p)).toBeLessThanOrEqual(144);
     }
     // One form for every commune, the short one where it would not fit (UX review of 04/11/2026).
-    expect(titleOf(pageOf("saint-paul")!)).toBe("La journée à Saint-Paul : eau, météo, sorties · 974");
-    expect(titleOf(pageOf("le-port")!)).toBe("La journée au Port : eau, météo, sorties · 974");
-    expect(titleOf(pageOf("la-plaine-des-palmistes")!)).toBe("La journée à La Plaine-des-Palmistes · 974");
-    expect(COMMUNES.filter((p) => titleOf(p).endsWith(" : eau, météo, sorties · 974")).length).toBe(23);
+    expect(titleOf(pageOf("le-port")!)).toBe("La journée au Port : eau, météo, sorties · La Réunion (974)");
+    expect(titleOf(pageOf("cilaos")!)).toBe("La journée à Cilaos : eau, météo, sorties · La Réunion (974)");
+    expect(titleOf(pageOf("saint-paul")!)).toBe("La journée à Saint-Paul · La Réunion (974)");
+    expect(titleOf(pageOf("la-plaine-des-palmistes")!)).toBe("La journée à La Plaine-des-Palmistes · La Réunion (974)");
+    expect(COMMUNES.filter((p) => titleOf(p).endsWith(" : eau, météo, sorties · La Réunion (974)")).length).toBe(2);
+    expect(COMMUNES.every((p) => titleOf(p).length <= 60 && titleOf(p).endsWith(" · La Réunion (974)"))).toBe(true);
     expect(H1(pageOf("le-port")!)).toBe("La journée au Port");
     // Each link says what is on the other side.
     expect(LINK(pageOf("le-port")!)).toBe("La journée au Port : eau, vigilance, météo, sorties →");

@@ -25,7 +25,7 @@ import { KREOL } from "./publier-texte.js";
 export const PATH = "/associations";
 /** The short addresses people type, sent here. */
 export const ALIASES = ["/clubs", "/asso"];
-const TITLE = "Clubs et associations\u00a0: faites connaître vos événements, gratuitement · 974";
+const TITLE = "Clubs et associations\u00a0: vos événements · La Réunion (974)";
 const META = "Matchs, kermesses, sorties, concerts\u00a0: vos dates sur rundata.re et dans les assistants IA, avec le nom de votre club. Gratuit, sans compte, en quelques clics.";
 const H1 = "Espace clubs et associations";
 const ESPRIT = "Vos matchs, vos kermesses, vos sorties et vos concerts s'affichent gratuitement sur rundata.re et dans les assistants IA qui l'utilisent (ChatGPT, Claude, Le Chat), avec le nom et le lien de votre club. Vous continuez à publier là où vous le faites déjà\u00a0: sans compte, sans publicité, et vos événements deviennent des données ouvertes, que tout le monde peut réutiliser en citant votre club.";

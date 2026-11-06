@@ -34,7 +34,7 @@ describe("the /crues page", () => {
   it("says the vigilance first, from Vigicrues Réunion, then the gauges measured lately, the others counted apart", async () => {
     const { html } = await page();
     const w = words(html);
-    expect(html).toContain("<title>Crues Réunion en direct : rivières et vigilance · 974</title>");
+    expect(html).toContain("<title>Crues en direct : rivières et vigilance · La Réunion (974)</title>");
     expect(w).toMatch(/Crues des rivières 974/);
     expect(w).toContain("Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert.");
     expect(w).toContain("Dernier bulletin le 07/08 à 06:22 : Vigicrues Réunion n'en publie qu'en vigilance jaune ou plus.");

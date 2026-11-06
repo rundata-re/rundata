@@ -22,7 +22,7 @@ export const PATH = "/antennes";
 
 // The words of the page, marketing's.
 const T = {
-  title: "Antennes Réunion : 4G, 5G, TNT et radio sur la carte · 974",
+  title: "Antennes 4G, 5G, TNT et radio · La Réunion (974)",
   description: "Les supports d'antennes mobiles (Orange, SFR Réunion, Free, Zeop) et les émetteurs de radio et de télévision de La Réunion, d'après l'ANFR.",
   h1: "Les antennes de La Réunion",
   note:

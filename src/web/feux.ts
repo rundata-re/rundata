@@ -25,7 +25,7 @@ export interface FeuxLive {
   vigilance?: Cached<mf.Vigilance> | null;
 }
 
-const TITLE = "Feux de forêt Réunion : détections satellite 24 h · 974";
+const TITLE = "Feux de forêt : détections satellite 24 h · La Réunion (974)";
 const H1 = "Feux de végétation à La Réunion, vus par satellite";
 const LEAD = "Les points chauds repérés par les satellites VIIRS de la NASA ces dernières 24 h, sur une carte et en liste, avec les sentiers fermés et la vigilance du jour. Détection satellite, faux positifs possibles : toit chaud, site industriel, brûlage autorisé.";
 // A preview stays in the message it was sent in: each state says its day and time, never « ces dernières 24 h » alone.

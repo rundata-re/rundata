@@ -13,6 +13,9 @@ import { esc } from "./map.js";
 import { type Alerte, credit } from "./data.js";
 import { credits, DESCRIPTION_MAX, layout, leAt } from "./pages.js";
 
+// What a search engine shows of a title: the tab's title takes the first of its forms that fits.
+const TITLE_MAX = 60;
+
 type Departures = Awaited<ReturnType<typeof stopPageDepartures>>;
 
 /** At most this many stops in a search's list. */
@@ -74,7 +77,8 @@ export function toStop(p: transit.StopPage, ya: Porte = porte()): string {
 export function stopPage(origin: string, p: transit.StopPage, d: Departures, now = new Date(), alerte?: Alerte): string {
   const ya = porte(alerte);
   const path = `${STOP_PATH}/${p.slug}`;
-  const title = `${titled(p)} : prochains bus · 974`;
+  const title = [`${titled(p)} : prochains bus · La Réunion (974)`, `${titled(p)} · La Réunion (974)`, `${titled(p)} : prochains bus · 974`]
+    .find((t) => t.length <= TITLE_MAX) ?? `${titled(p)} · 974`;
   const description = described(p, d.lignes);
   const names = p.groups.map((g) => `${esc(transit.NETWORKS[g.reseau]?.nom ?? g.reseau)} : ${esc(g.nom)}`).join(" · ");
 
@@ -121,5 +125,5 @@ ${found.length > SEARCH_MAX ? `<p class="note">Les ${SEARCH_MAX} premiers sont a
     : `<p>Aucun arrêt de bus trouvé pour « ${esc(q)} ». Donnez le nom de l'arrêt et sa commune (« Gare routière, Saint-Pierre »).</p>`;
   const band = `${crumbBar("Arrêt de bus", { name: "Bus", path: "/bus" })}
 <div class="wrap intro"><div class="pitch"><h1>Arrêt de bus</h1>${stopSearch(q)}</div></div>`;
-  return layout(origin, { title: "Arrêt de bus · 974", description: "Prochains bus à un arrêt de La Réunion (974), tous réseaux.", path: STOP_PATH, noindex: true, jsonld: [], alerte }, band, `<section class="card">${result}</section>`);
+  return layout(origin, { title: "Arrêt de bus · La Réunion (974)", description: "Prochains bus à un arrêt de La Réunion (974), tous réseaux.", path: STOP_PATH, noindex: true, jsonld: [], alerte }, band, `<section class="card">${result}</section>`);
 }

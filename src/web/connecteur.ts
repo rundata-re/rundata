@@ -9,7 +9,7 @@ import { askHome, connectSteps } from "./home.js";
 import { connector, layout } from "./pages.js";
 
 export const PATH = "/mcp";
-const TITLE = "Ajouter rundata.re à votre assistant IA · connecteur MCP gratuit";
+const TITLE = "Ajouter rundata.re à votre IA · connecteur MCP gratuit";
 // The connector's one name on every link to it (marketing's review of 29/10, R4).
 const CRUMB = "Brancher mon IA";
 const DESCRIPTION = "Comment ajouter le connecteur rundata.re à ChatGPT, Claude ou Le Chat : votre IA lit les données de La Réunion en direct. Gratuit, sans compte.";

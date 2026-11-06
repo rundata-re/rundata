@@ -54,7 +54,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(page).toContain('<code id="mcp-url">https://rundata.re/<wbr>mcp</code>');
     // The first screen at 390 px: the breadcrumb under the connector's one name, the heading, one sentence, then the
     // address and « Copier », before the step by step. The title is the one search engines know.
-    expect(page).toContain("<title>Ajouter rundata.re à votre assistant IA · connecteur MCP gratuit</title>");
+    expect(page).toContain("<title>Ajouter rundata.re à votre IA · connecteur MCP gratuit</title>");
     const band = page.slice(page.indexOf('class="crumbs'), page.indexOf("<section"));
     expect(band).toContain("Brancher mon IA");
     // R1: a pill names a source or a nature only; « Gratuit, sans compte » is neither.

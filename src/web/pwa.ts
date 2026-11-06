@@ -278,6 +278,6 @@ export const OFFLINE_SCRIPT = `${WHEN}
 (async()=>{const ul=document.getElementById("gardees"),none=document.getElementById("rien-garde");
 document.getElementById("again").addEventListener("click",()=>location.reload());
 try{const c=await caches.open("pages");const rows=[];for(const k of await c.keys()){const r=await c.match(k);if(!r)continue;
-rows.push({href:new URL(k.url).pathname,at:Number(r.headers.get("x-copie")),title:new DOMParser().parseFromString(decodeURIComponent(r.headers.get("x-titre")||""),"text/html").documentElement.textContent.replace(/ · (?:974|rundata\.re)$/,"")})}
+rows.push({href:new URL(k.url).pathname,at:Number(r.headers.get("x-copie")),title:new DOMParser().parseFromString(decodeURIComponent(r.headers.get("x-titre")||""),"text/html").documentElement.textContent.replace(/ · (?:La Réunion \(974\)|974|rundata\.re)$/,"")})}
 rows.sort((a,b)=>b.at-a.at);for(const x of rows){const li=document.createElement("li"),a=document.createElement("a");a.href=x.href;a.textContent=x.title;
 li.append(a,", copie du "+when(x.at,Date.now()));ul.append(li)}none.hidden=rows.length>0}catch{none.hidden=false}})();`;

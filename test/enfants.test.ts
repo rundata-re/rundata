@@ -303,7 +303,7 @@ describe("a commune's children's page", () => {
 
   it("says marketing's words, with French spacing", () => {
     const n = enfants.inCommune("Saint-Denis").length;
-    expect(html).toContain(`<title>Avec les enfants à Saint-Denis${NBSP}: où aller · 974</title>`);
+    expect(html).toContain(`<title>Avec les enfants à Saint-Denis${NBSP}: où aller · La Réunion (974)</title>`);
     expect(flat(html)).toContain(`Aires de jeux, parcs, piscines, médiathèques : les ${n} lieux où aller avec les enfants à Saint-Denis, sur une carte, et les activités du week-end.`);
     expect(html).toContain(`<p class="lead">Les ${n} lieux pour les enfants de Saint-Denis, sur la carte${NBSP}: choisissez un type, ou un point pour voir sa fiche.</p>`);
     expect(html).toContain('aria-label="Choisir un type de lieu"');

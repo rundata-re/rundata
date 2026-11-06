@@ -51,7 +51,7 @@ describe("the stop pages", () => {
     expect(d.departs[0].trajet).toMatch(/^\/bus\/trajet\/carjaune\/\d+\/[^?]+\?jour=20261023&arret=\d+#arret-\d+$/);
     expect(d.lignes).toContain("S2");
     const html = stopPage(O, p, d, NOW);
-    expect(html).toContain("<title>Arrêt Gare de St-Pierre : prochains bus · 974</title>");
+    expect(html).toContain("<title>Arrêt Gare de St-Pierre : prochains bus · La Réunion (974)</title>");
     expect(html).toContain("<h1>Arrêt Gare de St-Pierre</h1>");
     expect(html).toContain("Les prochains bus qui passent à cet arrêt, toutes lignes et tous réseaux confondus. Chaque départ mène à son parcours, arrêt par arrêt.");
     // Car Jaune's and Alternéo's stops of that name, one page. (The French spacing of the page comes at the response: typo.ts.)
@@ -78,7 +78,7 @@ describe("the stop pages", () => {
     expect(description.replace(/&#39;/g, "'").length).toBeLessThanOrEqual(160);
     expect(description).toMatch(/: lignes L1(, L\d+)* et \d+ autres, (directions et heures de passage, )?d&#39;après les horaires/);
     expect(html).toContain(`<meta name="robots" content="noindex">`);
-    expect(html).toContain(`<title>Arrêt ${quiet.nom}, ${quiet.commune} : prochains bus · 974</title>`.replace(/'/g, "&#39;"));
+    expect(html).toContain(`<title>Arrêt ${quiet.nom}, ${quiet.commune} · La Réunion (974)</title>`.replace(/'/g, "&#39;"));
     expect(html).toContain("Pas de départ prévu dans les prochaines heures.");
   });
 

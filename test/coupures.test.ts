@@ -476,7 +476,7 @@ describe("coupures d'eau", () => {
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
     const sd = page("saint-denis");
-    expect(sd).toContain("<title>Coupure d&#39;eau Saint-Denis : avis du distributeur · 974</title>");
+    expect(sd).toContain("<title>Coupure d&#39;eau Saint-Denis · La Réunion (974)</title>");
     expect(sd).toContain("<h1>Coupures d'eau à Saint-Denis <span class=\"n974\">974</span></h1>");
     expect(sd).toContain("ROUTE DE BOIS DE NEFLES");
     expect(sd).toContain("<b>Dionéo</b> distribue l'eau à Saint-Denis");
@@ -611,7 +611,7 @@ describe("coupures d'eau", () => {
     const page = coupuresPage("https://rundata.re", { value, fetchedAt: NOW }, NOW);
     expect(page).toContain(`<path d="${sp.d}" style="fill:#f03e3e"/>`);
     // Its title says what the page gives, not a state: never « avis en cours » on a day without any.
-    expect(page).toContain("<title>Coupure d&#39;eau Réunion : avis des distributeurs · 974</title>");
+    expect(page).toContain("<title>Coupure d&#39;eau : avis des distributeurs · La Réunion (974)</title>");
     expect(page).not.toContain("aujourd&#39;hui : avis en cours");
     // Every site answered: no grey of a site without answer, nor its legend.
     expect(page).not.toContain("Site sans réponse");

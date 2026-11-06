@@ -321,8 +321,8 @@ describe("home page", () => {
       'name="twitter:card" content="summary_large_image"', 'property="og:locale" content="fr_FR"']) expect(page).toContain(tag);
     expect(page.match(/<title>(.*?)<\/title>/)![1].length).toBeLessThanOrEqual(65);
     // The title names what people look for; the AI stays in the h1 and the description.
-    expect(page).toContain("<title>La Réunion 974 en direct : météo, routes, rando, sorties</title>");
-    expect(page).toContain('property="og:title" content="La Réunion 974 en direct : météo, routes, rando, sorties"');
+    expect(page).toContain("<title>La Réunion (974) en direct : météo, routes, rando, sorties</title>");
+    expect(page).toContain('property="og:title" content="La Réunion (974) en direct : météo, routes, rando, sorties"');
     expect(page).toMatch(/name="description" content="[^"]*974/);
     for (const link of ["https://www.facebook.com/rundata.re", "https://www.instagram.com/rundata.re/", "https://www.threads.com/@rundata.re", "https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q", "https://glama.ai/mcp/servers/rundata-re/rundata", "https://github.com/rundata-re/rundata", "https://www.data.gouv.fr/reuses/"]) expect(page).toContain(`href="${link}`);
   });
@@ -399,7 +399,7 @@ describe("commune pages", () => {
     expect(cold.r.status).toBe(200);
     expect(cold.text).toContain(`<h1>Saint-Leu <span class="n974">974</span>\u00a0: la fiche de la commune</h1>`);
     expect(cold.text).toContain(`<p class="pill">Fiche de la commune</p>`);
-    expect(cold.text).toContain(`<title>Saint-Leu 974\u00a0: mairie, écoles, médecins, élections</title>`);
+    expect(cold.text).toContain(`<title>Saint-Leu, La Réunion (974)\u00a0: mairie, écoles, élections</title>`);
     expect(cold.text).toContain(`<p class="hook">La fiche de Saint-Leu\u00a0: la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.</p>`);
     expect(cold.text).not.toMatch(/sur une (seule )?page/);
     expect(cold.text).toMatch(/<h3><a href="\/meteo\/saint-leu">Météo<span class="sr"> à Saint-Leu<\/span><\/a><\/h3><p class="tv">\d+(,\d)?\u00a0°C<\/p>/);
@@ -810,7 +810,7 @@ describe("vigilance and sea pages", () => {
     const cache = isolate(edge);
     const { text, used } = await serve(cache, "/mer");
     expect(text).toContain("Mer à La Réunion\u00a0: température et houle <span class=\"n974\">974</span>");
-    expect(text).toMatch(/<title>Mer Réunion\u00a0: houle, température de l(&#39;|')eau et marée · 974<\/title>/);
+    expect(text).toMatch(/<title>Mer\u00a0: houle, température de l(&#39;|')eau, marée · La Réunion \(974\)<\/title>/);
     expect(text).toContain("Boucan-Canot");
     expect(text).toContain('href="/meteo/saint-paul"');
     expect(text).toMatch(/\d+,\d °C/);

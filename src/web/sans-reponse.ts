@@ -12,7 +12,7 @@ import { layout } from "./pages.js";
 
 export const PATH = "/sites-sans-reponse";
 const H1 = "Sites publics sans réponse";
-const TITLE = "Sites publics de La Réunion sans réponse · rundata.re";
+const TITLE = "Sites publics sans réponse · La Réunion (974)";
 // Shorter than the lead, for the previews and the search engines (marketing, within DESCRIPTION_MAX).
 const DESCRIPTION = "Les sites publics de La Réunion qui ne répondent pas en ce moment, depuis quand, et ce qui manque alors sur rundata.re. Revérifiés chaque jour.";
 const CHAPEAU = "Certains sites publics de La Réunion ne répondent pas en ce moment. Ce qu'ils publient manque alors sur rundata.re. Cette page dit lesquels, depuis quand, et ce qui manque ici. Chaque site est revérifié chaque jour et quitte la liste dès qu'il répond.";

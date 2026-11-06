@@ -9,7 +9,7 @@ import { layout } from "./pages.js";
 import { KIND_OF, SECTIONS } from "./pwa.js";
 
 export const PATH = "/application";
-const TITLE = "rundata.re sur l'écran d'accueil, comme une application · 974";
+const TITLE = "rundata.re sur l'écran d'accueil, comme une application";
 const DESCRIPTION = "Ajoutez rundata.re à l'écran d'accueil\u00a0: les étapes pour Safari, Chrome, Firefox, Edge et Samsung Internet, sur téléphone ou ordinateur. Sans store ni compte.";
 const NAME = "rundata.re sur votre écran d'accueil";
 

@@ -91,8 +91,8 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
   <p class="note"><a href="/randonnees">Toutes les randonnées sur la carte de l'île</a>, avec le filtre par distance et dénivelé · <a href="/sentiers">tous les sentiers fermés</a>.</p>
   ${d && data ? sourcesNote(d.sources, data) : ""}</section>`;
 
-  const long = `Randonnée ${s.nom} : traces GPS et sentiers ouverts · 974`;
-  const title = long.length <= TITLE_MAX ? long : `Randonnée ${s.nom} : traces GPS · 974`;
+  const title = [`Randonnée ${s.nom} : traces GPS · La Réunion (974)`, `Randonnée ${s.nom} · La Réunion (974)`, `Randonnée ${s.nom} : traces GPS · 974`]
+    .find((t) => t.length <= TITLE_MAX) ?? `Randonnée ${s.nom} · 974`;
   const short = `Randonnée ${s.dans} (La Réunion, 974) : sentiers de l'ONF et itinéraires avec trace GPS (GPX), leur état du jour et la météo.`;
   const description = d
     ? describe(`${s.nom} (La Réunion, 974) : ${trails.length} sentiers de l'ONF et ${plural(routes.length, "itinéraire")} avec trace GPS (GPX), leur état du jour (${closed.length} fermé${closed.length > 1 ? "s" : ""} en ce moment) et la météo.`, short)

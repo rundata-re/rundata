@@ -95,7 +95,7 @@ describe("the schools and the cyclone alert", () => {
   it("is a page of its own, the rule under the state, the plan linked", () => {
     const page = (v: mf.Vigilance) => ecolesPage("https://rundata.re", { value: v, fetchedAt: NOW, stale: false }, NOW, alerteOf(v, NOW));
     const calm = page(map([]));
-    expect(calm).toContain("<title>École fermée ? Cyclone et alerte orange Réunion · 974</title>");
+    expect(calm).toContain("<title>École fermée ? Cyclone et alerte orange · La Réunion (974)</title>");
     expect(calm).toContain("<h1>Cyclone : les écoles sont-elles fermées ?</h1>");
     expect(calm).toContain("Pas d&#39;alerte cyclonique en cours à La Réunion.");
     expect(calm).toContain("Ce que prévoit le plan ORSEC Cyclones</h2>");

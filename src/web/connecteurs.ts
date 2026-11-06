@@ -32,7 +32,7 @@ const PARENT = { name: "Clubs et associations", path: "/associations" };
 const DEPOT = "https://github.com/rundata-re/rundata";
 const CLE_MAX = 200;
 
-const TITLE = "Relier votre compte HelloAsso à rundata.re\u00a0: clubs et associations · 974";
+const TITLE = "Relier votre compte HelloAsso à rundata.re";
 const META = "Associations de La Réunion\u00a0: reliez une fois votre compte HelloAsso, et vos événements publics s'affichent sur rundata.re et dans les assistants IA, sans rien saisir deux fois.";
 const CONNEXION_TITLE = "Votre connexion à rundata.re";
 const CONNEXION_META = "Confirmer ou retirer la connexion de votre association à rundata.re.";

@@ -10,7 +10,7 @@ import { esc } from "./map.js";
 import { layout } from "./pages.js";
 import { ORSEC } from "../tools/ecoles.js";
 
-export const TITLE = "Kit cyclone Réunion : la liste du plan ORSEC · 974";
+export const TITLE = "Kit cyclone : la liste du plan ORSEC · La Réunion (974)";
 const H1 = "Que faut-il avoir chez soi pour un cyclone ?";
 const META = "Kit d'urgence, réserves, plein du véhicule, centre d'hébergement : ce que le plan ORSEC Cyclones de la préfecture demande de préparer à La Réunion (974).";
 const LEAD = "Ce que le dispositif ORSEC Cyclones de la préfecture (arrêté 2026-182) demande de préparer avant un cyclone, cité page par page.";

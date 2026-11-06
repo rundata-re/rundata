@@ -18,6 +18,9 @@ import { inseeCommune, ventText } from "./meteo-carte.js";
 import { credits, dayMonth, deg, hm, layout, metres, shortName, thin, leAt, duAt } from "./pages.js";
 import { a, enGrand, fr } from "../tools/format.js";
 
+// What a search engine shows of a title: the tab's title takes the first of its forms that fits.
+const TITLE_MAX = 60;
+
 export const STATION_PATH = "/meteo/station";
 export const stationPath = (id: string) => `${STATION_PATH}/${id}`;
 
@@ -258,7 +261,7 @@ export function stationPage(origin: string, data: Cached<StationData> | null, id
   const path = stationPath(id);
   const h = d.historique;
   const on = live(d);
-  const title = on || !h ? `${name} : station météo en direct et historique` : `${name} : historique de la station météo`;
+  const title = [`${name} : station météo · La Réunion (974)`, `${name} · La Réunion (974)`, `${name} : station météo · 974`].find((t) => t.length <= TITLE_MAX) ?? `${name} · 974`;
   const what = measures(d);
   const who = cirad(d.nom) ? `${bare(d.nom)} du CIRAD` : `Météo-France ${name}`;
   const told = (where: string) =>

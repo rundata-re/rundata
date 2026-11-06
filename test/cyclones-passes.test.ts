@@ -47,7 +47,7 @@ describe("past cyclones", () => {
   it("has a page with its source, the measures, the rain note and the links", () => {
     const html = passePage("https://rundata.re", passe("garance-2025"));
     expect(html).toContain(`<title>${titleOf(passe("garance-2025"))}</title>`);
-    expect(html).toContain("<title>Cyclone Garance 2025 : pluie et vent mesurés · Réunion 974</title>");
+    expect(html).toContain("<title>Cyclone Garance 2025 : pluie, vent · La Réunion (974)</title>");
     expect(html).toContain("<h1>Cyclone Garance, 28 février 2025</h1>");
     expect(html).toContain('href="https://www.reunion.developpement-durable.gouv.fr/IMG/pdf/1a_meteo_france_bilan_saison_cyclonique.pdf"');
     expect(html).toContain("Pluie du jour : cumul mesuré de 10 h ce jour-là à 10 h le lendemain (heure de La Réunion), comme le compte Météo-France.");
@@ -63,7 +63,7 @@ describe("past cyclones", () => {
 
   it("gives a long episode each station's wettest day, and says how few measured the wind", () => {
     const h = passe("hyacinthe-1980");
-    expect(titleOf(h)).toBe("Cyclone Hyacinthe 1980 : pluie mesurée · Réunion 974");
+    expect(titleOf(h)).toBe("Cyclone Hyacinthe 1980 : pluie mesurée · La Réunion (974)");
     expect(metaOf(h)).toBe("Cyclone Hyacinthe (janvier 1980) à La Réunion (974) : pluie mesurée station par station par Météo-France, et les records de station.");
     expect(mesures(h).jours).toHaveLength(12);
     const html = passePage("https://rundata.re", h);
@@ -79,7 +79,7 @@ describe("past cyclones", () => {
     expect(firinga).not.toContain("2024))");
     // Belal: 60.2 m/s at the Maïdo, the 217 km/h of Météo-France's account.
     expect(passePage("https://rundata.re", passe("belal-2024"))).toContain("<b>Piton Maïdo</b> : 217\u00a0km/h (60,2\u00a0m/s) le 15/01/2024");
-    expect(titleOf(passe("firinga-1989"))).toBe("Cyclone Firinga 1989 : pluie et vent mesurés · Réunion 974");
+    expect(titleOf(passe("firinga-1989"))).toBe("Cyclone Firinga 1989 : pluie, vent · La Réunion (974)");
     // Belal: the misspelt place of the source is cut, the number and its unit never.
     const belal = passePage("https://rundata.re", passe("belal-2024"));
     expect(belal).not.toContain("Saint-Anne");
@@ -113,7 +113,7 @@ describe("past cyclones", () => {
     const three = (name: string) => c.stations.find((s) => s.station === name)!.rr!.slice(2, 5).reduce((a, x) => a! + x!, 0);
     expect(three("Plaine des Palmistes")).toBe(2507);
     expect(three("Bebour")).toBe(2465);
-    expect(titleOf(passe("clotilda-1987"))).toBe("Cyclone Clotilda 1987 : pluie mesurée · Réunion 974");
+    expect(titleOf(passe("clotilda-1987"))).toBe("Cyclone Clotilda 1987 : pluie mesurée · La Réunion (974)");
     // Colina: 205 km/h at the Plaine-des-Palmistes.
     expect(passePage("https://rundata.re", passe("colina-1993"))).toContain("<b>Plaine des Palmistes</b> : 205\u00a0km/h (57\u00a0m/s) le 19/01/1993");
   });

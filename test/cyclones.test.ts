@@ -139,7 +139,7 @@ describe("cyclones", () => {
     const live = page.slice(0, page.indexOf('id="h-alerte"'));
     expect(live).not.toMatch(/Au plus près|Déplacement|Vent moyen|Cercles à 500|km au |rafales|hPa|Pression/);
     expect(page).toContain("<h3>Fytia <span class=\"note\">tempête tropicale modérée</span></h3><p>Dernier avis du CMRS : 03/02 à 10:00 (heure de La Réunion).</p>");
-    expect(page).toContain("<title>Cyclone Réunion en ce moment : systèmes actifs, alerte · 974</title>");
+    expect(page).toContain("<title>Cyclone en ce moment : trajectoire, alerte · 974</title>");
     expect(page).toContain("Néna in siklone pa loin La Rényon ? Gèt si https://rundata.re/cyclones é di amwin sak Météo-France é la préfektir i di.");
     expect(page).toContain("Y a-t-il un cyclone près de La Réunion ? Lis https://rundata.re/cyclones et dis-moi ce qu'en disent Météo-France et la préfecture.");
     const out = body(await cyclones(cache(OCTOBER), undefined, OCTOBER)) as CyclonesAnswer;
@@ -152,7 +152,7 @@ describe("cyclones", () => {
     const vigilance = vigilancePage("https://rundata.re", null, OCTOBER);
     expect(vigilance).not.toContain("Écoutez la radio");
     // /vigilance is the weather's: its name no longer says the cyclone alert, which is /cyclones's.
-    expect(vigilance).toContain("<title>Vigilance météo Réunion 974 en direct</title>");
+    expect(vigilance).toContain("<title>Vigilance météo à La Réunion (974) en direct</title>");
     expect(vigilance).toContain('<h1>Vigilance météo <span class="n974">974</span></h1>');
     expect(vigilance).toContain('"position":2,"name":"Vigilance météo"');
     // The fixed description, while the copy is not there yet.

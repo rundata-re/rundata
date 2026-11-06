@@ -71,7 +71,7 @@ describe("a station's page", () => {
     const html = page({ ...d, derniere: { ...d.derniere!, time: "2026-10-25T08:18:00Z" } });
     expect(html).toContain(`<li aria-current="page">Gillot aéroport</li>`);
     expect(html).toContain(`<h1>Gillot <span class="n974">aéroport</span></h1>\n    <p class="hook">Ce que mesure cette station en ce moment, et son historique depuis 1953.</p>`);
-    expect(html).toContain("<title>Gillot aéroport : station météo en direct et historique");
+    expect(html).toContain("<title>Gillot aéroport : station météo · La Réunion (974)</title>");
     expect(html).toContain(`<span class="big span">27,9\u00a0°C</span><p>mesurés sous abri <b>le 25/10 à 12:18</b> par la station Météo-France de l'aéroport, à Sainte-Marie, 8 m d'altitude.</p>`);
     expect(html).toContain("<h2>La dernière mesure, le 25/10 à 12:18</h2>");
     for (const k of ["Vent moyen", "Humidité", "Point de rosée", "Pluie", "Pression (niveau de la mer)", "Soleil"]) expect(html).toContain(`<li><span>${k}</span>`);
@@ -173,7 +173,7 @@ describe("a station's page", () => {
     const later = new Date(Date.parse(h.jusqu_au) + 400 * 86_400_000);
     const year = (ymd: string) => ymd.split("-").reverse().join("/");
     const html = stationPage("https://rundata.re", { value: d, fetchedAt: later, stale: false }, d.id, later);
-    expect(html).toContain("<title>Gillot aéroport : historique de la station météo");
+    expect(html).toContain("<title>Gillot aéroport : station météo · La Réunion (974)</title>");
     expect(html).toContain(`<p class="hook">L&#39;historique de cette station, de ${h.depuis} au ${year(h.jusqu_au)}.</p>`);
     expect(html).toContain(`rundata.re n&#39;a pas de mesure de cette station depuis le ${year(h.jusqu_au)}.`);
     expect(html).toContain(`<h2 id="h-30">Les 30 derniers jours de mesure</h2>`);

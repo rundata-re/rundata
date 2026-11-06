@@ -180,7 +180,7 @@ export async function answer(asked: Asked, now: Date): Promise<Answer> {
  */
 function titleOf(r: Answer | undefined): string {
   const page = "Trajet en bus · 974";
-  if (!r) return "Trajet en bus à La Réunion · 974";
+  if (!r) return "Trajet en bus à La Réunion (974)";
   if (r.passee) return `Erreur : date passée · ${page}`;
   if (!r.de && !r.a) return `Erreur : départ et arrivée non trouvés · ${page}`;
   if (!r.de) return `Erreur : départ non trouvé · ${page}`;

@@ -907,7 +907,7 @@ export async function buildTrail(cache: Cache, t: { nom: string } & traces.Senti
     alt_min: t.alt_min ?? m.alt_min,
     alt_max: t.alt_max ?? m.alt_max,
     etat: shut.length
-      ? `${onf.nuance(shut[0], now) ? onf.motifs(shut[0], now).join(" · ") : `Fermé${shut[0].cause ? ` : ${shut[0].cause}` : ""}${shut[0].info ? ` (${shut[0].info})` : ""}`}${open ? ", en partie" : ""}`
+      ? onf.nuance(shut[0], now) ? `${onf.motifs(shut[0], now).join(" · ")}${open ? ", en partie" : ""}` : closedState(shut[0].cause, shut[0].info, open)
       : open ? OUVERT_ONF : noticeOf(tr.troncons) ?? "Hors gestion ONF : état non connu",
     ferme: shut.length > 0,
     troncons: states,
@@ -974,6 +974,21 @@ const stamp = (now: Date) => {
 };
 const figures = (x: { km: number; dplus?: number; dmoins?: number }) =>
   `${String(x.km).replace(".", ",")} km${x.dplus != null ? `, dénivelé +${x.dplus} m / -${x.dmoins ?? 0} m` : ""}`;
+
+// A cause the ONF opens with the state itself (« Fermé suite aux éboulis… », « Danger Fermé suite… »).
+const SAID_SHUT = /^(Danger )?Fermée?(?: (.*))?$/i;
+
+/**
+ * A closed trail's state as its page and preview open with it: « Fermé : cause (info) », « En partie fermé : … » when
+ * some of it is open. A cause that already says « Fermé » is not told twice: « Fermé suite aux éboulis… », « Fermé :
+ * danger, suite aux éboulis… ».
+ */
+export function closedState(cause: string | undefined, info: string | undefined, partial: boolean): string {
+  const head = partial ? "En partie fermé" : "Fermé";
+  const m = cause?.match(SAID_SHUT);
+  const said = !cause ? head : !m ? `${head} : ${cause}` : m[1] ? `${head} : danger${m[2] ? `, ${m[2]}` : ""}` : m[2] ? `${head} ${m[2]}` : head;
+  return `${said}${info ? ` (${info})` : ""}`;
+}
 
 /** An ONF trail's GPX: its state when downloaded in the description, the ONF as author. */
 export async function trailGpx(cache: Cache, origin: string, t: { nom: string } & traces.SentierStats, now = new Date()): Promise<string> {

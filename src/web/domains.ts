@@ -2288,7 +2288,10 @@ function traceLegend(kind: "sentier" | "randonnee", etats: string[]): string {
  * else nothing: the two traces differ, and two titles alike in one group would contradict each other.
  */
 export function twinOf(kind: "sentier" | "randonnee", nom: string): string | undefined {
-  const both = !!traces.SENTIERS[nom] && traces.RANDONNEES.some((r) => r.nom === nom);
+  // The same name, whatever its capitals: « Sentier de l'École Normale » (ONF), « Sentier de l'École normale » (OpenStreetMap).
+  const low = nom.toLocaleLowerCase("fr");
+  const same = (x: string) => x.toLocaleLowerCase("fr") === low;
+  const both = Object.keys(traces.SENTIERS).some(same) && traces.RANDONNEES.some((r) => same(r.nom));
   return both ? (kind === "sentier" ? "sentier ONF" : "itinéraire") : undefined;
 }
 
@@ -2322,6 +2325,9 @@ export function stateHead(d: TraceAnswer, now = new Date()): string | undefined 
   return notice ? `Hors gestion ONF\u00a0; sur la carte de l'ONF\u00a0: “${notice}”` : undefined;
 }
 
+/** A sentence's end, once: a state the ONF ends with a full stop (« …de la Rivière de l'Est. ») gets no second one. */
+const stop = (s: string) => ([".", "!", "?", "…"].some((c) => s.endsWith(c)) ? s : `${s}.`);
+
 /**
  * A trail's preview (og:description). A closed one says so before anything else, in full when it fits, else its short state,
  * and never offers the GPX: a link to a dangerous trail arrives in a group without an invitation to take its trace. The
@@ -2331,14 +2337,14 @@ export function traceDescription(d: TraceAnswer, nom: string, where: string, sho
   const figures = `${kmFr(d.km)} km${relief(d) ? `, ${relief(d)}` : ""}`;
   const head = stateHead(d, now);
   if (!head) {
-    return describe(`${nom} (${where}) : ${figures}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`,
-      describe(`${nom} (La Réunion) : ${figures}. ${d.etat}. Trace GPS à télécharger (GPX) et profil.`, short));
+    return describe(`${nom} (${where}) : ${figures}. ${stop(d.etat)} Trace GPS à télécharger (GPX) et profil.`,
+      describe(`${nom} (La Réunion) : ${figures}. ${stop(d.etat)} Trace GPS à télécharger (GPX) et profil.`, short));
   }
   // A weekend notice past its last day: its words (« ouvert le samedi et le dimanche ») stay out of the preview.
   const over = d.genre === "sentier" && d.troncons.some((t) => t.etat === "fermé" && onf.finWeekEnd(t, now)?.passe);
   const said = over ? [head] : [d.etat, head];
   // Last for each, the state alone: the page's title names the trail.
-  const tries = said.flatMap((s) => [`${s}. ${nom} (${where}) : ${figures}.`, `${s}. ${nom} (La Réunion) : ${figures}.`, `${s}. ${nom} (La Réunion).`, `${s}.`]);
+  const tries = said.map(stop).flatMap((s) => [`${s} ${nom} (${where}) : ${figures}.`, `${s} ${nom} (La Réunion) : ${figures}.`, `${s} ${nom} (La Réunion).`, s]);
   const fit = tries.find((t) => t.length <= DESCRIPTION_MAX);
   if (fit) return fit;
   // A state longer than a preview: cut between two words, « … » after a word, never after a full stop.

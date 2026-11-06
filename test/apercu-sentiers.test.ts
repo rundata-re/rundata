@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { avis, finWeekEnd, motifs } from "../src/providers/sentiers.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
-import { noticeOf, type TraceAnswer } from "../src/web/data.js";
-import { stateHead, traceDescription, tracePage } from "../src/web/domains.js";
+import { closedState, noticeOf, type TraceAnswer } from "../src/web/data.js";
+import { stateHead, traceDescription, tracePage, twinOf } from "../src/web/domains.js";
 
 // The preview of a closed trail says so first (og:description), with the ONF's words of the audit of 04/11.
 const trail = (nom: string, slug: string, etat: string, troncons: TraceAnswer["troncons"], over: Partial<TraceAnswer> = {}): TraceAnswer => ({
@@ -142,5 +142,42 @@ describe("aperçu d'un sentier fermé", () => {
     expect(stateHead(d)).toBe("2 tronçons fermés sur cet itinéraire");
     expect(page(d)).toMatch(/^2 tronçons fermés/);
     expect(page(d)).not.toMatch(/GPX/);
+  });
+});
+
+// The shape of the closed previews, from the replay of 402 pages on 1.0.297.
+describe("la forme de l'état d'un sentier fermé", () => {
+  it("une cause qui dit déjà « Fermé » ne le dit pas deux fois", () => {
+    expect(closedState("Sentier dégradé", "Réouverture 2026", false)).toBe("Fermé : Sentier dégradé (Réouverture 2026)");
+    expect(closedState(undefined, "Réouverture 2026", false)).toBe("Fermé (Réouverture 2026)");
+    expect(closedState(undefined, undefined, false)).toBe("Fermé");
+    expect(closedState("Fermé à cause de sa dangerosité", "Pas de réouverture prévue à court terme", false)).toBe("Fermé à cause de sa dangerosité (Pas de réouverture prévue à court terme)");
+    expect(closedState("Fermé car Sentier Ecole Normale fermé", undefined, false)).toBe("Fermé car Sentier Ecole Normale fermé");
+    expect(closedState("Danger Fermé suite aux éboulis au niveau du Cassé de la Rivière de l'Est", undefined, false)).toBe("Fermé : danger, suite aux éboulis au niveau du Cassé de la Rivière de l'Est");
+    // « Danger » alone, before another word, stays the ONF's.
+    expect(closedState("Danger falaise instable", undefined, false)).toBe("Fermé : Danger falaise instable");
+    // A word that only starts like it is not taken for it.
+    expect(closedState("Fermeture administrative", undefined, false)).toBe("Fermé : Fermeture administrative");
+  });
+
+  it("fermé sur un tronçon, ouvert sur un autre : « En partie fermé » d'abord, avec la cause", () => {
+    expect(closedState("Travaux de réhabilitation de la piste en cours", "Fermée jusqu'au 18 décembre 2026 inclus", true)).toBe("En partie fermé : Travaux de réhabilitation de la piste en cours (Fermée jusqu'au 18 décembre 2026 inclus)");
+    expect(closedState("Fermé car Sentier Ecole Normale fermé", undefined, true)).toBe("En partie fermé car Sentier Ecole Normale fermé");
+    const troncons = [{ etat: "ouvert" }, { etat: "fermé", cause: "Équipements dégradés, déviation par RF Fleurs Jaunes" }];
+    const d = trail("Sentier du Trou de Fer", "sentier-du-trou-de-fer", closedState(troncons[1].cause, undefined, true), troncons);
+    // The page puts its no-break spaces before « : » (typoPage).
+    expect(page(d).replaceAll("\u00a0", " ")).toBe("En partie fermé : Équipements dégradés, déviation par RF Fleurs Jaunes. Sentier du Trou de Fer (Salazie, La Réunion) : 6,4 km, 412 m de dénivelé positif.");
+  });
+
+  it("une cause qui finit par un point n'en reçoit pas un second", () => {
+    const cause = "Fermé suite aux éboulis au niveau du Cassé de la Rivière de l'Est.";
+    const d = trail("Sentier des Citernes", "sentier-des-citernes", closedState(cause, undefined, false), [{ etat: "fermé", cause }]);
+    expect(traceDescription(d, d.nom, "Volcan, La Réunion", "repli")).toBe("Fermé suite aux éboulis au niveau du Cassé de la Rivière de l'Est. Sentier des Citernes (Volcan, La Réunion) : 6,4 km, 412 m de dénivelé positif.");
+    expect(page(d)).not.toContain("..");
+  });
+
+  it("un même nom, en capitales différentes, a ses deux pages distinguées", () => {
+    expect(twinOf("sentier", "Sentier de l'École Normale")).toBe("sentier ONF");
+    expect(twinOf("randonnee", "Sentier de l'École normale")).toBe("itinéraire");
   });
 });

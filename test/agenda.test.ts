@@ -982,6 +982,19 @@ describe("agenda", () => {
     expect(donat.find((e: EventRow) => e.titre === "Le journal des voleurs")).toMatchObject({ categories: ["Danse"], genres: ["danse"], lieu: "Théâtre Luc Donat" });
   });
 
+  it("tells each date of the Kabardock as its agreement of 06/11 asks: title, day, hall, genre, its link, « Source : » and the hour read", async () => {
+    const b = body(await agenda(cache(), "Le Port", undefined, undefined, NOW, 300));
+    const kab = b.evenements.filter((e: EventRow) => e.publie_par === "Kabardock");
+    expect(kab.length).toBeGreaterThan(0);
+    for (const e of kab) {
+      expect(e.source).toMatch(/^Kabardock \(site lu le \p{L}+ \d\d\/\d\d à \d\d:\d\d\)$/u);
+      expect(e.lien).toMatch(/^https:\/\/kabardock\.com\/spectacle\//);
+      expect([e.description, e.billetterie, e.image]).toEqual([undefined, undefined, undefined]);
+    }
+    expect(kab.find((e: EventRow) => e.titre === "Dock Session")).toMatchObject({ categories: ["Scène découverte"], lieu: "Kabardock", commune: "Le Port" });
+    expect(JSON.stringify(b.non_repris ?? "")).not.toContain("Kabardock");
+  });
+
   it("gives the island's next two weeks, the same event once, from every agenda", async () => {
     const c = cache();
     const b = body(await agenda(c, undefined, undefined, undefined, NOW));

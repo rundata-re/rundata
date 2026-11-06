@@ -33,7 +33,7 @@ async function cacheWith() {
   const store = new MemoryStore();
   await store.put("agendas", kept({
     "agenda:saint_paul": kept([event("Kabar à Saint-Paul", "Saint-Paul", "Mairie de Saint-Paul")]),
-    "agenda:kabardock": kept([event("Concert au Kabardock", "Le Port", "Kabardock")]),
+    "agenda:cdnoi": kept([event("Pièce au CDNOI", "Saint-Denis", "CDNOI")]),
   }));
   await store.put(PLANIFIES, kept({ "agenda:sportsregions": kept([event("Tournoi de badminton", "Saint-Pierre", "Badminton Club", "https://bcsp.sportsregions.fr/evenements/1")]) }));
   return new Cache(store, () => NOW.getTime());
@@ -46,28 +46,28 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     vi.restoreAllMocks();
   });
 
-  it("are seven halls, the clubs' calendar and two federations, five halls and the federations asked on 26/10, the Théâtre Luc Donat read again since its yes of 27/10; Le Séchoir, whose site writes nothing, still read", () => {
+  it("are seven halls, the clubs' calendar and two federations, five halls and the federations asked on 26/10, the Théâtre Luc Donat read again since its yes of 27/10, the Kabardock since its yes of 06/11; Le Séchoir, whose site writes nothing, still read", () => {
     expect(Object.keys(NON_REPRISES)).toEqual([
       "agenda:teat", "agenda:cite_des_arts", "agenda:kabardock", "agenda:bisik", "agenda:luc_donat", "agenda:cdnoi", "agenda:lespas",
       "sport:ffgolf", "sport:ffvoile", "agenda:sportsregions",
     ]);
     // Bisik's, Léspas' and Sportsregions' are forms the user sends: not yet.
     const NON = ["agenda:bisik", "agenda:lespas", "agenda:sportsregions"];
-    const OUI = ["agenda:luc_donat"];
+    const OUI: Record<string, string> = { "agenda:luc_donat": "2026-10-27", "agenda:kabardock": "2026-11-06" };
     for (const [k, x] of Object.entries(NON_REPRISES)) {
-      expect([k, x.etat, x.demandee_le]).toEqual(NON.includes(k) ? [k, "a_demander", undefined] : [k, OUI.includes(k) ? "accordee" : "demandee", "2026-10-26"]);
-      expect(x.accordee_le).toBe(OUI.includes(k) ? "2026-10-27" : undefined);
+      expect([k, x.etat, x.demandee_le]).toEqual(NON.includes(k) ? [k, "a_demander", undefined] : [k, OUI[k] ? "accordee" : "demandee", "2026-10-26"]);
+      expect(x.accordee_le).toBe(OUI[k]);
     }
     // Each one an agenda that would be read, or a federation of the sport tool.
     for (const k of Object.keys(NON_REPRISES).filter((k) => k.startsWith("agenda:"))) expect(LISIBLES.some((a) => `agenda:${a.id}` === k)).toBe(true);
-    expect(AGENDAS.filter((a) => a.source === SALLES).map((a) => a.nom)).toEqual(["Le Séchoir", "Théâtre Luc Donat"]);
+    expect(AGENDAS.filter((a) => a.source === SALLES).map((a) => a.nom)).toEqual(["Le Séchoir", "Kabardock", "Théâtre Luc Donat"]);
     expect(AGENDAS).not.toContain(SPORTSREGIONS);
     // The halls' source named after those read, and its link theirs.
-    expect([SALLES.nom, SALLES.attribution, SALLES.url]).toEqual(["Programmes des salles : Le Séchoir, Théâtre Luc Donat", "Le Séchoir, Théâtre Luc Donat", "https://www.lesechoir.com"]);
+    expect([SALLES.nom, SALLES.attribution, SALLES.url]).toEqual(["Programmes des salles : Le Séchoir, Kabardock, Théâtre Luc Donat", "Le Séchoir, Kabardock, Théâtre Luc Donat", "https://www.lesechoir.com"]);
     // Its written agreement said in the halls' licence, with its day (marketing, 27/10).
-    expect(SALLES.licence).toBe("Le Séchoir\u00a0: site sans mentions légales, programme repris tel qu'il est publié\u00a0; les autres salles\u00a0: seulement avec leur accord écrit\u00a0; Théâtre Luc Donat : repris avec son accord écrit du 27/10/2026");
-    expect(PROGRAMMES_SALLES).toBe("les programmes du Séchoir et du Théâtre Luc Donat");
-    expect(COUVERTURE).toContain("Programmes des salles : Le Séchoir, Théâtre Luc Donat.");
+    expect(SALLES.licence).toBe("Le Séchoir\u00a0: site sans mentions légales, programme repris tel qu'il est publié\u00a0; les autres salles\u00a0: seulement avec leur accord écrit\u00a0; Kabardock : repris avec son accord écrit du 06/11/2026\u00a0; Théâtre Luc Donat : repris avec son accord écrit du 27/10/2026");
+    expect(PROGRAMMES_SALLES).toBe("les programmes du Séchoir, du Kabardock et du Théâtre Luc Donat");
+    expect(COUVERTURE).toContain("Programmes des salles : Le Séchoir, Kabardock, Théâtre Luc Donat.");
   });
 
   it("are said in the same words as the communes, the halls in one block, the day of the request once it has gone", () => {
@@ -99,8 +99,8 @@ describe("the halls and the sports sites whose terms forbid taking their informa
   });
 
   it("are said once each when only some were asked: those asked in one sentence after the block (marketing, 26/10)", () => {
-    // The Théâtre Luc Donat, which agreed on 27/10, is no longer among them.
-    expect(mentionSalles()).toEqual(["Les mentions légales des sites de 6 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, le Kabardock, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. Nous avons demandé cet accord le 26/10 au TÉAT, à la Cité des Arts, au Kabardock et au CDNOI, et attendons leur réponse."]);
+    // The Théâtre Luc Donat, which agreed on 27/10, and the Kabardock, on 06/11, are no longer among them.
+    expect(mentionSalles()).toEqual(["Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. Nous avons demandé cet accord le 26/10 au TÉAT, à la Cité des Arts et au CDNOI, et attendons leur réponse."]);
     expect(mentionSalles("Saint-Paul")).toEqual(["Les mentions légales des sites de 2 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air) et Léspas. rundata.re n'affiche donc pas leurs programmes. Nous avons demandé cet accord le 26/10 au TÉAT et attendons sa réponse."]);
     expect(mentionSports(undefined, true)).toEqual([`${TROIS} Nous avons demandé cet accord le 26/10 à la ffgolf et à la FFVoile, et attendons leur réponse.`]);
     expect(mentionSports(["golf"], false)).toEqual([`${GOLF} Nous lui avons demandé cet accord le 26/10 et attendons sa réponse.`]);
@@ -135,8 +135,9 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     const all = body(await sportTool(c, undefined, undefined, "a_venir", NOW));
     expect(all.non_repris).toContain(TROIS);
     expect(sportPage("https://rundata.re", { value: { ...all, classements: [] }, fetchedAt: NOW, stale: false }, NOW)).toContain(`<p class="note np">${TROIS.replace(/'/g, "&#39;")} <a href="/ouvrir-ses-donnees#licence">Comment permettre la reprise</a></p>`);
-    // The Théâtre Luc Donat, which agreed on 27/10, is read: the agendas read are set when the module loads.
-    expect(urls.filter((u) => /teat|citedesarts|kabardock|bisik|cdnoi|lespas|sportsregions|ffgolf|ffvoile/.test(u))).toEqual([]);
+    // The Théâtre Luc Donat and the Kabardock, which agreed on 27/10 and 06/11, are read: the agendas read are set when
+    // the module loads.
+    expect(urls.filter((u) => /teat|citedesarts|bisik|cdnoi|lespas|sportsregions|ffgolf|ffvoile/.test(u))).toEqual([]);
   });
 
   it("are listed apart in sources_donnees, each with its terms, and not with the sources read", () => {

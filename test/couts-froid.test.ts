@@ -83,6 +83,7 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/openagenda\.com\/agendas\/32570974/, "agenda/openagenda_otnord.json"],
   [/theatrelucdonat\.re\/tld_agenda/, "agenda/luc-donat.html"],
   [/theatrelucdonat\.re\/prog/, "agenda/luc-donat-saison.html"],
+  [/kabardock\.com/, "agenda/kabardock.html"],
 ];
 
 let unrouted: string[] = [];

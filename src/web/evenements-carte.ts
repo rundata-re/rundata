@@ -99,7 +99,8 @@ export function pointsSvg(points: Point[], href: string, rounds: [number, number
     const to = p.nombre === 1 && p.lien ? p.lien : href;
     // An event's own link leads to its announcement, on the publisher's site; several events, to the list.
     const out = to.startsWith("http");
-    return `<a class="mk evp" href="${esc(to)}"${out ? ` rel="noopener"${fenetre(to)}` : ""} aria-label="${esc(`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`)}"${out ? ` data-pv="annonce"` : ""} data-pn="${esc(p.lieu)}" data-p2="${esc(what)}"${p.source ? ` data-p3="${esc(`Source\u00a0: ${p.source}`)}"` : ""}>` +
+    // Out of the Tab order, as the rounds (islandMap's `listed`): the list under the map gives each event and its link.
+    return `<a class="mk evp" href="${esc(to)}"${out ? ` rel="noopener"${fenetre(to)}` : ""} aria-label="${esc(`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`)}"${out ? ` data-pv="annonce"` : ""} data-pn="${esc(p.lieu)}" data-p2="${esc(what)}"${p.source ? ` data-p3="${esc(`Source\u00a0: ${p.source}`)}"` : ""} tabindex="-1">` +
       `<circle class="hit" cx="${x}" cy="${y}" r="30" style="fill:transparent;stroke:none"/><title>${esc(`${p.lieu} : ${what}`)}</title><circle class="sh" cx="${x}" cy="${y}" r="${POINT_R}"/></a>`;
   }).join("");
 }
@@ -160,7 +161,7 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
     shown.map((id) => { const [t, i] = id.split("-"); return `.evmap:has(#evt-${t}:checked):has(#evg-${i}:checked) .ly-${id}{display:${empty.includes(`ly-${id}"`) ? "block" : "inline"}}`; }).join("");
   const label = "Carte de La Réunion (974) : les événements de ce soir, de demain ou du week-end, par commune";
   return `<figure class="card mapcard evmap"><style>${css}</style>${times}${genre}` +
-    `<div class="evm">${laterMap(islandMap({ layers, overlay: under, label }))}</div>` + empty +
+    `<div class="evm">${laterMap(islandMap({ layers, overlay: under, listed: true, label }))}</div>` + empty +
     `<figcaption class="note">${legende([
       { forme: "rond", couleur: COUNT_COLOR, texte: "3", dit: "événements de la commune" },
       { forme: "point", couleur: POINT, dit: "lieu de l'événement, d'après l'annonce" },

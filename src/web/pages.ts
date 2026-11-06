@@ -1557,7 +1557,7 @@ function weatherLive(data: Cached<HomeData> | null, now: Date): string {
       : { lon: s.lon, lat: s.lat - 0.022, label: `${s.vent ?? "—"} km/h`, say: s.vent != null ? `vent ${s.vent} km/h` : "pas de mesure", name: s.nom.split(" ").pop()!, color: "#44555a", href: `#${stationId(s.nom)}` },
   );
   return `<div class="live"><figure class="card mapcard">` +
-    islandMap({ markers, peaks: true, label: `Carte de La Réunion (974) avec les températures mesurées ${leAt(latest || data.fetchedAt.toISOString())}` }) +
+    islandMap({ markers, peaks: true, listed: true, label: `Carte de La Réunion (974) avec les températures mesurées ${leAt(latest || data.fetchedAt.toISOString())}` }) +
     `<figcaption class="legend">8 °C<i></i>33 °C · températures mesurées sous abri</figcaption></figure>` +
     `<div class="card"><h3>Station par station</h3><ul class="stations">${sorted.map((s) => stationItem(s, now)).join("")}</ul>` +
     `${d.indisponibles.length ? `<p class="note">Momentanément indisponible : ${esc(d.indisponibles.join(", "))}.</p>` : ""}</div></div><p class="sources">Sources : ${credits(d.sources)}.</p>`;

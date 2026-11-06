@@ -1502,7 +1502,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
     ${ask(`Ousa mi pé roshar mon loto élèktrik vitman koté Sin-Pyèr ? Gèt si ${url} é di amwin.`,
       `Où recharger rapidement ma voiture électrique à Saint-Pierre ? Lis ${url} et dis-le-moi.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, apart: true, label: "Carte de La Réunion (974) : les points de charge libres, commune par commune" })}
+  <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : les points de charge libres, commune par commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "rond", couleur: "#2b8a3e", texte: "3", dit: "points de charge libres dans la commune" },
     { forme: "rond", couleur: "#868e96", texte: "0", dit: "aucun libre" },
@@ -2832,7 +2832,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
     <p class="note">Votre position ne quitte pas votre appareil.</p><p class="note" id="autour-msg" role="status" hidden></p>
     <div id="autour-res" hidden><h3>Les 10 plus proches, à vol d'oiseau</h3><ul class="rows eau dae" id="autour-list"></ul></div></div>
   </div>
-  <figure class="card mapcard">${islandMap({ markers, apart: true, label: "Carte de La Réunion (974) : le nombre de défibrillateurs par commune" })}
+  <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : le nombre de défibrillateurs par commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: COUNT_COLOR, texte: "52", dit: "défibrillateurs de la commune" }], esc(`Liste nationale Géo'DAE, lue le ${dayMonth(DAE_BUILT)}.`))}</figcaption></figure>
   <div class="dae-sous">${compte}
     ${ask(`Ousa néna in défibrilatèr pli prés la plaj l'Ermitaz ? Gèt si ${url} é di amwin.`,

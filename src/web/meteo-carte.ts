@@ -176,7 +176,8 @@ function windMark(x0: number, y0: number, s: StationNow, at?: [number, number]):
 /**
  * One link per station for every layer, each drawing its own dot (`l-t`, `l-p`, `l-v`, shown by the page's CSS) and
  * giving the bubble its value (`data-tvt`, `data-tvp`, `data-tvv`); a station without a measure of the layer shown is
- * hidden (`has-…`). Its name for a screen reader says every measure.
+ * hidden (`has-…`). Its name for a screen reader says every measure. Out of the Tab order (islandMap's `listed`): the
+ * list of the stations under the map gives each one, its measures and its link.
  */
 function station(s: StationNow, named: boolean, rain: number | undefined, hour: boolean, windAt?: [number, number], rainAt?: [number, number]): string {
   const [x, y] = project(s.lon, s.lat);
@@ -195,7 +196,7 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
     (rain != null ? (rain > 0 ? dot("p", rx, ry, rainColor(rain), rainSaid(rain, named) ? rainFigure(rain) : undefined) : dot("p", x, y, RAIN_DRY, undefined, true)) : "") +
     (s.vent != null ? windMark(x, y, s, windAt) : "");
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
-  return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data}>` +
+  return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
     `<circle class="hit" cx="${x}" cy="${y}" r="${named ? HIT : HIT / 2}" style="fill:transparent;stroke:none"/>${shapes}</a>`;
 }
 

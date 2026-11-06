@@ -107,14 +107,14 @@ export function when(time: Date, now: Date) {
   return { heure_mesure: localTime(time), fuseau: "heure de La Réunion (UTC+4)", age_min: age, age_texte: ageText(age) };
 }
 
-/**
- * A place found on part of its name only, or on a name close to the one asked: said first in the answer, so that
- * « Bellecombe » read as the Rempart de Bellecombe is not taken for the place meant. Undefined for a name found whole.
- */
 /** Pieces of a résumé put one after the other as sentences: a point after a piece that does not end with one (. ! ? …), never two. */
 export const phrases = (parts: (string | null | undefined)[]) =>
   parts.filter((x): x is string => !!x?.trim()).map((x) => x.trimEnd()).map((x) => (/[.!?…]$/.test(x) ? x : `${x}.`)).join(" ");
 
+/**
+ * A place found on part of its name only, or on a name close to the one asked: said first in the answer, so that
+ * « Bellecombe » read as the Rempart de Bellecombe is not taken for the place meant. Undefined for a name found whole.
+ */
 export function placeWarning(asked: string, r: Resolution): string | undefined {
   if ((r.correspondance !== "partielle" || r.ignores) && r.correspondance !== "approchee") return undefined;
   const p = r.lieu;

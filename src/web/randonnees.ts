@@ -47,6 +47,8 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
   const closed = trails.filter((t) => t.etat === "fermé");
   const cut = routes.filter((h) => h.fermes.length);
   const keys = new Set([...trails.map((t) => t.k), ...routes.map((h) => h.k)]);
+  // The map opens on the sector's own trails: an itinerary that runs on outside it would widen the frame to the island.
+  const own = new Set((trails.length ? trails : routes).map((t) => t.k));
 
   const status = !d
     ? loading("La carte des randonnées")
@@ -54,7 +56,7 @@ export function secteurPage(origin: string, s: Secteur, data: Cached<RandonneesA
       `Aujourd'hui, <b>${plural(closed.length, "sentier fermé", "sentiers fermés")}</b>${cut.length ? `, sur ${plural(cut.length, "itinéraire")}` : ""}.</p></div>`;
 
   const map = d && keys.size
-    ? `<figure class="card mapcard">${hikesMap(d.lignes.filter((l) => keys.has(l.k)), `Carte de La Réunion (974) : les sentiers et les itinéraires de randonnée ${s.dans}, ouverts ou fermés`)}
+    ? `<figure class="card mapcard">${hikesMap(d.lignes.filter((l) => keys.has(l.k)), `Carte de La Réunion (974) : les sentiers et les itinéraires de randonnée ${s.dans}, ouverts ou fermés`, d.lignes.filter((l) => own.has(l.k)))}
   <figcaption class="note legend"><span><i class="sw rte"></i>itinéraire avec trace</span><span><i class="sw ouvert"></i>sentier ouvert</span><span><i class="sw ferme"></i>fermé</span><span><i class="sw inconnu"></i>hors gestion ONF</span>${traceSource(d.carte_mise_a_jour, true, d.carte_lue)}</figcaption></figure>`
     : "";
 

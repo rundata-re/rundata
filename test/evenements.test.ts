@@ -5,7 +5,7 @@ import { agendaPage } from "../src/web/domains.js";
 import { concertsPage, holidays, inWeekend, occurrences, weekend, weekendPage, weekendText } from "../src/web/evenements.js";
 import { STYLE_PATH } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
-import { beside, couche } from "../src/web/evenements-carte.js";
+import { beside, couche, pointHit } from "../src/web/evenements-carte.js";
 import { H, W } from "../src/web/map.js";
 
 type Row = NonNullable<AgendaAnswer["evenements"]>[number];
@@ -219,7 +219,7 @@ describe("the map of /evenements", () => {
     expect(html).toContain(`.evmap:has(#evt-we:checked):has(#evg-1:checked) .ly-we-1{display:inline}`);
   });
 
-  it("draws a point under a round beside it, never on its figure, and the rounds over the points", () => {
+  it("draws a point under a round beside it, never on its figure, and the points over the rounds", () => {
     // On its place when free; beside the round, on the side of its place, when under it.
     expect(beside([100, 100], [[300, 300]])).toEqual([100, 100]);
     expect(beside([310, 300], [[300, 300]])).toEqual([358, 300]);
@@ -227,8 +227,18 @@ describe("the map of /evenements", () => {
     expect(Math.hypot(x - 300, y - 300)).toBeGreaterThanOrEqual(57);
     expect(Math.hypot(x - 357, y - 300)).toBeGreaterThanOrEqual(57);
     const placed = row("Kabar", "2026-10-27T19:00", "mardi 27/10 à 19:00", { lieu: "Léspas, Saint-Paul", position: { lat: -21.01, lon: 55.27 } });
+    // Drawn after the rounds, so that a click at a point's centre opens the venue, never the round whose hit area
+    // (66 units) reaches the point beside it, 57 units away (06/11/2026: 22 venues of 23).
     const html = page([placed]);
-    expect(html.indexOf('class="mk evp"')).toBeLessThan(html.indexOf('aria-label="Saint-Paul : 1 événement, voir le détail"'));
+    expect(html.indexOf('class="mk evp"')).toBeGreaterThan(html.indexOf('aria-label="Saint-Paul : 1 événement, voir le détail"'));
+    // Its own hit area stops at the round's figure (34 units), which stays the round's: never under its own dot (17).
+    expect(pointHit([358, 300], [[300, 300]])).toBe(24);
+    expect(pointHit([100, 100], [[300, 300]])).toBe(30);
+    expect(pointHit([100, 100], [])).toBe(30);
+    expect(pointHit([340, 300], [[300, 300]])).toBe(17);
+    const hit = /<a class="mk evp"[^>]*><circle class="hit" cx="([\d.]+)" cy="([\d.]+)" r="(\d+)"/.exec(html)!;
+    const round = /<a class="mk" href="#jours" aria-label="Saint-Paul : 1 événement, voir le détail"[^>]*><circle class="hit" cx="([\d.]+)" cy="([\d.]+)"/.exec(html)!;
+    expect(Math.hypot(+hit[1] - +round[1], +hit[2] - +round[2]) - +hit[3]).toBeGreaterThanOrEqual(34);
   });
 
   it("gives its layer as data, apart from its drawing: rounds of communes, points of placed venues", () => {

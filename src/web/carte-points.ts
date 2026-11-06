@@ -19,7 +19,9 @@
  * MOUSE_PX, none.
  *
  * With a finger, a point is small and its neighbours close: a tap takes the nearest point within TAP_PX of it, even
- * one whose own hit area is under another's, never one out of the map's frame (a map zoomed in). When several are
+ * one whose own hit area is under another's, never one out of the map's frame (a map zoomed in), nor one of a layer
+ * the page hides (/evenements' other times and genres: Chrome gives a hidden SVG element its size, and the list then
+ * named each venue four times, 06/11/2026). When several are
  * that close, a short list of their names offers them; more than LIST_MAX, a map that zooms (it handles `pzoom974` and
  * cancels it) zooms in on the tap instead, until the list is short or it can zoom no more. A drag or a pinch is not a tap.
  *
@@ -67,6 +69,7 @@ export const MOTS = {
 export const POINTS_SCRIPT = `(()=>{const maps=[...document.querySelectorAll("svg.map")].filter((s)=>s.querySelector("a.mk,a.sp,a.zn[data-pn]"));if(!maps.length&&!document.querySelector("template.carte,svg.map[data-kc]"))return;
 const R=${TAP_PX},LIST=${LIST_MAX},M=${MOUSE_PX},T=${JSON.stringify(MOTS)},mk=(c,t)=>{const e=document.createElement(c);if(t)e.className=t;return e};
 const lines=(a)=>[a.dataset.pn||a.dataset.tp,a.dataset.p2,a.dataset.p3].filter(Boolean);
+const shown=(a)=>{for(let e=a;e&&e.tagName!=="svg";e=e.parentElement)if(getComputedStyle(e).display==="none")return false;return true};
 const mid=(a)=>{const h=a.querySelector(".hit");const r=(h||a).getBoundingClientRect();return r.width?[r.left+r.width/2,r.top+r.height/2]:null};
 const row=(a)=>{const h=a.getAttribute("href")||"";return h.length>1&&h[0]==="#"?document.getElementById(h.slice(1)):null};
 const voir=(t)=>{const d=t.closest("details")||t.querySelector(":scope>details");if(d)d.open=true;if(location.hash!=="#"+t.id){location.hash=t.id;return}t.scrollIntoView({block:"start"});t.style.animation="none";t.offsetWidth;t.style.animation=""};
@@ -117,7 +120,7 @@ let down=null,up=null;s.addEventListener("pointerdown",(e)=>{if(go)return;down=e
 s.addEventListener("pointerup",(e)=>{if(down)up=[e.clientX,e.clientY]},true);
 s.addEventListener("click",(e)=>{if(go)return;if(!down)return;
 const d=down,u=up||d;down=up=null;if(Math.hypot(u[0]-d[0],u[1]-d[1])>10)return;
-const b=s.getBoundingClientRect(),near=pts().map((a)=>[a,mid(a)]).filter(([,c])=>c&&c[0]>=b.left&&c[0]<=b.right&&c[1]>=b.top&&c[1]<=b.bottom).map(([a,c])=>[a,Math.hypot(c[0]-u[0],c[1]-u[1])]).filter(([,k])=>k<=R).sort((p,q)=>p[1]-q[1]).map(([a])=>a);
+const b=s.getBoundingClientRect(),near=pts().filter(shown).map((a)=>[a,mid(a)]).filter(([,c])=>c&&c[0]>=b.left&&c[0]<=b.right&&c[1]>=b.top&&c[1]<=b.bottom).map(([a,c])=>[a,Math.hypot(c[0]-u[0],c[1]-u[1])]).filter(([,k])=>k<=R).sort((p,q)=>p[1]-q[1]).map(([a])=>a);
 const z=!near.length&&!named&&e.target.closest("a.zn[data-pn]");if(z){e.preventDefault();e.stopPropagation();show(z);return}
 if(!near.length||(near.length===1&&near[0]===e.target.closest("a.mk,a.sp")&&!near[0].matches("[data-tp]")))return;e.preventDefault();e.stopPropagation();
 if(near.length===1)fire(near[0]);else if(near.length<=LIST||s.dispatchEvent(new CustomEvent("pzoom974",{cancelable:true,detail:{x:u[0],y:u[1]}})))choose(near,u[0],u[1])},true)};maps.forEach(wire);

@@ -68,6 +68,12 @@ export const rondsMarkers = (ronds: Rond[], href: string): Marker[] =>
 const ROUND_R = 34;
 const POINT_R = 17;
 const CLEAR = ROUND_R + POINT_R + 6;
+// A point's hit area at most, for a finger.
+const POINT_HIT = 30;
+
+/** A point's hit area at `at`: POINT_HIT, less where a round's figure is nearer, never under the point's own figure. */
+export const pointHit = ([x, y]: [number, number], rounds: [number, number][]) =>
+  Math.max(POINT_R, Math.min(POINT_HIT, ...rounds.map(([rx, ry]) => Math.floor(Math.hypot(x - rx, y - ry) - ROUND_R))));
 
 /**
  * Where a point is drawn: on its place, or, when that is under a round, beside the round, on the side of its place,
@@ -88,20 +94,23 @@ export function beside([x, y]: [number, number], rounds: [number, number][]): [n
 }
 
 /**
- * The points as SVG, under the rounds (islandMap's `overlay`): a small point, the venue's name, and the event with its
+ * The points as SVG, over the rounds (islandMap's `above`): a small point, the venue's name, and the event with its
  * source as in the list, leading to it; several events at one venue lead to `href`. `rounds`: where the rounds are,
- * which a point keeps off (beside()).
+ * which a point keeps off (beside()). Over them, so that a click on a point beside a round opens the point, never the
+ * round whose hit area reaches under it (22 of 23 venues on 06/11/2026); its own hit area stops at a round's figure,
+ * which stays the round's.
  */
 export function pointsSvg(points: Point[], href: string, rounds: [number, number][] = []): string {
   return points.map((p) => {
     const [x, y] = beside(project(p.lon, p.lat), rounds);
+    const hit = pointHit([x, y], rounds);
     const what = p.nombre > 1 ? count(p.nombre) : p.titre;
     const to = p.nombre === 1 && p.lien ? p.lien : href;
     // An event's own link leads to its announcement, on the publisher's site; several events, to the list.
     const out = to.startsWith("http");
     // Out of the Tab order, as the rounds (islandMap's `listed`): the list under the map gives each event and its link.
     return `<a class="mk evp" href="${esc(to)}"${out ? ` rel="noopener"${fenetre(to)}` : ""} aria-label="${esc(`${p.lieu} : ${what}, ${out ? "voir l'annonce" : "voir le détail"}`)}"${out ? ` data-pv="annonce"` : ""} data-pn="${esc(p.lieu)}" data-p2="${esc(what)}"${p.source ? ` data-p3="${esc(`Source\u00a0: ${p.source}`)}"` : ""} tabindex="-1">` +
-      `<circle class="hit" cx="${x}" cy="${y}" r="30" style="fill:transparent;stroke:none"/><title>${esc(`${p.lieu} : ${what}`)}</title><circle class="sh" cx="${x}" cy="${y}" r="${POINT_R}"/></a>`;
+      `<circle class="hit" cx="${x}" cy="${y}" r="${hit}" style="fill:transparent;stroke:none"/><title>${esc(`${p.lieu} : ${what}`)}</title><circle class="sh" cx="${x}" cy="${y}" r="${POINT_R}"/></a>`;
   }).join("");
 }
 
@@ -132,7 +141,7 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
   const kinds: [string, string][] = [["", "Tous"], ...genres.filter(([g]) => present.has(g))];
 
   const layers: { id: string; markers: Marker[] }[] = [];
-  let under = "";
+  let over = "";
   let empty = "";
   const shown: string[] = [];
   for (const [t, , said] of TIMES) {
@@ -146,7 +155,7 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
       }
       const { ronds, points } = couche(list);
       layers.push({ id, markers: rondsMarkers(ronds, "#jours") });
-      if (points.length) under += `<g class="ly ly-${id}">${pointsSvg(points, "#jours", ronds.map((r) => project(r.lon, r.lat)))}</g>`;
+      if (points.length) over += `<g class="ly ly-${id}">${pointsSvg(points, "#jours", ronds.map((r) => project(r.lon, r.lat)))}</g>`;
     });
   }
 
@@ -161,7 +170,7 @@ export function eventsMap(rows: Row[], weekend: Row[], genres: [string, string][
     shown.map((id) => { const [t, i] = id.split("-"); return `.evmap:has(#evt-${t}:checked):has(#evg-${i}:checked) .ly-${id}{display:${empty.includes(`ly-${id}"`) ? "block" : "inline"}}`; }).join("");
   const label = "Carte de La Réunion (974) : les événements de ce soir, de demain ou du week-end, par commune";
   return `<figure class="card mapcard evmap"><style>${css}</style>${times}${genre}` +
-    `<div class="evm">${laterMap(islandMap({ layers, overlay: under, listed: true, label }))}</div>` + empty +
+    `<div class="evm">${laterMap(islandMap({ layers, above: over, listed: true, label }))}</div>` + empty +
     `<figcaption class="note">${legende([
       { forme: "rond", couleur: COUNT_COLOR, texte: "3", dit: "événements de la commune" },
       { forme: "point", couleur: POINT, dit: "lieu de l'événement, d'après l'annonce" },

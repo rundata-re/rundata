@@ -64,7 +64,7 @@ import {
   withoutForecast,
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
-import { coastal, PAGES, type PlacePage } from "../web/places.js";
+import { coastal, PAGES, type PlacePage, slugify } from "../web/places.js";
 import { mentionCommune, occurrences, repris, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
@@ -388,19 +388,26 @@ export type Resume = ReturnType<typeof resume>;
 /**
  * The summary of one commune, from the copies given (each recent enough, or missing): what the tool answers and the
  * page shows. The weather is that of the place asked when it has its own page (Maïdo, Hell-Bourg), else the commune's.
- * `lieu`: the place asked when it is not the commune and has no weather page of its own (a beach, a quarter): the
- * weather given is the commune's centre's, said with how far it is from the place (Boucan Canot, 04/11/2026: the
- * station and its distance were the centre of Saint-Paul's, 11 km away, and the forecast's rain 8 times the beach's).
+ * `lieu`: the place asked when it is not the commune and has no weather page of its own (a beach, a quarter).
+ * `meteoDuLieu`: how much of the weather given is the place's own (resumeDuJour builds it at the place): all of it, or
+ * its measure only, the forecast being the commune's centre's (`"mesure"`, said so). Without it, all of it is the
+ * centre's, said with how far it is from the place (Boucan Canot, 04/11/2026: the station and its distance were the
+ * centre of Saint-Paul's, 11 km away, and the forecast's rain 8 times the beach's).
  */
-export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: LeftOut[] = [], lieu?: { nom: string; lon: number; lat: number }) {
+export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: LeftOut[] = [], lieu?: { nom: string; lon: number; lat: number }, meteoDuLieu?: "tout" | "mesure") {
   const today = localDay(now);
   const nom = commune.nom;
   const w = l.meteo ? weather(l.meteo.value, l.meteo.fetchedAt, now) : undefined;
   const away = lieu && w ? distanceKm(commune.place.lon, commune.place.lat, lieu.lon, lieu.lat) : 0;
-  const centre = lieu && away >= 1 ? `météo du centre ${de(nom)}, à ${km(away)} de ${lieu.nom}` : undefined;
+  const far = !!lieu && away >= 1;
+  const centre = far && !meteoDuLieu ? `météo du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom}` : undefined;
+  // The place's own measure under the centre's forecast: the forecast said as the centre's, where it is given.
+  const forecastAway = far && meteoDuLieu === "mesure";
   const meteo = w && centre
     ? { ...w, lieu: `centre ${de(nom)}`, avertissement: `Météo du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom} : la station, sa distance et la prévision sont celles du centre. Pour ${lieu!.nom} même : meteo_actuelle et prevision_meteo.` }
-    : w;
+    : w && forecastAway && w.prevision
+      ? { ...w, lieu: lieu!.nom, avertissement: `Prévision du centre ${de(nom)}, à ${km(away)} de ${lieu!.nom}\u00a0: celle ${de(lieu!.nom)} n'a pas pu être calculée cette fois. La mesure est celle de la station la plus proche ${de(lieu!.nom)}.` }
+      : w && lieu && meteoDuLieu ? { ...w, lieu: lieu.nom } : w;
   const news = [...(l.actualites?.value.en_direct ?? []), ...(l.actualites?.value.infos ?? [])]
     .filter((i) => i.communes?.includes(nom) && now.getTime() - Date.parse(instant(i.publie, now)) < NEWS_HOURS * 3600_000);
   const roads = news.filter((i) => i.sujets?.some((s) => ROADS.includes(s)));
@@ -466,10 +473,11 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const bins = col.COMMUNES.includes(nom);
   const resumeText = [
     `${nom}, ${DAY_FR.format(now)}`,
-    centre ?? "",
+    // Whose weather it is, when not the commune's: the centre's, or the place's own.
+    centre ?? (far && meteoDuLieu && w ? `météo ${de(lieu!.nom)}` : ""),
     t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom)})` : "",
     f?.temperature_min && f.temperature_max
-      ? `${f.periode ? `prévision ${f.periode}\u00a0: ` : "prévision du jour "}${fourchette(f.temperature_min, f.temperature_max)}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}`
+      ? `${forecastAway ? `prévision du centre ${de(nom)}${f.periode ? ` ${f.periode}` : " du jour"}\u00a0: ` : f.periode ? `prévision ${f.periode}\u00a0: ` : "prévision du jour "}${fourchette(f.temperature_min, f.temperature_max)}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}`
       : "",
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",
@@ -717,11 +725,20 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   // refreshed, waited for a moment as by an assistant reading the page. Read as kept, it was 20 to 30 min older than
   // the page's (31/10/2026, Le Tampon: 21,1 °C measured at 05:48 in the tool, 19,9 °C at 06:06 on the page).
   const vigilance = vigilanceOf(cache);
-  const meteo = await snapshot(cache, `web:lieu:${place.slug}`, () => buildPlace(cache, place, now), background ?? (() => undefined), now, undefined, true, withoutForecast);
-  const { copies, leftOut } = await readCopies(cache, commune, place, now, background, vigilance, { meteo });
-  // A place without a weather page of its own (a beach, a quarter): the weather is the commune's centre's, said so.
+  const weatherOf = (p: PlacePage) =>
+    snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background ?? (() => undefined), now, undefined, true, withoutForecast).catch(() => null);
+  // A place without a weather page of its own (a lieu-dit, a beach): its own weather, built as a page's (buildPlace:
+  // meteo_actuelle and prevision_meteo at the place asked), under its own key. The commune's centre's only for what that
+  // build lacks, said so (Grand Coude, 06/11/2026: the coast's 24,9 °C for a place at 1 121 m, whose station read 16,4 °C).
   const asked = place === commune && normalize(res.lieu.nom) !== normalize(commune.nom) ? res.lieu : undefined;
-  const r = resume(commune, copies, now, leftOut, asked);
+  const here = asked ? await weatherOf({ slug: slugify(`${asked.nom} ${asked.commune}`), nom: asked.nom, lieu, place: asked, commune: false }) : null;
+  const centre = !here?.value.meteo || !here.value.prevision ? await weatherOf(place) : null;
+  const meteo = !here?.value.meteo ? centre
+    : here.value.prevision || !centre?.value.prevision ? here
+    : { ...here, value: { ...here.value, prevision: centre.value.prevision } };
+  const meteoDuLieu = !here?.value.meteo ? undefined : meteo === here ? "tout" as const : "mesure" as const;
+  const { copies, leftOut } = await readCopies(cache, commune, place, now, background, vigilance, { meteo });
+  const r = resume(commune, copies, now, leftOut, asked, meteoDuLieu);
   // A place found on part of its name, said before the day (« Maurice », Fond Maurice at Les Avirons).
   const said = placeWarning(lieu, res);
   const day = said ? { ...r, resume: `${said} ${r.resume}` } : r;

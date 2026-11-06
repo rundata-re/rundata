@@ -7,7 +7,7 @@ import { ACCUEIL, NOTE_ACCUEIL } from "../providers/accueils-medias.js";
 import * as radars from "../routes/radars.js";
 import { localTime } from "../geo.js";
 import { why } from "../types.js";
-import { a, credits, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, notFound, placeBlock, text } from "./format.js";
 import { injoignable, mediasNonLus, when } from "./injoignable.js";
 import { mentionLa1ere } from "./non-repris.js";
 import * as littoral from "./littoral.js";
@@ -187,6 +187,10 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   const names = (i: src.Info) => own(i) || (!!commune && i.communes.includes(commune));
   const asked = !!res || !!said;
   const where = said ? `« ${lieu!.trim()} »` : res ? (res.lieu.type === "commune" ? commune! : `${res.lieu.nom} (${commune})`) : undefined;
+  // What a count of texts names: the place only when each of them names it, else its commune, with how many name the
+  // place itself (Grand Coude, 06/11/2026: « 2 informations mentionnent Grand Coude » for articles on Manapany and Vincendo).
+  const whom = (all: number, ownCount: number) => !place || said || ownCount === all ? where
+    : `${commune}, la commune ${de(res!.lieu.nom)}${ownCount ? `, dont ${ownCount} qui nomme${ownCount > 1 ? "nt" : ""} ${res!.lieu.nom}` : ""}`;
 
   const live = pool.filter((i) => i.direct).slice(0, LIVE_MAX);
   const articles = pool.filter((i) => !i.direct);
@@ -198,6 +202,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   // The prefecture's acts that name the place: the store is read only when a place is asked.
   const raaCopie = asked ? (await raa.copie(cache))?.value : undefined;
   const arretes = raaCopie ? raa.actesDe(raaCopie, commune, place, now) : [];
+  const namesPlace = (a: raa.Acte) => !!place && ` ${normalize(`${a.lieux.join(" ")} ${a.titre}`)} `.includes(` ${place} `);
   const kind = what ? ` (${what.nom})` : "";
   const latest = (i: src.Info) => `${quand(i, now)} (${i.media}${i.direct ? ", en direct" : ""}) : « ${i.titre} »`;
   // What an item says of the place asked for: its first sentence, the only text kept, when it names it.
@@ -215,7 +220,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   const resume = [
     blind ? "" : asked
       ? mine.length
-        ? `${mine.length} information${mine.length > 1 ? "s" : ""}${kind} des dernières ${h} h mentionne${mine.length > 1 ? "nt" : ""} ${where}. ` +
+        ? `${mine.length} information${mine.length > 1 ? "s" : ""}${kind} des dernières ${h} h mentionne${mine.length > 1 ? "nt" : ""} ${whom(mine.length, mine.filter(own).length)}. ` +
           mine.slice(0, 4).map((i) => `${latest(i)}${about(i) ? ` : « ${about(i)} »` : ""}`).join("\u00a0; ") + "."
         : `Aucune information${kind} des médias lus ne mentionne ${where} depuis ${quand({ publie: since, heure: true }, now)}.`
       : pool.length
@@ -225,7 +230,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
     silent,
     prefecture.length ? `Dernier communiqué de la préfecture, ${quand(prefecture[0], now)} : « ${prefecture[0].titre} ».` : "",
     arretes.length
-      ? `Au recueil des actes administratifs de la préfecture, ${arretes.length} acte${arretes.length > 1 ? "s" : ""} ${periodeRaa(raaCopie!)} nomme${arretes.length > 1 ? "nt" : ""} ${where}\u00a0: « ${arretes[0].titre} » (${recueilDe(arretes[0].recueil)}).`
+      ? `Au recueil des actes administratifs de la préfecture, ${arretes.length} acte${arretes.length > 1 ? "s" : ""} ${periodeRaa(raaCopie!)} nomme${arretes.length > 1 ? "nt" : ""} ${whom(arretes.length, arretes.filter(namesPlace).length)}\u00a0: « ${arretes[0].titre} » (${recueilDe(arretes[0].recueil)}).`
       : "",
   ].filter(Boolean).join(" ");
 

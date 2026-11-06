@@ -185,6 +185,19 @@ describe("the acts in the news of a place", () => {
     expect(reads).toBe(1);
   });
 
+  it("says the commune's acts as the commune's for a place inside it, and the place only for those that name it", async () => {
+    // Plage de l'Ermitage, 06/11/2026: « 2 actes nomment Plage de l'Ermitage-les-Bains » for an act on Mafate.
+    const c = new Cache(new MemoryStore(), () => NOW.getTime());
+    const b = body(await actualites(c, "La Montagne", undefined, undefined, NOW));
+    expect(b.resume).toContain("1 acte des 15 derniers jours nomme Saint-Denis, la commune de La Montagne\u00a0: « Arrêté réglementant la circulation pendant le carnaval de Saint-Denis »");
+    raa.configure(async () => ({ ...stored, actes: [...stored.actes, { ...stored.actes[0], titre: "Arrêté portant fermeture de la route de La Montagne", lieux: ["La Montagne"] }] }));
+    const both = body(await actualites(new Cache(new MemoryStore(), () => NOW.getTime()), "La Montagne", undefined, undefined, NOW));
+    expect(both.resume).toContain("2 actes des 15 derniers jours nomment Saint-Denis, la commune de La Montagne, dont 1 qui nomme La Montagne\u00a0:");
+    raa.configure(async () => ({ ...stored, actes: [{ ...stored.actes[0], titre: "Arrêté portant fermeture de la route de La Montagne", communes: [], lieux: ["La Montagne"] }] }));
+    const own = body(await actualites(new Cache(new MemoryStore(), () => NOW.getTime()), "La Montagne", undefined, undefined, NOW));
+    expect(own.resume).toContain("1 acte des 15 derniers jours nomme La Montagne (Saint-Denis)\u00a0:");
+  });
+
   it("says that none names the place, and never reads the store for the whole island", async () => {
     const c = new Cache(new MemoryStore(), () => NOW.getTime());
     const b = body(await actualites(c, "Le Tampon", undefined, undefined, NOW));

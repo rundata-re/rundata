@@ -322,8 +322,12 @@ describe("actualités", () => {
     // In the gazetteer (OpenStreetMap's business zone): the commune's news, what names the place itself first.
     const cambaie = body(await actualites(cache(), "Cambaie", undefined, undefined, NOW));
     expect([cambaie.lieu.trouve, cambaie.lieu.commune]).toEqual(["Cambaie", "Saint-Paul"]);
-    expect(cambaie.resume).toMatch(/^2 informations des dernières 24 h mentionnent Cambaie \(Saint-Paul\)\. aujourd'hui à 11:40 \(Freedom\) : « Incendie à Cambaie/);
+    // The commune's said as such: the place is named only by what names it (Grand Coude, 06/11/2026).
+    expect(cambaie.resume).toMatch(/^2 informations des dernières 24 h mentionnent Saint-Paul, la commune de Cambaie, dont 1 qui nomme Cambaie\. aujourd'hui à 11:40 \(Freedom\) : « Incendie à Cambaie/);
     expect(cambaie.infos.map((r: { titre: string }) => r.titre.split(" ")[0])).toEqual(["Incendie", "Saint-Paul"]);
+    // None names the place: the commune's only, never the place (Grand Coude, 06/11/2026: articles on Manapany and Vincendo).
+    const nefles = body(await actualites(cache(), "Bois de Nèfles", undefined, undefined, NOW));
+    expect(nefles.resume).toMatch(/^2 informations des dernières 24 h mentionnent Saint-Paul, la commune de Bois de Nèfles\. aujourd'hui à 11:55 /);
 
     // Not in the gazetteer, but in an article: that article, said as found by its name only.
     const rondPoint = body(await actualites(cache(), "la Jardinerie", undefined, undefined, NOW));

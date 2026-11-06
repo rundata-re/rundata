@@ -475,9 +475,74 @@ describe("reading the copies", () => {
     expect(r.lieu.commune).toBe("Saint-Paul");
     expect(r.commune).toBe("Saint-Paul");
     expect(r.coupures_eau.avis).toHaveLength(1);
-    // A beach without a weather page of its own: the centre's weather, said so (audit of 04/11/2026).
-    expect(r.meteo.avertissement).toBe("Météo du centre de Saint-Paul, à 6,2\u00a0km de Boucan-Canot : la station, sa distance et la prévision sont celles du centre. Pour Boucan-Canot même : meteo_actuelle et prevision_meteo.");
+    // A beach without a weather page of its own: its own weather, as meteo_actuelle and prevision_meteo give it.
+    expect(r.meteo).toMatchObject({ lieu: "Boucan-Canot", mesure: { station: "Pointe des Trois-Bassins" } });
+    expect(r.meteo.avertissement).toBeUndefined();
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo de Boucan-Canot\u00a0; 26,9 °C mesurés à 09:18 \(station Pointe des Trois-Bassins\)/);
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
+  });
+
+  describe("the weather of a place without a page of its own", () => {
+    const ask = async (lieu: string, edge: EdgeLike, budget = PAGE_BUDGET) => {
+      const pending: Promise<unknown>[] = [];
+      const run = await counted(budget, async () => {
+        const r = await resumeDuJour(isolate(edge), lieu, NOW, (p) => pending.push(p));
+        await Promise.allSettled(pending);
+        return r;
+      });
+      return { r: body(run.value), used: (await run.settled()).used };
+    };
+    // Saint-Joseph's page as the site keeps it: its centre's weather, on the coast (the copies' figures).
+    const withCentre = async () => {
+      const edge = await edgeWith();
+      await edge.put("web:lieu:saint-joseph", { value: COPIES.meteo.value, fetchedAt: ago(2).getTime() });
+      return edge;
+    };
+
+    it("gives a lieu-dit of the Hauts its own station and forecast, not the coast's (Grand Coude, 06/11/2026)", async () => {
+      // Live: « météo du centre de Saint-Joseph, à 9,3 km de Grand Coude ; 24,9 °C » where Grand-Coude read 16,4 °C.
+      const edge = await withCentre();
+      const { r, used } = await ask("Grand Coude", edge);
+      expect(r.meteo).toMatchObject({ lieu: "Grand Coude", mesure: { station: "Grand-Coude", altitude_m: 1085, distance_km: 0.8 } });
+      expect(r.meteo.avertissement).toBeUndefined();
+      // The forecast at the place (the fixtures' model), not the centre's copy (21 to 29 °C).
+      expect(r.meteo.prevision.aujourd_hui).toMatchObject({ periode: "de 14\u00a0h à minuit", temperature_min: "12,7 °C", temperature_max: "20,7 °C" });
+      expect(r.resume).toMatch(/^Saint-Joseph, samedi 24 octobre\u00a0; météo de Grand Coude\u00a0; 21,7 °C mesurés à 09:18 \(station Grand-Coude\)\u00a0; prévision de 14\u00a0h à minuit\u00a0: 12,7 °C à 20,7 °C/);
+      expect(r.resume).not.toMatch(/centre/);
+      expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+      // Kept under its own key: the next answer reads it, the centre's copy left as it is.
+      expect(await edge.get("web:lieu:grand-coude-saint-joseph")).toBeTruthy();
+    });
+
+    it("gives the forecast of the commune's centre, said so, when the place's could not be computed", async () => {
+      // So few subrequests left that the place's forecast is not computed (web/data.ts, FORECAST_MIN_LEFT).
+      let fallback: { r: ReturnType<typeof body>; used: number } | undefined;
+      for (let budget = 20; budget <= PAGE_BUDGET && !fallback; budget += 2) {
+        const got = await ask("Grand Coude", await withCentre(), budget);
+        if (got.r.meteo?.mesure?.station === "Grand-Coude" && got.r.meteo.avertissement) fallback = got;
+      }
+      expect(fallback).toBeDefined();
+      const { r } = fallback!;
+      expect(r.meteo.avertissement).toBe("Prévision du centre de Saint-Joseph, à 9,3\u00a0km de Grand Coude\u00a0: celle de Grand Coude n'a pas pu être calculée cette fois. La mesure est celle de la station la plus proche de Grand Coude.");
+      // The connector's texts are not typoPage()'s: the no-break space before « : » is the text's own.
+      expect(r.meteo.avertissement).toContain("Grand Coude\u00a0: ");
+      expect(r.meteo.avertissement).not.toMatch(/ :/);
+      expect(r.meteo.prevision.aujourd_hui).toMatchObject({ temperature_min: "21 °C", temperature_max: "29 °C" });
+      expect(r.resume).toMatch(/\(station Grand-Coude\)\u00a0; prévision du centre de Saint-Joseph du jour\u00a0: 21 °C à 29 °C/);
+    });
+
+    it("leaves a commune and a place with its own page as they were", async () => {
+      // A commune: its page's weather, nothing said of a place, no copy of another place built.
+      const edge = await edgeWith();
+      const { r } = await ask("Saint-Paul", edge);
+      expect(r.meteo).not.toHaveProperty("lieu");
+      expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; 27,4 °C mesurés à 13:54 \(station Saint-Paul\)/);
+      // The beach of L'Hermitage has its page (web/places.ts): its page's weather, as before.
+      const plage = (await ask("plage de l'Ermitage", await edgeWith())).r;
+      expect(plage.meteo).toMatchObject({ mesure: { station: "Pointe des Trois-Bassins" } });
+      expect(plage.meteo).not.toHaveProperty("avertissement");
+      expect(plage.resume).not.toMatch(/météo (du centre|de )/);
+    });
   });
 
   it("says a place off the island is not in La Réunion, and first what a word taken for part of a name was taken for", async () => {

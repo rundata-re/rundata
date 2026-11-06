@@ -159,6 +159,24 @@ describe("the UV index in prevision_meteo", () => {
     expect(r.sources.map((x: { source: string }) => x.source)).toContain(uv.SOURCE.nom);
   });
 
+  it("gives none for today's hours left when they start at the place's sunset or after: no UV said of the night", async () => {
+    // 06/11/2026: « aujourd'hui : de 22 h à minuit, 25,1 °C, … UV 13 (extrême) ». Saint-Leu's sunset on 22/10: 18:2x.
+    const at = async (utc: string) => body(await previsionMeteo(isolate(), "Saint-Leu", undefined, new Date(utc)));
+    const evening = await at("2026-10-22T14:00:00Z"); // 18:00, before sunset: the day's still said
+    expect(evening.jours[0]).toMatchObject({ periode: "de 18\u00a0h à minuit", indice_uv_max: expect.stringMatching(/^\d+ \(/) });
+    expect(/aujourd'hui : de 18\u00a0h à minuit[^;]*/.exec(evening.resume)?.[0]).toMatch(/UV \d+ \(/);
+    for (const utc of ["2026-10-22T15:00:00Z", "2026-10-22T18:30:00Z"]) { // 19:00 and 22:30
+      const night = await at(utc);
+      expect(night.jours[0].periode).toMatch(/^de (19|22)\u00a0h à minuit$/);
+      expect(night.jours[0].indice_uv_max).toBeUndefined();
+      const today = /aujourd'hui : de (19|22)\u00a0h à minuit[^;]*/.exec(night.resume)?.[0];
+      expect(today).toBeDefined();
+      expect(today).not.toMatch(/UV/);
+      // The days after keep theirs.
+      expect(night.jours[1].indice_uv_max).toMatch(/^\d+ \(/);
+    }
+  });
+
   it("is one request for the whole island, three subrequests cold", async () => {
     const edge = new EdgeLike();
     const cache = isolate(edge);

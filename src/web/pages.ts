@@ -1365,9 +1365,74 @@ export function sourcesLast(body: string): [string, string[]] {
 /** The JSON-LD's « description » values, at every depth, as the metas' (a raw text: typo() only turns spaces into no-break ones). */
 const frenchDescriptions = (key: string, value: unknown) => (key === "description" && typeof value === "string" ? typo(value) : value);
 
-export function layout(origin: string, head: Head, band: string, body: string): string {
+/** Where the element that starts at `from` ends, its own closing tag included; -1 when it is not closed. */
+const elementEnd = (html: string, from: number, tag: string) => {
+  const isOpen = (i: number) => html.startsWith(`<${tag}`, i) && (html[i + tag.length + 1] === " " || html[i + tag.length + 1] === ">");
+  const close = `</${tag}>`;
+  let depth = 0;
+  for (let i = from; i < html.length; ) {
+    const c = html.indexOf(close, i);
+    if (c < 0) return -1;
+    let o = html.indexOf(`<${tag}`, i);
+    while (o >= 0 && o < c && !isOpen(o)) o = html.indexOf(`<${tag}`, o + 1);
+    if (o >= 0 && o < c) {
+      depth++;
+      i = o + tag.length + 1;
+    } else {
+      depth--;
+      i = c + close.length;
+      if (depth === 0) return i;
+    }
+  }
+  return -1;
+};
+
+/** The first element of `html` at its top level: [start, end, tag], or undefined. */
+const firstElement = (html: string): [number, number, string] | undefined => {
+  const start = html.indexOf("<");
+  if (start < 0) return undefined;
+  let n = start + 1;
+  while (n < html.length && /[a-z0-9]/.test(html[n])) n++;
+  const tag = html.slice(start + 1, n);
+  const end = tag ? elementEnd(html, start, tag) : -1;
+  return end > 0 ? [start, end, tag] : undefined;
+};
+
+const ASKBOX = '<div class="askbox">';
+
+/**
+ * The question to an assistant (ask(), « Domann out IA ») written in a page's band comes after the page's first block
+ * of data, on every page, by this one rule: after the band when the band shows a map or a figure on a phone too (a
+ * figure that is not « nophone »), else after the first block of the main text. Above the data, it took some 300 px of
+ * the first screen and delayed the answer one came for (UX review, 04/11/2026). The question is in the band of the
+ * pages that write it, so that each page keeps writing it once, where it is read: in the page's text, unchanged. A
+ * question already in the main text stays where its page put it (the volcano during an alert, the home page).
+ */
+export function askAfterData(band: string, main: string): [string, string] {
+  const at = band.indexOf(ASKBOX);
+  if (at < 0) return [band, main];
+  const end = elementEnd(band, at, "div");
+  if (end < 0) return [band, main];
+  const box = band.slice(at, end);
+  // The line it sat on, so that the band keeps no empty one.
+  const lineStart = band.lastIndexOf("\n", at) + 1;
+  const cut = band.slice(lineStart, at).trim() === "" && (band[end] === "\n" || end === band.length) ? [lineStart, end + 1] : [at, end];
+  const rest = band.slice(0, cut[0]) + band.slice(cut[1]);
+  const figure = rest.split("<figure").slice(1).some((f) => {
+    const cls = f.startsWith(' class="') ? f.slice(8, f.indexOf('"', 8)).split(" ") : [];
+    return (f[0] === " " || f[0] === ">") && !cls.includes("nophone");
+  });
+  if (figure) return [rest, `${box}\n${main}`];
+  const first = firstElement(main);
+  if (!first) return [rest, `${main}\n${box}`];
+  return [rest, `${main.slice(0, first[1])}\n${box}${main.slice(first[1])}`];
+}
+
+export function layout(origin: string, head: Head, written: string, body: string): string {
   // A page that names its own sources has, in its footer, only the link to them all; the others keep the site's.
-  const [main, sources] = sourcesLast(body);
+  const [text0, sources] = sourcesLast(body);
+  // The question to an assistant after the first block of data (askAfterData()), before the acronyms and ids below.
+  const [band, main] = askAfterData(written, text0);
   const map = sources.length ? mapCredit(band + main) : undefined;
   if (map) sources.push(map);
   // The IGN's background a visitor picks on a zoomed map (web/map.ts, FONDS), named by its script in the footer's credit.
@@ -2147,7 +2212,6 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
   const cyc = v?.zones[mf.ISLAND]?.[mf.CYCLONE] ?? [];
   const cycNow = current(cyc, now);
   const r = v ? raised(v) : [];
-  const url = `${origin}/vigilance`;
 
   let status: string;
   if (!v) {
@@ -2240,8 +2304,6 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
     <p class="pill"><span class="dot"></span>Vigilance Météo-France en direct</p>
     <h1>Vigilance météo <span class="n974">974</span></h1>
     ${status}
-    ${ask(`Siklone i ariv ? Na lékol domin ? Gèt si ${url} é di amwin sak Météo-France é la préfektir i di.`,
-      `Y a-t-il une vigilance météo en cours à La Réunion ? Lis ${url} et dis-moi ce que dit Météo-France, zone par zone.`)}
   </div>
   ${hero}
 </div>`;

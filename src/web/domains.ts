@@ -1196,6 +1196,14 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
         return [p.nom, { href: `#${anchorId("c", p.nom)}`, say: `${n}\u00a0vélo${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}` }];
       }))
     : {};
+  // One marker per commune served, where its stations are, as on /bornes: how many bikes can be taken there.
+  const markers = (d?.communes ?? []).flatMap((c) => {
+    const at = d!.stations.filter((s) => s.commune === c.commune && s.lon != null && s.lat != null);
+    if (!at.length) return [];
+    const n = c.velos_disponibles, said = `${n} vélo${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}`;
+    return [{ lon: at.reduce((x, s) => x + s.lon!, 0) / at.length, lat: at.reduce((x, s) => x + s.lat!, 0) / at.length, label: String(n),
+      name: `${c.commune} : ${said}`, round: true, color: n ? "#2b8a3e" : "#868e96", quiet: true, place: c.commune, say: said, href: `#${anchorId("c", c.commune)}` }];
+  });
   const byCommune = d
     ? `<ul class="zones">${BIKE_COMMUNES.map((c) => {
         const mine = d.stations.filter((s) => s.commune === c).sort((a, b) => b.velos_electriques + (b.trottinettes ?? 0) - (a.velos_electriques + (a.trottinettes ?? 0)) || a.nom.localeCompare(b.nom, "fr"));
@@ -1221,8 +1229,14 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
     ${ask(`Néna in vélo Altervélo i rès dan la stasion IUT ? Gèt si ${url} é di amwin.`,
       `Reste-t-il des vélos Altervélo à la station IUT de Saint-Pierre ? Lis ${url} et dis-le-moi.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) : les communes où circulent les vélos Altervélo" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "aplat", couleur: "var(--zone-on)", dit: "commune desservie par Altervélo" }],
+  <figure class="card mapcard">${islandMap({ fills, links, markers, apart: true, listed: true, label: "Carte de La Réunion (974) : les communes où circulent les vélos Altervélo, et leurs vélos disponibles" })}
+  <figcaption class="note" style="color:var(--on-night-muted)">${legende([
+    { forme: "aplat", couleur: "var(--zone-on)", dit: "commune desservie par Altervélo" },
+    ...(markers.length ? [
+      { forme: "rond" as const, couleur: "#2b8a3e", texte: "3", dit: "vélos disponibles dans la commune" },
+      { forme: "rond" as const, couleur: "#868e96", texte: "0", dit: "aucun vélo disponible" },
+    ] : []),
+  ],
     d && data ? esc(`Vélos disponibles d'après les stations, relevé ${readAt(data.fetchedAt, now).de}.`) : undefined)}</figcaption></figure>
 </div>`;
 

@@ -87,6 +87,25 @@ describe("Altervélo", () => {
     expect(desc.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
   });
 
+  it("puts on the map, as /bornes does, the bikes of each commune served where its stations are", async () => {
+    const value = body(await velosLibreService(cache(), undefined, NOW, true));
+    const html = velosPage("https://rundata.re", { value, fetchedAt: NOW, stale: false }, NOW);
+    expect(mapLinks(html).filter((l) => l.kind === "mk")).toEqual([
+      { kind: "mk", href: "#c-saint-pierre", label: "Saint-Pierre : 7\u00a0vélos disponibles, voir le détail" },
+      { kind: "mk", href: "#c-saint-louis", label: "Saint-Louis : 0\u00a0vélo disponible, voir le détail" },
+      { kind: "mk", href: "#c-l-etang-sale", label: "L&#39;Étang-Salé : 12\u00a0vélos disponibles, voir le détail" },
+    ]);
+    // The legend draws both: a commune with bikes, one with none.
+    expect(html).toContain('<circle r="34" fill="#2b8a3e"/><text y="11">3</text></svg>vélos disponibles dans la commune</span>');
+    expect(html).toContain('<text y="11">0</text></svg>aucun vélo disponible</span>');
+    expect(deadAnchors(html)).toEqual([]);
+    expect(tabStops(html)).toBe(0);
+    // Without the stations' position, no marker and no such legend.
+    const bare = velosPage("https://rundata.re", { value: body(await velosLibreService(cache(), undefined, NOW)), fetchedAt: NOW, stale: false }, NOW);
+    expect(mapLinks(bare).filter((l) => l.kind === "mk")).toEqual([]);
+    expect(bare).not.toContain("aucun vélo disponible</span>");
+  });
+
   it("keeps each station's position for the page's « Y aller », never in the tool's answer", async () => {
     expect(JSON.stringify(body(await velosLibreService(cache(), undefined, NOW)))).not.toContain('"lat"');
     const value = body(await velosLibreService(cache(), undefined, NOW, true));

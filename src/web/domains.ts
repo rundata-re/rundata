@@ -2863,9 +2863,14 @@ const sportName = (s: string) => SPORT_HEADING[s] ?? s.charAt(0).toUpperCase() +
 // A next event's sport in its line: as the answer names it, the canoë-kayak with the va'a.
 const sportOf = (s: string) => (s === "canoë-kayak" ? SPORT_SAID[s] : s);
 
-/** « vendredi 30/10 à 20:30 » → « ven. 30/10, 20:30 » ; « du samedi 24/10 au dimanche 25/10 » → « 24/10 → 25/10 ». */
+/**
+ * « vendredi 30/10 à 20:30 » → « ven. 30/10, 20:30 » ; « du samedi 24/10 au dimanche 25/10 » → « 24/10 → 25/10 », the
+ * league's note kept after it ; « vendredi 06/11 et samedi 07/11 » → « 06/11 et 07/11 ».
+ */
 const shortWhen = (q: string) =>
-  q.startsWith("du ") ? q.replace(/^du \S+ (\S+) au \S+ (\S+)$/, "$1 → $2") : q.replace(/^(\S{3})\S* /, "$1. ").replace(" à ", ", ");
+  q.startsWith("du ") ? q.replace(/^du \S+ (\S+) au \S+ (\S+)( \(.+\))?$/, "$1 → $2$3")
+  : / et \S+ \d/.test(q) ? q.replace(/^\S+ (\S+) et \S+ (\S+)$/, "$1 et $2")
+  : q.replace(/^(\S{3})\S* /, "$1. ").replace(" à ", ", ");
 
 function sportRow(r: SportAnswer["resultats"] extends (infer T)[] | undefined ? T : never, withScore: boolean): string {
   // A date the volley league gives otherwise, said under the match (« La Ligue … annonce ce match le … »).

@@ -395,6 +395,11 @@ export interface Epreuve {
   /** Results published (sailing), or cancelled / postponed. */
   etat?: "résultats publiés" | "annulée" | "reportée";
   lien?: string;
+  /**
+   * The volley league's tournaments (tools/sport.ts `tournoi`): « titre » when `debut` and `fin` are the days its title
+   * gives (« … 06-07 novembre »), « ligue » when they are the span the league posted it over, wider than its matches.
+   */
+  dates?: "titre" | "ligue";
 }
 
 interface RawRegate { competitionId: number; competitionNom: string; dateDebut: string; dateFin: string; club?: { nom: string }; bateaux?: { nom: string }[]; avecResultats: boolean; competitionAnnulee: boolean; competitionInvalidee: boolean }

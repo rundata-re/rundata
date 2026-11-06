@@ -3079,13 +3079,30 @@ ${connectorCta("sport", "le sport")}`;
   return layout(origin, { title, description, path: "/sport", jsonld: [crumbs(origin, "Sport", "/sport"), webPage(origin, "/sport", title, description, data)], alerte }, band, body);
 }
 
+const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/**
+ * The name a source gives the next event, on the home page's tile (words validated by data-run on 06/11/2026): without a
+ * leading « Saison 2026-2027 » in that exact form, nor a closing date (« 06-07 novembre ») whose days and month are all
+ * in its « quand ». Nothing else of the source's name is rewritten.
+ */
+export function libelleProchain(epreuve: string, quand: string): string {
+  const s = epreuve.replace(/^Saison \d{4}-\d{4} /, "");
+  const m = new RegExp(`\\s(\\d{1,2})(?:-(\\d{1,2}))? (${MOIS.join("|")})$`, "u").exec(s);
+  if (!m) return s;
+  const mm = String(MOIS.indexOf(m[3]) + 1).padStart(2, "0");
+  const days = [m[1], m[2]].filter((d): d is string => !!d).map((d) => `${d.padStart(2, "0")}/${mm}`);
+  return days.every((d) => quand.includes(d)) ? s.slice(0, m.index) : s;
+}
+
 export function sportLive(data: Cached<SportAnswer> | null): Live | undefined {
   const d = data?.value;
   if (!d) return undefined;
   // The page's count: all of them, not only those listed, cancelled ones included (06/11/2026: « 40 » here for 68).
+  // The whole detail shown (entier), the next event's sport and day included (data-run, 06/11/2026).
   const total = d.a_venir_en_tout ?? d.a_venir?.length ?? 0;
   const first = (d.a_venir ?? []).find((r) => r.etat !== "annulée");
-  return { valeur: `${total} rendez-vous`, detail: first ? `officiels d'ici quinze jours ; prochain : ${esc(first.epreuve)}, ${esc(first.quand)}` : "officiels d'ici quinze jours" };
+  return { valeur: `${total} rendez-vous`, detail: first ? `officiels d'ici quinze jours ; prochain : ${esc(libelleProchain(first.epreuve, first.quand))}${first.sport ? ` (${esc(first.sport)})` : ""}, ${esc(first.quand)}` : "officiels d'ici quinze jours", entier: true };
 }
 
 // ---------------------------------------------------------------- cyclones

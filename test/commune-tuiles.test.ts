@@ -56,6 +56,7 @@ function pack(span: number[], c: number): number[][] {
 const tile = (page: string, nom: string) => page.match(new RegExp(`<li class="tile[^>]*>(?:(?!<li class="tile).)*?>${nom}(?:</a>)?</h3>.*?(?=<li class="tile)`, "s"))![0];
 
 describe("a commune's tiles", () => {
+  // 24 pages built, about 3 s alone: its own time, like the test of the grid below.
   it("write their figure with plain no-break spaces, the narrow one being invisible in the bold of the titles", () => {
     for (const c of COMMUNES) {
       const page = communePage(ORIGIN, c, commune(ago(60_000)), NOW);
@@ -69,7 +70,7 @@ describe("a commune's tiles", () => {
     const page = communePage(ORIGIN, COMMUNES[0], { ...commune(ago(60_000)), place } as unknown as Parameters<typeof communePage>[2], NOW);
     const big = page.match(/<span class="big">(.*?)<\/span>/)?.[1];
     expect(big).toMatch(/^\d+(,\d)?\u00a0°C$/);
-  });
+  }, 30_000);
 
   // A page built for each commune in three states: about 3 s alone, over vitest's 5 s by default when the whole suite
   // loads the machine. Its own time, so a busy machine is not taken for a hole in the grid.

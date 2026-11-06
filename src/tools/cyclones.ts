@@ -176,19 +176,22 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
   }
   const officiel = mf.officiel(mf.OFFICIEL_CYCLONE);
 
+  // The alert is read beside GDACS's list, not after it: a slow list no longer leaves the prefecture's copy no time
+  // within the answer's wait (server.ts TOOL_WAIT_MS; 06/11/2026, its copy served 48 minutes old). It never throws.
+  const alerted = alert(cache, now);
   let list: gdacs.Systeme[];
   try {
     list = (await gdacs.systemes(cache, now)).value.filter((s) => s.debut <= now.toISOString());
   } catch (err) {
     console.error(`source ${gdacs.SOURCE.id} indisponible:`, why(err));
-    const a = await alert(cache, now);
+    const a = await alerted;
     return {
       ...text({ erreur: "Le suivi des systèmes tropicaux (GDACS) ne répond pas pour le moment.", alerte_cyclonique: a?.texte, injoignable: a?.injoignable, ecoles: a?.ecoles, officiel, consulter: OFFICIAL, sources: credits([gdacs.SOURCE]) }),
       isError: true,
     };
   }
 
-  const [active, a] = await Promise.all([gdacs.actifs(cache, list, now), alert(cache, now)]);
+  const [active, a] = await Promise.all([gdacs.actifs(cache, list, now), alerted]);
   const alerte = a?.texte;
   const rows = active.map((x) => activeRow(x.systeme, x.avis));
   // GDACS lists a system hours or days after the RSMC follows it: meanwhile, the RSMC's own bulletins say it.

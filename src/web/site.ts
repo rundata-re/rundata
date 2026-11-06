@@ -1021,6 +1021,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
  */
 export const CAPTURES = [
   { src: "/icons/capture-accueil.27c05f84ec.webp", label: "La Réunion en direct, avec la carte des températures mesurées" },
+  { src: "/icons/capture-meteo.b5cdab34f1.webp", label: "La météo mesurée aux stations de l'île" },
 ];
 
 /**

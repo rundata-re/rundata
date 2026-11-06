@@ -5,6 +5,7 @@ import { COMMUNES, communePage, communesPage } from "../src/web/commune.js";
 import { H, islandMap, W } from "../src/web/map.js";
 import { CSS } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
+import { tabStops } from "./cartes.js";
 
 const ORIGIN = "https://rundata.re";
 const map = (html: string) => html.match(/<figure class="card mapcard(?: nophone| noms)?">(.*?)<\/figure>/s)![1];
@@ -24,8 +25,10 @@ describe("the names on the map of /communes", () => {
   const html = map(communesPage(ORIGIN));
 
   it("name the 24 communes, each a link to its page", () => {
-    const names = [...html.matchAll(/<a class="sp" href="([^"]+)" aria-label="([^"]+), voir sa page" data-pn="([^"]+)" data-pv="commune">/g)].map((m) => m.map((x) => x.replace("&#39;", "'")));
+    const names = [...html.matchAll(/<a class="sp" href="([^"]+)" aria-label="([^"]+), voir sa page" data-pn="([^"]+)" data-pv="commune" tabindex="-1">/g)].map((m) => m.map((x) => x.replace("&#39;", "'")));
     expect(names).toHaveLength(24);
+    // The page lists the 24 communes with their links: their names on the map out of the Tab order.
+    expect(tabStops(communesPage(ORIGIN))).toBe(0);
     expect(names.map((m) => m[3]).sort()).toEqual(COMMUNES.map((c) => c.nom).sort());
     for (const [, href, , nom] of names) expect(href).toBe(`/communes/${COMMUNES.find((c) => c.nom === nom)!.slug}`);
     // Shortened on the map, said in full.

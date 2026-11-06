@@ -27,7 +27,7 @@ describe("the points of the maps, with a mouse and with a finger", () => {
 
   it("names each marker of the island's map by its place and its value, as said aloud", () => {
     const island = enfantsPage(O, null, NOW);
-    const marks = [...island.matchAll(/<a class="mk" href="[^"]+" aria-label="([^"]+)" data-pn="([^"]+)" data-p2="([^"]+)">/g)];
+    const marks = [...island.matchAll(/<a class="mk" href="[^"]+" aria-label="([^"]+)" data-pn="([^"]+)" data-p2="([^"]+)" tabindex="-1">/g)];
     expect(marks.length).toBeGreaterThan(20);
     for (const [, said, name, value] of marks) expect(said).toBe(`${name} : ${value}, voir le détail`);
   });

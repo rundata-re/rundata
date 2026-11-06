@@ -9,7 +9,7 @@ import { communePage } from "../src/web/commune.js";
 import { ASK_FRANCAIS, ASK_KREOL, enfantsCommunePage, enfantsPage, LEAD, TITLE } from "../src/web/enfants.js";
 import { esc } from "../src/web/map.js";
 import { pageOf } from "../src/web/places.js";
-import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { deadAnchors, doubleIds, mapLinks, mapPoints, tabStops } from "./cartes.js";
 
 const O = "https://rundata.re";
 const NOW = new Date("2026-10-24T06:00:00Z");
@@ -159,6 +159,11 @@ describe("the children's page", () => {
   const data = { value: { ce_week_end: [row("Heure du conte", "2026-10-24T10:00", "À partir de 6 mois à 6 ans")], evenements: [row("Heure du conte", "2026-10-24T10:00", "À partir de 6 mois à 6 ans"), row("Marionnettes", "2026-10-28T15:00")] }, fetchedAt: NOW } as any;
   const html = enfantsPage(O, data, NOW);
 
+  it("keeps the map's counts out of the Tab order: each commune is a row below", () => {
+    expect(mapPoints(html)).toBe(24);
+    expect(tabStops(html)).toBe(0);
+  });
+
   it("says marketing's words, with French spacing", () => {
     expect(html).toContain(`<title>${TITLE}</title>`);
     expect(html).toContain("Avec les enfants à La Réunion <span class=\"n974\">974</span>");
@@ -258,6 +263,9 @@ describe("a commune's children's page", () => {
     expect(n).toBe(118);
     const dots = [...map.matchAll(/<a class="sp" href="#lieu-(\d+)" data-i="(\d+)" data-t="([a-z_]+)" data-pn="[^"]+"[^>]*><title>/g)];
     expect(dots).toHaveLength(n);
+    // Each place is a row of the list below: its dot out of the Tab order.
+    expect(dots.every(([a]) => a.includes('tabindex="-1"'))).toBe(true);
+    expect(tabStops(html)).toBe(0);
     for (const [, href, i, t] of dots) {
       expect(href).toBe(i);
       expect(html).toContain(`<li id="lieu-${i}" class="tgt" data-i="${i}" data-t="${t}"`);

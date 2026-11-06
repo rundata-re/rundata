@@ -6,7 +6,7 @@ import { heuresDites } from "../src/tools/format.js";
 import { restrictionsEau } from "../src/tools/secheresse.js";
 import { buildSecheresse } from "../src/web/data.js";
 import { nobreak, secheresseLive, secheressePage } from "../src/web/domains.js";
-import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
+import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 // VigiEau on 24/10/2026: the drought order of 10/10/2026, Saint-Joseph in crisis.
 const raw = readFileSync(new URL("./fixtures/vigieau/zones_974.json", import.meta.url), "utf8");
@@ -34,6 +34,7 @@ describe("restrictions d'eau", () => {
   it("leads from each commune of the map to its row of the table", async () => {
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
     expect(mapLinks(page)).toHaveLength(24);
+    expect(tabStops(page)).toBe(0);
     expect(mapLinks(page).find((l) => l.href === "#c-saint-joseph")?.label).toBe("Saint-Joseph : eau du robinet\u00a0: crise, voir le détail");
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);

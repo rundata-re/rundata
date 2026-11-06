@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure, IDS, parseLive } from "../src/providers/irve.js";
-import { type AgendaAnswer, buildBornes, buildDae, type HomeData, type StationNow } from "../src/web/data.js";
-import { agendaPage, bornesPage, daePage } from "../src/web/domains.js";
+import { type AgendaAnswer, buildBornes, buildCrues, buildDae, type HomeData, type StationNow } from "../src/web/data.js";
+import { agendaPage, bornesPage, cruesPage, daePage } from "../src/web/domains.js";
 import { islandMap } from "../src/web/map.js";
 import { meteoPage } from "../src/web/pages.js";
-import { deadAnchors, mapLinks, tabStops } from "./cartes.js";
+import { deadAnchors, mapLinks, mapPoints, tabStops } from "./cartes.js";
 
 // The maps of the pages that list the same places under them: their points out of the Tab order, as /ecoles' and
 // /carte's, still links for the mouse and a finger. Before, 3 stops of Tab per point: 72 on /defibrillateurs, 63 on
@@ -15,7 +15,10 @@ const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-10-27T06:00:00Z");
 const cached = <T>(value: T) => ({ value, fetchedAt: NOW, stale: false });
 
-afterEach(() => configure(undefined));
+afterEach(() => {
+  configure(undefined);
+  vi.unstubAllGlobals();
+});
 
 /** What the keyboard meets: no stop on the map, every point still a link to a place the page has. */
 function keyboardSkips(page: string, points: number) {
@@ -62,6 +65,18 @@ describe("the maps whose page lists the same places", () => {
     const page = meteoPage(ORIGIN, cached(home), NOW);
     expect(page.match(/<a class="mk[^"]*" href="#[^"]+"[^>]* tabindex="-1">/g)).toHaveLength(2);
     expect(tabStops(page)).toBe(0);
+  });
+
+  it("/crues: no gauge is a stop of Tab, each a row of the list below", async () => {
+    // Vigicrues Réunion on 23/10/2026 at 23:45 UTC, as in crues-page.test.ts.
+    const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
+    vi.stubGlobal("fetch", async (url: string, init?: { body?: URLSearchParams }) =>
+      new Response(fixture(url.endsWith("vigilance.php") ? "vigicrues_vigilance.json" : `vigicrues_${init?.body?.get("mesure")}.json`), { headers: { "content-type": "application/json" } }));
+    const at = new Date("2026-10-23T23:52:00Z");
+    const value = await buildCrues(new Cache(new MemoryStore(), () => at.getTime()), at);
+    const page = cruesPage(ORIGIN, { value, fetchedAt: at, stale: false }, at);
+    expect(mapPoints(page)).toBeGreaterThan(5);
+    keyboardSkips(page, 6);
   });
 
   it("keeps the points in the Tab order on a map whose page has no such list (the home page's)", () => {

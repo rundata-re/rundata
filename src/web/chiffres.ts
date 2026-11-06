@@ -40,7 +40,7 @@ function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
       ? `<p>Relue le plus souvent, ${esc(d.cadence!)}\u00a0: ${esc(d.la_plus_lue)}.</p>`
       : d.cadence === "à chaque version du site" ? "<p>Mises à jour avec le site.</p>" : d.cadence ? `<p>Relues ${esc(d.cadence)}.</p>` : "";
     return `<h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3>
-  ${lecture}<div class="card table-wrap"><table class="drought niveaux"><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
+  ${lecture}<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">${esc(d.domaine)}</caption><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
     `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div>`;
   });
   return `<h2 id="sources">Toutes les sources</h2>
@@ -66,7 +66,7 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
   ].join("")}</ul>`;
 
   const domaines = `<h2 id="par-domaine">Par domaine</h2>
-  <div class="card table-wrap"><table class="drought niveaux"><thead><tr><th scope="col">Domaine</th><th scope="col">Sources</th><th scope="col">Producteurs</th><th scope="col">Lecture</th></tr></thead><tbody>${c.par_domaine.map((d) =>
+  <div class="card table-wrap"><table class="drought niveaux"><caption class="sr">Par domaine</caption><thead><tr><th scope="col">Domaine</th><th scope="col">Sources</th><th scope="col">Producteurs</th><th scope="col">Lecture</th></tr></thead><tbody>${c.par_domaine.map((d) =>
     `<tr><th scope="row">${d.page ? `<a href="${esc(d.page)}">${esc(d.domaine)}</a>` : esc(d.domaine)}</th><td data-label="Sources">${n(d.sources)}${d.deja_comptees_plus_haut ? ` <small>dont ${n(d.deja_comptees_plus_haut)} déjà comptée${d.deja_comptees_plus_haut > 1 ? "s" : ""} plus haut</small>` : ""}</td><td data-label="Producteurs">${d.producteurs.length ? esc(d.producteurs.join(", ")) : "—"}</td>${d.cadence ? `<td data-label="Lecture">${esc(d.cadence)}</td>` : "<td></td>"}</tr>`).join("")}</tbody></table></div>`;
 
   const t = c.terrain;

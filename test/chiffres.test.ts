@@ -102,6 +102,11 @@ describe("the counts (chiffres.ts)", () => {
     const html = typo(chiffresPage("https://rundata.re", c, inventaire(sources)));
     expect(html).toContain("Plus 1 site non officiel, compté dans les sources sans être nommé ici.");
     if (deja) expect(html).toMatch(/<small>dont \d+ déjà comptées? plus haut<\/small>/);
+    // Each table named for a screen reader by the title shown above it.
+    const tables = html.match(/<table[^>]*>/g) ?? [];
+    expect(html.match(/<table[^>]*><caption class="sr">/g)).toHaveLength(tables.length);
+    expect(html).toContain('<caption class="sr">Par domaine</caption>');
+    expect(html).toContain(`<caption class="sr">${inventaire(sources)[0].domaine}</caption>`);
   });
 
   it("say how often each domain is read: in words, « à chaque version du site » for a bundled list, nothing when not known here", () => {

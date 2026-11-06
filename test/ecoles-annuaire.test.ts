@@ -143,3 +143,16 @@ describe("the page /ecoles", () => {
     expect(communePage("https://rundata.re", p, { place: null })).toContain('<a href="/ecoles#college">Le collège de secteur de votre adresse, et les écoles de toute l\'île →</a>');
   });
 });
+
+describe("the tables of /ecoles", () => {
+  it("each have a name for a screen reader, the titles shown above them", () => {
+    const html = annuaireEcolesPage("https://rundata.re");
+    const tables = html.match(/<table[^>]*>/g) ?? [];
+    expect(tables.length).toBeGreaterThan(100);
+    expect(html.match(/<table[^>]*><caption class="sr">/g)).toHaveLength(tables.length);
+    // A commune's collèges, a lycée, an establishment after the bac: each by its heading, the collèges with their commune.
+    expect(html).toContain('<h4>Collèges</h4><div class="table-wrap defile"><table class="drought histo passe ipsva"><caption class="sr">Collèges, Saint-Paul</caption>');
+    expect(html).toMatch(/<h5>([^<]+) <span class="note">IPS [^<]+<\/span><\/h5><div class="table-wrap defile"><table class="drought histo passe ipsva"><caption class="sr">\1<\/caption>/);
+    expect(html).toMatch(/<h4>([^<]+)<\/h4><div class="table-wrap"><table class="drought histo passe psup"><caption class="sr">\1<\/caption>/);
+  });
+});

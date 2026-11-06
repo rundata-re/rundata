@@ -223,14 +223,14 @@ function profileSection(): string {
     const rows = ([[R.gt, e.gt, ips.SEUIL.gt], [R.pro, e.pro, ips.SEUIL.pro]] as const).filter(([, v]) => v)
       .map(([nom, v, seuil]) => `<tr><th scope="row">${esc(nom)}</th><td>${esc(tauxText(v!.acces, v!.presents, seuil))}</td><td>${esc(tauxText(v!.reussite, v!.presents, seuil))}</td><td>${nombre(v!.presents)}</td></tr>`);
     return `<h5>${esc(e.nom)} <span class="note">IPS ${ipsText(e.ips)}</span></h5>` + (rows.length
-      ? `<div class="table-wrap defile"><table class="drought histo passe ipsva"><thead><tr><th scope="col">Voie</th><th scope="col">Accès de la seconde au bac</th><th scope="col">Réussite au bac</th><th scope="col">Présents au bac</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
+      ? `<div class="table-wrap defile"><table class="drought histo passe ipsva"><caption class="sr">${esc(e.nom)}</caption><thead><tr><th scope="col">Voie</th><th scope="col">Accès de la seconde au bac</th><th scope="col">Réussite au bac</th><th scope="col">Présents au bac</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>`
       : `<p class="note">${esc(R.sansBac)}</p>`);
   };
   return `<section id="colleges-lycees" aria-labelledby="h-colleges-lycees">
   <div class="sec-h"><p class="eyebrow">${esc(R.eyebrow)}</p><h2 id="h-colleges-lycees">${esc(R.h2)}</h2><p>${esc(R.lead(ips.COLLEGES.length, ips.LYCEES.length, ips.RENTREE, ips.SESSION))}</p></div>
   <div class="card"><p>${esc(R.ips)}</p><p>${esc(R.attendu)} ${esc(R.va)}</p><p>${esc(R.marge)}</p><p>${esc(R.classement)}</p></div>
   <ul class="zones top" id="ipsl">${all.map(([c, cols, lycs]) => `<li class="card tgt" id="${anchorId("r", c)}"><details><summary><h3>${esc(c)} <span class="note">${esc([cols.length ? compte(cols.length, "collège", "collèges") : "", lycs.length ? compte(lycs.length, "lycée", "lycées") : ""].filter(Boolean).join(", "))}</span></h3></summary><div class="kinds">` +
-    (cols.length ? `<div class="kind"><h4>Collèges</h4><div class="table-wrap defile"><table class="drought histo passe ipsva"><thead><tr><th scope="col">Collège</th><th scope="col">IPS</th><th scope="col">Réussite au brevet, série générale</th><th scope="col">Candidats</th></tr></thead><tbody>` +
+    (cols.length ? `<div class="kind"><h4>Collèges</h4><div class="table-wrap defile"><table class="drought histo passe ipsva"><caption class="sr">${esc(`Collèges, ${c}`)}</caption><thead><tr><th scope="col">Collège</th><th scope="col">IPS</th><th scope="col">Réussite au brevet, série générale</th><th scope="col">Candidats</th></tr></thead><tbody>` +
       cols.map((e) => `<tr><th scope="row">${esc(e.nom)}</th><td>${ipsText(e.ips)}</td><td>${esc(tauxText(e.reussite, e.candidats, ips.SEUIL.college))}</td><td>${nombre(e.candidats)}</td></tr>`).join("") + `</tbody></table></div></div>` : "") +
     (lycs.length ? `<div class="kind"><h4>Lycées</h4>${lycs.map(lyc).join("")}</div>` : "") + `</div></details></li>`).join("")}</ul>
   <p class="note">${esc(R.credit(ips.RENTREE, ips.SESSION))} ${esc(R.jeux)} : ${ips.PAGES.map((j) => `<a href="${esc(j.page)}" rel="noopener">${esc(j.titre)}</a>`).join(", ")}. <a href="${NOTE_IPS}" rel="noopener">${esc(R.plus)}</a>.</p>
@@ -255,7 +255,7 @@ function afterBacSection(): string {
   <ul class="zones top" id="pbl">${all.map(([c, list]) => {
     const k = list.reduce((m, e) => m + e.formations.length, 0);
     return `<li class="card tgt" id="${anchorId("b", c)}"><details><summary><h3>${esc(c)} <span class="note">${k} formation${k > 1 ? "s" : ""}</span></h3></summary><div class="kinds">` +
-      list.map((e) => `<div class="kind"><h4>${esc(e.nom)}</h4><div class="table-wrap"><table class="drought histo passe psup"><thead><tr><th scope="col">Formation</th><th scope="col">Places</th><th scope="col">Taux d'accès</th></tr></thead><tbody>` +
+      list.map((e) => `<div class="kind"><h4>${esc(e.nom)}</h4><div class="table-wrap"><table class="drought histo passe psup"><caption class="sr">${esc(e.nom)}</caption><thead><tr><th scope="col">Formation</th><th scope="col">Places</th><th scope="col">Taux d'accès</th></tr></thead><tbody>` +
         e.formations.map((f) => `<tr><th scope="row"><a href="${esc(f.fiche)}" rel="noopener">${esc(f.nom)}</a></th><td>${nombre(f.places)}</td><td>${f.tauxAcces}\u00a0%</td></tr>`).join("") +
         `</tbody></table></div></div>`).join("") + `</div></details></li>`;
   }).join("")}</ul>

@@ -139,7 +139,7 @@ describe("the order of the pages", () => {
     expect(connecteurPage(O).match(/<header class="top">(.*?)<\/header>/s)![1]).toContain('<a class="cta-ia" href="/mcp" aria-label="Brancher mon IA" aria-current="page">');
     expect(header).toContain('<summary aria-label="Menu : toutes les rubriques">');
     expect(header).toMatch(/<span class="x"><svg[^]*?<\/svg><\/span><span class="m" aria-hidden="true">Menu<\/span><\/summary>/);
-    expect(CSS).toContain(".menu summary .m{font:700 11px/1 system-ui,sans-serif}");
+    expect(CSS).toContain(".menu summary .m{font:700 12px/1 system-ui,sans-serif}");
   });
 });
 

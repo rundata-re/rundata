@@ -338,7 +338,7 @@ background:rgb(255 255 255/.08);border:1px solid rgb(255 255 255/.12);color:#fff
 .menu summary::-webkit-details-marker{display:none}
 .menu summary .ic{width:1.3rem;height:1.3rem;display:block}.menu summary span{display:grid;place-items:center}
 /* « Menu » under the icon, in the same square (ux, 06/11/2026). */
-.menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 11px/1 system-ui,sans-serif}
+.menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 12px/1 system-ui,sans-serif}
 .menu summary .x,.menu[open] summary .g{display:none}.menu[open] summary .x{display:block}
 .menu summary:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .sheet{position:absolute;left:0;right:0;top:100%;background:#071626;
@@ -738,7 +738,7 @@ text-decoration:none;font-size:.95rem;transition:border-color .15s,transform .15
 .warn .ic{color:var(--lave)}
 /* A link inside a sentence, its target at least 44 px tall for a finger (padding of an inline box leaves the lines where they are). */
 .tap{padding-block:.8rem}
-.badge{display:inline-block;font:700 .72rem system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;
+.badge{display:inline-block;font:700 .75rem system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;
 border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave);vertical-align:middle}
 .badge.m{background:var(--surface);color:var(--accent);border:1px solid var(--line)}
 .hb{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .6rem}
@@ -941,7 +941,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau .q-bonne{color:var(--vert);font-weight:700}.rows.eau .q-moyenne{color:var(--q-moyenne);font-weight:700}.rows.eau .q-mauvaise{color:var(--lave);font-weight:700}.rows.eau .q-none{color:var(--muted)}
 .lvl{display:inline-block;padding:.1rem .55rem;border-radius:1rem;font:700 .8rem system-ui,sans-serif;background:var(--c);color:#14202b}
 .table-wrap{overflow-x:auto}
-table.drought{width:100%;border-collapse:collapse;font-size:.92rem}section.guide{max-width:46rem}section.guide h3{margin-top:1.6rem;scroll-margin-top:1rem}section.guide[id]{scroll-margin-top:1rem}section.guide li{margin-block:.25rem}section.guide pre{background:var(--surface-2,var(--surface));border:1px solid var(--line);border-radius:12px;padding:.9rem;overflow-x:auto;font:.8rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}section.guide code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}section.guide pre code{overflow-wrap:normal}.callout{border-left:4px solid var(--accent)}table.niveaux th[scope=row]{font-weight:600}@media (max-width:640px){table.niveaux thead{display:none}table.niveaux tr{display:block;border-top:1px solid var(--line);padding:.55rem 0}table.niveaux tbody tr:first-child{border-top:0}table.drought.niveaux td:not([data-label]){display:none}table.drought.niveaux th,table.drought.niveaux td{display:block;border:0;padding:.1rem .25rem}table.niveaux td::before{content:attr(data-label) "\\00a0: ";color:var(--muted)}}.etat{display:inline-block;border-radius:999px;padding:.05rem .55rem;font-size:.8rem;font-weight:600;white-space:nowrap;text-decoration:none;border:1px solid var(--line)}.etat.lu{background:var(--vert);color:var(--vert-ink);border-color:var(--vert)}.etat.bientot{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}.etat.demande{background:var(--surface);color:var(--link)}table.passe caption{text-align:left;color:var(--muted);font-size:.85rem;padding:0 .35rem .4rem}table.passe{font-size:.82rem}table.passe th,table.passe td{padding:.4rem .25rem}table.passe td{white-space:nowrap;font-variant-numeric:tabular-nums}table.drought tr.past{color:var(--muted)}
+table.drought{width:100%;border-collapse:collapse;font-size:.92rem}section.guide{max-width:46rem}section.guide h3{margin-top:1.6rem;scroll-margin-top:1rem}section.guide[id]{scroll-margin-top:1rem}section.guide li{margin-block:.25rem}section.guide pre{background:var(--surface-2,var(--surface));border:1px solid var(--line);border-radius:12px;padding:.9rem;overflow-x:auto;font:.8rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}section.guide code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}section.guide pre code{overflow-wrap:normal;font-size:1em}.callout{border-left:4px solid var(--accent)}table.niveaux th[scope=row]{font-weight:600}@media (max-width:640px){table.niveaux thead{display:none}table.niveaux tr{display:block;border-top:1px solid var(--line);padding:.55rem 0}table.niveaux tbody tr:first-child{border-top:0}table.drought.niveaux td:not([data-label]){display:none}table.drought.niveaux th,table.drought.niveaux td{display:block;border:0;padding:.1rem .25rem}table.niveaux td::before{content:attr(data-label) "\\00a0: ";color:var(--muted)}}.etat{display:inline-block;border-radius:999px;padding:.05rem .55rem;font-size:.8rem;font-weight:600;white-space:nowrap;text-decoration:none;border:1px solid var(--line)}.etat.lu{background:var(--vert);color:var(--vert-ink);border-color:var(--vert)}.etat.bientot{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}.etat.demande{background:var(--surface);color:var(--link)}table.passe caption{text-align:left;color:var(--muted);font-size:.85rem;padding:0 .35rem .4rem}table.passe{font-size:.82rem}table.passe small{font-size:.75rem}table.passe th,table.passe td{padding:.4rem .25rem}table.passe td{white-space:nowrap;font-variant-numeric:tabular-nums}table.drought tr.past{color:var(--muted)}
 table.histo small{display:block}table.colle th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
 /* An establishment's formations, a table each: the same columns from one table to the next. */
 table.psup{table-layout:fixed}table.psup tbody th{hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}table.psup thead th:nth-child(2){width:4.2rem}table.psup thead th:nth-child(3){width:5.4rem}
@@ -1006,6 +1006,12 @@ table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
 .warn ul{padding:0}
 .social,.social>span{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}.social a{display:inline-flex;align-items:center;gap:.35rem}.social svg{width:1.1rem;height:1.1rem;flex:none}
 .social .pair{display:inline-flex;align-items:center;gap:inherit}
+/* Touch targets of 24 px at least (WCAG 2.5.8), the page unmoved: an account link or a hike's grows by padding that its
+   margin takes back; a link alone in a list, a table, the crumbs or the cyclone line grows by vertical padding, which
+   moves no line around an inline box (« kit » also in width, taken back by its margin); a summary is never shorter. */
+.social a,.hike .links a{padding-block:2px;margin-block:-2px}
+:is(.rows,.plain,table,.crumbs,.cyc) a:not([class]){padding-block:max(0px,calc(12.5px - .55em))}.cyc a{padding-inline:4px;margin-inline:-4px}
+summary{min-height:24px}
 .pages{list-style:none;padding:0;margin-top:1rem;display:flex;flex-wrap:wrap;gap:.4rem}.pages a{display:block;padding:.3rem .75rem;border-radius:999px;background:rgb(255 255 255/.06);border:1px solid rgb(255 255 255/.1);text-decoration:none;font-size:.86rem}
 footer.foot{background:var(--night);color:var(--on-night-muted);font-size:.86rem;line-height:1.55;padding-block:2.5rem 3rem;border-top:1px solid rgb(255 255 255/.06)}
 footer.foot .wrap{display:grid;gap:1.5rem}

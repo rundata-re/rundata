@@ -19,6 +19,7 @@
 import type { Cache } from "../cache.js";
 import { count, perInvocation } from "../budget.js";
 import { getText } from "../http.js";
+import { noteLecture } from "../lectures.js";
 import { type SourceInfo, why } from "../types.js";
 import * as gdacs from "./cyclones.js";
 import type { Store } from "./vigilance-carte.js";
@@ -271,7 +272,14 @@ export async function kept(now = new Date()): Promise<Parcours[]> {
 export async function suivisKept(now = new Date()): Promise<Suivi[]> {
   if (!enLigne()) return [];
   const e = await lu();
-  return e ? suivis(e, now) : [];
+  const list = e ? suivis(e, now) : [];
+  // The answer that says them dates from this read too (tools/fraicheur.ts): the oldest of its reads, GDACS's or this one.
+  // A failure since the last success: its last copy, said as such.
+  if (list.length && e?.lu) {
+    const stale = !!e.echec && e.echec > e.lu;
+    noteLecture({ key: KEY, fetchedAt: Date.parse(e.lu), stale, freshSeconds: QUIET_MINUTES * 60, ...(stale && { source: SOURCE.id }), from: SOURCE.id });
+  }
+  return list;
 }
 
 /**

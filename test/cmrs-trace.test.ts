@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as trace from "../src/providers/cmrs-trace.js";
 import type { Store } from "../src/providers/vigilance-carte.js";
+import { withLectures } from "../src/lectures.js";
+import { cite } from "../src/tools/citer.js";
 import { cyclones } from "../src/tools/cyclones.js";
 import { basinMap, label, W } from "../src/web/cyclones-bassin.js";
 import { buildCyclones } from "../src/web/data.js";
@@ -347,6 +349,25 @@ describe("a system the RSMC follows before GDACS lists it", () => {
     expect(page).toContain("consulter le site officiel de Météo-France");
     expect(page.slice(page.indexOf("<main"))).not.toMatch(/13\.3|56\.6|1007 hPa/);
     expect(page).not.toContain('class="cur"');
+  });
+
+  it("dates the tool's answer by the RSMC's read too, the older of the two, and names the RSMC once", async () => {
+    stubFetch(() => new Response(ZP2));
+    await trace.passage(cache(NOV6), new Date("2026-11-06T07:25:00Z"));
+    const { value: r, lectures } = await withLectures(() => cyclones(cache(NOV6), undefined, NOV6));
+    expect(lectures.find((l) => l.key === "cmrs:trace")).toMatchObject({ fetchedAt: Date.parse("2026-11-06T07:25:00Z"), stale: false });
+    const b = JSON.parse(cite("cyclones", r, { lectures, now: NOV6 }).content[0].text);
+    // GDACS read at 15:00, the bulletin at 11:25: the answer is as old as the bulletin's read.
+    expect(b.fraicheur.lue_a).toBe("06/11 11:25");
+    expect(b.fraicheur.age).toBe("il y a 4 h");
+    const CITER = "rundata.re, d'après les bulletins du CMRS de La Réunion (Météo-France) et GDACS";
+    expect(b.citer).toBe(CITER);
+    expect(b.resume).toContain(`Source : ${CITER}, https://rundata.re/cyclones?ref=mcp.`);
+    // Without a system followed, the read of the bulletins dates nothing and the citation is GDACS's.
+    const day = new Date("2026-11-07T07:00:00Z");
+    const later = await withLectures(() => cyclones(cache(day), undefined, day));
+    expect(later.lectures.some((l) => l.key === "cmrs:trace")).toBe(false);
+    expect(JSON.parse(cite("cyclones", later.value, { lectures: later.lectures, now: day }).content[0].text).citer).toBe("rundata.re, d'après CMRS de La Réunion (Météo-France), via GDACS");
   });
 
   it("is no longer followed 24 hours after its bulletin, nor after the RSMC's last one", async () => {

@@ -86,6 +86,8 @@ const CITER: Partial<Record<string, (p: Payload) => string>> = {
   qualite_eau: () => "rundata.re, d'après l'ARS La Réunion",
   crues_rivieres: () => "rundata.re, d'après Vigicrues",
   resume_du_jour: () => "rundata.re, d'après Météo-France et d'autres sources (liste dans sources)",
+  // The RSMC's own bulletins beside GDACS: the centre named once, never « CMRS de La Réunion » twice.
+  cyclones: (p) => (JSON.stringify(p.sources).includes("WTIO31") ? "rundata.re, d'après les bulletins du CMRS de La Réunion (Météo-France) et GDACS" : citation(p)),
 };
 
 /** The `citer` of a tool's answer: its own words (CITER) when it credits a source, else made from the sources. */

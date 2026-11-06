@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, finEtangSale, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
@@ -64,7 +64,8 @@ function file(url: string, form?: string): string | undefined {
   if (url.includes("plainedespalmistes.fr/wp-json/wp/v2/agenda")) return "agenda_plaine-des-palmistes.json";
   if (url.includes("plainedespalmistes.fr/wp-json/wp/v2/actus")) return "actus_plaine-des-palmistes.json";
   if (url.includes("lapossession")) return "rss_la-possession.xml";
-  if (url.includes("letangsale")) return "etang-sale.html";
+  // L'Étang-Salé's list, and the pages of three of its events over a period, read on 06/11/2026; the others do not answer.
+  if (url.includes("letangsale")) return url.includes("?limit=") ? "etang-sale.html" : /\/(758|769|773)-/.exec(url) ? `etang-sale_${/\/(758|769|773)-/.exec(url)![1]}.html` : undefined;
   if (url.includes("petite-ile")) return "petite-ile.html";
   if (url.includes("braspanon")) return url.endsWith("/2026/11") ? "bras-panon_2026-11.html" : url.endsWith("/2026/10") ? "bras-panon_2026-10.html" : undefined;
   if (url.includes("saint-benoit")) return "saint-benoit.html";
@@ -1027,6 +1028,52 @@ describe("agenda", () => {
     expect(parseEtangSale("<html><body>Maintenance</body></html>", NOW)).toEqual([]);
   });
 
+  it("reads on L'Étang-Salé's event pages the last day of the three soonest over a period, each page kept a week", async () => {
+    // « Début : 7 Novembre 2026 », « Fin : 8 Novembre 2026 »; an event of a day says « Date : ».
+    expect(finEtangSale(fixture("etang-sale_758.html"))).toBe("2026-11-08");
+    expect(finEtangSale(fixture("etang-sale_769.html"))).toBeUndefined();
+    expect(finEtangSale(fixture("etang-sale_773.html"))).toBeUndefined();
+    expect(finEtangSale("<html><body>Maintenance</body></html>")).toBeUndefined();
+    const etang = AGENDAS.find((a) => a.id === "etang_sale")!;
+    let t = NOW.getTime();
+    const c = new Cache(new MemoryStore(), () => t);
+    const page = (n: number) => read.filter((u) => new RegExp(`/${n}-`).test(u)).length;
+    const got = (await etang.load(c, NOW)).value;
+    // Odyssea's hour as the town hall publishes it, and its last day from its page; the loto of a day unchanged.
+    expect(got.find((e) => e.titre === "Odyssea Réunion 2026")!.seances).toEqual([{ debut: "2026-11-07T09:18", fin: "2026-11-08" }]);
+    expect(got.find((e) => e.titre === "Loto Quine Les Petits Flamboyants")!.seances).toEqual([{ debut: "2026-11-13T18:00" }]);
+    expect(got.find((e) => e.titre === "Compétitions sportives : 06 - 08 novembre")!.seances).toEqual([{ debut: "2026-11-06", fin: "2026-11-08" }]);
+    // The list, then three pages: the soonest over a period (a link without a day) whose title gives none. Neither those
+    // on given days (« …/762-aurus-monique-b-thomas/2026-11-10-20-00 ») nor the competitions, nor the later lotos.
+    expect(read.filter((u) => u.includes("letangsale"))).toHaveLength(4);
+    expect([758, 769, 773, 772, 768, 770, 762].map(page)).toEqual([1, 1, 1, 0, 0, 0, 0]);
+    // The list read again two hours later: the pages kept, not read again; a week later, read again.
+    t += 2 * 3600_000;
+    read.length = 0;
+    expect((await etang.load(c, new Date(t))).value.find((e) => e.titre === "Odyssea Réunion 2026")!.seances[0].fin).toBe("2026-11-08");
+    expect(read.filter((u) => u.includes("letangsale"))).toEqual(["https://www.letangsale.fr/mes-acces-rapides/telechargements/l-agenda-des-manifestations?limit=50"]);
+    t += 7 * 86400_000;
+    read.length = 0;
+    await etang.load(c, new Date(t));
+    expect(page(758)).toBe(1);
+    // A page that does not answer: the event keeps its first day, the list is served.
+    down = /\/758-/;
+    const sans = (await etang.load(new Cache(new MemoryStore(), () => NOW.getTime()), NOW)).value;
+    expect(sans.find((e) => e.titre === "Odyssea Réunion 2026")!.seances).toEqual([{ debut: "2026-11-07T09:18" }]);
+    expect(sans).toHaveLength(11);
+    // Through the tool: said with both days, and its page kept in the agendas' copy from one reading of the list to the next.
+    down = undefined;
+    let u = NOW.getTime();
+    const tc = new Cache(new MemoryStore(), () => u);
+    const odyssea = async () => body(await agenda(tc, "L'Étang-Salé", "a_venir", undefined, new Date(u), 300)).evenements.find((e: EventRow) => e.titre === "Odyssea Réunion 2026");
+    expect((await odyssea()).quand).toBe("du samedi 07/11 à 09:18 au dimanche 08/11");
+    u += 2 * 3600_000;
+    read.length = 0;
+    expect((await odyssea()).quand).toBe("du samedi 07/11 à 09:18 au dimanche 08/11");
+    expect(read.some((x) => x.includes("?limit=50"))).toBe(true);
+    expect(page(758)).toBe(0);
+  });
+
   it("tells each date of L'Étang-Salé with « site de la commune de L'Étang-Salé » and the hour read, its sports programme left to the sport tool", async () => {
     const b = body(await agenda(cache(), "L'Étang-Salé", "a_venir", undefined, NOW, 300));
     const etang = b.evenements.filter((e: EventRow) => e.publie_par === "Ville de L'Étang-Salé");
@@ -1099,8 +1146,8 @@ describe("agenda", () => {
     expect(b.evenements.some((e: { publie_par: string }) => e.publie_par === "Ville de Saint-Louis")).toBe(false);
     expect(asked.every((ua) => ua === "rundata.re (contact@rundata.re)")).toBe(true);
     // Twenty-five agendas (two pages for Bras-Panon and for the Théâtre Luc Donat; Saint-Louis's is read by the scheduled
-    // event), and the pages of the four shows on both TÉAT stages.
-    expect(asked).toHaveLength(29);
+    // event), the pages of the four shows on both TÉAT stages, and those of three events of L'Étang-Salé over a period.
+    expect(asked).toHaveLength(32);
     expect(read.some((u) => u.includes("reunionest.fr"))).toBe(false);
   });
 

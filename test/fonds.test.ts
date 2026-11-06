@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
@@ -25,11 +26,11 @@ import { ecolesPage } from "../src/web/ecoles.js";
 import { enfantsPage } from "../src/web/enfants.js";
 import { concertsPage, weekendPage } from "../src/web/evenements.js";
 import { feuxPage } from "../src/web/feux.js";
-import { fond, FONDS, MENTION, SANS_FOND, varySaveData, withSaveData } from "../src/web/fonds.js";
+import { fond, FONDS, MENTION, MOTIF_CREDIT, MOTIF_PAGES, MOTIF_PATH, SANS_FOND, varySaveData, withSaveData } from "../src/web/fonds.js";
 import files from "../src/web/fonds.json" with { type: "json" };
 import { homePage } from "../src/web/home.js";
 import { kitPage } from "../src/web/kit-cyclone.js";
-import { CSS, meteoPage, seaPage, vigilancePage } from "../src/web/pages.js";
+import { CSS, meteoPage, notFoundPage, offlinePage, seaPage, vigilancePage } from "../src/web/pages.js";
 import { proposerPage } from "../src/web/propositions.js";
 import { annuaireEcolesPage } from "../src/web/ecoles-annuaire.js";
 import { withVolcan } from "../src/web/volcan-alerte.js";
@@ -179,8 +180,9 @@ describe("the illustrations behind the band", () => {
     const plain = await withSaveData(ask({}), () => seaPage(O, null, NOW));
     expect(picture(plain.value)).toBeDefined();
     expect(plain.varie).toBe(true);
-    // A page without a picture is the same either way: nothing to vary on.
-    expect((await withSaveData(ask({ "save-data": "on" }), () => homePage(O, null, NOW))).varie).toBe(false);
+    // A page without a picture still varies, by the contour lines of its footer (below); the offline page has neither.
+    expect((await withSaveData(ask({ "save-data": "on" }), () => homePage(O, null, NOW))).varie).toBe(true);
+    expect((await withSaveData(ask({ "save-data": "on" }), () => offlinePage(O))).varie).toBe(false);
   });
 
   it("answer with « Vary: Save-Data » where the page depends on it, so that a shared cache keeps one copy per variant", async () => {
@@ -195,8 +197,9 @@ describe("the illustrations behind the band", () => {
     }
     expect(picture(await (await get("/kit-cyclone", { "save-data": "on" })).text())).toBeUndefined();
     expect(picture(await (await get("/kit-cyclone")).text())).toBeDefined();
-    // A page without a picture: no Vary on Save-Data.
-    expect((await get("/a-propos")).headers.get("vary") ?? "").not.toMatch(/save-data/i);
+    // A page without a picture varies too, by the contour lines of its footer; the offline page has neither.
+    expect((await get("/a-propos")).headers.get("vary")).toMatch(/(^|,\s*)Save-Data$/);
+    expect((await get("/hors-ligne")).headers.get("vary") ?? "").not.toMatch(/save-data/i);
   });
 
   it("add Save-Data to a Vary already there, once", async () => {
@@ -223,5 +226,79 @@ describe("the illustrations behind the band", () => {
       }
     }
     expect(readFileSync(new URL("../public/_headers", import.meta.url), "utf8")).toMatch(/^\/fonds\/\*\n {2}Cache-Control: public, max-age=31536000, immutable$/m);
+  });
+});
+
+describe("the contour lines of the decor", () => {
+  const get = (path: string, h: Record<string, string> = {}) => handle(new Request(`${O}${path}`, { headers: h }), new Cache());
+  const band = (html: string) => html.match(/<div class="band[^"]*">/)?.[0];
+  const foot = (html: string) => html.match(/<footer class="foot[^"]*">/)?.[0];
+  const count = (html: string, s: string) => html.split(s).length - 1;
+
+  it("are one light file, named after its content, kept a year, drawn with paths only", () => {
+    const file = new URL(`../public${MOTIF_PATH}`, import.meta.url);
+    const svg = readFileSync(file);
+    expect(MOTIF_PATH).toMatch(/^\/motif\/[a-z-]+\.[0-9a-f]{10}\.svg$/);
+    expect(MOTIF_PATH).toContain(`.${createHash("sha256").update(svg).digest("hex").slice(0, 10)}.svg`);
+    expect(statSync(file).size).toBeLessThanOrEqual(27 * 1024);
+    expect([...new Set(svg.toString("utf8").match(/<[a-z]+/g))].sort()).toEqual(["<path", "<svg"]);
+    expect(readFileSync(new URL("../public/_headers", import.meta.url), "utf8")).toMatch(/^\/motif\/\*\n {2}Cache-Control: public, max-age=31536000, immutable$/m);
+  });
+
+  it("are asked by the stylesheet only from 1200 px, so that a phone never downloads them, and never printed", () => {
+    const at = CSS.indexOf("@media (min-width:75rem){.band.motif::before{");
+    expect(at).toBeGreaterThanOrEqual(0);
+    // The block's end, by its braces.
+    let depth = 0;
+    let end = at;
+    for (let i = CSS.indexOf("{", at); i < CSS.length; i++) {
+      if (CSS[i] === "{") depth++;
+      else if (CSS[i] === "}" && --depth === 0) { end = i; break; }
+    }
+    const block = CSS.slice(at, end + 1);
+    expect(count(block, `url(${MOTIF_PATH})`)).toBe(2);
+    expect(count(CSS, MOTIF_PATH)).toBe(2);
+    expect(block).toContain("footer.foot.motif .wrap>div:last-child::after{");
+    expect(CSS).toContain("@media print{.band.motif::before,footer.foot.motif .wrap>div:last-child::after{display:none}}");
+    expect(CSS).toContain("@media (forced-colors:active){.band.motif::before,footer.foot.motif .wrap>div:last-child::after{display:none}}");
+  });
+
+  it("are in the band of the pages about the site, the legal texts and an address that does not exist, and of no other", async () => {
+    expect(MOTIF_PAGES.size).toBe(9);
+    for (const p of [...MOTIF_PAGES, "/une-adresse-qui-n-existe-pas"]) {
+      const r = await get(p);
+      expect(band(await r.text()), p).toBe('<div class="band motif">');
+    }
+    expect((await get("/une-adresse-qui-n-existe-pas")).status).toBe(404);
+    for (const p of ["/", "/presse", "/meteo", "/actualites", "/carte", "/peche"]) expect(band(await (await get(p)).text()), p).toBe('<div class="band">');
+    for (const [p, render] of Object.entries(PAGES)) expect(band(render()), p).toBe('<div class="band">');
+  });
+
+  it("are in the footer of every page, credited there once", async () => {
+    for (const [p, render] of [...Object.entries(PAGES), ["/", () => homePage(O, null, NOW)] as const, ["/404", () => notFoundPage(O, "/x")] as const]) {
+      const html = render();
+      expect(foot(html), p).toBe('<footer class="foot motif">');
+      expect(count(html, MOTIF_CREDIT), p).toBe(1);
+      expect(html.indexOf(MOTIF_CREDIT), p).toBeGreaterThan(html.indexOf('<footer class="foot motif">'));
+    }
+    expect(MOTIF_CREDIT).toBe("Courbes de niveau du décor : IGN, RGE ALTI (Licence Ouverte 2.0).");
+    // With the no-break space before the colon, like every page's text.
+    expect(await (await get("/a-propos")).text()).toContain("Courbes de niveau du décor\u00a0: IGN, RGE ALTI (Licence Ouverte 2.0).");
+  });
+
+  it("leave the band, the footer and their credit under an orange vigilance, a cyclone alert, the volcano's alert, or when the browser asks to save data", async () => {
+    const without = (html: string, what: string) => {
+      expect(band(html), what).toBe('<div class="band">');
+      expect(foot(html), what).toBe('<footer class="foot">');
+      expect(html, what).not.toContain(MOTIF_CREDIT);
+    };
+    without(seaPage(O, null, NOW, vigilance(3, "orange")), "orange");
+    without(seaPage(O, null, NOW, { couleur: 2, neutre: true, texte: "Météo-France : pré-alerte cyclonique.", court: { cyclone: 2, prevue: false } }), "pré-alerte");
+    without(withVolcan({ niveau: "Alerte 1", eruption: false }, () => notFoundPage(O, "/x")), "volcan");
+    without(await (await get("/a-propos", { "save-data": "on" })).text(), "Save-Data");
+    // A yellow vigilance leaves them.
+    expect(foot(seaPage(O, null, NOW, vigilance(2, "jaune")))).toBe('<footer class="foot motif">');
+    // Nor on the offline page, kept for days.
+    expect(foot(offlinePage(O))).toBe('<footer class="foot">');
   });
 });

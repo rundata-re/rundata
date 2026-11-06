@@ -52,7 +52,7 @@ import { bannerHtml, ENCLOS, volcanBanner } from "./volcan-alerte.js";
 import { AVIS_CSS, avisForm } from "./avis.js";
 import { aide, AIDE_CSS, SIGNAL_SCRIPT } from "./signaux.js";
 import { FORMS_CSS } from "./formulaires-style.js";
-import { fond, FOND_CSS } from "./fonds.js";
+import { fond, FOND_CSS, motif, MOTIF_CREDIT, MOTIF_CSS, MOTIF_PAGES } from "./fonds.js";
 import { POINTS_CSS, POINTS_SCRIPT } from "./carte-points.js";
 import { CARTE_CSS } from "./carte-style.js";
 import { PLEIN_ECRAN_CSS, pleinEcran } from "./plein-ecran.js";
@@ -999,7 +999,7 @@ footer.foot .brand{color:var(--on-night);margin-bottom:.8rem}
 footer.foot p+p{margin-top:.6rem}
 footer.foot h3{color:var(--on-night);font-size:1rem;margin-bottom:.4rem}
 footer.foot .slogan{font-size:1rem;padding-left:calc(1.55rem + .6rem)}
-`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS;
+`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + MOTIF_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS;
 /**
  * The stylesheet, a file of its own (web/site.ts) rather than copied into every page: its address changes with its
  * content, so that browsers keep it a year and fetch it again only once it changes.
@@ -1029,6 +1029,8 @@ interface Head {
   referrer?: string;
   /** The page shows the volcano's alert itself (the home page's card, /volcan's heading): no volcano banner above it. */
   volcan?: boolean;
+  /** The band shows the contour lines beside its text from 1200 px, like the pages of MOTIF_PAGES (web/fonds.ts): the page of an address that does not exist. */
+  motif?: boolean;
   /** /vigilance, /cyclones and /crues: their own data says all is green, the only time their picture is shown (fonds.ts). */
   vert?: boolean;
   /** The page's own hook, in place of its category's: a station's page, which says since when it measures. */
@@ -1339,6 +1341,8 @@ export function layout(origin: string, head: Head, band: string, body: string): 
   const image = ogImage(origin, head.path, head.image);
   // Each acronym spelled out at its first occurrence, from the title's band to the end of the main text (web/sigles.ts).
   const [top, text] = withSigles([withHook(band, head.path, head.volcan, head.hook), mentionLinks(main)]);
+  // The contour lines of the decor (web/fonds.ts), in the footer of every page from 1200 px and in the band of a few.
+  const decor = !head.shell && motif(head.alerte, !!urgent(head).volcan);
   return `<!doctype html>
 <html lang="fr">
 <head>
@@ -1376,14 +1380,14 @@ ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head
 ${header(head.path, origin, urgent(head))}
 ${head.shell ? "" : `${banner(head.alerte, head.path)}
 ${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}`}
-<div class="band">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${top}</div>
+<div class="band${decor && (head.motif || MOTIF_PAGES.has(head.path)) ? " motif" : ""}">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${top}</div>
 <main class="wrap">
 ${text}
 </main>
 ${head.shell ? "" : `${head.sansPartage ? "" : share(origin, head)}
 ${head.sansAvis ? "" : `${aide()}
 ${avisForm(head.path)}`}`}
-${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot"><div class="wrap">
+${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot${decor ? " motif" : ""}"><div class="wrap">
   <div>
     <a class="brand" href="/">${logo()}<span>rundata.re</span></a>
     ${SLOGAN}
@@ -1395,8 +1399,9 @@ ${sources.length ? `<div class="wrap fin-sources">${sources.join("\n")}</div>\n`
     <ul class="pages" aria-label="Catégories">${WITH_PAGE.map((c) => `<li><a href="${c.path}">${esc(c.nom)}</a></li>`).join("")}<li><a href="/communes">Communes</a></li><li><a href="/meteo#communes">Météo par commune</a></li>${enLigne() ? `<li><a href="/associations">Clubs et associations</a></li>` : ""}</ul>
   </div>
   <div>
-    ${sources.length ? `<p><a href="/chiffres">Toutes les sources →</a></p>` : `<h3>Sources</h3>
-    <p>Mesures : stations Météo-France de La Réunion (Licence Ouverte Etalab 2.0), aéroports Roland-Garros et Pierrefonds (METAR), balises de vent de la FFVL (Licence Ouverte 2.0) et <a href="https://openwindmap.org">OpenWindMap</a>, température de la mer par satellite NOAA CoastWatch et NASA MODIS (domaine public). Prévisions : AROME outre-mer de Météo-France (Licence Ouverte), modèle IFS et ensemble ENS de l'ECMWF, <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0). Vigilance et radar : Météo-France. Cyclones : CMRS de La Réunion (Météo-France), via GDACS ; côtes Natural Earth (domaine public). Historique : données climatologiques quotidiennes de Météo-France depuis 1900. Volcan : préfecture de La Réunion, OVPF-IPGP (CC BY 4.0), et en dernier recours <a href="https://pitonlive.com">pitonlive.com</a> (site non officiel). Électricité : EDF SEI. Air : Atmo Réunion (ODbL). Services publics : service-public.fr. Bus : horaires publiés par les réseaux sur transport.data.gouv.fr. Vélos : Altervélo (CIVIS, Ecovélo). Terrain et risques : IGN, DGFiP, Géoportail de l'urbanisme, DEAL Réunion, Géorisques (BRGM), DVF du Cerema. Toutes sous Licence Ouverte sauf mention. Randonnée : ONF La Réunion ; itinéraires et traces © contributeurs OpenStreetMap (ODbL). Lieux : © contributeurs OpenStreetMap (ODbL), IGN, geo.api.gouv.fr. Relief, photographies aériennes, routes et noms des cartes : IGN, RGE ALTI, couche Photographies aériennes de la Géoplateforme, BD ORTHO et BD TOPO${choix}. Police des titres : Bricolage Grotesque (SIL OFL).</p>`}
+    ${sources.length ? `<p><a href="/chiffres">Toutes les sources →</a></p>${decor ? `
+    <p>${MOTIF_CREDIT}</p>` : ""}` : `<h3>Sources</h3>
+    <p>Mesures : stations Météo-France de La Réunion (Licence Ouverte Etalab 2.0), aéroports Roland-Garros et Pierrefonds (METAR), balises de vent de la FFVL (Licence Ouverte 2.0) et <a href="https://openwindmap.org">OpenWindMap</a>, température de la mer par satellite NOAA CoastWatch et NASA MODIS (domaine public). Prévisions : AROME outre-mer de Météo-France (Licence Ouverte), modèle IFS et ensemble ENS de l'ECMWF, <a href="https://open-meteo.com/">Weather data by Open-Meteo.com</a> (CC BY 4.0). Vigilance et radar : Météo-France. Cyclones : CMRS de La Réunion (Météo-France), via GDACS ; côtes Natural Earth (domaine public). Historique : données climatologiques quotidiennes de Météo-France depuis 1900. Volcan : préfecture de La Réunion, OVPF-IPGP (CC BY 4.0), et en dernier recours <a href="https://pitonlive.com">pitonlive.com</a> (site non officiel). Électricité : EDF SEI. Air : Atmo Réunion (ODbL). Services publics : service-public.fr. Bus : horaires publiés par les réseaux sur transport.data.gouv.fr. Vélos : Altervélo (CIVIS, Ecovélo). Terrain et risques : IGN, DGFiP, Géoportail de l'urbanisme, DEAL Réunion, Géorisques (BRGM), DVF du Cerema. Toutes sous Licence Ouverte sauf mention. Randonnée : ONF La Réunion ; itinéraires et traces © contributeurs OpenStreetMap (ODbL). Lieux : © contributeurs OpenStreetMap (ODbL), IGN, geo.api.gouv.fr. Relief, photographies aériennes, routes et noms des cartes : IGN, RGE ALTI, couche Photographies aériennes de la Géoplateforme, BD ORTHO et BD TOPO${choix}.${decor ? ` ${MOTIF_CREDIT}` : ""} Police des titres : Bricolage Grotesque (SIL OFL).</p>`}
     <p>Ces données sont fournies telles quelles, sans garantie. Pour un cyclone ou de fortes pluies, seules comptent la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a> et les consignes de la préfecture.</p>
     <p><a href="/publier">Votre organisation publie un agenda ou des données ? Le guide pour les publier en flux ouvert →</a></p>
   </div>
@@ -2017,6 +2022,7 @@ export function notFoundPage(origin: string, path: string): string {
     description: "La Réunion (974) en direct\u00a0: sorties, randos, météo, routes, vigilance, volcan, air, électricité, calendrier.",
     path,
     jsonld: [],
+    motif: true,
   }, `<div class="wrap intro"><div class="pitch"><h1>Page introuvable</h1><p class="lead">Cette adresse n'existe pas sur rundata.re. Repartez de <a href="/">l'accueil</a>, des <a href="/evenements">sorties</a>, des <a href="/randonnees">randos</a> ou de <a href="/communes">votre commune</a>, ou découvrez <a href="/a-propos">qui fait rundata.re</a>.</p></div></div>`,
   `<section aria-labelledby="h-cat"><h2 id="h-cat">Les catégories</h2><ul class="chips">${WITH_PAGE.map((c) => `<li><a href="${c.path}">${esc(c.nom)}</a></li>`).join("")}</ul></section>
 <section aria-labelledby="h-communes"><h2 id="h-communes">Météo par commune et par lieu</h2>${placeLinks()}</section>`);

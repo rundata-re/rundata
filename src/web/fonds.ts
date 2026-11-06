@@ -159,3 +159,47 @@ export function fond(path: string, alerte: Alerte | undefined, volcan: boolean, 
   const f = files[fond.nom];
   return `<img class="fond" style="--y:${fond.y}%" src="/fonds/${f["480"]}" srcset="/fonds/${f["480"]} 480w, /fonds/${f["1024"]} 1024w" sizes="(min-width: 48rem) 100vw, 50vw" alt="" decoding="async" fetchpriority="low"><p class="fond-ia">${MENTION}</p>`;
 }
+
+/**
+ * The contour lines of the island (marketing's kit, « Motif : les courbes de niveau »; ux's review of 04/11/2026), a
+ * file of public/ whose address changes with its content. Only from 1200 px, where there is room beside the text: on a
+ * narrower screen nothing is downloaded, a background picture under a media query being fetched only when it applies.
+ * Night in both themes, like the band and the footer. Not in the HTML (an SVG hidden on a phone is paid for anyway) nor
+ * as `data:` (the CSP refuses it, and it would weigh on the stylesheet that every page waits for).
+ */
+export const MOTIF_PATH = "/motif/ile-large.9aac573b5f.svg";
+
+/**
+ * The pages whose band shows the whole island beside its text from 1200 px, in place of its rays: the pages about the
+ * site, the legal texts and the page of an address that does not exist (Head.motif), whose band holds neither data nor
+ * picture and leaves its right free. Not /presse, whose visual takes that place.
+ */
+export const MOTIF_PAGES = new Set(["/a-propos", "/chiffres", "/valeurs", "/nouveautes", "/publier", "/ouvrir-ses-donnees", "/sites-sans-reponse", "/conditions", "/confidentialite"]);
+
+/** The credit of the contour lines, in marketing's words, in the footer of every page that may show them. */
+export const MOTIF_CREDIT = "Courbes de niveau du décor : IGN, RGE ALTI (Licence Ouverte 2.0).";
+
+/**
+ * Whether the page may show the contour lines: never while a picture is ruled out (enAlerte), nor when the browser asks
+ * to save data; the page then says it varies with Save-Data, like fond().
+ */
+export function motif(alerte: Alerte | undefined, volcan: boolean): boolean {
+  if (enAlerte(alerte, volcan)) return false;
+  const state = sansFond.getStore();
+  if (state) state.varie = true;
+  return !state?.saveData;
+}
+
+/**
+ * From 75rem (1200 px) only. In the band: the island at full strength in a box at the right of the content's column,
+ * faded in from its left, never under the text (ux measured the contrast of the 10 pages at 6 widths in both themes,
+ * none lower than today's). In the footer: only the room left free under its right column, which shrinks if the
+ * sources grow, so never under text either. Neither printed nor shown with forced colours.
+ */
+export const MOTIF_CSS = `
+@media (min-width:75rem){.band.motif::before{opacity:1;inset:0 max(0px,calc(50vw - 680px)) 0 auto;width:min(32vw,420px);background:url(${MOTIF_PATH}) no-repeat center/100% auto;-webkit-mask:linear-gradient(90deg,transparent,#000 12%);mask:linear-gradient(90deg,transparent,#000 12%)}
+footer.foot.motif .wrap>div:last-child{display:flex;flex-direction:column}
+footer.foot.motif .wrap>div:last-child::after{content:"";flex:1;margin-top:1.25rem;pointer-events:none;background:url(${MOTIF_PATH}) no-repeat 100% 42%/820px auto;-webkit-mask:linear-gradient(90deg,transparent,#000 40%);mask:linear-gradient(90deg,transparent,#000 40%)}}
+@media print{.band.motif::before,footer.foot.motif .wrap>div:last-child::after{display:none}}
+@media (forced-colors:active){.band.motif::before,footer.foot.motif .wrap>div:last-child::after{display:none}}
+`.replaceAll("\n", "");

@@ -14,6 +14,7 @@ import { homePage } from "../src/web/home.js";
 import { communesPage } from "../src/web/commune.js";
 import { VERSION } from "../src/server.js";
 import { COVERAGE as SEA_COVERAGE } from "../src/tools/mer.js";
+import { MOTIF_PATH } from "../src/web/fonds.js";
 import { CSS, DESCRIPTION_MAX, FONT_PATH, meteoPage, placePage, seaPage, STYLE_PATH, vigilanceLive, vigilancePage } from "../src/web/pages.js";
 import { PAGES, pageOf } from "../src/web/places.js";
 import { htmlFor, isReader, site } from "../src/web/site.js";
@@ -563,8 +564,8 @@ describe("what crawlers and previews fetch", () => {
     const old = await site(new Request("https://rundata.re/style-0.css"), new Cache(), () => {});
     expect(old!.headers.get("cache-control")).toBe("public, max-age=300");
     expect(await old!.text()).toBe(CSS);
-    // Its only address, the font's, is absolute: read the same from the file as from the page.
-    expect([...CSS.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1])).toEqual([FONT_PATH]);
+    // Its addresses, the font's and the contour lines' (web/fonds.ts), are absolute: read the same from the file as from the page.
+    expect([...CSS.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1])).toEqual([FONT_PATH, MOTIF_PATH, MOTIF_PATH]);
   });
 
   it("gives command-line clients one line and crawlers the page", async () => {

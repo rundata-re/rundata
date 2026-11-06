@@ -119,7 +119,7 @@ describe("the order of the pages", () => {
     const top = header.match(/<nav class="follow-top"[^>]*>(.*?)<\/nav>/s)![1];
     const sheet = header.match(/<nav class="sheet"[^>]*>(.*?)<\/nav>/s)![1];
     // Out of the home page's top since it was made lighter (04/11/2026): in the footer of every page.
-    const foot = homePage(O, null, NOW).split('<footer class="foot">')[1];
+    const foot = homePage(O, null, NOW).split('<footer class="foot')[1];
     for (const s of SOCIAL) {
       const link = `<a href="${s.nom === "GitHub" ? s.url : `${s.url}?ref=site`}" rel="noopener" aria-label="rundata.re sur ${s.nom}">`;
       expect(top).toContain(`${link}${s.svg}</a>`);

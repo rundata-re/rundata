@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ouvrir } from "../src/web/associations-drapeau.js";
 import { associationsPage } from "../src/web/associations.js";
 import { WITH_PAGE } from "../src/web/categories.js";
+import { connecteurPage } from "../src/web/connecteur.js";
 import * as enfants from "../src/vie/enfants.js";
 import type { Alerte } from "../src/web/data.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
@@ -126,6 +127,19 @@ describe("the order of the pages", () => {
       expect(sheet).toContain(`${link}${s.svg}${s.nom}</a>`);
       expect(foot).toContain(`${link}${s.svg}${s.nom}</a>`);
     }
+  });
+
+  it("leads the bar's button to /mcp under its page's name, « Mon IA » below 430 px, and says « Menu » under the menu's icon", () => {
+    const header = meteoPage(O, null, NOW).match(/<header class="top">(.*?)<\/header>/s)![1];
+    // The name of the home page's button and of /mcp's breadcrumb (marketing, 06/11/2026), whole in its aria-label.
+    expect(header).toMatch(/<a class="cta-ia" href="\/mcp" aria-label="Brancher mon IA"><svg[^]*?<\/svg><span class="ia-l">Brancher mon IA<\/span><span class="ia-c">Mon IA<\/span><\/a>/);
+    expect(header).not.toContain("#assistant");
+    expect(CSS).toContain(".cta-ia .ia-l{display:none}@media (min-width:430px){.cta-ia .ia-l{display:inline}.cta-ia .ia-c{display:none}}");
+    // On /mcp itself, the current page.
+    expect(connecteurPage(O).match(/<header class="top">(.*?)<\/header>/s)![1]).toContain('<a class="cta-ia" href="/mcp" aria-label="Brancher mon IA" aria-current="page">');
+    expect(header).toContain('<summary aria-label="Menu : toutes les rubriques">');
+    expect(header).toMatch(/<span class="x"><svg[^]*?<\/svg><\/span><span class="m" aria-hidden="true">Menu<\/span><\/summary>/);
+    expect(CSS).toContain(".menu summary .m{font:700 11px/1 system-ui,sans-serif}");
   });
 });
 

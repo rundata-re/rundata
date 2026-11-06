@@ -320,11 +320,16 @@ padding:.45rem .55rem;border-radius:12px;font-size:.93rem;font-weight:600}.quick
 .cta-ia{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem .95rem;border-radius:14px;background:var(--sun);color:var(--sun-ink);
 font:800 .95rem/1 system-ui,sans-serif;text-decoration:none;box-shadow:0 6px 18px -6px rgb(255 207 31/.55);white-space:nowrap}
 .cta-ia .ic{width:1.05rem;height:1.05rem}
+/* The page's own name from 430 px; below, « Mon IA », the whole name in its aria-label (ux, 06/11/2026: the whole name
+   widened the page by 12 px at 390 px and 82 px at 320 px). */
+.cta-ia .ia-l{display:none}@media (min-width:430px){.cta-ia .ia-l{display:inline}.cta-ia .ia-c{display:none}}
 .menu{position:static}
 .menu summary{list-style:none;display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:14px;cursor:pointer;
 background:rgb(255 255 255/.08);border:1px solid rgb(255 255 255/.12);color:#fff}
 .menu summary::-webkit-details-marker{display:none}
 .menu summary .ic{width:1.3rem;height:1.3rem;display:block}.menu summary span{display:grid;place-items:center}
+/* « Menu » under the icon, in the same square (ux, 06/11/2026). */
+.menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 11px/1 system-ui,sans-serif}
 .menu summary .x,.menu[open] summary .g{display:none}.menu[open] summary .x{display:block}
 .menu summary:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .sheet{position:absolute;left:0;right:0;top:100%;background:#071626;
@@ -1270,8 +1275,8 @@ function header(path: string, origin: string, u: Urgent): string {
   <a class="brand" href="/">${logo()}<span>rundata<span class="tld">.re</span></span></a>
   <nav class="quick" aria-label="Principales catégories">${quick}</nav>
   ${top.length ? `<nav class="follow-top" aria-label="Suivre rundata.re">${top.join("")}</nav>` : ""}
-  <a class="cta-ia" href="/#assistant">${icon("spark")}<span>Mon IA</span></a>
-  <details class="menu"><summary aria-label="Toutes les catégories"><span class="g">${icon("grid")}</span><span class="x">${icon("close")}</span></summary>
+  <a class="cta-ia" href="/mcp" aria-label="Brancher mon IA"${current("/mcp")}>${icon("spark")}<span class="ia-l">Brancher mon IA</span><span class="ia-c">Mon IA</span></a>
+  <details class="menu"><summary aria-label="Menu\u00a0: toutes les rubriques"><span class="g">${icon("grid")}</span><span class="x">${icon("close")}</span><span class="m" aria-hidden="true">Menu</span></summary>
     <nav class="sheet" aria-label="Catégories"><div class="wrap">
       ${link(COMMUNES, "kcomm k-communes")}
       ${groups}

@@ -26,8 +26,16 @@ export function communeRow(zones: vigieau.Zone[], insee: string) {
   };
 }
 
+/** The levels from the least to the most severe, with what two of them mean: the tool's `echelle`, and the scale of /secheresse. */
+export const SCALE: readonly (readonly [string, string?])[] = [
+  ["vigilance", "économiser l'eau"],
+  ["alerte"],
+  ["alerte renforcée"],
+  ["crise", "seuls les usages prioritaires : santé, salubrité, sécurité"],
+];
+
 const COMMON = {
-  echelle: "Du moins au plus sévère : vigilance (économiser l'eau), alerte, alerte renforcée, crise (seuls les usages prioritaires : santé, salubrité, sécurité).",
+  echelle: `Du moins au plus sévère : ${SCALE.map(([n, what]) => (what ? `${n} (${what})` : n)).join(", ")}.`,
   a_savoir: "Restrictions fixées par arrêté préfectoral, commune par commune. Une mairie ou le distributeur peut ajouter des coupures ou des tours d'eau : voir leurs avis.",
 };
 

@@ -59,6 +59,18 @@ describe("restrictions d'eau", () => {
     expect(page).not.toMatch(/\d\u00a0h(?:et|à|de)\b/);
   });
 
+  it("says the scale in lines above the table, each level with its pill, the order's date left to the map's legend; the tool's scale unchanged", async () => {
+    const b = body(await restrictionsEau(cache(), undefined));
+    expect(b.echelle).toBe("Du moins au plus sévère : vigilance (économiser l'eau), alerte, alerte renforcée, crise (seuls les usages prioritaires : santé, salubrité, sécurité).");
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    const head = page.slice(page.indexOf('id="h-communes-eau"'), page.indexOf("<table"));
+    expect(head).toContain('<ul class="plain"><li><span class="lvl" style="--c:#ffd43b">vigilance</span> économiser l&#39;eau</li><li><span class="lvl" style="--c:#ff922b">alerte</span></li><li><span class="lvl" style="--c:#f03e3e;color:#000">alerte renforcée</span></li><li><span class="lvl" style="--c:#862e9c;color:#fff">crise</span> seuls les usages prioritaires : santé, salubrité, sécurité</li></ul>');
+    expect(head).not.toContain("D'après l'arrêté");
+    // The count per level stays in the hero, the map, the table and « Ce qui est interdit », not in a sentence here.
+    expect(head).not.toContain("Du moins au plus sévère");
+    expect(head).not.toContain("alerte dans 14 communes");
+  });
+
   it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, then the order's date", async () => {
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
     expect(page).toContain('<span><svg viewBox="-37 -37 74 74" aria-hidden="true"><rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#862e9c"/></svg>crise</span>');

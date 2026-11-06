@@ -194,7 +194,7 @@ async function answer(request: Request, cache: Cache, background: Background, re
   const accept = request.headers.get("accept") ?? "";
   if (url.pathname === "/" && !accept.includes("text/html") && CLI.test(request.headers.get("user-agent") ?? "")) {
     return new Response(
-      `reunion-temps-reel ${VERSION} — serveur MCP de La Réunion 974 en direct.\nPoint d'accès MCP : ${url.origin}/mcp\n`,
+      `rundata.re ${VERSION} — serveur MCP de La Réunion (974), en direct.\nPoint d'accès MCP : ${url.origin}/mcp\n`,
       { headers: { "content-type": "text/plain; charset=utf-8" } },
     );
   }

@@ -1161,7 +1161,7 @@ export interface CyclonesAnswer {
   /** While GDACS has none: the systems the RSMC follows, from its bulletins (providers/cmrs-trace.ts). */
   suivi_cmrs?: ReturnType<typeof suiviRow>[];
   carte_officielle?: ReturnType<typeof carteOfficielle>;
-  /** The page's own: what to show of the RSMC's map (providers/cmrs-carte.ts), while a system is active. */
+  /** The page's own: what to show of the RSMC's map (providers/cmrs-carte.ts), while a system is active or followed by the RSMC. */
   carte?: cmrs.Carte;
   /** The page's own: the path travelled by each active system, from the RSMC's bulletins, once Météo-France agrees (providers/cmrs-trace.ts). */
   parcours?: cmrsTrace.Parcours[];
@@ -1226,7 +1226,11 @@ export async function buildHistorique(cache: Cache, now = new Date()): Promise<H
 export async function buildCyclones(cache: Cache, now = new Date()): Promise<CyclonesAnswer> {
   const a = needed<CyclonesAnswer>(await cyclones(cache, undefined, now), "cyclones");
   const active = !!a.systemes_actifs?.length;
-  const [carte, parcours] = active ? await Promise.all([cmrs.kept(), cmrsTrace.kept(now)]) : [undefined, []];
+  // The RSMC's map while a system is active or followed by the RSMC; the path travelled, only while GDACS has one.
+  const [carte, parcours] = await Promise.all([
+    active || a.suivi_cmrs?.length ? cmrs.kept() : undefined,
+    active ? cmrsTrace.kept(now) : [],
+  ]);
   return { ...a, ...(carte && { carte }), ...(parcours.length && { parcours }) };
 }
 

@@ -3074,7 +3074,8 @@ function seasonTable(s: CyclonesAnswer["saison_en_cours"]): string {
  * are: none, with the past cyclones' tracks; or the RSMC's map above it, or Météo-France's site when that map is not
  * shown here, and then no past track: only, once Météo-France agrees, the path each system has already travelled
  * (providers/cmrs-trace.ts), never its forecast. Without a system, it is the hero's map, as on the other pages; with
- * one, it stays under the RSMC's map, which comes first.
+ * one, it stays under the RSMC's map, which comes first. `active`: the systems active in GDACS, or else those the RSMC
+ * follows (the path travelled is only given for the first).
  */
 function basinFigure(d: CyclonesAnswer | undefined, active: number): string {
   const s = active > 1;
@@ -3143,15 +3144,17 @@ export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null
     ${ask(`Néna in siklone pa loin La Rényon ? Gèt si ${url} é di amwin sak Météo-France é la préfektir i di.`,
       `Y a-t-il un cyclone près de La Réunion ? Lis ${url} et dis-moi ce qu'en disent Météo-France et la préfecture.`)}
   </div>
-  ${active.length ? "" : basinFigure(d, 0)}
+  ${active.length || suivis.length ? "" : basinFigure(d, 0)}
 </div>`;
 
-  // In calm weather the section would only repeat the hero's « 0 système tropical actif »: it shows while a system is active.
-  const body = `${d && !active.length ? "" : `<section aria-labelledby="h-actifs">
-  <div class="sec-h"><p class="eyebrow">En ce moment</p><h2 id="h-actifs">Systèmes actifs</h2>
+  // In calm weather the section would only repeat the hero's « 0 système tropical actif »: it shows while a system is
+  // active, or followed by the RSMC before GDACS lists it (its map, then the basin's without the past tracks).
+  const shown = active.length + suivis.length;
+  const body = `${d && !shown ? "" : `<section aria-labelledby="h-actifs">
+  <div class="sec-h"><p class="eyebrow">En ce moment</p><h2 id="h-actifs">${suivis.length ? "Systèmes suivis" : "Systèmes actifs"}</h2>
   <p>${d ? esc(d.resume) : ""}</p></div>
   ${d ? active.map(activeCard).join("") : `<p class="card">Le suivi se charge : rechargez la page dans quelques secondes.</p>`}
-  ${active.length ? carteHtml(d?.carte, now) + basinFigure(d, active.length) : ""}
+  ${shown ? carteHtml(d?.carte, now) + basinFigure(d, shown) : ""}
 </section>`}
 <section aria-labelledby="h-alerte">
   <div class="sec-h"><p class="eyebrow">Préfecture de La Réunion</p><h2 id="h-alerte">Les phases de l'alerte cyclonique</h2>

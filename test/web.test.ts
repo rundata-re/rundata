@@ -585,14 +585,17 @@ describe("what crawlers and previews fetch", () => {
     expect([...CSS.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1])).toEqual([FONT_PATH, MOTIF_PATH, MOTIF_PATH]);
   });
 
-  it("gives command-line clients one line and crawlers the page", async () => {
+  it("gives command-line clients one line and crawlers the page, both named rundata.re, the footer's version led to the news", async () => {
     vi.stubGlobal("fetch", async () => {
       throw new Error("offline");
     });
     const curl = await handle(new Request("https://rundata.re/", { headers: { "user-agent": "curl/8.5", accept: "*/*" } }), new Cache());
-    expect(await curl.text()).toContain("Point d'accès MCP : https://rundata.re/mcp");
+    expect(await curl.text()).toBe(`rundata.re ${VERSION} — serveur MCP de La Réunion (974), en direct.\nPoint d'accès MCP : https://rundata.re/mcp\n`);
     const bot = await handle(new Request("https://rundata.re/", { headers: { "user-agent": "Googlebot/2.1", accept: "*/*" } }), new Cache());
     expect(bot.headers.get("content-type")).toContain("text/html");
+    const html = await bot.text();
+    expect(html).toContain(`<p>rundata.re, version <a href="/nouveautes">${VERSION}</a> · `);
+    expect(html).not.toContain("reunion-temps-reel");
   });
 });
 

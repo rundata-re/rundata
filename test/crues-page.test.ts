@@ -55,7 +55,7 @@ describe("the /crues page", () => {
 
   it("writes its notes on the band in the band's grey, not the white page's", async () => {
     const { html } = await page();
-    const band = html.slice(html.indexOf('<div class="band">'), html.indexOf('<main class="wrap">'));
+    const band = html.slice(html.indexOf('<div class="band">'), html.indexOf('<div class="wrap corps">'));
     expect(band).toContain('<p class="note">Pluies fortes ou crue');
     expect(CSS).toContain(".band .note{color:var(--on-night-muted)}");
     // No narrower rule gives a note on the band the white page's grey back.

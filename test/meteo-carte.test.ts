@@ -370,7 +370,7 @@ describe("the page /meteo with every station", () => {
     const sea = html.indexOf(`id="h-mer"`);
     const forecast = html.indexOf(`id="h-communes"`);
     expect(map).toBeGreaterThan(0);
-    expect(html.indexOf("<main")).toBeGreaterThan(map);
+    expect(html.indexOf('<div class="wrap corps">')).toBeGreaterThan(map);
     expect(list).toBeGreaterThan(map);
     expect(sea).toBeGreaterThan(list);
     expect(forecast).toBeGreaterThan(sea);

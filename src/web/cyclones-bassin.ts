@@ -207,7 +207,8 @@ export function basinMap(traces = false, parcours: Parcours[] = []): string {
     return `<g class="cur">${at.length > 1 ? `<path d="${line(p.points)}"/>` : ""}${at.slice(0, -1).map(([px, py]) => `<circle cx="${px}" cy="${py}" r="9"/>`).join("")}` +
       `<circle class="last" cx="${x}" cy="${y}" r="13"/><text class="cn" x="${tx}" y="${ty}"${anchor === "start" ? "" : ` style="text-anchor:${anchor}"`}>${esc(p.nom)}</text></g>`;
   }).join("");
-  return `<svg class="map ocean" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label(traces, parcours))}">` +
+  // With the tracks, a group, not an image: each is a link to its cyclone (an image may hold none).
+  return `<svg class="map ocean" viewBox="0 0 ${W} ${H}" role="${tracks ? "group" : "img"}" aria-label="${esc(label(traces, parcours))}">` +
     `<rect class="sea" width="${W}" height="${H}" rx="28"/>${grid}<path class="land" d="${land}"/><path class="shore" d="${land}"/>` +
     tracks + zone + zoneName + names + islets + home + lit + cur + `</svg>`;
 }

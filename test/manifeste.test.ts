@@ -161,6 +161,6 @@ describe("rundata.re's accounts", () => {
     expect(org.sameAs).toContain("https://www.data.gouv.fr/reuses/rundata-re-la-reunion-974-en-direct-pour-vous-et-votre-assistant-ia");
     expect(org.logo).toMatch(/^https:\/\/[^/]+\/icons\/logo-512\.[0-9a-f]{10}\.png$/);
     const presse = pressePage(O, []);
-    expect(presse.slice(0, presse.indexOf("<main")).match(/<p class="social">/g)).toHaveLength(1);
+    expect(presse.slice(0, presse.indexOf('<div class="wrap corps">')).match(/<p class="social">/g)).toHaveLength(1);
   });
 });

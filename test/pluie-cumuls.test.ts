@@ -2,7 +2,7 @@ import { Script } from "node:vm";
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { autour, averse, CUMULS_LOADER, cumulsScript, cumulsScriptPath, cumulsSection, pluvio, somme } from "../src/web/pluie-cumuls.js";
+import { autour, averse, CUMULS_LOADER, cumulsScript, cumulsScriptPath, cumulsSection, phrases, pluvio, somme } from "../src/web/pluie-cumuls.js";
 import { site } from "../src/web/site.js";
 
 const H = 3_600_000;
@@ -87,5 +87,55 @@ describe("/meteo's « Pluie tombée »", () => {
     const res = await site(new Request(`https://rundata.re${cumulsScriptPath()}`), new Cache(new MemoryStore()), () => {});
     expect(res!.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
     expect(await res!.text()).toBe(cumulsScript());
+  });
+});
+
+describe("the block's lines, the measure first", () => {
+  const mm = (v: number) => `${v.toLocaleString("fr-FR")} mm`;
+  const span = (a: number, b: number) => `de ${a / H}:00 à ${b / H}:00`;
+  const words = (p: (string | [string, string])[]) => p.map((x) => (typeof x === "string" ? x : x[0])).join("");
+
+  it("says the rain gauge's whole hours in bold, the radar's estimate below, without the gap sentence when they agree", () => {
+    const [gras, petit] = phrases("Cilaos", "de Cilaos", 3.2, " sur les 3 dernières heures", [3, 9 * H, 12 * H], 3.1, NaN, "", mm, span);
+    expect(gras).toBe("Cilaos : 3 mm mesurés au pluviomètre de 9:00 à 12:00.");
+    expect(petit).toEqual([" Le radar de Météo-France estime 3,2 mm au même endroit sur les 3 dernières heures : une estimation, pas une mesure."]);
+  });
+
+  it("adds the gap sentence, with the two official links, from 5 mm and twice the other on the same hours, a zero counting", () => {
+    const [, petit] = phrases("Cilaos", "de Cilaos", 1, " sur la dernière heure", [0, 11 * H, 12 * H], 6, NaN, " Il manque 15 min d'images.", mm, span);
+    expect(words(petit)).toBe(" Le radar de Météo-France estime 1 mm au même endroit sur la dernière heure : une estimation, pas une mesure. Il manque 15 min d'images." +
+      " Sur les mêmes heures, le pluviomètre a mesuré 0 mm et le radar estime 6 mm. Le pluviomètre mesure en un point ; le radar estime d'en haut, par carrés d'environ 550 m." +
+      " Un chiffre bas ne veut pas dire qu'il n'a pas plu fort tout près : avant de traverser une ravine ou un radier, voyez la vigilance et le niveau des rivières.");
+    expect(petit.filter((x) => typeof x !== "string")).toEqual([["vigilance", "/vigilance"], ["niveau des rivières", "/crues"]]);
+    // Below 5 mm, or less than twice, or the radar not seeing those hours: no gap sentence.
+    for (const [x, yp] of [[0, 4.9], [5, 9], [8, NaN]]) expect(phrases("Cilaos", "de Cilaos", 1, "", [x, 0, H], yp, NaN, "", mm, span)[1]).toHaveLength(1);
+    expect(phrases("Cilaos", "de Cilaos", 1, "", [10, 0, H], 5, NaN, "", mm, span)[1]).toHaveLength(6);
+  });
+
+  it("puts the radar in bold, with « estimés », when the gauge has no whole hour, misses one, or 1 mm fell since its last", () => {
+    expect(phrases("Le Port", "du Port", 2.4, " depuis le début de l'averse, aujourd'hui à 14:05", null, NaN, NaN, "", mm, span)).toEqual([
+      "Le Port : 2,4 mm estimés par le radar depuis le début de l'averse, aujourd'hui à 14:05.",
+      [" Une estimation, pas une mesure. Le pluviomètre du Port donne la pluie heure par heure : pas encore d'heure entière sur cette durée."],
+    ]);
+    expect(phrases("Le Port", "du Port", 2.4, "", [null, 9 * H, 12 * H], NaN, NaN, "", mm, span)[1]).toEqual([" Une estimation, pas une mesure. Le pluviomètre du Port n'a pas mesuré toutes les heures de cette durée."]);
+    const recent = phrases("Le Port", "du Port", 4, " sur les 3 dernières heures", [0.5, 9 * H, 11 * H], 0.4, 1, "", mm, span);
+    expect(recent).toEqual([
+      "Le Port : 4 mm estimés par le radar sur les 3 dernières heures.",
+      [" Une estimation, pas une mesure. Le pluviomètre du Port a mesuré 0,5 mm de 9:00 à 11:00 ; pas encore d'heure entière depuis."],
+    ]);
+    // Less than 1 mm since: still the measure first.
+    expect(phrases("Le Port", "du Port", 4, "", [0.5, 9 * H, 11 * H], 0.4, 0.9, "", mm, span)[0]).toBe("Le Port : 0,5 mm mesurés au pluviomètre de 9:00 à 11:00.");
+  });
+
+  it("says when the radar has no estimate at the place, in either case", () => {
+    expect(phrases("Cilaos", "de Cilaos", NaN, " sur la dernière heure", [2, 11 * H, 12 * H], NaN, NaN, "", mm, span)[1]).toEqual([" Le radar de Météo-France n'a pas d'estimation au même endroit sur la dernière heure."]);
+    expect(phrases("Cilaos", "de Cilaos", NaN, " sur la dernière heure", null, NaN, NaN, " Pas de pluie vue.", mm, span)).toEqual([
+      "Cilaos : pas d'estimation du radar sur la dernière heure.",
+      [" Le pluviomètre de Cilaos donne la pluie heure par heure : pas encore d'heure entière sur cette durée. Pas de pluie vue."],
+    ]);
+  });
+
+  it("is written into the page's script as it is", () => {
+    expect(cumulsScript()).toContain(`phrases=${phrases}`);
   });
 });

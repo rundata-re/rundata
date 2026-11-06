@@ -2,7 +2,7 @@
  * /meteo's « Pluie tombée » (the user's « Ok go » of 01/11/2026 to the mock-up C): the rain fallen around a place, in mm,
  * since the start of its shower or over the last 1, 3, 6 or 24 hours. The radar's lame d'eau of each image of 5 minutes
  * (pluie-radar.ts, decodeMm), added up in the browser from CUMULS_PATH; the place's rain gauge, its round hours, beside
- * it: the radar estimates, the gauge measures.
+ * it: the radar estimates, the gauge measures, and the measure is said first when there is one (`phrases`).
  * The shower around a place: going back from the last image, its rain within 2 km (any class, from 0.1 mm/h) after the
  * last hour without any. Shown by default while it rains there or ended less than 3 hours ago; otherwise the 24 hours.
  * The page holds only the section's title: the map and the places, with the script, are asked only when the visitor
@@ -10,6 +10,7 @@
  */
 import { esc, H, inScript, islandMap, KM, project, W } from "./map.js";
 import { GH, GW, MM_CHARS, MM_MIN, MM_STEP } from "./pluie-radar.js";
+import { de } from "../articles.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { hash } from "./pwa.js";
 import { CUMULS_PATH } from "./rejeu.js";
@@ -73,6 +74,35 @@ export const pluvio = (rr: (number | null)[], fin: number, from: number, to: num
   return f < 0 ? null : [mm, d, f];
 };
 
+/**
+ * The block's two lines, the measure first: [the bold one, the small one as texts and [text, link] pairs].
+ * `du` the place with its article (« du Port », articles.ts), `v` the radar's mm at the place over the length chosen (NaN where it does not see), `fin` the end of its sentence
+ * (« sur la dernière heure »…), `pv` the rain gauge's whole hours (pluvio), `yp` the radar over those same hours and `z`
+ * the radar after the last of them (NaN without), `suite` the sentences said in any case (no rain seen, images missing).
+ * Case 1, the gauge measured all the whole hours of the length: its mm in bold, the radar's estimate beside it, and when
+ * one of the two is at least 5 mm and twice the other on the same hours, a sentence on why they differ. Case 2, no whole
+ * hour, an hour not measured, or at least 1 mm seen by the radar since the gauge's last hour: the radar in bold, with
+ * « estimés ». Written for the page's script (${phrases}): no name from outside, the formats are given.
+ */
+export const phrases = (nom: string, du: string, v: number, fin: string, pv: [number | null, number, number] | null, yp: number, z: number, suite: string,
+  mm: (v: number) => string, span: (a: number, b: number) => string): [string, (string | [string, string])[]] => {
+  const radar = v === v ? mm(v) : "";
+  if (pv && pv[0] != null && !(z >= 1)) {
+    const x = pv[0], hi = Math.max(x, yp), lo = Math.min(x, yp);
+    const petit: (string | [string, string])[] = [(radar ? " Le radar de Météo-France estime " + radar + " au même endroit" + fin + " : une estimation, pas une mesure."
+      : " Le radar de Météo-France n'a pas d'estimation au même endroit" + fin + ".") + suite];
+    if (yp === yp && hi >= 5 && hi >= 2 * lo) {
+      petit.push(" Sur les mêmes heures, le pluviomètre a mesuré " + mm(x) + " et le radar estime " + mm(yp) + ". Le pluviomètre mesure en un point ; le radar estime d'en haut, par carrés d'environ 550 m. Un chiffre bas ne veut pas dire qu'il n'a pas plu fort tout près : avant de traverser une ravine ou un radier, voyez la ",
+        ["vigilance", "/vigilance"], " et le ", ["niveau des rivières", "/crues"], ".");
+    }
+    return [nom + " : " + mm(x) + " mesurés au pluviomètre " + span(pv[1], pv[2]) + ".", petit];
+  }
+  const gauge = !pv ? "Le pluviomètre " + du + " donne la pluie heure par heure : pas encore d'heure entière sur cette durée."
+    : pv[0] == null ? "Le pluviomètre " + du + " n'a pas mesuré toutes les heures de cette durée."
+    : "Le pluviomètre " + du + " a mesuré " + mm(pv[0]) + " " + span(pv[1], pv[2]) + " ; pas encore d'heure entière depuis.";
+  return [nom + " : " + (radar ? radar + " estimés par le radar" : "pas d'estimation du radar") + fin + ".", [(radar ? " Une estimation, pas une mesure. " : " ") + gauge + suite]];
+};
+
 /** The cells of a grid `w` × `h` within `r` cells of the cell cx, cy. */
 export const autour = (cx: number, cy: number, w: number, h: number, r: number): number[] => {
   const out: number[] = [], n = Math.ceil(r);
@@ -90,7 +120,7 @@ const RAYON = Math.round((RAYON_KM / ((KM * W) / GW)) * 100) / 100;
 function figure(): string {
   const options = meteofrance.stations().sort((a, b) => a.nom.localeCompare(b.nom, "fr")).map((s) => {
     const [x, y] = project(s.lon, s.lat);
-    return `<option value="${esc(s.id)}" data-x="${Math.round(x)}" data-y="${Math.round(y)}">${esc(s.nom)}</option>`;
+    return `<option value="${esc(s.id)}" data-de="${esc(de(s.nom))}" data-x="${Math.round(x)}" data-y="${Math.round(y)}">${esc(s.nom)}</option>`;
   }).join("");
   const radios = [`<input type="radio" name="cud" id="cud-a" value="a"><label for="cud-a">Début de l'averse</label>`,
     ...DUREES_H.map((h) => `<input type="radio" name="cud" id="cud-${h}" value="${h}"><label for="cud-${h}">${h}\u00a0h</label>`)].join("");
@@ -115,7 +145,7 @@ export const CUMULS_LOADER = `const cu=document.getElementById("pluie-tombee");i
 if("IntersectionObserver"in window){const io=new IntersectionObserver((e)=>{if(e.some((x)=>x.isIntersecting)){io.disconnect();go()}},{rootMargin:"400px"});io.observe(cu)}else go()}`;
 
 const cumulsJs = () => `(()=>{const cu=document.getElementById("pluie-tombee");cu.querySelector("figure").innerHTML=${inScript(figure())};const sel=document.getElementById("cu-l"),t=cu.querySelector(".cu-t"),nt=cu.querySelector(".cu-n"),cv=cu.querySelector("canvas"),mk=cu.querySelector(".cu-mk");
-const averse=${averse},somme=${somme},pluvio=${pluvio},autour=${autour};
+const averse=${averse},somme=${somme},pluvio=${pluvio},autour=${autour},phrases=${phrases};
 const C=${inScript(MM_CHARS)},V=Array.from(C,(_,k)=>${MM_MIN}*${MM_STEP}**k),P=${inScript(PALIERS)},T=${inScript(TEINTES)},NB="\\u00a0";
 const p2=(n)=>String(n).padStart(2,"0"),loc=(ms)=>new Date(ms+144e5),hm=(ms)=>{const x=loc(ms);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())};
 const dm=(ms)=>p2(loc(ms).getUTCDate())+"/"+p2(loc(ms).getUTCMonth()+1),day=(ms)=>loc(ms).toISOString().slice(0,10),quand=(ms)=>{const d=day(ms),n=Date.now();return d===day(n)?"aujourd'hui à "+hm(ms):d===day(n-864e5)?"hier à "+hm(ms):"le "+dm(ms)+" à "+hm(ms)};
@@ -127,7 +157,7 @@ try{lieu=localStorage.getItem("cumuls-lieu")}catch(e){}
 const decode=(e)=>{const p=un(e.pluie),c=new Uint8Array(p.length);let mm=e.mm!=null?new Float32Array(p.length):null,n=0;
 for(let k=0;k<p.length;k++){const x=p[k];c[k]=x==="."?255:+x;if(!mm)continue;if(x===".")mm[k]=NaN;else if(x!=="0"){if(n>=e.mm.length){mm=null;continue}mm[k]=V[C.indexOf(e.mm[n++])]}}
 return[c,mm&&n===e.mm.length?mm:null]};
-const st=()=>{const o=sel.selectedOptions[0];return{id:o.value,nom:o.textContent,x:+o.dataset.x,y:+o.dataset.y}};
+const st=()=>{const o=sel.selectedOptions[0];return{id:o.value,nom:o.textContent,de:o.dataset.de,x:+o.dataset.x,y:+o.dataset.y}};
 const draw=(out)=>{const g=cv.getContext("2d",{willReadFrequently:true}),im=g.createImageData(w,h),pal=T[matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"].map((c)=>[1,3,5].map((i)=>parseInt(c.slice(i,i+2),16)));
 for(let k=0;k<w*h;k++){const v=out[k];if(!(v>=P[0]))continue;let b=0;while(b<P.length-1&&v>=P[b+1])b++;im.data.set([...pal[b],235],k*4)}g.putImageData(im,0,0)};
 const show=()=>{if(!D)return;const s=st(),cx=Math.floor(s.x*w/${W}),cy=Math.floor(s.y*h/${H}),ks=autour(cx,cy,w,h,${RAYON}),wet=cls.map((c)=>c?ks.some((k)=>c[k]!==255&&c[k]>0):null);
@@ -136,12 +166,12 @@ const on=av&&to-av.fin<${FINIE_MS};let m=choix??(on?"a":"24");cu.querySelector("
 cu.querySelector("#cud-"+m).checked=true;const from=m==="a"?(av.de??first):Math.max(first,to-(+m)*36e5);
 const[out,miss]=somme(ims,w*h,from,to),v=out[cy*w+cx];
 draw(out);mk.setAttribute("cx",s.x);mk.setAttribute("cy",s.y);
-const ici=v===v?mmTxt(v):"pas d'estimation du radar";
-t.textContent=s.nom+NB+": "+ici+(m==="a"?(av.de==null?" depuis "+quand(from)+", l'averse avait déjà commencé":" depuis le début de l'averse, "+quand(from)):m==="1"?" sur la dernière heure":" sur les "+m+" dernières heures");
-const hs=D.heures,g=hs&&hs.st.find((x)=>x.id===s.id),pv=g&&pluvio(g.rr,Date.parse(hs.fin),from,to);
-nt.textContent=" Estimée par le radar "+span(from,to)+NB+": une estimation, pas une mesure."+(m!=="a"&&!av?" Pas de pluie vue par le radar à moins de 2"+NB+"km.":m!=="a"&&!on?" Dernière pluie vue par le radar à moins de 2"+NB+"km "+quand(av.fin)+".":"")+
-(pv?pv[0]==null?" Le pluviomètre de "+s.nom+" n'a pas mesuré toutes les heures de cette durée.":" Pluviomètre de "+s.nom+NB+": "+mmTxt(pv[0])+" mesurés "+span(pv[1],pv[2])+".":" Le pluviomètre donne la pluie heure par heure"+NB+": pas d'heure entière sur cette durée.")+
-(miss>=10?" Il manque "+(miss>=60?Math.floor(miss/60)+NB+"h"+(miss%60?NB+String(miss%60).padStart(2,"0"):""):miss+NB+"min")+" d'images du radar sur cette durée"+NB+": la pluie a pu être plus forte.":"")};
+const fin=m==="a"?(av.de==null?" depuis "+quand(from)+", l'averse avait déjà commencé":" depuis le début de l'averse, "+quand(from)):m==="1"?" sur la dernière heure":" sur les "+m+" dernières heures";
+const hs=D.heures,g=hs&&hs.st.find((x)=>x.id===s.id),pv=(g&&pluvio(g.rr,Date.parse(hs.fin),from,to))||null,at=(a,b)=>somme(ims,w*h,a,b)[0][cy*w+cx];
+const suite=(m!=="a"&&!av?" Pas de pluie vue par le radar à moins de 2"+NB+"km.":m!=="a"&&!on?" Dernière pluie vue par le radar à moins de 2"+NB+"km "+quand(av.fin)+".":"")+
+(miss>=10?" Il manque "+(miss>=60?Math.floor(miss/60)+NB+"h"+(miss%60?NB+String(miss%60).padStart(2,"0"):""):miss+NB+"min")+" d'images du radar sur cette durée"+NB+": la pluie a pu être plus forte.":"");
+const[gras,petit]=phrases(s.nom,s.de,v,fin,pv,pv?at(pv[1],pv[2]):NaN,pv?at(pv[2],to):NaN,suite,mmTxt,span);
+t.textContent=gras;nt.replaceChildren(...petit.map((x)=>typeof x==="string"?x:Object.assign(document.createElement("a"),{href:x[1],textContent:x[0]})))};
 sel.addEventListener("change",()=>{try{localStorage.setItem("cumuls-lieu",sel.value)}catch(e){}choix=null;show()});
 cu.querySelectorAll("[name=cud]").forEach((r)=>r.addEventListener("change",()=>{choix=r.value;show()}));
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",show);

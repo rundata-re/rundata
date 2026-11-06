@@ -15,7 +15,7 @@ import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../t
 import { connectorCta, crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { hm, layout, type Live, readAt, leAt } from "./pages.js";
+import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
 
 export const PATH = "/emploi";
 export const NOM = "Emploi public";
@@ -63,9 +63,13 @@ function quand(o: OffreRow): string {
   return `publiées du ${r[r.length - 1].publiee_le} au ${r[0].publiee_le}`;
 }
 
-function row(o: OffreRow): string {
-  const place = "commune" in o && o.commune ? o.commune : "commune non précisée";
-  const small = [o.employeur, "metier" in o ? o.metier : "domaine" in o ? o.domaine : undefined, o.nature, place].filter(Boolean).map((x) => esc(x!)).join(" · ");
+/** The nature most offers have: said once above the list when every offer has one, then only the others in their line. */
+const OUVERT = "Emploi ouvert aux titulaires et aux contractuels";
+
+/** An offer's line, without its commune, which its group says; without its nature when it is `OUVERT` and `once`. */
+function row(o: OffreRow, once: boolean): string {
+  const nature = once && o.nature === OUVERT ? undefined : o.nature;
+  const small = [o.employeur, "metier" in o ? o.metier : "domaine" in o ? o.domaine : undefined, nature].filter(Boolean).map((x) => esc(x!)).join(" · ");
   // Several offers: the title alone, then, across the whole line, a link to each, its reference never cut, its day said
   // when the line has none.
   const refs = "references" in o
@@ -75,6 +79,27 @@ function row(o: OffreRow): string {
   const title = "references" in o ? `<b>${esc(o.intitule)}</b>` : `<a href="${esc(o.lien)}" rel="noopener">${esc(o.intitule)}</a>`;
   return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title}<small>${small}</small></span>` +
     `<span class="q-none${"references" in o && !o.date_limite && !o.publiee_le ? " du" : ""}">${esc(quand(o))}</span>${refs}</li>`;
+}
+
+/**
+ * The offers by commune, the one with the most first and those without a commune last, each folded under its name and
+ * its number of offers: 476 offers in one list made a page of 105 000 px on a phone. The filter opens the groups it finds
+ * (SCRIPT); a search in the page or a link opens one by itself.
+ */
+function groups(rows: OffreRow[], once: boolean): string {
+  const by = new Map<string, OffreRow[]>();
+  for (const o of rows) {
+    const c = "commune" in o && o.commune ? o.commune : "";
+    by.set(c, [...(by.get(c) ?? []), o]);
+  }
+  const count = (l: OffreRow[]) => l.reduce((n, o) => n + ("references" in o ? o.nombre_offres : 1), 0);
+  return [...by]
+    .sort(([a, x], [b, y]) => +!a - +!b || count(y) - count(x) || a.localeCompare(b, "fr"))
+    .map(([c, l]) => {
+      const n = count(l);
+      return `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">·\u00a0${n}\u00a0offre${n > 1 ? "s" : ""}</span></h3>`,
+        `<ul class="rows eau">${l.map((o) => row(o, once)).join("")}</ul>`)}</div>`;
+    }).join("");
 }
 
 /** « Se former avec le CPF »: the themes by name, each with its count; nothing without a copy. */
@@ -100,6 +125,7 @@ for(const e of items)e.dataset.q=norm(e.textContent);
 const run=()=>{const q=norm(f.q.value).split(" ").filter(Boolean),c=f.c.value;let n=0;
 const all=items.reduce((t,e)=>t+(+e.dataset.n||1),0);
 for(const e of items){const ok=q.every((t)=>e.dataset.q.includes(t))&&(!c||e.dataset.c===c);e.hidden=!ok;if(ok)n+=+e.dataset.n||1}
+const on=q.length>0||!!c;for(const g of document.querySelectorAll("#offres .groupe")){const k=!!g.querySelector("li:not([hidden])");g.hidden=on&&!k;g.firstElementChild.open=on&&k}
 document.getElementById("of-n").textContent=q.length||c?n+" offre"+(n>1?"s":"")+" sur "+all+".":"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
 
@@ -118,6 +144,8 @@ export function emploiLive(data: Cached<EmploiAnswer> | null): Live | undefined 
 
 export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
+  // Their nature said once, only when every offer has one: an offer without would seem open to both.
+  const once = !!d?.offres.length && d.offres.every((o) => o.nature) && d.offres.some((o) => o.nature === OUVERT);
   const communes = [...new Set((d?.offres ?? []).flatMap((o) => ("commune" in o && o.commune ? [o.commune] : [])))].sort((x, y) => x.localeCompare(y, "fr"));
 
   const lu = d?.lu ? new Date(d.lu) : data?.fetchedAt ?? now;
@@ -130,7 +158,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
     : d.prochaine
       ? `<p class="card">Les offres ne sont pas encore lues : prochaine lecture prévue à ${hm(d.prochaine)}.</p>`
       : d.offres.length
-      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<ul class="rows eau" id="offres">${d.offres.map(row).join("")}</ul>`
+      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}${once ? `<p>Sauf mention, les offres sont ouvertes aux titulaires et aux contractuels.</p>` : ""}<div id="offres" class="plis">${groups(d.offres, once)}</div>`
       : `<p class="card">Aucune offre publiée sur Choisir le service public pour La Réunion ${leAt(d.lu ?? data.fetchedAt)}.</p>`;
 
   const title = "Emploi public Réunion : offres de l'État, des communes et des hôpitaux · 974";

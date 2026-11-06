@@ -121,7 +121,7 @@ describe("/peche", () => {
   it("shows today's species with their state, the tables, the lagoons and the texts, in marketing's words", () => {
     const html = pechePage(O, undefined, NOW);
     expect(html).toContain(`<title>${TITLE}</title>`);
-    expect(html).toContain("<h1>Pêche de loisir à La Réunion</h1>");
+    expect(html).toContain('<h1>Pêche de loisir à La Réunion <span class="n974">974</span></h1>');
     expect(html).toContain("Aujourd'hui, samedi 31 octobre</h2>");
     expect(html).toContain('<span class="badge m">Pas de fermeture aujourd&#39;hui</span>');
     expect(html).toContain('<span class="badge">Fermé aujourd&#39;hui</span>');

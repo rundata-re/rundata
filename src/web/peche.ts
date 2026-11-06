@@ -15,7 +15,7 @@ import { layout } from "./pages.js";
 
 export const PATH = "/peche";
 export const NOM = "Pêche";
-export const TITLE = "Pêche de loisir à La Réunion\u00a0: fermetures du jour, tailles et quantités · rundata.re";
+export const TITLE = "Pêche de loisir à La Réunion\u00a0: fermetures du jour, tailles et quantités · 974";
 const META = "Langouste, bichiques, capucin nain, anguille marbrée\u00a0: ce qui est fermé aujourd'hui, les tailles et les quantités de la pêche de loisir, d'après les arrêtés du préfet.";
 const H1 = "Pêche de loisir à La Réunion";
 const LEAD = "Avant de partir pêcher\u00a0: ce qui est fermé aujourd'hui, les tailles minimales et les quantités, espèce par espèce, d'après les arrêtés du préfet.";
@@ -36,7 +36,7 @@ export function pechePage(origin: string, alerte?: Alerte, now = new Date()): st
   const band = `${crumbBar(NOM)}
 <div class="wrap intro solo"><div class="pitch">
   <p class="pill">Arrêtés du préfet</p>
-  <h1>${esc(H1)}</h1>
+  <h1>${esc(H1)} <span class="n974">974</span></h1>
   <p class="lead">${esc(LEAD)}</p>
 </div></div>`;
   const today = `<section aria-labelledby="h-jour">

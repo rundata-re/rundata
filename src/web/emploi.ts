@@ -125,7 +125,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
 
   const band = `${crumbBar(NOM)}
 <div class="wrap intro solo"><div class="pitch">
-  <h1>Offres d'emploi public à La Réunion</h1>
+  <h1>Offres d'emploi public à La Réunion <span class="n974">974</span></h1>
   <p class="lead">Les offres de l'État, des collectivités et des hôpitaux publiées sur Choisir le service public, avec le lien pour postuler.</p>
   ${status}
 </div></div>`;

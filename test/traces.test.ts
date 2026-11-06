@@ -297,7 +297,7 @@ describe("traces GPS", () => {
     expect(res.status).toBe(200);
     const page = await res.text();
     expect(page).toContain("<title>Randonnée Mafate\u00a0: traces GPS et sentiers ouverts · 974</title>");
-    expect(page).toContain("<h1>Randonnée à Mafate</h1>");
+    expect(page).toContain('<h1>Randonnée à Mafate <span class="n974">974</span></h1>');
     expect(page).toContain(`<li><a href="/randonnees">Randonnée</a></li><li aria-current="page">Mafate</li>`);
     // The map of the day has 4 closed there; the one closed here is among them, with why.
     expect(page).toContain(`id="h-fermes">5 sentiers fermés à Mafate</h2>`);

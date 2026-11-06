@@ -187,7 +187,7 @@ describe("the prefect's fuel prices", () => {
     const page = render("https://rundata.re", at, NOW);
     expect(TITLE.length).toBeLessThanOrEqual(60);
     expect(page).toContain(`<title>${TITLE}</title>`);
-    expect(page).toContain("<h1>Prix des carburants à La Réunion, octobre 2026</h1>");
+    expect(page).toContain('<h1>Prix des carburants à La Réunion, octobre 2026 <span class="n974">974</span></h1>');
     // Marketing's sentence, its end dropped when it would not fit in what search engines show.
     expect(descriptionOf(prix)).toBe("Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), gazole 1,80 €/L (+0,12 €), bouteille de gaz 20,81 €. Fixés par le préfet.");
     for (const depuis of ["2026-09-01", "2026-02-01", "2026-12-01"]) expect(descriptionOf({ ...prix, depuis }).length).toBeLessThanOrEqual(160);
@@ -200,7 +200,7 @@ describe("the prefect's fuel prices", () => {
     expect(page).not.toContain("pas encore publiés");
     // On the 2nd of November, before the new order: October's, said to be in force since the 1st of October.
     const early = render("https://rundata.re", at, new Date("2026-11-02T06:00:00Z"));
-    expect(early).toContain("<h1>Prix des carburants à La Réunion, octobre 2026</h1>");
+    expect(early).toContain('<h1>Prix des carburants à La Réunion, octobre 2026 <span class="n974">974</span></h1>');
     expect(early).toContain("Les prix maximum de novembre 2026 ne sont pas encore publiés ou pas encore lus : voici ceux en vigueur depuis le 1er octobre 2026.");
   });
 
@@ -242,7 +242,7 @@ describe("a new order read before its 1st", () => {
   it("is announced on the page above the month in force, never said in force before the 1st at 0 h", () => {
     for (const t of ["2025-10-31T05:00:00Z", "2025-10-31T09:00:00Z", "2025-10-31T19:59:59Z"]) {
       const page = render("https://rundata.re", at(nov()), new Date(t));
-      expect(page, t).toContain("<h1>Prix des carburants à La Réunion, octobre 2025</h1>");
+      expect(page, t).toContain('<h1>Prix des carburants à La Réunion, octobre 2025 <span class="n974">974</span></h1>');
       // The page is put in French typography as it is sent (web/typo.ts), not here.
       expect(page, t).toContain(`<p class="lead">${ANNONCE.replaceAll("\u00a0;", " ;")}.</p><p class="lead">En vigueur jusqu&#39;au 31 octobre : sans plomb 1,56 €/litre ; gazole 1,24 €/litre ; gaz 19,09 € la bouteille de 12,5 kg.</p>`);
       expect(page, t).toContain('<th scope="col">Au 1er novembre 2025</th><th scope="col">Jusqu&#39;au 31 octobre 2025</th>');
@@ -256,7 +256,7 @@ describe("a new order read before its 1st", () => {
 
   it("is in force from the 1st at 0 h, Réunion time, with no new reading", () => {
     const page = render("https://rundata.re", at(nov()), new Date("2025-10-31T20:00:00Z"));
-    expect(page).toContain("<h1>Prix des carburants à La Réunion, novembre 2025</h1>");
+    expect(page).toContain('<h1>Prix des carburants à La Réunion, novembre 2025 <span class="n974">974</span></h1>');
     expect(page).toContain('<p class="lead">Prix maximum depuis le 1er novembre 2025 : sans plomb 1,54 €/litre (−0,02 €) ; gazole 1,23 €/litre (−0,01 €)');
     expect(page).not.toContain("au 1er novembre,");
     expect(carburantsPage("https://rundata.re", at(nov()), new Date("2025-10-31T20:00:00Z"))).toContain("depuis le 1er\u00a0novembre 2025 : sans plomb 1,54\u00a0€/litre (−0,02\u00a0€)");

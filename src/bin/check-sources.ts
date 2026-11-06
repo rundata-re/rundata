@@ -303,7 +303,7 @@ export const PAGES: PageCheck[] = [
       const l = local(now);
       if (l.day < 3) return [];
       const month = `${MONTHS[l.month - 1]} ${l.year}`;
-      return html.includes(`<h1>Prix des carburants à La Réunion, ${month}</h1>`) ? [] : [{ point: "/carburants", motif: `le titre ne dit pas ${month}` }];
+      return html.includes(`<h1>Prix des carburants à La Réunion, ${month} <span class="n974">974</span></h1>`) ? [] : [{ point: "/carburants", motif: `le titre ne dit pas ${month}` }];
     },
   },
   { path: "/trafic", max: 2 },

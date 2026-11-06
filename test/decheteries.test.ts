@@ -60,7 +60,7 @@ describe("the déchèteries of the West", () => {
     const page = decheteriesPage("https://rundata.re", copy, NOW);
     expect(TITLE.length).toBeLessThanOrEqual(60);
     expect(page).toContain(`<title>${TITLE.replace(/'/g, "&#39;")}</title>`);
-    expect(page).toContain("<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest</h1>");
+    expect(page).toContain('<h1>Les déchèteries de l&#39;île, et les bennes en direct dans l&#39;Ouest <span class="n974">974</span></h1>');
     for (const id of ["saint-paul", "le-port", "la-possession", "les-trois-bassins", "saint-leu"]) expect(page).toContain(`<section id="${id}"`);
     expect(TITLE).toBe("Déchèteries 974 : adresses, bennes en direct dans l'Ouest");
     expect(descriptionOf(sitesNow(etats, NOW))).toBe("Déchèteries de La Réunion (974) : où déposer déchets verts, encombrants, gravats, dans toute l'île ; bennes pleines en direct dans l'Ouest (TCO).");

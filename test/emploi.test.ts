@@ -350,7 +350,7 @@ describe("the tool emploi and the page /emploi", () => {
     const d = await buildEmploi(cache(), NOW);
     // The page's copy built 4 minutes after the feed's read: the feed's time is said.
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(Date.parse(c.lu) + 4 * 60_000), stale: false }, NOW);
-    expect(page).toContain("<h1>Offres d'emploi public à La Réunion</h1>");
+    expect(page).toContain("<h1>Offres d'emploi public à La Réunion <span class=\"n974\">974</span></h1>");
     expect(page).toContain("20 offres ouvertes à la candidature suivies par rundata.re sur Choisir le service public, dernière lecture le 29/10 à 12:45. Le site en affiche 628 pour La Réunion.</p>");
     const first = page.indexOf('<ul class="rows eau" id="offres">');
     expect(first).toBeGreaterThan(page.indexOf("</h1>"));

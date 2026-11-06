@@ -452,7 +452,7 @@ describe("coupures d'eau", () => {
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
     const sd = page("saint-denis");
     expect(sd).toContain("<title>Coupure d&#39;eau Saint-Denis aujourd&#39;hui : avis en cours · 974</title>");
-    expect(sd).toContain("<h1>Coupures d'eau à Saint-Denis</h1>");
+    expect(sd).toContain("<h1>Coupures d'eau à Saint-Denis <span class=\"n974\">974</span></h1>");
     expect(sd).toContain("ROUTE DE BOIS DE NEFLES");
     expect(sd).toContain("<b>Dionéo</b> distribue l'eau à Saint-Denis");
     expect(sd).toContain(`<li><a href="/coupures-eau">Coupures d'eau</a></li><li aria-current="page">Saint-Denis</li>`);
@@ -481,7 +481,7 @@ describe("coupures d'eau", () => {
     // Never said of a distributor that it does not publish (a notice may be on paper, at the mairie): only that rundata.re does not read it.
     expect(lt).not.toMatch(/ne publie pas/);
     expect(lt).not.toContain("Aucune coupure d&#39;eau annoncée");
-    expect(page("le-port")).toContain("<h1>Coupures d'eau au Port</h1>");
+    expect(page("le-port")).toContain("<h1>Coupures d'eau au Port <span class=\"n974\">974</span></h1>");
     expect(waterLive(pageOf("salazie")!, { coupures })).toMatchObject({ valeur: "Eau à ne pas boire" });
     expect(waterLive(pageOf("saint-paul")!, { coupures: night })).toMatchObject({ valeur: "1 avis de coupure" });
     // The notice of the 23rd is in Saint-Paul: not on Les Trois-Bassins' page.

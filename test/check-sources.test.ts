@@ -158,6 +158,7 @@ describe("the daily check of the sources", () => {
     expect(checkPage(page("/trafic"), 200, "", fresh.replace("Rien à signaler.", "Le flux en direct des bus ne répond pas pour le moment."), NOW).map((x) => x.motif)).toEqual(["dit « ne répond pas »"]);
     expect(checkPage(page("/vigilance"), 200, "", fresh.replace("2026-10-24T02", "2026-10-23T22"), NOW).map((x) => x.motif)).toEqual(["donnée d'il y a 4,4 h (seuil 2 h)"]);
     expect(checkPage(page("/carburants"), 200, "", "<h1>Prix des carburants à La Réunion, septembre 2026</h1>", NOW).map((x) => x.motif)).toEqual(["le titre ne dit pas octobre 2026"]);
+    expect(checkPage(page("/carburants"), 200, "", '<h1>Prix des carburants à La Réunion, octobre 2026 <span class="n974">974</span></h1>', NOW)).toEqual([]);
     expect(checkPage(page("/volcan"), 200, "", `${fresh}<p>Accès à l'Enclos : à vérifier sur reunion.gouv.fr</p>`, NOW).map((x) => x.motif)).toEqual(["niveau ou accès à l'Enclos « à vérifier »"]);
   });
 

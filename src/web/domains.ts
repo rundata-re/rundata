@@ -131,10 +131,13 @@ export const agendaNotes = (data: Cached<AgendaAnswer> | null | undefined, now: 
 const warnings = (list: string[]) =>
   list.length ? `<div class="card warn">${icon("alert")}<h3>À savoir</h3><ul class="plain">${list.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>` : "";
 
-/** The connector, at the end of every domain page. */
+/**
+ * The connector, at the end of every domain page. A tool's name may be cut after each « _ » (annuaire_services_ /
+ * publics) rather than inside a word on a narrow screen: <wbr> adds no character, a copy of the name is the name.
+ */
 const connectorCta = (tool: string, what: string) => `<section aria-labelledby="h-ia">
   <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
-  <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${esc(tool)}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
+  <p>Avec le connecteur, votre assistant lit lui-même ces données (outil <code>${esc(tool).replaceAll("_", "_<wbr>")}</code>), et toutes les autres de l'île : sorties, randos, météo, routes, volcan, air, électricité, bus, services publics, terrain. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p></div>
 </section>`;
 
 /**

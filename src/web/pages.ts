@@ -364,7 +364,7 @@ text-align:center;background:#0f1d2c;border:1px solid rgb(255 255 255/.07);trans
 .sheet .kcomm[aria-current]{background:color-mix(in srgb,var(--k) 14%,#0f1d2c);border-color:color-mix(in srgb,var(--k) 45%,transparent)}
 .sheet .groupe .kb,.sheet .kcomm .kb{width:1.75rem;height:1.75rem;border-radius:9px}
 .sheet .groupe .kb .ic,.sheet .kcomm .kb .ic{width:1.05rem;height:1.05rem}
-.sheet .groupe .gn{display:block;text-align:left}
+.sheet .groupe .gn{display:block;text-align:left;hyphens:auto;-webkit-hyphens:auto}
 .sheet .cyc{margin:-.45rem 0 0;font-size:.88rem;color:var(--on-night-muted)}.sheet .cyc a{color:var(--on-night);font-weight:600}
 @media (prefers-reduced-motion:reduce){.grid a,.grid a:hover,.grid a:active{transform:none;transition:none}}
 .sheet .connect{background:rgb(255 255 255/.06);border-color:rgb(255 255 255/.1);box-shadow:none}
@@ -518,7 +518,7 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 .tile h3 a{color:inherit;text-decoration:none}
 .tile h3 a::after{content:"";position:absolute;inset:0;border-radius:22px;z-index:1}
 .tile h3 a:focus-visible{outline:none}.tile:has(h3 a:focus-visible){outline:2px solid var(--link);outline-offset:2px}
-.tv{font:800 clamp(1.15rem,4.6vw,1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}.tv .nw{white-space:nowrap;overflow-wrap:normal}
+.tv{font:800 clamp(1.15rem,4.6vw,1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}.tv .nw{white-space:nowrap;overflow-wrap:normal}@media (max-width:22.2rem){.tv{font-size:1rem}}
 .tv .vg,.tv .aq{font:inherit;font-size:.95rem;padding:.15rem .6rem;vertical-align:.12em}
 .td{font-size:.84rem;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.td.all{display:block;overflow:visible}
 .tq{font-size:.92rem;font-style:italic;align-self:flex-start;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}
@@ -935,7 +935,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 table.drought{width:100%;border-collapse:collapse;font-size:.92rem}section.guide{max-width:46rem}section.guide h3{margin-top:1.6rem;scroll-margin-top:1rem}section.guide[id]{scroll-margin-top:1rem}section.guide li{margin-block:.25rem}section.guide pre{background:var(--surface-2,var(--surface));border:1px solid var(--line);border-radius:12px;padding:.9rem;overflow-x:auto;font:.8rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}section.guide code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}section.guide pre code{overflow-wrap:normal}.callout{border-left:4px solid var(--accent)}table.niveaux th[scope=row]{font-weight:600}@media (max-width:640px){table.niveaux thead{display:none}table.niveaux tr{display:block;border-top:1px solid var(--line);padding:.55rem 0}table.niveaux tbody tr:first-child{border-top:0}table.drought.niveaux td:not([data-label]){display:none}table.drought.niveaux th,table.drought.niveaux td{display:block;border:0;padding:.1rem .25rem}table.niveaux td::before{content:attr(data-label) "\\00a0: ";color:var(--muted)}}.etat{display:inline-block;border-radius:999px;padding:.05rem .55rem;font-size:.8rem;font-weight:600;white-space:nowrap;text-decoration:none;border:1px solid var(--line)}.etat.lu{background:var(--vert);color:var(--vert-ink);border-color:var(--vert)}.etat.bientot{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}.etat.demande{background:var(--surface);color:var(--link)}table.passe caption{text-align:left;color:var(--muted);font-size:.85rem;padding:0 .35rem .4rem}table.passe{font-size:.82rem}table.passe th,table.passe td{padding:.4rem .25rem}table.passe td{white-space:nowrap;font-variant-numeric:tabular-nums}table.drought tr.past{color:var(--muted)}
 table.histo small{display:block}table.colle th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
 /* An establishment's formations, a table each: the same columns from one table to the next. */
-table.psup{table-layout:fixed}table.psup thead th:nth-child(2){width:4.2rem}table.psup thead th:nth-child(3){width:5.4rem}
+table.psup{table-layout:fixed}table.psup tbody th{hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}table.psup thead th:nth-child(2){width:4.2rem}table.psup thead th:nth-child(3){width:5.4rem}
 /* A lycée's name and IPS above the table of its voies, in the commune's card of /ecoles. A card's details no wider
    than the card, so that a table wider than a phone scrolls in it instead of widening the page. */
 .kind h5{margin:.8rem 0 .2rem;font:600 .9rem system-ui,sans-serif}.card>details{min-width:0}

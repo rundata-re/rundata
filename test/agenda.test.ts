@@ -1406,10 +1406,20 @@ describe("agenda", () => {
       return f ? new Response(bytes(f)) : new Response("", { status: 503 });
     });
     const fresh = new Cache(new MemoryStore(), () => t);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const [kept, none] = await Promise.all([gather(c, new Date(t), 100), gather(fresh, new Date(t), 100)]);
     expect(kept.find((g) => g.agenda.id === "kabardock")?.value?.stale).toBe(true);
     expect(none.find((g) => g.agenda.id === "bisik")?.value).toBeUndefined();
     expect(none.find((g) => g.agenda.id === "cinor")?.value?.value.length).toBeGreaterThan(0);
+    // Its last copy served as planned: a line of the log; nothing to serve (in the empty store): an error.
+    const said = (spy: typeof log, id: string) => spy.mock.calls.map((c) => String(c[0])).filter((l) => l.includes(`(${id}) trop lente`));
+    expect(said(log, "kabardock")).toEqual(["source salles_spectacle (kabardock) trop lente : dernière copie"]);
+    expect(said(error, "kabardock")).toEqual(["source salles_spectacle (kabardock) trop lente"]);
+    expect(said(error, "bisik")).toEqual(["source salles_spectacle (bisik) trop lente"]);
+    expect(error.mock.calls.some((c) => String(c[0]).includes("dernière copie"))).toBe(false);
+    log.mockRestore();
+    error.mockRestore();
   });
 
   it("serves an agenda's last copy after a short wait, and waits longer only for one without a copy", async () => {

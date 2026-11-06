@@ -359,7 +359,10 @@ async function read(cache: Cache, now: Date, deadlineMs: number, graceMs: number
         console.error(`source ${agenda.source.id} (${agenda.id}) indisponible:`, why(err));
       }));
       const old = last(key(agenda));
-      console.error(`source ${agenda.source.id} (${agenda.id}) trop lente${old ? " : dernière copie" : ""}`);
+      // Its last copy served, as planned, while the reading goes on: a line of the log, not an error, which would drown
+      // the agendas that failed (six error lines in ten on 06/11/2026). Without a copy, nothing of it is shown: an error.
+      if (old) console.log(`source ${agenda.source.id} (${agenda.id}) trop lente : dernière copie`);
+      else console.error(`source ${agenda.source.id} (${agenda.id}) trop lente`);
       return { agenda, value: old };
     } catch (err) {
       if (err instanceof Postponed) {

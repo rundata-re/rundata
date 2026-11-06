@@ -290,7 +290,7 @@ function build() {
 </div></div>`;
   const carte = `<section aria-labelledby="h-carte"><h2 id="h-carte">Sur la carte</h2>${map()}</section>`;
   const reste = `<section aria-labelledby="h-communes"><h2 id="h-communes">Par commune</h2>${table()}
-  <p><a href="/#assistant">Les antennes près de votre adresse : demandez à votre IA →</a></p></section>
+  <p><a href="/mcp">Les antennes près de votre adresse : demandez à votre IA →</a></p></section>
 <section aria-labelledby="h-src"><h2 id="h-src">À savoir</h2>
   <p class="note">${esc(T.note)}<a href="https://www.cartoradio.fr" rel="noopener">cartoradio.fr</a>.</p>`;
   return { band, carte, reste };

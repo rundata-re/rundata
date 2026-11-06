@@ -76,7 +76,7 @@ describe("the weather's field (marketing, 06/11/2026)", () => {
     const page = meteoPage("https://rundata.re", null, NOW);
     expect(page).toContain(`<label class="champ-m" for="filtre">Météo d'un lieu : commune, quartier, sommet</label><span class="search">`);
     expect(page).toContain(`<input id="filtre" type="search" placeholder="Ex. : Cilaos, le Maïdo" autocomplete="off">`);
-    expect(page).toContain(`<p class="note" id="rien" hidden>Pas de page météo pour « <span id="rien-q"></span> ». Essayez une commune proche, ou posez la question à votre IA avec le <a href="/mcp">connecteur rundata.re</a>.</p>`);
+    expect(page).toContain(`<div class="rien" id="rien" hidden><p class="note">Pas de page météo pour « <span id="rien-q"></span> ». Choisissez la commune du lieu : sa page donne la mesure de la station la plus pertinente et la prévision.</p>`);
     expect(page).not.toContain("2 000 lieux");
   });
 });

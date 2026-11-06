@@ -731,6 +731,7 @@ padding:.2rem 1rem;max-width:28rem;box-shadow:var(--shadow);color:var(--muted)}
 .chips{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.45rem}
 /* The home page's field « Aller à… » (menu.ts), not the button « Y aller » (.aller): its label above it, the pages found below it. */
 .champ{display:block}.champ label,.champ-m{display:block;font-weight:700;margin-bottom:.4rem}.champ .search{margin:0}.champ .chips{margin:.7rem 0 0}.champ .note{margin:.6rem 0 0}
+.rien .chips{margin:.6rem 0}.places:has(+.rien:not([hidden])){display:none}
 .chips a{display:block;padding:.4rem .9rem;border-radius:999px;background:var(--surface);border:1px solid var(--line);color:var(--ink);
 text-decoration:none;font-size:.95rem;transition:border-color .15s,transform .15s}
 .chips a:hover{border-color:var(--accent);color:var(--link);transform:translateY(-1px)}
@@ -1704,13 +1705,18 @@ export function placeLinks(except?: string, hubs = false): string {
       `<input id="filtre" type="search" placeholder="Saint-Leu, Cilaos, le volcan…" autocomplete="off"></label>`
     : `<label class="champ-m" for="filtre">Météo d'un lieu\u00a0: commune, quartier, sommet</label>` +
       `<span class="search">${icon("search")}<input id="filtre" type="search" placeholder="Ex.\u00a0: Cilaos, le Maïdo" autocomplete="off"></span>`;
+  // When no chip has the name (06/11/2026): the communes, outside `.places` so that the filter leaves them shown;
+  // the script only shows `#rien` and writes what was typed in `#rien-q`.
+  const communes = `<ul class="chips">${others.filter((p) => p.commune).map(li).join("")}</ul>`;
   const none = hubs
-    ? "Pas de page pour ce nom : votre assistant, lui, connaît plus de 2 000 lieux de l'île."
-    : `Pas de page météo pour «\u00a0<span id="rien-q"></span>\u00a0». Essayez une commune proche, ou posez la question à votre IA avec le <a href="/mcp">connecteur rundata.re</a>.`;
+    ? `<p class="note">Pas de page pour «\u00a0<span id="rien-q"></span>\u00a0». Choisissez la commune du lieu\u00a0:</p>${communes}` +
+      `<p class="note">Pour un lieu-dit, votre assistant connaît plus de 2\u00a0000 lieux de l'île\u00a0: <a href="/mcp">brancher mon IA →</a></p>`
+    : `<p class="note">Pas de page météo pour «\u00a0<span id="rien-q"></span>\u00a0». Choisissez la commune du lieu\u00a0: sa page donne la mesure de la station la plus pertinente et la prévision.</p>${communes}` +
+      `<p class="note"><a href="/meteo#stations">Toutes les stations de mesure, commune par commune\u00a0: sur la page Météo →</a></p>`;
   return field +
     `<div class="places"><h3>${except ? "Les communes" : "Les 24 communes"}</h3><ul class="chips">${others.filter((p) => p.commune).map(li).join("")}</ul>` +
-    `<h3>Cirques, volcan, plages</h3><ul class="chips">${others.filter((p) => !p.commune).map(li).join("")}</ul>` +
-    `<p class="note" id="rien" hidden>${none}</p></div>`;
+    `<h3>Cirques, volcan, plages</h3><ul class="chips">${others.filter((p) => !p.commune).map(li).join("")}</ul></div>` +
+    `<div class="rien" id="rien" hidden>${none}</div>`;
 }
 
 const WEATHER_NOTES = `<section aria-labelledby="h-lire">
@@ -1909,7 +1915,7 @@ ${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p 
 </section>
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur la météo de l'île</h2>
-  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>meteo_actuelle</code> et <code>prevision_meteo</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>meteo_actuelle</code> et <code>prevision_meteo</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 ${WEATHER_NOTES}`;
@@ -2137,7 +2143,7 @@ ${cloudSea}
 ${nightCard}
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur la météo ${esc(de(p.nom))}</h2>
-  <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « il pleut ${esc(a(p.nom))} ? », il ira chercher lui-même la mesure, avec son heure et sa source. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
+  <p>Branchez le connecteur une fois sur ChatGPT, Claude ou Le Chat : à chaque « il pleut ${esc(a(p.nom))} ? », il ira chercher lui-même la mesure, avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 ${sea}
@@ -2319,7 +2325,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
 ${suivi}
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur la vigilance</h2>
-  <p>Avec le connecteur, votre assistant lit lui-même la vigilance de Météo-France (outil <code>vigilance_meteo</code>), et la signale d'office quand vous lui demandez la météo d'un lieu. Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant lit lui-même la vigilance de Météo-France (outil <code>vigilance_meteo</code>), et la signale d'office quand vous lui demandez la météo d'un lieu. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 <section aria-labelledby="h-couleurs">
@@ -2508,7 +2514,7 @@ ${bathingBlock(now, undefined, g)}${g.feuille}
 </section>
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Demandez à votre IA : « la mer est à combien à Saint-Leu ? », « la houle demain à Saint-Pierre ? »</h2>
-  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure la plus proche de la plage, avec sa date, et la houle prévue, étiquetée comme une prévision (outil <code>temperature_mer</code>). Gratuit, sans compte. <a href="/#assistant">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure la plus proche de la plage, avec sa date, et la houle prévue, étiquetée comme une prévision (outil <code>temperature_mer</code>). Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>`;
   return layout(origin, { title, description, path: "/mer", jsonld, alerte }, band, g.ligne + body);

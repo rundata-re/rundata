@@ -343,6 +343,9 @@ background:rgb(255 255 255/.08);border:1px solid rgb(255 255 255/.12);color:#fff
 /* « Menu » under the icon, in the same square (ux, 06/11/2026). */
 .menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 12px/1 system-ui,sans-serif}
 .menu summary .x,.menu[open] summary .g{display:none}.menu[open] summary .x{display:block}
+/* A closed menu's sheet not laid out at all: the browser contains a closed <details>'s content, so the sheet took the
+   button's box for its width and ran past the screen's edge (to 425 px at 320 px with the text at 150 %). */
+.menu:not([open])>.sheet{display:none}
 .menu summary:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .sheet{position:absolute;left:0;right:0;top:100%;background:#071626;
 border-bottom:1px solid rgb(255 255 255/.08);box-shadow:0 30px 60px -20px rgb(0 0 0/.7);max-height:calc(100dvh - 3.6rem);overflow:auto}
@@ -464,7 +467,8 @@ font:800 1.2rem Bricolage,system-ui,sans-serif}
 .tabs input:focus-visible+label{outline:2px solid var(--link);outline-offset:2px}
 .tab{flex-basis:100%;display:none;padding-top:.4rem;font-size:.93rem;line-height:1.55}
 #app-chatgpt:checked~.t-chatgpt,#app-claude:checked~.t-claude,#app-gemini:checked~.t-gemini,#app-meta:checked~.t-meta,#app-lechat:checked~.t-lechat,#app-local:checked~.t-local{display:grid;gap:.6rem}
-.tab a{font-weight:600}
+/* A link written as its address (« chatgpt.com/plugins ») cut where it must, so that it never widens the page. */
+.tab a{font-weight:600;overflow-wrap:anywhere}
 .askbox{display:grid;gap:.6rem;justify-items:start;min-width:0}
 .askt{font:800 clamp(1.4rem,3.6vw,1.8rem)/1.1 Bricolage,system-ui,sans-serif;letter-spacing:-.01em}
 .band .askt{color:#fff}
@@ -533,12 +537,20 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 .th h3{font-size:.95rem;font-weight:700;flex:1;min-width:0}
 .th{flex-wrap:wrap}.th h3{order:1;flex:1 0 100%}.th .go{margin-left:auto}
 @media (min-width:46rem){.th{flex-wrap:nowrap}.th h3{order:0;flex:1}.th .go{margin-left:0}}
+/* A narrow tile (three columns at 768 px with the text at 150 %): its title on its own line, as on a phone, never cut
+   by the tile's edge. In rem, which follows the text's size: at 100 %, only a phone's tiles are narrower, and their title
+   is on its own line already. */
+.tile{container:tuile/inline-size}
+@container tuile (max-width:12rem){.th{flex-wrap:wrap}.th h3{order:1;flex:1 0 100%}.th .go{margin-left:auto}}
 .th .kb{width:2.3rem;height:2.3rem;border-radius:12px}
 .th .go{color:var(--k);font-weight:800}
 .tile h3 a{color:inherit;text-decoration:none}
 .tile h3 a::after{content:"";position:absolute;inset:0;border-radius:22px;z-index:1}
 .tile h3 a:focus-visible{outline:none}.tile:has(h3 a:focus-visible){outline:2px solid var(--link);outline-offset:2px}
-.tv{font:800 clamp(1.15rem,4.6vw,1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}.tv .nw{white-space:nowrap;overflow-wrap:normal}@media (max-width:22.2rem){.tv{font-size:1rem}}
+/* A tile's figure: the size of the screen, never wider than its tile allows (cqi, the tile's width: the same at 100 %,
+   smaller with the text at 150 % in a narrow tile). Its word whole, smaller when the tile is too narrow for it
+   (« défibrillateurs », 7.75 em, in 12.5 % of the tile's width a letter). */
+.tv{font:800 clamp(1.15rem,min(4.6vw,13cqi),1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}.tv .nw{white-space:nowrap;overflow-wrap:normal;font-size:min(1em,12.5cqi)}@media (max-width:22.2rem){.tv{font-size:1rem}}
 .tv .vg,.tv .aq{font:inherit;font-size:.95rem;padding:.15rem .6rem;vertical-align:.12em}
 .td{font-size:.84rem;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.td.all{display:block;overflow:visible}
 .tq{font-size:.92rem;font-style:italic;align-self:flex-start;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}

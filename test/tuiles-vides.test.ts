@@ -79,7 +79,7 @@ describe("a tile with nothing to show", () => {
     expect(tiles.dae).toContain(`<p class="tv">${DAES.length.toLocaleString("fr-FR").replace(/\s/g, "\u00a0")}\u00a0<span class="nw">défibrillateurs</span></p>`);
     // The number and the word never apart, the word never cut, not even where it would overflow.
     expect(tiles.dae).not.toContain("&shy;");
-    expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal}");
+    expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal;");
     expect(tiles.dae).toMatch(/<p class="td all">dans les 24 communes, avec leur accès · Géo'DAE du \d\d\/\d\d<\/p>/);
     expect(tiles.enfants).toContain(`<p class="tv">`);
     for (const k of BUNDLED) expect(tiles[k], k).not.toContain(WAIT);

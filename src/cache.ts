@@ -166,6 +166,8 @@ export interface Cached<T> {
   outdated?: boolean;
   /** With `outdated`: what it is stamped with, none for a copy written before the stamps were kept. */
   stamp?: string;
+  /** When its last refresh failed (`echec`), ms: the breaker holds it until `breakerMs` after (`peek` only). */
+  failedAt?: number;
 }
 
 const FAILURE_BACKOFF_SECONDS = 60;
@@ -315,7 +317,7 @@ export class Cache {
   async peek<T>(key: string, freshAfter?: number): Promise<Cached<T> | undefined> {
     const hit = await this.store.get(key, freshAfter);
     if (unreadable(key, hit, this.version)) return undefined;
-    return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.cost != null && { cost: hit.cost }), ...(outdated(key, hit, this.version) && { outdated: true, ...(hit.version && { stamp: hit.version }) }) };
+    return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.cost != null && { cost: hit.cost }), ...(outdated(key, hit, this.version) && { outdated: true, ...(hit.version && { stamp: hit.version }) }), ...(hit.echec && { failedAt: hit.echec.at }) };
   }
 
   /** The value kept under `key` in the durable store (the Worker's KV), however old: what must outlive a deploy. */

@@ -11,6 +11,7 @@ import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
 import { citation } from "../src/tools/citer.js";
 import { credits } from "../src/tools/format.js";
+import { UpstreamError } from "../src/types.js";
 import { AGENDAS } from "../src/providers/agenda.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import * as metar from "../src/providers/metar.js";
@@ -626,6 +627,26 @@ describe("reading the copies", () => {
     await counted(PAGE_BUDGET, () => measured("web:trafic", async () => ({})));
     expect(costOf("web:trafic")).toBe(0);
     expect(refresh(cache, [{ ...dear, cost: 50 }, { ...dear, key: "web:volcan", cost: 11 }], () => {}, 25)).toEqual(["web:trafic"]);
+  });
+
+  it("leaves out a build that just failed, uncounted, and tries those of another revision the longest ago first", async () => {
+    // The sport's build fails at 12:00 (its source silent): the breaker writes it with its copy, peek says when.
+    let clock = NOW.getTime();
+    const cache = new Cache(new MemoryStore(), () => clock);
+    await cache.get("web:sport", 300, async () => ({}));
+    clock += 400_000;
+    await cache.get("web:sport", 300, async () => { throw new UpstreamError("ffhb", "HTTP 503"); });
+    const peeked = await cache.peek("web:sport");
+    expect(peeked?.failedAt).toBe(clock);
+    const builtAt = NOW.getTime() - 3600_000;
+    const sport = { key: "web:sport", age: Infinity, outdated: true, cost: 40, builtAt, failedAt: peeked!.failedAt, build: async () => ({}) };
+    const agenda = { key: "web:agenda", age: Infinity, outdated: true, cost: 32, builtAt, build: async () => ({}) };
+    // A minute after: the cache would serve the sport's copy without building it, so the events go, alone in the cap.
+    expect(refresh(cache, [sport, agenda], () => {}, 25, clock + 60_000)).toEqual(["web:agenda"]);
+    // The breaker closed: the events, tried an hour before the sport, go first, and the sport waits within the cap.
+    expect(refresh(cache, [sport, agenda], () => {}, 25, clock + 400_000)).toEqual(["web:agenda"]);
+    // The sport tried the longest ago: its turn.
+    expect(refresh(cache, [{ ...sport, failedAt: builtAt - 60_000 }, agenda], () => {}, 25, clock + 400_000)).toEqual(["web:sport"]);
   });
 
   it("says when the place is not found", async () => {

@@ -8,7 +8,7 @@
  * its build took last time is left of the invocation's subrequests.
  */
 import { costOf, left, measured } from "../budget.js";
-import type { Cache, Cached } from "../cache.js";
+import { breakerMs, type Cache, type Cached } from "../cache.js";
 import { distributeur } from "../eau/distributeurs.js";
 import { distanceKm, localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
@@ -626,6 +626,10 @@ export interface Stale {
   outdated?: boolean;
   /** What its build took where it was built, from its copy. */
   cost?: number;
+  /** When its copy was built, ms. */
+  builtAt?: number;
+  /** When its last build failed, ms (cache.ts `echec`): until the breaker closes, its copy is served without one. */
+  failedAt?: number;
 }
 
 /**
@@ -643,14 +647,18 @@ export const AFTER_ANSWER_CAP = 60;
  * jour » until the next one, eleven minutes later. Each only while what its build took (the most of `costOf` and its
  * copy's, else `unknown`) is left, counted with the builds started before it, and within AFTER_ANSWER_CAP with them:
  * one that does not fit waits for a later view. The first always goes within what is left, past the cap if it is
- * dearer, so that none waits for ever. The keys of the builds started.
+ * dearer, so that none waits for ever. One whose last build failed a moment ago is left out, not counted: the cache
+ * would serve its copy without building it (cache.ts, the breaker). Those of another revision go in the order of their
+ * last try, the longest ago first, so that one that keeps failing does not stay first. The keys of the builds started.
  */
-export function refresh(cache: Cache, stale: Stale[], background: Background, unknown: number): string[] {
-  const oldest = stale.filter((s) => !s.outdated).sort((a, b) => b.age - a.age)[0];
+export function refresh(cache: Cache, stale: Stale[], background: Background, unknown: number, now = Date.now()): string[] {
+  const due = stale.filter((s) => s.failedAt == null || now - s.failedAt >= breakerMs(FRESH_SECONDS));
+  const tried = (s: Stale) => s.failedAt ?? s.builtAt ?? 0;
+  const oldest = due.filter((s) => !s.outdated).sort((a, b) => b.age - a.age)[0];
   let room = left();
   let planned = 0;
   const started: string[] = [];
-  for (const s of [...stale.filter((x) => x.outdated), ...(oldest ? [oldest] : [])]) {
+  for (const s of [...due.filter((x) => x.outdated).sort((a, b) => tried(a) - tried(b)), ...(oldest ? [oldest] : [])]) {
     const cost = Math.max(costOf(s.key) ?? 0, s.cost ?? 0) || unknown;
     if (cost > room || (started.length > 0 && planned + cost > AFTER_ANSWER_CAP)) continue;
     room -= cost;
@@ -691,7 +699,7 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
     // Built by another revision: left out, however recent, and brought up to date first (`UPDATING`).
     if (copy?.outdated) {
       leftOut.push({ partie: c.nom, raison: UPDATING, outil: c.outil, page: `${SITE_URL}${c.page}` });
-      if (!(name in held)) due.push({ key: c.key, build: () => c.build(cache, now), age: Infinity, outdated: true, cost: copy.cost });
+      if (!(name in held)) due.push({ key: c.key, build: () => c.build(cache, now), age: Infinity, outdated: true, cost: copy.cost, builtAt: copy.fetchedAt.getTime(), failedAt: copy.failedAt });
       return;
     }
     if (usable(c, copy, now)) {
@@ -699,14 +707,14 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
       // The answer says how fresh it is from what it was served (tools/fraicheur.ts): these copies.
       noteLecture({ key: c.key, fetchedAt: copy.fetchedAt.getTime(), stale: false, freshSeconds: FRESH_SECONDS });
       const age = now.getTime() - copy.fetchedAt.getTime();
-      if (!(name in held) && age >= FRESH_SECONDS * 1000) due.push({ key: c.key, build: () => c.build(cache, now), age, cost: copy.cost });
+      if (!(name in held) && age >= FRESH_SECONDS * 1000) due.push({ key: c.key, build: () => c.build(cache, now), age, cost: copy.cost, builtAt: copy.fetchedAt.getTime(), failedAt: copy.failedAt });
       return;
     }
     leftOut.push({ partie: c.nom, raison: copy ? `copie de ${localTime(copy.fetchedAt)}, trop ancienne` : "pas de copie récente", outil: c.outil, page: `${SITE_URL}${c.page}` });
-    if (!(name in held)) due.push({ key: c.key, build: () => c.build(cache, now), age: copy ? now.getTime() - copy.fetchedAt.getTime() : Infinity, cost: copy?.cost });
+    if (!(name in held)) due.push({ key: c.key, build: () => c.build(cache, now), age: copy ? now.getTime() - copy.fetchedAt.getTime() : Infinity, cost: copy?.cost, builtAt: copy?.fetchedAt.getTime(), failedAt: copy?.failedAt });
   });
   if (!vig) leftOut.push({ partie: "vigilance", raison: mf.enabled() ? "Météo-France ne répond pas" : "vigilance non branchée", outil: "vigilance_meteo", page: `${SITE_URL}/vigilance` });
-  return { copies, leftOut, refreshed: background ? refresh(cache, due, background, COST_UNKNOWN) : [] };
+  return { copies, leftOut, refreshed: background ? refresh(cache, due, background, COST_UNKNOWN, now.getTime()) : [] };
 }
 
 /** The short answer, the tool's default (Claude's directory asks for frugal answers): what it leaves out, and where. */

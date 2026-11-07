@@ -14,7 +14,10 @@
  * was never its latest, and no read can get it back (its API serves the latest only): the run says « image due sautée
  * à la source » in its log line, which counts them, and the map says the gap. In 24 hours to 02/11/2026 23:00 (La
  * Réunion), 3 images of 288 were lost, all so, none to an error. Météo-France's package of the last three images
- * (DPPaquetRadar, 9 to 14 Mo for all its territories) could fill them, at a cost not worth these gaps.
+ * (DPPaquetRadar, 9 to 14 Mo for all its territories) could fill them, at a cost not worth these gaps. A run that read
+ * the radar over LATE_MS after its start may have found the next image out as well: it says « perdue, radar lu trop
+ * tard » instead (36 images of 287 on 06/11/2026, each run of a quarter of an hour waiting two minutes for Vigicrues,
+ * which did not answer, before reading the radar: worker.ts no longer waits for it).
  */
 import { count, unmeasured } from "../budget.js";
 import type { Cache } from "../cache.js";
@@ -41,6 +44,11 @@ const STEP_MS = 5 * 60_000;
  * minutes after the run, before the next run 5 minutes after it.
  */
 export const RETRIES_MS = [60_000, 60_000];
+/**
+ * A read this long after the run's start is late: the image that ends at T was out between T+0:48 and T+2:37 on
+ * 06/11/2026, so the next one may have replaced the image due by then, the run's fault and not Météo-France's.
+ */
+export const LATE_MS = 2 * 60_000;
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export interface Image {
@@ -151,14 +159,16 @@ export function suivant(before: Historique | null, lu: RainGrid | Error, now: Da
  * over 4 minutes old; in the Worker, one more for KV's token when the isolate holds none, and two more for a new token
  * written there when KV holds none either: providers/mf-auth.ts), one write of KV when the history changed. Without
  * the image due (the one that ended 5 minutes before the run's 5 minutes), up to two more reads of the radar, one
- * subrequest each, RETRIES_MS apart (`wait`).
+ * subrequest each, RETRIES_MS apart (`wait`). `clock`, the time of each read, to tell a read late (LATE_MS).
  */
-export async function passage(store: Store, cache: Cache, now = new Date(), long?: Store, wait = sleep, week?: semaine.Stores): Promise<string> {
+export async function passage(store: Store, cache: Cache, now = new Date(), long?: Store, wait = sleep, week?: semaine.Stores, clock = Date.now): Promise<string> {
   const tokens = tokensIssued();
   count();
   const before = await store.get();
   const failed = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
   let kept = false;
+  // How long after the run's start the image kept was read.
+  let late = clock() - now.getTime();
   let lu: RainGrid | Error = await radar.image(cache).then((img) => ((kept = img.stale), grid(img.value, true)), failed);
   // The image due ends at the start of the 5 minutes before the run's: at 13:10:20, the one of 13:00–13:05.
   const due = Math.floor(now.getTime() / STEP_MS) * STEP_MS - STEP_MS;
@@ -177,10 +187,11 @@ export async function passage(store: Store, cache: Cache, now = new Date(), long
     await wait(ms);
     waited += ms;
     again++;
+    const readAt = clock() - now.getTime();
     const read: RainGrid | Error = await radar.read().then((img) => grid(img, true), failed);
     // A newer image wins; an error only replaces an error, the latest one said.
     if (!(read instanceof Error) && (lu instanceof Error || Date.parse(read.fin) > Date.parse(lu.fin))) {
-      [lu, kept] = [read, false];
+      [lu, kept, late] = [read, false, readAt];
       add(read, new Date(now.getTime() + waited));
     } else if (lu instanceof Error) lu = read;
   }
@@ -203,11 +214,14 @@ export async function passage(store: Store, cache: Cache, now = new Date(), long
     }
   }
   const said = lu instanceof Error ? `illisible (${why(lu)})` : `${kept ? "copie gardée, " : ""}image finie à ${lu.fin}`;
-  // An image after the one due, which neither this run nor one before it read: Météo-France skipped it.
+  // An image after the one due, which neither this run nor one before it read: Météo-France skipped it, or the run read
+  // the radar too late, once the next one was out.
   const lastBefore = [...(before?.entrees ?? [])].reverse().find((e): e is Image => !isTrou(e));
   const skipped = !(lu instanceof Error) && Date.parse(lu.fin) > due && !!lastBefore && Date.parse(lastBefore.fin) < due &&
     !(next ?? before)!.entrees.some((e) => !isTrou(e) && Date.parse(e.fin) === due);
-  const dueSaid = behind(lu) ? "toujours absente" : skipped ? `sautée à la source (finie à ${iso(due)})` : "lue";
+  const dueSaid = behind(lu) ? "toujours absente"
+    : skipped ? (late > LATE_MS ? `perdue, radar lu trop tard (+${Math.round(late / 1000)} s ; finie à ${iso(due)})` : `sautée à la source (finie à ${iso(due)})`)
+    : "lue";
   const caught = again ? `, rattrapage : ${again} lecture${again > 1 ? "s" : ""} de plus, image due ${dueSaid}` : skipped ? `, image due ${dueSaid}` : "";
   return `${said}${caught}, ${next ? `${next.entrees.length} entrées écrites` : "rien à écrire"}${longSaid}, jetons Météo-France pris : ${tokensIssued() - tokens}`;
 }

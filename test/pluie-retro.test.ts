@@ -207,8 +207,11 @@ describe("a run of the scheduled event", () => {
 
   // 30/10/2026: 9 images missed in 24 hours, each lost once the next was out. Météo-France serves its latest only.
   describe("without the image due", () => {
-    /** One run at `now` over a history ending at 05:35, the radar answering `answers` in turn (then the last again). */
-    async function run(now: string, answers: (Buffer | number)[]) {
+    /**
+     * One run at `now` over a history ending at 05:35, the radar answering `answers` in turn (then the last again), its
+     * first read `late` ms after the run's start, the others after the waits too.
+     */
+    async function run(now: string, answers: (Buffer | number)[], late = 0) {
       meteofrance.configure({ applicationId: "test" });
       const asked: string[] = [];
       let i = 0;
@@ -222,7 +225,8 @@ describe("a run of the scheduled event", () => {
       const store = { get: async () => kept, put: async (h: Historique) => void (kept = h) };
       const waits: number[] = [];
       const clock = Date.parse(now);
-      const r = await counted(BUILD_BUDGET, () => passage(store, new Cache(new MemoryStore(), () => clock), new Date(clock), undefined, async (ms) => void waits.push(ms)));
+      const elapsed = () => clock + late + waits.reduce((a, b) => a + b, 0);
+      const r = await counted(BUILD_BUDGET, () => passage(store, new Cache(new MemoryStore(), () => clock), new Date(clock), undefined, async (ms) => void waits.push(ms), undefined, elapsed));
       return { said: r.value, used: r.used, asked, waits, kinds: kinds(kept!) };
     }
 
@@ -282,6 +286,28 @@ describe("a run of the scheduled event", () => {
       const r = await run("2026-10-22T05:45:20Z", [500, later]);
       expect(r.asked).toEqual(["500", "05:45"]);
       expect(r.said).toMatch(/^image finie à 2026-10-22T05:45:00Z, rattrapage : 1 lecture de plus, image due sautée à la source \(finie à 2026-10-22T05:40:00Z\), 3 entrées écrites/);
+    });
+
+    // 06/11/2026: 36 images of 287 lost, each run of a quarter of an hour reading the radar two minutes late, once the
+    // next image was out; the log said them skipped by Météo-France.
+    it("says an image lost to a late read as such, never as skipped at the source", async () => {
+      const r = await run("2026-10-22T05:45:20Z", [later], 157_000);
+      expect(r.kinds).toEqual(["05:35", "trou 05:35-05:40", "05:45"]);
+      expect(r.said).toBe("image finie à 2026-10-22T05:45:00Z, image due perdue, radar lu trop tard (+157 s ; finie à 2026-10-22T05:40:00Z), 3 entrées écrites, jetons Météo-France pris : 1");
+      // Within LATE_MS, still Météo-France's skip.
+      expect((await run("2026-10-22T05:45:20Z", [later], 110_000)).said).toContain("image due sautée à la source");
+    });
+
+    it("counts the late read from the one that got the image, after an error and a minute's wait", async () => {
+      const r = await run("2026-10-22T05:45:20Z", [500, later], 85_000);
+      expect(r.said).toMatch(/^image finie à 2026-10-22T05:45:00Z, rattrapage : 1 lecture de plus, image due perdue, radar lu trop tard \(\+145 s ; finie à 2026-10-22T05:40:00Z\), 3 entrées écrites/);
+    });
+
+    it("is run by the scheduled event once the Météo-France token is renewed, never after the slow reads", () => {
+      const worker = readFileSync(new URL("../src/worker.ts", import.meta.url), "utf8");
+      expect(worker).toContain("ctx.waitUntil(Promise.race([token, reads.then(() => {}, () => {})]).then(() => counted(BUILD_BUDGET, () => pluieRetro.passage({");
+      expect(worker.indexOf("tokenDone();")).toBeGreaterThan(worker.indexOf('await meteofrance.keepFresh("cron")'));
+      expect(worker.indexOf("tokenDone();")).toBeLessThan(worker.indexOf("await prefetchForecasts(c)"));
     });
 
     it("reads the radar once only when the image due is there", async () => {

@@ -434,12 +434,16 @@ export default {
     const kv = env.STORE;
     // The AROME grids first; then, with what is left of the invocation, the shared page copies that are due, and the
     // forecast's ensemble with what they left.
+    // The radar's history waits for the Météo-France token only, never for the slow reads after it (web/pluie-retro.ts).
+    let tokenDone = () => {};
+    const token = new Promise<void>((r) => (tokenDone = r));
     // Its own budget, enough for every copy that is due: past it a subrequest is refused here (budget.ts).
     const reads = counted(SCHEDULED_BUDGET, async () => {
       scheduled();
       // The Météo-France token renewed before it is due, here rather than by a question (providers/mf-auth.ts): its
       // log line says when.
       await meteofrance.keepFresh("cron").catch((err) => (console.error("jeton Météo-France : renouvellement impossible", why(err)), null));
+      tokenDone();
       const arome = await prefetchForecasts(c).catch((err) => (console.error("préchargement AROME impossible", why(err)), null));
       const aromeUsed = spent();
       // One listing of KV for both.
@@ -505,11 +509,13 @@ export default {
         .catch((err) => console.error("calendrier FFCK : lecture impossible", why(err))));
     }
     // Every run: the radar's latest image added to its last 6 hours in KV when it is new, or a gap when it cannot be
-    // read or is too old (web/pluie-retro.ts), once the reads above are done. One read of KV; one write when it changed.
+    // read or is too old (web/pluie-retro.ts), once the Météo-France token is renewed, never after the reads above: the
+    // rivers' could take two minutes when Vigicrues did not answer (06/11/2026), and Météo-France, which serves its latest
+    // image only, had put out the next one by then. One read of KV; one write when it changed.
     // About once a quarter of an hour, one more read and write: the 24 hours, an image a quarter of an hour; once an
     // hour, the week and its days besides, outside the run's cost (web/radar-semaine.ts).
     if (kv && radar.enabled()) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, () => pluieRetro.passage({
+      ctx.waitUntil(Promise.race([token, reads.then(() => {}, () => {})]).then(() => counted(BUILD_BUDGET, () => pluieRetro.passage({
         get: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
         put: (h) => kv.put(pluieRetro.KV_KEY, JSON.stringify(h), { expirationTtl: pluieRetro.KV_TTL_SECONDS }),
       }, c, now, {

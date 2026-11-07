@@ -186,9 +186,10 @@ function windMark(x0: number, y0: number, s: StationNow, at?: [number, number]):
  * hidden (`has-…`). Its name for a screen reader says every measure. Out of the Tab order (islandMap's `listed`): the
  * list of the stations under the map gives each one, its measures and its link.
  */
-function station(s: StationNow, named: boolean, rain: number | undefined, hour: boolean, windAt?: [number, number], rainAt?: [number, number]): string {
+function station(s: StationNow, named: boolean, rain: number | undefined, hour: boolean, at: Placed): string {
   const [x, y] = project(s.lon, s.lat);
-  const [rx, ry] = rainAt ?? [x, y];
+  const [tx, ty] = at.t ?? [x, y];
+  const [rx, ry] = at.p ?? [x, y];
   const span = hour ? "1\u202fh" : "6\u202fmin";
   const v = {
     t: s.temperature != null ? thin(deg(s.temperature)) : undefined,
@@ -198,7 +199,7 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
   const has = Object.entries(v).filter(([, x]) => x).map(([k]) => ` has-${k}`).join("");
   const place = `${shortName(s.nom)} · ${metres(s.altitude_m)}`;
   const figure = {
-    t: s.temperature != null && named ? `${Math.round(s.temperature)}°` : undefined,
+    t: tFigure(s, named),
     p: rain != null && rain > 0 && rainSaid(rain, named) ? rainFigure(rain) : undefined,
     v: s.vent != null ? String(s.vent) : undefined,
   };
@@ -209,12 +210,74 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
     `${place} : ${[v.t, v.p, v.v].filter(Boolean).join(", ")}, mesures ${duAt(s.time)}${by(s)}, voir le détail`,
   );
   const shapes =
-    (s.temperature != null ? dot("t", x, y, chip(s.temperature), figure.t) : "") +
-    (rain != null ? (rain > 0 ? dot("p", rx, ry, rainColor(rain), figure.p) : dot("p", x, y, RAIN_DRY, undefined, true)) : "") +
-    (s.vent != null ? windMark(x, y, s, windAt) : "");
+    (s.temperature != null ? dot("t", tx, ty, chip(s.temperature), figure.t) : "") +
+    (rain != null ? (rain > 0 ? dot("p", rx, ry, rainColor(rain), figure.p) : dot("p", rx, ry, RAIN_DRY, undefined, true)) : "") +
+    (s.vent != null ? windMark(x, y, s, at.v) : "");
+  // A touch area per layer, on its dot and shown with it (hits()).
+  const hit = Object.entries(at.hit).map(([l, [hx, hy, hr]]) => `<circle class="hit l-${l}" cx="${hx}" cy="${hy}" r="${hr}" style="fill:transparent;stroke:none"/>`).join("");
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
   return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
-    `<circle class="hit" cx="${x}" cy="${y}" r="${named ? HIT : HIT / 2}" style="fill:transparent;stroke:none"/>${shapes}</a>`;
+    `${hit}${shapes}</a>`;
+}
+
+/** A temperature disc's figure: at a named station only, the others are small dots, told by the bubble. */
+const tFigure = (s: StationNow, named: boolean) => (s.temperature != null && named ? `${Math.round(s.temperature)}°` : undefined);
+
+/** Where a station's marks of each layer are drawn, when not on its place, and its touch area in each layer: x, y, r. */
+interface Placed { t?: [number, number]; p?: [number, number]; v?: [number, number]; hit: Partial<Record<"t" | "p" | "v", [number, number, number]>> }
+
+/**
+ * Two dots of one layer a few hundred metres apart (Grand-Coude and Grand-Galet, 18 units on the map) drew the later
+ * over most of the earlier. Each pair that overlaps goes apart along the line between them, half each, just enough to
+ * touch, and never further from its place than its own radius: a station stays where it is measured, its place under
+ * its own dot, so that no line is needed to tie it (a cluster too tight keeps what is left over).
+ */
+export function nudge(places: [number, number][], r: number[]): [number, number][] {
+  const p = places.map(([x, y]): [number, number] => [x, y]);
+  for (let round = 0; round < 50; round++) {
+    let moved = false;
+    for (let i = 0; i < p.length; i++) {
+      for (let j = i + 1; j < p.length; j++) {
+        const dx = p[j][0] - p[i][0], dy = p[j][1] - p[i][1], d = Math.hypot(dx, dy);
+        const over = r[i] + r[j] - d;
+        if (over <= 0.01) continue;
+        const [ux, uy] = d > 0 ? [dx / d, dy / d] : [1, 0];
+        for (const [k, side] of [[i, -1], [j, 1]] as const) {
+          const ox = p[k][0] + (side * ux * over) / 2 - places[k][0], oy = p[k][1] + (side * uy * over) / 2 - places[k][1];
+          const f = Math.min(1, r[k] / (Math.hypot(ox, oy) || 1));
+          const q: [number, number] = [places[k][0] + ox * f, places[k][1] + oy * f];
+          if (Math.hypot(q[0] - p[k][0], q[1] - p[k][1]) > 0.01) [p[k], moved] = [q, true];
+        }
+      }
+    }
+    if (!moved) break;
+  }
+  return p.map(([x, y]) => [Math.round(x), Math.round(y)]);
+}
+
+/** A mark to keep clear of: a disc (x, y, r), or a wind pill (windMark(), its centre's x and y, null). */
+type Mark = [number, number, number | null];
+
+/** How far `x`, `y` is from a mark's white edge (0 inside it; the page's 4 units of stroke, half outside): a pill is the line between its two round ends, 24 around it. */
+function gap(x: number, y: number, [mx, my, r]: Mark): number {
+  if (r != null) return Math.max(0, Math.hypot(x - mx, y - my) - r - 2);
+  const cx = Math.min(Math.max(x, mx - 22), mx + 26);
+  return Math.max(0, Math.hypot(x - cx, y - my) - 26);
+}
+
+/**
+ * The touch areas of one layer, in the order the marks are drawn: each on its mark, as wide as HIT (half at a dot)
+ * where it covers no mark of the layer drawn before it, else up to the nearest of them, never under its own mark's
+ * size. A named station, drawn last, took with its 66 units the whole of a neighbour's dot (Palmiste Rouge under
+ * Cilaos, Chaudron under Gillot): what is seen is what is touched.
+ */
+function hits(marks: Mark[], own: number[], wide: number[]): [number, number, number][] {
+  return marks.map(([x, y], i) => {
+    const pill = marks[i][2] == null;
+    const cx = pill ? x + 2 : x;
+    const room = marks.slice(0, i).reduce((m, k) => Math.min(m, gap(cx, y, k)), wide[i]);
+    return [cx, y, Math.round(Math.max(own[i], room))];
+  });
 }
 
 /** A rain disc with its figure (dot()): at a named station, or from 1 mm; the others are small dots, told by the bubble. */
@@ -255,16 +318,49 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   const across = r.map((s) => 2 * discR(rainFigure(mm(s)!)));
   // The small dots stay on their place, left free (a dot half under a disc reads as a smudge, and is hard to touch).
   // Their radius with the white edge: 17 and 2 (dot()).
-  const dots = list.filter((s) => mm(s) != null && !r.includes(s)).map((s): [number, number, number] => [...project(s.lon, s.lat), 19]);
+  // Two of them too near apart, by no more than their radius (nudge()).
+  const small = list.filter((s) => mm(s) != null && !r.includes(s));
+  const smallAt = nudge(small.map((s) => project(s.lon, s.lat)), small.map(() => discR()));
+  const dots = smallAt.map(([x, y]): [number, number, number] => [x, y, 19]);
   const rainPlaced = apart(r.map((s) => ({ lon: s.lon, lat: s.lat, label: "", name: s.nom, round: true })), across, 1, across, dots);
-  const rainAt = new Map(r.map((s, i) => [s, rainPlaced[i]]));
+  // A small dot that a disc still covers (a corner with no free way for the disc: Gillot's over La Mare's, 19 units
+  // apart) steps out of it, by no more than its radius, and is drawn over it: its place stays under it.
+  const lifted = new Set<StationNow>();
+  small.forEach((s, i) => {
+    const place = project(s.lon, s.lat);
+    for (const [k, [cx, cy]] of rainPlaced.entries()) {
+      const [x, y] = smallAt[i], d = Math.hypot(x - cx, y - cy), touch = across[k] / 2 + discR();
+      if (d >= touch) continue;
+      const [ux, uy] = d > 0 ? [(x - cx) / d, (y - cy) / d] : [0, 1];
+      const ox = x + ux * (touch - d) - place[0], oy = y + uy * (touch - d) - place[1];
+      const f = Math.min(1, discR() / (Math.hypot(ox, oy) || 1));
+      smallAt[i] = [Math.round(place[0] + ox * f), Math.round(place[1] + oy * f)];
+      lifted.add(s);
+    }
+  });
+  const rainAt = new Map([...r.map((s, i): [StationNow, [number, number]] => [s, rainPlaced[i]]), ...small.map((s, i): [StationNow, [number, number]] => [s, smallAt[i]])]);
   const rainTies = ties(r, rainPlaced);
-  // The named ones last, over the dots.
-  const drawn = list.filter((s) => s.temperature != null || mm(s) != null || s.vent != null);
+  // The temperature's discs the same way.
+  const tPlaced = nudge(t.map((s) => project(s.lon, s.lat)), t.map((s) => discR(tFigure(s, named(s)))));
+  const tAt = new Map(t.map((s, i) => [s, tPlaced[i]]));
+  // The named ones last, over the dots; the dots lifted over a disc after them.
+  const order = (s: StationNow) => (lifted.has(s) ? 2 : named(s) ? 1 : 0);
+  const drawn = list.filter((s) => s.temperature != null || mm(s) != null || s.vent != null).sort((a, b) => order(a) - order(b));
+  // Each layer's touch areas, in that order (hits()).
+  const at = new Map(drawn.map((s): [StationNow, Placed] => [s, { t: tAt.get(s), p: rainAt.get(s), v: windAt.get(s), hit: {} }]));
+  const layer = (l: "t" | "p" | "v", of: StationNow[], mark: (s: StationNow) => Mark, own: (s: StationNow) => number) => {
+    const marks = of.map(mark);
+    hits(marks, of.map(own), of.map((s) => (named(s) ? HIT : HIT / 2))).forEach((h, i) => (at.get(of[i])!.hit[l] = h));
+  };
+  const place = (s: StationNow, m?: [number, number]) => m ?? project(s.lon, s.lat);
+  const rainR = (s: StationNow) => (mm(s)! > 0 && r.includes(s) ? discR(rainFigure(mm(s)!)) : discR());
+  layer("t", drawn.filter((s) => s.temperature != null), (s) => [...place(s, tAt.get(s)), discR(tFigure(s, named(s)))], (s) => discR(tFigure(s, named(s))));
+  layer("p", drawn.filter((s) => mm(s) != null), (s) => [...place(s, rainAt.get(s)), rainR(s)], rainR);
+  layer("v", drawn.filter((s) => s.vent != null), (s) => [...place(s, windAt.get(s)), null], () => 24);
   // The replay's dots, its date, time and what they are (measured or estimated), on the sea at the bottom left, the
   // widest off the coast; shown only while it plays (REJEU_JS).
   const top = `<g class="sts">${windTies ? `<g class="l-v wt" aria-hidden="true">${windTies}</g>` : ""}${rainTies ? `<g class="l-p wt" aria-hidden="true">${rainTies}</g>` : ""}` +
-    `${[...drawn].sort((a, b) => Number(named(a)) - Number(named(b))).map((s) => station(s, named(s), mm(s), hour, windAt.get(s), rainAt.get(s))).join("")}</g>` +
+    `${drawn.map((s) => station(s, named(s), mm(s), hour, at.get(s)!)).join("")}</g>` +
     `<g class="rj-st"></g><g class="rj-t" aria-hidden="true"><text class="rj-d" x="24" y="782"></text><text class="rj-h" x="24" y="846"></text><text class="rj-s" x="24" y="886"></text></g>`;
   // The veil's data: each station's place on the map, altitude and temperature; the script does the rest.
   const voile = JSON.stringify(t.map((s) => [...project(s.lon, s.lat), s.altitude_m, s.temperature]));

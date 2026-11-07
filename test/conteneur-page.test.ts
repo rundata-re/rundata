@@ -70,6 +70,9 @@ describe("small-screen rules on the page's container", () => {
     const s = pleinEcran({ boite: ".b", carte: ".c", barre: ".z", panneau: [".p"], legende: ".c>figcaption" });
     expect(s).toContain("if(t&&!box.contains(t))leave(true)");
     expect(s.match(/leave\(true\)/g)).toHaveLength(1);
+    // Not a link the page held back: a finger's first tap on a station of /meteo opens its bubble, and the full screen
+    // stays (it closed, and the page jumped by 800 px under the bubble).
+    expect(s).toContain('box.addEventListener("click",(e)=>{const a=on&&!e.defaultPrevented&&e.target.closest');
     // Every other way out (the button, Escape, the end of the browser's full screen) puts the page back.
     expect(s).toContain("b.addEventListener(\"click\",()=>on?leave():enter())");
     expect(s).toContain("if(!document.fullscreenElement)leave()");

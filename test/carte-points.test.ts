@@ -51,6 +51,8 @@ describe("the points of the maps, with a mouse and with a finger", () => {
     // times, from the other times and genres (06/11/2026).
     expect(POINTS_SCRIPT).toContain(`const shown=(a)=>{for(let e=a;e&&e.tagName!=="svg";e=e.parentElement)if(getComputedStyle(e).display==="none")return false;return true};`);
     expect(POINTS_SCRIPT).toContain("near=pts().filter(shown).map((a)=>[a,mid(a)])");
+    // A point is where its shown touch area is: a station of /meteo has one per layer, on that layer's mark.
+    expect(POINTS_SCRIPT).toContain(`const mid=(a)=>{const hs=[...a.querySelectorAll(".hit")],h=hs.find(shown)||hs[0];`);
   });
 
   it("zooms a commune's map on too many points under a finger, and lists them otherwise", () => {

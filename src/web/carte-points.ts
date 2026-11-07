@@ -21,7 +21,8 @@
  * With a finger, a point is small and its neighbours close: a tap takes the nearest point within TAP_PX of it, even
  * one whose own hit area is under another's, never one out of the map's frame (a map zoomed in), nor one of a layer
  * the page hides (/evenements' other times and genres: Chrome gives a hidden SVG element its size, and the list then
- * named each venue four times, 06/11/2026). When several are
+ * named each venue four times, 06/11/2026). A point is where its shown touch area is: on /meteo, a station has one per
+ * layer, on that layer's mark (meteo-carte.ts hits()), the others hidden with their layer. When several are
  * that close, a short list of their names offers them; more than LIST_MAX, a map that zooms (it handles `pzoom974` and
  * cancels it) zooms in on the tap instead, until the list is short or it can zoom no more. A drag or a pinch is not a tap.
  *
@@ -70,7 +71,7 @@ export const POINTS_SCRIPT = `(()=>{const maps=[...document.querySelectorAll("sv
 const R=${TAP_PX},LIST=${LIST_MAX},M=${MOUSE_PX},T=${JSON.stringify(MOTS)},mk=(c,t)=>{const e=document.createElement(c);if(t)e.className=t;return e};
 const lines=(a)=>[a.dataset.pn||a.dataset.tp,a.dataset.p2,a.dataset.p3].filter(Boolean);
 const shown=(a)=>{for(let e=a;e&&e.tagName!=="svg";e=e.parentElement)if(getComputedStyle(e).display==="none")return false;return true};
-const mid=(a)=>{const h=a.querySelector(".hit");const r=(h||a).getBoundingClientRect();return r.width?[r.left+r.width/2,r.top+r.height/2]:null};
+const mid=(a)=>{const hs=[...a.querySelectorAll(".hit")],h=hs.find(shown)||hs[0];const r=(h||a).getBoundingClientRect();return r.width?[r.left+r.width/2,r.top+r.height/2]:null};
 const row=(a)=>{const h=a.getAttribute("href")||"";return h.length>1&&h[0]==="#"?document.getElementById(h.slice(1)):null};
 const voir=(t)=>{const d=t.closest("details")||t.querySelector(":scope>details");if(d)d.open=true;if(location.hash!=="#"+t.id){location.hash=t.id;return}t.scrollIntoView({block:"start"});t.style.animation="none";t.offsetWidth;t.style.animation=""};
 const tip=mk("div","ptip");tip.hidden=true;tip.setAttribute("aria-hidden","true");document.body.append(tip);

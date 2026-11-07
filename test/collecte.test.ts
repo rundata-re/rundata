@@ -171,7 +171,11 @@ describe("the tool and the pages", () => {
     expect(page).toContain(`${head}<br><span class="note">tri le lundi, une semaine sur deux (prochain : 16/11)</span></h4>`);
     expect(page).toContain(`${head}<br><span class="note">tri le mardi, une semaine sur deux (prochain : 17/11)</span></h4>`);
     // A heading no other group shares stays as it was.
-    expect(page).toContain("Ordures ménagères le jeudi\u00a0<span class=\"note\">· La\u00a0Possession, 26\u00a0rues</span></h4>");
+    // « Possession » in a <span>: glued to « La », Chrome would cut it with no hyphen, « Posse|ssion ».
+    expect(page).toContain("Ordures ménagères le jeudi\u00a0<span class=\"note\">· La\u00a0<span>Possession,</span> 26\u00a0rues</span></h4>");
+    expect(page).toContain("· Le\u00a0<span>Port,</span> ");
+    expect(page).toContain("· Les\u00a0<span>Trois-Bassins,</span> ");
+    expect(page).not.toMatch(/(La|Le|Les)\u00a0(?!<span>)\p{Lu}/u);
     const heads = page.split('class="card groupe"').slice(1).map((g) => g.split("</summary>")[0]);
     expect(heads.length).toBeGreaterThan(100);
     expect(new Set(heads).size).toBe(heads.length);

@@ -72,6 +72,12 @@ export const diametre = (mw: number) => Math.max(30, 8.26 * Math.sqrt(mw));
 
 const mwText = (mw: number) => `${mw >= 10 ? Math.round(mw) : mw >= 1 ? mw.toFixed(1).replace(".", ",") : mw.toFixed(2).replace(".", ",")}\u00a0MW`;
 const installations = (n: number) => `${n.toLocaleString("fr-FR")}\u00a0installation${n > 1 ? "s" : ""}`;
+/**
+ * In a page's text (never an attribute), « installations » in a <span>, with the bracket or comma that follows it: glued to
+ * its number, Chrome would not hyphenate it and left « ) » alone on a line; in the span it writes « installa-tions) ». The
+ * bracket goes in the span too: after « installations</span> », WebKit put « ) » alone on the next line.
+ */
+const installationsCoupables = (html: string) => html.replaceAll(/(\d)\u00a0(installations?[),]?)/g, "$1\u00a0<span>$2</span>");
 const jourMois = (iso: string) => iso.split("-").reverse().join("/");
 export const MIS_A_JOUR = jourMois(INSTALLATIONS.mis_a_jour);
 
@@ -149,7 +155,7 @@ export function installationsReplay(j: Journee): string {
 /** Each commune's line, where its zone on the map leads: its filières, the strongest first. */
 export function installationsList(): string {
   return `<ul class="rows inst">${INSTALLATIONS.communes.map((c) =>
-    `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b><span>${esc(filieresText(c))}</span></li>`).join("")}</ul>`;
+    `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b><span>${installationsCoupables(esc(filieresText(c)))}</span></li>`).join("")}</ul>`;
 }
 
 // ---------------------------------------------------------------- the filières, one by one
@@ -222,7 +228,7 @@ export function filieresSection(j?: Journee): string {
       `<p class="fil-p">Part de la production\u00a0: <b>${pctText((mix.reduce((t, f) => t + Math.max(0, f[g]), 0) / produit) * 100)}</b> sur les dernières 24\u00a0h` +
       `<span class="fil-a" data-k="${FIL_ANNEE[nom].join(",")}" hidden></span>.</p>`;
     return `<li><h3><svg viewBox="-20 -20 40 40" aria-hidden="true"><circle class="${CLASSE[nom]}" r="15"/></svg>${esc(nom[0].toUpperCase() + nom.slice(1))}</h3>` +
-      `${FIL_TEXTE[nom] ? `<p class="fil-t">${FIL_TEXTE[nom]}</p>` : ""}<p>${figures}</p>${part}</li>`;
+      `${FIL_TEXTE[nom] ? `<p class="fil-t">${FIL_TEXTE[nom]}</p>` : ""}<p>${installationsCoupables(figures)}</p>${part}</li>`;
   }).join("");
   return `<section aria-labelledby="h-filieres">
   <div class="sec-h"><p class="eyebrow">Les filières</p><h2 id="h-filieres">Les filières, une par une</h2></div>

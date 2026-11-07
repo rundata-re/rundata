@@ -12,6 +12,7 @@ import { createServer, toutesLesSources } from "../src/server.js";
 import { CATEGORIES } from "../src/web/categories.js";
 import { SHARED } from "../src/web/partagees.js";
 import { chiffresPage } from "../src/web/chiffres.js";
+import { esc } from "../src/web/map.js";
 import { COMMUNES } from "../src/web/commune.js";
 import { typo } from "../src/web/typo.js";
 
@@ -335,6 +336,8 @@ describe("« Toutes les sources » on /chiffres (chiffres.ts, inventaire)", () =
       // Folded under its title, which holds the anchor: a link to it opens it (UNFOLD_SCRIPT, in every page).
       expect(html).toContain(`<details class="pli"><summary><h3 id="sources-${d.categorie}">`);
       expect(html).toContain(`<a href="#sources-${d.categorie}">`);
+      // Its count may go to the next line under 19.9 rem: glued to the domain, Chrome cut « (17 » then « ) ».
+      expect(html).toContain(`<a href="#sources-${d.categorie}">${esc(d.domaine)}</a>\u00a0<wbr class="adr">(${d.sources.length})`);
     }
     const tables = html.slice(html.indexOf('<h2 id="sources">'));
     expect(tables.match(/<details class="pli">/g)!.length).toBe(inventaire(sources).length);

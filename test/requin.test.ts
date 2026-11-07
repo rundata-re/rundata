@@ -87,7 +87,12 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(html).toContain("<p>Le GIP Centre Sécurité Requin ne cite pas de zone dans les autres communes.</p>");
     expect(html).toContain(`<a href="/eau">Qualité de l'eau\u00a0: les contrôles de l'<abbr title="Agence régionale de santé">ARS</abbr>, plage par plage et bassin par bassin →</a>`);
     // Not cut at the end of a line.
-    expect(html).toContain("Arrêté préfectoral n°\u00a0180 du 13/02/2026");
+    expect(html).toContain('Arrêté préfectoral n°\u00a0180 du 13/02/<wbr class="adr">2026');
+    // A date may end a line after its last « / »: Chrome found no break in « (27/10/2026). » and cut it bare.
+    expect(html).toContain('de nouveau ouvert au public, d&#39;après le GIP Centre Sécurité Requin (27/10/<wbr class="adr">2026).');
+    const regle = html.slice(html.indexOf('id="h-regle"'), html.indexOf('id="h-zones"'));
+    expect(regle).toMatch(/\d\d\/\d\d\/<wbr class="adr">\d{4}/);
+    expect(regle).not.toMatch(/\d\d\/\d\d\/\d{4}/);
     expect(html).toContain("bande des 300\u00a0m de tout le littoral");
     expect(html).toContain("art.\u00a02)");
     expect(html.slice(html.indexOf("<body"))).not.toMatch(/n° 180|300 m |art\. 2/);

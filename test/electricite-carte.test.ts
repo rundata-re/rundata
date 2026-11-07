@@ -118,6 +118,16 @@ describe("the map of the power installed", () => {
     for (const [, id] of marks) expect(list).toContain(`id="${id}"`);
   });
 
+  it("lets Chrome hyphenate « installations », glued to its number, in the list and the filières, never in the map's attributes", () => {
+    const list = installationsList();
+    expect(list).toMatch(/\(\d+\u00a0<span>installations\)<\/span>/);
+    expect(list).toMatch(/\(1\u00a0<span>installation\)<\/span>/);
+    expect(list).not.toMatch(/\d\u00a0installation/);
+    // The words of the map's zones, in attributes, stay as they are.
+    expect(map).not.toContain("<span>installation");
+    expect(map).toMatch(/data-tv="[^"]*\(\d+\u00a0installations\)/);
+  });
+
   it("gives each round its group and its MW for the replay, the groups' MW summed from the register", () => {
     const rounds = [...map.matchAll(/<circle class="sh [^"]+" [^>]*\/>/g)].map((m) => m[0]);
     expect(rounds.length).toBe(data.communes.reduce((n, c) => n + c.filieres.length, 0));
@@ -145,13 +155,15 @@ describe("the section « Les filières »", () => {
     const at = ["Bioénergies", "Solaire", "Hydraulique", "Éolien", "Thermique non renouvelable", "Stockage non hydraulique"].map((n) => sec.indexOf(`</svg>${n}</h3>`));
     expect(at.every((i, k) => i > 0 && (k === 0 || i > at[k - 1]))).toBe(true);
     expect(sec).toContain(`<circle class="f-bio" r="15"/></svg>Bioénergies</h3>`);
-    expect(sec).toContain("435\u00a0MW installés (10\u00a0installations)");
-    expect(sec).toContain(`, dont ${data.moins_de_36_kw.installations.toLocaleString("fr-FR")} de moins de 36\u00a0kW`);
+    expect(sec).toContain("435\u00a0MW installés (10\u00a0<span>installations)</span>");
+    expect(sec).toMatch(/\d\u00a0<span>installations,<\/span> dont /);
+    expect(sec).not.toMatch(/\d\u00a0installation/);
+    expect(sec).toContain(`installations,</span> dont ${data.moins_de_36_kw.installations.toLocaleString("fr-FR")} de moins de 36\u00a0kW`);
   });
 
   it("names the biggest installations by their commune and MW, a name only where the register gives one", () => {
     expect(sec).toContain("les plus grandes\u00a0: 211\u00a0MW au Port, 99,5\u00a0MW à Saint-André, 59 et 51,8\u00a0MW à Saint-Louis.");
-    expect(sec).toContain("249\u00a0MW installés en 7\u00a0installations\u00a0: 41\u00a0MW à Saint-Pierre, quatre de 40\u00a0MW à La Possession, deux de 24\u00a0MW à Sainte-Marie.");
+    expect(sec).toContain("249\u00a0MW installés en 7\u00a0<span>installations</span>\u00a0: 41\u00a0MW à Saint-Pierre, quatre de 40\u00a0MW à La Possession, deux de 24\u00a0MW à Sainte-Marie.");
     expect(sec).toContain("8,2\u00a0MW à Saint-André (« P.LO5H-CENTRALE HYDRAULIQUE DE PONT-DU-LOUP-3 », le seul nom que donne le registre), 4,6\u00a0MW à l'Entre-Deux.");
     expect(Object.values(data.grandes).flat().filter((g) => "nom" in g)).toHaveLength(1);
   });

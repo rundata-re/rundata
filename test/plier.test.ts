@@ -157,7 +157,7 @@ describe("long lists folded, the second pages", () => {
       expect(whole.startsWith(`${line}\u00a0; `)).toBe(true);
     }
     // On the island's page, the commune after it, its article kept with its name.
-    expect(page).toMatch(/<h4>Ordures ménagères [^<]*\u00a0<span class="note">· Le\u00a0Port, \d+\u00a0rues<\/span><\/h4>/);
+    expect(page).toMatch(/<h4>Ordures ménagères [^<]*\u00a0<span class="note">· Le\u00a0<span>Port,<\/span> \d+\u00a0rues<\/span><\/h4>/);
     // A commune's page: its streets without a calendar in one group, not folded.
     const port = collectePage(O, NOW, "Le Port");
     expect(port).toMatch(/<div class="card groupe" data-c="Le Port" data-r="[^"]*"><ul class="voies plain">/);

@@ -58,6 +58,8 @@ describe("the guide for those who publish (/publier)", () => {
     expect(page.match(/>Sur demande : écrivez-nous</g)).toHaveLength(3);
     expect(page).toContain(`<a class="etat demande" href="${MAILTO}">`);
     expect(MAILTO).toBe("mailto:contact@rundata.re?subject=Flux%20%C3%A0%20r%C3%A9f%C3%A9rencer");
+    // The address in bold opens the mail; it goes to the next line after its « @ » or a « . », never one letter before its end.
+    expect(page).toContain(`<strong><a href="${MAILTO}" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a></strong>`);
     expect(page).not.toMatch(/\{\{|\*\*|\]\(/);
   });
 

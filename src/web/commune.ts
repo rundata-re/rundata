@@ -34,7 +34,7 @@ import { credit, joursDuJour } from "./data.js";
 import { aCommune, deCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
-import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, HORAIRES_CHARGENT, electriciteLive, listClock, stillToCome, volcanLive } from "./domains.js";
+import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, electriciteLive, HORAIRES_CHARGENT, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
@@ -685,17 +685,17 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       ...(toHall || quartiers ? { more: `${toHall ? `<p class="ya">${toHall}</p>` : ""}${quartiers}` } : {}),
       ...(quartiers ? { full: true } : {}),
       question: `La mairie ${de(p.nom)} est ouverte ?`,
-      foot: fiche ? `<a href="${esc(fiche)}" rel="noopener">Fiche service-public.fr</a>` : `<a href="/mcp">Demandez à votre IA →</a>`,
+      foot: fiche ? `${lienNom(fiche, "Fiche service-public.fr", ' rel="noopener"')}` : `<a href="/mcp">Demandez à votre IA →</a>`,
     },
     ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
     ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: elsewhereLive(p) }] : []),
-    { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `<a href="${sante.GARDE.site}" rel="noopener">Pharmacie de garde : 3237.fr</a>` },
+    { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `${lienNom(sante.GARDE.site, "Pharmacie de garde : 3237.fr", ' rel="noopener"')}` },
     ...(droit
       ? [{
         icon: "scale",
         nom: "Point-justice",
         ...droit,
-        ...(fichePj ? { foot: `<a href="${esc(fichePj)}" rel="noopener">Fiche service-public.fr</a>` } : {}),
+        ...(fichePj ? { foot: `${lienNom(fichePj, "Fiche service-public.fr", ' rel="noopener"')}` } : {}),
       }]
       : []),
     ...(hikes ? [{ icon: "mountain", nom: hikes.nom, href: hikes.href, live: hikes.live, foot: hikes.foot }] : []),
@@ -710,7 +710,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(rents(p) ? [{ icon: "key", nom: "Loyers d'annonce", live: rents(p), foot: `<a href="${loyers.SOURCE.url}" rel="noopener">La carte des loyers de l'ANIL</a>` }] : []),
     ...(connexion(p) ? [{ icon: "wifi", nom: "Fibre", live: connexion(p), foot: `<a href="https://maconnexioninternet.arcep.fr/" rel="noopener">Votre adresse sur Ma connexion internet</a>` }] : []),
     ...(antennas(p) ? [{ icon: "antenna", nom: "Antennes", href: "/antennes", live: antennas(p, l.hs), foot: `<a href="/mcp">Votre adresse : demandez à votre IA →</a>` }] : []),
-    ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `<a href="https://monenfant.fr" rel="noopener">Trouver une crèche\u00a0: monenfant.fr</a>` }] : []),
+    ...(nursery(p) ? [{ icon: "kids", nom: "Crèches", href: "/enfants#creches", live: nursery(p), foot: `${lienNom("https://monenfant.fr", "Trouver une crèche\u00a0: monenfant.fr", ' rel="noopener"')}` }] : []),
     ...(afterBac(p) ? [{ icon: "book", nom: "Après le bac", href: `${ECOLES}#apres-bac`, live: afterBac(p) }] : []),
     ...(roadAccidents(p) ? [{ icon: "car", nom: "Accidents de la route", href: "/trafic#accidents", live: roadAccidents(p) }] : []),
   ];

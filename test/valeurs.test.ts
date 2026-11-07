@@ -25,7 +25,7 @@ describe("/valeurs, what rundata.re stands for", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("welcomes contributions after the open code, on /valeurs and /a-propos, GitHub linked without its address shown", async () => {
-    const welcome = `Les contributions sont les bienvenues. Vous aimez les données, le code ou La Réunion, et vous voulez faire avancer le numérique de l'île\u00a0? Proposez une source, une correction ou une amélioration sur <a href="${GITHUB}">GitHub</a>, ou écrivez à <a href="mailto:contact@rundata.re">contact@rundata.re</a>. Chaque proposition est relue avant d'être mise en ligne.`;
+    const welcome = `Les contributions sont les bienvenues. Vous aimez les données, le code ou La Réunion, et vous voulez faire avancer le numérique de l'île\u00a0? Proposez une source, une correction ou une amélioration sur <a href="${GITHUB}">GitHub</a>, ou écrivez à <a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>. Chaque proposition est relue avant d'être mise en ligne.`;
     const valeurs = await text("/valeurs");
     expect(valeurs).toContain(`<a href="${GITHUB}">Le code sur GitHub</a></p>\n  <p>${welcome}</p>`);
     expect(await text("/a-propos")).toContain(`Son code est libre (licence MIT). ${welcome}</p>\n  <p>Les sources`);

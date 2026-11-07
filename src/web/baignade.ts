@@ -5,6 +5,7 @@
 import { ARRETE, CSR, CSR_URL, noneLine, ruleText, saysBsan, SOURCE, STORIES, T, ZONES, zoneLine, zonesNear, inForce } from "../eau/requin.js";
 import type { Alerte } from "./data.js";
 import { porte, type Porte } from "./aller.js";
+import { lienNom } from "./domains.js";
 import { esc } from "./map.js";
 import { layout, SITE } from "./pages.js";
 
@@ -77,7 +78,7 @@ export function bathingPage(origin: string, now = new Date(), alerte?: Alerte): 
 <section aria-labelledby="h-src"><h2 id="h-src">Sources</h2>
   <p class="note">${inForce(now)
     ? `<a href="${esc(ARRETE.url)}">Arrêté préfectoral n°\u00a0${ARRETE.numero} du ${fr(ARRETE.signe)}</a> (${say(ARRETE.recueil)}), applicable du ${fr(ARRETE.du)} au ${fr(ARRETE.au)}.`
-    : `<a href="https://www.reunion.gouv.fr">reunion.gouv.fr</a>.`} ${SOURCE_HTML}. ${esc(SOURCE.licence)}.</p>
+    : `${lienNom("https://www.reunion.gouv.fr", "reunion.gouv.fr")}.`} ${SOURCE_HTML}. ${esc(SOURCE.licence)}.</p>
 </section>`;
   const jsonld = [
     {

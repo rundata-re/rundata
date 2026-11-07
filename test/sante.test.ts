@@ -66,7 +66,7 @@ describe("the pharmacies and hospitals of FINESS", () => {
   it("are counted on each commune's page, with where to find the duty pharmacy", () => {
     const page = communePage("https://rundata.re", pageOf("saint-leu")!, { place: null });
     expect(page).toMatch(/<h3>Pharmacies<\/h3><p class="tv">\d+ <span class="mc">phar\u00adma\u00adcies<\/span><\/p>/);
-    expect(page).toContain('<a href="https://www.3237.fr/" rel="noopener">Pharmacie de garde : 3237.fr</a>');
+    expect(page).toContain('<a href="https://www.3237.fr/" rel="noopener" aria-label="Pharmacie de garde : 3237.fr">Pharmacie de garde : 3237.<wbr>fr</a>');
   });
 });
 

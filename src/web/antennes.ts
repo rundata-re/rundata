@@ -13,7 +13,7 @@ import { nombre } from "../tools/format.js";
 import * as antennes from "../vie/antennes.js";
 import { dateLongue } from "../vie/internet.js";
 import type { Alerte } from "./data.js";
-import { crumbBar, crumbs, webPage } from "./domains.js";
+import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { MAX_ZOOM } from "./carte-zoom.js";
 import { esc, FOND_ZOOM, islandMap, project, zoomIsland } from "./map.js";
 import { credits, layout, type Live } from "./pages.js";
@@ -292,7 +292,7 @@ function build() {
   const reste = `<section aria-labelledby="h-communes"><h2 id="h-communes">Par commune</h2>${table()}
   <p><a href="/mcp">Les antennes près de votre adresse : demandez à votre IA →</a></p></section>
 <section aria-labelledby="h-src"><h2 id="h-src">À savoir</h2>
-  <p class="note">${esc(T.note)}<a href="https://www.cartoradio.fr" rel="noopener">cartoradio.fr</a>.</p>`;
+  <p class="note">${esc(T.note)}${lienNom("https://www.cartoradio.fr", "cartoradio.fr", ' rel="noopener"')}.</p>`;
   return { band, carte, reste };
 }
 

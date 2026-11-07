@@ -7,7 +7,7 @@ import * as mf from "../providers/vigilance.js";
 import type { Cyclone } from "../providers/prefecture.js";
 import { ecoles, LIMITE, ORSEC, RECTORAT, REGLE, withPrefecture } from "../tools/ecoles.js";
 import type { Alerte } from "./data.js";
-import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
+import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { ask, layout, officielHtml } from "./pages.js";
 
@@ -65,7 +65,7 @@ export function ecolesPage(origin: string, data: Cached<mf.Vigilance> | null, no
   const body = `<section aria-labelledby="h-regle">
   <div class="sec-h"><h2 id="h-regle">Ce que prévoit le plan ORSEC Cyclones</h2></div>
   <div class="card"><ul class="plain">${REGLE.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
-  <p class="note">D'après le <a href="${ORSEC.lien}" rel="noopener">dispositif ORSEC Cyclones de la préfecture</a> (arrêté 2026-182, page mise à jour le ${esc(ORSEC.mis_a_jour)}). Les annonces du jour viennent de la préfecture et du rectorat (<a href="${RECTORAT}" rel="noopener">ac-reunion.fr</a>).</p>
+  <p class="note">D'après le <a href="${ORSEC.lien}" rel="noopener">dispositif ORSEC Cyclones de la préfecture</a> (arrêté 2026-182, page mise à jour le ${esc(ORSEC.mis_a_jour)}). Les annonces du jour viennent de la préfecture et du rectorat (${lienNom(RECTORAT, "ac-reunion.fr", ' rel="noopener"')}).</p>
   <p class="note">${esc(LIMITE)}</p></div>
 </section>
 <section><p><a href="/alerte-cyclone">Alerte cyclonique : ce qui ferme, ce qui continue →</a> · <a href="/cyclones">Les cyclones du bassin →</a> · <a href="/vigilance">La vigilance zone par zone →</a> · <a href="/crues">Les rivières, station par station →</a></p></section>

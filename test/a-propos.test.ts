@@ -102,13 +102,16 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     for (const id of ["pourquoi", "financement", "engagements", "contact"]) expect(page).toContain(`id="${id}"`);
     for (const s of ["projet personnel et bénévole", "habitant de l'île, développeur", "Cloudflare", "Il est gratuit, n'affiche aucune publicité et ne vend aucune donnée.", "Pour les associations à but non lucratif, il est gratuit à vie.", "contact@rundata.re", 'href="/conditions#mentions-legales"', 'href="/presse"', '"@type":"AboutPage"']) expect(page).toContain(s);
     for (const s of ["aucun revenu", "offres gratuites", "restera gratuit"]) expect(page).not.toContain(s);
+    // The address in bold goes to the next line after its « @ » or a « . », never one letter before its end.
+    expect(page).toContain('<b><a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a></b>');
     const main = aProposPage("https://rundata.re").split("<footer")[0];
     // No personal account: GitHub only as the project's own repository, in the bar and in the contributions sentence.
     expect(main).not.toMatch(/bLd75/i);
     expect(main.match(/github\.com\/[^"]*/gi)?.every((u) => u.startsWith("github.com/rundata-re/rundata"))).toBe(true);
-    // About 300 words: the title, its sentence and the four sections, the contributions sentence among them (27/10).
+    // About 300 words: the title, its sentence and the four sections, the contributions sentence among them (27/10). A <wbr>
+    // is not a space: « contact@<wbr>rundata.<wbr>re » is one word.
     const text = (from: string, to: string) => main.slice(main.indexOf(from), main.indexOf(to, main.indexOf(from)));
-    const words = (text("<h1>", "</div></div>") + text("<section style=", "</section>")).replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+    const words = (text("<h1>", "</div></div>") + text("<section style=", "</section>")).replaceAll("<wbr>", "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThan(200);
     expect(words).toBeLessThan(360);
     expect(page).toContain('<a href="/a-propos">qui fait rundata.re\u00a0?</a>');

@@ -14,7 +14,7 @@ import { lisible } from "../propositions.js";
 import { inPeriod, periode, when } from "../tools/agenda.js";
 import type { Alerte } from "./data.js";
 import * as connecteurs from "./connecteurs.js";
-import { crumbBar, crumbs, webPage } from "./domains.js";
+import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { ICS_PATH, JSON_PATH } from "./flux-associations.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
@@ -195,7 +195,7 @@ ${lienForm(PATH)}
   <div class="card fo"><p id="relais">${esc(RELAIS)}</p>
   <p><button type="button" data-copy="relais">Copier le texte</button> <a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(RELAIS)}" target="_blank" rel="noopener">Partager sur WhatsApp</a></p></div>
 </section>
-<p>Une question\u00a0? <a href="mailto:contact@rundata.re">contact@rundata.re</a></p>
+<p>Une question\u00a0? ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}</p>
 ${TURNSTILE_SCRIPT}`;
   return layout(origin, { title: TITLE, description: META, path: PATH, jsonld: [crumbs(origin, "Clubs et associations", PATH), webPage(origin, PATH, TITLE, META, null), howTo(origin)], alerte, sansPartage: true }, band, body);
 }

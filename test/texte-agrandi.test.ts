@@ -143,3 +143,35 @@ describe("the question to an assistant, the text grown by a page zoom", () => {
     expect(CSS.indexOf("@media (max-width:12.5rem){.easy")).toBeGreaterThan(CSS.indexOf("@media (max-width:480px){.ask{gap:.4rem}"));
   });
 });
+
+// A page zoom at 250 % and more: a 320 px screen lays out on 128 px, a 390 px one on 130 px at 300 %, and the gutter and the
+// paddings in px or rem keep their size.
+describe("the whole page, the text grown by a page zoom of 250 % and more", () => {
+  const under9 = CSS.indexOf("@media (max-width:9rem){");
+  const under12 = CSS.indexOf("@media (max-width:12.5rem){.status");
+
+  it("narrows the gutter, the cards, buttons, tabs, pills and tiles under 9 rem", () => {
+    const rules = CSS.slice(under9, CSS.indexOf("}}", under9) + 2);
+    for (const r of [".wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}",
+      ".card{padding:.7rem}", ".tabs label{padding:.3rem .55rem}", ".connect button,.avis button{padding:.55rem .6rem}",
+      ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}", ".pill{padding:.3rem .5rem;gap:.3rem;letter-spacing:0}",
+      ".places{grid-template-columns:minmax(0,1fr)}", ".rows>li{min-width:0}", ".stcard .t{padding:.3rem .5rem;font-size:1.1rem}"])
+      expect(rules).toContain(r);
+    // 144 px: a 430 px screen at 300 % (143 px) is in, a 320 px one at 200 % (160 px) is not.
+    expect(430 / 3).toBeLessThanOrEqual(9 * 16);
+    expect(320 / 2).toBeGreaterThan(9 * 16);
+  });
+
+  it("lays out the status block on its width, its big figure smaller under 12.5 rem and under 9 rem", () => {
+    expect(CSS).toContain("@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}}");
+    expect(CSS.slice(under9)).toContain(".status .big{font-size:1.3rem;overflow-wrap:anywhere}");
+    expect(under12).toBeLessThan(under9);
+  });
+
+  it("comes after the rules it adjusts, at the end of the sheet, each block with its twin on the page's container", () => {
+    for (const r of [".avis button{", ".inst ol{", ".pill{display:inline-flex", ".stcard .t{display:inline-block", ".status{display:grid"])
+      expect(CSS.indexOf(r), r).toBeLessThan(under12);
+    expect(CSS.slice(under12)).toContain("@container page (max-width:12.5rem){.status{");
+    expect(CSS.slice(under9)).toContain("@container page (max-width:9rem){.wrap{");
+  });
+});

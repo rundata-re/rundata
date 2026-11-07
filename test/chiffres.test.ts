@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+import { SCHEDULED_BUDGET, counted, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { buildChiffres, buildEvenements, cadenceEnMots, chiffres, cle, clubs, type Copie, DOMAINES, EVENEMENTS_KEY, evenementsEvery, inventaire, KEY, resume, SANS_MAX, sansAgendas } from "../src/chiffres.js";
 import { compte, FICHES, producteursDe } from "../src/producteurs.js";
@@ -8,6 +10,7 @@ import { PROPOSITIONS } from "../src/providers/agenda-propositions.js";
 import { STATIONS as BORNES } from "../src/providers/irve.js";
 import { createServer, toutesLesSources } from "../src/server.js";
 import { CATEGORIES } from "../src/web/categories.js";
+import { SHARED } from "../src/web/partagees.js";
 import { chiffresPage } from "../src/web/chiffres.js";
 import { COMMUNES } from "../src/web/commune.js";
 import { typo } from "../src/web/typo.js";
@@ -175,6 +178,53 @@ describe("the counts (chiffres.ts)", () => {
     expect(await withEvents({ nombre: 90, sans: ["Le Séchoir", "Léspas", PROPOSITIONS.nom] })).toEqual([undefined, COPIE.evenements]);
     // No agenda answered: no list, no count of it.
     expect(await withEvents({ sans: ["agenda"] })).toEqual([undefined, COPIE.evenements]);
+  });
+
+  it("read neither Le Séchoir's site nor L'Étang-Salé's for the events' copy: the scheduled event's own reading of them, 5 subrequests less in its cold cost", async () => {
+    // Le Séchoir's agenda, and L'Étang-Salé's list with the pages of three of its events, read on 06/11/2026; every
+    // other site does not answer.
+    const fixture = (f: string) => readFileSync(new URL(`./fixtures/agenda/${f}`, import.meta.url));
+    const page = (url: string) => {
+      if (url.includes("lesechoir")) return "sechoir.json";
+      if (url.includes("letangsale")) return url.includes("?limit=") ? "etang-sale.html" : /\/(758|769|773)-/.exec(url) ? `etang-sale_${/\/(758|769|773)-/.exec(url)![1]}.html` : undefined;
+    };
+    const build = async () => {
+      const hosts: Record<string, number> = {};
+      vi.stubGlobal("fetch", async (url: string) => {
+        const host = new URL(url).hostname;
+        hosts[host] = (hosts[host] ?? 0) + 1;
+        const f = page(url);
+        return f ? new Response(fixture(f)) : new Response("", { status: 404 });
+      });
+      const quiet = [vi.spyOn(console, "error").mockImplementation(() => {}), vi.spyOn(console, "log").mockImplementation(() => {})];
+      try {
+        const run = await counted(SCHEDULED_BUDGET, () => {
+          scheduled();
+          return buildEvenements(new Cache(new MemoryStore(), () => NOW.getTime()), NOW);
+        });
+        await run.settled?.();
+        return { used: run.used, sechoir: hosts["www.lesechoir.com"] ?? 0, etangSale: hosts["www.letangsale.fr"] ?? 0 };
+      } finally {
+        vi.unstubAllGlobals();
+        quiet.forEach((spy) => spy.mockRestore());
+      }
+    };
+    const planned = AGENDAS.filter((a) => a.id === "sechoir" || a.id === "etang_sale");
+    expect(planned.map((a) => a.planifie)).toEqual([true, true]);
+    const now = await build();
+    expect(now).toMatchObject({ sechoir: 0, etangSale: 0 });
+    // As before they were planned: read with the others, their list and its pages.
+    planned.forEach((a) => (a.planifie = false));
+    let before;
+    try {
+      before = await build();
+    } finally {
+      planned.forEach((a) => (a.planifie = true));
+    }
+    expect(before).toMatchObject({ sechoir: 1, etangSale: 4 });
+    expect(before.used - now.used).toBe(5);
+    // Its cold cost, 56 while it read them (src/web/partagees.ts), less these.
+    expect(SHARED.find((s) => s.key === EVENEMENTS_KEY)!.cold).toBe(56 - (before.used - now.used));
   });
 
   it("date the copy by its build, not its write: a build that ends the minute after marks only the counts kept", () => {

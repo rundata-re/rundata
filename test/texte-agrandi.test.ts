@@ -176,17 +176,29 @@ describe("the whole page, the text grown by a page zoom of 250 % and more", () =
       ".pill{flex-wrap:wrap;padding:.3rem .5rem;gap:.1rem .3rem;letter-spacing:0}", ".pitch>*,.badge{max-width:100%}", ".badge{letter-spacing:.02em}",
       ".ech-rj input{min-width:0}", ".big.span{font-size:1.5rem}", "table.niveaux{width:100%;table-layout:fixed}",
       ".wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}",
-      ".card{padding:.7rem}:where(ul,ol){padding-left:1.2rem}.kchips{margin-inline:-.5rem;padding-inline:.5rem}}"])
+      ".card{padding:.7rem}", ":where(ul,ol){padding-left:1.2rem}.kchips{margin-inline:-.5rem;padding-inline:.5rem}}"])
       expect(rules).toContain(r);
     expect(rules).not.toContain("anywhere");
     expect(320 / 2).toBeLessThanOrEqual(12.5 * 16);
     expect(CSS.slice(under9, CSS.indexOf("}}", under9) + 2)).toContain(".kch>summary{padding:0 .6rem;flex-wrap:wrap}}");
   });
 
+  // A card folded in a .pli (/collecte's groups, in their commune) had the sides of both: its heading 44 px wide at 128 px
+  // (a 320 px screen at 250 %), each word cut (« Or|dur|es »), and WebKit widened the page to 134 px.
+  it("narrows the sides of a fold and of the cards folded in it", () => {
+    const under12Rules = CSS.slice(under12, CSS.indexOf("}}", under12) + 2);
+    expect(under12Rules).toContain("details.pli{padding:.7rem}details.pli .card{padding:.5rem}");
+    expect(CSS.slice(under9, CSS.indexOf("}}", under9) + 2)).toContain("details.pli,details.pli .card{padding:.4rem}");
+    // After the fold's own rule, which they override with the same weight.
+    expect(CSS.indexOf("details.pli{background:")).toBeLessThan(under12);
+    // 390 px at 100 % is 24.4 rem: none of them applies.
+    expect(390 / 16).toBeGreaterThan(12.5);
+  });
+
   it("comes after the rules it adjusts, at the end of the sheet, each block with its twin on the page's container", () => {
     for (const r of [".avis button{", ".inst ol{", ".pill{display:inline-flex", ".stcard .t{display:inline-block", ".status{display:grid",
       ".plain{list-style:none", ".corps{display:grid", ".ech-g{display:grid", ".vis-grid.phones{", ".fonds label{", ".legend span{",
-      ".aller{display:inline-flex", ".btn{display:inline-flex", ".cs .btn{", ".big.span{", ".kchips{display:flex", ".kch>summary{",
+      ".aller{display:inline-flex", ".btn{display:inline-flex", ".cs .btn{", ".big.span{", ".kchips{display:flex", ".kch>summary{", "details.pli{background:",
       ".pitch{display:grid", ".badge{display:inline-block", ".ech-rj input{", ".table-wrap{overflow-x:auto}"])
       expect(CSS.indexOf(r), r).toBeLessThan(under12);
     expect(CSS.slice(under12)).toContain("@container page (max-width:12.5rem){.status{");

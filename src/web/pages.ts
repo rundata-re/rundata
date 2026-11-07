@@ -320,8 +320,10 @@ export function narrowTwins(css: string): string {
  * table that scrolls aside keeps its columns as wide as their words: in a page body of one column of its width, WebKit
  * narrowed them below (« 2021 » over « 2022 » on /trafic). Gutter and cards are narrower (.5 and .7 rem), lists
  * indented 1.2 rem rather than 40 px, and the map's chips strip follows the gutter: at 160 px a list item in a card had
- * 44 px for its words, and most of them were cut without a hyphen. Placed at the end of the sheet, after the rules they
- * adjust (avis, install), and inside narrowTwins for their twins.
+ * 44 px for its words, and most of them were cut without a hyphen. A card folded in a .pli (/collecte's groups, in their
+ * commune) has the paddings of both: at 128 px its heading had 44 px, each word cut (« Or|dur|es »), and WebKit widened
+ * the page; the fold's and the card's sides are narrower (.7 and .5 rem, .4 rem under 9 rem). Placed at the end of the
+ * sheet, after the rules they adjust (avis, install), and inside narrowTwins for their twins.
  */
 const ZOOM_PAGE_CSS =
   "@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}" +
@@ -330,10 +332,10 @@ const ZOOM_PAGE_CSS =
   ".pill{flex-wrap:wrap;padding:.3rem .5rem;gap:.1rem .3rem;letter-spacing:0}.pitch>*,.badge{max-width:100%}.badge{letter-spacing:.02em}.ech-rj input{min-width:0}" +
   ".big.span{font-size:1.5rem}table.niveaux{width:100%;table-layout:fixed}" +
   ".wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}" +
-  ".card{padding:.7rem}:where(ul,ol){padding-left:1.2rem}.kchips{margin-inline:-.5rem;padding-inline:.5rem}}" +
+  ".card{padding:.7rem}details.pli{padding:.7rem}details.pli .card{padding:.5rem}:where(ul,ol){padding-left:1.2rem}.kchips{margin-inline:-.5rem;padding-inline:.5rem}}" +
   "@media (max-width:9rem){.cta-ia{padding-inline:.45rem}" +
   ".tabs label{padding:.3rem .55rem}.connect{padding-left:.5rem}.connect button,.avis button{padding:.55rem .6rem}" +
-  ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}.badge{letter-spacing:0;max-width:100%;overflow-wrap:anywhere}.pill{overflow-wrap:anywhere}" +
+  "details.pli,details.pli .card{padding:.4rem}.tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}.badge{letter-spacing:0;max-width:100%;overflow-wrap:anywhere}.pill{overflow-wrap:anywhere}" +
   ".places{grid-template-columns:minmax(0,1fr)}.inst ol{padding-left:1rem}" +
   ".status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.3rem;overflow-wrap:anywhere}" +
   ".rows>li{min-width:0}.stcard .t{padding:.3rem .5rem;font-size:1.1rem}" +

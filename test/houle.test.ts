@@ -9,7 +9,8 @@ import { SATELLITES, temperatureMer } from "../src/tools/mer.js";
 import { previsionMeteo } from "../src/tools/prevision.js";
 
 // Recorded from Open-Meteo for 22 to 25/10/2026: the ECMWF wave model at the beaches of the page /mer, and the CAMS
-// UV index over the island's six cells.
+// UV index over the island's six cells. Météo-France's MFWAM at the same beaches, recorded on 08/11/2026 for 08 to
+// 11/11, its times moved to 22 to 25/10 to go with the ECMWF's.
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const json = (f: string) => JSON.parse(String(fixture(f)));
 const NOW = new Date("2026-10-22T06:00:00Z"); // Thursday, 10:00 in Réunion
@@ -51,7 +52,7 @@ let down: RegExp | null;
 
 function upstream(url: string): Response {
   if (down?.test(url)) throw new Error("source down");
-  if (url.includes("marine-api.open-meteo")) return new Response(fixture("openmeteo_houle.json"));
+  if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
   if (url.includes("air-quality-api.open-meteo")) return new Response(fixture("cams_uv.json"));
   if (url.includes("/thredds/dodsC/gridLEODYNRTL3SWW00/")) return new Response(fixture("acspo.ascii"));
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
@@ -84,16 +85,32 @@ describe("houle.parse", () => {
     expect(houle.stepTime(w, 1).toISOString()).toBe("2026-10-21T23:00:00.000Z");
     for (const p of w.points) expect(p.hauteur.every((h) => h != null && h > 0 && h < 10)).toBe(true);
   });
+
+  it("reads MFWAM's mean period and its main swell, WAM's peak period and no swell", () => {
+    const mf = houle.parse(json("openmeteo_houle_mf.json"), "mfwam");
+    const leu = mf.points[8]; // Saint-Leu
+    expect(leu.modele).toBe("mfwam");
+    expect([leu.hauteur[0], leu.periode[0], leu.houle![0]]).toEqual([1.3, 10, 1]); // 1,28 m, 10,1 s, 1,04 m at 0 h
+    expect(leu.periode.every((t) => t != null)).toBe(true);
+    const wam = houle.parse(json("openmeteo_houle.json"));
+    expect(wam.points[8].modele).toBe("wam");
+    expect(wam.points[8].houle).toBeUndefined();
+    expect(wam.debut).toBe(mf.debut);
+  });
 });
 
 describe("the waves in temperature_mer", () => {
   it("answer « la houle à Saint-Leu ? » with a forecast labelled as such, apart from the measured temperature", async () => {
     const r = body(await temperatureMer(await withSea(), "Saint-Leu", NOW));
-    expect(r.resume).toMatch(/Vagues PRÉVUES près de Saint-Leu \(modèle WAM du Centre européen \(ECMWF\), pas une mesure\) : \d+(,\d)? m (du |de l')[a-z-]+, période \d+ s vers 9\u00a0h\u00a0; jusqu'à \d+(,\d)? m/);
+    expect(r.resume).toContain("Vagues PRÉVUES près de Saint-Leu (modèle MFWAM de Météo-France, pas une mesure) : " +
+      "1,2 m du sud, dont 1 m de houle principale, période moyenne 10 s vers 9\u00a0h\u00a0; jusqu'à 1,8 m dimanche 25/10.");
     const s = r.etat_de_la_mer;
     expect(s.nature).toBe("prevision");
-    expect(s.point_du_modele.distance_km).toBeLessThan(10);
-    expect(s.maintenant).toMatchObject({ heures: "jeudi 22/10 9\u00a0h", hauteur: expect.stringMatching(/ m$/), periode: expect.stringMatching(/ s$/) });
+    expect(s.modele).toEqual({ nom: "MFWAM de Météo-France", maille_km: 9, mise_a_jour: "toutes les 12 h" });
+    expect(s.point_du_modele.distance_km).toBeLessThan(6);
+    expect(s.maintenant).toEqual({ heures: "jeudi 22/10 9\u00a0h", hauteur: "1,2 m", houle_principale: "1 m", periode_moyenne: "10 s", venant: "du sud" });
+    expect(s.jours[0]).toMatchObject({ houle_principale: expect.stringMatching(/ m$/), periode_moyenne: expect.stringMatching(/ s$/) });
+    expect(s.jours[0].periode).toBeUndefined();
     expect(s.jours.map((d: { jour: string }) => d.jour)).toEqual(["jeudi 22/10", "vendredi 23/10", "samedi 24/10", "dimanche 25/10"]);
     expect(s.pas_de_3h).toHaveLength(8);
     expect(s.avertissements.join(" ")).toMatch(/PRÉVISION d'un modèle numérique de vagues, pas une mesure.*lagon/);
@@ -101,7 +118,42 @@ describe("the waves in temperature_mer", () => {
     // Never mixed: the measurement stays the satellite's, the forecast has no temperature.
     expect(r.mesure.nature).toBe("mesure_satellite");
     expect(JSON.stringify(s)).not.toMatch(/temperature/);
+    expect(r.sources.map((x: { source: string }) => x.source)).toContain(houle.SOURCE_MF.nom);
+    expect(r.sources.map((x: { source: string }) => x.source)).not.toContain(houle.SOURCE.nom);
+  });
+
+  it("come from WAM where MFWAM has no cell near the coast, with WAM's peak period and no swell apart", async () => {
+    const r = body(await temperatureMer(await withSea(), "Saint-Denis", NOW));
+    expect(r.resume).toMatch(/Vagues PRÉVUES près de Saint-Denis \(modèle WAM du Centre européen \(ECMWF\), pas une mesure\) : \d+(,\d)? m (du |de l')[a-z-]+, période \d+ s vers 9\u00a0h/);
+    expect(r.resume).not.toMatch(/houle principale|période moyenne/);
+    const s = r.etat_de_la_mer;
+    expect(s.modele.nom).toBe("WAM du Centre européen (ECMWF)");
+    expect(s.point_du_modele.distance_km).toBeLessThan(10);
+    expect(s.maintenant).toMatchObject({ periode: expect.stringMatching(/ s$/) });
+    expect(s.maintenant.houle_principale).toBeUndefined();
     expect(r.sources.map((x: { source: string }) => x.source)).toContain(houle.SOURCE.nom);
+    expect(r.sources.map((x: { source: string }) => x.source)).not.toContain(houle.SOURCE_MF.nom);
+  });
+
+  it("come from the other model when one is down, and from none away from its cells", async () => {
+    down = /meteofrance_wave/;
+    const r = body(await temperatureMer(await withSea(), "Saint-Leu", NOW));
+    expect(r.resume).toMatch(/près de Saint-Leu \(modèle WAM du Centre européen \(ECMWF\), pas une mesure\) : \d+(,\d)? m [^,]+, période \d+ s/);
+    down = /ecmwf_wam/;
+    const c = await withSea();
+    expect(body(await temperatureMer(c, "Saint-Leu", NOW)).etat_de_la_mer.modele.nom).toBe("MFWAM de Météo-France");
+    // MFWAM's nearest cell is 16 km off Saint-Denis: no waves rather than another stretch of coast's.
+    expect(body(await temperatureMer(c, "Saint-Denis", NOW)).resume).toMatch(/Pas de prévision de vagues à moins de 15 km de Saint-Denis/);
+  });
+
+  it("read a copy written before MFWAM came as WAM's", async () => {
+    const old = houle.parse(json("openmeteo_houle.json"));
+    for (const p of old.points) delete p.modele;
+    const edge = new EdgeLike();
+    await edge.put("houle:plages", { value: old, fetchedAt: NOW.getTime() });
+    const r = body(await temperatureMer(isolate(edge), "Saint-Leu", NOW));
+    expect(marine()).toBe(0);
+    expect(r.etat_de_la_mer.modele.nom).toBe("WAM du Centre européen (ECMWF)");
   });
 
   it("are left out away from the coast, and said so", async () => {
@@ -109,6 +161,7 @@ describe("the waves in temperature_mer", () => {
     expect(r.etat_de_la_mer).toBeUndefined();
     expect(r.resume).toMatch(/Pas de prévision de vagues à moins de 15 km de Cilaos/);
     expect(r.sources.map((x: { source: string }) => x.source)).not.toContain(houle.SOURCE.nom);
+    expect(r.sources.map((x: { source: string }) => x.source)).not.toContain(houle.SOURCE_MF.nom);
   });
 
   it("still answer without the satellites' copy", async () => {
@@ -123,10 +176,13 @@ describe("the waves in temperature_mer", () => {
   it("go with each point of the tour of the island", async () => {
     const r = body(await temperatureMer(await withSea(), undefined, NOW));
     expect(r.points.every((p: { vagues_prevision?: string }) => /^\d+(,\d)? m /.test(p.vagues_prevision ?? ""))).toBe(true);
-    expect(r.resume).toMatch(/Eau de mer, MESURÉE par satellite\u00a0: .* Vagues PRÉVUES maintenant \(modèle WAM .*pas une mesure\) : Plage de Boucan-Canot \d/);
+    expect(r.resume).toMatch(/Eau de mer, MESURÉE par satellite\u00a0: .* Vagues PRÉVUES maintenant \(modèles MFWAM de Météo-France et WAM du Centre européen \(ECMWF\), pas une mesure\) : Plage de Boucan-Canot \d/);
+    expect(r.resume).toMatch(/Saint-Leu \d+(,\d)? m [^;]*houle principale[^;]*; .*Saint-Denis \d+(,\d)? m [^,;]+, période \d+ s/);
+    expect(r.points.map((p: { vagues_modele?: string }) => p.vagues_modele)).toEqual([...Array(4).fill("MFWAM de Météo-France"), ...Array(2).fill("WAM du Centre européen (ECMWF)")]);
+    expect(r.sources.map((x: { source: string }) => x.source)).toEqual(expect.arrayContaining([houle.SOURCE_MF.nom, houle.SOURCE.nom]));
   });
 
-  it("cost one request for the whole coast cold, three subrequests with the cache, then one, then none", async () => {
+  it("cost one request per model for the whole coast cold, four subrequests with the cache, then one, then none", async () => {
     const edge = new EdgeLike();
     const cache = isolate(edge);
     const cold = await counted(PAGE_BUDGET, async () => {
@@ -135,12 +191,13 @@ describe("the waves in temperature_mer", () => {
       await temperatureMer(cache, undefined, NOW);
     });
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
-    expect(marine()).toBe(1);
+    expect(marine()).toBe(2);
+    expect(fetched.filter((u) => u.includes("marine-api")).map((u) => new URL(u).searchParams.get("models"))).toEqual(["ecmwf_wam", "meteofrance_wave"]);
     expect(edge.ops.filter((k) => k.startsWith("houle:"))).toEqual(["houle:plages", "houle:plages"]); // the miss, the write
     // Another isolate of the same data center: one read of the edge.
     edge.ops = [];
     await temperatureMer(isolate(edge), "Saint-Pierre", NOW);
-    expect(marine()).toBe(1);
+    expect(marine()).toBe(2);
     expect(edge.ops.filter((k) => k.startsWith("houle:"))).toEqual(["houle:plages"]);
     // The same isolate: from memory.
     edge.ops = [];

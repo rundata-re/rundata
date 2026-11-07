@@ -31,8 +31,7 @@ import { qualiteAir, type Amateurs, type Measured } from "../tools/air.js";
 import { calendrier } from "../tools/calendrier.js";
 import { electricite } from "../tools/electricite.js";
 import { pointsOf } from "./electricite-historique.js";
-import * as houle from "../providers/houle.js";
-import { BEACHES, PRODUCTS as SEA_PRODUCTS, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
+import { BEACHES, modelsOf, PRODUCTS as SEA_PRODUCTS, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
 import { islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
@@ -316,12 +315,13 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
   const last = t ? undefined : (await cache.peek<SeaData>("web:mer").catch(() => undefined))?.value;
   const satellites = SEA_PRODUCTS.map((p) => p.source.nom);
   const read = tide.some((g) => g.reading);
+  const lines = BEACHES.map((n) => resolvePlace(n)!.lieu).map((p) => (w ? waveLine(w.value, p.lon, p.lat, now) : null));
   return {
     plages: BEACHES.map((n, i) => {
       const p = resolvePlace(n)!.lieu;
       const r = t?.readings[i].r;
       const before = last?.plages?.find((b) => b.nom === p.nom && b.valeur != null);
-      const l = w ? waveLine(w.value, p.lon, p.lat, now) : null;
+      const l = lines[i];
       return {
         nom: p.nom,
         commune: p.commune,
@@ -336,7 +336,7 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
     ...(read ? { maree: tide.map((g) => gaugeRow(g, now)) } : {}),
     sources: [
       ...(t ? t.used.map((g) => credit(g.source)) : (last?.sources?.filter((s) => satellites.includes(s.source)) ?? [])),
-      ...(w ? [credit(houle.SOURCE)] : []),
+      ...modelsOf(lines.map((l) => l?.at)).map((m) => credit(m.source)),
       ...(read ? [credit(maregraphes.SOURCE)] : []),
     ],
   };

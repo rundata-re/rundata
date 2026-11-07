@@ -55,9 +55,11 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   enfants: 15,
   historique: 5,
   // A place said with its article (« Mesures les plus proches du Maïdo », « PRÉVISION … pour le Piton de la Fournaise »).
-  lieu: 21,
+  // Its sea answer reads the waves of the west and the south from MFWAM, with the main swell (tools/mer.ts).
+  lieu: 22,
   "marches-publics": 5,
-  mer: 5,
+  // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
+  mer: 6,
   meteo: 9,
   randonnees: 15,
   secheresse: 1,

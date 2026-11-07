@@ -2691,9 +2691,10 @@ export function wholeName(text: string): string {
   return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nm">${w}</span>`);
 }
 
-/** Escaped text whose hyphenated names (« Saint-Leu », « L'Étang-Salé ») do not break at the hyphen. */
+/** Escaped text whose hyphenated names (« Saint-Leu », « L'Étang-Salé ») do not break at the hyphen (.nom), but with the text
+ * at 125 % or more on a phone. */
 export function nobreak(text: string): string {
-  return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span style="white-space:nowrap">${w}</span>`);
+  return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nom">${w}</span>`);
 }
 
 /** « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading « avis daté du 05/11/2026 ». */

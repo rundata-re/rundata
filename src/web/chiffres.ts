@@ -40,7 +40,7 @@ function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
     const lecture = d.la_plus_lue
       ? `<p>Relue le plus souvent, ${esc(d.cadence!)}\u00a0: ${esc(d.la_plus_lue)}.</p>`
       : d.cadence === "à chaque version du site" ? "<p>Mises à jour avec le site.</p>" : d.cadence ? `<p>Relues ${esc(d.cadence)}.</p>` : "";
-    return `<details class="pli"><summary><h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>·\u00a0${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3></summary>
+    return `<details class="pli"><summary><h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>· ${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3></summary>
   ${lecture}<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">${esc(d.domaine)}</caption><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
     `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div></details>`;
   });

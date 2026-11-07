@@ -103,7 +103,7 @@ export function render(md: string): string {
           // Its words: the items of its list, up to the next section.
           let n = 0;
           for (let j = i + 1; j < lines.length && !/^## /.test(lines[j]); j++) if (/^- /.test(lines[j])) n++;
-          out.push(`<details class="pli"><summary><h2>${inline(h[2])} <small>·\u00a0${n}\u00a0mots</small></h2></summary>`);
+          out.push(`<details class="pli"><summary><h2>${inline(h[2])} <small>· ${n}\u00a0mots</small></h2></summary>`);
           folding = true;
         } else out.push(`<h2>${inline(h[2])}</h2>`);
         open = true;

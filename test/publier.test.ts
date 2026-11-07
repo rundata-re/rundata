@@ -41,7 +41,7 @@ describe("the guide for those who publish (/publier)", () => {
     expect(page).not.toMatch(/<details class="pli" open/);
     // The levels stay open, their title and their first lines above the tutorials.
     for (const n of [1, 2, 3]) expect(page).toMatch(new RegExp(`<section id="niveau-${n}" class="guide">\\n<h2>`));
-    expect(page).toContain('<section id="glossaire" class="guide">\n<details class="pli"><summary><h2>Les mots du guide <small>·\u00a010\u00a0mots</small></h2></summary>');
+    expect(page).toContain('<section id="glossaire" class="guide">\n<details class="pli"><summary><h2>Les mots du guide <small>· 10\u00a0mots</small></h2></summary>');
     expect(GUIDE.slice(GUIDE.indexOf("## Les mots du guide")).match(/^- /gm)).toHaveLength(10);
   });
 

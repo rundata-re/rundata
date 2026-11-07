@@ -73,7 +73,7 @@ describe("the déchèteries of the West", () => {
   });
 
   it("fold each commune under its name, its number of sites and its full skips, never « aucune » deduced", () => {
-    const heads = (html: string) => new Map([...html.matchAll(/<summary><h2 id="h-([a-z-]+)">[^<]+ <small>·\u00a0([^<]+)<\/small><\/h2><\/summary>/g)].map((m) => [m[1], m[2]]));
+    const heads = (html: string) => new Map([...html.matchAll(/<summary><h2 id="h-([a-z-]+)">[^<]+ <small>· ([^<]+)<\/small><\/h2><\/summary>/g)].map((m) => [m[1], m[2]]));
     const now = sitesNow(etats, NOW);
     const page = heads(decheteriesPage("https://rundata.re", copy, NOW));
     expect(page.size).toBe(TCO_COMMUNES.length + ELSEWHERE_COMMUNES.length);
@@ -81,7 +81,7 @@ describe("the déchèteries of the West", () => {
       const here = now.filter((x) => x.commune === c);
       const full = here.reduce((n, x) => n + (x.a_jour ? x.refuse.length : 0), 0);
       const sites = `${here.length}\u00a0déchèterie${here.length > 1 ? "s" : ""}`;
-      expect(page.get(anchorOf(c)), c).toBe(full ? `${sites} ·\u00a0${full}\u00a0benne${full > 1 ? "s" : ""} pleine${full > 1 ? "s" : ""}` : sites);
+      expect(page.get(anchorOf(c)), c).toBe(full ? `${sites} · ${full}\u00a0benne${full > 1 ? "s" : ""} pleine${full > 1 ? "s" : ""}` : sites);
     }
     for (const c of ELSEWHERE_COMMUNES) expect(page.get(anchorOf(c))).toMatch(/^\d+\u00a0déchèteries?$/);
     // The fixture has full skips somewhere; the next morning, nothing recent: no count, and never « aucune ».

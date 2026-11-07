@@ -29,7 +29,7 @@ export const FORMS_CSS = `.fo{max-width:44rem}
 .clubs-trouves a{display:block;min-height:44px;box-sizing:border-box;padding:.65rem .9rem;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--ink);font-weight:600;text-decoration:none}
 .clubs-trouves a span{display:block;font-weight:400;font-size:.88rem;color:var(--muted)}
 .fo .adresse{font-size:1.05rem;overflow-wrap:anywhere}
-.outils{list-style:none;padding:0;margin:0;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(16rem,1fr))}
+.outils{list-style:none;padding:0;margin:0;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(min(16rem,100%),1fr))}
 .outil h3{margin:0 0 .3rem}
 .outil ol{padding-left:1.2rem;margin:.3rem 0}
 .etat.non{background:var(--surface);color:var(--muted)}

@@ -91,7 +91,7 @@ describe("the monuments' category", () => {
   it("is a section of /chiffres with its source, never a tile of the home page", () => {
     const html = chiffresPage("https://rundata.re", chiffres(toutesLesSources(), undefined, NOW, 0), inventaire(toutesLesSources()));
     // With the SIT's remarkable places (vie/decouvrir.ts).
-    const at = html.indexOf('<h3 id="sources-patrimoine">Patrimoine <small>·\u00a02 sources</small></h3>');
+    const at = html.indexOf('<h3 id="sources-patrimoine">Patrimoine <small>· 2 sources</small></h3>');
     expect(at).toBeGreaterThan(0);
     expect(html.slice(at, html.indexOf("<h3", at + 1))).toContain("Immeubles protégés au titre des Monuments historiques (base Mérimée)");
     const home = homePage("https://rundata.re", null, NOW);

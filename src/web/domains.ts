@@ -1529,7 +1529,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
         const mine = d.stations.filter((s) => s.commune === c.commune).sort((a, b) => b.libres - a.libres || b.puissance_max_kw - a.puissance_max_kw);
         const free = mine.reduce((n, s) => n + s.libres, 0);
         return `<li class="card tgt" id="${anchorId("c", c.commune)}">${folded(foldBornes,
-          `<h3>${esc(c.commune)}${foldBornes ? "\u00a0" : " "}<span class="note">${foldBornes ? "·\u00a0" : ""}${free}\u00a0libre${free > 1 ? "s" : ""} sur\u00a0${c.points}, ${c.stations}\u00a0station${c.stations > 1 ? "s" : ""}</span></h3>`,
+          `<h3>${esc(c.commune)}${foldBornes ? "\u00a0" : " "}<span class="note">${foldBornes ? "· " : ""}${free}\u00a0libre${free > 1 ? "s" : ""} sur\u00a0${c.points}, ${c.stations}\u00a0station${c.stations > 1 ? "s" : ""}</span></h3>`,
           `<ul class="rows bornes">${mine.map((s) => borneRow(s, g, true)).join("")}</ul>`)}</li>`;
       }).join("")}</ul>` +
       `<p class="note">${esc(d.donnees)}${d.avertissement ? ` ${esc(d.avertissement)}` : ""}</p>`
@@ -1830,7 +1830,7 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
   const byCommune = d
     ? `<ul class="zones">${d.fermes_par_commune.map((c) =>
         `<li class="card">${folded(foldTrails,
-          `<h3>${esc(c.commune)}${foldTrails ? "\u00a0" : " "}<span class="note">${foldTrails ? "·\u00a0" : ""}${c.sentiers_fermes.length}\u00a0fermé${c.sentiers_fermes.length > 1 ? "s" : ""}</span></h3>`,
+          `<h3>${esc(c.commune)}${foldTrails ? "\u00a0" : " "}<span class="note">${foldTrails ? "· " : ""}${c.sentiers_fermes.length}\u00a0fermé${c.sentiers_fermes.length > 1 ? "s" : ""}</span></h3>`,
           `<ul class="rows eau">` +
         c.sentiers_fermes.map((t) => `<li${rowId(t.sentier)}><span>${t.page ? `<a href="${esc(t.page.replace(/^https:\/\/rundata\.re/, ""))}">${esc(t.sentier)}</a>` : esc(t.sentier)}<small>${onf.motifs(t, now).map(esc).join(" · ") || "fermé"}</small>` +
           (t.randonnees?.length ? `<small class="cuts">Coupe : ${t.randonnees.map((r) => `<a href="/randonnees/${esc(r.slug)}">${esc(r.nom)}</a>`).join(", ")}</small>` : "") + `</span>` +
@@ -2895,7 +2895,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   const list = d
     ? `<ul class="zones">${d.communes.map((c) =>
         `<li class="card tgt" id="${anchorId("c", c.commune)}">${folded(foldDae,
-          `<h3>${esc(c.commune)}${foldDae ? "\u00a0" : " "}<span class="note">${foldDae ? "·\u00a0" : ""}${c.nombre}\u00a0défibrillateur${c.nombre > 1 ? "s" : ""}${c.toute_heure ? `, dont ${c.toute_heure}\u00a0accessible${c.toute_heure > 1 ? "s" : ""} à toute heure` : ""}</span></h3>`,
+          `<h3>${esc(c.commune)}${foldDae ? "\u00a0" : " "}<span class="note">${foldDae ? "· " : ""}${c.nombre}\u00a0défibrillateur${c.nombre > 1 ? "s" : ""}${c.toute_heure ? `, dont ${c.toute_heure}\u00a0accessible${c.toute_heure > 1 ? "s" : ""} à toute heure` : ""}</span></h3>`,
           `<ul class="rows eau dae">` +
         c.liste.map((x) => `<li><span>${esc(x.lieu)}<small>${[x.adresse, x.emplacement, x.etage].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
           // The normal route, not on foot as « Autour de moi »: a device of the commune may be kilometres away.
@@ -2978,7 +2978,7 @@ function bySport(rows: NonNullable<SportAnswer["a_venir"]>, withScore: boolean, 
   const folds = fold && groups.length > 1 && rows.length > FOLD_ROWS;
   return `<ul class="zones">${groups.map((g) =>
     `<li class="card">${folded(folds,
-      `<h3>${esc(sportName(g.sp))}${folds ? "\u00a0" : " "}<span class="note">${folds ? "·\u00a0" : ""}${g.list.length}\u00a0${withScore ? "résultat" : "rendez-vous"}${withScore && g.list.length > 1 ? "s" : ""}</span></h3>`,
+      `<h3>${esc(sportName(g.sp))}${folds ? "\u00a0" : " "}<span class="note">${folds ? "· " : ""}${g.list.length}\u00a0${withScore ? "résultat" : "rendez-vous"}${withScore && g.list.length > 1 ? "s" : ""}</span></h3>`,
       `<ul class="rows eau">${g.list.slice(0, SPORT_LISTED).map((r) => sportRow(r, withScore)).join("")}` +
       (g.list.length > SPORT_LISTED ? `<li><span class="note">et ${g.list.length - SPORT_LISTED} autres : demandez-les à votre IA.</span><span></span></li>` : "") +
       `</ul>`)}</li>`).join("")}</ul>`;
@@ -3013,7 +3013,7 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
     ? `<ul class="zones">${d.classements.map((c) => {
         const site = `<a href="${esc(c.lien)}" rel="noopener">${foldTables ? federation(c.competition) : esc(c.competition)}</a>`;
         const head = foldTables
-          ? `<h3>${esc(c.competition)}${c.lignes.length ? `\u00a0<span class="note">·\u00a0${c.lignes.length}\u00a0équipe${c.lignes.length > 1 ? "s" : ""}</span>` : ""}</h3>`
+          ? `<h3>${esc(c.competition)}${c.lignes.length ? `\u00a0<span class="note">· ${c.lignes.length}\u00a0équipe${c.lignes.length > 1 ? "s" : ""}</span>` : ""}</h3>`
           : `<h3>${site}</h3>`;
         return `<li class="card">${folded(foldTables, head, (foldTables ? `<p class="note">${site}</p>` : "") +
           `${c.muet ? `<p class="note">${silentText(c.muet)}</p>` : ""}${c.lignes.length ? `<ul class="rows eau">${c.lignes.map((l) =>
@@ -3604,7 +3604,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
     : days.size
       ? `${filter}<div id="jours"><ul class="zones">${[...days].sort(([x], [y]) => x.localeCompare(y)).map(([day, rows]) =>
           `<li class="card">${folded(foldDays,
-            `<h3>${esc(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()).replace(/(\d) /, "$1\u00a0"))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "·\u00a0" : ""}${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3>`,
+            `<h3>${esc(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()).replace(/(\d) /, "$1\u00a0"))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3>`,
             `<ul class="rows eau">${rows.map((r) => agendaRow(r, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour les deux semaines qui viennent.</p>`;
 

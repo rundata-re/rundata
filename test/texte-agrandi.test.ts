@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CSS } from "../src/web/pages.js";
+import { FORMS_CSS } from "../src/web/formulaires-style.js";
+import { ELECTRICITE_CSS } from "../src/web/electricite-carte.js";
 
 // /air at 320 px with the text at 150 %: the language choice and the source list went past the screen; nothing moves at 100 %.
 describe("larger text on a narrow screen", () => {
@@ -31,5 +33,41 @@ describe("larger text on a narrow screen", () => {
     // Its longest commune, at 25.5 px, made the station tools 346 px wide: the page went 42 px past the screen.
     expect(CSS).toContain(".sttools{display:flex;flex-wrap:wrap;gap:.6rem 1rem;align-items:center;margin-bottom:.8rem;min-width:0}");
     expect(CSS).toContain(".sttools label{min-width:0;max-width:100%}.sttools select{max-width:100%;");
+  });
+});
+
+// The sitemap at 390 px with the text at 150 % and 200 % (200 %: WCAG 1.4.4): 34 renders went past the screen, through a
+// word longer than its line (an e-mail address, an offer's reference) widening its section's implicit column, or a row's
+// date squeezing the name beside it to nothing.
+describe("text at 150 and 200 % on a 390 px phone", () => {
+  it("cuts a word longer than its line inside its box, a section, a card or a heading block being one column its width", () => {
+    expect(CSS).toContain("font-variant-numeric:tabular-nums;overflow-wrap:break-word}");
+    expect(CSS).toContain(":where(section,.card,.pitch,.sec-h,.fil-l){grid-template-columns:minmax(0,1fr)}");
+    // A table's frame scrolls: its cells keep their words whole.
+    expect(CSS).toContain("th,td,:is(th,td) .note{overflow-wrap:normal}");
+  });
+
+  it("hyphenates, and puts a row's date, an hour or an air level's word on its own line, only from 125 % on a phone", () => {
+    const at = CSS.indexOf("@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}");
+    expect(at).toBeGreaterThan(-1);
+    const block = CSS.slice(at, CSS.indexOf(".kzoom,.btn{flex-wrap:wrap}}", at));
+    expect(block).toContain(".minuit li{grid-template-columns:minmax(0,1fr)}");
+    expect(block).toContain(":is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}");
+    expect(block).toContain(".rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}");
+    expect(block).toContain(".scale li{grid-template-columns:minmax(0,1fr)}");
+    // 19.9 em is 318 px at 100 %: under any phone, so nothing moves at the browser's default size.
+    expect(19.9 * 16).toBeLessThan(320);
+  });
+
+  it("gives a commune's chips the page's gutter, never more, and lets a row's title share its line with a long date", () => {
+    expect(CSS).toContain(".kchips{display:flex;gap:.4rem;margin:0 -16px .8rem;padding:0 16px .2rem;");
+    expect(CSS).toContain(".rows.eau li{grid-template-columns:minmax(0,1fr) fit-content(60%)}");
+    expect(CSS).toContain(".minuit li{display:grid;grid-template-columns:5.2rem minmax(0,1fr);");
+  });
+
+  it("shrinks a tool's column to the screen and lets the map's power legend go on two lines", () => {
+    // 16 rem is 384 px at 150 %, wider than the 358 px of a 390 px phone's column.
+    expect(FORMS_CSS).toContain("grid-template-columns:repeat(auto-fill,minmax(min(16rem,100%),1fr))}");
+    expect(ELECTRICITE_CSS).toContain(".iprw{display:flex;flex-wrap:wrap;align-items:center;");
   });
 });

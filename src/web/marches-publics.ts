@@ -90,7 +90,7 @@ function groups(avis: Avis[], now: Date): string {
   }
   return [...by]
     .sort(([a, x], [b, y]) => +!a - +!b || y.length - x.length || a.localeCompare(b, "fr"))
-    .map(([c, l]) => `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">·\u00a0${l.length}\u00a0avis</span></h3>`,
+    .map(([c, l]) => `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">· ${l.length}\u00a0avis</span></h3>`,
       `<ul class="rows eau">${l.map((a) => row(a, now)).join("")}</ul>`)}</div>`).join("");
 }
 

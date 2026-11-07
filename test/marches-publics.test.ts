@@ -256,12 +256,12 @@ describe("the page /marches-publics", () => {
     expect(p).toContain("1 avis de marché ouvert aux réponses");
     // Each id once: « laisser un avis » (#avis) leads to the form, not to the list, and the form keeps its own title.
     expect(doubleIds(p)).toEqual([]);
-    expect(p).toContain('<div id="marches" class="plis"><div class="card groupe"><details><summary><h3>Commune non précisée\u00a0<span class="note">·\u00a01\u00a0avis</span></h3></summary><ul class="rows eau">');
+    expect(p).toContain('<div id="marches" class="plis"><div class="card groupe"><details><summary><h3>Commune non précisée\u00a0<span class="note">· 1\u00a0avis</span></h3></summary><ul class="rows eau">');
     // By commune, the work's place else the buyer's, the most notices first, then the alphabet, those without one last;
     // each line keeps its place; the filter opens the groups it finds.
     const at = (id: string, x: Partial<boamp.Avis>): boamp.Avis => ({ ...a, id, ...x });
     const many = marchesPage(O, { value: { nombre: 5, avis: [at("1", {}), at("2", { communeAcheteur: "Saint-Paul" }), at("3", { commune: "Le Port" }), at("4", { commune: "Saint-Paul" }), at("5", { commune: "Bras-Panon" })], sources: [] }, fetchedAt: now, stale: false }, now);
-    expect([...many.matchAll(/<summary><h3>([^<]+)\u00a0<span class="note">·\u00a0([^<]+)<\/span>/g)].map((m) => `${m[1]} · ${m[2]}`)).toEqual(["Saint-Paul · 2\u00a0avis", "Bras-Panon · 1\u00a0avis", "Le Port · 1\u00a0avis", "Commune non précisée · 1\u00a0avis"]);
+    expect([...many.matchAll(/<summary><h3>([^<]+)\u00a0<span class="note">· ([^<]+)<\/span>/g)].map((m) => `${m[1]} · ${m[2]}`)).toEqual(["Saint-Paul · 2\u00a0avis", "Bras-Panon · 1\u00a0avis", "Le Port · 1\u00a0avis", "Commune non précisée · 1\u00a0avis"]);
     expect(many).toContain("· acheteur à Saint-Paul</small>");
     expect(many).toContain('g.hidden=on&&!k;g.firstElementChild.open=on&&k');
     expect(p).toContain('<aside class="avis wrap" id="avis" aria-labelledby="h-avis">');

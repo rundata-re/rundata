@@ -167,11 +167,11 @@ describe("the tool and the pages", () => {
   it("tells apart, under their heading, the groups of a commune that share it: the collection that parts them", () => {
     const page = collectePage("https://rundata.re", new Date("2026-11-08T08:00:00Z"));
     // Saint-Paul: two calendars of 39 streets, their household waste on the same days, their sorting not.
-    const head = "Ordures ménagères le samedi 14/11, le vendredi 20/11 et le vendredi 27/11…\u00a0<span class=\"note\">·\u00a0Saint-Paul, 39\u00a0rues</span>";
+    const head = "Ordures ménagères le samedi 14/11, le vendredi 20/11 et le vendredi 27/11…\u00a0<span class=\"note\">· Saint-Paul, 39\u00a0rues</span>";
     expect(page).toContain(`${head}<br><span class="note">tri le lundi, une semaine sur deux (prochain : 16/11)</span></h4>`);
     expect(page).toContain(`${head}<br><span class="note">tri le mardi, une semaine sur deux (prochain : 17/11)</span></h4>`);
     // A heading no other group shares stays as it was.
-    expect(page).toContain("Ordures ménagères le jeudi\u00a0<span class=\"note\">·\u00a0La\u00a0Possession, 26\u00a0rues</span></h4>");
+    expect(page).toContain("Ordures ménagères le jeudi\u00a0<span class=\"note\">· La\u00a0Possession, 26\u00a0rues</span></h4>");
     const heads = page.split('class="card groupe"').slice(1).map((g) => g.split("</summary>")[0]);
     expect(heads.length).toBeGreaterThan(100);
     expect(new Set(heads).size).toBe(heads.length);

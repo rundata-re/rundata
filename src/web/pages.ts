@@ -276,7 +276,31 @@ const ICON: Record<string, string> = {
 export const icon = (name: string) =>
   `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON[name]}</svg>`;
 
-export const CSS = `
+/** A small-screen rule: `@media (max-width:…rem){…}`, a single condition in rem. */
+const NARROW = /@media \(max-width:([\d.]+rem)\)\{/g;
+/**
+ * Each small-screen rule of `css` followed by its twin on the page's container (html, the whole page, so that the
+ * header, menu and footer follow too), `@container page (max-width:…rem)`, with the same content. A media query counts
+ * its rem on the browser's own text size, so where text is enlarged by raising the root's size (the browsers inside
+ * Facebook, Instagram and Messenger, Samsung Internet), the screen never looks narrow enough and the page grows wider
+ * than it. A container query counts its rem on the root's size: its twin follows that text. With the root at 16 px or
+ * more, a true media query makes its twin true too, so a browser with container queries follows the twin and one
+ * without them keeps the media query alone. Wide-screen rules (min-width) stay as they are: on a phone they are false
+ * either way.
+ */
+export function narrowTwins(css: string): string {
+  let out = "", from = 0;
+  for (const m of css.matchAll(NARROW)) {
+    const start = m.index + m[0].length;
+    let end = start;
+    for (let depth = 1; depth && end < css.length; end++) depth += css[end] === "{" ? 1 : css[end] === "}" ? -1 : 0;
+    out += css.slice(from, end) + `@container page (max-width:${m[1]}){${css.slice(start, end - 1)}}`;
+    from = end;
+  }
+  return out + css.slice(from);
+}
+
+export const CSS = narrowTwins(`
 @font-face{font-family:"Bricolage";src:url(${FONT_PATH}) format("woff2");font-weight:600 800;font-display:swap}
 :root{--bg:#f6f2ea;--surface:#fff;--surface-2:#fbf8f2;--ink:#14202b;--muted:#5a6672;--line:#e6dece;--link:#1d4ea6;
 --accent:#1d4ea6;--accent-ink:#fff;--u974:.18em;--sun:#ffcf1f;--sun-ink:#1a1500;--lave:#c0321f;--night:#0b1f36;--night-2:#15406b;
@@ -287,7 +311,7 @@ export const CSS = `
 --night-2:#0f2c4b;--sea:#0d2236;--land:#1a2a36;--coast:#3b6170;--gauge-calme:#56707a;--border:#2d4152;--hl:#4a3f17;--zone-on:#a8913a;--warn-bg:#2a1712;--vert:#4cc765;--vert-ink:#08121d;--pluie:#7aa5ff;--chaud:#ff9a52;--frais:#6cb4ee;--soleil:#ffd84d;
 --barre:#7d8a94;--q-moyenne:#e8590c;--shadow:0 1px 2px rgb(0 0 0/.3),0 10px 30px -8px rgb(0 0 0/.5);color-scheme:dark}}
 *{box-sizing:border-box}
-html{scroll-padding-top:5rem;-webkit-text-size-adjust:100%}
+html{scroll-padding-top:5rem;-webkit-text-size-adjust:100%;container:page/inline-size}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 body{margin:0;background:var(--bg);color:var(--ink);font:1.0625rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 font-variant-numeric:tabular-nums;overflow-wrap:break-word}
@@ -1152,7 +1176,7 @@ footer.foot .brand{color:var(--on-night);margin-bottom:.8rem;font-size:min(1.2re
 footer.foot p+p{margin-top:.6rem}
 footer.foot h3{color:var(--on-night);font-size:1rem;margin-bottom:.4rem}
 footer.foot .slogan{font-size:1rem;padding-left:calc(1.55rem + .6rem)}
-`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + MOTIF_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS;
+`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + MOTIF_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS);
 /**
  * The stylesheet, a file of its own (web/site.ts) rather than copied into every page: its address changes with its
  * content, so that browsers keep it a year and fetch it again only once it changes.

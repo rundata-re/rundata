@@ -37,7 +37,7 @@ export interface PleinEcran {
 export function pleinEcran(o: PleinEcran): string {
   return `<script>(()=>{const o=${inScript(o)},M=${inScript(MOTS)},box=document.querySelector(o.boite),map=box&&box.querySelector(o.carte),bar=box&&box.querySelector(o.barre);if(!map||!bar)return;
 const b=document.createElement("button");b.type="button";b.className="pe-b";b.setAttribute("aria-pressed","false");b.textContent=M.entrer;bar.append(b);
-const p=document.createElement("div");p.className="pe-p";const back=new Map(),root=document.documentElement,leg=o.legende&&box.querySelector(o.legende),large=matchMedia("(min-width:48rem) and (min-height:36rem)");let on=false,lc=null;
+const p=document.createElement("div");p.className="pe-p";const back=new Map(),root=document.documentElement,leg=o.legende&&box.querySelector(o.legende),large=matchMedia("(min-width:48rem) and (min-height:36rem)");let on=false,lc=null,y=0;
 // On a phone, the panel inside the map's block, under it (at its side when the phone lies on its side), the legend at
 // its top: the page's rules for the legend still find it there. On a large screen, the panel at the side, the legend
 // under the map.
@@ -46,14 +46,18 @@ const legende=()=>{const small=on&&!large.matches;if(on)(small?map:box).append(p
 const size=()=>{const s=map.querySelector("svg");if(!s)return;s.style.flex=s.style.width=s.style.height="";if(!on)return;const v=s.viewBox.baseVal,r=v.width/v.height,w=s.clientWidth,h=s.clientHeight;if(!w||!h||!r)return;
 s.style.flex="none";if(w/h>r){s.style.height=h+"px";s.style.width=Math.floor(h*r)+"px"}else s.style.height=Math.floor(w/r)+"px"};
 const fit=()=>requestAnimationFrame(()=>{size();dispatchEvent(new Event("resize"))});
-const enter=()=>{on=true;o.panneau.forEach((s)=>{const n=box.querySelector(s);if(!n)return;const c=document.createComment("pe");n.before(c);back.set(n,c);p.append(n)});legende();
+const enter=()=>{on=true;y=scrollY;o.panneau.forEach((s)=>{const n=box.querySelector(s);if(!n)return;const c=document.createComment("pe");n.before(c);back.set(n,c);p.append(n)});legende();
 box.classList.add("pe-on");map.classList.add("pe-m");bar.classList.add("pe-c");root.classList.add("pe-lock");b.textContent=M.sortir;b.setAttribute("aria-pressed","true");
 if(document.fullscreenEnabled&&box.requestFullscreen)box.requestFullscreen().catch(()=>{});fit()};
-const leave=()=>{if(!on)return;on=false;legende();back.forEach((c,n)=>c.replaceWith(n));back.clear();p.remove();
+// Back where the page was: with the page's container on html, the browser's scroll anchoring moved it by up to
+// 2 200 px when the panel's nodes went back to their place. Once now, once after the map has its size again; not when
+// a link of the box closes it (lien): the link's target sets the place.
+const put=()=>scrollTo({top:y,behavior:"instant"});
+const leave=(lien)=>{if(!on)return;on=false;legende();back.forEach((c,n)=>c.replaceWith(n));back.clear();p.remove();
 box.classList.remove("pe-on");map.classList.remove("pe-m");bar.classList.remove("pe-c");root.classList.remove("pe-lock");b.textContent=M.entrer;b.setAttribute("aria-pressed","false");
-if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});fit()};
+if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});if(!lien)put();fit();if(!lien)requestAnimationFrame(put)};
 b.addEventListener("click",()=>on?leave():enter());large.addEventListener("change",()=>{legende();fit()});
-box.addEventListener("click",(e)=>{const a=on&&e.target.closest&&e.target.closest('a[href^="#"]'),t=a&&document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));if(t&&!box.contains(t))leave()});
+box.addEventListener("click",(e)=>{const a=on&&e.target.closest&&e.target.closest('a[href^="#"]'),t=a&&document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));if(t&&!box.contains(t))leave(true)});
 document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)leave();fit()});
 addEventListener("resize",(e)=>{if(on&&e.isTrusted)fit()});
 addEventListener("keydown",(e)=>{if(e.key==="Escape"&&on&&!document.fullscreenElement)leave()})})();</script>`;

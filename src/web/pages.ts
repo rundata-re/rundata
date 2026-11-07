@@ -63,7 +63,7 @@ import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
 import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
-import { crumbBar, crumbs } from "./domains.js";
+import { crumbBar, crumbs, nomsCoupables } from "./domains.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
@@ -668,8 +668,15 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .band:has(.hero)::before{display:none}
 .hero-in{position:relative;display:grid;gap:1.6rem;padding-block:clamp(1.8rem,5vw,4rem) clamp(1.6rem,4vw,3.4rem);align-items:center}
 @media (min-width:58rem){.hero-in{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:3rem}}
-.hero-txt{display:grid;gap:1rem;justify-items:start;min-width:0}
+.hero-txt{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;justify-items:start;min-width:0}
 .hero h1{font-size:clamp(2.6rem,10vw,4.6rem);line-height:.98;letter-spacing:-.04em;text-shadow:0 2px 30px rgb(0 0 0/.25)}
+/* A page zoom (Safari's aA) lays the page out on fewer px than the screen has: 160 px for a 320 px screen at 200 %,
+   while the title keeps its 2.6 rem. « Réunion » is then 153 px for a column of 128, and the title, the line under it and
+   the buttons, all in the column of their widest word, went 9 px past the screen. Under 190 px (px, not rem: text
+   enlarged by the phone's setting keeps the title as it is, « Réunion » fits there), the title at most a fifth of the
+   width: « Réunion » whole in its column down to 143 px (430 px at 300 %). The column itself is never wider than the
+   block (minmax(0,1fr) above). */
+@media (max-width:190px){.hero h1{font-size:min(2.6rem,20vw)}}
 .hero .lead{color:rgb(255 255 255/.82);font-size:clamp(1.02rem,3.6vw,1.2rem);max-width:32rem}
 .hero .lead b{color:#fff}
 .hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;width:100%;max-width:30rem}.hero-cta .btn{flex:1 1 auto;justify-content:center}
@@ -1034,7 +1041,9 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows{list-style:none;padding:0;display:grid}
 .rows li{display:grid;grid-template-columns:3.4rem minmax(0,1fr) auto;gap:.6rem;align-items:baseline;padding:.45rem 0;border-top:1px solid var(--line)}
 .rows li:first-child{border-top:0}
-.rows.trajet li{grid-template-columns:auto minmax(0,1fr);scroll-margin-top:5rem}.rows.departs li{grid-template-columns:2.6rem minmax(0,1fr)}.rows.departs li>:last-child{grid-column:2}.rows.trajet .rt{display:block}.rows.trajet small{display:block;color:var(--muted);font-size:.82rem}.rows.trajet li.ici{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:.4rem;padding-inline:.4rem}.rows.trajet li.ici small{color:inherit;font-weight:700}
+/* A departure's line in a column as wide as its code, 2.6 rem at least so that « 84 » and « 73 » line up: « GECK » and
+   « FLOR » (44 px at 100 %) were cut into « GEC » and « K » in 2.6 rem (41.6 px). */
+.rows.trajet li{grid-template-columns:auto minmax(0,1fr);scroll-margin-top:5rem}.rows.departs li{grid-template-columns:minmax(2.6rem,max-content) minmax(0,1fr)}.rows.departs li>:last-child{grid-column:2}.rows.trajet .rt{display:block}.rows.trajet small{display:block;color:var(--muted);font-size:.82rem}.rows.trajet li.ici{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:.4rem;padding-inline:.4rem}.rows.trajet li.ici small{color:inherit;font-weight:700}
 /* A station's name at least 8.5 rem wide, but never more than 60 % of its row: 8.5 rem is 272 px at 200 %, wider than a
    320 px phone's line once its count has gone under it. */
 .rows.bikes li{grid-template-columns:minmax(min(8.5rem,60%),1fr) auto}
@@ -1176,6 +1185,10 @@ summary{min-height:24px}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
 .rows:not(.eau,.bornes,.velos,.bikes,.departs) li:has(>.note:last-child:not(:first-child)){grid-template-columns:minmax(max-content,1.7rem) minmax(0,1fr);hyphens:manual;-webkit-hyphens:manual}
+/* A departure (/bus, a stop, a commune's buses) on lines that use the whole row: its line « 64B » then « vers … (Kar'Ouest) »
+   from the same line, its time below. In the line's column, the direction had 100 px at 200 %, less than « (Kar'Ouest) »
+   (156 px) or « Plaines », cut in the middle. */
+.rows.departs li{display:block}.rows.departs li>b{margin-right:.6rem}.rows.departs li>:last-child{display:block;margin-top:.3rem}
 .scale li,.scale:has(.aq){grid-template-columns:minmax(0,1fr)}
 .btn{flex-wrap:wrap}}
 /* A table's cells and their notes keep their words whole: the frame scrolls (.table-wrap) rather than a narrow column
@@ -1685,11 +1698,15 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
 </html>`;
 }
 
+/**
+ * A page's sources, each with its licence. A producer's name may go to the next line after its « . » or before its inner
+ * capital (« Sensor.<wbr>Community », nomsCoupables), an address after each « / » or « . » (adressesCoupables).
+ */
 export function credits(list: Credit[]): string {
   const seen = new Set<string>();
   return list
     .filter((c) => !seen.has(c.source) && seen.add(c.source))
-    .map((c) => `${adressesCoupables(c.source)} (${adressesCoupables(c.licence)})`)
+    .map((c) => `${nomsCoupables(adressesCoupables(c.source))} (${adressesCoupables(c.licence)})`)
     .join(" ; ");
 }
 
@@ -2464,7 +2481,8 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
 
   const suivi = v?.suivi.length
     ? `<section aria-labelledby="h-suivi"><h2 id="h-suivi">Ce que dit Météo-France</h2><div class="card suivi">` +
-      v.suivi.map((t) => `<div><h3>${esc(t.titre)}</h3><p>${esc(t.texte)}</p></div>`).join("") +
+      // A title of two phenomena (« Fortes pluies/Orages ») may go to the next line after its « / », never inside « Orages ».
+      v.suivi.map((t) => `<div><h3>${esc(t.titre).replaceAll("/", "/<wbr>")}</h3><p>${esc(t.texte)}</p></div>`).join("") +
       `<p class="note">Texte de Météo-France, repris tel quel. Source : ${esc(mf.SOURCE.nom)} (${esc(mf.SOURCE.licence)}).</p></div></section>`
     : "";
 

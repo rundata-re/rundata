@@ -103,7 +103,8 @@ describe("the tile « À découvrir »", () => {
     const t = tile(page("le-port"))!;
     expect(t).toContain('<p class="tv">2 lieux</p>');
     expect(t).not.toContain("<details");
-    expect(page("le-port")).toContain(SOURCE.nom);
+    // Named in the page's sources, « TourInSoft » with its <wbr>s (nomsCoupables), the same text.
+    expect(page("le-port").replaceAll("<wbr>", "")).toContain(SOURCE.nom);
     // A place whose text is only about when to come shows its name alone.
     expect(tile(page("saint-philippe"))).toContain("<li><span><b>Vanille 100% Réunion</b></span></li>");
     for (const slug of ["les-trois-bassins", "sainte-marie"]) {

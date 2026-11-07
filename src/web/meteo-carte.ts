@@ -1408,12 +1408,21 @@ export const rejeuScript = () => (rejeuText ??= rejeuJs());
 let rejeuPath: string | undefined;
 export const rejeuScriptPath = () => (rejeuPath ??= `/meteo/rejeu-${hash(rejeuScript())}.js`);
 
-/** /meteo's own script: the stations' list (filter, sort, unfold), then the veil, the wind and the radar's rain, and their replay. */
-export const METEO_SCRIPT = `const stl=document.getElementById("stl");if(stl){const sel=document.getElementById("stc"),bs=document.querySelectorAll("[data-s]");
-const m=document.getElementById("stm"),open=()=>{stl.classList.remove("plie");if(m)m.parentElement.hidden=true};if(m)m.addEventListener("click",open);
+/** The stations' list of /meteo (filter, sort, unfold, unfolded for the station a link aims at): the start of METEO_SCRIPT. */
+export const LISTE_STATIONS_JS = `const stl=document.getElementById("stl");if(stl){const sel=document.getElementById("stc"),bs=document.querySelectorAll("[data-s]");
+const m=document.getElementById("stm"),open=()=>{stl.classList.remove("plie");if(m){m.setAttribute("aria-expanded","true");m.parentElement.hidden=true}};if(m)m.addEventListener("click",open);
 const f=()=>{const c=sel.value;open();stl.querySelectorAll("li").forEach((li)=>{li.hidden=!!c&&li.dataset.c!==c})};sel.addEventListener("change",f);
+// A station aimed at (a link to it, a station's marker of the map) whose row the folded list or the commune hides:
+// the list unfolded, every commune shown, and the row brought into view. Nothing aimed at, the list stays folded.
+const vise=()=>{let id="";try{id=decodeURIComponent(location.hash.slice(1))}catch{}const li=id&&document.getElementById(id);if(!li||li.parentElement!==stl||li.getClientRects().length)return;
+if(li.hidden){sel.value="";f()}else open();li.scrollIntoView({block:"start"})};
+// At load, once the site's script has shown what needs a script ([data-js]): only then is the list folded.
+addEventListener("hashchange",vise);if(document.readyState==="loading")addEventListener("DOMContentLoaded",vise,{once:true});else vise();
 bs.forEach((b)=>b.addEventListener("click",()=>{const k=b.dataset.s;open();bs.forEach((x)=>x.setAttribute("aria-pressed",x===b));
-[...stl.children].sort((a,z)=>k==="n"?a.dataset.n.localeCompare(z.dataset.n,"fr"):k==="t"?(z.dataset.t===""?-99:+z.dataset.t)-(a.dataset.t===""?-99:+a.dataset.t):a.dataset.z-z.dataset.z).forEach((li)=>stl.append(li))}))}
+[...stl.children].sort((a,z)=>k==="n"?a.dataset.n.localeCompare(z.dataset.n,"fr"):k==="t"?(z.dataset.t===""?-99:+z.dataset.t)-(a.dataset.t===""?-99:+a.dataset.t):a.dataset.z-z.dataset.z).forEach((li)=>stl.append(li))}))}`;
+
+/** /meteo's own script: the stations' list (filter, sort, unfold, unfolded for the station a link aims at), then the veil, the wind and the radar's rain, and their replay. */
+export const METEO_SCRIPT = `${LISTE_STATIONS_JS}
 // What the layers share: the time in La Réunion (UTC+4, no summer time), « hier » before midnight, and the replay's
 // hooks (RJ, read by REJEU_JS too, a script of the page's own).
 const p2=(n)=>String(n).padStart(2,"0"),loc=(t)=>new Date(Date.parse(t)+144e5),hm=(t)=>{const x=loc(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())};

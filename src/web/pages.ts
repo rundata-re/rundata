@@ -1904,7 +1904,7 @@ function stationsList(all: StationNow[], now: Date): string {
   const communes = [...new Set(all.map((s) => communeOf(s, all)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
   const tools = `<div class="sttools" data-js hidden><label>Commune <select id="stc"><option value="">Toutes</option>${communes.map((c) => `<option>${esc(c)}</option>`).join("")}</select></label>` +
     `<div class="sttri"><span id="sttri">Trier par</span><span class="tabs" role="group" aria-labelledby="sttri"><button type="button" data-s="z" aria-pressed="true">Altitude</button><button type="button" data-s="t" aria-pressed="false">Température</button><button type="button" data-s="n" aria-pressed="false">Nom</button></span></div></div>`;
-  const more = all.length > 12 ? `<p data-js hidden><button type="button" class="stmore" id="stm">Voir les ${all.length} stations</button></p>` : "";
+  const more = all.length > 12 ? `<p data-js hidden><button type="button" class="stmore" id="stm" aria-controls="stl" aria-expanded="false">Voir les ${all.length} stations</button></p>` : "";
   return `${tools}<ul class="stations${more ? " plie" : ""}" id="stl">${rows}</ul>${more}`;
 }
 

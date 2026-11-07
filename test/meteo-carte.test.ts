@@ -628,6 +628,10 @@ describe("the rain's animation and its replay", () => {
     expect(METEO_SCRIPT).toContain(`+" en défaut"+(part?" pendant une partie du rejeu":"")+", selon`);
     // A gap in the radar's images, said under the time on the map.
     expect(rejeuScript()).toContain(`else if(r&&r.gap){w="pas d'image radar";said+=". Pas d'image radar de "`);
+    // Said only where the rain cannot fade across the hole, or nothing follows it; an image missed, faded across, and said
+    // between which images when paused (playing, the word stays put: no word blinking at every image missed).
+    expect(rejeuScript()).toContain(`const r=at("p"),h=TR.find(([a,z])=>T>a&&T<z&&(!r||z>K.p[K.p.length-1].t));if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}`);
+    expect(rejeuScript()).toContain(`else if(r&&l==="p"&&r.a&&TR.some(([a,z])=>a>=r.a.t&&z<=r.z.t)){const x="entre les images radar de "+hmm(r.a.t)+" et de "+hmm(r.z.t);w=playing?"estimé par radar":x;said+=", pluie "+x}`);
   });
 
   it("writes both dates when the hours shown cross midnight in La Réunion, on the map", () => {

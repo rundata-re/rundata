@@ -80,8 +80,9 @@ describe("the rain moved between two images of the radar", () => {
     // Each image's field uploaded once, its red alone, and kept for the frames after (the 16 last used).
     expect(METEO_SCRIPT).toContain(`gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,j.w*4,j.h*4,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,soft(j))`);
     expect(METEO_SCRIPT).toContain(`if(TX.size>16){const[k,v]=TX.entries().next().value;gl.deleteTexture(v);TX.delete(k)}`);
-    // Faded as before without WebGL, or with the rain gauges' estimate.
-    expect(METEO_SCRIPT).toContain(`const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&glInit();`);
+    // Faded as before without WebGL, with the rain gauges' estimate, or between images over 15 minutes apart (played
+    // fast, one image in 4: the way found between them turned back from one pair to the next, the rain went aside then back).
+    expect(METEO_SCRIPT).toContain(`const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=900000&&glInit();`);
     expect(METEO_SCRIPT).toContain(`const F=way(mx[0],mx[1])&&flow(mx[0],mx[1]);`);
     expect(METEO_SCRIPT).toContain(`if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{`);
   });

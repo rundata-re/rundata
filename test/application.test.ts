@@ -28,7 +28,7 @@ describe("/application, rundata.re on the home screen", () => {
     expect([slash.status, slash.headers.get("location")]).toEqual([301, "/application"]);
     const page = await text("/application");
     expect(page).toContain("<title>rundata.re sur l&#39;écran d&#39;accueil, comme une application</title>");
-    expect(page).toContain("<h1>rundata.re sur votre écran d'accueil</h1>");
+    expect(page).toContain("<h1><span class=\"ident\">rundata.<wbr class=\"adr\">re</span> sur votre écran d'accueil</h1>");
     expect(page).toContain("Une icône sur votre téléphone, et la météo, la vigilance ou le volcan s'ouvrent d'un geste, comme une application.");
     expect(page).toContain("Pas de store, pas de compte : c'est le site lui-même.");
     const description = page.match(/<meta name="description" content="([^"]*)"/)![1].replace(/&#39;/g, "'");
@@ -47,7 +47,7 @@ describe("/application, rundata.re on the home screen", () => {
     expect(page).toContain("«\u00a0Installez ce site en tant qu'application\u00a0»");
     expect(page).toContain("<p>Selon la version de Firefox, l'option peut être ailleurs dans le menu.</p>");
     expect(page).toContain('<p><button type="button" class="go app-go" hidden>Installer</button></p>');
-    expect(page).toContain("Déjà fait\u00a0? L'icône rundata.re ouvre le site comme une application. Pour la retirer, faites un appui long sur l'icône, puis supprimez-la comme une autre application.");
+    expect(page).toContain("Déjà fait\u00a0? L'icône <span class=\"ident\">rundata.re</span> ouvre le site comme une application. Pour la retirer, faites un appui long sur l'icône, puis supprimez-la comme une autre application.");
     expect(page).toContain("const kindOf=(ua,touch)=>");
     expect(page).toContain("d.open=true;d.parentNode.prepend(d)");
     // A computer's Chrome on a touch screen only, as a phone asking for the computer's site says it is: no section opened.
@@ -55,7 +55,7 @@ describe("/application, rundata.re on the home screen", () => {
     // The install block below would repeat the steps, its link pointing to this page: only the sharing stays.
     expect(page).not.toContain('id="inst"');
     expect(page).toContain('<aside class="share wrap" aria-label="Partager et suivre">');
-    expect(page).toContain(`<p id="deja" hidden>rundata.re est déjà sur votre écran d'accueil.</p>`);
+    expect(page).toContain(`<p id="deja" hidden><span class="ident">rundata.re</span> est déjà sur votre écran d'accueil.</p>`);
   });
 
   it("is linked from the install block, the menu and the footer of every page, and listed in the sitemap", async () => {

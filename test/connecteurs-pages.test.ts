@@ -103,12 +103,12 @@ describe("« Relier votre plateforme »", () => {
     expect(page).toContain("Relier votre plateforme");
     expect(page).toContain(`href="${connecteurs.RELIER_PATH}">Relier HelloAsso</a>`);
     const form = plain(await (await get(connecteurs.RELIER_PATH)).text());
-    expect(form).toContain("<h1>Relier votre plateforme à rundata.re</h1>");
+    expect(form).toContain("<h1>Relier votre plateforme à <span class=\"ident\">rundata.<wbr class=\"adr\">re</span></h1>");
     expect(form).toContain("Nous ne lisons jamais vos commandes, paiements, dons, participants ni adhérents, même si vos clés le permettent.");
     expect(form).toContain("<button type=\"submit\">Vérifier mes clés</button>");
     expect(form).toContain("Ouvrez « Mon compte », puis l'onglet « Intégrations et API ».");
     // The open data, never ticked beforehand.
-    expect(form).toContain(`<label class="case"><input type="checkbox" name="ouvert" value="oui"> Mettre aussi nos événements dans les données ouvertes de rundata.re (facultatif)</label>`);
+    expect(form).toContain(`<label class="case"><input type="checkbox" name="ouvert" value="oui"> Mettre aussi nos événements dans les données ouvertes de <span class="ident">rundata.re</span> (facultatif)</label>`);
     expect(form).toContain("Si vous retirez l'accès, ils en sortent aussi ; une copie déjà faite par quelqu'un d'autre reste sous la licence.");
     const conf = plain(await (await get("/confidentialite")).text());
     expect(conf).toContain('Ces événements entrent dans nos données ouvertes (agenda ICS et JSON, Licence Ouverte 2.0) seulement si l\'association l\'a choisi en reliant son compte ; HelloAsso l\'a accepté par écrit le <span class="jm">29 octobre</span> 2026.');
@@ -315,7 +315,7 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     const secret = await relie();
     const page = await get(`${connecteurs.CONNEXION_PATH}${secret}`);
     expect(page.headers.get("x-robots-tag")).toBe("noindex");
-    expect(plain(await page.text())).toContain("L'association Club de pétanque du Tampon (Le Tampon) sera reliée à rundata.re avec l'adresse club@example.org.");
+    expect(plain(await page.text())).toContain("L'association Club de pétanque du Tampon (Le Tampon) sera reliée à <span class=\"ident\">rundata.re</span> avec l'adresse club@example.org.");
     expect(rows("SELECT etat FROM connexions")).toEqual([{ etat: "a_confirmer" }]);
     const done = plain(await (await post(`${connecteurs.CONNEXION_PATH}${secret}`, {})).text());
     expect(done).toContain("C'est confirmé");
@@ -333,7 +333,7 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     db.prepare("UPDATE connexions SET etat = 'actif'").run();
     db.prepare("INSERT INTO evenements_connectes (connexion, id, maj, titre, debut, lien) SELECT id, 'e', 'm', 'T', '2026-11-14T18:00', 'https://x' FROM connexions").run();
     const html = plain(await (await post(connecteurs.RELIER_PATH, { ...CLES, email: "nouveau@example.org" })).text());
-    expect(html).toContain("Cette association est déjà reliée à rundata.re.");
+    expect(html).toContain("Cette association est déjà reliée à <span class=\"ident\">rundata.re</span>.");
     const scelle = /name="attente" value="([^"]+)"/.exec(html)![1];
     await post(connecteurs.CONFIRMER_PATH, { attente: scelle, choix: "oui" });
     const second = /\/associations\/connexion\/([\w-]+)\n/.exec(sent.at(-1)!.text)![1];
@@ -350,7 +350,7 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     await post(`${connecteurs.CONNEXION_PATH}${secret}`, {});
     db.prepare("INSERT INTO evenements_connectes (connexion, id, maj, titre, debut, lien) SELECT id, 'e', 'm', 'T', '2026-11-14T18:00', 'https://x' FROM connexions").run();
     const page = plain(await (await get(`${connecteurs.CONNEXION_PATH}${secret}/retirer`)).text());
-    expect(page).toContain("L'association Club de pétanque du Tampon est reliée à rundata.re depuis le ");
+    expect(page).toContain("L'association Club de pétanque du Tampon est reliée à <span class=\"ident\">rundata.re</span> depuis le ");
     expect(page).toContain("<button type=\"submit\">Retirer l'accès</button>");
     expect(rows("SELECT COUNT(*) AS n FROM connexions")).toEqual([{ n: 1 }]);
     const done = plain(await (await post(`${connecteurs.CONNEXION_PATH}${secret}/retirer`, {})).text());
@@ -371,8 +371,8 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     const non = await relie("non@example.org");
     expect(rows("SELECT email, ouvert FROM connexions")).toEqual([{ email: "non@example.org", ouvert: 0 }]);
     await post(`${connecteurs.CONNEXION_PATH}${non}`, {});
-    expect(plain(await (await get(`${connecteurs.CONNEXION_PATH}${non}/retirer`)).text())).toContain("vos événements ne s'affichent plus sur rundata.re.</p>");
-    expect(plain(await (await post(`${connecteurs.CONNEXION_PATH}${non}/retirer`, {})).text())).toContain("ne s'affichent plus sur rundata.re. Un e-mail");
+    expect(plain(await (await get(`${connecteurs.CONNEXION_PATH}${non}/retirer`)).text())).toContain("vos événements ne s'affichent plus sur <span class=\"ident\">rundata.re</span>.</p>");
+    expect(plain(await (await post(`${connecteurs.CONNEXION_PATH}${non}/retirer`, {})).text())).toContain("ne s'affichent plus sur <span class=\"ident\">rundata.re</span>. Un e-mail");
     // Ticked: « oui », kept ticked when a field is to correct, written 1, and the withdrawal says the open data too.
     const wrong = plain(await (await post(connecteurs.RELIER_PATH, { ...CLES, email: "pas une adresse", ouvert: "oui" })).text());
     expect(wrong).toContain(`<input type="checkbox" name="ouvert" value="oui" checked>`);
@@ -380,8 +380,8 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     const oui = await relie("oui@example.org", { ouvert: "oui" });
     expect(rows("SELECT email, ouvert FROM connexions")).toEqual([{ email: "oui@example.org", ouvert: 1 }]);
     await post(`${connecteurs.CONNEXION_PATH}${oui}`, {});
-    expect(plain(await (await get(`${connecteurs.CONNEXION_PATH}${oui}/retirer`)).text())).toContain("vos événements ne s'affichent plus sur rundata.re ni dans nos données ouvertes.</p>");
-    expect(plain(await (await post(`${connecteurs.CONNEXION_PATH}${oui}/retirer`, {})).text())).toContain("ne s'affichent plus sur rundata.re ni dans nos données ouvertes. Un e-mail");
+    expect(plain(await (await get(`${connecteurs.CONNEXION_PATH}${oui}/retirer`)).text())).toContain("vos événements ne s'affichent plus sur <span class=\"ident\">rundata.re</span> ni dans nos données ouvertes.</p>");
+    expect(plain(await (await post(`${connecteurs.CONNEXION_PATH}${oui}/retirer`, {})).text())).toContain("ne s'affichent plus sur <span class=\"ident\">rundata.re</span> ni dans nos données ouvertes. Un e-mail");
   });
 
   it("refuses everything without the encryption key: nothing kept in clear instead", async () => {

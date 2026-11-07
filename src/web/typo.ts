@@ -12,6 +12,28 @@ import { enTetes } from "./securite.js";
 const RAW = /^<(script|style|pre|code|textarea)\b/;
 const LT = 60;
 const SPACE = 32;
+const R = 114;
+
+// « rundata.re » in the prose of a page, in a span without hyphenation (.ident, pages.ts): under 19.9 rem, where the page
+// is hyphenated, Safari cuts it « runda-ta.re ». Not in a link's name, the tab's title, an <option> or an SVG, where a span
+// is shown as text or hides it; nor in a path (« rundata.re/<wbr class="adr">associations », cheminsTexte) or a longer
+// name (« mcp.rundata.re », « rundata.reunion »). In a page's <h1>, wider than its line at 160 px (168 px in a 144 px
+// line on /mcp), it goes to the next line after its « . » (a <wbr> seen under 19.9 rem only), never « rundata.r|e »; not
+// in an <h2>, where it fits (126 px) and the <wbr> would leave « rundata. » alone at the end of a line.
+const SITE = "rundata.re";
+const OUVRE = '<span class="ident">';
+const NOM = `${OUVRE}${SITE}</span>`;
+const NOM_TITRE = `${OUVRE}rundata.<wbr class="adr">re</span>`;
+const GARDE = /^<(\/?)(a|title|option|svg|h1)[\s>]/;
+const AVANT = /[\p{L}\p{N}._/@-]/u;
+const APRES = /[\p{L}\p{N}_/-]/u;
+
+/** Whether the « rundata.re » at `i` is the site's name alone in a text, not already in its span. */
+function nomSeul(html: string, i: number): boolean {
+  if (!html.startsWith(SITE, i) || html.startsWith(OUVRE, i - OUVRE.length) || AVANT.test(html.charAt(i - 1))) return false;
+  const j = i + SITE.length;
+  return !APRES.test(html.charAt(j)) && !(html.charAt(j) === "." && APRES.test(html.charAt(j + 1)));
+}
 
 /** Where the tag, comment or raw element that starts at `i` ends (its last « > »); esc() writes no « > » in attributes. */
 function skip(html: string, i: number): number {
@@ -22,13 +44,26 @@ function skip(html: string, i: number): number {
   return close < 0 ? html.length : at(html.indexOf(">", close), 0);
 }
 
-export function typo(html: string): string {
+/**
+ * `html` with its no-break spaces; with `nom`, a whole page's, its « rundata.re » in their span too (nomSeul). Never on a
+ * text that goes in an attribute (the metas' description, the JSON-LD's).
+ */
+export function typo(html: string, nom = false): string {
   let out = "";
   let from = 0;
+  let garde = 0;
+  let titre = 0;
   for (let i = 0; i < html.length; i++) {
     const c = html.charCodeAt(i);
     if (c === LT) {
+      const g = nom ? GARDE.exec(html.slice(i, i + 9)) : null;
+      if (g?.[2] === "h1") titre = g[1] ? Math.max(0, titre - 1) : titre + 1;
+      else if (g) garde = g[1] ? Math.max(0, garde - 1) : garde + 1;
       i = skip(html, i);
+    } else if (c === R && nom && garde === 0 && nomSeul(html, i)) {
+      out += html.slice(from, i) + (titre ? NOM_TITRE : NOM);
+      from = i + SITE.length;
+      i = from - 1;
     } else if (c === SPACE) {
       const kept = spaceAt(html, i);
       if (kept === " ") continue;
@@ -45,7 +80,7 @@ export function typo(html: string): string {
  */
 export async function typoPage(r: Response | null): Promise<Response | null> {
   if (!r?.body || !(r.headers.get("content-type") ?? "").startsWith("text/html")) return r;
-  const html = typo(await r.text());
+  const html = typo(await r.text(), true);
   const headers = new Headers(r.headers);
   for (const [k, v] of Object.entries(await enTetes(html))) headers.set(k, v);
   return new Response(html, { status: r.status, statusText: r.statusText, headers });

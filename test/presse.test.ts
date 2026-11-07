@@ -23,18 +23,18 @@ const page = async (c = cache()) => {
 describe("press page", () => {
   it("has the release, ending on the press contact", async () => {
     const html = await page();
-    expect(html).toContain("<h1>rundata.re, pour la presse</h1>");
+    expect(html).toContain("<h1><span class=\"ident\">rundata.<wbr class=\"adr\">re</span>, pour la presse</h1>");
     expect(html).toContain("Toute La Réunion en direct, sur une seule page… et dans votre assistant IA");
-    expect(html).toContain(`Contact presse\u00a0: Benjamin, pour l'équipe rundata.re — <a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>`);
+    expect(html).toContain(`Contact presse\u00a0: Benjamin, pour l'équipe <span class="ident">rundata.re</span> — <a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>`);
     // One signature: the release ends on its contact line, as the communication kit's communiqué does.
-    expect(html).not.toContain("<p>L'équipe rundata.re</p>");
+    expect(html).not.toContain("<p>L'équipe <span class=\"ident\">rundata.re</span></p>");
     expect(html).toContain("Le sentier du Piton des Neiges\u00a0: sa trace GPS, sa longueur et son dénivelé.");
     // As the communication kit sends it: the news in, no figure of stations in the text, nothing announced that has shipped.
     expect(html).toContain("<li><b>Actualités</b>\u00a0: les informations des médias de l'île");
     expect(html).toContain("les stations Météo-France de la côte aux sommets, relevées toutes les 6 minutes");
     expect(html).not.toContain("D'autres rubriques arrivent");
     // The team speaks, not an unnamed user; the site is « en continu », not every five minutes.
-    expect(html).toContain("explique l'équipe de rundata.re.</p>");
+    expect(html).toContain("explique l'équipe de <span class=\"ident\">rundata.re</span>.</p>");
     expect(html).not.toContain("premiers utilisateurs");
     expect(html).toContain("commune par commune, mise à jour en continu, chaque donnée avec son heure.");
     expect(html).not.toContain("cinq minutes");
@@ -100,7 +100,7 @@ describe("press page", () => {
     // Reused for weeks: the label dates the captures, and says when they show an alert.
     expect(await page()).toContain(`<p class="eyebrow">Captures du 25 octobre 2026, pendant l'alerte 1 du Piton de la Fournaise.</p>`);
     const html = await page();
-    expect(html).toContain("Utilisation libre des visuels avec la mention rundata.re.");
+    expect(html).toContain("Utilisation libre des visuels avec la mention <span class=\"ident\">rundata.re</span>.");
     for (const [id, v] of Object.entries(visuals)) {
       expect(html).toContain(`<img src="${v.vignette}" width="${v.vignette_largeur}" height="${v.vignette_hauteur}" loading="lazy"`);
       expect(html).toContain(`<a class="dl" href="${v.hd}" download="rundata-${id}.jpg">Télécharger (HD)</a>`);

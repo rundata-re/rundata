@@ -30,7 +30,7 @@ describe("larger text on a narrow screen, on the pages of facts and of search", 
   it("puts a narrow tile's title on its own line, and keeps a tile's figure and its word inside the tile", () => {
     // Three columns at 768 px with the text at 150 %: the title beside the icon and the arrow was cut by the tile's edge.
     expect(CSS).toContain(".tile{container:tuile/inline-size}");
-    expect(CSS).toContain("@container tuile (max-width:12rem){.th{flex-wrap:wrap}.th h3{order:1;flex:1 0 100%}.th .go{margin-left:auto}}");
+    expect(CSS).toContain("@container tuile (max-width:12rem){.th{flex-wrap:wrap}.th h3{order:1;flex:1 0 100%;hyphens:auto;-webkit-hyphens:auto}.th .go{margin-left:auto}}");
     // The figure no bigger than the tile allows, the same as before at 100 % (4.6vw is the smaller there); its word whole.
     expect(CSS).toContain(".tv{font:800 clamp(1.15rem,min(4.6vw,13cqi),1.5rem)/1.12 ");
     expect(CSS).toContain(".tv .nw{white-space:nowrap;overflow-wrap:normal;font-size:min(1em,12.5cqi)}");

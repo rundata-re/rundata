@@ -118,6 +118,16 @@ describe("the map of the power installed", () => {
     for (const [, id] of marks) expect(list).toContain(`id="${id}"`);
   });
 
+  it("lets Chrome hyphenate « installations » in the list, glued to its number, and only there", () => {
+    const list = installationsList();
+    expect(list).toMatch(/\(\d+\u00a0<span>installations\)<\/span>/);
+    expect(list).toMatch(/\(1\u00a0<span>installation\)<\/span>/);
+    expect(list).not.toMatch(/\d\u00a0installation/);
+    // The words of the map's zones, in attributes, stay as they are.
+    expect(map).not.toContain("<span>installation");
+    expect(map).toMatch(/data-tv="[^"]*\(\d+\u00a0installations\)/);
+  });
+
   it("gives each round its group and its MW for the replay, the groups' MW summed from the register", () => {
     const rounds = [...map.matchAll(/<circle class="sh [^"]+" [^>]*\/>/g)].map((m) => m[0]);
     expect(rounds.length).toBe(data.communes.reduce((n, c) => n + c.filieres.length, 0));

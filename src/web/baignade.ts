@@ -14,9 +14,12 @@ export const LINK = `<a href="${PATH}">${esc(T.lien)} →</a>`;
 /** The line of the pages that only point here (the coastal communes, /eau). */
 export const LINE = `${esc(T.h2)} : <a href="${PATH}">${esc(T.lien.charAt(0).toLowerCase() + T.lien.slice(1))} →</a>`;
 
-/** The words that must not be cut at the end of a line: « n° 180 », « 300 m », « art. 2 ». */
+/**
+ * The words that must not be cut at the end of a line: « n° 180 », « 300 m », « art. 2 ». A date may end a line after its last
+ * « / » under 19.9 rem (wbr.adr, pages.ts): Chrome found no break in « (27/10/2026). » and cut it bare, « (27/10/202 » then « 6). ».
+ */
 const keep = (s: string) => s.replace(/(n°|art\.) (\d)/g, "$1\u00a0$2").replace(/(\d) m(?!\p{L})/gu, "$1\u00a0m");
-const say = (s: string) => esc(keep(s));
+const say = (s: string) => esc(keep(s)).replaceAll(/(\d\d\/\d\d\/)(\d{4})/g, '$1<wbr class="adr">$2');
 
 /** Where the GIP Centre Sécurité Requin announces the day's zones, with the links on « Instagram » and « Facebook ». */
 const STORIES_HTML = esc(T.stories)

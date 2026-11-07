@@ -124,6 +124,9 @@ function groups(today: number, commune?: string): string {
       ? `<details class="note"><summary>${where}${g.cals.length}\u00a0calendriers du TCO (PDF)</summary><p>${links}</p></details>`
       : `<p class="note">${where}${links}</p>`;
   };
+  // « La Possession » is glued by a no-break space: Chrome hyphenates no word of such a group and cut it bare,
+  // « Posse|ssion ». In a <span>, the name gets its hyphen again, « Pos-session », with no new break before it. Its comma
+  // goes in the span too: WebKit put a bracket that followed a span alone on the next line (installationsList).
   const dated = rhythms
     .map((x) => {
       const { g } = x;
@@ -132,7 +135,7 @@ function groups(today: number, commune?: string): string {
       const r = x.parts.join("\u00a0; ");
       const feries = col.holidays(cal, today).map((h) => (h.reportee ? esc(col.holidayLine(h)) : `Jour férié : vérifiez <a href="${esc(cal.pdf)}" rel="noopener">le calendrier du TCO (PDF) →</a>`));
       return `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(`${r}.`)}">${folded(true,
-        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">· ${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span>${apart(x)}</${hx}>`,
+        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">· ${commune ? "" : `${`${esc(g.commune)},`.replace(/^(Le|La|Les) (.+)/, "$1\u00a0<span>$2</span>")} `}${count(g)}</span>${apart(x)}</${hx}>`,
         `<p>${esc(cap(r))}.</p>${feries.map((f) => `<p>${f}</p>`).join("")}
 ${list(g)}
 ${pdfs(g)}`)}</div>`;

@@ -146,10 +146,14 @@ export function installationsReplay(j: Journee): string {
     `<button type="button" class="ip-re">Revenir à la puissance installée</button></p></div>`;
 }
 
-/** Each commune's line, where its zone on the map leads: its filières, the strongest first. */
+/**
+ * Each commune's line, where its zone on the map leads: its filières, the strongest first. « installations » in a <span>:
+ * glued to its number, Chrome would not hyphenate it and left « ) » alone on a line; in the span it writes « installa-tions) ».
+ * The bracket goes in the span too: after « installations</span> », WebKit put « ) » alone on the next line.
+ */
 export function installationsList(): string {
   return `<ul class="rows inst">${INSTALLATIONS.communes.map((c) =>
-    `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b><span>${esc(filieresText(c))}</span></li>`).join("")}</ul>`;
+    `<li id="inst-${slugify(c.commune)}" class="tgt"><b>${esc(c.commune)}</b><span>${esc(filieresText(c)).replaceAll(/(\d)\u00a0(installations?\))/g, "$1\u00a0<span>$2</span>")}</span></li>`).join("")}</ul>`;
 }
 
 // ---------------------------------------------------------------- the filières, one by one

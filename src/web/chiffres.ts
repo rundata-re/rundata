@@ -44,9 +44,10 @@ function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
   ${lecture}<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">${esc(d.domaine)}</caption><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
     `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div></details>`;
   });
+  // « (17) » may go to the next line under 19.9 rem (wbr.adr, pages.ts): glued to its domain, Chrome cut it « (17 » then « ) ».
   return `<h2 id="sources">Toutes les sources</h2>
   <p>Chaque source lue, par domaine\u00a0: son producteur, et sa licence ou les conditions de reprise de son site.</p>
-  <p>${inv.map((d) => `<a href="#sources-${esc(d.categorie)}">${esc(d.domaine)}</a>\u00a0(${n(d.sources.length)})`).join(" · ")}</p>
+  <p>${inv.map((d) => `<a href="#sources-${esc(d.categorie)}">${esc(d.domaine)}</a>\u00a0<wbr class="adr">(${n(d.sources.length)})`).join(" · ")}</p>
   ${nonNommees ? `<p>Plus ${nonNommees > 1 ? `${n(nonNommees)} sites non officiels, comptés` : "1 site non officiel, compté"} dans les sources sans être nommé${nonNommees > 1 ? "s" : ""} ici.</p>` : ""}
   <div class="plis">
   ${groupes.join("\n  ")}

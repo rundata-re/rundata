@@ -168,6 +168,11 @@ async function get<T>(
   try {
     let res: Response;
     const signal = AbortSignal.timeout(Math.max(timeoutMs, patience.getStore() ?? 0));
+    const unanswered = (err: unknown) => {
+      const failed = new UpstreamError(source, err instanceof Error ? err.message : String(err));
+      onFailure?.(source, url, failed);
+      return failed;
+    };
     onRead?.(url);
     try {
       res = await fetch(url, {
@@ -176,9 +181,7 @@ async function get<T>(
         signal,
       });
     } catch (err) {
-      const failed = new UpstreamError(source, err instanceof Error ? err.message : String(err));
-      onFailure?.(source, url, failed);
-      throw failed;
+      throw unanswered(err);
     }
     if (!res.ok) {
       await res.body?.cancel().catch(() => {});
@@ -186,7 +189,14 @@ async function get<T>(
       onFailure?.(source, url, failed);
       throw failed;
     }
-    return await read(res);
+    try {
+      return await read(res);
+    } catch (err) {
+      // The delay runs until the body has come: a body still coming when it ends is a source that does not answer in
+      // time, as a fetch cut there (the IPGP's earthquakes, 8 s). A body that came and cannot be read stays ours to mend.
+      if (signal.aborted) throw unanswered(err);
+      throw err;
+    }
   } finally {
     places.give();
   }

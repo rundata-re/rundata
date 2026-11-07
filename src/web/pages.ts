@@ -64,7 +64,7 @@ import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from
 import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
 import { adresseTexte } from "./adresse.js";
-import { crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
+import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
@@ -1231,6 +1231,9 @@ summary{min-height:24px}
    from the same line, its time below. In the line's column, the direction had 100 px at 200 %, less than « (Kar'Ouest) »
    (156 px) or « Plaines », cut in the middle. */
 .rows.departs li{display:block}.rows.departs li>b{margin-right:.6rem}.rows.departs li>:last-child{display:block;margin-top:.3rem}
+/* A tool's name in a <code> (soulignesCoupables, domains.ts) a tenth smaller: at 160 px « temperature_ » was 122.8 px in
+   a 121.6 px line on /mer, and was cut before its « _ ». */
+code>.ident{font-size:.9em}
 /* A list of figures (/meteo's sea, /electricite's sources): the figure under its name, which then has the whole line.
    Beside « 25,4 °C », « Saint-Leu » had 69 px at 200 % and was cut into « Sain », « t- » and « Leu ». */
 .bars li{grid-template-columns:minmax(0,1fr)}
@@ -2173,7 +2176,7 @@ ${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p 
 </section>
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur la météo de l'île</h2>
-  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>meteo_<wbr>actuelle</code> et <code>prevision_<wbr>meteo</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>${coupable("meteo_actuelle")}</code> et <code>${coupable("prevision_meteo")}</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 ${WEATHER_NOTES}`;
@@ -2584,7 +2587,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
 ${suivi}
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Votre IA, branchée sur la vigilance</h2>
-  <p>Avec le connecteur, votre assistant lit lui-même la vigilance de Météo-France (outil <code>vigilance_<wbr>meteo</code>), et la signale d'office quand vous lui demandez la météo d'un lieu. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant lit lui-même la vigilance de Météo-France (outil <code>${coupable("vigilance_meteo")}</code>), et la signale d'office quand vous lui demandez la météo d'un lieu. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
 <section aria-labelledby="h-couleurs">
@@ -2775,7 +2778,7 @@ ${bathingBlock(now, undefined, g)}${g.feuille}
 </section>
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Demandez à votre IA : « la mer est à combien à Saint-Leu ? », « la houle demain à Saint-Pierre ? »</h2>
-  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure la plus proche de la plage, avec sa date, et la houle prévue, étiquetée comme une prévision (outil <code>temperature_<wbr>mer</code>). Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure la plus proche de la plage, avec sa date, et la houle prévue, étiquetée comme une prévision (outil <code>${coupable("temperature_mer")}</code>). Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>`;
   return layout(origin, { title, description, path: "/mer", jsonld, alerte }, band, g.ligne + body);
@@ -2795,7 +2798,7 @@ export function legalPage(origin: string, kind: "confidentialite" | "conditions"
   <p>Pour savoir quelles pages et quels outils servent, et les améliorer, chaque page vue et chaque message reçu par le connecteur ajoutent une ligne anonyme aux statistiques : la page et sa rubrique, ou l'outil appelé avec le nom des paramètres donnés (pas leur valeur) ; le lieu demandé quand c'en est un, tel que le site l'a compris (une commune, une plage…), ou le texte demandé, coupé à 60 caractères, quand il ne l'a pas compris, pour apprendre à le comprendre ; le nom et la version de l'application de l'assistant (par exemple « claude-ai ») ; si la réponse a réussi, son temps et sa taille ; le pays déduit par Cloudflare, la langue du navigateur, si la page est ouverte depuis l'application installée sur l'écran d'accueil, le site d'où vient le visiteur et son type (une personne, un assistant, ou le nom du robot d'un assistant ou d'un moteur de recherche).</p>
   <p>Chaque lecture d'un flux RSS de commune ajoute aussi une ligne, à part : le flux, le nom de l'application qui le lit (Feedly, Inoreader…) et le nombre d'abonnés qu'elle annonce, sans rien sur les abonnés eux-mêmes.</p>
   <p>Ni adresse IP, ni identifiant, ni cookie. Des coordonnées ne sont jamais gardées, seulement leur commune.</p>
-  <p>Depuis le 24 octobre 2026, un texte non compris qui ressemble à une adresse (un numéro suivi d'une rue, d'un chemin, d'une impasse, d'un lotissement…) n'est plus gardé tel qu'écrit, ni dans les statistiques ni dans le journal : seulement le mot « adresse ». Un nom de rue sans numéro peut encore être gardé, coupé à 60 caractères, comme tout lieu non compris. Une adresse postale donnée à l'outil <code>fiche_<wbr>terrain</code> n'est jamais enregistrée, pas plus que les autres paramètres (un arrêt de bus, un sujet…).</p>
+  <p>Depuis le 24 octobre 2026, un texte non compris qui ressemble à une adresse (un numéro suivi d'une rue, d'un chemin, d'une impasse, d'un lotissement…) n'est plus gardé tel qu'écrit, ni dans les statistiques ni dans le journal : seulement le mot « adresse ». Un nom de rue sans numéro peut encore être gardé, coupé à 60 caractères, comme tout lieu non compris. Une adresse postale donnée à l'outil <code>${coupable("fiche_terrain")}</code> n'est jamais enregistrée, pas plus que les autres paramètres (un arrêt de bus, un sujet…).</p>
   <p>La page envoie aussi, sans identifiant, le temps qu'elle a mis à s'afficher sur votre appareil\u00a0; sur la page du connecteur, le fait que son adresse a été copiée\u00a0; et votre réponse au bouton «\u00a0Cette page vous a aidé\u00a0?\u00a0» (la page, et oui ou non).</p>
   <p>Ces statistiques sont gardées par Cloudflare (Workers Analytics Engine) trois mois au plus.</p>
   <p id="mesure-cloudflare">La mesure de Cloudflare. Chaque page charge aussi un petit script de Cloudflare Web Analytics, l'outil de mesure de notre hébergeur. À chaque page vue, il envoie à Cloudflare l'adresse de la page, le site d'où vous venez et des mesures de vitesse\u00a0: le temps qu'a mis la page à s'afficher, sa stabilité et sa réactivité sur votre appareil. Cloudflare y associe le pays, le navigateur, le système et le type d'appareil (ordinateur, téléphone, tablette). Ce script ne pose aucun cookie et ne garde rien dans votre navigateur. Comme pour toute page, Cloudflare reçoit votre adresse IP\u00a0; selon sa documentation, il ne s'en sert pas, ni d'aucune autre donnée, pour suivre les visiteurs dans le temps ou d'un site à l'autre. Cloudflare garde chaque mesure 7 jours, puis un échantillon d'environ un dixième, que nous pouvons consulter pendant six mois. Ces mesures nous servent à voir quelles pages sont lues et lesquelles s'affichent lentement, pour améliorer le site.</p>
@@ -2806,7 +2809,7 @@ export function legalPage(origin: string, kind: "confidentialite" | "conditions"
   <h2>Journaux techniques</h2>
   <p>Comme tout hébergeur, Cloudflare garde quelques jours les journaux du service (adresse demandée, erreurs, durée). Pour chaque message du connecteur, ils reprennent les éléments des statistiques ci-dessus, sans rien de plus. Une copie sans aucune adresse IP est conservée un an au plus, pour comprendre les pannes. Votre conversation n'y figure jamais.</p>
   <h2 id="avis-donnees">Les avis que vous laissez</h2>
-  <p>Le formulaire en bas de chaque page et l'outil <code>donner_<wbr>avis</code> du connecteur (que votre assistant appelle quand vous signalez une donnée qui manque ou une erreur, ou avec votre accord) enregistrent : la date, le type d'avis, le message, l'outil et le lieu concernés, le besoin résumé en quelques mots (jamais le texte de la conversation), la page du formulaire, et le nom de l'assistant quand il se présente (Claude, ChatGPT…). Ils servent à corriger et à compléter les données, et à rien d'autre. Ni compte, ni adresse IP : pour refuser les envois en masse, une empreinte chiffrée de l'adresse, qui change chaque jour et ne permet pas de la retrouver, est gardée un jour puis effacée. Les numéros de téléphone et adresses électroniques écrits dans un message sont retirés avant l'enregistrement. Les avis sont conservés 12 mois, chez Cloudflare (base D1), puis effacés automatiquement. Ils ne sont ni publiés ni partagés. Pour qu'un avis soit effacé plus tôt, écrire à <b>${adresseTexte("contact@rundata.re")}</b> en le citant.</p>
+  <p>Le formulaire en bas de chaque page et l'outil <code>${coupable("donner_avis")}</code> du connecteur (que votre assistant appelle quand vous signalez une donnée qui manque ou une erreur, ou avec votre accord) enregistrent : la date, le type d'avis, le message, l'outil et le lieu concernés, le besoin résumé en quelques mots (jamais le texte de la conversation), la page du formulaire, et le nom de l'assistant quand il se présente (Claude, ChatGPT…). Ils servent à corriger et à compléter les données, et à rien d'autre. Ni compte, ni adresse IP : pour refuser les envois en masse, une empreinte chiffrée de l'adresse, qui change chaque jour et ne permet pas de la retrouver, est gardée un jour puis effacée. Les numéros de téléphone et adresses électroniques écrits dans un message sont retirés avant l'enregistrement. Les avis sont conservés 12 mois, chez Cloudflare (base D1), puis effacés automatiquement. Ils ne sont ni publiés ni partagés. Pour qu'un avis soit effacé plus tôt, écrire à <b>${adresseTexte("contact@rundata.re")}</b> en le citant.</p>
 ${enLigne() ? `<h2 id="associations-donnees">Ce que les clubs et associations envoient</h2>
   <p><b>Formulaire «\u00a0Proposer un événement\u00a0».</b> Nous recueillons l'adresse e-mail de l'organisateur pour confirmer l'événement, le modérer et permettre de le modifier ou de l'annuler. Elle n'est pas publiée, sauf si l'organisateur coche «\u00a0Utiliser mon adresse e-mail comme contact public\u00a0»\u00a0: elle apparaît alors avec l'événement, sur rundata.re, dans les réponses des assistants IA et dans le flux ouvert des événements, et d'autres peuvent l'avoir copiée entre-temps. Il en va de même pour le contact public saisi dans le formulaire. L'adresse et le contact public sont effacés 30 jours après la dernière date de l'événement, avec une correction qui attendrait encore la relecture. Une proposition non confirmée est effacée sous 48 heures, et un événement l'est un an après sa dernière date.</p>
   <p><b>Formulaire «\u00a0Nous donner votre lien\u00a0».</b> Le lien, le nom de l'organisation, sa commune et le contact facultatif (jamais publié) sont effacés 12 mois après l'envoi.</p>
@@ -2828,7 +2831,7 @@ ${enLigne() ? `<h2 id="associations-donnees">Ce que les clubs et associations en
   <h2>Usage raisonnable</h2>
   <p>Le service est fait pour répondre à des questions. Ne l'interrogez pas en masse de façon automatique : il peut limiter ou bloquer un usage qui gêne les autres ou les services publics qu'il interroge.</p>
   <h2 id="reutiliser">Réutiliser les données</h2>
-  <p>Chaque donnée garde la licence de sa source : Licence Ouverte Etalab 2.0 pour la plupart, ODbL pour OpenStreetMap, CC BY 4.0 pour Open-Meteo et les séismes de l'IPGP. L'outil <code>sources_<wbr>donnees</code> les liste avec l'attribution à citer.</p>
+  <p>Chaque donnée garde la licence de sa source : Licence Ouverte Etalab 2.0 pour la plupart, ODbL pour OpenStreetMap, CC BY 4.0 pour Open-Meteo et les séismes de l'IPGP. L'outil <code>${coupable("sources_donnees")}</code> les liste avec l'attribution à citer.</p>
 ${enLigne() ? `<p id="evenements-proposes"><b>Événements proposés par les clubs et associations.</b> L'association qui propose un événement en est responsable\u00a0: elle garantit qu'il est ouvert au public, exact, et qu'elle a le droit de le publier. rundata.re relit chaque proposition avant de l'afficher. Il peut refuser ou retirer un événement, en donnant le motif à l'organisateur\u00a0: notamment un événement privé, une adresse de domicile, des données personnelles, de la politique électorale, une collecte d'argent sans organisme identifié ou de la publicité commerciale. Un événement faux ou qui pose problème peut être signalé à ${adresseTexte("contact@rundata.re")}\u00a0; nous le retirons, en général dans la journée. La mention «\u00a0Proposé par l'organisateur\u00a0» signale que l'événement n'a pas été vérifié par rundata.re. Les événements publiés sont sous Licence Ouverte 2.0.</p>
   ` : ""}  <h2 id="mentions-legales">Mentions légales</h2>
   <p>rundata.re est édité à titre non professionnel par un particulier qui, comme le permet l'article 1-1, II de la loi n° 2004-575 du 21 juin 2004 pour la confiance dans l'économie numérique, a choisi de préserver son anonymat. Ses éléments d'identification ont été communiqués à l'hébergeur. Contact : <b>${adresseTexte("contact@rundata.re")}</b>. Hébergeur : Cloudflare, Inc., 101 Townsend Street, San Francisco, CA 94107, États-Unis (${adresseTexte("cloudflare.com")}). Nom de domaine enregistré auprès de l'AFNIC (.re).</p>

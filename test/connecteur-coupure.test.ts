@@ -9,13 +9,16 @@ const between = (html: string, from: string, to: string) => {
   const start = html.indexOf(from) + from.length;
   return html.slice(start, html.indexOf(to, start));
 };
-// <wbr> is a void element that holds no text: what is copied or read aloud is what is left between them.
-const text = (html: string) => html.split("<wbr>").join("");
+// <wbr> is a void element that holds no text, and the span around a name joined by « _ » holds only it: what is copied
+// or read aloud is what is left between them.
+const text = (html: string) =>
+  html.split("<wbr>").join("").replaceAll('<span class="ident">', "").replaceAll("</span>", "");
 const HIDDEN = ["​", "‌", "‍", "⁠", "­", "﻿"];
 
 describe("text that may be cut after a « . » or a « _ »", () => {
   it("is the same text once its <wbr> elements are left out, with no hidden character", () => {
-    expect(coupable("annuaire_services_publics")).toBe("annuaire_<wbr>services_<wbr>publics");
+    const nom = '<span class="ident">annuaire_<wbr>services_<wbr>publics</span>';
+    expect(coupable("annuaire_services_publics")).toBe(nom);
     expect(coupable("sa fiche sur data.gouv.fr")).toBe("sa fiche sur data.<wbr>gouv.<wbr>fr");
     for (const s of ["annuaire_services_publics", "ind_atmo_2021", "sa fiche sur data.gouv.fr", "qualite_air"]) {
       expect(text(coupable(s))).toBe(s);
@@ -25,8 +28,8 @@ describe("text that may be cut after a « . » or a « _ »", () => {
 
   it("holds the tool's name in the connector card", () => {
     for (const [html, cut] of [
-      [carburantsPage("https://rundata.re", null), "annuaire_<wbr>services_<wbr>publics"],
-      [airPage("https://rundata.re", null), "qualite_<wbr>air"],
+      [carburantsPage("https://rundata.re", null), '<span class="ident">annuaire_<wbr>services_<wbr>publics</span>'],
+      [airPage("https://rundata.re", null), '<span class="ident">qualite_<wbr>air</span>'],
     ]) {
       expect(between(html, "(outil <code>", "</code>")).toBe(cut);
     }
@@ -34,7 +37,7 @@ describe("text that may be cut after a « . » or a « _ »", () => {
 
   it("holds the layer's code in /air's source list, never the link", () => {
     const dd = between(airPage("https://rundata.re", null), "<dt>Diffusé par</dt><dd>", "</dd>");
-    expect(dd).toContain("couche ouverte ind_<wbr>atmo_<wbr>2021 (");
+    expect(dd).toContain('couche ouverte <span class="ident">ind_<wbr>atmo_<wbr>2021</span> (');
     // In the link too, after each « . » of its address, its whole text in aria-label: a <wbr> alone would make a screen
     // reader say « data. gouv. fr ».
     expect(dd).toContain('rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur data.<wbr>gouv.<wbr>fr</a>)');

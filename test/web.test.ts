@@ -171,7 +171,7 @@ describe("home page", () => {
     // reader, gives the station, its altitude, the value to the tenth, and when and by whom it was measured.
     expect(cold.text).toMatch(/<figure class="hero-map"><svg class="map relief" viewBox="[^"]+" role="group"[^]*?<a class="mk" href="\/meteo#st-[a-z0-9-]+" aria-label="[^"]+ · [\d\u202f]+\u202fm : \d+(,\d)?\u202f°C, mesurée le \d\d\/\d\d à[\s\u00a0]\d\d:\d\d par [^"]+, voir le détail" data-tp="[^"]+ · [\d\u202f]+\u202fm" data-tv="\d+(,\d)?\u202f°C" data-td="mesurée le \d\d\/\d\d à[\s\u00a0]\d\d:\d\d par [^"]+"><circle class="hit"[^>]+\/><title>[^<]+<\/title><circle class="sh"/);
     expect(cold.text).toContain('<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="/meteo">');
-    expect(cold.text).toMatch(/meteo_actuelle\(lieu: "[^"]+"\)<\/p>\s*<p class="bubble ai">\d+(,\d)?\u202f°C, mesurés le \d\d\/\d\d à\u00a0\d\d:\d\d/);
+    expect(cold.text).toMatch(/<span class="ident">meteo_<wbr>actuelle\(lieu:<\/span> "[^"]+"\)<\/p>\s*<p class="bubble ai">\d+(,\d)?\u202f°C, mesurés le \d\d\/\d\d à\u00a0\d\d:\d\d/);
     expect(cold.text).toContain("Piton Maïdo");
     expect(cold.text).toMatch(/mesuré le \d\d\/\d\d à\u00a0\d\d:\d\d/);
     // No badge above the title since the top was made lighter (04/11/2026): the map's caption says when they measured.

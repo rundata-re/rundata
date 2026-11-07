@@ -1086,11 +1086,15 @@ summary{min-height:24px}
 :where(section,.card,.pitch,.sec-h,.fil-l){grid-template-columns:minmax(0,1fr)}
 /* Under 19.9 em (a 390 px phone from 125 %; 318 px at 100 %, so nothing moves on a phone at 100 %): a word too long for
    its line is cut where French cuts it, with a hyphen; a row's date or count, a station's hour, an air level's word and a
-   button's icon go on a line of their own rather than squeezing the name or the sentence beside them to a few letters. */
+   button's icon go on a line of their own rather than squeezing the name or the sentence beside them to a few letters.
+   A row whose date went under its sentence (/volcan's earthquakes) keeps two columns: the figure as wide as itself (1.7 rem
+   at least, so that « 0,5 » and « 1,2 » line up), the sentence the rest, 199 px rather than 126 at 200 %, and its words
+   whole (« Fournaise », « sommet »), each narrower than its line. */
 @media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}.minuit li{grid-template-columns:minmax(0,1fr)}
 .minuit .q,.rows .nw{white-space:normal}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
+.rows:not(.eau,.bornes,.velos,.bikes,.departs) li:has(>.note:last-child:not(:first-child)){grid-template-columns:minmax(max-content,1.7rem) minmax(0,1fr);hyphens:manual;-webkit-hyphens:manual}
 .scale li{grid-template-columns:minmax(0,1fr)}
 .kzoom,.btn{flex-wrap:wrap}}
 /* A table's cells and their notes keep their words whole: the frame scrolls (.table-wrap) rather than a narrow column

@@ -9,7 +9,7 @@ import { avis, type Avis, prochaineLecture, SOURCE } from "../providers/marches-
 import { acheteur, objet } from "../tools/employeurs.js";
 import { a as aCommune, credits } from "../tools/format.js";
 import { injoignable } from "../tools/injoignable.js";
-import { crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
+import { crumbBar, crumbs, lienNom, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
@@ -73,7 +73,7 @@ function jour(d: string, now: Date): string {
 function row(a: Avis, now: Date): string {
   const place = a.commune ? aCommune(a.commune) : a.communeAcheteur ? `acheteur ${aCommune(a.communeAcheteur)}` : undefined;
   const small = [acheteur(a.acheteur), a.types.join(", "), place].filter(Boolean).map((x) => esc(x!)).join(" · ");
-  return `<li data-c="${esc(a.commune ?? a.communeAcheteur ?? "")}"><span><a href="${esc(a.lien)}" rel="noopener">${esc(objet(a.objet))}</a><small>${small}</small></span>` +
+  return `<li data-c="${esc(a.commune ?? a.communeAcheteur ?? "")}"><span>${lienNom(a.lien, objet(a.objet), ' rel="noopener"')}<small>${small}</small></span>` +
     `<span class="q-none">${esc(`jusqu'au ${jour(a.limite, now)}`)}</span></li>`;
 }
 

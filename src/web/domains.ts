@@ -156,6 +156,23 @@ export function nomsCoupables(html: string): string {
 }
 
 /**
+ * An identifier from a source, its parts joined by « _ » (« 2026_PORT_05 », « DGFIP4_Trésorerie », « date_debut »), in
+ * escaped HTML: Chrome and Safari see one word in it and, past its line, cut it between two letters (« 2026_POR|T_05 »,
+ * « date_d|ebut » at 160 px, Safari's page zoom at 200 % on a 320 px screen). A <wbr> after each « _ » between two
+ * letters or digits, the one place where it may go to the next line, and no hyphen in it (.ident, pages.ts). In the text
+ * between the tags only, never in an attribute; on a link's text through lienNom() (Chrome names a link with a space for
+ * each <wbr>). A word split from its spaces, so that no pattern runs over the whole text. A declaration, as
+ * nomsCoupables(): lienNom() calls it while the modules load.
+ */
+export function soulignesCoupables(html: string): string {
+  return html
+    .split(/(<[^>]*>)/)
+    .map((x, i) => (i % 2 ? x : x.split(/([\s\u00a0]+)/).map((w, j) => (j % 2 || !/[\p{L}\p{N}]_[\p{L}\p{N}]/u.test(w) ? w
+      : `<span class="ident">${w.replaceAll(/(?<=[\p{L}\p{N}])_(?=[\p{L}\p{N}])/gu, "_<wbr>")}</span>`)).join("")))
+    .join("");
+}
+
+/**
  * A link whose text holds such a name (« le site de Sensor.Community ») or an address (« sa fiche sur data.gouv.fr »,
  * « monenfant.fr », « contact@rundata.re »): the name may go to the next line where nomsCoupables() puts its <wbr>, the
  * address after each of its « . » and « @ », rather than one or two letters before its end (« data.gou|v.fr »,
@@ -164,7 +181,7 @@ export function nomsCoupables(html: string): string {
  * A text with neither is written as it is, without aria-label. `attrs`: more attributes, each with its leading space.
  */
 export function lienNom(href: string, text: string, attrs = ""): string {
-  const coupe = nomsCoupables(adresseCoupable(text));
+  const coupe = soulignesCoupables(nomsCoupables(adresseCoupable(text)));
   return `<a href="${esc(href)}"${attrs}${coupe === esc(text) ? "" : ` aria-label="${esc(text)}"`}>${coupe}</a>`;
 }
 
@@ -2941,7 +2958,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
         `<li class="card tgt" id="${anchorId("c", c.commune)}">${folded(foldDae,
           `<h3>${esc(c.commune)}${foldDae ? "\u00a0" : " "}<span class="note">${foldDae ? "· " : ""}${c.nombre}\u00a0défibrillateur${c.nombre > 1 ? "s" : ""}${c.toute_heure ? `, dont ${c.toute_heure}\u00a0accessible${c.toute_heure > 1 ? "s" : ""} à toute heure` : ""}</span></h3>`,
           `<ul class="rows eau dae">` +
-        c.liste.map((x) => `<li><span>${esc(x.lieu)}<small>${[x.adresse, x.emplacement, x.etage].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
+        c.liste.map((x) => `<li><span>${soulignesCoupables(esc(x.lieu))}<small>${[x.adresse, x.emplacement, x.etage].filter(Boolean).map((v) => esc(v!)).join(" · ")}</small>` +
           // The normal route, not on foot as « Autour de moi »: a device of the commune may be kilometres away.
           `${aller({ nom: x.lieu, lat: x.lat ?? NaN, lon: x.lon ?? NaN, adresse: x.adresse })}</span>` +
           `<span class="${x.acces.includes("toute heure") || x.acces.includes("24 h") ? "q-bonne" : "q-none"}">${esc(shortAccess(x.acces))}</span></li>`).join("") +

@@ -12,7 +12,7 @@ import { SITE as CPF_SITE } from "../providers/cpf.js";
 import { A_SAVOIR as CPF_A_SAVOIR, themesCpf } from "../tools/cpf.js";
 import { nombre } from "../tools/format.js";
 import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../tools/emploi.js";
-import { connectorCta, crumbBar, crumbs, lienNom, sourcesNote, warnings, webPage } from "./domains.js";
+import { connectorCta, crumbBar, crumbs, lienNom, soulignesCoupables, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
@@ -74,7 +74,12 @@ function row(o: OffreRow, once: boolean): string {
   // when the line has none.
   const refs = "references" in o
     ? `<span class="refs"><small>${o.nombre_offres} offres\u00a0:</small>` +
-      o.references.map((r) => `<a href="${esc(r.lien)}" rel="noopener">Réf. <span class="nw">${esc(r.reference)}</span>${o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${r.publiee_le}`}</a>`).join("") + "</span>"
+      o.references.map((r) => {
+        // A reference joined by « _ » may go to the next line after it (soulignesCoupables), the link named by its text.
+        const jour = o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${r.publiee_le}`;
+        const ref = soulignesCoupables(esc(r.reference));
+        return `<a href="${esc(r.lien)}" rel="noopener"${ref === esc(r.reference) ? "" : ` aria-label="${esc(`Réf. ${r.reference}${jour}`)}"`}>Réf. <span class="nw">${ref}</span>${jour}</a>`;
+      }).join("") + "</span>"
     : "";
   const title = "references" in o ? `<b>${esc(o.intitule)}</b>` : `<a href="${esc(o.lien)}" rel="noopener">${esc(o.intitule)}</a>`;
   return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title}<small>${small}</small></span>` +

@@ -4,7 +4,7 @@
  * « Déjà lu » only once its reader is merged. Nothing is read to build it.
  */
 import type { Alerte } from "./data.js";
-import { crumbBar, crumbs, lienNom, nomsCoupables, webPage } from "./domains.js";
+import { crumbBar, crumbs, lienNom, nomsCoupables, soulignesCoupables, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
 import brand from "./brand.json" with { type: "json" };
@@ -45,7 +45,7 @@ const TUTOS: Record<string, string> = {};
 /** **gras**, *italique*, `code`, [lien](adresse), and the labels, on text already escaped. */
 function inline(md: string): string {
   return esc(md)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replaceAll(/`([^`]+)`/g, (_, c: string) => `<code>${soulignesCoupables(c)}</code>`)
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/(^|[\s(])\*([^*\s][^*]*?)\*(?=[\s.,;:)]|$)/g, "$1<em>$2</em>")
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, t: string, href: string) => `<a href="${href}">${t}</a>`)

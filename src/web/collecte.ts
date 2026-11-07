@@ -7,7 +7,7 @@ import * as col from "../vie/collecte.js";
 import { a, de, nombre } from "../tools/format.js";
 import { insecables } from "../typographie.js";
 import type { Alerte } from "./data.js";
-import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
+import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { folded, layout } from "./pages.js";
 
@@ -119,7 +119,7 @@ function groups(today: number, commune?: string): string {
   // no more by the year's last days), folded under their number.
   const pdfs = (g: { cals: number[]; commune: string }) => {
     const where = commune ? "" : `${esc(g.commune)} · `;
-    const links = g.cals.map((c) => `<a href="${esc(col.CALENDARS[c].pdf)}" rel="noopener">calendrier ${esc(col.CALENDARS[c].code)} du TCO (PDF)</a>`).join(" · ");
+    const links = g.cals.map((c) => lienNom(col.CALENDARS[c].pdf, `calendrier ${col.CALENDARS[c].code} du TCO (PDF)`, ' rel="noopener"')).join(" · ");
     return g.cals.length > 3
       ? `<details class="note"><summary>${where}${g.cals.length}\u00a0calendriers du TCO (PDF)</summary><p>${links}</p></details>`
       : `<p class="note">${where}${links}</p>`;

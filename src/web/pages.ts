@@ -302,25 +302,26 @@ export function narrowTwins(css: string): string {
 }
 
 /**
- * Text enlarged by a page zoom (Safari's aA menu): the screen is laid out on its width divided by the zoom, 128 px for a
- * 320 px screen at 250 %, 130 px for 390 px at 300 %, while lengths in px or rem keep their size. The 16 px gutter and
- * the paddings of cards, buttons, tabs, pills and tiles then leave a card about 52 px of text, less than one long word
- * (ChatGPT, Prévision, Envoyer), and the page grows wider than the screen. Under 9 rem (144 px: a 320 px screen from
- * 222 %, 390 px from 271 %, 430 px at 300 %), narrower paddings, tiles held in their column, the grids of the
+ * Text enlarged by a page zoom (Safari's aA menu): the screen is laid out on its width divided by the zoom, 128 px for
+ * a 320 px screen at 250 %, 130 px for 390 px at 300 %, while lengths in px or rem keep their size. The 16 px gutter
+ * and the paddings of cards, buttons, tabs, pills and tiles then leave a card about 52 px of text, less than one long
+ * word (ChatGPT, Prévision, Envoyer), and the page grows wider than the screen. Under 9 rem (144 px: a 320 px screen
+ * from 222 %, 390 px from 271 %, 430 px at 300 %), narrower paddings, tiles held in their column, the grids of the
  * status block, the places and the rows in one column of their width, smaller big figures, a word wider than the dark
- * band's pill cut in it (« Clubs et associations » on its own was hidden by the band). Under 12.5 rem, the big
- * figure of the status block (« 6 à 29 µg/m³ », kept on one line) at 1.5 rem in a column of the block's width, and the
- * whole site within 160 px (a 320 px screen at 200 %): the grids of lists, page bodies, the electricity chart and /presse's
- * phones on one column of their width (an implicit track took the widest word: « VANDERSCHAEGHE », « renouvelable »), the
- * map's tabs and legend, « Y aller » and buttons on several lines with narrower sides, the dark band's pill wrapping between its parts (each
- * a flex item on one line: « Plan ORSEC Cyclones » was 177 px wide, and the band hid the rest) with narrower paddings, /mer's figure smaller,
- * /peche's table on its width, the band's items, badges and /electricite's slider held to their column. A word still wider than its line, once hyphenated (hyphens:auto under 19.9 rem), is cut
- * there rather than widening the page (break-word, not anywhere: no track shrinks to a letter). A table that scrolls
- * aside keeps its columns as wide as their words: in a page body of one column of its width, WebKit narrowed them below
- * (« 2021 » over « 2022 » on /trafic). Gutter and cards are
- * narrower (.5 and .7 rem), lists indented 1.2 rem rather than 40 px, and the map's chips strip follows the gutter: at
- * 160 px a list item in a card had 44 px for its words, and most of them were cut without a hyphen.
- * Placed at the end of the sheet, after the rules they adjust (avis, install), and inside narrowTwins for their twins.
+ * band's pill cut in it (« Clubs et associations » on its own was hidden by the band). Under 12.5 rem, the big figure
+ * of the status block (« 6 à 29 µg/m³ », kept on one line) at 1.5 rem in a column of the block's width, and the whole
+ * site within 160 px (a 320 px screen at 200 %): the grids of lists, page bodies, the electricity chart and /presse's
+ * phones on one column of their width (an implicit track took the widest word: « VANDERSCHAEGHE », « renouvelable »),
+ * the map's tabs and legend, « Y aller » and buttons on several lines with narrower sides, the dark band's pill
+ * wrapping between its parts (each a flex item on one line: « Plan ORSEC Cyclones » was 177 px wide, and the band hid
+ * the rest) with narrower paddings, /mer's figure smaller, /peche's table on its width, the band's items, badges and
+ * /electricite's slider held to their column. A word still wider than its line, once hyphenated (hyphens:auto under
+ * 19.9 rem), is cut there rather than widening the page (break-word, not anywhere: no track shrinks to a letter). A
+ * table that scrolls aside keeps its columns as wide as their words: in a page body of one column of its width, WebKit
+ * narrowed them below (« 2021 » over « 2022 » on /trafic). Gutter and cards are narrower (.5 and .7 rem), lists
+ * indented 1.2 rem rather than 40 px, and the map's chips strip follows the gutter: at 160 px a list item in a card had
+ * 44 px for its words, and most of them were cut without a hyphen. Placed at the end of the sheet, after the rules they
+ * adjust (avis, install), and inside narrowTwins for their twins.
  */
 const ZOOM_PAGE_CSS =
   "@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}" +
@@ -369,6 +370,9 @@ p,ul,ol,table,figure{margin:0}
 .jm{white-space:nowrap}
 /* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. */
 wbr.adr{display:none}
+/* An identifier from a source (soulignesCoupables, domains.ts) goes to the next line after a « _ » only, never with a
+   hyphen: « 2026_PORT_|05 », never « DGFIP4_Tréso-rerie ». */
+.ident{hyphens:manual;-webkit-hyphens:manual}
 /* « Aller au contenu », the first stop of Tab on every page: seen only while it has the focus, over the bar; its target,
    the main landmark, from the vigilance's band and the title's on. */
 .evite{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:.6rem;z-index:30;padding:.6rem 1rem;border-radius:12px;

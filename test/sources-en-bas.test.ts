@@ -103,9 +103,10 @@ describe("the sources of a page", () => {
     const block = html.slice(html.indexOf('<div class="wrap fin-sources"'), html.indexOf("<footer"));
     expect(block).toContain("Prévision des vagues du modèle WAM du Centre européen (ECMWF), via Open-Meteo (CC BY 4.0");
     expect(block).toContain("Séismes localisés par l&#39;Observatoire volcanologique du Piton de la Fournaise (OVPF-IPGP) (CC BY 4.0)");
-    expect(block).toContain("cartographiés dans OpenStreetMap (ODbL 1.0)");
+    // A producer's name may go to the next line before its inner capital (nomsCoupables).
+    expect(block).toContain("cartographiés dans Open<wbr>Street<wbr>Map (ODbL 1.0)");
     expect(block).toContain("(EDF SEI) (Licence Ouverte Etalab 2.0)");
-    expect(block).toContain("Restrictions d&#39;eau en cas de sécheresse (VigiEau, arrêtés préfectoraux) (Licence Ouverte Etalab 2.0)");
+    expect(block).toContain("Restrictions d&#39;eau en cas de sécheresse (Vigi<wbr>Eau, arrêtés préfectoraux) (Licence Ouverte Etalab 2.0)");
     // The island's map beside the commune's name: its contours, its relief, its roads and the names of the communes.
     expect(block).toContain(`<p class="sources">Carte : contours des communes de geo.api.gouv.fr, relief, photographies aériennes, routes et noms de lieux de l'IGN (RGE ALTI, couche Photographies aériennes de la Géoplateforme, BD TOPO), sous Licence Ouverte Etalab 2.0.</p>`);
     expect(html.slice(html.indexOf("<footer"))).not.toContain("<h3>Sources</h3>");

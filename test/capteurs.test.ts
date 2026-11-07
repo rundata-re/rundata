@@ -157,7 +157,9 @@ describe("the sensors of private people (Sensor.Community)", () => {
     // /air keeps it above its block.
     const page = body(await qualiteAir(cache(), undefined, NOW, true));
     expect(page.capteurs_amateurs).toMatchObject({ avertissement: CAPTEURS_AVERTISSEMENT, explication: CAPTEURS_EXPLICATION, aucun: CAPTEURS_AUCUN });
-    expect(airPage("https://rundata.re", { value: page, fetchedAt: NOW, stale: false }, NOW)).toContain(`<b>${esc(CAPTEURS_AVERTISSEMENT)}</b> ${esc(CAPTEURS_EXPLICATION)}`);
+    expect(airPage("https://rundata.re", { value: page, fetchedAt: NOW, stale: false }, NOW)).toContain(
+      `<b>${esc(CAPTEURS_AVERTISSEMENT)}</b> ${esc(CAPTEURS_EXPLICATION).replace("Sensor.Community", "Sensor.<wbr>Community")}`,
+    );
   });
 
   it("never says none on a copy not written lately: its values as last read and when, or no recent reading", async () => {
@@ -202,6 +204,13 @@ describe("the sensors of private people (Sensor.Community)", () => {
     expect(section).toContain(`<b>${CAPTEURS_AVERTISSEMENT}</b>`);
     expect(section).toContain('<details class="card" id="brancher"><summary>Brancher son capteur</summary>');
     expect(section).not.toMatch(/class="[^"]*\b(?:aq|lvl|level)-/);
+    // The network's name may go to the next line after its « . », never in the middle of « Community » at 200 %: in the
+    // page's text and its guide's title, not on its link (named « Sensor. Community » with a <wbr>), nor in the tool's answer.
+    expect(section).toContain("partagés sur Sensor.<wbr>Community");
+    expect(section).toContain("<h3>airRohr (Sensor.<wbr>Community)</h3>");
+    expect(section).toContain('rel="noopener">Sensor.Community</a>');
+    expect(section.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>"))).toEqual([]);
+    expect(JSON.stringify(answer)).not.toContain("<wbr>");
     // Empty: one sentence and the link to the guide.
     capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [] }));
     const none = body(await qualiteAir(cache(), undefined, NOW, true));

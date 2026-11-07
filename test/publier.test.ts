@@ -33,8 +33,9 @@ describe("the guide for those who publish (/publier)", () => {
     const table = page.slice(page.indexOf('id="niveaux"'), page.indexOf('id="niveau-1"'));
     const links = [...table.matchAll(/<th scope="row"><a href="#([a-z0-9-]+)">/g)].map((m) => m[1]);
     expect(links).toEqual(["google-agenda", "outlook-nextcloud", "openagenda", "the-events-calendar", "rss", "tableur-csv", "data-gouv", "schema-org"]);
-    // Each lands on the title of a folded tutorial: the page's script opens the details around it (UNFOLD_SCRIPT).
-    for (const id of links) expect(page, id).toMatch(new RegExp(`<details class="pli"><summary><h3 id="${id}">[^<]*</h3></summary>`));
+    // Each lands on the title of a folded tutorial: the page's script opens the details around it (UNFOLD_SCRIPT). A
+    // title may hold a <wbr> (« Open<wbr>Agenda », nomsCoupables).
+    for (const id of links) expect(page, id).toMatch(new RegExp(`<details class="pli"><summary><h3 id="${id}">(?:[^<]|<wbr>)*</h3></summary>`));
     expect(page).toContain(UNFOLD_SCRIPT);
     expect(UNFOLD_SCRIPT).toContain('t.closest("details")');
     expect(page.match(/<details class="pli">/g)).toHaveLength(10);

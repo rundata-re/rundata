@@ -4,7 +4,7 @@
  * « Déjà lu » only once its reader is merged. Nothing is read to build it.
  */
 import type { Alerte } from "./data.js";
-import { crumbBar, crumbs, webPage } from "./domains.js";
+import { crumbBar, crumbs, nomsCoupables, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
 import brand from "./brand.json" with { type: "json" };
@@ -111,7 +111,7 @@ export function render(md: string): string {
         unfold();
         if (!run) out.push(`<div class="plis">`);
         run = true;
-        out.push(`<details class="pli"><summary><h3${h[3] ? ` id="${h[3]}"` : ""}>${inline(h[2])}</h3></summary>`);
+        out.push(`<details class="pli"><summary><h3${h[3] ? ` id="${h[3]}"` : ""}>${nomsCoupables(inline(h[2]))}</h3></summary>`);
         folding = true;
       }
       i++;

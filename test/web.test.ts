@@ -781,6 +781,8 @@ describe("vigilance and sea pages", () => {
     expect(text).toContain("Vigilance dans les 5 zones de l'île");
     expect(text).toContain("Sud-Est");
     expect(text).toContain("Ce que dit Météo-France");
+    // A title of two phenomena goes to the next line after its « / » at 200 %, not inside « Orages ».
+    expect(text).toContain("<h3>Fortes pluies/<wbr>Orages</h3>");
     expect(text).not.toContain('class="alerte');
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
   });

@@ -124,3 +124,22 @@ describe("a 320 px phone, the text at 100 to 200 %", () => {
     expect(CSS).toContain(".bubble{border-radius:18px;padding:.65rem min(1rem,4vw);max-width:max(92%,100% - 2.5em)}");
   });
 });
+
+// Safari's aA menu grows the text by a page zoom: a 320 px screen lays out on 160 px at 200 %, 107 px at 300 %.
+describe("the question to an assistant, the text grown by a page zoom", () => {
+  it("lays out the box and each language's block on the box's width, not on its widest button", () => {
+    expect(CSS).toContain(".askbox{display:grid;gap:.6rem;justify-items:start;min-width:0;grid-template-columns:minmax(0,1fr)}");
+    expect(CSS).toContain(".askbox>[data-l]{display:grid;gap:.6rem;justify-items:start;grid-template-columns:minmax(0,1fr)}");
+    expect(CSS).toContain(".askbox>*,.askbox>[data-l]>*{max-width:100%}");
+  });
+
+  it("narrows the buttons and the home's card under 12.5 em, so that « Français » and ChatGPT fit", () => {
+    expect(CSS).toContain("@media (max-width:12.5rem){.easy{padding:.8rem}.ask a,.band .ask a,.cta .ask a{padding:.6rem;flex-wrap:wrap;min-width:0}");
+    expect(CSS).toContain(".lang button{padding:.4rem .5rem;flex-wrap:wrap;min-width:0}}");
+    // A 320 px screen at 160 % and a 390 px one at 195 % lay out under 200 px; a phone at 150 % never does.
+    expect(320 / 1.6).toBeLessThanOrEqual(12.5 * 16);
+    expect(320 / 1.5).toBeGreaterThan(12.5 * 16);
+    // After the media block of the buttons' 480 px rule, so that it wins over it.
+    expect(CSS.indexOf("@media (max-width:12.5rem){.easy")).toBeGreaterThan(CSS.indexOf("@media (max-width:480px){.ask{gap:.4rem}"));
+  });
+});

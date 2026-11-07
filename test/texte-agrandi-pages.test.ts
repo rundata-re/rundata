@@ -114,4 +114,8 @@ describe("a tool's name in a <code>, with the text at 200 %", () => {
     expect(noms.length).toBeGreaterThanOrEqual(8);
     expect(noms.filter((x) => /_(?!<wbr>)/.test(x))).toEqual([]);
   });
+
+  it("is never hyphenated: French hyphenation would cut « donnees » once alone after the « _ »", () => {
+    expect(CSS).toContain("@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code{hyphens:manual;-webkit-hyphens:manual}");
+  });
 });

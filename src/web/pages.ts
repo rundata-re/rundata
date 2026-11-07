@@ -320,6 +320,10 @@ box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--k) 32%,transparent)}
 .kb .ic{width:1.35rem;height:1.35rem}
 header.top{position:sticky;top:0;z-index:20;background:rgb(7 22 38/.78);-webkit-backdrop-filter:saturate(1.6) blur(14px);backdrop-filter:saturate(1.6) blur(14px);
 border-bottom:1px solid rgb(255 255 255/.07);color:var(--on-night)}
+/* A screen less than 30 em tall (568 px from 119 % text, 800 px from 167 %): the header scrolls away with the page
+   rather than staying on top, where at 200 % it is 254 px tall, a third to almost half of the screen. In em, so that it
+   follows the text size the reader chose; relative, as the menu's sheet is placed under it. */
+@media (max-height:29.99em){header.top{position:relative}}
 .bar{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;min-height:3.6rem;padding-block:.45rem}
 .brand{display:flex;align-items:center;gap:.6rem;font:800 1.2rem/1 Bricolage,system-ui,sans-serif;color:inherit;text-decoration:none;letter-spacing:-.02em;margin-right:auto}
 .brand .tld{color:var(--sun)}
@@ -437,9 +441,11 @@ padding:.65rem 1.2rem;cursor:pointer;transition:transform .15s}
 /* The example of a conversation on the home page: one column the width of its box (.duo, .chat), and the tool's call cut
    where it must (« meteo_actuelle(lieu: », in a fixed-width font), so that with the text at 200 % on a 390 px phone it no
    longer widens the page to 401 px. */
-.chat{background:var(--surface);color:var(--ink);border-radius:24px;padding:1.2rem;display:grid;grid-template-columns:minmax(0,1fr);gap:.7rem;box-shadow:0 30px 60px -20px rgb(0 0 0/.5);min-width:0}
+.chat{background:var(--surface);color:var(--ink);border-radius:24px;padding:min(1.2rem,4vw);display:grid;grid-template-columns:minmax(0,1fr);gap:.7rem;box-shadow:0 30px 60px -20px rgb(0 0 0/.5);min-width:0}
 .chat .who{font-size:.78rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:.5rem}
-.bubble{border-radius:18px;padding:.65rem 1rem;max-width:92%}
+/* A bubble's margins capped by the screen's width, and its indent by the text's size: with the text at 200 % on a 320 px
+   phone its line is 212 px rather than 126, where nearly every line ended with a word cut in two. */
+.bubble{border-radius:18px;padding:.65rem min(1rem,4vw);max-width:max(92%,100% - 2.5em)}
 .bubble.me{justify-self:end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:6px}
 .bubble.ai{justify-self:start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:6px}
 .call{justify-self:start;font:.8rem ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);background:var(--surface-2);
@@ -770,7 +776,8 @@ border:solid rgb(241 245 249/.12);border-width:0 1px 1px 0;transform:translateX(
 .st h4{font-size:1rem;margin:0}.st h4 small{font-weight:400;color:var(--muted)}
 .st p{color:var(--muted);font-size:.9rem}
 
-.seas{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr));gap:.6rem}
+/* A sea tile at most the width of its row: 9.5 rem is 304 px with the text at 200 %, wider than a 320 px phone's line. */
+.seas{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(9.5rem,100%),1fr));gap:.6rem}
 .seas li{display:grid;gap:.1rem;padding:.8rem 1rem;border-radius:16px;background:linear-gradient(160deg,#0f6f8f,#0b4a6e);color:#fff}
 .seas span{font-size:.85rem;opacity:.85}.seas b{font:800 1.5rem Bricolage,system-ui,sans-serif}
 
@@ -940,6 +947,11 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .zones li p{font-size:.88rem;color:var(--muted)}
 .scale{list-style:none;padding:0;display:grid;gap:.6rem}
 .scale li{display:grid;grid-template-columns:7.5rem minmax(0,1fr);gap:.8rem;align-items:start}
+/* /air's scale: one level column for its six rows (a subgrid), at least 7.5 rem and as wide as its longest word.
+   « extrêmement » in its pill is 9 px wider than 7.5 rem, and was cut « extrêmeme / nt » without a hyphen on a 320 or a
+   390 px phone alike; a column per row would have pushed that row's sentence 8 px right of the others. */
+.scale:has(.aq){grid-template-columns:minmax(7.5rem,min-content) minmax(0,1fr);column-gap:.8rem}
+.scale:has(.aq) li{grid-column:1/-1;grid-template-columns:subgrid}
 .scale .vg{text-align:center}
 .suivi{display:grid;gap:1rem}
 .suivi p{max-width:65ch}
@@ -964,7 +976,9 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows li{display:grid;grid-template-columns:3.4rem minmax(0,1fr) auto;gap:.6rem;align-items:baseline;padding:.45rem 0;border-top:1px solid var(--line)}
 .rows li:first-child{border-top:0}
 .rows.trajet li{grid-template-columns:auto minmax(0,1fr);scroll-margin-top:5rem}.rows.departs li{grid-template-columns:2.6rem minmax(0,1fr)}.rows.departs li>:last-child{grid-column:2}.rows.trajet .rt{display:block}.rows.trajet small{display:block;color:var(--muted);font-size:.82rem}.rows.trajet li.ici{background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:.4rem;padding-inline:.4rem}.rows.trajet li.ici small{color:inherit;font-weight:700}
-.rows.bikes li{grid-template-columns:minmax(8.5rem,1fr) auto}
+/* A station's name at least 8.5 rem wide, but never more than 60 % of its row: 8.5 rem is 272 px at 200 %, wider than a
+   320 px phone's line once its count has gone under it. */
+.rows.bikes li{grid-template-columns:minmax(min(8.5rem,60%),1fr) auto}
 .rows li>span>.ya{display:block;margin-top:.3rem}
 /* Above the tile's link, stretched over the whole tile (.tile h3 a::after): a tap on the button opens its sheet. */
 .tile .aller{position:relative;z-index:2}
@@ -972,6 +986,10 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.bornes small{display:block;color:var(--muted);font-size:.82rem}
 .rows.bornes .busy{color:var(--muted)}
 .rows.eau li{grid-template-columns:minmax(0,1fr) fit-content(60%)}
+/* Under 22.5 rem (a 320 px phone at 100 %): the right column at most 35 % of the row, so that a date (« jusqu'au 03/12 »,
+   126 px) leaves an offer's title 149 px rather than 109, where « l'Environnement » was cut without a hyphen (/emploi: 316
+   words cut so, 10 left, each longer than any line at 100 %). */
+@media (max-width:22.5rem){.rows.eau li{grid-template-columns:minmax(0,1fr) fit-content(35%)}}
 @media (max-width:30rem){.rows.eau li>.fin{grid-column:1/-1}}
 /* /volcan during an alert: the earthquakes one line each, the media's time and name above the headline. */
 .rows.seismes li,.rows.medias li{display:block;font-size:.92rem}
@@ -1005,7 +1023,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau .q-bonne{color:var(--vert);font-weight:700}.rows.eau .q-moyenne{color:var(--q-moyenne);font-weight:700}.rows.eau .q-mauvaise{color:var(--lave);font-weight:700}.rows.eau .q-none{color:var(--muted)}
 .lvl{display:inline-block;padding:.1rem .55rem;border-radius:1rem;font:700 .8rem system-ui,sans-serif;background:var(--c);color:#14202b}
 .table-wrap{overflow-x:auto}
-table.drought{width:100%;border-collapse:collapse;font-size:.92rem}section.guide{max-width:46rem}section.guide h3{margin-top:1.6rem;scroll-margin-top:1rem}section.guide[id]{scroll-margin-top:1rem}section.guide li{margin-block:.25rem}section.guide pre{background:var(--surface-2,var(--surface));border:1px solid var(--line);border-radius:12px;padding:.9rem;overflow-x:auto;font:.8rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}section.guide code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}section.guide pre code{overflow-wrap:normal;font-size:1em}.callout{border-left:4px solid var(--accent)}table.niveaux th[scope=row]{font-weight:600}@media (max-width:640px){table.niveaux thead{display:none}table.niveaux tr{display:block;border-top:1px solid var(--line);padding:.55rem 0}table.niveaux tbody tr:first-child{border-top:0}table.drought.niveaux td:not([data-label]){display:none}table.drought.niveaux th,table.drought.niveaux td{display:block;border:0;padding:.1rem .25rem}table.niveaux td::before{content:attr(data-label) "\\00a0: ";color:var(--muted)}}.etat{display:inline-block;border-radius:999px;padding:.05rem .55rem;font-size:.8rem;font-weight:600;white-space:nowrap;text-decoration:none;border:1px solid var(--line)}.etat.lu{background:var(--vert);color:var(--vert-ink);border-color:var(--vert)}.etat.bientot{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}.etat.demande{background:var(--surface);color:var(--link)}table.passe caption{text-align:left;color:var(--muted);font-size:.85rem;padding:0 .35rem .4rem}table.passe{font-size:.82rem}table.passe small{font-size:.75rem}table.passe th,table.passe td{padding:.4rem .25rem}table.passe td{white-space:nowrap;font-variant-numeric:tabular-nums}table.drought tr.past{color:var(--muted)}
+table.drought{width:100%;border-collapse:collapse;font-size:.92rem}section.guide{max-width:46rem}section.guide h3{margin-top:1.6rem;scroll-margin-top:1rem}section.guide[id]{scroll-margin-top:1rem}section.guide li{margin-block:.25rem}section.guide pre{background:var(--surface-2,var(--surface));border:1px solid var(--line);border-radius:12px;padding:.9rem;overflow-x:auto;font:.8rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}section.guide code{font:.9em ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}section.guide pre code{overflow-wrap:normal;font-size:1em}.callout{border-left:4px solid var(--accent)}table.niveaux th[scope=row]{font-weight:600}@media (max-width:640px){table.niveaux thead{display:none}table.niveaux tr{display:block;border-top:1px solid var(--line);padding:.55rem 0}table.niveaux tbody tr:first-child{border-top:0}table.drought.niveaux td:not([data-label]){display:none}table.drought.niveaux th,table.drought.niveaux td{display:block;border:0;padding:.1rem .25rem}table.niveaux td::before{content:attr(data-label) "\\00a0: ";color:var(--muted)}}.etat{display:inline-block;border-radius:999px;padding:.05rem .55rem;font-size:.8rem;font-weight:600;max-width:100%;text-decoration:none;border:1px solid var(--line)}.etat.lu{background:var(--vert);color:var(--vert-ink);border-color:var(--vert)}.etat.bientot{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}.etat.demande{background:var(--surface);color:var(--link)}table.passe caption{text-align:left;color:var(--muted);font-size:.85rem;padding:0 .35rem .4rem}table.passe{font-size:.82rem}table.passe small{font-size:.75rem}table.passe th,table.passe td{padding:.4rem .25rem}table.passe td{white-space:nowrap;font-variant-numeric:tabular-nums}table.drought tr.past{color:var(--muted)}
 table.histo small{display:block}table.colle th:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
 /* An establishment's formations, a table each: the same columns from one table to the next. */
 table.psup{table-layout:fixed}table.psup tbody th{hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}table.psup thead th:nth-child(2){width:4.2rem}table.psup thead th:nth-child(3){width:5.4rem}
@@ -1098,7 +1116,7 @@ summary{min-height:24px}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
 .rows:not(.eau,.bornes,.velos,.bikes,.departs) li:has(>.note:last-child:not(:first-child)){grid-template-columns:minmax(max-content,1.7rem) minmax(0,1fr);hyphens:manual;-webkit-hyphens:manual}
-.scale li{grid-template-columns:minmax(0,1fr)}
+.scale li,.scale:has(.aq){grid-template-columns:minmax(0,1fr)}
 .kzoom,.btn{flex-wrap:wrap}}
 /* A table's cells and their notes keep their words whole: the frame scrolls (.table-wrap) rather than a narrow column
    cutting « (€/litre) » into « (€/litr » and « e) » at 150 %. */

@@ -731,7 +731,8 @@ li .l2{grid-column:1/-1;display:flex;align-items:center;justify-content:space-be
 .filter input[type=search],.filter select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:.55rem .7rem;width:100%;min-width:0}
 .filter .chk{display:flex;align-items:center;gap:.45rem;color:var(--ink);font-size:.95rem;flex:0 1 auto;padding-bottom:.6rem}.filter p{flex-basis:100%;margin:0}
 form.filter[hidden],li[data-k][hidden],details.sect[hidden],.groupe[hidden],.voies li[hidden],.sans[hidden]{display:none}
-.now-news{margin:0 0 1.2rem}.now-news h3{display:flex;align-items:center;gap:.4rem}.now-news li b{font-variant-numeric:tabular-nums}
+/* The column no wider than the card: a word longer than the line (« circonscription » at 200 %) is cut, not the page widened. */
+.now-news{margin:0 0 1.2rem}.now-news ul.plain{grid-template-columns:minmax(0,1fr)}.now-news h3{display:flex;align-items:center;gap:.4rem}.now-news li b{font-variant-numeric:tabular-nums}
 .hike{gap:.5rem}.hike.closed{border:2px solid var(--lave)}.hike .okay{font-size:.88rem;color:var(--vert)}
 .hike .shut{border-left:3px solid var(--lave);padding-left:.6rem;font-size:.9rem}.hike .shut b{color:var(--lave);display:flex;gap:.35rem;align-items:center}
 .hike .shut .ic{width:1rem;height:1rem}.hike .shut ul{margin:.2rem 0 0;padding-left:1rem}.hike .links{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-weight:700}
@@ -875,7 +876,8 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .wxmap .wv rect{fill:#14202c;stroke:#fff;stroke-width:3}.wxmap .wv path{fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.wxmap .wv circle{fill:#fff}.wxmap .wv text{fill:#fff;font-weight:700;font-size:30px;text-anchor:middle}.wxmap .wt line{vector-effect:non-scaling-stroke;stroke-linecap:round}.wxmap .wt .o{stroke:#0b1f36;stroke-width:3.5px}.wxmap .wt .i{stroke:#fff;stroke-width:1.5px}.wxmap .wt circle{fill:#fff;stroke:#0b1f36;stroke-width:2px;vector-effect:non-scaling-stroke}
 /* The station bubble (.mtip) is placed by the script against its parent, the figure: the figure must be its containing block. */
 .wxmap{position:relative}
-.wxmap .lgs{display:inline-flex;align-items:center;gap:.35rem;margin-right:.5rem;white-space:nowrap}.wxmap .lgr{display:flex;width:max-content;margin:.15rem 0 .2rem}
+/* The scale no wider than its caption: its bar shrinks (to 1.5 rem), the values stay whole. */
+.wxmap .lgs{display:inline-flex;align-items:center;gap:.35rem;margin-right:.5rem;white-space:nowrap;max-width:100%}.wxmap .lgs .vgrad{min-width:1.5rem}.wxmap .lgr{display:flex;width:max-content;margin:.15rem 0 .2rem}
 /* /meteo's « Pluie tombée » (pluie-cumuls.ts): its place, its lengths, the radar's rain on the island; the colours, the map's rain above. */
 .cumap{--cu0:#abd8f3;--cu1:#7cb5f8;--cu2:#738be9;--cu3:#7561c5;display:grid;grid-template-columns:minmax(0,1fr);gap:.55rem}.cu-c{display:flex;align-items:center;gap:.5rem;min-width:0}.cu-c select{flex:1;min-width:0;font:inherit;max-width:100%;padding:.3rem .5rem;border:1px solid var(--line);border-radius:.6rem;background:var(--surface);color:var(--ink)}
 .cu-d{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:.3rem;align-items:center}.cu-d legend{float:left;margin-right:.3rem;font-size:.9rem;color:var(--muted)}.cu-d label[hidden]{display:none}
@@ -884,7 +886,8 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 @media (prefers-color-scheme:dark){.cumap{--cu0:#284972;--cu1:#405a9d;--cu2:#6469c3;--cu3:#8c79e0}}
 .wxmap .voile{display:block;width:100%;height:100%}.wxmap .aqtabs{gap:.25rem}.wxmap .aqtabs label{padding:.3rem .65rem}
 html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stmore{font:inherit;font-weight:600;padding:.45rem 1rem;border:1px solid var(--line);border-radius:99px;background:none;color:var(--link);cursor:pointer}
-#stl{display:grid;grid-template-columns:repeat(auto-fill,minmax(10.5rem,1fr));gap:.6rem}
+/* A station never wider than the list: with the text at 200 %, 10.5 rem is 336 px for a 288 px list on a 320 px phone. */
+#stl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(10.5rem,100%),1fr));gap:.6rem}
 #stl .st{display:flex;flex-direction:column;gap:.15rem;padding:.75rem .85rem .7rem;border:1px solid var(--line);border-radius:1rem;background:var(--surface)}
 #stl .th{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.4rem}
 #stl .t{width:auto;padding:.3rem .55rem;border-radius:.6rem;font:700 1.2rem/1.1 Bricolage,system-ui,sans-serif}

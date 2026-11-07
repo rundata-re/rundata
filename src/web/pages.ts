@@ -783,6 +783,8 @@ li .l2{grid-column:1/-1;display:flex;align-items:center;justify-content:space-be
 form.filter[hidden],li[data-k][hidden],details.sect[hidden],.groupe[hidden],.voies li[hidden],.sans[hidden]{display:none}
 /* The column no wider than the card: a word longer than the line (« circonscription » at 200 %) is cut, not the page widened. */
 .now-news{margin:0 0 1.2rem}.now-news ul.plain{grid-template-columns:minmax(0,1fr)}.now-news h3{display:flex;align-items:center;gap:.4rem}.now-news li b{font-variant-numeric:tabular-nums}
+/* The same for /nouveautes' lists, where an address (« rundata.re/associations. ») is the longest word. */
+ul.nouv{grid-template-columns:minmax(0,1fr)}
 .hike{gap:.5rem}.hike.closed{border:2px solid var(--lave)}.hike .okay{font-size:.88rem;color:var(--vert)}
 .hike .shut{border-left:3px solid var(--lave);padding-left:.6rem;font-size:.9rem}.hike .shut b{color:var(--lave);display:flex;gap:.35rem;align-items:center}
 .hike .shut .ic{width:1rem;height:1rem}.hike .shut ul{margin:.2rem 0 0;padding-left:1rem}.hike .links{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-weight:700}

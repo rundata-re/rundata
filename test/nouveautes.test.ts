@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { changelog, NOUVEAUTES, parJour } from "../src/nouveautes.js";
 import { CSS, DESCRIPTION_MAX } from "../src/web/pages.js";
-import { DESCRIPTION, nouveautesPage, TITLE } from "../src/web/nouveautes.js";
+import { chiffreMot, DESCRIPTION, nouveautesPage, TITLE } from "../src/web/nouveautes.js";
 
 describe("the changes, said once", () => {
   it("CHANGELOG.md is the list of src/nouveautes.ts: run `npm run changelog` after changing it", () => {
@@ -47,5 +47,30 @@ describe("the changes, said once", () => {
     expect(page).toContain('<a href="/nouveautes">nouveautés</a>');
     expect(TITLE.length).toBeLessThanOrEqual(60);
     expect(DESCRIPTION.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
+  });
+});
+
+// With the text at 150 % on a 320 px phone, the lists widened the page (356 px): their grid had no column, and its implicit
+// track took the width of the longest word, an address (« rundata.re/associations. »). Once the column is as wide as the
+// card, a number bound to its word by a no-break space (« 24 communes ») was wider than the line, and Chrome, which never
+// hyphenates after one, cut the word at a letter (« 24 commune/s » at 200 %).
+describe("the lists of /nouveautes, with the text enlarged", () => {
+  const page = nouveautesPage("https://rundata.re");
+
+  it("have a column no wider than their card", () => {
+    expect(CSS).toContain("ul.nouv{grid-template-columns:minmax(0,1fr)}");
+    const listes = [...page.matchAll(/<ul class="([^"]*)">/g)].map((m) => m[1]).filter((c) => c.split(" ").includes("plain"));
+    expect(listes.length).toBeGreaterThan(3);
+    expect(listes.every((c) => c === "plain nouv")).toBe(true);
+  });
+
+  it("keep a number with its word in a .jm, never by a no-break space, a unit still bound", () => {
+    expect(chiffreMot("Électricité : la carte rejoue les 24 dernières heures, le graphique va jusqu'à 30 jours."))
+      .toBe('Électricité : la carte rejoue les <span class="jm">24 dernières</span> heures, le graphique va jusqu&#39;à <span class="jm">30 jours</span>.');
+    expect(chiffreMot("les 6 ou 24 h, 1,5 km, 2 %, version 1.0.455")).toBe("les 6 ou 24 h, 1,5 km, 2 %, version 1.0.455");
+    expect(chiffreMot("<b>3 communes</b>")).toBe('&lt;b&gt;<span class="jm">3 communes</span>&lt;/b&gt;');
+    const items = [...page.matchAll(/<ul class="plain nouv">(.*?)<\/ul>/gs)].map((m) => m[1]).join("");
+    expect(items).toContain('<span class="jm">');
+    expect(items.match(/\d \p{L}{3,}/gu) ?? []).toEqual([]);
   });
 });

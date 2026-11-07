@@ -572,6 +572,10 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 /* A name in a tile's figure (wholeName): whole on its line where it fits, else broken at its hyphen, never past the tile's
    edge. */
 .tv .nm{display:inline-block;max-width:100%}
+/* A long or compound word of a tile's figure (motsLongs, with its soft hyphens): whole on its line where it fits, else
+   cut where French cuts it or at its own hyphen, never anywhere (« événe-ments » at 768 px with the text at 200 %, not
+   « événemen / ts »). */
+.mc{display:inline-block;max-width:100%;text-decoration:inherit}
 .tv .vg,.tv .aq{font:inherit;font-size:.95rem;padding:.15rem .6rem;vertical-align:.12em}
 .td{font-size:.84rem;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.td.all{display:block;overflow:visible}
 .tq{font-size:.92rem;font-style:italic;align-self:flex-start;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}

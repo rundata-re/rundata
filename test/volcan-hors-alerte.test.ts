@@ -4,6 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import type { Info } from "../src/providers/actualites.js";
 import { parse } from "../src/providers/seismes.js";
 import { activityPosts, enclosWords, phaseOf } from "../src/providers/volcan.js";
+import { enGrand } from "../src/tools/format.js";
 import { buildVolcan, type TraficAnswer, type VolcanAnswer } from "../src/web/data.js";
 import { traficPage, volcanLive, volcanPage } from "../src/web/domains.js";
 import { demos, homePage, type HomeLive } from "../src/web/home.js";
@@ -99,7 +100,7 @@ describe("out of an alert, whether it erupts only with the official texts", () =
       source: "OVPF et préfecture, textes lus le 23/10 à 18:00",
     });
     const home = homePage(O, { volcan: copy } as unknown as HomeLive, NOW);
-    expect(home).toContain(`<p class="tv">Pas d'éruption annoncée</p><p class="td">OVPF et préfecture, textes lus le 23/10 à 18:00 · `);
+    expect(home).toContain(`<p class="tv">${enGrand("Pas d'éruption annoncée")}</p><p class="td">OVPF et préfecture, textes lus le 23/10 à 18:00 · `);
     const demo = demos({ volcan: copy } as unknown as HomeLive, NOW).find((d) => d.call === "volcan_seismes()")!.answer.replace(/&#39;/g, "'");
     expect(demo.startsWith("Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (le 23/10 à 18:00). Niveau ORSEC : Vigilance.")).toBe(true);
   });

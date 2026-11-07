@@ -238,15 +238,18 @@ describe("the map of every station on /meteo", () => {
   });
 
   it("leaves the rain's small dots free, the disc moved off them, unless it would then cover more", () => {
-    // A disc of 4 characters with a small dot at 900 m and a dry gauge at 1 km: both left free, and so are their places.
+    // A disc of 4 characters with a small dot at 900 m and a dry gauge at 1 km: both left free, and so are their places,
+    // each under its own dot (the two dots, 1,3 km apart, moved apart by less than their radius: nudge()).
     const a = st({ nom: "Pluviomètre A", id: "1", lon: 55.5, lat: -21.1, pluie_1h: 12.3 });
     const b = st({ nom: "Pluviomètre B", id: "2", lon: 55.508, lat: -21.1, pluie_1h: 0.3 });
     const c = st({ nom: "Pluviomètre C", id: "3", lon: 55.5, lat: -21.109, pluie_1h: 0 });
     const html = stationsMap([a, b, c]);
     const m = html.match(/<circle class="sh l-p" cx="([\d.-]+)" cy="([\d.-]+)" r="49"/)!;
     for (const s of [b, c]) {
-      const [x, y] = project(s.lon, s.lat);
-      expect(html).toContain(`<circle class="sh l-p" cx="${x}" cy="${y}" r="`);
+      const [x0, y0] = project(s.lon, s.lat);
+      const link = html.slice(html.indexOf(`href="#${stationId(s.nom)}"`));
+      const [, x, y] = /<circle class="sh l-p" cx="([\d.-]+)" cy="([\d.-]+)" r="/.exec(link)!.map(Number);
+      expect(Math.hypot(x - x0, y - y0), s.nom).toBeLessThanOrEqual(17);
       // The dot (19 with its edge), the disc's white edge and some air: never touching.
       expect(Math.abs(+m[1] - x) >= 49 + 25 || Math.abs(+m[2] - y) >= 49 + 25).toBe(true);
     }

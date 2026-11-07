@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, finEtangSale, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, finEtangSale, ETANG_SALE_PAGES, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
@@ -29,6 +29,20 @@ const fixture = (f: string) => readFileSync(new URL(`./fixtures/agenda/${f}`, im
 const NOW = new Date("2026-10-24T04:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
+// The same, with the copies of Le Séchoir and L'Étang-Salé, which only the scheduled event reads, written by it: as a
+// view read them before, its other agendas left without a copy.
+const plannedCache = async (c = cache(), at = NOW) => {
+  const real = globalThis.fetch;
+  vi.stubGlobal("fetch", (url: string, init?: RequestInit) => (/lesechoir|letangsale/.test(url) ? real(url, init) : Promise.resolve(new Response("", { status: 503 }))));
+  const err = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await refreshPlanned(c, at);
+  } finally {
+    err.mockRestore();
+    vi.stubGlobal("fetch", real);
+  }
+  return c;
+};
 
 const bytes = (f: string) => readFileSync(new URL(`./fixtures/agenda/${f}`, import.meta.url));
 
@@ -256,7 +270,7 @@ describe("agenda", () => {
       expect(before.indisponible).toBeUndefined();
       expect(before.non_lus).toContain("Ligue réunionnaise de volley-ball : première lecture dans quelques minutes");
       expect(titles(before)).not.toContain(KING);
-      expect(await refreshPlanned(at(), NOW)).toEqual({ lus: ["salazie", "saint_louis", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: [], trop_vieilles: [] });
+      expect(await refreshPlanned(at(), NOW)).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: [], trop_vieilles: [] });
       expect(urls.filter(isLeague)).toHaveLength(1);
       // Another isolate serves it, with the time it was read.
       const after = body(await agenda(at(), undefined, undefined, "King", NOW));
@@ -279,9 +293,10 @@ describe("agenda", () => {
       expect(late.resume).not.toContain("sans lecture récente");
       // For a commune: its own agendas, said in the summary too, and those of the whole island, not the other communes'.
       const leu = body(await agenda(at(), "Saint-Leu", undefined, undefined, new Date(t)));
-      expect(leu.non_lus).toEqual(expect.arrayContaining([`Ville de Saint-Leu : ${since}`, `Ligue réunionnaise de volley-ball : ${since}`]));
+      expect(leu.non_lus).toEqual(expect.arrayContaining([`Le Séchoir : ${since}`, `Ville de Saint-Leu : ${since}`, `Ligue réunionnaise de volley-ball : ${since}`]));
       expect(leu.non_lus.some((x: string) => x.startsWith("Ville de Saint-Louis"))).toBe(false);
-      expect(leu.resume).toContain(`sans lecture récente : Ville de Saint-Leu, ${since} (voir non_lus).`);
+      // Le Séchoir, in Saint-Leu, read by the scheduled event as well.
+      expect(leu.resume).toContain(`sans lecture récente : Le Séchoir, ${since}\u00a0; Ville de Saint-Leu, ${since} (voir non_lus).`);
       // La Plaine-des-Palmistes' agenda and news, one source name: named once.
       const plaine = body(await agenda(at(), "La Plaine-des-Palmistes", undefined, undefined, new Date(t)));
       expect(plaine.non_lus.filter((x: string) => x.startsWith("Ville de La Plaine-des-Palmistes"))).toHaveLength(1);
@@ -326,7 +341,7 @@ describe("agenda", () => {
       t += 2 * 3600_000;
       league = () => new Response("", { status: 503 });
       // 06:00 UTC: the Département's hour, its agenda read again too.
-      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "departement", ...MAIRIES], gardes: ["lrvb"], reportes: [], trop_vieilles: [] });
+      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "departement", ...MAIRIES], gardes: ["lrvb"], reportes: [], trop_vieilles: [] });
       expect(await entry(store)).toEqual(first);
       // Not tried again at each scheduled event: only once its next reading is due, an hour after the failure.
       const tries = urls.filter(isLeague).length;
@@ -335,14 +350,14 @@ describe("agenda", () => {
       expect(urls.filter(isLeague)).toHaveLength(tries);
       t += 5 * 60_000;
       league = () => new Response(JSON.stringify({ events: [] }));
-      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", ...MAIRIES], gardes: ["lrvb"], reportes: [], trop_vieilles: [] });
+      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "etang_sale", ...MAIRIES], gardes: ["lrvb"], reportes: [], trop_vieilles: [] });
       expect(await entry(store)).toEqual(first);
       // Finding nothing counts as a failure too: not read again within the hour; past it, read, and the copy replaced.
       t += 30 * 60_000;
       league = () => new Response(bytes("tribe_lrvb.json"));
       expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: [], gardes: [], reportes: [], trop_vieilles: [] });
       t += 30 * 60_000;
-      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "lrvb", ...MAIRIES], gardes: [], reportes: [], trop_vieilles: [] });
+      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "lrvb", ...MAIRIES], gardes: [], reportes: [], trop_vieilles: [] });
       const second = await entry(store);
       expect(second?.fetchedAt).toBe(t);
       // Still failing two days on: the copy, no longer served, is said too old in the scheduled event's log (the clubs'
@@ -351,7 +366,7 @@ describe("agenda", () => {
       // is not read, its copy said too old as well (no scheduled event ran in its four hours since).
       t += 49 * 3600_000;
       league = () => new Response("", { status: 503 });
-      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "cirest", ...MAIRIES, "sportsregions"], gardes: ["lrvb"], reportes: [], trop_vieilles: ["departement", "lrvb"] });
+      expect(await refreshPlanned(at(), new Date(t))).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "etang_sale", "cirest", ...MAIRIES, "sportsregions"], gardes: ["lrvb"], reportes: [], trop_vieilles: ["departement", "lrvb"] });
       expect(await entry(store)).toEqual(second);
     });
 
@@ -448,7 +463,7 @@ describe("agenda", () => {
         count(left() - 5); // what the scheduled event did before: 5 left, KEEP_LEFT 4 of them
         return refreshPlanned(new Cache(store, () => NOW.getTime()), NOW);
       });
-      expect(value).toEqual({ lus: [], gardes: [], reportes: ["salazie", "saint_louis", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], trop_vieilles: [] });
+      expect(value).toEqual({ lus: [], gardes: [], reportes: ["salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], trop_vieilles: [] });
       expect(urls).toEqual([]);
       expect(store.puts).toBe(0);
     });
@@ -649,23 +664,23 @@ describe("agenda", () => {
           return super.put(key, e);
         }
       }
-      // 27 left: the bundle's read, Salazie's and Saint-Louis's agendas, the CIREST's articles, the Département's list and
-      // its two events' pages, the league's page, the mairies' nine readings, the four pages, the write, and KEEP_LEFT (4)
-      // still left.
+      // 32 left: the bundle's read, Salazie's, Saint-Louis's and Le Séchoir's agendas, L'Étang-Salé's list and three of its
+      // events' pages, the CIREST's articles, the Département's list and its two events' pages, the league's page, the
+      // mairies' nine readings, the four pages, the write, and KEEP_LEFT (4) still left.
       const both = await counted(PAGE_BUDGET, async () => {
-        count(left() - 27);
+        count(left() - 32);
         const out = await refreshPlanned(new Cache(new Kv(), () => NOW.getTime()), NOW);
         return { out, left: left() };
       });
-      expect(both.value.out).toEqual({ lus: ["salazie", "saint_louis", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: [], trop_vieilles: [] });
+      expect(both.value.out).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: [], trop_vieilles: [] });
       expect(both.value.left).toBe(5);
       // One fewer: the league and the mairies only, the clubs' calendar at a later run (its copy served meanwhile).
       urls = [];
       const one = await counted(PAGE_BUDGET, async () => {
-        count(left() - 26);
+        count(left() - 31);
         return refreshPlanned(new Cache(new Kv(), () => NOW.getTime()), NOW);
       });
-      expect(one.value).toEqual({ lus: ["salazie", "saint_louis", "cirest", "departement", "lrvb", ...MAIRIES], gardes: [], reportes: ["sportsregions"], trop_vieilles: [] });
+      expect(one.value).toEqual({ lus: ["salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES], gardes: [], reportes: ["sportsregions"], trop_vieilles: [] });
       expect(urls.filter((u) => u.includes("sportsregions"))).toEqual([]);
       vi.mocked(console.log).mockRestore();
     });
@@ -1100,21 +1115,30 @@ describe("agenda", () => {
     expect(said[0]).toMatch(/^source agenda_etang_sale : fiche non lue, l'événement garde son premier jour \(agenda_etang_sale: .+\)$/);
     expect(said[0]).not.toContain("letangsale");
     err.mockRestore();
-    // Through the tool: said with both days, and its page kept in the agendas' copy from one reading of the list to the next.
+    // Through the tool: said with both days, from the scheduled event's copy, a view reading nothing of the site. The
+    // scheduled event reads it again every 3 hours, the list and its three pages (its `requetes`, BUDGET.md).
     down = undefined;
     let u = NOW.getTime();
     const tc = new Cache(new MemoryStore(), () => u);
-    const odyssea = async () => body(await agenda(tc, "L'Étang-Salé", "a_venir", undefined, new Date(u), 300)).evenements.find((e: EventRow) => e.titre === "Odyssea Réunion 2026");
+    const odyssea = async () => body(await agenda(tc, "L'Étang-Salé", "a_venir", undefined, new Date(u), 300)).evenements?.find((e: EventRow) => e.titre === "Odyssea Réunion 2026");
+    read.length = 0;
+    expect((await odyssea())).toBeUndefined();
+    expect(read.some((x) => x.includes("letangsale"))).toBe(false);
+    await refreshPlanned(tc, new Date(u));
+    expect(read.filter((x) => x.includes("letangsale"))).toHaveLength(1 + ETANG_SALE_PAGES);
     expect((await odyssea()).quand).toBe("du samedi 07/11 à 09:18 au dimanche 08/11");
     u += 2 * 3600_000;
     read.length = 0;
+    await refreshPlanned(tc, new Date(u));
     expect((await odyssea()).quand).toBe("du samedi 07/11 à 09:18 au dimanche 08/11");
-    expect(read.some((x) => x.includes("?limit=50"))).toBe(true);
-    expect(page(758)).toBe(0);
+    expect(read.some((x) => x.includes("letangsale"))).toBe(false);
+    u += 3600_000;
+    await refreshPlanned(tc, new Date(u));
+    expect(read.filter((x) => x.includes("letangsale"))).toHaveLength(1 + ETANG_SALE_PAGES);
   });
 
   it("tells each date of L'Étang-Salé with « site de la commune de L'Étang-Salé » and the hour read, its sports programme left to the sport tool", async () => {
-    const b = body(await agenda(cache(), "L'Étang-Salé", "a_venir", undefined, NOW, 300));
+    const b = body(await agenda(await plannedCache(), "L'Étang-Salé", "a_venir", undefined, NOW, 300));
     const etang = b.evenements.filter((e: EventRow) => e.publie_par === "Ville de L'Étang-Salé");
     // Its sports programme is the sport tool's; the titles in capitals said as every agenda's (tools/casse.ts).
     expect(etang.map((e: EventRow) => e.titre)).toEqual(["Odyssea Réunion 2026", "Concert aurus & monique b thomas", "Loto Quine Les Petits Flamboyants", "Jazzrenyon live 2026", "Open 2K", "Ligue d'improvisation reunionnaise"]);
@@ -1147,7 +1171,7 @@ describe("agenda", () => {
   });
 
   it("gives the island's next two weeks, the same event once, from every agenda", async () => {
-    const c = cache();
+    const c = await plannedCache();
     const b = body(await agenda(c, undefined, undefined, undefined, NOW));
     expect(b.resume).toBe(`40 événements à La Réunion dans les deux semaines qui viennent (du samedi 24/10 au samedi 07/11)\u00a0; ${RESUME_REUNION_FR}.`.replace("40", String(b.nombre)));
     // Without the sports programmes of La Possession, L'Étang-Salé and Saint-Benoît: the sport tool's.
@@ -1225,7 +1249,7 @@ describe("agenda", () => {
 
   it("says which commune's site each event of a mairie comes from and when it was read, keeping what each site's terms allow", async () => {
     // The pages: every event's line. The tool's answer below.
-    const all = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300, false, true));
+    const all = body(await agenda(await plannedCache(), undefined, undefined, undefined, NOW, 300, false, true));
     type Row = { publie_par: string; source?: string; description?: string; lien?: string };
     const by = (p: string): Row[] => all.evenements.filter((e: Row) => e.publie_par === p);
     const tampon = by("Ville du Tampon");
@@ -1250,7 +1274,7 @@ describe("agenda", () => {
     expect(all.evenements.filter((e: Row) => ["CINOR", "TÉAT La Réunion", "OTI EST REUNION — Droits réservés"].includes(e.publie_par)).every((e: Row) => e.source === undefined)).toBe(true);
     // The tool: a line only where a site's terms or agreement ask a mention with each event (Le Port's « © »), the others
     // said by publie_par and lu_le; no picture.
-    const tool = body(await agenda(cache(), undefined, undefined, undefined, NOW, 300));
+    const tool = body(await agenda(await plannedCache(), undefined, undefined, undefined, NOW, 300));
     const inTool = (p: string): (Row & { lu_le?: string; image?: string })[] => tool.evenements.filter((e: Row) => e.publie_par === p);
     expect(inTool("Ville du Port").every((e) => e.source === "site de la commune du Port (©\u00a0www.ville-port.re), lu le samedi 24/10 à 08:00")).toBe(true);
     expect(inTool("Ville du Tampon").every((e) => e.source === undefined && e.lu_le === "samedi 24/10 à 08:00")).toBe(true);
@@ -1265,7 +1289,7 @@ describe("agenda", () => {
     for (const t of ["1er Rally National Grand Est", "Grand Raid 2026", "Match de gala : Saint-Pierre – Le Tampon", "Agenda culturel", "Sportifs à l'honneur", "Planning des vacances", "Programme sport-santé", "Compétitions sportives handisport"]) {
       expect(programmeSportif({ titre: t }), t).toBe(false);
     }
-    const c = cache();
+    const c = await plannedCache();
     const all = body(await agenda(c, undefined, undefined, undefined, NOW, 300));
     const titles = all.evenements.map((e: { titre: string }) => e.titre);
     expect(titles.filter((t: string) => programmeSportif({ titre: t }))).toEqual([]);
@@ -1282,7 +1306,7 @@ describe("agenda", () => {
   });
 
   it("answers tonight, with the hours", async () => {
-    const b = body(await agenda(cache(), undefined, "ce_soir", "concert", NOW));
+    const b = body(await agenda(await plannedCache(), undefined, "ce_soir", "concert", NOW));
     expect(b.resume).toBe(`4 événements (concerts et musique) à La Réunion ce soir\u00a0; ${RESUME_REUNION_FR}.`);
     // The DKLO at Tan Rouge says « Cirque et musique » only after its first sentence: that text is not kept, the genre
     // it names is (`themes`), so the search still finds it.
@@ -1600,11 +1624,11 @@ describe("agenda", () => {
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       try {
         vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-          if (url.includes("lesechoir")) await new Promise((r) => setTimeout(r, 8_000));
+          if (url.includes("trois-bassins")) await new Promise((r) => setTimeout(r, 8_000));
           const f = file(url, typeof init?.body === "string" ? init.body : undefined);
           return f ? new Response(bytes(f)) : new Response("", { status: 503 });
         });
-        const sechoir = async (planned: boolean) => {
+        const troisBassins = async (planned: boolean) => {
           const run = counted(SCHEDULED_BUDGET, async () => {
             if (planned) scheduled();
             return gather(isolate(), NOW);
@@ -1612,10 +1636,10 @@ describe("agenda", () => {
           await vi.advanceTimersByTimeAsync(8_000);
           const { value, settled } = await run;
           await settled();
-          return value.find((g) => g.agenda.id === "sechoir")?.value;
+          return value.find((g) => g.agenda.id === "trois_bassins")?.value;
         };
-        expect(await sechoir(false)).toBeUndefined();
-        expect((await sechoir(true))?.value.length).toBeGreaterThan(0);
+        expect(await troisBassins(false)).toBeUndefined();
+        expect((await troisBassins(true))?.value.length).toBeGreaterThan(0);
       } finally {
         vi.useRealTimers();
       }
@@ -1624,10 +1648,10 @@ describe("agenda", () => {
     it("in the scheduled event, tries a reading cut by its delay or a server's error once more, and says so", async () => {
       const calls: Record<string, number> = {};
       vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-        const site = url.includes("lesechoir") ? "sechoir" : url.includes("kabardock") ? "kabardock" : url.includes("bisik") ? "bisik" : undefined;
+        const site = url.includes("trois-bassins") ? "trois_bassins" : url.includes("kabardock") ? "kabardock" : url.includes("bisik") ? "bisik" : undefined;
         if (site) calls[site] = (calls[site] ?? 0) + 1;
-        // Le Séchoir cut by its delay, the Kabardock in a server's error, then both back; Bisik refuses (404), not tried again.
-        if (site === "sechoir" && calls.sechoir === 1) throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
+        // Les Trois-Bassins cut by its delay, the Kabardock in a server's error, then both back; Bisik refuses (404), not tried again.
+        if (site === "trois_bassins" && calls.trois_bassins === 1) throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
         if (site === "kabardock" && calls.kabardock === 1) return new Response("", { status: 503 });
         if (site === "bisik") return new Response("", { status: 404 });
         const f = file(url, typeof init?.body === "string" ? init.body : undefined);
@@ -1643,13 +1667,13 @@ describe("agenda", () => {
         });
         await run.settled();
         const has = (id: string) => (run.value.find((g) => g.agenda.id === id)?.value?.value.length ?? 0) > 0;
-        return { sechoir: has("sechoir"), kabardock: has("kabardock"), bisik: has("bisik"), calls: { ...calls } };
+        return { trois_bassins: has("trois_bassins"), kabardock: has("kabardock"), bisik: has("bisik"), calls: { ...calls } };
       };
       // A view does not try again.
-      expect(await read(false)).toEqual({ sechoir: false, kabardock: false, bisik: false, calls: { sechoir: 1, kabardock: 1, bisik: 1 } });
-      expect(await read(true)).toEqual({ sechoir: true, kabardock: true, bisik: false, calls: { sechoir: 2, kabardock: 2, bisik: 1 } });
+      expect(await read(false)).toEqual({ trois_bassins: false, kabardock: false, bisik: false, calls: { trois_bassins: 1, kabardock: 1, bisik: 1 } });
+      expect(await read(true)).toEqual({ trois_bassins: true, kabardock: true, bisik: false, calls: { trois_bassins: 2, kabardock: 2, bisik: 1 } });
       const lines = logs.mock.calls.map(([l]) => String(l)).filter((l) => l.includes("nouvelle tentative"));
-      expect(lines).toEqual(expect.arrayContaining([expect.stringMatching(/\(sechoir\) : nouvelle tentative après échec \(.*timeout\), lue/), expect.stringMatching(/\(kabardock\) : nouvelle tentative après échec \(.*HTTP 503\), lue/)]));
+      expect(lines).toEqual(expect.arrayContaining([expect.stringMatching(/\(trois_bassins\) : nouvelle tentative après échec \(.*timeout\), lue/), expect.stringMatching(/\(kabardock\) : nouvelle tentative après échec \(.*HTTP 503\), lue/)]));
       vi.restoreAllMocks();
     });
 
@@ -1658,7 +1682,7 @@ describe("agenda", () => {
       try {
         let calls = 0;
         vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
-          if (url.includes("lesechoir")) {
+          if (url.includes("trois-bassins")) {
             calls++;
             vi.setSystemTime(Date.now() + 121_000);
             throw new DOMException("The operation was aborted due to timeout", "TimeoutError");
@@ -1672,8 +1696,62 @@ describe("agenda", () => {
           return gather(isolate(), NOW);
         });
         await run.settled();
-        expect(run.value.find((g) => g.agenda.id === "sechoir")?.value).toBeUndefined();
+        expect(run.value.find((g) => g.agenda.id === "trois_bassins")?.value).toBeUndefined();
         expect(calls).toBe(1);
+      } finally {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+      }
+    });
+
+    it("reads Le Séchoir in the scheduled event only, given 8 s there, a view reading nothing of its site", async () => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      try {
+        const asked: string[] = [];
+        vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+          asked.push(url);
+          if (url.includes("lesechoir")) await new Promise((r) => setTimeout(r, 8_000));
+          const f = file(url, typeof init?.body === "string" ? init.body : undefined);
+          return f ? new Response(bytes(f)) : new Response("", { status: 503 });
+        });
+        const c = isolate();
+        const view = counted(PAGE_BUDGET, () => gather(c, NOW));
+        await vi.advanceTimersByTimeAsync(8_000);
+        await (await view).settled();
+        expect(asked.some((u) => u.includes("lesechoir"))).toBe(false);
+        const run = counted(SCHEDULED_BUDGET, async () => {
+          scheduled();
+          return refreshPlanned(c, NOW);
+        });
+        await vi.advanceTimersByTimeAsync(8_000);
+        expect((await run).value.lus).toContain("sechoir");
+        const served = (await counted(PAGE_BUDGET, () => gather(c, NOW))).value.find((g) => g.agenda.id === "sechoir");
+        expect(served?.value?.value.length).toBeGreaterThan(0);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("begins no reading of its own agendas past two minutes after the first, the others said « reporté » for the next event", async () => {
+      vi.useFakeTimers({ toFake: ["Date"], now: Date.now() });
+      try {
+        vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+          // Salazie's agenda, the first, takes 121 s.
+          if (url.includes("ville-salazie.fr/category/10-agenda")) vi.setSystemTime(Date.now() + 121_000);
+          const f = file(url, typeof init?.body === "string" ? init.body : undefined);
+          return f ? new Response(bytes(f)) : new Response("", { status: 503 });
+        });
+        const logs = vi.spyOn(console, "log").mockImplementation(() => {});
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        const run = await counted(SCHEDULED_BUDGET, async () => {
+          scheduled();
+          return refreshPlanned(isolate(), NOW);
+        });
+        const planned = AGENDAS.filter((a) => a.planifie).map((a) => a.id);
+        expect(run.value).toEqual({ lus: ["salazie"], gardes: [], reportes: planned.slice(1), trop_vieilles: [] });
+        const said = logs.mock.calls.map(([l]) => String(l)).filter((l) => l.includes("reporté"));
+        expect(said).toHaveLength(planned.length - 1);
+        expect(said).toContain("source salles_spectacle (sechoir) reporté : lectures planifiées commencées il y a plus de 120 s");
       } finally {
         vi.useRealTimers();
         vi.restoreAllMocks();

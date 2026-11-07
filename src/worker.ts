@@ -463,7 +463,7 @@ export default {
       .then(({ value, used, reads }) => console.log(`préchargement AROME : ${JSON.stringify(value.arome)}, sous-requêtes : ${value.aromeUsed}` +
         (value.copies.written.length ? ` ; copies partagées : ${value.copies.written.join(", ")}` : "") +
         (value.copies.left.length ? ` ; reportées : ${value.copies.left.map((x) => `${x.key} (${x.why})`).join(", ")}` : "") +
-        (value.agendas?.lus.length || value.agendas?.gardes.length || value.agendas?.trop_vieilles.length ? ` ; agendas planifiés : ${JSON.stringify(value.agendas)}` : "") +
+        (value.agendas?.lus.length || value.agendas?.gardes.length || value.agendas?.reportes.length || value.agendas?.trop_vieilles.length ? ` ; agendas planifiés : ${JSON.stringify(value.agendas)}` : "") +
         (value.copies.written.length || value.copies.left.length || value.agendas?.lus.length ? `, sous-requêtes en tout : ${used}` : "") +
         // Each source's reads in the event: one read more often than its freshness says its copy did not carry over.
         readsSaid(reads)))

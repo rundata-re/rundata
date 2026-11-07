@@ -2025,6 +2025,8 @@ export async function snapshot<T>(
     if (yesterday || (typeof reader === "function" ? reader(key, got.value, age) : reader)) {
       const newer = await within(logged, waitMs);
       if (newer) return newer;
+      // The reader got the copy as it was: its age, to see what an assistant was given (the home page waits 800 ms).
+      console.log(`copie servie au lecteur pendant son rafraîchissement : ${key}, âge ${Math.round(age / 60_000)} min`);
     }
     background(logged);
   }

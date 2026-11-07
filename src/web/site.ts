@@ -228,6 +228,22 @@ const readerWaits: ReaderWaits = (key, value, ageMs) => {
 export const readerOf = (request: Request): boolean | ReaderWaits =>
   isReader(request) && (CHECK.test(request.headers.get("user-agent") ?? "") || readerWaits);
 
+// The home page: an assistant's fetcher waits for the weather's refresh this long at most, then gets the copy as it is,
+// its time said, the refresh going on after the answer (a person's banner wait for the vigilance). From 04 to 07/11/2026,
+// ChatGPT-User gave up 94 of its 118 reads of / before the page was sent, at 1,360 ms in the middle (none answered past
+// 1,524 ms), while the page waited up to 25 s for the stations to be read again. Without any copy, the page goes without
+// its live block, as a person's past WAIT_MS: its tiles say to reload it. The daily check of the sources still waits
+// READER_WAIT_MS: it must see the data, not a copy.
+export const HOME_READER_WAIT_MS = 800;
+
+/** How long the home page waits for `request`: the weather's copy (and whether for its refresh), then the vigilance. */
+export function homeWaits(request: Request): { meteo: number | undefined; reader: boolean | ReaderWaits; vigilance: number } {
+  const reader = readerOf(request);
+  if (!reader) return { meteo: undefined, reader, vigilance: BANNER_WAIT_MS };
+  if (reader === true) return { meteo: READER_WAIT_MS, reader, vigilance: READER_WAIT_MS };
+  return { meteo: HOME_READER_WAIT_MS, reader, vigilance: BANNER_WAIT_MS };
+}
+
 /** Waits as `waits` says, or as the reader would. */
 const alsoWaits = (waits: ReaderWaits, reader: boolean | ReaderWaits): ReaderWaits => (key, value, ageMs) =>
   waits(key, value, ageMs) || (typeof reader === "function" ? reader(key, value, ageMs) : reader);
@@ -554,9 +570,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
     }
   }
   if (path === "/") {
+    const waits = homeWaits(request);
     const [meteo, vigilance] = await Promise.all([
-      snapshot(cache, DOMAINS["/meteo"].key, () => buildHome(cache, now), background, now, waitFor(request), readerOf(request)),
-      vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now),
+      snapshot(cache, DOMAINS["/meteo"].key, () => buildHome(cache, now), background, now, waits.meteo, waits.reader),
+      vigilanceNow(cache, background, waits.vigilance, now),
     ]);
     const [actualites, volcan, air, electricite, calendrier, bus, trafic, velos, bornes, eau, sentiers, secheresse, coupures, sport, cyclones, historique, agenda, crues, emploi, marches] = await tileCopies(cache, HOME_TILES, background, meteo, now);
     return page(path, (live) => (live

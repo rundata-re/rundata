@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { landslides, sales, SNAP_M } from "../src/providers/terrain.js";
-import { snapshot } from "../src/web/data.js";
+import { BANNER_WAIT_MS, snapshot } from "../src/web/data.js";
+import { homePage, type HomeLive } from "../src/web/home.js";
 import { scheduledEvery } from "../src/web/partagees.js";
-import { readerOf } from "../src/web/site.js";
+import { HOME_READER_WAIT_MS, homeWaits, readerOf } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-26T15:40:00Z");
 const MIN = 60_000;
@@ -55,6 +56,76 @@ describe("a reader and a copy the scheduled event keeps (web/data.ts `snapshot`,
     expect(await served("web:crues", "rundata-check/1.0", 12)).toEqual({ value: 2, built: 2 });
     expect(readerOf(asking(PERSON))).toBe(false);
     expect(await served("web:crues", PERSON, 12)).toEqual({ value: 1, built: 2 });
+  });
+});
+
+// 04-07/11/2026: ChatGPT-User gave up 94 of its 118 reads of the home page before it was sent, the page waiting for the
+// stations to be read again (up to 25 s).
+describe("an assistant's fetcher on the home page (web/site.ts `homeWaits`)", () => {
+  const home = (ua: string) => new Request("https://rundata.re/", { headers: { "user-agent": ua } });
+  afterEach(() => vi.useRealTimers());
+
+  it("waits 800 ms for the weather and a person's time for the vigilance; the check of the sources 25 s; a person as before", () => {
+    expect(HOME_READER_WAIT_MS).toBe(800);
+    for (const ua of [CHATGPT, GOOGLEBOT]) expect(homeWaits(home(ua))).toMatchObject({ meteo: 800, vigilance: BANNER_WAIT_MS });
+    expect(homeWaits(home("rundata-check/1.0"))).toEqual({ meteo: 25_000, reader: true, vigilance: 25_000 });
+    expect(homeWaits(home(PERSON))).toEqual({ meteo: undefined, reader: false, vigilance: BANNER_WAIT_MS });
+  });
+
+  /**
+   * The weather's copy served to `ua` on the home page: `ageMin` old (none if null), its next build taking `buildMs`.
+   * What it has once `afterMs` have passed, and the builds made once the work after the answer is done.
+   */
+  async function served(ua: string, ageMin: number | null, buildMs: number, afterMs: number) {
+    vi.useFakeTimers({ now: NOW });
+    let t = NOW.getTime() - (ageMin ?? 0) * MIN;
+    const c = new Cache(new MemoryStore(), () => t);
+    let n = 0;
+    const build = () => new Promise<number>((resolve) => setTimeout(() => resolve(++n), buildMs));
+    if (ageMin != null) {
+      const first = snapshot(c, "web:meteo", build, () => {}, new Date(t));
+      await vi.advanceTimersByTimeAsync(buildMs);
+      await first;
+    }
+    t = NOW.getTime();
+    const w = homeWaits(home(ua));
+    const behind: Promise<unknown>[] = [];
+    let got: { value: number | undefined } | undefined;
+    void snapshot(c, "web:meteo", build, (p) => behind.push(p), NOW, w.meteo, w.reader).then((r) => (got = { value: r?.value }));
+    await vi.advanceTimersByTimeAsync(afterMs);
+    const at = got;
+    await vi.advanceTimersByTimeAsync(buildMs);
+    await Promise.all(behind);
+    return { at: at?.value ?? (at ? null : "en attente"), built: n };
+  }
+
+  it("serves an old copy within 800 ms when its refresh is slow, the refresh going on after the answer", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    for (const ua of [CHATGPT, GOOGLEBOT]) {
+      // 20 minutes old, a refresh of 3 s: the copy at 800 ms, and the refresh made behind.
+      expect(await served(ua, 20, 3000, HOME_READER_WAIT_MS + 1)).toEqual({ at: 1, built: 2 });
+    }
+    // Its age said, to measure what the assistants are given.
+    expect(log).toHaveBeenCalledWith("copie servie au lecteur pendant son rafraîchissement : web:meteo, âge 20 min");
+    log.mockRestore();
+  });
+
+  it("serves the refreshed copy when its refresh takes less than 800 ms", async () => {
+    expect(await served(CHATGPT, 20, 300, 301)).toEqual({ at: 2, built: 2 });
+  });
+
+  it("serves the page without its live block at 800 ms when there is no copy at all, the build going on", async () => {
+    expect(await served(CHATGPT, null, 3000, HOME_READER_WAIT_MS + 1)).toEqual({ at: null, built: 1 });
+    // The tiles then say why: no empty block.
+    const html = homePage("https://rundata.re", { meteo: null } as unknown as HomeLive, NOW);
+    const tile = /<li class="tile k-meteo">[\s\S]*?<\/li>/.exec(html)![0];
+    expect(tile).toContain("Se met à jour : rechargez la page dans quelques secondes.");
+  });
+
+  it("makes the check of the sources wait for the refresh, and never a person", async () => {
+    expect(await served("rundata-check/1.0", 20, 3000, HOME_READER_WAIT_MS + 1)).toEqual({ at: "en attente", built: 2 });
+    expect(await served("rundata-check/1.0", 20, 3000, 3001)).toEqual({ at: 2, built: 2 });
+    expect(await served(PERSON, 20, 3000, 1)).toEqual({ at: 1, built: 2 });
   });
 });
 

@@ -36,8 +36,9 @@ export interface CacheEntry {
   /**
    * When its refresh last failed, and the source that did not answer, if it said: until the breaker closes (`breakerMs`),
    * this copy is served at once, by every process that reads the store, rather than the source being asked again.
+   * `depuis`: the first failure of this outage; `dit`: when it was last said as an error (`OUTAGE_SAID_MS`).
    */
-  echec?: { at: number; source?: string };
+  echec?: { at: number; source?: string; depuis?: number; dit?: number };
 }
 
 /**
@@ -182,6 +183,12 @@ export const breakerMs = (freshSeconds: number, backoffSeconds = FAILURE_BACKOFF
 const ALWAYS_WAITED = (key: string) => key === "vigilance" || key.startsWith("cyclones:");
 // The invocation ran out of subrequests: not the source's fault, so not remembered against it.
 const OUT_OF_BUDGET = /Too many subrequests/;
+// A source that does not answer is said as an error when it falls, then once an hour while it stays down (a plain log
+// line in between), and once when it answers again with how long it was down: a source down for 14 hours (Vigicrues,
+// HTTP 525, 05-06/11/2026) wrote 171 error lines, one each scheduled event, among about a dozen of the code's own over
+// the same 3 days. The dashboard's error count and its table of first words read these lines.
+const OUTAGE_SAID_MS = 3600_000;
+const iso = (ms: number) => new Date(ms).toISOString();
 // Bundles kept in memory per process; older ones (an AROME run replaced by the next) are dropped.
 const MAX_BUNDLES = 8;
 
@@ -444,15 +451,27 @@ export class Cache {
       const entry: CacheEntry = { value, fetchedAt: this.now(), ...(cost != null && { cost }), ...(stampOf(key, this.version) != null && { version: stampOf(key, this.version) }), ...(from && { from }) };
       await put(entry);
       this.failures.delete(key);
+      const down = hit?.echec;
+      if (down?.source) {
+        const since = down.depuis ?? down.at;
+        console.error(`source ${down.source} revenue : ${key}, sans réponse depuis ${iso(since)} (${Math.round((entry.fetchedAt - since) / 60_000)} min)`);
+      }
       return { value, fetchedAt: new Date(entry.fetchedAt), stale: false, ...(from && { from }) };
     } catch (error) {
       if (!OUT_OF_BUDGET.test(String((error as Error)?.message ?? error))) {
-        this.failures.set(key, { at: this.now(), error });
+        const now = this.now();
+        this.failures.set(key, { at: now, error });
+        // The outage this failure belongs to, if the copy says one: a refresh that worked writes a copy without it.
+        const before = hit?.echec;
+        const since = before?.depuis ?? before?.at ?? now;
+        const said = before && (before.dit ?? before.at);
+        const loud = !(error instanceof UpstreamError) || said === undefined || now - said >= OUTAGE_SAID_MS;
         // The source answered, but reading it failed (its page changed shape…): ours to mend, said in the logs only.
         if (!(error instanceof UpstreamError)) console.error(`lecture sans aboutir : ${key}`, why(error));
-        // A copy to fall back on: the breaker opens for every process of the store (`serve`), said once in the logs.
-        else if (hit) console.error(`source ${error.source} sans réponse : ${key}, copie du ${new Date(hit.fetchedAt).toISOString()} servie`, why(error));
-        if (hit) await put({ ...hit, echec: { at: this.now(), ...(error instanceof UpstreamError && { source: error.source }) } }).catch(() => undefined);
+        // A copy to fall back on: the breaker opens for every process of the store (`serve`), said once in the logs, as
+        // an error when the source falls and once an hour after (OUTAGE_SAID_MS).
+        else if (hit) (loud ? console.error : console.log)(`source ${error.source} sans réponse : ${key}, copie du ${iso(hit.fetchedAt)} servie${before ? `, en panne depuis ${iso(since)}` : ""}`, why(error));
+        if (hit) await put({ ...hit, echec: { at: now, ...(error instanceof UpstreamError && { source: error.source }), depuis: since, dit: loud ? now : said } }).catch(() => undefined);
       }
       if (hit) return lastCopy<T>(hit, error);
       throw error;

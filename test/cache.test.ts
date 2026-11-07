@@ -60,6 +60,47 @@ describe("Cache", () => {
     log.mockRestore();
   });
 
+  // 05-06/11/2026: Vigicrues down 14 hours wrote 171 error lines, one each scheduled event.
+  it("says a source's outage as an error when it falls, once an hour while it lasts, and when it answers again", async () => {
+    const c = clock();
+    const cache = new Cache(new MemoryStore(), c.now);
+    await cache.get("crues", 60, async () => "ok");
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const silent = async () => { throw new UpstreamError("vigicrues", "HTTP 525", 525); };
+    const copy = new Date(1_000_000).toISOString();
+    const fell = new Date(1_000_000 + 120_000).toISOString();
+    c.advance(120);
+    await cache.get("crues", 60, silent);
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0][0]).toBe(`source vigicrues sans réponse : crues, copie du ${copy} servie`);
+    // Each scheduled event of the next hour, past the breaker: a plain log line, saying since when.
+    for (let i = 0; i < 11; i++) {
+      c.advance(5 * 60);
+      await cache.get("crues", 60, silent);
+    }
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(log).toHaveBeenCalledTimes(11);
+    expect(log.mock.calls[0][0]).toBe(`source vigicrues sans réponse : crues, copie du ${copy} servie, en panne depuis ${fell}`);
+    // An hour after the last error line: an error again.
+    c.advance(5 * 60);
+    await cache.get("crues", 60, silent);
+    expect(err).toHaveBeenCalledTimes(2);
+    expect(err.mock.calls[1][0]).toBe(`source vigicrues sans réponse : crues, copie du ${copy} servie, en panne depuis ${fell}`);
+    // Back: one error line, with how long it was down.
+    c.advance(5 * 60);
+    expect(await cache.get("crues", 60, async () => "revenu")).toMatchObject({ value: "revenu", stale: false });
+    expect(err).toHaveBeenCalledTimes(3);
+    expect(err.mock.calls[2][0]).toBe(`source vigicrues revenue : crues, sans réponse depuis ${fell} (65 min)`);
+    // The next outage is a new one: an error at once.
+    c.advance(5 * 60);
+    await cache.get("crues", 60, silent);
+    expect(err).toHaveBeenCalledTimes(4);
+    expect(err.mock.calls[3][0]).toMatch(/^source vigicrues sans réponse : crues, copie du .* servie$/);
+    err.mockRestore();
+    log.mockRestore();
+  });
+
   it("keeps the source a copy was read from, when it asked one: fresh, from the store and in a bundle", async () => {
     const c = clock();
     const store = new MemoryStore();

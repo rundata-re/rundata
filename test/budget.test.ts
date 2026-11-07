@@ -66,7 +66,7 @@ function upstream(url: string): Response {
   if (url.includes("data.gouv.fr/api/1/datasets/r/047b2ab9")) return new Response(fixture("ffvl_releves.json"));
   if (url.includes("/thredds/dodsC/gridLEODYNRTL3SWW00/")) return new Response(fixture("acspo.ascii"));
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
-  if (url.includes("marine-api.open-meteo")) return new Response(fixture("openmeteo_houle.json"));
+  if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
   if (url.includes("air-quality-api.open-meteo")) return new Response(fixture("cams_uv.json"));
   if (url.includes("ensemble-api.open-meteo.com/data")) return new Response(fixture("openmeteo_ens_meta.json"));
   if (url.includes("ensemble-api.open-meteo")) return new Response(fixture("openmeteo_ens_ile.json"));

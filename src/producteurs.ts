@@ -82,6 +82,7 @@ export const FICHES: Record<string, Fiche> = {
   openmeteo: { famille: "cc_by", producteurs: [ECMWF] },
   openmeteo_ens: { famille: "cc_by", producteurs: [ECMWF] },
   openmeteo_houle: { famille: "cc_by", producteurs: [ECMWF] },
+  openmeteo_houle_mf: { famille: "cc_by", producteurs: [MF] },
   cams_uv: { famille: "cc_by", producteurs: [ECMWF] },
   acspo: { famille: "domaine_public", producteurs: ["NOAA"] },
   noaa_crw_dhw_5km: { famille: "domaine_public", producteurs: ["NOAA"] },

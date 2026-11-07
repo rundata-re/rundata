@@ -30,19 +30,25 @@ export const PRODUCTS: { source: SourceInfo; cost: number; grid: (c: Cache, now:
   { source: modis.SOURCE, cost: modis.COST, grid: modis.grid },
 ];
 
+// MFWAM's nearest cell read up to this far, WAM's beyond: on 08/11/2026 MFWAM's lay 1 to 5 km off the beaches of the
+// west and the south, 7 to 20 km off those of the north and the east, where WAM's lay 3 to 9 km off (providers/houle.ts).
+const MF_MAX_KM = 6;
+
 export const COVERAGE =
   "Température de surface MESURÉE par satellite (NOAA ACSPO, ou NASA MODIS en secours). Une mesure paraît au plus tôt le lendemain " +
   "du jour mesuré, et les jours de nuages il n'y en a pas : la dernière peut dater de plusieurs jours. Chaque réponse donne le jour de la mesure. " +
-  `Vagues : PRÉVISION du modèle ${houle.MODEL.nom} (maille de ${houle.MODEL.maille_km} km, ${houle.MODEL.echeance_jours} jours), ` +
-  "jamais mélangée aux mesures. Les bouées côtières Candhis, qui mesurent la houle et l'eau toutes les 30 min, ne sont pas encore branchées.";
+  `Vagues : PRÉVISION, jamais mélangée aux mesures, du modèle ${houle.MODEL_MF.nom} (maille d'environ ${houle.MODEL_MF.maille_km} km), ` +
+  `qui distingue la houle principale du reste de la mer, là où il a un point à moins de ${MF_MAX_KM} km (ouest et sud), ` +
+  `et du modèle ${houle.MODEL.nom} (maille de ${houle.MODEL.maille_km} km) ailleurs (nord et est), sur ${houle.MODEL.echeance_jours} jours. ` +
+  "Aucune bouée de l'île ne publie de mesure de houle en ce moment (réseau Candhis du Cerema : dernières mesures en avril 2023).";
 
 const CAVEATS = [
   "Mesure satellite de la toute première couche d'eau, moyenne de la journée sur des carrés de 2 à 4 km : " +
     "c'est la température au large du lieu, pas au bord de la plage ni dans le lagon, qui peuvent différer.",
 ];
 
-// The waves of the whole coast: a cache read, one request for every beach, the cache write.
-const WAVE_SUBREQUESTS = 3;
+// The waves of the whole coast: a cache read, one request per model for every beach, the cache write.
+const WAVE_SUBREQUESTS = 4;
 // Further from the model's nearest sea cell, a place is not on the stretch of coast the cell stands for.
 const WAVE_MAX_KM = 15;
 const HOUR = 3600_000;
@@ -205,35 +211,60 @@ const metres = (h: number) => `${fr(Math.round(h * 10) / 10)} m`;
 interface WaveStep {
   time: Date;
   hauteur: number;
+  /** MFWAM's period is the mean one, WAM's the peak's (providers/houle.ts). */
+  modele: houle.ModelId;
   periode: number | null;
   direction: number | null;
+  /** MFWAM only: the main swell's height, kept when below the whole sea's. */
+  houle: number | null;
 }
 
 function stepOf(w: houle.Waves, p: houle.WavePoint, i: number): WaveStep | null {
   const h = p.hauteur[i];
-  return h == null ? null : { time: houle.stepTime(w, i), hauteur: h, periode: p.periode[i], direction: p.direction[i] };
+  const swell = p.houle?.[i];
+  return h == null
+    ? null
+    : { time: houle.stepTime(w, i), hauteur: h, modele: houle.modelOf(p), periode: p.periode[i], direction: p.direction[i], houle: swell != null && swell < h ? swell : null };
 }
+
+const seconds = (s: WaveStep) => (s.periode == null ? undefined : `${Math.round(s.periode)} s`);
 
 function stepText(s: WaveStep) {
   return {
     heures: `${dayLabel(localDate(s.time))} ${heure(localHour(s.time) * 60)}`,
     hauteur: metres(s.hauteur),
-    periode: s.periode == null ? undefined : `${Math.round(s.periode)} s`,
+    ...(s.houle != null ? { houle_principale: metres(s.houle) } : {}),
+    ...(s.modele === "mfwam" ? { periode_moyenne: seconds(s) } : { periode: seconds(s) }),
     venant: from(s.direction),
   };
 }
 
-/** « 0,8 m du sud-ouest, période 10 s ». */
+/** « 0,8 m du sud-ouest, période 10 s » ; MFWAM : « 1,3 m du sud, dont 1 m de houle principale, période moyenne 10 s ». */
 const waveWords = (s: WaveStep) =>
-  [metres(s.hauteur), from(s.direction), s.periode == null ? undefined : `période ${Math.round(s.periode)} s`].filter(Boolean).join(" ").replace(/ (période)/, ", $1");
+  [
+    [metres(s.hauteur), from(s.direction)].filter(Boolean).join(" "),
+    s.houle != null ? `dont ${metres(s.houle)} de houle principale` : undefined,
+    s.periode == null ? undefined : `période ${s.modele === "mfwam" ? "moyenne " : ""}${Math.round(s.periode)} s`,
+  ].filter(Boolean).join(", ");
 
-/** The model's sea cell nearest a place, with its steps still to come; null away from the coast. */
-export function wavesAt(w: houle.Waves, lon: number, lat: number, now: Date) {
+function nearest(w: houle.Waves, lon: number, lat: number, model: houle.ModelId) {
   let best: { p: houle.WavePoint; km: number } | undefined;
   for (const p of w.points) {
+    if (houle.modelOf(p) !== model) continue;
     const km = distanceKm(lon, lat, p.lon, p.lat);
     if (!best || km < best.km) best = { p, km };
   }
+  return best;
+}
+
+/**
+ * The sea cell a place reads, with its steps still to come; null away from the coast. MFWAM's nearest when within
+ * MF_MAX_KM, else WAM's; MFWAM's alone when WAM was not read.
+ */
+export function wavesAt(w: houle.Waves, lon: number, lat: number, now: Date) {
+  const mf = nearest(w, lon, lat, "mfwam");
+  const wam = nearest(w, lon, lat, "wam");
+  const best = mf && (mf.km <= MF_MAX_KM || !wam) ? mf : wam;
   if (!best || best.km > WAVE_MAX_KM) return null;
   const steps: WaveStep[] = [];
   best.p.hauteur.forEach((_, i) => {
@@ -244,7 +275,8 @@ export function wavesAt(w: houle.Waves, lon: number, lat: number, now: Date) {
   // The day's highest waves, today included.
   const days = [...new Set(steps.map((s) => localDate(s.time)))].map((date) =>
     steps.filter((s) => localDate(s.time) === date).reduce((a, b) => (b.hauteur > a.hauteur ? b : a)));
-  return { point: best.p, km: Math.round(best.km * 10) / 10, now: steps[0], steps, days };
+  const model = houle.MODELS[houle.modelOf(best.p)];
+  return { point: best.p, model, km: Math.round(best.km * 10) / 10, now: steps[0], steps, days };
 }
 
 const WAVE_WARNINGS = [
@@ -269,24 +301,34 @@ export function waveLine(w: houle.Waves, lon: number, lat: number, now: Date) {
   };
 }
 
+/** The models the places read, MFWAM first: what an answer about several places names and credits. */
+export function modelsOf(at: ({ model: houle.WaveModel } | null | undefined)[]): houle.WaveModel[] {
+  return [houle.MODEL_MF, houle.MODEL].filter((m) => at.some((a) => a?.model === m));
+}
+
+/** « modèle WAM du Centre européen (ECMWF) », « modèles MFWAM de Météo-France et WAM du Centre européen (ECMWF) ». */
+const modelWords = (ms: houle.WaveModel[]) => `modèle${ms.length > 1 ? "s" : ""} ${ms.map((m) => m.nom).join(" et ")}`;
+
 /** The block an answer carries: always labelled a forecast, never merged into the measurement. */
 function waveBlock(w: Cached<houle.Waves>, place: Place, now: Date) {
   const l = waveLine(w.value, place.lon, place.lat, now);
   if (!l) return null;
   const at = l.at;
   return {
+    model: at.model,
     resume:
-      `Vagues PRÉVUES près ${de(place.nom)} (modèle ${houle.MODEL.nom}, pas une mesure) : ${l.maintenant} ` +
+      `Vagues PRÉVUES près ${de(place.nom)} (modèle ${at.model.nom}, pas une mesure) : ${l.maintenant} ` +
       `vers ${l.heure}\u00a0; jusqu'à ${l.max} ${l.max_jour}.`,
     bloc: {
       nature: "prevision",
-      modele: { nom: houle.MODEL.nom, maille_km: houle.MODEL.maille_km, mise_a_jour: houle.MODEL.mise_a_jour },
+      modele: { nom: at.model.nom, maille_km: at.model.maille_km, mise_a_jour: at.model.mise_a_jour },
       point_du_modele: { lat: at.point.lat, lon: at.point.lon, distance_km: at.km },
       maintenant: stepText(at.now),
       jours: at.days.map((d) => ({
         jour: dayLabel(localDate(d.time)),
         hauteur_max: metres(d.hauteur),
-        periode: d.periode == null ? undefined : `${Math.round(d.periode)} s`,
+        ...(d.houle != null ? { houle_principale: metres(d.houle) } : {}),
+        ...(d.modele === "mfwam" ? { periode_moyenne: seconds(d) } : { periode: seconds(d) }),
         venant: from(d.direction),
       })),
       pas_de_3h: at.steps.slice(0, 8).map(stepText),
@@ -339,16 +381,19 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     const [gs, w, reef] = await Promise.all([copiedGrids(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
     const t = gs.length ? tourOf(gs, now) : null;
     if (!t && !w && !reef) return unavailable();
-    const points = TOUR.map((n) => resolvePlace(n)!.lieu).map((p, i) => {
-      const v = w ? wavesAt(w.value, p.lon, p.lat, now) : null;
-      return { lieu: p.nom, ...t?.readings[i].r?.mesure, ...(v ? { vagues_prevision: waveWords(v.now) } : {}) };
-    });
+    const at = TOUR.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, v: w ? wavesAt(w.value, p.lon, p.lat, now) : null }));
+    const points = at.map(({ p, v }, i) => ({
+      lieu: p.nom,
+      ...t?.readings[i].r?.mesure,
+      ...(v ? { vagues_prevision: waveWords(v.now), vagues_modele: v.model.nom } : {}),
+    }));
+    const models = modelsOf(at.map((a) => a.v));
     const measured = points.filter((p) => "temperature_eau" in p).map((p) => `${p.lieu}\u00a0: ${p.temperature_eau} (${measuredOn(p.jour_mesure!, now)})`);
     const waves = points.filter((p) => p.vagues_prevision).map((p) => `${p.lieu} ${p.vagues_prevision}`);
     return text({
       resume: [
         measured.length ? `Eau de mer, MESURÉE par satellite\u00a0: ${measured.join("\u00a0; ")}.` : "Pas de mesure satellite de l'eau pour le moment.",
-        ...(waves.length ? [`Vagues PRÉVUES maintenant (modèle ${houle.MODEL.nom}, pas une mesure) : ${waves.join("\u00a0; ")}.`] : []),
+        ...(waves.length ? [`Vagues PRÉVUES maintenant (${modelWords(models)}, pas une mesure) : ${waves.join("\u00a0; ")}.`] : []),
       ].join(" "),
       points,
       avertissements: [...(t ? CAVEATS : []), ...(t?.used.flatMap(staleWarning) ?? []), ...(w ? WAVE_WARNINGS : [])],
@@ -357,7 +402,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       // The rules of approach of whales and dolphins, from the decrees in the code: nothing read.
       cetaces: cetaces.cetacesBlock(now),
       couverture: COVERAGE,
-      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(w ? [houle.SOURCE] : []), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
+      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...models.map((m) => m.source), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
       // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
       jour_mesure: points.flatMap((p) => (p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
     });
@@ -402,7 +447,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     // On the coast only too: the rules of approach of whales and dolphins.
     ...(m || v ? { cetaces: cetaces.cetacesBlock(now) } : {}),
     couverture: COVERAGE,
-    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [houle.SOURCE] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : [])]),
+    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : [])]),
   });
 }
 

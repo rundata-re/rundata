@@ -60,6 +60,7 @@ const SHORT: Record<string, string> = {
   pioupiou: "OpenWindMap",
   openmeteo: "Open-Meteo (modèle IFS de l'ECMWF)",
   openmeteo_houle: "Open-Meteo (modèle de vagues WAM de l'ECMWF)",
+  openmeteo_houle_mf: "Open-Meteo (modèle de vagues MFWAM de Météo-France, Copernicus Marine)",
   cams_uv: "Copernicus (CAMS), via Open-Meteo",
   refmar: "SHOM (REFMAR)",
   gdacs_cyclones: "CMRS de La Réunion (Météo-France), via GDACS",

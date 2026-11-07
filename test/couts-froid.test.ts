@@ -59,6 +59,7 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/erddap\/griddap\/erdMH1sst/, "modis.csv"],
   [/maregraphie\/observation\/json\/110/, "shom_110.json"],
   [/maregraphie\/observation\/json\/832/, "shom_832.json"],
+  [/marine-api\.open-meteo\.com.*meteofrance_wave/, "openmeteo_houle_mf.json"],
   [/marine-api\.open-meteo\.com/, "openmeteo_houle.json"],
   [/fr-en-calendrier-scolaire/, "calendrier_scolaire.json"],
   [/calendrier\.api\.gouv\.fr\/jours-feries/, "jours_feries.json"],

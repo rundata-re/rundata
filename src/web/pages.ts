@@ -1099,6 +1099,11 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau .refs small{color:inherit}
 .rows .refs a{display:block;margin:0;padding:.5rem 0;font-weight:400}
 .rows .nw{white-space:nowrap}
+/* A comma that never starts a line (virgulesTenues, domains.ts): the line ends after it whenever the word before it fits,
+   the comma hanging in the card's padding. Letter-spacing takes .35 em after the comma and after the space, more than a
+   comma's width in any font; word-spacing gives the space .7 em: the comma takes no room, and mid-line the next word
+   starts where it did. */
+.virg{letter-spacing:-.35em;word-spacing:.7em}
 .rows small.said{color:var(--lave);font-weight:700}
 .rows .age{font-weight:700;font-size:.85rem;text-align:right;max-width:8.5rem}.rows .age.i{font-weight:400;color:var(--muted)}
 .kind h4{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}

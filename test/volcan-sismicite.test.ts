@@ -5,7 +5,8 @@ import type { Info } from "../src/providers/actualites.js";
 import { parse, type Seisme } from "../src/providers/seismes.js";
 import { activityPosts, phaseOf } from "../src/providers/volcan.js";
 import { BULLETIN_QUOTIDIEN, LOCALISES, perDay, volcanSeismes } from "../src/tools/volcan.js";
-import { volcanLive, volcanPage } from "../src/web/domains.js";
+import { virgulesTenues, volcanLive, volcanPage } from "../src/web/domains.js";
+import { CSS } from "../src/web/pages.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 // 23/10/2026 at 03:20, heure de La Réunion.
@@ -94,6 +95,24 @@ describe("the located earthquakes per day under the volcano", () => {
     const many = { ...r, seismes: { ...r.seismes, par_jour_sous_le_volcan: perDay(Array.from({ length: 40 }, () => quake("2026-10-22T10:00:00.000Z")), NOW) } };
     expect(volcanPage("https://rundata.re", { value: many, fetchedAt: NOW, stale: false }, NOW)).toContain(`<li aria-label="22/10 : 40"><i style="height:100%"></i></li>`);
     expect(volcanLive({ value: r, fetchedAt: NOW, stale: false })!.detail).toMatch(/\d+ séismes? localisés? par l'OVPF sous le volcan en 7 jours/);
+  });
+
+  it("keeps each quake's comma with the place before it, never alone at the start of a line", async () => {
+    const r = body(await volcanSeismes(cacheWith(), NOW));
+    const html = volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
+    const rows = [...html.matchAll(/<li><b>[^<]*<\/b><span>(.*?)<\/span><span class="note">/g)].map((m) => m[1]);
+    expect(rows.length).toBeGreaterThan(0);
+    // « …de la Fournaise, 1 km… »: Chrome and Safari put « , 1 km » on the next line at 160 px, the word alone fitting.
+    for (const row of rows) {
+      expect(row).toMatch(/<span class="virg">, <\/span>\d/);
+      // Every « , » before a space, the place's own (« …de la Fournaise, à 5 km du sommet ») too; the text unchanged.
+      expect(row.split('<span class="virg">, </span>').join("|")).not.toMatch(/[<,] /);
+      expect(row.replaceAll('<span class="virg">, </span>', ", ")).toMatch(/, \d+(?:,\d)?\u00a0km (?:sous le|au-dessus du) niveau de la mer$/);
+    }
+    // The comma takes no room and the space after it gives it back (pages.ts): the words stay where they were.
+    expect(CSS).toContain(".virg{letter-spacing:-.35em;word-spacing:.7em}");
+    // In the text only, a decimal comma left alone.
+    expect(virgulesTenues('<a title="a, b">sous X, 1,2\u00a0km</a>')).toBe('<a title="a, b">sous X<span class="virg">, </span>1,2\u00a0km</a>');
   });
 
   it("says under the bars too that the newest post of the OVPF is an image we do not read", async () => {

@@ -72,13 +72,14 @@ const OUVERT = "Emploi ouvert aux titulaires et aux contractuels";
  * « F/H ». Chrome's French hyphenation finds no place in a word that holds a « ( » or a « / », and no line ends after
  * a « / » before a letter: with the text at 200 % (160 px of view), it cut where the room ended, « Technicien(n|e) »,
  * « Animateur/A|nimatrice ». The line may now end there. The bracket is never hyphenated (.rows .nw, pages.ts): WebKit,
- * which wrote « Directeur(-trice) », would otherwise hyphenate it alone, « (tri-ce) ». Like an address's
+ * which wrote « Directeur(-trice) », would otherwise hyphenate it alone, « (tri-ce) ». Nor is it wrapped, even under
+ * 19.9 rem (.fem): both engines ended a line after its hyphen, « Directeur(- » then « trice) ». Like an address's
  * (adresseTexte), the <wbr> counts only under 19.9 rem (pages.ts), and holds no character: the copied text is the
  * offer's.
  */
 export const intituleCoupable = (s: string) =>
   esc(s)
-    .replaceAll(/(?<=\p{L})(\(-?\p{Ll}{1,6}\))/gu, '<wbr class="adr"><span class="nw">$1</span>')
+    .replaceAll(/(?<=\p{L})(\(-?\p{Ll}{1,6}\))/gu, '<wbr class="adr"><span class="nw fem">$1</span>')
     .replaceAll(/(?<=\p{L}{2}\/)(?=\p{L}{2})/gu, '<wbr class="adr">');
 
 /** The title as a link, named by its whole text when it holds a <wbr> (Chrome names a link with a space for each). */

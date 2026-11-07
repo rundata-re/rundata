@@ -7,6 +7,7 @@ import { REGISTRY } from "../src/registre.js";
 import { emploi, lignes, NON_REPRIS, pourOutil, type OffreRow } from "../src/tools/emploi.js";
 import { buildEmploi, emploiPage, intituleCoupable } from "../src/web/emploi.js";
 import { esc } from "../src/web/map.js";
+import { CSS } from "../src/web/pages.js";
 
 // The feed of La Réunion read on 29/10/2026 at 12:20, two offers' pages and the first search page read at 12:26-12:28,
 // cut to what is read of them (and without the recruiters' names).
@@ -432,8 +433,8 @@ describe("the tool emploi and the page /emploi", () => {
   });
 
   it("lets a title's line end before a feminine in brackets on a narrow screen, the text and the link's name the offer's", () => {
-    expect(intituleCoupable("Technicien(ne) systèmes et réseaux F/H")).toBe('Technicien<wbr class="adr"><span class="nw">(ne)</span> systèmes et réseaux F/H');
-    for (const [t, w] of [["Accompagnateur(trice)", 'Accompagnateur<wbr class="adr"><span class="nw">(trice)</span>'], ["Directeur(-trice)", 'Directeur<wbr class="adr"><span class="nw">(-trice)</span>'], ["Conseiller(ère) emploi", 'Conseiller<wbr class="adr"><span class="nw">(ère)</span> emploi'], ["Chargé(e) d'accueil", 'Chargé<wbr class="adr"><span class="nw">(e)</span> d&#39;accueil']]) {
+    expect(intituleCoupable("Technicien(ne) systèmes et réseaux F/H")).toBe('Technicien<wbr class="adr"><span class="nw fem">(ne)</span> systèmes et réseaux F/H');
+    for (const [t, w] of [["Accompagnateur(trice)", 'Accompagnateur<wbr class="adr"><span class="nw fem">(trice)</span>'], ["Directeur(-trice)", 'Directeur<wbr class="adr"><span class="nw fem">(-trice)</span>'], ["Conseiller(ère) emploi", 'Conseiller<wbr class="adr"><span class="nw fem">(ère)</span> emploi'], ["Chargé(e) d'accueil", 'Chargé<wbr class="adr"><span class="nw fem">(e)</span> d&#39;accueil']]) {
       expect(intituleCoupable(t)).toBe(w);
     }
     // After a « / » between two words, not between two letters alone.
@@ -444,8 +445,19 @@ describe("the tool emploi and the page /emploi", () => {
     const line = (intitule: string): OffreRow => ({ intitule, employeur: "Département", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/x/" });
     const html = emploiPage("https://rundata.re", { value: { nombre: 2, offres: [line("Technicien(ne) systèmes"), line("Agent d'entretien")], lu: NOW.toISOString(), couverture: "", sources: [] } as never, fetchedAt: NOW, stale: false }, NOW);
     // The link keeps its whole title as its name (Chrome would name it with a space for the <wbr>); the other, none.
-    expect(html).toContain('<a href="https://choisirleservicepublic.gouv.fr/offre-emploi/x/" rel="noopener" aria-label="Technicien(ne) systèmes">Technicien<wbr class="adr"><span class="nw">(ne)</span> systèmes</a>');
+    expect(html).toContain('<a href="https://choisirleservicepublic.gouv.fr/offre-emploi/x/" rel="noopener" aria-label="Technicien(ne) systèmes">Technicien<wbr class="adr"><span class="nw fem">(ne)</span> systèmes</a>');
     expect(html).toContain('<a href="https://choisirleservicepublic.gouv.fr/offre-emploi/x/" rel="noopener">Agent d&#39;entretien</a>');
+  });
+
+  it("keeps a title's feminine in brackets whole on a narrow screen, « (-trice) » too, a reference wrapping as before", () => {
+    expect(intituleCoupable("Directeur(-trice) de l'Office de Tourisme")).toBe('Directeur<wbr class="adr"><span class="nw fem">(-trice)</span> de l&#39;Office de Tourisme');
+    // Under 19.9 rem, .nw wraps (a reference may), .fem after it does not: « Directeur(- » then « trice) » before.
+    const etroit = CSS.slice(CSS.indexOf("@media (max-width:19.9rem){body{"));
+    const nw = etroit.indexOf(".rows .nw{white-space:normal}"), fem = etroit.indexOf(".rows .fem{white-space:nowrap}");
+    expect(nw).toBeGreaterThan(-1);
+    expect(fem).toBeGreaterThan(nw);
+    // Once in each copy of the narrow-screen rules (the media query and its container twin), after .nw there.
+    expect(CSS.match(/\.rows \.nw\{white-space:normal\}\s*(\/\*.*?\*\/\s*)?\.rows \.fem\{white-space:nowrap\}/gs)?.length).toBe(CSS.split(".rows .nw{white-space:normal}").length - 1);
   });
 
   it("shows a post published under several references as one line, a link to each, the days of each when the line has no closing date", async () => {

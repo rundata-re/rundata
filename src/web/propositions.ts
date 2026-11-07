@@ -291,11 +291,12 @@ export const erreurVue = (d: Pick<Document, "getElementById" | "querySelector">,
   const c = b && (b.matches("fieldset") ? b.querySelector("input") : b);
   if (c) (c as HTMLElement).focus();
   else if (m) {
-    const t = m.textContent;
+    // Its nodes, not its text: the text alone would lose the `<wbr>` of an address and the spans of a date.
+    const t = Array.from(m.childNodes);
     m.textContent = "";
     m.setAttribute("role", "alert");
     later(() => {
-      m.textContent = t;
+      m.append(...t);
     });
   }
 };

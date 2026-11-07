@@ -314,17 +314,38 @@ describe("the forms on the site (web/propositions.ts)", () => {
     const doc = (msg: ReturnType<typeof el>, marked: ReturnType<typeof el> | null) => ({ getElementById: () => msg, querySelector: () => marked }) as unknown as Document;
     const later: (() => void)[] = [];
     const input = el("input");
-    let msg = el("p");
+    const msg = el("p");
     formulaires.erreurVue(doc(msg, input), (f) => later.push(f));
     expect([input.focused, msg.role, later.length]).toEqual([true, "", 0]);
     const radio = el("input");
     formulaires.erreurVue(doc(msg, el("fieldset", radio)), (f) => later.push(f));
     expect(radio.focused).toBe(true);
-    msg = el("p");
-    formulaires.erreurVue(doc(msg, null), (f) => later.push(f));
-    expect([msg.role, msg.textContent]).toEqual(["alert", ""]);
+    // With none, put back node by node: the `<wbr>` of an address stay, where the text alone would lose them.
+    const wbr = { nodeName: "WBR", data: "" };
+    let nodes: { nodeName: string; data: string }[] = [{ nodeName: "#text", data: "Écrivez à contact@" }, wbr, { nodeName: "#text", data: "rundata.re." }];
+    const said = {
+      role: "",
+      get childNodes() {
+        return nodes;
+      },
+      get textContent() {
+        return nodes.map((n) => n.data).join("");
+      },
+      set textContent(v: string) {
+        nodes = v ? [{ nodeName: "#text", data: v }] : [];
+      },
+      append: (...n: { nodeName: string; data: string }[]) => nodes.push(...n),
+      setAttribute: (_: string, v: string) => {
+        said.role = v;
+      },
+    };
+    const avant = [...nodes];
+    formulaires.erreurVue({ getElementById: () => said, querySelector: () => null } as unknown as Document, (f) => later.push(f));
+    expect([said.role, said.textContent, nodes.length]).toEqual(["alert", "", 0]);
     later[0]();
-    expect(msg.textContent).toBe("Champs à corriger.");
+    expect(nodes).toEqual(avant);
+    expect(nodes[1]).toBe(wbr);
+    expect(said.textContent).toBe("Écrivez à contact@rundata.re.");
 
     // Run while the page is still read, above its fields: nothing yet, then the field once the page is read (the
     // defect seen in a browser on 06/11, where the script ran before the fields existed and never focused one).

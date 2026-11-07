@@ -53,3 +53,13 @@ export function telephoneTexte(tel: string): string {
 export function cheminTexte(path: string): string {
   return esc(path).replaceAll("/", '/<wbr class="adr">');
 }
+
+/**
+ * A text already escaped whose paths of rundata.re are written out (« sur rundata.re/associations. » in a line of
+ * /nouveautes): a <wbr class="adr"> after each « / » of the path, as cheminTexte() does for a link, the site's name kept
+ * whole. With the text at 150 or 200 % on a small screen, the line ends after « rundata.re/ » rather than one or two
+ * letters before the end of the path's word; above 19.9 rem the <wbr> are hidden.
+ */
+export function cheminsTexte(html: string): string {
+  return html.replace(/(?<=\brundata\.re)(?:\/[\p{Ll}\d-]+)+/gu, (p) => p.replaceAll("/", '/<wbr class="adr">'));
+}

@@ -3,6 +3,7 @@
  * CHANGELOG.md and sources_donnees (src/nouveautes.ts). Nothing is fetched.
  */
 import { NOUVEAUTES, parJour } from "../nouveautes.js";
+import { cheminsTexte } from "./adresse.js";
 import { connectorCta, crumbBar, jourMois, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { FOLD_ROWS, folded, GITHUB, layout, SITE } from "./pages.js";
@@ -37,8 +38,9 @@ export function nouveautesPage(origin: string): string {
   const fold = days.length > 1 && NOUVEAUTES.length > FOLD_ROWS;
   // A list's column as wide as its card (.nouv): an address (« rundata.re/associations. ») is a word, and the implicit
   // track took its width, so with the text at 150 % the page scrolled sideways (356 px on a 320 px screen). Under 12.5 rem
-  // every .plain already has this column.
-  const list = (d: (typeof days)[number]) => `<ul class="plain nouv">${d.textes.map((t) => `<li>${chiffreMot(t)}</li>`).join("")}</ul>`;
+  // every .plain already has this column. A path of the site in the text (« rundata.re/associations ») goes to the next
+  // line after its « / » rather than at a letter (cheminsTexte).
+  const list = (d: (typeof days)[number]) => `<ul class="plain nouv">${d.textes.map((t) => `<li>${cheminsTexte(chiffreMot(t))}</li>`).join("")}</ul>`;
   const body = days.map((d, i) => `<section aria-labelledby="h-${d.jour}">
   ${fold && i > 0
     ? `<div class="card">${folded(true, `<h2 id="h-${d.jour}"><time datetime="${d.jour}">${jourMois(d.titre)}</time>\u00a0<span class="note">· ${d.textes.length}\u00a0nouveauté${d.textes.length > 1 ? "s" : ""}</span></h2>`, list(d))}</div>`

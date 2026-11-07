@@ -28,7 +28,7 @@ describe("identifiers joined by « _ »", () => {
     expect(CSS).toContain(".ident{hyphens:manual;-webkit-hyphens:manual}");
     // In a <code>, a tenth smaller under 19.9 rem: « temperature_ » (122.8 px) went past its 121.6 px line on /mer at
     // 160 px.
-    expect(CSS).toContain("code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}code>.ident{font-size:.9em}");
+    expect(CSS.indexOf("code>.ident{font-size:.9em}")).toBeGreaterThan(CSS.indexOf("@media (max-width:19.9rem){body{hyphens:auto"));
   });
 
   it("keep a link's name whole in aria-label (Chrome names it with a space for each <wbr>)", () => {

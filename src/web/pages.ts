@@ -1221,10 +1221,8 @@ summary{min-height:24px}
    whole (« Fournaise », « sommet »), each narrower than its line. A day's title on /evenements and /nouveautes lets its
    month go to the next line, whole (« Mardi 10 / novembre », never « novembr/e » nor « no-vembre »): each word fits. Its
    count (« · 4 événements ») is still cut with a hyphen: Safari's page zoom at 200 % leaves 160 px, where « 4 événements »
-   is wider than the line and, unhyphenated, was cut at a letter (« événement/s »). A tool's name in a <code>
-   (soulignesCoupables, domains.ts) a tenth smaller: at 160 px « temperature_ » was 122.8 px in a 121.6 px line on /mer,
-   and was cut before its « _ ». */
-@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}code>.ident{font-size:.9em}.jm{white-space:normal}wbr.adr{display:inline}#jours h3 .note{hyphens:auto;-webkit-hyphens:auto}.minuit li{grid-template-columns:minmax(0,1fr)}
+   is wider than the line and, unhyphenated, was cut at a letter (« événement/s »). */
+@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}wbr.adr{display:inline}#jours h3 .note{hyphens:auto;-webkit-hyphens:auto}.minuit li{grid-template-columns:minmax(0,1fr)}
 .minuit .q,.rows .nw{white-space:normal}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
@@ -1233,6 +1231,9 @@ summary{min-height:24px}
    from the same line, its time below. In the line's column, the direction had 100 px at 200 %, less than « (Kar'Ouest) »
    (156 px) or « Plaines », cut in the middle. */
 .rows.departs li{display:block}.rows.departs li>b{margin-right:.6rem}.rows.departs li>:last-child{display:block;margin-top:.3rem}
+/* A tool's name in a <code> (soulignesCoupables, domains.ts) a tenth smaller: at 160 px « temperature_ » was 122.8 px in
+   a 121.6 px line on /mer, and was cut before its « _ ». */
+code>.ident{font-size:.9em}
 /* A list of figures (/meteo's sea, /electricite's sources): the figure under its name, which then has the whole line.
    Beside « 25,4 °C », « Saint-Leu » had 69 px at 200 % and was cut into « Sain », « t- » and « Leu ». */
 .bars li{grid-template-columns:minmax(0,1fr)}

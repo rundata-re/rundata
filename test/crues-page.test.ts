@@ -194,7 +194,7 @@ describe("the /crues page", () => {
     expect(w).toContain("Par fortes pluies Les radiers L'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région, qui ne s'affiche que chez elle. Ici, les annonces de la préfecture et des médias qui parlent d'un radier, avec leur heure.");
     expect(w).toContain("Consigne de la préfecture en vigilance fortes pluies : « Je ne tente jamais de franchir, à pied ou en voiture, les ravines et les rivières en crue, ou qui peuvent l'être soudainement, ainsi que les radiers submergés ». Communiqué du 02/04/2026 ↗");
     expect(w).toContain("03:30 · Clicanoo : Fortes pluies : le radier du Ouaki fermé à la circulation ↗");
-    expect(w).toContain("Carte officielle (infotrafic.re) ↗");
+    expect(w).toContain("Carte officielle ↗");
     const html = cruesPage(ORIGIN, data, NOW, undefined, { annonces, lue });
     expect(html).toContain('<a href="https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Vigilance-orange-fortes-pluies-orages-a-partir-de-12h" rel="noopener">Communiqué du 02/04/2026 ↗</a>');
     expect(html).toContain('href="https://www.infotrafic.re/"');

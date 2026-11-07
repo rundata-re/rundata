@@ -64,7 +64,7 @@ describe("circulation", () => {
     // The official map first, in the band; Waze's below it, before what rundata.re reads, and named nowhere else but
     // in the lead that says so and in the box that says why.
     expect(page).toContain(`<a class="btn sun" href="https://www.infotrafic.re/">`);
-    expect(page).toContain("Carte officielle (infotrafic.re) ↗</a>");
+    expect(page).toContain("Carte officielle ↗</a>");
     const map = page.indexOf(`<figure class="card mapcard wz">`);
     expect(page.indexOf('id="h-officiel"')).toBeLessThan(map);
     expect(map).toBeLessThan(page.indexOf('id="h-nous"'));

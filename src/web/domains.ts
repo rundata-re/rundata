@@ -155,6 +155,16 @@ export function nomsCoupables(html: string): string {
 }
 
 /**
+ * An address in a text (« infotrafic.re », « contact@rundata.re »), escaped: it may go to the next line after each of its
+ * « . » and « @ », rather than one or two letters before its end. Chrome never hyphenates a word that holds a « . », so a
+ * long name in a narrow box (a heading or a pill, text enlarged on a phone) also takes a soft hyphen where the caller puts
+ * one (« info\u00ADtrafic.re »). A heading or pill writes its address here; a link's whole text goes through lienNom().
+ */
+export function adresseCoupable(text: string): string {
+  return esc(text).replaceAll(/(?<=[\p{Ll}\p{N}])([.@])(?=\p{Ll})/gu, "$1<wbr>");
+}
+
+/**
  * A link whose text holds such a name (« le site de Sensor.Community ») or an address (« sa fiche sur data.gouv.fr »,
  * « monenfant.fr », « contact@rundata.re »): the name may go to the next line where nomsCoupables() puts its <wbr>, the
  * address after each of its « . » and « @ », rather than one or two letters before its end (« data.gou|v.fr »,
@@ -163,7 +173,7 @@ export function nomsCoupables(html: string): string {
  * A text with neither is written as it is, without aria-label. `attrs`: more attributes, each with its leading space.
  */
 export function lienNom(href: string, text: string, attrs = ""): string {
-  const coupe = nomsCoupables(esc(text)).replaceAll(/(?<=[\p{Ll}\p{N}])([.@])(?=\p{Ll})/gu, "$1<wbr>");
+  const coupe = nomsCoupables(adresseCoupable(text));
   return `<a href="${esc(href)}"${attrs}${coupe === esc(text) ? "" : ` aria-label="${esc(text)}"`}>${coupe}</a>`;
 }
 
@@ -1402,7 +1412,7 @@ function fordsSection(f: Fords | undefined, now: Date): string {
   return `<section aria-labelledby="h-radiers">
   <div class="sec-h"><p class="eyebrow">Par fortes pluies</p><h2 id="h-radiers">Les radiers</h2>
   <p>L'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région, qui ne s'affiche que chez elle. Ici, les annonces de la préfecture et des médias qui parlent d'un radier, avec leur heure.</p></div>
-  <div class="card">${icon("car")}${rule}${said}<p class="hero-cta"><a class="btn sun" href="${INFOTRAFIC}">${icon("car")}Carte officielle (infotrafic.re) ↗</a></p></div>
+  <div class="card">${icon("car")}${rule}${said}<p class="hero-cta"><a class="btn sun" href="${INFOTRAFIC}">${icon("car")}Carte officielle ↗</a></p></div>
 </section>`;
 }
 
@@ -1952,11 +1962,11 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   const band = `${crumbBar("Circulation")}
 <div class="wrap intro solo">
   <div class="pitch">
-    <p class="pill"><span class="dot"></span>Bouchons, accidents, travaux : infotrafic.re</p>
+    <p class="pill"><span class="dot"></span>Bouchons, accidents, travaux : ${adresseCoupable("info\u00ADtrafic.re")}</p>
     <h1>Circulation à La Réunion <span class="n974">974</span></h1>
     <p class="lead">Les bouchons, accidents et travaux en direct sont sur la carte officielle d'${lienNom(INFOTRAFIC, "infotrafic.re")}, le site de la Région, qui ne s'affiche que chez elle. Plus bas, la carte de Waze les montre aussi. rundata.re n'a pas la mesure des bouchons : la Région ne la rend pas réutilisable pour l'instant.</p>
     <p class="lead">La route du Littoral est basculée ou fermée ? L'état officiel est sur ${lienNom(INFOTRAFIC, "infotrafic.re")}.</p>
-    <p class="hero-cta"><a class="btn sun" href="${INFOTRAFIC}">${icon("car")}Carte officielle (infotrafic.re) ↗</a></p>
+    <p class="hero-cta"><a class="btn sun" href="${INFOTRAFIC}">${icon("car")}Carte officielle ↗</a></p>
     ${ask(`Néna in rout koupé oubien travo zordi\u00a0? Gèt si ${url} é di amwin.`, `Y a-t-il des routes coupées ou des travaux à La Réunion d'après les médias\u00a0? Lis ${url} et résume-moi.`)}
   </div>
 </div>`;
@@ -1980,7 +1990,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
 
   const official = `<section aria-labelledby="h-officiel">
   <div class="sec-h"><p class="eyebrow">Source officielle</p><h2 id="h-officiel">L'état des routes, par la Région</h2></div>
-  <a class="card link-card" href="${INFOTRAFIC}"><h3>${icon("car")}infotrafic.re ↗</h3>
+  <a class="card link-card" href="${INFOTRAFIC}"><h3 aria-label="infotrafic.re ↗">${icon("car")}${adresseCoupable("info\u00ADtrafic.re ↗")}</h3>
   <p>Le Centre régional de gestion du trafic (CRGT) de la Région Réunion y publie l'état des routes nationales : vitesses entre les panneaux à messages variables, accidents, travaux, routes fermées, radiers, basculement de la route du Littoral, et ses caméras. C'est la référence ; rundata.re n'en reprend rien.</p></a>
 </section>`;
 

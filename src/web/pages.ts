@@ -491,7 +491,11 @@ font:800 1.2rem Bricolage,system-ui,sans-serif}
 #app-chatgpt:checked~.t-chatgpt,#app-claude:checked~.t-claude,#app-gemini:checked~.t-gemini,#app-meta:checked~.t-meta,#app-lechat:checked~.t-lechat,#app-local:checked~.t-local{display:grid;gap:.6rem}
 /* A link written as its address (« chatgpt.com/plugins ») cut where it must, so that it never widens the page. */
 .tab a{font-weight:600;overflow-wrap:anywhere}
-.askbox{display:grid;gap:.6rem;justify-items:start;min-width:0}
+/* The question's box and each language's block: one column the width of the box, not of its widest button (« Français »
+   117 px, ChatGPT 123 px), on which every line was laid out, the sentences too: with the text at 200 % by Safari's aA
+   (a 320 px screen lays out on 160 px), a card has 82 px inside and its block ran 41 px past it, 4 px past the screen. */
+.askbox{display:grid;gap:.6rem;justify-items:start;min-width:0;grid-template-columns:minmax(0,1fr)}
+.askbox>*,.askbox>[data-l]>*{max-width:100%}
 .askt{font:800 clamp(1.4rem,3.6vw,1.8rem)/1.1 Bricolage,system-ui,sans-serif;letter-spacing:-.01em}
 .band .askt{color:#fff}
 .ask{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center}
@@ -500,7 +504,7 @@ text-decoration:none;background:var(--sun);color:var(--sun-ink);box-shadow:var(-
 .ask a:hover{transform:translateY(-1px)}
 @media (max-width:480px){.ask{gap:.4rem}.ask a,.band .ask a,.cta .ask a{padding:.7rem .85rem;font-size:.98rem;gap:.3rem}}
 .ask svg{width:1em;height:1em}
-.askbox>[data-l]{display:grid;gap:.6rem;justify-items:start}
+.askbox>[data-l]{display:grid;gap:.6rem;justify-items:start;grid-template-columns:minmax(0,1fr)}
 .askbox>[hidden]{display:none}
 .askq{font-size:.85rem;font-style:italic;color:var(--muted);max-width:34rem}
 .askn{font-size:.85rem;color:var(--muted);max-width:34rem}
@@ -521,6 +525,11 @@ background:none;color:var(--muted);cursor:pointer}
 .or{font-size:.92rem;color:var(--muted)}
 .band .or{color:var(--on-night-muted)}
 .easy{border:2px solid var(--sun)}
+/* Under 12.5 em (a 320 px screen from 160 %, 390 px from 195 %, by a page zoom): the buttons' padding narrower, their
+   icon or flag under the word when the two do not fit, and the home page's card .8rem inside: « Français » and ChatGPT
+   then fit in the card, 98 px wide at 320 px and 200 %. */
+@media (max-width:12.5rem){.easy{padding:.8rem}.ask a,.band .ask a,.cta .ask a{padding:.6rem;flex-wrap:wrap;min-width:0}
+.lang button{padding:.4rem .5rem;flex-wrap:wrap;min-width:0}}
 .tab code{font:.92em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:.1rem .4rem;overflow-wrap:anywhere}
 .qs{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:.45rem}
 .qs li{font-size:.93rem;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}

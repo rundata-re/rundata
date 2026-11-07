@@ -7,6 +7,7 @@ import { buildDae } from "../src/web/data.js";
 import { etage, nomDae } from "../src/tools/dae.js";
 import { nombre } from "../src/tools/format.js";
 import { AUTOUR_SCRIPT, daePage } from "../src/web/domains.js";
+import { CSS } from "../src/web/pages.js";
 
 const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-10-23T14:40:00Z");
@@ -125,6 +126,13 @@ describe("« Autour de moi » on /defibrillateurs", () => {
     expect(r.html).toMatch(/>(dehors, 24 h\/24|24 h\/24|horaires du lieu|accès réservé · demander à l&#39;accueil)</);
     expect(r.html).not.toContain("vol d'oiseau");
     expect(r.viewBox).toMatch(/^[-\d.]+ [-\d.]+ [\d.]+ [\d.]+$/);
+  });
+
+  it("writes the list in the band's light colours, with the same « Y aller » as the list below", () => {
+    // The results sit in the dark band of the page (.intro): the grey of the cream page read 2.6:1 there.
+    expect(CSS).toContain(".autour .rows.dae small,.autour .rows.dae .q-none{color:var(--on-night-muted)}.autour .rows.dae .q-bonne{color:#4cc765}");
+    // No rule of the block reaches its links: the button keeps .aller's inline-flex, its centred text and its arrow.
+    expect(CSS).not.toMatch(/\.autour [^{}]*(\ba|\.aller)[,{]/);
   });
 
   it("says why when there is no position or no list", async () => {

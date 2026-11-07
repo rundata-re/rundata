@@ -417,7 +417,10 @@ padding:.3rem .8rem;border-radius:999px;background:rgb(255 255 255/.1);border:1p
 .jour{list-style:none;margin:0;padding:0;display:grid;gap:.3rem;color:var(--on-night-muted);max-width:40rem}.jour b{color:var(--on-night)}.jour a{color:inherit}
 .lead b{color:var(--on-night)}
 .share{padding-bottom:1.2rem}.share .card{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;max-width:44rem}.share p{margin:0}
-.sh{display:inline-flex;align-items:center;gap:.4rem;font-weight:700;text-decoration:none;border-radius:999px;padding:.55rem 1rem}.sh svg{width:1rem;height:1rem}
+/* A button to share (« Partager sur WhatsApp »): never wider than its line, its words on several lines rather than the page
+   364 px wide on a 320 px phone with the text at 200 %. There its text at most 7.2 % of the screen's width and its sides at
+   most 5 %, so that « WhatsApp » and the arrow stay inside its round shape; the same as before at 100 %, and from 400 px. */
+.sh{display:inline-flex;align-items:center;gap:.4rem;font-weight:700;text-decoration:none;border-radius:999px;padding:.55rem min(1rem,5vw);max-width:100%;font-size:min(1em,7.2vw)}.sh svg{width:1rem;height:1rem}
 .sh.wa{background:#25d366;color:#06281a}
 .hook{font-size:1.08rem;font-weight:600;color:var(--on-night);max-width:36rem;margin-top:-.4rem}
 .works{font-size:.92rem;color:var(--on-night-muted)}
@@ -476,7 +479,9 @@ font:800 1.2rem Bricolage,system-ui,sans-serif}
 .tabs label{font-size:.9rem;font-weight:600;padding:.3rem .8rem;border-radius:999px;border:1px solid var(--line);cursor:pointer;color:var(--muted)}
 .tabs input:checked+label{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .tabs input:focus-visible+label{outline:2px solid var(--link);outline-offset:2px}
-.tab{flex-basis:100%;display:none;padding-top:.4rem;font-size:.93rem;line-height:1.55}
+/* An assistant's tab of the connector's steps (home page, /mcp): one column the width of its box, so that its longest
+   word (« authentification », 270 px with the text at 200 %) is cut there rather than widening the page to 336 px. */
+.tab{flex-basis:100%;display:none;padding-top:.4rem;font-size:.93rem;line-height:1.55;min-width:0;grid-template-columns:minmax(0,1fr)}
 #app-chatgpt:checked~.t-chatgpt,#app-claude:checked~.t-claude,#app-gemini:checked~.t-gemini,#app-meta:checked~.t-meta,#app-lechat:checked~.t-lechat,#app-local:checked~.t-local{display:grid;gap:.6rem}
 /* A link written as its address (« chatgpt.com/plugins ») cut where it must, so that it never widens the page. */
 .tab a{font-weight:600;overflow-wrap:anywhere}
@@ -790,7 +795,10 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .crumbs li+li::before{content:"› ";opacity:.6}
 .band .crumbs a{color:var(--on-night-muted)}
 .now{display:flex;align-items:flex-end;gap:.5rem 1.2rem;flex-wrap:wrap}
-.big{font:800 clamp(3.5rem,11vw,6rem)/.9 Bricolage,system-ui,sans-serif;letter-spacing:-.04em;color:#fff}
+/* A band's big figure (« 24,2 °C », 2.8 em wide): at most 28 % of the screen's width when 3.5rem is more, so that on a
+   320 px phone with the text at 200 % it is no longer 315 px wide in a 288 px column; the same as before at 100 and 150 %,
+   and from 400 px. */
+.big{font:800 clamp(min(3.5rem,28vw),11vw,6rem)/.9 Bricolage,system-ui,sans-serif;letter-spacing:-.04em;color:#fff}
 .now p{color:var(--on-night-muted);max-width:22rem;font-size:.95rem}
 .now p b{color:var(--on-night)}
 .band .mapcard{background:rgb(255 255 255/.06);border-color:rgb(255 255 255/.12);box-shadow:none}
@@ -1088,10 +1096,13 @@ th,td,:is(th,td) .note{overflow-wrap:normal}
 .hike .shut ul,footer.foot p:not(.social):has(a){line-height:max(26px,1.5em)}
 .pages{list-style:none;padding:0;margin-top:1rem;display:flex;flex-wrap:wrap;gap:.4rem}.pages a{display:block;padding:.3rem .75rem;border-radius:999px;background:rgb(255 255 255/.06);border:1px solid rgb(255 255 255/.1);text-decoration:none;font-size:.86rem}
 footer.foot{background:var(--night);color:var(--on-night-muted);font-size:.86rem;line-height:1.55;padding-block:2.5rem 3rem;border-top:1px solid rgb(255 255 255/.06)}
-footer.foot .wrap{display:grid;gap:1.5rem}
+/* The footer: one column the width of the screen below 58rem, its words cut there rather than widening the page; the
+   name (« rundata.re », a word with its logo, 308 px with the text at 200 %) at most 9 % of the screen's width a letter,
+   the same as before from 214 px at 100 %. */
+footer.foot .wrap{display:grid;gap:1.5rem;grid-template-columns:minmax(0,1fr)}
 @media (min-width:58rem){footer.foot .wrap{grid-template-columns:1fr 1.6fr}}
 footer.foot a{color:var(--on-night)}
-footer.foot .brand{color:var(--on-night);margin-bottom:.8rem}
+footer.foot .brand{color:var(--on-night);margin-bottom:.8rem;font-size:min(1.2rem,9vw)}
 footer.foot p+p{margin-top:.6rem}
 footer.foot h3{color:var(--on-night);font-size:1rem;margin-bottom:.4rem}
 footer.foot .slogan{font-size:1rem;padding-left:calc(1.55rem + .6rem)}

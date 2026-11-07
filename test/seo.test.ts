@@ -89,7 +89,9 @@ describe("search engines", () => {
     // Every trail and hike: within 60 characters, or a name too long by itself and only « · 974 » after it.
     for (const [kind, list] of [["sentier", Object.entries(SENTIERS).map(([nom, x]) => ({ slug: x.slug, nom }))], ["randonnee", RANDONNEES]] as const) {
       for (const { slug, nom } of list) {
-        const t = title(tracePage(O, kind, slug, nom, null, NOW)).replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+        // One pass over the escaped title, so that no « & » it gives back is read again as the start of an entity.
+        const raw = tracePage(O, kind, slug, nom, null, NOW).match(/<title>(.*?)<\/title>/)![1];
+        const t = raw.replace(/&(amp|quot|#39);/g, (_, e: string) => (e === "amp" ? "&" : e === "quot" ? '"' : "'"));
         expect(t.length <= 60 || t === `${nom} · 974`, t).toBe(true);
         expect(t).not.toContain("état ONF");
       }

@@ -533,6 +533,53 @@ describe("the scheduled refresh of the shared copies", () => {
     }
   });
 
+  it("says a copy left late when it is first left so, then once an hour, never at each event, whatever the isolate", async () => {
+    const kv = new FakeKv();
+    const cache = new Cache(new TieredStore(new MemoryStore(), new MemoryStore()), () => T0, false, undefined, "2.0.0");
+    const at = (key: string, ago: number) =>
+      kv.put(kvKey(key), JSON.stringify({ value: {}, fetchedAt: T0 - ago * 60_000, cost: 31, version: "2.0.0" }), { metadata: { fetchedAt: T0 - ago * 60_000, cost: 31, every: 30, version: "2.0.0" } });
+    // Both an hour and a quarter past their time (written 110 minutes ago, every 30 minutes): their cold cost never fits.
+    await at("web:essai-horaire", 110);
+    await at("web:essai-ailleurs", 110);
+    // The other one already said by another isolate's event, ten minutes ago: only KV knows it.
+    await kv.put(kvKey("retard:web:essai-ailleurs"), "", { metadata: { fetchedAt: T0 - 10 * 60_000 } });
+    const list: Shared[] = ["web:essai-horaire", "web:essai-ailleurs"].map((key) => ({ key, build: async () => (count(12), {}), every: 30, cold: 15 }));
+    const said: string[] = [];
+    const error = console.error;
+    console.error = (...a: unknown[]) => void said.push(a.join(" "));
+    const event = (minutes: number) =>
+      counted(TIGHT, async () => {
+        count(25);
+        return warmShared(cache, kv, new Date(T0 + minutes * 60_000), list);
+      });
+    try {
+      const events = [0, 5, 10, 50, 55, 60, 65];
+      const lines: string[][] = [];
+      for (const m of events) {
+        const before = said.length;
+        const run = await event(m);
+        expect(run.value.left.map((l) => l.key).sort()).toEqual(["web:essai-ailleurs", "web:essai-horaire"]);
+        lines.push(said.slice(before).map((l) => l.split(",")[0]));
+      }
+      // The first: at its first event left late, then an hour later. The other: an hour after the isolate that said it.
+      expect(lines).toEqual([
+        ["copie partagée en retard : web:essai-horaire"],
+        [],
+        [],
+        ["copie partagée en retard : web:essai-ailleurs"],
+        [],
+        ["copie partagée en retard : web:essai-horaire"],
+        [],
+      ]);
+      // One write in KV each time it is said, beside the copies, never over them.
+      expect(kv.writes.get(kvKey("retard:web:essai-horaire"))).toBe(2);
+      expect(kv.writes.get(kvKey("retard:web:essai-ailleurs"))).toBe(2);
+      expect(kv.writes.get(kvKey("web:essai-horaire"))).toBe(1);
+    } finally {
+      console.error = error;
+    }
+  });
+
   it("keeps a build's cost with its KV copy, for an isolate that has not built it", async () => {
     const kv = new FakeKv();
     const cache = new Cache(new TieredStore(new MemoryStore(), new MemoryStore()), () => T0, false);

@@ -5,7 +5,7 @@
  * KV, which every data center reads; it is the only writer. A page or the tool reads KV only when its data center's
  * cache has no copy, and copies what it read there.
  */
-import { costOf, count, left, measured, reserve, spent, unmeasured } from "../budget.js";
+import { costOf, count, later, left, measured, reserve, spent, unmeasured } from "../budget.js";
 import { type Cache, CACHE_FORMAT, type CacheEntry, type CacheStore, outdated, stampOf } from "../cache.js";
 import * as actu from "../providers/actualites.js";
 import * as ensemble from "../providers/ensemble.js";
@@ -179,6 +179,8 @@ export const AFTER_DEPLOY_RESERVE = 12;
 const EVENT_MS = 5 * 60_000;
 // Past its time by this much, a copy is tried at its cold cost, and said to be late when it is left again.
 const LATE_MINUTES = 60;
+// A copy left late is said when it is first left, then once an hour, as a source that does not answer (cache.ts).
+const LATE_SAID_MS = 3600_000;
 
 /**
  * How much older than its rate a copy may get, in ms: a sixth of the rate (30 min for 3 hours). One written off its
@@ -214,6 +216,12 @@ function expected(s: Shared, kept?: number): number {
 /** Per shape of the entries, as the data center's cache (cache.ts): a deploy that keeps it keeps the copies. */
 const KV_PREFIX = `copie:format-${CACHE_FORMAT}:`;
 export const kvKey = (key: string) => `${KV_PREFIX}${key}`;
+
+/**
+ * When the lateness of the copy `key` was last said, kept in KV beside the copies: the next events run in other isolates,
+ * and the event's one listing reads it with them. Never a copy's key: no shared copy's key begins with « retard: ».
+ */
+const lateKey = (key: string) => kvKey(`retard:${key}`);
 
 /**
  * The metadata of every shared copy in KV, by KV key, in one subrequest (a page of a listing holds 1 000 keys); a key
@@ -381,6 +389,7 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
   }
   const out: Warmed = { written: [], left: [] };
   const held: Promise<void>[] = [];
+  const told: Promise<void>[] = [];
   for (const { s, at, kept, over, version } of due) {
     // An hour past its time, a copy is expected at its cold cost: what it took at a dearer hour, kept with its last
     // copy, must not hold it back until that copy expires (web:trafic, 31 at 04:00, never under 33 since).
@@ -389,8 +398,24 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
     const late = !version && over >= LATE_MINUTES * 60_000;
     const leave = (why: string) => {
       out.left.push({ key: s.key, why });
-      // One line to search for in the Worker's logs: a copy left an hour past its time, about twelve events in a row.
-      if (late) console.error(`copie partagée en retard : ${s.key}, ${at == null ? "jamais écrite" : `écrite il y a ${ago(now.getTime() - at)}`}, reportée (${why})`);
+      if (!late) return;
+      // One line to search for in the Worker's logs: a copy left an hour past its time, said when it is first left so,
+      // then once an hour while it stays late, not at each event (twelve lines an hour before).
+      const k = lateKey(s.key);
+      const said = wrote.get(k)?.fetchedAt ?? listed?.get(k)?.fetchedAt;
+      if (said != null && now.getTime() - said < LATE_SAID_MS) return;
+      console.error(`copie partagée en retard : ${s.key}, ${at == null ? "jamais écrite" : `écrite il y a ${ago(now.getTime() - at)}`}, reportée (${why})`);
+      const meta: KvMeta = { fetchedAt: now.getTime() };
+      wrote.set(k, meta);
+      // Kept two hours, past which a copy still late is said again anyway. Not written, it is said at the next event.
+      // Waited for before the return, or, said from a build alongside after it, within the event (`later`).
+      const keep = async () => {
+        count(1, true);
+        await kv.put(k, "", { expirationTtl: 2 * 3600, metadata: meta });
+      };
+      const work = keep().catch(() => void wrote.delete(k));
+      later(work);
+      told.push(work);
     };
     // The copy looked up, then built, within what is left besides the writes; the writes (the data center's cache,
     // KV) go in the part kept for them.
@@ -409,6 +434,7 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
   }
   if (hold) held.forEach(hold);
   else await Promise.all(held);
+  await Promise.all(told);
   return out;
 }
 

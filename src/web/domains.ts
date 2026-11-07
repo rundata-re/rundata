@@ -2674,13 +2674,22 @@ export function secheresseLive(data: Cached<SecheresseAnswer> | null): Live | un
   const worst = DROUGHT_ORDER.find((n) => d.communes.some((c) => c.eau_du_robinet === n));
   const hit = d.communes.filter((c) => c.eau_du_robinet && c.eau_du_robinet !== "vigilance").length;
   // Above vigilance, the worst level and where, as /secheresse says it: « crise à Saint-Joseph », « alerte renforcée dans
-  // 5 communes » (worded by the user, 26/10). The tile's value is HTML: « Saint-Joseph » kept on one line.
+  // 5 communes » (worded by the user, 26/10). The tile's value is HTML: « Saint-Joseph » on one line where it fits (wholeName).
   const at = d.communes.filter((c) => c.eau_du_robinet === worst).map((c) => c.commune);
-  const valeur = !worst ? "vigilance" : worst === "vigilance" ? `jusqu'à ${worst}` : at.length === 1 ? `${worst} ${nobreak(a(at[0]))}` : `${worst} dans ${at.length} communes`;
+  const valeur = !worst ? "vigilance" : worst === "vigilance" ? `jusqu'à ${worst}` : at.length === 1 ? `${worst} ${wholeName(a(at[0]))}` : `${worst} dans ${at.length} communes`;
   return { valeur, detail: `${hit} commune${hit > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet` };
 }
 
 // ---------------------------------------------------------------- coupures d'eau
+
+/**
+ * Escaped text whose hyphenated names (« Saint-Joseph ») stay on one line where it is wide enough, and break at their
+ * hyphen only on a line narrower than the name (.nm, a box no wider than its line): a tile's figure, three tiles a row at
+ * 768 px with the text at 200 %, where « Saint-Joseph » kept whole went 27 px past the tile's edge, cut off.
+ */
+export function wholeName(text: string): string {
+  return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nm">${w}</span>`);
+}
 
 /** Escaped text whose hyphenated names (« Saint-Leu », « L'Étang-Salé ») do not break at the hyphen. */
 export function nobreak(text: string): string {

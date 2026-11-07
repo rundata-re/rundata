@@ -431,13 +431,16 @@ padding:.65rem 1.2rem;cursor:pointer;transition:transform .15s}
 .connect button:hover{transform:translateY(-1px)}
 .band .connect{border-color:transparent;font-size:1.05rem}
 
-.chat{background:var(--surface);color:var(--ink);border-radius:24px;padding:1.2rem;display:grid;gap:.7rem;box-shadow:0 30px 60px -20px rgb(0 0 0/.5);min-width:0}
+/* The example of a conversation on the home page: one column the width of its box (.duo, .chat), and the tool's call cut
+   where it must (« meteo_actuelle(lieu: », in a fixed-width font), so that with the text at 200 % on a 390 px phone it no
+   longer widens the page to 401 px. */
+.chat{background:var(--surface);color:var(--ink);border-radius:24px;padding:1.2rem;display:grid;grid-template-columns:minmax(0,1fr);gap:.7rem;box-shadow:0 30px 60px -20px rgb(0 0 0/.5);min-width:0}
 .chat .who{font-size:.78rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:.5rem}
 .bubble{border-radius:18px;padding:.65rem 1rem;max-width:92%}
 .bubble.me{justify-self:end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:6px}
 .bubble.ai{justify-self:start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:6px}
 .call{justify-self:start;font:.8rem ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);background:var(--surface-2);
-border:1px dashed var(--line);border-radius:8px;padding:.2rem .55rem}
+border:1px dashed var(--line);border-radius:8px;padding:.2rem .55rem;max-width:100%;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:no-preference){.chat>*{animation:up .5s both}.chat>:nth-child(2){animation-delay:.3s}
 .chat>:nth-child(3){animation-delay:1s}.chat>:nth-child(4){animation-delay:1.7s}}
 @keyframes up{from{opacity:0;transform:translateY(8px)}}
@@ -559,6 +562,9 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
    smaller with the text at 150 % in a narrow tile). Its word whole, smaller when the tile is too narrow for it
    (« défibrillateurs », 7.75 em, in 12.5 % of the tile's width a letter). */
 .tv{font:800 clamp(1.15rem,min(4.6vw,13cqi),1.5rem)/1.12 Bricolage,system-ui,sans-serif;letter-spacing:-.015em;overflow-wrap:anywhere}.tv .nw{white-space:nowrap;overflow-wrap:normal;font-size:min(1em,12.5cqi)}@media (max-width:22.2rem){.tv{font-size:1rem}}
+/* A name in a tile's figure (wholeName): whole on its line where it fits, else broken at its hyphen, never past the tile's
+   edge. */
+.tv .nm{display:inline-block;max-width:100%}
 .tv .vg,.tv .aq{font:inherit;font-size:.95rem;padding:.15rem .6rem;vertical-align:.12em}
 .td{font-size:.84rem;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.td.all{display:block;overflow:visible}
 .tq{font-size:.92rem;font-style:italic;align-self:flex-start;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}
@@ -613,7 +619,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 @keyframes pop{from{opacity:0;transform:translateY(6px)}}
 .hero-map figcaption{display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.82rem;color:rgb(255 255 255/.75);text-align:center;flex-wrap:wrap}
 .hero-map figcaption a{color:#fff}
-.duo{display:grid;gap:1rem;align-items:start}
+.duo{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;align-items:start}
 @media (min-width:58rem){.duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .duo .chat{box-shadow:var(--shadow);border:1px solid var(--line)}
 @media (max-width:40rem){.corps{gap:2.8rem}.sec-h p:not(.eyebrow){font-size:.98rem}}

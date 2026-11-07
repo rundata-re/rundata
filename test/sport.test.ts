@@ -46,12 +46,18 @@ function withAgendas() {
   void store.put("agendas", {
     value: {
       "agenda:la_possession": { value: [evt("p:1", "Agenda sportif du 22 au 24 octobre", "2026-10-22", "2026-10-24", "La Possession", "Ville de La Possession", "https://www.lapossession.re/agenda/890500")], fetchedAt: at },
-      "agenda:etang_sale": { value: [evt("e:1", "Planning des compétitions sportives du 23 au 25 octobre 2026", "2026-10-23", "2026-10-25", "L'Étang-Salé", "Ville de L'Étang-Salé", "https://www.letangsale.fr/planning")], fetchedAt: at },
       "agenda:saint_benoit": { value: [
         evt("b:1", "Agenda sportif", "2026-10-23", "2026-10-25", "Saint-Benoît", "Ville de Saint-Benoît", "https://www.saint-benoit.re/evenements/articles/9592-agenda-sportif"),
         evt("b:2", "Agenda sportif", "2026-10-16", "2026-10-18", "Saint-Benoît", "Ville de Saint-Benoît", "https://www.saint-benoit.re/evenements/articles/9500-agenda-sportif"),
       ], fetchedAt: at },
       "agenda:bras_panon": { value: [evt("r:1", "1er Rally National Grand Est", "2026-10-24", "2026-10-25", "Bras-Panon", "Ville de Bras-Panon", "https://www.braspanon.re/rally")], fetchedAt: at },
+    },
+    fetchedAt: at,
+  });
+  // L'Étang-Salé's, read by the scheduled event only: in its copy.
+  void store.put("agendas:planifies", {
+    value: {
+      "agenda:etang_sale": { value: [evt("e:1", "Planning des compétitions sportives du 23 au 25 octobre 2026", "2026-10-23", "2026-10-25", "L'Étang-Salé", "Ville de L'Étang-Salé", "https://www.letangsale.fr/planning")], fetchedAt: at },
     },
     fetchedAt: at,
   });

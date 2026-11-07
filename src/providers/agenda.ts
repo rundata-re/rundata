@@ -1788,9 +1788,14 @@ export const LISIBLES: Agenda[] = [
   // the scheduled event on the same site, had no failure.
   { ...rss("saint_louis", "Ville de Saint-Louis", "https://saintlouis.re/agenda?format=feed&type=rss", "Saint-Louis", SAINT_LOUIS), site_commune: "site de la commune de Saint-Louis", planifie: true },
   { ...rss("saint_andre", "Ville de Saint-André", "https://www.saint-andre.re/category/agenda/feed/", "Saint-André"), site_commune: "site de la commune de Saint-André", faits: true },
-  tribe("sechoir", "Le Séchoir", "https://www.lesechoir.com", "Saint-Leu", SALLES_SOURCE, "Le Séchoir"),
-  // Its list rather than its feed: the feed gives each event's day only as a stamp before its text, and no place.
-  { ...etangSale, site_commune: "site de la commune de L'Étang-Salé", mention: true, faits: true, programmes: true },
+  // Read by the scheduled event, which gives a slow site 30 s: read by the questions (04-07/11/2026), it was the agenda
+  // most often too slow for a view (266 views in 3 days), 99 of its readings were cut at 6 s, and 37 views had no copy
+  // of it at all, kept only in the data center that had read it.
+  { ...tribe("sechoir", "Le Séchoir", "https://www.lesechoir.com", "Saint-Leu", SALLES_SOURCE, "Le Séchoir"), planifie: true },
+  // Its list rather than its feed: the feed gives each event's day only as a stamp before its text, and no place. Read
+  // by the scheduled event, as Le Séchoir is (24 views of 88 too slow for it without any copy, 04-07/11/2026), every
+  // 3 hours: there its pages are read again at each reading, the list and ETANG_SALE_PAGES pages.
+  { ...etangSale, site_commune: "site de la commune de L'Étang-Salé", mention: true, faits: true, programmes: true, planifie: true, requetes: 1 + ETANG_SALE_PAGES, relecture: 3 * 3600 },
   { ...intraMuros("la_possession", "Ville de La Possession", "https://www.lapossession.re/agenda/rss", "La Possession", LA_POSSESSION), site_commune: "site de la commune de La Possession", faits: true, programmes: true },
   { ...petiteIle, site_commune: "site de la commune de Petite-Île", faits: true, accueil: PETITE_ILE.url },
   { ...brasPanon, site_commune: "site de la commune de Bras-Panon", mention: true, faits: true },
@@ -1863,7 +1868,8 @@ export const SANS_AGENDA: Record<string, string> = {
  * source read for this. Each once, by its link.
  */
 export async function programmesSportifs(cache: Pick<Cache, "bundle">): Promise<{ e: Evenement; agenda: Agenda; fetchedAt: Date }[]> {
-  return programmesIn(await cache.bundle(BUNDLE, BUNDLE_SYNC_SECONDS));
+  const [bundle, planned] = await Promise.all([cache.bundle(BUNDLE, BUNDLE_SYNC_SECONDS), planifiees(cache)]);
+  return programmesIn(bundle, planned);
 }
 
 /**
@@ -1874,7 +1880,7 @@ export async function programmesSportifs(cache: Pick<Cache, "bundle">): Promise<
 export async function sportDesAgendas(cache: Pick<Cache, "bundle">, programmes: boolean) {
   const [bundle, planned] = await Promise.all([cache.bundle(BUNDLE, BUNDLE_SYNC_SECONDS), planifiees(cache)]);
   return {
-    programmes: programmes ? programmesIn(bundle) : undefined,
+    programmes: programmes ? programmesIn(bundle, planned) : undefined,
     tournois: copiePlanifiee(planned, LIGUE_VOLLEY),
     clubs: copiePlanifiee(planned, SPORTSREGIONS),
     // Why either is not served, to be said.
@@ -1882,13 +1888,15 @@ export async function sportDesAgendas(cache: Pick<Cache, "bundle">, programmes: 
   };
 }
 
-function programmesIn(bundle: Pick<Bundle, "peek">): { e: Evenement; agenda: Agenda; fetchedAt: Date }[] {
+/** From the questions' bundle, and the scheduled event's for the agendas it alone reads (L'Étang-Salé's), as preuve does. */
+function programmesIn(bundle: Pick<Bundle, "peek">, planned: Pick<Bundle, "peek">): { e: Evenement; agenda: Agenda; fetchedAt: Date }[] {
   const seen = new Set<string>();
   return AGENDAS.flatMap((agenda) => {
-    const hit = bundle.peek(`agenda:${agenda.id}`);
+    const own = agenda.planifie ? undefined : bundle.peek(`agenda:${agenda.id}`);
+    const hit = agenda.planifie ? copiePlanifiee(planned, agenda) : own && { value: own.value as Evenement[], fetchedAt: new Date(own.fetchedAt) };
     // Each once by its own link, before it may be replaced by the site's home page.
-    return servis(agenda, (hit ? (hit.value as Evenement[]) : []).filter((e) => programmeSportif(e) && !seen.has(e.lien) && seen.add(e.lien)))
-      .map((e) => ({ e, agenda, fetchedAt: new Date(hit!.fetchedAt) }));
+    return servis(agenda, (hit ? hit.value : []).filter((e) => programmeSportif(e) && !seen.has(e.lien) && seen.add(e.lien)))
+      .map((e) => ({ e, agenda, fetchedAt: hit!.fetchedAt }));
   });
 }
 

@@ -229,6 +229,10 @@ const PATIENT_MS = 30_000;
 // There too, a reading cut by its delay or by a server's error (5xx) is tried once more, but none past that long after
 // the agendas began: the event must end before the next one, 5 minutes on (2 to 3 minutes at worst, ten sites down).
 const RETRY_WINDOW_MS = 120_000;
+// The scheduled event's own agendas (`refreshPlanned`), read one after the other, each fetch given PATIENT_MS: none begun
+// past that long after the first, so that the last ends 3 minutes after it at worst (L'Étang-Salé: its list, then its
+// pages at once, 30 s each), before the next event; the others are left for it (`reportes`), each said in the log.
+const PLANNED_WINDOW_MS = 120_000;
 // The subrequests not to be spent on the agendas: what follows them (the news's copy, the bundle's write, the page's
 // copy) and one more, within the invocation's budget (budget.ts); for a question, that one is the read of the scheduled
 // event's copies in KV, once a minute. An agenda past them is answered from its last copy, or named, and read by a
@@ -410,6 +414,7 @@ export async function refreshPlanned(cache: Cache, now = new Date()): Promise<{ 
   }
   const bundle = await src.planifiees(cache);
   const direct: src.AgendaStore = { get: async (_k, _s, load) => ({ value: await load(), fetchedAt: now, stale: false }) };
+  const from = Date.now();
   for (const agenda of planned) {
     const old = bundle.peek(`agenda:${agenda.id}`);
     if (old && !plannedDue(agenda, old.ageMs, now)) continue;
@@ -419,8 +424,14 @@ export async function refreshPlanned(cache: Cache, now = new Date()): Promise<{ 
       out.reportes.push(agenda.id);
       continue;
     }
+    if (Date.now() - from > PLANNED_WINDOW_MS) {
+      console.log(`source ${agenda.source.id} (${agenda.id}) reporté : lectures planifiées commencées il y a plus de ${PLANNED_WINDOW_MS / 1000} s`);
+      out.reportes.push(agenda.id);
+      continue;
+    }
     try {
-      const { value } = await agenda.load(direct, now);
+      // As long as a slow site takes (Le Séchoir), within PLANNED_WINDOW_MS for the next ones.
+      const { value } = await patiently(PATIENT_MS, () => agenda.load(direct, now));
       if (!value.length && !agenda.videLu && (old?.value as src.Evenement[] | undefined)?.length) {
         console.error(`source ${agenda.source.id} (${agenda.id}) : aucun événement, la copie est gardée`);
         out.gardes.push(agenda.id);

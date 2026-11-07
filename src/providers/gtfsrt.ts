@@ -245,6 +245,11 @@ function vehicle(r: Reader, out: Realtime) {
   (out.vehicles ??= []).push({ trip, ...(route ? { route } : {}), lat, lon, at: at || out.at, ...(stop ? { stop } : {}), ...(status !== undefined ? { status } : {}) });
 }
 
+/** An alert's words with a space after the bare comma that joins two quoted names (Car Jaune writes « Arrêts
+ *  "Bourg du 23ème","Gare de la Plaine des Cafres" non desservi »), so the names wrap apart on a narrow screen.
+ *  Only that exact form: nothing else of the network's words changes. */
+const spaced = (s: string) => s.replaceAll('","', '", "');
+
 // Alert: active_period (1: start 1, end 2), informed_entity (5: route_id 2, stop_id 5), header_text (10),
 // description_text (11).
 function alert(r: Reader): Alert {
@@ -264,8 +269,8 @@ function alert(r: Reader): Alert {
         if (e.field === 2 && e.to) a.lignes.push(e.str());
         else if (e.field === 5 && e.to) a.arrets.push(e.str());
       }
-    } else if (r.field === 10) a.titre = translated(r.sub());
-    else if (r.field === 11) a.texte = translated(r.sub()) || undefined;
+    } else if (r.field === 10) a.titre = spaced(translated(r.sub()));
+    else if (r.field === 11) a.texte = spaced(translated(r.sub())) || undefined;
   }
   return a;
 }

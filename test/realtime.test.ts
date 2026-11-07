@@ -56,6 +56,18 @@ describe("GTFS-RT feed", () => {
     expect(rt.active(barachois, barachois.periodes[0][1]! + 1)).toBe(false);
   });
 
+  it("puts a space after the bare comma between two quoted stop names, and only there", () => {
+    // The alert as encoded in the Car Jaune feed of 07/11/2026 at 16:15 (La Réunion), with the feed's header.
+    const real = rt.decode(new Uint8Array(readFileSync(new URL("./fixtures/gtfs_rt_carjaune_alerte.pb", import.meta.url))));
+    expect(real.alerts.map((a) => a.titre)).toEqual([`Arrêts "Bourg du 23ème", "Gare de la Plaine des Cafres" non desservi`]);
+    expect(real.alerts[0].texte).toContain(`les arrêts "Gare de la Plaine des Cafres" et "Bourg du 23ème" non desservis`);
+    // A header already spaced, and a quote followed by a comma and other words, stay as the network wrote them.
+    const ld = (field: number, bytes: Uint8Array) => new Uint8Array([(field << 3) | 2, bytes.length, ...bytes]);
+    const text = (s: string) => ld(1, ld(1, new TextEncoder().encode(s)));
+    const feed = (titre: string, texte: string) => ld(2, new Uint8Array([...ld(1, new TextEncoder().encode("a")), ...ld(5, new Uint8Array([...ld(10, text(titre)), ...ld(11, text(texte))]))]));
+    const temoin = rt.decode(feed(`Arrêts "A", "B" non desservis`, `Arrêt "A",reporté`));
+    expect(temoin.alerts[0]).toMatchObject({ titre: `Arrêts "A", "B" non desservis`, texte: `Arrêt "A",reporté` });
+  });
   it("reads where the buses that send their position are, without their plate", () => {
     const f = rt.decode(FEED);
     expect(f.vehicles).toHaveLength(2);

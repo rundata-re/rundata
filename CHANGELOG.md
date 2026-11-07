@@ -7,6 +7,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 ## Samedi 7 novembre 2026
 
 - Bus : un trajet d'un lieu à un autre demandé au connecteur renvoie à la page Trajet en bus, qui le cherche sur tous les réseaux de l'île.
+- Connecteur : un collège ou un lycée par son nom, son indice de position sociale, ses résultats au brevet ou au bac et le taux attendu.
 
 ## Vendredi 6 novembre 2026
 

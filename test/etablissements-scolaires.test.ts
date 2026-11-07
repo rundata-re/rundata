@@ -3,9 +3,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { INSEE } from "../src/places/insee.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
-import { byName, ecolesAnswer, SCHOOL } from "../src/tools/etablissements.js";
+import { byName, communeIn, ecolesAnswer, SCHOOL } from "../src/tools/etablissements.js";
 import * as carteScolaire from "../src/vie/carte-scolaire.js";
 import * as ecoles from "../src/vie/ecoles.js";
+import * as ips from "../src/vie/ips.js";
 import { communePage } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
 
@@ -105,6 +106,56 @@ describe("annuaire_services_publics asked for a school", () => {
     expect(byName(colleges, "Hugoxx").found).toEqual([]);
     expect(byName(colleges, "Ugo").found).toEqual([]);
     expect(byName(ecoles.LIST, "collège", ["Saint-Denis"]).words).toEqual([]);
+  });
+
+  it("takes a commune said whole in quoi as the place, without a place", () => {
+    expect(communeIn("collège Saint-Denis")).toBe("Saint-Denis");
+    expect(communeIn("collège Saint-Michel")).toBeUndefined();
+    // « collège Saint-Denis »: the 15 collèges of Saint-Denis, no name looked for.
+    const sd = body(ecolesAnswer("collège Saint-Denis", undefined));
+    expect(sd.nom).toBeUndefined();
+    expect(sd.resume).toMatch(/^15 établissements à Saint-Denis \(15 collèges\)\. /);
+    expect(sd.etablissements).toHaveLength(15);
+    // « collège Saint-Michel »: no commune of that name, so a name, found on the whole island.
+    const sm = body(ecolesAnswer("collège Saint-Michel", undefined));
+    expect(sm.lieu).toBeUndefined();
+    expect(sm.etablissements.map((e: { uai: string }) => e.uai)).toEqual(["9740072K"]);
+    // A name with its commune: the name, in that commune (the école Bellepierre, at Saint-Denis).
+    const bp = body(ecolesAnswer("école Bellepierre Saint-Denis", undefined));
+    expect(bp.resume).toMatch(/^École primaire publique Bellepierre \(Saint-Denis\), /);
+    expect(bp.etablissements.map((e: { uai: string }) => e.uai)).toEqual(["9740583R"]);
+  });
+
+  it("gives a collège's IPS and brevet, a lycée's IPS and bac by voie, with the DEPP's note and sources", () => {
+    const hugot = body(ecolesAnswer("collège Émile Hugo", undefined));
+    // ips.json: 108.7, 106 candidates, 92 % with a valeur ajoutée of +2, so 90 % expected.
+    expect(hugot.etablissements[0]).toMatchObject({
+      uai: "9741260B",
+      indice_position_sociale: { valeur: 108.7, rentree: 2025 },
+      brevet: { session: 2025, serie: "générale", candidats: 106, taux_reussite: "92\u00a0%", taux_reussite_attendu: "90\u00a0%" },
+    });
+    expect(hugot.avertissements.at(-1)).toBe(
+      "IPS et résultats\u00a0: DEPP, jeux des établissements publics et privés sous contrat\u00a0; aucun taux attendu sous 40 candidats (20 en voie professionnelle). rundata.re ne classe pas les établissements.",
+    );
+    expect(hugot.sources.map((s: { source: string }) => s.source)).toEqual([ecoles.SOURCE.nom, ips.SOURCE_IPS.nom, ips.SOURCE_VA.nom]);
+    expect(hugot.sources[1].licence).toBe("Licence Ouverte 2.0");
+    // Too few candidates: no expected rate, said why (the Medersa, 23 candidates; Jean Joly's voie professionnelle, 18 present).
+    expect(body(ecolesAnswer("collège Medersa", undefined)).etablissements[0].brevet).toMatchObject({ candidats: 23, taux_reussite: "100\u00a0%", taux_reussite_attendu: "non calculé, trop peu de candidats" });
+    const joly = body(ecolesAnswer("lycée Jean Joly", undefined)).etablissements[0];
+    expect(joly.bac.voie_professionnelle).toEqual({ presents: 18, taux_reussite: "67\u00a0%", taux_reussite_attendu: "non calculé, trop peu de candidats", taux_acces_seconde_bac: "31\u00a0%", taux_acces_attendu: "non calculé, trop peu de candidats" });
+    expect(joly.bac.voie_generale_et_technologique).toMatchObject({ presents: 274, taux_reussite: "89\u00a0%", taux_reussite_attendu: "95\u00a0%" });
+  });
+
+  it("gives nothing of the DEPP for an établissement its datasets leave out, nor ranks any", () => {
+    const r = body(ecolesAnswer("collège Montessori", undefined));
+    for (const e of r.etablissements) expect(Object.keys(e).filter((k) => /ips|brevet|bac|indice/.test(k)), e.nom).toEqual([]);
+    expect(r.avertissements.join(" ")).not.toContain("DEPP");
+    expect(r.sources).toHaveLength(1);
+    // A commune's collèges stay by distance, whatever their figures; no word that ranks them.
+    const sd = body(ecolesAnswer("collège", "Saint-Denis"));
+    const km = sd.etablissements.map((e: { distance_km: number }) => e.distance_km);
+    expect(km).toEqual([...km].sort((x: number, y: number) => x - y));
+    expect(JSON.stringify(sd)).not.toMatch(/meilleur|moins bon|class(?:ement|é)|\brangs?\b/i);
   });
 
   it("counts by commune without a place, and is reached through the annuaire", async () => {

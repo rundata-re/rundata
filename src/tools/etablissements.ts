@@ -11,6 +11,7 @@ import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as carteScolaire from "../vie/carte-scolaire.js";
 import * as ecoles from "../vie/ecoles.js";
+import * as ips from "../vie/ips.js";
 import { slugify } from "../web/places.js";
 import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 
@@ -32,6 +33,46 @@ const NOTES = [
   "Ne jamais déduire l'école ou le collège d'une adresse de la distance : la mairie fixe le secteur des écoles, le Département celui des collèges, et le rectorat affecte les élèves. Le collège public de secteur d'une adresse : redemander avec quoi = « collège », adresse = le numéro et la voie, lieu = la commune.",
 ];
 
+// The collèges' and lycées' IPS and results (vie/ips.ts), by their UAI: none for the établissements its datasets leave out.
+const COLLEGE_IPS = new Map(ips.COLLEGES.map((c) => [c.uai, c]));
+const LYCEE_IPS = new Map(ips.LYCEES.map((l) => [l.uai, l]));
+const DEPP =
+  "IPS et résultats\u00a0: DEPP, jeux des établissements publics et privés sous contrat\u00a0; aucun taux attendu sous 40 candidats (20 en voie professionnelle). rundata.re ne classe pas les établissements.";
+const pct = (n: number) => `${n}\u00a0%`;
+/** The rate expected, or why there is none: too few candidates for the ministry to compute it. */
+const attendu = (t: ips.Taux, candidats: number, seuil: number) => (t.attendu !== null ? pct(t.attendu) : candidats < seuil ? "non calculé, trop peu de candidats" : "non calculé");
+const voie = (v: ips.Voie | null, seuil: number) =>
+  v ? {
+    presents: v.presents,
+    taux_reussite: pct(v.reussite.taux),
+    taux_reussite_attendu: attendu(v.reussite, v.presents, seuil),
+    taux_acces_seconde_bac: v.acces ? pct(v.acces.taux) : undefined,
+    taux_acces_attendu: v.acces ? attendu(v.acces, v.presents, seuil) : undefined,
+  } : undefined;
+/** A collège's IPS and brevet, a lycée's IPS and bac by voie, as the DEPP gives them; nothing for one it leaves out. */
+function depp(e: ecoles.Etablissement) {
+  const c = e.type === "college" ? COLLEGE_IPS.get(e.uai) : undefined;
+  if (c) {
+    return {
+      indice_position_sociale: { valeur: c.ips, rentree: ips.RENTREE },
+      brevet: { session: ips.SESSION, serie: "générale", candidats: c.candidats, taux_reussite: pct(c.reussite.taux), taux_reussite_attendu: attendu(c.reussite, c.candidats, ips.SEUIL.college) },
+    };
+  }
+  const l = e.type === "lycee" ? LYCEE_IPS.get(e.uai) : undefined;
+  if (l) {
+    return {
+      indice_position_sociale: { valeur: l.ips, rentree: ips.RENTREE },
+      bac: { session: ips.SESSION, voie_generale_et_technologique: voie(l.gt, ips.SEUIL.gt), voie_professionnelle: voie(l.pro, ips.SEUIL.pro) },
+    };
+  }
+  return {};
+}
+/** The notes and sources of a list: the DEPP's when one of its rows carries its figures. */
+function credited(list: ecoles.Etablissement[]) {
+  const has = list.some((e) => COLLEGE_IPS.has(e.uai) || LYCEE_IPS.has(e.uai));
+  return { avertissements: has ? [...NOTES, DEPP] : NOTES, sources: credits(has ? [ecoles.SOURCE, ips.SOURCE_IPS, ips.SOURCE_VA] : [ecoles.SOURCE]) };
+}
+
 const row = ({ e, km }: { e: ecoles.Etablissement; km?: number }) => ({
   nom: e.nom,
   type: ecoles.KINDS.find((k) => k.type === e.type)!.un,
@@ -43,6 +84,7 @@ const row = ({ e, km }: { e: ecoles.Etablissement; km?: number }) => ({
   site: e.web,
   fiche_onisep: e.onisep,
   uai: e.uai,
+  ...depp(e),
 });
 
 // The words of `quoi` that are no name's: the kinds and services, what is asked of the place, the little words.
@@ -78,8 +120,17 @@ export function byName(pool: ecoles.Etablissement[], quoi: string, place: string
   return { words, found: exact.length ? exact : named(near), exact: exact.length > 0 };
 }
 
+/** The commune said whole in `quoi` (« collège Saint-Denis »), the longest name when several are. */
+export function communeIn(quoi: string): string | undefined {
+  const q = ` ${normalize(quoi)} `;
+  return Object.keys(INSEE).filter((c) => q.includes(` ${normalize(c)} `)).sort((x, y) => y.length - x.length)[0];
+}
+
 export function ecolesAnswer(quoi: string, lieu: string | undefined) {
-  const res = lieu?.trim() ? resolvePlace(lieu) : null;
+  // Without a place, a commune said whole in quoi is the place asked: « collège Saint-Denis » lists its collèges, and
+  // « école Bellepierre Saint-Denis » looks for that name there first.
+  const asked = lieu?.trim() ? lieu : communeIn(quoi);
+  const res = asked ? resolvePlace(asked) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
   const kinds = KINDS.filter(([re]) => re.test(quoi)).map(([, k]) => k);
   const tests = SERVICES.filter(([re]) => re.test(quoi)).map(([, t]) => t);
@@ -99,12 +150,11 @@ export function ecolesAnswer(quoi: string, lieu: string | undefined) {
       ? `${found[0].e.nom} (${found[0].e.commune}), ${found[0].e.adresse}.`
       : `${found.length} établissements : ${shown.map(({ e }) => `${e.nom} (${e.commune})`).join("\u00a0; ")}${found.length > SHOWN ? "…" : "."}`;
     return text({
-      lieu: res ? placeBlock(lieu!, res) : undefined,
+      lieu: res ? placeBlock(asked!, res) : undefined,
       resume: name.exact ? said : `Aucun nom exact\u00a0; nom approchant, à une lettre près : ${said}`,
       etablissements: shown.map(row),
       autres: found.length > SHOWN ? `${found.length - SHOWN} autres de ce nom : préciser le nom ou la commune.` : undefined,
-      avertissements: NOTES,
-      sources: credits([ecoles.SOURCE]),
+      ...credited(shown.map(({ e }) => e)),
     });
   }
   // A name that none has: said, then the list as without it.
@@ -127,7 +177,7 @@ export function ecolesAnswer(quoi: string, lieu: string | undefined) {
   const shown = here.length && !here.some((e) => e.type === "ecole") ? ranked : ranked.slice(0, SHOWN);
   const rest = here.length - shown.length;
   return text({
-    lieu: placeBlock(lieu!, res),
+    lieu: placeBlock(asked!, res),
     nom: sansNom,
     resume: here.length
       ? `${here.length} établissement${here.length > 1 ? "s" : ""} ${a(commune)} (${count(here)})${rest > 0 ? `, les ${shown.length} plus proches ${de(res.lieu.nom)} ci-dessous` : ""}. Le plus proche ${de(res.lieu.nom)} : ${shown[0].e.nom}, ${shown[0].e.adresse}, à ${fr(Math.round(shown[0].km * 10) / 10)} km.`
@@ -137,8 +187,7 @@ export function ecolesAnswer(quoi: string, lieu: string | undefined) {
       ? `${rest} autre${rest > 1 ? "s" : ""} ${a(commune)}, non listé${rest > 1 ? "s" : ""} ici : redemander avec le nom de l'établissement dans quoi, ou un quartier dans lieu, ou voir la page de la commune.`
       : undefined,
     page: `https://rundata.re/communes/${slugify(commune)}#ecoles`,
-    avertissements: NOTES,
-    sources: credits([ecoles.SOURCE]),
+    ...credited(shown.map(({ e }) => e)),
   });
 }
 

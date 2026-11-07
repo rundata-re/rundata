@@ -261,6 +261,20 @@ export const imageLinks = (lien: string) => `<a href="${esc(lien)}">la voir sur 
 // Where the prefecture publishes each phase of the ORSEC volcano plan.
 const GOUV = `${lienNom(PREFECTURE.url, "reunion.gouv.fr")}`;
 
+/**
+ * Escaped text whose « , » never starts a line: Chrome and Safari cut a word with its comma between the two when the word
+ * fits its line and the comma does not (« …de la Fournaise » then « , 1 km » on /volcan at 160 px, Safari's page zoom at
+ * 200 % on a 320 px screen). Each « , » followed by a space goes in a .virg (pages.ts), where it takes no room: it hangs past
+ * the end of the line, in the card's padding, and the space after it is widened by as much, so that the words around it
+ * stay where they were. In the text between the tags only; the text read and copied is the same.
+ */
+export function virgulesTenues(html: string): string {
+  return html
+    .split(/(<[^>]*>)/)
+    .map((x, i) => (i % 2 ? x : x.replaceAll(", ", '<span class="virg">, </span>')))
+    .join("");
+}
+
 /** `news`: the news copy, read during an alert only, for what the media say of it. */
 export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, now = new Date(), alerte?: Alerte, news?: ActualitesAnswer): string {
   const d = data?.value;
@@ -352,7 +366,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const quakeRow = (s: NonNullable<typeof q>["derniers"][number]) =>
     a
       ? `<li>${esc(s.heure.replace(" heure de La Réunion", ""))} · magnitude\u00a0<b>${esc(md(s.magnitude))}</b> · ${esc(where(s))}</li>`
-      : `<li><b>${esc(md(s.magnitude))}</b><span>${esc(s.lieu)}, ${esc(depthText(s.profondeur_km))}</span><span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
+      : `<li><b>${esc(md(s.magnitude))}</b><span>${virgulesTenues(esc(`${s.lieu}, ${depthText(s.profondeur_km)}`))}</span><span class="note">${esc(s.heure.replace(" heure de La Réunion", ""))}</span></li>`;
   const quakes = q
     ? `<div class="card">${icon("gauge")}<h3>Séismes localisés par l'OVPF</h3>` +
       quakeDays(q.par_jour_sous_le_volcan, e?.image_ovpf_plus_recente && !folded && !a ? apres : undefined) +

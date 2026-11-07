@@ -165,6 +165,18 @@ export function adresseCoupable(text: string): string {
 }
 
 /**
+ * An address in a sentence, out of a link (« écrivez à contact@rundata.re », the foot's sources): adresseCoupable(), its
+ * <wbr> marked .adr. Over 19.9 rem of screen they are display:none (pages.ts), and the sentence goes to the next line as
+ * it did without them: at 390 px, « contact@rundata.re » moves to the next line whole, never « contact@ / rundata.re ».
+ * Under it (text enlarged on a phone) the address may go to the next line after a « . » or « @ », rather than one or two
+ * letters before its end (« contact@rund|ata.re » at 200 %). No span around it: WebKit would draw the rest of the line a
+ * pixel further. A <wbr> holds no character: the copied text and what a screen reader says are the address.
+ */
+export function adresseTexte(text: string): string {
+  return adresseCoupable(text).replaceAll("<wbr>", '<wbr class="adr">');
+}
+
+/**
  * A link whose text holds such a name (« le site de Sensor.Community ») or an address (« sa fiche sur data.gouv.fr »,
  * « monenfant.fr », « contact@rundata.re »): the name may go to the next line where nomsCoupables() puts its <wbr>, the
  * address after each of its « . » and « @ », rather than one or two letters before its end (« data.gou|v.fr »,

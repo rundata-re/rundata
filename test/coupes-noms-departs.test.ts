@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { adresseCoupable, departureLi, jourMois, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
+import { adresseCoupable, adresseTexte, departureLi, jourMois, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
 import { CSS, legalPage } from "../src/web/pages.js";
 import { ouvrir as ouvrirAssociations } from "../src/web/associations-drapeau.js";
 import { ouvrir as ouvrirConnecteurs } from "../src/web/connecteurs-drapeau.js";
@@ -205,7 +205,7 @@ describe("an address in a sentence of /confidentialite, /conditions and the foot
       .filter((x) => /[a-z0-9][.@][a-z]/.test(x) && x !== "rundata.re" && x !== "cf.turnstile.u");
   const pages = () => [legalPage("https://rundata.re", "confidentialite"), legalPage("https://rundata.re", "conditions")];
 
-  it("is written by adresseCoupable(), in the text and at the foot, whichever forms are on (« contact@rund|ata.re » at 200 %)", () => {
+  it("is written by adresseTexte(), in the text and at the foot, whichever forms are on (« contact@rund|ata.re » at 200 %)", () => {
     try {
       for (const [associations, connecteurs] of [[true, true], [true, false], [false, true], [false, false]]) {
         ouvrirAssociations(associations);
@@ -223,10 +223,11 @@ describe("an address in a sentence of /confidentialite, /conditions and the foot
       ouvrirConnecteurs(true);
       const [privacy, terms] = pages().map((p) => p.replaceAll("\u00a0", " "));
       for (const page of [privacy, terms]) {
-        expect(page).toContain(" · contact@<wbr>rundata.<wbr>re</p>");
-        expect(page).not.toMatch(/<a\b[^>]*>[^<]*contact@<wbr>/);
+        expect(page).toContain(' · contact@<wbr class="adr">rundata.<wbr class="adr">re</p>');
+        expect(page).not.toContain("@<wbr>");
+        expect(page).not.toMatch(/<a\b[^>]*>[^<]*contact@<wbr\b/);
       }
-      const lu = (page: string) => page.replaceAll("<wbr>", "");
+      const lu = (page: string) => page.replaceAll('<wbr class="adr">', "");
       for (const s of [
         "chez l'IGN (data.geopf.fr), qui reçoit",
         "écrire à <b>contact@rundata.re</b> en le citant.",
@@ -244,6 +245,15 @@ describe("an address in a sentence of /confidentialite, /conditions and the foot
     } finally {
       ouvrirConnecteurs(false);
     }
+  });
+
+  it("goes to the next line in its middle only under 19.9 rem: at 390 px, the sentence goes to the line as it did before", () => {
+    expect(adresseTexte("contact@rundata.re")).toBe('contact@<wbr class="adr">rundata.<wbr class="adr">re');
+    expect(adresseTexte("a.b <i>")).toBe('a.<wbr class="adr">b &lt;i&gt;');
+    // Off outside the media query, on inside it; « .jm » is the date's rule, written just before each.
+    expect(CSS).toContain(".jm{white-space:nowrap}/* An address in a sentence (adresseTexte, domains.ts)");
+    expect(CSS.split("wbr.adr{display:none}")).toHaveLength(2);
+    expect(etroit).toContain(".jm{white-space:normal}wbr.adr{display:inline}");
   });
 });
 

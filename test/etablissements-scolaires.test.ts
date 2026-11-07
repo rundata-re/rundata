@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { INSEE } from "../src/places/insee.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
-import { ecolesAnswer, SCHOOL } from "../src/tools/etablissements.js";
+import { byName, ecolesAnswer, SCHOOL } from "../src/tools/etablissements.js";
 import * as carteScolaire from "../src/vie/carte-scolaire.js";
 import * as ecoles from "../src/vie/ecoles.js";
 import { communePage } from "../src/web/commune.js";
@@ -46,14 +46,65 @@ describe("annuaire_services_publics asked for a school", () => {
     expect(r.sources[0].licence).toContain("Licence Ouverte");
   });
 
-  it("keeps the service asked, and shows ten of a large commune", () => {
+  it("keeps the service asked, gives all of a commune's collèges, and says how to get the écoles it does not list", () => {
     const r = body(ecolesAnswer("internat", "Saint-Paul"));
     expect(r.etablissements.length).toBeGreaterThan(0);
     for (const e of r.etablissements) expect(e.services).toContain("internat");
-    const all = body(ecolesAnswer("collège", "Saint-Paul"));
-    expect(all.resume).toMatch(/^11 établissements à Saint-Paul \(11 collèges\)\./);
-    expect(all.etablissements).toHaveLength(10);
-    expect(all.autres).toBe("1 autre à Saint-Paul, sur la page de la commune.");
+    // Saint-Denis has the most collèges: the 15, nothing left out.
+    const all = body(ecolesAnswer("collège", "Saint-Denis"));
+    expect(all.resume).toMatch(/^15 établissements à Saint-Denis \(15 collèges\)\. Le plus proche/);
+    expect(all.etablissements).toHaveLength(15);
+    expect(all.etablissements.map((e: { uai: string }) => e.uai)).toContain("9741260B");
+    expect(all.autres).toBeUndefined();
+    // Its 84 écoles: ten, and the others counted with how to get them.
+    const ecolesSd = body(ecolesAnswer("école", "Saint-Denis"));
+    expect(ecolesSd.resume).toMatch(/^84 établissements à Saint-Denis \(84 écoles\), les 10 plus proches de Saint-Denis ci-dessous\. /);
+    expect(ecolesSd.etablissements).toHaveLength(10);
+    expect(ecolesSd.autres).toBe("74 autres à Saint-Denis, non listés ici : redemander avec le nom de l'établissement dans quoi, ou un quartier dans lieu, ou voir la page de la commune.");
+  });
+
+  it("finds an establishment by its name, accents aside or one letter off, the place's commune first", () => {
+    const hugot = "Collège Émile Hugot (Saint-Denis), 7 rue d'Emmerez de Charmoy, 97494 Saint-Denis.";
+    // Said as heard, without its T: the nearest name, said so.
+    for (const [quoi, lieu] of [["collège Émile Hugo", "Saint-Denis"], ["collège Emile Hugo", undefined], ["résultats au brevet du collège Émile Hugo", undefined]] as const) {
+      const r = body(ecolesAnswer(quoi, lieu));
+      expect(r.resume, quoi).toBe(`Aucun nom exact\u00a0; nom approchant, à une lettre près : ${hugot}`);
+      expect(r.etablissements.map((e: { uai: string }) => e.uai), quoi).toEqual(["9741260B"]);
+    }
+    expect(body(ecolesAnswer("collège emile hugot", undefined)).resume).toBe(hugot);
+    // Not in the commune asked: the island's, with its distance.
+    const loin = body(ecolesAnswer("collège Émile Hugo", "Saint-Paul"));
+    expect(loin.etablissements[0]).toMatchObject({ uai: "9741260B", commune: "Saint-Denis" });
+    expect(loin.etablissements[0].distance_km).toBeGreaterThan(10);
+    // In the commune asked, those of the commune alone.
+    const pro = body(ecolesAnswer("lycée professionnel", "Saint-Paul"));
+    expect(pro.etablissements.map((e: { nom: string }) => e.nom)).toEqual(["Lycée professionnel de Vue Belle"]);
+    // Several of one name, each with its commune.
+    expect(body(ecolesAnswer("école Leconte de Lisle", undefined)).resume).toMatch(/^3 établissements : École élémentaire publique Leconte de Lisle \(Saint-Paul\) ; /);
+  });
+
+  it("says a name none has, then lists as without it; the words of a question are no name", () => {
+    const r = body(ecolesAnswer("collège Zzyzx", "Saint-Paul"));
+    expect(r.nom).toBe("Aucun établissement dont le nom approche « zzyzx » : voici ceux du lieu.");
+    expect(r.etablissements).toHaveLength(11);
+    for (const [quoi, lieu] of [["collège le plus proche", "Saint-Paul"], ["école maternelle publique", "Saint-Denis"], ["collège de Sainte-Clotilde", "Sainte-Clotilde"], ["lycée avec internat", "Saint-Paul"], ["école fermée aujourd'hui", "Le Port"]] as const) {
+      const q = body(ecolesAnswer(quoi, lieu));
+      expect(q.nom, quoi).toBeUndefined();
+      expect(q.resume, quoi).toMatch(/^\d+ établissements? (?:à|au) /);
+    }
+  });
+
+  it("is one letter off at most, and exact for a short word", () => {
+    const colleges = ecoles.LIST.filter((e) => e.type === "college");
+    expect(byName(colleges, "Hugo").found.map((e) => e.uai)).toEqual(["9741260B"]);
+    expect(byName(colleges, "Hugo").exact).toBe(false);
+    // An exact name wins over one a letter off: the écoles Victor Hugo, not the collège Émile Hugot.
+    const exact = byName(ecoles.LIST, "Hugo");
+    expect([exact.exact, exact.found.length > 0, exact.found.every((e) => / Hugo(?: |$)/.test(e.nom))]).toEqual([true, true, true]);
+    // Two letters off, or three letters: nothing.
+    expect(byName(colleges, "Hugoxx").found).toEqual([]);
+    expect(byName(colleges, "Ugo").found).toEqual([]);
+    expect(byName(ecoles.LIST, "collège", ["Saint-Denis"]).words).toEqual([]);
   });
 
   it("counts by commune without a place, and is reached through the annuaire", async () => {

@@ -128,7 +128,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.473";
+export const VERSION = "1.0.474";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -489,7 +489,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »)\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aussi parcs, zoos, " +
         "parcs de loisirs, salles de jeux, escalade, musées\u00a0; " +
-        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée ») : cantine, internat, ULIS, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
+        "les écoles, collèges et lycées (quoi = « école », « collège », « lycée », avec le nom s'il est connu : « collège Émile Hugot ») : cantine, internat, ULIS, et le collège de secteur d'une adresse sur laquelle on s'interroge (adresse)\u00a0; " +
         "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…). " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {

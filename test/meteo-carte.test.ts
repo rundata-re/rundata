@@ -824,6 +824,8 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(js).toContain(`if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",2)}`);
     expect(js).toContain(`.then((j)=>{if(WK!==key||swap&&!j.radar)return;if(swap===2&&playing){SW=1;return}`);
     expect(js).toContain(`if(say)ann.textContent=show();if(SW){SW=0;RJ.go(BA(d),2)}};`);
+    // The box unticked while its finer file comes: the file shown asked again, the finer one dropped when it comes (WK).
+    expect(js).toContain(`if(swap&&(!J||key===DK)){if(J)WK=key;return}WK=key;`);
     // Another length or day asked forgets the waiting swap, before its stop can ask it.
     expect(js).toContain(`if(!swap){SW=0;stop(false);d=m;`);
     // A page kept from before has neither the box nor the days: the script still runs.

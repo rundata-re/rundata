@@ -331,18 +331,68 @@ function replayBar(fin: string): string {
 }
 
 /**
+ * The temperature of the rows y0 to y1 (at most h) of the grid q.T, w cells wide: the altitude's line (q.k, q.b, a metre
+ * every pas of the altitudes' grid a) and, by inverse distance, the stations' rest (q.p: x, y on the grid, °C off the
+ * line); the sea left out. The row after the last made, for the next slice. The page's script takes it as its text.
+ */
+export const veilRows = (q: { k: number; b: number; p: number[][]; T: Float32Array }, a: ArrayLike<number>, w: number, h: number, y0: number, y1: number, pas: number): number => {
+  const y2 = Math.min(h, y1);
+  for (let y = y0; y < y2; y++)
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x, v = a[i * 4];
+      if (!v) continue;
+      let sw = 0, sr = 0;
+      for (const [px, py, r] of q.p) {
+        const g = 1 / ((px - x) ** 2 + (py - y) ** 2 + 0.5);
+        sw += g;
+        sr += g * r;
+      }
+      q.T[i] = q.k + q.b * (v - 1) * pas + sr / sw;
+    }
+  return y2;
+};
+/**
+ * The wind of the rows y0 to y1 (at most h) of the fields q.U, q.V, w cells wide, by inverse distance from the
+ * anemometers q.p (x, y on the grid, u, v). The row after the last made. The page's script takes it as its text.
+ */
+export const fieldRows = (q: { p: number[][]; U: Float32Array; V: Float32Array }, w: number, h: number, y0: number, y1: number): number => {
+  const y2 = Math.min(h, y1);
+  for (let j = y0; j < y2; j++)
+    for (let i = 0; i < w; i++) {
+      const k = j * w + i;
+      let sw = 0, su = 0, sv = 0;
+      for (const [px, py, u, v] of q.p) {
+        const g = 1 / ((px - i) ** 2 + (py - j) ** 2 + 0.5);
+        sw += g;
+        su += g * u;
+        sv += g * v;
+      }
+      if (sw) {
+        q.U[k] = su / sw;
+        q.V[k] = sv / sw;
+      }
+    }
+  return y2;
+};
+/**
+ * The rows of a grid made in one slice of the replay's work between its frames: the 112 rows of a grid took 16 to 22 ms
+ * on a computer, 4 about 0.7 ms.
+ */
+const GRID_ROWS = 4;
+
+/**
  * The veil, computed in the browser: the altitude explains most of it, the stations the rest (inverse distance). For
- * the replay (RJ.t): the grid of any set of stations, drawn alone or mixed with another's.
+ * the replay (RJ.t): the grid of any set of stations, drawn alone or mixed with another's, at once or a few rows at a time
+ * (part: each call goes on until dl, and gives the grid once made).
  */
 const VOILE_SCRIPT = `const vo=document.querySelector("[data-voile]");if(vo){const st=JSON.parse(vo.dataset.voile),im=new Image();im.onload=()=>{
 const w=im.width,h=im.height,c=vo;c.width=w;c.height=h;const g=c2d(c);g.drawImage(im,0,0);const a=g.getImageData(0,0,w,h).data,S=${JSON.stringify(VEIL)};
 const col=(t)=>{let i=0;while(i<S.length-2&&t>S[i+1][0])i++;const[[t0,c0],[t1,c1]]=[S[i],S[i+1]],f=Math.min(1,Math.max(0,(t-t0)/(t1-t0)));return c0.map((v,j)=>v+(c1[j]-v)*f)};
 // The temperature of each cell from a set of stations [x, y, altitude, °C]: the altitude's line through them, the rest by inverse distance.
-const grid=(st)=>{const n=st.length;if(!n)return null;let sz=0,st2=0,sz2=0,szt=0;st.forEach(([,,z,t])=>{sz+=z;st2+=t;sz2+=z*z;szt+=z*t});let b=(n*szt-sz*st2)/(n*sz2-sz*sz);if(!(b<-.003&&b>-.01))b=-.0065;const k=(st2-b*sz)/n;
-const p=st.map(([x,y,z,t])=>[x*w/${W},y*h/${H},t-(k+b*z)]),T=new Float32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,v=a[i*4];if(!v)continue;let sw=0,sr=0;
-for(const[px,py,r]of p){const q=1/((px-x)**2+(py-y)**2+.5);sw+=q;sr+=q*r}T[i]=k+b*(v-1)*${altitudes.pas_m}+sr/sw}return T};
+const rows=${veilRows},part=(st)=>{const n=st.length;if(!n)return()=>null;let sz=0,st2=0,sz2=0,szt=0;st.forEach(([,,z,t])=>{sz+=z;st2+=t;sz2+=z*z;szt+=z*t});let b=(n*szt-sz*st2)/(n*sz2-sz*sz);if(!(b<-.003&&b>-.01))b=-.0065;const k=(st2-b*sz)/n;
+const q={k,b,p:st.map(([x,y,z,t])=>[x*w/${W},y*h/${H},t-(k+b*z)]),T:new Float32Array(w*h)};let y=0;return(dl)=>{while(y<h){y=rows(q,a,w,h,y,y+${GRID_ROWS},${altitudes.pas_m});if(y<h&&performance.now()>dl)return undefined}return q.T}},grid=(st)=>part(st)(Infinity);
 const o=g.createImageData(w,h),M=new Float32Array(w*h),paint=(T)=>{for(let i=0;i<w*h;i++){if(!a[i*4])continue;if(!T){o.data[i*4+3]=0;continue}const[R,G,B]=col(T[i]);o.data[i*4]=R;o.data[i*4+1]=G;o.data[i*4+2]=B;o.data[i*4+3]=215}g.putImageData(o,0,0)};
-const now=grid(st);paint(now);RJ.t={live:st,now,grid,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M[i]=A[i]+(B[i]-A[i])*f;paint(M)},back:()=>paint(now)}};im.src=vo.dataset.alt}`;
+const now=grid(st);paint(now);RJ.t={live:st,now,grid,part,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M[i]=A[i]+(B[i]-A[i])*f;paint(M)},back:()=>paint(now)}};im.src=vo.dataset.alt}`;
 
 /**
  * A frame every 1000 / 30 ms, 30 a second (written out: the page's scripts take this function as its text), for a rAF
@@ -399,15 +449,16 @@ frame:(k)=>{const s=cw/${W};g.globalCompositeOperation="destination-in";g.fillSt
 g.strokeStyle="rgba(255,255,255,.9)";g.lineWidth=Math.max(1.2,cw/330);g.beginPath();
 for(const p of ps){const[u,v]=at(p.x,p.y),x=p.x+u*.3*k,y=p.y+v*.3*k;if((p.a+=k)>100||x<0||y<0||x>=${W}||y>=${H}||!on_(x,y)){born(p);continue}g.moveTo(p.x*s,p.y*s);g.lineTo(x*s,y*s);p.x=x;p.y=y}g.stroke()}};const go=anim(o);
 // The field of a set of anemometers [x, y, u, v]: the live ones, or those of a round hour of the replay.
-let A,x;const field=(sx)=>{const p=sx.map(([X,Y,u,v])=>[X*w/${W},Y*h/${H},u,v]),u2=new Float32Array(w*h),v2=new Float32Array(w*h);for(let j=0;j<h;j++)for(let i=0;i<w;i++){const k=j*w+i;let sw=0,su=0,sv=0;
-for(const[px,py,u,v]of p){const q=1/((px-i)**2+(py-j)**2+.5);sw+=q;su+=q*u;sv+=q*v}if(sw){u2[k]=su/sw;v2[k]=sv/sw}}return[u2,v2]};
+// At once, or a few rows at a time (part: each call goes on until dl, and gives the field once made).
+let A,x;const rows=${fieldRows},part=(sx)=>{const q={p:sx.map(([X,Y,u,v])=>[X*w/${W},Y*h/${H},u,v]),U:new Float32Array(w*h),V:new Float32Array(w*h)};let y=0;
+return(dl)=>{while(y<h){y=rows(q,w,h,y,y+${GRID_ROWS});if(y<h&&performance.now()>dl)return undefined}return[q.U,q.V]}},field=(sx)=>part(sx)(Infinity);
 // The field drawn: the veil of its speed; the arrows again for those who ask for less motion, the particles following it alone.
 const veil=()=>{const e=x.createImageData(w,h);for(const k of land){const[R,G,B]=col(Math.hypot(U[k],V[k]));e.data[k*4]=R;e.data[k*4+1]=G;e.data[k*4+2]=B;e.data[k*4+3]=200}x.putImageData(e,0,0);
 if(g&&matchMedia("(prefers-reduced-motion: reduce)").matches)o.still()};
 const set=(F)=>{if(F){U.set(F[0]);V.set(F[1])}else{U.fill(0);V.fill(0)}veil()};
 im.onload=()=>{w=im.width;h=im.height;const c=ve;c.width=w;c.height=h;x=c2d(c);x.drawImage(im,0,0);A=x.getImageData(0,0,w,h).data;U=new Float32Array(w*h);V=new Float32Array(w*h);M=new Uint8Array(w*h);
 for(let k=0;k<w*h;k++)if(A[k*4]){M[k]=1;land.push(k)}const now=field(st);set(now);
-RJ.v={live:st,now,grid:field,show:set,mix:(F,G,f)=>{for(let k=0;k<w*h;k++){U[k]=F[0][k]+(G[0][k]-F[0][k])*f;V[k]=F[1][k]+(G[1][k]-F[1][k])*f}veil()},back:()=>set(now)};go()};im.src=ve.dataset.alt}`;
+RJ.v={live:st,now,grid:field,part,show:set,mix:(F,G,f)=>{for(let k=0;k<w*h;k++){U[k]=F[0][k]+(G[0][k]-F[0][k])*f;V[k]=F[1][k]+(G[1][k]-F[1][k])*f}veil()},back:()=>set(now)};go()};im.src=ve.dataset.alt}`;
 
 /**
  * The land cells seen badly on an image (of 8 382) from which the sentence of the hatches is said under the map; the
@@ -1046,6 +1097,12 @@ export const aheadOf = <K>(k: K[] | null | undefined, z: K, n: number): K[] => {
  */
 export const lapse = (t: number, was: number) => (was ? Math.min(t - was, 250) : 0);
 /**
+ * The grids of the temperature and of the wind kept from one frame or one play to the next, the last used: the 25 hours
+ * of 24 hours of both layers (16 before: the second tour made them all again, 16 to 22 ms each in the frame of the
+ * hour's change on a computer). About 56 KB a temperature's, 112 KB a wind's.
+ */
+export const GRIDS_KEPT = 52;
+/**
  * A full play: 12 s (data-run, 29/10); 24 s over 24 hours and 7 days, whose images follow each other every quarter of an
  * hour and every hour (01/11/2026: in 12 s, a slow phone drew the rain's 8 and 14 new images a second at 11 and 6 frames).
  * The finer files, for a device that keeps up: 54 s for the 288 images of 24 hours or of a day (5 a second), 96 s for
@@ -1130,7 +1187,15 @@ const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l)):1;if(!k||n<2)
 const moment=${momentAt},at=(l)=>{const k=sub(l),n=k===K[l]?1:KS.get(K[l])[0];return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)};
 // The stations of an hour, as the page's scripts take them: [x, y, altitude, °C], or [x, y, u, v] in km/h (y down).
 const sx=(l,i)=>l==="t"?st.filter((s)=>s.t[i]!=null).map((s)=>[s.x,s.y,s.alt,s.t[i]]):st.filter((s)=>s.ff[i]!=null&&(s.dd[i]!=null||s.ff[i]===0)).map((s)=>{const a=(s.dd[i]||0)*Math.PI/180,v=s.ff[i];return[s.x,s.y,-Math.sin(a)*v,Math.cos(a)*v]});
-const gridOf=(l,k)=>{if(k.i<0)return RJ[l].now;const key=l+k.i;let g=G.get(key);if(!g){g=RJ[l].grid(sx(l,k.i));G.set(key,g);if(G.size>16)G.delete(G.keys().next().value)}return g};
+// The grid of an hour: kept (G, the last GRIDS_KEPT used), or finished if begun between the frames (HJ), or made.
+const gkeep=(key,g)=>{G.delete(key);G.set(key,g);if(G.size>${GRIDS_KEPT})G.delete(G.keys().next().value)};
+const gridOf=(l,k)=>{if(k.i<0)return RJ[l].now;const key=l+k.i;let g=G.get(key);if(g===undefined){const j=HJ.get(key);g=j?j(Infinity):RJ[l].grid(sx(l,k.i));HJ.delete(key)}gkeep(key,g);return g};
+// Playing, the grids of the hours to come (RJ[l].part), a few rows at a time between the frames drawn, about 7 ms when
+// the browser is idle, else as soon as it can (Safari has no requestIdleCallback): never in the frame of an hour's change.
+let HQ=[],HT=0,HZ={};const HJ=new Map(),hidle=(f)=>self.requestIdleCallback?requestIdleCallback(f,{timeout:120}):setTimeout(f,0);
+const hwork=()=>{HT=0;const dl=performance.now()+7;while(HQ.length&&performance.now()<dl){const key=HQ[0],j=HJ.get(key);if(!j||G.has(key)){HQ.shift();HJ.delete(key);continue}
+const g=j(dl);if(g!==undefined){HQ.shift();HJ.delete(key);gkeep(key,g)}}if(HQ.length)HT=hidle(hwork)};
+const hours=(l,nz)=>{if(nz===HZ[l])return;HZ[l]=nz;for(const x of ahead(sub(l),nz,2)){const key=l+x.i;if(x.i>=0&&!G.has(key)&&!HJ.has(key)){HJ.set(key,RJ[l].part(sx(l,x.i)));HQ.push(key)}}if(!HT&&HQ.length)HT=hidle(hwork)};
 const tv=(s,k)=>k.i<0?LT.get(s.x+","+s.y)??null:s.t[k.i];
 const once=(k,f)=>{if(cur!==k){cur=k;f()}};
 // The radar's images of the trail at T (trailOf), lingering TRAIL of a play: none for those who ask for less motion.
@@ -1160,7 +1225,7 @@ if(l==="p"){const gr=RJ.p&&RJ.p.dims(),el=lg("p"),r=at("g");const k=r?r.m||(r.f<
 const gz=r&&(r.z||r.m);if(playing&&RJ.p.ahead&&gz&&gz!==AZ){AZ=gz;RJ.p.ahead(ahead(sub("g"),gz,3).map((x)=>()=>rain(x)),gr)}
 if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(rain(r.m),rain(r.m),0,el,gr,null,0));else{cur="";RJ.p.mix(rain(r.a),rain(r.z),r.f,el,gr,null,0)}}
 return k?{h:k}:null}
-const r=at(l);if(!RJ[l])return r;if(!r)once("x"+l,()=>RJ[l].show(null));else if(r.m)once(l+r.m.t,()=>RJ[l].show(gridOf(l,r.m)));else{cur="";RJ[l].mix(gridOf(l,r.a),gridOf(l,r.z),r.f)}
+const r=at(l);if(!RJ[l])return r;const hz=r&&(r.z||r.m);if(playing&&RJ[l].part&&hz)hours(l,hz);if(!r)once("x"+l,()=>RJ[l].show(null));else if(r.m)once(l+r.m.t,()=>RJ[l].show(gridOf(l,r.m)));else{cur="";RJ[l].mix(gridOf(l,r.a),gridOf(l,r.z),r.f)}
 if(l==="t"&&TD)for(const o of TD.out){let v=null;if(r){const a=tv(o.s,r.m||r.a),z=r.m?a:tv(o.s,r.z);if(a!=null&&z!=null)v=r.m?a:a+(z-a)*r.f}
 o.c.style.display=v==null?"none":"";if(v==null){if(o.t)o.t.textContent="";continue}o.c.setAttribute("fill",chip(v));if(o.t)o.t.textContent=Math.round(v)+"°"}return r};
 // The time of what the map shows (shownAt); the date or dates over it (daysOf).
@@ -1189,7 +1254,7 @@ T=Math.max(S,Math.min(E,T));rng.max=String((E-S)/ST[d]||0)};
 // The live map's colour scale in front, the same for the whole play.
 const legend=(l,k,one,many,text)=>{const el=lg(l);if(!el||!K[l].length)return;const c=st.filter((s)=>s[k].some((v)=>v!=null)).length,sc=fig.querySelector(".lg-"+l+" .lg-now .lgs");
 el.replaceChildren(...(sc?[sc.cloneNode(true)]:[]),text(c+" "+(c>1?many:one)))};
-const setup=()=>{const h=J.heures;st=h?h.st:[];n=h?h.heures:0;fin=h?Date.parse(h.fin):0;G.clear();cur="";was=null;
+const setup=()=>{const h=J.heures;st=h?h.st:[];n=h?h.heures:0;fin=h?Date.parse(h.fin):0;G.clear();HQ=[];HJ.clear();HZ={};cur="";was=null;
 const live=Date.parse(rb.dataset.fin)||0,th=(i)=>fin-(n-1-i)*36e5,hours=(f)=>{const k=[];for(let i=0;i<n;i++)if(st.some((s)=>s[f][i]!=null))k.push({t:th(i),i});return k};
 // The week's rain by 3 hours, one every hour (the user, 01/11/2026: 3 hours apart, « moins fluide que 24h et plus
 // brutal »), two in a row sharing 2 of their 3 hours: each at its middle, the time its spread is drawn whole.

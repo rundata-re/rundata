@@ -5,6 +5,7 @@ import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import * as propositions from "../src/propositions.js";
 import { FORMS_CSS } from "../src/web/formulaires-style.js";
+import { CSS } from "../src/web/pages.js";
 import * as formulaires from "../src/web/propositions.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion.
@@ -448,6 +449,21 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect(FORMS_CSS).toContain(".fo .f{display:grid;gap:.3rem;align-content:start;min-width:0}");
     expect(FORMS_CSS).toContain("width:100%;min-width:0;max-width:100%}");
     expect(FORMS_CSS).toContain(".fo input[type=date],.fo input[type=time]{-webkit-appearance:none;appearance:none;min-height:2.9rem;text-align:left}");
+  });
+
+  it("spreads a form's message into its card's padding on a narrow screen", () => {
+    // At 200 %, « contact@ » or « rundata. » was wider than the message's line and cut at a letter (« conta/ct@ »).
+    const regle = ".card>.msg{margin-inline:-.7rem;padding-inline:.4rem}";
+    expect(FORMS_CSS).toContain(`@media (max-width:20rem){${regle}}`);
+    // After the rules it adjusts, and twinned for text enlarged at the root.
+    expect(CSS.indexOf(regle)).toBeGreaterThan(CSS.indexOf(".avis .msg{"));
+    expect(CSS.indexOf(regle)).toBeGreaterThan(CSS.indexOf(".fo .msg{"));
+    expect(CSS).toContain(`@container page (max-width:20rem){${regle}}`);
+    // Where the card's padding is the smallest (.7 rem), less: its colour never against the card's edge.
+    const moins = ".card>.msg{margin-inline:-.4rem}";
+    expect(FORMS_CSS.indexOf(`@media (max-width:12.5rem){${moins}}`)).toBeGreaterThan(FORMS_CSS.indexOf(regle));
+    expect(CSS).toContain(`@container page (max-width:12.5rem){${moins}}`);
+    expect(CSS).toContain(".card{padding:.7rem}");
   });
 
   it("hides the date or time WebKit shows in an empty field, until it is filled or touched", async () => {

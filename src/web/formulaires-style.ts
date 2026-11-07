@@ -1,4 +1,11 @@
-/** The look of the clubs' and associations' space and forms (web/associations.ts, web/propositions.ts), in the stylesheet of every page (pages.ts). */
+/**
+ * The look of the clubs' and associations' space and forms (web/associations.ts, web/propositions.ts), in the stylesheet of every page (pages.ts).
+ * Under 20 rem (a 320 px phone, or text enlarged), a form's message spreads into its card's padding: its text gets 2.2 rem
+ * more of line, where « contact@ » or « rundata. » was wider than the line at 200 % and cut at a letter. Under 12.5 rem,
+ * where the card's padding is 0.7 rem (pages.ts), it spreads 0.4 rem only: its text in line with the card's, its colour
+ * 0.3 rem from the card's edge rather than against it. 20 rem and not 19.9: the feedback form's message, inside two
+ * gutters, cut its address at 320 px and 100 % too. After the feedback form's rules (pages.ts puts FORMS_CSS after AVIS_CSS).
+ */
 export const FORMS_CSS = `.fo{max-width:44rem}
 .fo label,.fo legend{font-weight:600;font-size:.92rem}
 .band .fo.card{color:var(--ink)}
@@ -25,6 +32,8 @@ export const FORMS_CSS = `.fo{max-width:44rem}
 .fo .msg{display:none;font-weight:700;border-radius:10px;padding:.6rem .8rem;background:var(--warn-bg);color:var(--lave)}
 .fo .msg.ok{background:var(--surface-2);color:var(--ink);border-left:4px solid var(--ren)}
 .fo .msg:target,.fo .msg.vu{display:block}
+@media (max-width:20rem){.card>.msg{margin-inline:-.7rem;padding-inline:.4rem}}
+@media (max-width:12.5rem){.card>.msg{margin-inline:-.4rem}}
 .clubs-trouves{list-style:none;padding:0;margin:.4rem 0 0;display:grid;gap:.5rem}
 .clubs-trouves a{display:block;min-height:44px;box-sizing:border-box;padding:.65rem .9rem;border:1px solid var(--border);border-radius:12px;background:var(--bg);color:var(--ink);font-weight:600;text-decoration:none}
 .clubs-trouves a span{display:block;font-weight:400;font-size:.88rem;color:var(--muted)}

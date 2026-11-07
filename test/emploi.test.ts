@@ -407,7 +407,7 @@ describe("the tool emploi and the page /emploi", () => {
     expect(html.match(/<small>Communes<\/small>/g)).toHaveLength(3);
     expect(html).not.toContain(`· ${ouvert}`);
     // By commune, the most offers first, then the alphabet, those without a commune last; folded, the commune not on the line.
-    const heads = [...html.matchAll(/<summary><h3>([^<]+)\u00a0<span class="note">·\u00a0([^<]+)<\/span><\/h3><\/summary>/g)].map((m) => `${m[1]} · ${m[2]}`);
+    const heads = [...html.matchAll(/<summary><h3>([^<]+)\u00a0<span class="note">· ([^<]+)<\/span><\/h3><\/summary>/g)].map((m) => `${m[1]} · ${m[2]}`);
     expect(heads).toEqual(["Saint-Denis · 2\u00a0offres", "Bras-Panon · 1\u00a0offre", "Le Port · 1\u00a0offre", "Commune non précisée · 1\u00a0offre"]);
     expect(html).not.toMatch(/<details open/);
     expect(html).not.toContain("commune non précisée");

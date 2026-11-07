@@ -53,9 +53,9 @@ function elsewhereCard(s: dech.Elsewhere, g: Porte): string {
  */
 function communeBlock(c: string, cards: string[], pleines = 0): string {
   const count = `${cards.length}\u00a0déchèterie${cards.length > 1 ? "s" : ""}`;
-  const full = pleines ? ` ·\u00a0${pleines}\u00a0benne${pleines > 1 ? "s" : ""} pleine${pleines > 1 ? "s" : ""}` : "";
+  const full = pleines ? ` · ${pleines}\u00a0benne${pleines > 1 ? "s" : ""} pleine${pleines > 1 ? "s" : ""}` : "";
   return `<section id="${anchorOf(c)}" aria-labelledby="h-${anchorOf(c)}">
-  <details class="pli"><summary><h2 id="h-${anchorOf(c)}">${esc(c)} <small>·\u00a0${count}${full}</small></h2></summary>
+  <details class="pli"><summary><h2 id="h-${anchorOf(c)}">${esc(c)} <small>· ${count}${full}</small></h2></summary>
   <div class="two">${cards.join("")}</div></details>
 </section>`;
 }

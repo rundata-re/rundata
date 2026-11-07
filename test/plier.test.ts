@@ -71,7 +71,7 @@ describe("long lists folded by category, each opened with a tap", () => {
     const page = daePage(O, { value: d, fetchedAt: NOW, stale: false }, NOW);
     expect(count(page, /<li class="card tgt" id="c-[a-z-]+"><details><summary><h3>/g)).toBe(d.communes.length);
     const sp = d.communes.find((c) => c.commune === "Saint-Pierre")!;
-    expect(page).toContain(`<summary><h3>Saint-Pierre\u00a0<span class="note">·\u00a0${sp.nombre}\u00a0défibrillateurs, dont ${sp.toute_heure}\u00a0accessible${sp.toute_heure > 1 ? "s" : ""} à toute heure</span></h3></summary><ul class="rows eau dae">`);
+    expect(page).toContain(`<summary><h3>Saint-Pierre\u00a0<span class="note">· ${sp.nombre}\u00a0défibrillateurs, dont ${sp.toute_heure}\u00a0accessible${sp.toute_heure > 1 ? "s" : ""} à toute heure</span></h3></summary><ul class="rows eau dae">`);
   });
 });
 
@@ -85,7 +85,7 @@ describe("long lists folded, the second pages", () => {
       fermes_par_commune: [{ commune: "Cilaos", sentiers_fermes: trails(n, "A") }, { commune: "Salazie", sentiers_fermes: trails(n, "B") }],
     }) as unknown as SentiersAnswer;
     const page = sentiersPage(O, cached(answer(5)), NOW);
-    expect(page).toContain(`<li class="card"><details><summary><h3>Cilaos\u00a0<span class="note">·\u00a05\u00a0fermés</span></h3></summary><ul class="rows eau">`);
+    expect(page).toContain(`<li class="card"><details><summary><h3>Cilaos\u00a0<span class="note">· 5\u00a0fermés</span></h3></summary><ul class="rows eau">`);
     // The map's cross leads to the trail's row, inside its commune: the common script opens it.
     expect(page).toMatch(/<details><summary><h3>Cilaos[^]*?<li class="tgt" id="t-sentier-a0">/);
     expect(sentiersPage(O, cached(answer(4)), NOW)).not.toContain("<details><summary><h3>");
@@ -100,8 +100,8 @@ describe("long lists folded, the second pages", () => {
     const venir = page.slice(page.indexOf('id="h-venir"'), page.indexOf('id="h-res"'));
     expect(venir).not.toContain("<details><summary>");
     expect(venir).toContain(`<h3>Handball <span class="note">6\u00a0rendez-vous</span></h3>`);
-    expect(page).toContain(`<li class="card"><details><summary><h3>Handball\u00a0<span class="note">·\u00a06\u00a0résultats</span></h3></summary>`);
-    expect(page).toContain(`<details><summary><h3>Handball, D1 masculine\u00a0<span class="note">·\u00a06\u00a0équipes</span></h3></summary><p class="note"><a href="https://example.org/22" rel="noopener">Le classement sur le site de la fédération<span class="sr"> : Handball, D1 masculine</span> ↗</a></p>`);
+    expect(page).toContain(`<li class="card"><details><summary><h3>Handball\u00a0<span class="note">· 6\u00a0résultats</span></h3></summary>`);
+    expect(page).toContain(`<details><summary><h3>Handball, D1 masculine\u00a0<span class="note">· 6\u00a0équipes</span></h3></summary><p class="note"><a href="https://example.org/22" rel="noopener">Le classement sur le site de la fédération<span class="sr"> : Handball, D1 masculine</span> ↗</a></p>`);
     // One championship: as it was, its name the link.
     const one = sportPage(O, cached({ ...answer, classements: [table("Handball, D1 masculine")] }), NOW);
     expect(one).toContain(`<li class="card"><h3><a href="https://example.org/22" rel="noopener">Handball, D1 masculine</a></h3>`);
@@ -115,7 +115,7 @@ describe("long lists folded, the second pages", () => {
     const page = agendaPage(O, cached(answer), NOW);
     expect(count(page, /<details open><summary><h3>/g)).toBe(2);
     expect(count(page, /<details><summary><h3>/g)).toBe(2);
-    expect(page).toContain(`<details open><summary><h3>Jeudi 29\u00a0octobre\u00a0<span class="note">·\u00a03\u00a0événements</span></h3></summary>`);
+    expect(page).toContain(`<details open><summary><h3>Jeudi 29\u00a0octobre\u00a0<span class="note">· 3\u00a0événements</span></h3></summary>`);
     expect(page).toContain(`if(g)document.querySelectorAll("#jours details").forEach((d)=>{if(d.querySelector("li[data-g]:not([hidden])"))d.open=true})`);
     const short = agendaPage(O, cached({ ...answer, evenements: evenements.slice(0, FOLD_ROWS), nombre: FOLD_ROWS }), NOW);
     expect(short).not.toMatch(/<details( open)?><summary><h3>/);
@@ -128,7 +128,7 @@ describe("long lists folded, the second pages", () => {
     expect(page).toContain(`<div class="sec-h"><h2 id="h-${days[0].jour}">`);
     expect(count(page, /<div class="card"><details><summary><h2 id="h-/g)).toBe(days.length - 1);
     const d = days[1];
-    expect(page).toContain(`<details><summary><h2 id="h-${d.jour}"><time datetime="${d.jour}">${d.titre.replace(/(\d) /, "$1\u00a0")}</time>\u00a0<span class="note">·\u00a0${d.textes.length}\u00a0nouveauté${d.textes.length > 1 ? "s" : ""}</span></h2></summary>`);
+    expect(page).toContain(`<details><summary><h2 id="h-${d.jour}"><time datetime="${d.jour}">${d.titre.replace(/(\d) /, "$1\u00a0")}</time>\u00a0<span class="note">· ${d.textes.length}\u00a0nouveauté${d.textes.length > 1 ? "s" : ""}</span></h2></summary>`);
   });
 
   it("folds each group of streets of /collecte under its rhythm, and a search opens the groups it finds", () => {
@@ -138,7 +138,7 @@ describe("long lists folded, the second pages", () => {
     // On the island's page, under their commune, folded under its name, its calendars and its streets (h4 under its h3);
     // the streets without a calendar after them, each commune's a group.
     expect(count(page, /<div class="card groupe"[^>]*><details><summary><h[34]>/g)).toBe(groups);
-    const communes = [...page.matchAll(/<details class="pli commune"><summary><h3>([^<]+) <small>·\u00a0(\d+)\u00a0calendriers?, ([\d\u202f\u00a0]+)\u00a0rues?<\/small><\/h3><\/summary>/g)];
+    const communes = [...page.matchAll(/<details class="pli commune"><summary><h3>([^<]+) <small>· (\d+)\u00a0calendriers?, ([\d\u202f\u00a0]+)\u00a0rues?<\/small><\/h3><\/summary>/g)];
     expect(communes.map((m) => m[1]).sort()).toEqual([...col.COMMUNES].sort());
     expect(communes.reduce((n, m) => n + Number(m[2]), 0)).toBe(count(page, /<div class="card groupe"[^>]*><details><summary><h4>/g));
     expect(page).not.toMatch(/<details class="pli commune" open/);
@@ -150,14 +150,14 @@ describe("long lists folded, the second pages", () => {
     // Its line, the rhythm's first part (with, under it, what parts it from a group that shares it); the whole rhythm
     // the first line inside.
     const sp = collectePage(O, NOW, "Saint-Paul");
-    const lines = [...sp.matchAll(/<details><summary><h3>([^<]*)\u00a0<span class="note">·\u00a0\d+\u00a0rues?<\/span>(?:<br><span class="note">[^<]+<\/span>)?<\/h3><\/summary><p>([^<]*)\.<\/p>/g)];
+    const lines = [...sp.matchAll(/<details><summary><h3>([^<]*)\u00a0<span class="note">· \d+\u00a0rues?<\/span>(?:<br><span class="note">[^<]+<\/span>)?<\/h3><\/summary><p>([^<]*)\.<\/p>/g)];
     expect(lines.length).toBe(count(sp, /<div class="card groupe"[^>]*><details>/g));
     for (const [, line, whole] of lines) {
       expect(line).not.toContain(";");
       expect(whole.startsWith(`${line}\u00a0; `)).toBe(true);
     }
     // On the island's page, the commune after it, its article kept with its name.
-    expect(page).toMatch(/<h4>Ordures ménagères [^<]*\u00a0<span class="note">·\u00a0Le\u00a0Port, \d+\u00a0rues<\/span><\/h4>/);
+    expect(page).toMatch(/<h4>Ordures ménagères [^<]*\u00a0<span class="note">· Le\u00a0Port, \d+\u00a0rues<\/span><\/h4>/);
     // A commune's page: its streets without a calendar in one group, not folded.
     const port = collectePage(O, NOW, "Le Port");
     expect(port).toMatch(/<div class="card groupe" data-c="Le Port" data-r="[^"]*"><ul class="voies plain">/);

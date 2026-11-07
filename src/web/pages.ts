@@ -290,7 +290,7 @@ export const CSS = `
 html{scroll-padding-top:5rem;-webkit-text-size-adjust:100%}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 body{margin:0;background:var(--bg);color:var(--ink);font:1.0625rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-font-variant-numeric:tabular-nums}
+font-variant-numeric:tabular-nums;overflow-wrap:break-word}
 a{color:var(--link);text-underline-offset:var(--u974);text-decoration-thickness:1px}
 h1,h2,h3{font-family:Bricolage,"Avenir Next","Segoe UI Variable Display",system-ui,sans-serif;line-height:1.08;
 text-wrap:balance;margin:0;font-weight:800}
@@ -651,7 +651,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .map.commune .sp.on .rg{stroke:#0b1f36;stroke-width:26px}.map.commune .sp.on .pt{stroke-width:18px}.map.commune .sp.off{display:none}
 .map.commune .sp:focus-visible .rg{stroke:var(--accent);stroke-width:24px}
 .ksw{display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 0 0 1px rgb(0 0 0/.3);vertical-align:-.1rem;margin-right:.3rem;flex:none}
-.kchips{display:flex;gap:.4rem;margin:0 -1rem .8rem;padding:0 1rem .2rem;overflow-x:auto;scrollbar-width:none}.kchips::-webkit-scrollbar{display:none}.kchips label{position:relative;flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:.2rem;min-height:44px;padding:.35rem .75rem;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:.92rem;cursor:pointer}
+.kchips{display:flex;gap:.4rem;margin:0 -16px .8rem;padding:0 16px .2rem;overflow-x:auto;scrollbar-width:none}.kchips::-webkit-scrollbar{display:none}.kchips label{position:relative;flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:.2rem;min-height:44px;padding:.35rem .75rem;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:.92rem;cursor:pointer}
 .kchips input{position:absolute;opacity:0;pointer-events:none}.kchips label:has(input:checked){border-color:var(--accent);background:var(--hl);font-weight:700}.kchips label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.kchips .n{color:var(--muted);font-size:.85rem;margin-left:.2rem}
 .ecarte .mapcard{position:static;padding:.5rem}.kzoom{display:flex;gap:.4rem;margin:.5rem 0 0}.kzoom button{min-width:44px;min-height:44px;font:inherit;font-size:1.05rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer}.kzoom button[data-z="0"]{font-size:.9rem;padding:0 .8rem;margin-left:auto}.kzoom button:disabled{opacity:.45;cursor:default}
 .fonds{margin:.5rem 0 0}.fonds label{padding:.3rem .5rem;white-space:nowrap}.fd-w{position:absolute;z-index:1;margin:0;padding:.15rem .55rem;border-radius:999px;background:rgb(11 31 54/.72);color:#fff;font-size:.8rem;pointer-events:none}.fd-w:empty{display:none}.map.fd-plan .rd,.map.fd-plan .nm{display:none}@media (prefers-color-scheme:dark){.map.fd-plan .fd{filter:brightness(.75)}}
@@ -857,7 +857,7 @@ html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stm
 @media (min-width:58rem){.two{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
 .stcard .t{display:inline-block;padding:.4rem .9rem;font-size:1.3rem}
 .stcard ul{padding-left:1.1rem}
-.minuit ul{list-style:none;padding:0;display:grid;gap:.5rem}.minuit li{display:grid;grid-template-columns:5.2rem 1fr;align-items:center;gap:.5rem}.minuit .v{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem}
+.minuit ul{list-style:none;padding:0;display:grid;gap:.5rem}.minuit li{display:grid;grid-template-columns:5.2rem minmax(0,1fr);align-items:center;gap:.5rem}.minuit .v{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem .5rem}
 .minuit .t{font-size:1.1rem;padding:.25rem .65rem}.minuit .q{white-space:nowrap}
 .cta{background:linear-gradient(135deg,var(--night),var(--night-2));color:var(--on-night);border:0;padding:clamp(1.3rem,4vw,2.2rem);gap:1rem}
 .cta p{color:var(--on-night-muted);max-width:40rem}
@@ -945,7 +945,7 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.bornes li{grid-template-columns:minmax(0,1fr) auto}
 .rows.bornes small{display:block;color:var(--muted);font-size:.82rem}
 .rows.bornes .busy{color:var(--muted)}
-.rows.eau li{grid-template-columns:minmax(0,1fr) auto}
+.rows.eau li{grid-template-columns:minmax(0,1fr) fit-content(60%)}
 @media (max-width:30rem){.rows.eau li>.fin{grid-column:1/-1}}
 /* /volcan during an alert: the earthquakes one line each, the media's time and name above the headline. */
 .rows.seismes li,.rows.medias li{display:block;font-size:.92rem}
@@ -1052,6 +1052,22 @@ summary{min-height:24px}
    line is cut rather than pushing the page wider; a search field (.search input), a reef's scale (.echelle) and the columns
    of /mer's reefs and of a tile's list (min(…, 100%)) shrink with their container. Nothing moves when it fits. */
 .sec-h h2,.pitch h1,.askq,.cta code{overflow-wrap:anywhere}
+/* Text at 150 to 200 % on a phone (200 %: WCAG 1.4.4): a section, a card or a heading block is one column the width of
+   its box, so that a word longer than its line (an e-mail address, a link written as its address, an offer's reference)
+   is cut there by body's overflow-wrap rather than widening the page. No specificity: a grid's own columns win. */
+:where(section,.card,.pitch,.sec-h,.fil-l){grid-template-columns:minmax(0,1fr)}
+/* Under 19.9 em (a 390 px phone from 125 %; 318 px at 100 %, so nothing moves on a phone at 100 %): a word too long for
+   its line is cut where French cuts it, with a hyphen; a row's date or count, a station's hour, an air level's word and a
+   button's icon go on a line of their own rather than squeezing the name or the sentence beside them to a few letters. */
+@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}.minuit li{grid-template-columns:minmax(0,1fr)}
+.minuit .q,.rows .nw{white-space:normal}
+:is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
+.rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
+.scale li{grid-template-columns:minmax(0,1fr)}
+.kzoom,.btn{flex-wrap:wrap}}
+/* A table's cells and their notes keep their words whole: the frame scrolls (.table-wrap) rather than a narrow column
+   cutting « (€/litre) » into « (€/litr » and « e) » at 150 %. */
+th,td,:is(th,td) .note{overflow-wrap:normal}
 /* The link alone under an opened commune's title (/ecoles, /enfants): the title's tap area, 44 px tall, is extended above
    it only, never over the link; the link grows downwards by padding, which moves no line around an inline box. */
 .card>details[open]>summary:has(+.kinds>p:first-child>a){padding-block:1rem 0;margin-block:-1rem 0}

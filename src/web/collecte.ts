@@ -132,7 +132,7 @@ function groups(today: number, commune?: string): string {
       const r = x.parts.join("\u00a0; ");
       const feries = col.holidays(cal, today).map((h) => (h.reportee ? esc(col.holidayLine(h)) : `Jour férié : vérifiez <a href="${esc(cal.pdf)}" rel="noopener">le calendrier du TCO (PDF) →</a>`));
       return `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(`${r}.`)}">${folded(true,
-        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">·\u00a0${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span>${apart(x)}</${hx}>`,
+        `<${hx}>${esc(cap(x.parts[0]))}\u00a0<span class="note">· ${commune ? "" : `${esc(g.commune).replace(/^(Le|La|Les) /, "$1\u00a0")}, `}${count(g)}</span>${apart(x)}</${hx}>`,
         `<p>${esc(cap(r))}.</p>${feries.map((f) => `<p>${f}</p>`).join("")}
 ${list(g)}
 ${pdfs(g)}`)}</div>`;
@@ -142,14 +142,14 @@ ${pdfs(g)}`)}</div>`;
   const said = esc(col.NO_CALENDAR_LIST.slice(0, col.NO_CALENDAR_LIST.lastIndexOf("Renseignez")));
   const nc = without.length
     ? `<div class="sans"><h3>Voies sans calendrier du TCO</h3><p>${said}<a href="${col.TCO_CONTACT}" rel="noopener">Renseignez-vous auprès du TCO →</a></p>
-${without.map((g) => `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(col.NO_CALENDAR)}">${commune ? list(g) : folded(true, `<h3>${esc(g.commune)}\u00a0<span class="note">·\u00a0${count(g)}</span></h3>`, list(g))}</div>`).join("\n")}</div>`
+${without.map((g) => `<div class="card groupe" data-c="${esc(g.commune)}" data-r="${esc(col.NO_CALENDAR)}">${commune ? list(g) : folded(true, `<h3>${esc(g.commune)}\u00a0<span class="note">· ${count(g)}</span></h3>`, list(g))}</div>`).join("\n")}</div>`
     : "";
   // On /collecte, the calendars by commune, each folded under its name, its number of calendars and of streets: the
   // 130 calendars' lines made 16 000 px on a phone. The search opens the ones it finds (SCRIPT).
   const byCommune = commune ? dated : [...new Set(rhythms.map((x) => x.g.commune))].map((c) => {
     const mine = rhythms.flatMap((x, i) => (x.g.commune === c ? [i] : []));
     const rues = new Set(mine.flatMap((i) => rhythms[i].g.noms)).size;
-    return `<details class="pli commune"><summary><h3>${esc(c)} <small>·\u00a0${mine.length}\u00a0calendrier${mine.length > 1 ? "s" : ""}, ${nombre(rues)}\u00a0rue${rues > 1 ? "s" : ""}</small></h3></summary>
+    return `<details class="pli commune"><summary><h3>${esc(c)} <small>· ${mine.length}\u00a0calendrier${mine.length > 1 ? "s" : ""}, ${nombre(rues)}\u00a0rue${rues > 1 ? "s" : ""}</small></h3></summary>
 ${mine.map((i) => dated[i]).join("\n")}</details>`;
   });
   return [commune ? byCommune.join("\n") : `<div class="plis">\n${byCommune.join("\n")}\n</div>`, nc].join("\n");

@@ -97,7 +97,7 @@ function groups(rows: OffreRow[], once: boolean): string {
     .sort(([a, x], [b, y]) => +!a - +!b || count(y) - count(x) || a.localeCompare(b, "fr"))
     .map(([c, l]) => {
       const n = count(l);
-      return `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">·\u00a0${n}\u00a0offre${n > 1 ? "s" : ""}</span></h3>`,
+      return `<div class="card groupe">${folded(true, `<h3>${esc(c || "Commune non précisée")}\u00a0<span class="note">· ${n}\u00a0offre${n > 1 ? "s" : ""}</span></h3>`,
         `<ul class="rows eau">${l.map((o) => row(o, once)).join("")}</ul>`)}</div>`;
     }).join("");
 }

@@ -139,6 +139,16 @@ describe("coraux", () => {
     expect(reefSection(null)).toContain("La grille de NOAA Coral Reef Watch n'a pas pu être lue pour le moment.");
   });
 
+  it("says of a point without a level that it had none on the days read, never on one day only", () => {
+    const [o, s, e] = coraux.POINTS;
+    const csv = HEAD + row("2026-03-01", o.lat, o.lon, "1.4", "4.3", "29.1") + row("2026-03-01", s.lat, s.lon, "NaN", "NaN", "NaN") + row("2026-03-02", s.lat, s.lon, "NaN", "NaN", "NaN") + row("2026-03-02", e.lat, e.lon, "0.5", "12.0", "30.2");
+    const html = reefSection({ value: coraux.parse(csv), fetchedAt: NOW, stale: false });
+    expect(html).toContain('<span class="lieu">Au large de Saint-Pierre</span><b>—</b><span>pas de niveau sur ces jours</span></li>');
+    expect(html).not.toContain("ce jour-là");
+    expect(html.match(/class="echelle"/g)).toHaveLength(2);
+    expect(html).toContain("Niveau\u00a0: maximum des 2 jours disponibles sur les 7 derniers");
+  });
+
   it("reads the grid at a view of /mer, never more than once a day for the views after it", async () => {
     const asked: string[] = [];
     vi.stubGlobal("fetch", async (url: string) => {

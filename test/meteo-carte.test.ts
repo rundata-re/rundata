@@ -14,7 +14,9 @@ import {
   communeOf,
   daysOf,
   discR,
+  fieldRows,
   gaugeField,
+  GRIDS_KEPT,
   HACHURES_DITES,
   landBreeze,
   lapse,
@@ -31,6 +33,7 @@ import {
   softenRows,
   stationsMap,
   trailOf,
+  veilRows,
   VENT_DE,
   ventDe,
   ventText,
@@ -971,5 +974,47 @@ describe("the replay played at an even pace", () => {
     // The veil kept with its image; a context lost, its textures gone with it.
     expect(METEO_SCRIPT).toContain(`const bad=(j)=>{let a=j.bd;if(a)return a;`);
     expect(METEO_SCRIPT).toContain(`GC.addEventListener("webglcontextlost",(e)=>{e.preventDefault();TX.clear();GU[2]=null;GL=++GX>2?false:null});`);
+  });
+
+  it("makes the temperature's and the wind's grids of the hours to come between the frames, a few rows at a time as all at once", () => {
+    // A grid of 12 × 9, the sea in its first column; three stations off the altitude's line, or three anemometers.
+    const w = 12, h = 9, a = new Uint8ClampedArray(w * h * 4);
+    for (let i = 0; i < w * h; i++) a[i * 4] = i % w ? 1 + ((i * 37) % 200) : 0;
+    const p = [[1.5, 2, 1.2], [8, 6.5, -0.8], [4, 4, 0.3]], q = () => ({ k: 24, b: -0.0065, p, T: new Float32Array(w * h) });
+    const whole = q(), part = q();
+    expect(veilRows(whole, a, w, h, 0, h, 12.5)).toBe(h);
+    for (let y = 0; y < h; y += 2) expect(veilRows(part, a, w, h, y, y + 2, 12.5)).toBe(Math.min(h, y + 2));
+    expect(part.T).toEqual(whole.T);
+    // The sea left at 0; one station alone: the altitude's line and its rest everywhere.
+    expect(whole.T[0]).toBe(0);
+    const one = { k: 24, b: -0.0065, p: [[3, 3, 2]], T: new Float32Array(w * h) };
+    veilRows(one, a, w, h, 0, h, 12.5);
+    expect(one.T[13]).toBeCloseTo(24 - 0.0065 * (a[13 * 4] - 1) * 12.5 + 2, 4);
+    const wind = [[2, 2, 10, -5], [9, 7, -3, 4]], f = () => ({ p: wind, U: new Float32Array(w * h), V: new Float32Array(w * h) });
+    const fw = f(), fp = f();
+    expect(fieldRows(fw, w, h, 0, h)).toBe(h);
+    for (let y = 0; y < h; y += 4) fieldRows(fp, w, h, y, y + 4);
+    expect([fp.U, fp.V]).toEqual([fw.U, fw.V]);
+    expect(fw.U[2 * w + 2]).toBeCloseTo((10 * 2 + -3 / (49 + 25 + 0.5)) / (2 + 1 / (49 + 25 + 0.5)), 4);
+    // The page's grids made either way: at once (grid), or until a time and given once made (part).
+    expect(METEO_SCRIPT).toContain(`const rows=${veilRows},part=(st)=>{`);
+    expect(METEO_SCRIPT).toContain(`return(dl)=>{while(y<h){y=rows(q,a,w,h,y,y+4,`);
+    expect(METEO_SCRIPT).toContain(`);if(y<h&&performance.now()>dl)return undefined}return q.T}},grid=(st)=>part(st)(Infinity);`);
+    expect(METEO_SCRIPT).toContain(`RJ.t={live:st,now,grid,part,show:paint,`);
+    expect(METEO_SCRIPT).toContain(`const rows=${fieldRows},part=(sx)=>{`);
+    expect(METEO_SCRIPT).toContain(`return(dl)=>{while(y<h){y=rows(q,w,h,y,y+4);if(y<h&&performance.now()>dl)return undefined}return[q.U,q.V]}},field=(sx)=>part(sx)(Infinity);`);
+    expect(METEO_SCRIPT).toContain(`RJ.v={live:st,now,grid:field,part,show:set,`);
+    // Playing, the replay asks for the next two hours as the hour ahead changes, between its frames (about 7 ms when
+    // idle); an hour begun is finished in its frame, never made twice; a page kept from before has no part.
+    const r = rejeuScript();
+    expect(r).toContain(`const hz=r&&(r.z||r.m);if(playing&&RJ[l].part&&hz)hours(l,hz);`);
+    expect(r).toContain(`for(const x of ahead(sub(l),nz,2)){const key=l+x.i;if(x.i>=0&&!G.has(key)&&!HJ.has(key)){HJ.set(key,RJ[l].part(sx(l,x.i)));HQ.push(key)}}`);
+    expect(r).toContain(`self.requestIdleCallback?requestIdleCallback(f,{timeout:120}):setTimeout(f,0)`);
+    expect(r).toContain(`const hwork=()=>{HT=0;const dl=performance.now()+7;`);
+    expect(r).toContain(`if(g===undefined){const j=HJ.get(key);g=j?j(Infinity):RJ[l].grid(sx(l,k.i));HJ.delete(key)}gkeep(key,g);return g};`);
+    // The last used kept: the 25 hours of 24 hours of both layers; a file read again, none of the former kept or asked.
+    expect(GRIDS_KEPT).toBeGreaterThanOrEqual(2 * 25);
+    expect(r).toContain(`const gkeep=(key,g)=>{G.delete(key);G.set(key,g);if(G.size>${GRIDS_KEPT})G.delete(G.keys().next().value)};`);
+    expect(r).toContain(`G.clear();HQ=[];HJ.clear();HZ={};`);
   });
 });

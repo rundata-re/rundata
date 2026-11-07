@@ -5,7 +5,7 @@ import type { HikeCard } from "../src/web/data.js";
 import { coupuresPage, hikeCard } from "../src/web/domains.js";
 import { homePage } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
-import { layout } from "../src/web/pages.js";
+import { CSS, layout } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
 import { typo } from "../src/web/typo.js";
 
@@ -119,10 +119,11 @@ describe("French typography on the pages", () => {
     expect(html).not.toMatch(/<meta name="description" content="[^"]* [:;?!][^"]*">/);
   });
 
+  // As a page is served: its spaces and its « rundata.re ».
   it("takes a fraction of a millisecond on a page of the site, and eight times as long on eight times the page", () => {
     const html = homePage(ORIGIN, null, NOW);
     const eight = html.repeat(8);
-    for (let i = 0; i < 3; i++) typo(eight);
+    for (let i = 0; i < 3; i++) typo(eight, true);
     // Each round times 8 passes over the page, then one pass over the page repeated 8 times: the same work, a few
     // milliseconds each, one right after the other, so the rest of the suite running in parallel weighs on both alike.
     // That work only ever adds time: the fastest of 12 rounds is the cost of typo itself, on each side.
@@ -130,10 +131,10 @@ describe("French typography on the pages", () => {
     let big = Infinity;
     for (let r = 0; r < 12; r++) {
       let t = performance.now();
-      for (let i = 0; i < 8; i++) typo(html);
+      for (let i = 0; i < 8; i++) typo(html, true);
       one = Math.min(one, (performance.now() - t) / 8);
       t = performance.now();
-      typo(eight);
+      typo(eight, true);
       big = Math.min(big, performance.now() - t);
     }
     // From 0.3 ms to 1.6 ms on the 130 kB home page, depending on the machine (a regular expression took twice as long).
@@ -142,6 +143,52 @@ describe("French typography on the pages", () => {
     // times as long. Measured 7.9 to 8.2 alone and 6.8 to 8.5 under two whole suites in parallel (5/11/2026); twice the
     // page had read 1.7 to 3.2 under load, too close to a bound of 3 to tell noise from a slow pass.
     expect(big / one).toBeLessThan(20);
+  });
+});
+
+describe("the site's name in the prose", () => {
+  const nom = (h: string) => typo(h, true);
+  const S = '<span class="ident">rundata.re</span>';
+
+  it("is put in a span without hyphenation, so that Safari never cuts it « runda-ta.re » at 160 px", () => {
+    expect(nom("<p>Mettre rundata.re sur l'écran d'accueil.</p>")).toBe(`<p>Mettre ${S} sur l'écran d'accueil.</p>`);
+    expect(nom("<p>Sur rundata.re. (rundata.re) «\u00a0rundata.re\u00a0»</p>")).toBe(`<p>Sur ${S}. (${S}) «\u00a0${S}\u00a0»</p>`);
+    expect(nom("<aside>rundata.re</aside><abbr>rundata.re</abbr>")).toBe(`<aside>${S}</aside><abbr>${S}</abbr>`);
+    expect(CSS).toContain(".ident{hyphens:manual;-webkit-hyphens:manual}");
+  });
+
+  it("is left as written in a link, the title, an option, an SVG, the code and the attributes", () => {
+    for (const h of [
+      '<a href="https://rundata.re/" aria-label="rundata.re">rundata.re</a>',
+      '<a href="/">voir <b>rundata.re</b></a>',
+      "<title>Météo · rundata.re</title>",
+      "<select><option>rundata.re</option></select>",
+      '<svg viewBox="0 0 9 9"><title>rundata.re</title><text>rundata.re</text></svg>',
+      "<code>rundata.re</code><pre>rundata.re</pre><script>s = \"rundata.re\";</script>",
+      '<img alt="rundata.re" src="/a.png"><meta name="description" content="rundata.re">',
+    ])
+      expect(nom(h)).toBe(h);
+    // After the link, the prose again.
+    expect(nom('<a href="/">rundata.re</a> et rundata.re')).toBe(`<a href="/">rundata.re</a> et ${S}`);
+  });
+
+  it("is left as written in a path, an address or a longer name, and is put in its span once", () => {
+    for (const h of [
+      '<p>sur rundata.re/<wbr class="adr">associations.</p>',
+      "<p>https://rundata.re, mcp.rundata.re, contact@rundata.re, rundata.reunion, rundata.re-x, rundata.re2</p>",
+    ])
+      expect(nom(h)).toBe(h);
+    expect(nom(nom("<p>rundata.re</p>"))).toBe(`<p>${S}</p>`);
+    // Only on a whole page: never in a text that goes in an attribute (the metas' description).
+    expect(typo("<p>rundata.re</p>")).toBe("<p>rundata.re</p>");
+  });
+
+  it("changes nothing else on a real page", () => {
+    const html = homePage(ORIGIN, null, NOW);
+    const out = nom(html);
+    expect(out).toContain(S);
+    expect(out.replaceAll(S, "rundata.re")).toBe(typo(html));
+    expect(jsonld(out)).toBe(jsonld(html));
   });
 });
 

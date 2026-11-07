@@ -371,7 +371,7 @@ p,ul,ol,table,figure{margin:0}
 /* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. */
 wbr.adr{display:none}
 /* An identifier from a source (soulignesCoupables, domains.ts) goes to the next line after a « _ » only, never with a
-   hyphen: « 2026_PORT_|05 », never « DGFIP4_Tréso-rerie ». */
+   hyphen: « 2026_PORT_|05 », never « DGFIP4_Tréso-rerie ». The site's name in the prose too (typo.ts): never « runda-ta.re ». */
 .ident{hyphens:manual;-webkit-hyphens:manual}
 /* « Aller au contenu », the first stop of Tab on every page: seen only while it has the focus, over the bar; its target,
    the main landmark, from the vigilance's band and the title's on. */

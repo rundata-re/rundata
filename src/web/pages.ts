@@ -2599,7 +2599,8 @@ const CROWDED = new Set(["Plage de la Saline les Bains", "Plage de Saint-Paul"])
 
 /**
  * The risk of coral bleaching at the three points of NOAA's grid, in marketing's words: the level in words with a scale
- * of 0 to 4 in night blue (the day's cell full), never NOAA's yellow, orange and red.
+ * of 0 to 7 in night blue (the level's cell full), never NOAA's yellow, orange and red, and what the level is (the
+ * highest of the last 7 days, or of the days the source has).
  */
 export function reefSection(c: Cached<coraux.Coraux> | null): string {
   const head = `<div class="sec-h"><p class="eyebrow">Indice satellite, selon NOAA</p><h2 id="h-coraux">${esc(coraux.TITRE)}</h2>`;
@@ -2607,7 +2608,7 @@ export function reefSection(c: Cached<coraux.Coraux> | null): string {
   const points = c.value.points.map((p) => `<li><span class="lieu">${esc(p.nom.charAt(0).toUpperCase() + p.nom.slice(1))}</span>` +
     (p.niveau != null
       ? `<b>${esc(coraux.NIVEAUX[p.niveau])}</b><span>selon NOAA</span>` +
-        `<span class="echelle" role="img" aria-label="niveau ${p.niveau} sur une échelle de 0 à 4">${[0, 1, 2, 3, 4].map((i) => `<i${i === p.niveau ? ' class="on"' : ""}></i>`).join("")}</span>`
+        `<span class="echelle" role="img" aria-label="niveau ${p.niveau} sur une échelle de 0 à 7">${coraux.NIVEAUX.map((_, i) => i).map((i) => `<i${i === p.niveau ? ' class="on"' : ""}></i>`).join("")}</span>`
       : "<b>—</b><span>pas de niveau ce jour-là</span>") +
     (p.dhw != null ? `<span>Chaleur accumulée sur 12 semaines\u00a0: ${esc(coraux.chaleur(p.dhw))}</span>` : "") +
     (p.sst != null ? `<span>Mer à ${esc(thin(deg(p.sst)))}, par satellite</span>` : "") +
@@ -2615,6 +2616,7 @@ export function reefSection(c: Cached<coraux.Coraux> | null): string {
   return `<section aria-labelledby="h-coraux">${head}
   <p>${esc(coraux.nature(c.value.jour))} ${esc(coraux.PAS_OBSERVATION)}</p></div>
   <div class="card"><ul class="reefs">${points}</ul>
+  <p class="note">Niveau\u00a0: ${esc(coraux.niveauSur(c.value.jours))}.</p>
   <p class="note">${esc(coraux.AIDE_CHALEUR)}</p>
   <p class="note">${esc(coraux.CASE)}${c.stale ? " Dernière valeur gardée\u00a0: le serveur de NOAA ne répond pas pour le moment." : ""}</p>
   <p class="sources">Source\u00a0: ${esc(coraux.CREDIT)}.</p></div>

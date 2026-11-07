@@ -324,6 +324,7 @@ export async function corauxBlock(cache: Cache) {
       ...(p.dhw != null ? { chaleur_accumulee_12_semaines: coraux.chaleur(p.dhw) } : {}),
       ...(p.sst != null ? { temperature_satellite: `${fr(Math.round(p.sst * 10) / 10)}\u00a0°C` } : {}),
     })),
+    niveau_sur: coraux.niveauSur(c.value.jours),
     jour_mesure: c.value.jour,
     nature: coraux.nature(c.value.jour),
     aide_chaleur: coraux.AIDE_CHALEUR,

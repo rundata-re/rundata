@@ -5,7 +5,7 @@ import * as cetaces from "../src/tools/cetaces.js";
 import { temperatureMer } from "../src/tools/mer.js";
 import { whaleSection } from "../src/web/pages.js";
 
-const CSV = readFileSync(new URL("./fixtures/coraux_dhw_5km.csv", import.meta.url), "utf8");
+const CSV = readFileSync(new URL("./fixtures/coraux_dhw_5km_7j.csv", import.meta.url), "utf8");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 // Réunion time is UTC+4: 30/06 at 20:00 UTC is already 1/07 at La Réunion.
 const at = (iso: string) => new Date(iso);

@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { adresseCoupable, departureLi, jourMois, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
-import { CSS } from "../src/web/pages.js";
+import { CSS, legalPage } from "../src/web/pages.js";
+import { ouvrir as ouvrirAssociations } from "../src/web/associations-drapeau.js";
+import { ouvrir as ouvrirConnecteurs } from "../src/web/connecteurs-drapeau.js";
 import { publierPage } from "../src/web/publier.js";
 
 // The rules of the narrow-screen block (under 19.9 rem), as the sheet writes them.
@@ -169,6 +171,79 @@ describe("an address in a heading, a pill or a button", () => {
     expect(page).toContain(`<h3 aria-label="infotrafic.re ↗"><svg`);
     expect(page).toContain("</svg>info\u00ADtrafic.<wbr>re ↗</h3>");
     expect(page.replaceAll("\u00a0", " ")).toContain("Bouchons, accidents, travaux : info\u00ADtrafic.<wbr>re</p>");
+  });
+});
+
+describe("an address in a sentence of /confidentialite, /conditions and the foot", () => {
+  // The words of a page out of its tags, its links (their text goes through lienNom()), its scripts and its styles,
+  // one run of text between two tags at a time, read character by character (never a regex on markup).
+  const horsLiens = (html: string) => {
+    const runs: string[] = [];
+    let run = "", tag = "", dans = false, lien = false, saute = "";
+    for (const c of html) {
+      if (dans) {
+        tag += c;
+        if (c !== ">") continue;
+        dans = false;
+        const nom = tag.slice(1).split(/[\s>]/)[0].toLowerCase();
+        if (saute) { if (nom === `/${saute}`) saute = ""; continue; }
+        if (nom === "script" || nom === "style") saute = nom;
+        else if (nom === "a") lien = true;
+        else if (nom === "/a") lien = false;
+        continue;
+      }
+      if (c === "<") { dans = true; tag = "<"; runs.push(run); run = ""; continue; }
+      if (!lien && !saute) run += c;
+    }
+    return [...runs, run];
+  };
+  // An address written whole in one run: a « . » or « @ » between a letter or digit and a letter. « rundata.re » alone
+  // is the site's name, written as it is everywhere; « cf.turnstile.u » is the name of a browser's key, not an address.
+  const entieres = (html: string) =>
+    horsLiens(html)
+      .flatMap((t) => t.match(/[\w-]+(?:[.@][\w-]+)+/g) ?? [])
+      .filter((x) => /[a-z0-9][.@][a-z]/.test(x) && x !== "rundata.re" && x !== "cf.turnstile.u");
+  const pages = () => [legalPage("https://rundata.re", "confidentialite"), legalPage("https://rundata.re", "conditions")];
+
+  it("is written by adresseCoupable(), in the text and at the foot, whichever forms are on (« contact@rund|ata.re » at 200 %)", () => {
+    try {
+      for (const [associations, connecteurs] of [[true, true], [true, false], [false, true], [false, false]]) {
+        ouvrirAssociations(associations);
+        ouvrirConnecteurs(connecteurs);
+        for (const page of pages()) expect(entieres(page)).toEqual([]);
+      }
+    } finally {
+      ouvrirAssociations(true);
+      ouvrirConnecteurs(false);
+    }
+  });
+
+  it("reads and copies as before: a <wbr> holds no character, and is never in a link's name", () => {
+    try {
+      ouvrirConnecteurs(true);
+      const [privacy, terms] = pages().map((p) => p.replaceAll("\u00a0", " "));
+      for (const page of [privacy, terms]) {
+        expect(page).toContain(" · contact@<wbr>rundata.<wbr>re</p>");
+        expect(page).not.toMatch(/<a\b[^>]*>[^<]*contact@<wbr>/);
+      }
+      const lu = (page: string) => page.replaceAll("<wbr>", "");
+      for (const s of [
+        "chez l'IGN (data.geopf.fr), qui reçoit",
+        "écrire à <b>contact@rundata.re</b> en le citant.",
+        "ou demande à contact@rundata.re), quand HelloAsso",
+        "écrivez à <b>contact@rundata.re</b> : nous répondons sous un mois.",
+        ' · <a href="/publier">publier vos données</a> · contact@rundata.re</p>',
+        "Services publics : service-public.fr. Bus : horaires publiés par les réseaux sur transport.data.gouv.fr. Vélos",
+        "Lieux : © contributeurs OpenStreetMap (ODbL), IGN, geo.api.gouv.fr. Relief",
+      ]) expect(lu(privacy)).toContain(s);
+      for (const s of [
+        "peut être signalé à contact@rundata.re ; nous le retirons",
+        "Contact : <b>contact@rundata.re</b>. Hébergeur",
+        "États-Unis (cloudflare.com). Nom de domaine",
+      ]) expect(lu(terms)).toContain(s);
+    } finally {
+      ouvrirConnecteurs(false);
+    }
   });
 });
 

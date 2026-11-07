@@ -945,7 +945,7 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     expect(privacy).toContain('<h2 id="associations-donnees">');
     expect(privacy).toContain("La vérification anti-robot (Cloudflare Turnstile) voit l'adresse au moment de l'envoi, sans que nous la gardions.");
     expect(privacy).toContain('Seuls les deux formulaires des clubs et associations demandent une adresse électronique (voir <a href="#associations-donnees">« Ce que les clubs et associations envoient »</a>).');
-    expect(privacy).toContain("Pour consulter ou faire effacer ce que nous gardons, écrivez à <b>contact@rundata.re</b> : nous répondons sous un mois.");
+    expect(privacy).toContain("Pour consulter ou faire effacer ce que nous gardons, écrivez à <b>contact@<wbr>rundata.<wbr>re</b> : nous répondons sous un mois.");
     expect(privacy).not.toContain("Aucune donnée ne permet de vous identifier");
     const terms = plain(await (await get("/conditions")).text());
     expect(terms).toContain('<p id="evenements-proposes"><b>Événements proposés par les clubs et associations.</b> L\'association qui propose un événement en est responsable : ');

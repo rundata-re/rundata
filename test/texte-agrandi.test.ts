@@ -55,6 +55,8 @@ describe("text at 150 and 200 % on a 390 px phone", () => {
     expect(block).toContain(":is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}");
     expect(block).toContain(".rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}");
     expect(block).toContain(".scale li{grid-template-columns:minmax(0,1fr)}");
+    // An earthquake's row (/volcan) whose date went under its sentence: two columns, the sentence's words kept whole.
+    expect(block).toContain(".rows:not(.eau,.bornes,.velos,.bikes,.departs) li:has(>.note:last-child:not(:first-child)){grid-template-columns:minmax(max-content,1.7rem) minmax(0,1fr);hyphens:manual;-webkit-hyphens:manual}");
     // 19.9 em is 318 px at 100 %: under any phone, so nothing moves at the browser's default size.
     expect(19.9 * 16).toBeLessThan(320);
   });

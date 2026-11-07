@@ -50,7 +50,7 @@ describe("text at 150 and 200 % on a 390 px phone", () => {
   it("hyphenates, and puts a row's date, an hour or an air level's word on its own line, only from 125 % on a phone", () => {
     const at = CSS.indexOf("@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}");
     expect(at).toBeGreaterThan(-1);
-    const block = CSS.slice(at, CSS.indexOf(".kzoom,.btn{flex-wrap:wrap}}", at));
+    const block = CSS.slice(at, CSS.indexOf(".btn{flex-wrap:wrap}}", at));
     expect(block).toContain(".minuit li{grid-template-columns:minmax(0,1fr)}");
     expect(block).toContain(":is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}");
     expect(block).toContain(".rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}");

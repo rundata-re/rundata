@@ -187,6 +187,9 @@ describe("the map of /evenements", () => {
     // A map that filters: in the content, under the band, as the charter of the maps wants.
     expect(html).toContain(`<section aria-labelledby="h-carte"><h2 id="h-carte">Sur la carte</h2><figure class="card mapcard evmap">`);
     expect(html.indexOf('id="h-carte"')).toBeGreaterThan(html.indexOf('class="wrap intro"'));
+    // A genre's tab goes on its own line and, alone wider than the map (« Expositions et visites » at 150 % on a 320 px
+    // phone), on two: never cut at the map's edge, which content-visibility hides without widening the page.
+    expect(html).toContain(".evmap .tabs label{font-size:.82rem;padding:.22rem .62rem}");
     // Tonight: the kabar of Tuesday at 19:00, not the Wednesday talk nor the fête of several days.
     expect(layerOf(html, "soir-0")).toContain(`aria-label="Saint-Paul : 1 événement, voir le détail"`);
     expect(layerOf(html, "soir-0")).not.toContain("Salazie");

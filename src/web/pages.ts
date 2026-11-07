@@ -679,7 +679,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .ksw{display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:var(--c);border:2px solid #fff;box-shadow:0 0 0 1px rgb(0 0 0/.3);vertical-align:-.1rem;margin-right:.3rem;flex:none}
 .kchips{display:flex;gap:.4rem;margin:0 -16px .8rem;padding:0 16px .2rem;overflow-x:auto;scrollbar-width:none}.kchips::-webkit-scrollbar{display:none}.kchips label{position:relative;flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:.2rem;min-height:44px;padding:.35rem .75rem;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:.92rem;cursor:pointer}
 .kchips input{position:absolute;opacity:0;pointer-events:none}.kchips label:has(input:checked){border-color:var(--accent);background:var(--hl);font-weight:700}.kchips label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}.kchips .n{color:var(--muted);font-size:.85rem;margin-left:.2rem}
-.ecarte .mapcard{position:static;padding:.5rem}.kzoom{display:flex;gap:.4rem;margin:.5rem 0 0}.kzoom button{min-width:44px;min-height:44px;font:inherit;font-size:1.05rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer}.kzoom button[data-z="0"]{font-size:.9rem;padding:0 .8rem;margin-left:auto}.kzoom button:disabled{opacity:.45;cursor:default}
+.ecarte .mapcard{position:static;padding:.5rem}.kzoom{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0 0}.kzoom button{min-width:44px;min-height:44px;font:inherit;font-size:1.05rem;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer}.kzoom button[data-z="0"]{font-size:.9rem;padding:0 .8rem;margin-left:auto}.kzoom button:disabled{opacity:.45;cursor:default}
 .fonds{margin:.5rem 0 0}.fonds label{padding:.3rem .5rem;white-space:nowrap}.fd-w{position:absolute;z-index:1;margin:0;padding:.15rem .55rem;border-radius:999px;background:rgb(11 31 54/.72);color:#fff;font-size:.8rem;pointer-events:none}.fd-w:empty{display:none}.map.fd-plan .rd,.map.fd-plan .nm{display:none}@media (prefers-color-scheme:dark){.map.fd-plan .fd{filter:brightness(.75)}}
 .klegend{display:flex;flex-wrap:wrap;gap:.3rem 1rem;margin:.5rem 0 0}.klegend span{display:inline-flex;align-items:center}
 .ksheet{position:relative;margin-top:.8rem;padding-right:3rem}.ksheet .nm{font-weight:700;font-size:1.05rem;margin:0}.ksheet .x{position:absolute;top:.4rem;right:.4rem;width:44px;height:44px;font-size:1.4rem;border:0;background:none;color:var(--ink);cursor:pointer}
@@ -1036,7 +1036,7 @@ table.drought th,table.drought td{text-align:left;padding:.45rem .5rem;border-to
 table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
 /* A commune's elections: a scrutin's heading in its summary, a round's and a block's, a card's details no wider than the
    card, and tables of four short columns, their figures to the right, that fit a phone without scrolling. */
-#elections .card>details>summary h4{display:inline;font:600 1rem system-ui,sans-serif}#elections h5{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}#elections h6{margin:.8rem 0 .2rem;font:600 .9rem system-ui,sans-serif}#elections .card>details{min-width:0}#elections table.votes th,#elections table.votes td{padding:.4rem .3rem}#elections table.votes td{overflow-wrap:anywhere}#elections table.votes th:nth-last-child(-n+2),#elections table.votes td:nth-last-child(-n+2){text-align:right;white-space:nowrap;overflow-wrap:normal}
+#elections .card>details>summary h4{display:inline;font:600 1rem system-ui,sans-serif}#elections h5{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}#elections h6{margin:.8rem 0 .2rem;font:600 .9rem system-ui,sans-serif}#elections .card>details{min-width:0}#elections table.votes th,#elections table.votes td{padding:.4rem .3rem}#elections table.votes td{hyphens:manual;-webkit-hyphens:manual}#elections table.votes th:nth-last-child(-n+2),#elections table.votes td:nth-last-child(-n+2){text-align:right;white-space:nowrap;overflow-wrap:normal}
 .rt{font-weight:700;color:var(--link)}
 .rows b{font:800 1.05rem Bricolage,system-ui,sans-serif;overflow-wrap:anywhere}
 .bars{list-style:none;padding:0;display:grid;gap:.7rem}
@@ -1117,7 +1117,7 @@ summary{min-height:24px}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
 .rows:not(.eau,.bornes,.velos,.bikes,.departs) li:has(>.note:last-child:not(:first-child)){grid-template-columns:minmax(max-content,1.7rem) minmax(0,1fr);hyphens:manual;-webkit-hyphens:manual}
 .scale li,.scale:has(.aq){grid-template-columns:minmax(0,1fr)}
-.kzoom,.btn{flex-wrap:wrap}}
+.btn{flex-wrap:wrap}}
 /* A table's cells and their notes keep their words whole: the frame scrolls (.table-wrap) rather than a narrow column
    cutting « (€/litre) » into « (€/litr » and « e) » at 150 %. */
 th,td,:is(th,td) .note{overflow-wrap:normal}

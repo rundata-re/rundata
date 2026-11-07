@@ -357,7 +357,7 @@ const PRINCIPLES = `<section aria-labelledby="h-lire">
   <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-lire">D'où viennent ces données</h2></div>
   <div class="three">
     <div class="card">${icon("gauge")}<h3>Datées et sourcées</h3><p>Chaque valeur vient avec son heure et sa source. Une mesure vient d'un capteur, un horaire est celui que publie le réseau, une prévision vient d'un modèle et porte toujours l'étiquette <span class="badge">Prévision</span>.</p></div>
-    <div class="card">${icon("book")}<h3>Des données publiques</h3><p>Météo-France, l'observatoire du Piton de la Fournaise, EDF, Atmo Réunion, les réseaux de bus, l'IGN, service-public.fr : rundata.re ne fait que réunir ce qu'ils publient, sous licence ouverte. L'outil <code>sources_donnees</code> les cite toutes.</p></div>
+    <div class="card">${icon("book")}<h3>Des données publiques</h3><p>Météo-France, l'observatoire du Piton de la Fournaise, EDF, Atmo Réunion, les réseaux de bus, l'IGN, service-public.fr : rundata.re ne fait que réunir ce qu'ils publient, sous licence ouverte. L'outil <code>sources_<wbr>donnees</code> les cite toutes.</p></div>
     <div class="card warn">${icon("alert")}<h3>En cas d'alerte, les autorités d'abord</h3><p>Cyclone, fortes pluies, éruption : seules comptent la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a> et les consignes de la préfecture. La vigilance en cours, zone par zone : <a href="/vigilance">page vigilance</a>.</p></div>
   </div>
 </section>`;

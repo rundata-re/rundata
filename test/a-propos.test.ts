@@ -50,7 +50,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     // The page depends on the Accept header (the MCP clients get the endpoint) and on Save-Data (its picture).
     expect(r.headers.get("vary")).toBe("accept, Save-Data");
     const page = await r.text();
-    expect(page).toContain("<h1>Brancher <span class=\"ident\">rundata.re</span> à votre IA</h1>");
+    expect(page).toContain("<h1>Brancher <span class=\"ident\">rundata.<wbr class=\"adr\">re</span> à votre IA</h1>");
     // Cut after a « / » or a « . » when it does not fit, never inside « rundata » or « mcp ».
     expect(page).toContain('<code id="mcp-url">https://<wbr>rundata.<wbr>re/<wbr>mcp</code>');
     // The first screen at 390 px: the breadcrumb under the connector's one name, the heading, one sentence, then the
@@ -98,7 +98,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const r = await handle(get("/a-propos", BROWSER), new Cache());
     expect(r.status).toBe(200);
     const page = await r.text();
-    expect(page).toContain("<h1>Qui fait <span class=\"ident\">rundata.re</span>\u00a0?</h1>");
+    expect(page).toContain("<h1>Qui fait <span class=\"ident\">rundata.<wbr class=\"adr\">re</span>\u00a0?</h1>");
     for (const id of ["pourquoi", "financement", "engagements", "contact"]) expect(page).toContain(`id="${id}"`);
     for (const s of ["projet personnel et bénévole", "habitant de l'île, développeur", "Cloudflare", "Il est gratuit, n'affiche aucune publicité et ne vend aucune donnée.", "Pour les associations à but non lucratif, il est gratuit à vie.", "contact@rundata.re", 'href="/conditions#mentions-legales"', 'href="/presse"', '"@type":"AboutPage"']) expect(page).toContain(s);
     for (const s of ["aucun revenu", "offres gratuites", "restera gratuit"]) expect(page).not.toContain(s);

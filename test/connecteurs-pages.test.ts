@@ -103,7 +103,7 @@ describe("« Relier votre plateforme »", () => {
     expect(page).toContain("Relier votre plateforme");
     expect(page).toContain(`href="${connecteurs.RELIER_PATH}">Relier HelloAsso</a>`);
     const form = plain(await (await get(connecteurs.RELIER_PATH)).text());
-    expect(form).toContain("<h1>Relier votre plateforme à <span class=\"ident\">rundata.re</span></h1>");
+    expect(form).toContain("<h1>Relier votre plateforme à <span class=\"ident\">rundata.<wbr class=\"adr\">re</span></h1>");
     expect(form).toContain("Nous ne lisons jamais vos commandes, paiements, dons, participants ni adhérents, même si vos clés le permettent.");
     expect(form).toContain("<button type=\"submit\">Vérifier mes clés</button>");
     expect(form).toContain("Ouvrez « Mon compte », puis l'onglet « Intégrations et API ».");

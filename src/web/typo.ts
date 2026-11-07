@@ -17,10 +17,13 @@ const R = 114;
 // « rundata.re » in the prose of a page, in a span without hyphenation (.ident, pages.ts): under 19.9 rem, where the page
 // is hyphenated, Safari cuts it « runda-ta.re ». Not in a link's name, the tab's title, an <option> or an SVG, where a span
 // is shown as text or hides it; nor in a path (« rundata.re/<wbr class="adr">associations », cheminsTexte) or a longer
-// name (« mcp.rundata.re », « rundata.reunion »).
+// name (« mcp.rundata.re », « rundata.reunion »). In a heading, wider than its line at 160 px (168 px in a 144 px line in
+// the <h1> of /mcp), it goes to the next line after its « . » (a <wbr> seen under 19.9 rem only), never « rundata.r|e ».
 const SITE = "rundata.re";
 const OUVRE = '<span class="ident">';
-const GARDE = /^<(\/?)(a|title|option|svg)[\s>]/;
+const NOM = `${OUVRE}${SITE}</span>`;
+const NOM_TITRE = `${OUVRE}rundata.<wbr class="adr">re</span>`;
+const GARDE = /^<(\/?)(a|title|option|svg|h[1-6])[\s>]/;
 const AVANT = /[\p{L}\p{N}._/@-]/u;
 const APRES = /[\p{L}\p{N}_/-]/u;
 
@@ -48,14 +51,16 @@ export function typo(html: string, nom = false): string {
   let out = "";
   let from = 0;
   let garde = 0;
+  let titre = 0;
   for (let i = 0; i < html.length; i++) {
     const c = html.charCodeAt(i);
     if (c === LT) {
       const g = nom ? GARDE.exec(html.slice(i, i + 9)) : null;
-      if (g) garde = g[1] ? Math.max(0, garde - 1) : garde + 1;
+      if (g?.[2][0] === "h") titre = g[1] ? Math.max(0, titre - 1) : titre + 1;
+      else if (g) garde = g[1] ? Math.max(0, garde - 1) : garde + 1;
       i = skip(html, i);
     } else if (c === R && nom && garde === 0 && nomSeul(html, i)) {
-      out += html.slice(from, i) + OUVRE + SITE + "</span>";
+      out += html.slice(from, i) + (titre ? NOM_TITRE : NOM);
       from = i + SITE.length;
       i = from - 1;
     } else if (c === SPACE) {

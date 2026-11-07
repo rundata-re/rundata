@@ -28,7 +28,7 @@ describe("/application, rundata.re on the home screen", () => {
     expect([slash.status, slash.headers.get("location")]).toEqual([301, "/application"]);
     const page = await text("/application");
     expect(page).toContain("<title>rundata.re sur l&#39;écran d&#39;accueil, comme une application</title>");
-    expect(page).toContain("<h1><span class=\"ident\">rundata.re</span> sur votre écran d'accueil</h1>");
+    expect(page).toContain("<h1><span class=\"ident\">rundata.<wbr class=\"adr\">re</span> sur votre écran d'accueil</h1>");
     expect(page).toContain("Une icône sur votre téléphone, et la météo, la vigilance ou le volcan s'ouvrent d'un geste, comme une application.");
     expect(page).toContain("Pas de store, pas de compte : c'est le site lui-même.");
     const description = page.match(/<meta name="description" content="([^"]*)"/)![1].replace(/&#39;/g, "'");

@@ -479,7 +479,7 @@ describe("what crawlers and previews fetch", () => {
     const r = await handle(new Request("https://rundata.re/chiffres"), isolate());
     expect(r.status).toBe(200);
     const html = await r.text();
-    expect(html).toContain("<h1><span class=\"ident\">rundata.re</span> en chiffres</h1>");
+    expect(html).toContain("<h1><span class=\"ident\">rundata.<wbr class=\"adr\">re</span> en chiffres</h1>");
     expect(html).toContain("sources publiques lues");
     expect(html).not.toContain("stations météo lues");
   });

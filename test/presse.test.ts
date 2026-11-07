@@ -23,7 +23,7 @@ const page = async (c = cache()) => {
 describe("press page", () => {
   it("has the release, ending on the press contact", async () => {
     const html = await page();
-    expect(html).toContain("<h1><span class=\"ident\">rundata.re</span>, pour la presse</h1>");
+    expect(html).toContain("<h1><span class=\"ident\">rundata.<wbr class=\"adr\">re</span>, pour la presse</h1>");
     expect(html).toContain("Toute La Réunion en direct, sur une seule page… et dans votre assistant IA");
     expect(html).toContain(`Contact presse\u00a0: Benjamin, pour l'équipe <span class="ident">rundata.re</span> — <a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>`);
     // One signature: the release ends on its contact line, as the communication kit's communiqué does.

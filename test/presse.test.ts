@@ -8,6 +8,7 @@ import { IDS } from "../src/providers/irve.js";
 import icons from "../src/web/icons.json" with { type: "json" };
 import visuals from "../src/web/presse.json" with { type: "json" };
 import { homePage } from "../src/web/home.js";
+import { CSS } from "../src/web/pages.js";
 import { insecables } from "../src/typographie.js";
 
 const NOW = new Date("2026-10-24T04:00:00Z");
@@ -123,5 +124,17 @@ describe("the stations in service", () => {
   it("are those of a recorded 6-minute packet, the count meteo_actuelle and sources_donnees give", () => {
     const csv = readFileSync(new URL("./fixtures/meteofrance_6min.csv", import.meta.url), "utf8");
     expect(new Set(csv.match(/^[^;\n]*;[^;\n]*;974\d{5}(?=;)/gm)!.map((l) => l.split(";")[2])).size).toBe(STATIONS_EN_SERVICE);
+  });
+});
+
+// /presse at 390 px with the text at 200 %: « défibrillateurs » beside its figure made the page 429 px wide.
+describe("the key figures, with the text at 200 % on a phone", () => {
+  it("put the words under the figure only when their longest word does not fit beside it", () => {
+    expect(CSS).toContain(".figs li{display:flex;flex-wrap:wrap;gap:.8rem;align-items:baseline}.figs li>span:not(.fig){flex:1 1 min-content;min-width:0}");
+  });
+
+  it("keep the words in a span of their own beside the figure, which the rule reaches", async () => {
+    const html = await page();
+    expect(html).toMatch(/<ul class="figs"><li class="card"><span class="fig">[^<]+<\/span><span>/);
   });
 });

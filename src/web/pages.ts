@@ -712,7 +712,10 @@ details.sect{margin-bottom:.8rem}details.sect>summary{cursor:pointer}details.sec
 .link-card{display:block;text-decoration:none;color:inherit}.link-card h3{display:flex;gap:.5rem;align-items:center;color:var(--link)}.link-card:hover{border-color:var(--accent)}
 .two>.card>.ic{width:1.6rem;height:1.6rem;color:var(--accent)}.two .card h4{margin-top:.5rem}
 .figs{list-style:none;padding:0;margin:0;display:grid;gap:.8rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))}
-.figs li{display:flex;gap:.8rem;align-items:baseline}.figs .fig{white-space:nowrap;font:800 2rem/1 Bricolage,system-ui,sans-serif;letter-spacing:-.03em;color:var(--accent)}
+/* A key figure and its words (/presse, /chiffres): the words beside the figure, under it only when their longest word does
+   not fit beside it (« défibrillateurs », 270 px with the text at 200 %, made /presse 429 px wide on a 390 px phone); cut
+   rather than widening the page only when longer than the whole card. */
+.figs li{display:flex;flex-wrap:wrap;gap:.8rem;align-items:baseline}.figs li>span:not(.fig){flex:1 1 min-content;min-width:0}.figs .fig{white-space:nowrap;font:800 2rem/1 Bricolage,system-ui,sans-serif;letter-spacing:-.03em;color:var(--accent)}
 .figs small{display:block;color:var(--muted);font-size:.82rem;margin-top:.2rem}
 .release{max-width:46rem;gap:.9rem}.release ul{padding-left:1.2rem;display:grid;gap:.5rem}.release h3{margin-top:.6rem}.release a{overflow-wrap:anywhere}
 /* A note on what is not taken from a site may give its address: it breaks where it must, never widening its section. */

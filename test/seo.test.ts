@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { RANDONNEES } from "../src/providers/traces.js";
+import { RANDONNEES, SENTIERS } from "../src/providers/traces.js";
 import type { AgendaAnswer } from "../src/web/data.js";
 import { agendaEvents, eventSummary, agendaPage, busPage, calendrierPage, coupuresPage, cyclonesPage, daePage, historiquePage, sportPage, tracePage, traficPage } from "../src/web/domains.js";
 import { feuxPage } from "../src/web/feux.js";
@@ -80,10 +80,20 @@ describe("search engines", () => {
     expect(title(daePage(O, null, NOW))).toBe("Défibrillateurs : où trouver un DAE · La Réunion (974)");
     expect(title(traficPage(O, null, NOW))).toBe("Circulation, trafic : routes, bus, médias · La Réunion (974)");
     expect(title(placePage(O, pageOf("cilaos")!, null, NOW))).toBe("Météo Cilaos en direct et prévisions · La Réunion (974)");
-    // « La Réunion (974) » with « trace GPX » when it fits, then without; the short « · 974 » for a long name.
+    // « La Réunion (974) » with « trace GPX » when it fits, then without; the sector gives way before them; the short
+    // « · 974 » for a long name.
     expect(title(tracePage(O, "randonnee", "sentier-du-piton-des-neiges", "Sentier du Piton des Neiges", null, NOW))).toBe("Sentier du Piton des Neiges (Cilaos) · La Réunion (974)");
     expect(title(tracePage(O, "randonnee", "pr25", "PR25", null, NOW))).toBe("PR25 (Mafate) : trace GPX · La Réunion (974)");
-    expect(title(tracePage(O, "sentier", "x", "Sentier panoramique de Bois Rouge (ancien sentier Bassin Bleu)", null, NOW))).toBe("Sentier panoramique de Bois Rouge (ancien sentier Bassin Bleu) : trace GPX · 974");
+    expect(title(tracePage(O, "sentier", "sentier-de-la-cage-aux-lions", "Sentier de la Cage aux Lions", null, NOW))).toBe("Sentier de la Cage aux Lions : trace GPX · La Réunion (974)");
+    expect(title(tracePage(O, "sentier", "x", "Sentier panoramique de Bois Rouge (ancien sentier Bassin Bleu)", null, NOW))).toBe("Sentier panoramique de Bois Rouge (ancien sentier Bassin Bleu) · 974");
+    // Every trail and hike: within 60 characters, or a name too long by itself and only « · 974 » after it.
+    for (const [kind, list] of [["sentier", Object.entries(SENTIERS).map(([nom, x]) => ({ slug: x.slug, nom }))], ["randonnee", RANDONNEES]] as const) {
+      for (const { slug, nom } of list) {
+        const t = title(tracePage(O, kind, slug, nom, null, NOW)).replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+        expect(t.length <= 60 || t === `${nom} · 974`, t).toBe(true);
+        expect(t).not.toContain("état ONF");
+      }
+    }
     // The school year: from July, the one that starts in August.
     expect(title(calendrierPage(O, null, new Date("2027-03-01T04:00:00Z")))).toContain("2026-2027");
     expect(title(calendrierPage(O, null, new Date("2027-07-10T04:00:00Z")))).toContain("2027-2028");

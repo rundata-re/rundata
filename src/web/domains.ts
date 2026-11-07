@@ -362,11 +362,12 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   // the volcano, the reason right under it (marketing).
   const vigilance = !a && !!e && !e.niveau_inconnu && e.niveau_orsec === "Vigilance";
   const heading = a ? volcanH1(a) : vigilance ? "Piton de la Fournaise : vigilance, pas d'éruption annoncée" : e?.niveau_inconnu ? "Piton de la Fournaise : état du volcan" : undefined;
-  // A state in the title says the day it was read (volcanTitle); « état du volcan » and the default say none.
+  // A state in the title says the day it was read (volcanTitle); « état du volcan » and the default say none. Vigilance
+  // keeps within the 60 characters a search engine shows: « pas d'éruption annoncée » is in the h1, right under it.
   const read = data?.fetchedAt ?? now;
   const title = a
     ? volcanTitle(a, read)
-    : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance, pas d'éruption annoncée · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, séismes · 974";
+    : vigilance ? `Piton de la Fournaise au ${localTime(read).slice(0, 5)} : vigilance · 974` : heading ? `${heading} · 974` : "Piton de la Fournaise en direct : éruption, séismes · 974";
   // Out of an alert, timeless: search engines keep it for days, a state in it would go stale (marketing).
   const description = a
     ? volcanMeta(a)
@@ -2523,10 +2524,11 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
   const twin = twinOf(kind, nom);
   const which = twin ? `${nom} (${twin}${sector ? `, ${sector.nom}` : ""})` : `${nom}${named}`;
   const bare = twin ? `${nom} (${twin})` : nom;
-  // Within the 60 characters a search engine shows: the sector, then « état ONF », give way to a long name.
-  const title = [`${which} : trace GPX · La Réunion (974)`, `${which} · La Réunion (974)`, `${which} : trace GPX · 974`,
-    `${which} : trace GPX, état ONF · 974`, `${bare} : trace GPX, état ONF · 974`, `${bare} : trace GPX · 974`]
-    .find((t) => t.length <= TITLE_MAX) ?? `${bare} : trace GPX · 974`;
+  // Within the 60 characters a search engine shows: the sector, then « La Réunion (974) », then « trace GPX », give way
+  // to a long name.
+  const title = [`${which} : trace GPX · La Réunion (974)`, `${which} · La Réunion (974)`, `${bare} : trace GPX · La Réunion (974)`,
+    `${bare} · La Réunion (974)`, `${which} : trace GPX · 974`, `${bare} : trace GPX · 974`]
+    .find((t) => t.length <= TITLE_MAX) ?? `${bare} · 974`;
   const short = `${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`;
   const where = sector ? `${sector.nom}, La Réunion` : "La Réunion";
   const description = d ? traceDescription(d, nom, where, short, now) : short;

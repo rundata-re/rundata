@@ -172,7 +172,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? man
 const cheminLien = (path: string) => `<a href="${esc(path)}" aria-label="${esc(`rundata.re${path}`)}">rundata.re${cheminTexte(path)}</a>`;
 
 /** « 29/10/2026 ». */
-const jma =(iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 /**
  * The commune's historic monuments (vie/monuments.ts), bundled: each name leads to its notice on POP, the ministry's

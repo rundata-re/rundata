@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { changelog, NOUVEAUTES, parJour } from "../src/nouveautes.js";
+import { cheminsTexte } from "../src/web/adresse.js";
 import { CSS, DESCRIPTION_MAX } from "../src/web/pages.js";
 import { chiffreMot, DESCRIPTION, nouveautesPage, TITLE } from "../src/web/nouveautes.js";
 
@@ -72,5 +73,21 @@ describe("the lists of /nouveautes, with the text enlarged", () => {
     const items = [...page.matchAll(/<ul class="plain nouv">(.*?)<\/ul>/gs)].map((m) => m[1]).join("");
     expect(items).toContain('<span class="jm">');
     expect(items.match(/\d \p{L}{3,}/gu) ?? []).toEqual([]);
+  });
+
+  // In the column as wide as its card, a path of the site was wider than the line at 150 or 200 %, and Chrome cut it at a
+  // letter (« rundata.re/associ|ations. », « rundata.re/ba|ignade »).
+  it("break a path of the site after its « / », never inside the site's name, nothing added to the text", () => {
+    const W = '<wbr class="adr">';
+    expect(cheminsTexte("sur rundata.re/associations.")).toBe(`sur rundata.re/${W}associations.`);
+    expect(cheminsTexte("https://rundata.re/coupures-eau/saint-denis, et")).toBe(`https://rundata.re/${W}coupures-eau/${W}saint-denis, et`);
+    for (const t of ["rundata.re s&#39;installe", "sur rundata.re.", "Page /application", "monrundata.re/a", "rundata.re/Bus"]) expect(cheminsTexte(t)).toBe(t);
+    const items = [...page.matchAll(/<ul class="plain nouv">(.*?)<\/ul>/gs)].map((m) => m[1]).join("");
+    expect(items).toContain(`sur rundata.re/${W}associations.`);
+    expect(items).toContain(`sur rundata.re/${W}baignade et`);
+    expect(items.match(/rundata\.re\/(?!<wbr class="adr">)/g) ?? []).toEqual([]);
+    // The text a reader copies is the line's text.
+    const texte = NOUVEAUTES.find((n) => n.texte.includes("rundata.re/associations"))!.texte;
+    expect(items.replaceAll(W, "")).toContain(chiffreMot(texte));
   });
 });

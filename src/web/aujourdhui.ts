@@ -8,7 +8,7 @@ import * as mf from "../providers/vigilance.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import type * as annuaire from "../providers/annuaire.js";
 import { mentionCourte } from "../tools/agenda.js";
-import { type Resume, UPDATING } from "../tools/resume.js";
+import { MAIRIE_FERMEE, type Resume, UPDATING } from "../tools/resume.js";
 import { MARCHES } from "../vie/marches.js";
 import * as monuments from "../vie/monuments.js";
 import { STATIONS_974 } from "../providers/meteofrance-stations.js";
@@ -222,7 +222,8 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     r.calendrier?.jour_ferie ? `<li>Jour férié : <b>${esc(r.calendrier.jour_ferie)}</b></li>` : "",
     r.calendrier?.vacances_scolaires ? `<li>${esc(r.calendrier.vacances_scolaires)} en cours · <a href="/calendrier">le calendrier →</a></li>` : "",
     `<li>Soleil : lever ${esc(r.soleil.lever)}, coucher ${esc(r.soleil.coucher)}</li>`,
-    r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${esc(r.mairie.telephone.replace(/ /g, "\u00a0"))}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}` : ""}</li>` : "",
+    // Closed all day: said once, « fermée aujourd'hui », never « fermée » then its hours « fermée aujourd'hui ».
+    r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${esc(r.mairie.telephone.replace(/ /g, "\u00a0"))}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}` : ""}</li>` : "",
   ].filter(Boolean).join("");
 
   const c = r.circulation;

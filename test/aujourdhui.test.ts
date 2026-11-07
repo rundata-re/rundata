@@ -136,6 +136,31 @@ describe("the town hall in the page of a commune's day", () => {
     const html = aujourdhuiPage("https://rundata.re", p, resume(p, { ...full(p.nom), commune: copy({ sources: [], mairie: hall }) } as never, NOW), null);
     expect(html).toContain("<li>Mairie : <b>horaires absents de l'annuaire</b>");
   });
+
+  // Its hours Monday to Friday; the line read at several times of a week, and on a holiday.
+  const HALL = { nom: "Mairie de Saint-Paul", insee: "97415", adresse: "1 place du Général de Gaulle", lon: null, lat: null, fiche: "", telephone: "0262 45 90 00", horaires: [{ de: "lundi", a: "vendredi", plages: [["07h30", "12h00"], ["13h00", "16h00"]] }] };
+  const line = (iso: string, ferie?: string) => {
+    const at = new Date(iso);
+    const c = <T>(value: T) => ({ value, fetchedAt: new Date(at.getTime() - 60_000), stale: false });
+    const p = pageOf("saint-paul")!;
+    const copies = { commune: c({ sources: [], mairie: HALL }), ...(ferie ? { calendrier: c({ jours_feries: { aujourd_hui: ferie, prochains: [], note: "" } }) } : {}) };
+    const html = aujourdhuiPage("https://rundata.re", p, resume(p, copies as never, at), null);
+    return html.match(/<li>Mairie : .*?<\/li>/)![0];
+  };
+
+  it("says « fermée » once: closed all day, closed at this hour, or a holiday", () => {
+    // Saturday 24/10, 14:00: no hours today, said once (« fermée fermée aujourd'hui » before).
+    const saturday = line("2026-10-24T10:00:00Z");
+    expect(saturday).toMatch(/^<li>Mairie : <b>fermée aujourd'hui<\/b> · 0262\u00a045\u00a090\u00a000/);
+    // Monday 26/10, 10:00 open, and 17:00 closed: the day's hours after the state.
+    expect(line("2026-10-26T06:00:00Z")).toMatch(/^<li>Mairie : <b>ouverte<\/b> <span class="note">07:30–12:00 et 13:00–16:00<\/span> · 0262/);
+    const evening = line("2026-10-26T13:00:00Z");
+    expect(evening).toMatch(/^<li>Mairie : <b>fermée<\/b> <span class="note">07:30–12:00 et 13:00–16:00<\/span> · 0262/);
+    // Wednesday 11/11, a holiday on a weekday of its hours.
+    const holiday = line("2026-11-11T06:00:00Z", "Armistice 1918");
+    expect(holiday).toMatch(/^<li>Mairie : <b>sans doute fermée, jour férié<\/b> · 0262/);
+    for (const l of [saturday, evening, holiday]) expect(l.match(/fermée/g), l).toHaveLength(1);
+  });
 });
 
 describe("the top of the page of a commune's day", () => {

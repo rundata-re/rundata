@@ -550,9 +550,11 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 @media (min-width:46rem){.th{flex-wrap:nowrap}.th h3{order:0;flex:1}.th .go{margin-left:0}}
 /* A narrow tile (three columns at 768 px with the text at 150 %): its title on its own line, as on a phone, never cut
    by the tile's edge. In rem, which follows the text's size: at 100 %, only a phone's tiles are narrower, and their title
-   is on its own line already. */
+   is on its own line already. A word of the title longer than that line is cut where French cuts it, with a hyphen
+   (« Séche-resse », 768 px with the text at 200 %), not anywhere by overflow-wrap (« Sécheress / e »). The title only:
+   the figure below, hyphenated too, cut words that fit whole on the next line (« sentiers », « d'éruption »). */
 .tile{container:tuile/inline-size}
-@container tuile (max-width:12rem){.th{flex-wrap:wrap}.th h3{order:1;flex:1 0 100%}.th .go{margin-left:auto}}
+@container tuile (max-width:12rem){.th{flex-wrap:wrap}.th h3{order:1;flex:1 0 100%;hyphens:auto;-webkit-hyphens:auto}.th .go{margin-left:auto}}
 .th .kb{width:2.3rem;height:2.3rem;border-radius:12px}
 .th .go{color:var(--k);font-weight:800}
 .tile h3 a{color:inherit;text-decoration:none}

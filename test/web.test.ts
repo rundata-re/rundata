@@ -518,7 +518,7 @@ describe("what crawlers and previews fetch", () => {
       const html = await r.text();
       expect(html).toContain(`<link rel="canonical" href="https://rundata.re${path}">`);
       expect(html).toContain('href="/confidentialite"');
-      expect(html).toContain("contact@rundata.re");
+      expect(html).toContain('contact@<wbr class="adr">rundata.<wbr class="adr">re');
     }
   });
 

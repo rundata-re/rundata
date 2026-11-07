@@ -47,7 +47,7 @@ describe("circulation", () => {
     expect(page).toContain("<h1>Circulation à La Réunion");
     // The question to an assistant holds with what the page has (marketing; its Creole validated by the user on 04/11/2026).
     expect(page.replaceAll("\u00a0", " ")).toContain("« Y a-t-il des routes coupées ou des travaux à La Réunion");
-    expect(page.replaceAll("\u00a0", " ")).toContain("« Néna in rout koupé oubien travo zordi ? Gèt si https://<wbr>rundata.<wbr>re/<wbr>trafic é di amwin. »");
+    expect(page.replaceAll("\u00a0", " ")).toContain("« Néna in rout koupé oubien travo zordi ? Gèt si <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>trafic</span> é di amwin. »");
     expect(page).not.toMatch(/kat-voi|bouchonne/);
     // The title shared on the networks is the tab's.
     expect(page).toContain('<meta property="og:title" content="Circulation, trafic : routes, bus, médias · La Réunion (974)">');

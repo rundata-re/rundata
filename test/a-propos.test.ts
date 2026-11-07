@@ -52,7 +52,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const page = await r.text();
     expect(page).toContain("<h1>Brancher <span class=\"ident\">rundata.<wbr class=\"adr\">re</span> à votre IA</h1>");
     // Cut after a « / » or a « . » when it does not fit, never inside « rundata » or « mcp ».
-    expect(page).toContain('<code id="mcp-url">https://<wbr>rundata.<wbr>re/<wbr>mcp</code>');
+    expect(page).toContain('<code id="mcp-url"><span class="adrweb">https://<wbr>rundata.<wbr>re/<wbr>mcp</span></code>');
     // The first screen at 390 px: the breadcrumb under the connector's one name, the heading, one sentence, then the
     // address and « Copier », before the step by step. The title is the one search engines know.
     expect(page).toContain("<title>Ajouter rundata.re à votre IA · connecteur MCP gratuit</title>");
@@ -63,7 +63,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const lead = band.match(/<p class="lead">([^<]*)<\/p>/)![1];
     expect(lead).toBe("Ajoutez cette adresse à ChatGPT, Claude ou Le Chat\u00a0: votre IA lira les données de La Réunion en direct.");
     expect(lead.split(/[\s\u00a0]+/).filter((w) => /\p{L}/u.test(w)).length).toBeLessThanOrEqual(20);
-    expect(band.indexOf('<code id="mcp-adresse">https://<wbr>rundata.<wbr>re/<wbr>mcp</code><button type="button" data-copy="mcp-adresse"')).toBeGreaterThan(band.indexOf("<h1>"));
+    expect(band.indexOf('<code id="mcp-adresse"><span class="adrweb">https://<wbr>rundata.<wbr>re/<wbr>mcp</span></code><button type="button" data-copy="mcp-adresse"')).toBeGreaterThan(band.indexOf("<h1>"));
     expect(page.match(/"name":"Brancher mon IA"/)).not.toBeNull();
     for (const a of ["<h3>Claude</h3>", "<h3>ChatGPT</h3>", "<h3>Le Chat</h3>", 'datetime="2026-11-02"', 'href="/confidentialite"', 'href="/conditions"']) expect(page).toContain(a);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1].length).toBeLessThanOrEqual(DESCRIPTION_MAX);
@@ -103,13 +103,13 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     for (const s of ["projet personnel et bénévole", "habitant de l'île, développeur", "Cloudflare", "Il est gratuit, n'affiche aucune publicité et ne vend aucune donnée.", "Pour les associations à but non lucratif, il est gratuit à vie.", "contact@rundata.re", 'href="/conditions#mentions-legales"', 'href="/presse"', '"@type":"AboutPage"']) expect(page).toContain(s);
     for (const s of ["aucun revenu", "offres gratuites", "restera gratuit"]) expect(page).not.toContain(s);
     // The address in bold goes to the next line after its « @ » or a « . », never one letter before its end.
-    expect(page).toContain('<b><a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a></b>');
+    expect(page).toContain('<b><a href="mailto:contact@rundata.re" aria-label="contact@rundata.re"><span class="adrweb">contact@<wbr>rundata.<wbr>re</span></a></b>');
     const main = aProposPage("https://rundata.re").split("<footer")[0];
     // No personal account: GitHub only as the project's own repository, in the bar and in the contributions sentence.
     expect(main).not.toMatch(/bLd75/i);
     expect(main.match(/github\.com\/[^"]*/gi)?.every((u) => u.startsWith("github.com/rundata-re/rundata"))).toBe(true);
     // About 300 words: the title, its sentence and the four sections, the contributions sentence among them (27/10). A <wbr>
-    // is not a space: « contact@<wbr>rundata.<wbr>re » is one word.
+    // is not a space: « contact@<wbr>rundata<wbr>.re », in its span, is one word.
     const text = (from: string, to: string) => main.slice(main.indexOf(from), main.indexOf(to, main.indexOf(from)));
     const words = (text("<h1>", "</div></div>") + text("<section style=", "</section>")).replaceAll("<wbr>", "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThan(200);
@@ -142,7 +142,8 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(Math.max(...compte.map((p) => p.length))).toBeLessThan(1_000);
     const joindre = paragraphs(section(await page("/a-propos"), '<h2 id="contact">', "</section>"));
     expect(joindre.length).toBe(4);
-    expect(Math.max(...joindre.map((p) => p.length))).toBeLessThan(500);
+    // The span around an address (adresseCoupable) is markup, not text: left out of the count.
+    expect(Math.max(...joindre.map((p) => p.replaceAll('<span class="adrweb">', "").replaceAll("</span>", "").length))).toBeLessThan(500);
     for (const [path, name] of [["/confidentialite", "Confidentialité"], ["/conditions", "Conditions d&#39;utilisation et mentions légales"]]) {
       const html = await page(path);
       expect(html).toContain(`<nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/"><span class="ident">rundata.re</span></a></li><li aria-current="page">${name}</li></ol></nav>`);

@@ -10,7 +10,7 @@ import { occurrences, weekend, type Weekend } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
 import { esc } from "./map.js";
 import { holidays } from "../feries.js";
-import { ask, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
+import { adressesCoupables, ask, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
 
 type Row = NonNullable<AgendaAnswer["evenements"]>[number];
 
@@ -158,7 +158,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   ${warnings(agendaNotes(data, now))}
 </section>
 <section aria-labelledby="h-couv">
-  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? esc(d.couverture) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p></div>
+  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? adressesCoupables(d.couverture, true) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p></div>
   ${d && data ? sourcesNote(d.sources, data) : ""}
   <p><a href="/publier">Votre agenda n'est pas lu ? Le guide pour le publier →</a></p>
 </section>

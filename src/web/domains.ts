@@ -130,7 +130,7 @@ export const agendaNotes = (data: Cached<AgendaAnswer> | null | undefined, now: 
 ];
 
 const warnings = (list: string[]) =>
-  list.length ? `<div class="card warn">${icon("alert")}<h3>À savoir</h3><ul class="plain">${list.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>` : "";
+  list.length ? `<div class="card warn">${icon("alert")}<h3>À savoir</h3><ul class="plain">${list.map((w) => `<li>${adresseTexte(w)}</li>`).join("")}</ul></div>` : "";
 
 /**
  * A tool's name or a layer's code, escaped, that may be cut after each « . » and « _ » on a narrow screen
@@ -1309,7 +1309,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
 
   const body = `<section aria-labelledby="h-stations">
   <div class="sec-h"><p class="eyebrow">Station par station</p><h2 id="h-stations">Vélos et places libres</h2>
-  <p>${d ? esc(d.service) : "Altervélo : vélos à assistance électrique en libre-service de la CIVIS."}</p></div>
+  <p>${d ? adressesCoupables(d.service, true) : "Altervélo : vélos à assistance électrique en libre-service de la CIVIS."}</p></div>
   ${byCommune}
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>
@@ -1618,7 +1618,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   <figcaption class="note" style="color:var(--on-night-muted)">${legende([
     { forme: "rond", couleur: "#2b8a3e", texte: "3", dit: "points de charge libres dans la commune" },
     { forme: "rond", couleur: "#868e96", texte: "0", dit: "aucun libre" },
-  ], data ? esc(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'${leAt(new Date(d.etat_jusqu_a)).replace(/^le /, "au ")}` : ""}, lu ${leAt(data.fetchedAt)}.`) : undefined)}</figcaption></figure>
+  ], data ? adressesCoupables(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'${leAt(new Date(d.etat_jusqu_a)).replace(/^le /, "au ")}` : ""}, lu ${leAt(data.fetchedAt)}.`, true) : undefined)}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-rapide">
@@ -3723,7 +3723,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
   ${warnings(agendaNotes(data, now))}
 </section>
 <section aria-labelledby="h-couv">
-  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? esc(d.couverture) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p>
+  <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? adressesCoupables(d.couverture, true) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p>
   <p>Les séances de cinéma sont sur les sites des salles : ${CINEMAS.map((c) => `<a href="${esc(c.lien)}" rel="noopener">${esc(c.nom)}</a>`).join(", ")}.</p></div>
   ${d && data ? sourcesNote(d.sources, data) : ""}
   <p class="note np">${noteReunionFr()}${reprise(noteReunionFr())}</p>

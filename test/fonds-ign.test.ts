@@ -86,7 +86,7 @@ describe("the IGN's backgrounds on the zoomed maps", () => {
 
   it("are told on /confidentialite", () => {
     expect(legalPage("https://rundata.re", "confidentialite")).toContain(
-      "<p id=\"fonds-ign\">Si vous choisissez le fond Plan IGN ou Photo aérienne, votre navigateur charge ces images chez l'IGN (data.<wbr class=\"adr\">geopf.<wbr class=\"adr\">fr), qui reçoit alors votre adresse IP.</p>",
+      "<p id=\"fonds-ign\">Si vous choisissez le fond Plan IGN ou Photo aérienne, votre navigateur charge ces images chez l'IGN (<span class=\"adrweb\">data.<wbr class=\"adr\">geopf.<wbr class=\"adr\">fr</span>), qui reçoit alors votre adresse IP.</p>",
     );
   });
 });

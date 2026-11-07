@@ -173,7 +173,7 @@ describe("the Enclos, as the official texts say it", () => {
   it("says the Enclos is to check when no official text says it", async () => {
     const v = await answer(release("Piton de la Fournaise : vigilance renforcée", "2026-10-20T08:00:00.000Z"));
     expect(v.etat!.acces_enclos).toBeUndefined();
-    expect(volcanPage(O, copyOf(v), NOW)).toContain(`<h3>Accès à l&#39;Enclos</h3><p>Accès à l'Enclos : à vérifier sur <a href="https://www.reunion.gouv.fr/Actualites/Communiques-de-presse" aria-label="reunion.gouv.fr">reunion.<wbr>gouv.<wbr>fr</a>, avant de partir.</p>`);
+    expect(volcanPage(O, copyOf(v), NOW)).toContain(`<h3>Accès à l&#39;Enclos</h3><p>Accès à l'Enclos : à vérifier sur <a href="https://www.reunion.gouv.fr/Actualites/Communiques-de-presse" aria-label="reunion.gouv.fr"><span class="adrweb">reunion.<wbr>gouv.<wbr>fr</span></a>, avant de partir.</p>`);
     expect(trafic({ ...v, etat: { ...v.etat!, acces_enclos: {} } })).toContain("<p><b>À vérifier</b> (reunion.gouv.fr).");
   });
 });

@@ -25,7 +25,7 @@ describe("press page", () => {
     const html = await page();
     expect(html).toContain("<h1><span class=\"ident\">rundata.<wbr class=\"adr\">re</span>, pour la presse</h1>");
     expect(html).toContain("Toute La Réunion en direct, sur une seule page… et dans votre assistant IA");
-    expect(html).toContain(`Contact presse\u00a0: Benjamin, pour l'équipe <span class="ident">rundata.re</span> — <a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>`);
+    expect(html).toContain(`Contact presse\u00a0: Benjamin, pour l'équipe <span class="ident">rundata.re</span> — <a href="mailto:contact@rundata.re" aria-label="contact@rundata.re"><span class="adrweb">contact@<wbr>rundata.<wbr>re</span></a>`);
     // One signature: the release ends on its contact line, as the communication kit's communiqué does.
     expect(html).not.toContain("<p>L'équipe <span class=\"ident\">rundata.re</span></p>");
     expect(html).toContain("Le sentier du Piton des Neiges\u00a0: sa trace GPS, sa longueur et son dénivelé.");

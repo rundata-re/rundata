@@ -33,17 +33,17 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
 
   it("in a link, may cut an address after each « . » and « @ » (« data.gou|v.fr » at 200 %), never a sentence's end", () => {
     expect(lienNom("https://www.data.gouv.fr/x", "sa fiche sur data.gouv.fr", ' rel="noopener"')).toBe(
-      '<a href="https://www.data.gouv.fr/x" rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur data.<wbr>gouv.<wbr>fr</a>',
+      '<a href="https://www.data.gouv.fr/x" rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur <span class="adrweb">data.<wbr>gouv.<wbr>fr</span></a>',
     );
     expect(lienNom("mailto:contact@rundata.re", "contact@rundata.re")).toBe(
-      '<a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>',
+      '<a href="mailto:contact@rundata.re" aria-label="contact@rundata.re"><span class="adrweb">contact@<wbr>rundata.<wbr>re</span></a>',
     );
-    expect(lienNom("https://www.3237.fr", "Pharmacie de garde : 3237.fr")).toContain(">Pharmacie de garde : 3237.<wbr>fr</a>");
+    expect(lienNom("https://www.3237.fr", "Pharmacie de garde : 3237.fr")).toContain(">Pharmacie de garde : <span class=\"adrweb\">3237.<wbr>fr</span></a>");
     // A « . » before a space or a capital is a sentence's end or a name's (nomsCoupables), and « 1.0 » a version.
     expect(lienNom("/x", "Lire la suite. Puis ODbL 1.0")).toBe('<a href="/x">Lire la suite. Puis ODbL 1.0</a>');
     // The text is escaped once, the address too.
     expect(lienNom("https://x.re/?a=1&b=2", "l'eau sur eaudurobinet.re")).toBe(
-      '<a href="https://x.re/?a=1&amp;b=2" aria-label="l&#39;eau sur eaudurobinet.re">l&#39;eau sur eaudurobinet.<wbr>re</a>',
+      '<a href="https://x.re/?a=1&amp;b=2" aria-label="l&#39;eau sur eaudurobinet.re">l&#39;eau sur <span class="adrweb">eaudurobinet.<wbr>re</span></a>',
     );
   });
 
@@ -90,7 +90,7 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
   it("has its place in /publier's titles (« Open<wbr>Agenda »), never in a link without its whole name, an attribute or the page's title", () => {
     const page = publierPage("https://rundata.re");
     expect(page).toContain('<h3 id="openagenda">3 · Open<wbr>Agenda</h3>');
-    // A link may have one (lienNom: « data.<wbr>gouv.<wbr>fr » at the foot), with its whole text in aria-label.
+    // A link may have one (lienNom: « data<wbr>.gouv<wbr>.fr » at the foot), with its whole text in aria-label.
     expect(page.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>") && !x.includes(' aria-label="'))).toEqual([]);
     expect(page).not.toMatch(/="[^"]*<wbr>/);
     expect(page.slice(page.indexOf("<title>"), page.indexOf("</title>"))).not.toContain("<wbr>");
@@ -154,8 +154,8 @@ describe("an address in a heading, a pill or a button", () => {
   const adresse = (t: string) => (t.match(/[\w\u00AD-]+(?:[.@][\w-]+)+/g) ?? []).some((x) => /[a-z0-9][.@][a-z]/.test(x) && x !== "rundata.re");
 
   it("may go to the next line after its « . » and « @ », and where a soft hyphen was put, escaped", () => {
-    expect(adresseCoupable("info\u00ADtrafic.re")).toBe("info\u00ADtrafic.<wbr>re");
-    expect(adresseCoupable("contact@rundata.re")).toBe("contact@<wbr>rundata.<wbr>re");
+    expect(adresseCoupable("info\u00ADtrafic.re")).toBe("<span class=\"adrweb\">info\u00ADtrafic.<wbr>re</span>");
+    expect(adresseCoupable("contact@rundata.re")).toBe("<span class=\"adrweb\">contact@<wbr>rundata.<wbr>re</span>");
     expect(adresseCoupable("Bouchons, accidents, travaux. Puis <b>")).toBe("Bouchons, accidents, travaux. Puis &lt;b&gt;");
   });
 
@@ -174,8 +174,8 @@ describe("an address in a heading, a pill or a button", () => {
     expect(page).toContain(`<a class="btn sun" href="https://www.infotrafic.re/">`);
     expect(page).toMatch(/<a class="btn sun" href="https:\/\/www\.infotrafic\.re\/"><svg[^]*?<\/svg>Carte officielle ↗<\/a>/);
     expect(page).toContain(`<h3 aria-label="infotrafic.re ↗"><svg`);
-    expect(page).toContain("</svg>info\u00ADtrafic.<wbr>re ↗</h3>");
-    expect(page.replaceAll("\u00a0", " ")).toContain("Bouchons, accidents, travaux : info\u00ADtrafic.<wbr>re</p>");
+    expect(page).toContain("</svg><span class=\"adrweb\">info\u00ADtrafic.<wbr>re</span> ↗</h3>");
+    expect(page.replaceAll("\u00a0", " ")).toContain("Bouchons, accidents, travaux : <span class=\"adrweb\">info\u00ADtrafic.<wbr>re</span></p>");
   });
 });
 
@@ -228,11 +228,12 @@ describe("an address in a sentence of /confidentialite, /conditions, the foot an
       ouvrirConnecteurs(true);
       const [privacy, terms] = pages().map((p) => p.replaceAll("\u00a0", " "));
       for (const page of [privacy, terms]) {
-        expect(page).toContain(' · contact@<wbr class="adr">rundata.<wbr class="adr">re</p>');
+        expect(page).toContain(' · <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span></p>');
         expect(page).not.toContain("@<wbr>");
         expect(page).not.toMatch(/<a\b[^>]*>[^<]*contact@<wbr\b/);
       }
-      const lu = (page: string) => page.replaceAll('<wbr class="adr">', "");
+      // The text as read: no <wbr>, no span around the address (markup only).
+      const lu = (page: string) => page.replaceAll('<wbr class="adr">', "").replaceAll('<span class="adrweb">', "").replaceAll("</span>", "");
       for (const s of [
         "chez l'IGN (data.geopf.fr), qui reçoit",
         "écrire à <b>contact@rundata.re</b> en le citant.",
@@ -287,7 +288,7 @@ describe("an address in a sentence of /confidentialite, /conditions, the foot an
       const pages = await messages();
       for (const page of pages) expect(entieres(page)).toEqual([]);
       // Each page says it out of the foot: the message, not only the foot, is checked.
-      for (const page of pages) expect(page.split("<footer")[0]).toContain('contact@<wbr class="adr">rundata.<wbr class="adr">re');
+      for (const page of pages) expect(page.split("<footer")[0]).toContain('<span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>');
     } finally {
       ouvrirConnecteurs(false);
     }
@@ -297,7 +298,7 @@ describe("an address in a sentence of /confidentialite, /conditions, the foot an
     try {
       ouvrirConnecteurs(true);
       const pages = await messages();
-      const lu = pages.map((p) => p.replaceAll('<wbr class="adr">', "").replaceAll("\u00a0", " ")).join("\n");
+      const lu = pages.map((p) => p.replaceAll('<wbr class="adr">', "").replaceAll('<span class="adrweb">', "").replaceAll("</span>", "").replaceAll("\u00a0", " ")).join("\n");
       for (const s of [
         "L'avis n'a pas pu être enregistré (vide ou trop long ?). Votre saisie est gardée ci-dessous. Réessayez, ou écrivez à contact@rundata.re.",
         "vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re. Votre saisie est gardée ci-dessous.",
@@ -331,8 +332,8 @@ describe("an address in a sentence of /confidentialite, /conditions, the foot an
   });
 
   it("goes to the next line in its middle only under 19.9 rem: at 390 px, the sentence goes to the line as it did before", () => {
-    expect(adresseTexte("contact@rundata.re")).toBe('contact@<wbr class="adr">rundata.<wbr class="adr">re');
-    expect(adresseTexte("a.b <i>")).toBe('a.<wbr class="adr">b &lt;i&gt;');
+    expect(adresseTexte("contact@rundata.re")).toBe('<span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>');
+    expect(adresseTexte("a.b <i>")).toBe('<span class="adrweb">a.<wbr class="adr">b</span> &lt;i&gt;');
     // Off outside the media query, on inside it; « .jm » is the date's rule, written just before each.
     expect(CSS).toContain(".jm{white-space:nowrap}/* An address in a sentence (adresseTexte, adresse.ts)");
     expect(CSS.split("wbr.adr{display:none}")).toHaveLength(2);

@@ -34,8 +34,8 @@ describe("the guide for those who publish (/publier)", () => {
     const links = [...table.matchAll(/<th scope="row"><a href="#([a-z0-9-]+)">/g)].map((m) => m[1]);
     expect(links).toEqual(["google-agenda", "outlook-nextcloud", "openagenda", "the-events-calendar", "rss", "tableur-csv", "data-gouv", "schema-org"]);
     // Each lands on the title of a folded tutorial: the page's script opens the details around it (UNFOLD_SCRIPT). A
-    // title may hold a <wbr> (« Open<wbr>Agenda », nomsCoupables).
-    for (const id of links) expect(page, id).toMatch(new RegExp(`<details class="pli"><summary><h3 id="${id}">(?:[^<]|<wbr>)*</h3></summary>`));
+    // title may hold a <wbr> (« Open<wbr>Agenda », nomsCoupables) or an address (« data.gouv.fr », adressesDuTexte).
+    for (const id of links) expect(page, id).toMatch(new RegExp(`<details class="pli"><summary><h3 id="${id}">(?:[^<]|<wbr(?: class="adr")?>|<span class="adrweb">|</span>)*</h3></summary>`));
     expect(page).toContain(UNFOLD_SCRIPT);
     expect(UNFOLD_SCRIPT).toContain('t.closest("details")');
     expect(page.match(/<details class="pli">/g)).toHaveLength(10);
@@ -59,7 +59,7 @@ describe("the guide for those who publish (/publier)", () => {
     expect(page).toContain(`<a class="etat demande" href="${MAILTO}">`);
     expect(MAILTO).toBe("mailto:contact@rundata.re?subject=Flux%20%C3%A0%20r%C3%A9f%C3%A9rencer");
     // The address in bold opens the mail; it goes to the next line after its « @ » or a « . », never one letter before its end.
-    expect(page).toContain(`<strong><a href="${MAILTO}" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a></strong>`);
+    expect(page).toContain(`<strong><a href="${MAILTO}" aria-label="contact@rundata.re"><span class="adrweb">contact@<wbr>rundata.<wbr>re</span></a></strong>`);
     expect(page).not.toMatch(/\{\{|\*\*|\]\(/);
   });
 

@@ -130,7 +130,7 @@ describe("measures at Atmo Réunion's stations", () => {
     expect(section).toContain("mesurée il y a 9 h");
     expect(section.match(/<li>/g)).toHaveLength(7);
     expect(section.match(/mesure brute, non validée/g)).toHaveLength(7);
-    expect(section).toContain(`<a href="${airMesures.SOURCE.url}" rel="noopener" aria-label="fichiers du LCSQA sur data.gouv.fr">fichiers du LCSQA sur data.<wbr>gouv.<wbr>fr</a>`);
+    expect(section).toContain(`<a href="${airMesures.SOURCE.url}" rel="noopener" aria-label="fichiers du LCSQA sur data.gouv.fr">fichiers du LCSQA sur <span class="adrweb">data.<wbr>gouv.<wbr>fr</span></a>`);
     // Without measures, no section.
     airMesures.configure(undefined);
     const none = body(await qualiteAir(cache(), undefined, NOW, true));

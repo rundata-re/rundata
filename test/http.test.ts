@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { counted, PAGE_BUDGET } from "../src/budget.js";
-import { getMatch, getText, IN_FLIGHT, patiently, permis } from "../src/http.js";
+import { getJson, getMatch, getText, IN_FLIGHT, patiently, permis, whenFailed } from "../src/http.js";
+import { UpstreamError } from "../src/types.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -94,6 +95,51 @@ describe("the fetches of an invocation", () => {
     const p = platform(10);
     await Promise.all(sites.map((u) => getText("agenda", u, 1_000)));
     expect(p.most()).toBe(6);
+  });
+});
+
+describe("a body that does not come in time", () => {
+  afterEach(() => whenFailed(undefined));
+
+  /** A site whose headers come at once, then a body: its first piece, then nothing until the read's signal ends it. */
+  function stalls(first: string) {
+    vi.stubGlobal("fetch", async (_url: string, init?: RequestInit) => {
+      const signal = init?.signal ?? undefined;
+      let sent = false;
+      const body = new ReadableStream<Uint8Array>({
+        pull: (c) => {
+          if (!sent) {
+            sent = true;
+            c.enqueue(new TextEncoder().encode(first));
+            return;
+          }
+          return new Promise<void>((_, reject) =>
+            signal?.addEventListener("abort", () => reject(new DOMException("The operation was aborted due to timeout", "TimeoutError"))),
+          );
+        },
+      });
+      return new Response(body);
+    });
+  }
+
+  it("is a source that does not answer, as a fetch cut by its delay, and is told as a failed read", async () => {
+    stalls("2026-11-06T15:50|-21.2|55.7");
+    const told: [string, string, UpstreamError][] = [];
+    whenFailed((source, url, err) => told.push([source, url, err]));
+    const err = await getText("ipgp", "https://lent.example/seismes", 30).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(UpstreamError);
+    expect(err).toMatchObject({ source: "ipgp", message: expect.stringMatching(/^ipgp: .*timeout/) });
+    expect(told).toEqual([["ipgp", "https://lent.example/seismes", err]]);
+  });
+
+  it("but a body that came whole and cannot be read stays ours to mend, told to no one", async () => {
+    vi.stubGlobal("fetch", async () => new Response("{pas du json"));
+    const told: string[] = [];
+    whenFailed((source) => told.push(source));
+    const err = await getJson("x", "https://example.org/", 1_000).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(SyntaxError);
+    expect(err).not.toBeInstanceOf(UpstreamError);
+    expect(told).toEqual([]);
   });
 });
 

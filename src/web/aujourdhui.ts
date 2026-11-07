@@ -16,6 +16,7 @@ import { INSEE } from "../places/insee.js";
 import { porte, SHEET as ALLER } from "./aller.js";
 import { type Alerte, credit, sansPeriode } from "./data.js";
 import { connectorCta, courantItem, lienNom, silentItem, silentText, webPage } from "./domains.js";
+import { adresseTexte, cheminTexte, telephoneTexte } from "./adresse.js";
 import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { a, communeDite, de, fourchette } from "../tools/format.js";
@@ -164,6 +165,12 @@ export function descriptionOf(p: PlacePage, r: Resume): string {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 
+/**
+ * A link to a page of the site written as its address (« rundata.re/collecte/saint-paul »): it may go to the next line
+ * after each « / » (cheminTexte()), and keeps its whole text as its name, as lienNom() does.
+ */
+const cheminLien = (path: string) => `<a href="${esc(path)}" aria-label="${esc(`rundata.re${path}`)}">rundata.re${cheminTexte(path)}</a>`;
+
 /** « 29/10/2026 ». */
 const jma = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
@@ -223,7 +230,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     r.calendrier?.vacances_scolaires ? `<li>${esc(r.calendrier.vacances_scolaires)} en cours · <a href="/calendrier">le calendrier →</a></li>` : "",
     `<li>Soleil : lever ${esc(r.soleil.lever)}, coucher ${esc(r.soleil.coucher)}</li>`,
     // Closed all day: said once, « fermée aujourd'hui », never « fermée » then its hours « fermée aujourd'hui ».
-    r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${esc(r.mairie.telephone.replace(/ /g, "\u00a0"))}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}` : ""}</li>` : "",
+    r.mairie ? `<li>Mairie : <b>${r.mairie.jour_ferie ? "sans doute fermée, jour férié" : r.mairie.ouverte === null ? "horaires absents de l'annuaire" : r.mairie.horaires_aujourd_hui === MAIRIE_FERMEE ? MAIRIE_FERMEE : r.mairie.ouverte ? "ouverte" : "fermée"}</b>${r.mairie.horaires_aujourd_hui && r.mairie.horaires_aujourd_hui !== MAIRIE_FERMEE ? ` <span class="note">${esc(r.mairie.horaires_aujourd_hui)}</span>` : ""}${r.mairie.telephone ? ` · ${telephoneTexte(r.mairie.telephone)}` : ""}${mairie ? ` ${g.aller({ nom: mairie.nom, lat: mairie.lat ?? NaN, lon: mairie.lon ?? NaN, adresse: mairie.adresse }, "mairie")}` : ""}</li>` : "",
   ].filter(Boolean).join("");
 
   const c = r.circulation;
@@ -251,7 +258,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const events = ev
     ? card("music", "Sortir aujourd'hui",
         (ev.liste.length
-          ? `<ul class="plain">${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${esc([e.quand, e.lieu, e.prix, e.source && `Source\u00a0: ${e.source}`].filter(Boolean).join(" · "))}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
+          ? `<ul class="plain">${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
           : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus.</p>`) +
         // Its site not read until it agrees: said under them, in marketing's words.
         (notRead ? `<p class="note np">${esc(notRead.ligne)}${reprise(notRead.ligne)}</p>` : ""),
@@ -270,7 +277,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
       ? `<li>Déchèteries : <b>${dFresh.length ? `déchets verts acceptés dans ${dGreen} sur ${dFresh.length}` : "état des bennes à vérifier sur place"}</b> <span class="note">d'après les agents du TCO</span> · <a href="${esc(d.page.replace(/^https:\/\/rundata\.re/, ""))}">les bennes →</a></li>`
       : "",
     r.carburants?.prix_maximum ? `<li>Carburants (prix maximum du mois) : <b>${esc(r.carburants.prix_maximum)}</b> · <a href="/carburants">les prix →</a></li>` : "",
-    r.collecte_dechets ? `<li>Collecte des déchets : le jour de votre rue sur <a href="${esc(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}">rundata.re${esc(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}</a>.</li>` : "",
+    r.collecte_dechets ? `<li>Collecte des déchets : le jour de votre rue sur ${cheminLien(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}.</li>` : "",
     `<li>Pharmacie de garde (nuits, dimanches, jours fériés) : <b>${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}</b>, ou le 32 37 (payant)</li>`,
   ].filter(Boolean).join("");
   // A part whose copy is being built again (tools/resume.ts, `UPDATING`) says so, as the other tiles.

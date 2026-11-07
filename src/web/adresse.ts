@@ -33,3 +33,23 @@ export function adresseTexte(text: string): string {
 export function avecContact(text: string): string {
   return esc(text).replaceAll("contact@rundata.re", adresseTexte("contact@rundata.re"));
 }
+
+/**
+ * A phone number written in groups (« 02 62 40 04 04 »), escaped: its groups held by no-break spaces, so that it goes to
+ * the next line whole, and a <wbr class="adr"> after each of them. Over 19.9 rem of screen they are display:none
+ * (pages.ts): the line is laid out as before. Under it (text enlarged on a phone), the number may go to the next line
+ * between two groups, rather than between two digits (« 02 62 40 04 0|4 » at 200 %). A <wbr> holds no character.
+ */
+export function telephoneTexte(tel: string): string {
+  return esc(tel).split(" ").join('\u00a0<wbr class="adr">');
+}
+
+/**
+ * A path of rundata.re written as a link's text (« /collecte/saint-paul », shown « rundata.re/collecte/saint-paul »),
+ * escaped: a <wbr class="adr"> after each « / », so that under 19.9 rem it goes to the next line there, rather than
+ * between two letters (« rundata.re/collec|te/saint-paul » at 150 %). « rundata.re » itself stays whole. The link that
+ * shows it keeps its whole text in aria-label, as lienNom() does.
+ */
+export function cheminTexte(path: string): string {
+  return esc(path).replaceAll("/", '/<wbr class="adr">');
+}

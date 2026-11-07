@@ -9,7 +9,7 @@ import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
 import { BULLETIN_QUOTIDIEN, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
 import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
-import { adresseCoupable } from "./adresse.js";
+import { adresseCoupable, adresseTexte } from "./adresse.js";
 import { SOMMET } from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
@@ -3105,7 +3105,7 @@ ${d?.programmes_communes?.length || d?.non_repris ? `<section aria-labelledby="h
   <div class="sec-h"><p class="eyebrow">Publiés par les mairies</p><h2 id="h-prog">Programmes sportifs des communes</h2>
   ${d.programmes_communes?.length ? `<p>${esc(d.programmes_a_savoir ?? "")}</p>` : ""}</div>
   ${d.programmes_communes?.length ? `<ul class="zones"><li class="card"><ul class="rows eau">${d.programmes_communes.map((p) =>
-    `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a><small>${esc([p.commune, `Source\u00a0: ${p.source}`].filter(Boolean).join(" · "))}</small></span><span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
+    `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a><small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span><span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
   ${d.non_repris ? `<p class="card np">${esc(d.non_repris)}${reprise(d.non_repris)}</p>` : ""}
 </section>` : ""}
 ${d?.resultats?.length ? `<section aria-labelledby="h-res">
@@ -3489,8 +3489,10 @@ export function eventGo(r: Pick<AgendaRow, "titre" | "lieu" | "commune" | "posit
 
 function agendaRow(r: AgendaRow, g: Porte = porte()): string {
   const lieu = r.lieu && r.lieu.length > 80 ? `${r.lieu.slice(0, 79)}…` : r.lieu;
-  const small = [r.commune, lieu, r.prix && r.prix.length < 80 ? r.prix : undefined, r.autres_dates ? `aussi ${r.autres_dates.join(", ")}` : undefined, r.propose ? `${r.publie_par} · ${r.propose}` : r.via ? `${r.publie_par} · via ${r.via.plateforme}, ${r.via.lu}` : r.source ? `Source\u00a0: ${r.source}` : r.publie_par && r.lu_le ? `${r.publie_par}, lu le ${r.lu_le}` : r.publie_par, r.contact ? `contact\u00a0: ${r.contact}` : undefined]
-    .filter(Boolean).map((x) => esc(x!)).join(" · ");
+  // Its source may give a site's address (« © www.departement974.fr »): adresseTexte(), as in the foot.
+  const source = r.source ? `Source\u00a0: ${r.source}` : undefined;
+  const small = [r.commune, lieu, r.prix && r.prix.length < 80 ? r.prix : undefined, r.autres_dates ? `aussi ${r.autres_dates.join(", ")}` : undefined, r.propose ? `${r.publie_par} · ${r.propose}` : r.via ? `${r.publie_par} · via ${r.via.plateforme}, ${r.via.lu}` : source ? source : r.publie_par && r.lu_le ? `${r.publie_par}, lu le ${r.lu_le}` : r.publie_par, r.contact ? `contact\u00a0: ${r.contact}` : undefined]
+    .filter(Boolean).map((x) => (x === source ? adresseTexte(x!) : esc(x!))).join(" · ");
   // Cancelled or postponed stays listed, said first: people look for it.
   const badge = r.statut ? `<span class="badge${r.statut === "complet" ? " m" : ""}">${esc(r.statut)}</span> ` : "";
   const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";
@@ -3636,7 +3638,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
 
   const weekend = d?.ce_week_end.length
     ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Ce week-end</h2><ul class="plain">${d.ce_week_end.slice(0, AGENDA_WEEKEND).map((r) =>
-        `<li><b>${esc(r.quand)}</b> : ${r.statut && r.statut !== "complet" ? `<b>${esc(r.statut)}</b> ` : ""}${esc(r.titre)}${r.commune || r.source ? ` <span class="note" style="color:var(--on-night-muted)">${esc([r.commune && `(${r.commune})`, r.source && `Source\u00a0: ${r.source}`].filter(Boolean).join(" · "))}</span>` : ""}</li>`).join("")}</ul>` +
+        `<li><b>${esc(r.quand)}</b> : ${r.statut && r.statut !== "complet" ? `<b>${esc(r.statut)}</b> ` : ""}${esc(r.titre)}${r.commune || r.source ? ` <span class="note" style="color:var(--on-night-muted)">${[r.commune && esc(`(${r.commune})`), r.source && adresseTexte(`Source\u00a0: ${r.source}`)].filter(Boolean).join(" · ")}</span>` : ""}</li>`).join("")}</ul>` +
       `<p class="note"><a href="/evenements/ce-week-end" style="color:var(--on-night)">${d.ce_week_end.length > AGENDA_WEEKEND ? `Et ${d.ce_week_end.length - AGENDA_WEEKEND} autres : tout` : "Tout"} le week-end →</a></p></figure>`
     : "";
   // The map of tonight, tomorrow and the weekend (evenements-carte.ts): it filters, so it is in the content, under the band.

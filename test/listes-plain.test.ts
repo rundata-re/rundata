@@ -12,7 +12,8 @@ import { site } from "../src/web/site.js";
 
 const W = '<wbr class="adr">';
 // The text a reader copies: a <wbr> holds no character.
-const copied = (html: string) => html.replaceAll(W, "");
+// What a reader copies: neither a <wbr> nor the span around an address (adresseTexte) adds a character.
+const copied = (html: string) => html.replaceAll(W, "").replaceAll('<span class="adrweb">', "").replaceAll("</span>", "");
 const NOW = new Date("2026-11-07T06:00:00Z");
 const at = <T>(value: T) => ({ value, fetchedAt: new Date(NOW.getTime() - 60_000), stale: false });
 const SOURCE = `${DEPARTEMENT_MENTION} (site lu le samedi 07/11 à 10:01)`;
@@ -50,7 +51,7 @@ describe("the lists of the page of a commune's day", () => {
 
   it("writes an event's source by adresseTexte(): the mention whole once the <wbr> are taken out, the event's link untouched", () => {
     const line = html.match(/<li>[^]*?Exposition[^]*?<\/li>/)![0];
-    expect(line).toContain(`Source : © www.${W}departement974.${W}fr - Département de La Réunion (site lu le samedi 07/11 à 10:01)`);
+    expect(line).toContain(`Source : © <span class="adrweb">www.${W}departement974.${W}fr</span> - Département de La Réunion (site lu le samedi 07/11 à 10:01)`);
     expect(copied(line)).toContain(`Source : ${DEPARTEMENT_MENTION} (site lu le`);
     expect(line).toContain('href="https://www.departement974.fr/agenda/exposition"');
     expect(line).toContain(" · Saint-Paul · Source");
@@ -67,7 +68,7 @@ describe("an event's source on /evenements", () => {
   const html = agendaPage("https://rundata.re", { value: { resume: "", nombre: 1, evenements: [row], couverture: "", a_savoir: "", sources: [], ce_week_end: [row] } as never, fetchedAt: NOW }, NOW);
 
   it("writes the mention by adresseTexte() in the list and in the weekend's tile, never in an attribute", () => {
-    const cut = `Source : © www.${W}departement974.${W}fr - Département de La Réunion`;
+    const cut = `Source : © <span class="adrweb">www.${W}departement974.${W}fr</span> - Département de La Réunion`;
     expect(html.split(cut).length - 1).toBe(2);
     expect(html).toContain(`(Saint-Denis) · ${cut}`);
     // The map's point keeps its text whole in its attribute.

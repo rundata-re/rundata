@@ -17,7 +17,7 @@ import * as connecteurs from "./connecteurs.js";
 import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { ICS_PATH, JSON_PATH } from "./flux-associations.js";
 import { esc } from "./map.js";
-import { layout } from "./pages.js";
+import { adressesCoupables, layout } from "./pages.js";
 import { lienForm, PROPOSER_PATH, TURNSTILE_SCRIPT } from "./propositions.js";
 import brand from "./brand.json" with { type: "json" };
 import { KREOL } from "./publier-texte.js";
@@ -192,7 +192,7 @@ ${lienForm(PATH)}
 </section>
 <section aria-labelledby="h-relais">
   <div class="sec-h"><h2 id="h-relais">Faites passer</h2><p>Le texte à transmettre aux autres clubs et associations\u00a0:</p></div>
-  <div class="card fo"><p id="relais">${esc(RELAIS)}</p>
+  <div class="card fo"><p id="relais">${adressesCoupables(RELAIS, true)}</p>
   <p><button type="button" data-copy="relais">Copier le texte</button> <a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(RELAIS)}" target="_blank" rel="noopener">Partager sur WhatsApp</a></p></div>
 </section>
 <p>Une question\u00a0? ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}</p>

@@ -160,7 +160,7 @@ describe("The pages' part", () => {
     expect(html).toContain('<p id="retours">Les retours. Pour savoir si le site sert d\'un jour à l\'autre, votre navigateur garde deux dates :');
     // What venu() does: past 13 months, wiped at the next visit, before anything is sent (« première »).
     expect(html).toContain("Passé 13 mois après votre première visite, il est effacé dès votre visite suivante, avant tout envoi\u00a0; il n'est jamais prolongé. Sans nouvelle visite, il reste sur votre appareil, sans être lu ni envoyé.");
-    expect(html).toContain('(« Cookies : solutions pour les outils de mesure d\'audience », <a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience" aria-label="cnil.fr">cnil.<wbr>fr</a>).</p>');
+    expect(html).toContain('(« Cookies : solutions pour les outils de mesure d\'audience », <a href="https://www.cnil.fr/fr/cookies-et-autres-traceurs/regles/cookies-solutions-pour-les-outils-de-mesure-daudience" aria-label="cnil.fr"><span class="adrweb">cnil.<wbr>fr</span></a>).</p>');
   });
 
   it("says on /confidentialite what Cloudflare Web Analytics measures, after our own statistics", () => {

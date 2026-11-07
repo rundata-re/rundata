@@ -368,8 +368,14 @@ p,ul,ol,table,figure{margin:0}
 /* A day's number with its month (« 10 novembre »), on one line (marketing), or « Saint-Paul » in /presse's release, never
    « Saint- / Paul » at 390 px; under 19.9 em, below, the line may break there. */
 .jm{white-space:nowrap}
-/* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. */
+/* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. An address
+   (adresseCoupable, adressesCoupables) is never hyphenated: under 19.9 rem WebKit drew a hyphen inside its name
+   (« runda-ta.re », « geo.api.-gouv.fr »); it goes to the next line at its <wbr>, or a soft hyphen its caller put. Its
+   class is not .adresse, the forms' own (formulaires-style.ts), which enlarges its text. Its span draws no box and takes
+   everything from its parent but the hyphen: in a flex pill (.pill) it would be an item of its own, in a fact (.facts
+   span) a pill of its own; two classes, to outweigh such rules. */
 wbr.adr{display:none}
+.adrweb.adrweb{all:inherit;display:contents;-webkit-hyphens:manual;hyphens:manual}
 /* An identifier from a source (soulignesCoupables, domains.ts) goes to the next line after a « _ » only, never with a
    hyphen: « 2026_PORT_|05 », never « DGFIP4_Tréso-rerie ». */
 .ident{hyphens:manual;-webkit-hyphens:manual}
@@ -1754,13 +1760,14 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
 
 /**
  * A page's sources, each with its licence. A producer's name may go to the next line after its « . » or before its inner
- * capital (« Sensor.<wbr>Community », nomsCoupables), an address after each « / » or « . » (adressesCoupables).
+ * capital (« Sensor.<wbr>Community », nomsCoupables), an address after each « / » or « . », a bare domain
+ * after each « . » (« geo.api.gouv.fr », adressesCoupables with its second argument).
  */
 export function credits(list: Credit[]): string {
   const seen = new Set<string>();
   return list
     .filter((c) => !seen.has(c.source) && seen.add(c.source))
-    .map((c) => `${nomsCoupables(adressesCoupables(c.source))} (${adressesCoupables(c.licence)})`)
+    .map((c) => `${nomsCoupables(adressesCoupables(c.source, true))} (${adressesCoupables(c.licence, true)})`)
     .join(" ; ");
 }
 
@@ -1831,18 +1838,33 @@ const FLAG_FR = `<svg viewBox="0 0 3 2" aria-hidden="true"><path fill="#002654" 
 
 /**
  * Escaped text whose addresses written out (https://rundata.re/coupures-eau, www.ipgp.fr/…, dx.doi.org/10.17183/REFMAR)
- * get a <wbr> after each run of « / » or « . » inside them: with the text at 200 %, a line ends there rather than one or
- * two letters before the end of a word, which overflow-wrap:anywhere does only when a piece is longer than its line.
+ * get a <wbr> after each run of « / » and each « . » inside them (coupeAdresse): with the text at 200 %, a line
+ * ends there rather than one or two letters before the end of a word, which overflow-wrap:anywhere does only when a piece
+ * is longer than its line.
  * <wbr> holds no character, so a copy of the text is the text. Never in a link: Chrome names it with a space for each
- * <wbr> (coupable, domains.ts).
+ * <wbr> (coupable, domains.ts). `domaines`: a bare domain in the rest of the text (« geo.api.gouv.fr » in a page's
+ * sources) goes through adresseTexte(), its <wbr> counting only under 19.9 rem, in a span WebKit never hyphenates; and the
+ * <wbr> after « https:// » and after each « . » of a full address count only there too, so that at 390 px a sentence
+ * newly cut here keeps its lines (« sur https:// » or « sur https://altervelo. » never ends one).
  */
-export function adressesCoupables(text: string): string {
-  return text.split(/((?:https?:\/\/|www\.)[^\s«»"<>]+)/).map((x, i) => (i % 2 ? coupeAdresse(x) : esc(x))).join("");
+export function adressesCoupables(text: string, domaines = false): string {
+  return text
+    .split(/((?:https?:\/\/|www\.)[^\s«»"<>]+)/)
+    .map((x, i) => (i % 2 ? coupeAdresse(x, domaines ? '<wbr class="adr">' : "<wbr>") : domaines ? adresseTexte(x) : esc(x)))
+    .join("");
 }
 
-/** An address (or an e-mail address), escaped, with a <wbr> after each run of « / », « . » or « @ » inside it. */
-function coupeAdresse(address: string): string {
-  return address.split(/(?<=[/.@])(?=[^/.@])/).map(esc).join("<wbr>");
+/**
+ * An address (or an e-mail address), escaped, with a <wbr> after each run of « / », « . » or « @ » inside it, in a
+ * <span class="adrweb"> that WebKit never hyphenates (pages.ts CSS). `point`: the <wbr> after « https:// » and after
+ * each « . », <wbr class="adr"> in a text newly cut by adressesCoupables(…, true), which counts only under 19.9 rem; the
+ * other addresses keep their lines as before. It goes after the « . », never before: a <wbr> between a letter and its
+ * « . » breaks their kerning, even hidden in WebKit, and the line grows.
+ */
+function coupeAdresse(address: string, point = "<wbr>"): string {
+  const parts = address.split(/(?<=[/.@])(?=[^/.@])/);
+  const apres = (p: string) => (/^https?:\/\/$/.test(p) || p.endsWith(".") ? point : "<wbr>");
+  return `<span class="adrweb">${parts.map((p, i) => esc(p) + (i < parts.length - 1 ? apres(p) : "")).join("")}</span>`;
 }
 
 /**

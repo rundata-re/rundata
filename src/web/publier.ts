@@ -3,6 +3,7 @@
  * marketing (web/publier-texte.ts). Each format says whether rundata.re reads it, from the code: a label turns to
  * « Déjà lu » only once its reader is merged. Nothing is read to build it.
  */
+import { adressesDuTexte } from "./adresse.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, lienNom, nomsCoupables, soulignesCoupables, webPage } from "./domains.js";
 import { esc } from "./map.js";
@@ -203,7 +204,8 @@ export function publierPage(origin: string, alerte?: Alerte): string {
   const guide = open ? GUIDE.replace(/^> \*\*Votre flux est en ligne[\s\S]*?remplacera bientôt cet e-mail\.$/m, REFERENCER_FORMULAIRE) : GUIDE;
   if (open && guide === GUIDE) throw new Error("publier : « Référencer votre flux » introuvable");
   // The address to write to opens the mail, with its subject.
-  let body = render(guide).replaceAll("<strong>contact@rundata.re</strong>", `<strong>${lienNom(MAILTO, "contact@rundata.re")}</strong>`);
+  // Its addresses in the text may go to the next line after a « . », never hyphenated (adressesDuTexte).
+  let body = adressesDuTexte(render(guide).replaceAll("<strong>contact@rundata.re</strong>", `<strong>${lienNom(MAILTO, "contact@rundata.re")}</strong>`));
   if (open) {
     body = `<aside class="card callout"><p>Petit club, peu de temps\u00a0? Commencez par l'<a href="/associations">Espace clubs et associations</a>\u00a0: quelques clics suffisent.</p></aside>\n${body.replace(`<section id="exemples" class="guide">`, `${lienForm(PATH)}\n<section id="exemples" class="guide">`)}${TURNSTILE_SCRIPT}`;
   }

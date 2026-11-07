@@ -131,7 +131,7 @@ describe("the antennas of the island (ANFR)", () => {
     expect(html).not.toMatch(/5G en service/);
     // The commune of the tile has the same counts, its operators without « sur ».
     expect(html).toContain('<th scope="row">Cilaos</th><td data-label="Supports mobiles">7</td><td data-label="Dont 5G techniquement opérationnelle">5</td><td data-label="Supports par opérateur">Orange 2, SFR Réunion 4, Free 1, Zeop 1</td><td data-label="Supports radio et TV">6</td>');
-    expect(html).toContain('<a href="https://www.cartoradio.fr" rel="noopener" aria-label="cartoradio.fr">cartoradio.<wbr>fr</a>');
+    expect(html).toContain('<a href="https://www.cartoradio.fr" rel="noopener" aria-label="cartoradio.fr"><span class="adrweb">cartoradio.<wbr>fr</span></a>');
     // Served, and linked from the commune's tile.
     const res = await handle(new Request("https://rundata.re/antennes"), new Cache());
     expect(res.status).toBe(200);

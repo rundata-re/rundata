@@ -40,7 +40,7 @@ describe("text that may be cut after a « . » or a « _ »", () => {
     expect(dd).toContain('couche ouverte <span class="ident">ind_<wbr>atmo_<wbr>2021</span> (');
     // In the link too, after each « . » of its address, its whole text in aria-label: a <wbr> alone would make a screen
     // reader say « data. gouv. fr ».
-    expect(dd).toContain('rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur data.<wbr>gouv.<wbr>fr</a>)');
+    expect(dd).toContain('rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur <span class="adrweb">data.<wbr>gouv.<wbr>fr</span></a>)');
     expect(dd).toContain('<a href="https://www.data.gouv.fr/datasets/indice-de-la-qualite-de-lair-quotidien-par-commune-indice-atmo" ');
   });
 });

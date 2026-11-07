@@ -54,26 +54,28 @@ describe("larger text on a narrow screen, on the pages of facts and of search", 
   });
 
   it("cuts an address written out after a « / » or a « . », and a copy of it is still the address", () => {
-    // overflow-wrap:anywhere filled each line up to its last letter: « https://rundata.re/coupur | es-eau ».
-    expect(adressesCoupables("Lis https://rundata.re/coupures-eau é di amwin.")).toBe("Lis https://<wbr>rundata.<wbr>re/<wbr>coupures-eau é di amwin.");
-    expect(adressesCoupables("REFMAR. http://dx.doi.org/10.17183/REFMAR#RONIM")).toBe("REFMAR. http://<wbr>dx.<wbr>doi.<wbr>org/<wbr>10.<wbr>17183/<wbr>REFMAR#RONIM");
+    // overflow-wrap:anywhere filled each line up to its last letter: « https://rundata.re/coupur | es-eau ». The cut before a
+    // « . » is a <wbr class="adr">, hidden over 19.9 rem: at 390 px the line still ends after « https:// », never
+    // « https://rundata | .re/air ».
+    expect(adressesCoupables("Lis https://rundata.re/coupures-eau é di amwin.")).toBe("Lis <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>coupures-eau</span> é di amwin.");
+    expect(adressesCoupables("REFMAR. http://dx.doi.org/10.17183/REFMAR#RONIM")).toBe("REFMAR. <span class=\"adrweb\">http://<wbr>dx.<wbr>doi.<wbr>org/<wbr>10.<wbr>17183/<wbr>REFMAR#RONIM</span>");
     // An address without its scheme, an ellipsis kept whole, the text around escaped.
-    expect(adressesCoupables("🇫🇷 www.ipgp.fr/volcanoweb/r... & <b>")).toBe("🇫🇷 www.<wbr>ipgp.<wbr>fr/<wbr>volcanoweb/<wbr>r... &amp; &lt;b&gt;");
-    expect(adressesCoupables("https://x.re/a?b=1&c=2")).toBe("https://<wbr>x.<wbr>re/<wbr>a?b=1&amp;c=2");
+    expect(adressesCoupables("🇫🇷 www.ipgp.fr/volcanoweb/r... & <b>")).toBe("🇫🇷 <span class=\"adrweb\">www.<wbr>ipgp.<wbr>fr/<wbr>volcanoweb/<wbr>r...</span> &amp; &lt;b&gt;");
+    expect(adressesCoupables("https://x.re/a?b=1&c=2")).toBe("<span class=\"adrweb\">https://<wbr>x.<wbr>re/<wbr>a?b=1&amp;c=2</span>");
     // A text without an address: escaped, nothing more.
     expect(adressesCoupables("Saint-Denis, l'été.")).toBe("Saint-Denis, l&#39;été.");
     expect(credits([{ source: "©\u00a0www.departement974.fr - Département de La Réunion", licence: "Information publique", attribution: "" }])).toBe(
-      "©\u00a0www.<wbr>departement974.<wbr>fr - Département de La Réunion (Information publique)",
+      "©\u00a0<span class=\"adrweb\">www.<wbr class=\"adr\">departement974.<wbr class=\"adr\">fr</span> - Département de La Réunion (Information publique)",
     );
   });
 
   it("cuts a link written as its address after a « / », a « . » or a « @ », and names it by its address", () => {
     // Chrome names a link with a space for each <wbr> (« rundata. re/ actualites »): aria-label holds the address.
     expect(lienAdresse("https://rundata.re/actualites", "rundata.re/actualites")).toBe(
-      '<a href="https://rundata.re/actualites" aria-label="rundata.re/actualites">rundata.<wbr>re/<wbr>actualites</a>',
+      '<a href="https://rundata.re/actualites" aria-label="rundata.re/actualites"><span class="adrweb">rundata.<wbr>re/<wbr>actualites</span></a>',
     );
     expect(lienAdresse("mailto:contact@rundata.re", "contact@rundata.re", ' class="x"')).toBe(
-      '<a href="mailto:contact@rundata.re" class="x" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>',
+      '<a href="mailto:contact@rundata.re" class="x" aria-label="contact@rundata.re"><span class="adrweb">contact@<wbr>rundata.<wbr>re</span></a>',
     );
   });
 

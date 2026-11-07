@@ -430,7 +430,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     const robot = await post("/associations/lien", { ...fields, "cf-turnstile-response": "autre" }, { origin: "https://rundata.re" });
     expect(robot.status).toBe(503);
     const html = plain(await robot.text());
-    expect(html).toContain('<p class="msg vu" id="lien-verif" role="alert">Le lien n\'a pas été enregistré : la vérification anti-robot n\'a pas pu se faire. Votre saisie est gardée ci-dessous. Réessayez dans un instant ; si ça dure, écrivez à contact@<wbr class="adr">rundata.<wbr class="adr">re.</p>');
+    expect(html).toContain('<p class="msg vu" id="lien-verif" role="alert">Le lien n\'a pas été enregistré : la vérification anti-robot n\'a pas pu se faire. Votre saisie est gardée ci-dessous. Réessayez dans un instant ; si ça dure, écrivez à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.</p>');
     expect(html).not.toContain("vérifiez les champs");
     for (const v of ['value="Club de volley"', 'value="https://club.example/agenda.ics"', 'value="0262 00 00 00"', "<option selected>Saint-Paul</option>", 'value="oui" required checked', 'name="page" value="/publier"']) expect(html).toContain(v);
     expect(html).toContain("<title>Erreur : lien non enregistré · Clubs et associations · 974</title>");
@@ -439,7 +439,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect(html).toContain('<a href="/publier">Retour à la page précédente</a>');
     // A field wrong: « vérifiez les champs », the field marked.
     const wrong = plain(await (await post("/associations/lien", { ...fields, lien: "club.example", "cf-turnstile-response": "jeton-turnstile" })).text());
-    expect(wrong).toContain('id="lien-erreur" role="alert">Le lien n\'a pas pu être enregistré : vérifiez les champs (un lien commence par https://), ou écrivez à contact@<wbr class="adr">rundata.<wbr class="adr">re. Votre saisie est gardée ci-dessous.</p>');
+    expect(wrong).toContain('id="lien-erreur" role="alert">Le lien n\'a pas pu être enregistré : vérifiez les champs (un lien commence par https://), ou écrivez à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>. Votre saisie est gardée ci-dessous.</p>');
     expect(wrong).toMatch(/name="lien" [^>]*value="club.example" aria-invalid="true"/);
     expect(rows("SELECT * FROM liens")).toHaveLength(0);
   });
@@ -976,13 +976,13 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     formulaires.ouvrir(true);
     // Under the dated press release, never inside it.
     const presse = plain(await (await get("/presse")).text());
-    expect(presse).toContain('</article><p>Clubs et associations : comment ils publient leurs événements sur <span class="ident">rundata.re</span>, gratuitement et en données ouvertes, <a href="https://rundata.re/associations" aria-label="rundata.re/associations">rundata.<wbr>re/<wbr>associations</a></p></section>');
+    expect(presse).toContain('</article><p>Clubs et associations : comment ils publient leurs événements sur <span class="ident">rundata.re</span>, gratuitement et en données ouvertes, <a href="https://rundata.re/associations" aria-label="rundata.re/associations"><span class="adrweb">rundata.<wbr>re/<wbr>associations</span></a></p></section>');
     const privacy = plain(await (await get("/confidentialite")).text());
     expect(privacy).toContain('<li><a href="/associations">Clubs et associations</a></li>');
     expect(privacy).toContain('<h2 id="associations-donnees">');
     expect(privacy).toContain("La vérification anti-robot (Cloudflare Turnstile) voit l'adresse au moment de l'envoi, sans que nous la gardions.");
     expect(privacy).toContain('Seuls les deux formulaires des clubs et associations demandent une adresse électronique (voir <a href="#associations-donnees">« Ce que les clubs et associations envoient »</a>).');
-    expect(privacy).toContain('Pour consulter ou faire effacer ce que nous gardons, écrivez à <b>contact@<wbr class="adr">rundata.<wbr class="adr">re</b> : nous répondons sous un mois.');
+    expect(privacy).toContain('Pour consulter ou faire effacer ce que nous gardons, écrivez à <b><span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span></b> : nous répondons sous un mois.');
     expect(privacy).not.toContain("Aucune donnée ne permet de vous identifier");
     const terms = plain(await (await get("/conditions")).text());
     expect(terms).toContain('<p id="evenements-proposes"><b>Événements proposés par les clubs et associations.</b> L\'association qui propose un événement en est responsable : ');

@@ -171,14 +171,14 @@ describe("the children's page", () => {
     expect(LEAD).toContain(`skateparks${NBSP}: les lieux`);
     expect(LEAD).toContain(`De 0 à 17${NBSP}ans`);
     expect(flat(html)).toContain("Ce que vous ne trouverez pas ici.</b> Les accueils de loisirs (centres aérés)");
-    expect(html).toContain('<a href="https://monenfant.fr" rel="noopener" aria-label="monenfant.fr">monenfant.<wbr>fr</a>');
+    expect(html).toContain('<a href="https://monenfant.fr" rel="noopener" aria-label="monenfant.fr"><span class="adrweb">monenfant.<wbr>fr</span></a>');
     expect(flat(html)).toContain(esc("Lieux : © les contributeurs d'OpenStreetMap (ODbL) ; recensement des équipements sportifs (Data ES, ministère des Sports)"));
     expect(flat(html)).toContain(esc("Les âges en gras viennent de l'organisateur ou de la carte."));
     // The question to ask an AI, in Creole and in French, a no-break space before each « ? ».
     expect(ASK_KREOL).toBe(`Kosa néna pou fé ek marmay sé wikenn la${NBSP}? Gèt si https://rundata.re/enfants é di amwin.`);
     expect(ASK_FRANCAIS).toBe(`Où aller avec les enfants ce week-end à La Réunion${NBSP}? Lis https://rundata.re/enfants et propose-moi des lieux et des activités pour leur âge, près de chez moi.`);
     // The address cut after a « / » or a « . » rather than inside a word, with the text at 200 %.
-    expect(html).toContain(`<p class="askq">« ${esc(ASK_KREOL).replace("https://rundata.re/enfants", "https://<wbr>rundata.<wbr>re/<wbr>enfants")} »</p>`);
+    expect(html).toContain(`<p class="askq">« ${esc(ASK_KREOL).replace("https://rundata.re/enfants", '<span class="adrweb">https://<wbr>rundata.<wbr>re/<wbr>enfants</span>')} »</p>`);
     expect(html).toContain(`https://claude.ai/new?q=${encodeURIComponent(ASK_FRANCAIS)}`);
     // Never all the places, never open without the source's hours.
     expect(html).not.toMatch(/tous les lieux|toutes les activités/i);

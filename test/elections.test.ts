@@ -4,6 +4,7 @@ import { toutesLesSources } from "../src/server.js";
 import * as elections from "../src/vie/elections.js";
 import data from "../src/vie/elections.json" with { type: "json" };
 import { communePage } from "../src/web/commune.js";
+import { adresseTexte } from "../src/web/adresse.js";
 import { esc } from "../src/web/map.js";
 import { pageOf } from "../src/web/places.js";
 
@@ -134,7 +135,7 @@ describe("the part « Élections » of a commune's page", () => {
     expect(euro2009).not.toContain("N°");
     expect(part).toContain(esc("Les bureaux de vote changent de périmètre d'une élection à l'autre : la série est donnée pour la commune entière."));
     // The sources at the foot of the page.
-    expect(page("saint-paul")).toContain(`<p class="sources">${esc("Source\u00a0: Ministère de l'Intérieur, données agrégées par data.gouv.fr (Licence Ouverte Etalab 2.0), jeu mis à jour le 07/07/2026.")}</p>`);
+    expect(page("saint-paul")).toContain(`<p class="sources">${adresseTexte("Source\u00a0: Ministère de l'Intérieur, données agrégées par data.gouv.fr (Licence Ouverte Etalab 2.0), jeu mis à jour le 07/07/2026.")}</p>`);
     for (const s of elections.ofCommune("Saint-Paul")) expect(part).toContain(`<summary><h4>${s.nom}</h4></summary>`);
     // The présidentielle's first round: its twelve candidates in the order of their panels.
     const pres = elections.ofCommune("Saint-Paul").find((s) => s.type === "pres")!.tours[0]![0]!;

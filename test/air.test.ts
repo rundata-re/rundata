@@ -130,7 +130,7 @@ describe("air quality: what the index is and where it comes from", () => {
     expect(body(await qualiteAir(cache(diffused(YESTERDAY)), undefined, NOW)).echeance).toBeUndefined();
     const source = page.slice(page.indexOf('id="h-source-air"'), page.indexOf("</section>", page.indexOf('id="h-source-air"')));
     expect(source).toContain('<a href="https://www.atmo-reunion.net" rel="noopener">Atmo Réunion</a>');
-    expect(source).toContain(`<a href="${atmo.DIFFUSION}" rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur data.<wbr>gouv.<wbr>fr</a>`);
+    expect(source).toContain(`<a href="${atmo.DIFFUSION}" rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur <span class="adrweb">data.<wbr>gouv.<wbr>fr</span></a>`);
     expect(source).toContain(`<a href="${atmo.ODBL}" rel="noopener">ODbL 1.0</a>`);
     expect(source).toContain(`<a href="${esc(atmo.GUIDE)}" rel="noopener">guide de calcul de l'indice ATMO</a>`);
     expect(source).toContain("Prévision diffusée par Atmo Réunion la veille, le 22/10 à 10:45. Lue par rundata.re le 23/10 à 09:00.</p>");

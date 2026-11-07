@@ -112,7 +112,7 @@ describe("the clubs' own space", () => {
     });
     const r = await get(`${club.CLUB_PATH}?q=hand`);
     expect(r.status).toBe(503);
-    expect(plain(await r.text())).toContain(`La liste des clubs ne répond pas pour l'instant. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à contact@<wbr class="adr">rundata.<wbr class="adr">re.`);
+    expect(plain(await r.text())).toContain(`La liste des clubs ne répond pas pour l'instant. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
   });
 
   it("screen 2: reads the club's page once in ten minutes, however often it is opened, and keeps only the mask", async () => {
@@ -138,7 +138,7 @@ describe("the clubs' own space", () => {
     pages = {};
     r = await get(`${club.DEMANDE_PATH}?club=${tampon}`);
     expect(r.status).toBe(503);
-    expect(plain(await r.text())).toContain(`La vérification de l'adresse ne répond pas pour l'instant. Rien n'a été envoyé. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à contact@<wbr class="adr">rundata.<wbr class="adr">re.`);
+    expect(plain(await r.text())).toContain(`La vérification de l'adresse ne répond pas pour l'instant. Rien n'a été envoyé. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
     expect((await get(`${club.DEMANDE_PATH}?club=999`)).status).toBe(404);
     expect((await get(`${club.DEMANDE_PATH}?club=abc`)).status).toBe(404);
   });

@@ -140,8 +140,8 @@ describe("cyclones", () => {
     expect(live).not.toMatch(/Au plus près|Déplacement|Vent moyen|Cercles à 500|km au |rafales|hPa|Pression/);
     expect(page).toContain("<h3>Fytia <span class=\"note\">tempête tropicale modérée</span></h3><p>Dernier avis du CMRS : 03/02 à 10:00 (heure de La Réunion).</p>");
     expect(page).toContain("<title>Cyclone en ce moment : trajectoire, alerte · 974</title>");
-    expect(page).toContain("Néna in siklone pa loin La Rényon ? Gèt si https://<wbr>rundata.<wbr>re/<wbr>cyclones é di amwin sak Météo-France é la préfektir i di.");
-    expect(page).toContain("Y a-t-il un cyclone près de La Réunion ? Lis https://<wbr>rundata.<wbr>re/<wbr>cyclones et dis-moi ce qu'en disent Météo-France et la préfecture.");
+    expect(page).toContain("Néna in siklone pa loin La Rényon ? Gèt si <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>cyclones</span> é di amwin sak Météo-France é la préfektir i di.");
+    expect(page).toContain("Y a-t-il un cyclone près de La Réunion ? Lis <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>cyclones</span> et dis-moi ce qu'en disent Météo-France et la préfecture.");
     const out = body(await cyclones(cache(OCTOBER), undefined, OCTOBER)) as CyclonesAnswer;
     const quiet = cyclonesPage("https://rundata.re", { value: out, fetchedAt: OCTOBER, stale: false }, OCTOBER);
     expect(quiet).toContain("<thead><tr><th>Système</th><th>Dates</th></tr></thead>");

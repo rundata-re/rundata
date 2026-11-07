@@ -4,26 +4,55 @@
  */
 import { esc } from "./map.js";
 
+// An address in an escaped text (« infotrafic.re », « geo.api.gouv.fr », « contact@rundata.re »): letters, digits, « - »,
+// « _ » or a soft hyphen, then each « . » or « @ » between a lowercase letter or a digit and a lowercase letter, with the
+// letters after it. « Sensor.Community » (a capital after the « . »), « 1.0.476 » or a sentence's last « . » are none.
+const ADRESSE = /[\p{L}\p{N}_\u00ad-]*[\p{Ll}\p{N}](?:[.@](?=\p{Ll})[\p{L}\p{N}_\u00ad-]+)+/gu;
+
 /**
- * An address in a text (« infotrafic.re », « contact@rundata.re »), escaped: it may go to the next line after each of its
- * « . » and « @ », rather than one or two letters before its end. Chrome never hyphenates a word that holds a « . », so a
- * long name in a narrow box (a heading or a pill, text enlarged on a phone) also takes a soft hyphen where the caller puts
- * one (« info\u00ADtrafic.re »). A heading or pill writes its address here; a link's whole text goes through lienNom().
+ * An address in a text (« infotrafic.re », « contact@rundata.re »), escaped: it may go to the next line after each of
+ * its « . » and its « @ » (« geo.api. / gouv.fr », « contact@ / rundata. / re »), rather than one or two letters before
+ * its end. After the « . », not before it: a <wbr> between a letter and its « . » breaks their kerning, the address
+ * grows by almost a pixel, and a full line at 390 px loses its last word. It is in a <span class="adrweb">, which WebKit never hyphenates (pages.ts): with the text enlarged it
+ * drew a hyphen inside the name (« runda-ta.re », « geo.api.-gouv.fr »), and a copy of the line kept a wrong address.
+ * Chrome never hyphenates a word that holds a « . », so a long name in a narrow box (a heading or a pill, text enlarged
+ * on a phone) also takes a soft hyphen where the caller puts one (« info\u00ADtrafic.re »). A heading or pill writes its
+ * address here; a link's whole text goes through lienNom().
  */
 export function adresseCoupable(text: string): string {
-  return esc(text).replaceAll(/(?<=[\p{Ll}\p{N}])([.@])(?=\p{Ll})/gu, "$1<wbr>");
+  return coupe(esc(text));
 }
+
+/**
+ * adresseCoupable() on a text already escaped. The site's own name alone (« sur rundata.re ») is left to typo(), which
+ * writes it whole in its <span class="ident">: never « rundata. » alone at the end of a line.
+ */
+const coupe = (html: string) =>
+  html.replaceAll(ADRESSE, (a) =>
+    a === "rundata.re" ? a : `<span class="adrweb">${a.replaceAll(/(?<=[\p{Ll}\p{N}])([.@])(?=\p{Ll})/gu, "$1<wbr>")}</span>`);
 
 /**
  * An address in a sentence, out of a link (« écrivez à contact@rundata.re », the foot's sources): adresseCoupable(), its
  * <wbr> marked .adr. Over 19.9 rem of screen they are display:none (pages.ts), and the sentence goes to the next line as
  * it did without them: at 390 px, « contact@rundata.re » moves to the next line whole, never « contact@ / rundata.re ».
- * Under it (text enlarged on a phone) the address may go to the next line after a « . » or « @ », rather than one or two
- * letters before its end (« contact@rund|ata.re » at 200 %). No span around it: WebKit would draw the rest of the line a
- * pixel further. A <wbr> holds no character: the copied text and what a screen reader says are the address.
+ * Under it (text enlarged on a phone) the address may go to the next line after a « . » or a « @ », rather than one
+ * or two letters before its end (« contact@rund|ata.re » at 200 %). A <wbr> holds no character, nor does the span around
+ * the address: the copied text and what a screen reader says are the address.
  */
 export function adresseTexte(text: string): string {
   return adresseCoupable(text).replaceAll("<wbr>", '<wbr class="adr">');
+}
+
+/**
+ * A fragment of HTML written from a text (the guide of /publier, in Markdown): the addresses of its text written as
+ * adresseTexte() does (« Outlook.com », « schema.org », « rundata.re : » in its titles), never in a tag, a <code> (a feed's
+ * address, the code's own rule) nor a link (whose text is its name, lienNom()).
+ */
+export function adressesDuTexte(html: string): string {
+  return html
+    .split(/(<code\b[^]*?<\/code>|<a\b[^]*?<\/a>|<[^>]*>)/)
+    .map((x, i) => (i % 2 ? x : coupe(x).replaceAll("<wbr>", '<wbr class="adr">')))
+    .join("");
 }
 
 /**

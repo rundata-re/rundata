@@ -64,7 +64,7 @@ describe("the page of a commune's day", () => {
     expect(html).toContain("Fête 0");
     expect(html).toContain('<a href="/electricite">électricité</a>');
     expect(html).not.toMatch(/conforme/);
-    expect(html).toContain(`<a href="https://www.infotrafic.re/" rel="noopener" aria-label="la carte officielle sur infotrafic.re ↗">la carte officielle sur infotrafic.<wbr>re ↗</a>`);
+    expect(html).toContain(`<a href="https://www.infotrafic.re/" rel="noopener" aria-label="la carte officielle sur infotrafic.re ↗">la carte officielle sur <span class="adrweb">infotrafic.<wbr>re</span> ↗</a>`);
     expect(html).not.toMatch(/waze/i);
     // The hero's island situating the commune, as on its page, left out on a phone.
     expect(html).toMatch(/<figure class="card mapcard nophone"><svg [^>]*aria-label="Carte de La Réunion \(974\) situant [^"]*Entre-Deux"/);
@@ -79,7 +79,7 @@ describe("the page of a commune's day", () => {
     expect(html).toContain(`Marché aujourd'hui : <a href="https://www.mairie-saintpaul.re/marches-forains/" rel="noopener"><b>Marché forain de Saint-Paul</b></a> <span class="note">de 7\u00a0h à 12\u00a0h, Quai Gilbert, d&#39;après le site de la mairie de Saint-Paul</span>`);
     expect(html).toContain("<b>déchets verts acceptés dans 1 sur 1</b>");
     expect(html).toContain('<a href="/decheteries#saint-paul">les bennes →</a>');
-    expect(html).toContain('Pharmacie de garde (nuits, dimanches, jours fériés) : <b><a href="https://www.3237.fr/" rel="noopener" aria-label="3237.fr">3237.<wbr>fr</a></b>, ou le 32 37 (payant)');
+    expect(html).toContain('Pharmacie de garde (nuits, dimanches, jours fériés) : <b><a href="https://www.3237.fr/" rel="noopener" aria-label="3237.fr"><span class="adrweb">3237.<wbr>fr</span></a></b>, ou le 32 37 (payant)');
     // Without the prices of the month, no fuel line; elsewhere than the TCO, no skips.
     expect(html).not.toContain("Carburants :");
     const tampon = pageOf("le-tampon")!;
@@ -201,7 +201,7 @@ describe("the top of the page of a commune's day", () => {
       "<li><b>Vigilance\u00a0:</b> verte pour l&#39;Est (Météo-France).</li>" +
       "<li><b>Sorties\u00a0:</b> aucun événement trouvé aujourd'hui dans les agendas lus.</li>" +
       "<li><b>Carburants\u00a0:</b> prix maximum du mois\u00a0: sans plomb 2,11 €/L, gazole 1,69 €/L.</li>" +
-      '<li><b>Pharmacie de garde\u00a0:</b> <a href="https://www.3237.fr/" rel="noopener" aria-label="3237.fr">3237.<wbr>fr</a></li></ul>');
+      '<li><b>Pharmacie de garde\u00a0:</b> <a href="https://www.3237.fr/" rel="noopener" aria-label="3237.fr"><span class="adrweb">3237.<wbr>fr</span></a></li></ul>');
     // An event count; no weather nor fuel line without their data, no green line under a banner.
     const few = dayLines(p, day({ vigilance: vigil("Vigilance météo : jaune fortes pluies pour l'Est (Météo-France), la zone de Salazie.", true), evenements_du_jour: { liste: [{}, {}], autres: 1 } }));
     expect(few).toContain("<li><b>Sorties\u00a0:</b> 3 événements aujourd'hui.</li>");

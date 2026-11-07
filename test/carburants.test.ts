@@ -208,7 +208,7 @@ describe("the prefect's fuel prices", () => {
 
   it("unread, say so on their page in the tool's words, with the prefecture's link, never « se charge »", () => {
     const page = render("https://rundata.re", null, NOW);
-    expect(page).toContain(`<p class="lead">Les prix des carburants ne sont pas disponibles pour le moment : voir la préfecture (<a href="${carburants.SOURCE.url}" rel="noopener" aria-label="reunion.gouv.fr">reunion.<wbr>gouv.<wbr>fr</a>).</p>`);
+    expect(page).toContain(`<p class="lead">Les prix des carburants ne sont pas disponibles pour le moment : voir la préfecture (<a href="${carburants.SOURCE.url}" rel="noopener" aria-label="reunion.gouv.fr"><span class="adrweb">reunion.<wbr>gouv.<wbr>fr</span></a>).</p>`);
     expect(page).not.toMatch(/se charge|rechargez/);
   });
 

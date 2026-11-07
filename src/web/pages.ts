@@ -2606,7 +2606,8 @@ const CROWDED = new Set(["Plage de la Saline les Bains", "Plage de Saint-Paul"])
 /**
  * The risk of coral bleaching at the three points of NOAA's grid, in marketing's words: the level in words with a scale
  * of 0 to 7 in night blue (the level's cell full), never NOAA's yellow, orange and red, and what the level is (the
- * highest of the last 7 days, or of the days the source has).
+ * highest of the last 7 days, or of the days the source has). A point without a level had none on any of those days, so it
+ * says so of « ces jours », never of one day.
  */
 export function reefSection(c: Cached<coraux.Coraux> | null): string {
   const head = `<div class="sec-h"><p class="eyebrow">Indice satellite, selon NOAA</p><h2 id="h-coraux">${esc(coraux.TITRE)}</h2>`;
@@ -2615,7 +2616,7 @@ export function reefSection(c: Cached<coraux.Coraux> | null): string {
     (p.niveau != null
       ? `<b>${esc(coraux.NIVEAUX[p.niveau])}</b><span>selon NOAA</span>` +
         `<span class="echelle" role="img" aria-label="niveau ${p.niveau} sur une échelle de 0 à 7">${coraux.NIVEAUX.map((_, i) => i).map((i) => `<i${i === p.niveau ? ' class="on"' : ""}></i>`).join("")}</span>`
-      : "<b>—</b><span>pas de niveau ce jour-là</span>") +
+      : "<b>—</b><span>pas de niveau sur ces jours</span>") +
     (p.dhw != null ? `<span>Chaleur accumulée sur 12 semaines\u00a0: ${esc(coraux.chaleur(p.dhw))}</span>` : "") +
     (p.sst != null ? `<span>Mer à ${esc(thin(deg(p.sst)))}, par satellite</span>` : "") +
     `</li>`).join("");

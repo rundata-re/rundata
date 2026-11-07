@@ -157,11 +157,13 @@ describe("the site's name in the prose", () => {
     expect(CSS).toContain(".ident{hyphens:manual;-webkit-hyphens:manual}");
   });
 
-  it("goes to the next line after its « . » in a heading, where it is wider than its line at 160 px", () => {
+  it("goes to the next line after its « . » in an <h1>, where it is wider than its line at 160 px, not in an <h2>", () => {
     const T = '<span class="ident">rundata.<wbr class="adr">re</span>';
     expect(nom("<h1>Brancher rundata.re à votre IA</h1><p>rundata.re</p>")).toBe(`<h1>Brancher ${T} à votre IA</h1><p>${S}</p>`);
-    expect(nom('<h2 id="x">Joindre <b>rundata.re</b></h2><header>rundata.re</header>')).toBe(`<h2 id="x">Joindre <b>${T}</b></h2><header>${S}</header>`);
-    expect(nom(nom("<h3>rundata.re</h3>"))).toBe(`<h3>${T}</h3>`);
+    expect(nom('<h1 id="x">Joindre <b>rundata.re</b></h1><h2>Ce que rundata.re promet</h2><header>rundata.re</header>')).toBe(
+      `<h1 id="x">Joindre <b>${T}</b></h1><h2>Ce que ${S} promet</h2><header>${S}</header>`,
+    );
+    expect(nom(nom("<h1>rundata.re</h1>"))).toBe(`<h1>${T}</h1>`);
     // Its <wbr> seen under 19.9 rem only, as an address's.
     expect(CSS).toContain("wbr.adr{display:none}");
     expect(CSS).toContain("wbr.adr{display:inline}");

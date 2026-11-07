@@ -16,6 +16,7 @@ import * as avis from "../avis.js";
 import * as connexions from "../connecteurs/connexions.js";
 import { emailOf } from "../propositions.js";
 import type { Alerte } from "./data.js";
+import { adresseTexte, avecContact } from "./adresse.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
@@ -82,12 +83,12 @@ function formulaire(e: Formulaire): string {
   const bad = (k: string) => (wrong.has(k) ? ` aria-invalid="true" aria-describedby="faux-${k}"` : "");
   const note = (k: string) => (wrong.has(k) ? `<p class="faux" id="faux-${k}">${esc(FAUX[k])}</p>` : "");
   // Without `role="alert"` in the page: one there from the start is mostly not announced. ERREUR_SCRIPT gives it.
-  const said = e.erreur ? esc(ERREURS[e.erreur]) : wrong.size ? "Quelques champs sont à corriger, signalés ci-dessous." : "";
+  const said = e.erreur ? avecContact(ERREURS[e.erreur]) : wrong.size ? "Quelques champs sont à corriger, signalés ci-dessous." : "";
   const top = said ? `<p class="msg vu" id="p-erreur">${said}</p>${ERREUR_SCRIPT}` : "";
   return `<form class="card fo" method="post" action="${RELIER_PATH}" novalidate>
   ${top}
   <div class="f"><label for="r-plateforme">Votre plateforme</label><select id="r-plateforme" name="plateforme" required><option value="helloasso" selected>HelloAsso</option></select>
-    <p class="aide">D'autres plateformes viendront. Votre association en utilise une autre\u00a0? Dites-le-nous\u00a0: contact@rundata.re</p></div>
+    <p class="aide">D'autres plateformes viendront. Votre association en utilise une autre\u00a0? Dites-le-nous\u00a0: ${adresseTexte("contact@rundata.re")}</p></div>
   <section aria-labelledby="h-ou">
     <h3 id="h-ou">Où trouver vos clés\u00a0?</h3>
     <ol>
@@ -192,7 +193,7 @@ export async function confirmerRelier(request: Request, now = new Date(), alerte
   const issue = await connexions.enregistrer(a, avis.adresseOf(request.headers), `${url.origin}${CONNEXION_PATH}`, now);
   if (issue === "limite") return html(`${formulaire({ erreur: "limite" })}${TURNSTILE_SCRIPT}`, 429);
   if (issue !== "ok") return html(`${formulaire({ erreur: "indisponible" })}${TURNSTILE_SCRIPT}`, 503);
-  return html(section(`<p>Un e-mail est parti à ${esc(a.email)}. Ouvrez le lien qu'il contient pour confirmer, dans les 48 heures. Sans confirmation, tout est effacé.</p>`, `<p class="note">Rien reçu\u00a0? Regardez dans les indésirables, ou écrivez à contact@rundata.re.</p>`));
+  return html(section(`<p>Un e-mail est parti à ${esc(a.email)}. Ouvrez le lien qu'il contient pour confirmer, dans les 48 heures. Sans confirmation, tout est effacé.</p>`, `<p class="note">Rien reçu\u00a0? Regardez dans les indésirables, ou écrivez à ${adresseTexte("contact@rundata.re")}.</p>`));
 }
 
 // ---------------------------------------------------------------- the e-mailed link

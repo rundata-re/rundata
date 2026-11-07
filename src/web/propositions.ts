@@ -16,6 +16,7 @@ import { INSEE } from "../places/insee.js";
 import * as propositions from "../propositions.js";
 import { bodyText, postForm } from "../http.js";
 import type { Alerte } from "./data.js";
+import { adresseTexte } from "./adresse.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
@@ -101,10 +102,10 @@ export type LienRefus = { issue: "erreur"; erreurs: string[] } | { issue: "limit
 const GARDEE = "Votre saisie est gardée ci-dessous.";
 const LIEN_REFUS: Record<LienRefus["issue"], string> = {
   // The fields only: the robots' check and the storage have their own.
-  erreur: `Le lien n'a pas pu être enregistré\u00a0: vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re. ${GARDEE}`,
-  limite: `Plusieurs liens ont déjà été envoyés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à contact@rundata.re. ${GARDEE}`,
-  verif: `Le lien n'a pas été enregistré\u00a0: la vérification anti-robot n'a pas pu se faire. ${GARDEE} Réessayez dans un instant\u00a0; si ça dure, écrivez à contact@rundata.re.`,
-  indisponible: `Le lien n'a pas pu être enregistré. ${GARDEE} Réessayez dans quelques minutes, ou écrivez à contact@rundata.re.`,
+  erreur: `Le lien n'a pas pu être enregistré\u00a0: vérifiez les champs (un lien commence par https://), ou écrivez à ${adresseTexte("contact@rundata.re")}. ${GARDEE}`,
+  limite: `Plusieurs liens ont déjà été envoyés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à ${adresseTexte("contact@rundata.re")}. ${GARDEE}`,
+  verif: `Le lien n'a pas été enregistré\u00a0: la vérification anti-robot n'a pas pu se faire. ${GARDEE} Réessayez dans un instant\u00a0; si ça dure, écrivez à ${adresseTexte("contact@rundata.re")}.`,
+  indisponible: `Le lien n'a pas pu être enregistré. ${GARDEE} Réessayez dans quelques minutes, ou écrivez à ${adresseTexte("contact@rundata.re")}.`,
 };
 
 /**
@@ -235,9 +236,9 @@ function proposerForm(e: Etat, now: Date, correction?: { action: string; f: URLS
     e.kind === "faux"
       ? "Quelques champs sont à corriger, signalés ci-dessous."
       : e.kind === "limite"
-        ? "Cinq événements ont déjà été proposés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à contact@rundata.re."
+        ? `Cinq événements ont déjà été proposés aujourd'hui depuis cette connexion\u00a0: réessayez demain, ou écrivez à ${adresseTexte("contact@rundata.re")}.`
         : e.kind === "indisponible"
-          ? "La proposition n'a pas pu être enregistrée. Réessayez dans quelques minutes, ou écrivez à contact@rundata.re."
+          ? `La proposition n'a pas pu être enregistrée. Réessayez dans quelques minutes, ou écrivez à ${adresseTexte("contact@rundata.re")}.`
           : "";
   // Without `role="alert"` in the page: one there from the start is mostly not announced. ERREUR_SCRIPT gives it.
   const top = said ? `<p class="msg vu" id="p-erreur">${said}</p>${ERREUR_SCRIPT}` : "";
@@ -335,7 +336,7 @@ export function proposerPage(origin: string, e: Etat = { kind: "vide" }, now = n
       : e.kind === "envoye"
       ? `<section class="card fo" aria-labelledby="h-envoye"><h2 id="h-envoye">Vérifiez votre boîte e-mail</h2>
   <p>Nous vous avons envoyé un lien pour confirmer l'événement. Sans confirmation sous 48 heures, la proposition est effacée.</p>
-  <p class="note">Rien reçu\u00a0? Regardez dans les indésirables, ou écrivez à contact@rundata.re.</p>
+  <p class="note">Rien reçu\u00a0? Regardez dans les indésirables, ou écrivez à ${adresseTexte("contact@rundata.re")}.</p>
   <p><a href="${PROPOSER_PATH}">Proposer un autre événement</a> · <a href="/associations">Retour à l'espace clubs et associations</a></p></section>`
       : `${proposerForm(e, now)}${REPETE_SCRIPT}${VIDE_SCRIPT}${TURNSTILE_SCRIPT}`;
   // The tab says the error first, the first words a screen reader gives of the page.
@@ -442,11 +443,11 @@ function gererBody(l: propositions.Ligne, action: string, g: Extract<Gerer, { ki
   const head = `<section class="card fo" aria-labelledby="h-gerer">
   <h2 id="h-gerer">${esc(l.titre)}</h2>
   ${g.fait && FAIT[g.fait] ? `<p class="msg vu ok" role="status">${FAIT[g.fait]}</p>` : ""}
-  ${g.refuse ? `<p class="msg vu" id="p-erreur">Ce changement n'est plus possible pour cet événement. Pour toute question, écrivez à contact@rundata.re.</p>${ERREUR_SCRIPT}` : ""}
+  ${g.refuse ? `<p class="msg vu" id="p-erreur">Ce changement n'est plus possible pour cet événement. Pour toute question, écrivez à ${adresseTexte("contact@rundata.re")}.</p>${ERREUR_SCRIPT}` : ""}
   <p><span class="badge${TEINTE[l.etat]}">${esc(ETAT[l.etat])}</span> ${esc(quandOu(l))}.</p>
-  <p class="note">Organisé par ${esc(l.organisateur)}.${l.contact_public ? ` Contact public\u00a0: ${esc(l.contact_public)}.` : ""}${l.etat === "refuse" ? `${l.motif ? ` Motif\u00a0: ${esc(l.motif)}.` : ""} Pour toute question, écrivez à contact@rundata.re.` : ""}</p>
+  <p class="note">Organisé par ${esc(l.organisateur)}.${l.contact_public ? ` Contact public\u00a0: ${esc(l.contact_public)}.` : ""}${l.etat === "refuse" ? `${l.motif ? ` Motif\u00a0: ${esc(l.motif)}.` : ""} Pour toute question, écrivez à ${adresseTexte("contact@rundata.re")}.` : ""}</p>
   ${l.correction && open ? `<p class="note">Votre correction attend la relecture, en général sous 24 heures\u00a0; en attendant, la version ci-dessus reste affichée.</p>` : ""}
-  ${!l.correction && l.motif && l.etat !== "refuse" && open ? `<p class="note">Votre dernière correction n'a pas été retenue. Motif\u00a0: ${esc(l.motif)}. Pour toute question, écrivez à contact@rundata.re.</p>` : ""}
+  ${!l.correction && l.motif && l.etat !== "refuse" && open ? `<p class="note">Votre dernière correction n'a pas été retenue. Motif\u00a0: ${esc(l.motif)}. Pour toute question, écrivez à ${adresseTexte("contact@rundata.re")}.</p>` : ""}
   ${!open && !["refuse", "annule", "retire"].includes(l.etat) ? `<p class="note">La date de l'événement est passée\u00a0: il ne peut plus être changé.</p>` : ""}
   ${l.etat === "a_confirmer" && open ? actionForm(action, "confirmer", `<button type="submit">Confirmer l'événement</button>`) : ""}
   ${shown ? `<p><a href="/evenements">Voir les événements sur rundata.re</a></p>` : ""}
@@ -486,12 +487,12 @@ export function gererPage(origin: string, l: propositions.Ligne | undefined, act
 <div class="wrap intro solo"><div class="pitch">
   <p class="pill">Clubs et associations</p>
   <h1>Votre événement</h1>
-  <p class="lead">Gardez ce lien\u00a0: il est le seul moyen de changer l'événement. Ne le partagez pas. Lien perdu\u00a0? Écrivez à contact@rundata.re.</p>
+  <p class="lead">Gardez ce lien\u00a0: il est le seul moyen de changer l'événement. Ne le partagez pas. Lien perdu\u00a0? Écrivez à ${adresseTexte("contact@rundata.re")}.</p>
 </div></div>`;
   const body = l && g.kind === "page"
     ? gererBody(l, action, g, now)
     : `<section class="card fo" aria-labelledby="h-inconnu"><h2 id="h-inconnu">Ce lien ne mène à aucun événement</h2>
-  <p>Une proposition non confirmée sous 48 heures est effacée, et un événement l'est un an après sa dernière date. Vous pouvez <a href="${PROPOSER_PATH}">proposer l'événement à nouveau</a>, ou écrire à contact@rundata.re.</p></section>`;
+  <p>Une proposition non confirmée sous 48 heures est effacée, et un événement l'est un an après sa dernière date. Vous pouvez <a href="${PROPOSER_PATH}">proposer l'événement à nouveau</a>, ou écrire à ${adresseTexte("contact@rundata.re")}.</p></section>`;
   // The secret is never in the canonical address, nor sent to another site, nor indexed; nothing to share here, where a
   // volunteer would think they share their link.
   const title = l && g.kind === "page" && (g.refuse || g.faux) ? `Erreur\u00a0: ${GERER_TITLE}` : GERER_TITLE;

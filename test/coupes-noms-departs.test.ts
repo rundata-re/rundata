@@ -1,6 +1,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { adresseCoupable, adresseTexte, departureLi, jourMois, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
+import { adresseCoupable, adresseTexte, avecContact } from "../src/web/adresse.js";
+import { avisPage } from "../src/web/avis-envoi.js";
+import { relier } from "../src/web/connecteurs.js";
+import { gererPage, lienPage, proposerPage } from "../src/web/propositions.js";
+import type { Ligne } from "../src/propositions.js";
+import { departureLi, jourMois, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
 import { CSS, legalPage } from "../src/web/pages.js";
 import { ouvrir as ouvrirAssociations } from "../src/web/associations-drapeau.js";
 import { ouvrir as ouvrirConnecteurs } from "../src/web/connecteurs-drapeau.js";
@@ -174,7 +179,7 @@ describe("an address in a heading, a pill or a button", () => {
   });
 });
 
-describe("an address in a sentence of /confidentialite, /conditions and the foot", () => {
+describe("an address in a sentence of /confidentialite, /conditions, the foot and the forms' messages", () => {
   // The words of a page out of its tags, its links (their text goes through lienNom()), its scripts and its styles,
   // one run of text between two tags at a time, read character by character (never a regex on markup).
   const horsLiens = (html: string) => {
@@ -247,11 +252,89 @@ describe("an address in a sentence of /confidentialite, /conditions and the foot
     }
   });
 
+  // Every form's message that writes « contact@rundata.re », the forms open (the clubs' space is in club-pages.test.ts).
+  const ligne = (over: Partial<Ligne> = {}): Ligne => ({
+    id: 3, t: Date.parse("2026-10-25T08:00:00Z") / 1000, etat: "publie", titre: "Soirée dansante", date: "2026-11-27", debut: "20:00", fin: null,
+    repete: null, jusqu_au: null, commune: "Saint-Paul", lieu: "Salle polyvalente", organisateur: "Association", description: "Bal.",
+    prix: "", lien: null, email: "x@example.org", contact_public: null, derniere_date: "2026-11-27", motif: null, reporte_au: null, correction: null, ...over,
+  });
+  const messages = async () => {
+    const now = new Date("2026-11-07T10:00:00Z");
+    const f = new URLSearchParams("nom=Club&lien=x");
+    const envoi = (body: string) =>
+      new Request("https://rundata.re/associations/relier", { method: "POST", headers: { origin: "https://rundata.re", "content-type": "application/x-www-form-urlencoded" }, body });
+    return [
+      // Past the hour's cap, the feedback form's message gives no address.
+      ...[true, false].map((gardee) => avisPage("https://rundata.re", "/", { message: "m", type: "", refus: { issue: "erreur", gardee } })),
+      ...(["erreur", "limite", "verif", "indisponible"] as const).map((issue) =>
+        lienPage("https://rundata.re", "/associations", { f, refus: issue === "erreur" ? { issue, erreurs: ["lien"] } : { issue } }),
+      ),
+      proposerPage("https://rundata.re", { kind: "limite", f }, now),
+      proposerPage("https://rundata.re", { kind: "indisponible", f }, now),
+      proposerPage("https://rundata.re", { kind: "envoye" }, now),
+      gererPage("https://rundata.re", ligne(), "/x", { kind: "page", refuse: true }, now),
+      gererPage("https://rundata.re", ligne({ etat: "refuse", motif: "Hors de l'île" }), "/x", { kind: "page" }, now),
+      gererPage("https://rundata.re", ligne({ motif: "Date fausse" }), "/x", { kind: "page" }, now),
+      gererPage("https://rundata.re", undefined, "/x", { kind: "inconnu" }, now),
+      await (await relier(new Request("https://rundata.re/associations/relier"), now)).text(),
+      await (await relier(envoi("site_web=x"), now)).text(),
+    ];
+  };
+
+  it("is written by adresseTexte() in every form's message (« écrivez à contact@rundata.re »), never whole", async () => {
+    try {
+      ouvrirConnecteurs(true);
+      const pages = await messages();
+      for (const page of pages) expect(entieres(page)).toEqual([]);
+      // Each page says it out of the foot: the message, not only the foot, is checked.
+      for (const page of pages) expect(page.split("<footer")[0]).toContain('contact@<wbr class="adr">rundata.<wbr class="adr">re');
+    } finally {
+      ouvrirConnecteurs(false);
+    }
+  });
+
+  it("leaves each message's words as they were, and gives none of them to a link, an attribute or a field", async () => {
+    try {
+      ouvrirConnecteurs(true);
+      const pages = await messages();
+      const lu = pages.map((p) => p.replaceAll('<wbr class="adr">', "").replaceAll("\u00a0", " ")).join("\n");
+      for (const s of [
+        "L'avis n'a pas pu être enregistré (vide ou trop long ?). Votre saisie est gardée ci-dessous. Réessayez, ou écrivez à contact@rundata.re.",
+        "vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re. Votre saisie est gardée ci-dessous.",
+        "réessayez demain, ou écrivez à contact@rundata.re. Votre saisie est gardée ci-dessous.",
+        "Réessayez dans un instant ; si ça dure, écrivez à contact@rundata.re.</p>",
+        "Le lien n'a pas pu être enregistré. Votre saisie est gardée ci-dessous. Réessayez dans quelques minutes, ou écrivez à contact@rundata.re.</p>",
+        "Cinq événements ont déjà été proposés aujourd'hui depuis cette connexion : réessayez demain, ou écrivez à contact@rundata.re.</p>",
+        "La proposition n'a pas pu être enregistrée. Réessayez dans quelques minutes, ou écrivez à contact@rundata.re.</p>",
+        "Rien reçu ? Regardez dans les indésirables, ou écrivez à contact@rundata.re.</p>",
+        "Ce changement n'est plus possible pour cet événement. Pour toute question, écrivez à contact@rundata.re.</p>",
+        "Motif : Hors de l&#39;île. Pour toute question, écrivez à contact@rundata.re.</p>",
+        "Motif : Date fausse. Pour toute question, écrivez à contact@rundata.re.</p>",
+        "Ne le partagez pas. Lien perdu ? Écrivez à contact@rundata.re.</p>",
+        "proposer l'événement à nouveau</a>, ou écrire à contact@rundata.re.</p>",
+        "Votre association en utilise une autre ? Dites-le-nous : contact@rundata.re</p>",
+        "Réessayez dans quelques minutes ; si ça dure, écrivez-nous : contact@rundata.re</p>",
+      ]) expect(lu).toContain(s);
+      for (const page of pages) {
+        expect(page).not.toMatch(/="[^"]*<wbr/);
+        expect(page).not.toMatch(/<a\b[^>]*>[^<]*contact@<wbr\b/);
+        expect(page).not.toMatch(/<textarea\b[^>]*>[^<]*<wbr/);
+      }
+    } finally {
+      ouvrirConnecteurs(false);
+    }
+  });
+
+  it("writes a kept message's address with adresseTexte(), escaped, and nothing else", () => {
+    expect(avecContact("L'adresse : contact@rundata.re.")).toBe(`L&#39;adresse : ${adresseTexte("contact@rundata.re")}.`);
+    expect(avecContact("a.b <i>")).toBe("a.b &lt;i&gt;");
+  });
+
   it("goes to the next line in its middle only under 19.9 rem: at 390 px, the sentence goes to the line as it did before", () => {
     expect(adresseTexte("contact@rundata.re")).toBe('contact@<wbr class="adr">rundata.<wbr class="adr">re');
     expect(adresseTexte("a.b <i>")).toBe('a.<wbr class="adr">b &lt;i&gt;');
     // Off outside the media query, on inside it; « .jm » is the date's rule, written just before each.
-    expect(CSS).toContain(".jm{white-space:nowrap}/* An address in a sentence (adresseTexte, domains.ts)");
+    expect(CSS).toContain(".jm{white-space:nowrap}/* An address in a sentence (adresseTexte, adresse.ts)");
     expect(CSS.split("wbr.adr{display:none}")).toHaveLength(2);
     expect(etroit).toContain(".jm{white-space:normal}wbr.adr{display:inline}");
   });

@@ -9,6 +9,7 @@ import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
 import { BULLETIN_QUOTIDIEN, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
 import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
+import { adresseCoupable } from "./adresse.js";
 import { SOMMET } from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
@@ -152,28 +153,6 @@ export function nomsCoupables(html: string): string {
     .split(/(<[^>]*>)/)
     .map((x, i) => (i % 2 ? x : x.replaceAll(/(\p{Ll}\.?)(?=\p{Lu}\p{Ll})/gu, "$1<wbr>")))
     .join("");
-}
-
-/**
- * An address in a text (« infotrafic.re », « contact@rundata.re »), escaped: it may go to the next line after each of its
- * « . » and « @ », rather than one or two letters before its end. Chrome never hyphenates a word that holds a « . », so a
- * long name in a narrow box (a heading or a pill, text enlarged on a phone) also takes a soft hyphen where the caller puts
- * one (« info\u00ADtrafic.re »). A heading or pill writes its address here; a link's whole text goes through lienNom().
- */
-export function adresseCoupable(text: string): string {
-  return esc(text).replaceAll(/(?<=[\p{Ll}\p{N}])([.@])(?=\p{Ll})/gu, "$1<wbr>");
-}
-
-/**
- * An address in a sentence, out of a link (« écrivez à contact@rundata.re », the foot's sources): adresseCoupable(), its
- * <wbr> marked .adr. Over 19.9 rem of screen they are display:none (pages.ts), and the sentence goes to the next line as
- * it did without them: at 390 px, « contact@rundata.re » moves to the next line whole, never « contact@ / rundata.re ».
- * Under it (text enlarged on a phone) the address may go to the next line after a « . » or « @ », rather than one or two
- * letters before its end (« contact@rund|ata.re » at 200 %). No span around it: WebKit would draw the rest of the line a
- * pixel further. A <wbr> holds no character: the copied text and what a screen reader says are the address.
- */
-export function adresseTexte(text: string): string {
-  return adresseCoupable(text).replaceAll("<wbr>", '<wbr class="adr">');
 }
 
 /**

@@ -16,6 +16,7 @@ import * as avis from "../avis.js";
 import * as espace from "../clubs/espace.js";
 import type { Cache } from "../cache.js";
 import type { Alerte } from "./data.js";
+import { avecContact } from "./adresse.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { layout } from "./pages.js";
@@ -92,7 +93,7 @@ export async function trouver(request: Request, alerte?: Alerte): Promise<Respon
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") ?? "").replace(/\s+/g, " ").trim().slice(0, Q_MAX);
   const clubs = await espace.proposes().catch(() => undefined);
-  const body = clubs ? recherche(clubs, q) : section(`<p>${esc(LISTE_INDISPONIBLE)}</p>`);
+  const body = clubs ? recherche(clubs, q) : section(`<p>${avecContact(LISTE_INDISPONIBLE)}</p>`);
   return new Response(page(url.origin, "Votre espace", body, alerte), { status: clubs ? 200 : 503, headers: HTML_HEADERS });
 }
 
@@ -183,17 +184,17 @@ export async function demande(request: Request, cache: Cache, now = new Date(), 
   if (!c) return html("Votre espace", section(PAS_TROUVE), 404);
   if (post) {
     // Filled in by robots only, or not a person: nothing read, nothing sent.
-    if (f.get("site_web") || !(await human(f, avis.adresseOf(request.headers), { hostname: url.hostname, action: "club" }))) return html("Votre espace", section(`<p>${esc(INDISPONIBLE)}</p>`), 503);
+    if (f.get("site_web") || !(await human(f, avis.adresseOf(request.headers), { hostname: url.hostname, action: "club" }))) return html("Votre espace", section(`<p>${avecContact(INDISPONIBLE)}</p>`), 503);
     const d = await espace.demander(c, `${url.origin}${ACCES_PATH}`, avis.adresseOf(request.headers), now);
     if (d.issue === "ok") return html("Votre espace", apresEnvoi(c, d.masque));
     if (d.issue === "absente") return html("Votre espace", sansAdresse(c), 422);
     if (d.issue in LIMITES) return html("Votre espace", section(`<p>${esc(LIMITES[d.issue as espace.Limite])}</p>`), 429);
-    return html("Votre espace", section(`<p>${esc(INDISPONIBLE)}</p>`), 503);
+    return html("Votre espace", section(`<p>${avecContact(INDISPONIBLE)}</p>`), 503);
   }
   const a = await espace.apercu(c, cache);
   if ("masque" in a) return html("Votre espace", ecran2(c, a.masque));
   if (a.issue === "absente") return html("Votre espace", sansAdresse(c), 422);
-  return html("Votre espace", section(`<p>${esc(INDISPONIBLE)}</p>`), 503);
+  return html("Votre espace", section(`<p>${avecContact(INDISPONIBLE)}</p>`), 503);
 }
 
 // ---------------------------------------------------------------- screen 3 and « Mon agenda »

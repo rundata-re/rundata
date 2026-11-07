@@ -7,6 +7,7 @@
  * tool, and no form posted from another site.
  */
 import * as avis from "../avis.js";
+import { adresseTexte } from "./adresse.js";
 import { esc } from "./map.js";
 
 const OPTIONS: [avis.TypeAvis, string][] = [["manque", "Une donnée qui manque"], ["erreur", "Une erreur"], ["suggestion", "Une idée"], ["bravo", "Bravo"]];
@@ -34,7 +35,7 @@ const GARDEE = "Votre saisie est gardée ci-dessous.";
 const refusOf = (r: AvisRefus) =>
   r.issue === "limite"
     ? `Beaucoup d'avis sont partis d'ici dans l'heure : réessayez un peu plus tard.${r.gardee ? ` ${GARDEE}` : ""}`
-    : `L'avis n'a pas pu être enregistré (vide ou trop long ?).${r.gardee ? ` ${GARDEE}` : ""} Réessayez, ou écrivez à contact@rundata.re.`;
+    : `L'avis n'a pas pu être enregistré (vide ou trop long ?).${r.gardee ? ` ${GARDEE}` : ""} Réessayez, ou écrivez à ${adresseTexte("contact@rundata.re")}.`;
 
 /**
  * The form, with the page it is on; with `kept`, given back on its own page (web/avis-envoi.ts) with what was typed and

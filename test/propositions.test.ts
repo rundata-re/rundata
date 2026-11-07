@@ -408,7 +408,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     const robot = await post("/associations/lien", { ...fields, "cf-turnstile-response": "autre" }, { origin: "https://rundata.re" });
     expect(robot.status).toBe(503);
     const html = plain(await robot.text());
-    expect(html).toContain('<p class="msg vu" id="lien-verif" role="alert">Le lien n\'a pas été enregistré : la vérification anti-robot n\'a pas pu se faire. Votre saisie est gardée ci-dessous. Réessayez dans un instant ; si ça dure, écrivez à contact@rundata.re.</p>');
+    expect(html).toContain('<p class="msg vu" id="lien-verif" role="alert">Le lien n\'a pas été enregistré : la vérification anti-robot n\'a pas pu se faire. Votre saisie est gardée ci-dessous. Réessayez dans un instant ; si ça dure, écrivez à contact@<wbr class="adr">rundata.<wbr class="adr">re.</p>');
     expect(html).not.toContain("vérifiez les champs");
     for (const v of ['value="Club de volley"', 'value="https://club.example/agenda.ics"', 'value="0262 00 00 00"', "<option selected>Saint-Paul</option>", 'value="oui" required checked', 'name="page" value="/publier"']) expect(html).toContain(v);
     expect(html).toContain("<title>Erreur : lien non enregistré · Clubs et associations · 974</title>");
@@ -417,7 +417,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     expect(html).toContain('<a href="/publier">Retour à la page précédente</a>');
     // A field wrong: « vérifiez les champs », the field marked.
     const wrong = plain(await (await post("/associations/lien", { ...fields, lien: "club.example", "cf-turnstile-response": "jeton-turnstile" })).text());
-    expect(wrong).toContain('id="lien-erreur" role="alert">Le lien n\'a pas pu être enregistré : vérifiez les champs (un lien commence par https://), ou écrivez à contact@rundata.re. Votre saisie est gardée ci-dessous.</p>');
+    expect(wrong).toContain('id="lien-erreur" role="alert">Le lien n\'a pas pu être enregistré : vérifiez les champs (un lien commence par https://), ou écrivez à contact@<wbr class="adr">rundata.<wbr class="adr">re. Votre saisie est gardée ci-dessous.</p>');
     expect(wrong).toMatch(/name="lien" [^>]*value="club.example" aria-invalid="true"/);
     expect(rows("SELECT * FROM liens")).toHaveLength(0);
   });

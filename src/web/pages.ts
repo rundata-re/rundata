@@ -63,7 +63,8 @@ import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
 import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
-import { adresseTexte, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
+import { adresseTexte } from "./adresse.js";
+import { crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
@@ -349,7 +350,7 @@ p,ul,ol,table,figure{margin:0}
 /* A day's number with its month (« 10 novembre »), on one line (marketing); under 19.9 em, below, the month may go to the
    next line. */
 .jm{white-space:nowrap}
-/* An address in a sentence (adresseTexte, domains.ts): its <wbr> count only under 19.9 rem, below. */
+/* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. */
 wbr.adr{display:none}
 /* « Aller au contenu », the first stop of Tab on every page: seen only while it has the focus, over the bar; its target,
    the main landmark, from the vigilance's band and the title's on. */

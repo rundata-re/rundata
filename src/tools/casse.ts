@@ -9,7 +9,7 @@
  * word gets no accent: « PAUSE » is a word before it is Pausé. A title of one or two words is a name more often than a
  * sentence (an artist, a show: « NAWELL MADANI »): each of its words takes a capital.
  */
-import gazetteer from "../places/gazetteer.json" with { type: "json" };
+import gazetteer from "../places/gazetteer.js";
 
 /** The sigles kept in capitals: the island's bodies and what the agendas name most. */
 export const SIGLES = new Set([

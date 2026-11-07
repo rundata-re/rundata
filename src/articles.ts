@@ -2,7 +2,7 @@
 // « au Piton des Neiges », « de la plage de l'Ermitage-les-Bains », « au Maïdo », never « à Plage de l'Ermitage-les-Bains »
 // (06/11/2026: the connector's answers and the pages' titles, « Météo à Maïdo »).
 
-import gazetteer from "./places/gazetteer.json" with { type: "json" };
+import gazetteer from "./places/gazetteer.js";
 
 // The commune whose name has no article but takes one in a sentence: « à l'Entre-Deux », as the island and the commune
 // say it; the name alone where no word comes before it (« Météo Entre-Deux », marketing).

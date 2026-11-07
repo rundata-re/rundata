@@ -5,6 +5,7 @@
  */
 import table from "./clubs.json" with { type: "json" };
 import { normalize } from "../places/resolve.js";
+import { particules } from "../noms.js";
 
 export interface Club {
   /** As the federation writes it in its results (volley). */
@@ -16,7 +17,9 @@ export interface Club {
 }
 
 export type ClubSport = "volley" | "handball";
-const CLUBS: Record<ClubSport, Club[]> = { volley: table.volley, handball: table.handball };
+// Their names as French writes them (noms.ts: « Sporting Club de Sainte Marie »); key() reads them alike.
+const named = (l: Club[]) => l.map((c) => ({ ...c, nom: particules(c.nom) }));
+const CLUBS: Record<ClubSport, Club[]> = { volley: named(table.volley), handball: named(table.handball) };
 export const ZONES: Record<string, string[]> = table.zones;
 
 const key = (s: string) => normalize(s).replace(/\bst\b/g, "saint").replace(/\bste\b/g, "sainte");

@@ -12,6 +12,7 @@ import { tranche } from "../tools/format.js";
 import { ageRange } from "../providers/agenda-mots.js";
 import type { SourceInfo } from "../types.js";
 import data from "./enfants.json" with { type: "json" };
+import { particules } from "../noms.js";
 import { spansOn, withMinutes } from "./marches.js";
 
 export type Kind = "aire_de_jeux" | "parc" | "piscine" | "mediatheque" | "animaux" | "loisirs" | "salle_jeux" | "sport" | "escalade" | "musee" | "ludotheque";
@@ -43,7 +44,8 @@ export interface Lieu {
 
 /** The day the bundled list was last rebuilt. */
 export const BUILT: string = data.construit;
-export const LIEUX = data.lieux as Lieu[];
+/** The places, their names as French writes them (noms.ts: « Bibliothèque du Bois de Nèfles »). */
+export const LIEUX = (data.lieux as Lieu[]).map((l) => ({ ...l, nom: particules(l.nom) }));
 
 export const SOURCES: Record<Lieu["source"], SourceInfo> = {
   osm: {

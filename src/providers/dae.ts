@@ -4,6 +4,7 @@
  * the national file, which is updated every day but changes little from one month to the next.
  */
 import data from "../dae/dae.json" with { type: "json" };
+import { particules } from "../noms.js";
 import type { SourceInfo } from "../types.js";
 
 /** The day the bundled list was last rebuilt. */
@@ -34,4 +35,5 @@ export interface Dae {
   exploitant?: string;
 }
 
-export const DAES: Dae[] = data.defibrillateurs;
+/** The defibrillators, their places' names as French writes them (noms.ts: « Collège des 2 Canons »). */
+export const DAES: Dae[] = (data.defibrillateurs as Dae[]).map((d) => ({ ...d, nom: particules(d.nom) }));

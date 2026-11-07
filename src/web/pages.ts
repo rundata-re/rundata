@@ -1189,6 +1189,12 @@ summary{min-height:24px}
    from the same line, its time below. In the line's column, the direction had 100 px at 200 %, less than « (Kar'Ouest) »
    (156 px) or « Plaines », cut in the middle. */
 .rows.departs li{display:block}.rows.departs li>b{margin-right:.6rem}.rows.departs li>:last-child{display:block;margin-top:.3rem}
+/* A list of figures (/meteo's sea, /electricite's sources): the figure under its name, which then has the whole line.
+   Beside « 25,4 °C », « Saint-Leu » had 69 px at 200 % and was cut into « Sain », « t- » and « Leu ». */
+.bars li{grid-template-columns:minmax(0,1fr)}
+/* A page's key fact (/air's « D'où vient l'indice »), already the whole line, at 1.25 rem rather than 1.45: at 1.45 and
+   200 %, « Réunion, » (in « Atmo Réunion, observatoire… ») was wider than the line and cut into « Réunio » and « n ». */
+.facts dd{font-size:1.25rem}
 .scale li,.scale:has(.aq){grid-template-columns:minmax(0,1fr)}
 .btn{flex-wrap:wrap}}
 /* A table's cells and their notes keep their words whole: the frame scrolls (.table-wrap) rather than a narrow column

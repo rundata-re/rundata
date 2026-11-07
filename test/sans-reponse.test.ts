@@ -275,6 +275,13 @@ describe("what is shown", () => {
     expect(l).toMatchObject({ nom: "Salles de spectacle de La Réunion", manque: "Programmes des salles de spectacle", theme: "Autres sites" });
   });
 
+  it("gives a site with a « . » in its name a place to go to the next line, and keeps its link's name whole", () => {
+    const sc: sr.Ligne = { ...rows[0], hote: "data.sensor.community", url: "https://data.sensor.community/", nom: "Sensor.Community" };
+    const page = sansReponsePage("https://rundata.re", [sc], T);
+    // « Sensor.Comm|unity » at 200 % without it; with a <wbr> alone, Chrome would name the link « Sensor. Community ».
+    expect(page).toContain(' rel="nofollow noopener" aria-label="le site de Sensor.Community">le site de Sensor.<wbr>Community</a>');
+  });
+
   it("says it on the page in marketing's words, never down, closed, empty or refusing", () => {
     const page = typo(sansReponsePage("https://rundata.re", rows, T));
     expect(page).toContain("<title>Sites publics sans réponse · La Réunion (974)</title>");

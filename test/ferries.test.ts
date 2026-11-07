@@ -24,4 +24,11 @@ describe("the boat to Mauritius", () => {
     expect(s).toContain(`<p class="note">Vérifié le 24/10/2026.</p></section>`);
     expect(s.slice(0, s.indexOf("</section>"))).not.toContain("href");
   });
+
+  it("let the ship's name go to the next line on a narrow screen, never the airlines' names nor the duration", () => {
+    // « Mauritius Trochetia » bound in one piece was wider than a 320 px line at 200 % and cut into « Troche » and « tia ».
+    expect(T.page).toContain("Le Mauritius Trochetia relie");
+    expect(T.page).toContain("Air\u00a0Austral ou Air\u00a0Mauritius");
+    expect(T.page).toContain("45\u00a0minutes");
+  });
 });

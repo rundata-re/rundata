@@ -152,6 +152,17 @@ export const nomsCoupables = (html: string) =>
     .map((x, i) => (i % 2 ? x : x.replaceAll(/(\p{Ll}\.?)(?=\p{Lu}\p{Ll})/gu, "$1<wbr>")))
     .join("");
 
+/**
+ * A link whose text holds such a name (« le site de Sensor.Community »): the name may go to the next line where
+ * nomsCoupables() puts its <wbr>, and the link keeps its whole text as its name in aria-label, as lienAdresse() does
+ * (a <wbr> would make Chrome name it « Sensor. Community »). The name is the visible text, so it holds it. A text
+ * without such a name is written as it is, without aria-label. `attrs`: more attributes, each with its leading space.
+ */
+export function lienNom(href: string, text: string, attrs = ""): string {
+  const coupe = nomsCoupables(esc(text));
+  return `<a href="${esc(href)}"${attrs}${coupe === esc(text) ? "" : ` aria-label="${esc(text)}"`}>${coupe}</a>`;
+}
+
 /** The connector, at the end of every domain page, the tool's name coupable(). */
 const connectorCta = (tool: string, what: string) => `<section aria-labelledby="h-ia">
   <div class="card cta"><h2 id="h-ia">Votre IA, branchée sur ${esc(what)}</h2>
@@ -671,9 +682,9 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   <div class="card">${"lecture_ancienne" in am && am.lecture_ancienne ? `<p>${esc(am.lecture_ancienne)}</p>` : ""}${"valeurs" in am && am.valeurs
     ? `<ul class="plain">${am.valeurs.map((v) => `<li>${esc(v.commune)}${pm("PM2,5", v.pm2_5)}${pm("PM10", v.pm10)} · mesurées ${esc(v.mesurees)} <span class="note">non étalonné</span></li>`).join("")}</ul>`
     : "aucun" in am && am.aucun
-      ? `<p>${esc(am.aucun)} <a href="#brancher">Brancher un capteur</a></p>`
+      ? `<p>${nomsCoupables(esc(am.aucun))} <a href="#brancher">Brancher un capteur</a></p>`
       : am.echec ? `<p>${esc(am.echec)}</p>` : ""}
-  <p class="note">${amLe ? `Lu par rundata.re le ${esc(amLe)} à ${esc(amA)}, sur` : "Capteurs partagés sur"} <a href="${esc(am.carte)}" rel="noopener">Sensor.Community</a> (<a href="${esc(capteurs.DBCL)}" rel="noopener">DbCL 1.0</a>).</p></div>
+  <p class="note">${amLe ? `Lu par rundata.re le ${esc(amLe)} à ${esc(amA)}, sur` : "Capteurs partagés sur"} ${lienNom(am.carte, "Sensor.Community", ' rel="noopener"')} (<a href="${esc(capteurs.DBCL)}" rel="noopener">DbCL 1.0</a>).</p></div>
   <details class="card" id="brancher"><summary>Brancher son capteur</summary>
   <p>Un capteur de particules branché dehors et partagé sur Sensor.<wbr>Community apparaît dans le bloc ci-dessus, arrondi à sa commune.</p>
   <h3>airRohr (Sensor.<wbr>Community)</h3>

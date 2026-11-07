@@ -5,7 +5,7 @@
  */
 import { constatEnMots, jour, jourHeure, publiques, statutEnMots, type Ligne, type Public } from "../sans-reponse.js";
 import type { Alerte } from "./data.js";
-import { crumbBar, crumbs, webPage } from "./domains.js";
+import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { PATH as GUIDE } from "./ouvrir-donnees.js";
 import { layout } from "./pages.js";
@@ -32,7 +32,7 @@ function item(l: Public): string {
   const constat = l.statut === "injoignable" ? constatEnMots(l.constat) : undefined;
   const essai = l.statut === "revenu" ? undefined : l.dernier_essai ? `dernier essai le ${jourHeure(l.dernier_essai)}${constat ? ` : ${constat}` : ""}` : constat;
   const manque = l.statut === "revenu" || !l.manque ? undefined : `ce qui manque ici : ${l.page ? `<a href="${esc(l.page)}">${esc(l.manque)}</a>` : esc(l.manque)}`;
-  return `<li><a href="${esc(accueil(l))}" rel="nofollow noopener">le site de ${esc(l.nom)}</a> : ${statutEnMots(l)}${essai ? `<br>${esc(essai)}` : ""}${manque ? `<br>${manque}` : ""}</li>`;
+  return `<li>${lienNom(accueil(l), `le site de ${l.nom}`, ' rel="nofollow noopener"')} : ${statutEnMots(l)}${essai ? `<br>${esc(essai)}` : ""}${manque ? `<br>${manque}` : ""}</li>`;
 }
 
 /** The rows of one part, grouped by theme, the oldest first (publiques() sorts them). */

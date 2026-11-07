@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { departureLi, nomsCoupables } from "../src/web/domains.js";
+import { departureLi, lienNom, nomsCoupables } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
 import { publierPage } from "../src/web/publier.js";
 
@@ -16,7 +16,15 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
     expect(nomsCoupables('<a href="https://openagenda.com/OpenAgenda" title="OpenAgenda">x</a>')).toBe('<a href="https://openagenda.com/OpenAgenda" title="OpenAgenda">x</a>');
   });
 
-  it("is written so in the pages' text, outside a link's text, wherever a name has a « . » before a capital", () => {
+  it("in a link, keeps the link's whole text as its name, as an address-link does", () => {
+    expect(lienNom("https://maps.sensor.community/", "Sensor.Community", ' rel="noopener"')).toBe(
+      '<a href="https://maps.sensor.community/" rel="noopener" aria-label="Sensor.Community">Sensor.<wbr>Community</a>',
+    );
+    // A text without such a name is written as it is, with no aria-label.
+    expect(lienNom("https://rundata.re/", "le site de rundata.re")).toBe('<a href="https://rundata.re/">le site de rundata.re</a>');
+  });
+
+  it("is written so in the pages' text and links' text, wherever a name has a « . » before a capital (a link through lienNom)", () => {
     const dir = new URL("../src/web/", import.meta.url);
     const nus = readdirSync(dir)
       .filter((f) => f.endsWith(".ts"))
@@ -24,7 +32,7 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
         readFileSync(new URL(f, dir), "utf8")
           .split("\n")
           .filter((l) => !/^\s*(?:\/\/|\*|\/\*)/.test(l))
-          .flatMap((l) => [...l.matchAll(/(<a\b[^>]*>|>)([^<>`$]*)</g)].filter((m) => m[1] === ">" && /\p{Ll}\.\p{Lu}\p{Ll}/u.test(m[2])).map((m) => `${f} ${m[2]}`)),
+          .flatMap((l) => [...l.matchAll(/(<a\b[^>]*>|>)([^<>`$]*)</g)].filter((m) => /\p{Ll}\.\p{Lu}\p{Ll}/u.test(m[2])).map((m) => `${f} ${m[2]}`)),
       );
     expect(nus).toEqual([]);
   });
@@ -60,6 +68,16 @@ describe("a bus departure", () => {
 
   it("uses the whole row on a narrow screen: the direction from the line's line, the time below, « (Kar'Ouest) » whole at 200 %", () => {
     expect(etroit).toContain(".rows.departs li{display:block}.rows.departs li>b{margin-right:.6rem}.rows.departs li>:last-child{display:block;margin-top:.3rem}");
+  });
+});
+
+describe("a list of figures and a page's key fact on a narrow screen", () => {
+  it("puts the figure under its name, which has the whole line (« Saint-Leu » was « Sain / t- / Leu » at 200 %)", () => {
+    expect(etroit).toContain(".bars li{grid-template-columns:minmax(0,1fr)}");
+  });
+
+  it("writes a key fact at 1.25 rem, so that « Réunion, » fits the line at 200 % (it was « Réunio / n »)", () => {
+    expect(etroit).toContain(".facts dd{font-size:1.25rem}");
   });
 });
 

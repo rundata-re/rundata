@@ -1,7 +1,7 @@
 import type { Cache } from "../cache.js";
 import { distanceKm, localTime } from "../geo.js";
 import { INSEE } from "../places/insee.js";
-import { normalize, resolvePlace } from "../places/resolve.js";
+import { normalize, placesNear, resolvePlace } from "../places/resolve.js";
 import * as actuSource from "../providers/actualites.js";
 type Fil = actuSource.Fil;
 import { holidays } from "../providers/calendrier.js";
@@ -84,7 +84,11 @@ export function findStops(asked: string): { groups: transit.StopGroup[]; near: {
       if (at && distanceKm(first.lon, first.lat, at.lon, at.lat) <= FAR_FROM_PLACE_KM) return { groups, near: [] };
       const near = at ? nearStops(at.lon, at.lat, reseau) : [];
       if (near.length) return { groups: near.map((x) => x.g), near };
-      return { groups, near: [], manque: words.filter((w) => !matches(first, w)) };
+      // A word of a place the stop stands in is no word it lacks: « Trou d'Eau, La Saline » is the stop Trou d'eau, at
+      // La Saline les Bains, which its name does not say.
+      const around = new Set(placesNear(first.lon, first.lat, FAR_FROM_PLACE_KM).flatMap((p) => transit.expand(p.nom).split(" ")));
+      const manque = words.filter((w) => !matches(first, w) && !around.has(w));
+      return manque.length ? { groups, near: [], manque } : { groups, near: [] };
     }
   }
   // A small network named alone (« le téléphérique »): all its stops.
@@ -547,6 +551,34 @@ const timetables = (live: string[], feeds: Map<string, rt.Realtime>) => {
 const networksOf = (nets: string[]) =>
   [...new Set(nets)].map((n) => ({ nom: transit.NETWORKS[n].nom, exploitant: transit.NETWORKS[n].exploitant, horaires_valables_jusqu_au: transit.NETWORKS[n].valide_jusqu_au ?? undefined }));
 
+/** The words between a trip's start and its end (« Trou d'Eau vers Saint-Pierre »), the apostrophe written either way. */
+const TRIP_WORDS = new Set(["vers", "jusqu'à", "jusqu'au", "jusqu'a", "→", "->"]);
+
+/**
+ * A trip asked in place of a stop: its start and its end. The tool reads no journey, the page /bus/itineraire does;
+ * « de A à B » is left aside, « à » also says a stop's commune (« arrêt Mairie à Saint-Pierre »).
+ */
+export function tripAsked(asked: string): { de: string; a: string } | undefined {
+  const words = asked.replaceAll("\u2019", "'").trim().split(/\s+/);
+  const i = words.findIndex((w, k) => k > 0 && k < words.length - 1 && TRIP_WORDS.has(w.toLowerCase()));
+  if (i < 0) return undefined;
+  const start = /^(de|depuis)$/i.test(words[0]) && i > 1 ? 1 : 0;
+  // The commas around a part (« Trou d'Eau, La Saline, vers… »), without a regular expression.
+  const tidy = (x: string[]) => {
+    let t = x.join(" ");
+    while (t.startsWith(",")) t = t.slice(1).trimStart();
+    while (t.endsWith(",")) t = t.slice(0, -1).trimEnd();
+    return t;
+  };
+  const de = tidy(words.slice(start, i));
+  const a = tidy(words.slice(i + 1));
+  return de && a ? { de, a } : undefined;
+}
+
+/** Said first for a trip asked: the page that searches it, with its start and end. */
+const tripLink = ({ de, a }: { de: string; a: string }) =>
+  `Cet outil ne calcule pas de trajet. La page Trajet en bus de rundata.re le fait sur les horaires de tous les réseaux de l'île\u00a0: https://rundata.re/bus/itineraire?de=${encodeURIComponent(de)}&a=${encodeURIComponent(a)}. Donner ce lien à l'utilisateur.`;
+
 export async function transports(asked: string | undefined, ligne: string | undefined, now = new Date(), cache?: Cache) {
   const q = asked?.trim() ?? "";
   // A boat to Mauritius has no timetable to look for: the answer is that there is none.
@@ -564,6 +596,9 @@ export async function transports(asked: string | undefined, ligne: string | unde
         return text({ resume: `Aucune ligne « ${ligne} » dans les horaires publiés des réseaux de La Réunion.`, conseil: "Donner le nom de la ligne comme le réseau l'écrit (« S1 », « O1X », « 2 ») et son réseau (« Car Jaune »).", sources: credits([transit.SOURCE]) });
       }
     }
+    // A trip: the departures at its start, after the page that searches it.
+    const trip = tripAsked(q);
+    if (trip) return await stopAnswer(trip.de, ligne?.trim() || undefined, now, cache, findStops(trip.de), undefined, tripLink(trip));
     return await stopAnswer(q, ligne?.trim() || undefined, now, cache);
   } catch (err) {
     console.error(`source ${transit.SOURCE.id} indisponible:`, why(err));
@@ -598,19 +633,21 @@ const missingWords = (asked: string, where: string, manque: string[]) =>
 const stopWhere = (g: transit.StopGroup) => `${g.nom} (${g.commune}, ${transit.NETWORKS[g.reseau]?.nom ?? g.reseau})`;
 
 /** The next departures at the stops a question names, or near the place it names. */
-async function stopAnswer(asked: string, ligne: string | undefined, now: Date, cache?: Cache, found = findStops(asked), mort?: transit.StopGroup[]) {
+async function stopAnswer(asked: string, ligne: string | undefined, now: Date, cache?: Cache, found = findStops(asked), mort?: transit.StopGroup[], trajet?: string) {
   const { groups, near, manque } = found;
+  const first = trajet ? { trajet_en_bus: trajet } : {};
   if (!groups.length) {
     rienTrouve("transports");
-    return text({ resume: `Aucun arrêt de bus trouvé pour « ${asked} ».`, conseil: STOP_HELP, sources: credits([transit.SOURCE]) });
+    return text({ ...first, resume: `Aucun arrêt de bus trouvé pour « ${asked} ».`, conseil: STOP_HELP, sources: credits([transit.SOURCE]) });
   }
   const { shown, feeds, alertes, live } = await stopDepartures(groups, now, cache);
   // No departure at all: a stop no trip of the timetables stops at is said so, and the served stops nearest it given.
   const read = !shown.length ? await transit.passes(groups.flatMap((g) => g.ids)) : undefined;
   if (read && !read.length && !mort) {
     const alt = await servedNear(groups);
-    if (alt.length) return stopAnswer(asked, ligne, now, cache, { groups: alt.map((x) => x.g), near: alt, manque }, groups);
+    if (alt.length) return stopAnswer(asked, ligne, now, cache, { groups: alt.map((x) => x.g), near: alt, manque }, groups, trajet);
     return text({
+      ...first,
       ...(manque?.length ? { avertissement: missingWords(asked, groups.map(stopWhere).join(", "), manque) } : {}),
       resume: `${groups.length > 1 ? "Les arrêts" : "L'arrêt"} ${groups.map(stopWhere).join(", ")} n'${groups.length > 1 ? "ont" : "a"} aucun passage dans les horaires publiés, et aucun arrêt desservi n'est à moins de ${SERVED_NEAR_M} m.`,
       conseil: STOP_HELP,
@@ -640,6 +677,7 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
   const resume = [dead, off?.text, next].filter(Boolean).join(" ") + newsText(news);
   const used = live.length > 0 || alertes.length > 0 || !!off?.alertes;
   return text({
+    ...first,
     // Said first: a stop found on some words only may be in another commune than the one meant.
     ...(manque?.length ? { avertissement: missingWords(asked, mort ? mort.map(stopWhere).join(", ") : where, manque) } : {}),
     resume,

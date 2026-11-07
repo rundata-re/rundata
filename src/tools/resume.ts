@@ -338,6 +338,9 @@ function volcanoSources(all: Credit[] | undefined): Credit[] | undefined {
 // The ATMO index of the summary is Atmo Réunion's forecast for the day (qualite_air says the same).
 const AIR_NATURE = "PRÉVISION du jour, calculée par Atmo Réunion : pas une mesure.";
 
+/** The town hall's hours of a day its directory entry gives none for (a weekend, a weekday it never opens): the whole day. */
+export const MAIRIE_FERMEE = "fermée aujourd'hui";
+
 /**
  * Today is a holiday: the town hall's published hours are a week's, so it is said probably closed, never « ouverte »
  * (11/11/2026 would have said it open at 10:00 in the 24 communes).
@@ -569,7 +572,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
       ? {
           ouverte: ferie ? null : open,
           jour_ferie: ferie ? holidayText(ferie) : undefined,
-          horaires_aujourd_hui: ferie ? undefined : hoursOn(mairie, now) ?? (open === null ? undefined : "fermée aujourd'hui"),
+          horaires_aujourd_hui: ferie ? undefined : hoursOn(mairie, now) ?? (open === null ? undefined : MAIRIE_FERMEE),
           adresse: mairie.adresse,
           telephone: mairie.telephone,
           avertissement: HORAIRES_A_SAVOIR,

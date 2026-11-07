@@ -38,6 +38,9 @@ const LANES = 2;
 // two lanes each, the site had four requests at once, and batches of 8 it answers in 4 s from La Réunion were cut at
 // 13 s (27/10/2026, at 11:55 and 12:10).
 const SCHEDULED_TIMEOUT_MS = 25_000;
+// In the scheduled event too, a batch that did not answer stops the batches after it, and the copy before is served:
+// from 28/10 to 07/11/2026, 116 of the 117 runs with a batch unanswered had all 4 so (the site down, HTTP 525 after
+// 10,7 s each on 06/11/2026, two minutes of the event's run for the heights and the flows), 1 a single batch.
 
 export interface Station {
   id: string;
@@ -152,7 +155,8 @@ const seconds = (ms: number) => `${(ms / 1000).toFixed(1).replace(".", ",")} s`;
 /**
  * The readings of some gauges, or of all. The site takes about half a second per gauge, so a question about one place
  * asks only for the gauges around it. All 29 are read by the scheduled event only (cache.ts `islandRead`), in batches
- * one at a time, and kept in KV for every data center: a question or a page is served that copy with its time.
+ * one at a time, none after one that did not answer, and kept in KV for every data center: a question or a page is
+ * served that copy with its time.
  */
 export async function readings(cache: Cache, measure: Measure, ids: string[] = STATIONS.map((s) => s.id), now = new Date()) {
   if (ids.length !== STATIONS.length) return cache.get(`crues:${measure}:${[...ids].sort().join(",")}`, LEVELS_SECONDS, () => ask(measure, ids, now));
@@ -164,17 +168,23 @@ export async function readings(cache: Cache, measure: Measure, ids: string[] = S
     // How long each batch took, in the Worker's logs: what the site takes from Cloudflare, measured.
     const took: string[] = [];
     let failure: unknown;
+    let failed = false;
     let next = 0;
     await Promise.all(
       Array.from({ length: alone ? 1 : LANES }, async () => {
         while (next < batches.length) {
           const i = next++;
+          if (alone && failed) {
+            missing.push(...batches[i]);
+            took[i] = "non demandé";
+            continue;
+          }
           const start = Date.now();
           try {
             got.push(await ask(measure, batches[i], now, alone ? SCHEDULED_TIMEOUT_MS : undefined));
             took[i] = seconds(Date.now() - start);
           } catch (err) {
-            failure ??= err;
+            [failure, failed] = [failure ?? err, true];
             missing.push(...batches[i]);
             took[i] = `sans réponse après ${seconds(Date.now() - start)}`;
           }

@@ -224,11 +224,50 @@ describe("the 29 gauges, read by the scheduled event in batches", () => {
     const kv = new MemoryStore();
     const before = new Date(NOW.getTime() - 15 * 60_000);
     const old = (await inEvent(there(kv, before), before)).value.value;
-    [bump, silent] = [1, [first]];
+    [bump, silent] = [1, [other]];
     const r = (await inEvent(there(kv, NOW), NOW)).value;
     expect(r.stale).toBe(false);
-    expect(r.value[first]).toEqual(old[first]);
-    expect(last(r.value, other)).toBeCloseTo(last(old, other)! + 1);
+    expect(r.value[other]).toEqual(old[other]);
+    expect(last(r.value, first)).toBeCloseTo(last(old, first)! + 1);
+  });
+
+  // 06/11/2026: Vigicrues answered HTTP 525 after 10,7 s to each batch, 43 s for the heights and as much for the flows
+  // at each run of a quarter of an hour, which held up the radar's history behind them.
+  it("in the scheduled event, asks no batch after one that did not answer, and serves the copy before", async () => {
+    const kv = new MemoryStore();
+    const before = new Date(NOW.getTime() - 15 * 60_000);
+    const old = (await inEvent(there(kv, before), before)).value.value;
+    [batches, silent] = [[], [first]];
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const r = (await inEvent(there(kv, NOW), NOW)).value;
+    expect(batches.length).toBe(1);
+    expect(r).toMatchObject({ fetchedAt: before, stale: true, source: "vigicrues" });
+    expect(r.value[other]).toEqual(old[other]);
+    const line = log.mock.calls.map(([l]) => String(l)).find((l) => l.startsWith("source vigicrues, hauteur"));
+    expect(line).toMatch(/^source vigicrues, hauteur : 4 lots, un à la fois : sans réponse après \d+,\d s, non demandé, non demandé, non demandé$/);
+  });
+
+  it("after a batch that answered, keeps its gauges' new readings, and the readings from before for the batches not asked", async () => {
+    const kv = new MemoryStore();
+    const before = new Date(NOW.getTime() - 15 * 60_000);
+    const old = (await inEvent(there(kv, before), before)).value.value;
+    const second = ids.find((id) => STATIONS.findIndex((s) => s.id === id) >= 8 && STATIONS.findIndex((s) => s.id === id) < 16)!;
+    [batches, bump, silent] = [[], 1, [second]];
+    const r = (await inEvent(there(kv, NOW), NOW)).value;
+    expect(batches.length).toBe(2);
+    expect(r.stale).toBe(false);
+    expect(last(r.value, first)).toBeCloseTo(last(old, first)! + 1);
+    expect([r.value[second], r.value[other]]).toEqual([old[second], old[other]]);
+  });
+
+  it("for a question, still asks every batch when one does not answer", async () => {
+    silent = [first];
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const r = await readings(there(new MemoryStore(), NOW), "hauteur", undefined, NOW);
+    expect(batches.length).toBe(4);
+    expect(last(r.value, other)).toBeDefined();
   });
 
   it("serves the copy before, said as Vigicrues' that did not answer, when no batch answered", async () => {

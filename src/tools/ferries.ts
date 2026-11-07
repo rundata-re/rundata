@@ -20,8 +20,10 @@ export const T = {
     "Rodrigues se rejoint depuis Maurice.",
   h3: "Et le bateau pour Maurice ?",
   page:
-    // Non-breaking spaces: the names and the duration are not cut at the end of a line.
-    "Aucun bateau régulier ne transporte de passagers entre La Réunion et Maurice. Le Mauritius\u00a0Trochetia relie Maurice à Rodrigues " +
+    // Non-breaking spaces: the airlines' names and the duration are not cut at the end of a line. The ship's name may
+    // be: « Mauritius Trochetia » in one piece is wider than a 320 px phone's line with the text at 200 %, and was cut
+    // into « Troche » and « tia ».
+    "Aucun bateau régulier ne transporte de passagers entre La Réunion et Maurice. Le Mauritius Trochetia relie Maurice à Rodrigues " +
     "et Agaléga, mais sa ligne vers La Réunion est suspendue. Pour Maurice, il faut prendre l'avion : Air\u00a0Austral ou Air\u00a0Mauritius, " +
     "environ 45\u00a0minutes de vol.",
   verifie: `Vérifié le ${day}.`,

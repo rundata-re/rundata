@@ -205,16 +205,20 @@ describe("the sensors of private people (Sensor.Community)", () => {
     expect(section).toContain('<details class="card" id="brancher"><summary>Brancher son capteur</summary>');
     expect(section).not.toMatch(/class="[^"]*\b(?:aq|lvl|level)-/);
     // The network's name may go to the next line after its « . », never in the middle of « Community » at 200 %: in the
-    // page's text and its guide's title, not on its link (named « Sensor. Community » with a <wbr>), nor in the tool's answer.
+    // page's text, its guide's title and its link, never in the tool's answer.
     expect(section).toContain("partagés sur Sensor.<wbr>Community");
     expect(section).toContain("<h3>airRohr (Sensor.<wbr>Community)</h3>");
-    expect(section).toContain('rel="noopener">Sensor.Community</a>');
-    expect(section.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>"))).toEqual([]);
+    // On its link, its name whole in aria-label (lienNom): a <wbr> alone would make Chrome name it « Sensor. Community ».
+    expect(section).toContain('rel="noopener" aria-label="Sensor.Community">Sensor.<wbr>Community</a>');
+    expect(section.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>") && !x.includes('aria-label="'))).toEqual([]);
     expect(JSON.stringify(answer)).not.toContain("<wbr>");
-    // Empty: one sentence and the link to the guide.
+    // Empty: one sentence and the link to the guide; the name may go to the next line there too, not in the tool's answer.
     capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [] }));
     const none = body(await qualiteAir(cache(), undefined, NOW, true));
-    expect(airPage("https://rundata.re", { value: none, fetchedAt: NOW, stale: false }, NOW)).toContain(`<p>${esc(CAPTEURS_AUCUN)} <a href="#brancher">Brancher un capteur</a></p>`);
+    expect(airPage("https://rundata.re", { value: none, fetchedAt: NOW, stale: false }, NOW)).toContain(
+      `<p>${esc(CAPTEURS_AUCUN).replace("Sensor.Community", "Sensor.<wbr>Community")} <a href="#brancher">Brancher un capteur</a></p>`,
+    );
+    expect(JSON.stringify(none)).not.toContain("<wbr>");
   });
 
   it("costs, from cold, what the budget's registry says: the index and the two copies read from KV", async () => {

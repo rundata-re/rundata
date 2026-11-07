@@ -300,6 +300,26 @@ export function narrowTwins(css: string): string {
   return out + css.slice(from);
 }
 
+/**
+ * Text enlarged by a page zoom (Safari's aA menu): the screen is laid out on its width divided by the zoom, 128 px for a
+ * 320 px screen at 250 %, 130 px for 390 px at 300 %, while lengths in px or rem keep their size. The 16 px gutter and
+ * the paddings of cards, buttons, tabs, pills and tiles then leave a card about 52 px of text, less than one long word
+ * (ChatGPT, Prévision, Envoyer), and the page grows wider than the screen. Under 9 rem (144 px: a 320 px screen from
+ * 222 %, 390 px from 271 %, 430 px at 300 %), narrower gutter and paddings, tiles held in their column, the grids of the
+ * status block, the places and the rows in one column of their width, smaller big figures. Under 12.5 rem, the big
+ * figure of the status block (« 6 à 29 µg/m³ », kept on one line) at 1.5 rem in a column of the block's width.
+ * Placed at the end of the sheet, after the rules they adjust (avis, install), and inside narrowTwins for their twins.
+ */
+const ZOOM_PAGE_CSS =
+  "@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}}" +
+  "@media (max-width:9rem){.wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}" +
+  ".card{padding:.7rem}.cta-ia{padding-inline:.45rem}" +
+  ".tabs label{padding:.3rem .55rem}.connect{padding-left:.5rem}.connect button,.avis button{padding:.55rem .6rem}" +
+  ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}.badge{letter-spacing:0;max-width:100%;overflow-wrap:anywhere}" +
+  ".places{grid-template-columns:minmax(0,1fr)}.inst ol{padding-left:1rem}" +
+  ".pill{padding:.3rem .5rem;gap:.3rem;letter-spacing:0}.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.3rem;overflow-wrap:anywhere}" +
+  ".rows>li{min-width:0}.stcard .t{padding:.3rem .5rem;font-size:1.1rem}}";
+
 export const CSS = narrowTwins(`
 @font-face{font-family:"Bricolage";src:url(${FONT_PATH}) format("woff2");font-weight:600 800;font-display:swap}
 :root{--bg:#f6f2ea;--surface:#fff;--surface-2:#fbf8f2;--ink:#14202b;--muted:#5a6672;--line:#e6dece;--link:#1d4ea6;
@@ -1179,7 +1199,7 @@ footer.foot .brand{color:var(--on-night);margin-bottom:.8rem;font-size:min(1.2re
 footer.foot p+p{margin-top:.6rem}
 footer.foot h3{color:var(--on-night);font-size:1rem;margin-bottom:.4rem}
 footer.foot .slogan{font-size:1rem;padding-left:calc(1.55rem + .6rem)}
-`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + MOTIF_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS);
+`.replace(/\n/g, "") + AVIS_CSS + AIDE_CSS + FORMS_CSS + PWA_CSS + FOND_CSS + MOTIF_CSS + POINTS_CSS + LEGENDE_CSS + ELECTRICITE_CSS + CARTE_CSS + PLEIN_ECRAN_CSS + ZOOM_PAGE_CSS);
 /**
  * The stylesheet, a file of its own (web/site.ts) rather than copied into every page: its address changes with its
  * content, so that browsers keep it a year and fetch it again only once it changes.

@@ -180,14 +180,17 @@ describe("the counts (chiffres.ts)", () => {
     expect(await withEvents({ sans: ["agenda"] })).toEqual([undefined, COPIE.evenements]);
   });
 
-  it("read neither Le Séchoir's site nor L'Étang-Salé's for the events' copy: the scheduled event's own reading of them, 5 subrequests less in its cold cost", async () => {
-    // Le Séchoir's agenda, and L'Étang-Salé's list with the pages of three of its events, read on 06/11/2026; every
-    // other site does not answer.
+  it("read none of the agendas' sites the scheduled event reads for the events' copy, their reads less in its cold cost", async () => {
+    // Le Séchoir's agenda, L'Étang-Salé's list with the pages of three of its events (06/11/2026), Sainte-Marie's agenda
+    // (25/10/2026) and the Théâtre Luc Donat's with its season; every other site does not answer.
     const fixture = (f: string) => readFileSync(new URL(`./fixtures/agenda/${f}`, import.meta.url));
     const page = (url: string) => {
       if (url.includes("lesechoir")) return "sechoir.json";
       if (url.includes("letangsale")) return url.includes("?limit=") ? "etang-sale.html" : /\/(758|769|773)-/.exec(url) ? `etang-sale_${/\/(758|769|773)-/.exec(url)![1]}.html` : undefined;
+      if (url.includes("ville-saintemarie.re/wp-json/tribe")) return "tribe_sainte-marie.json";
+      if (url.includes("theatrelucdonat")) return url.endsWith("/prog") ? "luc-donat-saison.html" : "luc-donat.html";
     };
+    const SITES = { sechoir: "www.lesechoir.com", etang_sale: "www.letangsale.fr", sainte_marie: "www.ville-saintemarie.re", luc_donat: "www.theatrelucdonat.re" };
     const build = async () => {
       const hosts: Record<string, number> = {};
       vi.stubGlobal("fetch", async (url: string) => {
@@ -203,17 +206,18 @@ describe("the counts (chiffres.ts)", () => {
           return buildEvenements(new Cache(new MemoryStore(), () => NOW.getTime()), NOW);
         });
         await run.settled?.();
-        return { used: run.used, sechoir: hosts["www.lesechoir.com"] ?? 0, etangSale: hosts["www.letangsale.fr"] ?? 0 };
+        return { used: run.used, ...Object.fromEntries(Object.entries(SITES).map(([id, host]) => [id, hosts[host] ?? 0])) };
       } finally {
         vi.unstubAllGlobals();
         quiet.forEach((spy) => spy.mockRestore());
       }
     };
-    const planned = AGENDAS.filter((a) => a.id === "sechoir" || a.id === "etang_sale");
-    expect(planned.map((a) => a.planifie)).toEqual([true, true]);
+    const planned = AGENDAS.filter((a) => a.id in SITES);
+    expect(planned.map((a) => a.id).sort()).toEqual(Object.keys(SITES).sort());
+    expect(planned.every((a) => a.planifie)).toBe(true);
     const now = await build();
-    expect(now).toMatchObject({ sechoir: 0, etangSale: 0 });
-    // As before they were planned: read with the others, their list and its pages.
+    expect(now).toMatchObject({ sechoir: 0, etang_sale: 0, sainte_marie: 0, luc_donat: 0 });
+    // As before they were planned: read with the others, L'Étang-Salé's list and its pages, Luc Donat's agenda and season.
     planned.forEach((a) => (a.planifie = false));
     let before;
     try {
@@ -221,9 +225,9 @@ describe("the counts (chiffres.ts)", () => {
     } finally {
       planned.forEach((a) => (a.planifie = true));
     }
-    expect(before).toMatchObject({ sechoir: 1, etangSale: 4 });
-    expect(before.used - now.used).toBe(5);
-    // Its cold cost, 56 while it read them (src/web/partagees.ts), less these.
+    expect(before).toMatchObject({ sechoir: 1, etang_sale: 4, sainte_marie: 1, luc_donat: 2 });
+    expect(before.used - now.used).toBe(8);
+    // Its cold cost, 56 while it read them all (src/web/partagees.ts), less these.
     expect(SHARED.find((s) => s.key === EVENEMENTS_KEY)!.cold).toBe(56 - (before.used - now.used));
   });
 

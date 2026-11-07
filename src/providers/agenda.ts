@@ -1786,7 +1786,9 @@ export const LISIBLES: Agenda[] = [
   // Its terms ask for « www.ville-port.re » on what is taken from it.
   { ...tribe("le_port", "Ville du Port", "https://www.ville-port.re", "Le Port", LE_PORT), site_commune: "site de la commune du Port (©\u00a0www.ville-port.re)" },
   { ...tribe("trois_bassins", "Mairie des Trois-Bassins", "https://trois-bassins.re", "Les Trois-Bassins"), site_commune: "site de la commune des Trois-Bassins" },
-  { ...tribe("sainte_marie", "Ville de Sainte-Marie", "https://www.ville-saintemarie.re", "Sainte-Marie", SAINTE_MARIE), site_commune: "site de la commune de Sainte-Marie", faits: true },
+  // Read by the scheduled event, as Le Séchoir is: read by the questions (04-07/11/2026), 21 of its readings were cut
+  // at 6 s, the most after Le Séchoir's, and 213 views waited for it past 1 s.
+  { ...tribe("sainte_marie", "Ville de Sainte-Marie", "https://www.ville-saintemarie.re", "Sainte-Marie", SAINTE_MARIE), site_commune: "site de la commune de Sainte-Marie", faits: true, planifie: true },
   { ...salazie, site_commune: "site de la commune de Salazie", faits: true },
   { ...rss("le_tampon", "Ville du Tampon", "https://letampon.fr/agenda/feed/", "Le Tampon"), site_commune: "site de la commune du Tampon", faits: true, accueil: "https://letampon.fr/" },
   // Its whole agenda, all its categories: « /agenda/evenements » has had nothing to come since September 2026. Read by

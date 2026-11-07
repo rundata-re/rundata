@@ -528,6 +528,9 @@ const lucDonat: Agenda = {
   faits: true,
   // Its agenda, then its season's page for the genres.
   requetes: 2,
+  // Read by the scheduled event, as Le Séchoir is: read by the questions (04-07/11/2026), 7 of the 57 views too slow
+  // for it had no copy of it at all, kept only in the data center that had read it.
+  planifie: true,
   load: (cache, now) =>
     cache.get("agenda:luc_donat", FRESH_SECONDS, async () => {
       const [agenda, saison] = unlessSpent(await Promise.allSettled([

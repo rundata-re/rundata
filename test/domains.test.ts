@@ -4,6 +4,7 @@ import type { Cached } from "../src/cache.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as transit from "../src/providers/transit.js";
 import * as annuaire from "../src/providers/annuaire.js";
+import { enGrand } from "../src/tools/format.js";
 import { communePage } from "../src/web/commune.js";
 import { buildBus, communeStops, type CommuneData, type TraficAnswer } from "../src/web/data.js";
 import { airPage, busPage, calendrierPage, electricitePage, volcanPage } from "../src/web/domains.js";
@@ -134,15 +135,15 @@ describe("home page tiles", () => {
     };
     const page = homePage(ORIGIN, live, NOW);
     const tile = (name: string) => page.match(new RegExp(`<h3><a href="/[a-z]+">${name}</a></h3>(.*?)</li>`))![1];
-    expect(tile("Volcan")).toContain(`<p class="tv">Pas d'éruption annoncée</p>`);
+    expect(tile("Volcan")).toContain(`<p class="tv">${enGrand("Pas d'éruption annoncée")}</p>`);
     expect(tile("Volcan")).toContain("OVPF et préfecture, textes lus le ");
     expect(tile("Volcan")).toContain("Enclos : « réouverture partielle » (préfecture, 07/05)");
     expect(tile("Qualité de l&#39;air")).toContain(`<span class="aq aq2">moyen</span>`);
-    expect(tile("Électricité")).toContain(`<p class="tv">100\u00a0% renouvelable</p>`);
-    expect(tile("Calendrier")).toContain(`<p class="tv">Vacances scolaires</p>`);
+    expect(tile("Électricité")).toContain(`<p class="tv">${enGrand("100\u00a0% renouvelable")}</p>`);
+    expect(tile("Calendrier")).toContain(`<p class="tv">${enGrand("Vacances scolaires")}</p>`);
     expect(tile("Calendrier")).toContain("Toussaint dans 9 j");
     // The Région's official map; Waze only on /trafic, beside its own map.
-    expect(tile("Circulation").replaceAll("\u00a0", " ")).toContain(`<p class="tv">Carte officielle</p><p class="td all">bouchons, accidents et travaux : infotrafic.re ; 1 route forestière fermée</p>`);
+    expect(tile("Circulation").replaceAll("\u00a0", " ")).toContain(`<p class="tv">${enGrand("Carte officielle")}</p><p class="td all">bouchons, accidents et travaux : infotrafic.re ; 1 route forestière fermée</p>`);
     expect(page).not.toMatch(/waze/i);
     // A time, not « dans 3 min »: the page may be a few minutes old.
     expect(tile("Bus")).toMatch(/<p class="tv">(demain )?(\d\d:\d\d|\d+\u00a0h)<\/p><p class="td">prochain départ de la gare de Saint-/);
@@ -201,7 +202,7 @@ describe("commune page", () => {
     expect(tile(page, "Bus")).not.toContain("S1");
     expect(tile(page, "Vélos")).toContain(`<p class="tv">6 vélos</p>`);
     expect(tile(page, "Vélos")).toContain("<li><span>ZAC Maxime Rivière<small><b>6</b>\u00a0vélos · 4\u00a0places</small></span>");
-    expect(tile(page, "Volcan")).toContain("Pas d'éruption");
+    expect(tile(page, "Volcan")).toContain(enGrand("Pas d'éruption"));
     expect(tile(page, "Soleil et calendrier")).toMatch(/<p class="tv">\d\d:\d\d–\d\d:\d\d<\/p>/);
     expect(desc(page).length).toBeLessThanOrEqual(DESCRIPTION_MAX);
     expect(jsonld(page)[0].itemListElement.map((x: { name: string }) => x.name)).toEqual(["rundata.re", "Communes", "Saint-Pierre"]);
@@ -234,7 +235,7 @@ describe("routes", () => {
     const pending: Promise<unknown>[] = [];
     const r = (await site(new Request(`${ORIGIN}/`), cache, (p) => pending.push(p), NOW))!;
     const text = await r.text();
-    expect(text).toContain(`<p class="tv">Pas d'éruption annoncée</p>`);
+    expect(text).toContain(`<p class="tv">${enGrand("Pas d'éruption annoncée")}</p>`);
     expect(text).toContain(`<p class="tv">25\u00a0°C</p>`); // the sea, from the weather's copy
     // The tiles never built come first: one of them is being built, the volcano's copy is left as it is.
     expect(pending.length).toBe(1);

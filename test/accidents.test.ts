@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as accidents from "../src/routes/accidents.js";
 import { toutesLesSources } from "../src/server.js";
+import { enGrand } from "../src/tools/format.js";
 import { communePage } from "../src/web/commune.js";
 import { accidentsSection } from "../src/web/domains.js";
 import { pageOf } from "../src/web/places.js";
@@ -41,7 +42,7 @@ describe("the road accidents of the year (routes/accidents.ts)", () => {
 describe("the tile « Accidents de la route » of a commune", () => {
   it("says the year's counts plainly, from the national file, and goes to /trafic", () => {
     const t = tile(page("saint-denis"))!;
-    expect(t).toContain('<p class="tv">284 accidents corporels</p>');
+    expect(t).toContain(`<p class="tv">${enGrand("284 accidents corporels")}</p>`);
     expect(t).toContain("3 tués, 361 blessés en 2025 · d'après le fichier national des accidents (ONISR)");
     expect(t).toContain('href="/trafic#accidents"');
     expect(page("saint-denis")).toContain(accidents.SOURCE.nom);
@@ -49,7 +50,7 @@ describe("the tile « Accidents de la route » of a commune", () => {
 
   it("says « aucun tué recensé en 2025 » for none", () => {
     const t = tile(page("salazie"))!;
-    expect(t).toContain('<p class="tv">2 accidents corporels</p>');
+    expect(t).toContain(`<p class="tv">${enGrand("2 accidents corporels")}</p>`);
     expect(t).toContain("aucun tué recensé en 2025, 3 blessés · d'après le fichier national des accidents (ONISR)");
   });
 });

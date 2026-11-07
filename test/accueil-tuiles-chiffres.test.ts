@@ -41,11 +41,11 @@ describe("the home page's tile of fishing", () => {
 
 describe("the figures of the tiles", () => {
   it("take plain no-break spaces, in the tile only: the running text keeps the narrow one", () => {
-    expect(enGrand(`1\u202f151 supports`)).toBe("1\u00a0151 supports");
+    expect(enGrand(`1\u202f151 supports`)).toBe(`1\u00a0151 <span class="mc">sup\u00adports</span>`);
     expect(enGrand(`25\u202f°C <span class="nw">à 10:00</span>`)).toBe(`25\u00a0°C <span class="nw">à 10:00</span>`);
     const page = homePage("https://rundata.re", { meteo: null }, NOW);
     expect([...page.matchAll(/<p class="tv">(.*?)<\/p>/gs)].filter((m) => m[1].includes("\u202f"))).toEqual([]);
-    expect(tiles(page).antennes).toContain(`<p class="tv">${nombre(SUPPORTS.length).replace("\u202f", "\u00a0")} supports</p>`);
+    expect(tiles(page).antennes).toContain(`<p class="tv">${nombre(SUPPORTS.length).replace("\u202f", "\u00a0")} <span class="mc">sup\u00adports</span></p>`);
     expect(antennesLive().valeur).toBe(`${nombre(SUPPORTS.length)} supports`);
   });
 });
@@ -79,7 +79,7 @@ describe("the home page's tiles of the public jobs and markets", () => {
     expect(t.emploi).toContain(`<p class="tv">508 offres</p>`);
     expect(t.marches).toContain(`<p class="tv">103 avis</p>`);
     expect(t.peche).toContain(`<p class="tv">Capucin nain : pêche fermée</p>`);
-    expect(t.antennes).toContain(`<p class="tv">${enGrand(nombre(SUPPORTS.length))} supports</p>`);
+    expect(t.antennes).toContain(`<p class="tv">${enGrand(`${nombre(SUPPORTS.length)} supports`)}</p>`);
   });
 
   it("never read Choisir le service public nor the BOAMP from a view: their copies are rebuilt from the stored ones", async () => {

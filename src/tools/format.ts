@@ -55,13 +55,84 @@ export function nombre(n: number): string {
   return n.toLocaleString("fr-FR", { maximumFractionDigits: 20 }).replace(/\s/g, "\u202f");
 }
 
+const VOYELLE = /[aeiouyàâäéèêëîïôöùûüœæ]/;
+// The pairs never parted at a line's end (« ta-ble », « ou-vrir »), and the letters that make one sound (« ma-chine »).
+const LIQUIDE = /^(?:[bcdfgkptv]|ch|ph|th)[lr]$/;
+const UNE = /^(?:ch|ph|th|gn|qu|gu)/;
+
+/**
+ * Where a French word may be cut at a line's end, as a soft hyphen (U+00AD), from its syllables: before a consonant
+ * between two vowels (« évé-ne-ments »), between two consonants (« an-non-cée », « érup-tion »), before a consonant
+ * followed by « l » or « r » (« no-vem-bre », « dé-fi-bril-la-teurs »), never inside a group of vowels nor before an
+ * « x »; at least two letters before the cut and three after it, as French typesetting does. The word unchanged when it
+ * has no such place.
+ */
+export function syllabes(mot: string): string {
+  const m = mot.toLowerCase();
+  const voyelle = (k: number) => VOYELLE.test(m[k]) && !(m[k] === "u" && k > 0 && (m[k - 1] === "q" || m[k - 1] === "g") && k + 1 < m.length && VOYELLE.test(m[k + 1]));
+  const coupes: number[] = [];
+  let k = 0;
+  while (k < m.length && !voyelle(k)) k++;
+  while (k < m.length) {
+    while (k < m.length && voyelle(k)) k++;
+    const debut = k;
+    while (k < m.length && !voyelle(k)) k++;
+    if (k >= m.length) break;
+    // The consonants between two vowels, a letter or a group that makes one sound each.
+    const unites: number[] = [];
+    for (let i = debut; i < k; ) {
+      unites.push(i);
+      i += i + 1 < k && UNE.test(m.slice(i, i + 2)) ? 2 : 1;
+    }
+    const n = unites.length;
+    let coupe = unites[n - 1];
+    if (n >= 2 && LIQUIDE.test(m.slice(unites[n - 2], k))) coupe = unites[n - 2];
+    if (m[coupe] !== "x" && coupe >= 2 && mot.length - coupe >= 3) coupes.push(coupe);
+  }
+  let out = "", de = 0;
+  for (const c of coupes) { out += mot.slice(de, c) + "­"; de = c; }
+  return out + mot.slice(de);
+}
+
+/**
+ * The long words of a tile's figure cut where French cuts them, only when they are longer than their line: from eight
+ * letters, their soft hyphens put in (`syllabes`, not in a word with a capital, a name), and the word in a box never
+ * wider than its line (`.mc`), so that it goes to the next line whole where it fits there. A soft hyphen alone also cuts
+ * a word that fits on the next line, to fill the end of the line before it (« d'éruption » at 320 px). A compound word
+ * (« Sainte-Suzanne, », « rendez-vous ») in the same box: whole where it fits, else cut at its own hyphen. Text only:
+ * the tags, what an entity writes and the text of a `.nm`, `.nw` or `.nom` are left as they are.
+ */
+export function motsLongs(html: string): string {
+  const mots = (texte: string) =>
+    texte
+      .split(/([ \t\n]+)/)
+      .map((jeton) => {
+        const cut = jeton.replaceAll(/\p{L}{8,}/gu, (w) => (w[0] === w[0].toLowerCase() ? syllabes(w) : w));
+        return cut !== jeton || /\p{L}-\p{L}/u.test(jeton) ? `<span class="mc">${cut}</span>` : jeton;
+      })
+      .join("");
+  let out = "", de = 0, garde = false;
+  while (de < html.length) {
+    const ouvre = html.indexOf("<", de);
+    const ferme = ouvre < 0 ? -1 : html.indexOf(">", ouvre);
+    const fin = ferme < 0 ? html.length : ouvre;
+    out += garde ? html.slice(de, fin) : mots(html.slice(de, fin));
+    if (ferme < 0) break;
+    const balise = html.slice(ouvre, ferme + 1);
+    garde = balise === `<span class="nm">` || balise === `<span class="nw">` || balise === `<span class="nom">`;
+    out += balise;
+    de = ferme + 1;
+  }
+  return out;
+}
+
 /**
  * A tile's figure, in the bold of the titles: its narrow no-break spaces become plain no-break spaces. In that font at
  * weight 800, the narrow one is 2.6 px wide at 24 px, and « 1\u202f151 » reads « 1151 » at 390 px. The running text
- * keeps the narrow one.
+ * keeps the narrow one. Its long words cut where French cuts them, only when they are longer than their line (`motsLongs`).
  */
 export function enGrand(html: string): string {
-  return html.replace(/\u202f/g, "\u00a0");
+  return motsLongs(html.replace(/\u202f/g, "\u00a0"));
 }
 
 /** « Saint-Denis, Saint-Paul et Salazie ». */

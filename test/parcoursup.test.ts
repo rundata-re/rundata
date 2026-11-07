@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INSEE } from "../src/places/insee.js";
 import { toutesLesSources } from "../src/server.js";
+import { enGrand } from "../src/tools/format.js";
 import * as parcoursup from "../src/vie/parcoursup.js";
 import { ETABLISSEMENTS, parCommune } from "../src/vie/parcoursup-formations.js";
 import { communePage } from "../src/web/commune.js";
@@ -52,7 +53,7 @@ describe("the formations of La Réunion in Parcoursup (vie/parcoursup.ts)", () =
 describe("the tile « Après le bac » of a commune", () => {
   it("counts the commune's formations, places and establishments, and goes to /ecoles", () => {
     const t = tile(page("saint-denis"))!;
-    expect(t).toContain('<p class="tv">86 formations</p>');
+    expect(t).toContain(`<p class="tv">${enGrand("86 formations")}</p>`);
     expect(t).toContain("dans Parcoursup · 7\u202f165 places en 2025, dans 16 établissements</p>");
     expect(t).not.toContain("après Parcoursup");
     expect(t).toContain('href="/ecoles#apres-bac"');
@@ -62,13 +63,13 @@ describe("the tile « Après le bac » of a commune", () => {
 
   it("says a single formation in the singular", () => {
     const t = tile(page("la-plaine-des-palmistes"))!;
-    expect(t).toContain('<p class="tv">1 formation</p>');
+    expect(t).toContain(`<p class="tv">${enGrand("1 formation")}</p>`);
     expect(t).toContain("dans Parcoursup · 25 places en 2025, dans 1 établissement</p>");
   });
 
   it("says « aucune formation » for a commune without one", () => {
     const t = tile(page("salazie"))!;
-    expect(t).toContain('<p class="tv">Aucune formation Parcoursup dans la commune en 2025</p>');
+    expect(t).toContain(`<p class="tv">${enGrand("Aucune formation Parcoursup dans la commune en 2025")}</p>`);
   });
 });
 

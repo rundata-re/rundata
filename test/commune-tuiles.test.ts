@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, type Cached, MemoryStore } from "../src/cache.js";
+import { enGrand } from "../src/tools/format.js";
 import { BIKES_STALE_MS, COLUMNS, COMMUNES, communePage, measuredAt, spans } from "../src/web/commune.js";
 import { type CommuneData, pointJustice } from "../src/web/data.js";
 import { H, W } from "../src/web/map.js";
@@ -118,7 +119,7 @@ describe("the Vélos tile", () => {
 
   it("no longer gives the bikes counted as those of the moment once the count is old", () => {
     const t = tile(communePage(ORIGIN, p, commune(new Date("2026-10-30T11:35:00Z")), NOW), "Vélos");
-    expect(t).toContain('<p class="tv">6 stations</p>');
+    expect(t).toContain(`<p class="tv">${enGrand("6 stations")}</p>`);
     // The instruction first, never cut.
     expect(t).toContain('<p class="td all">Rechargez la page dans quelques secondes\u00a0: vélos libres comptés le 30/10 à 15:35.</p>');
     expect(tile(communePage(ORIGIN, p, commune(new Date("2026-10-29T11:35:00Z")), NOW), "Vélos")).toContain("vélos libres comptés le 29/10 à 15:35.");
@@ -143,7 +144,7 @@ describe("the town hall's tile", () => {
 
   it("says the hours are absent from the directory, and leaves them out of the description", () => {
     const page = communePage(ORIGIN, p, commune(ago(60_000), { mairie: hall }), NOW);
-    expect(page).toContain(`<p class="tv">Horaires absents de l'annuaire</p>`);
+    expect(page).toContain(`<p class="tv">${enGrand("Horaires absents de l'annuaire")}</p>`);
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).not.toMatch(/mairie (ouverte|fermée)/i);
     // The page's role, never a state of the moment.
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1]).toBe("Saint-Pierre (La Réunion, 974)\u00a0: la mairie et ses horaires, les écoles, les médecins, les élections, le logement\u00a0; météo, air et bus en direct.");

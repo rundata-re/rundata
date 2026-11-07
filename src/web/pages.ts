@@ -1224,6 +1224,9 @@ summary{min-height:24px}
    is wider than the line and, unhyphenated, was cut at a letter (« événement/s »). */
 @media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}wbr.adr{display:inline}#jours h3 .note{hyphens:auto;-webkit-hyphens:auto}.minuit li{grid-template-columns:minmax(0,1fr)}
 .minuit .q,.rows .nw{white-space:normal}
+/* A title's feminine in brackets stays whole even here (.fem, intituleCoupable in emploi.ts): wrapping, « Directeur(-trice) »
+   ended a line after its hyphen, « (- » then « trice) ». A reference keeps its normal, above. */
+.rows .fem{white-space:nowrap}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}
 .rows:not(.eau,.bornes,.velos,.bikes,.departs) li:has(>.note:last-child:not(:first-child)){grid-template-columns:minmax(max-content,1.7rem) minmax(0,1fr);hyphens:manual;-webkit-hyphens:manual}

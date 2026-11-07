@@ -8,7 +8,7 @@
  */
 import { distanceKm } from "../geo.js";
 import { INSEE } from "../places/insee.js";
-import { resolvePlace } from "../places/resolve.js";
+import { normalize, resolvePlace } from "../places/resolve.js";
 import * as carteScolaire from "../vie/carte-scolaire.js";
 import * as ecoles from "../vie/ecoles.js";
 import { slugify } from "../web/places.js";
@@ -23,6 +23,7 @@ const SERVICES: [RegExp, (e: ecoles.Etablissement) => boolean][] = [
   [/maternelle/i, (e) => !!e.niveau?.includes("maternelle")], [/[ée]l[ée]mentaire/i, (e) => !!e.niveau?.includes("élémentaire")],
   [/priv[ée]/i, (e) => !!e.prive], [/public/i, (e) => !e.prive],
 ];
+/** A commune's écoles shown; its collèges and lycées all are (15 at most, in Saint-Denis). */
 const SHOWN = 10;
 
 const dmy = (iso: string) => iso.split("-").reverse().join("/");
@@ -44,6 +45,39 @@ const row = ({ e, km }: { e: ecoles.Etablissement; km?: number }) => ({
   uai: e.uai,
 });
 
+// The words of `quoi` that are no name's: the kinds and services, what is asked of the place, the little words.
+const NOT_NAME = new Set([
+  "ecole", "ecoles", "college", "colleges", "lycee", "lycees", "etablissement", "etablissements", "scolaire", "scolaires",
+  "maternelle", "maternelles", "elementaire", "elementaires", "primaire", "ulis", "segpa", "internat", "cantine",
+  "public", "publique", "publics", "prive", "privee", "prives", "quel", "quelle", "quels", "quelles", "les", "des", "aux",
+  "pour", "sur", "dans", "avec", "sans", "chez", "son", "ses", "mon", "mes", "plus", "proche", "proches", "pres", "autour",
+  "ici", "cette", "tous", "toutes", "liste", "commune", "ville", "quartier", "enfant", "enfants", "fille", "fils",
+  "resultat", "resultats", "brevet", "bac", "ips", "indice", "taux", "attendu", "reussite", "classement", "niveau",
+  "adresse", "telephone", "numero", "contact", "site", "secteur", "inscription", "horaires", "rentree", "nom", "rep",
+  "section", "sportive", "ouvert", "ouverte", "ferme", "fermee", "fermes", "fermees", "aujourd", "hui", "demain",
+]);
+/** One letter off at most (one added, removed or changed), for a word of four letters or more; exact below. */
+function near(w: string, n: string): boolean {
+  if (w === n) return true;
+  if (w.length < 4 || Math.abs(w.length - n.length) > 1) return false;
+  let i = 0;
+  while (i < w.length && i < n.length && w[i] === n[i]) i++;
+  return w.slice(i + (w.length >= n.length ? 1 : 0)) === n.slice(i + (n.length >= w.length ? 1 : 0));
+}
+
+/**
+ * The establishments named in `quoi` (« collège Émile Hugo »): those whose name holds each word asked, accents aside,
+ * or one letter off (« Hugot »); the exact ones alone when there are. The words of the place asked are no name's.
+ */
+export function byName(pool: ecoles.Etablissement[], quoi: string, place: string[] = []) {
+  const skip = new Set(place.flatMap((p) => normalize(p).split(" ")));
+  const words = normalize(quoi).split(" ").filter((w) => w.length > 2 && !/^\d+$/.test(w) && !NOT_NAME.has(w) && !skip.has(w));
+  const named = (match: (w: string, n: string) => boolean) =>
+    words.length ? pool.filter((e) => words.every((w) => normalize(e.nom).split(" ").some((n) => match(w, n)))) : [];
+  const exact = named((w, n) => w === n);
+  return { words, found: exact.length ? exact : named(near), exact: exact.length > 0 };
+}
+
 export function ecolesAnswer(quoi: string, lieu: string | undefined) {
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
@@ -52,9 +86,33 @@ export function ecolesAnswer(quoi: string, lieu: string | undefined) {
   const pool = ecoles.LIST.filter((e) => (!kinds.length || kinds.includes(e.type)) && tests.every((t) => t(e)));
   const count = (list: ecoles.Etablissement[]) =>
     ecoles.KINDS.map((k) => [k.type, list.filter((e) => e.type === k.type).length] as const).filter(([, n]) => n).map(([k, n]) => ecoles.counted(k, n)).join(", ");
+  // A name asked: those of that name in the place's commune, else on the whole island; the nearest first.
+  const name = byName(pool, quoi, res ? [res.lieu.nom, res.lieu.commune] : []);
+  if (name.found.length) {
+    const p = res?.lieu;
+    const inCommune = name.found.filter((e) => e.commune === p?.commune);
+    const found = (inCommune.length ? inCommune : name.found)
+      .map((e) => ({ e, km: p ? distanceKm(p.lon, p.lat, e.lon, e.lat) : undefined }))
+      .sort((x, y) => (x.km ?? 0) - (y.km ?? 0) || x.e.nom.localeCompare(y.e.nom, "fr"));
+    const shown = found.slice(0, SHOWN);
+    const said = found.length === 1
+      ? `${found[0].e.nom} (${found[0].e.commune}), ${found[0].e.adresse}.`
+      : `${found.length} établissements : ${shown.map(({ e }) => `${e.nom} (${e.commune})`).join("\u00a0; ")}${found.length > SHOWN ? "…" : "."}`;
+    return text({
+      lieu: res ? placeBlock(lieu!, res) : undefined,
+      resume: name.exact ? said : `Aucun nom exact\u00a0; nom approchant, à une lettre près : ${said}`,
+      etablissements: shown.map(row),
+      autres: found.length > SHOWN ? `${found.length - SHOWN} autres de ce nom : préciser le nom ou la commune.` : undefined,
+      avertissements: NOTES,
+      sources: credits([ecoles.SOURCE]),
+    });
+  }
+  // A name that none has: said, then the list as without it.
+  const sansNom = name.words.length ? `Aucun établissement dont le nom approche « ${name.words.join(" ")} » : ${res ? "voici ceux du lieu" : "voici le compte par commune"}.` : undefined;
   if (!res) {
     const communes = [...new Set(pool.map((e) => e.commune))].sort((x, y) => x.localeCompare(y, "fr"));
     return text({
+      nom: sansNom,
       resume: `${pool.length} établissements à La Réunion d'après l'annuaire de l'Éducation nationale (${count(pool)}). Donner une commune ou un lieu pour la liste, les plus proches d'abord.`,
       par_commune: Object.fromEntries(communes.map((c) => [c, pool.filter((e) => e.commune === c).length])),
       avertissements: NOTES,
@@ -65,14 +123,19 @@ export function ecolesAnswer(quoi: string, lieu: string | undefined) {
   const here = pool.filter((e) => e.commune === commune);
   // The commune's, the nearest the place first; the island's nearest when the commune has none.
   const ranked = (here.length ? here : pool).map((e) => ({ e, km: distanceKm(lon, lat, e.lon, e.lat) })).sort((x, y) => x.km - y.km);
-  const shown = ranked.slice(0, SHOWN);
+  // A commune's collèges and lycées all (15 at most); ten of its écoles, the others counted, with how to get them.
+  const shown = here.length && !here.some((e) => e.type === "ecole") ? ranked : ranked.slice(0, SHOWN);
+  const rest = here.length - shown.length;
   return text({
     lieu: placeBlock(lieu!, res),
+    nom: sansNom,
     resume: here.length
-      ? `${here.length} établissement${here.length > 1 ? "s" : ""} ${a(commune)} (${count(here)}). Le plus proche ${de(res.lieu.nom)} : ${shown[0].e.nom}, ${shown[0].e.adresse}, à ${fr(Math.round(shown[0].km * 10) / 10)} km.`
+      ? `${here.length} établissement${here.length > 1 ? "s" : ""} ${a(commune)} (${count(here)})${rest > 0 ? `, les ${shown.length} plus proches ${de(res.lieu.nom)} ci-dessous` : ""}. Le plus proche ${de(res.lieu.nom)} : ${shown[0].e.nom}, ${shown[0].e.adresse}, à ${fr(Math.round(shown[0].km * 10) / 10)} km.`
       : `Aucun établissement de ce type ${a(commune)}. Les plus proches : ${shown.slice(0, 3).map(({ e, km }) => `${e.nom}, ${a(e.commune)}, à ${fr(Math.round(km * 10) / 10)} km`).join(" ; ")}.`,
     etablissements: shown.map(row),
-    autres: here.length > SHOWN ? `${here.length - SHOWN} autre${here.length - SHOWN > 1 ? "s" : ""} ${a(commune)}, sur la page de la commune.` : undefined,
+    autres: rest > 0
+      ? `${rest} autre${rest > 1 ? "s" : ""} ${a(commune)}, non listé${rest > 1 ? "s" : ""} ici : redemander avec le nom de l'établissement dans quoi, ou un quartier dans lieu, ou voir la page de la commune.`
+      : undefined,
     page: `https://rundata.re/communes/${slugify(commune)}#ecoles`,
     avertissements: NOTES,
     sources: credits([ecoles.SOURCE]),

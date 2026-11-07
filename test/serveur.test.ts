@@ -127,7 +127,8 @@ describe("the server's instructions", () => {
     // its « ce qui est couvert ou pas encore » left out (its first sentence says it).
     // 39 328 on 6/11/2026 with the Kabardock among the halls read in evenements (« même quand un média… », 14 shorter).
     // 39 301 the same day with L'Étang-Salé among the mairies read, and the OTI Est's agenda, suspended, no longer named.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_332);
+    // 39 352 on 7/11/2026 with a school's name in annuaire_services_publics (« avec le nom s'il est connu », an example).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_352);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

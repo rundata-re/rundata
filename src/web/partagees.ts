@@ -143,10 +143,10 @@ export const SHARED: Shared[] = [
   { key: CHIFFRES, build: buildChiffres, every: 60, cold: 45, cpu: 60, offset: 50 },
   // Its events, the whole agenda as /evenements reads it (55 measured there): every 6 hours, in the half hour's first
   // event, which no copy every 30 minutes takes; every hour while an agenda did not answer (chiffres.ts). Less Le
-  // Séchoir's site (1) and L'Étang-Salé's (its list and three pages, 4), which the agendas' own reading in the scheduled
-  // event reads (`planifie`, tools/agenda.ts `refreshPlanned`), counted there: 56 before, 51, measured in
-  // test/chiffres.test.ts.
-  { key: EVENEMENTS_KEY, build: buildEvenements, every: evenementsEvery, cold: 51, cpu: 200, range: { usual: 6 * 60, shortest: 60 }, offset: 30, before: [CHIFFRES] },
+  // Séchoir's site (1), L'Étang-Salé's (its list and three pages, 4), Sainte-Marie's (1) and the Théâtre Luc Donat's (its
+  // agenda and its season, 2), which the agendas' own reading in the scheduled event reads (`planifie`, tools/agenda.ts
+  // `refreshPlanned`), counted there: 56 before, 48, measured in test/chiffres.test.ts.
+  { key: EVENEMENTS_KEY, build: buildEvenements, every: evenementsEvery, cold: 48, cpu: 200, range: { usual: 6 * 60, shortest: 60 }, offset: 30, before: [CHIFFRES] },
 ];
 /**
  * Warmed after SHARED, with what it left, so that they never go short for these: the confidence of the forecast

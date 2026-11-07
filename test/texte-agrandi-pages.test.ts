@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CSS } from "../src/web/pages.js";
+import { nobreak } from "../src/web/domains.js";
 
 // /meteo, /mer, /vigilance, /carburants, a commune's page at 320 px with the text at 150 % and at 280 px: nothing wider
 // than the screen.
@@ -48,5 +49,23 @@ describe("larger text on a narrow screen, on the pages of facts and of search", 
     expect(19.9 * 24).toBeGreaterThan(390);
     // After the two columns' rule, which it overrides at the same specificity.
     expect(CSS.indexOf("@media (max-width:19.9rem)")).toBeGreaterThan(CSS.indexOf(".sheet .groupe{grid-template-columns:repeat(auto-fill,"));
+  });
+});
+
+// /coupures-eau and a commune's page on a 390 px phone with the text at 150 and 200 %: « La Plaine-des-Palmistes » kept on
+// one line made the page 413 px wide; two folded elections one under the other overlapped their titles by 5 px.
+describe("larger text on a narrow screen, on /coupures-eau and a commune's elections", () => {
+  it("keeps a hyphenated name on one line at 100 %, and lets it break at its hyphens from 125 % on a phone", () => {
+    expect(nobreak("La Plaine-des-Palmistes")).toBe('La <span class="nom">Plaine-des-Palmistes</span>');
+    expect(CSS).toContain(".nom{white-space:nowrap}@media (max-width:19.9rem){.nom{white-space:normal}}");
+    expect(19.9 * 16).toBeLessThan(320);
+  });
+
+  it("parts two folds of a card by as much as their titles reach past them, at any text size", () => {
+    expect(CSS).toContain(".card>details>summary{cursor:pointer;list-style:none;display:block;min-height:44px;padding:.5rem 0;margin:-.5rem 0;");
+    expect(CSS).toContain(".card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:1.3rem;display:grid;gap:.8rem;");
+    expect(CSS).toContain(".card>details+details{margin-top:.2rem}");
+    // Each title reaches .5rem past its fold, above and below: 1rem between two folds, the gap and the margin together.
+    expect(0.8 + 0.2).toBe(2 * 0.5);
   });
 });

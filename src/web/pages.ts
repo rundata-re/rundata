@@ -978,6 +978,10 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau .refs small{color:inherit}
 .rows .refs a{display:block;margin:0;padding:.5rem 0;font-weight:400}
 .rows .nw{white-space:nowrap}
+/* A hyphenated name kept on one line (nobreak(): « Saint-Leu », « La Plaine-des-Palmistes »); with the text at 125 % or
+   more on a phone (under 19.9 em; 318 px at 100 %) it may break at its hyphens, as « La Plaine-des-Palmistes » at 200 %
+   is wider than a card's line on a 390 px phone. */
+.nom{white-space:nowrap}@media (max-width:19.9rem){.nom{white-space:normal}}
 .rows small.said{color:var(--lave);font-weight:700}
 .rows .age{font-weight:700;font-size:.85rem;text-align:right;max-width:8.5rem}.rows .age.i{font-weight:400;color:var(--muted)}
 .kind h4{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}
@@ -985,6 +989,10 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 @media (max-width:600px){#kf label{flex-basis:100%}}
 @media (min-width:900px){.zones.top>li:has(details[open]){grid-column:1/-1}.zones.top details[open]>.kinds{columns:3 16rem;column-gap:2rem}.kinds .kind{break-inside:avoid}}
 .card>details>summary{cursor:pointer;list-style:none;display:block;min-height:44px;padding:.5rem 0;margin:-.5rem 0;box-sizing:border-box}.card>details>summary::-webkit-details-marker{display:none}
+/* Two folds one under the other in a card (a commune's elections): each title reaches .5rem past its fold to be 44 px tall,
+   1rem in all, over the card's .8rem gap; .2rem more between them, and the two titles touch without overlapping, so a tap
+   on the edge of one never opens the other (at any text size: all three are in rem). */
+.card>details+details{margin-top:.2rem}
 .card>details>summary :is(h3,h4){display:inline}.card>details>summary h2{display:inline;font-size:1.12rem;letter-spacing:-.005em}.card>details>summary::after{content:"\\a0▸";color:var(--muted)}.card>details[open]>summary::after{content:"\\a0▾"}
 .rows.eau .score{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .autour{margin:1rem 0}.autour>.note{margin-top:.6rem}.autour .rows.dae small,.autour .rows.dae .q-none{color:var(--on-night-muted)}.autour .rows.dae .q-bonne{color:#4cc765}.rows.dae li>span:last-child{max-width:9.5rem;text-align:right}.map.autour-on .mk,.mapcard:has(.autour-on) figcaption{display:none}.map .nr{fill:#2b8a3e;stroke:#fff;stroke-width:2px;vector-effect:non-scaling-stroke}.map .me{fill:#339af0;stroke:#fff;stroke-width:3px;vector-effect:non-scaling-stroke}

@@ -111,7 +111,7 @@ describe("« Relier votre plateforme »", () => {
     expect(form).toContain(`<label class="case"><input type="checkbox" name="ouvert" value="oui"> Mettre aussi nos événements dans les données ouvertes de rundata.re (facultatif)</label>`);
     expect(form).toContain("Si vous retirez l'accès, ils en sortent aussi ; une copie déjà faite par quelqu'un d'autre reste sous la licence.");
     const conf = plain(await (await get("/confidentialite")).text());
-    expect(conf).toContain("Ces événements entrent dans nos données ouvertes (agenda ICS et JSON, Licence Ouverte 2.0) seulement si l'association l'a choisi en reliant son compte ; HelloAsso l'a accepté par écrit le 29 octobre 2026.");
+    expect(conf).toContain('Ces événements entrent dans nos données ouvertes (agenda ICS et JSON, Licence Ouverte 2.0) seulement si l\'association l\'a choisi en reliant son compte ; HelloAsso l\'a accepté par écrit le <span class="jm">29 octobre</span> 2026.');
     expect(conf).toContain("HelloAsso nous a conseillé de passer par les clés API de chaque association : c'est aujourd'hui la seule façon de lire les événements d'une association qui le souhaite.");
     expect(conf).toContain("en supprimant ses clés API dans l'onglet « Intégrations et API » de son espace HelloAsso.");
     expect(conf).not.toContain("tant que HelloAsso ne nous l'a pas autorisé par écrit");

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as carburants from "../src/providers/carburants.js";
 import { annuaireTool } from "../src/tools/annuaire.js";
-import { FUEL } from "../src/tools/carburants.js";
+import { FUEL, keep } from "../src/tools/carburants.js";
 import { handle } from "../src/app.js";
 import { carburantsPage, descriptionOf, TITLE } from "../src/web/carburants.js";
 
@@ -13,6 +13,8 @@ const NOW = new Date("2026-10-24T08:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 // The page keeps amounts and dates on one line (« 1,54\u00a0€ »): read here with plain spaces.
 const flat = (s: string) => s.replaceAll("\u00a0", " ");
+// A day with its month, as the page keeps it on one line (« <span class="jm">1er novembre</span> »).
+const jm = (s: string) => s.replace(/(\d{1,2}|1er) (janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/g, '<span class="jm">$1 $2</span>');
 const render = (...a: Parameters<typeof carburantsPage>) => flat(carburantsPage(...a));
 
 afterEach(() => {
@@ -201,7 +203,7 @@ describe("the prefect's fuel prices", () => {
     // On the 2nd of November, before the new order: October's, said to be in force since the 1st of October.
     const early = render("https://rundata.re", at, new Date("2026-11-02T06:00:00Z"));
     expect(early).toContain('<h1>Prix des carburants à La Réunion, octobre 2026 <span class="n974">974</span></h1>');
-    expect(early).toContain("Les prix maximum de novembre 2026 ne sont pas encore publiés ou pas encore lus : voici ceux en vigueur depuis le 1er octobre 2026.");
+    expect(early).toContain(jm("Les prix maximum de novembre 2026 ne sont pas encore publiés ou pas encore lus : voici ceux en vigueur depuis le 1er octobre 2026."));
   });
 
   it("unread, say so on their page in the tool's words, with the prefecture's link, never « se charge »", () => {
@@ -231,7 +233,7 @@ describe("a new order read before its 1st", () => {
   const at = (p: carburants.Prix) => ({ value: p, fetchedAt: READ, stale: false });
   const ANNONCE = "Prix maximum au 1er novembre, fixés par la préfecture (communiqué du 31 octobre) : sans plomb 1,54 €/litre (−0,02 €)\u00a0; gazole 1,23 €/litre (−0,01 €)\u00a0; gaz 18,59 € la bouteille de 12,5 kg (−0,50 €), 18 € avec aides locales";
   // Every way the prices of November could be said in force.
-  const IN_FORCE = /depuis le 1er novembre|en vigueur depuis le 1er novembre|à La Réunion, novembre 2025<\/h1>/;
+  const IN_FORCE = /depuis le (?:<span class="jm">)?1er novembre|à La Réunion, novembre 2025<\/h1>/;
 
   it("gives its release's day", () => {
     const p = nov();
@@ -244,22 +246,32 @@ describe("a new order read before its 1st", () => {
       const page = render("https://rundata.re", at(nov()), new Date(t));
       expect(page, t).toContain('<h1>Prix des carburants à La Réunion, octobre 2025 <span class="n974">974</span></h1>');
       // The page is put in French typography as it is sent (web/typo.ts), not here.
-      expect(page, t).toContain(`<p class="lead">${ANNONCE.replaceAll("\u00a0;", " ;")}.</p><p class="lead">En vigueur jusqu&#39;au 31 octobre : sans plomb 1,56 €/litre ; gazole 1,24 €/litre ; gaz 19,09 € la bouteille de 12,5 kg.</p>`);
-      expect(page, t).toContain('<th scope="col">Au 1er novembre 2025</th><th scope="col">Jusqu&#39;au 31 octobre 2025</th>');
+      expect(page, t).toContain(jm(`<p class="lead">${ANNONCE.replaceAll("\u00a0;", " ;")}.</p><p class="lead">En vigueur jusqu&#39;au 31 octobre : sans plomb 1,56 €/litre ; gazole 1,24 €/litre ; gaz 19,09 € la bouteille de 12,5 kg.</p>`));
+      expect(page, t).toContain(jm('<th scope="col">Au 1er novembre 2025</th><th scope="col">Jusqu&#39;au 31 octobre 2025</th>'));
       expect(page, t).not.toMatch(IN_FORCE);
       expect(page, t).not.toContain("pas encore publiés");
     }
     // Without the release's day: the sentence without it.
     const undated = render("https://rundata.re", at({ ...nov(), publie: undefined }), READ);
-    expect(undated).toContain("Prix maximum au 1er novembre, fixés par la préfecture : sans plomb 1,54 €/litre");
+    expect(undated).toContain(jm("Prix maximum au 1er novembre, fixés par la préfecture : sans plomb 1,54 €/litre"));
+  });
+
+  it("never glues a day to its month with a no-break space, which stops the month's hyphenation (« novem / bre » at 200 %)", () => {
+    const COLLE = /(?:\d|1er)(?:\u00a0|&nbsp;)(?:janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)/;
+    for (const t of ["2025-10-31T05:00:00Z", "2025-10-31T20:00:00Z", "2025-11-12T08:00:00Z"]) {
+      const page = carburantsPage("https://rundata.re", at(nov()), new Date(t));
+      expect(page, t).not.toMatch(COLLE);
+      expect(page, t).toContain('<span class="jm">1er novembre</span>');
+    }
+    expect(keep("depuis le 1er novembre 2025 : 1,54 € ; 12,5 kg")).toBe("depuis le 1er novembre 2025 : 1,54\u00a0€ ; 12,5\u00a0kg");
   });
 
   it("is in force from the 1st at 0 h, Réunion time, with no new reading", () => {
     const page = render("https://rundata.re", at(nov()), new Date("2025-10-31T20:00:00Z"));
     expect(page).toContain('<h1>Prix des carburants à La Réunion, novembre 2025 <span class="n974">974</span></h1>');
-    expect(page).toContain('<p class="lead">Prix maximum depuis le 1er novembre 2025 : sans plomb 1,54 €/litre (−0,02 €) ; gazole 1,23 €/litre (−0,01 €)');
-    expect(page).not.toContain("au 1er novembre,");
-    expect(carburantsPage("https://rundata.re", at(nov()), new Date("2025-10-31T20:00:00Z"))).toContain("depuis le 1er\u00a0novembre 2025 : sans plomb 1,54\u00a0€/litre (−0,02\u00a0€)");
+    expect(page).toContain(jm('<p class="lead">Prix maximum depuis le 1er novembre 2025 : sans plomb 1,54 €/litre (−0,02 €) ; gazole 1,23 €/litre (−0,01 €)'));
+    expect(page).not.toContain(jm("au 1er novembre,"));
+    expect(carburantsPage("https://rundata.re", at(nov()), new Date("2025-10-31T20:00:00Z"))).toContain('depuis le <span class="jm">1er novembre</span> 2025 : sans plomb 1,54\u00a0€/litre (−0,02\u00a0€)');
     expect(page).not.toContain("En vigueur jusqu");
   });
 
@@ -286,7 +298,7 @@ describe("a new order read before its 1st", () => {
   it("on the 1st, an order not read yet is still said to be the past month's", () => {
     const oct = carburants.parseRelease(fixture("carburants_octobre.html"), LIEN, NOW)!;
     const page = render("https://rundata.re", at(oct), new Date("2026-10-31T20:01:00Z"));
-    expect(page).toContain("Les prix maximum de novembre 2026 ne sont pas encore publiés ou pas encore lus : voici ceux en vigueur depuis le 1er octobre 2026.");
+    expect(page).toContain(jm("Les prix maximum de novembre 2026 ne sont pas encore publiés ou pas encore lus : voici ceux en vigueur depuis le 1er octobre 2026."));
   });
 
   it("is asked for again every quarter of an hour while the copy is a past month's", async () => {

@@ -2044,7 +2044,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   const s = d?.carburants && fuelSay(d.carburants, now);
   const fuel = s && (s.annonce || s.lignes)
     ? `<div class="card">${icon("car")}<h3>Prix des carburants</h3>` +
-      (s.annonce ? `<p>${esc(keep(s.annonce))}.</p>${s.jusquau ? `<p>${esc(keep(s.jusquau))}.</p>` : ""}` : `<p>${esc(keep(`${s.depuis}, fixés par le préfet : ${s.lignes}`))}.</p>`) +
+      (s.annonce ? `<p>${jourMois(keep(s.annonce))}.</p>${s.jusquau ? `<p>${jourMois(keep(s.jusquau))}.</p>` : ""}` : `<p>${jourMois(keep(`${s.depuis}, fixés par le préfet : ${s.lignes}`))}.</p>`) +
       `<p class="note">Les mêmes dans toute l'île. <a href="/carburants">Tous les prix du mois →</a></p></div>`
     : "";
   // The fixed speed cameras, from the ministry's yearly list bundled with the site: where they stand, never the mobile checks.
@@ -3459,10 +3459,14 @@ export function historiqueLive(data: Cached<HistoriqueAnswer> | null, now = new 
 const AGENDA_WEEKEND = 7;
 type AgendaRow = AgendaAnswer["ce_week_end"][number];
 const longDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
-/** A day's title, escaped, its number and month kept on one line (marketing), « Mardi <span class="jm">10 novembre</span> »:
- *  .jm is nowrap in the style sheet, but on a small screen with the text enlarged (under 19.9 em), where « 10 novembre »
- *  can be wider than the title's line: there the month goes to the next line whole rather than being cut at a letter. */
-const jourMois = (titre: string) => esc(titre).replace(/(\d+(?:er)?) (\p{L}+)/u, '<span class="jm">$1 $2</span>');
+/** A text escaped, each day with its month kept on one line (marketing), « Mardi <span class="jm">10 novembre</span> »,
+ *  « depuis le <span class="jm">1er novembre</span> 2026 » (a day's title, /carburants, /trafic): .jm is nowrap in the
+ *  style sheet, but on a small screen with the text enlarged (under 19.9 em), where « 10 novembre » can be wider than
+ *  the line: there the month goes to the next line whole rather than being cut at a letter. The one rule for the pages'
+ *  dates: never a no-break space between the day and its month, which would stop the month's hyphenation. */
+function jourMois(texte: string): string {
+  return esc(texte).replaceAll(new RegExp(`(?<![\\p{L}\\d,.])(\\d{1,2}|1er) (${MOIS.join("|")})(?!\\p{L})`, "gu"), '<span class="jm">$1 $2</span>');
+}
 
 /** The hours of a row within its day, as kit.md writes them: « 14 h–18 h », « 19:30 », « 20 h », « jusqu'au dimanche 25/10 ». */
 export function agendaHours(q: string): string {

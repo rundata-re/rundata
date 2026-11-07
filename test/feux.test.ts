@@ -259,7 +259,7 @@ describe("the fires' page", () => {
   it("without the key: says the detection is not active, stays out of the search engines and the sitemap", async () => {
     const html = await (await page("/feux"))!.text();
     expect(html).toContain('<meta name="robots" content="noindex">');
-    expect(html).toContain("La détection des feux par satellite n&#39;est pas encore active sur rundata.re.");
+    expect(html).toContain("La détection des feux par satellite n&#39;est pas encore active sur <span class=\"ident\">rundata.re</span>.");
     expect(html).toContain("<b>Vous voyez un feu\u00a0? Appelez le 18 ou le 112.</b>");
     expect(html).not.toMatch(/Aucun feu|0 feu/);
     expect(asked).toEqual([]);

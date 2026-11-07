@@ -20,7 +20,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
 
   it("tells on the home page's ChatGPT tab to name rundata.re in the question, the @ menu as the other way", async () => {
     const page = await (await handle(get("/", BROWSER), new Cache())).text();
-    expect(page).toContain("Ensuite, dans une conversation (appli comprise), nommez rundata.re dans la question, par exemple <b>«\u00a0Avec rundata.re\u00a0: il fait combien à Cilaos en ce moment\u00a0?\u00a0»</b>, ou tapez <b>@</b> et choisissez rundata.re. Sinon, ChatGPT peut répondre avec sa propre météo, sans station ni heure de mesure. Testé avec l'offre ChatGPT Go.");
+    expect(page).toContain("Ensuite, dans une conversation (appli comprise), nommez <span class=\"ident\">rundata.re</span> dans la question, par exemple <b>«\u00a0Avec <span class=\"ident\">rundata.re</span>\u00a0: il fait combien à Cilaos en ce moment\u00a0?\u00a0»</b>, ou tapez <b>@</b> et choisissez <span class=\"ident\">rundata.re</span>. Sinon, ChatGPT peut répondre avec sa propre météo, sans station ni heure de mesure. Testé avec l'offre ChatGPT Go.");
   });
 
   it("sends Claude's users to its directory's card first, the custom connector as the other way on /mcp only", async () => {
@@ -28,9 +28,9 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const AUTRE = "<p><b>Autre façon\u00a0:</b> <b>Personnaliser → Connecteurs → + → Ajouter un connecteur personnalisé</b>, avec l'adresse ci-dessus (sur l'offre gratuite, un seul connecteur personnalisé).</p>";
     const home = await (await handle(get("/", BROWSER), new Cache())).text();
     const tab = home.slice(home.indexOf('<div class="tab t-claude">'), home.indexOf('<p class="tab t-gemini">'));
-    expect(tab).toBe(`<div class="tab t-claude"><p><b>Toutes les offres, y compris la gratuite.</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude\u00a0: ouvrez <a href="${FICHE}">sa fiche</a>, puis <b>Connecter</b>. Il marche ensuite aussi dans l'appli iPhone et Android.</p></div>\n        `);
+    expect(tab).toBe(`<div class="tab t-claude"><p><b>Toutes les offres, y compris la gratuite.</b> <span class="ident">rundata.re</span> est disponible dans l'annuaire des connecteurs de Claude\u00a0: ouvrez <a href="${FICHE}">sa fiche</a>, puis <b>Connecter</b>. Il marche ensuite aussi dans l'appli iPhone et Android.</p></div>\n        `);
     const mcp = await (await handle(get("/mcp", BROWSER), new Cache())).text();
-    expect(mcp).toContain(`<div class="card"><h3>Claude</h3><p><b>Offre\u00a0:</b> toutes, y compris la gratuite.</p><p><b>Où\u00a0:</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude\u00a0: <a href="${FICHE}">ouvrez sa fiche</a>, puis <b>Connecter</b>.</p>${AUTRE}</div>`);
+    expect(mcp).toContain(`<div class="card"><h3>Claude</h3><p><b>Offre\u00a0:</b> toutes, y compris la gratuite.</p><p><b>Où\u00a0:</b> <span class="ident">rundata.re</span> est disponible dans l'annuaire des connecteurs de Claude\u00a0: <a href="${FICHE}">ouvrez sa fiche</a>, puis <b>Connecter</b>.</p>${AUTRE}</div>`);
     // The steps: the card first, then the address.
     const step = mcp.slice(mcp.indexOf('<div class="tab t-claude">'), mcp.indexOf('<p class="tab t-gemini">'));
     expect(step.indexOf(FICHE)).toBeGreaterThan(0);
@@ -50,7 +50,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     // The page depends on the Accept header (the MCP clients get the endpoint) and on Save-Data (its picture).
     expect(r.headers.get("vary")).toBe("accept, Save-Data");
     const page = await r.text();
-    expect(page).toContain("<h1>Brancher rundata.re à votre IA</h1>");
+    expect(page).toContain("<h1>Brancher <span class=\"ident\">rundata.re</span> à votre IA</h1>");
     // Cut after a « / » or a « . » when it does not fit, never inside « rundata » or « mcp ».
     expect(page).toContain('<code id="mcp-url">https://<wbr>rundata.<wbr>re/<wbr>mcp</code>');
     // The first screen at 390 px: the breadcrumb under the connector's one name, the heading, one sentence, then the
@@ -69,7 +69,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(page.match(/<meta name="description" content="([^"]*)"/)![1].length).toBeLessThanOrEqual(DESCRIPTION_MAX);
     // ChatGPT answers with its own weather unless rundata.re is named: the card says to name it, no-break spaces as sent.
     expect(page).toContain("<b>Plugins → Ajouter → Ajouter un serveur MCP personnalisé</b>.</p>");
-    expect(page).toContain("<p><b>Ensuite\u00a0:</b> nommez rundata.re dans la question («\u00a0Avec rundata.re\u00a0: …\u00a0») ou tapez <b>@</b> et choisissez-le.</p></div>");
+    expect(page).toContain("<p><b>Ensuite\u00a0:</b> nommez <span class=\"ident\">rundata.re</span> dans la question («\u00a0Avec <span class=\"ident\">rundata.re</span>\u00a0: …\u00a0») ou tapez <b>@</b> et choisissez-le.</p></div>");
     expect(hits).toMatchObject([{ kind: "page", name: "/mcp", status: 200 }]);
     // HEAD from a link preview: the page too.
     expect((await handle(get("/mcp", BROWSER, "HEAD"), new Cache())).status).toBe(200);
@@ -98,7 +98,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const r = await handle(get("/a-propos", BROWSER), new Cache());
     expect(r.status).toBe(200);
     const page = await r.text();
-    expect(page).toContain("<h1>Qui fait rundata.re\u00a0?</h1>");
+    expect(page).toContain("<h1>Qui fait <span class=\"ident\">rundata.re</span>\u00a0?</h1>");
     for (const id of ["pourquoi", "financement", "engagements", "contact"]) expect(page).toContain(`id="${id}"`);
     for (const s of ["projet personnel et bénévole", "habitant de l'île, développeur", "Cloudflare", "Il est gratuit, n'affiche aucune publicité et ne vend aucune donnée.", "Pour les associations à but non lucratif, il est gratuit à vie.", "contact@rundata.re", 'href="/conditions#mentions-legales"', 'href="/presse"', '"@type":"AboutPage"']) expect(page).toContain(s);
     for (const s of ["aucun revenu", "offres gratuites", "restera gratuit"]) expect(page).not.toContain(s);

@@ -429,7 +429,7 @@ describe("commune pages", () => {
     expect(cold.text).toContain('href="/communes/saint-leu"');
     // The weather is built at once; the rest only read, and named with its page while it has no copy.
     expect(cold.text).toMatch(/mesurés le \d\d\/\d\d à\u00a0\d\d:\d\d par la station/);
-    expect(cold.text).toContain("rundata.re ne mesure pas les bouchons");
+    expect(cold.text).toContain("<span class=\"ident\">rundata.re</span> ne mesure pas les bouchons");
     expect(cold.text).toMatch(/Pas de copie récente pour\u00a0: .*<a href="\/coupures-eau\/saint-leu">coupures d&#39;eau<\/a>/);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     // Another isolate: a read for each copy and the vigilance, and the oldest copy missing brought up to date when it fits.
@@ -479,7 +479,7 @@ describe("what crawlers and previews fetch", () => {
     const r = await handle(new Request("https://rundata.re/chiffres"), isolate());
     expect(r.status).toBe(200);
     const html = await r.text();
-    expect(html).toContain("<h1>rundata.re en chiffres</h1>");
+    expect(html).toContain("<h1><span class=\"ident\">rundata.re</span> en chiffres</h1>");
     expect(html).toContain("sources publiques lues");
     expect(html).not.toContain("stations météo lues");
   });
@@ -524,7 +524,7 @@ describe("what crawlers and previews fetch", () => {
 
   it("says the service is free, not that it is non-commercial, in the terms", async () => {
     const html = await (await handle(new Request("https://rundata.re/conditions"), isolate())).text();
-    expect(html).toContain("rundata.re est un service gratuit\u00a0: un site et un connecteur MCP");
+    expect(html).toContain("<span class=\"ident\">rundata.re</span> est un service gratuit\u00a0: un site et un connecteur MCP");
     expect(html).not.toContain("non commercial");
   });
 
@@ -618,7 +618,7 @@ describe("what crawlers and previews fetch", () => {
     const bot = await handle(new Request("https://rundata.re/", { headers: { "user-agent": "Googlebot/2.1", accept: "*/*" } }), new Cache());
     expect(bot.headers.get("content-type")).toContain("text/html");
     const html = await bot.text();
-    expect(html).toContain(`<p>rundata.re, version <a href="/nouveautes">${VERSION}</a> · `);
+    expect(html).toContain(`<p><span class="ident">rundata.re</span>, version <a href="/nouveautes">${VERSION}</a> · `);
     expect(html).not.toContain("reunion-temps-reel");
   });
 });

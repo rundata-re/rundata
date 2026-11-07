@@ -52,7 +52,7 @@ describe("circulation", () => {
     // The title shared on the networks is the tab's.
     expect(page).toContain('<meta property="og:title" content="Circulation, trafic : routes, bus, médias · La Réunion (974)">');
     expect(page).toContain('<meta name="twitter:title" content="Circulation, trafic : routes, bus, médias · La Réunion (974)">');
-    expect(page).toContain("rundata.re n'a pas la mesure des bouchons\u00a0: la Région ne la rend pas réutilisable pour l'instant.");
+    expect(page).toContain("<span class=\"ident\">rundata.re</span> n'a pas la mesure des bouchons\u00a0: la Région ne la rend pas réutilisable pour l'instant.");
     expect(page).toContain(`href="https://www.infotrafic.re/"`);
     // The month's maximum fuel prices, beside the roads.
     expect(page.replaceAll("\u00a0", " ")).toContain('<h3>Prix des carburants</h3><p>Prix maximum depuis le <span class="jm">1er octobre</span> 2026, fixés par le préfet : sans plomb 2,00 €/litre (+0,17 €) ; gazole 1,80 €/litre (+0,12 €) ; gaz 20,81 € la bouteille de 12,5 kg (+0,21 €), 18 € avec aides locales.</p>');

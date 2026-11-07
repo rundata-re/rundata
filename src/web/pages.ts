@@ -365,8 +365,8 @@ p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-/* A day's number with its month (« 10 novembre »), on one line (marketing); under 19.9 em, below, the month may go to the
-   next line. */
+/* A day's number with its month (« 10 novembre »), on one line (marketing), or « Saint-Paul » in /presse's release, never
+   « Saint- / Paul » at 390 px; under 19.9 em, below, the line may break there. */
 .jm{white-space:nowrap}
 /* An address in a sentence (adresseTexte, adresse.ts): its <wbr> count only under 19.9 rem, below. */
 wbr.adr{display:none}
@@ -816,7 +816,11 @@ details.sect{margin-bottom:.8rem}details.sect>summary{cursor:pointer}details.sec
    rather than widening the page only when longer than the whole card. */
 .figs li{display:flex;flex-wrap:wrap;gap:.8rem;align-items:baseline}.figs li>span:not(.fig){flex:1 1 min-content;min-width:0}.figs .fig{white-space:nowrap;font:800 2rem/1 Bricolage,system-ui,sans-serif;letter-spacing:-.03em;color:var(--accent)}
 .figs small{display:block;color:var(--muted);font-size:.82rem;margin-top:.2rem}
-.release{max-width:46rem;gap:.9rem}.release ul{padding-left:1.2rem;display:grid;gap:.5rem}.release h3{margin-top:.6rem}.release a{overflow-wrap:anywhere}
+/* The release's lists (/presse): one column no wider than the card. Its implicit track took its widest line's width and
+   stood 9.7 px out of the card at 320 px with Safari's page zoom at 250 % (the page 137 px wide for 128 px of view). Under 12.5 rem, a smaller
+   indent gives the words back that room: 14 words cut without a hyphen there in Chrome instead of 27. */
+.release{max-width:46rem;gap:.9rem}.release ul{padding-left:1.2rem;display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem}.release h3{margin-top:.6rem}.release a{overflow-wrap:anywhere}
+@media (max-width:12.5rem){.release ul{padding-left:.6rem}}
 /* A note on what is not taken from a site may give its address: it breaks where it must, never widening its section. */
 .np{overflow-wrap:anywhere}
 .vis-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,20rem),1fr))}.vis-grid.phones{grid-template-columns:repeat(auto-fill,minmax(10rem,1fr))}

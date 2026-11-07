@@ -44,11 +44,20 @@ describe("press page", () => {
   it("says what the connector receives, never that no personal data is collected (the host keeps logs with the address)", async () => {
     const said = "le connecteur ne reçoit que la question posée à l'outil, par exemple «\u00a0Saint-Paul\u00a0», jamais votre conversation.";
     const html = await page();
-    // « Saint-Paul » kept on one line: cut at its hyphen, it read « Saint- / Paul » at 390 px.
-    expect(html).toContain(`Rien à installer, pas de compte\u00a0: ${said.replace("«\u00a0Saint-Paul\u00a0»", '<span style="white-space:nowrap">«\u00a0Saint-Paul\u00a0»</span>')}`);
+    // « Saint-Paul » kept on one line (.jm): cut at its hyphen, it read « Saint- / Paul » at 390 px. Under 19.9 em it may
+    // break: always on one line, it made the page 137 px wide at 320 px with Safari's page zoom at 250 % (128 px of view).
+    expect(html).toContain(`Rien à installer, pas de compte\u00a0: ${said.replace("«\u00a0Saint-Paul\u00a0»", '<span class="jm">«\u00a0Saint-Paul\u00a0»</span>')}`);
+    expect(html).not.toContain('style="white-space:nowrap"');
     const home = homePage("https://rundata.re", null, NOW);
     expect(home).toContain(`compris par la plupart des assistants IA. Il${said.slice("le connecteur".length)}</p>`);
     for (const h of [html, home]) expect(h).not.toMatch(/donnée personnelle/);
+  });
+
+  it("gives the release's lists one column no wider than the card (9.7 px out of it at 128 px of view)", () => {
+    expect(CSS).toContain(".release ul{padding-left:1.2rem;display:grid;grid-template-columns:minmax(0,1fr);gap:.5rem}");
+    // On a small screen (Safari's page zoom), a smaller indent, in the media query and its container twin.
+    expect(CSS).toContain("@media (max-width:12.5rem){.release ul{padding-left:.6rem}}");
+    expect(CSS).toContain("@container page (max-width:12.5rem){.release ul{padding-left:.6rem}}");
   });
 
   it("names the press contact once, by first name, in the release's contact line only", async () => {

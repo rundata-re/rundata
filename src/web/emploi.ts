@@ -66,6 +66,27 @@ function quand(o: OffreRow): string {
 /** The nature most offers have: said once above the list when every offer has one, then only the others in their line. */
 const OUVERT = "Emploi ouvert aux titulaires et aux contractuels";
 
+/**
+ * An offer's title, escaped, a <wbr class="adr"> before the feminine in brackets that ends a word (« Technicien(ne) »,
+ * « Directeur(-trice) »), and after a « / » between two words (« Animateur/Animatrice », « SG/SIR/OI »), not in
+ * « F/H ». Chrome's French hyphenation finds no place in a word that holds a « ( » or a « / », and no line ends after
+ * a « / » before a letter: with the text at 200 % (160 px of view), it cut where the room ended, « Technicien(n|e) »,
+ * « Animateur/A|nimatrice ». The line may now end there. The bracket is never hyphenated (.rows .nw, pages.ts): WebKit,
+ * which wrote « Directeur(-trice) », would otherwise hyphenate it alone, « (tri-ce) ». Like an address's
+ * (adresseTexte), the <wbr> counts only under 19.9 rem (pages.ts), and holds no character: the copied text is the
+ * offer's.
+ */
+export const intituleCoupable = (s: string) =>
+  esc(s)
+    .replaceAll(/(?<=\p{L})(\(-?\p{Ll}{1,6}\))/gu, '<wbr class="adr"><span class="nw">$1</span>')
+    .replaceAll(/(?<=\p{L}{2}\/)(?=\p{L}{2})/gu, '<wbr class="adr">');
+
+/** The title as a link, named by its whole text when it holds a <wbr> (Chrome names a link with a space for each). */
+function lienIntitule(href: string, s: string): string {
+  const t = intituleCoupable(s);
+  return `<a href="${esc(href)}" rel="noopener"${t === esc(s) ? "" : ` aria-label="${esc(s)}"`}>${t}</a>`;
+}
+
 /** An offer's line, without its commune, which its group says; without its nature when it is `OUVERT` and `once`. */
 function row(o: OffreRow, once: boolean): string {
   const nature = once && o.nature === OUVERT ? undefined : o.nature;
@@ -81,7 +102,7 @@ function row(o: OffreRow, once: boolean): string {
         return `<a href="${esc(r.lien)}" rel="noopener"${ref === esc(r.reference) ? "" : ` aria-label="${esc(`Réf. ${r.reference}${jour}`)}"`}>Réf. <span class="nw">${ref}</span>${jour}</a>`;
       }).join("") + "</span>"
     : "";
-  const title = "references" in o ? `<b>${esc(o.intitule)}</b>` : `<a href="${esc(o.lien)}" rel="noopener">${esc(o.intitule)}</a>`;
+  const title = "references" in o ? `<b>${intituleCoupable(o.intitule)}</b>` : lienIntitule(o.lien, o.intitule);
   return `<li data-c="${esc("commune" in o && o.commune ? o.commune : "")}"${"references" in o ? ` data-n="${o.nombre_offres}"` : ""}><span>${title}<small>${small}</small></span>` +
     `<span class="q-none${"references" in o && !o.date_limite && !o.publiee_le ? " du" : ""}">${esc(quand(o))}</span>${refs}</li>`;
 }

@@ -6,7 +6,7 @@
 import type { Cached } from "../cache.js";
 import * as carburants from "../providers/carburants.js";
 import { eve, firstOf, fuelSay, INDISPONIBLE, keep } from "../tools/carburants.js";
-import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
+import { connectorCta, crumbBar, crumbs, jourMois, lienNom, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { credits, DESCRIPTION_MAX, icon, layout } from "./pages.js";
@@ -16,7 +16,7 @@ const signed = (p: carburants.Produit) =>
   p.precedent_eur == null ? "" : p.prix_eur === p.precedent_eur ? "stable" : `${p.prix_eur > p.precedent_eur ? "+" : "−"}${eur(Math.abs(p.prix_eur - p.precedent_eur))}`;
 const find = (p: carburants.Prix, re: RegExp) => p.produits.find((x) => re.test(x.produit));
 
-const say = (s: string) => esc(keep(s));
+const say = (s: string) => jourMois(keep(s));
 
 // The texts of the page, worded by marketing.
 export const TITLE = "Prix carburants : essence, gazole, gaz · La Réunion (974)";

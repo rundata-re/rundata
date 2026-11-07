@@ -37,10 +37,12 @@ export function priceLine(p: carburants.Produit): string {
   return `${name.charAt(0).toLowerCase()}${name.slice(1)} ${priced(p)}${d ? ` (${d})` : ""}${p.note ? `, ${p.note}` : ""}`;
 }
 
-const MONTH = "janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre";
-/** The words not cut at the end of a line on a phone: « 1,54 € », « 12,5 kg », « 1er novembre », « 31 octobre ». */
-export const keep = (s: string) =>
-  s.replace(/(\d) (€|kg)/g, "$1\u00a0$2").replace(new RegExp(`(\\d|1er) (${MONTH})`, "g"), "$1\u00a0$2");
+/**
+ * The words not cut at the end of a line on a phone: « 1,54 € », « 12,5 kg ». A day with its month (« 1er novembre ») is
+ * kept on one line by the page, in its .jm (web/domains.ts, jourMois()): a no-break space before « novembre » would stop
+ * the browser from hyphenating it, and cut it at a letter when the text is enlarged (« novem / bre » at 200 %).
+ */
+export const keep = (s: string) => s.replace(/(\d) (€|kg)/g, "$1\u00a0$2");
 
 const MAIN = /^(supercarburant|gazole|gaz)$/i;
 const mainLines = (m: carburants.Mois) => m.produits.filter((x) => MAIN.test(x.produit)).map(priceLine).join("\u00a0; ");

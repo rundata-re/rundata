@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { adresseCoupable, departureLi, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
+import { adresseCoupable, departureLi, jourMois, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
 import { publierPage } from "../src/web/publier.js";
 
@@ -89,6 +89,28 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
     expect(page.slice(page.indexOf("<title>"), page.indexOf("</title>"))).not.toContain("<wbr>");
     // No word changes: without its <wbr>, the page is the same text.
     expect(page.replaceAll("<wbr>", "")).toContain('<h3 id="openagenda">3 · OpenAgenda</h3>');
+  });
+});
+
+describe("a day with its month", () => {
+  const MOIS = "janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre";
+
+  it("is kept on one line by its .jm, every one of a text, escaped (a day's title, /carburants, /trafic)", () => {
+    expect(jourMois("Mardi 10 novembre")).toBe('Mardi <span class="jm">10 novembre</span>');
+    expect(jourMois("Dimanche 1er novembre")).toBe('Dimanche <span class="jm">1er novembre</span>');
+    expect(jourMois("Au 1er novembre, communiqué du 31 octobre : 1,54 € l'essence")).toBe(
+      'Au <span class="jm">1er novembre</span>, communiqué du <span class="jm">31 octobre</span> : 1,54 € l&#39;essence',
+    );
+    // A figure that is not a day stays as it is: « 2025 novembre », « 12,5 mai », « 3 maisons ».
+    expect(jourMois("2025 novembre, 12,5 mai, 3 maisons")).toBe("2025 novembre, 12,5 mai, 3 maisons");
+  });
+
+  it("is never glued by a no-break space in the pages' sources: Chrome would not hyphenate the month (« novem / bre »)", () => {
+    const colle = new RegExp(`(?:\\d|1er)(?:\\\\u00a0|\u00a0|&nbsp;)(?:${MOIS})`);
+    const dir = new URL("../src/web/", import.meta.url);
+    const fichiers = [...readdirSync(dir).filter((f) => f.endsWith(".ts")).map((f) => new URL(f, dir)), new URL("../src/tools/carburants.ts", import.meta.url)];
+    const colles = fichiers.flatMap((f) => readFileSync(f, "utf8").split("\n").filter((l) => colle.test(l)).map((l) => `${f.pathname.split("/src/")[1]} ${l.trim()}`));
+    expect(colles).toEqual([]);
   });
 });
 

@@ -1,3 +1,4 @@
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { nobreak } from "../src/web/domains.js";
 import { adressesCoupables, credits, CSS, lienAdresse } from "../src/web/pages.js";
@@ -98,5 +99,19 @@ describe("larger text on a narrow screen, on /coupures-eau and a commune's elect
     expect(CSS).toContain(".card>details+details{margin-top:.2rem}");
     // Each title reaches .5rem past its fold, above and below: 1rem between two folds, the gap and the margin together.
     expect(0.8 + 0.2).toBe(2 * 0.5);
+  });
+});
+
+// A tool's name written in a <code> (« sources_donnees ») is one word for the browser: French hyphenation does not cut it
+// at its « _ », so at 200 % overflow-wrap cut it anywhere (« sources_donne | es »). Read in the source, so that a name
+// written later is checked too.
+describe("a tool's name in a <code>, with the text at 200 %", () => {
+  it("can go to the next line after each « _ » and nowhere else", () => {
+    const dir = new URL("../src/web/", import.meta.url);
+    const noms = readdirSync(dir).filter((f) => f.endsWith(".ts")).flatMap((f) =>
+      [...readFileSync(new URL(f, dir), "utf8").matchAll(/<code>([^<$]*_(?:[^<$]|<wbr>)*)<\/code>/g)].map((m) => `${f} ${m[1]}`),
+    );
+    expect(noms.length).toBeGreaterThanOrEqual(8);
+    expect(noms.filter((x) => /_(?!<wbr>)/.test(x))).toEqual([]);
   });
 });

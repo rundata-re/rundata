@@ -3,7 +3,7 @@ import { Cache } from "../src/cache.js";
 import type { AgendaAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/domains.js";
 import { concertsPage, holidays, inWeekend, occurrences, weekend, weekendPage, weekendText } from "../src/web/evenements.js";
-import { STYLE_PATH } from "../src/web/pages.js";
+import { CSS, STYLE_PATH } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
 import { beside, couche, pointHit } from "../src/web/evenements-carte.js";
 import { H, W } from "../src/web/map.js";
@@ -169,6 +169,19 @@ describe("the concerts", () => {
     expect(html).toContain(`<link rel="stylesheet" href="${STYLE_PATH}">`);
     const style = await site(new Request(`https://rundata.re${STYLE_PATH}`), new Cache(), () => {});
     expect(await style!.text()).toContain("@media (max-width:30rem){.rows.eau li>.fin{grid-column:1/-1}}");
+  });
+
+  it("keep a day's number with its month on one line, but on a small screen with the text enlarged", () => {
+    const html = agendaPage("https://rundata.re", data(ROWS), TUESDAY);
+    const titres = [...html.slice(html.indexOf('<div id="jours">')).matchAll(/<h3>(.*?)<span class="note">/g)].map((m) => m[1]);
+    expect(titres.length).toBeGreaterThan(3);
+    // Not by a no-break space: Chrome never cuts « novembre » with a hyphen after one, and at 320 px and 200 % it cut
+    // « 10 novembre » at a letter (« novembr/e »). A span, nowrap but under 19.9 em, where the month goes whole to the next line.
+    expect(titres.filter((t) => /\d\u00a0/.test(t))).toEqual([]);
+    expect(titres).toContain('Mardi <span class="jm">27 octobre</span> ');
+    expect(titres.every((t) => /^\p{Lu}\p{Ll}+ <span class="jm">\d+ \p{Ll}+<\/span>[ \u00a0]$/u.test(t))).toBe(true);
+    expect(CSS).toContain(".jm{white-space:nowrap}");
+    expect(CSS).toContain("code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}");
   });
 
   it("are linked from the events page", () => {

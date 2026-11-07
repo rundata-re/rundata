@@ -346,6 +346,9 @@ p,ul,ol,table,figure{margin:0}
 .wrap{max-width:72rem;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .ic{width:1.4em;height:1.4em;flex:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* A day's number with its month (« 10 novembre »), on one line (marketing); under 19.9 em, below, the month may go to the
+   next line. */
+.jm{white-space:nowrap}
 /* « Aller au contenu », the first stop of Tab on every page: seen only while it has the focus, over the bar; its target,
    the main landmark, from the vigilance's band and the title's on. */
 .evite{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:.6rem;z-index:30;padding:.6rem 1rem;border-radius:12px;
@@ -1166,8 +1169,9 @@ summary{min-height:24px}
    button's icon go on a line of their own rather than squeezing the name or the sentence beside them to a few letters.
    A row whose date went under its sentence (/volcan's earthquakes) keeps two columns: the figure as wide as itself (1.7 rem
    at least, so that « 0,5 » and « 1,2 » line up), the sentence the rest, 199 px rather than 126 at 200 %, and its words
-   whole (« Fournaise », « sommet »), each narrower than its line. */
-@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code{hyphens:manual;-webkit-hyphens:manual}.minuit li{grid-template-columns:minmax(0,1fr)}
+   whole (« Fournaise », « sommet »), each narrower than its line. A day's title on /evenements and /nouveautes lets its
+   month go to the next line, whole (« Mardi 10 / novembre », never « novembr/e » nor « no-vembre »): each word fits. */
+@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}.minuit li{grid-template-columns:minmax(0,1fr)}
 .minuit .q,.rows .nw{white-space:normal}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}

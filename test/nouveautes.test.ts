@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { changelog, NOUVEAUTES, parJour } from "../src/nouveautes.js";
-import { DESCRIPTION_MAX } from "../src/web/pages.js";
+import { CSS, DESCRIPTION_MAX } from "../src/web/pages.js";
 import { DESCRIPTION, nouveautesPage, TITLE } from "../src/web/nouveautes.js";
 
 describe("the changes, said once", () => {
@@ -34,8 +34,14 @@ describe("the changes, said once", () => {
   it("make the page /nouveautes", () => {
     const page = nouveautesPage("https://rundata.re");
     expect(page).toContain("<h1>Les nouveautés de rundata.re</h1>");
-    // The day's number with its month (marketing).
-    expect(page).toContain(`<time datetime="${parJour()[0].jour}">${parJour()[0].titre.replace(/(\d) /, "$1\u00a0")}</time>`);
+    // The day's number with its month (marketing), on one line: a span, nowrap in the style sheet but under 19.9 em, where
+    // « 4 novembre » can be wider than the title's line and the month goes whole to the next one (never « novembr/e »).
+    const [jour, mois] = parJour()[0].titre.match(/(\d+(?:er)?) (\p{L}+)/u)!.slice(1);
+    expect(page).toContain(`<time datetime="${parJour()[0].jour}">${parJour()[0].titre.replace(`${jour} ${mois}`, `<span class="jm">${jour} ${mois}</span>`)}</time>`);
+    const dates = [...page.matchAll(/<time datetime="[^"]+">(.*?)<\/time>/g)].map(([, t]) => t);
+    expect(dates.length).toBeGreaterThan(3);
+    expect(dates.filter((t) => !/^\p{Lu}\p{Ll}+ <span class="jm">\d+(?:er)? \p{Ll}+<\/span> \d{4}$/u.test(t))).toEqual([]);
+    expect(CSS).toContain(".jm{white-space:nowrap}");
     for (const n of NOUVEAUTES.slice(0, 3)) expect(page).toContain(n.texte.replace(/'/g, "&#39;").replace(/"/g, "&quot;"));
     expect(page).toContain('<link rel="canonical" href="https://rundata.re/nouveautes">');
     expect(page).toContain('<a href="/nouveautes">nouveautés</a>');

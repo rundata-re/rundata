@@ -291,6 +291,14 @@ describe("a commune's children's page", () => {
     expect(html).toMatch(/<button type="button" class="tomap f-[a-z]+" hidden aria-label="/);
   });
 
+  it("keeps each kind's dot after its last word, a plain space after it, so that the word can be cut with a hyphen", () => {
+    const heads = [...html.slice(html.indexOf('<div id="ecl">')).matchAll(/<h3>([^<]*)<span class="note">([^<]*)<\/span><\/h3>/g)];
+    expect(heads.length).toBeGreaterThan(3);
+    // Never « bibliothèques·10 » glued by two no-break spaces: Chrome would never hyphenate « bibliothèques ».
+    expect(heads.filter(([, nom, n]) => !nom.endsWith("\u00a0") || !/^· \d+$/.test(n))).toEqual([]);
+    expect(html).toMatch(/<h3>Médiathèques et bibliothèques\u00a0<span class="note">· \d+<\/span><\/h3>/);
+  });
+
   it("keeps the agenda to the commune, from the copy of /enfants", () => {
     expect(html).toContain("Heure du conte");
     expect(html).not.toContain("Marionnettes");

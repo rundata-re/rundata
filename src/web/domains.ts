@@ -3421,6 +3421,10 @@ export function historiqueLive(data: Cached<HistoriqueAnswer> | null, now = new 
 const AGENDA_WEEKEND = 7;
 type AgendaRow = AgendaAnswer["ce_week_end"][number];
 const longDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+/** A day's title, escaped, its number and month kept on one line (marketing), « Mardi <span class="jm">10 novembre</span> »:
+ *  .jm is nowrap in the style sheet, but on a small screen with the text enlarged (under 19.9 em), where « 10 novembre »
+ *  can be wider than the title's line: there the month goes to the next line whole rather than being cut at a letter. */
+const jourMois = (titre: string) => esc(titre).replace(/(\d+(?:er)?) (\p{L}+)/u, '<span class="jm">$1 $2</span>');
 
 /** The hours of a row within its day, as kit.md writes them: « 14 h–18 h », « 19:30 », « 20 h », « jusqu'au dimanche 25/10 ». */
 export function agendaHours(q: string): string {
@@ -3619,7 +3623,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
     : days.size
       ? `${filter}<div id="jours"><ul class="zones">${[...days].sort(([x], [y]) => x.localeCompare(y)).map(([day, rows]) =>
           `<li class="card">${folded(foldDays,
-            `<h3>${esc(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()).replace(/(\d) /, "$1\u00a0"))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3>`,
+            `<h3>${jourMois(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3>`,
             `<ul class="rows eau">${rows.map((r) => agendaRow(r, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour les deux semaines qui viennent.</p>`;
 
@@ -3680,7 +3684,7 @@ export function agendaTabs(path: string): string {
 }
 
 // What the pages built from a part of a domain's data (evenements.ts) share with the domain's own page.
-export { agendaRow, connectorCta, crumbBar, crumbs, describe, GENRE_SCRIPT, GENRES, loading, longDay, sourcesNote, warnings, webPage };
+export { agendaRow, connectorCta, crumbBar, crumbs, describe, GENRE_SCRIPT, GENRES, jourMois, loading, longDay, sourcesNote, warnings, webPage };
 
 // ---------------------------------------------------------------- actualités
 

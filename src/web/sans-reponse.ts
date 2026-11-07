@@ -59,7 +59,7 @@ export function sansReponsePage(origin: string, rows: Ligne[], passage: number |
   const body = `<section style="max-width:44rem;display:grid;gap:1rem">
   ${parts.length ? parts.join("\n  ") : `<p>${passage ? `Aucun site public sans réponse à la revérification du ${jour(passage)}.` : "Aucun site public sans réponse pour l'instant."}</p>`}
   <aside class="card"><p>${OPEN_DATA}</p></aside>
-  <p>Revérifié chaque jour${passage ? `, dernier passage le ${jourHeure(passage)}` : ""}. Un site de cette liste répond pour vous ? Écrivez-nous : <a href="mailto:contact@rundata.re">contact@rundata.re</a>. Et pour rendre ses informations faciles à reprendre\u00a0: <a href="${GUIDE}">notre guide</a>.</p>
+  <p>Revérifié chaque jour${passage ? `, dernier passage le ${jourHeure(passage)}` : ""}. Un site de cette liste répond pour vous ? Écrivez-nous : ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}. Et pour rendre ses informations faciles à reprendre\u00a0: <a href="${GUIDE}">notre guide</a>.</p>
   <p>Voir aussi : <a href="/chiffres">rundata.re en chiffres</a>.</p>
 </section>`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, H1, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);

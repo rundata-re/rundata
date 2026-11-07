@@ -15,7 +15,7 @@ import { STATIONS_974 } from "../providers/meteofrance-stations.js";
 import { INSEE } from "../places/insee.js";
 import { porte, SHEET as ALLER } from "./aller.js";
 import { type Alerte, credit, sansPeriode } from "./data.js";
-import { connectorCta, courantItem, silentItem, silentText, webPage } from "./domains.js";
+import { connectorCta, courantItem, lienNom, silentItem, silentText, webPage } from "./domains.js";
 import { esc, fenetre, islandMap } from "./map.js";
 import { reprise } from "./ouvrir-donnees.js";
 import { a, communeDite, de, fourchette } from "../tools/format.js";
@@ -110,7 +110,7 @@ export function dayLines(p: PlacePage, r: Resume): string {
     level ? line("Vigilance", `${esc(level)} (Météo-France).`) : "",
     ev ? line("Sorties", n ? `${plural(n, "événement")} aujourd'hui.` : "aucun événement trouvé aujourd'hui dans les agendas lus.") : "",
     r.carburants?.prix_maximum ? line("Carburants", `prix maximum du mois\u00a0: ${esc(r.carburants.prix_maximum)}.`) : "",
-    line("Pharmacie de garde", `<a href="${esc(r.pharmacie_de_garde.site)}" rel="noopener">3237.fr</a>`),
+    line("Pharmacie de garde", `${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}`),
   ].filter(Boolean);
   return `<ul class="jour">${lines.join("")}</ul>`;
 }
@@ -230,7 +230,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     (c.infos_routes?.length ? `<ul class="plain">${c.infos_routes.map(li).join("")}</ul>` : c.infos_routes ? `<p>Aucune information des médias sur les routes ou des blocages ${esc(aCommune(p.nom))} ces dernières heures.</p>` : "") +
     (c.routes_ile?.length ? `<p class="note">Ailleurs sur l'île :</p><ul class="plain">${c.routes_ile.map((x) => li({ titre: x.titre, lien: x.lien, media: x.source, quand: x.heure })).join("")}</ul>` : "") +
     (c.bus?.length ? `<p class="note">Info trafic des bus : ${c.bus.map((x) => esc(`${x.reseau} : ${x.titre}`)).join(" ; ")}</p>` : "") +
-    `<p class="note">rundata.re ne mesure pas les bouchons : <a href="${esc(c.carte_officielle)}" rel="noopener">la carte officielle sur infotrafic.re ↗</a>, et <a href="/trafic">la page circulation</a>.</p>`,
+    `<p class="note">rundata.re ne mesure pas les bouchons : ${lienNom(c.carte_officielle, "la carte officielle sur infotrafic.re ↗", ' rel="noopener"')}, et <a href="/trafic">la page circulation</a>.</p>`,
     "/trafic");
 
   const news = r.actualites
@@ -270,7 +270,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
       : "",
     r.carburants?.prix_maximum ? `<li>Carburants (prix maximum du mois) : <b>${esc(r.carburants.prix_maximum)}</b> · <a href="/carburants">les prix →</a></li>` : "",
     r.collecte_dechets ? `<li>Collecte des déchets : le jour de votre rue sur <a href="${esc(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}">rundata.re${esc(r.collecte_dechets.page.replace(/^https:\/\/rundata\.re/, ""))}</a>.</li>` : "",
-    `<li>Pharmacie de garde (nuits, dimanches, jours fériés) : <a href="${esc(r.pharmacie_de_garde.site)}" rel="noopener"><b>3237.fr</b></a>, ou le 32 37 (payant)</li>`,
+    `<li>Pharmacie de garde (nuits, dimanches, jours fériés) : <b>${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}</b>, ou le 32 37 (payant)</li>`,
   ].filter(Boolean).join("");
   // A part whose copy is being built again (tools/resume.ts, `UPDATING`) says so, as the other tiles.
   const link = (x: { partie: string; page: string }) => `<a href="${esc(x.page.replace(/^https:\/\/rundata\.re/, ""))}">${esc(x.partie)}</a>`;

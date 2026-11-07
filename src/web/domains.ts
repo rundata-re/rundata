@@ -143,23 +143,27 @@ export const coupable = (s: string) => esc(s).replaceAll(".", ".<wbr>").replaceA
  * A name with a « . » or a capital inside (Sensor.Community, OpenAgenda), in escaped HTML: Chrome's French hyphenation
  * never cuts it after its « . » and finds no place in « OpenAgenda », so that on a narrow line the name is cut where the
  * room ends (« Sensor.Comm|unity », « OpenAgend|a » at 200 %). The rule of
- * coupable(): a <wbr> after the « . » and before the inner capital, in the text between the tags only. Never on a link's
- * text (Chrome names it with a space for each <wbr>), and never in an attribute or a tool's answer.
+ * coupable(): a <wbr> after the « . » and before the inner capital, in the text between the tags only. On a link's text
+ * only through lienNom() (Chrome names a link with a space for each <wbr>), and never in an attribute or a tool's answer.
+ * A declaration, not a const: lienNom() calls it while the modules load (eau-cyclone.ts builds its note then).
  */
-export const nomsCoupables = (html: string) =>
-  html
+export function nomsCoupables(html: string): string {
+  return html
     .split(/(<[^>]*>)/)
     .map((x, i) => (i % 2 ? x : x.replaceAll(/(\p{Ll}\.?)(?=\p{Lu}\p{Ll})/gu, "$1<wbr>")))
     .join("");
+}
 
 /**
- * A link whose text holds such a name (« le site de Sensor.Community »): the name may go to the next line where
- * nomsCoupables() puts its <wbr>, and the link keeps its whole text as its name in aria-label, as lienAdresse() does
- * (a <wbr> would make Chrome name it « Sensor. Community »). The name is the visible text, so it holds it. A text
- * without such a name is written as it is, without aria-label. `attrs`: more attributes, each with its leading space.
+ * A link whose text holds such a name (« le site de Sensor.Community ») or an address (« sa fiche sur data.gouv.fr »,
+ * « monenfant.fr », « contact@rundata.re »): the name may go to the next line where nomsCoupables() puts its <wbr>, the
+ * address after each of its « . » and « @ », rather than one or two letters before its end (« data.gou|v.fr »,
+ * « monenfant.f|r » at 320 px). The link keeps its whole text as its name in aria-label, as lienAdresse() does (a <wbr>
+ * would make Chrome name it « Sensor. Community », « data. gouv. fr »). The name is the visible text, so it holds it.
+ * A text with neither is written as it is, without aria-label. `attrs`: more attributes, each with its leading space.
  */
 export function lienNom(href: string, text: string, attrs = ""): string {
-  const coupe = nomsCoupables(esc(text));
+  const coupe = nomsCoupables(esc(text)).replaceAll(/(?<=[\p{Ll}\p{N}])([.@])(?=\p{Ll})/gu, "$1<wbr>");
   return `<a href="${esc(href)}"${attrs}${coupe === esc(text) ? "" : ` aria-label="${esc(text)}"`}>${coupe}</a>`;
 }
 
@@ -237,7 +241,7 @@ const FACEBOOK_LINE = `<p class="lead">L'OVPF publie aussi sur Facebook, que nou
 export const imageLinks = (lien: string) => `<a href="${esc(lien)}">la voir sur Bluesky ↗</a>, ou suivre <a href="${OVPF_FACEBOOK}">l'OVPF sur Facebook ↗</a>`;
 
 // Where the prefecture publishes each phase of the ORSEC volcano plan.
-const GOUV = `<a href="${PREFECTURE.url}">reunion.gouv.fr</a>`;
+const GOUV = `${lienNom(PREFECTURE.url, "reunion.gouv.fr")}`;
 
 /** `news`: the news copy, read during an alert only, for what the media say of it. */
 export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, now = new Date(), alerte?: Alerte, news?: ActualitesAnswer): string {
@@ -666,7 +670,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   <div class="levels">${[...byStation].map(([station, list]) => `<div class="card tgt" id="${anchorId("st", list[0].station)}"><h3>${esc(station)}</h3><ul class="plain">` +
     list.map((v) => `<li><b>${esc(v.polluant)}</b> : ${esc(nombre(v.valeur))} ${esc(v.unite)} <span class="note">${esc(v.heure)}, station de type ${esc(v.type)}, mesure brute, non validée${v.retard ? `, ${esc(v.retard)}` : ""}</span></li>`).join("") +
     `</ul></div>`).join("")}</div>
-  <p class="note">Lues par rundata.re le ${esc(luLe)} à ${esc(luA)}, dans les <a href="${esc(m.source)}" rel="noopener">fichiers du LCSQA sur data.gouv.fr</a> (Licence Ouverte Etalab 2.0).</p>
+  <p class="note">Lues par rundata.re le ${esc(luLe)} à ${esc(luA)}, dans les ${lienNom(m.source, "fichiers du LCSQA sur data.gouv.fr", ' rel="noopener"')} (Licence Ouverte Etalab 2.0).</p>
 </section>`
     : "";
 
@@ -727,7 +731,7 @@ ${amateurs}
   <div class="sec-h"><p class="eyebrow">Provenance</p><h2 id="h-source-air">D'où vient l'indice</h2></div>
   <div class="card"><dl class="facts">
     <div><dt>Calculé par</dt><dd><a href="${esc(atmo.PROVENANCE.site)}" rel="noopener">Atmo Réunion</a>, observatoire agréé de la qualité de l'air</dd></div>
-    <div><dt>Diffusé par</dt><dd>Atmo France, couche ouverte ${coupable("ind_atmo_2021")} (<a href="${esc(atmo.PROVENANCE.fiche)}" rel="noopener">sa fiche sur data.gouv.fr</a>)</dd></div>
+    <div><dt>Diffusé par</dt><dd>Atmo France, couche ouverte ${coupable("ind_atmo_2021")} (${lienNom(atmo.PROVENANCE.fiche, "sa fiche sur data.gouv.fr", ' rel="noopener"')})</dd></div>
     <div><dt>Licence</dt><dd><a href="${esc(atmo.PROVENANCE.licence_lien)}" rel="noopener">${esc(atmo.PROVENANCE.licence)}</a></dd></div>
   </dl>${d && data ? `<p class="note">${d.diffusion ? `${esc(d.diffusion)} ` : ""}Lue par rundata.re ${readAt(data.fetchedAt, now).a}.</p>` : ""}</div>
   <div class="card"><h3>Comment l'indice est calculé</h3><ul class="plain">${atmo.METHODE.map((m) => `<li>${esc(m)}</li>`).join("")}</ul>
@@ -1327,7 +1331,7 @@ function latestGauge(d: CruesAnswer | undefined): string {
 
 /** The vigilance in the page's status, from Vigicrues Réunion; `readAt`: our read, when it could not be read. */
 function floodVigilance(v: CruesAnswer["vigilance_crues"], read: string): string {
-  if (!v) return `<p class="lead">Vigilance crues absente de notre lecture ${esc(read)} : voir <a href="${vigicrues.SOURCE.url}">vigicrues-reunion.re ↗</a>.</p>`;
+  if (!v) return `<p class="lead">Vigilance crues absente de notre lecture ${esc(read)} : voir ${lienNom(vigicrues.SOURCE.url, "vigicrues-reunion.re ↗")}.</p>`;
   if (!v.active) {
     return `<p class="lead">Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert.</p>` +
       (v.aucun_bulletin_depuis ? `<p class="note">Dernier bulletin le ${esc(v.aucun_bulletin_depuis)} : Vigicrues Réunion n'en publie qu'en vigilance jaune ou plus.</p>` : "");
@@ -1473,7 +1477,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
 </div>`;
 
   const sources = d && data
-    ? `<p class="note">Lu le ${esc(dayAt(data.fetchedAt))}. Le site officiel : <a href="${vigicrues.SOURCE.url}">vigicrues-reunion.re ↗</a>.</p><p class="sources">Sources : ${esc(vigicrues.SOURCE.nom)}, ${esc(vigicrues.SOURCE.attribution)} (${esc(vigicrues.SOURCE.licence)}).</p>`
+    ? `<p class="note">Lu le ${esc(dayAt(data.fetchedAt))}. Le site officiel : ${lienNom(vigicrues.SOURCE.url, "vigicrues-reunion.re ↗")}.</p><p class="sources">Sources : ${esc(vigicrues.SOURCE.nom)}, ${esc(vigicrues.SOURCE.attribution)} (${esc(vigicrues.SOURCE.licence)}).</p>`
     : "";
 
   const body = `<section aria-labelledby="h-vigilance-crues">
@@ -1950,8 +1954,8 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Bouchons, accidents, travaux : infotrafic.re</p>
     <h1>Circulation à La Réunion <span class="n974">974</span></h1>
-    <p class="lead">Les bouchons, accidents et travaux en direct sont sur la carte officielle d'<a href="${INFOTRAFIC}">infotrafic.re</a>, le site de la Région, qui ne s'affiche que chez elle. Plus bas, la carte de Waze les montre aussi. rundata.re n'a pas la mesure des bouchons : la Région ne la rend pas réutilisable pour l'instant.</p>
-    <p class="lead">La route du Littoral est basculée ou fermée ? L'état officiel est sur <a href="${INFOTRAFIC}">infotrafic.re</a>.</p>
+    <p class="lead">Les bouchons, accidents et travaux en direct sont sur la carte officielle d'${lienNom(INFOTRAFIC, "infotrafic.re")}, le site de la Région, qui ne s'affiche que chez elle. Plus bas, la carte de Waze les montre aussi. rundata.re n'a pas la mesure des bouchons : la Région ne la rend pas réutilisable pour l'instant.</p>
+    <p class="lead">La route du Littoral est basculée ou fermée ? L'état officiel est sur ${lienNom(INFOTRAFIC, "infotrafic.re")}.</p>
     <p class="hero-cta"><a class="btn sun" href="${INFOTRAFIC}">${icon("car")}Carte officielle (infotrafic.re) ↗</a></p>
     ${ask(`Néna in rout koupé oubien travo zordi\u00a0? Gèt si ${url} é di amwin.`, `Y a-t-il des routes coupées ou des travaux à La Réunion d'après les médias\u00a0? Lis ${url} et résume-moi.`)}
   </div>
@@ -1959,7 +1963,7 @@ export function traficPage(origin: string, data: Cached<TraficAnswer> | null, no
 
   // The route du Littoral as the media announce it, never as a measure: the card stays when none did, for those who look for it.
   const lit = d?.littoral;
-  const linked = (s: string) => esc(s).replace("infotrafic.re", `<a href="${INFOTRAFIC}">infotrafic.re</a>`);
+  const linked = (s: string) => esc(s).replace("infotrafic.re", `${lienNom(INFOTRAFIC, "infotrafic.re")}`);
   const said = (a: littoral.Annonce) =>
     `<b>${esc(littoral.etatText(a))}</b>, selon ${esc(a.media)}, <a href="${esc(a.lien)}" rel="noopener"${fenetre(a.lien)}>${littoral.linkWord(a)}</a> publié ${esc(littoral.publieText(a, now))}.`;
   const littoralBody = lit

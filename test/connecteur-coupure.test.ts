@@ -35,8 +35,9 @@ describe("text that may be cut after a « . » or a « _ »", () => {
   it("holds the layer's code in /air's source list, never the link", () => {
     const dd = between(airPage("https://rundata.re", null), "<dt>Diffusé par</dt><dd>", "</dd>");
     expect(dd).toContain("couche ouverte ind_<wbr>atmo_<wbr>2021 (");
-    // Not in the link: its name, which a screen reader says, would get a space for each <wbr>.
-    expect(dd).toContain('rel="noopener">sa fiche sur data.gouv.fr</a>)');
+    // In the link too, after each « . » of its address, its whole text in aria-label: a <wbr> alone would make a screen
+    // reader say « data. gouv. fr ».
+    expect(dd).toContain('rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur data.<wbr>gouv.<wbr>fr</a>)');
     expect(dd).toContain('<a href="https://www.data.gouv.fr/datasets/indice-de-la-qualite-de-lair-quotidien-par-commune-indice-atmo" ');
   });
 });

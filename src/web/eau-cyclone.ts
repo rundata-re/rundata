@@ -8,6 +8,7 @@
 import { BUILT, distributeur, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, plusieurs } from "../eau/distributeurs.js";
 import { a } from "../tools/format.js";
 import { PDF } from "./alerte-cyclone.js";
+import { lienNom } from "./domains.js";
 import { esc } from "./map.js";
 import { PAGES } from "./places.js";
 
@@ -44,7 +45,7 @@ export function coverageLine(commune: string): string {
 
 const quote = () =>
   `<div class="card"><p>« ${esc(CONSIGNE)} »</p><p class="note">Dispositif ORSEC Cyclones de la préfecture (arrêté 2026-182), consignes de la phase de sauvegarde <span>(<a href="${PDF}#page=${CONSIGNE_PAGE}" rel="noopener">p. ${CONSIGNE_PAGE}</a>)</span></p></div>`;
-const foot = `<p class="note">Distributeurs d'après le contrôle sanitaire de l'ARS (Hub'Eau), prélèvements des six derniers mois, table du ${esc(BUILT.split("-").reverse().join("/"))}. <a href="${EAUDUROBINET}" rel="noopener">La qualité de l'eau de votre réseau, sur le site de l'ARS : eaudurobinet.re →</a></p>`;
+const foot = `<p class="note">Distributeurs d'après le contrôle sanitaire de l'ARS (Hub'Eau), prélèvements des six derniers mois, table du ${esc(BUILT.split("-").reverse().join("/"))}. ${lienNom(EAUDUROBINET, "La qualité de l'eau de votre réseau, sur le site de l'ARS : eaudurobinet.re →", ' rel="noopener"')}</p>`;
 
 /** The section, for one commune or for the island; `now` says whether it leads (the season) or closes the page. */
 export function cycloneWater(now: Date, commune?: string): { html: string; lead: boolean } {

@@ -44,7 +44,7 @@ describe("after a cyclone, the tap water", () => {
     const read = /<b>Avis lus<\/b> : (.*?)<\/li>/.exec(island)![1];
     for (const c of ["Saint-Paul", "Les Trois-Bassins", "Sainte-Marie"]) expect(read).toContain(`>${c}</a>`);
     expect(island.match(/Sudéau \(/g)).toHaveLength(1);
-    expect(island).toContain('<a href="https://www.eaudurobinet.re/" rel="noopener">');
+    expect(island).toContain('<a href="https://www.eaudurobinet.re/" rel="noopener" aria-label="');
   });
 
   it("leads the page in the cyclone season, closes it the rest of the year", () => {

@@ -171,7 +171,7 @@ describe("the children's page", () => {
     expect(LEAD).toContain(`skateparks${NBSP}: les lieux`);
     expect(LEAD).toContain(`De 0 à 17${NBSP}ans`);
     expect(flat(html)).toContain("Ce que vous ne trouverez pas ici.</b> Les accueils de loisirs (centres aérés)");
-    expect(html).toContain('<a href="https://monenfant.fr" rel="noopener">monenfant.fr</a>');
+    expect(html).toContain('<a href="https://monenfant.fr" rel="noopener" aria-label="monenfant.fr">monenfant.<wbr>fr</a>');
     expect(flat(html)).toContain(esc("Lieux : © les contributeurs d'OpenStreetMap (ODbL) ; recensement des équipements sportifs (Data ES, ministère des Sports)"));
     expect(flat(html)).toContain(esc("Les âges en gras viennent de l'organisateur ou de la carte."));
     // The question to ask an AI, in Creole and in French, a no-break space before each « ? ».

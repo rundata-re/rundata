@@ -20,8 +20,44 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
     expect(lienNom("https://maps.sensor.community/", "Sensor.Community", ' rel="noopener"')).toBe(
       '<a href="https://maps.sensor.community/" rel="noopener" aria-label="Sensor.Community">Sensor.<wbr>Community</a>',
     );
-    // A text without such a name is written as it is, with no aria-label.
-    expect(lienNom("https://rundata.re/", "le site de rundata.re")).toBe('<a href="https://rundata.re/">le site de rundata.re</a>');
+    // A text with neither a name nor an address is written as it is, with no aria-label.
+    expect(lienNom("/trafic", "la page circulation")).toBe('<a href="/trafic">la page circulation</a>');
+  });
+
+  it("in a link, may cut an address after each « . » and « @ » (« data.gou|v.fr » at 200 %), never a sentence's end", () => {
+    expect(lienNom("https://www.data.gouv.fr/x", "sa fiche sur data.gouv.fr", ' rel="noopener"')).toBe(
+      '<a href="https://www.data.gouv.fr/x" rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur data.<wbr>gouv.<wbr>fr</a>',
+    );
+    expect(lienNom("mailto:contact@rundata.re", "contact@rundata.re")).toBe(
+      '<a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>',
+    );
+    expect(lienNom("https://www.3237.fr", "Pharmacie de garde : 3237.fr")).toContain(">Pharmacie de garde : 3237.<wbr>fr</a>");
+    // A « . » before a space or a capital is a sentence's end or a name's (nomsCoupables), and « 1.0 » a version.
+    expect(lienNom("/x", "Lire la suite. Puis ODbL 1.0")).toBe('<a href="/x">Lire la suite. Puis ODbL 1.0</a>');
+    // The text is escaped once, the address too.
+    expect(lienNom("https://x.re/?a=1&b=2", "l'eau sur eaudurobinet.re")).toBe(
+      '<a href="https://x.re/?a=1&amp;b=2" aria-label="l&#39;eau sur eaudurobinet.re">l&#39;eau sur eaudurobinet.<wbr>re</a>',
+    );
+  });
+
+  it("is used by every link whose words hold an address, other than « rundata.re », the site's own name", () => {
+    // A link written in the source with an address in its words (<a href="…">monenfant.fr</a>, also inside <b>) is cut in
+    // the middle of it on a narrow line: lienNom() or lienAdresse() writes it.
+    const dir = new URL("../src/web/", import.meta.url);
+    const nus = readdirSync(dir)
+      .filter((f) => f.endsWith(".ts"))
+      .flatMap((f) =>
+        readFileSync(new URL(f, dir), "utf8")
+          .split("\n")
+          .filter((l) => !/^\s*(?:\/\/|\*|\/\*)/.test(l))
+          .flatMap((l) =>
+            [...l.matchAll(/<a\b[^>]*>((?:<\/?(?:b|strong|em|i)>|[^<])*)<\/a>/g)]
+              .map((m) => [m[0], m[1].replaceAll(/<\/?(?:b|strong|em|i)>/g, "")])
+              .filter((m) => !m[1].includes("${") && (m[1].match(/[\w-]+(?:[.@][\w-]+)+/g) ?? []).some((x) => /[a-z0-9][.@][a-z]/.test(x) && x !== "rundata.re"))
+              .map((m) => `${f} ${m[0]}`),
+          ),
+      );
+    expect(nus).toEqual([]);
   });
 
   it("is written so in the pages' text and links' text, wherever a name has a « . » before a capital (a link through lienNom)", () => {
@@ -37,17 +73,18 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
     expect(nus).toEqual([]);
   });
 
-  it("never goes into a tool's answer: no <wbr>, nor nomsCoupables, outside the site's pages", () => {
+  it("never goes into a tool's answer: no <wbr>, nor nomsCoupables or lienNom, outside the site's pages", () => {
     const fichiers = (dir: URL): URL[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === "web" ? [] : fichiers(new URL(`${e.name}/`, dir))) : e.name.endsWith(".ts") ? [new URL(e.name, dir)] : []));
-    const avec = fichiers(new URL("../src/", import.meta.url)).filter((f) => /<wbr>|nomsCoupables/.test(readFileSync(f, "utf8")));
+    const avec = fichiers(new URL("../src/", import.meta.url)).filter((f) => /<wbr>|nomsCoupables|lienNom/.test(readFileSync(f, "utf8")));
     expect(avec.map((f) => f.pathname.split("/src/")[1])).toEqual([]);
   });
 
-  it("has its place in /publier's titles (« Open<wbr>Agenda »), never in a link, an attribute or the page's title", () => {
+  it("has its place in /publier's titles (« Open<wbr>Agenda »), never in a link without its whole name, an attribute or the page's title", () => {
     const page = publierPage("https://rundata.re");
     expect(page).toContain('<h3 id="openagenda">3 · Open<wbr>Agenda</h3>');
-    expect(page.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>"))).toEqual([]);
+    // A link may have one (lienNom: « data.<wbr>gouv.<wbr>fr » at the foot), with its whole text in aria-label.
+    expect(page.match(/<a\b[^>]*>(?:(?!<\/a>).)*<\/a>/gs)!.filter((x) => x.includes("<wbr>") && !x.includes(' aria-label="'))).toEqual([]);
     expect(page).not.toMatch(/="[^"]*<wbr>/);
     expect(page.slice(page.indexOf("<title>"), page.indexOf("</title>"))).not.toContain("<wbr>");
     // No word changes: without its <wbr>, the page is the same text.

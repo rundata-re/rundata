@@ -12,7 +12,7 @@ import { SITE as CPF_SITE } from "../providers/cpf.js";
 import { A_SAVOIR as CPF_A_SAVOIR, themesCpf } from "../tools/cpf.js";
 import { nombre } from "../tools/format.js";
 import { COUVERTURE, emploi, ENTREPRISES, NON_REPRIS, type OffreRow } from "../tools/emploi.js";
-import { connectorCta, crumbBar, crumbs, sourcesNote, warnings, webPage } from "./domains.js";
+import { connectorCta, crumbBar, crumbs, lienNom, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
@@ -108,7 +108,7 @@ function cpfSection(c: EmploiAnswer["cpf"], now: Date): string {
   return `<section id="cpf" aria-labelledby="h-cpf">
   <div class="sec-h"><p class="eyebrow">Mon Compte Formation</p><h2 id="h-cpf">Se former avec le CPF</h2><p>${esc(`${nombre(c.nombre)} formations éligibles au CPF ont une session ouverte à La Réunion dans le catalogue de Mon Compte Formation, lu ${readAt(new Date(c.lu), now).a}. Par thème, dans l'ordre alphabétique :`)}</p></div>
   <details class="card"><summary>${esc(`Les ${c.themes.length} thèmes`)}</summary><div class="table-wrap"><table class="drought histo passe"><caption class="sr">${esc(`Les ${c.themes.length} thèmes`)}</caption><thead><tr><th scope="col">Thème</th><th scope="col">Formations</th></tr></thead><tbody>${c.themes.map((t) => `<tr><th scope="row">${esc(t.theme)}</th><td>${nombre(t.formations)}</td></tr>`).join("")}</tbody></table></div></details>
-  <p>${esc(CPF_A_SAVOIR.replace(` (${CPF_SITE})`, ""))} <a href="${esc(CPF_SITE)}" rel="noopener">Chercher une formation sur moncompteformation.gouv.fr</a>.</p>
+  <p>${esc(CPF_A_SAVOIR.replace(` (${CPF_SITE})`, ""))} ${lienNom(CPF_SITE, "Chercher une formation sur moncompteformation.gouv.fr", ' rel="noopener"')}.</p>
   <p class="note">${esc("Caisse des Dépôts et DGEFP, Mon Compte Formation, l'offre de formation, Licence Ouverte.")}</p>
 </section>`;
 }

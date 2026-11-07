@@ -337,8 +337,8 @@ async function tileCopies(cache: Cache, keys: string[], background: Background, 
   // Only what the tiles' builds took last time (here, or where their copies were built) and is left: otherwise their
   // pages or a later visit bring them up to date.
   if (own === undefined || (own && age(own) < FRESH_SECONDS * 1000)) {
-    const due = keys.flatMap((key, i) => (age(copies[i]) >= fresh ? [{ key, build: () => BUILDS[key](cache, now), age: age(copies[i]), outdated: copies[i]?.outdated, cost: copies[i]?.cost }] : []));
-    refresh(cache, due, background, TILE_COST_UNKNOWN);
+    const due = keys.flatMap((key, i) => (age(copies[i]) >= fresh ? [{ key, build: () => BUILDS[key](cache, now), age: age(copies[i]), outdated: copies[i]?.outdated, cost: copies[i]?.cost, builtAt: copies[i]?.fetchedAt.getTime(), failedAt: copies[i]?.failedAt }] : []));
+    refresh(cache, due, background, TILE_COST_UNKNOWN, now.getTime());
   }
   return copies.map((c) => c ?? null);
 }

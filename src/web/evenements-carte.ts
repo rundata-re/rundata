@@ -120,7 +120,7 @@ const POINT = "#56b4e9";
 // Under the text on a phone: its drawing waits until it nears the screen (content-visibility), the first paint does not
 // (slow 4G at 390 px: +118 ms instead of +217 ms). `.evm`: the map's room while it waits to be put in (laterMap()).
 const STYLE = `.evmap{content-visibility:auto;contain-intrinsic-size:auto 560px}.evm{aspect-ratio:${W}/${H}}` +
-  ".evmap .tabs{margin-bottom:.45rem}.evmap .tabs label{white-space:nowrap;font-size:.82rem;padding:.22rem .62rem}" +
+  ".evmap .tabs{margin-bottom:.45rem}.evmap .tabs label{font-size:.82rem;padding:.22rem .62rem}" +
   `.evmap .evp .sh{fill:${POINT};stroke:#fff;stroke-width:5;paint-order:stroke}.evmap .ev0{margin:.4rem 0 0}`;
 
 const TIMES = [["soir", "Ce soir", "ce soir"], ["demain", "Demain", "demain"], ["we", "Ce week-end", "ce week-end"]] as const;

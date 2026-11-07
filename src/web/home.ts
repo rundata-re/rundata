@@ -9,7 +9,7 @@ import { PATH as A_PROPOS, QUI } from "./a-propos.js";
 import icons from "./icons.json" with { type: "json" };
 import { byUse, CATEGORIES, type Category, type Urgent } from "./categories.js";
 import type { ActualitesAnswer, AgendaAnswer, AirAnswer, Alerte, BusData, CalendrierAnswer, CruesAnswer, ElectriciteAnswer, HomeData, VelosAnswer, VolcanAnswer, BornesAnswer, CoupuresAnswer, EauAnswer, SecheresseAnswer, SentiersAnswer, SportAnswer, CyclonesAnswer, HistoriqueAnswer, TraficAnswer } from "./data.js";
-import { actualitesLive, airLive, atDay, bornesLive, cruesLive, feuxLive, floodRaised, imageLinks, busLive, coupuresLive, daeLive, eauLive, secheresseLive, randonneesLive, traficLive, sportLive, cyclonesLive, historiqueLive, agendaLive, calendrierLive, electriciteLive, velosLive, volcanLive, saidNow, stillToCome } from "./domains.js";
+import { actualitesLive, airLive, atDay, bornesLive, coupable, cruesLive, feuxLive, floodRaised, imageLinks, busLive, coupuresLive, daeLive, eauLive, secheresseLive, randonneesLive, traficLive, sportLive, cyclonesLive, historiqueLive, agendaLive, calendrierLive, electriciteLive, velosLive, volcanLive, saidNow, soulignesCoupables, stillToCome } from "./domains.js";
 import type { InfoRow } from "../tools/actualites.js";
 import { a, de, enGrand } from "../tools/format.js";
 import { enImagesApres, enImagesLuesAilleurs, jusquALecture, NON_ANNONCEE } from "../tools/volcan.js";
@@ -198,7 +198,7 @@ function chatDemo(h: HomeLive | null, now: Date): string {
   return `<figure class="chat" aria-label="Exemple de conversation avec le connecteur">
     <p class="who"><span class="dot"></span>Exemple, avec les données de maintenant</p>
     <p class="bubble me">${d.question}</p>
-    <p class="call">↳ ${d.call}</p>
+    <p class="call">↳ ${soulignesCoupables(d.call)}</p>
     <p class="bubble ai">${d.answer}</p>
   </figure>`;
 }
@@ -357,7 +357,7 @@ const PRINCIPLES = `<section aria-labelledby="h-lire">
   <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-lire">D'où viennent ces données</h2></div>
   <div class="three">
     <div class="card">${icon("gauge")}<h3>Datées et sourcées</h3><p>Chaque valeur vient avec son heure et sa source. Une mesure vient d'un capteur, un horaire est celui que publie le réseau, une prévision vient d'un modèle et porte toujours l'étiquette <span class="badge">Prévision</span>.</p></div>
-    <div class="card">${icon("book")}<h3>Des données publiques</h3><p>Météo-France, l'observatoire du Piton de la Fournaise, EDF, Atmo Réunion, les réseaux de bus, l'IGN, service-public.fr : rundata.re ne fait que réunir ce qu'ils publient, sous licence ouverte. L'outil <code>sources_<wbr>donnees</code> les cite toutes.</p></div>
+    <div class="card">${icon("book")}<h3>Des données publiques</h3><p>Météo-France, l'observatoire du Piton de la Fournaise, EDF, Atmo Réunion, les réseaux de bus, l'IGN, service-public.fr : rundata.re ne fait que réunir ce qu'ils publient, sous licence ouverte. L'outil <code>${coupable("sources_donnees")}</code> les cite toutes.</p></div>
     <div class="card warn">${icon("alert")}<h3>En cas d'alerte, les autorités d'abord</h3><p>Cyclone, fortes pluies, éruption : seules comptent la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a> et les consignes de la préfecture. La vigilance en cours, zone par zone : <a href="/vigilance">page vigilance</a>.</p></div>
   </div>
 </section>`;

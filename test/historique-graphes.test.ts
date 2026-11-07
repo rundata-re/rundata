@@ -47,6 +47,14 @@ describe("the days of /historique", () => {
     expect((await island()).stations.some((s) => s.jours || s.normale_jour)).toBe(false);
   });
 
+  it("cuts the tools' names of its notes after their « _ » only (Safari cut « meteo_actu|elle » at 160 px)", async () => {
+    plug();
+    const notes = historiquePage("https://rundata.re", at(await island()), NOW).match(/<ul class="plain note">(.*?)<\/ul>/s)![1];
+    expect(notes).toContain('<span class="ident">meteo_<wbr>actuelle</span>');
+    expect(notes).toContain('<span class="ident">prevision_<wbr>meteo.</span>');
+    expect(notes).not.toMatch(/\p{L}_\p{L}/u);
+  });
+
   it("draws the rain summed, the temperatures on the normal's band and the sunshine, each said in words", async () => {
     plug();
     const d = await island(true);

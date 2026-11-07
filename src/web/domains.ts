@@ -133,12 +133,15 @@ const warnings = (list: string[]) =>
   list.length ? `<div class="card warn">${icon("alert")}<h3>À savoir</h3><ul class="plain">${list.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>` : "";
 
 /**
- * A tool's name or a layer's code that may be cut after each « . » and « _ » on a narrow screen (annuaire_services_ /
- * publics, ind_atmo_ / 2021) rather than in the middle of a word, by overflow-wrap:anywhere (pages.ts): <wbr> holds no
- * character, so a copy of the text is the text. Never in a link: Chrome names it with a space for each <wbr>
- * (« data. gouv. fr »).
+ * A tool's name or a layer's code, escaped, that may be cut after each « . » and « _ » on a narrow screen
+ * (annuaire_services_ / publics, ind_atmo_ / 2021) rather than in the middle of a word, by overflow-wrap:anywhere
+ * (pages.ts): its « _ » through soulignesCoupables(), in a span without hyphenation, as every identifier joined by
+ * « _ ». <wbr> holds no character, so a copy of the text is the text. Never in a link: Chrome names it with a space for
+ * each <wbr> (« data. gouv. fr »). A declaration, not a const: pages.ts and home.ts call it while the modules load.
  */
-export const coupable = (s: string) => esc(s).replaceAll(".", ".<wbr>").replaceAll("_", "_<wbr>");
+export function coupable(s: string): string {
+  return soulignesCoupables(esc(s)).replaceAll(".", ".<wbr>");
+}
 
 /**
  * A name with a « . » or a capital inside (Sensor.Community, OpenAgenda), in escaped HTML: Chrome's French hyphenation
@@ -3445,7 +3448,7 @@ ${d?.heures ? hourlySection(d.heures) : ""}
 <section aria-labelledby="h-archive">
   <div class="sec-h"><p class="eyebrow">Toute l'archive</p><h2 id="h-archive">N'importe quel jour depuis 1900</h2>
   <p>Avec le connecteur, votre IA lit les mesures quotidiennes de chacune des 249 stations Météo-France que l'île a connues, de la première année de chacune jusqu'à hier : « il a plu combien en janvier 2018 à Cilaos ? », « il faisait combien le jour de mes 20 ans au Tampon ? », « record de chaleur à Saint-Denis ? », « il fait plus chaud qu'avant ? ». Les normales sont les moyennes 1991-2020 de chaque station.</p></div>
-  ${d ? `<ul class="plain note">${d.a_savoir.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+  ${d ? `<ul class="plain note">${d.a_savoir.map((x) => `<li>${soulignesCoupables(esc(x))}</li>`).join("")}</ul>` : ""}
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>
 ${connectorCta("historique_meteo", "l'historique météo")}`;
@@ -3460,7 +3463,7 @@ function hourlySection(h: HourlyAnswer): string {
   const cell = (v: number | undefined, unit = "") => (v == null ? "—" : `${fr(v)}${unit}`);
   return `<section aria-labelledby="h-heures">
   <div class="sec-h"><p class="eyebrow">Heure par heure</p><h2 id="h-heures">Hier et cette nuit à Saint-Denis</h2>
-  <p>${esc(h.resume.replace(/^.*?Heure par heure \([^)]*\) — /, ""))}</p></div>
+  <p>${soulignesCoupables(esc(h.resume.replace(/^.*?Heure par heure \([^)]*\) — /, "")))}</p></div>
   <details class="card table-wrap"><summary>Les ${rows.length} dernières heures publiées</summary>
   <table class="drought histo hours"><caption class="sr">Les ${rows.length} dernières heures publiées</caption><thead><tr><th>Heure</th><th>Pluie</th><th>Température</th><th>Vent</th><th>Rafale</th><th>Soleil</th></tr></thead><tbody>${rows.map((r) =>
     `<tr><th scope="row">${esc(r.heure)}</th><td>${cell(r.pluie_mm, " mm")}</td><td>${cell(r.temperature, " °C")}</td><td>${r.vent_kmh == null ? "—" : `${r.vent_kmh} km/h${r.vent_de ? ` ${esc(r.vent_de)}` : ""}`}</td><td>${cell(r.rafale_kmh, " km/h")}</td><td>${r.soleil_min == null ? "—" : `${r.soleil_min} min`}</td></tr>`).join("")}</tbody></table></details>

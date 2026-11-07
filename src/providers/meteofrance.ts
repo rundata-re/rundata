@@ -7,10 +7,12 @@
  * A slot is published 2 to 10 minutes after its time and fills up as stations report, so the latest slots are
  * read together (each station's newest row wins) and each slot is re-read until it is final.
  */
+import { isScheduled } from "../budget.js";
 import type { Bundle, Cache, Cached } from "../cache.js";
 import { getText } from "../http.js";
+import { noteLecture } from "../lectures.js";
 import type { Observation, Reading, Station } from "../types.js";
-import { download, session, type Session } from "./mf-auth.js";
+import { download, held, session, type Session } from "./mf-auth.js";
 import { SOURCE, STATIONS_974, VEILLE, type Veille } from "./meteofrance-stations.js";
 
 export { SOURCE, VEILLE, type Veille } from "./meteofrance-stations.js";
@@ -24,6 +26,11 @@ const SLOTS = 11;
 // The slots are kept together, one read and one write of the Worker's edge cache instead of eleven of each.
 const BUNDLE = "meteofrance:6min";
 const SYNC_SECONDS = 60;
+// The same entries in the Worker's KV, written by the scheduled event alone, at each of its events (`refreshShared`):
+// a question or a view whose data center's copy of a slot or of the hourly package is too old takes KV's when it is as
+// fresh as its own would have to be, at one read of KV per isolate and per minute, rather than reading the slots again
+// (meteo_actuelle, 31/10-07/11/2026: 44 calls of 76 read them, median 2.5 s, against 29 ms for the 32 others).
+export const KV_BUNDLE = "meteofrance:6min:kv";
 
 // The hourly package of the 974: every station's last days hour by hour in one call (about 900 kB of CSV), an hour
 // being in it about 10 minutes after it ends (measured 25/10/2026). Kept in the same bundle as each station's rain
@@ -105,11 +112,48 @@ function iso(ms: number) {
   return new Date(ms).toISOString().replace(".000Z", "Z");
 }
 
-async function slot(b: Bundle, start: number, now: number, s: Session): Promise<Cached<Row[]> | Error> {
+// Re-read every two minutes while the slot fills up; once final, a copy taken after that point stays good.
+const slotFresh = (start: number, now: number) => Math.max(RECHECK_SECONDS, (now - start - FINAL_AFTER_MS) / 1000);
+
+/** The entry `key` of `b` if it is good for `freshSeconds`, as `Bundle.get` judges it. */
+function good(b: Bundle | undefined, key: string, freshSeconds: number) {
+  const e = b?.peek(key);
+  return e && e.ageMs < freshSeconds * 1000 ? e : undefined;
+}
+
+/**
+ * KV's copy of `key` (KV_BUNDLE) when this data center's is not good for `freshSeconds` and KV's is: served as the
+ * data center's would be, and noted as it for the answer's freshness (lectures.ts), under the same key.
+ */
+async function fromKv<T>(b: Bundle, kv: (() => Promise<Bundle | undefined>) | undefined, key: string, freshSeconds: (e: unknown) => number): Promise<Cached<T> | undefined> {
+  if (!kv || good(b, key, freshSeconds(b.peek(key)?.value))) return undefined;
+  const k = await kv();
+  const shared = good(k, key, freshSeconds(k?.peek(key)?.value));
+  if (!shared) return undefined;
+  noteLecture({ key: `${BUNDLE}|${key}`, fetchedAt: shared.fetchedAt, stale: false, freshSeconds: freshSeconds(shared.value) });
+  return { value: shared.value as T, fetchedAt: new Date(shared.fetchedAt), stale: false };
+}
+
+/**
+ * KV's copy (KV_BUNDLE) as the scheduled event's readers take it (/chiffres, the day before): the one the event's step
+ * has just read and written (`refreshShared`, synced at each event), from this isolate's memory, never read again in
+ * the event. KV is read here only when the isolate holds none, the step not having run (no token): one read in place
+ * of the step's (registre.ts, meteofrance:stations).
+ */
+const inEvent = (cache: Cache) => cache.bundle(KV_BUNDLE, 24 * 3600, true);
+
+/** KV's copy (KV_BUNDLE), read at the first need of a question and once a minute at most in an isolate. */
+const kvOf = (cache: Cache) => {
+  let p: Promise<Bundle | undefined> | undefined;
+  return () => (p ??= cache.bundle(KV_BUNDLE, SYNC_SECONDS, true).catch(() => undefined));
+};
+
+async function slot(b: Bundle, start: number, now: number, s: Session, kv?: () => Promise<Bundle | undefined>): Promise<Cached<Row[]> | Error> {
   const date = iso(start);
-  // Re-read every two minutes while the slot fills up; once final, a copy taken after that point stays good.
-  const fresh = Math.max(RECHECK_SECONDS, (now - start - FINAL_AFTER_MS) / 1000);
+  const fresh = slotFresh(start, now);
   try {
+    const shared = await fromKv<Row[]>(b, kv, date, () => fresh);
+    if (shared) return shared;
     return await b.get(date, fresh, async () =>
       parseCsv(await download(`${BASE}?date=${date}&format=csv`, s, getText)),
     );
@@ -233,20 +277,50 @@ export function parseDay(csv: string, jour: string): Veille {
   return { jour, complet: csv.includes(`;${iso(start + 24 * HOUR_MS)};`), stations };
 }
 
+/**
+ * The day `jour` as `parseDay` reads it, from the hourly package already parsed (`parseHourly`): its 24 hours are the
+ * package's newest ones when it holds the day's last, which ends at its midnight.
+ */
+export function veilleDe(hourly: HourlyRain, jour: string): Veille {
+  const start = Date.parse(`${jour}T00:00:00Z`) - 4 * HOUR_MS;
+  const end = Date.parse(hourly.end);
+  // Where the day's hour j (ending at start + (j + 1) h) is in the package's hours, newest first.
+  const ks = Array.from({ length: 24 }, (_, j) => (end - (start + (j + 1) * HOUR_MS)) / HOUR_MS);
+  const at = (xs: (number | null)[] | undefined) => ks.map((k) => (xs && k >= 0 && k < xs.length ? xs[k] : null));
+  const all = (xs: (number | null)[]): xs is number[] => xs.every((x) => x != null && Number.isFinite(x));
+  const stations: Veille["stations"] = {};
+  for (const [id, r] of Object.entries(hourly.rr)) {
+    const [rr, tn, tx] = [at(r), at(hourly.mesures?.[id]?.tn), at(hourly.mesures?.[id]?.tx)];
+    const v = {
+      ...(all(rr) && { rr: r1(rr.reduce((a, b) => a + b, 0)) }),
+      ...(all(tn) && { tn: Math.min(...tn) }),
+      ...(all(tx) && { tx: Math.max(...tx) }),
+    };
+    if (Object.keys(v).length) stations[id] = v;
+  }
+  return { jour, complet: end >= start + 24 * HOUR_MS, stations };
+}
+
 /** The passes that keep the day before: 00:20 at La Réunion (20:20 UTC), and 00:35 when its last hour was not out yet. */
 export function veilleDue(now: Date): boolean {
   const m = now.getUTCMinutes();
   return now.getUTCHours() === 20 && ((m >= 20 && m < 25) || (m >= 35 && m < 40));
 }
 
-/** At a pass of `veilleDue`: the day that just ended, read from the hourly package and kept, unless kept whole already. */
+/**
+ * At a pass of `veilleDue`: the day that just ended, from the hourly package of KV's copy (KV_BUNDLE), which the
+ * event's step has just brought up to date (`refreshShared`), and kept, unless kept whole already. The package is
+ * never read here: its hour is in that copy by 00:20 once Météo-France has put it out, and at 00:35 otherwise.
+ */
 export async function keepVeille(cache: Cache, now = new Date()): Promise<Veille | undefined> {
   const jour = iso(now.getTime() + 4 * HOUR_MS - 24 * HOUR_MS).slice(0, 10);
   if (now.getUTCMinutes() >= 35) {
     const kept = (await cache.kept<Veille>(VEILLE))?.value;
     if (kept?.jour === jour && kept.complet) return undefined;
   }
-  const v = parseDay(await download(HOURLY_URL, session(SOURCE.id), getText), jour);
+  const hourly = (await inEvent(cache)).peek(HOURLY)?.value as HourlyRain | undefined;
+  if (!hourly) throw new Error("paquet horaire absent de la copie de KV");
+  const v = veilleDe(hourly, jour);
   await cache.keep(VEILLE, v);
   return v;
 }
@@ -291,33 +365,55 @@ export function stationHours(hourly: HourlyRain, id: string): StationHour[] {
   }));
 }
 
-/** Undefined when the hourly package cannot be read. Call after `observations`, whose bundle it reads again without I/O. */
-export async function recentRain(cache: Cache, now = new Date()): Promise<RecentRain | undefined> {
-  const b = await cache.bundle(BUNDLE, SYNC_SECONDS);
-  // Complete once it holds the newest hour that should be published: kept until the next one is due.
+/** How long the hourly package is good: until the next hour is due once it holds the newest one, else 5 minutes. */
+function hourlyFresh(have: unknown, now: Date): number {
   const due = Math.floor((now.getTime() - HOURLY_IN_MS) / HOUR_MS) * HOUR_MS;
-  const have = b.peek(HOURLY)?.value as HourlyRain | undefined;
-  const fresh = have && Date.parse(have.end) >= due ? (2 * HOUR_MS) / 1000 : HOURLY_RECHECK_SECONDS;
+  const end = (have as HourlyRain | undefined)?.end;
+  return end && Date.parse(end) >= due ? (2 * HOUR_MS) / 1000 : HOURLY_RECHECK_SECONDS;
+}
+
+/** The hourly package of `b`, read again when it is not good (`hourlyFresh`). */
+const readHourly = (b: Bundle, now: Date) =>
+  b.get(HOURLY, hourlyFresh(b.peek(HOURLY)?.value, now), async () => parseHourly(await download(HOURLY_URL, session(SOURCE.id), getText), now.getTime()));
+
+/**
+ * Undefined when the hourly package cannot be read. Call after `observations`, whose bundles it reads again without
+ * I/O. In the scheduled event, KV's copy as the event's step left it, never read.
+ */
+export async function recentRain(cache: Cache, now = new Date()): Promise<RecentRain | undefined> {
+  const latest = Math.floor(now.getTime() / SLOT_MS) * SLOT_MS;
+  const rainOf = (hourly: HourlyRain, ...bs: (Bundle | undefined)[]): RecentRain => ({
+    hourly,
+    slots: (id) => {
+      const out: { time: string; rr: number | null; t: number | null }[] = [];
+      for (let t = latest; t > Date.parse(hourly.end); t -= SLOT_MS) {
+        // The newer of the bundles' copies of the slot: a slot served from KV is not in the data center's.
+        const e = bs.map((b) => b?.peek(iso(t))).reduce((a, x) => (x && (!a || x.fetchedAt > a.fetchedAt) ? x : a), undefined);
+        const row = (e?.value as Row[] | undefined)?.find((r) => r.id === id);
+        if (row) out.push({ time: row.time, rr: row.rr_per, t: row.t == null ? null : celsius(row.t) });
+      }
+      return out;
+    },
+  });
+  if (isScheduled()) {
+    const k = await inEvent(cache);
+    const hourly = k.peek(HOURLY)?.value as HourlyRain | undefined;
+    return hourly && rainOf(hourly, k);
+  }
+  const b = await cache.bundle(BUNDLE, SYNC_SECONDS);
+  const kv = kvOf(cache);
   let hourly: HourlyRain;
   try {
-    hourly = (await b.get(HOURLY, fresh, async () => parseHourly(await download(HOURLY_URL, session(SOURCE.id), getText), now.getTime()))).value;
+    const shared = await fromKv<HourlyRain>(b, kv, HOURLY, (e) => hourlyFresh(e, now));
+    hourly = shared?.value ?? (await readHourly(b, now)).value;
     await b.save();
   } catch (err) {
     console.error("pluie heure par heure indisponible", err instanceof Error ? err.message : String(err));
     return undefined;
   }
-  const latest = Math.floor(now.getTime() / SLOT_MS) * SLOT_MS;
-  return {
-    hourly,
-    slots: (id) => {
-      const out: { time: string; rr: number | null; t: number | null }[] = [];
-      for (let t = latest; t > Date.parse(hourly.end); t -= SLOT_MS) {
-        const row = (b.peek(iso(t))?.value as Row[] | undefined)?.find((r) => r.id === id);
-        if (row) out.push({ time: row.time, rr: row.rr_per, t: row.t == null ? null : celsius(row.t) });
-      }
-      return out;
-    },
-  };
+  // KV's copy beside, for the slots since the hour that `observations` took from it: already read then, if it was.
+  const since = Array.from({ length: SLOTS }, (_, k) => latest - k * SLOT_MS).filter((t) => t > Date.parse(hourly.end));
+  return rainOf(hourly, b, since.some((t) => !b.has(iso(t))) ? await kv() : undefined);
 }
 
 /** Rain over the hour ending with `time`, when all ten slots of that hour are there. */
@@ -331,14 +427,53 @@ function rainHour(byTime: Map<string, Row>, time: string): number | null {
   return sum;
 }
 
-export async function observations(cache: Cache, now = new Date()): Promise<Cached<Observation[]>> {
+/** The starts of the slots read, newest first. */
+const starts = (now: Date) => {
   const latest = Math.floor(now.getTime() / SLOT_MS) * SLOT_MS;
-  const s = session(SOURCE.id);
-  const b = await cache.bundle(BUNDLE, SYNC_SECONDS);
-  const got = await Promise.all(Array.from({ length: SLOTS }, (_, k) => slot(b, latest - k * SLOT_MS, now.getTime(), s)));
-  const oldest = iso(latest - (SLOTS - 1) * SLOT_MS);
+  return Array.from({ length: SLOTS }, (_, k) => latest - k * SLOT_MS);
+};
+
+/** Forgets the slots older than the ones read; the hourly package stays. */
+const dropOld = (b: Bundle, now: Date) => {
+  const oldest = iso(starts(now)[SLOTS - 1]);
   b.drop((key) => key === HOURLY || key >= oldest);
+};
+
+/**
+ * The scheduled event's step (worker.ts), at each event, before the shared copies: the slots and the hourly package
+ * that a question would read again now (the same freshness), read into KV's copy (KV_BUNDLE), which is written once
+ * when one was read. In the event, `observations` and `recentRain` then read that copy, never Météo-France: /chiffres's
+ * count of the stations, the day before (`keepVeille`). What is good in it, said. It never takes a token: without one
+ * held (`keepFresh` failed), it reads nothing, and the copy waits for the next event (registre.ts, meteofrance:stations).
+ */
+export async function refreshShared(cache: Cache, now = new Date()): Promise<{ creneaux: number; horaire?: string } | "sans jeton"> {
+  if (!held()) return "sans jeton";
+  const s = session(SOURCE.id);
+  const b = await cache.bundle(KV_BUNDLE, SYNC_SECONDS, true);
+  const got = await Promise.all(starts(now).map((t) => slot(b, t, now.getTime(), s)));
+  const hourly = await readHourly(b, now).then((h) => h.value, () => undefined);
+  dropOld(b, now);
   await b.save();
+  return { creneaux: got.filter((g) => !(g instanceof Error) && !g.stale).length, ...(hourly && { horaire: hourly.end }) };
+}
+
+export async function observations(cache: Cache, now = new Date()): Promise<Cached<Observation[]>> {
+  let got: (Cached<Row[]> | Error)[];
+  if (isScheduled()) {
+    // In the scheduled event: KV's copy as the event's step left it, a slot not good there said stale.
+    const k = await inEvent(cache);
+    got = starts(now).map((t) => {
+      const e = k.peek(iso(t));
+      return e ? { value: e.value as Row[], fetchedAt: new Date(e.fetchedAt), stale: e.ageMs >= slotFresh(t, now.getTime()) * 1000 } : new Error(`créneau ${iso(t)} absent de la copie de KV`);
+    });
+  } else {
+    const s = session(SOURCE.id);
+    const b = await cache.bundle(BUNDLE, SYNC_SECONDS);
+    const kv = kvOf(cache);
+    got = await Promise.all(starts(now).map((t) => slot(b, t, now.getTime(), s, kv)));
+    dropOld(b, now);
+    await b.save();
+  }
   const ok = got.filter((g): g is Cached<Row[]> => !(g instanceof Error));
   if (!ok.length) throw got[0];
 

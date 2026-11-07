@@ -35,4 +35,18 @@ describe("the long words on a phone", () => {
   it("cuts a course's long words in its narrow column, hyphenated where the browser can, so that none covers its places", () => {
     expect(CSS).toContain("table.psup{table-layout:fixed}table.psup tbody th{hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}");
   });
+
+  it("keeps the WhatsApp button, the connector's tabs, a band's big figure and the footer in a 320 px screen with the text at 200 %", () => {
+    // The home page, /mcp and a commune's page were 364 px wide: « Partager sur WhatsApp » 305 px in a 288 px card,
+    // « authentification » in the ChatGPT tab, « 24,2 °C » 315 px in its band, and the footer's name 308 px.
+    expect(CSS).toContain("padding:.55rem min(1rem,5vw);max-width:100%;font-size:min(1em,7.2vw)}.sh svg{width:1rem;height:1rem}");
+    expect(CSS).toContain("line-height:1.55;min-width:0;grid-template-columns:minmax(0,1fr)}");
+    expect(CSS).toContain(".big{font:800 clamp(min(3.5rem,28vw),11vw,6rem)/.9 Bricolage");
+    expect(CSS).toContain("footer.foot .wrap{display:grid;gap:1.5rem;grid-template-columns:minmax(0,1fr)}");
+    expect(CSS).toContain("footer.foot .brand{color:var(--on-night);margin-bottom:.8rem;font-size:min(1.2rem,9vw)}");
+    // From 58rem the footer keeps its two columns, the later rule winning.
+    const i = CSS.indexOf("footer.foot .wrap{display:grid"), j = CSS.indexOf("@media (min-width:58rem){footer.foot .wrap{grid-template-columns:1fr 1.6fr}}");
+    expect(i).toBeGreaterThan(-1);
+    expect(j).toBeGreaterThan(i);
+  });
 });

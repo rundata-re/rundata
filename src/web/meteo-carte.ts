@@ -1286,8 +1286,8 @@ const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(
 const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};
 // A length (x), with its finer file when more images are shown (fine), or the day DY. With swap, the file shown is swapped
 // for this one once it is here, at the same moment (the end kept at the end), playing on; kept when it has no radar. With
-// swap 2, it waits for the play to stop (SW).
-RJ.go=(x,swap)=>{const m=x==="jour"?x:fine(x)?FI[x]:x,key=m==="jour"?m+DY:m;if(swap&&(!J||key===DK))return;WK=key;
+// swap 2, it waits for the play to stop (SW). The file shown asked again while another comes: the other one dropped.
+RJ.go=(x,swap)=>{const m=x==="jour"?x:fine(x)?FI[x]:x,key=m==="jour"?m+DY:m;if(swap&&(!J||key===DK)){if(J)WK=key;return}WK=key;
 if(!swap){SW=0;stop(false);d=m;for(const c of rb.querySelectorAll("[name=rjd]"))c.checked=c.value===x;if(x!=="jour")sel.value="";b.textContent="Chargement…";b.disabled=true;b.removeAttribute("aria-label")}
 (F[key]||(F[key]=Promise.all([fetch(m==="jour"?JP.replace("JOUR",DY):P[m]).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),RJ.p?RJ.p.prep():0]).then(([j])=>j))).then((j)=>{if(WK!==key||swap&&!j.radar)return;if(swap===2&&playing){SW=1;return}
 const t=T,te=T>=E,old=[J,d,DK];d=m;DK=key;J=j;if(m==="jour")J0=Date.parse(DY+"T20:00:00Z")-864e5;if(!setup()){if(!swap)throw new Error("vide");[J,d,DK]=old;setup();T=t;return}

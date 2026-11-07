@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { departureLi, lienNom, nomsCoupables } from "../src/web/domains.js";
+import { adresseCoupable, departureLi, lienNom, nomsCoupables, traficPage } from "../src/web/domains.js";
 import { CSS } from "../src/web/pages.js";
 import { publierPage } from "../src/web/publier.js";
 
@@ -73,10 +73,10 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
     expect(nus).toEqual([]);
   });
 
-  it("never goes into a tool's answer: no <wbr>, nor nomsCoupables or lienNom, outside the site's pages", () => {
+  it("never goes into a tool's answer: no <wbr>, nor nomsCoupables, lienNom or adresseCoupable, outside the site's pages", () => {
     const fichiers = (dir: URL): URL[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === "web" ? [] : fichiers(new URL(`${e.name}/`, dir))) : e.name.endsWith(".ts") ? [new URL(e.name, dir)] : []));
-    const avec = fichiers(new URL("../src/", import.meta.url)).filter((f) => /<wbr>|nomsCoupables|lienNom/.test(readFileSync(f, "utf8")));
+    const avec = fichiers(new URL("../src/", import.meta.url)).filter((f) => /<wbr>|nomsCoupables|lienNom|adresseCoupable/.test(readFileSync(f, "utf8")));
     expect(avec.map((f) => f.pathname.split("/src/")[1])).toEqual([]);
   });
 
@@ -89,6 +89,64 @@ describe("a name with a « . » or a capital inside, which Chrome does not hyphe
     expect(page.slice(page.indexOf("<title>"), page.indexOf("</title>"))).not.toContain("<wbr>");
     // No word changes: without its <wbr>, the page is the same text.
     expect(page.replaceAll("<wbr>", "")).toContain('<h3 id="openagenda">3 · OpenAgenda</h3>');
+  });
+});
+
+describe("an address in a heading, a pill or a button", () => {
+  // The words of src/web/'s sources, line by line, out of comments: [file, the element as written, its own words]. Its
+  // own words leave out what ${…} writes (an icon, a value) and the tags.
+  const ecrits = (motif: RegExp) => {
+    const dir = new URL("../src/web/", import.meta.url);
+    return readdirSync(dir)
+      .filter((f) => f.endsWith(".ts"))
+      .flatMap((f) =>
+        readFileSync(new URL(f, dir), "utf8")
+          .split("\n")
+          .filter((l) => !/^\s*(?:\/\/|\*|\/\*)/.test(l))
+          .flatMap((l) => [...l.matchAll(motif)].map((m) => [f, m[0], sansTags(sansExpressions(m[1]))])),
+      );
+  };
+  // What ${…} writes, with the braces inside it (${f({a: 1})}), is left out.
+  const sansExpressions = (t: string) => {
+    let out = "", n = 0;
+    for (let i = 0; i < t.length; i++) {
+      if (n === 0 && t.startsWith("${", i)) { n = 1; i++; continue; }
+      if (n > 0) { n += t[i] === "{" ? 1 : t[i] === "}" ? -1 : 0; if (n === 0) out += " "; continue; }
+      out += t[i];
+    }
+    return out;
+  };
+  // The tags, cut out character by character (never a regex on markup).
+  const sansTags = (t: string) => {
+    let out = "", dedans = false;
+    for (const c of t) { if (c === "<") dedans = true; else if (c === ">") { dedans = false; out += " "; } else if (!dedans) out += c; }
+    return out;
+  };
+  const adresse = (t: string) => (t.match(/[\w\u00AD-]+(?:[.@][\w-]+)+/g) ?? []).some((x) => /[a-z0-9][.@][a-z]/.test(x) && x !== "rundata.re");
+
+  it("may go to the next line after its « . » and « @ », and where a soft hyphen was put, escaped", () => {
+    expect(adresseCoupable("info\u00ADtrafic.re")).toBe("info\u00ADtrafic.<wbr>re");
+    expect(adresseCoupable("contact@rundata.re")).toBe("contact@<wbr>rundata.<wbr>re");
+    expect(adresseCoupable("Bouchons, accidents, travaux. Puis <b>")).toBe("Bouchons, accidents, travaux. Puis &lt;b&gt;");
+  });
+
+  it("is never in a button: the address is in the sentence above it (a button at 200 % is narrower than « (infotrafic.re) »)", () => {
+    const boutons = ecrits(/<a\b[^>]*\bclass="[^"]*\bbtn\b[^"]*"[^>]*>(.*?)<\/a>/g).filter(([, , t]) => adresse(t));
+    expect(boutons.map(([f, e]) => `${f} ${e}`)).toEqual([]);
+  });
+
+  it("in a heading or a pill, is written by adresseCoupable(), never by hand (« infotrafic.r » cut by the card's edge)", () => {
+    const ecrites = ecrits(/<(?:h[1-6]\b[^>]*|p class="pill"[^>]*)>(.*?)<\/(?:h[1-6]|p)>/g).filter(([, , t]) => adresse(t));
+    expect(ecrites.map(([f, e]) => `${f} ${e}`)).toEqual([]);
+  });
+
+  it("on /trafic: the button says « Carte officielle ↗ », the card's title and the pill take their soft hyphen, the card keeps its name", () => {
+    const page = traficPage("https://rundata.re", null, new Date("2026-11-07T08:00:00Z"));
+    expect(page).toContain(`<a class="btn sun" href="https://www.infotrafic.re/">`);
+    expect(page).toMatch(/<a class="btn sun" href="https:\/\/www\.infotrafic\.re\/"><svg[^]*?<\/svg>Carte officielle ↗<\/a>/);
+    expect(page).toContain(`<h3 aria-label="infotrafic.re ↗"><svg`);
+    expect(page).toContain("</svg>info\u00ADtrafic.<wbr>re ↗</h3>");
+    expect(page.replaceAll("\u00a0", " ")).toContain("Bouchons, accidents, travaux : info\u00ADtrafic.<wbr>re</p>");
   });
 });
 

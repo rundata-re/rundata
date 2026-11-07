@@ -9,6 +9,7 @@ import { communeAt } from "../places/resolve.js";
 import { decode } from "../providers/traces.js";
 import type { SourceInfo } from "../types.js";
 import data from "./velo.json" with { type: "json" };
+import { particules } from "../noms.js";
 
 export type Liste = "region" | "saint-denis" | "civis";
 
@@ -37,8 +38,9 @@ export interface Accroche {
   lat: number;
 }
 
-export const VOIES = data.voies as Voie[];
-export const ACCROCHES = data.accroches as Accroche[];
+export const VOIES = (data.voies as Voie[]).map((v) => (v.nom ? { ...v, nom: particules(v.nom) } : v));
+/** The racks, their places' names as French writes them (noms.ts: « Église des Avirons »), as the lanes'. */
+export const ACCROCHES = (data.accroches as Accroche[]).map((a) => (a.nom ? { ...a, nom: particules(a.nom) } : a));
 /** The day the lists were read from the portal. */
 export const LU_LE = data.construit;
 /** The Région's list's day, Saint-Denis's export's. */

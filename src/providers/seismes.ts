@@ -5,7 +5,7 @@
  */
 import { de } from "../articles.js";
 import type { Cache, Cached } from "../cache.js";
-import gazetteer from "../places/gazetteer.json" with { type: "json" };
+import gazetteer from "../places/gazetteer.js";
 import { bearingDeg, distanceKm } from "../geo.js";
 import { getText } from "../http.js";
 import type { SourceInfo } from "../types.js";

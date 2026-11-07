@@ -5,6 +5,7 @@
  */
 import type { SourceInfo } from "../types.js";
 import data from "./ecoles.json" with { type: "json" };
+import { particules } from "../noms.js";
 
 export type Kind = "ecole" | "college" | "lycee";
 
@@ -35,7 +36,8 @@ export interface Etablissement {
 /** The day the bundled list was rebuilt, and the newest row of the directory then. */
 export const BUILT: string = data.construit;
 export const UPDATED: string = data.mis_a_jour;
-export const LIST = data.etablissements as Etablissement[];
+/** The schools, their names as French writes them (noms.ts: « Leconte de Lisle », « L'Étoile »). */
+export const LIST = (data.etablissements as Etablissement[]).map((e) => ({ ...e, nom: particules(e.nom) }));
 
 export const SOURCE: SourceInfo = {
   id: "annuaire_education",

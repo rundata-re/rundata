@@ -2,7 +2,7 @@
  * The island as an inline SVG: coastline and communes from src/places/island.json (scripts/build-island.py), with
  * markers placed by the same projection. Colours come from the page's CSS, so the maps follow its light and dark themes.
  */
-import gazetteer from "../places/gazetteer.json" with { type: "json" };
+import gazetteer from "../places/gazetteer.js";
 import island from "../places/island.json" with { type: "json" };
 import relief from "./relief.json" with { type: "json" };
 import routes from "./routes.json" with { type: "json" };

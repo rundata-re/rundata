@@ -2,7 +2,7 @@
  * The places that get a page of their own at /meteo/<slug>: the 24 communes, plus the few places people search
  * the weather of by their own name. Each is resolved through the gazetteer, like a question to the tools.
  */
-import gazetteer from "../places/gazetteer.json" with { type: "json" };
+import gazetteer from "../places/gazetteer.js";
 import { resolvePlace } from "../places/resolve.js";
 import type { Place } from "../places/resolve.js";
 

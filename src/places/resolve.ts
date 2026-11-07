@@ -4,7 +4,7 @@
  * peaks, viewpoints and freshwater pools from OpenStreetMap, the named places of IGN's BD TOPO (lieux-dits, parks,
  * stadiums, ravines, roads…), with IGN altitudes.
  */
-import gazetteer from "./gazetteer.json" with { type: "json" };
+import gazetteer from "./gazetteer.js";
 import { distanceKm, inReunion } from "../geo.js";
 
 export interface Place {

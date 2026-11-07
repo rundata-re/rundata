@@ -17,7 +17,7 @@
  */
 import type { Cache, Cached } from "../cache.js";
 import { getText, httpUrl } from "../http.js";
-import gazetteer from "../places/gazetteer.json" with { type: "json" };
+import gazetteer from "../places/gazetteer.js";
 import { normalize } from "../places/resolve.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 import { ACCUEIL, ACCUEILS } from "./accueils-medias.js";

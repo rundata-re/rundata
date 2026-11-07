@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CSS } from "../src/web/pages.js";
 import { nobreak } from "../src/web/domains.js";
+import { adressesCoupables, credits, CSS, lienAdresse } from "../src/web/pages.js";
 
 // /meteo, /mer, /vigilance, /carburants, a commune's page at 320 px with the text at 150 % and at 280 px: nothing wider
 // than the screen.
@@ -50,15 +50,46 @@ describe("larger text on a narrow screen, on the pages of facts and of search", 
     // After the two columns' rule, which it overrides at the same specificity.
     expect(CSS.indexOf("@media (max-width:19.9rem)")).toBeGreaterThan(CSS.indexOf(".sheet .groupe{grid-template-columns:repeat(auto-fill,"));
   });
+
+  it("cuts an address written out after a « / » or a « . », and a copy of it is still the address", () => {
+    // overflow-wrap:anywhere filled each line up to its last letter: « https://rundata.re/coupur | es-eau ».
+    expect(adressesCoupables("Lis https://rundata.re/coupures-eau é di amwin.")).toBe("Lis https://<wbr>rundata.<wbr>re/<wbr>coupures-eau é di amwin.");
+    expect(adressesCoupables("REFMAR. http://dx.doi.org/10.17183/REFMAR#RONIM")).toBe("REFMAR. http://<wbr>dx.<wbr>doi.<wbr>org/<wbr>10.<wbr>17183/<wbr>REFMAR#RONIM");
+    // An address without its scheme, an ellipsis kept whole, the text around escaped.
+    expect(adressesCoupables("🇫🇷 www.ipgp.fr/volcanoweb/r... & <b>")).toBe("🇫🇷 www.<wbr>ipgp.<wbr>fr/<wbr>volcanoweb/<wbr>r... &amp; &lt;b&gt;");
+    expect(adressesCoupables("https://x.re/a?b=1&c=2")).toBe("https://<wbr>x.<wbr>re/<wbr>a?b=1&amp;c=2");
+    // A text without an address: escaped, nothing more.
+    expect(adressesCoupables("Saint-Denis, l'été.")).toBe("Saint-Denis, l&#39;été.");
+    expect(credits([{ source: "©\u00a0www.departement974.fr - Département de La Réunion", licence: "Information publique", attribution: "" }])).toBe(
+      "©\u00a0www.<wbr>departement974.<wbr>fr - Département de La Réunion (Information publique)",
+    );
+  });
+
+  it("cuts a link written as its address after a « / », a « . » or a « @ », and names it by its address", () => {
+    // Chrome names a link with a space for each <wbr> (« rundata. re/ actualites »): aria-label holds the address.
+    expect(lienAdresse("https://rundata.re/actualites", "rundata.re/actualites")).toBe(
+      '<a href="https://rundata.re/actualites" aria-label="rundata.re/actualites">rundata.<wbr>re/<wbr>actualites</a>',
+    );
+    expect(lienAdresse("mailto:contact@rundata.re", "contact@rundata.re", ' class="x"')).toBe(
+      '<a href="mailto:contact@rundata.re" class="x" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>',
+    );
+  });
+
+  it("keeps a hyphenated name whole on its line, and breaks it at its hyphens only when it is longer than the line", () => {
+    // « La Plaine-des-Palmistes » kept whole by white-space:nowrap made /coupures-eau 413 px wide at 200 %.
+    expect(nobreak("La Plaine-des-Palmistes")).toBe('La <span class="nb">Plaine-des-Palmistes</span>');
+    expect(CSS).toContain(".nb{display:inline-block;max-width:100%;text-decoration:inherit}");
+  });
 });
 
 // /coupures-eau and a commune's page on a 390 px phone with the text at 150 and 200 %: « La Plaine-des-Palmistes » kept on
 // one line made the page 413 px wide; two folded elections one under the other overlapped their titles by 5 px.
 describe("larger text on a narrow screen, on /coupures-eau and a commune's elections", () => {
-  it("keeps a hyphenated name on one line at 100 %, and lets it break at its hyphens from 125 % on a phone", () => {
-    expect(nobreak("La Plaine-des-Palmistes")).toBe('La <span class="nom">Plaine-des-Palmistes</span>');
-    expect(CSS).toContain(".nom{white-space:nowrap}@media (max-width:19.9rem){.nom{white-space:normal}}");
-    expect(19.9 * 16).toBeLessThan(320);
+  it("keeps a hyphenated name whole while it fits its line, even with the text at 200 % on a phone (.nb)", () => {
+    // « Saint-Leu » stays whole at any size; « La Plaine-des-Palmistes » breaks at its hyphens only where it is longer
+    // than a card's line. No rule lets every hyphenated name break once the text is larger.
+    expect(nobreak("Saint-Leu, La Plaine-des-Palmistes")).toBe('<span class="nb">Saint-Leu</span>, La <span class="nb">Plaine-des-Palmistes</span>');
+    expect(CSS).not.toMatch(/\.nom\{/);
   });
 
   it("parts two folds of a card by as much as their titles reach past them, at any text size", () => {

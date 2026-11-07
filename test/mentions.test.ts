@@ -50,7 +50,7 @@ describe("the sites that ask for their name with each link", () => {
       `<li><a href="${SITE}">Agenda</a><small>site de la commune de L&#39;Étang-Salé</small></li>`,
       `<li><a href="https://example.re/">A</a><small>x</small></li>`,
       // The name kept on one line by a tag of its own (nobreak).
-      `<p><a href="https://www.letangsale.fr/">Le site de la mairie de L&#39;<span class="nom">Étang-Salé</span> →</a></p>`,
+      `<p><a href="https://www.letangsale.fr/">Le site de la mairie de L&#39;<span class="nb">Étang-Salé</span> →</a></p>`,
     ])
       expect(mentionLinks(html)).toBe(html);
   });

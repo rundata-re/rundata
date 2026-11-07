@@ -17,7 +17,7 @@ import { enLigne } from "./associations-drapeau.js";
 import { esc } from "./map.js";
 import icons from "./icons.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
-import { follow, icon, layout, SITE } from "./pages.js";
+import { follow, icon, layout, lienAdresse, SITE } from "./pages.js";
 import visuals from "./presse.json" with { type: "json" };
 
 const CONTACT = "contact@rundata.re";
@@ -73,7 +73,7 @@ export async function pressFigures(cache: Cache): Promise<Figure[]> {
   return figures;
 }
 
-const link = (url: string) => `<a href="${url}">${url.replace(/^https:\/\//, "")}</a>`;
+const link = (url: string) => lienAdresse(url, url.replace(/^https:\/\//, ""));
 
 // The press release dated 24 October 2026, word for word as the communication kit sends it (communique.md); the key figures above it are live.
 const RELEASE = `<p class="eyebrow">Communiqué de presse · La Réunion, le 24 octobre 2026</p>
@@ -108,7 +108,7 @@ const RELEASE = `<p class="eyebrow">Communiqué de presse · La Réunion, le 24 
 <li>Exemples : ${["meteo/cilaos", "randonnees", "evenements", "historique"].map((p) => link(`https://rundata.re/${p}`)).join(" · ")}</li>
 <li>Visuels : <a href="#visuels">plus bas sur cette page</a>, utilisation libre avec la mention rundata.re.</li>
 </ul>
-<p><b>Contact presse : Benjamin, pour l'équipe rundata.re — <a href="mailto:${CONTACT}">${CONTACT}</a></b></p>`;
+<p><b>Contact presse : Benjamin, pour l'équipe rundata.re — ${lienAdresse(`mailto:${CONTACT}`, CONTACT)}</b></p>`;
 
 const kb = (octets: number) => `${n(Math.round(octets / 1024))} Ko`;
 
@@ -132,7 +132,7 @@ export function pressePage(origin: string, figures: Figure[]): string {
   <div class="pitch">
     <p class="pill">Espace presse</p>
     <h1>rundata.re, pour la presse</h1>
-    <p class="lead">Le communiqué, les chiffres clés comptés en direct et des visuels à télécharger, libres d'utilisation avec la mention rundata.re. Une question, une interview : <a href="mailto:${CONTACT}">${CONTACT}</a>.</p>
+    <p class="lead">Le communiqué, les chiffres clés comptés en direct et des visuels à télécharger, libres d'utilisation avec la mention rundata.re. Une question, une interview : ${lienAdresse(`mailto:${CONTACT}`, CONTACT)}.</p>
     <p class="hero-cta"><a class="btn sun" href="#visuels">${icon("map")}Les visuels</a><a class="btn glass" href="mailto:${CONTACT}">Contact presse</a></p>
     ${follow()}
   </div>

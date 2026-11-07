@@ -14,7 +14,7 @@ const NOW = new Date("2026-10-23T23:52:00Z");
 const ORIGIN = "https://rundata.re";
 // The page's words: links and bold read inline, the other tags as spaces, the typography's no-break spaces as spaces.
 const words = (html: string) =>
-  html.replace(/<\/?(a|b)\b[^>]*>/g, "").replace(/<[^>]*>/g, " ").replace(/&#39;/g, "'").replace(/\u00a0/g, " ").replace(/\s+/g, " ");
+  html.replace(/<\/?(a|b|wbr)\b[^>]*>/g, "").replace(/<[^>]*>/g, " ").replace(/&#39;/g, "'").replace(/\u00a0/g, " ").replace(/\s+/g, " ");
 
 let vigilance = fixture("vigicrues_vigilance.json");
 async function page(): Promise<{ html: string; data: Cached<CruesAnswer> }> {

@@ -64,7 +64,7 @@ import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import { SANS_FORMATION as DAE_SANS_FORMATION } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
 import * as atmo from "../providers/atmo.js";
-import { anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
+import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater } from "./eau-cyclone.js";
@@ -346,7 +346,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
   const readText = (t: string, open: boolean) => `<details${open ? " open" : ""}><summary>${esc(LU_DANS_L_IMAGE)}</summary>${t.split("\n\n").map((x) => `<p>${esc(x)}</p>`).join("")}</details>`;
   const list = Array.isArray(d?.publications_ovpf) ? d.publications_ovpf.slice(0, a ? 3 : 4) : [];
   const cards = list.length
-    ? `<ul class="posts" id="ovpf">${list.map((p, i) => `<li class="card"><p class="note">${esc(p.date)}</p><p>${esc(p.texte)}</p>${p.texte_lu_dans_l_image ? readText(p.texte_lu_dans_l_image, !!a && i === 0) : ""}${p.lien ? `<p><a href="${esc(p.lien)}">${p.image ? "Voir les images sur Bluesky" : "Lire le message"} →</a></p>` : ""}</li>`).join("")}</ul>`
+    ? `<ul class="posts" id="ovpf">${list.map((p, i) => `<li class="card"><p class="note">${esc(p.date)}</p><p>${adressesCoupables(p.texte)}</p>${p.texte_lu_dans_l_image ? readText(p.texte_lu_dans_l_image, !!a && i === 0) : ""}${p.lien ? `<p><a href="${esc(p.lien)}">${p.image ? "Voir les images sur Bluesky" : "Lire le message"} →</a></p>` : ""}</li>`).join("")}</ul>`
     : "";
   // During an alert, the official texts in one section: the prefecture's release, then the OVPF's posts (marketing).
   const official = a
@@ -2691,10 +2691,13 @@ export function wholeName(text: string): string {
   return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nm">${w}</span>`);
 }
 
-/** Escaped text whose hyphenated names (« Saint-Leu », « L'Étang-Salé ») do not break at the hyphen (.nom), but with the text
- * at 125 % or more on a phone. */
+/**
+ * Escaped text whose hyphenated names (« Saint-Leu », « L'Étang-Salé ») do not break at the hyphen, unless the name is
+ * longer than its line (.nb, a box no wider than its line): « La Plaine-des-Palmistes » kept whole in a notice's title, with
+ * the text at 200 % on a 390 px phone, made the page 413 px wide.
+ */
 export function nobreak(text: string): string {
-  return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nom">${w}</span>`);
+  return esc(text).replace(/[\p{Lu}][\p{L}'’]*(?:-[\p{L}'’]+)+/gu, (w) => `<span class="nb">${w}</span>`);
 }
 
 /** « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading « avis daté du 05/11/2026 ». */

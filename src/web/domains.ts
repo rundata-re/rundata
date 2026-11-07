@@ -2527,7 +2527,7 @@ export function tracePage(origin: string, kind: "sentier" | "randonnee", slug: s
   // Within the 60 characters a search engine shows: the sector, then « La Réunion (974) », then « trace GPX », give way
   // to a long name.
   const title = [`${which} : trace GPX · La Réunion (974)`, `${which} · La Réunion (974)`, `${bare} : trace GPX · La Réunion (974)`,
-    `${bare} · La Réunion (974)`, `${which} : trace GPX · 974`, `${bare} : trace GPX · 974`]
+    `${bare} · La Réunion (974)`, `${bare} : trace GPX · 974`]
     .find((t) => t.length <= TITLE_MAX) ?? `${bare} · 974`;
   const short = `${nom} (La Réunion, 974) : trace GPS à télécharger (GPX), longueur, dénivelé, profil et état du sentier d'après l'ONF.`;
   const where = sector ? `${sector.nom}, La Réunion` : "La Réunion";

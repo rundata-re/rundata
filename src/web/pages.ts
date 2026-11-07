@@ -1181,8 +1181,10 @@ summary{min-height:24px}
    A row whose date went under its sentence (/volcan's earthquakes) keeps two columns: the figure as wide as itself (1.7 rem
    at least, so that « 0,5 » and « 1,2 » line up), the sentence the rest, 199 px rather than 126 at 200 %, and its words
    whole (« Fournaise », « sommet »), each narrower than its line. A day's title on /evenements and /nouveautes lets its
-   month go to the next line, whole (« Mardi 10 / novembre », never « novembr/e » nor « no-vembre »): each word fits. */
-@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}wbr.adr{display:inline}.minuit li{grid-template-columns:minmax(0,1fr)}
+   month go to the next line, whole (« Mardi 10 / novembre », never « novembr/e » nor « no-vembre »): each word fits. Its
+   count (« · 4 événements ») is still cut with a hyphen: Safari's page zoom at 200 % leaves 160 px, where « 4 événements »
+   is wider than the line and, unhyphenated, was cut at a letter (« événement/s »). */
+@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}wbr.adr{display:inline}#jours h3 .note{hyphens:auto;-webkit-hyphens:auto}.minuit li{grid-template-columns:minmax(0,1fr)}
 .minuit .q,.rows .nw{white-space:normal}
 :is(.rows.eau,.rows.bornes,.rows.velos,.rows.bikes) li>:last-child:not(:first-child){grid-column:1/-1}
 .rows:not(.eau,.bornes,.velos,.bikes) li>.note:last-child:not(:first-child){grid-column:2/-1}

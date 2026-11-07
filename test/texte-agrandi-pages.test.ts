@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { nobreak } from "../src/web/domains.js";
 import { adressesCoupables, credits, CSS, lienAdresse } from "../src/web/pages.js";
+import { nouveautesPage } from "../src/web/nouveautes.js";
 
 // /meteo, /mer, /vigilance, /carburants, a commune's page at 320 px with the text at 150 % and at 280 px: nothing wider
 // than the screen.
@@ -125,5 +126,13 @@ describe("a tool's name in a <code>, with the text at 200 %", () => {
     const bloc = CSS.slice(CSS.indexOf("@media (max-width:19.9rem){body{hyphens:auto"));
     expect(bloc.slice(0, bloc.indexOf("}}") + 2)).toContain("code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}");
     expect(CSS.indexOf(".jm{white-space:nowrap}")).toBeLessThan(CSS.indexOf(".jm{white-space:normal}"));
+  });
+
+  it("still cuts a day's count with a hyphen (« · 4 événe-ments »), on /evenements as on /nouveautes", () => {
+    // Safari's page zoom at 200 % on a 320 px phone leaves 160 px: « 4 événements » is wider than the line, and with the
+    // title's hyphens:manual it was cut at a letter (« événement/s »). /nouveautes' count is out of its <time>.
+    const bloc = CSS.slice(CSS.indexOf("@media (max-width:19.9rem){body{hyphens:auto"));
+    expect(bloc.slice(0, bloc.indexOf("}}") + 2)).toContain("#jours h3 .note{hyphens:auto;-webkit-hyphens:auto}");
+    expect(nouveautesPage("https://rundata.re")).toMatch(/<h2 id="h-[\d-]+"><time datetime="[\d-]+">.*?<\/time>\u00a0<span class="note">· \d+\u00a0nouveautés?<\/span><\/h2>/);
   });
 });

@@ -752,6 +752,15 @@ const DROPS = {
 };
 
 /**
+ * The most two radar images may be apart for the rain to move from one to the other (flowOf); further apart, faded.
+ * Played fast, the replay keeps one image in 4 of the 5 minutes, 20 minutes apart: the showers born and gone between
+ * them make the way found turn back from one pair to the next, 7 times in 34 on the 24 hours of 06/11/2026, by 4 to
+ * 13 km (none in 139 one image after the other), so the rain went one way then back (the user, 07/11/2026: « des
+ * déplacements latéraux de la pluie aussi parfois à haute vitesse, c'est très bizarre »).
+ */
+const WAY_MS = 15 * 6e4;
+
+/**
  * The rain the radar sees, in the browser, asked for when the layer is first shown (web/pluie-radar.ts): its cells
  * washed in blue by class, drawn one pixel a cell then spread smoothly to the screen's size (the radar's cells made
  * steps on every edge), and where the radars see badly a light veil, with soft edges too, and fine hatches; and drops
@@ -882,8 +891,9 @@ for(const[i,j]of[[0,A],[1,Z]]){const t=tex(j);gl.activeTexture(gl.TEXTURE0+i);gl
 if(GU[2]!==F){gl.activeTexture(gl.TEXTURE2);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,F.w,F.h,0,gl.RGBA,gl.UNSIGNED_BYTE,F.t);GU[2]=F}
 const k=dark()?1:0;gl.uniform3fv(GQ.P,KA[k].flatMap((c)=>c.slice(0,3).map((x)=>x/255)));gl.uniform3fv(GQ.E,INK[k].map((x)=>x/255));
 gl.uniform1f(GQ.f,f);gl.uniform2f(GQ.n,A.w,A.h);gl.uniform2f(GQ.px,1/cw,1/ch);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4)};
-// Moved where the browser draws with WebGL and neither image is the rain gauges' estimate (way); faded otherwise.
-const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&glInit();
+// Moved where the browser draws with WebGL, neither image is the rain gauges' estimate, and they are WAY_MS apart at
+// most (way); faded otherwise.
+const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=${WAY_MS}&&glInit();
 const paint=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);if(!mx){if(d){x.drawImage(cv(d),0,0);const a=bad(d);if(!a.z)badly(x,a,d.w,d.h)}return}
 const F=way(mx[0],mx[1])&&flow(mx[0],mx[1]);
 if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{
@@ -1136,8 +1146,11 @@ const rain=(k)=>{let e=RN.get(k.t);if(e)return e;const gr=RJ.p.dims(),pts=[];for
 e={fin:new Date(k.end).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.w,gr.h,${JSON.stringify(CLASSES)},${GAUGE_REACH}*gr.w/${W})),mal_vu:"0"+(gr.w*gr.h).toString(36)+","};RN.set(k.t,e);return e};
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
-if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;const h=TR.find(([a,z])=>T>a&&T<z);if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
-const r=at("p"),pk=r?(r.m||r.z).t:0;if(pk!==PK){PK=pk;NWF=true}
+if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;
+// A hole in the radar's images, said only where the rain cannot fade across it (GP) or nothing follows; a missed image,
+// faded across (the user, 07/11/2026: « la pluie disparaît d'un coup »).
+const r=at("p"),h=TR.find(([a,z])=>T>a&&T<z&&(!r||z>K.p[K.p.length-1].t));if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
+const pk=r?(r.m||r.z).t:0;if(pk!==PK){PK=pk;NWF=true}
 // Playing, the next images made ready before the play reaches them (RJ.p.ahead; a page kept from before has none).
 const nz=r&&(r.z||r.m);if(playing&&RJ.p.ahead&&nz&&nz!==AZ){AZ=nz;RJ.p.ahead(ahead(sub("p"),nz,3).map((x)=>x.e),gr)}if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
 // 7 days, until the radar's week is whole (rejeu.ts; then its 3 hours an hour apart, as the 24 hours above): the rain
@@ -1158,6 +1171,7 @@ if(end){once("fin",()=>{for(const x of["t","v","p"])if(RJ[x])RJ[x].back()})}else
 t=end?E:shown(T,r,l);let w="",said=dm(t)+" à "+hmm(t);
 if(end){w="dernière mesure";said+=", dernière mesure"}else if(r&&r.gap){w="pas d'image radar";said+=". Pas d'image radar de "+hmm(r.gap[0])+" à "+hmm(r.gap[1])+"."}
 else if(r&&r.h){w="estimé entre les pluviomètres";said+=", pluie de "+hmm(r.h.end-108e5)+" à "+hmm(r.h.end)+", estimée entre les pluviomètres"}
+else if(r&&l==="p"&&r.a&&TR.some(([a,z])=>a>=r.a.t&&z<=r.z.t)){const x="entre les images radar de "+hmm(r.a.t)+" et de "+hmm(r.z.t);w=playing?"estimé par radar":x;said+=", pluie "+x}
 else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le radar":", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 // The hours of the rain shown, an hour's or 3 hours' (marketing: « 14 h – 15 h »).

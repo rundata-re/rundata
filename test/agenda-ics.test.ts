@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SCHEDULED_BUDGET, counted, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { ics, LISIBLES, parseIcs } from "../src/providers/agenda.js";
+import { buildEvenements } from "../src/chiffres.js";
+import { AGENDAS, ics, LISIBLES, parseIcs, tribe } from "../src/providers/agenda.js";
 import type { SourceInfo } from "../src/types.js";
 
 // Saturday 24/10/2026 in the morning; the days read run to 08/12.
@@ -101,20 +103,20 @@ describe("iCalendar agendas", () => {
     expect(asked).toEqual(["https://asso.example/remote.php/dav/public-calendars/abc?export rundata.re (contact@rundata.re)"]);
   });
 
-  it("reads Saint-Paul's iCalendar export while its site's API answers 404, its copy dated by its reading", async () => {
+  it("reads Saint-Paul's iCalendar export alone, never its site's API first, its copy dated by its reading", async () => {
     const asked: string[] = [];
-    let api = 404, export_ = 200;
+    let export_ = 200;
     vi.stubGlobal("fetch", async (url: string) => {
       asked.push(String(url));
-      if (String(url).includes("/wp-json/tribe/")) return new Response("<html>Page non trouvée</html>", { status: api });
+      if (String(url).includes("/wp-json/tribe/")) return new Response("<html>Page non trouvée</html>", { status: 404 });
       return export_ === 200 ? new Response(bytes("ics_saint-paul.ics")) : new Response("", { status: export_ });
     });
     const agenda = LISIBLES.find((a) => a.id === "saint_paul")!;
     let t = NOW.getTime();
     const cache = new Cache(new MemoryStore(), () => t);
     const first = await agenda.load(cache, NOW);
-    expect(asked.map((u) => u.replace(/\?.*/, "?…"))).toEqual(["https://www.mairie-saintpaul.re/wp-json/tribe/events/v1/events?…", "https://www.mairie-saintpaul.re/evenements/?…"]);
-    expect(asked[1]).toBe("https://www.mairie-saintpaul.re/evenements/?ical=1");
+    // One read, as its entry declares (`requetes` left at 1).
+    expect(asked).toEqual(["https://www.mairie-saintpaul.re/evenements/?ical=1"]);
     expect((first.value as { titre: string }[]).map((e) => e.titre)).toEqual([
       "La Koupe Kartié - Saint-Paul Centre",
       "La Koupe Kartié - Plateau Caillou",
@@ -123,16 +125,51 @@ describe("iCalendar agendas", () => {
       "Matinées agricole",
     ]);
     expect(first.fetchedAt.getTime()).toBe(NOW.getTime());
-    // A day on, the export down too: the copy, with the hour it was read at, not the hour it is served at.
+    // A day on, the export down: the copy, with the hour it was read at, not the hour it is served at, and still no API.
     t += 24 * 3600_000;
     export_ = 503;
     const later = await agenda.load(cache, new Date(t));
     expect([later.fetchedAt.getTime(), later.stale]).toEqual([NOW.getTime(), true]);
-    // Another failure of the API than a 404 (a 503, a timeout): no export read, as before.
+    expect(asked.filter((u) => u.includes("/wp-json/"))).toEqual([]);
+  });
+
+  it("costs the events' copy one read of Saint-Paul's site, its export, as its entry declares and the copy's cold cost counts it", async () => {
+    // Its API answering 404, as since 06/11/2026; every other site does not answer.
+    const asked: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      if (new URL(url).hostname === "www.mairie-saintpaul.re") asked.push(String(url));
+      return String(url).endsWith("/evenements/?ical=1") ? new Response(bytes("ics_saint-paul.ics")) : new Response("", { status: 404 });
+    });
+    const quiet = [vi.spyOn(console, "error").mockImplementation(() => {}), vi.spyOn(console, "log").mockImplementation(() => {})];
+    try {
+      const run = await counted(SCHEDULED_BUDGET, () => {
+        scheduled();
+        return buildEvenements(new Cache(new MemoryStore(), () => NOW.getTime()), NOW);
+      });
+      await run.settled?.();
+    } finally {
+      quiet.forEach((spy) => spy.mockRestore());
+    }
+    expect(asked).toEqual(["https://www.mairie-saintpaul.re/evenements/?ical=1"]);
+    expect(AGENDAS.find((a) => a.id === "saint_paul")!.requetes ?? 1).toBe(1);
+  });
+
+  it("reads a Tribe agenda's export after its API's 404 when not told the export alone, and only after a 404", async () => {
+    const asked: string[] = [];
+    let api = 404;
+    vi.stubGlobal("fetch", async (url: string) => {
+      asked.push(String(url));
+      if (String(url).includes("/wp-json/tribe/")) return new Response("<html>Page non trouvée</html>", { status: api });
+      return new Response(bytes("ics_saint-paul.ics"));
+    });
+    const agenda = tribe("essai", "Mairie de Saint-Paul", "https://www.mairie-saintpaul.re", "Saint-Paul", undefined, undefined, { page: "https://www.mairie-saintpaul.re/evenements/" });
+    const first = await agenda.load(new Cache(new MemoryStore(), () => NOW.getTime()), NOW);
+    expect(asked.map((u) => u.replace(/\?.*/, "?…"))).toEqual(["https://www.mairie-saintpaul.re/wp-json/tribe/events/v1/events?…", "https://www.mairie-saintpaul.re/evenements/?…"]);
+    expect(first.value).toHaveLength(5);
+    // Another failure of the API than a 404 (a 503, a timeout): no export read.
     asked.length = 0;
     api = 503;
-    export_ = 200;
-    await agenda.load(new Cache(new MemoryStore(), () => t), new Date(t)).catch(() => undefined);
+    await agenda.load(new Cache(new MemoryStore(), () => NOW.getTime()), NOW).catch(() => undefined);
     expect(asked.filter((u) => u.includes("ical=1"))).toEqual([]);
   });
 });

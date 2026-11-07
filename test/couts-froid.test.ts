@@ -73,7 +73,7 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/altervelo\/station_status/, "altervelo_station_status.json"],
   [/ensemble\/static\/meta\.json/, "openmeteo_ens_meta.json"],
   [/ensemble-api\.open-meteo\.com\/v1\/ensemble/, "openmeteo_ens_ile.json"],
-  [/mairie-saintpaul\.re\/wp-json\/tribe/, "agenda/tribe_saint-paul.json"],
+  [/mairie-saintpaul\.re\/evenements\/\?ical=1/, "agenda/ics_saint-paul.ics"],
   [/ville-port\.re\/wp-json\/tribe/, "agenda/tribe_le-port.json"],
   [/trois-bassins\.re\/wp-json\/tribe/, "agenda/tribe_trois-bassins.json"],
   [/ville-saintemarie\.re\/wp-json\/tribe/, "agenda/tribe_sainte-marie.json"],

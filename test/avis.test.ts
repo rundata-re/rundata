@@ -295,7 +295,7 @@ describe("the site's feedback form", () => {
     expect(long.headers.get("location")).toBeNull();
     const empty = (await (await post({ message: " ", page: "/bus" })).text()).replaceAll("&#39;", "'").replaceAll("\u00a0", " ");
     // Nothing typed: nothing said to be kept.
-    expect(empty).toContain("L'avis n'a pas pu être enregistré (vide ou trop long ?). Réessayez, ou écrivez à contact@rundata.re.");
+    expect(empty).toContain(`L'avis n'a pas pu être enregistré (vide ou trop long ?). Réessayez, ou écrivez à contact@<wbr class="adr">rundata.<wbr class="adr">re.`);
     expect((await post({ message: "bonjour", page: "//evil.example/x" })).headers.get("location")).toBe("https://rundata.re/#avis-merci");
     expect((await post({ message: "bonjour" }, { origin: "https://evil.example" })).status).toBe(403);
     expect(rows).toHaveLength(1);
@@ -319,6 +319,6 @@ describe("the site's feedback form", () => {
     // The storage down: the same, with the error's words.
     avis.configure(undefined);
     const down = (await (await post({ message: "Une idée", page: "/" })).text()).replaceAll("&#39;", "'");
-    expect(down).toContain("L'avis n'a pas pu être enregistré (vide ou trop long\u00a0?). Votre saisie est gardée ci-dessous. Réessayez, ou écrivez à contact@rundata.re.");
+    expect(down).toContain(`L'avis n'a pas pu être enregistré (vide ou trop long\u00a0?). Votre saisie est gardée ci-dessous. Réessayez, ou écrivez à contact@<wbr class="adr">rundata.<wbr class="adr">re.`);
   });
 });

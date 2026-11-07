@@ -1056,7 +1056,10 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .aq{display:inline-block;font-weight:700;font-size:.9rem;border-radius:8px;padding:.1rem .6rem;background:var(--aq0);color:#fff}
 .aq1{background:var(--aq1);color:#06302d}.aq2{background:var(--aq2);color:#06302d}.aq3{background:var(--aq3);color:#2a2600}
 .aq4{background:var(--aq4);color:#2a0606}.aq5{background:var(--aq5);color:#fff}.aq6{background:var(--aq6);color:#fff}
-.plain{list-style:none;padding:0;display:grid;gap:.45rem}
+/* A list's column no wider than the list, at every width: a word longer than the line (« rundata.re/collecte/saint-paul »
+   at 150 %, a street's label in capitals on /collecte) is cut or goes to the next line, never pushing every item out of
+   its card nor the page wider (370 px for 320 at 150 %). It already was under 12.5 rem (ZOOM_PAGE_CSS). */
+.plain{list-style:none;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:.45rem}
 .levels{display:grid;gap:1rem}
 .cols{display:block;columns:3 13rem;column-gap:1.5rem}
 .cols li{break-inside:avoid;margin-bottom:.45rem}

@@ -151,7 +151,7 @@ describe("the town hall in the page of a commune's day", () => {
   it("says « fermée » once: closed all day, closed at this hour, or a holiday", () => {
     // Saturday 24/10, 14:00: no hours today, said once (« fermée fermée aujourd'hui » before).
     const saturday = line("2026-10-24T10:00:00Z");
-    expect(saturday).toMatch(/^<li>Mairie : <b>fermée aujourd'hui<\/b> · 0262\u00a045\u00a090\u00a000/);
+    expect(saturday).toMatch(/^<li>Mairie : <b>fermée aujourd'hui<\/b> · 0262\u00a0<wbr class="adr">45\u00a0<wbr class="adr">90\u00a0<wbr class="adr">00<\/li>$/);
     // Monday 26/10, 10:00 open, and 17:00 closed: the day's hours after the state.
     expect(line("2026-10-26T06:00:00Z")).toMatch(/^<li>Mairie : <b>ouverte<\/b> <span class="note">07:30–12:00 et 13:00–16:00<\/span> · 0262/);
     const evening = line("2026-10-26T13:00:00Z");

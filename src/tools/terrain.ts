@@ -1,7 +1,7 @@
 import type { Cache } from "../cache.js";
 import { distanceKm } from "../geo.js";
 import { INSEE } from "../places/insee.js";
-import { resolvePlace } from "../places/resolve.js";
+import { resolvePlace, type Place } from "../places/resolve.js";
 import * as terrain from "../providers/terrain.js";
 import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
@@ -343,6 +343,26 @@ export function communeOf(adresse: string): string | undefined {
   return p?.correspondance === "exacte" ? INSEE[p.lieu.commune] : undefined;
 }
 
+/**
+ * The place an address names besides its street, between its commas, when the address base does not find the street:
+ * its quarter or hamlet rather than its commune (« …, La Saline les Bains, Saint-Paul »), where the gazetteer, given the
+ * whole address, takes the commune and its centre, 11 km away (07/11/2026). A quarter of another commune than the one
+ * named is not taken.
+ */
+export function lieuOf(adresse: string): Place | undefined {
+  const found = adresse
+    .split(",")
+    .slice(1)
+    .map((x) => resolvePlace(x.replaceAll(/\b97\d{3}\b/g, " ").trim()))
+    .flatMap((r) => (r?.correspondance === "exacte" ? [r.lieu] : []));
+  const communes = new Set(found.filter((l) => l.type === "commune").map((l) => l.commune));
+  return found.find((l) => l.type !== "commune" && (!communes.size || communes.has(l.commune))) ?? found.find((l) => l.type === "commune");
+}
+
+/** Said first when an address was asked and the address base does not find it: the answer is for a place's centre. */
+const introuvable = (adresse: string, at: string) =>
+  `Adresse introuvable dans la Base adresse nationale\u00a0: «\u00a0${adresse}\u00a0». Réponse pour ${at}, pas pour cette adresse\u00a0: le dire à l'utilisateur.`;
+
 export async function ficheLieu(cache: Cache, adresse: string, now = new Date()) {
   // Nothing to look for: the address base answers an empty query with its first result, a parcel of Sainte-Marie, which
   // an assistant gave as the answer (31/10/2026).
@@ -354,6 +374,8 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   // The street asked, found in the address base: its own sales besides the area's, by its land registry code, or by its
   // name for a street the address base names on its own.
   let voie: { nom: string; code?: string; insee: string } | undefined;
+  // An address asked that the address base does not find: the answer is for a place's centre, said first.
+  let perdue = false;
   const place = resolvePlace(adresse);
   if (place?.correspondance === "coordonnees") {
     where = { label: `point ${place.lieu.nom}`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "coordonnées données" };
@@ -388,8 +410,14 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
     }
     const code = a && street ? terrain.codeVoie(a.id) : undefined;
     if (a && street) voie = { nom: street, insee: a.insee, ...(code ? { code } : {}) };
-    if (a) where = { label: a.label, lon: a.lon, lat: a.lat, precision: a.type === "housenumber" ? "adresse exacte" : a.type === "street" ? "milieu de la rue" : "centre de la commune", insee: a.insee };
-    else if (place) where = { label: placeLabel(place.lieu), lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit", insee: INSEE[place.lieu.commune] };
+    // Neither the street nor the number: the quarter named, else the commune, said as such.
+    const lieu = a?.type === "housenumber" || a?.type === "street" ? undefined : lieuOf(adresse) ?? place?.lieu;
+    if (lieu && (!a || (a.type === "municipality" && lieu.type !== "commune" && INSEE[lieu.commune] === a.insee))) {
+      where = { label: placeLabel(lieu), lon: lieu.lon, lat: lieu.lat, precision: lieu.type === "commune" ? "centre de la commune" : "centre du lieu-dit", insee: INSEE[lieu.commune] };
+    } else if (a) {
+      where = { label: a.label, lon: a.lon, lat: a.lat, precision: a.type === "housenumber" ? "adresse exacte" : a.type === "street" ? "milieu de la rue" : a.type === "locality" ? "centre du lieu-dit" : "centre de la commune", insee: a.insee };
+    }
+    if (where && ADDRESS.test(adresse) && VAGUE.has(where.precision)) perdue = true;
   }
   if (!where) {
     return {
@@ -458,6 +486,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   if (vague) {
     const r_ = risksBlock(lon, lat, insee, undefined, cat, undefined);
     return text({
+      ...(perdue ? { avertissement: introuvable(adresse, `le centre ${where.precision === "centre de la commune" ? "de la commune de" : "de"} ${where.label}`) } : {}),
       resume: `${parts.join("\u00a0; ")}.`,
       conseil: CONSEIL_POINT,
       lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },

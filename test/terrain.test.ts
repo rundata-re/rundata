@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { codesByName, codeVoie, latestAct, nomVoie, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
 import { SOURCES as TRACES } from "../src/providers/traces.js";
-import { communeOf, ficheLieu, market, riskLine, sameStreet, streetLine, streetMarket } from "../src/tools/terrain.js";
+import { communeOf, ficheLieu, lieuOf, market, riskLine, sameStreet, streetLine, streetMarket } from "../src/tools/terrain.js";
 
 // Real answers of 23/10/2026 for 7 rue de la Buse, Saint-Paul: parcel BO 552, zone U1c, 115 sales since 2021.
 const raw = (f: string) => readFileSync(new URL(`./fixtures/terrain/${f}`, import.meta.url), "utf8");
@@ -315,6 +315,32 @@ describe("fiche terrain", () => {
     // A commune: its name alone.
     const c = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "Cilaos", NOW));
     expect(c.resume).toMatch(/^Cilaos\u00a0: lieu-dit ou commune, sans adresse ni point précis/);
+  });
+
+  it("says first an address the address base does not find, and answers for the quarter it names rather than its commune", async () => {
+    // 07/11/2026: « Boulevard de l'Océan, La Saline les Bains, Saint-Paul », no such street in the address base (its real
+    // answer), was answered for the centre of Saint-Paul, 11 km away, said « centre du lieu-dit », with its prices.
+    files = { ...files, geocodage: "geocode-ocean.json" };
+    const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "Boulevard de l'Océan, La Saline les Bains, Saint-Paul", NOW));
+    expect(Object.keys(r)[0]).toBe("avertissement");
+    expect(r.avertissement).toBe(
+      "Adresse introuvable dans la Base adresse nationale\u00a0: «\u00a0Boulevard de l'Océan, La Saline les Bains, Saint-Paul\u00a0». Réponse pour le centre de La Saline les Bains (Saint-Paul), pas pour cette adresse\u00a0: le dire à l'utilisateur.",
+    );
+    expect(r.resume).toMatch(/^La Saline les Bains \(Saint-Paul\)\u00a0: lieu-dit ou commune, sans adresse ni point précis/);
+    expect(r.lieu).toMatchObject({ label: "La Saline les Bains (Saint-Paul)", precision: "centre du lieu-dit", lon: 55.23713, lat: -21.09498 });
+    // No quarter named: the commune, said as such.
+    const c = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "Boulevard de l'Océan, Saint-Paul", NOW));
+    expect(c.avertissement).toContain("Réponse pour le centre de la commune de Saint-Paul, pas pour cette adresse");
+    expect(c.lieu).toMatchObject({ label: "Saint-Paul", precision: "centre de la commune" });
+    // A place asked as such is no address lost.
+    expect(body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "Bois de Nèfles", NOW))).not.toHaveProperty("avertissement");
+  });
+
+  it("takes the quarter an address names between its commas, never one of another commune than the one named", () => {
+    expect(lieuOf("Boulevard de l'Océan, La Saline les Bains, Saint-Paul")).toMatchObject({ nom: "La Saline les Bains", commune: "Saint-Paul" });
+    expect(lieuOf("rue des Lilas, 97434 La Saline-les-Bains")).toMatchObject({ nom: "La Saline les Bains" });
+    expect(lieuOf("rue des Lilas, Saint-Gilles les Bains, Saint-Pierre")).toMatchObject({ nom: "Saint-Pierre", type: "commune" });
+    expect(lieuOf("rue des Lilas")).toBeUndefined();
   });
 
   it("adds the risks: no plan at this address, CatNat of the commune, nothing slid around", async () => {

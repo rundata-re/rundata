@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import type * as rt from "../src/providers/gtfsrt.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { departures, findStops, linesNamed, parseQuery, stationDepartures, transports } from "../src/tools/transports.js";
+import { departures, findStops, linesNamed, parseQuery, stationDepartures, transports, tripAsked } from "../src/tools/transports.js";
 
 // Rows of the D1 database for the stations of Saint-Pierre, the cable car at Bancoul and Hell-Bourg, from the
 // networks' GTFS of 23/10/2026 (scripts/build-transit.py).
@@ -64,6 +64,11 @@ describe("finding the stop", () => {
     expect(findStops("plage de Boucan Canot")).toMatchObject({ groups: [{ nom: "Boucan-Canot" }, { nom: "Boucan-Canot" }], near: [] });
     expect(findStops("plage de Boucan Canot").manque).toBeUndefined();
     expect(findStops("gare Toto").manque).toEqual(["toto"]);
+    // 07/11/2026: the stop Trou d'eau stands at La Saline les Bains, which its name does not say; Saint-Gilles is 6 km away.
+    const trou = findStops("Trou d'Eau, La Saline");
+    expect(trou.groups.map((g) => g.nom)).toEqual(["Trou d'eau"]);
+    expect(trou.manque).toBeUndefined();
+    expect(findStops("Trou d'Eau, Saint-Gilles").manque).toEqual(["saint", "gilles"]);
   });
 
   it("does not take « car jaune » for the stop « Fleurs Jaunes »", () => {
@@ -77,6 +82,31 @@ describe("transports", () => {
     expect(Object.keys(r)[0]).toBe("avertissement");
     expect(r.avertissement).toBe("Aucun arrêt n'a tous les mots de «\u00a0gare Toto\u00a0»\u00a0: Gare des Avirons (Les Avirons, Car Jaune), Gare des Avirons (Les Avirons, Alternéo), sans «\u00a0toto\u00a0». Le dire à l'utilisateur, et vérifier la commune.");
     expect(body(await transports("plage de Boucan", undefined, NOW)).avertissement).toBeUndefined();
+  });
+
+  it("gives a trip asked the page that searches it first, then the departures at its start", async () => {
+    // 07/11/2026: « Trou d'Eau vers Saint-Pierre » gave the stop Château d'Eau, at Saint-Pierre.
+    const r = body(await transports("Trou d'Eau, La Saline vers Saint-Pierre", undefined, NOW));
+    expect(Object.keys(r)[0]).toBe("trajet_en_bus");
+    expect(r.trajet_en_bus).toBe(
+      "Cet outil ne calcule pas de trajet. La page Trajet en bus de rundata.re le fait sur les horaires de tous les réseaux de l'île\u00a0: https://rundata.re/bus/itineraire?de=Trou%20d'Eau%2C%20La%20Saline&a=Saint-Pierre. Donner ce lien à l'utilisateur.",
+    );
+    expect(r).not.toHaveProperty("avertissement");
+    expect(body(await transports("Trou d'Eau, La Saline", undefined, NOW))).not.toHaveProperty("trajet_en_bus");
+    // The departures at its start (the timetables of the tests hold Saint-Pierre's stations).
+    const sp = body(await transports("gare routière Saint-Pierre vers Le Tampon", undefined, NOW));
+    expect(sp.trajet_en_bus).toContain("https://rundata.re/bus/itineraire?de=gare%20routi%C3%A8re%20Saint-Pierre&a=Le%20Tampon.");
+    expect(sp.arrets[0]).toMatchObject({ nom: "Gare de St-Pierre", commune: "Saint-Pierre" });
+    expect(sp.departs.length).toBeGreaterThan(5);
+  });
+
+  it("reads a trip's start and end on « vers », « jusqu'à » or an arrow, never on « à »", () => {
+    expect(tripAsked("Trou d'Eau, La Saline vers Saint-Pierre")).toEqual({ de: "Trou d'Eau, La Saline", a: "Saint-Pierre" });
+    expect(tripAsked("de Saint-Denis jusqu\u2019à l'aéroport")).toEqual({ de: "Saint-Denis", a: "l'aéroport" });
+    expect(tripAsked("Gare de Saint-Pierre → Le Tampon")).toEqual({ de: "Gare de Saint-Pierre", a: "Le Tampon" });
+    expect(tripAsked("arrêt Mairie à Saint-Pierre")).toBeUndefined();
+    expect(tripAsked("vers Saint-Pierre")).toBeUndefined();
+    expect(tripAsked("Gare routière, Saint-Pierre")).toBeUndefined();
   });
 
   it("lists the next departures of every network at the station, line by line", async () => {

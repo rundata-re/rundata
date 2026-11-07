@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Samedi 7 novembre 2026
+
+- Bus : un trajet d'un lieu à un autre demandé au connecteur renvoie à la page Trajet en bus, qui le cherche sur tous les réseaux de l'île.
+
 ## Vendredi 6 novembre 2026
 
 - Cyclones : la carte de prévision de trajectoire de Météo-France, telle que publiée, dès qu'un système est suivi, même une zone perturbée.

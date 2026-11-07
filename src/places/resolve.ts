@@ -260,6 +260,9 @@ export function placeAt(lon: number, lat: number): Place {
   return best;
 }
 
+/** The places of the gazetteer within `km` of a point: the hamlets, beaches and quarters a stop there may be said by. */
+export const placesNear = (lon: number, lat: number, km: number): Place[] => PLACES.filter((p) => distanceKm(lon, lat, p.lon, p.lat) <= km);
+
 /** The commune of a point: that of the nearest place of the gazetteer. */
 export const communeAt = (lon: number, lat: number): string => placeAt(lon, lat).commune;
 

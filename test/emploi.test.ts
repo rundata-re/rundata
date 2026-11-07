@@ -345,6 +345,18 @@ describe("the tool emploi and the page /emploi", () => {
     expect(body(await emploi(cache(), undefined, undefined, NOW)).injoignable).toBe("Lu le 29/10 à 12:45 : le site de Choisir le service public n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.");
   });
 
+  it("cuts a reference joined by « _ » after it only, the link named by its whole text", async () => {
+    const c = await copie();
+    emploiSource.configure(async () => c);
+    const d = await buildEmploi(cache(), NOW);
+    const o = d.offres.find((x) => "references" in x) as Extract<OffreRow, { references: unknown }>;
+    o.references[0] = { ...o.references[0], reference: "MINT_BA974ATB-128439" };
+    const page = emploiPage("https://rundata.re", { value: d, fetchedAt: NOW, stale: false }, NOW);
+    expect(page).toMatch(/ rel="noopener" aria-label="Réf\. MINT_BA974ATB-128439[^"]*">Réf\. <span class="nw"><span class="ident">MINT_<wbr>BA974ATB-128439<\/span><\/span>/);
+    // A reference without one, as before: no aria-label.
+    expect(page).toContain(`rel="noopener">Réf. <span class="nw">${o.references[1].reference}</span>`);
+  });
+
   it("shows on /emploi the first offer under the title, its employer first and its closing date, without a link to the sites not taken", async () => {
     const c = await copie();
     emploiSource.configure(async () => c);

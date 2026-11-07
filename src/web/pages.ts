@@ -306,20 +306,37 @@ export function narrowTwins(css: string): string {
  * 320 px screen at 250 %, 130 px for 390 px at 300 %, while lengths in px or rem keep their size. The 16 px gutter and
  * the paddings of cards, buttons, tabs, pills and tiles then leave a card about 52 px of text, less than one long word
  * (ChatGPT, Prévision, Envoyer), and the page grows wider than the screen. Under 9 rem (144 px: a 320 px screen from
- * 222 %, 390 px from 271 %, 430 px at 300 %), narrower gutter and paddings, tiles held in their column, the grids of the
- * status block, the places and the rows in one column of their width, smaller big figures. Under 12.5 rem, the big
- * figure of the status block (« 6 à 29 µg/m³ », kept on one line) at 1.5 rem in a column of the block's width.
+ * 222 %, 390 px from 271 %, 430 px at 300 %), narrower paddings, tiles held in their column, the grids of the
+ * status block, the places and the rows in one column of their width, smaller big figures, a word wider than the dark
+ * band's pill cut in it (« Clubs et associations » on its own was hidden by the band). Under 12.5 rem, the big
+ * figure of the status block (« 6 à 29 µg/m³ », kept on one line) at 1.5 rem in a column of the block's width, and the
+ * whole site within 160 px (a 320 px screen at 200 %): the grids of lists, page bodies, the electricity chart and /presse's
+ * phones on one column of their width (an implicit track took the widest word: « VANDERSCHAEGHE », « renouvelable »), the
+ * map's tabs and legend, « Y aller » and buttons on several lines with narrower sides, the dark band's pill wrapping between its parts (each
+ * a flex item on one line: « Plan ORSEC Cyclones » was 177 px wide, and the band hid the rest) with narrower paddings, /mer's figure smaller,
+ * /peche's table on its width, the band's items, badges and /electricite's slider held to their column. A word still wider than its line, once hyphenated (hyphens:auto under 19.9 rem), is cut
+ * there rather than widening the page (break-word, not anywhere: no track shrinks to a letter). A table that scrolls
+ * aside keeps its columns as wide as their words: in a page body of one column of its width, WebKit narrowed them below
+ * (« 2021 » over « 2022 » on /trafic). Gutter and cards are
+ * narrower (.5 and .7 rem), lists indented 1.2 rem rather than 40 px, and the map's chips strip follows the gutter: at
+ * 160 px a list item in a card had 44 px for its words, and most of them were cut without a hyphen.
  * Placed at the end of the sheet, after the rules they adjust (avis, install), and inside narrowTwins for their twins.
  */
 const ZOOM_PAGE_CSS =
-  "@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}}" +
-  "@media (max-width:9rem){.wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}" +
-  ".card{padding:.7rem}.cta-ia{padding-inline:.45rem}" +
+  "@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}" +
+  "body{overflow-wrap:break-word}.table-wrap>table:not(.niveaux){min-width:min-content}.plain,.corps,.ech-g,.vis-grid.phones{grid-template-columns:minmax(0,1fr)}" +
+  ".fonds label,.legend span,.aller{white-space:normal}.aller,.btn{min-width:0;max-width:100%}.btn{padding-inline:.8rem}.cs .btn{flex-shrink:1}" +
+  ".pill{flex-wrap:wrap;padding:.3rem .5rem;gap:.1rem .3rem;letter-spacing:0}.pitch>*,.badge{max-width:100%}.badge{letter-spacing:.02em}.ech-rj input{min-width:0}" +
+  ".big.span{font-size:1.5rem}table.niveaux{width:100%;table-layout:fixed}" +
+  ".wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}" +
+  ".card{padding:.7rem}:where(ul,ol){padding-left:1.2rem}.kchips{margin-inline:-.5rem;padding-inline:.5rem}}" +
+  "@media (max-width:9rem){.cta-ia{padding-inline:.45rem}" +
   ".tabs label{padding:.3rem .55rem}.connect{padding-left:.5rem}.connect button,.avis button{padding:.55rem .6rem}" +
-  ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}.badge{letter-spacing:0;max-width:100%;overflow-wrap:anywhere}" +
+  ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}.badge{letter-spacing:0;max-width:100%;overflow-wrap:anywhere}.pill{overflow-wrap:anywhere}" +
   ".places{grid-template-columns:minmax(0,1fr)}.inst ol{padding-left:1rem}" +
-  ".pill{padding:.3rem .5rem;gap:.3rem;letter-spacing:0}.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.3rem;overflow-wrap:anywhere}" +
-  ".rows>li{min-width:0}.stcard .t{padding:.3rem .5rem;font-size:1.1rem}}";
+  ".status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.3rem;overflow-wrap:anywhere}" +
+  ".rows>li{min-width:0}.stcard .t{padding:.3rem .5rem;font-size:1.1rem}" +
+  ".kch>summary{padding:0 .6rem;flex-wrap:wrap}}";
 
 export const CSS = narrowTwins(`
 @font-face{font-family:"Bricolage";src:url(${FONT_PATH}) format("woff2");font-weight:600 800;font-display:swap}

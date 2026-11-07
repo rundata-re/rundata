@@ -150,11 +150,10 @@ describe("the whole page, the text grown by a page zoom of 250 % and more", () =
   const under9 = CSS.indexOf("@media (max-width:9rem){");
   const under12 = CSS.indexOf("@media (max-width:12.5rem){.status");
 
-  it("narrows the gutter, the cards, buttons, tabs, pills and tiles under 9 rem", () => {
+  it("narrows buttons, tabs and tiles under 9 rem", () => {
     const rules = CSS.slice(under9, CSS.indexOf("}}", under9) + 2);
-    for (const r of [".wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}",
-      ".card{padding:.7rem}", ".tabs label{padding:.3rem .55rem}", ".connect button,.avis button{padding:.55rem .6rem}",
-      ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}", ".pill{padding:.3rem .5rem;gap:.3rem;letter-spacing:0}",
+    for (const r of [".tabs label{padding:.3rem .55rem}", ".connect button,.avis button{padding:.55rem .6rem}",
+      ".tq,.qs li{padding:.35rem .5rem;min-width:0;max-width:100%}", ".pill{overflow-wrap:anywhere}",
       ".places{grid-template-columns:minmax(0,1fr)}", ".rows>li{min-width:0}", ".stcard .t{padding:.3rem .5rem;font-size:1.1rem}"])
       expect(rules).toContain(r);
     // 144 px: a 430 px screen at 300 % (143 px) is in, a 320 px one at 200 % (160 px) is not.
@@ -163,15 +162,34 @@ describe("the whole page, the text grown by a page zoom of 250 % and more", () =
   });
 
   it("lays out the status block on its width, its big figure smaller under 12.5 rem and under 9 rem", () => {
-    expect(CSS).toContain("@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}}");
+    expect(CSS).toContain("@media (max-width:12.5rem){.status{grid-template-columns:minmax(0,1fr)}.status .big{font-size:1.5rem}");
     expect(CSS.slice(under9)).toContain(".status .big{font-size:1.3rem;overflow-wrap:anywhere}");
     expect(under12).toBeLessThan(under9);
   });
 
+  // 160 px: a 320 px screen at 200 %. A long word no longer widens a grid's track, a map's tab, the « Y aller » link, a
+  // button or the dark band's pill; a word wider than the line is cut there only, hyphens first.
+  it("keeps every page within 160 px under 12.5 rem", () => {
+    const rules = CSS.slice(under12, CSS.indexOf("}}", under12) + 2);
+    for (const r of ["body{overflow-wrap:break-word}.table-wrap>table:not(.niveaux){min-width:min-content}", ".plain,.corps,.ech-g,.vis-grid.phones{grid-template-columns:minmax(0,1fr)}",
+      ".fonds label,.legend span,.aller{white-space:normal}", ".aller,.btn{min-width:0;max-width:100%}.btn{padding-inline:.8rem}", ".cs .btn{flex-shrink:1}",
+      ".pill{flex-wrap:wrap;padding:.3rem .5rem;gap:.1rem .3rem;letter-spacing:0}", ".pitch>*,.badge{max-width:100%}", ".badge{letter-spacing:.02em}",
+      ".ech-rj input{min-width:0}", ".big.span{font-size:1.5rem}", "table.niveaux{width:100%;table-layout:fixed}",
+      ".wrap{padding-left:max(.5rem,env(safe-area-inset-left,0px));padding-right:max(.5rem,env(safe-area-inset-right,0px))}",
+      ".card{padding:.7rem}:where(ul,ol){padding-left:1.2rem}.kchips{margin-inline:-.5rem;padding-inline:.5rem}}"])
+      expect(rules).toContain(r);
+    expect(rules).not.toContain("anywhere");
+    expect(320 / 2).toBeLessThanOrEqual(12.5 * 16);
+    expect(CSS.slice(under9, CSS.indexOf("}}", under9) + 2)).toContain(".kch>summary{padding:0 .6rem;flex-wrap:wrap}}");
+  });
+
   it("comes after the rules it adjusts, at the end of the sheet, each block with its twin on the page's container", () => {
-    for (const r of [".avis button{", ".inst ol{", ".pill{display:inline-flex", ".stcard .t{display:inline-block", ".status{display:grid"])
+    for (const r of [".avis button{", ".inst ol{", ".pill{display:inline-flex", ".stcard .t{display:inline-block", ".status{display:grid",
+      ".plain{list-style:none", ".corps{display:grid", ".ech-g{display:grid", ".vis-grid.phones{", ".fonds label{", ".legend span{",
+      ".aller{display:inline-flex", ".btn{display:inline-flex", ".cs .btn{", ".big.span{", ".kchips{display:flex", ".kch>summary{",
+      ".pitch{display:grid", ".badge{display:inline-block", ".ech-rj input{", ".table-wrap{overflow-x:auto}"])
       expect(CSS.indexOf(r), r).toBeLessThan(under12);
     expect(CSS.slice(under12)).toContain("@container page (max-width:12.5rem){.status{");
-    expect(CSS.slice(under9)).toContain("@container page (max-width:9rem){.wrap{");
+    expect(CSS.slice(under9)).toContain("@container page (max-width:9rem){.cta-ia{");
   });
 });

@@ -52,7 +52,7 @@ describe("long lists folded by category, each opened with a tap", () => {
     const kinds = new Set(enfants.inCommune("Saint-Denis").map((l) => l.type)).size;
     expect(count(big, /<div class="card kind" data-k><details><summary><h3>/g)).toBe(kinds);
     const play = enfants.inCommune("Saint-Denis").filter((l) => l.type === "aire_de_jeux").length;
-    expect(big).toContain(`<summary><h3>Aires de jeux\u00a0<span class="note">·\u00a0${play}</span></h3></summary>`);
+    expect(big).toContain(`<summary><h3>Aires de jeux\u00a0<span class="note">· ${play}</span></h3></summary>`);
     // Every row still has its anchor, for the map's « Voir dans la liste ».
     expect(count(big, /<li id="lieu-\d+"/g)).toBe(enfants.inCommune("Saint-Denis").length);
     // A filter opens the kinds that keep a place.
@@ -115,7 +115,7 @@ describe("long lists folded, the second pages", () => {
     const page = agendaPage(O, cached(answer), NOW);
     expect(count(page, /<details open><summary><h3>/g)).toBe(2);
     expect(count(page, /<details><summary><h3>/g)).toBe(2);
-    expect(page).toContain(`<details open><summary><h3>Jeudi 29\u00a0octobre\u00a0<span class="note">· 3\u00a0événements</span></h3></summary>`);
+    expect(page).toContain(`<details open><summary><h3>Jeudi <span class="jm">29 octobre</span>\u00a0<span class="note">· 3\u00a0événements</span></h3></summary>`);
     expect(page).toContain(`if(g)document.querySelectorAll("#jours details").forEach((d)=>{if(d.querySelector("li[data-g]:not([hidden])"))d.open=true})`);
     const short = agendaPage(O, cached({ ...answer, evenements: evenements.slice(0, FOLD_ROWS), nombre: FOLD_ROWS }), NOW);
     expect(short).not.toMatch(/<details( open)?><summary><h3>/);
@@ -128,7 +128,7 @@ describe("long lists folded, the second pages", () => {
     expect(page).toContain(`<div class="sec-h"><h2 id="h-${days[0].jour}">`);
     expect(count(page, /<div class="card"><details><summary><h2 id="h-/g)).toBe(days.length - 1);
     const d = days[1];
-    expect(page).toContain(`<details><summary><h2 id="h-${d.jour}"><time datetime="${d.jour}">${d.titre.replace(/(\d) /, "$1\u00a0")}</time>\u00a0<span class="note">· ${d.textes.length}\u00a0nouveauté${d.textes.length > 1 ? "s" : ""}</span></h2></summary>`);
+    expect(page).toContain(`<details><summary><h2 id="h-${d.jour}"><time datetime="${d.jour}">${d.titre.replace(/(\d+(?:er)?) (\p{L}+)/u, '<span class="jm">$1 $2</span>')}</time>\u00a0<span class="note">· ${d.textes.length}\u00a0nouveauté${d.textes.length > 1 ? "s" : ""}</span></h2></summary>`);
   });
 
   it("folds each group of streets of /collecte under its rhythm, and a search opens the groups it finds", () => {

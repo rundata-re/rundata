@@ -116,6 +116,14 @@ describe("a tool's name in a <code>, with the text at 200 %", () => {
   });
 
   it("is never hyphenated: French hyphenation would cut « donnees » once alone after the « _ »", () => {
-    expect(CSS).toContain("@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code{hyphens:manual;-webkit-hyphens:manual}");
+    expect(CSS).toContain("@media (max-width:19.9rem){body{hyphens:auto;-webkit-hyphens:auto}code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}");
+  });
+
+  it("lets a day's month go to the next line, whole, in the titles of /evenements and /nouveautes", () => {
+    // Out of the block (390 px at 100 %, a wide screen), « 10 novembre » stays on one line (marketing); in it, where it can
+    // be wider than the title's line, the month goes to the next line, never cut with or without a hyphen.
+    const bloc = CSS.slice(CSS.indexOf("@media (max-width:19.9rem){body{hyphens:auto"));
+    expect(bloc.slice(0, bloc.indexOf("}}") + 2)).toContain("code,#jours h3,h2>time{hyphens:manual;-webkit-hyphens:manual}.jm{white-space:normal}");
+    expect(CSS.indexOf(".jm{white-space:nowrap}")).toBeLessThan(CSS.indexOf(".jm{white-space:normal}"));
   });
 });

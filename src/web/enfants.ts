@@ -387,8 +387,9 @@ export function enfantsCommunePage(origin: string, p: PlacePage, data: Cached<En
   const fold = list.length > FOLD_ROWS && kinds.length > 1;
   const places = `<div id="ecl">${kinds.map((t) => {
     const of = list.map((l, i) => [l, i] as const).filter(([l]) => l.type === t.type);
-    // Its last word, the dot, the count and the arrow (the style sheet's) kept on one line.
-    const head = `<h3>${esc(t.nom)}${fold ? "\u00a0" : " "}<span class="note">${fold ? "·\u00a0" : ""}${of.length}</span></h3>`;
+    // The dot kept after its last word, never starting a line; a plain space after it, so that the word can still be cut
+    // with a hyphen: glued to the count too (« bibliothèques·10 »), Chrome never hyphenates it and cuts it at a letter.
+    const head = `<h3>${esc(t.nom)}${fold ? "\u00a0" : " "}<span class="note">${fold ? "· " : ""}${of.length}</span></h3>`;
     const rows = `<ul class="rows eau">${of.map(([l, i]) => communeLi(l, i, now, g)).join("")}</ul>`;
     return `<div class="card kind" data-k>${folded(fold, head, rows)}</div>`;
   }).join("")}</div>`;

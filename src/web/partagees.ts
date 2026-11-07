@@ -139,8 +139,10 @@ export const SHARED: Shared[] = [
   // half hour's first minute are their events'. Its cold cost: its copy before, the weather sources' last observations
   // (Météo-France's packets, the airports', the beacon's), the bikes' stations, the ONF's map (3), the copies of the
   // water and power cuts and of the events, the silent sites (a read, 2 of D1), the clubs' calendar: 45 in KV on 05/11/2026, 26 in
-  // the test, which sees neither D1 nor the copies read from KV (25 declared before, counted from the code).
-  { key: CHIFFRES, build: buildChiffres, every: 60, cold: 45, cpu: 60, offset: 50 },
+  // the test, which sees neither D1 nor the copies read from KV (25 declared before, counted from the code). Since the
+  // stations' copy (providers/meteofrance.ts `refreshShared`), Météo-France's packets are no longer read here: 13 fewer
+  // (its 11 slots, the data center's bundle read and written), counted in test/meteofrance-kv.test.ts.
+  { key: CHIFFRES, build: buildChiffres, every: 60, cold: 45 - 13, cpu: 60, offset: 50 },
   // Its events, the whole agenda as /evenements reads it (55 measured there): every 6 hours, in the half hour's first
   // event, which no copy every 30 minutes takes; every hour while an agenda did not answer (chiffres.ts). Less Le
   // Séchoir's site (1), L'Étang-Salé's (its list and three pages, 4), Sainte-Marie's (1) and the Théâtre Luc Donat's (its

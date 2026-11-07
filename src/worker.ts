@@ -446,6 +446,10 @@ export default {
       tokenDone();
       const arome = await prefetchForecasts(c).catch((err) => (console.error("préchargement AROME impossible", why(err)), null));
       const aromeUsed = spent();
+      // The Météo-France stations' slots and hourly package due, into the copy in KV that the questions and the views
+      // read (providers/meteofrance.ts `refreshShared`, which takes no token: the one above, when it is held): before
+      // the shared copies, whose /chiffres counts the stations from it, and the day before (`keepVeille`), its package.
+      const stations = kv && meteofrance.enabled() ? await meteofrance.refreshShared(c).catch((err) => (console.error("stations Météo-France : copie impossible", why(err)), null)) : null;
       // One listing of KV for both.
       const listing = kv ? listShared(kv) : undefined;
       // The copies built alongside (the rivers', minutes long), waited for after everything else: never before it.
@@ -457,10 +461,11 @@ export default {
       const agendas = kv ? await refreshPlanned(c).catch((err) => (console.error("agendas planifiés impossibles", why(err)), null)) : null;
       await Promise.all(held);
       const copies = { written: [...first.written, ...after.written], left: [...first.left, ...after.left] };
-      return { arome, aromeUsed, copies, agendas };
+      return { arome, aromeUsed, stations, copies, agendas };
       // What a read hands over after it (a failed read written down) finishes within the event.
     }, (p) => ctx.waitUntil(p))
       .then(({ value, used, reads }) => console.log(`préchargement AROME : ${JSON.stringify(value.arome)}, sous-requêtes : ${value.aromeUsed}` +
+        (value.stations ? ` ; stations Météo-France : ${JSON.stringify(value.stations)}` : "") +
         (value.copies.written.length ? ` ; copies partagées : ${value.copies.written.join(", ")}` : "") +
         (value.copies.left.length ? ` ; reportées : ${value.copies.left.map((x) => `${x.key} (${x.why})`).join(", ")}` : "") +
         (value.agendas?.lus.length || value.agendas?.gardes.length || value.agendas?.reportes.length || value.agendas?.trop_vieilles.length ? ` ; agendas planifiés : ${JSON.stringify(value.agendas)}` : "") +

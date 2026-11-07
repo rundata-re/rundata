@@ -98,9 +98,10 @@ afterEach(() => {
 describe("subrequests of a cold question in the Worker", () => {
   it.each([
     // The stations and the radar image, each read and written in the data center's cache. The FFVL's beacons are 1 here,
-    // 2 in the Worker, whose fetch follows the file's redirect.
-    ["meteo_actuelle, Cilaos", (c: Cache) => meteoActuelle(c, "Cilaos", NOW), 31],
-    ["meteo_actuelle, tour of the island", (c: Cache) => meteoActuelle(c, undefined, NOW), 26],
+    // 2 in the Worker, whose fetch follows the file's redirect. The stations' copy in KV looked for first, and found
+    // empty (providers/meteofrance.ts `refreshShared`): one more.
+    ["meteo_actuelle, Cilaos", (c: Cache) => meteoActuelle(c, "Cilaos", NOW), 32],
+    ["meteo_actuelle, tour of the island", (c: Cache) => meteoActuelle(c, undefined, NOW), 27],
     ["temperature_mer, Saint-Leu", (c: Cache) => temperatureMer(c, "Saint-Leu", NOW), 10],
     ["prevision_meteo, Cilaos demain", (c: Cache) => previsionMeteo(c, "Cilaos", "demain", NOW), PAGE_BUDGET],
     ["prevision_meteo, tour of the island", (c: Cache) => previsionMeteo(c, undefined, undefined, NOW), PAGE_BUDGET],

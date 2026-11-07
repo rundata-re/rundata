@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BUILD_BUDGET, counted } from "../src/budget.js";
+import { BUILD_BUDGET, counted, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { KvStore, type KvBinding } from "../src/kv.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { configure } from "../src/providers/mf-auth.js";
+import { configure, share, type Token } from "../src/providers/mf-auth.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const HEAD = fixture("meteofrance_horaire.csv").split("\n")[0];
@@ -68,15 +68,14 @@ describe("the day before at each station, from the hourly package", () => {
 /** The KV namespace, with what was asked of it. */
 class Namespace implements KvBinding {
   values = new Map<string, string>();
-  reads = 0;
-  writes = 0;
+  asked: string[] = [];
   async get(key: string) {
-    this.reads++;
+    this.asked.push(`get ${key}`);
     const v = this.values.get(key);
     return v === undefined ? null : JSON.parse(v);
   }
   async put(key: string, value: string) {
-    this.writes++;
+    this.asked.push(`put ${key}`);
     this.values.set(key, value);
   }
 }
@@ -84,48 +83,88 @@ class Namespace implements KvBinding {
 describe("the scheduled pass that keeps the day before", () => {
   let packages: string[];
   let body: string;
+  let token: Token | null;
   beforeEach(() => {
     packages = [];
     body = DAY;
+    token = null;
     configure({ applicationId: "test" });
+    share({ get: async () => token, put: async (t) => void (token = t) });
     vi.stubGlobal("fetch", async (url: string) => {
       if (String(url).includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
       if (String(url).includes("/paquet/horaire")) {
         packages.push(String(url));
         return new Response(body);
       }
+      // The slots of 6 minutes, which the step reads too: none here.
+      if (String(url).includes("infrahoraire-6m")) return new Response("", { status: 404 });
       throw new Error(`unexpected ${url}`);
     });
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     configure({});
+    share(undefined);
   });
-  // Each pass in a fresh isolate, as the scheduled event is: only KV carries over.
+  // Each event in a fresh isolate, as the scheduled event is: only KV carries over. As worker.ts runs it: the token and
+  // the stations' step (providers/meteofrance.ts `refreshShared`) in the event, then the day before in the same isolate.
   const isolate = (kv: KvBinding, at: string) => new Cache(new MemoryStore(), () => Date.parse(at), false, new KvStore(kv));
+  async function pass(kv: Namespace, at: string) {
+    const cache = isolate(kv, at);
+    await counted(SCHEDULED_BUDGET, async () => {
+      scheduled();
+      await meteofrance.keepFresh("cron");
+      await meteofrance.refreshShared(cache, new Date(at));
+    });
+    return counted(BUILD_BUDGET, () => meteofrance.keepVeille(cache, new Date(at)));
+  }
+  const veilles = (kv: Namespace) => kv.asked.filter((k) => k.endsWith(` ${meteofrance.VEILLE}`));
 
-  it("takes the token, the package and one write to KV at 00:20, and nothing more at 00:35 when the day was whole", async () => {
+  it("takes the step's package, never reads it itself, writes the day once at 00:20, and nothing more at 00:35 when it was whole", async () => {
     const kv = new Namespace();
-    const first = await counted(BUILD_BUDGET, () => meteofrance.keepVeille(isolate(kv, "2026-10-26T20:20:00Z"), new Date("2026-10-26T20:20:00Z")));
+    const first = await pass(kv, "2026-10-26T20:20:00Z");
     expect(first.value?.stations["97416463"]).toEqual({ rr: 1.6, tn: 20, tx: 27.5 });
-    expect(first.used).toBeLessThanOrEqual(3);
-    expect([packages.length, kv.reads, kv.writes]).toEqual([1, 0, 1]);
-    const second = await counted(BUILD_BUDGET, () => meteofrance.keepVeille(isolate(kv, "2026-10-26T20:35:00Z"), new Date("2026-10-26T20:35:00Z")));
+    expect(first.value).toEqual(meteofrance.parseDay(DAY, "2026-10-26"));
+    expect(first.used).toBe(1);
+    expect([packages.length, veilles(kv)]).toEqual([1, [`put ${meteofrance.VEILLE}`]]);
+    const second = await pass(kv, "2026-10-26T20:35:00Z");
     expect(second.value).toBeUndefined();
     expect(second.used).toBe(1);
-    expect([packages.length, kv.reads, kv.writes]).toEqual([1, 1, 1]);
+    // The package, good until the next hour is due, not read again by the step.
+    expect([packages.length, veilles(kv)]).toEqual([1, [`put ${meteofrance.VEILLE}`, `get ${meteofrance.VEILLE}`]]);
     // What historique_meteo reads afterwards, from another isolate.
     expect((await isolate(kv, "2026-10-27T03:00:00Z").kept<meteofrance.Veille>(meteofrance.VEILLE))?.value.jour).toBe("2026-10-26");
   });
 
-  it("reads the package again at 00:35 when its last hour was not out at 00:20", async () => {
+  it("is made again at 00:35 from the package the step read again, when its last hour was not out at 00:20", async () => {
     const kv = new Namespace();
     body = pack(hoursOfDay(() => ({ rr1: 0 }), "97416463", 23));
-    await counted(BUILD_BUDGET, () => meteofrance.keepVeille(isolate(kv, "2026-10-26T20:20:00Z"), new Date("2026-10-26T20:20:00Z")));
+    const first = await pass(kv, "2026-10-26T20:20:00Z");
+    expect(first.value?.complet).toBe(false);
     body = DAY;
-    const second = await counted(BUILD_BUDGET, () => meteofrance.keepVeille(isolate(kv, "2026-10-26T20:35:00Z"), new Date("2026-10-26T20:35:00Z")));
+    const second = await pass(kv, "2026-10-26T20:35:00Z");
     expect(second.value?.complet).toBe(true);
-    expect(second.used).toBeLessThanOrEqual(4);
-    expect([packages.length, kv.writes]).toEqual([2, 2]);
+    expect(second.value?.stations["97416463"]).toEqual({ rr: 1.6, tn: 20, tx: 27.5 });
+    expect(second.used).toBeLessThanOrEqual(2);
+    expect([packages.length, veilles(kv).filter((k) => k.startsWith("put")).length]).toEqual([2, 2]);
+  });
+
+  it("gives up without the step's package, rather than reading it", async () => {
+    await expect(meteofrance.keepVeille(isolate(new Namespace(), "2026-10-26T20:20:00Z"), new Date("2026-10-26T20:20:00Z"))).rejects.toThrow(/paquet horaire/);
+    expect(packages).toEqual([]);
+  });
+});
+
+describe("the day before from the hourly package already parsed (`veilleDe`)", () => {
+  it("is the day `parseDay` reads, whole or not", () => {
+    const at = (t: string, csv: string, jour: string) => meteofrance.veilleDe(meteofrance.parseHourly(csv, Date.parse(t)), jour);
+    expect(at("2026-10-26T20:20:00Z", DAY, "2026-10-26")).toEqual(meteofrance.parseDay(DAY, "2026-10-26"));
+    expect(at("2026-10-26T20:35:00Z", DAY, "2026-10-26")).toEqual(meteofrance.parseDay(DAY, "2026-10-26"));
+    const late = pack(hoursOfDay(() => ({ rr1: 0.5, tn: 290.15, tx: 295.15 }), "97416463", 23));
+    expect(at("2026-10-26T20:20:00Z", late, "2026-10-26")).toEqual(meteofrance.parseDay(late, "2026-10-26"));
+    const recorded = fixture("meteofrance_horaire.csv");
+    expect(at("2026-10-25T08:20:00Z", recorded, "2026-10-25")).toEqual(meteofrance.parseDay(recorded, "2026-10-25"));
   });
 });

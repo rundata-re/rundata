@@ -5,7 +5,7 @@ import { parse } from "../src/providers/vigieau.js";
 import { heuresDites } from "../src/tools/format.js";
 import { restrictionsEau } from "../src/tools/secheresse.js";
 import { buildSecheresse } from "../src/web/data.js";
-import { nobreak, secheresseLive, secheressePage } from "../src/web/domains.js";
+import { secheresseLive, secheressePage, wholeName } from "../src/web/domains.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 // VigiEau on 24/10/2026: the drought order of 10/10/2026, Saint-Joseph in crisis.
@@ -106,13 +106,13 @@ describe("the drought tile of the home page", () => {
     secheresseLive({ value: { communes: levels.map(([commune, eau_du_robinet]) => ({ commune, eau_du_robinet })) } as any, fetchedAt: new Date(), stale: false })!;
 
   it("says the worst level and where it applies: one commune, several, a name in « Le » or « Les »", async () => {
-    expect(tile([["Saint-Joseph", "crise"], ["Saint-Pierre", "alerte renforcée"], ["Cilaos", "alerte"]])).toEqual({ valeur: `crise ${nobreak("à Saint-Joseph")}`, detail: "3 communes sur 24 en alerte ou plus pour l'eau du robinet" });
+    expect(tile([["Saint-Joseph", "crise"], ["Saint-Pierre", "alerte renforcée"], ["Cilaos", "alerte"]])).toEqual({ valeur: `crise ${wholeName("à Saint-Joseph")}`, detail: "3 communes sur 24 en alerte ou plus pour l'eau du robinet" });
     expect(tile([["Saint-Joseph", "crise"], ["Saint-Philippe", "crise"], ["Cilaos", "vigilance"]]).valeur).toBe("crise dans 2 communes");
     expect(tile([["Le Tampon", "alerte renforcée"], ["Cilaos", "alerte"]]).valeur).toBe("alerte renforcée au Tampon");
     expect(tile([["Les Avirons", "alerte"], ["Cilaos", "vigilance"]]).valeur).toBe("alerte aux Avirons");
     expect(tile([["Le Port", "crise"]]).valeur).toBe("crise au Port");
     // From the copy of the decree: Saint-Joseph alone in crisis.
-    expect(secheresseLive({ value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false })!.valeur).toBe(`crise à <span style="white-space:nowrap">Saint-Joseph</span>`);
+    expect(secheresseLive({ value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false })!.valeur).toBe(`crise à <span class="nm">Saint-Joseph</span>`);
   });
 
   it("keeps its words when no commune is above vigilance, or there is no restriction", () => {

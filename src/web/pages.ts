@@ -1106,7 +1106,9 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau li>.refs{grid-column:1/-1}
 .rows.eau .refs small{color:inherit}
 .rows .refs a{display:block;margin:0;padding:.5rem 0;font-weight:400}
-.rows .nw{white-space:nowrap}
+/* A reference, a title's feminine in brackets (intituleCoupable, emploi.ts): never hyphenated, even under 19.9 rem where
+   they may wrap (below); WebKit cut the bracket alone, « (tri-ce) ». */
+.rows .nw{white-space:nowrap;hyphens:manual;-webkit-hyphens:manual}
 /* A comma that never starts a line (virgulesTenues, domains.ts): the line ends after it whenever the word before it fits,
    the comma hanging in the card's padding. Letter-spacing takes .35 em after the comma and after the space, more than a
    comma's width in any font; word-spacing gives the space .7 em: the comma takes no room, and mid-line the next word

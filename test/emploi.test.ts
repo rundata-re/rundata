@@ -5,7 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import * as emploiSource from "../src/providers/emploi.js";
 import { REGISTRY } from "../src/registre.js";
 import { emploi, lignes, NON_REPRIS, pourOutil, type OffreRow } from "../src/tools/emploi.js";
-import { buildEmploi, emploiPage } from "../src/web/emploi.js";
+import { buildEmploi, emploiPage, intituleCoupable } from "../src/web/emploi.js";
 import { esc } from "../src/web/map.js";
 
 // The feed of La Réunion read on 29/10/2026 at 12:20, two offers' pages and the first search page read at 12:26-12:28,
@@ -431,6 +431,23 @@ describe("the tool emploi and the page /emploi", () => {
     expect(html).toContain('g.hidden=on&&!k;g.firstElementChild.open=on&&k');
   });
 
+  it("lets a title's line end before a feminine in brackets on a narrow screen, the text and the link's name the offer's", () => {
+    expect(intituleCoupable("Technicien(ne) systèmes et réseaux F/H")).toBe('Technicien<wbr class="adr"><span class="nw">(ne)</span> systèmes et réseaux F/H');
+    for (const [t, w] of [["Accompagnateur(trice)", 'Accompagnateur<wbr class="adr"><span class="nw">(trice)</span>'], ["Directeur(-trice)", 'Directeur<wbr class="adr"><span class="nw">(-trice)</span>'], ["Conseiller(ère) emploi", 'Conseiller<wbr class="adr"><span class="nw">(ère)</span> emploi'], ["Chargé(e) d'accueil", 'Chargé<wbr class="adr"><span class="nw">(e)</span> d&#39;accueil']]) {
+      expect(intituleCoupable(t)).toBe(w);
+    }
+    // After a « / » between two words, not between two letters alone.
+    expect(intituleCoupable("Animateur/Animatrice")).toBe('Animateur/<wbr class="adr">Animatrice');
+    expect(intituleCoupable("Gestionnaire finances*SG/SIR/OI/FIN")).toBe('Gestionnaire finances*SG/<wbr class="adr">SIR/<wbr class="adr">OI/<wbr class="adr">FIN');
+    // Not a bracket after a space, nor initials, nor a word longer than a feminine ending, nor « F/H ».
+    for (const t of ["Agent technique (h/f)", "Contrôleur aérien (DGAC)", "Juriste(contentieux)", "Technicien F/H"]) expect(intituleCoupable(t)).toBe(esc(t));
+    const line = (intitule: string): OffreRow => ({ intitule, employeur: "Département", publiee_le: "29/10", lien: "https://choisirleservicepublic.gouv.fr/offre-emploi/x/" });
+    const html = emploiPage("https://rundata.re", { value: { nombre: 2, offres: [line("Technicien(ne) systèmes"), line("Agent d'entretien")], lu: NOW.toISOString(), couverture: "", sources: [] } as never, fetchedAt: NOW, stale: false }, NOW);
+    // The link keeps its whole title as its name (Chrome would name it with a space for the <wbr>); the other, none.
+    expect(html).toContain('<a href="https://choisirleservicepublic.gouv.fr/offre-emploi/x/" rel="noopener" aria-label="Technicien(ne) systèmes">Technicien<wbr class="adr"><span class="nw">(ne)</span> systèmes</a>');
+    expect(html).toContain('<a href="https://choisirleservicepublic.gouv.fr/offre-emploi/x/" rel="noopener">Agent d&#39;entretien</a>');
+  });
+
   it("shows a post published under several references as one line, a link to each, the days of each when the line has no closing date", async () => {
     const c = await copie();
     emploiSource.configure(async () => c);
@@ -438,7 +455,7 @@ describe("the tool emploi and the page /emploi", () => {
     const page = emploiPage("https://rundata.re", { value: d, fetchedAt: new Date(c.lu), stale: false }, NOW);
     // In marketing's words: the title alone, « 4 offres : », a link per line with the whole reference.
     // Across the whole line, under the date, each reference never cut.
-    expect(page).toContain('<li data-c="Sainte-Marie" data-n="4"><span><b>Gestionnaire finances*SG/SIR/OI/FIN</b><small>');
+    expect(page).toContain('<li data-c="Sainte-Marie" data-n="4"><span><b>Gestionnaire finances*SG/<wbr class="adr">SIR/<wbr class="adr">OI/<wbr class="adr">FIN</b><small>');
     expect(page).toContain('<span class="q-none">jusqu&#39;au 20/11</span><span class="refs"><small>4 offres\u00a0:</small><a href="https://choisirleservicepublic.gouv.fr/offre-emploi/DGAC-AVE-128051-CAT-B/" rel="noopener">Réf. <span class="nw">DGAC-AVE-128051-CAT-B</span></a><a href=');
     expect(page.match(/<li /g)!.length).toBeLessThan(20);
     // The filter counts the offers, not the lines.

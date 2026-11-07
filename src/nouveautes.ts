@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-07T18:30:00+04:00", texte: "Bus\u00a0: un trajet d'un lieu à un autre demandé au connecteur renvoie à la page Trajet en bus, qui le cherche sur tous les réseaux de l'île." },
+  { date: "2026-11-07T18:29:00+04:00", texte: "Connecteur\u00a0: un collège ou un lycée par son nom, son indice de position sociale, ses résultats au brevet ou au bac et le taux attendu." },
   { date: "2026-11-06T18:23:00+04:00", texte: "Cyclones\u00a0: la carte de prévision de trajectoire de Météo-France, telle que publiée, dès qu'un système est suivi, même une zone perturbée." },
   { date: "2026-11-04T15:12:00+04:00", texte: "Lieux des Hauts\u00a0: le ciel prévu pour la nuit, la phase de la Lune et les heures de nuit noire, calculées, sur la page du lieu." },
   { date: "2026-11-04T13:44:00+04:00", texte: "Mer\u00a0: les règles d'approche des baleines et des dauphins, résumées d'après les arrêtés du préfet de La Réunion." },

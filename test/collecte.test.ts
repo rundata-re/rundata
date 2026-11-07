@@ -182,7 +182,7 @@ describe("the tool and the pages", () => {
     const groups = page.split('class="card groupe"').slice(1);
     const both = groups.filter((g) => g.includes("calendrier 2026_POSS_11 du TCO") || g.includes("calendrier 2026_POSS_56 du TCO"));
     expect(both).toHaveLength(1);
-    for (const s of ["Impasse des Becs Roses", "Rue Hippolyte Piot", "calendrier 2026_POSS_11 du TCO (PDF)</a> · <a", "calendrier 2026_POSS_56 du TCO (PDF)"]) expect(both[0]).toContain(s);
+    for (const s of ["Impasse des Becs Roses", "Rue Hippolyte Piot", 'aria-label="calendrier 2026_POSS_11 du TCO (PDF)"', "du TCO (PDF)</a> · <a", 'aria-label="calendrier 2026_POSS_56 du TCO (PDF)"']) expect(both[0]).toContain(s);
   });
 
   it("renders /collecte and a commune's page every day of December, a calendar's days run out or not, then says on 1 January that the year's calendars are not out", () => {
@@ -201,13 +201,13 @@ describe("the tool and the pages", () => {
     const group = (iso: string, code: string) => collectePage("https://rundata.re", new Date(`${iso}T08:00:00Z`)).split('class="card groupe"').slice(1).filter((g) => g.includes(`calendrier ${code} du TCO`));
     // La Possession on 18/12: three calendars, three links in a row.
     const [three] = group("2026-12-18", "2026_POSS_29");
-    for (const c of ["2026_POSS_40", "2026_POSS_29", "2026_POSS_32"]) expect(three).toContain(`calendrier ${c} du TCO (PDF)</a>`);
+    for (const c of ["2026_POSS_40", "2026_POSS_29", "2026_POSS_32"]) expect(three).toContain(`aria-label="calendrier ${c} du TCO (PDF)">`);
     expect(three).toContain('<p class="note">La Possession · <a');
     expect(three).not.toContain("calendriers du TCO (PDF)</summary>");
     // Saint-Paul on 05/12: four calendars, folded under « 4 calendriers du TCO (PDF) ».
     const [four] = group("2026-12-05", "2026_SP1_34");
     expect(four).toContain('<details class="note"><summary>Saint-Paul · 4\u00a0calendriers du TCO (PDF)</summary><p><a');
-    for (const c of ["2026_SP1_34", "2026_SP1_18", "2026_SP1_22", "2026_SP1_20"]) expect(four).toContain(`calendrier ${c} du TCO (PDF)</a>`);
+    for (const c of ["2026_SP1_34", "2026_SP1_18", "2026_SP1_22", "2026_SP1_20"]) expect(four).toContain(`aria-label="calendrier ${c} du TCO (PDF)">`);
   });
 
   it("parts two calendars said alike by the first day that tells them apart, later in the year", () => {

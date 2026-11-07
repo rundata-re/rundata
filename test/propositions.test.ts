@@ -30,12 +30,17 @@ const plain = (html: string) => html.replace(/’/g, "'").replace(/[\u00a0\u202f
 const rows = <T = Record<string, unknown>>(sql: string) => db.prepare(sql).all() as T[];
 
 beforeEach(() => {
+  // The clock of a request handled (it reads the hour itself, where the functions are given NOW) set at NOW: the
+  // proposal's date, 07/11/2026, is checked against it, and on the real clock it was past from 08/11/2026 on. Only
+  // Date: the timers still run.
+  vi.useFakeTimers({ toFake: ["Date"], now: NOW });
   sent = [];
   plug();
   // Each test opens the space itself: closed, nothing of it answers.
   formulaires.ouvrir(false);
 });
 afterEach(() => {
+  vi.useRealTimers();
   propositions.configure(undefined);
   formulaires.configure(undefined);
   formulaires.ouvrir(formulaires.ASSOCIATIONS_EN_LIGNE);

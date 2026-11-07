@@ -149,6 +149,7 @@ describe("French typography on the pages", () => {
 describe("the site's name in the prose", () => {
   const nom = (h: string) => typo(h, true);
   const S = '<span class="ident">rundata.re</span>';
+  const T = '<span class="ident">rundata.<wbr class="adr">re</span>';
 
   it("is put in a span without hyphenation, so that Safari never cuts it « runda-ta.re » at 160 px", () => {
     expect(nom("<p>Mettre rundata.re sur l'écran d'accueil.</p>")).toBe(`<p>Mettre ${S} sur l'écran d'accueil.</p>`);
@@ -158,7 +159,6 @@ describe("the site's name in the prose", () => {
   });
 
   it("goes to the next line after its « . » in an <h1>, where it is wider than its line at 160 px, not in an <h2>", () => {
-    const T = '<span class="ident">rundata.<wbr class="adr">re</span>';
     expect(nom("<h1>Brancher rundata.re à votre IA</h1><p>rundata.re</p>")).toBe(`<h1>Brancher ${T} à votre IA</h1><p>${S}</p>`);
     expect(nom('<h1 id="x">Joindre <b>rundata.re</b></h1><h2>Ce que rundata.re promet</h2><header>rundata.re</header>')).toBe(
       `<h1 id="x">Joindre <b>${T}</b></h1><h2>Ce que ${S} promet</h2><header>${S}</header>`,
@@ -169,10 +169,20 @@ describe("the site's name in the prose", () => {
     expect(CSS).toContain("wbr.adr{display:inline}");
   });
 
-  it("is left as written in a link, the title, an option, an SVG, the code and the attributes", () => {
+  it("is put in its span in a link's name, without the <wbr> of an <h1>, its attributes as written", () => {
+    expect(nom('<a href="https://rundata.re/" aria-label="rundata.re">rundata.re</a>')).toBe(
+      `<a href="https://rundata.re/" aria-label="rundata.re">${S}</a>`,
+    );
+    expect(nom('<a href="/">voir <b>rundata.re</b></a> et rundata.re')).toBe(`<a href="/">voir <b>${S}</b></a> et ${S}`);
+    expect(nom('<h1><a href="/">rundata.re</a> et rundata.re</h1>')).toBe(`<h1><a href="/">${S}</a> et ${T}</h1>`);
+    expect(nom('<abbr title="x">rundata.re</abbr>')).toBe(`<abbr title="x">${S}</abbr>`);
+    expect(nom(nom(`<a class="sheet-app" href="/application">Mettre rundata.re sur l'écran d'accueil →</a>`))).toBe(
+      `<a class="sheet-app" href="/application">Mettre ${S} sur l'écran d'accueil →</a>`,
+    );
+  });
+
+  it("is left as written in the title, an option, an SVG, the code and the attributes", () => {
     for (const h of [
-      '<a href="https://rundata.re/" aria-label="rundata.re">rundata.re</a>',
-      '<a href="/">voir <b>rundata.re</b></a>',
       "<title>Météo · rundata.re</title>",
       "<select><option>rundata.re</option></select>",
       '<svg viewBox="0 0 9 9"><title>rundata.re</title><text>rundata.re</text></svg>',
@@ -180,8 +190,8 @@ describe("the site's name in the prose", () => {
       '<img alt="rundata.re" src="/a.png"><meta name="description" content="rundata.re">',
     ])
       expect(nom(h)).toBe(h);
-    // After the link, the prose again.
-    expect(nom('<a href="/">rundata.re</a> et rundata.re')).toBe(`<a href="/">rundata.re</a> et ${S}`);
+    // After the option, the prose again.
+    expect(nom("<option>rundata.re</option> et rundata.re")).toBe(`<option>rundata.re</option> et ${S}`);
   });
 
   it("is left as written in a path, an address or a longer name, and is put in its span once", () => {

@@ -114,7 +114,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     const words = (text("<h1>", "</div></div>") + text("<section style=", "</section>")).replaceAll("<wbr>", "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThan(200);
     expect(words).toBeLessThan(360);
-    expect(page).toContain('<a href="/a-propos">qui fait rundata.re\u00a0?</a>');
+    expect(page).toContain('<a href="/a-propos">qui fait <span class="ident">rundata.re</span>\u00a0?</a>');
   });
 
   it("sends /mentions-legales to the notice in /conditions, written as the LCEN allows an anonymous editor", async () => {
@@ -133,7 +133,9 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
   it("cuts « Ce que le site compte » and « Joindre rundata.re » in short paragraphs, and puts the breadcrumb on the legal pages", async () => {
     const page = async (path: string) => (await handle(get(path, BROWSER), new Cache())).text();
     const section = (html: string, from: string, to: string) => html.slice(html.indexOf(from), html.indexOf(to, html.indexOf(from)));
-    const paragraphs = (html: string) => html.split("<p").slice(1).map((p) => p.split("</p>")[0]);
+    // The site's name counted as written, without its span.
+    const paragraphs = (html: string) =>
+      html.split("<p").slice(1).map((p) => p.split("</p>")[0].replaceAll('<span class="ident">rundata.re</span>', "rundata.re"));
     // One paragraph of about 2 000 characters before (31/10/2026); its first sentence alone is about 1 000.
     const compte = paragraphs(section(await page("/confidentialite"), "<h2>Ce que le site compte</h2>", '<p id="mesure-cloudflare"'));
     expect(compte.length).toBe(6);
@@ -143,7 +145,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(Math.max(...joindre.map((p) => p.length))).toBeLessThan(500);
     for (const [path, name] of [["/confidentialite", "Confidentialité"], ["/conditions", "Conditions d&#39;utilisation et mentions légales"]]) {
       const html = await page(path);
-      expect(html).toContain(`<nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">rundata.re</a></li><li aria-current="page">${name}</li></ol></nav>`);
+      expect(html).toContain(`<nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/"><span class="ident">rundata.re</span></a></li><li aria-current="page">${name}</li></ol></nav>`);
       expect(html).toContain(`"@type":"BreadcrumbList"`);
       expect(html).toContain(`"item":"https://rundata.re${path}"`);
     }

@@ -61,7 +61,7 @@ describe("/application, rundata.re on the home screen", () => {
   it("is linked from the install block, the menu and the footer of every page, and listed in the sitemap", async () => {
     const page = await text("/valeurs");
     expect(page).toContain(`<a href="/application">Autre téléphone ou autre navigateur : les étapes pour chacun →</a>`);
-    expect(page).toContain(`<p class="sheet-h">Sur votre téléphone</p>\n      <p><a class="sheet-app" href="/application">Mettre rundata.re sur l'écran d'accueil →</a></p>`);
+    expect(page).toContain(`<p class="sheet-h">Sur votre téléphone</p>\n      <p><a class="sheet-app" href="/application">Mettre <span class="ident">rundata.re</span> sur l'écran d'accueil →</a></p>`);
     expect(page).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · `);
     expect(await text("/sitemap.xml")).toContain("<loc>https://rundata.re/application</loc>");
   });

@@ -99,7 +99,7 @@ describe("tide gauges", () => {
     expect(html).toMatch(/<li><span>Pointe des Galets \(Le Port\)<\/span><b>basse mer vers 06:00<\/b>/);
     expect(html).toContain("Calcul de rundata.re d&#39;après les mesures, pas la prédiction officielle du SHOM : analyse harmonique");
     expect(html).toContain("heures à environ 15 min près au Port, 20 min près à Sainte-Marie, hauteurs à environ 5 cm près ; pas de coefficient.");
-    expect(html).toContain("REFMAR. http://dx.doi.org/10.17183/REFMAR#RONIM");
+    expect(html).toContain("REFMAR. http://<wbr>dx.<wbr>doi.<wbr>org/<wbr>10.<wbr>17183/<wbr>REFMAR#RONIM");
   });
 
   it("gives the next tide on a coastal place's page and on its commune's tile, labelled", async () => {

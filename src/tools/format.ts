@@ -100,7 +100,7 @@ export function syllabes(mot: string): string {
  * wider than its line (`.mc`), so that it goes to the next line whole where it fits there. A soft hyphen alone also cuts
  * a word that fits on the next line, to fill the end of the line before it (« d'éruption » at 320 px). A compound word
  * (« Sainte-Suzanne, », « rendez-vous ») in the same box: whole where it fits, else cut at its own hyphen. Text only:
- * the tags, what an entity writes and the text of a `.nm`, `.nw` or `.nom` are left as they are.
+ * the tags, what an entity writes and the text of a `.nm`, `.nw` or `.nb` (nobreak) are left as they are.
  */
 export function motsLongs(html: string): string {
   const mots = (texte: string) =>
@@ -119,7 +119,7 @@ export function motsLongs(html: string): string {
     out += garde ? html.slice(de, fin) : mots(html.slice(de, fin));
     if (ferme < 0) break;
     const balise = html.slice(ouvre, ferme + 1);
-    garde = balise === `<span class="nm">` || balise === `<span class="nw">` || balise === `<span class="nom">`;
+    garde = balise === `<span class="nm">` || balise === `<span class="nw">` || balise === `<span class="nb">`;
     out += balise;
     de = ferme + 1;
   }

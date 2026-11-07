@@ -177,7 +177,8 @@ describe("the children's page", () => {
     // The question to ask an AI, in Creole and in French, a no-break space before each « ? ».
     expect(ASK_KREOL).toBe(`Kosa néna pou fé ek marmay sé wikenn la${NBSP}? Gèt si https://rundata.re/enfants é di amwin.`);
     expect(ASK_FRANCAIS).toBe(`Où aller avec les enfants ce week-end à La Réunion${NBSP}? Lis https://rundata.re/enfants et propose-moi des lieux et des activités pour leur âge, près de chez moi.`);
-    expect(html).toContain(`<p class="askq">« ${esc(ASK_KREOL)} »</p>`);
+    // The address cut after a « / » or a « . » rather than inside a word, with the text at 200 %.
+    expect(html).toContain(`<p class="askq">« ${esc(ASK_KREOL).replace("https://rundata.re/enfants", "https://<wbr>rundata.<wbr>re/<wbr>enfants")} »</p>`);
     expect(html).toContain(`https://claude.ai/new?q=${encodeURIComponent(ASK_FRANCAIS)}`);
     // Never all the places, never open without the source's hours.
     expect(html).not.toMatch(/tous les lieux|toutes les activités/i);

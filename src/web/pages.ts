@@ -572,6 +572,9 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 /* A name in a tile's figure (wholeName): whole on its line where it fits, else broken at its hyphen, never past the tile's
    edge. */
 .tv .nm{display:inline-block;max-width:100%}
+/* A hyphenated name kept whole (nobreak, domains.ts): on the next line rather than broken at its hyphen, unless it is
+   longer than a line; then broken at its hyphens rather than pushing the page wider. Underlined like the link it sits in. */
+.nb{display:inline-block;max-width:100%;text-decoration:inherit}
 /* A long or compound word of a tile's figure (motsLongs, with its soft hyphens): whole on its line where it fits, else
    cut where French cuts it or at its own hyphen, never anywhere (« événe-ments » at 768 px with the text at 200 %, not
    « événemen / ts »). */
@@ -985,10 +988,6 @@ overflow-x:auto;scroll-snap-type:x mandatory}
 .rows.eau .refs small{color:inherit}
 .rows .refs a{display:block;margin:0;padding:.5rem 0;font-weight:400}
 .rows .nw{white-space:nowrap}
-/* A hyphenated name kept on one line (nobreak(): « Saint-Leu », « La Plaine-des-Palmistes »); with the text at 125 % or
-   more on a phone (under 19.9 em; 318 px at 100 %) it may break at its hyphens, as « La Plaine-des-Palmistes » at 200 %
-   is wider than a card's line on a 390 px phone. */
-.nom{white-space:nowrap}@media (max-width:19.9rem){.nom{white-space:normal}}
 .rows small.said{color:var(--lave);font-weight:700}
 .rows .age{font-weight:700;font-size:.85rem;text-align:right;max-width:8.5rem}.rows .age.i{font-weight:400;color:var(--muted)}
 .kind h4{margin:.9rem 0 .1rem;font:700 .95rem system-ui,sans-serif;color:var(--muted)}
@@ -1611,7 +1610,7 @@ export function credits(list: Credit[]): string {
   const seen = new Set<string>();
   return list
     .filter((c) => !seen.has(c.source) && seen.add(c.source))
-    .map((c) => `${esc(c.source)} (${esc(c.licence)})`)
+    .map((c) => `${adressesCoupables(c.source)} (${adressesCoupables(c.licence)})`)
     .join(" ; ");
 }
 
@@ -1681,6 +1680,32 @@ const FLAG_RCF = `<svg viewBox="0 0 60 40" aria-hidden="true">${FLAG_INNER}</svg
 const FLAG_FR = `<svg viewBox="0 0 3 2" aria-hidden="true"><path fill="#002654" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#ce1126" d="M2 0h1v2H2z"/></svg>`;
 
 /**
+ * Escaped text whose addresses written out (https://rundata.re/coupures-eau, www.ipgp.fr/…, dx.doi.org/10.17183/REFMAR)
+ * get a <wbr> after each run of « / » or « . » inside them: with the text at 200 %, a line ends there rather than one or
+ * two letters before the end of a word, which overflow-wrap:anywhere does only when a piece is longer than its line.
+ * <wbr> holds no character, so a copy of the text is the text. Never in a link: Chrome names it with a space for each
+ * <wbr> (coupable, domains.ts).
+ */
+export function adressesCoupables(text: string): string {
+  return text.split(/((?:https?:\/\/|www\.)[^\s«»"<>]+)/).map((x, i) => (i % 2 ? coupeAdresse(x) : esc(x))).join("");
+}
+
+/** An address (or an e-mail address), escaped, with a <wbr> after each run of « / », « . » or « @ » inside it. */
+function coupeAdresse(address: string): string {
+  return address.split(/(?<=[/.@])(?=[^/.@])/).map(esc).join("<wbr>");
+}
+
+/**
+ * A link whose words are its address (rundata.re/actualites, data.regionreunion.com, contact@rundata.re), cut after a
+ * « / », a « . » or a « @ » rather than one or two letters before the end, with the text at 150 or 200 %. Its <wbr> would
+ * make Chrome name the link with a space for each (« rundata. re/ actualites »): its name is the address, in aria-label.
+ * `attrs`: more attributes, each with its leading space.
+ */
+export function lienAdresse(href: string, text: string, attrs = ""): string {
+  return `<a href="${esc(href)}"${attrs} aria-label="${esc(text)}">${coupeAdresse(text)}</a>`;
+}
+
+/**
  * « Domann out IA » (Réunion Creole: « demande à ton IA »): buttons that open ChatGPT or Claude in a new tab with the
  * question already typed, asking it to read the page. The way in for people on a free plan, or who will not add a
  * connector. A switch picks Creole (the default) or French, which the assistants answer more surely; the choice
@@ -1702,7 +1727,7 @@ export function ask(kreol: string, francais: string): string {
     const page = /https?:\/\/\S+/.exec(question)?.[0];
     return `<div data-l="${l}" lang="${l}"${hidden ? " hidden" : ""}><p class="askt">${title}</p>` +
       `<p class="ask">${a(`https://chatgpt.com/?hints=search&amp;q=${q}`, "ChatGPT", page)}${a(`https://claude.ai/new?q=${q}`, "Claude", page)}</p>${COPIED}` +
-      `<p class="askq">« ${esc(question)} »</p></div>`;
+      `<p class="askq">« ${adressesCoupables(question)} »</p></div>`;
   };
   const b = (l: string, flag: string, name: string, on: boolean) =>
     `<button type="button" data-askl="${l}" aria-pressed="${on}">${flag}${name}</button>`;
@@ -1724,8 +1749,9 @@ export const COPIED = `<p class="copie" role="status" lang="fr" hidden></p>`;
 
 /** The connector's address with its copy button; `id` keeps several on one page apart. */
 export function connector(origin: string, id: string): string {
-  // Cut after its last « / » when it does not fit, never inside « mcp » (31/10/2026: « https://rundata.re/m | cp »).
-  return `<div class="connect"><code id="${id}">${esc(origin)}/<wbr>mcp</code><button type="button" data-copy="${id}" data-signal aria-label="Copier l'adresse du connecteur">Copier</button></div>`;
+  // Cut after a « / » or a « . » when it does not fit, never inside « mcp » (31/10/2026: « https://rundata.re/m | cp »)
+  // nor inside « rundata » (« https://run | data.re/ » with the text at 200 %).
+  return `<div class="connect"><code id="${id}">${adressesCoupables(`${origin}/mcp`)}</code><button type="button" data-copy="${id}" data-signal aria-label="Copier l'adresse du connecteur">Copier</button></div>`;
 }
 
 export const withTemp = (data: Cached<HomeData> | null) => data?.value.stations.filter((x) => x.temperature != null && !x.stale) ?? [];
@@ -2513,7 +2539,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   <ul class="seas">${computed.map((x) => `<li><span>${esc(x.nom)}</span>` +
       x.next.liste.map((e, i) => (i === 0 ? `<b>${esc(e.type)} ${esc(e.heure)}</b><span>${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""}</span>` : `<span>${esc(e.type)} ${esc(e.heure)} (${esc(thin(`${fr(e.hauteur_m)} m`))})</span>`)).join("") +
       `</li>`).join("")}</ul>
-  <p class="note">${esc(TIDE_LABEL.replace(/^c/, "C"))} : analyse harmonique de plusieurs années de mesures de ces deux marégraphes ; heures à environ ${computed.map((x) => `${x.minutes} min près ${a(x.gauge.commune)}`).join(", ")}, hauteurs à environ 5 cm près ; pas de coefficient. La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation. ${esc(TIDE_CITATION)}</p>
+  <p class="note">${esc(TIDE_LABEL.replace(/^c/, "C"))} : analyse harmonique de plusieurs années de mesures de ces deux marégraphes ; heures à environ ${computed.map((x) => `${x.minutes} min près ${a(x.gauge.commune)}`).join(", ")}, hauteurs à environ 5 cm près ; pas de coefficient. La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation. ${adressesCoupables(TIDE_CITATION)}</p>
   <p class="note">Ces heures valent près des deux marégraphes, à ${NEAR_KM} km au plus. Plus loin sur la côte, la marée arrive à une autre heure : horaires officiels du SHOM pour ${["Saint-Leu", "Saint-Pierre"].map((c) => `<a href="${esc(shomPort(c)!)}">${c}</a>`).join(" et ")}.</p>`
     : "";
   const tide = d?.maree?.length || coming
@@ -2602,7 +2628,7 @@ ${bathingBlock(now, undefined, g)}${g.feuille}
 </section>
 <section class="card cta" aria-labelledby="h-ia">
   <h2 id="h-ia">Demandez à votre IA : « la mer est à combien à Saint-Leu ? », « la houle demain à Saint-Pierre ? »</h2>
-  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure la plus proche de la plage, avec sa date, et la houle prévue, étiquetée comme une prévision (outil <code>temperature_mer</code>). Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
+  <p>Avec le connecteur, votre assistant va chercher lui-même la mesure la plus proche de la plage, avec sa date, et la houle prévue, étiquetée comme une prévision (outil <code>temperature_<wbr>mer</code>). Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>`;
   return layout(origin, { title, description, path: "/mer", jsonld, alerte }, band, g.ligne + body);
@@ -2649,7 +2675,7 @@ ${enLigne() ? `<h2 id="associations-donnees">Ce que les clubs et associations en
 </section>`
     : `<section style="${PROSE}">
   <h2>Le service</h2>
-  <p>rundata.re est un service gratuit\u00a0: un site et un connecteur MCP (<code>${esc(origin)}/mcp</code>) qui réunissent les données publiques de La Réunion pour les personnes et leurs assistants IA. Il n'y a ni compte ni abonnement. Son code est libre, sous licence MIT, sur <a href="${GITHUB}">GitHub</a>.</p>
+  <p>rundata.re est un service gratuit\u00a0: un site et un connecteur MCP (<code>${adressesCoupables(`${origin}/mcp`)}</code>) qui réunissent les données publiques de La Réunion pour les personnes et leurs assistants IA. Il n'y a ni compte ni abonnement. Son code est libre, sous licence MIT, sur <a href="${GITHUB}">GitHub</a>.</p>
   <h2>Pas un service officiel, pas de garantie</h2>
   <p>Les données viennent d'organismes publics et de projets ouverts, cités dans chaque réponse. Elles sont données telles quelles, sans garantie d'exactitude, de fraîcheur ni de disponibilité. Pour un cyclone, de fortes pluies, une crue ou une éruption, seules comptent la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a> et les consignes de la préfecture. La fiche d'une adresse n'a aucune valeur juridique : le cadastre est un document fiscal, et l'état des risques obligatoire pour une vente ou une location reste à établir.</p>
   <h2>Usage raisonnable</h2>

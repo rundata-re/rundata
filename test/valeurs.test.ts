@@ -84,7 +84,7 @@ describe("/ouvrir-ses-donnees, the guide to making one's information reusable", 
     for (const id of ["pourquoi", "texte", "flux", "fichier", "licence", "site-d-abord", "securite", "loi", "rundata"]) expect(page).toContain(`<h2 id="${id}">`);
     // The secret address of a calendar is named, never asked for.
     expect(page).toContain("L'«\u00a0Adresse secrète au format iCal\u00a0», elle, ne se donne jamais");
-    expect(page).toContain('<a href="mailto:contact@rundata.re">contact@rundata.re</a>');
+    expect(page).toContain('<a href="mailto:contact@rundata.re" aria-label="contact@rundata.re">contact@<wbr>rundata.<wbr>re</a>');
   });
 
   it("is linked from the footer, /a-propos, /valeurs, /sites-sans-reponse and the sitemap", async () => {

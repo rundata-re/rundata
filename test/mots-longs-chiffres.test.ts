@@ -35,7 +35,7 @@ describe("the long words of a tile's figure", () => {
     expect(motsLongs("éruption à la Fournaise")).toBe(`<span class="mc">érup­tion</span> à la Fournaise`);
     expect(motsLongs(`crise à <span class="nm">Saint-Joseph</span>`)).toBe(`crise à <span class="nm">Saint-Joseph</span>`);
     expect(motsLongs(`<span class="nw">renouvelable</span>`)).toBe(`<span class="nw">renouvelable</span>`);
-    expect(motsLongs(`<span class="nom">Sainte-Suzanne</span>`)).toBe(`<span class="nom">Sainte-Suzanne</span>`);
+    expect(motsLongs(`<span class="nb">Sainte-Suzanne</span>`)).toBe(`<span class="nb">Sainte-Suzanne</span>`);
     expect(motsLongs(`<a href="/electricite-renouvelable">EDF</a>`)).toBe(`<a href="/electricite-renouvelable">EDF</a>`);
   });
 

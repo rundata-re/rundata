@@ -6,7 +6,7 @@
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { askHome, connectSteps } from "./home.js";
-import { connector, layout } from "./pages.js";
+import { adressesCoupables, connector, layout } from "./pages.js";
 
 export const PATH = "/mcp";
 const TITLE = "Ajouter rundata.re à votre IA · connecteur MCP gratuit";
@@ -57,7 +57,7 @@ export function connecteurPage(origin: string, alerte?: Alerte): string {
 <section style="max-width:44rem;display:grid;gap:1rem" aria-labelledby="h-savoir">
   <h2 id="h-savoir">Bon à savoir</h2>
   <p>Votre assistant n'envoie au connecteur que les paramètres de sa question, par exemple « Saint-Paul », jamais votre conversation. Aucun compte, aucun cookie : voir <a href="/confidentialite">la confidentialité</a> et <a href="/conditions">les conditions d'utilisation</a>. Sans connecteur, les mêmes données sont sur <a href="/">le site</a>, et <a href="/a-propos">qui fait rundata.re</a> est expliqué ici.</p>
-  <p>Pour les développeurs : point d'accès MCP en HTTP (<i>Streamable HTTP</i>, sans état, réponses JSON), sans authentification, à l'adresse <code>${origin}/mcp</code>, en POST.</p>
+  <p>Pour les développeurs : point d'accès MCP en HTTP (<i>Streamable HTTP</i>, sans état, réponses JSON), sans authentification, à l'adresse <code>${adressesCoupables(`${origin}/mcp`)}</code>, en POST.</p>
 </section>`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, CRUMB, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);
 }

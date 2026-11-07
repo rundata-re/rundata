@@ -939,7 +939,7 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     formulaires.ouvrir(true);
     // Under the dated press release, never inside it.
     const presse = plain(await (await get("/presse")).text());
-    expect(presse).toContain('</article><p>Clubs et associations : comment ils publient leurs événements sur rundata.re, gratuitement et en données ouvertes, <a href="https://rundata.re/associations">rundata.re/associations</a></p></section>');
+    expect(presse).toContain('</article><p>Clubs et associations : comment ils publient leurs événements sur rundata.re, gratuitement et en données ouvertes, <a href="https://rundata.re/associations" aria-label="rundata.re/associations">rundata.<wbr>re/<wbr>associations</a></p></section>');
     const privacy = plain(await (await get("/confidentialite")).text());
     expect(privacy).toContain('<li><a href="/associations">Clubs et associations</a></li>');
     expect(privacy).toContain('<h2 id="associations-donnees">');

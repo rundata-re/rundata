@@ -6,7 +6,7 @@
  */
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
-import { layout } from "./pages.js";
+import { layout, lienAdresse } from "./pages.js";
 
 export const PATH = "/ouvrir-ses-donnees";
 const TITLE = "Rendre ses données accessibles · rundata.re";
@@ -39,14 +39,14 @@ export function ouvrirDonneesPage(origin: string, alerte?: Alerte): string {
   <h2 id="flux">2. Un flux\u00a0: il est souvent déjà là</h2>
   <p>Un flux permet à d'autres sites et applications de suivre vos nouvelles publications sans les recopier à la main.</p>
   <ul>
-    <li><b>Votre site tourne sous WordPress\u00a0?</b> Il publie déjà des flux RSS, sans rien installer (<a href="https://developer.wordpress.org/advanced-administration/wordpress/feeds/">documentation WordPress</a>). Sur un site WordPress, le flux des articles se trouve en général à l'adresse du site suivie de /feed/, comme <a href="https://wordpress.org/news/feed/">wordpress.org/news/feed/</a>. Son API est active elle aussi, et ce qui est public sur le site l'est aussi par elle (<a href="https://developer.wordpress.org/rest-api/">documentation</a>). Rien à faire, sauf ne pas la couper\u00a0: WordPress le déconseille (<a href="https://developer.wordpress.org/rest-api/frequently-asked-questions/">questions fréquentes</a>).</li>
+    <li><b>Votre site tourne sous WordPress\u00a0?</b> Il publie déjà des flux RSS, sans rien installer (<a href="https://developer.wordpress.org/advanced-administration/wordpress/feeds/">documentation WordPress</a>). Sur un site WordPress, le flux des articles se trouve en général à l'adresse du site suivie de /feed/, comme ${lienAdresse("https://wordpress.org/news/feed/", "wordpress.org/news/feed/")}. Son API est active elle aussi, et ce qui est public sur le site l'est aussi par elle (<a href="https://developer.wordpress.org/rest-api/">documentation</a>). Rien à faire, sauf ne pas la couper\u00a0: WordPress le déconseille (<a href="https://developer.wordpress.org/rest-api/frequently-asked-questions/">questions fréquentes</a>).</li>
     <li><b>Un site Wix avec son module Blog\u00a0?</b> Il propose un flux RSS (<a href="https://support.wix.com/en/article/wix-blog-adding-an-rss-button-to-your-site">aide Wix</a>).</li>
     <li><b>Votre agenda est dans Google Agenda\u00a0?</b> Rendez-le public, puis donnez son «\u00a0Adresse publique au format iCal\u00a0»\u00a0: d'autres pourront le lire (<a href="https://support.google.com/calendar/answer/37083?hl=fr">aide Google</a>). L'«\u00a0Adresse secrète au format iCal\u00a0», elle, ne se donne jamais (<a href="https://support.google.com/calendar/answer/37648?hl=fr">aide Google</a>).</li>
     <li><b>Pas encore d'agenda en ligne\u00a0?</b> OpenAgenda a des fonctions gratuites, dont des exports ics et json et une interface de programmation (<a href="https://openagenda.com/fr/p/fonctions">fonctionnalités gratuites d'OpenAgenda</a>, page lue le 31/10/2026). Les annonces d'un agenda public y sont diffusées sous Licence Ouverte 2.0 (<a href="https://doc.openagenda.com/fr/article/conditions-generales-dutilisation-xq325m/">conditions d'utilisation</a>). Les fonctions payantes servent surtout à rassembler beaucoup d'agendas\u00a0: pour publier le sien, la version gratuite suffit en général.</li>
   </ul>
   <h2 id="fichier">3. Un fichier simple, pour une liste</h2>
   <p>Des horaires, une liste d'équipements, des résultats\u00a0: un tableur enregistré au format CSV suffit. Vous pouvez le publier sur data.gouv.fr, la plateforme publique des données ouvertes. L'inscription y est gratuite, et les données publiées doivent être gratuites et d'intérêt public (<a href="https://www.data.gouv.fr/pages/legal/cgu">modalités d'utilisation</a>). On peut y publier au nom de sa structure, association comprise (<a href="https://guides.data.gouv.fr/organisations/creer-une-organisation">créer une organisation</a>), en déposant le fichier ou en donnant le lien d'un fichier qui reste sur votre site (<a href="https://guides.data.gouv.fr/jeux-de-donnees/publier-un-jeu-de-donnees">publier un jeu de données</a>).</p>
-  <p>À La Réunion, le portail de la Région, <a href="https://data.regionreunion.com">data.regionreunion.com</a>, présente déjà des données de communes et d'intercommunalités de l'île.</p>
+  <p>À La Réunion, le portail de la Région, ${lienAdresse("https://data.regionreunion.com", "data.regionreunion.com")}, présente déjà des données de communes et d'intercommunalités de l'île.</p>
   <h2 id="licence">4. Une licence claire</h2>
   <p>Dites ce que les autres ont le droit de faire. Le plus simple est la Licence Ouverte 2.0, celle des données publiques de l'État (<a href="https://www.data.gouv.fr/pages/legal/licences/etalab-2.0">texte de la licence</a>). Avec elle, chacun peut réutiliser vos informations, même pour un usage commercial, à condition de citer la source et la date de mise à jour, sans faire croire à un soutien officiel.</p>
   <p>Dans vos mentions légales, une phrase suffit. Par exemple, et c'est une proposition de rundata.re, pas un modèle officiel\u00a0: «\u00a0Sauf mention contraire, les informations publiées sur ce site peuvent être réutilisées selon la Licence Ouverte 2.0, en citant [votre structure] et la date de mise à jour. Les photos et logos n'en font pas partie.\u00a0»</p>
@@ -61,7 +61,7 @@ export function ouvrirDonneesPage(origin: string, alerte?: Alerte): string {
   <h2 id="loi">7. Pour les communes et les administrations, c'est aussi la loi</h2>
   <p>La loi pour une République numérique du 7 octobre 2016 vise les administrations de 50 agents ou plus (en équivalents temps plein) et, pour une collectivité, d'au moins 3 500 habitants. Elles publient en ligne, entre autres, leurs bases de données mises à jour régulièrement, et les données dont la publication présente un intérêt économique, social, sanitaire ou environnemental (articles L312-1-1 et D312-1-1-1 du code des relations entre le public et l'administration). Les 24 communes de La Réunion comptent toutes plus de 3 500 habitants. Ce guide aide aussi à remplir cette obligation, simplement.</p>
   <h2 id="rundata">8. Et rundata.re\u00a0?</h2>
-  <p>Si vos informations sont publiées ainsi, rundata.re peut les reprendre en citant votre nom, votre page et l'heure de la lecture. Une question, ou envie que nous lisions votre flux\u00a0? Écrivez à <a href="mailto:contact@rundata.re">contact@rundata.re</a>.</p>
+  <p>Si vos informations sont publiées ainsi, rundata.re peut les reprendre en citant votre nom, votre page et l'heure de la lecture. Une question, ou envie que nous lisions votre flux\u00a0? Écrivez à ${lienAdresse("mailto:contact@rundata.re", "contact@rundata.re")}.</p>
 </section>`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, CRUMB, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);
 }

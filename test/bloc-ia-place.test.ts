@@ -47,7 +47,7 @@ describe("the question to an assistant", () => {
       expect(at(t, '<div class="askbox">')).toBeLessThan(at(t, first));
     }
     // The Creole question as written, in French typography.
-    expect(text(meteo)).toContain("Gèt bann mézir an dirèk si https://rundata.re/meteo é di amwin lèr la mézir.");
+    expect(text(meteo)).toContain("Gèt bann mézir an dirèk si https://<wbr>rundata.<wbr>re/<wbr>meteo é di amwin lèr la mézir.");
   });
 
   it("follows the first section of a commune's page and of /volcan, whose map is not on a phone", () => {

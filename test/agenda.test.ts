@@ -59,7 +59,8 @@ function file(url: string, form?: string): string | undefined {
   if (url.includes("lespas")) return "lespas.html";
   if (url.includes("lesechoir")) return "sechoir.json";
   if (url.includes("saint-andre")) return "rss_saint-andre.xml";
-  if (url.includes("mairie-saintpaul")) return "tribe_saint-paul.json";
+  // Saint-Paul's export, read alone: its API answers 404 since 06/11/2026.
+  if (url.includes("mairie-saintpaul")) return "ics_saint-paul.ics";
   if (url.includes("ville-port")) return "tribe_le-port.json";
   if (url.includes("trois-bassins")) return "tribe_trois-bassins.json";
   if (url.includes("lrvb.re")) return "tribe_lrvb.json";
@@ -1323,7 +1324,8 @@ describe("agenda", () => {
     const b = body(value);
     expect(vide).toBe(false);
     expect(b.lieu.commune).toBe("Saint-Paul");
-    expect(b.evenements.map((e: { titre: string }) => e.titre)).toContain("La Koupe Kartié – Saint-Gilles-les-Bains");
+    // From Saint-Paul's export, which writes the hyphen where its API wrote a dash.
+    expect(b.evenements.map((e: { titre: string }) => e.titre)).toContain("La Koupe Kartié - Saint-Gilles-les-Bains");
     expect(b.evenements.every((e: { commune: string }) => e.commune === "Saint-Paul")).toBe(true);
   });
 

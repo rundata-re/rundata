@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
 import * as coraux from "../src/providers/coraux.js";
-import { temperatureMer } from "../src/tools/mer.js";
+import { corauxBlock, temperatureMer } from "../src/tools/mer.js";
 import { reefSection } from "../src/web/pages.js";
 
 // NOAA Coral Reef Watch's 5 km grid over the island, 7 days without a gap (05/04 to 11/04/2025, read on 07/11/2026): a
@@ -99,7 +99,8 @@ describe("coraux", () => {
         { lieu: "au large de Saint-Pierre", niveau: `${coraux.NIVEAUX[6]} (selon NOAA)`, niveau_noaa: 6, chaleur_accumulee_12_semaines: "17,0 °C-semaines", temperature_satellite: "28,6 °C" },
         { lieu: "au large de Saint-Benoît", niveau: `${coraux.NIVEAUX[5]} (selon NOAA)`, niveau_noaa: 5, chaleur_accumulee_12_semaines: "15,4 °C-semaines", temperature_satellite: "28,5 °C" },
       ],
-      niveau_sur: SEPT,
+      // What the warnings say is not said again.
+      niveau_sur: "maximum des 7 derniers jours, selon NOAA Coral Reef Watch",
       jour_mesure: "2025-04-11",
       nature: coraux.nature("2025-04-11"),
       aide_chaleur: coraux.AIDE_CHALEUR,
@@ -108,6 +109,18 @@ describe("coraux", () => {
     expect(r.sources.map((s: { source: string }) => s.source)).toContain(coraux.SOURCE.nom);
     await temperatureMer(cache, undefined, NOW);
     expect(asked.filter((u) => u.includes("dhw_5km"))).toHaveLength(1);
+  });
+
+  it("gives a place's answer the point nearest to it only", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      if (String(url).includes("dhw_5km")) return new Response(CSV);
+      throw new Error("offline");
+    });
+    const cache = new Cache(undefined, () => NOW.getTime());
+    const near = (lon: number, lat: number) => corauxBlock(cache, { lon, lat }).then((b) => b!.points.map((p) => p.lieu));
+    expect(await near(55.4713, -21.3419)).toEqual(["au large de Saint-Pierre"]);
+    expect(await near(55.2253, -21.0573)).toEqual(["Récif de Saint-Gilles et l'Hermitage"]);
+    expect((await corauxBlock(cache))!.points).toHaveLength(3);
   });
 
   it("answers temperature_mer without the block, and with the rest, when NOAA's grid does not answer", async () => {

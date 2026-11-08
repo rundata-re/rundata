@@ -114,7 +114,9 @@ describe("temperature_mer", () => {
       throw new Error("down");
     });
     const r = body(await temperatureMer(await offlineCache({ acspoCached: false }), "Saint-Leu", NOW));
-    expect(r.mesure).toMatchObject({ nature: "mesure_satellite", source: expect.stringMatching(/MODIS/) });
+    // The measure's product is said once, in its sources.
+    expect(r.mesure).toMatchObject({ nature: "mesure_satellite" });
+    expect(r.mesure.source).toBeUndefined();
     expect(r.sources[0].source).toMatch(/MODIS/);
   });
 

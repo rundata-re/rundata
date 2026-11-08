@@ -46,14 +46,14 @@ export const COVERAGE =
   "Température de surface MESURÉE par satellite : le dernier passage de NOAA-20 au-dessus de l'île (vers 01:40 et vers 14:00, " +
   "publié moins de 1 h 30 après), quand il voit la mer à moins de 5 km du lieu, sinon la moyenne d'une journée (NOAA ACSPO, " +
   "ou NASA MODIS en secours), qui paraît au plus tôt le lendemain. Les jours de nuages il n'y a pas de mesure : la dernière peut " +
-  "dater de plusieurs jours. Chaque réponse dit de quel produit vient la valeur, avec l'heure du passage ou le jour de la moyenne. " +
-  `Vagues : PRÉVISION, jamais mélangée aux mesures, du modèle ${houle.MODEL_MF.nom} (maille d'environ ${houle.MODEL_MF.maille_km} km), ` +
+  "dater de plusieurs jours. " +
+  `Vagues : PRÉVISION, jamais mélangée aux mesures, du modèle ${houle.MODEL_MF.nom}, ` +
   `qui distingue la houle principale du reste de la mer, là où il a un point à moins de ${MF_MAX_KM} km (ouest et sud), ` +
-  `et du modèle ${houle.MODEL.nom} (maille de ${houle.MODEL.maille_km} km) ailleurs (nord et est), sur ${houle.MODEL.echeance_jours} jours. ` +
+  `et du modèle ${houle.MODEL.nom} ailleurs (nord et est), sur ${houle.MODEL.echeance_jours} jours. ` +
   "Aucune bouée de l'île ne publie de mesure de houle en ce moment (réseau Candhis du Cerema : dernières mesures en avril 2023).";
 
 const CAVEATS = [
-  "Mesure satellite de la toute première couche d'eau, sur des carrés de 2 à 4 km (un passage du satellite, ou la moyenne d'une journée) : " +
+  "Mesure satellite de la toute première couche d'eau, sur des carrés de 2 à 4 km : " +
     "c'est la température au large du lieu, pas au bord de la plage ni dans le lagon, qui peuvent différer.",
 ];
 
@@ -221,6 +221,15 @@ function reading(place: Place, gs: Grid[], now: Date, passes?: Cached<viirs.Pass
     };
   }
   return null;
+}
+
+/**
+ * A measure as an answer says it: without `passage`, which `quand` says, and for one place without `source`, which its
+ * `sources` say; the tour keeps each point's product.
+ */
+function said<M extends { passage?: string; source: string }>(m: M, place = false) {
+  const { passage: _passage, source, ...rest } = m;
+  return place ? rest : { ...rest, source };
 }
 
 /** Calendar days at La Réunion from the day of a measure to `now`: one on the morning after, whatever the hour. */
@@ -421,7 +430,8 @@ function waveBlock(w: Cached<houle.Waves>, place: Place, now: Date) {
         ...(d.modele === "mfwam" ? { periode_moyenne: seconds(d) } : { periode: seconds(d) }),
         venant: from(d.direction),
       })),
-      pas_de_3h: at.steps.slice(0, 8).map(stepText),
+      // The 7 steps after `maintenant`, which is the first: the same 24 hours, said once.
+      pas_de_3h: at.steps.slice(1, 8).map(stepText),
       mis_a_jour: localTime(w.fetchedAt),
       avertissements: [...WAVE_WARNINGS, ...(w.stale ? ["Service de prévision momentanément injoignable : prévision précédente, plus ancienne."] : [])],
     },
@@ -439,8 +449,11 @@ function unavailable() {
   };
 }
 
-/** The risk of coral bleaching at the three points, in marketing's words; null when NOAA's grid could not be read. */
-export async function corauxBlock(cache: Cache) {
+/**
+ * The risk of coral bleaching at the three points, in marketing's words; null when NOAA's grid could not be read. Near
+ * a place, its nearest point only: the other two are not about it.
+ */
+export async function corauxBlock(cache: Cache, near?: { lon: number; lat: number }) {
   let c: Cached<coraux.Coraux>;
   try {
     c = await coraux.coraux(cache);
@@ -450,13 +463,14 @@ export async function corauxBlock(cache: Cache) {
   }
   return {
     titre: coraux.TITRE,
-    points: c.value.points.map((p) => ({
+    points: (near ? [c.value.points.reduce((a, b) => (distanceKm(near.lon, near.lat, b.lon, b.lat) < distanceKm(near.lon, near.lat, a.lon, a.lat) ? b : a))] : c.value.points).map((p) => ({
       lieu: p.nom,
       ...(p.niveau != null ? { niveau: `${coraux.NIVEAUX[p.niveau]} (selon NOAA)`, niveau_noaa: p.niveau } : {}),
       ...(p.dhw != null ? { chaleur_accumulee_12_semaines: coraux.chaleur(p.dhw) } : {}),
       ...(p.sst != null ? { temperature_satellite: `${fr(Math.round(p.sst * 10) / 10)}\u00a0°C` } : {}),
     })),
-    niveau_sur: coraux.niveauSur(c.value.jours),
+    // Without « estimation par satellite, pas une observation sur le récif », which the warnings say.
+    niveau_sur: coraux.niveauSur(c.value.jours, false),
     jour_mesure: c.value.jour,
     nature: coraux.nature(c.value.jour),
     aide_chaleur: coraux.AIDE_CHALEUR,
@@ -474,11 +488,14 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     const at = TOUR.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, v: w ? wavesAt(w.value, p.lon, p.lat, now) : null }));
     const points = at.map(({ p, v }, i) => ({
       lieu: p.nom,
-      ...t?.readings[i].r?.mesure,
+      ...(t?.readings[i].r ? said(t.readings[i].r!.mesure) : {}),
       ...(v ? { vagues_prevision: waveWords(v.now), vagues_modele: v.model.nom } : {}),
     }));
     const models = modelsOf(at.map((a) => a.v));
-    const measured = points.filter((p) => "temperature_eau" in p).map((p) => `${p.lieu}\u00a0: ${p.temperature_eau} (${measuredOn(p as { jour_mesure: string; passage?: string }, now)})`);
+    const measured = points.flatMap((p, i) => {
+      const r = t?.readings[i].r;
+      return r ? [`${p.lieu}\u00a0: ${r.mesure.temperature_eau} (${measuredOn(r.mesure, now)})`] : [];
+    });
     const waves = points.filter((p) => p.vagues_prevision).map((p) => `${p.lieu} ${p.vagues_prevision}`);
     return text({
       resume: [
@@ -500,7 +517,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
 
   const r = resolvePlace(lieu);
   if (!r) return notFound(lieu);
-  const [gs, ps, w, reef] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
+  const [gs, ps, w, reef] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache, r.lieu) : null]);
   if (!gs.length && !ps && !w) return unavailable();
   const m = gs.length || ps ? reading(r.lieu, gs, now, ps) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
@@ -519,7 +536,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
   return text({
     lieu: placeBlock(lieu, r),
     resume: `${temperature} ${waves}`,
-    ...(m ? { mesure: m.mesure } : {}),
+    ...(m ? { mesure: said(m.mesure, true) } : {}),
     ...(v ? { etat_de_la_mer: v.bloc } : {}),
     ...(m
       ? {

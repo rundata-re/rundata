@@ -113,7 +113,9 @@ describe("the waves in temperature_mer", () => {
     expect(s.jours[0]).toMatchObject({ houle_principale: expect.stringMatching(/ m$/), periode_moyenne: expect.stringMatching(/ s$/) });
     expect(s.jours[0].periode).toBeUndefined();
     expect(s.jours.map((d: { jour: string }) => d.jour)).toEqual(["jeudi 22/10", "vendredi 23/10", "samedi 24/10", "dimanche 25/10"]);
-    expect(s.pas_de_3h).toHaveLength(8);
+    // The 7 steps after the one under way, which `maintenant` says.
+    expect(s.pas_de_3h).toHaveLength(7);
+    expect(s.pas_de_3h[0].heures).not.toBe(s.maintenant.heures);
     expect(s.avertissements.join(" ")).toMatch(/PRÉVISION d'un modèle numérique de vagues, pas une mesure.*lagon/);
     expect(s.avertissements.join(" ")).toMatch(/vigilance vagues-submersion/);
     // Never mixed: the measurement stays the satellite's, the forecast has no temperature.

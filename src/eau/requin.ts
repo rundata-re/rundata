@@ -94,6 +94,8 @@ export const T = {
   reduit: "Ces zones réduisent le risque requin, elles ne le suppriment pas.",
   intro: `Zones citées par le ${CSR} (securite-requin.re) :`,
   ouverture: "Nous ne savons pas si une zone est ouverte aujourd'hui : regardez le drapeau sur place.",
+  /** Under the zones of an answer, once one ZONEX is said: what a ZONEX is, said once rather than on each (the size of an answer). */
+  zonex: "ZONEX : zone où la baignade et les activités de vague sont permises seulement quand elle est ouverte et surveillée.",
   /** Under the zones, once one kept by the BSAN is said. */
   bsan: "BSAN : Brigade de sécurité des activités nautiques.",
   /** Instagram and Facebook carry the links of STORIES on the pages. */
@@ -145,9 +147,15 @@ export function zonesNear(lon: number, lat: number, commune?: string): (Zone & {
 /** Whether T.bsan goes under these zones: once one is said with the BSAN (marketing). */
 export const saysBsan = (zones: Zone[], now: Date) => inForce(now) && zones.some((z) => z.par);
 
-/** The lines of a list of zones, then T.bsan if it goes under them. */
+/**
+ * The lines of a list of zones in an answer, then T.zonex and T.bsan if they go under them. A ZONEX's line is its kind
+ * only, « ZONEX des Brisants : ZONEX (BSAN et RESSAC). », and T.zonex says once what a ZONEX permits: the same words
+ * on every ZONEX made an answer about Saint-Gilles go past its size (bin/check-sources.ts).
+ */
 export function zoneLines(zones: Zone[], now: Date): string[] {
-  return [...zones.map((z) => zoneLine(z, now)), ...(saysBsan(zones, now) ? [T.bsan] : [])];
+  const zonex = inForce(now) && zones.some((z) => z.type === "zonex");
+  const line = (z: Zone) => (zonex && z.type === "zonex" ? `${z.nom} : ZONEX${z.par ? ` (${z.par})` : ""}.` : zoneLine(z, now));
+  return [...zones.map(line), ...(zonex ? [T.zonex] : []), ...(saysBsan(zones, now) ? [T.bsan] : [])];
 }
 
 export function zoneLine(z: Zone, now: Date): string {

@@ -19,28 +19,28 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | contrôle | valeur | limite |
 |---|---:|---:|
 | pire passage planifié, sous-requêtes | 523 | 550 |
-| pire passage planifié, appels KV et D1 | 119 | 1 000 |
-| pire passage planifié, CPU (ms) | 4 806 | 30 000 |
+| pire passage planifié, appels KV et D1 | 122 | 1 000 |
+| pire passage planifié, CPU (ms) | 4 866 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
-| passage le plus chargé (cadences les plus courtes), sous-requêtes | 213 | 550 |
-| vue la plus chère, sous-requêtes | 86 | 200 |
-| question la plus chère, sous-requêtes | 72 | 200 |
+| passage le plus chargé (cadences les plus courtes), sous-requêtes | 226 | 550 |
+| vue la plus chère, sous-requêtes | 87 | 200 |
+| question la plus chère, sous-requêtes | 73 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 523 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 477, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 213 (cadences les plus courtes).
+- Marge : le pire passage planifié est à 523 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 477, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 137 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture).
-- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:50 UTC, 213 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, web:chiffres, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, emploi:offres, connecteurs:lecture).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 396 sous-requêtes à 00:00 UTC.
-- Vue la plus chère : /, 86. Question la plus chère : resume_du_jour, 72. Construction la plus chère : web:chiffres:evenements, 48.
+- Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
+- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 397 sous-requêtes à 00:00 UTC.
+- Vue la plus chère : /, 87. Question la plus chère : resume_du_jour, 73. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 523 | 36 | 59 | 24 | 1 164 | 284 | 4 806 |
-| tâche planifiée, par jour | 32 488 | 4 754 | 4 107 | 2 407 | 102 914 | 58 511 | 264 976 |
-| tâche planifiée, par jour, cadences les plus courtes | 51 620 | 6 386 | 6 411 | 2 887 | 107 954 | 58 511 | 413 256 |
-| tâche planifiée, par mois (30 jours) | 974 627 | 142 620 | 123 210 | 72 223 | 3 087 411 | 1 755 321 | 7 949 267 |
+| pire passage planifié | 523 | 38 | 60 | 24 | 1 164 | 284 | 4 866 |
+| tâche planifiée, par jour | 36 207 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 256 |
+| tâche planifiée, par jour, cadences les plus courtes | 55 339 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 536 |
+| tâche planifiée, par mois (30 jours) | 1 086 197 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 467 667 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -69,7 +69,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | onf:sentiers | copie partagée (KV) | 60 min | 00:45 | 5 |  | 1 |  |  |  | 40 | estimé |
 | web:volcan | copie partagée (KV) | 30 min (5 au plus court) | 00:15 | 34 | 3 | 4 | 2 | 21 |  | 110 | mesuré |
 | web:courant | copie partagée (KV) | 120 min (30 au plus court) | 00:20 | 8 |  | 1 |  |  |  | 30 | mesuré |
-| web:chiffres | copie partagée (KV) | 60 min | 00:50 | 46 |  | 1 | 2 | 21 |  | 60 | estimé |
+| web:chiffres | copie partagée (KV) | 60 min | 00:50 | 33 |  | 1 | 2 | 21 |  | 60 | estimé |
 | web:chiffres:evenements | copie partagée (KV) | 360 min (60 au plus court) | 00:30 | 49 |  | 1 |  |  |  | 200 | estimé |
 | ens:ile | copie partagée, avec ce que les autres ont laissé | 180 min | 01:40 | 5 |  | 1 |  |  |  | 40 | mesuré |
 | vigilance:carte | carte officielle de la vigilance : son état (KV), lu à chaque copie de la vigilance | 5 min | 00:00 | 1 | 1 |  |  |  |  |  | code |
@@ -114,7 +114,8 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | candhis:etat | bouées Candhis du Cerema : la dernière mesure de chaque bouée de La Réunion, une requête par type de bouée, gardée dans KV | 30 min | 00:10 | 5 | 1 | 1 |  |  |  | 10 | code |
 | ffck:etat | canoë-kayak et va'a : le calendrier de la FFCK, une page au plus par passage (la liste d'une saison une fois par jour, sinon la fiche d'une épreuve de l'île), gardé dans KV | 30 min | 00:25 | 3 | 1 | 1 |  |  |  | 300 | code |
 | connecteurs:lecture | plateformes des associations (HelloAsso) : les événements publics d'une association reliée, relus toutes les 6 h, une association par passage | 5 min | 00:00 | 22 |  |  | 7 | 202 | 203 | 20 | estimé |
-| meteofrance:veille | météo de la veille : la pluie et les températures de 0 h à 24 h de chaque station Météo-France (paquet horaire, environ 900 ko), écrites dans KV à 00:20 heure de La Réunion, relues à 00:35 si la dernière heure manquait | 1440 min | 20:20 | 3 |  | 1 |  |  |  | 40 | estimé |
+| meteofrance:veille | météo de la veille : la pluie et les températures de 0 h à 24 h de chaque station Météo-France, prises dans le paquet horaire de la copie des stations, écrites dans KV à 00:20 heure de La Réunion, refaites à 00:35 si la dernière heure manquait | 1440 min | 20:20 | 2 | 1 | 1 |  |  |  | 40 | code |
+| meteofrance:stations | stations Météo-France : les 11 derniers paquets de 6 minutes et le paquet horaire du 974, lus quand ils sont dus et gardés dans KV pour les questions et les vues, écrits à chaque passage où l'un a été lu | 5 min | 00:00 | 14 | 1 | 1 |  |  |  | 60 | code |
 | propositions:purge | propositions des clubs : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 1 |  |  | 1 |  | 10 | 5 | estimé |
 | clubs:annuaire | espace club : les clubs de handball de l'île, relus une fois par semaine sur la carte de MonClub (environ 2,2 Mo), à 04:00 heure de La Réunion | 10080 min | 00:00 | 4 |  |  | 3 | 40 | 40 | 60 | code |
 | clubs:purge | espace club : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 3 |  |  | 3 |  | 5 | 2 | estimé |
@@ -133,17 +134,17 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 86 | 11 | 3 | 2 | 840 |  | 110 | mesuré |
-| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 86 | 10 | 3 |  |  |  | 160 | mesuré |
-| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 72 | 13 | 4 |  |  |  | 130 | mesuré |
-| /meteo/* | la météo d'un lieu | à chaque vue |  | 58 | 3 | 3 |  |  |  | 130 | mesuré |
+| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 87 | 12 | 3 | 2 | 840 |  | 110 | mesuré |
+| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 87 | 11 | 3 |  |  |  | 160 | mesuré |
+| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 73 | 14 | 4 |  |  |  | 130 | mesuré |
+| /meteo/* | la météo d'un lieu | à chaque vue |  | 59 | 4 | 3 |  |  |  | 130 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |
-| /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
-| /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 20 | code |
-| /meteo/rejeu-24h-5min.json | la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 40 | code |
-| /meteo/rejeu-7j-15min.json | la barre de lecture de /meteo sur 7 jours, plus d'images : le radar au quart d'heure une fois la semaine pleine (KV, ses jours) et les heures rondes des stations | à chaque vue |  | 13 | 9 |  | 1 | 140 |  | 120 | code |
-| /meteo/rejeu-jour-*.json | la barre de lecture de /meteo sur un jour choisi : le radar toutes les 5 min de ce jour (KV) et les heures rondes des stations | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 30 | code |
-| /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV) | à chaque vue |  | 6 | 2 |  | 1 | 140 |  | 40 | code |
+| /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
+| /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
+| /meteo/rejeu-24h-5min.json | la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations | à chaque vue |  | 9 | 5 |  | 1 | 140 |  | 40 | code |
+| /meteo/rejeu-7j-15min.json | la barre de lecture de /meteo sur 7 jours, plus d'images : le radar au quart d'heure une fois la semaine pleine (KV, ses jours) et les heures rondes des stations | à chaque vue |  | 14 | 10 |  | 1 | 140 |  | 120 | code |
+| /meteo/rejeu-jour-*.json | la barre de lecture de /meteo sur un jour choisi : le radar toutes les 5 min de ce jour (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 30 | code |
+| /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV) | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 40 | code |
 | /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
 | /carte/resume.json | les chiffres du bandeau « En direct » de /carte : la dernière copie des stations, des rivières, des sentiers et des séismes | à chaque vue |  | 12 | 4 |  |  |  |  | 20 | code |
@@ -171,7 +172,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /antennes | la page des antennes : la carte et le tableau (dans le paquet), et la copie des sites mobiles hors service | à chaque vue |  | 8 | 1 |  |  |  |  | 80 | code |
 | /chiffres | rundata.re en chiffres : la copie de ses comptes, avec la vigilance et la version de l'en-tête | à chaque vue |  | 9 | 1 |  |  |  |  | 40 | code |
 | * | toute autre adresse : la vigilance et la version, lues pour l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 70 | mesuré |
-| /meteo | la page /meteo | à chaque vue |  | 49 | 3 | 3 |  |  |  | 80 | mesuré |
+| /meteo | la page /meteo | à chaque vue |  | 50 | 4 | 3 |  |  |  | 80 | mesuré |
 | /volcan | la page /volcan | à chaque vue |  | 55 | 4 | 3 | 2 | 21 |  | 60 | mesuré |
 | /air | la page /air | à chaque vue |  | 14 | 1 |  |  |  |  | 40 | mesuré |
 | /electricite | la page /electricite | à chaque vue |  | 17 | 1 |  |  |  |  | 30 | mesuré |
@@ -203,8 +204,8 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 72 | 4 | 4 |  |  |  | 130 | estimé |
-| meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 38 |  |  |  |  |  | 120 | mesuré |
+| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 73 | 5 | 4 |  |  |  | 130 | estimé |
+| meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 39 | 1 |  |  |  |  | 120 | mesuré |
 | evenements | l'outil evenements | à chaque vue |  | 33 |  |  |  |  |  | 190 | mesuré |
 | sport | l'outil sport | à chaque vue |  | 33 |  |  |  |  |  | 160 | mesuré |
 | volcan_seismes | l'outil volcan_seismes | à chaque vue |  | 42 | 3 | 3 | 2 | 21 |  | 90 | mesuré |
@@ -301,6 +302,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | ffck:etat | providers/avis-eau, providers/ffck |
 | connecteurs:lecture | connecteurs/helloasso |
 | meteofrance:veille | providers/meteofrance, providers/mf-auth |
+| meteofrance:stations | providers/meteofrance, providers/mf-auth |
 | clubs:annuaire | clubs/monclub |
 | / | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
 | /communes/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance, providers/viirs |

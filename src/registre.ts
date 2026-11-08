@@ -543,18 +543,35 @@ const SCHEDULED: Entry[] = [
     from: ["src/connecteurs/helloasso.ts", "src/connecteurs/lecture.ts"],
     basis: "estimé",
   },
-  // The day before at each Météo-France station (providers/meteofrance.ts keepVeille): the hourly package of the 974
-  // (about 900 kB), read once a day at 00:20 in La Réunion and again at 00:35 only when its last hour was not out yet
-  // (then with one read of KV first). Here the pass of 00:20: the token, the package, one write to KV.
+  // The day before at each Météo-France station (providers/meteofrance.ts keepVeille), at 00:20 in La Réunion and again
+  // at 00:35 only when its last hour was not out yet: the hourly package of the step below (meteofrance:stations),
+  // taken from the isolate's memory, never read here. At 00:35, the day kept read first (KV): a read and a write.
   {
     id: "meteofrance:veille",
     trigger: "planifiée",
-    what: "météo de la veille\u00a0: la pluie et les températures de 0\u00a0h à 24\u00a0h de chaque station Météo-France (paquet horaire, environ 900 ko), écrites dans KV à 00:20 heure de La Réunion, relues à 00:35 si la dernière heure manquait",
+    what: "météo de la veille\u00a0: la pluie et les températures de 0\u00a0h à 24\u00a0h de chaque station Météo-France, prises dans le paquet horaire de la copie des stations, écrites dans KV à 00:20 heure de La Réunion, refaites à 00:35 si la dernière heure manquait",
     every: 24 * 60,
     offset: 20 * 60 + 20,
-    run: { subrequests: 3, kvWrites: 1, cpuMs: 40 },
+    run: { subrequests: 2, kvReads: 1, kvWrites: 1, cpuMs: 40 },
     from: ["src/providers/meteofrance.ts"],
-    basis: "estimé",
+    basis: "code",
+  },
+  // The Météo-France stations' copy in KV (providers/meteofrance.ts refreshShared), at each event: the copy read (KV),
+  // the 11 slots of 6 minutes and the hourly package (about 900 kB) that are due as a question would judge them, the
+  // copy written when one was read. It never takes a token: without one held, it reads nothing (the token's reads are
+  // meteofrance:jeton's). Counted in test/meteofrance-kv.test.ts. The event's readers of the stations (/chiffres, the
+  // day before) take the copy from the isolate's memory: without the step, their one read of KV is this one. After a
+  // 401, the slots asked again with the next token, as every read of Météo-France in the event: not counted. CPU
+  // estimated as the day before's package, which it now parses, and the slots: to be measured in a Worker.
+  {
+    id: "meteofrance:stations",
+    trigger: "planifiée",
+    what: "stations Météo-France\u00a0: les 11 derniers paquets de 6 minutes et le paquet horaire du 974, lus quand ils sont dus et gardés dans KV pour les questions et les vues, écrits à chaque passage où l'un a été lu",
+    every: EVENT_MINUTES,
+    offset: 0,
+    run: { subrequests: 14, kvReads: 1, kvWrites: 1, cpuMs: 60 },
+    from: ["src/providers/meteofrance.ts"],
+    basis: "code",
   },
   {
     id: "propositions:purge",
@@ -913,7 +930,18 @@ const withIsland = (e: Entry): Entry => {
   const n = ISLAND_READS[e.id] ?? 0;
   return n ? { ...e, run: { ...e.run, subrequests: e.run.subrequests + 2 * n, kvReads: (e.run.kvReads ?? 0) + n, kvWrites: (e.run.kvWrites ?? 0) + n } } : e;
 };
-export const REGISTRY: Entry[] = ENTRIES.map(withIsland);
+/**
+ * The views and questions that read the Météo-France stations (providers/meteofrance.ts `observations`, `recentRain`):
+ * when their data center's slots or hourly package are too old, KV's copy (meteofrance:stations) is read once, at most
+ * once a minute in an isolate, before the slots too old there as well are read as before. A read of KV more, at worst.
+ */
+export const STATIONS_READS = new Set([
+  "/", "/communes/*", "/aujourdhui/*", "/meteo", "/meteo/*", "resume_du_jour", "meteo_actuelle",
+  "/meteo/rejeu-6h.json", "/meteo/rejeu-24h.json", "/meteo/rejeu-24h-5min.json", "/meteo/rejeu-7j-15min.json", "/meteo/rejeu-jour-*.json", "/meteo/rejeu-7j.json",
+]);
+const withStations = (e: Entry): Entry =>
+  STATIONS_READS.has(e.id) ? { ...e, run: { ...e.run, subrequests: e.run.subrequests + 1, kvReads: (e.run.kvReads ?? 0) + 1 } } : e;
+export const REGISTRY: Entry[] = ENTRIES.map(withIsland).map(withStations);
 
 // --- The totals ----------------------------------------------------------------------------------------------------
 

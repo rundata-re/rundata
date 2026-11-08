@@ -14,7 +14,7 @@ import type { Cache } from "../cache.js";
 import { distanceKm } from "../geo.js";
 import { region, inMemory, variable, type Reader } from "../hdf5.js";
 import { getBytes } from "../http.js";
-import { type SourceInfo, why } from "../types.js";
+import { type SourceInfo, UpstreamError, why } from "../types.js";
 
 export const SOURCE: SourceInfo = {
   id: "viirs",
@@ -56,6 +56,11 @@ const POSTED_AFTER = 35 * MINUTE;
 const RETRY = 10 * MINUTE;
 /** A granule still missing this long after it was measured is given up. */
 const GIVE_UP = 6 * 3600_000;
+/**
+ * A granule NOAA still answers 404 for this long after its end is a hole in the orbit (one at 22:50 UTC on 7 November
+ * 2026), not asked again: the others are posted within 80 minutes.
+ */
+const POSTED_BY = 90 * MINUTE;
 /** How long passes are kept, and the newest pass of each window kept to expect the next ones. */
 const KEEP = 30 * 3600_000;
 const ANCHOR = 4 * 86_400_000;
@@ -92,6 +97,8 @@ export interface Probe {
   granule: number;
   lu: boolean;
   essai: number;
+  /** NOAA answered 404 POSTED_BY or more after the granule's end: a hole, not asked again while the probe is kept. */
+  absent?: true;
 }
 
 export interface Passages {
@@ -177,14 +184,17 @@ export function expected(state: Passages, sat: Satellite, until: number): number
   return [...out].filter((g) => g >= from && g <= until).sort((a, b) => b - a);
 }
 
-/** The next granule to ask at `now`, the newest first: posted by now, never read, not tried in the last RETRY. */
+/**
+ * The next granule to ask at `now`, the newest first: posted by now, never read nor found a hole, not tried in the last
+ * RETRY.
+ */
 export function nextProbe(state: Passages, now: number): { sat: Satellite; granule: number } | undefined {
   const due: { sat: Satellite; granule: number }[] = [];
   for (const sat of SATELLITES) {
     for (const g of expected(state, sat, now)) {
       if (g + GRANULE + POSTED_AFTER > now || now - g > GIVE_UP) continue;
       const tried = state.sondes.find((s) => s.satellite === sat.id && s.granule === g);
-      if (tried && (tried.lu || now - tried.essai < RETRY)) continue;
+      if (tried && (tried.lu || tried.absent || now - tried.essai < RETRY)) continue;
       due.push({ sat, granule: g });
     }
   }
@@ -224,17 +234,20 @@ export async function build(cache: Cache, now = new Date()): Promise<Passages> {
   if (!next) return state;
   const { sat, granule } = next;
   let lu = false;
+  let absent = false;
   let pass: Pass | null = null;
   try {
     pass = await readPass(inMemory(await getBytes(SOURCE.id, granuleUrl(sat, granule), TIMEOUT_MS)), sat.id, granule);
     lu = true;
   } catch (err) {
-    // Not posted yet (404) is the usual case: asked again after RETRY, given up after GIVE_UP.
+    // Not posted yet (404) is the usual case: asked again after RETRY, given up after GIVE_UP; a 404 from POSTED_BY
+    // after its end is a hole, so that the window's other granules are asked instead of it, the newest first.
+    absent = err instanceof UpstreamError && err.status === 404 && now.getTime() - (granule + GRANULE) >= POSTED_BY;
     console.log(`source viirs : granule ${new Date(granule).toISOString()} pas lu:`, why(err));
   }
   return {
     passages: pass ? [pass, ...state.passages].sort((a, b) => b.heure - a.heure) : state.passages,
-    sondes: [{ satellite: sat.id, granule, lu, essai: now.getTime() }, ...state.sondes.filter((s) => !(s.satellite === sat.id && s.granule === granule))],
+    sondes: [{ satellite: sat.id, granule, lu, essai: now.getTime(), ...(absent && { absent: true as const }) }, ...state.sondes.filter((s) => !(s.satellite === sat.id && s.granule === granule))],
   };
 }
 

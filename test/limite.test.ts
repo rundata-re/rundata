@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type Limiteur, MESSAGE_FORMULAIRE, PAR_MINUTE, refuse, sorteDe } from "../src/limite.js";
+import { type Limiteur, MESSAGE_FORMULAIRE, MESSAGE_TRAJET, PAR_MINUTE, refuse, sorteDe } from "../src/limite.js";
 
 /** A binding that lets `n` calls through per key, then refuses; it records the keys. */
 function compteur(n: number): Limiteur & { keys: string[] } {
@@ -25,6 +25,29 @@ describe("the rate limit, per address", () => {
     for (const p of ["/mcp", "/mcp/"]) expect(sorteDe(req(p))).toBe("mcp");
     for (const p of ["/avis", "/associations/lien", "/associations/proposer", "/associations/relier/confirmer", "/associations/proposition/AbC"]) expect(sorteDe(req(p))).toBe("formulaire");
     for (const r of [req("/mcp", "GET"), req("/mcp/", "GET"), req("/avis", "GET"), req("/associations"), req("/csp-rapport"), req("/volcan", "GET")]) expect(sorteDe(r)).toBeUndefined();
+  });
+
+  it("counts a trip's page in GET or HEAD, not the bus's other pages", () => {
+    const trip = "/bus/trajet/alterneo/84/0_5105";
+    for (const m of ["GET", "HEAD"]) expect(sorteDe(req(trip, m)), m).toBe("trajet");
+    expect(sorteDe(req(trip, "POST"))).toBeUndefined();
+    for (const p of ["/bus", "/bus/trajet", "/bus/arret/saint-benoit/gare-de-saint-benoit", "/bus/itineraire"]) expect(sorteDe(req(p, "GET")), p).toBeUndefined();
+    // Far above a person's: at most 25 trips in a minute over 7 days to 08/11/2026, against 224 for a robot.
+    expect(PAR_MINUTE.trajet).toBe(60);
+  });
+
+  it("answers a trip past the threshold with a sentence, the address counted apart from its calls and sends", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const trajet = compteur(1);
+    const trip = "/bus/trajet/alterneo/84/0_5105";
+    expect(await refuse(req(trip, "GET"), { trajet })).toBeUndefined();
+    const r = await refuse(req(trip, "GET"), { trajet });
+    expect(r?.status).toBe(429);
+    expect(r?.headers.get("retry-after")).toBe("60");
+    expect(r?.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+    expect(await r?.text()).toBe(MESSAGE_TRAJET);
+    expect(MESSAGE_TRAJET).not.toMatch(/\d/);
+    expect(trajet.keys).toEqual(["trajet:203.0.113.7", "trajet:203.0.113.7"]);
   });
 
   it("counts the request of a club's link on any method, the club's other pages in GET not", () => {

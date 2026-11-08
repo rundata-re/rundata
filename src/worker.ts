@@ -135,6 +135,7 @@ interface Env {
   /** Rate Limiting: the calls to /mcp and the forms' sends, per address and per minute (src/limite.ts). */
   LIMITE_MCP?: limite.Limiteur;
   LIMITE_FORMULAIRES?: limite.Limiteur;
+  LIMITE_TRAJETS?: limite.Limiteur;
 }
 
 /** The part of a D1 binding used here. */
@@ -404,7 +405,7 @@ export default {
     const robot = refusRobot(request);
     if (robot) return robot;
     // A connection past its threshold is answered before anything is read or built.
-    const trop = await limite.refuse(request, { mcp: env.LIMITE_MCP, formulaire: env.LIMITE_FORMULAIRES });
+    const trop = await limite.refuse(request, { mcp: env.LIMITE_MCP, formulaire: env.LIMITE_FORMULAIRES, trajet: env.LIMITE_TRAJETS });
     if (trop) return trop;
     // The demo video, sent through the Worker for it alone (wrangler.jsonc, run_worker_first): the static assets answer
     // a byte range with the whole file, and Safari plays a video only from ranges (web/plage.ts). Same headers as

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { interdit, INTERDITS, refusRobot, ROBOTS_NOMMES } from "../src/robots.js";
+import { HEBERGEUR_INTERDITS, interdit, INTERDITS, refusRobot, ROBOTS_NOMMES, ROBOTS_REFUSES } from "../src/robots.js";
 import worker from "../src/worker.js";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
@@ -63,10 +63,11 @@ describe("named robots on what robots.txt forbids them", () => {
     const robots = await (await handle(new Request("https://rundata.re/robots.txt"), new Cache(new MemoryStore()))).text();
     const all = robots.split("\n\n").find((b) => b.startsWith("User-agent: *"))!;
     expect(all.split("\n").filter((l) => l.startsWith("Disallow: ")).map((l) => l.slice(10))).toEqual(INTERDITS);
-    // The same file as before the list was shared.
+    // The same file as before the list was shared, with the group of the robots refused everything.
     expect(robots).toBe(
       "User-agent: Googlebot\nUser-agent: GoogleOther\nUser-agent: Bingbot\nDisallow: /*?maj=\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /\n\n" +
-        "User-agent: *\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /\n\nSitemap: https://rundata.re/sitemap.xml\n",
+        "User-agent: *\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /\n\n" +
+        "User-agent: DotBot\nUser-agent: ElevenlabsCrawler\nDisallow: /\n\nSitemap: https://rundata.re/sitemap.xml\n",
     );
   });
 });
@@ -104,7 +105,7 @@ describe("browsers of a hosting network on what robots.txt forbids every robot",
     expect(refusRobot(fromNetwork(TRIP, BROWSER, 45102, "https://rundata.re/bus/arret/gare-routiere-de-saint-denis"))).toBeUndefined();
     // A referer from elsewhere is not the site.
     expect(refusRobot(fromNetwork(TRIP, BROWSER, 45102, "https://rundata.re.example.com/"))?.status).toBe(403);
-    for (const url of ["https://rundata.re/", "https://rundata.re/bus", "https://rundata.re/sentiers", "https://rundata.re/bus/arret/gare-routiere-de-saint-denis"]) {
+    for (const url of ["https://rundata.re/", "https://rundata.re/bus", "https://rundata.re/sentiers", "https://rundata.re/bus/arret"]) {
       expect(refusRobot(fromNetwork(url, BROWSER, 45102))).toBeUndefined();
     }
     // A home network (AS37002, Réunicable), Meta's checker, and a request without request.cf.
@@ -115,6 +116,28 @@ describe("browsers of a hosting network on what robots.txt forbids every robot",
     expect(refusRobot(fromNetwork(TRIP, GOOGLEBOT, 16509))).toBeUndefined();
   });
 
+  it("are refused a stop's page without a referer from the site, with a sentence that does not say robots.txt forbids it", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    // As on 07/11/2026: the same Chrome of Singapore on the stops' pages, 165 ms of CPU each.
+    const stop = "https://rundata.re/bus/arret/saint-benoit/gare-de-saint-benoit";
+    const r = refusRobot(fromNetwork(stop, BROWSER, 45102))!;
+    expect(r.status).toBe(403);
+    expect(await r.text()).toBe(
+      "Cette page n'est pas servie au réseau d'un hébergeur (AS45102)\u00a0: certains robots s'y présentent comme des navigateurs. " +
+        "Si vous passez par un VPN, coupez-le, ou ouvrez-la depuis https://rundata.re/bus. Les autres pages de rundata.re restent ouvertes.\n",
+    );
+    expect(log).toHaveBeenLastCalledWith("navigateur d'hébergeur refusé : AS45102 (/bus/arret/saint-benoit/gare-de-saint-benoit)");
+    expect(HEBERGEUR_INTERDITS).toEqual([...INTERDITS, "/bus/arret/"]);
+    // Opened from the site, from a home network, by Meta's checker, by a search engine or an assistant: served.
+    expect(refusRobot(fromNetwork(stop, BROWSER, 45102, "https://rundata.re/bus"))).toBeUndefined();
+    for (const asn of [37002, 32934]) expect(refusRobot(fromNetwork(stop, BROWSER, asn))).toBeUndefined();
+    const keep = [GOOGLEBOT, "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.3; +https://openai.com/searchbot", "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot", "Claude-User (claude-code/2.1; +https://support.anthropic.com/)", "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)"];
+    for (const ua of keep) for (const asn of [16509, 14618, 45102]) expect(refusRobot(fromNetwork(stop, ua, asn)), `${ua} AS${asn}`).toBeUndefined();
+    // robots.txt does not forbid the stops to anyone.
+    expect(interdit(new URL(stop))).toBe(false);
+    log.mockRestore();
+  });
+
   it("leave a named robot's refusal as it was, from any network and with a referer from the site", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     for (const asn of [45102, 37002]) {
@@ -123,5 +146,35 @@ describe("browsers of a hosting network on what robots.txt forbids every robot",
       expect(log).toHaveBeenLastCalledWith("robot refusé : GPTBot (/bus/trajet/alterneo/84/0_5105)");
     }
     log.mockRestore();
+  });
+});
+
+describe("robots of no use to the site", () => {
+  const DOTBOT = "Mozilla/5.0 (compatible; DotBot/1.2; +https://opensiteexplorer.org/dotbot; help@moz.com)";
+  const ELEVENLABS = "Mozilla/5.0 (compatible; ElevenlabsCrawler/1.0; +https://elevenlabs.io/docs/bots)";
+
+  it("are refused every page before anything is read, robots.txt excepted", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const fetch = vi.fn(async () => new Response(""));
+    vi.stubGlobal("fetch", fetch);
+    const env = new Proxy({}, { get: (_, k) => { throw new Error(`binding ${String(k)} read`); } });
+    for (const ua of [DOTBOT, ELEVENLABS, DOTBOT.toLowerCase()]) {
+      for (const p of ["/", "/sentiers", "/bus/arret/saint-benoit/gare-de-saint-benoit", "/mcp"]) {
+        const r = await worker.fetch(req(`https://rundata.re${p}`, ua), env as never, ctx);
+        expect([r.status, await r.text()], `${ua} ${p}`).toEqual([403, "Interdit par https://rundata.re/robots.txt\n"]);
+      }
+      expect(refusRobot(req("https://rundata.re/robots.txt", ua))).toBeUndefined();
+    }
+    expect(log).toHaveBeenLastCalledWith("robot refusé partout : DotBot (/mcp)");
+    expect(fetch).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+    log.mockRestore();
+  });
+
+  it("are forbidden everything by robots.txt, in a group of their own, and the other robots keep theirs", async () => {
+    expect(ROBOTS_REFUSES).toEqual(["DotBot", "ElevenlabsCrawler"]);
+    const robots = await (await handle(new Request("https://rundata.re/robots.txt"), new Cache(new MemoryStore()))).text();
+    expect(robots.split("\n\n")).toContain("User-agent: DotBot\nUser-agent: ElevenlabsCrawler\nDisallow: /");
+    for (const ua of [GOOGLEBOT, BROWSER, UA.GPTBot]) expect(refusRobot(req("https://rundata.re/sentiers", ua))).toBeUndefined();
   });
 });

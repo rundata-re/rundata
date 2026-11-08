@@ -150,6 +150,41 @@ describe("viirs's build, one granule at most", () => {
     expect(state.passages).toHaveLength(1);
     expect(state.sondes[0].lu).toBe(true);
   });
+
+  it("passes over a granule missing from NOAA's orbit, once its posting time is over", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const asked: string[] = [];
+    let status = 404;
+    vi.stubGlobal("fetch", async (url: string) => {
+      asked.push(url);
+      return new Response("", { status });
+    });
+    const hole = at("2026-11-07T22:50:00Z");
+    const store = new MemoryStore();
+    const run = async (iso: string) => {
+      const now = at(iso);
+      const state = await viirs.build(new Cache(store, () => now), new Date(now));
+      await store.put(viirs.KEY, { value: state, fetchedAt: now });
+      return state;
+    };
+    // 40 minutes after its end, not posted yet: asked again 10 minutes later.
+    let state = await run("2026-11-07T23:40:00Z");
+    expect(state.sondes[0]).toMatchObject({ granule: hole, lu: false });
+    expect(state.sondes[0].absent).toBeUndefined();
+    state = await run("2026-11-07T23:50:00Z");
+    expect(state.sondes[0].granule).toBe(hole);
+    // Still 404 at 00:30, 90 minutes after its end: a hole, and the window's granules before it are asked instead.
+    state = await run("2026-11-08T00:30:00Z");
+    expect(state.sondes[0]).toMatchObject({ granule: hole, absent: true });
+    state = await run("2026-11-08T00:40:00Z");
+    expect(state.sondes[0].granule).toBe(hole - 10 * MIN);
+    expect(viirs.nextProbe(state, at("2026-11-08T04:00:00Z"))?.granule).not.toBe(hole);
+    // Another failure is no hole: asked again until 6 hours.
+    status = 503;
+    const late = await run("2026-11-08T00:50:00Z");
+    expect(late.sondes[0].absent).toBeUndefined();
+    expect(asked.filter((u) => u.includes("202611072250"))).toHaveLength(3);
+  });
 });
 
 describe("temperature_mer with the satellite's passes", () => {

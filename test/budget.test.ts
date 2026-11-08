@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, SERVICE_OPS_LIMIT, SUBREQUEST_LIMIT, costOf, count, counted, later, left, measured, reponseSaid, reserve, spent } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
@@ -56,7 +57,7 @@ const isolate = (kv: KvBinding = new Namespace()) =>
 
 let coverages: string[];
 
-function upstream(url: string): Response {
+function upstream(url: string, init?: RequestInit): Response {
   if (url.includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
   if (url.includes("DPPaquetObs")) return new Response(fixture("meteofrance_6min.csv"));
   if (url.includes("DPRadar")) return new Response(fixture("radar_lame_eau.h5"));
@@ -64,7 +65,8 @@ function upstream(url: string): Response {
   if (url.endsWith("/live/all")) return new Response(fixture("pioupiou_all.json"));
   if (url.includes("pioupiou")) return Response.json({ data: JSON.parse(String(fixture("pioupiou_all.json"))).data[0] });
   if (url.includes("data.gouv.fr/api/1/datasets/r/047b2ab9")) return new Response(fixture("ffvl_releves.json"));
-  if (url.includes("/thredds/dodsC/gridLEODYNRTL3SWW00/")) return new Response(fixture("acspo.ascii"));
+  const pub = coastwatch(url, init);
+  if (pub) return pub;
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
   if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
   if (url.includes("air-quality-api.open-meteo")) return new Response(fixture("cams_uv.json"));
@@ -84,9 +86,9 @@ function upstream(url: string): Response {
 beforeEach(() => {
   coverages = [];
   configure({ applicationId: "test" });
-  vi.stubGlobal("fetch", async (url: string) => {
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     overLimit();
-    return upstream(String(url));
+    return upstream(String(url), init);
   });
 });
 
@@ -221,7 +223,7 @@ describe("a run not all out yet, in the Worker", () => {
   const MISSING_FROM = Date.parse("2026-10-23T03:00:00Z");
 
   beforeEach(() => {
-    vi.stubGlobal("fetch", async (url: string) => {
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       overLimit();
       const u = decodeURIComponent(String(url));
       if (u.includes("GetCapabilities")) {
@@ -231,7 +233,7 @@ describe("a run not all out yet, in the Worker", () => {
         coverages.push(u);
         return new Response("not found", { status: 404 });
       }
-      return upstream(String(url));
+      return upstream(String(url), init);
     });
   });
 

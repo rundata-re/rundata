@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { costOf, count, counted, measured } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
@@ -55,7 +56,6 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/ville-saintemarie\.re\/wp-json\/wp\/v2\/posts/, "avis-eau/saintemarie.json"],
   [/saintleu\.re\/wp-json/, "avis-eau/saintleu.json"],
   [/atmo-france\.org/, "atmo_974.json"],
-  [/coastwatch\.noaa\.gov\/thredds/, "acspo.ascii"],
   [/erddap\/griddap\/erdMH1sst/, "modis.csv"],
   [/maregraphie\/observation\/json\/110/, "shom_110.json"],
   [/maregraphie\/observation\/json\/832/, "shom_832.json"],
@@ -93,6 +93,9 @@ let unrouted: string[] = [];
 const urlOf = (input: string | URL | Request) => (input instanceof Request ? input.url : String(input));
 const answering = async (input: string | URL | Request, init?: RequestInit) => {
   const url = urlOf(input);
+  // CoastWatch's /pub/, read by ranges (test/sst.ts).
+  const pub = coastwatch(url, init);
+  if (pub) return pub;
   const route = ROUTES.find(([re]) => re.test(url));
   if (!route) {
     unrouted.push(url);

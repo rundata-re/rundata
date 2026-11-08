@@ -2,7 +2,8 @@ import { PAGE_BUDGET, counted } from "../src/budget.js";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore, TieredStore } from "../src/cache.js";
-import { parseAscii, parseCsv } from "../src/providers/acspo.js";
+import { parseCsv } from "../src/providers/acspo.js";
+import { coastwatch, parseAscii } from "./sst.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { SATELLITES, satellitesEvery, temperatureMer } from "../src/tools/mer.js";
@@ -85,7 +86,7 @@ describe("temperature_mer", () => {
   it("gives the satellite reading with its date and its caveats", async () => {
     const r = body(await temperatureMer(await offlineCache(), "Hermitage", NOW));
     expect(r.mesure).toMatchObject({ nature: "mesure_satellite", jour_mesure: "2026-10-16", age_jours: 2 });
-    expect(r.resume).toMatch(/^Eau de mer près de la plage de l'Ermitage-les-Bains\u00a0: \d+(,\d)? °C, mesurée par satellite le 16\/10, il y a 2 jours \(moyenne du jour, point de mesure à \d+(,\d)? km\)\./);
+    expect(r.resume).toMatch(/^Eau de mer près de la plage de l'Ermitage-les-Bains\u00a0: \d+(,\d)? °C, mesurée par satellite \(moyenne du 16\/10, il y a 2 jours, point de mesure à \d+(,\d)? km\)\./);
     expect(r.avertissements).toContain(
       "Mesure du 16/10, il y a 2 jours\u00a0: ce n'est pas la température d'aujourd'hui. Une mesure par satellite paraît le lendemain, " +
         "et les jours de nuages il n'y en a pas\u00a0: la dernière peut donc dater de plusieurs jours.",
@@ -96,16 +97,16 @@ describe("temperature_mer", () => {
     // 16 October read on the 19th at 01:00, La Réunion: three days, though less than 72 hours.
     const night = new Date("2026-10-18T21:00:00Z");
     const late = body(await temperatureMer(await offlineCache(), "Hermitage", night));
-    expect(late.resume).toContain("mesurée par satellite le 16/10, il y a 3 jours (");
+    expect(late.resume).toContain("mesurée par satellite (moyenne du 16/10, il y a 3 jours, ");
     // The 17th read on the 18th: yesterday's, without the clouds.
     const r = body(await temperatureMer(await offlineCache({ acspoDay: "2026-10-17" }), "Hermitage", NOW));
-    expect(r.resume).toContain("mesurée par satellite hier, 17/10 (");
+    expect(r.resume).toContain("mesurée par satellite (moyenne d'hier, 17/10, ");
     expect(r.avertissements).toContain("Mesure d'hier (17/10)\u00a0: ce n'est pas la température d'aujourd'hui. Une mesure par satellite paraît le lendemain.");
   });
 
   it("gives each point of the coast its day and age", async () => {
     const r = body(await temperatureMer(await offlineCache(), undefined, NOW));
-    expect(r.resume).toMatch(/^Eau de mer, MESURÉE par satellite\u00a0: Plage de Boucan-Canot\u00a0: \d+(,\d)? °C \(le 16\/10, il y a 2 jours\)\u00a0; /);
+    expect(r.resume).toMatch(/^Eau de mer, MESURÉE par satellite\u00a0: Plage de Boucan-Canot\u00a0: \d+(,\d)? °C \(moyenne du 16\/10, il y a 2 jours\)\u00a0; /);
   });
 
   it("falls back to MODIS when the copy was made with the NOAA CoastWatch server down", async () => {
@@ -124,14 +125,14 @@ describe("temperature_mer", () => {
       throw new Error("offline");
     });
     // The corals' grid (providers/coraux.ts), read by the tool once a day, is not one of the satellites' grids.
-    const satellites = () => asked.filter((u) => (u.includes("/thredds/") || u.includes("/erddap/")) && !u.includes("dhw_5km"));
+    const satellites = () => asked.filter((u) => (u.includes("coastwatch.noaa.gov/pub/") || u.includes("/erddap/")) && !u.includes("dhw_5km"));
     // In the Worker, where the scheduled event shares the grids; a copy of 7 hours: it has not refreshed it since.
     const inWorker = async <T,>(f: () => Promise<T>) => (await counted(PAGE_BUDGET, f)).value;
     const cache = await offlineCache({ copyAgeMs: 7 * 3600_000 });
     const place = body(await inWorker(() => temperatureMer(cache, "Saint-Leu", NOW)));
     expect(place.mesure).toMatchObject({ nature: "mesure_satellite", jour_mesure: "2026-10-16" });
     const tour = body(await inWorker(() => temperatureMer(cache, undefined, NOW)));
-    expect(tour.resume).toMatch(/^Eau de mer, MESURÉE par satellite : Plage de Boucan-Canot : \d+(,\d)? °C \(le 16\/10, il y a 2 jours\)/);
+    expect(tour.resume).toMatch(/^Eau de mer, MESURÉE par satellite : Plage de Boucan-Canot : \d+(,\d)? °C \(moyenne du 16\/10, il y a 2 jours\)/);
     // Dated by the day measured, not by rundata.re's read of the copy (18/10 16:20), which fraicheur says as the read.
     expect(tour.mis_a_jour).toBeUndefined();
     expect(tour.jour_mesure).toBe("2026-10-16");
@@ -158,15 +159,31 @@ describe("temperature_mer", () => {
   });
 
   it("brings the grids up to date after the answer outside the Worker, where no scheduled event runs (Node)", async () => {
-    vi.stubGlobal("fetch", async (url: string) => {
-      if (String(url).includes("/thredds/")) return new Response(fixture("acspo.ascii"));
+    // ACSPO's day only: no granule of the satellite's passes, no MODIS.
+    const ranges: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      if (String(url).includes("/l3s/")) ranges.push(String((init?.headers as Record<string, string>).Range));
+      if (String(url).includes("/l3s/")) return coastwatch(String(url), init)!;
       throw new Error("offline");
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const cache = new Cache(new MemoryStore(), () => NOW.getTime());
-    expect(body(await temperatureMer(cache, "Saint-Leu", NOW)).mesure).toBeUndefined();
-    await vi.waitFor(async () => expect(await cache.peek(SATELLITES)).toBeDefined());
-    expect(body(await temperatureMer(cache, "Saint-Leu", NOW)).mesure).toMatchObject({ nature: "mesure_satellite" });
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    let now = NOW.getTime();
+    const cache = new Cache(new MemoryStore(), () => now);
+    // A range of the day's file after each answer, more than ten minutes apart, until the day is read.
+    let mesure: unknown;
+    for (let i = 0; i < 20 && !mesure; i++) {
+      const asked = ranges.length;
+      mesure = body(await temperatureMer(cache, "Saint-Leu", new Date(now))).mesure;
+      if (i === 0) expect(mesure).toBeUndefined();
+      if (mesure) break;
+      await vi.waitFor(() => expect(ranges.length).toBe(asked + 1));
+      await vi.waitFor(async () => expect((await cache.peek(SATELLITES))?.fetchedAt.getTime()).toBe(now));
+      now += 11 * 60_000;
+    }
+    expect(mesure).toMatchObject({ nature: "mesure_satellite", produit: "moyenne du jour", jour_mesure: "2026-10-17" });
+    expect(ranges.length).toBeGreaterThan(5);
+    expect(new Set(ranges).size).toBe(ranges.length);
   });
 
   it("reads the grids again after half an hour while ACSPO lacks the day it should have, else after 3 hours", () => {

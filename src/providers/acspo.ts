@@ -1,13 +1,18 @@
 /**
- * Sea surface temperature measured by satellite: NOAA ACSPO L3S-LEO, daily, 0.02° (~2 km), from the THREDDS server of
- * NOAA STAR over OPeNDAP. Real radiometer readings gridded per day, not an interpolated analysis: cloudy pixels are simply
- * missing. A day is published the next morning (UTC). Only pixels with GHRSST quality level 5 ("best") are kept.
+ * Sea surface temperature measured by satellite: NOAA ACSPO L3S-LEO, daily, 0.02° (~2 km). Real radiometer readings
+ * gridded per day, not an interpolated analysis: cloudy pixels are simply missing. A day is published the next morning
+ * (UTC). Only pixels with GHRSST quality level 5 ("best") are kept.
+ *
+ * Read from /pub/ of CoastWatch, which its robots.txt allows (/thredds/ and /erddap/ are refused to all robots): one
+ * NetCDF-4 file of about 420 Mo a day, of which only the chunks of the island are read, by ranges (hdf5.ts). One range
+ * each time the scheduled event builds the satellites' copy, so that CoastWatch is never asked more than once a minute
+ * (its robots.txt asks 10 s): a day takes about ten of them, its reading kept in KV between two.
  */
-import type { Cache } from "../cache.js";
-import { BBOX, distanceKm } from "../geo.js";
-import { getText } from "../http.js";
+import type { Cache, Cached } from "../cache.js";
+import { distanceKm } from "../geo.js";
+import { type Kept, ReadsSpent, region, resumable, variable } from "../hdf5.js";
+import { getBytes } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
-import { unlessSpent } from "../budget.js";
 
 export const SOURCE: SourceInfo = {
   id: "acspo",
@@ -19,36 +24,33 @@ export const SOURCE: SourceInfo = {
 };
 
 const DAYS = 4;
-/** One file per day: the downloads, plus the cache read and write. */
-export const COST = DAYS + 2;
-const FRESH_SECONDS = 3 * 3600; // the product is daily; a few checks a day are enough
-// A day's subset comes in a few seconds; a stuck server must not hold a page refresh, which Cloudflare cuts after 30 s
-// (and MODIS may still have to be asked after this).
-const TIMEOUT_MS = 12_000;
-// CoastWatch's servers have been down for days at a time: once they fail, MODIS answers for half an hour before they are
-// asked again, instead of each page waiting for them and then lacking the subrequests MODIS needs.
-const BACKOFF_SECONDS = 30 * 60;
-// A day the server has can be missing from what came, when it took longer than TIMEOUT_MS: on 25 October 2026 the grid
-// read at 16:09 Réunion time stopped at the 22nd, the 24th published at 03:42 UTC, and was kept three hours. Such a grid
-// is asked again after half an hour.
-const RETRY_SECONDS = 30 * 60;
+/** One range at most, and the reading kept in KV: its read and its write. */
+export const COST = 3;
+// A range comes in a few seconds, the island's chunk (about 5 Mo) in a few more; a stuck server must not hold the
+// scheduled event.
+const TIMEOUT_MS = 20_000;
+/** The days read and the one being read, kept in KV across deploys (cache.ts `keep`). */
+export const KEY = "acspo:l3s";
+/** A day the server did not have yet is asked again after this. */
+const RETRY_MS = 30 * 60_000;
 
-// The daily files of the global 0.02° grid: rows from 89.99° N southwards, columns from 179.99° W eastwards. The ERDDAP
-// dataset that served them as one table (noaacwLEOACSPOSSTL3SnrtCDaily) is gone from CoastWatch since October 2026.
-const BASE = "https://coastwatch.noaa.gov/thredds/dodsC/gridLEODYNRTL3SWW00";
+const BASE = "https://coastwatch.noaa.gov/pub/socd2/coastwatch/sst/nrt/l3s/leo/daily";
 const FILE = "120000-STAR-L3S_GHRSST-SSTsubskin-LEO_Daily-ACSPO_V2.81-v02.0-fv01.0.nc";
-const row = (lat: number) => (89.99 - lat) / 0.02;
-const col = (lon: number) => (lon + 179.99) / 0.02;
-const box =
-  `[0][${Math.floor(row(BBOX.latMax))}:${Math.ceil(row(BBOX.latMin))}]` +
-  `[${Math.floor(col(BBOX.lonMin))}:${Math.ceil(col(BBOX.lonMax))}]`;
-const QUERY = `sea_surface_temperature${box},quality_level${box}`.replace(/\[/g, "%5B").replace(/\]/g, "%5D");
+// The island with 0.1° around it, on the global grid of 0.02°: rows from 89.99° N southwards, columns from 179.99° W
+// eastwards.
+const BOX = { latMax: -20.75, latMin: -21.5, lonMin: 55.1, lonMax: 56.0 };
+const row = (lat: number) => Math.round((89.99 - lat) / 0.02);
+const col = (lon: number) => Math.round((lon + 179.99) / 0.02);
+const R0 = row(BOX.latMax);
+const R1 = row(BOX.latMin) + 1;
+const C0 = col(BOX.lonMin);
+const C1 = col(BOX.lonMax) + 1;
 
-/** The OPeNDAP text subset of the island for the day `date` (YYYY-MM-DD). */
+/** The file of the day `date` (YYYY-MM-DD). */
 export function dayUrl(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
   const doy = Math.round((d.getTime() - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86_400_000) + 1;
-  return `${BASE}/${d.getUTCFullYear()}/${String(doy).padStart(3, "0")}/${date.replace(/-/g, "")}${FILE}.ascii?${QUERY}`;
+  return `${BASE}/${d.getUTCFullYear()}/${String(doy).padStart(3, "0")}/${date.replace(/-/g, "")}${FILE}`;
 }
 
 /** One day of valid pixels: [lon, lat, °C]. JSON-friendly so that any cache store can keep it. */
@@ -74,36 +76,6 @@ export function parseCsv(csv: string, variable = "sea_surface_temperature"): Sst
     days.get(date)!.pixels.push([parseFloat(f[ilon]), parseFloat(f[ilat]), sst]);
   }
   return [...days.values()].sort((a, b) => b.date.localeCompare(a.date));
-}
-
-/** The lines of one part of an OPeNDAP ASCII answer (`name` then its values, up to a blank line). */
-function part(text: string, name: string): string[] {
-  const lines = text.split("\n");
-  const start = lines.findIndex((l) => l.startsWith(`${name}[`));
-  if (start < 0) throw new Error(`réponse OPeNDAP sans ${name}`);
-  const end = lines.findIndex((l, i) => i > start && l.trim() === "");
-  return lines.slice(start + 1, end < 0 ? undefined : end);
-}
-
-const numbers = (lines: string[]) => lines.join(",").split(",").filter((v) => v.trim() !== "").map(Number);
-
-/**
- * OPeNDAP ASCII (each grid's rows « [0][i], v, v… », then its lat and lon maps) to the day's valid pixels. The
- * temperature is stored in hundredths of a degree above 0 °C (scale 0.01, offset 273.15 K), -32768 where there is none.
- */
-export function parseAscii(text: string, date: string): SstDay {
-  const rows = (v: string) => part(text, `${v}.${v}`).map((l) => numbers([l]).slice(1));
-  const sst = rows("sea_surface_temperature");
-  const ql = rows("quality_level");
-  const lats = numbers(part(text, "sea_surface_temperature.lat"));
-  const lons = numbers(part(text, "sea_surface_temperature.lon"));
-  const pixels: [number, number, number][] = [];
-  sst.forEach((r, i) =>
-    r.forEach((v, j) => {
-      if (v !== -32768 && ql[i]?.[j] === 5) pixels.push([lons[j], lats[i], v / 100]);
-    }),
-  );
-  return { date, pixels };
 }
 
 export interface SstReading {
@@ -144,25 +116,61 @@ export function nearest(days: SstDay[], lon: number, lat: number, maxKm = 12): S
 /** The newest day the server should have at `now`: a day is published the next morning, before 06:00 UTC. */
 export const due = (now: Date) => new Date(now.getTime() - 30 * 3600_000).toISOString().slice(0, 10);
 
+/** The days read, newest first, and the day being read: the ranges kept, the temperatures once read, the last try. */
+export interface L3s {
+  jours: SstDay[];
+  lecture?: { date: string; plages: Kept[]; sst?: number[]; essai?: number };
+}
+
+/** The island's pixels of a day from its temperatures and quality levels, row after row over the box. */
+function pixelsOf(sst: ArrayLike<number>, ql: ArrayLike<number>): SstDay["pixels"] {
+  const width = C1 - C0;
+  const out: SstDay["pixels"] = [];
+  for (let i = 0; i < sst.length; i++) {
+    if (sst[i] === -32768 || ql[i] !== 5) continue;
+    const lat = Math.round((89.99 - 0.02 * (R0 + Math.floor(i / width))) * 100) / 100;
+    const lon = Math.round((-179.99 + 0.02 * (C0 + (i % width))) * 100) / 100;
+    out.push([lon, lat, sst[i] / 100]);
+  }
+  return out;
+}
+
 /**
- * The last DAYS days before `now` (UTC) that came, newest first, a day without a clear pixel included; fails only if
- * none of them comes. Without the day `due`, asked again after RETRY_SECONDS instead of FRESH_SECONDS.
+ * One step of the reading of the day `due` when it is not among the days read: at most one range asked. The day comes
+ * once its temperatures and its quality levels are read, the temperature stored in hundredths of a degree above 0 °C
+ * (scale 0.01, offset 273.15 K), -32768 where there is none.
  */
-export async function grid(cache: Cache, now = new Date()) {
-  const load = async () => {
-    const dates = Array.from({ length: DAYS }, (_, k) =>
-      new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1 - k)).toISOString().slice(0, 10),
-    );
-    // The day before is missing until the morning (UTC) it is published: the others answer for it.
-    const got = unlessSpent(await Promise.allSettled(dates.map(async (d) => parseAscii(await getText(SOURCE.id, dayUrl(d), TIMEOUT_MS), d))));
-    const days = got.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
-    if (!days.length) throw (got[0] as PromiseRejectedResult).reason;
-    // The days due and newer than those that came: said, since the answer then gives an older day.
-    got.forEach((r, k) => {
-      if (r.status === "rejected" && dates[k] <= due(now) && dates[k] > days[0].date) console.error(`source acspo : jour ${dates[k]} manquant:`, why(r.reason));
-    });
-    return days;
-  };
-  const c = await cache.get("acspo", FRESH_SECONDS, load, BACKOFF_SECONDS);
-  return (c.value[0]?.date ?? "") >= due(now) ? c : cache.get("acspo", RETRY_SECONDS, load, BACKOFF_SECONDS);
+export async function step(state: L3s, now = new Date()): Promise<L3s> {
+  const date = due(now);
+  if ((state.jours[0]?.date ?? "") >= date) return state;
+  const lecture = state.lecture?.date === date ? { ...state.lecture, plages: [...state.lecture.plages] } : { date, plages: [] };
+  if (lecture.essai != null && now.getTime() - lecture.essai < RETRY_MS) return state;
+  const read = resumable(lecture.plages, async (o, l) => new Uint8Array(await getBytes(SOURCE.id, dayUrl(date), TIMEOUT_MS, { Range: `bytes=${o}-${o + l - 1}` })));
+  try {
+    lecture.sst ??= [...(await region(read, await variable(read, "sea_surface_temperature"), R0, R1, C0, C1, -32768))];
+    const ql = await region(read, await variable(read, "quality_level"), R0, R1, C0, C1, -128);
+    const day = { date, pixels: pixelsOf(lecture.sst, ql) };
+    return { jours: [day, ...state.jours.filter((d) => d.date < date)].slice(0, DAYS) };
+  } catch (err) {
+    if (err instanceof ReadsSpent) return { ...state, lecture: { ...lecture, essai: undefined } };
+    // Not posted yet (404) is the usual case before the morning (UTC): asked again after RETRY_MS.
+    console.log(`source acspo : jour ${date} pas lu:`, why(err));
+    return { ...state, lecture: { ...lecture, essai: now.getTime() } };
+  }
+}
+
+/**
+ * The days read, newest first, after one more step of the reading of the day due (`step`): none yet while the first is
+ * being read, `enCours` saying so; fails when none was ever read and none is being read. Their state is kept in KV, the
+ * scheduled event's isolates sharing nothing else.
+ */
+export async function grid(cache: Cache, now = new Date()): Promise<Cached<SstDay[]> & { enCours?: boolean }> {
+  const kept = await cache.kept<L3s>(KEY).catch(() => undefined);
+  const before = kept?.value?.jours ? kept.value : { jours: [] };
+  const after = await step(before, now);
+  if (after !== before) await cache.keep(KEY, after).catch((err) => console.error("source acspo : lecture non gardée:", why(err)));
+  const enCours = !!after.lecture && !after.lecture.essai;
+  if (!after.jours.length && !enCours) throw new Error("source acspo : aucun jour lu");
+  const read = after === before ? (kept?.fetchedAt ?? now) : now;
+  return { value: after.jours, fetchedAt: read, stale: false, ...(enCours ? { enCours: true } : {}) };
 }

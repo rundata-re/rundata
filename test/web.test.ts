@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
+import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { failed, handle } from "../src/app.js";
 import { stopPages } from "../src/providers/transit.js";
@@ -59,7 +60,7 @@ class ReadsByKey extends EdgeLike {
 const isolate = (edge = new EdgeLike(), kv = new MemoryStore()) =>
   new Cache(new TieredStore(new MemoryStore(), edge), () => NOW.getTime(), false, kv);
 
-function upstream(url: string): Response {
+function upstream(url: string, init?: RequestInit): Response {
   if (url.includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
   if (url.includes("DPPaquetObs")) return new Response(fixture("meteofrance_6min.csv"));
   if (url.includes("DPVigilance")) return new Response(fixture("vigilance_om.zip"));
@@ -67,7 +68,8 @@ function upstream(url: string): Response {
   if (url.endsWith("/live/all")) return new Response(fixture("pioupiou_all.json"));
   if (url.includes("pioupiou")) return Response.json({ data: JSON.parse(String(fixture("pioupiou_all.json"))).data[0] });
   if (url.includes("data.gouv.fr/api/1/datasets/r/047b2ab9")) return new Response(fixture("ffvl_releves.json"));
-  if (url.includes("/thredds/dodsC/gridLEODYNRTL3SWW00/")) return new Response(fixture("acspo.ascii"));
+  const pub = coastwatch(url, init);
+  if (pub) return pub;
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
   if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
   if (new URL(url).hostname === "firms.modaps.eosdis.nasa.gov") return new Response(fixture("firms_viirs_noaa20.csv"));
@@ -91,9 +93,9 @@ function upstream(url: string): Response {
 
 beforeEach(() => {
   configure({ applicationId: "test" });
-  vi.stubGlobal("fetch", async (url: string) => {
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     overLimit();
-    return upstream(String(url));
+    return upstream(String(url), init);
   });
 });
 
@@ -187,12 +189,12 @@ describe("home page", () => {
 
   it("takes the sea from the copy of /mer, however old, and never asks the satellites itself, nor does a place on the coast", async () => {
     const asked: string[] = [];
-    vi.stubGlobal("fetch", async (url: string) => {
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       overLimit();
       asked.push(String(url));
-      return upstream(String(url));
+      return upstream(String(url), init);
     });
-    const satellites = () => asked.filter((u) => u.includes("/thredds/") || u.includes("/erddap/"));
+    const satellites = () => asked.filter((u) => u.includes("coastwatch.noaa.gov/pub/") || u.includes("/erddap/"));
     // No copy of /mer yet: the page goes without the sea rather than ask NOAA.
     const bare = await serve(isolate(), "/meteo");
     expect(bare.text).toContain("Piton Maïdo");
@@ -224,13 +226,13 @@ describe("home page", () => {
 
   it("never asks the satellites from /mer either, when its copy is rebuilt after a view", async () => {
     const asked: string[] = [];
-    vi.stubGlobal("fetch", async (url: string) => {
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       overLimit();
       asked.push(String(url));
-      return upstream(String(url));
+      return upstream(String(url), init);
     });
     // The corals' grid (providers/coraux.ts), read at the view once a day, is not one of the satellites' grids.
-    const satellites = () => asked.filter((u) => (u.includes("/thredds/") || u.includes("/erddap/")) && !u.includes("dhw_5km"));
+    const satellites = () => asked.filter((u) => (u.includes("coastwatch.noaa.gov/pub/") || u.includes("/erddap/")) && !u.includes("dhw_5km"));
     // Without the shared grids, and with them three hours old beside a copy of /mer as old: the page is rebuilt from them.
     expect((await serve(isolate(), "/mer")).text).toContain("Boucan-Canot");
     expect(satellites()).toEqual([]);

@@ -99,6 +99,7 @@ const SHARED_FROM: Record<string, string[]> = {
   "web:coupures": ["src/tools/coupures.ts"],
   "web:air": ["src/tools/air.ts"],
   "mer:satellites": ["src/providers/acspo.ts", "src/providers/modis.ts"],
+  "mer:passages": ["src/providers/viirs.ts"],
   "web:mer": ["src/tools/mer.ts"],
   "web:calendrier": ["src/tools/calendrier.ts"],
   seismes: ["src/providers/seismes.ts"],

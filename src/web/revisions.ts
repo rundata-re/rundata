@@ -56,10 +56,12 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   historique: 5,
   // A place said with its article (« Mesures les plus proches du Maïdo », « PRÉVISION … pour le Piton de la Fournaise »).
   // Its sea answer reads the waves of the west and the south from MFWAM, with the main swell (tools/mer.ts).
-  lieu: 22,
+  // Its sea sentence: the satellite's pass first (« passage de cette nuit à 01:39 »), else « moyenne d'hier, 06/11 ».
+  lieu: 23,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
-  mer: 6,
+  // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
+  mer: 7,
   meteo: 9,
   randonnees: 15,
   secheresse: 1,

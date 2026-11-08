@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { costOf, count, counted, measured, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
@@ -328,14 +329,15 @@ const isolate = (edge: EdgeLike) => new Cache(new TieredStore(new MemoryStore(),
 
 beforeEach(() => {
   configure({ applicationId: "test" });
-  vi.stubGlobal("fetch", async (url: string) => {
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     const u = String(url);
     if (u.includes("/token")) return Response.json({ access_token: "t", expires_in: 3600 });
     if (u.includes("DPPaquetObs")) return new Response(fixture("meteofrance_6min.csv"));
     if (u.includes("DPVigilance")) return new Response(fixture("vigilance_om.zip"));
     if (u.includes("aviationweather")) return new Response(fixture("metar.json"));
     if (u.endsWith("/live/all")) return new Response(fixture("pioupiou_all.json"));
-    if (u.includes("/thredds/dodsC/gridLEODYNRTL3SWW00/")) return new Response(fixture("acspo.ascii"));
+    const pub = coastwatch(u, init);
+    if (pub) return pub;
     if (u.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
     if (u.includes("open-meteo.com/data")) return new Response(fixture("openmeteo_meta.json"));
     if (u.includes("open-meteo")) return new Response(fixture("openmeteo_cilaos.json"));

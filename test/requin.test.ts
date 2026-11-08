@@ -24,10 +24,12 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     const b = requinBlock(NOW, { nom: "L'Hermitage", lon: 55.2265, lat: -21.0743 });
     expect(b.regle).toBe(`${T.regle} ${T.reduit}`);
     expect(b.zones).toEqual([T.intro, "Lagon de l'Hermitage : lagon, baignade permise dans les conditions fixées par la commune (arrêté préfectoral n° 180, art. 2).",
-      "ZONEX de l'Hermitage : ZONEX, zone où la baignade et les activités de vague sont permises seulement quand elle est ouverte et surveillée.",
-      "ZONEX des Brisants : ZONEX, zone où la baignade et les activités de vague sont permises seulement quand elle est ouverte et surveillée (BSAN et RESSAC).",
+      // What a ZONEX permits, said once under them.
+      "ZONEX de l'Hermitage : ZONEX.",
+      "ZONEX des Brisants : ZONEX (BSAN et RESSAC).",
       "Roches Noires : zone de baignade fermée par un filet, permise seulement quand elle est ouverte et surveillée.",
-      "ZONEX des Roches Noires : ZONEX, zone où la baignade et les activités de vague sont permises seulement quand elle est ouverte et surveillée (BSAN et RESSAC).",
+      "ZONEX des Roches Noires : ZONEX (BSAN et RESSAC).",
+      T.zonex,
       "BSAN : Brigade de sécurité des activités nautiques.", T.ouverture]);
     expect(b.deploiements_du_jour).toEqual({
       texte: "Les filets et les ZONEX déployés dans la journée sont annoncés dans les stories Instagram et Facebook du GIP Centre Sécurité Requin.",

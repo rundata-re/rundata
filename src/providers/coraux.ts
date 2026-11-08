@@ -68,10 +68,14 @@ export const AIDE_CHALEUR =
   "à partir de 16, risque de mortalité sévère de plusieurs espèces (plus de 50\u00a0% des coraux)\u00a0; à partir de 20, risque de mortalité presque complète (plus de 80\u00a0% des coraux).";
 export const CREDIT = "NOAA Coral Reef Watch (domaine public)";
 
-const SELON = "selon NOAA Coral Reef Watch (estimation par satellite, pas une observation sur le récif)";
-/** What the level is: the highest of the last 7 days, or of the `jours` days of them the source has. */
-export const niveauSur = (jours: number) =>
-  jours >= 7 ? `maximum des 7 derniers jours, ${SELON}` : `maximum des ${jours} jours disponibles sur les 7 derniers (jours manquants chez la source), ${SELON}`;
+const SELON = "selon NOAA Coral Reef Watch";
+const ESTIMATION = " (estimation par satellite, pas une observation sur le récif)";
+/**
+ * What the level is: the highest of the last 7 days, or of the `jours` days of them the source has. `estimation`: false
+ * in temperature_mer, whose warnings say it.
+ */
+export const niveauSur = (jours: number, estimation = true) =>
+  `${jours >= 7 ? "maximum des 7 derniers jours" : `maximum des ${jours} jours disponibles sur les 7 derniers (jours manquants chez la source)`}, ${SELON}${estimation ? ESTIMATION : ""}`;
 
 /**
  * A day's level on NOAA's scale of 0 to 7, from that day's HotSpot (°C) and DHW (°C-weeks) at one cell: 0 without

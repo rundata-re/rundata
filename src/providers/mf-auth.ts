@@ -141,8 +141,18 @@ export async function keepFresh(source: string): Promise<"gardé" | "renouvelé"
     oauth = kept;
     return "gardé";
   }
+  // Still good while the next one is asked: held if the portal fails (`held`), as `first` would take it.
+  if (kept && Date.now() < kept.until) oauth = kept;
   await newToken(source, kept ? "renouvelé avant son échéance" : "aucun jeton dans KV");
   return "renouvelé";
+}
+
+/**
+ * Whether a read can be made without taking a token first: the isolate holds a good one (`keepFresh` just kept or
+ * renewed it), or none is needed (a key or a fixed token). For the scheduled event's step that must not take one.
+ */
+export function held(): boolean {
+  return !credentials.applicationId || (oauth != null && Date.now() < oauth.until);
 }
 
 /** After a 401 with `failed`: KV's token when another isolate wrote a newer one, else a new one. */

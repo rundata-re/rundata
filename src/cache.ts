@@ -241,6 +241,11 @@ export class Cache {
     this.wide = durable === store ? store : new TieredStore(store, new Prefixed(durable, "lecture:"));
   }
 
+  /** The time the stores are read at, ms (its clock: tests set it). */
+  time(): number {
+    return this.now();
+  }
+
   /** `backoffSeconds`: how long a failure is remembered (in this process) before the source is asked again. */
   async get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS): Promise<Cached<T>> {
     const hit = await this.store.get(key, this.now() - freshSeconds * 1000);

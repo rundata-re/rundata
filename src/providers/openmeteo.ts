@@ -33,6 +33,10 @@ export const MODEL: ForecastModel = {
 const API = "https://api.open-meteo.com/v1/forecast";
 const META = "https://api.open-meteo.com/data/ecmwf_ifs/static/meta.json";
 const FRESH_SECONDS = 30 * 60;
+// IFS HRES runs every 6 hours (meta.json's update_interval_seconds): a cell's forecast read once serves until the next.
+const RUN_EVERY_SECONDS = 6 * 3600;
+// The forecast of a cell kept in KV as the copy served when Open-Meteo does not answer: older than a day, it says little.
+const KEEP_SECONDS = 24 * 3600;
 
 const HOURLY = ["temperature_2m", "precipitation", "weather_code", "cloud_cover", "wind_speed_10m", "wind_gusts_10m", "wind_direction_10m"];
 const DAILY = ["weather_code", "temperature_2m_min", "temperature_2m_max", "precipitation_sum", "wind_gusts_10m_max"];
@@ -50,17 +54,28 @@ export interface OpenMeteoJson {
 
 interface MetaJson {
   last_run_initialisation_time: number;
+  /** When the run was out, in seconds: the forecasts read before it are those of the run before. */
+  last_run_availability_time?: number;
 }
 
-/** Places a few hundred metres apart share one request: the grid is 9 km anyway. */
+/** What is sent to Open-Meteo: the point to 0.01° (about 1 km, the grid is 9 km), the altitude to 10 m. */
+const asked = (place: Place) => ({
+  lat: place.lat.toFixed(2),
+  lon: place.lon.toFixed(2),
+  altitude: place.altitude_m == null ? undefined : Math.round(place.altitude_m / 10) * 10,
+});
+
+/** Places that send Open-Meteo the same request share one copy, in KV for every data center. */
 export function cacheKey(place: Place): string {
-  return `openmeteo:${place.lat.toFixed(2)},${place.lon.toFixed(2)},${place.altitude_m ?? "dem"}`;
+  const a = asked(place);
+  return `openmeteo:${a.lat},${a.lon},${a.altitude ?? "dem"}`;
 }
 
 function url(place: Place): string {
+  const a = asked(place);
   const q = new URLSearchParams({
-    latitude: place.lat.toFixed(2),
-    longitude: place.lon.toFixed(2),
+    latitude: a.lat,
+    longitude: a.lon,
     models: "ecmwf_ifs",
     timezone: "Indian/Reunion",
     forecast_days: String(MODEL.echeance_jours),
@@ -68,7 +83,7 @@ function url(place: Place): string {
     daily: DAILY.join(","),
   });
   // Without it, Open-Meteo uses its own 90 m terrain model at that point, which is just as good on flat ground.
-  if (place.altitude_m != null) q.set("elevation", String(place.altitude_m));
+  if (a.altitude != null) q.set("elevation", String(a.altitude));
   return `${API}?${q}`;
 }
 
@@ -111,19 +126,32 @@ export function parse(j: OpenMeteoJson, runAt?: Date): Forecast {
   };
 }
 
-async function runTime(cache: Cache): Promise<Date | undefined> {
+async function runMeta(cache: Cache): Promise<MetaJson | undefined> {
   try {
-    const m = await cache.get("openmeteo:meta", FRESH_SECONDS, () => getJson<MetaJson>(SOURCE.id, META));
-    return new Date(m.value.last_run_initialisation_time * 1000);
+    return (await cache.get("openmeteo:meta", FRESH_SECONDS, () => getJson<MetaJson>(SOURCE.id, META))).value;
   } catch {
     return undefined; // the run time is a nicety; the forecast stands without it
   }
 }
 
+/**
+ * How long a cell's copy is fresh at `now` (ms), in seconds: one read since the run was out (`availableAt`, ms) is that
+ * run's, one read before is the run before's. Without the run's time, or a run late, 6 hours at most.
+ */
+export function freshFor(now: number, availableAt?: number): number {
+  if (availableAt == null) return RUN_EVERY_SECONDS;
+  return Math.max(60, Math.min(RUN_EVERY_SECONDS, Math.floor((now - availableAt) / 1000)));
+}
+
+/**
+ * The forecast of the place's cell: read once per run of the model, then the copy in KV for every place, question and
+ * data center that asks the same (cacheKey), one read of KV each, without an index. The run's time comes first.
+ */
 export async function forecast(cache: Cache, place: Place): Promise<Cached<Forecast>> {
-  const [raw, runAt] = await Promise.all([
-    cache.get(cacheKey(place), FRESH_SECONDS, () => getJson<OpenMeteoJson>(SOURCE.id, url(place))),
-    runTime(cache),
-  ]);
-  return { ...raw, value: parse(raw.value, runAt) };
+  const meta = await runMeta(cache);
+  const available = meta && (meta.last_run_availability_time ?? meta.last_run_initialisation_time) * 1000;
+  const raw = await cache.island(cacheKey(place), freshFor(cache.time(), available), () => getJson<OpenMeteoJson>(SOURCE.id, url(place)), KEEP_SECONDS);
+  const f = parse(raw.value, meta && new Date(meta.last_run_initialisation_time * 1000));
+  // The place's own altitude in the answer, the one its page shows: Open-Meteo answers with the one sent, to 10 m.
+  return { ...raw, value: place.altitude_m == null ? f : { ...f, altitude_m: place.altitude_m } };
 }

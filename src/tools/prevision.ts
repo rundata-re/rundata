@@ -278,9 +278,9 @@ interface Got {
 async function forecasts(cache: Cache, places: Place[], starts: Date[], now: Date, aromeWaitMs = Infinity): Promise<Got> {
   // Not even the run list is asked for when the period is beyond AROME's 48 hours.
   const wanted = starts.filter((t) => t.getTime() < now.getTime() + 48 * HOUR);
-  // Set aside what the ECMWF answers may cost cold (each read, fetched and stored at the edge), plus its run time
-  // and the UV index.
-  const reserve = 3 * (places.length + 2);
+  // Set aside what the ECMWF answers may cost cold (each read at the edge and in KV, fetched, stored in both: 5), plus
+  // its run time (read at the edge, fetched, stored: 3) and the UV index (a copy for the island, as a cell: 5).
+  const reserve = 5 * places.length + 8;
   const aromeP = wanted.length
     ? arome.prepare(cache, wanted, reserve).catch((err) => {
         console.error(`source ${arome.SOURCE.id} indisponible:`, why(err));

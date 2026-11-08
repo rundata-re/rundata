@@ -807,7 +807,7 @@ const VISITS: Entry[] = [
 // --- The questions -------------------------------------------------------------------------------------------------
 
 /** Every tool (server.ts), as measured: the most subrequests of a call, its CPU, its file. */
-const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string; kvReads?: number; d1?: Pick<Run, "d1Calls" | "d1RowsRead" | "d1RowsWritten">; basis?: Basis; from?: string[] }> = {
+const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string; file?: string; kvReads?: number; d1?: Pick<Run, "d1Calls" | "d1RowsRead" | "d1RowsWritten">; basis?: Basis; from?: string[] }> = {
   // Measured 59 when it only read the weather's copy; since it builds it as /aujourdhui/* does (tools/resume.ts), that
   // page's: measured 62, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
   resume_du_jour: { subrequests: 64, cpuMs: 130, file: "resume", basis: "estimé" },
@@ -823,7 +823,9 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
   // found; and about 20 ms more to find its name in the files (Saint-Paul's 5 years, the first run of a process); each
   // copied 7 days.
   fiche_terrain: { subrequests: 38, cpuMs: 100, file: "terrain", basis: "estimé" },
-  prevision_meteo: { subrequests: 20, cpuMs: 100, file: "prevision" },
+  // Its forecast of a cell kept in KV until the model's next run (providers/openmeteo.ts): KV reads and writes in
+  // ISLAND_READS, one write per cell asked and per run, so 4 a day per cell at most.
+  prevision_meteo: { subrequests: 20, cpuMs: 100, file: "prevision", what: "l'outil prevision_meteo\u00a0: la prévision de chaque maille d'Open-Meteo gardée dans KV jusqu'au calcul suivant du modèle (toutes les 6 h), une écriture par maille demandée et par calcul, 4 par jour et par maille au plus" },
   qualite_eau: { subrequests: 15, cpuMs: 90, file: "eau" },
   // 14, and 5 from the code for the corals' grid, as /mer.
   temperature_mer: { subrequests: 19, cpuMs: 50, file: "mer" },
@@ -864,7 +866,7 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; file?: string;
 const QUESTIONS: Entry[] = Object.entries(TOOLS).map(([tool, t]) => ({
   id: tool,
   trigger: "question",
-  what: `l'outil ${tool}`,
+  what: t.what ?? `l'outil ${tool}`,
   run: { subrequests: t.subrequests, ...(t.kvReads && { kvReads: t.kvReads }), ...t.d1, cpuMs: t.cpuMs },
   from: t.from ?? (t.file ? [`src/tools/${t.file}.ts`] : []),
   basis: t.basis ?? "mesuré",
@@ -911,18 +913,19 @@ export function reached(from: string[]): string[] {
 }
 
 /**
- * The sources read for the whole island (cache.ts `island`: NASA FIRMS's fires and the days it has data for, CAMS's UV, the OVPF's posts, Piton
+ * The sources read for the whole island (cache.ts `island`: NASA FIRMS's fires and the days it has data for, CAMS's UV, Open-Meteo's forecast of a place's cell, the OVPF's posts, Piton
  * Live, the water notices, the prefecture's list, Vigicrues Réunion's vigilance, heights and flows, a trail's altitudes from the IGN) that each entry reads, from the imports of its files (not their
  * helpers'). From cold, each is asked of KV as well and written there, beyond what the entry measured: a read and a
  * write more, two subrequests.
  */
 export const ISLAND_READS: Record<string, number> = {
   "web:volcan": 3, "/volcan": 3, volcan_seismes: 3,
-  resume_du_jour: 4, "/aujourdhui/*": 4,
-  "/": 3, "/communes/*": 3, "/meteo": 3, "/meteo/*": 3,
+  resume_du_jour: 5, "/aujourdhui/*": 5,
+  "/": 3, "/communes/*": 4, "/meteo": 3, "/meteo/*": 4,
   cyclones: 2, "/cyclones": 2, "/ecoles-cyclone": 2,
   "/feux": 2, sentiers_randonnee: 2, "/sentiers": 2, "/sentiers/*": 3, "/randonnees": 2, "/randonnees/*": 2, vigilance_meteo: 2,
-  prevision_meteo: 1,
+  // The UV index, and Open-Meteo's forecast of each place's cell (providers/openmeteo.ts): six for the tour of the island.
+  prevision_meteo: 7,
   "web:crues": 3, crues_rivieres: 3, "/crues": 3,
   "web:coupures": 1, coupures_eau: 1, "/coupures-eau": 1, "/coupures-eau/*": 1, qualite_eau: 1, "/eau": 1,
 };

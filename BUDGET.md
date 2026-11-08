@@ -23,8 +23,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | pire passage planifié, CPU (ms) | 4 866 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 226 | 550 |
-| vue la plus chère, sous-requêtes | 87 | 200 |
-| question la plus chère, sous-requêtes | 73 | 200 |
+| vue la plus chère, sous-requêtes | 89 | 200 |
+| question la plus chère, sous-requêtes | 75 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
@@ -33,7 +33,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
 - Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 397 sous-requêtes à 00:00 UTC.
-- Vue la plus chère : /, 87. Question la plus chère : resume_du_jour, 73. Construction la plus chère : web:chiffres:evenements, 48.
+- Vue la plus chère : /communes/*, 89. Question la plus chère : resume_du_jour, 75. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -135,9 +135,9 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 87 | 12 | 3 | 2 | 840 |  | 110 | mesuré |
-| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 87 | 11 | 3 |  |  |  | 160 | mesuré |
-| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 73 | 14 | 4 |  |  |  | 130 | mesuré |
-| /meteo/* | la météo d'un lieu | à chaque vue |  | 59 | 4 | 3 |  |  |  | 130 | mesuré |
+| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 89 | 12 | 4 |  |  |  | 160 | mesuré |
+| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 75 | 15 | 5 |  |  |  | 130 | mesuré |
+| /meteo/* | la météo d'un lieu | à chaque vue |  | 61 | 5 | 4 |  |  |  | 130 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
@@ -204,13 +204,13 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 73 | 5 | 4 |  |  |  | 130 | estimé |
+| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 75 | 6 | 5 |  |  |  | 130 | estimé |
 | meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 39 | 1 |  |  |  |  | 120 | mesuré |
 | evenements | l'outil evenements | à chaque vue |  | 33 |  |  |  |  |  | 190 | mesuré |
 | sport | l'outil sport | à chaque vue |  | 33 |  |  |  |  |  | 160 | mesuré |
 | volcan_seismes | l'outil volcan_seismes | à chaque vue |  | 42 | 3 | 3 | 2 | 21 |  | 90 | mesuré |
 | fiche_terrain | l'outil fiche_terrain | à chaque vue |  | 38 |  |  |  |  |  | 100 | estimé |
-| prevision_meteo | l'outil prevision_meteo | à chaque vue |  | 22 | 1 | 1 |  |  |  | 100 | mesuré |
+| prevision_meteo | l'outil prevision_meteo : la prévision de chaque maille d'Open-Meteo gardée dans KV jusqu'au calcul suivant du modèle (toutes les 6 h), une écriture par maille demandée et par calcul, 4 par jour et par maille au plus | à chaque vue |  | 34 | 7 | 7 |  |  |  | 100 | mesuré |
 | qualite_eau | l'outil qualite_eau | à chaque vue |  | 17 | 1 | 1 |  |  |  | 90 | mesuré |
 | temperature_mer | l'outil temperature_mer | à chaque vue |  | 19 |  |  |  |  |  | 50 | mesuré |
 | transports | l'outil transports | à chaque vue |  | 13 |  |  | 2 | 840 |  | 80 | mesuré |

@@ -1,16 +1,19 @@
 /**
- * How fast one connection may call: the MCP endpoint and the forms' sends, counted by Cloudflare's Rate Limiting
+ * How fast one connection may call: the MCP endpoint, the forms' sends and the trips' pages, counted by Cloudflare's Rate Limiting
  * binding (wrangler.jsonc `ratelimits`), per address and per Cloudflare location, over a minute. Past it, a 429 with
  * Retry-After, before anything is read or built.
  *
  * The thresholds are far above any real client's (Loki, 7 days to 26/10: at most 164 calls to /mcp in a minute from
  * one User-Agent, Claude Code, which may be several addresses; 66 for Claude-User; 1 send of a form): an assistant's
  * servers send the calls of all their users from a few addresses, and must never be slowed. They stop a script
- * that loops. The counts are approximate (each location counts apart, eventually consistent), which is enough here.
+ * that loops. A trip's page (/bus/trajet/…) is built from the network's timetable for whoever opens it: on 06 and
+ * 07/11/2026 a Chrome of Hong Kong asked up to 224 a minute; a person, at most 25 in a minute over 7 days, from anywhere.
+ * The counts are approximate (each location counts apart, eventually consistent), which is enough here.
  * Without the binding (Node, the tests, a Worker not given it) or when it fails, nothing is refused.
  */
 import { adresseOf } from "./avis.js";
 import { withCors } from "./app.js";
+import { TRIP_PATH } from "./tools/transports.js";
 
 /** The part of a Rate Limiting binding used here. */
 export interface Limiteur {
@@ -18,7 +21,7 @@ export interface Limiteur {
 }
 
 /** Per address and per minute (the binding's period, wrangler.jsonc). */
-export const PAR_MINUTE = { mcp: 600, formulaire: 20 } as const;
+export const PAR_MINUTE = { mcp: 600, formulaire: 20, trajet: 60 } as const;
 export type Sorte = keyof typeof PAR_MINUTE;
 export const RETRY_AFTER_S = 60;
 
@@ -27,12 +30,13 @@ const FORMULAIRES = /^\/(?:avis|associations\/.+)$/;
 const LECTURES = new Set(["/associations/club/demande"]);
 
 /**
- * What a request counts against, if anything: a POST to /mcp (or /mcp/), a form sent, or a page that reads a source
- * for whoever opens it.
+ * What a request counts against, if anything: a POST to /mcp (or /mcp/), a form sent, a page that reads a source
+ * for whoever opens it, or a trip's page.
  */
 export function sorteDe(request: Request): Sorte | undefined {
   const path = new URL(request.url).pathname;
   if (LECTURES.has(path)) return "formulaire";
+  if (path.startsWith(`${TRIP_PATH}/`)) return request.method === "GET" || request.method === "HEAD" ? "trajet" : undefined;
   if (request.method !== "POST") return undefined;
   if (path === "/mcp" || path === "/mcp/") return "mcp";
   return FORMULAIRES.test(path) ? "formulaire" : undefined;
@@ -61,8 +65,11 @@ export async function refuse(request: Request, limiteurs: Partial<Record<Sorte, 
     const message = `Too many requests from this address. Retry in ${RETRY_AFTER_S} seconds.`;
     return withCors(Response.json({ jsonrpc: "2.0", error: { code: -32000, message }, id: null }, { status: 429, headers }));
   }
-  return new Response(MESSAGE_FORMULAIRE, { status: 429, headers: { ...headers, "content-type": "text/plain; charset=utf-8" } });
+  return new Response(sorte === "trajet" ? MESSAGE_TRAJET : MESSAGE_FORMULAIRE, { status: 429, headers: { ...headers, "content-type": "text/plain; charset=utf-8" } });
 }
 
 /** What a person sees after too many sends from their connection: true, since nothing was read nor kept yet. No threshold is said. */
 export const MESSAGE_FORMULAIRE = "Trop d'envois depuis cette connexion en une minute\u00a0: celui-ci n'a pas été gardé. Réessayez dans une minute, ou écrivez à contact@rundata.re.";
+
+/** What a person sees after too many trips opened from their connection in a minute. No threshold is said. */
+export const MESSAGE_TRAJET = "Trop de trajets ouverts depuis cette connexion en une minute. Réessayez dans une minute.";

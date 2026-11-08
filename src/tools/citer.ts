@@ -65,6 +65,7 @@ const SHORT: Record<string, string> = {
   refmar: "SHOM (REFMAR)",
   gdacs_cyclones: "CMRS de La Réunion (Météo-France), via GDACS",
   acspo: "NOAA CoastWatch",
+  viirs: "NOAA CoastWatch",
   noaa_crw_dhw_5km: "NOAA Coral Reef Watch",
   modis: "NASA MODIS",
 };

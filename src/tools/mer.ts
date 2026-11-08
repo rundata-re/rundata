@@ -6,6 +6,7 @@ import * as coraux from "../providers/coraux.js";
 import * as cetaces from "./cetaces.js";
 import * as houle from "../providers/houle.js";
 import * as modis from "../providers/modis.js";
+import * as viirs from "../providers/viirs.js";
 import * as requin from "../eau/requin.js";
 import { later, left } from "../budget.js";
 import { type SourceInfo, why } from "../types.js";
@@ -22,30 +23,43 @@ export const BEACHES = ["Saint-Denis", "Sainte-Marie", "Saint-Benoît", "Anse de
   "Grande Anse", "Plage de Saint-Pierre", "Plage de L'Étang-Salé", "Saint-Leu", "Plage de la Saline les Bains",
   "Plage de l'Ermitage-les-Bains", "Plage de Boucan-Canot", "Plage de Saint-Paul", "Le Port"];
 
+/**
+ * Every source of a measure of the water: the satellite's passes first (providers/viirs.ts), then the products of a
+ * day's mean. What the pages and the summary keep of a copy's sources when they show the water only.
+ */
+export const SEA_SOURCES: SourceInfo[] = [];
+
 // Best first: ACSPO merges several satellites at 2 km; MODIS (one satellite, 4 km) stands in when ACSPO is
 // down or clouded out near the place.
 // `cost`: the subrequests of a product not in memory (budget.ts).
-export const PRODUCTS: { source: SourceInfo; cost: number; grid: (c: Cache, now: Date) => Promise<Cached<acspo.SstDay[]>> }[] = [
+export const PRODUCTS: { source: SourceInfo; cost: number; grid: (c: Cache, now: Date) => Promise<Cached<acspo.SstDay[]> & { enCours?: boolean }> }[] = [
   { source: acspo.SOURCE, cost: acspo.COST, grid: acspo.grid },
   { source: modis.SOURCE, cost: modis.COST, grid: modis.grid },
 ];
+SEA_SOURCES.push(viirs.SOURCE, ...PRODUCTS.map((p) => p.source));
 
 // MFWAM's nearest cell read up to this far, WAM's beyond: on 08/11/2026 MFWAM's lay 1 to 5 km off the beaches of the
 // west and the south, 7 to 20 km off those of the north and the east, where WAM's lay 3 to 9 km off (providers/houle.ts).
 const MF_MAX_KM = 6;
 
 export const COVERAGE =
-  "Température de surface MESURÉE par satellite (NOAA ACSPO, ou NASA MODIS en secours). Une mesure paraît au plus tôt le lendemain " +
-  "du jour mesuré, et les jours de nuages il n'y en a pas : la dernière peut dater de plusieurs jours. Chaque réponse donne le jour de la mesure. " +
+  "Température de surface MESURÉE par satellite : le dernier passage de NOAA-20 au-dessus de l'île (vers 01:40 et vers 14:00, " +
+  "publié moins de 1 h 30 après), quand il voit la mer à moins de 5 km du lieu, sinon la moyenne d'une journée (NOAA ACSPO, " +
+  "ou NASA MODIS en secours), qui paraît au plus tôt le lendemain. Les jours de nuages il n'y a pas de mesure : la dernière peut " +
+  "dater de plusieurs jours. Chaque réponse dit de quel produit vient la valeur, avec l'heure du passage ou le jour de la moyenne. " +
   `Vagues : PRÉVISION, jamais mélangée aux mesures, du modèle ${houle.MODEL_MF.nom} (maille d'environ ${houle.MODEL_MF.maille_km} km), ` +
   `qui distingue la houle principale du reste de la mer, là où il a un point à moins de ${MF_MAX_KM} km (ouest et sud), ` +
   `et du modèle ${houle.MODEL.nom} (maille de ${houle.MODEL.maille_km} km) ailleurs (nord et est), sur ${houle.MODEL.echeance_jours} jours. ` +
   "Aucune bouée de l'île ne publie de mesure de houle en ce moment (réseau Candhis du Cerema : dernières mesures en avril 2023).";
 
 const CAVEATS = [
-  "Mesure satellite de la toute première couche d'eau, moyenne de la journée sur des carrés de 2 à 4 km : " +
+  "Mesure satellite de la toute première couche d'eau, sur des carrés de 2 à 4 km (un passage du satellite, ou la moyenne d'une journée) : " +
     "c'est la température au large du lieu, pas au bord de la plage ni dans le lagon, qui peuvent différer.",
 ];
+
+// A pass is used within 5 km of the place and for a day: further, or older, the day's mean answers.
+const PASS_MAX_KM = 5;
+const PASS_MAX_AGE_MS = 24 * 3600_000;
 
 // The waves of the whole coast: a cache read, one request per model for every beach, the cache write.
 const WAVE_SUBREQUESTS = 4;
@@ -55,7 +69,7 @@ const HOUR = 3600_000;
 
 interface Grid {
   source: SourceInfo;
-  cached: Cached<acspo.SstDay[]>;
+  cached: Cached<acspo.SstDay[]> & { enCours?: boolean };
 }
 
 /** A product's grid as the shared copy keeps it, in JSON: `lu` is when it was read. */
@@ -64,10 +78,12 @@ export interface GridCopy {
   jours: acspo.SstDay[];
   lu: number;
   stale?: boolean;
+  /** ACSPO's day due being read, a range at each build (providers/acspo.ts). */
+  enCours?: boolean;
 }
 
 const gridCopy = (g: Grid): GridCopy =>
-  ({ source: g.source.id, jours: g.cached.value, lu: g.cached.fetchedAt.getTime(), ...(g.cached.stale ? { stale: true } : {}) });
+  ({ source: g.source.id, jours: g.cached.value, lu: g.cached.fetchedAt.getTime(), ...(g.cached.stale ? { stale: true } : {}), ...(g.cached.enCours ? { enCours: true } : {}) });
 
 /**
  * The satellites' grids, a shared copy (web/partagees.ts) that only the scheduled event builds: the copy of /mer, the
@@ -76,10 +92,14 @@ const gridCopy = (g: Grid): GridCopy =>
  */
 export const SATELLITES = "mer:satellites";
 
-/** Minutes until the grids are read again: half an hour while ACSPO lacks the day it should have (acspo.due), else 3 hours. */
+/**
+ * Minutes until the grids are read again: 10 while ACSPO's day is being read (a range each time), half an hour while
+ * ACSPO lacks the day it should have (acspo.due), else 3 hours.
+ */
 export function satellitesEvery(last: unknown, now = new Date()): number {
   if (!Array.isArray(last)) return 3 * 60;
   const a = (last as GridCopy[]).find((g) => g.source === acspo.SOURCE.id);
+  if (a?.enCours) return 10;
   return (a?.jours[0]?.date ?? "") >= acspo.due(now) ? 3 * 60 : 30;
 }
 
@@ -108,6 +128,19 @@ async function copiedGrids(cache: Cache, now: Date): Promise<Grid[]> {
   });
 }
 
+/**
+ * The shared copy of the satellite's passes (providers/viirs.ts), however old: each pass says its time. Outside the
+ * Worker, brought up to date after the answer, as the grids.
+ */
+async function copiedPasses(cache: Cache, now: Date): Promise<Cached<viirs.Passages> | undefined> {
+  const hit = await cache.peek<viirs.Passages>(viirs.KEY, now.getTime() - 10 * 60_000).catch(() => undefined);
+  const every = viirs.passagesEvery(hit?.value, now);
+  if (left() === Infinity && (!hit || now.getTime() - hit.fetchedAt.getTime() >= every * 60_000)) {
+    later(cache.get(viirs.KEY, every * 60, () => viirs.build(cache, now)).catch((err) => console.error("passages du satellite indisponibles:", why(err))));
+  }
+  return hit?.value?.passages ? hit : undefined;
+}
+
 /** The products that answer, in order of preference. A product that fails is skipped. */
 async function grids(cache: Cache, now: Date): Promise<Grid[]> {
   const out: Grid[] = [];
@@ -124,7 +157,50 @@ async function grids(cache: Cache, now: Date): Promise<Grid[]> {
   return out;
 }
 
-function reading(place: Place, gs: Grid[], now: Date) {
+/** The local time of a pass, « 01:39 ». */
+const passHour = (t: number) => {
+  const d = new Date(t + 4 * 3600_000);
+  return heure(d.getUTCHours() * 60 + d.getUTCMinutes());
+};
+
+/**
+ * When a pass was, for the reader, and the « passage … » that says it: « cette nuit à 01:39 » (« la nuit dernière » from
+ * noon), « aujourd'hui à 14:02 », « hier à 14:02 », « le 06/11 à 14:02 ».
+ */
+function passWhen(t: number, now: Date): { quand: string; passage: string } {
+  const day = localDate(new Date(t));
+  const at = passHour(t);
+  if (day === localDate(now) && localHour(new Date(t)) < 6) {
+    const night = localHour(now) < 12 ? "cette nuit" : "la nuit dernière";
+    return { quand: `${night} à ${at}`, passage: `passage de ${night} à ${at}` };
+  }
+  if (day === localDate(now)) return { quand: `aujourd'hui à ${at}`, passage: `passage d'aujourd'hui à ${at}` };
+  if (day === localDate(new Date(now.getTime() - 86_400_000))) return { quand: `hier à ${at}`, passage: `passage d'hier à ${at}` };
+  return { quand: `le ${shortDay(day)} à ${at}`, passage: `passage du ${shortDay(day)} à ${at}` };
+}
+
+/** The pass's reading first, within PASS_MAX_KM and PASS_MAX_AGE_MS; else the day's mean of the first product that has one. */
+function reading(place: Place, gs: Grid[], now: Date, passes?: Cached<viirs.Passages>) {
+  const p = passes ? viirs.latest(passes.value, place.lon, place.lat, now.getTime(), PASS_MAX_KM, PASS_MAX_AGE_MS) : null;
+  if (p) {
+    return {
+      grid: { source: viirs.SOURCE, cached: { value: [], fetchedAt: passes!.fetchedAt, stale: passes!.stale } } as Grid,
+      valeur: p.valeur,
+      mesure: {
+        temperature_eau: `${fr(p.valeur)} °C`,
+        nature: "mesure_satellite",
+        produit: "passage du satellite",
+        satellite: p.satellite,
+        heure_mesure: localTime(new Date(p.heure)),
+        jour_mesure: localDate(new Date(p.heure)),
+        quand: passWhen(p.heure, now).quand,
+        passage: passWhen(p.heure, now).passage,
+        distance_km: p.distance_km,
+        position: { lat: p.lat, lon: p.lon },
+        source: viirs.SOURCE.nom,
+      },
+    };
+  }
   for (const g of gs) {
     const m = acspo.nearest(g.cached.value, place.lon, place.lat);
     if (!m) continue;
@@ -135,6 +211,7 @@ function reading(place: Place, gs: Grid[], now: Date) {
       mesure: {
         temperature_eau: `${fr(m.valeur)} °C`,
         nature: "mesure_satellite",
+        produit: "moyenne du jour",
         jour_mesure: m.date,
         age_jours: ageDays,
         distance_km: m.distance_km,
@@ -153,14 +230,26 @@ function daysSince(day: string, now: Date): number {
 
 const shortDay = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
 
-/** « le 22/10, il y a 3 jours », or « hier, 24/10 » (marketing). A day is published the next morning at the earliest. */
-function measuredOn(day: string, now: Date): string {
-  const n = daysSince(day, now);
-  return n <= 1 ? `hier, ${shortDay(day)}` : `le ${shortDay(day)}, il y a ${n} jours`;
+/**
+ * What a measure is, for the reader: its pass, « passage de cette nuit à 01:39 », or the day's mean, « moyenne d'hier,
+ * 06/11 », « moyenne du 04/11, il y a 3 jours » (marketing). A day is published the next morning at the earliest.
+ */
+function measuredOn(m: { jour_mesure: string; passage?: string }, now: Date): string {
+  if (m.passage) return m.passage;
+  const n = daysSince(m.jour_mesure, now);
+  return n <= 1 ? `moyenne d'hier, ${shortDay(m.jour_mesure)}` : `moyenne du ${shortDay(m.jour_mesure)}, il y a ${n} jours`;
 }
 
-/** What the day of the measure means for the reader, the clouds said when it is older than yesterday's (marketing). */
-function ageWarning(day: string, now: Date): string {
+/**
+ * What the measure means for the reader: a pass is an instant, not the day's; a day's mean is not today's, the clouds said
+ * when it is older than yesterday's (marketing).
+ */
+function ageWarning(m: { jour_mesure: string; passage?: string }, now: Date): string {
+  if (m.passage) {
+    return `Mesure du ${m.passage}\u00a0: un instant, pas la moyenne de la journée. La surface de la mer est un peu plus fraîche la nuit ` +
+      "et le matin, plus chaude l'après-midi.";
+  }
+  const day = m.jour_mesure;
   const n = daysSince(day, now);
   return n <= 1
     ? `Mesure d'hier (${shortDay(day)})\u00a0: ce n'est pas la température d'aujourd'hui. Une mesure par satellite paraît le lendemain.`
@@ -172,17 +261,18 @@ function staleWarning(g: Grid | undefined) {
   return g?.cached.stale ? ["Source momentanément injoignable : dernière valeur connue."] : [];
 }
 
-/** One reading per stretch of `names`, null where no product has one, from the grids `gs`. */
-function tourOf(gs: Grid[], now: Date, names = TOUR) {
-  const readings = names.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, r: reading(p, gs, now) }));
-  const used = [...new Set(readings.flatMap((x) => (x.r ? [x.r.grid] : [])))];
+/** One reading per stretch of `names`, null where nothing has one, from the passes `ps` and the grids `gs`. */
+function tourOf(gs: Grid[], now: Date, names = TOUR, ps?: Cached<viirs.Passages>) {
+  const readings = names.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, r: reading(p, gs, now, ps) }));
+  // One per source: each pass's reading carries a grid of its own.
+  const used = [...new Map(readings.flatMap((x) => (x.r ? [[x.r.grid.source.id, x.r.grid] as const] : []))).values()];
   return { readings, used };
 }
 
-/** The tour of `names` from the shared copy of the grids, for the copy of /mer; null without it. */
+/** The tour of `names` from the shared copies of the passes and the grids, for the copy of /mer; null without them. */
 export async function seaTour(cache: Cache, now = new Date(), names = TOUR) {
-  const gs = await copiedGrids(cache, now);
-  return gs.length ? tourOf(gs, now, names) : null;
+  const [gs, ps] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now)]);
+  return gs.length || ps ? tourOf(gs, now, names, ps) : null;
 }
 
 // --- Waves: a forecast, kept apart from the measurement ---------------------------------------------------------
@@ -378,8 +468,8 @@ export async function corauxBlock(cache: Cache) {
 /** `withCoraux`: false for a place's page (web/data.ts), whose copy shows no corals and does not pay for their read. */
 export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date(), withCoraux = true) {
   if (!lieu?.trim()) {
-    const [gs, w, reef] = await Promise.all([copiedGrids(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
-    const t = gs.length ? tourOf(gs, now) : null;
+    const [gs, ps, w, reef] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
+    const t = gs.length || ps ? tourOf(gs, now, TOUR, ps) : null;
     if (!t && !w && !reef) return unavailable();
     const at = TOUR.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, v: w ? wavesAt(w.value, p.lon, p.lat, now) : null }));
     const points = at.map(({ p, v }, i) => ({
@@ -388,7 +478,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       ...(v ? { vagues_prevision: waveWords(v.now), vagues_modele: v.model.nom } : {}),
     }));
     const models = modelsOf(at.map((a) => a.v));
-    const measured = points.filter((p) => "temperature_eau" in p).map((p) => `${p.lieu}\u00a0: ${p.temperature_eau} (${measuredOn(p.jour_mesure!, now)})`);
+    const measured = points.filter((p) => "temperature_eau" in p).map((p) => `${p.lieu}\u00a0: ${p.temperature_eau} (${measuredOn(p as { jour_mesure: string; passage?: string }, now)})`);
     const waves = points.filter((p) => p.vagues_prevision).map((p) => `${p.lieu} ${p.vagues_prevision}`);
     return text({
       resume: [
@@ -404,20 +494,20 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       couverture: COVERAGE,
       sources: credits([...(t?.used.map((g) => g.source) ?? []), ...models.map((m) => m.source), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
       // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
-      jour_mesure: points.flatMap((p) => (p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
+      jour_mesure: points.flatMap((p) => ("jour_mesure" in p && p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
     });
   }
 
   const r = resolvePlace(lieu);
   if (!r) return notFound(lieu);
-  const [gs, w, reef] = await Promise.all([copiedGrids(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
-  if (!gs.length && !w) return unavailable();
-  const m = gs.length ? reading(r.lieu, gs, now) : null;
+  const [gs, ps, w, reef] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
+  if (!gs.length && !ps && !w) return unavailable();
+  const m = gs.length || ps ? reading(r.lieu, gs, now, ps) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
   const temperature = m
-    ? `Eau de mer près ${de(r.lieu.nom)}\u00a0: ${m.mesure.temperature_eau}, mesurée par satellite ${measuredOn(m.mesure.jour_mesure, now)} ` +
-      `(moyenne du jour, point de mesure à ${fr(m.mesure.distance_km)} km).`
-    : gs.length
+    ? `Eau de mer près ${de(r.lieu.nom)}\u00a0: ${m.mesure.temperature_eau}, mesurée par satellite ` +
+      `(${measuredOn(m.mesure, now)}${"satellite" in m.mesure ? `, ${m.mesure.satellite}` : ""}, point de mesure à ${fr(m.mesure.distance_km)} km).`
+    : gs.length || ps
       ? `Pas de mesure satellite exploitable à moins de 12 km ${de(r.lieu.nom)} sur les derniers jours ` +
         "(nuages, ou lieu trop loin de la mer)."
       : "Température de l'eau : les sources satellite ne répondent pas pour le moment.";
@@ -435,7 +525,7 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       ? {
           avertissements: [
             ...CAVEATS,
-            ageWarning(m.mesure.jour_mesure, now),
+            ageWarning(m.mesure, now),
             ...staleWarning(m.grid),
           ],
         }

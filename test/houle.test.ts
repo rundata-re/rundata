@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, count, counted, left } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import * as acspo from "../src/providers/acspo.js";
+import { coastwatch, parseAscii } from "./sst.js";
 import * as houle from "../src/providers/houle.js";
 import * as uv from "../src/providers/uv.js";
 import { SATELLITES, temperatureMer } from "../src/tools/mer.js";
@@ -42,7 +42,7 @@ const isolate = (edge = new EdgeLike()) => new Cache(new TieredStore(new MemoryS
 /** An isolate whose data center holds the satellites' grids the scheduled event shared: temperature_mer reads them there. */
 async function withSea() {
   const edge = new EdgeLike();
-  const satellites = [{ source: "acspo", jours: [acspo.parseAscii(String(fixture("acspo.ascii")), "2026-10-21")], lu: NOW.getTime() }];
+  const satellites = [{ source: "acspo", jours: [parseAscii(String(fixture("acspo.ascii")), "2026-10-21")], lu: NOW.getTime() }];
   await edge.put(SATELLITES, { value: satellites, fetchedAt: NOW.getTime() });
   return isolate(edge);
 }
@@ -50,11 +50,12 @@ async function withSea() {
 let fetched: string[];
 let down: RegExp | null;
 
-function upstream(url: string): Response {
+function upstream(url: string, init?: RequestInit): Response {
   if (down?.test(url)) throw new Error("source down");
   if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
   if (url.includes("air-quality-api.open-meteo")) return new Response(fixture("cams_uv.json"));
-  if (url.includes("/thredds/dodsC/gridLEODYNRTL3SWW00/")) return new Response(fixture("acspo.ascii"));
+  const pub = coastwatch(url, init);
+  if (pub) return pub;
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
   if (url.includes("open-meteo.com/data")) return new Response(fixture("openmeteo_meta.json"));
   if (url.includes("open-meteo")) return new Response(fixture("openmeteo_cilaos.json"));
@@ -64,10 +65,10 @@ function upstream(url: string): Response {
 beforeEach(() => {
   fetched = [];
   down = null;
-  vi.stubGlobal("fetch", async (url: string) => {
+  vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     overLimit();
     fetched.push(String(url));
-    return upstream(String(url));
+    return upstream(String(url), init);
   });
 });
 

@@ -79,7 +79,7 @@ import { instant, type InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
 import { enTete } from "./representativeness.js";
 import { NETWORKS } from "./meteo.js";
-import { PRODUCTS as SEA_PRODUCTS } from "./mer.js";
+import { SEA_SOURCES } from "./mer.js";
 import { alerteVolcan, releaseDay } from "../web/volcan-alerte.js";
 
 // How old an announcement of the route du Littoral may be to be told in a summary.
@@ -280,7 +280,7 @@ function sea(p: PlacePage, mer: SeaData | undefined, place: PlaceData | undefine
   return m ? { row: { temperature_eau: m.temperature_eau, jour_mesure: m.jour_mesure, mesure: "satellite, au large" }, sources: seaSources(place!.mer!.sources) } : undefined;
 }
 
-const SATELLITES = SEA_PRODUCTS.map((x) => x.source.nom);
+const SATELLITES = SEA_SOURCES.map((x) => x.nom);
 
 /**
  * The summary gives the water's temperature only, a measure by satellite: the satellites' sources, not the forecast of

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as viirs from "../src/providers/viirs.js";
 import { BUILD_BUDGET, count, counted, left, measured, SCHEDULED_BUDGET } from "../src/budget.js";
 import { Cache, CACHE_FORMAT, type CacheEntry, isCopy, MemoryStore, stampOf, TieredStore } from "../src/cache.js";
 import { VERSION } from "../src/server.js";
@@ -163,9 +164,10 @@ describe("the shared copies after a deploy", () => {
     // The deploy: a new isolate, a new version.
     const cache = new Cache(new TieredStore(new MemoryStore(), edge), () => now, false, undefined, "2.0.0");
     const events: { written: string[]; used: number; rest: number; at: number }[] = [];
-    // The news, the satellites' grids, the vigilance, the earthquakes and the ONF's map are a source's, not a page's: no version, kept.
+    // The news, the satellites' grids and passes, the vigilance, the earthquakes and the ONF's map are a source's, not a
+    // page's: no version, kept.
     const pages = list.filter((s) => isCopy(s.key));
-    expect(pages.length).toBe(list.length - 5);
+    expect(pages.length).toBe(list.length - 6);
     const done = () => pages.every((s) => JSON.parse(kv.data.get(kvKey(s.key))!).version === "2.0.0");
     while (events.length < 12 && !done()) {
       const run = await counted(SCHEDULED_BUDGET, async () => ({ warmed: await warmShared(cache, kv, new Date(now), list), rest: left() }));
@@ -277,8 +279,13 @@ describe("the scheduled refresh of the shared copies", () => {
     // from 10 h to 14 h, its copy here never having the day's forecast: 12 more, at the hours of the day simulated, never
     // at those of the clock (the test went every 15 minutes all day when run from 10 h to 14 h).
     expect(kv.writes.get(kvKey("web:air"))).toBe(36);
-    expect(total).toBeLessThanOrEqual(1188);
-    expect(total).toBeGreaterThanOrEqual(1145);
+    // The satellite's passes (providers/viirs.ts), its copy here never holding a granule read: every 10 minutes from an
+    // hour before each of the two windows until their granules are given up, 6 hours after, else every hour. Its
+    // worst day, NOAA not answering: a real day goes back to every hour once the window's granules are read.
+    const passes = kv.writes.get(kvKey(viirs.KEY))!;
+    expect(passes).toBe(112);
+    expect(total - passes).toBeLessThanOrEqual(1188);
+    expect(total - passes).toBeGreaterThanOrEqual(1145);
   });
 
   it("refreshes a copy at each of its slots, though written a few seconds into the event before", async () => {

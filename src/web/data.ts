@@ -31,7 +31,7 @@ import { qualiteAir, type Amateurs, type Measured } from "../tools/air.js";
 import { calendrier } from "../tools/calendrier.js";
 import { electricite } from "../tools/electricite.js";
 import { pointsOf } from "./electricite-historique.js";
-import { BEACHES, modelsOf, PRODUCTS as SEA_PRODUCTS, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
+import { BEACHES, modelsOf, SEA_SOURCES, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
 import { islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
@@ -265,7 +265,7 @@ async function seaOfTour(cache: Cache, now: Date): Promise<{ mer: SeaNow[]; sour
     const b = copy.value.plages.find((x) => x.nom === resolvePlace(n)!.lieu.nom);
     return b?.valeur != null && b.jour && b.distance_km != null ? [{ nom: b.nom, valeur: b.valeur, jour: b.jour, distance_km: b.distance_km }] : [];
   });
-  const satellites = SEA_PRODUCTS.map((p) => p.source.nom);
+  const satellites = SEA_SOURCES.map((p) => p.nom);
   return mer.length ? { mer, sources: copy.value.sources.filter((s) => satellites.includes(s.source)) } : null;
 }
 
@@ -313,7 +313,7 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
   // last copy's readings, each with its day, rather than a copy without the water's temperature that the home page
   // would keep 3 hours, or the scheduled event write to KV. A copy older code wrote may lack them.
   const last = t ? undefined : (await cache.peek<SeaData>("web:mer").catch(() => undefined))?.value;
-  const satellites = SEA_PRODUCTS.map((p) => p.source.nom);
+  const satellites = SEA_SOURCES.map((p) => p.nom);
   const read = tide.some((g) => g.reading);
   const lines = BEACHES.map((n) => resolvePlace(n)!.lieu).map((p) => (w ? waveLine(w.value, p.lon, p.lat, now) : null));
   return {

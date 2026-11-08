@@ -20,6 +20,7 @@ import { floodRaised } from "./domains.js";
 import { alerteVolcan } from "./volcan-alerte.js";
 import { type CourantAnswer, followed } from "../tools/courant.js";
 import { buildSatellites, SATELLITES, satellitesEvery } from "../tools/mer.js";
+import * as viirs from "../providers/viirs.js";
 import { buildChiffres, buildEvenements, EVENEMENTS_KEY, evenementsEvery, KEY as CHIFFRES } from "../chiffres.js";
 
 /** The part of a KV namespace binding used here. */
@@ -113,8 +114,16 @@ export const SHARED: Shared[] = [
   // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes
   // an hour more until it is, 12 a day at most.
   { key: "web:air", build: buildAir, every: (last, now) => airEvery(last, now), cold: 8, cpu: 40, range: { usual: 60, shortest: 15 }, offset: 40 },
-  // Built only here: the copy of /mer, the pages and temperature_mer read it, never the satellites.
-  { key: SATELLITES, build: buildSatellites, every: (last, now) => satellitesEvery(last, now), cold: 10, cpu: 110, range: { usual: 3 * 60, shortest: 30 }, offset: 55 },
+  // Built only here: the copy of /mer, the pages and temperature_mer read it, never the satellites. Every 10 minutes
+  // while ACSPO's day is read, a range each time (providers/acspo.ts), at minutes ending in 5: never in the events of
+  // the passes', at minutes ending in 0, so that CoastWatch is asked once in an event at most. Its cold cost: ACSPO's
+  // reading kept in KV, read and written, and its range (3, 6 when it read four days by /thredds/), and MODIS (3).
+  { key: SATELLITES, build: buildSatellites, every: (last, now) => satellitesEvery(last, now), cold: 7, cpu: 400, range: { usual: 3 * 60, shortest: 10 }, offset: 55 },
+  // The satellite's passes over the island (providers/viirs.ts): every 10 minutes while a granule is to be asked, a
+  // granule each time, else every hour. Its cold cost: its last copy, from the data center's cache then KV
+  // (SharedFallback), and a granule. Its CPU: unpacking the granule's three chunks of the island, 58 to 116 ms in
+  // workerd (wrangler dev) on two granules of 6 and 7 November 2026, 215 to 330 in Node.
+  { key: viirs.KEY, build: viirs.build, every: (last, now) => viirs.passagesEvery(last, now), cold: 3, cpu: 400, range: { usual: 60, shortest: 10 }, offset: 0 },
   { key: "web:mer", build: buildSea, every: 3 * 60, cold: 13, cpu: 110, offset: 75 },
   { key: "web:calendrier", build: buildCalendrier, every: 6 * 60, cold: 8, cpu: 40, offset: 130 },
   // The earthquakes and the ONF's map, which /volcan's copy embeds: built in the data center of the event, it read that

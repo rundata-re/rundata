@@ -159,6 +159,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).
   onf: 1,
+  // CAMS's UV index: a day without its hours of 10 h to 14 h kept without an index, never « UV 0 » (10/11/2026).
+  "uv:ile": 1,
 };
 
 /** The revision of the source whose entry is kept under `key`: its own, else its first part's; for a bundle's entry, its entry's. */

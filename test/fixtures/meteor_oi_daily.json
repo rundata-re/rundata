@@ -1,0 +1,53 @@
+{
+ "MDM1570": {
+  "time": "09/11/2026 à 18h40",
+  "tempsunix": "1794235200",
+  "stats": {
+   "current": {
+    "outTemp": "14,2",
+    "humidity": "99",
+    "windSpeed": "0",
+    "windDir": "   N/A",
+    "windGust": "0",
+    "rainSum1h": "0,0"
+   }
+  }
+ },
+ "CJS400": {
+  "time": "09/11/2026 à 18h40",
+  "stats": {
+   "current": {
+    "outTemp": "21,4",
+    "humidity": "80",
+    "windSpeed": "16",
+    "windDir": "135",
+    "windGust": "27",
+    "rainSum1h": "0,0"
+   }
+  }
+ },
+ "GPN1413": {
+  "time": "09/11/2026 à 18h39",
+  "stats": {
+   "current": {
+    "outTemp": "N/A",
+    "humidity": "N/A",
+    "windSpeed": "N/A",
+    "rainSum1h": "0.0 mm"
+   }
+  }
+ },
+ "PAM290": {
+  "time": "09/11/2026 à 18:40",
+  "stats": {
+   "current": {
+    "outTemp": "21,8",
+    "humidity": "86",
+    "windSpeed": "2",
+    "windDir": "90",
+    "windGust": "8",
+    "rainSum1h": "0,0"
+   }
+  }
+ }
+}

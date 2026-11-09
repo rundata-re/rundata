@@ -15,7 +15,8 @@
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/demo/*"] },
   "preview_urls": false,
   // Every 5 minutes, fills the bundle of the latest AROME run (src/worker.ts), about 35 grids per run of it.
-  "triggers": { "crons": ["*/5 * * * *"] },
+  // The second, MétéoR-OI's stations in an event of their own (src/providers/meteor-oi.ts CRON): never the first's budget.
+  "triggers": { "crons": ["*/5 * * * *", "3,13,23,33,43,53 * * * *"] },
   // The AROME bundles, shared by every data center. Id from `npx wrangler kv namespace create STORE`.
   "kv_namespaces": [{ "binding": "STORE", "id": "1f961db9ed58429f9687eb6c438981f4" }],
   // The bus timetables (src/providers/transit.ts), imported by scripts/build-transit.py.

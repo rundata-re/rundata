@@ -57,7 +57,7 @@ type Payload = Record<string, unknown>;
 // Producers whose attribution is long or in English, by source id: the name a sentence can carry.
 const SHORT: Record<string, string> = {
   metar: "Météo-France",
-  pioupiou: "OpenWindMap",
+  meteor_oi: "MétéoR-OI",
   openmeteo: "Open-Meteo (modèle IFS de l'ECMWF)",
   openmeteo_houle: "Open-Meteo (modèle de vagues WAM de l'ECMWF)",
   openmeteo_houle_mf: "Open-Meteo (modèle de vagues MFWAM de Météo-France, Copernicus Marine)",
@@ -98,7 +98,7 @@ export function citerOf(tool: string, p: Payload): string {
   return own && Array.isArray(p.sources) && p.sources.length ? own(p) : citation(p);
 }
 
-/** « rundata.re, d'après Météo-France (station Le Port), OpenWindMap » from the sources an answer credits. */
+/** « rundata.re, d'après Météo-France (station Le Port), MétéoR-OI » from the sources an answer credits. */
 export function citation(p: Payload): string {
   // Each credit as credits() writes it (format.ts), or a source given whole (sources_donnees).
   const listed = (Array.isArray(p.sources) ? p.sources : [])

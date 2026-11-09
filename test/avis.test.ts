@@ -6,7 +6,6 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import type { Hit } from "../src/metrics.js";
 import { parseCsv } from "../src/providers/acspo.js";
 import { parseAscii } from "./sst.js";
-import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { AVIS_HINT, cite } from "../src/tools/citer.js";
 import { credits } from "../src/tools/format.js";
 import * as irve from "../src/providers/irve.js";
@@ -22,11 +21,10 @@ const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].tex
 async function offlineCache() {
   const store = new MemoryStore();
   const at = NOW.getTime();
-  const beacons = inReunionBeacons(JSON.parse(fixture("pioupiou_all.json")).data);
-  const live = beacons.map((b) => ({ ...b, measurements: { ...b.measurements, date: "2026-10-18T19:16:00Z" } }));
+  // The FFVL's beacons, their last readings at 19:16.
+  const releves = (JSON.parse(fixture("ffvl_releves.json")) as { date: string }[]).map((r) => ({ ...r, date: "2026-10-18T19:16:00Z" }));
   await store.put("metar", { value: JSON.parse(fixture("metar.json")), fetchedAt: at });
-  await store.put("pioupiou:all", { value: beacons, fetchedAt: at });
-  await store.put("pioupiou:live", { value: live, fetchedAt: at });
+  await store.put("ffvl:releves", { value: releves, fetchedAt: at });
   const satellites = [
     { source: "acspo", jours: [parseAscii(fixture("acspo.ascii"), "2026-10-16")], lu: at },
     { source: "modis", jours: parseCsv(fixture("modis.csv"), "sstMasked"), lu: at },
@@ -59,7 +57,7 @@ async function tools(): Promise<{ name: string; description: string; inputSchema
 describe("citation", () => {
   it("names rundata.re with the station measured, and links the place's page", async () => {
     const sp = body(cite("meteo_actuelle", await meteoActuelle(await offlineCache(), "Saint-Pierre", NOW)));
-    expect(sp.citer).toBe("rundata.re, d'après Météo-France (station Saint-Pierre Pierrefonds), OpenWindMap");
+    expect(sp.citer).toBe("rundata.re, d'après Météo-France (station Saint-Pierre Pierrefonds), FFVL");
     expect(sp.lien).toBe("https://rundata.re/meteo/saint-pierre?ref=mcp");
     const r = body(cite("meteo_actuelle", await meteoActuelle(await offlineCache(), "plage de l'Hermitage", NOW)));
     expect(r.citer).toMatch(/^rundata\.re, d'après /);
@@ -124,9 +122,9 @@ describe("citation", () => {
     const sp = body(cite("meteo_actuelle", await meteoActuelle(await offlineCache(), "Saint-Pierre", NOW)));
     // The station named by the résumé, not again in its source (06/11/2026); citer keeps it.
     expect(sp.resume).toContain("Saint-Pierre Pierrefonds");
-    expect(sp.resume).toMatch(/\. Source : rundata\.re, d'après Météo-France, OpenWindMap, https:\/\/rundata\.re\/meteo\/saint-pierre\?ref=mcp\.$/);
+    expect(sp.resume).toMatch(/\. Source : rundata\.re, d'après Météo-France, FFVL, https:\/\/rundata\.re\/meteo\/saint-pierre\?ref=mcp\.$/);
     expect(sp.resume.split("Source :").length).toBe(2);
-    expect(sp.citer).toBe("rundata.re, d'après Météo-France (station Saint-Pierre Pierrefonds), OpenWindMap"); // the fields stay
+    expect(sp.citer).toBe("rundata.re, d'après Météo-France (station Saint-Pierre Pierrefonds), FFVL"); // the fields stay
     expect(sp.lien).toBe("https://rundata.re/meteo/saint-pierre?ref=mcp");
     const answer = (v: object, isError = false) => ({ content: [{ type: "text" as const, text: JSON.stringify(v) }], ...(isError ? { isError } : {}) });
     // Without a full stop, one is added; the rest of the answer is left as written.

@@ -58,7 +58,6 @@ Ce serveur [MCP](https://modelcontextprotocol.io) donne à votre assistant IA (C
 |---|---|---|---|
 | Stations Météo-France, API Package Observations (clé gratuite, facultative) | ~56 stations, de la côte aux sommets : air, pluie, et pour une partie humidité, vent, pression | toutes les 6 min, publiées 5 à 10 min après | Licence Ouverte Etalab 2.0 |
 | METAR Gillot et Pierrefonds (Météo-France, via NOAA aviationweather.gov) | air, humidité, vent, pression, temps présent | toutes les 30 min, environ 20 min de retard | données OMM, diffusion libre |
-| Balises Pioupiou / [OpenWindMap](https://openwindmap.org) | vent | toutes les 4 min | licence communautaire OpenWindMap, attribution obligatoire |
 | NOAA CoastWatch ACSPO L3S | température de surface de la mer, satellite, carrés de 2 km | quotidienne, paraît au plus tôt le lendemain | domaine public |
 | NASA Aqua MODIS (via NOAA PFEG), en secours | idem, carrés de 4 km, de jour | quotidienne, paraît au plus tôt le lendemain | domaine public |
 | Vigilance météo et alerte cyclonique, Météo-France (API DPVigilance, même clé) | couleurs par zone et par heure, textes de suivi | à chaque nouveau bulletin, lu toutes les 5 min | Licence Ouverte Etalab 2.0 |

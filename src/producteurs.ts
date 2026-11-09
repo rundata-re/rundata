@@ -9,7 +9,7 @@
  * - A collective (communes, salles, media, water distributors, charge point operators) counts each body the code reads,
  *   from the lists it keeps (providers/agenda.ts, irve/stations.json); never 1 for the collective. The clubs on
  *   Sportsregions are read from the last copy of their calendar: counted live (chiffres.ts), not here.
- * - A licence is one of seven families; the first five are open. In doubt, a source is not said open.
+ * - A licence is one of eight families; the first five are open. In doubt, a source is not said open.
  *
  * Every source of toutesLesSources (server.ts) has its entry here (test/producteurs.test.ts), its producers given or
  * taken from the agendas that read it.
@@ -21,7 +21,7 @@ import { AGENDAS, type Agenda } from "./providers/agenda.js";
 import { STATIONS as BORNES } from "./providers/irve.js";
 import type { SourceInfo } from "./types.js";
 
-export type Famille = "licence_ouverte" | "odbl" | "dbcl" | "cc_by" | "domaine_public" | "licence_attribution" | "information_publique";
+export type Famille = "licence_ouverte" | "odbl" | "dbcl" | "cc_by" | "domaine_public" | "licence_attribution" | "cc_by_nc" | "information_publique";
 
 /** The families as the page writes them; the open ones make « licence ouverte ». */
 export const FAMILLES: Record<Famille, { nom: string; ouverte: boolean }> = {
@@ -31,8 +31,10 @@ export const FAMILLES: Record<Famille, { nom: string; ouverte: boolean }> = {
   cc_by: { nom: "CC BY", ouverte: true },
   domaine_public: { nom: "domaine public", ouverte: true },
   // A producer's own licence that lets its data be reused with its attribution, under its conditions: not one of the
-  // open licences (OpenWindMap's community licence, Pioupiou).
+  // open licences.
   licence_attribution: { nom: "licence propre, réutilisation avec attribution", ouverte: false },
+  // Non-commercial use only: not open (MétéoR-OI, rundata.re being non-commercial).
+  cc_by_nc: { nom: "CC BY-NC", ouverte: false },
   information_publique: { nom: "information publique", ouverte: false },
 };
 
@@ -77,7 +79,7 @@ export const FICHES: Record<string, Fiche> = {
   gdacs_cyclones: { famille: "information_publique", producteurs: [MF] },
   // Under Météo-France's written agreement of 02/11/2026, not an open licence: in doubt, not said open.
   meteofrance_cmrs_wtio31: { famille: "information_publique", producteurs: [MF] },
-  pioupiou: { famille: "licence_attribution", producteurs: ["OpenWindMap"] },
+  meteor_oi: { famille: "cc_by_nc", producteurs: ["MétéoR Océan Indien"] },
   ffvl: { famille: "licence_ouverte", producteurs: ["Fédération française de vol libre"] },
   openmeteo: { famille: "cc_by", producteurs: [ECMWF] },
   openmeteo_ens: { famille: "cc_by", producteurs: [ECMWF] },

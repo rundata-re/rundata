@@ -199,8 +199,8 @@ describe("/chiffres in the event, after the step (web:chiffres)", () => {
     expect(stations).toMatchObject({ stale: false, fetchedAt: NOW });
     expect(a.value.construite_le).toBe(NOW.toISOString());
     expect(a.used - lookup - b.value.afterUsed).toBe(13);
-    // Its declared cold cost, the one measured (45) less these 13.
-    expect(shared.cold).toBe(45 - 13);
+    // Its declared cold cost, the one measured (45) less these 13, and less the 6 of the Pioupiou beacon, no longer read.
+    expect(shared.cold).toBe(45 - 13 - 6);
   });
 });
 

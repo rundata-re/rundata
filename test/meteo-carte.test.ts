@@ -55,7 +55,7 @@ const GILLOT = st({ nom: "Saint-Denis Gillot (aéroport)", id: "97418110", lon: 
 const PLAINE = st({ nom: "Plaine des Cafres", id: "97422440", lon: 55.572833, lat: -21.209167, altitude_m: 1560, temperature: 17.2, vent: 12, direction: 95, pluie_1h: 2.4 });
 const BRAS_SEC = st({ nom: "Bras-Sec", id: "97422445", lon: 55.525167, lat: -21.205667, altitude_m: 1210, temperature: 19.1, pluie_1h: 0.4 });
 const PLUVIO = st({ nom: "Bélouve", id: "97421260", lon: 55.5365, lat: -21.060833, altitude_m: 1500, pluie_1h: 0 });
-const BALISE = st({ nom: "Balise Cambaie", source: "pioupiou", id: "1300", lon: 55.29, lat: -20.98, altitude_m: 20, vent: 22, direction: 200 });
+const BALISE = st({ nom: "Balise du Port", source: "ffvl", id: "999", lon: 55.29, lat: -20.98, altitude_m: 20, vent: 22, direction: 200 });
 const ALL = [GILLOT, PLAINE, BRAS_SEC, PLUVIO, BALISE];
 
 const links = (html: string) => [...html.matchAll(/<a class="mk([^"]*)" href="([^"]+)"/g)].map((m) => ({ cls: m[1], href: m[2] }));
@@ -560,7 +560,6 @@ describe("the replay bar's own script", () => {
       expect(js).toContain(words);
     }
     expect(js).not.toMatch(/temps r[ée]el|prévision/i);
-    expect(js).not.toContain("OpenWindMap");
     // The data it is given (the stations named on the map, the colours) cannot close a script.
     expect(js).not.toContain("</");
   });

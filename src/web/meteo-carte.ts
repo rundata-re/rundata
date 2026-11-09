@@ -32,7 +32,7 @@ export function communeOf(s: StationNow, all: StationNow[]): string | undefined 
 }
 
 const by = (s: StationNow) =>
-  s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par l'aéroport (METAR)" : s.source === "pioupiou" ? ` par OpenWindMap (${s.nom.replace(/^Balise /, "balise de ")})` : s.source === "ffvl" ? ` par la FFVL (${s.nom.replace(/^B/, "b")})` : "";
+  s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par l'aéroport (METAR)" : s.source === "ffvl" ? ` par la FFVL (${s.nom.replace(/^B/, "b")})` : s.source === "meteor_oi" ? `, station ${s.nom} (Données : MétéoR-OI, licence CC BY-NC 4.0)` : "";
 
 // Where the wind comes from, in words: abbreviations read badly (« vent O » as « vent 0 »).
 export const VENT_DE = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];

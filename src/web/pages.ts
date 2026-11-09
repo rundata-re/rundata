@@ -65,6 +65,7 @@ import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
 import { adresseTexte } from "./adresse.js";
 import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
+import * as meteorOi from "../providers/meteor-oi.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
@@ -877,6 +878,8 @@ border:solid rgb(241 245 249/.12);border-width:0 1px 1px 0;transform:translateX(
 .t.na{background:#44555a;font-size:.85rem}
 .st h4{font-size:1rem;margin:0}.st h4 small{font-weight:400;color:var(--muted)}
 .st p{color:var(--muted);font-size:.9rem}
+/* MétéoR-OI's credit beside each of its measures (METEOR_CREDIT): under the rest, the whole width of the tile. */
+.st .cr{grid-column:1/-1;font-size:.8rem}
 
 /* A sea tile at most the width of its row: 9.5 rem is 304 px with the text at 200 %, wider than a 320 px phone's line. */
 .seas{list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(9.5rem,100%),1fr));gap:.6rem}
@@ -1750,7 +1753,7 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
   <div>
     ${sources.length ? `<p><a href="/chiffres">Toutes les sources →</a></p>${decor ? `
     <p>${MOTIF_CREDIT}</p>` : ""}` : `<h3>Sources</h3>
-    <p>Mesures : stations Météo-France de La Réunion (Licence Ouverte Etalab 2.0), aéroports Roland-Garros et Pierrefonds (METAR), balises de vent de la FFVL (Licence Ouverte 2.0) et <a href="https://openwindmap.org">OpenWindMap</a>, température de la mer par satellite NOAA CoastWatch et NASA MODIS (domaine public). Prévisions : AROME outre-mer de Météo-France (Licence Ouverte), modèle IFS et ensemble ENS de l'ECMWF, ${lienNom("https://open-meteo.com/", "Weather data by Open-Meteo.com")} (CC BY 4.0). Vigilance et radar : Météo-France. Cyclones : CMRS de La Réunion (Météo-France), via GDACS ; côtes Natural Earth (domaine public). Historique : données climatologiques quotidiennes de Météo-France depuis 1900. Volcan : préfecture de La Réunion, OVPF-IPGP (CC BY 4.0), et en dernier recours ${lienNom("https://pitonlive.com", "pitonlive.com")} (site non officiel). Électricité : EDF SEI. Air : Atmo Réunion (ODbL). Services publics : ${adresseTexte("service-public.fr")}. Bus : horaires publiés par les réseaux sur ${adresseTexte("transport.data.gouv.fr")}. Vélos : Altervélo (CIVIS, Ecovélo). Terrain et risques : IGN, DGFiP, Géoportail de l'urbanisme, DEAL Réunion, Géorisques (BRGM), DVF du Cerema. Toutes sous Licence Ouverte sauf mention. Randonnée : ONF La Réunion ; itinéraires et traces © contributeurs OpenStreetMap (ODbL). Lieux : © contributeurs OpenStreetMap (ODbL), IGN, ${adresseTexte("geo.api.gouv.fr")}. Relief, photographies aériennes, routes et noms des cartes : IGN, RGE ALTI, couche Photographies aériennes de la Géoplateforme, BD ORTHO et BD TOPO${choix}.${decor ? ` ${MOTIF_CREDIT}` : ""} Police des titres : Bricolage Grotesque (SIL OFL).</p>`}
+    <p>Mesures : stations Météo-France de La Réunion (Licence Ouverte Etalab 2.0), aéroports Roland-Garros et Pierrefonds (METAR), balises de vent de la FFVL (Licence Ouverte 2.0), température de la mer par satellite NOAA CoastWatch et NASA MODIS (domaine public). Prévisions : AROME outre-mer de Météo-France (Licence Ouverte), modèle IFS et ensemble ENS de l'ECMWF, ${lienNom("https://open-meteo.com/", "Weather data by Open-Meteo.com")} (CC BY 4.0). Vigilance et radar : Météo-France. Cyclones : CMRS de La Réunion (Météo-France), via GDACS ; côtes Natural Earth (domaine public). Historique : données climatologiques quotidiennes de Météo-France depuis 1900. Volcan : préfecture de La Réunion, OVPF-IPGP (CC BY 4.0), et en dernier recours ${lienNom("https://pitonlive.com", "pitonlive.com")} (site non officiel). Électricité : EDF SEI. Air : Atmo Réunion (ODbL). Services publics : ${adresseTexte("service-public.fr")}. Bus : horaires publiés par les réseaux sur ${adresseTexte("transport.data.gouv.fr")}. Vélos : Altervélo (CIVIS, Ecovélo). Terrain et risques : IGN, DGFiP, Géoportail de l'urbanisme, DEAL Réunion, Géorisques (BRGM), DVF du Cerema. Toutes sous Licence Ouverte sauf mention. Randonnée : ONF La Réunion ; itinéraires et traces © contributeurs OpenStreetMap (ODbL). Lieux : © contributeurs OpenStreetMap (ODbL), IGN, ${adresseTexte("geo.api.gouv.fr")}. Relief, photographies aériennes, routes et noms des cartes : IGN, RGE ALTI, couche Photographies aériennes de la Géoplateforme, BD ORTHO et BD TOPO${choix}.${decor ? ` ${MOTIF_CREDIT}` : ""} Police des titres : Bricolage Grotesque (SIL OFL).</p>`}
     <p>Ces données sont fournies telles quelles, sans garantie. Pour un cyclone ou de fortes pluies, seules comptent la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a> et les consignes de la préfecture.</p>
     <p><a href="/publier">Votre organisation publie un agenda ou des données ? Le guide pour les publier en flux ouvert →</a></p>
   </div>
@@ -1769,9 +1772,18 @@ export function credits(list: Credit[]): string {
   const seen = new Set<string>();
   return list
     .filter((c) => !seen.has(c.source) && seen.add(c.source))
-    .map((c) => `${nomsCoupables(adressesCoupables(c.source, true))} (${adressesCoupables(c.licence, true)})`)
+    .map((c) => (c.source === meteorOi.SOURCE.nom ? METEOR_CREDIT : `${nomsCoupables(adressesCoupables(c.source, true))} (${adressesCoupables(c.licence, true)})`))
     .join(" ; ");
 }
+
+/**
+ * MétéoR-OI's credit, word for word as the association asked (« Données : MétéoR-OI, licence CC BY-NC 4.0 »), with a
+ * link to its site: in a page's sources wherever one of its measures is shown, and beside each of them.
+ */
+// Written out, not by lienNom: built when the module loads, before domains.ts (an import cycle); neither text holds an
+// address to break.
+export const METEOR_CREDIT = `Données : <a href="${meteorOi.SITE}" rel="noopener">MétéoR-OI</a>, licence <a href="${meteorOi.CC_BY_NC}" rel="noopener">CC BY-NC 4.0</a>`;
+const meteorNote = (s: StationNow) => (s.source === meteorOi.SOURCE.id ? `<p class="cr">${METEOR_CREDIT}</p>` : "");
 
 function age(iso: string, now: Date): string {
   return `${leAt(iso)}, ${since(iso, now)}`;
@@ -1829,7 +1841,7 @@ function stationItem(s: StationNow, now: Date): string {
   const details = [s.humidite != null ? `humidité ${s.humidite} %` : undefined, windText(s), rainText(s)].filter(Boolean).join(" · ");
   const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (mesure ancienne)" : "";
   return `<li class="st tgt" id="${stationId(s.nom)}">${t}<h4>${esc(s.nom)} <small>${metres(s.altitude_m)}</small></h4>` +
-    `<p>${esc(thin(details || "température seulement"))} · <span class="when">mesuré ${age(s.time, now)}${old}</span></p></li>`;
+    `<p>${esc(thin(details || "température seulement"))} · <span class="when">mesuré ${age(s.time, now)}${old}</span></p>${meteorNote(s)}</li>`;
 }
 
 export const EXTERNAL = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>`;
@@ -1971,7 +1983,7 @@ function stationsList(all: StationNow[], now: Date): string {
     const when = day === localTime(now).split(" ")[0] ? `<span class="sr">mesurée le ${day} à </span>${time}` : `<span class="sr">mesurée le </span>${day}<span class="sr"> à</span> ${time}`;
     return `<li class="st tgt" id="${stationId(s.nom)}" data-c="${esc(c)}" data-z="${s.altitude_m}" data-t="${s.temperature ?? ""}" data-n="${esc(s.nom)}">` +
       `<p class="th">${t}<span class="when">${when}${old}</span></p><h3>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h3><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
-      `${pills ? `<p class="pls">${pills}</p>` : ""}</li>`;
+      `${pills ? `<p class="pls">${pills}</p>` : ""}${meteorNote(s)}</li>`;
   }).join("");
   const communes = [...new Set(all.map((s) => communeOf(s, all)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
   const tools = `<div class="sttools" data-js hidden><label>Commune <select id="stc"><option value="">Toutes</option>${communes.map((c) => `<option>${esc(c)}</option>`).join("")}</select></label>` +

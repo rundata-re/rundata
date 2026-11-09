@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { humidity, parseMetar, presentWeather, type MetarJson } from "../src/providers/metar.js";
-import { inReunionBeacons, parse as parsePioupiou, type PioupiouJson } from "../src/providers/pioupiou.js";
 import { dayUrl, grid, KEY, type L3s, nearest, step } from "../src/providers/acspo.js";
 import { coastwatch, parseAscii } from "./sst.js";
 import { Cache, MemoryStore } from "../src/cache.js";
@@ -41,21 +40,6 @@ describe("metar", () => {
   it("decodes present weather", () => {
     expect(presentWeather("-SHRA BR")).toBe("averses faible, brume");
     expect(presentWeather("+TSRA")).toBe("orage avec pluie fort");
-  });
-});
-
-describe("pioupiou", () => {
-  const all = JSON.parse(fixture("pioupiou_all.json")).data as PioupiouJson[];
-
-  it("finds the beacons in Réunion", () => {
-    expect(inReunionBeacons(all).map((p) => p.id)).toEqual([1300]);
-  });
-
-  it("drops silent beacons", () => {
-    const p = all.find((x) => x.id === 1300)!;
-    const t = new Date(p.measurements.date!);
-    expect(parsePioupiou(p, new Date(t.getTime() + 10 * 60_000))?.readings[0]).toMatchObject({ variable: "vent_moyen" });
-    expect(parsePioupiou(p, new Date(t.getTime() + 3 * 3600_000))).toBeNull();
   });
 });
 

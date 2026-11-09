@@ -8,7 +8,8 @@ import { PATH } from "../chiffres.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { esc } from "./map.js";
-import { layout } from "./pages.js";
+import { layout, METEOR_CREDIT } from "./pages.js";
+import { SITE as METEOR_SITE } from "../providers/meteor-oi.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
 
 export { PATH };
@@ -33,7 +34,8 @@ const parenthese = (familles: string[]) => familles.join(", ");
 /**
  * « Toutes les sources »: each source counted, by domain, an anchor for each, one line each (chiffres.ts, `inventaire`).
  * The table of « Par domaine », one cell under another on a phone. Each domain folded under its title: the 25 tables
- * made 28 000 px on a phone. A link to a domain opens it (UNFOLD_SCRIPT), a search in the page too.
+ * made 28 000 px on a phone. A link to a domain opens it (UNFOLD_SCRIPT), a search in the page too. MétéoR-OI's row
+ * gives its credit as the association asked, with its links (METEOR_CREDIT).
  */
 function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
   const groupes = inv.map((d) => {
@@ -42,7 +44,7 @@ function toutesLesSources(inv: Inventaire, nonNommees = 0): string {
       : d.cadence === "à chaque version du site" ? "<p>Mises à jour avec le site.</p>" : d.cadence ? `<p>Relues ${esc(d.cadence)}.</p>` : "";
     return `<details class="pli"><summary><h3 id="sources-${esc(d.categorie)}">${esc(d.domaine)} <small>· ${d.sources.length > 1 ? `${n(d.sources.length)} sources` : "1 source"}</small></h3></summary>
   ${lecture}<div class="card table-wrap"><table class="drought niveaux"><caption class="sr">${esc(d.domaine)}</caption><thead><tr><th scope="col">Source</th><th scope="col">Producteur</th><th scope="col">Licence ou conditions</th></tr></thead><tbody>${d.sources.map((s) =>
-    `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${esc(s.licence)}</td></tr>`).join("")}</tbody></table></div></details>`;
+    `<tr><th scope="row"><a href="${esc(s.url)}" rel="noopener">${esc(s.nom)}</a></th><td data-label="Producteur">${s.producteurs.length ? esc(s.producteurs.join(", ")) : "—"}</td><td data-label="Licence ou conditions">${s.url === METEOR_SITE ? METEOR_CREDIT : esc(s.licence)}</td></tr>`).join("")}</tbody></table></div></details>`;
   });
   // « (17) » may go to the next line under 19.9 rem (wbr.adr, pages.ts): glued to its domain, Chrome cut it « (17 » then « ) ».
   return `<h2 id="sources">Toutes les sources</h2>
@@ -75,7 +77,7 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
 
   const t = c.terrain;
   const terrain = [
-    t.stations_meteo && item(t.stations_meteo.nombre, "stations météo lues", "/meteo", kept(c, t.stations_meteo)),
+    t.stations_meteo && item(t.stations_meteo.nombre, "stations météo lues", "/meteo", `<small>Les stations de MétéoR-OI, relues par une tâche à part, n'y sont pas comptées.</small>${kept(c, t.stations_meteo)}`),
     item(t.maregraphes, "marégraphes", "/mer"),
     item(t.defibrillateurs, "défibrillateurs", "/defibrillateurs"),
     item(t.points_de_recharge, "points de recharge pour voiture électrique", "/bornes", `<small>dans ${n(t.stations_de_recharge)} stations</small>`),

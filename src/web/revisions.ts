@@ -65,7 +65,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its sea sentence: the satellite's pass first (« passage de cette nuit à 01:39 »), else « moyenne d'hier, 06/11 ».
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
-  lieu: 25,
+  // A day without its hours of 10 h to 14 h has no UV index, never « UV 0 » (10/11/2026).
+  lieu: 26,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».

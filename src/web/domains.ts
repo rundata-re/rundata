@@ -710,7 +710,8 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
     : "";
 
   // The sensors of private people, under the index and apart from it, worded by marketing (29/10/2026): raw values by
-  // commune, the hour they measured, never a colour, a threshold, an identifier nor a place.
+  // commune, their network and the hour they measured, never a colour, a threshold, an identifier nor a place;
+  // sensors.social's credit as it asked it (09/11/2026), in English, with a link to its site and one to its licence.
   const am = d?.capteurs_amateurs;
   const [amLe, amA] = am && "lu_par_rundata" in am ? am.lu_par_rundata.split(" ") : [];
   const pm = (name: string, v: number | undefined) => (v === undefined ? "" : ` · ${name} : ${esc(nombre(v))} µg/m³`);
@@ -719,18 +720,22 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   <div class="sec-h"><p class="eyebrow">Capteurs de particuliers</p><h2 id="h-capteurs-air">Capteurs amateurs</h2>
   <p><b>${esc(CAPTEURS_AVERTISSEMENT)}</b> ${nomsCoupables(esc(CAPTEURS_EXPLICATION))}</p></div>
   <div class="card">${"lecture_ancienne" in am && am.lecture_ancienne ? `<p>${esc(am.lecture_ancienne)}</p>` : ""}${"valeurs" in am && am.valeurs
-    ? `<ul class="plain">${am.valeurs.map((v) => `<li>${esc(v.commune)}${pm("PM2,5", v.pm2_5)}${pm("PM10", v.pm10)} · mesurées ${esc(v.mesurees)} <span class="note">non étalonné</span></li>`).join("")}</ul>`
+    ? `<ul class="plain">${am.valeurs.map((v) => `<li>${esc(v.commune)}${pm("PM2,5", v.pm2_5)}${pm("PM10", v.pm10)} · mesurées ${esc(v.mesurees)} <span class="note">${nomsCoupables(esc(v.reseau))}, non étalonné</span></li>`).join("")}</ul>`
     : "aucun" in am && am.aucun
       ? `<p>${nomsCoupables(esc(am.aucun))} <a href="#brancher">Brancher un capteur</a></p>`
-      : am.echec ? `<p>${esc(am.echec)}</p>` : ""}
-  <p class="note">${amLe ? `Lu par rundata.re le ${esc(amLe)} à ${esc(amA)}, sur` : "Capteurs partagés sur"} ${lienNom(am.carte, "Sensor.Community", ' rel="noopener"')} (<a href="${esc(capteurs.DBCL)}" rel="noopener">DbCL 1.0</a>).</p></div>
+      : am.echec ? `<p>${esc(am.echec)}</p>` : ""}${"lectures_impossibles" in am && am.lectures_impossibles ? am.lectures_impossibles.map((x) => `<p>${nomsCoupables(esc(x))}</p>`).join("") : ""}
+  <p class="note">${amLe ? `Lu par rundata.re le ${esc(amLe)} à ${esc(amA)}, sur` : "Capteurs partagés sur"} ${lienNom(capteurs.CARTE, "Sensor.Community", ' rel="noopener"')} (<a href="${esc(capteurs.DBCL)}" rel="noopener">DbCL 1.0</a>) et ${lienNom(capteurs.SOCIAL_CARTE, "sensors.social", ' rel="noopener"')} (<span lang="en">Sensor data © ${lienNom(capteurs.SOCIAL_CARTE, "sensors.social", ' rel="noopener"')} contributors, <a href="${esc(capteurs.ODBL)}" rel="noopener">ODbL 1.0</a></span>).</p></div>
   <details class="card" id="brancher"><summary>Brancher son capteur</summary>
-  <p>Un capteur de particules branché dehors et partagé sur Sensor.<wbr>Community apparaît dans le bloc ci-dessus, arrondi à sa commune.</p>
+  <p>Un capteur de particules branché dehors et partagé sur Sensor.<wbr>Community ou sensors.<wbr>social apparaît dans le bloc ci-dessus, arrondi à sa commune.</p>
   <h3>airRohr (Sensor.<wbr>Community)</h3>
   <ul class="plain"><li>Une carte NodeMCU ESP8266</li><li>Un capteur de particules SDS011</li><li>Un capteur BME280 (température, humidité, pression)</li><li>Un abri en tube PVC</li></ul>
   <p><a href="${esc(capteurs.GUIDE)}" rel="noopener">Le guide officiel de l'airRohr</a></p>
   <p>Au moment d'inscrire le capteur, arrondissez vous-même sa position : rundata.re n'affiche que la commune, mais Sensor.<wbr>Community peut publier la position que vous saisissez.</p>
-  <p class="note">Lu le 29/10/2026 à 10:53.</p></details>
+  <p class="note">Lu le 29/10/2026 à 10:53.</p>
+  <h3>Altruist (sensors.<wbr>social)</h3>
+  <p><a href="${esc(capteurs.SOCIAL_GUIDE)}" rel="noopener">Le guide officiel d'installation de l'Altruist</a></p>
+  <p>Au moment de régler le capteur, arrondissez vous-même sa position : rundata.re n'affiche que la commune, mais sensors.<wbr>social publie les coordonnées que vous saisissez.</p>
+  <p class="note">Lu le 09/11/2026 à 15:15.</p></details>
 </section>`
     : "";
 

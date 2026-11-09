@@ -18,9 +18,9 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 523 | 550 |
+| pire passage planifié, sous-requêtes | 527 | 550 |
 | pire passage planifié, appels KV et D1 | 122 | 1 000 |
-| pire passage planifié, CPU (ms) | 4 866 | 30 000 |
+| pire passage planifié, CPU (ms) | 4 876 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 226 | 550 |
 | vue la plus chère, sous-requêtes | 89 | 200 |
@@ -28,7 +28,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 523 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 477, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
+- Marge : le pire passage planifié est à 527 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 473, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
@@ -37,10 +37,10 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 523 | 38 | 60 | 24 | 1 164 | 284 | 4 866 |
-| tâche planifiée, par jour | 36 207 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 256 |
-| tâche planifiée, par jour, cadences les plus courtes | 55 339 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 536 |
-| tâche planifiée, par mois (30 jours) | 1 086 197 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 467 667 |
+| pire passage planifié | 527 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
+| tâche planifiée, par jour | 36 303 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
+| tâche planifiée, par jour, cadences les plus courtes | 55 435 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
+| tâche planifiée, par mois (30 jours) | 1 089 077 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -102,6 +102,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | antennes:hors-service | sites mobiles hors service : les lignes de La Réunion du fichier quotidien de l'Arcep (0,5 à 2,2 Mo), écrites dans KV une fois par jour | 1440 min | 10:30 | 3 | 1 | 1 |  |  |  | 40 | estimé |
 | cpf:formations | formations CPF : les lignes de La Réunion du catalogue de Mon Compte Formation (Caisse des Dépôts, environ 780 Ko), écrites dans KV une fois par jour | 1440 min | 12:15 | 4 | 1 | 1 |  |  |  | 60 | estimé |
 | capteurs:air | capteurs amateurs de particules (Sensor.Community) : les 5 dernières minutes sur l'île, une requête, gardées 2 heures dans KV | 15 min | 00:10 | 3 | 1 | 1 |  |  |  | 10 | code |
+| capteurs:social | capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (les 3 qui ont émis en dernier au plus), dans la copie de capteurs:air | 60 min | 00:10 | 4 |  |  |  |  |  | 10 | code |
 | radar:6h | pluie radar des 6 dernières heures pour le rejeu de /meteo : la dernière image de Météo-France ajoutée dans KV quand elle est nouvelle, ou un trou daté, et chaque quart d'heure une image gardée 24 heures | 5 min | 00:00 | 9 | 2 | 2 |  |  |  | 200 | estimé |
 | radar:7j | semaine du radar pour le rejeu 7 jours de /meteo : chaque heure finie ajoutée par le passage du radar, la pluie la plus forte de l'heure, et chaque image de 5 min dans la clé de son jour | 60 min | 00:05 | 0 | 3 | 3 |  |  |  | 40 | estimé |
 | meteofrance:jeton | jeton Météo-France commun à tous les isolats : lu dans KV au premier besoin d'un isolat, à son échéance, après un refus (401) ou par le passage planifié quand son isolat n'en tient pas un bon pour 15 minutes de plus, au plus une fois par invocation | 1 min | 00:00 | 1 | 1 |  |  |  |  |  | estimé |
@@ -289,6 +290,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | antennes:hors-service | providers/sites-hs |
 | cpf:formations | providers/cpf |
 | capteurs:air | providers/capteurs |
+| capteurs:social | providers/capteurs |
 | radar:6h | providers/mf-auth, providers/radar |
 | radar:7j | providers/mf-auth, providers/radar |
 | meteofrance:jeton | providers/mf-auth |

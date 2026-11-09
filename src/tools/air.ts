@@ -161,16 +161,34 @@ async function stations(cache: Cache, now: Date, place?: { commune: string; lon:
 
 /** The index's source, then those of the measures at the stations and of the sensors, when they are said. */
 const sourcesOf = (mesures: unknown, amateur: unknown) =>
-  credits([atmo.SOURCE, ...(mesures ? [airMesures.SOURCE] : []), ...(amateur ? [capteurs.SOURCE] : [])]);
+  credits([atmo.SOURCE, ...(mesures ? [airMesures.SOURCE] : []), ...(amateur ? [capteurs.SOURCE, capteurs.SOURCE_SOCIAL] : [])]);
 
 // Worded by marketing (29/10/2026).
 export const CAPTEURS_AVERTISSEMENT = "Capteur amateur, non étalonné : à prendre avec précaution.";
 export const CAPTEURS_EXPLICATION =
-  "Mesures de capteurs installés par des particuliers et partagés sur Sensor.Community, ni étalonnés ni contrôlés par Atmo Réunion : " +
+  "Mesures de capteurs installés par des particuliers et partagés sur Sensor.Community ou sensors.social, ni étalonnés ni contrôlés par Atmo Réunion : " +
   "leur valeur peut s'écarter de la réalité, et leur position est arrondie à la commune. La qualité de l'air officielle est l'indice d'Atmo Réunion, juste au-dessus.";
-export const CAPTEURS_AUCUN = "Aucun capteur partagé sur Sensor.Community n'a émis à La Réunion dans les 2 dernières heures.";
+export const CAPTEURS_AUCUN = "Aucun capteur partagé sur Sensor.Community ou sensors.social n'a émis à La Réunion dans les 2 dernières heures.";
 /** Sensor.Community not read since `since` and nothing read before it: said, never as no sensor. */
 export const capteursEchec = (since: string, now: Date) => `Lecture des capteurs amateurs impossible depuis ${measuredAt(since, now).replace(/^à /, "")}.`;
+/** One network not read since `since` while the other was: said, never as no sensor on it. */
+export const reseauEchec = (reseau: capteurs.Reseau, since: string, now: Date) => `Lecture de ${reseau} impossible depuis ${measuredAt(since, now).replace(/^à /, "")}.`;
+
+/**
+ * The two networks, each with its map, its licence and how to add a sensor to it; sensors.social with its credit, as it
+ * asked it (09/11/2026), in English as on its map.
+ */
+export const RESEAUX = [
+  { nom: capteurs.SC, carte: capteurs.CARTE, licence: capteurs.SOURCE.licence, lien_licence: capteurs.DBCL, brancher_un_capteur: capteurs.GUIDE },
+  {
+    nom: capteurs.SS,
+    carte: capteurs.SOCIAL_CARTE,
+    licence: capteurs.SOURCE_SOCIAL.licence,
+    lien_licence: capteurs.ODBL,
+    attribution: capteurs.SOCIAL_CREDIT,
+    brancher_un_capteur: capteurs.SOCIAL_GUIDE,
+  },
+];
 /** The copy not written lately: when it was, with the values it kept, or that there is no recent reading; never none. */
 export const capteursAncienne = (lu: string, now: Date, values: boolean) =>
   values ? `Dernière lecture des capteurs ${measuredAt(lu, now)}.` : `Pas de lecture récente des capteurs (dernière lecture ${measuredAt(lu, now)}).`;
@@ -183,9 +201,9 @@ export function measuredAt(iso: string, now: Date): string {
 }
 
 /**
- * The sensors of private people (Sensor.Community), apart from the index and under it: by commune, their raw particles
- * and when they measured, never an identifier nor a place. Undefined where they are not stored (a local server, the
- * tests) or not read.
+ * The sensors of private people (Sensor.Community, sensors.social), apart from the index and under it: by commune, their
+ * raw particles, their network and when they measured, never an identifier nor a place; a measure of sensors.social with
+ * its credit. Undefined where they are not stored (a local server, the tests) or not read.
  */
 async function amateurs(cache: Cache, now: Date, page = false) {
   let copy;
@@ -203,26 +221,35 @@ async function amateurs(cache: Cache, now: Date, page = false) {
       explication: CAPTEURS_EXPLICATION,
       echec: capteursEchec(v.echec, now),
       position: "arrondie à la commune",
-      carte: capteurs.CARTE,
-      brancher_un_capteur: capteurs.GUIDE,
-      licence: capteurs.SOURCE.licence,
+      reseaux: RESEAUX,
     };
   }
   const list = v.capteurs;
-  const none = !list.length && !copy.stale;
+  const echecs = Object.entries(v.echecs ?? {}).map(([r, since]) => reseauEchec(r as capteurs.Reseau, since, now));
+  // A network not read is not one without sensors: « none » only when both were read.
+  const none = !list.length && !copy.stale && !echecs.length;
   return {
     // No value, nothing to take with care: the tool leaves the warning out until a sensor measures (marketing,
     // 30/10/2026). /air keeps it above its block.
     ...((page || !none) && { avertissement: CAPTEURS_AVERTISSEMENT, explication: CAPTEURS_EXPLICATION }),
     ...(copy.stale && { lecture_ancienne: capteursAncienne(v.lu, now, list.length > 0) }),
+    ...(echecs.length && { lectures_impossibles: echecs }),
     ...(list.length
-      ? { valeurs: list.map((c) => ({ commune: c.commune, ...(c.pm2_5 !== undefined && { pm2_5: c.pm2_5 }), ...(c.pm10 !== undefined && { pm10: c.pm10 }), unite: "µg/m³", mesurees: measuredAt(c.mesure_a, now) })) }
+      ? {
+          valeurs: list.map((c) => ({
+            commune: c.commune,
+            ...(c.pm2_5 !== undefined && { pm2_5: c.pm2_5 }),
+            ...(c.pm10 !== undefined && { pm10: c.pm10 }),
+            unite: "µg/m³",
+            mesurees: measuredAt(c.mesure_a, now),
+            reseau: c.reseau ?? capteurs.SC,
+            ...(c.reseau === capteurs.SS && { attribution: capteurs.SOCIAL_CREDIT }),
+          })),
+        }
       : none ? { aucun: CAPTEURS_AUCUN } : {}),
     position: "arrondie à la commune",
     lu_par_rundata: localTime(copy.fetchedAt),
-    carte: capteurs.CARTE,
-    brancher_un_capteur: capteurs.GUIDE,
-    licence: capteurs.SOURCE.licence,
+    reseaux: RESEAUX,
   };
 }
 

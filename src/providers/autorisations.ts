@@ -115,8 +115,47 @@ export const NON_REPRISES: Record<string, SourceNonReprise> = {
   "agenda:sportsregions": { nom: "Sportsregions", cite: "Sportsregions", du_site: "de Sportsregions", textes: "conditions d'utilisation", famille: "sport", publie: "les événements que les clubs y publient", lues_le: "2026-10-26", conditions: "https://www.sportsregions.fr/informations-legales", etat: "a_demander" },
 };
 
+/**
+ * A source whose site writes no licence for its data, asked in writing whether rundata.re may take them: not read until
+ * it agrees, then read on the conditions of its answer. sensors.social (Robonomics): its code was under BSD 3-Clause and
+ * nothing covered its measures (read on 29/10/2026); asked by its form on 08/11/2026, it agreed in writing on
+ * 09/11/2026, its measures under ODbL 1.0 since 03/11/2026 (the NOTICE of its repository).
+ */
+export interface LicenceDemandee {
+  nom: string;
+  organisme: string;
+  /** What is read there once it agrees. */
+  publie: string;
+  etat: "demandee" | "accordee" | "refusee";
+  /** The day the request went, as given by who sent it: never guessed. */
+  demandee_le: string;
+  /** The day of its written yes, as given by who received it. */
+  accordee_le?: string;
+  refusee_le?: string;
+  /** The licence of what is taken, and the conditions of its answer. */
+  licence?: string;
+  conditions?: string;
+}
+
+/** By source: `capteurs:<id>` for a network of sensors (providers/capteurs.ts). */
+export const LICENCES: Record<string, LicenceDemandee> = {
+  "capteurs:sensors_social": {
+    nom: "sensors.social",
+    organisme: "Robonomics",
+    publie: "les mesures de particules des capteurs de l'île",
+    etat: "accordee",
+    demandee_le: "2026-11-08",
+    accordee_le: "2026-11-09",
+    licence: "ODbL 1.0",
+    conditions:
+      "le crédit « Sensor data © sensors.social contributors, ODbL 1.0 » avec un lien vers sensors.social et un vers la licence partout où une mesure est dite, " +
+      "une lecture par heure au plus pour l'île, un User-Agent qui nomme https://rundata.re et contact@rundata.re",
+  },
+};
+
 /** Whether a source may be read: yes for one whose site asks nothing, or allows it. */
-export const autorisee = (source: string) => ["accordee", "permise"].includes(AUTORISATIONS[source]?.etat ?? NON_REPRISES[source]?.etat ?? "accordee");
+export const autorisee = (source: string) =>
+  ["accordee", "permise"].includes(AUTORISATIONS[source]?.etat ?? NON_REPRISES[source]?.etat ?? LICENCES[source]?.etat ?? "accordee");
 
 /** The halls or the sports sites not read until they agree, in the list's order. */
 export const nonReprises = (famille: SourceNonReprise["famille"]): SourceNonReprise[] =>

@@ -132,10 +132,17 @@ interface Demo {
   answer: string;
 }
 
+/**
+ * The temperatures of the home page, on its map and in its sample exchange: Météo-France's stations and the airports'
+ * only, as before MétéoR-OI's were added to the weather (09/11/2026). Its 38 stations crowded the island here, and
+ * neither the map's bubbles nor the exchange carry their credit. /meteo, the communes' pages and the connector keep them.
+ */
+const homeStations = (h: HomeLive | null) => withTemp(h?.meteo ?? null).filter((s) => s.source === "meteofrance" || s.source === "metar");
+
 /** Sample exchanges, each answered with the data of the moment: what the connector changes, shown. */
 export function demos(h: HomeLive | null, now: Date): Demo[] {
   const out: Demo[] = [];
-  const l = withTemp(h?.meteo ?? null);
+  const l = homeStations(h);
   if (l.length) {
     // The coldest station, in the Hauts: the answer a model could not give from memory.
     const s = coldest(l);
@@ -224,7 +231,7 @@ function champ(): string {
 
 /** The island with the temperatures measured now, as on the weather page. */
 function heroMap(h: HomeLive | null): string {
-  const l = withTemp(h?.meteo ?? null);
+  const l = homeStations(h);
   // The times of the temperatures shown, not the latest of every station read (a beacon at 14:05 for temperatures of
   // 13:48 to 14:00, 04/11/2026), with their day: « le 05/11 à 14:00 », or « le 05/11 de 13:48 à 14:00 ».
   const times = l.map((s) => s.time).sort();

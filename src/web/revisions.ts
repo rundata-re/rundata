@@ -73,7 +73,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   sentiers: 22,
   // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
   // A volley match's sets written as its score, « 26-28 ».
-  sport: 28,
+  // The ffgolf's written refusal of 09/11/2026: its own line, dated, in the golf's mention.
+  sport: 29,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.

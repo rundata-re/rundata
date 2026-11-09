@@ -19,6 +19,7 @@ const SEPT = "Les mentions légales des sites de 7 salles interdisent d'en repre
 const GOLF = "Les conditions d'utilisation du site de la ffgolf interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas les compétitions des golfs de La Réunion.";
 const VOILE = "Les mentions légales du site de la FFVoile interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas les régates de la Ligue de voile de La Réunion.";
 const CLUBS = "Les conditions d'utilisation de Sportsregions interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas les événements que les clubs y publient.";
+const GOLF_REFUS = "La ffgolf a refusé, le 09/11, que rundata.re reprenne le contenu de son site : les compétitions des golfs de La Réunion ne s'affichent donc pas ici.";
 const TROIS = "Les conditions d'utilisation ou les mentions légales de 3 sites interdisent d'en reprendre le contenu sans leur accord : la ffgolf (les compétitions des golfs de La Réunion), la FFVoile (les régates de la Ligue de voile de La Réunion) et Sportsregions (les événements que les clubs y publient). rundata.re n'affiche donc pas ces rendez-vous.";
 
 const saved = structuredClone(NON_REPRISES);
@@ -46,7 +47,7 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     vi.restoreAllMocks();
   });
 
-  it("are seven halls, the clubs' calendar and two federations, five halls and the federations asked on 26/10, the Théâtre Luc Donat read again since its yes of 27/10, the Kabardock since its yes of 06/11; Le Séchoir, whose site writes nothing, still read", () => {
+  it("are seven halls, the clubs' calendar and two federations, five halls and the federations asked on 26/10, the Théâtre Luc Donat read again since its yes of 27/10, the Kabardock since its yes of 06/11, the ffgolf refused in writing on 09/11; Le Séchoir, whose site writes nothing, still read", () => {
     expect(Object.keys(NON_REPRISES)).toEqual([
       "agenda:teat", "agenda:cite_des_arts", "agenda:kabardock", "agenda:bisik", "agenda:luc_donat", "agenda:cdnoi", "agenda:lespas",
       "sport:ffgolf", "sport:ffvoile", "agenda:sportsregions",
@@ -54,9 +55,11 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     // Bisik's, Léspas' and Sportsregions' are forms the user sends: not yet.
     const NON = ["agenda:bisik", "agenda:lespas", "agenda:sportsregions"];
     const OUI: Record<string, string> = { "agenda:luc_donat": "2026-10-27", "agenda:kabardock": "2026-11-06" };
+    const REFUS: Record<string, string> = { "sport:ffgolf": "2026-11-09" };
     for (const [k, x] of Object.entries(NON_REPRISES)) {
-      expect([k, x.etat, x.demandee_le]).toEqual(NON.includes(k) ? [k, "a_demander", undefined] : [k, OUI[k] ? "accordee" : "demandee", "2026-10-26"]);
+      expect([k, x.etat, x.demandee_le]).toEqual(NON.includes(k) ? [k, "a_demander", undefined] : [k, OUI[k] ? "accordee" : REFUS[k] ? "refusee" : "demandee", "2026-10-26"]);
       expect(x.accordee_le).toBe(OUI[k]);
+      expect(x.refusee_le).toBe(REFUS[k]);
     }
     // Each one an agenda that would be read, or a federation of the sport tool.
     for (const k of Object.keys(NON_REPRISES).filter((k) => k.startsWith("agenda:"))) expect(LISIBLES.some((a) => `agenda:${a.id}` === k)).toBe(true);
@@ -102,8 +105,12 @@ describe("the halls and the sports sites whose terms forbid taking their informa
     // The Théâtre Luc Donat, which agreed on 27/10, and the Kabardock, on 06/11, are no longer among them.
     expect(mentionSalles()).toEqual(["Les mentions légales des sites de 5 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air), la Cité des Arts, Bisik, le CDNOI et Léspas. rundata.re n'affiche donc pas leurs programmes. Nous avons demandé cet accord le 26/10 au TÉAT, à la Cité des Arts et au CDNOI, et attendons leur réponse."]);
     expect(mentionSalles("Saint-Paul")).toEqual(["Les mentions légales des sites de 2 salles interdisent d'en reprendre le contenu sans accord : le TÉAT (Champ Fleuri et Plein Air) et Léspas. rundata.re n'affiche donc pas leurs programmes. Nous avons demandé cet accord le 26/10 au TÉAT et attendons sa réponse."]);
-    expect(mentionSports(undefined, true)).toEqual([`${TROIS} Nous avons demandé cet accord le 26/10 à la ffgolf et à la FFVoile, et attendons leur réponse.`]);
-    expect(mentionSports(["golf"], false)).toEqual([`${GOLF} Nous lui avons demandé cet accord le 26/10 et attendons sa réponse.`]);
+    // The ffgolf, which refused in writing on 09/11, its own line after the block.
+    expect(mentionSports(undefined, true)).toEqual([
+      "Les conditions d'utilisation ou les mentions légales de 2 sites interdisent d'en reprendre le contenu sans leur accord : la FFVoile (les régates de la Ligue de voile de La Réunion) et Sportsregions (les événements que les clubs y publient). rundata.re n'affiche donc pas ces rendez-vous. Nous avons demandé cet accord le 26/10 à la FFVoile et attendons sa réponse.",
+      GOLF_REFUS,
+    ]);
+    expect(mentionSports(["golf"], false)).toEqual([GOLF_REFUS]);
     // On two days: each after its sites, from the oldest; one refused, its own line.
     set("agenda:cdnoi", { demandee_le: "2026-10-22" });
     set("agenda:kabardock", { etat: "refusee", refusee_le: "2026-11-03" });

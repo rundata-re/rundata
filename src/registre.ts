@@ -916,12 +916,12 @@ export function reached(from: string[]): string[] {
  * The sources read for the whole island (cache.ts `island`: NASA FIRMS's fires and the days it has data for, CAMS's UV, Open-Meteo's forecast of a place's cell, the OVPF's posts, Piton
  * Live, the water notices, the prefecture's list, Vigicrues Réunion's vigilance, heights and flows, a trail's altitudes from the IGN) that each entry reads, from the imports of its files (not their
  * helpers'). From cold, each is asked of KV as well and written there, beyond what the entry measured: a read and a
- * write more, two subrequests.
+ * write more, two subrequests. The copy of the weather of / and /meteo (web/data.ts ISLAND_PAGES) is one of them.
  */
 export const ISLAND_READS: Record<string, number> = {
   "web:volcan": 3, "/volcan": 3, volcan_seismes: 3,
   resume_du_jour: 5, "/aujourdhui/*": 5,
-  "/": 3, "/communes/*": 4, "/meteo": 3, "/meteo/*": 4,
+  "/": 4, "/communes/*": 4, "/meteo": 4, "/meteo/*": 4,
   cyclones: 2, "/cyclones": 2, "/ecoles-cyclone": 2,
   "/feux": 2, sentiers_randonnee: 2, "/sentiers": 2, "/sentiers/*": 3, "/randonnees": 2, "/randonnees/*": 2, vigilance_meteo: 2,
   // The UV index, and Open-Meteo's forecast of each place's cell (providers/openmeteo.ts): six for the tour of the island.

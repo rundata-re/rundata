@@ -303,11 +303,13 @@ export class Cache {
 
   /**
    * As `get`, from the entry the caller has just read (`peek`, or an older `get`) instead of reading the stores again:
-   * served if fresh enough, else loaded, the entry being the copy served if the source fails.
+   * served if fresh enough, else loaded, the entry being the copy served if the source fails. `island`: written to the
+   * durable store too, as `island` does, for a copy every data center serves (web/data.ts ISLAND_PAGES).
    */
-  async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>): Promise<Cached<T>> {
+  async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>, island = false): Promise<Cached<T>> {
     const hit = have && { value: have.value, fetchedAt: have.fetchedAt.getTime(), ...(have.cost != null && { cost: have.cost }), ...(have.from && { from: have.from }), ...(!have.outdated && { version: stampOf(key, this.version) }) };
-    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e)));
+    const stores = island ? this.wide : this.store;
+    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => stores.put(key, e)));
   }
 
   /** Forgets the failure remembered under `key`, so that it is asked again at once (tools/agenda.ts: one more try). */
@@ -324,10 +326,10 @@ export class Cache {
   /**
    * The newest entry stored under `key`, however old, without loading it. `freshAfter` (a time, ms): an entry fetched
    * since then in a faster store will do, so slower stores (the data center's cache, a subrequest each) are asked only
-   * otherwise.
+   * otherwise. `island`: the durable store (the Worker's KV) asked last, as `island` does.
    */
-  async peek<T>(key: string, freshAfter?: number): Promise<Cached<T> | undefined> {
-    const hit = await this.store.get(key, freshAfter);
+  async peek<T>(key: string, freshAfter?: number, island = false): Promise<Cached<T> | undefined> {
+    const hit = await (island ? this.wide : this.store).get(key, freshAfter);
     if (unreadable(key, hit, this.version)) return undefined;
     return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.cost != null && { cost: hit.cost }), ...(outdated(key, hit, this.version) && { outdated: true, ...(hit.version && { stamp: hit.version }) }), ...(hit.echec && { failedAt: hit.echec.at }) };
   }

@@ -74,8 +74,8 @@ describe("the zoom of every map that zooms", () => {
 
   it("comes closer on the IGN's backgrounds where the map says so, and back within the relief's limit when the relief is picked again", () => {
     // The backgrounds come after the zoom's script in the page: looked for when needed.
-    expect(script).toContain('const most=()=>+(svg.dataset.zoomFd&&document.querySelector(fd+" input:checked:not([value=relief])")?svg.dataset.zoomFd:svg.dataset.zoom)||1,');
-    expect(script).toContain('document.addEventListener("change",(e)=>{if(e.target.closest&&e.target.closest(fd))clamp()});put();');
+    expect(script).toContain('most=()=>off()?1:+(svg.dataset.zoomFd&&document.querySelector(fd+" input:checked:not([value=relief])")?svg.dataset.zoomFd:svg.dataset.zoom)||1,');
+    expect(script).toContain('document.addEventListener("change",(e)=>{if(e.target.closest&&e.target.closest(fd))clamp()});');
     // A button that can do nothing more is greyed: + at the closest, − and « Recentrer » on the whole frame.
     expect(script).toContain('bt("+").disabled=v[2]<=B[2]/most()+.01;bt("-").disabled=bt("0").disabled=v[2]>=B[2]-.01');
     expect(CSS).toContain(".kzoom button:disabled{opacity:.45;cursor:default}");
@@ -110,7 +110,7 @@ describe("the zoom of every map that zooms", () => {
   });
 
   it("opens nothing at the end of a drag, and on the hikes' map takes the nearest line within half a finger of a tap", () => {
-    expect(script).toContain('svg.addEventListener("click",(e)=>{if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);');
+    expect(script).toContain('svg.addEventListener("click",(e)=>{if(off())return;if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);');
     expect(REACH_PX).toBe(22);
     expect(HIKES_REACH).toContain(`for(let r=4;r<=${REACH_PX};r+=3)`);
     expect(HIKES_REACH).toContain('if(e.target.dataset?.k)return;');

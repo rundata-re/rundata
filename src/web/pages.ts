@@ -943,7 +943,11 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .wxmap .l-p,.wxmap .l-v{display:none}.wxmap:has(#wxl-p:checked) .l-p,.wxmap:has(#wxl-v:checked) .l-v{display:inline}.wxmap:has(#wxl-p:checked) .l-t,.wxmap:has(#wxl-v:checked) .l-t{display:none}
 .wxmap:has(#wxl-t:checked) a.mk:not(.has-t),.wxmap:has(#wxl-p:checked) a.mk:not(.has-p),.wxmap:has(#wxl-v:checked) a.mk:not(.has-v){display:none}
 /* The amateur stations (the user, 10/11/2026): their group and the legend's line shown only once the box is ticked, then in place of the official stations' group (the same stations laid out with them); a dotted outline. */
-.wxmap .sts-am,.wxmap .amlg{display:none}.wxmap:has(#wx-am:checked) .sts-am{display:inline}.wxmap:has(#wx-am:checked) .sts-of{display:none}.wxmap:has(#wx-am:checked) .amlg{display:block}
+.wxmap .sts-am,.wxmap .amlg{display:none}.wxmap:has(#wx-am:checked) .sts-am{display:inline}.wxmap:has(#wx-am:checked) .sts-of{display:none}
+.wxmap .lg-am{display:none}.wxmap:has(#wx-am:checked) .lg-am{display:inline}.wxmap:has(#wx-am:checked) .lg-of{display:none}
+.wxmap .map :is(.mo,.wt line){transform-box:view-box;transform:scale(var(--mk,1))}.wxmap .map :is(.wt circle,.rj-st circle,.rj-t text){transform-box:fill-box;transform-origin:center;transform:scale(var(--mk,1))}.wxmap .map .rj-t text{transform-origin:left bottom}
+.map[data-zoom][data-zpe]{touch-action:auto;user-select:auto;-webkit-user-select:auto}.pe-on .map[data-zoom][data-zpe]{touch-action:none;user-select:none;-webkit-user-select:none}
+.wxmap:not(.pe-m) .wxbar>.kzoom{display:none}.wxbar>.kzoom{margin:0;gap:.35rem}.wxbar>.kzoom button{border-radius:999px;border-color:rgb(255 255 255/.25);background:none;color:var(--on-night-muted);font-weight:600}.wxbar>.kzoom button[data-z="0"]{margin-left:0}.wxbox.pe-on .wxbar.pe-c{position:relative}.pe-on .wxbar>.kzoom{position:absolute;z-index:2;top:100%;right:.5rem;margin-top:.5rem}.pe-on .wxbar>.kzoom button{background:var(--night)}.wxmap:has(#wx-am:checked) .amlg{display:block}
 .map a.mk.am .sh,.map a.mk.am rect{stroke-dasharray:7 5}
 .amchk{order:1;display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:.9rem;font-weight:600;color:var(--on-night-muted);cursor:pointer;margin-bottom:.5rem}.amchk input{width:1.1rem;height:1.1rem;margin:0}.pe-on .wxbar .amchk{margin:0}
 details.amdet{margin-top:.8rem}details.amdet .stations{margin-top:.6rem}

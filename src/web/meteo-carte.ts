@@ -11,7 +11,8 @@ import altitudes from "./altitudes.json" with { type: "json" };
 import { fr } from "../tools/format.js";
 import { ditAmateur, NETWORKS } from "../tools/meteo.js";
 import type { StationNow } from "./data.js";
-import { apart, esc, H, islandMap, KM, nameWithShown, project, W } from "./map.js";
+import { ZOOM_SCRIPT, zoomButtons } from "./carte-zoom.js";
+import { apart, esc, FIN_SCRIPT, H, islandMap, KM, nameWithShown, project, W } from "./map.js";
 import { CLASSES, PATH as PLUIE_RADAR } from "./pluie-radar.js";
 import { chip, deg, metres, shortName, stationId, STOPS, thin, leAt, duAt } from "./pages.js";
 import { hash } from "./pwa.js";
@@ -219,8 +220,10 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
   // A touch area per layer, on its dot and shown with it (hits()).
   const hit = Object.entries(at.hit).map(([l, [hx, hy, hr]]) => `<circle class="hit l-${l}" cx="${hx}" cy="${hy}" r="${hr}" style="fill:transparent;stroke:none"/>`).join("");
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
+  // Its marks in a group that the full screen scales about the station's place (MARQUES_JS): a mark moved off it comes
+  // back towards it as it gets smaller, its tie with it.
   return `<a class="mk${has}${s.amateur ? " am" : ""}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
-    `${hit}${shapes}</a>`;
+    `<g class="mo" style="transform-origin:${x}px ${y}px">${hit}${shapes}</g></a>`;
 }
 
 /** A temperature disc's figure: at a named station only, the others are small dots, told by the bubble. */
@@ -293,7 +296,7 @@ const rainFigure = (rain: number) => fr(Math.round(rain * 10) / 10);
 function ties(list: StationNow[], placed: [number, number][]): string {
   return list.map((s, i) => {
     const [x0, y0] = project(s.lon, s.lat), [x, y] = placed[i];
-    const line = (c: string) => `<line class="${c}" x1="${x0}" y1="${y0}" x2="${x}" y2="${y}"/>`;
+    const line = (c: string) => `<line class="${c}" x1="${x0}" y1="${y0}" x2="${x}" y2="${y}" style="transform-origin:${x0}px ${y0}px"/>`;
     return Math.hypot(x - x0, y - y0) > 1 ? `${line("o")}${line("i")}<circle cx="${x0}" cy="${y0}" r="9"/>` : "";
   }).join("");
 }
@@ -397,12 +400,34 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
     (nRain ? fo("p", `<div class="vt"><canvas class="voile" data-pluie="${PLUIE_RADAR}" data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "") +
     (wd.length ? fo("v", `<div class="vt"><canvas class="voile" data-vent="${esc(vent)}"${ventAm} data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "");
   const n = (k: number, one: string, many: string) => `${k} ${k > 1 ? many : one}`;
+  // Once « Stations amateur » is ticked, each legend counts them apart, after the official ones, and dates the latest
+  // of all those shown (marketing, 10/11/2026); a layer that none of them measures keeps its legend.
+  const tAm = amateurs.filter((s) => s.temperature != null).length;
+  const pAm = amateurs.filter((s) => mm(s) != null).length;
+  const wAm = amateurs.filter((s) => s.vent != null).length;
+  const latestAll = every.reduce((m, s) => (s.time > m ? s.time : m), "");
+  /** A legend's two versions, the box unticked then ticked; one only where the ticked box adds nothing to it. */
+  const both = (of: string, am: string | false) => (am ? `<span class="lg-of">${of}</span><span class="lg-am">${am}</span>` : of);
+  const tEstime = (am: string) => ` Entre les stations, les couleurs sont <b>estimées selon l'altitude</b>${am} : ce n'est pas une mesure.`;
+  const pFin = (at: string) => `${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente ${leAt(at)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}.`;
+  const vFin = (at: string, am: string) => `vent moyen mesuré en km/h, le plus récent ${leAt(at)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines${am} : ce n'est pas une mesure.`;
+  const COMPRISES = ", stations amateur comprises";
+  const NON_VERIFIEE = "fiabilité non vérifiée";
   // A tab and a legend per measure that at least one station has; the first shown without a choice.
   const layers = [
-    t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>Température mesurée sous abri à ${t.length} des ${list.length}\u00a0stations, la plus récente ${leAt(latest)}. Entre les stations, les couleurs sont <b>estimées selon l'altitude</b> : ce n'est pas une mesure.` },
+    t.length && { id: "t", tab: "Température", legend: `<span class="lgs">${thin(deg(STOPS_LO))}<i class="vgrad"></i>${thin(deg(STOPS_HI))}</span>` + both(
+      `Température mesurée sous abri à ${t.length} des ${list.length}\u00a0stations, la plus récente ${leAt(latest)}.${tEstime("")}`,
+      !!tAm && `Température mesurée sous abri à ${t.length} des ${list.length}\u00a0stations officielles, et par ${n(tAm, "station amateur", "stations amateur")}, ${NON_VERIFIEE}. La plus récente ${leAt(latestAll)}.${tEstime(COMPRISES)}`,
+    ) },
     // « Pluie » alone (the user, 01/11/2026): the legend says over how long, and the radar is in the same layer.
-    nRain && { id: "p", tab: "Pluie", legend: `${n(nRain, "pluviomètre", "pluviomètres")}, ${hour ? "pluie de la dernière heure en mm" : "pluie des 6 dernières minutes seulement, en mm"}, la plus récente ${leAt(latest)}${hour ? "" : " : l'heure complète n'est pas encore disponible"}. Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
-    w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>${n(w.length, "anémomètre", "anémomètres")}, vent moyen mesuré en km/h, le plus récent ${leAt(latest)}. La flèche montre où va le vent (un vent d'est vient de l'est).${landBreeze(list) ? " La nuit, l'air descend des pentes vers la mer (brise de terre)." : ""} Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.` },
+    nRain && { id: "p", tab: "Pluie", legend: both(
+      `${n(nRain, "pluviomètre", "pluviomètres")}, ${pFin(latest)}`,
+      !!pAm && `${n(nRain, "pluviomètre officiel", "pluviomètres officiels")} et ${pAm} amateur (${NON_VERIFIEE}), ${pFin(latestAll)}`,
+    ) + ` Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
+    w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>` + both(
+      `${n(w.length, "anémomètre", "anémomètres")}, ${vFin(latest, "")}`,
+      !!wAm && `${n(w.length, "anémomètre officiel", "anémomètres officiels")} et ${wAm} amateur (${NON_VERIFIEE}), ${vFin(latestAll, COMPRISES)}`,
+    ) },
   ].filter((l): l is { id: string; tab: string; legend: string } => !!l);
   const tabs = `<div class="tabs aqtabs" role="radiogroup" aria-label="Mesure affichée sur la carte">` +
     layers.map((l, i) => `<input type="radio" name="wxl" id="wxl-${l.id}"${i ? "" : ' class="on" checked'}><label for="wxl-${l.id}">${l.tab}</label>`).join("") + `</div>`;
@@ -416,11 +441,37 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // The amateur stations' box, unticked (the user, 10/11/2026): its words are the user's; ticked, the legend says what
   // the dotted outline is (marketing).
   const box = amateurs.length ? `<label class="amchk"><input type="checkbox" id="wx-am"> Stations amateur</label>` : "";
+  // The map zooms in its full screen only, its buttons in the bar there (the user, 10/11/2026: « plus de commandes comme
+  // le zoom »); its relief finer there when the screen asks for it, its marks at a size of their own (MARQUES_JS).
+  const map = islandMap({ under: overlay, top, peaks: true, fond: FOND, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` })
+    .replace('<svg class="map terrain"', `<svg class="map terrain" data-fd="${FOND}" data-zoom="${ZOOM_METEO}" data-zpe data-fin`);
   const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur, fiabilité non vérifiée.</span>` : "";
-  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}${box}</div>` +
-    islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` }) +
-    bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
+  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}${box}${zoomButtons(FOND, "ile")}</div>` +
+    map + ZOOM_SCRIPT + `<script>${MARQUES_JS}${FIN_SCRIPT}</script>` + bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
+
+/** The key of /meteo's map for the zoom's buttons and its fine relief's layer (`rf-w`). */
+const FOND = "w";
+
+/**
+ * How much closer than the whole island /meteo's map comes in its full screen: the canvases of the rain and the wind
+ * are drawn at the whole map's size (ANIM) and grow with it, so not as close as the hikes' maps (MAX_ZOOM).
+ */
+export const ZOOM_METEO = 4;
+
+/**
+ * The marks' size in the full screen: in the page, the map is at most about this wide, in px; in its full screen, wider
+ * or zoomed, the stations' discs, pills, figures, touch areas and the replay's dots keep the size they would have on a
+ * map this wide (`--mk`, CSS: a station's marks scaled about its place, so that one moved off it comes back towards it
+ * with its tie; the replay's dots about their centre), never larger than drawn (at 1920 px they were twice the size,
+ * the user, 10/11/2026). The names of places avoid them at that size (NOMS_SCRIPT).
+ */
+export const MARQUES_PX = 560;
+
+export const MARQUES_JS = `(()=>{const f=document.currentScript&&document.currentScript.closest("figure"),svg=f&&f.querySelector("svg.map");if(!svg)return;
+const set=()=>{const c=svg.clientWidth,v=svg.viewBox.baseVal,k=svg.closest(".pe-on")&&c&&v&&v.width?Math.min(1,${MARQUES_PX}*v.width/(${W}*c)):1;
+if(k<1)svg.style.setProperty("--mk",String(Math.round(k*1000)/1000));else svg.style.removeProperty("--mk")};
+if(window.ResizeObserver)new ResizeObserver(set).observe(svg);new MutationObserver(set).observe(svg,{attributes:true,attributeFilter:["viewBox"]});addEventListener("resize",set);set()})();`;
 
 /** Under the stations' map, the way to /carte, its view of the weather now: the same rain and stations, the others to tick (marketing). */
 export const TOUTES_LES_COUCHES = "La météo avec les rivières, les sentiers et le volcan, sur une seule carte →";
@@ -536,14 +587,16 @@ const STEP = `const p=pace(t,last,nx);if(!p)return;const k=p[0];nx=p[1];last=t;`
  * is shown, the map on screen and the tab in front; drawn again when the map's width changes (a phone's address bar
  * that hides changes its height alone); one still picture for those who ask for less motion, or when nothing moves
  * (`o.moving()`). `o.ready()` says when its data has come; the function returned, called then, starts it; `o.again()`
- * draws it all again, for the replay's images.
+ * draws it all again, for the replay's images. Its size is the whole map's on screen, out of any zoom of the full
+ * screen (`rect()`): zoomed, the canvas grows with the map rather than holding up to 16 times the pixels.
  */
 const ANIM = `const anim=(o)=>{const inp=document.getElementById(o.id);let run=false,seen=false,raf=0,last=0,nx=0,cw=0;
 const pace=${pace},loop=(t)=>{raf=requestAnimationFrame(loop);${STEP}o.frame(k)};
-const go=()=>{const on=inp&&inp.checked&&seen&&!document.hidden&&o.ready();if(on&&!run){run=true;last=nx=0;const r=o.fl.getBoundingClientRect();cw=Math.round(r.width);o.size(r);
+const rect=()=>{const r=o.fl.getBoundingClientRect(),s=o.fl.closest("svg"),z=s&&s.viewBox.baseVal.width?s.viewBox.baseVal.width/${W}:1;return{width:r.width*z,height:r.height*z}};
+const go=()=>{const on=inp&&inp.checked&&seen&&!document.hidden&&o.ready();if(on&&!run){run=true;last=nx=0;const r=rect();cw=Math.round(r.width);o.size(r);
 if(o.moving&&!o.moving()||o.held&&o.held()||matchMedia("(prefers-reduced-motion: reduce)").matches){o.still();return}raf=requestAnimationFrame(loop)}else if(!on&&run){run=false;cancelAnimationFrame(raf)}};
 new IntersectionObserver((e)=>{seen=e[0].isIntersecting;go()}).observe(o.fl.closest("figure"));document.addEventListener("visibilitychange",go);
-document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",go));addEventListener("resize",()=>{if(run&&Math.round(o.fl.getBoundingClientRect().width)!==cw){run=false;cancelAnimationFrame(raf);go()}});
+document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",go));addEventListener("resize",()=>{if(run&&Math.round(rect().width)!==cw){run=false;cancelAnimationFrame(raf);go()}});
 o.again=()=>{if(run){run=false;cancelAnimationFrame(raf)}go()};return go};`;
 
 

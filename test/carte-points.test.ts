@@ -106,6 +106,6 @@ describe("the points of the maps, with a mouse and with a finger", () => {
     // The children's map marks the dot and its row, and lets the click go on to the row; the click that ends a drag is
     // stopped before, by the zoom's script (carte-zoom.ts).
     expect(commune).toContain(`if(!a)return;sheet.hidden=true;mark(a.dataset.i)});`);
-    expect(commune).toContain(`svg.addEventListener("click",(e)=>{if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);`);
+    expect(commune).toContain(`svg.addEventListener("click",(e)=>{if(off())return;if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);`);
   });
 });

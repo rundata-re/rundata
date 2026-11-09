@@ -59,7 +59,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,
-  historique: 5,
+  // Un jour incomplet dit jusqu'à quelle heure, jamais présenté entier (10/11/2026).
+  historique: 6,
   // A place said with its article (« Mesures les plus proches du Maïdo », « PRÉVISION … pour le Piton de la Fournaise »).
   // Its sea answer reads the waves of the west and the south from MFWAM, with the main swell (tools/mer.ts).
   // Its sea sentence: the satellite's pass first (« passage de cette nuit à 01:39 »), else « moyenne d'hier, 06/11 ».

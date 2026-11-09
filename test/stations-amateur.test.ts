@@ -101,7 +101,7 @@ describe("/meteo with an amateur station", () => {
     // The legends count the official stations; ticked, a line says what the dotted outline is (marketing).
     expect(svg).toContain("Température mesurée sous abri à 2 des 2 stations");
     expect(svg).toContain("2 anémomètres");
-    expect(svg).toContain('<span class="amlg">Contour pointillé : station amateur, fiabilité non vérifiée.</span>');
+    expect(svg).toContain('<span class="amlg">Contour pointillé : station amateur.</span>');
   });
 
   it("draws neither the box nor the amateur group without an amateur station", () => {

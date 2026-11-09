@@ -34,6 +34,9 @@ describe("/meteo's map in its full screen (the user, 10/11/2026: « une meilleur
     expect(svg.indexOf(ZOOM_SCRIPT)).toBeGreaterThan(svg.indexOf("</svg>"));
     // Out of the full screen: no button, a finger scrolls and pinches the page, the text can be selected.
     expect(CSS).toContain(".wxmap:not(.pe-m) .wxbar>.kzoom{display:none}");
+    // In it, the buttons sit in the bar, at the end of its line or on a line of their own, above the map: never over it (a 390 px phone hid stations under them).
+    expect(CSS).toContain(".pe-on .wxbar>.kzoom{margin-left:auto}");
+    expect(CSS).not.toMatch(/\.kzoom\{[^}]*position:absolute/);
     expect(CSS).toContain(".map[data-zoom][data-zpe]{touch-action:auto;user-select:auto;-webkit-user-select:auto}.pe-on .map[data-zoom][data-zpe]{touch-action:none;");
   });
 

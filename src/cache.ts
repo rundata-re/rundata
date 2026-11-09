@@ -222,6 +222,8 @@ export class Cache {
   private bundles = new Map<string, BundleState>();
   /** The stores, then `durable` behind them (`island`). */
   private wide: CacheStore;
+  /** The island's copies in the durable store (the Worker's KV), behind `wide`; none when there is no durable store. */
+  private lectures?: CacheStore;
 
   /**
    * `dedupe` lets concurrent questions share one upstream request. The Worker turns it off: there, a request
@@ -238,7 +240,8 @@ export class Cache {
     private durable: CacheStore = store,
     readonly version?: string,
   ) {
-    this.wide = durable === store ? store : new TieredStore(store, new Prefixed(durable, "lecture:"));
+    this.lectures = durable === store ? undefined : new Prefixed(durable, "lecture:");
+    this.wide = this.lectures ? new TieredStore(store, this.lectures) : store;
   }
 
   /** The time the stores are read at, ms (its clock: tests set it). */
@@ -303,11 +306,13 @@ export class Cache {
 
   /**
    * As `get`, from the entry the caller has just read (`peek`, or an older `get`) instead of reading the stores again:
-   * served if fresh enough, else loaded, the entry being the copy served if the source fails.
+   * served if fresh enough, else loaded, the entry being the copy served if the source fails. `island`: written to the
+   * durable store too, as `island` does, for a copy every data center serves (web/data.ts ISLAND_PAGES).
    */
-  async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>): Promise<Cached<T>> {
+  async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>, island = false): Promise<Cached<T>> {
     const hit = have && { value: have.value, fetchedAt: have.fetchedAt.getTime(), ...(have.cost != null && { cost: have.cost }), ...(have.from && { from: have.from }), ...(!have.outdated && { version: stampOf(key, this.version) }) };
-    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e)));
+    const stores = island ? this.wide : this.store;
+    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => stores.put(key, e)));
   }
 
   /** Forgets the failure remembered under `key`, so that it is asked again at once (tools/agenda.ts: one more try). */
@@ -324,10 +329,23 @@ export class Cache {
   /**
    * The newest entry stored under `key`, however old, without loading it. `freshAfter` (a time, ms): an entry fetched
    * since then in a faster store will do, so slower stores (the data center's cache, a subrequest each) are asked only
-   * otherwise.
+   * otherwise. `islandWithinMs`: for a copy of the island (web/data.ts ISLAND_PAGES), the durable store (the Worker's
+   * KV) asked last, as `island` does, but waited for that long at most: past it, the data center's copy, however old,
+   * is the answer (a read of KV may take seconds, 09/11/2026), and what KV gives later is not waited for. The newer of
+   * the two is put in the data center's stores.
    */
-  async peek<T>(key: string, freshAfter?: number): Promise<Cached<T> | undefined> {
-    const hit = await this.store.get(key, freshAfter);
+  async peek<T>(key: string, freshAfter?: number, islandWithinMs?: number): Promise<Cached<T> | undefined> {
+    let hit = await this.store.get(key, freshAfter);
+    if (islandWithinMs != null && this.lectures && !(hit && freshAfter != null && hit.fetchedAt >= freshAfter)) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), islandWithinMs)));
+      const far = await Promise.race([this.lectures.get(key).catch(() => undefined), late]);
+      clearTimeout(timer);
+      if (far && (!hit || far.fetchedAt > hit.fetchedAt)) {
+        hit = far;
+        await this.store.put(key, far).catch(() => undefined);
+      }
+    }
     if (unreadable(key, hit, this.version)) return undefined;
     return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.cost != null && { cost: hit.cost }), ...(outdated(key, hit, this.version) && { outdated: true, ...(hit.version && { stamp: hit.version }) }), ...(hit.echec && { failedAt: hit.echec.at }) };
   }

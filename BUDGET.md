@@ -33,7 +33,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
 - Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 397 sous-requêtes à 00:00 UTC.
-- Vue la plus chère : /communes/*, 89. Question la plus chère : resume_du_jour, 75. Construction la plus chère : web:chiffres:evenements, 48.
+- Vue la plus chère : /, 89. Question la plus chère : resume_du_jour, 75. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -134,7 +134,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 87 | 12 | 3 | 2 | 840 |  | 110 | mesuré |
+| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 89 | 13 | 4 | 2 | 840 |  | 110 | mesuré |
 | /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 89 | 12 | 4 |  |  |  | 160 | mesuré |
 | /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 75 | 15 | 5 |  |  |  | 130 | mesuré |
 | /meteo/* | la météo d'un lieu | à chaque vue |  | 61 | 5 | 4 |  |  |  | 130 | mesuré |
@@ -172,7 +172,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /antennes | la page des antennes : la carte et le tableau (dans le paquet), et la copie des sites mobiles hors service | à chaque vue |  | 8 | 1 |  |  |  |  | 80 | code |
 | /chiffres | rundata.re en chiffres : la copie de ses comptes, avec la vigilance et la version de l'en-tête | à chaque vue |  | 9 | 1 |  |  |  |  | 40 | code |
 | * | toute autre adresse : la vigilance et la version, lues pour l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 70 | mesuré |
-| /meteo | la page /meteo | à chaque vue |  | 50 | 4 | 3 |  |  |  | 80 | mesuré |
+| /meteo | la page /meteo | à chaque vue |  | 52 | 5 | 4 |  |  |  | 80 | mesuré |
 | /volcan | la page /volcan | à chaque vue |  | 55 | 4 | 3 | 2 | 21 |  | 60 | mesuré |
 | /air | la page /air | à chaque vue |  | 14 | 1 |  |  |  |  | 40 | mesuré |
 | /electricite | la page /electricite | à chaque vue |  | 17 | 1 |  |  |  |  | 30 | mesuré |

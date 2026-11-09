@@ -1950,6 +1950,22 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T | null> {
 }
 
 /**
+ * The page copies kept for the whole island in the durable store (the Worker's KV), behind memory and the data center's
+ * cache, and written there by the view that built them (`Cache.island`), not by the scheduled event (web/partagees.ts):
+ * a data center whose copy is older than FRESH_SECONDS serves the one built last anywhere. The weather of the home page
+ * and of /meteo: kept by data center, from 07 to 08/11/2026 the assistants and robots reading / were given a copy 299 min
+ * old in the middle, up to 1 370, though it was built again after each of their views, in their own data center only.
+ * At most one write of KV per build, one every FRESH_SECONDS: 288 a day at most, 195 at the traffic of those days.
+ */
+export const ISLAND_PAGES = new Set(["web:meteo"]);
+/**
+ * How long a view waits for the island's copy in KV, ms, when its data center's is older than FRESH_SECONDS: past it,
+ * the data center's copy is served, as before. A read of KV slower than a tool call's time was seen three times on
+ * 09/11/2026 (air:mesures); the home page's reader waits HOME_READER_WAIT_MS (800) in all, this included.
+ */
+export const ISLAND_PEEK_MS = 300;
+
+/**
  * The last copy of a page's data and when it was built, refreshed in the background when older than
  * FRESH_SECONDS. Null when there is none yet and it takes more than a few seconds to build.
  *
@@ -1998,8 +2014,12 @@ export async function snapshot<T>(
   };
   // One read of the stores: a copy fresh in memory, else the newest there is (the data center's cache, KV behind it
   // for the shared copies); its refresh below starts from it rather than reading them again.
-  const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000).catch(() => undefined);
-  const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run));
+  const island = ISLAND_PAGES.has(key);
+  // The island's copy waited for ISLAND_PEEK_MS at most, and that wait taken from the reader's (`waitMs`).
+  const start = Date.now();
+  const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000, island ? Math.min(ISLAND_PEEK_MS, waitMs) : undefined).catch(() => undefined);
+  if (island) waitMs = Math.max(0, waitMs - (Date.now() - start));
+  const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run, island));
   let got: Cached<T> | null;
   try {
     got = await within(any, waitMs);
@@ -2020,7 +2040,7 @@ export async function snapshot<T>(
   const freshFor = Math.min(incomplete?.(got.value) ? INCOMPLETE_RETRY_SECONDS : FRESH_SECONDS, sinceMidnight(now));
   const age = now.getTime() - got.fetchedAt.getTime();
   if (age > freshFor * 1000) {
-    const fresh = written(cache.getFrom(key, got, freshFor, run));
+    const fresh = written(cache.getFrom(key, got, freshFor, run, island));
     const logged = fresh.catch((err) => console.error(`page ${key} : rafraîchissement impossible`, why(err)));
     if (yesterday || (typeof reader === "function" ? reader(key, got.value, age) : reader)) {
       const newer = await within(logged, waitMs);

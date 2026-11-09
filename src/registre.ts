@@ -380,11 +380,12 @@ const SCHEDULED: Entry[] = [
     basis: "code",
   },
   // In the pass at 10 past the hour besides (capteurs:air): sensors.social's list of the last hour, then one request per
-  // sensor of the island, SOCIAL_MAX at most (1 sensor on 09/11/2026: 2 requests). Same copy, same write.
+  // sensor of the island, SOCIAL_MAX at most, the 3 that sent last (1 sensor on 09/11/2026: 2 requests). Same copy,
+  // same write.
   {
     id: "capteurs:social",
     trigger: "planifiée",
-    what: "capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (5 au plus), dans la copie de capteurs:air",
+    what: "capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (les 3 qui ont émis en dernier au plus), dans la copie de capteurs:air",
     every: 60,
     offset: CAPTEURS_OFFSET,
     run: { subrequests: 1 + SOCIAL_MAX, cpuMs: 10 },

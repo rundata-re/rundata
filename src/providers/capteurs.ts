@@ -61,8 +61,11 @@ const URL = `https://data.sensor.community/airrohr/v1/filter/box=${BOX.south.toF
 const ROSEMAN = "https://roseman.robonomics.network/api/v2/sensor/";
 /** Asked by sensors.social: rundata.re's site and address in the User-Agent of its reads (ASCII only). */
 export const SOCIAL_UA = "rundata.re (https://rundata.re; contact@rundata.re)";
-/** The island's sensors on sensors.social read at most: one request each, besides the list (1 on 09/11/2026). */
-export const SOCIAL_MAX = 5;
+/**
+ * The island's sensors on sensors.social read at most: one request each, besides the list (1 on 09/11/2026). Past it,
+ * the ones that sent last are kept: the scheduled event's worst pass has little room left (BUDGET.md).
+ */
+export const SOCIAL_MAX = 3;
 /** Once an hour, at 10 past (UTC), the first of the hour's passes: sensors.social asked for one read an hour at most. */
 export const socialDue = (now: Date) => refreshDue(now) && now.getUTCMinutes() < REFRESH_EVERY;
 

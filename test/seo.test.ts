@@ -222,6 +222,10 @@ describe("link previews", () => {
     expect(at("/a-propos")).toMatch(/^\/og\.png\?v=/);
     // A page of a section keeps its own, and the alt follows the picture.
     expect(at("/cyclones")).toMatch(/^\/og\/cyclones\./);
+    // The air's and the bikes' their own; the energy's stays on the charging points and the electricity.
+    expect(at("/air")).toMatch(/^\/og\/air\.[0-9a-f]{10}\.png$/);
+    expect(at("/velos")).toMatch(/^\/og\/velos\.[0-9a-f]{10}\.png$/);
+    for (const p of ["/bornes", "/electricite"]) expect(at(p), p).toMatch(/^\/og\/energie\.[0-9a-f]{10}\.png$/);
     const past = passePage(O, PASSES[0]);
     expect(img(past)).toMatch(/^\/og\/historique\.[0-9a-f]{10}\.png$/);
     expect(past).toContain(`<meta property="og:image:alt" content="${rubriques.find((r) => r.png.startsWith("/og/historique."))!.alt.replace(/'/g, "&#39;")}">`);

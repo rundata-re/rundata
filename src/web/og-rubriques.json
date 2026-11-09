@@ -93,12 +93,27 @@
  {
   "pages": [
    "/bornes",
-   "/velos",
    "/electricite"
   ],
   "png": "/og/energie.561c9511a6.png",
   "png_4x5": "/og/energie-4x5.70eade7ec8.png",
   "alt": "Symbole rundata.re et courbes de niveau de l'île (altitudes IGN RGE ALTI) : Énergie 974. Recharge et électricité en direct"
+ },
+ {
+  "pages": [
+   "/velos"
+  ],
+  "png": "/og/velos.5a1c4d6643.png",
+  "png_4x5": "/og/velos-4x5.b82da6e0b2.png",
+  "alt": "Symbole rundata.re et courbes de niveau de l'île (altitudes IGN RGE ALTI) : Vélos 974. Vélos et places libres, en direct"
+ },
+ {
+  "pages": [
+   "/air"
+  ],
+  "png": "/og/air.117b66c337.png",
+  "png_4x5": "/og/air-4x5.13fd2b83ec.png",
+  "alt": "Symbole rundata.re et courbes de niveau de l'île (altitudes IGN RGE ALTI) : Air 974. Qualité de l'air, commune par commune"
  },
  {
   "pages": [

@@ -16,7 +16,7 @@ import { UpstreamError } from "../src/types.js";
 import { AGENDAS } from "../src/providers/agenda.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import * as metar from "../src/providers/metar.js";
-import * as pioupiou from "../src/providers/pioupiou.js";
+import * as ffvl from "../src/providers/ffvl.js";
 import * as radar from "../src/providers/radar.js";
 import * as atmo from "../src/providers/atmo.js";
 import * as airMesures from "../src/providers/air-mesures.js";
@@ -187,13 +187,13 @@ describe("the summary of a day", () => {
     const named = (r: { sources: { source: string }[] }) => r.sources.map((x) => x.source);
     const port = AGENDAS.find((a) => a.id === "le_port")!;
     const paul = AGENDAS.find((a) => a.id === "saint_paul")!;
-    const meteo = { ...COPIES.meteo.value, meteo: { ...COPIES.meteo.value.meteo, sources: credits([meteofrance.SOURCE, metar.SOURCE, pioupiou.SOURCE, radar.SOURCE]) } };
+    const meteo = { ...COPIES.meteo.value, meteo: { ...COPIES.meteo.value.meteo, sources: credits([meteofrance.SOURCE, metar.SOURCE, ffvl.SOURCE, radar.SOURCE]) } };
     const agenda = { ...COPIES.agenda.value, sources: credits([paul.source, port.source]), evenements: COPIES.agenda.value.evenements.map((e) => ({ ...e, publie_par: paul.nom })) };
     const copies = { ...COPIES, meteo: copy(meteo), agenda: copy(agenda) };
     const r = resume(SAINT_PAUL, copies as never, NOW);
     expect(r.meteo!.mesure!.station).toBe("Saint-Paul");
     expect(named(r)).toContain(meteofrance.SOURCE.nom);
-    for (const s of [metar.SOURCE, pioupiou.SOURCE, radar.SOURCE, port.source]) expect(named(r)).not.toContain(s.nom);
+    for (const s of [metar.SOURCE, ffvl.SOURCE, radar.SOURCE, port.source]) expect(named(r)).not.toContain(s.nom);
     // The forecast shown keeps its own; the agenda of the events listed, as /evenements names it.
     expect(named(r)).toContain("Open-Meteo");
     expect(named(r)).toContain(paul.source.nom);
@@ -207,7 +207,7 @@ describe("the summary of a day", () => {
     const stations = meteo.meteo.stations.map((x) => ({ ...x, source: "inconnu" }));
     const unknown = resume(SAINT_PAUL, { ...copies, meteo: copy({ ...meteo, meteo: { ...meteo.meteo, stations } }) } as never, NOW);
     expect(unknown.meteo!.mesure).toBeTruthy();
-    for (const s of [meteofrance.SOURCE, metar.SOURCE, pioupiou.SOURCE, radar.SOURCE]) expect(named(unknown)).toContain(s.nom);
+    for (const s of [meteofrance.SOURCE, metar.SOURCE, ffvl.SOURCE, radar.SOURCE]) expect(named(unknown)).toContain(s.nom);
   });
 
   it("credits for the air the commune's index only, for the sea the satellites only (rule 3)", () => {
@@ -335,7 +335,6 @@ beforeEach(() => {
     if (u.includes("DPPaquetObs")) return new Response(fixture("meteofrance_6min.csv"));
     if (u.includes("DPVigilance")) return new Response(fixture("vigilance_om.zip"));
     if (u.includes("aviationweather")) return new Response(fixture("metar.json"));
-    if (u.endsWith("/live/all")) return new Response(fixture("pioupiou_all.json"));
     const pub = coastwatch(u, init);
     if (pub) return pub;
     if (u.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));

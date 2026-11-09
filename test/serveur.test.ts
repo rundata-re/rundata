@@ -4,7 +4,6 @@ import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { withLectures } from "../src/lectures.js";
 import { INDEX, LISTE_DU, listeDu, NOUVEAUTES, OUTILS, outilsRecents, serveur } from "../src/nouveautes.js";
-import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { existsSync } from "node:fs";
 import { listeAllegee, nomDeSource, SERVER_ICONS, SOURCES_COURT, VERSION } from "../src/server.js";
 import { citation, citerOf, cite } from "../src/tools/citer.js";
@@ -28,11 +27,8 @@ const rpcResult = async (method: string, params: unknown = {}) => (await (await 
 /** The weather stations' recorded answers, read at `at`; `now` may be later, to make them old. */
 async function weatherCache(at: number, now = at) {
   const store = new MemoryStore();
-  const beacons = inReunionBeacons(JSON.parse(fixture("pioupiou_all.json")).data);
   const date = new Date(at - 4 * 60_000).toISOString();
   await store.put("metar", { value: JSON.parse(fixture("metar.json")), fetchedAt: at });
-  await store.put("pioupiou:all", { value: beacons, fetchedAt: at });
-  await store.put("pioupiou:live", { value: beacons.map((b) => ({ ...b, measurements: { ...b.measurements, date } })), fetchedAt: at });
   await store.put("ffvl:releves", { value: [{ idbalise: 164, date, vitesseVentMoy: 8, vitesseVentMax: 15, directVentMoy: 112 }], fetchedAt: at });
   return new Cache(store, () => now);
 }
@@ -335,10 +331,9 @@ describe("fraicheur", () => {
     expect(f.copies_de_secours).toEqual([
       { source: "Observations aéroport (METAR)", lue_le: "18/10 20:20" },
       { source: "Balises météo de la FFVL", lue_le: "18/10 20:20" },
-      { source: "Balises de vent Pioupiou (OpenWindMap)", lue_le: "18/10 20:20" },
     ]);
     expect(f.avertissement).toBe(
-      "Ces sources n'ont pas répondu à notre dernière lecture : « Observations aéroport (METAR) », lue le 18/10 à 20:20\u00a0; « Balises météo de la FFVL », lue le 18/10 à 20:20\u00a0; « Balises de vent Pioupiou (OpenWindMap) », lue le 18/10 à 20:20. Ce qui vient d'elles date de ces lectures.",
+      "Ces sources n'ont pas répondu à notre dernière lecture : « Observations aéroport (METAR) », lue le 18/10 à 20:20\u00a0; « Balises météo de la FFVL », lue le 18/10 à 20:20. Ce qui vient d'elles date de ces lectures.",
     );
   });
 

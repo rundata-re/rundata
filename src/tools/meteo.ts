@@ -5,7 +5,7 @@ import { communeAt, resolvePlace, type Resolution } from "../places/resolve.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import * as metar from "../providers/metar.js";
 import * as ffvl from "../providers/ffvl.js";
-import * as pioupiou from "../providers/pioupiou.js";
+import * as meteorOi from "../providers/meteor-oi.js";
 import * as radar from "../providers/radar.js";
 import { radarAt } from "./radar.js";
 import { recentRainBlock } from "./pluie-recente.js";
@@ -24,8 +24,8 @@ interface Provider {
 const ALL_PROVIDERS: Provider[] = [
   { source: meteofrance.SOURCE, observations: meteofrance.observations, enabled: meteofrance.enabled },
   { source: metar.SOURCE, observations: (c) => metar.observations(c) },
-  { source: pioupiou.SOURCE, observations: pioupiou.observations },
   { source: ffvl.SOURCE, observations: ffvl.observations },
+  { source: meteorOi.SOURCE, observations: meteorOi.observations },
 ];
 
 /** Every network a station can come from, keyed or not: what a station's `source` names (resume.ts credits by it). */
@@ -40,11 +40,12 @@ export function coverage(n?: number): string {
   return meteofrance.enabled()
     ? `${n ? `Les ${n}\u00a0stations qui ont mesuré dans cette lecture\u00a0: celles` : "Les stations"} de Météo-France, de la côte aux sommets et dans les cirques (mesures toutes les ` +
         "6 min, publiées 5 à 10 min après : température, pluie, et pour une partie d'entre elles humidité et vent), " +
-        "les observations des 2 aéroports (METAR, état du ciel), et des balises de vent : Cambaie à Saint-Paul (OpenWindMap)\u00a0; " +
-        "Kélonia à Saint-Leu, le Trou d'Eau et le Maïdo à Saint-Paul, Matouta à Saint-Joseph (FFVL, quand elles émettent)."
+        "les observations des 2 aéroports (METAR, état du ciel), et des balises de vent : " +
+        "Kélonia à Saint-Leu, le Trou d'Eau et le Maïdo à Saint-Paul, Matouta à Saint-Joseph (FFVL, quand elles émettent)\u00a0; " +
+        "et les stations de l'association MétéoR Océan Indien (température, pluie, vent, mesurés toutes les 5 min et relus toutes les 10 min), en particulier à Marla dans Mafate, dans les Hauts du Sud, sur la côte de Saint-Joseph et dans l'Est."
     : "Version 0.1 : seules les sources ouvertes sans clé sont branchées, soit les 2 stations des aéroports " +
-        "(Saint-Denis Gillot et Saint-Pierre Pierrefonds, toutes les 30 min), et des balises de vent : Cambaie (Saint-Paul, OpenWindMap) et celles de la FFVL qui émettent. " +
-        "Pas encore de pluviomètre lu en direct, ni de station dans les Hauts ou les cirques.";
+        "(Saint-Denis Gillot et Saint-Pierre Pierrefonds, toutes les 30 min), les balises de vent de la FFVL qui émettent, " +
+        "et les stations de l'association MétéoR Océan Indien (température, pluie, vent, mesurés toutes les 5 min et relus toutes les 10 min), dont Marla dans Mafate.";
 }
 
 // Without a place, the tour of the island: coast on every side, the Hauts and a cirque, not all of them.
@@ -100,6 +101,8 @@ function stationBlock(o: Observation, stale: boolean, now: Date) {
     // Said wherever the station stands in another commune than the place's (« Bellevue Bras-Panon » for Salazie).
     commune: stationCommune(o.station),
     source: o.station.source,
+    // The credit the association asked for, beside each of its measures.
+    ...(o.station.source === meteorOi.SOURCE.id ? { credit: meteorOi.CREDIT, lien: meteorOi.SITE } : {}),
     altitude_m: o.station.altitude_m,
     ...t,
     mesures,

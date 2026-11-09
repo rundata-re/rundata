@@ -62,8 +62,6 @@ function upstream(url: string, init?: RequestInit): Response {
   if (url.includes("DPPaquetObs")) return new Response(fixture("meteofrance_6min.csv"));
   if (url.includes("DPRadar")) return new Response(fixture("radar_lame_eau.h5"));
   if (url.includes("aviationweather")) return new Response(fixture("metar.json"));
-  if (url.endsWith("/live/all")) return new Response(fixture("pioupiou_all.json"));
-  if (url.includes("pioupiou")) return Response.json({ data: JSON.parse(String(fixture("pioupiou_all.json"))).data[0] });
   if (url.includes("data.gouv.fr/api/1/datasets/r/047b2ab9")) return new Response(fixture("ffvl_releves.json"));
   const pub = coastwatch(url, init);
   if (pub) return pub;

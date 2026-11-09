@@ -74,7 +74,7 @@ const DAY = 24 * 60;
 
 export const DOMAINES: Domaine[] = [
   // Météo-France's packets are asked again every 2 minutes (providers/meteofrance.ts, RECHECK_SECONDS).
-  { categorie: "meteo", sources: ids("meteofrance", "metar", "pioupiou", "ffvl", "mf_radar", "openmeteo", "arome", "openmeteo_ens", "cams_uv"), cadence: { minutes: 2, de: "meteofrance" } },
+  { categorie: "meteo", sources: ids("meteofrance", "metar", "ffvl", "meteor_oi", "mf_radar", "openmeteo", "arome", "openmeteo_ens", "cams_uv"), cadence: { minutes: 2, de: "meteofrance" } },
   // The floods with the vigilance: no category of their own; their levels every 5 minutes, as the vigilance.
   { categorie: "vigilance", sources: ids("mf_vigilance", "vigicrues"), cadence: { minutes: 5, de: "mf_vigilance" } },
   { categorie: "cyclones", sources: ids("gdacs_cyclones", "meteofrance_cmrs_wtio31"), cadence: { minutes: 30, de: "gdacs_cyclones" } },
@@ -195,9 +195,14 @@ export function clubs(evenements: Pick<Evenement, "organisateur">[], connus = cl
   return new Set(noms.map(cle).filter((k) => k && !connus.has(k))).size;
 }
 
-/** The stations whose observation is recent, in every weather source; undefined when a source failed or is stale. */
+/**
+ * The stations whose observation is recent, in every weather source but MétéoR-OI's; undefined when a source failed or
+ * is stale. MétéoR-OI's, read by an event of their own (providers/meteor-oi.ts), are left out, as the page says: reading
+ * their copy here would add a subrequest to the scheduled event of every 5 minutes, at its limit (BUDGET.md).
+ */
+export const NON_COMPTEES = new Set(["meteor_oi"]);
 async function stationsMeteo(cache: Cache, now: Date): Promise<number | undefined> {
-  const got = await Promise.all(weatherProviders().map((p) => p.observations(cache, now)));
+  const got = await Promise.all(weatherProviders().filter((p) => !NON_COMPTEES.has(p.source.id)).map((p) => p.observations(cache, now)));
   if (got.some((g) => g.stale)) return undefined;
   const recent = got.flatMap((g) => g.value).filter((o) => now.getTime() - o.time.getTime() <= OBSERVATION_MS);
   // An airport is both a Météo-France station and a METAR: one place of measurement, as meteo_actuelle merges them.

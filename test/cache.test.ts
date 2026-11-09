@@ -113,7 +113,7 @@ describe("Cache", () => {
     const b = await cache.bundle("paquet", 60);
     expect((await b.get("horaire", 60, from("meteofrance"))).from).toBe("meteofrance");
     // Two sources asked for one entry: none said.
-    const both = async () => { noteSource("metar"); noteSource("pioupiou"); return "ok"; };
+    const both = async () => { noteSource("metar"); noteSource("ffvl"); return "ok"; };
     expect((await cache.get("vent", 60, both)).from).toBeUndefined();
     // A load within a load: each entry its own source.
     const outer = await cache.get("dehors", 60, async () => {

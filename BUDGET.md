@@ -18,29 +18,32 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 527 | 550 |
+| pire passage planifié, sous-requêtes | 521 | 550 |
 | pire passage planifié, appels KV et D1 | 122 | 1 000 |
 | pire passage planifié, CPU (ms) | 4 876 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 226 | 550 |
-| vue la plus chère, sous-requêtes | 89 | 200 |
-| question la plus chère, sous-requêtes | 75 | 200 |
+| vue la plus chère, sous-requêtes | 90 | 200 |
+| question la plus chère, sous-requêtes | 76 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
+| tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 527 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 473, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
+- Marge : le pire passage planifié est à 521 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 479, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 397 sous-requêtes à 00:00 UTC.
-- Vue la plus chère : /, 89. Question la plus chère : resume_du_jour, 75. Construction la plus chère : web:chiffres:evenements, 48.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 391 sous-requêtes à 00:00 UTC.
+- Vue la plus chère : /, 90. Question la plus chère : resume_du_jour, 76. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 527 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
-| tâche planifiée, par jour | 36 303 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
-| tâche planifiée, par jour, cadences les plus courtes | 55 435 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
-| tâche planifiée, par mois (30 jours) | 1 089 077 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
+| pire passage planifié | 521 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
+| tâche planifiée, par jour | 36 159 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
+| tâche planifiée, par jour, cadences les plus courtes | 55 291 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
+| tâche planifiée, par mois (30 jours) | 1 084 757 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
+| tâches planifiées à part, par jour | 5 760 | 144 | 144 |  |  |  | 2 880 |
+| tâches planifiées à part, par mois (30 jours) | 172 800 | 4 320 | 4 320 |  |  |  | 86 400 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -69,7 +72,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | onf:sentiers | copie partagée (KV) | 60 min | 00:45 | 5 |  | 1 |  |  |  | 40 | estimé |
 | web:volcan | copie partagée (KV) | 30 min (5 au plus court) | 00:15 | 34 | 3 | 4 | 2 | 21 |  | 110 | mesuré |
 | web:courant | copie partagée (KV) | 120 min (30 au plus court) | 00:20 | 8 |  | 1 |  |  |  | 30 | mesuré |
-| web:chiffres | copie partagée (KV) | 60 min | 00:50 | 33 |  | 1 | 2 | 21 |  | 60 | estimé |
+| web:chiffres | copie partagée (KV) | 60 min | 00:50 | 27 |  | 1 | 2 | 21 |  | 60 | estimé |
 | web:chiffres:evenements | copie partagée (KV) | 360 min (60 au plus court) | 00:30 | 49 |  | 1 |  |  |  | 200 | estimé |
 | ens:ile | copie partagée, avec ce que les autres ont laissé | 180 min | 01:40 | 5 |  | 1 |  |  |  | 40 | mesuré |
 | vigilance:carte | carte officielle de la vigilance : son état (KV), lu à chaque copie de la vigilance | 5 min | 00:00 | 1 | 1 |  |  |  |  |  | code |
@@ -122,6 +125,14 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | clubs:purge | espace club : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 3 |  |  | 3 |  | 5 | 2 | estimé |
 | connecteurs:purge | plateformes des associations : la purge quotidienne (D1, ses quatre instructions en un seul appel), à 04:00 heure de La Réunion | 1440 min | 00:00 | 1 |  |  | 1 |  | 5 | 2 | estimé |
 
+## Tâches planifiées à part
+
+Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec le budget d'une construction de copie (100 sous-requêtes) : elle ne compte ni dans la tâche planifiée des 5 minutes ni dans son pire passage.
+
+| entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
+| meteor:stations | stations de MétéoR-OI : la copie lue, le fichier de chacune des 38 stations du portail de l'association, la copie écrite | 10 min | 00:03 | 40 | 1 | 1 |  |  |  | 20 | code |
+
 ## Tâches GitHub
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
@@ -135,10 +146,10 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 89 | 13 | 4 | 2 | 840 |  | 110 | mesuré |
-| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 89 | 12 | 4 |  |  |  | 160 | mesuré |
-| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 75 | 15 | 5 |  |  |  | 130 | mesuré |
-| /meteo/* | la météo d'un lieu | à chaque vue |  | 61 | 5 | 4 |  |  |  | 130 | mesuré |
+| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 90 | 14 | 4 | 2 | 840 |  | 110 | mesuré |
+| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 90 | 13 | 4 |  |  |  | 160 | mesuré |
+| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 76 | 16 | 5 |  |  |  | 130 | mesuré |
+| /meteo/* | la météo d'un lieu | à chaque vue |  | 62 | 6 | 4 |  |  |  | 130 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
@@ -174,7 +185,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | /chiffres | rundata.re en chiffres : la copie de ses comptes, avec la vigilance et la version de l'en-tête | à chaque vue |  | 9 | 1 |  |  |  |  | 40 | code |
 | /essais/uv-moufia/* | essai interne, page privée derrière son lien secret : son fichier lu dans KV | à chaque vue |  | 1 | 1 |  |  |  |  | 100 | estimé |
 | * | toute autre adresse : la vigilance et la version, lues pour l'en-tête | à chaque vue |  | 7 |  |  |  |  |  | 70 | mesuré |
-| /meteo | la page /meteo | à chaque vue |  | 52 | 5 | 4 |  |  |  | 80 | mesuré |
+| /meteo | la page /meteo | à chaque vue |  | 53 | 6 | 4 |  |  |  | 80 | mesuré |
 | /volcan | la page /volcan | à chaque vue |  | 55 | 4 | 3 | 2 | 21 |  | 60 | mesuré |
 | /air | la page /air | à chaque vue |  | 14 | 1 |  |  |  |  | 40 | mesuré |
 | /electricite | la page /electricite | à chaque vue |  | 17 | 1 |  |  |  |  | 30 | mesuré |
@@ -206,8 +217,8 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 75 | 6 | 5 |  |  |  | 130 | estimé |
-| meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 39 | 1 |  |  |  |  | 120 | mesuré |
+| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 76 | 7 | 5 |  |  |  | 130 | estimé |
+| meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 40 | 2 |  |  |  |  | 120 | mesuré |
 | evenements | l'outil evenements | à chaque vue |  | 33 |  |  |  |  |  | 190 | mesuré |
 | sport | l'outil sport | à chaque vue |  | 33 |  |  |  |  |  | 160 | mesuré |
 | volcan_seismes | l'outil volcan_seismes | à chaque vue |  | 42 | 3 | 3 | 2 | 21 |  | 90 | mesuré |
@@ -261,7 +272,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | onf:sentiers | providers/sentiers |
 | web:volcan | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ovpf-pdf, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
 | web:courant | providers/avis-eau, providers/coupures-courant |
-| web:chiffres | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/pioupiou, providers/radar, providers/salles, providers/sentiers, providers/sport, providers/velos |
+| web:chiffres | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/ffvl, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar, providers/salles, providers/sentiers, providers/sport, providers/velos |
 | web:chiffres:evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | ens:ile | providers/ensemble |
 | vigilance:carte |  |
@@ -292,6 +303,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | cpf:formations | providers/cpf |
 | capteurs:air | providers/capteurs |
 | capteurs:social | providers/capteurs |
+| meteor:stations | providers/meteor-oi |
 | radar:6h | providers/mf-auth, providers/radar |
 | radar:7j | providers/mf-auth, providers/radar |
 | meteofrance:jeton | providers/mf-auth |
@@ -307,10 +319,10 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | meteofrance:veille | providers/meteofrance, providers/mf-auth |
 | meteofrance:stations | providers/meteofrance, providers/mf-auth |
 | clubs:annuaire | clubs/monclub |
-| / | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
-| /communes/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance, providers/viirs |
-| /aujourdhui/* | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
-| /meteo/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance, providers/viirs |
+| / | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/openmeteo, providers/radar, providers/uv, providers/vigilance |
+| /communes/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/radar, providers/uv, providers/vigilance, providers/viirs |
+| /aujourdhui/* | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
+| /meteo/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/radar, providers/uv, providers/vigilance, providers/viirs |
 | /meteo/pluie-radar.json | providers/mf-auth, providers/radar |
 | /meteo/rejeu-6h.json | providers/meteofrance, providers/mf-auth, providers/radar |
 | /meteo/rejeu-24h.json | providers/meteofrance, providers/mf-auth, providers/radar |
@@ -329,15 +341,15 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /feux | providers/feux |
 | /ecoles-cyclone | providers/feux, providers/mf-auth, providers/vigilance |
 | /carburants | providers/carburants |
-| /associations | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
-| /associations/relier | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
-| /associations/connexion/* | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
+| /associations | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
+| /associations/relier | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
+| /associations/connexion/* | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
 | /associations/evenements.* | connecteurs/helloasso, providers/avis-eau |
-| /associations/club/demande | clubs/monclub, connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
+| /associations/club/demande | clubs/monclub, connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan, web/propositions |
 | /sites-sans-reponse | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | /antennes | providers/sites-hs |
 | /essais/uv-moufia/* |  |
-| /meteo | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/openmeteo, providers/pioupiou, providers/radar, providers/uv, providers/vigilance |
+| /meteo | providers/arome, providers/calendrier, providers/ensemble, providers/feux, providers/ffvl, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/openmeteo, providers/radar, providers/uv, providers/vigilance |
 | /volcan | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
 | /air | providers/air-mesures, providers/atmo, providers/capteurs |
 | /electricite | providers/avis-eau, providers/coupures-courant, providers/edf |
@@ -364,8 +376,8 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /enfants | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | /emploi | providers/cpf, providers/emploi |
 | /marches-publics | providers/marches-publics |
-| resume_du_jour | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/mf-auth, providers/modis, providers/openmeteo, providers/pioupiou, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
-| meteo_actuelle | providers/ffvl, providers/metar, providers/meteofrance, providers/mf-auth, providers/pioupiou, providers/radar |
+| resume_du_jour | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
+| meteo_actuelle | providers/ffvl, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
 | evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | volcan_seismes | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |

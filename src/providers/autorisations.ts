@@ -119,7 +119,10 @@ export const NON_REPRISES: Record<string, SourceNonReprise> = {
  * A source whose site writes no licence for its data, asked in writing whether rundata.re may take them: not read until
  * it agrees, then read on the conditions of its answer. sensors.social (Robonomics): its code was under BSD 3-Clause and
  * nothing covered its measures (read on 29/10/2026); asked by its form on 08/11/2026, it agreed in writing on
- * 09/11/2026, its measures under ODbL 1.0 since 03/11/2026 (the NOTICE of its repository).
+ * 09/11/2026, its measures under ODbL 1.0 since 03/11/2026 (the NOTICE of its repository). MétéoR Océan Indien: its
+ * measures under CC BY-NC 4.0, « l'utilisation systématique […] pour l'alimentation d'une rubrique météorologique » not
+ * tolerated without its board's leave (its conditions, read on 29/10/2026); asked by its form on 01/11/2026, it agreed
+ * in writing on 09/11/2026 for the wind, the temperature and the rain, rundata.re's use being non-commercial.
  */
 export interface LicenceDemandee {
   nom: string;
@@ -137,7 +140,7 @@ export interface LicenceDemandee {
   conditions?: string;
 }
 
-/** By source: `capteurs:<id>` for a network of sensors (providers/capteurs.ts). */
+/** By source: `capteurs:<id>` for a network of sensors (providers/capteurs.ts), `meteo:<id>` for a network of stations. */
 export const LICENCES: Record<string, LicenceDemandee> = {
   "capteurs:sensors_social": {
     nom: "sensors.social",
@@ -150,6 +153,19 @@ export const LICENCES: Record<string, LicenceDemandee> = {
     conditions:
       "le crédit « Sensor data © sensors.social contributors, ODbL 1.0 » avec un lien vers sensors.social et un vers la licence partout où une mesure est dite, " +
       "une lecture par heure au plus pour l'île, un User-Agent qui nomme https://rundata.re et contact@rundata.re",
+  },
+  "meteo:meteor_oi": {
+    nom: "MétéoR Océan Indien",
+    organisme: "MétéoR Océan Indien (association)",
+    publie: "le vent, la température et la pluie des stations de son réseau",
+    etat: "accordee",
+    demandee_le: "2026-11-01",
+    accordee_le: "2026-11-09",
+    licence: "CC BY-NC 4.0",
+    conditions:
+      "le crédit « Données : MétéoR-OI, licence CC BY-NC 4.0 » avec un lien vers https://www.meteor-oi.re sur la carte, dans la page des sources, à côté de chaque relevé et dans les réponses du connecteur, " +
+      "une lecture de chaque page au plus toutes les 5 minutes, un User-Agent qui nomme https://rundata.re et contact@rundata.re\u00a0; " +
+      "chaque mesure avec sa station et son heure, aucune station placée plus précisément que sur la carte de l'association, retrait sur simple demande",
   },
 };
 

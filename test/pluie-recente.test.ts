@@ -35,8 +35,6 @@ async function cache(rain: Record<string, number> = {}, metar?: string, clock = 
     ? [{ icaoId: "FMEP", obsTime: Date.parse("2026-10-25T08:30:00Z") / 1000, reportTime: "2026-10-25T08:30:00.000Z", temp: 24, dewp: 21, wdir: 130, wspd: 17, altim: 1018, metarType: "METAR", rawOb: metar, lat: -21.32, lon: 55.425, elev: 21, name: "St Pierre/Pierrefonds", cover: "BKN", clouds: [] }]
     : [];
   await store.put("metar", { value: metars, fetchedAt: at });
-  await store.put("pioupiou:all", { value: [], fetchedAt: at });
-  await store.put("pioupiou:live", { value: [], fetchedAt: at });
   return new Cache(store, () => clock.getTime());
 }
 

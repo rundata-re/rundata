@@ -13,16 +13,15 @@ import { discR, nudge, stationsMap } from "../src/web/meteo-carte.js";
 // share at 320 and 390 px, in the page and in full screen.
 
 const at = "2026-11-07T05:12:00Z";
-// The stations the map drew in each layer on 07/11/2026 at 09:12 (1.0.452): 46 temperatures, 55 rain gauges, 20 winds.
+// The stations the map drew in each layer on 07/11/2026 at 09:12 (1.0.452): 46 temperatures, 55 rain gauges, 20 winds; less the Pioupiou beacon of Cambaie, no longer read since 09/11/2026: 19 winds.
 const LIVE = {
   t: "bagatelle beauvallon bellecombe-jacob bellevue-bras-panon bois-de-nefles-saint-paul bois-rouge bras-pistolet bras-sec chaudron cilaos colimacons colorado dos-d-ane grand-coude grand-galet grand-ilet gros-piton-sainte-rose hauts-de-sainte-rose la-crete la-nouvelle le-baril le-dimitile le-guillaume le-port le-tevelave le-tremblet mare-a-vieille-place menciol palmiste-rouge petite-france piton-bloc piton-maido piton-saint-leu plaine-des-cafres plaine-des-chicots plaine-des-makes plaine-des-palmistes pointe-des-trois-bassins pont-d-yves pont-mathurin saint-benoit saint-denis-gillot-aeroport saint-francois saint-joseph saint-leu saint-pierre-pierrefonds-aeroport",
   p: "bagatelle beauvallon bellecombe-jacob bellevue-bras-panon belouve bois-de-nefles-saint-paul bois-rouge bras-pistolet bras-sec chaudron chemin-de-ceinture cilaos colimacons colorado commerson dos-d-ane grand-coude grand-galet grand-ilet gros-piton-sainte-rose hauts-de-sainte-rose ilet-a-cordes ilet-a-vidot la-crete la-nouvelle le-baril le-brule-val-fleuri le-dimitile le-guillaume le-port le-tevelave le-tremblet menciol montauban palmiste-rouge petite-france piton-bloc piton-maido piton-saint-leu plaine-des-cafres plaine-des-chicots plaine-des-fougeres plaine-des-makes plaine-des-palmistes pointe-des-trois-bassins pont-d-yves pont-mathurin saint-benoit saint-denis-gillot-aeroport saint-francois saint-joseph saint-leu saint-pierre-pierrefonds-aeroport salazie-village takamaka-pk-12",
-  v: "balise-de-kelonia balise-du-maido balise-du-trou-d-eau balise-pole-aeronautique-de-cambaie bellecombe-jacob bellevue-bras-panon cilaos colimacons gros-piton-sainte-rose le-baril le-port petite-france piton-maido plaine-des-cafres plaine-des-palmistes pointe-des-trois-bassins pont-mathurin saint-benoit saint-denis-gillot-aeroport saint-pierre-pierrefonds-aeroport",
+  v: "balise-de-kelonia balise-du-maido balise-du-trou-d-eau bellecombe-jacob bellevue-bras-panon cilaos colimacons gros-piton-sainte-rose le-baril le-port petite-france piton-maido plaine-des-cafres plaine-des-palmistes pointe-des-trois-bassins pont-mathurin saint-benoit saint-denis-gillot-aeroport saint-pierre-pierrefonds-aeroport",
 };
 const PLACES = [
   ...STATIONS_974.map(([id, nom, lat, lon, altitude_m]) => ({ id, nom, lat, lon, altitude_m, source: "meteofrance" })),
   ...BALISES.map((b) => ({ id: String(b.id), nom: b.nom, lat: b.lat, lon: b.lon, altitude_m: b.altitude_m, source: "ffvl" })),
-  { id: "1300", nom: "Balise Pôle Aéronautique de Cambaie", lat: -20.98, lon: 55.29, altitude_m: 5, source: "pioupiou" },
 ];
 /** The stations of `sets` (ids by layer, « tous » for every Météo-France station), each with the measures of its layers. */
 function stations(sets: Record<"t" | "p" | "v", string | "tous">, rain: (i: number) => number): StationNow[] {
@@ -93,7 +92,8 @@ describe("stations' map: every dot touched where it is seen", () => {
       const bad: string[] = [];
       for (const layer of ["t", "p", "v"]) {
         const got = onTop(svg, layer);
-        expect(got.length, layer).toBeGreaterThanOrEqual(20);
+        // The 19 winds of 07/11, the fewest of the three layers.
+        expect(got.length, layer).toBeGreaterThanOrEqual(19);
         bad.push(...got.filter((g) => !g.centre || 2 * g.on < g.n).map((g) => `${layer} ${g.st} ${g.on}/${g.n}${g.centre ? "" : " centre"} ${g.by}`));
       }
       expect(bad).toEqual([]);

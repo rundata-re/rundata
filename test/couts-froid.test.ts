@@ -68,7 +68,6 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/pitonlive\.com/, "pitonlive_state.json"],
   [/public\.api\.bsky\.app/, "ovpf_bluesky.json"],
   [/aviationweather\.gov/, "metar.json"],
-  [/api\.pioupiou\.fr/, "pioupiou_all.json"],
   [/datasets\/r\/047b2ab9/, "ffvl_releves.json"],
   [/altervelo\/station_information/, "altervelo_station_information.json"],
   [/altervelo\/station_status/, "altervelo_station_status.json"],

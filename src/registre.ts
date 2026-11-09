@@ -30,6 +30,7 @@ import { REFRESH_EVERY as MARCHES_EVERY, REFRESH_OFFSET as MARCHES_OFFSET, TEXTE
 import { EVENEMENT_MINUTES as EMPLOI_FICHE_EVERY, REFRESH_EVERY as EMPLOI_EVERY, REFRESH_OFFSET as EMPLOI_OFFSET } from "./providers/emploi.js";
 import { REFRESH_EVERY as IRVE_EVERY, REFRESH_OFFSET as IRVE_OFFSET } from "./providers/irve.js";
 import { REFRESH_EVERY as FFCK_EVERY, REFRESH_OFFSET as FFCK_OFFSET } from "./providers/ffck.js";
+import { REFRESH_EVERY as METEOR_EVERY, REFRESH_OFFSET as METEOR_OFFSET, STATIONS as METEOR_STATIONS } from "./providers/meteor-oi.js";
 import { SHARED, SHARED_AFTER, type Shared } from "./web/partagees.js";
 import { COMMUNE_TILES, DOMAINS, HOME_TILES } from "./web/site.js";
 
@@ -43,7 +44,11 @@ export const SCHEDULED_CPU_MS = 30_000;
 /** The memory of an isolate, Mo: every invocation it serves at once shares it. */
 export const ISOLATE_MEMORY_MB = 128;
 
-export type Trigger = "planifiée" | "visite" | "question" | "actions";
+/**
+ * `planifiée à part`: a scheduled event of its own cron (wrangler.jsonc), in its own invocation, with its own budget
+ * (BUILD_BUDGET): never in the 5 minutes' event nor its worst pass.
+ */
+export type Trigger = "planifiée" | "planifiée à part" | "visite" | "question" | "actions";
 /** `mesuré`: over MEASURED; `code`: read in the code (a bound, a count); `estimé`: from a neighbour's measure. */
 export type Basis = "mesuré" | "code" | "estimé";
 
@@ -390,6 +395,19 @@ const SCHEDULED: Entry[] = [
     offset: CAPTEURS_OFFSET,
     run: { subrequests: 1 + SOCIAL_MAX, cpuMs: 10 },
     from: ["src/providers/capteurs.ts"],
+    basis: "code",
+  },
+  // MétéoR-OI's stations (providers/meteor-oi.ts), in an event of their own cron (wrangler.jsonc): the copy read from KV,
+  // one file per station (each read every REFRESH_EVERY minutes, never more than once in 5 as the association asked),
+  // the copy written. CPU: about 0.2 ms to read a file of 8 Ko, rounded up for all of them.
+  {
+    id: "meteor:stations",
+    trigger: "planifiée à part",
+    what: `stations de MétéoR-OI : la copie lue, le fichier de chacune des ${METEOR_STATIONS.length} stations du portail de l'association, la copie écrite`,
+    every: METEOR_EVERY,
+    offset: METEOR_OFFSET,
+    run: { subrequests: METEOR_STATIONS.length + 2, kvReads: 1, kvWrites: 1, cpuMs: 20 },
+    from: ["src/providers/meteor-oi.ts"],
     basis: "code",
   },
   // The radar's last 6 hours (web/pluie-retro.ts), at every run: the history read from KV, the latest image, the
@@ -960,7 +978,16 @@ export const STATIONS_READS = new Set([
 ]);
 const withStations = (e: Entry): Entry =>
   STATIONS_READS.has(e.id) ? { ...e, run: { ...e.run, subrequests: e.run.subrequests + 1, kvReads: (e.run.kvReads ?? 0) + 1 } } : e;
-export const REGISTRY: Entry[] = ENTRIES.map(withIsland).map(withStations);
+/**
+ * The views, questions and copies that read every weather source (tools/meteo.ts `providers`), MétéoR-OI's stations
+ * among them (providers/meteor-oi.ts `observations`): its copy in KV read once, at most once in 5 minutes in an isolate.
+ * Not /chiffres's copy, which counts the stations without MétéoR-OI's (chiffres.ts NON_COMPTEES): never in the scheduled
+ * event of every 5 minutes.
+ */
+export const METEOR_READS = new Set(["/", "/communes/*", "/aujourdhui/*", "/meteo", "/meteo/*", "resume_du_jour", "meteo_actuelle"]);
+const withMeteor = (e: Entry): Entry =>
+  METEOR_READS.has(e.id) ? { ...e, run: { ...e.run, subrequests: e.run.subrequests + 1, kvReads: (e.run.kvReads ?? 0) + 1 } } : e;
+export const REGISTRY: Entry[] = ENTRIES.map(withIsland).map(withStations).map(withMeteor);
 
 // --- The totals ----------------------------------------------------------------------------------------------------
 
@@ -980,6 +1007,8 @@ const sum = (runs: Run[]): Run => runs.reduce<Run>((a, r) => ({
 }), { subrequests: 0, cpuMs: 0 });
 
 const scheduled = (entries = REGISTRY) => entries.filter((e) => e.trigger === "planifiée");
+/** The scheduled events of their own cron, each in its own invocation. */
+const apart = (entries = REGISTRY) => entries.filter((e) => e.trigger === "planifiée à part");
 
 /** Every scheduled entry at once, from cold: after a deploy, every copy due in the same event. */
 export const worstEvent = (entries = REGISTRY) => sum(scheduled(entries).map((e) => e.run));
@@ -1002,7 +1031,7 @@ export function busiestEvent(entries = REGISTRY, shortest = false): { minute: nu
 }
 
 /** A day of the scheduled event and the workflows: each entry times the runs of a day. */
-export function perDay(trigger: "planifiée" | "actions", entries = REGISTRY, shortest = false): Run {
+export function perDay(trigger: "planifiée" | "planifiée à part" | "actions", entries = REGISTRY, shortest = false): Run {
   return sum(entries.filter((e) => e.trigger === trigger && e.every != null).map((e) => {
     const n = (24 * 60) / ((shortest && e.shortest) || e.every!);
     const r = e.run;
@@ -1032,6 +1061,7 @@ export function checks(entries = REGISTRY): { what: string; value: number; limit
     { what: "vue la plus chère, sous-requêtes", value: dearest("visite", entries).run.subrequests, limit: PAGE_BUDGET },
     { what: "question la plus chère, sous-requêtes", value: dearest("question", entries).run.subrequests, limit: PAGE_BUDGET },
     { what: "construction de copie la plus chère, sous-requêtes", value: dearestBuild().cold ?? 0, limit: BUILD_BUDGET },
+    ...apart(entries).map((e) => ({ what: `tâche planifiée à part ${e.id}, sous-requêtes`, value: e.run.subrequests, limit: BUILD_BUDGET })),
   ];
 }
 
@@ -1058,6 +1088,7 @@ export function budget(entries = REGISTRY): string {
   const day = perDay("planifiée", entries);
   const dayShort = perDay("planifiée", entries, true);
   const actions = perDay("actions", entries);
+  const own = perDay("planifiée à part", entries);
   const view = dearest("visite", entries);
   const ask = dearest("question", entries);
   const build = dearestBuild();
@@ -1089,10 +1120,13 @@ export function budget(entries = REGISTRY): string {
     totalRow("tâche planifiée, par jour", day) + "\n" +
     totalRow("tâche planifiée, par jour, cadences les plus courtes", dayShort) + "\n" +
     totalRow("tâche planifiée, par mois (30 jours)", day, 30) + "\n" +
+    totalRow("tâches planifiées à part, par jour", own) + "\n" +
+    totalRow("tâches planifiées à part, par mois (30 jours)", own, 30) + "\n" +
     totalRow("tâches GitHub, par jour", actions) + "\n" +
     totalRow("tâches GitHub, par mois (30 jours)", actions, 30) + "\n\n" +
     `Les visites et les questions sont comptées par vue : leur total dépend du trafic.\n\n` +
     `## Tâche planifiée\n\n${HEAD}\n${by("planifiée")}\n\n` +
+    `## Tâches planifiées à part\n\nChacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec le budget d'une construction de copie (${n(BUILD_BUDGET)} sous-requêtes)\u00a0: elle ne compte ni dans la tâche planifiée des 5 minutes ni dans son pire passage.\n\n${HEAD}\n${by("planifiée à part")}\n\n` +
     `## Tâches GitHub\n\n${HEAD}\n${by("actions")}\n\n` +
     `## Visites\n\n${HEAD}\n${by("visite")}\n\n` +
     `## Questions\n\n${HEAD}\n${by("question")}\n\n` +

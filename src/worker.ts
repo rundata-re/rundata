@@ -19,6 +19,8 @@ import * as prefectureCopie from "./providers/prefecture-copie.js";
 import * as raa from "./providers/raa.js";
 import * as airMesures from "./providers/air-mesures.js";
 import * as capteurs from "./providers/capteurs.js";
+import * as meteorOi from "./providers/meteor-oi.js";
+import { autorisee } from "./providers/autorisations.js";
 import * as cpf from "./providers/cpf.js";
 import * as emploi from "./providers/emploi.js";
 import * as sitesHs from "./providers/sites-hs.js";
@@ -273,6 +275,12 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(airMesures.KV_KEY, "json")) as airMesures.Copie | null;
   });
+  // Read every 10 minutes from the association's portal by the scheduled event of its own cron below, and kept in KV
+  // (src/providers/meteor-oi.ts): nothing while its agreement is not given.
+  meteorOi.configure(kv && autorisee(meteorOi.AUTORISATION) ? async () => {
+    count();
+    return (await kv.get(meteorOi.KV_KEY, "json")) as meteorOi.Copie | null;
+  } : undefined);
   // Read every 15 minutes from Sensor.Community, and every hour from sensors.social, by the scheduled event below, and
   // kept in KV (src/providers/capteurs.ts).
   capteurs.configure(async () => {
@@ -436,9 +444,26 @@ export default {
     return value;
   },
 
-  async scheduled(_controller: unknown, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
+  async scheduled(controller: { cron?: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
     const c = setup(env);
     const kv = env.STORE;
+    // MétéoR-OI's stations, in an event of their own cron (wrangler.jsonc) and their own budget: one file per station,
+    // every 10 minutes, kept in KV (src/providers/meteor-oi.ts). Nothing else is done in it.
+    if (controller.cron === meteorOi.CRON) {
+      if (kv && autorisee(meteorOi.AUTORISATION)) {
+        ctx.waitUntil(counted(BUILD_BUDGET, async () => {
+          count();
+          const before = (await kv.get(meteorOi.KV_KEY, "json")) as meteorOi.Copie | null;
+          return meteorOi.collect(before, async (copie) => {
+            count(1, true);
+            await kv.put(meteorOi.KV_KEY, JSON.stringify(copie), { expirationTtl: meteorOi.KV_TTL_SECONDS });
+          });
+        }, (p) => ctx.waitUntil(p))
+          .then(({ value, used, reads }) => console.log(`stations MétéoR-OI : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
+          .catch((err) => console.error("stations MétéoR-OI : lecture impossible", why(err))));
+      }
+      return;
+    }
     // The AROME grids first; then, with what is left of the invocation, the shared page copies that are due, and the
     // forecast's ensemble with what they left.
     // The radar's history waits for the Météo-France token only, never for the slow reads after it (web/pluie-retro.ts).

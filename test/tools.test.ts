@@ -5,7 +5,6 @@ import { Cache, MemoryStore, TieredStore } from "../src/cache.js";
 import { parseCsv } from "../src/providers/acspo.js";
 import { coastwatch, parseAscii } from "./sst.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
-import { inReunionBeacons } from "../src/providers/pioupiou.js";
 import { SATELLITES, satellitesEvery, temperatureMer } from "../src/tools/mer.js";
 import { coverage, meteoActuelle } from "../src/tools/meteo.js";
 import { resume } from "../src/tools/resume.js";
@@ -23,11 +22,10 @@ const NOW = new Date("2026-10-18T19:20:00Z");
 async function offlineCache({ acspoCached = true, acspoDay = "2026-10-16", copyAgeMs = 0 } = {}) {
   const store = new MemoryStore();
   const at = NOW.getTime();
-  const beacons = inReunionBeacons(JSON.parse(fixture("pioupiou_all.json")).data);
-  const live = beacons.map((b) => ({ ...b, measurements: { ...b.measurements, date: "2026-10-18T19:16:00Z" } }));
+  // The FFVL's beacons, their last readings at 19:16.
+  const releves = (JSON.parse(fixture("ffvl_releves.json")) as { date: string }[]).map((r) => ({ ...r, date: "2026-10-18T19:16:00Z" }));
   await store.put("metar", { value: JSON.parse(fixture("metar.json")), fetchedAt: at });
-  await store.put("pioupiou:all", { value: beacons, fetchedAt: at });
-  await store.put("pioupiou:live", { value: live, fetchedAt: at });
+  await store.put("ffvl:releves", { value: releves, fetchedAt: at });
   // The satellites' grids as the scheduled event shares them (tools/mer.ts SATELLITES): temperature_mer reads them there.
   const lu = at - copyAgeMs;
   const satellites = [
@@ -44,7 +42,7 @@ describe("meteo_actuelle", () => {
   it("answers for a beach with the nearest wind and the nearest temperature", async () => {
     const r = body(await meteoActuelle(await offlineCache(), "plage de l'Hermitage", NOW));
     expect(r.lieu.trouve).toBe("Plage de l'Ermitage-les-Bains");
-    expect(r.resume).toMatch(/Cambaie/);
+    expect(r.resume).toMatch(/Balise du Trou d'Eau \(3,5/);
     expect(r.resume).toMatch(/°C/);
     expect(r.stations[0]).toMatchObject({ heure_mesure: "18/10 23:16", age_min: 4 });
   });
@@ -57,7 +55,8 @@ describe("meteo_actuelle", () => {
 
   it("tours the island without a place", async () => {
     const r = body(await meteoActuelle(await offlineCache(), undefined, NOW));
-    expect(r.stations).toHaveLength(3);
+    // The 2 airports and the FFVL's beacons that read.
+    expect(r.stations.map((s: { source: string }) => s.source)).toEqual(["metar", "metar", "ffvl", "ffvl", "ffvl"]);
   });
 
   it("says a place off the island is not in La Réunion, and a word taken for part of a name first", async () => {
@@ -211,7 +210,7 @@ describe("meteo_actuelle with the Météo-France stations", () => {
   const iso = (ms: number) => new Date(ms).toISOString().replace(".000Z", "Z");
 
   /** The recorded 05:18 slot, copied back over the hour before, with a little rain at Cilaos. */
-  // With the wind beacons too (Cambaie by Saint-Paul, Kélonia at Saint-Leu…): wind only, no temperature.
+  // With the wind beacons too (Kélonia at Saint-Leu, the Trou d'Eau at Saint-Paul…): wind only, no temperature.
   async function mfCache(beacons = false) {
     const store = new MemoryStore();
     const at = MF_NOW.getTime();
@@ -227,9 +226,6 @@ describe("meteo_actuelle with the Météo-France stations", () => {
     }
     await store.put("meteofrance:6min", { value: slots, fetchedAt: at });
     await store.put("metar", { value: JSON.parse(fixture("metar.json")), fetchedAt: at });
-    const piou = beacons ? inReunionBeacons(JSON.parse(fixture("pioupiou_all.json")).data) : [];
-    await store.put("pioupiou:all", { value: piou, fetchedAt: at });
-    await store.put("pioupiou:live", { value: piou.map((b) => ({ ...b, measurements: { ...b.measurements, date: iso(at - 4 * 60_000) } })), fetchedAt: at });
     if (beacons) {
       const releves = (JSON.parse(fixture("ffvl_releves.json")) as { date: string }[]).map((r) => ({ ...r, date: iso(at - 4 * 60_000) }));
       await store.put("ffvl:releves", { value: releves, fetchedAt: at });

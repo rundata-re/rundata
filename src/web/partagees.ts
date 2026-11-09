@@ -146,12 +146,14 @@ export const SHARED: Shared[] = [
   { key: "web:courant", build: buildCourant, every: (last) => ((last as CourantAnswer | undefined)?.indisponibles?.some(followed) ? 30 : 2 * 60), cold: 7, cpu: 30, range: { usual: 2 * 60, shortest: 30 }, offset: 20, before: ["web:electricite"] },
   // The counts of /chiffres and sources_donnees (chiffres.ts), beside the electricity's copy, of 7: the events of the
   // half hour's first minute are their events'. Its cold cost: its copy before, the weather sources' last observations
-  // (Météo-France's packets, the airports', the beacon's), the bikes' stations, the ONF's map (3), the copies of the
+  // (Météo-France's packets, the airports'), the bikes' stations, the ONF's map (3), the copies of the
   // water and power cuts and of the events, the silent sites (a read, 2 of D1), the clubs' calendar: 45 in KV on 05/11/2026, 26 in
   // the test, which sees neither D1 nor the copies read from KV (25 declared before, counted from the code). Since the
   // stations' copy (providers/meteofrance.ts `refreshShared`), Météo-France's packets are no longer read here: 13 fewer
-  // (its 11 slots, the data center's bundle read and written), counted in test/meteofrance-kv.test.ts.
-  { key: CHIFFRES, build: buildChiffres, every: 60, cold: 45 - 13, cpu: 60, offset: 50 },
+  // (its 11 slots, the data center's bundle read and written), counted in test/meteofrance-kv.test.ts. Since the
+  // Pioupiou beacon is no longer read (09/11/2026), its list and its reading are not either: 6 fewer, 26 in the test
+  // before, 20 after (test/couts-froid.test.ts).
+  { key: CHIFFRES, build: buildChiffres, every: 60, cold: 45 - 13 - 6, cpu: 60, offset: 50 },
   // Its events, the whole agenda as /evenements reads it (55 measured there): every 6 hours, in the half hour's first
   // event, which no copy every 30 minutes takes; every hour while an agenda did not answer (chiffres.ts). Less Le
   // Séchoir's site (1), L'Étang-Salé's (its list and three pages, 4), Sainte-Marie's (1) and the Théâtre Luc Donat's (its

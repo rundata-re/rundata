@@ -33,10 +33,12 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The Moon between its main phases said once in the summary: « Lune décroissante », not « Lune : Lune décroissante ».
   calendrier: 5,
   // sensors.social among the air's sources, under ODbL (09/11/2026).
-  chiffres: 24,
+  // MétéoR Océan Indien among the weather's sources, under CC BY-NC (09/11/2026).
+  chiffres: 25,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
-  commune: 24,
+  // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
+  commune: 25,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   coupures: 13,
   courant: 8,
@@ -60,12 +62,14 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A place said with its article (« Mesures les plus proches du Maïdo », « PRÉVISION … pour le Piton de la Fournaise »).
   // Its sea answer reads the waves of the west and the south from MFWAM, with the main swell (tools/mer.ts).
   // Its sea sentence: the satellite's pass first (« passage de cette nuit à 01:39 »), else « moyenne d'hier, 06/11 ».
-  lieu: 23,
+  // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
+  lieu: 24,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
   mer: 7,
-  meteo: 9,
+  // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
+  meteo: 10,
   randonnees: 15,
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.

@@ -90,7 +90,10 @@ export function communeNames(href: (nom: string) => string, listed = false): str
 
 /**
  * A commune hovered lights its name (`.on`), and a name hovered or focused its commune, outlined and lightly filled:
- * the two lists in the same order (ORDER).
+ * the two lists in the same order (ORDER). A link of the list under the map (« Choisissez votre commune ») hovered or
+ * focused lights its commune too, paired by its address; the list comes after this script, so the page listens for it.
  */
 export const SURVOL_SCRIPT = `(()=>{const c=document.querySelector("svg.map .cn");if(!c)return;const z=[...c.closest("svg").querySelectorAll(".zn")],n=[...c.querySelectorAll("a")],` +
-  `on=(i,v)=>{z[i]?.classList.toggle("on",v);n[i]?.classList.toggle("on",v)};[z,n].forEach((l)=>l.forEach((a,i)=>{a.addEventListener("pointerenter",()=>on(i,true));a.addEventListener("pointerleave",()=>on(i,false));a.addEventListener("focus",()=>on(i,true));a.addEventListener("blur",()=>on(i,false))}))})();`;
+  `on=(i,v)=>{z[i]?.classList.toggle("on",v);n[i]?.classList.toggle("on",v)};[z,n].forEach((l)=>l.forEach((a,i)=>{a.addEventListener("pointerenter",()=>on(i,true));a.addEventListener("pointerleave",()=>on(i,false));a.addEventListener("focus",()=>on(i,true));a.addEventListener("blur",()=>on(i,false))}));` +
+  `const h=new Map(z.map((a,i)=>[a.getAttribute("href"),i])),l=(e,v)=>{const a=e.target.closest?.("ul.zones .chips a"),i=a&&h.get(a.getAttribute("href"));if(i!==undefined&&a)on(i,v)};` +
+  `[["pointerover",true],["pointerout",false],["focusin",true],["focusout",false]].forEach(([t,v])=>document.addEventListener(t,(e)=>l(e,v)))})();`;

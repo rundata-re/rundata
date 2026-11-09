@@ -80,6 +80,18 @@ describe("the names on the map of /communes", () => {
     expect(SURVOL_SCRIPT).toContain(`a.addEventListener("focus",()=>on(i,true));a.addEventListener("blur",()=>on(i,false))`);
   });
 
+  it("light a commune while its link in the list under the map is hovered or focused", () => {
+    // The list « Choisissez votre commune », after the script: the page listens for its links, paired by address.
+    const page = communesPage(ORIGIN);
+    const list = [...page.slice(page.indexOf('id="h-communes"')).matchAll(/<ul class="chips">(.*?)<\/ul>/g)].flatMap((m) => [...m[1].matchAll(/<a href="([^"]+)"/g)].map((a) => a[1]));
+    const zones = [...html.matchAll(/<a class="zn" href="([^"]+)"/g)].map((m) => m[1]);
+    expect(list).toHaveLength(24);
+    expect([...list].sort()).toEqual([...zones].sort());
+    expect(page.indexOf(SURVOL_SCRIPT)).toBeLessThan(page.indexOf('id="h-communes"'));
+    expect(SURVOL_SCRIPT).toContain(`e.target.closest?.("ul.zones .chips a")`);
+    expect(SURVOL_SCRIPT).toContain(`[["pointerover",true],["pointerout",false],["focusin",true],["focusout",false]]`);
+  });
+
   // 10/11/2026, the user: « tu en as fait trop avec les info bulles qui servent a rien » (the bubble of L'Étang-Salé
   // shown far from its name, over others).
   it("have no bubble, nor a title, for the mouse or the keyboard: each name is its commune's link", () => {

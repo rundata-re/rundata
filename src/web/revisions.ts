@@ -32,7 +32,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   bus: 14,
   // The Moon between its main phases said once in the summary: « Lune décroissante », not « Lune : Lune décroissante ».
   calendrier: 5,
-  chiffres: 23,
+  // sensors.social among the air's sources, under ODbL (09/11/2026).
+  chiffres: 24,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   commune: 24,

@@ -98,6 +98,7 @@ export const FICHES: Record<string, Fiche> = {
   atmo_indice: { famille: "odbl", producteurs: ["Atmo Réunion"] },
   lcsqa_mesures: { famille: "licence_ouverte", producteurs: ["Atmo Réunion"] },
   sensor_community: { famille: "dbcl", producteurs: ["Sensor.Community"] },
+  sensors_social: { famille: "odbl", producteurs: ["sensors.social"] },
   edf_sei_reunion: { famille: "licence_ouverte", producteurs: ["EDF"] },
   // The mairies relay EDF's notices: EDF only (they count by their agendas and news).
   mairies_edf: { famille: "information_publique", producteurs: ["EDF"] },

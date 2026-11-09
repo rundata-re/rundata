@@ -153,7 +153,7 @@ import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricit
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
 import { CUMULS_PATH, DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuCumuls, rejeuFin, rejeuJour } from "./rejeu.js";
 import { COUCHE_PATH, coucheResponse, RESUME_PATH, resumeResponse } from "./couches.js";
-import { UV_PATH, uvMoufia, UV_HEADERS } from "./uv-moufia.js";
+import { UV_HEADERS, UV_PATH, uvMoufia } from "./uv-moufia.js";
 
 const HTML = {
   "content-type": "text/html; charset=utf-8",
@@ -176,9 +176,8 @@ const GPX = { "content-type": "application/gpx+xml; charset=utf-8", "cache-contr
  * The page that draws Météo-France's bulletin for Cloudflare's browser (web/vigilance-carte.ts) is not for anyone else.
  * What every robot is forbidden is INTERDITS (robots.ts), which the Worker also refuses to the robots that ignore it.
  * The robots of ROBOTS_REFUSES are forbidden everything, and refused it.
- * The private page of an internal trial (web/uv-moufia.ts) is forbidden too, but not refused here: its secret keeps it.
  */
-const DISALLOW = [...INTERDITS, UV_PATH].map((p) => `Disallow: ${p}\n`).join("");
+const DISALLOW = INTERDITS.map((p) => `Disallow: ${p}\n`).join("");
 const REFUSES = ROBOTS_REFUSES.map((n) => `User-agent: ${n}\n`).join("");
 const ROBOTS = (origin: string) =>
   `User-agent: Googlebot\nUser-agent: GoogleOther\nUser-agent: Bingbot\nDisallow: /*?maj=\n${DISALLOW}Allow: /\n\nUser-agent: *\n${DISALLOW}Allow: /\n\n${REFUSES}Disallow: /\n\nSitemap: ${origin}/sitemap.xml\n`;

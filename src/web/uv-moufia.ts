@@ -238,7 +238,7 @@ const statLigne = (nom: string, s: unknown) => {
 const TETE_STAT = `<thead><tr><th scope="col">mesure</th><th scope="col">n</th><th scope="col">médiane</th><th scope="col">écart interquartile</th></tr></thead>`;
 
 /** A table of statistics `{n, mediane, q25, q75}`; a nested set (by month, by half-year) as its own rows. */
-export function tableStats(stats: Record<string, unknown> | undefined, prefixe = ""): string {
+export function tableStats(stats: Record<string, unknown> | undefined, titre: string, prefixe = ""): string {
   if (!stats) return "";
   const rows: string[] = [];
   for (const [nom, v] of Object.entries(stats)) {
@@ -247,7 +247,7 @@ export function tableStats(stats: Record<string, unknown> | undefined, prefixe =
       for (const [sous, w] of Object.entries(v)) rows.push(statLigne(`${court}, ${sous}`, w));
     } else rows.push(statLigne(court, v));
   }
-  return `<div class="tw"><table>${TETE_STAT}<tbody>${rows.join("")}</tbody></table></div>`;
+  return `<div class="tw"><table><caption class="sr">${esc(titre)}</caption>${TETE_STAT}<tbody>${rows.join("")}</tbody></table></div>`;
 }
 
 /** (b)/Bentham by solar zenith angle, morning and afternoon, from the stats' keys « … SZA 20-30 matin ». */
@@ -269,7 +269,7 @@ export function tableAngles(stats: Record<string, unknown> | undefined): string 
   }
   if (!bandes.size) return "";
   const cell = (s: Stat | undefined) => (s ? `${n3(s.mediane)} <small>(n = ${fr(s.n)})</small>` : "—");
-  return `<div class="tw"><table><thead><tr><th scope="col">angle zénithal</th><th scope="col">matin</th><th scope="col">après-midi</th></tr></thead><tbody>${[...bandes].map(([b, v]) => `<tr><th scope="row">${esc(b)}°</th><td>${cell(v.matin)}</td><td>${cell(v.apres)}</td></tr>`).join("")}</tbody></table></div>`;
+  return `<div class="tw"><table><caption class="sr">(b)/Bentham par angle zénithal, matin et après-midi (médiane)</caption><thead><tr><th scope="col">angle zénithal</th><th scope="col">matin</th><th scope="col">après-midi</th></tr></thead><tbody>${[...bandes].map(([b, v]) => `<tr><th scope="row">${esc(b)}°</th><td>${cell(v.matin)}</td><td>${cell(v.apres)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 const CIELS: Record<string, string> = { clair: "clair", mixte: "mixte", nuageux: "nuageux" };
@@ -285,7 +285,7 @@ export function tableJours(jours: Jour[]): string {
   const blocs = [...mois].map(([m, js], i, all) => {
     const [l, ym] = m.split(" ");
     const rows = js.map((j) => `<tr><th scope="row">${dateFr(j.date)}</th><td>${esc(CIELS[j.ciel] ?? j.ciel)}</td><td>${j.o3 == null ? "—" : fr(Math.round(j.o3))}</td><td>${heureLocale(j.midi_t)}</td><td>${n2(j.midi_sza)}</td><td>${n2(j.midi_a)}</td><td>${n2(j.midi_b)}</td><td>${n2(j.midi_b_recale)}</td><td>${n2(j.midi_cams)}</td><td>${n2(j.midi_cams_ciel_clair)}</td><td>${n2(j.midi_uve40)}</td><td>${n2(j.max_b)} <small>${heureLocale(j.max_b_t)}</small></td></tr>`).join("");
-    return `<details${i === all.length - 1 ? " open" : ""}><summary>${esc(lieu(l))}, ${ym.slice(5, 7)}/${ym.slice(0, 4)} <small>(${js.length} jour${js.length > 1 ? "s" : ""})</small></summary><div class="tw"><table class="jours">${tete}<tbody>${rows}</tbody></table></div></details>`;
+    return `<details${i === all.length - 1 ? " open" : ""}><summary>${esc(lieu(l))}, ${ym.slice(5, 7)}/${ym.slice(0, 4)} <small>(${js.length} jour${js.length > 1 ? "s" : ""})</small></summary><div class="tw"><table class="jours"><caption class="sr">${esc(lieu(l))}, ${ym.slice(5, 7)}/${ym.slice(0, 4)}</caption>${tete}<tbody>${rows}</tbody></table></div></details>`;
   });
   return blocs.join("\n");
 }
@@ -313,6 +313,7 @@ g.s-b{stroke:none;fill:var(--b);fill-opacity:.45}.s-b-pt{fill:var(--b);fill-opac
 .tw{overflow-x:auto;margin:.4rem 0 1rem}table{border-collapse:collapse;font-size:.9rem;font-variant-numeric:tabular-nums}
 th,td{border-bottom:1px solid var(--ln);padding:4px 8px;text-align:right;white-space:nowrap}th[scope=row],thead th:first-child{text-align:left}thead th{color:var(--mu);font-weight:600}
 td small,summary small{color:var(--mu)}details{margin:.2rem 0}summary{cursor:pointer;padding:4px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 dl.m{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px}dl.m dt{font-weight:600}dl.m dd{margin:0;min-width:0}
 @media (max-width:560px){dl.m{grid-template-columns:1fr}}
 </style>`;
@@ -336,7 +337,7 @@ export function pageUv(d: Simulation): string {
     : "";
   const validite = m.recalage?.validite ? `<p class="mu"><strong>Validité du recalage :</strong> ${esc(m.recalage.validite)}.</p>` : "";
   const uve2015 = d.uve_2015_vs_omi?.length
-    ? `<h3>UVE publié en 2015 face à l'indice OMI au survol</h3><div class="tw"><table><thead><tr><th scope="col">jour</th><th scope="col">survol (heure locale)</th><th scope="col">épaisseur optique des nuages (OMI)</th><th scope="col">OMI au survol</th><th scope="col">UVE publié × 40</th></tr></thead><tbody>${d.uve_2015_vs_omi.map((r) => `<tr><th scope="row">${dateFr(r.date)}</th><td>${heureLocale(`0000-00-00T${r.omi_t}`)}</td><td>${n2(r.omi_nuage_opt)}</td><td>${n2(r.omi_survol)}</td><td>${n2(r.uve40_publie)}</td></tr>`).join("")}</tbody></table></div>`
+    ? `<h3>UVE publié en 2015 face à l'indice OMI au survol</h3><div class="tw"><table><caption class="sr">UVE publié en 2015 face à l'indice OMI au survol</caption><thead><tr><th scope="col">jour</th><th scope="col">survol (heure locale)</th><th scope="col">épaisseur optique des nuages (OMI)</th><th scope="col">OMI au survol</th><th scope="col">UVE publié × 40</th></tr></thead><tbody>${d.uve_2015_vs_omi.map((r) => `<tr><th scope="row">${dateFr(r.date)}</th><td>${heureLocale(`0000-00-00T${r.omi_t}`)}</td><td>${n2(r.omi_nuage_opt)}</td><td>${n2(r.omi_survol)}</td><td>${n2(r.uve40_publie)}</td></tr>`).join("")}</tbody></table></div>`
     : "";
   const html = `<!doctype html>
 <html lang="fr">
@@ -368,17 +369,17 @@ ${tableAngles(b.stats)}
 ${nuageBentham(b, k)}
 <div class="grille">${bCourbes}</div>
 <h3>Statistiques</h3>
-${tableStats(b.stats, "bentham: ")}` : ""}
+${tableStats(b.stats, "Statistiques face au Bentham", "bentham: ")}` : ""}
 
 ${kipp ? `<h2 id="kipp">Face au Kipp &amp; Zonen du LACy</h2>
 <p>${esc(kipp.source)}.</p>
-${tableStats(kipp.stats, "kipp lacy: ")}` : ""}
+${tableStats(kipp.stats, "Statistiques face au Kipp & Zonen du LACy", "kipp lacy: ")}` : ""}
 
 <h2 id="derive">Dérive, mois par mois</h2>
 ${graphiqueDerive(d.derive_mois)}
 ${uve2015}
 
-${d.stats ? `<h2 id="stats">Face à CAMS et à OMI</h2>${tableStats(d.stats)}` : ""}
+${d.stats ? `<h2 id="stats">Face à CAMS et à OMI</h2>${tableStats(d.stats, "Statistiques face à CAMS et à OMI")}` : ""}
 
 <h2 id="tableau">Tous les jours</h2>
 <p class="mu">Valeurs au midi solaire (heure de La Réunion), indice UV ; le maximum de (b) avec son heure. Un tableau par mois.</p>

@@ -28,8 +28,8 @@ describe("search engines", () => {
     const groups = robots.split("\n\n");
     // Nor the searches for a stop: a page per query typed, each stop has its own.
     // Nor a trip: an address per stop and per day, not indexed.
-    expect(groups[0]).toBe("User-agent: Googlebot\nUser-agent: GoogleOther\nUser-agent: Bingbot\nDisallow: /*?maj=\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /");
-    expect(groups[1]).toBe("User-agent: *\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /");
+    expect(groups[0]).toBe("User-agent: Googlebot\nUser-agent: GoogleOther\nUser-agent: Bingbot\nDisallow: /*?maj=\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nDisallow: /essais/uv-moufia/\nAllow: /");
+    expect(groups[1]).toBe("User-agent: *\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nDisallow: /essais/uv-moufia/\nAllow: /");
     expect(robots).toContain(`Sitemap: ${O}/sitemap.xml`);
   });
 

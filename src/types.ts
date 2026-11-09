@@ -41,6 +41,13 @@ export interface SourceInfo {
   licence: string;
   attribution: string;
   url: string;
+  /**
+   * A network of amateur stations: their measures are given as they are, with a reliability not checked (the user,
+   * 10/11/2026). Hidden by default on the maps, listed apart, never the station a place is answered with first.
+   */
+  amateur?: true;
+  /** Its short name, as a sentence says it (« MétéoR-OI »), where the attribution is longer. */
+  court?: string;
 }
 
 /** Thrown when an upstream source cannot be reached and nothing is cached. */

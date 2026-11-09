@@ -57,7 +57,7 @@ export async function pressFigures(cache: Cache): Promise<Figure[]> {
     cache.peek<HomeData>("web:meteo").catch(() => undefined),
   ]);
   // The stations /meteo counts in its title, from its copy: never a number written in the code, left out without it.
-  const stations = meteo?.value.toutes?.length;
+  const stations = meteo?.value.toutes?.filter((s) => !s.amateur).length;
   const figures: Figure[] = [
     { valeur: toolCount(cache), label: "outils dans le connecteur pour les assistants IA", detail: "météo, volcan, bus, eau, sentiers, terrain…" },
     { valeur: COMMUNES.length, label: "communes, chacune avec sa page" },

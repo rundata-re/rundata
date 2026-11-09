@@ -31,6 +31,24 @@ const ALL_PROVIDERS: Provider[] = [
 /** Every network a station can come from, keyed or not: what a station's `source` names (resume.ts credits by it). */
 export const NETWORKS: SourceInfo[] = ALL_PROVIDERS.map((p) => p.source);
 
+/** True for a station of an amateur network (SourceInfo `amateur`): its measure as it is, its reliability not checked. */
+export const amateur = (source: string) => NETWORKS.some((n) => n.id === source && n.amateur);
+
+/** What a station of an amateur network is said to be, beside its measures (the user's words, 10/11/2026). */
+export const NATURE_AMATEUR = "mesure de station amateur, fiabilité non vérifiée";
+
+/** An amateur network's short name (« MétéoR-OI »); undefined for an official one. */
+export const reseauAmateur = (source: string) => {
+  const n = NETWORKS.find((x) => x.id === source && x.amateur);
+  return n && (n.court ?? n.organisme);
+};
+
+/** What a page says of an amateur station, beside it (the user's words, 10/11/2026): « station amateur (MétéoR-OI), fiabilité non vérifiée ». */
+export const ditAmateur = (source: string) => {
+  const n = reseauAmateur(source);
+  return n ? `station amateur (${n}), fiabilité non vérifiée` : undefined;
+};
+
 export function providers(): Provider[] {
   return ALL_PROVIDERS.filter((p) => p.enabled?.() ?? true);
 }
@@ -102,6 +120,7 @@ function stationBlock(o: Observation, stale: boolean, now: Date) {
     commune: stationCommune(o.station),
     source: o.station.source,
     // The credit the association asked for, beside each of its measures.
+    ...(amateur(o.station.source) ? { amateur: true, nature: NATURE_AMATEUR } : {}),
     ...(o.station.source === meteorOi.SOURCE.id ? { credit: meteorOi.CREDIT, lien: meteorOi.SITE } : {}),
     altitude_m: o.station.altitude_m,
     ...t,
@@ -147,7 +166,6 @@ function sentence(name: string, o: Observation, now: Date): string {
   return `${name} : ${parts.join(", ")} (mesuré à ${t.heure_mesure.split(" ")[1]} heure de La Réunion, ${t.age_texte})`;
 }
 
-/** The tour of the island, without a place: the stations of TOUR_METEOFRANCE, then the other sources' own. */
 /**
  * Every station that measured, an airport's METAR left out where Météo-France measures at the same spot: the stations
  * /meteo counts in its title, the press page and the coverage of meteo_actuelle, one number for all (counted at each
@@ -158,6 +176,7 @@ export function toutes<T extends { o: Observation }>(obs: T[]): T[] {
   return obs.filter(({ o }) => !(o.station.source === "metar" && mf.some((m) => sameSpot(o, m.o))));
 }
 
+/** The tour of the island, without a place: the stations of TOUR_METEOFRANCE, then the other sources' own, never an amateur one. */
 export async function islandTour(cache: Cache, now = new Date()) {
   const list = providers();
   const { obs, down } = await collect(cache, now, list);
@@ -167,7 +186,7 @@ export async function islandTour(cache: Cache, now = new Date()) {
     .filter(({ o }) =>
       o.station.source === "meteofrance"
         ? rank(o) >= 0
-        : !(o.station.source === "metar" && mf.some((m) => sameSpot(o, m.o))),
+        : !amateur(o.station.source) && !(o.station.source === "metar" && mf.some((m) => sameSpot(o, m.o))),
     )
     .sort((a, b) => rank(a.o) - rank(b.o));
   return { tour, all: toutes(obs), down, sources: list.map((p) => p.source) };
@@ -200,9 +219,11 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   const sources = credits([...list.map((p) => p.source), ...(rain ? [radar.SOURCE] : [])]);
   const indisponibles = down.length ? down : undefined;
 
-  const ranked = obs
+  const all = obs
     .map(({ o, stale }) => ({ o, stale, f: fit(r.lieu, o.station) }))
     .sort((a, b) => mieux(a.f, b.f));
+  // The stations of the official networks answer; an amateur one only comes after them, as a complement (below).
+  const ranked = all.filter((x) => !amateur(x.o.station.source));
 
   // Best station first. Second, the best one that brings what people ask about and the first lacks (a temperature
   // next to a wind-only beacon), else simply the next best: on a summit, another summit station, not an airport
@@ -221,8 +242,12 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   const warms = (x: (typeof ranked)[number]) => !covered.has("temperature") && x.o.readings.some((rd) => rd.variable === "temperature");
   take(ranked.find((x) => (elsewhere(x) || (!chosen.includes(x) && warms(x))) && x.o.readings.some((rd) => ASKED.has(rd.variable) && !covered.has(rd.variable))) ?? ranked.find(elsewhere));
   take(ranked.find((x) => !chosen.includes(x) && x.o.readings.some((rd) => !covered.has(rd.variable))));
+  // Last, the nearest amateur station when it speaks for the place (« bonne » or « moyenne »): listed with what it is,
+  // never summed up, never first (the user, 10/11/2026: « telles quelles, avec une fiabilité non vérifiée »).
+  const complement = all.find((x) => amateur(x.o.station.source) && x.f.pertinence !== "faible");
+  if (complement) chosen.push(complement);
 
-  const shown = chosen.slice(0, 2);
+  const shown = chosen.filter((x) => x !== complement).slice(0, 2);
   // Named, since the warning often concerns the second station only.
   const warnings = [...new Set(shown.filter((x) => x.f.pertinence !== "bonne" && x.f.avertissements[0])
     .map((x) => `${x.o.station.nom} : ${x.f.avertissements[0].replace(/^La station est/, "station")}`))];

@@ -1004,10 +1004,10 @@ describe("the replay played at an even pace", () => {
     expect(METEO_SCRIPT).toContain(`const rows=${veilRows},part=(st)=>{`);
     expect(METEO_SCRIPT).toContain(`return(dl)=>{while(y<h){y=rows(q,a,w,h,y,y+4,`);
     expect(METEO_SCRIPT).toContain(`);if(y<h&&performance.now()>dl)return undefined}return q.T}},grid=(st)=>part(st)(Infinity);`);
-    expect(METEO_SCRIPT).toContain(`RJ.t={live:st,now,grid,part,show:paint,`);
+    expect(METEO_SCRIPT).toContain(`RJ.t={live:live(),now,grid,part,show:paint,`);
     expect(METEO_SCRIPT).toContain(`const rows=${fieldRows},part=(sx)=>{`);
     expect(METEO_SCRIPT).toContain(`return(dl)=>{while(y<h){y=rows(q,w,h,y,y+4);if(y<h&&performance.now()>dl)return undefined}return[q.U,q.V]}},field=(sx)=>part(sx)(Infinity);`);
-    expect(METEO_SCRIPT).toContain(`RJ.v={live:st,now,grid:field,part,show:set,`);
+    expect(METEO_SCRIPT).toContain(`RJ.v={live:live(),now,grid:field,part,show:set,`);
     // Playing, the replay asks for the next two hours as the hour ahead changes, between its frames (about 7 ms when
     // idle); an hour begun is finished in its frame, never made twice; a page kept from before has no part.
     const r = rejeuScript();

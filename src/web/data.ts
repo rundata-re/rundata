@@ -33,7 +33,7 @@ import { electricite } from "../tools/electricite.js";
 import { pointsOf } from "./electricite-historique.js";
 import { BEACHES, modelsOf, SEA_SOURCES, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
-import { islandTour, meteoActuelle } from "../tools/meteo.js";
+import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
 import { named } from "../tools/annuaire.js";
 import { alertsFor, applyRealtime, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures } from "../tools/transports.js";
@@ -111,6 +111,8 @@ export interface StationNow {
   rafales?: number;
   pluie_6min?: number;
   pluie_1h?: number;
+  /** A station of an amateur network (SourceInfo `amateur`): hidden by default on the maps, listed apart. */
+  amateur?: true;
 }
 
 export interface SeaNow {
@@ -156,6 +158,11 @@ export interface StationAnswer {
   distance_km?: number;
   direction?: string;
   pertinence?: string;
+  /** A station of an amateur network, given as a complement after the others (tools/meteo.ts), with its credit. */
+  amateur?: boolean;
+  nature?: string;
+  credit?: string;
+  lien?: string;
 }
 
 export interface MeteoAnswer {
@@ -243,6 +250,7 @@ function stationNow(o: Observation, stale: boolean): StationNow {
     rafales: num(o, "rafales"),
     pluie_6min: num(o, "pluie_6min"),
     pluie_1h: num(o, "pluie_1h"),
+    ...(amateur(s.source) ? { amateur: true } : {}),
   };
 }
 

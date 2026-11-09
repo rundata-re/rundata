@@ -9,6 +9,7 @@ import { INSEE } from "../places/insee.js";
 import { sun } from "../providers/calendrier.js";
 import altitudes from "./altitudes.json" with { type: "json" };
 import { fr } from "../tools/format.js";
+import { ditAmateur, NETWORKS } from "../tools/meteo.js";
 import type { StationNow } from "./data.js";
 import { apart, esc, H, islandMap, KM, nameWithShown, project, W } from "./map.js";
 import { CLASSES, PATH as PLUIE_RADAR } from "./pluie-radar.js";
@@ -31,8 +32,10 @@ export function communeOf(s: StationNow, all: StationNow[]): string | undefined 
   return near && own(near);
 }
 
+// An amateur station's bubble says what it is (the user's words, 10/11/2026), then its network's credit.
 const by = (s: StationNow) =>
-  s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par l'aéroport (METAR)" : s.source === "ffvl" ? ` par la FFVL (${s.nom.replace(/^B/, "b")})` : s.source === "meteor_oi" ? `, station ${s.nom} (Données : MétéoR-OI, licence CC BY-NC 4.0)` : "";
+  s.source === "meteofrance" ? " par Météo-France" : s.source === "metar" ? " par l'aéroport (METAR)" : s.source === "ffvl" ? ` par la FFVL (${s.nom.replace(/^B/, "b")})`
+    : s.amateur ? `, ${ditAmateur(s.source) ?? ""}. ${NETWORKS.find((n) => n.id === s.source)?.attribution ?? ""}` : "";
 
 // Where the wind comes from, in words: abbreviations read badly (« vent O » as « vent 0 »).
 export const VENT_DE = ["du nord", "du nord-est", "d'est", "du sud-est", "du sud", "du sud-ouest", "d'ouest", "du nord-ouest"];
@@ -216,7 +219,7 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
   // A touch area per layer, on its dot and shown with it (hits()).
   const hit = Object.entries(at.hit).map(([l, [hx, hy, hr]]) => `<circle class="hit l-${l}" cx="${hx}" cy="${hy}" r="${hr}" style="fill:transparent;stroke:none"/>`).join("");
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
-  return `<a class="mk${has}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
+  return `<a class="mk${has}${s.amateur ? " am" : ""}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
     `${hit}${shapes}</a>`;
 }
 
@@ -295,87 +298,104 @@ function ties(list: StationNow[], placed: [number, number][]): string {
   }).join("");
 }
 
-export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
+export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // The rain of the last hour; of the last 6 minutes where no station has the hour yet (a copy just after a restart).
-  const hour = list.some((s) => s.pluie_1h != null);
+  const hour = every.some((s) => s.pluie_1h != null);
   const mm = (s: StationNow) => (hour ? s.pluie_1h : s.pluie_6min);
+  // The official networks' stations, shown; the amateur ones only once « Stations amateur » is ticked, laid out again
+  // with the others in a group of their own, so that a station hidden never moves one shown (the user, 10/11/2026).
+  const list = every.filter((s) => !s.amateur);
+  const amateurs = every.filter((s) => s.amateur);
+  /** The marks of a set of stations, laid out together, in a group of class `cls`. */
+  const marks = (list: StationNow[], cls: string): string => {
+    const t = list.filter((s) => s.temperature != null);
+    const named = (s: StationNow) => NAMED.has(s.id ?? "");
+    const w = list.filter((s) => s.vent != null);
+    // No wind pill covers another (two beacons a few hundred metres apart): those that would are moved apart, each tied
+    // to its place by a line and a dot, under every pill, as the home page's (map.ts, apart()); side by side rather than
+    // one above the other, which would take the room of « Saint-Paul » on a phone.
+    const placed = apart(w.map((s) => ({ lon: s.lon, lat: s.lat, label: "", name: s.nom })), w.map(() => WIND_W), 3);
+    const windAt = new Map(w.map((s, i) => [s, placed[i]]));
+    const windTies = ties(w, placed);
+    // No rain disc with its figure covers another (four over each other in the middle of the island under the rain of
+    // 31/10 at 10:23, marketing's review): moved apart and tied to their place the same way (#607's rounds). The small
+    // dots stay on their place.
+    const r = list.filter((s) => (mm(s) ?? 0) > 0 && rainSaid(mm(s)!, named(s)));
+    // Each at its own size: a disc of 4 characters is wider.
+    const across = r.map((s) => 2 * discR(rainFigure(mm(s)!)));
+    // The small dots stay on their place, left free (a dot half under a disc reads as a smudge, and is hard to touch).
+    // Their radius with the white edge: 17 and 2 (dot()).
+    // Two of them too near apart, by no more than their radius (nudge()).
+    const small = list.filter((s) => mm(s) != null && !r.includes(s));
+    const smallAt = nudge(small.map((s) => project(s.lon, s.lat)), small.map(() => discR()));
+    const dots = smallAt.map(([x, y]): [number, number, number] => [x, y, 19]);
+    const rainPlaced = apart(r.map((s) => ({ lon: s.lon, lat: s.lat, label: "", name: s.nom, round: true })), across, 1, across, dots);
+    // A small dot that a disc still covers (a corner with no free way for the disc: Gillot's over La Mare's, 19 units
+    // apart) steps out of it, by no more than its radius, and is drawn over it: its place stays under it.
+    const lifted = new Set<StationNow>();
+    small.forEach((s, i) => {
+      const place = project(s.lon, s.lat);
+      for (const [k, [cx, cy]] of rainPlaced.entries()) {
+        const [x, y] = smallAt[i], d = Math.hypot(x - cx, y - cy), touch = across[k] / 2 + discR();
+        if (d >= touch) continue;
+        const [ux, uy] = d > 0 ? [(x - cx) / d, (y - cy) / d] : [0, 1];
+        const ox = x + ux * (touch - d) - place[0], oy = y + uy * (touch - d) - place[1];
+        const f = Math.min(1, discR() / (Math.hypot(ox, oy) || 1));
+        smallAt[i] = [Math.round(place[0] + ox * f), Math.round(place[1] + oy * f)];
+        lifted.add(s);
+      }
+    });
+    const rainAt = new Map([...r.map((s, i): [StationNow, [number, number]] => [s, rainPlaced[i]]), ...small.map((s, i): [StationNow, [number, number]] => [s, smallAt[i]])]);
+    const rainTies = ties(r, rainPlaced);
+    // The temperature's discs the same way.
+    const tPlaced = nudge(t.map((s) => project(s.lon, s.lat)), t.map((s) => discR(tFigure(s, named(s)))));
+    const tAt = new Map(t.map((s, i) => [s, tPlaced[i]]));
+    // The named ones last, over the dots; the dots lifted over a disc after them.
+    const order = (s: StationNow) => (lifted.has(s) ? 2 : named(s) ? 1 : 0);
+    const drawn = list.filter((s) => s.temperature != null || mm(s) != null || s.vent != null).sort((a, b) => order(a) - order(b));
+    // Each layer's touch areas, in that order (hits()).
+    const at = new Map(drawn.map((s): [StationNow, Placed] => [s, { t: tAt.get(s), p: rainAt.get(s), v: windAt.get(s), hit: {} }]));
+    const layer = (l: "t" | "p" | "v", of: StationNow[], mark: (s: StationNow) => Mark, own: (s: StationNow) => number) => {
+      const marks = of.map(mark);
+      hits(marks, of.map(own), of.map((s) => (named(s) ? HIT : HIT / 2))).forEach((h, i) => (at.get(of[i])!.hit[l] = h));
+    };
+    const place = (s: StationNow, m?: [number, number]) => m ?? project(s.lon, s.lat);
+    const rainR = (s: StationNow) => (mm(s)! > 0 && r.includes(s) ? discR(rainFigure(mm(s)!)) : discR());
+    layer("t", drawn.filter((s) => s.temperature != null), (s) => [...place(s, tAt.get(s)), discR(tFigure(s, named(s)))], (s) => discR(tFigure(s, named(s))));
+    layer("p", drawn.filter((s) => mm(s) != null), (s) => [...place(s, rainAt.get(s)), rainR(s)], rainR);
+    layer("v", drawn.filter((s) => s.vent != null), (s) => [...place(s, windAt.get(s)), null], () => 24);
+    return `<g class="sts ${cls}">${windTies ? `<g class="l-v wt" aria-hidden="true">${windTies}</g>` : ""}${rainTies ? `<g class="l-p wt" aria-hidden="true">${rainTies}</g>` : ""}` +
+      `${drawn.map((s) => station(s, named(s), mm(s), hour, at.get(s)!)).join("")}</g>`;
+  };
   const t = list.filter((s) => s.temperature != null);
   const nRain = list.filter((s) => mm(s) != null).length;
   const latest = list.reduce((m, s) => (s.time > m ? s.time : m), "");
-  const named = (s: StationNow) => NAMED.has(s.id ?? "");
   const w = list.filter((s) => s.vent != null);
-  // No wind pill covers another (two beacons a few hundred metres apart): those that would are moved apart, each tied
-  // to its place by a line and a dot, under every pill, as the home page's (map.ts, apart()); side by side rather than
-  // one above the other, which would take the room of « Saint-Paul » on a phone.
-  const placed = apart(w.map((s) => ({ lon: s.lon, lat: s.lat, label: "", name: s.nom })), w.map(() => WIND_W), 3);
-  const windAt = new Map(w.map((s, i) => [s, placed[i]]));
-  const windTies = ties(w, placed);
-  // No rain disc with its figure covers another (four over each other in the middle of the island under the rain of
-  // 31/10 at 10:23, marketing's review): moved apart and tied to their place the same way (#607's rounds). The small
-  // dots stay on their place.
-  const r = list.filter((s) => (mm(s) ?? 0) > 0 && rainSaid(mm(s)!, named(s)));
-  // Each at its own size: a disc of 4 characters is wider.
-  const across = r.map((s) => 2 * discR(rainFigure(mm(s)!)));
-  // The small dots stay on their place, left free (a dot half under a disc reads as a smudge, and is hard to touch).
-  // Their radius with the white edge: 17 and 2 (dot()).
-  // Two of them too near apart, by no more than their radius (nudge()).
-  const small = list.filter((s) => mm(s) != null && !r.includes(s));
-  const smallAt = nudge(small.map((s) => project(s.lon, s.lat)), small.map(() => discR()));
-  const dots = smallAt.map(([x, y]): [number, number, number] => [x, y, 19]);
-  const rainPlaced = apart(r.map((s) => ({ lon: s.lon, lat: s.lat, label: "", name: s.nom, round: true })), across, 1, across, dots);
-  // A small dot that a disc still covers (a corner with no free way for the disc: Gillot's over La Mare's, 19 units
-  // apart) steps out of it, by no more than its radius, and is drawn over it: its place stays under it.
-  const lifted = new Set<StationNow>();
-  small.forEach((s, i) => {
-    const place = project(s.lon, s.lat);
-    for (const [k, [cx, cy]] of rainPlaced.entries()) {
-      const [x, y] = smallAt[i], d = Math.hypot(x - cx, y - cy), touch = across[k] / 2 + discR();
-      if (d >= touch) continue;
-      const [ux, uy] = d > 0 ? [(x - cx) / d, (y - cy) / d] : [0, 1];
-      const ox = x + ux * (touch - d) - place[0], oy = y + uy * (touch - d) - place[1];
-      const f = Math.min(1, discR() / (Math.hypot(ox, oy) || 1));
-      smallAt[i] = [Math.round(place[0] + ox * f), Math.round(place[1] + oy * f)];
-      lifted.add(s);
-    }
-  });
-  const rainAt = new Map([...r.map((s, i): [StationNow, [number, number]] => [s, rainPlaced[i]]), ...small.map((s, i): [StationNow, [number, number]] => [s, smallAt[i]])]);
-  const rainTies = ties(r, rainPlaced);
-  // The temperature's discs the same way.
-  const tPlaced = nudge(t.map((s) => project(s.lon, s.lat)), t.map((s) => discR(tFigure(s, named(s)))));
-  const tAt = new Map(t.map((s, i) => [s, tPlaced[i]]));
-  // The named ones last, over the dots; the dots lifted over a disc after them.
-  const order = (s: StationNow) => (lifted.has(s) ? 2 : named(s) ? 1 : 0);
-  const drawn = list.filter((s) => s.temperature != null || mm(s) != null || s.vent != null).sort((a, b) => order(a) - order(b));
-  // Each layer's touch areas, in that order (hits()).
-  const at = new Map(drawn.map((s): [StationNow, Placed] => [s, { t: tAt.get(s), p: rainAt.get(s), v: windAt.get(s), hit: {} }]));
-  const layer = (l: "t" | "p" | "v", of: StationNow[], mark: (s: StationNow) => Mark, own: (s: StationNow) => number) => {
-    const marks = of.map(mark);
-    hits(marks, of.map(own), of.map((s) => (named(s) ? HIT : HIT / 2))).forEach((h, i) => (at.get(of[i])!.hit[l] = h));
-  };
-  const place = (s: StationNow, m?: [number, number]) => m ?? project(s.lon, s.lat);
-  const rainR = (s: StationNow) => (mm(s)! > 0 && r.includes(s) ? discR(rainFigure(mm(s)!)) : discR());
-  layer("t", drawn.filter((s) => s.temperature != null), (s) => [...place(s, tAt.get(s)), discR(tFigure(s, named(s)))], (s) => discR(tFigure(s, named(s))));
-  layer("p", drawn.filter((s) => mm(s) != null), (s) => [...place(s, rainAt.get(s)), rainR(s)], rainR);
-  layer("v", drawn.filter((s) => s.vent != null), (s) => [...place(s, windAt.get(s)), null], () => 24);
+  const drawn = list.filter((s) => s.temperature != null || mm(s) != null || s.vent != null);
   // The replay's dots, its date, time and what they are (measured or estimated), on the sea at the bottom left, the
   // widest off the coast; shown only while it plays (REJEU_JS).
-  const top = `<g class="sts">${windTies ? `<g class="l-v wt" aria-hidden="true">${windTies}</g>` : ""}${rainTies ? `<g class="l-p wt" aria-hidden="true">${rainTies}</g>` : ""}` +
-    `${drawn.map((s) => station(s, named(s), mm(s), hour, at.get(s)!)).join("")}</g>` +
+  const top = marks(list, "sts-of") + (amateurs.length ? marks(every, "sts-am") : "") +
     `<g class="rj-st"></g><g class="rj-t" aria-hidden="true"><text class="rj-d" x="24" y="782"></text><text class="rj-h" x="24" y="846"></text><text class="rj-s" x="24" y="886"></text></g>`;
   // The veil's data: each station's place on the map, altitude and temperature; the script does the rest.
-  const voile = JSON.stringify(t.map((s) => [...project(s.lon, s.lat), s.altitude_m, s.temperature]));
+  // The amateur stations' apart (`-am`): the script adds them only once « Stations amateur » is ticked.
+  const tData = (l: StationNow[]) => JSON.stringify(l.filter((s) => s.temperature != null).map((s) => [...project(s.lon, s.lat), s.altitude_m, s.temperature]));
+  const voile = tData(t);
+  const voileAm = amateurs.length ? ` data-voile-am="${esc(tData(amateurs))}"` : "";
   // A canvas rather than an image: the site's policy lets no picture be made in the page (img-src 'self').
   // The wind's data: each anemometer's place and where its wind goes, in km/h along the map's x and y (y down).
   // A wind without its direction says nothing of where the air goes: left out (a calm is a measure, and stays).
-  const wd = w.filter((s) => s.direction != null || s.vent === 0);
-  const vent = JSON.stringify(wd.map((s) => {
+  const winds = (l: StationNow[]) => l.filter((s) => s.vent != null && (s.direction != null || s.vent === 0));
+  const vData = (l: StationNow[]) => JSON.stringify(winds(l).map((s) => {
     const a = ((s.direction ?? 0) * Math.PI) / 180, v = s.vent!;
     return [...project(s.lon, s.lat), Math.round(-Math.sin(a) * v * 10) / 10, Math.round(Math.cos(a) * v * 10) / 10];
   }));
+  const wd = winds(w);
+  const vent = vData(w);
+  const ventAm = winds(amateurs).length ? ` data-vent-am="${esc(vData(amateurs))}"` : "";
   const fo = (l: string, canvas: string) => `<foreignObject class="l-${l}" width="${W}" height="${H}" clip-path="url(#isl-clip)">${canvas}</foreignObject>`;
-  const overlay = fo("t", `<canvas class="voile" data-voile="${esc(voile)}" data-alt="${esc(altPath)}" width="1" height="1"></canvas>`) +
+  const overlay = fo("t", `<canvas class="voile" data-voile="${esc(voile)}"${voileAm} data-alt="${esc(altPath)}" width="1" height="1"></canvas>`) +
     (nRain ? fo("p", `<div class="vt"><canvas class="voile" data-pluie="${PLUIE_RADAR}" data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "") +
-    (wd.length ? fo("v", `<div class="vt"><canvas class="voile" data-vent="${esc(vent)}" data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "");
+    (wd.length ? fo("v", `<div class="vt"><canvas class="voile" data-vent="${esc(vent)}"${ventAm} data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "");
   const n = (k: number, one: string, many: string) => `${k} ${k > 1 ? many : one}`;
   // A tab and a legend per measure that at least one station has; the first shown without a choice.
   const layers = [
@@ -393,9 +413,13 @@ export function stationsMap(list: StationNow[], altPath = ALT_PATH): string {
   // The replay bar just under the map, before the legend: on a phone, the map, the lengths and the slider fit in one
   // screen (the user, 01/11/2026, as /electricite).
   // The tabs in a bar, which the full screen's button joins (pages.ts).
-  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}</div>` +
+  // The amateur stations' box, unticked (the user, 10/11/2026): its words are the user's; ticked, the legend says what
+  // the dotted outline is (marketing).
+  const box = amateurs.length ? `<label class="amchk"><input type="checkbox" id="wx-am"> Stations amateur</label>` : "";
+  const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur, fiabilité non vérifiée.</span>` : "";
+  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}${box}</div>` +
     islandMap({ under: overlay, top, peaks: true, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` }) +
-    bubble + `<figcaption class="note">${replay}${legend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
+    bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
 
 /** Under the stations' map, the way to /carte, its view of the weather now: the same rain and stations, the others to tick (marketing). */
@@ -481,14 +505,17 @@ const GRID_ROWS = 4;
  * the replay (RJ.t): the grid of any set of stations, drawn alone or mixed with another's, at once or a few rows at a time
  * (part: each call goes on until dl, and gives the grid once made).
  */
-const VOILE_SCRIPT = `const vo=document.querySelector("[data-voile]");if(vo){const st=JSON.parse(vo.dataset.voile),im=new Image();im.onload=()=>{
+const VOILE_SCRIPT = `const vo=document.querySelector("[data-voile]");if(vo){const st=JSON.parse(vo.dataset.voile),sa=JSON.parse(vo.dataset.voileAm||"[]"),im=new Image();im.onload=()=>{
 const w=im.width,h=im.height,c=vo;c.width=w;c.height=h;const g=c2d(c);g.drawImage(im,0,0);const a=g.getImageData(0,0,w,h).data,S=${JSON.stringify(VEIL)};
 const col=(t)=>{let i=0;while(i<S.length-2&&t>S[i+1][0])i++;const[[t0,c0],[t1,c1]]=[S[i],S[i+1]],f=Math.min(1,Math.max(0,(t-t0)/(t1-t0)));return c0.map((v,j)=>v+(c1[j]-v)*f)};
 // The temperature of each cell from a set of stations [x, y, altitude, °C]: the altitude's line through them, the rest by inverse distance.
 const rows=${veilRows},part=(st)=>{const n=st.length;if(!n)return()=>null;let sz=0,st2=0,sz2=0,szt=0;st.forEach(([,,z,t])=>{sz+=z;st2+=t;sz2+=z*z;szt+=z*t});let b=(n*szt-sz*st2)/(n*sz2-sz*sz);if(!(b<-.003&&b>-.01))b=-.0065;const k=(st2-b*sz)/n;
 const q={k,b,p:st.map(([x,y,z,t])=>[x*w/${W},y*h/${H},t-(k+b*z)]),T:new Float32Array(w*h)};let y=0;return(dl)=>{while(y<h){y=rows(q,a,w,h,y,y+${GRID_ROWS},${altitudes.pas_m});if(y<h&&performance.now()>dl)return undefined}return q.T}},grid=(st)=>part(st)(Infinity);
 const o=g.createImageData(w,h),M=new Float32Array(w*h),paint=(T)=>{for(let i=0;i<w*h;i++){if(!a[i*4])continue;if(!T){o.data[i*4+3]=0;continue}const[R,G,B]=col(T[i]);o.data[i*4]=R;o.data[i*4+1]=G;o.data[i*4+2]=B;o.data[i*4+3]=215}g.putImageData(o,0,0)};
-const now=grid(st);paint(now);RJ.t={live:st,now,grid,part,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M[i]=A[i]+(B[i]-A[i])*f;paint(M)},back:()=>paint(now)}};im.src=vo.dataset.alt}`;
+// The amateur stations only once their box is ticked (the user, 10/11/2026), the live colours made again when it changes.
+const amb=document.getElementById("wx-am"),live=()=>amb&&amb.checked?st.concat(sa):st,now=grid(live());paint(now);
+RJ.t={live:live(),now,grid,part,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M[i]=A[i]+(B[i]-A[i])*f;paint(M)},back:()=>paint(RJ.t.now)};
+if(amb&&sa.length)amb.addEventListener("change",()=>{RJ.t.live=live();RJ.t.now=grid(RJ.t.live);if(!RJ.on)paint(RJ.t.now)})};im.src=vo.dataset.alt}`;
 
 /**
  * A frame every 1000 / 30 ms, 30 a second (written out: the page's scripts take this function as its text), for a rAF
@@ -527,7 +554,7 @@ o.again=()=>{if(run){run=false;cancelAnimationFrame(raf)}go()};return go};`;
  * particles bound to the map's size; a picture of arrows for those who ask for less motion. For the replay (RJ.v): the
  * field of any set of anemometers, drawn alone or mixed with another's, cell by cell.
  */
-const VENT_SCRIPT = `const ve=document.querySelector("[data-vent]");if(ve){const st=JSON.parse(ve.dataset.vent),fl=ve.nextElementSibling,im=new Image();
+const VENT_SCRIPT = `const ve=document.querySelector("[data-vent]");if(ve){const st=JSON.parse(ve.dataset.vent),sa=JSON.parse(ve.dataset.ventAm||"[]"),fl=ve.nextElementSibling,im=new Image();
 let w=0,h=0,U,V,M,land=[],ps=[],cw=0,ch=0,g;const S=${JSON.stringify(WIND)};
 const col=(t)=>{let i=0;while(i<S.length-2&&t>S[i+1][0])i++;const[[t0,c0],[t1,c1]]=[S[i],S[i+1]],f=Math.min(1,Math.max(0,(t-t0)/(t1-t0)));return c0.map((v,j)=>v+(c1[j]-v)*f)};
 const at=(x,y)=>{const gx=Math.min(w-1.001,Math.max(0,x*w/${W}-.5)),gy=Math.min(h-1.001,Math.max(0,y*h/${H}-.5)),i=gx|0,j=gy|0,fx=gx-i,fy=gy-j,k=j*w+i;
@@ -553,8 +580,11 @@ const veil=()=>{const e=x.createImageData(w,h);for(const k of land){const[R,G,B]
 if(g&&matchMedia("(prefers-reduced-motion: reduce)").matches)o.still()};
 const set=(F)=>{if(F){U.set(F[0]);V.set(F[1])}else{U.fill(0);V.fill(0)}veil()};
 im.onload=()=>{w=im.width;h=im.height;const c=ve;c.width=w;c.height=h;x=c2d(c);x.drawImage(im,0,0);A=x.getImageData(0,0,w,h).data;U=new Float32Array(w*h);V=new Float32Array(w*h);M=new Uint8Array(w*h);
-for(let k=0;k<w*h;k++)if(A[k*4]){M[k]=1;land.push(k)}const now=field(st);set(now);
-RJ.v={live:st,now,grid:field,part,show:set,mix:(F,G,f)=>{for(let k=0;k<w*h;k++){U[k]=F[0][k]+(G[0][k]-F[0][k])*f;V[k]=F[1][k]+(G[1][k]-F[1][k])*f}veil()},back:()=>set(now)};go()};im.src=ve.dataset.alt}`;
+for(let k=0;k<w*h;k++)if(A[k*4]){M[k]=1;land.push(k)}
+// The amateur anemometers only once their box is ticked (the user, 10/11/2026), the live field made again when it changes.
+const amb=document.getElementById("wx-am"),live=()=>amb&&amb.checked?st.concat(sa):st,now=field(live());set(now);
+RJ.v={live:live(),now,grid:field,part,show:set,mix:(F,G,f)=>{for(let k=0;k<w*h;k++){U[k]=F[0][k]+(G[0][k]-F[0][k])*f;V[k]=F[1][k]+(G[1][k]-F[1][k])*f}veil()},back:()=>set(RJ.v.now)};
+if(amb&&sa.length)amb.addEventListener("change",()=>{RJ.v.live=live();RJ.v.now=field(RJ.v.live);if(!RJ.on)set(RJ.v.now)});go()};im.src=ve.dataset.alt}`;
 
 /**
  * The land cells seen badly on an image (of 8 382) from which the sentence of the hatches is said under the map; the
@@ -1482,7 +1512,9 @@ const m=document.getElementById("stm"),open=()=>{stl.classList.remove("plie");if
 const f=()=>{const c=sel.value;open();stl.querySelectorAll("li").forEach((li)=>{li.hidden=!!c&&li.dataset.c!==c})};sel.addEventListener("change",f);
 // A station aimed at (a link to it, a station's marker of the map) whose row the folded list or the commune hides:
 // the list unfolded, every commune shown, and the row brought into view. Nothing aimed at, the list stays folded.
-const vise=()=>{let id="";try{id=decodeURIComponent(location.hash.slice(1))}catch{}const li=id&&document.getElementById(id);if(!li||li.parentElement!==stl||li.getClientRects().length)return;
+// An amateur station's row, in its folded section (#sta): the section opened.
+const vise=()=>{let id="";try{id=decodeURIComponent(location.hash.slice(1))}catch{}const li=id&&document.getElementById(id),dt=document.getElementById("sta");
+if(li&&dt&&!dt.open&&dt.contains(li)){dt.open=true;li.scrollIntoView({block:"start"});return}if(!li||li.parentElement!==stl||li.getClientRects().length)return;
 if(li.hidden){sel.value="";f()}else open();li.scrollIntoView({block:"start"})};
 // At load, once the site's script has shown what needs a script ([data-js]): only then is the list folded.
 addEventListener("hashchange",vise);if(document.readyState==="loading")addEventListener("DOMContentLoaded",vise,{once:true});else vise();

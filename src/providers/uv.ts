@@ -34,7 +34,7 @@ interface AirJson {
   hourly: { time: string[]; uv_index: (number | null)[] };
 }
 
-/** One cell: the highest index of each day, by local date ("2026-10-24"). */
+/** One cell: the highest index of each day, by local date ("2026-10-24"). A day whose hours stop before the sun is high is left out. */
 export interface UvCell {
   lat: number;
   lon: number;
@@ -52,16 +52,28 @@ function url(): string {
   return `${API}?${q}`;
 }
 
+/**
+ * The hours a day's highest index falls in, local time: the sun is highest near noon on the island, so the index peaks
+ * between 10 h and 14 h. CAMS's last day may hold only its first hours (00 h-04 h on 10/11/2026): its highest index, 0,
+ * read « UV 0 (faible) ». A day is kept only when it has every one of these hours.
+ */
+const SUN_HOURS = ["10", "11", "12", "13", "14"];
+
 export function parse(raw: AirJson | AirJson[]): UvCell[] {
   return (Array.isArray(raw) ? raw : [raw]).map((j) => {
     const max: Record<string, number> = {};
+    const sun: Record<string, Set<string>> = {};
     j.hourly.time.forEach((t, i) => {
       const v = j.hourly.uv_index[i];
       if (typeof v !== "number") return;
       const day = t.slice(0, 10);
       max[day] = Math.max(max[day] ?? 0, v);
+      if (SUN_HOURS.includes(t.slice(11, 13))) (sun[day] ??= new Set()).add(t.slice(11, 13));
     });
-    for (const d of Object.keys(max)) max[d] = Math.round(max[d]);
+    for (const d of Object.keys(max)) {
+      if ((sun[d]?.size ?? 0) < SUN_HOURS.length) delete max[d];
+      else max[d] = Math.round(max[d]);
+    }
     return { lat: j.latitude, lon: j.longitude, max };
   });
 }

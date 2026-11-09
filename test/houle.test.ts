@@ -49,11 +49,13 @@ async function withSea() {
 
 let fetched: string[];
 let down: RegExp | null;
+/** CAMS's answer when a test changes it. */
+let camsBody: string | null;
 
 function upstream(url: string, init?: RequestInit): Response {
   if (down?.test(url)) throw new Error("source down");
   if (url.includes("marine-api.open-meteo")) return new Response(fixture(url.includes("meteofrance_wave") ? "openmeteo_houle_mf.json" : "openmeteo_houle.json"));
-  if (url.includes("air-quality-api.open-meteo")) return new Response(fixture("cams_uv.json"));
+  if (url.includes("air-quality-api.open-meteo")) return new Response(camsBody ?? fixture("cams_uv.json"));
   const pub = coastwatch(url, init);
   if (pub) return pub;
   if (url.includes("erdMH1sstd1day")) return new Response(fixture("modis.csv"));
@@ -65,6 +67,7 @@ function upstream(url: string, init?: RequestInit): Response {
 beforeEach(() => {
   fetched = [];
   down = null;
+  camsBody = null;
   vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
     overLimit();
     fetched.push(String(url));
@@ -235,6 +238,31 @@ describe("the UV index in prevision_meteo", () => {
       // The days after keep theirs.
       expect(night.jours[1].indice_uv_max).toMatch(/^\d+ \(/);
     }
+  });
+
+  // 10/11/2026: CAMS's fifth day held only 00 h-04 h, and /meteo said « UV 0 (faible) » of it.
+  it("gives none for a day whose hours stop before the sun is high, never « UV 0 »", async () => {
+    const cut = (j: { hourly: { time: string[]; uv_index: (number | null)[] } }) => {
+      const n = j.hourly.time.indexOf("2026-10-26T05:00");
+      return { ...j, hourly: { time: j.hourly.time.slice(0, n), uv_index: j.hourly.uv_index.slice(0, n) } };
+    };
+    const raw = json("cams_uv.json");
+    const short = (Array.isArray(raw) ? raw : [raw]).map(cut);
+    for (const c of uv.parse(short)) {
+      expect(c.max["2026-10-26"]).toBeUndefined();
+      expect(c.max["2026-10-25"]).toBeGreaterThan(0);
+    }
+    // A day whose noon is missing is left out too, whatever its other hours say.
+    const noNoon = (Array.isArray(raw) ? raw : [raw]).map((j: { hourly: { time: string[]; uv_index: (number | null)[] } }) => ({ ...j, hourly: { ...j.hourly, uv_index: j.hourly.uv_index.map((v, i) => (j.hourly.time[i] === "2026-10-25T12:00" ? null : v)) } }));
+    for (const c of uv.parse(noNoon)) expect(c.max["2026-10-25"]).toBeUndefined();
+    // The tool that serves /meteo and the connector: the day is there, without an index.
+    camsBody = JSON.stringify(short);
+    const r = body(await previsionMeteo(isolate(), "Saint-Leu", undefined, NOW));
+    const fifth = r.jours[4];
+    expect(fifth.jour).toMatch(/26/);
+    expect(fifth.indice_uv_max).toBeUndefined();
+    expect(r.jours[3].indice_uv_max).toMatch(/^\d+ \(/);
+    expect(r.resume).not.toMatch(/UV 0 /);
   });
 
   it("is one request for the whole island, three subrequests cold", async () => {

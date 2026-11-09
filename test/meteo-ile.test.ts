@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, type CacheEntry, MemoryStore } from "../src/cache.js";
-import { ISLAND_PAGES, snapshot } from "../src/web/data.js";
-import { homeWaits } from "../src/web/site.js";
+import { ISLAND_PAGES, ISLAND_PEEK_MS, snapshot } from "../src/web/data.js";
+import { HOME_READER_WAIT_MS, homeWaits } from "../src/web/site.js";
 
 const T0 = Date.parse("2026-11-07T03:18:00Z");
 const MIN = 60_000;
@@ -55,6 +55,34 @@ describe("the weather of / and /meteo, one copy for the island (web/data.ts ISLA
     const third = await snapshot(center(), "web:meteo", build, later, new Date(clock.t + MIN));
     expect(third?.value).toEqual({ construite: 2 });
     expect(builds).toBe(2);
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  it("waits for KV 300 ms at most: past it, the data center's copy, within the reader's 800 ms in all", async () => {
+    vi.useFakeTimers({ now: T0 });
+    // A KV that takes 5 s to answer (a read slower than a tool call's time, 09/11/2026), a build of 3 s.
+    class SlowKv extends MemoryStore {
+      async get(key: string, freshAfter?: number) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return super.get(key, freshAfter);
+      }
+    }
+    const kv = new SlowKv();
+    await kv.put("lecture:web:meteo", { value: { construite: "ailleurs" }, fetchedAt: T0 - MIN });
+    const memory = new MemoryStore();
+    await memory.put("web:meteo", { value: { construite: "ici" }, fetchedAt: T0 - 20 * MIN });
+    const c = new Cache(memory, () => T0, false, kv);
+    const build = () => new Promise((resolve) => setTimeout(() => resolve({ construite: "neuve" }), 3000));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    let got: unknown;
+    void snapshot(c, "web:meteo", build, () => {}, new Date(T0), reader.meteo, reader.reader).then((r) => (got = r?.value));
+    await vi.advanceTimersByTimeAsync(ISLAND_PEEK_MS);
+    expect(got).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(HOME_READER_WAIT_MS - ISLAND_PEEK_MS);
+    expect(got).toEqual({ construite: "ici" });
+    log.mockRestore();
+    await vi.advanceTimersByTimeAsync(5000);
   });
 
   it("keeps the other pages' copies in the data center, out of KV", async () => {

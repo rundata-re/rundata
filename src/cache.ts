@@ -222,6 +222,8 @@ export class Cache {
   private bundles = new Map<string, BundleState>();
   /** The stores, then `durable` behind them (`island`). */
   private wide: CacheStore;
+  /** The island's copies in the durable store (the Worker's KV), behind `wide`; none when there is no durable store. */
+  private lectures?: CacheStore;
 
   /**
    * `dedupe` lets concurrent questions share one upstream request. The Worker turns it off: there, a request
@@ -238,7 +240,8 @@ export class Cache {
     private durable: CacheStore = store,
     readonly version?: string,
   ) {
-    this.wide = durable === store ? store : new TieredStore(store, new Prefixed(durable, "lecture:"));
+    this.lectures = durable === store ? undefined : new Prefixed(durable, "lecture:");
+    this.wide = this.lectures ? new TieredStore(store, this.lectures) : store;
   }
 
   /** The time the stores are read at, ms (its clock: tests set it). */
@@ -326,10 +329,23 @@ export class Cache {
   /**
    * The newest entry stored under `key`, however old, without loading it. `freshAfter` (a time, ms): an entry fetched
    * since then in a faster store will do, so slower stores (the data center's cache, a subrequest each) are asked only
-   * otherwise. `island`: the durable store (the Worker's KV) asked last, as `island` does.
+   * otherwise. `islandWithinMs`: for a copy of the island (web/data.ts ISLAND_PAGES), the durable store (the Worker's
+   * KV) asked last, as `island` does, but waited for that long at most: past it, the data center's copy, however old,
+   * is the answer (a read of KV may take seconds, 09/11/2026), and what KV gives later is not waited for. The newer of
+   * the two is put in the data center's stores.
    */
-  async peek<T>(key: string, freshAfter?: number, island = false): Promise<Cached<T> | undefined> {
-    const hit = await (island ? this.wide : this.store).get(key, freshAfter);
+  async peek<T>(key: string, freshAfter?: number, islandWithinMs?: number): Promise<Cached<T> | undefined> {
+    let hit = await this.store.get(key, freshAfter);
+    if (islandWithinMs != null && this.lectures && !(hit && freshAfter != null && hit.fetchedAt >= freshAfter)) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), islandWithinMs)));
+      const far = await Promise.race([this.lectures.get(key).catch(() => undefined), late]);
+      clearTimeout(timer);
+      if (far && (!hit || far.fetchedAt > hit.fetchedAt)) {
+        hit = far;
+        await this.store.put(key, far).catch(() => undefined);
+      }
+    }
     if (unreadable(key, hit, this.version)) return undefined;
     return hit && { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.cost != null && { cost: hit.cost }), ...(outdated(key, hit, this.version) && { outdated: true, ...(hit.version && { stamp: hit.version }) }), ...(hit.echec && { failedAt: hit.echec.at }) };
   }

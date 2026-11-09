@@ -2,8 +2,9 @@
  * METAR of the two airports, from NOAA aviationweather.gov. No key, every 30 minutes, ~20 min latency.
  * Temperature and dew point are whole degrees, so the humidity computed from them is ±5 %.
  */
+import { isScheduled } from "../budget.js";
 import type { Cache } from "../cache.js";
-import { getJson } from "../http.js";
+import { getJson, patiently } from "../http.js";
 import type { Observation, Reading, SourceInfo, Station } from "../types.js";
 
 export const SOURCE: SourceInfo = {
@@ -17,6 +18,13 @@ export const SOURCE: SourceInfo = {
 
 const URL = "https://aviationweather.gov/api/data/metar?ids=FMEE,FMEP&format=json&hours=3";
 const FRESH_SECONDS = 5 * 60;
+
+/**
+ * The scheduled event's patience with aviationweather.gov, which nobody waits for: past the 21,7 s of its slowest answer
+ * in 171 reads of 09/11/2026 (one every 5 minutes, 09:17 to 23:27; median 1,68 s, 8 over 15 s, each held before its
+ * first byte, none lost). A visit or a question keeps the usual 15 s, and the copy of less than 5 minutes.
+ */
+export const PATIENCE_MS = 25_000;
 
 // Positions and altitudes from the Météo-France station list (the METAR feed rounds them).
 const STATIONS: Record<string, Station> = {
@@ -123,6 +131,7 @@ export function stations(): Station[] {
 
 export async function observations(cache: Cache) {
   // The cache keeps the upstream JSON as received, so that any store (memory, KV) can hold it.
-  const raw = await cache.get("metar", FRESH_SECONDS, () => getJson<MetarJson[]>(SOURCE.id, URL));
+  const read = () => getJson<MetarJson[]>(SOURCE.id, URL);
+  const raw = await cache.get("metar", FRESH_SECONDS, () => (isScheduled() ? patiently(PATIENCE_MS, read) : read()));
   return { ...raw, value: parseMetar(raw.value) };
 }

@@ -22,7 +22,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
   // Les événements de Saint-Paul lus dans son export iCal tant que l'API de son site répond 404 (depuis le 06/11/2026).
   agenda: 37,
-  air: 12,
+  // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
+  air: 13,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays

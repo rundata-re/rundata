@@ -270,7 +270,8 @@ function setup(env: Env): Cache {
     count();
     return (await kv.get(airMesures.KV_KEY, "json")) as airMesures.Copie | null;
   });
-  // Read every 15 minutes from Sensor.Community by the scheduled event below, and kept in KV (src/providers/capteurs.ts).
+  // Read every 15 minutes from Sensor.Community, and every hour from sensors.social, by the scheduled event below, and
+  // kept in KV (src/providers/capteurs.ts).
   capteurs.configure(async () => {
     if (!kv) return null;
     count();
@@ -555,7 +556,8 @@ export default {
         .catch((err) => console.error("mesures de l'air : lecture impossible", why(err))));
     }
     // Every 15 minutes, at 10, 25, 40 and 55 past: the sensors of private people on Sensor.Community over the island,
-    // one request, kept in KV for 2 hours (src/providers/capteurs.ts), once the reads above are done.
+    // one request, and at 10 past those of sensors.social besides, its list and one request per sensor of the island;
+    // kept in KV for 2 hours (src/providers/capteurs.ts), once the reads above are done.
     if (kv && capteurs.refreshDue(now)) {
       ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
         count();
@@ -563,7 +565,7 @@ export default {
         return capteurs.collect(before, async (stocke) => {
           count(1, true);
           await kv.put(capteurs.KV_KEY, JSON.stringify(stocke), { expirationTtl: capteurs.KV_TTL_SECONDS });
-        }, now);
+        }, now, capteurs.socialDue(now));
       }))
         .then(({ value, used, reads }) => console.log(`capteurs amateurs : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("capteurs amateurs : lecture impossible", why(err))));

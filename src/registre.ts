@@ -25,7 +25,7 @@ import { FROM_MINUTE as TRACE_FROM, QUIET_MINUTES as TRACE_EVERY } from "./provi
 import { REFRESH_EVERY as AIR_EVERY, REFRESH_OFFSET as AIR_OFFSET } from "./providers/air-mesures.js";
 import { FIRST_HOUR as HS_FIRST, REFRESH_OFFSET as HS_OFFSET } from "./providers/sites-hs.js";
 import { FIRST_HOUR as CPF_FIRST, REFRESH_OFFSET as CPF_OFFSET } from "./providers/cpf.js";
-import { REFRESH_EVERY as CAPTEURS_EVERY, REFRESH_OFFSET as CAPTEURS_OFFSET } from "./providers/capteurs.js";
+import { REFRESH_EVERY as CAPTEURS_EVERY, REFRESH_OFFSET as CAPTEURS_OFFSET, SOCIAL_MAX } from "./providers/capteurs.js";
 import { REFRESH_EVERY as MARCHES_EVERY, REFRESH_OFFSET as MARCHES_OFFSET, TEXTES_OFFSET as MARCHES_TEXTES_OFFSET } from "./providers/marches-publics.js";
 import { EVENEMENT_MINUTES as EMPLOI_FICHE_EVERY, REFRESH_EVERY as EMPLOI_EVERY, REFRESH_OFFSET as EMPLOI_OFFSET } from "./providers/emploi.js";
 import { REFRESH_EVERY as IRVE_EVERY, REFRESH_OFFSET as IRVE_OFFSET } from "./providers/irve.js";
@@ -376,6 +376,18 @@ const SCHEDULED: Entry[] = [
     every: CAPTEURS_EVERY,
     offset: CAPTEURS_OFFSET,
     run: { subrequests: 3, kvReads: 1, kvWrites: 1, cpuMs: 10 },
+    from: ["src/providers/capteurs.ts"],
+    basis: "code",
+  },
+  // In the pass at 10 past the hour besides (capteurs:air): sensors.social's list of the last hour, then one request per
+  // sensor of the island, SOCIAL_MAX at most (1 sensor on 09/11/2026: 2 requests). Same copy, same write.
+  {
+    id: "capteurs:social",
+    trigger: "planifiée",
+    what: "capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (5 au plus), dans la copie de capteurs:air",
+    every: 60,
+    offset: CAPTEURS_OFFSET,
+    run: { subrequests: 1 + SOCIAL_MAX, cpuMs: 10 },
     from: ["src/providers/capteurs.ts"],
     basis: "code",
   },

@@ -202,8 +202,8 @@ async function get<T>(
   }
 }
 
-export async function getJson<T>(source: string, url: string, timeoutMs = 15_000): Promise<T> {
-  return get(source, url, timeoutMs, (res) => res.json() as Promise<T>);
+export async function getJson<T>(source: string, url: string, timeoutMs = 15_000, headers?: Record<string, string>): Promise<T> {
+  return get(source, url, timeoutMs, (res) => res.json() as Promise<T>, headers);
 }
 
 export async function getText(

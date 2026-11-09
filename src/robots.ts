@@ -19,9 +19,13 @@ import { HEBERGEURS, visitor } from "./metrics.js";
 import { RENDU_PATH } from "./providers/vigilance-carte.js";
 import { TRIP_PATH } from "./tools/transports.js";
 import { STOP_PATH } from "./web/domains.js";
+import { UV_PATH } from "./web/uv-moufia.js";
 
-/** Forbidden to every robot, as robots.txt's Disallow lines write them: the start of the path and its query. */
-export const INTERDITS = [`${STOP_PATH}?q=`, `${TRIP_PATH}/`, RENDU_PATH];
+/**
+ * Forbidden to every robot, as robots.txt's Disallow lines write them: the start of the path and its query. The private
+ * page of an internal trial too (web/uv-moufia.ts): a mail's link scanner from a hosting network is refused it.
+ */
+export const INTERDITS = [`${STOP_PATH}?q=`, `${TRIP_PATH}/`, RENDU_PATH, UV_PATH];
 
 /**
  * Forbidden to a browser of a hosting network that does not come from a page of the site: INTERDITS and the stops' pages.

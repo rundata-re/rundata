@@ -63,10 +63,10 @@ describe("named robots on what robots.txt forbids them", () => {
     const robots = await (await handle(new Request("https://rundata.re/robots.txt"), new Cache(new MemoryStore()))).text();
     const all = robots.split("\n\n").find((b) => b.startsWith("User-agent: *"))!;
     expect(all.split("\n").filter((l) => l.startsWith("Disallow: ")).map((l) => l.slice(10))).toEqual(INTERDITS);
-    // The same file as before the list was shared, with the group of the robots refused everything.
+    // The same file as before the list was shared, with the group of the robots refused everything, and the private page.
     expect(robots).toBe(
-      "User-agent: Googlebot\nUser-agent: GoogleOther\nUser-agent: Bingbot\nDisallow: /*?maj=\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /\n\n" +
-        "User-agent: *\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nAllow: /\n\n" +
+      "User-agent: Googlebot\nUser-agent: GoogleOther\nUser-agent: Bingbot\nDisallow: /*?maj=\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nDisallow: /essais/uv-moufia/\nAllow: /\n\n" +
+        "User-agent: *\nDisallow: /bus/arret?q=\nDisallow: /bus/trajet/\nDisallow: /vigilance/bulletin-rendu\nDisallow: /essais/uv-moufia/\nAllow: /\n\n" +
         "User-agent: DotBot\nUser-agent: ElevenlabsCrawler\nDisallow: /\n\nSitemap: https://rundata.re/sitemap.xml\n",
     );
   });

@@ -153,6 +153,7 @@ import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricit
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
 import { CUMULS_PATH, DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuCumuls, rejeuFin, rejeuJour } from "./rejeu.js";
 import { COUCHE_PATH, coucheResponse, RESUME_PATH, resumeResponse } from "./couches.js";
+import { UV_HEADERS, UV_PATH, uvMoufia } from "./uv-moufia.js";
 
 const HTML = {
   "content-type": "text/html; charset=utf-8",
@@ -432,6 +433,9 @@ export async function site(request: Request, cache: Cache, background: Backgroun
   const file = new URL(request.url).pathname;
   const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? ogFile(file);
   if (style) return style;
+  // The private page of an internal trial, behind its secret link: nothing else read, and the site's 404 without it,
+  // never kept nor indexed (web/uv-moufia.ts).
+  if (file.startsWith(UV_PATH)) return (await uvMoufia(request)) ?? introuvable(await notFound(request));
   // The bus trips, kept a minute at the edge (web/bord.ts): the copy as it was served.
   const copie = await bord.lire(request);
   if (copie) return copie;
@@ -1077,6 +1081,15 @@ export function manifest() {
     ].map((s) => ({ ...s, icons: [{ src: icons["192"], sizes: "192x192", type: "image/png" }] })),
     screenshots: CAPTURES.map((c) => ({ ...c, sizes: "1080x1920", type: "image/webp", form_factor: "narrow" })),
   };
+}
+
+/** The site's 404 for an address that carries a secret: never kept, nor indexed. */
+async function introuvable(r: Response): Promise<Response> {
+  const headers = new Headers(r.headers);
+  headers.set("cache-control", UV_HEADERS["cache-control"]);
+  headers.set("x-robots-tag", UV_HEADERS["x-robots-tag"]);
+  headers.set("referrer-policy", UV_HEADERS["referrer-policy"]);
+  return new Response(r.body, { status: 404, headers });
 }
 
 /** Any other address a browser asks for: a page that leads back to the communes. */

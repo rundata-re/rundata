@@ -37,7 +37,9 @@ const reliefImage = (clip: string, href?: string) =>
 export const RELIEF_FIN = `/relief-fin-${relief.fin}-`;
 export const RELIEF_FIN_N = 4;
 export const RELIEF_FIN_ZOOM = 2.5;
-const finLayer = (key: string) => `<g id="rf-${key}" class="rf" clip-path="url(#isl-clip)"></g>`;
+/** RELIEF_PATH's width in pixels, the island's whole width; a fine tile's is the same for a quarter of it. */
+export const RELIEF_PX = 1200;
+export const finLayer = (key: string) => `<g id="rf-${key}" class="rf" clip-path="url(#isl-clip)"></g>`;
 
 /**
  * The credit of the island's map, for a page that names its own sources (the footer then names none): the communes'
@@ -716,7 +718,8 @@ export function ownIds(parts: string[]): string[] {
  * left, then aslant on either side, the first that touches no point; else, inside the frame (never cut by its edge: « Piton de la Fournaise » at 1280, marketing's review of 31/10), the one that covers the least of the lines and dots and no marker's shape; else the name is not shown, the summit's mark is, as a name that would cover a marker (« 3 070 m » under « 13,1 », review n° 457); the name
  * moves, never the station. What is hidden takes no room (the wind's pills under the temperatures, the summits'
  * names on a phone). Again when the map changes size, when a map zooms (its viewBox) and when a tab
- * changes the points shown. A map put in the page later (laterMap()) is placed when it comes.
+ * changes the points shown. A map put in the page later (laterMap()) is placed when it comes. Marks drawn smaller than
+ * their shapes (`--mk`, /meteo's in its full screen) are avoided at the size drawn, about their group's point (`.mo`).
  */
 /**
  * A map far under the hero, put in the page only when it nears the screen: in a `<template>` until then, so that the
@@ -737,7 +740,7 @@ export const NOMS_SCRIPT = `(()=>{const P=${JSON.stringify(NUDGE).replace(/</g, 
 const run=(svg)=>{const g=svg.querySelector(".nm"),vb=svg.viewBox.baseVal,cw=svg.clientWidth;if(!g||!vb||!vb.width||!cw)return;
 const u=vb.width/cw,wide=cw>=640,p=2*u,busy=[],kept=[],box=(b,r)=>[b.x-r-p,b.y-r-p,b.x+b.width+r+p,b.y+b.height+r+p],
 e=${EDGE}*u,inn=(b)=>b[0]>=vb.x+e&&b[1]>=vb.y+e&&b[2]<=vb.x+vb.width-e&&b[3]<=vb.y+vb.height-e,free=(b)=>inn(b)&&![...busy,...kept].some((o)=>hit(o,b));const shown=(e)=>{for(;e&&e!==svg;e=e.parentNode)if(getComputedStyle(e).display==="none")return false;return true};
-const hard=[];svg.querySelectorAll(".mk .sh,.mk .mn,.sp:not(.off) .rg,.pin,.ties circle,.trk-start,.rj-st circle,.wt line,.wt circle").forEach((e)=>{let b;if(!shown(e))return;try{b=e.getBBox()}catch{return}const r=e.matches(".rg,.trk-start")?9*u:0;if(b.width||b.height||r&&e.getClientRects().length){busy.push(box(b,r));if(e.matches(".mk .sh"))hard.push(e.tagName==="circle"?[b.x+b.width/2,b.y+b.height/2,b.width/2]:box(b,0))}});
+const hard=[],mk=+svg.style.getPropertyValue("--mk")||1;svg.querySelectorAll(".mk .sh,.mk .mn,.sp:not(.off) .rg,.pin,.ties circle,.trk-start,.rj-st circle,.wt line,.wt circle").forEach((e)=>{let b;if(!shown(e))return;try{b=e.getBBox()}catch{return}if(mk!==1&&!e.matches("line")){const m=e.closest(".mo"),o=m?getComputedStyle(m).transformOrigin.split(" ").map(parseFloat):[b.x+b.width/2,b.y+b.height/2];b={x:o[0]+(b.x-o[0])*mk,y:o[1]+(b.y-o[1])*mk,width:b.width*mk,height:b.height*mk}}const r=e.matches(".rg,.trk-start")?9*u:0;if(b.width||b.height||r&&e.getClientRects().length){busy.push(box(b,r));if(e.matches(".mk .sh"))hard.push(e.tagName==="circle"?[b.x+b.width/2,b.y+b.height/2,b.width/2]:box(b,0))}});
 svg.querySelectorAll(".trk-halo").forEach((l)=>{const L=l.getTotalLength(),st=Math.max(6*u,L/800);for(let s=0;s<=L;s+=st){const q=l.getPointAtLength(s);busy.push([q.x-4*u-p,q.y-4*u-p,q.x+4*u+p,q.y+4*u+p])}});
 const marks=[];svg.querySelectorAll(".pk").forEach((k)=>{const ts=[...k.querySelectorAll("text")],at=(d)=>ts.forEach((t)=>{t.setAttribute("x",+t.dataset.x+d[0]);t.setAttribute("y",+t.dataset.y+d[1])});
 let T;const a=k.querySelector("path");if(!shown(k)||!a)return;try{a.removeAttribute("transform");T=a.getBBox()}catch{return}if(!T.width)return;
@@ -1129,6 +1132,17 @@ im.addEventListener("error",()=>{if(im.getAttribute("href")===F){im.dataset.ko="
 if(!seen.has(s)){seen.add(s);if(ro)ro.observe(s);if(mo)mo.observe(s,{attributes:true,attributeFilter:["viewBox"]})}pick(im)});
 const go=()=>{take(document);document.addEventListener("carte",(e)=>{if(e.target.querySelectorAll)take(e.target)})};
 if(document.readyState==="complete")go();else addEventListener("load",go,{once:true})})();`;
+
+/**
+ * The fine relief of a map in its full screen (`svg[data-fin]`, /meteo's): the tiles in view of its layer `rf-<key>`,
+ * once the screen's pixels across the map (its width on screen, times the screen's density and its zoom) are more than
+ * RELIEF_PX by a tenth, whatever the zoom; never out of the full screen. Each tile asked once, kept while the page lasts.
+ */
+export const FIN_SCRIPT = `(()=>{document.querySelectorAll("svg[data-fin]:not([data-fon])").forEach((svg)=>{svg.dataset.fon="1";const rg=svg.querySelector(".rf"),W=${W},H=${H},RN=${RELIEF_FIN_N},RF=${inScript(RELIEF_FIN)},NS="http://www.w3.org/2000/svg";if(!rg)return;let q=0;
+const fin=()=>{q=0;const v=svg.viewBox.baseVal,c=svg.clientWidth;if(!c||!v||!svg.closest(".pe-on")||c*(devicePixelRatio||1)*W/v.width<=${RELIEF_PX}*1.1)return;const s=W/RN,t=H/RN;
+for(let i=Math.max(0,Math.floor(v.x/s));i<=Math.min(RN-1,Math.floor((v.x+v.width)/s));i++)for(let j=Math.max(0,Math.floor(v.y/t));j<=Math.min(RN-1,Math.floor((v.y+v.height)/t));j++){const id=i+"-"+j;if(rg.querySelector('[data-t="'+id+'"]'))continue;
+const im=document.createElementNS(NS,"image");im.dataset.t=id;im.setAttribute("x",i*s);im.setAttribute("y",j*t);im.setAttribute("width",s);im.setAttribute("height",t);im.setAttribute("preserveAspectRatio","none");im.setAttribute("href",RF+id+".webp");rg.appendChild(im)}};
+const later=()=>{clearTimeout(q);q=setTimeout(fin,250)};new MutationObserver(later).observe(svg,{attributes:true,attributeFilter:["viewBox"]});addEventListener("resize",later)})})();`;
 
 // New tiles only once a pinch or a drag has stopped (250 ms): the Géoplateforme takes at most 40 requests a second
 // from one address, and a view asks for 96 tiles at most, a level lower if the screen's would take more (a wide map on

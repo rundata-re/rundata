@@ -8,7 +8,8 @@
  * one (a computer, Android); an iPhone allows it only to a video, so there the block covers the page instead (position
  * fixed, the screen's safe areas). Escape or the button again leaves it, and so does a link to a part of the page
  * outside the block, when the page lets it lead there. The map takes the largest size at its proportions; each change of size is told to the page as a
- * `resize`, so that the canvases, the IGN's tiles and the figures of the map are drawn again at the map's new size.
+ * `resize`, so that the canvases, the IGN's tiles and the figures of the map are drawn again at the map's new size;
+ * so is a choice in the block (a layer, a box), whose legend may take another line.
  * Written for any map: /carte, /meteo.
  */
 
@@ -56,7 +57,7 @@ const put=()=>scrollTo({top:y,behavior:"instant"});
 const leave=(lien)=>{if(!on)return;on=false;legende();back.forEach((c,n)=>c.replaceWith(n));back.clear();p.remove();
 box.classList.remove("pe-on");map.classList.remove("pe-m");bar.classList.remove("pe-c");root.classList.remove("pe-lock");b.textContent=M.entrer;b.setAttribute("aria-pressed","false");
 if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});if(!lien)put();fit();if(!lien)requestAnimationFrame(put)};
-b.addEventListener("click",()=>on?leave():enter());large.addEventListener("change",()=>{legende();fit()});
+b.addEventListener("click",()=>on?leave():enter());box.addEventListener("change",()=>{if(on)fit()});large.addEventListener("change",()=>{legende();fit()});
 // A link the page held back (a finger's first tap on a station of /meteo opens its bubble, not its link) leaves it open.
 box.addEventListener("click",(e)=>{const a=on&&!e.defaultPrevented&&e.target.closest&&e.target.closest('a[href^="#"]'),t=a&&document.getElementById(decodeURIComponent(a.getAttribute("href").slice(1)));if(t&&!box.contains(t))leave(true)});
 document.addEventListener("fullscreenchange",()=>{if(!document.fullscreenElement)leave();fit()});

@@ -10,6 +10,8 @@
  * `zshow` (its detail: x and y, in the map's units), and frames it with `zbox` (x, y and the width; none, the whole
  * frame); carte-points.ts zooms where a finger covers too many points with
  * `pzoom974`. A button that can do nothing more is greyed. Without the script, the map stays as drawn and the buttons hidden.
+ * A map that zooms in its full screen only (`data-zpe`, /meteo's: on the page, a finger scrolls the page and a click
+ * opens at once) stays whole out of it, and is whole again when it leaves it.
  */
 export const MOTS = {
   zoomIn: "Rapprocher",
@@ -58,7 +60,7 @@ export const REACH_PX = 22;
 // runs once for each map, however many times the page holds it. The backgrounds come after it in the page: they are
 // looked for when they change, and when the map zooms.
 const SCRIPT = `(()=>{document.querySelectorAll("svg[data-zoom]:not([data-zon])").forEach((svg)=>{svg.dataset.zon="1";const key=svg.dataset.fd,z=document.querySelector('.kzoom[data-fd="'+key+'"]'),fd='.fonds[data-fd="'+key+'"]';if(z)z.hidden=false;
-const most=()=>+(svg.dataset.zoomFd&&document.querySelector(fd+" input:checked:not([value=relief])")?svg.dataset.zoomFd:svg.dataset.zoom)||1,bt=(k)=>z&&z.querySelector('[data-z="'+k+'"]');
+const off=()=>svg.hasAttribute("data-zpe")&&!svg.closest(".pe-on"),most=()=>off()?1:+(svg.dataset.zoomFd&&document.querySelector(fd+" input:checked:not([value=relief])")?svg.dataset.zoomFd:svg.dataset.zoom)||1,bt=(k)=>z&&z.querySelector('[data-z="'+k+'"]');
 const B=(svg.dataset.box||svg.getAttribute("viewBox")).split(" ").map(Number);let v=svg.getAttribute("viewBox").split(" ").map(Number);const put=()=>{svg.setAttribute("viewBox",v.map((x)=>Math.round(x*100)/100).join(" "));svg.classList.toggle("zoomed",v[2]<B[2]-.01);
 if(z){bt("+").disabled=v[2]<=B[2]/most()+.01;bt("-").disabled=bt("0").disabled=v[2]>=B[2]-.01}};
 const clamp=()=>{v[2]=Math.min(B[2],Math.max(B[2]/most(),v[2]));v[3]=v[2]*B[3]/B[2];v[0]=Math.min(B[0]+B[2]-v[2],Math.max(B[0],v[0]));v[1]=Math.min(B[1]+B[3]-v[3],Math.max(B[1],v[1]));put()};
@@ -72,11 +74,11 @@ if(ps.size===2){const[a,b]=[...ps.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]),c=
 if(!svg.classList.contains("zoomed"))return;const p0=pt(o[0],o[1]),p1=pt(e.clientX,e.clientY);moved+=Math.hypot(e.clientX-o[0],e.clientY-o[1]);v[0]-=p1[0]-p0[0];v[1]-=p1[1]-p0[1];clamp();e.preventDefault()});
 const up=(e)=>{ps.delete(e.pointerId);if(ps.size<2)last=null};["pointerup","pointercancel","pointerleave"].forEach((t)=>svg.addEventListener(t,up));
 ${WHEEL_SCRIPT}${DOUBLE_SCRIPT}
-svg.addEventListener("click",(e)=>{if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);
+svg.addEventListener("click",(e)=>{if(off())return;if(moved>8){e.stopImmediatePropagation();e.preventDefault();return}held(e)},true);
 svg.addEventListener("pzoom974",(e)=>{const w=v[2],c=pt(e.detail.x,e.detail.y);zoom(2.5,c[0],c[1]);if(v[2]<w)e.preventDefault()});
 svg.addEventListener("zbox",(e)=>{const d=e.detail;if(!d){v=B.slice();put();return}v=[d.x,d.y,d.w,d.w*B[3]/B[2]];clamp()});
 svg.addEventListener("zshow",(e)=>{const x=e.detail.x,y=e.detail.y;if(x<v[0]||x>v[0]+v[2]||y<v[1]||y>v[1]+v[3]){v[0]=x-v[2]/2;v[1]=y-v[3]/2;clamp()}});
-document.addEventListener("change",(e)=>{if(e.target.closest&&e.target.closest(fd))clamp()});put();
+document.addEventListener("change",(e)=>{if(e.target.closest&&e.target.closest(fd))clamp()});if(svg.hasAttribute("data-zpe"))addEventListener("resize",()=>{if(off())v=B.slice();clamp()});put();
 if(z)z.addEventListener("click",(e)=>{const k=e.target.closest("button")?.dataset.z;if(k==="+")zoom(${DOUBLE_STEP});else if(k==="-")zoom(1/${DOUBLE_STEP});else if(k==="0"){v=B.slice();put()}})})})();`;
 
 /**
@@ -84,10 +86,18 @@ if(z)z.addEventListener("click",(e)=>{const k=e.target.closest("button")?.datase
  * `key` is the map's `data-fd`; `frame`, what its whole frame shows.
  */
 export function zoomControls(key: string, frame: keyof typeof MOTS.recadrerAria): string {
+  return zoomButtons(key, frame) + ZOOM_SCRIPT;
+}
+
+/** The buttons alone, for a page that puts them elsewhere than under the map: ZOOM_SCRIPT after the map. */
+export function zoomButtons(key: string, frame: keyof typeof MOTS.recadrerAria): string {
   // The words hold no character to escape in an attribute.
   const button = (z: string, aria: string, text: string) => `<button type="button" data-z="${z}" aria-label="${aria}">${text}</button>`;
-  return `<div class="kzoom" data-fd="${key}" hidden>${button("+", MOTS.zoomIn, "+")}${button("-", MOTS.zoomOut, "−")}${button("0", MOTS.recadrerAria[frame], MOTS.recadrer)}</div><script>${SCRIPT}</script>`;
+  return `<div class="kzoom" data-fd="${key}" hidden>${button("+", MOTS.zoomIn, "+")}${button("-", MOTS.zoomOut, "−")}${button("0", MOTS.recadrerAria[frame], MOTS.recadrer)}</div>`;
 }
+
+/** The zoom's script, after the map (and its buttons, wherever they are). */
+export const ZOOM_SCRIPT = `<script>${SCRIPT}</script>`;
 
 /**
  * On the hikes' map, a tap beside a line takes the nearest one within a finger's reach. After the zoom's script, whose

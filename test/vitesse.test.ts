@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journeeOf } from "../src/web/data.js";
 import { installationsReplay, productionChart } from "../src/web/electricite-carte.js";
-import { rejeuScript, skipOf } from "../src/web/meteo-carte.js";
+import { IMAGES_FAST, IMAGES_MAX, imagesMaxOf, keepsUp, rejeuScript, skipOf } from "../src/web/meteo-carte.js";
 import { CSS } from "../src/web/pages.js";
 import { VITESSE_JS, VITESSES, vitesseBouton } from "../src/web/vitesse.js";
 
@@ -88,11 +88,42 @@ describe("the speed of the replays", () => {
     expect(at(4)).toEqual([4, 3, 4, 4, 4]);
     // Never more than 7 shown a second.
     for (const v of VITESSES) for (const x of Object.values(n)) expect((v * x) / skipOf(v, x, 7)).toBeLessThanOrEqual(7);
-    expect(js).toContain(`const kk=(n)=>(${skipOf})(V,n,7),ne=(n)=>V*n/kk(n)`);
+    expect(js).toContain(`const skipOf=${skipOf},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};`);
+    expect(js).toContain(`const kk=(n,x)=>skipOf(V,n,x||7),ne=(n)=>V*n/kk(n)`);
     // Only while playing: paused, the slider shows every image.
-    expect(js).toContain(`sub=(l)=>{const k=K[l],n=playing?kk(ips(l)):1;`);
+    expect(js).toContain(`sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0):1;`);
     expect(js).toContain(`trail=(s)=>rm||!tw()?null:keep(sub("p"),T,s,tw())`);
     // The finer files asked automatically on the images they would show a second at the speed.
-    expect(js).toContain(`ne(nps(m))*CW[0]+30*CW[1]<`);
+    expect(js).toContain(`can=(m)=>keepsUp(CW,slow,ne(nps(m)),0.6,25),`);
+  });
+
+  it("shows up to 14 new images of the rain a second to a device that keeps up with them, as for the finer files; 7 to the others", () => {
+    expect([IMAGES_MAX, IMAGES_FAST]).toEqual([7, 14]);
+    // Measured in the first seconds of a play: a new image's ms, another frame's, the frames a second.
+    const quick = [20, 2, 30], slowish = [45, 3, 30], jerky = [10, 1, 20];
+    const max = (cw: number[] | null, v: number, n: number, slow = false) => imagesMaxOf(cw, slow, v, n, 0.6, 25, 7, 14);
+    // The rain's new images a second at ×1: 6 h, 24 h, 7 days, then the finer files of 24 h and 7 days.
+    const n = { "6h": 72 / 12, "24h": 96 / 24, "7j": 168 / 24, "24h+": 288 / 54, "7j+": 672 / 96 };
+    // At ×4, a quick device: one image in 2 rather than in 4 (in 3 over 24 hours), 10 minutes apart over 6 hours and
+    // the finer 24 hours, rather than 20.
+    expect(Object.values(n).map((x) => skipOf(4, x, max(quick, 4, x)))).toEqual([2, 2, 2, 2, 2]);
+    expect(Object.values(n).map((x) => skipOf(4, x, max(null, 4, x)))).toEqual([4, 3, 4, 4, 4]);
+    // 12 new images a second at 45 ms each and 30 frames at 3 ms fill more than 0.6 s: 7, though it keeps up with the
+    // finer files' 6 (the same measure, keepsUp).
+    expect(max(slowish, 4, n["6h"])).toBe(7);
+    expect(keepsUp(slowish, false, (4 * n["6h"]) / skipOf(4, n["6h"], 7), 0.6, 25)).toBe(true);
+    // Fewer than 25 frames a second, a connection that saves data, or not measured yet: 7.
+    expect([max(jerky, 4, n["6h"]), max(quick, 4, n["6h"], true), max(null, 4, n["6h"])]).toEqual([7, 7, 7]);
+    // At ×1, every image either way; at ×2, every image rather than one in 2.
+    expect(Object.values(n).map((x) => skipOf(1, x, max(quick, 1, x)))).toEqual([1, 1, 1, 1, 1]);
+    expect(Object.values(n).map((x) => skipOf(2, x, max(quick, 2, x)))).toEqual([1, 1, 1, 1, 1]);
+    const js = rejeuScript();
+    // Chosen when a play starts or its speed changes, never during it; only for the rain.
+    expect(js).toContain(`const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?7:imagesMaxOf(CW,slow,V,ips("p"),0.6,25,7,14)}return IM};`);
+    expect(js).toContain(`const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FW.length=0;`);
+    // A device that draws fewer than 25 frames a second over the last 30 goes back to 7 at once, for the rest of the visit.
+    expect(js).toContain(`if(IM>7&&was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30&&FW.reduce((a,b)=>a+b,0)>30e3/25){DN=true;IM=7}}`);
+    // The rain's next image shown, for the page to decide whether a pair is moved (test/pluie-mouvement.test.ts).
+    expect(js).toContain(`RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm(),nxt(r.z))`);
   });
 });

@@ -40,7 +40,12 @@
  * The mouse over it opens it, and outlines the commune (`.on`); a click follows its link. It opens below the commune,
  * its arrow up, when there is no room above it inside the map (Saint-Denis, Sainte-Marie, Sainte-Suzanne), and moves
  * in from the map's sides, its arrow still on the commune (Saint-Philippe, Saint-Paul). A finger's tap opens it, never
- * the page: its link does. On /communes, whose names are the links, a tap opens the page, as its legend says.
+ * the page: its link does.
+ *
+ * The map of /communes (its names' layer, `.cn`: carte-communes.ts) has no bubble at all, neither for the mouse nor for
+ * the keyboard (the user, 10/11/2026: « les info bulles qui servent à rien », one shown far from its name and over
+ * others): each name is its commune's link, and the commune hovered is outlined by the page (SURVOL_SCRIPT). A finger's
+ * tap there still takes the nearest name, a short list when several are that close.
  */
 
 /** Around a finger's tap, in CSS pixels: the half of the 44 px a finger covers. */
@@ -106,14 +111,14 @@ document.addEventListener("pointerdown",(e)=>{if(!box.hidden&&!box.contains(e.ta
 document.addEventListener("keydown",(e)=>{if(e.key==="Escape"){close();hide()}else if(e.key==="Tab"&&!e.shiftKey&&on&&document.activeElement===on&&tip.classList.contains("lien")){e.preventDefault();tip.querySelector("a").focus()}});
 addEventListener("resize",()=>{close();hide()});
 document.addEventListener("click",(e)=>{if(e.defaultPrevented||e.button||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;const a=e.target.closest&&e.target.closest("svg.map a.mk,svg.map a.sp,svg.map a.zn"),r=a&&row(a);if(!r)return;e.preventDefault();hide();voir(r)});
-const wire=(s)=>{const pts=()=>[...s.querySelectorAll("a.mk,a.sp")],zs=[...s.querySelectorAll("a.zn[data-pn]")],named=!!s.querySelector("a.sp");const own=!!(s.closest("figure")||s.parentElement).querySelector("[data-mtip]");
+const wire=(s)=>{const pts=()=>[...s.querySelectorAll("a.mk,a.sp")],zs=[...s.querySelectorAll("a.zn[data-pn]")],named=!!s.querySelector("a.sp");const own=!!(s.closest("figure")||s.parentElement).querySelector("[data-mtip]")||!!s.querySelector(".cn");
 const nearest=(x,y)=>{const b=s.getBoundingClientRect();let best=null,k=M;s.querySelectorAll("a.sp").forEach((a)=>{const c=mid(a);if(!c||c[0]<b.left||c[0]>b.right||c[1]<b.top||c[1]>b.bottom)return;const d=Math.hypot(c[0]-x,c[1]-y);if(d<=k){k=d;best=a}});return best};
 if(!own){[...pts(),...zs].forEach((a)=>{a.querySelectorAll("title").forEach((t)=>{if(!a.getAttribute("aria-label"))a.setAttribute("aria-label",t.textContent);t.remove()});
 a.addEventListener("focus",()=>{if(pass!==a&&a.matches(":focus-visible"))show(a)});a.addEventListener("blur",(e)=>{if(pass===a)pass=null;if(!tip.contains(e.relatedTarget))later()});
 if(a.matches(".mk,.zn")){a.addEventListener("pointerenter",(e)=>{if(e.pointerType==="mouse")show(a)});a.addEventListener("pointerleave",(e)=>{if(e.pointerType==="mouse")later()})}});
 let vise=null;const aim=(a)=>{if(vise&&vise!==a)vise.classList.remove("vise");vise=a;if(a)a.classList.add("vise")};
 s.addEventListener("pointermove",(e)=>{if(e.pointerType!=="mouse"||!s.querySelector("a.sp"))return;const a=nearest(e.clientX,e.clientY);s.classList.add("souris");aim(a);if(e.buttons){hide();return}
-const z=!a&&e.target.closest&&e.target.closest("a.zn[data-pn]");if(a)show(a);else if(z)show(z);else if(on&&on.matches(".sp"))later()});
+if(a)show(a);else if(on&&on.matches(".sp"))later()});
 s.addEventListener("pointerleave",(e)=>{if(e.pointerType!=="mouse")return;s.classList.remove("souris");aim(null);if(on&&on.matches(".sp"))later()});
 s.addEventListener("pointerdown",(e)=>{if(e.pointerType!=="mouse"){s.classList.remove("souris");aim(null)}},true);
 new MutationObserver(()=>{if(!on||!s.contains(on))return;const c=mid(on),b=s.getBoundingClientRect();if(!c||c[0]<b.left||c[0]>b.right||c[1]<b.top||c[1]>b.bottom)hide();else place(on)}).observe(s,{attributes:true,attributeFilter:["viewBox"]})}

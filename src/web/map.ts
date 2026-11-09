@@ -355,7 +355,8 @@ const pointData = (lines: (string | undefined)[]) =>
 /**
  * Each commune given as a link over its shape, invisible until hovered or focused, with its bubble's lines (`data-pn`,
  * `data-p2`) and its link's words (`data-pv`, « Voir la commune → »). One without `href` has its bubble only, and is
- * not said: the map's legend says it.
+ * not said: the map's legend says it. Under the names of /communes (`named`), a commune has neither bubble nor title:
+ * its name is its link, and the page outlines it when hovered (carte-communes.ts).
  */
 function zoneLinks(links: Record<string, ZoneLink>, named = false, listed = false): string {
   const out = island.paths
@@ -364,7 +365,8 @@ function zoneLinks(links: Record<string, ZoneLink>, named = false, listed = fals
       const l = links[p.nom];
       const said = l.say ? `${p.nom} : ${l.say}, voir le détail` : `${p.nom}, voir sa page`;
       const a11y = !l.href || named ? ' tabindex="-1" aria-hidden="true"' : ` aria-label="${esc(said)}"`;
-      return `<a class="zn"${l.href ? ` href="${esc(l.href)}"` : ""}${a11y}${pointData([p.nom, l.say])}${l.href ? ' data-pv="commune"' : ""}${l.href && !named && listed ? ' tabindex="-1"' : ""}><title>${esc(p.nom)}</title><path d="${p.d}"/></a>`;
+      if (named) return `<a class="zn"${l.href ? ` href="${esc(l.href)}"` : ""}${a11y}><path d="${p.d}"/></a>`;
+      return `<a class="zn"${l.href ? ` href="${esc(l.href)}"` : ""}${a11y}${pointData([p.nom, l.say])}${l.href ? ' data-pv="commune"' : ""}${l.href && listed ? ' tabindex="-1"' : ""}><title>${esc(p.nom)}</title><path d="${p.d}"/></a>`;
     })
     .join("");
   return out ? `<g class="zones">${out}</g>` : "";

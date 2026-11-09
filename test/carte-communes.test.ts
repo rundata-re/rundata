@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import island from "../src/places/island.json" with { type: "json" };
 import { NAME_UNITS, nameBox, PLACES, SURVOL_SCRIPT } from "../src/web/carte-communes.js";
+import { POINTS_SCRIPT } from "../src/web/carte-points.js";
 import { COMMUNES, communePage, communesPage } from "../src/web/commune.js";
 import { H, islandMap, W } from "../src/web/map.js";
 import { CSS } from "../src/web/pages.js";
@@ -68,14 +69,27 @@ describe("the names on the map of /communes", () => {
     expect(communesPage(ORIGIN)).toContain(`<figcaption class="note" style="color:var(--on-night-muted)">Choisissez une commune pour ouvrir sa page.</figcaption></figure>`);
     expect(CSS).toContain(".map .cn a.on text");
     expect(CSS).toContain(".map .zn.on path");
+    // On /communes the commune lit is filled with the sun's colour, lightly: white over the land did not show.
+    expect(CSS).toContain(".noms .map .zn.on path{fill:color-mix(in srgb,var(--sun) 24%,transparent)}");
     // The names in the order of the communes' links, so that the script pairs them by rank.
-    const zones = [...html.matchAll(/<a class="zn"[^>]*><title>([^<]+)<\/title>/g)].map((m) => m[1]);
-    const names = [...html.matchAll(/<a class="sp"[^>]* data-pn="([^"]+)"/g)].map((m) => m[1]);
+    const zones = [...html.matchAll(/<a class="zn" href="([^"]+)"/g)].map((m) => m[1]);
+    const names = [...html.matchAll(/<a class="sp" href="([^"]+)"/g)].map((m) => m[1]);
+    expect(zones).toHaveLength(24);
     expect(names).toEqual(zones);
+    // A name focused lights its commune too, and lets it go on blur.
+    expect(SURVOL_SCRIPT).toContain(`a.addEventListener("focus",()=>on(i,true));a.addEventListener("blur",()=>on(i,false))`);
+  });
+
+  // 10/11/2026, the user: « tu en as fait trop avec les info bulles qui servent a rien » (the bubble of L'Étang-Salé
+  // shown far from its name, over others).
+  it("have no bubble, nor a title, for the mouse or the keyboard: each name is its commune's link", () => {
+    expect(POINTS_SCRIPT).toContain(`||!!s.querySelector(".cn");`);
+    expect(html).not.toMatch(/<a class="zn"[^>]*data-pn=/);
+    expect(html).not.toMatch(/<a class="zn"[^>]*><title>/);
   });
 
   it("leave the communes' own links to the mouse, so that the keyboard meets each commune once", () => {
-    expect(html.match(/<a class="zn" href="[^"]+" tabindex="-1" aria-hidden="true" data-pn="[^"]+" data-pv="commune">/g)).toHaveLength(24);
+    expect(html.match(/<a class="zn" href="[^"]+" tabindex="-1" aria-hidden="true"><path /g)).toHaveLength(24);
     // The placed names of the other maps are not drawn.
     expect(html).not.toContain('class="nm"');
   });

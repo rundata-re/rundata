@@ -614,7 +614,7 @@ describe("the rain's animation and its replay", () => {
     // An image that changes draws the layer again and moves no drop; only rain after none starts the animation, and a
     // still picture is drawn again with its image for those who ask for less motion.
     expect(METEO_SCRIPT).toContain(`const turn=(was,nw)=>{if(cw)paint();if(!was&&moving()||nw&&calm())o.again()}`);
-    expect(METEO_SCRIPT.match(/mix:\(a,z,f,el,gr,tr,wm\)=>\{[^\n]*/)![0]).not.toContain("o.again");
+    expect(METEO_SCRIPT.match(/mix:\(a,z,f,el,gr,tr,wm,nx\)=>\{[^\n]*/)![0]).not.toContain("o.again");
     // A drop at its end is born again, or leaves when the rain wants fewer; those lacking come a tenth at a time.
     expect(METEO_SCRIPT).toContain(`if((p.a+=k)>p.m){if(ds.length>n||!born(p))ds.splice(i,1)}`);
     expect(METEO_SCRIPT).toContain(`Math.ceil(n/10)`);
@@ -661,7 +661,7 @@ describe("the rain's animation and its replay", () => {
     for (const m of [46, 47, 47.49]) expect(shown(at(10, m), { a, z, f: (m - 45) / 5 }, "p")).toBe(a.t);
     for (const m of [47.5, 48, 49.9]) expect(shown(at(10, m), { a, z, f: (m - 45) / 5 }, "p")).toBe(z.t);
     expect(rejeuScript()).toContain(`t=end?E:shown(T,r,l)`);
-    expect(rejeuScript()).toContain(`trail(shown(T,r,l)),wm())`);
+    expect(rejeuScript()).toContain(`trail(shown(T,r,l)),wm(),nxt(r.z))`);
     expect(METEO_SCRIPT).toContain(`n=f<.5?A:Z`);
     // On an image, its time; between two hours of the stations, the moment, said « estimé ».
     expect(shown(at(10, 46), { m: a }, "p")).toBe(a.t);
@@ -820,7 +820,7 @@ describe("the rain's edges, its drops and the wind", () => {
     const PL = { "24h+": 54_000, "7j+": 96_000, jour: 54_000 }, DU = { "24h+": 864e5, "7j+": 6048e5, jour: 864e5 }, ST = { "24h+": 3e5, "7j+": 9e5, jour: 3e5 };
     expect((Object.keys(PL) as (keyof typeof PL)[]).map((m) => DU[m] / ST[m] * 1e3 / PL[m])).toEqual([16 / 3, 7, 16 / 3]);
     expect(js).toContain(`SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0}`);
-    expect(js).toContain(`slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=25&&ne(nps(m))*CW[0]+30*CW[1]<600,`);
+    expect(js).toContain(`slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>keepsUp(CW,slow,ne(nps(m)),0.6,25),`);
     // Measured in a play of the rain over 6 or 24 hours only, unless more images were asked or refused.
     expect(js).toContain(`MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p"`);
     // The finer file asked at once, swapped in once the play stops (at its end or paused): a play never changes its pace.
@@ -946,7 +946,7 @@ describe("the replay played at an even pace", () => {
     expect(rejeuScript()).toContain(`if(playing&&RJ.p.ahead&&gz&&gz!==AZ){AZ=gz;RJ.p.ahead(ahead(sub("g"),gz,3).map((x)=>()=>rain(x)),gr)}`);
     expect(METEO_SCRIPT).toContain(`const prepPlan=${prepPlan};`);
     // Playing on from the picture shown, two images not ready leave it there; the textures dropped with the layer.
-    expect(METEO_SCRIPT).toContain(`if(RJ.pl&&mx&&(A.fin===mx[0].fin||A.fin===mx[1].fin)&&!fit(A,Z)){HP=[a,z,f,el,gr,tr,wm];need(A,Z);return}`);
+    expect(METEO_SCRIPT).toContain(`if(RJ.pl&&mx&&(A.fin===mx[0].fin||A.fin===mx[1].fin)&&!fit(A,Z,N)){HP=[a,z,f,el,gr,tr,wm,nx];need(A,Z,N);return}`);
     expect(rejeuScript()).toContain(`AZ=null;if(RJ.p&&RJ.p.flush)RJ.p.flush();`);
     expect(METEO_SCRIPT).toContain(`flush:()=>{AQ=[];HP=null;NK="";FQ.clear();if(GL)for(const t of TX.values())GL.deleteTexture(t);TX.clear()}`);
     // The work a slice of about 7 ms at a time, when idle, or as soon as it can without requestIdleCallback (Safari).

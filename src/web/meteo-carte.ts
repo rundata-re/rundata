@@ -906,6 +906,35 @@ const DROPS = {
  * déplacements latéraux de la pluie aussi parfois à haute vitesse, c'est très bizarre »).
  */
 const WAY_MS = 15 * 6e4;
+/**
+ * The way of the rain of grid `a` (w × h) along a field found by flowOf (U, V at bw × bh blocks, in cells): each block's
+ * way weighted by the rain of `a` over it; [0, 0] where it is dry. The page's script takes it as its text.
+ */
+export const meanWay = (U: Float32Array, V: Float32Array, bw: number, bh: number, a: Float32Array, w: number, h: number): [number, number] => {
+  let su = 0, sv = 0, s = 0;
+  for (let y = 0; y < h; y++) {
+    const by = Math.min(bh - 1, Math.floor((y * bh) / h));
+    for (let x = 0; x < w; x++) {
+      const q = a[y * w + x];
+      if (!q) continue;
+      const i = by * bw + Math.min(bw - 1, Math.floor((x * bw) / w));
+      su += U[i] * q;
+      sv += V[i] * q;
+      s += q;
+    }
+  }
+  return s ? [su / s, sv / s] : [0, 0];
+};
+/**
+ * Whether way `q` turns back from way `p`, both a cell or more, more than 120° apart: the rain moved one way between two
+ * images then back between the next two. Then the first two are faded, not moved (the user, 07/11/2026, over 7 days:
+ * « l'impression de décalage latéral toujours »; on the 7 days of 09/11/2026, an image every quarter of an hour, 17
+ * pairs in 231). The page's script takes it as its text.
+ */
+export const turnsBack = (p: number[], q: number[]) => {
+  const a = Math.hypot(p[0], p[1]), b = Math.hypot(q[0], q[1]);
+  return a >= 1 && b >= 1 && (p[0] * q[0] + p[1] * q[1]) / (a * b) < -0.5;
+};
 
 /**
  * The rain the radar sees, in the browser, asked for when the layer is first shown (web/pluie-radar.ts): its cells
@@ -1039,10 +1068,18 @@ if(GU[2]!==F){gl.activeTexture(gl.TEXTURE2);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB
 const k=dark()?1:0;gl.uniform3fv(GQ.P,KA[k].flatMap((c)=>c.slice(0,3).map((x)=>x/255)));gl.uniform3fv(GQ.E,INK[k].map((x)=>x/255));
 gl.uniform1f(GQ.f,f);gl.uniform2f(GQ.n,A.w,A.h);gl.uniform2f(GQ.px,1/cw,1/ch);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLE_STRIP,0,4)};
 // Moved where the browser draws with WebGL, neither image is the rain gauges' estimate, and they are WAY_MS apart at
-// most (way); faded otherwise.
-const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=${WAY_MS}&&glInit();
+// most (wy); faded otherwise.
+const wy=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=${WAY_MS}&&glInit();
+// And the way of the next pair (Z to the next image shown, N) does not turn back (turnsBack): decided once a pair, as
+// soon as both ways are found (decide; undefined until then), kept (WB). No next image (null: the file's last, or a
+// page's script from before), faded.
+const meanWay=${meanWay},turnsBack=${turnsBack},WB=new Map();
+const decide=(A,Z,N)=>{if(!N||!wy(A,Z))return false;const key=fk(A,Z)+" "+N.fin;let b=WB.get(key);if(b!==undefined)return b;const r=FL.get(fk(A,Z)),nx=wy(Z,N),q=nx&&FL.get(fk(Z,N));if(!r||nx&&!q)return undefined;
+b=!q||!turnsBack(meanWay(r.U,r.V,r.w,r.h,gv(A),A.w,A.h),meanWay(q.U,q.V,q.w,q.h,gv(Z),Z.w,Z.h));WB.set(key,b);if(WB.size>KP(A))WB.delete(WB.keys().next().value);return b};
+// Paused, or not made ready in time: the ways found now.
+const way=(A,Z,N)=>{let b=decide(A,Z,N);if(b===undefined){flowStep(A,Z,Infinity);if(wy(Z,N))flowStep(Z,N,Infinity);b=decide(A,Z,N)}return b};
 const paint=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);if(!mx){if(d){x.drawImage(cv(d),0,0);const a=bad(d);if(!a.z)badly(x,a,d.w,d.h)}return}
-const F=way(mx[0],mx[1])&&flow(mx[0],mx[1]);
+const F=way(mx[0],mx[1],mx[4])&&flow(mx[0],mx[1]);
 if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{
 x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over"}
 const a=veils(...mx);if(a)badly(x,a,mx[1].w,mx[1].h)};
@@ -1091,22 +1128,25 @@ const un=(s)=>s.split(",").map((r)=>r?r[0].repeat(parseInt(r.slice(1),36)):"").j
 const Dg=new Map(),grid=(e,gr)=>{let j=Dg.get(e);if(j){Dg.delete(e);Dg.set(e,j);return j}j={fin:e.fin,pg:e.pg,pannes:e.pannes,w:gr.w,h:gr.h,pluie:un(e.pluie),mal_vu:un(e.mal_vu)};Dg.set(e,j);if(Dg.size>KP(j))Dg.delete(Dg.keys().next().value);return j};
 // What the two images need to be drawn without a long task, made ready or not (fit); made ready first (need), the
 // picture then drawn again (HP). The next images, made ready in the order of prepPlan (ahead, from the replay's script).
-const fit=(A,Z)=>!!(A.bd&&Z.bd)&&(A===Z?cvOk(A):way(A,Z)?!!(A.sf&&Z.sf&&FL.has(fk(A,Z))&&TX.has(A)&&TX.has(Z)):cvOk(A)&&cvOk(Z));
-const pair=(A,Z,dl)=>A===Z?cvStep(A,dl):way(A,Z)?softStep(A,dl)&&softStep(Z,dl)&&flowStep(A,Z,dl)&&!!(tex(A)&&tex(Z)):cvStep(A,dl)&&cvStep(Z,dl);
-const need=(A,Z)=>{const key=fk(A,Z);if(NK===key&&AQ.length)return;NK=key;AQ.unshift((dl)=>{bad(A);bad(Z);if(!pair(A,Z,dl))return false;if(HP){const h=HP;HP=null;RJ.p.mix(...h)}return true});kick()};
+// The next image N: null for none, undefined while not known (the last of those made ready ahead: its way found, the
+// rest once the next is known).
+const fit=(A,Z,N)=>{if(!(A.bd&&Z.bd))return false;if(A===Z)return cvOk(A);const b=decide(A,Z,N);return b===undefined?false:b?!!(A.sf&&Z.sf&&FL.has(fk(A,Z))&&TX.has(A)&&TX.has(Z)):cvOk(A)&&cvOk(Z)};
+const pair=(A,Z,N,dl)=>{if(A===Z)return cvStep(A,dl);if(!wy(A,Z)||N===null)return cvStep(A,dl)&&cvStep(Z,dl);if(!(softStep(A,dl)&&softStep(Z,dl)&&flowStep(A,Z,dl)))return false;if(N===undefined)return true;
+if(wy(Z,N)&&!flowStep(Z,N,dl))return false;return decide(A,Z,N)?!!(tex(A)&&tex(Z)):cvStep(A,dl)&&cvStep(Z,dl)};
+const need=(A,Z,N)=>{const key=fk(A,Z);if(NK===key&&AQ.length)return;NK=key;AQ.unshift((dl)=>{bad(A);bad(Z);if(!pair(A,Z,N,dl))return false;if(HP){const h=HP;HP=null;RJ.p.mix(...h)}return true});kick()};
 const prepPlan=${prepPlan};
 const ok=(gr)=>L&&L.length===gr.w*gr.h,empty=(w,h)=>{mx=null;use(none(w,h));turn(true,true)};
 RJ.p={prep:land,dims:()=>L&&{w:LW,h:LH,L},wind:(ws,t)=>{WS=ws||[];WT=ws?t:null},
 // Between two images (f of the way), with the trail of those before as [image, share left], over wm minutes.
 // Playing on from the picture shown, two images not ready yet leave it there while they are made ready (need): the
 // play never waits for them.
-mix:(a,z,f,el,gr,tr,wm)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr);if(RJ.pl&&mx&&(A.fin===mx[0].fin||A.fin===mx[1].fin)&&!fit(A,Z)){HP=[a,z,f,el,gr,tr,wm];need(A,Z);return}HP=null;
-const n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg];d=n;P=[dist(A),dist(Z),f];
+mix:(a,z,f,el,gr,tr,wm,nx)=>{if(!ok(gr))return;const A=grid(a,gr),Z=grid(z,gr),N=nx?grid(nx,gr):null;if(RJ.pl&&mx&&(A.fin===mx[0].fin||A.fin===mx[1].fin)&&!fit(A,Z,N)){HP=[a,z,f,el,gr,tr,wm,nx];need(A,Z,N);return}HP=null;
+const n=f<.5?A:Z,was=moving(),nw=d!==n,tg=tr&&tr.map(([e,w])=>[grid(e,gr),w]);mx=[A,Z,f,tg,N];d=n;P=[dist(A),dist(Z),f];
 turn(was,nw)},
 gap:(e,el,gr)=>{if(ok(gr))empty(gr.w,gr.h)},
 // The images xs (or what gives each, a rain gauges' estimate) from the next one shown, made ready in the order of
 // prepPlan; the textures and the work left when the layer changes (flush).
-ahead:(xs,gr)=>{if(!ok(gr))return;const js=[];AQ=prepPlan(xs.length).map(([k,i])=>k==="g"?()=>{js[i]=grid(typeof xs[i]==="function"?xs[i]():xs[i],gr);bad(js[i]);return true}:k==="s"?(dl)=>softStep(js[i],dl):(dl)=>pair(js[i-1],js[i],dl));NK="";kick()},
+ahead:(xs,gr)=>{if(!ok(gr))return;const js=[];AQ=prepPlan(xs.length).map(([k,i])=>k==="g"?()=>{js[i]=grid(typeof xs[i]==="function"?xs[i]():xs[i],gr);bad(js[i]);return true}:k==="s"?(dl)=>softStep(js[i],dl):(dl)=>pair(js[i-1],js[i],i+1<xs.length&&typeof xs[i+1]!=="function"?grid(xs[i+1],gr):undefined,dl));NK="";kick()},
 flush:()=>{AQ=[];HP=null;NK="";FQ.clear();if(GL)for(const t of TX.values())GL.deleteTexture(t);TX.clear()},
 clear:()=>{if(d)empty(d.w,d.h)},
 // The replay's legend, written once for the file played (the user, 01/11/2026: « garde le même texte pour la légende,
@@ -1227,9 +1267,28 @@ const TRAIL_MS = 2_000;
  * images are skipped, one in 2, 3…, rather than frames: a new image of the rain is drawn again whole, and a slow phone
  * drew 8 a second at 10 to 15 frames (01/11/2026). The finer files are asked automatically on the new images shown.
  */
-const IMAGES_MAX = 7;
+export const IMAGES_MAX = 7;
+/**
+ * The most new images of the rain a second for a device that keeps up with them (keepsUp, measured as for the finer
+ * files): at ×4, an image every 10 minutes moved one into the other, rather than every 20 faded (the user, 07/11/2026,
+ * at ×4: « pas fluide »; 09/11/2026: the rain of two images 20 minutes apart covered the same cells at 13 %).
+ */
+export const IMAGES_FAST = 14;
 /** At speed `v`, one image shown in so many of a layer that has `n` new ones a second at ×1, for `max` at most a second. */
 export const skipOf = (v: number, n: number, max: number) => Math.max(1, Math.ceil((v * n) / max - 1e-9));
+/**
+ * Whether a device keeps up with `n` new images of the rain a second: its time measured (cw: a new image's, another
+ * frame's, the frames a second; null before the measure) fits within `share` of a second and it draws `fps` frames a
+ * second, never on a connection that saves data or is slow. The replay's script takes it as its text.
+ */
+export const keepsUp = (cw: number[] | null, slow: boolean, n: number, share: number, fps: number) =>
+  !!cw && !slow && cw[2] >= fps && n * cw[0] + 30 * cw[1] < share * 1000;
+/**
+ * The most new images of the rain a second at speed `v`, for a layer of `n` a second at ×1: `hi` for a device that
+ * keeps up with those it would then show, else `lo`. The replay's script takes it as its text (with keepsUp and skipOf).
+ */
+export const imagesMaxOf = (cw: number[] | null, slow: boolean, v: number, n: number, share: number, fps: number, lo: number, hi: number) =>
+  keepsUp(cw, slow, (v * n) / skipOf(v, n, hi), share, fps) ? hi : lo;
 
 /**
  * The replay, asked by REJEU_SCRIPT when its visitor first touches the bar: the file of the length chosen
@@ -1249,8 +1308,9 @@ function rejeuJs(): string {
 ${VITESSE_JS}
 const P=${js({ ...REJEU_PATHS, "24h+": FINS["24h"], "7j+": FINS["7j"] })},JP=${js(jourPath("JOUR"))},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},PL=${js(PLAY_MS)},TRAIL=${TRAIL_MS};
 // A layer's new images a second at ×1 (the radar's, or one an hour), at the speed one in kk of them (IMAGES_MAX), and so
-// many shown a second (ne).
-const kk=(n)=>(${skipOf})(V,n,${IMAGES_MAX}),ne=(n)=>V*n/kk(n),ips=(l)=>(l==="p"?DU[d]/ST[d]:DU[d]/36e5)*1e3/PL[d];
+// many shown a second (ne); the rain's, up to IM (IMAGES_FAST for a device that keeps up).
+const skipOf=${skipOf},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};
+const kk=(n,x)=>skipOf(V,n,x||${IMAGES_MAX}),ne=(n)=>V*n/kk(n),ips=(l)=>(l==="p"?DU[d]/ST[d]:DU[d]/36e5)*1e3/PL[d];
 const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5},SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0},DU={"6h":216e5,"24h":864e5,"7j":6048e5,"24h+":864e5,"7j+":6048e5,jour:864e5};
 // The longest time between two images of the radar faded into each other: 10 minutes over 6 hours, half an hour in the
 // finer files (their first day, a quarter of an hour apart), 2 hours between the images of an hour.
@@ -1265,7 +1325,7 @@ let d="",J=null,st=[],n=0,fin=0,S=0,E=0,T=0,K={},TR=[],RT=Infinity,LT=new Map(),
 // and their number, of the others and theirs, all the frames, the time of the first measured; CW: the time of a new
 // image, of another frame, the frames a second), never on a connection that saves data or is slow.
 let DK="",WK="",DY="",J0=0,FINE=box.checked,USER=FINE,MZ=false,NWF=false,PK=0,AZ=null,CW=null,SW=0;const MS=[0,0,0,0,0,0],cx=navigator.connection,
-slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>!!CW&&!slow&&CW[2]>=${KEEPS_UP_FPS}&&ne(nps(m))*CW[0]+30*CW[1]<${KEEPS_UP * 1000},
+slow=!!cx&&(cx.saveData||/2g|3g/.test(cx.effectiveType||"")),nps=(m)=>DU[m]/ST[m]*1e3/PL[m],can=(m)=>keepsUp(CW,slow,ne(nps(m)),${KEEPS_UP},${KEEPS_UP_FPS}),
 fine=(x)=>!!FI[x]&&FINE&&(USER||can(FI[x]));
 const lx=(t)=>new Date(t+144e5),hmm=(t)=>{const x=lx(t);return p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())},dm=(t)=>{const x=lx(t);return p2(x.getUTCDate())+"/"+p2(x.getUTCMonth()+1)};
 const lay=()=>["t","p","v"].find((l)=>{const i=document.getElementById("wxl-"+l);return i&&i.checked})||"";
@@ -1278,7 +1338,12 @@ const ring=(f)=>{const g=mk("g",{},dots),out=[];g.style.display="none";for(const
 out.push({s,big,c:mk("circle",{cx:s.x,cy:s.y,r:big?34:17},g),t:big?mk("text",{class:"mv",x:s.x,y:s.y+11},g):null})}return{g,out}};
 // A layer's moments at T: on one, or between two (f of the way), or none (before its first, or across a long hole).
 // Playing faster than its images can follow, one in n of them, the last kept (sub); paused, every one.
-const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l)):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){c=[n,k.filter((x,i)=>i%n===0||i===k.length-1)];KS.set(k,c)}return c[1]};
+// The rain's most a second (IM), chosen when a play starts and when its speed changes (IQ), never during it: a device
+// that keeps up gets IMAGES_FAST (imagesMaxOf); one that then draws fewer than KEEPS_UP_FPS frames a second over the
+// last 30 (FW) goes back to IMAGES_MAX at once, until the page is left (DN).
+let IM=${IMAGES_MAX},IQ="",DN=false,PN=0;const FW=[];
+const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?${IMAGES_MAX}:imagesMaxOf(CW,slow,V,ips("p"),${KEEPS_UP},${KEEPS_UP_FPS},${IMAGES_MAX},${IMAGES_FAST})}return IM};
+const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){c=[n,k.filter((x,i)=>i%n===0||i===k.length-1)];KS.set(k,c)}return c[1]};
 // Playing, never held on a moment (momentAt): the time written moves on with the picture.
 const moment=${momentAt},at=(l)=>{const k=sub(l),n=k===K[l]?1:KS.get(K[l])[0];return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)};
 // The stations of an hour, as the page's scripts take them: [x, y, altitude, °C], or [x, y, u, v] in km/h (y down).
@@ -1305,6 +1370,8 @@ const three=(s,k)=>k.w.some((i)=>s.rr[i]==null)?null:k.w.reduce((a,i)=>a+s.rr[i]
 const RN=new Map(),field=${gaugeField},enc=(x)=>x.replace(/(.)\\1*/g,(m)=>m[0]+m.length.toString(36)+",");
 const rain=(k)=>{let e=RN.get(k.t);if(e)return e;const gr=RJ.p.dims(),pts=[];for(const s of st){const v=three(s,k);if(v!=null)pts.push([s.x*gr.w/${W},s.y*gr.h/${H},v])}
 e={fin:new Date(k.end).toISOString(),pg:1,pannes:[],pluie:enc(field(pts,gr.L,gr.w,gr.h,${JSON.stringify(CLASSES)},${GAUGE_REACH}*gr.w/${W})),mal_vu:"0"+(gr.w*gr.h).toString(36)+","};RN.set(k.t,e);return e};
+// The rain's image shown after z (null after the last): the next pair's way decides whether this one is moved.
+let NX=[];const nxt=(z)=>{const k=sub("p");if(NX[0]!==k||NX[1]!==z){const i=k.indexOf(z);NX=[k,z,i>=0&&k[i+1]?k[i+1].e:null]}return NX[2]};
 // The layer shown at T; what it is, for the word under the time.
 const draw=(l)=>{TD&&(TD.g.style.display=l==="t"?"":"none");
 if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p||!gr)return null;
@@ -1313,7 +1380,7 @@ if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar,el=lg("p");if(!RJ.p
 const r=at("p"),h=TR.find(([a,z])=>T>a&&T<z&&(!r||z>K.p[K.p.length-1].t));if(h){once("g"+h[0],()=>RJ.p.gap(h[2],el,gr));return{gap:h}}
 const pk=r?(r.m||r.z).t:0;if(pk!==PK){PK=pk;NWF=true}
 // Playing, the next images made ready before the play reaches them (RJ.p.ahead; a page kept from before has none).
-const nz=r&&(r.z||r.m);if(playing&&RJ.p.ahead&&nz&&nz!==AZ){AZ=nz;RJ.p.ahead(ahead(sub("p"),nz,3).map((x)=>x.e),gr)}if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm())}return r}
+const nz=r&&(r.z||r.m);if(playing&&RJ.p.ahead&&nz&&nz!==AZ){AZ=nz;RJ.p.ahead(ahead(sub("p"),nz,3).map((x)=>x.e),gr)}if(r)blow(shown(T,r,l));if(!r)once("n",()=>RJ.p.clear(el));else if(r.m)once("m"+r.m.t,()=>RJ.p.mix(r.m.e,r.m.e,0,el,gr,trail(r.m.t),wm()));else{cur="";RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm(),nxt(r.z))}return r}
 // 7 days, until the radar's week is whole (rejeu.ts; then its 3 hours an hour apart, as the 24 hours above): the rain
 // gauges' 3 hours spread between them (rain), faded from one to the next, without their dots (the
 // user, 01/11/2026: « beaucoup trop chargé »); the time and the legend those of the 3 hours shown (k), switched half way.
@@ -1374,9 +1441,10 @@ fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.lengt
 const gauge=(ms)=>{const n=++MS[4];if(n===11)MS[5]=performance.now();if(n>10){const i=NWF?0:2;MS[i]+=ms;MS[i+1]++}NWF=false;if(MS[1]<6||MS[3]<30)return;MZ=false;const o=MS[2]/MS[3];
 CW=[Math.max(0,MS[0]/MS[1]-o),o,(n-11)*1e3/Math.max(1,performance.now()-MS[5])];
 if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",2)}};
-const lapse=${lapse};const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=lapse(t,was);T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
+const lapse=${lapse};const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=lapse(t,was);
+if(IM>${IMAGES_MAX}&&was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30&&FW.reduce((a,b)=>a+b,0)>30e3/${KEEPS_UP_FPS}){DN=true;IM=${IMAGES_MAX}}}T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
 // The measure, in a play of the rain over 6 or 24 hours, until it is known or more images are asked.
-const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
+const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FW.length=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
 const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show();if(SW){SW=0;RJ.go(BA(d),2)}};
 // Back to the live map when the file cannot come: the bar says so.
 const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};

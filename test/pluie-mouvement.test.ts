@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { blurOf, downOf, flowOf, flowStage, matchOf, METEO_SCRIPT, sadOf, upOf } from "../src/web/meteo-carte.js";
+import { readFileSync } from "node:fs";
+import { blurOf, downOf, flowOf, flowStage, matchOf, meanWay, METEO_SCRIPT, sadOf, turnsBack, upOf } from "../src/web/meteo-carte.js";
 
 // The radar's grid: 125 × 112 cells of about 1 km, classes 0 to 8.
 const w = 125, h = 112;
@@ -82,8 +83,8 @@ describe("the rain moved between two images of the radar", () => {
     expect(METEO_SCRIPT).toContain(`if(TX.size>16){const[k,v]=TX.entries().next().value;gl.deleteTexture(v);TX.delete(k)}`);
     // Faded as before without WebGL, with the rain gauges' estimate, or between images over 15 minutes apart (played
     // fast, one image in 4: the way found between them turned back from one pair to the next, the rain went aside then back).
-    expect(METEO_SCRIPT).toContain(`const way=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=900000&&glInit();`);
-    expect(METEO_SCRIPT).toContain(`const F=way(mx[0],mx[1])&&flow(mx[0],mx[1]);`);
+    expect(METEO_SCRIPT).toContain(`const wy=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=900000&&glInit();`);
+    expect(METEO_SCRIPT).toContain(`const F=way(mx[0],mx[1],mx[4])&&flow(mx[0],mx[1]);`);
     expect(METEO_SCRIPT).toContain(`if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{`);
   });
 });
@@ -104,5 +105,55 @@ describe("the way between two images found a step at a time", () => {
     const [u, v] = at(f, 40, 50);
     expect(u).toBeGreaterThan(3);
     expect(v).toBeGreaterThan(1);
+  });
+});
+
+describe("a pair of images moved only when the next pair's way does not turn back", () => {
+  it("is a way of a cell or more, more than 120° from the other", () => {
+    expect(turnsBack([2, 0], [-2, 0.1])).toBe(true);
+    expect(turnsBack([2, 0], [-1, 1.5])).toBe(true);
+    // 90°, or less than a cell either way: not a U-turn.
+    expect(turnsBack([2, 0], [0, 2])).toBe(false);
+    expect(turnsBack([0.6, 0], [-2, 0])).toBe(false);
+    expect(turnsBack([2, 0], [-0.6, 0])).toBe(false);
+  });
+
+  it("weighs each block's way by the rain over it", () => {
+    // Two blocks across, the left one wet with 3, the right with 1.
+    const a = new Float32Array([3, 0, 0, 1]);
+    expect(meanWay(new Float32Array([4, 0]), new Float32Array([0, 8]), 2, 1, a, 4, 1)).toEqual([3, 2]);
+    expect(meanWay(new Float32Array([4, 0]), new Float32Array([0, 8]), 2, 1, new Float32Array(4), 4, 1)).toEqual([0, 0]);
+  });
+
+  it("leaves no U-turn on 9 images of the radar's 7 days, a quarter of an hour apart (04/11/2026, 23:00 to 01:00)", () => {
+    const j = JSON.parse(readFileSync(new URL("./fixtures/radar-7j-demi-tours.json", import.meta.url), "utf8"));
+    const un = (s: string) => s.split(",").map((r) => (r ? r[0].repeat(parseInt(r.slice(1), 36)) : "")).join("");
+    const g = j.entrees.map((e: { pluie: string }) => {
+      const s = un(e.pluie), v = new Float32Array(j.w * j.h);
+      for (let k = 0; k < v.length; k++) v[k] = +s[k] || 0;
+      return v;
+    });
+    const ways = g.slice(1).map((z: Float32Array, i: number) => {
+      const f = flowOf(g[i], z, j.w, j.h, 15);
+      return meanWay(f.U, f.V, f.w, f.h, g[i], j.w, j.h);
+    });
+    // The U-turns from a pair moved to the next one moved.
+    const uTurns = (moved: boolean[]) => ways.slice(1).filter((x: number[], i: number) => moved[i] && moved[i + 1] && turnsBack(ways[i], x)).length;
+    // Every pair moved, as before: twice the rain went one way, then back.
+    expect(uTurns(ways.map(() => true))).toBe(2);
+    // Moved only when the next pair's way does not turn back; the last, with no next, faded.
+    const moved = ways.map((x: number[], i: number) => i + 1 < ways.length && !turnsBack(x, ways[i + 1]));
+    expect(uTurns(moved)).toBe(0);
+    // The third (2.4 cells west) before the fourth (2.3 east), the seventh before the eighth.
+    expect(moved).toEqual([true, true, false, true, true, true, false, false]);
+  });
+
+  it("is decided once a pair in the page, from the two ways made ready, faded without a next image", () => {
+    expect(METEO_SCRIPT).toContain(`const meanWay=${meanWay},turnsBack=${turnsBack},WB=new Map();`);
+    expect(METEO_SCRIPT).toContain("const decide=(A,Z,N)=>{if(!N||!wy(A,Z))return false;");
+    expect(METEO_SCRIPT).toContain("b=!q||!turnsBack(meanWay(r.U,r.V,r.w,r.h,gv(A),A.w,A.h),meanWay(q.U,q.V,q.w,q.h,gv(Z),Z.w,Z.h));WB.set(key,b);");
+    expect(METEO_SCRIPT).toContain("const F=way(mx[0],mx[1],mx[4])&&flow(mx[0],mx[1]);");
+    // The images made ready ahead: each pair with the next image, the last without (its way found, decided later).
+    expect(METEO_SCRIPT).toContain(`(dl)=>pair(js[i-1],js[i],i+1<xs.length&&typeof xs[i+1]!=="function"?grid(xs[i+1],gr):undefined,dl)`);
   });
 });

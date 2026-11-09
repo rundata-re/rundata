@@ -45,7 +45,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // (« Lycée Polyvalent Paul Moreau - Loge »). Its floor as people read it, without « étage » before a text that says it
   // (« 1er étage », « rez-de-chaussée - Bât B »).
   // Its places' names as French writes them (noms.ts): « Collège des 2 Canons », « Église de La Ravine Sèche ».
-  dae: 9,
+  // Raised with each weekly Géo'DAE list (scripts/build-dae.py, its PR opened by the Monday timer).
+  dae: 10,
   dechets: 2,
   eau: 3,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».

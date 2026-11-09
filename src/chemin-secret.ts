@@ -5,9 +5,10 @@
  * - a proposal's page (web/propositions.ts, PROPOSITION_PATH);
  * - the link confirming or removing a platform's connection (web/connecteurs.ts, CONNEXION_PATH);
  * - the link that opens a club's space, and the space itself (web/club.ts): every path under /associations/club/ but
- *   the request of a link, /associations/club/demande.
+ *   the request of a link, /associations/club/demande;
+ * - the private page of an internal trial, sent to a researcher (web/uv-moufia.ts, UV_PATH).
  */
-const SECRETS = ["/associations/proposition/", "/associations/connexion/", "/associations/club/acces/"];
+const SECRETS = ["/associations/proposition/", "/associations/connexion/", "/associations/club/acces/", "/essais/uv-moufia/"];
 const CLUB = "/associations/club/";
 const CLUB_PUBLICS = new Set(["demande"]);
 

@@ -3,7 +3,8 @@
  * WCS API of portail-api.meteofrance.fr (same application and OAuth token as the observations).
  *
  * The API only hands out two-dimensional slices: one request is one field at one time over the whole island
- * (27 × 23 points, an 8 KB GeoTIFF). Each 3-hour step takes five of them; they serve every place on the island
+ * (27 × 23 points, an 8 KB GeoTIFF). Each 3-hour step takes five of them, those of 9 and 12 h two more (the day's
+ * maximum, below); they serve every place on the island
  * until the next run, so the cache holds grids, not places: all the grids of a run are kept as one bundle, in the
  * Worker's KV, filled by a scheduled prefetch (src/worker.ts) so that questions rarely download any. Runs start at
  * 0, 6, 12 and 18 h UTC and reach 48 h; on 22/10/2026 at 10:00 the newest one listed was the 18 h UTC run of the
@@ -15,6 +16,12 @@
  *
  * No terrain height is published: it is worked out once from surface and sea-level pressure, and temperatures
  * are brought from the model's (smoothed) terrain to the place's altitude, 0.65 °C per 100 m.
+ *
+ * The temperature of a step is read at its start, 9, 12 and 15 h by day: the warmest hour often falls between (11 to 13 h
+ * at most stations), and the highest of the three was 0.4 °C under the model's own maximum on average, up to 1.3 °C
+ * (70 Météo-France stations, 09/11/2026). The model also publishes the highest temperature of each past hour
+ * (MAXIMUM_TEMPERATURE: at 13 h, the maximum from 12 to 13 h, not since the run's start): read at 11, 12, 13 and 14 h,
+ * it covers 10 to 14 h, and the gap fell to 0.03 °C on average, four grids a day.
  *
  * The cloud base and top are published as pressures (Pa, 0 where the cell has no cloud): they give the altitude of the
  * cloud sea of the Hauts, read at the place's own cell (an average of a cloudy cell and a clear one means nothing).
@@ -82,7 +89,8 @@ export const LISTED_AFTER_MIN = 6 * 60 + 20;
  */
 export const MAX_NEW_GRIDS = 40;
 /**
- * A question's share in the Worker: two steps of five grids, about what the budget of 40 subrequests left it. The
+ * A question's share in the Worker: two steps of five grids, or one of 9 h with its cloud layer and maximum, about
+ * what the budget of 40 subrequests left it. The
  * scheduled prefetch fills the run's bundle, which every data center reads: with the budgets of budget.ts, questions
  * in several data centers at once must not download a new run's grids each, past the API's rate.
  */
@@ -96,10 +104,10 @@ const LAPSE = 0.0065; // °C per metre
 // Lightning flash density over the 3 hours above which the step says "orage". Not calibrated yet.
 const STORM_DENSITY = 0.05;
 
-type FieldName = "temperature" | "nuages" | "rafales" | "pluie" | "foudre" | "base" | "sommet";
+type FieldName = "temperature" | "nuages" | "rafales" | "pluie" | "foudre" | "base" | "sommet" | "maxi1" | "maxi2" | "maxi3";
 
 // `at`: hours after the start of the step the field is read at. Accumulations (_PT3H) end at the step's end;
-// gusts are the maximum of the hour before `at`.
+// gusts and the maxima (maxi1 to maxi3) are the maximum of the hour before `at`.
 const FIELDS: Record<FieldName, { id: string; suffix?: string; height?: number; at: number }> = {
   temperature: { id: "TEMPERATURE__SPECIFIC_HEIGHT_LEVEL_ABOVE_GROUND", height: 2, at: 0 },
   nuages: { id: "TOTAL_CLOUD_COVER__GROUND_OR_WATER_SURFACE", at: 1 },
@@ -108,14 +116,24 @@ const FIELDS: Record<FieldName, { id: string; suffix?: string; height?: number; 
   foudre: { id: "LIGHTNING_STRIKE_DENSITY__GROUND_OR_WATER_SURFACE", suffix: "_PT3H", at: 3 },
   base: { id: "PRESSURE__BASE_CLOUD", at: 1 },
   sommet: { id: "PRESSURE__LEVEL_OF_CLOUD_TOP", at: 1 },
+  maxi1: { id: "MAXIMUM_TEMPERATURE__SPECIFIC_HEIGHT_LEVEL_ABOVE_GROUND", height: 2, at: 1 },
+  maxi2: { id: "MAXIMUM_TEMPERATURE__SPECIFIC_HEIGHT_LEVEL_ABOVE_GROUND", height: 2, at: 2 },
+  maxi3: { id: "MAXIMUM_TEMPERATURE__SPECIFIC_HEIGHT_LEVEL_ABOVE_GROUND", height: 2, at: 3 },
 };
 const NAMES = Object.keys(FIELDS) as FieldName[];
-const CORE = NAMES.filter((f) => f !== "base" && f !== "sommet");
+const CORE: FieldName[] = ["temperature", "nuages", "rafales", "pluie", "foudre"];
+const LAYER: FieldName[] = ["base", "sommet"];
+const MAXI: FieldName[] = ["maxi1", "maxi2", "maxi3"];
 // The cloud layer only for the steps of the morning, 6–9 h and 9–12 h in La Réunion, those the cloud sea is told of, and
 // of the night, 18 h to 6 h, whose sky is told over the Hauts (tools/nuages.ts). Six steps a day of two grids more,
 // rather than two more grids for all eight.
 const LAYER_HOURS = new Set([6, 9, 18, 21, 0, 3]);
-const fieldsOf = (start: Date): FieldName[] => (LAYER_HOURS.has((start.getUTCHours() + 4) % 24) ? NAMES : CORE);
+// The hourly maximum at 11 and 12 h in the step of 9 h, at 13 and 14 h in that of 12 h: from 10 to 14 h.
+const MAXI_HOURS: Record<number, FieldName[]> = { 9: ["maxi2", "maxi3"], 12: ["maxi1", "maxi2"] };
+function fieldsOf(start: Date): FieldName[] {
+  const h = (start.getUTCHours() + 4) % 24;
+  return [...CORE, ...(LAYER_HOURS.has(h) ? LAYER : []), ...(MAXI_HOURS[h] ?? [])];
+}
 
 export interface Grid {
   x0: number;
@@ -472,15 +490,18 @@ export function atPlace(d: AromeData, place: Place): Forecast {
   d.steps.forEach((st, i) => {
     if (i > 0 && st.run.getTime() !== d.steps[i - 1].run.getTime()) suite.push({ runAt: st.run, from: st.start });
   });
+  // A temperature of a cell brought from the model's terrain to the place's altitude.
+  const toPlace = (v: number, k: number) => {
+    const zc = d.relief.values[k];
+    return altitude == null || zc == null ? v : v + LAPSE * (zc - altitude);
+  };
   const hours: ForecastHour[] = d.steps.map(({ start, grids }) => {
     const read = (f: FieldName, adjust?: (v: number, k: number) => number) => {
       const g = grids[f];
       return g ? at(g, place.lon, place.lat, adjust) : null;
     };
-    const temperature = read("temperature", (v, k) => {
-      const zc = d.relief.values[k];
-      return altitude == null || zc == null ? v : v + LAPSE * (zc - altitude);
-    });
+    const temperature = read("temperature", toPlace);
+    const maxima = MAXI.map((f) => read(f, toPlace)).filter((v): v is number => v != null);
     const pluie = read("pluie");
     const nuages = read("nuages");
     const gust = read("rafales");
@@ -490,6 +511,7 @@ export function atPlace(d: AromeData, place: Place): Forecast {
       time: start,
       duree_h: STEP_H,
       temperature: r1(temperature),
+      ...(maxima.length ? { temperature_max: r1(Math.max(...maxima)) } : {}),
       pluie_mm: rain,
       code: weatherCode(rain, nuages, read("foudre")),
       nuages_pct: nuages == null ? null : Math.round(Math.min(100, Math.max(0, nuages))),

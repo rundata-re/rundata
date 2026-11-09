@@ -168,6 +168,19 @@ describe("historique_meteo, hour by hour", () => {
     expect(a.resume).not.toMatch(/23 h\)|jusqu'à 23 h/);
   });
 
+  it("says a day with no hour published yet is not published, with no figure for it", async () => {
+    both();
+    // 25/10 at 0 h 30, a period ending today: none of its hours is published yet.
+    const night = new Date("2026-10-24T20:30:00Z");
+    const a = json(await historiqueMeteo(new Cache(), "Sainte-Marie", { du: "2026-10-23", au: "2026-10-25", detail: "heure" }, night));
+    const none = a.heure_par_heure.par_jour.at(-1);
+    // Its date and why, nothing else: no total, no mean, no extreme.
+    expect(none).toEqual({ date: "25/10/2026", jour_incomplet: "aucune heure de ce jour n'est encore publiée" });
+    expect(a.resume).toContain("25/10 : pas encore publié");
+    expect(a.resume).not.toMatch(/25\/10 : (?!pas encore publié)/);
+    expect(a.heure_par_heure.jusqu_a).toBe("24/10/2026 8 h");
+  });
+
   it("never calls a past day incomplete when its station falls silent early: a gap, not hours still to be published", async () => {
     both();
     // The same hours (none after 24/10 8 h) read days later.

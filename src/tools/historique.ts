@@ -606,9 +606,11 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
     return Object.values(row).filter((v) => v !== undefined).length > 1 ? row : null;
   }).filter((r) => r !== null);
   // The last hour published: the hourly file of a day comes out in the morning with the night just ended, so yesterday
-  // may stop at 8 h until the next file, and today always stops early. A day it cuts is said to be incomplete.
+  // may stop at 8 h until the next file, and today always stops early. A day it cuts is said to be incomplete. Only
+  // yesterday and today can be cut so: an older day missing its last hours is a gap of the station, not a file to come.
   const lastHour = [...hs].reverse().find((h) => [rain, temp, sun].some((x) => x && (at(x, "RR1", h) ?? at(x, "T", h) ?? at(x, "INS", h)) != null));
-  const cut = (d: string) => (!lastHour || d < lastHour.day || (d === lastHour.day && lastHour.hour === 23) ? undefined : d === lastHour.day ? lastHour.hour : null);
+  const yesterday = iso(now.getTime() + 4 * 3600_000 - DAY_MS);
+  const cut = (d: string) => (!lastHour || d < yesterday || d < lastHour.day || (d === lastHour.day && lastHour.hour === 23) ? undefined : d === lastHour.day ? lastHour.hour : null);
   const facts = [...days(p)].map((d) => dayFacts(d, hs, rain, temp, sun, wind, cut(d)));
   const used = new Map<PosteHoraire, string[]>();
   for (const [s, what] of [[rain, "pluie"], [temp, "température, humidité"], [wind, "vent et rafales"], [sun, "ensoleillement"]] as [HourSeries | undefined, string][]) {

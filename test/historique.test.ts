@@ -168,6 +168,14 @@ describe("historique_meteo, hour by hour", () => {
     expect(a.resume).not.toMatch(/23 h\)|jusqu'à 23 h/);
   });
 
+  it("never calls a past day incomplete when its station falls silent early: a gap, not hours still to be published", async () => {
+    both();
+    // The same hours (none after 24/10 8 h) read days later.
+    const later = json(await historiqueMeteo(new Cache(), "Sainte-Marie", { du: "2026-10-23", au: "2026-10-24", detail: "heure" }, new Date("2026-10-28T08:00:00Z")));
+    expect(later.heure_par_heure.par_jour.map((d: { jour_incomplet?: string }) => d.jour_incomplet)).toEqual([undefined, undefined]);
+    expect(later.resume).not.toContain("jour incomplet");
+  });
+
   it("leaves the hours out over a longer period, or when asked by day", async () => {
     both();
     const long = json(await historiqueMeteo(new Cache(), "Cilaos", { jours: 14 }, NOW));

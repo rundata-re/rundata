@@ -22,6 +22,9 @@ const NOW = new Date("2026-10-22T06:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const H = 3600_000;
 
+// The hourly maximum, not recorded that day: the temperature of 12:00 raised by 1.5 °C at 13:00 and by 2 °C at 14:00.
+const warmer = (by: number) => { const g = arome.parseGrid(tif("t2m")); return { ...g, values: g.values.map((v) => (v == null ? null : v + by)) }; };
+
 const relief = () => arome.relief(arome.parseGrid(tif("ps")), arome.parseGrid(tif("pmsl")), arome.parseGrid(tif("t2m0")));
 
 /** The run, its terrain and the one recorded step are cached; ECMWF for Cilaos too. */
@@ -35,6 +38,8 @@ async function offlineCache(listAgeMs = 0) {
   for (const [field, file, h] of fields) {
     bundle[arome.gridKey(field, new Date(STEP.getTime() + h * H))] = { value: arome.pack(arome.parseGrid(tif(file))), fetchedAt: at };
   }
+  bundle[arome.gridKey("maxi1", new Date(STEP.getTime() + H))] = { value: arome.pack(warmer(1.5)), fetchedAt: at };
+  bundle[arome.gridKey("maxi2", new Date(STEP.getTime() + 2 * H))] = { value: arome.pack(warmer(2)), fetchedAt: at };
   await store.put(arome.bundleKey(RUN), { value: bundle, fetchedAt: at });
   await store.put(openmeteo.cacheKey(resolvePlace("Cilaos")!.lieu), { value: json("openmeteo_cilaos.json"), fetchedAt: at });
   await store.put("openmeteo:meta", { value: json("openmeteo_meta.json"), fetchedAt: at });
@@ -81,6 +86,25 @@ describe("newestRun", () => {
   });
 });
 
+describe("atPlace", () => {
+  it("gives the hourly maximum of the step where it was read, brought to the place's altitude like the temperature", () => {
+    const t2m = arome.parseGrid(tif("t2m"));
+    const none = { nuages: null, rafales: null, pluie: null, foudre: null, base: null, sommet: null, maxi3: null };
+    const d: arome.AromeData = {
+      run: RUN,
+      relief: relief(),
+      steps: [
+        { start: STEP, run: RUN, grids: { ...none, temperature: t2m, maxi1: warmer(1.5), maxi2: warmer(2) } },
+        { start: new Date(STEP.getTime() + 3 * H), run: RUN, grids: { ...none, temperature: t2m, maxi1: null, maxi2: null } },
+      ],
+      later: 0,
+    };
+    const [noon, afternoon] = arome.atPlace(d, resolvePlace("Cilaos")!.lieu).hours;
+    expect(noon.temperature_max! - noon.temperature!).toBeCloseTo(2, 1);
+    expect(afternoon).not.toHaveProperty("temperature_max");
+  });
+});
+
 describe("weatherCode", () => {
   it.each([
     [0, 10, 0, 0], [0, 90, 0, 3], [1, 90, 0, 61], [5, 90, 0, 63], [20, 100, 0, 65], [5, 90, 1, 95], [null, null, null, null],
@@ -114,6 +138,8 @@ describe("prevision_meteo with AROME", () => {
     expect(w).toMatch(/vigilance officielle/);
     expect(w).toMatch(/relief du modèle est à 1\d{3} m : les températures sont ramenées à l'altitude de Cilaos \(1\u202f209 m\)/);
     expect(r.jours[0].modeles).toMatch(/AROME outre-mer de Météo-France de 12\u00a0h à 15\u00a0h/);
+    // The day's highest is the model's hourly maximum from 12 to 14 h, 2 °C above 12 h here, not the temperature at 12 h.
+    expect(Number(r.jours[0].temperature_max.replace(",", ".").replace(" °C", ""))).toBeGreaterThanOrEqual(t + 1.5);
     // The UV index comes from its own forecast, credited and explained apart.
     expect(r.jours[0].indice_uv_max).toMatch(/^\d+ \((faible|modéré|élevé|très élevé|extrême)\)$/);
     expect(w).toMatch(/Indice UV : PRÉVISION du service européen Copernicus/);
@@ -141,9 +167,12 @@ describe("prevision_meteo with AROME", () => {
       return new Response(grid);
     });
     const r = body(await previsionMeteo(await offlineCache(), "Cilaos", undefined, NOW));
-    // Whole steps only: five grids each, seven for the morning's with their cloud layer.
+    // Whole steps only: five grids each, seven for the morning's with their cloud layer, nine for 9 h with its maximum.
     expect(urls.length).toBeLessThanOrEqual(arome.MAX_NEW_GRIDS);
-    expect(urls.length).toBeGreaterThan(arome.MAX_NEW_GRIDS - 7);
+    expect(urls.length).toBeGreaterThan(arome.MAX_NEW_GRIDS - 9);
+    // The hourly maximum of 11 and 12 h, in the step of 9 h.
+    const maxima = urls.filter((u) => u.includes("coverageid=MAXIMUM_TEMPERATURE__SPECIFIC_HEIGHT_LEVEL_ABOVE_GROUND___2026-10-21T18.00.00Z&") && u.includes("subset=height(2)"));
+    expect(maxima.map((u) => u.match(/time\(([^)]+)\)/)![1])).toEqual(expect.arrayContaining(["2026-10-22T07:00:00Z", "2026-10-22T08:00:00Z"]));
     // The step under way (9h) and the next ones; 12h was cached already.
     expect(urls.some((u) => u.includes("time(2026-10-22T05:00:00Z)"))).toBe(true);
     expect(r.pas_de_3h[0]).toMatchObject({ heures: "jeudi 22/10 9\u00a0h–12\u00a0h", modele: "AROME outre-mer de Météo-France" });
@@ -245,13 +274,14 @@ describe("a run listed before all its hours are out", () => {
     expect(r.resume).toMatch(/^PRÉVISION \(pas une mesure\) pour Cilaos/);
     expect(r.modele).toMatchObject({ nom: "AROME outre-mer de Météo-France", run_du_modele: "22/10 04:00" });
     expect(r.modele.calculs_suivants).toEqual([{ run_du_modele: "21/10 22:00", a_partir_de: "23/10 06:00" }]);
-    // Midnight to 6h from the newest run, then the run before, then ECMWF. Cold, the question's 40 grids reach 18h,
+    // Midnight to 6h from the newest run, then the run before, then ECMWF. Cold, the question's 40 grids reach 15h,
     // the run not out yet costing one try (the 15h step had none left when each grid in flight was tried): the steps of
-    // the night and of the morning take two more each for the cloud layer (the prefetch fills the rest).
+    // the night and of the morning take two more each for the cloud layer, those of 9 and 12 h two more for the hourly
+    // maximum (the prefetch fills the rest).
     const models = r.pas_de_3h.map((s: { heures: string; modele: string }) => s.modele);
     expect(models).toHaveLength(8);
-    expect(models.slice(0, 6).every((m: string) => m.startsWith("AROME"))).toBe(true);
-    expect(models.slice(6).every((m: string) => /^IFS/.test(m))).toBe(true);
+    expect(models.slice(0, 5).every((m: string) => m.startsWith("AROME"))).toBe(true);
+    expect(models.slice(5).every((m: string) => /^IFS/.test(m))).toBe(true);
     expect(r.avertissements.join(" ")).toMatch(/calcul d'AROME de 22\/10 04:00 n'est pas encore entièrement publié .* à partir de 23\/10 06:00, les valeurs viennent du calcul de 21\/10 22:00/);
     expect(asked.some((a) => a.run === BEFORE)).toBe(true);
   });

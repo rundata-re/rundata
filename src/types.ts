@@ -70,6 +70,8 @@ export interface ForecastHour {
   duree_h: number;
   /** At `time`. */
   temperature: number | null;
+  /** The highest of some of the stretch's hours, where the model publishes it (AROME, 10 to 14 h in La Réunion). */
+  temperature_max?: number | null;
   /** Over the stretch. */
   pluie_mm: number | null;
   /** WMO weather code. */

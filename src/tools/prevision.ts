@@ -194,6 +194,8 @@ function stepStarts(days: string[], now: Date, keep: (jour: string, hour: number
 function dayFromHours(date: string, hours: ForecastHour[]): ForecastDay {
   const hs = hours.filter((h) => localDate(h.time) === date);
   const temps = hs.map((h) => h.temperature).filter((t): t is number => t != null);
+  // The highest of the hours between the steps' starts, where the model gives it: the starts miss the warmest hour.
+  const highs = temps.concat(hs.map((h) => h.temperature_max).filter((t): t is number => t != null));
   const rains = hs.map((h) => h.pluie_mm).filter((r): r is number => r != null);
   const gusts = hs.map((h) => h.rafales_kmh).filter((g): g is number => g != null);
   const wet = hs.map((h) => h.code).filter((c): c is number => c != null && c >= 51);
@@ -209,7 +211,7 @@ function dayFromHours(date: string, hours: ForecastHour[]): ForecastDay {
     date,
     code: wet.length ? Math.max(...wet) : null,
     tmin: temps.length ? Math.min(...temps) : null,
-    tmax: temps.length ? Math.max(...temps) : null,
+    tmax: highs.length ? Math.max(...highs) : null,
     pluie_mm: rains.length ? Math.round(rains.reduce((a, b) => a + b, 0) * 10) / 10 : null,
     rafales_max_kmh: gusts.length ? Math.max(...gusts) : null,
     modeles: segments.length > 1 ? segments.map((x) => `${x.nom} de ${paire(x.de * 60, x.a * 60).join(" à ")}`).join(", puis ") : undefined,

@@ -445,7 +445,7 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // le zoom »); its relief finer there when the screen asks for it, its marks at a size of their own (MARQUES_JS).
   const map = islandMap({ under: overlay, top, peaks: true, fond: FOND, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` })
     .replace('<svg class="map terrain"', `<svg class="map terrain" data-fd="${FOND}" data-zoom="${ZOOM_METEO}" data-zpe data-fin`);
-  const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur, fiabilité non vérifiée.</span>` : "";
+  const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur.</span>` : "";
   return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}${box}${zoomButtons(FOND, "ile")}</div>` +
     map + ZOOM_SCRIPT + `<script>${MARQUES_JS}${FIN_SCRIPT}</script>` + bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }

@@ -167,6 +167,30 @@ describe("air quality: what the index is and where it comes from", () => {
     await atmo.indices(c, new Date(t));
     expect(read).toHaveLength(1);
   });
+  it("serves every data center the island's latest read when the layer stops answering, and leaves the layer alone in all of them", async () => {
+    // 08/11/2026: the layer redirected to itself; a data center seldom asked served its own read, 5 h before the latest.
+    let up = true;
+    const read: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      read.push(url);
+      if (!up) throw new TypeError("Too many redirects.");
+      return new Response(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url), "utf8"), { headers: { "content-type": "application/json" } });
+    });
+    let t = Date.parse("2026-11-08T10:40:00Z");
+    const kv = new MemoryStore();
+    const seldom = new MemoryStore();
+    void seldom.put("atmo:974", { value: list, fetchedAt: Date.parse("2026-11-08T05:52:00Z") });
+    const center = (memory: MemoryStore) => new Cache(memory, () => t, false, kv);
+    await atmo.indices(center(new MemoryStore()), new Date(t));
+    expect(read).toHaveLength(1);
+    up = false;
+    t = Date.parse("2026-11-09T03:46:00Z");
+    const busy = await atmo.indices(center(new MemoryStore()), new Date(t));
+    expect(read).toHaveLength(2);
+    const other = await atmo.indices(center(seldom), new Date(t + 60_000));
+    expect(read).toHaveLength(2);
+    for (const c of [busy, other]) expect(c).toMatchObject({ stale: true, fetchedAt: new Date("2026-11-08T10:40:00Z") });
+  });
   it("builds the copy of /air every quarter of an hour from 10 h to 14 h while it lacks the day's diffusion, else every hour", () => {
     const at = new Date("2026-11-04T07:40:00Z");
     expect(airEvery({ diffusion: "Prévision diffusée par Atmo Réunion la veille, le 03/11 à 11:44." }, at)).toBe(15);

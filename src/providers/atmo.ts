@@ -106,10 +106,16 @@ export function parse(json: { features: { properties: Props }[] }): Index[] {
   }));
 }
 
+/**
+ * The island's indices, one copy for the whole island in the durable store (the Worker's KV) behind memory and the data
+ * center's cache: every data center serves the latest read, and a layer that does not answer is left alone by all of
+ * them. Kept in each data center's cache alone, a data center seldom asked served its own read, the copy of a
+ * data center read 5 h before the latest one when the layer stopped answering (08/11/2026).
+ */
 export async function indices(cache: Cache, now = new Date()): Promise<Cached<Index[]>> {
   const load = async () => parse(await getJson(SOURCE.id, URL, 20_000));
-  const c = await cache.get("atmo:974", FRESH_SECONDS, load);
+  const c = await cache.island("atmo:974", FRESH_SECONDS, load);
   // Read again only when the copy is older than a quarter of an hour: a copy just read is not asked of the store twice.
   const old = now.getTime() - c.fetchedAt.getTime() >= AWAITED_SECONDS * 1000;
-  return old && diffusionAttendue(c.value, now) ? cache.get("atmo:974", AWAITED_SECONDS, load) : c;
+  return old && diffusionAttendue(c.value, now) ? cache.island("atmo:974", AWAITED_SECONDS, load) : c;
 }

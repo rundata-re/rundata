@@ -67,7 +67,7 @@ import { adresseTexte } from "./adresse.js";
 import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
 import * as meteorOi from "../providers/meteor-oi.js";
 import { PASSES } from "../historique/cyclones-passes.js";
-import { OLD_MINUTES } from "../tools/meteo.js";
+import { OLD_MINUTES, ditAmateur, reseauAmateur } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
 
 // What a search engine shows of a title: the tab's title takes the first of its forms that fits.
@@ -942,6 +942,11 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .wxmap:has(#wxl-t:checked) .lg-t,.wxmap:has(#wxl-p:checked) .lg-p,.wxmap:has(#wxl-v:checked) .lg-v{display:inline}
 .wxmap .l-p,.wxmap .l-v{display:none}.wxmap:has(#wxl-p:checked) .l-p,.wxmap:has(#wxl-v:checked) .l-v{display:inline}.wxmap:has(#wxl-p:checked) .l-t,.wxmap:has(#wxl-v:checked) .l-t{display:none}
 .wxmap:has(#wxl-t:checked) a.mk:not(.has-t),.wxmap:has(#wxl-p:checked) a.mk:not(.has-p),.wxmap:has(#wxl-v:checked) a.mk:not(.has-v){display:none}
+/* The amateur stations (the user, 10/11/2026): their group and the legend's line shown only once the box is ticked, then in place of the official stations' group (the same stations laid out with them); a dotted outline. */
+.wxmap .sts-am,.wxmap .amlg{display:none}.wxmap:has(#wx-am:checked) .sts-am{display:inline}.wxmap:has(#wx-am:checked) .sts-of{display:none}.wxmap:has(#wx-am:checked) .amlg{display:block}
+.map a.mk.am .sh,.map a.mk.am rect{stroke-dasharray:7 5}
+.amchk{order:1;display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:.9rem;font-weight:600;color:var(--on-night-muted);cursor:pointer;margin-bottom:.5rem}.amchk input{width:1.1rem;height:1.1rem;margin:0}.pe-on .wxbar .amchk{margin:0}
+details.amdet{margin-top:.8rem}details.amdet .stations{margin-top:.6rem}
 /* The two canvases of a layer stacked by a grid, never positioned: in a foreignObject, Safari paints a positioned element unscaled, off the map. */
 .wxmap .vt{display:grid;grid-template:100%/100%;width:100%;height:100%}.wxmap .vt canvas{grid-area:1/1;width:100%;height:100%}
 .wxmap .wv rect{fill:#14202c;stroke:#fff;stroke-width:3}.wxmap .wv path{fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.wxmap .wv circle{fill:#fff}.wxmap .wv text{fill:#fff;font-weight:700;font-size:30px;text-anchor:middle}.wxmap .wt line{vector-effect:non-scaling-stroke;stroke-linecap:round}.wxmap .wt .o{stroke:#0b1f36;stroke-width:3.5px}.wxmap .wt .i{stroke:#fff;stroke-width:1.5px}.wxmap .wt circle{fill:#fff;stroke:#0b1f36;stroke-width:2px;vector-effect:non-scaling-stroke}
@@ -1940,12 +1945,13 @@ export function connector(origin: string, id: string): string {
   return `<div class="connect"><code id="${id}">${adressesCoupables(`${origin}/mcp`)}</code><button type="button" data-copy="${id}" data-signal aria-label="Copier l'adresse du connecteur">Copier</button></div>`;
 }
 
-export const withTemp = (data: Cached<HomeData> | null) => data?.value.stations.filter((x) => x.temperature != null && !x.stale) ?? [];
+export const withTemp = (data: Cached<HomeData> | null) => data?.value.stations.filter((x) => x.temperature != null && !x.stale && !x.amateur) ?? [];
 /**
  * Every station's temperature, for the island's range (« 14 à 30 °C… de Piton Maïdo à Gillot »): the tour's alone left
  * out Bois-Rouge at 30,7 °C, given in the list of the same page. The tour's on a copy made before every station was kept.
+ * The official networks' only: an amateur station's reliability is not checked (the user, 10/11/2026).
  */
-const withTempAll = (data: Cached<HomeData> | null) => (data?.value.toutes ?? data?.value.stations)?.filter((x) => x.temperature != null && !x.stale) ?? [];
+const withTempAll = (data: Cached<HomeData> | null) => (data?.value.toutes ?? data?.value.stations)?.filter((x) => x.temperature != null && !x.stale && !x.amateur) ?? [];
 export const coldest = (l: StationNow[]) => l.reduce((a, b) => (b.temperature! < a.temperature! ? b : a));
 export const warmest = (l: StationNow[]) => l.reduce((a, b) => (b.temperature! > a.temperature! ? b : a));
 
@@ -1969,10 +1975,15 @@ function weatherLive(data: Cached<HomeData> | null, now: Date): string {
     `${d.indisponibles.length ? `<p class="note">Momentanément indisponible : ${esc(d.indisponibles.join(", "))}.</p>` : ""}</div></div><p class="sources">Sources : ${credits(d.sources)}.</p>`;
 }
 
-/** Every station, filtered by commune and sorted by the page's script; without it, by altitude. */
-function stationsList(all: StationNow[], now: Date): string {
-  const rows = [...all].sort((a, b) => a.altitude_m - b.altitude_m).map((s) => {
-    const c = communeOf(s, all) ?? "";
+/**
+ * Every station of the official networks, filtered by commune and sorted by the page's script; without it, by altitude.
+ * Under them, folded, the amateur stations, each said so (marketing's words, 10/11/2026).
+ */
+function stationsList(every: StationNow[], now: Date): string {
+  const all = every.filter((s) => !s.amateur);
+  const am = every.filter((s) => s.amateur);
+  const row = (s: StationNow) => {
+    const c = communeOf(s, every) ?? "";
     const t = s.temperature != null ? `<span class="t" style="background:${chip(s.temperature)}">${thin(deg(s.temperature))}</span>` : `<span class="t na">—</span>`;
     const pills = windPill(s) + rainPill(s);
     const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (ancienne)" : "";
@@ -1983,13 +1994,19 @@ function stationsList(all: StationNow[], now: Date): string {
     const when = day === localTime(now).split(" ")[0] ? `<span class="sr">mesurée le ${day} à </span>${time}` : `<span class="sr">mesurée le </span>${day}<span class="sr"> à</span> ${time}`;
     return `<li class="st tgt" id="${stationId(s.nom)}" data-c="${esc(c)}" data-z="${s.altitude_m}" data-t="${s.temperature ?? ""}" data-n="${esc(s.nom)}">` +
       `<p class="th">${t}<span class="when">${when}${old}</span></p><h3>${s.source === "meteofrance" && s.id && stationOf(s.id) ? `<a href="${stationPath(s.id)}">${esc(s.nom)}</a>` : esc(s.nom)}</h3><p class="ou">${esc(c)} · ${metres(s.altitude_m)}</p>` +
-      `${pills ? `<p class="pls">${pills}</p>` : ""}${meteorNote(s)}</li>`;
-  }).join("");
+      `${pills ? `<p class="pls">${pills}</p>` : ""}${s.amateur ? `<p class="cr">${esc(ditAmateur(s.source) ?? "")}</p>` : ""}${meteorNote(s)}</li>`;
+  };
+  const rows = [...all].sort((a, b) => a.altitude_m - b.altitude_m).map(row).join("");
   const communes = [...new Set(all.map((s) => communeOf(s, all)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, "fr"));
   const tools = `<div class="sttools" data-js hidden><label>Commune <select id="stc"><option value="">Toutes</option>${communes.map((c) => `<option>${esc(c)}</option>`).join("")}</select></label>` +
     `<div class="sttri"><span id="sttri">Trier par</span><span class="tabs" role="group" aria-labelledby="sttri"><button type="button" data-s="z" aria-pressed="true">Altitude</button><button type="button" data-s="t" aria-pressed="false">Température</button><button type="button" data-s="n" aria-pressed="false">Nom</button></span></div></div>`;
   const more = all.length > 12 ? `<p data-js hidden><button type="button" class="stmore" id="stm" aria-controls="stl" aria-expanded="false">Voir les ${all.length} stations</button></p>` : "";
-  return `${tools}<ul class="stations${more ? " plie" : ""}" id="stl">${rows}</ul>${more}`;
+  const net = [...new Set(am.map((s) => reseauAmateur(s.source)))].join(", ");
+  const amateurs = am.length
+    ? `<details class="pli amdet" id="sta"><summary><h3>${esc(am.length > 1 ? `Les ${am.length} stations amateur de ${net}\u00a0: fiabilité non vérifiée` : `La station amateur de ${net}\u00a0: fiabilité non vérifiée`)}</h3></summary>` +
+      `<ul class="stations">${[...am].sort((a, b) => a.altitude_m - b.altitude_m).map(row).join("")}</ul></details>`
+    : "";
+  return `${tools}<ul class="stations${more ? " plie" : ""}" id="stl">${rows}</ul>${more}${amateurs}`;
 }
 
 /**
@@ -2192,7 +2209,7 @@ export function meteoPage(origin: string, data: Cached<HomeData> | null, now = n
 </div>`;
 
   const body = all.length ? `<section id="stations" aria-labelledby="h-stations">
-  <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-stations">Les ${all.length} stations, de la côte aux sommets</h2>
+  <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-stations">Les ${all.filter((s) => !s.amateur).length} stations, de la côte aux sommets</h2>
   <p>La dernière mesure de chaque station, avec son heure ; sans autre date, c'est le ${localTime(now).split(" ")[0]}. Les stations de Météo-France publient toutes les 6 minutes.</p></div>
   ${stationsList(all, now)}
   <p class="sources">Sources : ${credits([...data!.value.sources, ALTITUDES_CREDIT, RADAR_CREDIT])}.</p>
@@ -2267,6 +2284,17 @@ function stationCard(s: StationAnswer): string {
     `</div>`;
 }
 
+/**
+ * The nearest amateur station, when the answer gives one after the others (tools/meteo.ts): folded, its reliability
+ * said not checked in its title (marketing, 10/11/2026), its credit under its measures.
+ */
+function amateurCard(s: StationAnswer): string {
+  const at = s.distance_km != null ? `, à ${fr(s.distance_km)}\u00a0km` : "";
+  const credit = s.source === meteorOi.SOURCE.id ? METEOR_CREDIT : esc(s.credit ?? "");
+  return `<details class="pli amdet"><summary><h3>${esc(`Station amateur la plus proche${at} (${reseauAmateur(s.source) ?? ""})\u00a0: fiabilité non vérifiée`)}</h3></summary>` +
+    `${stationCard(s)}<p class="cr">${credit}</p></details>`;
+}
+
 /** The max and min since midnight at a Météo-France station, under the measures of now. */
 function sinceMidnightCard(j: DepuisMinuit): string {
   const row = (label: string, x: DepuisMinuit["maximum"]) =>
@@ -2283,8 +2311,9 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const g = porte(alerte);
   const place = p.place;
   const d = data?.value;
-  // The answer's first two are never at the same spot (meteo.ts, sameSpot).
-  const stations = (d?.meteo?.stations ?? []).slice(0, 2);
+  // The answer's first two are never at the same spot (meteo.ts, sameSpot); an amateur station apart, folded.
+  const stations = (d?.meteo?.stations ?? []).filter((s) => !s.amateur).slice(0, 2);
+  const complement = d?.meteo?.stations.find((s) => s.amateur);
   const first = enTete(d?.meteo?.stations);
   const kind = p.precision ?? KIND[place.type] ?? place.type;
   const where = place.nom !== p.nom ? ` Les mesures et la prévision sont données pour ${esc(place.nom)}.` : "";
@@ -2319,7 +2348,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const measured = !data
     ? `<p class="card">Les mesures se chargent : rechargez la page dans quelques secondes.</p>`
     : stations.length
-      ? `<div class="two">${stations.map(stationCard).join("")}</div>` + (jour ? sinceMidnightCard(jour) : "") +
+      ? `<div class="two">${stations.map(stationCard).join("")}</div>` + (complement ? amateurCard(complement) : "") + (jour ? sinceMidnightCard(jour) : "") +
         `<p class="note">Mis à jour ${leAt(data.fetchedAt)} (${since(data.fetchedAt, now)}). Sources : ${credits(d!.meteo!.sources)}.</p>`
       : `<p class="card">Aucune mesure disponible pour le moment.</p>`;
 

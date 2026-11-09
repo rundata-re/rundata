@@ -38,7 +38,7 @@ function stations(sets: Record<"t" | "p" | "v", string | "tous">, rain: (i: numb
 type Shape = { owner: string; layer: string; kind: "hit" | "dot" | "pill"; x: number; y: number; r: number };
 /** The marks of the stations' group, in the order they are drawn: circles with their white edge, wind pills. */
 function shapes(svg: string): Shape[] {
-  const sts = svg.slice(svg.indexOf('<g class="sts">'), svg.indexOf('<g class="rj-st">'));
+  const sts = svg.slice(svg.indexOf('<g class="sts sts-of">'), svg.indexOf('<g class="rj-st">'));
   const out: Shape[] = [];
   for (const a of sts.split('<a class="mk').slice(1)) {
     const owner = /href="#([^"]+)"/.exec(a)![1];

@@ -82,10 +82,11 @@ export const mieux = (a: Fit, b: Fit) => RANG[a.pertinence] - RANG[b.pertinence]
 
 /**
  * The station a page or a summary names first for a place, from the stations of `meteo_actuelle` (in the order of
- * mieux): of those with a temperature, the first « bonne », else the first « moyenne », else the first. One rule, so that
+ * mieux): of those of an official network with a temperature, the first « bonne », else the first « moyenne », else the first. One rule, so that
  * /meteo, /aujourdhui, the commune's page and `resume_du_jour` name the same station.
  */
-export function enTete<S extends { mesures: Record<string, string>; pertinence?: string }>(stations: S[] = []): S | undefined {
-  const warm = stations.filter((s) => s.mesures.temperature);
+export function enTete<S extends { mesures: Record<string, string>; pertinence?: string; amateur?: boolean }>(stations: S[] = []): S | undefined {
+  // Never an amateur station's (tools/meteo.ts): its reliability is not checked.
+  const warm = stations.filter((s) => s.mesures.temperature && !s.amateur);
   return warm.find((s) => s.pertinence === "bonne") ?? warm.find((s) => s.pertinence !== "faible") ?? warm[0];
 }

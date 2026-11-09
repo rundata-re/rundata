@@ -23,6 +23,8 @@ export const SOURCE: SourceInfo = {
   licence: "CC BY-NC 4.0",
   attribution: "Données : MétéoR-OI, licence CC BY-NC 4.0",
   url: "https://www.meteor-oi.re",
+  amateur: true,
+  court: "MétéoR-OI",
 };
 
 /** The credit the association asked for, word for word, wherever one of its measures is said. */

@@ -523,9 +523,14 @@ function spans(hs: number[]): string[] {
   return out;
 }
 
-/** What one day was like hour by hour, in a sentence and as figures. */
-function dayFacts(day: string, hs: Hour[], rain?: HourSeries, temp?: HourSeries, sun?: HourSeries, wind?: HourSeries) {
-  const mine = hs.filter((h) => h.day === day);
+/**
+ * What one day was like hour by hour, in a sentence and as figures. `upTo`: the last hour published when the day is
+ * cut short (today, or yesterday before its file is complete), null when none is; its figures are then those of these
+ * hours only, and said so, never as the whole day's.
+ */
+function dayFacts(day: string, hs: Hour[], rain?: HourSeries, temp?: HourSeries, sun?: HourSeries, wind?: HourSeries, upTo?: number | null) {
+  if (upTo === null) return { texte: `${frDate(day).slice(0, 5)} : pas encore publié`, chiffres: { date: frDate(day), jour_incomplet: "aucune heure de ce jour n'est encore publiée" } };
+  const mine = hs.filter((h) => h.day === day && (upTo === undefined || h.hour <= upTo));
   const rr = mine.map((h) => [h.hour, at(rain, "RR1", h)] as const).filter(([, v]) => v != null) as [number, number][];
   const wet = rr.filter(([, v]) => v >= RAIN_HOUR_MM);
   const t = mine.map((h) => [h.hour, at(temp, "T", h)] as const).filter(([, v]) => v != null) as [number, number][];
@@ -547,10 +552,14 @@ function dayFacts(day: string, hs: Hour[], rain?: HourSeries, temp?: HourSeries,
   }
   if (hot && cold) parts.push(`${fr(cold[1])} °C à ${cold[0]} h, ${fr(hot[1])} °C à ${hot[0]} h`);
   if (gust) parts.push(`rafale max ${Math.round(gust[1] * 3.6)} km/h vers ${gust[0]} h`);
+  const label = upTo === undefined ? frDate(day).slice(0, 5) : `${frDate(day).slice(0, 5)} (jour incomplet, publié jusqu'à ${upTo} h)`;
   return {
-    texte: `${frDate(day).slice(0, 5)} : ${parts.filter(Boolean).join("\u00a0; ") || "aucune mesure"}`,
+    texte: `${label} : ${parts.filter(Boolean).join("\u00a0; ") || "aucune mesure"}`,
     chiffres: {
       date: frDate(day),
+      ...(upTo === undefined
+        ? {}
+        : { jusqu_a: `${upTo} h`, jour_incomplet: `mesures publiées jusqu'à ${upTo} h seulement : pluie, températures, soleil et rafale ne valent que pour ces heures, pas pour la journée entière` }),
       pluie_mm: rr.length ? total : undefined,
       heures_de_pluie: rr.length ? wet.map(([h, v]) => `${h} h : ${fr(v)} mm`) : undefined,
       heures_ensoleillees: ins.length ? sunny.length : undefined,
@@ -596,14 +605,15 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
     };
     return Object.values(row).filter((v) => v !== undefined).length > 1 ? row : null;
   }).filter((r) => r !== null);
-  const facts = [...days(p)].map((d) => dayFacts(d, hs, rain, temp, sun, wind));
+  // The last hour published: the hourly file of a day comes out in the morning with the night just ended, so yesterday
+  // may stop at 8 h until the next file, and today always stops early. A day it cuts is said to be incomplete.
+  const lastHour = [...hs].reverse().find((h) => [rain, temp, sun].some((x) => x && (at(x, "RR1", h) ?? at(x, "T", h) ?? at(x, "INS", h)) != null));
+  const cut = (d: string) => (!lastHour || d < lastHour.day || (d === lastHour.day && lastHour.hour === 23) ? undefined : d === lastHour.day ? lastHour.hour : null);
+  const facts = [...days(p)].map((d) => dayFacts(d, hs, rain, temp, sun, wind, cut(d)));
   const used = new Map<PosteHoraire, string[]>();
   for (const [s, what] of [[rain, "pluie"], [temp, "température, humidité"], [wind, "vent et rafales"], [sun, "ensoleillement"]] as [HourSeries | undefined, string][]) {
     if (s) used.set(s.poste, [...(used.get(s.poste) ?? []), what]);
   }
-  // Today's hours stop at the last one published (the file comes out in the morning).
-  const lastHour = [...hs].reverse().find((h) => [rain, temp, sun].some((x) => x && (at(x, "RR1", h) ?? at(x, "T", h) ?? at(x, "INS", h)) != null));
-  const today = iso(now.getTime() + 4 * 3600_000);
   // The hours may come from another station than the days (the place's own has gaps): name it, with how far it is.
   const where = [...used.keys()].map((x) => {
     const b = stationBlock(place, asPoste(x), "") as { distance_km?: number; ecart_altitude_m?: number };
@@ -614,10 +624,10 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
   }).join("\u00a0; ");
   return {
     ou: where,
-    texte: facts.map((f) => f.texte).join(". ") + (p.au === today && lastHour ? ` (aujourd'hui, publié jusqu'à ${lastHour.hour} h)` : ""),
+    texte: facts.map((f) => f.texte).join(". "),
     bloc: {
       definition: "Heure de La Réunion. Chaque valeur est celle de l'heure qui se termine à l'heure indiquée : la pluie de « 15 h » est tombée entre 14 h et 15 h, le soleil de « 15 h » est en minutes sur cette heure-là, la rafale est la plus forte de l'heure. La température est celle relevée à l'heure pile : le maximum et le minimum de la journée, mesurés en continu, peuvent la dépasser un peu.",
-      jusqu_a: hs.length ? `${frDate(hs[hs.length - 1].day)} ${hs[hs.length - 1].hour} h` : undefined,
+      jusqu_a: lastHour ? `${frDate(lastHour.day)} ${lastHour.hour} h` : undefined,
       stations: [...used].map(([x, what]) => stationBlock(place, asPoste(x), `heure par heure : ${what.join(", ")}`)),
       par_jour: facts.map((f) => f.chiffres),
       heures: lignes,

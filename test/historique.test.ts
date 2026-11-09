@@ -149,7 +149,23 @@ describe("historique_meteo, hour by hour", () => {
     expect(a.erreur).toBeUndefined();
     expect(a.heure_par_heure.stations[0].station).toBe("Saint-Denis Gillot (aéroport)");
     expect(a.heure_par_heure.heures.at(-1).heure).toBe("24/10 8 h");
-    expect(a.resume).toMatch(/aujourd'hui, publié jusqu'à 8 h/);
+    expect(a.resume).toContain("24/10 (jour incomplet, publié jusqu'à 8 h) : ");
+    expect(a.heure_par_heure.jusqu_a).toBe("24/10/2026 8 h");
+  });
+
+  it("says a day cut short by the hours not published yet is incomplete, with its last hour, never as the whole day", async () => {
+    both();
+    // 25/10 at 1 h: yesterday's file stops at 8 h until the next one comes out.
+    const night = new Date("2026-10-24T21:00:00Z");
+    const a = json(await historiqueMeteo(new Cache(), "Sainte-Marie", { du: "2026-10-23", au: "2026-10-24", detail: "heure" }, night));
+    expect(a.heure_par_heure.jusqu_a).toBe("24/10/2026 8 h");
+    expect(a.heure_par_heure.heures.at(-1).heure).toBe("24/10 8 h");
+    const [whole, cut] = a.heure_par_heure.par_jour;
+    expect(whole.jour_incomplet).toBeUndefined();
+    expect(cut).toMatchObject({ date: whole.date.replace("23", "24"), jusqu_a: "8 h" });
+    expect(cut.jour_incomplet).toMatch(/^mesures publiées jusqu'à 8 h seulement : .*pas pour la journée entière$/);
+    expect(a.resume).toContain("24/10 (jour incomplet, publié jusqu'à 8 h) : ");
+    expect(a.resume).not.toMatch(/23 h\)|jusqu'à 23 h/);
   });
 
   it("leaves the hours out over a longer period, or when asked by day", async () => {

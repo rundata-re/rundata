@@ -63,7 +63,7 @@ describe("the points of the maps, with a mouse and with a finger", () => {
   });
 
   it("keeps the bubble of /meteo and of the home page, and gives their markers the tap with a finger's pointer", () => {
-    expect(POINTS_SCRIPT).toContain(`const own=!!(s.closest("figure")||s.parentElement).querySelector("[data-mtip]");`);
+    expect(POINTS_SCRIPT).toContain(`const own=!!(s.closest("figure")||s.parentElement).querySelector("[data-mtip]")||!!s.querySelector(".cn");`);
     expect(POINTS_SCRIPT).toContain(`if(a.matches("[data-tp]"))a.dispatchEvent(new PointerEvent("pointerdown",{bubbles:true,pointerType:"touch"}))`);
   });
 
@@ -72,8 +72,7 @@ describe("the points of the maps, with a mouse and with a finger", () => {
     expect(MOUSE_PX).toBe(14);
     expect(POINTS_SCRIPT).toContain(`let best=null,k=M;s.querySelectorAll("a.sp")`);
     expect(POINTS_SCRIPT).toContain(`const a=nearest(e.clientX,e.clientY);s.classList.add("souris");aim(a);`);
-    // Away from any name, on a commune of /communes, the commune's own bubble.
-    expect(POINTS_SCRIPT).toContain(`const z=!a&&e.target.closest&&e.target.closest("a.zn[data-pn]");if(a)show(a);else if(z)show(z);else if(on&&on.matches(".sp"))later()`);
+    expect(POINTS_SCRIPT).toContain(`if(a)show(a);else if(on&&on.matches(".sp"))later()`);
     // A click takes that same point, the browser's own (a double click held still works, carte-zoom.ts): it alone takes
     // the pointer; one far from every dot, on a hit area alone, takes none. A finger gives the hit areas back.
     expect(POINTS_CSS).toContain(`svg.map.souris a.sp:not(.vise){pointer-events:none}`);

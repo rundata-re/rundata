@@ -758,7 +758,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .map .nm{pointer-events:none}.map .nm text{fill:#f1f5f9;stroke:rgb(11 31 54/.75);paint-order:stroke;stroke-linejoin:round;font-weight:500;dominant-baseline:central;text-rendering:geometricPrecision}
 .map .nm [data-r="0"]{font-weight:600}.map .nm .nx{display:none}
 .map .cn text{fill:#f1f5f9;stroke:rgb(11 31 54/.8);stroke-width:8px;paint-order:stroke;stroke-linejoin:round;font-weight:600;text-anchor:middle;dominant-baseline:central;text-rendering:geometricPrecision}
-.map .cn .hit{fill:transparent;stroke:none}.map .cn a:hover text,.map .cn a.on text,.map .cn a:focus-visible text{fill:var(--sun)}.map .zn.on path{fill:rgb(255 255 255/.14);stroke:var(--sun);stroke-width:4}
+.map .cn .hit{fill:transparent;stroke:none}.map .cn a:hover text,.map .cn a.on text,.map .cn a:focus-visible text{fill:var(--sun)}.map .zn.on path{fill:rgb(255 255 255/.14);stroke:var(--sun);stroke-width:4}.noms .map .zn.on path{fill:color-mix(in srgb,var(--sun) 24%,transparent)}
 @media (max-width:37.49rem){.mapcard.noms{padding:.4rem}}
 .map .cn .tie{pointer-events:none}.map .cn .tie path{fill:none;stroke:#f1f5f9;stroke-width:3px;stroke-linecap:round}.map .cn .tie circle{fill:#f1f5f9;stroke:rgb(11 31 54/.8);stroke-width:3px}
 .map .trk{fill:none;stroke:#ff922b;stroke-width:4px;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}

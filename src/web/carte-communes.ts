@@ -6,8 +6,9 @@
  * the south). A long name goes on two lines; « Les Trois-Bassins » and « La Plaine-des-Palmistes » are shortened, their
  * full name said to screen readers and in the bubble.
  *
- * A finger on or near a name takes it (carte-points.ts: the nearest name within 22 px, a short list when several). A
- * commune hovered names itself: its name in the sun's colour, and its shape outlined when its name is hovered
+ * No bubble (the user, 10/11/2026): a click or a tap on a name or on its commune opens its page. A finger on or near a
+ * name takes it (carte-points.ts: the nearest name within 22 px, a short list when several). A commune hovered names
+ * itself: its name in the sun's colour, and its shape outlined and lightly filled when its name is hovered or focused
  * (SURVOL_SCRIPT; CSS rules with :has() did the same, but slowed the page's first paint on a slow phone).
  */
 import island from "../places/island.json" with { type: "json" };
@@ -87,6 +88,9 @@ export function communeNames(href: (nom: string) => string, listed = false): str
   return `<g class="cn" font-size="${NAME_UNITS}"><g class="tie" aria-hidden="true">${ties.join("")}</g>${names.join("")}</g>`;
 }
 
-/** A commune hovered lights its name (`.on`), and a name hovered its commune: the two lists in the same order (ORDER). */
+/**
+ * A commune hovered lights its name (`.on`), and a name hovered or focused its commune, outlined and lightly filled:
+ * the two lists in the same order (ORDER).
+ */
 export const SURVOL_SCRIPT = `(()=>{const c=document.querySelector("svg.map .cn");if(!c)return;const z=[...c.closest("svg").querySelectorAll(".zn")],n=[...c.querySelectorAll("a")],` +
-  `on=(i,v)=>{z[i]?.classList.toggle("on",v);n[i]?.classList.toggle("on",v)};[z,n].forEach((l)=>l.forEach((a,i)=>{a.addEventListener("pointerenter",()=>on(i,true));a.addEventListener("pointerleave",()=>on(i,false))}))})();`;
+  `on=(i,v)=>{z[i]?.classList.toggle("on",v);n[i]?.classList.toggle("on",v)};[z,n].forEach((l)=>l.forEach((a,i)=>{a.addEventListener("pointerenter",()=>on(i,true));a.addEventListener("pointerleave",()=>on(i,false));a.addEventListener("focus",()=>on(i,true));a.addEventListener("blur",()=>on(i,false))}))})();`;

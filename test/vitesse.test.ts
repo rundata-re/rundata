@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journeeOf } from "../src/web/data.js";
 import { installationsReplay, productionChart } from "../src/web/electricite-carte.js";
-import { IMAGES_FAST, IMAGES_MAX, imagesMaxOf, keepsUp, rejeuScript, skipOf } from "../src/web/meteo-carte.js";
+import { IMAGES_FAST, IMAGES_MAX, IMAGES_OVER, imagesMaxOf, keepsUp, rejeuScript, skipNear, skipOf } from "../src/web/meteo-carte.js";
 import { CSS } from "../src/web/pages.js";
 import { VITESSE_JS, VITESSES, vitesseBouton } from "../src/web/vitesse.js";
 
@@ -88,10 +88,10 @@ describe("the speed of the replays", () => {
     expect(at(4)).toEqual([4, 3, 4, 4, 4]);
     // Never more than 7 shown a second.
     for (const v of VITESSES) for (const x of Object.values(n)) expect((v * x) / skipOf(v, x, 7)).toBeLessThanOrEqual(7);
-    expect(js).toContain(`const skipOf=${skipOf},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};`);
-    expect(js).toContain(`const kk=(n,x)=>skipOf(V,n,x||7),ne=(n)=>V*n/kk(n)`);
+    expect(js).toContain(`const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};`);
+    expect(js).toContain(`const kk=(n,x,m)=>skipNear(V,n,x||7,DN?0:m||0,1.2),ne=(n)=>V*n/kk(n)`);
     // Only while playing: paused, the slider shows every image.
-    expect(js).toContain(`sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0):1;`);
+    expect(js).toContain(`sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;`);
     expect(js).toContain(`trail=(s)=>rm||!tw()?null:keep(sub("p"),T,s,tw())`);
     // The finer files asked automatically on the images they would show a second at the speed.
     expect(js).toContain(`can=(m)=>keepsUp(CW,slow,ne(nps(m)),0.6,25),`);
@@ -119,11 +119,39 @@ describe("the speed of the replays", () => {
     expect(Object.values(n).map((x) => skipOf(2, x, max(quick, 2, x)))).toEqual([1, 1, 1, 1, 1]);
     const js = rejeuScript();
     // Chosen when a play starts or its speed changes, never during it; only for the rain.
-    expect(js).toContain(`const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?7:imagesMaxOf(CW,slow,V,ips("p"),0.6,25,7,14)}return IM};`);
-    expect(js).toContain(`const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FW.length=0;`);
+    expect(js).toContain(`const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?7:imagesMaxOf(CW,slow,V,ips("p"),0.6,25,7,14);`);
+    expect(js).toContain(`const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FD=30;FW.length=0;`);
     // A device that draws fewer than 25 frames a second over the last 30 goes back to 7 at once, for the rest of the visit.
-    expect(js).toContain(`if(IM>7&&was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30&&FW.reduce((a,b)=>a+b,0)>30e3/25){DN=true;IM=7}}`);
+    expect(js).toContain(`if(was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30){const s=FW.reduce((a,b)=>a+b,0);if(s>30e3/25){DN=true;IM=7;FD=30}`);
     // The rain's next image shown, for the page to decide whether a pair is moved (test/pluie-mouvement.test.ts).
     expect(js).toContain(`RJ.p.mix(r.a.e,r.z.e,r.f,el,gr,trail(shown(T,r,l)),wm(),nxt(r.z))`);
+  });
+
+  it("keeps the rain's images 15 minutes apart at most, moved one into the other, for up to 1.2 times its most a second", () => {
+    expect(IMAGES_OVER).toBe(1.2);
+    // The rain's new images a second at ×1 and the most within 15 minutes (one in so many): 6 h, 24 h, 24 h and 7 days finer.
+    const n = { "6h": 72 / 12, "24h": 96 / 24, "24h+": 288 / 54, "7j+": 672 / 96 };
+    const most = { "6h": 3, "24h": 1, "24h+": 3, "7j+": 1 };
+    const at = (v: number, max: number) => Object.entries(n).map(([k, x]) => skipNear(v, x, max, most[k as keyof typeof most], 1.2));
+    // At ×4, 7 a second: one in 3 over 6 hours and the finer 24 hours (8 and 7.1 a second, 15 minutes apart) rather
+    // than one in 4 (20 minutes, faded); over 24 hours (16 a second) and the finer 7 days (28), as skipOf.
+    expect(at(4, 7)).toEqual([3, 3, 3, 4]);
+    expect(Object.values(n).map((x) => skipOf(4, x, 7))).toEqual([4, 3, 4, 4]);
+    // At ×4, 14 a second: every image of 24 hours (16 a second); the finer 7 days, one in 2 (30 minutes, faded).
+    expect(at(4, 14)).toEqual([2, 1, 2, 2]);
+    // At ×2, 7 a second: every image over 24 hours (8 a second) rather than one in 2, 30 minutes apart.
+    expect(at(2, 7)).toEqual([2, 1, 2, 2]);
+    // At ×1 as skipOf; and never past 1.2 times the most.
+    expect(at(1, 7)).toEqual([1, 1, 1, 1]);
+    for (const v of VITESSES) for (const max of [7, 14]) for (const [k, x] of Object.entries(n)) {
+      const s = skipNear(v, x, max, most[k as keyof typeof most], 1.2);
+      expect((v * x) / s).toBeLessThanOrEqual(Math.max(max * 1.2, (v * x) / skipOf(v, x, max)) + 1e-9);
+      expect(s).toBeLessThanOrEqual(skipOf(v, x, max));
+    }
+    // No image within 15 minutes (7 days, an image an hour): skipOf.
+    expect(skipNear(4, 7, 7, 0, 1.2)).toBe(skipOf(4, 7, 7));
+    const js = rejeuScript();
+    // Over the radar's images only, never once the device fell behind (DN).
+    expect(js).toContain(`NR=()=>Math.floor(900000/ST[d])`);
   });
 });

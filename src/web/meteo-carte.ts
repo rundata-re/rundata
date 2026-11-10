@@ -569,18 +569,21 @@ RJ.t={live:live(),now,grid,part,show:paint,mix:(A,B,f)=>{for(let i=0;i<w*h;i++)M
 if(amb&&sa.length)amb.addEventListener("change",()=>{RJ.t.live=live();RJ.t.now=grid(RJ.t.live);if(!RJ.on)paint(RJ.t.now)})};im.src=vo.dataset.alt}`;
 
 /**
- * A frame every 1000 / 30 ms, 30 a second (written out: the page's scripts take this function as its text), for a rAF
- * callback at the time `t`, `last` the previous frame's time and `nx` the next's: null when it is too soon, else the
- * time gone by in frames, how far things move, and the next frame's time. A frame is drawn as soon as its time is
- * within 8 ms, so that a screen's 60 Hz, never quite even, gives every other frame of its own (a frame at 32 ms at
- * least drew one in four instead, 15 a second, 31/10/2026), and a frame late by more than one starts the count again.
+ * A frame every 1000 / `fps` ms, 30 a second unless asked (written out: the page's scripts take this function as its
+ * text), for a rAF callback at the time `t`, `last` the previous frame's time and `nx` the next's: null when it is too
+ * soon, else the time gone by in frames of 1/30 s, how far things move, and the next frame's time. A frame is drawn as
+ * soon as its time is within a quarter of a frame (8 ms at 30), so that a screen's 60 Hz, never quite even, gives every
+ * other frame of its own (a frame at 32 ms at least drew one in four instead, 15 a second, 31/10/2026), and at 60 a
+ * second every frame of a 60 Hz screen and every other of a 120 Hz one; a frame late by more than one starts the count
+ * again.
  */
-export const pace = (t: number, last: number, nx: number): [number, number] | null => {
-  if (t < nx - 8) return null;
-  return [last ? Math.min(t - last, 100) / (1000 / 30) : 1, t - nx > 1000 / 30 ? t + 1000 / 30 : nx + 1000 / 30];
+export const pace = (t: number, last: number, nx: number, fps = 30): [number, number] | null => {
+  if (t < nx - Math.min(8, 250 / fps)) return null;
+  return [last ? Math.min(t - last, 100) / (1000 / 30) : 1, t - nx > 1000 / fps ? t + 1000 / fps : nx + 1000 / fps];
 };
-/** The step of a script's rAF callback that has `pace`, `t`, `last` and `nx`: `k`, how far things move. */
-const STEP = `const p=pace(t,last,nx);if(!p)return;const k=p[0];nx=p[1];last=t;`;
+/** The step of a script's rAF callback that has `pace`, `t`, `last` and `nx`, at `fps` frames a second if named (30 else): `k`, how far things move. */
+const stepAt = (fps = "") => `const p=pace(t,last,nx${fps && "," + fps});if(!p)return;const k=p[0];nx=p[1];last=t;`;
+const STEP = stepAt();
 
 /**
  * What the wind and the rain share in the browser: a canvas animated 30 frames a second (STEP), only while its layer
@@ -990,6 +993,15 @@ const DROPS = {
  */
 const WAY_MS = 15 * 6e4;
 /**
+ * How much of the next image shows at `f` of the way between two images faded rather than moved: none for the first
+ * third, all of it for the last, faded in the third between. Faded the whole way, the rain of both stayed on the map
+ * side by side, the stronger one going over from one to the other: over 7 days, its images an hour apart (all faded,
+ * 723 pairs in 723) or 30 minutes at ×2, the rain looked as if it slid sideways (the user, 07/11/2026: « l'impression
+ * de décalage latéral toujours »). Half way still half of each, when the legend and the time go over (shownAt, mix).
+ * The page's script takes it as its text.
+ */
+export const fadeOf = (f: number) => Math.min(1, Math.max(0, 3 * f - 1));
+/**
  * The way of the rain of grid `a` (w × h) along a field found by flowOf (U, V at bw × bh blocks, in cells): each block's
  * way weighted by the rain of `a` over it; [0, 0] where it is dry. The page's script takes it as its text.
  */
@@ -1156,15 +1168,15 @@ const wy=(A,Z)=>A!==Z&&!A.pg&&!Z.pg&&Date.parse(Z.fin)-Date.parse(A.fin)<=${WAY_
 // And the way of the next pair (Z to the next image shown, N) does not turn back (turnsBack): decided once a pair, as
 // soon as both ways are found (decide; undefined until then), kept (WB). No next image (null: the file's last, or a
 // page's script from before), faded.
-const meanWay=${meanWay},turnsBack=${turnsBack},WB=new Map();
+const meanWay=${meanWay},turnsBack=${turnsBack},fadeOf=${fadeOf},WB=new Map();
 const decide=(A,Z,N)=>{if(!N||!wy(A,Z))return false;const key=fk(A,Z)+" "+N.fin;let b=WB.get(key);if(b!==undefined)return b;const r=FL.get(fk(A,Z)),nx=wy(Z,N),q=nx&&FL.get(fk(Z,N));if(!r||nx&&!q)return undefined;
 b=!q||!turnsBack(meanWay(r.U,r.V,r.w,r.h,gv(A),A.w,A.h),meanWay(q.U,q.V,q.w,q.h,gv(Z),Z.w,Z.h));WB.set(key,b);if(WB.size>KP(A))WB.delete(WB.keys().next().value);return b};
 // Paused, or not made ready in time: the ways found now.
 const way=(A,Z,N)=>{let b=decide(A,Z,N);if(b===undefined){flowStep(A,Z,Infinity);if(wy(Z,N))flowStep(Z,N,Infinity);b=decide(A,Z,N)}return b};
 const paint=()=>{const x=c2d(pr);x.clearRect(0,0,cw,ch);if(!mx){if(d){x.drawImage(cv(d),0,0);const a=bad(d);if(!a.z)badly(x,a,d.w,d.h)}return}
 const F=way(mx[0],mx[1],mx[4])&&flow(mx[0],mx[1]);
-if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{
-x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2];x.drawImage(cv(mx[0]),0,0);x.globalAlpha=mx[2];x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over"}
+if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{const e=fadeOf(mx[2]);
+x.globalCompositeOperation="lighter";x.globalAlpha=1-e;x.drawImage(cv(mx[0]),0,0);x.globalAlpha=e;x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over"}
 const a=veils(...mx);if(a)badly(x,a,mx[1].w,mx[1].h)};
 const o={fl,id:"wxl-p",ready:()=>!!d,moving,
 size:(r)=>{cw=fl.width=pr.width=Math.max(1,Math.round(r.width));ch=fl.height=pr.height=Math.max(1,Math.round(r.height));g=c2d(fl);paint();
@@ -1360,12 +1372,30 @@ export const IMAGES_FAST = 14;
 /** At speed `v`, one image shown in so many of a layer that has `n` new ones a second at ×1, for `max` at most a second. */
 export const skipOf = (v: number, n: number, max: number) => Math.max(1, Math.ceil((v * n) / max - 1e-9));
 /**
- * Whether a device keeps up with `n` new images of the rain a second: its time measured (cw: a new image's, another
- * frame's, the frames a second; null before the measure) fits within `share` of a second and it draws `fps` frames a
- * second, never on a connection that saves data or is slow. The replay's script takes it as its text.
+ * How far over its most a second (IMAGES_MAX, IMAGES_FAST) the rain goes for its images to stay WAY_MS apart at most,
+ * moved one into the other rather than faded: a play at ×4, one image in 4 of the 5 minutes, 20 apart, was all faded,
+ * 5 new images a second (10/11/2026, WebKit at 390 px: 90 pairs in 90 over 6 hours; the user, 07/11/2026, at ×4:
+ * « pas fluide »). 1.2: 8 a second over 6 hours at ×4 for the slow device's 7, 16 over 24 hours for the 14 of one
+ * that keeps up; not over 7 days of the finer file (28). A device that then draws fewer than KEEPS_UP_FPS frames a
+ * second goes back to skipOf for the rest of its visit.
  */
-export const keepsUp = (cw: number[] | null, slow: boolean, n: number, share: number, fps: number) =>
-  !!cw && !slow && cw[2] >= fps && n * cw[0] + 30 * cw[1] < share * 1000;
+export const IMAGES_OVER = 1.2;
+/**
+ * As skipOf, or one in `most` (the most images of the layer within WAY_MS) when skipOf would take them further apart
+ * and `most` shows at most `over` times `max` a second. The replay's script takes it as its text, with skipOf.
+ */
+export const skipNear = (v: number, n: number, max: number, most: number, over: number) => {
+  const k = skipOf(v, n, max);
+  return most >= 1 && k > most && (v * n) / most <= max * over + 1e-9 ? most : k;
+};
+/**
+ * Whether a device keeps up with `n` new images of the rain a second and `frames` frames drawn a second (30 unless
+ * asked): its time measured (cw: a new image's, another frame's, the frames a second; null before the measure) fits
+ * within `share` of a second and it draws `fps` frames a second, never on a connection that saves data or is slow. The
+ * replay's script takes it as its text.
+ */
+export const keepsUp = (cw: number[] | null, slow: boolean, n: number, share: number, fps: number, frames = 30) =>
+  !!cw && !slow && cw[2] >= fps && n * cw[0] + frames * cw[1] < share * 1000;
 /**
  * The most new images of the rain a second at speed `v`, for a layer of `n` a second at ×1: `hi` for a device that
  * keeps up with those it would then show, else `lo`. The replay's script takes it as its text (with keepsUp and skipOf).
@@ -1391,9 +1421,10 @@ function rejeuJs(): string {
 ${VITESSE_JS}
 const P=${js({ ...REJEU_PATHS, "24h+": FINS["24h"], "7j+": FINS["7j"] })},JP=${js(jourPath("JOUR"))},LB=${js(labels)},N=new Set(${js([...NAMED])}),C=${js(STOPS)},PL=${js(PLAY_MS)},TRAIL=${TRAIL_MS};
 // A layer's new images a second at ×1 (the radar's, or one an hour), at the speed one in kk of them (IMAGES_MAX), and so
-// many shown a second (ne); the rain's, up to IM (IMAGES_FAST for a device that keeps up).
-const skipOf=${skipOf},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};
-const kk=(n,x)=>skipOf(V,n,x||${IMAGES_MAX}),ne=(n)=>V*n/kk(n),ips=(l)=>(l==="p"?DU[d]/ST[d]:DU[d]/36e5)*1e3/PL[d];
+// many shown a second (ne); the rain's, up to IM (IMAGES_FAST for a device that keeps up), or one in m of them, its
+// images within WAY_MS, up to IMAGES_OVER times IM (skipNear), unless the device fell behind (DN).
+const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};
+const kk=(n,x,m)=>skipNear(V,n,x||${IMAGES_MAX},DN?0:m||0,${IMAGES_OVER}),ne=(n)=>V*n/kk(n),ips=(l)=>(l==="p"?DU[d]/ST[d]:DU[d]/36e5)*1e3/PL[d];
 const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5},SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0},DU={"6h":216e5,"24h":864e5,"7j":6048e5,"24h+":864e5,"7j+":6048e5,jour:864e5};
 // The longest time between two images of the radar faded into each other: 10 minutes over 6 hours, half an hour in the
 // finer files (their first day, a quarter of an hour apart), 2 hours between the images of an hour.
@@ -1423,10 +1454,14 @@ out.push({s,big,c:mk("circle",{cx:s.x,cy:s.y,r:big?34:17},g),t:big?mk("text",{cl
 // Playing faster than its images can follow, one in n of them, the last kept (sub); paused, every one.
 // The rain's most a second (IM), chosen when a play starts and when its speed changes (IQ), never during it: a device
 // that keeps up gets IMAGES_FAST (imagesMaxOf); one that then draws fewer than KEEPS_UP_FPS frames a second over the
-// last 30 (FW) goes back to IMAGES_MAX at once, until the page is left (DN).
-let IM=${IMAGES_MAX},IQ="",DN=false,PN=0;const FW=[];
-const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?${IMAGES_MAX}:imagesMaxOf(CW,slow,V,ips("p"),${KEEPS_UP},${KEEPS_UP_FPS},${IMAGES_MAX},${IMAGES_FAST})}return IM};
-const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){c=[n,k.filter((x,i)=>i%n===0||i===k.length-1)];KS.set(k,c)}return c[1]};
+// last 30 (FW) goes back to IMAGES_MAX at once, until the page is left (DN). Its images within WAY_MS (NR, one in so
+// many at most). The frames drawn a second (FD): 60 for a device that keeps up with them as with IMAGES_FAST (the user,
+// 07/11/2026, at ×4: « pas fluide »; at 30, the rain moved 5 px a frame over 6 hours at ×4), back to 30 for the rest of
+// the visit once it draws fewer than 50 (D6).
+let IM=${IMAGES_MAX},IQ="",DN=false,PN=0,FD=30,D6=false;const FW=[],NR=()=>Math.floor(${WAY_MS}/ST[d]);
+const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?${IMAGES_MAX}:imagesMaxOf(CW,slow,V,ips("p"),${KEEPS_UP},${KEEPS_UP_FPS},${IMAGES_MAX},${IMAGES_FAST});
+FD=!D6&&IM>${IMAGES_MAX}&&keepsUp(CW,slow,V*ips("p")/kk(ips("p"),IM,NR()),${KEEPS_UP},${KEEPS_UP_FPS},60)?60:30}return IM};
+const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){c=[n,k.filter((x,i)=>i%n===0||i===k.length-1)];KS.set(k,c)}return c[1]};
 // Playing, never held on a moment (momentAt): the time written moves on with the picture.
 const moment=${momentAt},at=(l)=>{const k=sub(l),n=k===K[l]?1:KS.get(K[l])[0];return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)};
 // The stations of an hour, as the page's scripts take them: [x, y, altitude, °C], or [x, y, u, v] in km/h (y down).
@@ -1524,10 +1559,10 @@ fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.lengt
 const gauge=(ms)=>{const n=++MS[4];if(n===11)MS[5]=performance.now();if(n>10){const i=NWF?0:2;MS[i]+=ms;MS[i+1]++}NWF=false;if(MS[1]<6||MS[3]<30)return;MZ=false;const o=MS[2]/MS[3];
 CW=[Math.max(0,MS[0]/MS[1]-o),o,(n-11)*1e3/Math.max(1,performance.now()-MS[5])];
 if(!USER&&can("24h+")){FINE=true;box.checked=true;sel.hidden=false;if(d==="24h")RJ.go("24h",2)}};
-const lapse=${lapse};const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${STEP}const dt=lapse(t,was);
-if(IM>${IMAGES_MAX}&&was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30&&FW.reduce((a,b)=>a+b,0)>30e3/${KEEPS_UP_FPS}){DN=true;IM=${IMAGES_MAX}}}T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
+const lapse=${lapse};const pace=${pace},tick=(t)=>{raf=requestAnimationFrame(tick);const was=last;${stepAt("FD")}const dt=lapse(t,was);
+if(was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30){const s=FW.reduce((a,b)=>a+b,0);if(s>30e3/${KEEPS_UP_FPS}){DN=true;IM=${IMAGES_MAX};FD=30}else if(FD>30&&s>30e3/50){FD=30;D6=true}}}T=Math.min(E,T+(E-S)*dt*V/PL[d]);const t1=performance.now();show();if(MZ)gauge(performance.now()-t1);if(T>=E)stop(true)};
 // The measure, in a play of the rain over 6 or 24 hours, until it is known or more images are asked.
-const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FW.length=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
+const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FD=30;FW.length=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
 const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show();if(SW){SW=0;RJ.go(BA(d),2)}};
 // Back to the live map when the file cannot come: the bar says so.
 const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};

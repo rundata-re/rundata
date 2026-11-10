@@ -567,12 +567,12 @@ describe("the replay bar's own script", () => {
 
 describe("the rain's animation and its replay", () => {
   // The frames a loop draws at the rAF times given, and how far each moves (k, in frames of 1/30 s), as STEP does.
-  const frames = (times: number[]) => {
+  const frames = (times: number[], fps?: number) => {
     let last = 0,
       nx = 0;
     const out: number[] = [];
     for (const t of times) {
-      const p = pace(t, last, nx);
+      const p = pace(t, last, nx, fps);
       if (!p) continue;
       out.push(p[0]);
       nx = p[1];
@@ -585,7 +585,8 @@ describe("the rain's animation and its replay", () => {
 
   it("draws 30 frames a second on a 60 Hz screen never quite even, a 120 Hz one and a capture stepped at 1/30 s", () => {
     // The animations and the replay step alike, with pace as its text, as frames() does.
-    expect(tick.slice(1)).toEqual(loop.slice(1));
+    expect(tick[1]).toBe(loop[1]);
+    expect(tick[2]).toBe("const p=pace(t,last,nx,FD);if(!p)return;const k=p[0];nx=p[1];last=t;");
     expect(loop[1]).toBe(String(pace));
     expect(loop[2]).toBe("const p=pace(t,last,nx);if(!p)return;const k=p[0];nx=p[1];last=t;");
     // The functions taken as their text need nothing of the module around them.
@@ -606,6 +607,24 @@ describe("the rain's animation and its replay", () => {
     expect(frames([1000, 2000])[1]).toBeCloseTo(3, 6);
   });
 
+  it("draws the replay 60 frames a second for a device that keeps up: every frame of a 60 Hz screen, every other of a 120 Hz one", () => {
+    // 60 Hz, each frame up to 0.6 ms early or late: every one, each moving half a frame of 1/30 s.
+    const jitter = Array.from({ length: 600 }, (_, i) => 1000 + (i * 1000) / 60 + (i % 2 ? -0.6 : 0.6) * ((i * 7) % 3 === 0 ? 1 : -1));
+    const k60 = frames(jitter, 60);
+    expect(k60).toHaveLength(600);
+    for (const k of k60.slice(1)) expect(k).toBeCloseTo(0.5, 1);
+    // 120 Hz, as an iPhone's screen: 60 a second, never 120.
+    expect(frames(Array.from({ length: 1200 }, (_, i) => 1000 + (i * 1000) / 120), 60)).toHaveLength(600);
+    // Every 1/30 s, 30: never more than the screen gives.
+    expect(frames(Array.from({ length: 300 }, (_, i) => 1000 + (i * 1000) / 30), 60)).toHaveLength(300);
+    const js = rejeuScript();
+    // 60 for a device that keeps up with IMAGES_FAST and with 60 frames a second at the time each took; 30 at every play's start.
+    expect(js).toContain(`FD=!D6&&IM>7&&keepsUp(CW,slow,V*ips("p")/kk(ips("p"),IM,NR()),0.6,25,60)?60:30}return IM};`);
+    expect(js).toContain(`PN++;FD=30;FW.length=0;`);
+    // Fewer than 50 drawn a second over the last 30 frames: 30 for the rest of the visit; fewer than 25, 7 images too.
+    expect(js).toContain(`if(FW.length===30){const s=FW.reduce((a,b)=>a+b,0);if(s>30e3/25){DN=true;IM=7;FD=30}else if(FD>30&&s>30e3/50){FD=30;D6=true}}`);
+  });
+
   it("keeps the drops falling when the replay's image changes, born in each of the two faded by its share", () => {
     // Drops born in the image drawn, or in one of the two, as much as it shows.
     expect(METEO_SCRIPT).toContain(`s=Z&&Z.n&&(!A.n||Math.random()<f)?Z:A`);
@@ -617,8 +636,8 @@ describe("the rain's animation and its replay", () => {
     // A drop at its end is born again, or leaves when the rain wants fewer; those lacking come a tenth at a time.
     expect(METEO_SCRIPT).toContain(`if((p.a+=k)>p.m){if(ds.length>n||!born(p))ds.splice(i,1)}`);
     expect(METEO_SCRIPT).toContain(`Math.ceil(n/10)`);
-    // The two images faded added, each by its share: no dip half way.
-    expect(METEO_SCRIPT).toContain(`x.globalCompositeOperation="lighter";x.globalAlpha=1-mx[2]`);
+    // The two images faded added, each by its share (fadeOf, test/pluie-mouvement.test.ts): no dip half way.
+    expect(METEO_SCRIPT).toContain(`else{const e=fadeOf(mx[2]);\nx.globalCompositeOperation="lighter";x.globalAlpha=1-e;x.drawImage(cv(mx[0]),0,0);x.globalAlpha=e;`);
   });
 
   it("keeps the same legend under the map for the whole replay, the time being on the map", () => {

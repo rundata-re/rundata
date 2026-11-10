@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { blurOf, downOf, flowOf, flowStage, matchOf, meanWay, METEO_SCRIPT, sadOf, turnsBack, upOf } from "../src/web/meteo-carte.js";
+import { blurOf, downOf, fadeOf, flowOf, flowStage, matchOf, meanWay, METEO_SCRIPT, sadOf, turnsBack, upOf } from "../src/web/meteo-carte.js";
 
 // The radar's grid: 125 × 112 cells of about 1 km, classes 0 to 8.
 const w = 125, h = 112;
@@ -148,8 +148,20 @@ describe("a pair of images moved only when the next pair's way does not turn bac
     expect(moved).toEqual([true, true, false, true, true, true, false, false]);
   });
 
+  it("fades two images in the middle third of the way only: each alone the rest of the time, half of each half way", () => {
+    expect([0, 0.2, 1 / 3].map(fadeOf)).toEqual([0, 0, 0]);
+    expect(fadeOf(0.5)).toBeCloseTo(0.5, 9);
+    expect([0.8, 1].map(fadeOf)).toEqual([1, 1]);
+    expect(fadeOf(2 / 3)).toBeCloseTo(1, 9);
+    expect(fadeOf(0.4)).toBeCloseTo(0.2, 9);
+    // Both images on the map a third of the time, rather than all of it.
+    const both = Array.from({ length: 300 }, (_, i) => fadeOf(i / 300)).filter((e) => e > 0 && e < 1).length;
+    expect(both).toBeGreaterThanOrEqual(98);
+    expect(both).toBeLessThanOrEqual(101);
+  });
+
   it("is decided once a pair in the page, from the two ways made ready, faded without a next image", () => {
-    expect(METEO_SCRIPT).toContain(`const meanWay=${meanWay},turnsBack=${turnsBack},WB=new Map();`);
+    expect(METEO_SCRIPT).toContain(`const meanWay=${meanWay},turnsBack=${turnsBack},fadeOf=${fadeOf},WB=new Map();`);
     expect(METEO_SCRIPT).toContain("const decide=(A,Z,N)=>{if(!N||!wy(A,Z))return false;");
     expect(METEO_SCRIPT).toContain("b=!q||!turnsBack(meanWay(r.U,r.V,r.w,r.h,gv(A),A.w,A.h),meanWay(q.U,q.V,q.w,q.h,gv(Z),Z.w,Z.h));WB.set(key,b);");
     expect(METEO_SCRIPT).toContain("const F=way(mx[0],mx[1],mx[4])&&flow(mx[0],mx[1]);");

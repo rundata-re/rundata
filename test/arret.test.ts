@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { departureRow, departures, findStops, searchStops, stopPageDepartures, tripRun, type Departure } from "../src/tools/transports.js";
@@ -42,6 +42,42 @@ describe("the stop pages", () => {
     expect(p.indexe).toBe(true);
     expect(transit.pageOfStop(-1)).toBeUndefined();
     expect(transit.pageOfStop(1e9)).toBeUndefined();
+  });
+
+  it("have the addresses made from the names people read, all 4 900 of them, which are written only when read", async () => {
+    // As they were made until 10/11/2026: from each group's name written as people read it (stopName()).
+    const slug = (s: string) => transit.expand(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const before = new Map<string, transit.StopGroup[]>();
+    for (const g of transit.GROUPS) {
+      const key = `${slug(g.commune)}/${slug(g.nom)}`;
+      before.set(key, [...(before.get(key) ?? []), g]);
+    }
+    const pages = transit.stopPages();
+    expect([...pages.keys()]).toEqual([...before.keys()]);
+    for (const [key, groups] of before) {
+      const p = pages.get(key)!;
+      expect(p.groups, key).toEqual(groups);
+      expect(p.nom, key).toBe(groups[0].nom);
+      expect(p.commune, key).toBe(groups[0].commune);
+    }
+    // A new isolate builds them at its first trip's or stop's page: without writing a single name as people read it,
+    // some 170 ms of CPU of the 200 that robots made it pay on 09/11/2026.
+    vi.resetModules();
+    let written = 0;
+    vi.doMock("../src/tools/casse.js", async (actual) => {
+      const m = await actual<typeof import("../src/tools/casse.js")>();
+      return { ...m, casseArret: (...a: Parameters<typeof m.casseArret>) => (written++, m.casseArret(...a)) };
+    });
+    try {
+      const fresh = await import("../src/providers/transit.js");
+      expect(fresh.stopPages().size).toBe(pages.size);
+      expect(written).toBe(0);
+      expect(fresh.pageOfStop(station().groups[0].ids[0])?.nom).toBe(station().nom);
+      expect(written).toBeGreaterThan(0);
+    } finally {
+      vi.doUnmock("../src/tools/casse.js");
+      vi.resetModules();
+    }
   });
 
   it("give the next buses of all lines, each leading to its trip with this stop chosen, and the lines in the description", async () => {

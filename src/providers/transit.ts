@@ -113,12 +113,21 @@ export interface StopGroup {
 /** Normalized, with « St » and « Ste » written out, as stop names use both. */
 export const expand = (s: string) => normalize(s).replace(/\bst\b/g, "saint").replace(/\bste\b/g, "sainte");
 
+/**
+ * A group's name as its network writes it, normalized (expand()), as read once when the groups are made: its page's
+ * address is made from it (slugOf()), the same as from the name people read, since expand() folds the case and the
+ * accents. Writing the 5 229 names as people read them (stopName()) and normalizing them again cost some 200 ms of CPU
+ * at the first trip's or stop's page of each new isolate (measured on 10/11/2026), when the robots that read the trips
+ * from addresses all over the world met a new isolate nearly each time.
+ */
+const EXPANDED = new WeakMap<StopGroup, string>();
 export const GROUPS: StopGroup[] = (() => {
   const by = new Map<string, StopGroup>();
   STOPS.forEach(([net, name, lat, lon, commune], id) => {
     // A bus station's bays (« Gare Routière Du Tampon Quai A » to « Quai Q ») are one stop for a traveller.
     const nom = name.replace(/\s+quai\s+\S+$/i, "");
-    const key = `${net}|${expand(nom)}|${commune}`;
+    const expanded = expand(nom);
+    const key = `${net}|${expanded}|${commune}`;
     const g = by.get(key);
     if (g) {
       g.ids.push(id);
@@ -126,14 +135,24 @@ export const GROUPS: StopGroup[] = (() => {
       g.lon += (lon - g.lon) / g.ids.length;
     } else {
       // Its name in capitals as people read it when it is read (stopName()); its words are the same in any case.
-      by.set(key, { reseau: net, get nom() { return stopName(nom); }, commune, ids: [id], lat, lon, words: new Set(expand(nom).split(" ")) });
+      const group: StopGroup = { reseau: net, get nom() { return stopName(nom); }, commune, ids: [id], lat, lon, words: new Set(expanded.split(" ")) };
+      by.set(key, group);
+      EXPANDED.set(group, expanded);
     }
   });
   return [...by.values()];
 })();
 
 /** A name in an address: « Gare de St-Pierre » → « gare-de-saint-pierre ». */
-const slug = (s: string) => expand(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const slugOf = (expanded: string) => expanded.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const slug = (s: string) => slugOf(expand(s));
+const communes = new Map<string, string>();
+/** A commune's part of an address, once for each of the 24. */
+const slugCommune = (c: string) => {
+  let v = communes.get(c);
+  if (v === undefined) communes.set(c, (v = slug(c)));
+  return v;
+};
 
 /** The stops of a page /bus/arret/<commune>/<name>: those of every network with that name in that commune. */
 export interface StopPage {
@@ -155,10 +174,11 @@ export function stopPages(): Map<string, StopPage> {
   if (pages) return pages;
   pages = new Map();
   for (const g of GROUPS) {
-    const key = `${slug(g.commune)}/${slug(g.nom)}`;
+    const key = `${slugCommune(g.commune)}/${slugOf(EXPANDED.get(g)!)}`;
     const p = pages.get(key);
     if (p) p.groups.push(g);
-    else pages.set(key, { slug: key, nom: g.nom, commune: g.commune, groups: [g], indexe: false });
+    // Its name as people read it when it is read, as its first group's.
+    else pages.set(key, { slug: key, get nom() { return g.nom; }, commune: g.commune, groups: [g], indexe: false });
   }
   for (const p of pages.values()) p.indexe = p.groups.some((g) => g.ids.some((id) => INDEXED.has(id)));
   return pages;
@@ -167,7 +187,7 @@ export function stopPages(): Map<string, StopPage> {
 export function pageOfStop(id: number): StopPage | undefined {
   if (!Number.isInteger(id) || id < 0 || id >= STOPS.length) return undefined;
   const s = stop(id);
-  return stopPages().get(`${slug(s.commune)}/${slug(s.nom)}`);
+  return stopPages().get(`${slugCommune(s.commune)}/${slug(s.nom)}`);
 }
 
 export function serviceRuns(net: string, service: number, day: number, weekday: number): boolean {

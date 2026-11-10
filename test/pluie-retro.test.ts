@@ -106,6 +106,11 @@ describe("the radar's 24 hours, an image a quarter of an hour", () => {
     expect(kinds({ w: 1, h: 1, entrees: quarters(six) })).toEqual(["13:00", "13:20", "trou 13:20-13:50", "14:00"]);
   });
 
+  it("take the next image when the image of the quarter alone is missing: its gap ends where that image starts", () => {
+    const six = [image(t("13:10")), image(t("13:15")), image(t("13:20")), image(t("13:25")), gap("13:25", "13:30"), image(t("13:35")), image(t("13:40")), image(t("13:45"))];
+    expect(kinds({ w: 1, h: 1, entrees: quarters(six) })).toEqual(["13:15", "13:35", "13:45"]);
+  });
+
   it("keep what came before the 6 hours, join the two with a gap where they do not meet, and forget past 24 hours", () => {
     const before: Historique = { w: 125, h: 112, entrees: [image("2026-10-28T12:00:00Z"), image(t("02:00")), image(t("02:15"))] };
     const six: Historique = { w: 125, h: 112, entrees: [image(t("08:00")), image(t("08:15")), image(t("08:20"))] };

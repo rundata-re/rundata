@@ -850,14 +850,17 @@ export const flowStage = (s: FlowState): boolean => {
   if (s.k === 0) {
     const [a4, W4, H4] = downOf(a, w, h, 4), [z4] = downOf(z, w, h, 4);
     const R = Math.max(2, Math.min(6, Math.ceil((s.dt / 15) * 3))), all = Math.max(W4, H4);
-    // The whole image's way: what the blocks are held to, unless staying is nearly as good.
-    let gu = 0, gv = 0, gb = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, 0, 0, Infinity);
+    // The whole image's way: what the blocks are held to, unless staying is nearly as good, or the rain more than
+    // doubles or halves (it forms or ends more than it moves). Scattered showers 15 minutes apart once matched 6 cells
+    // to the east and then 12 to the south, where the images 5 minutes apart moved them west: the whole rain slid.
+    let gu = 0, gv = 0, gb = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, 0, 0, Infinity), ma = 0, mz = 0;
     const g0 = gb;
     for (let v = -R; v <= R; v++) for (let u = -R; u <= R; u++) {
       const d = sadOf(a4, z4, W4, H4, W4 >> 1, H4 >> 1, all, u, v, gb);
       if (d < gb) { gb = d; gu = u; gv = v; }
     }
-    if (gb > 0.9 * g0) gu = gv = 0;
+    for (let k = 0; k < a4.length; k++) { ma += a4[k]; mz += z4[k]; }
+    if (gb > 0.8 * g0 || ma > 2 * mz || mz > 2 * ma) gu = gv = 0;
     const BW = 16, BH = 14, U = new Float32Array(BW * BH).fill(gu), V = new Float32Array(BW * BH).fill(gv);
     const S = matchOf(a4, z4, W4, H4, BW, BH, 3, R, U, V, true);
     for (let pass = 0; pass < 6; pass++) {

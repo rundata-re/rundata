@@ -148,6 +148,25 @@ describe("a pair of images moved only when the next pair's way does not turn bac
     expect(moved).toEqual([true, true, false, true, true, true, false, false]);
   });
 
+  it("does not slide scattered showers as a whole where the images 5 minutes apart keep them in place (07/11/2026, 03:00 to 04:00)", () => {
+    const j = JSON.parse(readFileSync(new URL("./fixtures/radar-7j-glissement.json", import.meta.url), "utf8"));
+    const un = (s: string) => s.split(",").map((r) => (r ? r[0].repeat(parseInt(r.slice(1), 36)) : "")).join("");
+    const g = j.entrees.map((e: { pluie: string }) => {
+      const s = un(e.pluie), v = new Float32Array(j.w * j.h);
+      for (let k = 0; k < v.length; k++) v[k] = +s[k] || 0;
+      return v;
+    });
+    const ways = g.slice(1).map((z: Float32Array, i: number) => {
+      const f = flowOf(g[i], z, j.w, j.h, 15);
+      return meanWay(f.U, f.V, f.w, f.h, g[i], j.w, j.h);
+    });
+    // 03:15 to 03:30: once 6.5 cells east; 03:30 to 03:45, the rain five times more: once 12.6 cells south.
+    expect(Math.hypot(...ways[1])).toBeLessThan(2);
+    expect(Math.hypot(...ways[2])).toBeLessThan(2.5);
+    // 03:45 to 04:00, the showers moving west with the trade winds: still found.
+    expect(ways[3][0]).toBeLessThan(-5);
+  });
+
   it("fades two images in the middle third of the way only: each alone the rest of the time, half of each half way", () => {
     expect([0, 0.2, 1 / 3].map(fadeOf)).toEqual([0, 0, 0]);
     expect(fadeOf(0.5)).toBeCloseTo(0.5, 9);

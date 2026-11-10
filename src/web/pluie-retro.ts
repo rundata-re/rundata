@@ -233,7 +233,8 @@ export interface Store {
 
 /**
  * The quarters of the hour within `entrees`: at each, the image of the quarter, or the next one within 5 minutes (its
- * own time kept, never moved to the quarter); else the gap of the 6 hours it falls in, as it is.
+ * own time kept, never moved to the quarter); else the gap of the 6 hours it falls in, as it is. A gap that ends at the
+ * quarter is not in it: the next image's 5 minutes start there (an image missed at 17:30 left the 17:35 one out).
  */
 export function quarters(entrees: Entree[]): Entree[] {
   if (!entrees.length) return [];
@@ -241,7 +242,7 @@ export function quarters(entrees: Entree[]): Entree[] {
   const first = Math.ceil(endOf(entrees[0]) / QUARTER_MS) * QUARTER_MS;
   const lastEnd = endOf(entrees[entrees.length - 1]);
   for (let q = first; q <= lastEnd; q += QUARTER_MS) {
-    const e = entrees.find((x) => (isTrou(x) ? Date.parse(x.de) < q && q <= Date.parse(x.a) : Date.parse(x.fin) >= q && Date.parse(x.fin) <= q + 5 * 60_000));
+    const e = entrees.find((x) => (isTrou(x) ? Date.parse(x.de) < q && q < Date.parse(x.a) : Date.parse(x.fin) >= q && Date.parse(x.fin) <= q + 5 * 60_000));
     if (e && e !== out[out.length - 1]) out.push(e);
   }
   return out;

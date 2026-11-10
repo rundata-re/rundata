@@ -27,6 +27,7 @@ import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
 import type { Alerte, Credit, DepuisMinuit, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
 import { joursDuJour, vigilanceLue } from "./data.js";
+import { CSS_CHIFFRES, enChiffres } from "./en-chiffres.js";
 import { hasZones, ZONES_SCRIPT } from "./defilement.js";
 import brand from "./brand.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
@@ -1196,6 +1197,7 @@ table.drought thead th{border-top:0;color:var(--muted);font-weight:600}
 .sta-grid h3{font-size:1rem;margin-bottom:.4rem}.sta-grid h3 small{font-weight:400;color:var(--muted)}.sta-0{color:var(--muted);padding:1rem 0}
 .ch{width:100%;height:auto;display:block}.ch .gr{stroke:var(--line);stroke-width:1}.ch .ax{font-size:20px;fill:var(--muted)}
 .ch .ln-t{fill:none;stroke:var(--chaud);stroke-width:3.5}.ch .ln-n{fill:none;stroke:var(--frais);stroke-width:3.5}.ch .bd{fill:#d6a828;opacity:.18}.ch .br{fill:var(--pluie)}
+${CSS_CHIFFRES}
 .hg{display:grid;gap:1rem;align-items:start;grid-template-columns:repeat(auto-fill,minmax(min(100%,19rem),1fr))}.hg .card{padding:.8rem}.hg h3{font-size:1rem;margin-bottom:.3rem}.hg h3 small{font-weight:400;color:var(--muted)}
 .hg .ch{touch-action:pan-y}.hg .ch .bd{fill:var(--muted);opacity:.2}.ch .ln-p{fill:none;stroke:var(--pluie);stroke-width:4}.ch .ln-no{fill:none;stroke:var(--ink);stroke-width:2.5;stroke-dasharray:7 6;opacity:.75}.hg .ch .br{fill:var(--soleil)}.hg .ch .br.g{fill:var(--muted);opacity:.6}.ch .mk{fill:var(--ink)}.ch .cur{stroke:var(--ink);stroke-width:1.5;opacity:.5;display:none}
 .ch-v{min-height:2.6em;margin:.2rem 0 0;font-size:.85rem;line-height:1.3;color:var(--muted)}.hg-k{margin:0 0 .6rem}.hg-k .k-p{border-top:3px solid var(--pluie)}.hg-k .k-no{border-top:2px dashed var(--ink)}.hg-k .k-t{border-top:3px solid var(--chaud)}.hg-k .k-n{border-top:3px solid var(--frais)}.hg-k .k-bd{height:.7rem;border:0;background:var(--muted);opacity:.35}.hg-k .k-s{height:.7rem;width:.6rem;border:0;background:var(--soleil)}.hg-k .k-g{width:.5rem;height:.5rem;border:0;border-radius:50%;background:var(--ink)}.hg .nn{margin:.2rem 0 0}.hg-an{padding:.8rem;max-width:38rem}.hg-an .an-l{display:none}@media (min-width:58rem){.hg-an{max-width:none}.hg-an .an-n{display:none}.hg-an .an-l{display:block}}.hg-an .ch{touch-action:pan-y}.ch .up{fill:var(--chaud)}.ch .dn{fill:var(--frais)}.ch .gr.z{stroke:var(--ink);opacity:.6}.hg-k .k-up,.hg-k .k-dn{width:.6rem;height:.7rem;border:0;background:var(--chaud)}.hg-k .k-dn{background:var(--frais)}
@@ -1677,6 +1679,11 @@ export function askAfterData(band: string, main: string): [string, string] {
     const cls = f.startsWith(' class="') ? f.slice(8, f.indexOf('"', 8)).split(" ") : [];
     return (f[0] === " " || f[0] === ">") && !cls.includes("nophone");
   });
+  // A block of data marked to come before it (« <Lieu> en chiffres », web/en-chiffres.ts): the question after that block.
+  const mark = main.indexOf(" data-avant-ia>");
+  const from = mark >= 0 ? main.lastIndexOf("<section", mark) : -1;
+  const after = from >= 0 ? elementEnd(main, from, "section") : -1;
+  if (figure && after > 0) return [rest, `${main.slice(0, after)}\n${box}${main.slice(after)}`];
   if (figure) return [rest, `${box}\n${main}`];
   const first = firstElement(main);
   if (!first) return [rest, `${main}\n${box}`];
@@ -2469,7 +2476,8 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
 
   // « Dernière mesure », never « en ce moment » above the values: a copy kept by a search engine says it still, beside
   // the measure of another evening, which an AI gave as the weather of now (06/11/2026). Each card says its day and time.
-  const body = `<section aria-labelledby="h-now">
+  const body = `${data ? enChiffres(d?.chiffres, p.nom, p.slug) : ""}
+<section aria-labelledby="h-now">
   <div class="hb"><h2 id="h-now">Dernière mesure près ${esc(de(p.nom))}</h2><span class="badge m">Mesure</span></div>
   ${measured}
 </section>

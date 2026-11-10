@@ -727,11 +727,17 @@ const OTHER_PAGES: Record<string, Page> = {
   // for the tiles of the public jobs and markets, their page's copy read from the data center's cache (06/11/2026).
   "/": { subrequests: 80, cpuMs: 110, from: METEO, what: "accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse", d1: BUS_D1 },
   // Measured 78, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
-  "/communes/*": { subrequests: 80, cpuMs: 160, from: [...METEO, "src/tools/mer.ts"], what: "page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse" },
+  // « <Lieu> en chiffres » (web/en-chiffres.ts) adds 3 to the copy of the place when it is rebuilt: the day before (KV), the
+  // stations of the archive (KV, kept 6 h) and their last 30 days (D1, one query, about 5 stations × 30 days) (10/11/2026).
+  "/communes/*": { subrequests: 83, cpuMs: 160, from: [...METEO, "src/tools/mer.ts"], what: "page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse", d1: { d1Calls: 1, d1RowsRead: 150 } },
   // Measured 62, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
-  "/aujourdhui/*": { subrequests: 64, cpuMs: 130, from: ["src/tools/resume.ts"], what: "la journée d'une commune (resume_du_jour)" },
+  // « <Lieu> en chiffres » (web/en-chiffres.ts) adds 3 to the copy of the place when it is rebuilt: the day before (KV), the
+  // stations of the archive (KV, kept 6 h) and their last 30 days (D1, one query, about 5 stations × 30 days) (10/11/2026).
+  "/aujourdhui/*": { subrequests: 67, cpuMs: 130, from: ["src/tools/resume.ts"], what: "la journée d'une commune (resume_du_jour)", d1: { d1Calls: 1, d1RowsRead: 150 } },
   // Measured 50, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
-  "/meteo/*": { subrequests: 52, cpuMs: 130, from: [...METEO, "src/tools/mer.ts"], what: "la météo d'un lieu" },
+  // « <Lieu> en chiffres » (web/en-chiffres.ts) adds 3 to the copy of the place when it is rebuilt: the day before (KV), the
+  // stations of the archive (KV, kept 6 h) and their last 30 days (D1, one query, about 5 stations × 30 days) (10/11/2026).
+  "/meteo/*": { subrequests: 55, cpuMs: 135, from: [...METEO, "src/tools/mer.ts"], what: "la météo d'un lieu", d1: { d1Calls: 1, d1RowsRead: 150 } },
   // The rain layer of /meteo's map (web/pluie-radar.ts), asked when the layer is first shown, kept 5 min by the browser:
   // the radar's latest image (1, when this data center's copy is over 4 minutes old), Météo-France's token (1 read of
   // KV, 2 more for a new one: providers/mf-auth.ts), and the history's latest image (KV, 1) only when the copy is one
@@ -844,7 +850,9 @@ const VISITS: Entry[] = [
 const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string; file?: string; kvReads?: number; d1?: Pick<Run, "d1Calls" | "d1RowsRead" | "d1RowsWritten">; basis?: Basis; from?: string[] }> = {
   // Measured 59 when it only read the weather's copy; since it builds it as /aujourdhui/* does (tools/resume.ts), that
   // page's: measured 62, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
-  resume_du_jour: { subrequests: 64, cpuMs: 130, file: "resume", basis: "estimé" },
+  // « <Lieu> en chiffres » (web/en-chiffres.ts) adds 3 to the copy of the place when it is rebuilt: the day before (KV), the
+  // stations of the archive (KV, kept 6 h) and their last 30 days (D1, one query, about 5 stations × 30 days) (10/11/2026).
+  resume_du_jour: { subrequests: 67, cpuMs: 130, file: "resume", basis: "estimé", d1: { d1Calls: 1, d1RowsRead: 150 } },
   // Measured 36, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
   meteo_actuelle: { subrequests: 38, cpuMs: 120, file: "meteo" },
   evenements: { subrequests: 33, cpuMs: 190, file: "agenda" },

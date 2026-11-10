@@ -204,7 +204,6 @@ function reading(place: Place, gs: Grid[], now: Date, passes?: Cached<viirs.Pass
   for (const g of gs) {
     const m = acspo.nearest(g.cached.value, place.lon, place.lat);
     if (!m) continue;
-    const ageDays = Math.round((now.getTime() - Date.parse(`${m.date}T12:00:00Z`)) / 86_400_000);
     return {
       grid: g,
       valeur: m.valeur,
@@ -213,7 +212,7 @@ function reading(place: Place, gs: Grid[], now: Date, passes?: Cached<viirs.Pass
         nature: "mesure_satellite",
         produit: "moyenne du jour",
         jour_mesure: m.date,
-        age_jours: ageDays,
+        age_jours: daysSince(m.date, now),
         distance_km: m.distance_km,
         position: { lat: m.lat, lon: m.lon },
         source: g.source.nom,
@@ -232,7 +231,10 @@ function said<M extends { passage?: string; source: string }>(m: M, place = fals
   return place ? rest : { ...rest, source };
 }
 
-/** Calendar days at La Réunion from the day of a measure to `now`: one on the morning after, whatever the hour. */
+/**
+ * Calendar days at La Réunion from the day of a measure to `now`: one on the morning after, whatever the hour. The one
+ * count of a measure's age, for `age_jours` and for the words that say it.
+ */
 function daysSince(day: string, now: Date): number {
   return Math.round((Date.parse(localDate(now)) - Date.parse(day)) / 86_400_000);
 }

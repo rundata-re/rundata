@@ -103,6 +103,26 @@ describe("temperature_mer", () => {
     expect(r.avertissements).toContain("Mesure d'hier (17/10)\u00a0: ce n'est pas la température d'aujourd'hui. Une mesure par satellite paraît le lendemain.");
   });
 
+  it("gives age_jours and the words the same age, in calendar days at La Réunion, on both sides of midnight", async () => {
+    const cache = await offlineCache({ acspoDay: "2026-11-06" });
+    const at = async (iso: string) => body(await temperatureMer(cache, "Hermitage", new Date(iso)));
+    // The 6th read on the 8th at 03:19, La Réunion: two days, though 24-hour spans from noon UTC on the 6th count one.
+    const r = await at("2026-11-07T23:19:00Z");
+    expect(r.mesure).toMatchObject({ jour_mesure: "2026-11-06", age_jours: 2 });
+    expect(r.resume).toContain("mesurée par satellite (moyenne du 06/11, il y a 2 jours, ");
+    expect(r.avertissements).toContain(
+      "Mesure du 06/11, il y a 2 jours : ce n'est pas la température d'aujourd'hui. Une mesure par satellite paraît le lendemain, " +
+        "et les jours de nuages il n'y en a pas : la dernière peut donc dater de plusieurs jours.",
+    );
+    // The last minute of the 7th, La Réunion: yesterday's, one day; the first minute of the 8th: two days.
+    const before = await at("2026-11-07T19:59:00Z");
+    expect(before.mesure.age_jours).toBe(1);
+    expect(before.resume).toContain("mesurée par satellite (moyenne d'hier, 06/11, ");
+    const after = await at("2026-11-07T20:00:00Z");
+    expect(after.mesure.age_jours).toBe(2);
+    expect(after.resume).toContain("mesurée par satellite (moyenne du 06/11, il y a 2 jours, ");
+  });
+
   it("gives each point of the coast its day and age", async () => {
     const r = body(await temperatureMer(await offlineCache(), undefined, NOW));
     expect(r.resume).toMatch(/^Eau de mer, MESURÉE par satellite\u00a0: Plage de Boucan-Canot\u00a0: \d+(,\d)? °C \(moyenne du 16\/10, il y a 2 jours\)\u00a0; /);

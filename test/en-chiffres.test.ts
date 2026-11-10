@@ -56,7 +56,7 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(p.h!.t).toHaveLength(24);
     expect(p.h!.t.at(-1)).toBe(HOURLY.mesures![PIERREFONDS].t[0]);
     expect(p.j!.au).toBe("2026-10-23");
-    expect(p.j!.tx).toHaveLength(30);
+    expect(p.j!.tx).toHaveLength(31);
     // Yesterday is not in the archive yet: from the hours kept that night, said provisional.
     expect(p.hier).toEqual({ j: "2026-10-24", tn: 21, tx: 29.4, rr: 0.4, prov: true });
     // The amateur station of the page's answer: its last temperature only.
@@ -118,6 +118,19 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(block).toContain('<button type="button" data-p="30" aria-pressed="false">30 jours</button>');
     expect(block).not.toMatch(/6\u00a0h|"6"/);
     for (const p of [...h.pts, ...w.pts]) expect(p.html).not.toContain("Entre-Deux");
+  });
+
+  it("counts the month's rain from the 1st when the archive's last day is a 31, and keeps a whole month for it", async () => {
+    const c = await figures();
+    const s = c.stations.find((x) => x.id === c.defaut)!;
+    expect(s.j!.rr).toHaveLength(31);
+    // The archive up to 31/10: 10 mm the 1st, 1 mm each other day, so 40 mm from the 1st, 39 had the 1st been left out.
+    const rr = [10, ...Array.from({ length: 30 }, () => 1)];
+    const j = { au: "2026-10-31", tn: rr.map(() => 20), tx: rr.map(() => 28), rr };
+    const d = draw({ ...c, stations: c.stations.map((x) => (x === s ? { ...x, j } : x)) });
+    const mois = d.chips.slice(d.chips.indexOf('data-k="mois"') + 36);
+    expect(text(mois.slice(0, mois.indexOf("</button>")))).toMatch(/^Octobre 40\u00a0mm du 1er au 31\/10/);
+    expect(draw({ ...c, stations: c.stations.map((x) => (x === s ? { ...x, j } : x)) }, { p: "30" }).pts).toHaveLength(30);
   });
 
   it("follows the settings: °F, knots, the figures hidden, another station", async () => {

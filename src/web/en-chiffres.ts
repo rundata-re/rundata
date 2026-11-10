@@ -33,6 +33,8 @@ export const LOIN_KM = 5;
 export const ECART_M = 300;
 /** The days of the longest curve. */
 export const JOURS = 30;
+/** Days the archive keeps: a whole month, for the month's rain up to the 31st, more than the curve's JOURS. */
+export const GARDES = 31;
 
 const HOUR_MS = 3600_000;
 const DAY_MS = 24 * HOUR_MS;
@@ -59,7 +61,7 @@ export interface StationChiffres {
   h?: { end: string; t: (number | null)[]; tn: (number | null)[]; tx: (number | null)[]; rr: (number | null)[]; ff: (number | null)[]; raf: (number | null)[]; dd: (number | null)[] };
   /** Yesterday, 0 h to 24 h at La Réunion: from the archive when it has it, else added up from the hours (provisional). */
   hier?: { j: string; tn?: number; tx?: number; rr?: number; prov: boolean };
-  /** The archive's last JOURS days, up to `au` (YYYY-MM-DD). */
+  /** The archive's last GARDES days, up to `au` (YYYY-MM-DD). */
   j?: { au: string; tn: (number | null)[]; tx: (number | null)[]; rr: (number | null)[] };
   /** Its normal rain month by month, January first (1991-2020). */
   nrr?: (number | null)[];
@@ -196,14 +198,14 @@ export function chiffresDe(r: {
   return { lu: r.lu.toISOString(), stations, defaut };
 }
 
-/** The archive's last JOURS days of the stations, up to the last day it has before today, and their first year. */
+/** The archive's last GARDES days of the stations, up to the last day it has before today, and their first year. */
 export async function archiveOf(cache: Cache, ids: string[], now: Date) {
   if (!climat.enabled()) return undefined;
   const postes = new Map((await climat.postes(cache)).value.filter((p) => ids.includes(p.poste)).map((p) => [p.poste, p.debut]));
   const yesterday = ymd(now.getTime() - DAY_MS);
   const year = +yesterday.slice(0, 4);
-  // One query; the year before only while the last 30 days reach into it.
-  const from = ymd(Date.parse(yesterday) - (JOURS + 1) * DAY_MS).slice(0, 4);
+  // One query; the year before only while the last GARDES days reach into it.
+  const from = ymd(Date.parse(yesterday) - (GARDES + 6) * DAY_MS).slice(0, 4);
   const read = await climat.years(ids, Math.min(year, +from), year);
   const out = new Map<string, { au: string; tn: (number | null)[]; tx: (number | null)[]; rr: (number | null)[] }>();
   for (const id of ids) {
@@ -217,7 +219,7 @@ export async function archiveOf(cache: Cache, ids: string[], now: Date) {
       if (day(iso, "RR") != null || day(iso, "TX") != null) au = iso;
     }
     if (!au) continue;
-    const dates = Array.from({ length: JOURS }, (_, k) => new Date(Date.parse(au!) - (JOURS - 1 - k) * DAY_MS).toISOString().slice(0, 10));
+    const dates = Array.from({ length: GARDES }, (_, k) => new Date(Date.parse(au!) - (GARDES - 1 - k) * DAY_MS).toISOString().slice(0, 10));
     out.set(id, { au, tn: dates.map((d) => day(d, "TN")), tx: dates.map((d) => day(d, "TX")), rr: dates.map((d) => day(d, "RR")) });
   }
   return Object.assign(out, { postes });
@@ -310,7 +312,7 @@ export const dessine = (
   else chips.push(["pluie", D.figures[2][1], "—", "pas de cumul lu", `${who}<br>pas de pluie lue pour cette station`]);
   if (j && month >= 0) {
     const day = +j.au.slice(8, 10);
-    const m = sum(j.rr.slice(-day).length === day ? j.rr.slice(-day) : j.rr.slice(-Math.min(day, j.rr.length)));
+    const m = sum(j.rr.slice(-day));
     const nm = s.nrr?.[month];
     chips.push(["mois", D.mois[month], m != null ? mm(m) : "—", `du 1er au ${dj(j.au)}${nm != null ? ` · normale du mois entier\u00a0: ${fr(nm, 0)}\u00a0mm` : ""}`,
       `<b>${m != null ? mm(m) : "—"} du 1er au ${dj(j.au)}</b><br>${who}<br>${nm != null ? `normale ${/^[AO]/.test(D.mois[month]) ? "d'" : "de "}${D.mois[month].toLowerCase()} 1991-2020 de cette station\u00a0: ${fr(nm, 0)}\u00a0mm (Météo-France, moyenne calculée par rundata.re)` : "pas de normale pour cette station"}`]);

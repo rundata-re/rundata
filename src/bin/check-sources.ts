@@ -187,10 +187,15 @@ export const TOOLS: ToolCheck[] = [
  */
 export const MAX_BYTES: Record<string, number> = {
   volcan_seismes: 11_000, // 9 644
-  "meteo_actuelle (Saint-Denis)": 6_500, // 5 822
+  // 6 658 on 10/11/2026: +1 055 for the stations of MétéoR Océan Indien (a station with its credit, the source, its
+  // words in `couverture`); the size of the day plus a tenth, rounded up to 500.
+  "meteo_actuelle (Saint-Denis)": 7_500, // 5 822
   "prevision_meteo (Saint-Denis)": 13_000, // 11 410
   "temperature_mer (Saint-Gilles)": 12_000, // 14 827, then 10 671 with the whales' rules on /mer only
-  qualite_air: 8_500, // 7 589
+  // 8 688 on 10/11/2026: +509 for sensors.social (its network, its source, its credit), +404 for Atmo unreachable (the
+  // warning and the last copy, which go when it answers again); 8 284 without the Atmo part, plus a tenth, rounded up
+  // to 500.
+  qualite_air: 9_500, // 7 589
   electricite: 5_500, // 4 933
   crues_rivieres: 12_000, // 10 651
   "maree (Saint-Pierre)": 3_000, // 2 579

@@ -243,6 +243,13 @@ describe("the finer files and the days", () => {
     const whole = (await get(FINS["7j"])).body;
     expect(whole.radar.entrees).toHaveLength(7 * 96 - 3);
     expect(fins(whole.radar).slice(-2)).toEqual(["2026-11-01T07:45:00Z", "2026-11-01T08:00:00Z"]);
+    // The image of 07:30 missed alone, a gap of its 5 minutes in its day: the one of 07:35 in its place.
+    const day1 = all["2026-11-01"].entrees, i30 = day1.findIndex((e) => "fin" in e && e.fin === "2026-11-01T07:30:00Z");
+    day1.splice(i30, 1, { trou: true, de: "2026-11-01T07:25:00Z", a: "2026-11-01T07:30:00Z" });
+    configure(sources(week, null, null, null, all).s);
+    const missed = (await get(FINS["7j"])).body;
+    expect(missed.radar.entrees).toHaveLength(7 * 96 - 3);
+    expect(fins(missed.radar).slice(-4)).toEqual(["2026-11-01T07:15:00Z", "2026-11-01T07:35:00Z", "2026-11-01T07:45:00Z", "2026-11-01T08:00:00Z"]);
     // A day kept: its images and the stations' hours from its midnight; today up to now.
     configure(s);
     const day = await get(jourPath("2026-10-31"));

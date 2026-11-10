@@ -23,7 +23,7 @@ import type { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
 import { project } from "./map.js";
-import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure, sansLame } from "./pluie-retro.js";
+import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure, quarters, sansLame } from "./pluie-retro.js";
 import { KEEP_MS as WEEK_KEEP_MS, PREMIER_JOUR } from "./radar-semaine.js";
 
 export const DUREES = ["6h", "24h", "7j"] as const;
@@ -291,8 +291,12 @@ export function assembler(hs: (Historique | null)[], from: number): Historique |
   return entrees.length ? { w: first.w, h: first.h, entrees } : null;
 }
 
-/** Over 7 days, the images of the quarters of an hour, and the gaps of half an hour or more. */
-const QUART = (e: Entree) => (isTrou(e) ? endOf(e) - Date.parse(e.de) >= 30 * 60_000 : new Date(e.fin).getUTCMinutes() % 15 === 0);
+/**
+ * Over 7 days, the images of the quarters of an hour, or the next within 5 minutes where the quarter's is missing
+ * (quarters), and the gaps of half an hour or more: an image missed at a quarter no longer makes the replay fade over
+ * half an hour.
+ */
+const quarts = (entrees: Entree[]) => quarters(entrees).filter((e) => !isTrou(e) || endOf(e) - Date.parse(e.de) >= 30 * 60_000);
 
 /** A history of the radar, without the lame d'eau of its images unless `lame` (the file of rain totals). */
 const radarOf = async (read: () => Promise<Historique | null>, lame = false) => {
@@ -309,7 +313,7 @@ async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise
   if (f === "24h") return { radar: src ? assembler(hs, from) : null, heures: heures(s, HEURES["24h"]) };
   // The days for the hours they hold while written, as the file of an image an hour; the rain gauges before them.
   const all = src && assembler(hs, from);
-  const radar = all && written(all, now) ? { ...all, entrees: all.entrees.filter(QUART) } : null;
+  const radar = all && written(all, now) ? { ...all, entrees: quarts(all.entrees) } : null;
   return { ...(radar ? { radar } : {}), heures: heures(s, HEURES["7j"]) };
 }
 

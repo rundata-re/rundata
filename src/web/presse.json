@@ -1,73 +1,73 @@
 {
  "randonnees-ordi": {
-  "hd": "/presse/rundata-randonnees-ordi.56f715721e.jpg",
+  "hd": "/presse/rundata-randonnees-ordi.63ca5cd685.jpg",
   "largeur": 1600,
   "hauteur": 1113,
-  "octets": 214414,
-  "vignette": "/presse/rundata-randonnees-ordi.3863d82628.webp",
+  "octets": 225143,
+  "vignette": "/presse/rundata-randonnees-ordi.98ab9b5741.webp",
   "vignette_largeur": 800,
   "vignette_hauteur": 557
  },
  "accueil-ordi": {
-  "hd": "/presse/rundata-accueil-ordi.49fb6abfa3.jpg",
+  "hd": "/presse/rundata-accueil-ordi.6baa5589ae.jpg",
   "largeur": 1600,
   "hauteur": 1000,
-  "octets": 216330,
-  "vignette": "/presse/rundata-accueil-ordi.089053ce12.webp",
+  "octets": 179858,
+  "vignette": "/presse/rundata-accueil-ordi.b58ff68a89.webp",
   "vignette_largeur": 800,
   "vignette_hauteur": 500
  },
  "piton-des-neiges-ordi": {
-  "hd": "/presse/rundata-piton-des-neiges-ordi.7df84516a2.jpg",
+  "hd": "/presse/rundata-piton-des-neiges-ordi.a51004fcee.jpg",
   "largeur": 1600,
   "hauteur": 1013,
-  "octets": 159406,
-  "vignette": "/presse/rundata-piton-des-neiges-ordi.ad7bc86b68.webp",
+  "octets": 188175,
+  "vignette": "/presse/rundata-piton-des-neiges-ordi.5dc20d77c0.webp",
   "vignette_largeur": 800,
   "vignette_hauteur": 506
  },
  "accueil": {
-  "hd": "/presse/rundata-accueil.7a6121cc2d.jpg",
+  "hd": "/presse/rundata-accueil.9ef27808f2.jpg",
   "largeur": 780,
   "hauteur": 1300,
-  "octets": 127697,
-  "vignette": "/presse/rundata-accueil.c32a67651a.webp",
+  "octets": 156583,
+  "vignette": "/presse/rundata-accueil.6ed4801415.webp",
   "vignette_largeur": 400,
   "vignette_hauteur": 667
  },
  "cilaos": {
-  "hd": "/presse/rundata-cilaos.372cda157f.jpg",
+  "hd": "/presse/rundata-cilaos.d5d14859e5.jpg",
   "largeur": 780,
   "hauteur": 1300,
-  "octets": 117403,
-  "vignette": "/presse/rundata-cilaos.4351103185.webp",
+  "octets": 106086,
+  "vignette": "/presse/rundata-cilaos.08c81e2ba7.webp",
   "vignette_largeur": 400,
   "vignette_hauteur": 667
  },
  "randonnees": {
-  "hd": "/presse/rundata-randonnees.9c04dee5c4.jpg",
+  "hd": "/presse/rundata-randonnees.ab1c568710.jpg",
   "largeur": 780,
   "hauteur": 1300,
-  "octets": 117224,
-  "vignette": "/presse/rundata-randonnees.101b1202d6.webp",
+  "octets": 118098,
+  "vignette": "/presse/rundata-randonnees.088dd9581b.webp",
   "vignette_largeur": 400,
   "vignette_hauteur": 667
  },
  "evenements": {
-  "hd": "/presse/rundata-evenements.73d77de50a.jpg",
+  "hd": "/presse/rundata-evenements.57e4eb4174.jpg",
   "largeur": 780,
   "hauteur": 1300,
-  "octets": 118411,
-  "vignette": "/presse/rundata-evenements.1f24dab64c.webp",
+  "octets": 112879,
+  "vignette": "/presse/rundata-evenements.9d8f2c6d92.webp",
   "vignette_largeur": 400,
   "vignette_hauteur": 667
  },
  "historique": {
-  "hd": "/presse/rundata-historique.eba9a97e95.jpg",
+  "hd": "/presse/rundata-historique.96dadc4649.jpg",
   "largeur": 780,
   "hauteur": 1300,
-  "octets": 123172,
-  "vignette": "/presse/rundata-historique.cc2aa3d62a.webp",
+  "octets": 145472,
+  "vignette": "/presse/rundata-historique.898c2c89be.webp",
   "vignette_largeur": 400,
   "vignette_hauteur": 667
  }

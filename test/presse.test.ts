@@ -98,7 +98,7 @@ describe("press page", () => {
 
   it("offers each visual as a thumbnail and an HD download, free to use with the credit", async () => {
     // Reused for weeks: the label dates the captures, and says when they show an alert.
-    expect(await page()).toContain(`<p class="eyebrow">Captures du 25 octobre 2026, pendant l'alerte 1 du Piton de la Fournaise.</p>`);
+    expect(await page()).toContain(`<p class="eyebrow">Captures du <span class="jm">10 novembre</span> 2026.</p>`);
     const html = await page();
     expect(html).toContain("Utilisation libre des visuels avec la mention <span class=\"ident\">rundata.re</span>.");
     for (const [id, v] of Object.entries(visuals)) {

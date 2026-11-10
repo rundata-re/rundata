@@ -150,7 +150,7 @@ export function pressePage(origin: string, figures: Figure[]): string {
   const release = `<section aria-labelledby="h-communique"><article class="card release">${RELEASE}</article>${clubs}</section>`;
 
   const gallery = `<section id="visuels" aria-labelledby="h-visuels">
-  <div class="sec-h"><p class="eyebrow">Captures du 25 octobre 2026, pendant l'alerte 1 du Piton de la Fournaise.</p><h2 id="h-visuels">Visuels</h2>
+  <div class="sec-h"><p class="eyebrow">Captures du <span class="jm">10 novembre</span> 2026.</p><h2 id="h-visuels">Visuels</h2>
   <p><b>Utilisation libre des visuels avec la mention rundata.re.</b> Cliquez sur une image pour l'ouvrir en grand.</p></div>
   <div class="vis-grid">${wide.map(visual).join("")}</div>
   <div class="vis-grid phones">${phones.map(visual).join("")}</div>

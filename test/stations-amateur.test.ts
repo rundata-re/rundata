@@ -6,7 +6,7 @@ import { enTete } from "../src/tools/representativeness.js";
 import { amateur, islandTour, meteoActuelle, NATURE_AMATEUR } from "../src/tools/meteo.js";
 import type { StationAnswer, StationNow } from "../src/web/data.js";
 import { stationsMap } from "../src/web/meteo-carte.js";
-import { meteoPage, placePage } from "../src/web/pages.js";
+import { CSS, meteoPage, placePage } from "../src/web/pages.js";
 import { PAGES } from "../src/web/places.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
@@ -126,6 +126,17 @@ describe("/meteo with an amateur station", () => {
     const two = [...STATIONS, st("Cambaie", "meteor_oi", { id: "CAM015", lon: 55.28, lat: -20.96, altitude_m: 20, temperature: 24.2, amateur: true })];
     const page = meteoPage(ORIGIN, { ...COPY, value: { ...COPY.value, toutes: two } }, NOW);
     expect(page).toContain("<summary><h3>Les 2 stations amateur de MétéoR-OI : fiabilité non vérifiée</h3></summary>");
+  });
+
+  it("gives the amateur list the cards of Météo-France's, its wind arrow sized, not filling the screen (10/11/2026)", () => {
+    // Its list a child of its section, as the rules aim at it.
+    expect(meteoPage(ORIGIN, COPY, NOW)).toMatch(/<details class="pli amdet" id="sta"><summary>.*?<\/summary><ul class="stations"><li class="st tgt" id="st-marla"/);
+    // Every rule of Météo-France's list for the amateur one too, but its folding after twelve.
+    const rules = [...CSS.replace(/\/\*[^]*?\*\//g, "").matchAll(/([^{}]*#stl[^{}]*)\{/g)].map((m) => m[1].trim());
+    expect(rules.filter((s) => !s.startsWith(":is(#stl,#sta>.stations)"))).toEqual(["html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13)"]);
+    for (const part of ["{display:grid", " .st{", " .t{", " .pl{", " .pl svg{width:.85rem;height:.85rem}", " .ar{fill:none"]) {
+      expect(CSS, part).toContain(`:is(#stl,#sta>.stations)${part}`);
+    }
   });
 });
 

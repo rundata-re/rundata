@@ -67,7 +67,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // A day without its hours of 10 h to 14 h has no UV index, never « UV 0 » (10/11/2026).
-  lieu: 26,
+  // « <Lieu> en chiffres »: the figures of the nearest stations, their hours and their last 30 days (web/en-chiffres.ts).
+  lieu: 27,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».

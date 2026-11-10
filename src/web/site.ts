@@ -110,6 +110,7 @@ import { SCRIPT as ALLER_SCRIPT, SCRIPT_PATH as ALLER_PATH } from "./aller.js";
 import { rejeuScript, rejeuScriptPath } from "./meteo-carte.js";
 import { CURSEUR_FILE, curseurScript, curseurScriptPath } from "./carte-curseur.js";
 import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
+import { chiffresScript, chiffresScriptPath } from "./en-chiffres.js";
 import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, STYLE_PATH, vigilancePage } from "./pages.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
 import { pageOf, PAGES } from "./places.js";
@@ -431,7 +432,7 @@ export function proche(path: string, now = new Date()): string | undefined {
 export async function site(request: Request, cache: Cache, background: Background, now = new Date()): Promise<Response | null> {
   // Nothing of the moment in them: answered before the volcano's state is read.
   const file = new URL(request.url).pathname;
-  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? ogFile(file);
+  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? chiffresFile(file) ?? ogFile(file);
   if (style) return style;
   // The private page of an internal trial, behind its secret link: nothing else read, and the site's 404 without it,
   // never kept nor indexed (web/uv-moufia.ts).
@@ -507,6 +508,16 @@ function rejeuFile(path: string): Response | null {
   if (!REJEU_FILE.test(path)) return null;
   return new Response(rejeuScript(), {
     headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": path === rejeuScriptPath() ? "public, max-age=31536000, immutable" : "public, max-age=300", "x-content-type-options": "nosniff" },
+  });
+}
+
+const CHIFFRES_FILE = /^\/meteo\/chiffres-\w+\.js$/;
+
+/** The script of « <Lieu> en chiffres » (web/en-chiffres.ts), the same for every place, kept a year at its address. */
+function chiffresFile(path: string): Response | null {
+  if (!CHIFFRES_FILE.test(path)) return null;
+  return new Response(chiffresScript(), {
+    headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": path === chiffresScriptPath() ? "public, max-age=31536000, immutable" : "public, max-age=300", "x-content-type-options": "nosniff" },
   });
 }
 

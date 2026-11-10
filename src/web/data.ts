@@ -35,6 +35,7 @@ import { BEACHES, modelsOf, SEA_SOURCES, seaTour, TOUR as SEA_TOUR, temperatureM
 import { gaugeRow, gauges } from "../tools/maree.js";
 import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
+import { buildChiffres, type Chiffres } from "./en-chiffres.js";
 import { named } from "../tools/annuaire.js";
 import { alertsFor, applyRealtime, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures } from "../tools/transports.js";
 import * as prefecture from "../providers/prefecture.js";
@@ -83,6 +84,9 @@ const KEEP_SECONDS = 24 * 3600;
 const WAIT_MS = 4000;
 // Below this many subrequests left, a place page is built without its forecast rather than risk the limit.
 const FORECAST_MIN_LEFT = 10;
+// Below this many, without « en chiffres »: its reads are the day before (KV), the archive's stations (KV, a day kept)
+// and their days (D1).
+const CHIFFRES_MIN_LEFT = 4;
 // A copy that lacks part of what it should show (`incomplete` of snapshot) is built again from this age, not after
 // FRESH_SECONDS: by then what it lacked has usually come within reach (the stations stored, a source back).
 const INCOMPLETE_RETRY_SECONDS = 60;
@@ -143,6 +147,8 @@ export interface PlaceData {
   meteo?: MeteoAnswer;
   mer?: MerAnswer;
   prevision?: PrevisionAnswer;
+  /** « <Lieu> en chiffres » (web/en-chiffres.ts); absent from a copy built before it, or when its reads failed. */
+  chiffres?: Chiffres;
 }
 
 export interface StationAnswer {
@@ -364,6 +370,13 @@ export async function buildPlace(cache: Cache, p: PlacePage, now = new Date()): 
       out.prevision = answer<PrevisionAnswer>(await previsionMeteo(cache, p.lieu, undefined, now));
     } catch (err) {
       console.error(`page ${p.slug} : prévision indisponible`, why(err));
+    }
+  }
+  if (left() >= CHIFFRES_MIN_LEFT) {
+    try {
+      out.chiffres = await buildChiffres(cache, { nom: p.nom, lon: p.place.lon, lat: p.place.lat, altitude_m: p.place.altitude_m, commune: p.commune ? p.nom : p.place.commune }, out.meteo, now);
+    } catch (err) {
+      console.error(`page ${p.slug} : chiffres indisponibles`, why(err));
     }
   }
   if (!out.meteo && !out.prevision) throw new Error(`aucune donnée pour ${p.nom}`);

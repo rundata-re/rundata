@@ -966,17 +966,18 @@ details.amdet{margin-top:.8rem}details.amdet .stations{margin-top:.6rem}
 @media (prefers-color-scheme:dark){.cumap{--cu0:#284972;--cu1:#405a9d;--cu2:#6469c3;--cu3:#8c79e0}}
 .wxmap .voile{display:block;width:100%;height:100%}.wxmap .aqtabs{gap:.25rem}.wxmap .aqtabs label{padding:.3rem .65rem}
 html:has([data-js]:not([hidden])) #stl.plie>li:nth-child(n+13){display:none}.stmore{font:inherit;font-weight:600;padding:.45rem 1rem;border:1px solid var(--line);border-radius:99px;background:none;color:var(--link);cursor:pointer}
-/* A station never wider than the list: with the text at 200 %, 10.5 rem is 336 px for a 288 px list on a 320 px phone. */
-#stl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(10.5rem,100%),1fr));gap:.6rem}
-#stl .st{display:flex;flex-direction:column;gap:.15rem;padding:.75rem .85rem .7rem;border:1px solid var(--line);border-radius:1rem;background:var(--surface)}
-#stl .th{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.4rem}
-#stl .t{width:auto;padding:.3rem .55rem;border-radius:.6rem;font:700 1.2rem/1.1 Bricolage,system-ui,sans-serif}
-#stl h3{font-family:inherit;font-size:1rem;font-weight:700;line-height:1.25;letter-spacing:normal;text-wrap:wrap}#stl p{font-size:.84rem;line-height:1.35}#stl .when{font-size:.78rem;color:var(--muted)}
-#stl .pls{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:auto;padding-top:.45rem}
-#stl .pl{display:inline-flex;padding:.12rem .5rem;border:1px solid var(--line);border-radius:99px;background:var(--surface-2);color:var(--ink);font-size:.8rem;white-space:nowrap}
-#stl .pl>span{display:inline-flex;align-items:center;gap:.22rem}#stl .pl svg{width:.85rem;height:.85rem}
-#stl .ar{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}#stl .dr{fill:#2456b8}
-#stl .pl.wet{background:#2456b8;border-color:#2456b8;color:#fff}#stl .pl.wet .dr{fill:#fff}
+/* Météo-France's list (#stl) and the amateur one folded under it (#sta, since 10/11/2026) share their cards; folded after
+   twelve and « Voir les N stations » for the first only. A station never wider than the list: with the text at 200 %, 10.5 rem is 336 px for a 288 px list on a 320 px phone. */
+:is(#stl,#sta>.stations){display:grid;grid-template-columns:repeat(auto-fill,minmax(min(10.5rem,100%),1fr));gap:.6rem}
+:is(#stl,#sta>.stations) .st{display:flex;flex-direction:column;gap:.15rem;padding:.75rem .85rem .7rem;border:1px solid var(--line);border-radius:1rem;background:var(--surface)}
+:is(#stl,#sta>.stations) .th{display:flex;align-items:center;justify-content:space-between;gap:.4rem;margin-bottom:.4rem}
+:is(#stl,#sta>.stations) .t{width:auto;padding:.3rem .55rem;border-radius:.6rem;font:700 1.2rem/1.1 Bricolage,system-ui,sans-serif}
+:is(#stl,#sta>.stations) h3{font-family:inherit;font-size:1rem;font-weight:700;line-height:1.25;letter-spacing:normal;text-wrap:wrap}:is(#stl,#sta>.stations) p{font-size:.84rem;line-height:1.35}:is(#stl,#sta>.stations) .when{font-size:.78rem;color:var(--muted)}
+:is(#stl,#sta>.stations) .pls{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:auto;padding-top:.45rem}
+:is(#stl,#sta>.stations) .pl{display:inline-flex;padding:.12rem .5rem;border:1px solid var(--line);border-radius:99px;background:var(--surface-2);color:var(--ink);font-size:.8rem;white-space:nowrap}
+:is(#stl,#sta>.stations) .pl>span{display:inline-flex;align-items:center;gap:.22rem}:is(#stl,#sta>.stations) .pl svg{width:.85rem;height:.85rem}
+:is(#stl,#sta>.stations) .ar{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}:is(#stl,#sta>.stations) .dr{fill:#2456b8}
+:is(#stl,#sta>.stations) .pl.wet{background:#2456b8;border-color:#2456b8;color:#fff}:is(#stl,#sta>.stations) .pl.wet .dr{fill:#fff}
 .sttri{display:grid;gap:.3rem}.sttri .tabs{gap:.3rem}
 .stmore{margin-top:.8rem}
 .wxmap .vgrad{display:inline-block;width:4.5rem;height:.6rem;border-radius:.3rem;background:linear-gradient(90deg,#2a6a9a,#248c78,#d6a828,#de7028,#c8301c);vertical-align:middle}

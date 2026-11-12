@@ -245,6 +245,23 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(units.indexOf('<p class="mx-sub">Vent</p>')).toBeGreaterThan(units.indexOf('value="f"'));
   });
 
+  it("puts the curve's bubble under the hour axis up to 640 px, in place of the note, in a zone of fixed height", () => {
+    const script = chiffresScript();
+    // ux at 390 px (12/11): the bubble took the whole width over the curve and hid the points around the one read.
+    expect(script).toContain('nar=matchMedia("(max-width:640px)")');
+    // The zone under the axis is sized once for the longest bubble of the period, for the note and the bubble alike.
+    expect(script).toContain('const lg=pts.reduce((a,p)=>p.html.length>a.length?p.html:a,"")');
+    expect(script).toContain('cn.style.minHeight=h+"px";tp.style.minHeight=h+"px"');
+    expect(script).toContain("pts=d.pts;cur=-1;fit();");
+    // While reading: the bubble at the note's place, the note hidden but keeping its room; back when the reading stops.
+    expect(script).toContain('if(nar.matches){const cn=$("mx-cn");tp.style.left="";tp.style.top=Math.ceil(cn.getBoundingClientRect().top-plot.getBoundingClientRect().top)+"px";cn.style.visibility="hidden";return}');
+    expect(script).toContain('const hide=()=>{$("mx-tip").hidden=true;$("mx-cn").style.visibility="";');
+    expect(CSS_CHIFFRES).toContain("@media (max-width:640px){#mx-cn{margin-top:.4rem}.mx-tip{left:0;right:0;width:auto;max-width:none;transform:none;box-shadow:none;box-sizing:border-box}}");
+    // Above 640 px, the bubble still follows the point, over the curve.
+    expect(script).toContain('tp.style.left=Math.max(w/2,Math.min(pw-w/2,p.x*k))+"px";tp.style.top=Math.max(0,p.y*k-tp.offsetHeight-14)+"px"');
+    expect(() => new Function(script)).not.toThrow();
+  });
+
   it("serves its script at its address, kept a year, valid JavaScript", async () => {
     const res = await site(new Request(`https://rundata.re${chiffresScriptPath()}`), new Cache(new MemoryStore()), () => {});
     expect(res!.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");

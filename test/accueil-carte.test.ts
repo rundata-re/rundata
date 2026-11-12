@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { accueilCarte, IDS, problemes, sujets, type HomeLive } from "../src/web/accueil-carte.js";
+import { describe, expect, it, vi } from "vitest";
+import { accueilCarte, dessinsGardes, IDS, problemes, sujets, type HomeLive } from "../src/web/accueil-carte.js";
 import { CSS } from "../src/web/pages.js";
 
 // 10:30 in La Réunion.
@@ -107,6 +107,28 @@ describe("the home page's island", () => {
     const port = layout(accueilCarte(worse("Le Port"), NOW)!, "tel");
     expect(port).not.toContain('<g class="hub cx" data-k="air">');
     expect(port).toMatch(/data-k="air"[^>]* data-tp="Le Port\u00a0: dégradé \(ozone\) · ailleurs moyen"/);
+  });
+
+  it("keeps its drawing for copies that place the same things, and writes the page as a new drawing would", async () => {
+    const at = (velos: number, mer: number): HomeLive => ({
+      ...live,
+      velos: cached({ communes: [{ commune: "Saint-Pierre", velos_disponibles: velos }], stations: [{ commune: "Saint-Pierre", lon: 55.478, lat: -21.341 }, { commune: "Saint-Pierre", lon: 55.472, lat: -21.334 }] }),
+      meteo: cached({ stations, toutes: stations, sources: [], indisponibles: [], mer: [{ nom: "Plage de Boucan-Canot", valeur: 26.2, jour: "2026-11-09" }, { nom: "Plage de l'Hermitage", valeur: mer, jour: "2026-11-09" }] }),
+    });
+    accueilCarte(at(12, 26.4), NOW);
+    const kept = dessinsGardes();
+    // 13 bikes, the Hermitage's sea 25.6 °C (« eau 26 °C » still): the same widths, the same places; no new drawing, the page's own words.
+    const again = accueilCarte(at(13, 25.6), NOW)!;
+    expect(dessinsGardes()).toBe(kept);
+    expect(again).toContain(">13 disponibles<");
+    expect(/data-k="mer"[^>]* data-tv="([^"]*)"/.exec(layout(again, "tel"))![1]).toBe("25,6\u202f°C");
+    vi.resetModules();
+    const fresh = await import("../src/web/accueil-carte.js");
+    expect(fresh.dessinsGardes()).toBe(0);
+    expect(fresh.accueilCarte(at(13, 25.6), NOW)).toBe(again);
+    // 130 bikes: a wider label, a new drawing.
+    accueilCarte(at(130, 26.4), NOW);
+    expect(dessinsGardes()).toBe(kept + 2);
   });
 
   it("gives Vélos its track at 390 px when the sea's nearest beach, Saint-Pierre's, would bar its way: the sea takes its next", () => {

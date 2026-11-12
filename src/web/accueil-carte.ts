@@ -752,8 +752,37 @@ const lengthOf = (ps: P[]) => Math.round(ps.slice(1).reduce((a, p, i) => a + Mat
 const said = (s: Sujet, tip = s.tip) => `${s.k}${s.src ? ` · ${s.src}` : ""}\u00a0: ${s.value}. ${tip.place}${tip.value ? `\u00a0: ${tip.value}` : ""}, ${tip.detail}, voir le détail`;
 
 /** One layout: the island, its temperatures, the tracks and their hubs under the labels. */
+/**
+ * The drawings already made in this isolate, by what their places and tracks depend on: a page drawn again with the same
+ * copies, or with a value of the same width (« 49 disponibles »), costs no drawing (~200 ms each layout). The words and
+ * the bubbles are this page's, never the kept ones'.
+ */
+const DRAWN = new Map<string, { d: Drawn; one: Partial<Record<Id, number>> }>();
+const KEPT = 8;
+/** How many drawings this isolate keeps (for the tests). */
+export const dessinsGardes = () => DRAWN.size;
+
+export function drawn(L: Layout, list: Sujet[], temps: P[]): Drawn {
+  const sized = list.map((s) => ({ s, f: fit(L, s, CAPS[`${L.name}:${s.id}`] ?? CAP) }));
+  const key = JSON.stringify([L.name, temps, sized.map(({ s, f }) => [s.id, f.size, s.pts, s.one?.length ?? 0, !!s.temp, !!s.summit])]);
+  let kept = DRAWN.get(key);
+  if (kept) {
+    DRAWN.delete(key);
+  } else {
+    const d = draw(L, list, temps);
+    // A subject that keeps one place of several: which, by its rank, for this page's bubble.
+    const one = Object.fromEntries(list.filter((s) => s.one && d.places[s.id]?.length).map((s) => [s.id, s.pts.indexOf(d.places[s.id]![0])]));
+    kept = { d, one };
+    if (DRAWN.size >= KEPT) DRAWN.delete(DRAWN.keys().next().value!);
+  }
+  DRAWN.set(key, kept);
+  const texts = Object.fromEntries(sized.map(({ s, f }) => [s.id, { t1: f.t1, t2: f.t2, t3: f.t3 }]));
+  const tips = Object.fromEntries(list.filter((s) => s.one && kept.one[s.id] != null).map((s) => [s.id, s.one![kept.one[s.id]!]]));
+  return { ...kept.d, texts, tips };
+}
+
 function layoutSvg(L: Layout, list: Sujet[], temps: Marker[]): { svg: string; problems: string[] } {
-  const d = draw(L, list, temps.map((t) => project(t.lon, t.lat) as P));
+  const d = drawn(L, list, temps.map((t) => project(t.lon, t.lat) as P));
   const by = Object.fromEntries(list.map((s) => [s.id, s])) as Record<Id, Sujet>;
   const tracks: string[] = [];
   const hubs: string[] = [];

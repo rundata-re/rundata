@@ -155,6 +155,28 @@ describe("the home page's island", () => {
     expect(CSS).toContain("@media (prefers-reduced-motion:reduce){.hm .pu,.hm .gp{display:none}.hm .gr{stroke-dashoffset:0;animation:none!important}");
   });
 
+  it("makes the bikes', the trails' and the forest roads' tracks between their places grow the same way, none drawn at rest", () => {
+    const many = {
+      ...live,
+      velos: cached({
+        communes: [{ commune: "Saint-Pierre", velos_disponibles: 7 }, { commune: "Saint-Louis", velos_disponibles: 6 }],
+        stations: [{ commune: "Saint-Pierre", lon: 55.478, lat: -21.341 }, { commune: "Saint-Louis", lon: 55.411, lat: -21.286 }],
+      }),
+    };
+    const map = accueilCarte(many, NOW)!;
+    expect(problemes(many, NOW)).toEqual([]);
+    for (const name of ["tel", "large"]) {
+      const svg = layout(map, name);
+      for (const k of ["velos", "sentiers"]) {
+        expect(svg, `${name} ${k}`).toMatch(new RegExp(`class="gr cx" data-k="${k}" style="[^"]*--l:\\d+;--a:\\d+`));
+        expect(svg, `${name} ${k}`).toContain(`class="gp cx" data-k="${k}"`);
+      }
+      for (const k of ["velos", "sentiers", "routes"]) expect(svg).not.toContain(`class="tr nt cx" data-k="${k}"`);
+    }
+    // A label lit does not grow like the maps' markers: on the edge of the map, it would be cut.
+    expect(CSS).toContain(".map.hm a.lb:hover,.map.hm a.lb.on{transform:none}");
+  });
+
   it("never cuts the volcano's value: on one line where it fits, else on two, read as one text", () => {
     expect(layout(html, "tel")).toContain(">pas d&#39;éruption annoncée</text>");
     expect(layout(html, "large")).toMatch(/<tspan>pas d&#39;éruption <\/tspan><tspan x="[\d.]+" dy="\d+">annoncée<\/tspan><\/text>/);

@@ -2325,6 +2325,8 @@ const LABELS: Record<string, string> = {
   visibilite: "Visibilité",
 };
 
+// Distance and altitude under a station's name, never its « pertinence » (bonne, moyenne, faible), a word of the tools'
+// answers that says nothing to a visitor; a station far off or on another side keeps its warning below (avertissements).
 function stationCard(s: StationAnswer): string {
   const m = s.mesures;
   const main = m.temperature ?? m.vent_moyen;
@@ -2337,7 +2339,6 @@ function stationCard(s: StationAnswer): string {
     communeDite(s, ""),
     s.distance_km != null ? `à ${fr(s.distance_km)} km${s.direction ? ` (${s.direction})` : ""}` : undefined,
     `${s.altitude_m.toLocaleString("fr-FR")} m d'altitude`,
-    s.pertinence ? `pertinence ${s.pertinence}` : undefined,
   ].filter(Boolean).join(" · ");
   return `<div class="card stcard"><h3>${esc(s.station)}</h3><p class="note">${esc(thin(meta))}</p>` +
     (main ? `<p><span class="t" style="background:${Number.isFinite(t) ? chip(t) : "#44555a"}">${esc(thin(main))}</span></p>` : "") +
@@ -2363,7 +2364,7 @@ function sinceMidnightCard(j: DepuisMinuit): string {
   const row = (label: string, x: DepuisMinuit["maximum"]) =>
     `<li><span>${label}</span><span class="v"><span class="t" style="background:${chip(x.valeur)}">${esc(thin(`${fr(x.valeur)} ${x.unite}`))}</span> <span class="q">${esc(thin(x.quand))}</span></span></li>`;
   return `<div class="card stcard minuit"><h3>Depuis minuit ${esc(a(j.station))}</h3>` +
-    `<p class="note">${esc(thin(`à ${fr(j.distance_km)} km · pertinence ${j.pertinence} · ${j.periode}`))}</p>` +
+    `<p class="note">${esc(thin(`à ${fr(j.distance_km)} km · ${j.periode}`))}</p>` +
     `<ul>${row("Au plus", j.maximum)}${row("Au moins", j.minimum)}</ul>` +
     `<p class="note">Relevés heure par heure de Météo-France : le plus haut et le plus bas de chaque heure, puis les mesures toutes les 6 minutes de l'heure en cours.</p>` +
     (j.avertissements.length ? `<p class="note">⚠ ${esc(j.avertissements.join(" "))}</p>` : "") +

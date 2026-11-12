@@ -736,6 +736,42 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 @keyframes pop{from{opacity:0;transform:translateY(6px)}}
 .hero-map figcaption{display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.82rem;color:rgb(255 255 255/.75);text-align:center;flex-wrap:wrap}
 .hero-map figcaption a{color:#fff}
+/* The home page's map (accueil-carte.ts): marketing's « Lagon » on ux's « Circuit », a layout for a phone, one for a wide screen. */
+.ile .map.defs{position:absolute;width:0;height:0;overflow:hidden}
+.ile .hm-large{display:none}
+@media (min-width:58rem){.ile .hm-tel{display:none}.ile .hm-large{display:block}}
+.ile figcaption{flex-direction:column;gap:.25rem}.ile figcaption .cap{display:flex;align-items:center;justify-content:center;gap:.5rem;flex-wrap:wrap}
+.ile figcaption small{font-size:.75rem;color:rgb(255 255 255/.62);max-width:34rem}
+.hm .coast{stroke:#99f6e4;stroke-width:10;opacity:.55}
+.hm .tr{fill:none;stroke-width:3.4;stroke-linejoin:round;stroke-linecap:round;opacity:.85}
+.hm .pu,.hm .gp{fill:none;stroke-linecap:round;opacity:0}
+.hm .pu{stroke-width:7;stroke-dasharray:40 100000;stroke-dashoffset:40}
+.hm .gr{fill:none;stroke-width:4;stroke-linecap:round;stroke-dasharray:var(--l) 100000;stroke-dashoffset:var(--l);opacity:0}
+.hm .gp{stroke-width:8;stroke-dasharray:30 100000;stroke-dashoffset:30}
+.hm .rg{fill:none;stroke-width:3;stroke-dasharray:6 7;opacity:.6;transform-box:fill-box;transform-origin:center}
+.hm .r2{stroke-width:2;stroke-dasharray:2 8}
+.hm .pd{fill:rgb(12 22 18/.8);stroke-width:3}
+.hm .lb .bx{fill:rgb(14 24 20/.86);stroke-width:2}
+.map.relief.hm .lb circle{stroke:none}
+.hm .lb text{text-anchor:start}
+.hm .t1{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;letter-spacing:.05em}
+.hm .t2{font-family:system-ui,sans-serif;font-weight:700;fill:#fff}
+.hm .lb{outline:none}.hm .lb:focus-visible .bx{stroke-width:5}
+.hm .cx,.hm .mk,.hm image[data-relief]{transition:opacity .25s,filter .25s,stroke-width .25s}
+.hm:has([data-h]:is(:hover,:focus-visible,.on)) .cx{opacity:.18}
+.hm:has([data-h]:is(:hover,:focus-visible,.on)) .mk:not(.lb){opacity:.35}
+.hm:has([data-h]:is(:hover,:focus-visible,.on)) image[data-relief]{filter:saturate(.5) brightness(.75)}
+${["sortie", "routes", "sentiers", "volcan", "mer", "velos", "meteo", "air"].map((k) => {
+  const on = `.hm:has([data-h=${k}]:is(:hover,:focus-visible,.on))`;
+  return `${on} .cx[data-k=${k}],${on} .mk[data-h=${k}]{opacity:1}${on} .tr[data-k=${k}]{stroke-width:5;filter:url(#hm-glow)}${on} .lb[data-k=${k}] .bx{stroke-width:4}` +
+    `${on} [data-k=${k}] .rg,${on} .rg[data-k=${k}]{opacity:1;animation:hm-turn 4s linear infinite}${on} .pu[data-k=${k}]{opacity:1;animation:hm-pu calc(var(--l) * 2ms) linear infinite}` +
+    `${on} .gr[data-k=${k}]{opacity:1;filter:url(#hm-glow);animation:hm-draw calc(var(--l) * 2ms) linear calc(var(--a) * 2ms) both}${on} .gp[data-k=${k}]{animation:hm-tip calc(var(--l) * 2ms) linear calc(var(--a) * 2ms) both}`;
+}).join("\n")}
+@keyframes hm-pu{from{stroke-dashoffset:40}to{stroke-dashoffset:calc(var(--l) * -1)}}
+@keyframes hm-draw{from{stroke-dashoffset:var(--l)}to{stroke-dashoffset:0}}
+@keyframes hm-tip{0%{opacity:1;stroke-dashoffset:30}99%{opacity:1}to{opacity:0;stroke-dashoffset:calc(var(--l) * -1)}}
+@keyframes hm-turn{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.hm .pu,.hm .gp{display:none}.hm .gr{stroke-dashoffset:0;animation:none!important}.hm .rg{animation:none!important}.hm .cx,.hm .mk{transition:none}}
 .duo{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;align-items:start}
 @media (min-width:58rem){.duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .duo .chat{box-shadow:var(--shadow);border:1px solid var(--line)}
@@ -858,12 +894,12 @@ details.sect{margin-bottom:.8rem}details.sect>summary{cursor:pointer}details.sec
 .mtip{position:absolute;z-index:3;left:0;top:0;display:grid;gap:.12rem;min-width:9.5rem;max-width:15rem;padding:.6rem .8rem .65rem;
 border-radius:12px;background:#0f1d2c;color:#f1f5f9;border:1px solid rgb(241 245 249/.12);box-shadow:0 1px 2px rgb(0 0 0/.3),0 10px 30px -8px rgb(0 0 0/.5);
 text-decoration:none;font-size:.85rem;line-height:1.3;text-align:left;opacity:0;transform:translateY(4px);transition:opacity .15s ease-out,transform .15s ease-out}
-.mtip[hidden]{display:none}.mtip.vu{opacity:1;transform:none}
+.mtip[hidden]{display:none}.mtip .mt-v:empty{display:none}.mtip.vu{opacity:1;transform:none}
 .mtip .mt-p{font-weight:600}.mtip .mt-v{font:700 1.45rem/1.15 Bricolage,system-ui,sans-serif}.mtip .mt-d{color:#b4c6d8;font-size:.8rem}
 .mtip .mt-go{margin-top:.3rem;color:#8fb4ff;font-weight:600;font-size:.8rem}
 .mtip::after{content:"";position:absolute;left:var(--ax,50%);bottom:-7px;width:12px;height:12px;background:#0f1d2c;
 border:solid rgb(241 245 249/.12);border-width:0 1px 1px 0;transform:translateX(-50%) rotate(45deg)}
-.mtip.bas::after{bottom:auto;top:-7px;border-width:1px 0 0 1px}
+.mtip.bas::after{bottom:auto;top:-7px;border-width:1px 0 0 1px}.mtip.cote::after{display:none}
 @media (prefers-reduced-motion:reduce){.mtip{transition:none;transform:none}}
 .map .zn path{fill:transparent;stroke:none}.map .zn:hover path{fill:rgb(255 255 255/.14);stroke:var(--sun);stroke-width:4}
 .map .zn:focus-visible path{fill:rgb(255 255 255/.2);stroke:var(--sun);stroke-width:8}
@@ -1443,13 +1479,14 @@ const mt=document.querySelector("[data-mtip]");if(mt){const box=mt.parentElement
 const put=(a)=>{clearTimeout(t);if(on)on.classList.remove("on");on=a;a.classList.add("on");
 const L=box.querySelector("[name=wxl]:checked"),k=L?L.id.slice(4):"";mt.querySelector(".mt-p").textContent=a.dataset.tp;mt.querySelector(".mt-v").textContent=a.dataset["tv"+k]||a.dataset.tv;mt.querySelector(".mt-d").textContent=a.dataset["td"+k]||a.dataset.td;mt.href=a.getAttribute("href");
 mt.hidden=false;const f=box.getBoundingClientRect(),r=([...a.querySelectorAll(".sh")].find((e)=>e.getBoundingClientRect().width)||a).getBoundingClientRect(),w=mt.offsetWidth,h=mt.offsetHeight;
-const cx=r.left+r.width/2-f.left,x=Math.min(Math.max(cx-w/2,6),f.width-w-6),up=r.top-f.top-h-12>=0;
-mt.classList.toggle("bas",!up);mt.style.left=x+"px";mt.style.top=(up?r.top-f.top-h-12:r.bottom-f.top+12)+"px";
+const c0=a.dataset.cote,c1=(c0==="r"&&r.right-f.left+w+18>f.width)||(c0==="l"&&r.left-f.left-w-18<0)||(c0==="t"&&r.top-f.top-h-12<0)?"b":c0,c=c1==="b"&&r.bottom-f.top+h+12>f.height?"t":c1,side=c==="l"||c==="r",cx=r.left+r.width/2-f.left,x=Math.min(Math.max(cx-w/2,6),f.width-w-6),up=c?c==="t":r.top-f.top-h-12>=0;
+mt.classList.toggle("bas",!up&&!side);mt.classList.toggle("cote",side);mt.style.left=(side?(c==="l"?r.left-f.left-w-12:r.right-f.left+12):x)+"px";
+mt.style.top=(side?r.top+r.height/2-f.top-h/2:up?r.top-f.top-h-12:r.bottom-f.top+12)+"px";
 mt.style.setProperty("--ax",Math.min(Math.max(cx-x,16),w-16)+"px");requestAnimationFrame(()=>mt.classList.add("vu"))};
 const off=()=>{clearTimeout(t);if(on)on.classList.remove("on");on=null;mt.classList.remove("vu");mt.hidden=true};
 const later=()=>{clearTimeout(t);t=setTimeout(off,160)};
 box.querySelectorAll("a.mk[data-tp]").forEach((a)=>{a.addEventListener("pointerdown",(e)=>{touch=e.pointerType!=="mouse"});
-a.addEventListener("pointerenter",(e)=>{if(e.pointerType==="mouse")put(a)});a.addEventListener("pointerleave",(e)=>{if(e.pointerType==="mouse")later()});
+a.addEventListener("pointerenter",(e)=>{if(e.pointerType==="mouse"&&!a.classList.contains("lb"))put(a)});a.addEventListener("pointerleave",(e)=>{if(e.pointerType==="mouse")later()});
 a.addEventListener("focus",()=>{if(!touch)put(a)});a.addEventListener("blur",later);
 a.addEventListener("click",(e)=>{if(touch&&on!==a){e.preventDefault();put(a)}touch=false})});
 box.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",off));mt.addEventListener("pointerenter",()=>clearTimeout(t));mt.addEventListener("pointerleave",(e)=>{if(e.pointerType==="mouse")later()});

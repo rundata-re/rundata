@@ -82,7 +82,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copy keeps the trail pages' previews, which drop a weekend notice past its last day (web/domains.ts stateHead).
   // Its copies keep the notices' words (providers/sentiers.ts nuance): past its last day, a weekend notice is quoted, without « ouvert ».
   // Its copies keep a closed trail's state (web/data.ts closedState): « En partie fermé : … » first, « Fermé » said once.
-  sentiers: 22,
+  // Its copy keeps the middle of each forest road closed to traffic (web/data.ts routes_points), for the home page's map.
+  sentiers: 23,
   // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
   // A volley match's sets written as its score, « 26-28 ».
   // The ffgolf's written refusal of 09/11/2026: its own line, dated, in the golf's mention.

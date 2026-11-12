@@ -833,6 +833,14 @@ describe("the summary of a holiday full of events", () => {
     expect(few.liste).toHaveLength(5);
     expect(few).not.toHaveProperty("autres");
     expect(few).not.toHaveProperty("outil");
+    // Credited: the agendas of the five shown, not those of the others (rule 3).
+    const paul = AGENDAS.find((x) => x.id === "saint_paul")!;
+    const port = AGENDAS.find((x) => x.id === "le_port")!;
+    const evenements = ten.map((e, i) => ({ ...e, publie_par: (i < 5 ? paul : port).nom }));
+    const agenda = copy({ ...COPIES.agenda.value, sources: credits([paul.source, port.source]), evenements });
+    const named = resume(SAINT_PAUL, { ...COPIES, agenda } as never, NOW).sources.map((x) => x.source);
+    expect(named).toContain(paul.source.nom);
+    expect(named).not.toContain(port.source.nom);
   });
 
   it("stays under the check's size: the holiday and its events add less than the margin of a day without any", async () => {

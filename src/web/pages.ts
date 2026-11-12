@@ -757,6 +757,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 .hm .t1{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;letter-spacing:.05em}
 .hm .t2{font-family:system-ui,sans-serif;font-weight:700;fill:#fff}
 .hm .lb{outline:none}.hm .lb:focus-visible .bx{stroke-width:5}
+.map.hm a.lb:hover,.map.hm a.lb.on{transform:none}
 .hm .cx,.hm .mk,.hm image[data-relief]{transition:opacity .25s,filter .25s,stroke-width .25s}
 .hm:has([data-h]:is(:hover,:focus-visible,.on)) .cx{opacity:.18}
 .hm:has([data-h]:is(:hover,:focus-visible,.on)) .mk:not(.lb){opacity:.35}

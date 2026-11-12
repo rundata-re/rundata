@@ -5,7 +5,7 @@
  */
 import { appendFileSync } from "node:fs";
 import "../src/bin/net.js";
-import { AGENT, checkAnswer, checkPage, PAGES, TOOLS, type PageCheck, type Probleme, type ToolCheck } from "../src/bin/check-sources.js";
+import { AGENT, checkAnswer, checkPage, PAGES, sizesSummary, TOOLS, type PageCheck, type Probleme, type ToolCheck } from "../src/bin/check-sources.js";
 
 const origin = process.argv[2] ?? "https://rundata.re";
 const TIMEOUT_MS = 60_000;
@@ -51,7 +51,7 @@ const first = await round(TOOLS, PAGES);
 const failing = { tools: TOOLS.filter((c) => first.tools.get(c)!.length), pages: PAGES.filter((c) => first.pages.get(c)!.length) };
 let problems: Probleme[] = [];
 if (failing.tools.length || failing.pages.length) {
-  for (const p of [...first.tools.values(), ...first.pages.values()].flat()) console.log(`premier essai : ${p.point} : ${p.motif}`);
+  for (const p of [...first.tools.values(), ...first.pages.values()].flat()) console.log(`premier essai : ${p.point} : ${p.motif}${p.blocs ? ` (${p.blocs.map(([k, n]) => `${k} ${n}`).join(", ")})` : ""}`);
   console.log(`nouvel essai dans ${RETRY_MS / 1000} s`);
   await new Promise((r) => setTimeout(r, RETRY_MS));
   const again = await round(failing.tools, failing.pages);
@@ -61,7 +61,7 @@ if (failing.tools.length || failing.pages.length) {
 const total = TOOLS.length + PAGES.length;
 const lines = problems.map((p) => `| ${p.point} | ${p.motif.replace(/\|/g, "/")} |`);
 const summary = problems.length
-  ? `## Contrôle des sources : ${problems.length} problème(s)\n\n| Point | Motif |\n|---|---|\n${lines.join("\n")}\n`
+  ? `## Contrôle des sources : ${problems.length} problème(s)\n\n| Point | Motif |\n|---|---|\n${lines.join("\n")}\n${sizesSummary(problems)}`
   : `## Contrôle des sources : ${total} points, tout est à jour\n`;
 console.log(summary);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);

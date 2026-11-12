@@ -169,7 +169,11 @@ const DAY_FR = new Intl.DateTimeFormat("fr-FR", { timeZone: "Indian/Reunion", we
 const ROADS = ["route", "mobilisation"];
 const NEWS_HOURS = 12;
 const NEWS_MAX = 4;
-const EVENTS_MAX = 10;
+// The events of the day shown, the others counted and left to evenements: on the holiday of 11/11/2026, a full list of 10
+// took Saint-Paul's summary to 11.8 KB, past the check's 10.5 KB (src/bin/check-sources.ts), each event ~250 bytes.
+// resume()'s answer is kept in no copy: it is computed at each view (web/site.ts) and each call of the tool, from the
+// copies, so no RENDU_REVISION to raise (web/revisions.ts).
+const EVENTS_MAX = 5;
 // A build whose cost was measured neither in this isolate nor with its copy is taken to cost this much (web/site.ts
 // does the same).
 const COST_UNKNOWN = 25;
@@ -433,6 +437,9 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   // Its distributor's feed did not answer at the last read (tools/coupures.ts).
   const waterSilent = dist?.avis ? muetPour(l.coupures?.value.injoignable, nom) : undefined;
   const events = (l.agenda?.value.evenements ?? []).filter((r) => r.commune === nom && repris(r) && occurrences(r).some((o) => o.du <= today && today <= o.au));
+  // The EVENTS_MAX shown: those with a state first (ANNULÉ, REPORTÉ, complet), which the server's rule says first and
+  // which no one should travel for, the others in the agenda's order; the same list credited.
+  const shown = [...events.filter((r) => r.statut), ...events.filter((r) => !r.statut)].slice(0, EVENTS_MAX);
   const mairie = l.commune?.value.mairie;
   const open = mairie ? openNow(mairie, now) : null;
   // Today's holiday, from the calendar's copy of today (sameDay); none known without it.
@@ -523,7 +530,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
         ])
       : undefined,
     prices ? credits([FUEL_SOURCE]) : undefined,
-    l.coupures?.value.sources, agendaSources(events, l.agenda?.value.sources), calendrier ? l.calendrier?.value.sources : undefined,
+    l.coupures?.value.sources, agendaSources(shown, l.agenda?.value.sources), calendrier ? l.calendrier?.value.sources : undefined,
     mairie ? commune_([annuaire.SOURCE.nom]) : undefined, busAlerts ? commune_([transit.SOURCE.nom, rt.SOURCE.nom]) : undefined,
     sites?.length ? l.dechets?.value.sources : undefined, volc ? volcanoSources(l.volcan!.value.sources) : undefined, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
   ];
@@ -560,8 +567,10 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
       : undefined,
     evenements_du_jour: l.agenda
       ? {
-          liste: events.slice(0, EVENTS_MAX).map((r) => ({ titre: r.titre, quand: r.quand, lieu: r.lieu, prix: r.prix, statut: r.statut, lien: r.lien, source: r.source })),
+          liste: shown.map((r) => ({ titre: r.titre, quand: r.quand, lieu: r.lieu, prix: r.prix, statut: r.statut, lien: r.lien, source: r.source })),
           autres: events.length > EVENTS_MAX ? events.length - EVENTS_MAX : undefined,
+          outil: events.length > EVENTS_MAX ? "evenements" : undefined,
+          page: events.length > EVENTS_MAX ? `${SITE_URL}/evenements` : undefined,
           aucun: events.length ? undefined : "Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.",
           non_repris: notRead,
         }

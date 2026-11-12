@@ -235,12 +235,23 @@ describe("the max and min since midnight on a place's weather page", () => {
     const meteo = body(await meteoActuelle(await cache(), p.lieu, NOW, "jour"));
     const page = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: false }, NOW);
     expect(page).toContain("<h3>Depuis minuit à Saint-Pierre Pierrefonds (aéroport)</h3>");
-    expect(page).toContain("à 5,9 km · pertinence bonne · de 00:00 à 12:54");
+    expect(page).toContain("à 5,9 km · de 00:00 à 12:54");
     expect(page).toMatch(/<li><span>Au plus<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">26,5\u202f°C<\/span> <span class="q">entre 09:00 et 10:00<\/span><\/span><\/li>/);
     expect(page).toMatch(/<li><span>Au moins<\/span><span class="v"><span class="t" style="background:#[0-9a-f]{6}">22,9\u202f°C<\/span> <span class="q">entre 00:00 et 01:00<\/span><\/span><\/li>/);
     // A copy of the day before, served after midnight while the next is built: yesterday's would pass for today's.
     const late = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: true }, new Date("2026-10-25T20:10:00Z"));
     expect(late).toContain("Dernière mesure près de Saint-Pierre");
     expect(late).not.toContain("Depuis minuit");
+  });
+
+  it("says each station's distance and altitude, never its « pertinence », a word that says nothing to a visitor", async () => {
+    const meteo = body(await meteoActuelle(await cache(), p.lieu, NOW, "jour"));
+    expect(meteo.stations.some((s: { pertinence?: string }) => s.pertinence)).toBe(true);
+    const page = placePage("https://rundata.re", p, { value: { meteo }, fetchedAt: NOW, stale: false }, NOW);
+    const notes = [...page.matchAll(/<div class="card stcard[^"]*"><h3>[^<]*<\/h3><p class="note">([^<]*)<\/p>/g)].map((m) => m[1]);
+    expect(notes.length).toBeGreaterThan(1);
+    for (const n of notes) expect(n).toMatch(/à [\d,]+\s?km/u);
+    expect(notes.filter((n) => /m d&#39;altitude/.test(n)).length).toBe(notes.length - 1);
+    expect(page).not.toContain("pertinence");
   });
 });

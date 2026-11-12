@@ -165,6 +165,48 @@ describe("the home page's island", () => {
     expect(M.dessinsGardes()).toBe(4);
   });
 
+  it("reads its drawings from KV where its isolate has none, and draws a page's map only once for every isolate", async () => {
+    // KV as the Worker has it: text, written and read again.
+    const texts = new Map<string, string>();
+    const kv = { get: async (k: string) => (texts.has(k) ? JSON.parse(texts.get(k)!) : undefined), put: async (k: string, e: unknown) => void texts.set(k, JSON.stringify(e)) };
+    const after: Promise<unknown>[] = [];
+    const background = (p: Promise<unknown>) => void after.push(p);
+    const isolate = async (version = "1.0.540") => {
+      vi.resetModules();
+      const { Cache, MemoryStore } = await import("../src/cache.js");
+      return { cache: new Cache(new MemoryStore(), Date.now, true, kv, version), A: await import("../src/web/accueil-dessins.js"), M: await import("../src/web/accueil-carte.js") };
+    };
+    // The first visit: nothing in KV, it draws, and writes its drawings after its response.
+    const one = await isolate();
+    expect(await one.A.dessinsAccueil(one.cache, live, NOW, background)).toBe("dessines");
+    await Promise.all(after.splice(0));
+    expect(texts.size).toBe(1);
+    const page = one.M.accueilCarte(live, NOW);
+    expect(await one.A.dessinsAccueil(one.cache, live, NOW, background)).toBe("ici");
+    // Another isolate reads them: no drawing, nothing written, the same page.
+    const two = await isolate();
+    expect(await two.A.dessinsAccueil(two.cache, live, NOW, background)).toBe("lus");
+    expect(after).toHaveLength(0);
+    expect(two.M.dessinsGardes()).toBe(2);
+    expect(two.M.accueilCarte(live, NOW)).toBe(page);
+    expect(two.M.dessinsGardes()).toBe(2);
+    // A wider label (130 bikes): other drawings, drawn and written once.
+    const wider: HomeLive = { ...live, velos: cached({ ...(live.velos!.value as object), communes: [{ commune: "Saint-Pierre", velos_disponibles: 130 }] }) };
+    expect(await two.A.dessinsAccueil(two.cache, wider, NOW, background)).toBe("dessines");
+    await Promise.all(after.splice(0));
+    expect(texts.size).toBe(2);
+    // Another version of the code reads none of the old ones.
+    const next = await isolate("1.0.541");
+    expect(await next.A.dessinsAccueil(next.cache, live, NOW, background)).toBe("dessines");
+    // Drawings of another key, or not drawings, are never taken.
+    const d = next.M.dessinsCarte(live, NOW)!;
+    const fresh = await isolate();
+    expect(fresh.M.reprendreCarte(d, fresh.M.cleCarte(wider, NOW)!.cle)).toBe(false);
+    expect(fresh.M.reprendreCarte({ cle: d.cle, dessins: [] }, d.cle)).toBe(false);
+    expect(fresh.M.reprendreCarte("<html>", d.cle)).toBe(false);
+    expect(fresh.M.dessinsGardes()).toBe(0);
+  });
+
   it("gives Vélos its track at 390 px when the sea's nearest beach, Saint-Pierre's, would bar its way: the sea takes its next", () => {
     // Altervélo's stations where they are (station_information.json, read 12/11), the sea of the home page's six beaches.
     const at: [string, ...[number, number][]][] = [

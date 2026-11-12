@@ -184,6 +184,47 @@ function windMark(x0: number, y0: number, s: StationNow, at?: [number, number]):
   return `<g class="sh l-v wv"><rect x="${x - 46}" y="${y - 24}" width="96" height="48" rx="24"/>${arrow}<text x="${x + 18}" y="${y + 11}">${s.vent}</text></g>`;
 }
 
+/** The wind legend's colours (.wgrad, pages.ts) at their speeds in km/h, 0 to 60. */
+const WIND_STOPS: [number, number[]][] = [[0, [70, 104, 176]], [10.2, [46, 150, 172]], [19.8, [74, 170, 98]], [30, [222, 184, 62]], [45, [222, 112, 46]], [60, [178, 44, 72]]];
+/** A wind speed's colour, as the legend's scale. */
+export function windColor(v: number): string {
+  let i = 0;
+  while (i < WIND_STOPS.length - 2 && v > WIND_STOPS[i + 1][0]) i++;
+  const [[v0, c0], [v1, c1]] = [WIND_STOPS[i], WIND_STOPS[i + 1]];
+  const k = Math.min(1, Math.max(0, (v - v0) / (v1 - v0)));
+  return `#${c0.map((c, j) => Math.round(c + (c1[j] - c) * k).toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** A rain point's radius with « Valeurs » unticked: larger as it rains harder, 12 to 30. */
+export const rainPointR = (mm: number) => Math.min(30, Math.round(12 + 6 * Math.log2(1 + mm)));
+
+/** A wind arrow's length and thickness with « Valeurs » unticked: longer and thicker with the speed, 34 and 6 at least. */
+export const windArrow = (v: number): [number, number] => [Math.round(34 + 1.5 * Math.min(v, 60)), Math.round((6 + Math.min(v, 60) / 10) * 10) / 10];
+
+/**
+ * A station's marks with « Valeurs » unticked (the user, 10/11/2026: « en gardant toujours les points »), said in one
+ * short attribute that the page's script (VALEURS_JS) turns into points on its place the first time the box is
+ * unticked: drawn by the server, they doubled the map's marks and cost the page 70 % more before it is ready (DCL, CPU
+ * ×4, 10/11/2026). Parts split by « | »: `t:<colour>` a point of the temperature's colour; `p:<radius>:<colour>` a rain
+ * point, larger as it rains harder, radius 0 for no rain (a white one); `v:<length>:<width>:<turn>:<colour>` an arrow
+ * from the station where the wind goes, of the legend's colour, longer and thicker with the speed, length 0 for a calm
+ * or a wind without its direction (a small disc). Colours without their « # ».
+ */
+export function pointsData(s: StationNow, rain: number | undefined): string {
+  const c = (h: string) => h.slice(1);
+  const parts: string[] = [];
+  if (s.temperature != null) parts.push(`t:${c(chip(s.temperature))}`);
+  if (rain != null) parts.push(rain > 0 ? `p:${rainPointR(rain)}:${c(rainColor(rain))}` : "p:0");
+  if (s.vent != null) {
+    const col = c(windColor(s.vent));
+    if (s.direction != null && s.vent > 0) {
+      const [L, w] = windArrow(s.vent);
+      parts.push(`v:${L}:${w}:${(s.direction + 180) % 360}:${col}`);
+    } else parts.push(`v:0:0:0:${col}`);
+  }
+  return parts.join("|");
+}
+
 /**
  * One link per station for every layer, each drawing its own dot (`l-t`, `l-p`, `l-v`, shown by the page's CSS) and
  * giving the bubble its value (`data-tvt`, `data-tvp`, `data-tvv`); a station without a measure of the layer shown is
@@ -222,7 +263,7 @@ function station(s: StationNow, named: boolean, rain: number | undefined, hour: 
   const data = Object.entries(v).map(([k, x]) => (x ? ` data-tv${k}="${esc(x)}"` : "")).join("");
   // Its marks in a group that the full screen scales about the station's place (MARQUES_JS): a mark moved off it comes
   // back towards it as it gets smaller, its tie with it.
-  return `<a class="mk${has}${s.amateur ? " am" : ""}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
+  return `<a class="mk${has}${s.amateur ? " am" : ""}" href="#${stationId(s.nom)}" aria-label="${esc(said)}" data-pt="${pointsData(s, rain)}" data-tp="${esc(place)}" data-td="mesurée ${leAt(s.time)}${esc(by(s))}"${data} tabindex="-1">` +
     `<g class="mo" style="transform-origin:${x}px ${y}px">${hit}${shapes}</g></a>`;
 }
 
@@ -441,12 +482,18 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // The amateur stations' box, unticked (the user, 10/11/2026): its words are the user's; ticked, the legend says what
   // the dotted outline is (marketing).
   const box = amateurs.length ? `<label class="amchk"><input type="checkbox" id="wx-am"> Stations amateur</label>` : "";
+  // « Valeurs » (the user, 10/11/2026: « une option pour afficher/masquer les valeurs »), ticked: the discs and pills
+  // with their figures; unticked, the points of pointsData(). One box for the three layers, kept by the browser (VALEURS_JS);
+  // hidden without a script, which draws the points.
+  const values = `<label class="amchk" data-js hidden><input type="checkbox" id="wx-val" checked> Valeurs</label>`;
   // The map zooms in its full screen only, its buttons in the bar there (the user, 10/11/2026: « plus de commandes comme
   // le zoom »); its relief finer there when the screen asks for it, its marks at a size of their own (MARQUES_JS).
   const map = islandMap({ under: overlay, top, peaks: true, fond: FOND, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` })
     .replace('<svg class="map terrain"', `<svg class="map terrain" data-fd="${FOND}" data-zoom="${ZOOM_METEO}" data-zpe data-fin`);
   const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur.</span>` : "";
-  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}${box}${zoomButtons(FOND, "ile")}</div>` +
+  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}<div class="wxchk">${values}${box}</div>${zoomButtons(FOND, "ile")}</div>` +
+    // Before the map: the class set before its marks are read (set after, the page took 15 % longer to be ready).
+    `<script>${VALEURS_JS}</script>` +
     map + ZOOM_SCRIPT + `<script>${MARQUES_JS}${FIN_SCRIPT}</script>` + bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
 }
 
@@ -472,6 +519,29 @@ export const MARQUES_JS = `(()=>{const f=document.currentScript&&document.curren
 const set=()=>{const c=svg.clientWidth,v=svg.viewBox.baseVal,k=svg.closest(".pe-on")&&c&&v&&v.width?Math.min(1,${MARQUES_PX}*v.width/(${W}*c)):1;
 if(k<1)svg.style.setProperty("--mk",String(Math.round(k*1000)/1000));else svg.style.removeProperty("--mk")};
 if(window.ResizeObserver)new ResizeObserver(set).observe(svg);new MutationObserver(set).observe(svg,{attributes:true,attributeFilter:["viewBox"]});addEventListener("resize",set);set()})();`;
+
+/**
+ * « Valeurs » as the reader left it, in this browser only (ticked when the storage says nothing or refuses), and the
+ * points of pointsData(), made once, the first time the box is unticked. Left unticked, the marks wait unseen
+ * (`vatt`, still laid out) until the page is ready, then the points come: the names' script reads the style of every
+ * mark while the page loads, slowly for marks hidden, and the page took 30 % longer to be ready (DCL, CPU ×4, 10/11/2026).
+ * Each point in its station's group (`.mo`), on its place, with its touch area (HIT / 2). Unticked, the figure takes the class `sansv`, which hides the discs, pills and
+ * their ties (pages.ts); ticked again, the points hidden.
+ */
+export const VALEURS_JS = `(()=>{const b=document.getElementById("wx-val"),f=b&&b.closest("figure");if(!f)return;const N="http://www.w3.org/2000/svg";let made=false;
+const el=(n,a)=>{const e=document.createElementNS(N,n);for(const k in a)e.setAttribute(k,a[k]);return e};
+const make=()=>{made=true;f.querySelectorAll("a.mk[data-pt]").forEach((a)=>{const g=a.querySelector(".mo"),o=/transform-origin:\\s*([\\d.]+)px ([\\d.]+)px/.exec(g&&g.getAttribute("style")||"");if(!o)return;const x=o[1],y=o[2];
+const hit=(l)=>el("circle",{class:"hit pt l-"+l,cx:x,cy:y,r:${HIT / 2},style:"fill:transparent;stroke:none"});
+a.getAttribute("data-pt").split("|").forEach((p)=>{const q=p.split(":"),l=q[0];
+if(l==="t")g.append(el("circle",{class:"pt l-t",cx:x,cy:y,r:14,fill:"#"+q[1]}));
+else if(l==="p")g.append(q[1]==="0"?el("circle",{class:"pt l-p",cx:x,cy:y,r:9,style:"fill:#fff;stroke:${RAIN_DRY};stroke-width:4"}):el("circle",{class:"pt l-p",cx:x,cy:y,r:q[1],fill:"#"+q[2]}));
+else if(l==="v"){if(q[1]==="0")g.append(el("circle",{class:"pt l-v",cx:x,cy:y,r:9,fill:"#"+q[4]}));else{const L=+q[1],w=+q[2],h=Math.round(w*1.6+6),d="M0 0V"+(-L)+"M"+(-h)+" "+(h-L)+"l"+h+" "+(-h)+" "+h+" "+h,
+v=el("g",{class:"pt l-v wa",transform:"translate("+x+" "+y+") rotate("+q[3]+")"});v.append(el("path",{class:"wa-f",d,style:"stroke-width:"+(w+6)}),el("path",{class:"wa-c",d,style:"stroke:#"+q[4]+";stroke-width:"+w}));g.append(v)}}
+else return;g.append(hit(l))})})};
+const set=()=>{if(!b.checked&&!made)make();f.classList.toggle("sansv",!b.checked)};
+let left=false;try{left=localStorage.getItem("wx-valeurs")==="0"}catch(e){}
+if(left){b.checked=false;f.classList.add("vatt");const later=()=>setTimeout(()=>{f.classList.remove("vatt");set()});if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",later);else later()}
+b.addEventListener("change",()=>{set();try{localStorage.setItem("wx-valeurs",b.checked?"1":"0")}catch(e){}})})();`;
 
 /** Under the stations' map, the way to /carte, its view of the weather now: the same rain and stations, the others to tick (marketing). */
 export const TOUTES_LES_COUCHES = "La météo avec les rivières, les sentiers et le volcan, sur une seule carte →";

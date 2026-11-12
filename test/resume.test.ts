@@ -843,6 +843,22 @@ describe("the summary of a holiday full of events", () => {
     expect(named).not.toContain(port.source.nom);
   });
 
+  it("shows an event cancelled or postponed among the 5, whatever its place in the agenda, and credits its agenda", async () => {
+    const paul = AGENDAS.find((x) => x.id === "saint_paul")!;
+    const port = AGENDAS.find((x) => x.id === "le_port")!;
+    // The 8th cancelled, from another agenda than the first seven.
+    const evenements = ten.map((e, i) => ({ ...e, publie_par: (i === 7 ? port : paul).nom, ...(i === 7 ? { statut: "ANNULÉ" } : {}) }));
+    const agenda = copy({ ...COPIES.agenda.value, sources: credits([paul.source, port.source]), evenements });
+    const r = resume(SAINT_PAUL, { ...COPIES, agenda } as never, NOW);
+    const liste = r.evenements_du_jour!.liste;
+    expect(liste).toHaveLength(5);
+    expect(liste[0]).toMatchObject({ titre: ten[7].titre, statut: "ANNULÉ" });
+    // The others in the agenda's order.
+    expect(liste.slice(1).map((e) => e.titre)).toEqual(ten.slice(0, 4).map((e) => e.titre));
+    expect(r.evenements_du_jour!.autres).toBe(5);
+    expect(r.sources.map((x) => x.source)).toEqual(expect.arrayContaining([paul.source.nom, port.source.nom]));
+  });
+
   it("stays under the check's size: the holiday and its events add less than the margin of a day without any", async () => {
     const bytes = (s: string) => new TextEncoder().encode(s).length;
     const plain = bytes((await answer([], COPIES.calendrier.value)).text);

@@ -509,9 +509,27 @@ const near = (s: Sujet) => (s.summit ? 60 : s.pts.length > 1 && !s.one ? 11 : 18
  * Where everything goes, for a layout: the labels at their place, then each subject's places joined (a tree, each edge
  * a circuit's way) and its track to its label, each the shortest way that crosses no other track and touches no label,
  * no place, no temperature and no summit. A place under another subject's label, or that no clean way reaches, is left
- * out with its track (`problems`); a subject that keeps one place of several (the sea) takes the first that one reaches.
+ * out with its track (`problems`); a subject that keeps one place of several (the sea) takes the first that one reaches,
+ * and the next when its track bars a network's.
  */
 export function draw(L: Layout, list: Sujet[], temps: P[]): Drawn {
+  const skip: P[] = [];
+  let d = drawOnce(L, list, temps, skip);
+  // The sea's track, drawn first, may bar the only way of a network's track (to Saint-Pierre's beach, Vélos' at 390 px):
+  // the sea then takes its next beach, while that leaves fewer problems. A drawing more, only on such a day.
+  const one = list.find((s) => s.one);
+  const nets = list.filter((s) => !s.one && s.pts.length > 1).map((s) => `piste ${s.id}`);
+  const barred = (x: Drawn) => x.problems.some((p) => nets.includes(p));
+  while (one && barred(d) && d.places[one.id]?.length) {
+    const next = drawOnce(L, list, temps, [...skip, d.places[one.id]![0]]);
+    if (next.problems.length >= d.problems.length) break;
+    skip.push(d.places[one.id]![0]);
+    d = next;
+  }
+  return d;
+}
+
+function drawOnce(L: Layout, list: Sujet[], temps: P[], skip: P[]): Drawn {
   const labels: Drawn["labels"] = {};
   const texts: Drawn["texts"] = {};
   for (const s of list) {
@@ -599,6 +617,7 @@ export function draw(L: Layout, list: Sujet[], temps: P[]): Drawn {
   for (const s of list.filter((x) => x.one)) {
     const l = pts[s.id]!;
     const hit = byDistance(s.id, l).find((i) => {
+      if (skip.includes(l[i])) return false;
       if (obstacles.some((o) => o.c && o.own !== s.id && !o.temp && Math.hypot(o.c[0] - l[i][0], o.c[1] - l[i][1]) < near(s) + o.r!)) return false;
       const r = leader(s, l[i]);
       if (!r) return false;

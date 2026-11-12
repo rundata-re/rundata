@@ -170,6 +170,10 @@ describe("the home page's island", () => {
     expect(problemes(old, NOW)).toEqual([]);
   });
 
+  it("keeps a label lit at its size, unlike the maps' markers: on the edge of the map, it would be cut", () => {
+    expect(CSS).toContain(".map.hm a.lb:hover,.map.hm a.lb.on{transform:none}");
+  });
+
   it("leaves the old map in place when no subject has a value", () => {
     expect(accueilCarte({}, NOW)).toBeNull();
   });

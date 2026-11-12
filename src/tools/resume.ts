@@ -171,6 +171,8 @@ const NEWS_HOURS = 12;
 const NEWS_MAX = 4;
 // The events of the day shown, the others counted and left to evenements: on the holiday of 11/11/2026, a full list of 10
 // took Saint-Paul's summary to 11.8 KB, past the check's 10.5 KB (src/bin/check-sources.ts), each event ~250 bytes.
+// resume()'s answer is kept in no copy: it is computed at each view (web/site.ts) and each call of the tool, from the
+// copies, so no RENDU_REVISION to raise (web/revisions.ts).
 const EVENTS_MAX = 5;
 // A build whose cost was measured neither in this isolate nor with its copy is taken to cost this much (web/site.ts
 // does the same).

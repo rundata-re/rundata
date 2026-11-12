@@ -190,6 +190,61 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(CSS_CHIFFRES.indexOf(".mk[data-x] .mk-tip{display:none}")).toBeGreaterThan(show);
   });
 
+  it("graduates the curve at round steps, 5 °C or 10 °F, evenly spaced, every point between its lines", async () => {
+    const c = await figures();
+    const s = c.stations.find((x) => x.id === c.defaut)!;
+    // 30 days from 14,2 to 36,1 °C: more than five steps of 5 (10 to 40), so steps of 10.
+    const tx = s.j!.tx.map((_, i) => 26 + (i % 7)), tn = s.j!.tn.map((_, i) => 17 + (i % 5));
+    const wide = { ...c, stations: c.stations.map((x) => (x === s ? { ...x, j: { ...x.j!, tx: [...tx.slice(0, -1), 36.1], tn: [...tn.slice(0, -1), 14.2] } } : x)) };
+    const axis = (svg: string) => [...svg.matchAll(/<line class="gr" x1="40" x2="\d+(?:\.\d+)?" y1="([\d.]+)"[^>]*\/><text class="ax" x="34" y="[\d.]+" text-anchor="end">(−?\d+)<\/text>/g)].map((m) => [+m[1], +m[2].replace("−", "-")]);
+    for (const [d, r, step] of [[c, {}, 5], [c, { p: "7" }, 5], [c, { p: "30" }, 5], [c, { ut: "f" }, 10], [c, { p: "7", ut: "f" }, 10], [wide, { p: "30" }, 10]] as const) {
+      const drawn = draw(d, r as Partial<Reglages>);
+      const ticks = axis(drawn.svg);
+      expect(ticks.length, JSON.stringify(r)).toBeGreaterThanOrEqual(2);
+      for (const [, v] of ticks) expect(v % step, `${v} ${JSON.stringify(r)}`).toBe(0);
+      const values = ticks.map(([, v]) => v), ys = ticks.map(([y]) => y);
+      for (let k = 1; k < ticks.length; k++) {
+        expect(values[k - 1] - values[k], JSON.stringify(r)).toBe(-step);
+        expect(Math.abs(ys[k - 1] - ys[k] - (ys[0] - ys[1])), JSON.stringify(r)).toBeLessThan(0.2);
+      }
+      for (const p of drawn.pts) expect(p.y >= Math.min(...ys) - 0.1 && p.y <= Math.max(...ys) + 0.1, `${p.y} ${JSON.stringify(r)}`).toBe(true);
+    }
+    expect(axis(draw(wide, { p: "30" }).svg).map(([, v]) => v)).toEqual([10, 20, 30, 40]);
+  });
+
+  it("draws the rain in a band of its own, below the temperatures, so that a bar never hides a point", async () => {
+    const c = await figures();
+    const s = c.stations.find((x) => x.id === c.defaut)!;
+    // A wet 7 days, the coolest night on the wettest day (the 04/11 of the review).
+    const rr = s.j!.rr.map((_, i) => (i % 3 ? 2 : 40));
+    const tn = s.j!.tn.map((_, i) => (i % 3 ? 22 : 18));
+    const wet = { ...c, stations: c.stations.map((x) => (x === s ? { ...x, j: { ...x.j!, rr, tn }, h: { ...x.h!, rr: x.h!.rr.map((_, i) => (i % 4 ? 0.2 : 6)) } } : x)) };
+    for (const p of ["24", "7", "30"] as const) {
+      const svg = draw(wet, { p }).svg;
+      const bars = [...svg.matchAll(/<rect class="br" x="[\d.]+" y="([\d.]+)" width="[\d.]+" height="([\d.]+)"/g)].map((m) => [+m[1], +m[2]]);
+      expect(bars.length, p).toBeGreaterThan(0);
+      for (const [y, h] of bars) {
+        expect(y, p).toBeGreaterThanOrEqual(176);
+        expect(y + h, p).toBeCloseTo(210, 1);
+      }
+      const temps = [...svg.matchAll(/<circle class="d[xn]" cx="[\d.]+" cy="([\d.]+)"/g), ...svg.matchAll(/[ML][\d.]+,([\d.]+)/g)].map((m) => +m[1]);
+      expect(temps.length, p).toBeGreaterThan(0);
+      for (const y of temps) expect(y, p).toBeLessThanOrEqual(160);
+      expect(svg).toMatch(/^<svg class="mx-svg" viewBox="0 0 640 250"/);
+      expect(svg).toContain('<text class="ax" x="34" y="197" text-anchor="end">pluie</text>');
+    }
+  });
+
+  it("gives its bubbles a border in both themes, wider than a figure from 641 px, and names the units of each measure", async () => {
+    expect(CSS_CHIFFRES).toMatch(/\.mk-tip,\.mx-tip\{[^}]*border:1px solid color-mix\(in srgb,var\(--on-night\) 28%,transparent\)/);
+    expect(CSS_CHIFFRES).toContain("@media (min-width:641px){.mx-chips>.mk .mk-tip{right:auto;width:min(27rem,calc(200% - .4rem))}");
+    const block = enChiffres(await figures(), "Entre-Deux", "entre-deux");
+    const units = block.slice(block.indexOf("<legend>Unités</legend>"), block.indexOf("</fieldset>", block.indexOf("<legend>Unités</legend>")));
+    expect(text(units)).toBe("Unités Température °C °F Vent km/h nœuds m/s");
+    expect(units.indexOf('<p class="mx-sub">Vent</p>')).toBeLessThan(units.indexOf('value="kmh"'));
+    expect(units.indexOf('<p class="mx-sub">Vent</p>')).toBeGreaterThan(units.indexOf('value="f"'));
+  });
+
   it("serves its script at its address, kept a year, valid JavaScript", async () => {
     const res = await site(new Request(`https://rundata.re${chiffresScriptPath()}`), new Cache(new MemoryStore()), () => {});
     expect(res!.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");

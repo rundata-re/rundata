@@ -276,9 +276,11 @@ export const dessine = (
   hourAt = (h: { end: string; t: unknown[] }, i: number) => new Date(Date.parse(h.end) - (h.t.length - 1 - i) * 3600_000).toISOString(),
   al = (m: number) => String(m).replace(/\B(?=(\d{3})+(?!\d))/g, "\u202f") + "\u00a0m",
   sum = (xs: (number | null)[]) => (xs.some((x) => x == null) ? null : xs.reduce((a: number, b) => a + (b as number), 0)),
-  // The curve's place of a value: x of the i-th of n (`pad` at each end), y of a temperature between lo and hi.
+  // The curve's place of a value: x of the i-th of n (`pad` at each end); y of a temperature in the band of 14 to 160,
+  // lo and hi in the unit shown (Yu of a value in that unit, Y of one in °C), the rain in its own band below (172-210).
   X = (i: number, n: number, pad: number) => Math.round((40 + pad + (n === 1 ? 0 : (i * (W - 50 - 2 * pad)) / (n - 1))) * 10) / 10,
-  Y = (c: number, lo: number, hi: number) => Math.round((196 - ((c - lo) * 182) / (hi - lo)) * 10) / 10,
+  Yu = (u: number, lo: number, hi: number) => Math.round((160 - ((u - lo) * 146) / (hi - lo)) * 10) / 10,
+  Y = (c: number, lo: number, hi: number) => Yu(T(c), lo, hi),
   /** « de Saint-Leu », « du Tévelave », « des Avirons », escaped. */
   du = (nom: string) => (/^Les /.test(nom) ? `des ${e(nom.slice(4))}` : /^Le /.test(nom) ? `du ${e(nom.slice(3))}` : `de ${e(nom)}`),
 ): Dessin => {
@@ -340,8 +342,9 @@ export const dessine = (
   const chipsHtml = chips.filter((c) => !R.hide.includes(c[0])).map(([k, l, val, sub, tip]) =>
     `<button type="button" class="mk" data-k="${k}" aria-expanded="false"><span class="mk-l">${l}</span><span class="mk-v">${val}</span><span class="mk-s">${sub}</span><span class="mk-tip" role="tooltip">${tip}</span></button>`).join("");
   // The curve.
-  // The curve: 230 high, its values between 14 and 196, from x 40 to W - 10 (X and Y).
-  const H = 230, L = 40, Rr = 10, Tp = 14, Bt = 196;
+  // The curve: 250 high, from x 40 to W - 10 (X); the temperatures between 14 and 160 (Y), the rain's bars from 210 up
+  // to 176, apart, so that a bar never hides a point (the UX review of 12/11/2026), the days' or hours' labels at 240.
+  const H = 250, L = 40, Rr = 10, Tp = 14, Bt = 210, RAIN = 34;
   const days = R.p !== "24";
   const n = days ? +R.p : 24;
   const items: { lo?: number | null; hi?: number | null; t?: number | null; rr: number | null; lab: string; at: string }[] = days
@@ -351,16 +354,21 @@ export const dessine = (
   let svg = "";
   const pts: Dessin["pts"] = [];
   if (vals.length) {
-    const lo = Math.floor(Math.min(...vals)) - 1, hi = Math.ceil(Math.max(...vals)) + 1;
+    // Its graduations at round steps of the unit shown: 5 °C or 10 °F, twice that past five steps.
+    const us = vals.map((c) => T(c));
+    let step = R.ut === "f" ? 10 : 5;
+    if ((Math.ceil(Math.max(...us) / step) - Math.floor(Math.min(...us) / step)) > 5) step *= 2;
+    const lo = Math.floor(Math.min(...us) / step) * step;
+    const hi = Math.max(lo + step, Math.ceil(Math.max(...us) / step) * step);
     const pad = days ? Math.min(30, (W - L - Rr) / (2 * n)) : 0;
-    for (let k = 0; k <= 2; k++) {
-      const c = lo + ((hi - lo) * k) / 2;
-      svg += `<line class="gr" x1="${L}" x2="${W - Rr}" y1="${Y(c, lo, hi)}" y2="${Y(c, lo, hi)}"/><text class="ax" x="${L - 6}" y="${Y(c, lo, hi) + 4}" text-anchor="end">${fr(T(c), 0)}</text>`;
+    for (let u = lo; u <= hi; u += step) {
+      svg += `<line class="gr" x1="${L}" x2="${W - Rr}" y1="${Yu(u, lo, hi)}" y2="${Yu(u, lo, hi)}"/><text class="ax" x="${L - 6}" y="${Yu(u, lo, hi) + 4}" text-anchor="end">${fr(u, 0)}</text>`;
     }
     const rmax = Math.max(2, ...items.map((it) => it.rr ?? 0));
     const bw = Math.max(2, Math.min(18, ((W - L - Rr) / n) * 0.5));
+    svg += `<line class="gr" x1="${L}" x2="${W - Rr}" y1="${Bt}" y2="${Bt}"/><text class="ax" x="${L - 6}" y="${Bt - RAIN / 2 + 4}" text-anchor="end">pluie</text>`;
     items.forEach((it, i) => {
-      if ((it.rr ?? 0) > 0) svg += `<rect class="br" x="${X(i, n, pad) - bw / 2}" y="${Bt - (it.rr! / rmax) * 46}" width="${bw}" height="${(it.rr! / rmax) * 46}" rx="2"/>`;
+      if ((it.rr ?? 0) > 0) svg += `<rect class="br" x="${X(i, n, pad) - bw / 2}" y="${Math.round((Bt - (it.rr! / rmax) * RAIN) * 10) / 10}" width="${bw}" height="${Math.round((it.rr! / rmax) * RAIN * 10) / 10}" rx="2"/>`;
     });
     if (days)
       items.forEach((it, i) => {
@@ -460,7 +468,7 @@ export function enChiffres(c: Chiffres | undefined, lieu: string, slug: string):
 <details class="mx-reg"><summary>Réglages</summary>
 <div class="mx-panel">
 <fieldset><legend>Station</legend><div id="mx-st"></div><label><input type="checkbox" id="mx-am"> <span>Montrer aussi les stations amateur (MétéoR-OI), à la fiabilité non vérifiée</span></label></fieldset>
-<fieldset><legend>Unités</legend>${radio("ut", "c", "°C", true)}${radio("ut", "f", "°F", false)}${radio("uv", "kmh", "km/h", true)}${radio("uv", "kt", "nœuds", false)}${radio("uv", "ms", "m/s", false)}</fieldset>
+<fieldset><legend>Unités</legend><p class="mx-sub">Température</p>${radio("ut", "c", "°C", true)}${radio("ut", "f", "°F", false)}<p class="mx-sub">Vent</p>${radio("uv", "kmh", "km/h", true)}${radio("uv", "kt", "nœuds", false)}${radio("uv", "ms", "m/s", false)}</fieldset>
 <fieldset><legend>Période de la courbe</legend>${radio("p", "24", "24\u00a0h", true)}${radio("p", "7", "7 jours", false)}${radio("p", "30", "30 jours", false)}</fieldset>
 <fieldset><legend>Chiffres affichés</legend><div id="mx-show">${FIGURES.map(([k, l]) => `<label><input type="checkbox" value="${k}" checked> ${l}</label>`).join("")}</div></fieldset>
 <div class="mx-foot"><span>Vos réglages restent dans ce navigateur. Rien n'est envoyé, sans compte.</span><button type="button" id="mx-reset">Revenir aux réglages d'origine</button></div>
@@ -483,6 +491,7 @@ export const CSS_CHIFFRES = `.mx{margin:0 0 1.6rem}.mx h2{margin:0 0 .2rem}.mx-l
 .mx-panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.9rem;margin-top:.6rem;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.9rem}
 @media (max-width:760px){.mx-panel{grid-template-columns:1fr 1fr}}@media (max-width:420px){.mx-panel{grid-template-columns:1fr}}
 .mx fieldset{border:0;margin:0;padding:0;min-width:0}.mx legend{font-weight:700;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem}
+.mx-sub{margin:.5rem 0 0;font-size:.85rem;font-weight:700;color:var(--ink)}.mx-sub:first-of-type{margin-top:0}
 .mx-panel label{display:flex;gap:.45rem;align-items:flex-start;font-size:.9rem;margin:.3rem 0;cursor:pointer}.mx-panel small{color:var(--muted)}
 .mx-foot{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.6rem;justify-content:space-between;align-items:center;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:.6rem}
 .mx-foot button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:999px;padding:.5rem .8rem;cursor:pointer;min-height:44px}
@@ -491,9 +500,10 @@ export const CSS_CHIFFRES = `.mx{margin:0 0 1.6rem}.mx h2{margin:0 0 .2rem}.mx-l
 .mk:hover,.mk:focus-visible,.mk[aria-expanded=true]{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
 .mk-l{display:block;font-weight:700;font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.mk-v{display:block;font-weight:800;font-size:1.3rem;line-height:1.2;margin:.25rem 0 .1rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .mk-s{display:block;font-size:.82rem;color:var(--muted);line-height:1.3}.mk-am{font-weight:700;font-size:.75rem;background:var(--hl);color:var(--ink);border-radius:6px;padding:.1rem .3rem;margin-left:.3rem;vertical-align:.15em}
-.mk-tip,.mx-tip{position:absolute;z-index:5;background:var(--night);color:var(--on-night);border-radius:10px;padding:.5rem .65rem;font-size:.82rem;line-height:1.35;box-shadow:0 8px 24px rgb(0 0 0/.25);font-weight:400;text-transform:none;letter-spacing:0}
+.mk-tip,.mx-tip{position:absolute;z-index:5;background:var(--night);color:var(--on-night);border-radius:10px;padding:.5rem .65rem;font-size:.82rem;line-height:1.35;box-shadow:0 8px 24px rgb(0 0 0/.25);border:1px solid color-mix(in srgb,var(--on-night) 28%,transparent);font-weight:400;text-transform:none;letter-spacing:0}
 .mk-tip{left:.5rem;right:.5rem;top:calc(100% + 6px);display:none}.mk:hover .mk-tip,.mk:focus-visible .mk-tip,.mk[aria-expanded=true] .mk-tip{display:block}
 .mk[data-x] .mk-tip{display:none}.mk .nw{white-space:nowrap}
+@media (min-width:641px){.mx-chips>.mk .mk-tip{right:auto;width:min(27rem,calc(200% - .4rem))}.mx-chips>.mk:nth-child(3n+2) .mk-tip{left:50%;transform:translateX(-50%)}.mx-chips>.mk:nth-child(3n) .mk-tip{left:auto;right:.5rem}}
 @media (max-width:640px){.mx-chips>.mk:nth-child(odd) .mk-tip{right:calc(-100% - .6rem)}.mx-chips>.mk:nth-child(even) .mk-tip{left:calc(-100% - .6rem)}.mk-v{font-size:1.08rem}}
 .mx-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.9rem .9rem .6rem;margin-top:.75rem}
 .mx-ch{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}.mx-ch h3{margin:0;font-size:1rem}

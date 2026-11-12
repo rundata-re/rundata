@@ -8,7 +8,7 @@ import * as climat from "../src/providers/climat.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import type { MeteoAnswer, PlaceData } from "../src/web/data.js";
 import {
-  archiveOf, type Chiffres, chiffresDe, chiffresScript, chiffresScriptPath, DEFAUT, dessine, dit, enChiffres, FIGURES, KEY, LARGEUR, leadOf, type Reglages,
+  archiveOf, type Chiffres, chiffresDe, chiffresScript, CSS_CHIFFRES, chiffresScriptPath, DEFAUT, dessine, dit, enChiffres, FIGURES, KEY, LARGEUR, leadOf, type Reglages,
 } from "../src/web/en-chiffres.js";
 import { CSS, placePage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
@@ -147,6 +147,47 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(o.lead).toBe(other.lead.replace(/&/g, "&amp;"));
     // An unknown station (another place's, or gone) falls back on the default.
     expect(draw(c, { st: "00000000" }).href).toBe(`/meteo/station/${PIERREFONDS}`);
+  });
+
+  it("says the dates of its 7 days while the archive ends before yesterday, « en 7 jours » once yesterday is loaded", async () => {
+    // Read at 12:57 on 25/10, the archive up to 23/10: yesterday, 24/10, is loaded at 11:45 each day (marketing, 12/11/2026).
+    const c = await figures();
+    const pluie = (d: ReturnType<typeof draw>) => { const x = d.chips.slice(d.chips.indexOf('data-k="pluie"')); return x.slice(0, x.indexOf("</button>")); };
+    const early = draw(c);
+    expect(pluie(early)).toMatch(/<span class="mk-s">[\d,]+\u00a0mm <span class="nw">du 17\/10 au 23\/10<\/span>/);
+    expect(text(pluie(early))).not.toContain("en 7 jours");
+    expect(draw(c, { p: "7" }).note).toBe("Jusqu'au 23/10\u00a0: la journée d'hier est ajoutée vers midi. Barres\u00a0: le plus bas et le plus haut de chaque jour ; en bleu, la pluie (de 10\u00a0h à 10\u00a0h le lendemain).");
+    expect(draw(c, { p: "30" }).note).toMatch(/^Jusqu'au 23\/10\u00a0: la journée d'hier est ajoutée vers midi\. Barres/);
+    expect(early.note).not.toContain("Jusqu'au");
+    // Yesterday loaded: the archive's days up to 24/10, its window said as before, no note.
+    const s = c.stations.find((x) => x.id === c.defaut)!;
+    const add = (xs: (number | null)[], v: number) => [...xs.slice(1), v];
+    const j = { au: "2026-10-24", tn: add(s.j!.tn, 21), tx: add(s.j!.tx, 29.4), rr: add(s.j!.rr, 0) };
+    const loaded = { ...c, stations: c.stations.map((x) => (x === s ? { ...x, j } : x)) };
+    expect(text(pluie(draw(loaded)))).toMatch(/[\d,]+\u00a0mm en 7 jours/);
+    expect(pluie(draw(loaded))).not.toContain('class="nw"');
+    for (const p of ["7", "30"] as const) expect(draw(loaded, { p }).note).toMatch(/^Barres/);
+    // No rain at all: « 0 mm du … au … », never « pas de pluie ».
+    const dry = { ...c, stations: c.stations.map((x) => (x === s ? { ...x, h: { ...x.h!, rr: x.h!.rr.map(() => null) }, j: { ...x.j!, rr: x.j!.rr.map(() => 0) } } : x)) };
+    expect(text(pluie(draw(dry)))).toContain("0\u00a0mm du 17/10 au 23/10");
+  });
+
+  it("reads a point of the curve on a touch, not only on a move, the page still scrolling", () => {
+    const script = chiffresScript();
+    expect(script).toContain('plot.addEventListener("pointermove",near);plot.addEventListener("pointerdown",near);');
+    expect(CSS_CHIFFRES).toMatch(/\.mx-plot\{[^}]*touch-action:pan-y/);
+  });
+
+  it("closes a figure's bubble on a touch anywhere else and on Échap", () => {
+    const script = chiffresScript();
+    // A touch outside the figures closes the one open; a touch on a figure is its own click.
+    expect(script).toContain('document.addEventListener("pointerdown",(ev)=>{if(!(ev.target instanceof Element&&ev.target.closest("#mx .mk")))mx.querySelectorAll(".mk[aria-expanded=true]").forEach((x)=>x.setAttribute("aria-expanded","false"))});');
+    // Échap closes it, and hides the one under the pointer or the focus until the pointer leaves or the focus goes.
+    expect(script).toMatch(/document\.addEventListener\("keydown",\(ev\)=>\{if\(ev\.key==="Escape"\).*setAttribute\("data-x",""\);x\.setAttribute\("aria-expanded","false"\)/);
+    expect(script).toContain('b.addEventListener("pointerleave",()=>b.removeAttribute("data-x"));b.addEventListener("blur",()=>b.removeAttribute("data-x"))');
+    const show = CSS_CHIFFRES.indexOf(".mk:hover .mk-tip,.mk:focus-visible .mk-tip,.mk[aria-expanded=true] .mk-tip{display:block}");
+    expect(show).toBeGreaterThan(0);
+    expect(CSS_CHIFFRES.indexOf(".mk[data-x] .mk-tip{display:none}")).toBeGreaterThan(show);
   });
 
   it("serves its script at its address, kept a year, valid JavaScript", async () => {

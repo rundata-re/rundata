@@ -100,6 +100,8 @@ export interface Marker {
    * full, then its time and source. Said the same way to a screen reader, as the link's name.
    */
   tip?: { place: string; value: string; detail: string };
+  /** The subject it belongs to on a map that lights a subject up (the home page's, accueil-carte.ts): `data-h`. */
+  subject?: string;
 }
 
 /**
@@ -346,7 +348,7 @@ function marker(m: Marker, hit = HIT, at?: [number, number], listed = false, oth
   // What the bubble on hover says, and the list of close points on a tap (carte-points.ts); a marker with a bubble has its own.
   const lines = m.tip ? [] : [m.place ?? m.name, m.say ?? m.label];
   // The hit area under the marker, painted but invisible, so that a tap a little beside it still counts.
-  return `<a class="mk" href="${esc(m.href)}" aria-label="${esc(said)}"${tip}${pointData(lines)}${listed ? ' tabindex="-1"' : ""}>` +
+  return `<a class="mk" href="${esc(m.href)}" aria-label="${esc(said)}"${m.subject ? ` data-h="${esc(m.subject)}"` : ""}${tip}${pointData(lines)}${listed ? ' tabindex="-1"' : ""}>` +
     `<circle class="hit" cx="${x}" cy="${y}" r="${hit}" style="fill:transparent;stroke:none"/>${inner}</a>`;
 }
 
@@ -775,6 +777,18 @@ document.addEventListener("carte",(e)=>{const s=e.target;if(s.matches&&s.matches
 document.addEventListener("change",()=>maps.forEach(later))})();`;
 
 /**
+ * The relief map's definitions alone (the island, the clip of its relief, the coast's glow), in an svg of no size: for
+ * a page that draws the island twice, each layout for its width, with `defs: false` (accueil-carte.ts). Never hidden
+ * with `display:none`, where a clip or a filter would no longer apply to the maps that use it. `more`: the page's own
+ * definitions besides (a filter of its own).
+ */
+export function reliefDefs(more = ""): string {
+  const paths = island.paths.map((p) => `<path d="${p.d}"/>`).join("");
+  return `<svg class="map defs" width="0" height="0" aria-hidden="true" focusable="false"><defs><g id="isl">${paths}</g>` +
+    `<clipPath id="isl-clip">${paths}</clipPath><filter id="glow" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="14"/></filter>${more}</defs></svg>`;
+}
+
+/**
  * `highlight`: the commune whose page this is. `pin`: the place asked about, drawn as a dot with its name.
  * `peaks`: the two summits, for orientation on the island-wide map. `fills`: a colour per commune (the vigilance map).
  * Without `fills`, the land is the island's relief (the same image as the hero's), under the sea and coast of the
@@ -829,6 +843,14 @@ export function islandMap(opts: {
    * cost three stops of Tab (the point, its bubble's link, the point again: 195 to cross /evenements' map, 06/11/2026).
    */
   listed?: boolean;
+  /** The relief's map only: the part of the plane shown, `[x0, y0, x1, y1]` in map units, wider than the island. */
+  frame?: [number, number, number, number];
+  /** The relief's map only: a class more on the svg. */
+  cls?: string;
+  /** The relief's map only: the summits without their names. */
+  peakNames?: boolean;
+  /** The relief's map only: without its definitions, those of reliefDefs() drawn once in the page (a second layout). */
+  defs?: boolean;
   label: string;
 }): string {
   const paths = island.paths.map((p) => `<path d="${p.d}"/>`).join("");
@@ -882,13 +904,15 @@ export function islandMap(opts: {
     const peaks = PEAKS.map((p) => {
       const [x, y] = project(p.lon, p.lat);
       // The name above the summit: the stations around it carry their temperature just below.
-      return `<g class="pk"><path d="M${x - 16} ${y + 12}L${x} ${y - 16}L${x + 16} ${y + 12}Z"/><text x="${x}" y="${y - 28}">${esc(p.name)}</text></g>`;
+      const name = opts.peakNames === false ? "" : `<text x="${x}" y="${y - 28}">${esc(p.name)}</text>`;
+      return `<g class="pk"><path d="M${x - 16} ${y + 12}L${x} ${y - 16}L${x + 16} ${y + 12}Z"/>${name}</g>`;
     }).join("");
-    return `<svg class="map relief" viewBox="0 0 ${W} ${H}" ${role} aria-label="${esc(opts.label)}">` +
-      `<defs><g id="isl">${paths}</g>${defs}</defs>` +
+    const [x0, y0, x1, y1] = opts.frame ?? [0, 0, W, H];
+    return `<svg class="map relief${opts.cls ? ` ${esc(opts.cls)}` : ""}" viewBox="${x0} ${y0} ${x1 - x0} ${y1 - y0}" ${role} aria-label="${esc(opts.label)}">` +
+      (opts.defs === false ? "" : `<defs><g id="isl">${paths}</g>${defs}</defs>`) +
       `<use href="#isl" class="halo" filter="url(#glow)"/><use href="#isl" class="coast"/><use href="#isl" class="ground"/>` +
       reliefImage("isl-clip", RELIEF_LEGER) +
-      zones + peaks + markers + `</svg>`;
+      zones + peaks + markers + (opts.top ?? "") + `</svg>`;
   }
   const terrain = !fills;
   const land = terrain

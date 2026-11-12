@@ -599,6 +599,8 @@ export interface SentiersAnswer {
   sources: Credit[];
   /** The middle of each closed trail, for the map (not in the tool's answer). */
   points: { nom: string; lon: number; lat: number }[];
+  /** The middle of each forest road closed to traffic, from the same map: the home page's map. Missing on an older copy. */
+  routes_points?: { nom: string; lon: number; lat: number }[];
   /** How many trails the ONF manages, open or closed (providers/sentiers.ts, `geres`). */
   suivis: number;
   /** How many trails of its map it does not manage or gives no state for; missing on an older copy. */
@@ -622,12 +624,18 @@ export async function buildSentiers(cache: Cache, now = new Date()): Promise<Sen
       const [lon, lat] = t.points[Math.floor(t.points.length / 2)];
       return { nom: t.nom, lon, lat };
     });
+  const routes_points = carte.routes
+    .filter((r) => /interdit/i.test(r.circulation) && r.points.length)
+    .map((r) => {
+      const [lon, lat] = r.points[Math.floor(r.points.length / 2)];
+      return { nom: r.nom, lon, lat };
+    });
   const randonnees = [...traces.RANDONNEES]
     .sort((x, y) => x.nom.localeCompare(y.nom, "fr"))
     .map((r) => ({ nom: r.nom, slug: r.slug, km: r.km, dplus: r.dplus, boucle: r.boucle }));
   // Each closed trail with the hikes it cuts.
   const fermes_par_commune = a.fermes_par_commune.map((c) => ({ ...c, sentiers_fermes: c.sentiers_fermes.map((t) => ({ ...t, randonnees: hikesThrough(t.sentier) })) }));
-  return { ...a, carte_lue: read.fetchedAt.toISOString(), fermes_par_commune, points, suivis: onf.geres(carte.sentiers).size, sans_etat: onf.sansEtat(carte.sentiers), randonnees, ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites, lu: fires.fetchedAt.toISOString() } } : {}) };
+  return { ...a, carte_lue: read.fetchedAt.toISOString(), fermes_par_commune, points, routes_points, suivis: onf.geres(carte.sentiers).size, sans_etat: onf.sansEtat(carte.sentiers), randonnees, ...(fires ? { feux: { detections: fires.detections, satellites: fires.satellites, lu: fires.fetchedAt.toISOString() } } : {}) };
 }
 
 /** The hikes that follow an ONF trail, by its name. */

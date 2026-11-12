@@ -169,14 +169,14 @@ describe("home page", () => {
     // The hero's island carries the temperatures measured now.
     // Each temperature leads to its station's row on the weather page; its bubble, said the same way to a screen
     // reader, gives the station, its altitude, the value to the tenth, and when and by whom it was measured.
-    expect(cold.text).toMatch(/<figure class="hero-map"><svg class="map relief" viewBox="[^"]+" role="group"[^]*?<a class="mk" href="\/meteo#st-[a-z0-9-]+" aria-label="[^"]+ · [\d\u202f]+\u202fm : \d+(,\d)?\u202f°C, mesurée le \d\d\/\d\d à[\s\u00a0]\d\d:\d\d par [^"]+, voir le détail" data-tp="[^"]+ · [\d\u202f]+\u202fm" data-tv="\d+(,\d)?\u202f°C" data-td="mesurée le \d\d\/\d\d à[\s\u00a0]\d\d:\d\d par [^"]+"><circle class="hit"[^>]+\/><title>[^<]+<\/title><circle class="sh"/);
+    expect(cold.text).toMatch(/<figure class="hero-map ile"><svg class="map defs"[^]*?<svg class="map relief hm hm-tel" viewBox="[^"]+" role="group"[^]*?<a class="mk" href="\/meteo#st-[a-z0-9-]+" aria-label="[^"]+ · [\d\u202f]+\u202fm : \d+(,\d)?\u202f°C, mesurée (le \d\d\/\d\d )?à[\s\u00a0]\d\d:\d\d par [^"]+, voir le détail" data-h="meteo" data-tp="[^"]+ · [\d\u202f]+\u202fm" data-tv="\d+(,\d)?\u202f°C" data-td="mesurée (le \d\d\/\d\d )?à[\s\u00a0]\d\d:\d\d par [^"]+"><circle class="hit"[^>]+\/><title>[^<]+<\/title><circle class="sh"/);
     expect(cold.text).toContain('<a class="mtip" data-mtip hidden aria-hidden="true" tabindex="-1" href="/meteo">');
     expect(cold.text).toMatch(/<span class="ident">meteo_<wbr>actuelle\(lieu:<\/span> "[^"]+"\)<\/p>\s*<p class="bubble ai">\d+(,\d)?\u202f°C, mesurés le \d\d\/\d\d à\u00a0\d\d:\d\d/);
     expect(cold.text).toContain("Piton Maïdo");
     expect(cold.text).toMatch(/mesuré le \d\d\/\d\d à\u00a0\d\d:\d\d/);
-    // No badge above the title since the top was made lighter (04/11/2026): the map's caption says when they measured.
+    // No badge above the title since the top was made lighter (04/11/2026): the map's caption says when its subjects were read.
     expect(cold.text).not.toContain("En direct · <b>");
-    expect(cold.text).toMatch(/<figcaption><span class="dot"><\/span>Températures mesurées le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d · /);
+    expect(cold.text).toMatch(/<figcaption><span class="cap"><span class="dot"><\/span>Lu (à\u00a0\d\d:\d\d|le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d|entre \d\d:\d\d et \d\d:\d\d|entre le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d et le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d)\u00a0· /);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     // Another isolate of the same data center: the weather from the edge, and the oldest of the other tiles brought up
     // to date afterwards, still within the limit.
@@ -606,7 +606,8 @@ describe("what crawlers and previews fetch", () => {
     expect(old!.headers.get("cache-control")).toBe("public, max-age=300");
     expect(await old!.text()).toBe(CSS);
     // Its addresses, the font's and the contour lines' (web/fonds.ts), are absolute: read the same from the file as from the page.
-    expect([...CSS.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1])).toEqual([FONT_PATH, MOTIF_PATH, MOTIF_PATH]);
+    // A fragment alone (the home map's glow, url(#hm-glow)) names an element of the page, not a file.
+    expect([...CSS.matchAll(/url\(([^)]*)\)/g)].map((m) => m[1]).filter((u) => !u.startsWith("#"))).toEqual([FONT_PATH, MOTIF_PATH, MOTIF_PATH]);
   });
 
   it("gives command-line clients one line and crawlers the page, both named rundata.re, the footer's version led to the news", async () => {
@@ -954,7 +955,8 @@ describe("the maps lead to what they show", () => {
 
     const home = (await serve(cache, "/")).text;
     const there = anchors(home, "/meteo#");
-    expect(there.length).toBeGreaterThan(5);
+    // The island's three temperature stations, once in each of its two layouts (phone and wide screen).
+    expect(there).toHaveLength(6);
     expect(there.filter((a) => !rows.has(a.href.slice("/meteo#".length)))).toEqual([]);
   });
 

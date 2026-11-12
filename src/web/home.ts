@@ -22,6 +22,7 @@ import { pecheLive } from "./peche.js";
 import { enLigne } from "./associations-drapeau.js";
 import { CHAMP, champScript } from "./menu.js";
 import { esc, fenetre, islandMap, type Marker } from "./map.js";
+import { accueilCarte } from "./accueil-carte.js";
 import { casse } from "../tools/casse.js";
 import {
   ask,
@@ -229,7 +230,10 @@ function champ(): string {
     `</section><script>${champScript(enLigne())}</script>`;
 }
 
-/** The island with the temperatures measured now, as on the weather page. */
+/**
+ * The island with the temperatures measured now, as on the weather page: the home page's map when none of its subjects
+ * has a value (accueil-carte.ts).
+ */
 function heroMap(h: HomeLive | null): string {
   const l = homeStations(h);
   // The times of the temperatures shown, not the latest of every station read (a beacon at 14:05 for temperatures of
@@ -413,7 +417,7 @@ export function homePage(origin: string, h: HomeLive | null, now = new Date(), a
     <h1>La Réunion <span class="n974">974</span> en direct</h1>
     <p class="hero-cta"><a class="btn sun" href="#en-ce-moment">Voir l'île</a><a class="btn glass" href="/mcp">${icon("spark")}Brancher mon IA</a></p>
   </div>
-  ${heroMap(h)}
+  ${(h && accueilCarte(h, now)) ?? heroMap(h)}
 </div></div>`;
   const body = `${champ()}
 ${tiles(live, u, happening(h, now))}

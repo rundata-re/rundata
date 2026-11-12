@@ -109,6 +109,30 @@ describe("the home page's island", () => {
     expect(port).toMatch(/data-k="air"[^>]* data-tp="Le Port\u00a0: dégradé \(ozone\) · ailleurs moyen"/);
   });
 
+  it("gives Vélos its track at 390 px when the sea's nearest beach, Saint-Pierre's, would bar its way: the sea takes its next", () => {
+    // Altervélo's stations where they are (station_information.json, read 12/11), the sea of the home page's six beaches.
+    const at: [string, ...[number, number][]][] = [
+      ["Saint-Pierre", [55.523416, -21.359026], [55.476235, -21.3437], [55.463545, -21.336658], [55.493469, -21.327042], [55.475255, -21.327384], [55.496996, -21.305695], [55.454998, -21.299014], [55.492238, -21.344748], [55.470232, -21.285993], [55.486542, -21.32557], [55.476875, -21.314816], [55.525556, -21.330927], [55.478779, -21.329059], [55.477406, -21.331613], [55.471081, -21.334082], [55.457105, -21.332738], [55.473258, -21.340894], [55.51177, -21.350426], [55.516462, -21.339433], [55.481414, -21.342959], [55.490734, -21.341835], [55.4684, -21.342451], [55.425795, -21.305038]],
+      ["L'Étang-Salé", [55.373082, -21.276815], [55.335112, -21.262771], [55.336383, -21.272303]],
+      ["Saint-Louis", [55.437744, -21.264711], [55.401759, -21.293055], [55.415033, -21.276133], [55.432253, -21.281166], [55.406598, -21.289943], [55.4357, -21.27228], [55.417489, -21.285726], [55.398277, -21.283282], [55.448572, -21.269679]],
+    ];
+    const beaches = ["Plage de Boucan-Canot", "Plage de l'Ermitage-les-Bains", "Saint-Leu", "Plage de Saint-Pierre", "Saint-Denis", "Saint-Benoît"];
+    const h: HomeLive = {
+      ...live,
+      meteo: cached({ stations, toutes: stations, sources: [], indisponibles: [], mer: beaches.map((nom) => ({ nom, valeur: 26, jour: "2026-11-12", distance_km: 1 })) }),
+      velos: cached({
+        communes: at.map(([commune]) => ({ commune, velos_disponibles: 15 })),
+        stations: at.flatMap(([commune, ...l]) => l.map(([lon, lat]) => ({ commune, lon, lat }))),
+      }),
+    };
+    expect(problemes(h, NOW)).toEqual([]);
+    const tel = layout(accueilCarte(h, NOW)!, "tel");
+    // Vélos' label has its port, where its track ends; the sea's track goes to Saint-Leu.
+    const velos = tel.slice(tel.indexOf('<a class="mk lb cx" href="/velos"'));
+    expect(velos.slice(0, velos.indexOf("</a>"))).toContain('class="po"');
+    expect(tel).toMatch(/data-k="mer"[^>]* data-tp="Saint-Leu"/);
+  });
+
   it("gives each layout one keyboard stop per label, in reading order, and leaves rings and tracks out of the links", () => {
     for (const name of ["tel", "large"]) {
       const svg = layout(html, name);

@@ -31,24 +31,43 @@ async function kvKey(cle: string, version: string | undefined): Promise<string> 
 
 /**
  * Before the home page is written: its map's drawings in this isolate, read from KV when it has none, else drawn here
- * and written to KV after the response. Nothing to do when the isolate has them (0 subrequest), one read when KV has
- * them, one read and one write when it has not. Never fails the page: the page draws what is missing.
+ * and written to KV after the response (`background`: the Worker's ctx.waitUntil, through budget.ts `later`). Nothing to
+ * do when the isolate has them (0 subrequest), one read when KV has them, one read and one write when it has not. A KV
+ * that fails, to read or to write, leaves the page to its own drawing: never an error on the page.
  */
 export async function dessinsAccueil(cache: Cache, h: HomeLive, now: Date, background: Background): Promise<"ici" | "lus" | "dessines" | "aucun"> {
+  let c: ReturnType<typeof cleCarte>;
+  let key: string;
   try {
-    const c = cleCarte(h, now);
+    c = cleCarte(h, now);
     if (!c) return "aucun";
     if (c.ici) return "ici";
-    const key = await kvKey(c.cle, cache.version);
-    if (left() > 0) {
-      const kept = await cache.kept<unknown>(key);
-      if (kept && reprendreCarte(kept.value, c.cle)) return "lus";
-    }
-    const d = dessinsCarte(h, now);
-    if (d && left() > 0) background(cache.keep(key, d, DESSINS_KEEP_SECONDS).catch((err) => console.error("carte de l'accueil : dessins non écrits", why(err))));
-    return "dessines";
+    key = await kvKey(c.cle, cache.version);
   } catch (err) {
-    console.error("carte de l'accueil : dessins non lus", why(err));
+    console.error("carte de l'accueil : clé des dessins impossible", why(err));
     return "aucun";
   }
+  if (left() > 0) {
+    try {
+      const kept = await cache.kept<unknown>(key);
+      if (kept && reprendreCarte(kept.value, c.cle)) return "lus";
+    } catch (err) {
+      console.error("carte de l'accueil : dessins non lus en KV, dessinés ici", why(err));
+    }
+  }
+  let d: ReturnType<typeof dessinsCarte>;
+  try {
+    d = dessinsCarte(h, now);
+  } catch (err) {
+    console.error("carte de l'accueil : dessin impossible", why(err));
+    return "aucun";
+  }
+  // One line a write, for their count a day in the logs; a write KV refuses says so besides (kv.ts).
+  if (d && left() > 0) {
+    background(cache.keep(key, d, DESSINS_KEEP_SECONDS).then(
+      () => console.log(`carte de l'accueil : dessins envoyés au KV (${key})`),
+      (err) => console.error("carte de l'accueil : dessins non écrits en KV", why(err)),
+    ));
+  }
+  return "dessines";
 }

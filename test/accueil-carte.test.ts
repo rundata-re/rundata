@@ -207,6 +207,27 @@ describe("the home page's island", () => {
     expect(fresh.M.dessinsGardes()).toBe(0);
   });
 
+  it("draws its map itself when KV fails, to read or to write, and never fails the page", async () => {
+    vi.resetModules();
+    const { Cache, MemoryStore } = await import("../src/cache.js");
+    const A = await import("../src/web/accueil-dessins.js");
+    const M = await import("../src/web/accueil-carte.js");
+    const down = { get: async () => { throw new Error("KV en panne"); }, put: async () => { throw new Error("KV en panne"); } };
+    const after: Promise<unknown>[] = [];
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const logs = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      expect(await A.dessinsAccueil(new Cache(new MemoryStore(), Date.now, true, down, "1.0.540"), live, NOW, (p) => void after.push(p))).toBe("dessines");
+      await Promise.all(after);
+      expect(errors.mock.calls.map((c) => c[0])).toEqual(["carte de l'accueil : dessins non lus en KV, dessinés ici", "carte de l'accueil : dessins non écrits en KV"]);
+      expect(M.dessinsGardes()).toBe(2);
+      expect(M.accueilCarte(live, NOW)).toBe(accueilCarte(live, NOW));
+    } finally {
+      errors.mockRestore();
+      logs.mockRestore();
+    }
+  });
+
   it("gives Vélos its track at 390 px when the sea's nearest beach, Saint-Pierre's, would bar its way: the sea takes its next", () => {
     // Altervélo's stations where they are (station_information.json, read 12/11), the sea of the home page's six beaches.
     const at: [string, ...[number, number][]][] = [

@@ -291,7 +291,6 @@ function agendaOf(source: string | undefined): string {
   const of = lower.startsWith("le ") ? `du ${name.slice(3)}` : lower.startsWith("les ") ? `des ${name.slice(4)}` : /^[aeiouyéèêàâîôûh]/i.test(name) ? `d'${name}` : `de ${name}`;
   return `d'après l'agenda ${of}`;
 }
-/** « Le Port : dégradé (ozone) · ailleurs bon à moyen », or « Le Port et 2 autres communes : … » (marketing). */
 /** From « dégradé » Air's label has a track (ux); up to 3 communes, the bubble names them, past that it counts them (marketing). */
 const AIR_TRACE = 3;
 const AIR_PAR_NOM = 3;
@@ -771,14 +770,21 @@ const said = (s: Sujet, tip = s.tip) => `${s.k}${s.src ? ` · ${s.src}` : ""}\u0
  * copies, or with a value of the same width (« 49 disponibles »), costs no drawing (~200 ms each layout). The words and
  * the bubbles are this page's, never the kept ones'.
  */
-const DRAWN = new Map<string, { d: Drawn; one: Partial<Record<Id, number>> }>();
+type Kept = { d: Drawn; one: Partial<Record<Id, number>> };
+const DRAWN = new Map<string, Kept>();
 const KEPT = 8;
 /** How many drawings this isolate keeps (for the tests). */
 export const dessinsGardes = () => DRAWN.size;
 
-export function drawn(L: Layout, list: Sujet[], temps: P[]): Drawn {
+/** The labels as fit() cuts them, and the key of the layout's drawing: everything its places and tracks depend on. */
+function keyed(L: Layout, list: Sujet[], temps: P[]) {
   const sized = list.map((s) => ({ s, f: fit(L, s, CAPS[`${L.name}:${s.id}`] ?? CAP) }));
   const key = JSON.stringify([L.name, temps, sized.map(({ s, f }) => [s.id, f.size, s.pts, s.one?.length ?? 0, !!s.temp, !!s.summit])]);
+  return { sized, key };
+}
+
+/** The layout's drawing, kept by its key: drawn when this isolate has none. */
+function keptFor(L: Layout, list: Sujet[], temps: P[], key: string): Kept {
   let kept = DRAWN.get(key);
   if (kept) {
     DRAWN.delete(key);
@@ -787,12 +793,69 @@ export function drawn(L: Layout, list: Sujet[], temps: P[]): Drawn {
     // A subject that keeps one place of several: which, by its rank, for this page's bubble.
     const one = Object.fromEntries(list.filter((s) => s.one && d.places[s.id]?.length).map((s) => [s.id, s.pts.indexOf(d.places[s.id]![0])]));
     kept = { d, one };
-    if (DRAWN.size >= KEPT) DRAWN.delete(DRAWN.keys().next().value!);
   }
+  keep(key, kept);
+  return kept;
+}
+
+function keep(key: string, kept: Kept): void {
+  DRAWN.delete(key);
+  if (DRAWN.size >= KEPT) DRAWN.delete(DRAWN.keys().next().value!);
   DRAWN.set(key, kept);
+}
+
+export function drawn(L: Layout, list: Sujet[], temps: P[]): Drawn {
+  const { sized, key } = keyed(L, list, temps);
+  const kept = keptFor(L, list, temps, key);
   const texts = Object.fromEntries(sized.map(({ s, f }) => [s.id, { t1: f.t1, t2: f.t2, t3: f.t3 }]));
   const tips = Object.fromEntries(list.filter((s) => s.one && kept.one[s.id] != null).map((s) => [s.id, s.one![kept.one[s.id]!]]));
   return { ...kept.d, texts, tips };
+}
+
+/** The keys of the page's drawings, one per layout; none when the page has no map. */
+function pageKeys(h: HomeLive, now: Date): { L: Layout; list: Sujet[]; temps: P[]; key: string }[] {
+  const list = sujets(h, now);
+  if (!list.length) return [];
+  const temps = tempMarkers(h, now).map((t) => project(t.lon, t.lat) as P);
+  return LAYOUTS.map((L) => ({ L, list, temps, key: keyed(L, list, temps).key }));
+}
+
+/**
+ * The drawings of a page, both layouts, as kept outside the isolate (web/accueil-dessins.ts): the keys they were drawn
+ * for, joined (`cle`), and each layout's drawing.
+ */
+export interface DessinsCarte {
+  cle: string;
+  dessins: { key: string; d: Drawn; one: Partial<Record<Id, number>> }[];
+}
+
+/**
+ * What the page's map depends on, for its drawings kept outside the isolate: their joined key, and whether this isolate
+ * has them already. Null when the page has no map.
+ */
+export function cleCarte(h: HomeLive, now: Date): { cle: string; ici: boolean } | null {
+  const pk = pageKeys(h, now);
+  return pk.length ? { cle: pk.map((x) => x.key).join("\n"), ici: pk.every((x) => DRAWN.has(x.key)) } : null;
+}
+
+/** The page's drawings, drawn now where this isolate has none, to keep outside it. Null when the page has no map. */
+export function dessinsCarte(h: HomeLive, now: Date): DessinsCarte | null {
+  const pk = pageKeys(h, now);
+  if (!pk.length) return null;
+  return { cle: pk.map((x) => x.key).join("\n"), dessins: pk.map(({ L, list, temps, key }) => ({ key, ...keptFor(L, list, temps, key) })) };
+}
+
+/**
+ * Gives this isolate drawings kept outside it, when they are those of the key `cle` (a page's, `cleCarte`): the page then
+ * draws nothing. False, and nothing kept, for anything else.
+ */
+export function reprendreCarte(v: unknown, cle: string): boolean {
+  const x = v as Partial<DessinsCarte> | null;
+  if (!x || x.cle !== cle || !Array.isArray(x.dessins) || x.dessins.length !== LAYOUTS.length) return false;
+  const keys = cle.split("\n");
+  if (!x.dessins.every((k, i) => k && k.key === keys[i] && k.d && typeof k.d === "object" && Array.isArray(k.d.segs) && k.one && typeof k.one === "object")) return false;
+  for (const { key, d, one } of x.dessins) keep(key, { d, one });
+  return true;
 }
 
 /** One layout: the island, its temperatures, the tracks and their hubs under the labels. */

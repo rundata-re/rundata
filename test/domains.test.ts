@@ -237,9 +237,11 @@ describe("routes", () => {
     const text = await r.text();
     expect(text).toContain(`<p class="tv">${enGrand("Pas d'éruption annoncée")}</p>`);
     expect(text).toContain(`<p class="tv">25\u00a0°C</p>`); // the sea, from the weather's copy
-    // The tiles never built come first: one of them is being built, the volcano's copy is left as it is.
-    expect(pending.length).toBe(1);
+    // The tiles never built come first: one of them is being built, the volcano's copy is left as it is. Besides, the
+    // map's drawings, which no isolate had, are written for the others (web/accueil-dessins.ts).
+    expect(pending.length).toBe(2);
     await Promise.all(pending);
+    expect([...(store as unknown as { entries: Map<string, unknown> }).entries.keys()].filter((k) => k.startsWith("accueil:dessins:"))).toHaveLength(1);
     expect((await store.get("web:volcan"))!.fetchedAt).toBe(at(30).fetchedAt);
   });
 });

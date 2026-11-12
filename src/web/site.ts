@@ -63,6 +63,7 @@ import {
   type RandonneesAnswer,
   type VolcanAnswer,
 } from "./data.js";
+import { dessinsAccueil } from "./accueil-dessins.js";
 import { COMMUNES, communePage, communesPage } from "./commune.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
@@ -609,8 +610,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
       vigilanceNow(cache, background, waits.vigilance, now),
     ]);
     const [actualites, volcan, air, electricite, calendrier, bus, trafic, velos, bornes, eau, sentiers, secheresse, coupures, sport, cyclones, historique, agenda, crues, emploi, marches] = await tileCopies(cache, HOME_TILES, background, meteo, now);
+    const h = { meteo, vigilance, volcan, air, electricite, calendrier, bus, trafic, velos, bornes, eau, sentiers, secheresse, coupures, sport, cyclones, historique, agenda, actualites, crues, emploi, marches };
+    // The map's drawings, kept for every isolate in KV (web/accueil-dessins.ts): the page draws only what they miss.
+    await dessinsAccueil(cache, h, now, background);
     return page(path, (live) => (live
-      ? homePage(origin, { meteo, vigilance, volcan, air, electricite, calendrier, bus, trafic, velos, bornes, eau, sentiers, secheresse, coupures, sport, cyclones, historique, agenda, actualites, crues, emploi, marches }, now, alerteLue(vigilance, now))
+      ? homePage(origin, h, now, alerteLue(vigilance, now))
       : homePage(origin, null, now)), meteo, background, [rebuild(cache, DOMAINS["/meteo"].key, () => buildHome(cache, now))]);
   }
   // The bins' days: the bundled calendars and the day, nothing read but the vigilance's banner.

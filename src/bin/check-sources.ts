@@ -43,11 +43,21 @@ export function parseTime(s: unknown, now: Date): Date | undefined {
 const ageHours = (t: Date, now: Date) => (now.getTime() - t.getTime()) / HOUR;
 const hours = (h: number) => (h < 1 ? `${Math.round(h * 60)} min` : `${String(Math.round(h * 10) / 10).replace(".", ",")} h`);
 
+type Payload = Record<string, any>;
+
 /** One problem with what was read: what, and why. */
 export interface Probleme {
   point: string;
   motif: string;
+  /** An answer past its size: the bytes of each of its top-level fields, the largest first (never their content). */
+  blocs?: [string, number][];
 }
+
+/** The bytes of each top-level field of an answer, as JSON, the largest first: what made it grow, without its content. */
+export const sizesOf = (p: Payload): [string, number][] =>
+  Object.entries(p)
+    .map(([k, v]): [string, number] => [k, new TextEncoder().encode(JSON.stringify(v) ?? "").length])
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 
 /** A dated field no older than `max` hours: the problem if it is missing, unreadable or too old. */
 function fresh(point: string, what: string, value: unknown, max: number, now: Date): Probleme[] {
@@ -57,7 +67,6 @@ function fresh(point: string, what: string, value: unknown, max: number, now: Da
   return age > max ? [{ point, motif: `${what} d'il y a ${hours(age)} (seuil ${hours(max)})` }] : [];
 }
 
-type Payload = Record<string, any>;
 
 export interface ToolCheck {
   /** The point's name in the summary. */
@@ -213,6 +222,13 @@ export const MAX_BYTES: Record<string, number> = {
   "resume_du_jour (Saint-Paul)": 10_500,
 };
 
+/** For each answer past its size, the table of its fields' bytes, for the job's summary; "" without one. */
+export const sizesSummary = (problems: Probleme[]) =>
+  problems
+    .filter((p) => p.blocs?.length)
+    .map((p) => `\n### ${p.point} : taille de chaque bloc\n\n| Bloc | Octets |\n|---|---|\n${p.blocs!.map(([k, n]) => `| ${k} | ${n.toLocaleString("fr-FR")} |`).join("\n")}\n`)
+    .join("");
+
 const ko = (bytes: number) => `${(bytes / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}\u00a0Ko`;
 
 /**
@@ -258,7 +274,8 @@ export function checkAnswer(c: ToolCheck, result: { isError?: boolean; content?:
   else if (p.fraicheur?.avertissement) out.push({ point: c.point, motif: String(p.fraicheur.avertissement) });
   const bytes = new TextEncoder().encode(text).length;
   const max = MAX_BYTES[c.point];
-  if (max != null && bytes > max) out.push({ point: c.point, motif: `réponse de ${ko(bytes)}, au-delà de ${ko(max)}` });
+  // 11/11/2026: resume_du_jour at 11.8 KB, and nothing left to say which part had grown; its sizes are now said.
+  if (max != null && bytes > max) out.push({ point: c.point, motif: `réponse de ${ko(bytes)}, au-delà de ${ko(max)}`, blocs: sizesOf(p) });
   return [...out, ...c.check(p, now)];
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { configurerEquipe, handle, JETON_EQUIPE, sansBalise } from "../src/app.js";
 import { Cache } from "../src/cache.js";
-import { AGENT, checkAnswer, checkPage, MAX_BYTES, PAGES, parseTime, RADAR_HISTORY, TOOLS } from "../src/bin/check-sources.js";
+import { AGENT, checkAnswer, checkPage, MAX_BYTES, PAGES, parseTime, RADAR_HISTORY, sizesOf, sizesSummary, TOOLS } from "../src/bin/check-sources.js";
 import type { Hit } from "../src/metrics.js";
 
 // Saturday 24 October 2026, 07:11 in Réunion.
@@ -127,6 +127,26 @@ describe("the daily check of the sources", () => {
     expect(motifs("carburants", { en_vigueur_depuis: "1er octobre 2026", fraicheur: {} }, new Date("2026-11-03T03:11:00Z"))).toEqual(["prix en vigueur depuis « 1er octobre 2026 », pas novembre 2026"]);
     // The 1st and the 2nd, the new order may not be read yet.
     expect(motifs("carburants", { en_vigueur_depuis: "1er octobre 2026", fraicheur: {} }, new Date("2026-11-02T03:11:00Z"))).toEqual([]);
+  });
+
+  // 11/11/2026: resume_du_jour (Saint-Paul) at 11.8 KB, and nothing left to say which part had grown.
+  it("says the bytes of each part of an answer past its size, the largest first, never their content", () => {
+    const now = new Date("2026-11-11T10:47:00Z");
+    const c = TOOLS.find((x) => x.point === "resume_du_jour (Saint-Paul)")!;
+    const answer = { evenements_du_jour: { liste: ["é".repeat(6_000)] }, sources: ["x".repeat(4_000)], lien: "https://rundata.re/aujourdhui/saint-paul", fraicheur: {} };
+    const [p] = checkAnswer(c, { content: [{ type: "text", text: JSON.stringify(answer) }] }, now);
+    expect(p.motif).toBe("réponse de 16,1\u00a0Ko, au-delà de 10,5\u00a0Ko");
+    expect(p.blocs).toEqual([["evenements_du_jour", 12_014], ["sources", 4_004], ["lien", 42], ["fraicheur", 2]]);
+    expect(sizesOf({ a: "é", b: [1, 2] })).toEqual([["b", 5], ["a", 4]]);
+    const summary = sizesSummary([p, { point: "maree (Saint-Pierre)", motif: "marée absente" }]);
+    expect(summary).toBe(
+      "\n### resume_du_jour (Saint-Paul) : taille de chaque bloc\n\n| Bloc | Octets |\n|---|---|\n" +
+        "| evenements_du_jour | 12\u202f014 |\n| sources | 4\u202f004 |\n| lien | 42 |\n| fraicheur | 2 |\n",
+    );
+    expect(summary).not.toContain("é");
+    expect(sizesSummary([{ point: "maree (Saint-Pierre)", motif: "marée absente" }])).toBe("");
+    // Under its size: no parts said.
+    expect(checkAnswer(c, { content: [{ type: "text", text: JSON.stringify({ lien: "x", fraicheur: {} }) }] }, now)).toEqual([]);
   });
 
   it("checks the size of each answer, the vigilance and the cyclones apart", () => {

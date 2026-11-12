@@ -795,3 +795,52 @@ describe("the summary after the audit of 04/11/2026", () => {
     expect(none.leftOut).toContainEqual({ partie: "volcan", raison: "pas de copie récente", outil: "volcan_seismes", page: "https://rundata.re/volcan" });
   });
 });
+
+// 11/11/2026, the Armistice: the check of the sources read Saint-Paul's summary at 11.8 KB, past its 10.5 KB
+// (src/bin/check-sources.ts), on a day of events; on 12/11 at 07:50, without any event, it was 9,015 bytes.
+describe("the summary of a holiday full of events", () => {
+  const CHECK_MAX = 10_500;
+  const WITHOUT_EVENTS_LIVE = 9_015;
+  // Ten events of the day at Saint-Paul, ~250 bytes each as on the site (« La Koupe Kartié », 246 bytes on 12/11).
+  const ten = Array.from({ length: 10 }, (_, i) => ({
+    titre: `Commémoration et après-midi festif au front de mer, quartier n°${i + 1}`,
+    commune: "Saint-Paul",
+    date: "2026-10-24T08:00",
+    quand: "samedi 24/10 de 08:00 à 17:00",
+    lieu: "Front de mer de Saint-Paul",
+    prix: "gratuit",
+    lien: `https://www.mairie-saintpaul.re/agenda/commemoration-apres-midi-festif-quartier-${i + 1}`,
+  }));
+  const holiday = { ...COPIES.calendrier.value, jours_feries: { aujourd_hui: "Armistice", prochains: [], note: "" } };
+  async function answer(evenements: unknown[], calendrier: unknown) {
+    const edge = await edgeWith(["agenda", "calendrier"]);
+    await edge.put(KEYS.agenda, { value: { ...COPIES.agenda.value, evenements }, fetchedAt: ago(2).getTime() });
+    await edge.put(KEYS.calendrier, { value: calendrier, fetchedAt: ago(2).getTime() });
+    const r = await resumeDuJour(isolate(edge), "Saint-Paul", NOW, () => undefined);
+    return { text: r.content[0].text, body: body(r) };
+  }
+
+  it("shows 5 events, the others counted and left to evenements, its sources those of the events shown", async () => {
+    const { body: b } = await answer(ten, holiday);
+    const ev = b.evenements_du_jour;
+    expect(ev.liste).toHaveLength(5);
+    expect(ev.liste.map((e: { titre: string }) => e.titre)).toEqual(ten.slice(0, 5).map((e) => e.titre));
+    expect(ev).toMatchObject({ autres: 5, outil: "evenements", page: "https://rundata.re/evenements" });
+    expect(b.mairie.jour_ferie).toBe("Aujourd'hui est férié (Armistice) : la mairie est sans doute fermée, à vérifier auprès d'elle.");
+    expect(b.calendrier).toBeDefined();
+    // Five or fewer: nothing to send elsewhere.
+    const few = (await answer(ten.slice(0, 5), holiday)).body.evenements_du_jour;
+    expect(few.liste).toHaveLength(5);
+    expect(few).not.toHaveProperty("autres");
+    expect(few).not.toHaveProperty("outil");
+  });
+
+  it("stays under the check's size: the holiday and its events add less than the margin of a day without any", async () => {
+    const bytes = (s: string) => new TextEncoder().encode(s).length;
+    const plain = bytes((await answer([], COPIES.calendrier.value)).text);
+    const full = bytes((await answer(ten, holiday)).text);
+    // The margin of 12/11's answer, measured on the site.
+    expect(full - plain).toBeLessThan(CHECK_MAX - WITHOUT_EVENTS_LIVE);
+    expect(full).toBeLessThan(CHECK_MAX);
+  });
+});

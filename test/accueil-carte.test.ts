@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { accueilCarte, dessinsGardes, IDS, problemes, sujets, type HomeLive } from "../src/web/accueil-carte.js";
+import { accueilCarte, IDS, problemes, sujets, type HomeLive } from "../src/web/accueil-carte.js";
 import { CSS } from "../src/web/pages.js";
 
 // 10:30 in La Réunion.
@@ -109,17 +109,51 @@ describe("the home page's island", () => {
     expect(port).toMatch(/data-k="air"[^>]* data-tp="Le Port\u00a0: dégradé \(ozone\) · ailleurs moyen"/);
   });
 
+  it("draws Air's track only from « dégradé » and for 3 communes at most, and counts the communes past 3 in its bubble", () => {
+    const COMMUNES = ["Les Avirons", "Bras-Panon", "Entre-Deux", "L'Étang-Salé", "Petite-Île", "La Plaine-des-Palmistes", "Le Port", "La Possession",
+      "Saint-André", "Saint-Benoît", "Saint-Denis", "Saint-Joseph", "Saint-Leu", "Saint-Louis", "Saint-Paul", "Saint-Pierre", "Saint-Philippe",
+      "Sainte-Marie", "Sainte-Rose", "Sainte-Suzanne", "Salazie", "Le Tampon", "Les Trois-Bassins", "Cilaos"];
+    // The first n communes of the list (Le Tampon first, the island's south) at `worst`, the others at `rest` in turn.
+    const island = (n: number, worst: number, ...rest: number[]): HomeLive => {
+      const order = ["Le Tampon", ...COMMUNES.filter((c) => c !== "Le Tampon")];
+      return { ...live, air: cached({ communes: order.map((commune, i) => ({ commune, niveau: i < n ? worst : rest[i % rest.length], polluants: ["ozone"] })), diffusion: "Prévision diffusée par Atmo Réunion la veille, le 09/11 à 11:24." }) };
+    };
+    const air = (h: HomeLive) => {
+      const tel = layout(accueilCarte(h, NOW)!, "tel");
+      const a = /<a class="mk lb cx" href="\/air"[^>]* aria-label="([^"]*)"[^>]* data-tp="([^"]*)" data-tv="([^"]*)"[^>]*>.*?class="t2"[^>]*>([^<]*)</.exec(tel)!;
+      return { aria: a[1], place: a[2], value: a[3], label: a[4], track: tel.includes('<g class="hub cx" data-k="air">') };
+    };
+    // « dégradé » in 1 commune, then in 3: named, with a track.
+    expect(air(island(1, 3, 2))).toMatchObject({ label: "moyen à dégradé", place: "Le Tampon\u00a0: dégradé (ozone) · ailleurs moyen", value: "", track: true });
+    expect(air(island(3, 3, 2))).toMatchObject({ place: "Le Tampon et 2 autres communes\u00a0: dégradé (ozone) · ailleurs moyen", track: true });
+    // In 4 communes, and in 20: counted, with no track.
+    expect(air(island(4, 3, 2))).toMatchObject({ place: "dégradé (ozone) dans 4\u00a0communes sur\u00a024 · ailleurs moyen", track: false });
+    const today = air(island(20, 2, 1));
+    expect(today).toMatchObject({ label: "bon à moyen", place: "moyen (ozone) dans 20\u00a0communes sur\u00a024 · ailleurs bon", value: "", track: false });
+    expect(today.aria).toBe("Air · prévu (Atmo)\u00a0: bon à moyen. moyen (ozone) dans 20\u00a0communes sur\u00a024 · ailleurs bon, indice ATMO prévu par Atmo Réunion, diffusé le 09/11 à\u00a011:24, voir le détail");
+    // « moyen » or « bon » the worst in 1 commune: named, with no track.
+    expect(air(island(1, 2, 1))).toMatchObject({ place: "Le Tampon\u00a0: moyen (ozone) · ailleurs bon", track: false });
+    // « Ailleurs » of several levels: from the best to the next worst, never the worst.
+    expect(air(island(2, 4, 1, 2, 3))).toMatchObject({ label: "bon à mauvais", place: "Le Tampon et 1 autre commune\u00a0: mauvais (ozone) · ailleurs bon à dégradé" });
+    expect(air(island(5, 3, 1, 2))).toMatchObject({ place: "dégradé (ozone) dans 5\u00a0communes sur\u00a024 · ailleurs bon à moyen", track: false });
+    // The same level on the whole island: that level alone, no track.
+    expect(air(island(24, 2))).toMatchObject({ label: "moyen", place: "moyen (ozone) sur toute l&#39;île", value: "", track: false });
+  });
+
   it("keeps its drawing for copies that place the same things, and writes the page as a new drawing would", async () => {
     const at = (velos: number, mer: number): HomeLive => ({
       ...live,
       velos: cached({ communes: [{ commune: "Saint-Pierre", velos_disponibles: velos }], stations: [{ commune: "Saint-Pierre", lon: 55.478, lat: -21.341 }, { commune: "Saint-Pierre", lon: 55.472, lat: -21.334 }] }),
       meteo: cached({ stations, toutes: stations, sources: [], indisponibles: [], mer: [{ nom: "Plage de Boucan-Canot", valeur: 26.2, jour: "2026-11-09" }, { nom: "Plage de l'Hermitage", valeur: mer, jour: "2026-11-09" }] }),
     });
-    accueilCarte(at(12, 26.4), NOW);
-    const kept = dessinsGardes();
+    // A module of its own: the other tests' drawings, up to the 8 kept, would hide a new one.
+    vi.resetModules();
+    const M = await import("../src/web/accueil-carte.js");
+    M.accueilCarte(at(12, 26.4), NOW);
+    expect(M.dessinsGardes()).toBe(2);
     // 13 bikes, the Hermitage's sea 25.6 °C (« eau 26 °C » still): the same widths, the same places; no new drawing, the page's own words.
-    const again = accueilCarte(at(13, 25.6), NOW)!;
-    expect(dessinsGardes()).toBe(kept);
+    const again = M.accueilCarte(at(13, 25.6), NOW)!;
+    expect(M.dessinsGardes()).toBe(2);
     expect(again).toContain(">13 disponibles<");
     expect(/data-k="mer"[^>]* data-tv="([^"]*)"/.exec(layout(again, "tel"))![1]).toBe("25,6\u202f°C");
     vi.resetModules();
@@ -127,8 +161,8 @@ describe("the home page's island", () => {
     expect(fresh.dessinsGardes()).toBe(0);
     expect(fresh.accueilCarte(at(13, 25.6), NOW)).toBe(again);
     // 130 bikes: a wider label, a new drawing.
-    accueilCarte(at(130, 26.4), NOW);
-    expect(dessinsGardes()).toBe(kept + 2);
+    M.accueilCarte(at(130, 26.4), NOW);
+    expect(M.dessinsGardes()).toBe(4);
   });
 
   it("gives Vélos its track at 390 px when the sea's nearest beach, Saint-Pierre's, would bar its way: the sea takes its next", () => {

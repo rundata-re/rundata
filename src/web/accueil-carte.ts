@@ -292,14 +292,27 @@ function agendaOf(source: string | undefined): string {
   return `d'après l'agenda ${of}`;
 }
 /** « Le Port : dégradé (ozone) · ailleurs bon à moyen », or « Le Port et 2 autres communes : … » (marketing). */
+/** From « dégradé » Air's label has a track (ux); up to 3 communes, the bubble names them, past that it counts them (marketing). */
+const AIR_TRACE = 3;
+const AIR_PAR_NOM = 3;
+/** « (ozone) », « (ozone et particules PM10) »: the pollutants of communes, the most named first. */
+function why(at: NonNullable<AirAnswer["communes"]>): string {
+  const by = new Map<string, number>();
+  for (const c of at) for (const p of c.polluants ?? []) by.set(p, (by.get(p) ?? 0) + 1);
+  const all = [...by].sort((x, y) => y[1] - x[1]).map(([p]) => p);
+  return all.length ? ` (${all.join(" et ")})` : "";
+}
+/** « Le Tampon : dégradé (ozone) · ailleurs moyen », or past 3 communes « moyen (ozone) dans 20 communes sur 24 · ailleurs bon ». */
 function worstOf(l: NonNullable<AirAnswer["communes"]>, name: (n: number) => string): string {
   const worst = Math.max(...l.map((c) => c.niveau));
   const at = l.filter((c) => c.niveau === worst);
+  // « Ailleurs », the communes where it is not the worst: never that level itself.
   const rest = l.filter((c) => c.niveau !== worst).map((c) => c.niveau);
-  const why = at[0].polluants?.length ? ` (${at[0].polluants.join(" et ")})` : "";
-  const who = at.length > 1 ? `${at[0].commune} et ${at.length - 1} ${plural(at.length - 1, "autre commune", "autres communes")}` : at[0].commune;
   const [lo, hi] = [Math.min(...rest), Math.max(...rest)];
-  return `${who}\u00a0: ${name(worst)}${why} · ailleurs ${lo === hi ? name(lo) : `${name(lo)} à ${name(hi)}`}`;
+  const ailleurs = ` · ailleurs ${lo === hi ? name(lo) : `${name(lo)} à ${name(hi)}`}`;
+  if (at.length > AIR_PAR_NOM) return `${name(worst)}${why(at)} dans ${at.length}\u00a0communes sur\u00a0${l.length}${ailleurs}`;
+  const who = at.length > 1 ? `${at[0].commune} et ${at.length - 1} ${plural(at.length - 1, "autre commune", "autres communes")}` : at[0].commune;
+  return `${who}\u00a0: ${name(worst)}${why(at.slice(0, 1))}${ailleurs}`;
 }
 /** The pollutants an index comes from, as Atmo names them, in the words of the bubble. */
 const POLLUANTS: [RegExp, string][] = [[/^ozone/i, "de l'ozone"], [/^particules/i, "des particules"], [/^dioxyde d'azote/i, "du dioxyde d'azote"], [/^dioxyde de soufre/i, "du dioxyde de soufre"]];
@@ -332,13 +345,15 @@ function air(h: HomeLive, now: Date): Sujet | undefined {
   const best = Math.min(...l.map((c) => c.niveau));
   const name = (n: number) => AIR_NAMES[n] ?? "inconnu";
   const value = best === worst ? name(worst) : `${name(best)} à ${name(worst)}`;
-  // A track to the commune where it is the worst, when it is not the same everywhere.
-  const at = best === worst ? undefined : placeOf(l.find((c) => c.niveau === worst)!.commune);
+  const at = l.filter((c) => c.niveau === worst);
+  // A track only where the air is « dégradé » or worse, in 3 communes at most: one drawn to the first of 20 would say it
+  // is worse there than elsewhere (ux).
+  const place = best !== worst && worst >= AIR_TRACE && at.length <= AIR_PAR_NOM ? placeOf(at[0].commune) : undefined;
   return {
-    id: "air", k: "Air", src: "prévu (Atmo)", value, color: COLOURS.air, href: HREF.air, pts: at ? [at] : [],
+    id: "air", k: "Air", src: "prévu (Atmo)", value, color: COLOURS.air, href: HREF.air, pts: place ? [place] : [],
     tip: {
-      // Where it is the worst first when it differs (no track may get there), then why (marketing).
-      place: best === worst ? cause(l) : worstOf(l, name),
+      // Where it is the worst first, then why (marketing): the communes by name up to 3, else how many.
+      place: best !== worst ? worstOf(l, name) : l.length === 24 ? `${name(worst)}${why(at)} sur toute l'île` : cause(l),
       value: "",
       detail: `indice ATMO prévu par Atmo Réunion${diffused(h.air!.value.diffusion, now)}`,
     },
@@ -751,7 +766,6 @@ const lengthOf = (ps: P[]) => Math.round(ps.slice(1).reduce((a, p, i) => a + Mat
 /** The aria name of a label's link: what it shows, then its bubble's lines. */
 const said = (s: Sujet, tip = s.tip) => `${s.k}${s.src ? ` · ${s.src}` : ""}\u00a0: ${s.value}. ${tip.place}${tip.value ? `\u00a0: ${tip.value}` : ""}, ${tip.detail}, voir le détail`;
 
-/** One layout: the island, its temperatures, the tracks and their hubs under the labels. */
 /**
  * The drawings already made in this isolate, by what their places and tracks depend on: a page drawn again with the same
  * copies, or with a value of the same width (« 49 disponibles »), costs no drawing (~200 ms each layout). The words and
@@ -781,6 +795,7 @@ export function drawn(L: Layout, list: Sujet[], temps: P[]): Drawn {
   return { ...kept.d, texts, tips };
 }
 
+/** One layout: the island, its temperatures, the tracks and their hubs under the labels. */
 function layoutSvg(L: Layout, list: Sujet[], temps: Marker[]): { svg: string; problems: string[] } {
   const d = drawn(L, list, temps.map((t) => project(t.lon, t.lat) as P));
   const by = Object.fromEntries(list.map((s) => [s.id, s])) as Record<Id, Sujet>;

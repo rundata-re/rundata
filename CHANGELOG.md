@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Mardi 10 novembre 2026
+
+- Météo : une case Valeurs sur la carte des stations ; décochée, des points de couleur, des flèches pour le vent, la valeur au toucher.
+
 ## Dimanche 8 novembre 2026
 
 - Mer : la température au dernier passage de NOAA-20, avec son heure et la distance du point de mesure ; à défaut, la moyenne de la veille.

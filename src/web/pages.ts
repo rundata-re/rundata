@@ -950,7 +950,20 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .map[data-zoom][data-zpe]{touch-action:auto;user-select:auto;-webkit-user-select:auto}.pe-on .map[data-zoom][data-zpe]{touch-action:none;user-select:none;-webkit-user-select:none}
 .wxmap:not(.pe-m) .wxbar>.kzoom{display:none}.wxbar>.kzoom{margin:0;gap:.35rem}.wxbar>.kzoom button{border-radius:999px;border-color:rgb(255 255 255/.25);background:none;color:var(--on-night-muted);font-weight:600}.wxbar>.kzoom button[data-z="0"]{margin-left:0}.pe-on .wxbar>.kzoom{margin-left:auto}.wxmap:has(#wx-am:checked) .amlg{display:block}
 .map a.mk.am .sh,.map a.mk.am rect{stroke-dasharray:7 5}
+/* « Valeurs » unticked (meteo-carte.ts, VALEURS_JS): the points instead of the discs, pills and their ties; the amateur
+   ones dotted too, an arrow's shaft dashed. Ticked again, the points hidden. A class of the figure, set by the script,
+   not :has(): the rules over every mark made the page 30 % slower to be ready (10/11/2026). Over the layers' rules
+   (:has(#wxl-p:checked) .l-p, an id), hence !important. */
+.wxmap:not(.sansv) .pt{display:none!important}.wxmap.vatt .sts{visibility:hidden}
+.wxmap.sansv :is(.sh,.mv,.wv,.wt,.hit:not(.pt)){display:none!important}
+.map a.mk.am circle.pt{stroke-dasharray:7 5}.map a.mk.am .wa-c{stroke-dasharray:14 8}
+.wxmap .wa path{fill:none;stroke-linecap:round;stroke-linejoin:round}.wxmap .wa .wa-f{stroke:#fff}
+.map a.mk:hover circle.pt,.map a.mk.on circle.pt{stroke-width:7}
+/* A temperature point has the colours of the veil under it: a dark shadow outside its white edge, in both themes. */
+.wxmap circle.pt.l-t{filter:drop-shadow(0 0 2px rgb(0 0 0/.85))}
 .amchk{order:1;display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:.9rem;font-weight:600;color:var(--on-night-muted);cursor:pointer;margin-bottom:.5rem}.amchk input{width:1.1rem;height:1.1rem;margin:0}.pe-on .wxbar .amchk{margin:0}
+/* The two boxes on a line of their own under the tabs, « Valeurs » first, side by side at 390 px (data-run, 10/11/2026). */
+.wxchk{order:1;flex:1 0 100%;display:flex;flex-wrap:wrap;justify-content:space-between;column-gap:1rem}.pe-on .wxbar .wxchk{flex-basis:auto;gap:1rem}
 details.amdet{margin-top:.8rem}details.amdet .stations{margin-top:.6rem}
 /* The two canvases of a layer stacked by a grid, never positioned: in a foreignObject, Safari paints a positioned element unscaled, off the map. */
 .wxmap .vt{display:grid;grid-template:100%/100%;width:100%;height:100%}.wxmap .vt canvas{grid-area:1/1;width:100%;height:100%}

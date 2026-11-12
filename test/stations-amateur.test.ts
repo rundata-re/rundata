@@ -5,8 +5,8 @@ import * as meteorOi from "../src/providers/meteor-oi.js";
 import { enTete } from "../src/tools/representativeness.js";
 import { amateur, islandTour, meteoActuelle, NATURE_AMATEUR } from "../src/tools/meteo.js";
 import type { StationAnswer, StationNow } from "../src/web/data.js";
-import { stationsMap } from "../src/web/meteo-carte.js";
-import { CSS, meteoPage, placePage } from "../src/web/pages.js";
+import { stationsMap, VALEURS_JS, windArrow, windColor } from "../src/web/meteo-carte.js";
+import { chip, CSS, meteoPage, placePage } from "../src/web/pages.js";
 import { PAGES } from "../src/web/places.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
@@ -171,5 +171,108 @@ describe("/meteo's list script and an amateur station aimed at", () => {
     });
     expect(sta.open).toBe(true);
     expect(row.scrolled).toBe(true);
+  });
+});
+
+describe("/meteo's map with « Valeurs » (the user, 10/11/2026: « afficher/masquer les valeurs, en gardant toujours les points »)", () => {
+  const svg = stationsMap(STATIONS);
+  /** The first link of a station whose words hold `name`, in `of`. */
+  const mark = (name: string, of = svg) => of.split("</a>").find((a) => a.includes("<a class=\"mk") && a.slice(a.lastIndexOf("<a class=\"mk")).includes(name))!.replace(/^[^]*(?=<a class="mk)/, "");
+  const rules = CSS.replace(/\/\*[^]*?\*\//g, "");
+
+  /** A fake page around the map: each station's link and group, the box, the figure, the storage; VALEURS_JS run in it. */
+  async function run(stored: string | null) {
+    const { runInNewContext } = await import("node:vm");
+    type El = { name: string; attrs: Record<string, string>; kids: El[]; append: (...k: El[]) => void; setAttribute: (k: string, v: string) => void };
+    const el = (name: string): El => ({ name, attrs: {}, kids: [], append(...k) { this.kids.push(...k); }, setAttribute(k, v) { this.attrs[k] = String(v); } });
+    const links = [...svg.matchAll(/<a class="mk[^"]*"[^>]*data-pt="([^"]*)"[^>]*><g class="mo" style="([^"]*)">/g)].map((m) => {
+      const g = { ...el("g"), getAttribute: (k: string) => (k === "style" ? m[2] : null) };
+      return { pt: m[1], g, getAttribute: (k: string) => (k === "data-pt" ? m[1] : null), querySelector: () => g };
+    });
+    const classes = new Set<string>();
+    const figure = { querySelectorAll: () => links, classList: { add: (c: string) => classes.add(c), remove: (c: string) => classes.delete(c), toggle: (c: string, on: boolean) => (on ? classes.add(c) : classes.delete(c)) } };
+    let change = () => {};
+    const box = { checked: true, closest: () => figure, addEventListener: (_: string, f: () => void) => (change = f) };
+    const kept: Record<string, string> = {};
+    const ready: (() => void)[] = [], later: (() => void)[] = [];
+    runInNewContext(VALEURS_JS, {
+      document: { readyState: "loading", addEventListener: (_: string, f: () => void) => ready.push(f), getElementById: (id: string) => (id === "wx-val" ? box : null), createElementNS: (_: string, n: string) => el(n) },
+      setTimeout: (f: () => void) => later.push(f),
+      localStorage: { getItem: () => stored, setItem: (k: string, v: string) => (kept[k] = v) },
+      Math,
+    });
+    const untick = () => { box.checked = false; change(); };
+    const tick = () => { box.checked = true; change(); };
+    /** The page ready, then what it put off. */
+    const settle = () => { ready.splice(0).forEach((f) => f()); later.splice(0).forEach((f) => f()); };
+    return { box, classes, links, kept, untick, tick, settle };
+  }
+  const drawn = (l: { g: { kids: { attrs: Record<string, string> }[] } }) => l.g.kids.map((k) => k.attrs.class);
+
+  it("has one box for the three layers, ticked, beside « Stations amateur », hidden without a script", () => {
+    expect(svg).toContain('<div class="wxchk"><label class="amchk" data-js hidden><input type="checkbox" id="wx-val" checked> Valeurs</label><label class="amchk"><input type="checkbox" id="wx-am">');
+    expect(svg.match(/id="wx-val"/g)).toHaveLength(1);
+    expect(svg).toContain(VALEURS_JS);
+  });
+
+  it("draws no point with the page, only what each station's would be", () => {
+    expect(svg).not.toContain('class="pt ');
+    // Gillot: its temperature's colour, no rain, an arrow towards the north-west (wind from the south-east, 120°) of 20 km/h.
+    const [L, w] = windArrow(20);
+    expect(mark("Gillot")).toContain(`data-pt="t:${chip(24.6).slice(1)}|p:0|v:${L}:${w}:300:${windColor(20).slice(1)}"`);
+    // Marla: a calm, a small disc; amateur, dotted.
+    const marla = mark("Marla", svg.slice(svg.indexOf('<g class="sts sts-am">')));
+    expect(marla).toMatch(/^<a class="mk[^"]* am"/);
+    expect(marla).toContain('data-pt="t:');
+    expect(marla).toContain("|v:0:0:0:4668b0\"");
+    expect(rules).toContain(".map a.mk.am circle.pt{stroke-dasharray:7 5}");
+  });
+
+  it("hides the discs, pills and their ties once unticked, and shows each station's points, made once", async () => {
+    expect(rules).toContain(".wxmap:not(.sansv) .pt{display:none!important}.wxmap.vatt .sts{visibility:hidden}");
+    expect(rules).toContain(".wxmap.sansv :is(.sh,.mv,.wv,.wt,.hit:not(.pt)){display:none!important}");
+    expect(rules).not.toMatch(/:has\(#wx-val/);
+    const r = await run(null);
+    expect(r.box.checked).toBe(true);
+    expect(r.classes.has("sansv")).toBe(false);
+    expect(r.links.every((l) => l.g.kids.length === 0)).toBe(true);
+    r.untick();
+    expect(r.classes.has("sansv")).toBe(true);
+    expect(r.kept["wx-valeurs"]).toBe("0");
+    const gillot = r.links.find((l) => l.pt.startsWith(`t:${chip(24.6).slice(1)}`))!;
+    expect(drawn(gillot)).toEqual(["pt l-t", "hit pt l-t", "pt l-p", "hit pt l-p", "pt l-v wa", "hit pt l-v"]);
+    const arrow = gillot.g.kids[4] as unknown as { attrs: Record<string, string>; kids: { attrs: Record<string, string> }[] };
+    expect(arrow.attrs.transform).toMatch(/^translate\([\d.]+ [\d.]+\) rotate\(300\)$/);
+    expect(arrow.kids[1].attrs.style).toBe(`stroke:${windColor(20)};stroke-width:${windArrow(20)[1]}`);
+    expect(gillot.g.kids[2].attrs.style).toBe("fill:#fff;stroke:#7d93a8;stroke-width:4");
+    // On its place, where the station's marks are scaled about.
+    expect(gillot.g.kids[0].attrs.cx).toBe(/transform-origin:([\d.]+)px/.exec(svg.slice(svg.indexOf('data-pt="' + gillot.pt)))![1]);
+    // Ticked again then unticked: the class goes and comes back, the points are not made twice.
+    r.tick();
+    expect(r.classes.has("sansv")).toBe(false);
+    expect(r.kept["wx-valeurs"]).toBe("1");
+    r.untick();
+    expect(gillot.g.kids).toHaveLength(6);
+  });
+
+  it("starts unticked when the reader left it so, its points made once the page is ready", async () => {
+    const r = await run("0");
+    expect(r.box.checked).toBe(false);
+    // While the page loads, the marks unseen, laid out still; the points once it is ready.
+    expect([...r.classes]).toEqual(["vatt"]);
+    expect(r.links.every((l) => l.g.kids.length === 0)).toBe(true);
+    r.settle();
+    expect([...r.classes]).toEqual(["sansv"]);
+    expect(r.links.every((l) => l.g.kids.length > 0)).toBe(true);
+  });
+
+  it("draws a wind's arrow longer and thicker as it blows harder, from the legend's blue to its red", () => {
+    expect(windColor(0)).toBe("#4668b0");
+    expect(windColor(60)).toBe("#b22c48");
+    expect(windColor(90)).toBe("#b22c48");
+    const [l5, w5] = windArrow(5), [l40, w40] = windArrow(40);
+    expect(l40).toBeGreaterThan(l5);
+    expect(w40).toBeGreaterThan(w5);
+    expect(windArrow(1)[0]).toBeGreaterThanOrEqual(34);
   });
 });

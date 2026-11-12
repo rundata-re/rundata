@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-10T12:00:00+04:00", texte: "Météo\u00a0: une case Valeurs sur la carte des stations\u00a0; décochée, des points de couleur, des flèches pour le vent, la valeur au toucher." },
   { date: "2026-11-08T04:06:00+04:00", texte: "Mer\u00a0: la température au dernier passage de NOAA-20, avec son heure et la distance du point de mesure\u00a0; à défaut, la moyenne de la veille." },
   { date: "2026-11-07T18:30:00+04:00", texte: "Bus\u00a0: un trajet d'un lieu à un autre demandé au connecteur renvoie à la page Trajet en bus, qui le cherche sur tous les réseaux de l'île." },
   { date: "2026-11-07T18:29:00+04:00", texte: "Connecteur\u00a0: un collège ou un lycée par son nom, son indice de position sociale, ses résultats au brevet ou au bac et le taux attendu." },

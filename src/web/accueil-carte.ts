@@ -6,8 +6,9 @@
  * A phone and a wide screen each have their layout, the island drawn once (reliefDefs()).
  *
  * Hover, keyboard focus or a first tap on a subject (the bubble's script marks the link `.on`, pages.ts): its tracks
- * light up and thicken, a pulse of its colour runs from the label to the place, its rings turn, the rest fades. Météo's
- * tracks are not drawn at rest: the pulse makes them grow, from the station nearest its label to the others, as it goes.
+ * light up and thicken, a pulse of its colour runs from the label to the place, its rings turn, the rest fades. The
+ * tracks between the places of Météo, the bikes, the trails and the forest roads are not drawn at rest: the pulse makes
+ * them grow, from the place nearest its label to the others, as it goes (the user, 11/11).
  *
  * Everything comes from the copies the home page reads already (HomeLive): nothing more is read. A subject without a
  * value is not shown; a track to a place the data does not locate is not drawn.
@@ -130,7 +131,7 @@ export interface Sujet {
   entier?: boolean;
   /** Météo: its places are the temperatures' discs, drawn by the map. */
   temp?: boolean;
-  /** Its tracks between its places are not drawn at rest: the pulse makes them grow (Météo). */
+  /** Its tracks between its places are not drawn at rest: the pulse makes them grow (Météo, vélos, sentiers, routes). */
   pousse?: boolean;
   /** One place to keep of `pts`, each with its bubble: the first a clean track reaches (the sea's beaches). */
   one?: Sujet["tip"][];
@@ -357,7 +358,7 @@ function velos(h: HomeLive, now: Date): Sujet | undefined {
   });
   const lu = iso(h.velos!.fetchedAt);
   return {
-    id: "velos", k: "Vélos", src: "Altervélo", value: `${total} ${plural(total, "disponible", "disponibles")}`, color: COLOURS.velos, href: HREF.velos, pts,
+    id: "velos", k: "Vélos", src: "Altervélo", value: `${total} ${plural(total, "disponible", "disponibles")}`, color: COLOURS.velos, href: HREF.velos, pts, pousse: true,
     tip: { place: `${d.communes.map((c) => `${c.commune} ${c.velos_disponibles}`).join(" · ")}, dans ${d.stations.length} ${plural(d.stations.length, "station", "stations")}`, value: "", detail: `d'après Altervélo, lu ${when(lu, now)}` },
     lu,
   };
@@ -375,7 +376,7 @@ function sentiers(h: HomeLive, now: Date): Sujet | undefined {
   const pts = d.points.filter((p) => names.has(p.nom) && !seen.has(p.nom) && seen.add(p.nom)).map((p) => project(p.lon, p.lat) as P);
   const lu = d.carte_lue ?? iso(h.sentiers!.fetchedAt);
   return {
-    id: "sentiers", k: "Sentiers", src: "ONF", value: n ? `${n} ${plural(n, "fermé", "fermés")}` : "aucune fermeture lue", color: COLOURS.sentiers, href: HREF.sentiers, pts,
+    id: "sentiers", k: "Sentiers", src: "ONF", value: n ? `${n} ${plural(n, "fermé", "fermés")}` : "aucune fermeture lue", color: COLOURS.sentiers, href: HREF.sentiers, pts, pousse: true,
     tip: { place: top && pts.length ? `Toute l'île · tracés dessinés\u00a0: ${top.commune}` : "Toute l'île", value: `${n} ${plural(n, "sentier fermé", "sentiers fermés")} sur ${d.suivis} suivis par l'ONF`, detail: `selon l'ONF, carte lue ${when(lu, now)}` },
     lu,
   };
@@ -395,7 +396,7 @@ function routes(h: HomeLive, now: Date): Sujet | undefined {
   const n = list.length;
   const lu = iso((t ? h.trafic : h.sentiers)!.fetchedAt);
   return {
-    id: "routes", k: "Routes", src: "ONF", value: n ? `${n} ${plural(n, "fermée", "fermées")}` : "aucune fermeture lue", color: COLOURS.routes, href: HREF.routes, pts,
+    id: "routes", k: "Routes", src: "ONF", value: n ? `${n} ${plural(n, "fermée", "fermées")}` : "aucune fermeture lue", color: COLOURS.routes, href: HREF.routes, pts, pousse: true,
     tip: {
       place: n ? `${list.slice(0, 3).map(shortRoad).join(" · ")}${n > 3 ? ` et ${n - 3} ${plural(n - 3, "autre", "autres")}` : ""}` : "Routes forestières",
       value: n ? "" : "Aucune fermeture lue",

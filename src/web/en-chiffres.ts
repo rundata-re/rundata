@@ -422,7 +422,7 @@ let R=Object.assign({},DEF,S,{st:(S.st||{})[SL],hide:Array.isArray(S.hide)?S.hid
 const $=(i)=>document.getElementById(i);let pts=[],cw=640,cur=-1;
 const save=()=>{try{const o=Object.assign({},S,{am:R.am,ut:R.ut,uv:R.uv,p:R.p,hide:R.hide,st:Object.assign({},S.st||{},R.st?{[SL]:R.st}:{})});S=o;localStorage.setItem(K,JSON.stringify(o))}catch(x){}};
 const all=()=>{cw=Math.max(300,Math.round($("mx-plot").clientWidth)||640);const d=draw(D,R,cw);$("mx-lead").innerHTML=d.lead;$("mx-chips").innerHTML=d.chips;$("mx-ct").innerHTML=d.titre;$("mx-svg").innerHTML=d.svg;$("mx-cn").textContent=d.note;
-const l=$("mx-link");l.innerHTML=d.lien;l.href=d.href||"#";l.hidden=!d.href;pts=d.pts;cur=-1;
+const l=$("mx-link");l.innerHTML=d.lien;l.href=d.href||"#";l.hidden=!d.href;pts=d.pts;cur=-1;fit();
 mx.querySelectorAll(".tabs button").forEach((b)=>b.setAttribute("aria-pressed",String(b.dataset.p===R.p)));
 mx.querySelectorAll(".mk").forEach((b)=>{b.addEventListener("click",()=>{const o=b.getAttribute("aria-expanded")==="true";mx.querySelectorAll(".mk").forEach((x)=>x.setAttribute("aria-expanded","false"));b.removeAttribute("data-x");b.setAttribute("aria-expanded",String(!o))});b.addEventListener("pointerleave",()=>b.removeAttribute("data-x"));b.addEventListener("blur",()=>b.removeAttribute("data-x"))});
 $("mx-am").checked=R.am;mx.querySelectorAll("input[name=mx-ut],input[name=mx-uv],input[name=mx-p]").forEach((i)=>{i.checked=i.value===R[i.name.slice(3)]});
@@ -430,11 +430,13 @@ const sh=D.stations.filter((s)=>!s.am||R.am),cs=sh.find((s)=>s.id===R.st)||sh.fi
 $("mx-st").innerHTML=sh.map((s)=>'<label><input type="radio" name="mx-st" value="'+s.id+'"'+(s===cs?" checked":"")+'> <span>'+s.nom.replace(/&/g,"&amp;").replace(/</g,"&lt;")+(s.am?'<span class="mk-am">amateur</span>':"")+'<br><small>'+String(s.alt).replace(/\\B(?=(\\d{3})+(?!\\d))/g,"\\u202f")+"\\u00a0m · à "+String(s.d).replace(".",",")+"\\u00a0km</small></span></label>").join("");
 $("mx-st").querySelectorAll("input").forEach((i)=>i.addEventListener("change",()=>{R.st=i.value;save();all()}));
 $("mx-show").querySelectorAll("input").forEach((i)=>{i.checked=!R.hide.includes(i.value)})};
+const plot=$("mx-plot"),nar=matchMedia("(max-width:640px)"),fit=()=>{const tp=$("mx-tip"),cn=$("mx-cn");cn.style.minHeight="";tp.style.minHeight="";cn.style.visibility="";if(!nar.matches||!pts.length)return;const lg=pts.reduce((a,p)=>p.html.length>a.length?p.html:a,"");tp.innerHTML=lg;tp.style.visibility="hidden";tp.hidden=false;const h=Math.ceil(Math.max(tp.offsetHeight,cn.offsetHeight));tp.hidden=true;tp.style.visibility="";cn.style.minHeight=h+"px";tp.style.minHeight=h+"px"};
 const show=(i)=>{const p=pts[i];if(!p)return;cur=i;const sv=$("mx-svg").querySelector("svg"),k=sv.getBoundingClientRect().width/cw,c=sv.querySelector(".cur"),o=sv.querySelector(".dot");
 c.setAttribute("x1",p.x);c.setAttribute("x2",p.x);o.setAttribute("cx",p.x);o.setAttribute("cy",p.y);const tp=$("mx-tip");tp.innerHTML=p.html;tp.hidden=false;
+if(nar.matches){const cn=$("mx-cn");tp.style.left="";tp.style.top=Math.ceil(cn.getBoundingClientRect().top-plot.getBoundingClientRect().top)+"px";cn.style.visibility="hidden";return}
 const w=tp.offsetWidth,pw=sv.getBoundingClientRect().width;tp.style.left=Math.max(w/2,Math.min(pw-w/2,p.x*k))+"px";tp.style.top=Math.max(0,p.y*k-tp.offsetHeight-14)+"px"};
-const hide=()=>{$("mx-tip").hidden=true;const sv=$("mx-svg").querySelector("svg");if(!sv)return;sv.querySelector(".cur")?.setAttribute("x1",-9);sv.querySelector(".cur")?.setAttribute("x2",-9);sv.querySelector(".dot")?.setAttribute("cx",-9);cur=-1};
-const plot=$("mx-plot"),near=(ev)=>{if(!pts.length)return;const r=plot.getBoundingClientRect(),x=(ev.clientX-r.left)*cw/r.width;let b=0;pts.forEach((p,i)=>{if(Math.abs(p.x-x)<Math.abs(pts[b].x-x))b=i});show(b)};
+const hide=()=>{$("mx-tip").hidden=true;$("mx-cn").style.visibility="";const sv=$("mx-svg").querySelector("svg");if(!sv)return;sv.querySelector(".cur")?.setAttribute("x1",-9);sv.querySelector(".cur")?.setAttribute("x2",-9);sv.querySelector(".dot")?.setAttribute("cx",-9);cur=-1};
+const near=(ev)=>{if(!pts.length)return;const r=plot.getBoundingClientRect(),x=(ev.clientX-r.left)*cw/r.width;let b=0;pts.forEach((p,i)=>{if(Math.abs(p.x-x)<Math.abs(pts[b].x-x))b=i});show(b)};
 plot.addEventListener("pointermove",near);plot.addEventListener("pointerdown",near);
 document.addEventListener("pointerdown",(ev)=>{if(!(ev.target instanceof Element&&ev.target.closest("#mx .mk")))mx.querySelectorAll(".mk[aria-expanded=true]").forEach((x)=>x.setAttribute("aria-expanded","false"))});
 document.addEventListener("keydown",(ev)=>{if(ev.key==="Escape")mx.querySelectorAll(".mk").forEach((x)=>{if(x.getAttribute("aria-expanded")==="true"||x.matches(":hover,:focus"))x.setAttribute("data-x","");x.setAttribute("aria-expanded","false")})});
@@ -514,4 +516,5 @@ export const CSS_CHIFFRES = `.mx{margin:0 0 1.6rem}.mx h2{margin:0 0 .2rem}.mx-l
 .mx-svg .lt{fill:none;stroke:var(--chaud);stroke-width:2.5;stroke-linejoin:round}.mx-svg .bd{fill:var(--chaud);opacity:.25}.mx-svg .br{fill:var(--pluie)}
 .mx-svg .dx{fill:var(--chaud)}.mx-svg .dn{fill:var(--frais)}.mx-svg .cur{stroke:var(--ink);stroke-dasharray:3 3}.mx-svg .dot{fill:var(--surface);stroke:var(--chaud);stroke-width:2.5}
 .mx-tip{top:0;pointer-events:none;width:max-content;max-width:min(340px,calc(100% - 4px));transform:translateX(-50%)}.mx-tip[hidden]{display:none}
+@media (max-width:640px){#mx-cn{margin-top:.4rem}.mx-tip{left:0;right:0;width:auto;max-width:none;transform:none;box-shadow:none;box-sizing:border-box}}
 .mx-link{display:inline-block;margin-top:.7rem;font-weight:700}`;

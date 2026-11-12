@@ -305,8 +305,13 @@ export const dessine = (
   const norm7 = n7.length ? sum(n7) : null;
   const r24 = h ? sum(h.rr) : null;
   const r7 = j ? sum(j.rr.slice(-7)) : null;
+  // The archive's days end the day before yesterday each morning, until the day before is loaded (marketing's words,
+  // 12/11/2026): its 7 days then said by their dates, « 31 mm du 04/11 au 10/11 », never « en 7 jours ».
+  const veille = loc(new Date(Date.parse(D.lu) - 86400_000).toISOString()).slice(0, 10);
+  const avant = j != null && j.au !== veille;
+  const in7 = j && avant ? ` <span class="nw">du ${dj(new Date(Date.parse(j.au) - 6 * 86400_000).toISOString())} au ${dj(j.au)}</span>` : " en 7 jours";
   if (r24 != null || r7 != null)
-    chips.push(["pluie", D.figures[2][1], r24 != null ? `${mm(r24)} en 24\u00a0h` : `${mm(r7)} en 7 jours`, (r24 != null && r7 != null ? `${mm(r7)} en 7 jours` : "") + (norm7 != null && r7 != null ? ` · d'habitude ≈ ${fr(norm7, 0)}\u00a0mm` : ""),
+    chips.push(["pluie", D.figures[2][1], r24 != null ? `${mm(r24)} en 24\u00a0h` : `${mm(r7)}${in7}`, (r24 != null && r7 != null ? `${mm(r7)}${in7}` : "") + (norm7 != null && r7 != null ? ` · d'habitude ≈ ${fr(norm7, 0)}\u00a0mm` : ""),
       `<b>${r7 != null ? `${mm(r7)} du ${dj(new Date(Date.parse(j!.au) - 6 * 86400_000).toISOString())} au ${dj(j!.au)}` : `${mm(r24)} en 24\u00a0h, jusqu'à ${hh(h!.end)} le ${jm(h!.end)}`}</b><br>${who}<br>` +
       (r7 != null ? `pluie de chaque jour comptée de 10\u00a0h à 10\u00a0h le lendemain, comme Météo-France${norm7 != null ? ` · habituel ≈ ${fr(norm7, 0)}\u00a0mm, calculé par rundata.re sur la normale 1991-2020 de la station` : ""}` : "relevés horaires")]);
   else chips.push(["pluie", D.figures[2][1], "—", "pas de cumul lu", `${who}<br>pas de pluie lue pour cette station`]);
@@ -385,7 +390,7 @@ export const dessine = (
     chips: chipsHtml,
     titre: `Température mesurée à ${e(s.nom)}`,
     svg: `<svg class="mx-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Température mesurée à ${e(s.nom)}, ${days ? `${n} derniers jours` : "24 dernières heures"}">${svg}</svg>`,
-    note: !vals.length ? "" : days ? "Barres\u00a0: le plus bas et le plus haut de chaque jour ; en bleu, la pluie (de 10\u00a0h à 10\u00a0h le lendemain)." : "Relevé de chaque heure ; en bleu, la pluie de l'heure.",
+    note: !vals.length ? "" : days ? (avant ? `Jusqu'au ${dj(j!.au)}\u00a0: la journée d'hier est ajoutée vers midi. ` : "") + "Barres\u00a0: le plus bas et le plus haut de chaque jour ; en bleu, la pluie (de 10\u00a0h à 10\u00a0h le lendemain)." : "Relevé de chaque heure ; en bleu, la pluie de l'heure.",
     lien: s.am ? "" : `Les relevés de la station ${du(s.nom)}${s.dep ? ` depuis ${s.dep}` : ""} →`,
     href: s.am ? "" : `/meteo/station/${s.id}`,
     pts,
@@ -411,7 +416,7 @@ const save=()=>{try{const o=Object.assign({},S,{am:R.am,ut:R.ut,uv:R.uv,p:R.p,hi
 const all=()=>{cw=Math.max(300,Math.round($("mx-plot").clientWidth)||640);const d=draw(D,R,cw);$("mx-lead").innerHTML=d.lead;$("mx-chips").innerHTML=d.chips;$("mx-ct").innerHTML=d.titre;$("mx-svg").innerHTML=d.svg;$("mx-cn").textContent=d.note;
 const l=$("mx-link");l.innerHTML=d.lien;l.href=d.href||"#";l.hidden=!d.href;pts=d.pts;cur=-1;
 mx.querySelectorAll(".tabs button").forEach((b)=>b.setAttribute("aria-pressed",String(b.dataset.p===R.p)));
-mx.querySelectorAll(".mk").forEach((b)=>b.addEventListener("click",()=>{const o=b.getAttribute("aria-expanded")==="true";mx.querySelectorAll(".mk").forEach((x)=>x.setAttribute("aria-expanded","false"));b.setAttribute("aria-expanded",String(!o))}));
+mx.querySelectorAll(".mk").forEach((b)=>{b.addEventListener("click",()=>{const o=b.getAttribute("aria-expanded")==="true";mx.querySelectorAll(".mk").forEach((x)=>x.setAttribute("aria-expanded","false"));b.removeAttribute("data-x");b.setAttribute("aria-expanded",String(!o))});b.addEventListener("pointerleave",()=>b.removeAttribute("data-x"));b.addEventListener("blur",()=>b.removeAttribute("data-x"))});
 $("mx-am").checked=R.am;mx.querySelectorAll("input[name=mx-ut],input[name=mx-uv],input[name=mx-p]").forEach((i)=>{i.checked=i.value===R[i.name.slice(3)]});
 const sh=D.stations.filter((s)=>!s.am||R.am),cs=sh.find((s)=>s.id===R.st)||sh.find((s)=>s.id===D.defaut)||sh[0];
 $("mx-st").innerHTML=sh.map((s)=>'<label><input type="radio" name="mx-st" value="'+s.id+'"'+(s===cs?" checked":"")+'> <span>'+s.nom.replace(/&/g,"&amp;").replace(/</g,"&lt;")+(s.am?'<span class="mk-am">amateur</span>':"")+'<br><small>'+String(s.alt).replace(/\\B(?=(\\d{3})+(?!\\d))/g,"\\u202f")+"\\u00a0m · à "+String(s.d).replace(".",",")+"\\u00a0km</small></span></label>").join("");
@@ -421,7 +426,10 @@ const show=(i)=>{const p=pts[i];if(!p)return;cur=i;const sv=$("mx-svg").querySel
 c.setAttribute("x1",p.x);c.setAttribute("x2",p.x);o.setAttribute("cx",p.x);o.setAttribute("cy",p.y);const tp=$("mx-tip");tp.innerHTML=p.html;tp.hidden=false;
 const w=tp.offsetWidth,pw=sv.getBoundingClientRect().width;tp.style.left=Math.max(w/2,Math.min(pw-w/2,p.x*k))+"px";tp.style.top=Math.max(0,p.y*k-tp.offsetHeight-14)+"px"};
 const hide=()=>{$("mx-tip").hidden=true;const sv=$("mx-svg").querySelector("svg");if(!sv)return;sv.querySelector(".cur")?.setAttribute("x1",-9);sv.querySelector(".cur")?.setAttribute("x2",-9);sv.querySelector(".dot")?.setAttribute("cx",-9);cur=-1};
-const plot=$("mx-plot");plot.addEventListener("pointermove",(ev)=>{if(!pts.length)return;const r=plot.getBoundingClientRect(),x=(ev.clientX-r.left)*cw/r.width;let b=0;pts.forEach((p,i)=>{if(Math.abs(p.x-x)<Math.abs(pts[b].x-x))b=i});show(b)});
+const plot=$("mx-plot"),near=(ev)=>{if(!pts.length)return;const r=plot.getBoundingClientRect(),x=(ev.clientX-r.left)*cw/r.width;let b=0;pts.forEach((p,i)=>{if(Math.abs(p.x-x)<Math.abs(pts[b].x-x))b=i});show(b)};
+plot.addEventListener("pointermove",near);plot.addEventListener("pointerdown",near);
+document.addEventListener("pointerdown",(ev)=>{if(!(ev.target instanceof Element&&ev.target.closest("#mx .mk")))mx.querySelectorAll(".mk[aria-expanded=true]").forEach((x)=>x.setAttribute("aria-expanded","false"))});
+document.addEventListener("keydown",(ev)=>{if(ev.key==="Escape")mx.querySelectorAll(".mk").forEach((x)=>{if(x.getAttribute("aria-expanded")==="true"||x.matches(":hover,:focus"))x.setAttribute("data-x","");x.setAttribute("aria-expanded","false")})});
 plot.addEventListener("pointerleave",(ev)=>{if(ev.pointerType==="mouse")hide()});plot.addEventListener("blur",hide);
 plot.addEventListener("keydown",(ev)=>{if(ev.key==="ArrowRight"||ev.key==="ArrowLeft"){ev.preventDefault();show(Math.max(0,Math.min(pts.length-1,(cur<0?pts.length-1:cur)+(ev.key==="ArrowRight"?1:-1))))}else if(ev.key==="Escape")hide()});
 mx.querySelectorAll(".tabs button").forEach((b)=>b.addEventListener("click",()=>{R.p=b.dataset.p;save();all()}));
@@ -485,6 +493,7 @@ export const CSS_CHIFFRES = `.mx{margin:0 0 1.6rem}.mx h2{margin:0 0 .2rem}.mx-l
 .mk-s{display:block;font-size:.82rem;color:var(--muted);line-height:1.3}.mk-am{font-weight:700;font-size:.75rem;background:var(--hl);color:var(--ink);border-radius:6px;padding:.1rem .3rem;margin-left:.3rem;vertical-align:.15em}
 .mk-tip,.mx-tip{position:absolute;z-index:5;background:var(--night);color:var(--on-night);border-radius:10px;padding:.5rem .65rem;font-size:.82rem;line-height:1.35;box-shadow:0 8px 24px rgb(0 0 0/.25);font-weight:400;text-transform:none;letter-spacing:0}
 .mk-tip{left:.5rem;right:.5rem;top:calc(100% + 6px);display:none}.mk:hover .mk-tip,.mk:focus-visible .mk-tip,.mk[aria-expanded=true] .mk-tip{display:block}
+.mk[data-x] .mk-tip{display:none}.mk .nw{white-space:nowrap}
 @media (max-width:640px){.mx-chips>.mk:nth-child(odd) .mk-tip{right:calc(-100% - .6rem)}.mx-chips>.mk:nth-child(even) .mk-tip{left:calc(-100% - .6rem)}.mk-v{font-size:1.08rem}}
 .mx-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:.9rem .9rem .6rem;margin-top:.75rem}
 .mx-ch{display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap}.mx-ch h3{margin:0;font-size:1rem}

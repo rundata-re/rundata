@@ -197,9 +197,11 @@ export function configurerDefiOpenai(jeton: string | undefined) {
 
 /**
  * The fetchers of AI assistants and search engines. A person gets a page without its live block rather than wait
- * more than a few seconds; these read the page once and answer from it, so they wait for the measurements. Not the
- * crawlers that gather pages to train a model (ClaudeBot, GPTBot, meta-externalagent): what they read is kept as it
- * was, and the copy does for them.
+ * more than a few seconds; these read the page once and answer from it, so they wait longer for a page that has no
+ * copy, and for the refresh of a copy the scheduled event has left behind. A page's own copy (a place's, a station's,
+ * a commune's) they wait for HOME_READER_WAIT_MS at most, then get it as it is, its time said (`ownWaits`): past
+ * ~1.5 s, ChatGPT-User gives up. Not the crawlers that gather pages to train a model (ClaudeBot, GPTBot,
+ * meta-externalagent): what they read is kept as it was, and the copy does for them.
  */
 // rundata-check: the daily check of the sources (bin/check-sources.ts), which must see the data, not the cache.
 const READERS = /rundata-check\/|ChatGPT-User|OAI-SearchBot|Claude-User|Claude-SearchBot|Perplexity|MistralAI|meta-externalfetcher|facebookexternalhit|Googlebot|bingbot|Applebot|DuckAssistBot/i;
@@ -246,6 +248,20 @@ export function homeWaits(request: Request): { meteo: number | undefined; reader
   if (!reader) return { meteo: undefined, reader, vigilance: BANNER_WAIT_MS };
   if (reader === true) return { meteo: READER_WAIT_MS, reader, vigilance: READER_WAIT_MS };
   return { meteo: HOME_READER_WAIT_MS, reader, vigilance: BANNER_WAIT_MS };
+}
+
+// A page's own copy (web:lieu, web:station, web:commune), kept by no scheduled event: a reader waited for its refresh
+// up to READER_WAIT_MS whenever it was more than FRESH_SECONDS old. From 08 to 12/11/2026, OAI-SearchBot read the
+// /meteo/<lieu> pages 264 times in 4 days, 2,383 ms in the middle (p90 4,931 ms), the stations, the radar, the FFVL,
+// the METAR, Pioupiou and Open-Meteo read again before the answer, and ChatGPT-User gave up 3 of its 17 reads: the
+// slowness of /meteo/piton-de-la-fournaise (2,644 ms in the middle) was theirs. It now waits as on the home page, the
+// refresh going on after the answer, and without any copy the page goes without its live block. The daily check of
+// the sources still waits READER_WAIT_MS.
+/** How long a page waits for its own copy for `request`, and whether for its refresh (web/data.ts `snapshot`). */
+export function ownWaits(request: Request): [number | undefined, boolean | ReaderWaits] {
+  const reader = readerOf(request);
+  if (!reader) return [undefined, false];
+  return reader === true ? [READER_WAIT_MS, true] : [HOME_READER_WAIT_MS, true];
 }
 
 /** Waits as `waits` says, or as the reader would. */
@@ -859,7 +875,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");
     if (!stationOf(id)) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, waitFor(request), readerOf(request)),
+      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...ownWaits(request)),
       alerte(cache, background, now),
     ]);
     return page(path, (live) => stationPage(origin, live ? data : null, id, now, a), data, background, [rebuild(cache, `web:station:${id}`, () => buildStation(cache, id, now))]);
@@ -869,7 +885,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(slug);
     if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, waitFor(request), readerOf(request), withoutForecast),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast),
       alerte(cache, background, now),
     ]);
     // The state of the hikes around: the hikers' page's last copy, as it is, never built for this page.
@@ -884,7 +900,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     // The weather is built when it has no copy, as on the commune's page; the rest only read (tools/resume.ts).
     const vigilance = vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now);
-    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, waitFor(request), readerOf(request), withoutForecast);
+    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast);
     // The weather's copy as the snapshot gave it: not read again (the read could be one subrequest too many).
     const { copies, leftOut } = await readCopies(cache, p, p, now, background, vigilance, { meteo: place });
     return page(path, (live) => (live
@@ -908,8 +924,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(path.slice("/communes/".length).replace(/\/$/, ""));
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [place, commune, vigilance] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, waitFor(request), readerOf(request), withoutForecast),
-      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, waitFor(request), readerOf(request)),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast),
+      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, ...ownWaits(request)),
       vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now),
     ]);
     // The West's communes have their déchèteries' tile too (the TCO publishes them).

@@ -4,7 +4,10 @@ import { landslides, sales, SNAP_M } from "../src/providers/terrain.js";
 import { BANNER_WAIT_MS, snapshot } from "../src/web/data.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { scheduledEvery } from "../src/web/partagees.js";
-import { HOME_READER_WAIT_MS, homeWaits, readerOf } from "../src/web/site.js";
+import type { MeteoAnswer } from "../src/tools/meteo.js";
+import { placePage } from "../src/web/pages.js";
+import { pageOf } from "../src/web/places.js";
+import { HOME_READER_WAIT_MS, homeWaits, ownWaits, readerOf } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-26T15:40:00Z");
 const MIN = 60_000;
@@ -45,10 +48,9 @@ describe("a reader and a copy the scheduled event keeps (web/data.ts `snapshot`,
     }
   });
 
-  it("makes them wait, as before, once the scheduled event has fallen behind, and for a page's own copy", async () => {
+  it("makes them wait, as before, once the scheduled event has fallen behind", async () => {
     // Past its rate (15), its margin (2.5) and the two events of slack (10).
     expect(await served("web:crues", GOOGLEBOT, 28)).toEqual({ value: 2, built: 2 });
-    expect(await served("web:lieu:saint-paul", GOOGLEBOT, 12)).toEqual({ value: 2, built: 2 });
   });
 
   it("makes the daily check of the sources wait always, and never a person", async () => {
@@ -166,5 +168,72 @@ describe("fiche_terrain's reads around a point (providers/terrain.ts)", () => {
     await sales(c, P.lon, P.lat, 2021);
     await sales(c, P.lon + 0.00002, P.lat + 0.00001, 2021);
     expect(urls).toHaveLength(1);
+  });
+});
+
+// 08-12/11/2026: OAI-SearchBot read the /meteo/<lieu> pages 264 times in 4 days, 2,383 ms in the middle (p90 4,931 ms),
+// waiting for the page's own copy to be built again; ChatGPT-User gave up 3 of its 17 reads.
+describe("a page's own copy for a reader (web/site.ts `ownWaits`)", () => {
+  const OAI = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot";
+  const BUILD_MS = 1500;
+
+  it("makes a reader wait HOME_READER_WAIT_MS for its refresh, the check of the sources 25 s, a person as before", () => {
+    for (const ua of [OAI, GOOGLEBOT, CHATGPT]) expect(ownWaits(asking(ua)), ua).toEqual([HOME_READER_WAIT_MS, true]);
+    expect(ownWaits(asking("rundata-check/1.0"))).toEqual([25_000, true]);
+    expect(ownWaits(asking(PERSON))).toEqual([undefined, false]);
+  });
+
+  /** A page's own copy `ageMin` old (none when null), its build taking BUILD_MS, read by `ua`. */
+  async function own(ua: string, ageMin: number | null) {
+    let t = NOW.getTime() - (ageMin ?? 0) * MIN;
+    const c = new Cache(new MemoryStore(), () => t);
+    let n = 0;
+    if (ageMin != null) await snapshot(c, "web:lieu:piton-de-la-fournaise", async () => ++n, () => {}, new Date(t));
+    t = NOW.getTime();
+    const slow = () => new Promise<number>((resolve) => setTimeout(() => resolve(++n), BUILD_MS));
+    const behind: Promise<unknown>[] = [];
+    const start = Date.now();
+    const got = await snapshot(c, "web:lieu:piton-de-la-fournaise", slow, (p) => behind.push(p), NOW, ...ownWaits(asking(ua)));
+    const waited = Date.now() - start;
+    await Promise.all(behind);
+    return { value: got?.value ?? null, waited, built: n };
+  }
+
+  it("gives it the copy as it is past HOME_READER_WAIT_MS, 12 minutes or 2 hours old, its refresh going on after the answer", async () => {
+    for (const age of [12, 120]) {
+      const got = await own(OAI, age);
+      expect(got.value, `${age} min`).toBe(1);
+      expect(got.waited).toBeLessThan(BUILD_MS);
+      expect(got.built).toBe(2);
+    }
+  });
+
+  it("sends the page without its live block when there is no copy at all, as the home page does", async () => {
+    const got = await own(CHATGPT, null);
+    expect(got.value).toBeNull();
+    expect(got.waited).toBeLessThan(BUILD_MS);
+    expect(got.built).toBe(1);
+  });
+
+  it("still makes the daily check of the sources wait for the refresh", async () => {
+    expect(await own("rundata-check/1.0", 12)).toMatchObject({ value: 2, built: 2 });
+  });
+
+  it("says the time of its measure on the page, and that it is not the weather of now past 90 minutes", () => {
+    const p = pageOf("piton-de-la-fournaise")!;
+    const meteo = {
+      resume: "",
+      stations: [{ station: "Bellecombe", source: "meteofrance", altitude_m: 2245, heure_mesure: "26/10/2026 18:24", age_min: 6, mesures: { temperature: "9,1 °C" }, avertissements: [], distance_km: 0.8, pertinence: "bonne" }],
+      sources: [],
+    } as unknown as MeteoAnswer;
+    // Built at 18:30 (Réunion), the measure of 18:24: read at 19:40, then at 20:40.
+    const copy = { value: { meteo }, fetchedAt: new Date(NOW.getTime() - 70 * MIN), stale: true };
+    const hour = placePage("https://rundata.re", p, copy, NOW);
+    expect(hour).toMatch(/mesurés <b>[^<]*18:24<\/b> par la station <b>Bellecombe<\/b>/);
+    expect(hour).not.toContain("Ce n&#39;est pas le temps");
+    const later = placePage("https://rundata.re", p, copy, new Date(NOW.getTime() + 60 * MIN));
+    expect(later).toMatch(/mesurés <b>[^<]*18:24<\/b>/);
+    expect(later).toContain("Dernière mesure lue à la station Bellecombe : ");
+    expect(later).toContain("Ce n&#39;est pas le temps qu&#39;il fait maintenant.");
   });
 });

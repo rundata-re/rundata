@@ -70,7 +70,7 @@ import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
 import { concertsPage, weekendPage } from "./evenements.js";
 import { communePath as enfantsPath, enfantsCommunePage, enfantsPage } from "./enfants.js";
-import { coupuresCommunePage } from "./coupures.js";
+import { avisLus, coupuresCommunePage } from "./coupures.js";
 import { cloudSeaTold, hikesNear, summitOf } from "./liens.js";
 import { LOGO_PETIT_SVG } from "./logo.js";
 import { homePage } from "./home.js";
@@ -150,7 +150,7 @@ import { STOP_PATH } from "./domains.js";
 import * as transit from "../providers/transit.js";
 import { carteRoute } from "./vigilance-carte.js";
 import { carteRoute as cmrsRoute } from "./cmrs-carte.js";
-import { INTERDITS, ROBOTS_REFUSES } from "../robots.js";
+import { enChargement, INTERDITS, revenir, robot, ROBOTS_REFUSES } from "../robots.js";
 import { PATH as PLUIE_RADAR, rainGrid } from "./pluie-radar.js";
 import { historiqueResponse, PATH as ELECTRICITE_HISTORIQUE } from "./electricite-historique.js";
 import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPath } from "./station.js";
@@ -394,9 +394,21 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  */
 function sitemap(origin: string, now: Date, fuelDay?: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    siteUrls(now, fuelDay).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
+    siteUrls(now, fuelDay).filter(([u]) => !horsSitemap.has(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
     `\n</urlset>\n`;
 }
+
+/**
+ * Pages online, linked and known (an address written another way still leads to them), but left out of the sitemap:
+ * - a commune's water cuts whose distributor's notices are not read: nothing of its own to show, and in noindex until
+ *   a source is read (web/coupures.ts avisLus);
+ * - the weather stations' pages (#523), while Google judges the site again after the fall of 30/10/2026: they come
+ *   back once its November 2026 core update is over.
+ */
+const horsSitemap = new Set([
+  ...COMMUNES.filter((p) => !avisLus(p.nom)).map((p) => `/coupures-eau/${p.slug}`),
+  ...STATIONS.map((x) => stationPath(x.id)),
+]);
 
 /** The pages of the sitemap, each with its day and how often it changes. */
 function siteUrls(now: Date, fuelDay?: string): Url[] {
@@ -467,6 +479,8 @@ export async function site(request: Request, cache: Cache, background: Backgroun
     if (to) return new Response(null, { status: 301, headers: { location: `${to}${url.search}`, "cache-control": STATIC } });
   }
   const typed = await typoPage(built.value);
+  // A page whose data is not read yet (« … se charge ») is never handed to a robot: it is told to come back (robots.ts).
+  if (typed?.status === 200 && (typed.headers.get("content-type") ?? "").startsWith("text/html") && robot(request) && enChargement(await typed.clone().text())) return revenir();
   // A page whose picture depends on Save-Data says so to the shared caches that keep it a minute.
   const r = typed && built.varie ? varySaveData(typed) : typed;
   if (r?.status === 200 && request.method === "GET" && bord.gardeDe(new URL(request.url))) background(bord.garder(request, r.clone()));

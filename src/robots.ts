@@ -15,7 +15,7 @@
  * Some robots are of no use to rundata.re and are refused everything but robots.txt (ROBOTS_REFUSES), which tells them
  * so: on 07/11/2026, 146 pages for DotBot (Moz) and 478 for ElevenlabsCrawler, 27 000 ms of CPU together.
  */
-import { HEBERGEURS, visitor } from "./metrics.js";
+import { HEBERGEURS, TEAM, visitor } from "./metrics.js";
 import { RENDU_PATH } from "./providers/vigilance-carte.js";
 import { TRIP_PATH } from "./tools/transports.js";
 import { STOP_PATH } from "./web/domains.js";
@@ -98,3 +98,30 @@ export function refusRobot(request: Request): Response | undefined {
     { status: 403, headers: TEXT_HEADERS },
   );
 }
+
+/**
+ * « Les mesures se chargent », « L'état des sentiers se charge » : what a page says in place of data not read yet (the
+ * first view after a deploy, a source slower than the wait). In the visible text only: a script's « n'a pas pu se
+ * charger », shown in the browser after its own failure, is not one.
+ */
+const CHARGE = /\bse\s+charg(?:e|ent)\b/;
+
+/** The visible text of a page: without its scripts, styles and tags. */
+export const texteVisible = (html: string) =>
+  html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;| /g, " ");
+
+/** Whether a page's HTML says that its data is still loading. */
+export const enChargement = (html: string) => CHARGE.test(texteVisible(html));
+
+/** Whether a request names itself as anything but a browser or the team: a search engine, an assistant's fetcher, a script. */
+export function robot(request: Request): boolean {
+  const ua = request.headers.get("user-agent") ?? "";
+  return ua !== "" && !["navigateur", TEAM].includes(visitor(ua, asnOf(request)));
+}
+
+/**
+ * The answer to a robot in place of a page whose data is still loading: come back in a minute (503 and Retry-After, as
+ * Google asks of a page briefly unavailable), never a page that would be indexed without its data.
+ */
+export const revenir = () =>
+  new Response("La page se construit : revenez dans une minute.\n", { status: 503, headers: { ...TEXT_HEADERS, "retry-after": "60", "x-robots-tag": "noindex" } });

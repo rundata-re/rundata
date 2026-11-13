@@ -18,8 +18,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 397 | 550 |
-| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 530 | 8 500 |
+| pire passage planifié, sous-requêtes | 399 | 550 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 532 | 8 500 |
 | queue « carte du CMRS », sous-requêtes | 19 | 100 |
 | queue « trace du CMRS », sous-requêtes | 8 | 100 |
 | queue « sites sans réponse », sous-requêtes | 22 | 100 |
@@ -36,8 +36,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | queue « connecteurs », sous-requêtes | 22 | 100 |
 | queue « veille », sous-requêtes | 2 | 100 |
 | queue « espace club », sous-requêtes | 4 | 100 |
-| pire passage planifié, appels KV et D1 | 122 | 1 000 |
-| pire passage planifié, CPU (ms) | 4 876 | 30 000 |
+| pire passage planifié, appels KV et D1 | 123 | 1 000 |
+| pire passage planifié, CPU (ms) | 4 881 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 172 | 550 |
 | vue la plus chère, sous-requêtes | 93 | 200 |
@@ -46,19 +46,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 550.
-- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 550. Le pire passage, queues comprises (530), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
+- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 550. Le pire passage, queues comprises (532), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 101 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 172 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 349 sous-requêtes à 06:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 351 sous-requêtes à 06:00 UTC.
 - Vue la plus chère : /communes/*, 93. Question la plus chère : resume_du_jour, 79. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 530 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
-| tâche planifiée, par jour | 36 343 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
-| tâche planifiée, par jour, cadences les plus courtes | 55 475 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
-| tâche planifiée, par mois (30 jours) | 1 090 277 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
+| pire passage planifié | 532 | 38 | 61 | 24 | 1 164 | 284 | 4 881 |
+| tâche planifiée, par jour | 36 631 | 5 043 | 4 539 | 2 407 | 102 914 | 58 511 | 283 216 |
+| tâche planifiée, par jour, cadences les plus courtes | 55 763 | 6 675 | 6 843 | 2 887 | 107 954 | 58 511 | 431 496 |
+| tâche planifiée, par mois (30 jours) | 1 098 917 | 151 290 | 136 170 | 72 223 | 3 087 411 | 1 755 321 | 8 496 467 |
 | tâches planifiées à part, par jour | 5 760 | 144 | 144 |  |  |  | 2 880 |
 | tâches planifiées à part, par mois (30 jours) | 172 800 | 4 320 | 4 320 |  |  |  | 86 400 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -85,6 +85,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | mer:passages | copie partagée (KV) | 60 min (10 au plus court) | 00:00 | 4 |  | 1 |  |  |  | 400 | mesuré |
 | web:mer | copie partagée (KV) | 180 min | 01:15 | 16 |  | 1 |  |  |  | 110 | mesuré |
 | web:calendrier | copie partagée (KV) | 360 min | 02:10 | 9 |  | 1 |  |  |  | 40 | estimé |
+| metar | copie partagée (KV) | 10 min | 00:05 | 2 |  | 1 |  |  |  | 5 | estimé |
 | seismes | copie partagée (KV) | 10 min | 00:05 | 3 |  | 1 |  |  |  | 10 | estimé |
 | onf:sentiers | copie partagée (KV) | 60 min | 00:45 | 5 |  | 1 |  |  |  | 40 | estimé |
 | web:volcan | copie partagée (KV) | 30 min (5 au plus court) | 00:15 | 34 | 3 | 4 | 2 | 21 |  | 110 | mesuré |
@@ -285,6 +286,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | mer:passages | providers/viirs |
 | web:mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv, providers/viirs |
 | web:calendrier | providers/calendrier |
+| metar | providers/metar |
 | seismes | providers/seismes |
 | onf:sentiers | providers/sentiers |
 | web:volcan | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ovpf-pdf, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |

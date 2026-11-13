@@ -87,13 +87,25 @@ const TOUR_METEOFRANCE = [
  */
 export const OLD_MINUTES = 90;
 
+/**
+ * Past this age, a measure of a copy kept after a failed read is left out, its source said unavailable: until then it is
+ * shown with its time, as every measure (rule of 3 ter: the last reading kept, said with its hour). A copy read minutes
+ * before a failure hid Gillot and Pierrefonds from the island's temperatures (aviationweather.gov, 07/11/2026).
+ */
+export const COPY_MAX_MINUTES = 3 * 60;
+
 async function collect(cache: Cache, now: Date, list: Provider[]) {
   const results = await Promise.allSettled(list.map((p) => p.observations(cache, now)));
+  // `stale`: its source did not answer at the last read, the measure served from the copy kept (said to an assistant).
   const obs: { o: Observation; stale: boolean }[] = [];
   const down: string[] = [];
   results.forEach((r, i) => {
-    if (r.status === "fulfilled") r.value.value.forEach((o) => obs.push({ o, stale: r.value.stale }));
-    else {
+    if (r.status === "fulfilled") {
+      const kept = r.value.value.filter((o) => !r.value.stale || now.getTime() - o.time.getTime() <= COPY_MAX_MINUTES * 60_000);
+      kept.forEach((o) => obs.push({ o, stale: r.value.stale }));
+      // Every measure of the copy too old: the source is said unavailable, as when there is no copy.
+      if (r.value.stale && r.value.value.length && !kept.length) down.push(list[i].source.nom);
+    } else {
       down.push(list[i].source.nom);
       console.error(`source ${list[i].source.id} indisponible:`, why(r.reason)); // shows in the Worker logs
     }

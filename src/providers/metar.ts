@@ -17,7 +17,16 @@ export const SOURCE: SourceInfo = {
 };
 
 const URL = "https://aviationweather.gov/api/data/metar?ids=FMEE,FMEP&format=json&hours=3";
-const FRESH_SECONDS = 5 * 60;
+/**
+ * Shared through KV (web/partagees.ts), brought up to date by the scheduled event every SHARED_EVERY minutes with its
+ * patience: a visit or a question reads the source itself only when that copy is older than this. Visits read it with
+ * 15 s, and from 06/11 to 13/11/2026 it gave up on aviationweather.gov 6 to 14 times a day, mostly between 16:00 and
+ * 23:00 in La Réunion, the source up to date (Worker's logs).
+ */
+const FRESH_SECONDS = 15 * 60;
+/** The scheduled event's refresh of the shared copy, minutes: the airports send a METAR every half hour or hour. */
+export const SHARED_EVERY = 10;
+export const KEY = "metar";
 
 /**
  * The scheduled event's patience with aviationweather.gov, which nobody waits for: past the 21,7 s of its slowest answer
@@ -129,9 +138,22 @@ export function stations(): Station[] {
   return Object.values(STATIONS);
 }
 
+const read = () => getJson<MetarJson[]>(SOURCE.id, URL);
+
+/**
+ * The upstream JSON as received, so that any store (memory, KV) can hold it: patiently in the scheduled event, which
+ * logs how long aviationweather.gov took to answer from Cloudflare (« METAR lu en 1 680 ms »), the measure the probes
+ * from La Réunion could not give. A failure is logged by the cache (« source metar sans réponse »).
+ */
+export async function lire(): Promise<MetarJson[]> {
+  if (!isScheduled()) return read();
+  const t0 = Date.now();
+  const rows = await patiently(PATIENCE_MS, read);
+  console.log(`METAR lu en ${Date.now() - t0} ms`);
+  return rows;
+}
+
 export async function observations(cache: Cache) {
-  // The cache keeps the upstream JSON as received, so that any store (memory, KV) can hold it.
-  const read = () => getJson<MetarJson[]>(SOURCE.id, URL);
-  const raw = await cache.get("metar", FRESH_SECONDS, () => (isScheduled() ? patiently(PATIENCE_MS, read) : read()));
+  const raw = await cache.get(KEY, FRESH_SECONDS, lire);
   return { ...raw, value: parseMetar(raw.value) };
 }

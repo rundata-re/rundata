@@ -140,8 +140,8 @@ describe("MétéoR-OI's stations", () => {
   it("never adds to the scheduled event of every 5 minutes: /chiffres counts the stations without MétéoR-OI's", () => {
     expect(NON_COMPTEES.has(meteorOi.SOURCE.id)).toBe(true);
     expect(METEOR_READS.has("web:chiffres")).toBe(false);
-    // The event's own reads, the queues after them left out (registre.ts `queue`).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(397);
+    // The event's own reads, the queues after them left out (registre.ts `queue`); 399 with the airports' METAR (its request and its write).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(399);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

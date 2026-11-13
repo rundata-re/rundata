@@ -102,6 +102,7 @@ const SANS_REPONSE_D1 = { d1Calls: 2, d1RowsRead: SANS_REPONSE_HOSTS + 1 };
 const COPY_WRITE = 1;
 // Where each shared copy's build reads from (web/data.ts builds them from these tools and sources).
 const SHARED_FROM: Record<string, string[]> = {
+  metar: ["src/providers/metar.ts"],
   vigilance: ["src/providers/vigilance.ts"],
   "web:crues": ["src/tools/crues.ts"],
   "web:actualites": ["src/tools/actualites.ts"],
@@ -139,7 +140,7 @@ const SHARED_KV: Record<string, number> = { "web:air": 2, "web:electricite": 1 }
 const SHARED_KV_WRITES: Record<string, number> = { "web:electricite": 1 };
 
 // Never built alone over MEASURED: their CPU is that of the page that shows them; the vigilance's and the rivers', measured in Node; the earthquakes' and the ONF's map's, estimated from /volcan's and /sentiers's.
-const SHARED_ESTIMATED = new Set(["vigilance", "seismes", "onf:sentiers", "web:crues", "mer:satellites", "web:calendrier", "web:chiffres", "web:chiffres:evenements"]);
+const SHARED_ESTIMATED = new Set(["metar", "vigilance", "seismes", "onf:sentiers", "web:crues", "mer:satellites", "web:calendrier", "web:chiffres", "web:chiffres:evenements"]);
 
 const sharedEntry = (s: Shared, after: boolean): Entry => ({
   id: s.key,

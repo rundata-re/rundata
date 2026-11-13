@@ -130,7 +130,7 @@ Chaque pull request fusionnée est mise en ligne sur rundata.re dès que les tes
 
 **Dans votre assistant IA** : ajoutez un connecteur personnalisé avec l'adresse `https://rundata.re/mcp` (Claude.ai, ChatGPT, Le Chat…). Rien à installer, pas de compte.
 
-**En local** (Node ≥ 20) : `npm install`, puis `npm run dev:http` (point d'accès `http://127.0.0.1:8787/mcp`, visible de cette machine seulement ; `HOST=0.0.0.0` pour l'ouvrir au réseau, par exemple dans un conteneur) ou `npm run dev:stdio`. `npm test` lance les tests, sans réseau.
+**En local** (Node ≥ 22.12) : `npm install`, puis `npm run dev:http` (point d'accès `http://127.0.0.1:8787/mcp`, visible de cette machine seulement ; `HOST=0.0.0.0` pour l'ouvrir au réseau, par exemple dans un conteneur) ou `npm run dev:stdio`. `npm test` lance les tests, sans réseau.
 
 **En conteneur** : `docker build -t rundata .` puis `docker run -i --rm rundata` lance le serveur en stdio (variables facultatives `METEOFRANCE_APPLICATION_ID` ou `METEOFRANCE_API_KEY` pour les stations, la vigilance et le radar de Météo-France).
 

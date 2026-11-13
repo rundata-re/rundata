@@ -9,7 +9,8 @@ import { eve, firstOf, fuelSay, INDISPONIBLE, keep } from "../tools/carburants.j
 import { connectorCta, crumbBar, crumbs, jourMois, lienNom, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
-import { credits, DESCRIPTION_MAX, icon, layout } from "./pages.js";
+import { credits, DESCRIPTION_MAX, layout } from "./pages.js";
+import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 
 const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 const signed = (p: carburants.Produit) =>
@@ -22,6 +23,24 @@ const say = (s: string) => jourMois(keep(s));
 export const TITLE = "Prix carburants : essence, gazole, gaz · La Réunion (974)";
 
 /** « Prix maximum en octobre 2026 à La Réunion (974) : sans plomb 2,00 €/L (+0,17 €), gazole 1,80 €/L (+0,12 €), bouteille de gaz 20,81 €. … » */
+/**
+ * The stable text (marketing, 14/11/2026), in place of the card « Des prix maximum, les mêmes dans toute l'île ». « Les
+ * stations l'affichent en général tel quel » left out: nothing published says what the stations display.
+ */
+const LIRE = `<p>À La Réunion, le préfet fixe chaque mois les <b>prix maximum</b> des carburants et de la bouteille de gaz, par un arrêté. Ils tiennent compte des cours internationaux, du taux de change et du fret. Ils s'appliquent le 1er du mois, dans toutes les stations de l'île : aucune ne peut vendre plus cher.</p>
+<p>La page donne les prix du mois en cours et ceux du mois précédent, avec l'écart pour chaque produit. Elle reprend aussi la phrase du communiqué de la préfecture qui résume la hausse ou la baisse. Nous relisons l'arrêté chaque jour : un nouveau prix apparaît sur le site dès que l'arrêté est publié.</p>
+<p><b>Ce que la page réunit :</b></p>
+<ul class="plain"><li>l'arrêté du mois, le précédent et l'écart entre les deux, sur une seule ligne par produit ;</li>
+<li>les produits que l'on cherche moins souvent, comme le GNR, le pétrole lampant ou les carburants des professionnels de la mer.</li></ul>
+<p><a href="/trafic">La circulation et l'état des routes →</a></p>`;
+
+const FAQ: Faq[] = [
+  { q: "Le prix est-il le même dans toutes les stations ?", a: "Le préfet fixe un prix maximum pour toute l'île : aucune station ne peut vendre plus cher." },
+  { q: "Quand les prix changent-ils ?", a: "Le 1er de chaque mois, d'après l'arrêté du préfet. La page affiche le nouveau prix dès que l'arrêté est publié." },
+  { q: "Où trouver le prix d'une station précise ?", a: "Il n'existe pas de relevé des prix station par station à La Réunion : les départements d'outre-mer ne sont pas dans le relevé national. Le prix maximum de cette page est donc la référence." },
+  { q: "Pourquoi deux prix pour la bouteille de gaz ?", a: "L'arrêté donne le prix maximum de la bouteille de 12,5 kg, et un second prix une fois déduites les aides locales. La page reprend les deux tels quels." },
+];
+
 export function descriptionOf(p: carburants.Prix | undefined): string {
   if (!p) return "Prix maximum des carburants à La Réunion (974), fixés chaque mois par le préfet : sans plomb, gazole, bouteille de gaz. Partout sur l'île.";
   const sp = find(p, /^supercarburant$/i);
@@ -64,13 +83,10 @@ export function carburantsPage(origin: string, data: Cached<carburants.Prix> | n
   <p class="note">D'après <a href="${esc(p.lien)}" rel="noopener">le communiqué de la préfecture</a> : « ${esc(p.titre)} ».</p></section>`
     : "";
 
-  const why = `<section aria-labelledby="h-savoir"><div class="card">${icon("car")}<h3 id="h-savoir">Des prix maximum, les mêmes dans toute l'île</h3>
-  <p>À La Réunion, le préfet fixe chaque mois les prix maximum des carburants et de la bouteille de gaz, d'après les cours internationaux, le taux de change et le fret. Ils s'appliquent le 1er du mois dans toutes les stations de l'île.</p>
-  <p>Il n'y a pas de relevé des prix par station : les départements d'outre-mer ne sont pas dans le relevé national. <a href="/trafic">La circulation et l'état des routes →</a></p></div></section>`;
 
   const body = `${table}
-${why}
 <section>${p && data ? `<p class="note">Source : ${credits([{ source: carburants.SOURCE.nom, licence: carburants.SOURCE.licence, attribution: carburants.SOURCE.attribution }])}.</p>` : ""}</section>
+${texteStable(LIRE, FAQ)}
 ${connectorCta("annuaire_services_publics", "les prix des carburants")}`;
-  return layout(origin, { title: TITLE, description, path, jsonld: [crumbs(origin, "Prix des carburants", path), webPage(origin, path, TITLE, description, data)], alerte }, band, body);
+  return layout(origin, { title: TITLE, description, path, jsonld: [crumbs(origin, "Prix des carburants", path), webPage(origin, path, TITLE, description, data), faqPage(FAQ)], alerte, iaAside: true }, band, body);
 }

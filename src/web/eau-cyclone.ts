@@ -18,6 +18,9 @@ export const CONSIGNE_PAGE = 18;
 const EAUDUROBINET = "https://www.eaudurobinet.re/";
 const COMMUNES = PAGES.filter((p) => p.commune).map((p) => p.nom);
 
+/** How many distributors' notices are read, each counted once (CISE Réunion through the CIREST and Sainte-Marie). */
+export const distributeursLus = () => new Set(COMMUNES.map((c) => distributeur(c)).filter((d) => d?.avis).map((d) => d!.nom)).size;
+
 /** November to April, as the cyclones tool says the season (src/tools/cyclones.ts), local time. */
 export function inSeason(now: Date): boolean {
   const m = new Date(now.getTime() + 4 * 3600_000).getUTCMonth() + 1;

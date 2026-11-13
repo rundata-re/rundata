@@ -9,6 +9,11 @@
  * 974 ». « 974 » sorts La Réunion from meetings, so the tab's title carries it, « La Réunion (974) » when it fits in
  * 60 characters; the headings stay as people say them.
  */
+import { faqPage, sansBalises, texteStable, type Faq } from "./texte-stable.js";
+import chaud from "../historique/plus-chaud.json" with { type: "json" };
+import { STATIONS_REFERENCE } from "../tools/historique.js";
+import { STATIONS_974 } from "../providers/meteofrance-stations.js";
+import { RELECTURE_MIN as METEOFRANCE_RELECTURE_MIN } from "../providers/meteofrance.js";
 import { CUMULS_LOADER, cumulsSection } from "./pluie-cumuls.js";
 import { porte } from "./aller.js";
 import { resolvePlace } from "../places/resolve.js";
@@ -588,6 +593,9 @@ text-decoration:none;background:var(--sun);color:var(--sun-ink);box-shadow:var(-
 .askbox>[data-l]{display:grid;gap:.6rem;justify-items:start;grid-template-columns:minmax(0,1fr)}
 .askbox>[hidden]{display:none}
 .askq{font-size:.85rem;font-style:italic;color:var(--muted);max-width:34rem}
+.ia{display:grid;gap:1rem;padding-block:1.5rem 2rem;min-width:0}.ia>.cta{margin:0}
+.ia-ligne{margin-top:1.4rem;font-weight:600}
+.lire,.faq{display:grid;gap:.6rem;max-width:46rem}.faq h3{margin-top:.6rem}.faq h3:first-child{margin-top:0}
 .askn{font-size:.85rem;color:var(--muted);max-width:34rem}
 .copie{font-size:.9rem;font-weight:700;max-width:34rem}
 .band .askq,.band .askn{color:var(--on-night-muted)}
@@ -1379,6 +1387,13 @@ interface Head {
   vert?: boolean;
   /** The page's own hook, in place of its category's: a station's page, which says since when it measures. */
   hook?: string;
+  /**
+   * The two blocks about the assistants (the question « Domann out IA » and « Votre IA, branchée sur… ») out of <main>,
+   * in one <aside> after it; <main> keeps one line at its foot with the page's own question (iaAside()). The head pages
+   * whose own text must outweigh the template's (/coupures-eau, /bus, /sentiers, /meteo, /carburants, /secheresse, the
+   * communes).
+   */
+  iaAside?: boolean;
   /** The picture of another section in link previews (scripts/build-og.py's key): a past cyclone, a station that no
    * longer measures, show the history's, not the « en direct » of their section's. */
   image?: string;
@@ -1741,11 +1756,44 @@ export function askAfterData(band: string, main: string): [string, string] {
   return [rest, `${main.slice(0, first[1])}\n${box}${main.slice(first[1])}`];
 }
 
+/**
+ * For a page with `iaAside`: the band and the text without the question to an assistant (ASKBOX) and without the
+ * section « Votre IA, branchée sur… » (aria-labelledby="h-ia"), the text ending with one line that asks the page's own
+ * question (the first sentence of the question in French) and leads to them, and the <aside> that holds them both.
+ */
+export function iaAside(band: string, main: string): [string, string, string] {
+  let box = "";
+  const at = band.indexOf(ASKBOX);
+  const end = at < 0 ? -1 : elementEnd(band, at, "div");
+  if (end > 0) {
+    box = band.slice(at, end);
+    const lineStart = band.lastIndexOf("\n", at) + 1;
+    const cut = band.slice(lineStart, at).trim() === "" && band[end] === "\n" ? [lineStart, end + 1] : [at, end];
+    band = band.slice(0, cut[0]) + band.slice(cut[1]);
+  }
+  let cta = "";
+  const s = main.search(/<section\b[^>]*aria-labelledby="h-ia"/);
+  const e = s < 0 ? -1 : elementEnd(main, s, "section");
+  if (e > 0) {
+    cta = main.slice(s, e);
+    main = (main.slice(0, s) + main.slice(e)).replace(/\n{3,}/g, "\n\n");
+  }
+  if (!box && !cta) return [band, main, ""];
+  // The question in French, as its box writes it (« Y a-t-il une coupure d'eau à Saint-Denis ? Lis … »): its first sentence.
+  // Without its tags nor any < or > left, since it goes back into HTML (sansBalises()); its entities stay as they are.
+  const m = /<div data-l="fr"[^>]*>[\s\S]*?<p class="askq">« ([\s\S]*?) »<\/p>/.exec(box)?.[1];
+  const fr = m === undefined ? undefined : sansBalises(m);
+  const question = fr ? /^[^?]*\?/.exec(fr)?.[0] : undefined;
+  const line = `<p class="ia-ligne">${question ? `Demandez à votre IA : « ${question} »` : "Demandez à votre IA"} <a href="#ia">→</a></p>`;
+  return [band, `${main}\n${line}`, `<aside class="wrap ia" id="ia" aria-label="Votre IA">\n${box}\n${cta}\n</aside>`];
+}
+
 export function layout(origin: string, head: Head, written: string, body: string): string {
   // A page that names its own sources has, in its footer, only the link to them all; the others keep the site's.
   const [text0, sources] = sourcesLast(body);
-  // The question to an assistant after the first block of data (askAfterData()), before the acronyms and ids below.
-  const [band, main] = askAfterData(written, text0);
+  // The question to an assistant after the first block of data (askAfterData()), before the acronyms and ids below; or,
+  // on a head page, both blocks about the assistants after <main> (iaAside()).
+  const [band, main, aside] = head.iaAside ? iaAside(written, text0) : [...askAfterData(written, text0), ""];
   const map = sources.length ? mapCredit(band + main) : undefined;
   if (map) sources.push(map);
   // The IGN's background a visitor picks on a zoomed map (web/map.ts, FONDS), named by its script in the footer's credit.
@@ -1804,7 +1852,7 @@ ${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}`}
 ${text}
 </div>
 </main>
-${head.shell ? "" : `${head.sansPartage ? "" : share(origin, head)}
+${aside ? `${aside}\n` : ""}${head.shell ? "" : `${head.sansPartage ? "" : share(origin, head)}
 ${head.sansAvis ? "" : `${aide()}
 ${avisForm(head.path)}`}`}
 ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot${decor ? " motif" : ""}"><div class="wrap">
@@ -2202,6 +2250,32 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
 }
 
 /** The island's weather: every station, from the coast to the summits, the sea, and a page per commune or place. */
+/**
+ * /meteo's stable text (marketing, 14/11/2026). The stations of reference and the first year of Gillot's series from
+ * the data of /historique. The record of a station comes with the block « Records », later.
+ */
+const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. La prévision est à part, sur la page de chaque commune, et elle est toujours présentée comme une prévision.</p>
+<p>Chaque chiffre est la dernière mesure d'une station, avec son heure. Les mesures viennent de plusieurs réseaux :</p>
+<ul class="plain"><li><b>Les stations de Météo-France</b> publient une mesure toutes les 6 minutes, et nous les relisons toutes les ${METEOFRANCE_RELECTURE_MIN} minutes.</li>
+<li><b>Les deux aéroports</b> publient leurs observations toutes les 30 minutes.</li>
+<li><b>Des balises de vent</b> complètent le réseau, dont celles des clubs de parapente (FFVL).</li>
+<li><b>Les stations amateur du réseau MétéoR-OI</b>, en option, ajoutent des points de mesure dans les hauts et les quartiers. Leur fiabilité n'est pas vérifiée comme celle des stations officielles : elles sont dessinées avec un contour en pointillé.</li></ul>
+<p>Les stations vont de la côte à plus de ${fr(Math.floor(Math.max(...STATIONS_974.map((s) => s[4])) / 100) * 100)} m d'altitude. Entre deux stations, la carte <b>estime</b> la température d'après l'altitude, et la pluie d'après le radar de Météo-France. Ce sont des estimations, pas des mesures.</p>
+<p><b>Ce que la page réunit et qu'aucune source ne montre seule :</b></p>
+<ul class="plain"><li>les stations officielles, celles des aéroports, les balises et les stations amateur, sur une même carte et à la même heure ;</li>
+<li>la possibilité de rejouer les 6 dernières heures, les 24 dernières heures ou les 7 derniers jours.</li></ul>
+<p><b>L'historique et les records :</b> voir <a href="/historique">la page Historique</a>.</p>
+<ul class="plain"><li>Elle compare les 30 derniers jours à la normale 1991-2020, à ${STATIONS_REFERENCE} stations de référence.</li>
+<li>Elle donne la température de chaque année depuis ${(chaud.annees as [number, number][])[0][0]} ${a(chaud.station.replace(/ \(aéroport\)$/, ""))}.</li>
+<li>Avec le connecteur, votre assistant IA lit aussi les mesures quotidiennes des stations que Météo-France a eues sur l'île, records compris.</li></ul>`;
+
+const METEO_FAQ: Faq[] = [
+  { q: "Pourquoi la température diffère-t-elle de celle de mon appli ?", a: "Une appli donne souvent une prévision ou une estimation pour votre position. Ici, c'est la mesure d'une station, sous abri, à une heure donnée. Choisissez la station la plus proche et à la même altitude que vous : à La Réunion, quelques centaines de mètres de dénivelé changent beaucoup la température." },
+  { q: "Les stations amateur sont-elles fiables ?", a: "Leur fiabilité n'est pas vérifiée par Météo-France. Elles sont donc en option (la case « Stations amateur »), et chacune est marquée. Elles aident à voir ce qui se passe entre les stations officielles." },
+  { q: "Il a peu plu ces derniers temps : est-ce normal pour la saison ?", a: `<a href="/historique">La page Historique</a> compare la pluie des 30 derniers jours à la normale 1991-2020 de chaque station de référence.` },
+  { q: "Quel temps fera-t-il demain ?", a: `C'est une prévision : voyez la page de votre commune, qui la donne sur 7 jours, à part des mesures. Pour une vigilance, seul le site de Météo-France fait foi.` },
+];
+
 export function meteoPage(origin: string, data: Cached<HomeData> | null, now = new Date(), alerte?: Alerte): string {
   const l = withTempAll(data);
   const all = data?.value.toutes ?? [];
@@ -2300,8 +2374,9 @@ ${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p 
   <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>${coupable("meteo_actuelle")}</code> et <code>${coupable("prevision_meteo")}</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>
+${texteStable(meteoLire(), METEO_FAQ)}
 ${WEATHER_NOTES}`;
-  return layout(origin, { title, description, path: "/meteo", jsonld, alerte }, band, body);
+  return layout(origin, { title, description, path: "/meteo", jsonld: [...jsonld, faqPage(METEO_FAQ)], alerte, iaAside: true }, band, body);
 }
 
 const KIND: Record<string, string> = {

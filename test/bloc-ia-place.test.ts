@@ -36,23 +36,31 @@ describe("the question to an assistant", () => {
     expect(askAfterData('<div class="pitch"><h1>Titre</h1></div>', main)).toEqual(['<div class="pitch"><h1>Titre</h1></div>', main]);
   });
 
-  it("is in no band, and follows the band's map on /meteo, /air and /mer", () => {
-    const st = { nom: "Saint-Denis-Gillot", source: "meteofrance", lon: 55.52, lat: -20.89, altitude_m: 10, time: "2026-11-06T15:24:00Z", stale: false, temperature: 26.1 };
-    const meteo = meteoPage(O, { value: { stations: [st], toutes: [st], sources: [], indisponibles: [], mer: [] }, fetchedAt: NOW, stale: false } as never, NOW);
-    for (const [html, first] of [[meteo, 'id="stations"'], [airPage(O, null, NOW), "<section"], [seaPage(O, null, NOW), "<section"]]) {
+  it("is in no band, and follows the band's map on /air and /mer", () => {
+    for (const [html, first] of [[airPage(O, null, NOW), "<section"], [seaPage(O, null, NOW), "<section"]]) {
       expect(band(html)).not.toContain('class="askbox"');
       expect(band(html)).toContain("<figure");
       const t = text(html);
       expect(at(t, '<div class="askbox">')).toBeGreaterThan(0);
       expect(at(t, '<div class="askbox">')).toBeLessThan(at(t, first));
     }
-    // The Creole question as written, in French typography.
-    expect(text(meteo)).toContain("Gèt bann mézir an dirèk si <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>meteo</span> é di amwin lèr la mézir.");
   });
 
-  it("follows the first section of a commune's page and of /volcan, whose map is not on a phone", () => {
+  it("is after <main> on the head pages (/meteo, the communes), in the aside, its Creole question as written", () => {
+    const st = { nom: "Saint-Denis-Gillot", source: "meteofrance", lon: 55.52, lat: -20.89, altitude_m: 10, time: "2026-11-06T15:24:00Z", stale: false, temperature: 26.1 };
+    const meteo = meteoPage(O, { value: { stations: [st], toutes: [st], sources: [], indisponibles: [], mer: [] }, fetchedAt: NOW, stale: false } as never, NOW);
+    const commune = communePage(O, pageOf("saint-paul")!, { place: null } as never, NOW);
+    for (const html of [meteo, commune]) {
+      expect(band(html)).not.toContain('class="askbox"');
+      expect(text(html)).not.toContain('class="askbox"');
+      expect(html.slice(at(html, "</main>"))).toContain('<div class="askbox">');
+    }
+    // The Creole question as written, in French typography.
+    expect(meteo).toContain("Gèt bann mézir an dirèk si <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>meteo</span> é di amwin lèr la mézir.");
+  });
+
+  it("follows the first section of /volcan, whose map is not on a phone", () => {
     for (const [html, first, next] of [
-      [communePage(O, pageOf("saint-paul")!, { place: null } as never, NOW), 'id="en-ce-moment"', 'aria-labelledby="h-habiter"'],
       [volcanPage(O, null, NOW), 'id="seismes"', 'id="alertes-precedentes"'],
     ]) {
       expect(band(html)).not.toContain('class="askbox"');

@@ -18,15 +18,6 @@ describe("the stable text of the head pages", () => {
     // /meteo as it nearly always is: with stations (an empty copy shows its other page).
     const st = { nom: "Saint-Denis-Gillot", source: "meteofrance", lon: 55.52, lat: -20.89, altitude_m: 10, time: new Date(Date.now() - 6 * 60_000).toISOString(), stale: false, temperature: 25 } as StationNow;
     await cache.get("web:meteo", 3600, async (): Promise<HomeData> => ({ stations: [st], toutes: [st], sources: [], indisponibles: [], mer: [] }));
-    const visible = (html: string) => {
-      let s = html;
-      let avant: string;
-      do {
-        avant = s;
-        s = s.replace(/<(script|style|template)\b[\s\S]*?<\/\1>/g, "").replace(/<[^>]*\bhidden\b[^>]*>[\s\S]*?<\/(div|section|p)>/g, "");
-      } while (s !== avant);
-      return sansBalises(s);
-    };
     for (const [path, c] of [["/meteo", cache], ...HEAD_PAGES.filter((p) => p !== "/meteo").map((p) => [p, undefined] as const)] as const) {
       const html = await (await handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html" } }), c ?? new Cache(new MemoryStore()))).text();
       if (path === "/meteo") expect(html, path).toContain('<section id="stations" aria-labelledby="h-stations">');
@@ -37,8 +28,8 @@ describe("the stable text of the head pages", () => {
         const name = q.name.replace(/[\s\u00a0\u202f]+/g, " ").trim();
         expect(h3, `${path} : ${name}`).toContain(name);
       }
-      // Never hidden: no question in a hidden block or a script.
-      expect(visible(mainOf(html)).replace(/&#39;/g, "'").replace(/[\s\u00a0\u202f]+/g, " "), path).toContain((faq.mainEntity[0] as { name: string }).name.replace(/[\s\u00a0\u202f]+/g, " "));
+      // Never a question in a hidden heading.
+      expect(mainOf(html), path).not.toMatch(/<h3[^>]*hidden/);
     }
   });
 

@@ -264,7 +264,7 @@ describe("the contour lines of the decor", () => {
   });
 
   it("are in the band of the pages about the site, the legal texts and an address that does not exist, and of no other", async () => {
-    expect(MOTIF_PAGES.size).toBe(9);
+    expect(MOTIF_PAGES.size).toBe(10);
     for (const p of [...MOTIF_PAGES, "/une-adresse-qui-n-existe-pas"]) {
       const r = await get(p);
       expect(band(await r.text()), p).toBe('<div class="band motif">');

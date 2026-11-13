@@ -40,6 +40,7 @@ import { climb, relief } from "../tools/sentiers.js";
 import { SCALE as DROUGHT_SCALE } from "../tools/secheresse.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
+import { lienJeux } from "./transport-donnees.js";
 import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
@@ -1206,6 +1207,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
   <p>Toutes les lignes qui partent de chaque gare, tous réseaux confondus, au plus trois départs par ligne et par direction.</p></div>
   ${gares}
   ${d ? `<p class="sources">Sources : ${credits(d.sources)}.</p>` : ""}
+  ${lienJeux()}
 </section>
 ${d?.alertes?.length ? `<section aria-labelledby="h-trafic"><h2 id="h-trafic">Info trafic</h2><div class="card">${alertList(d.alertes)}<p class="note">Publié par les réseaux dans leur flux en direct, repris tel quel.</p></div></section>` : ""}
 ${connectorCta("transports", "les bus de l'île")}
@@ -1317,6 +1319,7 @@ export function velosPage(origin: string, data: Cached<VelosAnswer> | null, now 
   <p>${d ? adressesCoupables(d.service, true) : "Altervélo : vélos à assistance électrique en libre-service de la CIVIS."}</p></div>
   ${byCommune}
   ${d && data ? sourcesNote(d.sources, data) : ""}
+  ${lienJeux()}
 </section>
 ${connectorCta("velos_libre_service", "les vélos du Sud")}${d ? g.feuille : ""}`;
 
@@ -1636,6 +1639,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   <p>${d ? esc(d.recharge) : "Les bornes publiques de l'île et l'état de chacun de leurs points."}</p></div>
   ${byCommune}
   ${d && data ? sourcesNote(d.sources, data) : ""}
+  ${lienJeux()}
 </section>
 ${connectorCta("bornes_recharge", "les bornes de recharge")}${d ? g.feuille : ""}`;
 

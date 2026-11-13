@@ -9,7 +9,8 @@ import { Cache, MemoryStore, stampOf, TieredStore, type CacheEntry } from "../sr
 import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import * as feux from "../src/providers/feux.js";
-import { alerteOf, buildPlace, buildSea, type SeaData, snapshot, withoutForecast } from "../src/web/data.js";
+import { alerteOf, buildHome, buildPlace, buildSea, type SeaData, snapshot, withoutForecast } from "../src/web/data.js";
+import * as coraux from "../src/providers/coraux.js";
 import { buildSatellites, SATELLITES } from "../src/tools/mer.js";
 import { homePage } from "../src/web/home.js";
 import { communesPage } from "../src/web/commune.js";
@@ -248,14 +249,48 @@ describe("home page", () => {
   it("keeps the last copy's readings, with their day, while the satellites' grids are not shared yet", async () => {
     // Right after the deploy that shares them: the scheduled event has not built them yet, and a view rebuilds /mer.
     const edge = new EdgeLike();
-    const old: SeaData = { plages: [{ nom: "Saint-Leu", commune: "Saint-Leu", lon: 55.28, lat: -21.17, valeur: 25.1, jour: "2026-10-20", distance_km: 0.3 }], sources: [{ source: "Température de surface de la mer par satellite (NOAA ACSPO L3S)", licence: "Domaine public (NOAA)", attribution: "NOAA" }] };
+    const old: SeaData = { plages: [{ nom: "Saint-Leu", commune: "Saint-Leu", lon: 55.28, lat: -21.17, valeur: 25.1, jour: "2026-10-20", heure: "2026-10-20T09:49:00Z", distance_km: 0.3 }], sources: [{ source: "Température de surface de la mer par satellite (NOAA ACSPO L3S)", licence: "Domaine public (NOAA)", attribution: "NOAA" }] };
     await edge.put("web:mer", { value: old, fetchedAt: NOW.getTime() - 3 * 3600_000 });
     const cache = isolate(edge);
     await serve(cache, "/mer");
     const sea = (await cache.peek<SeaData>("web:mer"))!;
     expect(sea.fetchedAt.getTime()).toBe(NOW.getTime());
-    expect(sea.value.plages.find((b) => b.nom === "Saint-Leu")).toMatchObject({ valeur: 25.1, jour: "2026-10-20", houle: expect.anything() });
+    expect(sea.value.plages.find((b) => b.nom === "Saint-Leu")).toMatchObject({ valeur: 25.1, jour: "2026-10-20", heure: "2026-10-20T09:49:00Z", houle: expect.anything() });
     expect(sea.value.sources.map((s) => s.source)).toContain(old.sources[0].source);
+  });
+
+  it("gives the home page's sea the corals a view of /mer kept in KV, each beach its nearest point, without asking NOAA", async () => {
+    const asked: string[] = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      asked.push(String(url));
+      return upstream(String(url), init);
+    });
+    // The grid a view of /mer read yesterday, in KV: Saint-Gilles' reef on alert, the other two points without stress.
+    const reef: coraux.Coraux = { jour: "2026-10-18", jours: 7, points: coraux.POINTS.map((p, i) => ({ ...p, niveau: i === 0 ? 3 : 0, dhw: 0, sst: 26 })) };
+    const kv = new MemoryStore();
+    // The island's copies are under « lecture: » in KV (cache.ts).
+    await kv.put(`lecture:${coraux.KEY}`, { value: reef, fetchedAt: NOW.getTime() - 20 * 3600_000 });
+    const edge = new EdgeLike();
+    const old: SeaData = {
+      plages: [
+        { nom: "Saint-Leu", commune: "Saint-Leu", lon: 55.28, lat: -21.17, valeur: 25.1, jour: "2026-10-20", heure: "2026-10-20T09:49:00Z", distance_km: 0.3 },
+        { nom: "Saint-Benoît", commune: "Saint-Benoît", lon: 55.71, lat: -21.03, valeur: 24.8, jour: "2026-10-20", distance_km: 1.2 },
+      ],
+      sources: [],
+    };
+    await edge.put("web:mer", { value: old, fetchedAt: NOW.getTime() - 3 * 3600_000 });
+    const sea = (await counted(PAGE_BUDGET, () => buildSea(isolate(edge, kv), NOW))).value;
+    expect(sea.coraux).toEqual(reef);
+    expect(asked.filter((u) => u.includes("dhw_5km"))).toEqual([]);
+    // The home page's weather reads that copy: each beach with its pass and the level of its nearest point.
+    await edge.put("web:mer", { value: sea, fetchedAt: NOW.getTime() });
+    const home = (await counted(PAGE_BUDGET, () => buildHome(isolate(edge), NOW))).value;
+    expect(home.mer.find((m) => m.nom === "Saint-Leu")).toMatchObject({ heure: "2026-10-20T09:49:00Z", coraux: { niveau: 3, jour: "2026-10-18" } });
+    expect(home.mer.find((m) => m.nom === "Saint-Benoît")).toMatchObject({ coraux: { niveau: 0, jour: "2026-10-18" } });
+    expect(home.mer.find((m) => m.nom === "Saint-Benoît")).not.toHaveProperty("heure");
+    // No grid kept: no corals, and the copy is made all the same.
+    const bare = (await counted(PAGE_BUDGET, () => buildSea(isolate(new EdgeLike()), NOW))).value;
+    expect(bare).not.toHaveProperty("coraux");
   });
 
   it("reads no tile from the data center's cache on a warm isolate whose copies are fresh", async () => {

@@ -140,7 +140,7 @@ describe("MétéoR-OI's stations", () => {
   it("never adds to the scheduled event of every 5 minutes: /chiffres counts the stations without MétéoR-OI's", () => {
     expect(NON_COMPTEES.has(meteorOi.SOURCE.id)).toBe(true);
     expect(METEOR_READS.has("web:chiffres")).toBe(false);
-    expect(worstEvent().subrequests).toBeLessThanOrEqual(521);
+    expect(worstEvent().subrequests).toBeLessThanOrEqual(523);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

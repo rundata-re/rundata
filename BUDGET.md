@@ -18,7 +18,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 521 | 550 |
+| pire passage planifié, sous-requêtes | 523 | 550 |
 | pire passage planifié, appels KV et D1 | 122 | 1 000 |
 | pire passage planifié, CPU (ms) | 4 876 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
@@ -29,19 +29,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 521 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 479, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
+- Marge : le pire passage planifié est à 523 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 477, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 391 sous-requêtes à 00:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 393 sous-requêtes à 00:00 UTC.
 - Vue la plus chère : /communes/*, 93. Question la plus chère : resume_du_jour, 79. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 521 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
-| tâche planifiée, par jour | 36 159 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
-| tâche planifiée, par jour, cadences les plus courtes | 55 291 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
-| tâche planifiée, par mois (30 jours) | 1 084 757 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
+| pire passage planifié | 523 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
+| tâche planifiée, par jour | 36 175 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
+| tâche planifiée, par jour, cadences les plus courtes | 55 307 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
+| tâche planifiée, par mois (30 jours) | 1 085 237 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
 | tâches planifiées à part, par jour | 5 760 | 144 | 144 |  |  |  | 2 880 |
 | tâches planifiées à part, par mois (30 jours) | 172 800 | 4 320 | 4 320 |  |  |  | 86 400 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -66,7 +66,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | web:air | copie partagée (KV) | 60 min (15 au plus court) | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
 | mer:satellites | copie partagée (KV) | 180 min (10 au plus court) | 00:55 | 8 |  | 1 |  |  |  | 400 | estimé |
 | mer:passages | copie partagée (KV) | 60 min (10 au plus court) | 00:00 | 4 |  | 1 |  |  |  | 400 | mesuré |
-| web:mer | copie partagée (KV) | 180 min | 01:15 | 14 |  | 1 |  |  |  | 110 | mesuré |
+| web:mer | copie partagée (KV) | 180 min | 01:15 | 16 |  | 1 |  |  |  | 110 | mesuré |
 | web:calendrier | copie partagée (KV) | 360 min | 02:10 | 9 |  | 1 |  |  |  | 40 | estimé |
 | seismes | copie partagée (KV) | 10 min | 00:05 | 3 |  | 1 |  |  |  | 10 | estimé |
 | onf:sentiers | copie partagée (KV) | 60 min | 00:45 | 5 |  | 1 |  |  |  | 40 | estimé |

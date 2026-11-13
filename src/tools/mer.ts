@@ -186,6 +186,8 @@ function reading(place: Place, gs: Grid[], now: Date, passes?: Cached<viirs.Pass
     return {
       grid: { source: viirs.SOURCE, cached: { value: [], fetchedAt: passes!.fetchedAt, stale: passes!.stale } } as Grid,
       valeur: p.valeur,
+      /** When the satellite passed, ISO: the copy of /mer keeps it for the home page's map (web/data.ts). */
+      passe: new Date(p.heure).toISOString(),
       mesure: {
         temperature_eau: `${fr(p.valeur)} °C`,
         nature: "mesure_satellite",

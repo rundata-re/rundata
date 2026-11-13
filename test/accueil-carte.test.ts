@@ -89,6 +89,23 @@ describe("the home page's island", () => {
     expect(port.tip.detail).toBe("Le Port, à\u00a019:30, d'après l'agenda de la commune du Port");
   });
 
+  it("says in the sea's bubble NOAA's corals near its beach, then the water there with the satellite's pass, and never corals of an old day", () => {
+    const sea = (mer: unknown[]) => sujets({ meteo: cached({ stations: [], sources: [], indisponibles: [], mer }) }, NOW)[0];
+    const beach = { nom: "Saint-Leu", valeur: 26.4, jour: "2026-11-10", heure: "2026-11-10T05:49:00Z", distance_km: 2 };
+    expect(sea([{ ...beach, coraux: { niveau: 0, jour: "2026-11-08" } }]).tip).toEqual({
+      place: "Coraux\u00a0: pas de stress thermique (NOAA)", value: "", detail: "eau à 26,4\u202f°C au large de Saint-Leu, mesurée par satellite à\u00a009:49 (NOAA)",
+    });
+    // An alert says its level, whole; a pass of another day, its day; a beach with an article, its article.
+    expect(sea([{ ...beach, nom: "Plage de Boucan-Canot", heure: "2026-11-09T09:58:00Z", coraux: { niveau: 3, jour: "2026-11-08" } }]).tip).toEqual({
+      place: "Coraux\u00a0: alerte niveau 1\u00a0: risque de blanchissement de tout le récif (NOAA)", value: "",
+      detail: "eau à 26,4\u202f°C au large de la plage de Boucan-Canot, mesurée par satellite le 09/11 à 13:58 (NOAA)",
+    });
+    // Corals of a day too old, or none: the beach and its water, as before; a day's mean, its day alone.
+    const { heure: _h, ...mean } = beach;
+    expect(sea([{ ...mean, coraux: { niveau: 0, jour: "2026-11-04" } }]).tip).toEqual({ place: "Saint-Leu", value: "26,4\u202f°C", detail: "mesurée par satellite le 10/11 (NOAA)" });
+    expect(sea([beach]).tip).toEqual({ place: "Saint-Leu", value: "26,4\u202f°C", detail: "mesurée par satellite à\u00a009:49 (NOAA)" });
+  });
+
   it("opens each label's bubble away from the island: above the top band, below the bottom one, beside the flanks on a wide screen", () => {
     const side = (name: string) => Object.fromEntries([...layout(html, name).matchAll(/data-k="([a-z]+)" data-h="[a-z]+" aria-label="[^"]*" data-cote="([tblr])"/g)].map((m) => [m[1], m[2]]));
     expect(side("tel")).toEqual({ sortie: "t", routes: "t", sentiers: "t", volcan: "b", mer: "b", velos: "b", meteo: "t", air: "b" });

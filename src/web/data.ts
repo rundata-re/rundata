@@ -12,6 +12,7 @@ import type { Jour } from "../tools/volcan.js";
 import * as arome from "../providers/arome.js";
 import { left, measured, unmeasured } from "../budget.js";
 import { daysApart, distanceKm, localTime, sinceMidnight } from "../geo.js";
+import * as coraux from "../providers/coraux.js";
 import { type Cache, type Cached, stampOf } from "../cache.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
@@ -124,7 +125,11 @@ export interface SeaNow {
   valeur: number;
   /** Day of the satellite pass, YYYY-MM-DD. */
   jour: string;
+  /** When the satellite passed, ISO; missing for a day's mean, and on a copy of /mer made before it was kept. */
+  heure?: string;
   distance_km: number;
+  /** NOAA's bleaching level (0 to 7) at the corals' point nearest the beach, and its day; missing without the grid. */
+  coraux?: { niveau: number; jour: string };
 }
 
 export interface Credit {
@@ -277,7 +282,9 @@ async function seaOfTour(cache: Cache, now: Date): Promise<{ mer: SeaNow[]; sour
   if (!copy) return null;
   const mer = SEA_TOUR.flatMap((n) => {
     const b = copy.value.plages.find((x) => x.nom === resolvePlace(n)!.lieu.nom);
-    return b?.valeur != null && b.jour && b.distance_km != null ? [{ nom: b.nom, valeur: b.valeur, jour: b.jour, distance_km: b.distance_km }] : [];
+    if (b?.valeur == null || !b.jour || b.distance_km == null) return [];
+    const reef = copy.value.coraux?.points.filter((p) => p.niveau != null).sort((x, y) => distanceKm(b.lon, b.lat, x.lon, x.lat) - distanceKm(b.lon, b.lat, y.lon, y.lat))[0];
+    return [{ nom: b.nom, valeur: b.valeur, jour: b.jour, ...(b.heure && { heure: b.heure }), distance_km: b.distance_km, ...(reef && { coraux: { niveau: reef.niveau!, jour: copy.value.coraux!.jour } }) }];
   });
   const satellites = SEA_SOURCES.map((p) => p.nom);
   return mer.length ? { mer, sources: copy.value.sources.filter((s) => satellites.includes(s.source)) } : null;
@@ -308,6 +315,8 @@ export interface BeachNow {
   lat: number;
   valeur?: number;
   jour?: string;
+  /** When the satellite passed, ISO; missing for a day's mean. */
+  heure?: string;
   distance_km?: number;
   /** The waves FORECAST near the beach; missing on a copy made before they were read. */
   houle?: { hauteur_m: number; maintenant: string; heure: string; max: string; max_jour: string };
@@ -317,11 +326,31 @@ export interface SeaData {
   plages: BeachNow[];
   /** The two tide gauges; missing on a copy made before they were read. */
   maree?: ReturnType<typeof gaugeRow>[];
+  /** The corals' grid as a view of /mer last kept it, for the home page's map; missing when no view had read it. */
+  coraux?: coraux.Coraux;
   sources: Credit[];
 }
 
+/** How long the copy of /mer waits for the corals' grid in KV, when its data center has none. */
+const REEF_KV_WAIT_MS = 1_500;
+
+/**
+ * The corals' grid that a view of /mer last kept (providers/coraux.ts), never asked of NOAA here: the scheduled event
+ * builds this copy and does not read the grid (web/site.ts). One read of KV at most, when the data center has none
+ * of the last day.
+ */
+async function corauxGardes(cache: Cache, now: Date): Promise<coraux.Coraux | undefined> {
+  try {
+    // KV only when the data center's copy is older than a day: the grid has a new day once a day.
+    return (await cache.peek<coraux.Coraux>(coraux.KEY, now.getTime() - 24 * 3600_000, REEF_KV_WAIT_MS))?.value;
+  } catch (err) {
+    console.error("copie de /mer : coraux gardés illisibles", why(err));
+    return undefined;
+  }
+}
+
 export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData> {
-  const [t, tide, w] = await Promise.all([seaTour(cache, now, BEACHES), gauges(cache, now), wavesNow(cache)]);
+  const [t, tide, w, reef] = await Promise.all([seaTour(cache, now, BEACHES), gauges(cache, now), wavesNow(cache), corauxGardes(cache, now)]);
   if (!t && !w) throw new Error("ni mesure satellite de la mer, ni prévision des vagues");
   // Without the satellites' grids (before the scheduled event first shares them, or a day after they last came): the
   // last copy's readings, each with its day, rather than a copy without the water's temperature that the home page
@@ -342,12 +371,13 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
         lon: p.lon,
         lat: p.lat,
         ...(r
-          ? { valeur: r.valeur, jour: r.mesure.jour_mesure, distance_km: r.mesure.distance_km }
-          : before ? { valeur: before.valeur, jour: before.jour, distance_km: before.distance_km } : {}),
+          ? { valeur: r.valeur, jour: r.mesure.jour_mesure, ...("passe" in r && { heure: r.passe }), distance_km: r.mesure.distance_km }
+          : before ? { valeur: before.valeur, jour: before.jour, ...(before.heure && { heure: before.heure }), distance_km: before.distance_km } : {}),
         ...(l ? { houle: { hauteur_m: l.hauteur_m, maintenant: l.maintenant, heure: l.heure, max: l.max, max_jour: l.max_jour } } : {}),
       };
     }),
     ...(read ? { maree: tide.map((g) => gaugeRow(g, now)) } : {}),
+    ...(reef && { coraux: reef }),
     sources: [
       ...(t ? t.used.map((g) => credit(g.source)) : (last?.sources?.filter((s) => satellites.includes(s.source)) ?? [])),
       ...modelsOf(lines.map((l) => l?.at)).map((m) => credit(m.source)),

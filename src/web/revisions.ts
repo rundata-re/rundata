@@ -79,7 +79,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.
   meteo: 12,
   randonnees: 15,
-  secheresse: 1,
+  // The levels of the order n°2026-2094 of 12/11/2026 while VigiEau serves the one it replaced, VigiEau's said beside.
+  secheresse: 2,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.
   // Its copy keeps the trail pages' previews, which drop a weekend notice past its last day (web/domains.ts stateHead).
   // Its copies keep the notices' words (providers/sentiers.ts nuance): past its last day, a weekend notice is quoted, without « ouvert ».

@@ -79,6 +79,12 @@ export interface Entry {
   shortest?: number;
   /** The minute of the day (UTC) of its first run, modulo `every`. */
   offset?: number;
+  /**
+   * A scheduled entry run after the event's reads in its own `counted(BUILD_BUDGET, …)` (worker.ts `scheduled`), in the
+   * same invocation: the name its log line starts with (« capteurs amateurs : … »). Its subrequests never draw on
+   * SCHEDULED_BUDGET; each queue is held to BUILD_BUDGET, and the invocation's total, queues and all, to the platform's.
+   */
+  queue?: string;
   run: Run;
   /** Where its reads start: files whose imports reach every source it reads. Never a file that reaches them all. */
   from: string[];
@@ -215,6 +221,7 @@ const SCHEDULED: Entry[] = [
   // Outside a system, the list of GDACS and the bulletins kept alone.
   {
     id: "cmrs:liste",
+    queue: "carte du CMRS",
     trigger: "planifiée",
     what: "carte de prévision de trajectoire du CMRS : la liste de ses bulletins (Météo-France), pendant un système actif ou suivi par le CMRS",
     every: CMRS_EVERY,
@@ -225,6 +232,7 @@ const SCHEDULED: Entry[] = [
   },
   {
     id: "cmrs:image",
+    queue: "carte du CMRS",
     trigger: "planifiée",
     what: "carte de prévision de trajectoire du CMRS : l'image (Météo-France), gardée dans KV sous son empreinte, pendant un système actif ou suivi par le CMRS",
     every: CMRS_EVERY,
@@ -240,6 +248,7 @@ const SCHEDULED: Entry[] = [
   // Counted all day, as if every hour were in those minutes, and each read written.
   {
     id: "cmrs:trace",
+    queue: "trace du CMRS",
     trigger: "planifiée",
     what: "bulletin du CMRS (WTIO31, copie de la NOAA) : position et stade gardés dans KV, et l'heure de la lecture tant qu'un système est suivi",
     every: TRACE_EVERY,
@@ -307,6 +316,7 @@ const SCHEDULED: Entry[] = [
   // Its own budget (BUILD_BUDGET), after the event's reads: one GET per site not come back, the writes in one batch.
   {
     id: "sans-reponse:reverification",
+    queue: "sites sans réponse",
     trigger: "planifiée",
     what: "sites sans réponse : la revérification quotidienne, une lecture par site (D1 et sites), à 06:00 heure de La Réunion",
     every: 24 * 60,
@@ -320,6 +330,7 @@ const SCHEDULED: Entry[] = [
   // most, rounded up here; 9 to 17 Mo held besides its 9 Mo of text (measured in Node on the real file).
   {
     id: "irve:etat",
+    queue: "bornes de recharge",
     trigger: "planifiée",
     what: "bornes de recharge : la part de La Réunion du fichier national (environ 9 Mo), écrite dans KV après les autres lectures",
     every: IRVE_EVERY,
@@ -334,6 +345,7 @@ const SCHEDULED: Entry[] = [
   // 193 to 254 ms for a whole day's.
   {
     id: "air:mesures",
+    queue: "mesures de l'air",
     trigger: "planifiée",
     what: "qualité de l'air : les mesures horaires des stations d'Atmo Réunion, leurs lignes du fichier national du LCSQA (jusqu'à 12,5 Mo, lu ligne à ligne), écrites dans KV quand la dernière heure change",
     every: AIR_EVERY,
@@ -348,6 +360,7 @@ const SCHEDULED: Entry[] = [
   // file of 22/10/2026 (2.17 Mo), 6.3 on that of 29/10 (0.87 Mo); rounded up for a Worker. Memory estimated.
   {
     id: "antennes:hors-service",
+    queue: "sites mobiles hors service",
     trigger: "planifiée",
     what: "sites mobiles hors service : les lignes de La Réunion du fichier quotidien de l'Arcep (0,5 à 2,2 Mo), écrites dans KV une fois par jour",
     every: 24 * 60,
@@ -364,6 +377,7 @@ const SCHEDULED: Entry[] = [
   // and the copy held besides; rounded up.
   {
     id: "cpf:formations",
+    queue: "formations CPF",
     trigger: "planifiée",
     what: "formations CPF : les lignes de La Réunion du catalogue de Mon Compte Formation (Caisse des Dépôts, environ 780 Ko), écrites dans KV une fois par jour",
     every: 24 * 60,
@@ -376,6 +390,7 @@ const SCHEDULED: Entry[] = [
   // changed or an hour after: 3. Its answer is a list of a few sensors at most (none on 29/10/2026).
   {
     id: "capteurs:air",
+    queue: "capteurs amateurs",
     trigger: "planifiée",
     what: "capteurs amateurs de particules (Sensor.Community) : les 5 dernières minutes sur l'île, une requête, gardées 2 heures dans KV",
     every: CAPTEURS_EVERY,
@@ -385,12 +400,13 @@ const SCHEDULED: Entry[] = [
     basis: "code",
   },
   // In the pass at 10 past the hour besides (capteurs:air): sensors.social's list of the last hour, then one request per
-  // sensor of the island, SOCIAL_MAX at most, the 3 that sent last (1 sensor on 09/11/2026: 2 requests). Same copy,
+  // sensor of the island, SOCIAL_MAX at most (10), the ones that sent last (1 sensor on 09/11/2026: 2 requests). Same copy,
   // same write.
   {
     id: "capteurs:social",
+    queue: "capteurs amateurs",
     trigger: "planifiée",
-    what: "capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (les 3 qui ont émis en dernier au plus), dans la copie de capteurs:air",
+    what: `capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (les ${SOCIAL_MAX} qui ont émis en dernier au plus), dans la copie de capteurs:air`,
     every: 60,
     offset: CAPTEURS_OFFSET,
     run: { subrequests: 1 + SOCIAL_MAX, cpuMs: 10 },
@@ -422,6 +438,7 @@ const SCHEDULED: Entry[] = [
   // (web/pluie-radar.ts, decodeMm), with no read or write more: +48 % on the images of the rainy 31/10/2026, so 7 Mo.
   {
     id: "radar:6h",
+    queue: "historique radar",
     trigger: "planifiée",
     what: "pluie radar des 6 dernières heures pour le rejeu de /meteo : la dernière image de Météo-France ajoutée dans KV quand elle est nouvelle, ou un trou daté, et chaque quart d'heure une image gardée 24 heures",
     every: EVENT_MINUTES,
@@ -436,6 +453,7 @@ const SCHEDULED: Entry[] = [
   // CPU: the strongest rain of an hour's 12 images and about 2 Mo of JSON read and written at the most (a rainy week).
   {
     id: "radar:7j",
+    queue: "historique radar",
     trigger: "planifiée",
     what: "semaine du radar pour le rejeu 7 jours de /meteo : chaque heure finie ajoutée par le passage du radar, la pluie la plus forte de l'heure, et chaque image de 5 min dans la clé de son jour",
     every: 60,
@@ -475,6 +493,7 @@ const SCHEDULED: Entry[] = [
   // measured in a Worker.
   {
     id: "emploi:offres",
+    queue: "offres d'emploi",
     trigger: "planifiée",
     what: "emploi public : la page d'une offre de Choisir le service public à chaque événement, la plus récente pas encore lue, sinon chaque offre ouverte à son tour, écrites dans KV quand elles changent",
     every: EMPLOI_FICHE_EVERY,
@@ -486,6 +505,7 @@ const SCHEDULED: Entry[] = [
   // In the same event as the page above, at 25 past: the feed, one request.
   {
     id: "emploi:flux",
+    queue: "offres d'emploi",
     trigger: "planifiée",
     what: "emploi public : le flux des 20 dernières offres de Choisir le service public pour La Réunion",
     every: EMPLOI_EVERY,
@@ -499,6 +519,7 @@ const SCHEDULED: Entry[] = [
   // Node on the page of 05/11/2026, 30 runs in pieces of 16 Ko: 10 ms (median), 20 ms at most.
   {
     id: "emploi:total",
+    queue: "offres d'emploi",
     trigger: "planifiée",
     what: "emploi public : le compte de la recherche de Choisir le service public pour La Réunion, lu en flux à la place de la page d'offre du même événement",
     every: EMPLOI_EVERY,
@@ -510,6 +531,7 @@ const SCHEDULED: Entry[] = [
   // The copy read from KV, the list of the open notices (one request, about 80 Ko), the copy written when it changed.
   {
     id: "marches-publics:liste",
+    queue: "marchés publics",
     trigger: "planifiée",
     what: "marchés publics : la liste des avis de marché ouverts publiés au BOAMP pour La Réunion, écrite dans KV quand elle change",
     every: MARCHES_EVERY,
@@ -523,6 +545,7 @@ const SCHEDULED: Entry[] = [
   // 29/10/2026: 3 ms a notice (234 to 438 ms for 100), so 550 ms at the first read, a few ms an hour after.
   {
     id: "marches-publics:textes",
+    queue: "marchés publics",
     trigger: "planifiée",
     what: "marchés publics : le texte des nouveaux avis, pour savoir s'ils sont de l'île et leur commune, écrit dans KV",
     every: MARCHES_EVERY,
@@ -536,6 +559,7 @@ const SCHEDULED: Entry[] = [
   // time, the list of the active buoys besides: one request per type, three more subrequests in that run.
   {
     id: "candhis:etat",
+    queue: "bouées Candhis",
     trigger: "planifiée",
     what: "bouées Candhis du Cerema : la dernière mesure de chaque bouée de La Réunion, une requête par type de bouée, gardée dans KV",
     every: CANDHIS_EVERY,
@@ -551,6 +575,7 @@ const SCHEDULED: Entry[] = [
   // agendas; 7 ms after (median of 30). An event's page, under 1 ms. Counted with the index, rounded up.
   {
     id: "ffck:etat",
+    queue: "calendrier FFCK",
     trigger: "planifiée",
     what: "canoë-kayak et va'a : le calendrier de la FFCK, une page au plus par passage (la liste d'une saison une fois par jour, sinon la fiche d'une épreuve de l'île), gardé dans KV",
     every: FFCK_EVERY,
@@ -567,6 +592,7 @@ const SCHEDULED: Entry[] = [
   // reading writes all its events (up to CONNECTEUR_PAGES pages of 50).
   {
     id: "connecteurs:lecture",
+    queue: "connecteurs",
     trigger: "planifiée",
     what: "plateformes des associations (HelloAsso) : les événements publics d'une association reliée, relus toutes les 6 h, une association par passage",
     every: EVENT_MINUTES,
@@ -579,6 +605,7 @@ const SCHEDULED: Entry[] = [
   // taken from the isolate's memory, never read here. At 00:35, the day kept read first (KV): a read and a write.
   {
     id: "meteofrance:veille",
+    queue: "veille",
     trigger: "planifiée",
     what: "météo de la veille\u00a0: la pluie et les températures de 0\u00a0h à 24\u00a0h de chaque station Météo-France, prises dans le paquet horaire de la copie des stations, écrites dans KV à 00:20 heure de La Réunion, refaites à 00:35 si la dernière heure manquait",
     every: 24 * 60,
@@ -619,6 +646,7 @@ const SCHEDULED: Entry[] = [
   // its 37 clubs of the island written in one statement, those gone marked in another.
   {
     id: "clubs:annuaire",
+    queue: "espace club",
     trigger: "planifiée",
     what: "espace club : les clubs de handball de l'île, relus une fois par semaine sur la carte de MonClub (environ 2,2 Mo), à 04:00 heure de La Réunion",
     every: 7 * 24 * 60,
@@ -1018,8 +1046,17 @@ const scheduled = (entries = REGISTRY) => entries.filter((e) => e.trigger === "p
 /** The scheduled events of their own cron, each in its own invocation. */
 const apart = (entries = REGISTRY) => entries.filter((e) => e.trigger === "planifiée à part");
 
-/** Every scheduled entry at once, from cold: after a deploy, every copy due in the same event. */
+/** Every scheduled entry at once, from cold: after a deploy, every copy due in the same event. The whole invocation. */
 export const worstEvent = (entries = REGISTRY) => sum(scheduled(entries).map((e) => e.run));
+/** The scheduled entries that draw on SCHEDULED_BUDGET: all but the queues run after the reads (`queue`). */
+const main = (entries = REGISTRY) => scheduled(entries).filter((e) => !e.queue);
+/** The same, without the queues: what SCHEDULED_BUDGET holds (worker.ts, `counted(SCHEDULED_BUDGET, …)`). */
+export const worstMain = (entries = REGISTRY) => sum(main(entries).map((e) => e.run));
+/** Each queue and what its entries take at once, from cold: held to BUILD_BUDGET. */
+export const queues = (entries = REGISTRY) =>
+  [...new Set(scheduled(entries).flatMap((e) => (e.queue ? [e.queue] : [])))].map((q) => ({ queue: q, run: sum(scheduled(entries).filter((e) => e.queue === q).map((e) => e.run)) }));
+/** The share of the platform's subrequests per invocation the whole scheduled invocation may take: 15 % kept. */
+export const PLATFORM_SHARE = 0.85;
 
 /** Whether `e` runs in the event at minute `t` of the day (UTC); `shortest`: at its shortest cadence. */
 const runsAt = (e: Entry, t: number, shortest = false) => {
@@ -1031,7 +1068,7 @@ const runsAt = (e: Entry, t: number, shortest = false) => {
 export function busiestEvent(entries = REGISTRY, shortest = false): { minute: number; ids: string[]; run: Run } {
   let best = { minute: 0, ids: [] as string[], run: sum([]) };
   for (let t = 0; t < 24 * 60; t += EVENT_MINUTES) {
-    const at = scheduled(entries).filter((e) => runsAt(e, t, shortest));
+    const at = main(entries).filter((e) => runsAt(e, t, shortest));
     const run = sum(at.map((e) => e.run));
     if (run.subrequests > best.run.subrequests) best = { minute: t, ids: at.map((e) => e.id), run };
   }
@@ -1061,7 +1098,9 @@ export function checks(entries = REGISTRY): { what: string; value: number; limit
   const worst = worstEvent(entries);
   const busy = busiestEvent(entries, true);
   return [
-    { what: "pire passage planifié, sous-requêtes", value: worst.subrequests, limit: SCHEDULED_BUDGET },
+    { what: "pire passage planifié, sous-requêtes", value: worstMain(entries).subrequests, limit: SCHEDULED_BUDGET },
+    { what: "pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %)", value: worst.subrequests, limit: Math.floor(PLATFORM_SHARE * SUBREQUEST_LIMIT) },
+    ...queues(entries).map((q) => ({ what: `queue « ${q.queue} », sous-requêtes`, value: q.run.subrequests, limit: BUILD_BUDGET })),
     { what: "pire passage planifié, appels KV et D1", value: serviceOps(worst), limit: SERVICE_OPS_LIMIT },
     { what: "pire passage planifié, CPU (ms)", value: worst.cpuMs, limit: SCHEDULED_CPU_MS },
     { what: "pire passage planifié, mémoire déclarée (Mo)", value: worst.memoryMb ?? 0, limit: ISOLATE_MEMORY_MB },
@@ -1078,7 +1117,7 @@ export function checks(entries = REGISTRY): { what: string; value: number; limit
 const n = (x: number | undefined) => (x ? Math.round(x).toLocaleString("fr-FR").replace(/ /g, " ") : "");
 const hhmm = (minute: number) => `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 const cadence = (e: Entry) => (e.every == null ? (e.trigger === "actions" ? "à chaque fusion" : "à chaque vue") : `${e.every} min${e.shortest ? ` (${e.shortest} au plus court)` : ""}`);
-const row = (e: Entry) => `| ${e.id} | ${e.what} | ${cadence(e)} | ${e.every != null ? hhmm(e.offset ?? 0) : ""} | ${n(e.run.subrequests) || "0"} | ${n(e.run.kvReads)} | ${n((e.run.kvWrites ?? 0) + (e.run.kvLists ?? 0))} | ${n(e.run.d1Calls)} | ${n(e.run.d1RowsRead)} | ${n(e.run.d1RowsWritten)} | ${n(e.run.cpuMs)} | ${e.basis} |`;
+const row = (e: Entry) => `| ${e.id} | ${e.what}${e.queue ? ` (queue « ${e.queue} »)` : ""} | ${cadence(e)} | ${e.every != null ? hhmm(e.offset ?? 0) : ""} | ${n(e.run.subrequests) || "0"} | ${n(e.run.kvReads)} | ${n((e.run.kvWrites ?? 0) + (e.run.kvLists ?? 0))} | ${n(e.run.d1Calls)} | ${n(e.run.d1RowsRead)} | ${n(e.run.d1RowsWritten)} | ${n(e.run.cpuMs)} | ${e.basis} |`;
 const HEAD = "| entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |\n|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|";
 const totalRow = (what: string, r: Run, k = 1) => `| ${what} | ${n(r.subrequests * k) || "0"} | ${n((r.kvReads ?? 0) * k)} | ${n(((r.kvWrites ?? 0) + (r.kvLists ?? 0)) * k)} | ${n((r.d1Calls ?? 0) * k)} | ${n((r.d1RowsRead ?? 0) * k)} | ${n((r.d1RowsWritten ?? 0) * k)} | ${n(r.cpuMs * k)} |`;
 const TOTAL_HEAD = "| | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |\n|---|---:|---:|---:|---:|---:|---:|---:|";
@@ -1113,10 +1152,11 @@ export function budget(entries = REGISTRY): string {
     `## Totaux\n\n` +
     `| contrôle | valeur | limite |\n|---|---:|---:|\n` +
     checks(entries).map((c) => `| ${c.what} | ${n(c.value)} | ${n(c.limit)} |`).join("\n") + `\n\n` +
-    `- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).\n` +
+    `- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre ${n(SCHEDULED_BUDGET)}.\n` +
+    `- Queues : ${queues(entries).length} lectures lancées après celles de la tâche, chacune dans son propre budget de ${n(BUILD_BUDGET)} sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux ${n(SCHEDULED_BUDGET)}. Le pire passage, queues comprises (${n(worst.subrequests)}), reste sous la limite de la plateforme, ${n(SUBREQUEST_LIMIT)} sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.\n` +
     // Past 85 % of its limit, the margin left is said, with the rule that keeps it (decided on 31/10/2026).
-    (worst.subrequests > 0.85 * SCHEDULED_BUDGET
-      ? `- Marge : le pire passage planifié est à ${n(worst.subrequests)} sous-requêtes sur ${n(SCHEDULED_BUDGET)}. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les ${n(SERVICE_OPS_LIMIT)} appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins ${n(SERVICE_OPS_LIMIT - worst.subrequests)}, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à ${n(short.run.subrequests)} (cadences les plus courtes).\n`
+    (worstMain(entries).subrequests > 0.85 * SCHEDULED_BUDGET
+      ? `- Marge : le pire passage planifié est à ${n(worstMain(entries).subrequests)} sous-requêtes sur ${n(SCHEDULED_BUDGET)}. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les ${n(SERVICE_OPS_LIMIT)} appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins ${n(SERVICE_OPS_LIMIT - worst.subrequests)}, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à ${n(short.run.subrequests)} (cadences les plus courtes).\n`
       : "") +
     `- Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (${scheduled(entries).filter((e) => e.run.memoryMb).map((e) => `${e.id}, ${n(e.run.memoryMb)} Mo au pic`).join(", ")}), face aux ${n(ISOLATE_MEMORY_MB)} Mo d'un isolat\u00a0; les autres ne la déclarent pas.\n` +
     `- Passage le plus chargé selon les décalages, cadences habituelles : ${hhmm(usual.minute)} UTC, ${n(usual.run.subrequests)} sous-requêtes (${usual.ids.join(", ")}).\n` +

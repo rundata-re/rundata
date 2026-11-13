@@ -63,9 +63,11 @@ const ROSEMAN = "https://roseman.robonomics.network/api/v2/sensor/";
 export const SOCIAL_UA = "rundata.re (https://rundata.re; contact@rundata.re)";
 /**
  * The island's sensors on sensors.social read at most: one request each, besides the list (1 on 09/11/2026). Past it,
- * the ones that sent last are kept: the scheduled event's worst pass has little room left (BUDGET.md).
+ * the ones that sent last are kept. 3 until 14/11/2026, when the budget counted this read where it runs, in its own
+ * queue after the event's reads (worker.ts, registre.ts `queue`): 11 requests an hour at most, in the hour's one pass
+ * that sensors.social's condition allows (« une lecture par heure au plus pour l'île »).
  */
-export const SOCIAL_MAX = 3;
+export const SOCIAL_MAX = 10;
 /** Once an hour, at 10 past (UTC), the first of the hour's passes: sensors.social asked for one read an hour at most. */
 export const socialDue = (now: Date) => refreshDue(now) && now.getUTCMinutes() < REFRESH_EVERY;
 

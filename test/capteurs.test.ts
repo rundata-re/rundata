@@ -289,9 +289,12 @@ describe("the sensors of private people on sensors.social (ODbL 1.0, its written
       { id: SS_ID(3), commune: "Le Port" },
       { id: SS_ID(1), commune: "Saint-Denis" },
     ]);
-    const many = Array.from({ length: 9 }, (_, i) => ss(10 + i, -20.87999, 55.44814, T + i));
+    // More than SOCIAL_MAX (10 since 14/11/2026): the ones that sent last.
+    expect(capteurs.SOCIAL_MAX).toBe(10);
+    const many = Array.from({ length: 14 }, (_, i) => ss(10 + i, -20.87999, 55.44814, T + i));
     expect(capteurs.socialMarkers(many)).toHaveLength(capteurs.SOCIAL_MAX);
-    expect(capteurs.socialMarkers(many)[0].id).toBe(SS_ID(18));
+    expect(capteurs.socialMarkers(many)[0].id).toBe(SS_ID(23));
+    expect(capteurs.socialMarkers(many).at(-1)!.id).toBe(SS_ID(14));
   });
 
   it("takes a sensor's latest measure of particles, its time in UTC, its key apart from Sensor.Community's", () => {

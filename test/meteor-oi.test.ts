@@ -8,7 +8,7 @@ import { METEOR_CREDIT, credits } from "../src/web/pages.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { NON_COMPTEES } from "../src/chiffres.js";
-import { METEOR_READS, worstEvent } from "../src/registre.js";
+import { METEOR_READS, worstMain } from "../src/registre.js";
 
 // The files of four stations of the association's portal, read on 09/11/2026 at 18:40, what is read of them only:
 // Marla (calm, no direction, `tempsunix`), Petite-Île's college (wind, no `tempsunix`), the rain gauge of the Grandes
@@ -140,7 +140,8 @@ describe("MétéoR-OI's stations", () => {
   it("never adds to the scheduled event of every 5 minutes: /chiffres counts the stations without MétéoR-OI's", () => {
     expect(NON_COMPTEES.has(meteorOi.SOURCE.id)).toBe(true);
     expect(METEOR_READS.has("web:chiffres")).toBe(false);
-    expect(worstEvent().subrequests).toBeLessThanOrEqual(523);
+    // The event's own reads, the queues after them left out (registre.ts `queue`).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(397);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

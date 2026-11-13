@@ -32,7 +32,7 @@ export function coverageLine(commune: string): string {
     const several = plusieurs(commune);
     return `Distributeur non identifié ${where}${several ? ` : le contrôle sanitaire de l'ARS en cite plusieurs (${several.slice(0, -1).join(", ")} et ${several.at(-1)})` : ""}. Renseignez-vous auprès de la mairie.`;
   }
-  if (!d.avis) return `Nous ne lisons pas les avis de ${d.nom}, qui distribue l'eau ${where} : renseignez-vous auprès de ${d.nom} ou de la mairie.`;
+  if (!d.avis) return `Les avis de ${d.nom}, qui distribue l'eau ${where}, ne sont pas lus par rundata.re : renseignez-vous auprès de ${d.nom} ou de la mairie.`;
   // The shared copy of the notices is rebuilt every 30 minutes at least (web/partagees.ts), more often when read.
   // Said as on the commune's card (web/coupures.ts): the ville's posts, some only an image whose advice is not read.
   if (d.site === MAIRIE_SAINTE_MARIE)
@@ -58,7 +58,7 @@ export function cycloneWater(now: Date, commune?: string): { html: string; lead:
     const unknown = COMMUNES.filter((c) => !distributeur(c));
     lines = `<ul class="plain">
   <li><b>Avis lus</b> : ${read.map(link).join(", ")}.</li>
-  <li><b>Nous ne lisons pas les avis de</b> : ${[...new Set(unread.map((c) => distributeur(c)!.nom))].map((nom) => `${esc(nom)} (${unread.filter((c) => distributeur(c)!.nom === nom).map(link).join(", ")})`).join(", ")}.</li>
+  <li><b>Avis non lus par rundata.re</b> : ${[...new Set(unread.map((c) => distributeur(c)!.nom))].map((nom) => `${esc(nom)} (${unread.filter((c) => distributeur(c)!.nom === nom).map(link).join(", ")})`).join(", ")}.</li>
   ${unknown.length ? `<li><b>Distributeur non identifié</b> : ${unknown.map(link).join(", ")}.</li>` : ""}
 </ul>`;
   }

@@ -63,6 +63,12 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   return { valeur, detail: detail || "coupures, sécheresse et eau du robinet" };
 }
 
+/**
+ * Whether the notices of a commune's distributor are read: without them, its page has nothing of its own to show (only
+ * where to look), and stays out of the search engines and the sitemap until a source is read (web/site.ts).
+ */
+export const avisLus = (commune: string) => !!distributeur(commune)?.avis;
+
 export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies, now = new Date(), alerte?: Alerte): string {
   const d = w.coupures?.value;
   const path = `/coupures-eau/${p.slug}`;
@@ -189,5 +195,5 @@ ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte, ...(avisLus(p.nom) ? {} : { noindex: true }) }, band, body);
 }

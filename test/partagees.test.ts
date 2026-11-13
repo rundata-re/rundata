@@ -164,10 +164,10 @@ describe("the shared copies after a deploy", () => {
     // The deploy: a new isolate, a new version.
     const cache = new Cache(new TieredStore(new MemoryStore(), edge), () => now, false, undefined, "2.0.0");
     const events: { written: string[]; used: number; rest: number; at: number }[] = [];
-    // The news, the satellites' grids and passes, the vigilance, the earthquakes and the ONF's map are a source's, not a
-    // page's: no version, kept.
+    // The news, the satellites' grids and passes, the vigilance, the earthquakes, the ONF's map and the airports' METAR are
+    // a source's, not a page's: no version, kept.
     const pages = list.filter((s) => isCopy(s.key));
-    expect(pages.length).toBe(list.length - 6);
+    expect(pages.length).toBe(list.length - 7);
     const done = () => pages.every((s) => JSON.parse(kv.data.get(kvKey(s.key))!).version === "2.0.0");
     while (events.length < 12 && !done()) {
       const run = await counted(SCHEDULED_BUDGET, async () => ({ warmed: await warmShared(cache, kv, new Date(now), list), rest: left() }));
@@ -275,7 +275,7 @@ describe("the scheduled refresh of the shared copies", () => {
     const total = [...kv.writes.values()].reduce((a, b) => a + b, 0);
     // The vigilance and the news every 5 minutes, the earthquakes every 10, the rivers every 15, quiet here, the volcano's
     // copy, quiet too, every 30 minutes like four others, the ONF's map and the counts of /chiffres every hour, and the
-    // satellites' grids every 3 hours (about 1 180 a day, partagees.ts). The air every hour, and every quarter of an hour
+    // satellites' grids every 3 hours (about 1 180 a day, partagees.ts), and the airports' METAR every 10 minutes (144). The air every hour, and every quarter of an hour
     // from 10 h to 14 h, its copy here never having the day's forecast: 12 more, at the hours of the day simulated, never
     // at those of the clock (the test went every 15 minutes all day when run from 10 h to 14 h).
     expect(kv.writes.get(kvKey("web:air"))).toBe(36);
@@ -284,8 +284,8 @@ describe("the scheduled refresh of the shared copies", () => {
     // worst day, NOAA not answering: a real day goes back to every hour once the window's granules are read.
     const passes = kv.writes.get(kvKey(viirs.KEY))!;
     expect(passes).toBe(112);
-    expect(total - passes).toBeLessThanOrEqual(1188);
-    expect(total - passes).toBeGreaterThanOrEqual(1145);
+    expect(total - passes).toBeLessThanOrEqual(1188 + 144);
+    expect(total - passes).toBeGreaterThanOrEqual(1145 + 144);
   });
 
   it("refreshes a copy at each of its slots, though written a few seconds into the event before", async () => {

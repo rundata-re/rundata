@@ -10,6 +10,7 @@ import { type Cache, CACHE_FORMAT, type CacheEntry, type CacheStore, outdated, s
 import * as actu from "../providers/actualites.js";
 import * as ensemble from "../providers/ensemble.js";
 import * as ovpfPdf from "../providers/ovpf-pdf.js";
+import * as metar from "../providers/metar.js";
 import * as seismes from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as mf from "../providers/vigilance.js";
@@ -134,6 +135,10 @@ export const SHARED: Shared[] = [
   // minutes, their freshness, in the volcano's events; the map every hour, its freshness, before the volcano's and
   // /chiffres's. Their cold costs: the catalogue, plus one; the map's two layers and its date, plus one. Their CPU:
   // parsing them, estimated from /sentiers's.
+  // The airports' METAR (providers/metar.ts), which the visits read with 15 s and gave up on at 15 s 6 to 14 times a day
+  // (06/11 to 13/11/2026): read here with the event's patience (25 s), beside the others rather than before them, every
+  // 10 minutes; one request, its copy the one the visits and questions read (same key), its CPU the parse of two stations' few lines (estimated).
+  { key: metar.KEY, build: () => metar.lire(), every: metar.SHARED_EVERY, cold: 1, cpu: 5, offset: 5, alongside: true },
   { key: seismes.KEY, build: (_cache, now) => seismes.read(now), every: 10, cold: 2, cpu: 10, offset: 5, before: ["web:volcan"] },
   { key: onf.KEY, build: () => onf.lire(), every: 60, cold: 4, cpu: 40, offset: 45, before: ["web:volcan", CHIFFRES] },
   // The PDF of the OVPF's newest release, read here only (providers/ovpf-pdf.ts), once the copy is built and outside its

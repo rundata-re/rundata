@@ -1907,7 +1907,7 @@ function stationItem(s: StationNow, now: Date): string {
     ? `<span class="t" style="background:${chip(s.temperature)}">${thin(deg(s.temperature))}</span>`
     : `<span class="t na">${s.vent != null ? thin(`${s.vent} km/h`) : "—"}</span>`;
   const details = [s.humidite != null ? `humidité ${s.humidite} %` : undefined, windText(s), rainText(s)].filter(Boolean).join(" · ");
-  const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (mesure ancienne)" : "";
+  const old = ageMinutes(new Date(s.time), now) > 90 ? " (mesure ancienne)" : "";
   return `<li class="st tgt" id="${stationId(s.nom)}">${t}<h4>${esc(s.nom)} <small>${metres(s.altitude_m)}</small></h4>` +
     `<p>${esc(thin(details || "température seulement"))} · <span class="when">mesuré ${age(s.time, now)}${old}</span></p>${meteorNote(s)}</li>`;
 }
@@ -2008,13 +2008,15 @@ export function connector(origin: string, id: string): string {
   return `<div class="connect"><code id="${id}">${adressesCoupables(`${origin}/mcp`)}</code><button type="button" data-copy="${id}" data-signal aria-label="Copier l'adresse du connecteur">Copier</button></div>`;
 }
 
-export const withTemp = (data: Cached<HomeData> | null) => data?.value.stations.filter((x) => x.temperature != null && !x.stale && !x.amateur) ?? [];
+// A measure from a copy kept after a failed read counts as any other, at its time: the ones older than 3 hours are left
+// out before (tools/meteo.ts COPY_MAX_MINUTES).
+export const withTemp = (data: Cached<HomeData> | null) => data?.value.stations.filter((x) => x.temperature != null && !x.amateur) ?? [];
 /**
  * Every station's temperature, for the island's range (« 14 à 30 °C… de Piton Maïdo à Gillot »): the tour's alone left
  * out Bois-Rouge at 30,7 °C, given in the list of the same page. The tour's on a copy made before every station was kept.
  * The official networks' only: an amateur station's reliability is not checked (the user, 10/11/2026).
  */
-const withTempAll = (data: Cached<HomeData> | null) => (data?.value.toutes ?? data?.value.stations)?.filter((x) => x.temperature != null && !x.stale && !x.amateur) ?? [];
+const withTempAll = (data: Cached<HomeData> | null) => (data?.value.toutes ?? data?.value.stations)?.filter((x) => x.temperature != null && !x.amateur) ?? [];
 export const coldest = (l: StationNow[]) => l.reduce((a, b) => (b.temperature! < a.temperature! ? b : a));
 export const warmest = (l: StationNow[]) => l.reduce((a, b) => (b.temperature! > a.temperature! ? b : a));
 
@@ -2049,7 +2051,7 @@ function stationsList(every: StationNow[], now: Date): string {
     const c = communeOf(s, every) ?? "";
     const t = s.temperature != null ? `<span class="t" style="background:${chip(s.temperature)}">${thin(deg(s.temperature))}</span>` : `<span class="t na">—</span>`;
     const pills = windPill(s) + rainPill(s);
-    const old = s.stale || ageMinutes(new Date(s.time), now) > 90 ? " (ancienne)" : "";
+    const old = ageMinutes(new Date(s.time), now) > 90 ? " (ancienne)" : "";
     // Its day said to a screen reader and to a page read as text, even today's: a copy kept by a search engine gave
     // « 11,9 °C à 20 h 30 » for the evening of another day (06/11/2026). Seen, the time alone: « 06/11 · 14:06 »
     // pushes it under the temperature on 9 cards of 12 at 390 px. The day seen too when it is not today's.

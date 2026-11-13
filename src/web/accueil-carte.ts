@@ -14,7 +14,7 @@
  * value is not shown; a track to a place the data does not locate is not drawn.
  */
 import type { Cached } from "../cache.js";
-import type { AgendaAnswer, AirAnswer, HomeData, SeaNow, SentiersAnswer, TraficAnswer, VelosAnswer, VolcanAnswer } from "./data.js";
+import type { AgendaAnswer, AirAnswer, ElectriciteAnswer, HomeData, SeaNow, SentiersAnswer, TraficAnswer, VelosAnswer, VolcanAnswer } from "./data.js";
 import { de } from "../articles.js";
 import { NIVEAUX } from "../providers/coraux.js";
 import { resolvePlace } from "../places/resolve.js";
@@ -113,9 +113,9 @@ function via(a: P, b: P, x0: number, y0: number, x1: number, y1: number): Seg[][
 
 // ---------------------------------------------------------------- the subjects
 
-export type Id = "sortie" | "sentiers" | "routes" | "mer" | "volcan" | "velos" | "meteo" | "air";
+export type Id = "sortie" | "sentiers" | "routes" | "mer" | "volcan" | "velos" | "meteo" | "air" | "elec";
 /** The order of reading (ux): the keyboard meets the labels in it. */
-export const IDS: Id[] = ["sortie", "routes", "sentiers", "volcan", "mer", "velos", "meteo", "air"];
+export const IDS: Id[] = ["sortie", "routes", "sentiers", "volcan", "mer", "velos", "meteo", "air", "elec"];
 
 export interface Sujet {
   id: Id;
@@ -146,10 +146,11 @@ export interface Sujet {
 /** Marketing's colours (« Lagon »), light on the night of the hero in both themes; red for an alert only. */
 const COLOURS: Record<Id, string> = {
   sortie: "#fdba74", sentiers: "#86efac", routes: "#93c5fd", mer: "#7dd3fc", volcan: "#c4b5fd", velos: "#5eead4", meteo: "#e2e8f0", air: "#fcd34d",
+  elec: "#f0abfc",
 };
 const ALERT = "#f87171";
 const HREF: Record<Id, string> = {
-  sortie: "/evenements", sentiers: "/sentiers", routes: "/trafic", mer: "/mer", volcan: "/volcan", velos: "/velos", meteo: "/meteo", air: "/air",
+  sortie: "/evenements", sentiers: "/sentiers", routes: "/trafic", mer: "/mer", volcan: "/volcan", velos: "/velos", meteo: "/meteo", air: "/air", elec: "/electricite",
 };
 
 /** Météo-France's three stations of the map: the coast, a cirque, a plain (ux's mock-up): Gillot, Cilaos, Plaine des Cafres. */
@@ -381,6 +382,25 @@ function air(h: HomeLive, now: Date): Sujet | undefined {
   };
 }
 
+/** « à HH:MM » or « le JJ/MM à HH:MM », from EDF's « 14/11 00:15 heure de La Réunion ». */
+function edfWhen(heure: string, now: Date): string {
+  const [day, time] = heure.split(" ");
+  const local = new Date(now.getTime() + 4 * 3600_000).toISOString();
+  return day === `${local.slice(8, 10)}/${local.slice(5, 7)}` ? `à\u00a0${time}` : `le ${day} à\u00a0${time}`;
+}
+
+function elec(h: HomeLive, now: Date): Sujet | undefined {
+  const p = h.electricite?.value.production;
+  // An old line is not the island's production now: the label leaves it to /electricite, which says so.
+  if (!p || p.perimee || !/^\d\d\/\d\d \d\d:\d\d/.test(p.heure_mesure)) return undefined;
+  return {
+    // No track (ux): the figure is the whole island's, and EDF gives it by kind of plant, not by plant.
+    id: "elec", k: "Électricité", src: "EDF", value: `${fr(Math.round(p.renouvelable_pct))}\u202f% renouvelable`, color: COLOURS.elec, href: HREF.elec, pts: [],
+    tip: { place: `${fr(Math.round(p.total_mw))} MW produits`, value: "", detail: `${edfWhen(p.heure_mesure, now)}, d'après EDF` },
+    lu: iso(h.electricite!.fetchedAt),
+  };
+}
+
 function velos(h: HomeLive, now: Date): Sujet | undefined {
   const d = h.velos?.value;
   if (!d?.communes?.length) return undefined;
@@ -450,10 +470,11 @@ export interface HomeLive {
   velos?: Cached<VelosAnswer> | null;
   sentiers?: Cached<SentiersAnswer> | null;
   agenda?: Cached<AgendaAnswer> | null;
+  electricite?: Cached<ElectriciteAnswer> | null;
 }
 
 export function sujets(h: HomeLive, now: Date): Sujet[] {
-  const all = [sortie(h, now), routes(h, now), sentiers(h, now), volcan(h, now), mer(h, now), velos(h, now), meteo(h, now), air(h, now)];
+  const all = [sortie(h, now), routes(h, now), sentiers(h, now), volcan(h, now), mer(h, now), velos(h, now), meteo(h, now), air(h, now), elec(h, now)];
   return all.filter((s): s is Sujet => !!s);
 }
 
@@ -470,17 +491,22 @@ interface Layout {
 
 /** ux's « Circuit » (maquette-circuit.ts, c-phone and c-wide), Météo's place added by ux. */
 export const LAYOUTS: Layout[] = [
-  { name: "tel", frame: [-10, -270, 1010, 1170], F1: 24, F2: 36, at: {
-    sortie: [0, -260], meteo: [410, -260], routes: [150, -150], sentiers: [1000, -150, "r"],
-    mer: [0, 820], volcan: [1000, 930, "r"], velos: [0, 1060], air: [460, 1060] } },
-  { name: "large", frame: [-200, -70, 1200, 990], F1: 25, F2: 37, at: {
-    sortie: [-190, 110], routes: [150, -60], sentiers: [1190, 60, "r"],
-    mer: [-190, 420], velos: [-190, 830], air: [480, 878], volcan: [1190, 520, "r"], meteo: [1190, -60, "r"] } },
+  // ux, 14/11: the sea takes the top-left corner, the only way to the west coast; Air right under the island, which
+  // nothing covers; Électricité beside Volcan.
+  { name: "tel", frame: [-10, -270, 1010, 1200], F1: 24, F2: 36, at: {
+    mer: [0, -260], meteo: [410, -260], routes: [150, -150], sentiers: [1000, -150, "r"],
+    air: [0, 820], elec: [0, 930], volcan: [1000, 930, "r"], velos: [0, 1090], sortie: [460, 1090] } },
+  // The left column 60 units further out, the coast's communes left free; Air between Mer and Vélos, Électricité in its
+  // old place.
+  { name: "large", frame: [-260, -70, 1200, 990], F1: 25, F2: 37, at: {
+    sortie: [-250, 110], routes: [150, -60], sentiers: [1190, 60, "r"],
+    mer: [-250, 420], air: [-250, 600], velos: [-250, 830], elec: [480, 878], volcan: [1190, 520, "r"], meteo: [1190, -60, "r"] } },
 ];
 
 /** The widest a label may be, so that it never reaches its neighbour's place (ux's layouts); a few narrower. */
 const CAP = 420;
-const CAPS: Partial<Record<`${Layout["name"]}:${Id}`, number>> = { "tel:sortie": 400, "tel:volcan": 600 };
+// Électricité's value never cut (ux).
+const CAPS: Partial<Record<`${Layout["name"]}:${Id}`, number>> = { "tel:sortie": 400, "tel:elec": 470, "large:elec": 480 };
 
 /**
  * A text's width, guessed from its letters with room to spare (ux: 0,66 em a bold letter, the system font of an iPhone
@@ -969,7 +995,7 @@ const GLOW = `<filter id="hm-glow" filterUnits="userSpaceOnUse" x="-600" y="-600
 /** « Sources : … » of the subjects shown (marketing): only those on the map. */
 const SOURCES: Record<Id, string> = {
   volcan: "OVPF-IPGP, préfecture", routes: "ONF", sentiers: "ONF", sortie: "agendas des mairies et des salles", mer: "NOAA", air: "Atmo Réunion",
-  velos: "Altervélo", meteo: "Météo-France",
+  velos: "Altervélo", meteo: "Météo-France", elec: "EDF",
 };
 
 /**

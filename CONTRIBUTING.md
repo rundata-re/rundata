@@ -10,7 +10,7 @@ Merci de votre intérêt pour rundata.re. Le projet veut faire avancer le numér
 ## En codant
 
 1. Pour un changement important, ouvrez d'abord un ticket : on en parle avant que vous y passiez du temps.
-2. En local (Node ≥ 20) : `npm install`, puis `npm run dev:http`. `npm test` lance les tests, sans réseau ; `npm run typecheck` vérifie les types.
+2. En local (Node ≥ 22.12) : `npm install`, puis `npm run dev:http`. `npm test` lance les tests, sans réseau ; `npm run typecheck` vérifie les types.
 3. Ouvrez une pull request et remplissez le modèle proposé.
 
 Quelques règles :

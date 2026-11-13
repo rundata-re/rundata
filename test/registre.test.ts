@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { AGENDAS } from "../src/providers/agenda.js";
-import { budget, checks, FETCHING, HUBS, PAGE_PATHS, reached, REGISTRY, TOOL_NAMES, type Entry } from "../src/registre.js";
+import { BUILD_BUDGET, SUBREQUEST_LIMIT } from "../src/budget.js";
+import { budget, checks, FETCHING, HUBS, PAGE_PATHS, PLATFORM_SHARE, queues, reached, REGISTRY, TOOL_NAMES, worstEvent, worstMain, type Entry } from "../src/registre.js";
 import { SHARED, SHARED_AFTER } from "../src/web/partagees.js";
 import { DOMAINS } from "../src/web/site.js";
 
@@ -42,6 +43,21 @@ describe("the budget's registry (src/registre.ts)", () => {
 
   it("keeps every total under its limit", () => {
     for (const c of checks()) expect(c.value, c.what).toBeLessThanOrEqual(c.limit);
+  });
+
+  it("puts in a queue exactly the scheduled reads worker.ts runs in their own counted(BUILD_BUDGET) after the event's reads", () => {
+    // Each block of the scheduled event that counts its own BUILD_BUDGET, but MétéoR-OI's, which has a cron of its own: the
+    // name its log line starts with, which is its entries' queue.
+    const src = readFileSync(new URL("../src/worker.ts", import.meta.url), "utf8");
+    const event = src.slice(src.indexOf("async scheduled("));
+    const blocks = event.split("counted(BUILD_BUDGET").slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI");
+    expect(new Set(blocks).size).toBe(blocks.length);
+    expect([...new Set(REGISTRY.flatMap((e) => (e.queue ? [e.queue] : [])))].sort()).toEqual([...blocks].sort());
+    for (const e of REGISTRY.filter((x) => x.queue)) expect(e.trigger, e.id).toBe("planifiée");
+    // The queues leave SCHEDULED_BUDGET, never the invocation: its total, queues and all, under the platform's limit less 15 %.
+    expect(worstMain().subrequests).toBeLessThan(worstEvent().subrequests);
+    expect(worstEvent().subrequests).toBeLessThanOrEqual(PLATFORM_SHARE * SUBREQUEST_LIMIT);
+    for (const q of queues()) expect(q.run.subrequests, q.queue).toBeLessThanOrEqual(BUILD_BUDGET);
   });
 
   it("would fail a read that passes its limit", () => {

@@ -18,30 +18,47 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 523 | 550 |
+| pire passage planifié, sous-requêtes | 397 | 550 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 530 | 8 500 |
+| queue « carte du CMRS », sous-requêtes | 19 | 100 |
+| queue « trace du CMRS », sous-requêtes | 8 | 100 |
+| queue « sites sans réponse », sous-requêtes | 22 | 100 |
+| queue « bornes de recharge », sous-requêtes | 2 | 100 |
+| queue « mesures de l'air », sous-requêtes | 6 | 100 |
+| queue « sites mobiles hors service », sous-requêtes | 3 | 100 |
+| queue « formations CPF », sous-requêtes | 4 | 100 |
+| queue « capteurs amateurs », sous-requêtes | 14 | 100 |
+| queue « historique radar », sous-requêtes | 9 | 100 |
+| queue « offres d'emploi », sous-requêtes | 4 | 100 |
+| queue « marchés publics », sous-requêtes | 6 | 100 |
+| queue « bouées Candhis », sous-requêtes | 5 | 100 |
+| queue « calendrier FFCK », sous-requêtes | 3 | 100 |
+| queue « connecteurs », sous-requêtes | 22 | 100 |
+| queue « veille », sous-requêtes | 2 | 100 |
+| queue « espace club », sous-requêtes | 4 | 100 |
 | pire passage planifié, appels KV et D1 | 122 | 1 000 |
 | pire passage planifié, CPU (ms) | 4 876 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
-| passage le plus chargé (cadences les plus courtes), sous-requêtes | 226 | 550 |
+| passage le plus chargé (cadences les plus courtes), sous-requêtes | 172 | 550 |
 | vue la plus chère, sous-requêtes | 93 | 200 |
 | question la plus chère, sous-requêtes | 79 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
 
-- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement).
-- Marge : le pire passage planifié est à 523 sous-requêtes sur 550. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les 1 000 appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins 477, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à 226 (cadences les plus courtes).
+- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 550.
+- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 550. Le pire passage, queues comprises (530), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 151 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:air, ens:ile, vigilance:carte, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, capteurs:air, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, marches-publics:textes, candhis:etat, connecteurs:lecture, meteofrance:stations).
-- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 226 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, cmrs:image, cmrs:trace, agendas:planifies, sans-reponse:echecs, copies:echecs, irve:etat, radar:6h, meteofrance:jeton, meteofrance:jeton:nouveau, emploi:offres, connecteurs:lecture, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 393 sous-requêtes à 00:00 UTC.
+- Passage le plus chargé selon les décalages, cadences habituelles : 00:20 UTC, 101 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:electricite, web:courant, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:stations).
+- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 172 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 349 sous-requêtes à 06:00 UTC.
 - Vue la plus chère : /communes/*, 93. Question la plus chère : resume_du_jour, 79. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 523 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
-| tâche planifiée, par jour | 36 175 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
-| tâche planifiée, par jour, cadences les plus courtes | 55 307 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
-| tâche planifiée, par mois (30 jours) | 1 085 237 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
+| pire passage planifié | 530 | 38 | 60 | 24 | 1 164 | 284 | 4 876 |
+| tâche planifiée, par jour | 36 343 | 5 043 | 4 395 | 2 407 | 102 914 | 58 511 | 282 496 |
+| tâche planifiée, par jour, cadences les plus courtes | 55 475 | 6 675 | 6 699 | 2 887 | 107 954 | 58 511 | 430 776 |
+| tâche planifiée, par mois (30 jours) | 1 090 277 | 151 290 | 131 850 | 72 223 | 3 087 411 | 1 755 321 | 8 474 867 |
 | tâches planifiées à part, par jour | 5 760 | 144 | 144 |  |  |  | 2 880 |
 | tâches planifiées à part, par mois (30 jours) | 172 800 | 4 320 | 4 320 |  |  |  | 86 400 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -77,9 +94,9 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | ens:ile | copie partagée, avec ce que les autres ont laissé | 180 min | 01:40 | 5 |  | 1 |  |  |  | 40 | mesuré |
 | vigilance:carte | carte officielle de la vigilance : son état (KV), lu à chaque copie de la vigilance | 5 min | 00:00 | 1 | 1 |  |  |  |  |  | code |
 | vigilance:carte:bulletin | carte officielle de la vigilance : un nouveau bulletin gardé (le PDF et l'état, KV), puis son image par le navigateur de Cloudflare (l'image et l'état), 24 images par jour au plus | 60 min | 00:00 | 5 |  | 4 |  |  |  | 40 | code |
-| cmrs:liste | carte de prévision de trajectoire du CMRS : la liste de ses bulletins (Météo-France), pendant un système actif ou suivi par le CMRS | 30 min | 00:15 | 9 | 3 | 2 |  |  |  | 10 | code |
-| cmrs:image | carte de prévision de trajectoire du CMRS : l'image (Météo-France), gardée dans KV sous son empreinte, pendant un système actif ou suivi par le CMRS | 30 min | 00:20 | 10 | 3 | 3 |  |  |  | 10 | code |
-| cmrs:trace | bulletin du CMRS (WTIO31, copie de la NOAA) : position et stade gardés dans KV, et l'heure de la lecture tant qu'un système est suivi | 15 min (5 au plus court) | 00:25 | 8 | 1 | 1 |  |  |  | 10 | code |
+| cmrs:liste | carte de prévision de trajectoire du CMRS : la liste de ses bulletins (Météo-France), pendant un système actif ou suivi par le CMRS (queue « carte du CMRS ») | 30 min | 00:15 | 9 | 3 | 2 |  |  |  | 10 | code |
+| cmrs:image | carte de prévision de trajectoire du CMRS : l'image (Météo-France), gardée dans KV sous son empreinte, pendant un système actif ou suivi par le CMRS (queue « carte du CMRS ») | 30 min | 00:20 | 10 | 3 | 3 |  |  |  | 10 | code |
+| cmrs:trace | bulletin du CMRS (WTIO31, copie de la NOAA) : position et stade gardés dans KV, et l'heure de la lecture tant qu'un système est suivi (queue « trace du CMRS ») | 15 min (5 au plus court) | 00:25 | 8 | 1 | 1 |  |  |  | 10 | code |
 | agendas:planifies | agendas lus par la tâche planifiée : leur copie commune (KV), lue à chaque passage, écrite après une lecture | 5 min | 00:00 | 1 | 1 |  |  |  |  |  | code |
 | agendas:planifies:ecriture | agendas lus par la tâche planifiée : l'écriture de leur copie commune | 60 min | 00:00 | 1 |  | 1 |  |  |  |  | code |
 | agenda:sainte_marie | agenda lu par la tâche planifiée : Ville de Sainte-Marie | 60 min | 00:00 | 1 |  |  |  |  |  | 30 | mesuré |
@@ -99,29 +116,29 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | agenda:luc_donat | agenda lu par la tâche planifiée : Théâtre Luc Donat | 60 min | 00:00 | 2 |  |  |  |  |  | 30 | mesuré |
 | sans-reponse:echecs | sites sans réponse : l'état des sites relu quand une lecture échoue (D1), au plus toutes les 10 minutes par isolat, après la réponse aussi pour une vue ou une question ; une écriture de plus pour un site qui entre dans la liste | 10 min | 00:00 | 1 |  |  | 1 | 20 |  | 2 | estimé |
 | copies:echecs | copies partagées : l'échec d'une copie en retard, lu avec elle et écrit après un essai manqué (KV), au plus une fois toutes les 5 minutes par copie pour tous les centres de données, seulement quand sa source ne répond pas | 5 min | 00:00 | 2 | 1 | 1 |  |  |  |  | code |
-| sans-reponse:reverification | sites sans réponse : la revérification quotidienne, une lecture par site (D1 et sites), à 06:00 heure de La Réunion | 1440 min | 02:00 | 22 |  |  | 2 | 20 | 21 | 30 | estimé |
-| irve:etat | bornes de recharge : la part de La Réunion du fichier national (environ 9 Mo), écrite dans KV après les autres lectures | 15 min | 00:05 | 2 |  | 1 |  |  |  | 300 | estimé |
-| air:mesures | qualité de l'air : les mesures horaires des stations d'Atmo Réunion, leurs lignes du fichier national du LCSQA (jusqu'à 12,5 Mo, lu ligne à ligne), écrites dans KV quand la dernière heure change | 60 min | 00:45 | 6 | 1 | 1 |  |  |  | 260 | mesuré |
-| antennes:hors-service | sites mobiles hors service : les lignes de La Réunion du fichier quotidien de l'Arcep (0,5 à 2,2 Mo), écrites dans KV une fois par jour | 1440 min | 10:30 | 3 | 1 | 1 |  |  |  | 40 | estimé |
-| cpf:formations | formations CPF : les lignes de La Réunion du catalogue de Mon Compte Formation (Caisse des Dépôts, environ 780 Ko), écrites dans KV une fois par jour | 1440 min | 12:15 | 4 | 1 | 1 |  |  |  | 60 | estimé |
-| capteurs:air | capteurs amateurs de particules (Sensor.Community) : les 5 dernières minutes sur l'île, une requête, gardées 2 heures dans KV | 15 min | 00:10 | 3 | 1 | 1 |  |  |  | 10 | code |
-| capteurs:social | capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (les 3 qui ont émis en dernier au plus), dans la copie de capteurs:air | 60 min | 00:10 | 4 |  |  |  |  |  | 10 | code |
-| radar:6h | pluie radar des 6 dernières heures pour le rejeu de /meteo : la dernière image de Météo-France ajoutée dans KV quand elle est nouvelle, ou un trou daté, et chaque quart d'heure une image gardée 24 heures | 5 min | 00:00 | 9 | 2 | 2 |  |  |  | 200 | estimé |
-| radar:7j | semaine du radar pour le rejeu 7 jours de /meteo : chaque heure finie ajoutée par le passage du radar, la pluie la plus forte de l'heure, et chaque image de 5 min dans la clé de son jour | 60 min | 00:05 | 0 | 3 | 3 |  |  |  | 40 | estimé |
+| sans-reponse:reverification | sites sans réponse : la revérification quotidienne, une lecture par site (D1 et sites), à 06:00 heure de La Réunion (queue « sites sans réponse ») | 1440 min | 02:00 | 22 |  |  | 2 | 20 | 21 | 30 | estimé |
+| irve:etat | bornes de recharge : la part de La Réunion du fichier national (environ 9 Mo), écrite dans KV après les autres lectures (queue « bornes de recharge ») | 15 min | 00:05 | 2 |  | 1 |  |  |  | 300 | estimé |
+| air:mesures | qualité de l'air : les mesures horaires des stations d'Atmo Réunion, leurs lignes du fichier national du LCSQA (jusqu'à 12,5 Mo, lu ligne à ligne), écrites dans KV quand la dernière heure change (queue « mesures de l'air ») | 60 min | 00:45 | 6 | 1 | 1 |  |  |  | 260 | mesuré |
+| antennes:hors-service | sites mobiles hors service : les lignes de La Réunion du fichier quotidien de l'Arcep (0,5 à 2,2 Mo), écrites dans KV une fois par jour (queue « sites mobiles hors service ») | 1440 min | 10:30 | 3 | 1 | 1 |  |  |  | 40 | estimé |
+| cpf:formations | formations CPF : les lignes de La Réunion du catalogue de Mon Compte Formation (Caisse des Dépôts, environ 780 Ko), écrites dans KV une fois par jour (queue « formations CPF ») | 1440 min | 12:15 | 4 | 1 | 1 |  |  |  | 60 | estimé |
+| capteurs:air | capteurs amateurs de particules (Sensor.Community) : les 5 dernières minutes sur l'île, une requête, gardées 2 heures dans KV (queue « capteurs amateurs ») | 15 min | 00:10 | 3 | 1 | 1 |  |  |  | 10 | code |
+| capteurs:social | capteurs amateurs de particules (sensors.social) : la dernière heure sur l'île, sa liste puis une requête par capteur de l'île (les 10 qui ont émis en dernier au plus), dans la copie de capteurs:air (queue « capteurs amateurs ») | 60 min | 00:10 | 11 |  |  |  |  |  | 10 | code |
+| radar:6h | pluie radar des 6 dernières heures pour le rejeu de /meteo : la dernière image de Météo-France ajoutée dans KV quand elle est nouvelle, ou un trou daté, et chaque quart d'heure une image gardée 24 heures (queue « historique radar ») | 5 min | 00:00 | 9 | 2 | 2 |  |  |  | 200 | estimé |
+| radar:7j | semaine du radar pour le rejeu 7 jours de /meteo : chaque heure finie ajoutée par le passage du radar, la pluie la plus forte de l'heure, et chaque image de 5 min dans la clé de son jour (queue « historique radar ») | 60 min | 00:05 | 0 | 3 | 3 |  |  |  | 40 | estimé |
 | meteofrance:jeton | jeton Météo-France commun à tous les isolats : lu dans KV au premier besoin d'un isolat, à son échéance, après un refus (401) ou par le passage planifié quand son isolat n'en tient pas un bon pour 15 minutes de plus, au plus une fois par invocation | 1 min | 00:00 | 1 | 1 |  |  |  |  |  | estimé |
 | meteofrance:jeton:nouveau | jeton Météo-France commun à tous les isolats : un nouveau jeton demandé au portail et écrit dans KV par le passage planifié, 15 minutes avant l'échéance du précédent, soit environ toutes les 40 minutes | 40 min | 00:00 | 2 |  | 1 |  |  |  |  | estimé |
-| emploi:offres | emploi public : la page d'une offre de Choisir le service public à chaque événement, la plus récente pas encore lue, sinon chaque offre ouverte à son tour, écrites dans KV quand elles changent | 5 min | 00:00 | 3 | 1 | 1 |  |  |  | 15 | estimé |
-| emploi:flux | emploi public : le flux des 20 dernières offres de Choisir le service public pour La Réunion | 60 min | 00:25 | 1 |  |  |  |  |  | 5 | estimé |
-| emploi:total | emploi public : le compte de la recherche de Choisir le service public pour La Réunion, lu en flux à la place de la page d'offre du même événement | 60 min | 00:25 | 0 |  |  |  |  |  | 20 | mesuré |
-| marches-publics:liste | marchés publics : la liste des avis de marché ouverts publiés au BOAMP pour La Réunion, écrite dans KV quand elle change | 60 min | 00:35 | 3 | 1 | 1 |  |  |  | 10 | estimé |
-| marches-publics:textes | marchés publics : le texte des nouveaux avis, pour savoir s'ils sont de l'île et leur commune, écrit dans KV | 60 min | 00:40 | 3 | 1 | 1 |  |  |  | 550 | estimé |
-| candhis:etat | bouées Candhis du Cerema : la dernière mesure de chaque bouée de La Réunion, une requête par type de bouée, gardée dans KV | 30 min | 00:10 | 5 | 1 | 1 |  |  |  | 10 | code |
-| ffck:etat | canoë-kayak et va'a : le calendrier de la FFCK, une page au plus par passage (la liste d'une saison une fois par jour, sinon la fiche d'une épreuve de l'île), gardé dans KV | 30 min | 00:25 | 3 | 1 | 1 |  |  |  | 300 | code |
-| connecteurs:lecture | plateformes des associations (HelloAsso) : les événements publics d'une association reliée, relus toutes les 6 h, une association par passage | 5 min | 00:00 | 22 |  |  | 7 | 202 | 203 | 20 | estimé |
-| meteofrance:veille | météo de la veille : la pluie et les températures de 0 h à 24 h de chaque station Météo-France, prises dans le paquet horaire de la copie des stations, écrites dans KV à 00:20 heure de La Réunion, refaites à 00:35 si la dernière heure manquait | 1440 min | 20:20 | 2 | 1 | 1 |  |  |  | 40 | code |
+| emploi:offres | emploi public : la page d'une offre de Choisir le service public à chaque événement, la plus récente pas encore lue, sinon chaque offre ouverte à son tour, écrites dans KV quand elles changent (queue « offres d'emploi ») | 5 min | 00:00 | 3 | 1 | 1 |  |  |  | 15 | estimé |
+| emploi:flux | emploi public : le flux des 20 dernières offres de Choisir le service public pour La Réunion (queue « offres d'emploi ») | 60 min | 00:25 | 1 |  |  |  |  |  | 5 | estimé |
+| emploi:total | emploi public : le compte de la recherche de Choisir le service public pour La Réunion, lu en flux à la place de la page d'offre du même événement (queue « offres d'emploi ») | 60 min | 00:25 | 0 |  |  |  |  |  | 20 | mesuré |
+| marches-publics:liste | marchés publics : la liste des avis de marché ouverts publiés au BOAMP pour La Réunion, écrite dans KV quand elle change (queue « marchés publics ») | 60 min | 00:35 | 3 | 1 | 1 |  |  |  | 10 | estimé |
+| marches-publics:textes | marchés publics : le texte des nouveaux avis, pour savoir s'ils sont de l'île et leur commune, écrit dans KV (queue « marchés publics ») | 60 min | 00:40 | 3 | 1 | 1 |  |  |  | 550 | estimé |
+| candhis:etat | bouées Candhis du Cerema : la dernière mesure de chaque bouée de La Réunion, une requête par type de bouée, gardée dans KV (queue « bouées Candhis ») | 30 min | 00:10 | 5 | 1 | 1 |  |  |  | 10 | code |
+| ffck:etat | canoë-kayak et va'a : le calendrier de la FFCK, une page au plus par passage (la liste d'une saison une fois par jour, sinon la fiche d'une épreuve de l'île), gardé dans KV (queue « calendrier FFCK ») | 30 min | 00:25 | 3 | 1 | 1 |  |  |  | 300 | code |
+| connecteurs:lecture | plateformes des associations (HelloAsso) : les événements publics d'une association reliée, relus toutes les 6 h, une association par passage (queue « connecteurs ») | 5 min | 00:00 | 22 |  |  | 7 | 202 | 203 | 20 | estimé |
+| meteofrance:veille | météo de la veille : la pluie et les températures de 0 h à 24 h de chaque station Météo-France, prises dans le paquet horaire de la copie des stations, écrites dans KV à 00:20 heure de La Réunion, refaites à 00:35 si la dernière heure manquait (queue « veille ») | 1440 min | 20:20 | 2 | 1 | 1 |  |  |  | 40 | code |
 | meteofrance:stations | stations Météo-France : les 11 derniers paquets de 6 minutes et le paquet horaire du 974, lus quand ils sont dus et gardés dans KV pour les questions et les vues, écrits à chaque passage où l'un a été lu | 5 min | 00:00 | 14 | 1 | 1 |  |  |  | 60 | code |
 | propositions:purge | propositions des clubs : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 1 |  |  | 1 |  | 10 | 5 | estimé |
-| clubs:annuaire | espace club : les clubs de handball de l'île, relus une fois par semaine sur la carte de MonClub (environ 2,2 Mo), à 04:00 heure de La Réunion | 10080 min | 00:00 | 4 |  |  | 3 | 40 | 40 | 60 | code |
+| clubs:annuaire | espace club : les clubs de handball de l'île, relus une fois par semaine sur la carte de MonClub (environ 2,2 Mo), à 04:00 heure de La Réunion (queue « espace club ») | 10080 min | 00:00 | 4 |  |  | 3 | 40 | 40 | 60 | code |
 | clubs:purge | espace club : la purge quotidienne (D1), à 04:00 heure de La Réunion | 1440 min | 00:00 | 3 |  |  | 3 |  | 5 | 2 | estimé |
 | connecteurs:purge | plateformes des associations : la purge quotidienne (D1, ses quatre instructions en un seul appel), à 04:00 heure de La Réunion | 1440 min | 00:00 | 1 |  |  | 1 |  | 5 | 2 | estimé |
 

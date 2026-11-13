@@ -3,7 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { parse } from "../src/providers/vigieau.js";
 import { heuresDites } from "../src/tools/format.js";
-import { restrictionsEau } from "../src/tools/secheresse.js";
+import { INSEE } from "../src/places/insee.js";
+import * as arrete from "../src/providers/arrete-secheresse.js";
+import { enVigueur, restrictionsEau } from "../src/tools/secheresse.js";
 import { buildSecheresse } from "../src/web/data.js";
 import { secheresseLive, secheressePage, wholeName } from "../src/web/domains.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
@@ -26,8 +28,12 @@ describe("restrictions d'eau", () => {
 
   it("sums up the island", async () => {
     const b = body(await restrictionsEau(cache(), undefined));
-    expect(b.resume).toBe("Sécheresse à La Réunion (arrêté en vigueur depuis le 10/10/2026). Eau du robinet : crise à Saint-Joseph\u00a0; alerte renforcée dans 5 communes\u00a0; alerte dans 14 communes\u00a0; vigilance aux Trois-Bassins, à Saint-Leu, à Saint-Louis et à Sainte-Rose.");
-    expect(b.communes[0]).toEqual({ commune: "Saint-Joseph", eau_du_robinet: "crise", rivieres_et_sources: "alerte renforcée", nappes: "crise" });
+    // VigiEau still serves the order of 09/10/2026: the levels are those of the order of 12/11/2026 (providers/arrete-secheresse.ts).
+    expect(b.resume).toBe("Sécheresse à La Réunion (arrêté n°2026-2094/SG/SCOPP/BCPE du 12/11/2026, en vigueur depuis le 12/11/2026). Eau du robinet : crise à Saint-Joseph\u00a0; alerte renforcée dans 9 communes\u00a0; alerte dans 13 communes\u00a0; vigilance à Sainte-Rose.");
+    expect(b.communes[0]).toEqual({
+      commune: "Saint-Joseph", eau_du_robinet: "crise", rivieres_et_sources: "crise", nappes: "crise",
+      vigieau_differe: [{ commune: "Saint-Joseph", ressource: "rivières et sources", arrete: "crise", vigieau: "alerte renforcée" }],
+    });
     expect(b.communes).toHaveLength(24);
   });
 
@@ -74,7 +80,7 @@ describe("restrictions d'eau", () => {
   it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, then the order's date", async () => {
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
     expect(page).toContain('<span><svg viewBox="-37 -37 74 74" aria-hidden="true"><rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#862e9c"/></svg>crise</span>');
-    expect(page).toContain('<span class="mls">Eau du robinet, d&#39;après l&#39;arrêté préfectoral en vigueur depuis le\u00a010/10/2026.</span>');
+    expect(page).toContain('<span class="mls">Eau du robinet, d&#39;après l&#39;arrêté préfectoral n°2026-2094/SG/SCOPP/BCPE, en vigueur depuis le\u00a012/11/2026.</span>');
     expect(page).not.toContain('<span style="color:');
   });
 
@@ -88,18 +94,110 @@ describe("restrictions d'eau", () => {
 
   it("says what a private person may not do in a commune", async () => {
     const b = body(await restrictionsEau(cache(), "Saint-Joseph"));
-    expect(b.resume).toBe("Restrictions d'eau à Saint-Joseph : crise pour l'eau du robinet\u00a0; crise pour les nappes souterraines, alerte renforcée pour les rivières et sources.");
+    expect(b.resume).toBe("Restrictions d'eau à Saint-Joseph : crise pour l'eau du robinet\u00a0; crise pour les nappes souterraines, crise pour les rivières et sources, d'après l'arrêté n°2026-2094/SG/SCOPP/BCPE du 12/11/2026, en vigueur depuis le 12/11/2026.");
     const usages = b.restrictions_eau_du_robinet.map((r: { usage: string }) => r.usage);
     expect(usages).toContain("Arrosage des pelouses");
     expect(usages).not.toContain("Arrosage des golfs");
     expect(b.restrictions_eau_du_robinet.find((r: { usage: string }) => r.usage === "Arrosage des jardins potagers").restriction).toBe("Interdiction entre 6 h et 20 h");
-    expect(b.arrete).toMatch(/^https:\/\/regleau\..*\.pdf$/);
+    expect(b.arrete).toMatchObject({ numero: "n°2026-2094/SG/SCOPP/BCPE", signe_le: "12/11/2026", en_vigueur_depuis: "12/11/2026", lien: "https://www.reunion.gouv.fr/contenu/telechargement/54342/411078/file/" });
   });
 
   it("gives a farmer's rules when asked", async () => {
     const b = body(await restrictionsEau(cache(), "Saint-Joseph", "exploitation"));
-    expect(b.restrictions_eau_du_robinet.map((r: { usage: string }) => r.usage)).toContain("Prélèvement d’eau pour l’irrigation par aspersion des cultures (hors périmètres irrigués)");
+    // The withdrawals go by the level of the resource drawn from, not through the tap water (article 3).
+    expect(b.restrictions_eau_du_robinet.map((r: { usage: string }) => r.usage)).not.toContain("Prélèvement d’eau pour l’irrigation par aspersion des cultures (hors périmètres irrigués)");
+    expect(b.restrictions_puits_forages_rivieres["rivières et sources"]).toContainEqual({ usage: "Prélèvement d’eau pour l’irrigation par aspersion des cultures (hors périmètres irrigués)", restriction: "Interdiction" });
   });
+
+describe("the order of 12/11/2026 while VigiEau serves the one it replaced", () => {
+  const served = (edit: (z: Record<string, any>) => void = () => {}) => {
+    const zones = JSON.parse(raw);
+    for (const z of zones) edit(z);
+    return JSON.stringify(zones);
+  };
+  const withVigieau = (json: string) => vi.stubGlobal("fetch", async () => new Response(json, { headers: { "content-type": "application/json" } }));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("gives Saint-Joseph, Saint-Leu and Saint-Denis the order's levels, VigiEau's beside them where they differ", async () => {
+    withVigieau(raw);
+    const sj = body(await restrictionsEau(cache(), "Saint-Joseph"));
+    expect(sj.niveaux).toEqual({ eau_du_robinet: "crise", rivieres_et_sources: "crise", nappes: "crise" });
+    expect(sj.vigieau_differe).toEqual([{ commune: "Saint-Joseph", ressource: "rivières et sources", arrete: "crise", vigieau: "alerte renforcée" }]);
+    const sl = body(await restrictionsEau(cache(), "Saint-Leu"));
+    expect(sl.niveaux).toEqual({ eau_du_robinet: "alerte", rivieres_et_sources: "alerte", nappes: "vigilance" });
+    expect(sl.vigieau_differe).toEqual([
+      { commune: "Saint-Leu", ressource: "eau du robinet", arrete: "alerte", vigieau: "vigilance" },
+      { commune: "Saint-Leu", ressource: "rivières et sources", arrete: "alerte", vigieau: "vigilance" },
+    ]);
+    const sd = body(await restrictionsEau(cache(), "Saint-Denis"));
+    expect(sd.niveaux).toEqual({ eau_du_robinet: "alerte renforcée", rivieres_et_sources: "alerte renforcée", nappes: "alerte" });
+    expect(sd.vigieau_differe).toBeUndefined();
+  });
+
+  it("says, dated, that VigiEau still shows the order of 10/10, before the levels", async () => {
+    withVigieau(raw);
+    const b = body(await restrictionsEau(cache(), undefined));
+    expect(b.vigieau).toMatch(/^VigiEau affiche encore l'arrêté précédent, en vigueur depuis le 10\/10\/2026 \(VigiEau lu le \d\d\/\d\d \d\d:\d\d\)\. Les niveaux donnés ici sont ceux de l'arrêté n°2026-2094\/SG\/SCOPP\/BCPE du 12\/11\/2026, en vigueur depuis le 12\/11\/2026, qui le remplace\.$/);
+    // Before the levels, so that an assistant says it first.
+    expect(Object.keys(b).slice(0, 3)).toEqual(["arrete", "vigieau", "resume"]);
+    expect(Object.keys(body(await restrictionsEau(cache(), "Saint-Leu"))).slice(0, 4)).toEqual(["lieu", "arrete", "vigieau", "resume"]);
+    expect(b.sources.map((s: { source: string }) => s.source)).toEqual([arrete.SOURCE.nom, "Restrictions d'eau en cas de sécheresse (VigiEau, arrêtés préfectoraux)"]);
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    expect(page).toContain('<a href="https://www.reunion.gouv.fr/contenu/telechargement/54342/411078/file/">arrêté préfectoral n°2026-2094/SG/SCOPP/BCPE du 12/11/2026</a>, en vigueur depuis le 12/11/2026.');
+    expect(page).toContain("VigiEau affiche encore l&#39;arrêté précédent, en vigueur depuis le 10/10/2026");
+    expect(page).toContain("VigiEau\u00a0: vigilance</small>");
+  });
+
+  it("drops the sentence once VigiEau serves the order, by its date or its file's number, never a date written in the code", async () => {
+    for (const edit of [
+      (z: Record<string, any>) => z.arrete && (z.arrete.dateDebutValidite = "2026-11-13T00:00:00.000Z"),
+      (z: Record<string, any>) => z.arrete && (z.arrete.cheminFichier = "https://regleau.s3.gra.perf.cloud.ovh.net/arrete-restriction/1/a/Arr%C3%AAt%C3%A9%20n%C2%B02026-2094.pdf"),
+    ]) {
+      withVigieau(served(edit));
+      const b = body(await restrictionsEau(cache(), undefined));
+      expect(b.vigieau).toBeUndefined();
+      expect(b.arrete.numero).toBe("n°2026-2094/SG/SCOPP/BCPE");
+      // The same order on VigiEau: a level it gives otherwise is still said.
+      expect(b.communes.find((c: { commune: string }) => c.commune === "Saint-Joseph").vigieau_differe).toHaveLength(1);
+    }
+  });
+
+  it("leaves the table for VigiEau once it serves a later order", async () => {
+    withVigieau(served((z) => z.arrete && (z.arrete.dateDebutValidite = "2026-12-05T00:00:00.000Z")));
+    const b = body(await restrictionsEau(cache(), "Saint-Leu"));
+    expect(b.niveaux).toEqual({ eau_du_robinet: "vigilance", rivieres_et_sources: "vigilance", nappes: "vigilance" });
+    expect(b.vigieau).toBeUndefined();
+    expect(b.vigieau_differe).toBeUndefined();
+    expect(b.arrete).toMatch(/^https:\/\/regleau\./);
+  });
+
+  it("puts Saint-Joseph in crisis first, with the annex's rules for that level, as written", async () => {
+    withVigieau(raw);
+    const d = await buildSecheresse(cache());
+    expect(d.communes[0].commune).toBe("Saint-Joseph");
+    const page = secheressePage("https://rundata.re", { value: d, fetchedAt: new Date(), stale: false });
+    const crise = page.indexOf('<span class="lvl" style="--c:#862e9c;color:#fff">crise</span> <span class="note">Saint-Joseph</span>');
+    expect(crise).toBeGreaterThan(-1);
+    expect(crise).toBeLessThan(page.indexOf('<span class="note">Cilaos'));
+    const sj = body(await restrictionsEau(cache(), "Saint-Joseph"));
+    const rule = (u: string) => sj.restrictions_eau_du_robinet.find((r: { usage: string }) => r.usage === u)?.restriction;
+    expect(rule("Remplissage et maintien du niveau d’eau des plans d’eau de loisirs et piscines privées")).toBe("Interdiction");
+    expect(rule("Lavage des véhicules en station de lavage")).toBe("Interdiction");
+    expect(rule("Arrosage des jardins potagers")).toBe("Interdiction entre 6 h et 20 h");
+    expect(rule("Lavage des bâtiments, façades, toitures, trottoirs, voiries et autres surfaces imperméabilisées (dont les cours)")).toBe("Interdiction\u00a0; Sauf si réalisé par une collectivité ou une entreprise de nettoyage professionnel avec impératif sanitaire ou sécuritaire");
+    // Never a word of the press release of 13/11: no « renforcé » nor « allégé » said of a commune.
+    expect(page).not.toMatch(/restrictions? (?:d’eau |d'eau )?(?:vont être )?(?:renforcées|allégées)|Annonce de la préfecture/);
+  });
+
+  it("writes the 24 communes of article 3, the tap water at the higher of its two levels", () => {
+    expect(Object.keys(arrete.ARRETE.niveaux).sort()).toEqual(Object.values(INSEE).sort());
+    expect(arrete.ANNEXE).toHaveLength(20);
+    expect(arrete.usages("crise", true)).toHaveLength(14);
+    expect(arrete.usages("crise", false)).toHaveLength(20);
+    const zones = enVigueur([]).zones;
+    expect(zones.filter((z) => z.ressource === "AEP" && z.niveau === "alerte_renforcee").map((z) => z.insee).sort()).toEqual(["97403", "97407", "97408", "97409", "97410", "97411", "97421", "97422", "97424"]);
+  });
+});
 
 describe("the drought tile of the home page", () => {
   const tile = (levels: [string, string | null][]) =>

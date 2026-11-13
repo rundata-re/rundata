@@ -2676,6 +2676,12 @@ function droughtScale(): string {
   return `<ul class="plain">${DROUGHT_SCALE.map(([n, what]) => `<li>${droughtBadge(n)}${what ? ` ${esc(what)}` : ""}</li>`).join("")}</ul>`;
 }
 
+/** Under a level of the order, VigiEau's where it gives another: « VigiEau : alerte ». */
+const vigieauSays = (c: SecheresseAnswer["communes"][number], ressource: string) => {
+  const e = c.vigieau_differe?.find((x) => x.ressource === ressource);
+  return e ? `<small class="note" style="display:block">VigiEau\u00a0: ${esc(e.vigieau)}</small>` : "";
+};
+
 export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/secheresse`;
@@ -2693,12 +2699,15 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
   const status = !d
     ? loading("Les restrictions d'eau")
     : d.communes.length
-      ? `<div class="now"><span class="big">${hit.length}</span><p>commune${hit.length > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet${d.arrete_du ? `, d'après l'arrêté préfectoral en vigueur depuis le ${esc(d.arrete_du)}` : ""}.</p></div>`
+      ? `<div class="now"><span class="big">${hit.length}</span><p>commune${hit.length > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet${d.arrete
+          ? `, d'après l'<a href="${esc(d.arrete.lien)}">arrêté préfectoral ${esc(d.arrete.numero)} du ${esc(d.arrete.signe_le ?? "")}</a>, en vigueur depuis le ${esc(d.arrete.en_vigueur_depuis ?? "")}`
+          : d.arrete_du ? `, d'après l'arrêté préfectoral en vigueur depuis le ${esc(d.arrete_du)}` : ""}.</p></div>` +
+        (d.vigieau ? `<p class="note" style="color:var(--on-night-muted)">${esc(d.vigieau)}</p>` : "")
       : `<p class="lead">${esc(d.resume)}</p>`;
 
   const table = d?.communes.length
     ? `<div class="card table-wrap"><table class="drought"><caption class="sr">Les niveaux de restriction</caption><thead><tr><th>Commune</th><th>Eau du robinet</th><th>Rivières et sources</th><th>Nappes</th></tr></thead><tbody>${d.communes.map((c) =>
-        `<tr><th scope="row" class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${esc(c.commune)}</th><td>${droughtBadge(c.eau_du_robinet)}</td><td>${droughtBadge(c.rivieres_et_sources)}</td><td>${droughtBadge(c.nappes)}</td></tr>`).join("")}</tbody></table></div>`
+        `<tr><th scope="row" class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${esc(c.commune)}</th><td>${droughtBadge(c.eau_du_robinet)}${vigieauSays(c, "eau du robinet")}</td><td>${droughtBadge(c.rivieres_et_sources)}${vigieauSays(c, "rivières et sources")}</td><td>${droughtBadge(c.nappes)}${vigieauSays(c, "nappes souterraines")}</td></tr>`).join("")}</tbody></table></div>`
     : "";
 
   const rules = (d?.interdits ?? []).sort((x, y) => DROUGHT_ORDER.indexOf(x.niveau) - DROUGHT_ORDER.indexOf(y.niveau)).map((x) =>
@@ -2721,7 +2730,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
   </div>
   <figure class="card mapcard">${islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) colorée par le niveau de restriction de l'eau du robinet de chaque commune" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende(["vigilance", "alerte", "alerte renforcée", "crise"].map((n): Cle => ({ forme: "aplat", couleur: DROUGHT_COLOR[n], dit: n })),
-    esc(`Eau du robinet, d'après l'arrêté préfectoral en vigueur${d?.arrete_du ? ` depuis le\u00a0${d.arrete_du}` : ""}.`))}</figcaption></figure>
+    esc(`Eau du robinet, d'après l'arrêté préfectoral ${d?.arrete ? `${d.arrete.numero}, en vigueur depuis le\u00a0${d.arrete.en_vigueur_depuis}` : `en vigueur${d?.arrete_du ? ` depuis le\u00a0${d.arrete_du}` : ""}`}.`))}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-communes-eau">

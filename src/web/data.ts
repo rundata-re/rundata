@@ -1128,8 +1128,12 @@ export async function routeGpx(cache: Cache, origin: string, r: traces.Randonnee
 
 export interface SecheresseAnswer {
   resume: string;
-  communes: { commune: string; eau_du_robinet?: string; rivieres_et_sources?: string; nappes?: string }[];
+  communes: { commune: string; eau_du_robinet?: string; rivieres_et_sources?: string; nappes?: string; vigieau_differe?: { ressource: string; arrete: string; vigieau: string }[] }[];
   arrete_du?: string;
+  /** The order the levels are from, when VigiEau still serves an older one or gives other levels (tools/secheresse.ts `enVigueur`). */
+  arrete?: { numero: string; signe_le?: string; en_vigueur_depuis?: string; publie: string; lien: string; remplace: string };
+  /** VigiEau still serves the order this one replaced: said with its date. */
+  vigieau?: string;
   echelle: string;
   a_savoir: string;
   sources: Credit[];

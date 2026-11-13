@@ -126,6 +126,7 @@ import { SECTEURS, secteurOf } from "../traces/secteurs.js";
 import { secteurPage } from "./randonnees.js";
 import { aProposPage, llmsTxt } from "./a-propos.js";
 import { PATH as VALEURS, valeursPage } from "./valeurs.js";
+import { PATH as JEUX_TRANSPORT, transportDonneesPage } from "./transport-donnees.js";
 import { antennesPage, PATH as ANTENNES } from "./antennes.js";
 import { annuaireEcolesPage, PATH as ECOLES } from "./ecoles-annuaire.js";
 import { cartePage, PATH as CARTE } from "./carte.js";
@@ -408,7 +409,7 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
     // The busiest stops only (scripts/build-transit.py): the others' pages are not indexed.
     ...[...transit.stopPages().values()].filter((p) => p.indexe).map((p) => live(`${STOP_PATH}/${p.slug}`)),
     ...PAGES.map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
-    ...Object.values(traces.SENTIERS).map((t) => trace(`/sentiers/${t.slug}`)), ...["/presse", "/a-propos", VALEURS, APPLICATION, GUIDE, "/mcp", "/confidentialite", "/conditions", BAIGNADE, ...PASSES.map((c) => `/cyclones/${c.slug}`)].map(fixed),
+    ...Object.values(traces.SENTIERS).map((t) => trace(`/sentiers/${t.slug}`)), ...["/presse", "/a-propos", VALEURS, JEUX_TRANSPORT, APPLICATION, GUIDE, "/mcp", "/confidentialite", "/conditions", BAIGNADE, ...PASSES.map((c) => `/cyclones/${c.slug}`)].map(fixed),
     ...(formulaires.enLigne() ? [live(ASSOCIATIONS_PATH), fixed(formulaires.PROPOSER_PATH)] : []),
     ["/nouveautes", localDay(NOUVEAUTES[0].date), "daily"], [ANTENNES, undefined, "weekly"], [SANS_REPONSE, undefined, "daily"], live(CHIFFRES), ["/carburants", fuelDay ? (fuelDay < today ? fuelDay : today) : undefined, "daily"],
     // The fires' page only once FIRMS's key is there: before, it says the detection is not active.
@@ -824,6 +825,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === ANTENNES || path === `${ANTENNES}/`) {
     const [hs, a] = await Promise.all([sitesHs.sites(cache), alerte(cache, background, now)]);
     return new Response(antennesPage(origin, hs, now, a), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
+  }
+  // The datasets of transport.data.gouv.fr the site reads (the MMTIS access point's request of 13/11/2026): the same.
+  if (path === JEUX_TRANSPORT) {
+    return new Response(transportDonneesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
   // What rundata.re stands for: nothing read but the vigilance's banner, as /a-propos.
   if (path === VALEURS || path === `${VALEURS}/`) {

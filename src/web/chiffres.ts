@@ -11,6 +11,7 @@ import { esc } from "./map.js";
 import { layout, METEOR_CREDIT } from "./pages.js";
 import { SITE as METEOR_SITE } from "../providers/meteor-oi.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
+import { PATH as JEUX_TRANSPORT } from "./transport-donnees.js";
 
 export { PATH };
 const H1 = "rundata.re en chiffres";
@@ -98,7 +99,8 @@ export function chiffresPage(origin: string, c: Chiffres, inv: Inventaire, alert
 
   const licences = `<h2 id="licences">Les licences</h2>
   <p>${n(c.sous_licence_ouverte)} des ${n(c.sources)} sources sont publiées sous une licence ouverte (${esc(parenthese(c.licences_ouvertes))}). Pour les autres, rundata.re ne reprend que des faits (une valeur, un état, un titre et son heure), avec le lien de la source\u00a0; pour les médias, le titre et parfois la première phrase. Certaines sont reprises avec l'accord écrit de leur producteur, ou en attendant sa réponse\u00a0: leur ligne le dit dans la liste des sources.</p>
-  <ul>${Object.entries(c.licences).map(([nom, nombre]) => `<li>${esc(nom.charAt(0).toUpperCase() + nom.slice(1))}\u00a0: ${n(nombre)}</li>`).join("")}</ul>`;
+  <ul>${Object.entries(c.licences).map(([nom, nombre]) => `<li>${esc(nom.charAt(0).toUpperCase() + nom.slice(1))}\u00a0: ${n(nombre)}</li>`).join("")}</ul>
+  <p>Les jeux de données de transport.data.gouv.fr, le Point d'accès national aux données de transport, sont listés à part : <a href="${JEUX_TRANSPORT}">les données de transport utilisées</a>.</p>`;
 
   const s = c.manque.sites_sans_reponse;
   const silence = !s ? "" : s.nombre

@@ -69,7 +69,8 @@ import * as atmo from "../providers/atmo.js";
 import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
-import { cycloneWater } from "./eau-cyclone.js";
+import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
+import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
@@ -199,6 +200,23 @@ const connectorCta = (tool: string, what: string) => `<section aria-labelledby="
  * The note under the water notices (/coupures-eau, /coupures-eau/x): the tool's, with a link to /eau in place of the
  * name of the tool for the tap water.
  */
+/** /coupures-eau's stable text (marketing, 14/11/2026): `lus`, how many distributors' notices are read. */
+const COUPURES_LIRE = (lus: number) => `<p>En haut, les avis en cours ou à venir, du plus récent au plus ancien. Chaque avis porte le nom du distributeur, la commune, l'heure de publication et le lien vers l'avis complet. On en distingue deux sortes :</p>
+<ul class="plain"><li>les <b>coupures et travaux</b> : l'eau est interrompue, avec l'heure de retour annoncée par le distributeur ;</li>
+<li>l'<b>eau à ne pas boire</b> : l'eau coule, mais le distributeur demande de ne pas la boire, souvent après de fortes pluies ou un incident à l'usine de traitement.</li></ul>
+<p>Nous relisons les avis de ${lus} distributeurs au moins toutes les 30 minutes. Chaque avis est repris tel qu'il est publié, avec un court extrait. Seul l'avis complet, sur le site du distributeur, fait foi. Quand un avis n'est publié qu'en image ou en PDF, nous ne pouvons pas le lire : la page donne alors seulement son lien.</p>
+<p><b>Ce que la page réunit et qu'aucun distributeur ne montre seul :</b></p>
+<ul class="plain"><li>les avis de tous les distributeurs lus, sur une seule page, alors que chacun ne publie que pour ses communes ;</li>
+<li>pour chaque commune : le niveau de sécheresse fixé par le préfet, le résultat des analyses de l'eau du robinet de l'ARS et les consignes du dispositif ORSEC après un cyclone.</li></ul>`;
+
+const COUPURES_FAQ: Faq[] = [
+  { q: "Aucun avis pour ma commune : l'eau n'est donc pas coupée ?", a: "Pas forcément. « Aucun avis en cours » veut dire que nous avons lu le site du distributeur et qu'il n'annonce rien. Une coupure qu'il n'a pas publiée, ou une fuite chez vous, n'apparaît pas ici. Si votre commune est dans la liste « Avis non lus par rundata.re », adressez-vous à la mairie ou au distributeur." },
+  // No figure of our own here (how long, how many minutes): the distributor's notice says what to do.
+  { q: "L'eau revient : je peux la boire tout de suite ?", a: "Suivez les consignes de l'avis du distributeur, jusqu'à son avis suivant." },
+  { q: "Quelle différence avec les restrictions de sécheresse ?", a: `Une coupure ou un avis « ne pas boire » vient du distributeur et concerne un secteur précis. Les restrictions de sécheresse viennent d'un arrêté du préfet : elles limitent certains usages, comme l'arrosage ou le lavage des voitures, dans toute la commune. Elles sont détaillées sur <a href="/secheresse">la page Sécheresse</a>.` },
+  { q: "Qui distribue l'eau chez moi ?", a: "La page de chaque commune nomme son distributeur, d'après le contrôle sanitaire de l'ARS. C'est lui qu'il faut appeler pour une fuite ou une coupure." },
+];
+
 export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
 
 /**
@@ -1154,6 +1172,31 @@ export const alertList = (list: { reseau: string; lignes?: string[]; titre: stri
 
 export const HORAIRES_CHARGENT = "Les horaires se chargent\u00a0: rechargez la page dans quelques secondes.";
 
+/**
+ * /bus's stable text (marketing, 14/11/2026): `reseaux` and `lignes` from the timetables, the sentence that says them
+ * left out without them. The networks one by one are in the band's list.
+ */
+// The station of Saint-Pierre in the example: Car Jaune and Alternéo at « Gare de Saint-Pierre », CarSud at « Gare
+// Routière de St Pierre », in the networks' GTFS (test/texte-stable.test.ts checks it).
+const busLire = (reseaux?: number, lignes?: number) =>
+  (reseaux && lignes ? `<p>La page réunit ${reseaux} réseaux de bus et le téléphérique Papang, soit ${fr(lignes)} lignes. ` : "<p>") +
+  `Elle part toujours d'un lieu : une gare routière, un arrêt ou un trajet. Pour chaque départ, elle donne la ligne, la direction, le réseau et l'heure.</p>
+<ul class="plain"><li>Quand le réseau publie ses retards en direct, l'heure en tient compte : nous les relisons chaque minute.</li>
+<li>Sinon, c'est l'horaire théorique publié par le réseau, sans les retards ni les déviations.</li>
+<li>L'info trafic (arrêts non desservis, déviations, travaux) est reprise telle que les réseaux la publient.</li></ul>
+<p><b>Qui dessert quoi :</b></p>
+<ul class="plain"><li>Le Car Jaune, réseau de la Région, relie les communes entre elles, tout autour de l'île.</li>
+<li>Les autres réseaux circulent dans les communes de leur intercommunalité.</li></ul>
+<p><b>Ce que la page réunit et qu'aucun réseau ne montre seul :</b> les départs de tous les réseaux dans une même gare. À la gare de Saint-Pierre, par exemple, on voit ensemble le Car Jaune, Alternéo et CarSud. On peut aussi préparer un trajet qui passe d'un réseau à l'autre. Chaque réseau, lui, n'affiche que ses propres lignes.</p>`;
+
+/** /bus's questions, the boat to Mauritius as the page has said it since 24/10 (tools/ferries.ts). */
+const busFaq = (): Faq[] => [
+  { q: "Les heures affichées tiennent-elles compte des retards ?", a: "Oui, quand le réseau publie ses retards en direct. Sinon, l'heure affichée est l'horaire théorique du réseau : un bus peut passer plus tôt ou plus tard." },
+  { q: "Quel bus prendre pour aller d'une commune à une autre ?", a: "Entre deux communes éloignées, c'est en général le Car Jaune. Dans votre commune, c'est le réseau de votre intercommunalité. Le formulaire « Préparer un trajet » cherche dans tous les réseaux à la fois." },
+  { q: "Comment trouver mon arrêt ?", a: "Tapez son nom dans la recherche d'arrêt. Chaque arrêt a sa page, avec les lignes qui y passent et les prochains départs." },
+  { q: FERRY.h3, a: esc(FERRY.page), note: esc(FERRY.verifie), id: "h-bateau" },
+];
+
 export function busPage(origin: string, data: Cached<BusData> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/bus`;
@@ -1210,10 +1253,10 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
   ${lienJeux()}
 </section>
 ${d?.alertes?.length ? `<section aria-labelledby="h-trafic"><h2 id="h-trafic">Info trafic</h2><div class="card">${alertList(d.alertes)}<p class="note">Publié par les réseaux dans leur flux en direct, repris tel quel.</p></div></section>` : ""}
-${connectorCta("transports", "les bus de l'île")}
-<section aria-labelledby="h-bateau"><h3 id="h-bateau">${esc(FERRY.h3)}</h3><p>${esc(FERRY.page)}</p><p class="note">${esc(FERRY.verifie)}</p></section>`;
+${texteStable(busLire(d ? d.reseaux.length : undefined, d ? lines : undefined), busFaq())}
+${connectorCta("transports", "les bus de l'île")}`;
 
-  return layout(origin, { title, description, path: "/bus", jsonld: [crumbs(origin, "Bus", "/bus"), webPage(origin, "/bus", title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: "/bus", jsonld: [crumbs(origin, "Bus", "/bus"), webPage(origin, "/bus", title, description, data), faqPage(busFaq())], alerte, iaAside: true }, band, body);
 }
 
 export function busLive(data: Cached<BusData> | null, now = new Date()): Live | undefined {
@@ -1881,6 +1924,25 @@ export function firesSection(f: feux.Feux | undefined, now: Date): string {
  */
 export const closedTrails = (d: SentiersAnswer) => new Set(d.points.map((p) => p.nom)).size;
 
+/**
+ * /sentiers's stable text (marketing, 14/11/2026): how many trails the ONF follows, how many have no known state, how
+ * many full hikes; each sentence left out without its figure.
+ */
+const sentiersLire = (suivis?: number, sansEtat?: number, randonnees?: number) => `<p>La page liste, commune par commune, les sentiers que la carte de l'ONF donne fermés. Pour chacun, elle donne la cause quand l'ONF la publie (éboulement, passage effondré, arbres en travers, travaux) et la date de réouverture si elle est annoncée. Un sentier est fermé par arrêté (préfet ou maire) ou par décision de l'ONF : s'y engager est interdit et dangereux.</p>
+<p>Nous relisons la carte de l'ONF chaque heure. La date en haut de page est celle de sa dernière mise à jour par l'ONF, pas celle de notre lecture.${suivis ? ` L'ONF suit ${suivis} sentiers.` : ""}${sansEtat ? ` ${sansEtat} autres sentiers, gérés par une commune, le Département ou un propriétaire privé, n'ont pas d'état connu ici.` : ""}</p>
+<p><b>Ce que la page réunit et qu'aucune source ne montre seule :</b></p>
+<ul class="plain"><li>l'état donné par la carte de l'ONF ;</li>
+<li>les avis de l'ONF qui la nuancent : certaines routes forestières sont fermées en semaine et ouvertes le week-end, et la page montre les deux ;</li>
+<li>${randonnees ? `les traces GPS des sentiers et des ${randonnees} grands itinéraires` : "les traces GPS des sentiers et des grands itinéraires"}, avec leur dénivelé d'après l'IGN ;</li>
+<li>la météo de chaque secteur.</li></ul>`;
+
+const SENTIERS_FAQ: Faq[] = [
+  { q: "Un sentier n'est pas dans la liste : est-il ouvert ?", a: "S'il est géré par l'ONF et absent de la liste, la carte de l'ONF le donne ouvert. S'il n'est pas géré par l'ONF, nous ne connaissons pas son état : renseignez-vous auprès de la commune ou du Parc national. Dans tous les cas, la météo du jour et le balisage sur place comptent aussi." },
+  { q: "Je peux passer quand même, avec prudence ?", a: "Non. Un sentier fermé l'est pour un danger constaté, et y entrer est interdit." },
+  { q: "Quand va-t-il rouvrir ?", a: "Quand l'ONF annonce une date ou une année, la page la donne, par exemple « Réouverture 2026 ». Sans annonce, nous n'en donnons pas. « Pas de réouverture prévue à court terme » est la formule de l'ONF." },
+  { q: "La trace GPS suffit-elle pour partir ?", a: "Non. Une trace ne remplace ni le balisage ni l'état du sentier. Vérifiez cette page le jour même : une fermeture peut tomber d'un jour à l'autre." },
+];
+
 export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/sentiers`;
@@ -1954,9 +2016,10 @@ export function sentiersPage(origin: string, data: Cached<SentiersAnswer> | null
 </section>
 ${burning ? "" : fires}
 ${hikes}
+${texteStable(sentiersLire(d?.suivis, d?.sans_etat, d?.randonnees.length), SENTIERS_FAQ)}
 ${connectorCta("sentiers_randonnee", "les sentiers de randonnée")}`;
 
-  return layout(origin, { title, description, path: "/sentiers", hook: `Avant de partir : les sentiers fermés d'après ${onfCarte(d?.carte_mise_a_jour)}, et pourquoi.`, jsonld: [hikeCrumbs(origin, "Sentiers fermés", "/sentiers"), webPage(origin, "/sentiers", title, description, data)], alerte }, band, etatOnf(body));
+  return layout(origin, { title, description, path: "/sentiers", hook: `Avant de partir : les sentiers fermés d'après ${onfCarte(d?.carte_mise_a_jour)}, et pourquoi.`, jsonld: [hikeCrumbs(origin, "Sentiers fermés", "/sentiers"), webPage(origin, "/sentiers", title, description, data), faqPage(SENTIERS_FAQ)], alerte, iaAside: true }, band, etatOnf(body));
 }
 
 // ---------------------------------------------------------------- circulation
@@ -2682,6 +2745,30 @@ const vigieauSays = (c: SecheresseAnswer["communes"][number], ressource: string)
   return e ? `<small class="note" style="display:block">VigiEau\u00a0: ${esc(e.vigieau)}</small>` : "";
 };
 
+/** /secheresse's stable text (marketing, 14/11/2026). */
+const SECHERESSE_LIRE = `<p>Quand la pluie manque, le préfet prend un arrêté qui limite certains usages de l'eau. La page reprend l'arrêté du préfet en vigueur, commune par commune.</p>
+<p><b>Quatre niveaux, du plus léger au plus strict :</b></p>
+<ul class="plain"><li><b>vigilance</b> : économiser l'eau ;</li>
+<li><b>alerte</b> et <b>alerte renforcée</b> : des usages sont limités ou interdits ;</li>
+<li><b>crise</b> : seuls les usages prioritaires restent permis (santé, salubrité, sécurité).</li></ul>
+<p>Chaque commune a un niveau pour trois ressources :</p>
+<ul class="plain"><li><b>l'eau du robinet</b>, celle qui compte pour un particulier branché au réseau ;</li>
+<li><b>les rivières et les sources</b> ;</li>
+<li><b>les nappes</b>.</li></ul>
+<p>Les deux dernières concernent ceux qui prélèvent directement dans le milieu : forage, captage, pompage.</p>
+<p>La liste « Ce qui est interdit » donne, niveau par niveau, les usages limités pour un particulier : arrosage, lavage des voitures, piscine, fontaines, avec les heures permises quand l'arrêté en donne. Les agriculteurs, les entreprises et les collectivités ont leurs propres règles dans l'arrêté.</p>
+<p><b>Ce que la page réunit :</b></p>
+<ul class="plain"><li>le niveau de chaque commune pour les trois ressources, dans un seul tableau ;</li>
+<li>les usages permis ou interdits, traduits en cas concrets.</li></ul>
+<p>Pour comprendre pourquoi : <a href="/historique">la page Historique</a> compare la pluie récente à la normale, et <a href="/coupures-eau">la page Coupures d'eau</a> donne les avis des distributeurs.</p>`;
+
+const SECHERESSE_FAQ: Faq[] = [
+  { q: "Qui décide des restrictions ?", a: "Le préfet de La Réunion, par arrêté, sur la base des niveaux des rivières et des nappes. La date de l'arrêté en vigueur est en haut de page." },
+  { q: "Je peux arroser mon jardin ?", a: "Cela dépend du niveau de votre commune pour l'eau du robinet. Pour chaque niveau, la liste « Ce qui est interdit » dit si l'arrosage est permis, interdit, ou permis à certaines heures." },
+  { q: "Jusqu'à quand durent les restrictions ?", a: "Jusqu'à ce qu'un nouvel arrêté les change ou les lève. Il n'y a pas de date de fin fixée à l'avance." },
+  { q: "Quelle différence avec une coupure d'eau ?", a: "Une restriction limite des usages dans toute la commune. Une coupure, annoncée par le distributeur, interrompt l'eau dans un secteur." },
+];
+
 export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
   const url = `${origin}/secheresse`;
@@ -2745,9 +2832,10 @@ ${rules ? `<section aria-labelledby="h-interdits">
   ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>` : ""}
+${texteStable(SECHERESSE_LIRE, SECHERESSE_FAQ)}
 ${connectorCta("restrictions_eau", "les restrictions d'eau")}`;
 
-  return layout(origin, { title, description, path: "/secheresse", jsonld: [crumbs(origin, "Sécheresse", "/secheresse"), webPage(origin, "/secheresse", title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: "/secheresse", jsonld: [crumbs(origin, "Sécheresse", "/secheresse"), webPage(origin, "/secheresse", title, description, data), faqPage(SECHERESSE_FAQ)], alerte, iaAside: true }, band, body);
 }
 
 export function secheresseLive(data: Cached<SecheresseAnswer> | null): Live | undefined {
@@ -2902,10 +2990,11 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>
 ${cyclone.lead ? cyclone.html : ""}
+${texteStable(COUPURES_LIRE(distributeursLus()), COUPURES_FAQ)}
 ${connectorAsk("les coupures d'eau", "Saint-Denis")}
 ${cyclone.lead ? "" : cyclone.html}`;
 
-  return layout(origin, { title, description, path: "/coupures-eau", jsonld: [crumbs(origin, "Coupures d'eau", "/coupures-eau"), webPage(origin, "/coupures-eau", title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: "/coupures-eau", jsonld: [crumbs(origin, "Coupures d'eau", "/coupures-eau"), webPage(origin, "/coupures-eau", title, description, data), faqPage(COUPURES_FAQ)], alerte, iaAside: true }, band, body);
 }
 
 // What the communes' water pages (coupures.ts) share with the island's.

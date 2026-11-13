@@ -21,6 +21,8 @@ const BASE = "https://public-api.meteofrance.fr/public/DPPaquetObs/v2/paquet/sta
 const SLOT_MS = 6 * 60_000;
 const FINAL_AFTER_MS = 15 * 60_000; // a slot no longer changes after this
 const RECHECK_SECONDS = 2 * 60;
+/** How often the packets are asked again, in minutes, as /meteo says it. */
+export const RELECTURE_MIN = RECHECK_SECONDS / 60;
 // Slots read per question: enough for the newest row of each station and the nine before it (rain over an hour).
 const SLOTS = 11;
 // The slots are kept together, one read and one write of the Worker's edge cache instead of eleven of each.

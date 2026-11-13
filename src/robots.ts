@@ -124,4 +124,4 @@ export function robot(request: Request): boolean {
  * Google asks of a page briefly unavailable), never a page that would be indexed without its data.
  */
 export const revenir = () =>
-  new Response("La page se construit : revenez dans une minute.\n", { status: 503, headers: { ...TEXT_HEADERS, "retry-after": "60", "x-robots-tag": "noindex" } });
+  new Response("La page se construit : revenez dans une minute.\n", { status: 503, headers: { ...TEXT_HEADERS, "retry-after": "60" } });

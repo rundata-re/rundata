@@ -70,6 +70,8 @@ describe("the sitemap, as a search engine's robot reads it", () => {
     expect(robot.status).toBe(503);
     expect(robot.headers.get("retry-after")).toBe("60");
     expect(robot.headers.get("cache-control")).toBe("no-store");
+    // Google ignores a 5xx's headers: no noindex, which could only confuse another engine.
+    expect(robot.headers.get("x-robots-tag")).toBeNull();
   });
 
   it("reads « se charge » in the visible text only, not in a script's message", () => {

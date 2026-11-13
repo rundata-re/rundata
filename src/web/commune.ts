@@ -48,6 +48,8 @@ import { PATH as ECOLES, schoolLi } from "./ecoles-annuaire.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { enTete } from "../tools/representativeness.js";
 import { casse } from "../tools/casse.js";
+import { COMMUNE_LIRE, communeFaq } from "./commune-texte.js";
+import { faqPage, texteStable } from "./texte-stable.js";
 
 /** What a commune's page is made of, each part null or missing when there is no copy yet. */
 export interface CommuneLive {
@@ -798,6 +800,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(l.volcan?.value.sources ?? []),
     ...(l.electricite?.value.sources ?? []),
   ];
+  const faq = communeFaq(p.nom, p.slug);
   const body = `<section id="en-ce-moment" aria-labelledby="h-now">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-now">${esc(p.nom)} en ce moment</h2>
   <p>Chaque catégorie a sa page pour toute l'île ; ici, ce qui concerne ${esc(p.nom)}. Mise à jour en continu, chaque donnée avec son heure et sa source.</p></div>
@@ -810,7 +813,8 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <p>Des chiffres publiés une fois par an, par trimestre, par mois ou par semaine, chacun avec sa date.</p></div>
   <ul class="tiles" aria-label="Habiter ${esc(aCommune(p.nom))}">${habiter.map((t) => tile(t)).join("")}</ul>
 </section>
-` : ""}${schools(p)}${doctors(p)}${votes(p)}<section aria-labelledby="h-ile">
+` : ""}${schools(p)}${doctors(p)}${votes(p)}${texteStable(COMMUNE_LIRE, faq)}
+<section aria-labelledby="h-ile">
   <h2 id="h-ile">Et pour toute l'île</h2>
   <ul class="tiles" aria-label="Toute l'île">${island.map((t) => tile(t)).join("")}</ul>
 </section>
@@ -824,7 +828,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <ul class="chips">${COMMUNES.filter((x) => x.slug !== p.slug).map((x) => `<li><a href="${hub(x)}">${esc(x.nom)}</a></li>`).join("")}</ul>
 </section>`;
   const rss = { href: rssPath(p), title: rssTitle(p), link: rssLink(p), hint: RSS_HINT };
-  return layout(origin, { title, description, path: hub(p), jsonld, alerte, rss, hook: `La fiche ${deCommune(p.nom)} : la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.` }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
+  return layout(origin, { title, description, path: hub(p), jsonld: faq.length ? [...jsonld, faqPage(faq)] : jsonld, alerte, rss, iaAside: true, hook: `La fiche ${deCommune(p.nom)} : la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.` }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
 }
 
 /** The 24 communes, by vigilance zone: the island's own way of splitting itself (Nord, Est, Sud, Ouest). */

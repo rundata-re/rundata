@@ -57,6 +57,9 @@ const TOUR = [
   ["97424410", "cirque de Cilaos"],
 ] as const;
 
+/** How many stations of reference /historique compares to the normal: one per climate. */
+export const STATIONS_REFERENCE = TOUR.length;
+
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const DAY_MS = 86_400_000;
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);

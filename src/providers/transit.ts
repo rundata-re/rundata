@@ -61,6 +61,11 @@ const tidy = (name: string) => name.replace(/\s{2,}/g, " ");
 export const ROUTES = (network.routes as unknown as [string, string, string][]).map(([net, short, long]) => [net, tidy(short), tidy(long)] as [string, string, string]);
 /** [network, name, lat, lon, commune] by stop index. */
 const STOPS = (network.stops as unknown as [string, string, number, number, string][]).map(([net, name, ...rest]) => [net, tidy(name), ...rest] as [string, string, number, number, string]);
+/** The networks with a stop in a commune (Car Jaune, Kar'Ouest…), in their numbering order. */
+export function reseauxDe(commune: string): Network[] {
+  const keys = new Set(STOPS.filter((s) => s[4] === commune).map((s) => s[0]));
+  return ORDER.filter((n) => [...keys].some((k) => NETWORKS[k] === n));
+}
 const shown = new Map<string, string>();
 /**
  * A stop's name as people read it, the ones its network writes in capitals too (casseArret(): « GARE SAINT ANDRE »,

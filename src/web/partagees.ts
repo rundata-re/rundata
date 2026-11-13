@@ -124,7 +124,9 @@ export const SHARED: Shared[] = [
   // (SharedFallback), and a granule. Its CPU: unpacking the granule's three chunks of the island, 58 to 116 ms in
   // workerd (wrangler dev) on two granules of 6 and 7 November 2026, 215 to 330 in Node.
   { key: viirs.KEY, build: viirs.build, every: (last, now) => viirs.passagesEvery(last, now), cold: 3, cpu: 400, range: { usual: 60, shortest: 10 }, offset: 0 },
-  { key: "web:mer", build: buildSea, every: 3 * 60, cold: 13, cpu: 110, offset: 75 },
+  // Its cold cost: 13, and 2 for the corals' grid a view of /mer kept (web/data.ts `corauxGardes`: the data center's
+  // cache, then KV), 15 in the test.
+  { key: "web:mer", build: buildSea, every: 3 * 60, cold: 15, cpu: 110, offset: 75 },
   { key: "web:calendrier", build: buildCalendrier, every: 6 * 60, cold: 8, cpu: 40, offset: 130 },
   // The earthquakes and the ONF's map, which /volcan's copy embeds: built in the data center of the event, it read that
   // data center's own copies, which no view had brought up to date (26 October 2026: 8 earthquakes in 7 days and the

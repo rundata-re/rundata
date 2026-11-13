@@ -14,7 +14,9 @@
  * value is not shown; a track to a place the data does not locate is not drawn.
  */
 import type { Cached } from "../cache.js";
-import type { AgendaAnswer, AirAnswer, HomeData, SentiersAnswer, TraficAnswer, VelosAnswer, VolcanAnswer } from "./data.js";
+import type { AgendaAnswer, AirAnswer, HomeData, SeaNow, SentiersAnswer, TraficAnswer, VelosAnswer, VolcanAnswer } from "./data.js";
+import { de } from "../articles.js";
+import { NIVEAUX } from "../providers/coraux.js";
 import { resolvePlace } from "../places/resolve.js";
 import { fourchette, fr } from "../tools/format.js";
 import { alerteVolcan } from "./volcan-alerte.js";
@@ -254,7 +256,26 @@ function sortie(h: HomeLive, now: Date): Sujet | undefined {
   };
 }
 
-function mer(h: HomeLive): Sujet | undefined {
+/** A day of the corals' grid older than this is not said: NOAA publishes a day about 2 days after, its mirror misses some. */
+const CORAUX_MAX_JOURS = 5;
+/** « Coraux : pas de stress thermique (NOAA) », NOAA's level near the beach (marketing); none without a recent day. */
+function corauxDe(m: SeaNow, now: Date): string | undefined {
+  const c = m.coraux;
+  if (!c || !NIVEAUX[c.niveau] || now.getTime() - Date.parse(`${c.jour}T12:00:00Z`) > CORAUX_MAX_JOURS * 86_400_000) return undefined;
+  const n = NIVEAUX[c.niveau];
+  return `Coraux\u00a0: ${n.charAt(0).toLowerCase()}${n.slice(1)} (NOAA)`;
+}
+/** « mesurée par satellite le 13/11 à 13:49 (NOAA) », or the day alone for a day's mean. */
+const measured = (m: SeaNow, now: Date) => `mesurée par satellite ${m.heure ? when(m.heure, now) : `le ${dayOf(m.jour)}`} (NOAA)`;
+/** The bubble of a beach: the corals' level, then the water there with its pass (marketing); without the corals, the water. */
+function seaTip(m: SeaNow, now: Date): Sujet["tip"] {
+  const reef = corauxDe(m, now);
+  return reef
+    ? { place: reef, value: "", detail: `eau à ${thin(deg(m.valeur))} au large ${de(m.nom)}, ${measured(m, now)}` }
+    : { place: m.nom, value: thin(deg(m.valeur)), detail: measured(m, now) };
+}
+
+function mer(h: HomeLive, now: Date): Sujet | undefined {
   const l = h.meteo?.value.mer ?? [];
   if (!l.length) return undefined;
   const v = l.map((m) => m.valeur);
@@ -262,11 +283,11 @@ function mer(h: HomeLive): Sujet | undefined {
   // One beach, the first a clean track reaches (draw()), with its own bubble.
   const placed = l.flatMap((m) => {
     const at = placeOf(m.nom);
-    return at ? [{ at, tip: { place: m.nom, value: thin(deg(m.valeur)), detail: `mesurée par satellite le ${dayOf(m.jour)}, NOAA` } }] : [];
+    return at ? [{ at, tip: seaTip(m, now) }] : [];
   });
   return {
     id: "mer", k: "Mer", src: "NOAA", value, color: COLOURS.mer, href: HREF.mer, pts: placed.map((x) => x.at), one: placed.map((x) => x.tip),
-    tip: placed[0]?.tip ?? { place: l[0].nom || "En mer, près de la côte", value, detail: `mesurée par satellite le ${dayOf(l[0].jour)}, NOAA` },
+    tip: placed[0]?.tip ?? { place: l[0].nom || "En mer, près de la côte", value, detail: measured(l[0], now) },
     lu: iso(h.meteo!.fetchedAt),
   };
 }
@@ -432,7 +453,7 @@ export interface HomeLive {
 }
 
 export function sujets(h: HomeLive, now: Date): Sujet[] {
-  const all = [sortie(h, now), routes(h, now), sentiers(h, now), volcan(h, now), mer(h), velos(h, now), meteo(h, now), air(h, now)];
+  const all = [sortie(h, now), routes(h, now), sentiers(h, now), volcan(h, now), mer(h, now), velos(h, now), meteo(h, now), air(h, now)];
   return all.filter((s): s is Sujet => !!s);
 }
 

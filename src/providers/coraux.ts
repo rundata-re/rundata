@@ -150,10 +150,10 @@ export function parse(csv: string): Coraux {
   return { jour, jours: new Set(kept.map((x) => x.jour)).size, points };
 }
 
-/**
- * The last 7 days, read for the whole island at most once a day, kept in KV. Its own key since the scale of 0 to 7:
- * the copies of « coraux:ile » hold one day's level on the scale of 0 to 4.
- */
+/** Its own key since the scale of 0 to 7: the copies of « coraux:ile » hold one day's level on the scale of 0 to 4. */
+export const KEY = "coraux:ile:7j";
+
+/** The last 7 days, read for the whole island at most once a day, kept in KV. */
 export function coraux(cache: Cache): Promise<Cached<Coraux>> {
-  return cache.island("coraux:ile:7j", FRESH_SECONDS, async () => parse(await getText(SOURCE.id, CSV_URL, TIMEOUT_MS)));
+  return cache.island(KEY, FRESH_SECONDS, async () => parse(await getText(SOURCE.id, CSV_URL, TIMEOUT_MS)));
 }

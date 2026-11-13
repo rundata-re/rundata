@@ -72,10 +72,12 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
-  mer: 7,
+  // Each beach with the satellite's pass time, and the corals' grid a view of /mer kept (the home page's sea bubble).
+  mer: 8,
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
-  meteo: 11,
+  // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.
+  meteo: 12,
   randonnees: 15,
   secheresse: 1,
   // Its copy keeps the fires' lines of sentiers_randonnee (tools/feux.ts `when`), now with their day.

@@ -523,11 +523,12 @@ describe("what crawlers and previews fetch", () => {
     const robots = await (await handle(new Request("https://rundata.re/robots.txt"), isolate())).text();
     expect(robots).toContain("Sitemap: https://rundata.re/sitemap.xml");
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), isolate())).text();
-    // The pages, the 24 communes, their water, their day and their places for children, a page per hike and per ONF trail with its GPS trace, and per past
-    // cyclone, and the busiest bus stops.
+    // The pages, the 24 communes, their water where its notices are read (16), their day and their places for children, a
+    // page per hike and per ONF trail with its GPS trace, and per past cyclone, and the busiest bus stops. Not the weather
+    // stations' pages, out of it while Google judges the site again.
     const stops = [...stopPages().values()].filter((p) => p.indexe);
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 24 + 24 + 24 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length + STATIONS.length);
-    expect(map).toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
+    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 16 + 24 + 24 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
+    expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");
     expect(map).toContain("<loc>https://rundata.re/sites-sans-reponse</loc>");

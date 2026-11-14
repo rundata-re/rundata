@@ -22,7 +22,22 @@ export interface Ile {
     derniere_analyse?: string;
     /** The networks with a sample off the limits in 6 months. */
     a_surveiller: ReturnType<typeof networkRow>[];
+    /**
+     * Every network, with the districts the ARS gives for it and its last sample in 6 months: its day (ISO) and the
+     * ARS's conclusion as written. Absent from a copy gathered before 14/11/2026.
+     */
+    reseaux_detail?: Reseau[];
   }[];
+}
+
+/** One network of a commune, as the ARS's sanitary control gives it (Hub'Eau). */
+export interface Reseau {
+  reseau: string;
+  quartiers: string[];
+  /** The day of its last sample in 6 months (« 2026-11-03 »), none without one. */
+  derniere_analyse?: string;
+  /** The ARS's conclusion on that sample, as written (« Eau d'alimentation conforme aux exigences de qualité… »). */
+  conclusion?: string;
 }
 
 const FRESH_SECONDS = 3600;
@@ -55,6 +70,11 @@ export async function gather(cache: Cache, now = new Date()): Promise<Ile> {
           non_conformes_6_mois: value.prelevements.filter((p) => !p.conforme).length,
           derniere_analyse: last ? last.date.slice(0, 10) : undefined,
           a_surveiller: rows.filter((r) => r.non_conformes_6_mois).sort((a, b) => b.non_conformes_6_mois - a.non_conformes_6_mois),
+          reseaux_detail: value.reseaux.map((r): Reseau => {
+            // The samples are the latest first (potable.commune).
+            const s = value.prelevements.find((x) => x.reseaux.includes(r.code));
+            return { reseau: r.nom, quartiers: r.quartiers, ...(s ? { derniere_analyse: s.date.slice(0, 10), ...(s.conclusion ? { conclusion: s.conclusion } : {}) } : {}) };
+          }),
         };
       } catch {
         return null;

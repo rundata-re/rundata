@@ -61,6 +61,7 @@ import { crues } from "../tools/crues.js";
 import * as daeSource from "../providers/dae.js";
 import { anyHour, byCommune as daeByCommune, daeRow, URGENCE as DAE_URGENCE } from "../tools/dae.js";
 import { coupuresEau, type FluxMuet, type noticeRow } from "../tools/coupures.js";
+import { avis as avisEau } from "../providers/avis-eau.js";
 import { lues } from "../eau/distributeurs.js";
 import { type CourantAnswer, type courantBlock, courantCopy } from "../tools/courant.js";
 import { type NonOfficiel, volcanSeismes } from "../tools/volcan.js";
@@ -1167,11 +1168,45 @@ export interface CoupuresAnswer {
   a_savoir: string;
   sources: Credit[];
   communes_suivies: string[];
+  /**
+   * For each commune a notice names, its DERNIERS_AVIS latest, past ones too, as long as their feed still lists them:
+   * for the commune's page (web/coupures.ts). Absent from a copy built before 14/11/2026.
+   */
+  derniers_avis?: Record<string, DernierAvis[]>;
+  /** For each commune in derniers_avis, the publication of the oldest notice its feeds still list: the page says from when they go back. */
+  plus_ancien_avis?: Record<string, string>;
 }
+
+/** A commune's notice, in force or past: when it was published, by whom, and its link. */
+export interface DernierAvis {
+  publie: string;
+  /** Its day only is known (La Créole): no time told. */
+  jour?: true;
+  titre: string;
+  distributeur: string;
+  lien?: string;
+}
+
+export const DERNIERS_AVIS = 5;
 
 export async function buildCoupures(cache: Cache, now = new Date()): Promise<CoupuresAnswer> {
   const a = needed<Omit<CoupuresAnswer, "communes_suivies">>(await coupuresEau(cache, undefined, now), "coupures");
-  return { ...a, communes_suivies: lues() };
+  // The feeds' read the tool has just made, from memory: no request more.
+  const derniers: Record<string, DernierAvis[]> = {};
+  const oldest: Record<string, string> = {};
+  try {
+    for (const n of (await avisEau(cache)).value) {
+      for (const c of n.communes) {
+        if (!oldest[c] || Date.parse(n.publie) < Date.parse(oldest[c])) oldest[c] = n.publie;
+        const list = (derniers[c] ??= []);
+        if (list.length < DERNIERS_AVIS) list.push({ publie: n.publie, ...(n.jour ? { jour: true as const } : {}), titre: n.titre, distributeur: n.distributeur, ...(n.lien ? { lien: n.lien } : {}) });
+      }
+    }
+  } catch {
+    // The tool's answer stands without them: the page then shows the notices in force only.
+    return { ...a, communes_suivies: lues() };
+  }
+  return { ...a, communes_suivies: lues(), derniers_avis: derniers, plus_ancien_avis: oldest };
 }
 
 export type { CourantAnswer };

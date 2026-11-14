@@ -8,7 +8,7 @@ import { coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { buildCoupures } from "../src/web/data.js";
 import { couvertureCourte, coupuresLive, coupuresPage, noticesHead } from "../src/web/domains.js";
 import island from "../src/places/island.json" with { type: "json" };
-import { pageOf } from "../src/web/places.js";
+import { PAGES, pageOf } from "../src/web/places.js";
 import { resume } from "../src/tools/resume.js";
 import { site } from "../src/web/site.js";
 import { aujourdhuiPage, descriptionOf } from "../src/web/aujourdhui.js";
@@ -188,6 +188,33 @@ describe("coupures d'eau", () => {
     const both = only([{ titre: "Coupure d'eau rue A" }, { titre: "Qualité de l'eau" }, { titre: "Retour à la normale" }]);
     expect(waterLive(pageOf("saint-denis")!, { coupures: both })).toMatchObject({ valeur: "1 avis de coupure" });
     expect(resume(pageOf("saint-denis")!, { coupures: both } as never, NOW).resume).toContain("\u00a0; 1 avis de coupure d'eau, et 2 autres avis sur l'eau\u00a0;");
+  });
+
+  it("lists a commune's latest notices, past ones too, each with its day, its publisher and its link, never « terminé »", async () => {
+    const value = await buildCoupures(cache(), NOW);
+    const all = Object.entries(value.derniers_avis ?? {});
+    expect(all.length).toBeGreaterThan(0);
+    for (const [, list] of all) {
+      expect(list.length).toBeLessThanOrEqual(5);
+      expect([...list].sort((x, y) => y.publie.localeCompare(x.publie))).toEqual(list);
+    }
+    // A commune with a notice no longer in force: on its page, below the notices in force, not repeated.
+    const coupures = { value, fetchedAt: NOW };
+    const [commune, list] = all.find(([c, l]) => l.some((n) => !value.avis.some((x) => x.titre === n.titre && x.communes.includes(c))))!;
+    const past = list.find((n) => !value.avis.some((x) => x.titre === n.titre && x.communes.includes(commune)))!;
+    const html = coupuresCommunePage("https://rundata.re", PAGES.find((x) => x.commune && x.nom === commune)!, { coupures }, NOW);
+    const block = html.slice(html.indexOf("<h3>Derniers avis publiés"));
+    expect(block.slice(0, block.indexOf("</ul>"))).toContain(past.lien ? `<a href="${past.lien}" rel="noopener">` : past.titre.slice(0, 10));
+    expect(block.slice(0, block.indexOf("</ul>"))).toMatch(/publié le \d{2}\/\d{2}\/\d{4}/);
+    expect(block.slice(0, block.indexOf("</ul>"))).not.toContain("terminé");
+    // Not a full history: said in one line, with the day of the oldest notice the feeds still list.
+    const oldest = value.plus_ancien_avis![commune];
+    expect(list.every((n) => Date.parse(n.publie) >= Date.parse(oldest))).toBe(true);
+    const day = new Date(Date.parse(oldest) + 4 * 3600_000).toISOString().slice(0, 10).split("-").reverse().join("/");
+    expect(block).toContain(`pas un historique complet\u00a0: le plus ancien date du ${day}.</p>`);
+    // A copy built before: the page as before.
+    const { derniers_avis: _, ...before } = value;
+    expect(coupuresCommunePage("https://rundata.re", PAGES.find((x) => x.commune && x.nom === commune)!, { coupures: { value: before, fetchedAt: NOW } }, NOW)).not.toContain("Derniers avis publiés");
   });
 
   it("shows a list read whole, else sends to the notice for the streets, on the page and in the tool", async () => {

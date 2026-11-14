@@ -1,5 +1,5 @@
 import type { Cache, Cached } from "../cache.js";
-import { distributeur, LIENS, lues, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { distributeur, LIENS, lues, partage, phrasePartage, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as notices from "../providers/avis-eau.js";
 import { BACK, lifts } from "../providers/avis-eau.js";
@@ -161,6 +161,10 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const covered = !!dist?.avis || all.some((n) => n.communes.includes(commune));
   // Not read: the distributor the ARS names, as on the commune's page (worded by marketing); none named, the plain sentence.
   const unread = covered ? undefined : dist;
+  // Shared between distributors (src/eau/distributeurs.ts): each with its networks, as the ARS gives them, and whose
+  // notices are read; none chosen.
+  const shared = dist?.partage ?? partage(commune);
+  const sharedText = shared && `${phrasePartage(commune, shared)} ${dist?.avis ? `Seuls les avis de ${dist.nom} sont lus.` : "Leurs avis ne sont pas lus par rundata.re."}`;
   // Its feed did not answer at the last read: its notices kept said so, or its read said failed, never « aucun avis ».
   const mute = dist?.avis ? muetPour(silent, commune) : undefined;
   const resume = [
@@ -172,6 +176,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
       : unread ? `Pas d'avis en ligne lisible pour ${commune} : rundata.re ne lit pas les avis de coupure de ${unread.nom}, qui y distribue l'eau. Voir ${unread.nom} ou la mairie.`
       : `Pas d'avis en ligne lisible pour ${commune} : voir la mairie ou le distributeur d'eau.`,
     mute ? mute.texte : "",
+    sharedText ?? "",
   ].filter(Boolean).join(" ");
   return text({
     lieu: placeBlock(lieu, res),
@@ -180,11 +185,12 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     // A mairie only linked to (src/eau/distributeurs.ts): where its notices are, nothing taken from them.
     mairie: !covered && LIENS[commune] ? { libelle: LIENS[commune].libelle, lien: LIENS[commune].site } : undefined,
     distributeur: unread ? { nom: unread.nom, d_apres: DISTRIBUTEURS } : undefined,
+    distributeurs: shared ? { texte: sharedText, par: shared.par.map((d) => ({ nom: d.nom, reseaux: d.reseaux })), reseaux: shared.reseaux, d_apres: DISTRIBUTEURS } : undefined,
     contact: covered ? undefined : `Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/${slugify(commune)}`,
     injoignable: mute ? [mute] : undefined,
     avis: mine.map((n) => noticeRow(n, now, n === dry)),
     ...common,
     // The distributor named is the ARS's sanitary control's (src/eau/distributeurs.json), credited as the page does.
-    ...(unread ? { sources: credits([notices.SOURCE, potable.SOURCE]) } : {}),
+    ...(unread || shared ? { sources: credits([notices.SOURCE, potable.SOURCE]) } : {}),
   });
 }

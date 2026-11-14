@@ -2,13 +2,14 @@
 """Build src/eau/distributeurs.json: the water distributor of each commune of La Réunion, as the ARS names it in its
 sanitary control of tap water (Hub'Eau, « qualité de l'eau potable », field nom_distributeur) in the commune's samples
 over the last six months. A commune whose samples name more than one is left unidentified (null), its distributors
-listed under « plusieurs »: none is guessed (data-run). Open data, Licence Ouverte 2.0.
+listed under « plusieurs », each with the networks its samples give it (field reseaux), and the commune's networks
+counted once: none is guessed. Open data, Licence Ouverte 2.0.
 Usage: python3 -I scripts/build-distributeurs.py
 """
 import json
 import time
 import urllib.request
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -25,12 +26,26 @@ INSEE = {
 }
 
 
+def summarize(rows):
+    """A commune's distributor, or None and its distributors with their networks when its samples name more than one."""
+    count = Counter(x["nom_distributeur"] for x in rows if x.get("nom_distributeur"))
+    if len(count) < 2:
+        return (next(iter(count)) if count else None), None
+    # Each distributor's networks, by code, named as the ARS names them; the commune's counted once.
+    nets, names = defaultdict(set), {}
+    for x in rows:
+        for r in x.get("reseaux") or []:
+            nets[x.get("nom_distributeur")].add(r["code"])
+            names[r["code"]] = r["nom"]
+    return None, {"reseaux": len(names), "par": {d: sorted(names[c] for c in nets[d]) for d in sorted(count)}}
+
+
 def main():
     since = (date.today() - timedelta(days=182)).isoformat()
     communes, several = {}, {}
     for nom, code in INSEE.items():
         # E. coli is part of every bacteriological analysis: one row per sample, all of them within the page.
-        url = f"{API}?code_commune={code}&code_parametre=1449&date_min_prelevement={since}&size=1000&fields=nom_distributeur"
+        url = f"{API}?code_commune={code}&code_parametre=1449&date_min_prelevement={since}&size=1000&fields=nom_distributeur,reseaux"
         for attempt in range(4):
             try:
                 with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=90) as r:
@@ -40,11 +55,10 @@ def main():
                 if attempt == 3:
                     raise
                 time.sleep(5 * (attempt + 1))
-        count = Counter(x["nom_distributeur"] for x in rows if x.get("nom_distributeur"))
-        communes[nom] = next(iter(count)) if len(count) == 1 else None
-        if len(count) > 1:
-            several[nom] = sorted(count)
-        print(f"  {nom}: {communes[nom] or sorted(count)} ({sum(count.values())} résultats)")
+        communes[nom], one = summarize(rows)
+        if one:
+            several[nom] = one
+        print(f"  {nom}: {communes[nom] or several.get(nom)} ({len(rows)} résultats)")
         time.sleep(0.5)
     OUT.write_text(json.dumps({
         "construit": date.today().isoformat(),

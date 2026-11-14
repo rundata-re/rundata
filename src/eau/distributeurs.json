@@ -1,5 +1,5 @@
 {
- "construit": "2026-10-24",
+ "construit": "2026-11-14",
  "source": "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau), Licence Ouverte 2.0",
  "communes": {
   "Les Avirons": "CISE REUNION",
@@ -28,9 +28,22 @@
   "Cilaos": "RECIL"
  },
  "plusieurs": {
-  "L'Étang-Salé": [
-   "MAIRIE DE L'ÉTANG-SALÉ",
-   "RUNEO"
-  ]
+  "L'Étang-Salé": {
+   "reseaux": 8,
+   "par": {
+    "MAIRIE DE L'ÉTANG-SALÉ": [
+     "RESEAU SCES NOUVELLES LES HAUTS"
+    ],
+    "RUNEO": [
+     "RESEAU CANOTS LES BAS",
+     "RESEAU ETANG SALE VILLE EST",
+     "RESEAU ETANG SALE VILLE OUEST",
+     "RESEAU LAFOND",
+     "RESEAU LES CANOTS LES HAUTS",
+     "RESEAU MANIRON LAMBERT LES HAUTS",
+     "RESEAU SOURCES NOUVELLES"
+    ]
+   }
+  }
  }
 }

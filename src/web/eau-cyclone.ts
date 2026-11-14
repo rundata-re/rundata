@@ -5,7 +5,7 @@
  * notices are not read. Up the page in the cyclone season, at its foot the rest of the year. Nothing more is fetched.
  * Worded by marketing.
  */
-import { BUILT, distributeur, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, plusieurs } from "../eau/distributeurs.js";
+import { BUILT, distributeur, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, partage, phrasePartage } from "../eau/distributeurs.js";
 import { a } from "../tools/format.js";
 import { PDF } from "./alerte-cyclone.js";
 import { lienNom } from "./domains.js";
@@ -32,9 +32,12 @@ export function coverageLine(commune: string): string {
   const d = distributeur(commune);
   const where = a(commune);
   if (!d) {
-    const several = plusieurs(commune);
-    return `Distributeur non identifié ${where}${several ? ` : le contrôle sanitaire de l'ARS en cite plusieurs (${several.slice(0, -1).join(", ")} et ${several.at(-1)})` : ""}. Renseignez-vous auprès de la mairie.`;
+    // Shared between distributors none of whose notices are read: each named with its networks.
+    const p = partage(commune);
+    return p ? `${phrasePartage(commune, p)} Leurs avis ne sont pas lus par rundata.re\u00a0: renseignez-vous auprès de la mairie.` : `Distributeur non identifié ${where}. Renseignez-vous auprès de la mairie.`;
   }
+  // Shared: each distributor with its networks, then whose notices are read.
+  const shared = d.partage ? `${phrasePartage(commune, d.partage)} ` : "";
   if (!d.avis) return `Les avis de ${d.nom}, qui distribue l'eau ${where}, ne sont pas lus par rundata.re : renseignez-vous auprès de ${d.nom} ou de la mairie.`;
   // The shared copy of the notices is rebuilt every 30 minutes at least (web/partagees.ts), more often when read.
   // Said as on the commune's card (web/coupures.ts): the ville's posts, some only an image whose advice is not read.
@@ -43,7 +46,7 @@ export function coverageLine(commune: string): string {
   if (d.site === MAIRIE_SAINT_LEU) return "Nous lisons les avis de coupure publiés par la commune de Saint-Leu, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.";
   // The CIREST when it publishes the notices, else the distributor.
   const by = d.par ?? d.nom;
-  return `Nous lisons les avis publiés par ${by} pour ${commune}, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.`;
+  return `${shared}Nous lisons les avis publiés par ${by} pour ${commune}, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.`;
 }
 
 const quote = () =>
@@ -58,10 +61,12 @@ export function cycloneWater(now: Date, commune?: string): { html: string; lead:
   else {
     const read = COMMUNES.filter((c) => distributeur(c)?.avis);
     const unread = COMMUNES.filter((c) => distributeur(c) && !distributeur(c)!.avis);
-    const unknown = COMMUNES.filter((c) => !distributeur(c));
+    // Shared between distributors none of whose notices are read: named together.
+    const shared = COMMUNES.filter((c) => !distributeur(c) && partage(c));
+    const unknown = COMMUNES.filter((c) => !distributeur(c) && !partage(c));
     lines = `<ul class="plain">
   <li><b>Avis lus</b> : ${read.map(link).join(", ")}.</li>
-  <li><b>Avis non lus par rundata.re</b> : ${[...new Set(unread.map((c) => distributeur(c)!.nom))].map((nom) => `${esc(nom)} (${unread.filter((c) => distributeur(c)!.nom === nom).map(link).join(", ")})`).join(", ")}.</li>
+  <li><b>Avis non lus par rundata.re</b> : ${[...new Set(unread.map((c) => distributeur(c)!.nom))].map((nom) => `${esc(nom)} (${unread.filter((c) => distributeur(c)!.nom === nom).map(link).join(", ")})`).join(", ")}${shared.map((c) => `, ${esc(partage(c)!.par.map((x) => x.nom).join(" et "))} (${link(c)})`).join("")}.</li>
   ${unknown.length ? `<li><b>Distributeur non identifié</b> : ${unknown.map(link).join(", ")}.</li>` : ""}
 </ul>`;
   }

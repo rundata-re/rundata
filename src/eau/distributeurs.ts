@@ -62,11 +62,16 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
   "L'Étang-Salé": { par: "la mairie de L'Étang-Salé", site: "https://www.letangsale.fr/", libelle: "Le site de la mairie de L'Étang-Salé" },
 };
 /**
- * A distributor's own site, linked only, by the name the page says: its notices are not read here. CISE Réunion (site
- * edited by Saur, read on 05/11/2026): its « L'eau dans ma commune » gives each commune's water quality and works after
- * a form, with no address per commune, so its home page; its legal notice says nothing of links.
+ * A distributor's own site, linked only, by the name the page says: its notices are not read here. Both are edited by
+ * Saur, whose « L'eau dans ma commune » gives each commune's water quality and works after a form, with no address per
+ * commune, so their home pages; their legal notices and terms forbid copying the sites' contents, say nothing of links,
+ * and their robots.txt allow the home page.
+ * - CISE Réunion (read on 05/11/2026).
+ * - Sudéau (read on 14/11/2026: www.sudeau.re, its « mentions légales » and « conditions générales d'utilisation »).
+ * Not linked (14/11/2026): the SPL Sources et Eaux (sourceo.re), whose pages « Communiqués » and « Travaux en cours et
+ * incidents » are empty, so no page of notices to link; RECIL, no site of its own found.
  */
-export const SITES_DISTRIBUTEURS: Readonly<Record<string, string>> = { "CISE Réunion": "https://www.cise-reunion.re/" };
+export const SITES_DISTRIBUTEURS: Readonly<Record<string, string>> = { "CISE Réunion": "https://www.cise-reunion.re/", "Sudéau": "https://www.sudeau.re/" };
 
 export const BUILT = data.construit;
 export const SOURCE = data.source;

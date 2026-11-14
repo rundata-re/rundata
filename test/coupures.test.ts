@@ -436,8 +436,8 @@ describe("coupures d'eau", () => {
 
   it("says when a commune's distributor publishes nothing read here, and names it as the page does", async () => {
     const b = body(await coupuresEau(cache(), "Le Tampon", NOW));
-    expect(b.resume).toBe("Pas d'avis en ligne lisible pour Le Tampon : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau. Voir Sudéau ou la mairie.");
-    expect(b.distributeur).toEqual({ nom: "Sudéau", d_apres: "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau), Licence Ouverte 2.0" });
+    expect(b.resume).toBe("Pas d'avis en ligne lisible pour Le Tampon : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau. Voir le site de Sudéau, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: https://www.sudeau.re/, ou la mairie.");
+    expect(b.distributeur).toEqual({ nom: "Sudéau", site: "https://www.sudeau.re/", d_apres: "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau), Licence Ouverte 2.0" });
     expect(b.contact).toBe("Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/le-tampon");
     // The distributor named is the ARS's: its sanitary control is credited beside the notices.
     expect(b.sources.map((s: { source: string }) => s.source)).toEqual(["Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie, commune de Saint-Leu)", "Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)"]);
@@ -501,8 +501,13 @@ describe("coupures d'eau", () => {
     expect(av).not.toContain("avis aux abonnés");
     // Sainte-Marie and Saint-Benoît, also CISE Réunion's, have their notices read: no link to its site.
     for (const slug of ["sainte-marie", "saint-benoit"]) expect(page(slug)).not.toContain("cise-reunion.re");
-    // Another distributor not read keeps its words (Sudéau, at Le Tampon).
-    expect(page("le-tampon")).toContain("ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.");
+    // Sudéau, also edited by Saur with the same « L'eau dans ma commune », in the same words, on each of its communes.
+    for (const slug of ["le-tampon", "saint-joseph", "saint-philippe", "entre-deux"]) {
+      expect(page(slug)).toContain(`Ses avis de coupure ne sont pas lus par rundata.re : voir <a href="https://www.sudeau.re/" rel="noopener">le site de Sudéau</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique « L'eau dans ma commune »), ou la mairie.`);
+    }
+    // A distributor without a site linked keeps its words (the SPL Sources et Eaux, at Petite-Île: its pages of notices empty).
+    expect(page("petite-ile")).toContain("ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.");
+    expect(page("petite-ile")).not.toContain("sourceo.re");
   });
 
   it("gives each commune its page: its notices, or none at the time of the copy, and who distributes its water", async () => {

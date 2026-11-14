@@ -7,7 +7,7 @@ import { scheduledEvery } from "../src/web/partagees.js";
 import type { MeteoAnswer } from "../src/tools/meteo.js";
 import { placePage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
-import { HOME_READER_WAIT_MS, homeWaits, ownWaits, readerOf } from "../src/web/site.js";
+import { HOME_READER_WAIT_MS, homeWaits, LIVE_READER_WAIT_MS, oldCopy, ownWaits, readerOf } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-26T15:40:00Z");
 const MIN = 60_000;
@@ -235,5 +235,92 @@ describe("a page's own copy for a reader (web/site.ts `ownWaits`)", () => {
     expect(later).toMatch(/mesurés <b>[^<]*18:24<\/b>/);
     expect(later).toContain("Dernière mesure lue à la station Bellecombe : ");
     expect(later).toContain("Ce n&#39;est pas le temps qu&#39;il fait maintenant.");
+  });
+});
+
+// 12-14/11/2026: a page's own copy was given 677 times to a reader while it was rebuilt, 316 minutes old in the middle,
+// up to 24 h; each data center keeps its own, rebuilt only by a view there. On 13/11 at 05:46 (Réunion), OAI-SearchBot
+// read /meteo/saint-gilles-les-bains twice a second apart, from two data centers: copies 1,085 and 725 minutes old.
+describe("a page's own copy too old to be told as the present (web/site.ts `oldCopy`)", () => {
+  const AT = new Date("2026-11-13T01:46:00Z");
+  const KEY = "web:lieu:saint-gilles-les-bains";
+  const OAI = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot";
+  const FB = "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)";
+  afterEach(() => vi.useRealTimers());
+
+  /**
+   * The copy of KEY `ageMin` old read by `ua` at AT, its next build taking `buildMs`: what the view got (null: its page
+   * without its live block), after how long, the builds made once the work after the answer is done, and the lines.
+   */
+  async function read(ua: string, ageMin: number, buildMs = 3000) {
+    vi.useFakeTimers({ now: AT });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    let t = AT.getTime() - ageMin * MIN;
+    const c = new Cache(new MemoryStore(), () => t);
+    let n = 0;
+    await snapshot(c, KEY, async () => ++n, () => {}, new Date(t));
+    t = AT.getTime();
+    const request = new Request("https://rundata.re/meteo/saint-gilles-les-bains", { headers: { "user-agent": ua } });
+    const build = () => new Promise<number>((resolve) => setTimeout(() => resolve(++n), buildMs));
+    const behind: Promise<unknown>[] = [];
+    let got: { value: number | null; at: number } | undefined;
+    void snapshot(c, KEY, build, (p) => behind.push(p), AT, ...ownWaits(request), undefined, oldCopy(request)).then((r) => (got = { value: r?.value ?? null, at: Date.now() - AT.getTime() }));
+    await vi.advanceTimersByTimeAsync(30_000);
+    await Promise.all(behind);
+    const lines = log.mock.calls.map((c) => String(c[0]));
+    log.mockRestore();
+    return { ...got!, built: n, lines };
+  }
+
+  it("makes the search engines' fetchers wait for its refresh: the two copies of 13/11 05:46", async () => {
+    for (const age of [1085, 725]) {
+      const got = await read(OAI, age);
+      expect(got, `${age} min`).toMatchObject({ value: 2, at: 3000, built: 2 });
+      expect(got.lines.some((l) => l.startsWith("copie refusée"))).toBe(false);
+    }
+  });
+
+  it("gives a fetcher that answers someone now the page without its live block past LIVE_READER_WAIT_MS, with a line of its own", async () => {
+    expect(LIVE_READER_WAIT_MS).toBeLessThan(1500);
+    for (const age of [1085, 725]) {
+      const got = await read(CHATGPT, age);
+      expect(got, `${age} min`).toMatchObject({ value: null, at: LIVE_READER_WAIT_MS, built: 2 });
+      expect(got.lines).toContain(`copie refusée pour son âge : ${KEY}, âge ${age} min, d'avant minuit`);
+      expect(got.lines.some((l) => l.startsWith("copie servie au lecteur"))).toBe(false);
+    }
+    // Made today, 2 hours old: refused too, past OLD_MINUTES (90).
+    expect((await read(CHATGPT, 120)).lines).toContain(`copie refusée pour son âge : ${KEY}, âge 120 min`);
+    // The page then says why it has no figures.
+    expect(placePage("https://rundata.re", pageOf("saint-gilles-les-bains")!, null, AT)).toContain("Les mesures se chargent");
+  });
+
+  it("serves the refreshed copy when it comes within LIVE_READER_WAIT_MS", async () => {
+    expect(await read(CHATGPT, 1085, 500)).toMatchObject({ value: 2, at: 500, built: 2 });
+  });
+
+  it("still gives a copy within OLD_MINUTES as it is at HOME_READER_WAIT_MS, its refresh behind", async () => {
+    const got = await read(CHATGPT, 60);
+    expect(got).toMatchObject({ value: 1, at: HOME_READER_WAIT_MS, built: 2 });
+    expect(got.lines).toContain(`copie servie au lecteur pendant son rafraîchissement : ${KEY}, âge 60 min`);
+  });
+
+  it("gives a link's preview the copy, dated, at HOME_READER_WAIT_MS", async () => {
+    expect(oldCopy(new Request("https://rundata.re/", { headers: { "user-agent": FB } }))).toBeUndefined();
+    const got = await read(FB, 1085);
+    expect(got).toMatchObject({ value: 1, at: HOME_READER_WAIT_MS, built: 2 });
+    expect(got.lines).toContain(`copie servie au lecteur pendant son rafraîchissement : ${KEY}, âge 1085 min`);
+  });
+
+  it("gives a person the page without its live block for a copy made before midnight, and an old one of today at once", async () => {
+    const got = await read(PERSON, 725, 5000);
+    expect(got).toMatchObject({ value: null, at: 4000, built: 2 });
+    expect(got.lines).toContain(`copie refusée pour son âge : ${KEY}, âge 725 min, d'avant minuit`);
+    // 05:46: a copy of 03:46 is of today.
+    expect(await read(PERSON, 120)).toMatchObject({ value: 1, at: 0, built: 2 });
+  });
+
+  it("leaves the daily check of the sources to wait for the refresh", async () => {
+    expect(oldCopy(new Request("https://rundata.re/", { headers: { "user-agent": "rundata-check/dev4" } }))).toBeUndefined();
+    expect(await read("rundata-check/1.0", 1085)).toMatchObject({ value: 2, at: 3000 });
   });
 });

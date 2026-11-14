@@ -15,12 +15,12 @@ const get = (path: string, ua?: string) =>
 
 /**
  * A page that says its own subject is not read: every wording of it in the code (web/coupures.ts, tools/coupures.ts,
- * web/eau-cyclone.ts, tools/resume.ts). Not a source named beside the subject and not read (the OVPF's Facebook page
- * is caught by « nous ne lisons pas »), nor a read still to come (« pas encore lues : prochaine lecture »), nor one
+ * web/eau-cyclone.ts, tools/resume.ts). Not a source named beside the subject and not read (the OVPF's Facebook page,
+ * on /volcan with its data: « que nous ne lisons pas »), nor a read still to come (« pas encore lues : prochaine lecture »), nor one
  * distributor of a commune whose others are read (« Les avis de la mairie ne sont pas lus »), nor the water's question
  * on a commune's page, whose subject is the commune (web/commune-texte.ts).
  */
-const NON_LU = /nous ne lisons pas|ne lit pas (?:les |ses |d')avis|avis de coupure[^.]{0,80}ne sont pas (?:encore )?lus|leurs avis ne sont pas lus|avis du distributeur[^.]{0,40}ne sont pas lus/i;
+const NON_LU = /(?:nous ne lisons|ne lit) pas (?:les |ses |d')avis|avis de coupure[^.]{0,80}ne sont pas (?:encore )?lus|leurs avis ne sont pas lus|avis du distributeur[^.]{0,40}ne sont pas lus/i;
 
 async function sitemap(): Promise<string[]> {
   const xml = await (await handle(get("/sitemap.xml"), new Cache(new MemoryStore()))).text();
@@ -95,13 +95,14 @@ describe("the sitemap, as a search engine's robot reads it", () => {
       "Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.",
       "D'après l'ARS, deux distributeurs. Leurs avis ne sont pas lus par rundata.re.",
       "Les avis du distributeur du Tampon ne sont pas lus par rundata.re : voir la mairie.",
-      "L'OVPF publie aussi sur Facebook, que nous ne lisons pas.",
     ]) expect(t, t).toMatch(NON_LU);
     for (const t of [
       "Les offres ne sont pas encore lues : prochaine lecture prévue à 10:30.",
       "Les avis de la mairie ne sont pas lus par rundata.re.",
       "Sudéau, d'après le contrôle sanitaire de l'ARS. Ses avis ne sont pas encore lus par rundata.re : adressez-vous à la mairie ou au distributeur.",
       "Avis non lus par rundata.re : Sudéau (Le Tampon).",
+      "L'OVPF publie aussi sur Facebook, que nous ne lisons pas : suivre sa page officielle.",
+      "Programme sportif de la commune : rundata.re ne lit pas ce document, il en donne seulement le lien.",
       "Un événement Facebook n'est pas un flux ouvert, et rundata.re ne lit pas Facebook.",
     ]) expect(t, t).not.toMatch(NON_LU);
   });

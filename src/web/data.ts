@@ -82,7 +82,7 @@ import { coastal, type PlacePage } from "./places.js";
 
 export const FRESH_SECONDS = 5 * 60; // the stations publish every 6 minutes
 const KEEP_SECONDS = 24 * 3600;
-const WAIT_MS = 4000;
+export const WAIT_MS = 4000;
 // Below this many subrequests left, a place page is built without its forecast rather than risk the limit.
 const FORECAST_MIN_LEFT = 10;
 // Below this many, without « en chiffres »: its reads are the day before (KV), the archive's stations (KV, a day kept)
@@ -2053,10 +2053,23 @@ export const ISLAND_PEEK_MS = 300;
  *
  * A copy made before the last midnight in La Réunion is due whatever its age, and every view waits up to `waitMs` for
  * it to be built again, as a reader does: what it says of the day (« aujourd'hui », the forecast's first day, a count
- * of days) would be yesterday's. A copy made at 23:58 is 3 minutes old at 00:01, within FRESH_SECONDS.
+ * of days) would be yesterday's. A copy made at 23:58 is 3 minutes old at 00:01, within FRESH_SECONDS. *
+ * `old`: what a view does with a copy too old to be told as the present (`OldCopy`).
  */
 /** Whether a reader waits for the refresh of the copy of `key`, `ageMs` old, rather than get it as it is. */
 export type ReaderWaits = (key: string, value: unknown, ageMs: number) => boolean;
+
+/**
+ * A copy older than `afterMs`, or made before the last midnight in La Réunion: its refresh is waited for up to `waitMs`
+ * (from the view's start), and past it the view gets no copy, its page without its live block, rather than one
+ * whose figures would be taken for the present. From 12 to 14/11/2026, a page's own copy (web:lieu, web:commune) was
+ * given 677 times to a reader while it was rebuilt, 316 minutes old in the middle, up to 24 h: each data center keeps
+ * its own, rebuilt only by a view there (web/site.ts `oldCopy`).
+ */
+export interface OldCopy {
+  afterMs: number;
+  waitMs: number;
+}
 
 export async function snapshot<T>(
   cache: Cache,
@@ -2067,6 +2080,7 @@ export async function snapshot<T>(
   waitMs = WAIT_MS,
   reader: boolean | ReaderWaits = false,
   incomplete?: (value: T) => boolean,
+  old?: OldCopy,
 ): Promise<Cached<T> | null> {
   // Each build is measured: a tile is brought up to date only when what it took last time is left (web/site.ts).
   // The agendas' pages are also timed step by step, their copy's write included (web/mesure.ts).
@@ -2113,6 +2127,15 @@ export async function snapshot<T>(
   if (age > freshFor * 1000) {
     const fresh = written(cache.getFrom(key, got, freshFor, run, island));
     const logged = fresh.catch((err) => console.error(`page ${key} : rafraîchissement impossible`, why(err)));
+    const tooOld = old && (yesterday || age > old.afterMs);
+    if (tooOld) {
+      const newer = await within(logged, Math.max(0, old.waitMs - (Date.now() - start)));
+      if (newer) return newer;
+      // Counted in the logs: how often a view went without its live block rather than get an old copy.
+      console.log(`copie refusée pour son âge : ${key}, âge ${Math.round(age / 60_000)} min${yesterday ? ", d'avant minuit" : ""}`);
+      background(logged);
+      return null;
+    }
     if (yesterday || (typeof reader === "function" ? reader(key, got.value, age) : reader)) {
       const newer = await within(logged, waitMs);
       if (newer) return newer;

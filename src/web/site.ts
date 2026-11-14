@@ -53,6 +53,8 @@ import {
   buildVolcan,
   FRESH_SECONDS,
   snapshot,
+  WAIT_MS,
+  type OldCopy,
   vigilanceNow,
   cycloneDecisionNow,
   withoutForecast,
@@ -64,6 +66,7 @@ import {
   type VolcanAnswer,
 } from "./data.js";
 import { dessinsAccueil } from "./accueil-dessins.js";
+import { OLD_MINUTES } from "../tools/meteo.js";
 import { COMMUNES, communePage, communesPage } from "./commune.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
@@ -264,6 +267,26 @@ export function ownWaits(request: Request): [number | undefined, boolean | Reade
   const reader = readerOf(request);
   if (!reader) return [undefined, false];
   return reader === true ? [READER_WAIT_MS, true] : [HOME_READER_WAIT_MS, true];
+}
+
+// A page's own copy too old to be told as the present: older than OLD_MINUTES, where the place's page says « Ce n'est
+// pas le temps qu'il fait maintenant », or made before midnight. Each data center keeps its own, rebuilt only by a view
+// there: from 12 to 14/11/2026, readers were given 677 of them while they were rebuilt, 316 minutes old in the middle,
+// up to 24 h (on 13/11 at 05:46, OAI-SearchBot read /meteo/saint-gilles-les-bains twice a second apart, from two data
+// centers: copies 1,085 and 725 minutes old). The fetchers that answer someone now wait for its refresh until
+// LIVE_READER_WAIT_MS, under ChatGPT-User's ~1.5 s, then get the page without its live block rather than old figures;
+// the search engines' (OAI-SearchBot gave up none of 403 reads, the longest 21.7 s) wait for it until READER_WAIT_MS;
+// a person, only for a copy made before midnight, until WAIT_MS, as before. A link's preview (facebookexternalhit)
+// gets the copy, its measure dated; the daily check of the sources waits always (`ownWaits`).
+const LIVE_READERS = /ChatGPT-User|Claude-User|Perplexity-User|MistralAI-User|meta-externalfetcher|DuckAssistBot/i;
+const PREVIEWS = /facebookexternalhit/i;
+export const LIVE_READER_WAIT_MS = 1300;
+/** What a view of a page's own copy does with one too old to be told as the present (web/data.ts `OldCopy`). */
+export function oldCopy(request: Request): OldCopy | undefined {
+  const ua = request.headers.get("user-agent") ?? "";
+  if (CHECK.test(ua) || PREVIEWS.test(ua)) return undefined;
+  if (!isReader(request)) return { afterMs: Infinity, waitMs: WAIT_MS };
+  return { afterMs: OLD_MINUTES * 60_000, waitMs: LIVE_READERS.test(ua) ? LIVE_READER_WAIT_MS : READER_WAIT_MS };
 }
 
 /** Waits as `waits` says, or as the reader would. */
@@ -900,7 +923,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");
     if (!stationOf(id)) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...ownWaits(request)),
+      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...ownWaits(request), undefined, oldCopy(request)),
       alerte(cache, background, now),
     ]);
     return page(path, (live) => stationPage(origin, live ? data : null, id, now, a), data, background, [rebuild(cache, `web:station:${id}`, () => buildStation(cache, id, now))]);
@@ -910,7 +933,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(slug);
     if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request)),
       alerte(cache, background, now),
     ]);
     // The state of the hikes around: the hikers' page's last copy, as it is, never built for this page.
@@ -925,7 +948,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     // The weather is built when it has no copy, as on the commune's page; the rest only read (tools/resume.ts).
     const vigilance = vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now);
-    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast);
+    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request));
     // The weather's copy as the snapshot gave it: not read again (the read could be one subrequest too many).
     const { copies, leftOut } = await readCopies(cache, p, p, now, background, vigilance, { meteo: place });
     return page(path, (live) => (live
@@ -949,8 +972,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(path.slice("/communes/".length).replace(/\/$/, ""));
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [place, commune, vigilance] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast),
-      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, ...ownWaits(request)),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request)),
+      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, ...ownWaits(request), undefined, oldCopy(request)),
       vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now),
     ]);
     // The West's communes have their déchèteries' tile too (the TCO publishes them).

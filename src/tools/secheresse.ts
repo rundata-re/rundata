@@ -2,6 +2,7 @@ import type { Cache } from "../cache.js";
 import { localTime } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import * as arrete from "../providers/arrete-secheresse.js";
+import * as raa from "../providers/raa.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as vigieau from "../providers/vigieau.js";
 import { why } from "../types.js";
@@ -81,6 +82,36 @@ export function enVigueur(vz: vigieau.Zone[], t: arrete.Arrete = arrete.ARRETE):
   return { zones, table: t, vigieau_anterieur: same ? undefined : since, ecarts };
 }
 
+/** A drought order newer than the levels given, seen in the prefecture's recueil and not taken into account yet. */
+export interface PlusRecent {
+  numero?: string;
+  signe_le: string;
+  publie: string;
+  lien: string;
+  texte: string;
+}
+
+/**
+ * The drought order the collector last saw in the recueil des actes administratifs (providers/raa.ts), when it was
+ * signed after the order the levels are from: after the table written by hand (`ref`, providers/arrete-secheresse.ts),
+ * and after the day VigiEau's order took effect (`vigieauDepuis`: when VigiEau serves it, it is taken into account).
+ * Compared by their signature days, never by their numbers. Its levels are never guessed: only that it is out.
+ */
+export function plusRecent(s: raa.ArreteSecheresse | undefined, v: EnVigueur, vigieauDepuis: string | undefined, ref: arrete.Arrete = arrete.ARRETE): PlusRecent | undefined {
+  if (!s || s.signe_le <= ref.signe_le || (vigieauDepuis && vigieauDepuis >= s.signe_le)) return undefined;
+  const r = s.recueil;
+  const publie = `recueil des actes administratifs ${r.numero != null ? `spécial n°${r.numero} ` : ""}du ${day(r.date)}`;
+  const de = v.table ? `l'arrêté ${v.table.numero} du ${day(v.table.signe_le)}` : `VigiEau${vigieauDepuis ? ` (arrêté en vigueur depuis le ${day(vigieauDepuis)})` : ""}`;
+  return {
+    ...(s.numero && { numero: s.numero }),
+    signe_le: day(s.signe_le)!,
+    publie,
+    lien: s.pdf,
+    texte: `Un arrêté sécheresse plus récent est paru${s.numero ? `, n°${s.numero},` : ""} signé le ${day(s.signe_le)} (${publie}). ` +
+      `Il n'est pas encore pris en compte par rundata.re : les niveaux donnés ici sont ceux de ${de}.`,
+  };
+}
+
 /** The levels from the least to the most severe, with what two of them mean: the tool's `echelle`, and the scale of /secheresse. */
 export const SCALE: readonly (readonly [string, string?])[] = [
   ["vigilance", "économiser l'eau"],
@@ -105,10 +136,15 @@ export async function restrictionsEau(cache: Cache, lieu: string | undefined, pr
   const v = enVigueur(read.value);
   const zones = v.zones;
   const since = zones.map((z) => z.depuis).filter(Boolean).sort().pop();
+  // VigiEau's own order, by the day it took effect, whatever the levels given.
+  const vigieauDepuis = read.value.map((z) => z.depuis).filter((x): x is string => !!x).sort().pop();
+  const recent = plusRecent((await raa.copie(cache))?.value.secheresse, v, vigieauDepuis);
   const t = v.table;
   const ecartsOf = (commune?: string) => v.ecarts.filter((e) => !commune || e.commune === commune);
   // Said first, before the levels: the order the levels are from, and VigiEau's when it still serves an older one.
   const lead = {
+    // First of all: the levels below may no longer be those in force.
+    ...(recent && { arrete_plus_recent: recent }),
     ...(t && {
       arrete: {
         numero: t.numero,
@@ -127,7 +163,7 @@ export async function restrictionsEau(cache: Cache, lieu: string | undefined, pr
     arrete_du: day(since),
     ...COMMON,
     consulter: t ? t.url : vigieau.SOURCE.url,
-    sources: credits(t ? [arrete.SOURCE, vigieau.SOURCE] : [vigieau.SOURCE]),
+    sources: credits([...(t ? [arrete.SOURCE] : []), vigieau.SOURCE, ...(recent ? [raa.SOURCE] : [])]),
   };
   const differe = (commune?: string) => {
     const e = ecartsOf(commune);

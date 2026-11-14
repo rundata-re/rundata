@@ -2783,14 +2783,18 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
     if (nm) links[nm] = { href: `#${anchorId("c", nm)}`, say: `eau du robinet\u00a0: ${c.eau_du_robinet ?? "aucune restriction"}` };
   }
 
-  const status = !d
+  // A newer order than the levels shown, out in the recueil and not taken into account yet: said first.
+  const recent = d?.arrete_plus_recent
+    ? `<p class="note" style="color:var(--on-night-muted)"><b>${esc(d.arrete_plus_recent.texte)}</b> <a href="${esc(d.arrete_plus_recent.lien)}">Lire l'arrêté (PDF)</a></p>`
+    : "";
+  const status = recent + (!d
     ? loading("Les restrictions d'eau")
     : d.communes.length
       ? `<div class="now"><span class="big">${hit.length}</span><p>commune${hit.length > 1 ? "s" : ""} sur 24 en alerte ou plus pour l'eau du robinet${d.arrete
           ? `, d'après l'<a href="${esc(d.arrete.lien)}">arrêté préfectoral ${esc(d.arrete.numero)} du ${esc(d.arrete.signe_le ?? "")}</a>, en vigueur depuis le ${esc(d.arrete.en_vigueur_depuis ?? "")}`
           : d.arrete_du ? `, d'après l'arrêté préfectoral en vigueur depuis le ${esc(d.arrete_du)}` : ""}.</p></div>` +
         (d.vigieau ? `<p class="note" style="color:var(--on-night-muted)">${esc(d.vigieau)}</p>` : "")
-      : `<p class="lead">${esc(d.resume)}</p>`;
+      : `<p class="lead">${esc(d.resume)}</p>`);
 
   const table = d?.communes.length
     ? `<div class="card table-wrap"><table class="drought"><caption class="sr">Les niveaux de restriction</caption><thead><tr><th>Commune</th><th>Eau du robinet</th><th>Rivières et sources</th><th>Nappes</th></tr></thead><tbody>${d.communes.map((c) =>

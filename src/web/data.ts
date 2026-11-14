@@ -56,7 +56,7 @@ import * as feux from "../providers/feux.js";
 import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
-import { restrictionsEau } from "../tools/secheresse.js";
+import { type PlusRecent, restrictionsEau } from "../tools/secheresse.js";
 import { crues } from "../tools/crues.js";
 import * as daeSource from "../providers/dae.js";
 import { anyHour, byCommune as daeByCommune, daeRow, URGENCE as DAE_URGENCE } from "../tools/dae.js";
@@ -1134,6 +1134,8 @@ export interface SecheresseAnswer {
   arrete?: { numero: string; signe_le?: string; en_vigueur_depuis?: string; publie: string; lien: string; remplace: string };
   /** VigiEau still serves the order this one replaced: said with its date. */
   vigieau?: string;
+  /** A newer drought order seen in the prefecture's recueil, not taken into account yet (tools/secheresse.ts `plusRecent`). */
+  arrete_plus_recent?: PlusRecent;
   echelle: string;
   a_savoir: string;
   sources: Credit[];

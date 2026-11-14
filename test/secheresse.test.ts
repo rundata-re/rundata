@@ -5,7 +5,8 @@ import { parse } from "../src/providers/vigieau.js";
 import { heuresDites } from "../src/tools/format.js";
 import { INSEE } from "../src/places/insee.js";
 import * as arrete from "../src/providers/arrete-secheresse.js";
-import { enVigueur, restrictionsEau } from "../src/tools/secheresse.js";
+import { enVigueur, plusRecent, restrictionsEau } from "../src/tools/secheresse.js";
+import * as raa from "../src/providers/raa.js";
 import { buildSecheresse } from "../src/web/data.js";
 import { secheresseLive, secheressePage, wholeName } from "../src/web/domains.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
@@ -267,4 +268,75 @@ describe("the drought tile of the home page", () => {
     expect(tile([])).toEqual({ valeur: "aucune restriction", detail: "d'après VigiEau" });
   });
 });
+});
+
+// 13/11/2026: the prefecture's communiqué contradicted the order n°2026-2094; the levels are those of the order, written
+// by hand. What was missing: to know that a newer order is out in the recueil des actes administratifs.
+describe("a newer drought order out in the recueil des actes administratifs (tools/secheresse.ts `plusRecent`)", () => {
+  const recueil = { titre: "Spécial n° 240 du 21 novembre 2026", numero: 240, date: "2026-11-21", lien: "https://www.reunion.gouv.fr/recueil-240" };
+  const pdf = "https://www.reunion.gouv.fr/contenu/telechargement/1/2/file/arrete-2200.pdf";
+  const newer: raa.ArreteSecheresse = { titre: "Arrêté n°2026-2200 du 20 novembre 2026 définissant les communes de La Réunion où les usages de l'eau doivent faire l'objet de mesures de vigilance...", numero: "2026-2200", signe_le: "2026-11-20", recueil, pdf };
+  const the2094: raa.ArreteSecheresse = { ...newer, numero: "2026-2094", signe_le: "2026-11-12", pdf: arrete.ARRETE.url };
+  const copie = (secheresse?: raa.ArreteSecheresse): raa.Copie => ({ actes: [], recueils: [], ...(secheresse && { secheresse }), lu_le: "2026-11-21T06:00:00.000Z" });
+  beforeEach(() => vi.stubGlobal("fetch", async () => new Response(raw, { headers: { "content-type": "application/json" } })));
+  afterEach(() => {
+    raa.configure(undefined);
+    vi.unstubAllGlobals();
+  });
+
+  it("says nothing of the order the levels are from, nor of an older one, and compares the signature days", () => {
+    const v = enVigueur(parse(JSON.parse(raw)));
+    expect(plusRecent(the2094, v, "2026-10-10")).toBeUndefined();
+    expect(plusRecent({ ...newer, signe_le: "2026-11-01" }, v, "2026-10-10")).toBeUndefined();
+    expect(plusRecent(undefined, v, "2026-10-10")).toBeUndefined();
+    // Another number, signed the same day as the order written by hand: not newer.
+    expect(plusRecent({ ...newer, signe_le: arrete.ARRETE.signe_le }, v, "2026-10-10")).toBeUndefined();
+  });
+
+  it("says a newer one is out and not taken into account yet, with its number, day, recueil and PDF, never its levels", () => {
+    const v = enVigueur(parse(JSON.parse(raw)));
+    const r = plusRecent(newer, v, "2026-10-10")!;
+    expect(r).toEqual({
+      numero: "2026-2200",
+      signe_le: "20/11/2026",
+      publie: "recueil des actes administratifs spécial n°240 du 21/11/2026",
+      lien: pdf,
+      texte: "Un arrêté sécheresse plus récent est paru, n°2026-2200, signé le 20/11/2026 (recueil des actes administratifs spécial n°240 du 21/11/2026). " +
+        `Il n'est pas encore pris en compte par rundata.re : les niveaux donnés ici sont ceux de l'arrêté ${arrete.ARRETE.numero} du 12/11/2026.`,
+    });
+  });
+
+  it("says nothing once VigiEau serves it: its levels are then the ones given", () => {
+    const v = enVigueur(parse(JSON.parse(raw)));
+    expect(plusRecent(newer, v, "2026-11-20")).toBeUndefined();
+    expect(plusRecent(newer, v, "2026-11-21")).toBeUndefined();
+  });
+
+  it("puts it first in restrictions_eau's answer, for the island and for a place, its source credited", async () => {
+    raa.configure(async () => copie(newer));
+    const island = body(await restrictionsEau(cache(), undefined));
+    expect(Object.keys(island)[0]).toBe("arrete_plus_recent");
+    expect(island.arrete_plus_recent.texte).toContain("Il n'est pas encore pris en compte par rundata.re");
+    expect(JSON.stringify(island.sources)).toContain("Recueil des actes administratifs");
+    const place = body(await restrictionsEau(cache(), "Saint-Joseph"));
+    expect(Object.keys(place).indexOf("arrete_plus_recent")).toBeLessThan(Object.keys(place).indexOf("resume"));
+  });
+
+  it("says nothing without a newer order, or without the recueil's copy", async () => {
+    raa.configure(async () => copie(the2094));
+    expect(body(await restrictionsEau(cache(), undefined)).arrete_plus_recent).toBeUndefined();
+    raa.configure(async () => null);
+    expect(body(await restrictionsEau(cache(), undefined)).arrete_plus_recent).toBeUndefined();
+  });
+
+  it("shows it on /secheresse before the levels, with the order's PDF", async () => {
+    raa.configure(async () => copie(newer));
+    const now = new Date("2026-11-21T06:00:00Z");
+    const html = secheressePage("https://rundata.re", { value: await buildSecheresse(cache(), now), fetchedAt: now, stale: false }, now);
+    const at = html.indexOf("Un arrêté sécheresse plus récent est paru");
+    expect(at).toBeGreaterThan(0);
+    expect(at).toBeLessThan(html.indexOf('<div class="now">'));
+    expect(html).toContain(`<a href="${pdf}">Lire l'arrêté (PDF)</a>`);
+    expect(html).toContain("Il n&#39;est pas encore pris en compte par rundata.re");
+  });
 });

@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import gazetteer from "../src/places/gazetteer.json" with { type: "json" };
 import { placesIn, plain } from "../src/providers/actualites.js";
-import type { Acte, Recueil } from "../src/providers/raa.js";
+import type { Acte, ArreteSecheresse, Recueil } from "../src/providers/raa.js";
 
 const ORIGIN = "https://www.reunion.gouv.fr";
 export const LISTE = `${ORIGIN}/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs-RAA`;
@@ -235,4 +235,47 @@ export function garder(lus: Lu[], r: Recueil, noms: Set<string>, actes: Acte[]):
     ajoutes.push({ ...a, recueil: { numero: r.numero, date: r.date, lien: r.lien }, communes, lieux });
   }
   return { ajoutes, gardes: kept.length };
+}
+
+// ---------------------------------------------------------------- the drought orders
+
+// An order on the uses of water in a drought, by its title: « Arrêté n°2026-2094 du 12 novembre 2026 définissant les
+// communes de La Réunion où les usages de l'eau doivent faire l'objet de mesures de vigilance... ». It names no place,
+// so it is not among the acts kept above (14/11/2026).
+const ARRETE = alone("arr[êe]t[ée]");
+const SECHERESSE = alone("s[ée]cheresse|usages? de l['’]eau|restrictions? (?:temporaires? )?(?:des|d['’]) ?usages");
+
+/**
+ * The drought orders of a recueil, kept by the filters: with their signature day read from their title (`avec_date`), or
+ * without (`sans_date`), which say nothing on the site and are only logged.
+ */
+export function secheresseDe(lus: Lu[], r: Recueil, noms: Set<string>): { avec_date: ArreteSecheresse[]; sans_date: Lu[] } {
+  const avec_date: ArreteSecheresse[] = [];
+  const sans_date: Lu[] = [];
+  for (const a of lus) {
+    const t = a.titre.replace(/_/g, " ");
+    if (!ARRETE.test(t) || !SECHERESSE.test(t) || ecarte(a.titre, noms)) continue;
+    const du = /(?<![\p{L}\p{N}])du (\d{1,2}(?:er)? \p{L}+ \d{4})/u.exec(t);
+    const signe_le = du ? jour(du[1]) : undefined;
+    if (!signe_le) {
+      sans_date.push(a);
+      continue;
+    }
+    const numero = /n\s*°?\s*(\d{4}-\d{2,5})/iu.exec(t)?.[1];
+    avec_date.push({ titre: a.titre, ...(numero && { numero }), signe_le, recueil: { titre: r.titre, numero: r.numero, date: r.date, lien: r.lien }, pdf: a.pdf });
+  }
+  return { avec_date, sans_date };
+}
+
+/** The newer of two drought orders, by their signature day; the one kept on a tie. */
+export const plusRecente = (kept: ArreteSecheresse | undefined, x: ArreteSecheresse) => (!kept || x.signe_le > kept.signe_le ? x : kept);
+
+/**
+ * The line that tells the team a drought order signed after `refSigne` (the order written by hand) is out, its levels
+ * to be read: once per order (`dejaDits`, by PDF); undefined otherwise.
+ */
+export function ligneAlerte(s: ArreteSecheresse | undefined, dejaDits: Set<string>, refSigne: string): string | undefined {
+  if (!s || s.signe_le <= refSigne || dejaDits.has(s.pdf)) return undefined;
+  const [an, mois, j] = s.signe_le.split("-");
+  return `Nouvel arrêté sécheresse au RAA : n°${s.numero ?? "?"}, du ${j}/${mois}/${an}, ${s.pdf} : relire les niveaux par commune (providers/arrete-secheresse.ts)`;
 }

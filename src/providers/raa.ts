@@ -52,6 +52,21 @@ export interface Acte {
   lieux: string[];
 }
 
+/**
+ * The newest drought order (« arrêté sécheresse », « usages de l'eau ») the collector has seen in a recueil, its title
+ * as published: only to say that it exists and is not taken into account yet (tools/secheresse.ts), never its levels.
+ * Kept from run to run, past DAYS: the levels are written by hand (providers/arrete-secheresse.ts), maybe later.
+ */
+export interface ArreteSecheresse {
+  titre: string;
+  /** « 2026-2094 », when the title gives it. */
+  numero?: string;
+  /** Signed, from the title (« du 12 novembre 2026 »), YYYY-MM-DD. */
+  signe_le: string;
+  recueil: Pick<Recueil, "titre" | "numero" | "date" | "lien">;
+  pdf: string;
+}
+
 export interface Copie {
   /** The acts of the recueils read, of the last DAYS, that name a place: newest recueil first. */
   actes: Acte[];
@@ -63,6 +78,8 @@ export interface Copie {
    * What is said absent is said of the recueils since that day.
    */
   lus_depuis?: string;
+  /** The newest drought order seen, whatever the place it names (ArreteSecheresse). */
+  secheresse?: ArreteSecheresse;
   /** When the collector wrote it (ISO, UTC): a run that changes nothing does not write. */
   lu_le: string;
 }

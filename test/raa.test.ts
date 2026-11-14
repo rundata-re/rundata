@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as raa from "../src/providers/raa.js";
 import { actualites, RAA_A_SAVOIR } from "../src/tools/actualites.js";
-import { couverture, ecarte, ecrire, FILTRES, garder, parseListe, parseRecueil, prenoms, suite, vusAssez, vusPage1, vusSuivante } from "../scripts/raa-lire.js";
+import { couverture, ecarte, ecrire, FILTRES, garder, ligneAlerte, parseListe, parseRecueil, plusRecente, prenoms, secheresseDe, suite, vusAssez, vusPage1, vusSuivante } from "../scripts/raa-lire.js";
 
 // Every title and name here is made up: no act of a real recueil, no real person.
 const NOW = new Date("2026-11-03T08:00:00Z");
@@ -231,4 +231,46 @@ it("ships the derived list of first names only, with its source, licence and thr
   const text = readFileSync(new URL("../scripts/raa-prenoms.txt", import.meta.url), "utf8");
   expect(text).toMatch(/^# .*\n# Source : Insee, Fichier des prénoms .*Licence Ouverte\.\n# Seuil : 2000 naissances\./);
   expect(noms.size).toBe(2169);
+});
+
+// The recueil spécial n°229 of 13/11/2026, as its page listed its acts: the order n°2026-2094 names no place, so it was
+// not among the acts kept (14/11/2026).
+describe("the drought orders of a recueil (scripts/raa-lire.ts `secheresseDe`)", () => {
+  const r = { titre: "Spécial n° 229 du 13 novembre 2026", numero: 229, date: "2026-11-13", lien: "https://www.reunion.gouv.fr/recueil-229" };
+  const noms = prenoms();
+  const lu = (titre: string, pdf = `https://www.reunion.gouv.fr/${encodeURIComponent(titre)}.pdf`) => ({ titre, service: "DIRECTION DE L’ENVIRONNEMENT, DE L’AMÉNAGEMENT ET DU LOGEMENT", date: "2026-11-13", pdf });
+  const T2094 = "Arrêté n°2026-2094 du 12 novembre 2026 définissant les communes de La Réunion où les usages de l'eau doivent faire l'objet de mesures de vigilance...";
+  const AUTRES = [
+    "Arrêté DIMANCHE O BARACHOIS timbre et signé",
+    "20261113_ARRETE N° 2099 du 13 novembre 2026_composition CRJSVA",
+    "Arrêté n 443 portant dérogation au plan de servitudes de l'aérodrome de La Réunion",
+  ];
+
+  it("finds the order n°2026-2094, with its number and signature day, and none of the other acts", () => {
+    const got = secheresseDe([lu(T2094), ...AUTRES.map((t) => lu(t))], r, noms);
+    expect(got.sans_date).toEqual([]);
+    expect(got.avec_date).toEqual([{ titre: T2094, numero: "2026-2094", signe_le: "2026-11-12", recueil: r, pdf: lu(T2094).pdf }]);
+  });
+
+  it("finds a title in « sécheresse » or « restriction des usages », and logs one without a day", () => {
+    const a = secheresseDe([lu("Arrêté_n°2026-2200_du_1er_décembre_2026_portant_restriction_temporaire_des_usages_de_l'eau")], r, noms);
+    expect(a.avec_date.map((x) => [x.numero, x.signe_le])).toEqual([["2026-2200", "2026-12-01"]]);
+    expect(secheresseDe([lu("Arrêté cadre sécheresse du 3 mars 2027 à La Réunion")], r, noms).avec_date[0].signe_le).toBe("2027-03-03");
+    const sans = secheresseDe([lu("Arrêté sécheresse modificatif à La Réunion")], r, noms);
+    expect(sans.avec_date).toEqual([]);
+    expect(sans.sans_date.map((x) => x.titre)).toEqual(["Arrêté sécheresse modificatif à La Réunion"]);
+    // Not an order, or not on water.
+    expect(secheresseDe([lu("Communiqué sécheresse du 13 novembre 2026"), lu("Arrêté du 13 novembre 2026 portant usage de la voie publique")], r, noms).avec_date).toEqual([]);
+  });
+
+  it("keeps the newest by signature day, and tells the team once of one signed after the order written by hand", () => {
+    const [a] = secheresseDe([lu(T2094)], r, noms).avec_date;
+    const [b] = secheresseDe([lu("Arrêté n°2026-2200 du 20 novembre 2026 définissant les communes de La Réunion où les usages de l'eau doivent faire l'objet de mesures de vigilance...")], { ...r, numero: 240, date: "2026-11-21" }, noms).avec_date;
+    expect(plusRecente(undefined, a)).toBe(a);
+    expect(plusRecente(a, b)).toBe(b);
+    expect(plusRecente(b, a)).toBe(b);
+    expect(ligneAlerte(a, new Set(), "2026-11-12")).toBeUndefined();
+    expect(ligneAlerte(b, new Set(), "2026-11-12")).toBe(`Nouvel arrêté sécheresse au RAA : n°2026-2200, du 20/11/2026, ${b.pdf} : relire les niveaux par commune (providers/arrete-secheresse.ts)`);
+    expect(ligneAlerte(b, new Set([b.pdf]), "2026-11-12")).toBeUndefined();
+  });
 });

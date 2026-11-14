@@ -17,6 +17,7 @@
 import type { Lecture } from "../lectures.js";
 import type { SourceInfo } from "../types.js";
 import { pageOf, slugify } from "../web/places.js";
+import { deNom } from "../articles.js";
 import { credited } from "./format.js";
 import { fraicheur } from "./fraicheur.js";
 
@@ -78,6 +79,21 @@ function stationsOf(p: Payload): { station?: unknown; source?: unknown }[] {
 }
 
 /**
+ * A commune's water cuts: who publishes the notices read for it (`avis_lus_sur`: « la CIREST », « Dionéo »), and the ARS
+ * when the answer names the distributor from its samples; every notice shown from that publisher, else the whole list.
+ */
+function citerCoupures(p: Payload): string {
+  const lus = p.avis_lus_sur as { publie_par?: unknown } | undefined;
+  if (!lus || typeof lus.publie_par !== "string") return citation(p);
+  const par = lus.publie_par;
+  const key = par.replace(/^(?:la|le|les) /, "").toLowerCase();
+  const rows = [...(Array.isArray(p.avis) ? p.avis : []), ...(p.ne_pas_boire ? [p.ne_pas_boire] : [])] as { distributeur?: unknown }[];
+  if (rows.some((r) => typeof r?.distributeur !== "string" || !r.distributeur.toLowerCase().includes(key))) return citation(p);
+  const ars = JSON.stringify(p.sources ?? []).includes("ARS La Réunion");
+  return `rundata.re, d'après les avis ${/^(?:la|le|les) /.test(par) ? `de ${par}` : deNom(par)}${ars ? " et l'ARS La Réunion" : ""}`;
+}
+
+/**
  * The tools whose producers' names do not make a short sentence (English, the same producer twice, a long list): their
  * `citer` in the words of marketing (06/11/2026), when the answer credits any source. `sources` keeps each one's exact
  * attribution, the NASA's whole.
@@ -86,6 +102,7 @@ const CITER: Partial<Record<string, (p: Payload) => string>> = {
   sentiers_randonnee: (p) => `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
   fiche_terrain: () => "rundata.re, d'après l'IGN, la DGFiP et la Base adresse nationale",
   qualite_eau: () => "rundata.re, d'après l'ARS La Réunion",
+  coupures_eau: citerCoupures,
   crues_rivieres: () => "rundata.re, d'après Vigicrues",
   resume_du_jour: () => "rundata.re, d'après Météo-France et d'autres sources (liste dans sources)",
   // The RSMC's own bulletins beside GDACS: the centre named once, never « CMRS de La Réunion » twice.

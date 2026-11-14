@@ -46,7 +46,7 @@ describe("the records of the stations of reference", () => {
 
   it("writes each record with its date, leaves out what is missing, and the block without any", () => {
     const h = {
-      periode: { du: "2026-09-24", au: "2026-10-23", jours: 30 },
+      periode: { du: "24/09/2026", au: "23/10/2026", jours: 30 },
       records_reference: [
         { zone: "nord (Saint-Denis)", poste: "97418110", station: "Saint-Denis Gillot", depuis: 1953, temperature_max: { valeur: 35.2, date: "28/01/1993" }, rafale_max_kmh: { valeur: 223, date: "28/02/1962" } },
         { zone: "est (au vent)", poste: "97410238", station: "Saint-Benoît", depuis: 1952 },
@@ -70,7 +70,7 @@ describe("the records of the stations of reference", () => {
     expect(await get()).not.toContain('id="h-records"');
     await cache.get("web:historique", 3600, async () => ({
       resume: "",
-      periode: { du: "2026-09-24", au: "2026-10-23", jours: 30 },
+      periode: { du: "24/09/2026", au: "23/10/2026", jours: 30 },
       stations: [],
       records_reference: [{ zone: "cirque de Cilaos", poste: "97424410", station: "Cilaos", depuis: 1952, temperature_min: { valeur: 0.1, date: "06/08/1982" } }],
     }));
@@ -79,6 +79,8 @@ describe("the records of the stations of reference", () => {
     // Right after the data, before « Comment lire cette page ».
     expect(html.indexOf('id="h-records"')).toBeLessThan(html.indexOf('id="h-lire"'));
     expect(html).toContain("le plus frais, <b>0,1");
+    // The day as the copy of /historique gives it, already written JJ/MM/AAAA (frDate()).
+    expect(html).toContain("jusqu'au 23/10/2026.");
     // One « h-lire » only: « Comment lire ces données » has its own id on the page without stations.
     expect(html.match(/id="h-lire"/g)).toHaveLength(1);
     expect(html).toContain('<section aria-labelledby="h-notes">');

@@ -2257,7 +2257,6 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
  * missing is left out, a station without any too, and the block without any station.
  */
 export function recordsSection(h: HistoriqueAnswer | undefined): string {
-  const iso = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
   const items = (h?.records_reference ?? []).flatMap((r) => {
     const parts = [
       r.temperature_max && `le plus chaud, <b>${thin(deg(r.temperature_max.valeur))}</b> le ${r.temperature_max.date}`,
@@ -2271,7 +2270,7 @@ export function recordsSection(h: HistoriqueAnswer | undefined): string {
   if (!items.length || !h) return "";
   return `<section id="records" aria-labelledby="h-records">
   <div class="sec-h"><p class="eyebrow">Historique</p><h2 id="h-records">Les records des stations de référence</h2>
-  <p>Une station par climat de l'île, comme sur <a href="/historique">la page Historique</a> : ses records depuis le début de ses mesures quotidiennes publiées par Météo-France, jusqu'au ${iso(h.periode.au)}. Un jour sans mesure n'est pas compté.</p></div>
+  <p>Une station par climat de l'île, comme sur <a href="/historique">la page Historique</a> : ses records depuis le début de ses mesures quotidiennes publiées par Météo-France, jusqu'au ${esc(h.periode.au)}. Un jour sans mesure n'est pas compté.</p></div>
   <ul class="card plain records">${items.join("")}</ul>
 </section>`;
 }

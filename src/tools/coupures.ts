@@ -67,16 +67,20 @@ export function noticeRow(n: notices.Avis, now: Date, current = n.ne_pas_boire) 
   };
 }
 
+/** The ARS La Réunion's leaflet « Coupure d'eau », the source of `AFTER_CUT` (read 14/11/2026). */
+export const ARS_COUPURE = "https://www.lareunion.ars.sante.fr/system/files/2024-08/D%C3%A9pliant%20COUPURE%20D'EAU-web.pdf";
 /**
- * What to know after a cut (marketing). The tool ends it with the name of the tool for the tap water, the pages with a
- * link to /eau (web/domains.ts, `afterCutNote`).
+ * What to know after a cut, in the ARS's words (its leaflet, `ARS_COUPURE`): no advice of our own. A notice that says not
+ * to drink the water has its own instructions (how long to boil it, bottles given out), so the notice is what counts. The
+ * tool ends it with its source and the name of the tool for the tap water, the pages with a link to the leaflet and to
+ * /eau (web/domains.ts, `afterCutNote`).
  */
-export const AFTER_CUT = "Après une coupure, l'eau peut être trouble ou impropre à la boisson pendant quelques heures : la laisser couler avant de la boire. Quand un avis dit de ne pas boire l'eau, utiliser de l'eau en bouteille ou bouillie au moins 3 minutes pour boire, cuisiner et se brosser les dents.";
+export const AFTER_CUT = "D'après l'ARS La Réunion, quand l'eau revient au robinet après une coupure, elle peut être impropre à la consommation pendant plusieurs heures\u00a0: ne pas la boire ni s'en servir pour préparer les repas, préférer l'eau en bouteille, et la garder pour la toilette, les WC et le ménage. Quand un avis dit de ne pas boire l'eau, suivre les consignes de cet avis.";
 
 const COMMON = {
   // Worded by marketing: never « pas de coupure » where the sources say nothing.
   couverture: `Avis lus pour ${enumeration(lues())} (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.`,
-  a_savoir: `${AFTER_CUT} La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.`,
+  a_savoir: `${AFTER_CUT} Source\u00a0: le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion, ${ARS_COUPURE}. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.`,
 };
 
 // A title that says the water is cut or disturbed, whether or not its hours were read (« fermeture préventive de la

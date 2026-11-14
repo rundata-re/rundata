@@ -45,7 +45,7 @@ import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAn
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW } from "../tools/bornes.js";
-import { AFTER_CUT, muetPour } from "../tools/coupures.js";
+import { AFTER_CUT, ARS_COUPURE, muetPour } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
 import island from "../places/island.json" with { type: "json" };
@@ -217,7 +217,7 @@ const COUPURES_FAQ: Faq[] = [
   { q: "Qui distribue l'eau chez moi ?", a: "La page de chaque commune nomme son distributeur, d'après le contrôle sanitaire de l'ARS. C'est lui qu'il faut appeler pour une fuite ou une coupure." },
 ];
 
-export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
+export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} Source\u00a0: <a href="${esc(ARS_COUPURE)}" rel="noopener">le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion</a>. La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
 
 /**
  * The connector on the water's pages (/coupures-eau, /coupures-eau/x, /eau): a question to ask, without the tool's name

@@ -2373,10 +2373,10 @@ ${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p 
   <h2 id="h-ia">Votre IA, branchée sur la météo de l'île</h2>
   <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>${coupable("meteo_actuelle")}</code> et <code>${coupable("prevision_meteo")}</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
-</section>
-${texteStable(meteoLire(), METEO_FAQ)}
-${WEATHER_NOTES}`;
-  return layout(origin, { title, description, path: "/meteo", jsonld: [...jsonld, faqPage(METEO_FAQ)], alerte, iaAside: true }, band, body);
+</section>`;
+  // « Comment lire cette page » and the questions on both pages, with stations or without: the FAQPage below says them.
+  return layout(origin, { title, description, path: "/meteo", jsonld: [...jsonld, faqPage(METEO_FAQ)], alerte, iaAside: true }, band, `${body}
+${texteStable(meteoLire(), METEO_FAQ)}${all.length ? "" : `\n${WEATHER_NOTES}`}`);
 }
 
 const KIND: Record<string, string> = {

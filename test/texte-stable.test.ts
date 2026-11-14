@@ -4,6 +4,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { communeFaq } from "../src/web/commune-texte.js";
 import { iaAside } from "../src/web/pages.js";
 import { faqPage, sansBalises, texteStable } from "../src/web/texte-stable.js";
+import type { HomeData, StationNow } from "../src/web/data.js";
 import network from "../src/transit/network.json" with { type: "json" };
 
 const get = async (path: string) => (await handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html" } }), new Cache(new MemoryStore()))).text();
@@ -12,6 +13,26 @@ const mainOf = (html: string) => html.slice(html.indexOf("<main"), html.indexOf(
 const ldOf = (html: string) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => [JSON.parse(m[1])].flat());
 
 describe("the stable text of the head pages", () => {
+  it("shows every question of a page's FAQPage in a visible <h3>, /meteo with its stations too", async () => {
+    const cache = new Cache(new MemoryStore());
+    // /meteo as it nearly always is: with stations (an empty copy shows its other page).
+    const st = { nom: "Saint-Denis-Gillot", source: "meteofrance", lon: 55.52, lat: -20.89, altitude_m: 10, time: new Date(Date.now() - 6 * 60_000).toISOString(), stale: false, temperature: 25 } as StationNow;
+    await cache.get("web:meteo", 3600, async (): Promise<HomeData> => ({ stations: [st], toutes: [st], sources: [], indisponibles: [], mer: [] }));
+    for (const [path, c] of [["/meteo", cache], ...HEAD_PAGES.filter((p) => p !== "/meteo").map((p) => [p, undefined] as const)] as const) {
+      const html = await (await handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html" } }), c ?? new Cache(new MemoryStore()))).text();
+      if (path === "/meteo") expect(html, path).toContain('<section id="stations" aria-labelledby="h-stations">');
+      const faq = ldOf(html).find((x) => x["@type"] === "FAQPage");
+      expect(faq, path).toBeDefined();
+      const h3 = [...mainOf(html).matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>/g)].map((m) => sansBalises(m[1]).replace(/&#39;/g, "'").replace(/[\s\u00a0\u202f]+/g, " ").trim());
+      for (const q of faq.mainEntity as { name: string }[]) {
+        const name = q.name.replace(/[\s\u00a0\u202f]+/g, " ").trim();
+        expect(h3, `${path} : ${name}`).toContain(name);
+      }
+      // Never a question in a hidden heading.
+      expect(mainOf(html), path).not.toMatch(/<h3[^>]*hidden/);
+    }
+  });
+
   it("says how to read the page and answers its questions in <main>, with a FAQPage of the same questions", async () => {
     for (const path of HEAD_PAGES) {
       const html = await get(path);

@@ -1091,13 +1091,13 @@ async function pages(request: Request, cache: Cache, background: Background, now
 }
 
 /**
- * The phone captures that the install window shows (1080×1920, WebP), in public/icons/ named after their content:
- * taken on a calm page, no alert in big and nothing relative, and taken again when the page changes much, not at
- * each version. Each label is also the picture's text for a screen reader.
+ * The phone captures that the install window shows (a 360×640 screen at ×3, so 1080×1920, WebP at quality 70), in
+ * public/icons/ named after their content: taken on a calm page, no alert in big and nothing relative, and taken
+ * again when the page changes much, not at each version. Each label is also the picture's text for a screen reader.
  */
 export const CAPTURES = [
-  { src: "/icons/capture-accueil.27c05f84ec.webp", label: "La Réunion en direct, avec la carte des températures mesurées" },
-  { src: "/icons/capture-meteo.065613d3d6.webp", label: "La météo mesurée aux stations de l'île" },
+  { src: "/icons/capture-accueil.42b10697b2.webp", label: "La Réunion en direct, avec la carte des températures mesurées" },
+  { src: "/icons/capture-meteo.a30f6162cd.webp", label: "La météo mesurée aux stations de l'île" },
 ];
 
 /**

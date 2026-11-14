@@ -28,7 +28,7 @@ import { ARRETE } from "../src/providers/arrete-secheresse.js";
 import { type ArreteSecheresse, type Copie, DAYS, KV_KEY, KV_TTL_SECONDS } from "../src/providers/raa.js";
 import { why } from "../src/types.js";
 import { getKv, putKv } from "./kv.js";
-import { couverture, ecrire, garder, ligneAlerte, listeDe, parseListe, parseRecueil, plusRecente, prenoms, secheresseDe, suite, type Vus, vusAssez, vusPage1, vusSuivante } from "./raa-lire.js";
+import { aLaNouvelleAdresse, couverture, ecrire, garder, ligneAlerte, listeDe, parseListe, parseRecueil, plusRecente, prenoms, secheresseDe, suite, type Vus, vusAssez, vusPage1, vusSuivante } from "./raa-lire.js";
 import { readPage } from "./reunion-gouv.js";
 
 const STATE = join(homedir(), ".local/state/rundata-collecte/raa.json");
@@ -54,7 +54,10 @@ function etat(): Etat | undefined {
 
 const kv = process.argv.includes("--kv");
 // Without the machine's state (its first run, or lost), the store's copy, which covers the 15 days.
-const had = kv ? etat() ?? (await getKv<Copie>(KV_KEY).then((c) => c && { copie: c, ecrite: sansHeure(c) })) : undefined;
+const lu = kv ? etat() ?? (await getKv<Copie>(KV_KEY).then((c) => c && { copie: c, ecrite: sansHeure(c) })) : undefined;
+// The links kept before the list moved (14/11/2026), at its new address: the recueils already read are not read again.
+// `ecrite` stays as it was, so the copy is written once more with the new links.
+const had: Etat | undefined = lu && { ...lu, copie: aLaNouvelleAdresse(lu.copie), vus: aLaNouvelleAdresse(lu.vus) };
 const before = had?.copie;
 const now = new Date();
 const today = new Date(now.getTime() + 4 * 3600_000);

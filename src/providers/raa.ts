@@ -16,7 +16,7 @@ export const SOURCE = {
   organisme: "Préfecture de La Réunion",
   licence: "Licence Ouverte Etalab 2.0",
   attribution: "Préfecture de La Réunion",
-  url: "https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs-RAA",
+  url: "https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs",
 } satisfies SourceInfo;
 
 /** Written by scripts/raa.ts, read by worker.ts. */

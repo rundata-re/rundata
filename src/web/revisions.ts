@@ -16,7 +16,8 @@
 export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026: named in the sources and the coverage.
   // A rubric in capitals at the head of a first sentence left out (« LIBRE EXPRESSION Sous le bruit… »).
-  actualites: 17,
+  // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
+  actualites: 18,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -74,12 +75,14 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // A day without its hours of 10 h to 14 h has no UV index, never « UV 0 » (10/11/2026).
   // « <Lieu> en chiffres »: the figures of the nearest stations, their hours and their last 30 days (web/en-chiffres.ts).
-  lieu: 27,
+  // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
+  lieu: 28,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
   // Each beach with the satellite's pass time, and the corals' grid a view of /mer kept (the home page's sea bubble).
-  mer: 8,
+  // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
+  mer: 9,
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.

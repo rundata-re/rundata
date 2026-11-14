@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as raa from "../src/providers/raa.js";
 import { actualites, RAA_A_SAVOIR } from "../src/tools/actualites.js";
-import { couverture, ecarte, ecrire, FILTRES, garder, ligneAlerte, parseListe, parseRecueil, plusRecente, prenoms, secheresseDe, suite, vusAssez, vusPage1, vusSuivante } from "../scripts/raa-lire.js";
+import { aLaNouvelleAdresse, adresse, couverture, ecarte, ecrire, FILTRES, garder, ligneAlerte, listeDe, parseListe, parseRecueil, plusRecente, prenoms, secheresseDe, suite, vusAssez, vusPage1, vusSuivante } from "../scripts/raa-lire.js";
 
 // Every title and name here is made up: no act of a real recueil, no real person.
 const NOW = new Date("2026-11-03T08:00:00Z");
@@ -32,6 +32,24 @@ describe("the prefecture's recueil des actes administratifs", () => {
       // A monthly recueil, without a number: the day it was published.
       { titre: "DÉCEMBRE", numero: undefined, date: "2027-01-02", lien: "https://www.reunion.gouv.fr/Publications/RAA/Recueil-des-actes-administratifs-2027/DECEMBRE" },
     ]);
+  });
+
+  it("reads the list at its address since 14/11/2026, and a link still written with « -RAA » at that address", () => {
+    const P = "https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales";
+    expect(listeDe(2026)).toBe(`${P}/Recueil-des-actes-administratifs/Recueil-des-actes-administratifs-2026`);
+    expect(raa.SOURCE.url).toBe(`${P}/Recueil-des-actes-administratifs`);
+    const ancien = `${P}/Recueil-des-actes-administratifs-RAA/Recueil-des-actes-administratifs-2026/Special-n-3-du-04-janvier-2026`;
+    const nouveau = `${P}/Recueil-des-actes-administratifs/Recueil-des-actes-administratifs-2026/Special-n-3-du-04-janvier-2026`;
+    expect(adresse(ancien)).toBe(nouveau);
+    expect(adresse(`${P}/Recueil-des-actes-administratifs-RAA`)).toBe(`${P}/Recueil-des-actes-administratifs`);
+    expect(adresse(nouveau)).toBe(nouveau);
+    const html = card(ancien.slice("https://www.reunion.gouv.fr".length), "Spécial n° 3 du 04 janvier 2026", "05/01/2026");
+    expect(parseListe(html)[0].lien).toBe(nouveau);
+    expect(suite(`<a class="fr-pagination__link fr-pagination__link--next" href="${ancien}/(offset)/10">`)).toBe(`${nouveau}/(offset)/10`);
+    // What the collector kept before the move: read the new way, so the recueils already read are not read again.
+    const kept = { recueils: [{ titre: "x", date: "2026-01-04", lien: ancien }], actes: [{ recueil: { lien: ancien } }] };
+    expect(aLaNouvelleAdresse(kept)).toEqual({ recueils: [{ titre: "x", date: "2026-01-04", lien: nouveau }], actes: [{ recueil: { lien: nouveau } }] });
+    expect(aLaNouvelleAdresse(undefined)).toBeUndefined();
   });
 
   it("reads a recueil's acts under their service and day, without « Télécharger », the tooltips or the trailing « _ »", () => {

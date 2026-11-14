@@ -39,6 +39,8 @@ const row = (now: Date) => (l: enfants.Lieu & { km?: number }) => {
     detail: l.detail,
     adresse: l.adresse,
     horaires_aujourd_hui: today,
+    horaires: enfants.poolHours(l)?.texte,
+    horaires_lien: enfants.poolHours(l)?.lien,
     distance_km: l.km != null ? Math.round(l.km * 10) / 10 : undefined,
     lien: l.site ?? l.lien,
   };

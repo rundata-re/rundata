@@ -685,7 +685,7 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
     ...(near.length && !mort ? { note: `Arrêts les plus proches de « ${asked} » : préciser le nom de l'arrêt pour un résultat exact.` } : {}),
     ...(ligne ? { ligne_introuvable: `Aucune ligne « ${ligne} » dans les horaires publiés : tous les départs sont donnés.` } : {}),
     departs: shown.map(toolRow),
-    ...(alertes.length || off?.alertes ? { info_trafic: [...(off?.alertes ?? []), ...others] } : {}),
+    ...(alertes.length || off?.alertes ? { info_trafic: untold([...(off?.alertes ?? []), ...others], resume) } : {}),
     ...(news.length ? { dans_les_medias: news } : {}),
     horaires: timetables(live, feeds),
     reseaux: networksOf(groups.map((g) => g.reseau)),
@@ -994,7 +994,7 @@ async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache
     ...(stopsOf ? {} : { note: "Liste des arrêts indisponible pour le moment : seuls les terminus et les horaires sont donnés." }),
     ...(place ? { arret: place } : {}),
     ...(shownAt?.shown.length ? { departs: shownAt.shown.map(toolRow) } : {}),
-    ...(shownAt?.alertes.length ? { info_trafic: shownAt.alertes } : off?.alertes ? { info_trafic: off.alertes } : {}),
+    ...(shownAt?.alertes.length ? { info_trafic: untold(shownAt.alertes, resume) } : off?.alertes ? { info_trafic: untold(off.alertes, resume) } : {}),
     ...(news.length ? { dans_les_medias: news } : {}),
     ...(hour === undefined ? { detail: "Les heures de départ une par une : redemander avec l'heure voulue (« après 17 h »)." } : {}),
     horaires: shownAt ? timetables(shownAt.live, shownAt.feeds) : timetables([], new Map()),
@@ -1002,6 +1002,13 @@ async function lineAnswer(ligne: string, asked: string, now: Date, cache?: Cache
     sources: credits([transit.SOURCE, ...(used ? [rt.SOURCE] : []), ...(news.length ? [actuSource.SOURCES.medias] : [])]),
   });
 }
+
+/**
+ * The alerts for `info_trafic`, without the title of those the summary already says word for word: their network's
+ * full text stays, with its dates (« le 15/11/2026 de 14h00 à 19h00 »). The title alone is kept where it is all there is.
+ */
+export const untold = <A extends { titre: string; detail?: string }>(alertes: A[], resume: string) =>
+  alertes.map((a) => (a.detail && resume.includes(a.titre.trim().replace(/\.$/, "")) ? (({ titre: _, ...rest }) => rest)(a) : a));
 
 /** A line's stops by commune, in their order: « Saint-Joseph : Église Vincendo, Gare de St-Joseph ». */
 function byCommune(list: transit.Stop[]): string[] {

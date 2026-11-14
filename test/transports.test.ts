@@ -288,6 +288,12 @@ describe("a line", () => {
     const told = body(await transports(undefined, "E1", WED, new Cache(store, () => WED.getTime(), false)));
     expect(told.resume).toMatch(/alors qu'elle circule le mercredi les autres semaines\. Info trafic de Car Jaune \(flux de 07:29\)\u00a0: «\u00a0Grève : lignes E1 et S2 non assurées\u00a0»\. Prochaine journée de service, jeudi 12 novembre\u00a0: /);
     expect(told.info_trafic).toEqual([{ reseau: "Car Jaune", lignes: ["E1"], titre: alert.titre }]);
+    // With the network's full text: the title, already in the summary, is not given again; the text and its dates are.
+    const texte = "Mouvement social - Lignes E1 et S2 non assurées le 11/11/2026 de 05h00 à 20h00.";
+    store.put("rt:carjaune", { value: { at: WED.getTime() / 1000 - 30, trips: {}, cancelled: [], alerts: [{ ...alert, texte }], vehicles: [] }, fetchedAt: WED.getTime() });
+    const full = body(await transports(undefined, "E1", WED, new Cache(store, () => WED.getTime(), false)));
+    expect(full.resume).toContain(`«\u00a0${alert.titre}\u00a0»`);
+    expect(full.info_trafic).toEqual([{ reseau: "Car Jaune", lignes: ["E1"], detail: texte }]);
   });
 
   it("at a stop with nothing running today, says so for all its lines, and what the timetables say beside it", async () => {

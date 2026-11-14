@@ -46,9 +46,21 @@ jobs:
         run: node scripts/climat-ready.mjs horaire
       - name: Deploy
         run: npx wrangler deploy
+      # curl is classed as a robot (src/robots.ts): a page still loading just after the deploy answers it 503 with
+      # Retry-After, « come back in a minute ». That one is asked again every 15 s for up to 90 s; any other code fails.
       - name: The site answers
         run: |
           for path in / /meteo /bus; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' -H 'accept: text/html' "https://rundata.re$path")
-            echo "$path $code"; [ "$code" = 200 ] || exit 1
+            deadline=$((SECONDS + 90))
+            while :; do
+              headers=$(curl -s -o /dev/null -D - -H 'accept: text/html' "https://rundata.re$path" | tr -d '\r')
+              code=$(printf '%s\n' "$headers" | awk 'NR==1 {print $2}')
+              echo "$path $code"
+              [ "$code" = 200 ] && break
+              if [ "$code" = 503 ] && printf '%s\n' "$headers" | grep -qi '^retry-after:' && [ $SECONDS -lt $deadline ]; then
+                sleep 15
+                continue
+              fi
+              exit 1
+            done
           done

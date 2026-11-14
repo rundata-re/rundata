@@ -102,7 +102,7 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     expect(heads.slice(0, 4)).toEqual(["Saint-Paul", "Les Trois-Bassins", "Saint-Leu", "L'Étang-Salé"]);
     // Every zone under a commune of the page.
     expect(new Set(heads)).toEqual(new Set(ZONES.map((z) => z.commune)));
-    expect(html).toContain('href="https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs-RAA/Recueil-des-actes-administratifs-2026/Special-n-35-du-13-fevrier-2026"');
+    expect(html).toContain('href="https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs/Recueil-des-actes-administratifs-2026/Special-n-35-du-13-fevrier-2026"');
   });
 
   it("give the zones as the GIP Centre Sécurité Requin corrected them on 27/10/2026, with its name, its link and its stories", async () => {

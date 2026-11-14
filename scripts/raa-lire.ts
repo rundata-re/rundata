@@ -12,7 +12,14 @@ import { placesIn, plain } from "../src/providers/actualites.js";
 import type { Acte, ArreteSecheresse, Recueil } from "../src/providers/raa.js";
 
 const ORIGIN = "https://www.reunion.gouv.fr";
-export const LISTE = `${ORIGIN}/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs-RAA`;
+export const LISTE = `${ORIGIN}/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs`;
+// Until 14/11/2026 the list was under « …/Recueil-des-actes-administratifs-RAA », which now answers a 301 to the same
+// path without « -RAA ». A link still written the old way (a page's own links, a copy read before) is read the new way.
+const ANCIENNE = /\/Recueil-des-actes-administratifs-RAA(?=[/"?#]|$)/g;
+/** A recueil's (or the list's) link at the list's present address. */
+export const adresse = (lien: string) => lien.replace(ANCIENNE, "/Recueil-des-actes-administratifs");
+/** What the collector kept (its copy, the recueils seen), its links at the list's present address. */
+export const aLaNouvelleAdresse = <T>(x: T): T => (x === undefined ? x : (JSON.parse(JSON.stringify(x).replace(ANCIENNE, "/Recueil-des-actes-administratifs")) as T));
 /** The page of a year's recueils, newest first: a page a year (« Recueil-des-actes-administratifs-2026 »). */
 export const listeDe = (annee: number) => `${LISTE}/Recueil-des-actes-administratifs-${annee}`;
 
@@ -41,7 +48,7 @@ export function parseListe(html: string): Recueil[] {
       titre,
       numero: n ? Number(n[1]) : undefined,
       date: (n && jour(n[2])) ?? `${m[5]}-${m[4]}-${m[3]}`,
-      lien: new URL(plain(m[1]), ORIGIN).href,
+      lien: adresse(new URL(plain(m[1]), ORIGIN).href),
     });
   }
   return out;
@@ -50,7 +57,7 @@ export function parseListe(html: string): Recueil[] {
 /** The link of the next page of the year's list (older recueils), undefined on its last page. */
 export function suite(html: string): string | undefined {
   const m = /<a\b[^>]*class="[^"]*fr-pagination__link--next[^"]*"[^>]*href="([^"]+)"/.exec(html);
-  return m ? new URL(plain(m[1]), ORIGIN).href : undefined;
+  return m ? adresse(new URL(plain(m[1]), ORIGIN).href) : undefined;
 }
 
 /**

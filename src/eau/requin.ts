@@ -11,7 +11,7 @@ import { distanceKm } from "../geo.js";
 import type { SourceInfo } from "../types.js";
 
 export const RAA_URL =
-  "https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs-RAA/" +
+  "https://www.reunion.gouv.fr/Publications/Publications-administratives-et-legales/Recueil-des-actes-administratifs/" +
   "Recueil-des-actes-administratifs-2026/Special-n-35-du-13-fevrier-2026";
 
 export const ARRETE = {

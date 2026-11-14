@@ -53,6 +53,7 @@ import { prefetchForecasts } from "./tools/prevision.js";
 import { listShared, SHARED, SHARED_AFTER, SharedFallback, warmShared } from "./web/partagees.js";
 import { configurerDefiOpenai } from "./web/site.js";
 import { configurerUv } from "./web/uv-moufia.js";
+import { configurerVideo } from "./web/partage-video.js";
 import * as pluieRetro from "./web/pluie-retro.js";
 import * as pluieRadar from "./web/pluie-radar.js";
 import * as radarSemaine from "./web/radar-semaine.js";
@@ -370,6 +371,8 @@ function setup(env: Env): Cache {
   configurerEquipe(env.EQUIPE_JETON);
   // Its data in KV, written once by the team: the page's secret link reads it (web/uv-moufia.ts).
   configurerUv(env.UV_MOUFIA_JETON, env.STORE);
+  // The videos handed to Threads, written into KV by the team for a day (web/partage-video.ts).
+  configurerVideo(env.STORE);
   configurerDefiOpenai(env.OPENAI_APPS_CHALLENGE);
   metaWebhookSecrets(env.META_VERIFY_TOKEN, env.META_APP_SECRET);
   // The associations' links to their platform, in the same database (scripts/connecteurs.sql): the platform's secret

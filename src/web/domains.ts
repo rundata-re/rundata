@@ -70,6 +70,7 @@ import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DES
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
+import { lues } from "../eau/distributeurs.js";
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
@@ -216,6 +217,18 @@ const COUPURES_FAQ: Faq[] = [
   { q: "Quelle différence avec les restrictions de sécheresse ?", a: `Une coupure ou un avis « ne pas boire » vient du distributeur et concerne un secteur précis. Les restrictions de sécheresse viennent d'un arrêté du préfet : elles limitent certains usages, comme l'arrosage ou le lavage des voitures, dans toute la commune. Elles sont détaillées sur <a href="/secheresse">la page Sécheresse</a>.` },
   { q: "Qui distribue l'eau chez moi ?", a: "La page de chaque commune nomme son distributeur, d'après le contrôle sanitaire de l'ARS. C'est lui qu'il faut appeler pour une fuite ou une coupure." },
 ];
+
+/**
+ * The coverage line of /coupures-eau without its list of communes, which the page writes once, at its foot
+ * (cycloneWater(), « Avis lus : … ») : the number of communes, and a link to that list.
+ */
+export function couvertureCourte(couverture: string): string {
+  const read = lues();
+  const list = enumeration(read);
+  if (!couverture.includes(list)) return esc(couverture);
+  const [before, after] = couverture.split(list);
+  return `${esc(before)}<a href="#communes-lues">${read.length} communes</a>${esc(after)}`;
+}
 
 export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} Source\u00a0: <a href="${esc(ARS_COUPURE)}" rel="noopener">le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion</a>. La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
 
@@ -494,7 +507,7 @@ export function volcanPage(origin: string, data: Cached<VolcanAnswer> | null, no
 ${connectorCta("volcan_seismes", "le volcan")}`;
 
   // Its heading and the official blocks say all the banner would: no banner here.
-  return layout(origin, { title, description, path: "/volcan", jsonld: [crumbs(origin, "Volcan", "/volcan"), webPage(origin, "/volcan", title, description, data)], alerte, volcan: !!a }, band, body);
+  return layout(origin, { title, description, path: "/volcan", jsonld: [crumbs(origin, "Volcan", "/volcan"), webPage(origin, "/volcan", title, description, data)], alerte, volcan: !!a, iaAside: true }, band, body);
 }
 
 // A place of an earthquake row this long or shorter never breaks inside: about a third of a line at 390 px.
@@ -2988,7 +3001,7 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
 
   const body = `<section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis</h2>
-  <p>${d ? esc(d.couverture) : ""}</p></div>
+  <p>${d ? couvertureCourte(d.couverture) : ""}</p></div>
   ${list}
   ${d ? afterCutNote : ""}
   ${d && data ? sourcesNote(d.sources, data) : ""}
@@ -3440,7 +3453,7 @@ ${d?.saison_precedente ? `<section aria-labelledby="h-saison-prec">
 ${d ? `<section aria-labelledby="h-src"><div class="sec-h"><h2 id="h-src">D'où viennent ces données</h2><p>${esc(d.a_savoir)}</p></div>${data ? sourcesNote(d.sources, data) : ""}</section>` : ""}
 ${connectorCta("cyclones", "les cyclones")}`;
 
-  return layout(origin, { title, description, path: "/cyclones", jsonld: [crumbs(origin, "Cyclones", "/cyclones"), webPage(origin, "/cyclones", title, description, data)], alerte, vert: !!d && !alerte && !active.length }, band, body);
+  return layout(origin, { title, description, path: "/cyclones", jsonld: [crumbs(origin, "Cyclones", "/cyclones"), webPage(origin, "/cyclones", title, description, data)], alerte, iaAside: true, vert: !!d && !alerte && !active.length }, band, body);
 }
 
 export function cyclonesLive(data: Cached<CyclonesAnswer> | null): Live | undefined {
@@ -3843,7 +3856,7 @@ ${connectorCta("evenements", "les événements de l'île")}`;
 
   const events = agendaEvents(d?.evenements ?? []);
   const jsonld = [crumbs(origin, "Événements", "/evenements"), webPage(origin, "/evenements", title, description, data), ...(events.length ? [{ "@context": "https://schema.org", "@graph": events }] : [])];
-  return layout(origin, { title, description, path: "/evenements", jsonld, alerte }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
+  return layout(origin, { title, description, path: "/evenements", jsonld, alerte, iaAside: true }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
 }
 
 export function agendaLive(data: Cached<AgendaAnswer> | null): Live | undefined {
@@ -3969,7 +3982,7 @@ ${pref}
 ${connectorCta("actualites", "l'actualité de l'île")}
 <script>${NEWS_SCRIPT}</script>`;
 
-  return layout(origin, { title, description, path: "/actualites", jsonld: [crumbs(origin, "Actualités", "/actualites"), webPage(origin, "/actualites", title, description, data)], alerte }, band, body);
+  return layout(origin, { title, description, path: "/actualites", jsonld: [crumbs(origin, "Actualités", "/actualites"), webPage(origin, "/actualites", title, description, data)], alerte, iaAside: true }, band, body);
 }
 
 export function actualitesLive(data: Cached<ActualitesAnswer> | null): Live | undefined {

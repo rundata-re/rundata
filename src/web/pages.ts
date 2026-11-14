@@ -1391,7 +1391,9 @@ interface Head {
    * The two blocks about the assistants (the question « Domann out IA » and « Votre IA, branchée sur… ») out of <main>,
    * in one <aside> after it; <main> keeps one line at its foot with the page's own question (iaAside()). The head pages
    * whose own text must outweigh the template's (/coupures-eau, /bus, /sentiers, /meteo, /carburants, /secheresse, the
-   * communes).
+   * communes), then since 14/11/2026 those of a place or a commune (/meteo/x, /aujourdhui/x, /coupures-eau/x) and
+   * /volcan, /cyclones, /evenements, /actualites, where it was the same text on each page. A question a page writes in its
+   * own text stays there (the volcano during an alert); the home page's is its own card, not this block.
    */
   iaAside?: boolean;
   /** The picture of another section in link previews (scripts/build-og.py's key): a past cyclone, a station that no
@@ -2653,7 +2655,7 @@ ${hikesAround(p, hikes)}
   <h2 id="h-ailleurs">Météo ailleurs à La Réunion</h2>
   ${placeLinks(p.slug)}
 </section>`;
-  return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte }, band, g.ligne + body);
+  return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true }, band, g.ligne + body);
 }
 
 export function notFoundPage(origin: string, path: string): string {

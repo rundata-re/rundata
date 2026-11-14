@@ -9,6 +9,8 @@ import network from "../src/transit/network.json" with { type: "json" };
 
 const get = async (path: string) => (await handle(new Request(`https://rundata.re${path}`, { headers: { accept: "text/html" } }), new Cache(new MemoryStore()))).text();
 const HEAD_PAGES = ["/coupures-eau", "/bus", "/sentiers", "/meteo", "/carburants", "/secheresse", "/communes/saint-paul"];
+// The same block, the same on each of them, out of <main> too since 14/11/2026: the pages of a place or a commune, and four head pages.
+const IA_PAGES = [...HEAD_PAGES, "/aujourdhui/saint-paul", "/coupures-eau/saint-paul", "/meteo/saint-paul", "/volcan", "/cyclones", "/evenements", "/actualites"];
 const mainOf = (html: string) => html.slice(html.indexOf("<main"), html.indexOf("</main>"));
 const ldOf = (html: string) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => [JSON.parse(m[1])].flat());
 
@@ -49,7 +51,7 @@ describe("the stable text of the head pages", () => {
   });
 
   it("moves both blocks about the assistants out of <main>, into one aside after it, and keeps one line with the page's question", async () => {
-    for (const path of HEAD_PAGES) {
+    for (const path of IA_PAGES) {
       const html = await get(path);
       const main = mainOf(html);
       expect(main, path).not.toContain('class="askbox"');
@@ -64,12 +66,12 @@ describe("the stable text of the head pages", () => {
   });
 
   it("leaves the other pages as they were: the question in <main>, no aside", async () => {
-    for (const path of ["/vigilance", "/aujourdhui/saint-paul", "/air"]) {
+    for (const path of ["/vigilance", "/mer", "/air"]) {
       const html = await get(path);
       expect(html, path).not.toContain('<aside class="wrap ia"');
       expect(mainOf(html), path).not.toContain('class="ia-ligne"');
     }
-    expect(mainOf(await get("/aujourdhui/saint-paul"))).toContain('class="askbox"');
+    expect(mainOf(await get("/air"))).toContain('class="askbox"');
   });
 
   it("asks a commune's questions only with their data, and never names a person", () => {

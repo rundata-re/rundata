@@ -6,7 +6,7 @@ import { annonceCoupure, compteAvis, coupuresEau, noticeRow } from "../src/tools
 import { cite } from "../src/tools/citer.js";
 import { coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { buildCoupures } from "../src/web/data.js";
-import { coupuresLive, coupuresPage, noticesHead } from "../src/web/domains.js";
+import { couvertureCourte, coupuresLive, coupuresPage, noticesHead } from "../src/web/domains.js";
 import island from "../src/places/island.json" with { type: "json" };
 import { pageOf } from "../src/web/places.js";
 import { resume } from "../src/tools/resume.js";
@@ -432,6 +432,16 @@ describe("coupures d'eau", () => {
     // « ne pas boire l'eau » at the water's return after the repair: a cut.
     expect(leak.ne_pas_boire).toBe(false);
     expect(list[3].ne_pas_boire).toBe(false);
+  });
+
+  it("writes the list of communes read once on /coupures-eau, at its foot: the coverage line gives their number and a link", async () => {
+    const couverture = body(await coupuresEau(cache(), undefined, NOW)).couverture as string;
+    const line = couvertureCourte(couverture);
+    expect(line).toMatch(/^Avis lus pour <a href="#communes-lues">\d+ communes<\/a> \(Dionéo, runéo, /);
+    expect(line).not.toContain("Bras-Panon");
+    expect(line).toContain("une coupure que ces sources n&#39;annoncent pas n&#39;apparaît pas ici");
+    // A coverage line written otherwise: as it is.
+    expect(couvertureCourte("Avis lus pour Saint-Denis.")).toBe("Avis lus pour Saint-Denis.");
   });
 
   it("says when a commune's distributor publishes nothing read here, and names it as the page does", async () => {

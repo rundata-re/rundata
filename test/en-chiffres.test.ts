@@ -295,15 +295,15 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(JSON.parse(JSON.stringify(out))).toEqual(JSON.parse(JSON.stringify(draw(c))));
   });
 
-  it("comes after the page's band and before the question to an assistant, the measures after", async () => {
+  it("comes after the page's band, before the measures, the question to an assistant after <main>", async () => {
     const c = await figures({ meteo: meteo([MESURE]) });
     const data: PlaceData = { meteo: { resume: "", stations: [{ ...MESURE, avertissements: [] }], sources: [] }, chiffres: c };
     const html = placePage("https://rundata.re", entreDeux, { value: data, fetchedAt: NOW, stale: false }, NOW);
     const main = html.slice(html.indexOf("<main"));
     const at = (s: string) => main.indexOf(s);
     expect(at('<section class="mx" id="mx"')).toBeGreaterThan(0);
-    expect(at('<section class="mx" id="mx"')).toBeLessThan(at('<div class="askbox">'));
-    expect(at('<div class="askbox">')).toBeLessThan(at('id="h-now"'));
+    expect(at('<section class="mx" id="mx"')).toBeLessThan(at('id="h-now"'));
+    expect(at('<div class="askbox">')).toBeGreaterThan(at("</main>"));
     expect(main).toContain("<h2 id=\"mx-t\">Entre-Deux en chiffres</h2>");
     expect(main).toContain(`<a class="mx-link" id="mx-link" href="/meteo/station/${PIERREFONDS}">Les relevés de la station de Saint-Pierre Pierrefonds, aéroport depuis `);
     // A copy built before the block: the page as before.

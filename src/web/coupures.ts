@@ -198,5 +198,5 @@ ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte, ...(avisLus(p.nom) ? {} : { noindex: true }) }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte, iaAside: true, ...(avisLus(p.nom) ? {} : { noindex: true }) }, band, body);
 }

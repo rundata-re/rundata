@@ -59,15 +59,11 @@ describe("the question to an assistant", () => {
     expect(meteo).toContain("Gèt bann mézir an dirèk si <span class=\"adrweb\">https://<wbr>rundata.<wbr>re/<wbr>meteo</span> é di amwin lèr la mézir.");
   });
 
-  it("follows the first section of /volcan, whose map is not on a phone", () => {
-    for (const [html, first, next] of [
-      [volcanPage(O, null, NOW), 'id="seismes"', 'id="alertes-precedentes"'],
-    ]) {
-      expect(band(html)).not.toContain('class="askbox"');
-      const t = text(html);
-      expect(at(t, first)).toBeLessThan(at(t, '<div class="askbox">'));
-      expect(at(t, '<div class="askbox">')).toBeLessThan(at(t, next));
-    }
+  it("is after <main> on /volcan without an alert, in the aside, as on the head pages", () => {
+    const html = volcanPage(O, null, NOW);
+    expect(band(html)).not.toContain('class="askbox"');
+    expect(text(html)).not.toContain('class="askbox"');
+    expect(html.slice(at(html, "</main>"))).toContain('<div class="askbox">');
   });
 
   it("is not on /vigilance nor on /feux", () => {

@@ -171,6 +171,54 @@ describe("the order of 12/11/2026 while VigiEau serves the one it replaced", () 
     expect(b.arrete).toMatch(/^https:\/\/regleau\./);
   });
 
+  /** VigiEau once it serves order 2094 at the order's own levels (network water: the higher of the two), started on `date`,
+   *  its file at `file` when given; `edit` then changes some zones. */
+  const updated = (date: string, file?: string, edit: (z: Record<string, any>) => void = () => {}) =>
+    served((z) => {
+      const [sou, sup] = arrete.ARRETE.niveaux[`974${z.code.slice(-2)}`];
+      const rank = (n: string) => ["vigilance", "alerte", "alerte_renforcee", "crise"].indexOf(n);
+      z.niveauGravite = z.type === "SOU" ? sou : z.type === "SUP" ? sup : rank(sou) >= rank(sup) ? sou : sup;
+      z.arrete.dateDebutValidite = date;
+      if (file) z.arrete.cheminFichier = file;
+      edit(z);
+    });
+
+  it("says nothing of VigiEau once it serves the order at the same levels, by its date or its file's number", async () => {
+    for (const json of [
+      updated("2026-11-12T00:00:00.000Z"),
+      updated("2026-11-14T00:00:00.000Z", "https://regleau.s3.gra.perf.cloud.ovh.net/arrete-restriction/1/a/arrete%202094.pdf"),
+    ]) {
+      withVigieau(json);
+      const ile = body(await restrictionsEau(cache(), undefined));
+      expect(ile.vigieau).toBeUndefined();
+      expect(ile.communes.filter((c: { vigieau_differe?: unknown }) => c.vigieau_differe)).toEqual([]);
+      for (const c of ["Saint-Joseph", "Saint-Leu", "Saint-Denis", "Saint-Benoît", "Salazie"]) {
+        const b = body(await restrictionsEau(cache(), c));
+        expect(b.vigieau).toBeUndefined();
+        expect(b.vigieau_differe).toBeUndefined();
+        expect(b.arrete.numero).toBe("n°2026-2094/SG/SCOPP/BCPE");
+      }
+      const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+      expect(page).not.toContain("VigiEau\u00a0:");
+      expect(page).not.toContain("VigiEau affiche encore");
+      expect(page).toContain("arrêté préfectoral n°2026-2094/SG/SCOPP/BCPE du 12/11/2026</a>");
+    }
+  });
+
+  it("still shows VigiEau's level for the one zone where it differs once it serves the order", async () => {
+    // Saint-Leu's rivers: alert in the order, vigilance on VigiEau.
+    withVigieau(updated("2026-11-12T00:00:00.000Z", undefined, (z) => z.code === "04_974_13" && z.type === "SUP" && (z.niveauGravite = "vigilance")));
+    const ile = body(await restrictionsEau(cache(), undefined));
+    expect(ile.vigieau).toBeUndefined();
+    expect(ile.communes.filter((c: { vigieau_differe?: unknown }) => c.vigieau_differe).map((c: { commune: string }) => c.commune)).toEqual(["Saint-Leu"]);
+    const sl = body(await restrictionsEau(cache(), "Saint-Leu"));
+    expect(sl.niveaux).toEqual({ eau_du_robinet: "alerte", rivieres_et_sources: "alerte", nappes: "vigilance" });
+    expect(sl.vigieau_differe).toEqual([{ commune: "Saint-Leu", ressource: "rivières et sources", arrete: "alerte", vigieau: "vigilance" }]);
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    expect(page.split("VigiEau\u00a0:")).toHaveLength(2);
+    expect(page).toContain("VigiEau\u00a0: vigilance</small>");
+  });
+
   it("puts Saint-Joseph in crisis first, with the annex's rules for that level, as written", async () => {
     withVigieau(raw);
     const d = await buildSecheresse(cache());

@@ -9,6 +9,7 @@ import { listeAllegee, nomDeSource, SERVER_ICONS, SOURCES_COURT, VERSION } from 
 import { citation, citerOf, cite } from "../src/tools/citer.js";
 import { dataDate, fraicheur, instantOf, sourceMuette } from "../src/tools/fraicheur.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
+import { resolvePlace } from "../src/places/resolve.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-24T09:20:00Z");
@@ -74,6 +75,10 @@ describe("the server's instructions", () => {
     // without « La Réunion »; the English line with it.
     const head = text.slice(0, 512);
     for (const must of ["La Réunion (974) en direct", "mesurée", "même sans « La Réunion »", "Cilaos", "Réunion Island live public data"]) expect(head).toContain(must);
+    // Places of the island known elsewhere by the same name: on 14/11/2026, « ça souffle comment au Colorado ? » was
+    // answered from the web, on the American state. Each of them is in the gazetteer.
+    expect(head).toContain("même un nom connu ailleurs (Colorado, Bellevue, La Montagne)");
+    for (const nom of ["Colorado", "Bellevue", "La Montagne"]) expect(resolvePlace(nom)?.lieu.commune, nom).toBeTruthy();
     expect(text.slice(0, text.indexOf("\n"))).not.toContain("Outils");
     // Who makes the service, then the index, early.
     expect(text.indexOf("https://rundata.re/a-propos")).toBeLessThan(text.indexOf("\n- "));
@@ -125,7 +130,9 @@ describe("the server's instructions", () => {
     // 39 301 the same day with L'Étang-Salé among the mairies read, and the OTI Est's agenda, suspended, no longer named.
     // 39 352 on 7/11/2026 with a school's name in annuaire_services_publics (« avec le nom s'il est connu », an example).
     // 39 446 the same day with a collège's IPS and results in annuaire_services_publics (a few words, validated).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_446);
+    // 39 476 on 14/11/2026 with « ça souffle au Colorado ? » among meteo_actuelle's examples: a place of Saint-Denis that
+    // Haiku took for the American state, answering from the web without calling any tool (bench of 14/11).
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_476);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

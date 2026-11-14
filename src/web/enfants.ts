@@ -81,8 +81,15 @@ function eventLi(r: Row, g: Porte): string {
  * A place's second line: its address, its age and today's hours on the left, « Y aller » on the right, so that the name
  * has the width of the first line (data-run, 29/10: under the name alone, the button nearly doubled the list's height).
  */
+/** A pool's hours that no open source gives, and the commune's pages that announce them when known (vie/enfants.ts). */
+function poolHours(l: enfants.Lieu): string {
+  const h = enfants.poolHours(l);
+  if (!h) return "";
+  return ` <small class="hor">${esc(h.texte)}${h.lien ? ` (<a href="${esc(h.lien)}" rel="noopener">${esc(`site de la mairie ${deCommune(l.commune)}`)}</a>)` : ""}</small>`;
+}
+
 const second = (l: enfants.Lieu, nom: string, a: enfants.Age, today: string | undefined, g: Porte) =>
-  `<span class="l2"><span>${l.adresse ? `<small class="adr">${esc(l.adresse)}</small> ` : ""}${badge(a)}${today ? ` <small>${esc(`aujourd'hui ${today}`)}</small>` : ""}</span>` +
+  `<span class="l2"><span>${l.adresse ? `<small class="adr">${esc(l.adresse)}</small> ` : ""}${badge(a)}${today ? ` <small>${esc(`aujourd'hui ${today}`)}</small>` : poolHours(l)}</span>` +
   `${g.aller({ nom, lat: l.lat, lon: l.lon, adresse: l.adresse })}</span>`;
 
 function placeLi(l: enfants.Lieu, now: Date, g: Porte): string {

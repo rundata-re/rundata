@@ -153,6 +153,26 @@ describe("annuaire_services_publics, asked about children", () => {
   });
 });
 
+describe("a pool's hours, which no open source gives", () => {
+  it("are said not published, the commune's pages linked where they were checked, on the tool and on both pages", () => {
+    const pools = enfants.LIEUX.filter((l) => l.type === "piscine");
+    for (const l of pools) expect(enfants.poolHours(l)?.texte).toMatch(/^Horaires et fermetures\u00a0: non publiés en données ouvertes/);
+    expect(enfants.LIEUX.filter((l) => l.type !== "piscine").every((l) => !enfants.poolHours(l))).toBe(true);
+    const b = body(enfantsAnswer("piscine", "Saint-Philippe", NOW));
+    const baril = b.lieux.find((l: { nom: string }) => /Puits des Anglais/.test(l.nom));
+    expect(baril.horaires).toBe("Horaires et fermetures\u00a0: non publiés en données ouvertes\u00a0; la mairie les annonce sur ses pages");
+    expect(baril.horaires_lien).toBe("https://saintphilippe.re/?s=piscine");
+    const leu = body(enfantsAnswer("piscine", "Saint-Leu", NOW)).lieux[0];
+    expect(leu.horaires).toBe("Horaires et fermetures\u00a0: non publiés en données ouvertes");
+    expect(leu.horaires_lien).toBeUndefined();
+    const link = '(<a href="https://saintphilippe.re/?s=piscine" rel="noopener">site de la mairie de Saint-Philippe</a>)';
+    expect(enfantsCommunePage(O, pageOf("saint-philippe")!, null, NOW)).toContain(link);
+    const island = enfantsPage(O, null, NOW);
+    expect(island).toContain(link);
+    expect(island.split("Horaires et fermetures\u00a0: non publiés en données ouvertes").length - 1).toBe(pools.length);
+  });
+});
+
 describe("the children's page", () => {
   const row = (titre: string, date: string, age?: string) =>
     ({ titre, quand: "samedi 24/10 de 10:00 à 11:00", date, commune: "Saint-Leu", lieu: "Médiathèque", genres: ["enfants"], lien: "https://example.re/", publie_par: "Saint-Leu", ...(age ? { age } : {}) }) as any;

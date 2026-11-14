@@ -184,6 +184,21 @@ export function hoursToday(l: Lieu, now: Date): string | undefined {
   const all = withMinutes({ horaires_osm: l.horaires_osm });
   return spansOn({ horaires_osm: l.horaires_osm }, now)?.map(([de, a]) => tranche(de, a, all)).join(" et ");
 }
+/**
+ * What a pool without hours says instead (avis of a user, 14/11/2026): no open source gives a pool's hours or its
+ * closures, which the communes announce on their own pages. Only a link, never their text (rule 3 bis): the
+ * commune's search for « piscine », where it was checked to answer.
+ */
+export const POOL_PAGES: Record<string, string> = {
+  "Saint-Philippe": "https://saintphilippe.re/?s=piscine",
+};
+export function poolHours(l: Lieu): { texte: string; lien?: string } | undefined {
+  if (l.type !== "piscine" || l.horaires_osm) return undefined;
+  const lien = POOL_PAGES[l.commune];
+  return lien
+    ? { texte: typo("Horaires et fermetures : non publiés en données ouvertes ; la mairie les annonce sur ses pages"), lien }
+    : { texte: typo("Horaires et fermetures : non publiés en données ouvertes") };
+}
 export const HOURS_NOTE = typo("Les horaires viennent d'OpenStreetMap : vérifiez auprès du lieu avant de vous déplacer, surtout un jour férié.");
 
 /** The sources of a list of places, each once, in OpenStreetMap, Data ES, Basilic order. */

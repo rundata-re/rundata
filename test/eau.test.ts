@@ -8,7 +8,10 @@ import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteN
 import { distributeur } from "../src/eau/distributeurs.js";
 import { gather } from "../src/eau/ile.js";
 import { eauPage } from "../src/web/domains.js";
+import { coupuresCommunePage, reseauxCommune } from "../src/web/coupures.js";
+import { PAGES } from "../src/web/places.js";
 import { esc } from "../src/web/map.js";
+import { a } from "../src/articles.js";
 import { mapPoints, tabStops } from "./cartes.js";
 
 // Hub'Eau for Saint-Pierre and the ministry's page of the plage de l'Hermitage centre, read on 24/10/2026: the latest
@@ -119,6 +122,36 @@ describe("qualité de l'eau", () => {
     expect(sansPrelevement("2026-09-30", NOW)).toBeUndefined();
     expect(sansPrelevement("2026-10-02", new Date("2026-11-05T04:00:00Z"))).toBe("Aucun prélèvement publié par l'ARS depuis le 02/10/2026 (4 semaines).");
     expect(sansPrelevement(undefined, NOW)).toBeUndefined();
+  });
+
+  it("keeps each network of a commune with its districts and its last sample, the ARS's conclusion quoted on its page", async () => {
+    const ile = await gather(cache(), NOW);
+    const c = ile.communes.find((x) => x.reseaux_detail?.some((r) => r.quartiers.length && r.conclusion))!;
+    expect(c).toBeDefined();
+    expect(c.reseaux_detail).toHaveLength(c.reseaux);
+    const r = c.reseaux_detail!.find((x) => x.quartiers.length && x.conclusion)!;
+    expect(r.derniere_analyse).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const html = reseauxCommune(c.commune, c);
+    const at = a(c.commune);
+    expect(html).toContain(`<p>${esc(at.charAt(0).toUpperCase() + at.slice(1))}, l'eau du robinet passe par ${c.reseaux} réseau`);
+    expect(html).toContain(`Réseau ${esc(r.reseau)}<small>${esc(r.quartiers.join("\u00a0; "))}</small>`);
+    expect(html).toContain(`Dernier prélèvement le ${r.derniere_analyse!.split("-").reverse().join("/")}. Conclusion de l'ARS\u00a0: «\u00a0${esc(r.conclusion!.trim())}\u00a0»`);
+    // A name with its article: « au Tampon », never « Le Tampon est desservie »; « géré » agrees with one network.
+    const one = { ...c, reseaux_detail: c.reseaux_detail!.slice(0, 1) };
+    expect(reseauxCommune("Le Tampon", one)).toContain("<p>Au Tampon, l'eau du robinet passe par 1 réseau de distribution");
+    expect(reseauxCommune("Les Avirons", one)).toContain("<p>Aux Avirons, l'eau du robinet passe par 1 réseau");
+    expect(reseauxCommune("Saint-Paul", one)).toContain("<p>À Saint-Paul, l'eau du robinet passe par 1 réseau");
+    expect(reseauxCommune("Le Tampon", one)).not.toMatch(/gérés par|est desservie/);
+    // Never said by us: only the ARS's conclusion, in quotes.
+    expect(html.replace(/«[^»]*»/g, "")).not.toMatch(/potable|conforme/i);
+    // On the commune's page, above « who distributes the water »; a copy gathered before has no list, the page as before.
+    const p = PAGES.find((x) => x.commune && x.nom === c.commune)!;
+    const eau = { value: { ...ile, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false };
+    const page = coupuresCommunePage("https://rundata.re", p, { coupures: null, eau }, NOW);
+    expect(page.indexOf(`Réseau ${esc(r.reseau)}<small>`)).toBeGreaterThan(0);
+    expect(page.indexOf(`Réseau ${esc(r.reseau)}<small>`)).toBeLessThan(page.indexOf('id="h-qui"'));
+    const old = { ...eau, value: { ...eau.value, communes: eau.value.communes.map(({ reseaux_detail: _, ...x }) => x) } };
+    expect(coupuresCommunePage("https://rundata.re", p, { coupures: null, eau: old }, NOW)).not.toMatch(/l'eau du robinet passe par \d+ réseau/);
   });
 
   it("says on /eau, under the count, that no sample was published for weeks, and gives the note without « toutes les deux semaines »", async () => {

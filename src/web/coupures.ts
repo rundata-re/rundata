@@ -10,7 +10,7 @@ import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
 import { de, deNom } from "../articles.js";
 import { a } from "../tools/format.js";
-import type { Alerte, CoupuresAnswer, EauAnswer, SecheresseAnswer } from "./data.js";
+import type { Alerte, CoupuresAnswer, DernierAvis, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
 import { afterCutNote, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
@@ -46,6 +46,44 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? man
 /** « des Eaux de La Possession », « de la CIREST », « d'un distributeur » : who published the notices, after « avis ». */
 const ofBy = (by: string) =>
   by.startsWith("Eaux de La Possession") ? `des ${by}` : by.startsWith("CIREST") ? `de la ${by}` : by === "le distributeur" ? "du distributeur" : deNom(by);
+
+/** « 05/11/2026 à 15:09 », Réunion time; the day only for a source that gives no time (La Créole). */
+function publieLe(n: DernierAvis): string {
+  const local = new Date(Date.parse(n.publie) + 4 * 3600_000).toISOString();
+  const day = local.slice(0, 10).split("-").reverse().join("/");
+  return n.jour ? day : `${day} à ${local.slice(11, 16)}`;
+}
+
+/**
+ * The commune's latest notices, past ones too, as their feeds still list them, without those shown above: each its
+ * day, its publisher and its link. Never « terminé »: only what the notice says, behind its link (marketing).
+ */
+export function derniersAvis(commune: string, w: WaterCopies, shown: { titre: string; publie_le?: string }[]): string {
+  const list = (w.coupures?.value.derniers_avis?.[commune] ?? []).filter((n) => !shown.some((x) => x.titre === n.titre));
+  if (!list.length) return "";
+  const oldest = Date.parse(w.coupures?.value.plus_ancien_avis?.[commune] ?? "");
+  const day = Number.isFinite(oldest) ? new Date(oldest + 4 * 3600_000).toISOString().slice(0, 10).split("-").reverse().join("/") : "";
+  const scope = `<p class="note">Ce sont les avis que les flux des distributeurs listent encore, pas un historique complet${day ? ` : le plus ancien date du ${day}` : ""}.</p>`;
+  return `<h3>Derniers avis publiés ${esc(a(commune))}</h3>
+  <ul class="plain">${list.map((n) => `<li>${n.lien ? `<a href="${esc(n.lien)}" rel="noopener">${esc(n.titre)}</a>` : esc(n.titre)} <span class="note">publié le ${esc(publieLe(n))} par ${esc(n.distributeur)}</span></li>`).join("")}</ul>
+  ${scope}`;
+}
+
+/**
+ * The networks of the commune's tap water, the districts the ARS gives for each, and its last sample: its day and the
+ * ARS's conclusion, quoted, never « potable » nor « conforme » said by us (marketing); a day long past said as it is.
+ */
+export function reseauxCommune(commune: string, c: EauAnswer["communes"][number]): string {
+  const rows = c.reseaux_detail;
+  if (!rows?.length) return "";
+  const dist = distributeur(commune);
+  const by = dist && !dist.partage ? `, géré${rows.length > 1 ? "s" : ""} par ${esc(dist.nom)}` : "";
+  // « Au Tampon », « Aux Avirons », « À Saint-Paul »: no verb to agree with the commune's name.
+  const at = a(commune);
+  return `<p>${esc(at.charAt(0).toUpperCase() + at.slice(1))}, l'eau du robinet passe par ${rows.length} réseau${rows.length > 1 ? "x" : ""} de distribution${by}, d'après l'ARS :</p>
+  <ul class="rows eau">${rows.map((r) => `<li><span>Réseau ${esc(r.reseau)}${r.quartiers.length ? `<small>${esc(r.quartiers.join(" ; "))}</small>` : ""}</span>` +
+    `<span class="note">${r.derniere_analyse ? `Dernier prélèvement le ${esc(r.derniere_analyse.split("-").reverse().join("/"))}${r.conclusion ? `. Conclusion de l'ARS : « ${esc(r.conclusion.trim())} »` : ""}` : "Pas d'analyse publiée depuis 6 mois"}</span></li>`).join("")}</ul>`;
+}
 
 /** The commune's page's tile: a cut or not, its drought level, its tap water. */
 export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
@@ -138,6 +176,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 
   const tap = x.robinet
     ? `<section aria-labelledby="h-robinet"><div class="sec-h"><p class="eyebrow">Contrôle sanitaire de l'ARS</p><h2 id="h-robinet">L'eau du robinet ${esc(where)}</h2></div>
+  ${reseauxCommune(p.nom, x.robinet)}
   <ul class="zones">${tapCard(x.robinet)}</ul><p class="note"><a href="/eau">L'eau du robinet de chaque commune, et la baignade →</a></p></section>`
     : `<p class="note"><a href="/eau">La qualité de l'eau du robinet, commune par commune →</a></p>`;
 
@@ -186,13 +225,14 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const body = `<section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
   ${list}
+  ${derniersAvis(p.nom, w, x.avis)}
   ${d ? afterCutNote : ""}
 </section>
+${tap}
 ${cyclone.lead ? cyclone.html : ""}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>
   <div class="two">${distBlock}${drought}</div>
 </section>
-${tap}
 ${others}
 ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}

@@ -44,7 +44,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
   // Sudéau's site linked on the pages of the communes whose water it distributes (14/11/2026).
-  coupures: 16,
+  // Each commune's latest notices, past ones too, for its page (`derniers_avis`, 14/11/2026).
+  coupures: 17,
   courant: 8,
   crues: 3,
   cyclones: 11,

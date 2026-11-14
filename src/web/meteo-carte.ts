@@ -1461,6 +1461,33 @@ export const skipNear = (v: number, n: number, max: number, most: number, over: 
   const k = skipOf(v, n, max);
   return most >= 1 && k > most && (v * n) / most <= max * over + 1e-9 ? most : k;
 };
+/** A window of the radar as the replay's files hold it (pluie-retro.ts): its cells and hatches run-length encoded. */
+type Fenetre = { fin: string; de?: string; pannes?: string[]; pluie: string; mal_vu: string };
+/**
+ * Windows played one in so many (skipOf) as one: from the first one's start to the last one's end, at each cell the
+ * strongest rain and the hatches of any, worked out when first drawn. One window of 3 hours in 4 over 7 days at ×4,
+ * an hour of the rain was never shown, and two images in a row shared 15 % of their rain (10 % in WebKit at 390 px,
+ * 28 pairs in 28 faded 4 hours apart, the rain 23 cells further on): the rain jumped sideways (the user, 07/11/2026:
+ * « l'impression de décalage latéral toujours »); the 4 windows as one, 40 %. The replay's script takes it as its text.
+ */
+export const unionOf = (es: Fenetre[]): Fenetre => {
+  const z = es[es.length - 1];
+  const o = { fin: z.fin, de: es[0].de ?? z.de, pannes: [...new Set(es.flatMap((e) => e.pannes ?? []))] } as Fenetre;
+  for (const k of ["pluie", "mal_vu"] as const) {
+    let m = "";
+    const p: PropertyDescriptor = { enumerable: true };
+    p.get = () => {
+      if (m) return m;
+      const g = es.map((e) => e[k].split(",").map((r) => (r ? r[0].repeat(parseInt(r.slice(1), 36)) : "")).join(""));
+      const c = g[0].split("");
+      for (const x of g) for (let i = 0; i < c.length; i++) if (x[i] > c[i]) c[i] = x[i];
+      m = c.join("").replace(/(.)\1*/g, (r) => r[0] + r.length.toString(36) + ",");
+      return m;
+    };
+    Object.defineProperty(o, k, p);
+  }
+  return o;
+};
 /**
  * Whether a device keeps up with `n` new images of the rain a second and `frames` frames drawn a second (30 unless
  * asked): its time measured (cw: a new image's, another frame's, the frames a second; null before the measure) fits
@@ -1496,7 +1523,7 @@ const P=${js({ ...REJEU_PATHS, "24h+": FINS["24h"], "7j+": FINS["7j"] })},JP=${j
 // A layer's new images a second at ×1 (the radar's, or one an hour), at the speed one in kk of them (IMAGES_MAX), and so
 // many shown a second (ne); the rain's, up to IM (IMAGES_FAST for a device that keeps up), or one in m of them, its
 // images within WAY_MS, up to IMAGES_OVER times IM (skipNear), unless the device fell behind (DN).
-const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};
+const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf},unite=${unionOf};
 const kk=(n,x,m)=>skipNear(V,n,x||${IMAGES_MAX},DN?0:m||0,${IMAGES_OVER}),ne=(n)=>V*n/kk(n),ips=(l)=>(l==="p"?DU[d]/ST[d]:DU[d]/36e5)*1e3/PL[d];
 const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5},SN={"6h":6e4,"24h":18e4,"7j":6e5,"24h+":0,"7j+":0,jour:0},DU={"6h":216e5,"24h":864e5,"7j":6048e5,"24h+":864e5,"7j+":6048e5,jour:864e5};
 // The longest time between two images of the radar faded into each other: 10 minutes over 6 hours, half an hour in the
@@ -1534,7 +1561,9 @@ out.push({s,big,c:mk("circle",{cx:s.x,cy:s.y,r:big?34:17},g),t:big?mk("text",{cl
 let IM=${IMAGES_MAX},IQ="",DN=false,PN=0,FD=30,D6=false;const FW=[],NR=()=>Math.floor(${WAY_MS}/ST[d]);
 const imx=()=>{const q=V+" "+PN+" "+d;if(IQ!==q){IQ=q;IM=DN?${IMAGES_MAX}:imagesMaxOf(CW,slow,V,ips("p"),${KEEPS_UP},${KEEPS_UP_FPS},${IMAGES_MAX},${IMAGES_FAST});
 FD=!D6&&IM>${IMAGES_MAX}&&keepsUp(CW,slow,V*ips("p")/kk(ips("p"),IM,NR()),${KEEPS_UP},${KEEPS_UP_FPS},60)?60:30}return IM};
-const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){c=[n,k.filter((x,i)=>i%n===0||i===k.length-1)];KS.set(k,c)}return c[1]};
+const KS=new WeakMap(),sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;if(!k||n<2)return k;let c=KS.get(k);if(!c||c[0]!==n){
+// The rain's windows (each its start, de) shown one in n further apart than WAY_MS, faded: each with those it skips (unite).
+const w=l==="p"&&n*ST[d]>${WAY_MS},o=[];let j=0;k.forEach((x,i)=>{if(i%n===0||i===k.length-1){const g=k.slice(j,i+1);o.push(w&&g.length>1&&g.every((y)=>y.e&&y.e.de)?{t:x.t,e:unite(g.map((y)=>y.e))}:x);j=i+1}});c=[n,o];KS.set(k,c)}return c[1]};
 // Playing, never held on a moment (momentAt): the time written moves on with the picture.
 const moment=${momentAt},at=(l)=>{const k=sub(l),n=k===K[l]?1:KS.get(K[l])[0];return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)};
 // The stations of an hour, as the page's scripts take them: [x, y, altitude, °C], or [x, y, u, v] in km/h (y down).

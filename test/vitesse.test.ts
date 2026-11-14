@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { journeeOf } from "../src/web/data.js";
 import { installationsReplay, productionChart } from "../src/web/electricite-carte.js";
-import { IMAGES_FAST, IMAGES_MAX, IMAGES_OVER, imagesMaxOf, keepsUp, rejeuScript, skipNear, skipOf } from "../src/web/meteo-carte.js";
+import { IMAGES_FAST, IMAGES_MAX, IMAGES_OVER, imagesMaxOf, keepsUp, rejeuScript, skipNear, skipOf, unionOf } from "../src/web/meteo-carte.js";
 import { CSS } from "../src/web/pages.js";
 import { VITESSE_JS, VITESSES, vitesseBouton } from "../src/web/vitesse.js";
 
@@ -88,7 +88,7 @@ describe("the speed of the replays", () => {
     expect(at(4)).toEqual([4, 3, 4, 4, 4]);
     // Never more than 7 shown a second.
     for (const v of VITESSES) for (const x of Object.values(n)) expect((v * x) / skipOf(v, x, 7)).toBeLessThanOrEqual(7);
-    expect(js).toContain(`const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf};`);
+    expect(js).toContain(`const skipOf=${skipOf},skipNear=${skipNear},keepsUp=${keepsUp},imagesMaxOf=${imagesMaxOf},unite=${unionOf};`);
     expect(js).toContain(`const kk=(n,x,m)=>skipNear(V,n,x||7,DN?0:m||0,1.2),ne=(n)=>V*n/kk(n)`);
     // Only while playing: paused, the slider shows every image.
     expect(js).toContain(`sub=(l)=>{const k=K[l],n=playing?kk(ips(l),l==="p"?imx():0,l==="p"?NR():0):1;`);
@@ -153,5 +153,32 @@ describe("the speed of the replays", () => {
     const js = rejeuScript();
     // Over the radar's images only, never once the device fell behind (DN).
     expect(js).toContain(`NR=()=>Math.floor(900000/ST[d])`);
+  });
+
+  it("shows the windows it skips with the one it shows, faded only", () => {
+    const enc = (x: string) => x.replace(/(.)\1*/g, (r) => r[0] + r.length.toString(36) + ",");
+    const win = (h: number, pluie: string, mal: string, pannes: string[] = []) => ({
+      fin: `2026-11-13T${String(h).padStart(2, "0")}:00:00Z`,
+      de: `2026-11-13T${String(h - 3).padStart(2, "0")}:00:00Z`,
+      pannes,
+      pluie: enc(pluie),
+      mal_vu: enc(mal),
+    });
+    // Four windows of 3 hours, an hour apart, the rain going east: one shown for the four, from 03:00 to 09:00.
+    const es = [win(6, "3300000000", "0000000000"), win(7, "0330000000", "1000000000", ["Colorado"]), win(8, "0003300000", "0000000000"), win(9, "0000033000", "0000000000", ["Colorado"])];
+    const u = unionOf(es);
+    expect(u.fin).toBe("2026-11-13T09:00:00Z");
+    expect(u.de).toBe("2026-11-13T03:00:00Z");
+    expect(u.pannes).toEqual(["Colorado"]);
+    expect(u.pluie).toBe(enc("3333333000"));
+    expect(u.mal_vu).toBe(enc("1000000000"));
+    // The strongest rain at each cell; the same text read twice.
+    expect(unionOf([win(6, "1200", "0000"), win(7, "2100", "0000")]).pluie).toBe(enc("2200"));
+    expect(u.pluie).toBe(u.pluie);
+    const js = rejeuScript();
+    // Never named inside (the page's script has no __name).
+    expect(js).not.toContain("__name");
+    // Playing, the rain's windows shown one in n, further apart than 15 minutes, each with those it skipped.
+    expect(js).toContain(`const w=l==="p"&&n*ST[d]>900000,o=[];let j=0;k.forEach((x,i)=>{if(i%n===0||i===k.length-1){const g=k.slice(j,i+1);o.push(w&&g.length>1&&g.every((y)=>y.e&&y.e.de)?{t:x.t,e:unite(g.map((y)=>y.e))}:x);j=i+1}});`);
   });
 });

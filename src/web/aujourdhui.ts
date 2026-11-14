@@ -331,5 +331,5 @@ ${cuts || events ? `<section aria-labelledby="h-eau-sorties"><div class="sec-h">
   <p class="sources">Sources : ${credits([...r.sources, credit(monuments.SOURCE)])}.</p>
 </section>
 ${connectorCta("resume_du_jour", `la journée ${deCommune(p.nom)}`)}`;
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, at)], alerte }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, at)], alerte, iaAside: true }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
 }

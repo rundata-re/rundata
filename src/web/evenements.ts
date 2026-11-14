@@ -164,7 +164,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
 </section>
 ${connectorCta("evenements", "les événements de l'île")}`;
 
-  return layout(origin, { title, description, path, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(dated, origin)], alerte }, band, g.ligne + body);
+  return layout(origin, { title, description, path, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(dated, origin)], alerte, iaAside: true }, band, g.ligne + body);
 }
 
 /**
@@ -238,5 +238,5 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
 </section>
 ${connectorCta("evenements", "les concerts et les sorties de l'île")}`;
 
-  return layout(origin, { title, description, path, hook: CONCERTS_HOOK, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(rows, origin)], alerte }, band, g.ligne + body);
+  return layout(origin, { title, description, path, hook: CONCERTS_HOOK, jsonld: [jsonld, webPage(origin, path, title, description, data), ...graph(rows, origin)], alerte, iaAside: true }, band, g.ligne + body);
 }

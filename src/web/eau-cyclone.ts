@@ -64,7 +64,7 @@ export function cycloneWater(now: Date, commune?: string): { html: string; lead:
     // Shared between distributors none of whose notices are read: named together.
     const shared = COMMUNES.filter((c) => !distributeur(c) && partage(c));
     const unknown = COMMUNES.filter((c) => !distributeur(c) && !partage(c));
-    lines = `<ul class="plain">
+    lines = `<ul class="plain" id="communes-lues">
   <li><b>Avis lus</b> : ${read.map(link).join(", ")}.</li>
   <li><b>Avis non lus par rundata.re</b> : ${[...new Set(unread.map((c) => distributeur(c)!.nom))].map((nom) => `${esc(nom)} (${unread.filter((c) => distributeur(c)!.nom === nom).map(link).join(", ")})`).join(", ")}${shared.map((c) => `, ${esc(partage(c)!.par.map((x) => x.nom).join(" et "))} (${link(c)})`).join("")}.</li>
   ${unknown.length ? `<li><b>Distributeur non identifié</b> : ${unknown.map(link).join(", ")}.</li>` : ""}

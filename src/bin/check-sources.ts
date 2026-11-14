@@ -208,7 +208,11 @@ export const MAX_BYTES: Record<string, number> = {
   electricite: 5_500, // 4 933
   crues_rivieres: 12_000, // 10 651
   "maree (Saint-Pierre)": 3_000, // 2 579
-  "transports (gare de Saint-Denis)": 6_500, // 5 746
+  // 7 231 on 14/11/2026 at 07:59, 7 016 once info_trafic no longer repeats the titles the summary says: 12 departures at
+  // the morning peak, 10 with their bus's live position and where it is, and 3 notices of Car Jaune (stops not served
+  // for Dipavali and other events, 627 bytes with their full text and dates); 6 374 without them. The size of the day
+  // plus a tenth, rounded up to 500.
+  "transports (gare de Saint-Denis)": 8_000, // 7 016
   "actualites (routes)": 10_500, // 9 373
   carburants: 3_000, // 2 558
   coupures_eau: 12_500, // 11 007

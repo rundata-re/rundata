@@ -197,6 +197,11 @@ describe("departures in real time", () => {
     expect(r.resume).toMatch(/d'après les annonces en direct des réseaux et les horaires publiés\u00a0: /);
     expect(r.departs.find((x: { retard_min?: number }) => x.retard_min === 5)).toBeTruthy();
     expect(r.info_trafic.map((a: { titre: string }) => a.titre)).toEqual(["Déviation à Saint-Pierre"]);
+    // With the network's full text, the title the summary says is not given again (14/11/2026: 7,3 Ko at the gare of Saint-Denis).
+    const texte = "Travaux - Déviation à Saint-Pierre le 14/11/2026 de 08h00 à 18h00.";
+    const withText = body(await transports("gare routière Saint-Pierre", undefined, NOW, withFeed({ ...feed, alerts: [{ ...feed.alerts[0], texte }] })));
+    expect(withText.resume).toContain("Déviation à Saint-Pierre");
+    expect(withText.info_trafic).toEqual([{ reseau: "Car Jaune", lignes: expect.any(Array), detail: texte }]);
     expect(r.horaires).toMatch(/^Car Jaune : heures annoncées en direct par le réseau \(flux de \d\d:\d\d\)/);
     expect(JSON.stringify(r.sources)).toMatch(/GTFS-RT/);
     // Early or on time: the participle agrees with the noun before it (marketing).

@@ -215,6 +215,8 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     avis: mine.map((n) => noticeRow(n, now, n === dry)),
     ...common,
     // The distributor named is the ARS's sanitary control's (src/eau/distributeurs.json), credited as the page does.
-    ...(unread || shared || (named && dist) ? { sources: credits([notices.SOURCE, potable.SOURCE]) } : {}),
+    // Its notices not read and none shown: the ARS alone, no notice of any distributor is used.
+    ...(unread && !mine.length && !dry ? { sources: credits([potable.SOURCE]) }
+      : unread || shared || (named && dist) ? { sources: credits([notices.SOURCE, potable.SOURCE]) } : {}),
   });
 }

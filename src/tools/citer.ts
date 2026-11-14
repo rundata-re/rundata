@@ -83,6 +83,9 @@ function stationsOf(p: Payload): { station?: unknown; source?: unknown }[] {
  * when the answer names the distributor from its samples; every notice shown from that publisher, else the whole list.
  */
 function citerCoupures(p: Payload): string {
+  // The ARS alone (a distributor whose notices are not read, none shown): who distributes the water, not what is cut.
+  const only = Array.isArray(p.sources) && p.sources.length === 1 ? (p.sources[0] as { attribution?: unknown }).attribution : undefined;
+  if (only === "ARS La Réunion, données Hub'Eau") return "rundata.re, d'après l'ARS La Réunion (données Hub'Eau)";
   const lus = p.avis_lus_sur as { publie_par?: unknown } | undefined;
   if (!lus || typeof lus.publie_par !== "string") return citation(p);
   const par = lus.publie_par;

@@ -435,12 +435,16 @@ describe("coupures d'eau", () => {
   });
 
   it("says when a commune's distributor publishes nothing read here, and names it as the page does", async () => {
-    const b = body(await coupuresEau(cache(), "Le Tampon", NOW));
+    const t = await coupuresEau(cache(), "Le Tampon", NOW);
+    const b = body(t);
     expect(b.resume).toBe("Pas d'avis en ligne lisible pour Le Tampon : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau. Voir le site de Sudéau, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: https://www.sudeau.re/, ou la mairie.");
     expect(b.distributeur).toEqual({ nom: "Sudéau", site: "https://www.sudeau.re/", d_apres: "ARS La Réunion, contrôle sanitaire des eaux distribuées (Hub'Eau), Licence Ouverte 2.0" });
     expect(b.contact).toBe("Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/le-tampon");
-    // The distributor named is the ARS's: its sanitary control is credited beside the notices.
-    expect(b.sources.map((s: { source: string }) => s.source)).toEqual(["Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie, commune de Saint-Leu)", "Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)"]);
+    // The distributor named is the ARS's, and no notice is used: its sanitary control alone is credited and cited.
+    expect(b.sources.map((s: { source: string }) => s.source)).toEqual(["Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)"]);
+    const c = body(cite("coupures_eau", t));
+    expect(c.citer).toBe("rundata.re, d'après l'ARS La Réunion (données Hub'Eau)");
+    expect(c.resume).toContain("Source : rundata.re, d'après l'ARS La Réunion (données Hub'Eau)");
     // Two distributors named by the ARS (L'Étang-Salé): runéo's notices are read, the sharing is said.
     const es = body(await coupuresEau(cache(), "L'Étang-Salé", NOW));
     expect(es.resume).toBe("Aucun avis de coupure récent ou à venir à L'Étang-Salé dans les avis de runéo\u00a0: https://www.runeo.re/. D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. Seuls les avis de runéo sont lus. Le site de la mairie de L'Étang-Salé\u00a0: https://www.letangsale.fr/.");

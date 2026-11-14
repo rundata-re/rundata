@@ -196,7 +196,7 @@ export function poolHours(l: Lieu): { texte: string; lien?: string } | undefined
   if (l.type !== "piscine" || l.horaires_osm) return undefined;
   const lien = POOL_PAGES[l.commune];
   return lien
-    ? { texte: typo("Horaires et fermetures : non publiés en données ouvertes ; la mairie les annonce sur ses pages"), lien }
+    ? { texte: typo("Horaires et fermetures : non publiés en données ouvertes ; la mairie les annonce sur ses pages"), lien }
     : { texte: typo("Horaires et fermetures : non publiés en données ouvertes") };
 }
 export const HOURS_NOTE = typo("Les horaires viennent d'OpenStreetMap : vérifiez auprès du lieu avant de vous déplacer, surtout un jour férié.");

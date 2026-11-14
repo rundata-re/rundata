@@ -70,7 +70,7 @@ import { grandRaidRow, mentionProgrammes, quand as sportDay, sportTool, type Spo
 import { cyclones, type activeRow, type carteOfficielle, type seasonRow, type suiviRow } from "../tools/cyclones.js";
 import * as cmrs from "../providers/cmrs-carte.js";
 import * as cmrsTrace from "../providers/cmrs-trace.js";
-import { historiqueMeteo } from "../tools/historique.js";
+import { historiqueMeteo, recordsReference, type RecordsReference } from "../tools/historique.js";
 import { agenda, type EventRow, mentionIle as agendaNonRepris } from "../tools/agenda.js";
 import { mentionSalles, RESUME_REUNION_FR } from "../tools/non-repris.js";
 import * as actuSource from "../providers/actualites.js";
@@ -1242,6 +1242,8 @@ export interface CyclonesAnswer {
 /** The last 30 days at six stations, one per climate of the island, against their normal. */
 export interface HistoriqueAnswer {
   resume: string;
+  /** The records of its stations of reference, for /meteo's block « Records » (tools/historique.ts). */
+  records_reference?: RecordsReference[];
   periode: { du: string; au: string; jours: number };
   stations: {
     zone: string;
@@ -1281,6 +1283,12 @@ export async function buildHistorique(cache: Cache, now = new Date()): Promise<H
     if (h?.heure_par_heure?.heures.length) d.heures = h;
   } catch (err) {
     console.error("page historique : heures indisponibles", why(err));
+  }
+  try {
+    const r = await recordsReference(cache, now);
+    if (r.length) d.records_reference = r;
+  } catch (err) {
+    console.error("page historique : records indisponibles", why(err));
   }
   return d;
 }

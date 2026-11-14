@@ -167,11 +167,22 @@ export interface Records {
   mois: { tx?: (Extreme | null)[]; tn?: (Extreme | null)[]; rr?: (Extreme | null)[] };
 }
 
-export async function records(poste: string): Promise<Records | null> {
-  const [r] = await all<{ jusqu_a: number; data: string }>("SELECT jusqu_a, data FROM records WHERE poste = ?", poste);
-  if (!r) return null;
+const recordsRow = (r: { jusqu_a: number; data: string }): Records => {
   const data = JSON.parse(r.data) as Partial<Omit<Records, "jusqu_a">>;
   return { ...data, jusqu_a: r.jusqu_a, mois: data.mois ?? {} };
+};
+
+export async function records(poste: string): Promise<Records | null> {
+  const [r] = await all<{ jusqu_a: number; data: string }>("SELECT jusqu_a, data FROM records WHERE poste = ?", poste);
+  return r ? recordsRow(r) : null;
+}
+
+/** The records of several stations, in one query: those the archive has. */
+export async function recordsMany(postes: string[]): Promise<Map<string, Records>> {
+  if (!postes.length) return new Map();
+  const rows = await all<{ poste: string; jusqu_a: number; data: string }>(
+    `SELECT poste, jusqu_a, data FROM records WHERE poste IN (${postes.map(() => "?").join(",")})`, ...postes);
+  return new Map(rows.map((r) => [r.poste, recordsRow(r)]));
 }
 
 export interface Normales {

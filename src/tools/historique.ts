@@ -304,6 +304,11 @@ async function recordsOf(s: Series, months: number[], now: Date) {
   if (!r) return undefined;
   const thisYear = +iso(now.getTime() + 4 * 3600_000).slice(0, 4);
   const extra = r.jusqu_a < thisYear ? (await climat.years([s.poste.poste], r.jusqu_a + 1, thisYear)).get(s.poste.poste) : undefined;
+  return recordsFrom(s.poste, r, extra, months);
+}
+
+/** A station's records, as the tool says them: those stored, beaten by a day of the years after them (`extra`). */
+function recordsFrom(poste: Poste, r: climat.Records, extra: Map<number, Year> | undefined, months: number[]) {
   const best = (f: Field, cur: climat.Extreme | undefined | null, beats: (a: number, b: number) => boolean, month?: number) => {
     let b = cur ?? undefined;
     for (const [y, yr] of extra ?? []) {
@@ -319,8 +324,8 @@ async function recordsOf(s: Series, months: number[], now: Date) {
   const hi = (x: number, y: number) => x > y;
   const lo = (x: number, y: number) => x < y;
   return {
-    station: s.poste.nom,
-    depuis: s.poste.debut,
+    station: poste.nom,
+    depuis: poste.debut,
     temperature_max: best("TX", r.tx, hi),
     temperature_min: best("TN", r.tn, lo),
     pluie_en_un_jour_mm: best("RR", r.rr, hi),
@@ -337,6 +342,34 @@ async function recordsOf(s: Series, months: number[], now: Date) {
         }))
       : undefined,
   };
+}
+
+/** The records of a station of reference, with its climate. */
+export type RecordsReference = NonNullable<ReturnType<typeof recordsFrom>> & { zone: string; poste: string };
+
+/**
+ * The records of the stations of reference of /historique (one per climate), for /meteo's block « Records » : two
+ * queries (their records, then the days of the years after them), none when the archive is not there.
+ */
+export async function recordsReference(cache: Cache, now: Date): Promise<RecordsReference[]> {
+  if (!climat.enabled()) return [];
+  const postes = (await climat.postes(cache)).value;
+  const tour = TOUR.flatMap(([id, zone]) => {
+    const poste = postes.find((p) => p.poste === id);
+    return poste ? [{ zone, poste }] : [];
+  });
+  const rs = await climat.recordsMany(tour.map((t) => t.poste.poste));
+  if (!rs.size) return [];
+  const thisYear = +iso(now.getTime() + 4 * 3600_000).slice(0, 4);
+  const from = Math.min(...[...rs.values()].map((r) => r.jusqu_a)) + 1;
+  const days = from <= thisYear ? await climat.years([...rs.keys()], from, thisYear) : new Map<string, Map<number, Year>>();
+  return tour.flatMap(({ zone, poste }) => {
+    const r = rs.get(poste.poste);
+    if (!r) return [];
+    // Only the years after this station's own records.
+    const extra = new Map([...(days.get(poste.poste) ?? [])].filter(([y]) => y > r.jusqu_a));
+    return [{ zone, poste: poste.poste, ...recordsFrom(poste, r, extra, []) }];
+  });
 }
 
 /** The page of a station (web/station.ts): its last 30 days, its year month by month, its records. */

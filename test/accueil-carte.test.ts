@@ -318,6 +318,10 @@ describe("the home page's island", () => {
       expect(svg.match(/<a class="mk" href="\/meteo#st-[a-z0-9-]+" aria-label="[^"]+" data-h="meteo"/g)).toHaveLength(3);
       expect(svg.match(/class="gr cx" data-k="meteo"/g)).toHaveLength(2);
       expect(svg).toMatch(/class="gr cx" data-k="meteo" style="[^"]*--l:\d+;--a:\d+/);
+      // Its label says it is three stations, not the whole island, on one line; Météo-France is in the bubble.
+      const m = /<a class="mk lb cx" href="\/meteo"[^>]* aria-label="([^"]*)"[^>]*>.*?class="t1"[^>]*>([^<]*)</.exec(svg)!;
+      expect(m[2]).toBe("MÉTÉO · 3 STATIONS");
+      expect(m[1]).toMatch(/^Météo · 3 stations\u00a0: \d+ à \d+\u202f°C\. .+ par Météo-France, voir le détail$/);
     }
     expect(CSS).toContain("@media (prefers-reduced-motion:reduce){.hm .pu,.hm .gp{display:none}.hm .gr{stroke-dashoffset:0;animation:none!important}");
   });

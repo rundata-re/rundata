@@ -160,6 +160,7 @@ import { buildStation, STATION_PATH, STATIONS, stationOf, stationPage, stationPa
 import { CUMULS_PATH, DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, rejeuCumuls, rejeuFin, rejeuJour } from "./rejeu.js";
 import { COUCHE_PATH, coucheResponse, RESUME_PATH, resumeResponse } from "./couches.js";
 import { UV_HEADERS, UV_PATH, uvMoufia } from "./uv-moufia.js";
+import { partageVideo, VIDEO_PATH } from "./partage-video.js";
 
 const HTML = {
   "content-type": "text/html; charset=utf-8",
@@ -493,6 +494,8 @@ export async function site(request: Request, cache: Cache, background: Backgroun
   // The private page of an internal trial, behind its secret link: nothing else read, and the site's 404 without it,
   // never kept nor indexed (web/uv-moufia.ts).
   if (file.startsWith(UV_PATH)) return (await uvMoufia(request)) ?? introuvable(await notFound(request));
+  // A video handed to Threads for a day, read from KV: nothing else read, the site's 404 once gone (web/partage-video.ts).
+  if (file.startsWith(VIDEO_PATH)) return (await partageVideo(request)) ?? introuvable(await notFound(request));
   // The bus trips, kept a minute at the edge (web/bord.ts): the copy as it was served.
   const copie = await bord.lire(request);
   if (copie) return copie;

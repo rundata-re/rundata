@@ -438,11 +438,10 @@ describe("coupures d'eau", () => {
     expect(b.contact).toBe("Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/le-tampon");
     // The distributor named is the ARS's: its sanitary control is credited beside the notices.
     expect(b.sources.map((s: { source: string }) => s.source)).toEqual(["Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie, commune de Saint-Leu)", "Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)"]);
-    // No distributor named by the ARS (L'Étang-Salé): the plain sentence, the contact still.
+    // Two distributors named by the ARS (L'Étang-Salé): runéo's notices are read, the sharing is said.
     const es = body(await coupuresEau(cache(), "L'Étang-Salé", NOW));
-    expect(es.resume).toBe("Pas d'avis en ligne lisible pour L'Étang-Salé : voir la mairie ou le distributeur d'eau.");
+    expect(es.resume).toBe("Aucun avis de coupure récent ou à venir à L'Étang-Salé. D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. Seuls les avis de runéo sont lus.");
     expect(es.distributeur).toBeUndefined();
-    expect(es.contact).toMatch(/la mairie : https:\/\/rundata\.re\/communes\/l-etang-sale$/);
     const sp = body(await coupuresEau(cache(NIGHT), "Saint-Paul", NIGHT));
     expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul : Interruption nocturne de la distribution du 23/10/2026.");
     expect(sp.avis[0]).toMatchObject({ publie_le: "23/10/2026", coupure: { de: "vendredi 23/10 à 22:00", a: "samedi 24/10 à 06:00", etat: "en cours" } });
@@ -604,7 +603,7 @@ describe("coupures d'eau", () => {
     });
     const b = body(await coupuresEau(cache(), undefined, NOW));
     expect(b.ne_pas_boire).toEqual(["La Plaine-des-Palmistes", "Saint-Pierre", "Salazie"]);
-    expect(b.couverture).toBe("Avis lus pour Bras-Panon, La Plaine-des-Palmistes, La Possession, Le Port, Les Trois-Bassins, Saint-André, Saint-Benoît, Saint-Denis, Saint-Leu, Saint-Louis, Saint-Paul, Saint-Pierre, Sainte-Marie, Sainte-Rose, Sainte-Suzanne et Salazie (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.");
+    expect(b.couverture).toBe("Avis lus pour Bras-Panon, L'Étang-Salé, La Plaine-des-Palmistes, La Possession, Le Port, Les Trois-Bassins, Saint-André, Saint-Benoît, Saint-Denis, Saint-Leu, Saint-Louis, Saint-Paul, Saint-Pierre, Sainte-Marie, Sainte-Rose, Sainte-Suzanne et Salazie (Dionéo, runéo, Eaux de La Possession, La Créole, la CIREST pour ses six communes, CISE Réunion par la ville de Sainte-Marie, Derichebourg Aqua OI par la commune de Saint-Leu)\u00a0: une coupure que ces sources n'annoncent pas n'apparaît pas ici. Ailleurs, voir la mairie ou le distributeur.");
     const value = await buildCoupures(cache(), NOW);
     expect(value.communes_suivies).toEqual(expect.arrayContaining(["Le Port", "Saint-Louis", "Saint-Pierre", "Sainte-Suzanne"]));
     const sp = island.paths.find((p: { nom: string }) => p.nom === "Saint-Pierre")!;
@@ -657,7 +656,7 @@ describe("coupures d'eau", () => {
     expect(extract("Coupure " + "longue ".repeat(60)).texte).toMatch(/^Coupure (?:longue ){30,}\[…\]$/);
   });
 
-  it("gives Saint-Leu's notices on its page, and for Petite-Île, Cilaos and L'Étang-Salé only a link to the mairie", async () => {
+  it("gives Saint-Leu's notices on its page, for Petite-Île and Cilaos only a link to the mairie, and L'Étang-Salé's two distributors", async () => {
     const at = new Date("2026-08-22T04:00:00Z");
     const c = new Cache(new MemoryStore(), () => at.getTime());
     const coupures = { value: await buildCoupures(c, at), fetchedAt: at };
@@ -669,9 +668,13 @@ describe("coupures d'eau", () => {
     expect(coupures.value.communes_suivies).toContain("Saint-Leu");
     expect(page("cilaos")).toContain(`<a href="https://ville-cilaos.fr/?s=coupure+d%27eau" rel="noopener">Les avis de coupure d&#39;eau sur le site de la ville de Cilaos →</a>`);
     expect(page("petite-ile")).toContain(`<a href="https://www.petite-ile.re/" rel="noopener" target="_blank">Les avis « Coupure d&#39;eau » sur le site de la ville de <span class="nb">Petite-Île</span> →</a>`);
+    // L'Étang-Salé: the ARS names runéo for 7 of its 8 networks and the mairie for one; runéo's notices are read.
     const es = page("l-etang-sale");
-    expect(es).toContain("Le distributeur de la commune n'est pas connu ici : voir la mairie. <a href=\"https://www.letangsale.fr/\" rel=\"noopener\">Le site de la mairie de L&#39;<span class=\"nb\">Étang-Salé</span> →</a>");
-    expect(es).not.toContain("Coupure d’eau");
+    expect(es).toContain("<p>D&#39;après l&#39;ARS, runéo distribue l&#39;eau de 7 réseaux sur 8 à L&#39;Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts.</p>");
+    expect(es).toContain(`Les avis de runéo sont relus au moins toutes les 30 minutes : <a href="https://www.runeo.re/" rel="noopener">le site de runéo</a>.`);
+    expect(es).toContain(`<p>Les avis de la mairie de L&#39;Étang-Salé ne sont pas lus par rundata.re. <a href="https://www.letangsale.fr/" rel="noopener">`);
+    expect(es).not.toMatch(/non identifié|pas connu ici/);
+    expect(coupures.value.communes_suivies).toContain("L'Étang-Salé");
     expect(waterLive(pageOf("cilaos")!, { coupures })).toMatchObject({ valeur: "Site pas lu" });
     // No notice of Saint-Leu at the time: said of the commune that publishes them, not of its distributor.
     const later = new Date("2026-10-24T04:00:00Z");
@@ -690,6 +693,16 @@ describe("coupures d'eau", () => {
     expect(b.resume).toBe("Pas d'avis en ligne lisible pour Cilaos : rundata.re ne lit pas les avis de coupure de RECIL, qui y distribue l'eau. Voir RECIL ou la mairie.");
     expect(b.mairie).toEqual({ libelle: "Les avis de coupure d'eau sur le site de la ville de Cilaos", lien: "https://ville-cilaos.fr/?s=coupure+d%27eau" });
     expect(body(await coupuresEau(cache(), "Saint-Leu", NOW)).mairie).toBeUndefined();
+  });
+
+  it("names L'Étang-Salé's two distributors with their networks, as the ARS does, and reads runéo's notices there", async () => {
+    const b = body(await coupuresEau(cache(), "L'Étang-Salé", NOW));
+    expect(b.resume).toMatch(/ D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts\. Seuls les avis de runéo sont lus\.$/);
+    expect(b.resume).not.toMatch(/Pas d'avis en ligne lisible|non identifié/);
+    expect(b.distributeurs).toMatchObject({ reseaux: 8, par: [{ nom: "runéo" }, { nom: "la mairie de L'Étang-Salé", reseaux: ["Sources Nouvelles les Hauts"] }] });
+    expect(b.distributeurs.par[0].reseaux).toHaveLength(7);
+    expect(b.distributeur).toBeUndefined();
+    expect(b.mairie).toBeUndefined();
   });
 
   it("serves a page per commune, none for an unknown one", async () => {

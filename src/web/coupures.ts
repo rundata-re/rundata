@@ -4,7 +4,7 @@
  * commune's own page. Cut from the copies of /coupures-eau, /secheresse and /eau: nothing more is fetched.
  */
 import type { Cached } from "../cache.js";
-import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
@@ -56,7 +56,7 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   const detail = [
     // When its notices were read, unless its site did not answer: that says its own hour.
     x.muet ? esc(x.muet.court) : x.distributeur?.avis || x.avis.length ? `avis lus ${esc(leAt(w.coupures.fetchedAt))}` : "",
-    x.distributeur ? `distributeur ${esc(x.distributeur.nom)}` : "",
+    x.distributeur ? (x.distributeur.partage ? `distributeurs ${esc(x.distributeur.partage.par.map((d) => d.nom).join(" et "))}` : `distributeur ${esc(x.distributeur.nom)}`) : "",
     x.secheresse ? `sécheresse : ${esc(x.secheresse.eau_du_robinet ?? "aucune restriction")}` : "",
     x.robinet ? (x.robinet.non_conformes_6_mois ? `robinet : ${plural(x.robinet.non_conformes_6_mois, "analyse non conforme", "analyses non conformes")} en 6 mois` : x.robinet.analyses_6_mois ? "robinet : analyses conformes" : "") : "",
   ].filter(Boolean).join(" · ");
@@ -108,9 +108,10 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       : x.muet ? ""
       : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
 
+  const unreadShare = dist?.partage?.par.filter((x) => !x.site).map((x) => x.nom) ?? [];
   const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +
     (dist
-      ? `<p><b>${esc(dist.nom)}</b> distribue l'eau ${esc(where)}, d'après le contrôle sanitaire de l'ARS.</p>` +
+      ? (dist.partage ? `<p>${esc(phrasePartage(p.nom, dist.partage))}</p>` : `<p><b>${esc(dist.nom)}</b> distribue l'eau ${esc(where)}, d'après le contrôle sanitaire de l'ARS.</p>`) +
         (dist.avis
           ? dist.site === CIREST.site
             ? `<p>Les avis de la commune, publiés par la CIREST, sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site)}" rel="noopener">les avis de la CIREST</a>.</p>`
@@ -120,11 +121,13 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
             ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la commune de Saint-Leu</a> : ils s'affichent en haut de cette page, avec un court extrait et le lien vers l'avis complet. Un avis publié en image n'est pas lu : nous donnons seulement son lien.</p>`
             : dist.site === CREOLE.url
             ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.</p>`
-            : `<p>Ses avis sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
+            : `<p>${dist.partage ? `Les avis de ${esc(dist.nom)}` : "Ses avis"} sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
           : siteDist
           ? `<p>Ses avis de coupure ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">le site de ${esc(dist.nom)}</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique «\u00a0L'eau dans ma commune\u00a0»), ou la mairie.${lienA}</p>`
           : `<p>Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.${lienA}</p>`)
       : `<p>Le distributeur de la commune n'est pas connu ici : voir la mairie.${lienA}</p>`) +
+    // A shared commune: the distributors whose notices are not read, the mairie's site linked (L'Étang-Salé).
+    (dist?.partage && unreadShare.length ? `<p>Les avis de ${esc(unreadShare.join(" et "))} ne sont pas lus par rundata.re.${lienA}</p>` : "") +
     `<p class="note">Son numéro d'urgence (fuite, coupure non annoncée) est sur la facture d'eau. <a href="/communes/${p.slug}">${esc(p.nom)} en direct : la mairie, ses horaires et son téléphone →</a></p></div>`;
 
   const drought = x.secheresse

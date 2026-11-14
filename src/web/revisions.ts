@@ -41,7 +41,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   commune: 26,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
-  coupures: 13,
+  // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
+  coupures: 14,
   courant: 8,
   crues: 3,
   cyclones: 11,
@@ -53,7 +54,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Raised with each weekly Géo'DAE list (scripts/build-dae.py, its PR opened by the Monday timer).
   dae: 10,
   dechets: 2,
-  eau: 3,
+  // The communes whose notices are read, in the tap water's note, with those shared between distributors (L'Étang-Salé).
+  eau: 4,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   electricite: 19,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).

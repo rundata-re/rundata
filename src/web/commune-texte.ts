@@ -3,7 +3,7 @@
  * site already has, each asked only when its data exists. Its own figures for each commune, and durable; no person
  * named (no mayor, no elected official). The commune's portrait is for later.
  */
-import { distributeur } from "../eau/distributeurs.js";
+import { distributeur, phrasePartage } from "../eau/distributeurs.js";
 import { reseauxDe } from "../providers/transit.js";
 import * as mf from "../providers/vigilance.js";
 import { a, de } from "../tools/format.js";
@@ -25,7 +25,10 @@ export function communeFaq(commune: string, slug: string): Faq[] {
   if (d) {
     faq.push({
       q: `Qui distribue l'eau ${a(commune)} ?`,
-      a: `${esc(d.nom)}, d'après le contrôle sanitaire de l'ARS. ${d.avis
+      // Shared between distributors: each with its networks, then where the notices read are (only ever read).
+      a: d.partage
+        ? `${esc(phrasePartage(commune, d.partage))} Les avis de coupure de ${esc(d.nom)} sont sur <a href="/coupures-eau/${esc(slug)}">la page Coupures d'eau ${esc(de(commune))}</a>.`
+        : `${esc(d.nom)}, d'après le contrôle sanitaire de l'ARS. ${d.avis
         ? `Les avis de coupure sont sur <a href="/coupures-eau/${esc(slug)}">la page Coupures d'eau ${esc(de(commune))}</a>.`
         : "Ses avis ne sont pas encore lus par rundata.re : adressez-vous à la mairie ou au distributeur."}`,
     });

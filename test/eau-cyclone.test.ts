@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import data from "../src/eau/distributeurs.json" with { type: "json" };
-import { distributeur, plusieurs } from "../src/eau/distributeurs.js";
+import { distributeur, lues, partage, reseauNom } from "../src/eau/distributeurs.js";
 import { coupuresCommunePage } from "../src/web/coupures.js";
 import { coupuresPage } from "../src/web/domains.js";
 import { pageOf } from "../src/web/places.js";
@@ -18,11 +18,17 @@ describe("after a cyclone, the tap water", () => {
   });
 
   it("names a commune's distributor only when the ARS's samples name one, and says whose notices are read", () => {
-    // L'Étang-Salé: two distributors in the samples, none chosen.
+    // L'Étang-Salé: two distributors in the samples, none chosen; each with its networks, runéo's notices read.
     expect((data.communes as Record<string, string | null>)["L'Étang-Salé"]).toBeNull();
-    expect(distributeur("L'Étang-Salé")).toBeUndefined();
-    expect(plusieurs("L'Étang-Salé")).toEqual(["la mairie de L'Étang-Salé", "runéo"]);
-    expect(coverageLine("L'Étang-Salé")).toBe("Distributeur non identifié à L'Étang-Salé : le contrôle sanitaire de l'ARS en cite plusieurs (la mairie de L'Étang-Salé et runéo). Renseignez-vous auprès de la mairie.");
+    expect(partage("L'Étang-Salé")).toEqual({ reseaux: 8, par: [
+      { nom: "runéo", site: "https://www.runeo.re/", reseaux: ["Canots les Bas", "Étang Salé Ville Est", "Étang Salé Ville Ouest", "Lafond", "Les Canots les Hauts", "Maniron Lambert les Hauts", "Sources Nouvelles"] },
+      { nom: "la mairie de L'Étang-Salé", reseaux: ["Sources Nouvelles les Hauts"] },
+    ] });
+    expect(distributeur("L'Étang-Salé")).toMatchObject({ nom: "runéo", site: "https://www.runeo.re/", avis: true });
+    expect(lues()).toContain("L'Étang-Salé");
+    expect(coverageLine("L'Étang-Salé")).toBe("D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. " +
+      "Nous lisons les avis publiés par runéo pour L'Étang-Salé, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
+    expect(reseauNom("RESEAU SCES NOUVELLES LES HAUTS")).toBe("Sources Nouvelles les Hauts");
     expect(coverageLine("Le Tampon")).toBe("Les avis de Sudéau, qui distribue l'eau au Tampon, ne sont pas lus par rundata.re : renseignez-vous auprès de Sudéau ou de la mairie.");
     expect(coverageLine("Saint-Paul")).toBe("Nous lisons les avis publiés par La Créole pour Saint-Paul, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     // Sainte-Marie: CISE Réunion's notices, as the ville posts them; Les Avirons, also CISE Réunion, is not read.
@@ -38,11 +44,11 @@ describe("after a cyclone, the tap water", () => {
     for (const html of [cycloneWater(OCTOBER).html, ...["Saint-Paul", "Saint-Denis", "L'Étang-Salé", "Cilaos"].map((c) => cycloneWater(OCTOBER, c).html)])
       expect(html).not.toMatch(/eau potable|rétabli|aucun avis/i);
     const island = cycloneWater(OCTOBER).html;
-    expect(island).toContain("<b>Distributeur non identifié</b>");
+    expect(island).not.toContain("Distributeur non identifié");
     expect(island).toMatch(/Sudéau \(<a href="\/coupures-eau\/[a-z-]+">[^<]+<\/a>, <a href="\/coupures-eau\/[a-z-]+">[^<]+<\/a>/);
     expect(island).toContain(`CISE Réunion (<a href="/coupures-eau/les-avirons">Les Avirons</a>)`);
     const read = /<b>Avis lus<\/b> : (.*?)<\/li>/.exec(island)![1];
-    for (const c of ["Saint-Paul", "Les Trois-Bassins", "Sainte-Marie"]) expect(read).toContain(`>${c}</a>`);
+    for (const c of ["Saint-Paul", "Les Trois-Bassins", "Sainte-Marie", "L&#39;Étang-Salé"]) expect(read).toContain(`>${c}</a>`);
     expect(island.match(/Sudéau \(/g)).toHaveLength(1);
     expect(island).toContain('<a href="https://www.eaudurobinet.re/" rel="noopener" aria-label="');
   });

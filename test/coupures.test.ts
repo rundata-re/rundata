@@ -239,13 +239,15 @@ describe("coupures d'eau", () => {
     for (const page of [isle, salazie]) {
       expect(doubleIds(page)).toEqual([]);
       // The tap water: a link to /eau on the pages, never the tool's name.
-      expect(page).toMatch(/se brosser les dents\. La conformité de l'eau du robinet, d'après les analyses de l'<abbr[^>]*>ARS<\/abbr>\s:\svoir <a href="\/eau">la qualité de l'eau<\/a>\.<\/p>/);
+      // What to know after a cut, in the ARS's words, with its leaflet: nothing of our own (no « laisser couler avant de la boire »).
+      expect(page).toMatch(/suivre les consignes de cet avis\. Source\s:\s<a href="https:\/\/www\.lareunion\.ars\.sante\.fr\/system\/files\/2024-08\/D%C3%A9pliant%20COUPURE%20D&#39;EAU-web\.pdf" rel="noopener">le dépliant «\sCoupure d'eau\s» de l'(?:<abbr[^>]*>)?ARS(?:<\/abbr>)? La Réunion<\/a>\. La conformité de l'eau du robinet, d'après les analyses de l'(?:<abbr[^>]*>)?ARS(?:<\/abbr>)?\s:\svoir <a href="\/eau">la qualité de l'eau<\/a>\.<\/p>/);
+      expect(page).not.toMatch(/laisser couler|bouillie au moins/);
       expect(page).not.toContain("qualite_eau");
       expect(page).toContain('<section aria-labelledby="h-coupures-eau">');
       expect(page).toContain('<aside class="avis wrap" id="avis" aria-labelledby="h-avis">');
     }
     // The tool still names the tool for the tap water, for the assistant.
-    expect(body(await coupuresEau(cache(later), "Salazie", later)).a_savoir).toMatch(/se brosser les dents\. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau\.$/);
+    expect(body(await coupuresEau(cache(later), "Salazie", later)).a_savoir).toBe("D'après l'ARS La Réunion, quand l'eau revient au robinet après une coupure, elle peut être impropre à la consommation pendant plusieurs heures\u00a0: ne pas la boire ni s'en servir pour préparer les repas, préférer l'eau en bouteille, et la garder pour la toilette, les WC et le ménage. Quand un avis dit de ne pas boire l'eau, suivre les consignes de cet avis. Source\u00a0: le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion, https://www.lareunion.ars.sante.fr/system/files/2024-08/D%C3%A9pliant%20COUPURE%20D'EAU-web.pdf. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.");
     const day = resume(pageOf("salazie")!, { coupures } as never, later);
     expect(day.resume).toContain("\u00a0; 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day.resume).not.toContain("coupure d'eau");

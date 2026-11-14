@@ -13,6 +13,15 @@ const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.co
 const get = (path: string, ua?: string) =>
   new Request(`${O}${path}`, { headers: { accept: "text/html", ...(ua ? { "user-agent": ua } : {}) } });
 
+/**
+ * A page that says its own subject is not read: every wording of it in the code (web/coupures.ts, tools/coupures.ts,
+ * web/eau-cyclone.ts, tools/resume.ts). Not a source named beside the subject and not read (the OVPF's Facebook page,
+ * on /volcan with its data: « que nous ne lisons pas »), nor a read still to come (« pas encore lues : prochaine lecture »), nor one
+ * distributor of a commune whose others are read (« Les avis de la mairie ne sont pas lus »), nor the water's question
+ * on a commune's page, whose subject is the commune (web/commune-texte.ts).
+ */
+const NON_LU = /(?:nous ne lisons|ne lit) pas (?:les |ses |d')avis|avis de coupure[^.]{0,80}ne sont pas (?:encore )?lus|leurs avis ne sont pas lus|avis du distributeur[^.]{0,40}ne sont pas lus/i;
+
 async function sitemap(): Promise<string[]> {
   const xml = await (await handle(get("/sitemap.xml"), new Cache(new MemoryStore()))).text();
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].slice(O.length) || "/");
@@ -37,7 +46,8 @@ describe("the sitemap, as a search engine's robot reads it", () => {
       const vu = await b.text();
       // A page unavailable for now (503, the bus without their database here) is not indexed either way.
       if (b.status === 200 && (/<meta name="robots" content="[^"]*noindex/.test(vu) || /noindex/.test(b.headers.get("x-robots-tag") ?? ""))) fautes.push(`${path} : noindex`);
-      if (/nous ne lisons pas/i.test(texteVisible(vu))) fautes.push(`${path} : « nous ne lisons pas »`);
+      const nonLu = texteVisible(vu).match(NON_LU);
+      if (nonLu) fautes.push(`${path} : « ${nonLu[0]} »`);
     }
     expect(fautes.join("\n")).toBe("");
   }, 600_000);
@@ -56,6 +66,8 @@ describe("the sitemap, as a search engine's robot reads it", () => {
     const cache = new Cache(new MemoryStore());
     const coupure = await (await counted(0, () => handle(get(`/coupures-eau/${nonLues[0].slug}`), cache))).value.text();
     expect(coupure).toContain('<meta name="robots" content="noindex">');
+    // What keeps it out: the guard above would see it.
+    expect(texteVisible(coupure)).toMatch(NON_LU);
     const station = await (await counted(0, () => handle(get(stationPath(STATIONS[0].id)), cache))).value;
     expect(station.status).toBe(200);
     expect(await station.text()).not.toContain("noindex");
@@ -72,6 +84,27 @@ describe("the sitemap, as a search engine's robot reads it", () => {
     expect(robot.headers.get("cache-control")).toBe("no-store");
     // Google ignores a 5xx's headers: no noindex, which could only confuse another engine.
     expect(robot.headers.get("x-robots-tag")).toBeNull();
+  });
+
+  it("knows every wording of a page whose own subject is not read", () => {
+    for (const t of [
+      "Nous ne lisons pas les avis de coupure de Sudéau : voir la mairie.",
+      "Pas d'avis en ligne lisible pour Le Tampon : rundata.re ne lit pas les avis de coupure de Sudéau, qui y distribue l'eau.",
+      "D'après l'ARS, Sudéau distribue l'eau au Tampon, et rundata.re ne lit pas ses avis.",
+      "Les avis de coupure de Sudéau ne sont pas lus par rundata.re\u00a0: voir son site.",
+      "Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.",
+      "D'après l'ARS, deux distributeurs. Leurs avis ne sont pas lus par rundata.re.",
+      "Les avis du distributeur du Tampon ne sont pas lus par rundata.re : voir la mairie.",
+    ]) expect(t, t).toMatch(NON_LU);
+    for (const t of [
+      "Les offres ne sont pas encore lues : prochaine lecture prévue à 10:30.",
+      "Les avis de la mairie ne sont pas lus par rundata.re.",
+      "Sudéau, d'après le contrôle sanitaire de l'ARS. Ses avis ne sont pas encore lus par rundata.re : adressez-vous à la mairie ou au distributeur.",
+      "Avis non lus par rundata.re : Sudéau (Le Tampon).",
+      "L'OVPF publie aussi sur Facebook, que nous ne lisons pas : suivre sa page officielle.",
+      "Programme sportif de la commune : rundata.re ne lit pas ce document, il en donne seulement le lien.",
+      "Un événement Facebook n'est pas un flux ouvert, et rundata.re ne lit pas Facebook.",
+    ]) expect(t, t).not.toMatch(NON_LU);
   });
 
   it("reads « se charge » in the visible text only, not in a script's message", () => {

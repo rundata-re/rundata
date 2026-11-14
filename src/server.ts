@@ -129,13 +129,13 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.568";
+export const VERSION = "1.0.569";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
 // then the index of the tools and the rules. What each tool does, and the words its answers
 // must carry (15 ou 112, a closed trail is forbidden, the tides are computed), is in its description.
-const INSTRUCTIONS = `rundata.re : La Réunion (974) en direct, d'après les données publiques : sorties, randos, météo mesurée aux stations, routes, vigilance, volcan, mer, bus, eau. Ces outils répondent aux questions sur l'île et ses lieux, même sans « La Réunion » dans la question (Cilaos, Saint-Gilles, le Maïdo…). / Réunion Island live public data; each answer carries its citation, link, sources and data time.
+const INSTRUCTIONS = `rundata.re : La Réunion (974) en direct, d'après les données publiques : sorties, randos, météo mesurée aux stations, routes, vigilance, volcan, mer, bus, eau. Ces outils répondent aux questions sur l'île et ses lieux, même sans « La Réunion » dans la question (Cilaos, Saint-Gilles, le Maïdo…), même un nom connu ailleurs (Colorado, Bellevue, La Montagne). / Réunion Island live public data, cited.
 Service fait à La Réunion, sans compte ni publicité, code libre (MIT) : https://rundata.re/a-propos. Outils, les plus récents d'abord :
 ${INDEX}
 
@@ -321,7 +321,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "l'heure de la dernière pluie et le cumul depuis minuit, pour « il a plu quand à Saint-Joseph ? », « combien est-il tombé cette nuit ? »\u00a0; " +
         "la température max et min depuis minuit (temperature_depuis_minuit) : « quelle était la température max aujourd'hui à Saint-Pierre ? », « il a fait combien au plus chaud aujourd'hui ? ». " +
         "Pour toute question sur le temps qu'il fait en ce moment : « quel temps fait-il à Saint-Denis ? », " +
-        "« il fait chaud à la plage de l'Hermitage ? », « il pleut à Cilaos ? », « y a-t-il du vent à Saint-Pierre ? », « il fait froid au Maïdo ? ». " +
+        "« il fait chaud à la plage de l'Hermitage ? », « il pleut à Cilaos ? », « y a-t-il du vent à Saint-Pierre ? », « il fait froid au Maïdo ? », « ça souffle au Colorado ? ». " +
         "Renvoie des mesures datées avec la station, sa distance, son altitude, et un avertissement " +
         "quand le lieu a un autre microclimat (altitude, versant au vent ou sous le vent). " +
         "Pour plus tard (demain, ce soir, ce week-end), utiliser prevision_meteo. " +

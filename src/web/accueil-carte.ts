@@ -196,7 +196,8 @@ function meteo(h: HomeLive, now: Date): Sujet | undefined {
   const range = thin(`${fourchette(fr(Math.round(Math.min(...t))), fr(Math.round(Math.max(...t))))} °C`);
   const times = l.map((s) => s.time).sort();
   return {
-    id: "meteo", k: "Météo", src: "Météo-France", value: range, color: COLOURS.meteo, href: HREF.meteo, temp: true, pousse: true,
+    // The label says it is not the whole island: « 3 stations », Météo-France being in the bubble (too wide beside it).
+    id: "meteo", k: "Météo", src: `${l.length} ${plural(l.length, "station", "stations")}`, value: range, color: COLOURS.meteo, href: HREF.meteo, temp: true, pousse: true,
     pts: l.map((s) => project(s.lon, s.lat) as P),
     // The bubble adds what the label has not (marketing): each station's value.
     tip: { place: l.map((s) => `${shortName(s.nom)} ${thin(`${fr(Math.round(s.temperature!))} °C`)}`).join(" · "), value: "", detail: `mesurées ${when(times[0], now)}${times.length > 1 && hm(times[0]) !== hm(times[times.length - 1]) ? ` et ${hm(times[times.length - 1])}` : ""} par Météo-France` },

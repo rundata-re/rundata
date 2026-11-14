@@ -30,7 +30,7 @@ import { a, communeDite, de, enGrand, fourchette, fr } from "../tools/format.js"
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
-import type { Alerte, Credit, DepuisMinuit, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
+import type { Alerte, Credit, DepuisMinuit, HistoriqueAnswer, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
 import { joursDuJour, vigilanceLue } from "./data.js";
 import { CSS_CHIFFRES, enChiffres } from "./en-chiffres.js";
 import { hasZones, ZONES_SCRIPT } from "./defilement.js";
@@ -2149,8 +2149,9 @@ export function placeLinks(except?: string, hubs = false): string {
     `<div class="rien" id="rien" hidden>${none}</div>`;
 }
 
-const WEATHER_NOTES = `<section aria-labelledby="h-lire">
-  <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-lire">Comment lire ces données</h2></div>
+// Its own id, h-notes: h-lire is « Comment lire cette page » of texteStable(), on the same page.
+const WEATHER_NOTES = `<section aria-labelledby="h-notes">
+  <div class="sec-h"><p class="eyebrow">Bon à savoir</p><h2 id="h-notes">Comment lire ces données</h2></div>
   <div class="three">
     <div class="card">${icon("gauge")}<h3>Une mesure n'est pas une prévision</h3><p>Ce qui est affiché comme mesuré vient d'un capteur, avec son heure. Les prévisions viennent de modèles (AROME de Météo-France, puis le modèle européen) et portent toujours l'étiquette <span class="badge">Prévision</span>.</p></div>
     <div class="card">${icon("mountain")}<h3>Une île, cent microclimats</h3><p>La Réunion passe de 0 à 3 000 m en 20 km, du versant au vent (Saint-Benoît, Sainte-Rose) au versant sous le vent (Saint-Paul, Saint-Leu). Chaque réponse dit quelle station a mesuré, à quelle distance et à quelle altitude.</p></div>
@@ -2251,8 +2252,34 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
 
 /** The island's weather: every station, from the coast to the summits, the sea, and a page per commune or place. */
 /**
+ * The block « Records » of /meteo: the records of each station of reference of /historique (one per climate), since
+ * the first daily measurement Météo-France published for it, from its copy (recordsReference()), never written by hand. A record
+ * missing is left out, a station without any too, and the block without any station.
+ */
+export function recordsSection(h: HistoriqueAnswer | undefined): string {
+  const iso = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
+  const items = (h?.records_reference ?? []).flatMap((r) => {
+    const parts = [
+      r.temperature_max && `le plus chaud, <b>${thin(deg(r.temperature_max.valeur))}</b> le ${r.temperature_max.date}`,
+      r.temperature_min && `le plus frais, <b>${thin(deg(r.temperature_min.valeur))}</b> le ${r.temperature_min.date}`,
+      r.pluie_en_un_jour_mm && `la plus forte pluie en un jour, <b>${thin(`${fr(Math.round(r.pluie_en_un_jour_mm.valeur * 10) / 10)} mm`)}</b> le ${r.pluie_en_un_jour_mm.date}`,
+      r.rafale_max_kmh && `la plus forte rafale, <b>${thin(`${fr(r.rafale_max_kmh.valeur)} km/h`)}</b> le ${r.rafale_max_kmh.date}`,
+    ].filter(Boolean);
+    // Never a parenthesis in another: the climate's words may hold one (« nord (Saint-Denis) »).
+    return parts.length ? [`<li><b>${esc(r.station)}</b> — ${esc(r.zone)}, mesures depuis ${r.depuis} : ${parts.join(" ; ")}.</li>`] : [];
+  });
+  if (!items.length || !h) return "";
+  return `<section id="records" aria-labelledby="h-records">
+  <div class="sec-h"><p class="eyebrow">Historique</p><h2 id="h-records">Les records des stations de référence</h2>
+  <p>Une station par climat de l'île, comme sur <a href="/historique">la page Historique</a> : ses records depuis le début de ses mesures quotidiennes publiées par Météo-France, jusqu'au ${iso(h.periode.au)}. Un jour sans mesure n'est pas compté.</p></div>
+  <ul class="card plain records">${items.join("")}</ul>
+</section>`;
+}
+
+/**
  * /meteo's stable text (marketing, 14/11/2026). The stations of reference and the first year of Gillot's series from
- * the data of /historique. The record of a station comes with the block « Records », later.
+ * the data of /historique. The record of each station of reference is in the block « Records » just above it
+ * (recordsSection()).
  */
 const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. La prévision est à part, sur la page de chaque commune, et elle est toujours présentée comme une prévision.</p>
 <p>Chaque chiffre est la dernière mesure d'une station, avec son heure. Les mesures viennent de plusieurs réseaux :</p>
@@ -2276,7 +2303,7 @@ const METEO_FAQ: Faq[] = [
   { q: "Quel temps fera-t-il demain ?", a: `C'est une prévision : voyez la page de votre commune, qui la donne sur 7 jours, à part des mesures. Pour une vigilance, seul le site de Météo-France fait foi.` },
 ];
 
-export function meteoPage(origin: string, data: Cached<HomeData> | null, now = new Date(), alerte?: Alerte): string {
+export function meteoPage(origin: string, data: Cached<HomeData> | null, now = new Date(), alerte?: Alerte, historique?: HistoriqueAnswer): string {
   const l = withTempAll(data);
   const all = data?.value.toutes ?? [];
   // The page's figure, not a tile's line for a copy with no temperature (`vide`).
@@ -2374,8 +2401,10 @@ ${sea(false) ? `<section id="mer" aria-labelledby="h-mer"><div class="sec-h"><p 
   <p>Avec le connecteur, votre assistant va chercher lui-même la mesure de la station la plus pertinente (outils <code>${coupable("meteo_actuelle")}</code> et <code>${coupable("prevision_meteo")}</code>), avec son heure et sa source. Gratuit, sans compte. <a href="/mcp#h-brancher">Comment le brancher</a>.</p>
   ${connector(origin, "mcp-url")}
 </section>`;
-  // « Comment lire cette page » and the questions on both pages, with stations or without: the FAQPage below says them.
+  // After the data, on both pages, with stations or without: the block « Records », then « Comment lire cette page » and
+  // the questions, which the FAQPage below says.
   return layout(origin, { title, description, path: "/meteo", jsonld: [...jsonld, faqPage(METEO_FAQ)], alerte, iaAside: true }, band, `${body}
+${recordsSection(historique)}
 ${texteStable(meteoLire(), METEO_FAQ)}${all.length ? "" : `\n${WEATHER_NOTES}`}`);
 }
 

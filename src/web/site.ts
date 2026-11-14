@@ -309,8 +309,9 @@ let swText: string | undefined;
  * not only an assistant's reader, waits for the refresh of an old copy (`snapshot`), for a page that would say something
  * wrong from it.
  */
-export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: Date) => Promise<any>; page: (origin: string, data: Cached<any> | null, now: Date, alerte?: Alerte) => string; waits?: ReaderWaits }> = {
-  "/meteo": { key: "web:meteo", build: buildHome, page: meteoPage },
+export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: Date) => Promise<any>; page: (origin: string, data: Cached<any> | null, now: Date, alerte?: Alerte, avec?: any) => string; waits?: ReaderWaits; /** Another page's copy the page also shows, read as it is (never built for it). */ avec?: string }> = {
+  // The records of /historique's stations of reference, from its copy (block « Records »).
+  "/meteo": { key: "web:meteo", build: buildHome, page: meteoPage, avec: "web:historique" },
   "/volcan": { key: "web:volcan", build: buildVolcan, page: volcanPage },
   "/air": { key: "web:air", build: buildAir, page: airPage },
   "/electricite": { key: "web:electricite", build: buildElectricite, page: electricitePage },
@@ -766,12 +767,13 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   const domain = DOMAINS[path.replace(/(.)\/$/, "$1")];
   if (domain) {
-    const [data, a] = await Promise.all([
+    const [data, a, avec] = await Promise.all([
       snapshot(cache, domain.key, () => domain.build(cache, now), background, now, waitFor(request), domain.waits ? alsoWaits(domain.waits, readerOf(request)) : readerOf(request)),
       alerte(cache, background, now),
+      domain.avec ? cache.peek<unknown>(domain.avec).catch(() => undefined) : undefined,
     ]);
     const t = Date.now();
-    const res = page(path, (live) => domain.page(origin, live ? data : null, now, a), data, background, [rebuild(cache, domain.key, () => domain.build(cache, now))]);
+    const res = page(path, (live) => domain.page(origin, live ? data : null, now, a, live ? avec?.value : undefined), data, background, [rebuild(cache, domain.key, () => domain.build(cache, now))]);
     // The agendas' cold views, step by step (web/mesure.ts).
     const said = ligne(domain.key, mesure(), Date.now() - t);
     if (said) console.log(said);

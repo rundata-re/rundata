@@ -60,7 +60,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   emploi: 9,
   enfants: 15,
   // Un jour incomplet dit jusqu'à quelle heure, jamais présenté entier (10/11/2026).
-  historique: 6,
+  // Les records des six stations de référence rangés dans la copie (`records_reference`), pour le bloc Records de /meteo.
+  historique: 7,
   // A place said with its article (« Mesures les plus proches du Maïdo », « PRÉVISION … pour le Piton de la Fournaise »).
   // Its sea answer reads the waves of the west and the south from MFWAM, with the main swell (tools/mer.ts).
   // Its sea sentence: the satellite's pass first (« passage de cette nuit à 01:39 »), else « moyenne d'hier, 06/11 ».

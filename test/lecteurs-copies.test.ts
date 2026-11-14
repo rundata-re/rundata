@@ -7,7 +7,7 @@ import { scheduledEvery } from "../src/web/partagees.js";
 import type { MeteoAnswer } from "../src/tools/meteo.js";
 import { placePage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
-import { HOME_READER_WAIT_MS, homeWaits, LIVE_READER_WAIT_MS, oldCopy, ownWaits, readerOf } from "../src/web/site.js";
+import { HOME_READER_WAIT_MS, homeWaits, LIVE_READER_WAIT_MS, oldCopy, ownWaits, readerOf, site } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-26T15:40:00Z");
 const MIN = 60_000;
@@ -322,5 +322,70 @@ describe("a page's own copy too old to be told as the present (web/site.ts `oldC
   it("leaves the daily check of the sources to wait for the refresh", async () => {
     expect(oldCopy(new Request("https://rundata.re/", { headers: { "user-agent": "rundata-check/dev4" } }))).toBeUndefined();
     expect(await read("rundata-check/1.0", 1085)).toMatchObject({ value: 2, at: 3000 });
+  });
+});
+
+// 14/11/2026, once #1081 was live: ChatGPT-User asked /meteo/cilaos, then /meteo/salazie, and got a 503 « revenir »
+// (robots.ts) in 1.5 s, the page without its live block saying « Les mesures se chargent ». To its user, no answer at all.
+describe("a fetcher that answers someone now and a copy refused for its age, through site()", () => {
+  const KEY = "web:lieu:cilaos";
+  const meteo = {
+    resume: "",
+    stations: [{ station: "Cilaos", source: "meteofrance", altitude_m: 1197, heure_mesure: "14/11/2026 08:12", age_min: 6, mesures: { temperature: "17,3 °C" }, avertissements: [], distance_km: 0.4, pertinence: "bonne" }],
+    sources: [],
+  } as unknown as MeteoAnswer;
+  afterEach(() => vi.unstubAllGlobals());
+
+  /** /meteo/cilaos for ChatGPT-User, its copy 5 hours old, the sources answering as `fetch` does. */
+  async function ask(fetch: () => Promise<Response>) {
+    vi.stubGlobal("fetch", fetch);
+    const now = new Date();
+    let t = now.getTime() - 300 * MIN;
+    const c = new Cache(new MemoryStore(), () => t);
+    await snapshot(c, KEY, async () => ({ meteo }), () => {}, new Date(t));
+    t = now.getTime();
+    const spies = (["log", "warn", "error"] as const).map((k) => vi.spyOn(console, k).mockImplementation(() => {}));
+    const request = new Request("https://rundata.re/meteo/cilaos", { headers: { accept: "text/html", "user-agent": CHATGPT } });
+    const start = Date.now();
+    // The refresh is left behind: with sources that never answer, it never ends.
+    const r = (await site(request, c, () => {}, now))!;
+    const waited = Date.now() - start;
+    const lines = spies[0].mock.calls.map((x) => String(x[0]));
+    for (const s of spies) s.mockRestore();
+    return { status: r.status, retry: r.headers.get("retry-after"), html: await r.text(), lines, waited };
+  }
+
+  it("gives it the page, 200, saying its measures load, when the sources are slower than its wait: no 503", async () => {
+    const got = await ask(() => new Promise<Response>(() => {}));
+    expect(got.status).toBe(200);
+    expect(got.retry).toBeNull();
+    expect(got.waited).toBeLessThan(LIVE_READER_WAIT_MS + 500);
+    expect(got.html).toContain("Les mesures se chargent");
+    expect(got.html).not.toContain("17,3 °C");
+    expect(got.lines).toContain(`copie refusée pour son âge : ${KEY}, âge 300 min`);
+  });
+
+  it("gives it the page, 200, without the old figures, when the sources fail", async () => {
+    const got = await ask(async () => { throw new Error("hors ligne"); });
+    expect(got.status).toBe(200);
+    expect(got.html).not.toContain("17,3 °C");
+    expect(got.html).not.toMatch(/mesurés <b>/);
+  });
+});
+
+describe("a copy too old whose refresh fails (web/data.ts `snapshot`)", () => {
+  it("is refused too: the failed refresh gives the same copy back", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const now = new Date("2026-11-14T04:00:00Z");
+    let t = now.getTime() - 300 * MIN;
+    const c = new Cache(new MemoryStore(), () => t);
+    await snapshot(c, "web:lieu:cilaos", async () => 1, () => {}, new Date(t));
+    t = now.getTime();
+    const got = await snapshot(c, "web:lieu:cilaos", async () => { throw new Error("hors ligne"); }, () => {}, now, HOME_READER_WAIT_MS, true, undefined, { afterMs: 90 * MIN, waitMs: LIVE_READER_WAIT_MS });
+    expect(got).toBeNull();
+    expect(log).toHaveBeenCalledWith("copie refusée pour son âge : web:lieu:cilaos, âge 300 min");
+    log.mockRestore();
+    err.mockRestore();
   });
 });

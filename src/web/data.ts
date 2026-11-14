@@ -2130,7 +2130,8 @@ export async function snapshot<T>(
     const tooOld = old && (yesterday || age > old.afterMs);
     if (tooOld) {
       const newer = await within(logged, Math.max(0, old.waitMs - (Date.now() - start)));
-      if (newer) return newer;
+      // A refresh that failed gives the same copy back: refused as well.
+      if (newer && newer.fetchedAt > got.fetchedAt) return newer;
       // Counted in the logs: how often a view went without its live block rather than get an old copy.
       console.log(`copie refusée pour son âge : ${key}, âge ${Math.round(age / 60_000)} min${yesterday ? ", d'avant minuit" : ""}`);
       background(logged);

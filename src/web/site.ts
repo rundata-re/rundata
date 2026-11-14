@@ -281,6 +281,8 @@ export function ownWaits(request: Request): [number | undefined, boolean | Reade
 const LIVE_READERS = /ChatGPT-User|Claude-User|Perplexity-User|MistralAI-User|meta-externalfetcher|DuckAssistBot/i;
 const PREVIEWS = /facebookexternalhit/i;
 export const LIVE_READER_WAIT_MS = 1300;
+/** Whether `request` comes from a fetcher that answers someone now: never told to come back later (`site`). */
+export const lecteurDirect = (request: Request) => LIVE_READERS.test(request.headers.get("user-agent") ?? "");
 /** What a view of a page's own copy does with one too old to be told as the present (web/data.ts `OldCopy`). */
 export function oldCopy(request: Request): OldCopy | undefined {
   const ua = request.headers.get("user-agent") ?? "";
@@ -504,7 +506,10 @@ export async function site(request: Request, cache: Cache, background: Backgroun
   }
   const typed = await typoPage(built.value);
   // A page whose data is not read yet (« … se charge ») is never handed to a robot: it is told to come back (robots.ts).
-  if (typed?.status === 200 && (typed.headers.get("content-type") ?? "").startsWith("text/html") && robot(request) && enChargement(await typed.clone().text())) return revenir();
+  // Not a fetcher that answers someone now (ChatGPT-User…): a 503 is no answer at all to its user, where the page
+  // without its live block says at least what it has; on 14/11/2026, /meteo/cilaos and /meteo/salazie answered it 503
+  // once its copy was refused for its age (#1081).
+  if (typed?.status === 200 && (typed.headers.get("content-type") ?? "").startsWith("text/html") && robot(request) && !lecteurDirect(request) && enChargement(await typed.clone().text())) return revenir();
   // A page whose picture depends on Save-Data says so to the shared caches that keep it a minute.
   const r = typed && built.varie ? varySaveData(typed) : typed;
   if (r?.status === 200 && request.method === "GET" && bord.gardeDe(new URL(request.url))) background(bord.garder(request, r.clone()));

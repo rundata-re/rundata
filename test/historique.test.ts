@@ -304,6 +304,29 @@ describe("nothing measured", () => {
     expect(a.sources.map((s: { source: string }) => s.source)).toContain("Stations Météo-France (mesures toutes les 6 minutes)");
   });
 
+  it("gives yesterday's rain hour by hour at every gauge of a commune, while the hourly archive has not got it", async () => {
+    plug();
+    // Made-up hours (index 0: 00:00 to 01:00), at Saint-Philippe's two gauges.
+    const h = (wet: Record<number, number>) => Array.from({ length: 24 }, (_, k) => wet[k] ?? 0);
+    const c = await kept({
+      "97417340": { rr: 41.6, rr_h: h({ 6: 7.9, 7: 33.7 }) },
+      "97417360": { rr: 0.4, rr_h: h({ 7: 0.4 }) },
+    });
+    const a = json(await historiqueMeteo(c, "Saint-Philippe", { du: "2026-10-24" }, now));
+    expect(a.hier_heure_par_heure.stations).toEqual([
+      { station: "Le Tremblet", pluie_mm: 41.6, heures_de_pluie: ["entre 6 h et 7 h : 7,9 mm", "entre 7 h et 8 h : 33,7 mm"] },
+      { station: "Le Baril", pluie_mm: 0.4, heures_de_pluie: ["entre 7 h et 8 h : 0,4 mm"] },
+    ]);
+    expect(a.resume).toContain(
+      "Pluie d'hier heure par heure, 24/10/2026, cumul des mesures horaires de Météo-France aux pluviomètres de Saint-Philippe : " +
+        "Le Tremblet 41,6 mm (entre 6 h et 7 h : 7,9 mm, entre 7 h et 8 h : 33,7 mm)\u00a0; Le Baril 0,4 mm (entre 7 h et 8 h : 0,4 mm). Les autres heures, pas de pluie mesurée.",
+    );
+    // A day kept before its hours were: the day only, as before.
+    const b = json(await historiqueMeteo(await kept({ "97417340": { rr: 41.6 } }), "Saint-Philippe", { du: "2026-10-24" }, now));
+    expect(b.hier_heure_par_heure).toBeUndefined();
+    expect(b.hier_provisoire.pluie.mm).toBe(41.6);
+  });
+
   it("takes the temperatures from the nearest station that has all their hours, when the rain's station has not", async () => {
     plug();
     const c = await kept({ "97418110": { rr: 0.4, tx: 28.1 }, "97418123": { rr: 0.6, tn: 21.9, tx: 28.4 } });

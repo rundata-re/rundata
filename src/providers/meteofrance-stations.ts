@@ -99,6 +99,9 @@ export interface Veille {
   jour: string;
   /** Whether the package had the day's last hour: if not, the next pass reads it again. */
   complet: boolean;
-  /** Each station with a value over all 24 hours: rain in mm, the lowest and the highest temperature in °C. */
-  stations: Record<string, { rr?: number; tn?: number; tx?: number }>;
+  /**
+   * Each station with a value over all 24 hours: rain in mm, the lowest and the highest temperature in °C. `rr_h`, its
+   * rain hour by hour (index 0: 00:00 to 01:00), with `rr` (absent from a day kept before 15/11/2026).
+   */
+  stations: Record<string, { rr?: number; rr_h?: number[]; tn?: number; tx?: number }>;
 }

@@ -339,7 +339,9 @@ describe("a fetcher that answers someone now and a copy refused for its age, thr
   /** /meteo/cilaos for ChatGPT-User, its copy 5 hours old, the sources answering as `fetch` does. */
   async function ask(fetch: () => Promise<Response>) {
     vi.stubGlobal("fetch", fetch);
-    const now = new Date();
+    // A fixed time, 12:00 at La Réunion: from 00:00 to 05:00 a copy 5 hours old is from before midnight, and is
+    // refused saying so.
+    const now = new Date("2026-11-14T08:00:00Z");
     let t = now.getTime() - 300 * MIN;
     const c = new Cache(new MemoryStore(), () => t);
     await snapshot(c, KEY, async () => ({ meteo }), () => {}, new Date(t));

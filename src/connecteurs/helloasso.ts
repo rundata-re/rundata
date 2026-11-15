@@ -229,7 +229,7 @@ export const HELLOASSO: Plateforme = {
   champs: ["client_id", "client_secret"],
   verifier,
   acceder,
-  lire: (jeton, organisation, connus) => lire(jeton, organisation, connus),
+  lire,
 };
 
 /** For the tests: a reading at a given time. */

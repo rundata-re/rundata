@@ -83,7 +83,8 @@ export async function lireUne(now = new Date(), apres?: () => Promise<void>): Pr
     if (acces.secret && acces.secret !== secret) await d.run("UPDATE connexions SET secret = ? WHERE id = ?", await chiffre.chiffrer(acces.secret, ad), c.id);
     const gardes = await d.all<EvenementPublic>(`SELECT ${CHAMPS.join(", ")} FROM evenements_connectes WHERE connexion = ?`, c.id);
     const connus = new Map(gardes.map((e) => [e.id, Object.fromEntries(Object.entries(e).filter(([, v]) => v !== null)) as unknown as EvenementPublic]));
-    const lus = await p.lire(acces.jeton, c.organisation, connus);
+    // At the run's own time: the events to come are those after `now`, never after the clock of the machine.
+    const lus = await p.lire(acces.jeton, c.organisation, connus, now);
     const avant = new Map(gardes.map((e) => [e.id, ligne(e)]));
     const changes = lus.filter((e) => avant.get(e.id) !== ligne(e));
     const effaces = await d.run("DELETE FROM evenements_connectes WHERE connexion = ? AND id NOT IN (SELECT value FROM json_each(?))", c.id, JSON.stringify(lus.map((e) => e.id)));

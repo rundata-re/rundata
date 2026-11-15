@@ -79,10 +79,10 @@ export interface Plateforme {
    */
   acceder(secret: string): Promise<Acces>;
   /**
-   * Its public events to come. `connus`: those kept from the last reading, by id, so that an event not changed since
+   * Its public events to come after `now`. `connus`: those kept from the last reading, by id, so that an event not changed since
    * is not read again in detail.
    */
-  lire(jeton: string, organisation: string, connus: ReadonlyMap<string, EvenementPublic>): Promise<EvenementPublic[]>;
+  lire(jeton: string, organisation: string, connus: ReadonlyMap<string, EvenementPublic>, now: Date): Promise<EvenementPublic[]>;
 }
 
 /** A postcode of La Réunion: the associations and the events taken are the island's only. */

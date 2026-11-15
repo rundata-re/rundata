@@ -180,7 +180,7 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   const pool = data.infos.filter((i) => i.publie >= since && (!what || what.test(i)));
 
   const commune = res?.lieu.commune;
-  // A place inside a commune (Ravine des Cabris) is looked for by its own name too.
+  // A place inside a commune (La Plaine des Cafres) is looked for by its own name too.
   // What names it itself comes first.
   const place = said ?? (res && res.lieu.type !== "commune" ? normalize(res.lieu.nom).replace(/^(le|la|les|l) /, "") : undefined);
   const own = (i: src.Info) => !!place && ` ${normalize(`${i.lieux.join(" ")} ${i.titre} ${i.resume ?? ""}`)} `.includes(` ${place} `);

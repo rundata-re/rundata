@@ -45,8 +45,8 @@ const LONG_CANDIDATES = 2;
  * to October 2026, the rain of the station chosen and of the best one on the other side differ alike up to 150 m
  * (ratio of the larger to the smaller, 5 mm added to each, 2,2 at the 75th percentile and 3,6 at the 90th), then more
  * and more (2,6 and 4,2 from 150 to 200 m, 2,8 and 5,3 beyond). The same 150 m as the warning and the « bonne »
- * relevance of representativeness.ts. La Ravine des Cabris (236 m), October 2026: 2 mm at Pierrefonds (21 m), 13,9 mm
- * at Bras-Long (510 m), 6 km from each.
+ * relevance of representativeness.ts. Petite-Île (306 m), from 1 to 23 October 2026: 2 mm at Pierrefonds (21 m), 12,7 mm
+ * at Bras-Long (510 m), 15 and 17 km away.
  */
 export const AUTRE_ALTITUDE_M = 150;
 /** Hour by hour on its own up to this many days, on demand up to HOURLY_MAX. */

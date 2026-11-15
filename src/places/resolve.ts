@@ -210,7 +210,7 @@ function resolve(text: string): Resolution | null {
 
   // An exact name scores above any other kind of match, and comes alone. Among names that differ only by their small
   // words (« Plaine des Sables », « La Plaine aux Sables »), the one written as asked comes first, its article aside
-  // (« Ravine des Cabris » is the town of La Ravine des Cabris as much as the ravine).
+  // (« Ravine Blanche » is the town of La Ravine Blanche as much as the ravine).
   const bare = (s: string) => normalize(s).replace(/^(?:le|la|les|l) /, "");
   const asked = bare(text);
   // A dash between names lists places (« La Plaine – Bois-de-Nèfles »): not one name that only differs from them by its

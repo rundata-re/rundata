@@ -53,12 +53,12 @@ describe("historique_meteo", () => {
 
   it("takes rain, temperatures and sunshine from the best station for each, day by day", async () => {
     const queries = plug();
-    const a = json(await historiqueMeteo(new Cache(), "Ravine des Cabris", { jours: 14 }, NOW));
+    const a = json(await historiqueMeteo(new Cache(), "Petite-Île", { jours: 14 }, NOW));
     expect(a.periode).toEqual({ du: "10/10/2026", au: "23/10/2026", jours: 14 });
     expect(a.stations.map((s: { station: string; mesure: string }) => [s.station, s.mesure])).toEqual([
       ["Saint-Pierre Pierrefonds (aéroport)", "pluie, températures et rafales"],
       ["Pont-Mathurin", "ensoleillement"],
-      // 215 m below the place: the rain gauge above it too.
+      // 285 m below the place: the rain gauge above it too.
       ["Bras-Long", "pluie, à une autre altitude"],
     ]);
     expect(a.jours).toHaveLength(14);
@@ -66,7 +66,7 @@ describe("historique_meteo", () => {
     expect(a.pluie).toMatchObject({ total_mm: 1, jours_de_pluie: 1, normale_mm: 8 });
     expect(a.temperatures).toMatchObject({ maximales_moyenne: 28, maximales_normale: 27.6 });
     expect(a.ensoleillement).toMatchObject({ jours_gris: 2, jours_mesures: 14 });
-    expect(a.resume).toMatch(/^La Ravine des Cabris, du 10\/10\/2026 au 23\/10\/2026 : 1 mm de pluie/);
+    expect(a.resume).toMatch(/^Petite-Île, du 10\/10\/2026 au 23\/10\/2026 : 1 mm de pluie/);
     // Its records since 1999, the years after the stored ones included.
     expect(a.records.rafale_max_kmh).toEqual({ valeur: 180, date: "22/01/2002" });
     expect(a.records.par_mois[0].mois).toBe("octobre");
@@ -76,13 +76,13 @@ describe("historique_meteo", () => {
 
   it("gives the rain also above the place when its rain gauge is more than 150 m below it, never instead of it", async () => {
     plug();
-    // La Ravine des Cabris (236 m), October 2026: Pierrefonds, 215 m below, had 2 mm; Bras-Long, 274 m above, 13,9 mm.
-    const a = json(await historiqueMeteo(new Cache(), "Ravine des Cabris", { du: "01/10/2026", au: "23/10/2026" }, NOW));
-    expect(a.stations[0]).toMatchObject({ station: "Saint-Pierre Pierrefonds (aéroport)", mesure: "pluie, températures et rafales", ecart_altitude_m: -215 });
+    // Petite-Île (306 m), from 1 to 23 October 2026: Pierrefonds, 285 m below, had 2 mm; Bras-Long, 204 m above, 12,7 mm.
+    const a = json(await historiqueMeteo(new Cache(), "Petite-Île", { du: "01/10/2026", au: "23/10/2026" }, NOW));
+    expect(a.stations[0]).toMatchObject({ station: "Saint-Pierre Pierrefonds (aéroport)", mesure: "pluie, températures et rafales", ecart_altitude_m: -285 });
     expect(a.pluie.total_mm).toBe(2);
-    expect(a.pluie_autre_altitude).toMatchObject({ station: "Bras-Long", altitude_m: 510, distance_km: 6.4, ecart_altitude_m: 274, total_mm: 12.7, jours_mesures: 23 });
+    expect(a.pluie_autre_altitude).toMatchObject({ station: "Bras-Long", altitude_m: 510, distance_km: 16.8, ecart_altitude_m: 204, total_mm: 12.7, jours_mesures: 23 });
     expect(a.stations.map((s: { station: string; mesure: string }) => [s.station, s.mesure])).toContainEqual(["Bras-Long", "pluie, à une autre altitude"]);
-    expect(a.resume).toContain("Saint-Pierre Pierrefonds (aéroport) est 215\u00a0m plus bas que La Ravine des Cabris\u00a0; plus haut, à Bras-Long (510\u00a0m, 6,4\u00a0km, direction N), 12,7\u00a0mm de pluie sur la même période.");
+    expect(a.resume).toContain("Saint-Pierre Pierrefonds (aéroport) est 285\u00a0m plus bas que Petite-Île\u00a0; plus haut, à Bras-Long (510\u00a0m, 16,8\u00a0km, direction NNO), 12,7\u00a0mm de pluie sur la même période.");
     // Within 150 m, one station as before.
     const c = json(await historiqueMeteo(new Cache(), "Cilaos", { du: "01/10/2026", au: "23/10/2026" }, NOW));
     expect(c.pluie_autre_altitude).toBeUndefined();

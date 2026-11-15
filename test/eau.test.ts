@@ -70,8 +70,8 @@ describe("qualité de l'eau", () => {
   });
 
   it("finds the network of the quartier asked, and what went off the limits", async () => {
-    const b = body(await qualiteEau(cache(), "Ravine des Cabris", undefined, NOW));
-    expect(b.resume).toBe("Eau du robinet, réseau Usine Dassy Conde à La Ravine des Cabris : dernière analyse le 24/08/2026 : NON CONFORME\u00a0; 6 analyses non conformes sur 16 en 6 mois.");
+    const b = body(await qualiteEau(cache(), "Condé", undefined, NOW));
+    expect(b.resume).toBe("Eau du robinet, réseau Usine Dassy Conde à Condé : dernière analyse le 24/08/2026 : NON CONFORME\u00a0; 6 analyses non conformes sur 16 en 6 mois.");
     expect(b.eau_du_robinet.reseau.non_conformites[0]).toEqual({
       date: "24/08/2026",
       prelevements: 3,

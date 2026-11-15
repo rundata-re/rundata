@@ -30,7 +30,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays
   // small (« St Gilles-les-Hauts »), and starts a part of the name after « - » or « <> » (« Les Jacarandas - La Plaine »).
   // Two quoted stop names of a network alert joined by a bare comma spaced (« "Bourg du 23ème", "Gare…" »).
-  bus: 14,
+  // A departure of today's service links its trip without « ?jour= » (robots.txt forbids the trips: one address a trip).
+  bus: 15,
   // The Moon between its main phases said once in the summary: « Lune décroissante », not « Lune : Lune décroissante ».
   calendrier: 5,
   // sensors.social among the air's sources, under ODbL (09/11/2026).
@@ -40,7 +41,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
-  commune: 26,
+  // Its bus departures of today's service link their trip without « ?jour= », as on /bus.
+  commune: 27,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).

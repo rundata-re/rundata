@@ -1649,7 +1649,7 @@ export async function buildBus(now = new Date(), cache?: Cache): Promise<BusData
       gares.push({
         commune: groups[0].commune,
         arrets: groups.map((g) => ({ nom: g.nom, reseau: transit.NETWORKS[g.reseau]?.nom ?? g.reseau, ...(transit.pageOfStop(g.ids[0]) ? { page: transit.pageOfStop(g.ids[0])!.slug } : {}) })),
-        departs: kept.map(pageRow),
+        departs: kept.map(pageRow(now)),
         complet_min: completeMinutes(all, kept, lists[i].horizon),
       });
     });
@@ -1894,7 +1894,7 @@ export async function buildCommune(cache: Cache, p: PlacePage, now = new Date())
       return {
         gare,
         arrets: groups.map((g) => ({ nom: g.nom, reseau: transit.NETWORKS[g.reseau]?.nom ?? g.reseau })),
-        departs: shown.map(pageRow),
+        departs: shown.map(pageRow(now)),
         complet_min: completeMinutes(all, shown, horizon),
         ...(alertes.length ? { alertes } : {}),
       };

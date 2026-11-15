@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { departures, findStops, pageRow, tripRun } from "../src/tools/transports.js";
+import { type Departure, departures, findStops, pageRow, todayOf, tripPath, tripRun } from "../src/tools/transports.js";
 import { tripGonePage, tripPage } from "../src/web/trajet.js";
 
 // The rows of the database for Saint-Pierre's bus station, as in test/transports.test.ts (GTFS of 23/10/2026).
@@ -33,11 +33,52 @@ async function departure() {
 }
 
 describe("the link of a departure", () => {
-  it("names its pattern and its stop within the network, and the day of its service", async () => {
+  it("names its pattern and its stop within the network, without the day for today's service", async () => {
     const d = await departure();
     expect(d.jour).toBe(20261023);
     const local = d.stop - CJ.first_stop;
-    expect(pageRow(d).trajet).toBe(`/bus/trajet/carjaune/${d.pattern - CJ.first_pattern}/${encodeURIComponent(d.trip)}?jour=20261023&arret=${local}#arret-${local}`);
+    const base = `/bus/trajet/carjaune/${d.pattern - CJ.first_pattern}/${encodeURIComponent(d.trip)}`;
+    expect(pageRow(NOW)(d).trajet).toBe(`${base}?arret=${local}#arret-${local}`);
+    // Seen the day before or the day after (a copy across midnight), the same departure keeps its day.
+    expect(pageRow(new Date("2026-10-22T03:30:00Z"))(d).trajet).toBe(`${base}?jour=20261023&arret=${local}#arret-${local}`);
+    expect(pageRow(new Date("2026-10-24T03:30:00Z"))(d).trajet).toBe(`${base}?jour=20261023&arret=${local}#arret-${local}`);
+    // Yesterday's service after midnight and tomorrow's keep their day; a link without a page's day too.
+    expect(tripPath({ ...d, jour: 20261022 } as Departure, 20261023)).toContain("?jour=20261022&arret=");
+    expect(tripPath({ ...d, jour: 20261024 } as Departure, 20261023)).toContain("?jour=20261024&arret=");
+    expect(tripPath(d)).toContain("?jour=20261023&arret=");
+  });
+
+  it("takes today as La Réunion's date, midnight included", () => {
+    expect(todayOf(new Date("2026-10-23T19:59:59Z"))).toBe(20261023);
+    expect(todayOf(new Date("2026-10-23T20:00:00Z"))).toBe(20261024);
+    expect(todayOf(new Date("2026-10-22T20:00:00Z"))).toBe(20261023);
+  });
+
+  it("without the day, opens the same run as with it: today's, the stop at the departure's time", async () => {
+    const d = await departure();
+    const local = d.pattern - CJ.first_pattern;
+    const dated = (await tripRun("carjaune", local, d.trip, 20261023, NOW))!;
+    const plain = (await tripRun("carjaune", local, d.trip, undefined, NOW))!;
+    expect(plain.jour).toBe(20261023);
+    expect(plain).toEqual(dated);
+    expect(plain.arrets!.find((s) => s.id === d.stop)!.at).toBe(NOW.getTime() + d.in * 1000);
+    // Just after midnight, a departure of the new day's service opens that day's run, not the day before's.
+    const night = new Date("2026-10-23T20:00:30Z");
+    const next = (await departures(findStops("gare routière Saint-Pierre").groups, night, 20 * 3600)).find((x) => x.reseau === "carjaune" && x.jour === 20261024 && x.pattern === d.pattern);
+    expect(next).toBeDefined();
+    if (next) {
+      expect(pageRow(night)(next).trajet).not.toContain("jour=");
+      expect((await tripRun("carjaune", local, next.trip, undefined, night))!.jour).toBe(20261024);
+    }
+  });
+
+  it("leaves out the day only where no trip runs 4 hours, as a departure listed 20 hours ahead would need", () => {
+    const longest = Math.max(...Object.values(rows).flatMap((r) => r.pattern_stops ?? []).map((r) => {
+      const stops = JSON.parse((r as unknown as { stops: string }).stops) as [number, number][];
+      return stops.at(-1)![1];
+    }));
+    expect(longest).toBeGreaterThan(0);
+    expect(longest).toBeLessThan(4 * 3600);
   });
 });
 
@@ -45,7 +86,7 @@ describe("a trip", () => {
   it("gives its stops in order with their times, from its start on the day of its service", async () => {
     const d = await departure();
     const t = (await tripRun("carjaune", d.pattern - CJ.first_pattern, d.trip, 20261023, NOW))!;
-    expect(t.ligne).toBe(pageRow(d).ligne);
+    expect(t.ligne).toBe(pageRow(NOW)(d).ligne);
     expect(t.arrets!.length).toBeGreaterThan(2);
     const at = t.arrets!.find((s) => s.id === d.stop)!;
     // The time at the stop clicked on is the departure's.

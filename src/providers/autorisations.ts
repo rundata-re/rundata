@@ -129,12 +129,18 @@ export interface LicenceDemandee {
   organisme: string;
   /** What is read there once it agrees. */
   publie: string;
-  etat: "demandee" | "accordee" | "refusee";
+  /**
+   * « retiree » once the source asked for its measures to be taken down after it had agreed: nothing is read nor served
+   * of it again, and what was kept of it is erased (scripts/meteor-retrait.ts for MétéoR-OI).
+   */
+  etat: "demandee" | "accordee" | "refusee" | "retiree";
   /** The day the request went, as given by who sent it: never guessed. */
   demandee_le: string;
   /** The day of its written yes, as given by who received it. */
   accordee_le?: string;
   refusee_le?: string;
+  /** The day it asked for its measures to be taken down. */
+  retiree_le?: string;
   /** The licence of what is taken, and the conditions of its answer. */
   licence?: string;
   conditions?: string;

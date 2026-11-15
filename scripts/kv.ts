@@ -37,3 +37,10 @@ export async function getKv<T>(key: string): Promise<T | undefined> {
   if (!res.ok) throw Object.assign(new Error(`lecture KV de ${key} refusée : HTTP ${res.status}`), { status: res.status });
   return (await res.json()) as T;
 }
+
+/** Deletes `key` from the store; nothing to do when there is none. Throws when the API refuses it. */
+export async function deleteKv(key: string) {
+  const { url, token } = where(key);
+  const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
+  if (!res.ok && res.status !== 404) throw Object.assign(new Error(`effacement KV de ${key} refusé : HTTP ${res.status}`), { status: res.status });
+}

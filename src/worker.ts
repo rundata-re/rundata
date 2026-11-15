@@ -463,7 +463,14 @@ export default {
             ecrite = copie;
             count(1, true);
             await kv.put(meteorOi.KV_KEY, JSON.stringify(copie), { expirationTtl: meteorOi.KV_TTL_SECONDS });
-          }, now);
+          }, now, async (jour, stations) => {
+            // At the pass of 23:53 in La Réunion only: the day of each station added to the days kept, for
+            // historique_meteo (providers/meteor-oi.ts JOURS_KEY). A read and a write of KV, once a day.
+            count();
+            const gardes = (await c.kept<meteorOi.Jours>(meteorOi.JOURS_KEY))?.value;
+            count(1, true);
+            await c.keep(meteorOi.JOURS_KEY, meteorOi.ajouterJour(gardes, jour, stations), meteorOi.JOURS_TTL_SECONDS);
+          });
           // The first pass after a round hour keeps that hour's rain, from the files it just read (meteor-oi.ts, heures).
           const h = meteorOi.heureDue(now);
           if (!ecrite || h === undefined) return said;

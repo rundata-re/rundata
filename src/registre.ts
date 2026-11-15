@@ -30,7 +30,7 @@ import { REFRESH_EVERY as MARCHES_EVERY, REFRESH_OFFSET as MARCHES_OFFSET, TEXTE
 import { EVENEMENT_MINUTES as EMPLOI_FICHE_EVERY, REFRESH_EVERY as EMPLOI_EVERY, REFRESH_OFFSET as EMPLOI_OFFSET } from "./providers/emploi.js";
 import { REFRESH_EVERY as IRVE_EVERY, REFRESH_OFFSET as IRVE_OFFSET } from "./providers/irve.js";
 import { REFRESH_EVERY as FFCK_EVERY, REFRESH_OFFSET as FFCK_OFFSET } from "./providers/ffck.js";
-import { REFRESH_EVERY as METEOR_EVERY, REFRESH_OFFSET as METEOR_OFFSET, STATIONS as METEOR_STATIONS } from "./providers/meteor-oi.js";
+import { JOUR_HEURE_UTC, JOUR_MINUTE_UTC, REFRESH_EVERY as METEOR_EVERY, REFRESH_OFFSET as METEOR_OFFSET, STATIONS as METEOR_STATIONS } from "./providers/meteor-oi.js";
 import { SHARED, SHARED_AFTER, type Shared } from "./web/partagees.js";
 import { COMMUNE_TILES, DOMAINS, HOME_TILES } from "./web/site.js";
 
@@ -436,6 +436,20 @@ const SCHEDULED: Entry[] = [
     every: 60,
     offset: METEOR_OFFSET,
     run: { subrequests: 2, kvReads: 1, kvWrites: 1, cpuMs: 2 },
+    from: ["src/providers/meteor-oi.ts"],
+    basis: "code",
+  },
+  // Each MétéoR-OI station's day (providers/meteor-oi.ts JOURS_KEY), for historique_meteo: at the pass of 23:53 in La
+  // Réunion only, in the same invocation as meteor:stations and its budget, from the files that pass reads anyway. The
+  // days kept read from KV and written again: a read and a write once a day (test/meteor-oi.test.ts holds the two
+  // within BUILD_BUDGET together).
+  {
+    id: "meteor:jours",
+    trigger: "planifiée à part",
+    what: "jours des stations de MétéoR-OI : la pluie depuis minuit et les températures extrêmes du jour de chaque station, prises dans les fichiers lus à 23:53 heure de La Réunion, ajoutées aux jours gardés (KV, 400 jours) pour historique_meteo",
+    every: 24 * 60,
+    offset: JOUR_HEURE_UTC * 60 + JOUR_MINUTE_UTC,
+    run: { subrequests: 2, kvReads: 1, kvWrites: 1, cpuMs: 5 },
     from: ["src/providers/meteor-oi.ts"],
     basis: "code",
   },
@@ -916,8 +930,9 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string;
   // Measured 13; 1 more while a system is active, as /cyclones.
   cyclones: { subrequests: 14, cpuMs: 70, file: "cyclones" },
   actualites: { subrequests: 10, cpuMs: 180, file: "actualites" },
-  // 10 measured, and before noon the day before kept by the scheduled event (one read of KV).
-  historique_meteo: { subrequests: 11, cpuMs: 60, file: "historique", d1: { d1Calls: 3, d1RowsRead: 300 }, basis: "estimé" },
+  // 10 measured, and before noon the day before kept by the scheduled event (one read of KV); with a place and a
+  // period since MétéoR-OI's first day kept, its days (one read of KV more, providers/meteor-oi.ts JOURS_KEY).
+  historique_meteo: { subrequests: 12, cpuMs: 60, file: "historique", d1: { d1Calls: 3, d1RowsRead: 300 }, basis: "estimé" },
   sentiers_randonnee: { subrequests: 10, cpuMs: 60, file: "sentiers" },
   vigilance_meteo: { subrequests: 10, cpuMs: 50, file: "vigilance" },
   coupures_eau: { subrequests: 9, cpuMs: 110, file: "coupures" },

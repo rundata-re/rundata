@@ -427,6 +427,18 @@ const SCHEDULED: Entry[] = [
     from: ["src/providers/meteor-oi.ts"],
     basis: "code",
   },
+  // In the same event, the first pass after each round hour: the stations' hours read from KV, that hour's rain added
+  // from the files just read, written back (meteor-oi.ts, heures). That pass costs 2 subrequests more than the others.
+  {
+    id: "meteor:heures",
+    trigger: "planifiée à part",
+    what: "stations de MétéoR-OI, la première passe après chaque heure ronde : les heures gardées lues, la pluie de l'heure ajoutée d'après les fichiers déjà lus, les heures écrites",
+    every: 60,
+    offset: METEOR_OFFSET,
+    run: { subrequests: 2, kvReads: 1, kvWrites: 1, cpuMs: 2 },
+    from: ["src/providers/meteor-oi.ts"],
+    basis: "code",
+  },
   // The radar's last 6 hours (web/pluie-retro.ts), at every run: the history read from KV, the latest image, the
   // history written when the image is new or a gap grows: 2 or 3 subrequests (counted in test/pluie-retro.test.ts,
   // without KV's token); about once a quarter of an hour, the 24 hours read and written besides (2 more); 7 at most,

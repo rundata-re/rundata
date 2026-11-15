@@ -456,11 +456,24 @@ export default {
       if (kv && autorisee(meteorOi.AUTORISATION)) {
         ctx.waitUntil(counted(BUILD_BUDGET, async () => {
           count();
+          const now = new Date();
           const before = (await kv.get(meteorOi.KV_KEY, "json")) as meteorOi.Copie | null;
-          return meteorOi.collect(before, async (copie) => {
+          let ecrite: meteorOi.Copie | undefined;
+          const said = await meteorOi.collect(before, async (copie) => {
+            ecrite = copie;
             count(1, true);
             await kv.put(meteorOi.KV_KEY, JSON.stringify(copie), { expirationTtl: meteorOi.KV_TTL_SECONDS });
-          });
+          }, now);
+          // The first pass after a round hour keeps that hour's rain, from the files it just read (meteor-oi.ts, heures).
+          const h = meteorOi.heureDue(now);
+          if (!ecrite || h === undefined) return said;
+          count();
+          const avant = (await kv.get(meteorOi.HEURES_KV_KEY, "json")) as meteorOi.Heures | null;
+          const gardees = meteorOi.heures(avant, ecrite.mesures, h);
+          count(1, true);
+          await kv.put(meteorOi.HEURES_KV_KEY, JSON.stringify(gardees), { expirationTtl: meteorOi.HEURES_KV_TTL_SECONDS });
+          const n = Object.values(gardees.st).filter((v) => v[v.length - 1] != null).length;
+          return `${said}, pluie de l'heure gardée pour ${n} stations`;
         }, (p) => ctx.waitUntil(p))
           .then(({ value, used, reads }) => console.log(`stations MétéoR-OI : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
           .catch((err) => console.error("stations MétéoR-OI : lecture impossible", why(err))));

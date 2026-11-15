@@ -83,6 +83,41 @@ describe("MétéoR-OI's stations", () => {
     expect(said).toBe(`${meteorOi.STATIONS.length} stations à jour sur ${meteorOi.STATIONS.length}, sans réponse : PAM290`);
   });
 
+  it("keeps the rain of each round hour from the first pass after it, a measure at most 10 minutes from the hour, 25 hours", () => {
+    // The passes at 3, 13… past the hour (CRON): only the first one after the hour keeps it.
+    expect(meteorOi.heureDue(new Date("2026-11-16T04:03:00Z"))).toBe(Date.parse("2026-11-16T04:00:00Z"));
+    expect(meteorOi.heureDue(new Date("2026-11-16T04:13:00Z"))).toBeUndefined();
+    expect(meteorOi.heureDue(new Date("2026-11-16T04:53:00Z"))).toBeUndefined();
+    const h = Date.parse("2026-11-16T04:00:00Z");
+    const mesures: meteorOi.Mesure[] = [
+      { code: "TBL105", mesure_a: "2026-11-16T04:02:00.000Z", pluie_1h: 33.7 },
+      { code: "CJS400", mesure_a: "2026-11-16T03:55:00.000Z", pluie_1h: 0 },
+      // Too far from the hour (a silent station's measure of the pass before): not that hour's rain.
+      { code: "LIA570", mesure_a: "2026-11-16T03:45:00.000Z", pluie_1h: 4 },
+      // No rain measured: nothing kept.
+      { code: "MDM1570", mesure_a: "2026-11-16T04:00:00.000Z", temperature: 14 },
+    ];
+    const one = meteorOi.heures(null, mesures, h);
+    expect(one.fin).toBe("2026-11-16T04:00:00Z");
+    expect(Object.keys(one.st).sort()).toEqual(["CJS400", "TBL105"]);
+    expect(one.st.TBL105).toHaveLength(meteorOi.HEURES);
+    expect(one.st.TBL105.at(-1)).toBe(33.7);
+    expect(one.st.TBL105.slice(0, -1).every((v) => v === null)).toBe(true);
+    expect(one.st.CJS400.at(-1)).toBe(0);
+    // The next hour: shifted by one, the hour before kept; an hour missed (no pass) stays empty.
+    const two = meteorOi.heures(one, [{ code: "TBL105", mesure_a: "2026-11-16T06:03:00.000Z", pluie_1h: 1.2 }], h + 2 * 3_600_000);
+    expect(two.fin).toBe("2026-11-16T06:00:00Z");
+    expect(two.st.TBL105.slice(-3)).toEqual([33.7, null, 1.2]);
+    expect(two.st.CJS400.slice(-3)).toEqual([0, null, null]);
+    // After 25 hours, a station's hours are gone, and the station with them.
+    const later = meteorOi.heures(two, [], h + 27 * 3_600_000);
+    expect(later.st).toEqual({});
+    // An older hour than the newest kept (a pass late) still goes in its place.
+    const late = meteorOi.heures(two, [{ code: "CJS400", mesure_a: "2026-11-16T05:01:00.000Z", pluie_1h: 0.4 }], h + 3_600_000);
+    expect(late.fin).toBe("2026-11-16T06:00:00Z");
+    expect(late.st.CJS400.slice(-3)).toEqual([0, 0.4, null]);
+  });
+
   it("writes nothing when no station answers, and leaves out a measure older than an hour", async () => {
     vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
     const write = vi.fn(async () => {});

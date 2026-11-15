@@ -202,6 +202,62 @@ export async function collect(before: Copie | null, write: (c: Copie) => Promise
   return `${mesures.length} stations à jour sur ${STATIONS.length}${sansReponse.length ? `, sans réponse : ${sansReponse.join(", ")}` : ""}`;
 }
 
+/**
+ * The rain of each round hour at each station, kept apart for /meteo's replay of 6 and 24 hours: written by the pass just
+ * after the hour, with the files that pass read, never a read more. Nothing of it is shown yet. Its own key, so that the
+ * copy of the last measures, which many pages read, does not grow; taken down with the rest, on the association's request.
+ */
+export const HEURES_KV_KEY = "meteor:heures";
+/** The hours kept: the replay's 24, and the one before its first. */
+export const HEURES = 25;
+export const HEURES_KV_TTL_SECONDS = 2 * 86_400;
+/**
+ * How far from a round hour a measure may be to give that hour's rain: its `rainSum1h` covers the hour up to it, so the
+ * hour kept may be shifted by this much at most.
+ */
+export const HEURE_ECART_MS = REFRESH_EVERY * 60_000;
+const HOUR_MS = 3_600_000;
+
+/** The hours kept: `fin`, the end of the newest (ISO UTC); for each station its HEURES hours up to it, oldest first, mm or null. */
+export interface Heures {
+  fin: string;
+  st: Record<string, (number | null)[]>;
+}
+
+/** The round hour (ms) whose rain the pass at `now` keeps: the one just past, for the first pass after it only. */
+export function heureDue(now: Date): number | undefined {
+  const h = Math.floor(now.getTime() / HOUR_MS) * HOUR_MS;
+  return now.getTime() - h < REFRESH_EVERY * 60_000 ? h : undefined;
+}
+
+/**
+ * The hours kept, shifted to end at the round hour `h` (ms), with the rain of the hour ending at `h` of each station
+ * whose measure is at most HEURE_ECART_MS from it. A station's hours where it measured nothing are dropped.
+ */
+export function heures(before: Heures | null, mesures: Mesure[], h: number): Heures {
+  const fin = Math.max(h, before ? Date.parse(before.fin) : 0);
+  const at = (ms: number) => HEURES - 1 - Math.round((fin - ms) / HOUR_MS);
+  const st: Record<string, (number | null)[]> = {};
+  if (before) {
+    const end = Date.parse(before.fin);
+    for (const [code, v] of Object.entries(before.st)) {
+      const out: (number | null)[] = Array(HEURES).fill(null);
+      v.forEach((x, i) => {
+        const k = at(end - (v.length - 1 - i) * HOUR_MS);
+        if (x != null && k >= 0 && k < HEURES) out[k] = x;
+      });
+      if (out.some((x) => x != null)) st[code] = out;
+    }
+  }
+  const k = at(h);
+  if (k >= 0)
+    for (const m of mesures) {
+      if (m.pluie_1h == null || Math.abs(Date.parse(m.mesure_a) - h) > HEURE_ECART_MS) continue;
+      (st[m.code] ??= Array(HEURES).fill(null))[k] = m.pluie_1h;
+    }
+  return { fin: new Date(fin).toISOString().replace(".000Z", "Z"), st };
+}
+
 export function station(s: StationMor): Station {
   return { source: SOURCE.id, id: s.code, nom: s.nom, lon: s.lon, lat: s.lat, altitude_m: s.altitude_m, variables: ["temperature", "humidite", "vent", "pluie"] };
 }

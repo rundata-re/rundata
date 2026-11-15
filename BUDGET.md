@@ -44,6 +44,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | question la plus chère, sous-requêtes | 79 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
+| tâche planifiée à part meteor:heures, sous-requêtes | 2 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 550.
 - Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 550. Le pire passage, queues comprises (532), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
@@ -59,8 +60,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée, par jour | 36 631 | 5 043 | 4 539 | 2 407 | 102 914 | 58 511 | 283 216 |
 | tâche planifiée, par jour, cadences les plus courtes | 55 763 | 6 675 | 6 843 | 2 887 | 107 954 | 58 511 | 431 496 |
 | tâche planifiée, par mois (30 jours) | 1 098 917 | 151 290 | 136 170 | 72 223 | 3 087 411 | 1 755 321 | 8 496 467 |
-| tâches planifiées à part, par jour | 5 760 | 144 | 144 |  |  |  | 2 880 |
-| tâches planifiées à part, par mois (30 jours) | 172 800 | 4 320 | 4 320 |  |  |  | 86 400 |
+| tâches planifiées à part, par jour | 5 808 | 168 | 168 |  |  |  | 2 928 |
+| tâches planifiées à part, par mois (30 jours) | 174 240 | 5 040 | 5 040 |  |  |  | 87 840 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -150,6 +151,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | meteor:stations | stations de MétéoR-OI : la copie lue, le fichier de chacune des 38 stations du portail de l'association, la copie écrite | 10 min | 00:03 | 40 | 1 | 1 |  |  |  | 20 | code |
+| meteor:heures | stations de MétéoR-OI, la première passe après chaque heure ronde : les heures gardées lues, la pluie de l'heure ajoutée d'après les fichiers déjà lus, les heures écrites | 60 min | 00:03 | 2 | 1 | 1 |  |  |  | 2 | code |
 
 ## Tâches GitHub
 
@@ -323,6 +325,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | capteurs:air | providers/capteurs |
 | capteurs:social | providers/capteurs |
 | meteor:stations | providers/meteor-oi |
+| meteor:heures | providers/meteor-oi |
 | radar:6h | providers/mf-auth, providers/radar |
 | radar:7j | providers/mf-auth, providers/radar |
 | meteofrance:jeton | providers/mf-auth |

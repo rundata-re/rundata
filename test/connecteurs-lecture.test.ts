@@ -20,7 +20,7 @@ const KEY = Buffer.alloc(32, 7).toString("base64");
 const ACCESS = "eyJhbGciOiJIUzI1NiJ9.acces.signature";
 const FIRST = "rafraichissement-premier";
 const H = 3600_000;
-// Thursday 29 October 2026, 10:00 at La Réunion: the events below are to come, whatever the day the tests run.
+// Thursday 29 October 2026, 10:00 at La Réunion, the clock of every test below: the events are to come, whatever the day the tests run.
 const NOW = new Date("2026-10-29T06:00:00Z");
 const ORG = "club-de-petanque";
 const PAGE = `https://www.helloasso.com/associations/${ORG}/evenements/`;
@@ -61,6 +61,10 @@ const secretGarde = async () => {
 };
 
 beforeEach(() => {
+  // The site's routes (handle) read the clock, as they must: it is NOW for the whole file, so that no date below ever
+  // passes. Only Date: the promises and the timers stay real.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
   sent = [];
   logged = [];
   turned = 0;
@@ -93,6 +97,7 @@ beforeEach(() => {
   for (const level of ["log", "warn", "error", "info"] as const) vi.spyOn(console, level).mockImplementation((...a: unknown[]) => void logged.push(a.map(String).join(" ")));
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   chiffre.configure(undefined);

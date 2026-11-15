@@ -126,18 +126,19 @@ const COMMON = {
 };
 
 export async function restrictionsEau(cache: Cache, lieu: string | undefined, profil: Profil = "particulier") {
-  let read: Awaited<ReturnType<typeof vigieau.zones>>;
+  let read: Awaited<ReturnType<typeof vigieau.zones>> | undefined;
   try {
     read = await vigieau.zones(cache);
   } catch (err) {
     console.error(`source ${vigieau.SOURCE.id} indisponible:`, why(err));
-    return { ...text({ erreur: "Les restrictions d'eau (VigiEau) ne répondent pas pour le moment.", consulter: vigieau.SOURCE.url }), isError: true };
   }
-  const v = enVigueur(read.value);
+  // VigiEau silent, without a copy kept: the levels of the order written by hand alone (providers/arrete-secheresse.ts),
+  // said as such, nothing read elsewhere; no level of VigiEau's to set beside them.
+  const v = read ? enVigueur(read.value) : { ...enVigueur([]), ecarts: [] };
   const zones = v.zones;
   const since = zones.map((z) => z.depuis).filter(Boolean).sort().pop();
   // VigiEau's own order, by the day it took effect, whatever the levels given.
-  const vigieauDepuis = read.value.map((z) => z.depuis).filter((x): x is string => !!x).sort().pop();
+  const vigieauDepuis = read?.value.map((z) => z.depuis).filter((x): x is string => !!x).sort().pop();
   const recent = plusRecent((await raa.copie(cache))?.value.secheresse, v, vigieauDepuis);
   const t = v.table;
   const ecartsOf = (commune?: string) => v.ecarts.filter((e) => !commune || e.commune === commune);
@@ -155,15 +156,18 @@ export async function restrictionsEau(cache: Cache, lieu: string | undefined, pr
         remplace: t.remplace,
       },
     }),
-    ...(t && v.vigieau_anterieur && {
-      vigieau: `VigiEau affiche encore l'arrêté précédent, en vigueur depuis le ${day(v.vigieau_anterieur)} (VigiEau lu le ${localTime(read.fetchedAt)}). Les niveaux donnés ici sont ceux de l'arrêté ${t.numero} du ${day(t.signe_le)}, en vigueur depuis le ${day(t.depuis)}, qui le remplace.`,
+    ...(t && !read && {
+      vigieau: `VigiEau n'a pas répondu. Les niveaux donnés ici sont ceux de l'arrêté ${t.numero} du ${day(t.signe_le)}, en vigueur depuis le ${day(t.depuis)}, d'après son texte (${t.recueil}).`,
+    }),
+    ...(t && read && v.vigieau_anterieur && {
+      vigieau: `VigiEau affiche encore l'arrêté précédent, en vigueur depuis le ${day(v.vigieau_anterieur)} (VigiEau lu le ${localTime(read!.fetchedAt)}). Les niveaux donnés ici sont ceux de l'arrêté ${t.numero} du ${day(t.signe_le)}, en vigueur depuis le ${day(t.depuis)}, qui le remplace.`,
     }),
   };
   const common = {
     arrete_du: day(since),
     ...COMMON,
     consulter: t ? t.url : vigieau.SOURCE.url,
-    sources: credits([...(t ? [arrete.SOURCE] : []), vigieau.SOURCE, ...(recent ? [raa.SOURCE] : [])]),
+    sources: credits([...(t ? [arrete.SOURCE] : []), ...(read ? [vigieau.SOURCE] : []), ...(recent ? [raa.SOURCE] : [])]),
   };
   const differe = (commune?: string) => {
     const e = ecartsOf(commune);

@@ -8,7 +8,9 @@ import { METEOR_CREDIT, credits } from "../src/web/pages.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { NON_COMPTEES } from "../src/chiffres.js";
-import { METEOR_READS, worstMain } from "../src/registre.js";
+import { METEOR_READS, REGISTRY, worstMain } from "../src/registre.js";
+import { BUILD_BUDGET } from "../src/budget.js";
+import { CLES, refus } from "../scripts/meteor-retrait.js";
 
 // The files of four stations of the association's portal, read on 09/11/2026 at 18:40, what is read of them only:
 // Marla (calm, no direction, `tempsunix`), Petite-Île's college (wind, no `tempsunix`), the rain gauge of the Grandes
@@ -186,4 +188,75 @@ describe("MétéoR-OI's stations", () => {
     expect(minutes.every((m) => m % 5 !== 0 && (m - meteorOi.REFRESH_OFFSET) % meteorOi.REFRESH_EVERY === 0)).toBe(true);
     expect(minutes).toHaveLength(60 / meteorOi.REFRESH_EVERY);
   });
+
+  it("keeps each station's day at the pass of 23:53 in La Réunion only, from the files that pass reads, no read more", async () => {
+    // 16/11/2026 at 23:50 in La Réunion: the day since midnight as the station's file writes it.
+    const dayFile = (code: string): meteorOi.Daily => ({
+      time: "16/11/2026 à 23h50",
+      stats: {
+        current: { outTemp: "18,2", rainSum1h: "0,0 mm" },
+        sinceMidnight: code === "GPN1413" ? { rainSum: "12,4 mm" } : { rainSum: "3,6 mm", tempMinValue: "16,9°C", tempMaxValue: "27,1°C" },
+      },
+    });
+    let asked = 0;
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      asked++;
+      const code = meteorOi.STATIONS.find((s) => String(input) === meteorOi.fichier(s))!.code;
+      return code === "PAM290" ? new Response("", { status: 503 }) : Response.json(dayFile(code));
+    });
+    const at = new Date("2026-11-16T19:53:20Z");
+    const kept: [string, Record<string, meteorOi.JourStation>][] = [];
+    const said = await meteorOi.collect(null, async () => {}, at, async (jour, st) => void kept.push([jour, st]));
+    expect(asked).toBe(meteorOi.STATIONS.length);
+    expect(kept).toHaveLength(1);
+    expect(kept[0][0]).toBe("2026-11-16");
+    expect(kept[0][1].CJS400).toEqual({ pluie_mm: 3.6, tmin: 16.9, tmax: 27.1, jusqu_a: "23:50" });
+    expect(kept[0][1].GPN1413).toEqual({ pluie_mm: 12.4, jusqu_a: "23:50" });
+    expect(kept[0][1].PAM290).toBeUndefined();
+    expect(said).toContain(`jour du 2026-11-16 gardé pour ${meteorOi.STATIONS.length - 1} stations`);
+    // Any other pass: no day kept.
+    for (const t of ["2026-11-16T19:43:20Z", "2026-11-16T20:03:20Z", "2026-11-16T07:53:20Z"]) {
+      expect(meteorOi.jourGarde(new Date(t)), t).toBeUndefined();
+    }
+    let other = 0;
+    await meteorOi.collect(null, async () => {}, new Date("2026-11-16T19:43:20Z"), async () => void other++);
+    expect(other).toBe(0);
+  });
+
+  it("keeps a day only from a measure of that day after 23:00, and never an absurd value", () => {
+    const d = (time: string, m: Record<string, string>): meteorOi.Daily => ({ time, stats: { sinceMidnight: m } });
+    expect(meteorOi.jourDe(d("16/11/2026 à 22h55", { rainSum: "1,0 mm" }), "2026-11-16")).toBeUndefined();
+    expect(meteorOi.jourDe(d("15/11/2026 à 23h50", { rainSum: "1,0 mm" }), "2026-11-16")).toBeUndefined();
+    expect(meteorOi.jourDe(d("16/11/2026 à 23h53", { rainSum: "N/A" }), "2026-11-16")).toBeUndefined();
+    expect(meteorOi.jourDe(d("16/11/2026 à 23h53", { rainSum: "0,2 mm", tempMinValue: "-40,0°C", tempMaxValue: "25,0°C" }), "2026-11-16")).toEqual({ pluie_mm: 0.2, tmax: 25, jusqu_a: "23:53" });
+  });
+
+  it("keeps 400 days at most, says its first, and replaces a day kept again", () => {
+    let j = meteorOi.ajouterJour(undefined, "2026-11-16", { MDM1570: { pluie_mm: 1, jusqu_a: "23:50" } });
+    expect(j.debut).toBe("2026-11-16");
+    j = meteorOi.ajouterJour(j, "2026-11-16", { MDM1570: { pluie_mm: 2, jusqu_a: "23:53" } });
+    expect(j.jours["2026-11-16"].MDM1570.pluie_mm).toBe(2);
+    j = meteorOi.ajouterJour(j, "2027-12-21", { MDM1570: { pluie_mm: 0, jusqu_a: "23:50" } });
+    expect(Object.keys(j.jours)).toEqual(["2027-12-21"]);
+    expect(j.debut).toBe("2027-12-21");
+    expect(meteorOi.JOURS_TTL_SECONDS).toBe(430 * 86_400);
+  });
+
+  it("keeps its day within the budget of its own event, with the stations' files, once a day", () => {
+    const st = REGISTRY.find((e) => e.id === "meteor:stations")!;
+    const jours = REGISTRY.find((e) => e.id === "meteor:jours")!;
+    expect(jours.trigger).toBe("planifiée à part");
+    expect(jours.every).toBe(24 * 60);
+    expect(jours.offset).toBe(19 * 60 + 53);
+    expect(meteorOi.CRON.split(" ")[0].split(",").map(Number)).toContain(meteorOi.JOUR_MINUTE_UTC);
+    expect(st.run.subrequests + jours.run.subrequests).toBeLessThanOrEqual(BUILD_BUDGET);
+  });
+
+  it("is taken down in one command, every key and the archive's copies, only once the agreement is withdrawn", () => {
+    expect(CLES).toEqual(["meteor:stations", "meteor:heures", "meteor:jours"]);
+    expect(refus("accordee")).toContain("« retiree »");
+    expect(refus("retiree")).toBeUndefined();
+    expect(autorisee(meteorOi.AUTORISATION)).toBe(true);
+  });
 });
+

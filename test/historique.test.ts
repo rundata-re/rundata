@@ -5,6 +5,8 @@ import { counted } from "../src/budget.js";
 import { Cache } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
 import { VEILLE, type Veille } from "../src/providers/meteofrance-stations.js";
+import * as meteorOi from "../src/providers/meteor-oi.js";
+import { LICENCES } from "../src/providers/autorisations.js";
 import { historiqueMeteo, nothing, parseDate, period, TODAY } from "../src/tools/historique.js";
 
 // Real rows of the archive (scripts/build-climat.py): eight stations, the years 2006, 2025 and 2026 up to 23 October.
@@ -342,3 +344,69 @@ describe("nothing measured", () => {
     expect(other.resume).not.toMatch(/cumul des mesures horaires/);
   });
 });
+
+describe("MétéoR-OI's days", () => {
+  const at = new Date("2026-11-19T08:00:00Z");
+  // Marla's days as the pass of 23:53 kept them (providers/meteor-oi.ts ajouterJour).
+  const withDays = async () => {
+    const c = new Cache();
+    let j = meteorOi.ajouterJour(undefined, "2026-11-16", { MDM1570: { pluie_mm: 4.2, tmin: 9.8, tmax: 19.4, jusqu_a: "23:50" } });
+    j = meteorOi.ajouterJour(j, "2026-11-17", { MDM1570: { pluie_mm: 11.5, tmin: 10.1, tmax: 17.9, jusqu_a: "23:50" } });
+    j = meteorOi.ajouterJour(j, "2026-11-18", { MDM1570: { pluie_mm: 0, tmin: 8.7, tmax: 20.3, jusqu_a: "23:53" } });
+    await c.keep(meteorOi.JOURS_KEY, j);
+    return c;
+  };
+
+  it("gives an amateur station's days last, never first, with the association's credit and link, from its first day kept", async () => {
+    plug();
+    const a = json(await historiqueMeteo(await withDays(), "Marla", { du: "2026-11-15", au: "2026-11-18", detail: "jour" }, at));
+    // After Météo-France's sentence, never before it.
+    expect(a.resume.startsWith("Les mesures du 15/11/2026 au 18/11/2026 ne sont pas encore disponibles")).toBe(true);
+    expect(a.resume.endsWith(
+      " Aussi, station amateur (MétéoR-OI), fiabilité non vérifiée, à Marla (1570\u00a0m, 0,5\u00a0km, direction NO)\u00a0: 15,7\u00a0mm de pluie, températures de 8,7\u00a0°C à 20,3\u00a0°C " +
+        "du 16/11/2026 au 18/11/2026, de minuit à minuit (Données : MétéoR-OI, licence CC BY-NC 4.0, https://www.meteor-oi.re).",
+    )).toBe(true);
+    expect(Object.keys(a).at(-1)).toBe("station_amateur");
+    expect(a.station_amateur).toEqual({
+      station: "Marla", nature: "station amateur (MétéoR-OI), fiabilité non vérifiée", altitude_m: 1570, distance_km: 0.5, direction: "NO",
+      du: "16/11/2026", au: "18/11/2026", jours: 3, jours_mesures: 3, pluie_mm: 15.7, temperature_min: 8.7, temperature_max: 20.3,
+      a_savoir: "Jour compté de minuit à minuit (heure de La Réunion), comme l'association le compte, relevé à 23:53\u00a0: les 7 dernières minutes de chaque jour au moins y manquent. Jours gardés par rundata.re depuis le 16/11/2026.",
+      credit: "Données : MétéoR-OI, licence CC BY-NC 4.0", lien: "https://www.meteor-oi.re", licence: "https://creativecommons.org/licenses/by-nc/4.0/deed.fr",
+    });
+    // Placed as the association's map places it: no coordinates.
+    expect(JSON.stringify(a.station_amateur)).not.toMatch(/lat|lon/);
+    expect(a.sources.map((x: { attribution: string }) => x.attribution)).toEqual(["Météo-France", "Données : MétéoR-OI, licence CC BY-NC 4.0"]);
+  });
+
+  it("reads nothing more for a period before its first day, and gives nothing once the agreement is withdrawn", async () => {
+    plug();
+    const c = await withDays();
+    let reads = 0;
+    const kept = c.kept.bind(c);
+    c.kept = (async (key: string) => (key === meteorOi.JOURS_KEY && reads++, kept(key))) as typeof c.kept;
+    expect(json(await historiqueMeteo(c, "Marla", { du: "2026-10-01", au: "2026-10-23", detail: "jour" }, at)).station_amateur).toBeUndefined();
+    expect(reads).toBe(0);
+    const l = LICENCES[meteorOi.AUTORISATION];
+    const before = l.etat;
+    l.etat = "retiree";
+    try {
+      expect(json(await historiqueMeteo(c, "Marla", { du: "2026-11-16", au: "2026-11-18", detail: "jour" }, at)).station_amateur).toBeUndefined();
+      expect(reads).toBe(0);
+    } finally {
+      l.etat = before;
+    }
+  });
+
+  it("never gives a station of « faible » pertinence, nor one that kept too few of the days asked", async () => {
+    plug();
+    // Saint-Denis: no MétéoR-OI station near enough.
+    expect(json(await historiqueMeteo(await withDays(), "Saint-Denis", { du: "2026-11-16", au: "2026-11-18", detail: "jour" }, at)).station_amateur).toBeUndefined();
+    const c = new Cache();
+    await c.keep(meteorOi.JOURS_KEY, meteorOi.ajouterJour(undefined, "2026-11-16", { MDM1570: { pluie_mm: 4.2, jusqu_a: "23:50" } }));
+    // One day kept of three asked since the first: under 60 %.
+    const few = { ...(await c.kept<meteorOi.Jours>(meteorOi.JOURS_KEY))!.value, debut: "2026-11-10" };
+    await c.keep(meteorOi.JOURS_KEY, few);
+    expect(json(await historiqueMeteo(c, "Marla", { du: "2026-11-16", au: "2026-11-18", detail: "jour" }, at)).station_amateur).toBeUndefined();
+  });
+});
+

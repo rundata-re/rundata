@@ -45,6 +45,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
 | tâche planifiée à part meteor:heures, sous-requêtes | 2 | 100 |
+| tâche planifiée à part meteor:jours, sous-requêtes | 2 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 550.
 - Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 550. Le pire passage, queues comprises (532), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
@@ -60,8 +61,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée, par jour | 36 631 | 5 043 | 4 539 | 2 407 | 102 914 | 58 511 | 283 216 |
 | tâche planifiée, par jour, cadences les plus courtes | 55 763 | 6 675 | 6 843 | 2 887 | 107 954 | 58 511 | 431 496 |
 | tâche planifiée, par mois (30 jours) | 1 098 917 | 151 290 | 136 170 | 72 223 | 3 087 411 | 1 755 321 | 8 496 467 |
-| tâches planifiées à part, par jour | 5 808 | 168 | 168 |  |  |  | 2 928 |
-| tâches planifiées à part, par mois (30 jours) | 174 240 | 5 040 | 5 040 |  |  |  | 87 840 |
+| tâches planifiées à part, par jour | 5 810 | 169 | 169 |  |  |  | 2 933 |
+| tâches planifiées à part, par mois (30 jours) | 174 300 | 5 070 | 5 070 |  |  |  | 87 990 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
@@ -152,6 +153,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | meteor:stations | stations de MétéoR-OI : la copie lue, le fichier de chacune des 38 stations du portail de l'association, la copie écrite | 10 min | 00:03 | 40 | 1 | 1 |  |  |  | 20 | code |
 | meteor:heures | stations de MétéoR-OI, la première passe après chaque heure ronde : les heures gardées lues, la pluie de l'heure ajoutée d'après les fichiers déjà lus, les heures écrites | 60 min | 00:03 | 2 | 1 | 1 |  |  |  | 2 | code |
+| meteor:jours | jours des stations de MétéoR-OI : la pluie depuis minuit et les températures extrêmes du jour de chaque station, prises dans les fichiers lus à 23:53 heure de La Réunion, ajoutées aux jours gardés (KV, 400 jours) pour historique_meteo | 1440 min | 19:53 | 2 | 1 | 1 |  |  |  | 5 | code |
 
 ## Tâches GitHub
 
@@ -249,7 +251,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | transports | l'outil transports | à chaque vue |  | 13 |  |  | 2 | 840 |  | 80 | mesuré |
 | cyclones | l'outil cyclones | à chaque vue |  | 18 | 2 | 2 |  |  |  | 70 | mesuré |
 | actualites | l'outil actualites | à chaque vue |  | 10 |  |  |  |  |  | 180 | mesuré |
-| historique_meteo | l'outil historique_meteo | à chaque vue |  | 11 |  |  | 3 | 300 |  | 60 | estimé |
+| historique_meteo | l'outil historique_meteo | à chaque vue |  | 12 |  |  | 3 | 300 |  | 60 | estimé |
 | sentiers_randonnee | l'outil sentiers_randonnee | à chaque vue |  | 14 | 2 | 2 |  |  |  | 60 | mesuré |
 | vigilance_meteo | l'outil vigilance_meteo | à chaque vue |  | 14 | 2 | 2 |  |  |  | 50 | mesuré |
 | coupures_eau | l'outil coupures_eau | à chaque vue |  | 11 | 1 | 1 |  |  |  | 110 | mesuré |
@@ -326,6 +328,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | capteurs:social | providers/capteurs |
 | meteor:stations | providers/meteor-oi |
 | meteor:heures | providers/meteor-oi |
+| meteor:jours | providers/meteor-oi |
 | radar:6h | providers/mf-auth, providers/radar |
 | radar:7j | providers/mf-auth, providers/radar |
 | meteofrance:jeton | providers/mf-auth |
@@ -390,7 +393,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /decheteries | providers/tco |
 | /cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | /crues | providers/actualites, providers/avis-eau, providers/vigicrues |
-| /historique |  |
+| /historique | providers/meteor-oi |
 | /evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | /evenements/ce-week-end | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | /evenements/concerts | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
@@ -410,7 +413,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | transports | providers/actualites, providers/avis-eau, providers/calendrier, providers/gtfsrt |
 | cyclones | providers/actualites, providers/avis-eau, providers/cmrs-carte, providers/cmrs-trace, providers/cyclones, providers/feux, providers/mf-auth, providers/prefecture, providers/vigilance |
 | actualites | providers/actualites, providers/avis-eau |
-| historique_meteo |  |
+| historique_meteo | providers/meteor-oi |
 | sentiers_randonnee | providers/feux, providers/sentiers, providers/traces |
 | vigilance_meteo | providers/feux, providers/mf-auth, providers/vigilance |
 | coupures_eau | providers/avis-eau, providers/eaupotable |

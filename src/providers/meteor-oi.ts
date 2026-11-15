@@ -135,7 +135,7 @@ export interface Copie {
 export interface Daily {
   time?: string;
   tempsunix?: string;
-  stats?: { current?: Record<string, string | undefined> };
+  stats?: { current?: Record<string, string | undefined>; sinceMidnight?: Record<string, string | undefined> };
 }
 
 /** « 14,2 », « 0.0 mm », « 1016,7 » as numbers; « N/A », empty or anything else as nothing. */
@@ -186,8 +186,16 @@ export function parse(s: StationMor, d: Daily): Mesure | undefined {
  * One pass: every station's file, at most IN_FLIGHT at once (http.ts), each with the association's User-Agent; a
  * station not read keeps its measure of the pass before, said in `sans_reponse`. Writes the copy and says what it did.
  */
-export async function collect(before: Copie | null, write: (c: Copie) => Promise<void>, now = new Date()): Promise<string> {
-  const lus = await Promise.allSettled(STATIONS.map(async (s) => parse(s, JSON.parse(await getText(SOURCE.id, fichier(s), 20_000, { "User-Agent": UA })) as Daily)));
+export async function collect(before: Copie | null, write: (c: Copie) => Promise<void>, now = new Date(), keepDay?: (jour: string, stations: Record<string, JourStation>) => Promise<void>): Promise<string> {
+  const jour = jourGarde(now);
+  const jours: Record<string, JourStation> = {};
+  const lus = await Promise.allSettled(STATIONS.map(async (s) => {
+    const d = JSON.parse(await getText(SOURCE.id, fichier(s), 20_000, { "User-Agent": UA })) as Daily;
+    // At the day's pass, the day since midnight from the same file: no read more.
+    const j = jour && keepDay ? jourDe(d, jour) : undefined;
+    if (j) jours[s.code] = j;
+    return parse(s, d);
+  }));
   const avant = new Map((before?.mesures ?? []).map((m) => [m.code, m]));
   const mesures: Mesure[] = [];
   const sansReponse: string[] = [];
@@ -199,7 +207,76 @@ export async function collect(before: Copie | null, write: (c: Copie) => Promise
   });
   if (sansReponse.length === STATIONS.length) throw new Error("aucune station de MétéoR-OI n'a répondu");
   await write({ lu: now.toISOString(), mesures, ...(sansReponse.length ? { sans_reponse: sansReponse } : {}) });
-  return `${mesures.length} stations à jour sur ${STATIONS.length}${sansReponse.length ? `, sans réponse : ${sansReponse.join(", ")}` : ""}`;
+  const n = Object.keys(jours).length;
+  if (jour && keepDay && n) await keepDay(jour, jours);
+  return `${mesures.length} stations à jour sur ${STATIONS.length}${sansReponse.length ? `, sans réponse : ${sansReponse.join(", ")}` : ""}${jour && keepDay ? `, jour du ${jour} gardé pour ${n} stations` : ""}`;
+}
+
+// --- The days kept --------------------------------------------------------------------------------------------------
+
+/**
+ * Each station's day, kept for historique_meteo: its rain since midnight and its lowest and highest temperature, as its
+ * own file says them (`stats.sinceMidnight`), taken at the pass of 23:53 in La Réunion (19:53 UTC). A day runs from
+ * midnight to midnight in La Réunion's time, as the association counts it, and its last minutes are missing: those after
+ * the station's last measure before that pass (23:50 or 23:53 at best, the last 7 minutes or more).
+ */
+export const JOURS_KEY = "meteor:jours";
+/** About 13 months: a month of last year's to compare. KV keeps the key 30 days longer. */
+export const JOURS_GARDES = 400;
+export const JOURS_TTL_SECONDS = (JOURS_GARDES + 30) * 86_400;
+/** The first day this code could keep: no read of the days for a period that ends before it. */
+export const JOURS_PREMIER = "2026-11-16";
+/** The pass that keeps the day, in UTC: the last of the day in La Réunion. */
+export const JOUR_HEURE_UTC = 19;
+export const JOUR_MINUTE_UTC = 53;
+
+/** A station's day. `jusqu_a`: its last measure that day, « 23:50 », La Réunion's time. */
+export interface JourStation {
+  pluie_mm?: number;
+  tmin?: number;
+  tmax?: number;
+  jusqu_a: string;
+}
+
+/** The days kept: by day (« 2026-11-16 », La Réunion's), by station. `debut`: the first day kept. */
+export interface Jours {
+  debut: string;
+  jours: Record<string, Record<string, JourStation>>;
+}
+
+const RE_MS = 4 * 3600_000;
+const jourRe = (t: number) => new Date(t + RE_MS).toISOString().slice(0, 10);
+
+/** The day to keep at this pass, La Réunion's, or nothing when it is not the pass of 23:53. */
+export function jourGarde(now: Date): string | undefined {
+  return now.getUTCHours() === JOUR_HEURE_UTC && now.getUTCMinutes() >= JOUR_MINUTE_UTC - 3 && now.getUTCMinutes() < JOUR_MINUTE_UTC + 7 ? jourRe(now.getTime()) : undefined;
+}
+
+/**
+ * A station's day from its file: nothing when its last measure is not of that day after 23:00, or when it measured
+ * neither rain nor temperature. An absurd value is left out, as for a measure.
+ */
+export function jourDe(d: Daily, jour: string): JourStation | undefined {
+  const t = heure(d);
+  if (!t || jourRe(t.getTime()) !== jour) return undefined;
+  const local = new Date(t.getTime() + RE_MS).toISOString().slice(11, 16);
+  if (local < "23:00") return undefined;
+  const m = d.stats?.sinceMidnight ?? {};
+  const j: JourStation = { jusqu_a: local };
+  const pluie = nombre(m.rainSum);
+  const tmin = nombre(m.tempMinValue);
+  const tmax = nombre(m.tempMaxValue);
+  if (pluie != null && pluie >= 0 && pluie < 2000) j.pluie_mm = pluie;
+  if (tmin != null && tmin > -10 && tmin < 45) j.tmin = tmin;
+  if (tmax != null && tmax > -10 && tmax < 45 && (j.tmin == null || tmax >= j.tmin)) j.tmax = tmax;
+  return Object.keys(j).length > 1 ? j : undefined;
+}
+
+/** The days kept with `jour` added (or replaced), those older than JOURS_GARDES days dropped. */
+export function ajouterJour(avant: Jours | undefined, jour: string, stations: Record<string, JourStation>): Jours {
+  const depuis = new Date(Date.parse(jour) - JOURS_GARDES * 86_400_000).toISOString().slice(0, 10);
+  const jours = Object.fromEntries(Object.entries({ ...avant?.jours, [jour]: stations }).filter(([d]) => d > depuis).sort(([a], [b]) => a.localeCompare(b)));
+  return { debut: Object.keys(jours)[0], jours };
 }
 
 /**

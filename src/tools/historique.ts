@@ -22,6 +22,8 @@ import type { Station } from "../types.js";
 import { why } from "../types.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
 import { fit, mieux } from "./representativeness.js";
+import * as meteorOi from "../providers/meteor-oi.js";
+import { autorisee } from "../providers/autorisations.js";
 import { rienTrouve } from "../vide.js";
 
 /** Up to this many days, one row per day; up to 2 years one per month; beyond, one per year. */
@@ -746,6 +748,65 @@ function provisoire(kept: Veille, place: Place) {
   };
 }
 
+/** What MétéoR-OI's days are said to be, wherever one is given. */
+export const MOR_NATURE = `station amateur (${meteorOi.SOURCE.court}), fiabilité non vérifiée`;
+export const morNote = (debut: string) =>
+  `Jour compté de minuit à minuit (heure de La Réunion), comme l'association le compte, relevé à 23:53 : les 7 dernières minutes de chaque jour au moins y manquent. Jours gardés par rundata.re depuis le ${frDate(debut)}.`;
+
+/**
+ * MétéoR-OI's days near the place (providers/meteor-oi.ts JOURS_KEY), only beside Météo-France's and after them: its
+ * station of « bonne » or « moyenne » pertinence, in the order of meteo_actuelle, that kept at least COVERAGE of the
+ * days asked since its first day kept, said as an amateur station's with the association's credit and link beside it.
+ * Nothing before the first day the code could keep, so that older periods read nothing more; nothing once the
+ * association's agreement is withdrawn.
+ */
+async function morJours(cache: Cache, place: Place, p: Period) {
+  if (p.au < meteorOi.JOURS_PREMIER || !autorisee(meteorOi.AUTORISATION)) return undefined;
+  let kept: meteorOi.Jours | undefined;
+  try {
+    kept = (await cache.kept<meteorOi.Jours>(meteorOi.JOURS_KEY))?.value;
+  } catch (err) {
+    console.error("jours de MétéoR-OI indisponibles", why(err));
+  }
+  if (!kept?.debut) return undefined;
+  const q: Period = { du: p.du > kept.debut ? p.du : kept.debut, au: p.au };
+  if (q.du > q.au) return undefined;
+  const all = [...days(q)];
+  const near = meteorOi.STATIONS.map((s) => ({ s, f: fit(place, meteorOi.station(s)) })).filter((x) => x.f.pertinence !== "faible").sort((u, v) => mieux(u.f, v.f));
+  for (const { s, f } of near) {
+    const js = all.map((d) => kept.jours[d]?.[s.code]).filter((j): j is meteorOi.JourStation => !!j);
+    const rr = js.filter((j) => j.pluie_mm != null);
+    const tt = js.filter((j) => j.tmin != null && j.tmax != null);
+    const pluie = rr.length >= COVERAGE * all.length ? round1(rr.reduce((t, j) => t + j.pluie_mm!, 0)) : undefined;
+    const tmin = tt.length >= COVERAGE * all.length ? Math.min(...tt.map((j) => j.tmin!)) : undefined;
+    const tmax = tmin != null ? Math.max(...tt.map((j) => j.tmax!)) : undefined;
+    if (pluie == null && tmin == null) continue;
+    const span = q.du === q.au ? `le ${frDate(q.du)}` : `du ${frDate(q.du)} au ${frDate(q.au)}`;
+    const said = [pluie != null ? `${fr(pluie)} mm de pluie` : "", tmin != null ? `températures de ${fr(tmin)} °C à ${fr(tmax!)} °C` : ""].filter(Boolean).join(", ");
+    return {
+      phrase: `Aussi, ${MOR_NATURE}, ${a(s.nom)} (${s.altitude_m} m, ${fr(f.distance_km)} km, direction ${f.direction}) : ${said} ${span}, de minuit à minuit (${meteorOi.CREDIT}, ${meteorOi.SITE}).`,
+      bloc: {
+        station: s.nom,
+        nature: MOR_NATURE,
+        altitude_m: s.altitude_m,
+        distance_km: f.distance_km,
+        direction: f.direction,
+        du: frDate(q.du),
+        au: frDate(q.au),
+        jours: all.length,
+        jours_mesures: js.length,
+        ...(pluie != null ? { pluie_mm: pluie } : {}),
+        ...(tmin != null ? { temperature_min: tmin, temperature_max: tmax } : {}),
+        a_savoir: morNote(kept.debut),
+        credit: meteorOi.CREDIT,
+        lien: meteorOi.SITE,
+        licence: meteorOi.CC_BY_NC,
+      },
+    };
+  }
+  return undefined;
+}
+
 export async function historiqueMeteo(
   cache: Cache,
   lieu: string | undefined,
@@ -873,7 +934,8 @@ export async function historiqueMeteo(
   const veille = kept && provisoire(kept, place);
   // No measure of the period, at no station near: its days not loaded yet, or none measuring there.
   if (!rain && !temp && !sun && !hh && !veille) rienTrouve("historique_meteo");
-  return text({
+  const mor = await morJours(cache, place, p);
+  const out = {
     lieu: placeBlock(lieu, res),
     resume: ([daily, autre ? autreAltitude(place, p, rain!, autre) : "", hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
       (warn.length ? ` Attention : ${[...new Set(warn)].join(" ")}` : "") +
@@ -888,5 +950,8 @@ export async function historiqueMeteo(
     records: recs,
     ...common,
     ...(hh || veille ? { sources: credits([climat.SOURCE, ...(hh ? [climat.SOURCE_HORAIRE] : []), ...(veille ? [METEOFRANCE] : [])]) } : {}),
-  });
+  };
+  // MétéoR-OI's station last, never first nor instead of Météo-France's: its sentence at the end of the summary, its
+  // block after everything else, its credit with the sources.
+  return text(mor ? { ...out, resume: `${out.resume} ${mor.phrase}`, sources: [...out.sources, ...credits([meteorOi.SOURCE])], station_amateur: mor.bloc } : out);
 }

@@ -84,7 +84,9 @@ describe("the stop pages", () => {
     const p = station();
     const d = await stopPageDepartures(p.groups, NOW);
     expect(d.departs.length).toBeGreaterThan(2);
-    expect(d.departs[0].trajet).toMatch(/^\/bus\/trajet\/carjaune\/\d+\/[^?]+\?jour=20261023&arret=\d+#arret-\d+$/);
+    // Today's service: its trip without « ?jour= », which only another day keeps.
+    expect(d.departs[0].trajet).toMatch(/^\/bus\/trajet\/carjaune\/\d+\/[^?]+\?arret=\d+#arret-\d+$/);
+    expect(d.departs.every((x) => !x.trajet?.includes("jour="))).toBe(true);
     expect(d.lignes).toContain("S2");
     const html = stopPage(O, p, d, NOW);
     expect(html).toContain("<title>Arrêt Gare de St-Pierre : prochains bus · La Réunion (974)</title>");

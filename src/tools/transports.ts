@@ -489,18 +489,32 @@ export const departureRow = (d: Departure): DepartureRow => ({
 });
 
 export const TRIP_PATH = "/bus/trajet";
-/** The page of a departure's trip (web/trajet.ts): its pattern and its stop numbered within its network, and the day of its service. */
-export function tripPath(d: Departure): string | undefined {
+/**
+ * The page of a departure's trip (web/trajet.ts): its pattern and its stop numbered within its network, and the day of
+ * its service. The day is left out for today's service (`today`, La Réunion's date of the page): the trip's page then
+ * reads today's run, or yesterday's while it is still on the road (tripRun), which a departure of today's service listed
+ * within the 20 hours to come never is, no bus of the island running 4 hours. A dated address for each day, which
+ * robots.txt forbids, made thousands more of them every day (2 310 counted on 14/11/2026, 12 a stop's page). Yesterday's
+ * service after midnight and tomorrow's keep their day.
+ */
+export function tripPath(d: Departure, today?: number): string | undefined {
   const n = transit.NETWORKS[d.reseau];
   if (!n || d.jour === undefined) return undefined;
-  return `${TRIP_PATH}/${d.reseau}/${d.pattern - n.first_pattern}/${encodeURIComponent(d.trip)}?jour=${d.jour}&arret=${d.stop - n.first_stop}#arret-${d.stop - n.first_stop}`;
+  const stop = d.stop - n.first_stop;
+  return `${TRIP_PATH}/${d.reseau}/${d.pattern - n.first_pattern}/${encodeURIComponent(d.trip)}?${d.jour === today ? "" : `jour=${d.jour}&`}arret=${stop}#arret-${stop}`;
 }
 
-/** A departure as the pages keep it: the tool's row, and the page of its trip. */
+/** La Réunion's date of `now`, as a service day (YYYYMMDD). */
+export const todayOf = (now: Date) => day(now).ymd;
+
+/** A departure as the pages keep it: the tool's row, and the page of its trip, without its day for today's service. */
 export type PageRow = DepartureRow & { trajet?: string };
-export const pageRow = (d: Departure): PageRow => {
-  const trajet = tripPath(d);
-  return { ...departureRow(d), ...(trajet ? { trajet } : {}) };
+export const pageRow = (now: Date) => {
+  const today = todayOf(now);
+  return (d: Departure): PageRow => {
+    const trajet = tripPath(d, today);
+    return { ...departureRow(d), ...(trajet ? { trajet } : {}) };
+  };
 };
 
 /** « à l'heure », « 5 min de retard », « 2 min d'avance ». */
@@ -1184,7 +1198,7 @@ export async function stopPageDepartures(groups: transit.StopGroup[], now: Date,
   const live = [...new Set(shown.filter((d) => d.retard !== undefined || d.supprime).map((d) => d.reseau))];
   const at = [...feeds].filter(([n]) => live.includes(n)).reduce((t, [, f]) => Math.max(t, f.at), 0);
   return {
-    departs: shown.map(pageRow),
+    departs: shown.map(pageRow(now)),
     ...(off ? { aucun: off.text } : {}),
     alertes: [...(off?.alertes ?? []), ...alertsFor(groups, shown, feeds, now)].filter((a, i, l) => l.findIndex((b) => b.titre === a.titre) === i),
     lignes: [...new Set(lines)].sort((a, b) => a.localeCompare(b, "fr", { numeric: true })),

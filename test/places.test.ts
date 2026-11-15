@@ -131,7 +131,7 @@ describe("resolvePlace", () => {
     // Names alike once their small words are out: the one written as asked, its article aside.
     expect(at("Plaine des Sables")).toEqual(["Plaine des Sables", "lieu_dit", "Sainte-Rose", "exacte"]);
     expect(at("Sainte-Clotilde")?.slice(1, 3)).toEqual(["quartier", "Saint-Denis"]);
-    expect(at("Ravine des Cabris")).toEqual(["La Ravine des Cabris", "localite", "Saint-Pierre", "exacte"]);
+    expect(at("Ravine Blanche")).toEqual(["La Ravine Blanche", "localite", "Le Tampon", "exacte"]);
     // Two places of a kind and a name: the one the BD TOPO ranks better known.
     expect(at("Trois-Mares")?.slice(0, 3)).toEqual(["Trois Mares", "quartier", "Le Tampon"]);
     expect(at("Vincendo")?.slice(0, 3)).toEqual(["Vincendo", "quartier", "Saint-Joseph"]);

@@ -92,7 +92,7 @@ export interface Info {
   /** An entry of a live blog. */
   direct?: boolean;
   communes: string[];
-  /** The places named, besides the communes: « Ravine des Cabris », « Canabady ». */
+  /** The places named, besides the communes: « La Plaine des Cafres », « Trois Mares ». */
   lieux: string[];
   sujets: string[];
   /** The same story told by other media. */

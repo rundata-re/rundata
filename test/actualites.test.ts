@@ -51,9 +51,9 @@ describe("actualités", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("finds the communes a text names, by their places too, and not the common words that look like them", () => {
-    expect(placesIn("Barrage filtrant à St-Pierre, au rond-point de Canabady et à la Ravine des Cabris")).toEqual({
-      communes: ["Saint-Pierre"],
-      lieux: ["Cité Canabady", "La Ravine des Cabris"],
+    expect(placesIn("Barrage filtrant au Tampon, au rond-point de Trois-Mares et à la Plaine des Cafres")).toEqual({
+      communes: ["Le Tampon"],
+      lieux: ["Trois Mares", "La Plaine des Cafres"],
     });
     expect(placesIn("Le Port reste calme ; à Gillot, les vols sont maintenus").communes).toEqual(["Le Port", "Sainte-Marie"]);
     expect(placesIn("Tollé à La Rivière : une micro-crèche incendiée").communes).toEqual(["Saint-Louis"]);

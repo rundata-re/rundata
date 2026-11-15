@@ -674,7 +674,7 @@ describe("coupures d'eau", () => {
   it("follows runéo's communes like the others, from the table of distributors: a « ne pas boire » there is said for the island and on the map", async () => {
     // Before, a hand-written list left runéo's communes out: Saint-Pierre's notice was only given when Saint-Pierre was asked.
     const item = `<item><title>Qualité de l'eau à Saint-Pierre</title><link>https://www.runeo.re/flash-infos/test</link><pubDate>Fri, 23 Oct 2026 10:00:00 +0400</pubDate>` +
-      `<description>Suite à une pollution, ne pas boire l'eau du robinet à Saint-Pierre, secteur de Ravine des Cabris.</description></item>`;
+      `<description>Suite à une pollution, ne pas boire l'eau du robinet à Saint-Pierre, secteur de Bassin Plat.</description></item>`;
     vi.stubGlobal("fetch", async (url: string) => {
       if (url.includes("runeo")) return new Response(fixture("runeo.xml").replace("</channel>", `${item}</channel>`));
       const file = url.includes("dioneo") ? "dioneo.xml" : url.includes("possession") ? "possession.xml"

@@ -21,7 +21,7 @@ import { compass } from "../geo.js";
 import type { Station } from "../types.js";
 import { why } from "../types.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
-import { fit } from "./representativeness.js";
+import { fit, mieux } from "./representativeness.js";
 import { rienTrouve } from "../vide.js";
 
 /** Up to this many days, one row per day; up to 2 years one per month; beyond, one per year. */
@@ -37,6 +37,16 @@ export const GREY_SIGMA = 30;
 const SUNNY_SIGMA = 70;
 const CANDIDATES = 8;
 const LONG_CANDIDATES = 2;
+/**
+ * Beyond this difference of altitude with the place, the rain is also given at the station on the other side of the
+ * place's altitude (higher when the first is lower). Over the 3 907 places of the island and each month from January
+ * to October 2026, the rain of the station chosen and of the best one on the other side differ alike up to 150 m
+ * (ratio of the larger to the smaller, 5 mm added to each, 2,2 at the 75th percentile and 3,6 at the 90th), then more
+ * and more (2,6 and 4,2 from 150 to 200 m, 2,8 and 5,3 beyond). The same 150 m as the warning and the « bonne »
+ * relevance of representativeness.ts. La Ravine des Cabris (236 m), October 2026: 2 mm at Pierrefonds (21 m), 13,9 mm
+ * at Bras-Long (510 m), 6 km from each.
+ */
+export const AUTRE_ALTITUDE_M = 150;
 /** Hour by hour on its own up to this many days, on demand up to HOURLY_MAX. */
 const HOURLY_AUTO = 3;
 const HOURLY_MAX = 7;
@@ -500,6 +510,15 @@ function sentence(where: string, p: Period, s: Record<string, unknown>, names: {
   return `${where}, ${span} : ${parts.join("\u00a0; ") || "aucune mesure publiée"}.`;
 }
 
+/** The rain at the station on the other side of the place's altitude, said after the first one's. */
+function autreAltitude(place: Place, p: Period, rain: Series, autre: Series): string {
+  const pl = summary(p, autre).pluie as { total_mm: number };
+  const f = fit(place, asStation(autre.poste));
+  const dz = rain.poste.alt - place.altitude_m!;
+  const same = p.du === p.au ? "le même jour" : "sur la même période";
+  return `${rain.poste.nom} est ${Math.abs(dz)}\u00a0m plus ${dz < 0 ? "bas" : "haut"} que ${place.nom}\u00a0; plus ${dz < 0 ? "haut" : "bas"}, ${a(autre.poste.nom)} (${autre.poste.alt}\u00a0m, ${fr(f.distance_km)}\u00a0km, direction ${f.direction}), ${fr(pl.total_mm)}\u00a0mm de pluie ${same}.`;
+}
+
 function oneDay(where: string, d: string, s: Record<string, unknown>, names: { rain?: string; temp?: string; sun?: string }): string {
   const parts: string[] = [];
   const pl = s.pluie as { total_mm: number; jours_mesures: number; normale_mm?: number } | undefined;
@@ -804,10 +823,15 @@ export async function historiqueMeteo(
   const res = resolvePlace(lieu);
   if (!res) return notFound(lieu);
   const place = res.lieu;
-  const ranked = all.filter(covers).map((x) => ({ x, f: fit(place, asStation(x)) })).sort((u, v) => u.f.score - v.f.score);
+  // In the order of meteo_actuelle: the better relevance, then the lower score.
+  const ranked = all.filter(covers).map((x) => ({ x, f: fit(place, asStation(x)) })).sort((u, v) => mieux(u.f, v.f));
   const take = y1 - y0 >= 2 ? LONG_CANDIDATES : CANDIDATES;
   const pick = (f: Field) => ranked.filter((r) => r.x.params.includes(f)).slice(0, take).map((r) => r.x);
-  const wanted = [...new Set([...pick("RR"), ...pick("TX"), ...pick("INST").slice(0, take === LONG_CANDIDATES ? 1 : 2)])];
+  // The rain gauges above and below the place, for a rain station far from its altitude: never a « faible » one.
+  const z = place.altitude_m;
+  const side = (up: boolean) =>
+    z == null ? [] : ranked.filter((r) => r.x.params.includes("RR") && r.f.pertinence !== "faible" && (up ? r.x.alt > z : r.x.alt < z)).slice(0, take === LONG_CANDIDATES ? 1 : 2).map((r) => r.x);
+  const wanted = [...new Set([...pick("RR"), ...pick("TX"), ...pick("INST").slice(0, take === LONG_CANDIDATES ? 1 : 2), ...side(true), ...side(false)])];
   let read: Map<string, Map<number, Year>>;
   try {
     read = await climat.years(wanted.map((x) => x.poste), y0, y1);
@@ -820,6 +844,8 @@ export async function historiqueMeteo(
   const rain = best("RR");
   const temp = best("TX");
   const sun = best("INST");
+  const dz = rain && z != null ? rain.poste.alt - z : 0;
+  const autre = Math.abs(dz) > AUTRE_ALTITUDE_M ? side(dz < 0).map(series).find((x) => share(x, "RR", p) >= COVERAGE) : undefined;
 
   const s = summary(p, rain, temp, sun);
   const names = { rain: rain?.poste.nom, temp: temp?.poste.nom, sun: sun?.poste.nom };
@@ -849,12 +875,13 @@ export async function historiqueMeteo(
   if (!rain && !temp && !sun && !hh && !veille) rienTrouve("historique_meteo");
   return text({
     lieu: placeBlock(lieu, res),
-    resume: ([daily, hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
+    resume: ([daily, autre ? autreAltitude(place, p, rain!, autre) : "", hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
       (warn.length ? ` Attention : ${[...new Set(warn)].join(" ")}` : "") +
       // Yesterday kept from the hourly readings: said instead of « not loaded yet ».
       (veille ? ` ${veille.etiquette}${todayNote(p, now)}` : !rain && !temp && !hh ? ` ${nothing(place.nom, p, now, last)}` : rain || temp ? notYet(p, now, last) : todayNote(p, now))).trim(),
-    stations: stationsUsed(place, [[rain, "pluie"], [temp, "températures et rafales"], [sun, "ensoleillement"]]),
+    stations: stationsUsed(place, [[rain, "pluie"], [temp, "températures et rafales"], [sun, "ensoleillement"], [autre, "pluie, à une autre altitude"]]),
     ...s,
+    pluie_autre_altitude: autre && { ...stationBlock(place, autre.poste, "pluie"), ...(summary(p, autre).pluie as object), pourquoi: `${rain!.poste.nom} est à ${Math.abs(dz)}\u00a0m de l'altitude de ${place.nom}.` },
     ...shape(rain, temp, sun),
     hier_provisoire: veille?.bloc,
     heure_par_heure: hh?.bloc,

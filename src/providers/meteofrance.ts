@@ -270,7 +270,7 @@ export function parseDay(csv: string, jour: string): Veille {
   const stations: Veille["stations"] = {};
   for (const [id, s] of got) {
     const v = {
-      ...(all(s.rr) && { rr: r1(s.rr.reduce((a, b) => a + b, 0)) }),
+      ...(all(s.rr) && { rr: r1(s.rr.reduce((a, b) => a + b, 0)), rr_h: s.rr }),
       ...(all(s.tn) && { tn: celsius(Math.min(...s.tn)) }),
       ...(all(s.tx) && { tx: celsius(Math.max(...s.tx)) }),
     };
@@ -294,7 +294,7 @@ export function veilleDe(hourly: HourlyRain, jour: string): Veille {
   for (const [id, r] of Object.entries(hourly.rr)) {
     const [rr, tn, tx] = [at(r), at(hourly.mesures?.[id]?.tn), at(hourly.mesures?.[id]?.tx)];
     const v = {
-      ...(all(rr) && { rr: r1(rr.reduce((a, b) => a + b, 0)) }),
+      ...(all(rr) && { rr: r1(rr.reduce((a, b) => a + b, 0)), rr_h: rr }),
       ...(all(tn) && { tn: Math.min(...tn) }),
       ...(all(tx) && { tx: Math.max(...tx) }),
     };

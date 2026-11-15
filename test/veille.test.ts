@@ -44,8 +44,9 @@ describe("the day before at each station, from the hourly package", () => {
     expect(v.jour).toBe("2026-10-26");
     expect(v.complet).toBe(true);
     expect(v.stations).toEqual({
-      "97416463": { rr: 1.6, tn: 20, tx: 27.5 },
-      "97418110": { rr: 4.8, tx: 26 },
+      // Hour by hour too (index 0: 00:00 to 01:00), the airport's -0.1 as 0.
+      "97416463": { rr: 1.6, rr_h: Array.from({ length: 24 }, (_, k) => (k === 3 ? 1.2 : k === 4 ? 0.4 : 0)), tn: 20, tx: 27.5 },
+      "97418110": { rr: 4.8, rr_h: Array(24).fill(0.2), tx: 26 },
     });
   });
 
@@ -125,7 +126,7 @@ describe("the scheduled pass that keeps the day before", () => {
   it("takes the step's package, never reads it itself, writes the day once at 00:20, and nothing more at 00:35 when it was whole", async () => {
     const kv = new Namespace();
     const first = await pass(kv, "2026-10-26T20:20:00Z");
-    expect(first.value?.stations["97416463"]).toEqual({ rr: 1.6, tn: 20, tx: 27.5 });
+    expect(first.value?.stations["97416463"]).toMatchObject({ rr: 1.6, tn: 20, tx: 27.5 });
     expect(first.value).toEqual(meteofrance.parseDay(DAY, "2026-10-26"));
     expect(first.used).toBe(1);
     expect([packages.length, veilles(kv)]).toEqual([1, [`put ${meteofrance.VEILLE}`]]);
@@ -146,7 +147,7 @@ describe("the scheduled pass that keeps the day before", () => {
     body = DAY;
     const second = await pass(kv, "2026-10-26T20:35:00Z");
     expect(second.value?.complet).toBe(true);
-    expect(second.value?.stations["97416463"]).toEqual({ rr: 1.6, tn: 20, tx: 27.5 });
+    expect(second.value?.stations["97416463"]).toMatchObject({ rr: 1.6, tn: 20, tx: 27.5 });
     expect(second.used).toBeLessThanOrEqual(2);
     expect([packages.length, veilles(kv).filter((k) => k.startsWith("put")).length]).toEqual([2, 2]);
   });

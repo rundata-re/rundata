@@ -22,6 +22,7 @@ import type { Station } from "../types.js";
 import { why } from "../types.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
 import { fit, mieux } from "./representativeness.js";
+import { gaugesOf } from "./pluie-commune.js";
 import * as meteorOi from "../providers/meteor-oi.js";
 import { autorisee } from "../providers/autorisations.js";
 import { rienTrouve } from "../vide.js";
@@ -683,6 +684,7 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
   }).join("\u00a0; ");
   return {
     ou: where,
+    dernier: lastHour,
     texte: facts.map((f) => f.texte).join(". "),
     bloc: {
       definition: "Heure de La Réunion. Chaque valeur est celle de l'heure qui se termine à l'heure indiquée : la pluie de « 15 h » est tombée entre 14 h et 15 h, le soleil de « 15 h » est en minutes sur cette heure-là, la rafale est la plus forte de l'heure. La température est celle relevée à l'heure pile : le maximum et le minimum de la journée, mesurés en continu, peuvent la dépasser un peu.",
@@ -708,6 +710,39 @@ async function keptVeille(cache: Cache, jour: string): Promise<Veille | undefine
     console.error("veille indisponible", why(err));
     return undefined;
   }
+}
+
+/**
+ * Yesterday's rain hour by hour, as kept at 00:20 (`rr_h`), while the hourly archive does not have it (its file of a day
+ * comes out with the morning after, and is loaded the day after that): at every gauge of a commune asked as a whole, else
+ * at the best-placed gauge. Undefined when none has its hours (a day kept before they were).
+ */
+export function heuresHier(kept: Veille, place: Place) {
+  const has = (id: string) => kept.stations[id]?.rr_h?.length === 24;
+  const commune = place.type === "commune" ? gaugesOf(place.nom).filter(([id]) => has(id)) : [];
+  const near = STATIONS_974.filter(([id]) => has(id))
+    .map(([id, nom, lat, lon, altitude_m]) => ({ id, nom, f: fit(place, { source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }) }))
+    // Ranked as the answer's own stations are (mieux), so that both blocks name the same gauge.
+    .sort((u, v) => mieux(u.f, v.f))[0];
+  const picked = commune.length ? commune.map(([id, nom]) => ({ id, nom })) : near ? [near] : [];
+  if (!picked.length) return undefined;
+  const hours = (id: string) => kept.stations[id].rr_h!.map((mm, h) => ({ h, mm })).filter((x) => x.mm > 0);
+  const ligne = (h: number, mm: number) => `entre ${h} h et ${h + 1} h : ${fr(mm)} mm`;
+  const stations = picked
+    .map(({ id, nom }) => ({ station: nom, pluie_mm: kept.stations[id].rr!, heures_de_pluie: hours(id).map((x) => ligne(x.h, x.mm)) }))
+    .sort((x, y) => y.pluie_mm - x.pluie_mm);
+  const said = stations
+    .map((x) => `${x.station} ${fr(x.pluie_mm)} mm${x.heures_de_pluie.length ? ` (${x.heures_de_pluie.join(", ")})` : ""}`)
+    .join("\u00a0; ");
+  return {
+    texte: `Pluie d'hier heure par heure, ${frDate(kept.jour)}, ${VEILLE_NATURE} de Météo-France${commune.length ? ` aux pluviomètres de ${place.nom}` : ""} : ${said}. Les autres heures, pas de pluie mesurée.`,
+    bloc: {
+      jour: frDate(kept.jour),
+      nature: VEILLE_NATURE,
+      definition: "Heure de La Réunion. « entre 7 h et 8 h » : la pluie tombée de 7 h à 8 h ; seules les heures où il a plu sont listées.",
+      stations,
+    },
+  };
 }
 
 /**
@@ -929,27 +964,33 @@ export async function historiqueMeteo(
   const daily = rain || temp ? sentence(`${place.nom}`, p, s, names) : "";
   const yesterday = iso(now.getTime() + 4 * 3600_000 - DAY_MS);
   const last = lastDay(read, yesterday);
-  // Yesterday asked and not loaded yet: the day as the scheduled event kept it from the hourly package.
-  const kept = p.au >= yesterday && (!last || last < yesterday) ? await keptVeille(cache, yesterday) : undefined;
-  const veille = kept && provisoire(kept, place);
+  // Yesterday asked and not loaded yet: the day as the scheduled event kept it from the hourly package. Its hours too
+  // while the hourly archive does not reach yesterday's last one (it has the night just ended a day later).
+  const notLoaded = !last || last < yesterday;
+  const hoursMissing = !hh?.dernier || hh.dernier.day < yesterday || (hh.dernier.day === yesterday && hh.dernier.hour !== 23);
+  const kept = p.au >= yesterday && p.du <= yesterday && (notLoaded || hoursMissing) ? await keptVeille(cache, yesterday) : undefined;
+  const veille = kept && notLoaded ? provisoire(kept, place) : undefined;
+  const hier = kept && hoursMissing ? heuresHier(kept, place) : undefined;
   // No measure of the period, at no station near: its days not loaded yet, or none measuring there.
-  if (!rain && !temp && !sun && !hh && !veille) rienTrouve("historique_meteo");
+  if (!rain && !temp && !sun && !hh && !veille && !hier) rienTrouve("historique_meteo");
   const mor = await morJours(cache, place, p);
   const out = {
     lieu: placeBlock(lieu, res),
     resume: ([daily, autre ? autreAltitude(place, p, rain!, autre) : "", hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
       (warn.length ? ` Attention : ${[...new Set(warn)].join(" ")}` : "") +
       // Yesterday kept from the hourly readings: said instead of « not loaded yet ».
-      (veille ? ` ${veille.etiquette}${todayNote(p, now)}` : !rain && !temp && !hh ? ` ${nothing(place.nom, p, now, last)}` : rain || temp ? notYet(p, now, last) : todayNote(p, now))).trim(),
+      (veille ? ` ${veille.etiquette}${todayNote(p, now)}` : !rain && !temp && !hh ? ` ${nothing(place.nom, p, now, last)}` : rain || temp ? notYet(p, now, last) : todayNote(p, now)) +
+      (hier ? ` ${hier.texte}` : "")).trim(),
     stations: stationsUsed(place, [[rain, "pluie"], [temp, "températures et rafales"], [sun, "ensoleillement"], [autre, "pluie, à une autre altitude"]]),
     ...s,
     pluie_autre_altitude: autre && { ...stationBlock(place, autre.poste, "pluie"), ...(summary(p, autre).pluie as object), pourquoi: `${rain!.poste.nom} est à ${Math.abs(dz)}\u00a0m de l'altitude de ${place.nom}.` },
     ...shape(rain, temp, sun),
     hier_provisoire: veille?.bloc,
+    hier_heure_par_heure: hier?.bloc,
     heure_par_heure: hh?.bloc,
     records: recs,
     ...common,
-    ...(hh || veille ? { sources: credits([climat.SOURCE, ...(hh ? [climat.SOURCE_HORAIRE] : []), ...(veille ? [METEOFRANCE] : [])]) } : {}),
+    ...(hh || veille || hier ? { sources: credits([climat.SOURCE, ...(hh ? [climat.SOURCE_HORAIRE] : []), ...(veille || hier ? [METEOFRANCE] : [])]) } : {}),
   };
   // MétéoR-OI's station last, never first nor instead of Météo-France's: its sentence at the end of the summary, its
   // block after everything else, its credit with the sources.

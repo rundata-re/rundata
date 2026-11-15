@@ -9,6 +9,7 @@ import * as meteorOi from "../providers/meteor-oi.js";
 import * as radar from "../providers/radar.js";
 import { radarAt } from "./radar.js";
 import { recentRainBlock } from "./pluie-recente.js";
+import { pluieCommune } from "./pluie-commune.js";
 import { hasExtremes, todayTemperatureBlock } from "./temperature-du-jour.js";
 import { type Observation, type SourceInfo, why } from "../types.js";
 import { fit, mieux } from "./representativeness.js";
@@ -275,6 +276,10 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   const drizzle = Boolean(gauge && dry(gauge.o.station.id) && (!rain || rain.bloc.au_lieu_mm_h === 0) &&
     (sky || Number(rain?.bloc.max_3km_mm_h ?? 0) > 0));
   const pluie = gauge ? recentRainBlock(recentRain!, { id: gauge.o.station.id, nom: gauge.o.station.nom, fit: gauge.f }, r.lieu.nom, now, drizzle) : undefined;
+  // A whole commune asked: the rain at each of its gauges, and when they diverge, said (avis n° 22, Saint-Philippe).
+  const commune = recent === true && recentRain && r.lieu.type === "commune"
+    ? pluieCommune(recentRain, r.lieu.nom, gauge ? { id: gauge.o.station.id, nom: gauge.o.station.nom } : undefined, now)
+    : undefined;
   // The lowest and highest temperature since midnight, from the same hourly package, at the best-placed station that has them.
   const thermo = recentRain && ranked.find((x) => x.o.station.source === "meteofrance" && hasExtremes(recentRain, x.o.station.id));
   const jour = thermo ? todayTemperatureBlock(recentRain!, { id: thermo.o.station.id, nom: thermo.o.station.nom, fit: thermo.f }, now) : undefined;
@@ -287,7 +292,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
       (warnings.length ? `. Attention : ${warnings.join(" ")}` : "")
     : "Aucune mesure disponible pour le moment.";
   // Each piece a sentence: the stations' end with their time in brackets, and « Depuis minuit » starts a new one.
-  const resumeAll = phrases([placeWarning(lieu, r), resume, jour?.resume, rain?.resume, pluie?.resume]);
+  const resumeAll = phrases([placeWarning(lieu, r), resume, jour?.resume, rain?.resume, pluie?.resume, commune?.resume]);
 
   return text({
     lieu: placeBlock(lieu, r),
@@ -300,6 +305,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
     temperature_depuis_minuit: jour && (({ resume: _, ...block }) => block)(jour),
     radar: rain?.bloc,
     pluie_recente: pluie && (({ resume: _, ...block }) => block)(pluie),
+    pluie_commune: commune && (({ resume: _, ...block }) => block)(commune),
     sources_indisponibles: indisponibles,
     couverture: coverage(toutes(obs).length),
     sources,

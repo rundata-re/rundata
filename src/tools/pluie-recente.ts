@@ -59,6 +59,33 @@ export interface StationRain {
 }
 
 /**
+ * The rain since midnight (Réunion time) at a station of the hourly package: the full hours that began today, then the
+ * hour under way from its 6-minute slots. `missing` when an hour or a slot was not read: the total is then a floor.
+ * Undefined when the station has no hourly rain.
+ */
+export function sinceMidnight(rain: RecentRain, id: string, now: Date): { total: number; missing: boolean; upTo: number; cumul: string } | undefined {
+  const hours = rain.hourly.rr[id];
+  if (!hours) return undefined;
+  const t = now.getTime();
+  const end = Date.parse(rain.hourly.end);
+  const slots = rain.slots(id);
+  const newest = slots[0] ? Date.parse(slots[0].time) : undefined;
+  const first = slots.length ? Date.parse(slots.at(-1)!.time) - SLOT_MS : end;
+  const stuck = newest != null && newest - end > STUCK_MS && first > end;
+  const from = stuck ? first : end;
+  const expected = newest ? Math.round((newest - from) / SLOT_MS) : 0;
+  const read = slots.filter((s) => s.rr != null);
+  const partial = read.reduce((sum, s) => sum + s.rr!, 0);
+  const midnight = day(t) * 24 * HOUR_MS - LOCAL_MS;
+  const today = hours.filter((_, k) => end - (k + 1) * HOUR_MS >= midnight);
+  const missing = stuck || today.some((v) => v == null) || read.length !== expected || end - today.length * HOUR_MS > midnight;
+  const total = Math.round((today.reduce<number>((sum, v) => sum + (v ?? 0), 0) + partial) * 10) / 10;
+  const upTo = newest ?? end;
+  const [c0, c1] = paire(0, mins(upTo), true);
+  return { total, missing, upTo, cumul: `${missing ? "au moins " : ""}${mm(total)} de ${c0} à ${c1}` };
+}
+
+/**
  * The block for `station`, or undefined when it has no hourly rain. `drizzle` says the sky is loaded while the gauge
  * and the radar measure nothing: the gauge counts by steps of 0.2 mm, so a light drizzle may not show.
  */
@@ -105,14 +132,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
   const unread = stuck ? ` (de ${u0} à ${u1}, non lue)` : "";
   derniere ??= allRead ? `pas de pluie mesurée depuis ${dayWord(since, t)} ${hm(since)}` : `pas de pluie mesurée dans les heures disponibles${unread}`;
 
-  // Since midnight, Réunion time: the full hours that began today, then the hour under way.
-  const midnight = day(t) * 24 * HOUR_MS - LOCAL_MS;
-  const today = hours.filter((_, k) => end - (k + 1) * HOUR_MS >= midnight);
-  const missing = stuck || today.some((v) => v == null) || !partialWhole || end - today.length * HOUR_MS > midnight;
-  const total = today.reduce<number>((sum, v) => sum + (v ?? 0), 0) + partial;
-  const upTo = newest ?? end;
-  const [c0, c1] = paire(0, mins(upTo), true);
-  const cumul = `${missing ? "au moins " : ""}${mm(total)} de ${c0} à ${c1}`;
+  const { cumul } = sinceMidnight(rain, station.id, now)!;
 
   const k0 = hours.findIndex((v) => v != null && v > 0);
   const listed = k0 >= LISTED ? hours.length : LISTED;

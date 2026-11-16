@@ -1155,17 +1155,19 @@ const PLUVIO_JS = JSON.stringify({ r: PLUVIO_KM / KM, a: PLUVIO_ALT_M, m: altitu
 /** Where their legend leads, the question of /meteo's FAQ that says how they are worked out (the user, 16/11/2026), and its words (marketing). */
 export const PLUVIO_ANCRE = "h-zones-roses";
 export const PLUVIO_LIEN = "Comment c'est calculé →";
-/** A time of La Réunion as the map writes an hour: « 14 h », « 14 h 18 ». */
-const hOf = (ms: number) => {
-  const x = new Date(ms + 4 * 3_600_000), m = x.getUTCMinutes();
-  return `${x.getUTCHours()}\u00a0h${m ? `\u00a0${String(m).padStart(2, "0")}` : ""}`;
+/** Two times of La Réunion as a span of hours, by the site's rule for hours: « 14 h–15 h », « 14:18–15:18 ». */
+const hoursOf = (a: number, z: number) => {
+  const [x, y] = [a, z].map((ms) => new Date(ms + 4 * 3_600_000)), p2 = (n: number) => String(n).padStart(2, "0");
+  return x.getUTCMinutes() || y.getUTCMinutes()
+    ? `${p2(x.getUTCHours())}:${p2(x.getUTCMinutes())}–${p2(y.getUTCHours())}:${p2(y.getUTCMinutes())}`
+    : `${x.getUTCHours()}\u00a0h–${y.getUTCHours()}\u00a0h`;
 };
 /**
  * The live map's rose legend: the rain gauges' last hour, the one that ends at `fin`, said with its hours (the user,
- * 16/11/2026: the hour of that rain stated, « pluie de 00 h – 01 h »).
+ * 16/11/2026: the hour of that rain stated, « pluie de 0 h–1 h »).
  */
 export const pluvioLive = (fin: string, legende = PLUVIO_LEGENDE) =>
-  legende.replace("de l'heure", `de ${hOf(Date.parse(fin) - 3_600_000)} – ${hOf(Date.parse(fin))}`);
+  legende.replace("de l'heure", `de ${hoursOf(Date.parse(fin) - 3_600_000, Date.parse(fin))}`);
 /** How far a rain gauge's rain is spread in the replay, in the map's units: 10 km. */
 const GAUGE_REACH = Math.round((10 / KM) * 10) / 10;
 /** How near an anemometer must be for its wind to lean the drops, in the map's units: 15 km. */
@@ -1809,9 +1811,9 @@ else if(r&&r.h){w="estimé entre les pluviomètres";said+=", pluie de "+hmm(r.h.
 else if(r&&l==="p"&&r.a&&TR.some(([a,z])=>a>=r.a.t&&z<=r.z.t)){const x="entre les images radar de "+hmm(r.a.t)+" et de "+hmm(r.z.t);w=playing?"estimé par radar":x;said+=", pluie "+x}
 else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le radar":", pluie estimée par le radar entre ses images de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
-// The hours of the rain shown, an hour's or 3 hours' (marketing: « 14 h – 15 h »).
-const im=l==="p"&&r&&(r.m||(r.a&&(r.f<.5?r.a:r.z))),de=r&&r.h?r.h.end-108e5:im&&im.e&&im.e.de?Date.parse(im.e.de):0,hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")};
-if(r&&r.h)t=r.h.end;hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);
+// The hours of the rain shown, an hour's or 3 hours', by the site's rule for hours: « 14 h–15 h », « 14:15–15:15 ».
+const im=l==="p"&&r&&(r.m||(r.a&&(r.f<.5?r.a:r.z))),de=r&&r.h?r.h.end-108e5:im&&im.e&&im.e.de?Date.parse(im.e.de):0,hx=(a,z)=>{const x=lx(a),y=lx(z);return x.getUTCMinutes()||y.getUTCMinutes()?p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())+"–"+p2(y.getUTCHours())+":"+p2(y.getUTCMinutes()):x.getUTCHours()+"\u00a0h–"+y.getUTCHours()+"\u00a0h"};
+if(r&&r.h)t=r.h.end;hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";hh.textContent=!end&&de?hx(de,t):hmm(t);
 // The rain gauges' 3 hours over 7 days are drawn where the radar's images are (rj-g): « Pluviomètres » hides them there,
 // « Radar » elsewhere (CSS, pages.ts). The word names what the boxes leave shown: the radar, the rose zones, or both.
 fig.classList.toggle("rj-g",!end&&l==="p"&&!!(r&&r.h));let po=false;if(PZC){const on=l==="p"&&!end;PZC.style.display=on?"":"none";po=on&&pz(t,de)}

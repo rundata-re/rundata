@@ -2312,7 +2312,7 @@ const ZONES_ROSES = "Les zones roses estiment la pluie de l'heure affichée auto
   "Rien n'est dessiné sur la mer. Le ton dit la force de la pluie, aux seuils de la légende\u00a0: 0,2\u00a0mm, 2\u00a0mm, 8\u00a0mm et 20\u00a0mm dans l'heure. " +
   "Quand la case «\u00a0Radar\u00a0» est cochée, le radar est dessiné devant\u00a0: là où il voit de la pluie, c'est son bleu qui s'affiche. " +
   "C'est pourquoi les zones ne sont pas des ronds\u00a0: le relief les coupe, la mer et le radar les cachent, un voisin sec les rogne, et deux zones proches se rejoignent. " +
-  "Les pluviomètres de Météo-France donnent la pluie de l'heure pile. Celle d'une station amateur peut être décalée de 10\u00a0minutes au plus\u00a0: sa pluie de 06:08 à 07:08, par exemple, compte pour 06\u00a0h – 07\u00a0h. " +
+  "Les pluviomètres de Météo-France donnent la pluie de l'heure pile. Celle d'une station amateur peut être décalée de 10\u00a0minutes au plus\u00a0: sa pluie de 06:08 à 07:08, par exemple, compte pour 6\u00a0h–7\u00a0h. " +
   "C'est une estimation, qui peut se tromper\u00a0: une averse peut tomber entre deux pluviomètres sans qu'aucun la mesure, la pluie change d'une ravine à l'autre, et un pluviomètre peut tomber en panne. " +
   "La pluie n'est mesurée qu'au pluviomètre ou à la station, et seulement à cet endroit.";
 const METEO_FAQ: Faq[] = [

@@ -396,7 +396,7 @@ function elec(h: HomeLive, now: Date): Sujet | undefined {
   if (!p || p.perimee || !/^\d\d\/\d\d \d\d:\d\d/.test(p.heure_mesure)) return undefined;
   return {
     // No track (ux): the figure is the whole island's, and EDF gives it by kind of plant, not by plant.
-    id: "elec", k: "Électricité", src: "EDF", value: `${fr(Math.round(p.renouvelable_pct))}\u202f% renouvelable`, color: COLOURS.elec, href: HREF.elec, pts: [],
+    id: "elec", k: "Électricité", src: "EDF", value: `${fr(Math.round(p.renouvelable_pct))}\u202f% renouvelable`, color: COLOURS.elec, href: HREF.elec, pts: [], entier: true,
     tip: { place: `${fr(Math.round(p.total_mw))} MW produits`, value: "", detail: `${edfWhen(p.heure_mesure, now)}, d'après EDF` },
     lu: iso(h.electricite!.fetchedAt),
   };
@@ -506,8 +506,9 @@ export const LAYOUTS: Layout[] = [
 
 /** The widest a label may be, so that it never reaches its neighbour's place (ux's layouts); a few narrower. */
 const CAP = 420;
-// Électricité's value never cut (ux).
-const CAPS: Partial<Record<`${Layout["name"]}:${Id}`, number>> = { "tel:sortie": 400, "tel:elec": 470, "large:elec": 480 };
+// Électricité's value never cut (ux): its longest, « 100 % renouvelable », whole on the wide layout (484 units guessed),
+// on two lines on the phone's, where it would reach Vélos' track (entier, as Volcan's).
+const CAPS: Partial<Record<`${Layout["name"]}:${Id}`, number>> = { "tel:sortie": 400, "tel:elec": 470, "large:elec": 490 };
 
 /**
  * A text's width, guessed from its letters with room to spare (ux: 0,66 em a bold letter, the system font of an iPhone

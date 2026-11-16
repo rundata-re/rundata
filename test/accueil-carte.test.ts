@@ -187,6 +187,7 @@ describe("the home page's island", () => {
     expect(M.dessinsGardes()).toBe(4);
   });
 
+  // Its vi.resetModules() and re-imports of cache, accueil-dessins and accueil-carte pass the default 5 s on a loaded machine.
   it("reads its drawings from KV where its isolate has none, and draws a page's map only once for every isolate", async () => {
     // KV as the Worker has it: text, written and read again.
     const texts = new Map<string, string>();
@@ -227,7 +228,7 @@ describe("the home page's island", () => {
     expect(fresh.M.reprendreCarte({ cle: d.cle, dessins: [] }, d.cle)).toBe(false);
     expect(fresh.M.reprendreCarte("<html>", d.cle)).toBe(false);
     expect(fresh.M.dessinsGardes()).toBe(0);
-  });
+  }, 30_000);
 
   it("draws its map itself when KV fails, to read or to write, and never fails the page", async () => {
     vi.resetModules();

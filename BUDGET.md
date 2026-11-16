@@ -173,11 +173,11 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 79 | 16 | 5 | 1 | 150 |  | 130 | mesuré |
 | /meteo/* | la météo d'un lieu | à chaque vue |  | 65 | 6 | 4 | 1 | 150 |  | 135 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |
-| /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
-| /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 20 | code |
-| /meteo/rejeu-24h-5min.json | la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations | à chaque vue |  | 9 | 5 |  | 1 | 140 |  | 40 | code |
+| /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 20 | code |
+| /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 20 | code |
+| /meteo/rejeu-24h-5min.json | la barre de lecture de /meteo sur 24 heures, plus d'images : le radar toutes les 5 min (KV, ses jours et ses 6 heures) et les heures rondes des stations | à chaque vue |  | 10 | 6 |  | 1 | 140 |  | 40 | code |
 | /meteo/rejeu-7j-15min.json | la barre de lecture de /meteo sur 7 jours, plus d'images : le radar au quart d'heure une fois la semaine pleine (KV, ses jours) et les heures rondes des stations | à chaque vue |  | 14 | 10 |  | 1 | 140 |  | 120 | code |
-| /meteo/rejeu-jour-*.json | la barre de lecture de /meteo sur un jour choisi : le radar toutes les 5 min de ce jour (KV) et les heures rondes des stations | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 30 | code |
+| /meteo/rejeu-jour-*.json | la barre de lecture de /meteo sur un jour choisi : le radar toutes les 5 min de ce jour (KV) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 30 | code |
 | /meteo/rejeu-7j.json | la barre de lecture de /meteo sur 7 jours : les heures rondes des stations (KV), et la semaine du radar une fois pleine (KV) | à chaque vue |  | 7 | 3 |  | 1 | 140 |  | 40 | code |
 | /electricite/historique.json | le graphique de /electricite sur 7 et 30 jours (archive de rundata.re, KV) et le bilan annuel d'EDF | à chaque vue |  | 8 | 2 | 1 |  |  |  | 20 | code |
 | /carte/couche/*.json | le fichier d'une couche de /carte, demandé quand on la coche : pour une couche fixe, la liste du paquet ; pour une couche en direct, la dernière copie de sa page | à chaque vue |  | 3 | 1 |  |  |  |  | 10 | code |
@@ -349,12 +349,12 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | /aujourdhui/* | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
 | /meteo/* | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/feux, providers/ffvl, providers/houle, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/radar, providers/uv, providers/vigilance, providers/viirs |
 | /meteo/pluie-radar.json | providers/mf-auth, providers/radar |
-| /meteo/rejeu-6h.json | providers/meteofrance, providers/mf-auth, providers/radar |
-| /meteo/rejeu-24h.json | providers/meteofrance, providers/mf-auth, providers/radar |
-| /meteo/rejeu-24h-5min.json | providers/meteofrance, providers/mf-auth, providers/radar |
-| /meteo/rejeu-7j-15min.json | providers/meteofrance, providers/mf-auth, providers/radar |
-| /meteo/rejeu-jour-*.json | providers/meteofrance, providers/mf-auth, providers/radar |
-| /meteo/rejeu-7j.json | providers/meteofrance, providers/mf-auth, providers/radar |
+| /meteo/rejeu-6h.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
+| /meteo/rejeu-24h.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
+| /meteo/rejeu-24h-5min.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
+| /meteo/rejeu-7j-15min.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
+| /meteo/rejeu-jour-*.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
+| /meteo/rejeu-7j.json | providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/radar |
 | /electricite/historique.json | providers/avis-eau, providers/coupures-courant, providers/edf |
 | /mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/maregraphes, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv, providers/viirs |
 | /randonnees/* | providers/feux, providers/sentiers, providers/traces |

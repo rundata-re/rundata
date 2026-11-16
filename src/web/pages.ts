@@ -1009,6 +1009,14 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 .amchk{order:1;display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:.9rem;font-weight:600;color:var(--on-night-muted);cursor:pointer;margin-bottom:.5rem}.amchk input{width:1.1rem;height:1.1rem;margin:0}.pe-on .wxbar .amchk{margin:0}
 /* The two boxes on a line of their own under the tabs, « Valeurs » first, side by side at 390 px (data-run, 10/11/2026). */
 .wxchk{order:1;flex:1 0 100%;display:flex;flex-wrap:wrap;justify-content:space-between;column-gap:1rem}.pe-on .wxbar .wxchk{flex-basis:auto;gap:1rem}
+/* « Radar » and « Pluviomètres » on a second line, from the left, on the rain's tab only; in the full screen, on the line
+   of the rest (16/11/2026). Each box unticked hides its layer and its legend: the radar's rain, its drops and
+   sentence; the rose zones and theirs; over 7 days, the rain gauges' 3 hours drawn where the radar's are (.rj-g). The
+   live rose zones hidden while a replay plays. The rose zones' legend on its own line, after the radar's. */
+.wxpv{justify-content:flex-start}.wxmap:not(:has(#wxl-p:checked)) .wxpv{display:none}
+.wxmap:not(.rj-g):has(#wx-rd:not(:checked)) :is(.l-p [data-pluie],.l-p .flux,[data-radar],.lg-p .gp){display:none}
+.wxmap.rj-g:has(#wx-pv:not(:checked)) .l-p :is([data-pluie],.flux){display:none}
+.lg-p :is(.pz-now,.rj-pz){display:block;margin-top:.4rem}.wxmap:has(#wx-pv:not(:checked)) :is(.pvz,.pz-now,.rj-pz){display:none}.wxmap.rejeu:not(.rj-fin) .pvl{display:none}
 details.amdet{margin-top:.8rem}details.amdet .stations{margin-top:.6rem}
 /* The two canvases of a layer stacked by a grid, never positioned: in a foreignObject, Safari paints a positioned element unscaled, off the map. */
 .wxmap .vt{display:grid;grid-template:100%/100%;width:100%;height:100%}.wxmap .vt canvas{grid-area:1/1;width:100%;height:100%}
@@ -2297,10 +2305,25 @@ const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. L
 <li>Elle donne la température de chaque année depuis ${(chaud.annees as [number, number][])[0][0]} ${a(chaud.station.replace(/ \(aéroport\)$/, ""))}.</li>
 <li>Avec le connecteur, votre assistant IA lit aussi les mesures quotidiennes des stations que Météo-France a eues sur l'île, records compris.</li></ul>`;
 
+/** The FAQ's answer on the rose zones (marketing, 16/11/2026), its figures those of the map (meteo-carte.ts, PLUVIO_*). */
+const ZONES_ROSES = "Les zones roses estiment la pluie de l'heure affichée autour des pluviomètres de Météo-France, et des stations amateur quand la case «\u00a0Stations amateur\u00a0» est cochée. " +
+  "Chaque pluviomètre compte jusqu'à 5\u00a0km, et seulement là où l'altitude est à moins de 500\u00a0m de la sienne\u00a0: la pluie de la côte ne monte pas sur le volcan. " +
+  "En chaque point, la pluie est la moyenne des pluviomètres proches, chacun compté d'autant plus qu'il est près\u00a0: un pluviomètre sec compte aussi, et tire la zone vers zéro. " +
+  "Rien n'est dessiné sur la mer. Le ton dit la force de la pluie, aux seuils de la légende\u00a0: 0,2\u00a0mm, 2\u00a0mm, 8\u00a0mm et 20\u00a0mm dans l'heure. " +
+  "Quand la case «\u00a0Radar\u00a0» est cochée, le radar est dessiné devant\u00a0: là où il voit de la pluie, c'est son bleu qui s'affiche. " +
+  "C'est pourquoi les zones ne sont pas des ronds\u00a0: le relief les coupe, la mer et le radar les cachent, un voisin sec les rogne, et deux zones proches se rejoignent. " +
+  "Les pluviomètres de Météo-France donnent la pluie de l'heure pile. Celle d'une station amateur peut être décalée de 10\u00a0minutes au plus\u00a0: sa pluie de 06:08 à 07:08, par exemple, compte pour 06\u00a0h – 07\u00a0h. " +
+  "C'est une estimation, qui peut se tromper\u00a0: une averse peut tomber entre deux pluviomètres sans qu'aucun la mesure, la pluie change d'une ravine à l'autre, et un pluviomètre peut tomber en panne. " +
+  "La pluie n'est mesurée qu'au pluviomètre ou à la station, et seulement à cet endroit.";
 const METEO_FAQ: Faq[] = [
   { q: "Pourquoi la température diffère-t-elle de celle de mon appli ?", a: "Une appli donne souvent une prévision ou une estimation pour votre position. Ici, c'est la mesure d'une station, sous abri, à une heure donnée. Choisissez la station la plus proche et à la même altitude que vous : à La Réunion, quelques centaines de mètres de dénivelé changent beaucoup la température." },
   { q: "Les stations amateur sont-elles fiables ?", a: "Leur fiabilité n'est pas vérifiée par Météo-France. Elles sont donc en option (la case « Stations amateur »), et chacune est marquée. Elles aident à voir ce qui se passe entre les stations officielles." },
   { q: "Il a peu plu ces derniers temps : est-ce normal pour la saison ?", a: `<a href="/historique">La page Historique</a> compare la pluie des 30 derniers jours à la normale 1991-2020 de chaque station de référence.` },
+  // How the rose zones of the rain are worked out, and that they can be wrong (the user, 16/11/2026: « une section plus
+  // bas dans la page qui explique le modèle de calcul et qu'il peut comporter des erreurs »; marketing's words). Their
+  // legend leads here: its id is meteo-carte.ts's PLUVIO_ANCRE, written out (read here while that module loads, it would
+  // not be there yet; test/meteo-carte.test.ts checks they are the same).
+  { q: "Comment sont calculées les zones roses de la pluie\u00a0?", id: "h-zones-roses", a: ZONES_ROSES },
   { q: "Quel temps fera-t-il demain ?", a: `C'est une prévision : voyez la page de votre commune, qui la donne sur 7 jours, à part des mesures. Pour une vigilance, seul le site de Météo-France fait foi.` },
 ];
 

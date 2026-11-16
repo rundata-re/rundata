@@ -17,11 +17,15 @@
  * KV (SEMAINE_KV_KEY), merged with each newer package a data center already holds, never one asked for it, and at
  * first from the hourly archive in D1 (providers/climat.ts). Each file is kept by the data center as long as nothing
  * newer can be in it.
+ * The files of 6 and 24 hours and of a day also carry the rain of each hour at the amateur stations of MétéoR-OI, kept in
+ * KV by their own pass (providers/meteor-oi.ts, HEURES_KV_KEY), only while the association's agreement is given: the page
+ * adds them to its rose zones once « Stations amateur » is ticked.
  */
 import { count } from "../budget.js";
 import type { Cache } from "../cache.js";
 import * as climat from "../providers/climat.js";
 import * as meteofrance from "../providers/meteofrance.js";
+import * as meteorOi from "../providers/meteor-oi.js";
 import { project } from "./map.js";
 import { endOf, type Entree, fenetres, type Historique, isTrou, KEEP_MS, LONG_MS, parHeure, quarters, sansLame } from "./pluie-retro.js";
 import { KEEP_MS as WEEK_KEEP_MS, PREMIER_JOUR } from "./radar-semaine.js";
@@ -73,11 +77,22 @@ export interface SerieCarte extends Series {
   alt: number;
 }
 
+/** An amateur station of a file: its place, its altitude, the rain of each of the file's hours (mm, null when not kept). */
+export interface PluieAmateur {
+  id: string;
+  x: number;
+  y: number;
+  alt: number;
+  rr: (number | null)[];
+}
+
 export interface Heures {
   /** The end of the newest hour, ISO UTC. */
   fin: string;
   heures: number;
   st: SerieCarte[];
+  /** The amateur stations with a rain among the file's hours (amateurs()). */
+  am?: PluieAmateur[];
 }
 
 export interface Rejeu {
@@ -177,6 +192,29 @@ export function heures(s: Semaine | null, n: number, end?: number): Heures | nul
   return st.length ? { fin: after ? iso(last - after * HOUR_MS) : s.fin, heures: n, st } : null;
 }
 
+/**
+ * The file's hours with the amateur stations' rain of the same hours (`kept`, providers/meteor-oi.ts): each hour ending at
+ * the same round hour, at the stations of the association's list with one at least. Their places are the list's, to
+ * 0.01°, never closer than the association's map.
+ */
+export function amateurs(h: Heures | null, kept: meteorOi.Heures | null): Heures | null {
+  if (!h || !kept) return h;
+  const fin = Date.parse(h.fin), end = Date.parse(kept.fin), n = meteorOi.HEURES;
+  const am: PluieAmateur[] = [];
+  for (const s of meteorOi.STATIONS) {
+    const v = kept.st[s.code];
+    if (!v) continue;
+    const rr = Array.from({ length: h.heures }, (_, k) => {
+      const j = n - 1 - Math.round((end - (fin - (h.heures - 1 - k) * HOUR_MS)) / HOUR_MS);
+      return j >= 0 && j < v.length ? v[j] ?? null : null;
+    });
+    if (!rr.some((x) => x != null)) continue;
+    const [px, py] = project(s.lon, s.lat);
+    am.push({ id: s.code, x: Math.round(px * 10) / 10, y: Math.round(py * 10) / 10, alt: s.altitude_m, rr });
+  }
+  return am.length ? { ...h, am } : h;
+}
+
 export interface Sources {
   /** The radar's 6 hours (KV, pluie-retro.ts), with the lame d'eau in mm of its images. */
   six(): Promise<Historique | null>;
@@ -187,6 +225,8 @@ export interface Sources {
   /** Its week, an hour apart (radar-semaine.ts). */
   week(): Promise<Historique | null>;
   semaine: { get(): Promise<Semaine | null>; put(s: Semaine): Promise<void> };
+  /** The amateur stations' hours (providers/meteor-oi.ts): absent while the association's agreement is not given. */
+  amateur?(): Promise<meteorOi.Heures | null>;
 }
 
 let sources: Sources | undefined;
@@ -226,6 +266,14 @@ async function semaine(cache: Cache, now: Date, background: (p: Promise<unknown>
   return s;
 }
 
+/** The amateur stations' hours, when they are configured; null when they cannot be read. */
+async function kept(): Promise<meteorOi.Heures | null> {
+  const read = sources?.amateur;
+  if (!read) return null;
+  count();
+  return read().catch((err) => (console.error("rejeu : heures des stations amateur illisibles", err instanceof Error ? err.message : String(err)), null));
+}
+
 /** How long each file is kept: until something newer can be in it. */
 export function freshSeconds(d: Duree, now: Date): number {
   if (d === "6h") return 300;
@@ -242,15 +290,17 @@ async function build(d: Duree, cache: Cache, now: Date, background: (p: Promise<
     const entrees = h?.entrees.filter((e) => endOf(e) > now.getTime() - keep) ?? [];
     return h && entrees.length ? sansLame({ ...h, entrees }) : null;
   };
-  const [s, r] = await Promise.all([
+  const [s, r, am] = await Promise.all([
     semaine(cache, now, background),
     !sources ? undefined
     : d === "6h" ? radar(sources.six, KEEP_MS)
     : d === "24h" ? radar(sources.day, LONG_MS).then((h) => h && parHeure(h))
     : radar(sources.week, WEEK_KEEP_MS).then((h) => h && written(h, now) ? fenetres(h, HOUR_MS, 3 * HOUR_MS) : null),
+    // The amateur stations keep 25 hours: none over 7 days.
+    d === "7j" ? null : kept(),
   ]);
   // The week of the radar while it is written; the page shows the rain gauges for the hours before its first.
-  return { ...(d === "7j" ? r ? { radar: r } : {} : { radar: r ?? null }), heures: heures(s, HEURES[d]) };
+  return { ...(d === "7j" ? r ? { radar: r } : {} : { radar: r ?? null }), heures: amateurs(heures(s, HEURES[d]), am) };
 }
 
 /**
@@ -309,8 +359,8 @@ async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise
   const from = now.getTime() - (f === "24h" ? LONG_MS : 7 * DAY_MS);
   const src = sources;
   const reads = !src ? [] : [...joursEntre(from, now.getTime()).map((d) => radarOf(() => src.jour(d), lame)), ...(f === "24h" ? [radarOf(src.six, lame)] : [])];
-  const [s, hs] = await Promise.all([semaine(cache, now, background), Promise.all(reads)]);
-  if (f === "24h") return { radar: src ? assembler(hs, from) : null, heures: heures(s, HEURES["24h"]) };
+  const [s, hs, am] = await Promise.all([semaine(cache, now, background), Promise.all(reads), f === "24h" && !lame ? kept() : null]);
+  if (f === "24h") return { radar: src ? assembler(hs, from) : null, heures: amateurs(heures(s, HEURES["24h"]), am) };
   // The days for the hours they hold while written, as the file of an image an hour; the rain gauges before them.
   const all = src && assembler(hs, from);
   const radar = all && written(all, now) ? { ...all, entrees: quarts(all.entrees) } : null;
@@ -320,9 +370,11 @@ async function buildFin(f: Fin, cache: Cache, now: Date, background: (p: Promise
 /** The day `date`: its images, and the stations' hours from the midnight it starts at (`end` the one it ends at). */
 async function buildJour(date: string, end: number, cache: Cache, now: Date, background: (p: Promise<unknown>) => void): Promise<Rejeu> {
   const src = sources;
-  const [s, h] = await Promise.all([semaine(cache, now, background), src ? radarOf(() => src.jour(date)) : null]);
+  // The amateur stations' hours only for a day they can still be among (they keep 25 hours).
+  const recent = end > now.getTime() - meteorOi.HEURES * HOUR_MS;
+  const [s, h, am] = await Promise.all([semaine(cache, now, background), src ? radarOf(() => src.jour(date)) : null, recent ? kept() : null]);
   const fin = s ? Math.min(end, Date.parse(s.fin)) : end;
-  return { radar: src ? (h?.entrees.length ? h : null) : undefined, heures: heures(s, Math.round((fin - end + DAY_MS) / HOUR_MS) + 1, end) };
+  return { radar: src ? (h?.entrees.length ? h : null) : undefined, heures: amateurs(heures(s, Math.round((fin - end + DAY_MS) / HOUR_MS) + 1, end), am) };
 }
 
 const answer = async (key: string, fresh: number, cache: Cache, build: () => Promise<Rejeu>) =>

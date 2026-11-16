@@ -5,8 +5,10 @@ import * as climat from "../src/providers/climat.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { REGISTRY } from "../src/registre.js";
 import { type Historique, rle } from "../src/web/pluie-retro.js";
-import { assembler, configure, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
+import * as meteorOi from "../src/providers/meteor-oi.js";
+import { amateurs, assembler, configure, CUMULS_PATH, fill, FINS, freshSeconds, heures, HEURES, holes, jourPath, JOURS, joursEntre, joursOf, merge, PATHS, type Semaine, type Sources } from "../src/web/rejeu.js";
 import { PREMIER_JOUR } from "../src/web/radar-semaine.js";
+import { project } from "../src/web/map.js";
 import { site } from "../src/web/site.js";
 
 const csv = readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8");
@@ -88,6 +90,33 @@ describe("the stations' week", () => {
 });
 
 describe("the replay bar's files", () => {
+  it("carry the amateur stations' rain of their hours, at the association's stations, when it is configured; not over 7 days", async () => {
+    const now = at("2026-10-25T08:57:00Z");
+    const { s: src } = sources(merge(null, hourly, now));
+    const fin = Date.parse(heures(merge(null, hourly, now), 7)!.fin);
+    // Kept an hour behind the file: their newest hour is the file's last but one. A station off the list, and one whose
+    // only rain is before the file's hours, are left out.
+    const v = (k: number, x: number) => Object.assign(Array(meteorOi.HEURES).fill(null), { [k]: x }) as (number | null)[];
+    const kept: meteorOi.Heures = { fin: new Date(fin - 3_600_000).toISOString(), st: { TBL105: v(24, 8.9), ALF1370: v(0, 2), XYZ: v(24, 4) } };
+    let reads = 0;
+    configure({ ...src, amateur: async () => (reads++, kept) });
+    const get = async (p: string) => (await (await site(new Request(`https://rundata.re${p}`), new Cache(new MemoryStore(), () => now.getTime()), () => {}, now))!.json());
+    const six = (await get(PATHS["6h"])).heures;
+    const tbl = meteorOi.STATIONS.find((x) => x.code === "TBL105")!;
+    expect(six.am).toEqual([{ id: "TBL105", x: Math.round(project(tbl.lon, tbl.lat)[0] * 10) / 10, y: Math.round(project(tbl.lon, tbl.lat)[1] * 10) / 10, alt: 105, rr: [null, null, null, null, null, 8.9, null] }]);
+    expect((await get(PATHS["24h"])).heures.am[0].rr[22]).toBe(8.9);
+    expect(reads).toBe(2);
+    expect((await get(PATHS["7j"])).heures.am).toBeUndefined();
+    expect(reads).toBe(2);
+    // Without the agreement, nothing configured: none.
+    configure(src);
+    expect((await get(PATHS["6h"])).heures.am).toBeUndefined();
+    // Nothing kept, or hours of their own all outside the file's: the file as it was.
+    const h = heures(merge(null, hourly, now), 7);
+    expect(amateurs(h, null)).toBe(h);
+    expect(amateurs(h, { fin: kept.fin, st: { ALF1370: v(0, 2) } })).toBe(h);
+  });
+
   it("are kept as long as nothing newer can be in them", () => {
     expect(freshSeconds("6h", at("2026-10-25T08:57:00Z"))).toBe(300);
     expect(freshSeconds("24h", at("2026-10-25T08:57:00Z"))).toBe(900);

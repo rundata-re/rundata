@@ -60,7 +60,7 @@ describe("the rain at every gauge of a commune asked as a whole", () => {
     expect(b.depuis_minuit).toEqual({ "Le Tremblet": "76,1 mm", "Le Baril": "4,8 mm" });
     expect(b.fort_ecart).toBe(true);
     expect(b.resume).toBe(
-      "Pluie mesurée de 00:00 à 11:00 aux 2 pluviomètres Météo-France de Saint-Philippe : Le Tremblet 76,1 mm ; Le Baril 4,8 mm. " +
+      "Pluie mesurée de 00:00 à 11:00 aux 2 pluviomètres Météo-France de Saint-Philippe : Le Tremblet 76,1 mm ; Le Baril 4,8 mm. " +
         "Fort écart de 00:00 à 11:00 : Le Tremblet a mesuré 76,1 mm, Le Baril 4,8 mm. La pluie au Baril ne dit pas celle de toute la commune : dire les deux. " +
         // Yesterday: historique_meteo's, hour by hour at each gauge, no read more in meteo_actuelle.
         "Hier heure par heure à chacun : historique_meteo.",
@@ -75,7 +75,7 @@ describe("the rain at every gauge of a commune asked as a whole", () => {
     const b = pluieCommune(rain({ end: HOURLY.end, rr }), "Saint-Denis", undefined, NOW)!;
     const [wet, ...dry] = Object.keys(b.depuis_minuit);
     expect(b.depuis_minuit[wet]).toBe("0,2 mm");
-    expect(b.resume).toContain(`aux 6 pluviomètres Météo-France de Saint-Denis : ${wet} 0,2 mm ; ${dry.slice(0, -1).join(", ")} et ${dry.at(-1)} 0 mm.`);
+    expect(b.resume).toContain(`aux 6 pluviomètres Météo-France de Saint-Denis : ${wet} 0,2 mm ; ${dry.slice(0, -1).join(", ")} et ${dry.at(-1)} 0 mm.`);
   });
 
   it("says no gap below the threshold read from the archive, nor when the wettest is the one shown", () => {

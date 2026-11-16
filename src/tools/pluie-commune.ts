@@ -46,7 +46,7 @@ export function pluieCommune(rain: RecentRain, commune: string, shown: { id: str
   const dit = (x: (typeof split)[number]) => (periode ? x.pluie : `${x.pluie} ${x.periode}`);
   const groups = new Map<string, string[]>();
   for (const x of split) groups.set(dit(x), [...(groups.get(dit(x)) ?? []), x.nom]);
-  const said = [...groups].map(([pluie, noms]) => `${enumeration(noms)} ${pluie}`).join(" ; ");
+  const said = [...groups].map(([pluie, noms]) => `${enumeration(noms)} ${pluie}`).join(" ; ");
   const top = rows[0];
   const base = shown && sinceMidnight(rain, shown.id, now);
   const diverge = !!base && top.id !== shown!.id && top.c.total - base.total >= ECART_MM && top.c.total >= ECART_FOIS * base.total;

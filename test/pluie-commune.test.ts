@@ -55,28 +55,38 @@ describe("the rain at every gauge of a commune asked as a whole", () => {
 
   it("says each gauge's rain since midnight, the wettest first, and the gap the nearest one hides", () => {
     const b = pluieCommune(rain(), "Saint-Philippe", { id: "97417360", nom: "Le Baril" }, NOW)!;
-    expect(b.stations).toEqual([
-      { station: "Le Tremblet", cumul_depuis_minuit: "76,1 mm de 00:00 à 11:00" },
-      { station: "Le Baril", cumul_depuis_minuit: "4,8 mm de 00:00 à 11:00" },
-    ]);
-    expect(b.ecart).toBe(
-      "Fort écart entre les pluviomètres : Le Tremblet a mesuré 76,1 mm de 00:00 à 11:00 (depuis minuit), Le Baril 4,8 mm de 00:00 à 11:00. " +
-        "La pluie au Baril ne dit pas celle de toute la commune de Saint-Philippe : dire les deux.",
+    // The period said once, as every gauge was read to the same minute.
+    expect(b.periode).toBe("de 00:00 à 11:00");
+    expect(b.depuis_minuit).toEqual({ "Le Tremblet": "76,1 mm", "Le Baril": "4,8 mm" });
+    expect(b.fort_ecart).toBe(true);
+    expect(b.resume).toBe(
+      "Pluie mesurée de 00:00 à 11:00 aux 2 pluviomètres Météo-France de Saint-Philippe : Le Tremblet 76,1 mm ; Le Baril 4,8 mm. " +
+        "Fort écart de 00:00 à 11:00 : Le Tremblet a mesuré 76,1 mm, Le Baril 4,8 mm. La pluie au Baril ne dit pas celle de toute la commune : dire les deux. " +
+        // Yesterday: historique_meteo's, hour by hour at each gauge, no read more in meteo_actuelle.
+        "Hier heure par heure à chacun : historique_meteo.",
     );
-    expect(b.resume).toContain("Pluie mesurée depuis minuit aux 2 pluviomètres Météo-France de Saint-Philippe : Le Tremblet 76,1 mm de 00:00 à 11:00 ; Le Baril 4,8 mm de 00:00 à 11:00.");
-    // Yesterday: historique_meteo's, hour by hour at each gauge, no read more in meteo_actuelle.
-    expect(b.resume).toContain("Pour hier à chacun de ces pluviomètres, heure par heure : historique_meteo.");
+  });
+
+  it("names together the gauges with the same rain, the period said once", () => {
+    // Saint-Denis has six: one wet, five dry, as on 16/11/2026 at 07:42.
+    const ids = gaugesOf("Saint-Denis").map(([id]) => id);
+    expect(ids.length).toBe(6);
+    const rr = Object.fromEntries(ids.map((id, k) => [id, k === 2 ? [0.2, ...zeros(23)] : zeros(24)]));
+    const b = pluieCommune(rain({ end: HOURLY.end, rr }), "Saint-Denis", undefined, NOW)!;
+    const [wet, ...dry] = Object.keys(b.depuis_minuit);
+    expect(b.depuis_minuit[wet]).toBe("0,2 mm");
+    expect(b.resume).toContain(`aux 6 pluviomètres Météo-France de Saint-Denis : ${wet} 0,2 mm ; ${dry.slice(0, -1).join(", ")} et ${dry.at(-1)} 0 mm.`);
   });
 
   it("says no gap below the threshold read from the archive, nor when the wettest is the one shown", () => {
     // 19,9 mm more: under ECART_MM.
     const close = { ...HOURLY, rr: { "97417340": [ECART_MM - 0.1 + 4.8, ...zeros(23)], "97417360": BARIL } };
-    expect(pluieCommune(rain(close), "Saint-Philippe", { id: "97417360", nom: "Le Baril" }, NOW)!.ecart).toBeUndefined();
+    expect(pluieCommune(rain(close), "Saint-Philippe", { id: "97417360", nom: "Le Baril" }, NOW)!.fort_ecart).toBeUndefined();
     // 25 mm more but less than ECART_FOIS times as much.
     const wet = { ...HOURLY, rr: { "97417340": [35, ...zeros(23)], "97417360": [10, ...zeros(23)] } };
     expect(35 < ECART_FOIS * 10).toBe(true);
-    expect(pluieCommune(rain(wet), "Saint-Philippe", { id: "97417360", nom: "Le Baril" }, NOW)!.ecart).toBeUndefined();
-    expect(pluieCommune(rain(), "Saint-Philippe", { id: "97417340", nom: "Le Tremblet" }, NOW)!.ecart).toBeUndefined();
+    expect(pluieCommune(rain(wet), "Saint-Philippe", { id: "97417360", nom: "Le Baril" }, NOW)!.fort_ecart).toBeUndefined();
+    expect(pluieCommune(rain(), "Saint-Philippe", { id: "97417340", nom: "Le Tremblet" }, NOW)!.fort_ecart).toBeUndefined();
     // A commune whose only gauge is the one shown: nothing to add.
     expect(pluieCommune(rain({ end: HOURLY.end, rr: { "97417360": BARIL } }), "Saint-Philippe", { id: "97417360", nom: "Le Baril" }, NOW)).toBeUndefined();
   });
@@ -84,11 +94,12 @@ describe("the rain at every gauge of a commune asked as a whole", () => {
   it("meteo_actuelle on Saint-Philippe gives Le Tremblet's 76,1 mm beside Le Baril's, with the gap, in its summary", async () => {
     const r = body(await meteoActuelle(await cache(), "Saint-Philippe", NOW));
     expect(r.pluie_recente.station).toBe("Le Baril");
-    expect(r.pluie_commune.stations.map((s: { station: string }) => s.station)).toEqual(["Le Tremblet", "Le Baril"]);
+    expect(Object.keys(r.pluie_commune.depuis_minuit)).toEqual(["Le Tremblet", "Le Baril"]);
     // To the last 6-minute slot read, 11:12.
-    expect(r.pluie_commune.stations[0].cumul_depuis_minuit).toBe("76,1 mm de 00:00 à 11:12");
-    expect(r.pluie_commune.ecart).toContain("Le Tremblet a mesuré 76,1 mm");
-    expect(r.resume).toContain("Fort écart entre les pluviomètres");
+    expect(r.pluie_commune.periode).toBe("de 00:00 à 11:12");
+    expect(r.pluie_commune.depuis_minuit["Le Tremblet"]).toBe("76,1 mm");
+    expect(r.resume).toContain("Le Tremblet a mesuré 76,1 mm");
+    expect(r.resume).toContain("Fort écart de 00:00 à 11:12");
   });
 
   it("gives no commune block for a place within it", async () => {

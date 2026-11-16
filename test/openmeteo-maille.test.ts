@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as openmeteo from "../src/providers/openmeteo.js";
 import { resolvePlace } from "../src/places/resolve.js";
+import { withLectures } from "../src/lectures.js";
 import type { Place } from "../src/places/resolve.js";
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
@@ -77,5 +78,44 @@ describe("Open-Meteo's forecast, one copy per cell and per run of the model", ()
     expect(openmeteo.freshFor(OUT + 9 * 60 * MIN, OUT)).toBe(6 * 3600);
     expect(openmeteo.freshFor(OUT + 10_000, OUT)).toBe(60);
     expect(openmeteo.freshFor(OUT)).toBe(6 * 3600);
+  });
+
+  it("leaves the run's file out of the answer's freshness, and its copy kept after a failure out of the run's time", async () => {
+    // 13 to 16/11/2026: meta.json answered HTTP 404 to the Worker now and then; its copy of 12/11, 90 h old, made the
+    // answers say « copie de secours, il y a 90 h » and the run of 12/11, while the forecast was minutes old.
+    const kv = new MemoryStore();
+    const clock = { t: OUT + 90 * 60 * MIN };
+    // The isolate's copy of the run's file (cache.get reads the isolate's stores, not KV).
+    const mem = new MemoryStore();
+    await mem.put("openmeteo:meta", { value: meta, fetchedAt: OUT });
+    let down = true;
+    vi.stubGlobal("fetch", async (url: string) => {
+      asked.push(url);
+      if (url.includes("/static/meta.json")) return down ? new Response("", { status: 404 }) : new Response(JSON.stringify(run));
+      return new Response(fixture("openmeteo_cilaos.json"));
+    });
+    const { value, lectures } = await withLectures(() => openmeteo.forecast(new Cache(mem, () => clock.t, false, kv), cilaos));
+    expect(value.stale).toBe(false);
+    expect(value.value.runAt).toBeUndefined();
+    expect(lectures.map((l) => l.key)).toEqual([openmeteo.cacheKey(cilaos)]);
+    expect(lectures.some((l) => l.stale)).toBe(false);
+    // The file answers again, its breaker closed: the run's time is back, still not in the freshness.
+    down = false;
+    run = { ...meta, last_run_initialisation_time: Math.floor(clock.t / 1000) - 7 * 3600, last_run_availability_time: Math.floor(clock.t / 1000) - 3600 };
+    clock.t += 31 * MIN;
+    const again = await withLectures(() => openmeteo.forecast(new Cache(mem, () => clock.t, false, kv), cilaos));
+    expect(again.value.value.runAt?.getTime()).toBe(run.last_run_initialisation_time * 1000);
+    expect(again.lectures.some((l) => l.key === "openmeteo:meta")).toBe(false);
+  });
+
+  it("keeps the run's time of a copy kept after a failure while no newer run can be out", async () => {
+    const kv = new MemoryStore();
+    const clock = { t: OUT + 2 * 60 * MIN };
+    // The isolate's copy of the run's file (cache.get reads the isolate's stores, not KV).
+    const mem = new MemoryStore();
+    await mem.put("openmeteo:meta", { value: meta, fetchedAt: OUT });
+    vi.stubGlobal("fetch", async (url: string) => (url.includes("/static/meta.json") ? new Response("", { status: 404 }) : new Response(fixture("openmeteo_cilaos.json"))));
+    const f = await openmeteo.forecast(new Cache(mem, () => clock.t, false, kv), cilaos);
+    expect(f.value.runAt?.getTime()).toBe(meta.last_run_initialisation_time * 1000);
   });
 });

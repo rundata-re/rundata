@@ -52,6 +52,13 @@ export const callDeadline = () => until.getStore();
  */
 export const apart = <T>(fn: () => T): T => until.run(undefined as unknown as number, () => current.run([], fn));
 
+/**
+ * Runs `fn` within the tool call being answered, its sources waited for as long as the call waits, but without noting
+ * what it reads: a read that only helps the answer and says nothing of its data (providers/openmeteo.ts, the time of
+ * the model's run). From 13 to 16/11/2026 that file's copy, 90 h old, dated forecasts read minutes before.
+ */
+export const unnoted = <T>(fn: () => T): T => current.run([], fn);
+
 /** Called by the cache for each entry it serves; nothing outside a tool call. */
 export function noteLecture(l: Lecture) {
   current.getStore()?.push(l);

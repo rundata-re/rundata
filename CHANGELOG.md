@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 16 novembre 2026
 
+- Prévisions dans votre IA : plus d'avertissement « copie de secours » à tort quand la prévision est à jour, ni de fausse heure de calcul.
 - Météo : en rose, la pluie mesurée autour des pluviomètres, que le radar ne voit pas ; cases Radar, Pluviomètres et Stations amateur.
 - Connecteur : la pluie d'hier dans une commune, heure par heure, à chacun de ses pluviomètres, avec l'écart entre eux.
 - Connecteur : l'historique météo donne aussi les journées des stations amateur de MétéoR-OI, après celles de Météo-France.

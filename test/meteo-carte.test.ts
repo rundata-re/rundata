@@ -28,6 +28,7 @@ import {
   PLUVIO_CREDIT_AM,
   PLUVIO_KM,
   PLUVIO_LEGENDE,
+  pluvioLive,
   PLUVIO_MOT,
   pluvioBands,
   pluvioZone,
@@ -409,7 +410,9 @@ describe("the page /meteo with every station", () => {
     expect(pz).toHaveLength(4);
     expect(pz).toContainEqual([...project(PLAINE.lon, PLAINE.lat).map((x) => Math.round(x * 10) / 10), 2.4, 1560]);
     // Their legend with the hour's ends, in La Réunion's time (05:18Z is 09:18), and the link to the FAQ, hidden until drawn.
-    expect(html).toContain(`<span class="pz-now" hidden> En rose\u00a0: la pluie de 8\u00a0h\u00a018 – 9\u00a0h\u00a018 autour des pluviomètres de Météo-France`);
+    expect(html).toContain(`<span class="pz-now" hidden> En rose\u00a0: la pluie de 08:18–09:18 autour des pluviomètres de Météo-France`);
+    // The site's rule for hours: minutes as « 08:18 », a whole hour as « 2 h », a span with no space around its dash.
+    expect(pluvioLive("2026-11-15T23:00:00Z")).toContain("la pluie de 2\u00a0h–3\u00a0h autour");
     expect(html).toContain(`<span data-radar hidden></span><span class="pz-now" hidden>`);
     expect(html).toContain(`<a href="#h-zones-roses">Comment c&#39;est calculé →</a></span></span>`);
     // Every gauge of the newest time dry: nothing, even with rain an hour before.
@@ -453,8 +456,8 @@ describe("the page /meteo with every station", () => {
     const pzAm = JSON.parse(html.match(/data-pz-am="([^"]+)"/)![1].replace(/&quot;/g, '"')) as number[][];
     expect(pzAm).toEqual([[...project(55.8, -21.32).map((x) => Math.round(x * 10) / 10), 8.9, 105]]);
     // The legend, official or with them as the box says (lg-of, lg-am), the credit as the association asked, its link.
-    expect(html).toContain(`<span class="pz-now" hidden> <span class="lg-of">En rose\u00a0: la pluie de 8\u00a0h\u00a018 – 9\u00a0h\u00a018 autour des pluviomètres de Météo-France qui en ont mesuré`);
-    expect(html).toContain(`<span class="lg-am">En rose\u00a0: la pluie de 8\u00a0h\u00a018 – 9\u00a0h\u00a018 autour des pluviomètres de Météo-France et des stations amateur qui en ont mesuré, jusqu&#39;à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n&#39;est mesurée qu&#39;au pluviomètre ou à la station\u00a0: autour, c&#39;est une estimation. Données\u00a0: <a href="https://www.meteor-oi.re`);
+    expect(html).toContain(`<span class="pz-now" hidden> <span class="lg-of">En rose\u00a0: la pluie de 08:18–09:18 autour des pluviomètres de Météo-France qui en ont mesuré`);
+    expect(html).toContain(`<span class="lg-am">En rose\u00a0: la pluie de 08:18–09:18 autour des pluviomètres de Météo-France et des stations amateur qui en ont mesuré, jusqu&#39;à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n&#39;est mesurée qu&#39;au pluviomètre ou à la station\u00a0: autour, c&#39;est une estimation. Données\u00a0: <a href="https://www.meteor-oi.re`);
     expect(PLUVIO_CREDIT_AM).toBe(METEOR_CREDIT.replace("Données :", "Données\u00a0:"));
     expect(html).toContain(`${PLUVIO_CREDIT_AM}.</span> <a href="#h-zones-roses">Comment c&#39;est calculé →</a></span>`);
     // Every official rain gauge dry, an amateur station wet: the zones are written, for the box.
@@ -478,7 +481,7 @@ describe("the page /meteo with every station", () => {
     expect(js).toContain(`{const i=document.getElementById("wx-am");if(i)i.addEventListener("change",()=>{if(J&&SA.length){PZG.clear();PZI.clear();PZK="";show()}})}`);
     expect(() => new Function(js)).not.toThrow();
     // The FAQ says that their hour can be 10 minutes off.
-    expect(page(ALL)).toContain(`Celle d'une station amateur peut être décalée de 10\u00a0minutes au plus\u00a0: sa pluie de 06:08 à 07:08, par exemple, compte pour 06\u00a0h – 07\u00a0h. C'est une estimation`);
+    expect(page(ALL)).toContain(`Celle d'une station amateur peut être décalée de 10\u00a0minutes au plus\u00a0: sa pluie de 06:08 à 07:08, par exemple, compte pour 6\u00a0h–7\u00a0h. C'est une estimation`);
   });
 
   it("puts the map at the top, the stations' list in the middle, the sea and the forecasts below", () => {
@@ -956,7 +959,8 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(rejeuScript()).toContain(`const ST={"6h":3e5,"24h":9e5,"7j":36e5,"24h+":3e5,"7j+":9e5,jour:3e5}`);
     // « 14 h 15 » off the hour, « 14 h » on it.
     expect(METEO_SCRIPT).toContain(`const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")}`);
-    expect(rejeuScript()).toContain(`hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")}`);
+    // The replay's hours on the map by the site's rule: « 14:15–15:15 » off the hour, « 14 h–15 h » on it.
+    expect(rejeuScript()).toContain(`hx=(a,z)=>{const x=lx(a),y=lx(z);return x.getUTCMinutes()||y.getUTCMinutes()?p2(x.getUTCHours())+":"+p2(x.getUTCMinutes())+"–"+p2(y.getUTCHours())+":"+p2(y.getUTCMinutes()):x.getUTCHours()+"\u00a0h–"+y.getUTCHours()+"\u00a0h"};`);
     // The legend says it once, the hours being on the map: an hour's, or 3 hours' for the radar's week.
     expect(METEO_SCRIPT).toContain(`(o.de?"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France pendant les heures écrites sur la carte":"la pluie estimée par le radar de Météo-France à l'heure écrite sur la carte")`);
     expect(rejeuScript()).toContain(`de:R&&K.p.some((k)=>k.e.de)`);
@@ -966,7 +970,7 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(rejeuScript()).toContain(`if(BA(d)==="7j"){const r0=K.p.length?Date.parse(K.p[0].e.de||K.p[0].e.fin):Infinity;K.g=windows().filter((k)=>k.end<=r0)}}RT=K.p.length?K.p[0].t:Infinity;`);
     // The hatches linger over the images of 5 minutes only: an hour's image is already where the radars saw badly in its hour.
     expect(rejeuScript()).toContain(`trail=(s)=>rm||!tw()?null:keep(`);
-    expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t)`);
+    expect(rejeuScript()).toContain(`hh.textContent=!end&&de?hx(de,t):hmm(t)`);
     // Faded from one image to the next all the time, never held then switched (the user, 01/11/2026).
     expect(rejeuScript()).not.toContain("ease");
     expect(rejeuScript()).toContain(`return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)`);

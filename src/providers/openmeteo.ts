@@ -10,6 +10,7 @@
  */
 import type { Cache, Cached } from "../cache.js";
 import { getJson } from "../http.js";
+import { unnoted } from "../lectures.js";
 import type { Place } from "../places/resolve.js";
 import type { Forecast, ForecastModel, SourceInfo } from "../types.js";
 
@@ -126,9 +127,18 @@ export function parse(j: OpenMeteoJson, runAt?: Date): Forecast {
   };
 }
 
+/**
+ * The times of the model's last run, or nothing. Read apart from the answer's freshness (`unnoted`): it dates no
+ * forecast. Its copy kept after a failed read and telling of a run out more than RUN_EVERY_SECONDS ago is not used:
+ * a newer run is out, the forecast read since is that one's. From 13 to 16/11/2026 the file answered HTTP 404 to the
+ * Worker now and then, and a copy of 12/11 made the answers say « copie de secours, il y a 90 h » and the run of 12/11.
+ */
 async function runMeta(cache: Cache): Promise<MetaJson | undefined> {
   try {
-    return (await cache.get("openmeteo:meta", FRESH_SECONDS, () => getJson<MetaJson>(SOURCE.id, META))).value;
+    const c = await unnoted(() => cache.get("openmeteo:meta", FRESH_SECONDS, () => getJson<MetaJson>(SOURCE.id, META)));
+    const out = (c.value.last_run_availability_time ?? c.value.last_run_initialisation_time) * 1000;
+    if (c.stale && cache.time() - out > RUN_EVERY_SECONDS * 1000) return undefined;
+    return c.value;
   } catch {
     return undefined; // the run time is a nicety; the forecast stands without it
   }

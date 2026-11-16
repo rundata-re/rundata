@@ -7,7 +7,7 @@
 import { INSEE } from "../places/insee.js";
 import type { RecentRain } from "../providers/meteofrance.js";
 import { STATIONS_974 } from "../providers/meteofrance-stations.js";
-import { a } from "./format.js";
+import { a, enumeration } from "./format.js";
 import { sinceMidnight } from "./pluie-recente.js";
 
 /**
@@ -36,23 +36,34 @@ export function pluieCommune(rain: RecentRain, commune: string, shown: { id: str
     .filter((x): x is { id: string; nom: string; c: NonNullable<typeof x.c> } => x.c !== undefined)
     .sort((x, y) => y.c.total - x.c.total);
   if (!rows.length || (rows.length === 1 && rows[0].id === shown?.id)) return undefined;
-  const stations = rows.map((x) => ({ station: x.nom, cumul_depuis_minuit: x.c.cumul }));
+  // « 0,2 mm » and « de 00:00 à 07:42 »: the period said once when every gauge was read to the same minute, as it nearly
+  // always is, and the gauges with the same rain named together (most often, all but one at 0 mm).
+  const split = rows.map((x) => {
+    const k = x.c.cumul.lastIndexOf(" de ");
+    return { nom: x.nom, pluie: x.c.cumul.slice(0, k), periode: x.c.cumul.slice(k + 1) };
+  });
+  const periode = split.every((x) => x.periode === split[0].periode) ? split[0].periode : undefined;
+  const dit = (x: (typeof split)[number]) => (periode ? x.pluie : `${x.pluie} ${x.periode}`);
+  const groups = new Map<string, string[]>();
+  for (const x of split) groups.set(dit(x), [...(groups.get(dit(x)) ?? []), x.nom]);
+  const said = [...groups].map(([pluie, noms]) => `${enumeration(noms)} ${pluie}`).join(" ; ");
   const top = rows[0];
   const base = shown && sinceMidnight(rain, shown.id, now);
   const diverge = !!base && top.id !== shown!.id && top.c.total - base.total >= ECART_MM && top.c.total >= ECART_FOIS * base.total;
+  // Said once, in the summary; the block only marks it. The gauge shown may be outside the commune: its own cumul then.
+  const dite = split.find((x) => x.nom === shown?.nom);
   const ecart = diverge
-    ? `Fort écart entre les pluviomètres : ${top.nom} a mesuré ${top.c.cumul} (depuis minuit), ${shown!.nom} ${base!.cumul}. ` +
-      `La pluie ${a(shown!.nom)} ne dit pas celle de toute la commune de ${commune} : dire les deux.`
+    ? `Fort écart${periode ? ` ${periode}` : ""} : ${top.nom} a mesuré ${dit(split[0])}, ${shown!.nom} ${dite ? dit(dite) : base!.cumul}. ` +
+      `La pluie ${a(shown!.nom)} ne dit pas celle de toute la commune : dire les deux.`
     : undefined;
-  const said = rows.map((x) => `${x.nom} ${x.c.cumul}`).join(" ; ");
   return {
-    commune,
     nature: "mesure (pluviomètres Météo-France de la commune)",
-    stations,
-    ...(ecart ? { ecart } : {}),
+    ...(periode ? { periode } : {}),
+    depuis_minuit: Object.fromEntries(split.map((x) => [x.nom, dit(x)])),
+    ...(ecart ? { fort_ecart: true } : {}),
     resume:
-      `Pluie mesurée depuis minuit ${rows.length > 1 ? `aux ${rows.length} pluviomètres` : "au pluviomètre"} Météo-France de ${commune} : ${said}.` +
+      `Pluie mesurée ${periode ?? "depuis minuit"} ${rows.length > 1 ? `aux ${rows.length} pluviomètres` : "au pluviomètre"} Météo-France de ${commune} : ${said}.` +
       (ecart ? ` ${ecart}` : "") +
-      ` Pour hier à chacun de ces pluviomètres, heure par heure : historique_meteo.`,
+      ` Hier heure par heure à chacun : historique_meteo.`,
   };
 }

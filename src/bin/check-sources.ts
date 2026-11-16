@@ -198,6 +198,8 @@ export const MAX_BYTES: Record<string, number> = {
   volcan_seismes: 11_000, // 9 644
   // 6 658 on 10/11/2026: +1 055 for the stations of MétéoR Océan Indien (a station with its credit, the source, its
   // words in `couverture`); the size of the day plus a tenth, rounded up to 500.
+  // 7 676 on 16/11/2026 with the rain at each gauge of the commune (1.0.586); 7 206 once each gauge's rain is said
+  // without repeating the period, the gauges with the same rain named together, and the gap said once.
   "meteo_actuelle (Saint-Denis)": 7_500, // 5 822
   "prevision_meteo (Saint-Denis)": 13_000, // 11 410
   "temperature_mer (Saint-Gilles)": 12_000, // 14 827, then 10 671 with the whales' rules on /mer only

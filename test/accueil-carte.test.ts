@@ -376,6 +376,14 @@ describe("the home page's island", () => {
       expect(svg).not.toContain('data-k="elec" style');
       expect(svg).not.toContain('<g class="hub cx" data-k="elec">');
     }
+    // Its longest value too, never « 100 %… »: whole on the wide map, on two lines on the phone's, as Volcan's.
+    const e = (live.electricite as unknown as { value: { production: Record<string, unknown> } }).value;
+    const full = { ...live, electricite: cached({ ...e, production: { ...e.production, renouvelable_pct: 100 } }) };
+    const map = accueilCarte(full, NOW)!;
+    expect(layout(map, "large")).toContain(">100\u202f% renouvelable</text>");
+    expect(layout(map, "tel")).toMatch(/<tspan>100\u202f% <\/tspan><tspan x="[\d.]+" dy="\d+">renouvelable<\/tspan><\/text>/);
+    expect(map).not.toContain("100\u202f%…");
+    expect(problemes(full, NOW)).toEqual([]);
     expect(html).toContain("Sources\u00a0: ");
     expect(html).toMatch(/Sources\u00a0: [^<]*EDF/);
     const at = (p: Record<string, unknown>) => sujets({ electricite: cached({ production: { heure_mesure: "09/11 23:50 heure de La Réunion", age_min: 640, total_mw: 301.6, parts: [], renouvelable_pct: 88.7, statut: "", ...p } }) }, NOW);

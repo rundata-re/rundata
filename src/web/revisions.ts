@@ -58,7 +58,7 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // (« 1er étage », « rez-de-chaussée - Bât B »).
   // Its places' names as French writes them (noms.ts): « Collège des 2 Canons », « Église de La Ravine Sèche ».
   // Raised with each weekly Géo'DAE list (scripts/build-dae.py, its PR opened by the Monday timer).
-  dae: 10,
+  dae: 11,
   dechets: 2,
   // The communes whose notices are read, in the tap water's note, with those shared between distributors (L'Étang-Salé).
   eau: 4,

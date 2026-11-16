@@ -9,6 +9,7 @@ import { INSEE } from "../places/insee.js";
 import { sun } from "../providers/calendrier.js";
 import altitudes from "./altitudes.json" with { type: "json" };
 import { fr } from "../tools/format.js";
+import * as meteorOi from "../providers/meteor-oi.js";
 import { ditAmateur, NETWORKS } from "../tools/meteo.js";
 import type { StationNow } from "./data.js";
 import { ZOOM_SCRIPT, zoomButtons } from "./carte-zoom.js";
@@ -436,9 +437,19 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   const wd = winds(w);
   const vent = vData(w);
   const ventAm = winds(amateurs).length ? ` data-vent-am="${esc(vData(amateurs))}"` : "";
+  // The rose zones live (pluieScript): the official rain gauges' last hour, those of the newest time only, so that the
+  // map shows one hour; nothing when none of them measured rain enough for the lightest tone.
+  const rainEnd = hour ? list.reduce((m, s) => (s.pluie_1h != null && s.time > m ? s.time : m), "") : "";
+  const r1 = (x: number) => Math.round(x * 10) / 10;
+  const pzPts = rainEnd ? list.filter((s) => s.pluie_1h != null && s.time === rainEnd).map((s) => [...project(s.lon, s.lat).map(r1), s.pluie_1h!, s.altitude_m]) : [];
+  // The amateur stations of MétéoR-OI whose hour ends at most 10 minutes from it (their measures come every 10
+  // minutes), added by the script once « Stations amateur » is ticked: the zones then show their rain too.
+  const pzAm = rainEnd ? amateurs.filter((s) => s.source === meteorOi.SOURCE.id && s.pluie_1h != null && Math.abs(Date.parse(s.time) - Date.parse(rainEnd)) <= meteorOi.HEURE_ECART_MS)
+    .map((s) => [...project(s.lon, s.lat).map(r1), s.pluie_1h!, s.altitude_m]) : [];
+  const pzWet = [...pzPts, ...pzAm].some((p) => p[2] >= PLUVIO_MM[0]);
   const fo = (l: string, canvas: string) => `<foreignObject class="l-${l}" width="${W}" height="${H}" clip-path="url(#isl-clip)">${canvas}</foreignObject>`;
   const overlay = fo("t", `<canvas class="voile" data-voile="${esc(voile)}"${voileAm} data-alt="${esc(altPath)}" width="1" height="1"></canvas>`) +
-    (nRain ? fo("p", `<div class="vt"><canvas class="voile" data-pluie="${PLUIE_RADAR}" data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "") +
+    (nRain ? fo("p", `<div class="vt"><canvas class="voile" data-pluie="${PLUIE_RADAR}"${pzWet ? ` data-pz="${esc(JSON.stringify(pzPts))}"${pzAm.length ? ` data-pz-am="${esc(JSON.stringify(pzAm))}"` : ""}` : ""} data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "") +
     (wd.length ? fo("v", `<div class="vt"><canvas class="voile" data-vent="${esc(vent)}"${ventAm} data-alt="${esc(altPath)}" width="1" height="1"></canvas><canvas class="flux" width="1" height="1"></canvas></div>`) : "");
   const n = (k: number, one: string, many: string) => `${k} ${k > 1 ? many : one}`;
   // Once « Stations amateur » is ticked, each legend counts them apart, after the official ones, and dates the latest
@@ -464,7 +475,12 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
     nRain && { id: "p", tab: "Pluie", legend: both(
       `${n(nRain, "pluviomètre", "pluviomètres")}, ${pFin(latest)}`,
       !!pAm && `${n(nRain, "pluviomètre officiel", "pluviomètres officiels")} et ${pAm} amateur (${NON_VERIFIEE}), ${pFin(latestAll)}`,
-    ) + ` Point blanc : pas de pluie mesurée. <span data-radar hidden></span>` },
+    ) + ` Point blanc : pas de pluie mesurée. ` +
+      // The rose zones' legend, shown once the page's script has drawn them, after the radar's: the radar's scale, above its
+      // sentence, never read as the rose's (16/11/2026). With the amateur stations' rain among them once their box is
+      // ticked, the legend that says so and their credit.
+      `<span data-radar hidden></span>` +
+      (pzWet ? `<span class="pz-now" hidden> ${both(esc(pluvioLive(rainEnd)), !!pzAm.length && `${esc(pluvioLive(rainEnd, PLUVIO_LEGENDE_AM))} ${PLUVIO_CREDIT_AM}.`)} <a href="#${PLUVIO_ANCRE}">${esc(PLUVIO_LIEN)}</a></span>` : "") },
     w.length && { id: "v", tab: "Vent", legend: `<span class="lgs">0<i class="vgrad wgrad"></i>${thin("60 km/h")}</span>` + both(
       `${n(w.length, "anémomètre", "anémomètres")}, ${vFin(latest, "")}`,
       !!wAm && `${n(w.length, "anémomètre officiel", "anémomètres officiels")} et ${wAm} amateur (${NON_VERIFIEE}), ${vFin(latestAll, COMPRISES)}`,
@@ -486,12 +502,16 @@ export function stationsMap(every: StationNow[], altPath = ALT_PATH): string {
   // with their figures; unticked, the points of pointsData(). One box for the three layers, kept by the browser (VALEURS_JS);
   // hidden without a script, which draws the points.
   const values = `<label class="amchk" data-js hidden><input type="checkbox" id="wx-val" checked> Valeurs</label>`;
+  // « Radar » and « Pluviomètres » (the user, 16/11/2026: « des options radar et pluviomètres, cochées par défaut qu'on
+  // peut décocher »; marketing's words), on a line of their own under the boxes, on the rain's tab only (CSS, pages.ts):
+  // each hides its layer and its legend, live and in the replay. Shown by the site's script, which draws both.
+  const pluvio = nRain ? `<div class="wxchk wxpv" data-js hidden><label class="amchk"><input type="checkbox" id="wx-rd" checked> Radar</label><label class="amchk"><input type="checkbox" id="wx-pv" checked> Pluviomètres</label></div>` : "";
   // The map zooms in its full screen only, its buttons in the bar there (the user, 10/11/2026: « plus de commandes comme
   // le zoom »); its relief finer there when the screen asks for it, its marks at a size of their own (MARQUES_JS).
   const map = islandMap({ under: overlay, top, peaks: true, fond: FOND, label: `Carte de La Réunion (974) : la dernière mesure de ${drawn.length} des ${list.length} stations météo, ${leAt(latest)}` })
     .replace('<svg class="map terrain"', `<svg class="map terrain" data-fd="${FOND}" data-zoom="${ZOOM_METEO}" data-zpe data-fin`);
   const amLegend = amateurs.length ? `<span class="amlg">Contour pointillé\u00a0: station amateur.</span>` : "";
-  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}<div class="wxchk">${values}${box}</div>${zoomButtons(FOND, "ile")}</div>` +
+  return `<figure class="card mapcard airmap wxmap"><div class="wxbar">${tabs}<div class="wxchk">${values}${box}</div>${pluvio}${zoomButtons(FOND, "ile")}</div>` +
     // Before the map: the class set before its marks are read (set after, the page took 15 % longer to be ready).
     `<script>${VALEURS_JS}</script>` +
     map + ZOOM_SCRIPT + `<script>${MARQUES_JS}${FIN_SCRIPT}</script>` + bubble + `<figcaption class="note">${replay}${legend}${amLegend}<a class="wx-k" href="${CARTE_METEO}">${esc(TOUTES_LES_COUCHES)}</a></figcaption></figure>`;
@@ -1027,6 +1047,125 @@ export const gaugeField = (pts: number[][], L: ArrayLike<number>, w: number, h: 
   }
   return out;
 };
+/**
+ * The rain around the rain gauges, the replay's rose zones over 6 and 24 hours (15/11/2026; the user: « une
+ * zone autour des pluviomètres, sans montrer tous les points »): on the land's cells (`L`, w by h, altitude levels of
+ * `m` metres from 1, 0 the sea), each gauge of `pts` ([x, y, mm in its hour, altitude in m], in cells) counts within
+ * `r` cells and only where the land is within `a` metres of its own altitude: the coast's rain does not climb the
+ * volcano. A cell's rain is their mean, weighted more the nearer ((1 − d²/r²)² / (d² + 1): a gauge's own cell keeps
+ * its measure) and the closer in altitude; a dry gauge counts too, pulling its surroundings to none. Two numbers a cell: 1 where it rains at least the first of `cl` (mm),
+ * else 0, then its rain in mm. The zone stops at `r`: it never fades with distance (the user, 16/11/2026: « plus
+ * marquée … plus proche du style des zones radar »). The replay's script takes it as its text.
+ */
+export const pluvioZone = (pts: number[][], L: ArrayLike<number>, w: number, h: number, r: number, a: number, m: number, cl: number[]): Float32Array => {
+  const out = new Float32Array(w * h * 2);
+  for (let k = 0; k < w * h; k++) {
+    if (!L[k]) continue;
+    const x = k % w, y = (k / w) | 0, z = (L[k] - 1) * m;
+    let sw = 0, sv = 0;
+    for (const [px, py, v, pa] of pts) {
+      const d2 = (px - x) ** 2 + (py - y) ** 2;
+      if (d2 >= r * r) continue;
+      const near = 1 - d2 / (r * r), q = (near * near) / (d2 + 1) * (Number.isFinite(pa) ? Math.max(0, 1 - Math.abs(z - pa) / a) : 1);
+      if (!q) continue;
+      sw += q;
+      sv += q * v;
+    }
+    if (!sw) continue;
+    const v = sv / sw;
+    out[2 * k] = v >= cl[0] ? 1 : 0;
+    out[2 * k + 1] = v;
+  }
+  return out;
+};
+/**
+ * pluvioZone's cells drawn at `W` by `H` pixels (RGBA) as the radar's rain is (bands): its zone rounded (each cell the
+ * share of zone in the 3 by 3 around it, spread smoothly, cut at half), one opaque tone a class of `cl` (`pal`, [red,
+ * green, blue]) with clear-cut steps, and a line (`edge`) a pixel wide around, its outer side smoothed. The replay's
+ * script takes it as its text.
+ */
+export const pluvioBands = (z: ArrayLike<number>, w: number, h: number, W: number, H: number, cl: number[], pal: number[][], edge: number[]): Uint8ClampedArray => {
+  const P = new Float32Array(w * h), V = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let sp = 0, sv = 0;
+    for (let b = -1; b < 2; b++) for (let c = -1; c < 2; c++) {
+      const i = x + c, j = y + b;
+      if (i < 0 || j < 0 || i >= w || j >= h) continue;
+      const p = z[2 * (j * w + i)];
+      sp += p;
+      sv += p * z[2 * (j * w + i) + 1];
+    }
+    P[y * w + x] = sp / 9;
+    V[y * w + x] = sp ? sv / sp : 0;
+  }
+  const S = new Float32Array(W * H), M = new Float32Array(W * H), o = new Uint8ClampedArray(W * H * 4);
+  for (let Y = 0; Y < H; Y++) {
+    const gy = Math.min(h - 1, Math.max(0, ((Y + 0.5) * h) / H - 0.5)), y0 = Math.min(h - 2, gy | 0), fy = gy - y0;
+    for (let X = 0; X < W; X++) {
+      const gx = Math.min(w - 1, Math.max(0, ((X + 0.5) * w) / W - 0.5)), x0 = Math.min(w - 2, gx | 0), fx = gx - x0;
+      let sp = 0, sv = 0;
+      for (const [i, q] of [[y0 * w + x0, (1 - fx) * (1 - fy)], [y0 * w + x0 + 1, fx * (1 - fy)], [(y0 + 1) * w + x0, (1 - fx) * fy], [(y0 + 1) * w + x0 + 1, fx * fy]]) {
+        sp += q * P[i];
+        sv += q * P[i] * V[i];
+      }
+      S[Y * W + X] = sp;
+      M[Y * W + X] = sp ? sv / sp : 0;
+    }
+  }
+  for (let Y = 0; Y < H; Y++) for (let X = 0; X < W; X++) {
+    const i = Y * W + X, s = S[i];
+    if (s < 0.25) continue;
+    const gx = (S[X < W - 1 ? i + 1 : i] - S[X > 0 ? i - 1 : i]) / 2, gy = (S[Y < H - 1 ? i + W : i] - S[Y > 0 ? i - W : i]) / 2;
+    // How far inside the zone, in pixels: below 0 outside, the line from 0 to 1, the tone past 2.
+    const d = (s - 0.5) / Math.max(Math.hypot(gx, gy), 1e-3) + 0.5;
+    if (d <= 0) continue;
+    let c = 0;
+    while (c < cl.length && M[i] >= cl[c]) c++;
+    const f = pal[Math.max(1, c) - 1], m = d < 1 ? 0 : Math.min(1, d - 1);
+    for (let k = 0; k < 3; k++) o[i * 4 + k] = edge[k] + (f[k] - edge[k]) * m;
+    o[i * 4 + 3] = Math.min(1, d) * 255;
+  }
+  return o;
+};
+/**
+ * The rose zones' reach and altitude, in km and m: a gauge every 6.6 km on average (57 over the island), a shower a
+ * few km wide, so 5 km ties neighbours without spreading one gauge's rain over the island; 500 m of altitude.
+ */
+export const PLUVIO_KM = 5;
+export const PLUVIO_ALT_M = 500;
+/**
+ * Their four tones by the hour's rain from these mm, rose at the lightness and strength of the radar's four blues
+ * (RAIN_TIERS), opaque as they are: darker as it rains harder in the light theme, lighter in the dark one; the line
+ * around them a dark rose, a light one in the dark theme, never the radar's.
+ */
+export const PLUVIO_MM = [0.2, 2, 8, 20];
+/** Their legend in the replay, before the radar's, and the word under the time while they are shown (marketing, 16/11/2026). */
+export const PLUVIO_LEGENDE = "En rose\u00a0: la pluie de l'heure autour des pluviomètres de Météo-France qui en ont mesuré, jusqu'à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n'est mesurée qu'au pluviomètre\u00a0: autour, c'est une estimation.";
+export const PLUVIO_MOT = "radar et pluviomètres";
+/**
+ * The same once « Stations amateur » is ticked and their rain is among the zones (marketing, 16/11/2026), then the
+ * association's credit with its link, as it asked (providers/meteor-oi.ts).
+ */
+export const PLUVIO_LEGENDE_AM = "En rose\u00a0: la pluie de l'heure autour des pluviomètres de Météo-France et des stations amateur qui en ont mesuré, jusqu'à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n'est mesurée qu'au pluviomètre ou à la station\u00a0: autour, c'est une estimation.";
+export const PLUVIO_CREDIT_AM = `Données\u00a0: <a href="${meteorOi.SITE}" rel="noopener">MétéoR-OI</a>, licence <a href="${meteorOi.CC_BY_NC}" rel="noopener">CC BY-NC 4.0</a>`;
+export const PLUVIO_TONES = { light: ["#fec0e0", "#f691c9", "#e461ae", "#c6338f"].map(rgbOf), dark: ["#733057", "#9a3772", "#c03f8e", "#e250a8"].map(rgbOf) };
+export const PLUVIO_EDGE = { light: [92, 14, 66], dark: [255, 222, 242] };
+/** The rose zones' numbers for the page's scripts, live and in the replay. */
+const PLUVIO_JS = JSON.stringify({ r: PLUVIO_KM / KM, a: PLUVIO_ALT_M, m: altitudes.pas_m, cl: PLUVIO_MM, c: PLUVIO_TONES, e: PLUVIO_EDGE });
+/** Where their legend leads, the question of /meteo's FAQ that says how they are worked out (the user, 16/11/2026), and its words (marketing). */
+export const PLUVIO_ANCRE = "h-zones-roses";
+export const PLUVIO_LIEN = "Comment c'est calculé →";
+/** A time of La Réunion as the map writes an hour: « 14 h », « 14 h 18 ». */
+const hOf = (ms: number) => {
+  const x = new Date(ms + 4 * 3_600_000), m = x.getUTCMinutes();
+  return `${x.getUTCHours()}\u00a0h${m ? `\u00a0${String(m).padStart(2, "0")}` : ""}`;
+};
+/**
+ * The live map's rose legend: the rain gauges' last hour, the one that ends at `fin`, said with its hours (the user,
+ * 16/11/2026: the hour of that rain stated, « pluie de 00 h – 01 h »).
+ */
+export const pluvioLive = (fin: string, legende = PLUVIO_LEGENDE) =>
+  legende.replace("de l'heure", `de ${hOf(Date.parse(fin) - 3_600_000)} – ${hOf(Date.parse(fin))}`);
 /** How far a rain gauge's rain is spread in the replay, in the map's units: 10 km. */
 const GAUGE_REACH = Math.round((10 / KM) * 10) / 10;
 /** How near an anemometer must be for its wind to lean the drops, in the map's units: 15 km. */
@@ -1103,6 +1242,13 @@ export const turnsBack = (p: number[], q: number[]) => {
   const a = Math.hypot(p[0], p[1]), b = Math.hypot(q[0], q[1]);
   return a >= 1 && b >= 1 && (p[0] * q[0] + p[1] * q[1]) / (a * b) < -0.5;
 };
+
+/**
+ * What the radar misses, said under the rain's legend, live and in the replay, its 7 days too (15/11/2026;
+ * marketing's words): the gauges measured over 01–13/11 against the radar's images of those days, the median of
+ * 154 rainy days at a gauge (radar + 1) / (gauge + 1). A new measure changes the dates and the share together.
+ */
+export const RADAR_SOUS = "Le radar sous-estime la pluie, surtout dans l'Est, le Sud-Est et les hauts\u00a0: du 01 au 13/11, il a vu en médiane 17\u00a0% de la pluie mesurée par les pluviomètres de Météo-France. Là où il ne montre rien, il peut pleuvoir fort\u00a0: les pluviomètres font foi.";
 
 /**
  * The rain the radar sees, in the browser, asked for when the layer is first shown (web/pluie-radar.ts): its cells
@@ -1252,7 +1398,7 @@ if(F){warp(mx[0],mx[1],F,mx[2]);x.drawImage(GC,0,0)}else{const e=fadeOf(mx[2]);
 x.globalCompositeOperation="lighter";x.globalAlpha=1-e;x.drawImage(cv(mx[0]),0,0);x.globalAlpha=e;x.drawImage(cv(mx[1]),0,0);x.globalAlpha=1;x.globalCompositeOperation="source-over"}
 const a=veils(...mx);if(a)badly(x,a,mx[1].w,mx[1].h)};
 const o={fl,id:"wxl-p",ready:()=>!!d,moving,
-size:(r)=>{cw=fl.width=pr.width=Math.max(1,Math.round(r.width));ch=fl.height=pr.height=Math.max(1,Math.round(r.height));g=c2d(fl);paint();
+size:(r)=>{cw=fl.width=pr.width=Math.max(1,Math.round(r.width));ch=fl.height=pr.height=Math.max(1,Math.round(r.height));g=c2d(fl);paint();rose();
 ds=[];const n=want();for(let i=0;i<n;i++){const p={};if(!born(p))break;p.a=Math.random()*p.m;ds.push(p)}},
 still:()=>{g.clearRect(0,0,cw,ch);drops()},held:()=>QF===0||stop,
 // A drop at its end is born again, unless there are more than the rain wants; a tenth of those it lacks come each frame.
@@ -1267,9 +1413,20 @@ gb.type="button";gb.className="gp";gl();gb.addEventListener("click",()=>{stop=!s
 // The radar's scale on its own line above its sentence (.lgr), never read as part of it: its first and last classes,
 // its blues (TI), the theme's.
 const scale=(mm)=>{const s=document.createElement("span"),i=document.createElement("i");s.className="lgs lgr";i.className="vgrad";i.style.background="linear-gradient(90deg,"+TI[dark()?1:0].join(",")+")";const c=mm?SM:SC;s.append(c[0],i,c[1]);return s};
-const show=(el,t,bad,down,mm)=>{el.textContent=t;if(t.startsWith("En bleu"))el.prepend(scale(mm));if(bad){const i=document.createElement("i"),w=document.createElement("span");i.className="hsw";w.className="hsn";w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))}if(down)el.append(down);el.hidden=false};
+const show=(el,t,bad,down,mm)=>{el.textContent=t;if(t.startsWith("En bleu"))el.prepend(scale(mm));if(bad){const i=document.createElement("i"),w=document.createElement("span");i.className="hsw";w.className="hsn";w.append(i,"\u00a0"+BW);el.append(" ",w,bad.slice(BW.length+1))}if(down)el.append(down);el.append(" "+${JSON.stringify(RADAR_SOUS)});el.hidden=false};
 const land=()=>Lp||(Lp=new Promise((ok,ko)=>{const im=new Image();im.onload=()=>{const c=document.createElement("canvas");c.width=im.width;c.height=im.height;const x=c.getContext("2d");x.drawImage(im,0,0);
 const a=x.getImageData(0,0,im.width,im.height).data;LW=im.width;LH=im.height;ok(L=a.filter((v,i)=>i%4===0))};im.onerror=ko;im.src=pr.dataset.alt}));
+// The rose zones live (the user, 16/11/2026): the rain gauges' last hour (data-pz, stationsMap), worked out once on the
+// land's grid and drawn as in the replay (pluvioZone, pluvioBands) on a canvas under the radar's, 640 pixels across at
+// most, again for a new size or theme; its legend shown with them. Hidden while a replay plays (CSS, pages.ts). The
+// amateur stations' (data-pz-am) with them while « Stations amateur » is ticked, each way worked out once.
+const PLD=pr.dataset.pz?JSON.parse(pr.dataset.pz):[],PLA=pr.dataset.pzAm?JSON.parse(pr.dataset.pzAm):[],PLB=document.getElementById("wx-am"),PLZ=${PLUVIO_JS},plZone=${pluvioZone},plBands=${pluvioBands},PLN=document.querySelector(".pz-now"),PLG={};let PLC=null,PLK="";
+const rose=()=>{if(!PLD.length||!L||!cw)return;const am=PLA.length&&PLB&&PLB.checked?1:0,th=dark()?1:0,rs=Math.min(1,640/cw),W2=Math.round(cw*rs),H2=Math.round(ch*rs),key=am+"|"+th+"|"+W2+"|"+H2;if(key===PLK)return;PLK=key;
+if(!(am in PLG)){const sc=LW/${W};let z=plZone(PLD.concat(am?PLA:[]).map(([x,y,v,a])=>[x*sc,y*sc,v,a]),L,LW,LH,PLZ.r*sc,PLZ.a,PLZ.m,PLZ.cl),any=false;for(let k=0;k<LW*LH&&!any;k++)any=z[2*k]>0;PLG[am]=any?z:null}
+const z=PLG[am];if(PLN)PLN.hidden=!z;if(PLC)PLC.style.display=z?"":"none";if(!z)return;
+if(!PLC){PLC=document.createElement("canvas");PLC.className="pvz pvl";pr.before(PLC)}PLC.width=W2;PLC.height=H2;
+PLC.getContext("2d",{willReadFrequently:true}).putImageData(new ImageData(plBands(z,LW,LH,W2,H2,PLZ.cl,th?PLZ.c.dark:PLZ.c.light,th?PLZ.e.dark:PLZ.e.light),W2,H2),0,0)};
+if(PLA.length&&PLB)PLB.addEventListener("change",rose);
 // A grid made the one drawn, alone.
 const use=(j)=>{d=j;P=[dist(j),null,0];return dist(j).bad};
 // The drops stay where they fall when the image changes; the animation starts when rain comes, and for those who ask
@@ -1283,7 +1440,7 @@ const hx=(t)=>{const x=loc(t),m=x.getUTCMinutes();return x.getUTCHours()+"\u00a0
 const gd=(all)=>(all?!${rd}:hush())?"":"Les gouttes sont un effet visuel\u00a0: plus la pluie est forte, plus elles sont nombreuses et grosses"+(all?", et elles ${motion === "M1" ? "penchent" : "vont"} dans le sens du vent estimé d'après les anémomètres de Météo-France les plus proches, mesuré chaque heure. Loin de tout anémomètre, ou quand le vent de l'heure n'est pas connu, elles tombent droit.":WT==null?". Le vent de cette heure n'est pas connu\u00a0: elles tombent droit.":
 ", et elles ${motion === "M1" ? "penchent" : "vont"} dans le sens du vent estimé d'après les anémomètres "+(WT==="live"?"les plus proches, à leur dernière mesure.":"de Météo-France les plus proches, à "+hm(new Date(WT).toISOString())+".")+" Loin de tout anémomètre, elles tombent droit.");
 const say_=(j,bad)=>show(say,(dist(j).cells.length?"En bleu\u00a0: la pluie estimée par le radar de Météo-France "+at_(j.fin)+"\u00a0; "+fo():"Le radar de Météo-France ne voit pas de pluie "+at_(j.fin)+"."),bad,(j.pannes.length?" "+radars(j.pannes):"")+" "+gd());
-const get=()=>{if(asked||!inp.checked)return;asked=true;Promise.all([fetch(pr.dataset.pluie).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),land()]).then(([j])=>{
+const get=()=>{if(asked||!inp.checked)return;asked=true;if(PLD.length)land().then(rose,()=>{});Promise.all([fetch(pr.dataset.pluie).then((r)=>{if(!r.ok)throw new Error(String(r.status));return r.json()}),land()]).then(([j])=>{
 if(L.length!==j.w*j.h)throw new Error("grille");
 if(Date.now()-Date.parse(j.fin)>45*6e4){show(say,"Pas d'image radar récente : la dernière date "+when(j.fin)+" et n'est pas affichée.");return}live=j;
 if(RJ.on){say_(j,"");RJ.redraw();return}say_(j,use(j));go()}).catch(()=>{})};
@@ -1550,6 +1707,36 @@ const renames=()=>document.dispatchEvent(new Event("change"));
 // Each station's dot for a measure of the file, with its value for the tour's stations.
 const ring=(f)=>{const g=mk("g",{},dots),out=[];g.style.display="none";for(const s of st){if(!s[f].some((v)=>v!=null))continue;const big=N.has(s.id);
 out.push({s,big,c:mk("circle",{cx:s.x,cy:s.y,r:big?34:17},g),t:big?mk("text",{class:"mv",x:s.x,y:s.y+11},g):null})}return{g,out}};
+// The rose zones around the rain gauges over 6 and 24 hours, none over 7 days (pluvioZone; the user, 15/11/2026: « une
+// zone autour des pluviomètres, sans montrer tous les points et leurs valeurs »): each hour's zone worked out once on
+// the radar's grid and kept, then drawn as the radar's rain (pluvioBands) at the radar canvas's size, 640 pixels across
+// at most, the 6 last kept, by theme; at a time, the two hours around it added, each by its share (no dip half way),
+// each worth its middle (an image of the hour up to 07:00 shows the hour of 06:00 to 07:00 alone); on a canvas under
+// the radar's, so the radar's rain stays in front. Their legend after the radar's, whose scale is never read as theirs; the word under the time names both
+// while rose is shown at that time. The amateur stations' hours (the file's am, rejeu.ts) among them while « Stations
+// amateur » is ticked, with their legend and the association's credit; the hours worked out again when it changes.
+const PZ=${PLUVIO_JS},zone=${pluvioZone},pzBands=${pluvioBands},PZL=${js(PLUVIO_LEGENDE)},PZLA=${js(PLUVIO_LEGENDE_AM)},PZW=${js(PLUVIO_MOT)},
+dk=()=>matchMedia("(prefers-color-scheme: dark)").matches,PZG=new Map(),PZI=new Map(),pzA=()=>{const i=document.getElementById("wx-am");return i&&i.checked?SA:[]};let PZC=null,PZK="",PZO=false,SA=[];
+const pzZone=(i,gr)=>{if(PZG.has(i))return PZG.get(i);const sc=gr.w/${W},pts=[];for(const s of st.concat(pzA())){const v=s.rr[i];if(v!=null)pts.push([s.x*sc,s.y*sc,v,s.alt])}
+let z=null;if(pts.some((x)=>x[2]>0)){z=zone(pts,gr.L,gr.w,gr.h,PZ.r*sc,PZ.a,PZ.m,PZ.cl);let any=false;for(let k=0;k<gr.w*gr.h&&!any;k++)any=z[2*k]>0;if(!any)z=null}PZG.set(i,z);return z};
+const pzImg=(i,gr,W,H)=>{if(i<0||i>=n)return null;const th=dk()?1:0,key=i+"|"+th+"|"+W;if(PZI.has(key))return PZI.get(key);const z=pzZone(i,gr);
+const c=z?new ImageData(pzBands(z,gr.w,gr.h,W,H,PZ.cl,th?PZ.c.dark:PZ.c.light,th?PZ.e.dark:PZ.e.light),W,H):null;PZI.set(key,c);if(PZI.size>6)PZI.delete(PZI.keys().next().value);return c};
+// The canvas read often (drawn in software), as the radar's: Safari draws a larger GPU canvas at the wrong place and size
+// inside the map's foreignObject. The two hours put straight in, mixed by hand.
+let PZM=null;const pz=(t,de)=>{if(!PZC)return false;const gr=RJ.p.dims(),rc=PZC.nextElementSibling;if(!gr||!rc||rc.width<2)return false;const rs=Math.min(1,640/rc.width),W=Math.round(rc.width*rs),H=Math.round(rc.height*rs);
+const x=((de?(de+t)/2:t)-(fin-(n-1)*36e5-18e5))/36e5,i=Math.floor(x),f=x-i,k=i+"|"+Math.round(f*20)+"|"+dk()+"|"+W;
+if(k===PZK)return PZO;PZK=k;const A=f<.95?pzImg(i,gr,W,H):null,B=f>.05?pzImg(i+1,gr,W,H):null,g=PZC.getContext("2d",{willReadFrequently:true});if(PZC.width!==W||PZC.height!==H){PZC.width=W;PZC.height=H}
+if(A&&B){if(!PZM||PZM.width!==W||PZM.height!==H)PZM=new ImageData(W,H);const a=A.data,b=B.data,o=PZM.data,e=1-f;for(let p=0;p<o.length;p+=4){const u=a[p+3]*e,v=b[p+3]*f,s=u+v;o[p+3]=s;if(!s)continue;for(let q=0;q<3;q++)o[p+q]=(a[p+q]*u+b[p+q]*v)/s}g.putImageData(PZM,0,0)}
+else if(A||B)g.putImageData(A||B,0,0);else g.clearRect(0,0,W,H);PZO=!!(A||B);
+const el=lg("p"),pa=pzA().length?"1":"",ow=el&&el.querySelector(".rj-pz");if(ow&&ow.dataset.am!==pa)ow.remove();
+if(el&&(!ow||ow.dataset.am!==pa)){const sp=document.createElement("span"),a=document.createElement("a"),ln=(h,t)=>{const x=document.createElement("a");x.href=h;x.rel="noopener";x.textContent=t;return x};sp.className="rj-pz";sp.dataset.am=pa;a.href="#${PLUVIO_ANCRE}";a.textContent=${js(PLUVIO_LIEN)};
+if(pa)sp.append(" "+PZLA+" Données\u00a0: ",ln(${js(meteorOi.SITE)},"MétéoR-OI"),", licence ",ln(${js(meteorOi.CC_BY_NC)},"CC BY-NC 4.0"),". ",a);else sp.append(" "+PZL+" ",a);el.append(sp)}return PZO};
+// « Radar » and « Pluviomètres » (stationsMap): a box missing (a page from before) is ticked.
+const ck=(id)=>{const i=document.getElementById(id);return!i||i.checked};
+// The rain's legend for the file played, in a span of its own after the rose zones': the radar's images and the rain
+// gauges' 3 hours, each only while its box is ticked, nothing when neither is.
+const sayP=()=>{const el=lg("p");if(!RJ.p||!RJ.p.say||!el||!J)return;let s=el.querySelector(".rj-rd");if(!s){s=document.createElement("span");s.className="rj-rd";el.append(s)}
+const R=K.p.length>0&&ck("wx-rd"),G=K.g.length>0&&ck("wx-pv");s.hidden=!R&&!G;if(R||G)RJ.p.say(s,{r:R,de:R&&K.p.some((k)=>k.e.de),g:G,wm:rm?0:wm(),pannes:R?[...new Set(K.p.flatMap((k)=>k.e.pannes||[]))]:[]})};
 // A layer's moments at T: on one, or between two (f of the way), or none (before its first, or across a long hole).
 // Playing faster than its images can follow, one in n of them, the last kept (sub); paused, every one.
 // The rain's most a second (IM), chosen when a play starts and when its speed changes (IQ), never during it: a device
@@ -1624,7 +1811,12 @@ else if(r&&l==="p"){w="estimé par radar";said+=r.m?", pluie estimée par le rad
 else if(r&&r.m){w="mesuré";said+=", mesuré"}else if(r){w="estimé";said+=", estimé entre les mesures de "+hmm(r.a.t)+" et de "+hmm(r.z.t)}
 // The hours of the rain shown, an hour's or 3 hours' (marketing: « 14 h – 15 h »).
 const im=l==="p"&&r&&(r.m||(r.a&&(r.f<.5?r.a:r.z))),de=r&&r.h?r.h.end-108e5:im&&im.e&&im.e.de?Date.parse(im.e.de):0,hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")};
-if(r&&r.h)t=r.h.end;hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);hs.textContent=w;
+if(r&&r.h)t=r.h.end;hd.textContent=d!=="6h"||dm(S)!==dm(E)?days(!end&&de,t,BA(d)==="7j"||d==="jour"):"";hh.textContent=!end&&de?hx(de)+" – "+hx(t):hmm(t);
+// The rain gauges' 3 hours over 7 days are drawn where the radar's images are (rj-g): « Pluviomètres » hides them there,
+// « Radar » elsewhere (CSS, pages.ts). The word names what the boxes leave shown: the radar, the rose zones, or both.
+fig.classList.toggle("rj-g",!end&&l==="p"&&!!(r&&r.h));let po=false;if(PZC){const on=l==="p"&&!end;PZC.style.display=on?"":"none";po=on&&pz(t,de)}
+if(l==="p"&&!end){const pR=ck("wx-rd"),pV=ck("wx-pv"),at0=dm(t)+" à "+hmm(t);if(r&&r.h){if(!pV){w="";said=at0}}else if(!pR){w=pV&&BA(d)!=="7j"?"pluviomètres":"";said=at0+(po&&pV?", pluie autour des pluviomètres":"")}
+else if(po&&pV&&w==="estimé par radar"){w=PZW;said+=", et pluie autour des pluviomètres"}}hs.textContent=w;
 rng.value=String((T-S)/ST[d]);rng.setAttribute("aria-valuetext",said);return said};
 const lb=()=>d==="jour"?"Lire la journée du "+days(0,J0+432e5,true):LB[BA(d||"6h")];
 const btn=()=>{const end=!!J&&T>=E;b.disabled=false;b.textContent=playing?"❚❚ Pause":end?"↻ Relire":"▶ Lire";b.setAttribute("aria-label",playing?"Mettre en pause":end?"Relire":lb())};
@@ -1653,7 +1845,9 @@ dots.replaceChildren();TD=RJ.t?ring("t"):null;
 legend("t","t","station","stations",(x)=>"Température sous abri de "+x+" de Météo-France, une mesure par heure. Entre les stations, les couleurs sont estimées selon l'altitude : ce n'est pas une mesure.");
 legend("v","ff","anémomètre","anémomètres",(x)=>"Vent moyen sur 10 minutes de "+x+" de Météo-France, une mesure par heure. Entre eux, le mouvement et les couleurs sont estimés : ce n'est pas une mesure. Les aéroports et les balises de vent ne sont pas dans ce rejeu.");
 // A page kept from before (the script is served at any address) writes its legend image by image.
-if(RJ.p&&RJ.p.say)RJ.p.say(lg("p"),{r:K.p.length>0,de:K.p.some((k)=>k.e.de),g:K.g.length>0,wm:rm?0:wm(),pannes:[...new Set(K.p.flatMap((k)=>k.e.pannes||[]))]});
+const lp=lg("p");if(lp)lp.replaceChildren();sayP();
+if(PZC){PZC.remove();PZC=null}PZK="";PZO=false;PZI.clear();PZG.clear();SA=J.heures&&J.heures.am||[];const pr=RJ.p&&BA(d)!=="7j"&&st.concat(SA).some((s)=>s.rr&&s.rr.some((v)=>v>0))&&fig.querySelector("canvas[data-pluie]");
+if(pr){PZC=document.createElement("canvas");PZC.className="pvz";PZC.width=PZC.height=1;pr.before(PZC)}
 fig.classList.add("rejeu");rng.hidden=false;range();return K.t.length||K.v.length||K.p.length||K.g.length};
 // The time of a frame, after the first 10 of the measure: once 6 with a new image of the rain and 30 others are known,
 // more images for a device that keeps up with those of 24 hours, and the file of 24 hours played swapped for its finer
@@ -1667,7 +1861,7 @@ if(was&&t-was<250){FW.push(t-was);if(FW.length>30)FW.shift();if(FW.length===30){
 const play=()=>{if(T>=E)T=S;playing=true;RJ.pl=true;AZ=null;last=nx=0;PN++;FD=30;FW.length=0;NWF=false;MZ=!CW&&!USER&&!slow&&(d==="6h"||d==="24h")&&lay()==="p";cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);btn()};
 const stop=(say)=>{playing=false;RJ.pl=false;cancelAnimationFrame(raf);btn();if(say)ann.textContent=show();if(SW){SW=0;RJ.go(BA(d),2)}};
 // Back to the live map when the file cannot come: the bar says so.
-const fail=()=>{J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};
+const fail=()=>{if(PZC)PZC.style.display="none";J=null;DK="";fig.classList.remove("rejeu","rj-fin");RJ.on=false;rng.hidden=true;q.hidden=true;cur="";was=null;renames();for(const x of["t","v","p"])if(RJ[x])RJ[x].back();RJ.ko();b.setAttribute("aria-label",lb())};
 // A length (x), with its finer file when more images are shown (fine), or the day DY. With swap, the file shown is swapped
 // for this one once it is here, at the same moment (the end kept at the end), playing on; kept when it has no radar. With
 // swap 2, it waits for the play to stop (SW). The file shown asked again while another comes: the other one dropped.
@@ -1687,6 +1881,8 @@ rng.addEventListener("input",()=>{if(playing)stop(false);T=S+(+rng.value)*ST[d];
 rng.addEventListener("keydown",(e)=>{const v=+rng.value,m=+rng.max;let x=null;if(e.key==="ArrowRight"||e.key==="ArrowUp")x=Math.floor(v+1e-6)+1;else if(e.key==="ArrowLeft"||e.key==="ArrowDown")x=Math.ceil(v-1e-6)-1;
 else if(e.key==="Home")x=0;else if(e.key==="End")x=m;else if(e.key===" "){e.preventDefault();b.click();return}else return;e.preventDefault();if(playing)stop(false);T=S+Math.max(0,Math.min(m,x))*ST[d];ann.textContent=show();btn()});
 document.querySelectorAll("[name=wxl]").forEach((i)=>i.addEventListener("change",()=>{MZ=false;AZ=null;if(RJ.p&&RJ.p.flush)RJ.p.flush();if(J){cur="";range();show()}}));
+for(const id of["wx-rd","wx-pv"]){const i=document.getElementById(id);if(i)i.addEventListener("change",()=>{if(J){sayP();show()}})}
+{const i=document.getElementById("wx-am");if(i)i.addEventListener("change",()=>{if(J&&SA.length){PZG.clear();PZI.clear();PZK="";show()}})}
 if(RJ.want)RJ.go(RJ.want)})()`;
 }
 

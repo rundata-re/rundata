@@ -23,7 +23,16 @@ import {
   METEO_SCRIPT,
   momentAt,
   pace,
+  PLUVIO_ALT_M,
+  PLUVIO_ANCRE,
+  PLUVIO_CREDIT_AM,
+  PLUVIO_KM,
+  PLUVIO_LEGENDE,
+  PLUVIO_MOT,
+  pluvioBands,
+  pluvioZone,
   prepPlan,
+  RADAR_SOUS,
   rainPill,
   rejeuScript,
   rejeuScriptPath,
@@ -40,7 +49,7 @@ import {
   windAt,
   windPill,
 } from "../src/web/meteo-carte.js";
-import { CSS, meteoPage, stationId } from "../src/web/pages.js";
+import { CSS, METEOR_CREDIT, meteoPage, stationId } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-22T05:30:00Z");
@@ -151,8 +160,10 @@ describe("the map of every station on /meteo", () => {
     expect(html).toMatch(/<g class="sh l-v wv">[^]*?rotate\(20\)"\/><text [^>]*>22<\/text><\/g>/);
     expect(html).toContain("3 anémomètres, vent moyen mesuré en km/h, le plus récent le 22/10 à 09:18. La flèche montre où va le vent (un vent d'est vient de l'est). Entre les stations, le mouvement et les couleurs sont <b>estimés</b> à partir des stations voisines : ce n'est pas une mesure.");
     // The rain layer asks the radar's grid when first shown, with a place in its legend for what the radar sees.
-    expect(html).toContain(`<canvas class="voile" data-pluie="/meteo/pluie-radar.json" data-alt="${ALT_PATH}" `);
-    expect(html).toContain(`Point blanc : pas de pluie mesurée. <span data-radar hidden></span>`);
+    expect(html).toMatch(new RegExp(`<canvas class="voile" data-pluie="/meteo/pluie-radar.json" data-pz="[^"]+" data-alt="${ALT_PATH}" `));
+    // The radar's legend first, then the rose zones': the radar's scale never read as theirs.
+    expect(html).toContain(`Point blanc : pas de pluie mesurée. <span data-radar hidden></span><span class="pz-now" hidden> En rose`);
+    expect(html).toContain(`</a></span></span><span class="rj-lg">`);
     // No anemometer: no tab, no canvas, no script data.
     expect(stationsMap([BALISE])).toContain("1 anémomètre, vent moyen");
     const calm = stationsMap([BRAS_SEC, PLUVIO]);
@@ -390,6 +401,85 @@ describe("the page /meteo with every station", () => {
     mer: [{ nom: "Plage de Boucan Canot", valeur: 25.4, jour: "2026-10-21", distance_km: 2 }],
   });
   const page = (toutes?: StationNow[]) => meteoPage("https://rundata.re", { value: home(toutes), fetchedAt: NOW, stale: false }, NOW);
+
+  it("draws the rose zones live too, with their hour, gives the radar and the rain gauges a box each, ticked, and says how they are worked out", () => {
+    const html = stationsMap(ALL);
+    // The official rain gauges of the newest time, in the map's units, with their mm and altitude.
+    const pz = JSON.parse(html.match(/data-pz="([^"]+)"/)![1].replace(/&quot;/g, '"')) as number[][];
+    expect(pz).toHaveLength(4);
+    expect(pz).toContainEqual([...project(PLAINE.lon, PLAINE.lat).map((x) => Math.round(x * 10) / 10), 2.4, 1560]);
+    // Their legend with the hour's ends, in La Réunion's time (05:18Z is 09:18), and the link to the FAQ, hidden until drawn.
+    expect(html).toContain(`<span class="pz-now" hidden> En rose\u00a0: la pluie de 8\u00a0h\u00a018 – 9\u00a0h\u00a018 autour des pluviomètres de Météo-France`);
+    expect(html).toContain(`<span data-radar hidden></span><span class="pz-now" hidden>`);
+    expect(html).toContain(`<a href="#h-zones-roses">Comment c&#39;est calculé →</a></span></span>`);
+    // Every gauge of the newest time dry: nothing, even with rain an hour before.
+    expect(stationsMap([GILLOT, PLUVIO])).not.toContain("data-pz=");
+    expect(stationsMap([GILLOT, { ...PLAINE, time: "2026-10-22T04:18:00Z" }])).not.toContain("pz-now");
+    // The two boxes, on the rain's tab only; none without a rain gauge.
+    expect(html).toContain(`<div class="wxchk wxpv" data-js hidden><label class="amchk"><input type="checkbox" id="wx-rd" checked> Radar</label><label class="amchk"><input type="checkbox" id="wx-pv" checked> Pluviomètres</label></div>`);
+    expect(stationsMap([BALISE])).not.toContain("wx-rd");
+    expect(CSS).toContain(".wxpv{justify-content:flex-start}.wxmap:not(:has(#wxl-p:checked)) .wxpv{display:none}");
+    expect(CSS).toContain(".wxmap:not(.rj-g):has(#wx-rd:not(:checked)) :is(.l-p [data-pluie],.l-p .flux,[data-radar],.lg-p .gp){display:none}");
+    expect(CSS).toContain(".wxmap.rj-g:has(#wx-pv:not(:checked)) .l-p :is([data-pluie],.flux){display:none}");
+    expect(CSS).toContain(".lg-p :is(.pz-now,.rj-pz){display:block;margin-top:.4rem}.wxmap:has(#wx-pv:not(:checked)) :is(.pvz,.pz-now,.rj-pz){display:none}.wxmap.rejeu:not(.rj-fin) .pvl{display:none}");
+    // Live, drawn as in the replay once the land's grid is read, again at each size; in the replay, the word and the
+    // legend follow the boxes.
+    expect(METEO_SCRIPT).toContain(`plZone=${pluvioZone},plBands=${pluvioBands}`);
+    expect(METEO_SCRIPT).toContain(`if(PLD.length)land().then(rose,()=>{});`);
+    expect(METEO_SCRIPT).toContain(`paint();rose();`);
+    expect(() => new Function(METEO_SCRIPT)).not.toThrow();
+    const js = rejeuScript();
+    expect(js).toContain(`const R=K.p.length>0&&ck("wx-rd"),G=K.g.length>0&&ck("wx-pv");s.hidden=!R&&!G;`);
+    expect(js).toContain(`else if(!pR){w=pV&&BA(d)!=="7j"?"pluviomètres":"";`);
+    expect(js).toContain(`a.href="#h-zones-roses";a.textContent="Comment c'est calculé →";`);
+    // In the replay too, the rose zones' legend after the radar's.
+    expect(js).toContain(`else sp.append(" "+PZL+" ",a);el.append(sp)}return PZO};`);
+    expect(js).toContain(`for(const id of["wx-rd","wx-pv"]){const i=document.getElementById(id);if(i)i.addEventListener("change",()=>{if(J){sayP();show()}})}`);
+    expect(() => new Function(js)).not.toThrow();
+    // The FAQ's question, with its anchor, in the page and its FAQPage.
+    const p = page(ALL);
+    expect(p).toContain(`<h3 id="h-zones-roses">Comment sont calculées les zones roses de la pluie\u00a0?</h3><p>Les zones roses estiment la pluie de l'heure affichée autour des pluviomètres de Météo-France, et des stations amateur quand la case «\u00a0Stations amateur\u00a0» est cochée. Chaque pluviomètre compte jusqu'à 5\u00a0km`);
+    expect(p).toContain(`C'est une estimation, qui peut se tromper\u00a0:`);
+    expect(PLUVIO_ANCRE).toBe("h-zones-roses");
+    expect(p).toContain(`"name":"Comment sont calculées les zones roses de la pluie\u00a0?"`);
+  });
+
+  it("adds the amateur stations' rain to the rose zones once their box is ticked, with their legend and the association's credit", () => {
+    // MétéoR-OI's station at 05:14, 4 minutes from the rain gauges' newest time; another 20 minutes off is left out.
+    const am = (o: Partial<StationNow> & { nom: string }) => st({ source: "meteor_oi", amateur: true, ...o });
+    const TBL = am({ nom: "École du Tremblet", id: "TBL105", lon: 55.8, lat: -21.32, altitude_m: 105, pluie_1h: 8.9, time: "2026-10-22T05:14:00Z" });
+    const OLD = am({ nom: "Terre Rouge", id: "TRG170", lon: 55.51, lat: -21.34, altitude_m: 170, pluie_1h: 3, time: "2026-10-22T04:58:00Z" });
+    const html = stationsMap([...ALL, TBL, OLD]);
+    const pzAm = JSON.parse(html.match(/data-pz-am="([^"]+)"/)![1].replace(/&quot;/g, '"')) as number[][];
+    expect(pzAm).toEqual([[...project(55.8, -21.32).map((x) => Math.round(x * 10) / 10), 8.9, 105]]);
+    // The legend, official or with them as the box says (lg-of, lg-am), the credit as the association asked, its link.
+    expect(html).toContain(`<span class="pz-now" hidden> <span class="lg-of">En rose\u00a0: la pluie de 8\u00a0h\u00a018 – 9\u00a0h\u00a018 autour des pluviomètres de Météo-France qui en ont mesuré`);
+    expect(html).toContain(`<span class="lg-am">En rose\u00a0: la pluie de 8\u00a0h\u00a018 – 9\u00a0h\u00a018 autour des pluviomètres de Météo-France et des stations amateur qui en ont mesuré, jusqu&#39;à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n&#39;est mesurée qu&#39;au pluviomètre ou à la station\u00a0: autour, c&#39;est une estimation. Données\u00a0: <a href="https://www.meteor-oi.re`);
+    expect(PLUVIO_CREDIT_AM).toBe(METEOR_CREDIT.replace("Données :", "Données\u00a0:"));
+    expect(html).toContain(`${PLUVIO_CREDIT_AM}.</span> <a href="#h-zones-roses">Comment c&#39;est calculé →</a></span>`);
+    // Every official rain gauge dry, an amateur station wet: the zones are written, for the box.
+    const dry = stationsMap([GILLOT, { ...PLUVIO, time: at }, TBL]);
+    expect(dry).toContain("data-pz=");
+    expect(dry).toContain("data-pz-am=");
+    // Without them, as before.
+    expect(stationsMap(ALL)).not.toContain("data-pz-am");
+    expect(stationsMap(ALL)).not.toContain("lg-am\">En rose");
+    // Live: their points added while the box is ticked, each way worked out once, drawn again when it changes.
+    expect(METEO_SCRIPT).toContain(`PLA=pr.dataset.pzAm?JSON.parse(pr.dataset.pzAm):[],PLB=document.getElementById("wx-am")`);
+    expect(METEO_SCRIPT).toContain(`plZone(PLD.concat(am?PLA:[])`);
+    expect(METEO_SCRIPT).toContain(`if(PLN)PLN.hidden=!z;`);
+    expect(METEO_SCRIPT).toContain(`if(PLA.length&&PLB)PLB.addEventListener("change",rose);`);
+    expect(() => new Function(METEO_SCRIPT)).not.toThrow();
+    // In the replay, the file's am the same way, with their legend and the credit built of links.
+    const js = rejeuScript();
+    expect(js).toContain(`for(const s of st.concat(pzA()))`);
+    expect(js).toContain(`SA=J.heures&&J.heures.am||[];`);
+    expect(js).toContain(`if(pa)sp.append(" "+PZLA+" Données\u00a0: ",ln("https://www.meteor-oi.re`);
+    expect(js).toContain(`{const i=document.getElementById("wx-am");if(i)i.addEventListener("change",()=>{if(J&&SA.length){PZG.clear();PZI.clear();PZK="";show()}})}`);
+    expect(() => new Function(js)).not.toThrow();
+    // The FAQ says that their hour can be 10 minutes off.
+    expect(page(ALL)).toContain(`Celle d'une station amateur peut être décalée de 10\u00a0minutes au plus\u00a0: sa pluie de 06:08 à 07:08, par exemple, compte pour 06\u00a0h – 07\u00a0h. C'est une estimation`);
+  });
 
   it("puts the map at the top, the stations' list in the middle, the sea and the forecasts below", () => {
     const html = page(ALL);
@@ -643,7 +733,8 @@ describe("the rain's animation and its replay", () => {
   it("keeps the same legend under the map for the whole replay, the time being on the map", () => {
     // The user, 01/11/2026: « garde le même texte pour la légende, c'est inutile de changer le texte selon l'image ».
     // Written once for the file played; the images drawn without a word.
-    expect(rejeuScript()).toContain(`if(RJ.p&&RJ.p.say)RJ.p.say(lg("p"),{r:K.p.length>0,de:K.p.some((k)=>k.e.de),g:K.g.length>0,wm:rm?0:wm(),pannes:[...new Set(K.p.flatMap((k)=>k.e.pannes||[]))]});`);
+    expect(rejeuScript()).toContain(`const lp=lg("p");if(lp)lp.replaceChildren();sayP();`);
+    expect(rejeuScript()).toContain(`if(R||G)RJ.p.say(s,{r:R,de:R&&K.p.some((k)=>k.e.de),g:G,wm:rm?0:wm(),pannes:R?[...new Set(K.p.flatMap((k)=>k.e.pannes||[]))]:[]})};`);
     expect(METEO_SCRIPT).not.toContain(`say_(n,`);
     expect(METEO_SCRIPT).toContain(`gap:(e,el,gr)=>{if(ok(gr))empty(gr.w,gr.h)},`);
     expect(METEO_SCRIPT).toContain(`clear:()=>{if(d)empty(d.w,d.h)},`);
@@ -868,7 +959,7 @@ describe("the rain's edges, its drops and the wind", () => {
     expect(rejeuScript()).toContain(`hx=(x)=>{const y=lx(x),m=y.getUTCMinutes();return y.getUTCHours()+"\u00a0h"+(m?"\u00a0"+p2(m):"")}`);
     // The legend says it once, the hours being on the map: an hour's, or 3 hours' for the radar's week.
     expect(METEO_SCRIPT).toContain(`(o.de?"à chaque endroit, la pluie la plus forte vue par le radar de Météo-France pendant les heures écrites sur la carte":"la pluie estimée par le radar de Météo-France à l'heure écrite sur la carte")`);
-    expect(rejeuScript()).toContain(`de:K.p.some((k)=>k.e.de)`);
+    expect(rejeuScript()).toContain(`de:R&&K.p.some((k)=>k.e.de)`);
     // The 7 days: the radar's week for the hours the file has (rejeu.ts), the rain gauges' windows ended before its first.
     expect(rejeuScript()).toContain(`if(l==="p"&&(BA(d)!=="7j"||J.radar&&T>=RT)){const gr=J.radar`);
     expect(rejeuScript()).toContain(`if(J.radar)for(const e of J.radar.entrees)if(e.trou)TR.push([Date.parse(e.de),Date.parse(e.a),e]);else K.p.push({t:Date.parse(e.fin),e});`);
@@ -879,6 +970,62 @@ describe("the rain's edges, its drops and the wind", () => {
     // Faded from one image to the next all the time, never held then switched (the user, 01/11/2026).
     expect(rejeuScript()).not.toContain("ease");
     expect(rejeuScript()).toContain(`return moment(k,T,playing?0:SN[d],((l==="p"&&GP[d]||72e5)+6e4)*n)`);
+  });
+
+  it("draws the rain around the gauges within their reach, as flat as the radar's, at their altitude, none around a dry one", () => {
+    const cl = [0.2, 2, 8, 20];
+    const cls = (z: Float32Array) => Array.from(z.filter((_, i) => i % 2 === 0)).join("");
+    const mm = (z: Float32Array) => Array.from(z.filter((_, i) => i % 2 === 1));
+    // 11 land cells at 100 m (level 9 of 12.5 m), a gauge of 33.7 mm at the first, 5 cells of reach: rain up to the
+    // fifth cell only, as strong there as at the gauge (never paler with distance); the sea (0) never.
+    const L = [...Array(11).fill(9), 0];
+    const one = pluvioZone([[0, 0, 33.7, 100]], L, 12, 1, 5, 500, 12.5, cl);
+    expect(cls(one)).toBe("111110000000");
+    expect(mm(one).slice(0, 5).every((v) => Math.abs(v - 33.7) < 1e-4)).toBe(true);
+    // A dry gauge alone: nothing; a dry one beside a wet one pulls the rain down between them.
+    expect(cls(pluvioZone([[0, 0, 0, 100]], L, 12, 1, 5, 500, 12.5, cl))).toBe("0".repeat(12));
+    const two = mm(pluvioZone([[0, 0, 10, 100], [4, 0, 0, 100]], L, 12, 1, 5, 500, 12.5, cl));
+    expect(two[0]).toBeGreaterThan(9.8);
+    expect(two[2]).toBeLessThan(8);
+    // 500 m or more above the gauge: nothing (the coast's rain does not climb the volcano).
+    const up = [9, 9, 49, 49, 0];
+    expect(cls(pluvioZone([[0, 0, 33.7, 100]], up, 5, 1, 5, 500, 12.5, cl))).toBe("11000");
+    expect(cls(pluvioZone([], L, 12, 1, 5, 500, 12.5, cl))).toBe("0".repeat(12));
+    // Drawn at 4 pixels a cell: opaque tones with clear-cut steps, a line around, nothing outside or on the sea.
+    const pal = [[1, 1, 1], [2, 2, 2], [3, 3, 3], [4, 4, 4]], edge = [9, 9, 9];
+    const g = 12, Lg = Array(g * g).fill(9);
+    for (let k = 0; k < g; k++) Lg[k * g + g - 1] = 0;
+    const zg = pluvioZone([[3, 6, 33.7, 100], [6, 6, 5, 100]], Lg, g, g, 4, 500, 12.5, cl);
+    const o = pluvioBands(zg, g, g, g * 4, g * 4, cl, pal, edge);
+    const px = (x: number, y: number) => Array.from(o.slice((y * g * 4 + x) * 4, (y * g * 4 + x) * 4 + 4));
+    const seen = new Set<string>();
+    for (let y = 0; y < g * 4; y++) for (let x = 0; x < g * 4; x++) {
+      const [r, , , a] = px(x, y);
+      if (a === 255 && r >= 1 && r <= 4) seen.add(String(r));
+    }
+    expect(px(3 * 4 + 1, 6 * 4 + 1)).toEqual([4, 4, 4, 255]);
+    expect([...seen].sort()).toEqual(["2", "3", "4"]);
+    expect(px(0, 0)[3]).toBe(0);
+    expect(px(g * 4 - 1, 6 * 4)[3]).toBe(0);
+    let line = 0;
+    for (let x = 0; x < g * 4; x++) if (px(x, 6 * 4 + 1)[0] === 9) line++;
+    expect(line).toBeGreaterThan(0);
+    // In the replay of 6 and 24 hours, under the radar, never over 7 days; its legend and word as marketing wrote them.
+    const js = rejeuScript();
+    expect(js).toContain(`zone=${pluvioZone},pzBands=${pluvioBands}`);
+    expect(js).toContain(`"r":${PLUVIO_KM / KM},"a":${PLUVIO_ALT_M},"m":12.5`);
+    expect(js).toContain(`const pr=RJ.p&&BA(d)!=="7j"&&st.concat(SA).some((s)=>s.rr&&s.rr.some((v)=>v>0))&&fig.querySelector("canvas[data-pluie]");`);
+    expect(js).toContain(`pr.before(PZC)`);
+    expect(js).toContain(`else if(po&&pV&&w==="estimé par radar"){w=PZW;`);
+    expect(js).not.toContain("__name");
+    expect(() => new Function(js)).not.toThrow();
+    expect(PLUVIO_LEGENDE).toBe("En rose\u00a0: la pluie de l'heure autour des pluviomètres de Météo-France qui en ont mesuré, jusqu'à 5\u00a0km, avec un ton par force de pluie, comme pour le radar. Elle n'est mesurée qu'au pluviomètre\u00a0: autour, c'est une estimation.");
+    expect(PLUVIO_MOT).toBe("radar et pluviomètres");
+  });
+
+  it("says under the rain's legend what the radar misses, live and in the replay, with its dates and share", () => {
+    expect(RADAR_SOUS).toBe("Le radar sous-estime la pluie, surtout dans l'Est, le Sud-Est et les hauts\u00a0: du 01 au 13/11, il a vu en médiane 17\u00a0% de la pluie mesurée par les pluviomètres de Météo-France. Là où il ne montre rien, il peut pleuvoir fort\u00a0: les pluviomètres font foi.");
+    expect(METEO_SCRIPT).toContain(`if(down)el.append(down);el.append(" "+${JSON.stringify(RADAR_SOUS)});el.hidden=false};`);
   });
 
   it("spreads the week's rain gauges between them by 3 hours, one every hour, said estimated, without their dots", () => {

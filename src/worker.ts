@@ -226,7 +226,8 @@ function setup(env: Env): Cache {
   }));
   // The replay bar's files (web/rejeu.ts): the radar's last 6 hours, its 24 hours a quarter of an hour apart, its week
   // an hour apart and its days every 5 minutes, kept by the scheduled event below (web/pluie-retro.ts,
-  // web/radar-semaine.ts), and the stations' week, written only by the files that read it.
+  // web/radar-semaine.ts), and the stations' week, written only by the files that read it; the amateur stations' hours
+  // (src/providers/meteor-oi.ts) only while the association's agreement is given.
   rejeu.configure(kv && {
     six: async () => (await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null,
     day: async () => (await kv.get(pluieRetro.LONG_KV_KEY, "json")) as pluieRetro.Historique | null,
@@ -236,6 +237,7 @@ function setup(env: Env): Cache {
       get: async () => (await kv.get(rejeu.SEMAINE_KV_KEY, "json")) as rejeu.Semaine | null,
       put: (w) => kv.put(rejeu.SEMAINE_KV_KEY, JSON.stringify(w), { expirationTtl: rejeu.SEMAINE_KV_TTL_SECONDS }),
     },
+    ...(autorisee(meteorOi.AUTORISATION) ? { amateur: async () => (await kv.get(meteorOi.HEURES_KV_KEY, "json")) as meteorOi.Heures | null } : {}),
   });
   // The live rain layer, when this data center holds only an old copy of the radar: the history's latest image.
   pluieRadar.configure(kv && (async () => pluieRetro.derniere((await kv.get(pluieRetro.KV_KEY, "json")) as pluieRetro.Historique | null)));

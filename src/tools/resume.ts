@@ -748,6 +748,9 @@ export function court(r: Resume) {
   };
 }
 
+/** The weather's copy made before midnight: refused without waiting for its refresh (web/data.ts `OldCopy`). */
+const VEILLE_REFUSEE = { afterMs: Infinity, waitMs: 0 };
+
 /** `detail` false (the tool's default): the short answer, court(); the page reads resume() whole. */
 export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(), background?: Background, detail = true) {
   const found = placeOf(lieu);
@@ -757,8 +760,10 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   // refreshed, waited for a moment as by an assistant reading the page. Read as kept, it was 20 to 30 min older than
   // the page's (31/10/2026, Le Tampon: 21,1 °C measured at 05:48 in the tool, 19,9 °C at 06:06 on the page).
   const vigilance = vigilanceOf(cache);
+  // A copy made before midnight is refused at once, its refresh going on after the answer: usable() would leave it out
+  // all the same. On 16/11/2026 at 05:17, Saint-Louis's, 958 min old, was waited for 4 s and then left out (4,207 ms).
   const weatherOf = (p: PlacePage) =>
-    snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background ?? (() => undefined), now, undefined, true, withoutForecast).catch(() => null);
+    snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background ?? (() => undefined), now, undefined, true, withoutForecast, VEILLE_REFUSEE).catch(() => null);
   // A place without a weather page of its own (a lieu-dit, a beach): its own weather, built as a page's (buildPlace:
   // meteo_actuelle and prevision_meteo at the place asked), under its own key. The commune's centre's only for what that
   // build lacks, said so (Grand Coude, 06/11/2026: the coast's 24,9 °C for a place at 1 121 m, whose station read 16,4 °C).

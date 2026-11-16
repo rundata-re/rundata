@@ -585,6 +585,28 @@ describe("reading the copies", () => {
     expect(f.age).toBe("à l'instant");
   });
 
+  it("refuses a copy of the weather made before midnight at once, its refresh left to go on after the answer", async () => {
+    // 16/11/2026 05:17, Saint-Louis: resume_du_jour waited 4 s for the refresh of a copy made the day before at 13:19,
+    // 958 min old, which usable() then left out of the summary all the same; the call took 4,207 ms.
+    const edge = await edgeWith();
+    await edge.put(KEYS.meteo, { value: COPIES.meteo.value, fetchedAt: ago(958).getTime() });
+    // The stations slow: the refresh does not finish while the call could wait for it.
+    const served = globalThis.fetch;
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+      String(url).includes("DPPaquetObs") ? new Promise<Response>((ok) => setTimeout(() => ok(served(url, init)), 8000)) : served(url, init));
+    const logs = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const pending: Promise<unknown>[] = [];
+    const t = Date.now();
+    const r = body(await resumeDuJour(isolate(edge), "Saint-Paul", NOW, (p) => pending.push(p)));
+    const took = Date.now() - t;
+    expect(took).toBeLessThan(1000);
+    expect(r.meteo).toBeUndefined();
+    expect(r.non_inclus.find((x: { outil: string }) => x.outil === "meteo_actuelle et prevision_meteo")).toBeDefined();
+    expect(logs.mock.calls.flat().join("\n")).toContain("copie refusée pour son âge : web:lieu:saint-paul, âge 958 min, d'avant minuit");
+    expect(pending.length).toBeGreaterThan(0);
+    logs.mockRestore();
+  });
+
   it("gives the weather as its page has it, waiting a moment for a copy older than FRESH_SECONDS", async () => {
     // 31/10/2026, Le Tampon: the tool said 21,1 °C measured at 05:48, the page 19,9 °C at 06:06, at the same minute.
     const answer = async (min: number) => {

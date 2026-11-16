@@ -57,6 +57,17 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-16T06:10:00+04:00", texte: "Météo\u00a0: en rose, la pluie mesurée autour des pluviomètres, que le radar ne voit pas\u00a0; cases Radar, Pluviomètres et Stations amateur." },
+  { date: "2026-11-16T03:30:00+04:00", texte: "Connecteur\u00a0: la pluie d'hier dans une commune, heure par heure, à chacun de ses pluviomètres, avec l'écart entre eux." },
+  { date: "2026-11-16T03:05:00+04:00", texte: "Connecteur\u00a0: l'historique météo donne aussi les journées des stations amateur de MétéoR-OI, après celles de Météo-France." },
+  { date: "2026-11-14T11:35:00+04:00", texte: "Coupures d'eau\u00a0: la page de chaque commune nomme son distributeur et ses réseaux, d'après l'ARS, avec le lien vers ses avis." },
+  { date: "2026-11-14T04:41:00+04:00", texte: "Météo\u00a0: un bloc Records, les records des six stations de référence, lus dans l'archive et datés." },
+  { date: "2026-11-14T04:11:00+04:00", texte: "Grandes pages du site\u00a0: «\u00a0Comment lire cette page\u00a0» et des questions fréquentes, en bas de page." },
+  { date: "2026-11-14T01:55:00+04:00", texte: "Sécheresse\u00a0: les niveaux de l'arrêté préfectoral n°2026-2094 du 12/11, sur la page et dans le connecteur." },
+  { date: "2026-11-14T01:28:00+04:00", texte: "Accueil\u00a0: la carte gagne l'électricité d'EDF, et la bulle Mer dit l'état des coraux, d'après la NOAA." },
+  { date: "2026-11-13T14:21:00+04:00", texte: "Sources\u00a0: une page liste les jeux de transport.data.gouv.fr que le site utilise." },
+  { date: "2026-11-12T12:16:00+04:00", texte: "En chiffres\u00a0: la courbe se lit au toucher, avec des graduations rondes et les unités nommées." },
+  { date: "2026-11-12T10:37:00+04:00", texte: "Accueil\u00a0: une nouvelle carte de l'île, chaque sujet relié à son lieu, avec une bulle au survol ou au toucher." },
   { date: "2026-11-10T12:00:00+04:00", texte: "Météo\u00a0: une case Valeurs sur la carte des stations\u00a0; décochée, des points de couleur, des flèches pour le vent, la valeur au toucher." },
   { date: "2026-11-08T04:06:00+04:00", texte: "Mer\u00a0: la température au dernier passage de NOAA-20, avec son heure et la distance du point de mesure\u00a0; à défaut, la moyenne de la veille." },
   { date: "2026-11-07T18:30:00+04:00", texte: "Bus\u00a0: un trajet d'un lieu à un autre demandé au connecteur renvoie à la page Trajet en bus, qui le cherche sur tous les réseaux de l'île." },

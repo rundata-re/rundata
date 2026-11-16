@@ -4,6 +4,29 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Lundi 16 novembre 2026
+
+- Météo : en rose, la pluie mesurée autour des pluviomètres, que le radar ne voit pas ; cases Radar, Pluviomètres et Stations amateur.
+- Connecteur : la pluie d'hier dans une commune, heure par heure, à chacun de ses pluviomètres, avec l'écart entre eux.
+- Connecteur : l'historique météo donne aussi les journées des stations amateur de MétéoR-OI, après celles de Météo-France.
+
+## Samedi 14 novembre 2026
+
+- Coupures d'eau : la page de chaque commune nomme son distributeur et ses réseaux, d'après l'ARS, avec le lien vers ses avis.
+- Météo : un bloc Records, les records des six stations de référence, lus dans l'archive et datés.
+- Grandes pages du site : « Comment lire cette page » et des questions fréquentes, en bas de page.
+- Sécheresse : les niveaux de l'arrêté préfectoral n°2026-2094 du 12/11, sur la page et dans le connecteur.
+- Accueil : la carte gagne l'électricité d'EDF, et la bulle Mer dit l'état des coraux, d'après la NOAA.
+
+## Vendredi 13 novembre 2026
+
+- Sources : une page liste les jeux de transport.data.gouv.fr que le site utilise.
+
+## Jeudi 12 novembre 2026
+
+- En chiffres : la courbe se lit au toucher, avec des graduations rondes et les unités nommées.
+- Accueil : une nouvelle carte de l'île, chaque sujet relié à son lieu, avec une bulle au survol ou au toucher.
+
 ## Mardi 10 novembre 2026
 
 - Météo : une case Valeurs sur la carte des stations ; décochée, des points de couleur, des flèches pour le vent, la valeur au toucher.

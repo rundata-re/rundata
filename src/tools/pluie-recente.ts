@@ -136,11 +136,19 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
 
   const k0 = hours.findIndex((v) => v != null && v > 0);
   const listed = k0 >= LISTED ? hours.length : LISTED;
-  const lines = hours.slice(0, listed).map((v, k) => {
+  // Dry hours in a row in one line (« hier 19:00–07:00 : 0 mm »), each hour of rain or not measured on its own: a dry
+  // night was 13 lines of « 0 mm », the most of meteo_actuelle's size.
+  const lines: string[] = [];
+  const shown = hours.slice(0, listed);
+  for (let k = 0; k < shown.length; ) {
+    let j = k;
+    if (shown[k] === 0) while (shown[j + 1] === 0) j++;
     const e = end - k * HOUR_MS;
-    const prefix = day(e - HOUR_MS) < day(t) ? `${dayWord(e - HOUR_MS, t)} ` : "";
-    return `${prefix}${span(e - HOUR_MS, e)} : ${v == null ? "non mesurée" : mm(v)}`;
-  });
+    const b = end - (j + 1) * HOUR_MS;
+    const prefix = day(b) < day(t) ? `${dayWord(b, t)} ` : "";
+    lines.push(`${prefix}${span(b, e)} : ${shown[k] == null ? "non mesurée" : mm(shown[k]!)}`);
+    k = j + 1;
+  }
   // Yesterday's hours listed cover part of it only: their sum is not yesterday's rain (« il a plu combien hier ? »).
   const hier = hierPartiel(end, listed, t);
   if (stuck) lines.unshift(`${day(end) < day(t) ? `${dayWord(end, t)} ` : ""}${span(end, from)} : non lue (notre lecture n'a pas abouti)`);

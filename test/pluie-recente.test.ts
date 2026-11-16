@@ -73,9 +73,9 @@ describe("the rain of the last hours", () => {
     expect(b.derniere_pluie).toBe("aujourd'hui entre 11:00 et 12:00");
     // Midnight to noon: 2.6 + 9.1 + 0.6 (the 0.2 of yesterday 20 h–21 h left out).
     expect(b.cumul_depuis_minuit).toBe("12,3 mm de 00:00 à 12:00");
-    // Twelve hours, the ones of yesterday named so.
-    expect(b.par_heure).toHaveLength(12);
-    expect(b.par_heure.at(-1)).toBe("00:00–01:00 : 0 mm");
+    // Twelve hours, the dry ones in a row in one line: 00:00 to 09:00.
+    expect(b.par_heure).toHaveLength(4);
+    expect(b.par_heure.at(-1)).toBe("00:00–09:00 : 0 mm");
   });
 
   it("says the hours not read when the hourly package is stuck on an old copy, never as the hour under way", () => {
@@ -108,8 +108,8 @@ describe("the rain of the last hours", () => {
 
   it("goes back 24 hours when the last rain is older than 12 hours, yesterday's hours named", () => {
     const b = recentRainBlock({ hourly: HOURLY, slots: () => [] }, { id: "97422440", nom: "Plaine des Cafres", fit: near }, "Plaine des Cafres", NOW, false)!;
-    expect(b.par_heure).toHaveLength(24);
-    expect(b.par_heure).toContain("hier 22:00–23:00 : 0,2 mm");
+    // Twenty-four hours, the hour of rain on its own between the dry ones, each run in one line.
+    expect(b.par_heure).toEqual(["hier 23:00–12:00 : 0 mm", "hier 22:00–23:00 : 0,2 mm", "hier 12:00–22:00 : 0 mm"]);
     expect(b.derniere_pluie).toBe("hier entre 22:00 et 23:00");
     expect(b.cumul_depuis_minuit).toBe("0 mm de 00:00 à 12:00");
   });
@@ -117,7 +117,7 @@ describe("the rain of the last hours", () => {
   it("says that yesterday's hours listed are part of it only, and where its whole day is, read from those hours", () => {
     // Twenty-four hours back from noon: yesterday from 12:00 to midnight, never its sum given as yesterday's rain.
     const b = recentRainBlock({ hourly: HOURLY, slots: () => [] }, { id: "97422440", nom: "Plaine des Cafres", fit: near }, "Plaine des Cafres", NOW, false)!;
-    expect(b.par_heure.at(-1)).toBe("hier 12:00–13:00 : 0 mm");
+    expect(b.par_heure.at(-1)).toBe("hier 12:00–22:00 : 0 mm");
     expect(b.hier_partiel).toBe("Les heures d'hier ci-dessus ne vont que de 12:00 à 24:00 : pour la pluie de toute la journée d'hier, historique_meteo.");
     // Twelve hours back from noon, all of today: no field.
     const today = recentRainBlock({ hourly: HOURLY, slots: () => [] }, { id: "97412356", nom: "La Crête", fit: near }, "Saint-Joseph", NOW, false)!;
@@ -142,7 +142,7 @@ describe("the rain of the last hours", () => {
       cumul_depuis_minuit: "0,4 mm de 00:00 à 12:54",
     });
     expect(r.pluie_recente.par_heure[0]).toBe("12:00–12:54 : 0,4 mm (heure en cours)");
-    expect(r.pluie_recente.par_heure[1]).toBe("11:00–12:00 : 0 mm");
+    expect(r.pluie_recente.par_heure[1]).toBe("00:00–12:00 : 0 mm");
     expect(r.resume).toContain("Pluie à Saint-Joseph (pluviomètre, ");
     expect(r.resume).toContain("dernière pluie aujourd'hui entre 12:24 et 12:30\u00a0; 0,4 mm de 00:00 à 12:54 (depuis minuit).");
     expect(r.pluie_recente.bruine).toBeUndefined();
@@ -202,10 +202,10 @@ describe("the rain of the last hours", () => {
       const at = async (now: string, hourly = true) =>
         body(await meteoActuelle(await cache({}, undefined, new Date(now), hourly), "Saint-Joseph", new Date(now)));
       // 09:10Z: the 09:00Z hour is not due before 09:15Z, the 08:00Z one in hand is enough.
-      expect((await at("2026-10-25T09:10:00Z")).pluie_recente.par_heure[1]).toBe("11:00–12:00 : 0 mm");
+      expect((await at("2026-10-25T09:10:00Z")).pluie_recente.par_heure[1]).toBe("00:00–12:00 : 0 mm");
       expect(calls).toBe(0);
       // 09:20Z: due, asked again; unreadable here, so the hours in hand.
-      expect((await at("2026-10-25T09:20:00Z")).pluie_recente.par_heure[1]).toBe("11:00–12:00 : 0 mm");
+      expect((await at("2026-10-25T09:20:00Z")).pluie_recente.par_heure[1]).toBe("00:00–12:00 : 0 mm");
       expect(calls).toBe(1);
       // Never read: the answer goes without the block.
       const r = await at("2026-10-25T09:20:00Z", false);

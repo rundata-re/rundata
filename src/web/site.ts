@@ -136,6 +136,7 @@ import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
+import { ALIASES as ENTREPRISES_ALIASES, entreprisesPage, PATH as ENTREPRISES } from "./entreprises.js";
 import { PATH as SANS_REPONSE, sansReponsePage } from "./sans-reponse.js";
 import { chiffres, type Copie, inventaire, KEY as CHIFFRES_KEY, PATH as CHIFFRES } from "../chiffres.js";
 import { chiffresPage } from "./chiffres.js";
@@ -607,6 +608,8 @@ const ALIASES: Record<string, string> = {
   "/mentions-legales": "/conditions#mentions-legales",
   "/sources": CHIFFRES,
   "/randos": "/randonnees",
+  // The companies' and bodies' space (web/entreprises.ts): « /organismes », « /open-data ».
+  ...Object.fromEntries(ENTREPRISES_ALIASES.map((a) => [a, ENTREPRISES])),
 };
 
 async function pages(request: Request, cache: Cache, background: Background, now: Date): Promise<Response | null> {
@@ -888,6 +891,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // The guide to publishing one's information openly: the same.
   if (path === GUIDE || path === `${GUIDE}/`) {
     return new Response(ouvrirDonneesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+  }
+  // The companies' and bodies' space: the same, in noindex and out of the sitemap until it is announced (DISCRETE).
+  if (path === ENTREPRISES || path === `${ENTREPRISES}/`) {
+    return new Response(entreprisesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
   // rundata.re en chiffres: what the code counts, and the last copy of what the sources do (chiffres.ts); never a source.
   if (path === CHIFFRES || path === `${CHIFFRES}/`) {

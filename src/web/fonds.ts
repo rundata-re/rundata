@@ -79,6 +79,7 @@ export const SANS_FOND: Record<string, string> = {
   "/nouveautes": "about the site itself, which has no place to show",
   "/publier": "about the site itself, which has no place to show",
   "/ouvrir-ses-donnees": "about the site itself, which has no place to show",
+  "/entreprises": "about the site itself, which has no place to show",
   "/sites-sans-reponse": "about the site itself, which has no place to show",
   "/conditions": "a legal text",
   "/peche": "its picture comes later, made by marketing (an estuary at dawn, with vouves)",
@@ -175,7 +176,7 @@ export const MOTIF_PATH = "/motif/ile-large.9aac573b5f.svg";
  * site, the legal texts and the page of an address that does not exist (Head.motif), whose band holds neither data nor
  * picture and leaves its right free. Not /presse, whose visual takes that place.
  */
-export const MOTIF_PAGES = new Set(["/a-propos", "/chiffres", "/valeurs", "/sources/transport", "/nouveautes", "/publier", "/ouvrir-ses-donnees", "/sites-sans-reponse", "/conditions", "/confidentialite"]);
+export const MOTIF_PAGES = new Set(["/a-propos", "/chiffres", "/valeurs", "/sources/transport", "/nouveautes", "/publier", "/ouvrir-ses-donnees", "/entreprises", "/sites-sans-reponse", "/conditions", "/confidentialite"]);
 
 /** The credit of the contour lines, in marketing's words, in the footer of every page that may show them. */
 export const MOTIF_CREDIT = "Courbes de niveau du décor : IGN, RGE ALTI (Licence Ouverte 2.0).";

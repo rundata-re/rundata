@@ -50,7 +50,7 @@ export const COVERAGE =
   `Vagues : PRÉVISION, jamais mélangée aux mesures, du modèle ${houle.MODEL_MF.nom}, ` +
   `qui distingue la houle principale du reste de la mer, là où il a un point à moins de ${MF_MAX_KM} km (ouest et sud), ` +
   `et du modèle ${houle.MODEL.nom} ailleurs (nord et est), sur ${houle.MODEL.echeance_jours} jours. ` +
-  "Aucune bouée de l'île ne publie de mesure de houle en ce moment (réseau Candhis du Cerema : dernières mesures en avril 2023).";
+  "Aucune bouée de l'île ne publie de mesure de houle en ce moment (réseau Candhis du Cerema : dernières mesures en juin 2024, à la Rivière des Galets).";
 
 const CAVEATS = [
   "Mesure satellite de la toute première couche d'eau, sur des carrés de 2 à 4 km : " +

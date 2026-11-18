@@ -132,7 +132,9 @@ describe("the server's instructions", () => {
     // 39 446 the same day with a collège's IPS and results in annuaire_services_publics (a few words, validated).
     // 39 476 on 14/11/2026 with « ça souffle au Colorado ? » among meteo_actuelle's examples: a place of Saint-Denis that
     // Haiku took for the American state, answering from the web without calling any tool (bench of 14/11).
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_476);
+    // 39 489 on 16/11/2026 with Saint-André among the mairies read in evenements and electricite, whose mairies are now
+    // « qui le permettent » rather than « dont le site ne l'interdit pas » (13 shorter): Saint-André's agreed in writing.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_489);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

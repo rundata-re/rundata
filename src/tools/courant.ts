@@ -9,6 +9,7 @@ import * as cc from "../providers/coupures-courant.js";
 import { a as at, credits, de, enumeration } from "./format.js";
 import { injoignable as siteSilent } from "./injoignable.js";
 import { mention, mentionIle } from "./non-repris.js";
+import { AUTORISATIONS } from "../providers/autorisations.js";
 
 export interface CourantAnswer {
   avis: cc.AvisCourant[];
@@ -96,8 +97,10 @@ export function liveCommunes(c: CourantAnswer, now: Date): string[] {
  */
 export function honesty(): string {
   const read = cc.MAIRIES.map((m) => m.commune);
+  // Saint-André's site forbids it without its agreement, which it gave in writing on 16/11/2026.
+  const accord = read.some((c) => AUTORISATIONS[`courant:${c}`]?.etat === "accordee");
   return `EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). ` +
-    `Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
+    `Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas${accord ? " ou qui ont donné leur accord écrit à rundata.re" : ""}${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
 }
 
 /**

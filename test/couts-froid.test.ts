@@ -55,6 +55,9 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/lacreole\.re/, "avis-eau/lacreole.html"],
   [/ville-saintemarie\.re\/wp-json\/wp\/v2\/posts/, "avis-eau/saintemarie.json"],
   [/saintleu\.re\/wp-json/, "avis-eau/saintleu.json"],
+  // Saint-André's notices of power cuts, read since its written agreement of 16/11/2026 (live on that day).
+  [/saint-andre\.re\/wp-json\/wp\/v2\/posts/, "courant/saint-andre_posts.json"],
+  [/saint-andre\.re\/wp-json\/wp\/v2\/media/, "courant/saint-andre_media.json"],
   [/atmo-france\.org/, "atmo_974.json"],
   [/erddap\/griddap\/erdMH1sst/, "modis.csv"],
   [/maregraphie\/observation\/json\/110/, "shom_110.json"],
@@ -80,6 +83,7 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/saintlouis\.re\/agenda/, "agenda/rss_saint-louis-agenda.xml"],
   [/lesechoir\.com/, "agenda/sechoir.json"],
   [/braspanon\.re\/fr\/ev\//, "agenda/bras-panon_2026-11.html"],
+  [/saint-andre\.re\/category\/agenda\/feed/, "agenda/rss_saint-andre.xml"],
   [/openagenda\.com\/agendas\/50316469/, "agenda/openagenda_cinor.json"],
   [/openagenda\.com\/agendas\/32570974/, "agenda/openagenda_otnord.json"],
   [/theatrelucdonat\.re\/tld_agenda/, "agenda/luc-donat.html"],

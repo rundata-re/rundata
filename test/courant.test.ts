@@ -89,7 +89,8 @@ describe("the power cuts the mairies relay", () => {
     expect(sentence(sm, new Date("2026-11-25T10:00:00Z"))).toBe("Pas d'avis récent de la mairie de Sainte-Marie : le dernier date du 21/10. Nous ne savons pas si une coupure est prévue.");
     expect(none("Le Port")).toBe("rundata.re ne lit pas d'avis de coupure d'électricité pour Le Port : nous ne savons pas si une coupure est prévue.");
     expect(none("Sainte-Marie")).toBe("rundata.re n'a lu aucun avis de coupure d'électricité pour Sainte-Marie : nous ne savons pas si une coupure est prévue.");
-    // The communes of the honesty line: every mairie read, with or without a recent notice (all agreed here).
+    // The communes of the honesty line: every mairie read, with or without a recent notice (all read here, none by its written
+    // agreement: what it says then, test/autorisations.test.ts).
     expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas\u00a0: aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
     const cached = { value: copy, fetchedAt: NOW, stale: false };
     expect(courantBlock(cached, "Le Port", NOW)).toMatchObject({ avis: [], note: none("Le Port") });

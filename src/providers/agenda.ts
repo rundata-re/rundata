@@ -1148,6 +1148,7 @@ const salazie: Agenda = {
 };
 
 const BRAS_PANON = mairie("bras_panon", "Ville de Bras-Panon", "https://www.braspanon.re/fr/ev/2512733/agenda-1634");
+const SAINT_ANDRE = mairie("saint_andre", "Ville de Saint-André", "https://www.saint-andre.re/category/agenda/");
 // Its terms submit any link to its site to its agreement, its home page's too (src/liens.ts): the address read only.
 const SAINT_BENOIT_AGENDA = "https://www.saint-benoit.re/evenements/general";
 const SAINT_BENOIT = mairie("saint_benoit", "Ville de Saint-Benoît", SAINT_BENOIT_AGENDA);
@@ -1796,7 +1797,8 @@ export const LISIBLES: Agenda[] = [
   // refused (HTTP 403, 29/10-05/11/2026) and some data centers served a copy two or three days old; its news, read by
   // the scheduled event on the same site, had no failure.
   { ...rss("saint_louis", "Ville de Saint-Louis", "https://saintlouis.re/agenda?format=feed&type=rss", "Saint-Louis", SAINT_LOUIS), site_commune: "site de la commune de Saint-Louis", planifie: true },
-  { ...rss("saint_andre", "Ville de Saint-André", "https://www.saint-andre.re/category/agenda/feed/", "Saint-André"), site_commune: "site de la commune de Saint-André", faits: true },
+  // Read with its written agreement of 16/11/2026, which covers its agenda: its whole feed, the médiathèques' events in it too.
+  { ...rss("saint_andre", "Ville de Saint-André", "https://www.saint-andre.re/category/agenda/feed/", "Saint-André", SAINT_ANDRE), site_commune: "site de la commune de Saint-André", mention: true, faits: true },
   // Read by the scheduled event, which gives a slow site 30 s: read by the questions (04-07/11/2026), it was the agenda
   // most often too slow for a view (266 views in 3 days), 99 of its readings were cut at 6 s, and 37 views had no copy
   // of it at all, kept only in the data center that had read it.

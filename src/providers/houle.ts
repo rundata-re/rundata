@@ -2,7 +2,8 @@
  * Wave forecasts of two wave models, served by Open-Meteo's marine API: Météo-France's MFWAM (1/12°, for the Copernicus
  * Marine service of the EU) and the ECMWF's WAM (9 km). No key; free API for non-commercial use. A FORECAST, never a
  * measurement, and never mixed with one: the Candhis buoys of the Cerema (providers/candhis.ts) are the measurement,
- * but none of the island's publishes any (all inactive, the last measures in April 2023, read 08/11/2026).
+ * but none of the island's publishes any (all inactive, the last measures in June 2024, at
+ * Rivière des Galets, from getCampDispo read 18/11/2026).
  *
  * MFWAM splits the main swell from the rest of the sea, which WAM does not. But its sea cells keep off part of the
  * coast: the nearest one lies 16 km from Saint-Denis, 17 km from Saint-Benoît and 20 km from Sainte-Marie, off another

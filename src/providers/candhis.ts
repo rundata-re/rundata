@@ -7,7 +7,8 @@
  * Worker asks it only in its scheduled event, every 30 minutes, with one getCampListeTR request per type of buoy (all
  * the island's buoys of that type at once), and keeps what they measured in KV under `candhis:etat`: the pages and the
  * answers read KV, never the API. Which buoys of the island are active, and of which type, comes from getCampListe,
- * asked once for each of its three types when KV does not hold it, and again every 30 days. Without the key, nothing is
+ * asked once for each of its three types when KV does not hold it, and again every day: a buoy of the island that
+ * starts measuring is asked the day it shows there. Without the key, nothing is
  * asked, kept or shown.
  *
  * Documentation: « API PHP REST de Candhis (v1), documentation utilisateur », Cerema, octobre 2024.
@@ -34,11 +35,16 @@ export const KINDS: Record<Kind, string> = { 0: "non directionnel H13", 1: "dire
 export interface Bouee {
   code: string;
   nom: string;
-  lat: number;
-  lon: number;
+  /** Where it is, when known: neither getCampListe nor getCampListeTR gives it. */
+  lat?: number;
+  lon?: number;
 }
 
-/** The island's measuring campaigns, from the Cerema's list of stations on data.gouv.fr (candhis_houlographes_202412). */
+/**
+ * The island's measuring campaigns, from the Cerema's list of stations on data.gouv.fr (candhis_houlographes_202412),
+ * then the two buoys of Météo-France to come, with their codes and names from the Cerema's answer of 18/11/2026: not in
+ * service yet, their place not given. Only these codes are read from the API's lists.
+ */
 export const BOUEES: Bouee[] = [
   { code: "97401", nom: "Baie de la Possession", lat: -20.91018, lon: 55.34598 },
   { code: "97402", nom: "Pointe du Phare", lat: -20.921, lon: 55.28683 },
@@ -48,6 +54,8 @@ export const BOUEES: Bouee[] = [
   { code: "97406", nom: "Sainte-Rose", lat: -21.12133, lon: 55.78417 },
   { code: "97407", nom: "Vincendo", lat: -21.381, lon: 55.681 },
   { code: "97408", nom: "Port Réunion Est", lat: -20.92452, lon: 55.3242 },
+  { code: "97409", nom: "Sainte-Marie" },
+  { code: "97410", nom: "Saint-Pierre (large)" },
 ];
 const CODES = new Set(BOUEES.map((b) => b.code));
 
@@ -57,8 +65,11 @@ export const TTL_SECONDS = 7 * 86_400;
 /** The scheduled event asks every 30 minutes, at 10 and 40 past the hour (UTC): the buoys measure on the half hour. */
 export const REFRESH_EVERY = 30;
 export const REFRESH_OFFSET = 10;
-/** The list of the active buoys and their types, asked again after this. */
-const TYPES_DAYS = 30;
+/**
+ * The list of the active buoys and their types, asked again after this: a day, so that a buoy which starts measuring is
+ * read the same day. Three requests a day, against up to three every 30 minutes for the measurements.
+ */
+const TYPES_DAYS = 1;
 // Each data center reads its copy of the state again after this.
 const READ_SECONDS = 120;
 const TIMEOUT_MS = 20_000;
@@ -221,8 +232,8 @@ export function availability(message: unknown): { avec: string[]; sans: string[]
 const pauseOf = (status: number | undefined) => (status === 401 || status === 423 ? DAY : status === 429 ? 3 * 3600_000 : 0);
 
 /**
- * In the Worker's scheduled event: the island's active buoys and their types when `before` lacks them or they are 30
- * days old (one request per type), then one getCampListeTR request per type of active buoy, merged into `before`'s
+ * In the Worker's scheduled event: the island's active buoys and their types when `before` lacks them or they are a day
+ * old (one request per type), then one getCampListeTR request per type of active buoy, merged into `before`'s
  * measurements and handed to `write`, failures included. Returns what was done, for the logs; throws after writing when
  * a request failed.
  */

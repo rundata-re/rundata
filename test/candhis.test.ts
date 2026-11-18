@@ -135,7 +135,7 @@ describe("the Candhis buoys", () => {
   it("then, one request per type each time; a buoy silent this half hour keeps its last measurement and its time", async () => {
     candhis.configure(KEY);
     const old: candhis.Mesure = { ...candhis.parseTR(H13)[1], t: Date.parse("2026-10-27T08:00:00Z") };
-    const s = store({ essai: NOW.getTime() - 1800_000, lu: NOW.getTime() - 1800_000, types: { lu: NOW.getTime() - days(29), actives: { "97405": 2, "97408": 2 } }, mesures: { "97408": old } });
+    const s = store({ essai: NOW.getTime() - 1800_000, lu: NOW.getTime() - 1800_000, types: { lu: NOW.getTime() - days(1) + 60_000, actives: { "97405": 2, "97408": 2 } }, mesures: { "97408": old } });
     answer = () => json({ ...H13, message: "Données TR directionnel H13 (+97405+,-97408-)\\ 2026-10-27 10:00 ", results: [H13.results[0]] });
     expect(await candhis.refresh(s.before, s.write, NOW)).toBe("2 bouées actives, 1 mesures nouvelles, 1 requêtes");
     expect(asked.map((a) => a.url)).toEqual(["https://candhis.cerema.fr/API/v1/getCampListeTR.php?type=2&camp=97405,97408"]);
@@ -143,11 +143,26 @@ describe("the Candhis buoys", () => {
     expect(s.written[0].mesures["97405"].t).toBe(Date.parse("2026-10-27T10:00:00Z"));
   });
 
-  it("list the active buoys again after 30 days", async () => {
+  it("list the active buoys again after a day", async () => {
     candhis.configure(KEY);
-    const s = store({ essai: 0, types: { lu: NOW.getTime() - days(30), actives: { "97405": 2 } }, mesures: {} });
+    const s = store({ essai: 0, types: { lu: NOW.getTime() - days(1), actives: { "97405": 2 } }, mesures: {} });
     await candhis.refresh(s.before, s.write, NOW);
     expect(asked.filter((a) => a.url.includes("getCampListe.php"))).toHaveLength(3);
+  });
+
+  it("read the two buoys to come (réponse du Cerema du 18/11/2026) the day they show active, with no place known", async () => {
+    candhis.configure(KEY);
+    const s = store({ essai: 0, types: { lu: NOW.getTime() - days(1), actives: {} }, mesures: {} });
+    answer = (url) => {
+      const u = new URL(url);
+      if (u.pathname.endsWith("/getCampListe.php"))
+        return json(u.searchParams.get("type") === "2" ? liste(2, [["97409", "Sainte-Marie", "1", "TR directionnel H13"], ["97410", "Saint-Pierre (large)", "1", "TR directionnel H13"], ["97411", "Ailleurs", "1", "TR directionnel H13"]]) : liste(0, []));
+      return json({ ...H13, message: "Données TR directionnel H13 (+97409+,+97410+)\\ 2026-10-27 10:00 ", results: [["97409", ...H13.results[0].slice(1)], ["97410", ...H13.results[1].slice(1)]] });
+    };
+    expect(await candhis.refresh(s.before, s.write, NOW)).toBe("2 bouées actives, 2 mesures nouvelles, 4 requêtes");
+    expect(asked.at(-1)?.url).toBe("https://candhis.cerema.fr/API/v1/getCampListeTR.php?type=2&camp=97409,97410");
+    expect(Object.keys(s.written[0].mesures).sort()).toEqual(["97409", "97410"]);
+    expect(candhis.BOUEES.filter((b) => b.lat === undefined).map((b) => [b.code, b.nom])).toEqual([["97409", "Sainte-Marie"], ["97410", "Saint-Pierre (large)"]]);
   });
 
   it("stop for a while after a refusal (quota reached), writing why, and ask nothing until then", async () => {

@@ -22,7 +22,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
   // Les événements de Saint-Paul lus dans son export iCal tant que l'API de son site répond 404 (depuis le 06/11/2026).
-  agenda: 37,
+  // L'agenda de Saint-André repris avec l'accord écrit de la commune du 16/11/2026.
+  agenda: 38,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   air: 13,
   bornes: 5,
@@ -49,7 +50,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Sudéau's site linked on the pages of the communes whose water it distributes (14/11/2026).
   // Each commune's latest notices, past ones too, for its page (`derniers_avis`, 14/11/2026).
   coupures: 17,
-  courant: 8,
+  // Saint-André's notices read again, with its written agreement of 16/11/2026.
+  courant: 9,
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
@@ -63,7 +65,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The communes whose notices are read, in the tap water's note, with those shared between distributors (L'Étang-Salé).
   eau: 4,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
-  electricite: 19,
+  // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
+  electricite: 20,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,
@@ -153,6 +156,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "agenda:bras_panon": 2,
   // Read again with its written agreement of 06/11/2026, from its list: an older entry, read from its feed, is not served.
   "agenda:etang_sale": 2,
+  // Read again with its written agreement of 16/11/2026, as its own source: an older entry was read as the mairies'.
+  "agenda:saint_andre": 2,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
   // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
   // The events not yet over (tribeUrl, `ends_after`): one begun before today kept, as the league's weekend of 04-07/11.

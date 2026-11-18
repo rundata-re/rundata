@@ -129,7 +129,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.598";
+export const VERSION = "1.0.599";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -434,7 +434,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« météo de l'électricité » d'EDF pour les jours qui viennent (heures de pointe, réseau contraint, recharge conseillée " +
         "d'un véhicule électrique). Pour : « d'où vient l'électricité ? », " +
         "« quand recharger ma voiture électrique ? ». " +
-        `Coupures de courant (électricité, pas l'eau : coupures_eau) : les avis d'EDF que relaient les mairies dont le site ne l'interdit pas (${courantMairies.MAIRIES.map((m) => m.commune).join(", ")}), ` +
+        `Coupures de courant (électricité, pas l'eau : coupures_eau) : les avis d'EDF que relaient les mairies qui le permettent (${courantMairies.MAIRIES.map((m) => m.commune).join(", ")}), ` +
         "jours, heures et secteurs, avec le lien de l'avis. " +
         "Pour : « coupure de courant à Sainte-Marie ? », « coupure EDF prévue dans ma commune ? ».",
       inputSchema: { lieu },

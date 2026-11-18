@@ -45,7 +45,7 @@ export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:le_tampon": { commune: "Le Tampon", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:petite_ile": { commune: "Petite-Île", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:plaine_des_palmistes": { commune: "La Plaine-des-Palmistes", publie: "actualités", etat: "permise" },
-  "agenda:saint_andre": { commune: "Saint-André", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:saint_andre": { commune: "Saint-André", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
   "agenda:saint_benoit": { commune: "Saint-Benoît", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:saint_denis": { commune: "Saint-Denis", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:saint_joseph": { commune: "Saint-Joseph", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
@@ -55,7 +55,7 @@ export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:saint_pierre": { commune: "Saint-Pierre", publie: "événements et actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:sainte_rose": { commune: "Sainte-Rose", publie: "événements et actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "courant:Cilaos": { commune: "Cilaos", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
-  "courant:Saint-André": { commune: "Saint-André", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
+  "courant:Saint-André": { commune: "Saint-André", publie: "avis de coupure d'électricité", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
   "courant:Saint-Philippe": { commune: "Saint-Philippe", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
   "courant:Sainte-Suzanne": { commune: "Sainte-Suzanne", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
 };

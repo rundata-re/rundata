@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Mercredi 18 novembre 2026
+
+- Saint-André : son agenda et ses avis de coupure d'électricité reviennent, avec son accord écrit.
+
 ## Lundi 16 novembre 2026
 
 - Prévisions dans votre IA : plus d'avertissement « copie de secours » à tort quand la prévision est à jour, ni de fausse heure de calcul.

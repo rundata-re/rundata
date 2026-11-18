@@ -8,7 +8,7 @@
 import { getJson } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { strip } from "./avis-eau.js";
-import { autorisee } from "./autorisations.js";
+import { AUTORISATIONS, autorisee } from "./autorisations.js";
 import { unlessSpent } from "../budget.js";
 
 /**
@@ -37,7 +37,11 @@ export const SOURCE: SourceInfo = {
   id: "mairies_edf",
   nom: `Avis de coupure d'électricité d'EDF Réunion relayés par les mairies (${names.join(", ")})`,
   organisme: `EDF Réunion, avis relayés par ${names.length > 1 ? "les mairies" : "la mairie"} de ${listed}`,
-  licence: "Information publique : seuls les faits (jours, heures, secteurs) sont repris, avec le lien de l'avis",
+  // The mairies read with their written agreement, each with its day, as the agendas' (providers/agenda.ts).
+  licence: `Information publique : seuls les faits (jours, heures, secteurs) sont repris, avec le lien de l'avis${MAIRIES.flatMap((m) => {
+    const le = AUTORISATIONS[`courant:${m.commune}`]?.accordee_le;
+    return le ? [`\u00a0; ${m.commune} : repris avec son accord écrit du ${le.split("-").reverse().join("/")}`] : [];
+  }).join("")}`,
   attribution: `${names.length > 1 ? "Mairies" : "Mairie"} de ${listed}`,
   url: `${MAIRIES[0]?.site ?? LISIBLES[0].site}/`,
 };

@@ -582,7 +582,7 @@ const SCHEDULED: Entry[] = [
     basis: "estimé",
   },
   // Only with the Cerema's key. The state read from KV, one getCampListeTR request per type of active buoy (at most
-  // the three types; one when the island's buoys are all of one type), the state written. Every 30 days, and the first
+  // the three types; one when the island's buoys are all of one type), the state written. Once a day, and the first
   // time, the list of the active buoys besides: one request per type, three more subrequests in that run.
   {
     id: "candhis:etat",

@@ -66,7 +66,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   eau: 4,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
-  electricite: 20,
+  // A past notice in `coupures_annoncees`: its sentence, its commune and its link only (19/11/2026).
+  electricite: 21,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,

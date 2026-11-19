@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-19T05:01:00+04:00", texte: "Météo\u00a0: les records des stations de référence en cartes, un chiffre par case (chaud, frais, pluie, rafale)." },
   { date: "2026-11-18T11:16:00+04:00", texte: "Saint-André\u00a0: son agenda et ses avis de coupure d'électricité reviennent, avec son accord écrit." },
   { date: "2026-11-16T14:56:00+04:00", texte: "Prévisions dans votre IA\u00a0: plus d'avertissement «\u00a0copie de secours\u00a0» à tort quand la prévision est à jour, ni de fausse heure de calcul." },
   { date: "2026-11-16T06:10:00+04:00", texte: "Météo\u00a0: en rose, la pluie mesurée autour des pluviomètres, que le radar ne voit pas\u00a0; cases Radar, Pluviomètres et Stations amateur." },

@@ -62,27 +62,56 @@ describe("restrictions d'eau", () => {
     expect(heuresDites("avant 20 h")).toBe("avant 20\u00a0h");
     expect(heuresDites("de 8h-12h")).toBe("de 8\u00a0h-12\u00a0h");
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
-    expect(page).toMatch(/Arrosage des jardins potagers<small>Interdiction entre 6\u00a0h et 20\u00a0h<\/small>/);
+    expect(page).toContain('<td data-label="crise">Interdiction entre 6\u00a0h et 20\u00a0h</td>');
     expect(page).not.toMatch(/\d\u00a0h(?:et|à|de)\b/);
   });
 
-  it("says the scale in lines above the table, each level with its pill, the order's date left to the map's legend; the tool's scale unchanged", async () => {
+  it("says what each level means once, in « Comment lire cette page », not above the table; the tool's scale unchanged", async () => {
     const b = body(await restrictionsEau(cache(), undefined));
     expect(b.echelle).toBe("Du moins au plus sévère : vigilance (économiser l'eau), alerte, alerte renforcée, crise (seuls les usages prioritaires : santé, salubrité, sécurité).");
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
     const head = page.slice(page.indexOf('id="h-communes-eau"'), page.indexOf("<table"));
-    expect(head).toContain('<ul class="plain"><li><span class="lvl" style="--c:#ffd43b">vigilance</span> économiser l&#39;eau</li><li><span class="lvl" style="--c:#ff922b">alerte</span></li><li><span class="lvl" style="--c:#f03e3e;color:#000">alerte renforcée</span></li><li><span class="lvl" style="--c:#862e9c;color:#fff">crise</span> seuls les usages prioritaires : santé, salubrité, sécurité</li></ul>');
-    expect(head).not.toContain("D'après l'arrêté");
-    // The count per level stays in the hero, the map, the table and « Ce qui est interdit », not in a sentence here.
-    expect(head).not.toContain("Du moins au plus sévère");
-    expect(head).not.toContain("alerte dans 14 communes");
+    expect(head).not.toContain("<ul");
+    expect(page.match(/économiser l(?:'|&#39;)eau/g)).toHaveLength(1);
+    expect(page.match(/seuls les usages prioritaires/g)).toHaveLength(1);
+    expect(page).not.toContain("Du moins au plus sévère");
   });
 
-  it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, then the order's date", async () => {
+  it("draws its legend as the charter of the maps wants: each colour as a square then its word, never a coloured word, and nothing else", async () => {
     const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
     expect(page).toContain('<span><svg viewBox="-37 -37 74 74" aria-hidden="true"><rect x="-30" y="-30" width="60" height="60" rx="8" style="fill:#862e9c"/></svg>crise</span>');
-    expect(page).toContain('<span class="mls">Eau du robinet, d&#39;après l&#39;arrêté préfectoral n°2026-2094/SG/SCOPP/BCPE, en vigueur depuis le\u00a012/11/2026.</span>');
+    const figure = page.slice(page.indexOf('<figure class="card mapcard">'), page.indexOf("</figure>"));
+    expect(figure).not.toContain('class="mls"');
+    expect(figure).not.toContain("2094");
     expect(page).not.toContain('<span style="color:');
+  });
+
+  it("says the order's number once at the top with its link, and once more in VigiEau's note only", async () => {
+    const page = secheressePage("https://rundata.re", { value: await buildSecheresse(cache()), fetchedAt: new Date(), stale: false });
+    // From the title to « Comment lire cette page », the sources' credits aside.
+    const shown = page.slice(page.indexOf("<h1>"), page.indexOf('id="h-lire"')).replace(/<p class="sources">[\s\S]*?<\/p>/g, "");
+    expect(shown.match(/n°2026-2094\/SG\/SCOPP\/BCPE du 12\/11\/2026/g)).toHaveLength(2);
+    expect(shown).toContain('<a href="https://www.reunion.gouv.fr/contenu/telechargement/54342/411078/file/">arrêté préfectoral n°2026-2094/SG/SCOPP/BCPE du 12/11/2026</a>');
+    expect(shown).toContain("VigiEau affiche encore l&#39;arrêté précédent");
+  });
+
+  it("gives no column to a level no commune has, leaves empty a cell the order does not fill, and has no table without a restriction", async () => {
+    const d = await buildSecheresse(cache());
+    const crise = d.interdits.find((x) => x.niveau === "crise")!;
+    const sans = {
+      ...d,
+      interdits: d.interdits.filter((x) => x.niveau !== "vigilance").map((x) => (x === crise ? { ...x, restrictions: x.restrictions.filter((r) => r.usage !== "Arrosage des pelouses") } : x)),
+    };
+    const uses = (page: string) => page.slice(page.indexOf('<table class="drought niveaux usages">'), page.indexOf("</table>", page.indexOf('<table class="drought niveaux usages">')));
+    const t = uses(secheressePage("https://rundata.re", { value: sans, fetchedAt: new Date(), stale: false }));
+    expect(t.match(/<th scope="col">/g)).toHaveLength(4);
+    expect(t).not.toContain(">vigilance</span>");
+    expect(t).toMatch(/<th scope="row">Arrosage des pelouses<\/th><td data-label="alerte">Interdit<\/td><td data-label="alerte renforcée">Interdit<\/td><td><\/td><\/tr>/);
+    expect(t).not.toMatch(/—|non concerné/);
+    const vide = secheressePage("https://rundata.re", { value: { ...d, communes: [], interdits: [], resume: "Aucune restriction d'eau en vigueur à La Réunion." }, fetchedAt: new Date(), stale: false });
+    expect(vide).not.toContain("<table");
+    expect(vide).not.toContain('id="h-interdits"');
+    expect(vide).toContain("Aucune restriction d&#39;eau en vigueur à La Réunion.");
   });
 
   it("writes each level's pill in a text readable on its official colour, at least 4.5:1, the colour unchanged", async () => {
@@ -225,9 +254,12 @@ describe("the order of 12/11/2026 while VigiEau serves the one it replaced", () 
     const d = await buildSecheresse(cache());
     expect(d.communes[0].commune).toBe("Saint-Joseph");
     const page = secheressePage("https://rundata.re", { value: d, fetchedAt: new Date(), stale: false });
-    const crise = page.indexOf('<span class="lvl" style="--c:#862e9c;color:#fff">crise</span> <span class="note">Saint-Joseph</span>');
+    // « Ce qui est interdit »: a column per level some commune has, from the least to the most severe, crise last.
+    const uses = page.slice(page.indexOf('<table class="drought niveaux usages">'));
+    const crise = uses.indexOf('<span class="lvl" style="--c:#862e9c;color:#fff">crise</span><small class="note" style="display:block;font-weight:400">Saint-Joseph</small>');
     expect(crise).toBeGreaterThan(-1);
-    expect(crise).toBeLessThan(page.indexOf('<span class="note">Cilaos'));
+    expect(crise).toBeGreaterThan(uses.indexOf('alerte renforcée</span><small class="note" style="display:block;font-weight:400">Cilaos'));
+    expect(uses.indexOf('vigilance</span><small class="note" style="display:block;font-weight:400">Sainte-Rose</small>')).toBeGreaterThan(-1);
     const sj = body(await restrictionsEau(cache(), "Saint-Joseph"));
     const rule = (u: string) => sj.restrictions_eau_du_robinet.find((r: { usage: string }) => r.usage === u)?.restriction;
     expect(rule("Remplissage et maintien du niveau d’eau des plans d’eau de loisirs et piscines privées")).toBe("Interdiction");

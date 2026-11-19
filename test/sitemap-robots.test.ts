@@ -5,7 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { enChargement, texteVisible } from "../src/robots.js";
 import { COMMUNES } from "../src/web/commune.js";
 import { STATIONS, stationPath } from "../src/web/station.js";
-import { avisLus } from "../src/web/coupures.js";
+import { avisLus, indexable } from "../src/web/coupures.js";
 
 const O = "https://rundata.re";
 const NAVIGATEUR = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
@@ -55,8 +55,8 @@ describe("the sitemap, as a search engine's robot reads it", () => {
   it("leaves out the weather stations' pages and the water cuts of a commune whose notices are not read, still online", async () => {
     const urls = new Set(await sitemap());
     for (const x of STATIONS) expect(urls.has(stationPath(x.id)), stationPath(x.id)).toBe(false);
-    const nonLues = COMMUNES.filter((p) => !avisLus(p.nom));
-    const lues = COMMUNES.filter((p) => avisLus(p.nom));
+    const nonLues = COMMUNES.filter((p) => !indexable(p.nom));
+    const lues = COMMUNES.filter((p) => indexable(p.nom));
     expect(nonLues.length).toBeGreaterThan(0);
     expect(lues.length).toBeGreaterThan(0);
     for (const p of nonLues) expect(urls.has(`/coupures-eau/${p.slug}`), p.slug).toBe(false);

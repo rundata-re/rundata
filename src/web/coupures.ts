@@ -4,7 +4,7 @@
  * commune's own page. Cut from the copies of /coupures-eau, /secheresse and /eau: nothing more is fetched.
  */
 import type { Cached } from "../cache.js";
-import { CIREST, distributeur, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { CIREST, distributeur, GUIDES_AVIS, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
@@ -101,11 +101,15 @@ export function waterLive(p: PlacePage, w: WaterCopies): Live | undefined {
   return { valeur, detail: detail || "coupures, sécheresse et eau du robinet" };
 }
 
-/**
- * Whether the notices of a commune's distributor are read: without them, its page has nothing of its own to show (only
- * where to look), and stays out of the search engines and the sitemap until a source is read (web/site.ts).
- */
+/** Whether the notices of a commune's distributor are read. */
 export const avisLus = (commune: string) => !!distributeur(commune)?.avis;
+
+/**
+ * Whether a commune's page of water cuts goes to the search engines and the sitemap (web/site.ts): its notices read, or
+ * a text of its own on where they are published (GUIDES_AVIS). Without either, it has nothing of its own to show (only
+ * where to look), and stays out of them until a source is read.
+ */
+export const indexable = (commune: string) => avisLus(commune) || !!GUIDES_AVIS[commune];
 
 export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies, now = new Date(), alerte?: Alerte): string {
   const d = w.coupures?.value;
@@ -126,6 +130,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const silent = x.muet ? `<p class="note">${silentText(x.muet)}</p>` : "";
   // The site of a distributor whose notices are not read, linked only (CISE Réunion at Les Avirons).
   const siteDist = dist && !dist.avis ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
+  // Where its notices are published, in words of its own (GUIDES_AVIS): the lead, the distributor's card and the list.
+  const guide = dist && !dist.avis ? GUIDES_AVIS[p.nom] : undefined;
   const status = !d
     ? loading("Les avis des distributeurs")
     : x.muet && !x.avis.length
@@ -135,6 +141,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
         ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} ${esc(at)}.</p>`
+        : guide
+        ? `<p class="lead">${guide.bandeau}</p>`
         : siteDist
         ? `<p class="lead">Les avis de coupure de ${esc(nomDit(dist!))} ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.${lienA}</p>`
         : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`;
@@ -144,7 +152,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.avis.length
       ? `${silent}<ul class="zones">${x.avis.map(noticeCard).join("")}</ul>`
       : x.muet ? ""
-      : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
+      : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : guide?.texte ?? `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
 
   const unreadShare = dist?.partage?.par.filter((x) => !x.site).map((x) => x.nom) ?? [];
   const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +
@@ -160,6 +168,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
             : dist.site === CREOLE.url
             ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.</p>`
             : `<p>${dist.partage ? `Les avis de ${esc(dist.nom)}` : "Ses avis"} sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
+          : guide
+          ? `<p>${guide.distributeur}</p>`
           : siteDist
           ? `<p>Ses avis de coupure ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">le site de ${esc(dist.nom)}</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique «\u00a0L'eau dans ma commune\u00a0»), ou la mairie.${lienA}</p>`
           : `<p>Ses avis de coupure ne sont pas lus par rundata.re : ils sont sur ses avis aux abonnés et auprès de la mairie.${lienA}</p>`)
@@ -238,5 +248,5 @@ ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte, iaAside: true, ...(avisLus(p.nom) ? {} : { noindex: true }) }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte, iaAside: true, ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
 }

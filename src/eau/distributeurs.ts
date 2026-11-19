@@ -71,6 +71,21 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
  * Not linked (14/11/2026): the SPL Sources et Eaux (sourceo.re), whose pages « Communiqués » and « Travaux en cours et
  * incidents » are empty, so no page of notices to link; RECIL, no site of its own found.
  */
+/**
+ * A commune whose notices are not read, with a text of its own on where they are published (marketing): the official
+ * source's home page linked only, never a page of its site, with the page's lead and its distributor's card. Its page then has something of its own to show, and stays
+ * in the search engines and the sitemap (web/coupures.ts indexable).
+ * - Les Avirons: CISE Réunion, edited by Saur, whose terms allow a link to the home page only (art. 8) and forbid
+ *   copying without its written agreement (art. 5); the mairie stopped relaying its notices on 18/11/2024.
+ */
+export const GUIDES_AVIS: Readonly<Record<string, { bandeau: string; distributeur: string; texte: string }>> = {
+  "Les Avirons": {
+    bandeau: `Les avis de coupure des Avirons sont publiés par CISE Réunion sur <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0». La mairie peut aussi vous renseigner.`,
+    distributeur: `Ses avis de coupure sont publiés sur <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0».`,
+    texte: `Les avis de coupure et de travaux des Avirons sont publiés par CISE Réunion, le distributeur, sur son site\u00a0: <a href="https://www.cise-reunion.re/" rel="noopener">cise-reunion.re</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», puis Les Avirons (97425). Chaque avis y donne les secteurs, les horaires et la consigne pour l'eau à la reprise. rundata.re ne les reprend pas encore. La <a href="https://www.mairie-avirons.fr/" rel="noopener">mairie des Avirons</a> peut aussi vous renseigner.`,
+  },
+};
+
 export const SITES_DISTRIBUTEURS: Readonly<Record<string, string>> = { "CISE Réunion": "https://www.cise-reunion.re/", "Sudéau": "https://www.sudeau.re/" };
 
 export const BUILT = data.construit;

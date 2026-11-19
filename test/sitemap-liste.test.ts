@@ -16,12 +16,12 @@ const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/bus/arret/sain
 describe("the sitemap from 19/11/2026, marketing's list of 18/11/2026", () => {
   it("holds the 842 pages kept, but for those not indexable here, and none of the 567 left out", async () => {
     const urls = await sitemap();
-    // 842 kept, less three: /feux with no FIRMS key here, /entreprises while it is discreet (test/sitemap-entreprises.test.ts),
-    // and the water cuts of Les Avirons while their page is in noindex. 1 406 before, 567 left out.
-    expect(urls).toHaveLength(842 - 3);
+    // 842 kept, less two: /feux with no FIRMS key here and /entreprises while it is discreet (test/sitemap-entreprises.test.ts).
+    // The water cuts of Les Avirons are in it, said in words of their own (eau/distributeurs.ts GUIDES_AVIS). 1 406 before, 567 left out.
+    expect(urls).toHaveLength(842 - 2);
     expect(urls).not.toContain("/feux");
     expect(urls).not.toContain("/entreprises");
-    expect(urls).not.toContain("/coupures-eau/les-avirons");
+    expect(urls).toContain("/coupures-eau/les-avirons");
     for (const u of ["/", "/meteo", "/communes/les-avirons", "/meteo/les-avirons", "/bus/arret/les-avirons/gare-des-avirons"]) expect(urls, u).toContain(u);
     for (const u of RETIREES) expect(urls, u).not.toContain(u);
     expect(urls.filter(retiree)).toEqual([]);

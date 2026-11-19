@@ -70,7 +70,8 @@ describe("the weekend's events", () => {
     expect(days(ROWS[0])).toEqual([]);
     expect(days(ROWS[1])).toEqual(["2026-10-30"]);
     expect(days(ROWS[2])).toEqual(["2026-10-31"]);
-    expect(days(ROWS[3])).toEqual(["2026-10-30"]);
+    // A fête of several days, on each of them (20/11/2026: only on its first, Sunday looked empty).
+    expect(days(ROWS[3])).toEqual(["2026-10-30", "2026-10-31", "2026-11-01"]);
     expect(days(ROWS[4])).toEqual([]);
     expect(days(ROWS[5])).toEqual([]);
   });
@@ -94,6 +95,38 @@ describe("the weekend's events", () => {
     // Each event once, at its date that weekend, for search engines.
     expect(html).toContain(`"@type":"Event","name":"Kabar du mardi","startDate":"2026-10-31T19:00:00+04:00"`);
     expect(html.match(/"@type":"Event"/g)).toHaveLength(4);
+  });
+
+  it("lists an event of two days on both, and an exhibition of a month once, apart, as the tool counts", () => {
+    const graffiti = row("Réunion Graffiti", "2026-10-31T10:00", "du samedi 31/10 à 10:00 au dimanche 01/11 à 18:00", { genres: ["festival"], commune: "Saint-Pierre" });
+    const expo = row("Exposition Gauguin", "2026-10-15", "du jeudi 15/10 au dimanche 15/11", { commune: "Saint-Denis" });
+    const rows = [...ROWS, graffiti, expo];
+    const w = weekend(TUESDAY);
+    expect(inWeekend(graffiti, w, TUESDAY).map((o) => o.day)).toEqual(["2026-10-31", "2026-11-01"]);
+    expect(inWeekend(expo, w, TUESDAY).map((o) => [o.day, o.long])).toEqual([["2026-10-30", true], ["2026-10-31", true], ["2026-11-01", true]]);
+    const html = weekendPage("https://rundata.re", data(rows), TUESDAY);
+    // Six events that weekend, the exhibition among them; on each day, Graffiti, the exhibition said beside.
+    expect(html).toContain(`<span class="big">6</span>`);
+    const day = (title: string) => html.slice(html.indexOf(title), html.indexOf("</li></ul>", html.indexOf(title)));
+    expect(day("Samedi 31 octobre")).toContain("Réunion Graffiti");
+    expect(day("Dimanche 1er novembre")).toContain("Réunion Graffiti");
+    expect(html).toContain(`Dimanche 1er novembre (Toussaint, férié) <span class="note">3\u00a0événements, et 1 sur plusieurs semaines</span>`);
+    expect(html.match(/Exposition Gauguin<\/a>/g)).toHaveLength(1);
+    expect(html).toMatch(/<li class="card" id="longs"><h3>Sur plusieurs semaines <span class="note">1\u00a0événement<\/span><\/h3><p class="note">Expositions, saisons et autres événements de plus d&#39;une semaine, en cours ce week-end\.<\/p>.*Exposition Gauguin/s);
+    // Each event once for search engines.
+    expect(html.match(/"@type":"Event"/g)).toHaveLength(6);
+  });
+
+  it("does the same on the events page, over its two weeks", () => {
+    const graffiti = row("Réunion Graffiti", "2026-10-31T10:00", "du samedi 31/10 à 10:00 au dimanche 01/11 à 18:00", { commune: "Saint-Pierre" });
+    const expo = row("Exposition Gauguin", "2026-10-15", "du jeudi 15/10 au dimanche 15/11", { commune: "Saint-Denis" });
+    const html = agendaPage("https://rundata.re", data([...ROWS, graffiti, expo]), TUESDAY);
+    const days = [...html.matchAll(/<h3>([^<]*(?:<span class="jm">[^<]*<\/span>)?)[^<]*<span class="note">([^<]*)<\/span><\/h3>/g)].map((m) => [m[1].replace('<span class="jm">', "").replace("</span>", ""), m[2].replace(/^· /, "")]);
+    expect(days).toContainEqual(["Samedi 31 octobre", "3\u00a0événements, et 1 sur plusieurs semaines"]);
+    expect(days).toContainEqual(["Dimanche 1 novembre", "3\u00a0événements, et 1 sur plusieurs semaines"]);
+    expect(html.match(/Réunion Graffiti<\/a>/g)).toHaveLength(2);
+    expect(html.match(/Exposition Gauguin<\/a>/g)).toHaveLength(1);
+    expect(html).toContain("un événement de plusieurs jours compte pour chacun de ses jours");
   });
 
   it("says so when the agendas have nothing for it", () => {

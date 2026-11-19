@@ -5,8 +5,8 @@
 import type { Cached } from "../cache.js";
 import type { AgendaAnswer, Alerte } from "./data.js";
 import { porte } from "./aller.js";
-import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, loading, longDay, sourcesNote, warnings, webPage } from "./domains.js";
-import { occurrences, weekend, type Weekend } from "../tools/agenda.js";
+import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, jourCompte, loading, longDay, longsCard, sourcesNote, warnings, webPage } from "./domains.js";
+import { AHEAD_DAYS, type Jour, longRun, occurrences, parJour, weekend, type Weekend } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
 import { esc } from "./map.js";
 import { holidays } from "../feries.js";
@@ -20,15 +20,20 @@ const localDay = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOStri
 const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T00:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
 const upper = (s: string) => s.replace(/^\p{L}/u, (c) => c.toUpperCase());
 
-/** The day of the weekend each occurrence of a row is listed on, with its hours; nothing when it is not that weekend. */
+/** Friday from when it counts, when the weekend's Friday is still ahead (parJour). */
+const fridayOf = (w: Weekend, from: string) => (w.vendredi && from === w.du ? { jour: w.du, heure: w.vendredi } : undefined);
+
+/**
+ * The days of the weekend each occurrence of a row is listed on, with its hours, an occurrence of several days on each
+ * of them (`long`: of more than a week, told apart); nothing when it is not that weekend.
+ */
 export function inWeekend(r: Row, w: Weekend, now: Date): { day: string; date: string; quand: string; long: boolean }[] {
   const from = [w.du, localDay(now)].sort()[1];
-  return occurrences(r).flatMap((o) => {
-    if (o.au < from || o.du > w.au) return [];
-    // Friday daytime is not the weekend yet: a market at 08:00, a talk until 16:00.
-    if (w.vendredi && o.du === w.du && o.au === w.du && o.debut && (o.fin ?? o.debut) < w.vendredi) return [];
-    return [{ day: [o.du, from].sort()[1], date: `${o.du}${o.debut ? `T${o.debut}` : ""}`, quand: o.quand, long: o.du !== o.au }];
-  });
+  const os = occurrences(r);
+  return parJour([r], from, w.au, fridayOf(w, from)).flatMap((j) => [
+    ...j.evenements.map((x) => ({ day: j.jour, date: `${x.o.du}${x.o.debut ? `T${x.o.debut}` : ""}`, quand: x.o.quand, long: false })),
+    ...(j.aussi.length ? os.filter((o) => longRun(o) && o.du <= j.jour && j.jour <= o.au).slice(0, 1).map((o) => ({ day: j.jour, date: `${o.du}${o.debut ? `T${o.debut}` : ""}`, quand: o.quand, long: true })) : []),
+  ]);
 }
 
 /** « samedi 31 octobre », « dimanche 1er novembre ». */
@@ -66,14 +71,14 @@ function trail(origin: string, name: string, path: string) {
   return { bar, jsonld };
 }
 
-/** The genre filter and the days, as on /evenements. */
-function dayList(days: Map<string, string[]>, rows: Row[], heading: (day: string) => string, after: (day: string) => string = () => ""): string {
+/** The genre filter and the days, as on /evenements; `longs`: the card of those of more than a week, after them. */
+function dayList(jours: Jour<Row>[], rows: Row[], heading: (day: string) => string, g: ReturnType<typeof porte>, longs = "", after: (day: string) => string = () => ""): string {
   const present = new Set(rows.flatMap((r) => r.genres));
   const filter = present.size > 1
     ? `<form id="ef" class="card filter" hidden role="search" aria-label="Filtrer les événements par genre"><label>Genre <select name="g"><option value="">tous</option>${GENRES.filter(([g]) => present.has(g)).map(([g, nom]) => `<option value="${esc(g)}">${esc(nom)}</option>`).join("")}</select></label><p class="note" id="ef-n" aria-live="polite"></p></form>`
     : "";
-  return `${filter}<div id="jours"><ul class="zones">${[...days].sort(([x], [y]) => x.localeCompare(y)).map(([day, items]) =>
-    `<li class="card"><h3>${esc(heading(day))} <span class="note">${items.length} événement${items.length > 1 ? "s" : ""}</span></h3><ul class="rows eau">${items.join("")}</ul>${after(day)}</li>`).join("")}</ul></div><script>${GENRE_SCRIPT}</script>`;
+  return `${filter}<div id="jours"><ul class="zones">${jours.filter((j) => j.evenements.length).map((j) =>
+    `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau">${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div><script>${GENRE_SCRIPT}</script>`;
 }
 
 /** The events of a page as schema.org `Event`s (domains.ts `agendaEvents`), when there are any. */
@@ -84,6 +89,8 @@ const graph = (rows: Row[], origin: string) => {
 
 
 const CONCERT = "concert";
+const LONGS_CONCERTS = "Les concerts annoncés sur plus d'une semaine, en cours dans les deux semaines qui viennent.";
+const LONGS_WEEK_END = "Expositions, saisons et autres événements de plus d'une semaine, en cours ce week-end.";
 const count = (n: number, one: string, many = `${one}s`) => `${n} ${n > 1 ? many : one}`;
 
 export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, now = new Date(), alerte?: Alerte): string {
@@ -94,25 +101,23 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   const w = weekend(now);
   const when = weekendText(w, now);
 
-  const days = new Map<string, string[]>();
   const listed: Row[] = [];
   // As search engines get them: each event once, at its date that weekend.
   const dated: Row[] = [];
-  const sorted: { day: string; long: boolean; time: string; html: string; commune?: string }[] = [];
   // The tool's weekend (tools/agenda.ts): the same events and the same count as the connector's « ce_week_end ».
   for (const r of d?.ce_week_end ?? []) {
     const here = inWeekend(r, w, now);
     if (!here.length) continue;
     listed.push(r);
     dated.push({ ...r, date: here[0].date, quand: here[0].quand });
-    for (const o of here) sorted.push({ day: o.day, long: o.long, time: o.quand, html: agendaRow({ ...r, quand: o.quand }, g), commune: r.commune });
   }
-  // The shows of a day by their hour, the fêtes of several days after them.
-  sorted.sort((x, y) => Number(x.long) - Number(y.long) || (/\d\d:\d\d/.exec(x.time)?.[0] ?? "").localeCompare(/\d\d:\d\d/.exec(y.time)?.[0] ?? ""));
-  for (const s of sorted) days.set(s.day, [...(days.get(s.day) ?? []), s.html]);
+  // Each day with what goes on that day, a fête of two days on both (parJour, as the tool's `par_jour`); the shows by
+  // their hour, the fêtes of several days after them; those of more than a week once, after the days.
+  const from = [w.du, localDay(now)].sort()[1];
+  const jours = parJour(listed, from, w.au, fridayOf(w, from));
+  const longs = [...new Set(jours.flatMap((j) => j.aussi))];
   // The weather of the communes where something happens, day by day.
-  const where = new Map<string, (string | undefined)[]>();
-  for (const s of sorted) where.set(s.day, [...(where.get(s.day) ?? []), s.commune]);
+  const where = new Map(jours.map((j) => [j.jour, j.evenements.map((x) => x.r.commune)]));
   const n = listed.length;
   const of = (g: string) => listed.filter((r) => r.genres.includes(g)).length;
 
@@ -130,7 +135,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   const list = !d
     ? `<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
     : n
-      ? dayList(days, listed, (day) => `${upper(dayName(day))}${day === w.du && w.vendredi ? " soir" : ""}${w.feries.has(day) ? ` (${w.feries.get(day)}, férié)` : ""}`, (day) => forecastLinks(where.get(day) ?? []))
+      ? dayList(jours, listed, (day) => `${upper(dayName(day))}${day === w.du && w.vendredi ? " soir" : ""}${w.feries.has(day) ? ` (${w.feries.get(day)}, férié)` : ""}`, g, longsCard(longs, g, LONGS_WEEK_END), (day) => forecastLinks(where.get(day) ?? []))
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour ce week-end. Voir <a href="/evenements">les deux semaines qui viennent</a>.</p>`;
 
   const title = "Que faire ce week-end à La Réunion (974) ?";
@@ -183,11 +188,9 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
   const rows = (d?.evenements ?? []).filter((r) => r.genres.includes(CONCERT));
   const n = rows.length;
 
-  const days = new Map<string, string[]>();
-  for (const r of rows) {
-    const day = r.date.slice(0, 10) < today ? today : r.date.slice(0, 10);
-    days.set(day, [...(days.get(day) ?? []), agendaRow(r, g)]);
-  }
+  // Each concert on each of its days, as /evenements (parJour).
+  const jours = parJour(rows, today, addDays(today, AHEAD_DAYS));
+  const longs = [...new Set(jours.flatMap((j) => j.aussi))];
   // Tonight: what starts from 17:00 today, or has no hour.
   const tonight = rows.filter((r) => r.date.slice(0, 10) === today && (r.date.length === 10 || r.date.slice(11) >= "17:00"));
 
@@ -205,7 +208,7 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
   const list = !d
     ? `<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
     : n
-      ? dayList(days, rows, (day) => `${day === today ? "Aujourd'hui, " : ""}${dayName(day)}`.replace(/^\p{L}/u, (c) => c.toUpperCase()))
+      ? dayList(jours, rows, (day) => `${day === today ? "Aujourd'hui, " : ""}${dayName(day)}`.replace(/^\p{L}/u, (c) => c.toUpperCase()), g, longsCard(longs, g, LONGS_CONCERTS))
       : `<div class="card"><p>Aucun concert trouvé dans les agendas lus pour les deux semaines qui viennent. Les salles annoncent leurs dates plus loin sur leur site :</p>${halls}</div>`;
 
   const title = "Concerts à La Réunion (974) : ce soir et dans les 15 jours";

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Agenda : un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part.
 - La journée d'une commune : la question à poser à son IA s'écrit maintenant « zordi », comme sur /trafic.
 
 ## Jeudi 19 novembre 2026

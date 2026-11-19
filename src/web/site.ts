@@ -310,6 +310,19 @@ export const withoutCopy = (request: Request): number | undefined => (isReader(r
 const alsoWaits = (waits: ReaderWaits, reader: boolean | ReaderWaits): ReaderWaits => (key, value, ageMs) =>
   waits(key, value, ageMs) || (typeof reader === "function" ? reader(key, value, ageMs) : reader);
 
+/**
+ * How a reader waits for a page of DOMAINS: its own `waits` beside the reader's; and while the copy is younger than
+ * the page's `tenue` (minutes), not at all, the refresh going on after the answer, as for a person. The daily check of
+ * the sources (`reader` true) still waits: it must see the data, not a copy.
+ */
+export function domainWaits(domain: { waits?: ReaderWaits; tenue?: number }, request: Request): boolean | ReaderWaits {
+  const reader = readerOf(request);
+  const waits = domain.waits ? alsoWaits(domain.waits, reader) : reader;
+  if (!domain.tenue || reader === true || typeof waits !== "function") return waits;
+  const tenue = domain.tenue * 60_000;
+  return (key, value, ageMs) => ageMs > tenue && waits(key, value, ageMs);
+}
+
 /** A page without its live block is not kept, nor one from a copy of another revision (web/data.ts `snapshot`): the next load should have it. */
 export const htmlFor = (data: unknown) => (data && !(data as { outdated?: boolean }).outdated ? HTML : { ...HTML, "cache-control": "no-store" });
 
@@ -349,7 +362,7 @@ let swText: string | undefined;
  * not only an assistant's reader, waits for the refresh of an old copy (`snapshot`), for a page that would say something
  * wrong from it.
  */
-export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: Date) => Promise<any>; page: (origin: string, data: Cached<any> | null, now: Date, alerte?: Alerte, avec?: any) => string; waits?: ReaderWaits; /** Another page's copy the page also shows, read as it is (never built for it). */ avec?: string }> = {
+export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: Date) => Promise<any>; page: (origin: string, data: Cached<any> | null, now: Date, alerte?: Alerte, avec?: any) => string; waits?: ReaderWaits; /** Minutes during which a reader gets the copy at once, its refresh behind (`tenue`). */ tenue?: number; /** Another page's copy the page also shows, read as it is (never built for it). */ avec?: string }> = {
   // The records of /historique's stations of reference, from its copy (block « Records »).
   "/meteo": { key: "web:meteo", build: buildHome, page: meteoPage, avec: "web:historique" },
   "/volcan": { key: "web:volcan", build: buildVolcan, page: volcanPage },
@@ -367,7 +380,10 @@ export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: D
   "/secheresse": { key: "web:secheresse", build: buildSecheresse, page: secheressePage },
   "/coupures-eau": { key: "web:coupures", build: buildCoupures, page: coupuresPage },
   "/defibrillateurs": { key: "web:dae", build: buildDae, page: daePage },
-  "/sport": { key: "web:sport", build: buildSport, page: sportPage },
+  // Its build reads some 40 sources (the leagues' sites, the Grand Raid, the live scores): a reader waited for it whenever
+  // its copy was more than FRESH_SECONDS old, 2.7 s in the middle for the robots over 7 days and up to 12 s (Loki,
+  // 20/11/2026). The fixtures and standings change by the hour: within 30 minutes, the copy at once (`tenue`).
+  "/sport": { key: "web:sport", build: buildSport, page: sportPage, tenue: 30 },
   "/decheteries": { key: "web:dechets", build: (cache) => buildDechets(cache), page: decheteriesPage },
   "/cyclones": { key: "web:cyclones", build: buildCyclones, page: cyclonesPage },
   "/crues": { key: "web:crues", build: buildCrues, page: cruesPage },
@@ -851,7 +867,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const domain = DOMAINS[path.replace(/(.)\/$/, "$1")];
   if (domain) {
     const [data, a, avec] = await Promise.all([
-      snapshot(cache, domain.key, () => domain.build(cache, now), background, now, waitFor(request), domain.waits ? alsoWaits(domain.waits, readerOf(request)) : readerOf(request)),
+      snapshot(cache, domain.key, () => domain.build(cache, now), background, now, waitFor(request), domainWaits(domain, request)),
       alerte(cache, background, now),
       domain.avec ? cache.peek<unknown>(domain.avec).catch(() => undefined) : undefined,
     ]);

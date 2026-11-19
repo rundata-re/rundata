@@ -121,7 +121,7 @@ describe("the weekend's events", () => {
     const graffiti = row("Réunion Graffiti", "2026-10-31T10:00", "du samedi 31/10 à 10:00 au dimanche 01/11 à 18:00", { commune: "Saint-Pierre" });
     const expo = row("Exposition Gauguin", "2026-10-15", "du jeudi 15/10 au dimanche 15/11", { commune: "Saint-Denis" });
     const html = agendaPage("https://rundata.re", data([...ROWS, graffiti, expo]), TUESDAY);
-    const days = [...html.matchAll(/<h3>([^<]*(?:<span class="jm">[^<]*<\/span>)?)[^<]*<span class="note">([^<]*)<\/span><\/h3>/g)].map((m) => [m[1].replace(/<[^>]+>/g, ""), m[2].replace(/^· /, "")]);
+    const days = [...html.matchAll(/<h3>([^<]*(?:<span class="jm">[^<]*<\/span>)?)[^<]*<span class="note">([^<]*)<\/span><\/h3>/g)].map((m) => [m[1].replace('<span class="jm">', "").replace("</span>", ""), m[2].replace(/^· /, "")]);
     expect(days).toContainEqual(["Samedi 31 octobre", "3\u00a0événements, et 1 sur plusieurs semaines"]);
     expect(days).toContainEqual(["Dimanche 1 novembre", "3\u00a0événements, et 1 sur plusieurs semaines"]);
     expect(html.match(/Réunion Graffiti<\/a>/g)).toHaveLength(2);

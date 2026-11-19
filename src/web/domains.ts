@@ -65,7 +65,7 @@ import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import { SANS_FORMATION as DAE_SANS_FORMATION } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
 import * as atmo from "../providers/atmo.js";
-import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
+import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, duAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
@@ -1646,9 +1646,14 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   const libres = d?.stations.reduce((n, s) => n + s.libres, 0) ?? 0;
   const total = d?.stations.reduce((n, s) => n + s.total, 0) ?? 0;
 
+  // The count is dated by the operators' state (its latest change in the national file), not by our reading: the file
+  // is filled by batches and may be an hour behind (state up to 01:29, read at 02:41, on 20/11/2026). Without that
+  // time, by the reading, said as such.
+  const etat = d?.etat_jusqu_a;
+  const quand = etat ? `d'après l'état des opérateurs ${duAt(etat)}` : data ? `lu ${leAt(data.fetchedAt)}` : "";
   const status = !d
     ? loading("L'état des bornes")
-    : `<div class="now"><span class="big">${libres}</span><p>point${libres > 1 ? "s" : ""} de charge libre${libres > 1 ? "s" : ""} ${esc(leAt(data!.fetchedAt))}, sur <b>${total}</b> dans les ${d.stations.length} stations publiques de l'île.</p></div>`;
+    : `<div class="now"><span class="big">${libres}</span><p>point${libres > 1 ? "s" : ""} de charge libre${libres > 1 ? "s" : ""} ${esc(quand)}, sur <b>${total}</b> dans les ${d.stations.length} stations publiques de l'île.</p></div>`;
 
   // One marker per commune, where its stations are: how many points are free there.
   const markers = (d?.communes ?? []).map((c) => {
@@ -1676,7 +1681,7 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   const title = "Bornes de recharge libres en direct · La Réunion (974)";
   const short = "Bornes de recharge pour voiture électrique à La Réunion (974) : points libres, occupés ou hors service, en direct, station par station.";
   const description = d
-    ? describe(`Bornes de recharge à La Réunion (974) ${leAt(data!.fetchedAt)} : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
+    ? describe(`Bornes de recharge à La Réunion (974), ${etat ? `état ${duAt(etat)}` : leAt(data!.fetchedAt)} : ${libres} points libres sur ${total}, la recharge rapide et chaque station, commune par commune.`, short)
     : short;
 
   const band = `${crumbBar("Bornes de recharge")}
@@ -1724,7 +1729,8 @@ export function bornesLive(data: Cached<BornesAnswer> | null, now = new Date()):
   const fast = d.stations.filter((s) => s.puissance_max_kw >= FAST_KW && s.libres > 0).length;
   return {
     valeur: `${libres} point${libres > 1 ? "s" : ""} libre${libres > 1 ? "s" : ""}`,
-    detail: `sur ${d.stations.reduce((n, s) => n + s.total, 0)}, dans ${d.stations.length} stations ; recharge rapide libre dans ${fast} station${fast > 1 ? "s" : ""}`,
+    // With the time of the operators' state, as on /bornes.
+    detail: `sur ${d.stations.reduce((n, s) => n + s.total, 0)}, dans ${d.stations.length} stations${d.etat_jusqu_a ? `, état ${duAt(d.etat_jusqu_a)}` : ""} ; recharge rapide libre dans ${fast} station${fast > 1 ? "s" : ""}`,
   };
 }
 

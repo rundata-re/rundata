@@ -136,7 +136,8 @@ import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
-import { ALIASES as ENTREPRISES_ALIASES, entreprisesPage, PATH as ENTREPRISES } from "./entreprises.js";
+import { ALIASES as ENTREPRISES_ALIASES, DISCRETE as ENTREPRISES_DISCRETE, entreprisesPage, PATH as ENTREPRISES } from "./entreprises.js";
+import { retiree } from "./sitemap-retires.js";
 import { PATH as SANS_REPONSE, sansReponsePage } from "./sans-reponse.js";
 import { chiffres, type Copie, inventaire, KEY as CHIFFRES_KEY, PATH as CHIFFRES } from "../chiffres.js";
 import { chiffresPage } from "./chiffres.js";
@@ -422,7 +423,7 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  */
 function sitemap(origin: string, now: Date, fuelDay?: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    siteUrls(now, fuelDay).filter(([u]) => !horsSitemap.has(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
+    siteUrls(now, fuelDay).filter(([u]) => !horsSitemap.has(u) && !retiree(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
     `\n</urlset>\n`;
 }
 
@@ -431,7 +432,9 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
  * - a commune's water cuts whose distributor's notices are not read: nothing of its own to show, and in noindex until
  *   a source is read (web/coupures.ts avisLus);
  * - the weather stations' pages (#523), while Google judges the site again after the fall of 30/10/2026: they come
- *   back once its November 2026 core update is over.
+ *   back once its November 2026 core update is over;
+ * - the pages of marketing's list of 18/11/2026, from 19/11/2026 (web/sitemap-retires.ts). A page out of that list and indexable, one
+ *   added since or one whose noindex is lifted, goes in.
  */
 const horsSitemap = new Set([
   ...COMMUNES.filter((p) => !avisLus(p.nom)).map((p) => `/coupures-eau/${p.slug}`),
@@ -453,7 +456,9 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
     ...(formulaires.enLigne() ? [live(ASSOCIATIONS_PATH), fixed(formulaires.PROPOSER_PATH)] : []),
     ["/nouveautes", localDay(NOUVEAUTES[0].date), "daily"], [ANTENNES, undefined, "weekly"], [SANS_REPONSE, undefined, "daily"], live(CHIFFRES), ["/carburants", fuelDay ? (fuelDay < today ? fuelDay : today) : undefined, "daily"],
     // The fires' page only once FIRMS's key is there: before, it says the detection is not active.
-    ...(feux.enabled() ? [live(FEUX_PATH)] : [])];
+    ...(feux.enabled() ? [live(FEUX_PATH)] : []),
+    // The companies' space once it is announced: in noindex before (web/entreprises.ts DISCRETE).
+    ...(ENTREPRISES_DISCRETE ? [] : [fixed(ENTREPRISES)])];
   return urls;
 }
 

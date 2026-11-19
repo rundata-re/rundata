@@ -20,6 +20,7 @@ import { MOTIF_PATH } from "../src/web/fonds.js";
 import { CSS, DESCRIPTION_MAX, FONT_PATH, meteoPage, placePage, seaPage, STYLE_PATH, vigilanceLive, vigilancePage } from "../src/web/pages.js";
 import { PAGES, pageOf } from "../src/web/places.js";
 import { htmlFor, isReader, site } from "../src/web/site.js";
+import { retiree } from "../src/web/sitemap-retires.js";
 import { unzip } from "../src/zip.js";
 import { RANDONNEES, SENTIERS } from "../src/providers/traces.js";
 import { SECTEURS as SECTEURS_RANDO } from "../src/traces/secteurs.js";
@@ -525,9 +526,11 @@ describe("what crawlers and previews fetch", () => {
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), isolate())).text();
     // The pages, the 24 communes, their water where its notices are read (17), their day and their places for children, a
     // page per hike and per ONF trail with its GPS trace, and per past cyclone, and the busiest bus stops. Not the weather
-    // stations' pages, out of it while Google judges the site again.
-    const stops = [...stopPages().values()].filter((p) => p.indexe);
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 17 + 24 + 24 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
+    // stations' pages, out of it while Google judges the site again, nor the pages left out from 19/11/2026 (marketing's
+    // list of 18/11/2026): 19 days and 14 places for children of a commune, and stops (web/sitemap-retires.ts, counted in
+    // test/sitemap-liste.test.ts).
+    const stops = [...stopPages().values()].filter((p) => p.indexe && !retiree(`/bus/arret/${p.slug}`));
+    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 17 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");

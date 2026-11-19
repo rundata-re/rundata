@@ -363,7 +363,7 @@ describe("confidence of the forecast days (ECMWF ensemble)", () => {
     expect(tries).toBe(2); // the run time and the ensemble, once each
   });
 
-  it("shows on the weather page, one line a day, why a day is not sure in plain sight, and the warning under the days", () => {
+  it("shows on the weather page, one line a day, why a day is not sure in plain sight, and a line to /meteo under the days", () => {
     const prevision = {
       resume: "",
       jours: [
@@ -379,6 +379,8 @@ describe("confidence of the forecast days (ECMWF ensemble)", () => {
     expect(html).toContain(`<p>Confiance : <b>forte</b></p></li>`);
     expect(html).not.toContain("s&#39;accordent (1,2");
     expect(html).not.toContain(`title="les scénarios`);
-    expect(html).toContain(`<p class="note">Confiance : accord entre les 51 scénarios`);
+    // What the confidence says is on /meteo only: here, one line and its link (marketing, 14/11/2026).
+    expect(html).not.toContain("accord entre les 51 scénarios");
+    expect(html).toContain(`<p class="note">Plus l'échéance est lointaine, moins la prévision est sûre\u00a0: <a href="/meteo#confiance">comment nous l'indiquons →</a></p>`);
   });
 });

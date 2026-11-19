@@ -71,7 +71,7 @@ import { grandRaidRow, mentionProgrammes, quand as sportDay, sportTool, type Spo
 import { cyclones, type activeRow, type carteOfficielle, type seasonRow, type suiviRow } from "../tools/cyclones.js";
 import * as cmrs from "../providers/cmrs-carte.js";
 import * as cmrsTrace from "../providers/cmrs-trace.js";
-import { historiqueMeteo, recordsReference, type RecordsReference } from "../tools/historique.js";
+import { historiqueMeteo, recordsReference, reperesMois, type RecordsReference, type ReperesMois } from "../tools/historique.js";
 import { agenda, type EventRow, mentionIle as agendaNonRepris } from "../tools/agenda.js";
 import { mentionSalles, RESUME_REUNION_FR } from "../tools/non-repris.js";
 import * as actuSource from "../providers/actualites.js";
@@ -89,6 +89,8 @@ const FORECAST_MIN_LEFT = 10;
 // Below this many, without « en chiffres »: its reads are the day before (KV), the archive's stations (KV, a day kept)
 // and their days (D1).
 const CHIFFRES_MIN_LEFT = 4;
+/** The « Repères du mois »: the stations' list, then two queries of the archive at most. */
+const REPERES_MIN_LEFT = 3;
 // A copy that lacks part of what it should show (`incomplete` of snapshot) is built again from this age, not after
 // FRESH_SECONDS: by then what it lacked has usually come within reach (the stations stored, a source back).
 const INCOMPLETE_RETRY_SECONDS = 60;
@@ -155,6 +157,8 @@ export interface PlaceData {
   prevision?: PrevisionAnswer;
   /** « <Lieu> en chiffres » (web/en-chiffres.ts); absent from a copy built before it, or when its reads failed. */
   chiffres?: Chiffres;
+  /** « Repères du mois » (tools/historique.ts, reperesMois); absent from a copy built before it, or without a station near enough. */
+  reperes?: ReperesMois;
 }
 
 export interface StationAnswer {
@@ -408,6 +412,14 @@ export async function buildPlace(cache: Cache, p: PlacePage, now = new Date()): 
       out.chiffres = await buildChiffres(cache, { nom: p.nom, lon: p.place.lon, lat: p.place.lat, altitude_m: p.place.altitude_m, commune: p.commune ? p.nom : p.place.commune }, out.meteo, now);
     } catch (err) {
       console.error(`page ${p.slug} : chiffres indisponibles`, why(err));
+    }
+  }
+  if (left() >= REPERES_MIN_LEFT) {
+    try {
+      const r = await reperesMois(cache, p.place, now);
+      if (r) out.reperes = r;
+    } catch (err) {
+      console.error(`page ${p.slug} : repères indisponibles`, why(err));
     }
   }
   if (!out.meteo && !out.prevision) throw new Error(`aucune donnée pour ${p.nom}`);

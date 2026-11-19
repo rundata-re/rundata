@@ -73,7 +73,7 @@ const TOUR = [
 /** How many stations of reference /historique compares to the normal: one per climate. */
 export const STATIONS_REFERENCE = TOUR.length;
 
-const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+export const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 const DAY_MS = 86_400_000;
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const frDate = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}/${d.slice(0, 4)}`;
@@ -383,6 +383,71 @@ export async function recordsReference(cache: Cache, now: Date): Promise<Records
     const extra = new Map([...(days.get(poste.poste) ?? [])].filter(([y]) => y > r.jusqu_a));
     return [{ zone, poste: poste.poste, ...recordsFrom(poste, r, extra, []) }];
   });
+}
+
+/**
+ * « Repères du mois » of a place's weather page (web/pages.ts, marketing 14/11/2026): this month's 1991-2020 normals of
+ * the station that speaks best for the place among those that have all three (maximum, minimum, rain), and its records
+ * of the month since its first measure, from the archive. Its first part from the bundled normals, its records from two
+ * queries at most (the stored records, then the days of the years after them).
+ */
+export interface ReperesMois {
+  poste: string;
+  station: string;
+  distance_km: number;
+  /** 0 = January, the month of the build in La Réunion: a page viewed in another month leaves the block out. */
+  mois: number;
+  /** « 1991-2020 », from the normals' file. */
+  periode: string;
+  normale: { tx: number; tn: number; rr: number };
+  /** The year of its first daily measure in the archive. */
+  depuis?: number;
+  /** Absent when the archive has none for the station, or does not answer. */
+  chaleur?: { valeur: number; annee: number };
+  pluie?: { valeur: number; annee: number };
+}
+
+/**
+ * The station of the « Repères du mois »: the same order as meteo_actuelle (relevance, then score), never a « faible »
+ * one, the threshold the measure warns at (too far, too much higher or lower, the other side). Undefined when no such
+ * station has the month's three normals: the page then has no block.
+ */
+export async function reperesMois(cache: Cache, place: Place, now: Date): Promise<ReperesMois | undefined> {
+  if (!climat.enabled()) return undefined;
+  const mois = +iso(now.getTime() + 4 * 3600_000).slice(5, 7) - 1;
+  const of = (x: Poste) => {
+    const n = climat.normalesOf(x.poste);
+    const [tx, tn, rr] = [n?.tx?.[mois], n?.tn?.[mois], n?.rr?.[mois]];
+    return tx != null && tn != null && rr != null ? { tx, tn, rr } : undefined;
+  };
+  const best = (await climat.postes(cache)).value
+    .flatMap((x) => {
+      const normale = of(x);
+      return normale ? [{ x, normale, f: fit(place, asStation(x)) }] : [];
+    })
+    .filter((c) => c.f.pertinence !== "faible")
+    .sort((u, v) => mieux(u.f, v.f))[0];
+  if (!best) return undefined;
+  const out: ReperesMois = {
+    poste: best.x.poste,
+    station: best.x.nom,
+    distance_km: best.f.distance_km,
+    mois,
+    periode: climat.NORMALES_PERIODE,
+    normale: best.normale,
+    ...(best.x.debut ? { depuis: best.x.debut } : {}),
+  };
+  try {
+    const m = (await recordsOf({ poste: best.x, ys: new Map() }, [mois], now))?.par_mois?.[0];
+    const year = (r?: { valeur: number; date: string }) => r && { valeur: r.valeur, annee: +r.date.slice(-4) };
+    const chaleur = year(m?.temperature_max);
+    const pluie = year(m?.pluie_en_un_jour_mm);
+    if (chaleur) out.chaleur = chaleur;
+    if (pluie) out.pluie = { valeur: round1(pluie.valeur), annee: pluie.annee };
+  } catch (err) {
+    console.error(`repères ${best.x.poste} : records indisponibles`, why(err));
+  }
+  return out;
 }
 
 /** The page of a station (web/station.ts): its last 30 days, its year month by month, its records. */

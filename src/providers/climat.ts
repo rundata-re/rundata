@@ -200,6 +200,8 @@ export interface Normales {
 }
 const NORMALES = normales.stations as Record<string, Normales>;
 export const normalesOf = (poste: string): Normales | undefined => NORMALES[poste];
+/** The period of the normals, « 1991-2020 », as scripts/build-normales.py wrote it. */
+export const NORMALES_PERIODE: string = normales.periode;
 
 /** The day of the year (1…366) of a YYYY-MM-DD date. */
 export function dayOfYear(iso: string): number {

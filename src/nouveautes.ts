@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-19T11:55:00+04:00", texte: "Sécheresse\u00a0: ce qui est interdit, en un tableau par usage et par niveau, avec les mots de l'arrêté." },
+  { date: "2026-11-19T11:55:00+04:00", texte: "Météo d'une commune ou d'un lieu\u00a0: les normales et les records du mois, à la station la plus pertinente." },
   { date: "2026-11-19T11:03:00+04:00", texte: "Bornes de recharge\u00a0: un lien vers RechargePei, une appli utile pour trouver une borne à La Réunion." },
   { date: "2026-11-19T05:01:00+04:00", texte: "Météo\u00a0: les records des stations de référence en cartes, un chiffre par case (chaud, frais, pluie, rafale)." },
   { date: "2026-11-18T11:16:00+04:00", texte: "Saint-André\u00a0: son agenda et ses avis de coupure d'électricité reviennent, avec son accord écrit." },

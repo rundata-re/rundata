@@ -11,7 +11,7 @@
  */
 import { faqPage, sansBalises, texteStable, type Faq } from "./texte-stable.js";
 import chaud from "../historique/plus-chaud.json" with { type: "json" };
-import { STATIONS_REFERENCE } from "../tools/historique.js";
+import { MONTHS, STATIONS_REFERENCE } from "../tools/historique.js";
 import { STATIONS_974 } from "../providers/meteofrance-stations.js";
 import { RELECTURE_MIN as METEOFRANCE_RELECTURE_MIN } from "../providers/meteofrance.js";
 import { CUMULS_LOADER, cumulsSection } from "./pluie-cumuls.js";
@@ -31,6 +31,7 @@ import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
 import type { Alerte, Credit, DepuisMinuit, HistoriqueAnswer, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
+import { confianceExplication } from "../tools/prevision.js";
 import { joursDuJour, vigilanceLue } from "./data.js";
 import { CSS_CHIFFRES, enChiffres } from "./en-chiffres.js";
 import { hasZones, ZONES_SCRIPT } from "./defilement.js";
@@ -2328,6 +2329,7 @@ const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. L
 <p><b>Ce que la page réunit et qu'aucune source ne montre seule :</b></p>
 <ul class="plain"><li>les stations officielles, celles des aéroports, les balises et les stations amateur, sur une même carte et à la même heure ;</li>
 <li>la possibilité de rejouer les 6 dernières heures, les 24 dernières heures ou les 7 derniers jours.</li></ul>
+<p id="${CONFIANCE_ANCRE}"><b>La confiance des prévisions, pour chaque commune et chaque lieu\u00a0:</b> ${esc(confianceExplication())}</p>
 <p><b>L'historique et les records :</b> voir <a href="/historique">la page Historique</a>.</p>
 <ul class="plain"><li>Elle compare les 30 derniers jours à la normale 1991-2020, à ${STATIONS_REFERENCE} stations de référence.</li>
 <li>Elle donne la température de chaque année depuis ${(chaud.annees as [number, number][])[0][0]} ${a(chaud.station.replace(/ \(aéroport\)$/, ""))}.</li>
@@ -2529,6 +2531,30 @@ function sinceMidnightCard(j: DepuisMinuit): string {
     `</div>`;
 }
 
+/** The id of what the confidence says on /meteo, where each place page's forecast links. */
+export const CONFIANCE_ANCRE = "confiance";
+
+/**
+ * « Repères : station …, à … km » (marketing, 14/11/2026, its records' sentence 19/11/2026): this month's normals and records
+ * at the station of the copy (tools/historique.ts, reperesMois), none written by hand. Left out without them, and when
+ * the copy was built in another month than the view's. Without a record, the records' line; without a first year, its
+ * last sentence.
+ */
+export function reperesBlock(r: PlaceData["reperes"], now: Date): string {
+  if (!r || r.mois !== +localTime(now).slice(3, 5) - 1) return "";
+  const mois = MONTHS[r.mois];
+  const deg = (n: number) => `${fr(n)}\u00a0°C`;
+  const records = [
+    r.chaleur && `Record de chaleur en ${mois}\u00a0: ${deg(r.chaleur.valeur)} (${r.chaleur.annee}).`,
+    r.pluie && `Record de pluie en un jour en ${mois}\u00a0: ${fr(r.pluie.valeur)}\u00a0mm (${r.pluie.annee}).`,
+  ].filter(Boolean);
+  if (records.length && r.depuis) records.push(`Relevés depuis ${r.depuis}.`);
+  const lien = stationOf(r.poste) ? `<p><a href="${stationPath(r.poste)}">Tout l'historique de la station →</a></p>` : "";
+  return `<section id="reperes" aria-labelledby="h-reperes"><h2 id="h-reperes">Repères\u00a0: station ${esc(r.station)}, à ${fr(r.distance_km)}\u00a0km</h2>
+<div class="card"><p>En ${mois}, la normale est de ${deg(r.normale.tx)} pour la maximale et ${deg(r.normale.tn)} pour la minimale, avec ${fr(r.normale.rr)}\u00a0mm de pluie sur le mois (normales ${esc(r.periode)} de Météo-France).</p>
+${records.length ? `<p>${records.join(" ")}</p>` : ""}${lien}</div></section>`;
+}
+
 export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> | null, now = new Date(), alerte?: Alerte, hikes?: Cached<RandonneesAnswer> | null): string {
   const g = porte(alerte);
   const place = p.place;
@@ -2626,8 +2652,9 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     const short = why && cardReason(why);
     return short ? `<p class="why">${esc(short)}</p>` : "";
   };
-  // The tool's own words on the confidence index, said once under the days.
-  const confidenceNote = f?.jours?.some((j) => j.confiance) ? f.avertissements?.find((w) => w.startsWith("Confiance :")) : undefined;
+  // What the confidence says is said once, on /meteo (« Comment lire cette page »): here, a line and its link
+  // (marketing, 14/11/2026: the same 90 words on every place page).
+  const confidenceNote = f?.jours?.some((j) => j.confiance);
   const range = (lo?: string, hi?: string) => (lo && hi ? fourchette(lo.replace(/ °C$/, "°"), hi.replace(/ °C$/, "°"), " / ") : "—");
   const forecast = f?.jours?.length
     ? `<section aria-labelledby="h-prev"><div class="hb"><h2 id="h-prev">Prévision météo ${esc(p.nom)}</h2><span class="badge">Prévision, pas une mesure</span></div>` +
@@ -2637,7 +2664,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
         (j.indice_uv_max ? `<p>UV : ${esc(j.indice_uv_max)}</p>` : "") +
         (j.confiance ? `<p>Confiance : <b>${esc(j.confiance)}</b></p>` + whyNot(j.confiance_pourquoi) : "") + `</li>`).join("") +
       `</ul>` +
-      (confidenceNote ? `<p class="note">${esc(confidenceNote)}</p>` : "") +
+      (confidenceNote ? `<p class="note">Plus l'échéance est lointaine, moins la prévision est sûre\u00a0: <a href="/meteo#${CONFIANCE_ANCRE}">comment nous l'indiquons →</a></p>` : "") +
       `<p class="note">${esc(f.modele ? `Modèle ${f.modele.nom}, maille de ${fr(f.modele.maille_km)} km${f.modele.run_du_modele ? `, calcul du ${f.modele.run_du_modele.replace(" ", " à ")}` : ""}. ` : "")}` +
       `Un modèle ne voit pas tous les microclimats de l'île. Cyclone, fortes pluies : seule compte la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a>. ` +
       `Source : ${credits(f.sources)}.</p></section>`
@@ -2701,11 +2728,9 @@ ${nightCard}
 ${sea}
 ${coastal(p) ? bathingBlock(now, { nom: p.nom, lon: p.place.lon, lat: p.place.lat, commune: p.commune ? p.nom : undefined }, g) + g.feuille : ""}
 ${forecast}
+${reperesBlock(d?.reperes, now)}
 ${hikesAround(p, hikes)}
-<section aria-labelledby="h-ailleurs">
-  <h2 id="h-ailleurs">Météo ailleurs à La Réunion</h2>
-  ${placeLinks(p.slug)}
-</section>`;
+<p class="or"><a href="/meteo#communes">Météo ailleurs à La Réunion →</a></p>`;
   return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true }, band, g.ligne + body);
 }
 

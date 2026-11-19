@@ -7,7 +7,7 @@ import { scheduledEvery } from "../src/web/partagees.js";
 import type { MeteoAnswer } from "../src/tools/meteo.js";
 import { placePage } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
-import { HOME_READER_WAIT_MS, homeWaits, LIVE_READER_WAIT_MS, oldCopy, ownWaits, readerOf, site } from "../src/web/site.js";
+import { DOMAINS, domainWaits, HOME_READER_WAIT_MS, homeWaits, LIVE_READER_WAIT_MS, oldCopy, ownWaits, readerOf, site } from "../src/web/site.js";
 
 const NOW = new Date("2026-10-26T15:40:00Z");
 const MIN = 60_000;
@@ -389,5 +389,36 @@ describe("a copy too old whose refresh fails (web/data.ts `snapshot`)", () => {
     expect(log).toHaveBeenCalledWith("copie refusée pour son âge : web:lieu:cilaos, âge 300 min");
     log.mockRestore();
     err.mockRestore();
+  });
+});
+
+// 20/11/2026: /sport made the robots wait for its build (some 40 sources) whenever its copy was more than 5 minutes old,
+// 2.7 s in the middle over 7 days and up to 12 s.
+describe("a page kept a while for the readers (web/site.ts `domainWaits`, DOMAINS `tenue`)", () => {
+  const sport = (ua: string) => new Request("https://rundata.re/sport", { headers: { "user-agent": ua } });
+  const waits = (ua: string, ageMin: number) => {
+    const w = domainWaits(DOMAINS["/sport"], sport(ua));
+    return typeof w === "function" ? w("web:sport", {}, ageMin * MIN) : w;
+  };
+
+  it("gives a search engine's fetcher and an assistant's the copy at once within 30 minutes, and makes them wait after", () => {
+    expect(DOMAINS["/sport"].tenue).toBe(30);
+    for (const ua of [GOOGLEBOT, CHATGPT]) {
+      expect(waits(ua, 6), ua).toBe(false);
+      expect(waits(ua, 29), ua).toBe(false);
+      expect(waits(ua, 31), ua).toBe(true);
+    }
+  });
+
+  it("makes the daily check of the sources wait always, and never a person", () => {
+    expect(waits("rundata-check/verification", 6)).toBe(true);
+    expect(waits(PERSON, 6)).toBe(false);
+    expect(waits(PERSON, 300)).toBe(false);
+  });
+
+  it("leaves the other pages as they were", () => {
+    expect(domainWaits(DOMAINS["/eau"], sport(GOOGLEBOT))).toBe(readerOf(sport(GOOGLEBOT)));
+    const bus = domainWaits(DOMAINS["/bus"], sport(GOOGLEBOT));
+    expect(typeof bus).toBe("function");
   });
 });

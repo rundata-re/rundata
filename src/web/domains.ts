@@ -2781,7 +2781,7 @@ const SECHERESSE_LIRE = `<p>Quand la pluie manque, le préfet prend un arrêté 
 <li><b>les rivières et les sources</b> ;</li>
 <li><b>les nappes</b>.</li></ul>
 <p>Les deux dernières concernent ceux qui prélèvent directement dans le milieu : forage, captage, pompage.</p>
-<p>La liste « Ce qui est interdit » donne, niveau par niveau, les usages limités pour un particulier : arrosage, lavage des voitures, piscine, fontaines, avec les heures permises quand l'arrêté en donne. Les agriculteurs, les entreprises et les collectivités ont leurs propres règles dans l'arrêté.</p>
+<p>Le tableau « Ce qui est interdit » donne, niveau par niveau, les usages limités pour un particulier : arrosage, lavage des voitures, piscine, fontaines, avec les heures permises quand l'arrêté en donne. Les agriculteurs, les entreprises et les collectivités ont leurs propres règles dans l'arrêté.</p>
 <p><b>Ce que la page réunit :</b></p>
 <ul class="plain"><li>le niveau de chaque commune pour les trois ressources, dans un seul tableau ;</li>
 <li>les usages permis ou interdits, traduits en cas concrets.</li></ul>
@@ -2789,7 +2789,7 @@ const SECHERESSE_LIRE = `<p>Quand la pluie manque, le préfet prend un arrêté 
 
 const SECHERESSE_FAQ: Faq[] = [
   { q: "Qui décide des restrictions ?", a: "Le préfet de La Réunion, par arrêté, sur la base des niveaux des rivières et des nappes. La date de l'arrêté en vigueur est en haut de page." },
-  { q: "Je peux arroser mon jardin ?", a: "Cela dépend du niveau de votre commune pour l'eau du robinet. Pour chaque niveau, la liste « Ce qui est interdit » dit si l'arrosage est permis, interdit, ou permis à certaines heures." },
+  { q: "Je peux arroser mon jardin ?", a: "Cela dépend du niveau de votre commune pour l'eau du robinet. Pour chaque niveau, le tableau « Ce qui est interdit » dit si l'arrosage est permis, interdit, ou permis à certaines heures." },
   { q: "Jusqu'à quand durent les restrictions ?", a: "Jusqu'à ce qu'un nouvel arrêté les change ou les lève. Il n'y a pas de date de fin fixée à l'avance." },
   { q: "Quelle différence avec une coupure d'eau ?", a: "Une restriction limite des usages dans toute la commune. Une coupure, annoncée par le distributeur, interrompt l'eau dans un secteur." },
 ];

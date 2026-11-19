@@ -81,6 +81,7 @@ import { RELIEF_LEGER } from "./map.js";
 import { ligne, mesure } from "./mesure.js";
 import icons from "./icons.json" with { type: "json" };
 import og from "./og.json" with { type: "json" };
+import presse from "./presse.json" with { type: "json" };
 import rubriques from "./og-rubriques.json" with { type: "json" };
 import { NOUVEAUTES } from "../nouveautes.js";
 import { nouveautesPage } from "./nouveautes.js";
@@ -506,7 +507,7 @@ export function proche(path: string, now = new Date()): string | undefined {
 export async function site(request: Request, cache: Cache, background: Background, now = new Date()): Promise<Response | null> {
   // Nothing of the moment in them: answered before the volcano's state is read.
   const file = new URL(request.url).pathname;
-  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? chiffresFile(file) ?? ogFile(file);
+  const style = stylesheet(file) ?? allerScript(file) ?? rejeuFile(file) ?? curseurFile(file) ?? cumulsFile(file) ?? chiffresFile(file) ?? ogFile(file) ?? imageFile(file);
   if (style) return style;
   // The private page of an internal trial, behind its secret link: nothing else read, and the site's 404 without it,
   // never kept nor indexed (web/uv-moufia.ts).
@@ -560,6 +561,32 @@ const OG_PICTURES = new Map([og.png_4x5, ...rubriques.flatMap((r) => [r.png, r.p
 function ogFile(path: string): Response | null {
   const name = OG_FILE.exec(path)?.[1];
   const now = name === undefined ? undefined : OG_PICTURES.get(name);
+  if (!now || now === path) return null;
+  return new Response(null, { status: 301, headers: { location: now, "cache-control": "public, max-age=3600" } });
+}
+
+const IMAGE_FILE = /^\/(presse|icons)\/([a-z0-9-]+)\.[0-9a-f]{10}\.(jpg|webp|png)$/;
+/**
+ * Each fingerprinted picture of public/presse/ (scripts/build-presse.py) and public/icons/ (scripts/build-icons.py, the
+ * install window's captures) by its name and type, built at the first ask (CAPTURES is declared further down): « presse/rundata-cilaos.jpg » → « /presse/rundata-cilaos.d5d14859e5.jpg ».
+ */
+let images: Map<string, string> | undefined;
+const IMAGES = () => (images ??= new Map(
+  [...Object.values(presse).flatMap((v) => [v.hd, v.vignette]), ...Object.values(icons), ...CAPTURES.map((c) => c.src)]
+    .map((p) => [IMAGE_FILE.exec(p), p] as const)
+    .filter(([m]) => m)
+    .map(([m, p]) => [`${m![1]}/${m![2]}.${m![3]}`, p]),
+));
+
+/**
+ * A press picture or an icon asked by an earlier fingerprint, as Googlebot still does from its image index (the press
+ * page's visuals and the old flag icon, 404 on 20/11/2026): led to today's file of the same name and type, as ogFile
+ * does for the share pictures. A name no longer in public/ (the flag icon, replaced by the logo) keeps the 404: another
+ * picture is not the same one.
+ */
+function imageFile(path: string): Response | null {
+  const m = IMAGE_FILE.exec(path);
+  const now = m ? IMAGES().get(`${m[1]}/${m[2]}.${m[3]}`) : undefined;
   if (!now || now === path) return null;
   return new Response(null, { status: 301, headers: { location: now, "cache-control": "public, max-age=3600" } });
 }

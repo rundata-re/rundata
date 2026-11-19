@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { type Departure, departures, findStops, pageRow, todayOf, tripPath, tripRun } from "../src/tools/transports.js";
 import { tripGonePage, tripPage } from "../src/web/trajet.js";
+import { handle } from "../src/app.js";
 
 // The rows of the database for Saint-Pierre's bus station, as in test/transports.test.ts (GTFS of 23/10/2026).
 const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/rows.json", import.meta.url), "utf8")) as Record<
@@ -33,19 +34,21 @@ async function departure() {
 }
 
 describe("the link of a departure", () => {
-  it("names its pattern and its stop within the network, without the day for today's service", async () => {
+  it("names its pattern and its stop within the network, without the day: the same address from one day to the next", async () => {
     const d = await departure();
     expect(d.jour).toBe(20261023);
     const local = d.stop - CJ.first_stop;
     const base = `/bus/trajet/carjaune/${d.pattern - CJ.first_pattern}/${encodeURIComponent(d.trip)}`;
-    expect(pageRow(NOW)(d).trajet).toBe(`${base}?arret=${local}#arret-${local}`);
-    // Seen the day before or the day after (a copy across midnight), the same departure keeps its day.
-    expect(pageRow(new Date("2026-10-22T03:30:00Z"))(d).trajet).toBe(`${base}?jour=20261023&arret=${local}#arret-${local}`);
-    expect(pageRow(new Date("2026-10-24T03:30:00Z"))(d).trajet).toBe(`${base}?jour=20261023&arret=${local}#arret-${local}`);
-    // Yesterday's service after midnight and tomorrow's keep their day; a link without a page's day too.
-    expect(tripPath({ ...d, jour: 20261022 } as Departure, 20261023)).toContain("?jour=20261022&arret=");
-    expect(tripPath({ ...d, jour: 20261024 } as Departure, 20261023)).toContain("?jour=20261024&arret=");
-    expect(tripPath(d)).toContain("?jour=20261023&arret=");
+    const plain = `${base}?arret=${local}#arret-${local}`;
+    expect(pageRow(NOW)(d).trajet).toBe(plain);
+    // Seen the day before or the day after (a copy across midnight), on yesterday's service after midnight or on
+    // tomorrow's: no « ?jour= » ever, the link Google finds is the same every day (19/11/2026, 2 318 dated addresses).
+    expect(pageRow(new Date("2026-10-22T03:30:00Z"))(d).trajet).toBe(plain);
+    expect(pageRow(new Date("2026-10-24T03:30:00Z"))(d).trajet).toBe(plain);
+    for (const jour of [20261022, 20261024, 20261130]) expect(pageRow(NOW)({ ...d, jour } as Departure).trajet).toBe(plain);
+    // A journey searched for a given day keeps it (tools/itineraire.ts): without it, its trip's page would open another run.
+    expect(tripPath(d)).toBe(`${base}?jour=20261023&arret=${local}#arret-${local}`);
+    expect(tripPath(d, false)).toBe(plain);
   });
 
   it("takes today as La Réunion's date, midnight included", () => {
@@ -69,6 +72,41 @@ describe("the link of a departure", () => {
     if (next) {
       expect(pageRow(night)(next).trajet).not.toContain("jour=");
       expect((await tripRun("carjaune", local, next.trip, undefined, night))!.jour).toBe(20261024);
+    }
+  });
+
+  it("without the day, opens the run listed for tomorrow in the evening, as its dated address does, both still answering", async () => {
+    // Friday 23/10 at 21:00: a stop's page lists tomorrow's first departures, within 20 hours.
+    const evening = new Date("2026-10-23T17:00:00Z");
+    const list = await departures(findStops("gare routière Saint-Pierre").groups, evening, 20 * 3600);
+    const withStops = new Set(rows[CJ.stops_feed!].pattern_stops!.map((r) => CJ.first_pattern + r.id));
+    const tomorrow = list.filter((x) => x.reseau === "carjaune" && x.jour === 20261024 && withStops.has(x.pattern));
+    expect(tomorrow.length).toBeGreaterThan(0);
+    for (const d of tomorrow.slice(0, 5)) {
+      expect(pageRow(evening)(d).trajet).not.toContain("jour=");
+      const local = d.pattern - CJ.first_pattern;
+      const plain = (await tripRun("carjaune", local, d.trip, undefined, evening))!;
+      const dated = (await tripRun("carjaune", local, d.trip, 20261024, evening))!;
+      expect(plain.jour).toBe(20261024);
+      expect(plain).toEqual(dated);
+      expect(plain.arrets!.find((s) => s.id === d.stop)!.at).toBe(evening.getTime() + d.in * 1000);
+    }
+  });
+
+  it("keeps answering at an address shared with its day, as at the one without", async () => {
+    const d = await departure();
+    const local = d.stop - CJ.first_stop;
+    const base = `${ORIGIN}/bus/trajet/carjaune/${d.pattern - CJ.first_pattern}/${encodeURIComponent(d.trip)}`;
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      for (const u of [`${base}?jour=20261023&arret=${local}`, `${base}?arret=${local}`]) {
+        const r = await handle(new Request(u, { headers: { accept: "text/html" } }), new Cache());
+        expect(r.status, u).toBe(200);
+        expect(await r.text(), u).toContain(`<li id="arret-${local}" class="ici"`);
+      }
+    } finally {
+      vi.useRealTimers();
     }
   });
 

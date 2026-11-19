@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache } from "../src/cache.js";
-import { kmh, mesures, PASSES, passeOf, RAIN_NOTE, records, total } from "../src/historique/cyclones-passes.js";
+import { kmh, mesures, PASSES, passeOf, RAIN_NOTE, records, slugDuNom, total } from "../src/historique/cyclones-passes.js";
 import { cyclones } from "../src/tools/cyclones.js";
 import { metaOf, passePage, titleOf } from "../src/web/cyclones-passes.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
@@ -124,9 +124,28 @@ describe("past cyclones", () => {
     expect(r.status).toBe(200);
     expect(await r.text()).toContain("<h1>Cyclone Dina, 22 et 23 janvier 2002</h1>");
     expect((await handle(new Request("https://rundata.re/cyclones/bejisa-2014", { headers: { accept: "text/html" } }), cache)).status).toBe(404);
+    // The name alone, as people type it, leads to its page; a name not in the list stays a 404.
+    for (const p of PASSES) {
+      const r = await handle(new Request(`https://rundata.re/cyclones/${p.slug.slice(0, -5)}`), cache);
+      expect([r.status, r.headers.get("location")]).toEqual([301, `/cyclones/${p.slug}`]);
+    }
+    // With a slash, the site's own 301 drops it first, then the name leads to the page.
+    const slash = await handle(new Request("https://rundata.re/cyclones/dina/"), cache);
+    expect([slash.status, slash.headers.get("location")]).toEqual([301, "/cyclones/dina"]);
+    expect((await handle(new Request("https://rundata.re/cyclones/bejisa"), cache)).status).toBe(404);
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), cache)).text();
     for (const p of PASSES) expect(map).toContain(`<loc>https://rundata.re/cyclones/${p.slug}</loc>`);
     expect(cyclonesPage("https://rundata.re", null, NOW)).toContain('<li><a href="/cyclones/garance-2025">Cyclone Garance, 28 février 2025</a></li>');
+  });
+
+  it("takes a name back another season to its most recent page, and nothing else for an unknown name", () => {
+    const firinga = PASSES.find((p) => p.slug === "firinga-1989")!;
+    const liste = [firinga, { ...firinga, slug: "firinga-2031", annee: 2031 }, { ...firinga, slug: "firinga-2010", annee: 2010 }];
+    expect(slugDuNom("firinga", liste)).toBe("firinga-2031");
+    expect(slugDuNom("gamede")).toBe("gamede-2007");
+    expect(slugDuNom("hyacinthe")).toBe("hyacinthe-1980");
+    expect(slugDuNom("bejisa")).toBeUndefined();
+    expect(slugDuNom("dina-2002")).toBeUndefined();
   });
 
   it("is answered by the cyclones tool with the measures, in m/s too, and the page", async () => {

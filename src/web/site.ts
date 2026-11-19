@@ -93,7 +93,7 @@ import { kitPage } from "./kit-cyclone.js";
 import { pechePage } from "./peche.js";
 import { MODELE_CSV, publierPage } from "./publier.js";
 import { passePage } from "./cyclones-passes.js";
-import { PASSES } from "../historique/cyclones-passes.js";
+import { PASSES, slugDuNom } from "../historique/cyclones-passes.js";
 import { ecolesPage } from "./ecoles.js";
 import { COMMUNES as COLLECTE_COMMUNES, communeSlug } from "../vie/collecte.js";
 import { TCO_COMMUNES } from "../vie/decheteries.js";
@@ -698,6 +698,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const passe = /^\/cyclones\/([a-z0-9-]+)\/?$/.exec(path);
   if (passe) {
     const c = PASSES.find((x) => x.slug === passe[1]);
+    // The name without its year leads to its page, as people type it.
+    const nom = c ? undefined : slugDuNom(passe[1]);
+    if (nom) return new Response(null, { status: 301, headers: { location: `/cyclones/${nom}`, "cache-control": STATIC } });
     if (!c) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const a = await alerte(cache, background, now);
     return new Response(passePage(origin, c, a), { headers: HTML });

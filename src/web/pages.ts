@@ -1901,7 +1901,9 @@ export function credits(list: Credit[]): string {
   const seen = new Set<string>();
   // The sources under the same licence, word for word, said together, the licence once, in the order of the first of
   // each: « A, B (Licence Ouverte Etalab 2.0) ; C (ODbL) ». A licence that holds a source's own terms (a written
-  // agreement, « titres et lien seulement ») is its own text, never shared.
+  // agreement, « titres et lien seulement ») is grouped only with the sources whose licence is that same text: those
+  // terms name their producer, so they are the same terms for each source said before them. A different text (another
+  // producer, another agreement's date) is never merged into it.
   const groups = new Map<string, string[]>();
   const said: string[] = [];
   for (const c of list.filter((c) => !seen.has(c.source) && seen.add(c.source))) {

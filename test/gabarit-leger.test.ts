@@ -50,4 +50,14 @@ describe("the template of every page, lighter by its repeated words", () => {
     ]);
     expect(said).toBe(`Stations Météo-France, EDF SEI (${lo}) ; Indice ATMO (ODbL 1.0) ; Vigilance (${lo} ; Météo-France La Réunion : bulletin affiché tel quel, avec son accord écrit)`);
   });
+
+  it("says a licence with its own terms once only for sources under that same text, which then binds each of them", () => {
+    const sr = "Reprise soumise à son accord écrit : chaque événement cité avec son lien";
+    const said = credits([
+      { source: "Club A", licence: sr, attribution: "" },
+      { source: "Club B", licence: `${sr} du 02/11/2026`, attribution: "" },
+      { source: "Club C", licence: sr, attribution: "" },
+    ]);
+    expect(said).toBe(`Club A, Club C (${sr}) ; Club B (${sr} du 02/11/2026)`);
+  });
 });

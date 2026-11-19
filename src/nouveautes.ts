@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-20T03:14:00+04:00", texte: "Agenda\u00a0: un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part." },
+  { date: "2026-11-20T02:58:00+04:00", texte: "Bornes de recharge\u00a0: le nombre de points libres porte l'heure de l'état donné par les opérateurs, et non plus celle de notre lecture." },
   { date: "2026-11-20T02:50:00+04:00", texte: "La journée d'une commune\u00a0: la question à poser à son IA s'écrit maintenant «\u00a0zordi\u00a0», comme sur /trafic." },
   { date: "2026-11-19T12:25:00+04:00", texte: "Coupures d'eau\u00a0: en tête de chaque commune, le portrait de son eau (réseaux, dernières analyses sanitaires, niveau de sécheresse)." },
   { date: "2026-11-19T11:55:00+04:00", texte: "Sécheresse\u00a0: ce qui est interdit, en un tableau par usage et par niveau, avec les mots de l'arrêté." },

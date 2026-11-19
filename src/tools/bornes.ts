@@ -89,6 +89,12 @@ export function since(iso: string, now: Date): string {
   return day === localTime(now).split(" ")[0] ? time : `${day} ${time}`;
 }
 
+/** « de 04:12 » the day of the reading, « du 23/10 18:40 » before: the time of the operators' state, after « état ». */
+export const etatDe = (iso: string, lu: Date) => {
+  const t = since(iso, lu);
+  return /\//.test(t) ? `du ${t}` : `de ${t}`;
+};
+
 export function stationRow(s: irve.Station, live: irve.Live | undefined, now: Date, km?: number, detail = true) {
   return {
     station: label(s),
@@ -173,7 +179,9 @@ export async function bornesRecharge(cache: Cache, lieu: string | undefined, rap
     return text({
       resume:
         `${rapide ? "Recharge rapide" : "Bornes de recharge publiques"} à La Réunion : ${plural(pool.length, "station", "stations")}, ${plural(c.total, "point de charge", "points de charge")}` +
-        (live ? `\u00a0; en ce moment ${countText(c)}.` : "."),
+        // The count is the operators' state at its latest change in the file, not at our reading (the file is filled
+        // by batches and may be an hour behind): its time is that change's, as on /bornes.
+        (live ? `\u00a0; ${latest ? `d'après l'état des opérateurs ${etatDe(latest, lu!)}, ` : `dans le fichier lu à ${localTime(lu!).split(" ")[1]}, `}${countText(c)}.` : "."),
       communes,
       recharge_rapide: fast.map((s) => stationRow(s, live, now, undefined, false)),
       ...common,

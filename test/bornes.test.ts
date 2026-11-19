@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure, IDS, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
-import { bornesRecharge, lastChange, since } from "../src/tools/bornes.js";
-import { bornesPage } from "../src/web/domains.js";
+import { bornesRecharge, etatDe, lastChange, since } from "../src/tools/bornes.js";
+import { bornesLive, bornesPage } from "../src/web/domains.js";
 import { buildBornes } from "../src/web/data.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
 import { deadAnchors, doubleIds, mapLinks } from "./cartes.js";
@@ -62,7 +62,9 @@ describe("bornes de recharge", () => {
 
   it("sums up the island, fast charging apart", async () => {
     const r = body(await bornesRecharge(cache(LIVE), undefined, false, NOW));
-    expect(r.resume).toMatch(/^Bornes de recharge publiques à La Réunion : 136 stations, 411 points de charge\u00a0; en ce moment 268 libres sur 411/);
+    expect(r.resume).toMatch(/^Bornes de recharge publiques à La Réunion : 136 stations, 411 points de charge\u00a0; d'après l'état des opérateurs de 04:12, 268 libres sur 411/);
+    // Never « en ce moment »: the count is the operators' state at its latest change, behind the reading (04:37).
+    expect(r.resume).not.toContain("en ce moment");
     expect(r.communes[0]).toEqual({ commune: "Sainte-Marie", stations: 18, points: 103, libres: 45 });
     expect(r.recharge_rapide.every((s: { puissance_max_kw: number }) => s.puissance_max_kw >= 50)).toBe(true);
   });
@@ -97,13 +99,42 @@ describe("bornes de recharge", () => {
     await expect(buildBornes(cache(null), NOW)).rejects.toThrow();
   });
 
+  it("dates the count by the reading, said as such, when the file gives no time of change", async () => {
+    const data = { ...(await buildBornes(cache(LIVE), NOW)), etat_jusqu_a: undefined };
+    const page = bornesPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false }, NOW);
+    expect(page).toContain(`<span class="big">268</span><p>points de charge libres lu le 24/10 à 04:40, sur <b>`);
+    expect(bornesLive({ value: data, fetchedAt: NOW, stale: false }, NOW)?.detail).not.toContain("état");
+  });
+
+  it("dates the tool's count by the reading, said as such, when the file gives no time of change", async () => {
+    // The same points without their time of change: the summary says the file's reading, never « en ce moment ».
+    const bare: Live = { ...LIVE, points: Object.fromEntries(Object.entries(LIVE.points).map(([id, [st, etat]]) => [id, [st, etat, ""]])) as Live["points"] };
+    expect(lastChange(bare)).toBeUndefined();
+    const r = body(await bornesRecharge(cache(bare), undefined, false, NOW));
+    expect(r.resume).toMatch(/^Bornes de recharge publiques à La Réunion : 136 stations, 411 points de charge\u00a0; dans le fichier lu à 04:37, 268 libres sur 411/);
+    expect(r.resume).not.toMatch(/en ce moment|d'après l'état/);
+    expect(r.etat_jusqu_a).toBeUndefined();
+  });
+
+  it("gives the home page's tile the time of the operators' state", async () => {
+    const data = await buildBornes(cache(LIVE), NOW);
+    expect(bornesLive({ value: data, fetchedAt: NOW, stale: false }, NOW)?.detail).toMatch(/^sur 411, dans 136 stations, état du 24\/10 à 04:12 ; recharge rapide libre dans \d+ stations?$/);
+  });
+
+  it("says the state's time with its day when it is not the reading's", () => {
+    const lu = new Date("2026-11-20T00:10:00Z");
+    expect(etatDe("2026-11-19T21:55:00Z", lu)).toBe("de 01:55");
+    expect(etatDe("2026-11-19T19:40:00Z", lu)).toBe("du 19/11 23:40");
+  });
+
   it("serves a page with the free points of each commune", async () => {
     const data = await buildBornes(cache(LIVE), NOW);
     const page = bornesPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false }, NOW);
     expect(page).toContain('<span class="big">268</span>');
-    // The count dated by the reading, never « en ce moment »: a copy kept by a search engine says its day.
-    expect(page).toContain(`<span class="big">268</span><p>points de charge libres le 24/10 à 04:40, sur <b>`);
-    expect(page).toMatch(/<meta name="description" content="Bornes de recharge à La Réunion \(974\) le 24\/10 à\u00a004:40\u00a0: 268 points libres sur \d+, la recharge rapide et chaque station, commune par commune\.">/);
+    // The count dated by the operators' state (its latest change in the file, 04:12), not by the reading (04:40), and
+    // never « en ce moment »: a copy kept by a search engine says its day.
+    expect(page).toContain(`<span class="big">268</span><p>points de charge libres d&#39;après l&#39;état des opérateurs du 24/10 à 04:12, sur <b>`);
+    expect(page).toMatch(/<meta name="description" content="Bornes de recharge à La Réunion \(974\), état du 24\/10 à\u00a004:12\u00a0: 268 points libres sur \d+, la recharge rapide et chaque station, commune par commune\.">/);
     expect(page).not.toContain("en ce moment");
     expect(page).toContain("Recharge rapide");
     // The legend drawn as on the map (charter of the maps): a free point, none free, then the state's nature and time.

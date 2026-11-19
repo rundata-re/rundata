@@ -281,9 +281,20 @@ export const active = (a: Alert, now: number) => !a.periodes.length || a.periode
 /** The networks with a real-time feed. */
 export const withRealtime = () => Object.keys(NETWORKS).filter((n) => NETWORKS[n].temps_reel);
 
+/**
+ * How long a page waits for a network's feed, and how long a feed found silent is left alone. The feeds of Car Jaune and
+ * Car Sud fall silent for hours some days: with 8 s and the cache's minute of breaker, a page of a stop or of a trip of
+ * the South waited for them up to 8 s about once a minute, 8.5 to 9.5 s in the middle over 7 days for the robots that read
+ * these pages one after the other (Loki, 20/11/2026, « source gtfs_rt_reunion sans réponse : rt:carsud »). A feed is a
+ * small file that answers within a second when it works; once silent, it is asked again every 5 minutes, its last
+ * copy served in between (or, older than MAX_AGE_SECONDS, the page says the feed is silent).
+ */
+export const RT_TIMEOUT_MS = 4000;
+export const RT_BACKOFF_SECONDS = 5 * 60;
+
 /** The last feed of a network, at most a minute old; undefined for a network without one. */
 export async function realtime(cache: Cache, net: string): Promise<Cached<Realtime> | undefined> {
   const url = NETWORKS[net]?.temps_reel?.flux;
   if (!url) return undefined;
-  return cache.get(`rt:${net}`, FRESH_SECONDS, async () => decode(new Uint8Array(await getBytes(SOURCE.id, url, 8000))));
+  return cache.get(`rt:${net}`, FRESH_SECONDS, async () => decode(new Uint8Array(await getBytes(SOURCE.id, url, RT_TIMEOUT_MS))), RT_BACKOFF_SECONDS);
 }

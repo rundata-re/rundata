@@ -1274,6 +1274,10 @@ ${CSS_CHIFFRES}
 .sta-m td b{display:block;font-weight:600}.sta-m td small{display:block;color:var(--muted);font-size:.78rem}
 .sta-rec{display:grid;gap:.8rem;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));list-style:none;padding:0}.sta-rec li{display:flex;flex-direction:column;gap:.2rem;padding:1rem}
 .sta-rec span{color:var(--muted);font-size:.85rem}.sta-rec b{font:700 1.6rem/1.1 Bricolage,system-ui,sans-serif}.sta-rec small{color:var(--muted)}
+.records{list-style:none;padding:0;margin:0;display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(min(100%,21rem),1fr))}.records>li{grid-row:span 3;grid-template-rows:subgrid;row-gap:.3rem;align-content:start;padding:1rem}.records h3{font-size:1.05rem;margin:0}.records>li>p{margin:0;color:var(--muted);font-size:.9rem}.records>li>p span{white-space:nowrap}
+.records ul{list-style:none;padding:0;margin:.5rem 0 0;display:grid;gap:.5rem;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:auto auto auto}.records ul li{display:grid;grid-row:span 3;grid-template-rows:subgrid;row-gap:.15rem;align-content:start;padding:.6rem .7rem;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);min-width:0}
+.records ul span{color:var(--muted);font-size:.82rem;line-height:1.25;align-self:end}.records ul b{font:700 1.45rem/1.1 Bricolage,system-ui,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}.records ul small{color:var(--muted);font-size:.82rem;font-variant-numeric:tabular-nums}
+.records .chaud b{color:var(--chaud)}.records .frais b{color:var(--frais)}.records .pluie b{color:var(--pluie)}
 .band .bars li{color:var(--on-night)}
 .bars i{grid-column:1/-1;display:block;height:.55rem;border-radius:1rem;background:var(--barre)}.band .bars i{background:var(--barre-nuit)}
 .bars i.ren{background:var(--ren)}
@@ -2267,21 +2271,25 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
  * missing is left out, a station without any too, and the block without any station.
  */
 export function recordsSection(h: HistoriqueAnswer | undefined): string {
+  // A box per record: its words, its figure big, its date small (the cards of a station's page, station.ts).
+  const box = (cls: string, label: string, x: { valeur: number; date: string } | undefined, v: (n: number) => string) =>
+    x ? `<li class="${cls}"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${x.date}</small></li>` : "";
   const items = (h?.records_reference ?? []).flatMap((r) => {
-    const parts = [
-      r.temperature_max && `le plus chaud, <b>${thin(deg(r.temperature_max.valeur))}</b> le ${r.temperature_max.date}`,
-      r.temperature_min && `le plus frais, <b>${thin(deg(r.temperature_min.valeur))}</b> le ${r.temperature_min.date}`,
-      r.pluie_en_un_jour_mm && `la plus forte pluie en un jour, <b>${thin(`${fr(Math.round(r.pluie_en_un_jour_mm.valeur * 10) / 10)} mm`)}</b> le ${r.pluie_en_un_jour_mm.date}`,
-      r.rafale_max_kmh && `la plus forte rafale, <b>${thin(`${fr(r.rafale_max_kmh.valeur)} km/h`)}</b> le ${r.rafale_max_kmh.date}`,
-    ].filter(Boolean);
-    // Never a parenthesis in another: the climate's words may hold one (« nord (Saint-Denis) »).
-    return parts.length ? [`<li><b>${esc(r.station)}</b> — ${esc(r.zone)}, mesures depuis ${r.depuis} : ${parts.join(" ; ")}.</li>`] : [];
+    const boxes =
+      box("chaud", "Le plus chaud", r.temperature_max, deg) +
+      box("frais", "Le plus frais", r.temperature_min, deg) +
+      box("pluie", "La plus forte pluie en un jour", r.pluie_en_un_jour_mm, (n) => `${fr(Math.round(n * 10) / 10)} mm`) +
+      box("rafale", "La plus forte rafale", r.rafale_max_kmh, (n) => `${fr(n)} km/h`);
+    if (!boxes) return [];
+    // Its climate and the year of its first measure on a line of their own, under its name: never a parenthesis in another.
+    const zone = `${r.zone.charAt(0).toUpperCase()}${r.zone.slice(1)}`;
+    return [`<li class="card"><h3>${esc(r.station)}</h3><p>${esc(zone)} · <span>mesures depuis ${r.depuis}</span></p><ul>${boxes}</ul></li>`];
   });
   if (!items.length || !h) return "";
   return `<section id="records" aria-labelledby="h-records">
   <div class="sec-h"><p class="eyebrow">Historique</p><h2 id="h-records">Les records des stations de référence</h2>
   <p>Une station par climat de l'île, comme sur <a href="/historique">la page Historique</a> : ses records depuis le début de ses mesures quotidiennes publiées par Météo-France, jusqu'au ${esc(h.periode.au)}. Un jour sans mesure n'est pas compté.</p></div>
-  <ul class="card plain records">${items.join("")}</ul>
+  <ul class="records">${items.join("")}</ul>
 </section>`;
 }
 

@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Jeudi 19 novembre 2026
+
+- Météo : les records des stations de référence en cartes, un chiffre par case (chaud, frais, pluie, rafale).
+
 ## Mercredi 18 novembre 2026
 
 - Saint-André : son agenda et ses avis de coupure d'électricité reviennent, avec son accord écrit.

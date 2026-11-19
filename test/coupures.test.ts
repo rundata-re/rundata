@@ -536,10 +536,16 @@ describe("coupures d'eau", () => {
   it("links CISE Réunion's site at Les Avirons, whose notices are not read, and nowhere its notices are", async () => {
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
+    // Les Avirons: words of its own on where its notices are published (GUIDES_AVIS), its page indexed.
     const av = page("les-avirons");
-    expect(av).toContain(`Les avis de coupure de CISE Réunion ne sont pas lus par rundata.re : voir <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique « L'eau dans ma commune », ou la mairie.`);
-    expect(av).toContain(`Ses avis de coupure ne sont pas lus par rundata.re : voir <a href="https://www.cise-reunion.re/" rel="noopener">le site de CISE Réunion</a>, qui donne la qualité de l'eau et les travaux en cours de chaque commune (rubrique « L'eau dans ma commune »), ou la mairie.`);
-    expect(av).not.toContain("avis aux abonnés");
+    expect(av).toContain(`<p class="lead">Les avis de coupure des Avirons sont publiés par CISE Réunion sur <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique « L'eau dans ma commune ». La mairie peut aussi vous renseigner.</p>`);
+    expect(av).toContain(`<p>Ses avis de coupure sont publiés sur <a href="https://www.cise-reunion.re/" rel="noopener">son site</a>, rubrique « L'eau dans ma commune ».</p>`);
+    expect(av).toContain(`Les avis de coupure et de travaux des Avirons sont publiés par CISE Réunion, le distributeur, sur son site : <a href="https://www.cise-reunion.re/" rel="noopener">cise-reunion.re</a>, rubrique « L'eau dans ma commune », puis Les Avirons (97425). Chaque avis y donne les secteurs, les horaires et la consigne pour l'eau à la reprise. rundata.re ne les reprend pas encore. La <a href="https://www.mairie-avirons.fr/" rel="noopener">mairie des Avirons</a> peut aussi vous renseigner.`);
+    expect(av).not.toMatch(/avis de coupure[^.]{0,80}ne sont pas lus|Nous ne lisons pas|avis aux abonnés/);
+    expect(av).not.toContain('content="noindex"');
+    // Only CISE Réunion's home page is linked (its terms), never a page of its site.
+    expect(av.match(/https:\/\/www\.cise-reunion\.re\/[^"]+"/g) ?? []).toEqual([]);
+    expect(page("le-tampon")).toContain('<meta name="robots" content="noindex">');
     // Sainte-Marie and Saint-Benoît, also CISE Réunion's, have their notices read: no link to its site.
     for (const slug of ["sainte-marie", "saint-benoit"]) expect(page(slug)).not.toContain("cise-reunion.re");
     // Sudéau, also edited by Saur with the same « L'eau dans ma commune », in the same words, on each of its communes.

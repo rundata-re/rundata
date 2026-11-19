@@ -73,7 +73,7 @@ import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
 import { concertsPage, weekendPage } from "./evenements.js";
 import { communePath as enfantsPath, enfantsCommunePage, enfantsPage } from "./enfants.js";
-import { avisLus, coupuresCommunePage } from "./coupures.js";
+import { coupuresCommunePage, indexable } from "./coupures.js";
 import { cloudSeaTold, hikesNear, summitOf } from "./liens.js";
 import { LOGO_PETIT_SVG } from "./logo.js";
 import { homePage } from "./home.js";
@@ -430,14 +430,14 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
 /**
  * Pages online, linked and known (an address written another way still leads to them), but left out of the sitemap:
  * - a commune's water cuts whose distributor's notices are not read: nothing of its own to show, and in noindex until
- *   a source is read (web/coupures.ts avisLus);
+ *   a source is read, unless it has a text of its own on where they are published (web/coupures.ts indexable);
  * - the weather stations' pages (#523), while Google judges the site again after the fall of 30/10/2026: they come
  *   back once its November 2026 core update is over;
  * - the pages of marketing's list of 18/11/2026, from 19/11/2026 (web/sitemap-retires.ts). A page out of that list and indexable, one
  *   added since or one whose noindex is lifted, goes in.
  */
 const horsSitemap = new Set([
-  ...COMMUNES.filter((p) => !avisLus(p.nom)).map((p) => `/coupures-eau/${p.slug}`),
+  ...COMMUNES.filter((p) => !indexable(p.nom)).map((p) => `/coupures-eau/${p.slug}`),
   ...STATIONS.map((x) => stationPath(x.id)),
 ]);
 

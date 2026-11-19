@@ -701,12 +701,21 @@ describe("page data", () => {
     expect((await snapshot(c, "k", slow, () => {}, NOW, 5))?.value).toBe(42);
   });
 
-  it("built before its family's revision was raised, is built again at the first view after the deploy, not served", async () => {
+  it("built before its family's revision was raised, is served at once at the first view after the deploy, built again behind", async () => {
     const store = new MemoryStore();
     // Stamped with a revision older than any in web/revisions.ts.
     await store.put("web:agenda", { value: "ancienne", fetchedAt: NOW.getTime() - 60_000, version: "rendu-0" });
     const c = new Cache(store, () => NOW.getTime(), false, undefined, "2.0.0");
-    expect((await snapshot(c, "web:agenda", async () => "nouvelle", () => {}, NOW))?.value).toBe("nouvelle");
+    const later: Promise<unknown>[] = [];
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    expect((await snapshot(c, "web:agenda", async () => "nouvelle", (p) => later.push(p), NOW))?.value).toBe("ancienne");
+    log.mockRestore();
+    await Promise.all(later);
+    expect((await snapshot(c, "web:agenda", async () => "autre", () => {}, NOW))?.value).toBe("nouvelle");
+    // The daily check of the sources waits for the new drawing.
+    await store.put("web:agenda", { value: "ancienne", fetchedAt: NOW.getTime() - 60_000, version: "rendu-0" });
+    const check = new Cache(store, () => NOW.getTime(), false, undefined, "2.0.0");
+    expect((await snapshot(check, "web:agenda", async () => "nouvelle", () => {}, NOW, undefined, true))?.value).toBe("nouvelle");
   });
 
   // 29/10/2026: « L'actualité se charge : rechargez la page » on /actualites at the first view after the deploy of #471,

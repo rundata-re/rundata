@@ -169,9 +169,10 @@ export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
 export interface CourantRow {
   texte: string;
   commune: string;
-  nature: cc.AvisCourant["nature"];
-  publie_le: string;
-  titre: string;
+  /** With `publie_le`, `titre`, `creneaux` and `secteurs`: only for a notice of a cut today or later (`ahead`). */
+  nature?: cc.AvisCourant["nature"];
+  publie_le?: string;
+  titre?: string;
   lien: string;
   creneaux?: cc.Creneau[];
   secteurs?: string[];
@@ -179,17 +180,25 @@ export interface CourantRow {
   pdf?: true;
 }
 
-const row = (a: cc.AvisCourant, now: Date, first: boolean): CourantRow => ({
-  texte: sentence(a, now, first),
-  commune: a.commune,
-  nature: a.nature,
-  publie_le: localTime(new Date(a.publie)),
-  titre: a.titre,
-  lien: a.lien,
-  creneaux: a.creneaux.length ? a.creneaux : undefined,
-  secteurs: a.secteurs.length ? a.secteurs : undefined,
-  pdf: a.pdf && !stale(a, now) ? true : undefined,
-});
+/**
+ * A notice as the tool says it. One with no cut today or later is its sentence and its link only, the day it was
+ * published in the sentence: on 19/11/2026 the full entries of two past notices, Saint-André's of 04/09 and
+ * Sainte-Marie's of 02/11, took `electricite` past its 5.5 KB (src/bin/check-sources.ts).
+ */
+const row = (a: cc.AvisCourant, now: Date, first: boolean): CourantRow =>
+  ahead(a, now)
+    ? {
+        texte: sentence(a, now, first),
+        commune: a.commune,
+        nature: a.nature,
+        publie_le: localTime(new Date(a.publie)),
+        titre: a.titre,
+        lien: a.lien,
+        creneaux: a.creneaux.length ? a.creneaux : undefined,
+        secteurs: a.secteurs.length ? a.secteurs : undefined,
+        pdf: a.pdf && !stale(a, now) ? true : undefined,
+      }
+    : { texte: sentence(a, now, first), commune: a.commune, lien: a.lien, pdf: a.pdf && !stale(a, now) ? true : undefined };
 
 /** A commune's notices to say: those of today or later, else its latest one; none when its mairie relays none. */
 export function rowsOf(c: CourantAnswer, commune: string, now: Date): CourantRow[] {

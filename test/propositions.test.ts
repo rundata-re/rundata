@@ -970,7 +970,7 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     expect(p.clubs).toBe(1);
   });
 
-  it("is linked from the footer, /publier, /a-propos, the sitemap and the form's breadcrumb, only once out", async () => {
+  it("is linked from the menu, /publier, /a-propos, the sitemap and the form's breadcrumb, only once out", async () => {
     const closed = plain(await (await get("/confidentialite")).text());
     expect(closed).not.toContain('href="/associations"');
     expect(closed).not.toContain('id="associations-donnees"');
@@ -983,7 +983,8 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     const presse = plain(await (await get("/presse")).text());
     expect(presse).toContain('</article><p>Clubs et associations : comment ils publient leurs événements sur <span class="ident">rundata.re</span>, gratuitement et en données ouvertes, <a href="https://rundata.re/associations" aria-label="rundata.re/associations"><span class="adrweb">rundata.<wbr>re/<wbr>associations</span></a></p></section>');
     const privacy = plain(await (await get("/confidentialite")).text());
-    expect(privacy).toContain('<li><a href="/associations">Clubs et associations</a></li>');
+    // The menu's link on every page (the footer's list of categories, the same as the menu, is gone).
+    expect(privacy).toContain('<a class="k-associations" href="/associations?ref=menu">');
     expect(privacy).toContain('<h2 id="associations-donnees">');
     expect(privacy).toContain("La vérification anti-robot (Cloudflare Turnstile) voit l'adresse au moment de l'envoi, sans que nous la gardions.");
     expect(privacy).toContain('Seuls les deux formulaires des clubs et associations demandent une adresse électronique (voir <a href="#associations-donnees">« Ce que les clubs et associations envoient »</a>).');

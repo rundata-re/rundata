@@ -239,9 +239,9 @@ if(mark==="1"||mark==="0"){const p=document.createElement("div");p.className="ho
 p.textContent=team?"Cet appareil est marqué comme celui de l'équipe\u00a0: ses visites ne sont plus comptées.":"Cet appareil est de nouveau compté dans les visites.";document.body.prepend(p)}
 if("serviceWorker"in navigator){navigator.serviceWorker.register(${JSON.stringify(SW_PATH)}).catch(()=>{});
 if(app||team||mark==="0")navigator.serviceWorker.ready.then((r)=>{const w=navigator.serviceWorker.controller||r.active;if(app)w?.postMessage("app");if(team||mark==="0")w?.postMessage(team?"interne":"externe")}).catch(()=>{})}
-const inst=document.getElementById("inst");
-if(inst&&!app){let later=0;try{later=Number(localStorage.getItem("inst-plus-tard"))||0}catch{}
-if(Date.now()-later>30*864e5){let ask=null;
+const tpl=document.getElementById("inst-t");
+if(tpl&&!app){let later=0;try{later=Number(localStorage.getItem("inst-plus-tard"))||0}catch{}
+if(Date.now()-later>30*864e5){tpl.replaceWith(tpl.content.cloneNode(true));const inst=document.getElementById("inst");let ask=null;
 const show=(k)=>{inst.querySelectorAll("[data-inst]").forEach((e)=>{e.hidden=!e.dataset.inst.split(" ").includes(k)});inst.hidden=false};
 const k=kindOf(navigator.userAgent,navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 if(SHOWN.includes(k))show(k);else if(k==="telephone")show("telephone");
@@ -252,15 +252,17 @@ document.getElementById("inst-later").addEventListener("click",()=>{try{localSto
 
 /**
  * The install block, hidden until the page's script knows the browser: its steps, Android's « Installer » button, or
- * on another phone the link alone.
+ * on another phone the link alone. In a <template> that the script copies into the page where it would show it (not in
+ * the app, nor within 30 days of « Plus tard »): its words, for six browsers, are not the page's text for the search
+ * engines; without a script it never showed.
  */
-export const INSTALL = `<div class="card inst" id="inst" hidden>
+export const INSTALL = `<template id="inst-t"><div class="card inst" id="inst" hidden>
   <h3>rundata.re sur votre écran d'accueil</h3>
   <p>Un geste pour la météo, la vigilance ou le volcan. Les pages déjà vues restent lisibles sans réseau, pratique en randonnée. Pas de store, pas de compte.</p>
   ${SECTIONS.filter((s) => s.kind && SHOWN.includes(s.kind)).map((s) => s.html!.replace(/^<(\w+)/, `<$1 data-inst="${s.kind}"`)).join("\n  ")}
   <p><a href="/application">Autre téléphone ou autre navigateur\u00a0: les étapes pour chacun →</a></p>
   <p class="instb"><button type="button" class="go" id="inst-go" data-inst="bouton">Installer</button><button type="button" class="later" id="inst-later">Plus tard</button></p>
-</div>`;
+</div></template>`;
 
 export const PWA_CSS = `.inst{display:grid;gap:.6rem;max-width:44rem;margin-top:.8rem}.inst h3{font-size:1.05rem}.inst ol{padding-left:1.4rem;display:grid;gap:.2rem}
 .inst .partage{width:1.1em;height:1.1em;vertical-align:-.15em}

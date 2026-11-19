@@ -1351,7 +1351,6 @@ th,td,:is(th,td) .note{overflow-wrap:normal}
    enlarged, the padding goes to 0 once the text is tall enough by itself. */
 .hike>h3>a,.st>h3>a,.hike .shut li>a,footer.foot p:not(.social) a{padding-block:max(0px,calc(12.5px - .55em))}
 .hike .shut ul,footer.foot p:not(.social):has(a){line-height:max(26px,1.5em)}
-.pages{list-style:none;padding:0;margin-top:1rem;display:flex;flex-wrap:wrap;gap:.4rem}.pages a{display:block;padding:.3rem .75rem;border-radius:999px;background:rgb(255 255 255/.06);border:1px solid rgb(255 255 255/.1);text-decoration:none;font-size:.86rem}
 footer.foot{background:var(--night);color:var(--on-night-muted);font-size:.86rem;line-height:1.55;padding-block:2.5rem 3rem;border-top:1px solid rgb(255 255 255/.06)}
 /* The footer: one column the width of the screen below 58rem, its words cut there rather than widening the page; the
    name (« rundata.re », a word with its logo, 308 px with the text at 200 %) at most 9 % of the screen's width a letter,
@@ -1471,9 +1470,9 @@ addEventListener("pageshow",(e)=>{if(e.persisted)again()});document.addEventList
  * On a phone (coarse pointer), a tap on a link of copies() also copies its text, and the line after its paragraph
  * says whether it was. After the `?maj=` of the links (SCRIPT), so that the question copied has it.
  */
-export const COPIE_SCRIPT = `document.querySelectorAll("a[data-copie]").forEach((a)=>a.addEventListener("click",()=>{if(!matchMedia("(pointer:coarse)").matches)return;
+export const COPIE_SCRIPT = `const copieOn=(root)=>root.querySelectorAll("a[data-copie]").forEach((a)=>a.addEventListener("click",()=>{if(!matchMedia("(pointer:coarse)").matches)return;
 const s=a.parentElement.nextElementSibling,say=(k)=>{s.textContent=a.dataset[k];s.hidden=false};
-try{navigator.clipboard.writeText(a.dataset.copie||new URL(a.href).searchParams.get("q")).then(()=>say("ok"),()=>say("non"))}catch{say("non")}}));`;
+try{navigator.clipboard.writeText(a.dataset.copie||new URL(a.href).searchParams.get("q")).then(()=>say("ok"),()=>say("non"))}catch{say("non")}}));copieOn(document);`;
 
 /**
  * A folded category (`folded`) opened by a link to it or to one of its rows: the browsers that open it themselves
@@ -1489,12 +1488,13 @@ const o=b.textContent;if(b.dataset.signal&&location.pathname==="/mcp")sig("c");t
 const f=document.getElementById("filtre");if(f){const n=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();
 f.addEventListener("input",()=>{const q=n(f.value.trim());let any=false;document.querySelectorAll(".places li").forEach((li)=>{const ok=n(li.textContent).includes(q);li.hidden=!ok;any||=ok});
 document.querySelectorAll(".places h3").forEach((h)=>{h.hidden=![...h.nextElementSibling.children].some((li)=>!li.hidden)});const rq=document.getElementById("rien-q");if(rq)rq.textContent=f.value.trim();document.getElementById("rien").hidden=any})}
-const askl=(l)=>{document.querySelectorAll("[data-askl]").forEach((b)=>b.setAttribute("aria-pressed",b.dataset.askl===l));
+const askl=(l,bind)=>{document.querySelectorAll("[data-askl]").forEach((b)=>b.setAttribute("aria-pressed",b.dataset.askl===l));
+document.querySelectorAll(".askbox>template[data-tl]").forEach((t)=>{if(t.dataset.tl!==l)return;const d=t.content.firstElementChild.cloneNode(true);t.replaceWith(d);if(bind){majOn(d);copieOn(d)}});
 document.querySelectorAll(".askbox>[data-l]").forEach((d)=>{d.hidden=d.dataset.l!==l})};
 try{const l=localStorage.getItem("askl");if(l)askl(l)}catch{}
-document.querySelectorAll("[data-askl]").forEach((b)=>b.addEventListener("click",()=>{askl(b.dataset.askl);try{localStorage.setItem("askl",b.dataset.askl)}catch{}}));
-document.querySelectorAll("a[data-maj]").forEach((a)=>{const h=a.getAttribute("href"),u=a.dataset.maj;const set=()=>{const t=new Date(Date.now()+144e5);
-a.href=h.replace(encodeURIComponent(u),encodeURIComponent(u+"?maj="+t.getUTCHours()+"h"+String(t.getUTCMinutes()).padStart(2,"0")))};["click","auxclick","contextmenu"].forEach((e)=>a.addEventListener(e,set))});
+document.querySelectorAll("[data-askl]").forEach((b)=>b.addEventListener("click",()=>{askl(b.dataset.askl,true);try{localStorage.setItem("askl",b.dataset.askl)}catch{}}));
+const majOn=(root)=>root.querySelectorAll("a[data-maj]").forEach((a)=>{const h=a.getAttribute("href"),u=a.dataset.maj;const set=()=>{const t=new Date(Date.now()+144e5);
+a.href=h.replace(encodeURIComponent(u),encodeURIComponent(u+"?maj="+t.getUTCHours()+"h"+String(t.getUTCMinutes()).padStart(2,"0")))};["click","auxclick","contextmenu"].forEach((e)=>a.addEventListener(e,set))});majOn(document);
 ${COPIE_SCRIPT}
 ${POINTS_SCRIPT}
 ${NOMS_SCRIPT}
@@ -1878,7 +1878,6 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
     <p>rundata.re, version <a href="/nouveautes">${VERSION}</a> · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues()} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a> · ${adresseTexte("contact@rundata.re")}</p>
     <p>Référencé sur ${lienNom(DATAGOUV_REUSE, "data.gouv.fr")}, la plateforme des données publiques françaises, et sur <a href="${GLAMA}">Glama</a>, l'annuaire des serveurs MCP.</p>
     ${follow()}
-    <ul class="pages" aria-label="Catégories">${WITH_PAGE.map((c) => `<li><a href="${c.path}">${esc(c.nom)}</a></li>`).join("")}<li><a href="/communes">Communes</a></li><li><a href="/meteo#communes">Météo par commune</a></li>${enLigne() ? `<li><a href="/associations">Clubs et associations</a></li>` : ""}</ul>
   </div>
   <div>
     ${sources.length ? `<p><a href="/chiffres">Toutes les sources →</a></p>${decor ? `
@@ -1900,10 +1899,26 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
  */
 export function credits(list: Credit[]): string {
   const seen = new Set<string>();
-  return list
-    .filter((c) => !seen.has(c.source) && seen.add(c.source))
-    .map((c) => (c.source === meteorOi.SOURCE.nom ? METEOR_CREDIT : `${nomsCoupables(adressesCoupables(c.source, true))} (${adressesCoupables(c.licence, true)})`))
-    .join(" ; ");
+  // The sources under the same licence, word for word, said together, the licence once, in the order of the first of
+  // each: « A, B (Licence Ouverte Etalab 2.0) ; C (ODbL) ». A licence that holds a source's own terms (a written
+  // agreement, « titres et lien seulement ») is its own text, never shared.
+  const groups = new Map<string, string[]>();
+  const said: string[] = [];
+  for (const c of list.filter((c) => !seen.has(c.source) && seen.add(c.source))) {
+    if (c.source === meteorOi.SOURCE.nom) {
+      said.push(METEOR_CREDIT);
+      continue;
+    }
+    const names = groups.get(c.licence);
+    const name = nomsCoupables(adressesCoupables(c.source, true));
+    if (names) names.push(name);
+    else {
+      const group = [name];
+      groups.set(c.licence, group);
+      said.push(c.licence);
+    }
+  }
+  return said.map((x) => (x === METEOR_CREDIT ? x : `${groups.get(x)!.join(", ")} (${adressesCoupables(x, true)})`)).join(" ; ");
 }
 
 /**
@@ -2038,12 +2053,15 @@ export function ask(kreol: string, francais: string): string {
   const a = (href: string, name: string, page?: string) =>
     `<a href="${href}" target="_blank" rel="nofollow noopener"${page ? ` data-maj="${esc(page)}"` : ""}` +
     `${name === "ChatGPT" ? copies("", "Question copiée : collez-la dans ChatGPT si elle n'y est pas.", "Si la question n'est pas dans ChatGPT, recopiez-la ci-dessous.") : ""}>${name} ${EXTERNAL}</a>`;
+  // The language not shown in a <template> (its words are not the page's text for the search engines), copied into the
+  // page by the script when chosen (SCRIPT, askl).
   const block = (l: string, title: string, question: string, hidden: boolean) => {
     const q = encodeURIComponent(question);
     const page = /https?:\/\/\S+/.exec(question)?.[0];
-    return `<div data-l="${l}" lang="${l}"${hidden ? " hidden" : ""}><p class="askt">${title}</p>` +
+    const div = `<div data-l="${l}" lang="${l}"><p class="askt">${title}</p>` +
       `<p class="ask">${a(`https://chatgpt.com/?hints=search&amp;q=${q}`, "ChatGPT", page)}${a(`https://claude.ai/new?q=${q}`, "Claude", page)}</p>${COPIED}` +
       `<p class="askq">« ${adressesCoupables(question)} »</p></div>`;
+    return hidden ? `<template data-tl="${l}">${div}</template>` : div;
   };
   const b = (l: string, flag: string, name: string, on: boolean) =>
     `<button type="button" data-askl="${l}" aria-pressed="${on}">${flag}${name}</button>`;

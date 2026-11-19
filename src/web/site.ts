@@ -212,7 +212,9 @@ export function configurerDefiOpenai(jeton: string | undefined) {
  * meta-externalagent): what they read is kept as it was, and the copy does for them.
  */
 // rundata-check: the daily check of the sources (bin/check-sources.ts), which must see the data, not the cache.
-const READERS = /rundata-check\/|ChatGPT-User|OAI-SearchBot|Claude-User|Claude-SearchBot|Perplexity|MistralAI|meta-externalfetcher|facebookexternalhit|Googlebot|bingbot|Applebot|DuckAssistBot/i;
+// Google-InspectionTool: the Search Console's URL inspection, which reads a page once when its indexing is asked; taken
+// for a person until 19/11/2026, it waited 4 s on /bus on 19/11 and was told to come back (503).
+const READERS = /rundata-check\/|ChatGPT-User|OAI-SearchBot|Claude-User|Claude-SearchBot|Perplexity|MistralAI|meta-externalfetcher|facebookexternalhit|Googlebot|Google-InspectionTool|bingbot|Applebot|DuckAssistBot/i;
 const READER_WAIT_MS = 25_000;
 // The vigilance page waits longer than a banner for Météo-France: it is the page's whole content.
 const VIGILANCE_WAIT_MS = 8000;

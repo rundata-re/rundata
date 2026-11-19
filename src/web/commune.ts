@@ -34,7 +34,7 @@ import { credit, joursDuJour } from "./data.js";
 import { aCommune, deCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
-import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, electriciteLive, HORAIRES_CHARGENT, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
+import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, electriciteLive, HORAIRES_EN_ATTENTE, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
@@ -247,7 +247,7 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   const left = stillToCome(b.departs, data.fetchedAt, now).slice(0, 4);
   const where = b.gare ? `à la gare ${esc(de(p.nom))}` : `près du centre, arrêt ${esc(b.arrets[0].nom)}`;
   // A copy past what it knows: not « pas de départ », its refresh is on its way (web/data.ts `snapshot`).
-  if (!left.length && busOutran(b, now.getTime() - data.fetchedAt.getTime())) return { live: empty(HORAIRES_CHARGENT) };
+  if (!left.length && busOutran(b, now.getTime() - data.fetchedAt.getTime())) return { live: { valeur: "", detail: HORAIRES_EN_ATTENTE, vide: true } };
   if (!left.length) return { live: { valeur: "Pas de départ", detail: `${where} dans les prochaines heures, d'après les horaires publiés` } };
   const first = left.find(({ x }) => !x.temps_reel) ?? left[0];
   return {

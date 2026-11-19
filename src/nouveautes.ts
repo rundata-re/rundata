@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-19T12:25:00+04:00", texte: "Coupures d'eau\u00a0: en tête de chaque commune, le portrait de son eau (réseaux, dernières analyses sanitaires, niveau de sécheresse)." },
   { date: "2026-11-19T11:55:00+04:00", texte: "Sécheresse\u00a0: ce qui est interdit, en un tableau par usage et par niveau, avec les mots de l'arrêté." },
   { date: "2026-11-19T11:55:00+04:00", texte: "Météo d'une commune ou d'un lieu\u00a0: les normales et les records du mois, à la station la plus pertinente." },
   { date: "2026-11-19T11:03:00+04:00", texte: "Bornes de recharge\u00a0: un lien vers RechargePei, une appli utile pour trouver une borne à La Réunion." },

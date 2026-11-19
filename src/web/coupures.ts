@@ -9,6 +9,7 @@ import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
 import { de, deNom } from "../articles.js";
+import { faqPage, type Faq } from "./texte-stable.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, DernierAvis, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
@@ -37,7 +38,6 @@ export function waterOf(commune: string, w: WaterCopies) {
     // Its distributor's feed did not answer at the last read: never « pas de coupure annoncée » (tools/injoignable.ts).
     muet: distributeur(commune)?.avis ? muetPour(w.coupures?.value.injoignable, commune) : undefined,
     secheresse: w.secheresse?.value.communes.find((c) => c.commune === commune),
-    interdits: w.secheresse?.value.interdits.find((x) => x.communes.includes(commune)),
     robinet: w.eau?.value.communes.find((c) => c.commune === commune),
   };
 }
@@ -83,6 +83,36 @@ export function reseauxCommune(commune: string, c: EauAnswer["communes"][number]
   return `<p>${esc(at.charAt(0).toUpperCase() + at.slice(1))}, l'eau du robinet passe par ${rows.length} réseau${rows.length > 1 ? "x" : ""} de distribution${by}, d'après l'ARS :</p>
   <ul class="rows eau">${rows.map((r) => `<li><span>Réseau ${esc(r.reseau)}${r.quartiers.length ? `<small>${esc(r.quartiers.join(" ; "))}</small>` : ""}</span>` +
     `<span class="note">${r.derniere_analyse ? `Dernier prélèvement le ${esc(r.derniere_analyse.split("-").reverse().join("/"))}${r.conclusion ? `. Conclusion de l'ARS : « ${esc(r.conclusion.trim())} »` : ""}` : "Pas d'analyse publiée depuis 6 mois"}</span></li>`).join("")}</ul>`;
+}
+
+/**
+ * « Sécheresse : alerte depuis l'arrêté n°… du 12/11/2026. Ce qui est interdit : page Sécheresse. » The level of the
+ * commune's tap water from the prefecture's order, never VigiEau alone: "" without the order or without a level.
+ */
+export function secheresseLigne(c: SecheresseAnswer["communes"][number] | undefined, arrete: SecheresseAnswer["arrete"]): string {
+  if (!c?.eau_du_robinet || !arrete?.signe_le) return "";
+  const n = arrete.numero.startsWith("n°") ? arrete.numero : `n°${arrete.numero}`;
+  return `<p>Sécheresse\u00a0: ${esc(c.eau_du_robinet)} depuis l'arrêté ${esc(n)} du ${esc(arrete.signe_le)}. Ce qui est interdit\u00a0: <a href="/secheresse">page Sécheresse</a>.</p>`;
+}
+
+/**
+ * The two questions of the commune's water, each only with its data (marketing): who distributes it, from the ARS, and
+ * its last sample with the ARS's conclusion, quoted. No number nor address of a distributor: the site has none.
+ */
+export function eauFaq(commune: string, c: EauAnswer["communes"][number] | undefined): Faq[] {
+  const faq: Faq[] = [];
+  const dist = distributeur(commune);
+  const qui = dist?.partage ? dist.partage.par.map((d) => d.nom).join(" et ") : dist?.nom;
+  if (qui) faq.push({ q: `Qui distribue l'eau ${a(commune)}\u00a0?`, a: `${esc(qui.charAt(0).toUpperCase() + qui.slice(1))}, d'après l'ARS.` });
+  const last = [...(c?.reseaux_detail ?? [])].filter((r) => r.derniere_analyse).sort((x, y) => y.derniere_analyse!.localeCompare(x.derniere_analyse!))[0];
+  if (last) {
+    const conclusion = last.conclusion?.trim();
+    faq.push({
+      q: `Quand l'eau ${de(commune)} a-t-elle été analysée pour la dernière fois\u00a0?`,
+      a: `Le ${esc(last.derniere_analyse!.split("-").reverse().join("/"))}, sur le réseau ${esc(last.reseau)}.${conclusion ? ` Conclusion de l'ARS\u00a0: «\u00a0${esc(conclusion)}\u00a0».` : ""} Les résultats complets sont sur le site du ministère de la Santé.`,
+    });
+  }
+  return faq;
 }
 
 /** The commune's page's tile: a cut or not, its drought level, its tap water. */
@@ -180,15 +210,19 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 
   const drought = x.secheresse
     ? `<div class="card">${icon("sun")}<h3>Sécheresse</h3><p>Eau du robinet : ${droughtBadge(x.secheresse.eau_du_robinet)}${x.secheresse.rivieres_et_sources ? ` · rivières et sources : ${droughtBadge(x.secheresse.rivieres_et_sources)}` : ""}${x.secheresse.nappes ? ` · nappes : ${droughtBadge(x.secheresse.nappes)}` : ""}</p>` +
-      (x.interdits?.restrictions.length ? `<ul class="plain">${x.interdits.restrictions.slice(0, 6).map((r) => `<li>${esc(r.usage)} : ${esc(r.restriction)}</li>`).join("")}</ul>` : `<p>Pas d'interdiction pour un particulier : économiser l'eau.</p>`) +
       `<p class="note"><a href="/secheresse">L'arrêté sécheresse, commune par commune →</a></p></div>`
     : `<div class="card">${icon("sun")}<h3>Sécheresse</h3><p><a href="/secheresse">Les restrictions d'eau de l'arrêté en vigueur, commune par commune →</a></p></div>`;
 
-  const tap = x.robinet
+  // The portrait of the commune's water, at the top (marketing/seo-pages-tete-1411.md): its networks and its last
+  // samples from the ARS, its drought level from the order. Each part left out without its data: without Hub'Eau, the
+  // drought line alone; without either, a link.
+  const sec = secheresseLigne(x.secheresse, w.secheresse?.value.arrete);
+  const tap = x.robinet || sec
     ? `<section aria-labelledby="h-robinet"><div class="sec-h"><p class="eyebrow">Contrôle sanitaire de l'ARS</p><h2 id="h-robinet">L'eau du robinet ${esc(where)}</h2></div>
-  ${reseauxCommune(p.nom, x.robinet)}
-  <ul class="zones">${tapCard(x.robinet)}</ul><p class="note"><a href="/eau">L'eau du robinet de chaque commune, et la baignade →</a></p></section>`
+  ${x.robinet ? `${reseauxCommune(p.nom, x.robinet)}
+  <ul class="zones">${tapCard(x.robinet)}</ul>` : ""}${sec}<p class="note"><a href="/eau">L'eau du robinet de chaque commune, et la baignade →</a></p></section>`
     : `<p class="note"><a href="/eau">La qualité de l'eau du robinet, commune par commune →</a></p>`;
+  const faq = eauFaq(p.nom, x.robinet);
 
   const others = `<section aria-labelledby="h-autres"><div class="sec-h"><h2 id="h-autres">Les autres communes</h2></div>
   <p>${COMMUNES.filter((c) => c.slug !== p.slug).map((c) => `<a href="/coupures-eau/${c.slug}">${esc(c.nom)}</a>`).join(" · ")}</p>
@@ -232,21 +266,25 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 
   // Up the page in the cyclone season, at its foot the rest of the year.
   const cyclone = cycloneWater(now, p.nom);
-  const body = `<section aria-labelledby="h-coupures-eau">
+  const body = `${tap}
+<section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
   ${list}
   ${derniersAvis(p.nom, w, x.avis)}
   ${d ? afterCutNote : ""}
 </section>
-${tap}
 ${cyclone.lead ? cyclone.html : ""}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>
   <div class="two">${distBlock}${drought}</div>
 </section>
+${faq.length ? `<section aria-labelledby="h-faq">
+  <div class="sec-h"><h2 id="h-faq">Questions fréquentes</h2></div>
+  <div class="card faq">${faq.map((f) => `<h3>${esc(f.q)}</h3><p>${f.a}</p>`).join("")}</div>
+</section>` : ""}
 ${others}
 ${cyclone.lead ? "" : cyclone.html}
 ${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
-  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures)], alerte, iaAside: true, ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
+  return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);
 }

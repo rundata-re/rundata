@@ -8,7 +8,7 @@ import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteN
 import { distributeur } from "../src/eau/distributeurs.js";
 import { gather } from "../src/eau/ile.js";
 import { eauPage } from "../src/web/domains.js";
-import { coupuresCommunePage, reseauxCommune } from "../src/web/coupures.js";
+import { coupuresCommunePage, eauFaq, reseauxCommune, secheresseLigne } from "../src/web/coupures.js";
 import { PAGES } from "../src/web/places.js";
 import { esc } from "../src/web/map.js";
 import { a } from "../src/articles.js";
@@ -152,6 +152,53 @@ describe("qualité de l'eau", () => {
     expect(page.indexOf(`Réseau ${esc(r.reseau)}<small>`)).toBeLessThan(page.indexOf('id="h-qui"'));
     const old = { ...eau, value: { ...eau.value, communes: eau.value.communes.map(({ reseaux_detail: _, ...x }) => x) } };
     expect(coupuresCommunePage("https://rundata.re", p, { coupures: null, eau: old }, NOW)).not.toMatch(/l'eau du robinet passe par \d+ réseau/);
+  });
+
+  it("puts the portrait of the commune's water at the top: its networks, its drought level from the order, two questions", async () => {
+    const ile = await gather(cache(), NOW);
+    const c = ile.communes.find((x) => x.reseaux_detail?.some((r) => r.conclusion) && distributeur(x.commune) && !distributeur(x.commune)!.partage)!;
+    const p = PAGES.find((x) => x.commune && x.nom === c.commune)!;
+    const eau = { value: { ...ile, a_savoir: COMMON, sources: [] }, fetchedAt: NOW, stale: false };
+    const arrete = { numero: "n°2026-2094/SG/SCOPP/BCPE", signe_le: "12/11/2026", en_vigueur_depuis: "12/11/2026", publie: "recueil", lien: "https://www.reunion.gouv.fr/", remplace: "l'arrêté précédent" };
+    const restrictions = [{ usage: "Arrosage des jardins", restriction: "Interdit de 9 h à 19 h" }];
+    const sec = (withOrder: boolean) => ({
+      value: {
+        resume: "", echelle: "", a_savoir: "", sources: [], communes: [{ commune: c.commune, eau_du_robinet: "alerte" }],
+        ...(withOrder ? { arrete } : {}), interdits: [{ niveau: "alerte", communes: [c.commune], restrictions }],
+      },
+      fetchedAt: NOW, stale: false,
+    });
+    const page = coupuresCommunePage("https://rundata.re", p, { coupures: null, eau, secheresse: sec(true) }, NOW);
+    // At the top of <main>, before the notices.
+    const main = page.indexOf("<main");
+    expect(page.indexOf('id="h-robinet"')).toBeGreaterThan(main);
+    expect(page.indexOf('id="h-robinet"')).toBeLessThan(page.indexOf('id="h-coupures-eau"'));
+    expect(page).toContain(`<h2 id="h-robinet">L'eau du robinet ${esc(a(c.commune))}</h2>`);
+    // The drought level from the order, with its number and its day; what is forbidden on /secheresse only.
+    expect(page).toContain(`<p>Sécheresse\u00a0: alerte depuis l'arrêté n°2026-2094/SG/SCOPP/BCPE du 12/11/2026. Ce qui est interdit\u00a0: <a href="/secheresse">page Sécheresse</a>.</p>`);
+    expect(page).not.toContain("Arrosage des jardins");
+    expect(page).not.toContain("Pas d'interdiction");
+    // Without the order (VigiEau alone), no drought line; the level stays in the card.
+    expect(secheresseLigne({ commune: c.commune, eau_du_robinet: "alerte" }, undefined)).toBe("");
+    expect(secheresseLigne({ commune: c.commune }, arrete)).toBe("");
+    expect(coupuresCommunePage("https://rundata.re", p, { coupures: null, eau, secheresse: sec(false) }, NOW)).not.toContain("depuis l'arrêté");
+    // The two questions, said in the FAQPage too; no number nor address of the distributor.
+    const faq = eauFaq(c.commune, c);
+    expect(faq.map((f) => f.q)).toEqual([`Qui distribue l'eau ${a(c.commune)}\u00a0?`, expect.stringMatching(/^Quand l'eau .+ a-t-elle été analysée pour la dernière fois\u00a0\?$/)]);
+    expect(faq[0].a).toMatch(/, d'après l'ARS\.$/);
+    const last = [...c.reseaux_detail!].filter((r) => r.derniere_analyse).sort((x, y) => y.derniere_analyse!.localeCompare(x.derniere_analyse!))[0];
+    expect(faq[1].a).toMatch(new RegExp(`^Le ${last.derniere_analyse!.split("-").reverse().join("/")}, sur le réseau `));
+    expect(faq[1].a).toMatch(/ Les résultats complets sont sur le site du ministère de la Santé\.$/);
+    expect(faq.map((f) => f.a).join(" ").replace(/«[^»]*»/g, "")).not.toMatch(/potable|conforme|\d{2} ?\d{2} ?\d{2} ?\d{2} ?\d{2}|@/i);
+    expect(page).toContain('<h2 id="h-faq">Questions fréquentes</h2>');
+    expect(page).toContain('"@type":"FAQPage"');
+    // Hub'Eau down, no copy: the drought line alone, no question on the samples; nothing at all, a link only.
+    const sans = coupuresCommunePage("https://rundata.re", p, { coupures: null, eau: null, secheresse: sec(true) }, NOW);
+    expect(sans).toContain("depuis l'arrêté n°2026-2094");
+    expect(sans).not.toMatch(/l'eau du robinet passe par|a-t-elle été analysée/);
+    const rien = coupuresCommunePage("https://rundata.re", p, { coupures: null, eau: null, secheresse: null }, NOW);
+    expect(rien).not.toContain('id="h-robinet"');
+    expect(rien).toContain('<a href="/eau">La qualité de l\'eau du robinet, commune par commune →</a>');
   });
 
   it("says on /eau, under the count, that no sample was published for weeks, and gives the note without « toutes les deux semaines »", async () => {

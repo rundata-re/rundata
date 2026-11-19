@@ -14,7 +14,7 @@ import { SOMMET } from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
-import { CINEMAS } from "../tools/agenda.js";
+import { AHEAD_DAYS, CINEMAS, nombreDuJour, parJour } from "../tools/agenda.js";
 import { suiviPhrase } from "../tools/cyclones.js";
 import { ACCUEILS, AGENDAS } from "../providers/agenda.js";
 import { SOURCE as SALLES_SOURCE } from "../providers/salles.js";
@@ -3685,6 +3685,20 @@ function agendaRow(r: AgendaRow, g: Porte = porte()): string {
   return `<li data-g="${esc(r.genres.join(" "))}"><span>${badge}${r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${blank}>${esc(r.titre)}</a>` : esc(r.titre)}${news}<small>${small}${logo}${book}</small>${eventGo(r, g)}</span><span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${esc(hours)}</span></li>`;
 }
 
+/** Under a day's title: its events, and those of more than a week going on that day (parJour). */
+export function jourCompte(j: { evenements: { r: unknown }[]; aussi: unknown[] }): string {
+  const n = nombreDuJour(j);
+  return `${n}\u00a0événement${n > 1 ? "s" : ""}${j.aussi.length ? `, et ${j.aussi.length} sur plusieurs semaines` : ""}`;
+}
+
+export const LONGS_DEUX_SEMAINES = "Expositions, saisons et autres événements de plus d'une semaine, en cours dans les deux semaines qui viennent.";
+
+/** The events of more than a week, once each, after the days (parJour's `aussi`): an exhibition of a month does not drown each day. */
+export function longsCard(rows: AgendaRow[], g: Porte, intro: string): string {
+  if (!rows.length) return "";
+  return `<li class="card" id="longs"><h3>Sur plusieurs semaines <span class="note">${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3><p class="note">${esc(intro)}</p><ul class="rows eau">${rows.map((r) => agendaRow(r, g)).join("")}</ul></li>`;
+}
+
 /** A row's end, local, from its hours: « samedi 24/10 de 09:00 à 16:00 », « du vendredi 23/10 au dimanche 01/11 ». */
 function agendaEnd(r: AgendaRow): string | undefined {
   const span = /de \d\d:\d\d à (\d\d:\d\d)$/.exec(r.quand);
@@ -3802,11 +3816,10 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
   const url = `${origin}/evenements`;
   const today = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 
-  const days = new Map<string, AgendaRow[]>();
-  for (const r of d?.evenements ?? []) {
-    const day = r.date.slice(0, 10) < today ? today : r.date.slice(0, 10);
-    days.set(day, [...(days.get(day) ?? []), r]);
-  }
+  // Each event on each of its days (parJour, as the tool counts), those of more than a week once, apart.
+  const jours = parJour(d?.evenements ?? [], today, new Date(Date.parse(today) + AHEAD_DAYS * 86_400_000).toISOString().slice(0, 10));
+  const days = new Map(jours.filter((j) => j.evenements.length).map((j) => [j.jour, j]));
+  const longs = [...new Set(jours.flatMap((j) => j.aussi))];
 
   const status = !d
     ? loading("L'agenda")
@@ -3832,11 +3845,11 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
     : "";
   const list = !d
     ? `<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
-    : days.size
-      ? `${filter}<div id="jours"><ul class="zones">${[...days].sort(([x], [y]) => x.localeCompare(y)).map(([day, rows]) =>
+    : days.size || longs.length
+      ? `${filter}<div id="jours"><ul class="zones">${[...days].map(([day, j]) =>
           `<li class="card">${folded(foldDays,
-            `<h3>${jourMois(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3>`,
-            `<ul class="rows eau">${rows.map((r) => agendaRow(r, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
+            `<h3>${jourMois(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${jourCompte(j)}</span></h3>`,
+            `<ul class="rows eau">${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}${longsCard(longs, g, LONGS_DEUX_SEMAINES)}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour les deux semaines qui viennent.</p>`;
 
   const title = "Que faire à La Réunion (974) ? Concerts, fêtes, sorties";
@@ -3858,7 +3871,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
   const body = `${carte ? `<section aria-labelledby="h-carte"><h2 id="h-carte">Sur la carte</h2>${carte}</section>
 ` : ""}<section aria-labelledby="h-jours">
   <div class="sec-h"><p class="eyebrow">Deux semaines</p><h2 id="h-jours">Jour par jour</h2>
-  <p>Chaque événement renvoie à la page de celui qui le publie. Heures de La Réunion ; un événement de plusieurs jours est rangé au jour où il commence, ou à aujourd'hui s'il a déjà commencé. Un événement annulé ou reporté reste affiché, avec son statut.</p></div>
+  <p>Chaque événement renvoie à la page de celui qui le publie. Heures de La Réunion ; un événement de plusieurs jours compte pour chacun de ses jours, et ceux de plus d'une semaine (expositions, saisons) sont regroupés à la fin. Un événement annulé ou reporté reste affiché, avec son statut.</p></div>
   ${agendaTabs("/evenements")}
   ${list}
   ${d?.non_repris ? `<p class="np">${esc(d.non_repris)}${reprise(d.non_repris)}</p>` : ""}

@@ -26,7 +26,7 @@ import { MARKET } from "./marches.js";
 // The markets held each week are in the directory, not in an agenda (04/11/2026: « marché » at Saint-Paul, none found).
 export const MARCHES_REGULIERS = "Les marchés forains et couverts réguliers, avec leurs jours et horaires, sont dans annuaire_services_publics (quoi = «\u00a0marché\u00a0»).";
 
-const AHEAD_DAYS = 14;
+export const AHEAD_DAYS = 14;
 const SOON_DAYS = 30;
 const LISTED = 40;
 // The tool's answer: 25 events (40 were 22 KB of a 30 KB answer, 5/11/2026); the cancelled or postponed ones are all
@@ -556,15 +556,22 @@ const luVia = (v: NonNullable<src.Evenement["via"]>) => (v.sans_reponse ? `lu su
 const mentionDue = (e: src.Evenement) => !!e.credit || !!e.mention || !!e.site_commune?.includes("©");
 
 /** `place`: for the pages, which place it on the map; `outil`: the tool's answer, without its picture and its source when not due. */
-export function eventRow(e: src.Evenement, seances: src.Seance[], place = false, outil = false) {
+/** The dates of a row: what `occurrences` reads back, for the rows and for the tool's days alike. */
+function dates(seances: src.Seance[]) {
   const [first, ...others] = seances;
   return {
-    /** All in capitals in its agenda, in the case of a sentence (casse.ts). */
-    titre: casse(e.titre),
     quand: when(first),
     /** Local, « 2026-10-24T14:00 » or « 2026-10-24 ». */
     date: first.debut,
     autres_dates: others.length ? others.slice(0, NEXT_MAX).map(when).concat(others.length > NEXT_MAX ? [`et ${others.length - NEXT_MAX} autres`] : []) : undefined,
+  };
+}
+
+export function eventRow(e: src.Evenement, seances: src.Seance[], place = false, outil = false) {
+  return {
+    /** All in capitals in its agenda, in the case of a sentence (casse.ts). */
+    titre: casse(e.titre),
+    ...dates(seances),
     lieu: e.lieu,
     commune: e.commune,
     prix: e.prix,
@@ -640,6 +647,49 @@ export function occurrences(r: Pick<EventRow, "date" | "quand" | "autres_dates">
     return undefined;
   };
   return [r.quand, ...(r.autres_dates ?? [])].map(read).filter((o): o is Occurrence => !!o);
+}
+
+/** An occurrence of more than a week (an exhibition, a season): told apart from the events of each of its days. */
+export const longRun = (o: Pick<Occurrence, "du" | "au">) => spanDays({ debut: o.du, fin: o.au }) > LONG_DAYS;
+
+export interface Jour<R> {
+  /** Local, « 2026-11-21 ». */
+  jour: string;
+  /** The occurrences on that day, an event of a few days on each of them; by hour, those of several days after. */
+  evenements: { r: R; o: Occurrence }[];
+  /** The events of more than a week going on that day, once each: « aussi en cours ». */
+  aussi: R[];
+}
+
+/** How many events a day has, each once even when it has two occurrences that day. */
+export const nombreDuJour = (j: { evenements: { r: unknown }[] }) => new Set(j.evenements.map((x) => x.r)).size;
+
+/**
+ * The days from `du` to `au`, each with what goes on that day: an event of several days counts on each of them, not
+ * only on its first (Réunion Graffiti on the Saturday and on the Sunday, 20/11/2026); those of more than a week (an
+ * exhibition of a month) are kept apart, so as not to drown the day. `vendredi`: a weekend's Friday, and from when it
+ * counts: what is over before (a market at 08:00) is not the weekend yet. The tool (`par_jour`) and the pages count so.
+ */
+export function parJour<R extends Pick<EventRow, "date" | "quand" | "autres_dates">>(rows: R[], du: string, au: string, vendredi?: { jour: string; heure: string }): Jour<R>[] {
+  const days = new Map<string, Jour<R>>();
+  for (let d = du; d <= au; d = addDays(d, 1)) days.set(d, { jour: d, evenements: [], aussi: [] });
+  for (const r of rows) {
+    const os = occurrences(r);
+    const all = os.length ? os : [{ du: r.date.slice(0, 10), au: r.date.slice(0, 10), debut: r.date.slice(11, 16) || undefined, quand: r.quand }];
+    for (const o of all) {
+      for (let d = o.du < du ? du : o.du; d <= o.au && d <= au; d = addDays(d, 1)) {
+        if (vendredi && d === vendredi.jour && o.du === d && o.au === d && o.debut && (o.fin ?? o.debut) < vendredi.heure) continue;
+        const j = days.get(d)!;
+        if (!longRun(o)) j.evenements.push({ r, o });
+        else if (!j.aussi.includes(r)) j.aussi.push(r);
+      }
+    }
+  }
+  const hour = (x: { o: Occurrence }, d: string) => (x.o.du === d ? x.o.debut ?? "" : "");
+  for (const j of days.values()) {
+    j.evenements.sort((x, y) => Number(x.o.du !== x.o.au) - Number(y.o.du !== y.o.au) || hour(x, j.jour).localeCompare(hour(y, j.jour)));
+  }
+  return [...days.values()];
 }
 
 /** Said instead of a commune's events while its site is not read until it agrees (tools/non-repris.ts). */
@@ -797,6 +847,9 @@ function nonLus(got: Got[], commune: string | undefined): { nom: string; etat: s
 
 const A_SAVOIR = "Heures de La Réunion. Les dates et les prix sont ceux publiés par l'organisateur : vérifier sur la page de l'événement avant de se déplacer (annulation, météo, places). Un événement annulé ou reporté reste dans la liste avec son statut\u00a0; « complet » : plus de places en vente. Les matchs des clubs et les programmes sportifs des communes : l'outil sport.";
 
+/** What the tool's `par_jour` counts, for the assistant that reads it. */
+const PAR_JOUR = "Un événement de plusieurs jours compte pour chacun de ses jours. aussi_en_cours\u00a0: les événements de plus d'une semaine (expositions, saisons) en cours ce jour-là, comptés à part.";
+
 /** `listed`: how many events at most (the page lists them all). */
 /** `adherent`: the user says they are a club's member: its sessions for the members are told too, said so. */
 export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?: string, now = new Date(), listed = LISTED, adherent = false, place = false) {
@@ -862,6 +915,8 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   ].filter(Boolean).map((x) => x.replace(/\.$/, "")).join("\u00a0; ") + ".";
 
   const used = [...new Set(got.filter((g) => g.value && (!DE_LA_BASE.has(g.agenda.id) || g.value.value.length)).map((g) => g.agenda.source))] as SourceInfo[];
+  // Day by day, as the pages count (parJour): for the tool, over a period of several days.
+  const jours = !place && p.du !== p.au ? parJour(mine.map((x) => dates(x.seances)), p.du, p.au, p.vendredi ? { jour: p.du, heure: p.vendredi } : undefined) : undefined;
   const listedEvents = n ? mine.slice(0, listed) : [];
   const elsewhere = commune && !n && all.length ? all.slice(0, ELSEWHERE_MAX) : [];
   // The tool credits the agendas of the events it shows (every agenda read when it shows none: what « none » rests on).
@@ -872,6 +927,10 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     resume,
     periode: { du: dayText(p.du), au: dayText(p.au), soir: p.soir || undefined },
     nombre: n,
+    par_jour: jours && n ? {
+      a_savoir: PAR_JOUR,
+      jours: jours.map((j) => ({ jour: `${dayText(j.jour)}${p.vendredi && j.jour === p.du ? ` dès ${p.vendredi}` : ""}`, nombre: nombreDuJour(j), aussi_en_cours: j.aussi.length || undefined })),
+    } : undefined,
     quand_non_compris: p.incompris ? `« ${quand} » n'a pas été compris : les deux semaines qui viennent sont données. Dire « aujourd_hui », « ce_soir », « demain », « ce_week_end », « cette_semaine », un jour (« samedi ») ou une date (« 2026-10-31 »).` : undefined,
     evenements: n ? listedEvents.map((x) => eventRow(x.e, x.seances, place, !place)) : undefined,
     autres: n > listed ? `${n - listed} autres événements : préciser le lieu, le jour ou le genre (quoi).` : undefined,

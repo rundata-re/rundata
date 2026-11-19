@@ -7,7 +7,7 @@ import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mot
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
 import { ID as PROPOSITIONS_ID } from "../src/providers/agenda-propositions.js";
-import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, order, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS } from "../src/tools/agenda.js";
+import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, order, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS, longRun, nombreDuJour, occurrences, parJour } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
@@ -210,6 +210,23 @@ describe("agenda", () => {
     const past = read.find((e) => /TAN ROUGE/i.test(e.titre))!;
     const now = new Date("2026-11-05T12:00:00Z");
     expect(inPeriod(past, periode(undefined, now), now)).toEqual([]);
+  });
+
+  it("counts an event of several days on each of its days, those of more than a week apart, as the pages count", async () => {
+    // Saturday 24/10/2026 at 08:00: the weekend is Saturday and Sunday.
+    const r = body(await agenda(cache(), undefined, "ce_week_end", undefined, NOW, 300));
+    const rows: EventRow[] = r.evenements;
+    expect(rows).toHaveLength(r.nombre);
+    const jours = parJour(rows, "2026-10-24", "2026-10-25");
+    expect(r.par_jour.jours).toEqual(jours.map((j, i) => ({ jour: ["samedi 24/10", "dimanche 25/10"][i], nombre: nombreDuJour(j), ...(j.aussi.length ? { aussi_en_cours: j.aussi.length } : {}) })));
+    expect(r.par_jour.a_savoir).toContain("compte pour chacun de ses jours");
+    // What runs over both days is counted on the Sunday too, not only on the day it begins.
+    const both = rows.filter((e) => occurrences(e).some((o) => o.du <= "2026-10-24" && o.au >= "2026-10-25" && !longRun(o)));
+    expect(both.length).toBeGreaterThan(0);
+    expect(both.every((e) => jours[1].evenements.some((x) => x.r === e))).toBe(true);
+    expect(jours[1].aussi.length + jours[0].aussi.length).toBeGreaterThan(0);
+    // A single day has no days to count.
+    expect(body(await agenda(cache(), undefined, "aujourd_hui", undefined, NOW)).par_jour).toBeUndefined();
   });
 
   it("keeps a venue's position when a WordPress agenda gives one, and only the pages' copies carry it", async () => {

@@ -37,7 +37,6 @@ import * as accidents from "../routes/accidents.js";
 import * as radars from "../routes/radars.js";
 import * as fire from "../tools/feux.js";
 import { climb, relief } from "../tools/sentiers.js";
-import { SCALE as DROUGHT_SCALE } from "../tools/secheresse.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { lienJeux } from "./transport-donnees.js";
@@ -2748,12 +2747,21 @@ const droughtBadge = (n?: string) =>
   n ? `<span class="lvl" style="--c:${DROUGHT_COLOR[n] ?? "#868e96"}${DROUGHT_INK[n] ? `;color:${DROUGHT_INK[n]}` : ""}">${esc(n)}</span>` : `<span class="note">aucune</span>`;
 
 /**
- * The scale above the table of /secheresse: one line per level, from the least to the most severe, each with its pill
- * and what it means when the tool says it. The count per level is said by the hero, the map, the table and « Ce qui est
- * interdit »; the order's date by the map's legend.
+ * « Ce qui est interdit » on /secheresse: a row per use of the tap water limited for a private person, a column per level
+ * some commune has today, from the least to the most severe, with its communes. Each cell is the order's words for that
+ * use at that level, its hours as the kit writes them; a use the order says nothing of at a level leaves its cell empty.
+ * The levels are said once, in « Comment lire cette page »; the order's number and date once, at the top of the page.
  */
-function droughtScale(): string {
-  return `<ul class="plain">${DROUGHT_SCALE.map(([n, what]) => `<li>${droughtBadge(n)}${what ? ` ${esc(what)}` : ""}</li>`).join("")}</ul>`;
+function droughtUses(interdits: SecheresseAnswer["interdits"]): string {
+  const cols = [...interdits].filter((x) => DROUGHT_ORDER.includes(x.niveau)).sort((x, y) => DROUGHT_ORDER.indexOf(y.niveau) - DROUGHT_ORDER.indexOf(x.niveau));
+  const uses = [...new Set(cols.flatMap((x) => x.restrictions.map((r) => r.usage)))];
+  if (!cols.length || !uses.length) return "";
+  const head = cols.map((x) => `<th scope="col">${droughtBadge(x.niveau)}<small class="note" style="display:block;font-weight:400">${esc(x.communes.join(", "))}</small></th>`).join("");
+  const rows = uses.map((u) => `<tr><th scope="row">${esc(u)}</th>${cols.map((x) => {
+    const said = x.restrictions.find((r) => r.usage === u)?.restriction;
+    return said ? `<td data-label="${esc(x.niveau)}">${esc(heuresDites(said))}</td>` : "<td></td>";
+  }).join("")}</tr>`).join("");
+  return `<div class="card table-wrap"><table class="drought niveaux usages"><caption class="sr">Ce qui est interdit, par niveau</caption><thead><tr><th scope="col">Usage</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 /** Under a level of the order, VigiEau's where it gives another: « VigiEau : alerte ». */
@@ -2818,10 +2826,7 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
         `<tr><th scope="row" class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${esc(c.commune)}</th><td>${droughtBadge(c.eau_du_robinet)}${vigieauSays(c, "eau du robinet")}</td><td>${droughtBadge(c.rivieres_et_sources)}${vigieauSays(c, "rivières et sources")}</td><td>${droughtBadge(c.nappes)}${vigieauSays(c, "nappes souterraines")}</td></tr>`).join("")}</tbody></table></div>`
     : "";
 
-  const rules = (d?.interdits ?? []).sort((x, y) => DROUGHT_ORDER.indexOf(x.niveau) - DROUGHT_ORDER.indexOf(y.niveau)).map((x) =>
-    `<li class="card"><h3>${droughtBadge(x.niveau)} <span class="note">${esc(x.communes.join(", "))}</span></h3><ul class="rows eau">` +
-    (x.restrictions.length ? x.restrictions.map((r) => `<li><span>${esc(r.usage)}<small>${esc(heuresDites(r.restriction))}</small></span><span></span></li>`).join("") : `<li><span>Économiser l'eau : pas d'interdiction pour un particulier.</span><span></span></li>`) +
-    `</ul></li>`).join("");
+  const rules = droughtUses(d?.interdits ?? []);
 
   const title = "Sécheresse, restrictions d'eau · La Réunion (974)";
   const short = "Restrictions d'eau à La Réunion (974) : le niveau de sécheresse de chaque commune et ce qui est interdit (arrosage, lavage, piscine), d'après l'arrêté préfectoral.";
@@ -2837,19 +2842,18 @@ export function secheressePage(origin: string, data: Cached<SecheresseAnswer> | 
       `Ai-je le droit d'arroser mon jardin à Saint-Joseph ? Lis ${url} et dis-moi ce qui est interdit.`)}
   </div>
   <figure class="card mapcard">${islandMap({ fills, links, listed: true, label: "Carte de La Réunion (974) colorée par le niveau de restriction de l'eau du robinet de chaque commune" })}
-  <figcaption class="note" style="color:var(--on-night-muted)">${legende(["vigilance", "alerte", "alerte renforcée", "crise"].map((n): Cle => ({ forme: "aplat", couleur: DROUGHT_COLOR[n], dit: n })),
-    esc(`Eau du robinet, d'après l'arrêté préfectoral ${d?.arrete ? `${d.arrete.numero}, en vigueur depuis le\u00a0${d.arrete.en_vigueur_depuis}` : `en vigueur${d?.arrete_du ? ` depuis le\u00a0${d.arrete_du}` : ""}`}.`))}</figcaption></figure>
+  <figcaption class="note" style="color:var(--on-night-muted)">${legende(["vigilance", "alerte", "alerte renforcée", "crise"].map((n): Cle => ({ forme: "aplat", couleur: DROUGHT_COLOR[n], dit: n })))}</figcaption></figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-communes-eau">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-communes-eau">Les niveaux de restriction</h2>
-  ${d ? droughtScale() : ""}</div>
+</div>
   ${table || (d ? "" : `<p class="card">Les restrictions se chargent : rechargez la page dans quelques secondes.</p>`)}
 </section>
 ${rules ? `<section aria-labelledby="h-interdits">
   <div class="sec-h"><p class="eyebrow">Pour un particulier</p><h2 id="h-interdits">Ce qui est interdit</h2>
   <p>Les usages de l'eau du robinet limités à chaque niveau. Les agriculteurs, entreprises et collectivités ont leurs propres règles : demandez à votre IA avec le connecteur.</p></div>
-  <ul class="zones">${rules}</ul>
+  ${rules}
   ${d ? `<p class="note">${esc(d.a_savoir)}</p>` : ""}
   ${d && data ? sourcesNote(d.sources, data) : ""}
 </section>` : ""}

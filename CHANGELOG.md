@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Vendredi 20 novembre 2026
+
+- La journée d'une commune : la question à poser à son IA s'écrit maintenant « zordi », comme sur /trafic.
+
 ## Jeudi 19 novembre 2026
 
 - Coupures d'eau : en tête de chaque commune, le portrait de son eau (réseaux, dernières analyses sanitaires, niveau de sécheresse).

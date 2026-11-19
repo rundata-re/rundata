@@ -214,5 +214,8 @@ describe("the top of the page of a commune's day", () => {
     expect(html.indexOf("<h1>")).toBeLessThan(html.indexOf('class="hook"'));
     expect(html.indexOf('class="hook"')).toBeLessThan(html.indexOf('<ul class="jour">'));
     expect(html).toContain("<li><b>Sorties\u00a0:</b> 12 événements aujourd'hui.</li>");
+    // The question to ask an assistant, in the spelling of the kit, as on /trafic.
+    expect(html).toContain(`Kosa i spas ${p.nom} zordi ?`);
+    expect(html).not.toContain("jordi");
   });
 });

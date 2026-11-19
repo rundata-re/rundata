@@ -2104,6 +2104,9 @@ export const ISLAND_PEEK_MS = 300;
  * it to be built again, as a reader does: what it says of the day (« aujourd'hui », the forecast's first day, a count
  * of days) would be yesterday's. A copy made at 23:58 is 3 minutes old at 00:01, within FRESH_SECONDS. *
  * `old`: what a view does with a copy too old to be told as the present (`OldCopy`).
+ *
+ * `withoutCopyMs`: how long a view waits for the build when this data center has no copy at all, in place of `waitMs`
+ * (web/site.ts `withoutCopy`).
  */
 /** Whether a reader waits for the refresh of the copy of `key`, `ageMs` old, rather than get it as it is. */
 export type ReaderWaits = (key: string, value: unknown, ageMs: number) => boolean;
@@ -2130,6 +2133,7 @@ export async function snapshot<T>(
   reader: boolean | ReaderWaits = false,
   incomplete?: (value: T) => boolean,
   old?: OldCopy,
+  withoutCopyMs?: number,
 ): Promise<Cached<T> | null> {
   // Each build is measured: a tile is brought up to date only when what it took last time is left (web/site.ts).
   // The agendas' pages are also timed step by step, their copy's write included (web/mesure.ts).
@@ -2156,7 +2160,8 @@ export async function snapshot<T>(
   const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run, island));
   let got: Cached<T> | null;
   try {
-    got = await within(any, waitMs);
+    // No copy at all in this data center: the wait of a view that would otherwise get the page without its live block.
+    got = await within(any, seen ? waitMs : (withoutCopyMs ?? waitMs));
   } catch (err) {
     console.error(`page ${key} : données indisponibles`, why(err));
     return null;

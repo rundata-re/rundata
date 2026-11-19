@@ -296,6 +296,15 @@ export function oldCopy(request: Request): OldCopy | undefined {
   return { afterMs: OLD_MINUTES * 60_000, waitMs: LIVE_READERS.test(ua) ? LIVE_READER_WAIT_MS : READER_WAIT_MS };
 }
 
+// A page's own copy that this data center has none of: a search engine's fetcher (a reader that answers no one now) waits
+// for its build until READER_WAIT_MS, rather than HOME_READER_WAIT_MS, past which the page goes without its live block,
+// « … se chargent », and a robot is told to come back (robots.ts). From 17 to 19/11/2026, 103 of the 127 robots' 503
+// were that, answered at 850 to 1,000 ms: 76 to OAI-SearchBot, mostly on /meteo/<lieu> and /communes/<commune>. A
+// build from nothing takes 3 to 8 s there; OAI-SearchBot gave up none of 403 reads, the longest 21.7 s. The fetchers
+// that answer someone now keep their wait (`ownWaits`), as people.
+/** How long a page waits for its own copy's build for `request` when this data center has none (web/data.ts `snapshot`). */
+export const withoutCopy = (request: Request): number | undefined => (isReader(request) && !lecteurDirect(request) ? READER_WAIT_MS : undefined);
+
 /** Waits as `waits` says, or as the reader would. */
 const alsoWaits = (waits: ReaderWaits, reader: boolean | ReaderWaits): ReaderWaits => (key, value, ageMs) =>
   waits(key, value, ageMs) || (typeof reader === "function" ? reader(key, value, ageMs) : reader);
@@ -945,7 +954,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");
     if (!stationOf(id)) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...ownWaits(request), undefined, oldCopy(request)),
+      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...ownWaits(request), undefined, oldCopy(request), withoutCopy(request)),
       alerte(cache, background, now),
     ]);
     return page(path, (live) => stationPage(origin, live ? data : null, id, now, a), data, background, [rebuild(cache, `web:station:${id}`, () => buildStation(cache, id, now))]);
@@ -955,7 +964,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(slug);
     if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request)),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request)),
       alerte(cache, background, now),
     ]);
     // The state of the hikes around: the hikers' page's last copy, as it is, never built for this page.
@@ -970,7 +979,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     // The weather is built when it has no copy, as on the commune's page; the rest only read (tools/resume.ts).
     const vigilance = vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now);
-    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request));
+    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request));
     // The weather's copy as the snapshot gave it: not read again (the read could be one subrequest too many).
     const { copies, leftOut } = await readCopies(cache, p, p, now, background, vigilance, { meteo: place });
     return page(path, (live) => (live
@@ -994,8 +1003,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const p = pageOf(path.slice("/communes/".length).replace(/\/$/, ""));
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [place, commune, vigilance] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request)),
-      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, ...ownWaits(request), undefined, oldCopy(request)),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request)),
+      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, ...ownWaits(request), undefined, oldCopy(request), withoutCopy(request)),
       vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now),
     ]);
     // The West's communes have their déchèteries' tile too (the TCO publishes them).

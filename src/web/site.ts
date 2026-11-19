@@ -613,11 +613,14 @@ function cumulsFile(path: string): Response | null {
 }
 
 /**
- * Addresses typed or guessed for a page that has another name: the events page was first published as /agenda, the
- * English address of who makes a site, the legal notice now in /conditions, the sources counted and listed on /chiffres.
+ * Addresses typed or guessed for a page that has another name: the events page was first published as /agenda, and
+ * people guess /sorties or /sortir for it; the English address of who makes a site, the legal notice now in /conditions,
+ * the sources counted and listed on /chiffres.
  */
 const ALIASES: Record<string, string> = {
   "/agenda": "/evenements",
+  "/sorties": "/evenements",
+  "/sortir": "/evenements",
   // The day of one commune is at /aujourdhui/<commune>: without one, the list of the communes (UX review of 04/11/2026).
   "/aujourdhui": "/communes",
   "/about": "/a-propos",

@@ -162,6 +162,10 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(await to("/sources")).toEqual([301, "/chiffres"]);
     expect(await to("/randos/")).toEqual([301, "/randonnees"]);
     expect(await to("/agenda/")).toEqual([301, "/evenements"]);
+    expect(await to("/sorties")).toEqual([301, "/evenements"]);
+    expect(await to("/sortir/")).toEqual([301, "/evenements"]);
+    // Like /agenda, an alias leads to its page without the search.
+    expect(await to("/sorties?quand=demain")).toEqual([301, "/evenements"]);
     expect(await to("//exemple.com/")).toEqual([301, "/exemple.com"]);
     expect((await handle(get("/a-propos", BROWSER), new Cache())).status).toBe(200);
   });

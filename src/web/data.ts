@@ -2158,6 +2158,18 @@ export async function snapshot<T>(
   const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000, island ? Math.min(ISLAND_PEEK_MS, waitMs) : undefined).catch(() => undefined);
   if (island) waitMs = Math.max(0, waitMs - (Date.now() - start));
   const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run, island));
+  // A copy out of date by its revision alone (a deploy changed how the page is drawn), less than KEEP_SECONDS old,
+  // made since midnight and young enough for `old`: served at once, its build behind, rather than after the whole wait
+  // (800 ms for a reader, 4 s for a person on 19/11/2026, then the same copy). The first view in each data center after
+  // a deploy gets the drawing before. The daily check of the sources (`reader` true, no `old`) still waits for the new
+  // one, as a link's preview does.
+  const seenAge = seen ? now.getTime() - seen.fetchedAt.getTime() : Infinity;
+  if (seen?.outdated && (reader !== true || old) && seenAge < KEEP_SECONDS * 1000 && daysApart(seen.fetchedAt, now) === 0 && !(old && seenAge > old.afterMs)) {
+    background(any.catch(() => undefined));
+    // The same line as past the wait below: one count of the views given a copy of another revision.
+    console.log(`copie ancienne servie pendant la construction : ${key}, révision ${seen.stamp ?? "sans"}→${stampOf(key, cache.version)}, âge ${Math.round(seenAge / 60_000)} min`);
+    return seen;
+  }
   let got: Cached<T> | null;
   try {
     // No copy at all in this data center: the wait of a view that would otherwise get the page without its live block.

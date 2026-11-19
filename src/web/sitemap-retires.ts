@@ -1,7 +1,7 @@
 /**
- * The pages left out of the sitemap from 22/11/2026, still online, linked and indexable: marketing's list of that day,
+ * The pages left out of the sitemap from 19/11/2026, still online, linked and indexable: marketing's list of 18/11/2026,
  * made from Search Console (the pages with the fewest impressions over 95 days), so that Google spends its visits on the
- * pages people search. 842 pages stay in it. A page added after that day goes into the sitemap as before.
+ * pages people search. 842 pages stay in it. A page added after that list goes into the sitemap as before.
  */
 
 /** FNV-1a, 32 bits, of a path's UTF-8 bytes, in hexadecimal: how the stops' pages are listed below. */
@@ -106,5 +106,5 @@ const ARRETS = new Set([
   "d4b3a287", "6fb9256b", "34a1f5ac", "4ecd6ee9",
 ]);
 
-/** Whether a page of the site is one left out of the sitemap on 22/11/2026. */
+/** Whether a page of the site is one left out of the sitemap from 19/11/2026 (marketing's list of 18/11/2026). */
 export const retiree = (path: string) => PAGES.has(path) || (path.startsWith("/bus/arret/") && ARRETS.has(empreinte(path)));

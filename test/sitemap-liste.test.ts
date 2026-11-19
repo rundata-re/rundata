@@ -10,10 +10,10 @@ async function sitemap(): Promise<string[]> {
   return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].slice(O.length) || "/");
 }
 
-// Pages of marketing's list of 22/11/2026 left out of the sitemap: a commune's day, a commune's children's page, a stop.
+// Pages of marketing's list of 18/11/2026 left out of the sitemap: a commune's day, a commune's children's page, a stop.
 const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/bus/arret/saint-andre/lot-grand-pelvoisin"];
 
-describe("the sitemap of 22/11/2026, marketing's list", () => {
+describe("the sitemap from 19/11/2026, marketing's list of 18/11/2026", () => {
   it("holds the 842 pages kept, but for those not indexable here, and none of the 567 left out", async () => {
     const urls = await sitemap();
     // 842 kept, less three: /feux with no FIRMS key here, /entreprises while it is discreet (test/sitemap-entreprises.test.ts),

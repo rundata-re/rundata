@@ -433,7 +433,7 @@ function sitemap(origin: string, now: Date, fuelDay?: string): string {
  *   a source is read (web/coupures.ts avisLus);
  * - the weather stations' pages (#523), while Google judges the site again after the fall of 30/10/2026: they come
  *   back once its November 2026 core update is over;
- * - the pages of marketing's list of 22/11/2026 (web/sitemap-retires.ts). A page out of that list and indexable, one
+ * - the pages of marketing's list of 18/11/2026, from 19/11/2026 (web/sitemap-retires.ts). A page out of that list and indexable, one
  *   added since or one whose noindex is lifted, goes in.
  */
 const horsSitemap = new Set([

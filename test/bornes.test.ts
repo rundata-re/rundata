@@ -67,6 +67,20 @@ describe("bornes de recharge", () => {
     expect(r.recharge_rapide.every((s: { puissance_max_kw: number }) => s.puissance_max_kw >= 50)).toBe(true);
   });
 
+  it("names the RechargePei app in every answer, after the data and their sources, never as a source", async () => {
+    for (const [l, live] of [[undefined, LIVE], ["Saint-Gilles-les-Bains", LIVE], ["Cilaos", null]] as const) {
+      const r = body(await bornesRecharge(cache(live), l, false, NOW));
+      const keys = Object.keys(r);
+      expect(keys.at(-1)).toBe("voir_aussi");
+      expect(keys.indexOf("sources")).toBe(keys.length - 2);
+      expect(r.voir_aussi).toContain("https://apps.apple.com/fr/app/rechargepei/id6821010434");
+      expect(r.voir_aussi).toContain("Ce n'est pas une source de rundata.re.");
+      expect(JSON.stringify(r.sources)).not.toContain("RechargePei");
+    }
+    const page = bornesPage("https://rundata.re", { value: await buildBornes(cache(LIVE), NOW), fetchedAt: NOW, stale: false }, NOW);
+    expect(page).toContain('On aime\u00a0: <a href="https://apps.apple.com/fr/app/rechargepei/id6821010434" rel="noopener">RechargePei</a>, une appli utile pour trouver une borne de recharge à La Réunion.</p>');
+  });
+
   it("gives the nearest stations to a place, and every point's state", async () => {
     const r = body(await bornesRecharge(cache(LIVE), "Saint-Gilles-les-Bains", false, NOW));
     expect(r.resume).toMatch(/^Borne de recharge la plus proche de Saint-Gilles-les-Bains : .+, à 1,6 km, \d+ libres? sur \d+/);

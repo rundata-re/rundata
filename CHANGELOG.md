@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Jeudi 19 novembre 2026
 
+- Bornes de recharge : un lien vers RechargePei, une appli utile pour trouver une borne à La Réunion.
 - Météo : les records des stations de référence en cartes, un chiffre par case (chaud, frais, pluie, rafale).
 
 ## Mercredi 18 novembre 2026

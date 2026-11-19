@@ -184,6 +184,13 @@ export const PASSES: Passe[] = [
   },
 ];
 
+/**
+ * The page of a cyclone given by its name alone (/cyclones/dina, as people type it): the slug of that name in the list,
+ * the most recent when the name came back another season. Undefined for a name not in the list.
+ */
+export const slugDuNom = (nom: string, liste: readonly Passe[] = PASSES): string | undefined =>
+  liste.filter((p) => p.slug.replace(/-\d{4}$/, "") === nom).sort((a, b) => b.annee - a.annee)[0]?.slug;
+
 /** What a station measured: each day's rain (mm, 10 h to 10 h) and strongest gust (m/s, as Météo-France gives it). */
 export interface Mesure {
   poste: string;

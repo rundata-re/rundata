@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import og from "../src/web/og.json" with { type: "json" };
+import icons from "../src/web/icons.json" with { type: "json" };
 import rubriques from "../src/web/og-rubriques.json" with { type: "json" };
+import presse from "../src/web/presse.json" with { type: "json" };
 import { site } from "../src/web/site.js";
 
 const O = "https://rundata.re";
@@ -31,6 +33,31 @@ describe("images de partage à une empreinte périmée", () => {
 
   it("laisse le 404 à un nom inconnu", async () => {
     for (const path of ["/og/inconnu.fa19969c07.png", "/og/mer.png", "/og/mer.fa19969c07.jpg"]) {
+      const r = await ask(path);
+      expect(r?.status, path).not.toBe(301);
+    }
+  });
+});
+
+describe("visuels de presse et icônes à une empreinte périmée", () => {
+  it("mène l'ancienne empreinte au fichier actuel du même nom et du même type", async () => {
+    // Celles que Googlebot demandait encore le 20/11/2026.
+    for (const [path, now] of [
+      ["/presse/rundata-accueil-ordi.ee6a0c809d.jpg", presse["accueil-ordi"].hd],
+      ["/presse/rundata-cilaos.06f3fc0f6e.jpg", presse.cilaos.hd],
+      ["/presse/rundata-evenements.69f4c1cf30.jpg", presse.evenements.hd],
+      ["/presse/rundata-cilaos.0000000000.webp", presse.cilaos.vignette],
+      ["/icons/logo-180.0000000000.png", icons["180"]],
+      ["/icons/capture-meteo.0000000000.webp", "/icons/capture-meteo.a30f6162cd.webp"],
+    ]) {
+      const r = (await ask(path))!;
+      expect([r.status, r.headers.get("location")], path).toEqual([301, now]);
+    }
+  });
+
+  it("laisse le 404 à un nom qui n'existe plus, à un autre type et à l'empreinte actuelle", async () => {
+    // L'ancien drapeau, remplacé par le logo : une autre image n'est pas la même.
+    for (const path of ["/icons/flag-180.c1d91162bc.png", "/presse/rundata-cilaos.06f3fc0f6e.png", presse.cilaos.hd, "/presse/inconnu.06f3fc0f6e.jpg"]) {
       const r = await ask(path);
       expect(r?.status, path).not.toBe(301);
     }

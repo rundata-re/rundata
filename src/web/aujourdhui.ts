@@ -306,7 +306,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     ${urgent(p, r)}
     <p class="hook">${esc(HOOK(p))}</p>
     ${dayLines(p, r)}
-    ${ask(`Kosa i spas ${p.nom} jordi ? Gèt si ${url} é di amwin.`, `Que se passe-t-il ${aCommune(p.nom)} aujourd'hui ? Lis ${url} et résume-moi la journée.`)}
+    ${ask(`Kosa i spas ${p.nom} zordi ? Gèt si ${url} é di amwin.`, `Que se passe-t-il ${aCommune(p.nom)} aujourd'hui ? Lis ${url} et résume-moi la journée.`)}
   </div>
   <figure class="card mapcard nophone">${islandMap({ highlight: p.nom, label: `Carte de La Réunion (974) situant ${p.nom}` })}</figure>
 </div>`;

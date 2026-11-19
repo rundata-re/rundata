@@ -548,14 +548,19 @@ function sourcesOf(f?: Forecast, u?: Cached<uv.UvCell[]> | null, e?: ensemble.En
   return credits([f.source, ...(f.relais ?? []).map((r) => r.source), ...(u ? [uv.SOURCE] : []), ...(e ? [ensemble.SOURCE] : [])]);
 }
 
+/**
+ * What the confidence says, after « Confiance : »: in each answer that gives one, with the time of the scenarios'
+ * computation, and once on /meteo (web/pages.ts), without it, where each place page's forecast links.
+ */
+export const confianceExplication = (calcul?: string) =>
+  `elle dit si les ${ensemble.MODEL.membres} scénarios du Centre européen de prévision (ECMWF) s'accordent, sur un carré d'environ ${ensemble.MODEL.maille_km} km` +
+  `${calcul ? ` (calcul du ${calcul})` : ""}. Ce n'est pas la probabilité que la prévision soit juste, et ces scénarios ne viennent pas du ` +
+  "modèle de la prévision affichée. Confiance faible : les scénarios divergent, revoyez la prévision plus près du jour.";
+
 /** Said whenever the answer gives a confidence. */
 function ensWarnings(e: ensemble.Ensemble | null): string[] {
   if (!e) return [];
-  return [
-    `Confiance : elle dit si les ${ensemble.MODEL.membres} scénarios du Centre européen de prévision (ECMWF) s'accordent, sur un carré d'environ ${ensemble.MODEL.maille_km} km ` +
-      `(calcul du ${localTime(new Date(e.runAt)).replace(" ", " à ")}). Ce n'est pas la probabilité que la prévision soit juste, et ces scénarios ne viennent pas du ` +
-      "modèle de la prévision affichée. Confiance faible : les scénarios divergent, revoyez la prévision plus près du jour.",
-  ];
+  return [`Confiance : ${confianceExplication(localTime(new Date(e.runAt)).replace(" ", " à "))}`];
 }
 
 /** Said whenever the answer gives a UV index. */

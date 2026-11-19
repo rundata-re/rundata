@@ -7,6 +7,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 ## Jeudi 19 novembre 2026
 
 - Sécheresse : ce qui est interdit, en un tableau par usage et par niveau, avec les mots de l'arrêté.
+- Météo d'une commune ou d'un lieu : les normales et les records du mois, à la station la plus pertinente.
 - Bornes de recharge : un lien vers RechargePei, une appli utile pour trouver une borne à La Réunion.
 - Météo : les records des stations de référence en cartes, un chiffre par case (chaud, frais, pluie, rafale).
 

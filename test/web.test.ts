@@ -339,7 +339,7 @@ describe("home page", () => {
     for (const name of ["Météo", "Vigilance", "Mer", "Volcan", "Bus", "Qualité de l&#39;air", "Électricité", "Calendrier", "Services publics", "Terrain et risques"]) {
       expect(page).toContain(`${name}</`);
     }
-    expect(page).toContain('<li><a href="/electricite">Électricité</a></li>');
+    expect(page).toMatch(/<a class="k-[a-z-]+" href="\/electricite"><span class="kb">/);
     // The menu: every category, with its icon, the current one marked.
     expect(meteoPage("https://rundata.re", null, NOW)).toMatch(/<a class="k-meteo" href="\/meteo" aria-current="page"><span class="kb"><svg[^]*?<\/svg><\/span><span class="gn">Météo<\/span><\/a>/);
     expect(placePage("https://rundata.re", pageOf("cilaos")!, null, NOW)).toMatch(/<a class="k-meteo" href="\/meteo" aria-current="page">/);

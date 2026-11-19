@@ -503,8 +503,8 @@ describe("the page /meteo with every station", () => {
     expect(html.match(/<li class="st tgt"/g)).toHaveLength(5);
     expect(html).toContain(esc("Les 5 stations, de la côte aux sommets"));
     expect(html).toContain("Pour chaque commune, les cirques, le volcan et les plages : la mesure de la station qui représente le mieux le lieu (proche, à une altitude voisine, du même versant) et la prévision sur 7 jours, aujourd'hui compris");
-    expect(html).toContain(esc("IGN, RGE ALTI, pour les altitudes des couleurs estimées (Licence Ouverte 2.0)"));
-    expect(html).toContain(esc("Météo-France, lame d'eau radar, pour la pluie estimée (Licence Ouverte 2.0)"));
+    // Both under one licence, written once after them.
+    expect(html).toContain(esc("IGN, RGE ALTI, pour les altitudes des couleurs estimées, Météo-France, lame d'eau radar, pour la pluie estimée (Licence Ouverte 2.0)"));
     // The replay bar (marketing's words): hidden without a script, no length chosen, its script asked on a first touch.
     expect(html).toContain(`<div class="rj" data-rejeu="${rejeuScriptPath()}" data-fin="${ALL.reduce((m, x) => (x.time > m ? x.time : m), "")}" hidden><div class="tabs" role="radiogroup" aria-labelledby="rjd-n"><span class="tabs-n" id="rjd-n">Revoir :</span>` +
       `<input type="radio" name="rjd" id="rjd-6h" value="6h"><label for="rjd-6h">6\u00a0h</label><input type="radio" name="rjd" id="rjd-24h" value="24h"><label for="rjd-24h">24\u00a0h</label>` +

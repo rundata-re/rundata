@@ -106,7 +106,9 @@ describe("the sources of a page", () => {
     // A producer's name may go to the next line before its inner capital (nomsCoupables).
     expect(block).toContain("cartographiés dans Open<wbr>Street<wbr>Map (ODbL 1.0)");
     expect(block).toContain("(EDF SEI) (Licence Ouverte Etalab 2.0)");
-    expect(block).toContain("Restrictions d&#39;eau en cas de sécheresse (Vigi<wbr>Eau, arrêtés préfectoraux) (Licence Ouverte Etalab 2.0)");
+    // Named with the other sources of its licence, the licence written once.
+    expect(block).toContain("Restrictions d&#39;eau en cas de sécheresse (Vigi<wbr>Eau, arrêtés préfectoraux), ");
+    expect(block.slice(0, block.indexOf("</p>")).split("(Licence Ouverte Etalab 2.0)").length).toBe(2);
     // The island's map beside the commune's name: its contours, its relief, its roads and the names of the communes.
     expect(block).toContain(`<p class="sources">Carte : contours des communes de geo.api.gouv.fr, relief, photographies aériennes, routes et noms de lieux de l'IGN (RGE ALTI, couche Photographies aériennes de la Géoplateforme, BD TOPO), sous Licence Ouverte Etalab 2.0.</p>`);
     expect(html.slice(html.indexOf("<footer"))).not.toContain("<h3>Sources</h3>");

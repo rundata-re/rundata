@@ -44,7 +44,7 @@ import { lienJeux } from "./transport-donnees.js";
 import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
-import { FAST_KW } from "../tools/bornes.js";
+import { FAST_KW, RECHARGEPEI } from "../tools/bornes.js";
 import { AFTER_CUT, ARS_COUPURE, muetPour } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
@@ -1685,7 +1685,11 @@ export function bornesPage(origin: string, data: Cached<BornesAnswer> | null, no
   ], data ? adressesCoupables(`D'après les opérateurs de recharge (transport.data.gouv.fr)${d?.etat_jusqu_a ? `, état jusqu'${leAt(new Date(d.etat_jusqu_a)).replace(/^le /, "au ")}` : ""}, lu ${leAt(data.fetchedAt)}.`, true) : undefined)}</figcaption></figure>
 </div>`;
 
-  const body = `<section aria-labelledby="h-rapide">
+  // An outside resource, not a source of this page (tools/bornes.ts).
+  const voirAussi = `<p class="card note">On aime\u00a0: <a href="${esc(RECHARGEPEI.lien)}" rel="noopener">RechargePei</a>, une appli utile pour trouver une borne de recharge à La Réunion.</p>`;
+
+  const body = `${voirAussi}
+<section aria-labelledby="h-rapide">
   <div class="sec-h"><p class="eyebrow">${fr(FAST_KW)} kW et plus</p><h2 id="h-rapide">Recharge rapide</h2>
   <p>Les stations où l'on recharge en une demi-heure à une heure, avec une prise Combo CCS ou CHAdeMO.</p></div>
   ${d ? `<div class="card"><ul class="rows bornes">${fast.map((s) => borneRow({ ...s, station: `${s.station}${s.station.endsWith(s.commune) ? "" : ` (${s.commune})`}` }, g)).join("")}</ul></div>` : ""}

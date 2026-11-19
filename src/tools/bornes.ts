@@ -117,6 +117,17 @@ export function stationRow(s: irve.Station, live: irve.Live | undefined, now: Da
 const better = (live: irve.Live | undefined) => (a: irve.Station, b: irve.Station) =>
   count([b], live).libres - count([a], live).libres || kwMax(b) - kwMax(a);
 
+/**
+ * An outside resource, not a source of these answers: the RechargePei app, named as useful to find a charging station,
+ * never described. Said in every answer, after the data and their sources, never in their place; on /bornes, under the
+ * map.
+ */
+export const RECHARGEPEI = {
+  lien: "https://apps.apple.com/fr/app/rechargepei/id6821010434",
+  outil:
+    "On aime\u00a0: RechargePei, une appli utile pour trouver une borne de recharge à La Réunion\u00a0: https://apps.apple.com/fr/app/rechargepei/id6821010434. Ce n'est pas une source de rundata.re.",
+};
+
 const COMMON = {
   recharge:
     "Pour charger : l'application ou le badge du réseau indiqué (Freshmile, EZDrive…), ou le badge d'un autre opérateur accepté en itinérance. Recharge rapide = 50 kW ou plus (prise Combo CCS ou CHAdeMO)\u00a0; Type 2 = recharge normale, de 7 à 22 kW.",
@@ -144,6 +155,7 @@ export async function bornesRecharge(cache: Cache, lieu: string | undefined, rap
     ...(latest ? { etat_jusqu_a: latest } : {}),
     ...(old ? { avertissement: `État relevé ${ageText(ageMinutes(lu!, now))} : il a pu changer depuis.` } : {}),
     sources: credits([irve.SOURCE]),
+    voir_aussi: RECHARGEPEI.outil,
   };
   const pool = rapide ? irve.STATIONS.filter((s) => kwMax(s) >= FAST_KW) : irve.STATIONS;
   const kind = rapide ? "borne de recharge rapide" : "borne de recharge";

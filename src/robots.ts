@@ -18,7 +18,7 @@
 import { HEBERGEURS, TEAM, visitor } from "./metrics.js";
 import { RENDU_PATH } from "./providers/vigilance-carte.js";
 import { TRIP_PATH } from "./tools/transports.js";
-import { STOP_PATH } from "./web/domains.js";
+import { ATTENTE, STOP_PATH } from "./web/domains.js";
 import { UV_PATH } from "./web/uv-moufia.js";
 
 /**
@@ -110,8 +110,18 @@ const CHARGE = /\bse\s+charg(?:e|ent)\b/;
 export const texteVisible = (html: string) =>
   html.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;|&#160;| /g, " ");
 
-/** Whether a page's HTML says that its data is still loading. */
-export const enChargement = (html: string) => CHARGE.test(texteVisible(html));
+/** `html` without its blocks waiting for their refresh (web/domains.ts `ATTENTE`), each up to its first « </span> ». */
+const sansAttente = (html: string) =>
+  html.split(ATTENTE).map((x, i) => {
+    const end = x.indexOf("</span>");
+    return i === 0 || end < 0 ? x : x.slice(end + "</span>".length);
+  }).join(" ");
+
+/**
+ * Whether a page's HTML says that its data is still loading. Not a block of a page that has its data, waiting for its
+ * refresh (a station's departures past its copy): the rest of the page is there, and the page is served.
+ */
+export const enChargement = (html: string) => CHARGE.test(texteVisible(sansAttente(html)));
 
 /** Whether a request names itself as anything but a browser or the team: a search engine, an assistant's fetcher, a script. */
 export function robot(request: Request): boolean {

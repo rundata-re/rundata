@@ -1183,6 +1183,17 @@ export const alertList = (list: { reseau: string; lignes?: string[]; titre: stri
   `<ul class="plain">${list.map((a) => `<li><b>${esc(a.reseau)}${a.lignes ? `, ligne ${esc(a.lignes.join(", "))}` : ""}</b> : ${esc(a.titre)}${a.detail && a.detail !== a.titre ? `<p class="note">${esc(a.detail)}</p>` : ""}</li>`).join("")}</ul>`;
 
 export const HORAIRES_CHARGENT = "Les horaires se chargent\u00a0: rechargez la page dans quelques secondes.";
+/**
+ * The mark of a block waiting for its refresh in a page that has its data: a station's departures past what its copy
+ * knows (`busOutran`). Its « se chargent » does not make the whole page « loading » for a robot (robots.ts
+ * `enChargement`): on 19/11/2026 at 17:33, Google's URL inspection got a 503 for /bus, its copy 70 minutes old served,
+ * one station's list run out; 24 of the 127 robots' 503 of 17 to 19/11 were that.
+ */
+export const ATTENTE = "<span data-attente>";
+/** `html` marked as a block waiting for its refresh (`ATTENTE`); `html` holds no span. */
+export const enAttente = (html: string) => `${ATTENTE}${html}</span>`;
+/** The station's departures past what the copy knows, marked (`ATTENTE`). */
+export const HORAIRES_EN_ATTENTE = enAttente(HORAIRES_CHARGENT);
 
 /**
  * /bus's stable text (marketing, 14/11/2026): `reseaux` and `lignes` from the timetables, the sentence that says them
@@ -1230,7 +1241,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
         (left.length
           ? `<ul class="rows departs">${left.map(({ x, min, heure }) => departureLi(x, waitText(min, listClock(heure)), listClock(heure))).join("")}</ul>`
           : busOutran(g, now.getTime() - data!.fetchedAt.getTime())
-            ? `<p>${HORAIRES_CHARGENT}</p>`
+            ? `<p>${HORAIRES_EN_ATTENTE}</p>`
             : `<p>Pas de départ prévu dans les prochaines heures.</p>`) +
         `</li>`;
       }).join("")}</ul>` +

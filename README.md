@@ -4,7 +4,7 @@
 
 Sorties, randos, météo mesurée, routes : les données publiques de La Réunion en direct, datées et sourcées.
 
-Sur rundata.re et dans votre assistant IA (ChatGPT, Claude, Le Chat). Gratuit, sans compte.
+Sur [rundata.re](https://rundata.re) et dans votre assistant IA (ChatGPT, Claude, Le Chat). Gratuit, sans compte.
 
 Ce serveur [MCP](https://modelcontextprotocol.io) donne à votre assistant IA (Claude, ChatGPT, Le Chat…) les **données publiques de La Réunion en ce moment** : météo mesurée aux stations, vigilance, mer, volcan, électricité, qualité de l'air, services publics, horaires de bus, terrain et risques. Il répond à des questions comme « quel temps fait-il à Saint-Pierre ? », « le prochain bus à la gare de Saint-Pierre ? » ou « le volcan est en éruption ? » avec des valeurs datées et sourcées. Une mesure n'est jamais mélangée à une prévision : pour « il va pleuvoir demain ? », un outil à part donne la prévision d'un modèle, toujours étiquetée comme telle.
 

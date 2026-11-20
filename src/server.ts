@@ -31,7 +31,7 @@ import * as marchesOsm from "./vie/marches.js";
 import { z } from "zod";
 import type { Cache } from "./cache.js";
 import type { Recorder } from "./metrics.js";
-import type { Background } from "./web/data.js";
+import { type Background, fordNews } from "./web/data.js";
 import icons from "./web/icons.json" with { type: "json" };
 import { GAZETTEER_ATTRIBUTION, wholeIsland } from "./places/resolve.js";
 import * as acspo from "./providers/acspo.js";
@@ -52,7 +52,9 @@ import { cite, SITE_URL } from "./tools/citer.js";
 import { marquerTiers, OUTILS_TIERS } from "./tools/tiers.js";
 import { FICHE_LA1ERE, FICHE_REUNION_FR, fichesNonReprises } from "./tools/non-repris.js";
 import { resumeDuJour } from "./tools/resume.js";
-import { text } from "./tools/format.js";
+import { credits, text } from "./tools/format.js";
+import { localTime } from "./geo.js";
+import { INFOTRAFIC } from "./tools/littoral.js";
 import { temperatureMer, COVERAGE as SEA_COVERAGE } from "./tools/mer.js";
 import { AROME_WAIT_MS, previsionMeteo, coverage as forecastCoverage } from "./tools/prevision.js";
 import { coverage as weatherCoverage, meteoActuelle, providers as weatherProviders } from "./tools/meteo.js";
@@ -130,7 +132,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.669";
+export const VERSION = "1.0.670";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -161,6 +163,35 @@ async function withVigilance<R extends { content: { type: "text"; text: string }
   if (!warnings.lignes.length || r.isError) return r;
   const payload = JSON.parse(r.content[0].text) as Record<string, unknown>;
   return { ...r, content: [{ type: "text", text: JSON.stringify({ vigilance: warnings.lignes, officiel: warnings.officiel, ...payload }) }] };
+}
+
+/**
+ * The headlines that name a ford, as /crues shows them, added to crues_rivieres' answer: those of the news as last read
+ * (the scheduled event reads it every 5 minutes), never read for the tool, which asks Vigicrues Réunion already. An
+ * announcement, never the state of a ford: that is on infotrafic.re. Nothing added when the news was never read.
+ */
+async function withFords<R extends { content: { type: "text"; text: string }[]; isError?: boolean }>(
+  cache: Cache,
+  answer: Promise<R>,
+  now = new Date(),
+): Promise<R> {
+  const [r, news] = await Promise.all([answer, cache.peek<actuSources.Fil>(actuSources.KEY).catch(() => undefined)]);
+  if (!news || r.isError) return r;
+  const annonces = fordNews(news.value, now, true);
+  const lue = localTime(news.fetchedAt).replace(" ", " à ");
+  const payload = JSON.parse(r.content[0].text) as Record<string, unknown> & { sources?: { source: string }[] };
+  const radiers = {
+    resume: annonces.length
+      ? `Annonces de la préfecture et des médias qui parlent d'un radier, d'après notre lecture du ${lue}. Ce ne sont que des annonces : l'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région (${INFOTRAFIC}).`
+      : `Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture du ${lue}. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re (${INFOTRAFIC}).`,
+    ...(annonces.length ? { annonces } : {}),
+  };
+  const credited = credits([
+    ...(annonces.some((a) => a.source !== actuSources.SOURCES.prefecture.organisme) ? [actuSources.SOURCES.medias] : []),
+    ...(annonces.some((a) => a.source === actuSources.SOURCES.prefecture.organisme) ? [actuSources.SOURCES.prefecture] : []),
+  ]);
+  const sources = [...(payload.sources ?? []), ...credited.filter((c) => !payload.sources?.some((s) => s.source === c.source))];
+  return { ...r, content: [{ type: "text", text: JSON.stringify({ ...payload, radiers, sources }) }] };
 }
 
 /** An answer's texts with their no-break spaces: none of JSON's own spaces is before « : » or after a figure. */
@@ -422,7 +453,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       },
       annotations: { ...READ_ONLY },
     },
-    track("volcan_seismes", (args: { detail?: boolean }) => volcanSeismes(cache, new Date(), args.detail === true)),
+    track("volcan_seismes", (args: { detail?: boolean }) => withVigilance(cache, volcanSeismes(cache, new Date(), args.detail === true))),
   );
 
   server.registerTool(
@@ -473,7 +504,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       inputSchema: { lieu },
       annotations: { ...READ_ONLY },
     },
-    track("qualite_air", (args) => qualiteAir(cache, args.lieu)),
+    track("qualite_air", (args) => withVigilance(cache, qualiteAir(cache, args.lieu))),
   );
 
   server.registerTool(
@@ -633,7 +664,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       },
       annotations: { ...READ_ONLY },
     },
-    track("maree", (args: { lieu?: string }) => maree(cache, args.lieu)),
+    track("maree", (args: { lieu?: string }) => withVigilance(cache, maree(cache, args.lieu))),
   );
 
   server.registerTool(
@@ -642,7 +673,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       title: "Crues et rivières à La Réunion",
       description:
         "Vigilance crues de Vigicrues Réunion (DEAL), rivière par rivière, et hauteur d'eau et débit mesurés toutes les 5 minutes aux 29 stations " +
-        "des rivières et ravines de l'île, avec leur tendance et les crues historiques comme repères. Rappeler de ne jamais traverser un radier submergé. Pour : « la rivière des Galets est en crue ? », " +
+        "des rivières et ravines de l'île, avec leur tendance et les crues historiques comme repères. Rappeler de ne jamais traverser un radier submergé. " +
+        "Champ radiers : annonces de la préfecture et des médias sur un radier, pas son état (infotrafic.re). Pour : « la rivière des Galets est en crue ? », " +
         "« il y a une vigilance crues ? », « niveau de la ravine Saint-Gilles ? ».",
       inputSchema: {
         lieu: z
@@ -652,7 +684,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       },
       annotations: { ...READ_ONLY },
     },
-    track("crues_rivieres", (args: { lieu?: string }) => crues(cache, args.lieu, undefined, true)),
+    track("crues_rivieres", (args: { lieu?: string }) => withVigilance(cache, withFords(cache, crues(cache, args.lieu, undefined, true)))),
   );
 
   server.registerTool(
@@ -898,7 +930,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       },
       annotations: { ...READ_ONLY },
     },
-    track("historique_meteo", (args: { lieu?: string; jours?: number; du?: string; au?: string; detail?: "jour" | "heure" }) => historiqueMeteo(cache, args.lieu, { jours: args.jours, du: args.du, au: args.au, detail: args.detail })),
+    track("historique_meteo", (args: { lieu?: string; jours?: number; du?: string; au?: string; detail?: "jour" | "heure" }) => withVigilance(cache, historiqueMeteo(cache, args.lieu, { jours: args.jours, du: args.du, au: args.au, detail: args.detail }))),
   );
 
   server.registerTool(

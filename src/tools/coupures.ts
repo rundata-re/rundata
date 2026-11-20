@@ -1,3 +1,4 @@
+import { apresCyclone } from "../eau/cyclone.js";
 import type { Cache, Cached } from "../cache.js";
 import { distributeur, LIENS, lues, nomDit, partage, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { resolvePlace } from "../places/resolve.js";
@@ -138,7 +139,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     return { ...text({ erreur: "Les avis des distributeurs d'eau ne répondent pas pour le moment.", consulter: notices.SOURCE.url }), isError: true };
   }
   const live = current(all, now);
-  const common = { ...COMMON, sources: credits([notices.SOURCE]) };
+  const common = { ...COMMON, ...apresCyclone(now), sources: credits([notices.SOURCE]) };
 
   if (!lieu?.trim()) {
     const dry = lues().map((c) => doNotDrink(all, c) && c).filter(Boolean) as string[];

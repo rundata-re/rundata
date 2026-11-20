@@ -84,6 +84,8 @@ describe("the time an answer says it read its data", () => {
     expect(du({ avis: [{ publie_le: "30/10/2026 à 16:39" }] })).toBe("30/10 16:39");
     expect(du({ avis: [{ publie_le: "30/10/2026" }] })).toBe("30/10/2026");
     expect(du({ analyses: { derniere_analyse: "26/08/2026" } })).toBe("26/08/2026");
+    // qualite_eau's bathing sites, sampled on 22/09 (20/11/2026): the sample's day, never « à l'instant ».
+    expect(du({ baignade: { sites: [{ site: "Plage de l'Hermitage centre", dernier_prelevement: "22/09/2026" }] } })).toBe("22/09/2026");
     expect(du({ evenement: { publie_le: "vendredi 23/10 à 10:00" } })).toBe("23/10 10:00");
     expect(fraicheur({ vigilance: { emise: "30/10 17:07 heure de La Réunion" } }, [], now).fuseau).toBe("heure de La Réunion (UTC+4)");
   });

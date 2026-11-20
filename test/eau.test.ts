@@ -1,10 +1,11 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { parsePage, quality, season } from "../src/providers/baignades.js";
+import { parsePage, quality, season, SITES } from "../src/providers/baignades.js";
 import { networkName } from "../src/providers/eaupotable.js";
 import { SOURCE } from "../src/eau/requin.js";
-import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote } from "../src/tools/eau.js";
+import { CONSIGNE } from "../src/eau/cyclone.js";
+import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote, tapSentence } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
 import { gather } from "../src/eau/ile.js";
 import { eauPage } from "../src/web/domains.js";
@@ -71,7 +72,7 @@ describe("qualité de l'eau", () => {
 
   it("finds the network of the quartier asked, and what went off the limits", async () => {
     const b = body(await qualiteEau(cache(), "Condé", undefined, NOW));
-    expect(b.resume).toBe("Eau du robinet, réseau Usine Dassy Conde à Condé : dernière analyse le 24/08/2026 : NON CONFORME\u00a0; 6 analyses non conformes sur 16 en 6 mois.");
+    expect(b.resume).toBe("Eau du robinet, réseau Usine Dassy Conde à Condé : dernière analyse le 24/08/2026 : NON CONFORME, conclusion de l'ARS : « Eau d'alimentation non-conforme aux exigences de qualité »\u00a0; 6 analyses non conformes sur 16 en 6 mois.");
     expect(b.eau_du_robinet.reseau.non_conformites[0]).toEqual({
       date: "24/08/2026",
       prelevements: 3,
@@ -79,6 +80,51 @@ describe("qualité de l'eau", () => {
     });
     // Asked about neither, and no bathing site within 5 km: no bathing part.
     expect(b.baignade).toBeUndefined();
+  });
+
+  it("quotes the ARS's conclusion, never « conforme » alone where the references of quality are not met", async () => {
+    const b = body(await qualiteEau(cache(), "eau du robinet à Saint-Pierre", undefined, NOW));
+    type Row = { reseau: string; quartiers?: string; derniere_analyse_dans_les_limites?: boolean; conclusion_ars?: string };
+    const r = (b.eau_du_robinet.reseaux as Row[]).find((x) => x.derniere_analyse_dans_les_limites && /non conforme aux r/i.test(x.conclusion_ars ?? "") && x.quartiers)!;
+    expect(r.conclusion_ars).toMatch(/conforme aux limites de qualité et non conforme aux références de qualité/);
+    expect(b.eau_du_robinet.reseaux[0]).not.toHaveProperty("derniere_analyse_conforme");
+    // The sentence for that network, asked by its quartier.
+    const said = tapSentence(r as Parameters<typeof tapSentence>[0], "à Saint-Pierre");
+    expect(said).toContain(`, conclusion de l'ARS : « ${r.conclusion_ars!.replace(/\.$/, "")} »`);
+    expect(said.replace(/«[^»]*»/g, "")).not.toMatch(/: conforme/);
+    // No conclusion published: the values said within the limits, never « conforme », and the missing conclusion said.
+    const bare = tapSentence({ ...(r as Parameters<typeof tapSentence>[0]), conclusion_ars: undefined }, "à Saint-Pierre");
+    expect(bare).toContain("\u00a0: valeurs dans les limites de qualité\u00a0; l'ARS n'a pas publié de conclusion pour ce prélèvement");
+    expect(bare).not.toMatch(/conforme/);
+  });
+
+  it("gives the prefecture's instruction on tap water after a cyclone, in the season only, as the page quotes it", async () => {
+    expect(body(await qualiteEau(cache(), "Condé", "robinet", NOW)).a_savoir).not.toHaveProperty("apres_un_cyclone");
+    const november = body(await qualiteEau(cache(), "Condé", "robinet", new Date("2026-11-02T04:00:00Z")));
+    expect(november.a_savoir.apres_un_cyclone).toEqual({
+      consigne: `« ${CONSIGNE} »`,
+      d_apres: "Dispositif ORSEC Cyclones de la préfecture (arrêté 2026-182), consignes de la phase de sauvegarde, p. 18",
+      lien: expect.stringMatching(/^https:\/\/www\.reunion\.gouv\.fr\/.*\.pdf#page=18$/),
+    });
+    expect(november.a_savoir.apres_un_cyclone.consigne).toContain("faire bouillir pendant 3 minutes");
+    // Bathing alone: nothing on tap water.
+    expect(body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", new Date("2026-11-02T04:00:00Z"))).a_savoir).not.toHaveProperty("apres_un_cyclone");
+  });
+
+  it("gives all the bathing sites of a commune asked, as /eau does; the two nearest for a place", async () => {
+    // Every site answers with the recorded season of the Hermitage: what is counted here is the sites.
+    vi.stubGlobal("fetch", async (url: string) =>
+      new Response(fixture(`baignade_974000709_${new URL(url).searchParams.get("annee")}.html`, "latin1"), { headers: { "content-type": "text/html; charset=ISO-8859-1" } }));
+    const commune = body(await qualiteEau(cache(), "Saint-Pierre", "baignade", NOW));
+    const onPage = SITES.filter((s) => s.commune === "Saint-Pierre").map((s) => s.nom);
+    expect(onPage).toHaveLength(5);
+    expect(commune.baignade.sites.map((r: { site: string }) => r.site).sort()).toEqual([...onPage].sort());
+    // Saint-Paul's nine, the latest samples of the two nearest only: about 10 KB with the shark rule (2,5 KB).
+    const paul = await qualiteEau(cache(), "Saint-Paul", "baignade", NOW);
+    expect(body(paul).baignade.sites).toHaveLength(9);
+    expect(paul.content[0].text.length).toBeLessThan(11_000);
+    expect(body(paul).baignade.sites.filter((r: object) => "derniers_prelevements" in r)).toHaveLength(2);
+    expect(body(await qualiteEau(cache(), "Terre-Sainte", "baignade", NOW)).baignade.sites.length).toBeLessThanOrEqual(2);
   });
 
   it("lists a commune's networks, those with a problem first", async () => {

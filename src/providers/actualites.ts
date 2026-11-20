@@ -284,9 +284,16 @@ function places(found: ReturnType<typeof hits>): { communes: string[]; lieux: st
 const WEATHER = String.raw`meteo\w*|pluies?|orages?|cyclon\w*|tempete|depression tropicale|houle|vents? forts?|inondation\w*|crues?`;
 const WEATHER_WORD = new RegExp(`\\b(?:${WEATHER})\\b`);
 
+// « Mobilisation » in the sense of a strike or a blockade, not money, firms or means set to work: « une mobilisation
+// financière remarquable » (a town's renovation), « les PSAD mobilisent les entreprises », « Saint-André mobilise 84%
+// des financements » (20/11/2026). A word of these within the two words after it, or a figure right after it, leaves it
+// out; « la mobilisation du 24 octobre » keeps it, its figure coming a word later. Real ones seldom say who marches
+// (« Mobilisation du 24 octobre : ce qui est prévu »), so the word is not asked to come with a union or a strike.
+const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entreprises?|moyens|fonds|credits?|euros?|millions?|milliards?|ressources|budget\w*)\b)(?! \d)`;
+
 /** The subjects, for the questions people ask on a day like this. */
 export const SUJETS: { id: string; nom: string; re: RegExp }[] = [
-  { id: "mobilisation", nom: "manifestations et blocages", re: /\b(?:barrages?|blocages?|bloqu\w*|manifest\w*|mobilis\w*|gilets? jaunes?|rassemblement\w*|greve\w*|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b/ },
+  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:barrages?|blocages?|bloqu\w*|manifest\w*|${MOBILISATION}|gilets? jaunes?|rassemblement\w*|greve\w*|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b`) },
   { id: "route", nom: "routes et circulation", re: /\b(?:routes?|circulation|trafic|bouchons?|embouteillage\w*|accidents?|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation|chaussee|inforoutes?)\b/ },
   { id: "meteo", nom: "météo et cyclones", re: new RegExp(`\\b(?:${WEATHER}|vigilance)\\b`) },
   { id: "volcan", nom: "volcan et séismes", re: /\b(?:volcan\w*|eruption\w*|fournaise|dolomieu|seisme\w*|sismi\w*|enclos)\b/ },

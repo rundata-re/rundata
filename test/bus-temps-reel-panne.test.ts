@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { counted, PAGE_BUDGET, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { realtime, RT_BACKOFF_SECONDS, RT_TIMEOUT_MS } from "../src/providers/gtfsrt.js";
 
@@ -35,10 +36,60 @@ describe("a network's real-time feed that falls silent (providers/gtfsrt.ts `rea
       expect((await realtime(cache, "carsud"))?.fetchedAt.getTime(), `${after} min`).toBe(T0);
       expect(asked, `${after} min`).toBe(failed);
     }
-    // Past them: asked again, and its copy taken once it answers.
+    // Past them: asked again after the answer, the copy served; its new read taken by the next view once it answers.
     up = true;
     t = T0 + 2 * MIN + 5.5 * MIN;
-    expect((await realtime(cache, "carsud"))?.fetchedAt.getTime()).toBe(t);
+    const { value, settled } = await counted(PAGE_BUDGET, () => realtime(cache, "carsud"));
+    expect(value?.fetchedAt.getTime()).toBe(T0);
+    expect(value?.stale).toBe(true);
+    await settled();
     expect(asked).toBeGreaterThan(failed);
+    expect((await realtime(cache, "carsud"))?.fetchedAt.getTime()).toBe(t);
+  });
+
+  // 20/11/2026, after the robots got the feed already read: Car Jaune and Car Sud silent for hours, a robot still waited
+  // 1.2 to 2.1 s for their next try on the pages of the stations of Saint-Benoît and Saint-Louis.
+  it("once silent, is not waited for at its next try: the page gets the last copy with its time, the try goes on after", async () => {
+    let t = T0;
+    const cache = new Cache(new MemoryStore(), () => t);
+    let hung: ((r: Response) => void) | undefined;
+    vi.stubGlobal("fetch", async () => new Response(new Uint8Array(0)));
+    await realtime(cache, "carjaune");
+    t += 2 * MIN;
+    vi.stubGlobal("fetch", async () => new Response("down", { status: 503 }));
+    expect((await realtime(cache, "carjaune"))?.stale).toBe(true);
+    // Its next try hangs: the page does not wait for it.
+    vi.stubGlobal("fetch", (_url: unknown, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
+      hung = resolve;
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+    }));
+    t += 6 * MIN;
+    const kept: Promise<unknown>[] = [];
+    const { value } = await counted(PAGE_BUDGET, () => realtime(cache, "carjaune"), (w) => kept.push(w));
+    expect(value?.fetchedAt.getTime()).toBe(T0);
+    expect(value?.stale).toBe(true);
+    expect(kept.length).toBe(1);
+    expect(hung).toBeDefined();
+    hung!(new Response(new Uint8Array(0)));
+    await Promise.all(kept);
+    expect((await realtime(cache, "carjaune"))?.fetchedAt.getTime()).toBe(t);
+  });
+
+  it("is still waited for by the scheduled event", async () => {
+    let t = T0;
+    const cache = new Cache(new MemoryStore(), () => t);
+    vi.stubGlobal("fetch", async () => new Response(new Uint8Array(0)));
+    await realtime(cache, "carsud");
+    t += 2 * MIN;
+    vi.stubGlobal("fetch", async () => new Response("down", { status: 503 }));
+    await realtime(cache, "carsud");
+    t += 6 * MIN;
+    vi.stubGlobal("fetch", async () => new Response(new Uint8Array(0)));
+    const { value } = await counted(SCHEDULED_BUDGET, async () => {
+      scheduled();
+      return realtime(cache, "carsud");
+    });
+    expect(value?.fetchedAt.getTime()).toBe(t);
+    expect(value?.stale).toBe(false);
   });
 });

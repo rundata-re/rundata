@@ -41,11 +41,21 @@ function zonesHtml(zones: typeof ZONES, now: Date, g: Porte): string {
   return `<p>${say(T.intro)}</p><ul>${zones.map((z) => zoneLi(z, now, g)).join("")}</ul>${bsan(zones, now)}<p>${say(T.ouverture)}</p><p>${STORIES_HTML}</p>`;
 }
 
+/**
+ * The rule in one sentence on a place's page (/meteo/<lieu>), worded by marketing (20/11): the coastal places carried the
+ * order's 60 words each; /mer carries it in full. Only while the order is in force: after, the place says ruleText's own.
+ */
+const RULE_SHORT = "Baignade, surf, bodyboard et paddle sont interdits dans la bande des 300 m de tout le littoral, sauf dans le lagon, " +
+  `les espaces aménagés et surveillés, et les ZONEX ouvertes et surveillées (arrêté préfectoral n° ${ARRETE.numero}, jusqu'au ` +
+  `${ARRETE.au.split("-").reverse().join("/")}). Ces zones réduisent le risque requin, elles ne le suppriment pas.`;
+const RULE_SHORT_LINK = '<a href="/mer">Les règles et les zones surveillées, sur la page mer →</a>';
+
 /** The block of a page: near a place (its zones, or none), or for the whole island (every zone). */
 export function bathingBlock(now: Date, near?: { nom: string; lon: number; lat: number; commune?: string }, g: Porte = porte()): string {
   const zones = near ? zonesNear(near.lon, near.lat, near.commune) : ZONES;
+  const rule = near && inForce(now) ? `${say(RULE_SHORT)} ${RULE_SHORT_LINK}` : say(ruleText(now));
   return `<section aria-labelledby="h-requin"><h2 id="h-requin">${esc(T.h2)}</h2><div class="card">` +
-    `<p>${say(ruleText(now))}</p>` +
+    `<p>${rule}</p>` +
     (zones.length ? zonesHtml(zones, now, g) : `<p>${say(noneLine(near!.nom, now))}</p>`) +
     `<p>${say(T.drapeaux)}</p>` +
     `<p class="note">${SOURCE_HTML}. ${LINK}</p></div></section>`;

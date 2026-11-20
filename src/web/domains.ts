@@ -231,7 +231,15 @@ export function couvertureCourte(couverture: string): string {
   return `${esc(before)}<a href="#communes-lues">${read.length} communes</a>${esc(after)}`;
 }
 
-export const afterCutNote = `<p class="note">${esc(AFTER_CUT)} Source\u00a0: <a href="${esc(ARS_COUPURE)}" rel="noopener">le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion</a>. La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
+/** The ARS's advice after a cut, in full: on /coupures-eau always (the target of afterCutShort's link), on a commune's page
+ * while a notice is in progress there. */
+export const afterCutNote = `<p class="note" id="ars-coupure">${esc(AFTER_CUT)} Source\u00a0: <a href="${esc(ARS_COUPURE)}" rel="noopener">le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion</a>. La conformité de l'eau du robinet, d'après les analyses de l'ARS : voir <a href="/eau">la qualité de l'eau</a>.</p>`;
+
+/**
+ * A commune's page with no notice in progress: the ARS's advice in one sentence, and the full advice and the cyclone
+ * one (ORSEC) on the island's page. Worded by marketing (20/11): 24 pages carried the same 183 words.
+ */
+export const afterCutShort = `<p class="note">Après une coupure, l'eau qui revient au robinet peut être impropre à la consommation pendant plusieurs heures, d'après l'ARS La Réunion\u00a0: ne la buvez pas et ne cuisinez pas avec. Quand un avis dit de ne pas boire l'eau, suivez ses consignes. <a href="/coupures-eau#ars-coupure">Les consignes de l'ARS, et celles d'après un cyclone →</a></p>`;
 
 /**
  * The connector on the water's pages (/coupures-eau, /coupures-eau/x, /eau): a question to ask, without the tool's name

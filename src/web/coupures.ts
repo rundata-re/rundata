@@ -13,7 +13,7 @@ import { faqPage, type Faq } from "./texte-stable.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, DernierAvis, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
-import { afterCutNote, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
+import { afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
 import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
@@ -270,13 +270,16 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
 </div>`;
 
   // Up the page in the cyclone season, at its foot the rest of the year.
-  const cyclone = cycloneWater(now, p.nom);
+  // With no notice in progress in the commune, the ARS's advice in one sentence and no cyclone section: both are in full on
+  // /coupures-eau, where the sentence links. While a notice is in progress, or the notices are loading, both stay here.
+  const calm = !!d && !x.avis.length;
+  const cyclone = calm ? { html: "", lead: false } : cycloneWater(now, p.nom);
   const body = `${tap}
 <section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
   ${list}
   ${derniersAvis(p.nom, w, x.avis)}
-  ${d ? afterCutNote : ""}
+  ${d ? (calm ? afterCutShort : afterCutNote) : ""}
 </section>
 ${cyclone.lead ? cyclone.html : ""}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>

@@ -8,19 +8,23 @@ import * as ecoles from "../src/vie/ecoles.js";
 const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-11-20T06:00:00Z");
 const live = { place: null, commune: { value: { sources: [] }, fetchedAt: NOW, stale: false } as unknown as Cached<CommuneData> };
-/** A paragraph's text as written: the page escapes it and adds no tag inside, so only the entities are decoded. */
-const plain = (html: string) => html.replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+/**
+ * A paragraph's text as written: the page escapes it and adds no tag inside but the spelled-out acronyms
+ * (`<abbr title="Agence régionale de santé">ARS</abbr>`), so those keep their word and the entities are decoded.
+ */
+const ABBR = /<abbr title="[^"<>]*">([^<]*)<\/abbr>/g;
+const plain = (html: string) => html.replace(ABBR, "$1").replace(/&#39;/g, "'").replace(/&amp;/g, "&");
 /** What the band holds between the page's title and its hook (the hook included). */
 const under = (page: string) => page.match(/<\/h1>(.*?<p class="hook">[^<]*<\/p>)/s)![1];
 
 describe("a commune's own text", () => {
-  it("opens the five pages that have one, under the title and above the hook, word for word", () => {
-    expect(Object.keys(TEXTES).sort()).toEqual(["entre-deux", "la-possession", "le-tampon", "les-avirons", "saint-andre", "saint-denis", "saint-leu", "saint-louis", "saint-paul", "saint-pierre", "sainte-marie"]);
+  it("opens each of the 24 pages, under the title and above the hook, word for word", () => {
+    expect(Object.keys(TEXTES).sort()).toEqual(COMMUNES.map((c) => c.slug).sort());
     for (const [slug, [qui, page]] of Object.entries(TEXTES)) {
       const c = COMMUNES.find((x) => x.slug === slug)!;
       const band = under(communePage(ORIGIN, c, live, NOW));
       const [p1, p2, hook] = [...band.matchAll(/<p class="(lead|hook)">(.*?)<\/p>/gs)].map((m) => [m[1], plain(m[2])]);
-      expect(band.match(/<p class="lead">[^<]*<\/p>/g)).toHaveLength(2);
+      expect([slug, band.replace(ABBR, "$1").match(/<p class="lead">[^<]*<\/p>/g)?.length]).toEqual([slug, 2]);
       expect(p1).toEqual(["lead", qui]);
       expect(p2).toEqual(["lead", page]);
       // The hook, « La fiche de … : la mairie, les écoles… », comes after the text.
@@ -29,12 +33,6 @@ describe("a commune's own text", () => {
       // Fixed words: no figure of the moment, the same page after page.
       expect(band).not.toMatch(/°C|mesurés <b>/);
     }
-  });
-
-  it("leaves the 13 other pages as they were: their hook right under the title", () => {
-    const others = COMMUNES.filter((c) => !TEXTES[c.slug]);
-    expect(others).toHaveLength(13);
-    for (const c of others) expect(under(communePage(ORIGIN, c, live, NOW))).toMatch(/^\n    <p class="hook">La fiche [^<]*<\/p>$/);
   });
 
   /**

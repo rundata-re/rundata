@@ -169,6 +169,8 @@ export const CAPTEURS_EXPLICATION =
   "Mesures de capteurs installés par des particuliers et partagés sur Sensor.Community ou sensors.social, ni étalonnés ni contrôlés par Atmo Réunion : " +
   "leur valeur peut s'écarter de la réalité, et leur position est arrondie à la commune. La qualité de l'air officielle est l'indice d'Atmo Réunion, juste au-dessus.";
 export const CAPTEURS_AUCUN = "Aucun capteur partagé sur Sensor.Community ou sensors.social n'a émis à La Réunion dans les 2 dernières heures.";
+/** For a place: no sensor of its commune measured, those of the rest of the island left to /air (audit of 20/11/2026: Saint-Denis was given Saint-Pierre's alone). */
+export const capteursAucunLieu = (commune: string) => `Aucun capteur partagé sur Sensor.Community ou sensors.social n'a émis ${a(commune)} dans les 2 dernières heures. Ceux du reste de l'île sont sur https://rundata.re/air.`;
 /** Sensor.Community not read since `since` and nothing read before it: said, never as no sensor. */
 export const capteursEchec = (since: string, now: Date) => `Lecture des capteurs amateurs impossible depuis ${measuredAt(since, now).replace(/^à /, "")}.`;
 /** One network not read since `since` while the other was: said, never as no sensor on it. */
@@ -205,7 +207,10 @@ export function measuredAt(iso: string, now: Date): string {
  * raw particles, their network and when they measured, never an identifier nor a place; a measure of sensors.social with
  * its credit. Undefined where they are not stored (a local server, the tests) or not read.
  */
-async function amateurs(cache: Cache, now: Date, page = false) {
+/**
+ * `commune`: a place's, whose sensors alone are given, or the sentence that says it has none (`capteursAucunLieu`).
+ */
+async function amateurs(cache: Cache, now: Date, page = false, commune?: string) {
   let copy;
   try {
     copy = await capteurs.capteurs(now);
@@ -224,7 +229,9 @@ async function amateurs(cache: Cache, now: Date, page = false) {
       reseaux: RESEAUX,
     };
   }
-  const list = v.capteurs;
+  const all = v.capteurs;
+  const list = commune ? all.filter((c) => normalize(c.commune) === normalize(commune)) : all;
+  const elsewhere = !!commune && !list.length && all.length > 0;
   const echecs = Object.entries(v.echecs ?? {}).map(([r, since]) => reseauEchec(r as capteurs.Reseau, since, now));
   // A network not read is not one without sensors: « none » only when both were read.
   const none = !list.length && !copy.stale && !echecs.length;
@@ -246,7 +253,7 @@ async function amateurs(cache: Cache, now: Date, page = false) {
             ...(c.reseau === capteurs.SS && { attribution: capteurs.SOCIAL_CREDIT }),
           })),
         }
-      : none ? { aucun: CAPTEURS_AUCUN } : {}),
+      : elsewhere ? { aucun: capteursAucunLieu(commune!) } : none ? { aucun: CAPTEURS_AUCUN } : {}),
     position: "arrondie à la commune",
     lu_par_rundata: localTime(copy.fetchedAt),
     reseaux: RESEAUX,
@@ -322,7 +329,7 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
   const now_ = mine.find((x) => x.jour === day);
   const next = mine.find((x) => x.jour > day);
   const mesures = await stations(cache, now, res.lieu);
-  const amateur = await amateurs(cache, now);
+  const amateur = await amateurs(cache, now, false, res.lieu.commune || undefined);
   const parts = [now_ && sentence(now_, `Qualité de l'air prévue aujourd'hui ${a(res.lieu.commune)}`), next && sentence(next, "demain")].filter(Boolean);
   return text({
     lieu: placeBlock(lieu, res),

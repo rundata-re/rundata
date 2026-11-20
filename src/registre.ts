@@ -114,6 +114,7 @@ const SHARED_FROM: Record<string, string[]> = {
   "mer:passages": ["src/providers/viirs.ts"],
   "web:mer": ["src/tools/mer.ts"],
   "web:calendrier": ["src/tools/calendrier.ts"],
+  "web:sport": ["src/tools/sport.ts", "src/providers/sport.ts"],
   seismes: ["src/providers/seismes.ts"],
   "onf:sentiers": ["src/providers/sentiers.ts"],
   "web:volcan": ["src/tools/volcan.ts", "src/providers/ovpf-pdf.ts"],
@@ -134,7 +135,8 @@ const SHARED_D1: Record<string, Pick<Run, "d1Calls" | "d1RowsRead">> = {
 
 // Copies the scheduled event collects and a build reads from KV (src/worker.ts `configure`): the measures at Atmo
 // Réunion's stations and the sensors of private people.
-const SHARED_KV: Record<string, number> = { "web:air": 2, "web:electricite": 1 };
+// And the FFCK's calendar, which the scheduled event keeps (providers/ffck.ts), in /sport's copy.
+const SHARED_KV: Record<string, number> = { "web:air": 2, "web:electricite": 1, "web:sport": 1 };
 // Writes of KV besides the copy's own: rundata.re's archive of EDF's production (providers/edf.ts `archiver`), once
 // an hour, by the build that has the day's copy, with what the pass has left (its subrequests outside the cold cost).
 const SHARED_KV_WRITES: Record<string, number> = { "web:electricite": 1 };
@@ -1177,7 +1179,7 @@ export function budget(entries = REGISTRY): string {
     `## Limites\n\n` +
     `- ${n(SUBREQUEST_LIMIT)} sous-requêtes par invocation, et ${n(SERVICE_OPS_LIMIT)} appels à KV, D1 et aux autres services liés, ensemble.\n` +
     `- ${IN_FLIGHT} lectures en vol à la fois par invocation (src/http.ts), sur les 6 connexions que la plateforme ouvre ensemble.\n` +
-    `- Tâche planifiée : toutes les ${EVENT_MINUTES} minutes, ${n(SCHEDULED_BUDGET)} sous-requêtes, ${n(SCHEDULED_CPU_MS)} ms de CPU.\n` +
+    `- Tâche planifiée : toutes les ${EVENT_MINUTES} minutes, ${n(SCHEDULED_BUDGET)} sous-requêtes, ${n(SCHEDULED_CPU_MS)} ms de CPU. Cette limite est la nôtre, bien sous celle de la plateforme : 550 depuis le 05/11/2026, 600 depuis le 20/11/2026, quand la copie de /sport est devenue partagée (42 à froid). Sans cela, après toutes les copies refaites à froid, il ne restait que 78 sous-requêtes aux agendas planifiés, pour plus de 100 gardées par le test (test/partagees.test.ts).\n` +
     `- Mémoire : ${n(ISOLATE_MEMORY_MB)} Mo par isolat, pour toutes les invocations qu'il sert ensemble.\n` +
     `- Une visite ou une question : ${n(PAGE_BUDGET)} sous-requêtes. Une construction de copie : ${n(BUILD_BUDGET)}.\n\n` +
     `## Totaux\n\n` +

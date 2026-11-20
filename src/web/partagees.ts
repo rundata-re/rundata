@@ -15,7 +15,7 @@ import * as seismes from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as mf from "../providers/vigilance.js";
 import { why } from "../types.js";
-import { buildActualites, buildAir, buildCalendrier, buildCoupures, buildCourant, buildCrues, buildElectricite, buildSea, buildTrafic, buildVolcan, type CruesAnswer, FRESH_SECONDS, type VolcanAnswer } from "./data.js";
+import { buildActualites, buildAir, buildCalendrier, buildCoupures, buildCourant, buildCrues, buildElectricite, buildSea, buildSport, buildTrafic, buildVolcan, type CruesAnswer, FRESH_SECONDS, type VolcanAnswer } from "./data.js";
 import { airEvery } from "../tools/air.js";
 import { floodRaised } from "./domains.js";
 import { alerteVolcan } from "./volcan-alerte.js";
@@ -63,7 +63,7 @@ export interface Shared {
   alongside?: boolean;
 }
 
-// About 1 180 KV writes a day in all: 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 48 a day for each of the five every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
+// About 1 230 KV writes a day in all: 48 for /sport, every 30 minutes, 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 48 a day for each of the five every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
 // of /chiffres (4 more for their events, 24 while an agenda does not answer), 12 for the power
 // cuts the mairies relay (48 while the site of one of them does not answer), 8 for the sea, 8 for the satellites' grids (48 while ACSPO lacks a day it should have), 4 for the calendar; the volcano's, every 5 minutes during an alert, adds up to 240 more while it lasts (the banner
 // of every page reads it). The events stay out: their build takes most of an invocation (they will come in a bundle).
@@ -131,6 +131,14 @@ export const SHARED: Shared[] = [
   // Its cold cost: 13, and 2 for the corals' grid a view of /mer kept (web/data.ts `corauxGardes`: the data center's
   // cache, then KV), 15 in the test.
   { key: "web:mer", build: buildSea, every: 3 * 60, cold: 15, cpu: 110, offset: 75 },
+  // /sport, every 30 minutes: its view rebuilt it from some 40 sources (the leagues' sites, the Grand Raid, the live
+  // scores) whenever its copy was older than FRESH_SECONDS in that data center, and a robot waited for it, 2.7 s in the
+  // middle over 7 days and up to 12 s (Loki, 20/11/2026); kept here, a reader gets it at once (web/site.ts `readerOf`).
+  // The fixtures and standings change by the hour. Its cold cost: 30 in the test with every source answering (26 with
+  // none), 42 at most in the Worker's logs, which see the agendas' copies and the FFCK's state in KV. Its CPU: the
+  // tool's, measured (src/registre.ts). Beside the others (`alongside`): the FFHB's pages are slow some days. At minutes
+  // 5 and 35, where the busiest event at the usual rates stays lowest (118 subrequests, BUDGET.md).
+  { key: "web:sport", build: buildSport, every: 30, cold: 42, cpu: 160, offset: 5, alongside: true },
   { key: "web:calendrier", build: buildCalendrier, every: 6 * 60, cold: 8, cpu: 40, offset: 130 },
   // The earthquakes and the ONF's map, which /volcan's copy embeds: built in the data center of the event, it read that
   // data center's own copies, which no view had brought up to date (26 October 2026: 8 earthquakes in 7 days and the

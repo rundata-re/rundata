@@ -10,7 +10,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 - 10 000 sous-requêtes par invocation, et 1 000 appels à KV, D1 et aux autres services liés, ensemble.
 - 5 lectures en vol à la fois par invocation (src/http.ts), sur les 6 connexions que la plateforme ouvre ensemble.
-- Tâche planifiée : toutes les 5 minutes, 550 sous-requêtes, 30 000 ms de CPU.
+- Tâche planifiée : toutes les 5 minutes, 600 sous-requêtes, 30 000 ms de CPU. Cette limite est la nôtre, bien sous celle de la plateforme : 550 depuis le 05/11/2026, 600 depuis le 20/11/2026, quand la copie de /sport est devenue partagée (42 à froid). Sans cela, après toutes les copies refaites à froid, il ne restait que 78 sous-requêtes aux agendas planifiés, pour plus de 100 gardées par le test (test/partagees.test.ts).
 - Mémoire : 128 Mo par isolat, pour toutes les invocations qu'il sert ensemble.
 - Une visite ou une question : 200 sous-requêtes. Une construction de copie : 100.
 
@@ -18,8 +18,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 409 | 550 |
-| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 542 | 8 500 |
+| pire passage planifié, sous-requêtes | 452 | 600 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 585 | 8 500 |
 | queue « carte du CMRS », sous-requêtes | 19 | 100 |
 | queue « trace du CMRS », sous-requêtes | 8 | 100 |
 | queue « sites sans réponse », sous-requêtes | 22 | 100 |
@@ -36,10 +36,10 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | queue « connecteurs », sous-requêtes | 22 | 100 |
 | queue « veille », sous-requêtes | 2 | 100 |
 | queue « espace club », sous-requêtes | 4 | 100 |
-| pire passage planifié, appels KV et D1 | 123 | 1 000 |
-| pire passage planifié, CPU (ms) | 5 031 | 30 000 |
+| pire passage planifié, appels KV et D1 | 125 | 1 000 |
+| pire passage planifié, CPU (ms) | 5 191 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
-| passage le plus chargé (cadences les plus courtes), sous-requêtes | 172 | 550 |
+| passage le plus chargé (cadences les plus courtes), sous-requêtes | 191 | 600 |
 | vue la plus chère, sous-requêtes | 93 | 200 |
 | question la plus chère, sous-requêtes | 79 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
@@ -47,20 +47,20 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:heures, sous-requêtes | 2 | 100 |
 | tâche planifiée à part meteor:jours, sous-requêtes | 2 | 100 |
 
-- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 550.
-- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 550. Le pire passage, queues comprises (542), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
+- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 600.
+- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 600. Le pire passage, queues comprises (585), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 00:55 UTC, 104 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:coupures, mer:satellites, metar, seismes, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
-- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 03:20 UTC, 172 sous-requêtes (arome:veille, arome:grilles, partagees:liste, vigilance, actualites:fil, web:crues, web:electricite, mer:passages, web:volcan, web:courant, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 361 sous-requêtes à 06:00 UTC.
+- Passage le plus chargé selon les décalages, cadences habituelles : 00:05 UTC, 118 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:trafic, web:sport, metar, seismes, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
+- Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 191 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 404 sous-requêtes à 06:00 UTC.
 - Vue la plus chère : /communes/*, 93. Question la plus chère : resume_du_jour, 79. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 542 | 38 | 61 | 24 | 1 164 | 284 | 5 031 |
-| tâche planifiée, par jour | 36 991 | 5 043 | 4 539 | 2 407 | 102 914 | 58 511 | 286 816 |
-| tâche planifiée, par jour, cadences les plus courtes | 56 123 | 6 675 | 6 843 | 2 887 | 107 954 | 58 511 | 435 096 |
-| tâche planifiée, par mois (30 jours) | 1 109 717 | 151 290 | 136 170 | 72 223 | 3 087 411 | 1 755 321 | 8 604 467 |
+| pire passage planifié | 585 | 39 | 62 | 24 | 1 164 | 284 | 5 191 |
+| tâche planifiée, par jour | 39 055 | 5 091 | 4 587 | 2 407 | 102 914 | 58 511 | 294 496 |
+| tâche planifiée, par jour, cadences les plus courtes | 58 187 | 6 723 | 6 891 | 2 887 | 107 954 | 58 511 | 442 776 |
+| tâche planifiée, par mois (30 jours) | 1 171 637 | 152 730 | 137 610 | 72 223 | 3 087 411 | 1 755 321 | 8 834 867 |
 | tâches planifiées à part, par jour | 5 810 | 169 | 169 |  |  |  | 2 933 |
 | tâches planifiées à part, par mois (30 jours) | 174 300 | 5 070 | 5 070 |  |  |  | 87 990 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -86,6 +86,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | mer:satellites | copie partagée (KV) | 180 min (10 au plus court) | 00:55 | 8 |  | 1 |  |  |  | 400 | estimé |
 | mer:passages | copie partagée (KV) | 60 min (10 au plus court) | 00:00 | 4 |  | 1 |  |  |  | 400 | mesuré |
 | web:mer | copie partagée (KV) | 180 min | 01:15 | 16 |  | 1 |  |  |  | 110 | mesuré |
+| web:sport | copie partagée (KV) | 30 min | 00:05 | 43 | 1 | 1 |  |  |  | 160 | mesuré |
 | web:calendrier | copie partagée (KV) | 360 min | 02:10 | 9 |  | 1 |  |  |  | 40 | estimé |
 | metar | copie partagée (KV) | 10 min | 00:05 | 2 |  | 1 |  |  |  | 5 | estimé |
 | seismes | copie partagée (KV) | 10 min | 00:05 | 3 |  | 1 |  |  |  | 10 | estimé |
@@ -173,9 +174,9 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 90 | 14 | 4 | 2 | 840 |  | 110 | mesuré |
+| / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 90 | 15 | 4 | 2 | 840 |  | 110 | mesuré |
 | /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 93 | 13 | 4 | 1 | 150 |  | 160 | mesuré |
-| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 79 | 16 | 5 | 1 | 150 |  | 130 | mesuré |
+| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 79 | 17 | 5 | 1 | 150 |  | 130 | mesuré |
 | /meteo/* | la météo d'un lieu | à chaque vue |  | 65 | 6 | 4 | 1 | 150 |  | 135 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 20 | code |
@@ -227,7 +228,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | /secheresse | la page /secheresse | à chaque vue |  | 12 |  |  |  |  |  | 70 | mesuré |
 | /coupures-eau | la page /coupures-eau | à chaque vue |  | 27 | 2 | 1 |  |  |  | 100 | estimé |
 | /defibrillateurs | la page /defibrillateurs ; « Autour de moi » charge au clic la liste compacte (public/dae/), servie par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1 | à chaque vue |  | 6 |  |  |  |  |  | 40 | mesuré |
-| /sport | la page /sport | à chaque vue |  | 42 |  |  |  |  |  | 120 | mesuré |
+| /sport | la page /sport | à chaque vue |  | 42 | 1 |  |  |  |  | 120 | mesuré |
 | /decheteries | la page /decheteries | à chaque vue |  | 12 |  |  |  |  |  | 30 | mesuré |
 | /cyclones | la page /cyclones | à chaque vue |  | 32 | 2 | 2 |  |  |  | 50 | mesuré |
 | /crues | la page /crues | à chaque vue |  | 36 | 4 | 3 |  |  |  | 120 | estimé |
@@ -294,6 +295,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | mer:satellites | providers/acspo, providers/modis |
 | mer:passages | providers/viirs |
 | web:mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv, providers/viirs |
+| web:sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | web:calendrier | providers/calendrier |
 | metar | providers/metar |
 | seismes | providers/seismes |

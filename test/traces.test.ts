@@ -130,6 +130,8 @@ describe("traces GPS", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("application/gpx+xml; charset=utf-8");
     expect(res.headers.get("content-disposition")).toBe('attachment; filename="le-bloc-piton-des-neiges.gpx"');
+    // A file to download, never a page in the search engines' index (Search Console, 20/11/2026).
+    expect(res.headers.get("x-robots-tag")).toBe("noindex");
     const g = await res.text();
     expect(g.match(/<trkpt /g)).toHaveLength(61);
     expect(g).toContain(`<trkpt lat="-21.123471" lon="55.483276"><ele>1371.5</ele></trkpt>`);
@@ -143,6 +145,7 @@ describe("traces GPS", () => {
 
   it("serves a hike's GPX from the bundle, with OpenStreetMap's licence and the trails' state", async () => {
     const res = await handle(new Request("https://rundata.re/randonnees/sentier-du-piton-des-neiges.gpx"), cache());
+    expect(res.headers.get("x-robots-tag")).toBe("noindex");
     const g = await res.text();
     expect(g).toContain("<name>Sentier du Piton des Neiges</name>");
     expect(g).toContain("<license>https://opendatacommons.org/licenses/odbl/1-0/</license>");

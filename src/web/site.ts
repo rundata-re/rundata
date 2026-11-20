@@ -173,10 +173,12 @@ const HTML = {
   "referrer-policy": "strict-origin-when-cross-origin",
 };
 const STATIC = "public, max-age=604800";
-// A trace downloads as a file; the ONF's state in it is an hour old at most.
 // A feed reader comes back every few minutes at most; the copies behind it change every few minutes too.
 const RSS = { "content-type": "application/rss+xml; charset=utf-8", "cache-control": "public, max-age=300", "access-control-allow-origin": "*", "x-content-type-options": "nosniff" };
-const GPX = { "content-type": "application/gpx+xml; charset=utf-8", "cache-control": "public, max-age=3600", "access-control-allow-origin": "*", "x-content-type-options": "nosniff" };
+// A trace downloads as a file; the ONF's state in it is an hour old at most. Never indexed: Googlebot read the traces
+// as pages, 11 % of what it read of rundata.re, and counted them among those « explorées, non indexées » (Search
+// Console, 20/11/2026); the trail's page, which links to its trace, is the one to find.
+const GPX = { "content-type": "application/gpx+xml; charset=utf-8", "cache-control": "public, max-age=3600", "access-control-allow-origin": "*", "x-content-type-options": "nosniff", "x-robots-tag": "noindex" };
 
 /**
  * The search engines skip the addresses with `?maj=` (pages/ask): copies of a page made for the assistants, which

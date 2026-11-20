@@ -162,17 +162,21 @@ export function parseNotice(text: string): Pick<Avis, "debut" | "fin"> {
 const LIST_START = /secteurs? suivants?\s*:[ \t]*\n/i;
 // The lines that close a list of streets: none of them is a street. « Les abonnés doivent prendre la précaution de ne pas
 // consommer l'eau du robinet… » follows the list of a notice on the quality of the water (Dionéo and runéo, 03 and 04/11/2026).
-// « La régie La Créole remercie ses usagers… » follows La Créole's (04/11/2026).
-const CLOSING = /^(?:et toutes les voies|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) |communiqu[ée] |la régie )/i;
+// « La régie La Créole remercie ses usagers… » follows La Créole's (04/11/2026). The CIREST's notices on the quality of the
+// water end theirs with « Et les voies adjacentes » (Saint-Benoît, 19/11/2026) or go straight on to « Il est recommandé aux
+// abonnés des secteurs concernés… » (Sainte-Rose and Salazie, 18 and 20/11/2026).
+const CLOSING = /^(?:et (?:toutes )?les (?:voies|rues)|il est (?:recommandé|conseillé|demandé)|la remise en|le rétablissement|des perturbations|CISE|recommandations|les (?:abonnés|clients|usagers) |communiqu[ée] |la régie )/i;
 // The same sentences run on after the last street, on its line (« CHEMIN DAMBREVILLE Des perturbations dans… », runéo's
 // leaks, 04/11/2026): the street is what comes before.
 const RUN_ON = /\s(?:des perturbations|la remise en (?:eau|service)|le rétablissement)\b/i;
+const ADJACENT = /^et (?:toutes )?les (?:voies|rues) adjacentes/i;
 // Longer, a line is a sentence or a street with its limits (« RD13, Quartier Bras Mouton et rues adjacentes jusque … »).
 const STREET_MAX = 60;
 
 /**
  * The streets after « secteurs suivants : », one per line, and whether the list was read whole. Worded with marketing:
- * whole only when the list ends at a known closing line (« Et toutes les voies adjacentes », « La remise en eau … »),
+ * whole only when the list ends at a known closing line (« Et toutes les voies adjacentes », « La remise en eau … »,
+ * « Il est recommandé … »),
  * or at a blank line in a feed (`blankEnds`; WordPress posts put a blank line between the streets), and no line of it
  * was left out. A list that runs to the end of the text (the source cut short) or to a long line, or that another list
  * follows (« également sur le secteur suivant : »), is not whole: nothing of it is said, the notice is.
@@ -193,6 +197,9 @@ export function sectorList(text: string, blankEnds: boolean, max = STREET_MAX): 
       return !LIST_START.test(rest.slice(i + 1).join("\n")) ? { secteurs: out, secteurs_complets: true } : none;
     }
     if ((!l && blankEnds && out.length) || (l && CLOSING.test(l))) {
+      // « Et (toutes) les voies adjacentes » closes the list and is part of it: said last, as written, from a small letter.
+      const near = ADJACENT.exec(l)?.[0];
+      if (near && out.length) out.push(near.charAt(0).toLowerCase() + near.slice(1));
       return out.length && !LIST_START.test(rest.slice(i).join("\n")) ? { secteurs: out, secteurs_complets: true } : none;
     }
     if (l.length > max) return none;
@@ -201,6 +208,13 @@ export function sectorList(text: string, blankEnds: boolean, max = STREET_MAX): 
   }
   return none;
 }
+
+/**
+ * The list said in a sentence, the same on /coupures-eau, in the feed and in coupures_eau: « Chemin Pinguet et les voies
+ * adjacentes », the notice's own closing words joined without a comma (marketing, 20/11/2026).
+ */
+export const sectorsSaid = (secteurs: string[]) =>
+  secteurs.map((s, i) => (i === 0 ? s : /^et /.test(s) ? ` ${s}` : `, ${s}`)).join("");
 
 // The private character that marks, before the text is put on one line, the colon that opens a list.
 const MARK = "\uE000";

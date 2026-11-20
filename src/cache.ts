@@ -249,10 +249,13 @@ export class Cache {
     return this.now();
   }
 
-  /** `backoffSeconds`: how long a failure is remembered (in this process) before the source is asked again. */
-  async get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS): Promise<Cached<T>> {
+  /**
+   * `backoffSeconds`: how long a failure is remembered (in this process) before the source is asked again. `behindSilent`:
+   * once the source is found silent, its next try goes on after the answer, the last copy served (`serve`).
+   */
+  async get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS, behindSilent = false): Promise<Cached<T>> {
     const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
-    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e), backoffSeconds));
+    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e), backoffSeconds, behindSilent));
   }
 
   /**
@@ -434,6 +437,7 @@ export class Cache {
     load: () => Promise<T>,
     put: (e: CacheEntry) => Promise<void>,
     backoffSeconds = FAILURE_BACKOFF_SECONDS,
+    behindSilent = false,
   ): Promise<Cached<T>> {
     // A copy the code can no longer read is not one: built as if there were none, and nothing to serve if that fails.
     if (unreadable(key, hit, this.version)) hit = undefined;
@@ -453,6 +457,13 @@ export class Cache {
     if (!pending) {
       pending = this.refresh(key, hit, freshSeconds, load, put);
       if (this.dedupe) this.inflight.set(key, pending);
+    }
+    // A source found silent at its last try, past its breaker (`behindSilent`): the next try goes on after the answer, the
+    // last copy served with its time. The scheduled event still waits for it.
+    const silent = hit?.echec ?? failed;
+    if (behindSilent && hit && silent && !isScheduled()) {
+      later(pending.catch(() => undefined));
+      return copyOf<T>(hit, hit.echec?.source ?? (failed?.error instanceof UpstreamError ? failed.error.source : hit.from));
     }
     // A tool call past its time (lectures.ts) does not wait for a source it has a copy of: the copy is its answer, said
     // as such, and the read ends after it, its result stored for the next question.

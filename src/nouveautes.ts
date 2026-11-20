@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T11:31:00+04:00", texte: "Événements\u00a0: chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune." },
   { date: "2026-11-20T11:08:00+04:00", texte: "Élections\u00a0: chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur." },
   { date: "2026-11-20T10:53:00+04:00", texte: "Communes\u00a0: les pages de Saint-Denis, Saint-Paul, Saint-Pierre, du Tampon et des Avirons présentent la commune en quelques lignes." },
   { date: "2026-11-20T10:30:00+04:00", texte: "Terrain\u00a0: tapez une adresse et voyez la parcelle, la zone du PLU, les risques et les prix des ventes voisines, avec leurs sources." },

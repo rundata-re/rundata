@@ -37,6 +37,15 @@ describe("actualités", () => {
     expect(sujetsOf("Volcan : vigilance, et fortes pluies attendues sur l'Enclos")).toEqual(["meteo", "volcan"]);
   });
 
+  it("says « mobilisation » for a strike or a blockade, not for money or firms set to work", () => {
+    // Freedom and Imaz Press, 20/11/2026: tagged « mobilisation », the home's tile said « mobilisation en cours » above them.
+    const anru = "Saint-André : « 84% des financements ANRU engagé; Notre commune accélère sa transformation » C’est un communiqué de la ville de Saint-André : « […] Saint-André poursuit sa transformation urbaine avec des réalisations concrètes, une mobilisation financière remarquable et une…";
+    const psad = "Décrochage scolaire : la Région Réunion et les PSAD mobilisent les entreprises pour bâtir des passerelles vers l’emploi";
+    for (const t of [anru, psad, "Saint-André mobilise 84% des financements de l'Agence nationale pour sa rénovation urbaine"]) expect(sujetsOf(t), t).not.toContain("mobilisation");
+    // Parallèle Sud and Imaz Press, October 2026 (test/fixtures/actualites): a figure a word later keeps it.
+    for (const t of ["La FSU appelle à une nouvelle journée de mobilisation le 5 novembre", "Mobilisation du 24 octobre : ce qui est prévu"]) expect(sujetsOf(t), t).toContain("mobilisation");
+  });
+
   let down: RegExp | undefined;
   let asked: string[];
   beforeEach(() => {

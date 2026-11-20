@@ -321,7 +321,7 @@ export function doubtful(releases: Info[]): Info[] {
 }
 
 /** What words say of the Enclos: reopened in part, reopened, closed; undefined when they say none of it. */
-function enclosIn(t: string): Phase["enclos"] {
+export function enclosIn(t: string): Phase["enclos"] {
   return /r[ée]?ouverture partielle|partiellement/i.test(t) ? "partiel" : /r[ée]?ouvert/i.test(t) ? "ouvert" : /fermeture|ferm[ée]/i.test(t) ? "ferme" : undefined;
 }
 

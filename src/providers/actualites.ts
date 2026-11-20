@@ -291,10 +291,14 @@ const WEATHER_WORD = new RegExp(`\\b(?:${WEATHER})\\b`);
 // (« Mobilisation du 24 octobre : ce qui est prévu »), so the word is not asked to come with a union or a strike.
 const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entreprises?|moyens|fonds|credits?|euros?|millions?|milliards?|ressources|budget\w*)\b)(?! \d)`;
 
+// An accident of the road, not « un accident vasculaire cérébral » nor a day « sans accident » at work (Freedom, 29/10/2026:
+// two articles on health and safety at work under « routes et circulation »). On normalised text.
+export const ACCIDENT = String.raw`(?<!sans )accidents?(?! (?:vasculaires?|cardiaques?|domestiques?|du travail|de travail)\b)`;
+
 /** The subjects, for the questions people ask on a day like this. */
 export const SUJETS: { id: string; nom: string; re: RegExp }[] = [
-  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:barrages?|blocages?|bloqu\w*|manifest\w*|${MOBILISATION}|gilets? jaunes?|rassemblement\w*|greve\w*|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b`) },
-  { id: "route", nom: "routes et circulation", re: /\b(?:routes?|circulation|trafic|bouchons?|embouteillage\w*|accidents?|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation|chaussee|inforoutes?)\b/ },
+  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:barrages?|blocages?|bloqu\w*|manifest\w*|${MOBILISATION}|gilets? jaunes?|rassemblement\w*|greve\w*|grevistes?|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b`) },
+  { id: "route", nom: "routes et circulation", re: new RegExp(String.raw`\b(?:routes?|circulation|trafic|bouchons?|embouteillage\w*|${ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation|chaussee|inforoutes?)\b`) },
   { id: "meteo", nom: "météo et cyclones", re: new RegExp(`\\b(?:${WEATHER}|vigilance)\\b`) },
   { id: "volcan", nom: "volcan et séismes", re: /\b(?:volcan\w*|eruption\w*|fournaise|dolomieu|seisme\w*|sismi\w*|enclos)\b/ },
   { id: "eau", nom: "eau et électricité", re: /\b(?:eau potable|coupures?|robinet|citernes?|secheresse|ne buvez pas|ne pas boire|edf|electricite|delestage\w*|panne\w*)\b/ },

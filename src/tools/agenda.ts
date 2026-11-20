@@ -706,11 +706,21 @@ export function siteOf(nom: string): string {
 }
 
 /**
- * The agendas of a commune that did not answer this time (`indisponible`), in marketing's words (tools/injoignable.ts):
- * its tile then never says « rien d'annoncé » alone.
+ * The agendas of a commune that did not answer, in marketing's words (tools/injoignable.ts): its tile, its day's page
+ * and resume_du_jour then never say « rien d'annoncé » alone, nor count the other sources' events as the whole of it.
+ * Those read at the question (`indisponible`, at `readAt`), and those of the scheduled event whose last try failed
+ * (`nonLus`, the copy's `non_lus`: « Ville de Saint-Denis : dernière lecture sans succès (le 20/11 à 05:40) »), at the
+ * hour of that try. One read that went well and is now too old is not a failure: left to `non_lus` and /evenements.
+ * `lien`: its site, `at`: the read that failed (« 20/11 05:40 »).
  */
-export function silentOf(indisponible: string[] | undefined, commune: string, readAt: string, now: Date): (Injoignable & { site: string })[] {
-  return src.AGENDAS.filter((a) => a.commune === commune && indisponible?.includes(a.nom)).map((a) => ({ site: siteOf(a.nom), ...injoignable(siteOf(a.nom), undefined, readAt, now) }));
+export function silentOf(indisponible: string[] | undefined, commune: string, readAt: string, now: Date, nonLus?: string[]): (Injoignable & { site: string; lien: string; at: string })[] {
+  const out: (Injoignable & { site: string; lien: string; at: string })[] = [];
+  for (const a of src.AGENDAS.filter((x) => x.commune === commune)) {
+    const tried = nonLus?.map((x) => x.startsWith(`${a.nom} : `) && / sans succès \(le (\d\d\/\d\d) à (\d\d:\d\d)\)$/.exec(x)).find(Boolean);
+    const at = indisponible?.includes(a.nom) ? readAt : tried ? `${tried[1]} ${tried[2]}` : undefined;
+    if (at) out.push({ site: siteOf(a.nom), lien: a.source.url, at, ...injoignable(siteOf(a.nom), undefined, at, now) });
+  }
+  return out;
 }
 
 /**

@@ -167,9 +167,10 @@ export function communeEvents(p: PlacePage, agenda: Cached<AgendaAnswer> | null 
   // Its own agendas that did not answer this time: their site, in short, first in the detail, the whole of it in the
   // title; the value follows the other sources, which answered (marketing; tools/injoignable.ts).
   const at = localTime(agenda.fetchedAt);
-  const silent = silentOf(agenda.value.indisponible, p.nom, at, now);
-  const hour = `le ${at.split(" ")[0]} à ${at.split(" ")[1]}`;
-  const said = silent.length > 1 ? `${silent.length} sites sans réponse (${hour})` : silent.length ? `${silent[0].site.replace(/^le /, "")} sans réponse (${hour})` : undefined;
+  // Those of the scheduled event too, whose last try failed, at the hour of that try (Saint-Denis, 20/11/2026).
+  const silent = silentOf(agenda.value.indisponible, p.nom, at, now, agenda.value.non_lus);
+  const hour = (t: string) => `le ${t.split(" ")[0]} à ${t.split(" ")[1]}`;
+  const said = silent.length > 1 ? `${silent.length} sites sans réponse (${hour(silent[0].at)})` : silent.length ? `${silent[0].site.replace(/^le /, "")} sans réponse (${hour(silent[0].at)})` : undefined;
   const whole = silent.length ? silent.map((x) => x.texte).join(" ") : undefined;
   if (!rows.length && said) return { valeur: "Rien d'annoncé", detail: esc(said), title: whole };
   if (!rows.length) return mention ? { valeur: mention.valeur, detail: esc(mention.detail), title } : { valeur: "Rien d'annoncé", detail: "d'ici quinze jours dans les agendas lus" };

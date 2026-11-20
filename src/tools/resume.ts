@@ -65,12 +65,13 @@ import {
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
 import { coastal, PAGES, type PlacePage, slugify } from "../web/places.js";
-import { mentionCommune, occurrences, repris, sourcesServies } from "./agenda.js";
+import { mentionCommune, occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
 import { ecoles, resumeLine } from "./ecoles.js";
 import { compteAvis, muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
+import { when } from "./injoignable.js";
 import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
 import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, text } from "./format.js";
@@ -437,6 +438,11 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   // Its distributor's feed did not answer at the last read (tools/coupures.ts).
   const waterSilent = dist?.avis ? muetPour(l.coupures?.value.injoignable, nom) : undefined;
   const events = (l.agenda?.value.evenements ?? []).filter((r) => r.commune === nom && repris(r) && occurrences(r).some((o) => o.du <= today && today <= o.au));
+  // The commune's own agendas that did not answer (its site's news, read by the scheduled event): said with the hour
+  // of the try, so that the other sources' events are not read as the whole of the commune's day (rule 3 ter).
+  const eventsSilent = l.agenda ? silentOf(l.agenda.value.indisponible, nom, localTime(l.agenda.fetchedAt), now, l.agenda.value.non_lus) : [];
+  // In a few words, as the commune's tile says it (web/liens.ts): « site de la Ville de Saint-Denis sans réponse (le 20/11 à 05:40) ».
+  const eventsSaid = eventsSilent.map((x) => `${x.site.replace(/^le /, "")} sans réponse (${when(x.at)})`).join(", ");
   // The EVENTS_MAX shown: those with a state first (ANNULÉ, REPORTÉ, complet), which the server's rule says first and
   // which no one should travel for, the others in the agenda's order; the same list credited.
   const shown = [...events.filter((r) => r.statut), ...events.filter((r) => !r.statut)].slice(0, EVENTS_MAX);
@@ -496,8 +502,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     // None found is not none held: the agendas read are not all of them, the commune's own site may not be read at all.
     l.agenda
       ? events.length
-        ? `${events.length} événement${events.length > 1 ? "s" : ""} aujourd'hui`
-        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets${notRead ? ", sans le site de la commune" : ""})`
+        ? `${events.length} événement${events.length > 1 ? "s" : ""} aujourd'hui${eventsSaid ? `, ${eventsSaid}` : ""}`
+        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets${notRead ? ", sans le site de la commune" : ""})${eventsSaid ? `, ${eventsSaid}` : ""}`
       : "",
     roads.length ? `${roads.length} info${roads.length > 1 ? "s" : ""} sur les routes ou des blocages` : "",
     power.length ? shortOf(power[0], now) : "",
@@ -574,6 +580,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           page: events.length > EVENTS_MAX ? `${SITE_URL}/evenements` : undefined,
           aucun: events.length ? undefined : "Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.",
           non_repris: notRead,
+          injoignable: eventsSilent.length ? { texte: eventsSilent.map((x) => x.texte).join(" "), court: eventsSaid, site: eventsSilent[0].lien } : undefined,
         }
       : undefined,
     calendrier,

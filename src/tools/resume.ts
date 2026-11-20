@@ -64,7 +64,7 @@ import {
   withoutForecast,
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
-import { coastal, meteoPath, PAGES, type PlacePage, slugify } from "../web/places.js";
+import { coastal, meteoPath, PAGES, pageOf, type PlacePage, PRINCIPAL, slugify } from "../web/places.js";
 import { occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
@@ -489,8 +489,19 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const t = meteo?.mesure?.mesures.temperature;
   const f = meteo?.prevision?.aujourd_hui;
   const bins = col.COMMUNES.includes(nom);
+  // What asks to act first, in the order of /aujourdhui's top (web/aujourdhui.ts, urgent()): the water not to drink,
+  // the vigilance above green, the cyclone alert, the schools. Said first in the summary and in `avertissement`.
+  const dry = avis.filter((n) => n.ne_pas_boire).length;
+  const waterText = l.coupures ? (avis.length ? `${waterCount(avis)}${waterSilent ? ` (${waterSilent.court})` : ""}` : waterSilent ? `coupures d'eau : ${waterSilent.court}` : dist?.avis ? "pas de coupure d'eau annoncée" : "") : "";
+  const avertissement = [
+    dry ? `Eau à ne pas boire\u00a0: ${dry} avis en cours ${a(nom)}, dans les secteurs nommés par ${dry > 1 ? "les avis" : "l'avis"} (coupures_eau, avec ${dry > 1 ? "leurs liens" : "son lien"}).` : "",
+    v?.au_dessus_du_vert ? v.maintenant : "",
+    v?.alerte_cyclonique ?? "",
+    v?.ecoles && (v.au_dessus_du_vert || v.alerte_cyclonique) ? v.ecoles : "",
+  ].filter(Boolean).join(" ") || undefined;
   const resumeText = [
     `${nom}, ${DAY_FR.format(now)}`,
+    dry ? waterText : "",
     // Whose weather it is, when not the commune's: the centre's, or the place's own.
     centre ?? (far && meteoDuLieu && w ? `météo ${de(lieu!.nom)}` : ""),
     t ? `${t} mesurés à ${meteo!.mesure!.heure_mesure.split(" ")[1] ?? meteo!.mesure!.heure_mesure} (station ${meteo!.mesure!.station}${ailleurs(meteo!.mesure!, nom)})` : "",
@@ -500,7 +511,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",
     volc?.texte ?? "",
-    l.coupures ? (avis.length ? `${waterCount(avis)}${waterSilent ? ` (${waterSilent.court})` : ""}` : waterSilent ? `coupures d'eau : ${waterSilent.court}` : dist?.avis ? "pas de coupure d'eau annoncée" : "") : "",
+    dry ? "" : waterText,
     // None found is not none held: the agendas read are not all of them, the commune's own site may not be read at all.
     l.agenda
       ? events.length
@@ -544,6 +555,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   ];
 
   return {
+    /** Said first by the assistant, before the day: the water not to drink, the vigilance above green, the cyclone alert. */
+    avertissement,
     commune: nom,
     resume: resumeText,
     meteo,
@@ -629,13 +642,27 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   };
 }
 
-/** The commune of a place, and its own weather page when it has one. */
+/**
+ * The summary with a note on the place asked set after its opening (the commune and the day, and the water not to drink
+ * when it is said): « Saint-Paul, samedi 24 octobre. Plusieurs lieux… Météo de… ».
+ */
+export function apresAlertes(resume: string, note: string, eau: boolean): string {
+  const parts = resume.split("\u00a0; ");
+  const head = parts.slice(0, eau ? 2 : 1).join("\u00a0; ").replace(/\.$/, "");
+  const rest = parts.slice(eau ? 2 : 1).join("\u00a0; ");
+  return rest ? `${head}. ${note} ${rest[0].toUpperCase()}${rest.slice(1)}` : `${head}. ${note}`;
+}
+
+/** The commune of a place, and its own weather page when it has one (the principal one's, for a page sent there). */
 export function placeOf(lieu: string): { commune: PlacePage; place: PlacePage; res: NonNullable<ReturnType<typeof resolvePlace>> } | undefined {
   const res = resolvePlace(lieu);
   const commune = res && COMMUNES.find((p) => p.nom === res.lieu.commune);
   if (!res || !commune) return undefined;
   const own = PAGES.find((p) => p.place.nom === res.lieu.nom && p.place.commune === res.lieu.commune);
-  return { commune, place: own ?? commune, res };
+  // A page sent to another's for good (places.ts `PRINCIPAL`, L'Hermitage to Saint-Gilles-les-Bains): the weather and
+  // the name of the page shown there, never a copy the site no longer builds.
+  const shown = own && PRINCIPAL[own.slug] ? pageOf(PRINCIPAL[own.slug]) ?? own : own;
+  return { commune, place: shown ?? commune, res };
 }
 
 /** A copy a view may bring up to date after its answer. */
@@ -784,9 +811,13 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
     : { ...here, value: { ...here.value, prevision: centre.value.prevision } };
   const meteoDuLieu = !here?.value.meteo ? undefined : meteo === here ? "tout" as const : "mesure" as const;
   const { copies, leftOut } = await readCopies(cache, commune, place, now, background, vigilance, { meteo });
-  const r = resume(commune, copies, now, leftOut, asked, meteoDuLieu);
-  // A place found on part of its name, said before the day (« Maurice », Fond Maurice at Les Avirons).
+  // A place with a weather page of its own (Maïdo, Hell-Bourg): its weather is its own, named so, never the commune's
+  // (20/11/2026: the Maïdo's 9 °C given as Saint-Paul's).
+  const propre = place !== commune ? { nom: place.nom, lon: place.place.lon, lat: place.place.lat } : undefined;
+  const r = resume(commune, copies, now, leftOut, asked ?? propre, asked ? meteoDuLieu : propre && "tout");
+  // A place found on part of its name (« Maurice », Fond Maurice at Les Avirons) or one of several of that name: said
+  // after the commune and the day, and after the water not to drink, never before an alert (20/11/2026).
   const said = placeWarning(lieu, res);
-  const day = said ? { ...r, resume: `${said} ${r.resume}` } : r;
-  return text({ lieu: placeBlock(lieu, res), ...(detail ? day : court(day)) });
+  const day = said ? { ...r, resume: apresAlertes(r.resume, said, !!r.avertissement?.startsWith("Eau à ne pas boire")) } : r;
+  return text({ ...(day.avertissement && { avertissement: day.avertissement }), lieu: placeBlock(lieu, res), ...(detail ? day : court(day)) });
 }

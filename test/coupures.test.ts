@@ -200,6 +200,19 @@ describe("coupures d'eau", () => {
     expect(resume(pageOf("saint-denis")!, { coupures: both } as never, NOW).resume).toContain("\u00a0; 1 avis de coupure d'eau, et 2 autres avis sur l'eau\u00a0;");
   });
 
+  it("says the water not to drink first in the tool's day, and in an avertissement before everything, as /aujourdhui does", async () => {
+    const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
+    const only = (avis: object[]) => ({ value: { ...coupures.value, avis: avis.map((x) => ({ ...coupures.value.avis[0], communes: ["Salazie"], coupure: undefined, ne_pas_boire: undefined, ...x })) }, fetchedAt: NOW });
+    const day = resume(pageOf("salazie")!, { coupures: only([{ titre: "Dégradation de la qualité de l'eau", ne_pas_boire: true }, { titre: "Coupure d'eau rue A" }]) } as never, NOW);
+    expect(Object.keys(day)[0]).toBe("avertissement");
+    expect(day.avertissement).toBe("Eau à ne pas boire\u00a0: 1 avis en cours à Salazie, dans les secteurs nommés par l'avis (coupures_eau, avec son lien).");
+    // Right after the commune and the day, before the weather.
+    expect(day.resume).toMatch(/^Salazie, [^;]+\u00a0; 1 avis de coupure d'eau, et 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;/);
+    // No water to avoid, nothing above green: no avertissement, the water in its place.
+    const calm = resume(pageOf("salazie")!, { coupures: only([{ titre: "Coupure d'eau rue A" }]) } as never, NOW);
+    expect(calm.avertissement).toBeUndefined();
+  });
+
   it("lists a commune's latest notices, past ones too, each with its day, its publisher and its link, never « terminé »", async () => {
     const value = await buildCoupures(cache(), NOW);
     const all = Object.entries(value.derniers_avis ?? {});

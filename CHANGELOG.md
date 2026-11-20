@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Connecteur : la journée d'une commune dit d'abord l'eau à ne pas boire et la vigilance, et nomme la météo du lieu demandé (Maïdo…).
 - Assistants IA : la vigilance de Météo-France avec la marée, les crues, l'air, la météo passée et le volcan ; les radiers avec les crues.
 - Météo : chaque mesure dit si elle vient d'une station officielle de Météo-France, d'un aéroport, d'une balise ou d'une station amateur.
 - Lieux : un nom porté dans plusieurs communes (Bellevue, Bras Canot…) est signalé par les outils IA, avec les autres communes.

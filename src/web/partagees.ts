@@ -111,8 +111,9 @@ export const SHARED: Shared[] = [
   // Its cold cost: the 7 suppliers' and mairies' notices, with their copies: 13 in KV on 05/11/2026, 12 in the test.
   // 18 since 20/11/2026, measured from a cold cache with every source's fixture (test/couts-froid.test.ts), 13 before:
   // the sites of Saint-Philippe, Cilaos, Les Trois-Bassins and Petite-Île, one request each (providers/avis-eau.ts),
-  // and one read more of the data center's cache.
-  { key: "web:coupures", build: buildCoupures, every: 30, cold: 18, cpu: 60, offset: 25 },
+  // and one read more of the data center's cache. 21 with the page of Sainte-Suzanne's orders allowing runéo's works
+  // (providers/arretes-travaux.ts: the data center's cache read, the page, the cache written).
+  { key: "web:coupures", build: buildCoupures, every: 30, cold: 21, cpu: 60, offset: 25 },
   // The index (3), the copy of the measures at the stations (3: the data center's cache, KV, written back), the copy
   // of the sensors (1: KV, kept in memory).
   // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes

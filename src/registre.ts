@@ -751,7 +751,7 @@ const DOMAIN_PAGES: Record<string, Page> = {
   "/randonnees": { subrequests: 22, cpuMs: 210, from: ["src/tools/sentiers.ts"] },
   "/sentiers": { subrequests: 19, cpuMs: 60, from: ["src/tools/sentiers.ts"] },
   "/secheresse": { subrequests: 12, cpuMs: 70, from: ["src/tools/secheresse.ts"] },
-  "/coupures-eau": { subrequests: 25, cpuMs: 100, from: ["src/tools/coupures.ts"], basis: "estimé" },
+  "/coupures-eau": { subrequests: 28, cpuMs: 100, from: ["src/tools/coupures.ts"], basis: "estimé" },
   // « Autour de moi » loads its list on the click: a file of public/, served by Cloudflare before the Worker runs.
   "/defibrillateurs": { subrequests: 6, cpuMs: 40, from: ["src/tools/dae.ts"], what: "la page /defibrillateurs\u00a0; « Autour de moi » charge au clic la liste compacte (public/dae/), servie par Cloudflare avant le Worker : 0 Worker, 0 KV, 0 D1" },
   "/sport": { subrequests: 42, cpuMs: 120, from: ["src/tools/sport.ts"] },
@@ -843,7 +843,7 @@ const OTHER_PAGES: Record<string, Page> = {
   // the header's sources. The search (/bus/arret?q=) reads the bundled stops only: as "*".
   "/bus/arret/*": { subrequests: 16, cpuMs: 60, from: ["src/tools/transports.ts"], d1: { d1Calls: 3, d1RowsRead: 150 }, what: "la page d'un arrêt de bus : ses prochains départs", basis: "code" },
   "/bus/trajet/*": { subrequests: 11, cpuMs: 30, from: ["src/tools/transports.ts"], d1: { d1Calls: 2, d1RowsRead: 6 }, what: "le trajet d'un bus, arrêt par arrêt", basis: "code" },
-  "/coupures-eau/*": { subrequests: 32, cpuMs: 70, from: ["src/tools/coupures.ts"], what: "les coupures d'une commune", basis: "estimé" },
+  "/coupures-eau/*": { subrequests: 35, cpuMs: 70, from: ["src/tools/coupures.ts"], what: "les coupures d'une commune", basis: "estimé" },
   // The copy of /enfants, its agenda kept to the commune: the same reads as /enfants when it builds it.
   "/enfants/*": { subrequests: 37, cpuMs: 350, from: ["src/tools/agenda.ts"], what: "les lieux pour les enfants d'une commune, sur sa carte", basis: "code" },
   // FIRMS: the days each satellite has data for, then one list per satellite (providers/feux.ts COST).
@@ -939,8 +939,9 @@ const TOOLS: Record<string, { subrequests: number; cpuMs: number; what?: string;
   sentiers_randonnee: { subrequests: 10, cpuMs: 60, file: "sentiers" },
   vigilance_meteo: { subrequests: 10, cpuMs: 50, file: "vigilance" },
   // The notices' reads, cold: 5 more since 20/11/2026, one per commune site (providers/avis-eau.ts) and one read of the
-  // data center's cache (web/partagees.ts web:coupures), over the measure.
-  coupures_eau: { subrequests: 14, cpuMs: 110, file: "coupures", basis: "estimé" },
+  // data center's cache (web/partagees.ts web:coupures), over the measure. Three more for Sainte-Suzanne, the town's
+  // orders allowing runéo's works (providers/arretes-travaux.ts, 20/11/2026: the cache read, the page, the cache written).
+  coupures_eau: { subrequests: 17, cpuMs: 110, file: "coupures", basis: "estimé" },
   electricite: { subrequests: 9, cpuMs: 60, file: "electricite" },
   crues_rivieres: { subrequests: 9, cpuMs: 30, file: "crues" },
   calendrier: { subrequests: 7, cpuMs: 70, file: "calendrier" },

@@ -64,7 +64,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Sudéau's site linked on the pages of the communes whose water it distributes (14/11/2026).
   // Each commune's latest notices, past ones too, for its page (`derniers_avis`, 14/11/2026).
   // The notices of Saint-Philippe, Cilaos, Petite-Île and Les Trois-Bassins, read on the communes' sites (20/11/2026).
-  coupures: 18,
+  // Sainte-Suzanne's orders allowing runéo's works, a block of their own (`arretes_sainte_suzanne`, 20/11/2026).
+  coupures: 19,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   courant: 10,

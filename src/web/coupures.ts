@@ -17,6 +17,8 @@ import { afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, load
 import { esc, islandMap } from "./map.js";
 import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
+import * as ARRETES from "../providers/arretes-travaux.js";
+import type { BlocArretes } from "../providers/arretes-travaux.js";
 
 const TITLE_MAX = 60;
 const COMMUNES = PAGES.filter((p) => p.commune);
@@ -140,6 +142,23 @@ export const avisLus = (commune: string) => !!distributeur(commune)?.avis;
  * where to look), and stays out of them until a source is read.
  */
 export const indexable = (commune: string) => avisLus(commune) || !!GUIDES_AVIS[commune];
+
+/**
+ * Sainte-Suzanne's orders allowing runéo's works (providers/arretes-travaux.ts), under the notices: never counted as one,
+ * worded by marketing (20/11/2026). Nothing for another commune, nor before the site was ever read.
+ */
+export function arretesSection(commune: string, b: BlocArretes | undefined): string {
+  if (commune !== ARRETES.COMMUNE || !b) return "";
+  const items = b.arretes?.length
+    ? `<ul class="zones">${b.arretes.map((x) => `<li class="card"><p>Arrêté ${esc(x.arrete)} : ${esc(x.lieu)}, du ${esc(x.du)} au ${esc(x.au)}. <a href="${esc(x.lien)}" rel="noopener">L'arrêté →</a></p></li>`).join("")}</ul>`
+    : `<p class="card">${esc(b.aucun ?? "")}</p>`;
+  return `<section aria-labelledby="h-arretes">
+  <div class="sec-h"><h2 id="h-arretes">${esc(ARRETES.TITRE)}</h2></div>
+  <p>${esc(ARRETES.PHRASE)}</p>
+  ${items}
+  ${b.arretes?.length ? `<p class="note">D'après <a href="${esc(b.lien)}" rel="noopener">le site de la ville de Sainte-Suzanne</a>, lu le ${esc(b.lu_le)}.</p>` : ""}
+</section>`;
+}
 
 export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies, now = new Date(), alerte?: Alerte): string {
   const d = w.coupures?.value;
@@ -281,6 +300,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   ${derniersAvis(p.nom, w, x.avis)}
   ${d ? (calm ? afterCutShort : afterCutNote) : ""}
 </section>
+${arretesSection(p.nom, d?.arretes_sainte_suzanne)}
 ${cyclone.lead ? cyclone.html : ""}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>
   <div class="two">${distBlock}${drought}</div>
@@ -291,7 +311,7 @@ ${faq.length ? `<section aria-labelledby="h-faq">
 </section>` : ""}
 ${others}
 ${cyclone.lead ? "" : cyclone.html}
-${d && w.coupures ? sourcesNote([...d.sources, { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
+${d && w.coupures ? sourcesNote([...d.sources, ...(p.nom === ARRETES.COMMUNE && d.arretes_sainte_suzanne ? [{ source: ARRETES.SOURCE.nom, licence: ARRETES.SOURCE.licence, attribution: ARRETES.SOURCE.attribution }] : []), { source: DISTRIBUTEURS, licence: "Licence Ouverte Etalab 2.0", attribution: "ARS La Réunion" }], w.coupures) : ""}
 ${connectorAsk("les coupures d'eau", p.nom)}`;
 
   return layout(origin, { title, description, path, jsonld: [trail, webPage(origin, path, title, description, w.coupures), ...(faq.length ? [faqPage(faq)] : [])], alerte, iaAside: true, ...(indexable(p.nom) ? {} : { noindex: true }) }, band, body);

@@ -5,7 +5,8 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, textOf } from "../src/providers/avis-eau.js";
 import { annonceCoupure, compteAvis, coupuresEau, noticeRow } from "../src/tools/coupures.js";
 import { cite } from "../src/tools/citer.js";
-import { coupuresCommunePage, waterLive } from "../src/web/coupures.js";
+import { arretesSection, coupuresCommunePage, waterLive } from "../src/web/coupures.js";
+import { enCours, parseArretes } from "../src/providers/arretes-travaux.js";
 import { buildCoupures } from "../src/web/data.js";
 import { couvertureCourte, coupuresLive, coupuresPage, noticesHead } from "../src/web/domains.js";
 import island from "../src/places/island.json" with { type: "json" };
@@ -21,7 +22,7 @@ import { doubleIds, mapLinks } from "./cartes.js";
 // The communes' own sites read since 20/11/2026 (rule 3 bis): empty here, as in October; their copies of 20/11/2026 in
 // their own test (« reads the notices the communes post »).
 const communeFile = (url: string) =>
-  /saintphilippe|ville-cilaos/.test(url) ? "vide.json" : /trois-bassins|petite-ile/.test(url) ? "vide.xml" : undefined;
+  /saintphilippe|ville-cilaos/.test(url) ? "vide.json" : /trois-bassins|petite-ile|ville-saintesuzanne/.test(url) ? "vide.xml" : undefined;
 const COMMUNES_20_11: Record<string, string> = {
   saintphilippe: "saint-philippe.json", "ville-cilaos": "cilaos.json", "trois-bassins": "trois-bassins.xml", "petite-ile.re/taxonomy": "petite-ile.xml", "petite-ile.re/actualites": "petite-ile-avis.html",
 };
@@ -896,5 +897,81 @@ describe("the blocks taken out of a page (avis-eau.ts sansBlocs)", () => {
     expect(sansBlocs("<scr<script>x</script>ipt>", "<script", "</script>")).toBe("<script>");
     expect(parsePetiteIlePage("<article><p>Introduction</p><p>a <scr<script>x</script>ipt>b</p></article>")).not.toContain("<");
     expect(sansBlocs("İa<style>x</style>b", "<style", "</style>")).toBe("İab");
+  });
+});
+
+describe("the orders allowing runéo's works at Sainte-Suzanne (providers/arretes-travaux.ts)", () => {
+  // The town's page of its orders of works, 20/11/2026 at 10:54 (its articles only): three of runéo's, one posted twice,
+  // and an order of 2022 that is not a work site.
+  const page = readFileSync(new URL("./fixtures/avis-eau/sainte-suzanne-arretes.html", import.meta.url), "utf8");
+  const AT = new Date("2026-11-20T06:54:00Z");
+  const asked: string[] = [];
+  const stub = (body: string) => vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+    if (url.includes("ville-saintesuzanne.re/type-de-document")) {
+      asked.push(new Headers(init?.headers).get("user-agent") ?? "");
+      return new Response(body);
+    }
+    return new Response(/runeo/.test(url) ? fixture("runeo.xml") : /saintphilippe|ville-cilaos/.test(url) ? fixture("vide.json") : /trois-bassins|petite-ile/.test(url) ? fixture("vide.xml") : fixture("cirest.json"));
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reads each order once, its number, place and days as published, only runéo's works", () => {
+    const list = parseArretes(page);
+    expect(list.map((a) => a.numero)).toEqual(["596", "585", "584"]);
+    expect(list[0]).toEqual({ numero: "596", lieu: "11 chemin Mont Rose", du: "2026-11-23", au: "2027-02-26", lien: "https://ville-saintesuzanne.re/document-administrat/am-n-596-runeo-travaux-au-11-chemin-mont-rose-du-23-11-2026-au-26-02-2027-2/" });
+    expect(list[1].lieu).toBe("5-12 rue de la Source à la Marine");
+    // Their last day past: none left; the day of their end still in force.
+    expect(enCours(list, new Date("2027-02-26T19:59:00Z")).map((a) => a.numero)).toEqual(["596"]);
+    expect(enCours(list, new Date("2027-02-26T20:00:00Z"))).toEqual([]);
+  });
+
+  it("gives them in coupures_eau in a block of their own, never as notices, and its source credited", async () => {
+    stub(page);
+    asked.length = 0;
+    const b = body(await coupuresEau(new Cache(new MemoryStore(), () => AT.getTime()), "Sainte-Suzanne", AT));
+    expect(b.arretes_travaux_ville).toEqual({
+      note: "Autorisations de chantier publiées par la ville de Sainte-Suzanne, pas des avis de coupure : ne jamais en déduire une coupure ni son absence.",
+      arretes: [
+        { arrete: "n° 596", lieu: "11 chemin Mont Rose", du: "lundi 23/11/2026", au: "vendredi 26/02/2027", etat: "à venir", lien: expect.stringContaining("am-n-596") },
+        { arrete: "n° 585", lieu: "5-12 rue de la Source à la Marine", du: "jeudi 19/11/2026", au: "vendredi 12/02/2027", etat: "en cours", lien: expect.stringContaining("am-n-585") },
+        { arrete: "n° 584", lieu: "188 chemin Commune Bègue", du: "jeudi 19/11/2026", au: "vendredi 12/02/2027", etat: "en cours", lien: expect.stringContaining("am-n-584") },
+      ],
+      lu_le: "vendredi 20/11 à 10:54",
+      lien: "https://ville-saintesuzanne.re/type-de-document/arretes-de-travaux/",
+    });
+    expect(JSON.stringify(b.avis)).not.toContain("Mont Rose");
+    expect(b.resume).not.toContain("Mont Rose");
+    expect(JSON.stringify(b.sources)).toContain("Ville de Sainte-Suzanne");
+    expect(asked).toEqual([UA_RUNDATA]);
+    // Another commune: no block, the town's site not read.
+    asked.length = 0;
+    expect(body(await coupuresEau(new Cache(new MemoryStore(), () => AT.getTime()), "Saint-André", AT)).arretes_travaux_ville).toBeUndefined();
+    expect(asked).toEqual([]);
+  });
+
+  it("says none in marketing's words, never « pas de travaux » nor « pas de coupure »; nothing when the site never answered", async () => {
+    stub("<html></html>");
+    const none = body(await coupuresEau(new Cache(new MemoryStore(), () => AT.getTime()), "Sainte-Suzanne", AT)).arretes_travaux_ville;
+    expect(none.aucun).toBe("Pas d'arrêté de chantier de runéo en cours ou à venir sur le site de la ville, lu le vendredi 20/11 à 10:54.");
+    expect(none.arretes).toBeUndefined();
+    vi.stubGlobal("fetch", async (url: string) => (url.includes("ville-saintesuzanne") ? new Response("", { status: 503 }) : new Response(fixture("vide.xml"))));
+    expect(body(await coupuresEau(new Cache(new MemoryStore(), () => AT.getTime()), "Sainte-Suzanne", AT)).arretes_travaux_ville).toBeUndefined();
+  });
+
+  it("shows them on the page of Sainte-Suzanne under the notices, from the shared copy", async () => {
+    stub(page);
+    const c = new Cache(new MemoryStore(), () => AT.getTime());
+    const copy = await buildCoupures(c, AT);
+    expect(copy.arretes_sainte_suzanne?.arretes).toHaveLength(3);
+    const html = coupuresCommunePage("https://rundata.re", pageOf("sainte-suzanne")!, { coupures: { value: copy, fetchedAt: AT, stale: false } }, AT);
+    expect(html).toContain('<h2 id="h-arretes">Chantiers de runéo autorisés par la ville</h2>');
+    expect(html).toContain("Ce sont des autorisations de chantier, pas des avis de coupure d&#39;eau ; les avis de runéo sont plus haut sur cette page.");
+    expect(html).toContain("Arrêté n° 596 : 11 chemin Mont Rose, du lundi 23/11/2026 au vendredi 26/02/2027.");
+    expect(html).toContain("L'arrêté →</a>");
+    expect(html).toContain('le site de la ville de Sainte-Suzanne</a>, lu le vendredi 20/11 à 10:54.');
+    // Under the notices.
+    expect(html.indexOf('id="h-arretes"')).toBeGreaterThan(html.indexOf('id="h-coupures-eau"'));
+    expect(arretesSection("Saint-André", copy.arretes_sainte_suzanne)).toBe("");
+    expect(arretesSection("Sainte-Suzanne", undefined)).toBe("");
   });
 });

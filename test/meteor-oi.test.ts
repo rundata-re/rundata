@@ -181,8 +181,9 @@ describe("MétéoR-OI's stations", () => {
     // 401 with the news of Saint-Denis and Saint-Pierre (one request an hour each); 406 with the water notices of four
     // communes (Saint-Philippe, Cilaos, Trois-Bassins, Petite-Île: one request each in the shared copy web:coupures, 20/11/2026);
     // 409 with the news of Cilaos, Saint-Joseph and Saint-Philippe (20/11/2026); 452 with /sport's shared copy (42 from cold,
-    // and its read of the FFCK's state in KV).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(452);
+    // and its read of the FFCK's state in KV); 455 with Sainte-Suzanne's orders allowing runéo's works (web:coupures: the
+    // data center's cache read, the page, the cache written, 20/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(455);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

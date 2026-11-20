@@ -13,6 +13,7 @@
 /dae/*
   Cache-Control: public, max-age=31536000, immutable
   X-Content-Type-Options: nosniff
+  X-Robots-Tag: noindex
 /og.png
   Cache-Control: public, max-age=604800
   X-Content-Type-Options: nosniff
@@ -42,3 +43,4 @@
 /carte-scolaire/*
   Cache-Control: public, max-age=31536000, immutable
   X-Content-Type-Options: nosniff
+  X-Robots-Tag: noindex

@@ -125,7 +125,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A volley match's sets written as its score, « 26-28 ».
   // The ffgolf's written refusal of 09/11/2026: its own line, dated, in the golf's mention.
   // No sentence for the communes' sports programmes not read any more (20/11/2026).
-  sport: 30,
+  // The link to Réunion La 1ère's sport news at its new address (« /sport?r=reunion »; the old one answers 404).
+  sport: 31,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.

@@ -8,7 +8,7 @@ import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { adresseTexte } from "../src/web/adresse.js";
 import { esc } from "../src/web/map.js";
-import { pageOf } from "../src/web/places.js";
+import { PAGES, pageOf } from "../src/web/places.js";
 
 // Tuesday 3/11/2026, 20:00 at La Réunion.
 const NOW = new Date("2026-11-03T16:00:00Z");
@@ -164,7 +164,16 @@ describe("the part « Élections » of a commune's page", () => {
 describe("a commune's elections page, and its summary on the commune's page", () => {
   it("has marketing's title, description and h1, its own canonical, and the first year of the commune's scrutins", () => {
     const html = elec("le-port");
-    expect(html).toContain("<title>Élections au Port\u00a0: résultats et participation depuis 1999 | rundata.re</title>");
+    expect(html).toContain("<title>Élections au Port depuis 1999 · La Réunion (974)</title>");
+    // The suffix of the other pages, within the 60 characters a search engine shows, for the 24 communes.
+    const communes = PAGES.filter((p) => p.commune);
+    expect(communes).toHaveLength(24);
+    for (const c of communes) {
+      const t = electionsPage("https://rundata.re", c)!.match(/<title>(.*?)<\/title>/)![1].replaceAll("&#39;", "'");
+      expect(t, c.nom).toMatch(/^Élections .+ · La Réunion \(974\)$/);
+      expect(t.length, t).toBeLessThanOrEqual(60);
+    }
+    expect(elec("la-plaine-des-palmistes")).toContain("<title>Élections à La Plaine-des-Palmistes · La Réunion (974)</title>");
     expect(html).toContain(`<meta name="description" content="Chaque scrutin au Port depuis 1999, tel que le ministère de l&#39;Intérieur le publie\u00a0: inscrits, votants, blancs et nuls, résultats.">`);
     expect(html).toContain("<h1>Élections au Port</h1>");
     expect(html).toContain('<link rel="canonical" href="https://rundata.re/communes/le-port/elections">');

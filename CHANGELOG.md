@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Événements : chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune.
 - Élections : chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur.
 - Communes : les pages de Saint-Denis, Saint-Paul, Saint-Pierre, du Tampon et des Avirons présentent la commune en quelques lignes.
 - Terrain : tapez une adresse et voyez la parcelle, la zone du PLU, les risques et les prix des ventes voisines, avec leurs sources.

@@ -18,7 +18,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A rubric in capitals at the head of a first sentence left out (« LIBRE EXPRESSION Sous le bruit… »).
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
   // « Mobilisation » for a strike or a blockade only, not money or firms set to work (« mobilisation financière »).
-  actualites: 19,
+  // « Route » not for « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
+  actualites: 20,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -131,7 +132,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
-  trafic: 6,
+  // Its news of the roads: not « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
+  trafic: 7,
   velos: 7,
   volcan: 14,
 };

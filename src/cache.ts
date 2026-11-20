@@ -306,13 +306,28 @@ export class Cache {
 
   /**
    * As `get`, from the entry the caller has just read (`peek`, or an older `get`) instead of reading the stores again:
-   * served if fresh enough, else loaded, the entry being the copy served if the source fails. `island`: written to the
-   * durable store too, as `island` does, for a copy every data center serves (web/data.ts ISLAND_PAGES).
+   * served if fresh enough, else loaded, the entry being the copy served if the source fails. `islandEvery` (seconds):
+   * written to the durable store too, for a copy every data center serves (web/data.ts ISLAND_PAGES), unless the durable
+   * store already has one built less than that before (`islandPut`).
    */
-  async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>, island = false): Promise<Cached<T>> {
+  async getFrom<T>(key: string, have: Cached<T> | undefined, freshSeconds: number, load: () => Promise<T>, islandEvery?: number): Promise<Cached<T>> {
     const hit = have && { value: have.value, fetchedAt: have.fetchedAt.getTime(), ...(have.cost != null && { cost: have.cost }), ...(have.from && { from: have.from }), ...(!have.outdated && { version: stampOf(key, this.version) }) };
-    const stores = island ? this.wide : this.store;
-    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => stores.put(key, e)));
+    const put = islandEvery != null ? (e: CacheEntry) => this.islandPut(key, e, islandEvery) : (e: CacheEntry) => this.store.put(key, e);
+    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, put));
+  }
+
+  /**
+   * Puts a page's copy in this data center's stores, and in the durable store (the Worker's KV) unless it has one built
+   * less than `everySeconds` before this one, read just before: two data centers that built the same page within those
+   * seconds write it once, its write counted in the budget (BUDGET.md). KV takes up to a minute to show a write
+   * everywhere, so two builds a few seconds apart in two data centers may still both write.
+   */
+  private async islandPut(key: string, e: CacheEntry, everySeconds: number): Promise<void> {
+    await this.store.put(key, e);
+    if (!this.lectures) return;
+    const there = await this.lectures.get(key).catch(() => undefined);
+    if (there && there.fetchedAt > e.fetchedAt - everySeconds * 1000) return;
+    await this.lectures.put(key, e);
   }
 
   /** Forgets the failure remembered under `key`, so that it is asked again at once (tools/agenda.ts: one more try). */

@@ -10,6 +10,7 @@
 import type { Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import * as mf from "../providers/vigilance.js";
+import { sectorsSaid } from "../providers/avis-eau.js";
 import { periodeCoupure } from "../tools/coupures.js";
 import { cyclone, cycloneHead, cycloneLevel, highest, raised, spans } from "../tools/vigilance.js";
 import { deCommune } from "./aujourdhui.js";
@@ -114,7 +115,7 @@ function waterItems(p: PlacePage, c: CoupuresAnswer): Item[] {
       description: [
         n.ne_pas_boire ? "Ne pas boire l'eau du robinet." : "",
         n.coupure && periodeCoupure(n.coupure) ? `Coupure ${n.coupure.de && n.coupure.a ? `du ${n.coupure.de} au ${n.coupure.a}` : periodeCoupure(n.coupure)}.` : "",
-        n.secteurs_complets ? `Secteurs : ${n.secteurs.join(", ")}.` : "",
+        n.secteurs_complets ? `Secteurs : ${sectorsSaid(n.secteurs)}.` : "",
         n.lien ? `Avis de ${n.distributeur} : ${n.lien}` : `Avis de ${n.distributeur}.`,
       ].filter(Boolean).join(" "),
       path: `/coupures-eau/${p.slug}`,

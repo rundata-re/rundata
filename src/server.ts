@@ -132,7 +132,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.687";
+export const VERSION = "1.0.696";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -836,7 +836,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
     {
       title: "Défibrillateurs à La Réunion",
       description:
-        "Défibrillateurs (DAE) les plus proches d'un lieu de La Réunion (974), d'après la base nationale Géo'DAE : adresse, distance et temps à pied, " +
+        "Défibrillateurs (DAE) les plus proches d'un lieu de La Réunion (974), d'après la base nationale Géo'DAE : adresse, distance à vol d'oiseau, " +
         "emplacement exact, accessible à toute heure ou aux heures d'ouverture. " +
         "Pour : « où est le défibrillateur le plus proche de la plage de l'Hermitage ? », « défibrillateur à Cilaos ? ». " +
         "Dire d'abord d'appeler le 15 ou le 112 et de commencer le massage cardiaque.",

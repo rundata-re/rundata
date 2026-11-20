@@ -40,8 +40,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | pire passage planifié, CPU (ms) | 5 191 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 191 | 600 |
-| vue la plus chère, sous-requêtes | 93 | 200 |
-| question la plus chère, sous-requêtes | 79 | 200 |
+| vue la plus chère, sous-requêtes | 99 | 200 |
+| question la plus chère, sous-requêtes | 82 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
 | tâche planifiée à part meteor:heures, sous-requêtes | 2 | 100 |
@@ -53,7 +53,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 - Passage le plus chargé selon les décalages, cadences habituelles : 00:05 UTC, 118 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:trafic, web:sport, metar, seismes, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 191 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
 - Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 407 sous-requêtes à 06:00 UTC.
-- Vue la plus chère : /communes/*, 93. Question la plus chère : resume_du_jour, 79. Construction la plus chère : web:chiffres:evenements, 48.
+- Vue la plus chère : /communes/*, 99. Question la plus chère : resume_du_jour, 82. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -67,6 +67,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâches GitHub, par mois (30 jours) | 0 |  | 150 | 60 |  | 861 000 |  |
 
 Les visites et les questions sont comptées par vue : leur total dépend du trafic.
+
+Écritures KV par mois (30 jours) : 142 830 pour les tâches ci-dessus, et 423 360 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 49 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 566 190 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
 
 ## Tâche planifiée
 
@@ -175,9 +177,9 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 90 | 15 | 4 | 2 | 840 |  | 110 | mesuré |
-| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 93 | 13 | 4 | 1 | 150 |  | 160 | mesuré |
-| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 79 | 17 | 5 | 1 | 150 |  | 130 | mesuré |
-| /meteo/* | la météo d'un lieu | à chaque vue |  | 65 | 6 | 4 | 1 | 150 |  | 135 | mesuré |
+| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 99 | 17 | 6 | 1 | 150 |  | 160 | mesuré |
+| /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 82 | 19 | 6 | 1 | 150 |  | 130 | mesuré |
+| /meteo/* | la météo d'un lieu | à chaque vue |  | 68 | 8 | 5 | 1 | 150 |  | 135 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |
 | /meteo/rejeu-6h.json | la barre de lecture de /meteo sur 6 heures : le radar toutes les 5 min (KV) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 20 | code |
 | /meteo/rejeu-24h.json | la barre de lecture de /meteo sur 24 heures : le radar au quart d'heure (KV) et les heures rondes des stations | à chaque vue |  | 8 | 4 |  | 1 | 140 |  | 20 | code |
@@ -245,7 +247,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
-| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 79 | 7 | 5 | 1 | 150 |  | 130 | estimé |
+| resume_du_jour | l'outil resume_du_jour | à chaque vue |  | 82 | 9 | 6 | 1 | 150 |  | 130 | estimé |
 | meteo_actuelle | l'outil meteo_actuelle | à chaque vue |  | 40 | 2 |  |  |  |  | 120 | mesuré |
 | evenements | l'outil evenements | à chaque vue |  | 33 |  |  |  |  |  | 190 | mesuré |
 | sport | l'outil sport | à chaque vue |  | 33 |  |  |  |  |  | 160 | mesuré |

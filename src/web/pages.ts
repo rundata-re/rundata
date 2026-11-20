@@ -2970,6 +2970,22 @@ export function whaleSection(now: Date): string {
 </section>`;
 }
 
+/**
+ * What the beaches' figures are, under the map: the satellite's pass, an instant, said as the tool temperature_mer says
+ * it (« un instant, pas la moyenne de la journée »), or the day's mean; both when the beaches have some of each. The
+ * caption said « moyenne de chaque jour » over passes (20/11/2026).
+ */
+export function seaMeasure(seen: { jour?: string; heure?: string }[]): string {
+  const passes = [...new Set(seen.filter((b) => b.heure).map((b) => b.heure!))].sort();
+  const means = seen.filter((b) => !b.heure);
+  const when = (iso: string) => localTime(new Date(iso)).replace(" ", " à ");
+  const parts = [
+    ...(passes.length ? [`passage du satellite ${passes.map((h) => `le ${when(h)}`).join(" et ")}, un instant et pas la moyenne de la journée${means.length ? ` (${seen.length - means.length} plage${seen.length - means.length > 1 ? "s" : ""})` : ""}`] : []),
+    ...(means.length ? [`${new Set(means.map((b) => b.jour)).size > 1 ? `moyenne de chaque jour, ${lesJours(means.map((b) => b.jour!))}` : `moyenne du ${dayMonth(means[0].jour!)}`}${passes.length ? ` (${means.length} plage${means.length > 1 ? "s" : ""})` : ""}`] : []),
+  ];
+  return `Mesure par satellite (NOAA CoastWatch et NASA), ${parts.join("\u00a0; ")}.`;
+}
+
 export function seaPage(origin: string, data: Cached<SeaData> | null, now = new Date(), alerte?: Alerte, reef?: Cached<coraux.Coraux> | null): string {
   const g = porte(alerte);
   const d = data?.value;
@@ -2990,7 +3006,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const list = d
     ? `<ul class="seas">${d.plages.map((b) => `<li class="tgt" id="${anchorId("p", b.nom)}"><span>${esc(seaName(b.nom))}</span>` +
         (b.valeur != null
-          ? `<b>${esc(thin(deg(b.valeur)))}</b><span>le ${esc(dayMonth(b.jour!))}, à ${esc(fr(b.distance_km!))} km</span>`
+          ? `<b>${esc(thin(deg(b.valeur)))}</b><span>le ${esc(dayMonth(b.jour!))}${b.heure ? ` à ${esc(localTime(new Date(b.heure)).split(" ")[1])}` : ""}, à ${esc(fr(b.distance_km!))} km</span>`
           : `<b>—</b><span>pas de mesure (nuages)</span>`) +
         // « Y aller » to a beach, not to the centre of a town listed for its coast (Saint-Denis, Le Port…).
         `<a href="/meteo/${slugify(b.commune)}">Météo ${esc(b.commune)} →</a>${resolvePlace(b.nom)?.lieu.type === "commune" ? "" : g.aller({ nom: seaName(b.nom), lat: b.lat, lon: b.lon }, "baignade")}</li>`).join("")}</ul>` +
@@ -3014,7 +3030,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
   const coming = computed.length
     ? `<h3>Les prochaines marées : un calcul, pas la prédiction du SHOM</h3>
   <ul class="seas">${computed.map((x) => `<li><span>${esc(x.nom)}</span>` +
-      x.next.liste.map((e, i) => (i === 0 ? `<b>${esc(e.type)} ${esc(e.heure)}</b><span>${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""}</span>` : `<span>${esc(e.type)} ${esc(e.heure)} (${esc(thin(`${fr(e.hauteur_m)} m`))})</span>`)).join("") +
+      x.next.liste.map((e, i) => (i === 0 ? `<b>${esc(e.type)} ${esc(e.heure)}</b><span>${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""}</span>` : `<span>${esc(e.type)} ${esc(e.heure)} (${esc(thin(`${fr(e.hauteur_m)} m`))}${"note" in e ? ", marée faible : heure plus incertaine" : ""})</span>`)).join("") +
       `</li>`).join("")}</ul>
   <p class="note">${esc(TIDE_LABEL.replace(/^c/, "C"))} : analyse harmonique de plusieurs années de mesures de ces deux marégraphes ; heures à environ ${computed.map((x) => `${x.minutes} min près ${a(x.gauge.commune)}`).join(", ")}, hauteurs à environ 5 cm près ; pas de coefficient. La marée est faible à La Réunion (20 à 80 cm) : utile pour le lagon, la pêche à pied ou la mise à l'eau, pas pour la navigation. ${adressesCoupables(TIDE_CITATION)}</p>
   <p class="note">Ces heures valent près des deux marégraphes, à ${NEAR_KM} km au plus. Plus loin sur la côte, la marée arrive à une autre heure : horaires officiels du SHOM pour ${["Saint-Leu", "Saint-Pierre"].map((c) => `<a href="${esc(shomPort(c)!)}">${c}</a>`).join(" et ")}.</p>`
@@ -3055,7 +3071,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
       "@context": "https://schema.org",
       "@type": "Dataset",
       name: "Température de surface de la mer autour de La Réunion (974)",
-      description: "Température de surface de la mer mesurée par satellite au large de chaque plage de La Réunion, moyenne du jour, publiée au plus tôt le lendemain.",
+      description: "Température de surface de la mer mesurée par satellite au large de chaque plage de La Réunion : au dernier passage du satellite, sinon en moyenne d'une journée, publiée au plus tôt le lendemain.",
       url: `${origin}/mer`,
       isAccessibleForFree: true,
       inLanguage: "fr-FR",
@@ -3081,7 +3097,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
       `Quelle est la température de l'eau à La Réunion ? Lis ${url} et donne-moi la température plage par plage, avec la date de la mesure.`)}
   </div>
   <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) avec la température de la mer au large de chaque plage" })}
-  ${day ? `<figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(`Mesure par satellite (NOAA CoastWatch et NASA), ${new Set(seen.map((b) => b.jour)).size > 1 ? `moyenne de chaque jour, ${lesJours(seen.map((b) => b.jour!))}` : `moyenne du ${dayMonth(day)}`}.`))}</figcaption>` : ""}</figure>
+  ${day ? `<figcaption class="note" style="color:var(--on-night-muted)">${legende([{ forme: "rond", couleur: chip(26), texte: "26°", dit: "température de l'eau au large de la plage" }], esc(seaMeasure(seen)))}</figcaption>` : ""}</figure>
 </div>`;
 
   const body = `<section aria-labelledby="h-plages">

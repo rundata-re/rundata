@@ -11,7 +11,7 @@ const REFERENCE_SECONDS = 6 * 3600;
 // The answer's own date of its data: a measurement, a model run, a bulletin, a notice, a list rebuilt from its file, a
 // daily check, the day of a measure by satellite, a bathing site's last sample. Without one, the age is the read's: « à l'instant »
 // for a list of defibrillators a week old (31/10/2026), for a beach sampled two months before (20/11/2026).
-const DATED = ["heure_mesure", "jour_mesure", "run_du_modele", "emise", "mis_a_jour", "publie_le", "derniere_analyse", "dernier_prelevement", "derniere_verification"];
+const DATED = ["heure_mesure", "jour_mesure", "run_du_modele", "emise", "mis_a_jour", "publie_le", "derniere_analyse", "dernier_prelevement", "derniere_verification", "etat_jusqu_a"];
 // Lists of notices and publications beside the data (the mairies' power cuts, the OVPF's posts, the media's
 // headlines): dated, but not what the answer measures. Read last, when no other block carries a date.
 const NOTICES = new Set(["sources", "serveur", "avis", "coupures_annoncees", "publications_ovpf", "alertes_precedentes", "infos", "en_direct", "prefecture", "actualites", "evenements_du_jour", "actualite"]);

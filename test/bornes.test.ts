@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure, IDS, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
 import { bornesRecharge, etatDe, lastChange, since } from "../src/tools/bornes.js";
+import { dataDate } from "../src/tools/fraicheur.js";
+import { localTime } from "../src/geo.js";
 import { bornesLive, bornesPage } from "../src/web/domains.js";
 import { buildBornes } from "../src/web/data.js";
 import { DESCRIPTION_MAX } from "../src/web/pages.js";
@@ -85,7 +87,7 @@ describe("bornes de recharge", () => {
 
   it("gives the nearest stations to a place, and every point's state", async () => {
     const r = body(await bornesRecharge(cache(LIVE), "Saint-Gilles-les-Bains", false, NOW));
-    expect(r.resume).toMatch(/^Borne de recharge la plus proche de Saint-Gilles-les-Bains : .+, à 1,6 km, \d+ libres? sur \d+/);
+    expect(r.resume).toMatch(/^Borne de recharge la plus proche de Saint-Gilles-les-Bains : .+, à 1,6\u00a0km à vol d'oiseau, \d+ libres? sur \d+/);
     expect(r.stations[0].points[0]).toMatchObject({ puissance_kw: 80, prises: ["Combo CCS"], etat: "libre" });
     const town = body(await bornesRecharge(cache(LIVE), "Le Tampon", false, NOW));
     expect(town.resume).toMatch(/^9 stations de recharge au Tampon : 18 libres sur 19/);
@@ -157,7 +159,12 @@ describe("bornes de recharge", () => {
     const live: Live = { lu: "2026-11-04T09:50:00.000Z", points: { a: ["en_service", "libre", "2026-11-04T08:42:00.000Z"], b: ["en_service", "occupe", "2026-11-04T07:00:00.000Z"], c: ["en_service", "libre", "2026-11-05T00:00:00.000Z"] } };
     expect(lastChange(live)).toBe("2026-11-04T08:42:00.000Z");
     const r = body(await bornesRecharge(cache(LIVE), undefined, false, NOW));
-    expect(r.etat_jusqu_a).toBe(lastChange(LIVE));
+    // Réunion time, as /bornes says it, and the data's date in fraicheur (an assistant read the ISO's 07:24 as the time).
+    expect(r.etat_jusqu_a).toBe(localTime(new Date(lastChange(LIVE)!)));
+    expect(r.etat_jusqu_a).toMatch(/^\d\d\/\d\d \d\d:\d\d$/);
+    expect(dataDate(r, NOW)).toMatchObject({ du: r.etat_jusqu_a, cle: "etat_jusqu_a" });
+    // The page keeps its own instant.
+    expect((await buildBornes(cache(LIVE), NOW)).etat_jusqu_a).toBe(lastChange(LIVE));
     expect(r.donnees).toMatch(/^État de chaque point d'après son opérateur, dans le fichier national lu à 04:37 \(heure de La Réunion\), dont le changement d'état le plus récent est de \d\d:\d\d\u00a0: ce fichier se remplit par lots et peut être en retard\./);
   });
 

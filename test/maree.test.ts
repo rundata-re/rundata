@@ -2,9 +2,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { parse, read } from "../src/providers/maregraphes.js";
-import { gaugeRow, gauges, maree, NEAR_KM, nearest } from "../src/tools/maree.js";
+import { gaugeRow, gauges, maree, NEAR_KM, nearest, tidesAt } from "../src/tools/maree.js";
+import { GAUGES } from "../src/providers/maregraphes.js";
 import { communePage } from "../src/web/commune.js";
-import { CSS, placePage, seaPage } from "../src/web/pages.js";
+import { CSS, placePage, seaMeasure, seaPage } from "../src/web/pages.js";
 import { coastal, PAGES } from "../src/web/places.js";
 
 // Fifteen hours of both SHOM tide gauges, 23/10/2026 from 08:40 to 23:40 UTC (12:40 to 03:40 in La Réunion).
@@ -174,6 +175,38 @@ describe("tide gauges", () => {
     const rows = (await gauges(cache(), NOW)).map((g) => gaugeRow(g, NOW));
     const html = seaPage("https://rundata.re", { value: { plages: [], maree: rows, sources: [] }, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain('Plus loin sur la côte, la marée arrive à une autre heure : horaires officiels du SHOM pour <a href="https://maree.shom.fr/harbor/SAINT-LEU/hlt/0">Saint-Leu</a> et <a href="https://maree.shom.fr/harbor/SAINT-PIERRE_LA_REUNION/hlt/0">Saint-Pierre</a>.');
+  });
+
+  it("says « heure plus incertaine » on every weak tide of the sea page, not on the first only", async () => {
+    const rows = (await gauges(cache(), NOW)).map((g) => gaugeRow(g, NOW));
+    // The first hour of the coming fortnight when a weak tide is not the first one listed.
+    let at: Date | undefined;
+    let tide: { type: string; heure: string } | undefined;
+    for (let h = 0; h < 14 * 24 && !at; h++) {
+      const t = new Date(NOW.getTime() + h * 3600_000);
+      for (const g of GAUGES) {
+        const x = tidesAt(g, t, rows, NOW);
+        const e = x?.next.liste.find((y, i) => i > 0 && "note" in y);
+        if (e) [at, tide] = [t, e];
+      }
+    }
+    expect(at, "a weak tide past the first within a fortnight").toBeDefined();
+    const html = seaPage("https://rundata.re", { value: { plages: [], maree: rows, sources: [] }, fetchedAt: NOW, stale: false }, at!).replace(/\u00a0|\u202f/g, " ");
+    expect(html).toMatch(new RegExp(`${tide!.type} ${tide!.heure} \\([^)]*, marée faible : heure plus incertaine\\)`));
+  });
+
+  it("says a satellite's pass for what it is, never « moyenne » over it (temperature_mer's words)", () => {
+    expect(seaMeasure([{ jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }, { jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }]))
+      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39, un instant et pas la moyenne de la journée.");
+    expect(seaMeasure([{ jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }, { jour: "2026-11-20", heure: "2026-11-20T09:50:00Z" }]))
+      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39 et le 20/11 à 13:50, un instant et pas la moyenne de la journée.");
+    expect(seaMeasure([{ jour: "2026-11-19" }, { jour: "2026-11-19" }])).toBe("Mesure par satellite (NOAA CoastWatch et NASA), moyenne du 19/11.");
+    expect(seaMeasure([{ jour: "2026-11-20", heure: "2026-11-19T21:39:00Z" }, { jour: "2026-11-19" }]).replace(/\u00a0/g, " "))
+      .toBe("Mesure par satellite (NOAA CoastWatch et NASA), passage du satellite le 20/11 à 01:39, un instant et pas la moyenne de la journée (1 plage) ; moyenne du 19/11 (1 plage).");
+    const plage = { nom: "Saint-Pierre", commune: "Saint-Pierre", lon: 55.47, lat: -21.34, valeur: 26.4, jour: "2026-11-20", heure: "2026-11-19T21:39:00Z", distance_km: 2 };
+    const html = seaPage("https://rundata.re", { value: { plages: [plage], sources: [] }, fetchedAt: NOW, stale: false }, NOW);
+    expect(html).toContain("le 20/11 à 01:39, à 2 km");
+    expect(html).not.toContain("moyenne du 20/11");
   });
 
   it("gives no times on a coastal page away from the gauges, nor on its commune's tile", () => {

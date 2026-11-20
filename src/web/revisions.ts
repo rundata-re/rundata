@@ -21,7 +21,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « Route » not for « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
   // The other subjects narrowed: « vigilance » with its colour, not « une pluie de médailles », « une éruption de joie »,
   // fireworks, flights, « conseil » alone, nor « annulé » or « reporté » alone for culture; « AVC » is health.
-  actualites: 21,
+  // « Enquête publique » and « tribunal administratif » no crimes.
+  actualites: 22,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -68,7 +69,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Each commune's latest notices, past ones too, for its page (`derniers_avis`, 14/11/2026).
   // The notices of Saint-Philippe, Cilaos, Petite-Île and Les Trois-Bassins, read on the communes' sites (20/11/2026).
   // Sainte-Suzanne's orders allowing runéo's works, a block of their own (`arretes_sainte_suzanne`, 20/11/2026).
-  coupures: 19,
+  // The sectors of the CIREST's notices on the quality of the water, « et les voies adjacentes » kept, said in
+  // `secteurs_dits` (20/11/2026).
+  coupures: 20,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   courant: 10,
@@ -182,7 +185,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026.
   // A rubric in capitals at the head of a first sentence left out (sansRubrique).
   // Its subjects narrowed (sujetsOf): « vigilance » with its colour, « annulé » or « reporté » alone no culture, « AVC » health.
-  "actualites:fil": 8,
+  // « Enquête publique » and « tribunal administratif » no crimes (sujetsOf).
+  "actualites:fil": 9,
   // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   agenda: 1,
@@ -218,7 +222,9 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Trois-Bassins »), and a list of streets ended by « Communiqué … » or by « Des perturbations » run on its last line.
   // A La Créole notice with its day and two hours, and its list of streets ended by « La régie La Créole remercie… ».
   // Four feeds more, the communes' sites (Saint-Philippe, Cilaos, Les Trois-Bassins, Petite-Île; 20/11/2026).
-  "avis-eau:flux": 4,
+  // A list of streets ended by « Et (toutes) les voies adjacentes », kept last, or by « Il est recommandé… » (CIREST,
+  // 20/11/2026).
+  "avis-eau:flux": 5,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).

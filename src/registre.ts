@@ -31,6 +31,7 @@ import { EVENEMENT_MINUTES as EMPLOI_FICHE_EVERY, REFRESH_EVERY as EMPLOI_EVERY,
 import { REFRESH_EVERY as IRVE_EVERY, REFRESH_OFFSET as IRVE_OFFSET } from "./providers/irve.js";
 import { REFRESH_EVERY as FFCK_EVERY, REFRESH_OFFSET as FFCK_OFFSET } from "./providers/ffck.js";
 import { JOUR_HEURE_UTC, JOUR_MINUTE_UTC, REFRESH_EVERY as METEOR_EVERY, REFRESH_OFFSET as METEOR_OFFSET, STATIONS as METEOR_STATIONS } from "./providers/meteor-oi.js";
+import { FRESH_SECONDS as PAGE_FRESH_SECONDS, ISLAND_PAGES } from "./web/data.js";
 import { SHARED, SHARED_AFTER, type Shared } from "./web/partagees.js";
 import { COMMUNE_TILES, DOMAINS, HOME_TILES } from "./web/site.js";
 
@@ -1033,9 +1034,17 @@ export const ISLAND_READS: Record<string, number> = {
   "web:crues": 3, crues_rivieres: 3, "/crues": 3,
   "web:coupures": 1, coupures_eau: 1, "/coupures-eau": 1, "/coupures-eau/*": 1, qualite_eau: 1, "/eau": 1,
 };
+/**
+ * The communes' page copies kept for the island (web/data.ts ISLAND_PAGES, since 20/11/2026: web:commune:<commune>,
+ * web:lieu:<commune>) that each entry reads, besides ISLAND_READS: asked of KV when its data center's copy is past
+ * FRESH_SECONDS, KV read again before its write (`Cache.getFrom`), and written: two reads and a write, three subrequests.
+ * /meteo/* and /aujourdhui/* read web:lieu of a commune; resume_du_jour, of a commune too.
+ */
+export const ISLAND_PAGE_COPIES: Record<string, number> = { "/communes/*": 2, "/meteo/*": 1, "/aujourdhui/*": 1, resume_du_jour: 1 };
 const withIsland = (e: Entry): Entry => {
   const n = ISLAND_READS[e.id] ?? 0;
-  return n ? { ...e, run: { ...e.run, subrequests: e.run.subrequests + 2 * n, kvReads: (e.run.kvReads ?? 0) + n, kvWrites: (e.run.kvWrites ?? 0) + n } } : e;
+  const m = ISLAND_PAGE_COPIES[e.id] ?? 0;
+  return n || m ? { ...e, run: { ...e.run, subrequests: e.run.subrequests + 2 * n + 3 * m, kvReads: (e.run.kvReads ?? 0) + n + 2 * m, kvWrites: (e.run.kvWrites ?? 0) + n + m } } : e;
 };
 /**
  * The views and questions that read the Météo-France stations (providers/meteofrance.ts `observations`, `recentRain`):
@@ -1159,6 +1168,17 @@ const TOTAL_HEAD = "| | sous-requêtes | lectures KV | écritures KV | appels D1
 /** French spacing: a no-break space before « : ; ? ! » and inside the guillemets. */
 const typeset = (md: string) => md.replace(/ ([:;?!])/g, "\u00a0$1").replace(/« /g, "«\u00a0").replace(/ »/g, "\u00a0»");
 
+/** The KV writes included each month in the Workers plan (Cloudflare, Workers Paid). */
+export const KV_WRITES_INCLUDED = 1_000_000;
+/** At most one write per page copy of the island every FRESH_SECONDS, whatever the traffic (web/data.ts ISLAND_PAGES). */
+export const islandPagesMonth = () => ISLAND_PAGES.size * (86_400 / PAGE_FRESH_SECONDS) * 30;
+/** The month's KV writes: the scheduled tasks', and the island's page copies' at worst, against those included. */
+export function kvWritesMonth(day: Run, own: Run, actions: Run): string {
+  const tasks = ((day.kvWrites ?? 0) + (day.kvLists ?? 0) + (own.kvWrites ?? 0) + (own.kvLists ?? 0) + (actions.kvWrites ?? 0) + (actions.kvLists ?? 0)) * 30;
+  const island = islandPagesMonth();
+  return `Écritures KV par mois (30 jours) : ${n(tasks)} pour les tâches ci-dessus, et ${n(island)} au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : ${ISLAND_PAGES.size} clés, une écriture par clé toutes les ${PAGE_FRESH_SECONDS / 60} minutes au plus, quel que soit le trafic). Soit ${n(tasks + island)} au pire, face aux ${n(KV_WRITES_INCLUDED)} incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.\n\n`;
+}
+
 export function budget(entries = REGISTRY): string {
   const by = (t: Trigger) => entries.filter((e) => e.trigger === t).map(row).join("\n");
   const worst = worstEvent(entries);
@@ -1207,6 +1227,7 @@ export function budget(entries = REGISTRY): string {
     totalRow("tâches GitHub, par jour", actions) + "\n" +
     totalRow("tâches GitHub, par mois (30 jours)", actions, 30) + "\n\n" +
     `Les visites et les questions sont comptées par vue : leur total dépend du trafic.\n\n` +
+    kvWritesMonth(day, own, actions) +
     `## Tâche planifiée\n\n${HEAD}\n${by("planifiée")}\n\n` +
     `## Tâches planifiées à part\n\nChacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec le budget d'une construction de copie (${n(BUILD_BUDGET)} sous-requêtes)\u00a0: elle ne compte ni dans la tâche planifiée des 5 minutes ni dans son pire passage.\n\n${HEAD}\n${by("planifiée à part")}\n\n` +
     `## Tâches GitHub\n\n${HEAD}\n${by("actions")}\n\n` +

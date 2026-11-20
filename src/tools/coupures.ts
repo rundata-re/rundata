@@ -70,6 +70,8 @@ export function noticeRow(n: notices.Avis, now: Date, current = n.ne_pas_boire) 
     // The whole list, or none: a list read in part would let one conclude a street is not concerned.
     secteurs: n.secteurs,
     secteurs_complets: n.secteurs_complets,
+    // The same words as the page: « Secteurs : … Chemin Pinguet et les voies adjacentes ».
+    secteurs_dits: n.secteurs_complets && n.secteurs.length ? notices.sectorsSaid(n.secteurs) : undefined,
     ne_pas_boire: (n.ne_pas_boire && current) || undefined,
     forme: n.forme,
     extrait_coupe: n.extrait_coupe,

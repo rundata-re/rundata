@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import type * as rt from "../src/providers/gtfsrt.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { departures, findStops, linesNamed, parseQuery, stationDepartures, transports, tripAsked } from "../src/tools/transports.js";
+import { type Departure, departures, findStops, linesNamed, onceEach, parseQuery, stationDepartures, transports, tripAsked } from "../src/tools/transports.js";
 
 // Rows of the D1 database for the stations of Saint-Pierre, the cable car at Bancoul and Hell-Bourg, from the
 // networks' GTFS of 23/10/2026 (scripts/build-transit.py).
@@ -126,6 +126,20 @@ describe("transports", () => {
     expect(r.departs.every((d: { ligne: string }) => d.ligne === "S2")).toBe(true);
     const all = body(await transports("gare routière Saint-Pierre", undefined, NOW));
     expect(all.departs.some((d: { direction: string }) => /^\d+$/.test(d.direction))).toBe(false);
+  });
+
+  it("names the other stops of the name asked, and says one trip at two stops of the place once", async () => {
+    // Audit of the AI tools, 20/11/2026: « La Montagne » gave Montagne 16ème alone, Montagne 17ème unsaid.
+    const m = findStops("La Montagne");
+    expect(m.groups.map((g) => g.nom)).toEqual(["Montagne 16ème"]);
+    expect(m.autres?.map((g) => g.nom)).toContain("Montagne 17ème");
+    expect(findStops("Montagne 16ème").autres).toBeUndefined();
+    // Cilaos: the same bus 60 at Cilaos Ville, then at Alsace Corré a minute on, said once, at the first; the same trip
+    // coming back an hour later stays.
+    const d = (arret: string, at: number, trip = "t1"): Departure =>
+      ({ in: at - 45000, at, route: "60", headsign: "Gare Saint-Louis", reseau: "carjaune", arret, trip, stop: 1, pattern: 1, jour: 20261120 }) as Departure;
+    const once = onceEach([d("Alsace Corré", 45060), d("Cilaos Ville", 45000), d("Cilaos Ville", 48600), d("Cilaos Ville", 45000, "t2")]);
+    expect(once.map((x) => [x.arret, x.at, x.trip])).toEqual([["Cilaos Ville", 45000, "t1"], ["Cilaos Ville", 48600, "t1"]]);
   });
 
   it("runs the cable car every minute from its frequencies, each departure once", async () => {

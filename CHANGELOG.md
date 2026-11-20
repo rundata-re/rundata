@@ -6,8 +6,11 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Élections : chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur.
 - Communes : les pages de Saint-Denis, Saint-Paul, Saint-Pierre, du Tampon et des Avirons présentent la commune en quelques lignes.
 - Terrain : tapez une adresse et voyez la parcelle, la zone du PLU, les risques et les prix des ventes voisines, avec leurs sources.
+- Coupures d'eau : sur la page de chaque commune, ce que dit l'ARS de l'eau qui revient au robinet après une coupure.
+- Météo d'un lieu de bord de mer : la règle de baignade de l'arrêté préfectoral, et un lien vers les zones surveillées.
 - Que faire ce week-end : les marchés forains de chaque jour, avec leurs heures et leur source, et un lien vers le sport.
 - Actualités : ce que publient Cilaos, Saint-Joseph et Saint-Philippe sur leurs sites ; coupures de courant : avis de trois mairies de plus.
 - Coupures d'eau : les avis publiés par Saint-Philippe (Sudéau), Cilaos, Petite-Île et Trois-Bassins sont lus, avec le lien de chaque avis.
@@ -15,6 +18,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 - Événements : ceux qu'annoncent les mairies de La Possession, de Petite-Île et de Saint-Benoît sur leurs sites, avec le lien de chacun.
 - Marchés forains : jours et heures de six mairies de plus (Saint-Denis, Saint-Pierre, Le Tampon, Le Port…), avec la date de leur page.
 - Valeurs : comment rundata.re lit les sites publics, et comment demander qu'on retire ce qu'il en montre.
+- Pages des communes : la tuile Randonnée dit combien de sentiers de la commune sont ouverts ou fermés, d'après l'ONF.
 - Événements : ceux qu'annoncent les mairies du Tampon, de Saint-Denis et de Saint-Pierre sur leurs sites, avec le lien de chacun.
 - Agenda : un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part.
 - Fiche terrain : « mairie de Saint-Leu » situe la mairie elle-même, et un point incertain est dit en premier.

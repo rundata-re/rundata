@@ -484,6 +484,17 @@ describe("reading the copies", () => {
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
   });
 
+  it("names the place measured when it has a weather page of its own: the Maïdo's weather, never Saint-Paul's", async () => {
+    const edge = await edgeWith();
+    await edge.put("web:lieu:maido", { value: COPIES.meteo.value, fetchedAt: ago(2).getTime() });
+    const pending: Promise<unknown>[] = [];
+    const r = body(await resumeDuJour(isolate(edge), "Maïdo", NOW, (p) => pending.push(p)));
+    await Promise.allSettled(pending);
+    expect(r.commune).toBe("Saint-Paul");
+    expect(r.meteo.lieu).toBe("Maïdo");
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo du Maïdo\u00a0;/);
+  });
+
   describe("the weather of a place without a page of its own", () => {
     const ask = async (lieu: string, edge: EdgeLike, budget = PAGE_BUDGET) => {
       const pending: Promise<unknown>[] = [];
@@ -539,11 +550,13 @@ describe("reading the copies", () => {
       const { r } = await ask("Saint-Paul", edge);
       expect(r.meteo).not.toHaveProperty("lieu");
       expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; 27,4 °C mesurés à 13:54 \(station Saint-Paul\)/);
-      // The beach of L'Hermitage has its page (web/places.ts): its page's weather, as before.
+      // The beach of L'Hermitage: its page sends to Saint-Gilles-les-Bains' (places.ts `PRINCIPAL`), whose weather and name
+      // are given, never the centre's, never the address sent elsewhere.
       const plage = (await ask("plage de l'Ermitage", await edgeWith())).r;
-      expect(plage.meteo).toMatchObject({ mesure: { station: "Pointe des Trois-Bassins" } });
+      expect(plage.meteo).toMatchObject({ lieu: "Saint-Gilles-les-Bains", mesure: { station: "Pointe des Trois-Bassins" } });
       expect(plage.meteo).not.toHaveProperty("avertissement");
-      expect(plage.resume).not.toMatch(/météo (du centre|de )/);
+      expect(plage.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo de Saint-Gilles-les-Bains\u00a0; 26,9 °C/);
+      expect(JSON.stringify(plage)).not.toContain("/meteo/l-hermitage");
     });
   });
 

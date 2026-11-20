@@ -1,0 +1,53 @@
+{
+ "total_count": 4,
+ "results": [
+  {
+   "nom": "Mairie - Saint-Leu",
+   "code_insee_commune": "97413",
+   "adresse": "[{\"type_adresse\": \"Adresse\", \"complement1\": \"\", \"complement2\": \"\", \"numero_voie\": \"58 rue du G\u00e9n\u00e9ral-Lambert\", \"service_distribution\": \"\", \"code_postal\": \"97436\", \"nom_commune\": \"Saint-Leu\", \"pays\": \"France\", \"continent\": \"Europe\", \"longitude\": \"55.286887\", \"latitude\": \"-21.166223\"}, {\"type_adresse\": \"Adresse postale\", \"complement1\": \"\", \"complement2\": \"\", \"numero_voie\": \"58 rue du G\u00e9n\u00e9ral-Lambert\", \"service_distribution\": \"BP 1004\", \"code_postal\": \"97498\", \"nom_commune\": \"Saint-Leu Cedex\", \"pays\": \"France\", \"continent\": \"Europe\", \"longitude\": \"\", \"latitude\": \"\"}]",
+   "plage_ouverture": "[{\"nom_jour_debut\": \"Lundi\", \"nom_jour_fin\": \"Jeudi\", \"valeur_heure_debut_1\": \"08:00:00\", \"valeur_heure_fin_1\": \"16:00:00\", \"valeur_heure_debut_2\": \"\", \"valeur_heure_fin_2\": \"\", \"commentaire\": \"\"}, {\"nom_jour_debut\": \"Vendredi\", \"nom_jour_fin\": \"Vendredi\", \"valeur_heure_debut_1\": \"08:00:00\", \"valeur_heure_fin_1\": \"15:00:00\", \"valeur_heure_debut_2\": \"\", \"valeur_heure_fin_2\": \"\", \"commentaire\": \"\"}]",
+   "telephone": "[{\"valeur\": \"02 62 34 80 03\", \"description\": \"\"}]",
+   "adresse_courriel": "secretariat@mairie-saintleu.fr",
+   "site_internet": "[{\"libelle\": \"\", \"valeur\": \"https://www.saintleu.re/\"}]",
+   "url_service_public": "https://lannuaire.service-public.gouv.fr/la-reunion/la-reunion/04ef57f5-87ab-4096-8331-233dde880eae",
+   "commentaire_plage_ouverture": null,
+   "pivot": "[{\"type_service_local\": \"mairie\", \"code_insee_commune\": [\"97413\"]}]"
+  },
+  {
+   "nom": "Police municipale - Saint-Leu",
+   "code_insee_commune": "97413",
+   "adresse": "[{\"type_adresse\": \"Adresse\", \"complement1\": \"\", \"complement2\": \"\", \"numero_voie\": \"Avenue  G\u00e9n\u00e9ral-Lambert\", \"service_distribution\": \"\", \"code_postal\": \"97436\", \"nom_commune\": \"Saint-Leu\", \"pays\": \"France\", \"continent\": \"Europe\", \"longitude\": \"55.287975\", \"latitude\": \"-21.171303\"}]",
+   "plage_ouverture": null,
+   "telephone": "[{\"valeur\": \"02 62 33 66 74\", \"description\": \"\"}]",
+   "adresse_courriel": "police.municipale@mairie-saintleu.fr",
+   "site_internet": null,
+   "url_service_public": "https://lannuaire.service-public.gouv.fr/la-reunion/la-reunion/50688966-3f13-4c26-8c6c-ebb42446af4f",
+   "commentaire_plage_ouverture": null,
+   "pivot": "[{\"type_service_local\": \"police_municipale\", \"code_insee_commune\": [\"97413\"]}]"
+  },
+  {
+   "nom": "Point-justice de Saint-Leu",
+   "code_insee_commune": "97413",
+   "adresse": "[{\"type_adresse\": \"Adresse\", \"complement1\": \"\", \"complement2\": \"\", \"numero_voie\": \"3 rue du Commandant Legros\", \"service_distribution\": \"\", \"code_postal\": \"97436\", \"nom_commune\": \"SAINT-LEU\", \"pays\": \"\", \"continent\": \"\", \"longitude\": \"55.286717\", \"latitude\": \"-21.168019\"}]",
+   "plage_ouverture": null,
+   "telephone": "[{\"valeur\": \"02 62 34 70 85\", \"description\": \"\"}]",
+   "adresse_courriel": "maison.justice@mairie-saintleu.fr",
+   "site_internet": "[{\"libelle\": \"\", \"valeur\": \"https://cdad-reunion.fr/\"}]",
+   "url_service_public": "https://lannuaire.service-public.gouv.fr/la-reunion/la-reunion/da3d9e3b-ee88-4091-a455-4151c9735879",
+   "commentaire_plage_ouverture": null,
+   "pivot": "[{\"type_service_local\": \"point_justice\", \"code_insee_commune\": [\"97413\"]}]"
+  },
+  {
+   "nom": "Centre communal d'action sociale (CCAS) - Saint-Leu",
+   "code_insee_commune": "97413",
+   "adresse": "[{\"type_adresse\": \"Adresse\", \"complement1\": \"\", \"complement2\": \"\", \"numero_voie\": \"58 rue du g\u00e9n\u00e9ral lambert\", \"service_distribution\": \"\", \"code_postal\": \"97436\", \"nom_commune\": \"Saint-Leu\", \"pays\": \"France\", \"continent\": \"Europe\", \"longitude\": \"55.286887\", \"latitude\": \"-21.166223\"}]",
+   "plage_ouverture": null,
+   "telephone": "[{\"valeur\": \"+262262342835\", \"description\": \"\"}]",
+   "adresse_courriel": "secretariat.ccas@mairie-saintleu.fr",
+   "site_internet": "[{\"libelle\": \"\", \"valeur\": \"https://www.saintleu.re/actualite/le-ccas-centre-communal-daction-sociale.php\"}]",
+   "url_service_public": "https://lannuaire.service-public.gouv.fr/la-reunion/la-reunion/fb0bfef8-50ce-4597-bac3-b92ec4e9cf55",
+   "commentaire_plage_ouverture": null,
+   "pivot": "[{\"type_service_local\": \"ccas\", \"code_insee_commune\": [\"97413\"]}]"
+  }
+ ]
+}

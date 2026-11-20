@@ -8,6 +8,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 - Événements : ceux qu'annoncent les mairies du Tampon, de Saint-Denis et de Saint-Pierre sur leurs sites, avec le lien de chacun.
 - Agenda : un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part.
+- Fiche terrain : « mairie de Saint-Leu » situe la mairie elle-même, et un point incertain est dit en premier.
 - Bornes de recharge : le nombre de points libres porte l'heure de l'état donné par les opérateurs, et non plus celle de notre lecture.
 - La journée d'une commune : la question à poser à son IA s'écrit maintenant « zordi », comme sur /trafic.
 

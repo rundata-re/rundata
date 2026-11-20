@@ -93,6 +93,14 @@ export async function search(cache: Cache, what: string, insee?: string): Promis
   });
 }
 
+/** A commune's town hall itself: the directory names it « Mairie - <commune> », beside the CCAS or the police municipale. */
+export const isTownHall = (o: Office) => /^Mairie - /.test(o.nom);
+
+/** A commune's town hall (INSEE code), from the search for « mairie », or none. */
+export async function townHall(cache: Cache, insee: string): Promise<Office | undefined> {
+  return (await search(cache, "mairie", insee)).value.find(isTownHall);
+}
+
 /**
  * The places of justice, by the annuaire's kind of service (`type_service_local` in `pivot`): the points-justice and the
  * conseil départemental de l'accès au droit, the courts, the help to victims (the courts' bureaux and the associations).

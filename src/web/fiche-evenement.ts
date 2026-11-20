@@ -47,6 +47,35 @@ function prevision(r: Row, meteo: PlaceData | undefined): string {
   return parts.length ? `<li><b>Prévision météo</b> pour ${esc(jour.jour)} à ${esc(r.commune!)} : ${esc(parts.join(", "))}. C'est une prévision, pas une mesure.</li>` : "";
 }
 
+/** Where the event is, as its row says it: its place, then its commune when the place does not name it. */
+const ou = (r: Pick<Row, "lieu" | "commune">) => `${r.lieu ? `, ${r.lieu}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${r.commune}` : ""}`;
+
+/**
+ * The page's meta description, 155 characters at most, cut after a whole word: its day (and hour), its place, then its text. The day comes
+ * first so that each date of a series (a workshop every Saturday, the same text each time) has its own: Google takes
+ * pages with the same description for near duplicates.
+ */
+export function ficheDescription(r: Pick<Row, "titre" | "quand" | "lieu" | "commune" | "publie_par" | "description">): string {
+  const texte = r.description?.trim().replace(/\s+/g, " ");
+  const quand = r.quand ? `${r.quand[0].toUpperCase()}${r.quand.slice(1)}` : "";
+  const d = texte ? `${quand}${ou(r)} : ${texte}` : `${r.titre} : ${r.quand}${ou(r)}, d'après ${r.publie_par}.`;
+  // Longer: cut after a whole word, with an ellipsis.
+  return d.length <= 155 ? d : `${d.slice(0, 154).replace(/\s+\S*$/, "")}…`;
+}
+
+/**
+ * What the source does not give, said rather than left blank: an event without its hour (a day alone) or without its
+ * place, with who announced it, linked to its page when there is one, where the rest may be.
+ */
+function manque(r: Row): string {
+  const absents = [r.date.length <= 10 && "l'heure", !r.lieu && "le lieu"].filter((x): x is string => !!x);
+  if (!absents.length) return "";
+  const dit = absents.length === 2 ? `ni ${absents.join(" ni ")}` : `pas ${absents[0]}`;
+  const qui = r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par);
+  // The source's name after a colon, without an article: « Mairie de Saint-Pierre », « Weezevent » take none.
+  return `<p class="note" data-sortie>L'annonce ne donne ${dit} ; le détail est peut-être sur sa source : ${qui}.</p>`;
+}
+
 /** The page of an event to come (or on), from the copy of /evenements. */
 export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, meteo: PlaceData | undefined, alerte?: Alerte): string {
   const path = fichePath(r);
@@ -54,7 +83,7 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const texte = r.description?.trim();
   const day = r.date.slice(0, 10);
   const title = `${r.titre}${r.commune ? `, ${r.commune}` : ""} (${jj(day)})`;
-  const description = (texte ? texte.replace(/\s+/g, " ") : `${r.titre} : ${r.quand}${r.lieu ? `, ${r.lieu}` : ""}${r.commune ? `, ${r.commune}` : ""}, d'après ${r.publie_par}.`).slice(0, 155);
+  const description = ficheDescription(r);
   const { bar, jsonld } = crumbs(origin, r.titre, path);
   const autres = (data.value.evenements ?? []).filter((x) => x.fiche !== r.fiche && x.commune && x.commune === r.commune && x.date.slice(0, 10) === day).slice(0, 6);
   const badge = r.statut ? `<span class="badge${r.statut === "complet" ? " m" : ""}">${esc(r.statut)}</span> ` : "";
@@ -69,6 +98,7 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
 <div class="wrap intro solo"><div class="pitch">
   <h1>${badge}${esc(r.titre)}</h1>
   <p class="lead" data-sortie>${esc(r.quand)}${r.autres_dates?.length ? `, aussi ${esc(r.autres_dates.join(", "))}` : ""}${r.lieu ? `<br>${esc(r.lieu)}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${esc(r.commune)}` : ""}${r.lien ? ` · <a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : ""}</p>
+  ${manque(r)}
   ${r.prix ? `<p>${esc(r.prix)}</p>` : ""}
 </div></div>`;
   // data-sortie: a link followed to another site (its source, its tickets) is counted by the « sortie » signal (web/signal.ts).

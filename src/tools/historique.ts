@@ -450,6 +450,21 @@ export async function reperesMois(cache: Cache, place: Place, now: Date): Promis
   return out;
 }
 
+/** The page's « Repères » block, for historique_meteo: the same station, normals and records, in the tool's words. */
+function reperesOut(r: ReperesMois) {
+  const mois = MONTHS[r.mois];
+  return {
+    station: r.station,
+    distance_km: r.distance_km,
+    mois,
+    normale: { maximale: r.normale.tx, minimale: r.normale.tn, pluie_du_mois_mm: r.normale.rr, periode: r.periode },
+    ...(r.chaleur ? { record_de_chaleur: { valeur: r.chaleur.valeur, annee: r.chaleur.annee } } : {}),
+    ...(r.pluie ? { record_de_pluie_en_un_jour_mm: { valeur: r.pluie.valeur, annee: r.pluie.annee } } : {}),
+    ...(r.depuis ? { releves_depuis: r.depuis } : {}),
+    a_savoir: `Les repères ${/^[aeiouéâ]/.test(mois) ? `d'${mois}` : `de ${mois}`} de la page du lieu sur rundata.re (/meteo), à la station ${r.station}, qui a les normales du mois : une autre station que celle des records ci-dessus. Pour un record, donner les deux, chacun avec sa station et l'année de début de ses relevés.`,
+  };
+}
+
 /** The page of a station (web/station.ts): its last 30 days, its year month by month, its records. */
 export interface StationHistory {
   /** The first year of its measurements. */
@@ -1039,6 +1054,11 @@ export async function historiqueMeteo(
   // No measure of the period, at no station near: its days not loaded yet, or none measuring there.
   if (!rain && !temp && !sun && !hh && !veille && !hier) rienTrouve("historique_meteo");
   const mor = await morJours(cache, place, p);
+  // The « Repères » of the place's page on /meteo (reperesMois, the same function): when its station is not the one of
+  // the records above, given too, so that « le record de novembre à Saint-Pierre » reads here the page's figure as well,
+  // each with its station (audit of the AI tools, 20/11/2026). Only with days measured: not hour by hour, not « nothing yet ».
+  const rep = !hh && (rain || temp) ? await reperesMois(cache, place, now).catch(() => undefined) : undefined;
+  const reperes = rep && rep.poste !== temp?.poste.poste ? reperesOut(rep) : undefined;
   const out = {
     lieu: placeBlock(lieu, res),
     resume: ([daily, autre ? autreAltitude(place, p, rain!, autre) : "", hh ? `Heure par heure (station ${hh.ou}) — ${hh.texte}.` : ""].filter(Boolean).join(" ") +
@@ -1054,6 +1074,7 @@ export async function historiqueMeteo(
     hier_heure_par_heure: hier?.bloc,
     heure_par_heure: hh?.bloc,
     records: recs,
+    reperes_du_mois: reperes,
     ...common,
     ...(hh || veille || hier ? { sources: credits([climat.SOURCE, ...(hh ? [climat.SOURCE_HORAIRE] : []), ...(veille || hier ? [METEOFRANCE] : [])]) } : {}),
   };

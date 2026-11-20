@@ -20,7 +20,7 @@ export const SOURCE: SourceInfo = {
   url: "https://transport.data.gouv.fr",
 };
 
-const FRESH_SECONDS = 60;
+export const FRESH_SECONDS = 60;
 // A feed older than this is a feed that stopped: the timetables alone are given.
 export const MAX_AGE_SECONDS = 15 * 60;
 export const SKIPPED = -1;
@@ -297,4 +297,19 @@ export async function realtime(cache: Cache, net: string): Promise<Cached<Realti
   const url = NETWORKS[net]?.temps_reel?.flux;
   if (!url) return undefined;
   return cache.get(`rt:${net}`, FRESH_SECONDS, async () => decode(new Uint8Array(await getBytes(SOURCE.id, url, RT_TIMEOUT_MS))), RT_BACKOFF_SECONDS);
+}
+
+/**
+ * The last feed of a network for a robot (a search engine, an assistant): the copy already read here while the feed is
+ * less than MAX_AGE_SECONDS old by its own time, read again after the answer (`behind`) when it is past its minute. A
+ * stop's page waited for that read at each view a minute after the last: from 13 to 20/11/2026, the robots waited
+ * 0.65 s for /bus/arret/<arrêt> in the middle, 2.8 s at the 90th percentile and up to 8.7 s (Analytics Engine), the
+ * slow ones reading gtfs_rt_reunion before the answer (Loki). The page says the feed's time. Without such a copy, the
+ * feed is read as for a person.
+ */
+export async function realtimeKept(cache: Cache, net: string, now: Date, behind: (work: Promise<unknown>) => void): Promise<Cached<Realtime> | undefined> {
+  const seen = await cache.peek<Realtime>(`rt:${net}`).catch(() => undefined);
+  if (!seen?.value || now.getTime() / 1000 - seen.value.at >= MAX_AGE_SECONDS) return realtime(cache, net);
+  if (now.getTime() - seen.fetchedAt.getTime() > FRESH_SECONDS * 1000) behind(realtime(cache, net).catch(() => undefined));
+  return seen;
 }

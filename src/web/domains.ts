@@ -3703,7 +3703,7 @@ export const LONGS_DEUX_SEMAINES = "Expositions, saisons et autres événements 
 /** The events of more than a week, once each, after the days (parJour's `aussi`): an exhibition of a month does not drown each day. */
 export function longsCard(rows: AgendaRow[], g: Porte, intro: string): string {
   if (!rows.length) return "";
-  return `<li class="card" id="longs"><h3>Sur plusieurs semaines <span class="note">${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3><p class="note">${esc(intro)}</p><ul class="rows eau">${rows.map((r) => agendaRow(r, g)).join("")}</ul></li>`;
+  return `<li class="card" id="longs"><h3>Sur plusieurs semaines <span class="note">${rows.length}\u00a0événement${rows.length > 1 ? "s" : ""}</span></h3><p class="note">${esc(intro)}</p><ul class="rows eau" data-sortie>${rows.map((r) => agendaRow(r, g)).join("")}</ul></li>`;
 }
 
 /** A row's end, local, from its hours: « samedi 24/10 de 09:00 à 16:00 », « du vendredi 23/10 au dimanche 01/11 ». */
@@ -3898,7 +3898,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
       ? `${filter}<div id="jours"><ul class="zones">${[...days].map(([day, j]) =>
           `<li class="card">${folded(foldDays,
             `<h3>${jourMois(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${jourCompte(j)}</span></h3>`,
-            `<ul class="rows eau">${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}${longsCard(longs, g, LONGS_DEUX_SEMAINES)}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
+            `<ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}${longsCard(longs, g, LONGS_DEUX_SEMAINES)}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour les deux semaines qui viennent.</p>`;
 
   const title = "Que faire à La Réunion (974) ? Concerts, fêtes, sorties";

@@ -36,6 +36,15 @@ describe("What a page's browser tells, as read", () => {
     expect(["p", "j", "l", "s", "t"].map((v) => lire(`e=r&v=${v}&p=%2F`)?.value)).toEqual(["première", "même jour", "lendemain", "dans la semaine", "plus tard"]);
   });
 
+  it("reads a link followed from an agenda as the site it leads to, its name only", () => {
+    expect(lire("e=s&v=teat.re&p=%2Fevenements%2Fce-week-end")).toEqual({ event: "sortie", path: "/evenements/ce-week-end", value: "teat.re" });
+    expect(lire("e=s&v=billetterie.example.re&p=%2Faujourdhui%2Fsaint-paul")?.value).toBe("billetterie.example.re");
+    expect(lire("e=s&v=xn--sechoir-bya.re&p=%2Fevenements")?.value).toBe("xn--sechoir-bya.re");
+    // Never a path, a query, an address or anything else in its place.
+    for (const v of ["teat.re%2Fprogrammation", "https%3A%2F%2Fteat.re", "teat.re%3Fa%3D1", "localhost", "TEAT.RE", "", "-teat.re", "a b.re", `${"a".repeat(98)}.re`])
+      expect(lire(`e=s&v=${v}&p=%2Fevenements`), v).toBeUndefined();
+  });
+
   it("keeps nothing it does not know: no other event, value, page or time", () => {
     expect(lire("e=x&v=&p=%2F")).toBeUndefined();
     expect(lire("e=o&v=peut-etre&p=%2F")).toBeUndefined();
@@ -103,6 +112,66 @@ describe("POST /signal, as recorded", () => {
   });
 });
 
+/** The page's script run against a stub of the browser: its listeners, and what it sent by beacon. */
+function page(path = "/evenements") {
+  const listeners: Record<string, ((e: unknown) => void)[]> = {};
+  const sent: Record<string, string>[] = [];
+  class El {
+    constructor(private readonly link?: { href: string; marked: boolean }) {}
+    closest(selector: string) {
+      return selector === "[data-sortie] a[href]" && this.link?.marked ? { href: this.link.href } : null;
+    }
+  }
+  const globals = {
+    navigator: { sendBeacon: (_u: string, b: URLSearchParams) => sent.push(Object.fromEntries(b)) },
+    location: { pathname: path, host: "rundata.re", href: `https://rundata.re${path}` },
+    addEventListener: (t: string, f: (e: unknown) => void) => (listeners[t] ??= []).push(f),
+    document: { addEventListener: () => {}, querySelectorAll: () => [], referrer: "https://rundata.re/" },
+    performance: { getEntriesByType: () => [] },
+    PerformanceObserver: class { observe() {} },
+    localStorage: { getItem: () => null, setItem: () => {} },
+    Element: El,
+  };
+  new Function(...Object.keys(globals), SIGNAL_SCRIPT)(...Object.values(globals));
+  const fire = (type: string, button: number, href?: string, marked = true, extra = {}) =>
+    (listeners[type] ?? []).forEach((f) => f({ type, button, target: new El(href ? { href, marked } : undefined), ...extra }));
+  return { sent, fire };
+}
+
+describe("A link followed from an agenda of events", () => {
+  it("sends the site's name and the page left, once per click, the middle button's and ctrl's too", () => {
+    const { sent, fire } = page("/evenements/ce-week-end");
+    fire("click", 0, "https://www.teat.re/programmation/?utm=x#a");
+    fire("click", 0, "https://kabardock.com/agenda", true, { ctrlKey: true });
+    fire("auxclick", 1, "https://bisik.re/agenda/");
+    expect(sent).toEqual([
+      { e: "s", v: "teat.re", p: "/evenements/ce-week-end" },
+      { e: "s", v: "kabardock.com", p: "/evenements/ce-week-end" },
+      { e: "s", v: "bisik.re", p: "/evenements/ce-week-end" },
+    ]);
+  });
+
+  it("sends nothing for a link of the site, a link outside the agenda, a right click or a mail", () => {
+    const { sent, fire } = page();
+    fire("click", 0, "https://rundata.re/evenements/concerts");
+    fire("click", 0, "/meteo");
+    fire("click", 0, "https://www.teat.re/", false);
+    fire("auxclick", 2, "https://www.teat.re/");
+    fire("click", 0, "mailto:contact@example.re");
+    fire("click", 0);
+    expect(sent).toEqual([]);
+  });
+
+  it("is marked on the lists of events and the venues' programmes, not elsewhere", async () => {
+    const { concertsPage } = await import("../src/web/evenements.js");
+    const empty = { value: { evenements: [], couverture: "", sources: [] }, fetchedAt: new Date(), stale: false } as never;
+    expect(concertsPage(O, empty)).toMatch(/<p data-sortie>Les programmes des salles/);
+    const { longsCard } = await import("../src/web/domains.js");
+    expect(longsCard([{ titre: "Expo", date: "2026-11-20", quand: "du vendredi 20/11 au dimanche 20/12", genres: [], lien: "https://www.teat.re/expo" } as never], undefined as never, "x"))
+      .toContain('<ul class="rows eau" data-sortie>');
+  });
+});
+
 describe("The class of a visit, from the two days kept", () => {
   const today = "2026-10-27";
   it("tells the first visit, the same day, the next day, the week and later", () => {
@@ -156,7 +225,7 @@ describe("The pages' part", () => {
     const html = legalPage(O, "confidentialite");
     expect(html).toContain("Le site ne pose aucun cookie et ne contient aucun traceur publicitaire. Dans votre navigateur, sans cookie, le site garde la date de votre première et de votre dernière visite, pour savoir s'il sert d'un jour à l'autre\u00a0; il n'en envoie qu'une catégorie (voir <a href=\"#retours\">«\u00a0Les retours\u00a0»</a>).");
     expect(html).not.toContain("Seule la vérification anti-robot");
-    expect(html).toContain("La page envoie aussi, sans identifiant, le temps qu'elle a mis à s'afficher sur votre appareil ; sur la page du connecteur, le fait que son adresse a été copiée ; et votre réponse au bouton « Cette page vous a aidé ? » (la page, et oui ou non).</p>\n  <p>Ces statistiques sont gardées par Cloudflare");
+    expect(html).toContain("La page envoie aussi, sans identifiant, le temps qu'elle a mis à s'afficher sur votre appareil ; sur la page du connecteur, le fait que son adresse a été copiée ; quand vous suivez un lien depuis l'agenda des événements, le nom du site où il mène (par exemple le site d'une salle) et la page d'où vous partez, sans l'adresse complète du lien ; et votre réponse au bouton « Cette page vous a aidé ? » (la page, et oui ou non).</p>\n  <p>Ces statistiques sont gardées par Cloudflare");
     expect(html).toContain('<p id="retours">Les retours. Pour savoir si le site sert d\'un jour à l\'autre, votre navigateur garde deux dates :');
     // What venu() does: past 13 months, wiped at the next visit, before anything is sent (« première »).
     expect(html).toContain("Passé 13 mois après votre première visite, il est effacé dès votre visite suivante, avant tout envoi\u00a0; il n'est jamais prolongé. Sans nouvelle visite, il reste sur votre appareil, sans être lu ni envoyé.");

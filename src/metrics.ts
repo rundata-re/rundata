@@ -261,7 +261,7 @@ export interface Visit {
  *
  * A signal (web/signaux.ts) is written as a page too, but for blob1 (« signal »), blob3 (its event), blob6 (empty:
  * its referer is always the page), blob10 (its value: oui, non, première, même jour, lendemain, dans la semaine, plus
- * tard), double2 (« affichage »: the TTFB seen by the browser, ms) and double6 (« affichage »: the LCP, ms, 0 where the
+ * tard; for « sortie », the site the link leads to, « billetterie.example.re »), double2 (« affichage »: the TTFB seen by the browser, ms) and double6 (« affichage »: the LCP, ms, 0 where the
  * browser does not give it). A visit's class (« retour ») leaves with the page the visit came in by.
  *
  * | column  | mcp, rpc                                   | page                                   |

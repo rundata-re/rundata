@@ -1133,7 +1133,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
     let d: Awaited<ReturnType<typeof stopPageDepartures>>;
     try {
       if (!transit.enabled()) throw new Error("horaires indisponibles ici");
-      d = await stopPageDepartures(p.groups, now, cache);
+      // A robot gets the real-time feed already read, refreshed after the answer; the daily check of the sources waits for it (gtfsrt.ts `realtimeKept`).
+      d = await stopPageDepartures(p.groups, now, cache, typeof readerOf(request) === "function" ? background : undefined);
     } catch (err) {
       console.error(`page ${path} : horaires indisponibles`, why(err));
       return new Response(tripGonePage(origin, path, undefined, await alerte(cache, background, now), true), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "60" } });

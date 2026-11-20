@@ -16,7 +16,7 @@
  */
 import type { Lecture } from "../lectures.js";
 import type { SourceInfo } from "../types.js";
-import { pageOf, slugify } from "../web/places.js";
+import { meteoPath, pageOf, slugify } from "../web/places.js";
 import { deNom } from "../articles.js";
 import { credited } from "./format.js";
 import { fraicheur } from "./fraicheur.js";
@@ -161,7 +161,7 @@ export function lien(tool: string, p: Payload): string {
   const commune = page(lieu.commune) ?? (page(lieu.trouve)?.commune ? page(lieu.trouve) : undefined);
   const place = page(lieu.trouve) ?? commune;
   let path = PAGES[tool];
-  if (WEATHER.has(tool) && place) path = `/meteo/${place.slug}`;
+  if (WEATHER.has(tool) && place) path = meteoPath(place.slug);
   else if (!path) path = commune ? `/communes/${commune.slug}` : "/";
   return `${SITE_URL}${path}?ref=mcp`;
 }

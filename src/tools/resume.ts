@@ -64,7 +64,7 @@ import {
   withoutForecast,
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
-import { coastal, PAGES, type PlacePage, slugify } from "../web/places.js";
+import { coastal, meteoPath, PAGES, type PlacePage, slugify } from "../web/places.js";
 import { occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
@@ -132,7 +132,7 @@ const SEA = "température de la mer";
 /** The copies of the commune's summary, for a place with its own weather page or not. */
 function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | undefined> {
   return {
-    meteo: { key: `web:lieu:${place.slug}`, build: (c, now) => buildPlace(c, place, now), max: 30, nom: "météo mesurée et prévue", outil: "meteo_actuelle et prevision_meteo", page: `/meteo/${place.slug}` },
+    meteo: { key: `web:lieu:${place.slug}`, build: (c, now) => buildPlace(c, place, now), max: 30, nom: "météo mesurée et prévue", outil: "meteo_actuelle et prevision_meteo", page: meteoPath(place.slug) },
     commune: { key: `web:commune:${commune.slug}`, build: (c, now) => buildCommune(c, commune, now), max: 24 * H, nom: "mairie et info trafic des bus", outil: "annuaire_services_publics et transports", page: `/communes/${commune.slug}` },
     air: { key: "web:air", build: buildAir, max: 12 * H, sameDay: true, nom: "qualité de l'air", outil: "qualite_air", page: "/air" },
     mer: coastal(commune) ? { key: "web:mer", build: buildSea, max: 36 * H, nom: SEA, outil: "temperature_mer", page: "/mer" } : undefined,

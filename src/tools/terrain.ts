@@ -581,10 +581,13 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   } };
 }
 
-/** fiche_terrain: the fiche of an address (ficheDonnees), as the connector's answer. */
+/**
+ * fiche_terrain: the fiche of an address (ficheDonnees), as the connector's answer; its `page` is /terrain with the same
+ * address, the same fiche on the site (the link cited, citer.ts).
+ */
 export async function ficheLieu(cache: Cache, adresse: string, now = new Date()) {
   const r = await ficheDonnees(cache, adresse, now);
-  return r.erreur ? { ...text(r.erreur), isError: true } : text(r.fiche);
+  return r.erreur ? { ...text(r.erreur), isError: true } : text({ ...r.fiche, page: `https://rundata.re/terrain?adresse=${encodeURIComponent(adresse.replace(/\s+/g, " ").trim().slice(0, 200))}` });
 }
 
 function planName(p: terrain.Plan): string {

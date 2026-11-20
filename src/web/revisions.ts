@@ -144,7 +144,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   trafic: 8,
   velos: 7,
   // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
-  volcan: 15,
+  // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.
+  volcan: 16,
 };
 
 /**

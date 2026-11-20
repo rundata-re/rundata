@@ -60,8 +60,9 @@ const R = {
   aout2023: { jour: "2023-09-06", titre: "Piton de la Fournaise – réouverture totale de l’enclos", copie: copy("20240528000717", `${GOUV}/Actualites/Communique-de-presse/Piton-de-la-Fournaise-reouverture-totale-de-l-enclos`), mis_a_jour: true as const },
   janv2026a1: { jour: "2026-01-01", titre: "Piton de la Fournaise : passage en alerte 1 - fermeture de l’enclos", copie: copy("20260101111021", `${GOUV}/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-passage-en-alerte-1-fermeture-de-l-enclos4`) },
   janv2026v: { jour: "2026-01-02", titre: "Piton de la Fournaise : retour en phase de vigilance", copie: copy("20260102112551", `${GOUV}/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-retour-en-phase-de-vigilance`) },
-  // Its archived address carries the query it was saved with: the Wayback Machine keeps the copy under it alone.
-  fev2026a21: { jour: "2026-02-13", titre: "Piton de la Fournaise : éruption dans l’enclos", copie: copy("20260215235752", `${GOUV}/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos2?utm_source=chatgpt.com`) },
+  // The release on the prefecture's site: the Wayback Machine keeps its copy only under an address tagged by another
+  // assistant (« ?utm_source=… », its index read on 20/11/2026), a tag that a link of ours must not carry.
+  fev2026a21: { jour: "2026-02-13", titre: "Piton de la Fournaise : éruption dans l’enclos", copie: `${GOUV}/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos2` },
   janv2026a21: { jour: "2026-01-18", titre: "Piton de la Fournaise : éruption dans l’enclos", copie: copy("20260118182615", `${GOUV}/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos`) },
   janv2026v2: { jour: "2026-01-27", titre: "Piton de la Fournaise : passage en phase de vigilance", copie: copy("20260129081540", `${GOUV}/Actualites/Communiques-de-presse/Acces-a-l-enclos-avec-restrictions`) },
   mai2026: { jour: "2026-05-07", titre: "Piton de la Fournaise : réouverture partielle de l’enclos", copie: copy("20260507190343", `${GOUV}/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-reouverture-partielle-de-l-enclos`) },

@@ -173,6 +173,8 @@ describe("fiche terrain", () => {
     expect(r.marche_immobilier.maisons.prix_m2_median).toMatch(/^\d{1,3}\u202f\d{3}\u00a0€\/m²$/);
     expect(r.marche_immobilier.maisons.prix_median).toMatch(/^\d{1,3}(\u202f\d{3})+\u00a0€$/);
     expect(r.urbanisme.approuve_le).toBe("27/09/2012");
+    // The same fiche on the site: /terrain with the address asked (the link the tool cites).
+    expect(r.page).toBe("https://rundata.re/terrain?adresse=7%20rue%20de%20la%20Buse%2C%20Saint-Paul");
     expect(urls[0]).toContain("geocodage");
     // The street's own sales first, then the area's, named before its figures.
     expect(r.resume).toContain("\u00a0; Rue de la Buse, depuis 2021 : maisons 2\u202f500\u00a0€/m² (prix médian, 7 ventes)\u00a0; dans le secteur alentour (environ 600 m sur 600 m), depuis 2021 : maisons ");

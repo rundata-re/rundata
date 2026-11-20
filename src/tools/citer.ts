@@ -16,6 +16,7 @@
  */
 import type { Lecture } from "../lectures.js";
 import type { SourceInfo } from "../types.js";
+import { STATIONS_974 } from "../providers/meteofrance-stations.js";
 import { meteoPath, pageOf, slugify } from "../web/places.js";
 import { deNom } from "../articles.js";
 import { credited } from "./format.js";
@@ -50,8 +51,12 @@ const PAGES: Record<string, string> = {
   historique_meteo: "/historique",
   evenements: "/evenements",
   actualites: "/actualites",
+  emploi: "/emploi",
+  fiche_terrain: "/terrain",
 };
 const WEATHER = new Set(["meteo_actuelle", "prevision_meteo"]);
+// Météo-France's stations by name: each has its page, /meteo/station/<id> (web/station.ts).
+const STATION_IDS = new Map(STATIONS_974.map(([id, nom]) => [nom, id]));
 
 type Payload = Record<string, unknown>;
 
@@ -164,7 +169,12 @@ export function lien(tool: string, p: Payload): string {
   const commune = page(lieu.commune) ?? (page(lieu.trouve)?.commune ? page(lieu.trouve) : undefined);
   const place = page(lieu.trouve) ?? commune;
   let path = PAGES[tool];
-  if (WEATHER.has(tool) && place) path = meteoPath(place.slug);
+  // The measures of a place without a page of its own (a district, coordinates) come from a station that its commune's
+  // page may not show (20/11/2026: Saint-François for La Montagne, Chaudron on /meteo/saint-denis): that station's page.
+  const first = stationsOf(p)[0];
+  const station = tool === "meteo_actuelle" && !page(lieu.trouve) && first?.source === "meteofrance" && typeof first.station === "string" ? STATION_IDS.get(first.station) : undefined;
+  if (station) path = `/meteo/station/${station}`;
+  else if (WEATHER.has(tool) && place) path = meteoPath(place.slug);
   else if (!path) path = commune ? `/communes/${commune.slug}` : "/";
   return `${SITE_URL}${path}?ref=mcp`;
 }

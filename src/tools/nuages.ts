@@ -232,7 +232,8 @@ const hourName = (x: number) => (x % 24 === 0 ? "minuit" : `${x % 24} h`);
 export function cielDeNuit(f: Forecast, place: Place, now: Date, o: { nom?: string; jour?: string } = {}): CielDeNuit | null {
   const nt = night(now, o.jour);
   if (!nt) return null;
-  const altitude = place.altitude_m ?? 0;
+  // A point without its own altitude (coordinates) stands at the one the forecast brought it to: the relief, as its warning says.
+  const altitude = place.altitude_m ?? f.altitude_m;
   const fenetres: CielDeNuit["fenetres"] = [];
   for (const t of nt.starts) {
     const h = f.hours.find((x) => x.time.getTime() === t.getTime());

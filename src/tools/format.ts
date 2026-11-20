@@ -236,6 +236,8 @@ export function placeBlock(asked: string, r: Resolution) {
     // A road is long: the answer is for one point of it, said so, not for the whole of it.
     route: p.type === "route" ? `Une route\u00a0: la réponse vaut pour un point de son tracé, ${aCommune(p.commune)}, pas pour toute sa longueur.` : undefined,
     autres_possibilites: r.autres.length ? r.autres.map((a) => `${a.nom} (${a.type}, ${a.commune})`) : undefined,
+    // A point given by its coordinates is in the commune of the nearest known place: an estimate, said so.
+    commune_d_apres: r.proche ? `Commune du lieu connu le plus proche, ${r.proche.nom}, à ${String(r.proche.km).replace(".", ",")} km du point : près d'une limite de commune, le point peut être dans la voisine.` : undefined,
     // Said, so that a place not known is not taken for the commune named beside it.
     mots_ignores: r.ignores ? `«\u00a0${r.ignores.join(" ")}\u00a0» laissé de côté\u00a0: la réponse vaut pour ${le(p.nom)}.` : undefined,
   };

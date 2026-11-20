@@ -215,7 +215,7 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
   const picked = near.filter((x) => x.d <= NEAR_KM).slice(0, 2);
   if (!picked.length) {
     return {
-      resume: `Aucun site de baignade contrôlé par l'ARS à moins de ${NEAR_KM} km ${a(res.lieu.commune || res.lieu.nom)}\u00a0; le plus proche : ${near[0].s.nom} (${near[0].s.commune}, ${Math.round(near[0].d)} km).`,
+      resume: `Aucun site de baignade contrôlé par l'ARS à moins de ${NEAR_KM} km ${a(res.correspondance === "coordonnees" ? res.lieu.nom : res.lieu.commune || res.lieu.nom)}\u00a0; le plus proche : ${near[0].s.nom} (${near[0].s.commune}, ${Math.round(near[0].d)} km).`,
       sites_controles: baignades.SITES.map((s) => `${s.nom} (${s.commune})`),
     };
   }

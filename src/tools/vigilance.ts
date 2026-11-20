@@ -1,13 +1,13 @@
 import type { Cache } from "../cache.js";
 import { localTime } from "../geo.js";
-import { resolvePlace } from "../places/resolve.js";
+import { offIsland, resolvePlace } from "../places/resolve.js";
 import * as feux from "../providers/feux.js";
 import * as mf from "../providers/vigilance.js";
 import * as carte from "../providers/vigilance-carte.js";
 import { SITE_URL } from "./citer.js";
 import { why } from "../types.js";
 import { vigilanceLine } from "./feux.js";
-import { credits, notFound, placeBlock, text } from "./format.js";
+import { credits, placeBlock, text } from "./format.js";
 
 const OFFICIAL =
   "Information officielle de Météo-France, reprise telle quelle. En cas d'alerte cyclonique, suivre les consignes " +
@@ -217,21 +217,27 @@ export async function vigilanceMeteo(cache: Cache, lieu: string | undefined, now
     sources: credits(fireLine ? [mf.SOURCE, feux.SOURCE] : [mf.SOURCE]),
   };
 
-  if (!lieu?.trim()) {
+  // The whole island: asked without a place, or for a place not known (« Lieu introuvable » alone said no vigilance at all,
+  // ux 20/11/2026), then saying so first.
+  const res = lieu?.trim() ? resolvePlace(lieu) : null;
+  const zone = res ? mf.ZONE_OF_COMMUNE[res.lieu.commune] : undefined;
+  if (!res || !zone) {
+    const unknown = lieu?.trim()
+      ? offIsland(lieu)
+        ? `«\u00a0${lieu.trim()}\u00a0» n'est pas à La Réunion\u00a0: voici la vigilance de toute l'île.`
+        : `Lieu «\u00a0${lieu.trim()}\u00a0» non reconnu\u00a0: voici la vigilance de toute l'île. Pour celle de sa zone, redemander avec sa commune.`
+      : undefined;
     const resume = r.length
       ? `${common.alerte_cyclonique} Vigilances au-dessus du vert : ` +
         r.map((x) => `${x.couleur_max} ${x.phenomene.toLowerCase()} pour ${x.zone}`).join("\u00a0; ") + "."
       : islandGreen(v, now)
         ? `${common.alerte_cyclonique} Aucune vigilance particulière à La Réunion (tout est vert) dans les 24 h du bulletin.`
         : `${common.alerte_cyclonique} ${NONE_ISSUED_SAID}.`;
-    return text({ resume: `${resume} ${link}`, ...common, vigilances: r.map(({ max: _, ...x }) => x) });
+    return text({ lieu_non_reconnu: unknown, resume: `${unknown ? `${unknown} ` : ""}${resume} ${link}`, ...common, vigilances: r.map(({ max: _, ...x }) => x) });
   }
 
-  const res = resolvePlace(lieu);
-  if (!res) return notFound(lieu);
   // The zone of Météo-France the place is in, said as its own: never a colour given to the commune (Météo-France).
-  const zone = mf.ZONE_OF_COMMUNE[res.lieu.commune];
-  const own = zone ? v.zones[zone] ?? {} : {};
+  const own = v.zones[zone] ?? {};
   const land = Object.entries(mf.PHENOMENA).filter(([id]) => Number(id) !== mf.CYCLONE && Number(id) !== 9);
   const niveaux = land.map(([id, nom]) => {
     const periods = own[Number(id)] ?? [];
@@ -243,7 +249,7 @@ export async function vigilanceMeteo(cache: Cache, lieu: string | undefined, now
     };
   });
   const coast = r.filter((x) => x.phenomene === mf.PHENOMENA[9]);
-  const zoneName = zone ? mf.ZONES[zone] : "zone inconnue";
+  const zoneName = mf.ZONES[zone];
   const short = zoneName.split(" :")[0];
   const up = land.flatMap(([id, nom]) =>
     (own[Number(id)] ?? []).filter((p) => p.couleur >= 2).map((p) => `${mf.colour(p.couleur)} ${nom.toLowerCase()} ${p.fin ? `du ${day(p.debut)} au ${day(p.fin)}` : `à partir du ${day(p.debut)}`}`),
@@ -251,7 +257,7 @@ export async function vigilanceMeteo(cache: Cache, lieu: string | undefined, now
   const issued = land.some(([id]) => (own[Number(id)] ?? []).some((p) => p.couleur >= 1));
   const said = up.length ? up.join(", ") : issued ? "vert" : NONE_ISSUED;
   return text({
-    lieu: placeBlock(lieu, res),
+    lieu: placeBlock(lieu!, res),
     zone_vigilance: zoneName,
     resume:
       `${common.alerte_cyclonique} Vigilance Météo-France, zone ${short} (où se trouve ${res.lieu.commune}) : ${said}.` +

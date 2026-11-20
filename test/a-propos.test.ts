@@ -109,11 +109,12 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
     expect(main).not.toMatch(/bLd75/i);
     expect(main.match(/github\.com\/[^"]*/gi)?.every((u) => u.startsWith("github.com/rundata-re/rundata"))).toBe(true);
     // About 300 words: the title, its sentence and the four sections, the contributions sentence among them (27/10). A <wbr>
-    // is not a space: « contact@<wbr>rundata<wbr>.re », in its span, is one word.
+    // is not a space: « contact@<wbr>rundata<wbr>.re », in its span, is one word. About 90 more with « Notre lecteur »
+    // (#lecteur, 20/11), the page the readers' User-Agent names.
     const text = (from: string, to: string) => main.slice(main.indexOf(from), main.indexOf(to, main.indexOf(from)));
     const words = (text("<h1>", "</div></div>") + text("<section style=", "</section>")).replaceAll("<wbr>", "").replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
     expect(words).toBeGreaterThan(200);
-    expect(words).toBeLessThan(360);
+    expect(words).toBeLessThan(460);
     expect(page).toContain('<a href="/a-propos">qui fait <span class="ident">rundata.re</span>\u00a0?</a>');
   });
 

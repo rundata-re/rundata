@@ -1238,7 +1238,7 @@ describe("agenda", () => {
       "Ville de Petite-Île", "Ville de Bras-Panon"]));
     // Last year's posts of Saint-Louis are past; nothing of theirs.
     expect(b.evenements.some((e: { publie_par: string }) => e.publie_par === "Ville de Saint-Louis")).toBe(false);
-    expect(asked.every((ua) => ua === "rundata.re (+https://rundata.re/a-propos; contact@rundata.re)")).toBe(true);
+    expect(asked.every((ua) => ua === "rundata.re (+https://rundata.re/a-propos#lecteur; contact@rundata.re)")).toBe(true);
     // Twenty-five agendas (two pages for Bras-Panon and for the Théâtre Luc Donat; Saint-Louis's is read by the scheduled
     // event), the pages of the four shows on both TÉAT stages, and those of three events of L'Étang-Salé over a period.
     expect(asked).toHaveLength(32);

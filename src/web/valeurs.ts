@@ -11,7 +11,7 @@ import { GITHUB, layout } from "./pages.js";
 
 export const PATH = "/valeurs";
 const TITLE = "Nos valeurs · rundata.re";
-const DESCRIPTION = "rundata.re rassemble les données publiques de La Réunion, sans compte ni publicité, avec un code ouvert. Ce qui est fermé, on ne le contourne pas\u00a0: on le dit.";
+const DESCRIPTION = "rundata.re rassemble les données publiques de La Réunion, sans compte ni publicité, avec un code ouvert, et cite chaque source avec l'heure de sa lecture.";
 
 export function valeursPage(origin: string, alerte?: Alerte): string {
   const band = `${crumbBar("Nos valeurs")}
@@ -45,9 +45,12 @@ export function valeursPage(origin: string, alerte?: Alerte): string {
   <p>Les contributions sont les bienvenues. Vous aimez les données, le code ou La Réunion, et vous voulez faire avancer le numérique de l'île\u00a0? Proposez une source, une correction ou une amélioration sur <a href="${GITHUB}">GitHub</a>, ou écrivez à ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}. Chaque proposition est relue avant d'être mise en ligne.</p>
   <h2 id="donnees">Des données ouvertes, et sourcées</h2>
   <p>Chaque donnée affiche sa source, sa licence et son heure. Vous pouvez la reprendre à votre tour, aux conditions de sa licence\u00a0: <a href="/conditions#reutiliser">réutiliser les données</a>. Le même contenu se lit aussi depuis un assistant IA (ChatGPT, Claude, Le Chat), sans compte\u00a0: <a href="/mcp">le connecteur rundata.re</a>.</p>
-  <h2 id="ferme">Ce qui est fermé, nous ne le contournons pas</h2>
-  <p>Quand un site interdit par écrit de reprendre son contenu, rundata.re ne le reprend pas, même par un détour. À la place, la page le dit\u00a0: qui l'interdit et, quand nous lui avons demandé son accord, à quelle date. Un site public qui ne répond plus est signalé lui aussi\u00a0: <a href="/sites-sans-reponse">les sites publics sans réponse</a>.</p>
-  <p>Une information publique qui reste fermée n'arrive pas à tout le monde. Vous tenez à l'agenda de votre mairie, au programme de votre salle, aux résultats de votre club\u00a0? Demandez-leur d'en permettre la reprise\u00a0: c'est vous qu'ils écoutent. Et pour leur montrer comment, envoyez-leur <a href="${GUIDE}">notre guide</a>.</p>
+  <h2 id="ferme">Les informations publiques, lues avec égards</h2>
+  <p>Ce que les communes de La Réunion publient sur leur site (agendas, avis, horaires) est une information publique, utile à tous. rundata.re la lit lentement, une page par minute au plus, et la cite à chaque fois, avec le nom de la commune, le lien de sa page et l'heure de la lecture. Une commune qui préfère que nous ne la reprenions pas nous écrit\u00a0: ses informations sont retirées dans les 24 heures.</p>
+  <p>Pour les autres sites (un organisme, une salle, une billetterie, une entreprise), c'est au cas par cas. Quand l'un d'eux ne souhaite pas que son contenu soit repris, la page le dit, et dit à quelle date nous lui avons demandé son accord.</p>
+  <p>Dans tous les cas, nous ne passons jamais une barrière\u00a0: connexion, captcha, blocage ou paiement.</p>
+  <p>Vous tenez au programme de votre salle, aux résultats de votre club, à l'agenda de votre association\u00a0? Demandez-leur d'en permettre la reprise\u00a0: c'est vous qu'ils écoutent. Et pour leur montrer comment, envoyez-leur <a href="${GUIDE}">notre guide</a>.</p>
+  <p>Un site public qui ne répond plus est signalé lui aussi\u00a0: <a href="/sites-sans-reponse">les sites publics sans réponse</a>.</p>
   <h2 id="reseaux-sociaux">Pourquoi nous sommes aussi sur Facebook et Instagram</h2>
   <p>Parce que beaucoup d'entre vous y sont. Nos posts renvoient au site, où tout se lit sans compte et où c'est vous qui choisissez ce que vous lisez.</p>
 </section>`;

@@ -38,7 +38,7 @@ describe("/valeurs, what rundata.re stands for", () => {
     expect(page).toContain("<title>Nos valeurs · rundata.re</title>");
     expect(page).toContain("<h1>Nos valeurs</h1>");
     const description = page.match(/<meta name="description" content="([^"]*)"/)![1];
-    expect(description).toBe("rundata.re rassemble les données publiques de La Réunion, sans compte ni publicité, avec un code ouvert. Ce qui est fermé, on ne le contourne pas\u00a0: on le dit.");
+    expect(description).toBe("rundata.re rassemble les données publiques de La Réunion, sans compte ni publicité, avec un code ouvert, et cite chaque source avec l&#39;heure de sa lecture.");
     expect(description.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
     expect(page).toContain(`<meta property="og:description" content="${description}">`);
     expect(page).toContain('"name":"Nos valeurs"');

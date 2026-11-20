@@ -36,6 +36,7 @@ export function aProposPage(origin: string, alerte?: Alerte): string {
     <li><b>En cas d'alerte, les autorités d'abord</b> : la vigilance de Météo-France et les consignes de la préfecture.</li>
     <li><b>Une erreur signalée est vérifiée et corrigée au plus vite.</b></li>
   </ul>
+  <p id="lecteur"><b>Notre lecteur.</b> rundata.re lit les sites publics avec un programme qui se présente sous le nom «\u00a0rundata.re\u00a0», avec le lien de cette page. Il lit au plus une page par minute sur chaque site, garde ce qu'il a lu pour ne pas revenir sans raison, et ne passe jamais une connexion, un captcha ni un blocage. Vous gérez un de ces sites et vous souhaitez que nous cessions de le lire, ou que nous retirions ce que nous en montrons\u00a0? Écrivez à ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}\u00a0: c'est fait dans les 24 heures.</p>
   <h2 id="contact">Joindre rundata.re</h2>
   <p>Écrivez à <b>${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}</b>, ou laissez un avis avec le formulaire en bas de chaque page.</p>
   <p>Le site est né en octobre 2026. Son code est libre (licence MIT). Les contributions sont les bienvenues. Vous aimez les données, le code ou La Réunion, et vous voulez faire avancer le numérique de l'île\u00a0? Proposez une source, une correction ou une amélioration sur <a href="${GITHUB}">GitHub</a>, ou écrivez à ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}. Chaque proposition est relue avant d'être mise en ligne.</p>

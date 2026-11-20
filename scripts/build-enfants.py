@@ -46,6 +46,13 @@ OSM_KIND = {
 # Data ES's types → the page's.
 ES_SPORT = {"Skatepark", "Pumptrack", "Anneau de Roller", "Multisports/City-stades"}
 ES_CLIMB = {"Structure Artificielle d'Escalade", "Salle de blocs artificiels d'escalade"}
+# Sites that OpenStreetMap gives and that are gone, checked by hand on 20/11/2026: the page that replaced it, or none.
+SITES = {
+    # Bibliothèque André Malraux, L'Étang-Salé: the old index.php page is a 404.
+    "https://www.openstreetmap.org/node/2591156202": "https://www.letangsale.fr/mon-cadre-de-vie/mes-sports-loisirs/la-bibliotheque",
+    # Musée Dan Tan Lontan, Saint-André: the town's page is gone, with no other; its map entry stays.
+    "https://www.openstreetmap.org/node/4721820628": None,
+}
 CLOSED = re.compile(r"site ferm[ée]|ferm[ée]e? d[ée]finitivement|ferm[ée]e? depuis|hors service|d[ée]moli|d[ée]truit|d[ée]saffect", re.I)
 FAMILIES = "Individuel(s),famille(s)"
 NOT_PUBLIC_LIBRARY = re.compile(r"universitaire|documentation|librairie|archives|tabac|presse|\bCDI\b|^B\.?C\.?D\b|direction|centre multi", re.I)
@@ -149,8 +156,9 @@ def osm_places(elements):
             p["age"] = a
         if t.get("opening_hours"):
             p["horaires_osm"] = t["opening_hours"]
-        if t.get("website") or t.get("contact:website"):
-            p["site"] = t.get("website") or t.get("contact:website")
+        site = SITES.get(p["lien"], t.get("website") or t.get("contact:website"))
+        if site:
+            p["site"] = site
         street = tidy(" ".join(x for x in [t.get("addr:housenumber"), t.get("addr:street")] if x))
         if street:
             p["adresse"] = street

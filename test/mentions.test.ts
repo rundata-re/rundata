@@ -6,7 +6,7 @@ import { coupuresCommunePage } from "../src/web/coupures.js";
 import { enfantsPage } from "../src/web/enfants.js";
 import { pageOf } from "../src/web/places.js";
 
-const SITE = "https://www.letangsale.fr/index.php/bibliotheque-municipale.html";
+const SITE = "https://www.letangsale.fr/mon-cadre-de-vie/mes-sports-loisirs/la-bibliotheque";
 const MOTS = "site de la ville de L'Étang-Salé";
 const HTML_MOTS = "site de la ville de L&#39;Étang-Salé";
 const NOW = new Date("2026-10-24T06:00:00Z");

@@ -1,5 +1,5 @@
 {
-  "lu": "2026-10-31",
+  "lu": "2026-11-20",
   "sources": {
     "saint_paul": {
       "nom": "Les marchés forains",
@@ -38,6 +38,61 @@
       "date": "2021-06-01",
       "licence": "Reprise permise à fin d'information, sans modification ni usage commercial (mentions légales de saintlouis.re)",
       "lu": "2026-10-31"
+    },
+    "saint_joseph": {
+      "nom": "Marché forain du Sud Sauvage",
+      "organisme": "Mairie de Saint-Joseph",
+      "url": "https://saintjoseph.re/Marche-forain-du-Sud-Sauvage",
+      "date": "2018-01-05",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
+    },
+    "le_port": {
+      "nom": "Les marchés forains au Port",
+      "organisme": "Ville du Port",
+      "url": "https://www.ville-port.re/marche-forain-de-la-place-des-cheminots/",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
+    },
+    "saint_denis": {
+      "nom": "Les marchés forains",
+      "organisme": "Ville de Saint-Denis",
+      "url": "https://www.saintdenis.re/les-marches-forains",
+      "date": "2013-02-27",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
+    },
+    "saint_pierre_forain": {
+      "nom": "Le marché forain",
+      "organisme": "Mairie de Saint-Pierre",
+      "url": "https://www.saintpierre.re/decouvrez-saint-pierre/le-cadre-de-vie/les-marches-de-saint-pierre/le-marche-forain",
+      "date": "2023-01-23",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
+    },
+    "saint_pierre_fleurs": {
+      "nom": "Le marché aux fleurs",
+      "organisme": "Mairie de Saint-Pierre",
+      "url": "https://www.saintpierre.re/decouvrez-saint-pierre/le-cadre-de-vie/les-marches-de-saint-pierre/le-marche-aux-fleurs",
+      "date": "2023-01-23",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
+    },
+    "le_tampon": {
+      "nom": "Marché forain du Tampon : le marché est maintenu ce samedi 24 octobre",
+      "organisme": "Ville du Tampon",
+      "url": "https://letampon.fr/actualites/marche-forain-du-tampon-le-marche-est-maintenu-ce-samedi-24-octobre/",
+      "date": "2026-10-23",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
+    },
+    "saint_benoit": {
+      "nom": "Réorganisation du marché forain",
+      "organisme": "Ville de Saint-Benoît",
+      "url": "https://www.saint-benoit.re/fr/actualites/articles/4373-reorganisation-du-marche-forain",
+      "date": "2021-07-12",
+      "licence": "Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande",
+      "lu": "2026-11-20"
     }
   },
   "marches": [
@@ -115,15 +170,97 @@
       "horaires_osm": "Fr 06:00-13:00",
       "lieu": "Devant la mairie de La Rivière",
       "source": "saint_louis_2021"
+    },
+    {
+      "nom": "Marché forain du Sud Sauvage",
+      "commune": "Saint-Joseph",
+      "horaires": "le vendredi de 6 h à 12 h",
+      "horaires_osm": "Fr 06:00-12:00",
+      "lieu": "Place François Mitterrand (parc fermé)",
+      "source": "saint_joseph",
+      "osm": "https://www.openstreetmap.org/relation/3134908"
+    },
+    {
+      "nom": "Marché forain de la place des Cheminots",
+      "commune": "Le Port",
+      "horaires": "le mercredi de 5 h à 12 h",
+      "horaires_osm": "We 05:00-12:00",
+      "lieu": "Place des Cheminots",
+      "source": "le_port",
+      "osm": "https://www.openstreetmap.org/node/4011305767"
+    },
+    {
+      "nom": "Marché forain de l'Oasis",
+      "commune": "Le Port",
+      "horaires": "le vendredi de 5 h à 12 h",
+      "horaires_osm": "Fr 05:00-12:00",
+      "lieu": "Oasis",
+      "source": "le_port",
+      "osm": "https://www.openstreetmap.org/node/4003792392"
+    },
+    {
+      "nom": "Marché forain de Rivière des Galets",
+      "commune": "Le Port",
+      "horaires": "le dimanche de 5 h à 12 h",
+      "horaires_osm": "Su 05:00-12:00",
+      "lieu": "Rivière des Galets",
+      "source": "le_port",
+      "osm": "https://www.openstreetmap.org/node/13891112229"
+    },
+    {
+      "nom": "Marché forain de La Source",
+      "commune": "Saint-Denis",
+      "horaires": "le jeudi de 6 h à 12 h",
+      "horaires_osm": "Th 06:00-12:00",
+      "lieu": "La Source",
+      "source": "saint_denis"
+    },
+    {
+      "nom": "Marché forain des Camélias",
+      "commune": "Saint-Denis",
+      "horaires": "le vendredi de 6 h à 12 h",
+      "horaires_osm": "Fr 06:00-12:00",
+      "lieu": "Providence, Vauban, Camélias",
+      "source": "saint_denis"
+    },
+    {
+      "nom": "Marché forain de Saint-Pierre",
+      "commune": "Saint-Pierre",
+      "horaires": "le samedi de 5 h à 12 h",
+      "horaires_osm": "Sa 05:00-12:00",
+      "lieu": "Boulevard Hubert Delisle, lieu-dit « Les Filaos »",
+      "source": "saint_pierre_forain",
+      "osm": "https://www.openstreetmap.org/node/4608283177"
+    },
+    {
+      "nom": "Marché aux fleurs de Saint-Pierre",
+      "commune": "Saint-Pierre",
+      "horaires": "le mercredi de 6 h à 12 h",
+      "horaires_osm": "We 06:00-12:00",
+      "lieu": "Place du marché couvert, rue François Isautier",
+      "source": "saint_pierre_fleurs"
+    },
+    {
+      "nom": "Marché forain du Tampon",
+      "commune": "Le Tampon",
+      "horaires": "le samedi de 6 h à 13 h",
+      "horaires_osm": "Sa 06:00-13:00",
+      "lieu": "Esplanade Benjamin Hoarau",
+      "source": "le_tampon",
+      "osm": "https://www.openstreetmap.org/node/460480863"
+    },
+    {
+      "nom": "Marché forain de Saint-Benoît",
+      "commune": "Saint-Benoît",
+      "horaires": "le samedi de 6 h à 12 h",
+      "horaires_osm": "Sa 06:00-12:00",
+      "lieu": "Place de la Savane et haut de la rue du Stade",
+      "source": "saint_benoit",
+      "osm": "https://www.openstreetmap.org/node/2847824855"
     }
   ],
   "liens": {
-    "Saint-Pierre": "https://www.saintpierre.re/decouvrez-saint-pierre/le-cadre-de-vie/les-marches-de-saint-pierre/le-marche-forain",
-    "Le Tampon": "https://letampon.fr/",
-    "Saint-Denis": "https://www.saintdenis.re/",
     "Cilaos": "https://ville-cilaos.fr/",
-    "Saint-Joseph": "https://saintjoseph.re/Marche-forain-du-Sud-Sauvage",
-    "Le Port": "https://www.ville-port.re/marche-forain-de-la-place-des-cheminots/",
     "Saint-André": "https://www.saint-andre.re/"
   }
 }

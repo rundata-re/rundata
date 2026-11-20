@@ -87,26 +87,29 @@ describe("the page of a commune's day", () => {
   });
 
   it("gives the forain on its day before the covered market, kept apart, and never says there is no market", () => {
-    // Saturday 24/10 at 15:10: the forain of Saint-Pierre, its day and its morning from its OpenStreetMap name; the
+    // Saturday 24/10 at 15:10: the forain of Saint-Pierre, its day and hours from the town hall's page, dated; the
     // covered market, open all week, apart.
     const sp = pageOf("saint-pierre")!;
     const html = aujourdhuiPage("https://rundata.re", sp, resume(sp, full(sp.nom) as never, NOW), null);
-    expect(html).toContain(`Marché aujourd'hui : <a href="https://www.openstreetmap.org/node/4608283177" rel="noopener"><b>Marché Forain de Saint-Pierre (Samedi Matin)</b></a> <span class="note">le matin</span>`);
+    expect(html).toContain(`Marché aujourd'hui : <a href="https://www.saintpierre.re/decouvrez-saint-pierre/le-cadre-de-vie/les-marches-de-saint-pierre/le-marche-forain" rel="noopener"><b>Marché forain de Saint-Pierre</b></a> <span class="note">de 5\u00a0h à 12\u00a0h, Boulevard Hubert Delisle, lieu-dit « Les Filaos », d&#39;après le site de la mairie de Saint-Pierre (page du 23/01/2023)</span>`);
     expect(html).toContain(`Marché permanent : <a href="https://www.openstreetmap.org/way/67648500" rel="noopener"><b>Marché couvert de Saint-Pierre</b></a> <span class="note">du lundi au samedi de 7\u00a0h à 17\u00a0h, Rue Victor le Vigoureux</span>`);
     expect(html).not.toMatch(/Marché aujourd'hui : <a [^>]*><b>Marché couvert/);
-    expect(html.indexOf("Marché Forain de Saint-Pierre")).toBeLessThan(html.indexOf("Marché couvert de Saint-Pierre"));
-    // Nothing taken from its site: its page, for the days and hours.
-    expect(html).toContain(`<li>Jours et horaires des marchés : <a href="https://www.saintpierre.re/decouvrez-saint-pierre/le-cadre-de-vie/les-marches-de-saint-pierre/le-marche-forain" rel="noopener">site de la mairie de Saint-Pierre →</a></li>`);
-    // On Wednesday, no forain: the covered market alone, never « the market of the day ».
+    expect(html.indexOf("Marché forain de Saint-Pierre")).toBeLessThan(html.indexOf("Marché couvert de Saint-Pierre"));
+    // Its days taken from its site: no other link to it for the days and hours.
+    expect(html).not.toContain("Jours et horaires des marchés");
+    // On Wednesday, no forain: the flower market, and the covered market apart, never « the market of the day ».
     const wed = new Date("2026-10-28T04:00:00Z");
     const w = aujourdhuiPage("https://rundata.re", sp, resume(sp, full(sp.nom) as never, wed), null);
-    expect(w).not.toContain("Marché aujourd'hui");
+    expect(w).toMatch(/Marché aujourd'hui : <a [^>]*><b>Marché aux fleurs de Saint-Pierre<\/b>/);
+    expect(w).not.toMatch(/Marché aujourd'hui : <a [^>]*><b>Marché couvert/);
     expect(w).toContain("Marché permanent : ");
-    // Days no source gives: said so, by name, with the town hall's home page (its terms forbid a deeper link).
+    // Days no source gives: said so, by name; the town hall's site linked when its page gives no day with hours.
     const lt = pageOf("le-tampon")!;
     const t = aujourdhuiPage("https://rundata.re", lt, resume(lt, full(lt.nom) as never, NOW), null);
-    expect(t).toMatch(/<li>Marchés : <a [^>]*><b>Marché Couvert du Tampon<\/b><\/a>, .*, <span class="note">jours non trouvés<\/span><\/li>/);
-    expect(t).toMatch(/<li>Jours et horaires des marchés : <a href="https:\/\/letampon\.fr\/" rel="noopener"[^>]*>site de la mairie du Tampon →<\/a><\/li>/);
+    expect(t).toContain(`<b>Marché forain du Tampon</b></a> <span class="note">de 6\u00a0h à 13\u00a0h, Esplanade Benjamin Hoarau, d&#39;après le site de la mairie du Tampon (page du 23/10/2026)</span>`);
+    expect(t).toMatch(/<li>Autres marchés : <a [^>]*><b>Marché Couvert du Tampon<\/b><\/a>, .*, <span class="note">jours non trouvés<\/span><\/li>/);
+    const ci = pageOf("cilaos")!;
+    expect(aujourdhuiPage("https://rundata.re", ci, resume(ci, full(ci.nom) as never, NOW), null)).toMatch(/<li>Jours et horaires des marchés : <a href="https:\/\/ville-cilaos\.fr\/" rel="noopener"[^>]*>site de la mairie de Cilaos →<\/a><\/li>/);
     expect(t).not.toMatch(/pas de marché|aucun marché/i);
     // Under the markets of the day: « Autres marchés ».
     const sp2 = aujourdhuiPage("https://rundata.re", pageOf("saint-paul")!, resume(pageOf("saint-paul")!, full("Saint-Paul") as never, NOW), null);

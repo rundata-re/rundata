@@ -25,7 +25,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // L'agenda de Saint-André repris avec l'accord écrit de la commune du 16/11/2026.
   // Le Tampon, Saint-Denis et Saint-Pierre lus comme information publique de la commune (20/11/2026) : leurs événements,
   // leur couverture, et plus de mention « non repris » pour elles.
-  agenda: 39,
+  // La Possession, Petite-Île, Saint-Benoît et Sainte-Rose lues comme information publique de la commune (20/11/2026) :
+  // leurs événements, leur couverture, et plus de mention « non repris » pour elles.
+  agenda: 40,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   air: 13,
   bornes: 5,
@@ -41,7 +43,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // sensors.social among the air's sources, under ODbL (09/11/2026).
   // MétéoR Océan Indien among the weather's sources, under CC BY-NC (09/11/2026).
   // The news of Saint-Denis and Saint-Pierre, and Le Tampon's agenda, among the sources counted (20/11/2026).
-  chiffres: 26,
+  // The agendas of La Possession, Petite-Île and Saint-Benoît among the sources counted (20/11/2026).
+  chiffres: 27,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
@@ -182,6 +185,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Read again as the commune's public information (20/11/2026), each event with its own page's link: an older entry
   // linked its home page.
   "agenda:le_tampon": 1,
+  // An event without a place no longer takes the start of its text for one (20/11/2026).
+  "agenda:petite_ile": 1,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without

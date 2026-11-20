@@ -1130,7 +1130,10 @@ export function parsePetiteIle(html: string, now: Date, nom = "Ville de Petite-�
   // The list only, from its first row to the footer: the menus around it are four fifths of the page.
   const from = html.indexOf("views-row");
   const to = html.indexOf("<footer", from);
-  const t = tokens(html.slice(Math.max(0, from), to > 0 ? to : undefined));
+  // An event without a place keeps its empty « location_on » block: taken out, else the start of its text would be
+  // read as its place (« DON DE SANG - OFFREZ LE PLUS BEAU DES CADEAUX !… », 20/11/2026).
+  const list = html.slice(Math.max(0, from), to > 0 ? to : undefined).replace(/>location_on<\/i>\s*<\/div>/g, "></i></div>");
+  const t = tokens(list);
   const out: Evenement[] = [];
   for (let i = 1; i + 1 < t.length; i++) {
     if (t[i].t !== "access_time") continue;
@@ -1169,7 +1172,8 @@ const LA_POSSESSION = mairie("la_possession", "Ville de La Possession", "https:/
 // Its terms: « à des fins d'information et en aucune manière à des fins commerciales », « ne pas modifier », and its
 // copyright on every copy (`site_commune`).
 const LE_PORT = mairie("le_port", "Ville du Port", "https://www.ville-port.re/agenda/", REPRISE_INFORMATION);
-// Credited by their home page, the only page their terms allow a link to; their agenda page is read.
+// Its agenda page is read; each event links its own page since 20/11/2026 (the commune's public information,
+// autorisations.ts « publique »), its home page before.
 const PETITE_ILE = mairie("petite_ile", "Ville de Petite-Île", "https://www.petite-ile.re/");
 const PETITE_ILE_AGENDA = "https://www.petite-ile.re/actualites/agenda/";
 
@@ -1849,8 +1853,11 @@ export const LISIBLES: Agenda[] = [
   // by the scheduled event, as Le Séchoir is (24 views of 88 too slow for it without any copy, 04-07/11/2026), every
   // 3 hours: there its pages are read again at each reading, the list and ETANG_SALE_PAGES pages.
   { ...etangSale, site_commune: "site de la commune de L'Étang-Salé", mention: true, faits: true, programmes: true, planifie: true, requetes: 1 + ETANG_SALE_PAGES, relecture: 3 * 3600 },
+  // La Possession, Petite-Île and Saint-Benoît: the commune's public information (autorisations.ts « publique »,
+  // 20/11/2026), read by the questions, one request kept an hour in each data center;
+  // the facts only, each with its own page.
   { ...intraMuros("la_possession", "Ville de La Possession", "https://www.lapossession.re/agenda/rss", "La Possession", LA_POSSESSION), site_commune: "site de la commune de La Possession", faits: true, programmes: true },
-  { ...petiteIle, site_commune: "site de la commune de Petite-Île", faits: true, accueil: PETITE_ILE.url },
+  { ...petiteIle, site_commune: "site de la commune de Petite-Île", faits: true },
   { ...brasPanon, site_commune: "site de la commune de Bras-Panon", mention: true, faits: true },
   { ...saintBenoit, site_commune: "site de la commune de Saint-Benoît", faits: true, programmes: true },
   otiEst,

@@ -1,10 +1,9 @@
 /**
- * The sites never linked to, from a page or a tool's answer, not even by their home page, until they agree: their
- * terms submit any link to their « autorisation expresse et préalable » (Saint-Benoît's legal notice, read on
- * 25/10/2026; interne/catalogue/sources.yaml). What is not taken from them is said by the factual mention of
- * tools/non-repris.ts, which names them without a link.
+ * The sites never linked to, from a page or a tool's answer, not even by their home page: none since 20/11/2026, when
+ * Saint-Benoît's site, the last one here, became read as the commune's public information (autorisations.ts
+ * « publique »), each fact with its page's link. Kept for a site that would ask in writing not to be linked.
  */
-const SANS_LIEN = ["saint-benoit.re"];
+const SANS_LIEN: string[] = [];
 
 /** Whether `url` leads to a site of SANS_LIEN, whatever its page: never given as a link. Nothing else is. */
 export function sansLien(url: string | undefined): boolean {

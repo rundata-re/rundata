@@ -753,7 +753,7 @@ describe("coupures d'eau", () => {
     expect(sl).toContain("les avis de coupure publiés sur <a href=\"https://www.saintleu.re/?s=eau\" rel=\"noopener\">le site de la commune de Saint-Leu</a>");
     expect(coupures.value.communes_suivies).toContain("Saint-Leu");
     expect(page("cilaos")).toContain(`<a href="https://ville-cilaos.fr/?s=coupure+d%27eau" rel="noopener">Les avis de coupure d&#39;eau sur le site de la ville de Cilaos →</a>`);
-    expect(page("petite-ile")).toContain(`<a href="https://www.petite-ile.re/" rel="noopener" target="_blank">Les avis « Coupure d&#39;eau » sur le site de la ville de <span class="nb">Petite-Île</span> →</a>`);
+    expect(page("petite-ile")).toContain(`<a href="https://www.petite-ile.re/" rel="noopener">Les avis « Coupure d&#39;eau » sur le site de la ville de <span class="nb">Petite-Île</span> →</a>`);
     // L'Étang-Salé: the ARS names runéo for 7 of its 8 networks and the mairie for one; runéo's notices are read.
     const es = page("l-etang-sale");
     expect(es).toContain("<p>D&#39;après l&#39;ARS, runéo distribue l&#39;eau de 7 réseaux sur 8 à L&#39;Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts.</p>");

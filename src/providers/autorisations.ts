@@ -15,7 +15,8 @@
  * scheduled event, cached), under an honest User-Agent, each fact cited with its link and the hour it was read; nothing
  * technical is ever got round (captcha, login, a blocked address), and a commune that asks in writing to be taken out
  * is, within a day. The communes are switched to it in
- * batches, each once its reader is checked.
+ * batches, each once its reader is checked: Le Tampon, Saint-Denis and Saint-Pierre, then La Possession, Petite-Île,
+ * Saint-Benoît and Sainte-Rose (20/11/2026).
  */
 export interface Autorisation {
   /** The commune whose site it is. */
@@ -50,19 +51,21 @@ export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:bras_panon": { commune: "Bras-Panon", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-10-28" },
   "agenda:cilaos": { commune: "Cilaos", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:etang_sale": { commune: "L'Étang-Salé", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-06" },
-  "agenda:la_possession": { commune: "La Possession", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:la_possession": { commune: "La Possession", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:le_tampon": { commune: "Le Tampon", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
-  "agenda:petite_ile": { commune: "Petite-Île", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:petite_ile": { commune: "Petite-Île", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:plaine_des_palmistes": { commune: "La Plaine-des-Palmistes", publie: "actualités", etat: "permise" },
   "agenda:saint_andre": { commune: "Saint-André", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
-  "agenda:saint_benoit": { commune: "Saint-Benoît", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:saint_benoit": { commune: "Saint-Benoît", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:saint_denis": { commune: "Saint-Denis", publie: "actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:saint_joseph": { commune: "Saint-Joseph", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:saint_leu": { commune: "Saint-Leu", publie: "actualités", etat: "permise" },
   "agenda:saint_louis": { commune: "Saint-Louis", publie: "événements", etat: "permise" },
   "agenda:saint_philippe": { commune: "Saint-Philippe", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:saint_pierre": { commune: "Saint-Pierre", publie: "événements et actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
-  "agenda:sainte_rose": { commune: "Sainte-Rose", publie: "événements et actualités", etat: "demandee", demandee_le: "2026-10-26" },
+  // No agenda to read: its menu's « Agenda » (/fr/ev/1771460/agenda-1212) leads to its 404 page, and its six news of
+  // 20/11/2026 announce no dated event. Public all the same, so that it is no longer said « non repris ».
+  "agenda:sainte_rose": { commune: "Sainte-Rose", publie: "événements et actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "courant:Cilaos": { commune: "Cilaos", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
   "courant:Saint-André": { commune: "Saint-André", publie: "avis de coupure d'électricité", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
   "courant:Saint-Philippe": { commune: "Saint-Philippe", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },

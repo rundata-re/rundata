@@ -50,8 +50,8 @@ const MAIRIES: Record<string, { par: string; site: string }> = {
  * - Petite-Île (petite-ile.re/mentions-legales): « Les reproductions, les transmissions, les modifications, les
  *   réutilisations dudit site et de ses œuvres ne sont autorisées que dans le respect des dispositions de l'article L122-5
  *   du code de la propriété intellectuelle. » and « La mise en place de liens hypertexte pour tous les sites Internet
- *   devra faire l'objet d'une autorisation préalable de la Mairie. » Linked by its home page only, as its agenda's events
- *   are (src/providers/agenda.ts, ACCUEILS), until it answers our letter; never a page of its site.
+ *   devra faire l'objet d'une autorisation préalable de la Mairie. » Linked by its home page only, where its notices of
+ *   cuts are found (its agenda's events link their own page since 20/11/2026, read as the commune's public information).
  * - Cilaos (ville-cilaos.fr/mentions-legales): viewing only, copying needs express authorisation.
  * - L'Étang-Salé (letangsale.fr): no notice of cuts found on its site, whose legal notice excludes use « d'information »;
  *   the ARS names two distributors there, runéo for most of its networks and the mairie for one (partage).

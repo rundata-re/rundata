@@ -861,6 +861,25 @@ describe("agenda", () => {
     expect(list.every((e) => !e.description || e.description.length <= 200)).toBe(true);
   });
 
+  it("never takes the start of a Petite-Île event's text for its place when the place block is empty", () => {
+    // As its page gave it on 20/11/2026 (the theme's debug comments left out).
+    const teaser = (slug: string, titre: string, lieu: string) => `<div class="views-row"><a href="/actualites/agenda/${slug}"><article><div class="col-xs-8 col-md-7"><div>
+      <a href="/actualites/agenda/${slug}"><h2 class="node__title event--teaser--node__title"><span class="field field--name-title">${titre}</span></h2></a></div>
+      <div class="event--teaser--date"><i class="material-icons">access_time</i>              Du 01 décembre  au 17 décembre
+      </div>
+      <div class="event--teaser--lieu"><i class="material-icons align-middle">location_on</i>${lieu}
+      </div>
+      <div class="event--teaser--introduction">
+        &amp;nbsp;DON DE SANG - OFFREZ LE PLUS BEAU DES CADEAUX !Les fêtes approchent… et si vous faisiez un geste qui sauve des vies ?
+      </div></div></article></a></div>`;
+    const html = `${teaser("collecte-de-sang-le-mardi-1er-et-jeudi-17-decembre", "Collecte de sang le mardi 1er et jeudi 17 décembre", "")}${teaser("collecte-de-sang-le-1er-et-17-decembre-2026", "Collecte de sang le 1er et 17 décembre 2026", "Salle des Mariages")}<footer></footer>`;
+    const list = parsePetiteIle(html, new Date("2026-11-20T01:00:00Z"));
+    expect(list.map((e) => [e.titre, e.lieu])).toEqual([
+      ["Collecte de sang le mardi 1er et jeudi 17 décembre", undefined],
+      ["Collecte de sang le 1er et 17 décembre 2026", "Salle des Mariages"],
+    ]);
+  });
+
   it("reads the feed of L'Étang-Salé, the first sentence of its text only", () => {
     const etang = parseRss(fixture("rss_etang-sale.xml"), "Ville de L'Étang-Salé", "L'Étang-Salé", true);
     expect(etang.map((e) => [e.titre, e.seances, e.description])).toEqual([
@@ -1206,14 +1225,14 @@ describe("agenda", () => {
     const b = body(await agenda(c, undefined, undefined, undefined, NOW));
     expect(b.resume).toBe(`40 événements à La Réunion dans les deux semaines qui viennent (du samedi 24/10 au samedi 07/11)\u00a0; ${RESUME_REUNION_FR}.`.replace("40", String(b.nombre)));
     // Without the sports programmes of La Possession, L'Étang-Salé and Saint-Benoît: the sport tool's.
-    // Nor Saint-Benoît's 7, whose site is never linked (src/liens.ts).
-    // Nor the OTI Est's 8, suspended (its robots.txt closes it to the AI crawlers).
-    expect(b.nombre).toBe(85);
+    // Saint-Benoît's 8 in since 20/11/2026: its site, read as the commune's public information, is linked (src/liens.ts).
+    // Not the OTI Est's 8, suspended (its robots.txt closes it to the AI crawlers).
+    expect(b.nombre).toBe(93);
     expect(b.evenements).toHaveLength(40);
     // The tool asks for 25 (LISTED_OUTIL, server.ts), the pages keep 40: the first 25 of the same list, the count whole.
     expect(LISTED_OUTIL).toBe(25);
     const short = body(await agenda(c, undefined, undefined, undefined, NOW, LISTED_OUTIL));
-    expect(short.nombre).toBe(85);
+    expect(short.nombre).toBe(93);
     expect(short.evenements).toEqual(b.evenements.slice(0, 25));
     // Through the MCP endpoint, at the same hour.
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -1221,7 +1240,7 @@ describe("agenda", () => {
     try {
       const rpc = new Request("https://rundata.re/mcp", { method: "POST", headers: { "content-type": "application/json", accept: "application/json, text/event-stream" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "evenements", arguments: {} } }) });
       const tool = JSON.parse((await (await handle(rpc, c)).json()).result.content[0].text);
-      expect(tool.nombre).toBe(85);
+      expect(tool.nombre).toBe(93);
       // The endpoint puts no-break spaces before « : ; ? ! » (insecables): compared without them.
       const titles = (l: EventRow[]) => l.map((e) => e.titre.replace(/[\u00a0\u202f]/g, " "));
       expect(titles(tool.evenements)).toEqual(titles(b.evenements.slice(0, 25)));
@@ -1235,7 +1254,7 @@ describe("agenda", () => {
     const all = body(await agenda(c, undefined, undefined, undefined, NOW, 300));
     expect(new Set(all.evenements.map((e: { publie_par: string }) => e.publie_par))).toEqual(new Set(["Ville du Tampon", "Ville du Port", "Mairie des Trois-Bassins", "CINOR", "Mairie de Saint-Paul", "Ville de Saint-André",
       "Le Séchoir", "TÉAT La Réunion", "Cité des Arts", "Kabardock", "Bisik", "Théâtre Luc Donat", "CDNOI", "Léspas", "Ville de La Possession", "Ville de L'Étang-Salé",
-      "Ville de Petite-Île", "Ville de Bras-Panon"]));
+      "Ville de Petite-Île", "Ville de Bras-Panon", "Ville de Saint-Benoît"]));
     // Last year's posts of Saint-Louis are past; nothing of theirs.
     expect(b.evenements.some((e: { publie_par: string }) => e.publie_par === "Ville de Saint-Louis")).toBe(false);
     expect(asked.every((ua) => ua === "rundata.re (+https://rundata.re/a-propos#lecteur; contact@rundata.re)")).toBe(true);
@@ -1295,10 +1314,11 @@ describe("agenda", () => {
       expect(by(p).length, p).toBeGreaterThan(0);
       expect(by(p).every((e) => !e.description && e.source === `site de la commune ${commune}, lu le samedi 24/10 à 08:00`), p).toBe(true);
     }
-    expect(by("Ville de Petite-Île").every((e) => e.lien === "https://www.petite-ile.re/")).toBe(true);
-    // Saint-Benoît submits any link to its site to its agreement (src/liens.ts): its events, each shown with its link, are not.
-    expect(by("Ville de Saint-Benoît")).toEqual([]);
-    expect(JSON.stringify(all)).not.toContain("saint-benoit.re");
+    // Petite-Île and Saint-Benoît, read as the communes' public information since 20/11/2026: each event its own page
+    // (Petite-Île's home page and nothing of Saint-Benoît's before 20/11/2026).
+    expect(by("Ville de Petite-Île").every((e) => e.lien?.startsWith("https://www.petite-ile.re/actualites/agenda/"))).toBe(true);
+    expect(by("Ville de Saint-Benoît").length).toBeGreaterThan(0);
+    expect(by("Ville de Saint-Benoît").every((e) => !e.description && e.source === "site de la commune de Saint-Benoît, lu le samedi 24/10 à 08:00" && e.lien?.startsWith("https://www.saint-benoit.re/evenements/articles/"))).toBe(true);
     // Bras-Panon's terms say nothing of links: each its own page.
     expect(by("Ville de Bras-Panon").every((e) => e.lien?.startsWith("https://www.braspanon.re/fr/ev/"))).toBe(true);
     // Not a commune's site: no such line.
@@ -1329,10 +1349,11 @@ describe("agenda", () => {
     expect((await programmesSportifs(c)).map(({ e, agenda }) => [agenda.id, e.titre, e.seances])).toEqual([
       ["etang_sale", "Compétitions sportives : 06 - 08 novembre", [{ debut: "2026-11-06", fin: "2026-11-08" }]],
       ["la_possession", "Agenda sportif du 22 au 24 octobre", [{ debut: "2026-10-22", fin: "2026-10-24" }]],
+      // Saint-Benoît's too since 20/11/2026, its site read as the commune's public information and linked.
+      ["saint_benoit", "Agenda sportif", [{ debut: "2026-10-23", fin: "2026-10-25" }]],
     ]);
-    // By the same rules as the agenda tool: none of Saint-Benoît's, whose site is never linked; no sentence of the text.
+    // By the same rules as the agenda tool: no sentence of the text.
     const programmes = await programmesSportifs(c);
-    expect(programmes.some(({ agenda }) => agenda.id === "saint_benoit")).toBe(false);
     expect(programmes.every(({ e }) => !e.description)).toBe(true);
   });
 

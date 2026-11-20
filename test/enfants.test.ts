@@ -263,12 +263,12 @@ describe("the children's page", () => {
     expect(empty).toContain('id="c-saint-leu"');
   });
 
-  it("says, under an event from a commune's site, that site and when it was read; its home page in a new window", () => {
+  it("says, under an event from a commune's site, that site and when it was read; its link in the same window", () => {
     const tampon = { ...row("Atelier contes", "2026-10-24T10:00"), commune: "Petite-Île", publie_par: "Ville de Petite-Île", lien: "https://www.petite-ile.re/", source: "site de la commune de Petite-Île, lu le samedi 24/10 à 08:00" };
     const page = enfantsPage(O, { value: { ce_week_end: [tampon], evenements: [tampon] }, fetchedAt: NOW } as any, NOW);
     expect(page).toContain(`Source\u00a0: site de la commune de Petite-Île, lu le samedi 24/10 à 08:00`);
     expect(page).not.toContain("Ville de Petite-Île");
-    expect(page).toContain(`<a href="https://www.petite-ile.re/" rel="noopener" target="_blank">Atelier contes</a>`);
+    expect(page).toContain(`<a href="https://www.petite-ile.re/" rel="noopener">Atelier contes</a>`);
   });
 });
 

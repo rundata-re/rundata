@@ -215,11 +215,13 @@ export const sourceMuette = (source: string, at: Date, tardive?: boolean) =>
 
 /**
  * `donnee`: false leaves `donnee_du` out (an answer made of many dated parts, each saying its own), and dates the read
- * by the newest of them. `nom`: a source's
+ * by the newest of them. `lentes`: every read counts, the slow ones too. `nom`: a source's
  * name from its id, for the one served from its last copy.
  */
-export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { donnee?: boolean; nom?: (id: string) => string | undefined } = {}) {
-  const live = lectures.filter((l) => l.freshSeconds < REFERENCE_SECONDS);
+export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { donnee?: boolean; lentes?: boolean; nom?: (id: string) => string | undefined } = {}) {
+  // `lentes`: an answer whose slow reads are its data (the events of the agendas read once a day, 20/11/2026: « lue à
+  // 11:29 » over the Département's events read at 10:00, which the page said), none left out as reference.
+  const live = opts.lentes ? lectures : lectures.filter((l) => l.freshSeconds < REFERENCE_SECONDS);
   const pool = live.length ? live : lectures;
   // The oldest read of what is served up to date: the answer is at least this fresh. A last copy keeps its own time in
   // the warning, not here (31/10/2026: the events read at 01:17 said « il y a 2 h », the time of a silent source's

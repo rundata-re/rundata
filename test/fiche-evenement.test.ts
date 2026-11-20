@@ -105,6 +105,17 @@ describe("an event's page", () => {
     expect(page.replace(/&#39;/g, "'")).toContain(`${tool("2026-11-21T09:00")}</p>`);
   });
 
+  it("says a postponement's new day and the news that told it, as the list and the tool do", () => {
+    const reporte = row({ statut: "REPORTÉ", reporte_au: "samedi 28/11", statut_d_apres: { media: "Clicanoo", lien: "https://www.clicanoo.re/x" } } as Partial<Row>);
+    const page = fichePage("https://rundata.re", reporte, copy([reporte]), undefined);
+    expect(page).toContain(`<p class="note" data-sortie>Reporté au samedi 28/11 d'après <a href="https://www.clicanoo.re/x" rel="noopener">Clicanoo</a>.</p>`);
+    const annule = row({ statut: "ANNULÉ", statut_d_apres: { media: "Imaz Press", lien: "https://www.ipreunion.com/y" } } as Partial<Row>);
+    expect(fichePage("https://rundata.re", annule, copy([annule]), undefined)).toContain(">Annulé d'après <a href=\"https://www.ipreunion.com/y\"");
+    // Said by its organiser alone, without a new day: the badge says it all.
+    const seul = row({ statut: "ANNULÉ" } as Partial<Row>);
+    expect(fichePage("https://rundata.re", seul, copy([seul]), undefined)).not.toMatch(/>Annulé/);
+  });
+
   it("says what its source does not give, the hour or the address, never a blank", () => {
     const sans = row({ date: "2026-11-21", quand: "samedi 21/11", lieu: undefined, description: "Un texte." });
     const page = fichePage("https://rundata.re", sans, copy([sans]), undefined);

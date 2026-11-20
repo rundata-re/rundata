@@ -132,7 +132,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.684";
+export const VERSION = "1.0.685";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -336,7 +336,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       // The day's summary has a dozen dated parts: no single « donnee_du » for it, each part says its own.
       // The answers that quote third parties say so (tools/tiers.ts).
       const marked = OUTILS_TIERS.has(name) ? marquerTiers(r) : r;
-      const said = name === "donner_avis" ? r : cite(name, marked, { lectures, now, serveur: serveur(VERSION, tools, now), donnee: name !== "resume_du_jour", nom: nomDeSource });
+      const said = name === "donner_avis" ? r : cite(name, marked, { lectures, now, serveur: serveur(VERSION, tools, now), donnee: name !== "resume_du_jour", lentes: name === "evenements", nom: nomDeSource });
       return spaced(said);
     };
   };

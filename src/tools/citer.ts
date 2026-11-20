@@ -146,7 +146,7 @@ export function citation(p: Payload): string {
   const names: string[] = [];
   for (const s of station ? [...used.filter((s) => s.id === firstId), ...used.filter((s) => s.id !== firstId)] : used) {
     const n = shortName(s);
-    if (!names.some((x) => x.startsWith(n))) names.push(names.length === 0 && station ? `${n} (${station})` : n);
+    if (!names.some((x) => x.toLowerCase().startsWith(n.toLowerCase()))) names.push(names.length === 0 && station ? `${n} (${station})` : n);
   }
   // sources_donnees' short answer gives the number of its producers, not their names: their list.
   const producteurs = p.chiffres && typeof p.chiffres === "object" ? (p.chiffres as { producteurs?: unknown }).producteurs : undefined;
@@ -218,6 +218,8 @@ export interface Around {
   serveur?: object;
   /** False: no single `donnee_du` for this answer (fraicheur.ts). */
   donnee?: boolean;
+  /** True: the slow reads are the data too, not reference beside it (fraicheur.ts): the agendas read once a day. */
+  lentes?: boolean;
   /** A source's name from its id, for one served from its last copy (fraicheur.ts). */
   nom?: (id: string) => string | undefined;
 }
@@ -239,7 +241,7 @@ export function cite<R extends object>(tool: string, r: R, around: Around = {}):
   }
   if (!p || typeof p !== "object" || Array.isArray(p)) return r;
   const isError = "isError" in r && !!r.isError;
-  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, nom: around.nom }) };
+  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, lentes: around.lentes, nom: around.nom }) };
   if (wanting(p, isError)) extra.signaler = AVIS_HINT;
   if (around.serveur) extra.serveur = around.serveur;
   // A last copy in the answer: its freshness first, the rest at the end as always.

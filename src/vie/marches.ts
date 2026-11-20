@@ -130,6 +130,19 @@ export const hoursOn = (m: Pick<Marche, "horaires_osm">, now: Date) => {
   return spans?.map(([de, a]) => `de ${paire(de, a, all).join(" à ")}`).join(" et ");
 };
 
+/**
+ * Whether a market held on the day of `now` is over at `now`: every span of that day ended (20/11/2026: « Marché
+ * forain des Camélias de 6 h à 12 h » given at 12:26). False when its source gives no hours that day.
+ */
+export const fini = (m: Pick<Marche, "horaires_osm">, now: Date) => {
+  const spans = m.horaires_osm ? spansOn(m, now) : undefined;
+  const at = Math.floor(((now.getTime() + 4 * 3600_000) % 86_400_000) / 60_000);
+  return !!spans?.length && spans.every(([de, a]) => a > de && a <= at);
+};
+
+/** What a market of the day already over says. */
+export const TERMINE = "terminé pour aujourd'hui" as const;
+
 /** What is said of a market's hours when its source gives none we can trust. */
 export const NOT_FOUND = "heures non trouvées";
 
@@ -234,6 +247,8 @@ export const cherchesDans = (m: Pick<Lieu, "source">) =>
 /** A market held on a day, for the agenda: its hours that day as its source gives them, and where they come from. */
 export interface DuJour {
   nom: string;
+  /** Already over at the time asked, that day (fini()). */
+  termine?: typeof TERMINE;
   commune: string;
   horaires: string;
   adresse?: string;
@@ -246,18 +261,21 @@ export interface DuJour {
  * The markets held on a day of La Réunion (« 2026-11-21 »), in every commune or in one: those whose day and hours come
  * from a source, its hours that day (heldOn()), or the part of the day its name gives (« le matin »). Never one whose
  * hours no source gives, never one open all week, and never « open »: the day a source gives, with that source and the
- * day it was read.
+ * day it was read; one already over on the day of `now` says so (`termine`).
  */
-export function marchesDuJour(day: string, commune?: string): DuJour[] {
+export function marchesDuJour(day: string, commune?: string, now?: Date): DuJour[] {
   // Noon at La Réunion that day: heldOn() takes the weekday of its time there.
   const at = new Date(`${day}T08:00:00Z`);
   const communes = commune ? [commune] : [...new Set(MARCHES().map((m) => m.commune))];
+  // `now` on that day: a market already over says so (fini()), never given as still to come.
+  const today = now && new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10) === day;
   return communes.flatMap((c) => heldOn(c, at))
     .filter((m) => m.horaires_aujourd_hui !== "heures non trouvées")
     .map((m) => ({
       nom: m.nom,
       commune: m.commune,
       horaires: m.horaires_aujourd_hui,
+      ...(today && fini(m, now!) && { termine: TERMINE }),
       ...(m.adresse && { adresse: m.adresse }),
       d_apres: m.source === OSM
         ? `OpenStreetMap, relevé le ${dayMonthYear(OSM_LU)}`

@@ -167,8 +167,14 @@ const aboutKinds = (e: src.Evenement) => {
   const found = new Set([...kindsOf(about(e)), ...(e.themes ?? [])]);
   return THEMES.map((t) => t.genre).filter((g) => found.has(g));
 };
-/** Without the shows' genres when the title or the source's category say workshop, meeting or talk. */
-const unlessWorkshop = (e: src.Evenement, list: string[]) => (kindsOf(head(e)).includes("atelier") ? list.filter((g) => !SHOWS.has(g)) : list);
+/** Without the shows' genres when the title or the source's category say workshop, meeting, talk or market. */
+// A market too, but for a show its title or category names (« Concert au marché de Noël »): 20/11/2026, the
+// Christmas market of Le Port's galleries answered « concert » from its page's text.
+const unlessWorkshop = (e: src.Evenement, list: string[]) => {
+  const own = kindsOf(head(e));
+  if (own.includes("atelier")) return list.filter((g) => !SHOWS.has(g));
+  return own.includes("marché") ? list.filter((g) => !SHOWS.has(g) || own.includes(g)) : list;
+};
 
 /** The genres of an event, for the page's filter: from its title and categories, else its description. */
 export function genres(e: src.Evenement): string[] {
@@ -941,7 +947,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     ailleurs_sur_l_ile: elsewhere.length ? elsewhere.map((x) => eventRow(x.e, x.seances, false, !place)) : undefined,
     marches_reguliers: market ? MARCHES_REGULIERS : undefined,
     // The markets held on the period's days, apart from the events and not counted among them (vie/marches.ts).
-    marches_forains: place ? undefined : marchesDesJours(p, commune, !quoi || market),
+    marches_forains: place ? undefined : marchesDesJours(p, commune, !quoi || market, now),
     sport_ce_week_end: !place && /week.?end/i.test(quand ?? "") ? SPORT_CE_WEEK_END : undefined,
     cinemas: what?.nom?.includes("cinéma") || /cin[ée]|film/i.test(quoi ?? "") ? { seances: "Les séances des cinémas sont sur leurs sites :", salles: CINEMAS } : undefined,
     indisponible: failed.length ? failed : undefined,
@@ -968,12 +974,12 @@ export const MARCHES_JOURS_MAX = 4;
  * day and hours as their source gives them, with that source and the day it was read. None in the evening (they are
  * held in the morning or the day), none when the question asks for another kind of event (`asked` false).
  */
-export function marchesDesJours(p: Periode, commune: string | undefined, asked: boolean) {
+export function marchesDesJours(p: Periode, commune: string | undefined, asked: boolean, now?: Date) {
   if (!asked || p.soir) return undefined;
   const days: string[] = [];
   for (let d = p.du; d <= p.au && days.length <= MARCHES_JOURS_MAX; d = addDays(d, 1)) if (!(d === p.du && p.vendredi)) days.push(d);
   if (!days.length || days.length > MARCHES_JOURS_MAX) return undefined;
-  const out = days.map((d) => ({ jour: dayText(d), marches: marchesDuJour(d, commune).map(({ nom, commune, horaires, adresse, d_apres, lien }) => ({ nom, commune, horaires, adresse, d_apres, lien })) }))
+  const out = days.map((d) => ({ jour: dayText(d), marches: marchesDuJour(d, commune, now).map(({ nom, commune, horaires, termine, adresse, d_apres, lien }) => ({ nom, commune, horaires, termine, adresse, d_apres, lien })) }))
     .filter((x) => x.marches.length);
   return out.length
     ? { note: "Marchés forains réguliers, à leur jour habituel d'après leur source (datée) : un jour férié, la météo ou la mairie peuvent les changer. Ils ne sont pas comptés dans nombre.", jours: out }

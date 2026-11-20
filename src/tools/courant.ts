@@ -124,9 +124,13 @@ export function ahead(a: cc.AvisCourant, now: Date): boolean {
   return a.creneaux.some((s) => ends(s) >= today);
 }
 
+/** The hours of a day, as written: « de 09:00 à 15:00 », only one of them (« à partir de 09:00 », « jusqu'à 15:00 »), or none. */
+const hours = (s: Pick<cc.Creneau, "de" | "a">) =>
+  s.de && s.a ? ` de ${s.de} à ${s.a}` : s.de ? ` à partir de ${s.de}` : s.a ? ` jusqu'à ${s.a}` : "";
+
 /** « le lundi 19/10 de 09:00 à 15:00, secteurs Rue Médard, Rue des Jésuites ». */
 function slotText(s: cc.Creneau, now: Date): string {
-  const when = s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`;
+  const when = s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${hours(s)}`;
   return `${when}${s.secteurs.length ? `, secteurs ${s.secteurs.join(", ")}` : ""}`;
 }
 
@@ -215,7 +219,7 @@ export function shortOf(a: Pick<CourantRow, "nature" | "creneaux" | "pdf">, now:
   const next = (a.creneaux ?? []).find((s) => ends(s) >= localDay(now));
   if (!next) return "coupure d'électricité annoncée par la mairie";
   if (a.pdf) return `coupure d'électricité annoncée par EDF le ${dayFr(next.jour, now)}, heures et secteurs dans l'avis de la mairie`;
-  const when = next.au ? `du ${dayFr(next.jour, now)} au ${dayFr(next.au, now)}` : `le ${dayFr(next.jour, now)}${next.de && next.a ? ` de ${next.de} à ${next.a}` : ""}`;
+  const when = next.au ? `du ${dayFr(next.jour, now)} au ${dayFr(next.au, now)}` : `le ${dayFr(next.jour, now)}${hours(next)}`;
   return `coupure d'électricité programmée ${when}`;
 }
 

@@ -478,7 +478,7 @@ function warnings(f: Forecast, place?: Place): string[] {
   ];
   if (f.model === arome.MODEL) {
     const altitude = place
-      ? `À cet endroit, le relief du modèle est à ${f.relief_m ?? "?"} m : les températures sont ramenées à l'altitude de ` +
+      ? `À cet endroit, le relief du modèle est à ${f.relief_m != null ? nombre(f.relief_m) : "?"} m : les températures sont ramenées à l'altitude de ` +
         `${place.nom} (${nombre(f.altitude_m)} m).`
       : "Les températures sont ramenées à l'altitude de chaque lieu.";
     out.push(

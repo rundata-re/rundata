@@ -146,6 +146,13 @@ describe("the sky of the night", () => {
     expect(bas.mise_en_garde).toBe(CAVEAT);
   });
 
+  it("puts a point given by its coordinates at the altitude the forecast brought it to, not at 0 m", () => {
+    const point = resolvePlace("-21.0545, 55.2270")!.lieu;
+    expect(point.altitude_m).toBeNull();
+    const f = { ...forecast([hour(steps[0], 10, null, null), hour(steps[1], 10, null, null), hour(steps[2], 10, null, null), hour(steps[3], 10, null, null)]), altitude_m: 61 };
+    expect(cielDeNuit(f, point, EVENING)!.resume).toMatch(/^-21\.0545, 55\.2270 \(61\u00a0m\), ce soir et cette nuit : /);
+  });
+
   it("says rain, and nothing for a night with a step out of AROME", () => {
     const wet = { ...hour(steps[1], 100, 600, 3000), pluie_mm: 2.4 };
     const f = forecast([hour(steps[0], 50, 900, 1500), wet, hour(steps[2], 10, null, null), hour(steps[3], 10, null, null)]);

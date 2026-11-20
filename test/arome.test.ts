@@ -136,7 +136,7 @@ describe("prevision_meteo with AROME", () => {
     expect(w).toMatch(/pas une mesure/);
     expect(w).toMatch(/microclimats/);
     expect(w).toMatch(/vigilance officielle/);
-    expect(w).toMatch(/relief du modèle est à 1\d{3} m : les températures sont ramenées à l'altitude de Cilaos \(1\u202f209 m\)/);
+    expect(w).toMatch(/relief du modèle est à 1\u202f\d{3} m : les températures sont ramenées à l'altitude de Cilaos \(1\u202f209 m\)/);
     expect(r.jours[0].modeles).toMatch(/AROME outre-mer de Météo-France de 12\u00a0h à 15\u00a0h/);
     // The day's highest is the model's hourly maximum from 12 to 14 h, 2 °C above 12 h here, not the temperature at 12 h.
     expect(Number(r.jours[0].temperature_max.replace(",", ".").replace(" °C", ""))).toBeGreaterThanOrEqual(t + 1.5);

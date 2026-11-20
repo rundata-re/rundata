@@ -2928,7 +2928,7 @@ export function nobreak(text: string): string {
 /** « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading « avis daté du 05/11/2026 ». */
 const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publié le ${esc(n.publie_le)}` : `avis daté du ${esc(n.date_de_l_avis ?? "")}`);
 
-function noticeCard(n: CoupuresAnswer["avis"][number]): string {
+export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // An image or a PDF: nothing is read from it, the link only.
   if (n.forme) return `<li class="card"><h3>${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${n.lien ? `<a href="${esc(n.lien)}" rel="noopener">${esc(n.titre)} →</a>` : esc(n.titre)}</p></li>`;
@@ -3052,7 +3052,7 @@ ${cyclone.lead ? "" : cyclone.html}`;
 }
 
 // What the communes' water pages (coupures.ts) share with the island's.
-export { droughtBadge, noticeCard, tapCard };
+export { droughtBadge, tapCard };
 
 export function coupuresLive(data: Cached<CoupuresAnswer> | null): Live | undefined {
   const d = data?.value;

@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T13:36:00+04:00", texte: "Assistants IA\u00a0: pour Mafate, Cilaos et Salazie, les mêmes sentiers, longueurs et randonnées que leur page." },
   { date: "2026-11-20T13:13:00+04:00", texte: "Vigilance\u00a0: une position GPS donne la zone de sa commune, et un lieu non reconnu la vigilance de toute l'île, en le disant." },
   { date: "2026-11-20T13:05:00+04:00", texte: "Assistants IA\u00a0: la vigilance de Météo-France avec la marée, les crues, l'air, la météo passée et le volcan\u00a0; les radiers avec les crues." },
   { date: "2026-11-20T13:00:00+04:00", texte: "Météo\u00a0: chaque mesure dit si elle vient d'une station officielle de Météo-France, d'un aéroport, d'une balise ou d'une station amateur." },

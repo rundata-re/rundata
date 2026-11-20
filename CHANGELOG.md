@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Assistants IA : pour Mafate, Cilaos et Salazie, les mêmes sentiers, longueurs et randonnées que leur page.
 - Vigilance : une position GPS donne la zone de sa commune, et un lieu non reconnu la vigilance de toute l'île, en le disant.
 - Assistants IA : la vigilance de Météo-France avec la marée, les crues, l'air, la météo passée et le volcan ; les radiers avec les crues.
 - Météo : chaque mesure dit si elle vient d'une station officielle de Météo-France, d'un aéroport, d'une balise ou d'une station amateur.

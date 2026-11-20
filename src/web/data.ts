@@ -53,7 +53,7 @@ import { COMMON as EAU_COMMON } from "../tools/eau.js";
 import { credits } from "../tools/format.js";
 import * as onf from "../providers/sentiers.js";
 import * as feux from "../providers/feux.js";
-import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
+import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailKm, trailPlace } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
 import { type PlusRecent, restrictionsEau } from "../tools/secheresse.js";
@@ -823,9 +823,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
     const parts = byName.get(nom)!;
     const shut = parts.find((x) => x.statut === "fermé");
     const open = parts.some((x) => x.statut === "ouvert");
-    const at = parts.find((x) => x.points.length);
-    const mid = at?.points[Math.floor(at.points.length / 2)];
-    const where = { secteur: trailSecteur(nom, mid) ?? "Hauts de l'Ouest", commune: mid ? secteur(...mid).commune : "" };
+    const where = trailPlace(nom, parts);
     const stats = traces.SENTIERS[nom];
     const one = parts.length === 1 && parts[0].points.length > 2 ? parts[0].points : undefined;
     return {
@@ -835,7 +833,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
       commune: where.commune,
       communes: communesOf(parts),
       secteur: where.secteur,
-      km: stats?.km ?? Math.round(parts.reduce((t, x) => t + x.longueur_km, 0) * 10) / 10,
+      km: trailKm(nom, parts),
       dplus: stats?.dplus,
       dmoins: stats?.dmoins,
       etat: shut ? "fermé" : open ? "ouvert" : "inconnu",

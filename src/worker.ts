@@ -63,6 +63,7 @@ import { why } from "./types.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
 import { plage } from "./web/plage.js";
+import { GARDE_TAPEE, gardeTapee } from "./providers/terrain.js";
 
 // How long the edge keeps an entry. Much longer than any freshness window: an old copy is what gets served,
 // marked as such, while a source is down.
@@ -84,8 +85,10 @@ class EdgeStore implements CacheStore {
   }
   async put(key: string, entry: CacheEntry) {
     try {
+      // What someone typed, or its point: 3 days at most (providers/terrain.ts gardeTapee).
+      const keep = gardeTapee(key) ? GARDE_TAPEE : KEEP_SECONDS;
       const body = new Response(JSON.stringify(entry), {
-        headers: { "content-type": "application/json", "cache-control": `max-age=${KEEP_SECONDS}` },
+        headers: { "content-type": "application/json", "cache-control": `max-age=${keep}` },
       });
       count(1, true);
       await (await caches.open("upstream")).put(this.url(key), body);

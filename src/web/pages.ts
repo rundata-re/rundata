@@ -2051,6 +2051,7 @@ export function lienAdresse(href: string, text: string, attrs = ""): string {
  * The links' parameters are not documented by either service.
  * On a phone, ChatGPT's app leaves the question out (Android) or does not open (iPhone: chatgpt.com has no universal
  * link), and no documented scheme types it: the tap also copies the question, and a line says so (copies).
+ * `kreol` empty: the French question alone.
  */
 export function ask(kreol: string, francais: string): string {
   const a = (href: string, name: string, page?: string) =>
@@ -2066,12 +2067,16 @@ export function ask(kreol: string, francais: string): string {
       `<p class="askq">« ${adressesCoupables(question)} »</p></div>`;
     return hidden ? `<template data-tl="${l}">${div}</template>` : div;
   };
+  // French only (kreol empty): the question in French, no switch, and its block without data-l, which the script would
+  // hide for a visitor who chose Creole on another page. A page whose Creole question has not had the user's yes yet
+  // (/terrain, 20/11/2026).
+  const note = `<p class="askn">Rien à installer : la question est déjà écrite. ChatGPT marche même sans compte ; Claude demande de se connecter (compte gratuit).</p></div>`;
+  if (!kreol) return `<div class="askbox">${block("fr", "Demandez à votre IA", francais, false).replace(' data-l="fr"', "")}${note}`;
   const b = (l: string, flag: string, name: string, on: boolean) =>
     `<button type="button" data-askl="${l}" aria-pressed="${on}">${flag}${name}</button>`;
   return `<div class="askbox"><div class="lang" role="group" aria-label="Langue de la question">` +
     `${b(brand.slogan_lang, FLAG_RCF, "Kréol", true)}${b("fr", FLAG_FR, "Français", false)}</div>` +
-    block(brand.slogan_lang, "Domann out IA", kreol, false) + block("fr", "Demandez à votre IA", francais, true) +
-    `<p class="askn">Rien à installer : la question est déjà écrite. ChatGPT marche même sans compte ; Claude demande de se connecter (compte gratuit).</p></div>`;
+    block(brand.slogan_lang, "Domann out IA", kreol, false) + block("fr", "Demandez à votre IA", francais, true) + note;
 }
 
 /**

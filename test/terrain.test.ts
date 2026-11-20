@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { codesByName, codeVoie, latestAct, nomVoie, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
+import { codesByName, codeVoie, GARDE_TAPEE, gardeTapee, latestAct, nomVoie, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
 import { SOURCES as TRACES } from "../src/providers/traces.js";
 import { communeOf, ficheLieu, incertain, lieuOf, market, riskLine, sameStreet, SCORE_FAIBLE, streetLine, streetMarket, townHallOf } from "../src/tools/terrain.js";
 
@@ -578,5 +578,21 @@ describe("a place asked by its name, not its address", () => {
     expect(guess).toContain("avec une correspondance faible");
     expect(guess).not.toContain("une voie,");
     expect(SCORE_FAIBLE).toBeLessThan(0.52);
+  });
+});
+
+describe("the cache of what someone typed (providers/terrain.ts gardeTapee)", () => {
+  it("keeps 3 days every key of the fiche that holds a typed address, a street or a point; a commune's 7", () => {
+    expect(GARDE_TAPEE).toBe(3 * 24 * 3600);
+    // Each key the provider writes, by its prefix: a new one must be sorted here.
+    const src = readFileSync(new URL("../src/providers/terrain.ts", import.meta.url), "utf8");
+    const prefixes = [...src.matchAll(/cache\.get\(`([a-z-]+):/g)].map((m) => m[1]);
+    expect(new Set(prefixes)).toEqual(new Set(["ban", "ban-homonymes", "ban-code", "ban-voies", "cadastre", "gpu", "alti", "dvf", "dvf-voie", "ppr", "catnat", "mvt"]));
+    for (const p of prefixes) expect(gardeTapee(`${p}:x`), p).toBe(p !== "catnat");
+    expect(gardeTapee("ban:97413:mairie de saint-leu")).toBe(true);
+    expect(gardeTapee("cadastre:55.28689,-21.16622")).toBe(true);
+    expect(gardeTapee("annuaire:97413:mairie")).toBe(false);
+    expect(gardeTapee("catnat:97415")).toBe(false);
+    expect(gardeTapee("meteo:ban")).toBe(false);
   });
 });

@@ -26,6 +26,21 @@ export const SOURCES: Record<"ban" | "cadastre" | "gpu" | "alti" | "dvf" | "dvfV
 };
 
 const DAY = 24 * 3600;
+
+/**
+ * How long the data center's cache keeps an entry that holds what someone typed, or the point it gave (worker.ts
+ * EdgeStore): 3 days at most, where other entries stay 7 (20/11/2026). Their keys are the typed address (« ban: »,
+ * « ban-voies: »), a street of it (« ban-homonymes: », « ban-code: », « dvf-voie: »), its point (« cadastre: », « gpu: »,
+ * « alti: », « ppr: », « mvt: ») or the square around it (« dvf: »): kept 7 days, the page /terrain could not say
+ * « 3 jours au plus dans les journaux et le cache techniques de Cloudflare ». Cloudflare's logs keep 3 days too.
+ * The cost: a point asked again after 3 days is read again from its source, where its freshness allowed up to 30 days
+ * (altitude) or 7 (the others): at most one subrequest per source, for a fiche asked twice that far apart; and an entry
+ * served old while its source is down, 3 days at most instead of 7. catnat: (a commune) is no one's place: 7 days.
+ */
+export const GARDE_TAPEE = 3 * DAY;
+const TAPEES = /^(?:ban|ban-voies|ban-homonymes|ban-code|dvf-voie|cadastre|gpu|alti|ppr|mvt|dvf):/;
+/** True for a cache key of this file that holds a typed address, a street, a point or the square around it. */
+export const gardeTapee = (key: string) => TAPEES.test(key);
 const point = (lon: number, lat: number) => encodeURIComponent(JSON.stringify({ type: "Point", coordinates: [lon, lat] }));
 // What is read at the point (its parcel, its zone of the PLU, its risk prevention plans, its altitude) is kept to
 // about a metre (5 decimals): a parcel in town can be a few metres wide, and rounding further would give the

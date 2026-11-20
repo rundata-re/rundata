@@ -20,10 +20,12 @@ describe("the sitemap from 19/11/2026, marketing's list of 18/11/2026", () => {
     // The water cuts of Les Avirons are in it, said in words of their own (eau/distributeurs.ts GUIDES_AVIS). 1 406 before, 567 left out.
     // Three since 20/11/2026: the water cuts of Saint-Philippe, Cilaos and Petite-Île, whose notices are read.
     // Less /meteo/l-hermitage since 20/11/2026, out of the index: Saint-Gilles-les-Bains's says the same (places.ts PRINCIPAL).
-    expect(urls).toHaveLength(842 - 2 + 3 - 1);
+    // And one: the fiche of an address, /terrain (20/11/2026).
+    expect(urls).toHaveLength(842 - 2 + 3 - 1 + 1);
     for (const u of ["/coupures-eau/saint-philippe", "/coupures-eau/cilaos", "/coupures-eau/petite-ile"]) expect(urls, u).toContain(u);
     expect(urls).not.toContain("/meteo/l-hermitage");
     expect(urls).toContain("/meteo/saint-gilles-les-bains");
+    expect(urls).toContain("/terrain");
     expect(urls).not.toContain("/feux");
     expect(urls).not.toContain("/entreprises");
     expect(urls).toContain("/coupures-eau/les-avirons");

@@ -35,9 +35,6 @@ export const NETWORKS: SourceInfo[] = ALL_PROVIDERS.map((p) => p.source);
 /** True for a station of an amateur network (SourceInfo `amateur`): its measure as it is, its reliability not checked. */
 export const amateur = (source: string) => NETWORKS.some((n) => n.id === source && n.amateur);
 
-/** What a station of an amateur network is said to be, beside its measures (the user's words, 10/11/2026). */
-export const NATURE_AMATEUR = "mesure de station amateur, fiabilité non vérifiée";
-
 /** An amateur network's short name (« MétéoR-OI »); undefined for an official one. */
 export const reseauAmateur = (source: string) => {
   const n = NETWORKS.find((x) => x.id === source && x.amateur);
@@ -49,6 +46,30 @@ export const ditAmateur = (source: string) => {
   const n = reseauAmateur(source);
   return n ? `station amateur (${n}), fiabilité non vérifiée` : undefined;
 };
+
+/**
+ * What each official network's station is, in words, as /meteo says it (« les stations officielles », « les deux
+ * aéroports », « des balises de vent… (FFVL) »): an assistant tells the official from the amateur without knowing the
+ * sources' codes (the user, 20/11/2026).
+ */
+const KINDS: Record<string, string> = {
+  meteofrance: "station officielle de Météo-France",
+  metar: "station d'aéroport",
+  ffvl: "balise de vent de la FFVL",
+};
+
+/** A station's kind in words, after its name: « station officielle de Météo-France », « station amateur MétéoR-OI, fiabilité non vérifiée »… */
+export const stationKind = (source: string) => {
+  const n = reseauAmateur(source);
+  return n ? `station amateur ${n}, fiabilité non vérifiée` : (KINDS[source] ?? "station");
+};
+
+/**
+ * What a station's measures are, beside them: « mesure de station officielle de Météo-France »; an amateur one's with its
+ * network, as the page names it (the user's words of 10/11/2026, « fiabilité non vérifiée »; marketing, 20/11/2026).
+ */
+export const natureStation = (source: string) =>
+  source === "metar" ? "mesure de station d'aéroport (observation METAR)" : `mesure de ${stationKind(source)}`;
 
 export function providers(): Provider[] {
   return ALL_PROVIDERS.filter((p) => p.enabled?.() ?? true);
@@ -132,8 +153,10 @@ function stationBlock(o: Observation, stale: boolean, now: Date) {
     // Said wherever the station stands in another commune than the place's (« Bellevue Bras-Panon » for Salazie).
     commune: stationCommune(o.station),
     source: o.station.source,
+    // What the station is, in words, official or amateur.
+    nature: natureStation(o.station.source),
+    ...(amateur(o.station.source) ? { amateur: true } : {}),
     // The credit the association asked for, beside each of its measures.
-    ...(amateur(o.station.source) ? { amateur: true, nature: NATURE_AMATEUR } : {}),
     ...(o.station.source === meteorOi.SOURCE.id ? { credit: meteorOi.CREDIT, lien: meteorOi.SITE } : {}),
     altitude_m: o.station.altitude_m,
     ...t,
@@ -216,7 +239,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   if (!lieu?.trim()) {
     const { tour, all, down, sources } = await islandTour(cache, now);
     return text({
-      resume: tour.map(({ o }) => sentence(o.station.nom, o, now)).join("\u00a0; ") || "Aucune mesure disponible.",
+      resume: tour.map(({ o }) => sentence(`${o.station.nom}, ${stationKind(o.station.source)}`, o, now)).join("\u00a0; ") || "Aucune mesure disponible.",
       stations: tour.map(({ o, stale }) => ({ ...stationBlock(o, stale, now), versant: versant(o.station.lon, o.station.lat) })),
       sources_indisponibles: down.length ? down : undefined,
       couverture: coverage(all.length),
@@ -287,7 +310,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   const resume = shown.length
     ? `Mesures les plus proches ${de(r.lieu.nom)} — ` +
       shown
-        .map((x) => sentence(`${x.o.station.nom} (${fr(x.f.distance_km)} km, direction ${x.f.direction}, pertinence ${x.f.pertinence})`, x.o, now))
+        .map((x) => sentence(`${x.o.station.nom}, ${stationKind(x.o.station.source)} (${fr(x.f.distance_km)} km, direction ${x.f.direction}, pertinence ${x.f.pertinence})`, x.o, now))
         .join("\u00a0; ") +
       (warnings.length ? `. Attention : ${warnings.join(" ")}` : "")
     : "Aucune mesure disponible pour le moment.";

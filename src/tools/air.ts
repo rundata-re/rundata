@@ -231,10 +231,11 @@ async function amateurs(cache: Cache, now: Date, page = false, commune?: string)
   }
   const all = v.capteurs;
   const list = commune ? all.filter((c) => normalize(c.commune) === normalize(commune)) : all;
-  const elsewhere = !!commune && !list.length && all.length > 0;
   const echecs = Object.entries(v.echecs ?? {}).map(([r, since]) => reseauEchec(r as capteurs.Reseau, since, now));
   // A network not read is not one without sensors: « none » only when both were read.
   const none = !list.length && !copy.stale && !echecs.length;
+  // The same for a commune: « aucun capteur n'a émis » only when both networks were read, and others did.
+  const elsewhere = none && !!commune && all.length > 0;
   return {
     // No value, nothing to take with care: the tool leaves the warning out until a sensor measures (marketing,
     // 30/10/2026). /air keeps it above its block.

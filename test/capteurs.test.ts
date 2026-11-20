@@ -376,6 +376,13 @@ describe("the sensors of private people on sensors.social (ODbL 1.0, its written
     expect(answer.capteurs_amateurs.lectures_impossibles).toEqual(["Lecture de sensors.social impossible depuis 09:10."]);
     expect(answer.capteurs_amateurs).not.toHaveProperty("aucun");
     expect(airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW)).toContain("<p>Lecture de sensors.social impossible depuis 09:10.</p>");
+    // A place with none in its commune, one network not read: never « aucun capteur n'a émis à Cilaos ».
+    capteurs.configure(async () => ({ lu: "2026-10-29T06:10:00Z", capteurs: [{ cle: "900001", commune: "Saint-Denis", pm10: 20, mesure_a: "2026-10-29T06:00:00Z" }], echecs: { "sensors.social": "2026-10-29T05:10:00Z" } }));
+    const lieu = body(await qualiteAir(cache(), "Cilaos", NOW)).capteurs_amateurs;
+    expect(lieu).not.toHaveProperty("aucun");
+    expect(lieu).not.toHaveProperty("valeurs");
+    expect(lieu.lectures_impossibles).toEqual(["Lecture de sensors.social impossible depuis 09:10."]);
+    expect(lieu.avertissement).toBe(CAPTEURS_AVERTISSEMENT);
   });
 
   it("says each of its measures with its network and its credit, in the tool and on /air, never an identifier nor a place", async () => {

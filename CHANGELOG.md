@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Coupures d'eau : les avis publiés par Saint-Philippe (Sudéau), Cilaos, Petite-Île et Trois-Bassins sont lus, avec le lien de chaque avis.
 - La journée d'une commune : quand le site de la mairie ne répond pas, la page le dit, avec l'heure de notre dernière lecture.
 - Événements : ceux qu'annoncent les mairies de La Possession, de Petite-Île et de Saint-Benoît sur leurs sites, avec le lien de chacun.
 - Marchés forains : jours et heures de six mairies de plus (Saint-Denis, Saint-Pierre, Le Tampon, Le Port…), avec la date de leur page.

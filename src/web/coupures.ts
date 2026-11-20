@@ -4,7 +4,7 @@
  * commune's own page. Cut from the copies of /coupures-eau, /secheresse and /eau: nothing more is fetched.
  */
 import type { Cached } from "../cache.js";
-import { CIREST, distributeur, GUIDES_AVIS, LIENS, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
+import { CIREST, distributeur, GUIDES_AVIS, LIENS, MAIRIES_AUSSI, nomDit, MAIRIE_SAINT_LEU, MAIRIE_SAINTE_MARIE, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
@@ -153,6 +153,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // Who publishes the notices read (the CIREST, a mairie), else the distributor; a mairie only linked to (LIENS).
   const publisher = dist?.par ?? dist?.nom;
   const lien = LIENS[p.nom];
+  // A mairie that also posts the notices of a distributor read elsewhere (Les Trois-Bassins, La Créole's).
+  const aussi = MAIRIES_AUSSI[p.nom];
   // A home page only (ACCUEILS, none since 20/11/2026): opened in a new window.
   const lienA = lien ? ` <a href="${esc(lien.site)}" rel="noopener"${ACCUEILS.has(lien.site) ? ' target="_blank"' : ""}>${nobreak(lien.libelle)} →</a>` : "";
 
@@ -196,7 +198,10 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
             : dist.site === MAIRIE_SAINT_LEU
             ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la commune de Saint-Leu</a> : ils s'affichent en haut de cette page, avec un court extrait et le lien vers l'avis complet. Un avis publié en image n'est pas lu : nous donnons seulement son lien.</p>`
             : dist.site === CREOLE.url
-            ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.</p>`
+            ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a>${aussi ? ` et ceux que publie <a href="${esc(aussi.site)}" rel="noopener">le site de ${esc(aussi.par)}</a>` : ""} : ils s'affichent en haut de cette page.</p>`
+            : dist.par
+            // A mairie that posts its distributor's notices (Saint-Philippe, Petite-Île, Cilaos).
+            ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.par)}</a> : ils s'affichent en haut de cette page, avec le lien vers chaque avis.</p>`
             : `<p>${dist.partage ? `Les avis de ${esc(dist.nom)}` : "Ses avis"} sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
           : guide
           ? `<p>${guide.distributeur}</p>`

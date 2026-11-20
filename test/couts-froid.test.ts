@@ -55,6 +55,11 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/lacreole\.re/, "avis-eau/lacreole.html"],
   [/ville-saintemarie\.re\/wp-json\/wp\/v2\/posts/, "avis-eau/saintemarie.json"],
   [/saintleu\.re\/wp-json/, "avis-eau/saintleu.json"],
+  // The water notices the communes post, read since 20/11/2026 (their copies of that day).
+  [/saintphilippe\.re\/wp-json\/wp\/v2\/posts\?search=eau/, "avis-eau/saint-philippe.json"],
+  [/ville-cilaos\.fr\/wp-json\/wp\/v2\/posts\?search=eau/, "avis-eau/cilaos.json"],
+  [/trois-bassins\.re\/feed\//, "avis-eau/trois-bassins.xml"],
+  [/petite-ile\.re\/taxonomy\/term\/301\/feed/, "avis-eau/petite-ile.xml"],
   // Saint-André's notices of power cuts, read since its written agreement of 16/11/2026 (live on that day).
   [/saint-andre\.re\/wp-json\/wp\/v2\/posts/, "courant/saint-andre_posts.json"],
   [/saint-andre\.re\/wp-json\/wp\/v2\/media/, "courant/saint-andre_media.json"],

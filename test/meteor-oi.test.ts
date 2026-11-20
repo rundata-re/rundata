@@ -178,8 +178,9 @@ describe("MétéoR-OI's stations", () => {
     expect(NON_COMPTEES.has(meteorOi.SOURCE.id)).toBe(true);
     expect(METEOR_READS.has("web:chiffres")).toBe(false);
     // The event's own reads, the queues after them left out (registre.ts `queue`); 399 with the airports' METAR (its request and its write);
-    // 401 with the news of Saint-Denis and Saint-Pierre (one request an hour each).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(401);
+    // 401 with the news of Saint-Denis and Saint-Pierre (one request an hour each); 406 with the water notices of four
+    // communes (Saint-Philippe, Cilaos, Trois-Bassins, Petite-Île: one request each in the shared copy web:coupures, 20/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(406);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

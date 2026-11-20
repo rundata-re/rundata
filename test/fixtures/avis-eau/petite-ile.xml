@@ -1,0 +1,179 @@
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-rss.html.twig' -->
+<?xml version="1.0" encoding="utf-8" ?>
+<rss version="2.0" xml:base="https://www.petite-ile.re/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>coupure d&amp;#039;eau</title>
+    <link>https://www.petite-ile.re/</link>
+    <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+    <language>fr</language>
+    
+    
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupures d’eau</title>
+  <link>https://www.petite-ile.re/actualites/news/coupures-deau-45</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Sat, 14 Nov 2026 05:21:20 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">2065 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau</title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-72</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Fri, 16 Oct 2026 09:21:46 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">2044 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau</title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-67</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Wed, 22 Jul 2026 10:37:44 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1982 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Avis de coupure d&#039;eau</title>
+  <link>https://www.petite-ile.re/actualites/news/avis-de-coupure-deau-1</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Mon, 04 May 2026 10:56:47 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1936 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau </title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-64</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Mon, 20 Apr 2026 09:44:39 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1925 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau le mercredi 15 avril 2026</title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-le-mercredi-15-avril-2026</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Tue, 14 Apr 2026 09:38:47 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1919 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau </title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-63</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Mon, 13 Apr 2026 11:56:40 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1918 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau le mercredi 1er avril</title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-le-mercredi-1er-avril</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Mon, 30 Mar 2026 06:44:01 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1909 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Avis de coupure d&#039;eau</title>
+  <link>https://www.petite-ile.re/actualites/news/avis-de-coupure-deau</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Mon, 16 Mar 2026 11:54:02 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1902 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+
+<!-- THEME DEBUG -->
+<!-- THEME HOOK: 'views_view_row_rss' -->
+<!-- BEGIN OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+<item>
+  <title>Coupure d&#039;eau</title>
+  <link>https://www.petite-ile.re/actualites/news/coupure-deau-62</link>
+  <description>&lt;p&gt;L&#039;Îlot Z&#039;enfants vous souhaite de bonnes fêtes&lt;/p&gt;</description>
+  <pubDate>Tue, 02 Dec 2025 07:06:23 +0000</pubDate>
+    <dc:creator>service</dc:creator>
+    <guid isPermaLink="false">1846 at https://www.petite-ile.re</guid>
+    </item>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-row-rss.html.twig' -->
+
+
+  </channel>
+</rss>
+
+<!-- END OUTPUT from 'themes/contrib/bootstrap_barrio/templates/views/views-view-rss.html.twig' -->
+

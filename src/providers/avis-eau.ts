@@ -13,11 +13,14 @@
  *   only the link is kept.
  * - The commune of Saint-Leu posts Derichebourg Aqua OI's notices among its news: a short extract is kept, with the
  *   facts (hours, streets) and the link; a post that is only an image gives its link.
- * Other distributors (Sudéau, CISE in Les Avirons, Petite-Île, Cilaos) are not read here: some mairies get a link only
+ * - Since 20/11/2026 (rule 3 bis, a commune's public information): Saint-Philippe (Sudéau's notices), Cilaos (its water,
+ *   RECIL's or the CIVIS's), Les Trois-Bassins (La Créole's) and Petite-Île (the SPL Sources et Eaux's), each on the
+ *   commune's own site, under UA_RUNDATA.
+ * Other distributors (CISE in Les Avirons, the mairie of L'Étang-Salé) are not read here: some get a link only
  * (src/eau/distributeurs.ts).
  */
 import type { Cache, Cached } from "../cache.js";
-import { getJson, getText, httpUrl } from "../http.js";
+import { getJson, getText, httpUrl, UA_RUNDATA } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { localTime } from "../geo.js";
@@ -26,14 +29,15 @@ import { unlessSpent } from "../budget.js";
 
 export const SOURCE: SourceInfo = {
   id: "avis_eau",
-  nom: "Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie, commune de Saint-Leu)",
+  nom: "Avis des distributeurs d'eau : coupures, travaux, eau non potable (Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, villes de Sainte-Marie, Petite-Île, Cilaos et Trois-Bassins, communes de Saint-Leu et de Saint-Philippe)",
   organisme: "Distributeurs d'eau et intercommunalités de La Réunion",
   // Each one's terms, re-read on 26/10/2026. Dionéo, runéo and Eaux de La Possession forbid any reproduction not
   // expressly allowed: kept while they answer the request for their agreement (the user's choice of 26/10).
   licence:
     "Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. " +
-    "CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite",
-  attribution: "Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie / CISE Réunion, commune de Saint-Leu / Derichebourg Aqua OI",
+    "CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite. " +
+    "Saint-Philippe, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes, reprise avec sa source et son lien",
+  attribution: "Dionéo, runéo, Eaux de La Possession, La Créole, CIREST, ville de Sainte-Marie / CISE Réunion, commune de Saint-Leu / Derichebourg Aqua OI, commune de Saint-Philippe / Sudéau, ville de Petite-Île / SPL Sources et Eaux, ville de Cilaos, ville de Trois-Bassins / La Créole",
   url: "https://www.cirest.fr/categorie/communique/communique-eau/",
 };
 
@@ -66,8 +70,8 @@ export interface Avis {
   jour?: boolean;
   /** Said with the notice when its commune is not certain: « Commune non précisée par La Créole … ». */
   precision?: string;
-  /** A notice posted as an image or a PDF: nothing is read from it, only its link is given. */
-  forme?: "image" | "PDF";
+  /** A notice posted as an image or a PDF, or whose own page is not read yet (« page »): only its link is given. */
+  forme?: "image" | "PDF" | "page";
   /** The text is cut short (`cut`, or Saint-Leu's `extract`): what follows, the streets often, is only in the notice. */
   extrait_coupe?: boolean;
   /** Local times « 2026-10-26T21:00 », when the notice gives them. */
@@ -462,6 +466,182 @@ export function parseSaintLeu(posts: Omit<Post, "categories">[]): Avis[] {
   });
 }
 
+// The communes' own sites (rule 3 bis of 20/11/2026: a commune's public information is read, slowly, under an honest
+// name, UA_RUNDATA, each notice with its link and hour). Each is read once per FRESH_SECONDS (15 min) for the whole
+// island (`lecture`, an island copy), one request per site and per read: never more than one page a minute.
+const COMMUNE = { "User-Agent": UA_RUNDATA };
+// Saint-Philippe posts Sudéau's notices among its news (« Sudéau – interruption de la distribution en eau le 25 novembre
+// 2026 », 19/11/2026), today the only public page of Sudéau's notices for the commune: its WordPress posts searched for
+// « eau », whose text is whole (its RSS feed has an excerpt only).
+const SAINT_PHILIPPE = "https://saintphilippe.re/wp-json/wp/v2/posts?search=eau&per_page=20&_fields=date,title,link,content";
+// Cilaos posts the cuts of its water, for RECIL or the CIVIS, among its news: its WordPress posts searched for « eau ».
+const CILAOS = "https://ville-cilaos.fr/wp-json/wp/v2/posts?search=eau&per_page=20&_fields=date,title,link,content";
+// Les Trois-Bassins posts La Créole's notices for the commune (« Information La créole – Lavage du réservoir Cocâtre »,
+// 02/11/2026), not always on La Créole's page: its RSS feed, whose excerpt holds the notice (its /wp-json/ answers 401).
+const TROIS_BASSINS = "https://trois-bassins.re/feed/";
+// Petite-Île posts the SPL Sources et Eaux's notices under its tag « coupure d'eau » (term 301), about one a month. The
+// feed's descriptions are all one old article's (Drupal), and the theme's debug comments come before `<?xml`: only the
+// title, the day and the link are kept from it, and each notice's own page is read once (`petiteIle`).
+const PETITE_ILE = "https://www.petite-ile.re/taxonomy/term/301/feed";
+
+// A notice about the water the taps give, not about the electricity, the roads (the RN5), the irrigation alone, nor a
+// post that only names water (a swimming pool, a job).
+const TAP_WATER = /\beau\b|d.eau\b/i;
+const NOT_TAP = /électri|\bEDF\b|\bRN\s?5\b|circulation|piscine|centre aquatique|recrute|poste\b/i;
+const IRRIGATION = /irrigation/i;
+const DRINKING = /eau potable|distribution (?:en |d.)eau|coupures? d.eau/i;
+/** Whether a commune's post is a notice about its tap water: an irrigation notice only when it also cuts the tap water. */
+export function surLEau(titre: string, texte: string): boolean {
+  if (NOT_TAP.test(titre)) return false;
+  // « Fermeture exceptionnelle du réseau d'irrigation agricole » (Cilaos, 19/10/2026) also cut the tap water at night.
+  if (IRRIGATION.test(titre)) return DRINKING.test(texte);
+  return TAP_WATER.test(titre);
+}
+
+/**
+ * The hours of a commune's notice: the distributors' usual words (`times`), else a day and a span « le jeudi 5 novembre
+ * 2026 de 9h à 17h » (La Créole at Les Trois-Bassins, 02/11/2026), both on that day.
+ */
+export function communeTimes(texte: string): Pick<Avis, "debut" | "fin"> {
+  const t = times(texte);
+  if (t.debut || t.fin) return t;
+  const flat = texte.replace(/\s+/g, " ");
+  const span = /\bde ([01]?\d|2[0-3])\s?h(\d\d)? à ([01]?\d|2[0-3])\s?h(\d\d)?\b/i.exec(flat);
+  const day = span && dayOf(flat.slice(0, span.index));
+  return day && span ? { debut: `${day}T${pad(span[1])}:${span[2] ?? "00"}`, fin: `${day}T${pad(span[3])}:${span[4] ?? "00"}` } : t;
+}
+
+/** A commune's WordPress posts about its tap water, each a notice with its facts, under who publishes it. */
+function communePosts(posts: Omit<Post, "categories">[], distributeur: string, commune: string): Avis[] {
+  return posts.flatMap((p): Avis[] => {
+    const titre = strip(p.title.rendered).replace(/^[^\p{L}\d]+/u, "").trim();
+    const html = p.content.rendered;
+    const texte = lines(html);
+    if (!surLEau(titre, texte)) return [];
+    const base = { distributeur, titre, communes: [commune], publie: new Date(`${p.date}+04:00`).toISOString(), lien: httpUrl(p.link) };
+    if (texte.replace(/\s+/g, " ").length < 120 && /<img|\.pdf/i.test(html)) {
+      const forme: Avis["forme"] = /\.pdf/i.test(html) ? "PDF" : "image";
+      return [{ ...base, forme, secteurs: [], secteurs_complets: false, ne_pas_boire: false, texte: "" }];
+    }
+    return [{ ...base, ...communeTimes(texte), ...sectorList(texte, false), ne_pas_boire: drinkSaid(titre, texte), ...cut(texte) }];
+  });
+}
+
+/** Saint-Philippe's posts about its water: Sudéau's notices. */
+export const parseSaintPhilippe = (posts: Omit<Post, "categories">[]) => communePosts(posts, "Sudéau, par la commune de Saint-Philippe", "Saint-Philippe");
+/** Cilaos's posts about its water (RECIL, or the CIVIS when the reservoir of Bras Sec runs low). */
+export const parseCilaos = (posts: Omit<Post, "categories">[]) => communePosts(posts, "la ville de Cilaos", "Cilaos");
+
+const item = (xml: string, t: string) => decode(new RegExp(`<${t}>([\\s\\S]*?)</${t}>`).exec(xml)?.[1] ?? "").trim();
+
+/** Les Trois-Bassins's feed: its posts about La Créole's water, the excerpt being the notice. */
+export function parseTroisBassins(xml: string): Avis[] {
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].flatMap(([, it]): Avis[] => {
+    const titre = strip(item(it, "title"));
+    const texte = lines(item(it, "description").replace(/^<!\[CDATA\[|\]\]>$/g, "")).replace(/\s*\[(?:…|&hellip;|\.\.\.)\]\s*$/, " […]").trim();
+    // La Créole's notices name it rather than the water (« Information La créole – Lavage du réservoir Cocâtre »).
+    if (!surLEau(titre, texte) && !(/la cr[ée]ole/i.test(titre) && DRINKING.test(texte))) return [];
+    return [{
+      distributeur: "La Créole, par la ville de Trois-Bassins",
+      titre,
+      communes: ["Les Trois-Bassins"],
+      publie: new Date(item(it, "pubDate")).toISOString(),
+      ...communeTimes(texte),
+      ...sectorList(texte, false),
+      ne_pas_boire: drinkSaid(titre, texte),
+      ...cut(texte),
+      lien: httpUrl(item(it, "link")),
+    }];
+  });
+}
+
+/** Petite-Île's tag feed: each notice's title, day and link; its broken description left out. */
+export function parsePetiteIleFeed(body: string): { titre: string; lien: string; publie: string }[] {
+  const xml = body.slice(Math.max(0, body.indexOf("<?xml")));
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].flatMap(([, it]) => {
+    const lien = httpUrl(item(it, "link"));
+    const publie = new Date(item(it, "pubDate"));
+    return lien && !Number.isNaN(publie.getTime()) ? [{ titre: strip(item(it, "title")), lien, publie: publie.toISOString() }] : [];
+  });
+}
+
+/** The text of one of Petite-Île's notices, from its page: its body after the field « Introduction », else the article's. */
+export function parsePetiteIlePage(html: string): string {
+  const article = /<article\b[\s\S]*?<\/article>/.exec(sansBlocs(html, "<!--", "-->"))?.[0] ?? "";
+  // No « < » left in the text: it is shown as text, never as markup.
+  const texte = lines(sansBlocs(sansBlocs(article, "<script", "</script>"), "<style", "</style>")).replace(/</g, "");
+  const at = texte.search(/^Introduction$/m);
+  return (at >= 0 ? texte.slice(at + "Introduction".length) : texte).trim();
+}
+
+/**
+ * The text without its blocks from `open` to `close` (sought without regard to case): what lies between them is copied,
+ * and everything from a block left open is dropped. No regex: a removal never joins two halves into a new block.
+ */
+export function sansBlocs(text: string, open: string, close: string): string {
+  // Lower case char by char, so that an index in it is one in `text` (some letters lengthen in lower case).
+  const low = Array.from(text, (c) => (c.toLowerCase().length === c.length ? c.toLowerCase() : c)).join("");
+  let out = "";
+  let at = 0;
+  for (;;) {
+    const start = low.indexOf(open, at);
+    if (start < 0) return out + text.slice(at);
+    out += text.slice(at, start);
+    const end = low.indexOf(close, start + open.length);
+    if (end < 0) return out;
+    at = end + close.length;
+  }
+}
+
+// Its notices read in their own page: the 3 newest of the last 60 days, each once, kept 90 days.
+const PETITE_ILE_PAGES = 3;
+const PETITE_ILE_DAYS = 60;
+const PETITE_ILE_KEEP = 90 * 86_400;
+const pageKey = (lien: string) => `avis-eau:petite-ile:${lien}`;
+
+/**
+ * Petite-Île's notices. One request to its site per read, never two: when a notice of the feed read before has no text
+ * yet, its page is read instead of the feed (the feed then kept from the read before), else the feed. A notice whose page
+ * is not read yet is said by its title and link only (`forme` « page »).
+ */
+export async function petiteIle(cache: Cache, before: Avis[] | undefined, now = new Date(cache.time())): Promise<Avis[]> {
+  const recent = (a: { publie: string }) => now.getTime() - Date.parse(a.publie) < PETITE_ILE_DAYS * 86_400_000;
+  // One KV read per notice and per read (at most PETITE_ILE_PAGES), the page just read put in it.
+  const read = new Map<string, Promise<string | undefined>>();
+  const textOf = (lien: string) => {
+    if (!read.has(lien)) read.set(lien, cache.kept<string>(pageKey(lien)).then((k) => k?.value, () => undefined));
+    return read.get(lien)!;
+  };
+  const known = (before ?? []).filter(recent).slice(0, PETITE_ILE_PAGES);
+  const pending = [];
+  for (const a of known) if ((await textOf(a.lien!)) === undefined) pending.push(a);
+  // An empty text (a page that did not answer, `getText` below) is not asked again before its day is over.
+  let feed: { titre: string; lien: string; publie: string }[];
+  if (pending.length) {
+    // A page that does not answer is noted empty for a day, so the feed is read again meanwhile; the notice is then
+    // said by its title and link (forme « page »), and its page asked again the next day.
+    const lien = pending[0].lien!;
+    const page = await getText(SOURCE.id, lien, 12_000, COMMUNE).then(parsePetiteIlePage, (err) => {
+      console.error(`source ${SOURCE.id} : page de Petite-Île non lue (${lien}):`, why(err));
+      return "";
+    });
+    await cache.keep(pageKey(lien), page, page ? PETITE_ILE_KEEP : 86_400);
+    read.set(lien, Promise.resolve(page));
+    feed = (before ?? []).map((a) => ({ titre: a.titre, lien: a.lien!, publie: a.publie }));
+  } else {
+    feed = parsePetiteIleFeed(await getText(SOURCE.id, PETITE_ILE, 12_000, COMMUNE));
+  }
+  const out: Avis[] = [];
+  for (const [i, f] of feed.entries()) {
+    const base = { distributeur: "SPL Sources et Eaux, par la ville de Petite-Île", titre: f.titre, communes: ["Petite-Île"], publie: f.publie, lien: f.lien };
+    const texte = i < PETITE_ILE_PAGES && recent(f) ? await textOf(f.lien) : undefined;
+    out.push(texte
+      ? { ...base, ...communeTimes(texte), ...sectorList(texte, false), ne_pas_boire: drinkSaid(f.titre, texte), ...cut(texte) }
+      : { ...base, forme: "page", secteurs: [], secteurs_complets: false, ne_pas_boire: false, texte: "" });
+  }
+  return out;
+}
+
 /**
  * One feed's read. A feed that did not answer keeps the notices of the read before, with the hour of that read
  * (`lu_a`), and is said silent (`muet`): a failed read is never « no notice » (tools/injoignable.ts).
@@ -477,12 +657,16 @@ export interface Flux {
   lu_a?: string;
 }
 
-const PARTS: { de: string; site: string; load: () => Promise<Avis[]> }[] = [
+const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) => Promise<Avis[]> }[] = [
   ...FEEDS.map((f) => ({ de: f.nom === "Eaux de La Possession" ? "des Eaux de La Possession" : `de ${f.nom}`, site: new URL(f.url).origin + "/", load: async () => parseRss(await getText(SOURCE.id, f.url, 12_000), f) })),
   { de: "de la CIREST", site: "https://www.cirest.fr/categorie/communique/communique-eau/", load: async () => parseCirest(await getJson<Post[]>(SOURCE.id, CIREST, 12_000)) },
   { de: "de La Créole", site: CREOLE.url, load: async () => parseCreole(await getText(SOURCE.id, CREOLE.url, 12_000)) },
   { de: "de la ville de Sainte-Marie", site: "https://www.ville-saintemarie.re/?s=CISE", load: async () => parseSainteMarie(await getJson<Post[]>(SOURCE.id, SAINTE_MARIE, 12_000)) },
   { de: "de la commune de Saint-Leu", site: "https://www.saintleu.re/?s=eau", load: async () => parseSaintLeu(await getJson<Post[]>(SOURCE.id, SAINT_LEU, 12_000)) },
+  { de: "de la commune de Saint-Philippe", site: "https://saintphilippe.re/?s=eau", load: async () => parseSaintPhilippe(await getJson<Post[]>(SOURCE.id, SAINT_PHILIPPE, 12_000, COMMUNE)) },
+  { de: "de la ville de Cilaos", site: "https://ville-cilaos.fr/?s=eau", load: async () => parseCilaos(await getJson<Post[]>(SOURCE.id, CILAOS, 12_000, COMMUNE)) },
+  { de: "de la ville de Trois-Bassins", site: "https://trois-bassins.re/", load: async () => parseTroisBassins(await getText(SOURCE.id, TROIS_BASSINS, 12_000, COMMUNE)) },
+  { de: "de la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301", load: (cache, before) => petiteIle(cache, before) },
 ];
 
 const FLUX = "avis-eau:flux";
@@ -491,7 +675,7 @@ const FLUX = "avis-eau:flux";
 export async function lecture(cache: Cache): Promise<Cached<Flux[]>> {
   return cache.island(FLUX, FRESH_SECONDS, async () => {
     const before = await cache.peek<Flux[]>(FLUX).catch(() => undefined);
-    const parts = unlessSpent(await Promise.allSettled(PARTS.map((p) => p.load())));
+    const parts = unlessSpent(await Promise.allSettled(PARTS.map((p) => p.load(cache, before?.value.find((f) => f.site === p.site)?.avis))));
     const flux = PARTS.map((p, i): Flux => {
       const r = parts[i];
       if (r.status === "fulfilled") return { de: p.de, site: p.site, avis: r.value };

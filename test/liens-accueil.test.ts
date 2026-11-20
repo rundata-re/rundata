@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LIENS } from "../src/eau/distributeurs.js";
+import { LIENS, distributeur } from "../src/eau/distributeurs.js";
 import { ACCUEILS, AGENDAS, LISIBLES, servis } from "../src/providers/agenda.js";
 import { sansLien } from "../src/liens.js";
 
@@ -30,7 +30,8 @@ describe("the links to the communes' sites read as public information", () => {
     expect(servis(a, [{ id: lien, titre: "Trail urbain des letchis", seances: [{ debut: "2026-12-19" }], commune: "Saint-Benoît", categories: [], lien, publie_par: a.nom }]).map((e) => e.lien)).toEqual([lien]);
   });
 
-  it("leave the water page of Petite-Île on its home page, where its notices of cuts are found", () => {
-    expect(LIENS["Petite-Île"].site).toBe("https://www.petite-ile.re/");
+  it("read the notices of cuts of Petite-Île on its page of them, no longer only linked to (20/11/2026)", () => {
+    expect(LIENS["Petite-Île"]).toBeUndefined();
+    expect(distributeur("Petite-Île")?.site).toBe("https://www.petite-ile.re/taxonomy/term/301");
   });
 });

@@ -84,8 +84,20 @@ describe("the fiche of an address, /terrain (web/terrain.ts)", () => {
       "<p><b>Lieu incertain :</b> l'adresse a été placée au milieu de la rue, « Chemin de la Mairie 97424 Saint-Leu ». Vérifiez sur la carte que c'est le bon endroit avant de lire la fiche.</p>",
     );
     expect(doubt("chemin de la Mairie, Saint-Paul", street)).toContain("Le point trouvé est à Saint-Leu, pas à Saint-Paul.");
+    // A commune named with its article: « au Port », « aux Avirons », never « à Le Port ».
+    const port = { ...street, lieu: { ...street.lieu, label: "Rue de Saint-Paul 97420 Le Port", insee: "97407" } };
+    expect(doubt("rue de Saint-Paul, Saint-Paul", port)).toContain("Le point trouvé est au Port, pas à Saint-Paul.");
+    expect(doubt("rue de Saint-Paul, Les Avirons", port)).toContain("Le point trouvé est au Port, pas aux Avirons.");
     // The tool's own doubt on a point it calls exact: said too.
     expect(doubt("la plage", { ...FICHE, avertissement: "Lieu incertain…" })).toContain("Lieu incertain");
+  });
+
+  it("titles the rents of a commune with its article: « au Port », « à l'Entre-Deux », « à Saint-Paul »", () => {
+    const loyers = (commune: string) => plain(terrainPage("https://rundata.re", "7 rue de la Buse, Saint-Paul", { fiche: { ...FICHE, loyers_d_annonce: { commune, millesime: 2025, maison: { logement: "maison", loyer_m2_charges_comprises: "15,57\u00a0€/m²", intervalle_95: "14 à 17\u00a0€/m²" } } } }));
+    expect(loyers("Le Port")).toContain("Loyers d'annonce au Port");
+    expect(loyers("Entre-Deux")).toContain("Loyers d'annonce à l'Entre-Deux");
+    expect(loyers("Saint-Paul")).toContain("Loyers d'annonce à Saint-Paul");
+    expect(loyers("Le Port")).not.toContain("à Le Port");
   });
 
   it("puts each warning beside its block, the risks' first, and never « sans risque »", () => {

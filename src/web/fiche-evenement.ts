@@ -45,8 +45,11 @@ function prevision(r: Row, meteo: PlaceData | undefined): string {
   const jour = meteo?.prevision?.jours?.find((j) => j.jour === dayLabel(r.date.slice(0, 10)));
   if (!jour) return "";
   const temp = jour.temperature_min && jour.temperature_max ? `${jour.temperature_min} à ${jour.temperature_max}` : undefined;
-  const parts = [jour.ciel_en_journee, temp, jour.pluie ? `pluie : ${jour.pluie}` : undefined].filter(Boolean);
-  return parts.length ? `<li><b>Prévision météo</b> pour ${esc(jour.jour)} à ${esc(r.commune!)} : ${esc(parts.join(", "))}. C'est une prévision, pas une mesure.</li>` : "";
+  // The rain said once: « pluie (10,4 mm) » under a rainy sky, never « pluie, …, pluie : 10,4 mm de pluie ».
+  const mm = jour.pluie?.match(/^(\S+ mm) de pluie(.*)$/);
+  const ciel = jour.ciel_en_journee;
+  const parts = (ciel && mm && /pluie|averse/i.test(ciel) ? [`${ciel} (${mm[1]}${mm[2]})`, temp] : [ciel, temp, jour.pluie]).filter(Boolean);
+  return parts.length ? `<li><b>Prévision météo</b> pour ${esc(jour.jour)} ${esc(a(r.commune!))} : ${esc(parts.join(", "))}. C'est une prévision, pas une mesure.</li>` : "";
 }
 
 /** Where the event is, as its row says it: its place, then its commune when the place does not name it. */
@@ -120,7 +123,7 @@ export function fichePassee(origin: string, x: Fiche, alerte?: Alerte): string {
   const c = communeOf(x.commune);
   const title = `${x.titre}${x.commune ? `, ${x.commune}` : ""} (${jj(x.date)})`;
   const quand = x.fin && x.fin !== x.date.slice(0, 10) ? `du ${dayLabel(x.date.slice(0, 10))} au ${dayLabel(x.fin)}` : `le ${dayLabel(x.date.slice(0, 10))}`;
-  const description = `${x.titre} a eu lieu ${quand}${x.commune ? ` à ${x.commune}` : ""}.`;
+  const description = `${x.titre} a eu lieu ${quand}${x.commune ? ` ${a(x.commune)}` : ""}.`;
   const { bar, jsonld } = crumbs(origin, x.titre, path);
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
@@ -128,7 +131,7 @@ export function fichePassee(origin: string, x: Fiche, alerte?: Alerte): string {
   <p class="lead">Cet événement a eu lieu ${esc(quand)}${x.lieu ? `, ${esc(x.lieu)}` : ""}${x.commune && !x.lieu?.includes(x.commune) ? `, ${esc(x.commune)}` : ""}.</p>
 </div></div>`;
   const body = `<section style="max-width:44rem;display:grid;gap:1rem">
-  ${c ? `<p><a href="/aujourdhui/${c.slug}">Les prochaines sorties à ${esc(c.nom)} →</a></p>` : ""}
+  ${c ? `<p><a href="/aujourdhui/${c.slug}">Les prochaines sorties ${esc(a(c.nom))} →</a></p>` : ""}
   <p><a href="/evenements">Tous les événements des deux semaines à venir →</a></p>
   ${x.lien ? `<p class="note" data-sortie>Annoncé par <a href="${esc(x.lien)}" rel="noopener">${esc(x.publie_par)}</a>.</p>` : `<p class="note">Annoncé par ${esc(x.publie_par)}.</p>`}
 </section>`;

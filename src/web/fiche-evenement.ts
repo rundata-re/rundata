@@ -14,12 +14,14 @@
  * no agenda announces any more.
  */
 import type { Cached } from "../cache.js";
+import { a } from "../articles.js";
 import { COMMUNES } from "./commune.js";
 import type { AgendaAnswer, Alerte, PlaceData } from "./data.js";
 import { agendaEvents, webPage } from "./domains.js";
 import { type Fiche, fichePath } from "./fiches.js";
 import { esc } from "./map.js";
 import { layout, SITE } from "./pages.js";
+import { annonceManque } from "../tools/agenda.js";
 import { dayLabel } from "../tools/prevision.js";
 
 import type { Row } from "./fiches.js";
@@ -68,12 +70,10 @@ export function ficheDescription(r: Pick<Row, "titre" | "quand" | "lieu" | "comm
  * place, with who announced it, linked to its page when there is one, where the rest may be.
  */
 function manque(r: Row): string {
-  const absents = [r.date.length <= 10 && "l'heure", !r.lieu && "le lieu"].filter((x): x is string => !!x);
-  if (!absents.length) return "";
-  const dit = absents.length === 2 ? `ni ${absents.join(" ni ")}` : `pas ${absents[0]}`;
+  // The source's name without an article: « Mairie de Saint-Pierre », « Weezevent » take none.
   const qui = r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par);
-  // The source's name after a colon, without an article: « Mairie de Saint-Pierre », « Weezevent » take none.
-  return `<p class="note" data-sortie>L'annonce ne donne ${dit} ; le détail est peut-être sur sa source : ${qui}.</p>`;
+  const dit = annonceManque(r.date, r.lieu, qui);
+  return dit ? `<p class="note" data-sortie>${dit}</p>` : "";
 }
 
 /** The page of an event to come (or on), from the copy of /evenements. */
@@ -88,9 +88,9 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const autres = (data.value.evenements ?? []).filter((x) => x.fiche !== r.fiche && x.commune && x.commune === r.commune && x.date.slice(0, 10) === day).slice(0, 6);
   const badge = r.statut ? `<span class="badge${r.statut === "complet" ? " m" : ""}">${esc(r.statut)}</span> ` : "";
   const autour = [
-    c ? `<li><b>${esc(c.nom)}</b> : <a href="/aujourdhui/${c.slug}">la journée à ${esc(c.nom)}</a></li>` : "",
+    c ? `<li><b>${esc(c.nom)}</b> : <a href="/aujourdhui/${c.slug}">la journée ${esc(a(c.nom))}</a></li>` : "",
     prevision(r, meteo),
-    autres.length ? `<li><b>Le même jour à ${esc(r.commune!)}</b> :<ul>${autres.map((x) => `<li>${x.fiche ? `<a href="${fichePath(x)}">${esc(x.titre)}</a>` : esc(x.titre)}${x.quand ? ` <small>${esc(x.quand)}</small>` : ""}</li>`).join("")}</ul></li>` : "",
+    autres.length ? `<li><b>Le même jour ${esc(a(r.commune!))}</b> :<ul>${autres.map((x) => `<li>${x.fiche ? `<a href="${fichePath(x)}">${esc(x.titre)}</a>` : esc(x.titre)}${x.quand ? ` <small>${esc(x.quand)}</small>` : ""}</li>`).join("")}</ul></li>` : "",
   ].filter(Boolean);
   const source = r.source ? `<p class="note">Source : ${esc(r.source)}</p>` : "";
   const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";

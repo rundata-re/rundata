@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Événements : sur la page d'une sortie, une annonce sans heure ou sans adresse le dit, avec le lien de sa source.
 - Communes : les 24 pages de commune s'ouvrent désormais sur quelques lignes qui présentent la commune, de Saint-Joseph à Cilaos.
 - Coupures d'eau à Sainte-Suzanne : les chantiers de runéo autorisés par la ville, avec leur lieu, leurs dates et le lien de chaque arrêté.
 - Communes : Saint-André, Saint-Louis, Sainte-Marie, La Possession, Saint-Leu et l'Entre-Deux présentent aussi la commune en quelques lignes.

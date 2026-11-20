@@ -90,6 +90,27 @@ describe("resolvePlace", () => {
     expect(placeBlock("Cilaos", resolvePlace("Cilaos")!).avertissement).toBeUndefined();
   });
 
+  it("says the places of other communes that bear the very name asked (« Bellevue », 20/11/2026), and answers the one named with its commune", () => {
+    const r = resolvePlace("Bellevue")!;
+    expect([r.lieu.nom, r.lieu.commune, r.correspondance]).toEqual(["Bellevue", "Salazie", "exacte"]);
+    expect(r.autres.map((a) => a.commune)).toEqual(["Saint-Louis", "Sainte-Suzanne", "Bras-Panon"]);
+    const said = "Plusieurs lieux s'appellent «\u00a0Bellevue\u00a0»\u00a0: réponse pour Bellevue (localite, Salazie)\u00a0; il y a aussi Bellevue (localite, Saint-Louis), Bellevue (quartier, Sainte-Suzanne), Bellevue (quartier, Bras-Panon). Le dire à l'utilisateur et, s'il parlait d'un autre, redemander avec le nom de sa commune.";
+    expect(placeWarning("Bellevue", r)).toBe(said);
+    expect(placeBlock("Bellevue", r)).toMatchObject({ avertissement: said, autres_possibilites: ["Bellevue (localite, Saint-Louis)", "Bellevue (quartier, Sainte-Suzanne)", "Bellevue (quartier, Bras-Panon)"] });
+    // With its commune, the one meant, without the warning.
+    for (const [q, commune] of [["Bellevue Saint-Louis", "Saint-Louis"], ["Bellevue, Saint-Louis", "Saint-Louis"], ["Bellevue Salazie", "Salazie"]]) {
+      const s = resolvePlace(q)!;
+      expect([s.lieu.nom, s.lieu.commune, s.autres, placeWarning(q, s)], q).toEqual(["Bellevue", commune, [], undefined]);
+    }
+    // One per other commune, three at most: Piton Rouge stands twice in Le Tampon, twice in Saint-Joseph.
+    const p = resolvePlace("Piton Rouge")!;
+    expect(new Set(p.autres.map((a) => a.commune)).size).toBe(p.autres.length);
+    expect(p.autres.length).toBe(3);
+    expect(p.autres.map((a) => a.commune)).not.toContain(p.lieu.commune);
+    // A name borne in one commune only says nothing more.
+    expect(resolvePlace("Cilaos")!.autres).toEqual([]);
+  });
+
   it("gives for a cirque or the volcan one place of it, said so, not as the place's own name", () => {
     for (const [q, nom] of [["Mafate", "La Nouvelle"], ["Cirque de Mafate", "La Nouvelle"], ["Volcan", "Pas de Bellecombe - Jacob"], ["Piton de la Fournaise", "Pas de Bellecombe - Jacob"]]) {
       const r = resolvePlace(q)!;

@@ -38,13 +38,13 @@ describe("Réunion La 1ère, not read", () => {
       "Les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris : rundata.re n'affiche donc pas les informations de Réunion La 1ère. Elles restent sur son site, https://la1ere.franceinfo.fr/reunion/.",
     );
     expect(mentionLa1ere("sport")).toBe(
-      "Les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris : rundata.re n'affiche donc pas l'actualité sportive de Réunion La 1ère, dont le football. Elle reste sur son site, https://la1ere.franceinfo.fr/reunion/sport/.",
+      "Les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris : rundata.re n'affiche donc pas l'actualité sportive de Réunion La 1ère, dont le football. Elle reste sur son site, https://la1ere.franceinfo.fr/sport?r=reunion.",
     );
     expect(noteLa1ere("actualites")).toBe(
       "Réunion La 1ère n'est pas reprise ici : les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris. Ses informations sont sur <a href=\"https://la1ere.franceinfo.fr/reunion/\" rel=\"noopener\">la1ere.franceinfo.fr</a>.",
     );
     expect(noteLa1ere("sport")).toBe(
-      "L'actualité sportive de Réunion La 1ère n'est pas reprise ici : les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris. Elle est sur <a href=\"https://la1ere.franceinfo.fr/reunion/sport/\" rel=\"noopener\">la1ere.franceinfo.fr</a>.",
+      "L'actualité sportive de Réunion La 1ère n'est pas reprise ici : les conditions d'utilisation des sites de France Télévisions, lues le 26/10, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris. Elle est sur <a href=\"https://la1ere.franceinfo.fr/sport?r=reunion\" rel=\"noopener\">la1ere.franceinfo.fr</a>.",
     );
     expect(FICHE_LA1ERE).toEqual({
       nom: "Réunion La 1ère (France Télévisions)",

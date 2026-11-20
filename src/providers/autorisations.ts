@@ -220,7 +220,7 @@ export const MEDIAS: Record<string, MediaNonRepris> = {
     conditions: "https://www.franceinfo.fr/cgu.html",
     non_lue_depuis: "2026-10-26",
     site: "https://la1ere.franceinfo.fr/reunion/",
-    site_sport: "https://la1ere.franceinfo.fr/reunion/sport/",
+    site_sport: "https://la1ere.franceinfo.fr/sport?r=reunion",
     etat: "a_demander",
   },
   // The tourist board's site (Île de La Réunion Tourisme): its legal notice, dated 01/10/2026 and read on 26/10, forbids

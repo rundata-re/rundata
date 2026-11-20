@@ -511,7 +511,9 @@ export function electionsPage(origin: string, p: PlacePage, alerte?: Alerte): st
   const depuis = elections.debut(p.nom);
   const ou = aCommune(p.nom);
   const path = electionsPath(p);
-  const title = `Élections ${ou}\u00a0: résultats et participation depuis ${depuis} | ${SITE}`;
+  // The suffix of the other pages (« · La Réunion (974) »), within the TITLE_MAX a search engine shows: « depuis 1999 » left
+  // out where it does not fit (La Plaine-des-Palmistes). « Résultats et participation » are in the description.
+  const title = [`Élections ${ou} depuis ${depuis} · La Réunion (974)`, `Élections ${ou} · La Réunion (974)`].find((t) => t.length <= TITLE_MAX) ?? `Élections ${ou} · 974`;
   const description = `Chaque scrutin ${ou} depuis ${depuis}, tel que le ministère de l'Intérieur le publie\u00a0: inscrits, votants, blancs et nuls, résultats.`;
   const jsonld = [
     {

@@ -122,7 +122,28 @@ export const withMinutes = (m: Pick<Marche, "horaires_osm">) =>
  */
 export const hoursOn = (m: Pick<Marche, "horaires_osm">, now: Date) => {
   const all = withMinutes(m);
-  return spansOn(m, now)?.map(([de, a]) => `de ${paire(de, a, all).join(" à ")}`).join(" et ");
+  const spans = spansOn(m, now);
+  // Only that day's spans: « Mo 06:00-12:00; Fr 0:00-12:00 » keeps its Monday hours.
+  if (spans?.some(midnightSpan)) return NOT_FOUND;
+  return spans?.map(([de, a]) => `de ${paire(de, a, all).join(" à ")}`).join(" et ");
+};
+
+/** What is said of a market's hours when its source gives none we can trust. */
+export const NOT_FOUND = "heures non trouvées";
+
+/**
+ * Whether one of a market's spans starts at midnight and ends in the day (« Fr 0:00-12:00 »). No market of the island
+ * opens at midnight: such hours are most likely an entry error in OpenStreetMap (Saint-André's « Marché », node
+ * 5482625028, read on 24/10/2026), not a market's. Its day is kept, its hours are said not found, and no other hour is
+ * guessed in their place. A whole day (« 00:00-24:00 ») is not such a span.
+ */
+export const fromMidnight = (m: Pick<Marche, "horaires_osm">) => (m.horaires_osm ?? "").split(";").some(ruleFromMidnight);
+
+const midnightSpan = ([de, a]: [number, number]) => de === 0 && a > 0 && a < 24 * 60;
+/** Whether one rule of OpenStreetMap hours (« Fr 0:00-12:00 ») has a span from midnight. */
+const ruleFromMidnight = (rule: string) => {
+  const r = RULE.exec(rule);
+  return !!r && spansOf(r[2]).some(midnightSpan);
 };
 
 const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
@@ -142,7 +163,16 @@ export function dayOfName(m: Pick<Marche, "nom" | "note">): { jour: number; quan
 }
 
 /** Its days in words: its hours, else the day its name gives (« le samedi matin »), else undefined. */
-export function jours(m: Pick<Marche, "nom" | "note" | "horaires">): string | undefined {
+export function jours(m: Pick<Marche, "nom" | "note" | "horaires" | "horaires_osm">): string | undefined {
+  // Its days without the hours of a span from midnight (fromMidnight()): « le vendredi, heures non trouvées ».
+  if (m.horaires && fromMidnight(m)) {
+    const said = (horaires_osm: string) => `le ${[...daysOf({ horaires_osm })].map((d) => JOURS[d]).join(", le ")}, ${NOT_FOUND}`;
+    // `horaires` is written rule by rule, joined by « ; » (scripts/build-marches.py): only the rules from midnight lose their
+    // hours, the others keep theirs. Parts that do not match the rules: every day said without hours, nothing guessed.
+    const rules = m.horaires_osm!.split(";");
+    const parts = m.horaires.split("\u00a0; ");
+    return parts.length === rules.length ? parts.map((p, i) => (ruleFromMidnight(rules[i]) ? said(rules[i]) : p)).join("\u00a0; ") : said(m.horaires_osm!);
+  }
   if (m.horaires) return m.horaires;
   const d = dayOfName(m);
   return d && `le ${JOURS[d.jour]}${d.quand === "le matin" ? " matin" : d.quand === "l'après-midi" ? " après-midi" : d.quand ? ` ${d.quand}` : ""}`;
@@ -178,7 +208,7 @@ export const heldOn = (commune: string, now: Date) =>
     const h = m.horaires_osm ? hoursOn(m, now) : undefined;
     const d = m.horaires_osm ? undefined : dayOfName(m);
     const today = new Date(now.getTime() + 4 * 3600_000).getUTCDay();
-    const said = h ?? (d?.jour === today ? (d.quand ?? "heures non trouvées") : undefined);
+    const said = h ?? (d?.jour === today ? (d.quand ?? NOT_FOUND) : undefined);
     return said ? [{ ...m, horaires_aujourd_hui: said }] : [];
   });
 

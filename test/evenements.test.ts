@@ -89,7 +89,8 @@ describe("the weekend's events", () => {
     expect(html).toContain("Dimanche 1er novembre (Toussaint, férié)");
     // The other date of a row, with its hours.
     expect(html).toMatch(/Kabar du mardi<\/a>.*?<span class="q-none">19\u00a0h<\/span>/s);
-    expect(html).not.toContain("Marché forain");
+    // Among the events (the markets of the weekend's days have their own section after them).
+    expect(html.slice(0, html.indexOf('id="h-marches"'))).not.toContain("Marché forain");
     expect(html).not.toContain("Conférence");
     expect(html).toContain(`<a href="/evenements/ce-week-end" aria-current="page">Ce week-end</a>`);
     // Each event once, at its date that weekend, for search engines.

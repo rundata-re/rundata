@@ -5,11 +5,12 @@
 import type { Cached } from "../cache.js";
 import type { AgendaAnswer, Alerte } from "./data.js";
 import { porte } from "./aller.js";
-import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, jourCompte, loading, longDay, longsCard, sourcesNote, warnings, webPage } from "./domains.js";
+import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, jourCompte, jourMois, loading, longDay, longsCard, sourcesNote, warnings, webPage } from "./domains.js";
 import { AHEAD_DAYS, type Jour, longRun, occurrences, parJour, weekend, type Weekend } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
 import { esc } from "./map.js";
 import { holidays } from "../feries.js";
+import { marchesCount, marchesSection, SPORT_LIEN } from "./marches-agenda.js";
 import { adressesCoupables, ask, DESCRIPTION_MAX, layout, SITE } from "./pages.js";
 
 type Row = NonNullable<AgendaAnswer["evenements"]>[number];
@@ -34,6 +35,16 @@ export function inWeekend(r: Row, w: Weekend, now: Date): { day: string; date: s
     ...j.evenements.map((x) => ({ day: j.jour, date: `${x.o.du}${x.o.debut ? `T${x.o.debut}` : ""}`, quand: x.o.quand, long: false })),
     ...(j.aussi.length ? os.filter((o) => longRun(o) && o.du <= j.jour && j.jour <= o.au).slice(0, 1).map((o) => ({ day: j.jour, date: `${o.du}${o.debut ? `T${o.debut}` : ""}`, quand: o.quand, long: true })) : []),
   ]);
+}
+
+/**
+ * The weekend's days whose markets its page lists: from today when it has begun, without its Friday when the weekend
+ * begins that evening (« 17:00 »): the Friday markets are held in the morning.
+ */
+export function weekendMarketDays(w: Weekend, now: Date): string[] {
+  const days: string[] = [];
+  for (let d = [w.du, localDay(now)].sort()[1]; d <= w.au; d = addDays(d, 1)) if (!(d === w.du && w.vendredi)) days.push(d);
+  return days;
 }
 
 /** « samedi 31 octobre », « dimanche 1er novembre ». */
@@ -127,8 +138,15 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
 
   const kinds = ([["concert", "concert"], ["festival", "fête ou festival", "fêtes ou festivals"], ["marché", "marché"], ["théâtre", "pièce de théâtre", "pièces de théâtre"], ["danse", "spectacle de danse", "spectacles de danse"], ["enfants", "sortie pour les enfants", "sorties pour les enfants"], ["sport", "rendez-vous sportif", "rendez-vous sportifs"]] as [string, string, string?][])
     .map(([g, one, many]) => [of(g), count(of(g), one, many)] as const).filter(([k]) => k > 0);
+  // The markets of the weekend's days (marches-agenda.ts), apart from the events and not in their count; the sport, a link.
+  const marketDays = weekendMarketDays(w, now);
+  const markets = marchesCount(marketDays);
+  const extra = [
+    ...(markets ? [`<li><a href="#h-marches" style="color:var(--on-night)">${esc(count(markets, "marché forain", "marchés forains"))}</a></li>`] : []),
+    `<li><a href="/sport" style="color:var(--on-night)">Sport ce week-end</a></li>`,
+  ];
   const brief = d && kinds.length
-    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Au programme</h2><ul class="plain">${kinds.map(([, t]) => `<li>${esc(t)}</li>`).join("")}</ul>` +
+    ? `<figure class="card mapcard"><h2 style="color:var(--on-night)">Au programme</h2><ul class="plain">${kinds.map(([, t]) => `<li>${esc(t)}</li>`).join("")}${extra.join("")}</ul>` +
       `<p class="note" style="color:var(--on-night-muted)">D'après les agendas des salles, des mairies et de l'office de tourisme.</p></figure>`
     : "";
 
@@ -162,6 +180,8 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
   ${list}
   ${warnings(agendaNotes(data, now))}
 </section>
+${marchesSection(marketDays, (day) => jourMois(upper(dayName(day))))}
+${SPORT_LIEN}
 <section aria-labelledby="h-couv">
   <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? adressesCoupables(d.couverture, true) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p></div>
   ${d && data ? sourcesNote(d.sources, data) : ""}

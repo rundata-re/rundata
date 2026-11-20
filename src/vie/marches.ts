@@ -41,7 +41,7 @@ export const OSM: SourceInfo = {
 type Mairie = keyof typeof mairies.sources;
 export const dayMonthYear = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}/${day.slice(0, 4)}`;
 /** The page of a town hall a market comes from, its date when the page gives one. */
-export const MAIRIES: Record<Mairie, SourceInfo & { date?: string }> = Object.fromEntries(Object.entries(mairies.sources).map(([id, s]) => [id, {
+export const MAIRIES: Record<Mairie, SourceInfo & { date?: string; lu?: string }> = Object.fromEntries(Object.entries(mairies.sources).map(([id, s]) => [id, {
   id: `marches_${id}`,
   nom: `${s.organisme} : « ${s.nom} »${"date" in s ? `, page du ${dayMonthYear(s.date)}` : ""}`,
   organisme: s.organisme,
@@ -49,9 +49,10 @@ export const MAIRIES: Record<Mairie, SourceInfo & { date?: string }> = Object.fr
   attribution: s.organisme,
   url: s.url,
   ...("date" in s && { date: s.date }),
-}])) as Record<Mairie, SourceInfo & { date?: string }>;
+  lu: s.lu,
+}])) as Record<Mairie, SourceInfo & { date?: string; lu?: string }>;
 
-export type Lieu = Marche & { commune: string; source: SourceInfo & { date?: string }; lien: string };
+export type Lieu = Marche & { commune: string; source: SourceInfo & { date?: string; lu?: string }; lien: string };
 
 let all: Lieu[] | undefined;
 /** Every market with its commune and its source: OpenStreetMap's, a town hall's hours over them, then the town halls' own. */
@@ -219,3 +220,42 @@ export const apart = (commune: string, now: Date) =>
 
 /** The commune's markets whose days no source gives: never dropped, never said closed. */
 export const sansJours = (commune: string) => inCommune(commune).filter((m) => !m.horaires_osm && !dayOfName(m));
+
+/** The day OpenStreetMap's markets were read (scripts/build-marches.py): « relevé le 24/10/2026 ». */
+export const OSM_LU = data.construit;
+
+/** A market held on a day, for the agenda: its hours that day as its source gives them, and where they come from. */
+export interface DuJour {
+  nom: string;
+  commune: string;
+  horaires: string;
+  adresse?: string;
+  /** « OpenStreetMap, relevé le 24/10/2026 », « Ville de Saint-Paul, site lu le 31/10/2026 », with its page's date. */
+  d_apres: string;
+  lien: string;
+}
+
+/**
+ * The markets held on a day of La Réunion (« 2026-11-21 »), in every commune or in one: those whose day and hours come
+ * from a source, its hours that day (heldOn()), or the part of the day its name gives (« le matin »). Never one whose
+ * hours no source gives, never one open all week, and never « open »: the day a source gives, with that source and the
+ * day it was read.
+ */
+export function marchesDuJour(day: string, commune?: string): DuJour[] {
+  // Noon at La Réunion that day: heldOn() takes the weekday of its time there.
+  const at = new Date(`${day}T08:00:00Z`);
+  const communes = commune ? [commune] : [...new Set(MARCHES().map((m) => m.commune))];
+  return communes.flatMap((c) => heldOn(c, at))
+    .filter((m) => m.horaires_aujourd_hui !== "heures non trouvées")
+    .map((m) => ({
+      nom: m.nom,
+      commune: m.commune,
+      horaires: m.horaires_aujourd_hui,
+      ...(m.adresse && { adresse: m.adresse }),
+      d_apres: m.source === OSM
+        ? `OpenStreetMap, relevé le ${dayMonthYear(OSM_LU)}`
+        : `${m.source.organisme}, site lu le ${dayMonthYear(m.source.lu ?? mairies.lu)}${m.source.date ? ` (page du ${dayMonthYear(m.source.date)})` : ""}`,
+      lien: m.lien,
+    }))
+    .sort((x, y) => x.commune.localeCompare(y.commune, "fr") || x.nom.localeCompare(y.nom, "fr"));
+}

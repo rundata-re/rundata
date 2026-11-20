@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Que faire ce week-end : les marchés forains de chaque jour, avec leurs heures et leur source, et un lien vers le sport.
 - Actualités : ce que publient Cilaos, Saint-Joseph et Saint-Philippe sur leurs sites ; coupures de courant : avis de trois mairies de plus.
 - Coupures d'eau : les avis publiés par Saint-Philippe (Sudéau), Cilaos, Petite-Île et Trois-Bassins sont lus, avec le lien de chaque avis.
 - La journée d'une commune : quand le site de la mairie ne répond pas, la page le dit, avec l'heure de notre dernière lecture.

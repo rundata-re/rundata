@@ -2333,7 +2333,7 @@ const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. L
 <li><b>Les deux aéroports</b> publient leurs observations toutes les 30 minutes.</li>
 <li><b>Des balises de vent</b> complètent le réseau, dont celles des clubs de parapente (FFVL).</li>
 <li><b>Les stations amateur du réseau MétéoR-OI</b>, en option, ajoutent des points de mesure dans les hauts et les quartiers. Leur fiabilité n'est pas vérifiée comme celle des stations officielles : elles sont dessinées avec un contour en pointillé.</li></ul>
-<p>Les stations vont de la côte à plus de ${fr(Math.floor(Math.max(...STATIONS_974.map((s) => s[4])) / 100) * 100)} m d'altitude. Entre deux stations, la carte <b>estime</b> la température d'après l'altitude, et la pluie d'après le radar de Météo-France. Ce sont des estimations, pas des mesures.</p>
+<p>Les stations vont de la côte à plus de ${fr(Math.floor(Math.max(...STATIONS_974.map((s) => s[4])) / 100) * 100)}\u00a0m d'altitude. Entre deux stations, la carte <b>estime</b> la température d'après l'altitude, et la pluie d'après le radar de Météo-France. Ce sont des estimations, pas des mesures.</p>
 <p><b>Ce que la page réunit et qu'aucune source ne montre seule :</b></p>
 <ul class="plain"><li>les stations officielles, celles des aéroports, les balises et les stations amateur, sur une même carte et à la même heure ;</li>
 <li>la possibilité de rejouer les 6 dernières heures, les 24 dernières heures ou les 7 derniers jours.</li></ul>

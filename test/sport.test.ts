@@ -403,7 +403,7 @@ describe("sport", () => {
     expect(b.a_venir.some((r: { epreuve: string; quand: string }) => r.epreuve === "VB2CO – SVB" && r.quand === "samedi 24/10 à 20:00")).toBe(true);
     expect(b.a_venir.some((r: { sport: string; quand: string }) => r.sport === "sport auto" && r.quand === "du samedi 24/10 au dimanche 25/10")).toBe(true);
     expect(b.resultats.map((r: { score: string }) => r.score)).toContain("3-0");
-    expect(b.grand_raid.courses[0]).toMatchObject({ course: "Diagonale des fous (180 km, 10200 m D+)", partants: 2766, arrives: 2126, abandons: 640 });
+    expect(b.grand_raid.courses[0]).toMatchObject({ course: "Diagonale des fous (180\u00a0km, 10\u202f200\u00a0m D+)", partants: 2766, arrives: 2126, abandons: 640 });
     expect(b.grand_raid.courses[0].podium[0]).toBe("1. Hugo DECK (FR) 22 h 54 min");
     expect(b.indisponible).toBeUndefined();
     expect(b.a_venir.find((r: { epreuve: string; quand: string }) => r.epreuve === "VB2CO – SVB" && r.quand === "samedi 24/10 à 20:00")).toMatchObject({ etat: "annulée" });

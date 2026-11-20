@@ -41,23 +41,27 @@ def opened(r):
     return urllib.request.urlopen(urllib.request.Request(r, headers=UA), timeout=300)
 
 
-def hhmm(t):
+def hhmm(t, minutes):
+    """The kit's hours (marketing/identite/kit.md, « Heures »): « 18\u00a0h » for a round hour, « 09:15 » when one of the
+    station's hours has minutes, so that a station has one way of writing them."""
     h, m = t.split(":")
-    return f"{int(h)} h" + (f" {m}" if m != "00" else "")
+    return t if minutes else f"{int(h)}\u00a0h"
 
 
 def hours(text):
     """« 24/7 », « Mo,Tu… 08:00-18:00 » (the schema's OpenStreetMap-like syntax) in words."""
     text = text.strip()
     if text in ("", "24/7"):
-        return "24 h/24, 7 j/7" if text else ""
+        return "24\u00a0h/24, 7\u00a0j/7" if text else ""
     groups = re.findall(r"((?:Mo|Tu|We|Th|Fr|Sa|Su)(?:,(?:Mo|Tu|We|Th|Fr|Sa|Su))*)\s+(\d\d:\d\d)-(\d\d:\d\d)", text)
     if not groups:
         return text
+    minutes = any(t[3:] != "00" for _, a, b in groups for t in (a, b))
     by_time = {}
     for days, a, b in groups:
         for d in days.split(","):
-            by_time.setdefault(f"{hhmm(a)} – {hhmm(b)}", set()).add(DAYS[d])
+            # A span with an en dash and no space around it: « 8\u00a0h–18\u00a0h », « 09:15–18:45 ».
+            by_time.setdefault(f"{hhmm(a, minutes)}–{hhmm(b, minutes)}", set()).add(DAYS[d])
     parts = []
     for span, days in sorted(by_time.items(), key=lambda kv: min(kv[1])):
         days = sorted(days)

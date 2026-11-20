@@ -567,6 +567,19 @@ function dates(seances: src.Seance[]) {
   };
 }
 
+/**
+ * What an announcement leaves out, said the same on the event's page and in the tool (words by marketing, 20/11/2026):
+ * « L'annonce ne donne pas l'heure ; le détail est peut-être sur sa source : X. », or « pas d'adresse », or « ni l'heure
+ * ni l'adresse ». « l'adresse », not « le lieu »: an announcement may name its hall in its text without the field
+ * (« à la médiathèque… »). `qui` is the source's name, without an article (the page gives it as a link). Undefined when
+ * both are given.
+ */
+export function annonceManque(date: string, lieu: string | undefined, qui: string): string | undefined {
+  const heure = date.length <= 10, adresse = !lieu?.trim();
+  const dit = heure && adresse ? "ni l'heure ni l'adresse" : heure ? "pas l'heure" : adresse ? "pas d'adresse" : undefined;
+  return dit && `L'annonce ne donne ${dit}\u00a0; le détail est peut-être sur sa source\u00a0: ${qui}.`;
+}
+
 export function eventRow(e: src.Evenement, seances: src.Seance[], place = false, outil = false) {
   return {
     /** All in capitals in its agenda, in the case of a sentence (casse.ts). */
@@ -591,6 +604,8 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false,
     /** Absent when the source gives no http(s) link. */
     lien: versBilletterie(httpUrl(e.lien)),
     publie_par: e.publie_par,
+    /** « L'annonce ne donne pas d'adresse ; le détail est peut-être sur sa source : X. », as the event's page says it. */
+    manque: outil ? annonceManque(seances[0].debut, e.lieu, e.publie_par) : undefined,
     /** When rundata.re read the agenda this comes from; not for an event its organiser proposed, never read elsewhere. */
     lu_le: e.lu_le && !e.propose && !e.via ? dayText(e.lu_le) : undefined,
     /**

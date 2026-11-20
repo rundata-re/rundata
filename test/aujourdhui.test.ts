@@ -222,3 +222,28 @@ describe("the top of the page of a commune's day", () => {
     expect(html).not.toContain("jordi");
   });
 });
+
+describe("a commune whose own site did not answer", () => {
+  it("says it with the hour of the try, in resume_du_jour and on its day's page, beside the other sources' events", () => {
+    // Saint-Denis's news, read by the scheduled event: refused at its last try, never read well (20/11/2026).
+    const sd = pageOf("saint-denis")!;
+    const base = full(sd.nom);
+    const non_lus = ["Ville de Saint-Denis : dernière lecture sans succès (le 24/10 à 14:40)"];
+    const copies = { ...base, agenda: { ...base.agenda, value: { ...base.agenda.value, non_lus } } };
+    const r = resume(sd, copies as never, NOW);
+    expect(r.resume).toContain("12 événements aujourd'hui, site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40)");
+    expect(r.evenements_du_jour?.injoignable).toEqual({
+      texte: "Le site de la Ville de Saint-Denis n'a pas répondu à notre dernière lecture (le 24/10 à 14:40) : nous ne savons pas ce qu'il annonce en ce moment.",
+      court: "site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40)",
+      site: "https://www.saintdenis.re/",
+    });
+    const html = aujourdhuiPage("https://rundata.re", sd, r, null);
+    expect(html).toContain("<li><b>Sorties :</b> 12 événements aujourd'hui, site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40).</li>");
+    expect(html).toContain(`<p class="note">Le site de la Ville de Saint-Denis n&#39;a pas répondu à notre dernière lecture (le 24/10 à 14:40) : nous ne savons pas ce qu&#39;il annonce en ce moment.</p>`);
+    // None found: said too, the agendas read being incomplete.
+    const none = resume(sd, { ...copies, agenda: { ...copies.agenda, value: { ...copies.agenda.value, evenements: [] } } } as never, NOW);
+    expect(none.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets), site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40)");
+    // Read well: nothing said.
+    expect(resume(sd, base as never, NOW).evenements_du_jour?.injoignable).toBeUndefined();
+  });
+});

@@ -109,7 +109,7 @@ export function dayLines(p: PlacePage, r: Resume): string {
   const lines = [
     measured || forecast ? line("Météo", [measured, forecast].filter(Boolean).join(" ")) : "",
     level ? line("Vigilance", `${esc(level)} (Météo-France).`) : "",
-    ev ? line("Sorties", n ? `${plural(n, "événement")} aujourd'hui.` : "aucun événement trouvé aujourd'hui dans les agendas lus.") : "",
+    ev ? line("Sorties", `${n ? `${plural(n, "événement")} aujourd'hui` : "aucun événement trouvé aujourd'hui dans les agendas lus"}${ev.injoignable ? `, ${esc(ev.injoignable.court)}` : ""}.`) : "",
     r.carburants?.prix_maximum ? line("Carburants", `prix maximum du mois\u00a0: ${esc(r.carburants.prix_maximum)}.`) : "",
     line("Pharmacie de garde", `${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}`),
   ].filter(Boolean);
@@ -260,6 +260,8 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
         (ev.liste.length
           ? `<ul class="plain">${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
           : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus.</p>`) +
+        // Its own site that did not answer at our last read, with its hour (tools/injoignable.ts).
+        (ev.injoignable ? `<p class="note">${silentText(ev.injoignable)}</p>` : "") +
         // Its site not read until it agrees: said under them, in marketing's words.
         (notRead ? `<p class="note np">${esc(notRead.ligne)}${reprise(notRead.ligne)}</p>` : ""),
         "/evenements")

@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T05:01:00+04:00", texte: "Valeurs\u00a0: comment rundata.re lit les sites publics, et comment demander qu'on retire ce qu'il en montre." },
   { date: "2026-11-20T03:42:00+04:00", texte: "Événements\u00a0: ceux qu'annoncent les mairies du Tampon, de Saint-Denis et de Saint-Pierre sur leurs sites, avec le lien de chacun." },
   { date: "2026-11-20T03:14:00+04:00", texte: "Agenda\u00a0: un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part." },
   { date: "2026-11-20T02:59:00+04:00", texte: "Fiche terrain\u00a0: «\u00a0mairie de Saint-Leu\u00a0» situe la mairie elle-même, et un point incertain est dit en premier." },

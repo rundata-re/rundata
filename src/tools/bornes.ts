@@ -3,6 +3,7 @@ import { ageMinutes, ageText, distanceKm, localTime } from "../geo.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as irve from "../providers/irve.js";
 import { why } from "../types.js";
+import { autreCommune, volOiseau } from "./dae.js";
 import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 
 // Stations this close are worth the drive across town; past this, the nearest few are given anyway.
@@ -158,7 +159,8 @@ export async function bornesRecharge(cache: Cache, lieu: string | undefined, rap
         (latest ? `, dont le changement d'état le plus récent est de ${since(latest, lu!)}\u00a0: ce fichier se remplit par lots et peut être en retard` : "") +
         `. « depuis » est l'heure du dernier changement d'état de chaque point. Un point peut être pris entre-temps.`
       : "L'état en direct des bornes est indisponible pour le moment : seule la liste des stations est donnée.",
-    ...(latest ? { etat_jusqu_a: latest } : {}),
+    // The operators' latest change, Réunion time as /bornes says it (« 20/11 11:24 »): the data's date (fraicheur.ts).
+    ...(latest ? { etat_jusqu_a: localTime(new Date(latest)) } : {}),
     ...(old ? { avertissement: `État relevé ${ageText(ageMinutes(lu!, now))} : il a pu changer depuis.` } : {}),
     sources: credits([irve.SOURCE]),
     voir_aussi: RECHARGEPEI.outil,
@@ -210,9 +212,10 @@ export async function bornesRecharge(cache: Cache, lieu: string | undefined, rap
       (live ? ` : ${countText(k)}.` : ".") +
       (free ? ` Par exemple : ${label(free.s)}, ${countText(count([free.s], live))}.` : "");
   } else {
-    resume = `${kind[0].toUpperCase()}${kind.slice(1)} la plus proche ${de(p.nom)} : ${label(first.s)}${first.s.adresse.endsWith(first.s.commune) ? "" : ` (${first.s.commune})`}, à ${fr(Math.round(first.km * 10) / 10)} km` +
+    resume = `${kind[0].toUpperCase()}${kind.slice(1)} la plus proche ${de(p.nom)} : ${label(first.s)}${first.s.adresse.endsWith(first.s.commune) ? "" : ` (${first.s.commune})`}, ${volOiseau(first.km)}` +
       (live ? `, ${countText(count([first.s], live))}.` : ".") +
-      (free && free !== first ? ` Avec un point libre : ${label(free.s)}, à ${fr(Math.round(free.km * 10) / 10)} km.` : "");
+      (autreCommune(p.commune, first.s.commune) ? ` ${autreCommune(p.commune, first.s.commune)}` : "") +
+      (free && free !== first ? ` Avec un point libre : ${label(free.s)}, ${volOiseau(free.km)}.` : "");
   }
   return text({
     lieu: placeBlock(lieu, res),

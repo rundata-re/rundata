@@ -45,7 +45,7 @@ import type { ReleveEntree } from "../providers/prefecture-copie.js";
 import { ecoles, type ecolesBlock } from "../tools/ecoles.js";
 import { current, cyclone, cycloneLevel, highest, raised } from "../tools/vigilance.js";
 import { COMMUNES as BIKE_COMMUNES, velosLibreService } from "../tools/velos.js";
-import { bornesRecharge, count as countPoints, stationRow } from "../tools/bornes.js";
+import { bornesRecharge, count as countPoints, lastChange, stationRow } from "../tools/bornes.js";
 import { ile, type Ile } from "../eau/ile.js";
 import * as baignadesSource from "../providers/baignades.js";
 import * as eauPotableSource from "../providers/eaupotable.js";
@@ -622,7 +622,9 @@ export async function buildBornes(cache: Cache, now = new Date()): Promise<Borne
       libres: c.libres, total: c.total, occupes: c.occupes, hors_service: c.hors_service, inconnus: c.autres,
     };
   });
-  return { ...a, stations };
+  // The page's own instant of the operators' state (ISO), whatever the tool says it in (Réunion time, for an assistant).
+  const etat = lastChange(live);
+  return { ...a, etat_jusqu_a: etat, stations };
 }
 
 export type EauAnswer = Ile & { a_savoir: typeof EAU_COMMON; sources: Credit[] };

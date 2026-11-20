@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DAES } from "../src/providers/dae.js";
-import { access, aPied, defibrillateurs, daeRow, etage, loin, nomDae } from "../src/tools/dae.js";
+import { access, aPied, defibrillateurs, daeRow, etage, loin, nomDae, autreCommune } from "../src/tools/dae.js";
 import { daeCouche } from "../src/web/couches.js";
 import { buildDae } from "../src/web/data.js";
 import { daePage } from "../src/web/domains.js";
@@ -90,11 +90,30 @@ describe("défibrillateurs", () => {
   it("says a distance from 1 km in kilometres and a walk from an hour in hours", () => {
     expect([loin(0.64), loin(0.995), loin(1.19), loin(6.36)]).toEqual(["640\u00a0m", "1\u00a0km", "1,2\u00a0km", "6,4\u00a0km"]);
     expect([aPied(59), aPied(60), aPied(103), aPied(125)]).toEqual(["59\u00a0min", "1\u00a0h", "1\u00a0h\u00a043", "2\u00a0h\u00a005"]);
-    // Far from any device: its distance and its walk so, its name as people read it.
+    // Far from any device: its distance as the crow flies, no walk (the straight line crosses the mountain), its name as people read it.
     const r = body(defibrillateurs("Piton des Neiges"));
-    expect(r.resume).toMatch(/à \d+,\d\u00a0km, environ \d\u00a0h(\u00a0\d\d)? à pied/);
-    expect(r.resume).not.toMatch(/\d{4} m|\d{3} min/);
+    expect(r.resume).toMatch(/, à \d+,\d\u00a0km à vol d'oiseau, accès/);
+    expect(r.resume).not.toMatch(/à pied|\d{4} m|\d{3} min/);
+    expect(r.defibrillateurs.every((d: { a_pied?: string }) => d.a_pied === undefined)).toBe(true);
     expect(r.defibrillateurs.every((d: { lieu: string }) => /\p{Ll}/u.test(d.lieu))).toBe(true);
+  });
+
+  it("says every distance as the crow flies, a walk only under a kilometre, and the road when the device is in another commune", () => {
+    // Bellevue (Salazie): the third device is in Cilaos, 9,6 km away through the Piton des Neiges.
+    const bellevue = body(defibrillateurs("Bellevue"));
+    expect(bellevue.resume).toContain("(Salazie), à 3,2\u00a0km à vol d'oiseau, accès");
+    expect(bellevue.resume).not.toMatch(/à pied|une autre commune/);
+    const cilaos = bellevue.defibrillateurs.find((d: { adresse: string }) => d.adresse.endsWith("Cilaos"));
+    expect(cilaos).toMatchObject({ distance_m: 9590, distance: "9,6\u00a0km à vol d'oiseau", autre_commune: "À Cilaos, une autre commune\u00a0: par la route, le trajet peut être bien plus long que la distance à vol d'oiseau." });
+    expect(cilaos).not.toHaveProperty("a_pied_min");
+    expect(cilaos.a_pied).toBeUndefined();
+    // In town: a walk, with its condition.
+    const town = body(defibrillateurs("Saint-Denis"));
+    expect(town.resume).toMatch(/\(Saint-Denis\), à \d+\u00a0m à vol d'oiseau, environ \d+\u00a0min à pied si le chemin est direct, /);
+    expect(town.resume).toMatch(/Accessible à toute heure : .+, à \d+\u00a0m à vol d'oiseau\./);
+    // A device in another commune first: said after it.
+    expect(autreCommune("Saint-Paul", "Le Port")).toBe("Au Port, une autre commune\u00a0: par la route, le trajet peut être bien plus long que la distance à vol d'oiseau.");
+    expect([autreCommune("Saint-Denis", "Saint-Denis"), autreCommune("", "Cilaos")]).toEqual([undefined, undefined]);
   });
 
   it("says how a device can be reached", () => {

@@ -7,6 +7,10 @@
  * - « adresse copiée »: the connector's address copied, on /mcp only.
  * - « aide »: the answer to « Cette page vous a aidé ? », oui or non. Nothing kept: the buttons go away after the
  *   click, for this page view only.
+ * - « sortie »: a link followed from an agenda of events (a list marked `data-sortie`: /evenements, its week-end and
+ *   concerts, a commune's day) to another site: that site's name only (its host, without « www. »), never the link's
+ *   path or query, with the page left (its path, without query). One point per click, the middle button's and a
+ *   click with ctrl or ⌘ (a new tab) too; « Ouvrir dans un nouvel onglet » from the right-click menu is not seen.
  * - « retour »: whether the visitor came before, in one class. The browser's local storage keeps two days, without the
  *   hour: the first visit's and the last one's. Only the class is sent, never the days, once per visit, with the page
  *   the visit came in by (one not opened from another page of the site). The mark is never extended: 13 months after
@@ -25,7 +29,7 @@ export const SIGNAL_PATH = "/signal";
 const BODY_MAX = 300;
 
 /** The event names sent by the page, short, and as written in blob3. */
-const EVENTS: Record<string, string> = { a: "affichage", c: "adresse copiée", o: "aide", r: "retour" };
+const EVENTS: Record<string, string> = { a: "affichage", c: "adresse copiée", o: "aide", r: "retour", s: "sortie" };
 const AIDE: Record<string, string> = { oui: "oui", non: "non" };
 /** The classes of a visit, as written in blob10. */
 export const RETOURS: Record<string, string> = { p: "première", j: "même jour", l: "lendemain", s: "dans la semaine", t: "plus tard" };
@@ -53,6 +57,9 @@ let vu=false;const affiche=()=>{if(vu)return;vu=true;try{const n=performance.get
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")affiche()});addEventListener("pagehide",affiche);
 document.querySelectorAll("[data-aide]").forEach((b)=>b.addEventListener("click",()=>{const a=b.closest(".aide");a.querySelectorAll("button").forEach((x)=>{x.disabled=true});
 a.querySelector(".q").hidden=true;a.querySelector("[data-apres="+b.dataset.aide+"]").hidden=false;sig("o",b.dataset.aide)}));
+const sortie=(ev)=>{if(ev.button!==(ev.type==="auxclick"?1:0))return;const a=ev.target instanceof Element&&ev.target.closest("[data-sortie] a[href]");if(!a)return;
+let u;try{u=new URL(a.href,location.href)}catch{return}if(/^https?:$/.test(u.protocol)&&u.host!==location.host)sig("s",u.hostname.replace(/^www\./,""))};
+addEventListener("click",sortie);addEventListener("auxclick",sortie);
 ${VENU}
 try{let r="";try{r=new URL(document.referrer).host}catch{}if(r!==location.host){let m=null;try{m=JSON.parse(localStorage.getItem("${MARK}"))}catch{}
 const[c,n]=venu(m,new Date(Date.now()+144e5).toISOString().slice(0,10));localStorage.setItem("${MARK}",JSON.stringify(n));sig("r",c)}}catch{}`;
@@ -84,6 +91,8 @@ export interface Signal {
 }
 
 const PATH = /^\/(?!\/)[\w\-./%]{0,200}$/;
+// A site's name as the browser gives it (lowercase, punycode for an accented one): two labels at least, 100 characters.
+const HOST = /^(?=.{3,100}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/;
 // A time in ms from the browser: a whole number under ten minutes, else none.
 const ms = (s: string | null) => (s && /^\d{1,6}$/.test(s) && Number(s) <= 600_000 ? Number(s) : undefined);
 
@@ -107,6 +116,8 @@ function read(f: URLSearchParams, event: string, path: string, v: string): Signa
       return path === "/mcp" && !v ? { event, path, value: "" } : undefined;
     case "o":
       return AIDE[v] ? { event, path, value: AIDE[v] } : undefined;
+    case "s":
+      return HOST.test(v) ? { event, path, value: v } : undefined;
     default:
       return RETOURS[v] ? { event, path, value: RETOURS[v] } : undefined;
   }

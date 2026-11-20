@@ -255,7 +255,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const events = ev
     ? card("music", "Sortir aujourd'hui",
         (ev.liste.length
-          ? `<ul class="plain">${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
+          ? `<ul class="plain" data-sortie>${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
           : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus.</p>`) +
         // Its own site that did not answer at our last read, with its hour (tools/injoignable.ts).
         (ev.injoignable ? `<p class="note">${silentText(ev.injoignable)}</p>` : ""),

@@ -89,7 +89,7 @@ function dayList(jours: Jour<Row>[], rows: Row[], heading: (day: string) => stri
     ? `<form id="ef" class="card filter" hidden role="search" aria-label="Filtrer les événements par genre"><label>Genre <select name="g"><option value="">tous</option>${GENRES.filter(([g]) => present.has(g)).map(([g, nom]) => `<option value="${esc(g)}">${esc(nom)}</option>`).join("")}</select></label><p class="note" id="ef-n" aria-live="polite"></p></form>`
     : "";
   return `${filter}<div id="jours"><ul class="zones">${jours.filter((j) => j.evenements.length).map((j) =>
-    `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau">${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div><script>${GENRE_SCRIPT}</script>`;
+    `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div><script>${GENRE_SCRIPT}</script>`;
 }
 
 /** The events of a page as schema.org `Event`s (domains.ts `agendaEvents`), when there are any. */
@@ -224,7 +224,7 @@ export function concertsPage(origin: string, data: Cached<AgendaAnswer> | null, 
       (tonight.length > 7 ? `<p class="note" style="color:var(--on-night-muted)">et ${tonight.length - 7} autres.</p>` : "") + `</figure>`
     : "";
 
-  const halls = `<p>Les programmes des salles : ${HALLS.map(([nom, lien]) => `<a href="${esc(lien)}" rel="noopener">${esc(nom)}</a>`).join(", ")}.</p>`;
+  const halls = `<p data-sortie>Les programmes des salles : ${HALLS.map(([nom, lien]) => `<a href="${esc(lien)}" rel="noopener">${esc(nom)}</a>`).join(", ")}.</p>`;
   const list = !d
     ? `<p class="card">L'agenda se charge : rechargez la page dans quelques secondes.</p>`
     : n

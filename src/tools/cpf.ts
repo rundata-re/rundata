@@ -9,6 +9,7 @@ import { localTime } from "../geo.js";
 import { normalize } from "../places/resolve.js";
 import * as cpf from "../providers/cpf.js";
 import type { Formation } from "../providers/cpf.js";
+import { unnoted } from "../lectures.js";
 import { injoignable } from "./injoignable.js";
 import { nombre } from "./format.js";
 
@@ -63,7 +64,9 @@ const lecture = (lu: Date) => {
  */
 export async function formationsCpf(cache: Cache, motCle: string, words: string[], now = new Date()) {
   if (!cpf.configured()) return undefined;
-  const copie = await cpf.formations(cache);
+  // Its read never dates the answer of emploi: the catalogue is collected once a day, and its block says its own read
+  // (`donnees`). On 20/11/2026 the offers read at 12:25 were said read at 16:15 the day before, « il y a 20 h », the catalogue's time.
+  const copie = await unnoted(() => cpf.formations(cache));
   if (!copie) return { erreur: "Les formations éligibles au CPF ne sont pas disponibles pour le moment.", consulter: cpf.SITE, a_savoir: A_SAVOIR };
   const { value: c, fetchedAt } = copie;
   const t = texts(c.formations);

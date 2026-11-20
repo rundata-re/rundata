@@ -1240,6 +1240,10 @@ export interface SportAnswer {
   /** And the sports of all of them. */
   sports_a_venir?: string[];
   resultats?: SportRow[];
+  /** When `resultats` lists only the most recent: how many there are, said on the page as by the tool. */
+  resultats_en_tout?: number;
+  /** The days the answer covers, its results from `du`. */
+  periode?: { du: string; au: string };
   indisponible?: string[];
   non_couvert: string;
   sources: Credit[];

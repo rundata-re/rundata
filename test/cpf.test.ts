@@ -7,6 +7,8 @@ import * as emploiSource from "../src/providers/emploi.js";
 import { REGISTRY } from "../src/registre.js";
 import { A_SAVOIR, ORGANISME_MASQUE, duree, frais } from "../src/tools/cpf.js";
 import { emploi } from "../src/tools/emploi.js";
+import { fraicheur } from "../src/tools/fraicheur.js";
+import { withLectures } from "../src/lectures.js";
 import { buildEmploi, emploiPage } from "../src/web/emploi.js";
 
 // 16:15 in La Réunion.
@@ -184,6 +186,23 @@ describe("the formations in the tool emploi and on /emploi", () => {
     const all = body(await emploi(cache(), undefined, undefined, NOW));
     expect(all).not.toHaveProperty("formations_cpf");
     expect(reads()).toBe(before);
+  });
+
+  it("leaves the answer dated by the offers, the catalogue of the day before saying its own read", async () => {
+    catalogue(LIGNES);
+    let c: cpf.Copie | undefined;
+    const before = new Date(NOW.getTime() - 20 * 3600_000);
+    await cpf.collect(null, async (x) => void (c = x), before);
+    vi.unstubAllGlobals();
+    emploiSource.configure(async () => offres);
+    cpf.configure(async () => c!);
+    const { value, lectures } = await withLectures(() => emploi(cache(), undefined, "anglais", NOW));
+    const r = body(value);
+    expect(r.formations_cpf.donnees).toBe("Catalogue de Mon Compte Formation (lecture du 02/11 à 20:15, heure de La Réunion).");
+    expect(lectures.map((l) => l.key)).toEqual(["emploi:offres"]);
+    const f = fraicheur(r, lectures, NOW);
+    expect(f.lue_a).toBe("03/11 16:00");
+    expect(f.age).toBe("il y a 15 min");
   });
 
   it("is not given where nothing is configured, and says when the store does not answer", async () => {

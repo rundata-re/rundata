@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Coupures d'eau à Sainte-Suzanne : les chantiers de runéo autorisés par la ville, avec leur lieu, leurs dates et le lien de chaque arrêté.
 - Communes : Saint-André, Saint-Louis, Sainte-Marie, La Possession, Saint-Leu et l'Entre-Deux présentent aussi la commune en quelques lignes.
 - Événements : chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune.
 - Élections : chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur.

@@ -81,6 +81,7 @@ import { type Observation, why } from "../types.js";
 import { type Entree, FICHES, FICHES_EVERY_MS, PASSE_JOURS, registre } from "./fiches.js";
 import * as traces from "../providers/traces.js";
 import { coastal, type PlacePage } from "./places.js";
+import { bloc as blocArretes, type BlocArretes } from "../providers/arretes-travaux.js";
 
 export const FRESH_SECONDS = 5 * 60; // the stations publish every 6 minutes
 const KEEP_SECONDS = 24 * 3600;
@@ -1188,6 +1189,8 @@ export interface CoupuresAnswer {
   derniers_avis?: Record<string, DernierAvis[]>;
   /** For each commune in derniers_avis, the publication of the oldest notice its feeds still list: the page says from when they go back. */
   plus_ancien_avis?: Record<string, string>;
+  /** Sainte-Suzanne's orders allowing runéo's works (providers/arretes-travaux.ts), for its page; absent before 20/11/2026 or when never read. */
+  arretes_sainte_suzanne?: BlocArretes;
 }
 
 /** A commune's notice, in force or past: when it was published, by whom, and its link. */
@@ -1204,6 +1207,8 @@ export const DERNIERS_AVIS = 5;
 
 export async function buildCoupures(cache: Cache, now = new Date()): Promise<CoupuresAnswer> {
   const a = needed<Omit<CoupuresAnswer, "communes_suivies">>(await coupuresEau(cache, undefined, now), "coupures");
+  // Sainte-Suzanne's orders allowing runéo's works: one request, read every 30 minutes at most.
+  const arretes = await blocArretes(cache, now);
   // The feeds' read the tool has just made, from memory: no request more.
   const derniers: Record<string, DernierAvis[]> = {};
   const oldest: Record<string, string> = {};
@@ -1217,9 +1222,9 @@ export async function buildCoupures(cache: Cache, now = new Date()): Promise<Cou
     }
   } catch {
     // The tool's answer stands without them: the page then shows the notices in force only.
-    return { ...a, communes_suivies: lues() };
+    return { ...a, communes_suivies: lues(), ...(arretes && { arretes_sainte_suzanne: arretes }) };
   }
-  return { ...a, communes_suivies: lues(), derniers_avis: derniers, plus_ancien_avis: oldest };
+  return { ...a, communes_suivies: lues(), derniers_avis: derniers, plus_ancien_avis: oldest, ...(arretes && { arretes_sainte_suzanne: arretes }) };
 }
 
 export type { CourantAnswer };

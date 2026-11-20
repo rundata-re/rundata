@@ -109,6 +109,8 @@ export const FICHES: Record<string, Fiche> = {
   vigieau: { famille: "licence_ouverte", producteurs: [MTE, PREFECTURE] },
   // providers/avis-eau.ts: Dionéo, runéo, Eaux de La Possession, La Créole, the CIREST, Sainte-Marie and Saint-Leu.
   avis_eau: { famille: "information_publique", producteurs: ["Dionéo", "runéo", "Eaux de La Possession", "La Créole", "CIREST", commune("Sainte-Marie"), commune("Saint-Leu")] },
+  // providers/arretes-travaux.ts: the town of Sainte-Suzanne's orders allowing runéo's works (20/11/2026).
+  arretes_sainte_suzanne: { famille: "information_publique", producteurs: [commune("Sainte-Suzanne")] },
   risque_requin: { famille: "information_publique", producteurs: [PREFECTURE, "GIP Centre Sécurité Requin"] },
   geodae: { famille: "licence_ouverte", producteurs: [SANTE] },
   finess: { famille: "licence_ouverte", producteurs: [SANTE] },

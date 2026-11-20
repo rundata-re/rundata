@@ -73,6 +73,19 @@ describe("the shark rule and the zones where bathing is allowed", () => {
     for (const p of PAGES) expect(placePage(O, p, null, NOW).includes(`id="h-requin"`), p.slug).toBe(coastal(p));
   });
 
+  it("give a place's page the rule in one sentence with the order's number, and a link to /mer, which keeps it in full", () => {
+    const place = placePage(O, pageOf("saint-gilles-les-bains")!, null, NOW);
+    expect(place).toContain("Baignade, surf, bodyboard et paddle sont interdits dans la bande des 300\u00a0m de tout le littoral, sauf dans le lagon, " +
+      "les espaces aménagés et surveillés, et les ZONEX ouvertes et surveillées (arrêté préfectoral n°\u00a0180, jusqu&#39;au 15/02/<wbr class=\"adr\">2027). " +
+      'Ces zones réduisent le risque requin, elles ne le suppriment pas. <a href="/mer">Les règles et les zones surveillées, sur la page mer →</a>');
+    expect(place).not.toContain("Exceptions, dans les conditions fixées par les communes");
+    // The place's own line stays.
+    expect(text(placePage(O, pageOf("l-hermitage")!, null, NOW))).toContain("Lagon de l'Hermitage : lagon, baignade permise");
+    expect(seaPage(O, null, NOW)).toContain("Exceptions, dans les conditions fixées par les communes");
+    // Once the order has lapsed, the place says what ruleText says then, never the sentence.
+    expect(placePage(O, pageOf("saint-gilles-les-bains")!, null, AFTER)).not.toContain("jusqu&#39;au 15/02");
+  });
+
   it("never say a place is free of sharks or of risk, nor a zone open today", () => {
     const pages = [bathingPage(O, NOW), bathingPage(O, AFTER), seaPage(O, null, NOW), ...PAGES.filter(coastal).flatMap((p) => [placePage(O, p, null, NOW), placePage(O, p, null, AFTER)])];
     for (const html of pages) expect(text(html)).not.toMatch(NEVER);

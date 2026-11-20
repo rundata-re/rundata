@@ -618,6 +618,27 @@ describe("coupures d'eau", () => {
     expect(waterLive(pageOf("le-tampon")!, { coupures })).toMatchObject({ valeur: "Site pas lu" });
   });
 
+  it("gives the ARS's advice in one sentence on a commune's page with no notice, in full with the cyclone's while one is in progress", async () => {
+    const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
+    const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);
+    const short = "Après une coupure, l'eau qui revient au robinet peut être impropre à la consommation pendant plusieurs heures, d'après l'<abbr title=\"Agence régionale de santé\">ARS</abbr> La Réunion\u00a0: ne la buvez pas et ne cuisinez pas avec. Quand un avis dit de ne pas boire l'eau, suivez ses consignes. <a href=\"/coupures-eau#ars-coupure\">Les consignes de l'ARS, et celles d'après un cyclone →</a>";
+    // The page spells out the first « ARS » it says.
+    // No notice at Saint-Pierre in the copy: the sentence, its link, and neither the full advice nor the cyclone's section.
+    const calm = page("saint-pierre");
+    expect(calm).toContain(short);
+    expect(calm).not.toContain('id="ars-coupure"');
+    expect(calm).not.toContain('id="h-cyclone-eau"');
+    // A notice not to drink the water at La Plaine-des-Palmistes: both stay in full.
+    const dry = page("la-plaine-des-palmistes");
+    expect(dry).toContain('<p class="note" id="ars-coupure">');
+    expect(dry).toContain('id="h-cyclone-eau"');
+    expect(dry).not.toContain(short);
+    // The island's page, where the sentence links: both in full, the anchor on the advice.
+    const isle = coupuresPage("https://rundata.re", coupures, NOW);
+    expect(isle).toContain('<p class="note" id="ars-coupure">');
+    expect(isle).toContain('id="h-cyclone-eau"');
+  });
+
   it("says a feed that does not answer: its notices kept with the hour they were read, else its read failed, never « no cut »", async () => {
     const store = new MemoryStore();
     let t = NOW.getTime();

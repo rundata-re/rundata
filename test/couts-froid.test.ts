@@ -106,6 +106,23 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   [/theatrelucdonat\.re\/prog/, "agenda/luc-donat-saison.html"],
   [/kabardock\.com/, "agenda/kabardock.html"],
   [/letangsale\.fr/, "agenda/etang-sale.html"],
+  // /sport's sources, the fixtures of test/sport.test.ts (Saturday 24/10/2026).
+  [/livetrail.*global-event$/, "sport/livetrail_event.json"],
+  [/livetrail.*summaries$/, "sport/livetrail_summaries.json"],
+  [/livetrail/, "sport/livetrail_lives.json"],
+  [/ffhandball.*masculin.*journee-5/, "sport/ffhb_d1sm_j5.html"],
+  [/ffhandball.*masculin/, "sport/ffhb_d1sm.html"],
+  [/ffhandball.*journee-5/, "sport/ffhb_d1sf_j5.html"],
+  [/ffhandball/, "sport/ffhb_d1sf.html"],
+  [/ffvbbeach.*poule=R1M/i, "sport/ffvb_r1m.html"],
+  [/ffvbbeach.*poule=R1F/i, "sport/ffvb_r1f.html"],
+  [/ffvbbeach.*poule=R2F/i, "sport/ffvb_r2f.html"],
+  [/ffvbbeach.*poule=2MA/i, "sport/ffvb_2ma.html"],
+  [/ffvbbeach.*poule=2MB/i, "sport/ffvb_2mb.html"],
+  [/lrvb\.re/, "sport/lrvb_home.html"],
+  [/ffvoile/, "sport/ffvoile.json"],
+  [/ffgolf/, "sport/ffgolf.json"],
+  [/lsar/, "sport/lsar.json"],
 ];
 
 let unrouted: string[] = [];

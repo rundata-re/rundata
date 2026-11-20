@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Valeurs : comment rundata.re lit les sites publics, et comment demander qu'on retire ce qu'il en montre.
 - Événements : ceux qu'annoncent les mairies du Tampon, de Saint-Denis et de Saint-Pierre sur leurs sites, avec le lien de chacun.
 - Agenda : un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part.
 - Fiche terrain : « mairie de Saint-Leu » situe la mairie elle-même, et un point incertain est dit en premier.

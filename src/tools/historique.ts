@@ -584,7 +584,7 @@ function autreAltitude(place: Place, p: Period, rain: Series, autre: Series): st
   const f = fit(place, asStation(autre.poste));
   const dz = rain.poste.alt - place.altitude_m!;
   const same = p.du === p.au ? "le même jour" : "sur la même période";
-  return `${rain.poste.nom} est ${Math.abs(dz)}\u00a0m plus ${dz < 0 ? "bas" : "haut"} que ${place.nom}\u00a0; plus ${dz < 0 ? "haut" : "bas"}, ${a(autre.poste.nom)} (${autre.poste.alt}\u00a0m, ${fr(f.distance_km)}\u00a0km, direction ${f.direction}), ${fr(pl.total_mm)}\u00a0mm de pluie ${same}.`;
+  return `${rain.poste.nom} est ${fr(Math.abs(dz))}\u00a0m plus ${dz < 0 ? "bas" : "haut"} que ${place.nom}\u00a0; plus ${dz < 0 ? "haut" : "bas"}, ${a(autre.poste.nom)} (${fr(autre.poste.alt)}\u00a0m, ${fr(f.distance_km)}\u00a0km, direction ${f.direction}), ${fr(pl.total_mm)}\u00a0mm de pluie ${same}.`;
 }
 
 function oneDay(where: string, d: string, s: Record<string, unknown>, names: { rain?: string; temp?: string; sun?: string }): string {
@@ -745,7 +745,7 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
     const km = b.distance_km ?? 0;
     const dz = b.ecart_altitude_m ?? 0;
     if (km < 2 && Math.abs(dz) < 100) return x.nom;
-    return `${x.nom}, à ${fr(km)} km${Math.abs(dz) >= 100 ? ` et ${Math.abs(dz)} m plus ${dz > 0 ? "haut" : "bas"}` : ""}`;
+    return `${x.nom}, à ${fr(km)} km${Math.abs(dz) >= 100 ? ` et ${fr(Math.abs(dz))}\u00a0m plus ${dz > 0 ? "haut" : "bas"}` : ""}`;
   }).join("\u00a0; ");
   return {
     ou: where,
@@ -1048,7 +1048,7 @@ export async function historiqueMeteo(
       (hier ? ` ${hier.texte}` : "")).trim(),
     stations: stationsUsed(place, [[rain, "pluie"], [temp, "températures et rafales"], [sun, "ensoleillement"], [autre, "pluie, à une autre altitude"]]),
     ...s,
-    pluie_autre_altitude: autre && { ...stationBlock(place, autre.poste, "pluie"), ...(summary(p, autre).pluie as object), pourquoi: `${rain!.poste.nom} est à ${Math.abs(dz)}\u00a0m de l'altitude de ${place.nom}.` },
+    pluie_autre_altitude: autre && { ...stationBlock(place, autre.poste, "pluie"), ...(summary(p, autre).pluie as object), pourquoi: `${rain!.poste.nom} est à ${fr(Math.abs(dz))}\u00a0m de l'altitude de ${place.nom}.` },
     ...shape(rain, temp, sun),
     hier_provisoire: veille?.bloc,
     hier_heure_par_heure: hier?.bloc,

@@ -41,9 +41,21 @@ export const tranche = (de: number, a: number, minutes?: boolean) => paire(de, a
 export const minutees = (spans: [number, number][]) => spans.some(([de, a]) => de % 60 !== 0 || a % 60 !== 0);
 
 /** One reading as a short string a model can quote: "24 °C", "ESE (112°)", "65 % (calculée)". */
-/** A number written the French way: 24,6. */
+/**
+ * A number written the French way: « 24,6 », and its thousands from 4 digits with a narrow no-break space, « 2\u202f300 »,
+ * « 10\u202f200 » (marketing's kit, « Nombres »), as nombre() does. Never for a year or a code, which are written as
+ * they are.
+ */
 export function fr(n: number): string {
-  return String(n).replace(".", ",");
+  const [whole, decimals] = String(n).split(".");
+  const sign = whole.startsWith("-") ? "-" : "";
+  const digits = sign ? whole.slice(1) : whole;
+  let grouped = digits;
+  if (digits.length > 3 && /^\d+$/.test(digits)) {
+    grouped = "";
+    for (let end = digits.length; end > 0; end -= 3) grouped = digits.slice(Math.max(0, end - 3), end) + (grouped ? `\u202f${grouped}` : "");
+  }
+  return `${sign}${grouped}${decimals ? `,${decimals}` : ""}`;
 }
 
 /**

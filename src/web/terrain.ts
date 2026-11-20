@@ -7,6 +7,7 @@
  * the commune: the address typed without one gets it.
  */
 import { INSEE } from "../places/insee.js";
+import { nombre } from "../tools/format.js";
 import { communeOf, type ficheDonnees } from "../tools/terrain.js";
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
@@ -94,7 +95,7 @@ function place(fiche: O): string {
   const lieu = obj(fiche.lieu)!;
   const lon = Number(lieu.lon);
   const lat = Number(lieu.lat);
-  const alt = typeof fiche.altitude_m === "number" ? `${fiche.altitude_m}${N}m` : undefined;
+  const alt = typeof fiche.altitude_m === "number" ? `${nombre(fiche.altitude_m)}${N}m` : undefined;
   return block(
     "lieu",
     "Le point retenu",

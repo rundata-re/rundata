@@ -464,11 +464,15 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   // A market held today by its source but with no hour we can trust is never « the market of today »: it is said with
   // where its hours were looked for, and the town hall's site.
   const markets = held.filter((m) => m.horaires_aujourd_hui !== marches.NOT_FOUND);
-  const noHours = held.filter((m) => m.horaires_aujourd_hui === marches.NOT_FOUND);
+  const hoursMissing = held.filter((m) => m.horaires_aujourd_hui === marches.NOT_FOUND);
   const allWeek = marches.apart(nom, now);
-  const noDays = marches.sansJours(nom);
+  const daysMissing = marches.sansJours(nom);
   // The town hall's page of its markets, else its site when a market's days or hours are missing.
-  const townHall = marches.lienMairie(nom) ?? (noDays.length || noHours.length ? mairie?.site : undefined);
+  const townHall = marches.lienMairie(nom) ?? (daysMissing.length || hoursMissing.length ? mairie?.site : undefined);
+  // A market with neither a name of its own nor hours is left out: « Marché, heures non données » tells nothing. The
+  // town hall's page above stays (Saint-André, 20/11/2026).
+  const noHours = hoursMissing.filter((m) => !marches.sansNom(m));
+  const noDays = daysMissing.filter((m) => !marches.sansNom(m));
   // A town hall's market says where it comes from, and the date of its page when it gives one.
   const by = (m: marches.Lieu) =>
     m.source === marches.OSM ? undefined : `site de la mairie ${de(m.commune)}${m.source.date ? ` (page du ${marches.dayMonthYear(m.source.date)})` : ""}`;

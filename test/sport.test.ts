@@ -414,15 +414,15 @@ describe("sport", () => {
     expect(b.programmes_communes).toEqual([
       { type: "programme sportif de la commune", commune: "La Possession", titre: "Agenda sportif du 22 au 24 octobre", dates: "du jeudi 22/10 au samedi 24/10", lien: "https://www.lapossession.re/agenda/890500", source: "site de la commune de La Possession, lu le samedi 24/10 à 07:00", publie_par: "Ville de La Possession", lu_le: "samedi 24/10 à 07:00" },
       { type: "programme sportif de la commune", commune: "L'Étang-Salé", titre: "Planning des compétitions sportives du 23 au 25 octobre 2026", dates: "du vendredi 23/10 au dimanche 25/10", lien: "https://www.letangsale.fr/planning", source: "site de la commune de L'Étang-Salé, lu le samedi 24/10 à 07:00", publie_par: "Ville de L'Étang-Salé", lu_le: "samedi 24/10 à 07:00" },
+      // Saint-Benoît's since 20/11/2026, its site read as the commune's public information and linked (src/liens.ts).
+      { type: "programme sportif de la commune", commune: "Saint-Benoît", titre: "Agenda sportif", dates: "du vendredi 23/10 au dimanche 25/10", lien: "https://www.saint-benoit.re/evenements/articles/9592-agenda-sportif", source: "site de la commune de Saint-Benoît, lu le samedi 24/10 à 07:00", publie_par: "Ville de Saint-Benoît", lu_le: "samedi 24/10 à 07:00" },
     ]);
     expect(b.programmes_a_savoir).toMatch(/ne lit pas ce document, il en donne seulement le lien/);
-    expect(b.resume).toContain("2 programmes sportifs de commune (La Possession, L'Étang-Salé), en lien seulement");
+    expect(b.resume).toContain("3 programmes sportifs de commune (La Possession, L'Étang-Salé, Saint-Benoît), en lien seulement");
     expect(b.sources.map((s: { source: string }) => s.source)).toEqual(expect.arrayContaining(["Agenda de la Ville de La Possession", "Agenda de la Ville de L'Étang-Salé"]));
-    // Not Saint-Benoît's, whose site is never linked (src/liens.ts), even from its agenda's copy.
-    expect(JSON.stringify(b)).not.toContain("saint-benoit.re");
     const page = sportPage("https://rundata.re", { value: { ...b, classements: [] }, fetchedAt: NOW, stale: false }, NOW);
     expect(page).toContain("Programmes sportifs des communes");
-    expect(page).not.toContain("saint-benoit.re");
+    expect(page).toContain("https://www.saint-benoit.re/evenements/articles/9592-agenda-sportif");
     // A commune's own; none for one sport, a club, or the results.
     expect(body(await sportTool(withAgendas(), undefined, "La Possession", "ce_week_end", NOW)).programmes_communes.map((p: { commune: string }) => p.commune)).toEqual(["La Possession"]);
     expect(body(await sportTool(withAgendas(), "volley", undefined, undefined, NOW)).programmes_communes).toBeUndefined();

@@ -59,16 +59,14 @@ describe("public services directory", () => {
     for (const t of ["Réponse sous 48h", "Borne 24h/24", "CCAS fermé le vendredi"]) expect(noteDite(t)).toBe(t.charAt(0) === "C" ? t : t.charAt(0).toLowerCase() + t.slice(1));
   });
 
-  it("gives no link to the site of Saint-Benoît's town hall, whose terms submit any link to its agreement", async () => {
+  it("gives the site of Saint-Benoît's town hall, read as the commune's public information since 20/11/2026 (no link before)", async () => {
     const now = new Date("2026-10-22T06:00:00Z");
     const store = new MemoryStore();
     void store.put("annuaire:97410:mairie", { value: offices.filter((o: { insee: string }) => o.insee === "97410"), fetchedAt: now.getTime() });
     const r = body(await annuaireTool(new Cache(store, () => now.getTime()), "mairie", "Saint-Benoît", now));
-    // The directory gives it; the answer does not.
+    // The directory gives it; the answer too.
     expect(offices.find((o: { nom: string }) => o.nom === "Mairie - Saint-Benoît").site).toBe("https://www.saint-benoit.re/");
-    expect(r.resultats[0]).toMatchObject({ nom: "Mairie - Saint-Benoît", telephone: expect.any(String) });
-    expect(r.resultats[0].site).toBeUndefined();
-    expect(JSON.stringify(r)).not.toContain("saint-benoit.re");
+    expect(r.resultats[0]).toMatchObject({ nom: "Mairie - Saint-Benoît", telephone: expect.any(String), site: "https://www.saint-benoit.re/" });
   });
 
   it("gives a defibrillator asked of it the page of the devices, and no page without a place", async () => {

@@ -153,7 +153,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // Who publishes the notices read (the CIREST, a mairie), else the distributor; a mairie only linked to (LIENS).
   const publisher = dist?.par ?? dist?.nom;
   const lien = LIENS[p.nom];
-  // A home page only (ACCUEILS): opened in a new window, as that site's terms ask.
+  // A home page only (ACCUEILS, none since 20/11/2026): opened in a new window.
   const lienA = lien ? ` <a href="${esc(lien.site)}" rel="noopener"${ACCUEILS.has(lien.site) ? ' target="_blank"' : ""}>${nobreak(lien.libelle)} →</a>` : "";
 
   // Its feed silent: what was read before, said with its hour, the site linked; or that its read failed.

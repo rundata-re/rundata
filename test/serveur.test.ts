@@ -136,7 +136,9 @@ describe("the server's instructions", () => {
     // « qui le permettent » rather than « dont le site ne l'interdit pas » (13 shorter): Saint-André's agreed in writing.
     // 39 500 on 20/11/2026 with Le Tampon among the mairies read in evenements (« du Tampon »), read as the commune's
     // public information.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_500);
+    // 39 541 the same day with La Possession, Petite-Île and Saint-Benoît among the mairies read in evenements, read as
+    // the communes' public information too.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_550);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

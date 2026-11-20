@@ -1,95 +1,36 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { LIENS } from "../src/eau/distributeurs.js";
 import { ACCUEILS, AGENDAS, LISIBLES, servis } from "../src/providers/agenda.js";
 import { sansLien } from "../src/liens.js";
 
-// Petite-Île: its site's terms forbid a deep link. Until it answers our letter, rundata.re links to its home page only,
-// never to a page of its site. Le Tampon's site is read as the commune's public information since 20/11/2026
-// (autorisations.ts « publique »): each event links to its own page there.
-const ACCUEIL_SEUL: Record<string, string> = { "petite-ile.re": "Petite-Île" };
-// The addresses read on their sites (agendas), never shown as a link: each event links to the home page (`accueil`).
-const LUES = new Set([
-  "https://www.petite-ile.re/actualites/agenda/",
-  "https://www.saint-benoit.re/evenements/general",
-]);
-
-const hostOf = (url: string) => new URL(url).hostname.replace(/^www\./, "");
-const files = (dir: string): string[] =>
-  readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.isFile() ? [join(dir, e.name)] : []));
-
-describe("links to the site of Petite-Île", () => {
-  it("go to their home page only, anywhere in src/ and public/", () => {
-    const all = [...files("src"), ...files("public")];
-    expect(all.length).toBeGreaterThan(100);
-    const deep = all.flatMap((path) => {
-      const text = readFileSync(path, "utf8");
-      if (text.includes("\0")) return [];
-      return [...text.matchAll(/https?:\/\/[^\s"'`<>)\]]+/g)].flatMap(([url]) => {
-        let u: URL;
-        try { u = new URL(url); } catch { return []; }
-        if (!(hostOf(url) in ACCUEIL_SEUL)) return [];
-        return u.pathname === "/" && !u.search && !u.hash ? [] : LUES.has(url) ? [] : [`${path}: ${url}`];
-      });
-    });
-    expect(deep).toEqual([]);
-  });
-
-  it("from the water page of the commune", () => {
-    for (const [commune, l] of Object.entries(LIENS)) {
-      if (hostOf(l.site) in ACCUEIL_SEUL) expect(`${commune}: ${new URL(l.site).pathname}`).toBe(`${commune}: /`);
-    }
-    expect(LIENS["Petite-Île"].site).toBe("https://www.petite-ile.re/");
-  });
-
-  it("from each event of their agendas, whatever the link read", () => {
-    // Their own agendas, read on their sites (not a hall of the commune, which has its own site).
-    const theirs = LISIBLES.filter((a) => a.site_commune && Object.values(ACCUEIL_SEUL).includes(a.commune ?? ""));
-    expect(theirs.map((a) => a.commune).sort()).toEqual(["Petite-Île"]);
-    for (const a of theirs) {
-      expect(a.accueil && new URL(a.accueil).pathname).toBe("/");
-      const [e] = servis(a, [{ id: "x", titre: "Fête", seances: [{ debut: "2026-10-30" }], commune: a.commune!, categories: [], lien: `${a.accueil}actualites/agenda/fete`, publie_par: a.nom }]);
-      expect(e.lien).toBe(a.accueil);
+// Until 20/11/2026, Petite-Île's agenda linked its home page only and nothing linked Saint-Benoît's site (#381, #427).
+// Since then their sites are read as the communes' public information (autorisations.ts « publique »), as Le Tampon's:
+// each fact with its own page's link, the site read slowly under an honest User-Agent, taken out on a written request.
+describe("the links to the communes' sites read as public information", () => {
+  it("go to each event's own page: no agenda links its home page instead", () => {
+    expect(LISIBLES.filter((a) => a.accueil).map((a) => a.id)).toEqual([]);
+    expect([...ACCUEILS]).toEqual([]);
+    for (const id of ["petite_ile", "saint_benoit", "la_possession", "le_tampon"]) {
+      const a = AGENDAS.find((x) => x.id === id)!;
+      expect(a, id).toBeDefined();
+      const lien = `${a.source.url}fete-de-la-commune`;
+      const [e] = servis(a, [{ id: "x", titre: "Fête", seances: [{ debut: "2026-11-21" }], commune: a.commune!, categories: [], lien, publie_par: a.nom }]);
+      expect(e?.lien, id).toBe(lien);
     }
   });
 
-  it("would catch a deep link again", () => {
-    const deep = (url: string) => hostOf(url) in ACCUEIL_SEUL && new URL(url).pathname !== "/" && !LUES.has(url);
-    expect(deep("https://www.petite-ile.re/actualites/news")).toBe(true);
-    expect(deep("https://www.petite-ile.re/")).toBe(false);
-    expect(deep("https://www.ville-saintemarie.re/agenda/")).toBe(false);
-  });
-});
-
-// Saint-Benoît submits any link to its site, its home page's too, to its agreement (its legal notice, 25/10/2026). Its
-// public information is taken all the same since 20/11/2026 (the commune's public information, removed on request): the
-// days of its market, linked to their page (vie/marches-mairies.json). Nowhere else yet.
-const PUBLIQUE = "src/vie/marches-mairies.json";
-describe("the site of Saint-Benoît", () => {
-  it("is linked only by the commune's public information taken, anywhere in src/ and public/; its agenda's address is written", () => {
-    const all = [...files("src"), ...files("public")];
-    const found = all.flatMap((path) => {
-      const text = readFileSync(path, "utf8");
-      if (text.includes("\0")) return [];
-      return [...text.matchAll(/https?:\/\/[^\s"'`<>)\]]+/g)].flatMap(([url]) => (url.includes("saint-benoit.re") && !LUES.has(url) && path !== PUBLIQUE ? [`${path}: ${url}`] : []));
-    });
-    expect(found).toEqual([]);
-  });
-
-  it("nor by the home page of its events, nor by an agenda read before it agrees", () => {
-    expect([...ACCUEILS].filter(sansLien)).toEqual([]);
-    expect(LISIBLES.find((a) => a.id === "saint_benoit")?.accueil).toBeUndefined();
-    expect(AGENDAS.some((a) => a.id === "saint_benoit")).toBe(false);
-  });
-
-  it("is told apart by its host, whatever the page", () => {
-    expect(sansLien("https://www.saint-benoit.re/")).toBe(true);
-    expect(sansLien("http://saint-benoit.re/page/454-mentions-legales")).toBe(true);
-    expect(sansLien("https://www.petite-ile.re/")).toBe(false);
-    expect(sansLien("https://www.saint-benoit-reunion.fr/")).toBe(false);
-    // An event without a link (a club's proposal) is not one to that site.
+  it("are no longer refused for any site, Saint-Benoît's included, whatever the page", () => {
+    expect(sansLien("https://www.saint-benoit.re/evenements/articles/10641-trail-urbain-des-letchis")).toBe(false);
+    expect(sansLien("http://saint-benoit.re/")).toBe(false);
     expect(sansLien(undefined)).toBe(false);
     expect(sansLien("")).toBe(false);
+    // Saint-Benoît's events are served, each with its page.
+    const a = AGENDAS.find((x) => x.id === "saint_benoit")!;
+    const lien = "https://www.saint-benoit.re/evenements/articles/10641-trail-urbain-des-letchis";
+    expect(servis(a, [{ id: lien, titre: "Trail urbain des letchis", seances: [{ debut: "2026-12-19" }], commune: "Saint-Benoît", categories: [], lien, publie_par: a.nom }]).map((e) => e.lien)).toEqual([lien]);
+  });
+
+  it("leave the water page of Petite-Île on its home page, where its notices of cuts are found", () => {
+    expect(LIENS["Petite-Île"].site).toBe("https://www.petite-ile.re/");
   });
 });

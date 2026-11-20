@@ -233,6 +233,10 @@ export const FICHES: Record<string, Fiche> = {
   agenda_etang_sale: { famille: "information_publique", agendas: true },
   // Read with its written agreement of 16/11/2026 (providers/autorisations.ts).
   agenda_saint_andre: { famille: "information_publique", agendas: true },
+  // Read as the commune's public information since 20/11/2026 (providers/autorisations.ts).
+  agenda_la_possession: { famille: "information_publique", agendas: true },
+  agenda_petite_ile: { famille: "information_publique", agendas: true },
+  agenda_saint_benoit: { famille: "information_publique", agendas: true },
   actus_saint_louis_actus: { famille: "information_publique", agendas: true },
   actus_saint_leu: { famille: "information_publique", agendas: true },
   actus_plaine_des_palmistes_agenda: { famille: "information_publique", agendas: true },

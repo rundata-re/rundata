@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T13:53:00+04:00", texte: "Cyclones\u00a0: avant l'alerte orange, les outils IA rappellent le kit d'urgence du plan ORSEC (piles pour la radio…), avec son lien." },
   { date: "2026-11-20T13:40:00+04:00", texte: "Assistants IA\u00a0: l'eau du robinet avec la conclusion de l'ARS, la consigne après un cyclone, et toutes les plages contrôlées d'une commune." },
   { date: "2026-11-20T13:36:00+04:00", texte: "Assistants IA\u00a0: pour Mafate, Cilaos et Salazie, les mêmes sentiers, longueurs et randonnées que leur page." },
   { date: "2026-11-20T13:13:00+04:00", texte: "Vigilance\u00a0: une position GPS donne la zone de sa commune, et un lieu non reconnu la vigilance de toute l'île, en le disant." },

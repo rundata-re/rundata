@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { advisoryTime, parseList, parseTimeline, seasonOf, systemName } from "../src/providers/cyclones.js";
-import { cyclones } from "../src/tools/cyclones.js";
+import { cyclones, kitAvantOrange, SE_PREPARER } from "../src/tools/cyclones.js";
+import { SECTIONS } from "../src/web/kit-cyclone.js";
 import { alertePage } from "../src/web/alerte-cyclone.js";
 import { basinMap } from "../src/web/cyclones-bassin.js";
 import type { CyclonesAnswer } from "../src/web/data.js";
@@ -119,6 +120,20 @@ describe("cyclones", () => {
     // A full first page that stops in October 2025: the second one reaches July 2025.
     expect(calls.filter((u) => u.includes("pagenumber=2"))).toHaveLength(1);
     expect(calls.some((u) => u.includes("getepisodedata"))).toBe(false);
+  });
+
+  it("leads to the kit as /cyclones does, with the plan's own line on the radio and the batteries, until the orange alert", async () => {
+    const r = body(await cyclones(cache(OCTOBER), undefined, OCTOBER));
+    expect(r.se_preparer).toEqual({
+      conseil: "Vérifiez vos réserves (conserves, eau, piles pour radio et lampes, médicaments,…) au sein de votre kit d'urgence",
+      d_apres: "dispositif ORSEC Cyclones (arrêté 2026-182), p. 17",
+      page: "https://rundata.re/kit-cyclone",
+    });
+    // The same words as /kit-cyclone, at the same page of the plan.
+    expect(SECTIONS.flatMap((x) => x.lignes).some((l) => JSON.stringify(l).includes(SE_PREPARER.conseil) && JSON.stringify(l).includes("17"))).toBe(true);
+    // One rule for the page and the tool: none from the orange alert (niveau 3) on.
+    expect([undefined, { niveau: -1 }, { niveau: 2 }].map(kitAvantOrange)).toEqual([true, true, true]);
+    expect([{ niveau: 3 }, { niveau: 4 }].map(kitAvantOrange)).toEqual([false, false]);
   });
 
   it("says so when GDACS does not answer, with Météo-France's link", async () => {

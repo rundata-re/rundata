@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, type Cached, MemoryStore } from "../src/cache.js";
 import type { AgendaAnswer, PlaceData } from "../src/web/data.js";
-import { type Entree, type Fiche, FICHES, ficheIssue, fichePage, fichePassee, fichePath, ficheOf, ficheTerminee, ficheUrls, registre, type Row } from "../src/web/fiche-evenement.js";
+import { type Entree, type Fiche, FICHES, ficheDescription, ficheIssue, fichePage, fichePassee, fichePath, ficheOf, ficheTerminee, ficheUrls, registre, type Row } from "../src/web/fiche-evenement.js";
 import { ficheDe } from "../src/tools/agenda.js";
 import { site } from "../src/web/site.js";
 
@@ -58,6 +58,37 @@ describe("an event's page", () => {
     expect(texte).toMatch(/<section [^>]*data-sortie>[^]*D'après <a href="https:\/\/www.saintpierre.re/);
     // The context comes before the text.
     expect(texte.indexOf('id="autour"')).toBeLessThan(texte.indexOf('id="annonce"'));
+  });
+
+  it("gives each date of a series its own description, so that no two pages of the sitemap share one", () => {
+    const texte = "Avec l'association les Échiquiers du Nord, viens apprendre à jouer aux échecs. Gratuit, dès 8 ans.";
+    const serie = [["2026-11-21T14:00", "samedi 21/11 de 14:00 à 16:00", "1ad96848"], ["2026-11-25T14:00", "mercredi 25/11 de 14:00 à 16:00", "77c7ebe9"], ["2026-11-28T14:00", "samedi 28/11 de 14:00 à 16:00", "f0dfdce9"]]
+      .map(([date, quand, fiche]) => row({ titre: "Atelier d'échecs", date, quand, fiche, lieu: "Médiathèque François-Mitterrand", commune: "Saint-Denis", description: texte }));
+    const rows = [...serie, row({ description: "Trois groupes sur la scène." }), row({ titre: "Fête du quartier", fiche: "33334444", date: "2026-11-22", quand: "dimanche 22/11", description: "Un texte." })];
+    expect(ficheDescription(serie[0])).toBe("Samedi 21/11 de 14:00 à 16:00, Médiathèque François-Mitterrand, Saint-Denis : Avec l'association les Échiquiers du Nord, viens apprendre à jouer aux…");
+    expect(ficheDescription(serie[0]).length).toBeLessThanOrEqual(155);
+    // The sitemap's events, each page rendered: its meta description, never the same twice.
+    const urls = ficheUrls(registre(undefined, rows, "2026-11-20"), "2026-11-20").map(([u]) => u);
+    expect(urls).toHaveLength(5);
+    const descriptions = urls.map((u) => {
+      const r = rows.find((x) => fichePath(x) === u)!;
+      return /<meta name="description" content="([^"]*)">/.exec(fichePage("https://rundata.re", r, copy(rows), undefined))![1];
+    });
+    expect(new Set(descriptions).size).toBe(descriptions.length);
+  });
+
+  it("says what its source does not give, the hour or the place, never a blank", () => {
+    const sans = row({ date: "2026-11-21", quand: "samedi 21/11", lieu: undefined, description: "Un texte." });
+    const page = fichePage("https://rundata.re", sans, copy([sans]), undefined);
+    expect(page).toContain('<p class="note" data-sortie>L\'annonce de <a href="https://www.saintpierre.re/agenda/concert" rel="noopener">Mairie de Saint-Pierre</a> ne donne ni l\'heure ni le lieu : le détail peut être sur sa page.</p>');
+    // Its commune still said, and its day.
+    expect(page).toMatch(/<p class="lead" data-sortie>samedi 21\/11, Saint-Pierre · /);
+    const sansLien = fichePage("https://rundata.re", { ...sans, lien: undefined }, copy([sans]), undefined);
+    expect(sansLien).toContain("L'annonce de Mairie de Saint-Pierre ne donne ni l'heure ni le lieu.</p>");
+    const sansHeure = fichePage("https://rundata.re", { ...sans, lieu: "Kerveguen" }, copy([sans]), undefined);
+    expect(sansHeure).toContain("ne donne pas l'heure : le détail");
+    // Hour and place given: nothing said.
+    expect(fichePage("https://rundata.re", row(), copy([row()]), undefined)).not.toContain("ne donne");
   });
 
   it("keeps the events over 30 days, with the day each row last changed, and puts in the sitemap those to come with a text", () => {

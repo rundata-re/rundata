@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T12:20:00+04:00", texte: "Communes\u00a0: les 24 pages de commune s'ouvrent désormais sur quelques lignes qui présentent la commune, de Saint-Joseph à Cilaos." },
   { date: "2026-11-20T11:57:00+04:00", texte: "Coupures d'eau à Sainte-Suzanne\u00a0: les chantiers de runéo autorisés par la ville, avec leur lieu, leurs dates et le lien de chaque arrêté." },
   { date: "2026-11-20T11:34:00+04:00", texte: "Communes\u00a0: Saint-André, Saint-Louis, Sainte-Marie, La Possession, Saint-Leu et l'Entre-Deux présentent aussi la commune en quelques lignes." },
   { date: "2026-11-20T11:31:00+04:00", texte: "Événements\u00a0: chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune." },

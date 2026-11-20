@@ -64,7 +64,7 @@ import {
   withoutForecast,
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
-import { coastal, meteoPath, PAGES, type PlacePage, slugify } from "../web/places.js";
+import { coastal, meteoPath, PAGES, pageOf, type PlacePage, PRINCIPAL, slugify } from "../web/places.js";
 import { occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
@@ -642,13 +642,16 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   };
 }
 
-/** The commune of a place, and its own weather page when it has one. */
+/** The commune of a place, and its own weather page when it has one (the principal one's, for a page sent there). */
 export function placeOf(lieu: string): { commune: PlacePage; place: PlacePage; res: NonNullable<ReturnType<typeof resolvePlace>> } | undefined {
   const res = resolvePlace(lieu);
   const commune = res && COMMUNES.find((p) => p.nom === res.lieu.commune);
   if (!res || !commune) return undefined;
   const own = PAGES.find((p) => p.place.nom === res.lieu.nom && p.place.commune === res.lieu.commune);
-  return { commune, place: own ?? commune, res };
+  // A page sent to another's for good (places.ts `PRINCIPAL`, L'Hermitage to Saint-Gilles-les-Bains): the weather and
+  // the name of the page shown there, never a copy the site no longer builds.
+  const shown = own && PRINCIPAL[own.slug] ? pageOf(PRINCIPAL[own.slug]) ?? own : own;
+  return { commune, place: shown ?? commune, res };
 }
 
 /** A copy a view may bring up to date after its answer. */

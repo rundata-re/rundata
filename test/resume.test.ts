@@ -550,11 +550,13 @@ describe("reading the copies", () => {
       const { r } = await ask("Saint-Paul", edge);
       expect(r.meteo).not.toHaveProperty("lieu");
       expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; 27,4 °C mesurés à 13:54 \(station Saint-Paul\)/);
-      // The beach of L'Hermitage has its page (web/places.ts): its page's weather, named as its own, never the centre's.
+      // The beach of L'Hermitage: its page sends to Saint-Gilles-les-Bains' (places.ts `PRINCIPAL`), whose weather and name
+      // are given, never the centre's, never the address sent elsewhere.
       const plage = (await ask("plage de l'Ermitage", await edgeWith())).r;
-      expect(plage.meteo).toMatchObject({ lieu: "L'Hermitage", mesure: { station: "Pointe des Trois-Bassins" } });
+      expect(plage.meteo).toMatchObject({ lieu: "Saint-Gilles-les-Bains", mesure: { station: "Pointe des Trois-Bassins" } });
       expect(plage.meteo).not.toHaveProperty("avertissement");
-      expect(plage.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo de L'Hermitage\u00a0; 26,9 °C/);
+      expect(plage.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo de Saint-Gilles-les-Bains\u00a0; 26,9 °C/);
+      expect(JSON.stringify(plage)).not.toContain("/meteo/l-hermitage");
     });
   });
 

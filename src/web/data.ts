@@ -1874,7 +1874,7 @@ export function communeStops(p: PlacePage): { gare: boolean; groups: transit.Sto
 /** The town hall itself, not the other offices of the commune that the search for « mairie » also finds. */
 async function townHall(cache: Cache, p: PlacePage): Promise<annuaire.Office | undefined> {
   const list = (await annuaire.search(cache, "mairie", INSEE[p.nom])).value;
-  return list.find((o) => /^Mairie - /.test(o.nom)) ?? named(list, "mairie")[0];
+  return list.find(annuaire.isTownHall) ?? named(list, "mairie")[0];
 }
 
 /** The commune's point-justice nearest its centre, or the nearest one elsewhere: see `CommuneData.justice`. */

@@ -59,6 +59,7 @@ export const OUTILS: Outil[] = [
 export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-20T03:42:00+04:00", texte: "Événements\u00a0: ceux qu'annoncent les mairies du Tampon, de Saint-Denis et de Saint-Pierre sur leurs sites, avec le lien de chacun." },
   { date: "2026-11-20T03:14:00+04:00", texte: "Agenda\u00a0: un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part." },
+  { date: "2026-11-20T02:59:00+04:00", texte: "Fiche terrain\u00a0: «\u00a0mairie de Saint-Leu\u00a0» situe la mairie elle-même, et un point incertain est dit en premier." },
   { date: "2026-11-20T02:58:00+04:00", texte: "Bornes de recharge\u00a0: le nombre de points libres porte l'heure de l'état donné par les opérateurs, et non plus celle de notre lecture." },
   { date: "2026-11-20T02:50:00+04:00", texte: "La journée d'une commune\u00a0: la question à poser à son IA s'écrit maintenant «\u00a0zordi\u00a0», comme sur /trafic." },
   { date: "2026-11-19T12:25:00+04:00", texte: "Coupures d'eau\u00a0: en tête de chaque commune, le portrait de son eau (réseaux, dernières analyses sanitaires, niveau de sécheresse)." },

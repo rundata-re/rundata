@@ -1,0 +1,146 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     55.333717,
+     -21.203635
+    ]
+   },
+   "properties": {
+    "label": "Chemin de la Mairie 97424 Saint-Leu",
+    "score": 0.5344336363636363,
+    "id": "97413_0638",
+    "banId": "a49d3dee-e837-4e80-abd2-df2a5625384b",
+    "name": "Chemin de la Mairie",
+    "postcode": "97424",
+    "citycode": "97413",
+    "x": 327043.03,
+    "y": 7654405.44,
+    "city": "Saint-Leu",
+    "context": "974, La R\u00e9union",
+    "type": "street",
+    "importance": 0.62877,
+    "depcode": "97",
+    "street": "Chemin de la Mairie",
+    "_type": "address"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     2.420536,
+     49.217576
+    ]
+   },
+   "properties": {
+    "label": "Place de la Mairie 60340 Saint-Leu-d'Esserent",
+    "score": 0.4736704958677686,
+    "id": "60584_0445",
+    "banId": "9b14a268-cb54-473c-8801-1578caa3d713",
+    "name": "Place de la Mairie",
+    "postcode": "60340",
+    "citycode": "60584",
+    "x": 657777.54,
+    "y": 6902140.75,
+    "city": "Saint-Leu-d'Esserent",
+    "context": "60, Oise, Hauts-de-France",
+    "type": "street",
+    "importance": 0.50583,
+    "depcode": "60",
+    "street": "Place de la Mairie",
+    "_type": "address"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -0.32403,
+     47.61511
+    ]
+   },
+   "properties": {
+    "label": "Place de la Mairie 49140 La Chapelle-Saint-Laud",
+    "score": 0.36271539888682747,
+    "type": "locality",
+    "importance": 0.3164,
+    "id": "49076_z228gq",
+    "banId": "8ba797ae-f380-443d-800a-8cc359108ca9",
+    "name": "Place de la Mairie",
+    "postcode": "49140",
+    "citycode": "49076",
+    "x": 450368.71,
+    "y": 6729113.81,
+    "city": "La Chapelle-Saint-Laud",
+    "context": "49, Maine-et-Loire, Pays de la Loire",
+    "depcode": "49",
+    "locality": "Place de la Mairie",
+    "_type": "address"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     2.246517,
+     49.00873
+    ]
+   },
+   "properties": {
+    "label": "Rue Pierre Marie Chapuis 95320 Saint-Leu-la-For\u00eat",
+    "score": 0.3548783216783217,
+    "id": "95563_1174",
+    "banId": "18752438-1c71-4d98-9a0a-5cecd891ed63",
+    "name": "Rue Pierre Marie Chapuis",
+    "postcode": "95320",
+    "citycode": "95563",
+    "x": 644876.4,
+    "y": 6879020.57,
+    "city": "Saint-Leu-la-For\u00eat",
+    "context": "95, Val-d'Oise, \u00cele-de-France",
+    "type": "street",
+    "importance": 0.6152,
+    "depcode": "95",
+    "street": "Rue Pierre Marie Chapuis",
+    "_type": "address"
+   }
+  },
+  {
+   "type": "Feature",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -1.247455,
+     44.647486
+    ]
+   },
+   "properties": {
+    "label": "Rue de la Mairie 33970 L\u00e8ge-Cap-Ferret",
+    "score": 0.35392,
+    "id": "33236_dm2j8f",
+    "banId": "6c144cba-d44f-4f41-8576-fd6af186c7c4",
+    "name": "Rue de la Mairie",
+    "postcode": "33970",
+    "citycode": "33236",
+    "x": 363359.47,
+    "y": 6403321.16,
+    "city": "L\u00e8ge-Cap-Ferret",
+    "context": "33, Gironde, Nouvelle-Aquitaine",
+    "type": "street",
+    "importance": 0.51812,
+    "depcode": "33",
+    "street": "Rue de la Mairie",
+    "_type": "address"
+   }
+  }
+ ],
+ "query": "mairie de Saint-Leu La R\u00e9union"
+}

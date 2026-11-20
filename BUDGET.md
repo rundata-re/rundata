@@ -410,7 +410,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | evenements | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | sport | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/ffck, providers/salles, providers/sport-avis, providers/sport |
 | volcan_seismes | connecteurs/helloasso, providers/actualites, providers/agenda, providers/avis-eau, providers/prefecture, providers/salles, providers/seismes, providers/sentiers, providers/sport, providers/traces, providers/volcan |
-| fiche_terrain | providers/terrain |
+| fiche_terrain | providers/annuaire, providers/terrain |
 | prevision_meteo | providers/arome, providers/calendrier, providers/ensemble, providers/mf-auth, providers/openmeteo, providers/uv |
 | qualite_eau | providers/avis-eau, providers/baignades, providers/eaupotable |
 | temperature_mer | providers/acspo, providers/arome, providers/calendrier, providers/coraux, providers/ensemble, providers/houle, providers/mf-auth, providers/modis, providers/openmeteo, providers/uv, providers/viirs |

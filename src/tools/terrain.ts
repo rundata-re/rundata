@@ -2,6 +2,7 @@ import type { Cache } from "../cache.js";
 import { distanceKm } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { resolvePlace, type Place } from "../places/resolve.js";
+import * as annuaireSrc from "../providers/annuaire.js";
 import * as terrain from "../providers/terrain.js";
 import * as antennes from "../vie/antennes.js";
 import * as internet from "../vie/internet.js";
@@ -359,6 +360,38 @@ export function lieuOf(adresse: string): Place | undefined {
   return found.find((l) => l.type !== "commune" && (!communes.size || communes.has(l.commune))) ?? found.find((l) => l.type === "commune");
 }
 
+/**
+ * « mairie de Saint-Leu », « hôtel de ville du Port »: the town hall of a commune, which the address base does not know as
+ * a place and answers with a street of that name (« Chemin de la Mairie », Saint-Leu, 740 m up and 5 km from it,
+ * 20/11/2026). The commune is what comes after; the town hall's point is read from the Annuaire de l'administration.
+ */
+const TOWN_HALL = /^\s*(?:la\s+)?(?:mairie|h[oô]tel\s+de\s+ville)(?:\s+(?:de\s+la|de|du|des|d['’]))?\s*(.+)$/i;
+export function townHallOf(adresse: string): string | undefined {
+  const m = TOWN_HALL.exec(adresse);
+  if (!m || /\d/.test(adresse)) return undefined;
+  const r = resolvePlace(m[1].trim());
+  return r?.correspondance === "exacte" && r.lieu.type === "commune" ? INSEE[r.lieu.commune] : undefined;
+}
+
+/**
+ * Below this score the address base's best answer is a guess: said with it. Its scores here run lower than elsewhere, the
+ * question carrying « La Réunion » it does not match (« 12 Rue de Paris », Saint-Denis, 0,64; the right street of a
+ * commune named, 0,55 to 0,63; a street of another quarter, 0,32): the threshold leaves those it finds well alone.
+ */
+export const SCORE_FAIBLE = 0.45;
+
+/**
+ * Said first when a place was asked (no number, no kind of street) and the address base gives a street or a number, or
+ * when its answer is a guess: the point may not be the place asked.
+ */
+export function incertain(adresse: string, a: { label: string; type: string; score: number }, precision: string): string | undefined {
+  const voie = (a.type === "street" || a.type === "housenumber") && !ADDRESS.test(adresse);
+  const faible = a.score < SCORE_FAIBLE;
+  if (!voie && !faible) return undefined;
+  const N = "\u00a0";
+  return `Lieu incertain${N}: pour «${N}${adresse}${N}», la Base adresse nationale a retenu «${N}${a.label}${N}» (${precision})${voie ? `, une voie, qui n'est peut-être pas le lieu demandé` : ""}${faible ? `, avec une correspondance faible` : ""}. Le dire à l'utilisateur et lui demander l'adresse exacte (numéro, voie, commune) avant de se fier à cette fiche.`;
+}
+
 /** Said first when an address was asked and the address base does not find it: the answer is for a place's centre. */
 const introuvable = (adresse: string, at: string) =>
   `Adresse introuvable dans la Base adresse nationale\u00a0: «\u00a0${adresse}\u00a0». Réponse pour ${at}, pas pour cette adresse\u00a0: le dire à l'utilisateur.`;
@@ -376,8 +409,18 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   let voie: { nom: string; code?: string; insee: string } | undefined;
   // An address asked that the address base does not find: the answer is for a place's centre, said first.
   let perdue = false;
+  // The address base's answer may not be the place asked: said first (see incertain).
+  let doute: string | undefined;
+  let mairie: annuaireSrc.Office | undefined;
+  const hall = townHallOf(adresse);
+  if (hall) {
+    // The directory down: the address base as for any place, with its doubt.
+    mairie = await annuaireSrc.townHall(cache, hall).catch((err) => (console.error(`source ${annuaireSrc.SOURCE.id} indisponible:`, why(err)), undefined));
+  }
   const place = resolvePlace(adresse);
-  if (place?.correspondance === "coordonnees") {
+  if (mairie?.lon != null && mairie.lat != null) {
+    where = { label: `${mairie.nom}, ${mairie.adresse}`, lon: mairie.lon, lat: mairie.lat, precision: "bâtiment de la mairie, d'après l'Annuaire de l'administration", insee: hall };
+  } else if (place?.correspondance === "coordonnees") {
     where = { label: `point ${place.lieu.nom}`, lon: place.lieu.lon, lat: place.lieu.lat, precision: "coordonnées données" };
   } else if (place && place.correspondance === "exacte" && !ADDRESS.test(adresse)) {
     where = { label: placeLabel(place.lieu), lon: place.lieu.lon, lat: place.lieu.lat, precision: "centre du lieu-dit ou de la commune", insee: INSEE[place.lieu.commune] };
@@ -416,6 +459,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
       where = { label: placeLabel(lieu), lon: lieu.lon, lat: lieu.lat, precision: lieu.type === "commune" ? "centre de la commune" : "centre du lieu-dit", insee: INSEE[lieu.commune] };
     } else if (a) {
       where = { label: a.label, lon: a.lon, lat: a.lat, precision: a.type === "housenumber" ? "adresse exacte" : a.type === "street" ? "milieu de la rue" : a.type === "locality" ? "centre du lieu-dit" : "centre de la commune", insee: a.insee };
+      doute = incertain(adresse, a, where.precision);
     }
     if (where && ADDRESS.test(adresse) && VAGUE.has(where.precision)) perdue = true;
   }
@@ -470,7 +514,8 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   if (ant) parts.push(ant.ligne);
 
   const used = [
-    terrain.SOURCES.ban,
+    // The town hall's point from the directory: the address base was not read.
+    mairie && where.lon === mairie.lon && where.lat === mairie.lat ? annuaireSrc.SOURCE : terrain.SOURCES.ban,
     ...(p ? [terrain.SOURCES.cadastre] : []),
     ...(z ? [terrain.SOURCES.gpu] : []),
     ...(alt != null ? [terrain.SOURCES.alti] : []),
@@ -486,6 +531,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   if (vague) {
     const r_ = risksBlock(lon, lat, insee, undefined, cat, undefined);
     return text({
+      ...(doute ? { avertissement: doute } : {}),
       ...(perdue ? { avertissement: introuvable(adresse, `le centre ${where.precision === "centre de la commune" ? "de la commune de" : "de"} ${where.label}`) } : {}),
       resume: `${parts.join("\u00a0; ")}.`,
       conseil: CONSEIL_POINT,
@@ -499,6 +545,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   }
   const point = ant!;
   return text({
+    ...(doute ? { avertissement: doute } : {}),
     resume: `${parts.join("\u00a0; ")}.`,
     lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },
     altitude_m: alt ?? DOWN,

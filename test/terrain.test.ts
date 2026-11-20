@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { codesByName, codeVoie, latestAct, nomVoie, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
 import { SOURCES as TRACES } from "../src/providers/traces.js";
-import { communeOf, ficheLieu, lieuOf, market, riskLine, sameStreet, streetLine, streetMarket } from "../src/tools/terrain.js";
+import { communeOf, ficheLieu, incertain, lieuOf, market, riskLine, sameStreet, SCORE_FAIBLE, streetLine, streetMarket, townHallOf } from "../src/tools/terrain.js";
 
 // Real answers of 23/10/2026 for 7 rue de la Buse, Saint-Paul: parcel BO 552, zone U1c, 115 sales since 2021.
 const raw = (f: string) => readFileSync(new URL(`./fixtures/terrain/${f}`, import.meta.url), "utf8");
@@ -521,5 +521,62 @@ describe("fiche terrain, a street without a land registry code", () => {
     expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Rue de la Buse", non_lues: "DVF ne répond pas pour l'instant" });
     expect(r.sources.map((x: { source: string }) => x.source)).not.toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
     expect(urls.filter((u) => /plateforme|type=street/.test(u))).toEqual([]);
+  });
+});
+
+// « mairie de Saint-Leu » gave « Chemin de la Mairie », 740 m up and far from the town hall, without a word (20/11/2026).
+// Real answers of 20/11/2026: the address base's (geocode-mairie-saint-leu.json), the directory's (annuaire-mairie-saint-leu.json).
+describe("a place asked by its name, not its address", () => {
+  const cache = () => new Cache(new MemoryStore(), () => NOW.getTime());
+
+  it("takes a commune's town hall from the directory, its building and address said, without the address base", async () => {
+    files = { ...files, lannuaire: "annuaire-mairie-saint-leu.json", geocodage: "geocode-mairie-saint-leu.json" };
+    const b = body(await ficheLieu(cache(), "mairie de Saint-Leu", NOW));
+    expect(b.lieu).toMatchObject({
+      label: "Mairie - Saint-Leu, 58 rue du Général-Lambert, 97436 Saint-Leu",
+      precision: "bâtiment de la mairie, d'après l'Annuaire de l'administration",
+      insee: "97413",
+      lon: 55.28689,
+      lat: -21.16622,
+    });
+    expect(b.avertissement).toBeUndefined();
+    expect(b.resume).not.toContain("Chemin de la Mairie");
+    expect(urls.some((u) => u.includes("geocodage"))).toBe(false);
+    expect(JSON.stringify(b.sources)).toContain("Annuaire de l'administration");
+    expect(JSON.stringify(b.sources)).not.toContain("Base adresse nationale");
+  });
+
+  it("says the street the address base took for a place, and that it may not be the place, when the directory is down", async () => {
+    // No such fixture: the directory's request fails.
+    files = { ...files, lannuaire: "absent.json", geocodage: "geocode-mairie-saint-leu.json" };
+    const b = body(await ficheLieu(cache(), "mairie de Saint-Leu", NOW));
+    expect(b.lieu).toMatchObject({ label: "Chemin de la Mairie 97424 Saint-Leu", precision: "milieu de la rue" });
+    expect(b.avertissement).toBe(
+      "Lieu incertain\u00a0: pour «\u00a0mairie de Saint-Leu\u00a0», la Base adresse nationale a retenu «\u00a0Chemin de la Mairie 97424 Saint-Leu\u00a0» (milieu de la rue), une voie, qui n'est peut-être pas le lieu demandé. Le dire à l'utilisateur et lui demander l'adresse exacte (numéro, voie, commune) avant de se fier à cette fiche.",
+    );
+    // Said before anything else.
+    expect(Object.keys(b)[0]).toBe("avertissement");
+  });
+
+  it("knows a town hall asked only with a commune after it", () => {
+    expect(townHallOf("mairie de Saint-Leu")).toBe("97413");
+    expect(townHallOf("Mairie du Port")).toBe("97407");
+    expect(townHallOf("hôtel de ville de Saint-Denis")).toBe("97411");
+    expect(townHallOf("la mairie d'Étang-Salé")).toBe("97404");
+    // A street, a quarter's annex, a commune elsewhere: not a town hall to look up.
+    for (const q of ["12 rue de la Mairie, Saint-Leu", "chemin de la Mairie, Saint-Leu", "mairie annexe de Bois de Nèfles", "mairie de Paris", "mairie"]) {
+      expect(townHallOf(q), q).toBeUndefined();
+    }
+  });
+
+  it("doubts a street given for a place, and a guess of the address base, never an address it finds well", () => {
+    const street = { label: "Chemin de la Mairie 97424 Saint-Leu", type: "street", score: 0.53 };
+    expect(incertain("mairie de Saint-Leu", street, "milieu de la rue")).toContain("une voie, qui n'est peut-être pas le lieu demandé");
+    expect(incertain("chemin de la Mairie, Saint-Leu", street, "milieu de la rue")).toBeUndefined();
+    expect(incertain("12 rue de Paris, Saint-Denis", { label: "12 Rue de Paris 97400 Saint-Denis", type: "housenumber", score: 0.64 }, "adresse exacte")).toBeUndefined();
+    const guess = incertain("rue de la Poste, Saint-Paul", { label: "Rue de la Poste (St Gilles les Bains) 97460 Saint-Paul", type: "street", score: 0.32 }, "milieu de la rue");
+    expect(guess).toContain("avec une correspondance faible");
+    expect(guess).not.toContain("une voie,");
+    expect(SCORE_FAIBLE).toBeLessThan(0.52);
   });
 });

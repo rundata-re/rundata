@@ -235,6 +235,10 @@ export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { do
   // the date was read after it: the newest read, or the date itself, never later than now.
   if (at != null && at > read) read = Math.min(Math.max(...basis.map((l) => l.fetchedAt), at), now.getTime());
   const when = new Date(read);
+  // Sources read at different times: the oldest and the newest of the reads served up to date, both said (20/11/2026:
+  // « lue à 00:20 » alone over news read at 10:10, the time of a collector's copy).
+  const span = reads.length ? [localTime(new Date(Math.min(...reads))), localTime(new Date(Math.max(...reads)))] : [];
+  const entre = span.length && span[0] !== span[1] ? { plus_ancienne: span[0], plus_recente: span[1] } : undefined;
   // Only those the answer is about: a list of stations kept from yesterday says nothing of the measurement.
   const secours = copies(pool, opts.nom ?? (() => undefined));
   // « Le reste est à jour » only when every other entry read was within its freshness, and there is one.
@@ -243,6 +247,7 @@ export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { do
   return {
     donnee_du: data && written(data.du, at),
     lue_a: localTime(when),
+    ...(entre && { lectures: entre }),
     fuseau: FUSEAU,
     age: data?.age ?? (data && at != null ? ageFrom(data, at, now) : ageMinutes(when, now) < 1 ? "à l'instant" : ageText(ageMinutes(when, now))),
     copies_de_secours: secours.length ? secours.map(({ tardive: _, copie: __, ...c }) => c) : undefined,

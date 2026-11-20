@@ -15,7 +15,7 @@
  * seen, a line says it, and the command in RUNDATA_ALERTE, if any, is run once with that line as its only argument, to
  * tell the team its levels are to be read; the machine's state remembers it.
  * `npx tsx scripts/raa.ts [--kv]`, every hour with --kv (CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in the
- * environment, scripts/kv.ts), writing only when something changed. Without --kv, reads as a first run would, prints
+ * environment, scripts/kv.ts), writing at each run, its time in `lu_le`. Without --kv, reads as a first run would, prints
  * what it keeps and writes nothing.
  */
 import { execFileSync } from "node:child_process";
@@ -133,7 +133,9 @@ if (secheresse && ligne) {
 if (kv) {
   let ecrite = had?.ecrite;
   const ready = ecrire(!!ecrite, cover);
-  if (ready && sansHeure(next) !== ecrite) {
+  // Written at every run that read the site, even unchanged: its `lu_le` is the time of the answer's read
+  // (fraicheur.lue_a). Written only when it changed, on 20/11/2026 a copy checked at 09:33 said « lue à 00:20 ».
+  if (ready) {
     await putKv(KV_KEY, next, KV_TTL_SECONDS);
     ecrite = sansHeure(next);
     console.log(`écrit dans KV : ${KV_KEY}`);

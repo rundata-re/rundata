@@ -257,13 +257,16 @@ export async function stationDepartures(stations: transit.StopGroup[][], now: Da
   return lists;
 }
 
-/** The real-time feeds of these networks that are recent and say something; a feed that fails, stopped or is empty is left out. */
-export async function realtimeFeeds(nets: string[], cache: Cache, now: Date): Promise<Map<string, rt.Realtime>> {
+/**
+ * The real-time feeds of these networks that are recent and say something; a feed that fails, stopped or is empty is left
+ * out. `behind`, for a robot: the feed already read, its refresh after the answer (gtfsrt.ts `realtimeKept`).
+ */
+export async function realtimeFeeds(nets: string[], cache: Cache, now: Date, behind?: (work: Promise<unknown>) => void): Promise<Map<string, rt.Realtime>> {
   const out = new Map<string, rt.Realtime>();
   await Promise.all(
     [...new Set(nets)].filter((n) => transit.NETWORKS[n]?.temps_reel).map(async (n) => {
       try {
-        const c = await rt.realtime(cache, n);
+        const c = behind ? await rt.realtimeKept(cache, n, now, behind) : await rt.realtime(cache, n);
         const f = c?.value;
         if (f && now.getTime() / 1000 - f.at < rt.MAX_AGE_SECONDS && (f.cancelled.length || f.alerts.length || f.vehicles?.length || Object.keys(f.trips).length)) out.set(n, f);
       } catch (err) {
@@ -1172,7 +1175,8 @@ export async function tripRun(net: string, local: number, trip: string, jour: nu
  * when nothing of it runs today; the lines that stop there. One read of its passes serves the three, one or two of the
  * patterns: what the tool reads for a stop.
  */
-export async function stopPageDepartures(groups: transit.StopGroup[], now: Date, cache?: Cache) {
+/** `behind`: for a robot, the feeds already read, refreshed after the answer (`realtimeFeeds`). */
+export async function stopPageDepartures(groups: transit.StopGroup[], now: Date, cache?: Cache, behind?: (work: Promise<unknown>) => void) {
   const c = moment(now);
   const m = byStop(groups);
   const all = await transit.passes([...m.keys()]);
@@ -1189,7 +1193,7 @@ export async function stopPageDepartures(groups: transit.StopGroup[], now: Date,
     await read(pass);
     list = listed(pass, pats, m, 20 * 3600, c);
   }
-  const feeds = cache ? await realtimeFeeds(groups.map((g) => g.reseau), cache, now) : new Map<string, rt.Realtime>();
+  const feeds = cache ? await realtimeFeeds(groups.map((g) => g.reseau), cache, now, behind) : new Map<string, rt.Realtime>();
   const shown = spread(applyRealtime(list, feeds, now));
   const off = shown.every((d) => d.at >= 86400) ? await quiet(groups, undefined, feeds, now, cache, all) : undefined;
   // The lines that stop there (not their terminus), whatever the day: they change seldom, the times every minute.

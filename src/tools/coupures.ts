@@ -1,9 +1,11 @@
+import { apresCyclone } from "../eau/cyclone.js";
 import type { Cache, Cached } from "../cache.js";
 import { distributeur, LIENS, lues, nomDit, partage, phrasePartage, SITES_DISTRIBUTEURS, SOURCE as DISTRIBUTEURS } from "../eau/distributeurs.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as notices from "../providers/avis-eau.js";
 import { BACK, lifts } from "../providers/avis-eau.js";
 import * as potable from "../providers/eaupotable.js";
+import * as arretesVille from "../providers/arretes-travaux.js";
 import { localTime } from "../geo.js";
 import { why } from "../types.js";
 import { slugify } from "../web/places.js";
@@ -145,7 +147,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     return { ...text({ erreur: "Les avis des distributeurs d'eau ne répondent pas pour le moment.", consulter: notices.SOURCE.url }), isError: true };
   }
   const live = current(all, now);
-  const common = { ...COMMON, sources: credits([notices.SOURCE]) };
+  const common = { ...COMMON, ...apresCyclone(now), sources: credits([notices.SOURCE]) };
 
   if (!lieu?.trim()) {
     const dry = lues().map((c) => doNotDrink(all, c) && c).filter(Boolean) as string[];
@@ -209,6 +211,8 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     mute ? mute.texte : "",
     sharedText ?? "",
   ].filter(Boolean).join(" ");
+  // Sainte-Suzanne: the orders allowing runéo's works, a block of their own, never a notice (providers/arretes-travaux.ts).
+  const arretes = commune === arretesVille.COMMUNE ? await arretesVille.bloc(cache, now) : undefined;
   return text({
     lieu: placeBlock(lieu, res),
     resume,
@@ -221,10 +225,12 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     contact: covered ? undefined : `Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/${slugify(commune)}`,
     injoignable: mute ? [mute] : undefined,
     avis: mine.map((n) => noticeRow(n, now, n === dry)),
+    arretes_travaux_ville: arretes,
     ...common,
     // The distributor named is the ARS's sanitary control's (src/eau/distributeurs.json), credited as the page does.
     // Its notices not read and none shown: the ARS alone, no notice of any distributor is used.
     ...(unread && !mine.length && !dry ? { sources: credits([potable.SOURCE]) }
-      : unread || shared || (named && dist) ? { sources: credits([notices.SOURCE, potable.SOURCE]) } : {}),
+      : unread || shared || (named && dist) ? { sources: credits([notices.SOURCE, potable.SOURCE, ...(arretes ? [arretesVille.SOURCE] : [])]) }
+      : arretes ? { sources: credits([notices.SOURCE, arretesVille.SOURCE]) } : {}),
   });
 }

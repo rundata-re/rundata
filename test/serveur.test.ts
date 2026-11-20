@@ -140,7 +140,8 @@ describe("the server's instructions", () => {
     // the communes' public information too.
     // 39 563 the same day with Cilaos, Saint-Philippe and Sainte-Suzanne among the mairies whose notices of power cuts
     // electricite reads, as the communes' public information, and « les mairies » alone.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_570);
+    // 39 664 the same day with the field radiers of crues_rivieres, the headlines on the fords that /crues shows.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_670);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

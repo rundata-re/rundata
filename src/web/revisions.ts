@@ -18,7 +18,10 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A rubric in capitals at the head of a first sentence left out (« LIBRE EXPRESSION Sous le bruit… »).
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
   // « Mobilisation » for a strike or a blockade only, not money or firms set to work (« mobilisation financière »).
-  actualites: 19,
+  // « Route » not for « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
+  // The other subjects narrowed: « vigilance » with its colour, not « une pluie de médailles », « une éruption de joie »,
+  // fireworks, flights, « conseil » alone, nor « annulé » or « reporté » alone for culture; « AVC » is health.
+  actualites: 21,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -56,14 +59,16 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // Its bus departures of today's service link their trip without « ?jour= », as on /bus.
   // All its bus departures link their trip without « ?jour= », as on /bus (19/11/2026).
-  commune: 28,
+  // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
+  commune: 29,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
   // Sudéau's site linked on the pages of the communes whose water it distributes (14/11/2026).
   // Each commune's latest notices, past ones too, for its page (`derniers_avis`, 14/11/2026).
   // The notices of Saint-Philippe, Cilaos, Petite-Île and Les Trois-Bassins, read on the communes' sites (20/11/2026).
-  coupures: 18,
+  // Sainte-Suzanne's orders allowing runéo's works, a block of their own (`arretes_sainte_suzanne`, 20/11/2026).
+  coupures: 19,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   courant: 10,
@@ -100,7 +105,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « <Lieu> en chiffres »: the figures of the nearest stations, their hours and their last 30 days (web/en-chiffres.ts).
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
   // « Repères du mois »: the month's normals and records at the station that speaks best for the place (19/11/2026).
-  lieu: 29,
+  // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
+  lieu: 30,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
@@ -110,7 +116,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.
-  meteo: 12,
+  // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
+  meteo: 13,
   randonnees: 15,
   // The levels of the order n°2026-2094 of 12/11/2026 while VigiEau serves the one it replaced, VigiEau's said beside.
   // A newer drought order out in the prefecture's recueil, not taken into account yet, said first (arrete_plus_recent).
@@ -125,14 +132,20 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A volley match's sets written as its score, « 26-28 ».
   // The ffgolf's written refusal of 09/11/2026: its own line, dated, in the golf's mention.
   // No sentence for the communes' sports programmes not read any more (20/11/2026).
-  sport: 30,
+  // The link to Réunion La 1ère's sport news at its new address (« /sport?r=reunion »; the old one answers 404).
+  // A Grand Raid course's climb with its thousands separator, « 10\u202f200\u00a0m D+ ».
+  sport: 32,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
-  trafic: 6,
+  // Its news of the roads: not « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
+  // Its news of the roads: not « le trafic de drogue », nor the dam of Takamaka.
+  trafic: 8,
   velos: 7,
-  volcan: 14,
+  // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
+  // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.
+  volcan: 16,
 };
 
 /**
@@ -168,7 +181,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // The island's news only: France's and the world's left out (`local`).
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026.
   // A rubric in capitals at the head of a first sentence left out (sansRubrique).
-  "actualites:fil": 7,
+  // Its subjects narrowed (sujetsOf): « vigilance » with its colour, « annulé » or « reporté » alone no culture, « AVC » health.
+  "actualites:fil": 8,
   // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   agenda: 1,

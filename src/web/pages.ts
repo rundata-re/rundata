@@ -68,13 +68,13 @@ import { PLEIN_ECRAN_CSS, pleinEcran } from "./plein-ecran.js";
 import { ALTITUDES_CREDIT, communeOf, METEO_SCRIPT, RADAR_CREDIT, rainPill, stationsMap, windPill } from "./meteo-carte.js";
 import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
-import { coastal, pageOf, PAGES, type PlacePage, PRINCIPAL, slugify } from "./places.js";
+import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
 import { adresseTexte } from "./adresse.js";
 import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
 import * as meteorOi from "../providers/meteor-oi.js";
 import { PASSES } from "../historique/cyclones-passes.js";
-import { OLD_MINUTES, ditAmateur, reseauAmateur } from "../tools/meteo.js";
+import { OLD_MINUTES, ditAmateur, reseauAmateur, stationKind } from "../tools/meteo.js";
 import { enTete } from "../tools/representativeness.js";
 
 // What a search engine shows of a title: the tab's title takes the first of its forms that fits.
@@ -2333,7 +2333,7 @@ const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. L
 <li><b>Les deux aéroports</b> publient leurs observations toutes les 30 minutes.</li>
 <li><b>Des balises de vent</b> complètent le réseau, dont celles des clubs de parapente (FFVL).</li>
 <li><b>Les stations amateur du réseau MétéoR-OI</b>, en option, ajoutent des points de mesure dans les hauts et les quartiers. Leur fiabilité n'est pas vérifiée comme celle des stations officielles : elles sont dessinées avec un contour en pointillé.</li></ul>
-<p>Les stations vont de la côte à plus de ${fr(Math.floor(Math.max(...STATIONS_974.map((s) => s[4])) / 100) * 100)} m d'altitude. Entre deux stations, la carte <b>estime</b> la température d'après l'altitude, et la pluie d'après le radar de Météo-France. Ce sont des estimations, pas des mesures.</p>
+<p>Les stations vont de la côte à plus de ${fr(Math.floor(Math.max(...STATIONS_974.map((s) => s[4])) / 100) * 100)}\u00a0m d'altitude. Entre deux stations, la carte <b>estime</b> la température d'après l'altitude, et la pluie d'après le radar de Météo-France. Ce sont des estimations, pas des mesures.</p>
 <p><b>Ce que la page réunit et qu'aucune source ne montre seule :</b></p>
 <ul class="plain"><li>les stations officielles, celles des aéroports, les balises et les stations amateur, sur une même carte et à la même heure ;</li>
 <li>la possibilité de rejouer les 6 dernières heures, les 24 dernières heures ou les 7 derniers jours.</li></ul>
@@ -2504,6 +2504,8 @@ function stationCard(s: StationAnswer): string {
     .join("");
   const t = parseFloat((m.temperature ?? "").replace(",", "."));
   const meta = [
+    // What the station is, as the tools say it; an amateur one's is in its card's title.
+    s.amateur ? undefined : stationKind(s.source),
     communeDite(s, ""),
     s.distance_km != null ? `à ${fr(s.distance_km)} km${s.direction ? ` (${s.direction})` : ""}` : undefined,
     `${s.altitude_m.toLocaleString("fr-FR")} m d'altitude`,
@@ -2576,8 +2578,6 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const alt = place.altitude_m != null ? `, à ${place.altitude_m.toLocaleString("fr-FR")} m d'altitude` : "";
   const commune = place.commune && place.commune !== p.nom ? ` (commune ${esc(de(place.commune))})` : "";
   const v = versant(place.lon, place.lat);
-  // Another place's page says the same (places.ts `PRINCIPAL`): this one sends to it, out of the index.
-  const principal = PRINCIPAL[p.slug] ? pageOf(PRINCIPAL[p.slug]) : undefined;
   const title = [`Météo ${p.nom} en direct et prévisions · La Réunion (974)`, `Météo ${p.nom} en direct · La Réunion (974)`]
     .find((t) => t.length <= TITLE_MAX) ?? `Météo ${p.nom} en direct · 974`;
   const description = fit(
@@ -2598,7 +2598,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const headline = first
     ? `${perimee}<div class="now"><span class="big">${enGrand(esc(thin(first.mesures.temperature!)))}</span>` +
       `<p>mesurés <b>${esc(leJour(first.heure_mesure))}</b> par la station <b>${esc(first.station)}</b>${communeDite(first, place.commune || p.nom) ? ` ${esc(a(communeDite(first, place.commune || p.nom)!))}` : ""} ` +
-      `(${metres(first.altitude_m)}${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
+      `(${esc(stationKind(first.source))}, ${metres(first.altitude_m)} d'altitude${first.distance_km != null ? `, à ${fr(first.distance_km)} km` : ""}).</p></div>`
     : "";
 
   // Only from a copy made today: after midnight, yesterday's would pass for today's.
@@ -2712,7 +2712,6 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Météo en direct</p>
     <h1>Météo ${esc(a(p.nom))} <span class="n974">974</span></h1>
-    ${principal ? `<p class="or">${esc(p.nom)} a la même station, la même prévision et la même houle que ${esc(principal.nom)}, sa voisine. <a href="/meteo/${principal.slug}">La météo de ${esc(principal.nom)} →</a></p>` : ""}
     ${headline}
     ${ask(`I fé koman lo tan ${p.nom} astèr ? Gèt la mézir an dirèk si ${origin}/meteo/${p.slug} é di amwin lèr la mézir é la stasion.`,
       `Quel temps fait-il en ce moment ${a(p.nom)} ? Lis la mesure en direct sur ${origin}/meteo/${p.slug} et donne-moi l'heure de la mesure et la station.`)}
@@ -2742,7 +2741,7 @@ ${forecast}
 ${reperesBlock(d?.reperes, now)}
 ${hikesAround(p, hikes)}
 <p class="or"><a href="/meteo#communes">Météo ailleurs à La Réunion →</a></p>`;
-  return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true, ...(principal && { noindex: true }) }, band, g.ligne + body);
+  return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true }, band, g.ligne + body);
 }
 
 export function notFoundPage(origin: string, path: string): string {

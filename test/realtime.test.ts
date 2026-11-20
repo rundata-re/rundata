@@ -86,6 +86,48 @@ describe("GTFS-RT feed", () => {
     const later = new Date(at.getTime() + (rt.MAX_AGE_SECONDS + 60) * 1000);
     expect((await realtimeFeeds(["carjaune"], new Cache(new MemoryStore(), () => later.getTime(), false), later)).size).toBe(0);
   });
+
+  it("is given to a robot as already read while it is under 15 minutes old, read again after the answer", async () => {
+    const feed = rt.decode(FEED);
+    const at = new Date(feed.at * 1000);
+    // The source answers only once let go: an answer that waits for it never comes before.
+    let reads = 0;
+    let letGo = () => {};
+    vi.stubGlobal("fetch", () => (reads++, new Promise<Response>((done) => (letGo = () => done(new Response(FEED))))));
+    const kept = (readAt: Date, now: Date) => {
+      const store = new MemoryStore();
+      store.put("rt:carjaune", { value: feed, fetchedAt: readAt.getTime() });
+      return new Cache(store, () => now.getTime(), false);
+    };
+    // Read 3 minutes ago: given at once, read again behind.
+    const now = new Date(at.getTime() + 3 * 60_000);
+    const behind: Promise<unknown>[] = [];
+    const got = await realtimeFeeds(["carjaune"], kept(at, now), now, (w) => behind.push(w));
+    expect([...got.keys()]).toEqual(["carjaune"]);
+    expect(behind).toHaveLength(1);
+    letGo();
+    await Promise.all(behind);
+    expect(reads).toBe(1);
+    // Read 30 seconds ago: nothing read again.
+    reads = 0;
+    const soon = new Date(at.getTime() + 30_000);
+    const none: Promise<unknown>[] = [];
+    await realtimeFeeds(["carjaune"], kept(at, soon), soon, (w) => none.push(w));
+    expect([reads, none.length]).toEqual([0, 0]);
+    // A person, and a feed of more than 15 minutes for a robot: the answer waits for the read.
+    const late = new Date(at.getTime() + (rt.MAX_AGE_SECONDS + 60) * 1000);
+    for (const [when, robot] of [[now, false], [late, true]] as const) {
+      reads = 0;
+      let answered = false;
+      const after: Promise<unknown>[] = [];
+      const answer = realtimeFeeds(["carjaune"], kept(at, when), when, robot ? (w) => after.push(w) : undefined).then(() => (answered = true));
+      await vi.waitFor(() => expect(reads).toBe(1));
+      expect(answered).toBe(false);
+      letGo();
+      await answer;
+      expect(after).toHaveLength(0);
+    }
+  });
 });
 
 describe("departures in real time", () => {

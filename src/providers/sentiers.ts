@@ -71,7 +71,7 @@ const clean = (v: unknown) => (typeof v === "string" ? v.replace(/\s+/g, " ").tr
  */
 export const avis = (v: unknown) => clean(v)?.replace(/(\d{1,2}\/\d{1,2}\/\d{2,4}) (?=\p{Lu})/gu, "$1 · ");
 
-function statut(v: unknown): Statut {
+export function statut(v: unknown): Statut {
   const s = String(v ?? "").toLowerCase();
   if (s.includes("hors gestion")) return "hors gestion ONF";
   if (s.includes("ferm")) return "fermé";

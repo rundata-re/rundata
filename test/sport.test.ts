@@ -279,6 +279,11 @@ describe("sport", () => {
     expect(page.resultats).toEqual(all.resultats.slice(0, 30));
     expect(page.resultats_en_tout).toBe(n);
     expect(page.resume).toMatch(new RegExp(`^${n} résultats depuis le .+ \\(les 30 plus récents ci-dessous\\)\\.`));
+    // The page says it too, above its 30 (20/11/2026: the tool said 32, the page showed 30 without a total).
+    const html = sportPage("https://rundata.re", { value: { ...page, classements: [] } as SportAnswer, fetchedAt: NOW, stale: false }, NOW).replace(/\u00a0/g, " ");
+    expect(html).toContain(`<p>${n} résultats depuis le ${page.periode.du} : les 30 plus récents ci-dessous.</p>`);
+    const whole = sportPage("https://rundata.re", { value: { ...all, classements: [] } as SportAnswer, fetchedAt: NOW, stale: false }, NOW);
+    expect(whole).not.toContain("plus récents ci-dessous");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     try {
@@ -403,7 +408,7 @@ describe("sport", () => {
     expect(b.a_venir.some((r: { epreuve: string; quand: string }) => r.epreuve === "VB2CO – SVB" && r.quand === "samedi 24/10 à 20:00")).toBe(true);
     expect(b.a_venir.some((r: { sport: string; quand: string }) => r.sport === "sport auto" && r.quand === "du samedi 24/10 au dimanche 25/10")).toBe(true);
     expect(b.resultats.map((r: { score: string }) => r.score)).toContain("3-0");
-    expect(b.grand_raid.courses[0]).toMatchObject({ course: "Diagonale des fous (180 km, 10200 m D+)", partants: 2766, arrives: 2126, abandons: 640 });
+    expect(b.grand_raid.courses[0]).toMatchObject({ course: "Diagonale des fous (180\u00a0km, 10\u202f200\u00a0m D+)", partants: 2766, arrives: 2126, abandons: 640 });
     expect(b.grand_raid.courses[0].podium[0]).toBe("1. Hugo DECK (FR) 22 h 54 min");
     expect(b.indisponible).toBeUndefined();
     expect(b.a_venir.find((r: { epreuve: string; quand: string }) => r.epreuve === "VB2CO – SVB" && r.quand === "samedi 24/10 à 20:00")).toMatchObject({ etat: "annulée" });

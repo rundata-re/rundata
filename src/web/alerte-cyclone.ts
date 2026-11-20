@@ -4,6 +4,7 @@
  * Only the plan's words: where it says nothing (the buses, the shops), nothing is filled in. Worded by marketing.
  */
 import type { Cached } from "../cache.js";
+import { ORSEC_PDF } from "../eau/cyclone.js";
 import type { Cyclone } from "../providers/prefecture.js";
 import * as mf from "../providers/vigilance.js";
 import { ecoles, ORSEC, withPrefecture } from "../tools/ecoles.js";
@@ -18,7 +19,7 @@ const H1 = "Alerte cyclonique : ce qui ferme, ce qui continue";
 const META = "Alerte orange, rouge ou violette à La Réunion : travail, écoles, marchés, circulation, ce que prévoit le plan ORSEC Cyclones de la préfecture.";
 const LEAD = "Ce que prévoit le dispositif ORSEC Cyclones de la préfecture (arrêté 2026-182) à chaque niveau d'alerte, cité page par page. Seuls les communiqués de la préfecture disent le niveau en cours et les décisions du moment.";
 /** The plan itself, its pages addressed by `#page=`. */
-export const PDF = "https://www.reunion.gouv.fr/contenu/telechargement/51165/386323/file/2026%2002%2010%20DSO%20Cyclones%20VD.pdf";
+export const PDF = ORSEC_PDF;
 const NONE = "Pas d'alerte cyclonique en cours à La Réunion.";
 
 /** A quotation of the plan, or a line about it, and the page(s) it is on. */

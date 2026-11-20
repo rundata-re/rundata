@@ -9,8 +9,9 @@ import type { Lecture } from "../lectures.js";
 // Entries fresh for this long or more are reference data (stations, lists of places), not what the answer measures.
 const REFERENCE_SECONDS = 6 * 3600;
 // The answer's own date of its data: a measurement, a model run, a bulletin, a notice, a list rebuilt from its file, a
-// daily check, the day of a measure by satellite. Without one, the age is the read's: « à l'instant » for a list of defibrillators a week old (31/10/2026).
-const DATED = ["heure_mesure", "jour_mesure", "run_du_modele", "emise", "mis_a_jour", "publie_le", "derniere_analyse", "derniere_verification"];
+// daily check, the day of a measure by satellite, a bathing site's last sample. Without one, the age is the read's: « à l'instant »
+// for a list of defibrillators a week old (31/10/2026), for a beach sampled two months before (20/11/2026).
+const DATED = ["heure_mesure", "jour_mesure", "run_du_modele", "emise", "mis_a_jour", "publie_le", "derniere_analyse", "dernier_prelevement", "derniere_verification"];
 // Lists of notices and publications beside the data (the mairies' power cuts, the OVPF's posts, the media's
 // headlines): dated, but not what the answer measures. Read last, when no other block carries a date.
 const NOTICES = new Set(["sources", "serveur", "avis", "coupures_annoncees", "publications_ovpf", "alertes_precedentes", "infos", "en_direct", "prefecture", "actualites", "evenements_du_jour", "actualite"]);
@@ -214,11 +215,13 @@ export const sourceMuette = (source: string, at: Date, tardive?: boolean) =>
 
 /**
  * `donnee`: false leaves `donnee_du` out (an answer made of many dated parts, each saying its own), and dates the read
- * by the newest of them. `nom`: a source's
+ * by the newest of them. `lentes`: every read counts, the slow ones too. `nom`: a source's
  * name from its id, for the one served from its last copy.
  */
-export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { donnee?: boolean; nom?: (id: string) => string | undefined } = {}) {
-  const live = lectures.filter((l) => l.freshSeconds < REFERENCE_SECONDS);
+export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { donnee?: boolean; lentes?: boolean; nom?: (id: string) => string | undefined } = {}) {
+  // `lentes`: an answer whose slow reads are its data (the events of the agendas read once a day, 20/11/2026: « lue à
+  // 11:29 » over the Département's events read at 10:00, which the page said), none left out as reference.
+  const live = opts.lentes ? lectures : lectures.filter((l) => l.freshSeconds < REFERENCE_SECONDS);
   const pool = live.length ? live : lectures;
   // The oldest read of what is served up to date: the answer is at least this fresh. A last copy keeps its own time in
   // the warning, not here (31/10/2026: the events read at 01:17 said « il y a 2 h », the time of a silent source's

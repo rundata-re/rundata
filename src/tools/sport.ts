@@ -10,7 +10,7 @@ import * as src from "../providers/sport.js";
 import * as avis from "../providers/sport-avis.js";
 import { type Club, clubOf, clubsNamed, type ClubSport, zoneOf } from "../sport/clubs.js";
 import { type SourceInfo, why } from "../types.js";
-import { a, credits, de, enumeration, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, enumeration, fr, notFound, placeBlock, text } from "./format.js";
 import { deNom } from "../articles.js";
 import { mentionLa1ere, mentionSports } from "./non-repris.js";
 import { injoignable } from "./injoignable.js";
@@ -499,7 +499,7 @@ export function grandRaidRow(g: src.GrandRaid) {
     edition: g.edition,
     dates: g.debut === g.fin ? quand(g.debut) : duAu(g.debut, g.fin),
     courses: g.courses.map((c) => ({
-      course: `${c.nom} (${c.distance_km} km, ${c.denivele_m} m D+)`,
+      course: `${c.nom} (${fr(c.distance_km)}\u00a0km, ${fr(c.denivele_m)}\u00a0m D+)`,
       depart: `${quand(c.depart)}, ${c.lieu_depart}`,
       statut: c.statut,
       partants: c.partants,

@@ -57,6 +57,19 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T14:11:00+04:00", texte: "Météo passée\u00a0: pour un record du mois, les outils IA donnent aussi les repères de la page du lieu, avec leur station." },
+  { date: "2026-11-20T14:06:00+04:00", texte: "Événements\u00a0: une sortie reportée dit son nouveau jour et le média qui l'annonce\u00a0; un marché fini n'est plus donné pour aujourd'hui." },
+  { date: "2026-11-20T13:53:00+04:00", texte: "Cyclones\u00a0: avant l'alerte orange, les outils IA rappellent le kit d'urgence du plan ORSEC (piles pour la radio…), avec son lien." },
+  { date: "2026-11-20T13:40:00+04:00", texte: "Assistants IA\u00a0: l'eau du robinet avec la conclusion de l'ARS, la consigne après un cyclone, et toutes les plages contrôlées d'une commune." },
+  { date: "2026-11-20T13:36:00+04:00", texte: "Assistants IA\u00a0: pour Mafate, Cilaos et Salazie, les mêmes sentiers, longueurs et randonnées que leur page." },
+  { date: "2026-11-20T13:13:00+04:00", texte: "Vigilance\u00a0: une position GPS donne la zone de sa commune, et un lieu non reconnu la vigilance de toute l'île, en le disant." },
+  { date: "2026-11-20T13:05:00+04:00", texte: "Assistants IA\u00a0: la vigilance de Météo-France avec la marée, les crues, l'air, la météo passée et le volcan\u00a0; les radiers avec les crues." },
+  { date: "2026-11-20T13:00:00+04:00", texte: "Météo\u00a0: chaque mesure dit si elle vient d'une station officielle de Météo-France, d'un aéroport, d'une balise ou d'une station amateur." },
+  { date: "2026-11-20T12:48:00+04:00", texte: "Lieux\u00a0: un nom porté dans plusieurs communes (Bellevue, Bras Canot…) est signalé par les outils IA, avec les autres communes." },
+  { date: "2026-11-20T12:24:00+04:00", texte: "Événements\u00a0: sur la page d'une sortie, une annonce sans heure ou sans adresse le dit, avec le lien de sa source." },
+  { date: "2026-11-20T12:20:00+04:00", texte: "Communes\u00a0: les 24 pages de commune s'ouvrent désormais sur quelques lignes qui présentent la commune, de Saint-Joseph à Cilaos." },
+  { date: "2026-11-20T11:57:00+04:00", texte: "Coupures d'eau à Sainte-Suzanne\u00a0: les chantiers de runéo autorisés par la ville, avec leur lieu, leurs dates et le lien de chaque arrêté." },
+  { date: "2026-11-20T11:34:00+04:00", texte: "Communes\u00a0: Saint-André, Saint-Louis, Sainte-Marie, La Possession, Saint-Leu et l'Entre-Deux présentent aussi la commune en quelques lignes." },
   { date: "2026-11-20T11:31:00+04:00", texte: "Événements\u00a0: chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune." },
   { date: "2026-11-20T11:08:00+04:00", texte: "Élections\u00a0: chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur." },
   { date: "2026-11-20T10:53:00+04:00", texte: "Communes\u00a0: les pages de Saint-Denis, Saint-Paul, Saint-Pierre, du Tampon et des Avirons présentent la commune en quelques lignes." },

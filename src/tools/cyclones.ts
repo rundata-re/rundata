@@ -8,7 +8,7 @@ import * as mf from "../providers/vigilance.js";
 import { why } from "../types.js";
 import { credits, text } from "./format.js";
 import * as prefecture from "../providers/prefecture.js";
-import { ecolesBlock, quotidienLine } from "./ecoles.js";
+import { ecolesBlock, ORSEC, quotidienLine } from "./ecoles.js";
 import { cyclone as cycloneAlert } from "./vigilance.js";
 import { jourFr, kmh, mesures, PASSES, passeOf, rafale, RAIN_NOTE, records, total, type Passe } from "../historique/cyclones-passes.js";
 import { SOURCE as CLIMAT } from "../providers/climat.js";
@@ -25,6 +25,18 @@ export const OFFICIAL = {
   vigilance: mf.SOURCE.url,
   prefecture: "https://www.reunion.gouv.fr",
 };
+
+/**
+ * Before the orange alert (or with no alert), what the /cyclones page shows: the link to /kit-cyclone, here with the
+ * plan's own line on the kit (the same words as that page, p. 17; test/cyclones.test.ts checks they stay the same).
+ */
+export const SE_PREPARER = {
+  conseil: "Vérifiez vos réserves (conserves, eau, piles pour radio et lampes, médicaments,…) au sein de votre kit d'urgence",
+  d_apres: `${ORSEC.nom}, p. 17`,
+  page: `${SITE_URL}/kit-cyclone`,
+};
+/** Whether to lead to the kit, on the page and in the tool alike: up to the pré-alerte (niveau ≤ 2), and with no alert. */
+export const kitAvantOrange = (ecoles?: { niveau: number }) => (ecoles?.niveau ?? -1) <= 2;
 
 const COMMON = {
   a_savoir:
@@ -235,6 +247,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
     injoignable: a?.injoignable,
     vie_quotidienne: a?.vie_quotidienne,
     ecoles: a?.ecoles,
+    se_preparer: kitAvantOrange(a?.ecoles) ? SE_PREPARER : undefined,
     systemes_actifs: rows.length ? rows : undefined,
     suivi_cmrs: suivis.length ? suivis : undefined,
     carte_officielle: carte,

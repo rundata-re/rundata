@@ -16,7 +16,8 @@
  */
 import type { Lecture } from "../lectures.js";
 import type { SourceInfo } from "../types.js";
-import { pageOf, slugify } from "../web/places.js";
+import { STATIONS_974 } from "../providers/meteofrance-stations.js";
+import { meteoPath, pageOf, slugify } from "../web/places.js";
 import { deNom } from "../articles.js";
 import { credited } from "./format.js";
 import { fraicheur } from "./fraicheur.js";
@@ -50,8 +51,12 @@ const PAGES: Record<string, string> = {
   historique_meteo: "/historique",
   evenements: "/evenements",
   actualites: "/actualites",
+  emploi: "/emploi",
+  fiche_terrain: "/terrain",
 };
 const WEATHER = new Set(["meteo_actuelle", "prevision_meteo"]);
+// Météo-France's stations by name: each has its page, /meteo/station/<id> (web/station.ts).
+const STATION_IDS = new Map(STATIONS_974.map(([id, nom]) => [nom, id]));
 
 type Payload = Record<string, unknown>;
 
@@ -102,7 +107,10 @@ function citerCoupures(p: Payload): string {
  * attribution, the NASA's whole.
  */
 const CITER: Partial<Record<string, (p: Payload) => string>> = {
-  sentiers_randonnee: (p) => `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
+  // The canyons are the Parc national's inventory, beside the ONF's trails they run along.
+  sentiers_randonnee: (p) => JSON.stringify(p.sources).includes("Parc national")
+    ? "rundata.re, d'après le Parc national de La Réunion et l'ONF"
+    : `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
   fiche_terrain: () => "rundata.re, d'après l'IGN, la DGFiP et la Base adresse nationale",
   qualite_eau: () => "rundata.re, d'après l'ARS La Réunion",
   coupures_eau: citerCoupures,
@@ -138,7 +146,7 @@ export function citation(p: Payload): string {
   const names: string[] = [];
   for (const s of station ? [...used.filter((s) => s.id === firstId), ...used.filter((s) => s.id !== firstId)] : used) {
     const n = shortName(s);
-    if (!names.some((x) => x.startsWith(n))) names.push(names.length === 0 && station ? `${n} (${station})` : n);
+    if (!names.some((x) => x.toLowerCase().startsWith(n.toLowerCase()))) names.push(names.length === 0 && station ? `${n} (${station})` : n);
   }
   // sources_donnees' short answer gives the number of its producers, not their names: their list.
   const producteurs = p.chiffres && typeof p.chiffres === "object" ? (p.chiffres as { producteurs?: unknown }).producteurs : undefined;
@@ -161,7 +169,12 @@ export function lien(tool: string, p: Payload): string {
   const commune = page(lieu.commune) ?? (page(lieu.trouve)?.commune ? page(lieu.trouve) : undefined);
   const place = page(lieu.trouve) ?? commune;
   let path = PAGES[tool];
-  if (WEATHER.has(tool) && place) path = `/meteo/${place.slug}`;
+  // The measures of a place without a page of its own (a district, coordinates) come from a station that its commune's
+  // page may not show (20/11/2026: Saint-François for La Montagne, Chaudron on /meteo/saint-denis): that station's page.
+  const first = stationsOf(p)[0];
+  const station = tool === "meteo_actuelle" && !page(lieu.trouve) && first?.source === "meteofrance" && typeof first.station === "string" ? STATION_IDS.get(first.station) : undefined;
+  if (station) path = `/meteo/station/${station}`;
+  else if (WEATHER.has(tool) && place) path = meteoPath(place.slug);
   else if (!path) path = commune ? `/communes/${commune.slug}` : "/";
   return `${SITE_URL}${path}?ref=mcp`;
 }
@@ -205,6 +218,8 @@ export interface Around {
   serveur?: object;
   /** False: no single `donnee_du` for this answer (fraicheur.ts). */
   donnee?: boolean;
+  /** True: the slow reads are the data too, not reference beside it (fraicheur.ts): the agendas read once a day. */
+  lentes?: boolean;
   /** A source's name from its id, for one served from its last copy (fraicheur.ts). */
   nom?: (id: string) => string | undefined;
 }
@@ -226,7 +241,7 @@ export function cite<R extends object>(tool: string, r: R, around: Around = {}):
   }
   if (!p || typeof p !== "object" || Array.isArray(p)) return r;
   const isError = "isError" in r && !!r.isError;
-  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, nom: around.nom }) };
+  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, lentes: around.lentes, nom: around.nom }) };
   if (wanting(p, isError)) extra.signaler = AVIS_HINT;
   if (around.serveur) extra.serveur = around.serveur;
   // A last copy in the answer: its freshness first, the rest at the end as always.

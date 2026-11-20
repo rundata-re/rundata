@@ -63,6 +63,7 @@ import { why } from "./types.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
 import { plage } from "./web/plage.js";
+import { sansIndex } from "./web/noindex.js";
 import { GARDE_TAPEE, gardeTapee } from "./providers/terrain.js";
 
 // How long the edge keeps an entry. Much longer than any freshness window: an old copy is what gets served,
@@ -449,7 +450,8 @@ export default {
     }));
     // The wait of the visitor, apart from the invocation's duration (which counts the work after the response).
     console.log(reponseSaid(Date.now() - arrived, path));
-    return value;
+    // A file that is not a page is kept out of search results (web/noindex.ts).
+    return sansIndex(value);
   },
 
   async scheduled(controller: { cron?: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {

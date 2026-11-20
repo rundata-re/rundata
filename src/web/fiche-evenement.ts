@@ -14,12 +14,14 @@
  * no agenda announces any more.
  */
 import type { Cached } from "../cache.js";
+import { a } from "../articles.js";
 import { COMMUNES } from "./commune.js";
 import type { AgendaAnswer, Alerte, PlaceData } from "./data.js";
 import { agendaEvents, webPage } from "./domains.js";
 import { type Fiche, fichePath } from "./fiches.js";
 import { esc } from "./map.js";
 import { layout, SITE } from "./pages.js";
+import { annonceManque } from "../tools/agenda.js";
 import { dayLabel } from "../tools/prevision.js";
 
 import type { Row } from "./fiches.js";
@@ -43,8 +45,38 @@ function prevision(r: Row, meteo: PlaceData | undefined): string {
   const jour = meteo?.prevision?.jours?.find((j) => j.jour === dayLabel(r.date.slice(0, 10)));
   if (!jour) return "";
   const temp = jour.temperature_min && jour.temperature_max ? `${jour.temperature_min} à ${jour.temperature_max}` : undefined;
-  const parts = [jour.ciel_en_journee, temp, jour.pluie ? `pluie : ${jour.pluie}` : undefined].filter(Boolean);
-  return parts.length ? `<li><b>Prévision météo</b> pour ${esc(jour.jour)} à ${esc(r.commune!)} : ${esc(parts.join(", "))}. C'est une prévision, pas une mesure.</li>` : "";
+  // The rain said once: « pluie (10,4 mm) » under a rainy sky, never « pluie, …, pluie : 10,4 mm de pluie ».
+  const mm = jour.pluie?.match(/^(\S+ mm) de pluie(.*)$/);
+  const ciel = jour.ciel_en_journee;
+  const parts = (ciel && mm && /pluie|averse/i.test(ciel) ? [`${ciel} (${mm[1]}${mm[2]})`, temp] : [ciel, temp, jour.pluie]).filter(Boolean);
+  return parts.length ? `<li><b>Prévision météo</b> pour ${esc(jour.jour)} ${esc(a(r.commune!))} : ${esc(parts.join(", "))}. C'est une prévision, pas une mesure.</li>` : "";
+}
+
+/** Where the event is, as its row says it: its place, then its commune when the place does not name it. */
+const ou = (r: Pick<Row, "lieu" | "commune">) => `${r.lieu ? `, ${r.lieu}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${r.commune}` : ""}`;
+
+/**
+ * The page's meta description, 155 characters at most, cut after a whole word: its day (and hour), its place, then its text. The day comes
+ * first so that each date of a series (a workshop every Saturday, the same text each time) has its own: Google takes
+ * pages with the same description for near duplicates.
+ */
+export function ficheDescription(r: Pick<Row, "titre" | "quand" | "lieu" | "commune" | "publie_par" | "description">): string {
+  const texte = r.description?.trim().replace(/\s+/g, " ");
+  const quand = r.quand ? `${r.quand[0].toUpperCase()}${r.quand.slice(1)}` : "";
+  const d = texte ? `${quand}${ou(r)} : ${texte}` : `${r.titre} : ${r.quand}${ou(r)}, d'après ${r.publie_par}.`;
+  // Longer: cut after a whole word, with an ellipsis.
+  return d.length <= 155 ? d : `${d.slice(0, 154).replace(/\s+\S*$/, "")}…`;
+}
+
+/**
+ * What the source does not give, said rather than left blank: an event without its hour (a day alone) or without its
+ * place, with who announced it, linked to its page when there is one, where the rest may be.
+ */
+function manque(r: Row): string {
+  // The source's name without an article: « Mairie de Saint-Pierre », « Weezevent » take none.
+  const qui = r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par);
+  const dit = annonceManque(r.date, r.lieu, qui);
+  return dit ? `<p class="note" data-sortie>${dit}</p>` : "";
 }
 
 /** The page of an event to come (or on), from the copy of /evenements. */
@@ -54,21 +86,27 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const texte = r.description?.trim();
   const day = r.date.slice(0, 10);
   const title = `${r.titre}${r.commune ? `, ${r.commune}` : ""} (${jj(day)})`;
-  const description = (texte ? texte.replace(/\s+/g, " ") : `${r.titre} : ${r.quand}${r.lieu ? `, ${r.lieu}` : ""}${r.commune ? `, ${r.commune}` : ""}, d'après ${r.publie_par}.`).slice(0, 155);
+  const description = ficheDescription(r);
   const { bar, jsonld } = crumbs(origin, r.titre, path);
   const autres = (data.value.evenements ?? []).filter((x) => x.fiche !== r.fiche && x.commune && x.commune === r.commune && x.date.slice(0, 10) === day).slice(0, 6);
   const badge = r.statut ? `<span class="badge${r.statut === "complet" ? " m" : ""}">${esc(r.statut)}</span> ` : "";
+  // Cancelled or postponed: the new day and who said it, as the list and the tool say them (20/11/2026: the page
+  // had the badge alone).
+  const off = r.statut && r.statut !== "complet" && (r.reporte_au || r.statut_d_apres)
+    ? `\n  <p class="note" data-sortie>${esc(`${r.statut[0]}${r.statut.slice(1).toLowerCase()}`)}${r.reporte_au ? ` au ${esc(r.reporte_au)}` : ""}${r.statut_d_apres ? ` d'après <a href="${esc(r.statut_d_apres.lien)}" rel="noopener">${esc(r.statut_d_apres.media)}</a>` : ""}.</p>`
+    : "";
   const autour = [
-    c ? `<li><b>${esc(c.nom)}</b> : <a href="/aujourdhui/${c.slug}">la journée à ${esc(c.nom)}</a></li>` : "",
+    c ? `<li><b>${esc(c.nom)}</b> : <a href="/aujourdhui/${c.slug}">la journée ${esc(a(c.nom))}</a></li>` : "",
     prevision(r, meteo),
-    autres.length ? `<li><b>Le même jour à ${esc(r.commune!)}</b> :<ul>${autres.map((x) => `<li>${x.fiche ? `<a href="${fichePath(x)}">${esc(x.titre)}</a>` : esc(x.titre)}${x.quand ? ` <small>${esc(x.quand)}</small>` : ""}</li>`).join("")}</ul></li>` : "",
+    autres.length ? `<li><b>Le même jour ${esc(a(r.commune!))}</b> :<ul>${autres.map((x) => `<li>${x.fiche ? `<a href="${fichePath(x)}">${esc(x.titre)}</a>` : esc(x.titre)}${x.quand ? ` <small>${esc(x.quand)}</small>` : ""}</li>`).join("")}</ul></li>` : "",
   ].filter(Boolean);
   const source = r.source ? `<p class="note">Source : ${esc(r.source)}</p>` : "";
   const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
-  <h1>${badge}${esc(r.titre)}</h1>
+  <h1>${badge}${esc(r.titre)}</h1>${off}
   <p class="lead" data-sortie>${esc(r.quand)}${r.autres_dates?.length ? `, aussi ${esc(r.autres_dates.join(", "))}` : ""}${r.lieu ? `<br>${esc(r.lieu)}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${esc(r.commune)}` : ""}${r.lien ? ` · <a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : ""}</p>
+  ${manque(r)}
   ${r.prix ? `<p>${esc(r.prix)}</p>` : ""}
 </div></div>`;
   // data-sortie: a link followed to another site (its source, its tickets) is counted by the « sortie » signal (web/signal.ts).
@@ -90,7 +128,7 @@ export function fichePassee(origin: string, x: Fiche, alerte?: Alerte): string {
   const c = communeOf(x.commune);
   const title = `${x.titre}${x.commune ? `, ${x.commune}` : ""} (${jj(x.date)})`;
   const quand = x.fin && x.fin !== x.date.slice(0, 10) ? `du ${dayLabel(x.date.slice(0, 10))} au ${dayLabel(x.fin)}` : `le ${dayLabel(x.date.slice(0, 10))}`;
-  const description = `${x.titre} a eu lieu ${quand}${x.commune ? ` à ${x.commune}` : ""}.`;
+  const description = `${x.titre} a eu lieu ${quand}${x.commune ? ` ${a(x.commune)}` : ""}.`;
   const { bar, jsonld } = crumbs(origin, x.titre, path);
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
@@ -98,7 +136,7 @@ export function fichePassee(origin: string, x: Fiche, alerte?: Alerte): string {
   <p class="lead">Cet événement a eu lieu ${esc(quand)}${x.lieu ? `, ${esc(x.lieu)}` : ""}${x.commune && !x.lieu?.includes(x.commune) ? `, ${esc(x.commune)}` : ""}.</p>
 </div></div>`;
   const body = `<section style="max-width:44rem;display:grid;gap:1rem">
-  ${c ? `<p><a href="/aujourdhui/${c.slug}">Les prochaines sorties à ${esc(c.nom)} →</a></p>` : ""}
+  ${c ? `<p><a href="/aujourdhui/${c.slug}">Les prochaines sorties ${esc(a(c.nom))} →</a></p>` : ""}
   <p><a href="/evenements">Tous les événements des deux semaines à venir →</a></p>
   ${x.lien ? `<p class="note" data-sortie>Annoncé par <a href="${esc(x.lien)}" rel="noopener">${esc(x.publie_par)}</a>.</p>` : `<p class="note">Annoncé par ${esc(x.publie_par)}.</p>`}
 </section>`;

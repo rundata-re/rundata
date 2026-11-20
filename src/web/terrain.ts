@@ -7,6 +7,8 @@
  * the commune: the address typed without one gets it.
  */
 import { INSEE } from "../places/insee.js";
+import { nombre } from "../tools/format.js";
+import { a as aCommune } from "../articles.js";
 import { communeOf, type ficheDonnees } from "../tools/terrain.js";
 import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, webPage } from "./domains.js";
@@ -83,7 +85,7 @@ export function doubt(adresse: string, fiche: O): string | undefined {
   if (!placee && !fiche.avertissement) return undefined;
   const typed = communeOf(adresse);
   const found = str(lieu?.insee);
-  const ailleurs = typed && found && typed !== found ? ` Le point trouvé est à ${esc(communeName(found) ?? found)}, pas à ${esc(communeName(typed) ?? typed)}.` : "";
+  const ailleurs = typed && found && typed !== found ? ` Le point trouvé est ${esc(aCommune(communeName(found) ?? found))}, pas ${esc(aCommune(communeName(typed) ?? typed))}.` : "";
   return `<p><b>Lieu incertain${N}:</b> l'adresse a été placée ${esc(placee ?? `(${precision})`)}, ${q(esc(str(lieu?.label) ?? ""))}. ${VERIFIEZ}${ailleurs}</p>`;
 }
 
@@ -94,7 +96,7 @@ function place(fiche: O): string {
   const lieu = obj(fiche.lieu)!;
   const lon = Number(lieu.lon);
   const lat = Number(lieu.lat);
-  const alt = typeof fiche.altitude_m === "number" ? `${fiche.altitude_m}${N}m` : undefined;
+  const alt = typeof fiche.altitude_m === "number" ? `${nombre(fiche.altitude_m)}${N}m` : undefined;
   return block(
     "lieu",
     "Le point retenu",
@@ -172,7 +174,7 @@ function loyers(fiche: O): string {
   const kinds = Object.values(l).map(obj).filter((x): x is O => !!x && "loyer_m2_charges_comprises" in x);
   return block(
     "loyers",
-    `Loyers d'annonce ${l.commune === "Entre-Deux" ? "à l'Entre-Deux" : `à ${l.commune}`}`,
+    `Loyers d'annonce ${aCommune(String(l.commune))}`,
     `<ul class="plain">${kinds.map((k) => li(String(k.logement), `${esc(String(k.loyer_m2_charges_comprises))} charges comprises (entre ${esc(String(k.intervalle_95))})`)).join("")}</ul>`,
     esc(GARDES.loyers),
   );

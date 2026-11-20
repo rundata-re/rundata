@@ -6,6 +6,7 @@
 
 - [ ] `npm test` et `npm run typecheck`
 - [ ] Essayé sur une vraie question
+- [ ] Outils IA alignés avec la page (ou dit pourquoi rien à aligner)
 - [ ] Nouvelle source : licence vérifiée et citée dans `sources_donnees` et le README
 - [ ] Aucun secret, adresse personnelle ou note interne dans les fichiers
 

@@ -167,8 +167,14 @@ const aboutKinds = (e: src.Evenement) => {
   const found = new Set([...kindsOf(about(e)), ...(e.themes ?? [])]);
   return THEMES.map((t) => t.genre).filter((g) => found.has(g));
 };
-/** Without the shows' genres when the title or the source's category say workshop, meeting or talk. */
-const unlessWorkshop = (e: src.Evenement, list: string[]) => (kindsOf(head(e)).includes("atelier") ? list.filter((g) => !SHOWS.has(g)) : list);
+/** Without the shows' genres when the title or the source's category say workshop, meeting, talk or market. */
+// A market too, but for a show its title or category names (« Concert au marché de Noël »): 20/11/2026, the
+// Christmas market of Le Port's galleries answered « concert » from its page's text.
+const unlessWorkshop = (e: src.Evenement, list: string[]) => {
+  const own = kindsOf(head(e));
+  if (own.includes("atelier")) return list.filter((g) => !SHOWS.has(g));
+  return own.includes("marché") ? list.filter((g) => !SHOWS.has(g) || own.includes(g)) : list;
+};
 
 /** The genres of an event, for the page's filter: from its title and categories, else its description. */
 export function genres(e: src.Evenement): string[] {
@@ -567,6 +573,19 @@ function dates(seances: src.Seance[]) {
   };
 }
 
+/**
+ * What an announcement leaves out, said the same on the event's page and in the tool (words by marketing, 20/11/2026):
+ * « L'annonce ne donne pas l'heure ; le détail est peut-être sur sa source : X. », or « pas d'adresse », or « ni l'heure
+ * ni l'adresse ». « l'adresse », not « le lieu »: an announcement may name its hall in its text without the field
+ * (« à la médiathèque… »). `qui` is the source's name, without an article (the page gives it as a link). Undefined when
+ * both are given.
+ */
+export function annonceManque(date: string, lieu: string | undefined, qui: string): string | undefined {
+  const heure = date.length <= 10, adresse = !lieu?.trim();
+  const dit = heure && adresse ? "ni l'heure ni l'adresse" : heure ? "pas l'heure" : adresse ? "pas d'adresse" : undefined;
+  return dit && `L'annonce ne donne ${dit}\u00a0; le détail est peut-être sur sa source\u00a0: ${qui}.`;
+}
+
 export function eventRow(e: src.Evenement, seances: src.Seance[], place = false, outil = false) {
   return {
     /** All in capitals in its agenda, in the case of a sentence (casse.ts). */
@@ -591,6 +610,8 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false,
     /** Absent when the source gives no http(s) link. */
     lien: versBilletterie(httpUrl(e.lien)),
     publie_par: e.publie_par,
+    /** « L'annonce ne donne pas d'adresse ; le détail est peut-être sur sa source : X. », as the event's page says it. */
+    manque: outil ? annonceManque(seances[0].debut, e.lieu, e.publie_par) : undefined,
     /** When rundata.re read the agenda this comes from; not for an event its organiser proposed, never read elsewhere. */
     lu_le: e.lu_le && !e.propose && !e.via ? dayText(e.lu_le) : undefined,
     /**
@@ -926,7 +947,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     ailleurs_sur_l_ile: elsewhere.length ? elsewhere.map((x) => eventRow(x.e, x.seances, false, !place)) : undefined,
     marches_reguliers: market ? MARCHES_REGULIERS : undefined,
     // The markets held on the period's days, apart from the events and not counted among them (vie/marches.ts).
-    marches_forains: place ? undefined : marchesDesJours(p, commune, !quoi || market),
+    marches_forains: place ? undefined : marchesDesJours(p, commune, !quoi || market, now),
     sport_ce_week_end: !place && /week.?end/i.test(quand ?? "") ? SPORT_CE_WEEK_END : undefined,
     cinemas: what?.nom?.includes("cinéma") || /cin[ée]|film/i.test(quoi ?? "") ? { seances: "Les séances des cinémas sont sur leurs sites :", salles: CINEMAS } : undefined,
     indisponible: failed.length ? failed : undefined,
@@ -953,12 +974,12 @@ export const MARCHES_JOURS_MAX = 4;
  * day and hours as their source gives them, with that source and the day it was read. None in the evening (they are
  * held in the morning or the day), none when the question asks for another kind of event (`asked` false).
  */
-export function marchesDesJours(p: Periode, commune: string | undefined, asked: boolean) {
+export function marchesDesJours(p: Periode, commune: string | undefined, asked: boolean, now?: Date) {
   if (!asked || p.soir) return undefined;
   const days: string[] = [];
   for (let d = p.du; d <= p.au && days.length <= MARCHES_JOURS_MAX; d = addDays(d, 1)) if (!(d === p.du && p.vendredi)) days.push(d);
   if (!days.length || days.length > MARCHES_JOURS_MAX) return undefined;
-  const out = days.map((d) => ({ jour: dayText(d), marches: marchesDuJour(d, commune).map(({ nom, commune, horaires, adresse, d_apres, lien }) => ({ nom, commune, horaires, adresse, d_apres, lien })) }))
+  const out = days.map((d) => ({ jour: dayText(d), marches: marchesDuJour(d, commune, now).map(({ nom, commune, horaires, termine, adresse, d_apres, lien }) => ({ nom, commune, horaires, termine, adresse, d_apres, lien })) }))
     .filter((x) => x.marches.length);
   return out.length
     ? { note: "Marchés forains réguliers, à leur jour habituel d'après leur source (datée) : un jour férié, la météo ou la mairie peuvent les changer. Ils ne sont pas comptés dans nombre.", jours: out }

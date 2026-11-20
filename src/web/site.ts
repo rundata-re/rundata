@@ -122,7 +122,7 @@ import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
 import { chiffresScript, chiffresScriptPath } from "./en-chiffres.js";
 import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, STYLE_PATH, vigilancePage } from "./pages.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
-import { pageOf, PAGES, PRINCIPAL } from "./places.js";
+import { meteoPath, pageOf, PAGES, PRINCIPAL } from "./places.js";
 import { pressePage, pressFigures, toolCount } from "./presse.js";
 import { avisPost } from "./avis-envoi.js";
 import * as connecteurs from "./connecteurs.js";
@@ -1041,6 +1041,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const slug = path.slice("/meteo/".length).replace(/\/$/, "");
     const p = pageOf(slug);
     if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    // A place whose page would say what another's says (places.ts `PRINCIPAL`): sent there for good, nothing built. On
+    // 20/11/2026 at 11:41, /meteo/l-hermitage, then a page out of the index, still gave OAI-SearchBot a 503 while its copy was built.
+    if (PRINCIPAL[p.slug]) return new Response(null, { status: 301, headers: { location: `${meteoPath(p.slug)}${new URL(request.url).search}`, "cache-control": STATIC } });
     const [data, a] = await Promise.all([
       snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request)),
       alerte(cache, background, now),
@@ -1130,7 +1133,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
     let d: Awaited<ReturnType<typeof stopPageDepartures>>;
     try {
       if (!transit.enabled()) throw new Error("horaires indisponibles ici");
-      d = await stopPageDepartures(p.groups, now, cache);
+      // A robot gets the real-time feed already read, refreshed after the answer; the daily check of the sources waits for it (gtfsrt.ts `realtimeKept`).
+      d = await stopPageDepartures(p.groups, now, cache, typeof readerOf(request) === "function" ? background : undefined);
     } catch (err) {
       console.error(`page ${path} : horaires indisponibles`, why(err));
       return new Response(tripGonePage(origin, path, undefined, await alerte(cache, background, now), true), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "60" } });

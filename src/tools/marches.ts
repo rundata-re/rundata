@@ -20,7 +20,7 @@ export function marchesAnswer(lieu: string | undefined) {
   const row = (m: marches.Lieu & { km?: number }) => ({
     nom: m.nom,
     commune: m.commune,
-    quand: marches.jours(m) ?? m.note ?? "jours non trouvés",
+    quand: marches.jours(m) ?? m.note ?? `jours et heures non donnés ${marches.cherchesDans(m)}`,
     permanent: marches.permanent(m) || undefined,
     adresse: m.adresse ?? undefined,
     distance_km: m.km != null ? Math.round(m.km * 10) / 10 : undefined,
@@ -44,7 +44,7 @@ export function marchesAnswer(lieu: string | undefined) {
   const near = here.length ? here.map((m) => ({ ...m, km: undefined })) : marches.nearest(res.lieu.lon, res.lieu.lat, 3);
   const said = (m: marches.Lieu) => {
     const when = marches.jours(m) ?? m.note;
-    return `${m.nom} (${marches.permanent(m) ? "marché permanent, " : ""}${when ?? "jours non trouvés"})`;
+    return `${m.nom} (${marches.permanent(m) ? "marché permanent, " : ""}${when ?? `jours et heures non donnés ${marches.cherchesDans(m)}`})`;
   };
   const townHall = marches.lienMairie(commune);
   return text({

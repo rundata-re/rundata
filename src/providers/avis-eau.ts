@@ -334,7 +334,7 @@ const DRINK_WORDS = /ne pas boire|ne pas consommer l.eau|impropre (?:à|a) la co
 // The advice given with every cut, for the hours after the water comes back: a cut, not water to keep from drinking.
 const AFTER_CUT = /remise en eau|(?:rétablissement|reprise) de la distribution|après le rétablissement/i;
 const CUT = /interruption|coupure|travaux|fermer la distribution/i;
-const drinkSaid = (titre: string, texte: string) =>
+export const drinkSaid = (titre: string, texte: string) =>
   DRINK_WORDS.test(texte) && !lifts(texte) && !(CUT.test(`${titre} ${texte}`) && AFTER_CUT.test(texte));
 const lines = (html: string) => strip(html).replace(/\r\n?/g, "\n").replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 const ddmmyyyy = (d: string) => `${d.slice(6, 10)}-${d.slice(3, 5)}-${d.slice(0, 2)}`;
@@ -348,7 +348,7 @@ function creoleCommunes(titre: string, texte: string): Pick<Avis, "communes" | "
   if (named.length) return { communes: named };
   const lieu = LIEU.exec(texte)?.[1]?.trim();
   const r = lieu ? resolvePlace(lieu) : null;
-  const found = r && r.correspondance !== "approchee" ? [...new Set([r.lieu, ...r.autres].map((p) => p.commune))].filter((c) => CREOLE.communes.includes(c)) : [];
+  const found = r && r.correspondance !== "approchee" ? [...new Set([r.lieu, ...(r.correspondance === "exacte" ? [] : r.autres)].map((p) => p.commune))].filter((c) => CREOLE.communes.includes(c)) : [];
   if (found.length === 1) return { communes: found };
   return { communes: CREOLE.communes, precision: `La Créole ne précise pas la commune${lieu ? ` (lieu écrit dans l'avis : ${lieu})` : ""}.` };
 }

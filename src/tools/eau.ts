@@ -1,3 +1,4 @@
+import { apresCyclone } from "../eau/cyclone.js";
 import type { Cache } from "../cache.js";
 import { distanceKm } from "../geo.js";
 import { INSEE } from "../places/insee.js";
@@ -69,19 +70,24 @@ export function networkRow(r: potable.Reseau, samples: potable.Prelevement[]) {
     reseau: r.nom,
     quartiers: r.quartiers.length ? r.quartiers.join("\u00a0; ") : undefined,
     derniere_analyse: last ? day(last.date) : "aucune depuis 6 mois",
-    derniere_analyse_conforme: last ? last.conforme : undefined,
+    // Within the limits of quality only: the ARS also checks the references of quality, which its conclusion says
+    // (« conforme aux limites de qualité et non conforme aux références de qualité »), quoted as the page does.
+    derniere_analyse_dans_les_limites: last ? last.conforme : undefined,
+    conclusion_ars: last?.conclusion?.trim() || undefined,
     analyses_6_mois: mine.length,
     non_conformes_6_mois: bad.length,
     non_conformites: bad.length ? byDay(bad).slice(0, 4) : undefined,
   };
 }
 
-function tapSentence(row: ReturnType<typeof networkRow>, where: string): string {
+export function tapSentence(row: ReturnType<typeof networkRow>, where: string): string {
   if (!row.analyses_6_mois) return `Pas d'analyse publiée depuis 6 mois pour le réseau ${row.reseau} ${where}.`;
-  const last = `dernière analyse le ${row.derniere_analyse} : ${row.derniere_analyse_conforme ? "conforme" : "NON CONFORME"}`;
+  // The ARS's conclusion quoted, as on the page: never « conforme » alone where the references of quality are not met.
+  const said = row.conclusion_ars ? `, conclusion de l'ARS : « ${row.conclusion_ars.replace(/\.$/, "")} »` : "";
+  const last = `dernière analyse le ${row.derniere_analyse}${row.derniere_analyse_dans_les_limites ? said || "\u00a0: valeurs dans les limites de qualité\u00a0; l'ARS n'a pas publié de conclusion pour ce prélèvement" : ` : NON CONFORME${said}`}`;
   const bad = row.non_conformes_6_mois
     ? `${row.non_conformes_6_mois} analyse${row.non_conformes_6_mois > 1 ? "s" : ""} non conforme${row.non_conformes_6_mois > 1 ? "s" : ""} sur ${row.analyses_6_mois} en 6 mois`
-    : `toutes conformes en 6 mois (${row.analyses_6_mois})`;
+    : `toutes dans les limites de qualité en 6 mois (${row.analyses_6_mois})`;
   return `Eau du robinet, réseau ${row.reseau} ${where} : ${last}\u00a0; ${bad}.`;
 }
 
@@ -122,7 +128,7 @@ async function robinet(cache: Cache, res: Resolution, now: Date) {
   const resume = `Eau du robinet ${a(commune)} : ${value.reseaux.length} réseau${value.reseaux.length > 1 ? "x" : ""}, ${total} analyse${total > 1 ? "s" : ""} en 6 mois` +
     (badNets.length
       ? `\u00a0; non-conformités sur ${badNets.map((r) => `${r.reseau} (${r.non_conformes_6_mois})`).join(", ")}.`
-      : total ? ", toutes conformes." : ".") +
+      : total ? ", toutes dans les limites de qualité." : ".") +
     (value.reseaux.length > 1 ? " La qualité dépend du réseau qui dessert le quartier : préciser le quartier." : "");
   // The commune's newest analysis, of any network: the age of the answer, not the first network's (ranked by its
   // non-conformities). A notice in force dates it instead, as before.
@@ -173,7 +179,7 @@ export function sansPrelevement(last: string | undefined, now: Date): string | u
  * The sites' sentences, a gap the two share said once after them (06/11/2026: the same sentence after each of the two
  * beaches of L'Hermitage): « Pour les deux sites : aucun prélèvement publié… ».
  */
-export function bathSentences(rows: ReturnType<typeof siteRow>[]): string {
+export function bathSentences(rows: Omit<ReturnType<typeof siteRow>, "derniers_prelevements">[]): string {
   const gap = rows[0]?.prelevements_en_retard;
   const shared = rows.length > 1 && !!gap && rows.every((r) => r.prelevements_en_retard === gap);
   if (!shared) return rows.map((r) => bathSentence(r)).join(" ");
@@ -181,7 +187,7 @@ export function bathSentences(rows: ReturnType<typeof siteRow>[]): string {
   return `${rows.map((r) => bathSentence(r, false)).join(" ")} Pour ${pour}\u00a0: ${gap.charAt(0).toLowerCase()}${gap.slice(1)}`;
 }
 
-function bathSentence(row: ReturnType<typeof siteRow>, gap = true): string {
+function bathSentence(row: Omit<ReturnType<typeof siteRow>, "derniers_prelevements">, gap = true): string {
   if (!row.qualite_dernier_prelevement) return `${row.site} : pas de prélèvement publié.`;
   return `${row.site} : eau de ${row.qualite_dernier_prelevement} qualité au dernier prélèvement (${row.dernier_prelevement})` +
     (row.mauvais_sur_12_mois ? `, ${row.mauvais_sur_12_mois} mauvais résultat${row.mauvais_sur_12_mois > 1 ? "s" : ""} sur 12 mois` : "") + "." +
@@ -212,16 +218,29 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
   const near = baignades.SITES
     .map((s) => ({ s, d: distanceKm(res.lieu.lon, res.lieu.lat, s.lon, s.lat) }))
     .sort((x, y) => x.d - y.d);
-  const picked = near.filter((x) => x.d <= NEAR_KM).slice(0, 2);
+  // A commune asked: all its sites, as on /eau (Saint-Pierre has 5, Saint-Paul 9); a place: the two nearest.
+  const ofCommune = res.lieu.type === "commune" ? near.filter((x) => x.s.commune === res.lieu.commune) : [];
+  const picked = ofCommune.length ? ofCommune : near.filter((x) => x.d <= NEAR_KM).slice(0, 2);
   if (!picked.length) {
     return {
-      resume: `Aucun site de baignade contrôlé par l'ARS à moins de ${NEAR_KM} km ${a(res.lieu.commune || res.lieu.nom)}\u00a0; le plus proche : ${near[0].s.nom} (${near[0].s.commune}, ${Math.round(near[0].d)} km).`,
+      resume: `Aucun site de baignade contrôlé par l'ARS à moins de ${NEAR_KM} km ${a(res.correspondance === "coordonnees" ? res.lieu.nom : res.lieu.commune || res.lieu.nom)}\u00a0; le plus proche : ${near[0].s.nom} (${near[0].s.commune}, ${Math.round(near[0].d)} km).`,
       sites_controles: baignades.SITES.map((s) => `${s.nom} (${s.commune})`),
     };
   }
   const results = await Promise.all(picked.map((x) => baignades.results(cache, x.s, now)));
-  const rows = results.map((r) => siteRow(r.value, now, res.lieu));
-  return { resume: bathSentences(rows), sites: rows };
+  // Past the two nearest, a commune's sites without their latest samples (Saint-Paul's nine were 14 KB): asked by name,
+  // a site gives them.
+  const rows = results.map((r, i) => {
+    const row = siteRow(r.value, now, res.lieu);
+    if (i < 2) return row;
+    const { derniers_prelevements: _, ...rest } = row;
+    return rest;
+  });
+  return {
+    resume: bathSentences(rows),
+    sites: rows,
+    ...(rows.length > 2 ? { detail: "Les derniers prélèvements des deux sites les plus proches\u00a0; pour un autre site, rappeler l'outil avec son nom." } : {}),
+  };
 }
 
 const NB = "\u00a0";
@@ -298,7 +317,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     ...parts,
     indisponible: failed.length ? failed.map((f) => (f === "robinet" ? "eau du robinet" : "eau de baignade")) : undefined,
     a_savoir: {
-      ...(wanted.includes("robinet") ? { eau_du_robinet: COMMON.eau_du_robinet } : {}),
+      ...(wanted.includes("robinet") ? { eau_du_robinet: COMMON.eau_du_robinet, ...apresCyclone(now) } : {}),
       ...(wanted.includes("baignade") ? { eau_de_baignade: noteBaignade(!!(parts.baignade as { sites?: { prelevements_en_retard?: string }[] } | undefined)?.sites?.some((r) => r.prelevements_en_retard)) } : {}),
     },
     ...(sea ? { risque_requin: requin.requinBlock(now, res.lieu) } : {}),

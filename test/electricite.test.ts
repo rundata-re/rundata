@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
+import * as cc from "../src/providers/coupures-courant.js";
 import { breakdown, constraints, electricite, PERIMEE_MIN, produced } from "../src/tools/electricite.js";
 import { electriciteLive, electricitePage } from "../src/web/domains.js";
 
@@ -101,6 +102,23 @@ describe("electricity", () => {
   it("runs the strained hours together", () => {
     const c = constraints(hours());
     expect(c[0]).toEqual({ quand: "vendredi 23/10 de 18\u00a0h à 22\u00a0h", signal: "heures de pointe", recharge_conseillee_pct: 50 });
+  });
+
+  it("takes the newest line of EDF's two copies, as /electricite, and credits the mairies whose notices it gives", async () => {
+    // Audit of the AI tools, 20/11/2026: the tool said 12:10 from edf:mix while the page said 12:15 from edf:journee.
+    const at = new Date("2026-10-31T01:30:00Z");
+    const store = new MemoryStore();
+    void store.put("edf:mix", { value: line, fetchedAt: at.getTime() });
+    const newer = { ...line, date: "2026-10-31T05:25:00+04:00", total: 290 };
+    void store.put("edf:journee", { value: { lignes: [line, newer] }, fetchedAt: at.getTime() });
+    // A copy of the mairies' notices built elsewhere: its own credits were not registered here.
+    void store.put("web:courant", { value: { avis: [], lues: [], indisponibles: [], sources: [] }, fetchedAt: at.getTime() });
+    const r = body(await electricite(new Cache(store, () => at.getTime()), at));
+    expect(r.production.heure_mesure).toMatch(/^31\/10 05:25/);
+    expect(r.sources.map((s: { source: string }) => s.source)).toContain(cc.SOURCE.nom);
+    // The day's copy older than edf:mix: edf:mix.
+    void store.put("edf:journee", { value: { lignes: [{ ...line, date: "2026-10-31T05:15:00+04:00" }] }, fetchedAt: at.getTime() });
+    expect(body(await electricite(new Cache(store, () => at.getTime()), at)).production.heure_mesure).toMatch(/^31\/10 05:20/);
   });
 
   it("answers from cached EDF data", async () => {

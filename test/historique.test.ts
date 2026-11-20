@@ -71,7 +71,8 @@ describe("historique_meteo", () => {
     expect(a.records.rafale_max_kmh).toEqual({ valeur: 180, date: "22/01/2002" });
     expect(a.records.par_mois[0].mois).toBe("octobre");
     expect(a.nature).toBe("mesure");
-    expect(queries()).toBeLessThanOrEqual(4);
+    // 4, and 2 for the « Repères » of the page (reperesMois: its station's records and recent days).
+    expect(queries()).toBeLessThanOrEqual(6);
   });
 
   it("gives the rain also above the place when its rain gauge is more than 150 m below it, never instead of it", async () => {

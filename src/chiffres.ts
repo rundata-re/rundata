@@ -90,7 +90,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "velos", sources: ids("altervelo", "region_voie_velo", "saint_denis_pistes_cyclables", "civis_accroches_velo"), cadence: { minutes: 1, de: "altervelo" } },
   // The scheduled event writes the charge points' states every 15 minutes (providers/irve.ts, refresh).
   { categorie: "bornes", sources: ids("irve"), cadence: { minutes: 15, de: "irve" } },
-  { categorie: "coupures", sources: ids("avis_eau"), cadence: { minutes: 15, de: "avis_eau" } },
+  { categorie: "coupures", sources: ids("avis_eau", "arretes_sainte_suzanne"), cadence: { minutes: 15, de: "avis_eau" } },
   { categorie: "dae", sources: ids("geodae") },
   { categorie: "secheresse", sources: ids("vigieau"), cadence: { minutes: 60, de: "vigieau" } },
   // The tap water every 6 hours (providers/eaupotable.ts, and the workflow of /eau); the shark decree is bundled.

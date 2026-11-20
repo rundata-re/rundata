@@ -94,6 +94,35 @@ describe("vigilance Météo-France", () => {
     expect(warnings.officiel).toBe("Consulter le site officiel de Météo-France : https://meteofrance.re/fr/cyclone");
   });
 
+  it("gives a point given by its coordinates the zone of its commune, said as the nearest known place's (ux, 20/11/2026)", async () => {
+    const cache = cacheWith(await storm());
+    const sb = gazetteer.places.find((p) => p.type === "commune" && p.nom === "Saint-Benoît")!;
+    const est = body(await vigilanceMeteo(cache, `${sb.lat}, ${sb.lon}`, NOW));
+    expect(est.zone_vigilance).toMatch(/^Est/);
+    expect(est.resume).toContain("Vigilance Météo-France, zone Est (où se trouve Saint-Benoît) : orange fortes pluies / orages");
+    expect(est.lieu.commune).toBe("Saint-Benoît");
+    expect(est.lieu.commune_d_apres).toMatch(/^Commune du lieu connu le plus proche, .+, à [\d,]+\u00a0km du point\u00a0: près d'une limite de commune, le point peut être dans la voisine\.$/);
+    // The point of the audit, in the West: never « zone inconnue » nor « où se trouve ) ».
+    const ouest = body(await vigilanceMeteo(cache, "-21.0545, 55.2270", NOW));
+    expect(ouest.zone_vigilance).toMatch(/^Ouest/);
+    expect(ouest.resume).not.toMatch(/zone inconnue|où se trouve \)/);
+  });
+
+  it("answers with the whole island for a place not known, saying so first, never « Lieu introuvable » alone", async () => {
+    const cache = cacheWith(await storm());
+    const r = await vigilanceMeteo(cache, "zzzzqqq", NOW);
+    expect(r.isError).toBeFalsy();
+    const b = body(r);
+    expect(b.lieu_non_reconnu).toBe("Lieu «\u00a0zzzzqqq\u00a0» non reconnu\u00a0: voici la vigilance de toute l'île. Pour celle de sa zone, redemander avec sa commune.");
+    expect(b.resume.startsWith(b.lieu_non_reconnu)).toBe(true);
+    expect(b.resume).toContain("ALERTE CYCLONIQUE orange");
+    expect(b.resume).toContain("orange fortes pluies / orages pour Est");
+    expect(b.vigilances.length).toBeGreaterThan(0);
+    expect(body(await vigilanceMeteo(cache, "Paris", NOW)).lieu_non_reconnu).toBe("«\u00a0Paris\u00a0» n'est pas à La Réunion\u00a0: voici la vigilance de toute l'île.");
+    // Without a place, as before: nothing about one.
+    expect(body(await vigilanceMeteo(cache, undefined, NOW))).not.toHaveProperty("lieu_non_reconnu");
+  });
+
   it("says when Météo-France issued nothing for a zone, never green in its place", async () => {
     const v = structuredClone(await sample());
     delete v.zones["VIGI974-14"];

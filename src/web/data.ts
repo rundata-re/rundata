@@ -53,7 +53,7 @@ import { COMMON as EAU_COMMON } from "../tools/eau.js";
 import { credits } from "../tools/format.js";
 import * as onf from "../providers/sentiers.js";
 import * as feux from "../providers/feux.js";
-import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailSecteur } from "../tools/sentiers.js";
+import { communesOf, horsGestion, routeRow, secteur, SECTEURS, sentiersRandonnee, trailKm, trailPlace } from "../tools/sentiers.js";
 import { pathOf } from "./map.js";
 import { MESURES, mesure } from "./mesure.js";
 import { type PlusRecent, restrictionsEau } from "../tools/secheresse.js";
@@ -81,6 +81,7 @@ import { type Observation, why } from "../types.js";
 import { type Entree, FICHES, FICHES_EVERY_MS, PASSE_JOURS, registre } from "./fiches.js";
 import * as traces from "../providers/traces.js";
 import { coastal, type PlacePage } from "./places.js";
+import { bloc as blocArretes, type BlocArretes } from "../providers/arretes-travaux.js";
 
 export const FRESH_SECONDS = 5 * 60; // the stations publish every 6 minutes
 const KEEP_SECONDS = 24 * 3600;
@@ -822,9 +823,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
     const parts = byName.get(nom)!;
     const shut = parts.find((x) => x.statut === "fermé");
     const open = parts.some((x) => x.statut === "ouvert");
-    const at = parts.find((x) => x.points.length);
-    const mid = at?.points[Math.floor(at.points.length / 2)];
-    const where = { secteur: trailSecteur(nom, mid) ?? "Hauts de l'Ouest", commune: mid ? secteur(...mid).commune : "" };
+    const where = trailPlace(nom, parts);
     const stats = traces.SENTIERS[nom];
     const one = parts.length === 1 && parts[0].points.length > 2 ? parts[0].points : undefined;
     return {
@@ -834,7 +833,7 @@ export async function buildRandonnees(cache: Cache, now = new Date()): Promise<R
       commune: where.commune,
       communes: communesOf(parts),
       secteur: where.secteur,
-      km: stats?.km ?? Math.round(parts.reduce((t, x) => t + x.longueur_km, 0) * 10) / 10,
+      km: trailKm(nom, parts),
       dplus: stats?.dplus,
       dmoins: stats?.dmoins,
       etat: shut ? "fermé" : open ? "ouvert" : "inconnu",
@@ -1188,6 +1187,8 @@ export interface CoupuresAnswer {
   derniers_avis?: Record<string, DernierAvis[]>;
   /** For each commune in derniers_avis, the publication of the oldest notice its feeds still list: the page says from when they go back. */
   plus_ancien_avis?: Record<string, string>;
+  /** Sainte-Suzanne's orders allowing runéo's works (providers/arretes-travaux.ts), for its page; absent before 20/11/2026 or when never read. */
+  arretes_sainte_suzanne?: BlocArretes;
 }
 
 /** A commune's notice, in force or past: when it was published, by whom, and its link. */
@@ -1204,6 +1205,8 @@ export const DERNIERS_AVIS = 5;
 
 export async function buildCoupures(cache: Cache, now = new Date()): Promise<CoupuresAnswer> {
   const a = needed<Omit<CoupuresAnswer, "communes_suivies">>(await coupuresEau(cache, undefined, now), "coupures");
+  // Sainte-Suzanne's orders allowing runéo's works: one request, read every 30 minutes at most.
+  const arretes = await blocArretes(cache, now);
   // The feeds' read the tool has just made, from memory: no request more.
   const derniers: Record<string, DernierAvis[]> = {};
   const oldest: Record<string, string> = {};
@@ -1217,9 +1220,9 @@ export async function buildCoupures(cache: Cache, now = new Date()): Promise<Cou
     }
   } catch {
     // The tool's answer stands without them: the page then shows the notices in force only.
-    return { ...a, communes_suivies: lues() };
+    return { ...a, communes_suivies: lues(), ...(arretes && { arretes_sainte_suzanne: arretes }) };
   }
-  return { ...a, communes_suivies: lues(), derniers_avis: derniers, plus_ancien_avis: oldest };
+  return { ...a, communes_suivies: lues(), derniers_avis: derniers, plus_ancien_avis: oldest, ...(arretes && { arretes_sainte_suzanne: arretes }) };
 }
 
 export type { CourantAnswer };
@@ -1235,6 +1238,10 @@ export interface SportAnswer {
   /** And the sports of all of them. */
   sports_a_venir?: string[];
   resultats?: SportRow[];
+  /** When `resultats` lists only the most recent: how many there are, said on the page as by the tool. */
+  resultats_en_tout?: number;
+  /** The days the answer covers, its results from `du`. */
+  periode?: { du: string; au: string };
   indisponible?: string[];
   non_couvert: string;
   sources: Credit[];
@@ -1733,7 +1740,7 @@ const ROAD_NEWS_MAX = 6;
 // A headline is told here when its title is about the roads or the street, not only its text: the subjects come from
 // the summary too, and a live entry on the night's fires (« Rentrez vos poubelles ! ») or on postponed matches is no
 // news of the roads. A gathering is, but not a sporting one.
-const ROAD_TITLE = /\b(?:barrages?|blocages?|bloqu\w*|filtrants?|manifestation\w*|manifestant\w*|rassembl\w*(?! sporti)|cortege|operation escargot|routes?|inforoutes?|circulation|trafic|bouchons?|embouteillage\w*|accidents?|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation\w*|chaussee|deplacements?|rond point|bus)\b/;
+export const ROAD_TITLE = new RegExp(String.raw`\b(?:barrages?(?! (?:de takamaka|hydro\w*|d irrigation)\b)|blocages?|bloqu\w*|filtrants?|manifestation\w*|manifestant\w*|rassembl\w*(?! sporti)|cortege|operation escargot|routes?|inforoutes?|circulation|${actuSource.TRAFIC}|bouchons?|embouteillage\w*|${actuSource.ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation\w*|chaussee|deplacements?|rond point|bus)\b`);
 // The préfecture's communiqués on the protests and the roads (bilans, bans, closures): dated by the day only, kept a
 // day, two at most, above the media's.
 const PREFECTURE_HOURS = 24;
@@ -1776,11 +1783,14 @@ export const roadNewsNow = async (cache: Cache, background: Background, now = ne
 const FORD_TITLE = /\bradiers?\b/;
 const FORD_MAX = 6;
 
-/** The headlines of the préfecture and the media that name a ford, with their source and their time. */
-export function fordNews(news: actuSource.Fil | undefined, now: Date): { titre: string; lien: string; source: string; heure: string }[] {
+/**
+ * The headlines of the préfecture and the media that name a ford, with their source and their time. `jour`: the time
+ * with its day (« aujourd'hui à 03:30 »), for the tool crues_rivieres, whose answer has no heading to say the day.
+ */
+export function fordNews(news: actuSource.Fil | undefined, now: Date, jour = false): { titre: string; lien: string; source: string; heure: string }[] {
   const after = (h: number) => new Date(now.getTime() - h * 3600_000).toISOString();
   const onFords = (i: actuSource.Info) => FORD_TITLE.test(normalize(i.titre));
-  const row = (i: actuSource.Info) => ({ titre: i.titre, lien: i.lien, source: `${i.media}${i.direct ? ", en direct" : ""}`, heure: newsTime(i, now).replace(/^aujourd'hui à /, "") });
+  const row = (i: actuSource.Info) => ({ titre: i.titre, lien: i.lien, source: `${i.media}${i.direct ? ", en direct" : ""}`, heure: jour ? newsTime(i, now) : newsTime(i, now).replace(/^aujourd'hui à /, "") });
   const prefecture = (news?.prefecture ?? []).filter((i) => i.publie >= after(PREFECTURE_HOURS) && onFords(i)).slice(0, PREFECTURE_MAX);
   const medias = (news?.infos ?? []).filter((i) => i.publie >= after(ROAD_NEWS_HOURS) && onFords(i)).slice(0, FORD_MAX);
   return [...prefecture, ...medias].map(row);
@@ -2120,7 +2130,8 @@ export const ISLAND_PEEK_MS = 300;
  * of days) would be yesterday's. A copy made at 23:58 is 3 minutes old at 00:01, within FRESH_SECONDS. *
  * `old`: what a view does with a copy too old to be told as the present (`OldCopy`).
  *
- * `withoutCopyMs`: how long a view waits for the build when this data center has no copy at all, in place of `waitMs`
+ * `withoutCopyMs`: how long a view waits for the build when this data center has no copy it can serve (none, or one
+ * older than KEEP_SECONDS), in place of `waitMs`
  * (web/site.ts `withoutCopy`).
  */
 /** Whether a reader waits for the refresh of the copy of `key`, `ageMs` old, rather than get it as it is. */
@@ -2187,8 +2198,11 @@ export async function snapshot<T>(
   }
   let got: Cached<T> | null;
   try {
-    // No copy at all in this data center: the wait of a view that would otherwise get the page without its live block.
-    got = await within(any, seen ? waitMs : (withoutCopyMs ?? waitMs));
+    // No copy in this data center that can be served (none at all, or older than KEEP_SECONDS, built again): the wait
+    // of a view that would otherwise get the page without its live block. From 19/11 19:01 to 20/11/2026 11:41, after
+    // #1132, five robots' 503 were still answered at 850 to 982 ms, a copy there but more than a day old: a page read
+    // less than once a day in that data center.
+    got = await within(any, seenAge < KEEP_SECONDS * 1000 ? waitMs : (withoutCopyMs ?? waitMs));
   } catch (err) {
     console.error(`page ${key} : données indisponibles`, why(err));
     return null;

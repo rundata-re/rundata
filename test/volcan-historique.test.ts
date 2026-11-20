@@ -19,7 +19,7 @@ const FIXTURES: Record<string, string> = {
   "Piton-de-la-Fournaise-passage-en-alerte-1-fermeture-de-l-enclos4": "2026-01-01-alerte-1.html",
   "Piton-de-la-Fournaise-retour-en-phase-de-vigilance": "2026-01-02-vigilance.html",
   "Piton-de-la-Fournaise-eruption-dans-l-enclos": "2026-01-18-alerte-2-1.html",
-  "Piton-de-la-Fournaise-eruption-dans-l-enclos2?utm_source=chatgpt.com": "2026-02-13-alerte-2-1.html",
+  "Piton-de-la-Fournaise-eruption-dans-l-enclos2": "2026-02-13-alerte-2-1.html",
   "Acces-a-l-enclos-avec-restrictions": "2026-01-27-vigilance.html",
   "Piton-de-la-Fournaise-reouverture-partielle-de-l-enclos": "2026-05-07-vigilance.html",
   // The site before 2022: the breadcrumb with its title, and the article.
@@ -160,7 +160,9 @@ describe("the alerts before this one", () => {
     const p = precedentes();
     expect(p.note).toContain("Ce n'est pas un historique complet");
     expect(p.note).toContain(AVANT_2021);
-    expect(p.episodes[0].citations!.debut[0]).toBe("13/02/2026, alerte 2-1 : « L’observatoire volcanologique du piton de la Fournaise (OPVF) a enregistré à 09h25 une crise sismique, le trémor volcanique synonyme d’arrivée du magma à proximité de la surface a été enregistré depuis 10h00 (heure locale). » (communiqué du 13/02/2026 : https://web.archive.org/web/20260215235752/https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos2?utm_source=chatgpt.com)");
+    expect(p.episodes[0].citations!.debut[0]).toBe("13/02/2026, alerte 2-1 : « L’observatoire volcanologique du piton de la Fournaise (OPVF) a enregistré à 09h25 une crise sismique, le trémor volcanique synonyme d’arrivée du magma à proximité de la surface a été enregistré depuis 10h00 (heure locale). » (communiqué du 13/02/2026 : https://www.reunion.gouv.fr/Actualites/Communiques-de-presse/Piton-de-la-Fournaise-eruption-dans-l-enclos2)");
+    // No link of ours carries another assistant's tag.
+    expect(JSON.stringify(p)).not.toContain("utm_source");
     expect(resumeText()).toBe(
       "Alertes précédentes dont le début et la fin sont écrits dans un communiqué de la préfecture (liste partielle, depuis 2016\u00a0; avant novembre 2021, les niveaux du plan précédent) : " +
         "13/02/2026 alerte 2-1 → 07/05/2026 retour en phase de vigilance\u00a0; 18/01/2026 alerte 2-1 → 27/01/2026 réouverture des sentiers\u00a0; " +

@@ -135,7 +135,11 @@ function marketItems(mk: Markets | undefined, commune: string, aller: Aller): st
   return [
     ...mk.liste.map((x) => `<li>Marché aujourd'hui : ${name(x)} <span class="note">${esc(x.horaires_aujourd_hui)}${x.adresse ? `, ${esc(x.adresse)}` : ""}${esc(by(x))}</span>${go(x)}</li>`),
     ...(mk.permanents ?? []).map((x) => `<li>Marché permanent : ${name(x)} <span class="note">${esc(x.horaires ?? "")}${x.horaires_aujourd_hui === "fermé aujourd'hui" ? ", fermé aujourd'hui" : ""}${x.adresse ? `, ${esc(x.adresse)}` : ""}${esc(by(x))}</span>${go(x)}</li>`),
-    mk.jours_non_trouves ? `<li>${mk.liste.length || mk.permanents ? "Autres marchés" : "Marchés"} : ${mk.jours_non_trouves.map(name).join(", ")}, <span class="note">jours non trouvés</span></li>` : "",
+    // Held today by their source, without an hour: never « Marché aujourd'hui ».
+    ...(mk.heures_non_trouvees ?? []).map((x) => `<li>Marché sans heures : ${name(x)} <span class="note">${esc(x.manque)}${x.adresse ? `, ${esc(x.adresse)}` : ""}</span>${go(x)}</li>`),
+    // Those whose days no source gives, grouped by where they were looked for.
+    ...[...new Set((mk.jours_non_trouves ?? []).map((x) => x.manque))].map((manque) => [manque, mk.jours_non_trouves!.filter((x) => x.manque === manque)] as const).map(([manque, xs], i) =>
+      `<li>${i || mk.liste.length || mk.permanents || mk.heures_non_trouvees ? "Autres marchés" : "Marchés"} : ${xs.map(name).join(", ")}, <span class="note">${esc(manque)}</span></li>`),
     mk.mairie ? `<li>${esc(label)} : <a href="${esc(mk.mairie.site)}" rel="noopener"${fenetre(mk.mairie.site)}>${esc(site)} →</a></li>` : "",
   ];
 }

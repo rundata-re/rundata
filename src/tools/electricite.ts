@@ -115,11 +115,26 @@ export const perimeeTexte = (dayTime: string, age: number) =>
 /** « 30/10 à 22:00 », when EDF last updated the signal's dataset. */
 const annonce = (iso: string) => localTime(new Date(iso)).replace(" ", " à ");
 
+/**
+ * The latest line of production: edf:mix, or the page's copy of the day (edf:journee) when it holds a newer one, peeked
+ * without asking EDF again. The two copies are read at different times: on 20/11/2026 the tool said 12:10 while
+ * /electricite and resume_du_jour said 12:15 (audit of the AI tools).
+ */
+export async function newestMix(cache: Cache): Promise<Cached<edf.Mix>> {
+  const [mx, day] = await Promise.all([edf.mix(cache).catch((err) => err as Error), cache.peek<edf.Journee>("edf:journee").catch(() => undefined)]);
+  const d = day?.value?.lignes?.length ? edf.latest(day) : undefined;
+  if (mx instanceof Error) {
+    if (d) return d;
+    throw mx;
+  }
+  return d && Date.parse(d.value.date) > Date.parse(mx.value.date) ? d : mx;
+}
+
 // `live`: the latest line when the caller has read it already (the page's copy, with its 24 hours).
 export async function electricite(cache: Cache, now = new Date(), lieu?: string, live?: Promise<Cached<edf.Mix>>) {
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
-  const [m, sig, courant] = await Promise.all([settle(live ?? edf.mix(cache)), settle(edf.signal(cache, now)), cuts(cache)]);
+  const [m, sig, courant] = await Promise.all([settle(live ?? newestMix(cache)), settle(edf.signal(cache, now)), cuts(cache)]);
   const hours = sig?.heures;
   const coupures = courantBlock(courant, res?.lieu.commune, now);
   if (!m && !hours && !courant) {
@@ -188,6 +203,8 @@ export async function electricite(cache: Cache, now = new Date(), lieu?: string,
       "La Réunion n'est pas reliée au réseau européen : toute l'électricité est produite sur l'île, d'où les périodes de tension.",
       "La part renouvelable est celle publiée par filière, hors stockage.",
     ],
-    sources: courant ? [...credits([edf.SOURCE]), ...courant.value.sources] : credits([edf.SOURCE]),
+    // The mairies' notices credited here, in this instance: the copy's own credits were registered where it was built,
+    // so citer named EDF alone (audit of the AI tools, 20/11/2026).
+    sources: credits(courant ? [edf.SOURCE, cc.SOURCE] : [edf.SOURCE]),
   });
 }

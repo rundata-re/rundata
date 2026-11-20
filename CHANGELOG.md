@@ -6,6 +6,19 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Météo passée : pour un record du mois, les outils IA donnent aussi les repères de la page du lieu, avec leur station.
+- Événements : une sortie reportée dit son nouveau jour et le média qui l'annonce ; un marché fini n'est plus donné pour aujourd'hui.
+- Cyclones : avant l'alerte orange, les outils IA rappellent le kit d'urgence du plan ORSEC (piles pour la radio…), avec son lien.
+- Assistants IA : l'eau du robinet avec la conclusion de l'ARS, la consigne après un cyclone, et toutes les plages contrôlées d'une commune.
+- Assistants IA : pour Mafate, Cilaos et Salazie, les mêmes sentiers, longueurs et randonnées que leur page.
+- Vigilance : une position GPS donne la zone de sa commune, et un lieu non reconnu la vigilance de toute l'île, en le disant.
+- Assistants IA : la vigilance de Météo-France avec la marée, les crues, l'air, la météo passée et le volcan ; les radiers avec les crues.
+- Météo : chaque mesure dit si elle vient d'une station officielle de Météo-France, d'un aéroport, d'une balise ou d'une station amateur.
+- Lieux : un nom porté dans plusieurs communes (Bellevue, Bras Canot…) est signalé par les outils IA, avec les autres communes.
+- Événements : sur la page d'une sortie, une annonce sans heure ou sans adresse le dit, avec le lien de sa source.
+- Communes : les 24 pages de commune s'ouvrent désormais sur quelques lignes qui présentent la commune, de Saint-Joseph à Cilaos.
+- Coupures d'eau à Sainte-Suzanne : les chantiers de runéo autorisés par la ville, avec leur lieu, leurs dates et le lien de chaque arrêté.
+- Communes : Saint-André, Saint-Louis, Sainte-Marie, La Possession, Saint-Leu et l'Entre-Deux présentent aussi la commune en quelques lignes.
 - Événements : chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune.
 - Élections : chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur.
 - Communes : les pages de Saint-Denis, Saint-Paul, Saint-Pierre, du Tampon et des Avirons présentent la commune en quelques lignes.

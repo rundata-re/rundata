@@ -42,7 +42,7 @@ describe("meteo_actuelle", () => {
   it("answers for a beach with the nearest wind and the nearest temperature", async () => {
     const r = body(await meteoActuelle(await offlineCache(), "plage de l'Hermitage", NOW));
     expect(r.lieu.trouve).toBe("Plage de l'Ermitage-les-Bains");
-    expect(r.resume).toMatch(/Balise du Trou d'Eau \(3,5/);
+    expect(r.resume).toMatch(/Balise du Trou d'Eau, balise de vent de la FFVL \(3,5/);
     expect(r.resume).toMatch(/°C/);
     expect(r.stations[0]).toMatchObject({ heure_mesure: "18/10 23:16", age_min: 4 });
   });

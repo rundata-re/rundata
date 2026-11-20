@@ -53,6 +53,10 @@ describe("resolvePlace", () => {
     expect(a.correspondance).toBe("coordonnees");
     expect(a.lieu.lat).toBeCloseTo(-21.05);
     expect(resolvePlace("55.22 -21.05")!.lieu.lon).toBeCloseTo(55.22);
+    // In the commune of the nearest known place, said with it (« zone inconnue » for vigilance_meteo before, ux 20/11/2026).
+    const w = resolvePlace("-21.0545, 55.2270")!;
+    expect(w.lieu.commune).toBe("Saint-Paul");
+    expect(w.proche!.km).toBeLessThan(3);
   });
 
   it("rejects places outside Réunion and nonsense", () => {
@@ -88,6 +92,36 @@ describe("resolvePlace", () => {
     expect(placeWarning("Cilaos", resolvePlace("Cilaos")!)).toBeUndefined();
     expect(placeWarning("Square des Lilas, Saint-Pierre", resolvePlace("Square des Lilas, Saint-Pierre")!)).toBeUndefined();
     expect(placeBlock("Cilaos", resolvePlace("Cilaos")!).avertissement).toBeUndefined();
+  });
+
+  it("says nothing more for a commune's own name, borne elsewhere by a lieu-dit or a quartier (Saint-Joseph, Petite-Île, Bras-Panon, Entre-Deux)", () => {
+    for (const [nom, commune] of [["Saint-Joseph", "Saint-Joseph"], ["Petite-Île", "Petite-Île"], ["Bras-Panon", "Bras-Panon"], ["Entre-Deux", "Entre-Deux"]]) {
+      const r = resolvePlace(nom)!;
+      expect(r).toMatchObject({ correspondance: "exacte", autres: [] });
+      expect(r.lieu).toMatchObject({ type: "commune", commune });
+      expect(placeWarning(nom, r)).toBeUndefined();
+    }
+  });
+
+  it("says the places of other communes that bear the very name asked (« Bellevue », 20/11/2026), and answers the one named with its commune", () => {
+    const r = resolvePlace("Bellevue")!;
+    expect([r.lieu.nom, r.lieu.commune, r.correspondance]).toEqual(["Bellevue", "Salazie", "exacte"]);
+    expect(r.autres.map((a) => a.commune)).toEqual(["Saint-Louis", "Sainte-Suzanne", "Bras-Panon"]);
+    const said = "Plusieurs lieux s'appellent «\u00a0Bellevue\u00a0»\u00a0: réponse pour Bellevue (localite, Salazie)\u00a0; il y a aussi Bellevue (localite, Saint-Louis), Bellevue (quartier, Sainte-Suzanne), Bellevue (quartier, Bras-Panon). Le dire à l'utilisateur et, s'il parlait d'un autre, redemander avec le nom de sa commune.";
+    expect(placeWarning("Bellevue", r)).toBe(said);
+    expect(placeBlock("Bellevue", r)).toMatchObject({ avertissement: said, autres_possibilites: ["Bellevue (localite, Saint-Louis)", "Bellevue (quartier, Sainte-Suzanne)", "Bellevue (quartier, Bras-Panon)"] });
+    // With its commune, the one meant, without the warning.
+    for (const [q, commune] of [["Bellevue Saint-Louis", "Saint-Louis"], ["Bellevue, Saint-Louis", "Saint-Louis"], ["Bellevue Salazie", "Salazie"]]) {
+      const s = resolvePlace(q)!;
+      expect([s.lieu.nom, s.lieu.commune, s.autres, placeWarning(q, s)], q).toEqual(["Bellevue", commune, [], undefined]);
+    }
+    // One per other commune, three at most: Piton Rouge stands twice in Le Tampon, twice in Saint-Joseph.
+    const p = resolvePlace("Piton Rouge")!;
+    expect(new Set(p.autres.map((a) => a.commune)).size).toBe(p.autres.length);
+    expect(p.autres.length).toBe(3);
+    expect(p.autres.map((a) => a.commune)).not.toContain(p.lieu.commune);
+    // A name borne in one commune only says nothing more.
+    expect(resolvePlace("Cilaos")!.autres).toEqual([]);
   });
 
   it("gives for a cirque or the volcan one place of it, said so, not as the place's own name", () => {

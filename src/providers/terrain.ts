@@ -21,7 +21,7 @@ export const SOURCES: Record<"ban" | "cadastre" | "gpu" | "alti" | "dvf" | "dvfV
   alti: ALTIMETRIE,
   ppr: { id: "gpu_ppr", nom: "Plans de prévention des risques (servitudes du Géoportail de l'urbanisme)", organisme: "DEAL Réunion, IGN", licence: "Licence Ouverte Etalab 2.0", attribution: "DEAL Réunion, Géoportail de l'urbanisme", url: "https://www.geoportail-urbanisme.gouv.fr" },
   georisques: { id: "georisques", nom: "Géorisques : arrêtés de catastrophe naturelle, mouvements de terrain recensés (BDMvt)", organisme: "Ministère de la Transition écologique, BRGM", licence: "Licence Ouverte Etalab 2.0", attribution: "Géorisques, BRGM", url: "https://www.georisques.gouv.fr" },
-  dvf: { id: "dvf_cerema", nom: "Demandes de valeurs foncières (DVF open data, Cerema)", organisme: "DGFiP, Cerema", licence: "Licence Ouverte Etalab 2.0", attribution: "DGFiP, Cerema (DVF open data)", url: "https://apidf-preprod.cerema.fr" },
+  dvf: { id: "dvf_cerema", nom: "Demandes de valeurs foncières (DVF open data, Cerema)", organisme: "DGFiP, Cerema", licence: "Licence Ouverte Etalab 2.0", attribution: "DGFiP, Cerema (DVF open data)", url: "https://datafoncier.cerema.fr/donnees/autres-donnees-foncieres/dvfplus-open-data" },
   dvfVoie: { id: "dvf_etalab", nom: "Demandes de valeurs foncières géolocalisées (DVF, Etalab)", organisme: "DGFiP, Etalab", licence: "Licence Ouverte Etalab 2.0", attribution: "DGFiP, Etalab (DVF géolocalisées)", url: "https://files.data.gouv.fr/geo-dvf/" },
 };
 

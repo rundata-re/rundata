@@ -17,7 +17,7 @@ import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
 import { AHEAD_DAYS, CINEMAS, nombreDuJour, parJour, weekend } from "../tools/agenda.js";
 import { marchesSection, SPORT_LIEN } from "./marches-agenda.js";
-import { suiviPhrase } from "../tools/cyclones.js";
+import { kitAvantOrange, suiviPhrase } from "../tools/cyclones.js";
 import { ACCUEILS, AGENDAS } from "../providers/agenda.js";
 import { SOURCE as SALLES_SOURCE } from "../providers/salles.js";
 import type { Cached } from "../cache.js";
@@ -3303,7 +3303,8 @@ ${d?.programmes_communes?.length ? `<section aria-labelledby="h-prog">
     `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a><small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span><span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
 </section>` : ""}
 ${d?.resultats?.length ? `<section aria-labelledby="h-res">
-  <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2></div>
+  <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2>
+  ${d.resultats_en_tout ? `<p>${d.resultats_en_tout} résultats${d.periode ? ` depuis le ${esc(d.periode.du)}` : ""}\u00a0: les ${d.resultats.length} plus récents ci-dessous.</p>` : ""}</div>
   ${bySport(d.resultats, true, true)}
 </section>` : ""}
 ${standings ? `<section aria-labelledby="h-class">
@@ -3443,7 +3444,7 @@ export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null
     ${status}
     ${official}
     ${d?.alerte_cyclonique ? `<p class="lead"><b>${esc(d.alerte_cyclonique)}</b></p>` : ""}
-    ${d && (d.ecoles?.niveau ?? -1) <= 2 ? `<p class="lead"><a href="/kit-cyclone">Se préparer : le kit d'urgence du plan →</a></p>` : ""}
+    ${d && kitAvantOrange(d.ecoles) ? `<p class="lead"><a href="/kit-cyclone">Se préparer : le kit d'urgence du plan →</a></p>` : ""}
     ${ask(`Néna in siklone pa loin La Rényon ? Gèt si ${url} é di amwin sak Météo-France é la préfektir i di.`,
       `Y a-t-il un cyclone près de La Réunion ? Lis ${url} et dis-moi ce qu'en disent Météo-France et la préfecture.`)}
   </div>

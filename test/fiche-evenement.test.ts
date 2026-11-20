@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, type Cached, MemoryStore } from "../src/cache.js";
 import type { AgendaAnswer, PlaceData } from "../src/web/data.js";
-import { type Entree, type Fiche, FICHES, ficheIssue, fichePage, fichePassee, fichePath, ficheOf, ficheTerminee, ficheUrls, registre, type Row } from "../src/web/fiche-evenement.js";
-import { ficheDe } from "../src/tools/agenda.js";
+import { type Entree, type Fiche, FICHES, ficheDescription, ficheIssue, fichePage, fichePassee, fichePath, ficheOf, ficheTerminee, ficheUrls, registre, type Row } from "../src/web/fiche-evenement.js";
+import { eventRow, ficheDe } from "../src/tools/agenda.js";
+import type { Evenement, Seance } from "../src/providers/agenda.js";
 import { site } from "../src/web/site.js";
 
 const row = (over: Partial<Row> = {}): Row => ({
@@ -41,7 +42,11 @@ describe("an event's page", () => {
     const facts = fichePage("https://rundata.re", row(), copy([row(), autre]), meteo);
     expect(facts).toContain('<meta name="robots" content="noindex">');
     expect(facts).toContain('<link rel="canonical" href="https://rundata.re/evenements/concert-de-maloya-au-kerveguen-0a1b2c3d">');
-    expect(facts).toContain("Prévision météo</b> pour samedi 21/11 à Saint-Pierre : nuageux, 21 °C à 28 °C, pluie : pas de pluie. C'est une prévision, pas une mesure.");
+    expect(facts).toContain("Prévision météo</b> pour samedi 21/11 à Saint-Pierre : nuageux, 21 °C à 28 °C, pas de pluie. C'est une prévision, pas une mesure.");
+    // Le Port under rain: « au Port », the rain said once (the mandala's page: « à Le Port : pluie, …, pluie : 10,4 mm de pluie »).
+    const pluie = { prevision: { resume: "", sources: [], jours: [{ jour: "samedi 21/11", ciel_en_journee: "pluie", temperature_min: "24,1 °C", temperature_max: "26,9 °C", pluie: "10,4 mm de pluie" }] } } as unknown as PlaceData;
+    const port = row({ commune: "Le Port", lieu: "Médiathèque" });
+    expect(fichePage("https://rundata.re", port, copy([port]), pluie)).toContain("Prévision météo</b> pour samedi 21/11 au Port : pluie (10,4 mm), 24,1 °C à 26,9 °C. C'est une prévision, pas une mesure.");
     expect(facts).toContain('<a href="/evenements/marche-nocturne-11112222">Marché nocturne</a>');
     expect(facts).toContain('<a href="/aujourdhui/saint-pierre">la journée à Saint-Pierre</a>');
     expect(facts).toContain('Le détail est sur <a href="https://www.saintpierre.re/agenda/concert" rel="noopener">la page de Mairie de Saint-Pierre</a>');
@@ -58,6 +63,73 @@ describe("an event's page", () => {
     expect(texte).toMatch(/<section [^>]*data-sortie>[^]*D'après <a href="https:\/\/www.saintpierre.re/);
     // The context comes before the text.
     expect(texte.indexOf('id="autour"')).toBeLessThan(texte.indexOf('id="annonce"'));
+  });
+
+  it("gives each date of a series its own description, so that no two pages of the sitemap share one", () => {
+    const texte = "Avec l'association les Échiquiers du Nord, viens apprendre à jouer aux échecs. Gratuit, dès 8 ans.";
+    const serie = [["2026-11-21T14:00", "samedi 21/11 de 14:00 à 16:00", "1ad96848"], ["2026-11-25T14:00", "mercredi 25/11 de 14:00 à 16:00", "77c7ebe9"], ["2026-11-28T14:00", "samedi 28/11 de 14:00 à 16:00", "f0dfdce9"]]
+      .map(([date, quand, fiche]) => row({ titre: "Atelier d'échecs", date, quand, fiche, lieu: "Médiathèque François-Mitterrand", commune: "Saint-Denis", description: texte }));
+    const rows = [...serie, row({ description: "Trois groupes sur la scène." }), row({ titre: "Fête du quartier", fiche: "33334444", date: "2026-11-22", quand: "dimanche 22/11", description: "Un texte." })];
+    expect(ficheDescription(serie[0])).toBe("Samedi 21/11 de 14:00 à 16:00, Médiathèque François-Mitterrand, Saint-Denis : Avec l'association les Échiquiers du Nord, viens apprendre à jouer aux…");
+    expect(ficheDescription(serie[0]).length).toBeLessThanOrEqual(155);
+    // The sitemap's events, each page rendered: its meta description, never the same twice.
+    const urls = ficheUrls(registre(undefined, rows, "2026-11-20"), "2026-11-20").map(([u]) => u);
+    expect(urls).toHaveLength(5);
+    const descriptions = urls.map((u) => {
+      const r = rows.find((x) => fichePath(x) === u)!;
+      return /<meta name="description" content="([^"]*)">/.exec(fichePage("https://rundata.re", r, copy(rows), undefined))![1];
+    });
+    expect(new Set(descriptions).size).toBe(descriptions.length);
+  });
+
+  it("names the commune with its article: « au Port »", () => {
+    const port = row({ commune: "Le Port", fiche: "port1" });
+    const autre = row({ commune: "Le Port", fiche: "port2", titre: "Autre sortie" });
+    const page = fichePage("https://rundata.re", port, copy([port, autre]), undefined);
+    expect(page).toContain('<a href="/aujourdhui/le-port">la journée au Port</a>');
+    expect(page).toContain("<b>Le même jour au Port</b>");
+    expect(page).not.toMatch(/à Le Port/);
+  });
+
+  it("says in the tool's answer what the page says of an announcement without hour or address", () => {
+    const e = (lieu?: string) => ({ titre: "Initiation au mandala", categories: [], publie_par: "Ville du Port", lieu, lien: "https://www.ville-port.re/event/x/" }) as unknown as Evenement;
+    const tool = (debut: string, lieu?: string) => eventRow(e(lieu), [{ debut } as Seance], false, true).manque;
+    expect(tool("2026-11-21")).toBe("L'annonce ne donne ni l'heure ni l'adresse\u00a0; le détail est peut-être sur sa source\u00a0: Ville du Port.");
+    expect(tool("2026-11-21T09:00")).toBe("L'annonce ne donne pas d'adresse\u00a0; le détail est peut-être sur sa source\u00a0: Ville du Port.");
+    expect(tool("2026-11-21", "Médiathèque")).toBe("L'annonce ne donne pas l'heure\u00a0; le détail est peut-être sur sa source\u00a0: Ville du Port.");
+    expect(tool("2026-11-21T09:00", "Médiathèque")).toBeUndefined();
+    // The pages' copy does not carry it: the page writes its own, with the source's link.
+    expect(eventRow(e(), [{ debut: "2026-11-21" } as Seance]).manque).toBeUndefined();
+    // The page's words and the tool's are the same.
+    const page = fichePage("https://rundata.re", row({ date: "2026-11-21T09:00", lieu: undefined, lien: undefined, publie_par: "Ville du Port" }), copy([row()]), undefined);
+    expect(page.replace(/&#39;/g, "'")).toContain(`${tool("2026-11-21T09:00")}</p>`);
+  });
+
+  it("says a postponement's new day and the news that told it, as the list and the tool do", () => {
+    const reporte = row({ statut: "REPORTÉ", reporte_au: "samedi 28/11", statut_d_apres: { media: "Clicanoo", lien: "https://www.clicanoo.re/x" } } as Partial<Row>);
+    const page = fichePage("https://rundata.re", reporte, copy([reporte]), undefined);
+    expect(page).toContain(`<p class="note" data-sortie>Reporté au samedi 28/11 d'après <a href="https://www.clicanoo.re/x" rel="noopener">Clicanoo</a>.</p>`);
+    const annule = row({ statut: "ANNULÉ", statut_d_apres: { media: "Imaz Press", lien: "https://www.ipreunion.com/y" } } as Partial<Row>);
+    expect(fichePage("https://rundata.re", annule, copy([annule]), undefined)).toContain(">Annulé d'après <a href=\"https://www.ipreunion.com/y\"");
+    // Said by its organiser alone, without a new day: the badge says it all.
+    const seul = row({ statut: "ANNULÉ" } as Partial<Row>);
+    expect(fichePage("https://rundata.re", seul, copy([seul]), undefined)).not.toMatch(/>Annulé/);
+  });
+
+  it("says what its source does not give, the hour or the address, never a blank", () => {
+    const sans = row({ date: "2026-11-21", quand: "samedi 21/11", lieu: undefined, description: "Un texte." });
+    const page = fichePage("https://rundata.re", sans, copy([sans]), undefined);
+    expect(page).toContain('<p class="note" data-sortie>L\'annonce ne donne ni l\'heure ni l\'adresse\u00a0; le détail est peut-être sur sa source\u00a0: <a href="https://www.saintpierre.re/agenda/concert" rel="noopener">Mairie de Saint-Pierre</a>.</p>');
+    // Its commune still said, and its day.
+    expect(page).toMatch(/<p class="lead" data-sortie>samedi 21\/11, Saint-Pierre · /);
+    const sansLien = fichePage("https://rundata.re", { ...sans, lien: undefined }, copy([sans]), undefined);
+    expect(sansLien).toContain("L'annonce ne donne ni l'heure ni l'adresse\u00a0; le détail est peut-être sur sa source\u00a0: Mairie de Saint-Pierre.</p>");
+    const sansHeure = fichePage("https://rundata.re", { ...sans, lieu: "Kerveguen" }, copy([sans]), undefined);
+    expect(sansHeure).toContain("L'annonce ne donne pas l'heure\u00a0; le détail est peut-être sur sa source\u00a0: <a ");
+    const sansLieu = fichePage("https://rundata.re", { ...sans, date: "2026-11-21T19:30", quand: "samedi 21/11 à 19:30" }, copy([sans]), undefined);
+    expect(sansLieu).toContain("L'annonce ne donne pas d'adresse\u00a0; le détail est peut-être sur sa source\u00a0: <a ");
+    // Hour and place given: nothing said.
+    expect(fichePage("https://rundata.re", row(), copy([row()]), undefined)).not.toContain("ne donne");
   });
 
   it("keeps the events over 30 days, with the day each row last changed, and puts in the sitemap those to come with a text", () => {

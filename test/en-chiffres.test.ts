@@ -142,7 +142,7 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(f.chips).toMatch(/nœuds/);
     const other = c.stations.find((s) => !s.am && s.id !== PIERREFONDS)!;
     const o = draw(c, { st: other.id });
-    expect(o.titre).toBe(`Température mesurée à ${other.nom}`);
+    expect(o.titre).toBe(`Température mesurée ${/^Le /.test(other.nom) ? `au ${other.nom.slice(3)}` : `à ${other.nom}`}`);
     expect(o.href).toBe(`/meteo/station/${other.id}`);
     expect(o.lead).toBe(other.lead.replace(/&/g, "&amp;"));
     // An unknown station (another place's, or gone) falls back on the default.

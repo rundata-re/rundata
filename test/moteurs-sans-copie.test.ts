@@ -18,8 +18,8 @@ describe("a search engine's fetcher and a page's own copy this data center has n
     await new Promise((r) => setTimeout(r, ms));
     return "construite";
   };
-  const view = async (ua: string, having: boolean) => {
-    let t = NOW.getTime() - 3 * 60_000;
+  const view = async (ua: string, having: boolean, ageMs = 3 * 60_000) => {
+    let t = NOW.getTime() - ageMs;
     const c = new Cache(new MemoryStore(), () => t);
     if (having) await snapshot(c, "web:lieu:maido", async () => "copie", () => {}, new Date(t));
     t = NOW.getTime();
@@ -43,5 +43,13 @@ describe("a search engine's fetcher and a page's own copy this data center has n
 
   it("serves a copy it has at once, as before, its refresh behind", async () => {
     expect(await view(OAI, true)).toBe("copie");
+  });
+
+  // From 19/11 19:01 to 20/11/2026 11:41, five robots' 503 still answered at 850 to 982 ms: a copy there, more than a
+  // day old (KEEP_SECONDS), so built again, and only the reader's 800 ms waited for it.
+  it("waits as long for a copy too old to be served as for none", async () => {
+    const dayAndMore = 25 * 3600_000;
+    expect(await view(OAI, true, dayAndMore)).toBe("construite");
+    expect(await view(CHATGPT, true, dayAndMore)).toBeNull();
   });
 });

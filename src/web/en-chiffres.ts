@@ -396,8 +396,9 @@ export const dessine = (
   return {
     lead: e(s.lead),
     chips: chipsHtml,
-    titre: `Température mesurée à ${e(s.nom)}`,
-    svg: `<svg class="mx-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Température mesurée à ${e(s.nom)}, ${days ? `${n} derniers jours` : "24 dernières heures"}">${svg}</svg>`,
+    // « au Port », « aux Avirons »: written here, as this function also runs in the page's script, without the module's a().
+    titre: `Température mesurée ${e(/^Le /.test(s.nom) ? `au ${s.nom.slice(3)}` : /^Les /.test(s.nom) ? `aux ${s.nom.slice(4)}` : `à ${s.nom}`)}`,
+    svg: `<svg class="mx-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Température mesurée ${e(/^Le /.test(s.nom) ? `au ${s.nom.slice(3)}` : /^Les /.test(s.nom) ? `aux ${s.nom.slice(4)}` : `à ${s.nom}`)}, ${days ? `${n} derniers jours` : "24 dernières heures"}">${svg}</svg>`,
     note: !vals.length ? "" : days ? (avant ? `Jusqu'au ${dj(j!.au)}\u00a0: la journée d'hier est ajoutée vers midi. ` : "") + "Barres\u00a0: le plus bas et le plus haut de chaque jour ; en bleu, la pluie (de 10\u00a0h à 10\u00a0h le lendemain)." : "Relevé de chaque heure ; en bleu, la pluie de l'heure.",
     lien: s.am ? "" : `Les relevés de la station ${du(s.nom)}${s.dep ? ` depuis ${s.dep}` : ""} →`,
     href: s.am ? "" : `/meteo/station/${s.id}`,

@@ -22,8 +22,16 @@ export interface Resolution {
   correspondance: "exacte" | "partielle" | "approchee" | "coordonnees";
   /** A place given for a whole area the text names (« Mafate », La Nouvelle): « approchee », said so. */
   tient_lieu?: true;
-  /** Other places the text could mean, when the match is not exact. */
+  /**
+   * Other places the text could mean: when the match is not exact, or when places of other communes bear the very name
+   * asked (« Bellevue », at Salazie and at Saint-Louis), one per commune.
+   */
   autres: Place[];
+  /**
+   * For coordinates: the nearest place of the gazetteer, whose commune the point is given. Near a commune's limit, the
+   * point may be in the next one: said (format.ts).
+   */
+  proche?: { nom: string; km: number };
   /** The words of the text left aside around the name found, but its commune's (« parc », « palmiers » around « Saint-Pierre »). */
   ignores?: string[];
 }
@@ -193,10 +201,14 @@ function resolve(text: string): Resolution | null {
     let [a, b] = [parseFloat(m[1].replace(",", ".")), parseFloat(m[2].replace(",", "."))];
     if (Math.abs(a) > 50) [a, b] = [b, a]; // "55.22, -21.05": longitude first
     if (!inReunion(b, a)) return null;
+    // The commune of the nearest place, not none: the vigilance of its zone and its air index are said for it, where
+    // « zone inconnue » and « pas de vigilance » were (ux, 20/11/2026).
+    const near = placeAt(b, a);
     return {
-      lieu: { nom: `${a.toFixed(4)}, ${b.toFixed(4)}`, type: "coordonnees", lon: b, lat: a, altitude_m: null, commune: "" },
+      lieu: { nom: `${a.toFixed(4)}, ${b.toFixed(4)}`, type: "coordonnees", lon: b, lat: a, altitude_m: null, commune: near.commune },
       correspondance: "coordonnees",
       autres: [],
+      proche: { nom: near.nom, km: Math.round(distanceKm(b, a, near.lon, near.lat) * 10) / 10 },
     };
   }
 
@@ -218,8 +230,16 @@ function resolve(text: string): Resolution | null {
   const listed = /\s[–—-]\s/.test(text) && !EXACT.get(q.join(" "))?.some((e) => bare(e.place.nom) === asked);
   const exact = listed ? undefined : EXACT.get(q.join(" "));
   if (exact) {
-    const best = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place, standIn: e.standIn })).sort(order)[0];
-    return best.standIn ? { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true } : { lieu: best.place, correspondance: "exacte", autres: [] };
+    const ranked = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place, standIn: e.standIn })).sort(order);
+    const best = ranked[0];
+    if (best.standIn) return { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true };
+    // The same name in other communes (« Bellevue », Salazie and Saint-Louis): the first is answered, the others said, so
+    // that a cut of water or a forecast is not taken for the wrong one. Seen by ux on 20/11/2026.
+    // A commune's own name means the commune (« Saint-Joseph », not the lieu-dit of Sainte-Suzanne): nothing more said.
+    if (best.place.type === "commune") return { lieu: best.place, correspondance: "exacte", autres: [] };
+    const communes = new Set([best.place.commune]);
+    const autres = ranked.slice(1).flatMap((e) => (e.standIn || communes.has(e.place.commune) || !communes.add(e.place.commune) ? [] : [e.place])).slice(0, 3);
+    return { lieu: best.place, correspondance: "exacte", autres };
   }
   if (q.every((t) => KIND_WORDS.has(t))) return null;
   if (offIsland(text)) return null;

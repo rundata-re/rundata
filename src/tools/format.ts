@@ -41,9 +41,21 @@ export const tranche = (de: number, a: number, minutes?: boolean) => paire(de, a
 export const minutees = (spans: [number, number][]) => spans.some(([de, a]) => de % 60 !== 0 || a % 60 !== 0);
 
 /** One reading as a short string a model can quote: "24 °C", "ESE (112°)", "65 % (calculée)". */
-/** A number written the French way: 24,6. */
+/**
+ * A number written the French way: « 24,6 », and its thousands from 4 digits with a narrow no-break space, « 2\u202f300 »,
+ * « 10\u202f200 » (marketing's kit, « Nombres »), as nombre() does. Never for a year or a code, which are written as
+ * they are.
+ */
 export function fr(n: number): string {
-  return String(n).replace(".", ",");
+  const [whole, decimals] = String(n).split(".");
+  const sign = whole.startsWith("-") ? "-" : "";
+  const digits = sign ? whole.slice(1) : whole;
+  let grouped = digits;
+  if (digits.length > 3 && /^\d+$/.test(digits)) {
+    grouped = "";
+    for (let end = digits.length; end > 0; end -= 3) grouped = digits.slice(Math.max(0, end - 3), end) + (grouped ? `\u202f${grouped}` : "");
+  }
+  return `${sign}${grouped}${decimals ? `,${decimals}` : ""}`;
 }
 
 /**
@@ -195,10 +207,15 @@ export const phrases = (parts: (string | null | undefined)[]) =>
   parts.filter((x): x is string => !!x?.trim()).map((x) => x.trimEnd()).map((x) => (/[.!?…]$/.test(x) ? x : `${x}.`)).join(" ");
 
 /**
- * A place found on part of its name only, or on a name close to the one asked: said first in the answer, so that
- * « Bellecombe » read as the Rempart de Bellecombe is not taken for the place meant. Undefined for a name found whole.
+ * A place found on part of its name only, on a name close to the one asked, or whose name other communes' places bear
+ * too: said first in the answer, so that « Bellecombe » read as the Rempart de Bellecombe, or « Bellevue » read as
+ * Salazie's, is not taken for the place meant. Undefined for a name found whole and borne by no other commune's place.
  */
 export function placeWarning(asked: string, r: Resolution): string | undefined {
+  if (r.correspondance === "exacte" && r.autres.length) {
+    const p = r.lieu;
+    return `Plusieurs lieux s'appellent « ${asked.trim()} » : réponse pour ${p.nom} (${p.type}, ${p.commune}) ; il y a aussi ${r.autres.map((a) => `${a.nom} (${a.type}, ${a.commune})`).join(", ")}. Le dire à l'utilisateur et, s'il parlait d'un autre, redemander avec le nom de sa commune.`;
+  }
   if ((r.correspondance !== "partielle" || r.ignores) && r.correspondance !== "approchee") return undefined;
   const p = r.lieu;
   if (r.tient_lieu) return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), un lieu de ce secteur, pas tout le secteur\u00a0: le dire à l'utilisateur.`;
@@ -219,6 +236,8 @@ export function placeBlock(asked: string, r: Resolution) {
     // A road is long: the answer is for one point of it, said so, not for the whole of it.
     route: p.type === "route" ? `Une route\u00a0: la réponse vaut pour un point de son tracé, ${aCommune(p.commune)}, pas pour toute sa longueur.` : undefined,
     autres_possibilites: r.autres.length ? r.autres.map((a) => `${a.nom} (${a.type}, ${a.commune})`) : undefined,
+    // A point given by its coordinates is in the commune of the nearest known place: an estimate, said so.
+    commune_d_apres: r.proche ? `Commune du lieu connu le plus proche, ${r.proche.nom}, à ${String(r.proche.km).replace(".", ",")} km du point : près d'une limite de commune, le point peut être dans la voisine.` : undefined,
     // Said, so that a place not known is not taken for the commune named beside it.
     mots_ignores: r.ignores ? `«\u00a0${r.ignores.join(" ")}\u00a0» laissé de côté\u00a0: la réponse vaut pour ${le(p.nom)}.` : undefined,
   };

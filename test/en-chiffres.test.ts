@@ -282,6 +282,13 @@ describe("« <Lieu> en chiffres » (the user, 10/11/2026: « oui, supprime les v
     expect(script).not.toMatch(/fetch\(|XMLHttpRequest|sendBeacon/);
     expect(block).toContain("Vos réglages restent dans ce navigateur. Rien n'est envoyé, sans compte.");
     expect(block).toContain('<input type="checkbox" id="mx-am"> <span>Montrer aussi les stations amateur (MétéoR-OI), à la fiabilité non vérifiée</span>');
+    // The panel of settings is no text of the page: inside a template, put in the page when it is first opened. On
+    // 20/11/2026 its 300 words were the same on the 30 pages /meteo/<lieu>, where Google indexed none.
+    expect(block).toContain('<details class="mx-reg"><summary>Réglages</summary><template id="mx-reg-t">');
+    expect(block.replace(/<template\b[\s\S]*?<\/template>/g, "")).not.toMatch(/Montrer aussi les stations amateur|Vos réglages restent|Période de la courbe<\/legend>/);
+    expect(script).toContain('reg.addEventListener("toggle",()=>{if(reg.open&&!$("mx-am")){reg.appendChild(regT.content.cloneNode(true));bind();all()}})');
+    // Drawn before the panel is there: its fields are filled once it is.
+    expect(script).toContain('if($("mx-am")){$("mx-am").checked=R.am;');
     // The drawing in the page is this module's, with nothing named inside that the build would wrap (keepNames).
     expect(script).toContain(`draw=${dessine}`);
     const built = buildSync({ entryPoints: ["src/web/en-chiffres.ts"], write: false, keepNames: true, format: "esm" }).outputFiles[0].text;

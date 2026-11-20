@@ -425,11 +425,11 @@ const all=()=>{cw=Math.max(300,Math.round($("mx-plot").clientWidth)||640);const 
 const l=$("mx-link");l.innerHTML=d.lien;l.href=d.href||"#";l.hidden=!d.href;pts=d.pts;cur=-1;fit();
 mx.querySelectorAll(".tabs button").forEach((b)=>b.setAttribute("aria-pressed",String(b.dataset.p===R.p)));
 mx.querySelectorAll(".mk").forEach((b)=>{b.addEventListener("click",()=>{const o=b.getAttribute("aria-expanded")==="true";mx.querySelectorAll(".mk").forEach((x)=>x.setAttribute("aria-expanded","false"));b.removeAttribute("data-x");b.setAttribute("aria-expanded",String(!o))});b.addEventListener("pointerleave",()=>b.removeAttribute("data-x"));b.addEventListener("blur",()=>b.removeAttribute("data-x"))});
-$("mx-am").checked=R.am;mx.querySelectorAll("input[name=mx-ut],input[name=mx-uv],input[name=mx-p]").forEach((i)=>{i.checked=i.value===R[i.name.slice(3)]});
+if($("mx-am")){$("mx-am").checked=R.am;mx.querySelectorAll("input[name=mx-ut],input[name=mx-uv],input[name=mx-p]").forEach((i)=>{i.checked=i.value===R[i.name.slice(3)]});
 const sh=D.stations.filter((s)=>!s.am||R.am),cs=sh.find((s)=>s.id===R.st)||sh.find((s)=>s.id===D.defaut)||sh[0];
 $("mx-st").innerHTML=sh.map((s)=>'<label><input type="radio" name="mx-st" value="'+s.id+'"'+(s===cs?" checked":"")+'> <span>'+s.nom.replace(/&/g,"&amp;").replace(/</g,"&lt;")+(s.am?'<span class="mk-am">amateur</span>':"")+'<br><small>'+String(s.alt).replace(/\\B(?=(\\d{3})+(?!\\d))/g,"\\u202f")+"\\u00a0m · à "+String(s.d).replace(".",",")+"\\u00a0km</small></span></label>").join("");
 $("mx-st").querySelectorAll("input").forEach((i)=>i.addEventListener("change",()=>{R.st=i.value;save();all()}));
-$("mx-show").querySelectorAll("input").forEach((i)=>{i.checked=!R.hide.includes(i.value)})};
+$("mx-show").querySelectorAll("input").forEach((i)=>{i.checked=!R.hide.includes(i.value)})}};
 const plot=$("mx-plot"),nar=matchMedia("(max-width:640px)"),fit=()=>{const tp=$("mx-tip"),cn=$("mx-cn");cn.style.minHeight="";tp.style.minHeight="";cn.style.visibility="";if(!nar.matches||!pts.length)return;const lg=pts.reduce((a,p)=>p.html.length>a.length?p.html:a,"");tp.innerHTML=lg;tp.style.visibility="hidden";tp.hidden=false;const h=Math.ceil(Math.max(tp.offsetHeight,cn.offsetHeight));tp.hidden=true;tp.style.visibility="";cn.style.minHeight=h+"px";tp.style.minHeight=h+"px"};
 const show=(i)=>{const p=pts[i];if(!p)return;cur=i;const sv=$("mx-svg").querySelector("svg"),k=sv.getBoundingClientRect().width/cw,c=sv.querySelector(".cur"),o=sv.querySelector(".dot");
 c.setAttribute("x1",p.x);c.setAttribute("x2",p.x);o.setAttribute("cx",p.x);o.setAttribute("cy",p.y);const tp=$("mx-tip");tp.innerHTML=p.html;tp.hidden=false;
@@ -443,10 +443,11 @@ document.addEventListener("keydown",(ev)=>{if(ev.key==="Escape")mx.querySelector
 plot.addEventListener("pointerleave",(ev)=>{if(ev.pointerType==="mouse")hide()});plot.addEventListener("blur",hide);
 plot.addEventListener("keydown",(ev)=>{if(ev.key==="ArrowRight"||ev.key==="ArrowLeft"){ev.preventDefault();show(Math.max(0,Math.min(pts.length-1,(cur<0?pts.length-1:cur)+(ev.key==="ArrowRight"?1:-1))))}else if(ev.key==="Escape")hide()});
 mx.querySelectorAll(".tabs button").forEach((b)=>b.addEventListener("click",()=>{R.p=b.dataset.p;save();all()}));
-$("mx-am").addEventListener("change",(ev)=>{R.am=ev.target.checked;save();all()});
+const bind=()=>{$("mx-am").addEventListener("change",(ev)=>{R.am=ev.target.checked;save();all()});
 mx.querySelectorAll("input[name=mx-ut],input[name=mx-uv],input[name=mx-p]").forEach((i)=>i.addEventListener("change",()=>{R[i.name.slice(3)]=i.value;save();all()}));
 $("mx-show").querySelectorAll("input").forEach((i)=>i.addEventListener("change",()=>{R.hide=[...$("mx-show").querySelectorAll("input")].filter((x)=>!x.checked).map((x)=>x.value);save();all()}));
-$("mx-reset").addEventListener("click",()=>{R=Object.assign({},DEF,{hide:[]});S={};try{localStorage.removeItem(K)}catch(x){}all()});
+$("mx-reset").addEventListener("click",()=>{R=Object.assign({},DEF,{hide:[]});S={};try{localStorage.removeItem(K)}catch(x){}all()})};
+const reg=mx.querySelector(".mx-reg"),regT=document.getElementById("mx-reg-t");if(reg&&regT)reg.addEventListener("toggle",()=>{if(reg.open&&!$("mx-am")){reg.appendChild(regT.content.cloneNode(true));bind();all()}});
 let rw=0;addEventListener("resize",()=>{const w=Math.round(plot.clientWidth);if(w!==rw){rw=w;all()}});requestAnimationFrame(()=>setTimeout(()=>{all();rw=Math.round(plot.clientWidth)}))}}`;
 
 let text: string | undefined;
@@ -467,14 +468,14 @@ export function enChiffres(c: Chiffres | undefined, lieu: string, slug: string):
   const tab = (p: string, label: string) => `<button type="button" data-p="${p}" aria-pressed="${p === DEFAUT.p}">${label}</button>`;
   return `<section class="mx" id="mx" aria-labelledby="mx-t" data-s="${esc(slug)}" data-avant-ia>
 <div class="mx-bar"><div><h2 id="mx-t">${esc(lieu)} en chiffres</h2><p class="mx-lead" id="mx-lead">${d.lead}</p></div>
-<details class="mx-reg"><summary>Réglages</summary>
+<details class="mx-reg"><summary>Réglages</summary><template id="mx-reg-t">
 <div class="mx-panel">
 <fieldset><legend>Station</legend><div id="mx-st"></div><label><input type="checkbox" id="mx-am"> <span>Montrer aussi les stations amateur (MétéoR-OI), à la fiabilité non vérifiée</span></label></fieldset>
 <fieldset><legend>Unités</legend><p class="mx-sub">Température</p>${radio("ut", "c", "°C", true)}${radio("ut", "f", "°F", false)}<p class="mx-sub">Vent</p>${radio("uv", "kmh", "km/h", true)}${radio("uv", "kt", "nœuds", false)}${radio("uv", "ms", "m/s", false)}</fieldset>
 <fieldset><legend>Période de la courbe</legend>${radio("p", "24", "24\u00a0h", true)}${radio("p", "7", "7 jours", false)}${radio("p", "30", "30 jours", false)}</fieldset>
 <fieldset><legend>Chiffres affichés</legend><div id="mx-show">${FIGURES.map(([k, l]) => `<label><input type="checkbox" value="${k}" checked> ${l}</label>`).join("")}</div></fieldset>
 <div class="mx-foot"><span>Vos réglages restent dans ce navigateur. Rien n'est envoyé, sans compte.</span><button type="button" id="mx-reset">Revenir aux réglages d'origine</button></div>
-</div></details></div>
+</div></template></details></div>
 <div class="mx-chips" id="mx-chips">${d.chips}</div>
 <div class="mx-card"><div class="mx-ch"><h3 id="mx-ct">${d.titre}</h3><div class="tabs" role="group" aria-label="Période de la courbe">${tab("24", "24\u00a0h")}${tab("7", "7 jours")}${tab("30", "30 jours")}</div></div>
 <div class="mx-plot" id="mx-plot" tabindex="0" aria-label="Courbe\u00a0: flèches gauche et droite pour lire chaque valeur"><div id="mx-svg">${d.svg}</div><div class="mx-tip" id="mx-tip" role="status" hidden></div></div>

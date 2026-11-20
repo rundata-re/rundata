@@ -3,7 +3,9 @@ import { INSEE } from "../src/places/insee.js";
 import { toutesLesSources } from "../src/server.js";
 import * as elections from "../src/vie/elections.js";
 import data from "../src/vie/elections.json" with { type: "json" };
-import { communePage } from "../src/web/commune.js";
+import { communePage, electionsPage } from "../src/web/commune.js";
+import { handle } from "../src/app.js";
+import { Cache, MemoryStore } from "../src/cache.js";
 import { adresseTexte } from "../src/web/adresse.js";
 import { esc } from "../src/web/map.js";
 import { pageOf } from "../src/web/places.js";
@@ -12,8 +14,10 @@ import { pageOf } from "../src/web/places.js";
 const NOW = new Date("2026-11-03T16:00:00Z");
 const COMMUNES = Object.keys(INSEE);
 const page = (slug: string) => communePage("https://rundata.re", pageOf(slug)!, { place: null }, NOW);
+/** The commune's elections page (/communes/<commune>/elections). */
+const elec = (slug: string) => electionsPage("https://rundata.re", pageOf(slug)!)!;
 const section = (slug: string) => {
-  const html = page(slug);
+  const html = elec(slug);
   const at = html.indexOf('<section id="elections"');
   return html.slice(at, html.indexOf("</section>", at));
 };
@@ -99,9 +103,9 @@ describe("the elections of each commune (vie/elections.ts)", () => {
   });
 });
 
-describe("the tables of a commune's page", () => {
+describe("the tables of a commune's elections page", () => {
   it("each have a name for a screen reader, the titles shown above them", () => {
-    const html = page("saint-paul");
+    const html = elec("saint-paul");
     const tables = html.match(/<table[^>]*>/g) ?? [];
     expect(tables.length).toBeGreaterThan(50);
     expect(html.match(/<table[^>]*><caption class="sr">/g)).toHaveLength(tables.length);
@@ -121,11 +125,13 @@ describe("the part « Élections » of a commune's page", () => {
 
   it("says the ministry's words, then a card a type, a folded block a scrutin, its lines in the order of the panels", () => {
     const part = section("saint-paul");
-    expect(part).toContain(`<p class="eyebrow">Ministère de l'Intérieur</p><h2 id="h-elections">Élections à Saint-Paul</h2>`);
-    expect(part).toContain(esc("Chaque scrutin à Saint-Paul, tel que le ministère de l'Intérieur le publie : inscrits, votants, blancs, nuls, exprimés, puis les voix de chaque candidat ou liste. Le jeu de données commence en 1999 : les scrutins plus anciens ne sont pas repris."));
+    expect(elec("saint-paul")).toContain("<h1>Élections à Saint-Paul</h1>");
+    expect(elec("saint-paul")).toContain(esc("Chaque scrutin à Saint-Paul, tel que le ministère de l'Intérieur le publie : inscrits, votants, blancs, nuls, exprimés, puis les voix de chaque candidat ou liste. Le jeu de données commence en 1999 : les scrutins plus anciens ne sont pas repris."));
     expect(part).toContain(esc("Les candidats et les listes sont dans l'ordre des panneaux (N°), celui du ministère, quel que soit le résultat, avec leurs voix et leur % des exprimés. Les nuances politiques ne sont pas reprises. Sans panneaux dans le fichier (Européennes 2009, Municipales 2008, Européennes 2004), les listes sont dans l'ordre alphabétique. Jusqu'en 2015, le fichier compte les blancs avec les nuls."));
     expect(part).toContain(esc("La commune est partagée entre plusieurs circonscriptions : les résultats sont donnés pour chacune. La commune est partagée entre plusieurs cantons : les résultats sont donnés pour chacun. Quand le fichier ne nomme pas la circonscription ou le canton, les bureaux sont regroupés par leurs candidats."));
-    expect(part).toContain(esc("Ces cantons ne sont pas ceux des départementales, redessinés en 2015 : les deux ne se comparent pas."));
+    // The cantonales' note in one sentence, in full on /a-propos.
+    expect(part).toContain(`<p class="note">${esc("Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés.")} <a href="/a-propos#cantonales">Pourquoi elles ne se comparent pas aux départementales →</a></p>`);
+    expect(part).not.toContain("redessinés en 2015");
     expect(part.match(/<h3>[^<]+<\/h3>/g)).toEqual(["Municipales", "Législatives", "Européennes", "Présidentielle", "Régionales", "Départementales", "Cantonales", "Participation"].map((t) => `<h3>${t}</h3>`));
     expect(part).toContain(esc("blancs et nuls : "));
     // Four short columns; none for the panels where the file has none.
@@ -135,7 +141,7 @@ describe("the part « Élections » of a commune's page", () => {
     expect(euro2009).not.toContain("N°");
     expect(part).toContain(esc("Les bureaux de vote changent de périmètre d'une élection à l'autre : la série est donnée pour la commune entière."));
     // The sources at the foot of the page.
-    expect(page("saint-paul")).toContain(`<p class="sources">${adresseTexte("Source\u00a0: Ministère de l'Intérieur, données agrégées par data.gouv.fr (Licence Ouverte Etalab 2.0), jeu mis à jour le 07/07/2026.")}</p>`);
+    expect(elec("saint-paul")).toContain(`<p class="sources">${adresseTexte("Source\u00a0: Ministère de l'Intérieur, données agrégées par data.gouv.fr (Licence Ouverte Etalab 2.0), jeu mis à jour le 07/07/2026.")}</p>`);
     for (const s of elections.ofCommune("Saint-Paul")) expect(part).toContain(`<summary><h4>${s.nom}</h4></summary>`);
     // The présidentielle's first round: its twelve candidates in the order of their panels.
     const pres = elections.ofCommune("Saint-Paul").find((s) => s.type === "pres")!.tours[0]![0]!;
@@ -147,8 +153,45 @@ describe("the part « Élections » of a commune's page", () => {
   it("marks no line: no bold, no colour, no bar, no « élu » nor « en tête », no link, no person in the page's data", () => {
     for (const slug of ["saint-paul", "cilaos", "le-port"]) {
       const part = section(slug);
-      expect(part).not.toMatch(/<b>|<strong|style=|class="[^"]*(?:bar|barre|q-)|élue?s?\b|en tête|gagn|vainqueur|href=/i);
+      // One link only, the cantonales' note's.
+      expect(part.replace('<a href="/a-propos#cantonales">', "")).not.toMatch(/<b>|<strong|style=|class="[^"]*(?:bar|barre|q-)|élue?s?\b|en tête|gagn|vainqueur|href=/i);
       expect(page(slug)).not.toContain('"Person"');
+      expect(elec(slug)).not.toContain('"Person"');
     }
+  });
+});
+
+describe("a commune's elections page, and its summary on the commune's page", () => {
+  it("has marketing's title, description and h1, its own canonical, and the first year of the commune's scrutins", () => {
+    const html = elec("le-port");
+    expect(html).toContain("<title>Élections au Port\u00a0: résultats et participation depuis 1999 | rundata.re</title>");
+    expect(html).toContain(`<meta name="description" content="Chaque scrutin au Port depuis 1999, tel que le ministère de l&#39;Intérieur le publie\u00a0: inscrits, votants, blancs et nuls, résultats.">`);
+    expect(html).toContain("<h1>Élections au Port</h1>");
+    expect(html).toContain('<link rel="canonical" href="https://rundata.re/communes/le-port/elections">');
+    expect(html).not.toContain("noindex");
+    expect(html).toContain('<li><a href="/communes/le-port">Le Port</a></li><li aria-current="page">Élections</li>');
+  });
+
+  it("leaves on the commune's page the last participation against the island's, no candidate, and the link", () => {
+    const h = page("saint-paul");
+    const at = h.indexOf('<section id="elections"');
+    const part = h.slice(at, h.indexOf("</section>", at));
+    expect(part).toContain(`<h2 id="h-elections">Élections à Saint-Paul</h2>`);
+    expect(part).toContain(esc("Municipales 2026, 1er tour\u00a0: 50,51\u00a0% des inscrits ont voté à Saint-Paul, 55,27\u00a0% dans toute l'île."));
+    expect(part).toContain(`<a href="/communes/saint-paul/elections">${esc("Les élections à Saint-Paul depuis 1999\u00a0: participation et résultats →")}</a>`);
+    expect(part).not.toContain("<table");
+    for (const l of elections.ofCommune("Saint-Paul")[0]!.tours[0]![0]!.lignes) if (l.tete) expect(part).not.toContain(esc(l.tete));
+  });
+
+  it("is served for each commune, never for a place that is not one, and /a-propos holds the cantonales' note", async () => {
+    const cache = new Cache(new MemoryStore(), () => NOW.getTime());
+    for (const slug of ["petite-ile", "le-port", "saint-denis"]) {
+      const r = await handle(new Request(`https://rundata.re/communes/${slug}/elections`), cache);
+      expect(r.status, slug).toBe(200);
+    }
+    expect((await handle(new Request("https://rundata.re/communes/l-hermitage/elections"), cache)).status).toBe(404);
+    const about = await (await handle(new Request("https://rundata.re/a-propos"), cache)).text();
+    expect(about).toContain('<h2 id="cantonales">');
+    expect(about).toContain("Ces cantons ne sont pas ceux des départementales, redessinés en 2015");
   });
 });

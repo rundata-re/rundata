@@ -67,7 +67,7 @@ import {
 } from "./data.js";
 import { dessinsAccueil } from "./accueil-dessins.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
-import { COMMUNES, communePage, communesPage } from "./commune.js";
+import { COMMUNES, communePage, communesPage, electionsPage, electionsPath } from "./commune.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
@@ -480,7 +480,7 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
   const fixed = (u: string): Url => [u, undefined, "monthly"];
   const trace = (u: string): Url => [u, undefined, "daily"];
   // The defibrillators are a list bundled with the server: their page changes when it is rebuilt.
-  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed(TERRAIN), fixed(ECOLES), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
+  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed(TERRAIN), fixed(ECOLES), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => fixed(electionsPath(p))), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
     // The busiest stops only (scripts/build-transit.py): the others' pages are not indexed.
     ...[...transit.stopPages().values()].filter((p) => p.indexe).map((p) => live(`${STOP_PATH}/${p.slug}`)),
     ...PAGES.filter((p) => !PRINCIPAL[p.slug]).map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
@@ -1061,6 +1061,15 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // Without one of its copies, the feed says less than it should: kept a minute only.
     const whole = vigilance && coupures && randonnees && volcan;
     return new Response(communeRss(origin, p, { vigilance, coupures, randonnees, volcan }, now), { headers: whole ? RSS : { ...RSS, "cache-control": "public, max-age=60" } });
+  }
+  // A commune's elections, on their own page: from the package, nothing fetched.
+  const elec = /^\/communes\/([^/]+)\/elections\/?$/.exec(path);
+  if (elec) {
+    const p = pageOf(elec[1]!);
+    const html = p?.commune ? electionsPage(origin, p, await alerte(cache, background, now)) : undefined;
+    return html
+      ? new Response(html, { headers: { ...HTML, "cache-control": "public, max-age=3600" } })
+      : new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
   }
   if (path.startsWith("/communes/")) {
     const p = pageOf(path.slice("/communes/".length).replace(/\/$/, ""));

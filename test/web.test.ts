@@ -532,7 +532,7 @@ describe("what crawlers and previews fetch", () => {
     // test/sitemap-liste.test.ts). And the fiche of an address, /terrain (20/11/2026).
     const stops = [...stopPages().values()].filter((p) => p.indexe && !retiree(`/bus/arret/${p.slug}`));
     // The places whose page sends to another (places.ts PRINCIPAL) are out of it.
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length - Object.keys(PRINCIPAL).length + 61 + 24 + 21 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length + 1);
+    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length - Object.keys(PRINCIPAL).length + 61 + 24 + 21 + 24 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length + 1);
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");

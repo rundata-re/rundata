@@ -1399,6 +1399,8 @@ interface Head {
   vert?: boolean;
   /** The page's own hook, in place of its category's: a station's page, which says since when it measures. */
   hook?: string;
+  /** The page's own text, under its title and before its hook (HTML): a commune's page that has one (communes-textes.ts). */
+  texte?: string;
   /**
    * The two blocks about the assistants (the question « Domann out IA » and « Votre IA, branchée sur… ») out of <main>,
    * in one <aside> after it; <main> keeps one line at its foot with the page's own question (iaAside()). The head pages
@@ -1605,9 +1607,10 @@ ${head.sansInstallation ? "" : INSTALL}
 let lues: number | undefined;
 const sourcesLues = () => (lues ??= compte(toutesLesSources()).sources);
 
-const withHook = (band: string, path: string, volcan?: boolean, own?: string) => {
+const withHook = (band: string, path: string, volcan?: boolean, own?: string, texte?: string) => {
   const h = volcan && path === "/volcan" ? undefined : own ?? hook(path);
-  return h ? band.replace("</h1>", `</h1>\n    <p class="hook">${esc(h)}</p>`) : band;
+  const under = `${texte ? `\n    ${texte}` : ""}${h ? `\n    <p class="hook">${esc(h)}</p>` : ""}`;
+  return under ? band.replace("</h1>", `</h1>${under}`) : band;
 };
 
 // The menu: every category with a page, the clubs' space after the sport (once it is out), then the communes; the first
@@ -1820,7 +1823,7 @@ export function layout(origin: string, head: Head, written: string, body: string
   const image = ogImage(origin, head.path, head.image);
   // Each acronym spelled out at its first occurrence, from the title's band to the end of the main text (web/sigles.ts).
   // Each map with its own ids, when a page has two (ownIds()).
-  const [top, text] = ownIds(withSigles([withHook(band, head.path, head.volcan, head.hook), mentionLinks(main)]));
+  const [top, text] = ownIds(withSigles([withHook(band, head.path, head.volcan, head.hook, head.texte), mentionLinks(main)]));
   // The contour lines of the decor (web/fonds.ts), in the footer of every page from 1200 px and in the band of a few.
   const decor = !head.shell && motif(head.alerte, !!urgent(head).volcan);
   return `<!doctype html>

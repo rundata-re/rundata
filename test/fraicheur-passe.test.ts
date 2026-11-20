@@ -25,6 +25,22 @@ describe("the time an answer says it read its data", () => {
     expect(fraicheur({}, [halls], now, { nom: () => "Programmes des salles" }).lue_a).toBe("30/10 23:57");
   });
 
+  it("says the oldest and the newest of its reads when its sources were read at different times", () => {
+    // actualites at Cilaos, 20/11/2026 10:12: the media read at 10:10, the copy of the recueils des actes administratifs
+    // written by its collector at its run of 09:33 (it said « lue à 00:20 », its last change, until scripts/raa.ts wrote at each run).
+    const now = new Date(t("2026-11-20T10:12:00"));
+    const medias = { key: "actualites:fil", fetchedAt: t("2026-11-20T10:10:00"), stale: false, freshSeconds: 300 };
+    const raa = { key: "raa:copie", fetchedAt: t("2026-11-20T09:33:00"), stale: false, freshSeconds: 900, from: "prefecture_raa" };
+    const f = fraicheur({}, [medias, raa], now);
+    expect(f.lue_a).toBe("20/11 09:33");
+    expect(f.lectures).toEqual({ plus_ancienne: "20/11 09:33", plus_recente: "20/11 10:10" });
+    // Read at one time, or in the same minute: the time alone.
+    expect(fraicheur({}, [medias], now).lectures).toBeUndefined();
+    expect(fraicheur({}, [medias, { ...raa, fetchedAt: t("2026-11-20T10:10:30") }], now).lectures).toBeUndefined();
+    // A many-parts answer, dated by its newest read, says the oldest too.
+    expect(fraicheur({}, [medias, raa], now, { donnee: false })).toMatchObject({ lue_a: "20/11 10:10", lectures: { plus_ancienne: "20/11 09:33", plus_recente: "20/11 10:10" } });
+  });
+
   it("dates an answer of many dated parts by the newest of them, never older than one of its parts", () => {
     // resume_du_jour at Bras-Panon, 31/10/2026 07:10: the weather read again at 07:06 for the call, the calendar's copy of
     // 06:25. It said « lue à 06:25, il y a 45 min » over a measurement of 07:00.

@@ -22,8 +22,8 @@ export const SOURCE = {
 /** Written by scripts/raa.ts, read by worker.ts. */
 export const KV_KEY = "prefecture:raa:collecte";
 /**
- * Kept this long after the collector's last write, which is only when something changed: a week without a recueil
- * (holidays) must not empty the store. What is given is the last DAYS' anyway.
+ * Kept this long after the collector's last write (each run that read the site): days without a run must not empty
+ * the store. What is given is the last DAYS' anyway.
  */
 export const KV_TTL_SECONDS = 30 * 86_400;
 /** The recueils read and the acts given: those of the last 15 days. */
@@ -80,7 +80,7 @@ export interface Copie {
   lus_depuis?: string;
   /** The newest drought order seen, whatever the place it names (ArreteSecheresse). */
   secheresse?: ArreteSecheresse;
-  /** When the collector wrote it (ISO, UTC): a run that changes nothing does not write. */
+  /** When the collector read the site and wrote it (ISO, UTC), at each run, changed or not (20/11/2026). */
   lu_le: string;
 }
 

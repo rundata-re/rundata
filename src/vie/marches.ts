@@ -224,6 +224,13 @@ export const sansJours = (commune: string) => inCommune(commune).filter((m) => !
 /** The day OpenStreetMap's markets were read (scripts/build-marches.py): « relevé le 24/10/2026 ». */
 export const OSM_LU = data.construit;
 
+/**
+ * Where a market's missing days or hours were looked for, and when: « par OpenStreetMap, relevé le 24/10/2026 ». Said
+ * with them, never a bare « non trouvés » (revue du 20/11/2026).
+ */
+export const cherchesDans = (m: Pick<Lieu, "source">) =>
+  m.source === OSM ? `par OpenStreetMap, relevé le ${dayMonthYear(OSM_LU)}` : `par la page de la mairie, lue le ${dayMonthYear(m.source.lu ?? mairies.lu)}`;
+
 /** A market held on a day, for the agenda: its hours that day as its source gives them, and where they come from. */
 export interface DuJour {
   nom: string;

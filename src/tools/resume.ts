@@ -192,7 +192,7 @@ function waterCount(avis: { titre: string; coupure?: unknown; ne_pas_boire?: boo
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")}, et ${parts.at(-1)}` : parts.join("");
 }
 
-const MARKETS_NOT_ALL = "D'après OpenStreetMap et les sites des mairies qui permettent de les reprendre : tous les marchés n'y sont pas, et les jours peuvent avoir changé.";
+const MARKETS_NOT_ALL = "D'après OpenStreetMap et les sites des mairies : tous les marchés n'y sont pas, et les jours peuvent avoir changé.";
 const NO_DUTY = "rundata.re ne sait pas quelle pharmacie est de garde : seuls 3237.fr et le 32 37 le disent.";
 const FUEL_NOTE = "Prix maximum fixés chaque mois par le préfet, les mêmes dans toute l'île.";
 
@@ -460,14 +460,19 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const mer = seaPart?.row;
   const out = mer ? leftOut.filter((x) => x.partie !== SEA) : leftOut;
   // Held today, then those open all week, then those whose days no source gives, with the town hall's page.
-  const markets = marches.heldOn(nom, now);
+  const held = marches.heldOn(nom, now);
+  // A market held today by its source but with no hour we can trust is never « the market of today »: it is said with
+  // where its hours were looked for, and the town hall's site.
+  const markets = held.filter((m) => m.horaires_aujourd_hui !== marches.NOT_FOUND);
+  const noHours = held.filter((m) => m.horaires_aujourd_hui === marches.NOT_FOUND);
   const allWeek = marches.apart(nom, now);
   const noDays = marches.sansJours(nom);
-  const townHall = marches.lienMairie(nom);
+  // The town hall's page of its markets, else its site when a market's days or hours are missing.
+  const townHall = marches.lienMairie(nom) ?? (noDays.length || noHours.length ? mairie?.site : undefined);
   // A town hall's market says where it comes from, and the date of its page when it gives one.
   const by = (m: marches.Lieu) =>
     m.source === marches.OSM ? undefined : `site de la mairie ${de(m.commune)}${m.source.date ? ` (page du ${marches.dayMonthYear(m.source.date)})` : ""}`;
-  const marketSources = [...new Set([...markets, ...allWeek, ...noDays].map((m) => m.source))];
+  const marketSources = [...new Set([...markets, ...noHours, ...allWeek, ...noDays].map((m) => m.source))];
   // The prices of another month are not this month's; an order read before its 1st is not in force yet.
   const fuel = l.trafic?.value.carburants;
   const inForce = fuel && phases(fuel, now).vigueur;
@@ -592,11 +597,12 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
         }
       : undefined,
     coupures_electricite: power.length || powerSilent ? { avis: power.length ? power : undefined, injoignable: powerSilent && { texte: powerSilent.texte, site: powerSilent.site } } : undefined,
-    marches_du_jour: markets.length || allWeek.length || noDays.length || townHall
+    marches_du_jour: markets.length || noHours.length || allWeek.length || noDays.length || townHall
       ? {
           liste: markets.map((m) => ({ nom: m.nom, horaires_aujourd_hui: m.horaires_aujourd_hui, adresse: m.adresse ?? undefined, lien: m.lien, carte: m.osm, source: m.source.nom, d_apres: by(m) })),
           permanents: allWeek.length ? allWeek.map((m) => ({ nom: m.nom, horaires: m.horaires, horaires_aujourd_hui: m.horaires_aujourd_hui, adresse: m.adresse ?? undefined, lien: m.lien, carte: m.osm, source: m.source.nom, d_apres: by(m) })) : undefined,
-          jours_non_trouves: noDays.length ? noDays.map((m) => ({ nom: m.nom, adresse: m.adresse ?? undefined, lien: m.lien, carte: m.osm })) : undefined,
+          heures_non_trouvees: noHours.length ? noHours.map((m) => ({ nom: m.nom, manque: `heures non données ${marches.cherchesDans(m)}`, adresse: m.adresse ?? undefined, lien: m.lien, carte: m.osm })) : undefined,
+          jours_non_trouves: noDays.length ? noDays.map((m) => ({ nom: m.nom, manque: `jours et heures non donnés ${marches.cherchesDans(m)}`, adresse: m.adresse ?? undefined, lien: m.lien, carte: m.osm })) : undefined,
           mairie: townHall ? { texte: `Jours et horaires des marchés : site de la mairie ${de(nom)}`, site: townHall } : undefined,
           avertissement: MARKETS_NOT_ALL,
         }

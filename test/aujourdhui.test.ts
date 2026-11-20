@@ -106,7 +106,8 @@ describe("the page of a commune's day", () => {
     const lt = pageOf("le-tampon")!;
     const t = aujourdhuiPage("https://rundata.re", lt, resume(lt, full(lt.nom) as never, NOW), null);
     expect(t).toContain(`<b>Marché forain du Tampon</b></a> <span class="note">de 6\u00a0h à 13\u00a0h, Esplanade Benjamin Hoarau, d&#39;après le site de la mairie du Tampon (page du 23/10/2026)</span>`);
-    expect(t).toMatch(/<li>Autres marchés : <a [^>]*><b>Marché Couvert du Tampon<\/b><\/a>, .*, <span class="note">jours non trouvés<\/span><\/li>/);
+    expect(t).toMatch(/<li>Autres marchés : <a [^>]*><b>Marché Couvert du Tampon<\/b><\/a>, .*, <span class="note">jours et heures non donnés par OpenStreetMap, relevé le \d\d\/\d\d\/\d{4}<\/span><\/li>/);
+    expect(t).not.toContain("non trouvé");
     const ci = pageOf("cilaos")!;
     expect(aujourdhuiPage("https://rundata.re", ci, resume(ci, full(ci.nom) as never, NOW), null)).toMatch(/<li>Jours et horaires des marchés : <a href="https:\/\/ville-cilaos\.fr\/" rel="noopener"[^>]*>site de la mairie de Cilaos →<\/a><\/li>/);
     expect(t).not.toMatch(/pas de marché|aucun marché/i);

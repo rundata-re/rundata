@@ -65,14 +65,15 @@ export function ficheDescription(r: Pick<Row, "titre" | "quand" | "lieu" | "comm
 
 /**
  * What the source does not give, said rather than left blank: an event without its hour (a day alone) or without its
- * place, with who announced it and the link to its page, where the rest may be.
+ * place, with who announced it, linked to its page when there is one, where the rest may be.
  */
 function manque(r: Row): string {
   const absents = [r.date.length <= 10 && "l'heure", !r.lieu && "le lieu"].filter((x): x is string => !!x);
   if (!absents.length) return "";
   const dit = absents.length === 2 ? `ni ${absents.join(" ni ")}` : `pas ${absents[0]}`;
   const qui = r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : esc(r.publie_par);
-  return `<p class="note" data-sortie>L'annonce de ${qui} ne donne ${dit}${r.lien ? " : le détail peut être sur sa page" : ""}.</p>`;
+  // The source's name after a colon, without an article: « Mairie de Saint-Pierre », « Weezevent » take none.
+  return `<p class="note" data-sortie>L'annonce ne donne ${dit} ; le détail est peut-être sur sa source : ${qui}.</p>`;
 }
 
 /** The page of an event to come (or on), from the copy of /evenements. */

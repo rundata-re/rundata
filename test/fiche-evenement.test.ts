@@ -80,13 +80,15 @@ describe("an event's page", () => {
   it("says what its source does not give, the hour or the place, never a blank", () => {
     const sans = row({ date: "2026-11-21", quand: "samedi 21/11", lieu: undefined, description: "Un texte." });
     const page = fichePage("https://rundata.re", sans, copy([sans]), undefined);
-    expect(page).toContain('<p class="note" data-sortie>L\'annonce de <a href="https://www.saintpierre.re/agenda/concert" rel="noopener">Mairie de Saint-Pierre</a> ne donne ni l\'heure ni le lieu : le détail peut être sur sa page.</p>');
+    expect(page).toContain('<p class="note" data-sortie>L\'annonce ne donne ni l\'heure ni le lieu ; le détail est peut-être sur sa source : <a href="https://www.saintpierre.re/agenda/concert" rel="noopener">Mairie de Saint-Pierre</a>.</p>');
     // Its commune still said, and its day.
     expect(page).toMatch(/<p class="lead" data-sortie>samedi 21\/11, Saint-Pierre · /);
     const sansLien = fichePage("https://rundata.re", { ...sans, lien: undefined }, copy([sans]), undefined);
-    expect(sansLien).toContain("L'annonce de Mairie de Saint-Pierre ne donne ni l'heure ni le lieu.</p>");
+    expect(sansLien).toContain("L'annonce ne donne ni l'heure ni le lieu ; le détail est peut-être sur sa source : Mairie de Saint-Pierre.</p>");
     const sansHeure = fichePage("https://rundata.re", { ...sans, lieu: "Kerveguen" }, copy([sans]), undefined);
-    expect(sansHeure).toContain("ne donne pas l'heure : le détail");
+    expect(sansHeure).toContain("L'annonce ne donne pas l'heure ; le détail est peut-être sur sa source : <a ");
+    const sansLieu = fichePage("https://rundata.re", { ...sans, date: "2026-11-21T19:30", quand: "samedi 21/11 à 19:30" }, copy([sans]), undefined);
+    expect(sansLieu).toContain("L'annonce ne donne pas le lieu ; le détail est peut-être sur sa source : <a ");
     // Hour and place given: nothing said.
     expect(fichePage("https://rundata.re", row(), copy([row()]), undefined)).not.toContain("ne donne");
   });

@@ -286,6 +286,10 @@ describe("coupures d'eau", () => {
     }
     // The tool still names the tool for the tap water, for the assistant.
     expect(body(await coupuresEau(cache(later), "Salazie", later)).a_savoir).toBe("D'après l'ARS La Réunion, quand l'eau revient au robinet après une coupure, elle peut être impropre à la consommation pendant plusieurs heures\u00a0: ne pas la boire ni s'en servir pour préparer les repas, préférer l'eau en bouteille, et la garder pour la toilette, les WC et le ménage. Quand un avis dit de ne pas boire l'eau, suivre les consignes de cet avis. Source\u00a0: le dépliant «\u00a0Coupure d'eau\u00a0» de l'ARS La Réunion, https://www.lareunion.ars.sante.fr/system/files/2024-08/D%C3%A9pliant%20COUPURE%20D'EAU-web.pdf. La conformité de l'eau du robinet d'après les analyses de l'ARS : qualite_eau.");
+    // Out of the cyclone season, no instruction after a cyclone; in it, the prefecture's, as the page quotes it (src/eau/cyclone.ts).
+    expect(body(await coupuresEau(cache(later), "Salazie", later))).not.toHaveProperty("apres_un_cyclone");
+    const november = new Date("2026-11-02T04:00:00Z");
+    expect(body(await coupuresEau(cache(november), "Salazie", november)).apres_un_cyclone.consigne).toContain("faire bouillir pendant 3 minutes avant de la boire");
     const day = resume(pageOf("salazie")!, { coupures } as never, later);
     expect(day.resume).toContain("\u00a0; 1 avis d'eau à ne pas boire dans les secteurs de l'avis\u00a0;");
     expect(day.resume).not.toContain("coupure d'eau");

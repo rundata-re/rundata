@@ -5,27 +5,21 @@
  * notices are not read. Up the page in the cyclone season, at its foot the rest of the year. Nothing more is fetched.
  * Worded by marketing.
  */
+import { CONSIGNE, CONSIGNE_PAGE, inSeason, ORSEC_PDF as PDF } from "../eau/cyclone.js";
 import { BUILT, distributeur, MAIRIE_SAINTE_MARIE, partage, phrasePartage } from "../eau/distributeurs.js";
 import { a } from "../tools/format.js";
-import { PDF } from "./alerte-cyclone.js";
 import { lienNom } from "./domains.js";
 import { esc } from "./map.js";
 import { PAGES } from "./places.js";
 
-/** The plan's words, copied from the PDF (consignes of the phase de sauvegarde). */
-export const CONSIGNE = "Vérifier la qualité de l'eau du robinet avant de la consommer ainsi que les aliments du réfrigérateur. Ne pas oublier que l'eau du robinet peut rester impropre à la consommation plusieurs jours après l'arrêt des pluies. En conséquence, il est impératif de la faire bouillir pendant 3 minutes avant de la boire.";
-export const CONSIGNE_PAGE = 18;
+// The plan's words and the season, shared with the tools qualite_eau and coupures_eau.
+export { CONSIGNE, CONSIGNE_PAGE, inSeason };
+
 const EAUDUROBINET = "https://www.eaudurobinet.re/";
 const COMMUNES = PAGES.filter((p) => p.commune).map((p) => p.nom);
 
 /** How many distributors' notices are read, each counted once (CISE Réunion through the CIREST and Sainte-Marie). */
 export const distributeursLus = () => new Set(COMMUNES.map((c) => distributeur(c)).filter((d) => d?.avis).map((d) => d!.nom)).size;
-
-/** November to April, as the cyclones tool says the season (src/tools/cyclones.ts), local time. */
-export function inSeason(now: Date): boolean {
-  const m = new Date(now.getTime() + 4 * 3600_000).getUTCMonth() + 1;
-  return m >= 11 || m <= 4;
-}
 
 /** Whose notices are read for a commune, in a sentence. */
 export function coverageLine(commune: string): string {

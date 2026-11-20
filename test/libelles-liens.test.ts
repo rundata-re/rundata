@@ -41,6 +41,21 @@ describe("links of the same words for two pages", () => {
     const tile = communeHikes(pageOf("saint-denis")!, hikes, NOW)!;
     expect(tile.nom).toBe("Randonnée dans le Nord");
     expect(tile.live!.detail).not.toContain("randonnée");
+    expect(tile.live!.valeur).toBe("1 sentier fermé");
+    expect(tile.live!.detail).toMatch(/^sur 1 dans la commune, d'après la carte de l'ONF/);
+  });
+
+  it("give the number of the commune's open trails when none is closed: « 2 sentiers ouverts », « sur 2 dans la commune »", () => {
+    const trail = (k: string, etat: string) => ({ k, nom: `Sentier ${k}`, commune: "Le Tampon", communes: ["Le Tampon"], km: 3, etat, boucle: false, randonnees: [] });
+    const answer = (sentiers: unknown[]) => ({ value: { randonnees: [], secteurs: [{ secteur: "Sud", communes: ["Le Tampon"], sentiers }], lignes: [], fermes: 0, suivis: sentiers.length, sources: [] } as unknown as RandonneesAnswer, fetchedAt: NOW, stale: false });
+    const all = communeHikes(pageOf("le-tampon")!, answer([trail("a", "ouvert"), trail("b", "ouvert"), trail("c", "inconnu")]), NOW)!;
+    expect(all.live!.valeur).toBe("2 sentiers ouverts");
+    expect(all.live!.detail).toMatch(/^sur 2 dans la commune, d'après la carte de l'ONF/);
+    expect(communeHikes(pageOf("le-tampon")!, answer([trail("a", "ouvert")]), NOW)!.live!.valeur).toBe("1 sentier ouvert");
+    // Some closed: their number, over all of the commune's.
+    const some = communeHikes(pageOf("le-tampon")!, answer([trail("a", "ouvert"), trail("b", "fermé"), trail("c", "fermé")]), NOW)!;
+    expect(some.live!.valeur).toBe("2 sentiers fermés");
+    expect(some.live!.detail).toMatch(/^sur 3 dans la commune/);
   });
 
   it("add « , état ONF » to a trail's ONF page when the same name leads to its hike on the page", () => {

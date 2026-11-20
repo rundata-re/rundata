@@ -3302,7 +3302,8 @@ ${d?.programmes_communes?.length ? `<section aria-labelledby="h-prog">
     `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a><small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span><span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
 </section>` : ""}
 ${d?.resultats?.length ? `<section aria-labelledby="h-res">
-  <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2></div>
+  <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2>
+  ${d.resultats_en_tout ? `<p>${d.resultats_en_tout} résultats${d.periode ? ` depuis le ${esc(d.periode.du)}` : ""}\u00a0: les ${d.resultats.length} plus récents ci-dessous.</p>` : ""}</div>
   ${bySport(d.resultats, true, true)}
 </section>` : ""}
 ${standings ? `<section aria-labelledby="h-class">

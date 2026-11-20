@@ -279,6 +279,11 @@ describe("sport", () => {
     expect(page.resultats).toEqual(all.resultats.slice(0, 30));
     expect(page.resultats_en_tout).toBe(n);
     expect(page.resume).toMatch(new RegExp(`^${n} résultats depuis le .+ \\(les 30 plus récents ci-dessous\\)\\.`));
+    // The page says it too, above its 30 (20/11/2026: the tool said 32, the page showed 30 without a total).
+    const html = sportPage("https://rundata.re", { value: { ...page, classements: [] } as SportAnswer, fetchedAt: NOW, stale: false }, NOW).replace(/\u00a0/g, " ");
+    expect(html).toContain(`<p>${n} résultats depuis le ${page.periode.du} : les 30 plus récents ci-dessous.</p>`);
+    const whole = sportPage("https://rundata.re", { value: { ...all, classements: [] } as SportAnswer, fetchedAt: NOW, stale: false }, NOW);
+    expect(whole).not.toContain("plus récents ci-dessous");
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     try {

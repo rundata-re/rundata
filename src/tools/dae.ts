@@ -3,12 +3,33 @@ import { INSEE } from "../places/insee.js";
 import { resolvePlace } from "../places/resolve.js";
 import { BUILT, DAES, type Dae, SOURCE } from "../providers/dae.js";
 import { casseArret, lieuEcrit, NO_VOWEL, STOP_SIGLES } from "./casse.js";
-import { credits, fr, notFound, placeBlock, text } from "./format.js";
+import { slugify } from "../web/places.js";
+import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
 
 const NEAR_KM = 2;
 const SHOWN = 5;
 // Walking in town: about 80 m a minute, the streets a third longer than the straight line.
 const walk = (km: number) => Math.max(1, Math.round((km * 1000 * 1.3) / 80));
+// A walk said only this close: further, the straight line may cross a ravine or a cirque (20/11/2026: « 156 min à
+// pied » from Bellevue to Cilaos, through the Piton des Neiges).
+const WALK_KM = 1;
+
+/** A distance as the crow flies, in marketing's words (20/11/2026): « à 9,6\u00a0km à vol d'oiseau ». */
+export const volOiseau = (km: number) => `à ${loin(km)} à vol d'oiseau`;
+
+/** The walk, only under a kilometre and with its condition: « environ 10\u00a0min à pied si le chemin est direct ». */
+export const aPiedDirect = (km: number) => (km < WALK_KM ? `environ ${aPied(walk(km))} à pied si le chemin est direct` : undefined);
+
+/**
+ * The nearest point in another commune than the place asked (marketing, 20/11/2026): « À Cilaos, une autre commune\u00a0:
+ * par la route, le trajet peut être bien plus long que la distance à vol d'oiseau. ». Undefined in the same commune, or
+ * for a point without one (coordinates).
+ */
+export function autreCommune(lieu: string | undefined, commune: string): string | undefined {
+  if (!lieu || !commune || slugify(lieu) === slugify(commune)) return undefined;
+  const at = a(commune);
+  return `${at[0].toUpperCase()}${at.slice(1)}, une autre commune\u00a0: par la route, le trajet peut être bien plus long que la distance à vol d'oiseau.`;
+}
 
 /** How far, as it is said: « 640\u00a0m » to 10 m, from 1 000 m in kilometres to 100 m, « 6,4\u00a0km ». */
 export function loin(km: number): string {
@@ -98,13 +119,15 @@ export function access(d: Dae): string {
   return d.acces_libre ? "en accès libre aux heures d'ouverture du lieu" : "accès réservé (demander à l'accueil ou au personnel)";
 }
 
-export function daeRow(d: Dae, from?: { lon: number; lat: number }) {
+export function daeRow(d: Dae, from?: { lon: number; lat: number }, commune?: string) {
   const km = from ? distanceKm(from.lon, from.lat, d.lon, d.lat) : undefined;
   return {
     lieu: nomDae(d.nom),
     adresse: [d.adresse, d.commune].filter(Boolean).join(", "),
     distance_m: km !== undefined ? Math.round(km * 1000 / 10) * 10 : undefined,
-    a_pied_min: km !== undefined ? walk(km) : undefined,
+    distance: km !== undefined ? volOiseau(km).slice(2) : undefined,
+    a_pied: km !== undefined ? aPiedDirect(km) : undefined,
+    autre_commune: km !== undefined ? autreCommune(commune, d.commune) : undefined,
     acces: access(d),
     emplacement: d.emplacement,
     etage: etage(d.etage),
@@ -147,10 +170,11 @@ export function defibrillateurs(lieu: string | undefined) {
   return text({
     lieu: placeBlock(lieu, res),
     resume: `${URGENCE.split(" : ")[0]} : appeler le 15 ou le 112. Défibrillateur le plus proche (${res.lieu.nom}) : ` +
-      `${nomDae(first.d.nom)}${first.d.adresse ? `, ${first.d.adresse}` : ""} (${first.d.commune}), à ${loin(first.km)}, environ ${aPied(walk(first.km))} à pied, ${access(first.d)}.` +
-      (anyHour && anyHour !== first ? ` Accessible à toute heure : ${nomDae(anyHour.d.nom)}, à ${loin(anyHour.km)}.` : "") +
+      `${nomDae(first.d.nom)}${first.d.adresse ? `, ${first.d.adresse}` : ""} (${first.d.commune}), ${volOiseau(first.km)}${aPiedDirect(first.km) ? `, ${aPiedDirect(first.km)}` : ""}, ${access(first.d)}.` +
+      (autreCommune(res.lieu.commune, first.d.commune) ? ` ${autreCommune(res.lieu.commune, first.d.commune)}` : "") +
+      (anyHour && anyHour !== first ? ` Accessible à toute heure : ${nomDae(anyHour.d.nom)}, ${volOiseau(anyHour.km)}.` : "") +
       (near.length ? "" : ` Aucun à moins de ${NEAR_KM} km.`),
-    defibrillateurs: picked.map((x) => daeRow(x.d, from)),
+    defibrillateurs: picked.map((x) => daeRow(x.d, from, res.lieu.commune)),
     a_savoir: "Liste déclarée par les exploitants dans la base nationale : un appareil peut avoir été déplacé, ou être dans un lieu fermé à cette heure.",
     ...common,
   });

@@ -235,6 +235,8 @@ function resolve(text: string): Resolution | null {
     if (best.standIn) return { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true };
     // The same name in other communes (« Bellevue », Salazie and Saint-Louis): the first is answered, the others said, so
     // that a cut of water or a forecast is not taken for the wrong one. Seen by ux on 20/11/2026.
+    // A commune's own name means the commune (« Saint-Joseph », not the lieu-dit of Sainte-Suzanne): nothing more said.
+    if (best.place.type === "commune") return { lieu: best.place, correspondance: "exacte", autres: [] };
     const communes = new Set([best.place.commune]);
     const autres = ranked.slice(1).flatMap((e) => (e.standIn || communes.has(e.place.commune) || !communes.add(e.place.commune) ? [] : [e.place])).slice(0, 3);
     return { lieu: best.place, correspondance: "exacte", autres };

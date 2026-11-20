@@ -305,7 +305,8 @@ export const SUJETS: { id: string; nom: string; re: RegExp }[] = [
   { id: "meteo", nom: "météo et cyclones", re: new RegExp(`\\b(?:${WEATHER}|vigilance (?:jaune|orange|rouge|violette|meteo\\w*|cyclon\\w*|fortes?)|alerte cyclonique)\\b`) },
   { id: "volcan", nom: "volcan et séismes", re: /\b(?:volcan\w*|eruption\w*(?! (?:de joie|cutanee)\b)|fournaise|dolomieu|seisme\w*|sismi\w*|enclos)\b/ },
   { id: "eau", nom: "eau et électricité", re: /\b(?:eau potable|coupures?(?! de presse\b)|robinet|citernes?|secheresse|ne buvez pas|ne pas boire|edf|electricite|delestage\w*|panne\w*)\b/ },
-  { id: "securite", nom: "faits divers et sécurité", re: /\b(?:incendi\w*|feux(?! d artifices?\b)|police\w*|gendarm\w*|interpell\w*|tribunal|proces|agression\w*|vols?(?! (?:vers|pour|directs?|reguliers?|d air)\b)|meurtre\w*|enquete|secours|pompiers|braconnage)\b/ },
+  // Not « une enquête publique » nor « le tribunal administratif », procedures of a project, not crimes (19/11/2026).
+  { id: "securite", nom: "faits divers et sécurité", re: /\b(?:incendi\w*|feux(?! d artifices?\b)|police\w*|gendarm\w*|interpell\w*|tribunal(?! administratif)|proces|agression\w*|vols?(?! (?:vers|pour|directs?|reguliers?|d air)\b)|meurtre\w*|enquete(?! publique)|secours|pompiers|braconnage)\b/ },
   { id: "sante", nom: "santé", re: /\b(?:sante|chu|hopita\w*|ars|epidemie|dengue|chikungunya|leptospirose|vaccin\w*|cancer|avc)\b/ },
   { id: "politique", nom: "politique et collectivités", re: /\b(?:prefet\w*|prefecture|maires?|municipal\w*|elus?|region|departement\w*|gouvernement|ministre\w*|deputes?|senat\w*|conseil (?:municipal|departemental|regional|d etat|constitutionnel|communautaire|des ministres|general)|conseillers? (?:municipa\w*|departementa\w*|regiona\w*))\b/ },
   // Its own words only: « annulé » or « reporté » alone say nothing of culture (an election cancelled, matches put off,

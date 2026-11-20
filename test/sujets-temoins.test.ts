@@ -119,10 +119,13 @@ describe("witness headlines of /actualites's other subjects (its filter by subje
     hasNot("eau", ["Coupures de presse : l'exposition des archives départementales"]);
   });
 
-  it("« sécurité »: crimes, fires, the police; not fireworks nor flights", () => {
+  it("« sécurité »: crimes, fires, the police; not fireworks, flights, a public inquiry nor the administrative court", () => {
     has("securite", ["Saint-Denis : près de 3 kg de cocaïne, des armes saisis et un individu interpellé", "Braconnage dans la réserve naturelle : 79 kg de poissons et de crustacés saisis"]);
+    // Clicanoo, 19/11/2026: a call to take part in a public inquiry on a waste site, filed under the crimes on the site.
+    hasNot("securite", ["“Encore un jour !” Magali Barau appelle les Sainte-Mariens à se mobiliser contre l’ISDU de Beaufond. Elle appelle les habitants à participer à l’enquête publique sur la révision du SCoT. Le syndicat avait engagé un recours devant le tribunal administratif de La Réunion."]);
     // Written for this test.
     hasNot("securite", ["Feux d'artifice du 20 décembre : le programme", "Les vols vers Maurice reprennent ce week-end"]);
+    has("securite", ["Rixe à Bois d'Olives : une enquête ouverte", "Trafic de stupéfiants : trois hommes devant le tribunal correctionnel"]);
   });
 
   it("« santé »: health, a stroke included", () => {

@@ -166,8 +166,16 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
       ? { lieu: "Sentiers hors Enclos", texte: `${head} : ${shut.join(", ")} ${shut.length > 1 ? "fermés" : "fermé"} selon l'ONF (${when}).`, lien: "/sentiers" }
       : { lieu: "Sentiers hors Enclos", texte: `${head} : l'ONF ne signale pas de fermeture dans le secteur du volcan (${when}).`, lien: "/sentiers" });
     if (niveau && /^Vigilance/i.test(niveau)) {
-      const open = [...new Set(carte.value.sentiers.filter((t) => ENCLOS_TRAILS.test(t.nom) && t.statut === "ouvert").map((t) => t.nom))];
-      if (open.length) lignes.splice(1, 0, { lieu: "Sentiers de l'Enclos", texte: `Sentiers de l'Enclos ouverts selon l'ONF (${when}) : ${open.join(", ")}.` });
+      const enclos = carte.value.sentiers.filter((t) => ENCLOS_TRAILS.test(t.nom));
+      const open = [...new Set(enclos.filter((t) => t.statut === "ouvert").map((t) => t.nom))];
+      // The closed ones too, each with the ONF's reason: on 20/11/2026 the Kapor trail, « instable pour cause d'éruption
+      // récente », was closed on /sentiers and named nowhere here, where only the open ones were listed.
+      const shut = [...new Map(enclos.filter((t) => t.statut === "fermé").map((t) => [t.nom, t])).values()]
+        .map((t) => (t.cause ? `${t.nom} (${t.cause.replace(/\.$/, "")})` : t.nom));
+      const lines: Ligne[] = [];
+      if (open.length) lines.push({ lieu: "Sentiers de l'Enclos", texte: `Sentiers de l'Enclos ouverts selon l'ONF (${when}) : ${open.join(", ")}.` });
+      if (shut.length) lines.push({ lieu: "Sentiers de l'Enclos", texte: `Sentiers de l'Enclos fermés selon l'ONF (${when}) : ${shut.join("\u00a0; ")}.`, lien: "/sentiers" });
+      lignes.splice(1, 0, ...lines);
     }
   }
   return { titre: TITRE, chapeau: CHAPEAU, lignes, pied: PIED };

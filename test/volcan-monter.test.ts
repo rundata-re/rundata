@@ -81,6 +81,20 @@ describe("« Puis-je monter au volcan ? »", () => {
     ]);
   });
 
+  // 20/11/2026: the Kapor trail closed on /sentiers, « instable pour cause d'éruption récente », named nowhere on /volcan.
+  it("names the Enclos' closed trails as well as its open ones in vigilance, each with the ONF's reason", () => {
+    const c = carte();
+    c.value.sentiers.push(
+      { nom: "Sentier Kapor", statut: "fermé", cause: "Sentier instable pour cause d'éruption récente", longueur_km: 1, points: [] },
+      { nom: "Sentier Rivals", statut: "ouvert", longueur_km: 1, points: [] },
+    );
+    const lines = acces("Vigilance", undefined, undefined, c).lignes.map(lineText);
+    expect(lines).toContain("Sentiers de l'Enclos ouverts selon l'ONF (24/10) : Sentier Rivals.");
+    expect(lines.find((l) => l.startsWith("Sentiers de l'Enclos fermés"))).toMatch(
+      /^Sentiers de l'Enclos fermés selon l'ONF \(24\/10\) : Sentier du Cratère Dolomieu\u00a0; Sentier Kapor \(Sentier instable pour cause d'éruption récente\)\. https:\/\/rundata\.re\/sentiers$/,
+    );
+  });
+
   it("follows the level: the plan's words in vigilance and sauvegarde, nothing but « check » when the level is not read", () => {
     const vigilance = acces("Vigilance", undefined, undefined, carte());
     expect(lineText(vigilance.lignes[0])).toBe("Partie haute de l'Enclos : « l'accès du public non-accompagné est restreint aux seuls sentiers balisés et ouverts » (dispositif ORSEC Volcan, p. 23).");

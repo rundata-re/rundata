@@ -143,7 +143,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its news of the roads: not « le trafic de drogue », nor the dam of Takamaka.
   trafic: 8,
   velos: 7,
-  volcan: 14,
+  // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
+  volcan: 15,
 };
 
 /**

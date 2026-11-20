@@ -118,7 +118,7 @@ import { cumulsScript, cumulsScriptPath } from "./pluie-cumuls.js";
 import { chiffresScript, chiffresScriptPath } from "./en-chiffres.js";
 import { CSS, FONT_PATH, legalPage, meteoPage, notFoundPage, offlinePage, placePage, seaPage, STYLE_PATH, vigilancePage } from "./pages.js";
 import { OFFLINE_PATH, serviceWorker, SW_PATH } from "./pwa.js";
-import { pageOf, PAGES } from "./places.js";
+import { pageOf, PAGES, PRINCIPAL } from "./places.js";
 import { pressePage, pressFigures, toolCount } from "./presse.js";
 import { avisPost } from "./avis-envoi.js";
 import * as connecteurs from "./connecteurs.js";
@@ -481,7 +481,7 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
   const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed(ECOLES), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
     // The busiest stops only (scripts/build-transit.py): the others' pages are not indexed.
     ...[...transit.stopPages().values()].filter((p) => p.indexe).map((p) => live(`${STOP_PATH}/${p.slug}`)),
-    ...PAGES.map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
+    ...PAGES.filter((p) => !PRINCIPAL[p.slug]).map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
     ...Object.values(traces.SENTIERS).map((t) => trace(`/sentiers/${t.slug}`)), ...["/presse", "/a-propos", VALEURS, JEUX_TRANSPORT, APPLICATION, GUIDE, "/mcp", "/confidentialite", "/conditions", BAIGNADE, ...PASSES.map((c) => `/cyclones/${c.slug}`)].map(fixed),
     ...(formulaires.enLigne() ? [live(ASSOCIATIONS_PATH), fixed(formulaires.PROPOSER_PATH)] : []),
     ["/nouveautes", localDay(NOUVEAUTES[0].date), "daily"], [ANTENNES, undefined, "weekly"], [SANS_REPONSE, undefined, "daily"], live(CHIFFRES), ["/carburants", fuelDay ? (fuelDay < today ? fuelDay : today) : undefined, "daily"],

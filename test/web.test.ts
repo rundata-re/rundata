@@ -18,7 +18,7 @@ import { VERSION } from "../src/server.js";
 import { COVERAGE as SEA_COVERAGE } from "../src/tools/mer.js";
 import { MOTIF_PATH } from "../src/web/fonds.js";
 import { CSS, DESCRIPTION_MAX, FONT_PATH, meteoPage, placePage, seaPage, STYLE_PATH, vigilanceLive, vigilancePage } from "../src/web/pages.js";
-import { PAGES, pageOf } from "../src/web/places.js";
+import { PAGES, pageOf, PRINCIPAL } from "../src/web/places.js";
 import { htmlFor, isReader, site } from "../src/web/site.js";
 import { retiree } from "../src/web/sitemap-retires.js";
 import { unzip } from "../src/zip.js";
@@ -531,7 +531,8 @@ describe("what crawlers and previews fetch", () => {
     // list of 18/11/2026): 19 days and 14 places for children of a commune, and stops (web/sitemap-retires.ts, counted in
     // test/sitemap-liste.test.ts).
     const stops = [...stopPages().values()].filter((p) => p.indexe && !retiree(`/bus/arret/${p.slug}`));
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 21 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
+    // The places whose page sends to another (places.ts PRINCIPAL) are out of it.
+    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length - Object.keys(PRINCIPAL).length + 61 + 24 + 21 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");

@@ -705,7 +705,8 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(children(p) ? [{ icon: "kids", nom: "Enfants", href: enfantsPath(p), live: children(p) }] : []),
     ...(lieux ? [{ icon: "landmark", nom: "À découvrir", ...lieux, full: true }] : []),
     { icon: "calendar", nom: "Soleil et calendrier", href: "/calendrier", live: sunTimes(p, l.calendrier, now) },
-    { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/mcp">Demandez à votre IA →</a>`, wide: true },
+    // The fiche of an address of the commune (web/terrain.ts), the commune prefilled, besides the assistant (marketing, 20/11).
+    { icon: "map", nom: "Terrain et risques", question: `Mon adresse ${a(p.nom)} est-elle en zone inondable ?`, foot: `<a href="/terrain?commune=${p.slug}">La fiche d'une adresse →</a> · <a href="/mcp">Demandez à votre IA →</a>`, wide: true },
   ];
   // Figures of a year or a quarter, out of the grid that says « en ce moment » (marketing, 26/10).
   const habiter: Tile[] = [

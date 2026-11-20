@@ -396,11 +396,16 @@ export function incertain(adresse: string, a: { label: string; type: string; sco
 const introuvable = (adresse: string, at: string) =>
   `Adresse introuvable dans la Base adresse nationale\u00a0: «\u00a0${adresse}\u00a0». Réponse pour ${at}, pas pour cette adresse\u00a0: le dire à l'utilisateur.`;
 
-export async function ficheLieu(cache: Cache, adresse: string, now = new Date()) {
+/**
+ * The fiche of an address, as an object: the connector's answer (ficheLieu) and the /terrain page (web/terrain.ts) read
+ * the same one, so that the page never says more or less than the tool. `erreur` when nothing was found, or another
+ * street than the one asked.
+ */
+export async function ficheDonnees(cache: Cache, adresse: string, now = new Date()): Promise<{ erreur: Record<string, unknown>; fiche?: never } | { fiche: Record<string, unknown>; erreur?: never }> {
   // Nothing to look for: the address base answers an empty query with its first result, a parcel of Sainte-Marie, which
   // an assistant gave as the answer (31/10/2026).
   if (!/[\p{L}\p{N}]{2}/u.test(adresse ?? "")) {
-    return { ...text({ erreur: "Aucune adresse donnée.", conseil: "Donner une adresse (numéro, rue, commune), un lieu-dit ou des coordonnées." }), isError: true };
+    return { erreur: ({ erreur: "Aucune adresse donnée.", conseil: "Donner une adresse (numéro, rue, commune), un lieu-dit ou des coordonnées." }) };
   }
   // A street address goes to the national address base; a place name to the gazetteer first.
   let where: { label: string; lon: number; lat: number; precision: string; insee?: string } | null = null;
@@ -438,8 +443,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
       const q = (x: string) => `«${N}${x}${N}»`;
       const at = commune ? ` ${aCommune(commune)}` : "";
       const one = near.length === 1;
-      return {
-        ...text({
+      return { erreur: ({
           erreur: `Voie introuvable dans la Base adresse nationale${N}: ${q(adresse)}. Sa réponse la plus approchante, ${q(street)}${commune ? ` (${commune})` : ""}, est une autre voie${N}: pas de cadastre, de prix, d'urbanisme ni de risques pour une voie autre que celle demandée.`,
           ...(near.length ? { voies_proches: near.map((x) => (commune ? `${x}, ${commune}` : x)) } : {}),
           // The base's order, the closest first.
@@ -447,9 +451,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
             ? `${one ? "Voie" : "Voies"} au nom proche${at}, d'après la Base adresse nationale${N}: ${near.join(", ")}. Demander à l'utilisateur ${one ? "si c'est la bonne" : "laquelle est la bonne"}, puis redemander avec ce nom et la commune${N}; ne pas ${one ? "la choisir" : "en choisir une"} à sa place.`
             : `Aucune voie au nom proche${at} dans la Base adresse nationale. Demander à l'utilisateur de vérifier le nom de la voie, puis redemander avec la commune, ou avec un lieu-dit.`,
           sources: credits([terrain.SOURCES.ban]),
-        }),
-        isError: true,
-      };
+        }) };
     }
     const code = a && street ? terrain.codeVoie(a.id) : undefined;
     if (a && street) voie = { nom: street, insee: a.insee, ...(code ? { code } : {}) };
@@ -464,10 +466,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
     if (where && ADDRESS.test(adresse) && VAGUE.has(where.precision)) perdue = true;
   }
   if (!where) {
-    return {
-      ...text({ erreur: `Adresse ou lieu introuvable à La Réunion : « ${adresse} ».`, conseil: "Donner une adresse (numéro, rue, commune) ou un lieu-dit." }),
-      isError: true,
-    };
+    return { erreur: ({ erreur: `Adresse ou lieu introuvable à La Réunion : « ${adresse} ».`, conseil: "Donner une adresse (numéro, rue, commune) ou un lieu-dit." }) };
   }
   const { lon, lat } = where;
   // No address nor point: nothing of one parcel, which would be any parcel of the place (« parcelle AZ 0083, zone N » for
@@ -530,7 +529,7 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
   ];
   if (vague) {
     const r_ = risksBlock(lon, lat, insee, undefined, cat, undefined);
-    return text({
+    return { fiche: {
       ...(doute ? { avertissement: doute } : {}),
       ...(perdue ? { avertissement: introuvable(adresse, `le centre ${where.precision === "centre de la commune" ? "de la commune de" : "de"} ${where.label}`) } : {}),
       resume: `${parts.join("\u00a0; ")}.`,
@@ -541,10 +540,10 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
       ...(net ? { internet_dans_la_commune: net.bloc } : {}),
       risques_dans_la_commune: { catastrophes_naturelles: r_.catastrophes_naturelles, seisme: r_.seisme, radon: r_.radon, cyclone_et_volcan: r_.cyclone_et_volcan, pour_aller_plus_loin: r_.pour_aller_plus_loin },
       sources: credits(used),
-    });
+    } };
   }
   const point = ant!;
-  return text({
+  return { fiche: {
     ...(doute ? { avertissement: doute } : {}),
     resume: `${parts.join("\u00a0; ")}.`,
     lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },
@@ -579,7 +578,13 @@ export async function ficheLieu(cache: Cache, adresse: string, now = new Date())
       "Ces informations sur les risques ne remplacent pas l'état des risques obligatoire pour une vente ou une location. La couleur exacte de la zone d'un PPR (rouge : construction interdite, bleue : sous conditions) se lit sur sa carte de zonage.",
     ],
     sources: credits(used),
-  });
+  } };
+}
+
+/** fiche_terrain: the fiche of an address (ficheDonnees), as the connector's answer. */
+export async function ficheLieu(cache: Cache, adresse: string, now = new Date()) {
+  const r = await ficheDonnees(cache, adresse, now);
+  return r.erreur ? { ...text(r.erreur), isError: true } : text(r.fiche);
 }
 
 function planName(p: terrain.Plan): string {

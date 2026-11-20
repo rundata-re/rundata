@@ -92,6 +92,8 @@ import { decheteriesPage } from "./decheteries.js";
 import { alertePage } from "./alerte-cyclone.js";
 import { kitPage } from "./kit-cyclone.js";
 import { pechePage } from "./peche.js";
+import { ficheDonnees } from "../tools/terrain.js";
+import { ALIASES as TERRAIN_ALIASES, asked as terrainAsked, PATH as TERRAIN, terrainPage } from "./terrain.js";
 import { MODELE_CSV, publierPage } from "./publier.js";
 import { passePage } from "./cyclones-passes.js";
 import { PASSES, slugDuNom } from "../historique/cyclones-passes.js";
@@ -478,7 +480,7 @@ function siteUrls(now: Date, fuelDay?: string): Url[] {
   const fixed = (u: string): Url => [u, undefined, "monthly"];
   const trace = (u: string): Url => [u, undefined, "daily"];
   // The defibrillators are a list bundled with the server: their page changes when it is rebuilt.
-  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed(ECOLES), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
+  const urls: Url[] = [...["/", ...Object.keys(DOMAINS).filter((u) => u !== "/defibrillateurs"), "/vigilance", "/ecoles-cyclone", "/alerte-cyclone", "/mer", "/peche", CARTE, "/collecte", ...COLLECTE_COMMUNES.map((c) => `/collecte/${communeSlug(c)}`)].map(live), ["/defibrillateurs", dae.BUILT, "monthly"], fixed("/communes"), fixed("/kit-cyclone"), fixed(TERRAIN), fixed(ECOLES), fixed("/publier"), ...COMMUNES.map((p) => live(`/communes/${p.slug}`)), ...COMMUNES.map((p) => live(`/coupures-eau/${p.slug}`)), ...COMMUNES.map((p) => live(`/aujourdhui/${p.slug}`)), ...COMMUNES.map((p) => live(enfantsPath(p))),
     // The busiest stops only (scripts/build-transit.py): the others' pages are not indexed.
     ...[...transit.stopPages().values()].filter((p) => p.indexe).map((p) => live(`${STOP_PATH}/${p.slug}`)),
     ...PAGES.filter((p) => !PRINCIPAL[p.slug]).map((p) => live(`/meteo/${p.slug}`)), ...STATIONS.map((x) => live(stationPath(x.id))), ...SECTEURS.map((x) => live(`/randonnees/${x.slug}`)), ...traces.RANDONNEES.map((r) => trace(`/randonnees/${r.slug}`)),
@@ -674,6 +676,8 @@ const ALIASES: Record<string, string> = {
   "/randos": "/randonnees",
   // The companies' and bodies' space (web/entreprises.ts): « /organismes », « /open-data ».
   ...Object.fromEntries(ENTREPRISES_ALIASES.map((a) => [a, ENTREPRISES])),
+  // The fiche of an address (web/terrain.ts): the words people search for it.
+  ...Object.fromEntries(TERRAIN_ALIASES.map((a) => [a, TERRAIN])),
 };
 
 async function pages(request: Request, cache: Cache, background: Background, now: Date): Promise<Response | null> {
@@ -771,6 +775,14 @@ async function pages(request: Request, cache: Cache, background: Background, now
     return new Response(kitPage(origin, a), { headers: HTML });
   }
   // The rules of the day, computed from the decrees in the code (tools/peche.ts): nothing read but the vigilance's banner.
+  // The fiche of an address (web/terrain.ts): read at each view through the sources' cache (tools/terrain.ts), the
+  // page itself never kept, at the edge nor in a browser's cache, when it holds what someone typed.
+  if (path === TERRAIN) {
+    const commune = COMMUNES.find((p) => p.slug === url.searchParams.get("commune"));
+    const adresse = terrainAsked(url.searchParams.get("adresse") ?? "", commune);
+    const [r, a] = await Promise.all([adresse ? ficheDonnees(cache, adresse, now) : undefined, alerte(cache, background, now)]);
+    return new Response(terrainPage(origin, adresse, r, commune, a), { headers: { ...HTML, "cache-control": adresse ? "no-store" : "public, max-age=300" } });
+  }
   if (path === "/peche" || path === "/peche/") {
     const a = await alerte(cache, background, now);
     return new Response(pechePage(origin, a, now), { headers: HTML });

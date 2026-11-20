@@ -27,6 +27,11 @@ export interface Resolution {
    * asked (« Bellevue », at Salazie and at Saint-Louis), one per commune.
    */
   autres: Place[];
+  /**
+   * For coordinates: the nearest place of the gazetteer, whose commune the point is given. Near a commune's limit, the
+   * point may be in the next one: said (format.ts).
+   */
+  proche?: { nom: string; km: number };
   /** The words of the text left aside around the name found, but its commune's (« parc », « palmiers » around « Saint-Pierre »). */
   ignores?: string[];
 }
@@ -196,10 +201,14 @@ function resolve(text: string): Resolution | null {
     let [a, b] = [parseFloat(m[1].replace(",", ".")), parseFloat(m[2].replace(",", "."))];
     if (Math.abs(a) > 50) [a, b] = [b, a]; // "55.22, -21.05": longitude first
     if (!inReunion(b, a)) return null;
+    // The commune of the nearest place, not none: the vigilance of its zone and its air index are said for it, where
+    // « zone inconnue » and « pas de vigilance » were (ux, 20/11/2026).
+    const near = placeAt(b, a);
     return {
-      lieu: { nom: `${a.toFixed(4)}, ${b.toFixed(4)}`, type: "coordonnees", lon: b, lat: a, altitude_m: null, commune: "" },
+      lieu: { nom: `${a.toFixed(4)}, ${b.toFixed(4)}`, type: "coordonnees", lon: b, lat: a, altitude_m: null, commune: near.commune },
       correspondance: "coordonnees",
       autres: [],
+      proche: { nom: near.nom, km: Math.round(distanceKm(b, a, near.lon, near.lat) * 10) / 10 },
     };
   }
 

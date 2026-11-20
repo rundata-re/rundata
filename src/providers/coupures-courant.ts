@@ -24,9 +24,9 @@ export const LISIBLES: { commune: string; site: string; pdf?: true }[] = [
 ];
 
 /**
- * The mairies read: not those whose site's terms ask their authorisation, until it is given
- * (src/providers/autorisations.ts, `courant:<commune>`). One left out is not read, and its notices, already kept, are
- * not said (tools/courant.ts).
+ * The mairies read (src/providers/autorisations.ts, `courant:<commune>`): all of them since 20/11/2026, as the
+ * communes' public information. One taken out on its request is not read, and its notices, already kept, are not said
+ * (tools/courant.ts).
  */
 export const MAIRIES = LISIBLES.filter((m) => autorisee(`courant:${m.commune}`));
 

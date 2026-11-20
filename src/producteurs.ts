@@ -246,6 +246,10 @@ export const FICHES: Record<string, Fiche> = {
   // Read as the commune's public information since 20/11/2026 (providers/autorisations.ts).
   actus_saint_denis: { famille: "information_publique", agendas: true },
   actus_saint_pierre: { famille: "information_publique", agendas: true },
+  // Read as the commune's public information since 20/11/2026 (providers/autorisations.ts).
+  actus_cilaos: { famille: "information_publique", agendas: true },
+  actus_saint_joseph: { famille: "information_publique", agendas: true },
+  actus_saint_philippe: { famille: "information_publique", agendas: true },
   salles_spectacle: { famille: "information_publique", agendas: true },
   propositions_associations: { famille: "licence_ouverte", horsCompte: true },
   // The associations' own events, read with their consent on the platform they linked: not counted, as the proposals.

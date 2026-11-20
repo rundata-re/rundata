@@ -1,6 +1,5 @@
 import { a, de, deNom } from "../src/articles.js";
 import { describe, expect, it } from "vitest";
-import { mention } from "../src/tools/non-repris.js";
 import { resume } from "../src/tools/resume.js";
 import { aCommune, aujourdhuiPage, dayLines, descriptionOf, FICHE, H1, HOOK, LINK, stationCommune, titleOf, urgent } from "../src/web/aujourdhui.js";
 import type { Resume } from "../src/tools/resume.js";
@@ -120,15 +119,11 @@ describe("the page of a commune's day", () => {
     expect(l).toContain(`<b>Marché forain de la ZAC Avenir</b></a> <span class="note">de 6\u00a0h à 13\u00a0h, Place Raymond Barre, ZAC Avenir, d&#39;après le site de la mairie de Saint-Louis (page du 14/05/2020)</span>`);
   });
 
-  it("says under the practical side that a mairie's notices of power cuts are not read until it agrees, in the words of /electricite", () => {
+  it("says nothing instead of a mairie's notices of power cuts under the practical side: Sainte-Suzanne's are read since 20/11/2026", () => {
     const p = pageOf("sainte-suzanne")!;
-    const said = mention("courant", p.nom)!;
-    expect(said).toMatch(/^Les mentions légales du site de la commune de Sainte-Suzanne .* avis de coupure d'électricité/);
     const html = aujourdhuiPage("https://rundata.re", p, resume(p, full(p.nom) as never, NOW), null);
-    expect(html).toContain(`(payant)</li></ul><p class="note np">${esc(said)} <a href="/ouvrir-ses-donnees#licence">Comment permettre la reprise</a></p></div>`);
-    const paul = pageOf("saint-paul")!;
-    expect(mention("courant", paul.nom)).toBeUndefined();
-    expect(aujourdhuiPage("https://rundata.re", paul, resume(paul, full(paul.nom) as never, NOW), null)).not.toContain("avis de coupure d&#39;électricité");
+    expect(html).toContain("(payant)</li></ul></div>");
+    expect(html).not.toContain("non repris");
   });
 });
 

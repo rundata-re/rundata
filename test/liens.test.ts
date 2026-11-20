@@ -75,8 +75,8 @@ describe("links between the weather, the hikes and the communes", () => {
     const agenda = { value: { resume: "", nombre: 1, evenements: rows, couverture: "", a_savoir: "", sources: [], ce_week_end: rows } as unknown as AgendaAnswer, fetchedAt: NOW };
     expect(communeEvents(pageOf("saint-paul")!, agenda)).toMatchObject({ valeur: "1 événement" });
     expect(communeEvents(pageOf("saint-leu")!, agenda)).toMatchObject({ valeur: "Rien d'annoncé" });
-    // A commune whose site is not read until it agrees: never « rien d'annoncé » (test/autorisations.test.ts).
-    expect(communeEvents(pageOf("cilaos")!, agenda)).toMatchObject({ valeur: "Actualités non reprises" });
+    // Cilaos, its news read since 20/11/2026 as the commune's public information: as any other.
+    expect(communeEvents(pageOf("cilaos")!, agenda)).toMatchObject({ valeur: "Rien d'annoncé" });
     // Its own agenda did not answer this time: its site named in the detail.
     const silent = { ...agenda, value: { ...agenda.value, evenements: [], indisponible: ["Ville du Port"] } as unknown as AgendaAnswer };
     expect(communeEvents(pageOf("le-port")!, silent, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville du Port sans réponse (le 27/10 à 10:00)", title: "Le site de la Ville du Port n'a pas répondu à notre dernière lecture (le 27/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment." });

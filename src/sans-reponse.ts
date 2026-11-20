@@ -17,8 +17,8 @@
  *   timeout or a refused connection (a site that turns away Cloudflare's addresses shows nothing else), and becomes
  *   « injoignable » on a server error, a maintenance page or an unknown address.
  *
- * A site whose commune has not agreed to its reuse (autorisations.ts) is never shown: nothing is missing here because
- * of its silence, it is not read anyway. The table may not exist yet: every call then does nothing.
+ * A site of a commune whose source is not read (autorisations.ts) is never shown: nothing is missing here because of
+ * its silence, it is not read anyway. The table may not exist yet: every call then does nothing.
  */
 import { UA_RUNDATA } from "./http.js";
 import { count } from "./budget.js";
@@ -354,7 +354,7 @@ function communeDe(source: string): string | undefined {
   return a?.commune;
 }
 
-/** A commune that has not agreed to the reuse of one of its sources, whichever (autorisations.ts). */
+/** A commune one of whose sources is not read, whichever (autorisations.ts). */
 const enAttente = (commune: string | undefined) =>
   !!commune && Object.values(AUTORISATIONS).some((a) => a.commune === commune && !LISIBLE.includes(a.etat));
 
@@ -365,7 +365,7 @@ export interface Public extends Ligne {
 }
 
 /**
- * The rows shown: confirmed by a recheck, and none whose commune has not agreed to its reuse. A row that does not
+ * The rows shown: confirmed by a recheck, and none of a commune whose source is not read. A row that does not
  * name its editor or what it is missing takes them from its sources.
  */
 export function publiques(rows: Ligne[]): Public[] {

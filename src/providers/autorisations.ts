@@ -1,22 +1,14 @@
 /**
- * The sources whose site's terms forbid taking their information without their authorisation, and where their answer
- * stands, one line per source: a commune's agenda or news (Petite-Île, Cilaos, Saint-Philippe, Saint-Joseph, Le
- * Tampon, Saint-André, L'Étang-Salé, La Possession, Bras-Panon, Saint-Benoît, then Saint-Denis, Saint-Pierre and
- * Sainte-Rose, whose site is not read at all, as their legal notices read on 25/10/2026), the notices of power cuts a
- * commune relays (Cilaos, Saint-Philippe, Saint-André, Sainte-Suzanne). The same rule for every commune of the island. Until
- * a source has agreed, nothing is read of it, and what was kept of it is no longer served: each answer says so instead,
- * in marketing's words (tools/non-repris.ts).
+ * The communes' sources, one line each: a commune's agenda or news, the notices of power cuts it relays. Since
+ * 20/11/2026 every commune's own site is read as its public information (« publique »): slowly (one page a minute at
+ * most, by the scheduled event, cached), under an honest User-Agent, each fact cited with its link and the hour it was
+ * read; nothing technical is ever got round (captcha, login, a blocked address), and a commune that asks in writing to
+ * be taken out is, within a day. They were switched in batches, each once its reader was checked: Le Tampon,
+ * Saint-Denis and Saint-Pierre; La Possession, Petite-Île, Saint-Benoît and Sainte-Rose; Cilaos, Saint-Joseph and
+ * Saint-Philippe, with the notices of power cuts of Cilaos, Saint-Philippe and Sainte-Suzanne (20/11/2026).
  *
- * Those whose terms allow taking their information, on conditions they write (Saint-Louis, Saint-Leu, La
- * Plaine-des-Palmistes: « à des fins d'information », not commercial), are here too, « permise », to be named as such.
- * A source that is not here: its site's terms say nothing.
- *
- * Since 20/11/2026, a commune's own site is read as public information: slowly (one page a minute at most, by the
- * scheduled event, cached), under an honest User-Agent, each fact cited with its link and the hour it was read; nothing
- * technical is ever got round (captcha, login, a blocked address), and a commune that asks in writing to be taken out
- * is, within a day. The communes are switched to it in
- * batches, each once its reader is checked: Le Tampon, Saint-Denis and Saint-Pierre, then La Possession, Petite-Île,
- * Saint-Benoît and Sainte-Rose (20/11/2026).
+ * Those that answered before, « accordee » or « permise » (Saint-Louis, Saint-Leu, La Plaine-des-Palmistes: « à des
+ * fins d'information », not commercial), are read as they were.
  */
 export interface Autorisation {
   /** The commune whose site it is. */
@@ -49,7 +41,7 @@ export interface Autorisation {
  */
 export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:bras_panon": { commune: "Bras-Panon", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-10-28" },
-  "agenda:cilaos": { commune: "Cilaos", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:cilaos": { commune: "Cilaos", publie: "actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:etang_sale": { commune: "L'Étang-Salé", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-06" },
   "agenda:la_possession": { commune: "La Possession", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:le_tampon": { commune: "Le Tampon", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
@@ -58,18 +50,18 @@ export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:saint_andre": { commune: "Saint-André", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
   "agenda:saint_benoit": { commune: "Saint-Benoît", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:saint_denis": { commune: "Saint-Denis", publie: "actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
-  "agenda:saint_joseph": { commune: "Saint-Joseph", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:saint_joseph": { commune: "Saint-Joseph", publie: "actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:saint_leu": { commune: "Saint-Leu", publie: "actualités", etat: "permise" },
   "agenda:saint_louis": { commune: "Saint-Louis", publie: "événements", etat: "permise" },
-  "agenda:saint_philippe": { commune: "Saint-Philippe", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:saint_philippe": { commune: "Saint-Philippe", publie: "actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:saint_pierre": { commune: "Saint-Pierre", publie: "événements et actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   // No agenda to read: its menu's « Agenda » (/fr/ev/1771460/agenda-1212) leads to its 404 page, and its six news of
   // 20/11/2026 announce no dated event. Public all the same, so that it is no longer said « non repris ».
   "agenda:sainte_rose": { commune: "Sainte-Rose", publie: "événements et actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
-  "courant:Cilaos": { commune: "Cilaos", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
+  "courant:Cilaos": { commune: "Cilaos", publie: "avis de coupure d'électricité", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "courant:Saint-André": { commune: "Saint-André", publie: "avis de coupure d'électricité", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
-  "courant:Saint-Philippe": { commune: "Saint-Philippe", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
-  "courant:Sainte-Suzanne": { commune: "Sainte-Suzanne", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
+  "courant:Saint-Philippe": { commune: "Saint-Philippe", publie: "avis de coupure d'électricité", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
+  "courant:Sainte-Suzanne": { commune: "Sainte-Suzanne", publie: "avis de coupure d'électricité", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
 };
 
 /**
@@ -197,13 +189,6 @@ export const autorisee = (source: string) =>
 /** The halls or the sports sites not read until they agree, in the list's order. */
 export const nonReprises = (famille: SourceNonReprise["famille"]): SourceNonReprise[] =>
   Object.entries(NON_REPRISES).filter(([k, x]) => x.famille === famille && !autorisee(k)).map(([, x]) => x);
-
-/** The sources of a kind (`agenda`, `courant`) not read until they agree, in the list's order. */
-export const nonAutorisees = (famille: string): Autorisation[] =>
-  Object.entries(AUTORISATIONS).filter(([k]) => k.startsWith(`${famille}:`) && !autorisee(k)).map(([, a]) => a);
-
-/** A commune's source of that kind, while it has not agreed. */
-export const nonAutorisee = (famille: string, commune: string | undefined) => nonAutorisees(famille).find((a) => a.commune === commune);
 
 /**
  * A medium or a site whose terms forbid reading it by a program, its titles included: not read at all, and said instead

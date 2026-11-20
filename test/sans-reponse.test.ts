@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache } from "../src/cache.js";
+import { AUTORISATIONS } from "../src/providers/autorisations.js";
 import * as sr from "../src/sans-reponse.js";
 import { matches, sitesSansReponse } from "../src/tools/sans-reponse.js";
 import { sansReponsePage } from "../src/web/sans-reponse.js";
@@ -263,10 +264,19 @@ describe("what is shown", () => {
     rows = await sr.lignes();
   });
 
-  it("is only what a recheck confirmed, and nothing of a commune that has not agreed to its reuse", () => {
+  it("is only what a recheck confirmed, and nothing of a commune source that is not read", () => {
     const saintJoseph: sr.Ligne = { ...rows[0], hote: "saintjoseph.re", url: "https://saintjoseph.re/spip.php", nom: null, sources: ["actus_saint_joseph"], statut: "bloque" };
-    const shown = sr.publiques([...rows, saintJoseph]).map((l) => l.hote);
-    expect(shown).toEqual(["ipgp.fr", "coastwatch.noaa.gov"]);
+    // Saint-Joseph's news are read (public information of the commune since 20/11/2026): its site is shown.
+    expect(sr.publiques([...rows, saintJoseph]).map((l) => l.hote)).toEqual(["ipgp.fr", "coastwatch.noaa.gov", "saintjoseph.re"]);
+    // A commune source no longer read (one withdrawn on request, say) is not.
+    const a = AUTORISATIONS["agenda:saint_joseph"];
+    const etat = a.etat;
+    a.etat = "demandee";
+    try {
+      expect(sr.publiques([...rows, saintJoseph]).map((l) => l.hote)).toEqual(["ipgp.fr", "coastwatch.noaa.gov"]);
+    } finally {
+      a.etat = etat;
+    }
   });
 
   it("names a row without its editor from its sources", () => {

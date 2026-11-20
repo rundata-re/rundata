@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T08:23:00+04:00", texte: "Actualités\u00a0: ce que publient Cilaos, Saint-Joseph et Saint-Philippe sur leurs sites\u00a0; coupures de courant\u00a0: avis de trois mairies de plus." },
   { date: "2026-11-20T06:38:00+04:00", texte: "Coupures d'eau\u00a0: les avis publiés par Saint-Philippe (Sudéau), Cilaos, Petite-Île et Trois-Bassins sont lus, avec le lien de chaque avis." },
   { date: "2026-11-20T06:19:00+04:00", texte: "La journée d'une commune\u00a0: quand le site de la mairie ne répond pas, la page le dit, avec l'heure de notre dernière lecture." },
   { date: "2026-11-20T05:50:00+04:00", texte: "Événements\u00a0: ceux qu'annoncent les mairies de La Possession, de Petite-Île et de Saint-Benoît sur leurs sites, avec le lien de chacun." },

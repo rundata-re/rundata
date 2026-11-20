@@ -27,7 +27,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // leur couverture, et plus de mention « non repris » pour elles.
   // La Possession, Petite-Île, Saint-Benoît et Sainte-Rose lues comme information publique de la commune (20/11/2026) :
   // leurs événements, leur couverture, et plus de mention « non repris » pour elles.
-  agenda: 40,
+  // Cilaos, Saint-Joseph and Saint-Philippe read as the commune's public information (20/11/2026): their events, the
+  // coverage, and nothing said instead of a commune any more.
+  agenda: 41,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   air: 13,
   bornes: 5,
@@ -44,7 +46,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // MétéoR Océan Indien among the weather's sources, under CC BY-NC (09/11/2026).
   // The news of Saint-Denis and Saint-Pierre, and Le Tampon's agenda, among the sources counted (20/11/2026).
   // The agendas of La Possession, Petite-Île and Saint-Benoît among the sources counted (20/11/2026).
-  chiffres: 27,
+  // The news of Cilaos, Saint-Joseph and Saint-Philippe among the sources counted (20/11/2026).
+  chiffres: 28,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
@@ -60,7 +63,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The notices of Saint-Philippe, Cilaos, Petite-Île and Les Trois-Bassins, read on the communes' sites (20/11/2026).
   coupures: 18,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
-  courant: 9,
+  // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
+  courant: 10,
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
@@ -76,7 +80,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
   // A past notice in `coupures_annoncees`: its sentence, its commune and its link only (19/11/2026).
-  electricite: 21,
+  // `coupures_annoncees` with the notices of Cilaos, Saint-Philippe and Sainte-Suzanne, nothing said instead (20/11/2026).
+  electricite: 22,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,
@@ -117,7 +122,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
   // A volley match's sets written as its score, « 26-28 ».
   // The ffgolf's written refusal of 09/11/2026: its own line, dated, in the golf's mention.
-  sport: 29,
+  // No sentence for the communes' sports programmes not read any more (20/11/2026).
+  sport: 30,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.

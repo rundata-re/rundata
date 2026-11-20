@@ -565,6 +565,15 @@ const FEEDS: Feed[] = [
   { media: "Le Quotidien", url: "https://www.lequotidien.re/", parse: (b, now) => parseQuotidien(b, now) },
 ];
 
+/**
+ * Each media's host (without « www. »), with its name as credited and the address read: for the list of sites that do
+ * not answer (sans-reponse.ts), whose morning recheck asks what is read, never the root (Clicanoo's answers 403 while
+ * its feed answers 200, 20/11/2026), and names the media, never « Rédactions de La Réunion ».
+ */
+export const MEDIA_HOTES: Readonly<Record<string, { nom: string; url: string }>> = Object.fromEntries(
+  FEEDS.map((f) => [new URL(f.url).hostname.replace(/^www\./, ""), { nom: MEDIAS.find((m) => m.media === f.media)?.credit ?? f.media, url: f.url }]),
+);
+
 /** Imaz Press articles that may be live blogs: the newest of its editors' selection, or with a live word in the title. */
 export function liveCandidates(items: Info[], now: Date): string[] {
   const since = new Date(now.getTime() - LIVE_HOURS * 3600_000).toISOString();

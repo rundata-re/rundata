@@ -23,6 +23,7 @@
 import { UA_RUNDATA } from "./http.js";
 import { count } from "./budget.js";
 import { ACTUS_MAIRIES, LISIBLES } from "./providers/agenda.js";
+import { MEDIA_HOTES } from "./providers/actualites.js";
 import { AUTORISATIONS, LISIBLE } from "./providers/autorisations.js";
 import type { Cache } from "./cache.js";
 import type { SourceInfo } from "./types.js";
@@ -203,7 +204,9 @@ type Verdict = { issue: "repond" } | { issue: "bloque"; constat: string } | { is
 export async function essayer(l: Pick<Ligne, "url" | "verifier">, now: Date, fetcher: typeof fetch = fetch): Promise<Verdict> {
   let res: Response;
   count();
-  const adresse = l.verifier ? undefined : ADRESSES[hoteDe(l.url) ?? ""];
+  // A media's host: its feed or news sitemap, what is read (MEDIA_HOTES).
+  const hote = hoteDe(l.url) ?? "";
+  const adresse = l.verifier ? undefined : ADRESSES[hote] ?? MEDIA_HOTES[hote]?.url;
   try {
     res = await fetcher(l.verifier?.url ?? adresse ?? l.url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(DELAI_MS) });
   } catch (err) {
@@ -376,7 +379,8 @@ export function publiques(rows: Ligne[]): Public[] {
       const connues = l.sources.map((s) => registre.get(s)).filter((s): s is SourceInfo => !!s);
       return {
         ...l,
-        nom: l.nom ?? connues[0]?.organisme ?? l.hote,
+        // A media's row: its own name, not the newsrooms' grouped source.
+        nom: l.nom ?? MEDIA_HOTES[l.hote]?.nom ?? connues[0]?.organisme ?? l.hote,
         // Sensor.Community's row, without a theme of its own, under « Qualité de l'air » rather than « Autres sites ».
         theme: l.theme ?? l.sources.map((s) => themes.get(s)).find(Boolean) ?? "Autres sites",
         manque: l.manque ?? (connues.length ? connues.map((s) => s.nom).join("\u00a0; ") : null),

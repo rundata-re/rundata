@@ -285,6 +285,21 @@ describe("what is shown", () => {
     expect(l).toMatchObject({ nom: "Salles de spectacle de La Réunion", manque: "Programmes des salles de spectacle", theme: "Autres sites" });
   });
 
+  it("rechecks a media at the feed it is read from, and names its row after the media, not the newsrooms' grouped source", async () => {
+    // Clicanoo's root answers 403 while its feed answers 200 (20/11/2026): the row tested what is not read.
+    const clicanoo = answers({ "clicanoo.re": () => new Response("<rss/>", { status: 200 }) });
+    const asked: string[] = [];
+    const spy = (async (input: RequestInfo | URL) => (asked.push(String(input)), clicanoo(input))) as typeof fetch;
+    expect(await sr.essayer({ url: "https://www.clicanoo.re/", verifier: null }, MORNING, spy)).toEqual({ issue: "repond" });
+    expect(asked).toEqual(["https://www.clicanoo.re/rss"]);
+    const tem: string[] = [];
+    await sr.essayer({ url: "https://www.temoignages.re/", verifier: null }, MORNING, (async (input: RequestInfo | URL) => (tem.push(String(input)), new Response("", { status: 403 }))) as typeof fetch);
+    expect(tem).toEqual(["https://www.temoignages.re/spip.php?page=sitemap-news-fr.xml"]);
+    sr.inscrire([{ id: "medias_locaux", nom: "Titres des médias de La Réunion", organisme: "Rédactions de La Réunion", licence: "", attribution: "", url: "" }]);
+    const [l] = sr.publiques([{ ...rows[0], hote: "temoignages.re", nom: null, manque: null, theme: null, sources: ["medias_locaux"], statut: "bloque" }]);
+    expect(l.nom).toBe("Témoignages");
+  });
+
   it("gives a site with a « . » in its name a place to go to the next line, and keeps its link's name whole", () => {
     const sc: sr.Ligne = { ...rows[0], hote: "data.sensor.community", url: "https://data.sensor.community/", nom: "Sensor.Community" };
     const page = sansReponsePage("https://rundata.re", [sc], T);

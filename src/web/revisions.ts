@@ -59,7 +59,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // Its bus departures of today's service link their trip without « ?jour= », as on /bus.
   // All its bus departures link their trip without « ?jour= », as on /bus (19/11/2026).
-  commune: 28,
+  // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
+  commune: 29,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
@@ -104,7 +105,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « <Lieu> en chiffres »: the figures of the nearest stations, their hours and their last 30 days (web/en-chiffres.ts).
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
   // « Repères du mois »: the month's normals and records at the station that speaks best for the place (19/11/2026).
-  lieu: 29,
+  // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
+  lieu: 30,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
@@ -114,7 +116,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.
-  meteo: 12,
+  // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
+  meteo: 13,
   randonnees: 15,
   // The levels of the order n°2026-2094 of 12/11/2026 while VigiEau serves the one it replaced, VigiEau's said beside.
   // A newer drought order out in the prefecture's recueil, not taken into account yet, said first (arrete_plus_recent).

@@ -54,6 +54,14 @@ export const PAGES: PlacePage[] = [
 
 const BY_SLUG = new Map(PAGES.map((p) => [p.slug, p]));
 
+/**
+ * A place whose page says what another's says: the same station, the same forecast and the same swell. Its page stays
+ * online and followed, out of the index and of the sitemap, and sends to the other (`placePage`). From the pages of
+ * 20/11/2026: L'Hermitage and Saint-Gilles-les-Bains, Pointe des Trois-Bassins at 4.1 and 6.1 km, the forecast the same
+ * 7 days out of 7, 70 % of their text in common; Saint-Gilles-les-Bains the name searched for (marketing).
+ */
+export const PRINCIPAL: Readonly<Record<string, string>> = { "l-hermitage": "saint-gilles-les-bains" };
+
 export function pageOf(slug: string): PlacePage | undefined {
   return BY_SLUG.get(slug);
 }

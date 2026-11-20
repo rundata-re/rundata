@@ -4,6 +4,7 @@
  * the copy of /meteo/<commune>, the town hall and the buses the commune's own copy, the rest the last copy of each
  * category page (web/site.ts), so a page costs a few reads.
  */
+import { TEXTES } from "./communes-textes.js";
 import { porte, type Porte, SHEET as ALLER } from "./aller.js";
 import type { Cached } from "../cache.js";
 import { localTime } from "../geo.js";
@@ -702,6 +703,9 @@ function sunTimes(p: PlacePage, calendrier: Cached<CalendrierAnswer> | null | un
   return { valeur: `${t(s.lever)}–${t(s.coucher)}`, detail: `lever et coucher du soleil le ${jourDit(now)}${rest ? ` · ${rest}` : ""}` };
 }
 
+/** The commune's own text, when it has one (communes-textes.ts): two paragraphs, fixed, the lead of the band. */
+const texteDe = (slug: string) => TEXTES[slug]?.map((x) => `<p class="lead">${esc(x)}</p>`).join("\n    ");
+
 export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const place = p.place;
@@ -877,7 +881,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <ul class="chips">${COMMUNES.filter((x) => x.slug !== p.slug).map((x) => `<li><a href="${hub(x)}">${esc(x.nom)}</a></li>`).join("")}</ul>
 </section>`;
   const rss = { href: rssPath(p), title: rssTitle(p), link: rssLink(p), hint: RSS_HINT };
-  return layout(origin, { title, description, path: hub(p), jsonld: faq.length ? [...jsonld, faqPage(faq)] : jsonld, alerte, rss, iaAside: true, hook: `La fiche ${deCommune(p.nom)} : la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.` }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
+  return layout(origin, { title, description, path: hub(p), jsonld: faq.length ? [...jsonld, faqPage(faq)] : jsonld, alerte, rss, iaAside: true, texte: texteDe(p.slug), hook: `La fiche ${deCommune(p.nom)} : la mairie, les écoles, les médecins, les élections, le logement, et les données du moment.` }, band, g.ligne + (body.includes('class="aller"') ? body + ALLER : body));
 }
 
 /** The 24 communes, by vigilance zone: the island's own way of splitting itself (Nord, Est, Sud, Ouest). */

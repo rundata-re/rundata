@@ -3,7 +3,7 @@ import { marchesAnswer } from "../src/tools/marches.js";
 import { resume } from "../src/tools/resume.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import { pageOf } from "../src/web/places.js";
-import { fromMidnight, heldOn, hoursOn, jours, NOT_FOUND } from "../src/vie/marches.js";
+import { fromMidnight, heldOn, hoursOn, jours, NOT_FOUND, sansNom } from "../src/vie/marches.js";
 
 // Friday 20/11/2026, 09:00 at La Réunion.
 const FRI = new Date("2026-11-20T05:00:00Z");
@@ -28,6 +28,11 @@ describe("a market's span from midnight, an entry error in its source", () => {
     expect(jours(m)).toBe("le lundi de 6\u00a0h à 12\u00a0h\u00a0; le vendredi, heures non trouvées");
   });
 
+  it("names no market « Marché » alone", () => {
+    expect([sansNom({ nom: "Marché" }), sansNom({ nom: " marche " }), sansNom({ nom: "Marchés" })]).toEqual([true, true, true]);
+    expect([sansNom({ nom: "Vieux marché" }), sansNom({ nom: "Marché couvert" })]).toEqual([false, false]);
+  });
+
   it("says so for Saint-André's market, on its Friday and in the markets' tool", () => {
     const here = heldOn("Saint-André", FRI);
     expect(here.map((m) => m.horaires_aujourd_hui)).toEqual([NOT_FOUND]);
@@ -36,18 +41,21 @@ describe("a market's span from midnight, an entry error in its source", () => {
     expect(said).toContain("le vendredi, heures non trouvées");
   });
 
-  it("is never « the market of today » without an hour: its place, where its hours were looked for, and the town hall's site", () => {
+  it("is never « the market of today » without an hour, and left out with no name of its own: the town hall's site stays", () => {
     const sa = pageOf("saint-andre")!;
     const mairie = { nom: "Mairie de Saint-André", insee: "97409", adresse: "", lon: null, lat: null, horaires: [], site: "https://www.saint-andre.re/", fiche: "" };
     const r = resume(sa, { commune: { value: { mairie }, fetchedAt: FRI.getTime() } } as never, FRI);
     const mk = r.marches_du_jour!;
     expect(mk.liste).toEqual([]);
-    expect(mk.heures_non_trouvees).toEqual([expect.objectContaining({ nom: "Marché", manque: expect.stringMatching(/^heures non données par OpenStreetMap, relevé le \d\d\/\d\d\/\d{4}$/) })]);
+    // « Marché », heures non données: nothing the reader can use (20/11/2026). Its other market stays, without days.
+    expect(mk.heures_non_trouvees).toBeUndefined();
+    expect(mk.jours_non_trouves?.map((m) => m.nom)).toEqual(["Vieux marché"]);
     expect(mk.mairie?.site).toBe("https://www.saint-andre.re/");
     expect(r.resume).not.toMatch(/marché aujourd'hui/i);
     const html = aujourdhuiPage("https://rundata.re", sa, r, null);
     expect(html).not.toContain("Marché aujourd'hui");
-    expect(html).toMatch(/<li>Marché sans heures : <a [^>]*><b>Marché<\/b><\/a> <span class="note">heures non données par OpenStreetMap, relevé le /);
+    expect(html).not.toContain("Marché sans heures");
+    expect(html).toMatch(/<li>Marchés : <a [^>]*><b>Vieux marché<\/b><\/a>, <span class="note">jours et heures non donnés par OpenStreetMap, relevé le /);
     expect(html).toContain("site de la mairie de Saint-André →");
     expect(html).not.toContain("non trouvé");
   });

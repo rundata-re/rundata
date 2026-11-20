@@ -231,6 +231,12 @@ export const heldOn = (commune: string, now: Date) =>
 export const apart = (commune: string, now: Date) =>
   inCommune(commune).filter(permanent).map((m) => ({ ...m, horaires_aujourd_hui: hoursOn(m, now) ?? "fermé aujourd'hui" }));
 
+/**
+ * Whether a market has no name of its own (« Marché », OpenStreetMap's node 5482625028 at Saint-André): without its
+ * hours, the reader can do nothing with it. A day's summary leaves it out and keeps the town hall's page (20/11/2026).
+ */
+export const sansNom = (m: Pick<Marche, "nom">) => /^march[eé]s?$/i.test(m.nom.trim());
+
 /** The commune's markets whose days no source gives: never dropped, never said closed. */
 export const sansJours = (commune: string) => inCommune(commune).filter((m) => !m.horaires_osm && !dayOfName(m));
 

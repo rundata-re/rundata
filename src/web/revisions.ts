@@ -29,7 +29,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // leurs événements, leur couverture, et plus de mention « non repris » pour elles.
   // Cilaos, Saint-Joseph and Saint-Philippe read as the commune's public information (20/11/2026): their events, the
   // coverage, and nothing said instead of a commune any more.
-  agenda: 41,
+  // Chaque événement porte la clé de sa page (/evenements/<titre>-<clé>), et le titre des listes y mène.
+  agenda: 42,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   air: 13,
   bornes: 5,

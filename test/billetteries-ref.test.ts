@@ -4,6 +4,7 @@ import { parseRss as agendaRss } from "../src/providers/agenda.js";
 import { eventRow } from "../src/tools/agenda.js";
 import type { AgendaAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/domains.js";
+import { fichePage } from "../src/web/fiche-evenement.js";
 
 // The real event pages each ticket office was checked on (05/11/2026): 200 and the same page with « ?ref=rundata ».
 const CHECKED = [
@@ -46,7 +47,13 @@ describe("links to the ticket offices", () => {
     const d = { resume: "", nombre: rows.length, evenements: rows, couverture: "", a_savoir: "", sources: [], ce_week_end: rows } as unknown as AgendaAnswer;
     const html = agendaPage("https://rundata.re", { value: d, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<a href="${CHECKED[3]}?ref=rundata" rel="noopener">billets</a>`);
-    expect(html).toContain(`href="${COMMUNE}"`);
-    expect(html).not.toContain(`${COMMUNE}?ref`);
+    // Who publishes it, its name the link to its page there, in each row and atop the event's page: Weezevent's with
+    // « ?ref=rundata » (a condition of its agreement), the commune's as it is.
+    expect(html).toContain(`<a href="${CHECKED[2]}?ref=rundata" rel="noopener">Mairie de Saint-Paul</a>`);
+    expect(html).toContain(`<a href="${COMMUNE}" rel="noopener">Mairie de Saint-Paul</a>`);
+    expect(fichePage("https://rundata.re", rows[0], { value: d, fetchedAt: NOW, stale: false }, undefined)).toContain(`· <a href="${CHECKED[2]}?ref=rundata" rel="noopener">Mairie de Saint-Paul</a></p>`);
+    const page = fichePage("https://rundata.re", rows[1], { value: d, fetchedAt: NOW, stale: false }, undefined);
+    expect(page).toContain(`href="${COMMUNE}"`);
+    expect(html + page).not.toContain(`${COMMUNE}?ref`);
   });
 });

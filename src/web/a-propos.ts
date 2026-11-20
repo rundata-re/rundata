@@ -43,6 +43,10 @@ export function aProposPage(origin: string, alerte?: Alerte): string {
   <p>Les sources de chaque donnée sont citées en bas de chaque page.</p>
   <p>Voir aussi\u00a0: <a href="/valeurs">nos valeurs</a>, <a href="/ouvrir-ses-donnees">rendre ses données accessibles</a>, <a href="/presse">l'espace presse</a>,${enLigne() ? ` <a href="/associations">l'espace clubs et associations</a>,` : ""} <a href="/nouveautes">les nouveautés</a>, <a href="/chiffres">rundata.re en chiffres</a>, <a href="/sites-sans-reponse">les sites publics sans réponse</a>, <a href="/conditions#mentions-legales">les mentions légales</a> et <a href="/confidentialite">la confidentialité</a>.</p>
 </section>
+<section aria-labelledby="cantonales" style="max-width:44rem;display:grid;gap:1rem">
+  <h2 id="cantonales">Les cantonales, sur les pages des élections</h2>
+  <p>Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés. Ces cantons ne sont pas ceux des départementales, redessinés en 2015\u00a0: les deux ne se comparent pas.</p>
+</section>
 <section aria-labelledby="sigles" style="max-width:44rem;display:grid;gap:1rem">
   <h2 id="sigles">Sigles</h2>
   <ul>${Object.entries(SIGLES).map(([s, long]) => `<li><b>${s}</b>\u00a0: ${esc(long)}</li>`).join("")}<li><b>RECIL</b>\u00a0: le distributeur d'eau de Cilaos (d'après l'ARS)</li></ul>

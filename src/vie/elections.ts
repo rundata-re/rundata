@@ -107,6 +107,27 @@ export function participation(commune: string): { type: Type; nom: string; tours
   });
 }
 
+/** The year of the commune's first scrutin in the file: its page says « depuis » this year. */
+export const debut = (commune: string) => Math.min(...ofCommune(commune).map((s) => s.annee));
+
+/**
+ * The commune's latest scrutin where the whole commune votes (never the cantonales), its 1st round: its inscrits and
+ * votants, and the island's, the sum of the 24 communes in the same round.
+ */
+export function derniere(commune: string): { nom: string; inscrits: number; votants: number; ile: { inscrits: number; votants: number } } | undefined {
+  const all = data.participation as unknown as Partial<Record<Type, { annees: number[]; communes: Record<string, [number, number][]> }>>;
+  // SCRUTINS is in the file's order, the newest first (législatives 2024 after the européennes of the same June).
+  for (const s of SCRUTINS) {
+    const serie = all[s.type];
+    const i = serie?.annees.indexOf(s.annee) ?? -1;
+    const own = i >= 0 ? serie!.communes[commune]?.[i] : undefined;
+    if (!own) continue;
+    const rows = Object.values(serie!.communes).map((r) => r[i]!);
+    return { nom: s.nom, inscrits: own[0], votants: own[1], ile: { inscrits: rows.reduce((n, r) => n + r[0], 0), votants: rows.reduce((n, r) => n + r[1], 0) } };
+  }
+  return undefined;
+}
+
 /**
  * A block's heading in a commune split between races: « 1ère circonscription », « Canton de Saint-Denis-2 », as the file
  * names them; « Canton non nommé dans le fichier (2 sur 3) » when it does not.

@@ -21,7 +21,9 @@ describe("the sitemap from 19/11/2026, marketing's list of 18/11/2026", () => {
     // Three since 20/11/2026: the water cuts of Saint-Philippe, Cilaos and Petite-Île, whose notices are read.
     // Less /meteo/l-hermitage since 20/11/2026, out of the index: Saint-Gilles-les-Bains's says the same (places.ts PRINCIPAL).
     // And one: the fiche of an address, /terrain (20/11/2026).
-    expect(urls).toHaveLength(842 - 2 + 3 - 1 + 1);
+    // 24 since 20/11/2026: each commune's elections page.
+    expect(urls).toHaveLength(842 - 2 + 3 - 1 + 1 + 24);
+    expect(urls).toContain("/communes/petite-ile/elections");
     for (const u of ["/coupures-eau/saint-philippe", "/coupures-eau/cilaos", "/coupures-eau/petite-ile"]) expect(urls, u).toContain(u);
     expect(urls).not.toContain("/meteo/l-hermitage");
     expect(urls).toContain("/meteo/saint-gilles-les-bains");

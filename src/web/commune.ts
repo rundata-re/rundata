@@ -444,16 +444,21 @@ function scrutin(s: elections.Scrutin): string {
   return `<details><summary><h4>${esc(s.nom)}</h4></summary>${rounds}</details>`;
 }
 
+/** The path of the commune's elections page. */
+export const electionsPath = (p: PlacePage) => `/communes/${p.slug}/elections`;
+
 /**
- * The commune's elections (vie/elections.ts): a card a type, a folded block a scrutin, newest first, round by round,
- * then its participation since the file's first year. The ministry's figures and its order of the panels, whatever the
- * result: no political nuance, no colour, no bar, nothing in bold, no « élu » nor « en tête », no link to a candidate.
+ * The commune's elections (vie/elections.ts), on their own page (/communes/<commune>/elections, words by marketing,
+ * 20/11/2026): a card a type, a folded block a scrutin, newest first, round by round, then its participation since the
+ * file's first year. The ministry's figures and its order of the panels, whatever the result: no political nuance, no
+ * colour, no bar, nothing in bold, no « élu » nor « en tête », no link to a candidate.
  */
 function votes(p: PlacePage): string {
   const types = elections.parType(p.nom);
   if (!types.length) return "";
+  // The cantonales' note in one sentence; in full on /a-propos#cantonales, the same for every commune.
   const cards = types.map(({ type, scrutins }) => `<li class="card" data-k><h3>${esc(elections.TYPES[type].nom)}</h3>${scrutins.map(scrutin).join("")}${type === "cant"
-    ? `<p class="note">${esc(`Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés. Ces cantons ne sont pas ceux des départementales, redessinés en 2015\u00a0: les deux ne se comparent pas.`)}</p>`
+    ? `<p class="note">${esc("Aux cantonales, la moitié des cantons votait à chaque fois\u00a0: seuls les bureaux des cantons qui votaient sont comptés.")} <a href="/a-propos#cantonales">${esc("Pourquoi elles ne se comparent pas aux départementales →")}</a></p>`
     : ""}</li>`).join("");
   const series = elections.participation(p.nom);
   const serie = series.length
@@ -474,14 +479,57 @@ function votes(p: PlacePage): string {
       : []),
     ...(all.some((s) => s.tours.some((b) => b.some((x) => x.blancs === null))) ? ["Jusqu'en 2015, le fichier compte les blancs avec les nuls."] : []),
   ];
-  return `<section id="elections" aria-labelledby="h-elections">
-  <div class="sec-h"><p class="eyebrow">Ministère de l'Intérieur</p><h2 id="h-elections">Élections ${esc(aCommune(p.nom))}</h2>
-  <p>${esc(`Chaque scrutin ${aCommune(p.nom)}, tel que le ministère de l'Intérieur le publie\u00a0: inscrits, votants, blancs, nuls, exprimés, puis les voix de chaque candidat ou liste. Le jeu de données commence en ${elections.DEBUT}\u00a0: les scrutins plus anciens ne sont pas repris.`)}</p></div>
+  return `<section id="elections" aria-label="${esc(`Les scrutins ${aCommune(p.nom)}`)}">
   <ul class="zones top">${cards}${serie}</ul>
   <p class="note">${esc(["Les candidats et les listes sont dans l'ordre des panneaux (N°), celui du ministère, quel que soit le résultat, avec leurs voix et leur % des exprimés. Les nuances politiques ne sont pas reprises.", ...anciens, ...split, ...anonymes].join(" "))}</p>
   <p class="sources">Source\u00a0: ${credits([{ ...credit(elections.SOURCE), source: elections.SOURCE.attribution }])}, jeu mis à jour le ${esc(elections.MIS_A_JOUR.split("-").reverse().join("/"))}.</p>
 </section>
 `;
+}
+
+/**
+ * On the commune's page, its own summary (marketing, 20/11/2026): the participation in the 1st round of its latest
+ * scrutin, against the island's, no candidate named; then the link to its elections page.
+ */
+function votesSummary(p: PlacePage): string {
+  const d = elections.derniere(p.nom);
+  if (!d) return "";
+  return `<section id="elections" aria-labelledby="h-elections">
+  <div class="sec-h"><p class="eyebrow">Ministère de l'Intérieur</p><h2 id="h-elections">Élections ${esc(aCommune(p.nom))}</h2></div>
+  <p>${esc(`${d.nom}, 1er tour\u00a0: ${elections.pourcent(d.votants, d.inscrits)} des inscrits ont voté ${aCommune(p.nom)}, ${elections.pourcent(d.ile.votants, d.ile.inscrits)} dans toute l'île.`)}</p>
+  <p><a href="${electionsPath(p)}">${esc(`Les élections ${aCommune(p.nom)} depuis ${elections.debut(p.nom)}\u00a0: participation et résultats →`)}</a></p>
+  <p class="sources">Source\u00a0: ${credits([{ ...credit(elections.SOURCE), source: elections.SOURCE.attribution }])}, jeu mis à jour le ${esc(elections.MIS_A_JOUR.split("-").reverse().join("/"))}.</p>
+</section>
+`;
+}
+
+/** /communes/<commune>/elections: every scrutin of the commune in the file. Static: the file changes with a build. */
+export function electionsPage(origin: string, p: PlacePage, alerte?: Alerte): string | undefined {
+  const body = votes(p);
+  if (!body) return undefined;
+  const depuis = elections.debut(p.nom);
+  const ou = aCommune(p.nom);
+  const path = electionsPath(p);
+  const title = `Élections ${ou}\u00a0: résultats et participation depuis ${depuis} | ${SITE}`;
+  const description = `Chaque scrutin ${ou} depuis ${depuis}, tel que le ministère de l'Intérieur le publie\u00a0: inscrits, votants, blancs et nuls, résultats.`;
+  const jsonld = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [[SITE, "/"], ["Communes", "/communes"], [p.nom, hub(p)], ["Élections", path]]
+        .map(([name, u], i) => ({ "@type": "ListItem", position: i + 1, name, item: `${origin}${u}` })),
+    },
+    { "@context": "https://schema.org", "@type": "WebPage", name: title, description, inLanguage: "fr-FR", url: `${origin}${path}`, dateModified: elections.MIS_A_JOUR },
+  ];
+  const band = `<div class="wrap"><nav class="crumbs" aria-label="Fil d'Ariane"><ol><li><a href="/">${SITE}</a></li><li><a href="/communes">Communes</a></li><li><a href="${hub(p)}">${esc(p.nom)}</a></li><li aria-current="page">Élections</li></ol></nav></div>
+<div class="wrap intro">
+  <div class="pitch">
+    <p class="pill">Ministère de l'Intérieur</p>
+    <h1>${esc(`Élections ${ou}`)}</h1>
+    <p class="lead">${esc(`Chaque scrutin ${ou}, tel que le ministère de l'Intérieur le publie\u00a0: inscrits, votants, blancs, nuls, exprimés, puis les voix de chaque candidat ou liste. Le jeu de données commence en ${elections.DEBUT}\u00a0: les scrutins plus anciens ne sont pas repris.`)}</p>
+  </div>
+</div>`;
+  return layout(origin, { title, description, path, jsonld, alerte }, band, body);
 }
 
 /** The rents asked in the ads (vie/loyers.ts): a reference flat's per m², and a house's; one vintage a year. */
@@ -814,7 +862,7 @@ ${habiter.length ? `<section aria-labelledby="h-habiter">
   <p>Des chiffres publiés une fois par an, par trimestre, par mois ou par semaine, chacun avec sa date.</p></div>
   <ul class="tiles" aria-label="Habiter ${esc(aCommune(p.nom))}">${habiter.map((t) => tile(t)).join("")}</ul>
 </section>
-` : ""}${schools(p)}${doctors(p)}${votes(p)}${texteStable(COMMUNE_LIRE, faq)}
+` : ""}${schools(p)}${doctors(p)}${votesSummary(p)}${texteStable(COMMUNE_LIRE, faq)}
 <section aria-labelledby="h-ile">
   <h2 id="h-ile">Et pour toute l'île</h2>
   <ul class="tiles" aria-label="Toute l'île">${island.map((t) => tile(t)).join("")}</ul>

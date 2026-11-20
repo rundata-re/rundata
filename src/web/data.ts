@@ -2125,7 +2125,8 @@ export const ISLAND_PEEK_MS = 300;
  * of days) would be yesterday's. A copy made at 23:58 is 3 minutes old at 00:01, within FRESH_SECONDS. *
  * `old`: what a view does with a copy too old to be told as the present (`OldCopy`).
  *
- * `withoutCopyMs`: how long a view waits for the build when this data center has no copy at all, in place of `waitMs`
+ * `withoutCopyMs`: how long a view waits for the build when this data center has no copy it can serve (none, or one
+ * older than KEEP_SECONDS), in place of `waitMs`
  * (web/site.ts `withoutCopy`).
  */
 /** Whether a reader waits for the refresh of the copy of `key`, `ageMs` old, rather than get it as it is. */
@@ -2192,8 +2193,11 @@ export async function snapshot<T>(
   }
   let got: Cached<T> | null;
   try {
-    // No copy at all in this data center: the wait of a view that would otherwise get the page without its live block.
-    got = await within(any, seen ? waitMs : (withoutCopyMs ?? waitMs));
+    // No copy in this data center that can be served (none at all, or older than KEEP_SECONDS, built again): the wait
+    // of a view that would otherwise get the page without its live block. From 19/11 19:01 to 20/11/2026 11:41, after
+    // #1132, five robots' 503 were still answered at 850 to 982 ms, a copy there but more than a day old: a page read
+    // less than once a day in that data center.
+    got = await within(any, seenAge < KEEP_SECONDS * 1000 ? waitMs : (withoutCopyMs ?? waitMs));
   } catch (err) {
     console.error(`page ${key} : données indisponibles`, why(err));
     return null;

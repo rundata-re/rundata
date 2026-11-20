@@ -124,9 +124,12 @@ export function ahead(a: cc.AvisCourant, now: Date): boolean {
   return a.creneaux.some((s) => ends(s) >= today);
 }
 
-/** « le lundi 19/10 de 09:00 à 15:00, secteurs Rue Médard, Rue des Jésuites ». */
-function slotText(s: cc.Creneau, now: Date): string {
-  const when = s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`;
+/**
+ * « le lundi 19/10 de 09:00 à 15:00, secteurs Rue Médard, Rue des Jésuites ». `past`: its day is over, said right after
+ * the hours, « (date passée) » (marketing, 20/11/2026): only the date is known to be past, never that the cut took place.
+ */
+function slotText(s: cc.Creneau, now: Date, past = false): string {
+  const when = (s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`) + (past ? " (date passée)" : "");
   return `${when}${s.secteurs.length ? `, secteurs ${s.secteurs.join(", ")}` : ""}`;
 }
 
@@ -159,7 +162,8 @@ export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
   const coming = a.creneaux.filter((s) => ends(s) >= today);
   const shown = (coming.length ? coming : a.creneaux).slice(0, SLOTS_MAX);
   const more = (coming.length || a.creneaux.length) - shown.length;
-  return `${head} : coupure programmée ${shown.map((x) => slotText(x, now)).join("\u00a0; ")}${more > 0 ? `\u00a0; et ${more} autre${more > 1 ? "s" : ""} dans l'avis` : ""}.`;
+  // Nothing to come: each day said past (audit of the AI tools, 20/11/2026: the 29/10 cut given as if to come).
+  return `${head} : coupure programmée ${shown.map((x) => slotText(x, now, !coming.length)).join("\u00a0; ")}${more > 0 ? `\u00a0; et ${more} autre${more > 1 ? "s" : ""} dans l'avis` : ""}.`;
 }
 
 export interface CourantRow {

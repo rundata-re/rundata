@@ -82,6 +82,11 @@ describe("the power cuts the mairies relay", () => {
     expect(sentence(sp, later)).toBe("Dernier avis de coupure d'électricité publié par la mairie de Saint-Philippe le 24/10 : coupure en cours ce jour-là, secteurs Chemin Paul Hoareau, Chemin Ceinture.");
     expect(ahead(sp, later)).toBe(false);
     expect(sentence(ci, NOW)).toContain("coupure programmée du lundi 26/10 au vendredi 30/10, secteurs L’Îlet à Cordes, Mare Sèche.");
+    // Its days over, within the month: each said past, right after its hours (audit of the AI tools, 20/11/2026: a 29/10 cut given as is).
+    const gone = sentence(sm, new Date("2026-10-29T10:00:00Z"));
+    expect(gone).toMatch(/^Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21\/10 : coupure programmée /);
+    expect(gone).toMatch(/ de 09:00 à 15:00 \(date passée\), secteurs Rue des Jésuites, Rue Médard\u00a0; le mardi 27\/10 de 09:30 à 12:00 \(date passée\), secteurs Chemin Conteur\.$/);
+    expect(sentence(sm, NOW)).not.toContain("passée");
     // A notice of another year says its year.
     const old = parsePosts([post("2025-04-30T11:48:00", "Coupure d&rsquo;électricité à Sainte Suzanne", "<p>Coupure d'électricité programmée le mercredi 14 mai 2025, entre 9h30 à 13h30.</p>")], "Sainte-Suzanne")[0];
     expect(sentence(old, NOW)).toBe("Pas d'avis récent de la mairie de Sainte-Suzanne : le dernier date du 30/04/2025. Nous ne savons pas si une coupure est prévue.");

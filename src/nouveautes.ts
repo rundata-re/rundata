@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T06:19:00+04:00", texte: "La journée d'une commune\u00a0: quand le site de la mairie ne répond pas, la page le dit, avec l'heure de notre dernière lecture." },
   { date: "2026-11-20T05:50:00+04:00", texte: "Événements\u00a0: ceux qu'annoncent les mairies de La Possession, de Petite-Île et de Saint-Benoît sur leurs sites, avec le lien de chacun." },
   { date: "2026-11-20T05:19:00+04:00", texte: "Marchés forains\u00a0: jours et heures de six mairies de plus (Saint-Denis, Saint-Pierre, Le Tampon, Le Port…), avec la date de leur page." },
   { date: "2026-11-20T05:01:00+04:00", texte: "Valeurs\u00a0: comment rundata.re lit les sites publics, et comment demander qu'on retire ce qu'il en montre." },

@@ -7,7 +7,6 @@ import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { AFTER_ANSWER_CAP, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
-import { mentionCommune } from "../src/tools/agenda.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
 import { citation } from "../src/tools/citer.js";
@@ -442,16 +441,16 @@ describe("reading the copies", () => {
   });
 
   it("never shows an event of an agenda no longer read from a copy built before, and says the events are updating", async () => {
-    // Saint-Joseph: its site not read until it agrees (Petite-Île's is, as the commune's public information, since 20/11/2026).
-    const JOSEPH = pageOf("saint-joseph")!;
-    const unread = { ...event("Fête des goyaviers", "Saint-Joseph", "2026-10-24T10:00", "samedi 24/10 à 10:00"), lien: "https://saintjoseph.re/fete-des-goyaviers", source: "site de la commune de Saint-Joseph, lu le samedi 24/10 à 08:00" };
+    // Saint-Benoît: an event of the Office de tourisme de l'Est, whose agenda is suspended (providers/agenda.ts, SUSPENDUS).
+    const BENOIT = pageOf("saint-benoit")!;
+    const unread = { ...event("Fête des goyaviers", "Saint-Benoît", "2026-10-24T10:00", "samedi 24/10 à 10:00"), lien: "https://www.reunionest.fr/fete-des-goyaviers", publie_par: "Office de tourisme de l'Est" };
     const agenda = { ...COPIES.agenda.value, evenements: [unread] };
     const summary = async (version: string) => {
       const edge = new EdgeLike();
       await edge.put(KEYS.agenda, { value: agenda, fetchedAt: ago(2).getTime(), version });
       const cache = new Cache(new TieredStore(new MemoryStore(), edge), () => NOW.getTime(), false, new MemoryStore(), "2.0.0");
-      const { copies, leftOut } = await counted(PAGE_BUDGET, () => readCopies(cache, JOSEPH, JOSEPH, NOW)).then((r) => r.value);
-      return resume(JOSEPH, copies, NOW, leftOut);
+      const { copies, leftOut } = await counted(PAGE_BUDGET, () => readCopies(cache, BENOIT, BENOIT, NOW)).then((r) => r.value);
+      return resume(BENOIT, copies, NOW, leftOut);
     };
     // Of this revision, the copy is served, but not the event of a site no longer read (tools/agenda.ts, repris).
     const current = await summary(stampOf(KEYS.agenda, "2.0.0")!);
@@ -460,9 +459,9 @@ describe("reading the copies", () => {
     expect(current.non_inclus ?? []).not.toContainEqual(expect.objectContaining({ partie: "événements du jour" }));
     const r = await summary("rendu-0");
     expect(JSON.stringify(r)).not.toContain("Fête des goyaviers");
-    expect(JSON.stringify(r)).not.toContain("saintjoseph.re/fete");
+    expect(JSON.stringify(r)).not.toContain("reunionest.fr/fete");
     expect(r.non_inclus).toContainEqual(expect.objectContaining({ partie: "événements du jour", raison: UPDATING, outil: "evenements" }));
-    const page = aujourdhuiPage("https://rundata.re", JOSEPH, r, null);
+    const page = aujourdhuiPage("https://rundata.re", BENOIT, r, null);
     expect(page).toContain("Se met à jour : rechargez la page dans quelques minutes.");
     expect(page).not.toContain("Fête des goyaviers");
   });
@@ -756,17 +755,16 @@ describe("the summary after the audit of 04/11/2026", () => {
     for (const t of [r.resume, r.meteo!.avertissement, mesure.resume, mesure.meteo!.avertissement]) expect(t).not.toMatch(/(?:de|à|pour) Plage/i);
   });
 
-  it("says no event found is from incomplete agendas, and when the commune's own site is not read", () => {
+  it("says no event found is from incomplete agendas, for every commune", () => {
     const none = { ...COPIES, agenda: copy({ ...COPIES.agenda.value, evenements: [] }) };
     const sp = resume(SAINT_PAUL, none as never, NOW);
     expect(sp.resume).not.toMatch(/0 événement/);
     expect(sp.evenements_du_jour!.aucun).toBe("Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.");
-    const pierre = pageOf("saint-joseph")!;
-    const notRead = mentionCommune("Saint-Joseph");
-    expect(notRead).toBeTruthy();
-    const r = resume(pierre, none as never, NOW);
-    expect(r.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets, sans le site de la commune) ;");
-    expect(r.evenements_du_jour!.non_repris).toBe(notRead);
+    // Saint-Joseph, its news read as the commune's public information since 20/11/2026: as any other commune.
+    const joseph = pageOf("saint-joseph")!;
+    const r = resume(joseph, none as never, NOW);
+    expect(r.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets)\u00a0;");
+    expect(r.evenements_du_jour).not.toHaveProperty("non_repris");
     expect(resume(SAINT_PAUL, COPIES as never, NOW).evenements_du_jour!.aucun).toBeUndefined();
   });
 

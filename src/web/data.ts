@@ -67,12 +67,12 @@ import { type CourantAnswer, type courantBlock, courantCopy } from "../tools/cou
 import { type NonOfficiel, volcanSeismes } from "../tools/volcan.js";
 import type { Acces } from "../tools/volcan-acces.js";
 import * as sportSource from "../providers/sport.js";
-import { grandRaidRow, mentionProgrammes, quand as sportDay, sportTool, type SportRow } from "../tools/sport.js";
+import { grandRaidRow, quand as sportDay, sportTool, type SportRow } from "../tools/sport.js";
 import { cyclones, type activeRow, type carteOfficielle, type seasonRow, type suiviRow } from "../tools/cyclones.js";
 import * as cmrs from "../providers/cmrs-carte.js";
 import * as cmrsTrace from "../providers/cmrs-trace.js";
 import { historiqueMeteo, recordsReference, reperesMois, type RecordsReference, type ReperesMois } from "../tools/historique.js";
-import { agenda, type EventRow, mentionIle as agendaNonRepris } from "../tools/agenda.js";
+import { agenda, type EventRow } from "../tools/agenda.js";
 import { mentionSalles, RESUME_REUNION_FR } from "../tools/non-repris.js";
 import * as actuSource from "../providers/actualites.js";
 import { A_SAVOIR as ACTU_A_SAVOIR, COUVERTURE as ACTU_COUVERTURE, infoRow, prefectureLueTexte, quand as newsTime, type InfoRow } from "../tools/actualites.js";
@@ -1243,8 +1243,6 @@ export interface SportAnswer {
   grand_raid?: ReturnType<typeof grandRaidRow>;
   programmes_communes?: { type: string; commune?: string; titre: string; dates: string; lien: string; source: string; publie_par: string; lu_le: string }[];
   programmes_a_savoir?: string;
-  /** The sports programmes of the communes whose site is not read until they agree (tools/sport.ts, mentionProgrammes). */
-  non_repris?: string;
 }
 
 /** The tool's answer for the whole island, with the standings and the last Grand Raid, which it gives only when asked. */
@@ -1260,8 +1258,9 @@ export async function buildSport(cache: Cache, now = new Date()): Promise<SportA
     const muet = c.muet ? a.injoignable?.find((x) => x.competition.toLowerCase() === competition.toLowerCase()) : undefined;
     return { competition, lignes: c.classement, lien: c.lien, ...(muet && { muet: { texte: muet.texte, site: muet.site } }) };
   });
-  // The page says Réunion La 1ère's apart, under its sources (tools/non-repris.ts): the programmes' here.
-  return { ...a, non_repris: mentionProgrammes(), classements, grand_raid: gr ? grandRaidRow(gr.value) : undefined };
+  // The page says Réunion La 1ère's and the sports sites not read apart, under its sources (tools/non-repris.ts).
+  const { non_repris: _n, ...rest } = a as typeof a & { non_repris?: string };
+  return { ...rest, classements, grand_raid: gr ? grandRaidRow(gr.value) : undefined };
 }
 
 export interface CyclonesAnswer {
@@ -1364,7 +1363,7 @@ export interface AgendaAnswer {
   remises?: string[];
   /** The agendas read by the scheduled event whose copy is not served, with why (tools/agenda.ts, nonLus). */
   non_lus?: string[];
-  /** The communes and the halls whose site is not read until they agree (tools/agenda.ts, mentionIle; mentionSalles). */
+  /** The halls whose site is not read until they agree (tools/non-repris.ts, mentionSalles). */
   non_repris?: string;
   couverture: string;
   a_savoir: string;
@@ -1385,7 +1384,7 @@ export async function buildAgenda(cache: Cache, now = new Date()): Promise<Agend
   const weekend = answer<{ evenements?: EventRow[] }>(await agenda(cache, undefined, "ce_week_end", undefined, now, PAGE_EVENTS, false, true));
   // reunion.fr's agenda, not read, is the page's own note under its sources (noteReunionFr): not in its description.
   const resume = a.resume.replace(`\u00a0; ${RESUME_REUNION_FR}`, "");
-  return { ...a, resume, non_repris: [...agendaNonRepris(), ...mentionSalles()].join(" ") || undefined, ce_week_end: weekend?.evenements ?? [] };
+  return { ...a, resume, non_repris: mentionSalles().join(" ") || undefined, ce_week_end: weekend?.evenements ?? [] };
 }
 
 export interface EnfantsAnswer {

@@ -7,7 +7,6 @@ import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import type { Fil } from "../providers/actualites.js";
 import * as src from "../providers/agenda.js";
-import { nonAutorisee } from "../providers/autorisations.js";
 import { names, THEMES, W } from "../providers/agenda-mots.js";
 import { withNews } from "../providers/agenda-presse.js";
 import { evenements as relies, ID as CONNECTEURS_ID } from "../providers/agenda-connecteurs.js";
@@ -18,7 +17,7 @@ import { mesure } from "../web/mesure.js";
 import { casse } from "./casse.js";
 import { a, credits, de, enumeration, notFound, placeBlock, text } from "./format.js";
 import { type Injoignable, injoignable } from "./injoignable.js";
-import { dayMonth, mention, mentionIle as ileMention, mentionReunionFr, mentionSalles, mentionSports, RESUME_REUNION_FR } from "./non-repris.js";
+import { mentionReunionFr, mentionSalles, mentionSports, RESUME_REUNION_FR } from "./non-repris.js";
 import { quand as dayText, derniereLecture, duAu } from "./sport.js";
 import { rienTrouve } from "../vide.js";
 import { MARKET } from "./marches.js";
@@ -692,12 +691,6 @@ export function parJour<R extends Pick<EventRow, "date" | "quand" | "autres_date
   return [...days.values()];
 }
 
-/** Said instead of a commune's events while its site is not read until it agrees (tools/non-repris.ts). */
-export const mentionCommune = (commune: string | undefined) => mention("agenda", commune);
-
-/** The same for the whole island. */
-export const mentionIle = () => ileMention("agenda");
-
 /** « Mairie de Saint-Paul » → « le site de la Mairie de Saint-Paul », « Le Séchoir » → « le site du Séchoir ». */
 export function siteOf(nom: string): string {
   if (/^(Ville|Mairie|Commune)\b/.test(nom)) return `le site de la ${nom}`;
@@ -723,33 +716,7 @@ export function silentOf(indisponible: string[] | undefined, commune: string, re
   return out;
 }
 
-/**
- * The same in a few words (marketing): for the commune page's tile of outings, `valeur` and `detail` when it has no
- * event from elsewhere, `tete` before the next one's when it has; `resume` for the tool's summary; `ligne` under the
- * outings of the day's page.
- */
-export function mentionCourte(commune: string): { valeur: string; detail: string; tete: string; resume: string; ligne: string } | undefined {
-  const au = nonAutorisee("agenda", commune);
-  if (!au) return undefined;
-  // In marketing's words for each kind: its agenda, its news, or both (« site communal » in the tile's few words).
-  const words = ({
-    "événements": { valeur: "Agenda non repris", tete: "Agenda communal non repris", ce: "agenda du site de la commune non repris" },
-    "actualités": { valeur: "Actualités non reprises", tete: "Actualités communales non reprises", ce: "actualités du site de la commune non reprises" },
-    "événements et actualités": { valeur: "Agenda et actualités non repris", tete: "Site communal non repris", ce: "agenda et actualités du site de la commune non repris" },
-  } as Record<string, { valeur: string; tete: string; ce: string }>)[au.publie];
-  if (!words) return undefined;
-  const asked = au.etat !== "demandee" ? "" : au.demandee_le ? `, demandé le ${dayMonth(au.demandee_le)}` : ", que nous lui avons demandé";
-  const detail = au.etat === "refusee" ? `elle a refusé${au.refusee_le ? ` le ${dayMonth(au.refusee_le)}` : ""}` : `ses mentions légales l'interdisent sans son accord${asked}`;
-  return {
-    valeur: words.valeur,
-    detail,
-    tete: words.tete,
-    resume: `${words.ce}, ${detail} (voir non_repris)`,
-    ligne: `${words.ce[0].toUpperCase()}${words.ce.slice(1)} : ${detail}.`,
-  };
-}
-
-// The agendas not read until their commune agrees, and the sources only they are credited with.
+// The agendas listed but not read (suspended, or a site not read), and the sources only they are credited with.
 const NON_LUS = src.LISIBLES.filter((x) => !src.AGENDAS.includes(x));
 const THEIRS_ONLY = new Set(NON_LUS.map((x) => x.source).filter((s) => !src.AGENDAS.some((x) => x.source === s)).map((s) => s.nom));
 // reunion.fr's agenda, no longer read (tools/non-repris.ts): its events and its credit, in a copy built before.
@@ -806,8 +773,7 @@ function besides(commune: string): string {
 }
 const towns = src.AGENDAS.filter((x) => x.source !== SALLES_SOURCE && !DE_LA_BASE.has(x.id) && !x.partiel);
 const partial = src.AGENDAS.filter((x) => x.partiel);
-// Not those whose site is not read until they agree: said apart (mentionIle).
-const without = Object.keys(INSEE).filter((c) => !src.COVERED.includes(c) && !nonAutorisee("agenda", c));
+const without = Object.keys(INSEE).filter((c) => !src.COVERED.includes(c));
 /** The halls whose programme is read, for the tool's description: « le programme du Séchoir ». */
 export const PROGRAMMES_SALLES = `${halls.length > 1 ? "les programmes" : "le programme"} ${enumeration(halls.map((h) => ofAgenda(h.nom)))}`;
 /** The communes whose mairie's agenda is read, for the tool's description. */
@@ -819,7 +785,7 @@ export const COUVERTURE =
   (partial.length ? `Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date (pas un agenda complet) : ${[...new Set(partial.map((x) => x.commune))].join(", ")}. ` : "") +
   `Sans agenda lu : ${without.join(", ")}` +
   `${Object.entries(src.SANS_AGENDA).filter(([c]) => without.includes(c)).map(([, why]) => `\u00a0; ${why}`).join("")}. ` +
-  [...mentionIle(), ...mentionSalles(), ...mentionSports([], true)].map((x) => `${x} `).join("") +
+  [...mentionSalles(), ...mentionSports([], true)].map((x) => `${x} `).join("") +
   "Aussi : les événements que les clubs et associations proposent sur rundata.re (https://rundata.re/associations), relus avant publication. " +
   "Pas encore lus : les bars et les clubs, les billetteries privées. Un événement absent ici peut quand même avoir lieu (voir le site ou la " +
   "page Facebook de la salle ou de la mairie). Chaque événement dit qui le publie, renvoie à sa page et dit quand rundata.re l'a lu.";
@@ -907,13 +873,12 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   // reunion.fr's agenda, not read (tools/non-repris.ts): said for the whole island and for the big fêtes and festivals.
   const irt = !commune || !!what?.nom?.includes("fêtes et festivals");
   // The halls not read (tools/non-repris.ts), the commune's or the island's.
-  const nonRepris = [...(commune ? [mentionCommune(commune)] : mentionIle()), ...mentionSalles(commune), irt ? mentionReunionFr() : undefined].filter(Boolean).join(" ") || undefined;
+  const nonRepris = [...mentionSalles(commune), irt ? mentionReunionFr() : undefined].filter(Boolean).join(" ") || undefined;
   // Each part without its own final point (MARCHES_REGULIERS is a sentence): one point, at the end.
   const resume = [
     n ? `${n} événement${n > 1 ? "s" : ""}${kind} ${where} ${periodText}` : `Aucun événement${kind} trouvé ${where} ${periodText}`,
     off.length ? `ATTENTION : ${off.map((x) => `« ${casse(x.e.titre)} » ${x.e.statut}${x.e.reporte_au ? ` au ${dayText(x.e.reporte_au)}` : ""}${x.e.selon ? ` (d'après ${x.e.selon.media})` : ""}`).slice(0, 4).join(", ")}` : "",
-    commune && mentionCourte(commune) ? mentionCourte(commune)!.resume : "",
-    commune && !covered && !mentionCourte(commune) ? src.SANS_AGENDA[commune] ?? `ni la mairie ${de(commune)} ni une salle de la commune ne publient d'agenda lisible` : "",
+    commune && !covered ? src.SANS_AGENDA[commune] ?? `ni la mairie ${de(commune)} ni une salle de la commune ne publient d'agenda lisible` : "",
     irt ? RESUME_REUNION_FR : "",
     partly ? `${commune} : ${partly.partiel}${besides(commune!)}` : "",
     commune && !n && all.length ? `${all.length} ailleurs sur l'île` : "",

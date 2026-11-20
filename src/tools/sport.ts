@@ -3,8 +3,8 @@ import { localTime } from "../geo.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { type Fil, type Info, LUS, SOURCES as ACTU } from "../providers/actualites.js";
 import { httpUrl, versBilletterie } from "../http.js";
-import { type Agenda, AGENDAS, type Evenement, LIGUE_VOLLEY, type MatchLigue, LISIBLES, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
-import { autorisee, nonAutorisee } from "../providers/autorisations.js";
+import { type Agenda, type Evenement, LIGUE_VOLLEY, type MatchLigue, type nonServie, type programmesSportifs, reserve, SPORTSREGIONS, sportDesAgendas } from "../providers/agenda.js";
+import { autorisee } from "../providers/autorisations.js";
 import * as ffck from "../providers/ffck.js";
 import * as src from "../providers/sport.js";
 import * as avis from "../providers/sport-avis.js";
@@ -513,33 +513,6 @@ export function grandRaidRow(g: src.GrandRaid) {
   };
 }
 
-const dayMonth = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`;
-
-/**
- * Said instead of the sports programmes of the communes whose site is not read until they agree (marketing), for the
- * whole island or the communes asked: undefined when there is none.
- */
-export function mentionProgrammes(communes?: string[]): string | undefined {
-  const theirs = LISIBLES.filter((x) => x.programmes && x.commune && !AGENDAS.includes(x) && (!communes || communes.includes(x.commune))).map((x) => x.commune!).sort((x, y) => x.localeCompare(y, "fr"));
-  const au = (c: string) => nonAutorisee("agenda", c);
-  const waiting = theirs.filter((c) => au(c)?.etat !== "refusee");
-  const lines: string[] = [];
-  if (waiting.length) {
-    const days = new Set(waiting.map((c) => (au(c)?.etat === "demandee" ? au(c)!.demandee_le ?? "" : undefined)));
-    const day = days.size === 1 ? [...days][0] : undefined;
-    const one = waiting.length === 1;
-    lines.push((one
-      ? `Les mentions légales du site de la commune ${de(waiting[0])} interdisent d'en reprendre le contenu sans son accord : rundata.re n'affiche donc pas le programme sportif qu'elle y publie.`
-      : `Les programmes sportifs ${enumeration(waiting.map(de))} ne sont pas repris : les mentions légales des sites de ces communes l'interdisent sans leur accord.`) +
-      (day !== undefined ? ` Nous ${one ? "lui" : "leur"} avons demandé cet accord${day ? ` le ${dayMonth(day)}` : ""} et attendons ${one ? "sa" : "leur"} réponse.` : ""));
-  }
-  for (const c of theirs.filter((x) => !waiting.includes(x))) {
-    const no = au(c)?.refusee_le;
-    lines.push(`La commune ${de(c)} a refusé${no ? `, le ${dayMonth(no)},` : ""} que rundata.re reprenne le contenu de son site : le programme sportif qu'elle y publie ne s'affiche donc pas ici.`);
-  }
-  return lines.join(" ") || undefined;
-}
-
 const PROGRAMMES =
   "Programme sportif de la commune : le document publié par la mairie avec les compétitions de ses clubs. rundata.re ne lit pas ce document, il en donne seulement le lien : " +
   "les matchs, les heures et les lieux sont dans le document.";
@@ -765,11 +738,9 @@ export async function sportTool(cache: Cache, sport?: Sport, lieu?: string, q?: 
     titres_football_lus: foot?.length ? quand(localClock(data.presse!.fetchedAt)) : undefined,
     programmes_communes: programmes.length ? programmes.map(({ date: _d, agenda: _a, ...p }) => p) : undefined,
     programmes_a_savoir: programmes.length ? PROGRAMMES : undefined,
-    // Réunion La 1ère's sport news, not read (tools/non-repris.ts), for the whole island or the sports it covered; the
-    // programmes of the communes whose site is not read until they agree, where programmes are given.
+    // Réunion La 1ère's sport news, not read (tools/non-repris.ts), for the whole island or the sports it covered.
     non_repris: [
       (sport && NEWS_ONLY[sport]) || (!sport && !w) ? mentionLa1ere("sport") : undefined,
-      sport || q === "resultats" || (w && w.kind !== "communes") ? undefined : mentionProgrammes(w?.kind === "communes" ? w.communes : undefined),
       // The federations and the clubs' calendar not read until they agree, of the sport asked or all of them.
       ...mentionSports(federation ? [] : sport ? [sport] : undefined, clubsDe(sport)),
     ].filter(Boolean).join(" ") || undefined,

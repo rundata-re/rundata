@@ -905,7 +905,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
   const cuts = c
     ? `<section id="coupures" aria-labelledby="h-coupures">
   <div class="sec-h"><h2 id="h-coupures">Coupures d'électricité annoncées par les mairies</h2>
-  ${c.a_savoir ? `<p>${esc(c.a_savoir)}</p>` : ""}${c.non_repris ? `<p class="np">${esc(c.non_repris)}${reprise(c.non_repris)}</p>` : ""}${c.depannage ? `<p><b>${esc(c.depannage)}</b></p>` : ""}</div>
+  ${c.a_savoir ? `<p>${esc(c.a_savoir)}</p>` : ""}${c.depannage ? `<p><b>${esc(c.depannage)}</b></p>` : ""}</div>
   ${(c.injoignable ?? []).map((s) => `<p class="note">${silentText(s)}</p>`).join("")}
   ${c.avis?.length
     ? `<div class="card"><ul class="plain">${c.avis.map(courantItem).join("")}</ul></div>`
@@ -3285,12 +3285,11 @@ export function sportPage(origin: string, data: Cached<SportAnswer> | null, now 
   ${d ? (d.a_venir?.length ? bySport(d.a_venir, false) : `<p class="card">Aucun rendez-vous trouvé dans les quinze prochains jours.</p>`) : `<p class="card">Le calendrier se charge : rechargez la page dans quelques secondes.</p>`}
   ${clubsLink()}
 </section>
-${d?.programmes_communes?.length || d?.non_repris ? `<section aria-labelledby="h-prog">
+${d?.programmes_communes?.length ? `<section aria-labelledby="h-prog">
   <div class="sec-h"><p class="eyebrow">Publiés par les mairies</p><h2 id="h-prog">Programmes sportifs des communes</h2>
   ${d.programmes_communes?.length ? `<p>${esc(d.programmes_a_savoir ?? "")}</p>` : ""}</div>
   ${d.programmes_communes?.length ? `<ul class="zones"><li class="card"><ul class="rows eau">${d.programmes_communes.map((p) =>
     `<li><span><a href="${esc(p.lien)}" rel="noopener"${ACCUEILS.has(p.lien) ? ' target="_blank"' : ""}>${esc(p.titre)}</a><small>${[p.commune && esc(p.commune), adresseTexte(`Source\u00a0: ${p.source}`)].filter(Boolean).join(" · ")}</small></span><span class="q-none">${esc(shortWhen(p.dates))}</span></li>`).join("")}</ul></li></ul>` : ""}
-  ${d.non_repris ? `<p class="card np">${esc(d.non_repris)}${reprise(d.non_repris)}</p>` : ""}
 </section>` : ""}
 ${d?.resultats?.length ? `<section aria-labelledby="h-res">
   <div class="sec-h"><p class="eyebrow">Sept derniers jours</p><h2 id="h-res">Derniers résultats</h2></div>

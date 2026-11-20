@@ -5,7 +5,7 @@ import { resolvePlace } from "../places/resolve.js";
 import * as cc from "../providers/coupures-courant.js";
 import * as edf from "../providers/edf.js";
 import { why } from "../types.js";
-import { type CourantAnswer, courantBlock, courantCopy, nonReprisCourt } from "./courant.js";
+import { type CourantAnswer, courantBlock, courantCopy } from "./courant.js";
 import { credits, fr, notFound, paire, placeBlock, text } from "./format.js";
 
 /**
@@ -178,9 +178,6 @@ export async function electricite(cache: Cache, now = new Date(), lieu?: string,
   const silent = (coupures.injoignable ?? []).map((s) => s.texte);
   if (res) parts.unshift(coupures.avis?.length ? coupures.avis[0].texte : coupures.note ?? "", ...silent);
   else parts.push(...silent);
-  // The island: the mairies not read until they agree, in a few words, the whole of it in coupures_annoncees.non_repris.
-  const short = res ? undefined : nonReprisCourt();
-  if (short) parts.push(`${short[0].toUpperCase()}${short.slice(1)}.`);
   return text({
     ...(res ? { lieu: placeBlock(lieu!, res) } : {}),
     resume: parts.filter(Boolean).join(" "),

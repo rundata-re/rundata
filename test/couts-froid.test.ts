@@ -63,6 +63,11 @@ const ROUTES: [RegExp, string | ((body: string) => string)][] = [
   // Saint-André's notices of power cuts, read since its written agreement of 16/11/2026 (live on that day).
   [/saint-andre\.re\/wp-json\/wp\/v2\/posts/, "courant/saint-andre_posts.json"],
   [/saint-andre\.re\/wp-json\/wp\/v2\/media/, "courant/saint-andre_media.json"],
+  // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne, read as the communes' public information since 20/11/2026
+  // (live on that day).
+  [/saintphilippe\.re\/wp-json\/wp\/v2\/posts\?search/, "courant/saint-philippe_posts.json"],
+  [/ville-cilaos\.fr\/wp-json\/wp\/v2\/posts\?search/, "courant/cilaos_posts.json"],
+  [/ville-saintesuzanne\.re\/wp-json\/wp\/v2\/posts\?search/, "courant/sainte-suzanne_posts.json"],
   [/atmo-france\.org/, "atmo_974.json"],
   [/erddap\/griddap\/erdMH1sst/, "modis.csv"],
   [/maregraphie\/observation\/json\/110/, "shom_110.json"],

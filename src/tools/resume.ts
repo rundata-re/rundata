@@ -65,14 +65,13 @@ import {
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
 import { coastal, PAGES, type PlacePage, slugify } from "../web/places.js";
-import { mentionCommune, occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
+import { occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
 import { ecoles, resumeLine } from "./ecoles.js";
 import { compteAvis, muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { when } from "./injoignable.js";
-import { mention } from "./non-repris.js";
 import { SITE_URL } from "./citer.js";
 import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, text } from "./format.js";
 import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
@@ -451,7 +450,6 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   // Today's holiday, from the calendar's copy of today (sameDay); none known without it.
   const ferie = l.calendrier?.value.jours_feries?.aujourd_hui ?? undefined;
   const volc = l.volcan && VOLCANO_COMMUNES.includes(nom) ? volcano(l.volcan.value) : undefined;
-  const notRead = mentionCommune(nom);
   const sun = cal.sun(today, commune.place.lon, commune.place.lat, cal.horizonDe(commune.place));
   const prod = l.electricite?.value.production;
   const airHere = l.air?.value.communes?.find((x) => normalize(x.commune) === normalize(nom));
@@ -480,7 +478,6 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const green = fresh.filter((s) => s.accepte.includes("déchets verts")).length;
   const power = l.courant && followed(nom) ? aheadRows(l.courant.value, nom, now) : [];
   // A mairie not read until it agrees: what is said instead (tools/non-repris.ts).
-  const powerNotRead = mention("courant", nom);
   // Its site did not answer at the last read: said, never left as no cut (tools/courant.ts).
   const powerSilent = l.courant ? injoignable(l.courant.value, nom, localTime(l.courant.fetchedAt), now) : undefined;
 
@@ -503,7 +500,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     l.agenda
       ? events.length
         ? `${events.length} événement${events.length > 1 ? "s" : ""} aujourd'hui${eventsSaid ? `, ${eventsSaid}` : ""}`
-        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets${notRead ? ", sans le site de la commune" : ""})${eventsSaid ? `, ${eventsSaid}` : ""}`
+        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets)${eventsSaid ? `, ${eventsSaid}` : ""}`
       : "",
     roads.length ? `${roads.length} info${roads.length > 1 ? "s" : ""} sur les routes ou des blocages` : "",
     power.length ? shortOf(power[0], now) : "",
@@ -579,7 +576,6 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           outil: events.length > EVENTS_MAX ? "evenements" : undefined,
           page: events.length > EVENTS_MAX ? `${SITE_URL}/evenements` : undefined,
           aucun: events.length ? undefined : "Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.",
-          non_repris: notRead,
           injoignable: eventsSilent.length ? { texte: eventsSilent.map((x) => x.texte).join(" "), court: eventsSaid, site: eventsSilent[0].lien } : undefined,
         }
       : undefined,
@@ -595,7 +591,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           avertissement: HORAIRES_A_SAVOIR,
         }
       : undefined,
-    coupures_electricite: power.length || powerSilent ? { avis: power.length ? power : undefined, injoignable: powerSilent && { texte: powerSilent.texte, site: powerSilent.site } } : powerNotRead ? { non_repris: powerNotRead } : undefined,
+    coupures_electricite: power.length || powerSilent ? { avis: power.length ? power : undefined, injoignable: powerSilent && { texte: powerSilent.texte, site: powerSilent.site } } : undefined,
     marches_du_jour: markets.length || allWeek.length || noDays.length || townHall
       ? {
           liste: markets.map((m) => ({ nom: m.nom, horaires_aujourd_hui: m.horaires_aujourd_hui, adresse: m.adresse ?? undefined, lien: m.lien, carte: m.osm, source: m.source.nom, d_apres: by(m) })),

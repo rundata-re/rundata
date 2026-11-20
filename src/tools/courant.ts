@@ -6,10 +6,8 @@
 import type { Cached } from "../cache.js";
 import { localTime } from "../geo.js";
 import * as cc from "../providers/coupures-courant.js";
-import { a as at, credits, de, enumeration } from "./format.js";
+import { a as at, credits, de } from "./format.js";
 import { injoignable as siteSilent } from "./injoignable.js";
-import { mention, mentionIle } from "./non-repris.js";
-import { AUTORISATIONS } from "../providers/autorisations.js";
 
 export interface CourantAnswer {
   avis: cc.AvisCourant[];
@@ -93,14 +91,12 @@ export function liveCommunes(c: CourantAnswer, now: Date): string[] {
  * read: its legal notice forbids taking the content (« EDF interdit expressément toute réutilisation, reproduction ou
  * extraction d'éléments de ces bases de données », read on 03/11/2026), so the line says that, never that EDF publishes
  * nothing readable. It names every mairie read, with or without a recent notice, the same whether its site
- * answered or not (that is said apart, `injoignable`); those not read are said apart too (non_repris).
+ * answered or not (that is said apart, `injoignable`).
  */
 export function honesty(): string {
   const read = cc.MAIRIES.map((m) => m.commune);
-  // Saint-André's site forbids it without its agreement, which it gave in writing on 16/11/2026.
-  const accord = read.some((c) => AUTORISATIONS[`courant:${c}`]?.etat === "accordee");
   return `EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). ` +
-    `Nous reprenons celles que relaient les mairies dont le site ne l'interdit pas${accord ? " ou qui ont donné leur accord écrit à rundata.re" : ""}${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
+    `Nous reprenons celles que relaient les mairies sur leurs sites${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
 }
 
 /**
@@ -224,33 +220,18 @@ export function shortOf(a: Pick<CourantRow, "nature" | "creneaux" | "pdf">, now:
 }
 
 /**
- * The mairies whose notices are not read until they agree, in a few words for the tool's summary (marketing):
- * undefined when there is none.
- */
-export function nonReprisCourt(): string | undefined {
-  const communes = cc.LISIBLES.map((m) => m.commune).filter((x) => !followed(x)).sort((a, b) => a.localeCompare(b, "fr"));
-  if (!communes.length) return undefined;
-  const theirs = communes.length > 1 ? "leurs mentions légales l'interdisent sans leur accord" : "ses mentions légales l'interdisent sans son accord";
-  return `avis de coupure d'électricité ${enumeration(communes.map(de))} non repris, ${theirs} (voir non_repris)`;
-}
-
-/**
  * What the tool electricite adds: the commune's notices, or, when no place is given, the latest of each mairie that
- * relayed one lately (those of the honesty line): a notice of last year says nothing of the island today. For a mairie
- * not read until it agrees, what is said instead (`non_repris`, and `note` for its commune); for the island, the same
- * for all of them.
+ * relayed one lately (those of the honesty line): a notice of last year says nothing of the island today.
  */
 export function courantBlock(copy: Cached<CourantAnswer> | undefined, commune: string | undefined, now: Date) {
-  const nonRepris = commune ? mention("courant", commune) : mentionIle("courant").join(" ") || undefined;
-  if (!copy) return { indisponible: "Les avis de coupure relayés par les mairies n'ont pas encore été lus : réessayer plus tard.", non_repris: nonRepris };
+  if (!copy) return { indisponible: "Les avis de coupure relayés par les mairies n'ont pas encore été lus : réessayer plus tard." };
   const c = copy.value;
   const avis = commune ? rowsOf(c, commune, now) : liveCommunes(c, now).flatMap((x) => rowsOf(c, x, now));
   const silent = (commune ? [commune] : c.indisponibles).flatMap((x) => injoignable(c, x, localTime(copy.fetchedAt), now) ?? []);
   return {
     avis,
-    note: commune && !avis.length && !silent.length ? nonRepris ?? none(commune) : undefined,
+    note: commune && !avis.length && !silent.length ? none(commune) : undefined,
     injoignable: silent.length ? silent : undefined,
-    non_repris: nonRepris,
     a_savoir: honesty(),
     depannage: panne(),
     lu_a: localTime(copy.fetchedAt),

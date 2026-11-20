@@ -7,7 +7,6 @@ import type { Cached } from "../cache.js";
 import * as mf from "../providers/vigilance.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import type * as annuaire from "../providers/annuaire.js";
-import { mentionCourte } from "../tools/agenda.js";
 import { MAIRIE_FERMEE, type Resume, UPDATING } from "../tools/resume.js";
 import { MARCHES } from "../vie/marches.js";
 import * as monuments from "../vie/monuments.js";
@@ -18,7 +17,6 @@ import { type Alerte, credit, sansPeriode } from "./data.js";
 import { connectorCta, courantItem, lienNom, silentItem, silentText, webPage } from "./domains.js";
 import { adresseTexte, cheminTexte, telephoneTexte } from "./adresse.js";
 import { esc, fenetre, islandMap } from "./map.js";
-import { reprise } from "./ouvrir-donnees.js";
 import { a, communeDite, de, fourchette } from "../tools/format.js";
 import { compteAvis } from "../tools/coupures.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin, leJour } from "./pages.js";
@@ -254,23 +252,18 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
         `/coupures-eau/${p.slug}`, r.coupures_eau.avis.some((n) => n.ne_pas_boire) ? " warn" : "", aCommune(p.nom))
     : "";
   const ev = r.evenements_du_jour;
-  const notRead = mentionCourte(p.nom);
   const events = ev
     ? card("music", "Sortir aujourd'hui",
         (ev.liste.length
           ? `<ul class="plain">${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
           : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus.</p>`) +
         // Its own site that did not answer at our last read, with its hour (tools/injoignable.ts).
-        (ev.injoignable ? `<p class="note">${silentText(ev.injoignable)}</p>` : "") +
-        // Its site not read until it agrees: said under them, in marketing's words.
-        (notRead ? `<p class="note np">${esc(notRead.ligne)}${reprise(notRead.ligne)}</p>` : ""),
+        (ev.injoignable ? `<p class="note">${silentText(ev.injoignable)}</p>` : ""),
         "/evenements")
     : "";
   const d = r.decheteries;
   const dFresh = d?.sites.filter((x) => x.accepte) ?? [];
   const dGreen = dFresh.filter((x) => x.accepte!.includes("déchets verts")).length;
-  // Its notices of power cuts not read until it agrees: said under the list, as the agenda's under the outings.
-  const powerNotRead = r.coupures_electricite?.non_repris;
   const practical = [
     ...(r.coupures_electricite?.injoignable ? [silentItem(r.coupures_electricite.injoignable)] : []),
     ...(r.coupures_electricite?.avis ?? []).map(courantItem),
@@ -323,7 +316,7 @@ ${cuts || events ? `<section aria-labelledby="h-eau-sorties"><div class="sec-h">
   <div class="two">${cuts}${events}</div>
 </section>` : ""}
 <section aria-labelledby="h-pratique"><div class="sec-h"><h2 id="h-pratique">Vie pratique</h2></div>
-  <div class="card"><ul class="plain">${practical}</ul>${powerNotRead ? `<p class="note np">${esc(powerNotRead)}${reprise(powerNotRead)}</p>` : ""}</div>
+  <div class="card"><ul class="plain">${practical}</ul></div>
 </section>
 <section aria-labelledby="h-patrimoine"><div class="sec-h"><h2 id="h-patrimoine">Patrimoine</h2></div>
   ${monumentsCard(p.nom)}

@@ -281,7 +281,7 @@ function places(found: ReturnType<typeof hits>): { communes: string[]; lieux: st
 }
 
 // The weather's own words; « vigilance » apart, as the volcano has its phase of vigilance too (ORSEC Volcan).
-const WEATHER = String.raw`meteo\w*|pluies?|orages?|cyclon\w*|tempete|depression tropicale|houle|vents? forts?|inondation\w*|crues?`;
+const WEATHER = String.raw`meteo\w*|pluies?(?! de (?:medailles?|buts|critiques|records|cadeaux)\b)|orages?|cyclon\w*|tempete|depression tropicale|houle|vents? forts?|inondation\w*|crues?`;
 const WEATHER_WORD = new RegExp(`\\b(?:${WEATHER})\\b`);
 
 // « Mobilisation » in the sense of a strike or a blockade, not money, firms or means set to work: « une mobilisation
@@ -293,19 +293,24 @@ const MOBILISATION = String.raw`mobilis\w*(?! (?:\w+ ){0,2}?(?:financ\w*|entrepr
 
 // An accident of the road, not « un accident vasculaire cérébral » nor a day « sans accident » at work (Freedom, 29/10/2026:
 // two articles on health and safety at work under « routes et circulation »). On normalised text.
-export const ACCIDENT = String.raw`(?<!sans )accidents?(?! (?:vasculaires?|cardiaques?|domestiques?|du travail|de travail)\b)`;
+export const ACCIDENT = String.raw`(?<!sans )accidents?(?! (?:vasculaires?|cardiaques?|domestiques?|du travail|de travail|de parcours)\b)`;
+/** Traffic on the roads, not of drugs or weapons (« le trafic de drogue démantelé »). On normalised text. */
+export const TRAFIC = String.raw`trafic(?! (?:de |d )?(?:drogues?|stupefiants?|cocaine|cannabis|zamal|armes?|influence|migrants?|especes)\b)`;
 
 /** The subjects, for the questions people ask on a day like this. */
 export const SUJETS: { id: string; nom: string; re: RegExp }[] = [
-  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:barrages?|blocages?|bloqu\w*|manifest\w*|${MOBILISATION}|gilets? jaunes?|rassemblement\w*|greve\w*|grevistes?|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b`) },
-  { id: "route", nom: "routes et circulation", re: new RegExp(String.raw`\b(?:routes?|circulation|trafic|bouchons?|embouteillage\w*|${ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation|chaussee|inforoutes?)\b`) },
-  { id: "meteo", nom: "météo et cyclones", re: new RegExp(`\\b(?:${WEATHER}|vigilance)\\b`) },
-  { id: "volcan", nom: "volcan et séismes", re: /\b(?:volcan\w*|eruption\w*|fournaise|dolomieu|seisme\w*|sismi\w*|enclos)\b/ },
-  { id: "eau", nom: "eau et électricité", re: /\b(?:eau potable|coupures?|robinet|citernes?|secheresse|ne buvez pas|ne pas boire|edf|electricite|delestage\w*|panne\w*)\b/ },
-  { id: "securite", nom: "faits divers et sécurité", re: /\b(?:incendi\w*|feux|police\w*|gendarm\w*|interpell\w*|tribunal|proces|agression\w*|vols?|meurtre\w*|enquete|secours|pompiers|braconnage)\b/ },
-  { id: "sante", nom: "santé", re: /\b(?:sante|chu|hopita\w*|ars|epidemie|dengue|chikungunya|leptospirose|vaccin\w*|cancer)\b/ },
-  { id: "politique", nom: "politique et collectivités", re: /\b(?:prefet\w*|prefecture|maires?|municipal\w*|elus?|region|departement\w*|gouvernement|ministre\w*|deputes?|senat\w*|conseil)\b/ },
-  { id: "culture", nom: "sorties et culture", re: /\b(?:concerts?|festival\w*|spectacles?|exposition\w*|fete|annul\w*|report\w*)\b/ },
+  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:barrages?(?! (?:de takamaka|hydro\w*|d irrigation)\b)|blocages?|bloqu\w*|manifest\w*|${MOBILISATION}|gilets? jaunes?|rassemblement\w*|greve\w*|grevistes?|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b`) },
+  { id: "route", nom: "routes et circulation", re: new RegExp(String.raw`\b(?:routes?|circulation|${TRAFIC}|bouchons?|embouteillage\w*|${ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation|chaussee|inforoutes?)\b`) },
+  // « Vigilance » with its colour or a word of the weather only: « le CROS prône la vigilance » is no weather (24/10/2026).
+  { id: "meteo", nom: "météo et cyclones", re: new RegExp(`\\b(?:${WEATHER}|vigilance (?:jaune|orange|rouge|violette|meteo\\w*|cyclon\\w*|fortes?)|alerte cyclonique)\\b`) },
+  { id: "volcan", nom: "volcan et séismes", re: /\b(?:volcan\w*|eruption\w*(?! (?:de joie|cutanee)\b)|fournaise|dolomieu|seisme\w*|sismi\w*|enclos)\b/ },
+  { id: "eau", nom: "eau et électricité", re: /\b(?:eau potable|coupures?(?! de presse\b)|robinet|citernes?|secheresse|ne buvez pas|ne pas boire|edf|electricite|delestage\w*|panne\w*)\b/ },
+  { id: "securite", nom: "faits divers et sécurité", re: /\b(?:incendi\w*|feux(?! d artifices?\b)|police\w*|gendarm\w*|interpell\w*|tribunal|proces|agression\w*|vols?(?! (?:vers|pour|directs?|reguliers?|d air)\b)|meurtre\w*|enquete|secours|pompiers|braconnage)\b/ },
+  { id: "sante", nom: "santé", re: /\b(?:sante|chu|hopita\w*|ars|epidemie|dengue|chikungunya|leptospirose|vaccin\w*|cancer|avc)\b/ },
+  { id: "politique", nom: "politique et collectivités", re: /\b(?:prefet\w*|prefecture|maires?|municipal\w*|elus?|region|departement\w*|gouvernement|ministre\w*|deputes?|senat\w*|conseil (?:municipal|departemental|regional|d etat|constitutionnel|communautaire|des ministres|general)|conseillers? (?:municipa\w*|departementa\w*|regiona\w*))\b/ },
+  // Its own words only: « annulé » or « reporté » alone say nothing of culture (an election cancelled, matches put off,
+  // 24/10/2026), and « fête » the noun, not « … fête sa victoire ».
+  { id: "culture", nom: "sorties et culture", re: /\b(?:concerts?|festival\w*|spectacles?|exposition\w*|(?:la|une|les|des) fetes?|fetes? (?:de|du|des|foraine)\b)\b/ },
   { id: "sport", nom: "sport", re: /\b(?:sport\w*|match\w*|football|handball|volley|basket|rugby|surf|trail|grand raid|championn\w*|competition\w*)\b/ },
 ];
 

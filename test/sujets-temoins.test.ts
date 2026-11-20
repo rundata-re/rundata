@@ -97,3 +97,65 @@ describe("witness headlines, by subject", () => {
     expect(statut(null)).toBe("inconnu");
   });
 });
+
+describe("witness headlines of /actualites's other subjects (its filter by subject)", () => {
+  // Real headlines from test/fixtures/actualites (October 2026) first; the others written for this test, said as such.
+  it("« météo »: the weather, its vigilance with a colour; not « la vigilance » of a committee nor « une pluie de médailles »", () => {
+    has("meteo", ["Météo : un samedi qui se couvre au fil des heures", "Tempête Austen : 288.600 foyers sans électricité, 23 départements en vigilance orange"]);
+    hasNot("meteo", ["Week-end sous tension : Le CROS de La Réunion prône la vigilance et salue le report des rassemblements sportifs du 24 octobre"]);
+    // Written for this test.
+    hasNot("meteo", ["Une pluie de médailles pour les nageurs réunionnais"]);
+  });
+
+  it("« volcan »: the volcano; not « une éruption de joie »", () => {
+    has("volcan", ["Piton de la Fournaise : « Éruption avortée », le réservoir reste sous pression"]);
+    // Written for this test.
+    hasNot("volcan", ["Éruption de joie au stade après le but de la victoire"]);
+  });
+
+  it("« eau »: the tap water and the power; not « des coupures de presse »", () => {
+    has("eau", ["Plaine des Palmistes : la Cise alerte sur la qualité de l'eau, plusieurs citernes installées"]);
+    // Written for this test.
+    hasNot("eau", ["Coupures de presse : l'exposition des archives départementales"]);
+  });
+
+  it("« sécurité »: crimes, fires, the police; not fireworks nor flights", () => {
+    has("securite", ["Saint-Denis : près de 3 kg de cocaïne, des armes saisis et un individu interpellé", "Braconnage dans la réserve naturelle : 79 kg de poissons et de crustacés saisis"]);
+    // Written for this test.
+    hasNot("securite", ["Feux d'artifice du 20 décembre : le programme", "Les vols vers Maurice reprennent ce week-end"]);
+  });
+
+  it("« santé »: health, a stroke included", () => {
+    has("sante", ["Samedi à Saint-Benoît, grande “marche rose” contre le cancer du sein", "AVC à La Réunion : près de 1 900 hospitalisations par an"]);
+    hasNot("sante", ["Face aux tensions sociales, les ligues sportives préfèrent reporter les compétitions ce samedi"]);
+  });
+
+  it("« politique »: the institutions; « conseil » only as one of them", () => {
+    has("politique", ["Le Tampon : budget, cantines, associations… Découvrez les principales décisions du conseil municipal", "La commission permanente de la Région Réunion vote la prolongation de la réduction du coût des abonnements"]);
+    // Written for this test.
+    hasNot("politique", ["Conseil de lecture : nos romans de l'été"]);
+  });
+
+  it("« culture »: its own words; not an election cancelled, matches put off, nor « fête » the verb", () => {
+    has("culture", ["Somèn Kréol 2026 : cuisine lontan, concours intergénérationnel et concerts au Chaudron ce samedi 24 octobre", "Mobilisation citoyenne : plusieurs concerts, festivals et compétitions sportives annulés ou reportés"]);
+    hasNot("culture", [
+      "Annulation de l'élection de Saint-André : […] devant le Conseil d'État",
+      "Face aux tensions sociales, les ligues sportives préfèrent reporter les compétitions ce samedi",
+      "Week-end sous tension : Le CROS de La Réunion prône la vigilance et salue le report des rassemblements sportifs du 24 octobre",
+      "[…] fête sa victoire...et prépare les prochaines échéances",
+    ]);
+  });
+
+  it("« sport »", () => {
+    has("sport", ["Grand Raid : les joëlettes franchissent la ligne d’arrivée, l’émotion à son comble", "Face aux tensions sociales, les ligues sportives préfèrent reporter les compétitions ce samedi"]);
+    hasNot("sport", ["Le Tampon : budget, cantines, associations… Découvrez les principales décisions du conseil municipal"]);
+  });
+
+  it("« route » and « mobilisation »: not a drug traffic, « un accident de parcours », nor a dam", () => {
+    // Written for this test.
+    hasNot("route", ["Le trafic de drogue démantelé à Saint-Louis", "Accident de parcours : le club perd à domicile"]);
+    hasNot("mobilisation", ["Barrage de Takamaka : EDF lance des travaux"]);
+    expect(ROAD_TITLE.test(normalize("Le trafic de drogue démantelé à Saint-Louis"))).toBe(false);
+    expect(ROAD_TITLE.test(normalize("Barrage de Takamaka : EDF lance des travaux"))).toBe(false);
+  });
+});

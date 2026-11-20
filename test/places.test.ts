@@ -94,6 +94,15 @@ describe("resolvePlace", () => {
     expect(placeBlock("Cilaos", resolvePlace("Cilaos")!).avertissement).toBeUndefined();
   });
 
+  it("says nothing more for a commune's own name, borne elsewhere by a lieu-dit or a quartier (Saint-Joseph, Petite-Île, Bras-Panon, Entre-Deux)", () => {
+    for (const [nom, commune] of [["Saint-Joseph", "Saint-Joseph"], ["Petite-Île", "Petite-Île"], ["Bras-Panon", "Bras-Panon"], ["Entre-Deux", "Entre-Deux"]]) {
+      const r = resolvePlace(nom)!;
+      expect(r).toMatchObject({ correspondance: "exacte", autres: [] });
+      expect(r.lieu).toMatchObject({ type: "commune", commune });
+      expect(placeWarning(nom, r)).toBeUndefined();
+    }
+  });
+
   it("says the places of other communes that bear the very name asked (« Bellevue », 20/11/2026), and answers the one named with its commune", () => {
     const r = resolvePlace("Bellevue")!;
     expect([r.lieu.nom, r.lieu.commune, r.correspondance]).toEqual(["Bellevue", "Salazie", "exacte"]);

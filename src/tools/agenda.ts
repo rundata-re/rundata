@@ -21,6 +21,7 @@ import { mentionReunionFr, mentionSalles, mentionSports, RESUME_REUNION_FR } fro
 import { quand as dayText, derniereLecture, duAu } from "./sport.js";
 import { rienTrouve } from "../vide.js";
 import { MARKET } from "./marches.js";
+import { marchesDuJour } from "../vie/marches.js";
 
 // The markets held each week are in the directory, not in an agenda (04/11/2026: « marché » at Saint-Paul, none found).
 export const MARCHES_REGULIERS = "Les marchés forains et couverts réguliers, avec leurs jours et horaires, sont dans annuaire_services_publics (quoi = «\u00a0marché\u00a0»).";
@@ -911,6 +912,9 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     autres: n > listed ? `${n - listed} autres événements : préciser le lieu, le jour ou le genre (quoi).` : undefined,
     ailleurs_sur_l_ile: elsewhere.length ? elsewhere.map((x) => eventRow(x.e, x.seances, false, !place)) : undefined,
     marches_reguliers: market ? MARCHES_REGULIERS : undefined,
+    // The markets held on the period's days, apart from the events and not counted among them (vie/marches.ts).
+    marches_forains: place ? undefined : marchesDesJours(p, commune, !quoi || market),
+    sport_ce_week_end: !place && /week.?end/i.test(quand ?? "") ? SPORT_CE_WEEK_END : undefined,
     cinemas: what?.nom?.includes("cinéma") || /cin[ée]|film/i.test(quoi ?? "") ? { seances: "Les séances des cinémas sont sur leurs sites :", salles: CINEMAS } : undefined,
     indisponible: failed.length ? failed : undefined,
     // Those of `indisponible` left to the next question for want of subrequests; the others did not answer.
@@ -925,6 +929,27 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     // tool's fraicheur does, not the time its copy was built (04/11/2026: « lus à 14:05 » for agendas read at 13:09).
     lus_le: place ? oldestRead(got) : undefined,
   });
+}
+
+export const SPORT_CE_WEEK_END = "Les matchs des clubs ce week-end, et leurs résultats : l'outil sport, quand = « ce_week_end ».";
+/** The days of a period whose markets are given, at most: a day, the weekend, not two weeks. */
+export const MARCHES_JOURS_MAX = 4;
+
+/**
+ * The markets held on each day of a short period (MARCHES_JOURS_MAX), in the commune asked or on the whole island: their
+ * day and hours as their source gives them, with that source and the day it was read. None in the evening (they are
+ * held in the morning or the day), none when the question asks for another kind of event (`asked` false).
+ */
+export function marchesDesJours(p: Periode, commune: string | undefined, asked: boolean) {
+  if (!asked || p.soir) return undefined;
+  const days: string[] = [];
+  for (let d = p.du; d <= p.au && days.length <= MARCHES_JOURS_MAX; d = addDays(d, 1)) if (!(d === p.du && p.vendredi)) days.push(d);
+  if (!days.length || days.length > MARCHES_JOURS_MAX) return undefined;
+  const out = days.map((d) => ({ jour: dayText(d), marches: marchesDuJour(d, commune).map(({ nom, commune, horaires, adresse, d_apres, lien }) => ({ nom, commune, horaires, adresse, d_apres, lien })) }))
+    .filter((x) => x.marches.length);
+  return out.length
+    ? { note: "Marchés forains réguliers, à leur jour habituel d'après leur source (datée) : un jour férié, la météo ou la mairie peuvent les changer. Ils ne sont pas comptés dans nombre.", jours: out }
+    : undefined;
 }
 
 /** The oldest reading of the agendas whose events are served, ISO; none when none is. */

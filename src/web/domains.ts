@@ -15,7 +15,8 @@ import { SOMMET } from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
-import { AHEAD_DAYS, CINEMAS, nombreDuJour, parJour } from "../tools/agenda.js";
+import { AHEAD_DAYS, CINEMAS, nombreDuJour, parJour, weekend } from "../tools/agenda.js";
+import { marchesSection, SPORT_LIEN } from "./marches-agenda.js";
 import { suiviPhrase } from "../tools/cyclones.js";
 import { ACCUEILS, AGENDAS } from "../providers/agenda.js";
 import { SOURCE as SALLES_SOURCE } from "../providers/salles.js";
@@ -3847,6 +3848,17 @@ if(g)document.querySelectorAll("#jours details").forEach((d)=>{if(d.querySelecto
 document.getElementById("ef-n").textContent=g?n+" événement"+(n>1?"s":""):"";};
 f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
 
+/** The days whose markets /evenements lists: today, tomorrow, and the weekend's days after them (weekend()). */
+export function agendaMarketDays(now: Date): string[] {
+  const today = new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
+  const next = (day: string) => new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  const w = weekend(now);
+  const days = [today, next(today)];
+  // The Friday of the weekend is its evening (vendredi « 17:00 »): its markets are those of its day, already listed or not the weekend's.
+  for (let d = w.vendredi ? next(w.du) : w.du; d <= w.au; d = next(d)) if (d > today) days.push(d);
+  return [...new Set(days)].sort();
+}
+
 export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const d = data?.value;
@@ -3915,6 +3927,8 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
   ${clubsLink()}
   ${warnings(agendaNotes(data, now))}
 </section>
+${marchesSection(agendaMarketDays(now), (day) => jourMois(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase())))}
+${SPORT_LIEN}
 <section aria-labelledby="h-couv">
   <div class="sec-h"><h2 id="h-couv">Ce qui est couvert</h2><p>${d ? adressesCoupables(d.couverture, true) : ""}</p><p>${d ? esc(d.a_savoir) : ""}</p>
   <p>Les séances de cinéma sont sur les sites des salles : ${CINEMAS.map((c) => `<a href="${esc(c.lien)}" rel="noopener">${esc(c.nom)}</a>`).join(", ")}.</p></div>

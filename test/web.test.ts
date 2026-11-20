@@ -524,13 +524,14 @@ describe("what crawlers and previews fetch", () => {
     const robots = await (await handle(new Request("https://rundata.re/robots.txt"), isolate())).text();
     expect(robots).toContain("Sitemap: https://rundata.re/sitemap.xml");
     const map = await (await handle(new Request("https://rundata.re/sitemap.xml"), isolate())).text();
-    // The pages, the 24 communes, their water where its notices are read or said in words of its own (18), their day and their places for children, a
+    // The pages, the 24 communes, their water where its notices are read or said in words of its own (21, with Saint-Philippe, Cilaos and Petite-Île
+    // read since 20/11/2026), their day and their places for children, a
     // page per hike and per ONF trail with its GPS trace, and per past cyclone, and the busiest bus stops. Not the weather
     // stations' pages, out of it while Google judges the site again, nor the pages left out from 19/11/2026 (marketing's
     // list of 18/11/2026): 19 days and 14 places for children of a commune, and stops (web/sitemap-retires.ts, counted in
     // test/sitemap-liste.test.ts).
     const stops = [...stopPages().values()].filter((p) => p.indexe && !retiree(`/bus/arret/${p.slug}`));
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 18 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
+    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length + 61 + 24 + 21 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length);
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");

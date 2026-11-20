@@ -41,24 +41,27 @@ export const CIREST = { communes: ["Bras-Panon", "Saint-André", "La Plaine-des-
 // A mairie that posts its distributor's notices, read for that commune only (src/providers/avis-eau.ts).
 export const MAIRIE_SAINTE_MARIE = "https://www.ville-saintemarie.re/?s=CISE";
 export const MAIRIE_SAINT_LEU = "https://www.saintleu.re/?s=eau";
+// Since 20/11/2026 (rule 3 bis, a commune's public information): Saint-Philippe for Sudéau, Petite-Île for the SPL Sources
+// et Eaux, Cilaos for RECIL; their own distributors publish no notice that can be read (sourceo.re's pages empty, no
+// site found for RECIL, Sudéau's « L'eau dans ma commune » behind a form).
 const MAIRIES: Record<string, { par: string; site: string }> = {
   "Sainte-Marie": { par: "la ville de Sainte-Marie", site: MAIRIE_SAINTE_MARIE },
   "Saint-Leu": { par: "la commune de Saint-Leu", site: MAIRIE_SAINT_LEU },
+  "Saint-Philippe": { par: "la commune de Saint-Philippe", site: "https://saintphilippe.re/?s=eau" },
+  "Petite-Île": { par: "la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301" },
+  Cilaos: { par: "la ville de Cilaos", site: "https://ville-cilaos.fr/?s=eau" },
+};
+/** A commune whose mairie also posts the notices of a distributor read elsewhere: Les Trois-Bassins, La Créole's. */
+export const MAIRIES_AUSSI: Readonly<Record<string, { par: string; site: string }>> = {
+  "Les Trois-Bassins": { par: "la ville de Trois-Bassins", site: "https://trois-bassins.re/" },
 };
 /**
  * A mairie whose notices are not read, only linked to: where to look, for the commune's page. Nothing is taken from them.
- * - Petite-Île (petite-ile.re/mentions-legales): « Les reproductions, les transmissions, les modifications, les
- *   réutilisations dudit site et de ses œuvres ne sont autorisées que dans le respect des dispositions de l'article L122-5
- *   du code de la propriété intellectuelle. » and « La mise en place de liens hypertexte pour tous les sites Internet
- *   devra faire l'objet d'une autorisation préalable de la Mairie. » Linked by its home page only, where its notices of
- *   cuts are found (its agenda's events link their own page since 20/11/2026, read as the commune's public information).
- * - Cilaos (ville-cilaos.fr/mentions-legales): viewing only, copying needs express authorisation.
+ * Petite-Île and Cilaos were here until 20/11/2026: their notices are read since (MAIRIES, rule 3 bis).
  * - L'Étang-Salé (letangsale.fr): no notice of cuts found on its site, whose legal notice excludes use « d'information »;
  *   the ARS names two distributors there, runéo for most of its networks and the mairie for one (partage).
  */
 export const LIENS: Record<string, { par: string; site: string; libelle: string }> = {
-  "Petite-Île": { par: "la ville de Petite-Île", site: "https://www.petite-ile.re/", libelle: "Les avis « Coupure d'eau » sur le site de la ville de Petite-Île" },
-  Cilaos: { par: "la ville de Cilaos", site: "https://ville-cilaos.fr/?s=coupure+d%27eau", libelle: "Les avis de coupure d'eau sur le site de la ville de Cilaos" },
   "L'Étang-Salé": { par: "la mairie de L'Étang-Salé", site: "https://www.letangsale.fr/", libelle: "Le site de la mairie de L'Étang-Salé" },
 };
 /**
@@ -69,7 +72,8 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
  * - CISE Réunion (read on 05/11/2026).
  * - Sudéau (read on 14/11/2026: www.sudeau.re, its « mentions légales » and « conditions générales d'utilisation »).
  * Not linked (14/11/2026): the SPL Sources et Eaux (sourceo.re), whose pages « Communiqués » and « Travaux en cours et
- * incidents » are empty, so no page of notices to link; RECIL, no site of its own found.
+ * incidents » are empty, so no page of notices to link; RECIL, no site of its own found. Their notices are read on the
+ * sites of Petite-Île and Cilaos since 20/11/2026 (MAIRIES).
  */
 /**
  * A commune whose notices are not read, with a text of its own on where they are published (marketing): the official

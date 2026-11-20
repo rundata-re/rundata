@@ -57,7 +57,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
   // Sudéau's site linked on the pages of the communes whose water it distributes (14/11/2026).
   // Each commune's latest notices, past ones too, for its page (`derniers_avis`, 14/11/2026).
-  coupures: 17,
+  // The notices of Saint-Philippe, Cilaos, Petite-Île and Les Trois-Bassins, read on the communes' sites (20/11/2026).
+  coupures: 18,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   courant: 9,
   crues: 3,
@@ -193,7 +194,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // a blank line is kept (« TRAITEMENT ST FRANCOIS »). A commune written without its article (« commune de
   // Trois-Bassins »), and a list of streets ended by « Communiqué … » or by « Des perturbations » run on its last line.
   // A La Créole notice with its day and two hours, and its list of streets ended by « La régie La Créole remercie… ».
-  "avis-eau:flux": 3,
+  // Four feeds more, the communes' sites (Saint-Philippe, Cilaos, Les Trois-Bassins, Petite-Île; 20/11/2026).
+  "avis-eau:flux": 4,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).

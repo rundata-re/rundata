@@ -59,7 +59,7 @@ const matches = (g: transit.StopGroup, w: string) => g.words.has(w) || (w.length
  * its words only and lies far from the place it names whole: « plage de Boucan » is not the stop « Plage » of
  * Saint-Pierre, 30 km away. Such a stop, kept for want of a place, comes with the words its name lacks (`manque`).
  */
-export function findStops(asked: string): { groups: transit.StopGroup[]; near: { g: transit.StopGroup; m: number }[]; manque?: string[] } {
+export function findStops(asked: string): { groups: transit.StopGroup[]; near: { g: transit.StopGroup; m: number }[]; manque?: string[]; autres?: transit.StopGroup[] } {
   const { reseau, commune, words } = parseQuery(asked);
   const pool = transit.GROUPS.filter((g) => (!reseau || g.reseau === reseau) && (!commune || g.commune === commune));
   if (words.length) {
@@ -77,7 +77,10 @@ export function findStops(asked: string): { groups: transit.StopGroup[]; near: {
       const top = scored.filter((s) => s.n === best).sort((a, b) => a.extra - b.extra);
       const first = top[0].g;
       const groups = top.filter((s) => distanceKm(first.lon, first.lat, s.g.lon, s.g.lat) < 0.4).slice(0, 4).map((s) => s.g);
-      if (best === words.length) return { groups, near: [] };
+      // The other stops of that name, farther than the first's few: named, not left unsaid (« La Montagne » gave Montagne
+      // 16ème alone, with Montagne 17ème and others there too: audit of the AI tools, 20/11/2026).
+      const autres = top.filter((x) => !groups.includes(x.g)).slice(0, 5).map((x) => x.g);
+      if (best === words.length) return { groups, near: [], ...(autres.length ? { autres } : {}) };
       const place = resolvePlace(asked);
       const at = place?.correspondance === "exacte" ? place.lieu : undefined;
       // At the place named (« plage de Boucan Canot », the stop Boucan Canot): that place's stop.
@@ -195,6 +198,9 @@ const passing = (pass: Pass[], stopGroup: Map<number, transit.StopGroup>, horizo
     return g !== undefined && days.some(([d, shift]) => transit.mayRun(p.pattern, p.offset, g.reseau, d.ymd, d.weekday, secs - lookBack(g.reseau) + shift, secs + horizon + shift));
   });
 
+/** Within this time, the same trip at two of the stops asked is one departure. */
+const SAME_TRIP_S = 15 * 60;
+
 function listed(pass: Pass[], pats: Map<number, transit.Pattern>, stopGroup: Map<number, transit.StopGroup>, horizon: number, { secs, days }: Moment): Departure[] {
   const out: Departure[] = [];
   for (const p of pass) {
@@ -212,14 +218,25 @@ function listed(pass: Pass[], pats: Map<number, transit.Pattern>, stopGroup: Map
       }
     }
   }
+  return onceEach(out);
+}
+
+/** Both poles of a stop, or two copies of a trip, give the same departure once; and one trip at two of the stops asked. */
+export function onceEach(out: Departure[]): Departure[] {
   // Both poles of a stop, or two copies of a trip, give the same departure once.
   const seen = new Set<string>();
-  return out
+  const trips = new Map<string, number>();
+  return [...out]
     .sort((a, b) => a.in - b.in)
     .filter((d) => {
       const k = `${d.route}|${d.headsign}|${d.at}`;
       if (seen.has(k)) return false;
       seen.add(k);
+      // One trip at two stops of the place (Cilaos Ville, then Alsace Corré 40 m on: one bus 60 said twice, audit of the
+      // AI tools, 20/11/2026): once, at the first. Twice an hour apart, a loop coming back, it stays twice.
+      const at = trips.get(`${d.reseau}|${d.trip}|${d.jour}`);
+      if (at !== undefined && Math.abs(d.at - at) <= SAME_TRIP_S) return false;
+      trips.set(`${d.reseau}|${d.trip}|${d.jour}`, d.at);
       return true;
     });
 }
@@ -650,7 +667,7 @@ const stopWhere = (g: transit.StopGroup) => `${g.nom} (${g.commune}, ${transit.N
 
 /** The next departures at the stops a question names, or near the place it names. */
 async function stopAnswer(asked: string, ligne: string | undefined, now: Date, cache?: Cache, found = findStops(asked), mort?: transit.StopGroup[], trajet?: string) {
-  const { groups, near, manque } = found;
+  const { groups, near, manque, autres } = found;
   const first = trajet ? { trajet_en_bus: trajet } : {};
   if (!groups.length) {
     rienTrouve("transports");
@@ -698,7 +715,11 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
     ...(manque?.length ? { avertissement: missingWords(asked, mort ? mort.map(stopWhere).join(", ") : where, manque) } : {}),
     resume,
     arrets: stops,
-    ...(near.length && !mort ? { note: `Arrêts les plus proches de « ${asked} » : préciser le nom de l'arrêt pour un résultat exact.` } : {}),
+    ...(near.length && !mort
+      ? { note: `Arrêts les plus proches de « ${asked} » : préciser le nom de l'arrêt pour un résultat exact.` }
+      : autres?.length
+        ? { note: `D'autres arrêts répondent à «${NBSP}${asked}${NBSP}»${NBSP}: ${autres.map((g) => `${g.nom} (${g.commune})`).join(", ")}. Préciser le nom de l'arrêt pour leurs départs.` }
+        : {}),
     ...(ligne ? { ligne_introuvable: `Aucune ligne « ${ligne} » dans les horaires publiés : tous les départs sont donnés.` } : {}),
     departs: shown.map(toolRow),
     ...(alertes.length || off?.alertes ? { info_trafic: untold([...(off?.alertes ?? []), ...others], resume) } : {}),

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Météo passée : pour un record du mois, les outils IA donnent aussi les repères de la page du lieu, avec leur station.
 - Événements : une sortie reportée dit son nouveau jour et le média qui l'annonce ; un marché fini n'est plus donné pour aujourd'hui.
 - Cyclones : avant l'alerte orange, les outils IA rappellent le kit d'urgence du plan ORSEC (piles pour la radio…), avec son lien.
 - Assistants IA : l'eau du robinet avec la conclusion de l'ARS, la consigne après un cyclone, et toutes les plages contrôlées d'une commune.

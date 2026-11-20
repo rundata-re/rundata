@@ -4,7 +4,7 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
 import { confianceExplication } from "../src/tools/prevision.js";
-import { reperesMois, type ReperesMois } from "../src/tools/historique.js";
+import { historiqueMeteo, reperesMois, type ReperesMois } from "../src/tools/historique.js";
 import { meteoPage, placePage, reperesBlock } from "../src/web/pages.js";
 import { pageOf } from "../src/web/places.js";
 
@@ -63,6 +63,28 @@ describe("the month's landmarks of a place", () => {
     expect(r?.normale).toBeDefined();
     expect(r?.chaleur).toBeUndefined();
     expect(r?.pluie).toBeUndefined();
+  });
+
+  it("are given by historique_meteo too when its records are not at the page's station, the same figures (audit of 20/11/2026)", async () => {
+    plug();
+    const json = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
+    // Entre-Deux: no station measured its last 14 days' temperatures, the page has its landmarks at Pierrefonds.
+    const page = await reperesMois(new Cache(new MemoryStore()), pageOf("entre-deux")!.place, NOW);
+    const a = json(await historiqueMeteo(new Cache(new MemoryStore()), "Entre-Deux", { jours: 14 }, NOW));
+    expect(a.records).toBeUndefined();
+    expect(a.reperes_du_mois).toMatchObject({
+      station: page!.station,
+      distance_km: page!.distance_km,
+      mois: "octobre",
+      normale: { maximale: page!.normale.tx, minimale: page!.normale.tn, pluie_du_mois_mm: page!.normale.rr, periode: "1991-2020" },
+      record_de_chaleur: page!.chaleur,
+      releves_depuis: page!.depuis,
+    });
+    expect(a.reperes_du_mois.a_savoir).toMatch(/^Les repères d'octobre de la page du lieu sur rundata\.re \(\/meteo\), à la station /);
+    // Saint-Pierre: the records already are the page's station's, nothing twice.
+    const b = json(await historiqueMeteo(new Cache(new MemoryStore()), "Saint-Pierre", { jours: 14 }, NOW));
+    expect(b.records.station).toBe((await reperesMois(new Cache(new MemoryStore()), pageOf("saint-pierre")!.place, NOW))!.station);
+    expect(b.reperes_du_mois).toBeUndefined();
   });
 
   it("are nothing without the archive", async () => {

@@ -12,6 +12,7 @@ import { type Ligne, NIVEAUX, TITRE, VERSION } from "../tools/volcan-acces.js";
 import { PATH as SANS_REPONSE } from "./sans-reponse.js";
 import { adresseCoupable, adresseTexte } from "./adresse.js";
 import { SOMMET } from "../providers/seismes.js";
+import { sectorsSaid } from "../providers/avis-eau.js";
 import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
@@ -2934,7 +2935,7 @@ function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // Only the start written (La Créole): said as a start, not as the hour of the cut.
   const cut = n.coupure?.de ? `<p><b>${n.coupure.a ? `${esc(n.coupure.de ?? "")} → ${esc(n.coupure.a)}` : `À partir du ${esc(n.coupure.de ?? "")}`}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
   return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
-    `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(n.secteurs.join(", "))}</p>` : ""}` +
+    `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(sectorsSaid(n.secteurs))}</p>` : ""}` +
     `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;
 }
 

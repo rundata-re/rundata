@@ -2,13 +2,13 @@ import { UA_RUNDATA } from "../src/http.js";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, textOf } from "../src/providers/avis-eau.js";
+import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, sectorsSaid, textOf } from "../src/providers/avis-eau.js";
 import { annonceCoupure, compteAvis, coupuresEau, noticeRow } from "../src/tools/coupures.js";
 import { cite } from "../src/tools/citer.js";
 import { arretesSection, coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { enCours, parseArretes } from "../src/providers/arretes-travaux.js";
 import { buildCoupures } from "../src/web/data.js";
-import { couvertureCourte, coupuresLive, coupuresPage, noticesHead } from "../src/web/domains.js";
+import { couvertureCourte, coupuresLive, coupuresPage, noticeCard, noticesHead } from "../src/web/domains.js";
 import island from "../src/places/island.json" with { type: "json" };
 import { PAGES, pageOf } from "../src/web/places.js";
 import { resume } from "../src/tools/resume.js";
@@ -156,11 +156,29 @@ describe("coupures d'eau", () => {
     expect(noticeRow(leak, NOW).date_de_l_avis).toBeUndefined();
   });
 
+  it("reads the sectors of the CIREST's notices on the quality of the water", () => {
+    // Saint-Benoît, Sainte-Rose and Salazie (18-20/11/2026): a blank line after the colon, a list in <li> or after « – »,
+    // then « Et les voies adjacentes » or « Il est recommandé aux abonnés… » straight away.
+    const [rose, benoit, salazie] = parseCirest(JSON.parse(fixture("cirest-qualite.json")));
+    expect(benoit).toMatchObject({ communes: ["Saint-Benoît"], ne_pas_boire: true, secteurs_complets: true });
+    expect(benoit.secteurs).toHaveLength(15);
+    expect(benoit.secteurs.slice(0, 2)).toEqual(["Rivière des Roches", "Centre-ville"]);
+    expect(benoit.secteurs.slice(-2)).toEqual(["Chemin Pinguet", "et les voies adjacentes"]);
+    expect(rose).toMatchObject({ communes: ["Sainte-Rose"], ne_pas_boire: true, secteurs: ["Chemin La Caisse", "Chemin Piton Galet", "Chemin Alfred"], secteurs_complets: true });
+    expect(salazie).toMatchObject({ secteurs_complets: true });
+    // Said without a comma before « et », on the page, in the feed and in the tool (marketing, 20/11/2026).
+    expect(sectorsSaid(benoit.secteurs)).toMatch(/^Rivière des Roches, Centre-ville, .*, Chemin Pinguet et les voies adjacentes$/);
+    expect(sectorsSaid(rose.secteurs)).toBe("Chemin La Caisse, Chemin Piton Galet, Chemin Alfred");
+    expect(noticeRow(benoit, new Date("2026-11-20T10:00:00Z")).secteurs_dits).toBe(sectorsSaid(benoit.secteurs));
+    expect(noticeCard(noticeRow(benoit, new Date("2026-11-20T10:00:00Z")))).toContain("Chemin Pinguet et les voies adjacentes</p>");
+    expect(salazie.secteurs).toEqual(["Mare à Vieille Place", "Mare à Citron", "Bois de Pomme", "Mare à Goyaves", "Petit Sable", "Radier", "Fleurs Jaunes", "Secteur du village"]);
+  });
+
   it("gives a list of streets only when it was read whole", () => {
     const cirest = parseCirest(JSON.parse(fixture("cirest.json")));
     const of = (titre: RegExp) => cirest.find((n) => titre.test(n.titre))!;
-    // Ended by « Et toutes les voies adjacentes », which is no street.
-    expect(of(/^Saint-André : Lavage/)).toMatchObject({ secteurs: ["Chemin Lefaguyès", "Secteur Grand Canal", "Secteur Champs Borne", "Secteur Bel Ombre", "Chemin Quatre-Vingt", "Chemin des Limites"], secteurs_complets: true });
+    // Ended by « Et toutes les voies adjacentes », said last, from a small letter.
+    expect(of(/^Saint-André : Lavage/)).toMatchObject({ secteurs: ["Chemin Lefaguyès", "Secteur Grand Canal", "Secteur Champs Borne", "Secteur Bel Ombre", "Chemin Quatre-Vingt", "Chemin des Limites", "et toutes les voies adjacentes"], secteurs_complets: true });
     // Bullets dropped.
     expect(of(/fuite, vendredi 16 octobre/).secteurs).toEqual(["Rue des songes", "Impasse des songes", "Rue Dureaux", "Impasse des Verveines", "Impasse des Papyrus", "Rue Marcelly Robert"]);
     // « Les secteurs concernés sont : » is not read; a second list follows (Salazie); a long line follows (Grand Ilet): nothing.
@@ -468,8 +486,9 @@ describe("coupures d'eau", () => {
     expect(list.some((n) => /fermeture/i.test(n.titre + n.texte))).toBe(false);
     expect(list[0]).toMatchObject({ forme: "image", texte: "", communes: ["Sainte-Marie"], lien: "https://www.ville-saintemarie.re/communique-cise-reunion-33/" });
     const leak = list[2];
-    expect(leak.secteurs).toHaveLength(12);
-    expect(leak.secteurs.at(-1)).toBe("Moka");
+    // The 12 streets, then « et toutes les voies adjacentes » that closes the list.
+    expect(leak.secteurs).toHaveLength(13);
+    expect(leak.secteurs.slice(-2)).toEqual(["Moka", "et toutes les voies adjacentes"]);
     // « ne pas boire l'eau » at the water's return after the repair: a cut.
     expect(leak.ne_pas_boire).toBe(false);
     expect(list[3].ne_pas_boire).toBe(false);

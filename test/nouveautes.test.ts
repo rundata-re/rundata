@@ -4,6 +4,7 @@ import { changelog, NOUVEAUTES, parJour } from "../src/nouveautes.js";
 import { cheminsTexte } from "../src/web/adresse.js";
 import { CSS, DESCRIPTION_MAX } from "../src/web/pages.js";
 import { chiffreMot, DESCRIPTION, nouveautesPage, TITLE } from "../src/web/nouveautes.js";
+import { withSigles } from "../src/web/sigles.js";
 
 describe("the changes, said once", () => {
   it("CHANGELOG.md is the list of src/nouveautes.ts: run `npm run changelog` after changing it", () => {
@@ -43,7 +44,12 @@ describe("the changes, said once", () => {
     expect(dates.length).toBeGreaterThan(3);
     expect(dates.filter((t) => !/^\p{Lu}\p{Ll}+ <span class="jm">\d+(?:er)? \p{Ll}+<\/span> \d{4}$/u.test(t))).toEqual([]);
     expect(CSS).toContain(".jm{white-space:nowrap}");
-    for (const n of NOUVEAUTES.slice(0, 3)) expect(page).toContain(n.texte.replace(/'/g, "&#39;").replace(/"/g, "&quot;"));
+    // An acronym of the line (« ARS ») is spelled out in an <abbr> at its first occurrence on the page (withSigles): the
+    // line as written, or as the site spells it out.
+    for (const n of NOUVEAUTES.slice(0, 3)) {
+      const texte = n.texte.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+      expect([texte, withSigles([texte])[0]].some((t) => page.includes(t))).toBe(true);
+    }
     expect(page).toContain('<link rel="canonical" href="https://rundata.re/nouveautes">');
     expect(page).toContain('<a href="/nouveautes">nouveautés</a>');
     expect(TITLE.length).toBeLessThanOrEqual(60);

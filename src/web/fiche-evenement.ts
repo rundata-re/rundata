@@ -90,6 +90,11 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const { bar, jsonld } = crumbs(origin, r.titre, path);
   const autres = (data.value.evenements ?? []).filter((x) => x.fiche !== r.fiche && x.commune && x.commune === r.commune && x.date.slice(0, 10) === day).slice(0, 6);
   const badge = r.statut ? `<span class="badge${r.statut === "complet" ? " m" : ""}">${esc(r.statut)}</span> ` : "";
+  // Cancelled or postponed: the new day and who said it, as the list and the tool say them (20/11/2026: the page
+  // had the badge alone).
+  const off = r.statut && r.statut !== "complet" && (r.reporte_au || r.statut_d_apres)
+    ? `\n  <p class="note" data-sortie>${esc(`${r.statut[0]}${r.statut.slice(1).toLowerCase()}`)}${r.reporte_au ? ` au ${esc(r.reporte_au)}` : ""}${r.statut_d_apres ? ` d'après <a href="${esc(r.statut_d_apres.lien)}" rel="noopener">${esc(r.statut_d_apres.media)}</a>` : ""}.</p>`
+    : "";
   const autour = [
     c ? `<li><b>${esc(c.nom)}</b> : <a href="/aujourdhui/${c.slug}">la journée ${esc(a(c.nom))}</a></li>` : "",
     prevision(r, meteo),
@@ -99,7 +104,7 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
-  <h1>${badge}${esc(r.titre)}</h1>
+  <h1>${badge}${esc(r.titre)}</h1>${off}
   <p class="lead" data-sortie>${esc(r.quand)}${r.autres_dates?.length ? `, aussi ${esc(r.autres_dates.join(", "))}` : ""}${r.lieu ? `<br>${esc(r.lieu)}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${esc(r.commune)}` : ""}${r.lien ? ` · <a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : ""}</p>
   ${manque(r)}
   ${r.prix ? `<p>${esc(r.prix)}</p>` : ""}

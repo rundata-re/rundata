@@ -17,7 +17,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026: named in the sources and the coverage.
   // A rubric in capitals at the head of a first sentence left out (« LIBRE EXPRESSION Sous le bruit… »).
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
-  actualites: 18,
+  // « Mobilisation » for a strike or a blockade only, not money or firms set to work (« mobilisation financière »).
+  actualites: 19,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -29,7 +30,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // leurs événements, leur couverture, et plus de mention « non repris » pour elles.
   // Cilaos, Saint-Joseph and Saint-Philippe read as the commune's public information (20/11/2026): their events, the
   // coverage, and nothing said instead of a commune any more.
-  agenda: 41,
+  // Chaque événement porte la clé de sa page (/evenements/<titre>-<clé>), et le titre des listes y mène.
+  agenda: 42,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   air: 13,
   bornes: 5,
@@ -127,7 +129,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
-  trafic: 5,
+  // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
+  trafic: 6,
   velos: 7,
   volcan: 14,
 };

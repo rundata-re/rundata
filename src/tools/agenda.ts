@@ -615,9 +615,22 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false,
     image: outil ? undefined : e.image,
     /** Where it is, when its source gives it: for the pages' « Y aller » only (`place`), never in the tool's answer. */
     position: place && e.lat != null && e.lon != null && inReunion(e.lon, e.lat) ? { lat: e.lat, lon: e.lon } : undefined,
+    /** Its page on rundata.re (/evenements/<titre>-<fiche>, web/fiche-evenement.ts): for the pages, not in the tool's answer. */
+    fiche: outil ? undefined : ficheDe(e),
   };
 }
 export type EventRow = ReturnType<typeof eventRow>;
+
+/**
+ * An event's key on rundata.re, 8 hexadecimal digits: from who publishes it and its id there, never its title nor its
+ * date, so that its page keeps its address when either changes (web/fiche-evenement.ts).
+ */
+export function ficheDe(e: Pick<src.Evenement, "publie_par" | "id">): string {
+  const s = `${e.publie_par}|${e.id}`;
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) + s.charCodeAt(i)) >>> 0;
+  return h.toString(16).padStart(8, "0");
+}
 
 interface Occurrence {
   du: string;

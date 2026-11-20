@@ -57,8 +57,12 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-20T11:31:00+04:00", texte: "Événements\u00a0: chaque sortie de l'agenda a sa page, avec la météo prévue ce jour-là et les autres sorties de la commune." },
+  { date: "2026-11-20T11:08:00+04:00", texte: "Élections\u00a0: chaque commune a sa page, participation et résultats de chaque scrutin depuis 1999, d'après le ministère de l'Intérieur." },
   { date: "2026-11-20T10:53:00+04:00", texte: "Communes\u00a0: les pages de Saint-Denis, Saint-Paul, Saint-Pierre, du Tampon et des Avirons présentent la commune en quelques lignes." },
   { date: "2026-11-20T10:30:00+04:00", texte: "Terrain\u00a0: tapez une adresse et voyez la parcelle, la zone du PLU, les risques et les prix des ventes voisines, avec leurs sources." },
+  { date: "2026-11-20T10:27:00+04:00", texte: "Coupures d'eau\u00a0: sur la page de chaque commune, ce que dit l'ARS de l'eau qui revient au robinet après une coupure." },
+  { date: "2026-11-20T10:27:00+04:00", texte: "Météo d'un lieu de bord de mer\u00a0: la règle de baignade de l'arrêté préfectoral, et un lien vers les zones surveillées." },
   { date: "2026-11-20T08:46:00+04:00", texte: "Que faire ce week-end\u00a0: les marchés forains de chaque jour, avec leurs heures et leur source, et un lien vers le sport." },
   { date: "2026-11-20T08:23:00+04:00", texte: "Actualités\u00a0: ce que publient Cilaos, Saint-Joseph et Saint-Philippe sur leurs sites\u00a0; coupures de courant\u00a0: avis de trois mairies de plus." },
   { date: "2026-11-20T06:38:00+04:00", texte: "Coupures d'eau\u00a0: les avis publiés par Saint-Philippe (Sudéau), Cilaos, Petite-Île et Trois-Bassins sont lus, avec le lien de chaque avis." },
@@ -66,6 +70,7 @@ export const NOUVEAUTES: { date: string; texte: string }[] = [
   { date: "2026-11-20T05:50:00+04:00", texte: "Événements\u00a0: ceux qu'annoncent les mairies de La Possession, de Petite-Île et de Saint-Benoît sur leurs sites, avec le lien de chacun." },
   { date: "2026-11-20T05:19:00+04:00", texte: "Marchés forains\u00a0: jours et heures de six mairies de plus (Saint-Denis, Saint-Pierre, Le Tampon, Le Port…), avec la date de leur page." },
   { date: "2026-11-20T05:01:00+04:00", texte: "Valeurs\u00a0: comment rundata.re lit les sites publics, et comment demander qu'on retire ce qu'il en montre." },
+  { date: "2026-11-20T04:06:00+04:00", texte: "Pages des communes\u00a0: la tuile Randonnée dit combien de sentiers de la commune sont ouverts ou fermés, d'après l'ONF." },
   { date: "2026-11-20T03:42:00+04:00", texte: "Événements\u00a0: ceux qu'annoncent les mairies du Tampon, de Saint-Denis et de Saint-Pierre sur leurs sites, avec le lien de chacun." },
   { date: "2026-11-20T03:14:00+04:00", texte: "Agenda\u00a0: un événement de plusieurs jours apparaît chaque jour où il a lieu, et les expositions de plusieurs semaines sont regroupées à part." },
   { date: "2026-11-20T02:59:00+04:00", texte: "Fiche terrain\u00a0: «\u00a0mairie de Saint-Leu\u00a0» situe la mairie elle-même, et un point incertain est dit en premier." },

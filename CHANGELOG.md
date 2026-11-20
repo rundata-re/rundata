@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Vendredi 20 novembre 2026
 
+- Assistants IA : la vigilance de Météo-France avec la marée, les crues, l'air, la météo passée et le volcan ; les radiers avec les crues.
 - Météo : chaque mesure dit si elle vient d'une station officielle de Météo-France, d'un aéroport, d'une balise ou d'une station amateur.
 - Lieux : un nom porté dans plusieurs communes (Bellevue, Bras Canot…) est signalé par les outils IA, avec les autres communes.
 - Événements : sur la page d'une sortie, une annonce sans heure ou sans adresse le dit, avec le lien de sa source.

@@ -348,7 +348,7 @@ function creoleCommunes(titre: string, texte: string): Pick<Avis, "communes" | "
   if (named.length) return { communes: named };
   const lieu = LIEU.exec(texte)?.[1]?.trim();
   const r = lieu ? resolvePlace(lieu) : null;
-  const found = r && r.correspondance !== "approchee" ? [...new Set([r.lieu, ...r.autres].map((p) => p.commune))].filter((c) => CREOLE.communes.includes(c)) : [];
+  const found = r && r.correspondance !== "approchee" ? [...new Set([r.lieu, ...(r.correspondance === "exacte" ? [] : r.autres)].map((p) => p.commune))].filter((c) => CREOLE.communes.includes(c)) : [];
   if (found.length === 1) return { communes: found };
   return { communes: CREOLE.communes, precision: `La Créole ne précise pas la commune${lieu ? ` (lieu écrit dans l'avis : ${lieu})` : ""}.` };
 }

@@ -22,7 +22,10 @@ export interface Resolution {
   correspondance: "exacte" | "partielle" | "approchee" | "coordonnees";
   /** A place given for a whole area the text names (« Mafate », La Nouvelle): « approchee », said so. */
   tient_lieu?: true;
-  /** Other places the text could mean, when the match is not exact. */
+  /**
+   * Other places the text could mean: when the match is not exact, or when places of other communes bear the very name
+   * asked (« Bellevue », at Salazie and at Saint-Louis), one per commune.
+   */
   autres: Place[];
   /** The words of the text left aside around the name found, but its commune's (« parc », « palmiers » around « Saint-Pierre »). */
   ignores?: string[];
@@ -218,8 +221,14 @@ function resolve(text: string): Resolution | null {
   const listed = /\s[–—-]\s/.test(text) && !EXACT.get(q.join(" "))?.some((e) => bare(e.place.nom) === asked);
   const exact = listed ? undefined : EXACT.get(q.join(" "));
   if (exact) {
-    const best = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place, standIn: e.standIn })).sort(order)[0];
-    return best.standIn ? { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true } : { lieu: best.place, correspondance: "exacte", autres: [] };
+    const ranked = exact.map((e) => ({ score: (e.alias ? 101 : 100) + (bare(e.place.nom) === asked ? 0.5 : 0), place: e.place, standIn: e.standIn })).sort(order);
+    const best = ranked[0];
+    if (best.standIn) return { lieu: best.place, correspondance: "approchee", autres: [], tient_lieu: true };
+    // The same name in other communes (« Bellevue », Salazie and Saint-Louis): the first is answered, the others said, so
+    // that a cut of water or a forecast is not taken for the wrong one. Seen by ux on 20/11/2026.
+    const communes = new Set([best.place.commune]);
+    const autres = ranked.slice(1).flatMap((e) => (e.standIn || communes.has(e.place.commune) || !communes.add(e.place.commune) ? [] : [e.place])).slice(0, 3);
+    return { lieu: best.place, correspondance: "exacte", autres };
   }
   if (q.every((t) => KIND_WORDS.has(t))) return null;
   if (offIsland(text)) return null;

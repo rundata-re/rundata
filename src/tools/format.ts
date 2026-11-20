@@ -207,10 +207,15 @@ export const phrases = (parts: (string | null | undefined)[]) =>
   parts.filter((x): x is string => !!x?.trim()).map((x) => x.trimEnd()).map((x) => (/[.!?…]$/.test(x) ? x : `${x}.`)).join(" ");
 
 /**
- * A place found on part of its name only, or on a name close to the one asked: said first in the answer, so that
- * « Bellecombe » read as the Rempart de Bellecombe is not taken for the place meant. Undefined for a name found whole.
+ * A place found on part of its name only, on a name close to the one asked, or whose name other communes' places bear
+ * too: said first in the answer, so that « Bellecombe » read as the Rempart de Bellecombe, or « Bellevue » read as
+ * Salazie's, is not taken for the place meant. Undefined for a name found whole and borne by no other commune's place.
  */
 export function placeWarning(asked: string, r: Resolution): string | undefined {
+  if (r.correspondance === "exacte" && r.autres.length) {
+    const p = r.lieu;
+    return `Plusieurs lieux s'appellent « ${asked.trim()} » : réponse pour ${p.nom} (${p.type}, ${p.commune}) ; il y a aussi ${r.autres.map((a) => `${a.nom} (${a.type}, ${a.commune})`).join(", ")}. Le dire à l'utilisateur et, s'il parlait d'un autre, redemander avec le nom de sa commune.`;
+  }
   if ((r.correspondance !== "partielle" || r.ignores) && r.correspondance !== "approchee") return undefined;
   const p = r.lieu;
   if (r.tient_lieu) return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), un lieu de ce secteur, pas tout le secteur\u00a0: le dire à l'utilisateur.`;

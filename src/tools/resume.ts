@@ -642,6 +642,17 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   };
 }
 
+/**
+ * The summary with a note on the place asked set after its opening (the commune and the day, and the water not to drink
+ * when it is said): « Saint-Paul, samedi 24 octobre. Plusieurs lieux… Météo de… ».
+ */
+export function apresAlertes(resume: string, note: string, eau: boolean): string {
+  const parts = resume.split("\u00a0; ");
+  const head = parts.slice(0, eau ? 2 : 1).join("\u00a0; ").replace(/\.$/, "");
+  const rest = parts.slice(eau ? 2 : 1).join("\u00a0; ");
+  return rest ? `${head}. ${note} ${rest[0].toUpperCase()}${rest.slice(1)}` : `${head}. ${note}`;
+}
+
 /** The commune of a place, and its own weather page when it has one (the principal one's, for a page sent there). */
 export function placeOf(lieu: string): { commune: PlacePage; place: PlacePage; res: NonNullable<ReturnType<typeof resolvePlace>> } | undefined {
   const res = resolvePlace(lieu);
@@ -804,8 +815,9 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   // (20/11/2026: the Maïdo's 9 °C given as Saint-Paul's).
   const propre = place !== commune ? { nom: place.nom, lon: place.place.lon, lat: place.place.lat } : undefined;
   const r = resume(commune, copies, now, leftOut, asked ?? propre, asked ? meteoDuLieu : propre && "tout");
-  // A place found on part of its name, said before the day (« Maurice », Fond Maurice at Les Avirons).
+  // A place found on part of its name (« Maurice », Fond Maurice at Les Avirons) or one of several of that name: said
+  // after the commune and the day, and after the water not to drink, never before an alert (20/11/2026).
   const said = placeWarning(lieu, res);
-  const day = said ? { ...r, resume: `${said} ${r.resume}` } : r;
+  const day = said ? { ...r, resume: apresAlertes(r.resume, said, !!r.avertissement?.startsWith("Eau à ne pas boire")) } : r;
   return text({ ...(day.avertissement && { avertissement: day.avertissement }), lieu: placeBlock(lieu, res), ...(detail ? day : court(day)) });
 }

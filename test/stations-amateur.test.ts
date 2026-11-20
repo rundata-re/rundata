@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import { enTete } from "../src/tools/representativeness.js";
-import { amateur, islandTour, meteoActuelle, NATURE_AMATEUR } from "../src/tools/meteo.js";
+import { amateur, islandTour, meteoActuelle } from "../src/tools/meteo.js";
 import type { StationAnswer, StationNow } from "../src/web/data.js";
 import { stationsMap, VALEURS_JS, windArrow, windColor } from "../src/web/meteo-carte.js";
 import { chip, CSS, meteoPage, placePage } from "../src/web/pages.js";
@@ -54,11 +54,13 @@ describe("an amateur network's stations (the user, 10/11/2026: « telles quelles
     expect(stations[0].source).not.toBe("meteor_oi");
     expect(stations.findIndex((s) => s.amateur)).toBe(stations.length - 1);
     expect(stations.at(-1)).toMatchObject({
-      station: "Cambaie", source: "meteor_oi", amateur: true, nature: NATURE_AMATEUR, credit: "Données : MétéoR-OI, licence CC BY-NC 4.0", lien: "https://www.meteor-oi.re", pertinence: "bonne",
+      station: "Cambaie", source: "meteor_oi", amateur: true, nature: "mesure de station amateur MétéoR-OI, fiabilité non vérifiée", credit: "Données : MétéoR-OI, licence CC BY-NC 4.0", lien: "https://www.meteor-oi.re", pertinence: "bonne",
     });
-    expect(NATURE_AMATEUR).toBe("mesure de station amateur, fiabilité non vérifiée");
     expect(r.resume).not.toContain("Cambaie");
-    expect(stations.filter((s) => !s.amateur).every((s) => s.nature === undefined)).toBe(true);
+    // The official ones say what they are too, in the field and the summary.
+    expect(stations.filter((s) => !s.amateur).map((s) => s.nature)).toEqual(["mesure de balise de vent de la FFVL", "mesure de station d'aéroport (observation METAR)"]);
+    expect(r.resume).toContain("Balise du Trou d'Eau, balise de vent de la FFVL (19,1 km");
+    expect(r.resume).toContain("Saint-Denis Gillot (aéroport Roland-Garros), station d'aéroport (25,1 km");
     // The station a page or a summary names first is never the amateur one.
     expect(enTete(stations)?.station).not.toBe("Cambaie");
   });

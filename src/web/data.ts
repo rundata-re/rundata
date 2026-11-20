@@ -1781,11 +1781,14 @@ export const roadNewsNow = async (cache: Cache, background: Background, now = ne
 const FORD_TITLE = /\bradiers?\b/;
 const FORD_MAX = 6;
 
-/** The headlines of the préfecture and the media that name a ford, with their source and their time. */
-export function fordNews(news: actuSource.Fil | undefined, now: Date): { titre: string; lien: string; source: string; heure: string }[] {
+/**
+ * The headlines of the préfecture and the media that name a ford, with their source and their time. `jour`: the time
+ * with its day (« aujourd'hui à 03:30 »), for the tool crues_rivieres, whose answer has no heading to say the day.
+ */
+export function fordNews(news: actuSource.Fil | undefined, now: Date, jour = false): { titre: string; lien: string; source: string; heure: string }[] {
   const after = (h: number) => new Date(now.getTime() - h * 3600_000).toISOString();
   const onFords = (i: actuSource.Info) => FORD_TITLE.test(normalize(i.titre));
-  const row = (i: actuSource.Info) => ({ titre: i.titre, lien: i.lien, source: `${i.media}${i.direct ? ", en direct" : ""}`, heure: newsTime(i, now).replace(/^aujourd'hui à /, "") });
+  const row = (i: actuSource.Info) => ({ titre: i.titre, lien: i.lien, source: `${i.media}${i.direct ? ", en direct" : ""}`, heure: jour ? newsTime(i, now) : newsTime(i, now).replace(/^aujourd'hui à /, "") });
   const prefecture = (news?.prefecture ?? []).filter((i) => i.publie >= after(PREFECTURE_HOURS) && onFords(i)).slice(0, PREFECTURE_MAX);
   const medias = (news?.infos ?? []).filter((i) => i.publie >= after(ROAD_NEWS_HOURS) && onFords(i)).slice(0, FORD_MAX);
   return [...prefecture, ...medias].map(row);

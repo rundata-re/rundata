@@ -6,7 +6,7 @@ import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../sr
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { AFTER_ANSWER_CAP, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
 import { citation } from "../src/tools/citer.js";
@@ -555,9 +555,17 @@ describe("reading the copies", () => {
       const plage = (await ask("plage de l'Ermitage", await edgeWith())).r;
       expect(plage.meteo).toMatchObject({ lieu: "Saint-Gilles-les-Bains", mesure: { station: "Pointe des Trois-Bassins" } });
       expect(plage.meteo).not.toHaveProperty("avertissement");
-      expect(plage.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo de Saint-Gilles-les-Bains\u00a0; 26,9 °C/);
+      // The note on the homonyms after the commune and the day, never before them (20/11/2026).
+      expect(plage.resume).toMatch(/^Saint-Paul, samedi 24 octobre\. Plusieurs lieux s'appellent .* Météo de Saint-Gilles-les-Bains\u00a0; 26,9 °C/);
       expect(JSON.stringify(plage)).not.toContain("/meteo/l-hermitage");
     });
+  });
+
+  it("sets the note on the place asked after the day and the water not to drink, never before an alert", () => {
+    expect(apresAlertes("Salazie, vendredi 20 novembre\u00a0; 1 avis d'eau à ne pas boire\u00a0; météo de Hell-Bourg.", "Note.", true))
+      .toBe("Salazie, vendredi 20 novembre\u00a0; 1 avis d'eau à ne pas boire. Note. Météo de Hell-Bourg.");
+    expect(apresAlertes("Salazie, vendredi 20 novembre\u00a0; météo de Hell-Bourg.", "Note.", false)).toBe("Salazie, vendredi 20 novembre. Note. Météo de Hell-Bourg.");
+    expect(apresAlertes("Salazie, vendredi 20 novembre.", "Note.", false)).toBe("Salazie, vendredi 20 novembre. Note.");
   });
 
   it("says a place off the island is not in La Réunion, and first what a word taken for part of a name was taken for", async () => {
@@ -567,7 +575,7 @@ describe("reading the copies", () => {
     const pending: Promise<unknown>[] = [];
     const r = body(await resumeDuJour(isolate(await edgeWith()), "France", NOW, (p) => pending.push(p)));
     await Promise.all(pending);
-    expect(r.resume).toMatch(/^«\u00a0France\u00a0» compris comme Petite France \(localite, Saint-Paul\), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur\. /);
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\. «\u00a0France\u00a0» compris comme Petite France \(localite, Saint-Paul\), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur\. Météo de Petite France\u00a0; /);
     expect(r.commune).toBe("Saint-Paul");
   });
 

@@ -68,7 +68,7 @@ import { PLEIN_ECRAN_CSS, pleinEcran } from "./plein-ecran.js";
 import { ALTITUDES_CREDIT, communeOf, METEO_SCRIPT, RADAR_CREDIT, rainPill, stationsMap, windPill } from "./meteo-carte.js";
 import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
-import { coastal, pageOf, PAGES, type PlacePage, PRINCIPAL, slugify } from "./places.js";
+import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
 import { adresseTexte } from "./adresse.js";
 import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
@@ -2576,8 +2576,6 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const alt = place.altitude_m != null ? `, à ${place.altitude_m.toLocaleString("fr-FR")} m d'altitude` : "";
   const commune = place.commune && place.commune !== p.nom ? ` (commune ${esc(de(place.commune))})` : "";
   const v = versant(place.lon, place.lat);
-  // Another place's page says the same (places.ts `PRINCIPAL`): this one sends to it, out of the index.
-  const principal = PRINCIPAL[p.slug] ? pageOf(PRINCIPAL[p.slug]) : undefined;
   const title = [`Météo ${p.nom} en direct et prévisions · La Réunion (974)`, `Météo ${p.nom} en direct · La Réunion (974)`]
     .find((t) => t.length <= TITLE_MAX) ?? `Météo ${p.nom} en direct · 974`;
   const description = fit(
@@ -2712,7 +2710,6 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   <div class="pitch">
     <p class="pill"><span class="dot"></span>Météo en direct</p>
     <h1>Météo ${esc(a(p.nom))} <span class="n974">974</span></h1>
-    ${principal ? `<p class="or">${esc(p.nom)} a la même station, la même prévision et la même houle que ${esc(principal.nom)}, sa voisine. <a href="/meteo/${principal.slug}">La météo de ${esc(principal.nom)} →</a></p>` : ""}
     ${headline}
     ${ask(`I fé koman lo tan ${p.nom} astèr ? Gèt la mézir an dirèk si ${origin}/meteo/${p.slug} é di amwin lèr la mézir é la stasion.`,
       `Quel temps fait-il en ce moment ${a(p.nom)} ? Lis la mesure en direct sur ${origin}/meteo/${p.slug} et donne-moi l'heure de la mesure et la station.`)}
@@ -2742,7 +2739,7 @@ ${forecast}
 ${reperesBlock(d?.reperes, now)}
 ${hikesAround(p, hikes)}
 <p class="or"><a href="/meteo#communes">Météo ailleurs à La Réunion →</a></p>`;
-  return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true, ...(principal && { noindex: true }) }, band, g.ligne + body);
+  return layout(origin, { title, description, path: `/meteo/${p.slug}`, jsonld, alerte, iaAside: true }, band, g.ligne + body);
 }
 
 export function notFoundPage(origin: string, path: string): string {

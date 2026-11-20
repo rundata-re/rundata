@@ -23,7 +23,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
   // Les événements de Saint-Paul lus dans son export iCal tant que l'API de son site répond 404 (depuis le 06/11/2026).
   // L'agenda de Saint-André repris avec l'accord écrit de la commune du 16/11/2026.
-  agenda: 38,
+  // Le Tampon, Saint-Denis et Saint-Pierre lus comme information publique de la commune (20/11/2026) : leurs événements,
+  // leur couverture, et plus de mention « non repris » pour elles.
+  agenda: 39,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   air: 13,
   bornes: 5,
@@ -38,7 +40,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   calendrier: 5,
   // sensors.social among the air's sources, under ODbL (09/11/2026).
   // MétéoR Océan Indien among the weather's sources, under CC BY-NC (09/11/2026).
-  chiffres: 25,
+  // The news of Saint-Denis and Saint-Pierre, and Le Tampon's agenda, among the sources counted (20/11/2026).
+  chiffres: 26,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
@@ -176,6 +179,9 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   "agenda:sechoir": 5,
   // Two sessions of a show at two venues kept as two events (KiLLT).
   "agenda:luc_donat": 2,
+  // Read again as the commune's public information (20/11/2026), each event with its own page's link: an older entry
+  // linked its home page.
+  "agenda:le_tampon": 1,
   // With the time Atmo Réunion diffused the index (date_dif, `diffuse_le`), which an older entry lacks.
   atmo: 1,
   // A notice that awaits the return to normal keeps « ne pas boire » (#723), and a sector followed by the advice without

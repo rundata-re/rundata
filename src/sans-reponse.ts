@@ -20,9 +20,10 @@
  * A site whose commune has not agreed to its reuse (autorisations.ts) is never shown: nothing is missing here because
  * of its silence, it is not read anyway. The table may not exist yet: every call then does nothing.
  */
+import { UA_RUNDATA } from "./http.js";
 import { count } from "./budget.js";
 import { ACTUS_MAIRIES, LISIBLES } from "./providers/agenda.js";
-import { AUTORISATIONS } from "./providers/autorisations.js";
+import { AUTORISATIONS, LISIBLE } from "./providers/autorisations.js";
 import type { Cache } from "./cache.js";
 import type { SourceInfo } from "./types.js";
 
@@ -89,7 +90,7 @@ const CALME_ESSAIS = 3;
 // The rows' states, read once in a while by each isolate at its first failure, so that a failure already known writes nothing.
 const RELIRE_MS = 10 * 60_000;
 // Sites that answer a robot with no name by an error page: the same words as the agendas'.
-const UA = "rundata.re (contact@rundata.re)";
+const UA = UA_RUNDATA;
 const MAINTENANCE = /<title>[^<]*maintenance|site (?:est )?en maintenance|maintenance en cours/i;
 
 export const hoteDe = (url: string) => {
@@ -355,7 +356,7 @@ function communeDe(source: string): string | undefined {
 
 /** A commune that has not agreed to the reuse of one of its sources, whichever (autorisations.ts). */
 const enAttente = (commune: string | undefined) =>
-  !!commune && Object.values(AUTORISATIONS).some((a) => a.commune === commune && a.etat !== "accordee" && a.etat !== "permise");
+  !!commune && Object.values(AUTORISATIONS).some((a) => a.commune === commune && !LISIBLE.includes(a.etat));
 
 export interface Public extends Ligne {
   nom: string;

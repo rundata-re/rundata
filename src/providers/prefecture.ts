@@ -7,7 +7,7 @@
 import { later } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { localTime } from "../geo.js";
-import { getText } from "../http.js";
+import { getText, UA_RUNDATA } from "../http.js";
 import { UpstreamError } from "../types.js";
 import { when } from "../tools/injoignable.js";
 import { type Info, parsePrefecture, SOURCES } from "./actualites.js";
@@ -16,7 +16,7 @@ import * as copie from "./prefecture-copie.js";
 export const SOURCE = SOURCES.prefecture;
 
 const ORIGIN = "https://www.reunion.gouv.fr";
-const HEADERS = { "User-Agent": "rundata.re (contact@rundata.re)" };
+const HEADERS = { "User-Agent": UA_RUNDATA };
 // During a cyclone the prefecture opens a section of its own (« /Actualites/Cyclone-Garance », February 2025), where
 // the red alert, the violet one and the phase de sauvegarde appeared, not in the press releases; its menu links it.
 const SECTION = /href="(?:https:\/\/www\.reunion\.gouv\.fr)?(\/Actualites\/Cyclone-[A-Za-z0-9-]+)"/;

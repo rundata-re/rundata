@@ -442,15 +442,16 @@ describe("reading the copies", () => {
   });
 
   it("never shows an event of an agenda no longer read from a copy built before, and says the events are updating", async () => {
-    const LE_TAMPON = pageOf("le-tampon")!;
-    const unread = { ...event("Fête des goyaviers", "Le Tampon", "2026-10-24T10:00", "samedi 24/10 à 10:00"), lien: "https://www.letampon.fr/agenda/fete", source: "site de la commune du Tampon, lu le samedi 24/10 à 08:00" };
+    // Petite-Île: its site not read until it agrees.
+    const PETITE_ILE = pageOf("petite-ile")!;
+    const unread = { ...event("Fête des goyaviers", "Petite-Île", "2026-10-24T10:00", "samedi 24/10 à 10:00"), lien: "https://www.petite-ile.re/actualites/agenda/fete", source: "site de la commune de Petite-Île, lu le samedi 24/10 à 08:00" };
     const agenda = { ...COPIES.agenda.value, evenements: [unread] };
     const summary = async (version: string) => {
       const edge = new EdgeLike();
       await edge.put(KEYS.agenda, { value: agenda, fetchedAt: ago(2).getTime(), version });
       const cache = new Cache(new TieredStore(new MemoryStore(), edge), () => NOW.getTime(), false, new MemoryStore(), "2.0.0");
-      const { copies, leftOut } = await counted(PAGE_BUDGET, () => readCopies(cache, LE_TAMPON, LE_TAMPON, NOW)).then((r) => r.value);
-      return resume(LE_TAMPON, copies, NOW, leftOut);
+      const { copies, leftOut } = await counted(PAGE_BUDGET, () => readCopies(cache, PETITE_ILE, PETITE_ILE, NOW)).then((r) => r.value);
+      return resume(PETITE_ILE, copies, NOW, leftOut);
     };
     // Of this revision, the copy is served, but not the event of a site no longer read (tools/agenda.ts, repris).
     const current = await summary(stampOf(KEYS.agenda, "2.0.0")!);
@@ -459,9 +460,9 @@ describe("reading the copies", () => {
     expect(current.non_inclus ?? []).not.toContainEqual(expect.objectContaining({ partie: "événements du jour" }));
     const r = await summary("rendu-0");
     expect(JSON.stringify(r)).not.toContain("Fête des goyaviers");
-    expect(JSON.stringify(r)).not.toContain("letampon.fr/agenda");
+    expect(JSON.stringify(r)).not.toContain("petite-ile.re/actualites");
     expect(r.non_inclus).toContainEqual(expect.objectContaining({ partie: "événements du jour", raison: UPDATING, outil: "evenements" }));
-    const page = aujourdhuiPage("https://rundata.re", LE_TAMPON, r, null);
+    const page = aujourdhuiPage("https://rundata.re", PETITE_ILE, r, null);
     expect(page).toContain("Se met à jour : rechargez la page dans quelques minutes.");
     expect(page).not.toContain("Fête des goyaviers");
   });
@@ -760,8 +761,8 @@ describe("the summary after the audit of 04/11/2026", () => {
     const sp = resume(SAINT_PAUL, none as never, NOW);
     expect(sp.resume).not.toMatch(/0 événement/);
     expect(sp.evenements_du_jour!.aucun).toBe("Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.");
-    const pierre = pageOf("saint-pierre")!;
-    const notRead = mentionCommune("Saint-Pierre");
+    const pierre = pageOf("petite-ile")!;
+    const notRead = mentionCommune("Petite-Île");
     expect(notRead).toBeTruthy();
     const r = resume(pierre, none as never, NOW);
     expect(r.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets, sans le site de la commune) ;");

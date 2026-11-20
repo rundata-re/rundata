@@ -82,6 +82,11 @@ export async function bodyText(request: Request, max: number): Promise<string | 
   return new TextDecoder().decode(all);
 }
 
+/**
+ * The name rundata.re reads the sites under, with the page that says who reads them and why (rule of 20/11/2026: a
+ * commune's site is read slowly, under an honest name): the agendas, the halls, the news, the prefecture, fuel prices.
+ */
+export const UA_RUNDATA = "rundata.re (+https://rundata.re/a-propos; contact@rundata.re)";
 export const USER_AGENT = "reunion-temps-reel/0.2 (open source MCP server, real-time data for Reunion Island)"; // header values must be ASCII
 
 /**

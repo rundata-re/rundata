@@ -100,7 +100,7 @@ describe("iCalendar agendas", () => {
     const first = await agenda.load(cache, NOW);
     await agenda.load(cache, NOW);
     expect(first.value).toHaveLength(6);
-    expect(asked).toEqual(["https://asso.example/remote.php/dav/public-calendars/abc?export rundata.re (contact@rundata.re)"]);
+    expect(asked).toEqual(["https://asso.example/remote.php/dav/public-calendars/abc?export rundata.re (+https://rundata.re/a-propos; contact@rundata.re)"]);
   });
 
   it("reads Saint-Paul's iCalendar export alone, never its site's API first, its copy dated by its reading", async () => {

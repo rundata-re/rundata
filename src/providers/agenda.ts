@@ -23,7 +23,7 @@
  */
 import { de } from "../articles.js";
 import type { Bundle, Cache, Cached } from "../cache.js";
-import { getBytes, getText, httpUrl } from "../http.js";
+import { getBytes, getText, httpUrl, UA_RUNDATA } from "../http.js";
 import { inReunion } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
@@ -78,7 +78,9 @@ const REPRISE_INFORMATION = "Reprise autorisée à des fins d'information, sans 
 const SANS_CONDITION = "\u00a0; aucune condition de reprise écrite sur le site";
 
 // The sites are asked who is reading: some answer an unnamed robot with an error page.
-const HEADERS = { "User-Agent": "rundata.re (contact@rundata.re)" };
+// An honest name, with the page that says who reads and why (a commune's site is read as public information since
+// 20/11/2026, autorisations.ts « publique »).
+const HEADERS = { "User-Agent": UA_RUNDATA };
 const FRESH_SECONDS = 3600;
 const AHEAD_DAYS = 45;
 /** What the tourist office of the East's terms ask to show with what is taken from it. */
@@ -685,6 +687,35 @@ export function parseSpipNews(xml: string, nom: string, commune: string, now: Da
 }
 
 /**
+ * A Drupal site's news feed (Saint-Pierre's /rss.xml): each item's text starts with the node's title, its author's login
+ * and the hour it was posted (« mar 17/11/2026 - 11:14 »), fields the theme puts before the body; without them, its
+ * first sentence is the article's, where an announcement gives its day.
+ */
+export function parseDrupalNews(xml: string, nom: string, commune: string, now: Date): Evenement[] {
+  return [...xml.matchAll(/<item[^>]*>([\s\S]*?)<\/item>/g)].flatMap(([, item]) => {
+    const titre = clean(tag(item, "title"));
+    const html = tag(item, "description").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&")
+      .replace(/<span class="field field--name-(?:title|uid|created)\b[\s\S]*?<\/span>\s*(?:<\/span>)?/g, "");
+    // The text without the node's dates, said as data below.
+    const texte = clean(html.replace(/<div class="field field--name-field-(?:start|end)-date\b[\s\S]*?<\/div>/g, ""));
+    const lien = clean(tag(item, "link"));
+    // An event's node gives its start, local (« 2026-11-06T18:00:00 »), and its end, in UTC in its <time>: as data.
+    const start = /field--name-field-start-date[^>]*>\s*(?:<time datetime=")?(\d{4}-\d\d-\d\dT\d\d:\d\d)/.exec(html)?.[1];
+    const endUtc = /field--name-field-end-date[\s\S]*?<time datetime="(\d{4}-\d\d-\d\dT\d\d:\d\d):\d\dZ"/.exec(html)?.[1];
+    if (start) {
+      const fin = endUtc ? new Date(Date.parse(`${endUtc}:00Z`) + 4 * 3600_000).toISOString().slice(0, 16) : undefined;
+      const local = (x: string) => (x.endsWith("T00:00") ? x.slice(0, 10) : x);
+      const seance = { debut: local(start), ...(fin && fin !== start ? { fin: local(fin) } : {}) };
+      if ((seance.fin ?? seance.debut).slice(0, 10) < localDay(now)) return [];
+      const statut = statusOf(titre, texte);
+      return [{ ...(statut ? { statut } : {}), id: lien, titre, seances: [seance], commune, categories: [], ...extrait(texte), lien, publie_par: nom }];
+    }
+    const published = new Date(tag(item, "pubDate"));
+    return newsEvent(titre, texte, `${titre} ${premiere(texte)}`, lien, published, now, nom, commune);
+  });
+}
+
+/**
  * Salazie's site lists its categories « Agenda » and « Actualités » as pages: its feeds lead back to them and its
  * robots.txt forbids /wp-json/. Each post is a loop item: its id, its title, its excerpt. Its page is `?p=<id>`, which
  * the site sends on to the post.
@@ -768,6 +799,14 @@ export const ACTUS_MAIRIES: Agenda[] = [
   // Its feed of articles; not `?page=ical`, whose dates are the articles' publication, not events.
   { ...news("saint_joseph", "Ville de Saint-Joseph", "https://saintjoseph.re/", "https://saintjoseph.re/spip.php?page=backend", "Saint-Joseph",
     (body, now) => parseSpipNews(body, "Ville de Saint-Joseph", "Saint-Joseph", now)), site_commune: "site de la commune de Saint-Joseph", faits: true },
+  // Saint-Denis and Saint-Pierre: the commune's public information (autorisations.ts « publique », 20/11/2026); no
+  // agenda on either site. Saint-Denis's SPIP feed (« À la une »); Saint-Pierre's Drupal feed, whose events give their
+  // start and end as data (parseDrupalNews).
+  // One request an hour each, by the scheduled event (BUDGET.md: worst event 401 of 550 subrequests); the facts only.
+  { ...news("saint_denis", "Ville de Saint-Denis", "https://www.saintdenis.re/", "https://www.saintdenis.re/spip.php?page=backend", "Saint-Denis",
+    (body, now) => parseSpipNews(body, "Ville de Saint-Denis", "Saint-Denis", now)), site_commune: "site de la commune de Saint-Denis", faits: true },
+  { ...news("saint_pierre", "Mairie de Saint-Pierre", "https://www.saintpierre.re/", "https://www.saintpierre.re/rss.xml", "Saint-Pierre",
+    (body, now) => parseDrupalNews(body, "Mairie de Saint-Pierre", "Saint-Pierre", now)), site_commune: "site de la commune de Saint-Pierre", faits: true },
   // Its news (Joomla), apart from its agenda (« saint_louis »): the events it announces there, such as the associations'
   // forum. A feed of the same shape as SPIP's.
   { ...news("saint_louis_actus", "Ville de Saint-Louis", "https://saintlouis.re/actualites", "https://saintlouis.re/actualites?format=feed&type=rss", "Saint-Louis",
@@ -1791,7 +1830,10 @@ export const LISIBLES: Agenda[] = [
   // at 6 s, the most after Le Séchoir's, and 213 views waited for it past 1 s.
   { ...tribe("sainte_marie", "Ville de Sainte-Marie", "https://www.ville-saintemarie.re", "Sainte-Marie", SAINTE_MARIE), site_commune: "site de la commune de Sainte-Marie", faits: true, planifie: true },
   { ...salazie, site_commune: "site de la commune de Salazie", faits: true },
-  { ...rss("le_tampon", "Ville du Tampon", "https://letampon.fr/agenda/feed/", "Le Tampon"), site_commune: "site de la commune du Tampon", faits: true, accueil: "https://letampon.fr/" },
+  // Public information of the commune (autorisations.ts « publique », 20/11/2026): its feed, one request, kept an hour
+  // (FRESH_SECONDS) in each data center that reads it, as before; the facts only, each with its
+  // own page. Not by the scheduled event: its every-5-minutes budget has no request left (registre.ts).
+  { ...rss("le_tampon", "Ville du Tampon", "https://letampon.fr/agenda/feed/", "Le Tampon"), site_commune: "site de la commune du Tampon", faits: true },
   // Its whole agenda, all its categories: « /agenda/evenements » has had nothing to come since September 2026. Read by
   // the scheduled event, as its news are: read by the questions from every data center, about 5 % of its reads were
   // refused (HTTP 403, 29/10-05/11/2026) and some data centers served a copy two or three days old; its news, read by
@@ -1870,9 +1912,8 @@ export const ACCUEILS = new Set(LISIBLES.flatMap((a) => (a.accueil ? [a.accueil]
 export const COVERED: string[] = [...new Set(AGENDAS.flatMap((a) => a.couvre ?? (a.commune ? [a.commune] : [])))];
 
 /** Why a commune without any agenda read has none, when there is more to say than that. */
-export const SANS_AGENDA: Record<string, string> = {
-  "Saint-Pierre": "la page agenda de la mairie de Saint-Pierre est vide et le Kerveguen n'est pas encore lu",
-};
+// Saint-Pierre's (« la page agenda de la mairie est vide ») left on 20/11/2026: its news are read (ACTUS_MAIRIES).
+export const SANS_AGENDA: Record<string, string> = {};
 
 /**
  * The communes' sports programmes in the agendas' last copy, for the sport tool: one read of the bundle, never a

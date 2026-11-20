@@ -16,7 +16,7 @@
  * Everything is read in one go every few minutes and kept as one entry, so a question costs at most a dozen requests.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText, httpUrl } from "../http.js";
+import { getText, httpUrl, UA_RUNDATA } from "../http.js";
 import gazetteer from "../places/gazetteer.js";
 import { normalize } from "../places/resolve.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
@@ -68,7 +68,7 @@ export const SOURCES = {
   },
 } satisfies Record<string, SourceInfo>;
 
-const HEADERS = { "User-Agent": "rundata.re (contact@rundata.re)" };
+const HEADERS = { "User-Agent": UA_RUNDATA };
 export const FRESH_SECONDS = 5 * 60;
 /** What is kept: the last three days. */
 const KEEP_HOURS = 72;

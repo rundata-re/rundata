@@ -7,6 +7,9 @@ import { buildRandonnees, buildSentiers, type SentiersAnswer } from "../src/web/
 import { communeHikes } from "../src/web/liens.js";
 import { pageOf, slugify } from "../src/web/places.js";
 import { communeAt } from "../src/places/resolve.js";
+import { citerOf } from "../src/tools/citer.js";
+import { routesIn } from "../src/web/randonnees.js";
+import { SECTEURS as PAGES_SECTEURS } from "../src/traces/secteurs.js";
 import { closedTrails, randonneesLive, randonneesPage, sentiersPage } from "../src/web/domains.js";
 import { mapPoints, tabStops } from "./cartes.js";
 
@@ -25,6 +28,31 @@ describe("sentiers de randonnée", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("keeps a cirque's trails, their lengths and its hikes as its page /randonnees/<secteur> does (20/11/2026)", async () => {
+    const c = cache();
+    const page = await buildRandonnees(c, NOW);
+    type Row = { sentier: string; longueur_km?: number };
+    for (const nom of ["Mafate", "Cilaos", "Salazie"]) {
+      const z = body(await sentiersRandonnee(c, nom, NOW)).autour;
+      const onPage = page.secteurs.find((x) => x.secteur === nom)!.sentiers;
+      const listed = [...z.sentiers_fermes, ...z.sentiers_ouverts] as Row[];
+      // Each trail once, closed, open or out of management: as many as on the page.
+      const count = z.sentiers_fermes.length + (z.sentiers_ouverts_en_tout ?? z.sentiers_ouverts.length) + (z.hors_gestion_onf?.length ?? 0);
+      expect(count, nom).toBe(onPage.length);
+      expect(new Set(listed.map((r) => r.sentier)).size, nom).toBe(listed.length);
+      for (const r of listed) expect(r.longueur_km, `${nom} · ${r.sentier}`).toBe(onPage.find((t) => t.nom === r.sentier)!.km);
+      // Its hikes are its page's, in its order: never one of the next cirque passing near (PR25 of Mafate at Cilaos).
+      const hikes = routesIn(page, PAGES_SECTEURS.find((x) => x.nom === nom)!).map((h) => h.nom);
+      expect((z.randonnees_avec_trace ?? []).map((h: { randonnee: string }) => h.randonnee), nom).toEqual(hikes.slice(0, 10));
+    }
+  });
+
+  it("credits the Parc national's inventory for the canyons, the ONF alone for the trails", async () => {
+    const canyon = body(await sentiersRandonnee(cache(), "Cilaos", NOW, undefined, false, true));
+    expect(citerOf("sentiers_randonnee", canyon)).toBe("rundata.re, d'après le Parc national de La Réunion et l'ONF");
+    expect(citerOf("sentiers_randonnee", body(await sentiersRandonnee(cache(), "Cilaos", NOW)))).toBe("rundata.re, d'après l'ONF");
+  });
+
   it("says a trail of the commune closed in part, past its limit, closed and never open (Piste DFCI de la Glacière, 04/11/2026)", async () => {
     type F = { attributes: Record<string, unknown>; geometry?: { paths?: [number, number][][] } };
     const json = JSON.parse(fixture("sentiers.json")) as { features: F[] };
@@ -38,7 +66,7 @@ describe("sentiers de randonnée", () => {
     vi.stubGlobal("fetch", async (url: string) => new Response(url.includes("/5/query") ? JSON.stringify({ ...json, features }) : fixture(url.includes("/4/query") ? "routes.json" : "couche.json"), { headers: { "content-type": "application/json" } }));
     const b = body(await sentiersRandonnee(cache(), "Les Trois-Bassins", NOW));
     expect(b.autour.sentiers_ouverts.map((x: { sentier: string }) => x.sentier)).not.toContain(nom);
-    expect(b.autour.sentiers_fermes.find((x: { sentier: string }) => x.sentier === nom)).toMatchObject({ etat: "fermé", ferme_en_partie: true, longueur_km: 1.8 });
+    expect(b.autour.sentiers_fermes.find((x: { sentier: string }) => x.sentier === nom)).toMatchObject({ etat: "fermé", ferme_en_partie: true, longueur_fermee_km: 1.8 });
     expect(b.resume).toMatch(/Dans Les Trois-Bassins|Aux Trois-Bassins/);
     expect(b.resume).toMatch(/\d+ sentiers? fermés? \(dont 1 en partie\)/);
   });
@@ -167,7 +195,7 @@ describe("sentiers de randonnée", () => {
     const b = body(await sentiersRandonnee(cache(), "sentiers fermés à Mafate", NOW));
     // A hike of the cirque crosses a closed trail: said first.
     expect(b.resume).toBe("ATTENTION : PR25 emprunte 1 sentier fermé : La Nouvelle - Maison Laclos par PR (Éboulement). Un sentier fermé est interdit : ne pas s'y engager, prendre une variante ouverte ou renoncer. " +
-      "Dans le cirque de Mafate : 4 sentiers fermés, 58 ouverts, 2 hors gestion ONF (état non connu). 50 aires d'accueil de l'ONF dans le cirque de Mafate (voir aires_accueil). " +
+      "Dans le cirque de Mafate : 4 sentiers fermés, 58 ouverts. 50 aires d'accueil de l'ONF dans le cirque de Mafate (voir aires_accueil). " +
       "58 sentiers ouverts dans le cirque de Mafate : 10 d'entre eux ici, par ordre alphabétique, avec tous les sentiers fermés. La liste complète : https://rundata.re/randonnees/mafate#h-sentiers");
     // 10 open trails out of 58, by name; every closed one stays (5/11/2026: the 58 were 11 KB of a 20 KB answer).
     const ouverts: string[] = b.autour.sentiers_ouverts.map((t: { sentier: string }) => t.sentier);

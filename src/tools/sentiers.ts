@@ -111,6 +111,27 @@ const mid = (s: { points: [number, number][] }) => s.points[Math.floor(s.points.
  */
 export const communesOf = (sections: { points: [number, number][] }[]) => unique(sections.filter((s) => s.points.length).map((s) => communeAt(...mid(s))));
 
+/**
+ * Where a trail is, as the pages /randonnees and /randonnees/<secteur> rank it: by name, its sector computed with the
+ * traces, else the one of the middle of its first section with points. One rule for the pages and the tool, which
+ * counted Mafate's trails section by section (64 against the page's 62, 20/11/2026).
+ */
+export function trailPlace(nom: string, sections: { points: [number, number][] }[]): { secteur: string; commune: string } {
+  const at = sections.find((x) => x.points.length);
+  const m = at && mid(at);
+  return { secteur: trailSecteur(nom, m) ?? "Hauts de l'Ouest", commune: m ? secteur(...m).commune : "" };
+}
+
+/** A trail's length as the pages say it: that of its trace, else the sum of its sections on the ONF's map. */
+export const trailKm = (nom: string, sections: { longueur_km: number }[]) =>
+  traces.SENTIERS[nom]?.km ?? Math.round(sections.reduce((t, x) => t + x.longueur_km, 0) * 10) / 10;
+
+/** The hikes of a sector, as its page lists them: those mostly in it, then those crossing it, each by name. */
+export function routesOfSecteur(nom: string): traces.Randonnee[] {
+  const byName = [...traces.RANDONNEES].sort((x, y) => x.nom.localeCompare(y.nom, "fr"));
+  return [...byName.filter((r) => r.secteur === nom), ...byName.filter((r) => r.secteur !== nom && r.secteurs?.includes(nom))];
+}
+
 /** Distance from a point to the nearest point of a trail, in km. */
 function near(s: onf.Sentier | onf.Route, lon: number, lat: number): number {
   let best = Infinity;
@@ -582,7 +603,8 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     zone = {
       nom: cirque.nom,
       dans: `Dans ${cirque.nom}`,
-      sentiers: carte.sentiers.filter((s) => trailSecteur(s.nom, s.points.length ? mid(s) : undefined) === cirque.secteur),
+      // By trail, as its page ranks them (trailPlace): all its sections, wherever they lie.
+      sentiers: carte.sentiers.filter((s) => trailPlace(s.nom, carte.sentiers.filter((x) => x.nom === s.nom)).secteur === cirque.secteur),
       routes: carte.routes.filter((r) => r.points.length > 0 && secteur(...mid(r)).secteur === cirque.secteur),
     };
   } else if (res && res.lieu.type === "commune") {
@@ -603,7 +625,10 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
 
   const parts: string[] = [];
   const center = zone ? cirque ?? (res ? { lon: res.lieu.lon, lat: res.lieu.lat, km: res.lieu.type === "commune" ? 6 : NEAR_KM } : null) : null;
-  const around = center && !hikes.length ? routesNear(center.lon, center.lat, center.km).filter((r) => fits(filtre, r.km, climb(r))).slice(0, ROUTES_MAX) : [];
+  // A cirque's hikes are those of its page (routesOfSecteur), never one of the next cirque passing within its radius.
+  const around = center && !hikes.length
+    ? (cirque ? routesOfSecteur(cirque.secteur) : routesNear(center.lon, center.lat, center.km)).filter((r) => fits(filtre, r.km, climb(r))).slice(0, ROUTES_MAX)
+    : [];
   const warn = warning([...hikes, ...around].map((r) => routeRow(r, carte, now)), named, now);
   // A fire seen near the place goes first, before the closures.
   const nearby = center && fires ? fires.detections.filter((d) => distanceKm(center.lon, center.lat, d.lon, d.lat) <= center.km + FIRE_KM) : [];
@@ -638,8 +663,9 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     const partly = shut.filter((n) => zone!.sentiers.some((s) => s.nom === n && s.statut === "ouvert"));
     const openNames = unique(zone.sentiers.filter((s) => s.statut === "ouvert").map((s) => s.nom)).filter((n) => !shut.includes(n));
     const zOpen = openNames.length;
-    // A section « hors gestion ONF » or without a state is said, even on a trail open elsewhere: that part has no state.
-    const others = unique(zone.sentiers.filter((s) => s.statut !== "ouvert" && s.statut !== "fermé").map((s) => s.nom)).filter((n) => !shut.includes(n));
+    // A trail whose sections are all « hors gestion ONF » or without a state: one open elsewhere is open, as on the pages
+    // (it was counted twice, open and out of management: 64 trails in Mafate against the page's 62, 20/11/2026).
+    const others = unique(zone.sentiers.filter((s) => s.statut !== "ouvert" && s.statut !== "fermé").map((s) => s.nom)).filter((n) => !shut.includes(n) && !openNames.includes(n));
     const zOther = others.length;
     const zRoads = zone.routes.filter((r) => /interdit/i.test(r.circulation));
     parts.push(zone.sentiers.length
@@ -673,10 +699,17 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     zoneOut = {
       zone: zone.nom,
       randonnees_avec_trace: around.length ? around.map((r) => routeBrief(r, carte, now)) : undefined,
-      sentiers_fermes: zClosed.map((s) => ({ ...trailRow(s, zone!.from, now), ...(partly.includes(s.nom) ? { ferme_en_partie: true } : {}) })),
+      // One row per trail, as on the pages, with its length there (trailKm), not the closed section's.
+      sentiers_fermes: shut.map((nom) => {
+        const s = zClosed.find((x) => x.nom === nom)!;
+        const all = zone!.sentiers.filter((x) => x.nom === nom);
+        // Closed in part: the closed length too, beside the trail's.
+        const closedKm = Math.round(all.filter((x) => x.statut === "fermé").reduce((t, x) => t + x.longueur_km, 0) * 10) / 10;
+        return { ...trailRow(s, zone!.from, now), longueur_km: trailKm(nom, all), ...(partly.includes(nom) ? { ferme_en_partie: true, longueur_fermee_km: closedKm || undefined } : {}) };
+      }),
       sentiers_ouverts: ordered.slice(0, OPEN_MAX).map((nom) => {
         const t = traces.SENTIERS[nom];
-        return t ? { sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, denivele_negatif_m: t.dmoins, trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx` } : { sentier: nom };
+        return t ? { sentier: nom, longueur_km: t.km, denivele_positif_m: t.dplus, denivele_negatif_m: t.dmoins, trace_gpx: `${SITE_URL}/sentiers/${t.slug}.gpx` } : { sentier: nom, longueur_km: trailKm(nom, zone!.sentiers.filter((x) => x.nom === nom)) };
       }),
       sentiers_ouverts_en_tout: cut ? ordered.length : undefined,
       hors_gestion_onf: zOther ? others : undefined,

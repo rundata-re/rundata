@@ -80,7 +80,7 @@ import { littoral, type Littoral } from "../tools/littoral.js";
 import { type Observation, why } from "../types.js";
 import { type Entree, FICHES, FICHES_EVERY_MS, PASSE_JOURS, registre } from "./fiches.js";
 import * as traces from "../providers/traces.js";
-import { coastal, type PlacePage } from "./places.js";
+import { coastal, PAGES, type PlacePage } from "./places.js";
 import { bloc as blocArretes, type BlocArretes } from "../providers/arretes-travaux.js";
 
 export const FRESH_SECONDS = 5 * 60; // the stations publish every 6 minutes
@@ -2101,8 +2101,16 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T | null> {
  * and of /meteo: kept by data center, from 07 to 08/11/2026 the assistants and robots reading / were given a copy 299 min
  * old in the middle, up to 1 370, though it was built again after each of their views, in their own data center only.
  * At most one write of KV per build, one every FRESH_SECONDS: 288 a day at most, 195 at the traffic of those days.
+ *
+ * The page of each of the 24 communes, its own copy and its place's weather (web:commune:<commune>, web:lieu:<commune>):
+ * from 17 to 20/11/2026, OAI-SearchBot read /communes/<commune> 65 times, 41 of them past 2 s (up to 13 s), each a whole
+ * build of 70 to 90 subrequests, its data center (in the United States) having no copy or one too old; the robots
+ * waited 0.54 s in the middle, 3.1 s at the 90th percentile and up to 22 s over 7 days (Analytics Engine). Built by the
+ * views only, never by the scheduled event (each would take some 80 of its 600 subrequests). A view writes KV only when
+ * KV has no copy of the last FRESH_SECONDS (`Cache.getFrom`): one write per key every 5 minutes, 48 keys, 414 720 a
+ * month at most (BUDGET.md).
  */
-export const ISLAND_PAGES = new Set(["web:meteo"]);
+export const ISLAND_PAGES = new Set(["web:meteo", ...PAGES.filter((p) => p.commune).flatMap((p) => [`web:commune:${p.slug}`, `web:lieu:${p.slug}`])]);
 /**
  * How long a view waits for the island's copy in KV, ms, when its data center's is older than FRESH_SECONDS: past it,
  * the data center's copy is served, as before. A read of KV slower than a tool call's time was seen three times on
@@ -2183,7 +2191,7 @@ export async function snapshot<T>(
   const start = Date.now();
   const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000, island ? Math.min(ISLAND_PEEK_MS, waitMs) : undefined).catch(() => undefined);
   if (island) waitMs = Math.max(0, waitMs - (Date.now() - start));
-  const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run, island));
+  const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run, island ? FRESH_SECONDS : undefined));
   // A copy out of date by its revision alone (a deploy changed how the page is drawn), less than KEEP_SECONDS old,
   // made since midnight and young enough for `old`: served at once, its build behind, rather than after the whole wait
   // (800 ms for a reader, 4 s for a person on 19/11/2026, then the same copy). The first view in each data center after
@@ -2220,7 +2228,7 @@ export async function snapshot<T>(
   const freshFor = Math.min(incomplete?.(got.value) ? INCOMPLETE_RETRY_SECONDS : FRESH_SECONDS, sinceMidnight(now));
   const age = now.getTime() - got.fetchedAt.getTime();
   if (age > freshFor * 1000) {
-    const fresh = written(cache.getFrom(key, got, freshFor, run, island));
+    const fresh = written(cache.getFrom(key, got, freshFor, run, island ? FRESH_SECONDS : undefined));
     const logged = fresh.catch((err) => console.error(`page ${key} : rafraîchissement impossible`, why(err)));
     const tooOld = old && (yesterday || age > old.afterMs);
     if (tooOld) {

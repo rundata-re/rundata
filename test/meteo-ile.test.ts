@@ -92,3 +92,56 @@ describe("the weather of / and /meteo, one copy for the island (web/data.ts ISLA
     expect(kv.writes).toBe(0);
   });
 });
+
+// From 17 to 20/11/2026, OAI-SearchBot read /communes/<commune> 65 times, 41 past 2 s: whole builds where its data
+// center had no copy.
+describe("the pages of the communes, one copy for the island (web/data.ts ISLAND_PAGES)", () => {
+  it("are the 24 communes' own copies and their weather's, nothing else", async () => {
+    const { PAGES } = await import("../src/web/places.js");
+    const communes = PAGES.filter((p) => p.commune);
+    expect(communes).toHaveLength(24);
+    for (const p of communes) expect([ISLAND_PAGES.has(`web:commune:${p.slug}`), ISLAND_PAGES.has(`web:lieu:${p.slug}`)]).toEqual([true, true]);
+    expect(ISLAND_PAGES.size).toBe(49);
+    // A place that is not a commune keeps its copy in its data center.
+    const quartier = PAGES.find((p) => !p.commune)!;
+    expect(ISLAND_PAGES.has(`web:lieu:${quartier.slug}`)).toBe(false);
+  });
+
+  it("are never built by the scheduled event: some 80 subrequests each, of its 600", async () => {
+    const { SHARED, SHARED_AFTER } = await import("../src/web/partagees.js");
+    const scheduled = [...SHARED, ...SHARED_AFTER].map((s) => s.key);
+    expect(scheduled.filter((k) => ISLAND_PAGES.has(k) && k !== "web:meteo")).toEqual([]);
+    expect(scheduled.filter((k) => /^web:(commune|lieu):/.test(k))).toEqual([]);
+  });
+
+  it("cost at most one KV write per key every 5 minutes: 423 360 a month, under half the 1 million included", async () => {
+    const { islandPagesMonth, KV_WRITES_INCLUDED } = await import("../src/registre.js");
+    expect(islandPagesMonth()).toBe(49 * 288 * 30);
+    expect(islandPagesMonth()).toBeLessThan(KV_WRITES_INCLUDED / 2);
+  });
+
+  it("serve the copy another data center built, and write KV once per key in 5 minutes, two builds or not", async () => {
+    const kv = new Kv();
+    const clock = { t: T0 };
+    const center = (memory = new MemoryStore()) => new Cache(memory, () => clock.t, false, kv);
+    let builds = 0;
+    const build = async () => ({ construite: ++builds });
+    const key = "web:commune:bras-panon";
+
+    await snapshot(center(), key, build, () => {}, new Date(clock.t));
+    expect([builds, kv.writes]).toEqual([1, 1]);
+    // Another data center, a minute later: the copy of the first, nothing built.
+    clock.t += MIN;
+    expect((await snapshot(center(), key, build, () => {}, new Date(clock.t)))?.value).toEqual({ construite: 1 });
+    expect(builds).toBe(1);
+
+    // Two data centers that each build it within the 5 minutes (a copy of another revision, say): KV written once.
+    const other = new Cache(new MemoryStore(), () => clock.t, false, kv);
+    await other.getFrom(key, undefined, 0, build, 5 * 60);
+    expect([builds, kv.writes]).toEqual([2, 1]);
+    // Past the 5 minutes, the next build is written.
+    clock.t += 5 * MIN;
+    await other.getFrom(key, undefined, 0, build, 5 * 60);
+    expect([builds, kv.writes]).toEqual([3, 2]);
+  });
+});

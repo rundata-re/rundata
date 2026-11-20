@@ -10,6 +10,12 @@
  * Those whose terms allow taking their information, on conditions they write (Saint-Louis, Saint-Leu, La
  * Plaine-des-Palmistes: « à des fins d'information », not commercial), are here too, « permise », to be named as such.
  * A source that is not here: its site's terms say nothing.
+ *
+ * Since 20/11/2026, a commune's own site is read as public information: slowly (one page a minute at most, by the
+ * scheduled event, cached), under an honest User-Agent, each fact cited with its link and the hour it was read; nothing
+ * technical is ever got round (captcha, login, a blocked address), and a commune that asks in writing to be taken out
+ * is, within a day. The communes are switched to it in
+ * batches, each once its reader is checked.
  */
 export interface Autorisation {
   /** The commune whose site it is. */
@@ -21,9 +27,12 @@ export interface Autorisation {
   publie: "événements" | "actualités" | "événements et actualités" | "avis de coupure d'électricité";
   /**
    * « a_demander » until the letter asking for it has gone, « demandee » once it has, « refusee » only after a written
-   * no, « accordee » after a yes; « permise » when the site's own terms allow it, without asking.
+   * no, « accordee » after a yes; « permise » when the site's own terms allow it, without asking; « publique »: read as
+   * the public information of a commune, since `publique_le`.
    */
-  etat: "a_demander" | "demandee" | "accordee" | "permise" | "refusee";
+  etat: "a_demander" | "demandee" | "accordee" | "permise" | "refusee" | "publique";
+  /** The day it was first read as public information, « 2026-11-20 ». */
+  publique_le?: string;
   /** The day the letter went, « 2026-10-26 », as given by who sent it: never guessed. */
   demandee_le?: string;
   /** The day of its written no. */
@@ -42,17 +51,17 @@ export const AUTORISATIONS: Record<string, Autorisation> = {
   "agenda:cilaos": { commune: "Cilaos", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:etang_sale": { commune: "L'Étang-Salé", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-06" },
   "agenda:la_possession": { commune: "La Possession", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
-  "agenda:le_tampon": { commune: "Le Tampon", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:le_tampon": { commune: "Le Tampon", publie: "événements", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:petite_ile": { commune: "Petite-Île", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:plaine_des_palmistes": { commune: "La Plaine-des-Palmistes", publie: "actualités", etat: "permise" },
   "agenda:saint_andre": { commune: "Saint-André", publie: "événements", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
   "agenda:saint_benoit": { commune: "Saint-Benoît", publie: "événements", etat: "demandee", demandee_le: "2026-10-26" },
-  "agenda:saint_denis": { commune: "Saint-Denis", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:saint_denis": { commune: "Saint-Denis", publie: "actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:saint_joseph": { commune: "Saint-Joseph", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "agenda:saint_leu": { commune: "Saint-Leu", publie: "actualités", etat: "permise" },
   "agenda:saint_louis": { commune: "Saint-Louis", publie: "événements", etat: "permise" },
   "agenda:saint_philippe": { commune: "Saint-Philippe", publie: "actualités", etat: "demandee", demandee_le: "2026-10-26" },
-  "agenda:saint_pierre": { commune: "Saint-Pierre", publie: "événements et actualités", etat: "demandee", demandee_le: "2026-10-26" },
+  "agenda:saint_pierre": { commune: "Saint-Pierre", publie: "événements et actualités", etat: "publique", publique_le: "2026-11-20", demandee_le: "2026-10-26" },
   "agenda:sainte_rose": { commune: "Sainte-Rose", publie: "événements et actualités", etat: "demandee", demandee_le: "2026-10-26" },
   "courant:Cilaos": { commune: "Cilaos", publie: "avis de coupure d'électricité", etat: "demandee", demandee_le: "2026-10-26" },
   "courant:Saint-André": { commune: "Saint-André", publie: "avis de coupure d'électricité", etat: "accordee", demandee_le: "2026-10-26", accordee_le: "2026-11-16" },
@@ -175,9 +184,12 @@ export const LICENCES: Record<string, LicenceDemandee> = {
   },
 };
 
-/** Whether a source may be read: yes for one whose site asks nothing, or allows it. */
+/** The states in which a source is read. */
+export const LISIBLE: readonly string[] = ["accordee", "permise", "publique"];
+
+/** Whether a source may be read: yes for one whose site asks nothing, allows it, or is a commune's public information. */
 export const autorisee = (source: string) =>
-  ["accordee", "permise"].includes(AUTORISATIONS[source]?.etat ?? NON_REPRISES[source]?.etat ?? LICENCES[source]?.etat ?? "accordee");
+  LISIBLE.includes(AUTORISATIONS[source]?.etat ?? NON_REPRISES[source]?.etat ?? LICENCES[source]?.etat ?? "accordee");
 
 /** The halls or the sports sites not read until they agree, in the list's order. */
 export const nonReprises = (famille: SourceNonReprise["famille"]): SourceNonReprise[] =>

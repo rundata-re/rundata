@@ -10,7 +10,7 @@
  * - Théâtre Luc Donat (Le Tampon), CDNOI (Saint-Denis), Léspas (Saint-Paul): their season, with the hours.
  * The TÉAT, Luc Donat and the CDNOI pages are in ISO-8859-1.
  */
-import { getBytes, getText, permis, postBytes } from "../http.js";
+import { getBytes, getText, permis, postBytes, UA_RUNDATA } from "../http.js";
 import { normalize } from "../places/resolve.js";
 import type { SourceInfo } from "../types.js";
 import type { Agenda, AgendaStore, Evenement, Seance } from "./agenda.js";
@@ -28,7 +28,7 @@ export const SOURCE: SourceInfo = {
   url: "https://www.teat.re/programmation/",
 };
 
-const HEADERS = { "User-Agent": "rundata.re (contact@rundata.re)" };
+const HEADERS = { "User-Agent": UA_RUNDATA };
 // A season is published months ahead and changes little: a few hours is plenty.
 const FRESH_SECONDS = 6 * 3600;
 // A hall's site that takes longer is left out of this answer (its last copy is served when there is one): the

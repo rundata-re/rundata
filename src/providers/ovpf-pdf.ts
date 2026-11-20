@@ -12,7 +12,7 @@
  */
 import { left } from "../budget.js";
 import type { Cache } from "../cache.js";
-import { getBytes } from "../http.js";
+import { getBytes, UA_RUNDATA } from "../http.js";
 import { type Line, pdfLines } from "../pdf.js";
 import * as volcan from "./volcan.js";
 
@@ -119,7 +119,7 @@ export async function readNewest(cache: Cache, now = Date.now()): Promise<void> 
     }
     let lecture: Lecture;
     try {
-      const bytes = await getBytes(SOURCE_ID, url, 20_000, { "User-Agent": "rundata.re (contact@rundata.re)" });
+      const bytes = await getBytes(SOURCE_ID, url, 20_000, { "User-Agent": UA_RUNDATA });
       try {
         lecture = readRelease(await pdfLines(bytes), expectedDays(post));
       } catch (e) {

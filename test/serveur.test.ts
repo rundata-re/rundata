@@ -134,7 +134,9 @@ describe("the server's instructions", () => {
     // Haiku took for the American state, answering from the web without calling any tool (bench of 14/11).
     // 39 489 on 16/11/2026 with Saint-André among the mairies read in evenements and electricite, whose mairies are now
     // « qui le permettent » rather than « dont le site ne l'interdit pas » (13 shorter): Saint-André's agreed in writing.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_489);
+    // 39 500 on 20/11/2026 with Le Tampon among the mairies read in evenements (« du Tampon »), read as the commune's
+    // public information.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_500);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, left, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
-import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, finEtangSale, ETANG_SALE_PAGES, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
+import { ACTUS_MAIRIES, AGENDAS, CIREST, servis, COVERED, DEPARTEMENT_AGENDA, DEPARTEMENT_PAGES, LIGUE_VOLLEY, OTI_EST, SOURCES_LUES, SPORTSREGIONS, communeOf, departementListe, parseCirest, parseDepartement, parseDrupalNews, programmeSportif, programmesSportifs, datesIn, lead, parseBrasPanon, finEtangSale, ETANG_SALE_PAGES, parseEtangSale, parseIntraMuros, parseOpenAgenda, parseOtiEst, parsePetiteIle, parseRss, parseSaintBenoit, parseSalazie, parseSalazieNews, parseSpipNews, parseSportsregions, parseTribe, lieuDit, matchsLigue, tribeUrl, parseWpNews, salazieItems, toLocal } from "../src/providers/agenda.js";
 import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mots.js";
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
@@ -73,6 +73,9 @@ function file(url: string, form?: string): string | undefined {
   if (url.includes("ville-salazie.fr/category/actualites")) return "salazie_actus.html";
   if (url.includes("saintjoseph.re")) return "rss_saint-joseph.xml";
   if (url.includes("letampon")) return "rss_le-tampon.xml";
+  // Saint-Denis's and Saint-Pierre's news, read on 20/11/2026 at 03:16.
+  if (url.includes("saintdenis.re")) return "rss_saint-denis.xml";
+  if (url.includes("saintpierre.re")) return "rss_saint-pierre.xml";
   if (url.includes("saintlouis.re/actualites")) return "rss_saint-louis-actus.xml";
   if (url.includes("saintlouis")) return "rss_saint-louis.xml";
   if (url.includes("saintleu.re")) return "actus_saint-leu.json";
@@ -263,7 +266,7 @@ describe("agenda", () => {
     let league: () => Response;
     const KING = "King Saison 6 Solo étape 2";
     // The mairies' news, read by the scheduled event too, and Salazie's agenda before the league: their sites answer.
-    const MAIRIES = ["saint_philippe", "cilaos", "saint_joseph", "saint_louis_actus", "saint_leu", "plaine_des_palmistes_agenda", "plaine_des_palmistes_actus", "sainte_marie_actus", "salazie_actus"];
+    const MAIRIES = ["saint_philippe", "cilaos", "saint_joseph", "saint_denis", "saint_pierre", "saint_louis_actus", "saint_leu", "plaine_des_palmistes_agenda", "plaine_des_palmistes_actus", "sainte_marie_actus", "salazie_actus"];
     const titles = (b: { evenements?: { titre: string }[] }) => (b.evenements ?? []).map((e) => e.titre);
     const entry = async (store: MemoryStore) => ((await store.get("agendas:planifies"))?.value as Record<string, CacheEntry> | undefined)?.["agenda:lrvb"];
     const isLeague = (u: string) => new URL(u).hostname === "lrvb.re";
@@ -544,7 +547,7 @@ describe("agenda", () => {
 
   describe("the clubs' calendar (Sportsregions), read by the scheduled event", () => {
     // Salazie's agenda and the mairies' news, read by the scheduled event before it.
-    const MAIRIES = ["saint_philippe", "cilaos", "saint_joseph", "saint_louis_actus", "saint_leu", "plaine_des_palmistes_agenda", "plaine_des_palmistes_actus", "sainte_marie_actus", "salazie_actus"];
+    const MAIRIES = ["saint_philippe", "cilaos", "saint_joseph", "saint_denis", "saint_pierre", "saint_louis_actus", "saint_leu", "plaine_des_palmistes_agenda", "plaine_des_palmistes_actus", "sainte_marie_actus", "salazie_actus"];
     const pages = [1, 2, 3, 4].map((n) => fixture(`sportsregions_${n}.html`));
     let urls: string[];
     beforeEach(() => {
@@ -682,23 +685,23 @@ describe("agenda", () => {
           return super.put(key, e);
         }
       }
-      // 34 left: the bundle's read, Sainte-Marie's, Salazie's, Saint-Louis's and Le Séchoir's agendas, L'Étang-Salé's list
+      // 36 left: the bundle's read, Sainte-Marie's, Salazie's, Saint-Louis's and Le Séchoir's agendas, L'Étang-Salé's list
       // and three of its events' pages, the CIREST's articles, the Département's list and its two events' pages, the
-      // league's page, the mairies' nine readings, the four pages, the Théâtre Luc Donat's agenda and season, the write,
+      // league's page, the mairies' eleven readings, the four pages, the Théâtre Luc Donat's agenda and season, the write,
       // and KEEP_LEFT (4) still left.
       const run = (n: number) => counted(PAGE_BUDGET, async () => {
         count(left() - n);
         const out = await refreshPlanned(new Cache(new Kv(), () => NOW.getTime()), NOW);
         return { out, left: left() };
       });
-      const both = await run(34);
+      const both = await run(36);
       expect(both.value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions", "luc_donat"], gardes: [], reportes: [], trop_vieilles: [] });
       expect(both.value.left).toBe(4);
       // One fewer: the Théâtre Luc Donat, the last, at a later run (its copy served meanwhile).
-      expect((await run(33)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: ["luc_donat"], trop_vieilles: [] });
+      expect((await run(35)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "sportsregions"], gardes: [], reportes: ["luc_donat"], trop_vieilles: [] });
       // Two fewer: the clubs' calendar at a later run, the theatre's two readings still paid for after it.
       urls = [];
-      expect((await run(32)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "luc_donat"], gardes: [], reportes: ["sportsregions"], trop_vieilles: [] });
+      expect((await run(34)).value.out).toEqual({ lus: ["sainte_marie", "salazie", "saint_louis", "sechoir", "etang_sale", "cirest", "departement", "lrvb", ...MAIRIES, "luc_donat"], gardes: [], reportes: ["sportsregions"], trop_vieilles: [] });
       expect(urls.filter((u) => u.includes("sportsregions"))).toEqual([]);
       vi.mocked(console.log).mockRestore();
     });
@@ -724,6 +727,16 @@ describe("agenda", () => {
         ["Safran en fête 2026 : cinq jours de festivités à la Plaine des Grègues", [{ debut: "2026-11-07", fin: "2026-11-11" }]],
         ["La Caravane Santé fait étape à Saint-Joseph le 24 octobre 2026", [{ debut: "2026-10-24T09:00", fin: "2026-10-24T15:00" }]],
       ]);
+      // Saint-Denis's « À la une » (SPIP), read on 20/11/2026: its two events of October, with their days, seen on
+      // 01/10; none left on 20/11, both past.
+      const denis = fixture("rss_saint-denis.xml");
+      const octobre = parseSpipNews(denis, "Ville de Saint-Denis", "Saint-Denis", new Date("2026-10-01T00:00:00Z"));
+      expect(octobre.map((e) => [e.titre.slice(0, 26), e.seances])).toEqual([
+        ["SOMÈN KRÉOL 2026 : LA CULT", [{ debut: "2026-10-07", fin: "2026-10-31" }]],
+        ["Fête de l'Unité Dionysienn", [{ debut: "2026-10-03" }]],
+      ]);
+      expect(octobre.every((e) => e.commune === "Saint-Denis" && e.publie_par === "Ville de Saint-Denis" && e.lien.startsWith("https://www.saintdenis.re/"))).toBe(true);
+      expect(parseSpipNews(denis, "Ville de Saint-Denis", "Saint-Denis", new Date("2026-11-20T00:00:00Z"))).toEqual([]);
       // Saint-Louis's news (Joomla, a feed of the same shape), on 25/10/2026: calls for traders and applicants only
       // (« Forum des associations 2026 : appel aux professionnels de la restauration rapide », its day the forum's),
       // never an event's announcement to the public.
@@ -817,7 +830,7 @@ describe("agenda", () => {
       const surPage = body(await agenda(c, "Saint-Philippe", undefined, undefined, NOW, undefined, false, true)).evenements.find((e: { titre: string }) => e.titre.startsWith("« Union »"));
       expect(surPage.source).toBe("site de la commune de Saint-Philippe, lu le samedi 24/10 à 08:00");
       expect(union.lien).toContain("saintphilippe.re/");
-      expect(COUVERTURE).toContain("Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date (pas un agenda complet) : Saint-Philippe, Cilaos, Saint-Joseph, Saint-Louis, Saint-Leu, La Plaine-des-Palmistes, Sainte-Marie, Salazie.");
+      expect(COUVERTURE).toContain("Actualités des mairies, pour les seuls événements qu'elles annoncent avec leur date (pas un agenda complet) : Saint-Philippe, Cilaos, Saint-Joseph, Saint-Denis, Saint-Pierre, Saint-Louis, Saint-Leu, La Plaine-des-Palmistes, Sainte-Marie, Salazie.");
       expect(MAIRIES_LUES).not.toContain("Saint-Philippe");
       expect(ACTUS_MAIRIES.every((a) => a.planifie && AGENDAS.includes(a))).toBe(true);
     });
@@ -988,7 +1001,7 @@ describe("agenda", () => {
     const possession = AGENDAS.find((a) => a.id === "la_possession")!;
     expect(COVERED).toContain("La Possession");
     expect(SOURCES_LUES).toContain(possession.source);
-    expect(COVERED).not.toContain("Saint-Pierre");
+    expect(COVERED).not.toContain("Entre-Deux");
     expect(COVERED.every((c) => AGENDAS.some((a) => a.commune === c || a.couvre?.includes(c)))).toBe(true);
     expect(new Set(AGENDAS.map((a) => a.id)).size).toBe(AGENDAS.length);
   });
@@ -1225,7 +1238,7 @@ describe("agenda", () => {
       "Ville de Petite-Île", "Ville de Bras-Panon"]));
     // Last year's posts of Saint-Louis are past; nothing of theirs.
     expect(b.evenements.some((e: { publie_par: string }) => e.publie_par === "Ville de Saint-Louis")).toBe(false);
-    expect(asked.every((ua) => ua === "rundata.re (contact@rundata.re)")).toBe(true);
+    expect(asked.every((ua) => ua === "rundata.re (+https://rundata.re/a-propos; contact@rundata.re)")).toBe(true);
     // Twenty-five agendas (two pages for Bras-Panon and for the Théâtre Luc Donat; Saint-Louis's is read by the scheduled
     // event), the pages of the four shows on both TÉAT stages, and those of three events of L'Étang-Salé over a period.
     expect(asked).toHaveLength(32);
@@ -1272,8 +1285,8 @@ describe("agenda", () => {
     const by = (p: string): Row[] => all.evenements.filter((e: Row) => e.publie_par === p);
     const tampon = by("Ville du Tampon");
     expect(tampon.length).toBeGreaterThan(0);
-    // Its terms ask for an authorisation, and allow a link to the home page only.
-    expect(tampon.every((e) => e.source === "site de la commune du Tampon, lu le samedi 24/10 à 08:00" && !e.description && e.lien === "https://letampon.fr/")).toBe(true);
+    // Read as the commune's public information since 20/11/2026: its facts, without its text, each linking to its own page.
+    expect(tampon.every((e) => e.source === "site de la commune du Tampon, lu le samedi 24/10 à 08:00" && !e.description && e.lien?.startsWith("https://letampon.fr/agenda/"))).toBe(true);
     // Le Port's allow reproducing them, with « www.ville-port.re », never cut from its « © ».
     expect(by("Ville du Port").every((e) => e.source === "site de la commune du Port (©\u00a0www.ville-port.re), lu le samedi 24/10 à 08:00")).toBe(true);
     expect(by("Ville du Port").some((e) => e.description)).toBe(true);
@@ -1347,11 +1360,11 @@ describe("agenda", () => {
   });
 
   it("says when a commune publishes no agenda, and what there is elsewhere", async () => {
-    const { value, vide } = await withVide("evenements", () => agenda(cache(), "Saint-Pierre", "ce_week_end", undefined, NOW));
+    const { value, vide } = await withVide("evenements", () => agenda(cache(), "Entre-Deux", "ce_week_end", undefined, NOW));
     const b = body(value);
     // Nothing found where asked, whatever there is elsewhere: a question left without an answer (vide.ts).
     expect(vide).toBe(true);
-    expect(b.resume).toMatch(/^Aucun événement trouvé à Saint-Pierre ce week-end .*la page agenda de la mairie de Saint-Pierre est vide et le Kerveguen n'est pas encore lu\u00a0;.* ailleurs sur l'île\.$/);
+    expect(b.resume).toMatch(/^Aucun événement trouvé à l'Entre-Deux ce week-end .*ni la mairie de l'Entre-Deux ni une salle de la commune ne publient d'agenda lisible\u00a0;.* ailleurs sur l'île\.$/);
     expect(b.ailleurs_sur_l_ile.length).toBeGreaterThan(0);
   });
 
@@ -1805,5 +1818,41 @@ describe("agenda", () => {
     expect(agendaHours("samedi 24/10 à 19:30")).toBe("19:30");
     expect(agendaHours("du dimanche 25/10 à 08:30 au lundi 26/10 à 16:00")).toBe("jusqu'au lundi 26/10");
     expect(agendaHours("mercredi 28/10")).toBe("");
+  });
+});
+
+describe("Saint-Pierre's news (Drupal, parseDrupalNews)", () => {
+  const xml = readFileSync(new URL("./fixtures/agenda/rss_saint-pierre.xml", import.meta.url), "utf8");
+  const read = (body: string, now: string) => parseDrupalNews(body, "Mairie de Saint-Pierre", "Saint-Pierre", new Date(now));
+
+  it("takes an event's start and end from its fields, the news by their announcement, and leaves the rest", () => {
+    // Saturday 24/10/2026 at 04:00 in La Réunion: the feed read on 20/11, ten items.
+    const list = read(xml, "2026-10-25T00:00:00Z");
+    expect(list.map((e) => [e.titre, e.seances])).toEqual([
+      // A news item: its day in its title (newsEvent, as the other mairies' news).
+      ["Commémoration du 11 novembre 1918", [{ debut: "2026-11-11" }]],
+      // An event's node: its start, local, and its end, in UTC in its <time> (16:00Z is 20:00 in La Réunion).
+      ["Le street art et son impact dans la cité une conférence de Cyrille Gouyette au Kerveguen", [{ debut: "2026-11-06T18:00", fin: "2026-11-06T20:00" }]],
+      // Its end at midnight, as the site writes « dim 15/11/2026 - 00:00 » for an end without an hour: that day.
+      ["Souffle o.I. #7 : Saint-Pierre entre dans la danse", [{ debut: "2026-10-27T10:00", fin: "2026-11-15" }]],
+    ]);
+    // Without an announced day (« Village santé jeunesse 2026 », « Un week-end d'activités… »): left out.
+    expect(list.some((e) => /^Village santé|^Un week-end d'activités/.test(e.titre))).toBe(false);
+    for (const e of list) expect(e).toMatchObject({ commune: "Saint-Pierre", publie_par: "Mairie de Saint-Pierre", id: e.lien, lien: expect.stringMatching(/^https:\/\/www\.saintpierre\.re\//) });
+    // The node's title, author and creation stamp are not its text, nor its dates said as data.
+    const street = list[1] as { description?: string };
+    expect(street.description).toMatch(/^Le street art, un autre regard sur la ville/);
+    expect(JSON.stringify(list)).not.toMatch(/2026-11-06T18:00:00 |redaction|ven 06\/11\/2026 - 20:00/);
+  });
+
+  it("keeps an event without an end, and leaves an event past", () => {
+    // The street art conference without its end field: its start alone.
+    const sansFin = xml.replace(/&lt;div class="field field--name-field-end-date[\s\S]*?&lt;\/div&gt;/, "");
+    expect(sansFin).not.toBe(xml);
+    expect(read(sansFin, "2026-10-25T00:00:00Z").find((e) => e.titre.startsWith("Le street art"))?.seances).toEqual([{ debut: "2026-11-06T18:00" }]);
+    // On 20/11/2026, all three are over: nothing.
+    expect(read(xml, "2026-11-20T00:00:00Z")).toEqual([]);
+    // The day after the conference, Souffle o.I. still on (until 15/11), the conference gone.
+    expect(read(xml, "2026-11-07T00:00:00Z").map((e) => e.titre)).toEqual(["Commémoration du 11 novembre 1918", "Souffle o.I. #7 : Saint-Pierre entre dans la danse"]);
   });
 });

@@ -5,7 +5,7 @@
  * into the Worker's KV store, where the Worker reads them; elsewhere, from the prefecture.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText, permis } from "../http.js";
+import { getText, permis, UA_RUNDATA } from "../http.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 
 export const SOURCE: SourceInfo = {
@@ -50,7 +50,7 @@ export interface Mois {
 const ORIGIN = "https://www.reunion.gouv.fr";
 const HOST = new URL(ORIGIN).host;
 const LIST = `${ORIGIN}/Actualites/Communiques-de-presse`;
-const HEADERS = { "User-Agent": "rundata.re (contact@rundata.re)" };
+const HEADERS = { "User-Agent": UA_RUNDATA };
 const MONTHS = ["janv", "févr", "mars", "avr", "mai", "juin", "juil", "août", "sept", "oct", "nov", "déc"];
 const MONTH_NAMES = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 

@@ -204,7 +204,7 @@ describe("actualités", () => {
     expect(JSON.stringify(b)).not.toMatch(/Canabady|Mizik O Marmay/);
     expect(b.prefecture[0].titre).toBe("Violences urbaines : bilan de la nuit");
     // Every medium is read with the site's name; one request each, and the live blog.
-    expect(asked.every((a) => a.startsWith("rundata.re (contact@rundata.re) "))).toBe(true);
+    expect(asked.every((a) => a.startsWith("rundata.re (+https://rundata.re/a-propos; contact@rundata.re) "))).toBe(true);
     expect(asked.length).toBeLessThanOrEqual(12);
     // Le Quotidien: its home page, once.
     expect(asked.filter((a) => a.endsWith(" https://www.lequotidien.re/"))).toHaveLength(1);

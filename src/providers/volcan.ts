@@ -11,7 +11,7 @@
  */
 import { later } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
-import { getJson, getText, permis } from "../http.js";
+import { getJson, getText, permis, UA_RUNDATA } from "../http.js";
 import { noteLecture, noteSource } from "../lectures.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 import { decodeText, textOf } from "./avis-eau.js";
@@ -525,7 +525,7 @@ async function copiedPage(cache: Cache, lien: string, now: number): Promise<Cach
 }
 
 /** Reads a release's page: its title and its sentences. `get`: how a page is asked (the collector's, at its pace). */
-export async function readReleasePage(lien: string, get = (url: string) => getText(PREFECTURE.id, url, 12_000, { "User-Agent": "rundata.re (contact@rundata.re)" })): Promise<Page> {
+export async function readReleasePage(lien: string, get = (url: string) => getText(PREFECTURE.id, url, 12_000, { "User-Agent": UA_RUNDATA })): Promise<Page> {
   // Only the prefecture's own pages: a link planted in its list is never read.
   if (!permis(PREFECTURE.id, lien, [PREFECTURE_HOST])) throw new UpstreamError(PREFECTURE.id, "communiqué hors du site de la préfecture");
   const html = await get(lien);

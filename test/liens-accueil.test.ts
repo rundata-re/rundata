@@ -5,12 +5,12 @@ import { LIENS } from "../src/eau/distributeurs.js";
 import { ACCUEILS, AGENDAS, LISIBLES, servis } from "../src/providers/agenda.js";
 import { sansLien } from "../src/liens.js";
 
-// Le Tampon and Petite-Île: their sites' terms forbid a deep link. Until they answer our letters, rundata.re links to
-// their home page only, never to a page of their site.
-const ACCUEIL_SEUL: Record<string, string> = { "letampon.fr": "Le Tampon", "petite-ile.re": "Petite-Île" };
+// Petite-Île: its site's terms forbid a deep link. Until it answers our letter, rundata.re links to its home page only,
+// never to a page of its site. Le Tampon's site is read as the commune's public information since 20/11/2026
+// (autorisations.ts « publique »): each event links to its own page there.
+const ACCUEIL_SEUL: Record<string, string> = { "petite-ile.re": "Petite-Île" };
 // The addresses read on their sites (agendas), never shown as a link: each event links to the home page (`accueil`).
 const LUES = new Set([
-  "https://letampon.fr/agenda/feed/",
   "https://www.petite-ile.re/actualites/agenda/",
   "https://www.saint-benoit.re/evenements/general",
 ]);
@@ -19,7 +19,7 @@ const hostOf = (url: string) => new URL(url).hostname.replace(/^www\./, "");
 const files = (dir: string): string[] =>
   readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.isFile() ? [join(dir, e.name)] : []));
 
-describe("links to the sites of Le Tampon and Petite-Île", () => {
+describe("links to the site of Petite-Île", () => {
   it("go to their home page only, anywhere in src/ and public/", () => {
     const all = [...files("src"), ...files("public")];
     expect(all.length).toBeGreaterThan(100);
@@ -46,7 +46,7 @@ describe("links to the sites of Le Tampon and Petite-Île", () => {
   it("from each event of their agendas, whatever the link read", () => {
     // Their own agendas, read on their sites (not a hall of the commune, which has its own site).
     const theirs = LISIBLES.filter((a) => a.site_commune && Object.values(ACCUEIL_SEUL).includes(a.commune ?? ""));
-    expect(theirs.map((a) => a.commune).sort()).toEqual(["Le Tampon", "Petite-Île"]);
+    expect(theirs.map((a) => a.commune).sort()).toEqual(["Petite-Île"]);
     for (const a of theirs) {
       expect(a.accueil && new URL(a.accueil).pathname).toBe("/");
       const [e] = servis(a, [{ id: "x", titre: "Fête", seances: [{ debut: "2026-10-30" }], commune: a.commune!, categories: [], lien: `${a.accueil}actualites/agenda/fete`, publie_par: a.nom }]);

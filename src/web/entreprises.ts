@@ -124,7 +124,7 @@ export function entreprisesPage(origin: string, alerte?: Alerte): string {
   <h2 id="rundata">Ce que rundata.re fait de vos données</h2>
   <p>rundata.re est un service bénévole fait à La Réunion. Il rassemble en un seul endroit les données publiques de l'île : météo mesurée, routes, bus, eau, électricité, volcan. Il est sans compte, sans publicité, et son code est libre.</p>
   <ul>
-    <li><b>Une lecture à faible cadence, mise en cache.</b> Un flux en direct est lu au plus une fois par minute, quel que soit le nombre de visiteurs. Chaque lecture s'annonce sous le nom <code>rundata.re (contact@rundata.re)</code>.</li>
+    <li><b>Une lecture à faible cadence, mise en cache.</b> Un flux en direct est lu au plus une fois par minute, quel que soit le nombre de visiteurs. Chaque lecture s'annonce sous le nom <code>rundata.re (+https://rundata.re/a-propos; contact@rundata.re)</code>.</li>
     <li><b>Votre nom et votre lien, à chaque réponse.</b> Chaque donnée est affichée avec sa source, sa licence et l'heure de la lecture, et renvoie vers votre site pour le détail ou la réservation.</li>
     <li><b>Dans les assistants IA.</b> Les mêmes réponses, citées de la même façon, arrivent dans ChatGPT, Claude ou Le Chat, quand quelqu'un pose une question sur l'île.</li>
     <li><b>Rien d'inventé.</b> Si votre flux ne répond pas, rundata.re le dit, avec l'heure de la dernière lecture réussie. Il ne devine jamais un statut.</li>

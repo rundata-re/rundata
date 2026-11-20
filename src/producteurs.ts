@@ -232,6 +232,9 @@ export const FICHES: Record<string, Fiche> = {
   actus_plaine_des_palmistes_actus: { famille: "information_publique", agendas: true },
   actus_sainte_marie_actus: { famille: "information_publique", agendas: true },
   actus_salazie_actus: { famille: "information_publique", agendas: true },
+  // Read as the commune's public information since 20/11/2026 (providers/autorisations.ts).
+  actus_saint_denis: { famille: "information_publique", agendas: true },
+  actus_saint_pierre: { famille: "information_publique", agendas: true },
   salles_spectacle: { famille: "information_publique", agendas: true },
   propositions_associations: { famille: "licence_ouverte", horsCompte: true },
   // The associations' own events, read with their consent on the platform they linked: not counted, as the proposals.

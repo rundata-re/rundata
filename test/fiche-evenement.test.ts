@@ -42,7 +42,11 @@ describe("an event's page", () => {
     const facts = fichePage("https://rundata.re", row(), copy([row(), autre]), meteo);
     expect(facts).toContain('<meta name="robots" content="noindex">');
     expect(facts).toContain('<link rel="canonical" href="https://rundata.re/evenements/concert-de-maloya-au-kerveguen-0a1b2c3d">');
-    expect(facts).toContain("Prévision météo</b> pour samedi 21/11 à Saint-Pierre : nuageux, 21 °C à 28 °C, pluie : pas de pluie. C'est une prévision, pas une mesure.");
+    expect(facts).toContain("Prévision météo</b> pour samedi 21/11 à Saint-Pierre : nuageux, 21 °C à 28 °C, pas de pluie. C'est une prévision, pas une mesure.");
+    // Le Port under rain: « au Port », the rain said once (the mandala's page: « à Le Port : pluie, …, pluie : 10,4 mm de pluie »).
+    const pluie = { prevision: { resume: "", sources: [], jours: [{ jour: "samedi 21/11", ciel_en_journee: "pluie", temperature_min: "24,1 °C", temperature_max: "26,9 °C", pluie: "10,4 mm de pluie" }] } } as unknown as PlaceData;
+    const port = row({ commune: "Le Port", lieu: "Médiathèque" });
+    expect(fichePage("https://rundata.re", port, copy([port]), pluie)).toContain("Prévision météo</b> pour samedi 21/11 au Port : pluie (10,4 mm), 24,1 °C à 26,9 °C. C'est une prévision, pas une mesure.");
     expect(facts).toContain('<a href="/evenements/marche-nocturne-11112222">Marché nocturne</a>');
     expect(facts).toContain('<a href="/aujourdhui/saint-pierre">la journée à Saint-Pierre</a>');
     expect(facts).toContain('Le détail est sur <a href="https://www.saintpierre.re/agenda/concert" rel="noopener">la page de Mairie de Saint-Pierre</a>');

@@ -1738,7 +1738,7 @@ const ROAD_NEWS_MAX = 6;
 // A headline is told here when its title is about the roads or the street, not only its text: the subjects come from
 // the summary too, and a live entry on the night's fires (« Rentrez vos poubelles ! ») or on postponed matches is no
 // news of the roads. A gathering is, but not a sporting one.
-export const ROAD_TITLE = new RegExp(String.raw`\b(?:barrages?|blocages?|bloqu\w*|filtrants?|manifestation\w*|manifestant\w*|rassembl\w*(?! sporti)|cortege|operation escargot|routes?|inforoutes?|circulation|trafic|bouchons?|embouteillage\w*|${actuSource.ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation\w*|chaussee|deplacements?|rond point|bus)\b`);
+export const ROAD_TITLE = new RegExp(String.raw`\b(?:barrages?(?! (?:de takamaka|hydro\w*|d irrigation)\b)|blocages?|bloqu\w*|filtrants?|manifestation\w*|manifestant\w*|rassembl\w*(?! sporti)|cortege|operation escargot|routes?|inforoutes?|circulation|${actuSource.TRAFIC}|bouchons?|embouteillage\w*|${actuSource.ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation\w*|chaussee|deplacements?|rond point|bus)\b`);
 // The préfecture's communiqués on the protests and the roads (bilans, bans, closures): dated by the day only, kept a
 // day, two at most, above the media's.
 const PREFECTURE_HOURS = 24;

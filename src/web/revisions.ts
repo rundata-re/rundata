@@ -19,7 +19,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The prefecture's RAA list moved (« …/Recueil-des-actes-administratifs », without « -RAA ») on 14/11/2026: its links.
   // « Mobilisation » for a strike or a blockade only, not money or firms set to work (« mobilisation financière »).
   // « Route » not for « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
-  actualites: 20,
+  // The other subjects narrowed: « vigilance » with its colour, not « une pluie de médailles », « une éruption de joie »,
+  // fireworks, flights, « conseil » alone, nor « annulé » or « reporté » alone for culture; « AVC » is health.
+  actualites: 21,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -135,7 +137,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
   // Its news of the roads: not « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
-  trafic: 7,
+  // Its news of the roads: not « le trafic de drogue », nor the dam of Takamaka.
+  trafic: 8,
   velos: 7,
   volcan: 14,
 };
@@ -173,7 +176,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // The island's news only: France's and the world's left out (`local`).
   // Témoignages read again, with its newsroom's written agreement of 06/11/2026.
   // A rubric in capitals at the head of a first sentence left out (sansRubrique).
-  "actualites:fil": 7,
+  // Its subjects narrowed (sujetsOf): « vigilance » with its colour, « annulé » or « reporté » alone no culture, « AVC » health.
+  "actualites:fil": 8,
   // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   agenda: 1,

@@ -11,7 +11,7 @@ import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
 /** Whether `quoi` asks about a market, not a supermarket. */
 export const MARKET = /(?<!super|hyper)march[ée]s?(?!\p{L})|forain|halle(?!\p{L})/iu;
 
-const NOT_ALL = "D'après OpenStreetMap, relevé par ses contributeurs, et les sites des mairies qui permettent de les reprendre : tous les marchés n'y sont pas, et les jours peuvent avoir changé. La mairie a le calendrier des marchés forains. " +
+const NOT_ALL = "D'après OpenStreetMap, relevé par ses contributeurs, et les sites des mairies : tous les marchés n'y sont pas, et les jours peuvent avoir changé. La mairie a le calendrier des marchés forains. " +
   "Vous connaissez un marché absent ? Signalez-le avec donner_avis, ou ajoutez-le vous-même sur OpenStreetMap.";
 
 export function marchesAnswer(lieu: string | undefined) {

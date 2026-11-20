@@ -62,14 +62,17 @@ describe("links to the site of Petite-Île", () => {
   });
 });
 
-// Saint-Benoît submits any link to its site, its home page's too, to its agreement (its legal notice, 25/10/2026).
+// Saint-Benoît submits any link to its site, its home page's too, to its agreement (its legal notice, 25/10/2026). Its
+// public information is taken all the same since 20/11/2026 (the commune's public information, removed on request): the
+// days of its market, linked to their page (vie/marches-mairies.json). Nowhere else yet.
+const PUBLIQUE = "src/vie/marches-mairies.json";
 describe("the site of Saint-Benoît", () => {
-  it("is never linked, anywhere in src/ and public/: only the address of its agenda, read once it agrees, is written", () => {
+  it("is linked only by the commune's public information taken, anywhere in src/ and public/; its agenda's address is written", () => {
     const all = [...files("src"), ...files("public")];
     const found = all.flatMap((path) => {
       const text = readFileSync(path, "utf8");
       if (text.includes("\0")) return [];
-      return [...text.matchAll(/https?:\/\/[^\s"'`<>)\]]+/g)].flatMap(([url]) => (url.includes("saint-benoit.re") && !LUES.has(url) ? [`${path}: ${url}`] : []));
+      return [...text.matchAll(/https?:\/\/[^\s"'`<>)\]]+/g)].flatMap(([url]) => (url.includes("saint-benoit.re") && !LUES.has(url) && path !== PUBLIQUE ? [`${path}: ${url}`] : []));
     });
     expect(found).toEqual([]);
   });

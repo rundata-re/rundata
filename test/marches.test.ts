@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INSEE } from "../src/places/insee.js";
 import { MARKET, marchesAnswer } from "../src/tools/marches.js";
-import { apart, dayOfName, heldOn, hoursOn, jours, lienMairie, MARCHES, type Marche, nearest, permanent, sansJours } from "../src/vie/marches.js";
+import { apart, dayOfName, heldOn, hoursOn, jours, lienMairie, MAIRIES, MARCHES, type Marche, nearest, OSM, permanent, sansJours } from "../src/vie/marches.js";
 
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 
@@ -61,18 +61,33 @@ describe("the markets of the town halls", () => {
   const SAT = new Date("2026-10-24T04:00:00Z");
   const WED = new Date("2026-10-28T04:00:00Z");
 
-  it("take only the town halls whose site allows it, or says nothing against it, each with its page", () => {
+  it("take the town halls' own pages, each with its page (the user's decision of 20/11/2026)", () => {
     const by = new Set(MARCHES().map((m) => new URL(m.lien).hostname));
-    for (const h of by) expect(["www.openstreetmap.org", "www.mairie-saintpaul.re", "www.saintleu.re", "www.ville-saintemarie.re", "saintlouis.re"], h).toContain(h);
+    for (const h of by) expect(["www.openstreetmap.org", "www.mairie-saintpaul.re", "www.saintleu.re", "www.ville-saintemarie.re", "saintlouis.re", "saintjoseph.re", "www.ville-port.re", "www.saintdenis.re", "www.saintpierre.re", "letampon.fr", "www.saint-benoit.re"], h).toContain(h);
     // A market only a town hall gives: its commune from the page, no position, never among the nearest.
     const zac = MARCHES().find((m) => m.nom === "Marché forain de la ZAC Avenir")!;
     expect(zac).toMatchObject({ commune: "Saint-Louis", horaires: "le mercredi de 6\u00a0h à 13\u00a0h" });
     expect(zac.lon).toBeUndefined();
     expect(nearest(55.41, -21.27, 50).some((m) => m.nom === zac.nom)).toBe(false);
     expect(zac.source).toMatchObject({ date: "2020-05-14", licence: expect.stringMatching(/^Reprise permise à fin d'information/) });
-    // The others' page, where nothing is taken from them: Le Tampon's home page only.
-    expect(lienMairie("Le Tampon")).toBe("https://letampon.fr/");
+    // A commune whose page gives no day with hours (Cilaos: only a cancellation): its site, linked.
+    expect(lienMairie("Cilaos")).toBe("https://ville-cilaos.fr/");
+    expect(lienMairie("Le Tampon")).toBeUndefined();
     expect(lienMairie("Saint-Paul")).toBeUndefined();
+  });
+
+  it("take each commune's day and hours from its own page, dated, over its OpenStreetMap node, read on 20/11/2026", () => {
+    const FRI = new Date("2026-10-30T04:00:00Z");
+    const SUN = new Date("2026-10-25T04:00:00Z");
+    const THU = new Date("2026-10-29T04:00:00Z");
+    expect(heldOn("Le Port", WED).map((m) => [m.nom, m.horaires_aujourd_hui, m.lien])).toEqual([["Marché forain de la place des Cheminots", "de 5\u00a0h à 12\u00a0h", "https://www.ville-port.re/marche-forain-de-la-place-des-cheminots/"]]);
+    expect(heldOn("Le Port", SUN).map((m) => m.nom)).toEqual(["Marché forain de Rivière des Galets"]);
+    expect(heldOn("Saint-Joseph", FRI)[0]).toMatchObject({ nom: "Marché forain du Sud Sauvage", horaires_aujourd_hui: "de 6\u00a0h à 12\u00a0h", source: { date: "2018-01-05" } });
+    expect(heldOn("Saint-Benoît", SAT)[0]).toMatchObject({ nom: "Marché forain de Saint-Benoît", horaires_aujourd_hui: "de 6\u00a0h à 12\u00a0h", source: { date: "2021-07-12" } });
+    expect(heldOn("Saint-Denis", THU).map((m) => m.nom)).toContain("Marché forain de La Source");
+    // A page of 2013 over OpenStreetMap's hours: not taken; its markets OpenStreetMap does not time are.
+    expect(MARCHES().find((m) => m.nom === "Marché Forain du Chaudron")?.source).toBe(OSM);
+    for (const s of Object.values(MAIRIES)) expect(s.licence, s.id).toMatch(/^Information publique de la commune, citée avec le nom et le lien de sa page\u00a0; retirée sur simple demande$|Reprise permise|Non précisée/);
   });
 
   it("read the day a market's OpenStreetMap name or note gives, when it has no hours", () => {
@@ -89,8 +104,9 @@ describe("the markets of the town halls", () => {
     expect(permanent({ horaires_osm: "Tu-Sa 09:00-18:00;Su 09:00-13:00" })).toBe(true);
     expect(permanent({ horaires_osm: "Fr 07:00-16:00;Sa 07:00-12:00" })).toBe(false);
     expect(permanent({ horaires_osm: "Sa-Mo 06:00-12:00" })).toBe(false);
-    expect(heldOn("Saint-Pierre", SAT).map((m) => [m.nom, m.horaires_aujourd_hui])).toEqual([["Marché Forain de Saint-Pierre (Samedi Matin)", "le matin"]]);
-    expect(heldOn("Saint-Pierre", WED)).toEqual([]);
+    // The town hall's hours over its OpenStreetMap node's name (« (Samedi Matin) »); its flower market on Wednesday.
+    expect(heldOn("Saint-Pierre", SAT).map((m) => [m.nom, m.horaires_aujourd_hui])).toEqual([["Marché forain de Saint-Pierre", "de 5\u00a0h à 12\u00a0h"]]);
+    expect(heldOn("Saint-Pierre", WED).map((m) => m.nom)).toEqual(["Marché aux fleurs de Saint-Pierre"]);
     expect(apart("Saint-Pierre", WED).map((m) => m.nom)).toEqual(["Marché couvert de Saint-Pierre"]);
     expect(apart("Saint-Pierre", new Date("2026-10-25T04:00:00Z"))[0].horaires_aujourd_hui).toBe("fermé aujourd'hui");
     expect(heldOn("Saint-Leu", SAT).map((m) => m.nom)).toEqual(["Marché forain de Saint-Leu"]);

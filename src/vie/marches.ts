@@ -1,13 +1,14 @@
 /**
  * The markets of La Réunion: those OpenStreetMap maps (src/vie/marches.json, scripts/build-marches.py), the forains and
- * the covered markets its contributors have mapped, with their days and hours when given; and those of the town halls
- * whose sites allow it, or say nothing against it (src/vie/marches-mairies.json, read on 31/10/2026). Not all of them.
+ * the covered markets its contributors have mapped, with their days and hours when given; and those of the town halls'
+ * own pages (src/vie/marches-mairies.json, read on 31/10/2026 and 20/11/2026), each with its page's date. Not all of them.
  * - A town hall's hours prevail over OpenStreetMap's for the same market (by its OpenStreetMap object).
  * - A market without hours in OpenStreetMap is held on the day its name says (« Marché Forain de Saint-Pierre (Samedi
  *   Matin) »): its name is OpenStreetMap's too.
  * - A market open five days a week or more is kept apart: a covered market is never « the market of the day ».
- * - The other communes' sites forbid taking their content, or ask for an accord first: nothing is taken from them, a link
- *   to their page is given instead (`liens`). Nor from the tourist offices'.
+ * - A commune's public information is taken from its own site (decision of 20/11/2026): its markets' days, hours and
+ *   place only, with its name and its page's link, read slowly (a page a minute), removed on request. A commune whose page gives a day without hours, or only a
+ *   cancellation, is linked instead (`liens`). Nothing from the tourist offices'.
  */
 import { distanceKm } from "../geo.js";
 import { communeAt } from "../places/resolve.js";
@@ -75,8 +76,8 @@ export function nearest(lon: number, lat: number, max = 5) {
 }
 
 /**
- * The page of the town hall that gives its markets' days, where nothing is taken from it: its markets' page when it is
- * the current one, else its home page (Le Tampon's terms allow no other).
+ * The page of the town hall that gives its markets' days, where nothing is taken from it (a day without hours, or only a
+ * cancellation): its markets' page when it is the current one, else its home page.
  */
 export const lienMairie = (commune: string): string | undefined => (mairies.liens as Record<string, string>)[commune];
 

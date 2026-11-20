@@ -4,6 +4,7 @@
  * assistants reading a page see it, and points to the connector for the rest. Each also says it in a few words for
  * its tile on the home page.
  */
+import { BILLETTERIES } from "../http.js";
 import { enLigne } from "./associations-drapeau.js";
 import { OVPF, OVPF_FACEBOOK, PREFECTURE } from "../providers/volcan.js";
 import { BULLETIN_QUOTIDIEN, depthText, enImages, enImagesApres, IMAGE_APRES, IMAGE_LUE_APRES, givenAt, JOURS_SUIVANTS, type Jour, jusquALecture, LOCALISES, LOCALISES_LIEN, LU_DANS_L_IMAGE, NIVEAU_ILLISIBLE, NON_ANNONCEE, NON_LU, ORSEC_BAN, ovpfNiveau, pitonLines, VIGILANCE_ENCLOS } from "../tools/volcan.js";
@@ -3707,6 +3708,8 @@ export function longsCard(rows: AgendaRow[], g: Porte, intro: string): string {
 
 /** A row's end, local, from its hours: « samedi 24/10 de 09:00 à 16:00 », « du vendredi 23/10 au dimanche 01/11 ». */
 function agendaEnd(r: AgendaRow): string | undefined {
+  // A day without an hour: it ends that day (« samedi 24/10 »); an hour without its end says no end.
+  if (/^\d{4}-\d\d-\d\d$/.test(r.date) && !r.quand.startsWith("du ")) return r.date;
   const span = /de \d\d:\d\d à (\d\d:\d\d)$/.exec(r.quand);
   if (span && r.date.length > 10) return `${r.date.slice(0, 10)}T${span[1]}`;
   const until = /^du .* au \S+ (\d\d)\/(\d\d)(?: à (\d\d:\d\d))?$/.exec(r.quand);
@@ -3753,8 +3756,8 @@ export function eventSummary(r: AgendaRow): string {
 
 /**
  * The events as schema.org `Event`s, which search engines show in their own box. Only those with a commune and a
- * date: a place and a start are what they require. Nothing the source does not give, and no end guessed: the price as
- * the source writes it; the picture only OpenAgenda's, under the Licence Ouverte (never a town hall's or a hall's); the organiser as the site's agenda names it, else the hall whose own programme it is, never the town
+ * date: a place and a start are what they require. Nothing the source does not give, and no end guessed (a day without
+ * an hour ends that day; an hour without its end has none): the price as the source writes it (offer()); the picture only OpenAgenda's, under the Licence Ouverte (never a town hall's or a hall's); the organiser as the site's agenda names it, else the hall whose own programme it is, never the town
  * hall that publishes it.
  */
 export function agendaEvents(rows: AgendaRow[]): object[] {
@@ -3765,7 +3768,7 @@ export function agendaEvents(rows: AgendaRow[]): object[] {
       "@type": "Event",
       name: r.titre,
       startDate: iso(r.date),
-      ...(end && end > r.date ? { endDate: iso(end) } : {}),
+      ...(end && end >= r.date ? { endDate: iso(end) } : {}),
       eventStatus: `https://schema.org/${STATUS[r.statut ?? ""] ?? "EventScheduled"}`,
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       location: {
@@ -3776,7 +3779,7 @@ export function agendaEvents(rows: AgendaRow[]): object[] {
       ...(r.lien ? { url: r.lien } : {}),
       description: eventSummary(r),
       ...organizer(r),
-      ...offer(r.prix, r.lien),
+      ...offer(r),
       // The credit OpenAgenda gives, as its creator and its credit line; no copyright notice nor licence page it does not give.
       ...(r.image ? { image: { "@type": "ImageObject", url: r.image.url, author: { "@type": "Organization", name: r.image.auteur }, creator: { "@type": "Organization", name: r.image.auteur }, creditText: r.image.auteur, license: LICENCE_OUVERTE } } : {}),
     };
@@ -3793,18 +3796,47 @@ const LICENCE_OUVERTE = "https://www.data.gouv.fr/pages/legal/licences/etalab-2.
 function organizer(r: AgendaRow): { organizer?: object | object[] } {
   const named = r.organise_par?.map((name) => ({ "@type": "Organization", name }));
   if (named?.length) return { organizer: named.length === 1 ? named[0] : named };
-  return HALLS.has(r.publie_par) || r.propose ? { organizer: { "@type": "Organization", name: r.publie_par } } : {};
+  if (r.propose) return { organizer: { "@type": "Organization", name: r.publie_par } };
+  // The hall whose own programme it is: its site, the home of the event's page (never a ticket office's).
+  if (!HALLS.has(r.publie_par)) return {};
+  const site = siteOf(r.lien);
+  return { organizer: { "@type": "Organization", name: r.publie_par, ...(site ? { url: site } : {}) } };
+}
+
+function siteOf(lien: string | undefined): string | undefined {
+  if (!lien) return undefined;
+  try {
+    const u = new URL(lien);
+    return u.protocol === "https:" && !BILLETTERIES.includes(u.host) ? `${u.origin}/` : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**
- * An Offer only for one amount read in the source: « gratuit » is 0 €, « 5 € » is 5 €. A range, several prices or a
- * condition of entry (« Sur inscription ») make none, as an Offer without its price is what search engines warn of.
- * No availability nor sale date: no source gives them.
+ * What the source says of the price, as search engines read it, nothing guessed: « gratuit », « accès libre » or
+ * « entrée libre » alone is free (0 €, and `isAccessibleForFree`); one amount is an Offer at that amount, wherever it is
+ * in the text (« Tarif plein : 6€ », « Sur réservation, 20 euros »); several (« 10€ à 14€ », « Tarif plein : 5€ | Tarif
+ * réduit : 3€ », « 5 € adultes, gratuit enfants ») an AggregateOffer from the lowest to the highest. A condition of entry
+ * without an amount (« Sur inscription ») makes none, as an Offer without its price is what search engines warn of.
+ * Its link: the ticket office's when the source gives one, else the event's page; « complet » is sold out.
  */
-function offer(prix: string | undefined, url?: string): { offers?: object } {
+function offer(r: AgendaRow): { offers?: object; isAccessibleForFree?: true } {
+  const prix = r.prix?.trim();
   if (!prix) return {};
-  const amount = /^gratuit/i.test(prix) ? 0 : /^\s*(\d+(?:[.,]\d{1,2})?)\s*(?:€|euros?)\s*$/i.exec(prix)?.[1]?.replace(",", ".");
-  return amount === undefined ? {} : { offers: { "@type": "Offer", price: Number(amount), priceCurrency: "EUR", ...(url ? { url } : {}) } };
+  const libre = /\b(?:gratuite?|accès libre|entrée libre)\b/i;
+  const amounts = [...prix.matchAll(/(\d+(?:[.,]\d{1,2})?)\s*(?:€|euros?\b|(?=\s*(?:à|-|–)\s*\d+(?:[.,]\d{1,2})?\s*(?:€|euros?\b)))/gi)]
+    .map((m) => Number(m[1].replace(",", ".")));
+  const prices = [...new Set([...amounts, ...(libre.test(prix) ? [0] : [])])].sort((x, y) => x - y);
+  if (!prices.length) return {};
+  const more = {
+    ...((r.billetterie ?? r.lien) ? { url: r.billetterie ?? r.lien } : {}),
+    ...(r.statut === "complet" ? { availability: "https://schema.org/SoldOut" } : {}),
+  };
+  const offers = prices.length === 1
+    ? { "@type": "Offer", price: prices[0], priceCurrency: "EUR", ...more }
+    : { "@type": "AggregateOffer", lowPrice: prices[0], highPrice: prices[prices.length - 1], priceCurrency: "EUR", ...more };
+  return { offers, ...(prices.length === 1 && prices[0] === 0 ? { isAccessibleForFree: true as const } : {}) };
 }
 
 // The kinds a visitor can keep, in the order of the select; only those in the list are offered.

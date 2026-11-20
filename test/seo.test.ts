@@ -145,7 +145,8 @@ describe("events as schema.org Events", () => {
       row({ commune: "Saint-Leu", lieu: "Le Séchoir", publie_par: "Le Séchoir" }),
       row({ commune: "Saint-Leu", lieu: "Le Séchoir", publie_par: "Agenda de la mairie de Saint-Leu" }),
     ]) as any[];
-    expect(hall.organizer).toEqual({ "@type": "Organization", name: "Le Séchoir" });
+    // With its site, the home of the event's page in its programme.
+    expect(hall.organizer).toEqual({ "@type": "Organization", name: "Le Séchoir", url: "https://example.re/" });
     expect(mairie).not.toHaveProperty("organizer");
     // No picture of rundata.re's own in place of the event's.
     expect(hall).not.toHaveProperty("image");
@@ -159,8 +160,8 @@ describe("events as schema.org Events", () => {
       row({ commune: "Saint-Leu", publie_par: "Le Séchoir", organise_par: ["Le Séchoir", "Cie Bivouac"] }),
       row({ commune: "Saint-Paul", publie_par: "Mairie de Saint-Paul" }),
     ]) as any[];
-    // A range is not one amount: no Offer, rather than one without its price.
-    expect(paid).not.toHaveProperty("offers");
+    // A range: from the lowest to the highest, with the event's page.
+    expect(paid.offers).toEqual({ "@type": "AggregateOffer", lowPrice: 10, highPrice: 14, priceCurrency: "EUR", url: "https://www.lesechoir.com/evenement/x/" });
     expect(pictured.image).toEqual({
       "@type": "ImageObject",
       url: "https://img.openagenda.com/main/abc.base.image.jpg",
@@ -179,7 +180,23 @@ describe("events as schema.org Events", () => {
     expect(offers("Gratuit")).toMatchObject({ "@type": "Offer", price: 0, priceCurrency: "EUR" });
     expect(offers("12,50 €")).toMatchObject({ "@type": "Offer", price: 12.5, priceCurrency: "EUR" });
     expect(offers("Gratuit")).not.toHaveProperty("description");
-    expect(offers("Tarif plein : 5€ | Tarif réduit : 3€")).toBeUndefined();
+    expect(offers("Tarif plein : 5€ | Tarif réduit : 3€")).toMatchObject({ "@type": "AggregateOffer", lowPrice: 3, highPrice: 5, priceCurrency: "EUR" });
+    // As the agendas write them (OpenAgenda, 20/11/2026): free entry, one amount in a sentence.
+    expect(offers("Accès libre")).toMatchObject({ "@type": "Offer", price: 0 });
+    expect(offers("Tarif plein : 6€")).toMatchObject({ "@type": "Offer", price: 6, priceCurrency: "EUR" });
+    expect(offers("Sur réservation (via lien), 20 euros (règlement sur place en CB ou espèces uniquement)")).toMatchObject({ "@type": "Offer", price: 20 });
+    expect(offers("Sur réservation")).toBeUndefined();
+    const free = agendaEvents([row({ commune: "Saint-Denis", prix: "Entrée libre" })])[0] as any;
+    expect(free.isAccessibleForFree).toBe(true);
+    expect((agendaEvents([row({ commune: "Saint-Denis", prix: "12 €" })])[0] as any).isAccessibleForFree).toBeUndefined();
+    // The ticket office's link when the source gives one, and « complet » sold out.
+    const sold = agendaEvents([row({ commune: "Le Port", prix: "15 €", statut: "complet", billetterie: "https://www.monticket.re/x?ref=rundata" })])[0] as any;
+    expect(sold.offers).toEqual({ "@type": "Offer", price: 15, priceCurrency: "EUR", url: "https://www.monticket.re/x?ref=rundata", availability: "https://schema.org/SoldOut" });
+    // A hall's event whose page is the ticket office's: its name, no site taken from the ticket office.
+    expect((agendaEvents([row({ commune: "Saint-Leu", publie_par: "Le Séchoir", lien: "https://www.monticket.re/y" })])[0] as any).organizer).toEqual({ "@type": "Organization", name: "Le Séchoir" });
+    // A day without an hour ends that day; an hour without its end, no end.
+    expect(agendaEvents([row({ commune: "Saint-Paul", quand: "samedi 24/10", date: "2026-10-24" })])[0]).toMatchObject({ startDate: "2026-10-24", endDate: "2026-10-24" });
+    expect(agendaEvents([row({ commune: "Saint-Paul", quand: "samedi 24/10 à 20:00", date: "2026-10-24T20:00" })])[0]).not.toHaveProperty("endDate");
   });
 
   it("leave out an event without a commune or a date, and are on the page", () => {

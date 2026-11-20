@@ -61,6 +61,7 @@ import {
   type ActualitesAnswer,
   type Alerte,
   type Background,
+  type AgendaAnswer,
   type PlaceData,
   type RandonneesAnswer,
   type VolcanAnswer,
@@ -68,6 +69,7 @@ import {
 import { dessinsAccueil } from "./accueil-dessins.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { COMMUNES, communePage, communesPage, electionsPage, electionsPath } from "./commune.js";
+import { type Entree, FICHES, ficheAttente, ficheIssue, fichePage, fichePassee, ficheOf, ficheTerminee, ficheUrls } from "./fiche-evenement.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
@@ -440,9 +442,11 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  * always exact; « today » on a live page, or the day the traces were built for a trail whose state changed since,
  * would not be.
  */
-function sitemap(origin: string, now: Date, fuelDay?: string): string {
+function sitemap(origin: string, now: Date, fuelDay?: string, fiches?: Entree[]): string {
+  // The events to come with a text of their own (web/fiche-evenement.ts), each with the day its row last changed.
+  const events: Url[] = ficheUrls(fiches, localDay(now)).map(([u, day]) => [u, day, "daily"]);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    siteUrls(now, fuelDay).filter(([u]) => !horsSitemap.has(u) && !retiree(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
+    [...siteUrls(now, fuelDay), ...events].filter(([u]) => !horsSitemap.has(u) && !retiree(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
     `\n</urlset>\n`;
 }
 
@@ -865,6 +869,30 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const news = data && inAlert(data.value) ? await cache.peek<ActualitesAnswer>("web:actualites").catch(() => undefined) : undefined;
     return page(path, (live) => (live ? volcanPage(origin, data, now, a, news?.value) : volcanPage(origin, null, now, a)), data, background, [rebuild(cache, "web:volcan", () => buildVolcan(cache, now))]);
   }
+  // An event's own page (web/fiche-evenement.ts): the copy of /evenements, and the weather copy of its commune as it is.
+  const fiche = ficheOf(path);
+  if (fiche) {
+    const d = DOMAINS["/evenements"];
+    const [data, a] = await Promise.all([
+      snapshot(cache, d.key, () => d.build(cache, now), background, now, waitFor(request), d.waits ? alsoWaits(d.waits, readerOf(request)) : readerOf(request)),
+      alerte(cache, background, now),
+    ]);
+    const rows = (data?.value as AgendaAnswer | undefined)?.evenements;
+    // The register is read only for an event the copy does not list (over, or an address never known).
+    const kept = rows?.some((x) => x.fiche === fiche) ? undefined : await cache.kept<Entree[]>(FICHES).catch(() => undefined);
+    const issue = ficheIssue(path, fiche, data ? (rows ?? []) : undefined, kept?.value, localDay(now));
+    if ("vers" in issue) return Response.redirect(`${origin}${issue.vers}`, 301);
+    if ("page" in issue) {
+      const r = issue.page;
+      const c = r.commune ? COMMUNES.find((p) => p.nom === r.commune) : undefined;
+      const meteo = c ? await cache.peek<PlaceData>(`web:lieu:${c.slug}`, now.getTime() - FRESH_SECONDS * 1000).catch(() => undefined) : undefined;
+      return page(path, () => fichePage(origin, r, data!, meteo?.value, a), data, background, [rebuild(cache, d.key, () => d.build(cache, now))]);
+    }
+    if ("passee" in issue) return new Response(fichePassee(origin, issue.passee, a), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    if (issue.statut === 503) return new Response(ficheAttente(origin, path, a), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "30" } });
+    if (issue.statut === 404) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    return new Response(ficheTerminee(origin, path, a), { status: 410, headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+  }
   const domain = DOMAINS[path.replace(/(.)\/$/, "$1")];
   if (domain) {
     const [data, a, avec] = await Promise.all([
@@ -1171,8 +1199,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/sitemap.xml") {
     // The fuel page changes with the prefect's order: its date, from the stored copy when there is one. An order read
     // before its 1st changes the page the day it is read, not on its 1st: never a day ahead of today.
-    const fuel = await cache.peek<carburants.Prix>("carburants:prix").catch(() => undefined);
-    return new Response(sitemap(origin, now, fuel?.value.depuis), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
+    const [fuel, fiches] = await Promise.all([
+      cache.peek<carburants.Prix>("carburants:prix").catch(() => undefined),
+      cache.kept<Entree[]>(FICHES).catch(() => undefined),
+    ]);
+    return new Response(sitemap(origin, now, fuel?.value.depuis, fiches?.value), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
   }
   if (path === SW_PATH) {
     // Checked again at each visit: a new version reaches the phones at once (web/pwa.ts). The light relief, the one

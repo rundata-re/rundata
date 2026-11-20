@@ -42,6 +42,7 @@ import { climb, relief } from "../tools/sentiers.js";
 import * as feux from "../providers/feux.js";
 import { COMMUNES as BIKE_COMMUNES } from "../tools/velos.js";
 import { lienJeux } from "./transport-donnees.js";
+import { agendaEnd, fichePath } from "./fiches.js";
 import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAnswer, type AirAnswer, type Alerte, type BorneStation, type BornesAnswer, type BusData, type GareNow, type CalendrierAnswer, type CoupuresAnswer, type CruesAnswer, type CruesStation, type CyclonesAnswer, type DaeAnswer, type EauAnswer, type ElectriciteAnswer, type Enclos, type HikeCard, type HistoriqueAnswer, type HourlyAnswer, type RandonneesAnswer, type SecheresseAnswer, type SentiersAnswer, type SportAnswer, type TraceAnswer, type TraficAnswer, type TrailItem, type VeloStation, type VelosAnswer, type VolcanAnswer } from "./data.js";
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
@@ -3683,8 +3684,17 @@ function agendaRow(r: AgendaRow, g: Porte = porte()): string {
   const lieu = r.lieu && r.lieu.length > 80 ? `${r.lieu.slice(0, 79)}…` : r.lieu;
   // Its source may give a site's address (« © www.departement974.fr »): adresseTexte(), as in the foot.
   const source = r.source ? `Source\u00a0: ${r.source}` : undefined;
-  const small = [r.commune, lieu, r.prix && r.prix.length < 80 ? r.prix : undefined, r.autres_dates ? `aussi ${r.autres_dates.join(", ")}` : undefined, r.propose ? `${r.publie_par} · ${r.propose}` : r.via ? `${r.publie_par} · via ${r.via.plateforme}, ${r.via.lu}` : source ? source : r.publie_par && r.lu_le ? `${r.publie_par}, lu le ${r.lu_le}` : r.publie_par, r.contact ? `contact\u00a0: ${r.contact}` : undefined]
-    .filter(Boolean).map((x) => (x === source ? adresseTexte(x!) : esc(x!))).join(" · ");
+  const blank = r.lien && ACCUEILS.has(r.lien) ? ' target="_blank"' : "";
+  // Who publishes it, its name the link to the event's page there (the list's title opens its page on rundata.re): the
+  // source cited, and the visits the halls and associations that agreed expect. Its words as before.
+  const lienSource = (html: string) => (r.fiche && r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${blank}>${html}</a>` : html);
+  const qui = r.propose ? `${lienSource(esc(r.publie_par))} · ${esc(r.propose)}`
+    : r.via ? `${lienSource(esc(r.publie_par))} · via ${esc(`${r.via.plateforme}, ${r.via.lu}`)}`
+    : source ? lienSource(adresseTexte(source))
+    : r.publie_par && r.lu_le ? `${lienSource(esc(r.publie_par))}, lu le ${esc(r.lu_le)}`
+    : r.publie_par ? lienSource(esc(r.publie_par)) : undefined;
+  const small = [...[r.commune, lieu, r.prix && r.prix.length < 80 ? r.prix : undefined, r.autres_dates ? `aussi ${r.autres_dates.join(", ")}` : undefined].filter(Boolean).map((x) => esc(x!)), qui, r.contact ? esc(`contact\u00a0: ${r.contact}`) : undefined]
+    .filter(Boolean).join(" · ");
   // Cancelled or postponed stays listed, said first: people look for it.
   const badge = r.statut ? `<span class="badge${r.statut === "complet" ? " m" : ""}">${esc(r.statut)}</span> ` : "";
   const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";
@@ -3694,10 +3704,11 @@ function agendaRow(r: AgendaRow, g: Porte = porte()): string {
   const news = r.statut_d_apres
     ? `<small class="said">${esc(r.statut!.toLowerCase())}${r.reporte_au ? ` au ${esc(r.reporte_au)}` : ""} d'après <a href="${esc(r.statut_d_apres.lien)}" rel="noopener"${fenetre(r.statut_d_apres.lien)}>${esc(r.statut_d_apres.media)}</a></small>`
     : "";
-  const blank = r.lien && ACCUEILS.has(r.lien) ? ' target="_blank"' : "";
   // « jusqu'au vendredi 11/12 » goes under the title on a phone (.fin): beside it, it left the title a word a line.
   const hours = agendaHours(r.quand);
-  return `<li data-g="${esc(r.genres.join(" "))}"><span>${badge}${r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${blank}>${esc(r.titre)}</a>` : esc(r.titre)}${news}<small>${small}${logo}${book}</small>${eventGo(r, g)}</span><span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${esc(hours)}</span></li>`;
+  // Its title opens its page on rundata.re (web/fiche-evenement.ts), which links its source; a copy built before it, the source.
+  const title = r.fiche ? `<a href="${fichePath(r)}">${esc(r.titre)}</a>` : r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${blank}>${esc(r.titre)}</a>` : esc(r.titre);
+  return `<li data-g="${esc(r.genres.join(" "))}"><span>${badge}${title}${news}<small>${small}${logo}${book}</small>${eventGo(r, g)}</span><span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${esc(hours)}</span></li>`;
 }
 
 /** Under a day's title: its events, and those of more than a week going on that day (parJour). */
@@ -3715,17 +3726,6 @@ export function longsCard(rows: AgendaRow[], g: Porte, intro: string): string {
 }
 
 /** A row's end, local, from its hours: « samedi 24/10 de 09:00 à 16:00 », « du vendredi 23/10 au dimanche 01/11 ». */
-function agendaEnd(r: AgendaRow): string | undefined {
-  // A day without an hour: it ends that day (« samedi 24/10 »); an hour without its end says no end.
-  if (/^\d{4}-\d\d-\d\d$/.test(r.date) && !r.quand.startsWith("du ")) return r.date;
-  const span = /de \d\d:\d\d à (\d\d:\d\d)$/.exec(r.quand);
-  if (span && r.date.length > 10) return `${r.date.slice(0, 10)}T${span[1]}`;
-  const until = /^du .* au \S+ (\d\d)\/(\d\d)(?: à (\d\d:\d\d))?$/.exec(r.quand);
-  if (!until) return undefined;
-  const [, dd, mm, time] = until;
-  const y = Number(r.date.slice(0, 4)) + (`${mm}-${dd}` < r.date.slice(5, 10) ? 1 : 0);
-  return `${y}-${mm}-${dd}${time && r.date.length > 10 ? `T${time}` : ""}`;
-}
 
 const STATUS: Record<string, string> = { "ANNULÉ": "EventCancelled", "REPORTÉ": "EventPostponed" };
 

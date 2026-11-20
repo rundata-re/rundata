@@ -6,6 +6,7 @@ import { parseRss as waterRss } from "../src/providers/avis-eau.js";
 import { eventRow } from "../src/tools/agenda.js";
 import type { AgendaAnswer } from "../src/web/data.js";
 import { agendaPage } from "../src/web/domains.js";
+import { fichePage, fichePath } from "../src/web/fiche-evenement.js";
 
 // A feed that is compromised or badly made: its links are not all http(s) addresses.
 const BAD = ["javascript:alert(document.domain)", "JaVaScRiPt:alert(1)", "data:text/html,<script>alert(1)</script>", "/agenda/fete-de-l-ail", "//hote.example/agenda", "https:///sans-hote", "pas un lien"];
@@ -40,8 +41,13 @@ describe("liens venus des flux", () => {
     const d = { resume: "", nombre: rows.length, evenements: rows, couverture: "", a_savoir: "", sources: [], ce_week_end: rows } as unknown as AgendaAnswer;
     const html = agendaPage(O, { value: d, fetchedAt: NOW, stale: false }, NOW);
     expect(html).not.toMatch(/javascript:|data:text|hote\.example|href="\/agenda\/fete|sans-hote/i);
-    expect(html).toContain(`<a href="${GOOD}" rel="noopener">Concert 0`);
+    // The list's titles open the events' pages on rundata.re; the source's link is on that page, the bad ones nowhere.
+    expect(html).toContain(`<a href="${fichePath(rows[0])}">Concert 0`);
     expect(html).toContain("Concert 1");
+    expect(html).toContain(`<a href="${GOOD}" rel="noopener">Ville de Petite-Île</a>`);
+    const copie = { value: d, fetchedAt: NOW, stale: false };
+    expect(fichePage(O, rows[0], copie, undefined)).toContain(`<a href="${GOOD}" rel="noopener">la page de Ville de Petite-Île</a>`);
+    for (const r of rows.slice(1)) expect(fichePage(O, r, copie, undefined)).not.toMatch(/javascript:|data:text|hote\.example|href="\/agenda\/fete|sans-hote/i);
     // In the page's structured data too: an event without a link has no url.
     const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)![1]);
     const urls = ld[2]["@graph"].map((e: { url?: string }) => e.url);

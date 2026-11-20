@@ -78,6 +78,7 @@ import * as actuSource from "../providers/actualites.js";
 import { A_SAVOIR as ACTU_A_SAVOIR, COUVERTURE as ACTU_COUVERTURE, infoRow, prefectureLueTexte, quand as newsTime, type InfoRow } from "../tools/actualites.js";
 import { littoral, type Littoral } from "../tools/littoral.js";
 import { type Observation, why } from "../types.js";
+import { type Entree, FICHES, FICHES_EVERY_MS, PASSE_JOURS, registre } from "./fiches.js";
 import * as traces from "../providers/traces.js";
 import { coastal, type PlacePage } from "./places.js";
 
@@ -1378,12 +1379,27 @@ export interface AgendaAnswer {
 // The pages list every event of the two weeks and of the weekend, the connector at most 25 an answer.
 const PAGE_EVENTS = 300;
 
+/**
+ * The events' register for their own pages (web/fiche-evenement.ts): one read of the durable store, and one write at
+ * most an hour whatever the number of builds (one a data center), about 50 to 70 KB. A failure leaves it to the next.
+ */
+async function keepFiches(cache: Cache, rows: EventRow[], now: Date): Promise<void> {
+  try {
+    const kept = await cache.kept<Entree[]>(FICHES);
+    if (kept && now.getTime() - kept.fetchedAt.getTime() < FICHES_EVERY_MS) return;
+    await cache.keep(FICHES, registre(kept?.value, rows, new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 10)), (PASSE_JOURS + 15) * 86400);
+  } catch (e) {
+    console.warn(`registre des événements : ${why(e)}`);
+  }
+}
+
 /** The next two weeks for the whole island, and this weekend's apart: the same agendas, read once. */
 export async function buildAgenda(cache: Cache, now = new Date()): Promise<AgendaAnswer> {
   const a = needed<Omit<AgendaAnswer, "ce_week_end">>(await agenda(cache, undefined, undefined, undefined, now, PAGE_EVENTS, false, true), "agenda");
   const weekend = answer<{ evenements?: EventRow[] }>(await agenda(cache, undefined, "ce_week_end", undefined, now, PAGE_EVENTS, false, true));
   // reunion.fr's agenda, not read, is the page's own note under its sources (noteReunionFr): not in its description.
   const resume = a.resume.replace(`\u00a0; ${RESUME_REUNION_FR}`, "");
+  await keepFiches(cache, a.evenements ?? [], now);
   return { ...a, resume, non_repris: mentionSalles().join(" ") || undefined, ce_week_end: weekend?.evenements ?? [] };
 }
 

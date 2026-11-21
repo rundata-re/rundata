@@ -36,7 +36,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Cilaos, Saint-Joseph and Saint-Philippe read as the commune's public information (20/11/2026): their events, the
   // coverage, and nothing said instead of a commune any more.
   // Chaque événement porte la clé de sa page (/evenements/<titre>-<clé>), et le titre des listes y mène.
-  agenda: 42,
+  // Un billet de mairie dont l'extrait est coupé avant sa date : la date lue dans son texte entier (Saint-André, 21/11/2026).
+  agenda: 43,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
@@ -201,7 +202,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Read again with its written agreement of 06/11/2026, from its list: an older entry, read from its feed, is not served.
   "agenda:etang_sale": 2,
   // Read again with its written agreement of 16/11/2026, as its own source: an older entry was read as the mairies'.
-  "agenda:saint_andre": 2,
+  // The day of a post whose excerpt is cut before it, read in its whole text (content:encoded, 21/11/2026).
+  "agenda:saint_andre": 3,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
   // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
   // The events not yet over (tribeUrl, `ends_after`): one begun before today kept, as the league's weekend of 04-07/11.

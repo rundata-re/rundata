@@ -949,7 +949,10 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const elsewhere = commune && !n && all.length ? all.slice(0, ELSEWHERE_MAX) : [];
   // The tool credits the agendas of the events it shows (every agenda read when it shows none: what « none » rests on).
   const shownFrom = new Set([...listedEvents, ...elsewhere].map((x) => x.e.source_agenda).filter(Boolean));
-  const credited = place || !shownFrom.size ? used : used.filter((s) => shownFrom.has(s));
+  // The commune's own agendas read are credited even when they gave nothing: what « aucun événement à Saint-André »
+  // rests on (21/11/2026: the Ville de Saint-André missing from the sources, its feed read).
+  const own = new Set(commune ? got.filter((g) => g.value && g.agenda.commune === commune).map((g) => g.agenda.source) : []);
+  const credited = place || !shownFrom.size ? used : used.filter((s) => shownFrom.has(s) || own.has(s));
   return text({
     lieu: res && lieu ? placeBlock(lieu, res) : undefined,
     resume,

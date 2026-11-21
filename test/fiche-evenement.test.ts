@@ -132,6 +132,18 @@ describe("an event's page", () => {
     expect(fichePage("https://rundata.re", row(), copy([row()]), undefined)).not.toContain("ne donne");
   });
 
+  it("leaves out of the sitemap an event to come the copy no longer lists, as its address answers 410 (21/11/2026)", () => {
+    const a = row({ description: "Un texte." });
+    const b = row({ titre: "Atelier d'échecs", fiche: "1ad96848", description: "Un autre texte." });
+    const kept = registre(undefined, [a, b], "2026-11-20");
+    // The next reading no longer lists b: its register entry stays, to come, but its address is gone.
+    const rows = [a];
+    expect(ficheIssue("/evenements/atelier-d-echecs-1ad96848", "1ad96848", rows, kept, "2026-11-20")).toEqual({ statut: 410 });
+    expect(ficheUrls(kept, "2026-11-20", rows).map(([u]) => u)).toEqual(["/evenements/concert-de-maloya-au-kerveguen-0a1b2c3d"]);
+    // Without the copy (none yet), the register alone, as before.
+    expect(ficheUrls(kept, "2026-11-20").length).toBe(2);
+  });
+
   it("keeps the events over 30 days, with the day each row last changed, and puts in the sitemap those to come with a text", () => {
     const a = row({ description: "Un texte." });
     const b = row({ titre: "Fête du quartier", fiche: "33334444", date: "2026-11-22", quand: "dimanche 22/11" });

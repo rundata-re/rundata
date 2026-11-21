@@ -8,6 +8,7 @@ import { esc } from "../src/web/map.js";
 import { CSS, layout } from "../src/web/pages.js";
 import { site } from "../src/web/site.js";
 import { typo } from "../src/web/typo.js";
+import { unstyled } from "../src/typographie.js";
 
 const NOW = new Date("2026-10-24T04:00:00Z");
 const ORIGIN = "https://rundata.re";
@@ -225,5 +226,13 @@ describe("numbers", () => {
     expect(html).toContain("+1\u202f720\u00a0m");
     expect(html).toContain("jusqu&#39;à 3\u202f070\u00a0m");
     expect(html).not.toMatch(/\d \d{3}/);
+  });
+});
+
+describe("the bold letters of Unicode", () => {
+  it("are plain letters again, accents on them, and nothing else is touched", () => {
+    expect(unstyled("𝗖𝗢𝗨𝗣𝗨𝗥𝗘𝗦 𝗗’𝗘́𝗟𝗘𝗖𝗧𝗥𝗜𝗖𝗜𝗧𝗘́ 𝟮𝟯 𝗡𝗢𝗩𝗘𝗠𝗕𝗥𝗘 𝗮̀ 𝟵𝗵𝟬𝟬")).toBe("COUPURES D’ÉLECTRICITÉ 23 NOVEMBRE à 9h00");
+    // The no-break spaces, « m² », « ½ » and the ligatures stay as written: NFKC over the whole text would change them.
+    expect(unstyled("12 m² ; ½ ; œuvre ; ﬁn !")).toBe("12 m² ; ½ ; œuvre ; ﬁn !");
   });
 });

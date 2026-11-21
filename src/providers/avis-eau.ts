@@ -26,6 +26,7 @@ import { normalize, resolvePlace } from "../places/resolve.js";
 import { localTime } from "../geo.js";
 import { type SourceInfo, why } from "../types.js";
 import { unlessSpent } from "../budget.js";
+import { unstyled } from "../typographie.js";
 
 export const SOURCE: SourceInfo = {
   id: "avis_eau",
@@ -112,8 +113,9 @@ export function textOf(html: string): string {
   return out;
 }
 
-// Without the tags, nor the emoji the posts start their lines with (« ⚠️ CONSIGNES »), which most fonts lack.
-export const strip = (html: string) => decodeText(textOf(decode(html))).replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u25AA\u25AB]\s?/gu, "");
+// Without the tags, nor the emoji the posts start their lines with (« ⚠️ CONSIGNES »), which most fonts lack; the bold
+// letters of Unicode as plain ones (typographie.ts `unstyled`).
+export const strip = (html: string) => unstyled(decodeText(textOf(decode(html)))).replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u25AA\u25AB]\s?/gu, "");
 
 const NAMES = Object.keys(INSEE).sort((a, b) => b.length - a.length);
 /**

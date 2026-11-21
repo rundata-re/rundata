@@ -81,7 +81,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).
   // Each range of hours of a day its own cut, the streets after a house number read (« 650 chemin Balance », 21/11/2026).
-  courant: 12,
+  // A place a house number starts read, « Ch. » a street, the others said in the notice (`autres_lieux`, 21/11/2026).
+  courant: 13,
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
@@ -102,7 +103,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // jour de 18 h à 22 h », 21/11/2026).
   // `coupures_annoncees` with a notice written in the bold letters of Unicode (21/11/2026).
   // `coupures_annoncees` with each range of hours of a day (21/11/2026).
-  electricite: 25,
+  // `coupures_annoncees` with « et d'autres lieux nommés dans l'avis » (21/11/2026).
+  electricite: 26,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,

@@ -87,6 +87,41 @@ describe("the power cuts the mairies relay", () => {
     expect(said).toMatch(/le mardi 24\/11 de 09:00 à 10:30, secteur 650 chemin Balance\s?; le mardi 24\/11 de 10:00 à 14:00, secteur N176 ruelle Lacotte\.$/);
   });
 
+  it("reads a place a house number starts, and says the places it cannot read are in the notice", () => {
+    const html = `<p>LUNDI 23 NOVEMBRE 2026</p><p>De 9h00 à 12h30</p><p>Secteurs concernés :</p>
+<p>237 avenue de la République – secteur Le Chrystel ; 65 Centre commercial, bâtiment B ; Zone d'activités Est</p>
+<p>MARDI 24 NOVEMBRE 2026</p><p>De 10h00 à 14h00</p><p>Zone d'activités Est ; Quartier Bel-Air</p>
+<p>Recommandations</p><p>EDF Réunion recommande de débrancher les appareils sensibles. En cas de coupure persistante, contactez le 0800 333 974.</p>`;
+    const [avis] = parsePosts([post("2026-11-19T08:53:29", "INFORMATION – COUPURES D'ÉLECTRICITÉ", html)], "Saint-André");
+    expect(avis.creneaux).toEqual([
+      // « 65 Centre commercial, bâtiment B » read for its number; « Zone d'activités Est », on the same line, not a street.
+      { jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: ["237 avenue de la République", "Secteur Le Chrystel", "65 Centre commercial, bâtiment B"], autres_lieux: true },
+      // No street read, a list of names between « ; »: in the notice; the advice and the phone number are no places.
+      { jour: "2026-11-24", de: "10:00", a: "14:00", secteurs: [], autres_lieux: true },
+    ]);
+    const said = sentence(avis, new Date("2026-11-21T08:00:00Z"));
+    expect(said).toMatch(/de 09:00 à 12:30, secteurs 237 avenue de la République, Le Chrystel, 65 Centre commercial bâtiment B et d'autres lieux nommés dans l'avis\s?; /);
+    expect(said).toMatch(/le mardi 24\/11 de 10:00 à 14:00, aux lieux nommés dans l'avis\.$/);
+    // A place said more precisely after its comma is one place: alone it keeps the comma, in a list a space.
+    const near = (secteurs: string[]) => ({ ...avis, creneaux: [{ jour: "2026-11-24", de: "09:00", a: "10:30", secteurs }] });
+    expect(sentence(near(["Chemin Balance, à proximité du terrain de football"]), new Date("2026-11-21T08:00:00Z"))).toMatch(/, secteur Chemin Balance, à proximité du terrain de football\.$/);
+    expect(sentence(near(["Rue des Lilas, face à l'école", "Chemin Balance, près du stade"]), new Date("2026-11-21T08:00:00Z"))).toMatch(/, secteurs Rue des Lilas face à l'école, Chemin Balance près du stade\.$/);
+    expect(sentence(near(["Rue Payet, entre le n° 12 et le n° 40"]), new Date("2026-11-21T08:00:00Z"))).toMatch(/, secteur Rue Payet, entre le n° 12 et le n° 40\.$/);
+    expect(sentence(near(["Chemin Balance, jusqu'au carrefour", "Rue Payet"]), new Date("2026-11-21T08:00:00Z"))).toMatch(/, secteurs Chemin Balance jusqu'au carrefour, Rue Payet\.$/);
+    expect(sentence(near(["Le Chrystel, Bois Rouge"]), new Date("2026-11-21T08:00:00Z"))).toMatch(/, secteurs Le Chrystel, Bois Rouge\.$/);
+    // Alone, the place keeps its comma, one « secteur ».
+    const alone = { ...avis, creneaux: [{ jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: ["65 Centre commercial, bâtiment B"] }] };
+    expect(sentence(alone, new Date("2026-11-21T08:00:00Z"))).toMatch(/de 09:00 à 12:30, secteur 65 Centre commercial, bâtiment B\.$/);
+  });
+
+  it("ends a word before a letter or a digit, « à » and « cité » too", () => {
+    const text = "Le lundi 23 novembre de 9h00 à 12h00 :\nCité Fleurie\n2 à 3 coupures brèves possibles\n12 Bois Rouge\nCh. Lefaguyes\n12 Ch. des Lilas\nChez nous rien\nCh Lilas\nCh.";
+    // « 2 à 3 … » no place (`\\b` never ends « à »); « Cité Fleurie » a street; « Ch. » a chemin, never « Chez », « Ch » without its point nor « Ch. » ending the line.
+    expect(slotsOf(text, new Date("2026-11-19T08:00:00Z"))).toEqual([
+      { jour: "2026-11-23", de: "09:00", a: "12:00", secteurs: ["Cité Fleurie", "12 Bois Rouge", "Ch. Lefaguyes", "12 Ch. des Lilas"] },
+    ]);
+  });
+
   it("keeps the notices of cuts only, with their facts, never their text", () => {
     const sm = parsePosts(POSTS["ville-saintemarie.re"], "Sainte-Marie");
     expect(sm.map((a) => a.publie)).toEqual(["2026-10-21T06:00:00.000Z", "2026-09-02T11:31:00.000Z"]);

@@ -10,9 +10,8 @@ plugins {
     id("org.jetbrains.compose") version "1.11.1" apply false
 }
 
-// Les sorties de construction hors du dépôt : ~/.cache/rundata-mobile/build/<module> (tools/build.sh fixe
-// RUNDATA_MOBILE_BUILD, un dossier par worktree).
-val sorties = System.getenv("RUNDATA_MOBILE_BUILD") ?: "${System.getProperty("user.home")}/.cache/rundata-mobile/build"
-allprojects {
-    layout.buildDirectory = file("$sorties/${if (this == rootProject) "racine" else name}")
+// Dossier de sortie au choix : RUNDATA_MOBILE_BUILD=<dossier> y met les sorties de chaque module (<dossier>/<module>).
+// Sans lui, Gradle garde ses dossiers build/ habituels.
+System.getenv("RUNDATA_MOBILE_BUILD")?.let { sorties ->
+    allprojects { layout.buildDirectory = file("$sorties/${if (this == rootProject) "racine" else name}") }
 }

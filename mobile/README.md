@@ -7,11 +7,13 @@ La journée d'une commune de La Réunion, d'après le serveur MCP public de rund
 
 ## Construire
 
-`tools/build.sh` lance Gradle sous plafond mémoire, avec 2 cœurs réservés par `cpu-run`. Les sorties et les caches vont dans `~/.cache/rundata-mobile/`, jamais dans le dépôt. Le code de sortie 75 veut dire que rien n'a été construit.
+Avec Gradle, depuis `mobile/` (JDK 17, SDK Android dans `ANDROID_HOME`) :
 
 ```
-mobile/tools/build.sh :shared:testAndroidHostTest :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64
+./gradlew --max-workers=2 :shared:testAndroidHostTest :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64
 ```
+
+`--max-workers` fixe le nombre de tâches en parallèle. `RUNDATA_MOBILE_BUILD=<dossier>` met les sorties hors du dépôt, un sous-dossier par module ; sans lui, elles vont dans les `build/` habituels (ignorés par git).
 
 Sous Linux, les klibs iOS se compilent ; le framework se lie sur le Mac.
 

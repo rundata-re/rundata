@@ -730,7 +730,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   const tomorrow = dm?.communes?.length
     ? `<section aria-labelledby="h-demain-air">
   <div class="sec-h"><p class="eyebrow">Demain</p><h2 id="h-demain-air">L'indice prévu demain, le ${dmDay}</h2>
-  <p>${esc(dm.resume)} Une prévision d'Atmo Réunion, pas une mesure.${dm.diffusion ? ` ${esc(dm.diffusion)}` : ""} Lue par rundata.re ${readAt(data!.fetchedAt, now).a}.</p></div>
+  <p>${esc(dm.resume)} ${dm.diffusion ? `Pas une mesure : ${esc(dm.diffusion.charAt(0).toLowerCase() + dm.diffusion.slice(1))}` : "Une prévision d'Atmo Réunion, pas une mesure."} Lue par rundata.re ${readAt(data!.fetchedAt, now).a}.</p></div>
   <div class="levels">${levelCards(dm.communes, false)}</div>
 </section>`
     : "";

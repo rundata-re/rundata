@@ -197,8 +197,8 @@ private fun BlocVigilance(v: Vigilance, ouvrir: (String) -> Unit) {
     val (teinte, encre) = v.couleur.teinte(c)
     Bloc("$SITE/vigilance", ouvrir, if (v.enPremier) c.avertissementFond else c.surface) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (v.couleur != Couleur.AUCUNE) Box(Modifier.background(teinte, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                Texte("Vigilance ${v.couleur.feminin}", 14.sp, encre, gras = true)
+            if (v.couleur != Couleur.AUCUNE && v.etat != null) Box(Modifier.background(teinte, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                Texte("Vigilance ${v.etat}", 14.sp, encre, gras = true)
             }
             v.zone?.let { Texte("zone $it", 14.sp, c.attenue) }
         }

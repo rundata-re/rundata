@@ -41,12 +41,13 @@ class JourneeTest {
     @Test
     fun laJourneeDuResumeAvecLaMesureLaVigilanceEtLesSources() = runTest {
         val vues = mutableListOf<HttpRequestData>()
-        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-pierre-2"), "vigilance_meteo" to enregistree("vigilance-saint-pierre")), vues)).journee(saintPierre)
+        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-pierre-2")), vues)).journee(saintPierre)
         assertEquals(Mesure("26\u00a0°C", "Saint-Pierre Pierrefonds (aéroport)", 5.9, "21/11 19:30"), j.mesure)
         assertEquals("19:30", j.mesure!!.heureSeule)
         val v = assertNotNull(j.vigilance)
         assertEquals("Sud", v.zone)
         assertEquals(Couleur.VERT, v.couleur)
+        assertEquals("verte", v.etat)
         assertFalse(v.enPremier)
         assertTrue(v.texte.startsWith("Vigilance météo\u00a0: verte pour le Sud"))
         assertEquals(emptyList(), j.coupures)
@@ -57,8 +58,8 @@ class JourneeTest {
         // Citer : rundata.re et les producteurs, et l'heure de lecture.
         assertEquals("Source\u00a0: rundata.re, d'après Météo-France et d'autres sources. Lu à 19:35, heure de La Réunion.", Mots.source(j))
         assertEquals("mesurée à 19:30, heure de La Réunion, station Saint-Pierre Pierrefonds (aéroport), à 5,9 km", Mots.mesureA(j.mesure!!))
-        // Deux appels : la mesure était dans le résumé. Le User-Agent dit qui lit.
-        assertEquals(2, vues.size)
+        // Un seul appel : la mesure était dans le résumé, et la vigilance s'y lit. Le User-Agent dit qui lit.
+        assertEquals(1, vues.size)
         assertTrue(vues.all { it.headers[HttpHeaders.UserAgent] == "rundata.re-android/test" })
     }
 
@@ -67,23 +68,34 @@ class JourneeTest {
         // 19:35 : « météo mesurée et prévue : copie de 21/11 14:40, trop ancienne », dans non_inclus.
         val j = JourneeSource(serveur(mapOf(
             "resume_du_jour" to enregistree("resume-saint-pierre"),
-            "vigilance_meteo" to enregistree("vigilance-saint-pierre"),
             "meteo_actuelle" to enregistree("meteo-saint-pierre"),
         ))).journee(saintPierre)
         assertEquals(Mesure("26\u00a0°C", "Saint-Pierre Pierrefonds (aéroport)", 5.9, "21/11 19:30"), j.mesure)
     }
 
     @Test
-    fun sansVigilanceDeLOutilLaCouleurNestPasInventee() = runTest {
-        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-pierre-2"), "vigilance_meteo" to null))).journee(saintPierre)
-        assertEquals(Couleur.AUCUNE, j.vigilance?.couleur)
-        assertNotNull(j.mesure)
+    fun laPastilleDitLeTexteDeLaZoneEtSaCouleur() {
+        // Les formes que le serveur écrit (src/tools/vigilance.ts, zoneText) : la pastille reprend le texte mot pour mot.
+        val vert = "Vigilance météo\u00a0: verte pour le Sud (Météo-France), la zone de Saint-Pierre."
+        assertEquals("verte", etatDe(vert))
+        assertEquals(Couleur.VERT, couleurDe(etatDe(vert)))
+        val deux = "Vigilance météo\u00a0: orange vents forts, jaune fortes pluies / orages pour l'Est (Météo-France), la zone de Saint-Benoît."
+        assertEquals("orange vents forts, jaune fortes pluies / orages", etatDe(deux))
+        assertEquals(Couleur.ORANGE, couleurDe(etatDe(deux)))
+        assertEquals(Couleur.JAUNE, couleurDe("jaune fortes pluies / orages"))
+        assertEquals(Couleur.VIOLET, couleurDe("violette vents forts"))
+        // Rien d'émis : ni couleur, ni vert inventé.
+        val rien = "Vigilance météo\u00a0: pas de vigilance émise pour le Nord (Météo-France), la zone de Saint-Denis."
+        assertEquals("pas de vigilance émise", etatDe(rien))
+        assertEquals(Couleur.AUCUNE, couleurDe(etatDe(rien)))
+        assertNull(etatDe("Vigilance indisponible."))
+        assertEquals(Couleur.AUCUNE, couleurDe(null))
     }
 
     @Test
     fun uneErreurDuServeurEstDite() = runTest {
         assertFailsWith<McpErreur> {
-            JourneeSource(serveur(mapOf("resume_du_jour" to null, "vigilance_meteo" to null))).journee(saintPierre)
+            JourneeSource(serveur(mapOf("resume_du_jour" to null))).journee(saintPierre)
         }
         assertFailsWith<McpErreur> {
             lireReponse("""{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"erreur\":\"Lieu inconnu\"}"}],"isError":true}}""", false)
@@ -98,7 +110,7 @@ class JourneeTest {
 
     @Test
     fun lesCoupuresDEauAvecLeursDatesEtLeursSecteurs() = runTest {
-        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis"), "vigilance_meteo" to null))).journee(communeDe("saint-denis")!!)
+        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis")))).journee(communeDe("saint-denis")!!)
         assertEquals(6, j.coupures.size)
         val boire = j.coupures.first()
         assertTrue(boire.nePasBoire)

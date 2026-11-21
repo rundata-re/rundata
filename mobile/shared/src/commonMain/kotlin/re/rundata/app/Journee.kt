@@ -18,7 +18,8 @@ enum class Couleur(val mot: String) {
     val feminin: String get() = when (this) { VERT -> "verte"; VIOLET -> "violette"; else -> mot }
 
     companion object {
-        fun de(mot: String?): Couleur = entries.firstOrNull { it != AUCUNE && it.mot == mot?.trim()?.lowercase() } ?: AUCUNE
+        /** « vert » ou « verte », « violet » ou « violette » ; AUCUNE pour tout autre mot. */
+        fun de(mot: String?): Couleur = mot?.trim()?.lowercase().let { m -> entries.firstOrNull { it != AUCUNE && (it.mot == m || it.feminin == m) } } ?: AUCUNE
     }
 }
 
@@ -39,8 +40,17 @@ data class Mesure(
 data class Vigilance(
     /** « Vigilance météo : verte pour le Sud (Météo-France), la zone de Saint-Pierre. » */
     val texte: String,
+    /**
+     * Ce que ce texte dit de la zone, tel quel : « verte », « orange vents forts, jaune fortes pluies / orages », « pas de
+     * vigilance émise ». La pastille le reprend mot pour mot.
+     */
+    val etat: String?,
     /** « Sud ». */
     val zone: String?,
+    /**
+     * La couleur de la pastille, lue dans `etat` : celle qu'il nomme ; la plus grave quand il en nomme plusieurs, une par
+     * phénomène ; AUCUNE quand il n'en nomme pas (« pas de vigilance émise »). Jamais une couleur que le texte ne dit pas.
+     */
     val couleur: Couleur,
     val auDessusDuVert: Boolean,
     /** Le texte de l'alerte cyclonique quand il y en a une. */
@@ -84,21 +94,23 @@ data class Journee(
     val lueA: String?,
 )
 
-/** Lit la journée de `commune` : `resume_du_jour`, `vigilance_meteo` pour la couleur de sa zone, `meteo_actuelle` si le résumé n'a pas la mesure. */
+/**
+ * Lit la journée de `commune` : `resume_du_jour`, et `meteo_actuelle` si le résumé n'a pas la mesure. La vigilance, texte
+ * et couleur, vient du seul champ `vigilance.maintenant` du résumé, pour qu'ils disent la même chose.
+ */
 class JourneeSource(private val mcp: RundataMcp) {
     suspend fun journee(commune: Commune): Journee = coroutineScope {
-        val vigilance = async { runCatching { mcp.appeler("vigilance_meteo", mapOf("lieu" to commune.nom)) }.getOrNull() }
         val resume = mcp.appeler("resume_du_jour", mapOf("lieu" to commune.nom))
         val meteo = if (mesureDuResume(resume) == null) runCatching { mcp.appeler("meteo_actuelle", mapOf("lieu" to commune.nom)) }.getOrNull() else null
-        journeeDe(commune, resume, vigilance.await(), meteo)
+        journeeDe(commune, resume, meteo)
     }
 }
 
-/** La journée tirée des réponses des outils ; `vigilance` et `meteo` peuvent manquer. */
-fun journeeDe(commune: Commune, resume: JsonObject, vigilance: JsonObject?, meteo: JsonObject?): Journee {
+/** La journée tirée des réponses des outils ; `meteo` peut manquer. */
+fun journeeDe(commune: Commune, resume: JsonObject, meteo: JsonObject?): Journee {
     val mesure = mesureDuResume(resume) ?: meteo?.let(::mesureDeMeteo)
     val sources = buildList<Source> {
-        for (r in listOfNotNull(resume, meteo.takeIf { mesure != null && mesureDuResume(resume) == null }, vigilance)) {
+        for (r in listOfNotNull(resume, meteo.takeIf { mesure != null && mesureDuResume(resume) == null })) {
             (r["sources"] as? JsonArray)?.forEach { s ->
                 val o = s as? JsonObject ?: return@forEach
                 val nom = o.texte("source") ?: return@forEach
@@ -110,7 +122,7 @@ fun journeeDe(commune: Commune, resume: JsonObject, vigilance: JsonObject?, mete
         commune = commune,
         resume = resume.texte("resume"),
         mesure = mesure,
-        vigilance = (resume["vigilance"] as? JsonObject)?.let { vigilanceDe(it, vigilance) },
+        vigilance = (resume["vigilance"] as? JsonObject)?.let { vigilanceDe(it) },
         volcan = (resume["volcan"] as? JsonObject)?.let { v ->
             Volcan(v.texte("niveau_orsec"), v.texte("eruption_en_cours"), (v["alerte"] as? JsonPrimitive)?.booleanOrNull == true, v.texte("page") ?: "$SITE/volcan")
         },
@@ -146,15 +158,27 @@ private fun mesureDe(m: JsonObject): Mesure? {
     return Mesure(t, station, (m["distance_km"] as? JsonPrimitive)?.doubleOrNull, heure, (m["amateur"] as? JsonPrimitive)?.booleanOrNull == true)
 }
 
-private fun vigilanceDe(v: JsonObject, outil: JsonObject?): Vigilance {
-    // La couleur la plus haute des phénomènes de la zone, maintenant (vigilance_meteo avec la commune).
-    val couleur = (outil?.get("niveaux") as? JsonArray).orEmpty()
-        .map { Couleur.de((it as? JsonObject)?.texte("maintenant")) }
-        .maxByOrNull { it.ordinal } ?: Couleur.AUCUNE
+/**
+ * « verte », « orange vents forts, jaune fortes pluies / orages » : ce que « Vigilance météo : … pour le Sud (Météo-France)… »
+ * dit de la zone ; null quand le texte n'a pas cette forme.
+ */
+internal fun etatDe(texte: String): String? {
+    val apres = texte.substringAfter("Vigilance météo", "").trimStart(' ', '\u00a0', ':')
+    return apres.substringBefore(" pour l", "").trim().takeIf { it.isNotEmpty() }
+}
+
+/** La couleur de la pastille pour `etat` (voir Vigilance.couleur). */
+internal fun couleurDe(etat: String?): Couleur =
+    etat?.split(',')?.map { Couleur.de(it.trim().substringBefore(' ')) }?.filter { it != Couleur.AUCUNE }?.maxByOrNull { it.ordinal } ?: Couleur.AUCUNE
+
+private fun vigilanceDe(v: JsonObject): Vigilance {
+    val texte = v.texte("maintenant") ?: ""
+    val etat = etatDe(texte)
     return Vigilance(
-        texte = v.texte("maintenant") ?: "",
+        texte = texte,
+        etat = etat,
         zone = v.texte("zone"),
-        couleur = couleur,
+        couleur = couleurDe(etat),
         auDessusDuVert = (v["au_dessus_du_vert"] as? JsonPrimitive)?.booleanOrNull == true,
         alerteCyclonique = v.texte("alerte_cyclonique"),
         emise = v.texte("emise"),

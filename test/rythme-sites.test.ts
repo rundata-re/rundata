@@ -20,10 +20,12 @@ const NOW = new Date("2026-11-21T06:00:00Z");
 // Each request's site and time; Cilaos's water and news from their recordings, its power cuts none, the rest silent.
 let asked: { host: string; url: string; at: number }[] = [];
 const answer = async (url: string) => {
-  asked.push({ host: new URL(url).hostname, url, at: Date.now() });
-  if (url.includes(CILAOS) && url.includes("search=eau")) return new Response(fixture("avis-eau/cilaos.json"));
-  if (url.includes(CILAOS) && url.includes("categories=17")) return new Response(fixture("agenda/actus_cilaos.json"));
-  if (url.includes("/wp-json/wp/v2/")) return new Response("[]");
+  const u = new URL(url);
+  asked.push({ host: u.hostname, url, at: Date.now() });
+  const posts = u.pathname.startsWith("/wp-json/wp/v2/");
+  if (u.hostname === CILAOS && posts && u.searchParams.get("search") === "eau") return new Response(fixture("avis-eau/cilaos.json"));
+  if (u.hostname === CILAOS && posts && u.searchParams.get("categories") === "17") return new Response(fixture("agenda/actus_cilaos.json"));
+  if (posts) return new Response("[]");
   return new Response("", { status: 503 });
 };
 const toCilaos = () => asked.filter((a) => a.host === CILAOS);
@@ -129,7 +131,7 @@ describe("a commune's site, read slowly whoever asks", () => {
     });
     expect(next.lus).toContain("cilaos");
     const [water, news] = toCilaos();
-    expect(news.url).toContain("categories=17");
+    expect(new URL(news.url).searchParams.get("categories")).toBe("17");
     expect(news.at - water.at).toBeGreaterThanOrEqual(290);
   }, 30_000);
 

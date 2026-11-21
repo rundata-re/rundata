@@ -206,7 +206,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // A distributor of a shared commune whose notices are not read, and the mairie's site linked for it (LIENS).
   const unreadShare = !!shared?.par.some((d) => !d.site) && covered;
   const mairie = (!covered || unreadShare) && LIENS[commune] ? { libelle: LIENS[commune].libelle, lien: LIENS[commune].site } : undefined;
-  const sharedText = shared && `${phrasePartage(commune, shared)} ${dist?.avis ? `Seuls les avis de ${dist.nom} sont lus.` : "Leurs avis ne sont pas lus par rundata.re."}` +
+  const sharedText = shared && `${phrasePartage(commune, shared)} ${dist?.avis ? `Seuls les avis de ${dist.par ?? dist.nom} sont lus.` : "Leurs avis ne sont pas lus par rundata.re."}` +
     (unreadShare && mairie ? ` ${mairie.libelle}\u00a0: ${mairie.lien}.` : "");
   // Where the commune's notices are read: who publishes them (the CIREST, a mairie, else the distributor) and its page.
   // The distributor is the ARS's; for a shared commune read through the CIREST alone, none is chosen (partage).

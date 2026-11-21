@@ -9,7 +9,7 @@
  */
 import { costOf, left, measured } from "../budget.js";
 import { breakerMs, type Cache, type Cached } from "../cache.js";
-import { distributeur, phrasePartage } from "../eau/distributeurs.js";
+import { distributeur, partageLu } from "../eau/distributeurs.js";
 import { distanceKm, localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
@@ -576,8 +576,12 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     coupures_eau: l.coupures
       ? {
           avis: avis.map((n) => ({ titre: n.titre, coupure: n.coupure, secteurs: n.secteurs, secteurs_complets: n.secteurs_complets, ne_pas_boire: n.ne_pas_boire, lien: n.lien })),
-          // Shared between distributors: each with its networks (src/eau/distributeurs.ts), never one for the commune.
-          distributeur: dist?.partage ? phrasePartage(nom, dist.partage) : dist?.nom,
+          // A name, the distributor whose notices are read; a shared commune read through the CIREST alone names none.
+          distributeur: dist?.partage && dist.par ? undefined : dist?.nom,
+          // Who publishes the notices read, when not the distributor (the CIREST, a mairie).
+          publie_par: dist?.par,
+          // Shared between distributors: each with its networks, apart, and the one not read said so (src/eau/distributeurs.ts).
+          partage: dist?.partage ? partageLu(nom, { ...dist, partage: dist.partage }) : undefined,
           // When the notices were read, the copy's time and never the call's: « 06/11 14:15 ».
           lus_le: localTime(l.coupures.fetchedAt),
           note: avis.length || dist?.avis ? undefined : `Les avis du distributeur ${a(nom)} ne sont pas lus par rundata.re : voir la mairie.`,

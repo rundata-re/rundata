@@ -127,6 +127,23 @@ class JourneeTest {
     }
 
     @Test
+    fun lAvisDEauDitEnPremierQuandLaPlaceManque() = runTest {
+        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis")))).journee(communeDe("saint-denis")!!)
+        // L'eau à ne pas boire d'abord.
+        assertEquals("Qualité de l'eau", avisEnPremier(j.coupures, 11)?.titre)
+        // Sans elle, la prochaine coupure : le lundi 23/11, bien que donnée en dernier des travaux.
+        val coupures = j.coupures.filterNot { it.nePasBoire }
+        assertEquals("Travaux sur le réseau AEP Chemin Bois Rouge La bretagne", avisEnPremier(coupures, 11)?.titre)
+        // En cours avant à venir ; janvier après décembre.
+        val enCours = coupures.last().copy(etat = "en cours")
+        assertEquals(enCours, avisEnPremier(coupures + enCours, 11))
+        val janvier = AvisEau("Janvier", false, null, de = "lundi 04/01 à\u00a008:00")
+        val decembre = AvisEau("Décembre", false, null, de = "jeudi 31/12 à\u00a008:00")
+        assertEquals("Décembre", avisEnPremier(listOf(janvier, decembre), 12)?.titre)
+        assertNull(avisEnPremier(emptyList(), 11))
+    }
+
+    @Test
     fun lesDistancesCommeLeSiteLesEcrit() {
         assertEquals("5,9 km", Mots.km(5.9))
         assertEquals("6 km", Mots.km(6.04))

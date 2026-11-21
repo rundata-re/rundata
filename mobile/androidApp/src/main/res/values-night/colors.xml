@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="fond">#08121D</color>
+    <color name="encre">#E7EEF5</color>
+    <color name="attenue">#9FB1C3</color>
+    <color name="pastille_vert">#4CC765</color>
+    <color name="sur_vert">#08121D</color>
+    <color name="lien">#8FB4FF</color>
+</resources>

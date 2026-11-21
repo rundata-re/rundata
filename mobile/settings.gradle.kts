@@ -1,5 +1,5 @@
 // L'appli mobile de rundata.re : le code commun à Android et à l'iPhone (shared, Kotlin Multiplatform et Compose
-// Multiplatform) et l'hôte iOS (iosApp, construit sur un Mac).
+// Multiplatform), l'appli Android (androidApp) et, plus tard, l'hôte iOS (iosApp, construit sur un Mac).
 pluginManagement {
     repositories {
         google()
@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "rundata-mobile"
 
-include(":shared")
+include(":shared", ":androidApp")

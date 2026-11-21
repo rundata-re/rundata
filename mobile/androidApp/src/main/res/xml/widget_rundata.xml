@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mis à jour par WorkManager toutes les 30 min (MiseAJour), pas par le système : updatePeriodMillis à 0 -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_chargement"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:previewImage="@drawable/widget_apercu"
+    android:previewLayout="@layout/widget_apercu"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

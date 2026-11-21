@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Le bleu de l'icône du site, et les fonds du site (src/web/pages.ts) -->
+    <color name="logo_fond">#2563D8</color>
+    <color name="fond">#F6F2EA</color>
+    <!-- L'aperçu du widget (layout/widget_apercu) : les couleurs du thème commun (shared/Theme.kt) -->
+    <color name="encre">#14202B</color>
+    <color name="attenue">#5A6672</color>
+    <color name="pastille_vert">#237534</color>
+    <color name="sur_vert">#FFFFFF</color>
+    <color name="lien">#1D4EA6</color>
+</resources>

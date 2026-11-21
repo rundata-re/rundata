@@ -91,7 +91,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
   // A past notice in `coupures_annoncees`: its sentence, its commune and its link only (19/11/2026).
   // `coupures_annoncees` with the notices of Cilaos, Saint-Philippe and Sainte-Suzanne, nothing said instead (20/11/2026).
-  electricite: 22,
+  // The same strained hours day after day said once in `periodes_de_tension` (« du samedi 21/11 au jeudi 26/11, chaque
+  // jour de 18 h à 22 h », 21/11/2026).
+  electricite: 23,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,

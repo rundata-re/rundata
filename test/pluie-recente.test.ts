@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as meteofrance from "../src/providers/meteofrance.js";
+import type { HourlyRain } from "../src/providers/meteofrance.js";
 import { meteoActuelle } from "../src/tools/meteo.js";
 import { phrases } from "../src/tools/format.js";
 import { CONVENTION, hierPartiel, recentRainBlock } from "../src/tools/pluie-recente.js";
@@ -20,11 +21,11 @@ const SLOT = 6 * 60_000;
 const near: Fit = { distance_km: 1.2, direction: "SO", ecart_altitude_m: -17, versant: "sud", pertinence: "bonne", avertissements: [], score: 1 };
 
 /** The recorded 6-minute slot copied over 08:06 to 08:54 (12:06 to 12:54 in Réunion), with `rain` at Saint-Joseph. */
-async function cache(rain: Record<string, number> = {}, metar?: string, clock = NOW, hourly = true) {
+async function cache(rain: Record<string, number> = {}, metar?: string, clock = NOW, hourly = true, rr: HourlyRain["rr"] = {}) {
   const store = new MemoryStore();
   const at = NOW.getTime();
   const rows = meteofrance.parseCsv(fixture("meteofrance_6min.csv"));
-  const entries: Record<string, { value: unknown; fetchedAt: number }> = hourly ? { horaire: { value: HOURLY, fetchedAt: at } } : {};
+  const entries: Record<string, { value: unknown; fetchedAt: number }> = hourly ? { horaire: { value: { ...HOURLY, rr: { ...HOURLY.rr, ...rr } }, fetchedAt: at } } : {};
   for (let t = Date.parse("2026-10-25T08:06:00Z"); t <= Date.parse("2026-10-25T08:54:00Z"); t += SLOT) {
     const time = iso(t);
     entries[time] = { value: rows.map((r) => ({ ...r, time, rr_per: r.rr_per == null ? null : r.id === "97412384" ? rain[time] ?? 0 : 0 })), fetchedAt: at };
@@ -184,6 +185,13 @@ describe("the rain of the last hours", () => {
     expect(r.pluie_recente.pertinence).not.toBe("bonne");
     expect(r.pluie_recente.station).toBe("Cilaos");
     expect(r.pluie_recente.avertissements[1]).toBe("Pluie mesurée à Cilaos, pas au Piton des Neiges : elle peut y être très différente. Ne pas dire qu'il a plu ou non au Piton des Neiges sans le préciser.");
+  });
+
+  it("takes the rain at Colimaçons' own gauge, nearer than Piton Saint-Leu's, though the altitude puts Piton Saint-Leu first for the temperature", async () => {
+    // Both gauges in the hourly package, as on rundata.re: the recorded copy has neither.
+    const hours = (mm: number) => [mm, ...Array<number>(23).fill(0)];
+    const r = body(await meteoActuelle(await cache({}, undefined, NOW, true, { "97413520": hours(1.2), "97413580": hours(0) }), "Colimaçons", NOW));
+    expect(r.pluie_recente.station).toBe("Colimaçons");
   });
 
   it("warns that a light drizzle may not be measured when the gauge and the radar see nothing under a loaded sky", async () => {

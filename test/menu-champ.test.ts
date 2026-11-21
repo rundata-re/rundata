@@ -6,7 +6,7 @@ import { homePage } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
 import { CHAMP, champScript, cibles, GROUPES, norm, SYNONYMES, trouve } from "../src/web/menu.js";
 import { CSS, icon, meteoPage } from "../src/web/pages.js";
-import { PAGES } from "../src/web/places.js";
+import { meteoPath, PAGES } from "../src/web/places.js";
 
 const O = "https://rundata.re";
 const NOW = new Date("2026-11-04T10:00:00Z");
@@ -95,7 +95,8 @@ describe("the home page's field « Aller à une rubrique, une commune ou un lieu
 
   it("knows the cyclone's three pages, the sites that do not answer, every commune and every place with a page", () => {
     for (const p of ["/kit-cyclone", "/alerte-cyclone", "/ecoles-cyclone", "/sites-sans-reponse"]) expect(D.map((x) => x[1])).toContain(p);
-    for (const p of PAGES) expect(D.map((x) => x[1])).toContain(`/${p.commune ? "communes" : "meteo"}/${p.slug}`);
+    // A place sent to another's page (places.ts PRINCIPAL) leads to that page: test/hermitage-liste.test.ts.
+    for (const p of PAGES) expect(D.map((x) => x[1])).toContain(p.commune ? `/communes/${p.slug}` : meteoPath(p.slug));
   });
 });
 

@@ -140,8 +140,15 @@ export function ficheIssue(path: string, fiche: string, rows: Row[] | undefined,
   return { statut: x ? 410 : 404 };
 }
 
-/** The sitemap's events: to come and with a text of their own, with the day their row last changed. */
-export function ficheUrls(fiches: Entree[] | undefined, today: string): [string, string][] {
-  return (fiches ?? []).filter(vivante).filter((x) => x.texte && (x.fin ?? x.date.slice(0, 10)) >= today).map((x) => [fichePath(x), x.modifie]);
+/**
+ * The sitemap's events: to come and with a text of their own, with the day their row last changed. With the copy of
+ * /evenements (`rows`), only those it lists: an event to come no agenda announces any more answers 410 (ficheIssue),
+ * and stays out as well.
+ */
+export function ficheUrls(fiches: Entree[] | undefined, today: string, rows?: Pick<Row, "fiche">[]): [string, string][] {
+  const listed = rows && new Set(rows.map((r) => r.fiche));
+  return (fiches ?? []).filter(vivante)
+    .filter((x) => x.texte && (x.fin ?? x.date.slice(0, 10)) >= today && (!listed || listed.has(x.f)))
+    .map((x) => [fichePath(x), x.modifie]);
 }
 

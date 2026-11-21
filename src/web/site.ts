@@ -70,6 +70,7 @@ import { dessinsAccueil } from "./accueil-dessins.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { COMMUNES, communePage, communesPage, electionsPage, electionsPath } from "./commune.js";
 import { type Entree, FICHES, ficheAttente, ficheIssue, fichePage, fichePassee, ficheOf, ficheTerminee, ficheUrls } from "./fiche-evenement.js";
+import { FICHES_EVERY_MS } from "./fiches.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
@@ -442,9 +443,10 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
  * always exact; « today » on a live page, or the day the traces were built for a trail whose state changed since,
  * would not be.
  */
-function sitemap(origin: string, now: Date, fuelDay?: string, fiches?: Entree[]): string {
-  // The events to come with a text of their own (web/fiche-evenement.ts), each with the day its row last changed.
-  const events: Url[] = ficheUrls(fiches, localDay(now)).map(([u, day]) => [u, day, "daily"]);
+function sitemap(origin: string, now: Date, fuelDay?: string, fiches?: Entree[], rows?: AgendaAnswer["evenements"]): string {
+  // The events to come with a text of their own (web/fiche-evenement.ts), each with the day its row last changed; those
+  // the copy of /evenements no longer lists answer 410, and are left out.
+  const events: Url[] = ficheUrls(fiches, localDay(now), rows).map(([u, day]) => [u, day, "daily"]);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     [...siteUrls(now, fuelDay), ...events].filter(([u]) => !horsSitemap.has(u) && !retiree(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
     `\n</urlset>\n`;
@@ -1203,11 +1205,14 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === "/sitemap.xml") {
     // The fuel page changes with the prefect's order: its date, from the stored copy when there is one. An order read
     // before its 1st changes the page the day it is read, not on its 1st: never a day ahead of today.
-    const [fuel, fiches] = await Promise.all([
+    const [fuel, fiches, agenda] = await Promise.all([
       cache.peek<carburants.Prix>("carburants:prix").catch(() => undefined),
       cache.kept<Entree[]>(FICHES).catch(() => undefined),
+      // The copy of /evenements, to leave out the events it no longer lists (410): from this isolate's memory when it
+      // has one of the hour (the register is written hourly too), else the data center's cache; never KV.
+      cache.peek<AgendaAnswer>("web:agenda", now.getTime() - FICHES_EVERY_MS).catch(() => undefined),
     ]);
-    return new Response(sitemap(origin, now, fuel?.value.depuis, fiches?.value), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
+    return new Response(sitemap(origin, now, fuel?.value.depuis, fiches?.value, agenda ? (agenda.value.evenements ?? []) : undefined), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
   }
   if (path === SW_PATH) {
     // Checked again at each visit: a new version reaches the phones at once (web/pwa.ts). The light relief, the one

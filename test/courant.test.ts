@@ -122,6 +122,54 @@ describe("the power cuts the mairies relay", () => {
     ]);
   });
 
+  it("reads Saint-André's notice of 19/11/2026 as its site gives it: bold letters, dashes, « ; » ending the lines", () => {
+    // The post's own markup, only its attributes and the opening picture taken out.
+    const html = `<p>&nbsp;</p>
+<div>
+<div dir="auto">EDF Réunion informe les administrés de coupures d’électricité programmées dans le cadre de travaux sur le réseau électrique.</div>
+</div>
+<div>
+<div dir="auto"><span><img alt="📅" /></span> 𝗟𝗨𝗡𝗗𝗜 𝟮𝟯 𝗡𝗢𝗩𝗘𝗠𝗕𝗥𝗘 𝟮𝟬𝟮𝟲</div>
+<div dir="auto"><span><img alt="🕘" /></span> 𝗗𝗲 𝟵𝗵𝟬𝟬 𝗮̀ 𝟭𝟮𝗵𝟯𝟬</div>
+</div>
+<div>
+<div dir="auto"><span><img alt="📍" /></span> 𝗦𝗲𝗰𝘁𝗲𝘂𝗿𝘀 𝗰𝗼𝗻𝗰𝗲𝗿𝗻𝗲́𝘀 :</div>
+</div>
+<div>
+<div dir="auto">237 avenue de la République – secteur Le Chrystel ;</div>
+<div dir="auto">185 avenue de la République ;</div>
+<div dir="auto">65 Centre commercial, bâtiment B ;</div>
+<div dir="auto">N180 avenue de la République – Centre commercial.</div>
+</div>
+<div>
+<div dir="auto"><span><img alt="📅" /></span> 𝗠𝗔𝗥𝗗𝗜 𝟮𝟰 𝗡𝗢𝗩𝗘𝗠𝗕𝗥𝗘 𝟮𝟬𝟮𝟲</div>
+<div dir="auto"><span><img alt="🕘" /></span> 𝗗𝗲 𝟵𝗵𝟬𝟬 𝗮̀ 𝟭𝟬𝗵𝟯𝟬</div>
+</div>
+<div>
+<div dir="auto">650 chemin Balance, à proximité du terrain de football.</div>
+</div>
+<div>
+<div dir="auto"><span><img alt="🕙" /></span> De 10h00 à 14h00</div>
+<div dir="auto">N176 ruelle Lacotte.</div>
+</div>
+<div>
+<div dir="auto"><span><img alt="⚠️" /></span> Recommandations</div>
+</div>`;
+    const title = "❗𝗜𝗡𝗙𝗢𝗥𝗠𝗔𝗧𝗜𝗢𝗡 – 𝗖𝗢𝗨𝗣𝗨𝗥𝗘𝗦 𝗗’𝗘́𝗟𝗘𝗖𝗧𝗥𝗜𝗖𝗜𝗧𝗘́ 𝗔̀ 𝗦𝗔𝗜𝗡𝗧-𝗔𝗡𝗗𝗥𝗘́";
+    const [avis] = parsePosts([post("2026-11-19T08:53:29", title, html)], "Saint-André");
+    expect(avis.creneaux).toEqual([
+      {
+        jour: "2026-11-23", de: "09:00", a: "12:30", autres_lieux: true,
+        secteurs: ["237 avenue de la République", "Secteur Le Chrystel", "185 avenue de la République", "65 Centre commercial, bâtiment B", "N180 avenue de la République"],
+      },
+      { jour: "2026-11-24", de: "09:00", a: "10:30", secteurs: ["650 chemin Balance, à proximité du terrain de football"] },
+      { jour: "2026-11-24", de: "10:00", a: "14:00", secteurs: ["N176 ruelle Lacotte"] },
+    ]);
+    expect(sentence(avis, new Date("2026-11-21T08:00:00Z"))).toMatch(
+      /le lundi 23\/11 de 09:00 à 12:30, secteurs 237 avenue de la République, Le Chrystel, 185 avenue de la République, 65 Centre commercial bâtiment B, N180 avenue de la République et d'autres lieux nommés dans l'avis\s?; le mardi 24\/11 de 09:00 à 10:30, secteur 650 chemin Balance, à proximité du terrain de football\s?; le mardi 24\/11 de 10:00 à 14:00, secteur N176 ruelle Lacotte\.$/,
+    );
+  });
+
   it("keeps the notices of cuts only, with their facts, never their text", () => {
     const sm = parsePosts(POSTS["ville-saintemarie.re"], "Sainte-Marie");
     expect(sm.map((a) => a.publie)).toEqual(["2026-10-21T06:00:00.000Z", "2026-09-02T11:31:00.000Z"]);

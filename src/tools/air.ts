@@ -20,6 +20,14 @@ function sentence(x: atmo.Index, when: string): string {
   return `${when} : ${atmo.level(x.niveau)} (${x.niveau}/6)${d.length ? `, surtout ${d.join(" et ")}` : ""}`;
 }
 
+/** « Qualité de l'air prévue aujourd'hui à La Réunion : au pire moyen (2/6) dans toutes les communes. » */
+function islandSummary(xs: atmo.Index[], when: string): string {
+  const worst = Math.max(0, ...xs.map((x) => x.niveau));
+  const atWorst = xs.filter((x) => x.niveau === worst).map((x) => x.commune);
+  return `Qualité de l'air prévue ${when} à La Réunion : au pire ${atmo.level(worst)} (${worst}/6)` +
+    (atWorst.length < xs.length ? `, à ${atWorst.join(", ")}` : " dans toutes les communes") + ".";
+}
+
 /**
  * The island's communes a level each, the worst first: its level, quality and the pollutants that set it, then its
  * communes. Their sub-indices are said for a place only.
@@ -305,16 +313,27 @@ export async function qualiteAir(cache: Cache, lieu: string | undefined, now = n
     const mesures = await stations(cache, now);
     const amateur = await amateurs(cache, now, page);
     const todays = list.filter((x) => x.jour === day);
-    const worst = Math.max(0, ...todays.map((x) => x.niveau));
-    const atWorst = todays.filter((x) => x.niveau === worst).map((x) => x.commune);
+    // Tomorrow's index, when Atmo Réunion diffused it (with the day's, from about 11 h): said as for a place.
+    const next = today(new Date(now.getTime() + 86_400_000));
+    const tomorrows = list.filter((x) => x.jour === next);
+    const diffuseeDemain = diffusion(list, next);
+    const perCommune = (xs: atmo.Index[]) =>
+      page
+        ? { communes: xs.map((x) => ({ commune: x.commune, niveau: x.niveau, qualite: atmo.level(x.niveau), polluants: drivers(x), sous_indices: subIndices(x) })) }
+        : { communes_par_niveau: byLevel(xs) };
     return text({
-      resume: todays.length
-        ? `Qualité de l'air prévue aujourd'hui à La Réunion : au pire ${atmo.level(worst)} (${worst}/6)` +
-          (atWorst.length < todays.length ? `, à ${atWorst.join(", ")}` : " dans toutes les communes") + "."
-        : "L'indice du jour n'est pas dans la dernière lecture de la couche d'Atmo France.",
-      ...(page
-        ? { ...(todays.length && { echeance: day }), communes: todays.map((x) => ({ commune: x.commune, niveau: x.niveau, qualite: atmo.level(x.niveau), polluants: drivers(x), sous_indices: subIndices(x) })) }
-        : { communes_par_niveau: byLevel(todays) }),
+      resume: todays.length ? islandSummary(todays, "aujourd'hui") : "L'indice du jour n'est pas dans la dernière lecture de la couche d'Atmo France.",
+      ...(page && todays.length && { echeance: day }),
+      ...perCommune(todays),
+      ...(tomorrows.length && {
+        demain: {
+          resume: islandSummary(tomorrows, "demain"),
+          echeance: next,
+          nature: "PRÉVISION de demain par commune, calculée par Atmo Réunion : pas une mesure.",
+          ...(diffuseeDemain && { diffusion: `${diffuseeDemain}.` }),
+          ...perCommune(tomorrows),
+        },
+      }),
       ...common,
       // A place's answer and /air give every step.
       ...(!page && { comment_c_est_fait: methode(false) }),

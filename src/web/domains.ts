@@ -715,12 +715,25 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
           `<p class="lead">${esc(d.resume)}</p><p class="note" style="color:var(--on-night-muted)">Une prévision d'Atmo Réunion pour la journée, pas une mesure.${forecastNote}</p></div>`
         : `${top}<p class="lead">${esc(d.resume)}</p>`;
 
-  const byLevel = [6, 5, 4, 3, 2, 1]
-    .map((n) => ({ n, l: list.filter((c) => c.niveau === n) }))
+  // A card a level, its communes; today's are the map's targets, tomorrow's not (one anchor a commune).
+  const levelCards = (l: NonNullable<AirAnswer["communes"]>, anchors: boolean) => [6, 5, 4, 3, 2, 1]
+    .map((n) => ({ n, l: l.filter((c) => c.niveau === n).sort((a, b) => a.commune.localeCompare(b.commune, "fr")) }))
     .filter((x) => x.l.length)
     .map((x) => `<div class="card"><h3>${aq(x.n)} prévu dans ${x.l.length} commune${x.l.length > 1 ? "s" : ""}</h3><ul class="plain cols">` +
-      x.l.map((c) => `<li class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}">${esc(c.commune)}${c.polluants.length ? ` <span class="note">(${esc(c.polluants.join(", "))})</span>` : ""}</li>`).join("") + `</ul></div>`)
+      x.l.map((c) => `<li${anchors ? ` class="tgt" id="${anchorId("c", MAP_NAME.get(normalize(c.commune)) ?? c.commune)}"` : ""}>${esc(c.commune)}${c.polluants.length ? ` <span class="note">(${esc(c.polluants.join(", "))})</span>` : ""}</li>`).join("") + `</ul></div>`)
     .join("");
+  const byLevel = levelCards(list, true);
+
+  // Tomorrow's forecast, when Atmo Réunion diffused it: as today's, a forecast with its diffusion, under it.
+  const dm = d?.demain;
+  const dmDay = dm ? `${dm.echeance.slice(8, 10)}/${dm.echeance.slice(5, 7)}` : "";
+  const tomorrow = dm?.communes?.length
+    ? `<section aria-labelledby="h-demain-air">
+  <div class="sec-h"><p class="eyebrow">Demain</p><h2 id="h-demain-air">L'indice prévu demain, le ${dmDay}</h2>
+  <p>${esc(dm.resume)} Une prévision d'Atmo Réunion, pas une mesure.${dm.diffusion ? ` ${esc(dm.diffusion)}` : ""} Lue par rundata.re ${readAt(data!.fetchedAt, now).a}.</p></div>
+  <div class="levels">${levelCards(dm.communes, false)}</div>
+</section>`
+    : "";
 
   // Each pollutant's sub-index, commune by commune, folded: the list above already gives the one in cause.
   const pollutants = Object.values(atmo.POLLUTANTS);
@@ -796,7 +809,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   <div class="pitch">
     <p class="pill"><span class="dot"></span>${top ? "Mesuré aux stations" : "Prévision du jour"}</p>
     <h1>Qualité de l'air à La Réunion <span class="n974">974</span></h1>
-    ${status}
+    ${status}${tomorrow ? `<p class="note"><a href="#h-demain-air">Demain, le ${dmDay} : ${esc(dm!.resume.replace(/^Qualité de l'air prévue demain à La Réunion : /, "").replace(/\.$/, ""))} (prévision)</a></p>` : ""}
     ${ask(`Lèr lé bon La Rényon zordi ? Gèt si ${url} é di amwin pou mon komine.`,
       `L'air est-il bon aujourd'hui à La Réunion ? Lis ${url} et dis-moi la qualité de l'air dans ma commune.`)}
   </div>
@@ -809,6 +822,7 @@ export function airPage(origin: string, data: Cached<AirAnswer> | null, now = ne
   <p>L'indice ATMO prévu va de 1 (bon) à 6 (extrêmement mauvais). C'est le plus mauvais des sous-indices de cinq polluants : particules PM2,5 et PM10, ozone, dioxyde d'azote, dioxyde de soufre. Entre parenthèses, le polluant en cause.</p></div>
   ${d ? `<div class="levels">${byLevel}</div>${subs}${warnings(d.avertissements)}` : `<p class="card">L'indice se charge : rechargez la page dans quelques secondes.</p>`}
 </section>
+${tomorrow}
 ${amateurs}
 <section aria-labelledby="h-source-air">
   <div class="sec-h"><p class="eyebrow">Provenance</p><h2 id="h-source-air">D'où vient l'indice</h2></div>

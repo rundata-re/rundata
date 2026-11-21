@@ -37,7 +37,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Chaque événement porte la clé de sa page (/evenements/<titre>-<clé>), et le titre des listes y mène.
   agenda: 42,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
-  air: 13,
+  // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
+  air: 14,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays

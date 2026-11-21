@@ -209,3 +209,46 @@ describe("air quality: what the index is and where it comes from", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 });
+
+describe("air quality tomorrow, when Atmo Réunion diffused it", () => {
+  // The 23/10 diffusion at 11:30 gives the 24th too: Saint-Pierre « dégradé » by PM10 there, the others « moyen ».
+  const DIFFUSED = "2026-10-23T07:30:00Z";
+  const tomorrow = list
+    .filter((x) => x.jour === "2026-10-23")
+    .map((x) => ({ ...x, jour: "2026-10-24", diffuse_le: DIFFUSED, ...(x.commune === "Saint-Pierre" && { niveau: 3, sous_indices: { ...x.sous_indices, code_pm10: 3 } }) }));
+  const both = [...list.map((x) => ({ ...x, diffuse_le: YESTERDAY })), ...tomorrow];
+
+  it("says it in the island's answer, for the tool and for /air, with its nature and its diffusion", async () => {
+    const tool = body(await qualiteAir(cache(both), undefined, NOW));
+    expect(tool.demain).toMatchObject({
+      resume: "Qualité de l'air prévue demain à La Réunion : au pire dégradé (3/6), à Saint-Pierre.",
+      echeance: "2026-10-24",
+      nature: "PRÉVISION de demain par commune, calculée par Atmo Réunion : pas une mesure.",
+      diffusion: "Prévision diffusée par Atmo Réunion la veille, le 23/10 à 11:30.",
+    });
+    expect(tool.demain.communes_par_niveau[0]).toMatchObject({ niveau: 3, polluants: ["particules PM10"], communes: ["Saint-Pierre"] });
+    // The day's answer as before.
+    expect(tool.resume).toBe("Qualité de l'air prévue aujourd'hui à La Réunion : au pire moyen (2/6) dans toutes les communes.");
+    // As for a place.
+    expect(body(await qualiteAir(cache(both), "Saint-Pierre", NOW)).resume).toContain("demain : dégradé (3/6), surtout particules PM10");
+
+    const answer = body(await qualiteAir(cache(both), undefined, NOW, true));
+    expect(answer.demain.communes).toHaveLength(24);
+    const page = airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW);
+    const sec = page.slice(page.indexOf('id="h-demain-air"'), page.indexOf("</section>", page.indexOf('id="h-demain-air"')));
+    expect(sec).toContain("L'indice prévu demain, le 24/10</h2>");
+    expect(sec).toContain("Qualité de l&#39;air prévue demain à La Réunion : au pire dégradé (3/6), à Saint-Pierre. Une prévision d'Atmo Réunion, pas une mesure. Prévision diffusée par Atmo Réunion la veille, le 23/10 à 11:30. Lue par rundata.re le 23/10 à 09:00.");
+    expect(sec).toContain(`${'<span class="aq aq3">dégradé</span>'} prévu dans 1 commune</h3>`);
+    expect(sec).toContain("<li>Saint-Pierre <span class=\"note\">(particules PM10)</span></li>");
+    expect(sec).toContain(`${'<span class="aq aq2">moyen</span>'} prévu dans 23 communes`);
+    // Under the day's forecast, a line to it; a commune's anchor once on the page.
+    expect(page).toContain('<a href="#h-demain-air">Demain, le 24/10 : au pire dégradé (3/6), à Saint-Pierre (prévision)</a>');
+    expect(page.match(/<li class="tgt" id="c-/g)).toHaveLength(24);
+  });
+
+  it("is not said before Atmo Réunion diffuses it", async () => {
+    const answer = body(await qualiteAir(cache(), undefined, NOW, true));
+    expect(answer).not.toHaveProperty("demain");
+    expect(airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW)).not.toContain("h-demain-air");
+  });
+});

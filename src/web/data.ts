@@ -517,6 +517,8 @@ export interface AirAnswer {
   /** The day the index of `communes` is forecast for, « 2026-11-06 » (atmo.ts `date_ech`); for the pages only. */
   echeance?: string;
   communes?: { commune: string; niveau: number; qualite: string; polluants: string[]; sous_indices?: Record<string, number> }[];
+  /** Tomorrow's forecast, when Atmo Réunion diffused it: its summary, day, nature, diffusion and communes. */
+  demain?: { resume: string; echeance: string; nature: string; diffusion?: string; communes?: NonNullable<AirAnswer["communes"]> };
   nature: string;
   /** When Atmo Réunion diffused the day's forecast, in a sentence (tools/air.ts `diffusion`). */
   diffusion?: string;

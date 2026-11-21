@@ -104,6 +104,17 @@ describe("electricity", () => {
     expect(c[0]).toEqual({ quand: "vendredi 23/10 de 18\u00a0h à 22\u00a0h", signal: "heures de pointe", recharge_conseillee_pct: 50 });
   });
 
+  it("says the same strained hours day after day once, and a different day apart", () => {
+    const h = (iso: string, signal = "Heures de pointe", pct = 50) => ({ ...hours()[0], dateheure: iso, signal_horaire_texte: signal, signal_horaire_taux_recharge_conseille: pct });
+    const days = ["2026-11-21", "2026-11-22", "2026-11-23"].flatMap((d) => [14, 15, 16, 17].map((u) => h(`${d}T${u}:00:00+00:00`)));
+    const c = constraints([...days, h("2026-11-24T14:00:00+00:00", "Contraint", 0), h("2026-11-26T14:00:00+00:00")]);
+    expect(c).toEqual([
+      { quand: "du samedi 21/11 au lundi 23/11, chaque jour de 18\u00a0h à 22\u00a0h", signal: "heures de pointe", recharge_conseillee_pct: 50 },
+      { quand: "mardi 24/11 de 18\u00a0h à 19\u00a0h", signal: "contraint", recharge_conseillee_pct: 0 },
+      { quand: "jeudi 26/11 de 18\u00a0h à 19\u00a0h", signal: "heures de pointe", recharge_conseillee_pct: 50 },
+    ]);
+  });
+
   it("takes the newest line of EDF's two copies, as /electricite, and credits the mairies whose notices it gives", async () => {
     // Audit of the AI tools, 20/11/2026: the tool said 12:10 from edf:mix while the page said 12:15 from edf:journee.
     const at = new Date("2026-10-31T01:30:00Z");

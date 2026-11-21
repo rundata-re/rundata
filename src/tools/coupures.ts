@@ -129,7 +129,32 @@ export function muetPour<T extends { site: string }>(list: T[] | undefined, comm
   return list.find((f) => new URL(f.site).hostname === host);
 }
 
-export async function coupuresEau(cache: Cache, lieu: string | undefined, now = new Date()) {
+/** How many notices an assistant gets with their excerpt; the next ones with their link (MAX_BYTES, 21/11/2026). */
+export const AVIS_AVEC_TEXTE = 3;
+export const TEXTE_PAR_LE_LIEN = `Au-delà des ${AVIS_AVEC_TEXTE} premiers avis, leur texte n'est pas repris\u00a0: il est dans l'avis, à son lien. Un avis d'eau à ne pas boire garde toujours le sien.`;
+
+/**
+ * The notices as an assistant reads them, within the answer's size (scripts/check-sources.ts, 15,1 Ko on 20/11/2026 for
+ * 12,5): the streets said once, in the page's words (`secteurs_dits`, given for a list read whole only), never as a list beside
+ * them; past the first
+ * `AVIS_AVEC_TEXTE`, the excerpt left to the notice's link, except where it says not to drink the water. The page keeps
+ * every field (`complet`).
+ */
+export function pourAssistant(rows: ReturnType<typeof noticeRow>[]): { avis: Record<string, unknown>[]; abreges: boolean } {
+  let abreges = false;
+  const avis = rows.map((r, i) => {
+    const { secteurs, secteurs_complets, texte, extrait_coupe, ...rest } = r;
+    // `secteurs_dits` is given for a list read whole only: it says so; a list read in part keeps its `false`.
+    const said = r.secteurs_dits ? {} : { secteurs, secteurs_complets };
+    if (i < AVIS_AVEC_TEXTE || r.ne_pas_boire || !r.lien) return { ...rest, ...said, extrait_coupe, texte };
+    abreges = true;
+    return { ...rest, ...said };
+  });
+  return { avis, abreges };
+}
+
+/** `complet`: the page's build, every field of every notice; the tool's answer is cut to its size (`pourAssistant`). */
+export async function coupuresEau(cache: Cache, lieu: string | undefined, now = new Date(), complet = false) {
   let all: notices.Avis[];
   let silent: FluxMuet[];
   try {
@@ -149,13 +174,18 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     // cut from this one (the commune's water, its day) would otherwise say no notice where the water is not to be drunk.
     const stillDry = new Set(all.filter((n) => n.communes.some((c) => doNotDrink(all, c) === n)));
     const told = all.filter((n) => stillDry.has(n) || live.includes(n));
+    const rows = told.map((n) => noticeRow(n, now, stillDry.has(n)));
+    const cut = complet ? undefined : pourAssistant(rows);
     return text({
+      // The sites without an answer named once here, their words in `injoignable` (the page says them in full).
       resume: (dry.length ? `Eau à ne pas boire en ce moment : ${dry.join(", ")}. ` : "") +
         (live.length ? `${live.length} avis des distributeurs d'eau récents ou à venir.` : silent.length ? "" : "Aucun avis de coupure récent ou à venir.") +
-        silent.map((f) => ` ${f.texte}`).join(""),
+        (complet ? silent.map((f) => ` ${f.texte}`).join("")
+          : silent.length ? ` Sans réponse à la dernière lecture\u00a0: ${enumeration(silent.map((f) => f.de.replace(/^d(?:e (?:la |l'|les? )?|es )/, "")))}\u00a0: ce que chacun annonçait, dans injoignable.` : ""),
       injoignable: silent.length ? silent : undefined,
       ne_pas_boire: dry.length ? dry : undefined,
-      avis: told.map((n) => noticeRow(n, now, stillDry.has(n))),
+      avis: cut ? cut.avis : rows,
+      ...(cut?.abreges && { avis_abreges: TEXTE_PAR_LE_LIEN }),
       ...common,
     });
   }
@@ -218,7 +248,11 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     distributeurs: shared ? { texte: sharedText, par: shared.par.map((d) => ({ nom: d.nom, reseaux: d.reseaux })), reseaux: shared.reseaux, d_apres: DISTRIBUTEURS } : undefined,
     contact: covered ? undefined : `Le numéro d'urgence du distributeur (fuite, coupure non annoncée) est sur la facture d'eau\u00a0; la mairie : https://rundata.re/communes/${slugify(commune)}`,
     injoignable: mute ? [mute] : undefined,
-    avis: mine.map((n) => noticeRow(n, now, n === dry)),
+    ...(() => {
+      const rows = mine.map((n) => noticeRow(n, now, n === dry));
+      const cut = complet ? undefined : pourAssistant(rows);
+      return { avis: cut ? cut.avis : rows, ...(cut?.abreges && { avis_abreges: TEXTE_PAR_LE_LIEN }) };
+    })(),
     arretes_travaux_ville: arretes,
     ...common,
     // The distributor named is the ARS's sanitary control's (src/eau/distributeurs.json), credited as the page does.

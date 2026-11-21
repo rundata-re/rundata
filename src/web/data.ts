@@ -1206,7 +1206,7 @@ export interface DernierAvis {
 export const DERNIERS_AVIS = 5;
 
 export async function buildCoupures(cache: Cache, now = new Date()): Promise<CoupuresAnswer> {
-  const a = needed<Omit<CoupuresAnswer, "communes_suivies">>(await coupuresEau(cache, undefined, now), "coupures");
+  const a = needed<Omit<CoupuresAnswer, "communes_suivies">>(await coupuresEau(cache, undefined, now, true), "coupures");
   // Sainte-Suzanne's orders allowing runéo's works: one request, read every 30 minutes at most.
   const arretes = await blocArretes(cache, now);
   // The feeds' read the tool has just made, from memory: no request more.

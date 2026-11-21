@@ -141,6 +141,7 @@ import { annuaireEcolesPage, PATH as ECOLES } from "./ecoles-annuaire.js";
 import { cartePage, PATH as CARTE } from "./carte.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { applicationPage, PATH as APPLICATION } from "./application.js";
+import { APK_PATH, APK_URL, appliPage, PATH as APPLI } from "./appli.js";
 import { ouvrirDonneesPage, PATH as GUIDE } from "./ouvrir-donnees.js";
 import { ALIASES as ENTREPRISES_ALIASES, DISCRETE as ENTREPRISES_DISCRETE, entreprisesPage, PATH as ENTREPRISES } from "./entreprises.js";
 import { retiree } from "./sitemap-retires.js";
@@ -980,6 +981,12 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === VALEURS || path === `${VALEURS}/`) {
     return new Response(valeursPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
+  // The Android app's trial version: never indexed (noindex in the page and in its header), out of the sitemap, linked
+  // from nowhere on the site. Its file is the GitHub pre-release's asset; the short address follows the version.
+  if (path === APPLI) {
+    return new Response(appliPage(origin), { headers: { ...HTML, "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
+  }
+  if (path === APK_PATH) return new Response(null, { status: 302, headers: { location: APK_URL, "cache-control": "public, max-age=300", "x-robots-tag": "noindex" } });
   // How to put the site on the home screen, browser by browser: the same.
   if (path === APPLICATION || path === `${APPLICATION}/`) {
     return new Response(applicationPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });

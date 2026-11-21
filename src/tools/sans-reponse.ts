@@ -1,5 +1,5 @@
 import type { Cache } from "../cache.js";
-import { constatEnMots, etat, jour, jourHeure, publiques, type Public } from "../sans-reponse.js";
+import { constatEnMots, etat, jour, jourHeure, publiques, siteDe, type Public } from "../sans-reponse.js";
 import { PATH } from "../web/sans-reponse.js";
 import { SITE_URL } from "./citer.js";
 import { text } from "./format.js";
@@ -28,7 +28,7 @@ const accueil = (l: Public) => {
 function site(l: Public) {
   const statut = l.statut as keyof typeof STATUTS;
   return {
-    site: `le site de ${l.nom}`,
+    site: siteDe(l.nom),
     statut: STATUTS[statut],
     depuis: jour(statut === "revenu" ? (l.revenu_le ?? l.premier_echec) : l.premier_echec),
     dernier_essai: l.dernier_essai ? jourHeure(l.dernier_essai) : undefined,
@@ -47,7 +47,7 @@ export async function sitesSansReponse(cache: Cache, quoi?: string, now = new Da
   const today = jour(Math.floor(now.getTime() / 1000));
   const oldest = silent[0];
   const resume = silent.length
-    ? `${silent.length} site${silent.length > 1 ? "s" : ""} public${silent.length > 1 ? "s" : ""} sans réponse ce ${today}${quoi?.trim() ? ` pour « ${quoi.trim()} »` : ""}, revérifié${silent.length > 1 ? "s" : ""} chaque jour\u00a0; le plus ancien depuis le ${jour(oldest.premier_echec)} (le site de ${oldest.nom}).`
+    ? `${silent.length} site${silent.length > 1 ? "s" : ""} public${silent.length > 1 ? "s" : ""} sans réponse ce ${today}${quoi?.trim() ? ` pour « ${quoi.trim()} »` : ""}, revérifié${silent.length > 1 ? "s" : ""} chaque jour\u00a0; le plus ancien depuis le ${jour(oldest.premier_echec)} (${siteDe(oldest.nom)}).`
     : `Aucun site public sans réponse ce ${today}${quoi?.trim() ? ` pour « ${quoi.trim()} »` : ""}, d'après la revérification quotidienne.`;
   // The day's check, the date of what is said (tools/fraicheur.ts): not the time of this call.
   return text({ resume, ...(passage && { derniere_verification: jourHeure(passage) }), sites: asked.map(site), page: `${SITE_URL}${PATH}` });

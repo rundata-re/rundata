@@ -20,6 +20,7 @@
  * A site of a commune whose source is not read (autorisations.ts) is never shown: nothing is missing here because of
  * its silence, it is not read anyway. The table may not exist yet: every call then does nothing.
  */
+import { de } from "./articles.js";
 import { UA_RUNDATA } from "./http.js";
 import { count } from "./budget.js";
 import { ACTUS_MAIRIES, LISIBLES } from "./providers/agenda.js";
@@ -422,6 +423,13 @@ const iso = (t: number) => new Date(t * 1000 + LOCAL_MS).toISOString();
 export const jour = (t: number) => `${iso(t).slice(8, 10)}/${iso(t).slice(5, 7)}`;
 /** « 25/10 à 21:46 ». */
 export const jourHeure = (t: number) => `${jour(t)} à ${iso(t).slice(11, 16)}`;
+
+/**
+ * « le site du Quotidien », « le site d'Imaz Press », « le site de l'OVPF », « le site de Sudéau », « le site de la Ville
+ * de Saint-Denis », « le site du TCO » (the publisher's article, as tools/appel.ts says it).
+ */
+export const siteDe = (nom: string) =>
+  `le site ${/^(?:Ville|Mairie|Commune|CINOR|CIREST|CIVIS|CASUD)\b/u.test(nom) ? `de la ${nom}` : /^TCO\b/u.test(nom) ? `du ${nom}` : de(nom)}`;
 
 /** The words of a row's state: « sans réponse depuis le 24/10 »… */
 export function statutEnMots(l: Public): string {

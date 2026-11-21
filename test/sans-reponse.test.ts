@@ -349,6 +349,16 @@ describe("what is shown", () => {
   });
 });
 
+describe("a site's name in a sentence", () => {
+  it("takes its article: « le site du Quotidien », « d'Imaz Press », « de l'OVPF » (21/11/2026)", () => {
+    expect(["Le Quotidien", "Imaz Press", "l'OVPF", "Sudéau", "Clicanoo"].map(sr.siteDe)).toEqual(["le site du Quotidien", "le site d'Imaz Press", "le site de l'OVPF", "le site de Sudéau", "le site de Clicanoo"]);
+    // As listed live: « le site de Ville de Saint-Denis ».
+    expect(["Ville de Saint-Denis", "TCO"].map(sr.siteDe)).toEqual(["le site de la Ville de Saint-Denis", "le site du TCO"]);
+    const lq: sr.Ligne = { hote: "lequotidien.re", url: "https://www.lequotidien.re/", nom: "Le Quotidien", theme: "Actualités", manque: null, page: null, sources: [], statut: "injoignable", premier_echec: T, constat: "delai", revenu_le: null, dernier_essai: T, n403: 0, verifier: null } as unknown as sr.Ligne;
+    expect(sansReponsePage("https://rundata.re", [lq], T)).toContain(">le site du Quotidien</a>");
+  });
+});
+
 describe("a medium's site, among the media's source", () => {
   it("is asked at the feed read and named by its medium: Clicanoo's root 403, its feed read (21/11/2026)", async () => {
     const { HOTES_MEDIAS } = await import("../src/providers/actualites.js");

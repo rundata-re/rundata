@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { fil, firstSentence, lire, sansRubrique, local, LUS, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, SOURCES, SUSPENDUS, type Info } from "../src/providers/actualites.js";
+import { communesEnTete, fil, firstSentence, lire, sansRubrique, local, LUS, merge, prefectureNonRelue, sujetsOf, parseImazLive, parseNewsSitemap, parsePrefecture, parseQuotidien, parseRss, placesIn, SOURCES, SUSPENDUS, type Info } from "../src/providers/actualites.js";
 import { actualites, COUVERTURE, infoRow, instant, NOM_SEUL, quand } from "../src/tools/actualites.js";
 import { actualitesPage } from "../src/web/domains.js";
 import { buildActualites } from "../src/web/data.js";
@@ -69,6 +69,25 @@ describe("actualités", () => {
     // Not Le Port, not La Rivière des Galets as La Rivière, not Saint-Pierre-et-Miquelon, not La Source.
     expect(placesIn("le port de commerce, la rivière des Galets en crue, Saint-Pierre-et-Miquelon, à la source").communes).toEqual([]);
     expect(placesIn("SAINT-PAUL : la mairie communique").communes).toEqual(["Saint-Paul"]);
+  });
+
+  it("gives an article to the communes its headline opens on, and a place of two communes to the one the text names (21/11/2026)", () => {
+    // « Bois de Nèfles » is at Saint-Paul and at Saint-Denis: the commune the text names decides; none named, both.
+    expect(placesIn("Le quartier du Vauban, à Saint-Denis, accueille une structure médicale située rue Bois-de-Nèfles.").communes).toEqual(["Saint-Denis"]);
+    expect(placesIn("Un homme a été victime d'un malaise à Bois de Nèfles, à Saint-Paul.").communes).toEqual(["Saint-Paul"]);
+    expect(placesIn("Accident à Bois de Nèfles").communes).toEqual(expect.arrayContaining(["Saint-Paul", "Saint-Denis"]));
+    // The headline's opening, before its colon: names of the island's places only.
+    expect(communesEnTete("Saint-Denis : un nouveau centre médical pluridisciplinaire")).toEqual(["Saint-Denis"]);
+    expect(communesEnTete("Saint-Pierre / Le Tampon : la route coupée")).toEqual(["Saint-Pierre", "Le Tampon"]);
+    expect(communesEnTete("St-Pierre : la foire")).toEqual(["Saint-Pierre"]);
+    expect(communesEnTete("L'Étang-Salé : la plage")).toEqual(["L'Étang-Salé"]);
+    expect(communesEnTete("Saint-Gilles : la plage")).toEqual(["Saint-Paul"]);
+    expect(communesEnTete("Grève à Saint-Paul : les écoles fermées")).toBeUndefined();
+    expect(communesEnTete("Football : Saint-Denis gagne")).toBeUndefined();
+    // In a feed: the commune of the first sentence alone, the headline opening on another, is not the article's.
+    const item = (titre: string, description: string) => `<rss><channel><item><title>${titre}</title><link>https://example.org/a</link><pubDate>Sat, 21 Nov 2026 07:11:43 +0400</pubDate><description>${description}</description></item></channel></rss>`;
+    const [vauban] = parseRss(item("Saint-Denis : un nouveau centre médical bientôt installé dans le quartier du Vauban", "Le quartier du Vauban devrait accueillir une offre de soins, comme à Saint-Paul l'an dernier."), "Freedom");
+    expect(vauban.communes).toEqual(["Saint-Denis"]);
   });
 
   it("reads the feeds: titles, times with their offset, first sentences, and leaves out a radio's games", () => {

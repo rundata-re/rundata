@@ -446,7 +446,7 @@ const localDay = (d: string | Date) => new Date(new Date(d).getTime() + 4 * 3600
 function sitemap(origin: string, now: Date, fuelDay?: string, fiches?: Entree[], rows?: AgendaAnswer["evenements"]): string {
   // The events to come with a text of their own (web/fiche-evenement.ts), each with the day its row last changed; those
   // the copy of /evenements no longer lists answer 410, and are left out.
-  const events: Url[] = ficheUrls(fiches, localDay(now), rows).map(([u, day]) => [u, day, "daily"]);
+  const events: Url[] = ficheUrls(fiches, new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16), rows).map(([u, day]) => [u, day, "daily"]);
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     [...siteUrls(now, fuelDay), ...events].filter(([u]) => !horsSitemap.has(u) && !retiree(u)).map(([u, day, freq]) => `<url><loc>${origin}${u}</loc>${day ? `<lastmod>${day}</lastmod>` : ""}<changefreq>${freq}</changefreq></url>`).join("\n") +
     `\n</urlset>\n`;

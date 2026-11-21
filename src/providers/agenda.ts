@@ -618,7 +618,11 @@ export function parseRss(xml: string, nom: string, commune: string, first = fals
     // 09:20 »), a label (« EVENEMENT », Drupal's « Texte de l'article ») or the title again.
     const texte = first ? full.replace(STAMP, "").replace(/^(?:[ÉE]V[ÉE]NEMENT\s+)?/iu, "").replace(new RegExp(`^${escapeRe(titre)}\\s*(?:Texte de l'article\\s*)?`, "u"), "") : full;
     const published = new Date(tag(item, "pubDate"));
-    const seances = datesIn(titre, published).length ? datesIn(`${titre} ${texte}`, published) : datesIn(texte, published);
+    // An excerpt cut before its day (« un marché de Noël qui se tiendra… […] », Saint-André, 21/11/2026): the day in
+    // the post's whole text, which WordPress gives in content:encoded; the excerpt stays what is shown.
+    const whole = () => clean(tag(item, "content:encoded"));
+    const seances = datesIn(titre, published).length ? datesIn(`${titre} ${texte}`, published)
+      : datesIn(texte, published).length ? datesIn(texte, published) : datesIn(whole(), published);
     if (!seances.length) return [];
     const lien = clean(tag(item, "link"));
     const statut = statusOf(titre, texte);

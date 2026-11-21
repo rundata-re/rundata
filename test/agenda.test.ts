@@ -753,6 +753,19 @@ describe("agenda", () => {
       expect(parseWpNews(JSON.parse(fixture("actus_plaine-des-palmistes.json")), "Ville de La Plaine-des-Palmistes", "La Plaine-des-Palmistes", NOW)).toEqual([]);
     });
 
+    it("finds the day in a post's whole text when its excerpt is cut before it (Saint-André, 21/11/2026)", () => {
+      const item = (description: string, content: string) => `<rss><channel><item><title>Noël au Colosse</title><link>https://www.saint-andre.re/noel-au-colosse/</link><pubDate>Thu, 29 Oct 2026 09:16:37 +0000</pubDate><description><![CDATA[${description}]]></description><content:encoded><![CDATA[${content}]]></content:encoded></item></channel></rss>`;
+      const cut = "Un marché de Noël qui se tiendra au Parc du Colosse […]";
+      const [e] = parseRss(item(cut, "<p>Un marché de Noël qui se tiendra au Parc du Colosse à Saint-André ! Les 4, 5 et 6 décembre 2026 De 15 h à 22 h</p><p>Date limite de dépôt des candidatures : 15 novembre 2026.</p>"), "Ville de Saint-André", "Saint-André", true);
+      expect(e.seances).toEqual([4, 5, 6].map((d) => ({ debut: `2026-12-0${d}T15:00`, fin: `2026-12-0${d}T22:00` })));
+      // What is shown stays the excerpt; the whole text gives the day only.
+      expect(e.description).toBe("Un marché de Noël qui se tiendra au Parc du Colosse [...]");
+      // An excerpt that gives its day keeps it: the whole text is not read.
+      expect(parseRss(item("Le 12 décembre 2026, un concert.", "<p>Le 13 décembre 2026, un concert.</p>"), "Ville de Saint-André", "Saint-André", true)[0].seances).toEqual([{ debut: "2026-12-12" }]);
+      // No day anywhere: no event.
+      expect(parseRss(item(cut, "<p>Un marché de Noël.</p>"), "Ville de Saint-André", "Saint-André", true)).toEqual([]);
+    });
+
     it("reads Saint-Louis's whole agenda, whose events keep their title as the commune writes it", () => {
       expect(parseRss(fixture("rss_saint-louis-agenda.xml"), "Ville de Saint-Louis", "Saint-Louis", true).map((e) => [e.titre, e.seances, e.lien])).toEqual([
         ["Mois des séniors : Saint-Louis y mèt ses gramounes en lèr", [{ debut: "2026-10-02", fin: "2026-10-28" }], "https://saintlouis.re/agenda-menu/3107-mois-des-seniors-saint-louis-y-met-ses-gramounes-en-ler"],
@@ -1378,6 +1391,12 @@ describe("agenda", () => {
     // From Saint-Paul's export, which writes the hyphen where its API wrote a dash.
     expect(b.evenements.map((e: { titre: string }) => e.titre)).toContain("La Koupe Kartié - Saint-Gilles-les-Bains");
     expect(b.evenements.every((e: { commune: string }) => e.commune === "Saint-Paul")).toBe(true);
+  });
+
+  it("credits a commune's own agenda read even when it gives nothing, beside the events shown elsewhere (Saint-André, 21/11/2026)", async () => {
+    const b = body(await agenda(cache(), "Saint-André", "2026-11-28", undefined, NOW));
+    expect(b.nombre).toBe(0);
+    expect(b.sources.map((x: { attribution?: string }) => x.attribution)).toContain("Ville de Saint-André");
   });
 
   it("says when a commune publishes no agenda, and what there is elsewhere", async () => {

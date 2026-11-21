@@ -10,7 +10,7 @@ import * as nuages from "../tools/nuages.js";
 import type { CielDeNuit, MerDeNuages } from "../tools/nuages.js";
 import type { Jour } from "../tools/volcan.js";
 import * as arome from "../providers/arome.js";
-import { left, measured, unmeasured } from "../budget.js";
+import { isScheduled, left, measured, unmeasured } from "../budget.js";
 import { daysApart, distanceKm, localTime, sinceMidnight } from "../geo.js";
 import * as coraux from "../providers/coraux.js";
 import { type Cache, type Cached, stampOf } from "../cache.js";
@@ -1228,9 +1228,14 @@ export async function buildCoupures(cache: Cache, now = new Date()): Promise<Cou
 }
 
 export type { CourantAnswer };
-/** The power cuts relayed by the mairies: only the scheduled event builds it, into KV (web/partagees.ts). */
-export const buildCourant = async (cache?: Cache): Promise<CourantAnswer> =>
-  courantCopy(cache && (await cache.peek<CourantAnswer>("web:courant").catch(() => undefined)));
+/**
+ * The power cuts relayed by the mairies: only the scheduled event builds it, into KV (web/partagees.ts). A question
+ * builds it only where there is no copy (tools/resume.ts `cron`), once for all (cache.ts `claim`): it reads the mairies.
+ */
+export const buildCourant = async (cache?: Cache): Promise<CourantAnswer> => {
+  if (cache && !isScheduled() && !(await cache.claim("web:courant"))) throw new Error("web:courant : lecture déjà en cours ailleurs, pas de copie à servir");
+  return courantCopy(cache && (await cache.peek<CourantAnswer>("web:courant").catch(() => undefined)));
+};
 
 export interface SportAnswer {
   resume: string;

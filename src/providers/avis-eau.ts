@@ -20,7 +20,7 @@
  * (src/eau/distributeurs.ts).
  */
 import type { Cache, Cached } from "../cache.js";
-import { getJson, getText, httpUrl, UA_RUNDATA } from "../http.js";
+import { getJson, getText, httpUrl, sharedSite, UA_RUNDATA } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import { localTime } from "../geo.js";
@@ -482,7 +482,8 @@ export function parseSaintLeu(posts: Omit<Post, "categories">[]): Avis[] {
 
 // The communes' own sites (rule 3 bis of 20/11/2026: a commune's public information is read, slowly, under an honest
 // name, UA_RUNDATA, each notice with its link and hour). Each is read once per FRESH_SECONDS (15 min) for the whole
-// island (`lecture`, an island copy), one request per site and per read: never more than one page a minute.
+// island, by the scheduled event (`lecture`), one request per site and per read, a minute at least after another
+// source's request to the same site (http.ts `sharedSite`).
 const COMMUNE = { "User-Agent": UA_RUNDATA };
 // Saint-Philippe posts Sudéau's notices among its news (« Sudéau – interruption de la distribution en eau le 25 novembre
 // 2026 », 19/11/2026), today the only public page of Sudéau's notices for the commune: its WordPress posts searched for
@@ -683,11 +684,20 @@ const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) =
   { de: "de la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301", load: (cache, before) => petiteIle(cache, before) },
 ];
 
+// The sites these notices are read from, spaced with the other sources that read them (http.ts `sharedSite`).
+sharedSite(SOURCE.id, ...FEEDS.map((f) => f.url), CIREST, CREOLE.url, SAINTE_MARIE, SAINT_LEU, SAINT_PHILIPPE, CILAOS, TROIS_BASSINS, PETITE_ILE);
+
 const FLUX = "avis-eau:flux";
 
-/** Every feed's read, the notices of one that did not answer kept from the read before; throws only when all fail with nothing kept. */
+/**
+ * Every feed's read, the notices of one that did not answer kept from the read before; throws only when all fail with
+ * nothing kept. Read by the scheduled event only, once FRESH_SECONDS old (web/partagees.ts, web:coupures): the pages
+ * and the tools serve its copy, however old, with its time, and ask the sites only when there is none (`islandRead`).
+ * Read at the questions too before 21/11/2026, a copy older than FRESH_SECONDS was read again by each data center and
+ * each isolate that wanted it: five pages read the eleven sites within ten seconds on 20/11/2026.
+ */
 export async function lecture(cache: Cache): Promise<Cached<Flux[]>> {
-  return cache.island(FLUX, FRESH_SECONDS, async () => {
+  return cache.islandRead<Flux[]>(FLUX, FRESH_SECONDS, async () => {
     const before = await cache.peek<Flux[]>(FLUX).catch(() => undefined);
     const parts = unlessSpent(await Promise.allSettled(PARTS.map((p) => p.load(cache, before?.value.find((f) => f.site === p.site)?.avis))));
     const flux = PARTS.map((p, i): Flux => {

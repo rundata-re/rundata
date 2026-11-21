@@ -128,6 +128,10 @@ export class TieredStore implements CacheStore {
   async put(key: string, entry: CacheEntry, keepSeconds?: number) {
     await Promise.all(this.stores.map((s) => s.put(key, entry, keepSeconds)));
   }
+  /** The slowest store, which the isolates share (the data center's cache in the Worker): where a claim is written. */
+  get shared(): CacheStore {
+    return this.stores[this.stores.length - 1];
+  }
 }
 
 /** `store`'s entries under `prefix`: kept apart from the other entries of the same store (the Worker's KV). */
@@ -172,6 +176,10 @@ export interface Cached<T> {
 }
 
 const FAILURE_BACKOFF_SECONDS = 60;
+/** How long a question's claim to read the sources of a missing copy holds (`claim`). */
+export const CLAIM_SECONDS = 60;
+/** How long a claim is left before it is read back: another isolate's, written meanwhile, wins. */
+const CLAIM_SETTLE_MS = 150;
 // The longest a source that failed with a copy in the stores is left alone (its copy served at once): a source fresh for
 // less is asked again as often as it is fresh, one fresh for longer (a list, a day's file) no later than this.
 const BREAKER_MAX_SECONDS = 15 * 60;
@@ -300,9 +308,15 @@ export class Cache {
    */
   async islandRead<T>(key: string, freshSeconds: number, load: (before?: T) => Promise<T>): Promise<Cached<T>> {
     const hit = await this.wide.get(key, this.now() - freshSeconds * 1000);
-    if (hit && !isScheduled()) {
+    if (hit && !isScheduled() && !unreadable(key, hit, this.version)) {
       cacheTally().hits++;
       return this.noted(key, freshSeconds, hit.echec ? copyOf<T>(hit, hit.echec.source ?? hit.from) : { value: hit.value as T, fetchedAt: new Date(hit.fetchedAt), stale: false, ...(hit.from && { from: hit.from }) });
+    }
+    // No copy (after a deploy that can no longer read the last one, or before the first event): one question reads the
+    // sources, the others are told it is under way rather than asking them too (five pages read the water's eleven
+    // sites within ten seconds on 20/11/2026).
+    if (!isScheduled() && !(await this.claim(key))) {
+      throw new Error(`${key} : lecture déjà en cours ailleurs, pas de copie à servir`);
     }
     return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, () => load(hit?.value as T | undefined), (e) => this.wide.put(key, e)));
   }
@@ -331,6 +345,26 @@ export class Cache {
     const there = await this.lectures.get(key).catch(() => undefined);
     if (there && there.fetchedAt > e.fetchedAt - everySeconds * 1000) return;
     await this.lectures.put(key, e);
+  }
+
+  /**
+   * Whether this invocation may read the sources of `key`'s missing copy: true for the first to write its mark in the
+   * store the isolates share (the data center's cache), and to find it there a moment later; false while another's
+   * mark is less than CLAIM_SECONDS old. Two isolates writing within CLAIM_SETTLE_MS of each other: the later one's
+   * mark is read back by both. Two data centers each have their own cache: they may both read, once a minute at most.
+   * Where questions share one read (`dedupe`: Node, the tests), always true.
+   */
+  async claim(key: string): Promise<boolean> {
+    if (this.dedupe) return true;
+    const shared = this.store instanceof TieredStore ? this.store.shared : this.store;
+    const mark = `claim:${key}`;
+    const there = await shared.get(mark).catch(() => undefined);
+    if (there && this.now() - there.fetchedAt < CLAIM_SECONDS * 1000) return false;
+    const token = `${this.now()}-${Math.random().toString(36).slice(2)}`;
+    await shared.put(mark, { value: token, fetchedAt: this.now() }, CLAIM_SECONDS).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, CLAIM_SETTLE_MS));
+    const back = await shared.get(mark).catch(() => undefined);
+    return !back || back.value === token;
   }
 
   /** Forgets the failure remembered under `key`, so that it is asked again at once (tools/agenda.ts: one more try). */

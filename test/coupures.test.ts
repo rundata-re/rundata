@@ -1,3 +1,4 @@
+import { counted, scheduled } from "../src/budget.js";
 import { UA_RUNDATA } from "../src/http.js";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -31,6 +32,8 @@ const fixture = (f: string) => readFileSync(new URL(`./fixtures/avis-eau/${f}`, 
 const NOW = new Date("2026-10-24T04:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const cache = (now = NOW) => new Cache(new MemoryStore(), () => now.getTime());
+// In the scheduled event, the only one that reads the notices again once their copy is 15 minutes old (`lecture`).
+const enCron = async <T>(work: () => Promise<T>) => (await counted(1000, () => (scheduled(), work()))).value;
 // The night of La Créole's cut, the 23rd at 22:00 to the 24th at 06:00: 02:00 on the 24th.
 const NIGHT = new Date("2026-10-23T22:00:00Z");
 
@@ -677,6 +680,7 @@ describe("coupures d'eau", () => {
       return new Response(fixture(file));
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
+    await enCron(() => coupuresEau(at(), undefined, now));
     const sd = body(await coupuresEau(at(), "Saint-Denis", now));
     expect(sd.avis.length).toBeGreaterThan(0);
     expect(sd.injoignable).toEqual([{ texte: "Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu le 24/10 à 08:00, sans réponse depuis", de: "de Dionéo", site: "https://dioneo.re/" }]);
@@ -874,7 +878,7 @@ describe("coupures d'eau", () => {
     const feed = asked.filter((u) => u.includes("petite-ile"));
     expect(feed).toEqual(["https://www.petite-ile.re/taxonomy/term/301/feed"]);
     // Six days old on the 20th, past what the tool calls recent: read in the feeds' copy.
-    const petite = async () => (await lecture(c())).value.find((f) => f.de === "de la ville de Petite-Île")!.avis;
+    const petite = async () => (await enCron(() => lecture(c()))).value.find((f) => f.de === "de la ville de Petite-Île")!.avis;
     let pi = await petite();
     expect(pi[0]).toMatchObject({ titre: "Coupures d’eau", forme: "page", lien: "https://www.petite-ile.re/actualites/news/coupures-deau-45", texte: "" });
     t += 16 * 60_000;

@@ -23,7 +23,7 @@
  */
 import { de } from "../articles.js";
 import type { Bundle, Cache, Cached } from "../cache.js";
-import { getBytes, getText, httpUrl, UA_RUNDATA } from "../http.js";
+import { getBytes, getText, httpUrl, sharedSite, UA_RUNDATA } from "../http.js";
 import { inReunion } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
@@ -1906,6 +1906,11 @@ for (const a of AGENDAS) {
 }
 // Its link, the TÉAT's programme, is Le Séchoir's site while the TÉAT is not read.
 if (!AGENDAS.some((a) => a.id === "teat")) SALLES_SOURCE.url = "https://www.lesechoir.com";
+
+// The sites of the agendas with a source of their own, spaced with the other sources that read them (http.ts
+// `sharedSite`): a commune's news and its water or its power cuts, its news and its agenda. A source that several
+// agendas share (the halls', the mairies' agendas, OpenAgenda) names one of their sites only: left out.
+for (const a of AGENDAS) if (AGENDAS.filter((b) => b.source === a.source).length === 1) sharedSite(a.source.id, a.source.url);
 
 /**
  * The home pages some events link to instead of their own page (`accueil`): opened in a new window, as the terms of

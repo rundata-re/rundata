@@ -803,6 +803,33 @@ describe("the summary after the audit of 04/11/2026", () => {
     expect(unknown.volcan!.niveau_d_apres).toBeUndefined();
   });
 
+  it("never brings the power cuts' copy up to date from a page: the scheduled event does; builds it only where there is none", async () => {
+    // Cilaos's summary, every part but its power cuts held already: what is refreshed is the power cuts' copy or nothing.
+    const CILAOS = pageOf("cilaos")!;
+    const others = ["meteo", "commune", "air", "mer", "electricite", "actualites", "trafic", "coupures", "agenda", "calendrier", "dechets", "volcan"];
+    const held = Object.fromEntries(others.map((k) => [k, null]));
+    const view = async (entry?: CacheEntry) => {
+      const edge = new EdgeLike();
+      if (entry) await edge.put("web:courant", entry);
+      const cache = new Cache(new TieredStore(new MemoryStore(), edge), () => NOW.getTime(), false, new MemoryStore(), "2.0.0");
+      const pending: Promise<unknown>[] = [];
+      const run = await counted(PAGE_BUDGET, async () => {
+        const r = await readCopies(cache, CILAOS, CILAOS, NOW, (p) => pending.push(p), Promise.resolve(null), held);
+        await Promise.allSettled(pending);
+        return r;
+      });
+      return run.value.refreshed;
+    };
+    const courant = (min: number, version = stampOf("web:courant", "2.0.0")): CacheEntry => ({ value: { coupures: [], injoignables: [] }, fetchedAt: ago(min).getTime(), version });
+    // An old copy, kept (5 hours) or too old to say (7 hours): nothing starts.
+    expect(await view(courant(5 * 60))).not.toContain("web:courant");
+    expect(await view(courant(7 * 60))).not.toContain("web:courant");
+    // A copy built by another revision: nothing starts either.
+    expect(await view(courant(10, "rendu-0"))).not.toContain("web:courant");
+    // No copy at all: it is built.
+    expect(await view()).toEqual(["web:courant"]);
+  });
+
   it("reads the volcano's copy for the communes of the volcano only, and names it when it has none", async () => {
     expect(VOLCANO_COMMUNES).toEqual(["Sainte-Rose", "Saint-Philippe", "Le Tampon", "Saint-Joseph"]);
     const edge = new EdgeLike();

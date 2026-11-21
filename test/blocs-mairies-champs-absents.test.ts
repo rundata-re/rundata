@@ -75,7 +75,7 @@ describe("a mairie's blocks with a field missing", () => {
       sentence(avis({ nature: "en cours", publie: "2026-11-20T06:00:00Z" }), now),
       sentence(avis({ pdf: true }), now),
     ];
-    expect(said[0]).toContain("le lundi 23/11 à partir de 08:30, secteurs Rue A.");
+    expect(said[0]).toContain("le lundi 23/11 à partir de 08:30, secteur Rue A.");
     expect(said[1]).toContain("le lundi 23/11 jusqu'à 12:00.");
     expect(said[2]).toContain("coupure programmée le lundi 23/11.");
     expect(said[3]).toContain("« Coupure EDF »");

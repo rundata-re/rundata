@@ -69,3 +69,11 @@ export function insecables(s: string): string {
   }
   return from ? out + s.slice(from) : s;
 }
+
+/**
+ * A text written in the « bold » or « italic » letters of Unicode (U+1D400–U+1D7FF, « 𝗖𝗢𝗨𝗣𝗨𝗥𝗘 », « 𝟮𝟯 ») as plain
+ * letters and figures, its accents put back on them (« 𝗘́ » → « É »): what the mairies paste from their Facebook posts
+ * (Saint-André's notice of 19/11/2026: title, days and hours, unread by every pattern). Only that block is folded:
+ * NFKC over the whole text would also turn the no-break spaces into spaces and « m² » into « m2 ».
+ */
+export const unstyled = (s: string): string => s.replace(/[\u{1D400}-\u{1D7FF}]/gu, (c) => c.normalize("NFKC")).normalize("NFC");

@@ -348,3 +348,21 @@ describe("what is shown", () => {
     expect(matches(l, "air")).toBe(true);
   });
 });
+
+describe("a medium's site, among the media's source", () => {
+  it("is asked at the feed read and named by its medium: Clicanoo's root 403, its feed read (21/11/2026)", async () => {
+    const { HOTES_MEDIAS } = await import("../src/providers/actualites.js");
+    sr.inscrire([], {}, HOTES_MEDIAS);
+    const asked: string[] = [];
+    const clicanoo = (async (input: RequestInfo | URL) => {
+      asked.push(String(input));
+      return new URL(String(input)).pathname === "/rss" ? new Response("<rss></rss>", { status: 200 }) : new Response("", { status: 403 });
+    }) as typeof fetch;
+    expect(await sr.essayer({ url: "https://www.clicanoo.re/", verifier: null }, MORNING, clicanoo)).toEqual({ issue: "repond" });
+    expect(asked).toEqual(["https://www.clicanoo.re/rss"]);
+    const media = (hote: string): sr.Ligne => ({ hote, url: `https://www.${hote}/`, nom: null, theme: null, manque: null, page: null, sources: ["medias_locaux"], statut: "bloque", premier_echec: T, constat: "http_403", revenu_le: null, dernier_essai: T, n403: 2, verifier: null } as unknown as sr.Ligne);
+    const shown = sr.publiques([media("temoignages.re"), media("clicanoo.re")]);
+    expect(shown.map((l) => [l.nom, l.manque])).toEqual([["Témoignages", "Les titres de Témoignages dans les actualités"], ["Clicanoo", "Les titres de Clicanoo dans les actualités"]]);
+    expect([HOTES_MEDIAS["lequotidien.re"].manque, HOTES_MEDIAS["imazpress.com"].manque]).toEqual(["Les titres du Quotidien dans les actualités", "Les titres d'Imaz Press dans les actualités"]);
+  });
+});

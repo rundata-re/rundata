@@ -63,6 +63,18 @@ let all: All | undefined;
 let batch: Batch | undefined;
 const registre = new Map<string, SourceInfo>();
 const themes = new Map<string, string>();
+const hotes = new Map<string, Hote>();
+
+/**
+ * What a host is read for, when one source reads several sites (the media's headlines, providers/actualites.ts): its
+ * own name and what it is missing, and the address actually read, where the recheck asks it. Clicanoo's root answers
+ * 403 to our reads while its feed answers (21/11/2026): asked at its root, the row said it unread.
+ */
+export interface Hote {
+  nom: string;
+  manque: string;
+  url: string;
+}
 
 /** The database's calls (worker.ts), or none: nothing is written nor read. */
 export function configure(r?: Run, a?: All, b?: Batch) {
@@ -75,9 +87,10 @@ export function configure(r?: Run, a?: All, b?: Batch) {
  * The sources the server knows (sources_donnees' list): a row's editor and what it is missing, when the row does not
  * say; and the part of the site each is shown in (chiffres.ts, themesDesSources), its theme.
  */
-export function inscrire(sources: SourceInfo[], themesDes: Record<string, string> = {}) {
+export function inscrire(sources: SourceInfo[], themesDes: Record<string, string> = {}, hotesDes: Record<string, Hote> = {}) {
   for (const s of sources) if (!registre.has(s.id)) registre.set(s.id, s);
   for (const [id, t] of Object.entries(themesDes)) if (!themes.has(id)) themes.set(id, t);
+  for (const [h, x] of Object.entries(hotesDes)) if (!hotes.has(h)) hotes.set(h, x);
 }
 
 export const GARDE_REVENUS_JOURS = 7;
@@ -203,7 +216,8 @@ type Verdict = { issue: "repond" } | { issue: "bloque"; constat: string } | { is
 export async function essayer(l: Pick<Ligne, "url" | "verifier">, now: Date, fetcher: typeof fetch = fetch): Promise<Verdict> {
   let res: Response;
   count();
-  const adresse = l.verifier ? undefined : ADRESSES[hoteDe(l.url) ?? ""];
+  const h = hoteDe(l.url) ?? "";
+  const adresse = l.verifier ? undefined : (ADRESSES[h] ?? hotes.get(h)?.url);
   try {
     res = await fetcher(l.verifier?.url ?? adresse ?? l.url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(DELAI_MS) });
   } catch (err) {
@@ -366,7 +380,8 @@ export interface Public extends Ligne {
 
 /**
  * The rows shown: confirmed by a recheck, and none of a commune whose source is not read. A row that does not
- * name its editor or what it is missing takes them from its sources.
+ * name its editor or what it is missing takes them from its host (one medium among the media's source), else from its
+ * sources.
  */
 export function publiques(rows: Ligne[]): Public[] {
   return rows
@@ -374,12 +389,13 @@ export function publiques(rows: Ligne[]): Public[] {
     .filter((l) => !l.sources.some((s) => enAttente(communeDe(s))))
     .map((l) => {
       const connues = l.sources.map((s) => registre.get(s)).filter((s): s is SourceInfo => !!s);
+      const hote = hotes.get(l.hote);
       return {
         ...l,
-        nom: l.nom ?? connues[0]?.organisme ?? l.hote,
+        nom: l.nom ?? hote?.nom ?? connues[0]?.organisme ?? l.hote,
         // Sensor.Community's row, without a theme of its own, under « Qualité de l'air » rather than « Autres sites ».
         theme: l.theme ?? l.sources.map((s) => themes.get(s)).find(Boolean) ?? "Autres sites",
-        manque: l.manque ?? (connues.length ? connues.map((s) => s.nom).join("\u00a0; ") : null),
+        manque: l.manque ?? hote?.manque ?? (connues.length ? connues.map((s) => s.nom).join("\u00a0; ") : null),
       };
     })
     .sort((a, b) => a.premier_echec - b.premier_echec);

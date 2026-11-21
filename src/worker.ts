@@ -16,6 +16,7 @@ import * as irve from "./providers/irve.js";
 import * as eauIle from "./eau/ile.js";
 import * as carburants from "./providers/carburants.js";
 import * as prefectureCopie from "./providers/prefecture-copie.js";
+import { HOTES_MEDIAS } from "./providers/actualites.js";
 import * as raa from "./providers/raa.js";
 import * as airMesures from "./providers/air-mesures.js";
 import * as capteurs from "./providers/capteurs.js";
@@ -404,7 +405,7 @@ function setup(env: Env): Cache {
     avisDb && (async <T>(sql: string, ...params: unknown[]) => (await avisDb.prepare(sql).bind(...params).all<T>()).results),
     avisDb && (async (statements) => void (await avisDb.batch(statements.map((x) => avisDb.prepare(x.sql).bind(...x.params))))),
   );
-  sansReponse.inscrire(toutesLesSources(), themesDesSources());
+  sansReponse.inscrire(toutesLesSources(), themesDesSources(), HOTES_MEDIAS);
   whenFailed((source, url, err) => {
     const constat = sansReponse.constatDe(err);
     if (constat) later(sansReponse.noter(source, url, constat));

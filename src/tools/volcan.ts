@@ -6,7 +6,7 @@ import * as historique from "./volcan-historique.js";
 import * as ocr from "../providers/ovpf-ocr.js";
 import * as prefecture from "../providers/prefecture.js";
 import * as volcan from "../providers/volcan.js";
-import { etatHote, jour as jourDe, jourHeure, type Public } from "../sans-reponse.js";
+import { etatHote, jour as jourDe, jourHeure, siteDe, type Public } from "../sans-reponse.js";
 import { why } from "../types.js";
 import { credits, fr, text } from "./format.js";
 import { sourceMuette } from "./fraicheur.js";
@@ -92,7 +92,7 @@ export function ipgpMuet(l: Public, lus: { bluesky: boolean; prefecture: boolean
     : lus.bluesky ? "ses publications sur Bluesky, elles, sont lues" : pref ? "les communiqués de la préfecture, eux, sont lus" : "";
   const prefLue = typeof lus.prefecture === "string" ? `dernière lecture du site de la préfecture\u00a0: ${lus.prefecture}` : "";
   const tail = [encore, prefLue].filter(Boolean).join("\u00a0; ");
-  return `Le site de ${l.nom} ${depuis}${essai}. Un communiqué ou un bulletin de l'observatoire publié depuis peut manquer ici${tail ? `\u00a0; ${tail}` : ""}.`;
+  return `L${siteDe(l.nom).slice(1)} ${depuis}${essai}. Un communiqué ou un bulletin de l'observatoire publié depuis peut manquer ici${tail ? `\u00a0; ${tail}` : ""}.`;
 }
 
 // Its daily bulletin counts those too small to be located: linked, never its figures, which the IPGP's legal notice

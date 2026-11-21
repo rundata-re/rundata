@@ -3,7 +3,7 @@
  * what is missing here because of it (sans-reponse.ts). Worded by marketing (25/10): a silent site is never said
  * down, closed or empty, nor why it is silent, and one that answers but not to our reads is never said to refuse.
  */
-import { constatEnMots, jour, jourHeure, publiques, statutEnMots, type Ligne, type Public } from "../sans-reponse.js";
+import { constatEnMots, jour, jourHeure, publiques, siteDe, statutEnMots, type Ligne, type Public } from "../sans-reponse.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
@@ -32,7 +32,7 @@ function item(l: Public): string {
   const constat = l.statut === "injoignable" ? constatEnMots(l.constat) : undefined;
   const essai = l.statut === "revenu" ? undefined : l.dernier_essai ? `dernier essai le ${jourHeure(l.dernier_essai)}${constat ? ` : ${constat}` : ""}` : constat;
   const manque = l.statut === "revenu" || !l.manque ? undefined : `ce qui manque ici : ${l.page ? `<a href="${esc(l.page)}">${esc(l.manque)}</a>` : esc(l.manque)}`;
-  return `<li>${lienNom(accueil(l), `le site de ${l.nom}`, ' rel="nofollow noopener"')} : ${statutEnMots(l)}${essai ? `<br>${esc(essai)}` : ""}${manque ? `<br>${manque}` : ""}</li>`;
+  return `<li>${lienNom(accueil(l), siteDe(l.nom), ' rel="nofollow noopener"')} : ${statutEnMots(l)}${essai ? `<br>${esc(essai)}` : ""}${manque ? `<br>${manque}` : ""}</li>`;
 }
 
 /** The rows of one part, grouped by theme, the oldest first (publiques() sorts them). */

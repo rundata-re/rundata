@@ -595,6 +595,15 @@ const FEEDS: Feed[] = [
   { media: "Le Quotidien", url: "https://www.lequotidien.re/", parse: (b, now) => parseQuotidien(b, now) },
 ];
 
+/**
+ * Each medium's site, as the list of the sites that do not answer names it (sans-reponse.ts): its own name, its
+ * headlines as what is missing, and the address read, where the morning's recheck asks it.
+ */
+export const HOTES_MEDIAS = Object.fromEntries(FEEDS.map((f) => {
+  const m = MEDIAS.find((x) => x.media === f.media)!;
+  return [new URL(f.url).hostname.replace(/^www\./, ""), { nom: m.credit, manque: `Titres de ${m.media}`, url: f.url }];
+}));
+
 /** Imaz Press articles that may be live blogs: the newest of its editors' selection, or with a live word in the title. */
 export function liveCandidates(items: Info[], now: Date): string[] {
   const since = new Date(now.getTime() - LIVE_HOURS * 3600_000).toISOString();

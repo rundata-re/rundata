@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">rundata.re</string>
+    <string name="widget_nom">Météo mesurée</string>
+    <string name="widget_description">La température mesurée de votre commune et la vigilance de sa zone, d\'après rundata.re.</string>
+    <!-- L'aperçu du sélecteur de widgets : un exemple de lecture, pas une mesure. -->
+    <string name="apercu_commune">Saint-Denis</string>
+    <string name="apercu_temperature">25,5 °C</string>
+    <string name="apercu_mesure">mesurée à 20:48, Chaudron</string>
+    <string name="apercu_vigilance">Vigilance verte</string>
+    <string name="apercu_zone">zone Nord</string>
+    <string name="apercu_lue">Lu à 21:39</string>
+    <string name="apercu_officiel">Consulter le site officiel de Météo-France</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'icône masquable du site (fond bleu plein) : son cercle sûr de 80 % ramené dans la partie visible d'Android -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/logo_fond" />
+    <foreground>
+        <inset android:drawable="@drawable/logo_maskable" android:inset="12%" />
+    </foreground>
+    <monochrome>
+        <inset android:drawable="@drawable/logo_maskable" android:inset="12%" />
+    </monochrome>
+</adaptive-icon>

@@ -143,6 +143,23 @@ fun journeeDe(commune: Commune, resume: JsonObject, meteo: JsonObject?): Journee
     )
 }
 
+/**
+ * L'avis d'eau à dire en premier, quand la place manque (le widget) : l'eau à ne pas boire, puis une coupure en cours,
+ * puis la prochaine à venir, d'après sa date de début (« lundi 23/11 à 21:00 »). `mois` : le mois d'aujourd'hui, pour
+ * placer après décembre une date de janvier.
+ */
+fun avisEnPremier(avis: List<AvisEau>, mois: Int): AvisEau? {
+    avis.firstOrNull { it.nePasBoire }?.let { return it }
+    avis.firstOrNull { it.etat == "en cours" }?.let { return it }
+    val date = Regex("(\\d{1,2})/(\\d{1,2})\\D+(\\d{1,2}):(\\d{2})")
+    return avis.mapNotNull { a ->
+        val g = a.de?.let { date.find(it) }?.groupValues ?: return@mapNotNull null
+        val m = g[2].toInt()
+        val annee = if (m < mois - 6) 1 else 0
+        a to (((annee * 13 + m) * 32 + g[1].toInt()) * 24 + g[3].toInt()) * 60 + g[4].toInt()
+    }.minByOrNull { it.second }?.first
+}
+
 internal fun mesureDuResume(resume: JsonObject): Mesure? {
     val m = (resume["meteo"] as? JsonObject)?.get("mesure") as? JsonObject ?: return null
     return mesureDe(m)

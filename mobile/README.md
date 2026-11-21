@@ -1,8 +1,9 @@
 # L'appli mobile de rundata.re
 
-La journée d'une commune de La Réunion, d'après le serveur MCP public de rundata.re (`POST https://rundata.re/mcp` : `resume_du_jour`, `vigilance_meteo`, `meteo_actuelle`), sa seule source.
+La journée d'une commune de La Réunion, et un widget d'écran d'accueil avec la température mesurée et la vigilance de sa zone. Les données viennent uniquement du serveur MCP public de rundata.re (`POST https://rundata.re/mcp`, outils `resume_du_jour`, `vigilance_meteo` et `meteo_actuelle`).
 
 - `shared/` : le code commun à Android et à l'iPhone (Kotlin Multiplatform). Il contient le client MCP, la journée d'une commune et l'écran principal (Compose Multiplatform).
+- `androidApp/` : l'appli Android et son widget (Jetpack Glance, mis à jour toutes les 30 min par WorkManager).
 - `iosApp/` : l'hôte SwiftUI de l'écran commun. Son projet Xcode est produit et construit sur un Mac (XcodeGen, `project.yml`).
 
 ## Construire
@@ -10,10 +11,13 @@ La journée d'une commune de La Réunion, d'après le serveur MCP public de rund
 Avec Gradle, depuis `mobile/` (JDK 17, SDK Android dans `ANDROID_HOME`) :
 
 ```
-./gradlew --max-workers=2 :shared:testAndroidHostTest :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64
+./gradlew --max-workers=2 :shared:testAndroidHostTest :shared:compileKotlinIosArm64 \
+  :shared:compileKotlinIosSimulatorArm64 :androidApp:testDebugUnitTest :androidApp:assembleRelease :androidApp:lintRelease
 ```
 
 `--max-workers` fixe le nombre de tâches en parallèle. `RUNDATA_MOBILE_BUILD=<dossier>` met les sorties hors du dépôt, un sous-dossier par module ; sans lui, elles vont dans les `build/` habituels (ignorés par git).
+
+L'APK de release est signé avec la clé de debug tant qu'il n'y a pas de compte de store : `androidApp/outputs/apk/release/androidApp-release.apk`, dans le dossier de sortie de `androidApp`.
 
 Sous Linux, les klibs iOS se compilent ; le framework se lie sur le Mac.
 

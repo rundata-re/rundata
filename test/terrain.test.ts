@@ -166,6 +166,24 @@ describe("fiche terrain", () => {
     expect(urls.filter((u) => u.includes("geo-dvf"))[0]).toBe("https://files.data.gouv.fr/geo-dvf/latest/csv/2021/communes/974/97416.csv");
   });
 
+  it("keeps a street's sales when the area's do not answer: the same in the summary and in the market's field", async () => {
+    // 21/11/2026: the Cerema's API answered 522, Etalab's files the street's one sale; the field said « indisponible ».
+    files = { ...files, geocodage: "geocode-temple.json" };
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string) => (new URL(String(url)).hostname === "apidf-preprod.cerema.fr" ? new Response("", { status: 522 }) : inner(url)));
+    const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "rue du Temple, Saint-Pierre", NOW));
+    expect(r.resume).toContain("Rue du Temple, depuis 2021 : 2 ventes enregistrées dans DVF, trop peu pour une médiane");
+    expect(r.resume).not.toContain("dans le secteur alentour");
+    expect(r.marche_immobilier).toEqual({
+      secteur: "service momentanément indisponible : réessayer dans un instant",
+      sur_la_voie: { voie: "Rue du Temple", depuis: 2021, ventes: 2, note: "2 ventes enregistrées dans DVF sur la voie depuis 2021, trop peu pour une médiane" },
+      note: "Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.",
+    });
+    const cited = r.sources.map((x: { source: string }) => x.source);
+    expect(cited).toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
+    expect(cited).not.toContain("Demandes de valeurs foncières (DVF open data, Cerema)");
+  });
+
   it("reads an address: parcel, PLU zone, altitude, market", async () => {
     const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "7 rue de la Buse, Saint-Paul", NOW));
     expect(r.resume).toMatch(/^7 Rue de la Buse 97460 Saint-Paul \(adresse exacte\)\u00a0; altitude 5\u00a0m\u00a0; parcelle cadastrale BO 0552 \(2\u202f416\u00a0m²\)\u00a0; zone U1c du PLU, zone urbaine/);

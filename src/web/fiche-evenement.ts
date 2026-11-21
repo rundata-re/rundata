@@ -28,6 +28,9 @@ import type { Row } from "./fiches.js";
 
 export { type Entree, type Fiche, FICHES, ficheIssue, fichePath, ficheOf, ficheUrls, registre, type Row } from "./fiches.js";
 
+/** « Annoncé par… », at the head of a sentence. */
+const upper = (s: string) => s.charAt(0).toLocaleUpperCase("fr") + s.slice(1);
+
 const communeOf = (nom?: string) => (nom ? COMMUNES.find((p) => p.nom === nom) : undefined);
 const jj = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
@@ -104,7 +107,7 @@ export function fichePage(origin: string, r: Row, data: Cached<AgendaAnswer>, me
   const book = r.billetterie && r.billetterie !== r.lien ? ` · <a href="${esc(r.billetterie)}" rel="noopener">billets</a>` : "";
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
-  <h1>${badge}${esc(r.titre)}</h1>${off}
+  <h1>${badge}${esc(r.titre)}</h1>${off}${r.annonce ? `\n  <p class="note" data-sortie>${r.lien ? `<a href="${esc(r.lien)}" rel="noopener">${esc(upper(r.annonce))}</a>` : esc(upper(r.annonce))}.</p>` : ""}
   <p class="lead" data-sortie>${esc(r.quand)}${r.autres_dates?.length ? `, aussi ${esc(r.autres_dates.join(", "))}` : ""}${r.lieu ? `<br>${esc(r.lieu)}` : ""}${r.commune && !r.lieu?.includes(r.commune) ? `, ${esc(r.commune)}` : ""}${r.lien ? ` · <a href="${esc(r.lien)}" rel="noopener">${esc(r.publie_par)}</a>` : ""}</p>
   ${manque(r)}
   ${r.prix ? `<p>${esc(r.prix)}</p>` : ""}

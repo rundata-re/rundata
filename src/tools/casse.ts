@@ -33,7 +33,7 @@ const brand = (w: string) => {
 const SIGLE_MAX = 5;
 
 // The villages that are common words too (« la croix », « la montagne », « bellevue »): left in the sentence's case.
-const COMMON = new Set([
+export const COMMON = new Set([
   "Bagatelle", "Bellevue", "Chemin de Ceinture", "Deux Rives", "L'Abondance", "La Bretagne", "La Chapelle", "La Confiance",
   "La Croisée", "La Croix", "La Grande Montée", "La Montagne", "La Petite Ferme", "La Plaine", "La Ressource", "La Rivière",
   "Le Coin Tranquille", "Le Cratère", "Le Dix-Septième", "Le Quatorzième", "Le Refuge", "Le Vingt-Deuxième", "Les Lianes",

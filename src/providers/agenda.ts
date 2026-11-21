@@ -122,6 +122,8 @@ export interface Evenement {
   reporte_au?: string;
   /** Where to book, when it is not the event's own page. */
   billetterie?: string;
+  /** A call to stallholders or candidates given as its outing (tools/appel.ts): set by the tool, not by the source. */
+  appel?: "exposants" | "candidatures";
   /**
    * The championship matches its text lists, the volley league's weekends (`matchsLigue`): for the sport tool, to set
    * beside the FFVB's, never shown nor returned.

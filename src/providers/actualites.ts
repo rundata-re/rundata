@@ -16,6 +16,7 @@
  * Everything is read in one go every few minutes and kept as one entry, so a question costs at most a dozen requests.
  */
 import type { Cache, Cached } from "../cache.js";
+import { de } from "../articles.js";
 import { getText, httpUrl, UA_RUNDATA } from "../http.js";
 import gazetteer from "../places/gazetteer.js";
 import { normalize } from "../places/resolve.js";
@@ -596,12 +597,13 @@ const FEEDS: Feed[] = [
 ];
 
 /**
- * Each medium's site, as the list of the sites that do not answer names it (sans-reponse.ts): its own name, its
- * headlines as what is missing, and the address read, where the morning's recheck asks it.
+ * Each medium's site, as the list of the sites that do not answer names it (sans-reponse.ts): its short name, the one
+ * people know (« Clicanoo »), its headlines in the news as what is missing (words by marketing, 21/11/2026), and the
+ * address read, where the morning's recheck asks it.
  */
 export const HOTES_MEDIAS = Object.fromEntries(FEEDS.map((f) => {
   const m = MEDIAS.find((x) => x.media === f.media)!;
-  return [new URL(f.url).hostname.replace(/^www\./, ""), { nom: m.credit, manque: `Titres de ${m.media}`, url: f.url }];
+  return [new URL(f.url).hostname.replace(/^www\./, ""), { nom: m.media, manque: `Les titres ${de(m.media)} dans les actualités`, url: f.url }];
 }));
 
 /** Imaz Press articles that may be live blogs: the newest of its editors' selection, or with a live word in the title. */

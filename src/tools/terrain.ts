@@ -559,6 +559,8 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
           voir_le_reglement: `https://www.geoportail-urbanisme.gouv.fr/map/#tile=1&lon=${lon}&lat=${lat}&zoom=18`,
         }
       : z === undefined ? DOWN : "pas de zonage publié à ce point sur le Géoportail de l'urbanisme",
+    // The area's sales and the street's are two sources (the Cerema's API, Etalab's files): one down, the other kept,
+    // as the summary says it (21/11/2026: the Cerema answered 522, the street's one sale was in the summary only).
     marche_immobilier: m
       ? {
           perimetre: "environ 600 m × 600 m autour du point",
@@ -567,7 +569,9 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
           ...(voie ? { sur_la_voie: onStreet ?? { voie: voie.nom, non_lues: notRead } } : {}),
           note: MARCHE_NOTE,
         }
-      : DOWN,
+      : onStreet
+        ? { secteur: DOWN, sur_la_voie: onStreet, note: MARCHE_NOTE }
+        : DOWN,
     ...(r ? { loyers_d_annonce: r.bloc } : {}),
     ...(net ? { internet_dans_la_commune: net.bloc } : {}),
     antennes_a_moins_de_500_m: point.bloc,

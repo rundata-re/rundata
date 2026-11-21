@@ -100,6 +100,19 @@ describe("the fiche of an address, /terrain (web/terrain.ts)", () => {
     expect(loyers("Le Port")).not.toContain("à Le Port");
   });
 
+  it("says the street's sales when only the area's are not read, as the tool's summary does", () => {
+    const sur_la_voie = { voie: "Rue de l'Ancienne Mairie", depuis: 2021, ventes: 1, note: "1 vente enregistrée dans DVF sur la voie depuis 2021, trop peu pour une médiane" };
+    const fiche = { ...FICHE, marche_immobilier: { secteur: "service momentanément indisponible : réessayer dans un instant", sur_la_voie, note: "…" } };
+    const html = plain(terrainPage("https://rundata.re", "rue de l'Ancienne Mairie, Saint-Paul", { fiche }));
+    const block = html.slice(html.indexOf('id="h-prix"'), html.indexOf('id="h-prix"') + 1500);
+    expect(block).toContain("Rue de l'Ancienne Mairie\u00a0: 1 vente enregistrée dans DVF sur la voie depuis 2021, trop peu pour une médiane");
+    expect(block).toContain("Ventes du secteur alentour (environ 600\u00a0m sur 600\u00a0m)\u00a0: source momentanément indisponible, rechargez la page dans un instant.");
+    expect(block).not.toContain("<table");
+    // Both down: the block says the source is down, as before.
+    const none = plain(terrainPage("https://rundata.re", "7 rue de la Buse, Saint-Paul", { fiche: { ...FICHE, marche_immobilier: "service momentanément indisponible : réessayer dans un instant" } }));
+    expect(none).toContain("Source momentanément indisponible\u00a0: rechargez la page dans un instant.");
+  });
+
   it("puts each warning beside its block, the risks' first, and never « sans risque »", () => {
     const html = plain(terrainPage("https://rundata.re", "7 rue de la Buse, Saint-Paul", { fiche: FICHE }));
     const at = (s: string) => html.indexOf(s);

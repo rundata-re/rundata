@@ -49,6 +49,8 @@ const GEORISQUES = "https://www.georisques.gouv.fr/mes-risques/connaitre-les-ris
 // Never « sans risque » nor « zone sûre » (marketing).
 const HORS_PPR = "hors des zones réglementées des plans de prévention des risques";
 const NON_LU = `Source momentanément indisponible${N}: rechargez la page dans un instant.`;
+// The area's sales alone not read, the street's shown above it.
+const SECTEUR_MUET = `Ventes du secteur alentour (environ 600${N}m sur 600${N}m)${N}: source momentanément indisponible, rechargez la page dans un instant.`;
 
 /** The tool's precision, in marketing's words after « l'adresse a été placée »; undefined for a point that is sure. */
 const PLACEE: Record<string, string> = {
@@ -158,6 +160,8 @@ function prix(fiche: O): string {
   };
   const voie = obj(m.sur_la_voie);
   const street = voie ? `<p>${esc(String(voie.voie))}${N}: ${esc(str(voie.note) ?? str(voie.non_lues) ?? `${voie.ventes} ventes depuis ${voie.depuis}`)}</p>` : "";
+  // The area's sales not read, the street's read (tools/terrain.ts `secteur`): the street said, as in the tool's summary.
+  if (m.secteur) return block("prix", "Prix des ventes voisines", `${street}<p>${esc(SECTEUR_MUET)}</p>`, esc(GARDES.prix));
   return block(
     "prix",
     "Prix des ventes voisines",

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, type CacheEntry, MemoryStore } from "../src/cache.js";
-import { ISLAND_PAGES, ISLAND_PEEK_MS, snapshot } from "../src/web/data.js";
+import { ISLAND_ALONE_MS, ISLAND_PAGES, ISLAND_PEEK_MS, snapshot, WAIT_MS } from "../src/web/data.js";
 import { HOME_READER_WAIT_MS, homeWaits } from "../src/web/site.js";
 
 const T0 = Date.parse("2026-11-07T03:18:00Z");
@@ -83,6 +83,61 @@ describe("the weather of / and /meteo, one copy for the island (web/data.ts ISLA
     expect(got).toEqual({ construite: "ici" });
     log.mockRestore();
     await vi.advanceTimersByTimeAsync(5000);
+  });
+
+  // 19 to 21/11/2026: 8 % of the views of /aujourdhui/<commune> past 3 s, each a whole build of web:lieu where its data
+  // center had no copy, KV having one of the current revision 4 to 36 minutes old.
+  it("waits for KV longer when the data center has no copy at all: a person gets the island's, nothing built before", async () => {
+    vi.useFakeTimers({ now: T0 });
+    class SlowKv extends MemoryStore {
+      constructor(private ms: number) {
+        super();
+      }
+      async get(key: string, freshAfter?: number) {
+        await new Promise((resolve) => setTimeout(resolve, this.ms));
+        return super.get(key, freshAfter);
+      }
+    }
+    expect(ISLAND_ALONE_MS).toBeGreaterThan(ISLAND_PEEK_MS);
+    expect(ISLAND_ALONE_MS).toBeLessThan(WAIT_MS);
+    const kv = new SlowKv(1200);
+    await kv.put("lecture:web:lieu:saint-andre", { value: { construite: "ailleurs" }, fetchedAt: T0 - 20 * MIN });
+    const c = new Cache(new MemoryStore(), () => T0, false, kv);
+    let builds = 0;
+    const build = () => new Promise((resolve) => setTimeout(() => resolve({ construite: ++builds }), 6000));
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    let got: unknown;
+    void snapshot(c, "web:lieu:saint-andre", build, () => {}, new Date(T0)).then((r) => (got = r?.value));
+    await vi.advanceTimersByTimeAsync(1200);
+    expect(got).toEqual({ construite: "ailleurs" });
+    expect(log.mock.calls.map((x) => String(x[0]))).toContain(
+      `copie de l'île lue en 1200 ms : web:lieu:saint-andre, servie, aucune copie au centre de données, attente ${ISLAND_ALONE_MS} ms`);
+    log.mockRestore();
+    await vi.advanceTimersByTimeAsync(10_000);
+  });
+
+  it("still waits for KV ISLAND_PEEK_MS only when the data center has a copy, and says when KV answered", async () => {
+    vi.useFakeTimers({ now: T0 });
+    class SlowKv extends MemoryStore {
+      async get(key: string, freshAfter?: number) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        return super.get(key, freshAfter);
+      }
+    }
+    const kv = new SlowKv();
+    await kv.put("lecture:web:lieu:saint-andre", { value: { construite: "ailleurs" }, fetchedAt: T0 - MIN });
+    const memory = new MemoryStore();
+    await memory.put("web:lieu:saint-andre", { value: { construite: "ici" }, fetchedAt: T0 - 20 * MIN });
+    const c = new Cache(memory, () => T0, false, kv);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    let got: unknown;
+    void snapshot(c, "web:lieu:saint-andre", async () => ({ construite: "neuve" }), () => {}, new Date(T0)).then((r) => (got = r?.value));
+    await vi.advanceTimersByTimeAsync(ISLAND_PEEK_MS);
+    expect(got).toEqual({ construite: "ici" });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(log.mock.calls.map((x) => String(x[0]))).toContain(
+      `copie de l'île lue en 1200 ms : web:lieu:saint-andre, arrivée trop tard, copie du centre de données là, attente ${ISLAND_PEEK_MS} ms`);
+    log.mockRestore();
   });
 
   it("keeps the other pages' copies in the data center, out of KV", async () => {

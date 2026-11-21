@@ -384,15 +384,26 @@ export class Cache {
    * otherwise. `islandWithinMs`: for a copy of the island (web/data.ts ISLAND_PAGES), the durable store (the Worker's
    * KV) asked last, as `island` does, but waited for that long at most: past it, the data center's copy, however old,
    * is the answer (a read of KV may take seconds, 09/11/2026), and what KV gives later is not waited for. The newer of
-   * the two is put in the data center's stores.
+   * the two is put in the data center's stores. `islandAloneMs`: that wait when the data center has no copy at all,
+   * where giving up means a whole build (web/data.ts `snapshot`). A read past `islandWithinMs` is logged with its time.
    */
-  async peek<T>(key: string, freshAfter?: number, islandWithinMs?: number): Promise<Cached<T> | undefined> {
+  async peek<T>(key: string, freshAfter?: number, islandWithinMs?: number, islandAloneMs = islandWithinMs): Promise<Cached<T> | undefined> {
     let hit = await this.store.get(key, freshAfter);
     if (islandWithinMs != null && this.lectures && !(hit && freshAfter != null && hit.fetchedAt >= freshAfter)) {
+      const waitMs = hit ? islandWithinMs : islandAloneMs!;
+      const t = Date.now();
       let timer: ReturnType<typeof setTimeout> | undefined;
-      const late = new Promise<undefined>((resolve) => (timer = setTimeout(() => resolve(undefined), islandWithinMs)));
-      const far = await Promise.race([this.lectures.get(key).catch(() => undefined), late]);
+      const late = new Promise<"late">((resolve) => (timer = setTimeout(() => resolve("late"), waitMs)));
+      const read = this.lectures.get(key).catch(() => undefined);
+      const won = await Promise.race([read, late]);
       clearTimeout(timer);
+      const far = won === "late" ? undefined : won;
+      // How long KV took, when longer than the short wait: what the waits above are set from (21/11/2026).
+      if (won === "late" || Date.now() - t > islandWithinMs) {
+        const said = (ms: number, what: string) => console.log(`copie de l'île lue en ${ms} ms : ${key}, ${what}, ${hit ? "copie du centre de données là" : "aucune copie au centre de données"}, attente ${waitMs} ms`);
+        if (won !== "late") said(Date.now() - t, far ? "servie" : "absente");
+        else void read.then((e) => said(Date.now() - t, e ? "arrivée trop tard" : "absente, trop tard"));
+      }
       if (far && (!hit || far.fetchedAt > hit.fetchedAt)) {
         hit = far;
         await this.store.put(key, far).catch(() => undefined);

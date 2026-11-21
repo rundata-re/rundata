@@ -2172,6 +2172,13 @@ export type ReaderWaits = (key: string, value: unknown, ageMs: number) => boolea
 export interface OldCopy {
   afterMs: number;
   waitMs: number;
+  /**
+   * Past this age, ms (`afterMs` when not given), the data center's copy is of no use to the reader: the island's copy
+   * in KV is waited for as when there is none (ISLAND_ALONE_MS). On 21/11/2026 at 19:35, resume_du_jour at
+   * Saint-Pierre found its data center's web:lieu 5 h old, waited 300 ms for KV and left the weather out; the same
+   * call a minute later had it.
+   */
+  uselessAfterMs?: number;
 }
 
 export async function snapshot<T>(
@@ -2206,8 +2213,10 @@ export async function snapshot<T>(
   const island = ISLAND_PAGES.has(key);
   // The island's copy waited for ISLAND_PEEK_MS at most, and that wait taken from the reader's (`waitMs`).
   const start = Date.now();
+  // A copy the view would not serve (older than KEEP_SECONDS, or than what `old` takes) counts as none there.
+  const uselessAfterMs = Math.min(KEEP_SECONDS * 1000, old?.uselessAfterMs ?? old?.afterMs ?? Infinity);
   const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000, island ? Math.min(ISLAND_PEEK_MS, waitMs) : undefined,
-    island ? Math.min(ISLAND_ALONE_MS, withoutCopyMs ?? waitMs) : undefined).catch(() => undefined);
+    island ? Math.min(ISLAND_ALONE_MS, withoutCopyMs ?? waitMs) : undefined, now.getTime() - uselessAfterMs).catch(() => undefined);
   if (island) {
     waitMs = Math.max(0, waitMs - (Date.now() - start));
     if (withoutCopyMs != null) withoutCopyMs = Math.max(0, withoutCopyMs - (Date.now() - start));

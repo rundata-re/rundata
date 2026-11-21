@@ -134,11 +134,13 @@ interface Copy {
 
 const H = 60;
 const SEA = "température de la mer";
+/** The weather's copy kept in the summary for this long at most, minutes: past it, left out (usable()). */
+const METEO_MAX_MIN = 30;
 
 /** The copies of the commune's summary, for a place with its own weather page or not. */
 function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | undefined> {
   return {
-    meteo: { key: `web:lieu:${place.slug}`, build: (c, now) => buildPlace(c, place, now), max: 30, nom: "météo mesurée et prévue", outil: "meteo_actuelle et prevision_meteo", page: meteoPath(place.slug) },
+    meteo: { key: `web:lieu:${place.slug}`, build: (c, now) => buildPlace(c, place, now), max: METEO_MAX_MIN, nom: "météo mesurée et prévue", outil: "meteo_actuelle et prevision_meteo", page: meteoPath(place.slug) },
     commune: { key: `web:commune:${commune.slug}`, build: (c, now) => buildCommune(c, commune, now), max: 24 * H, nom: "mairie et info trafic des bus", outil: "annuaire_services_publics et transports", page: `/communes/${commune.slug}` },
     air: { key: "web:air", build: buildAir, max: 12 * H, sameDay: true, nom: "qualité de l'air", outil: "qualite_air", page: "/air" },
     mer: coastal(commune) ? { key: "web:mer", build: buildSea, max: 36 * H, nom: SEA, outil: "temperature_mer", page: "/mer" } : undefined,
@@ -771,8 +773,11 @@ export function court(r: Resume) {
   };
 }
 
-/** The weather's copy made before midnight: refused without waiting for its refresh (web/data.ts `OldCopy`). */
-const VEILLE_REFUSEE = { afterMs: Infinity, waitMs: 0 };
+/**
+ * The weather's copy made before midnight: refused without waiting for its refresh (web/data.ts `OldCopy`). One older
+ * than METEO_MAX_MIN, which usable() leaves out: the island's copy in KV waited for as when the data center has none.
+ */
+const VEILLE_REFUSEE = { afterMs: Infinity, waitMs: 0, uselessAfterMs: METEO_MAX_MIN * 60_000 };
 
 /** `detail` false (the tool's default): the short answer, court(); the page reads resume() whole. */
 export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(), background?: Background, detail = true) {

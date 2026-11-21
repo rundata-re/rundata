@@ -607,6 +607,29 @@ describe("reading the copies", () => {
     logs.mockRestore();
   });
 
+  it("waits for the island's copy when its data center's weather is too old for the summary, rather than leave it out", async () => {
+    // 21/11/2026 19:35, Saint-Pierre: the data center's web:lieu 5 h old, KV waited 300 ms, the weather left out
+    // (« copie de 21/11 14:40, trop ancienne »); the same call a minute later had it.
+    const edge = await edgeWith();
+    await edge.put(KEYS.meteo, { value: COPIES.meteo.value, fetchedAt: ago(5 * 60).getTime() });
+    /** KV, slower than ISLAND_PEEK_MS. */
+    class SlowKv extends MemoryStore {
+      async get(key: string, freshAfter?: number) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+        return super.get(key, freshAfter);
+      }
+    }
+    const kv = new SlowKv();
+    await kv.put(`lecture:${KEYS.meteo}`, { value: COPIES.meteo.value, fetchedAt: ago(4).getTime() });
+    const logs = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const r = body(await resumeDuJour(new Cache(new TieredStore(new MemoryStore(), edge), () => NOW.getTime(), false, kv), "Saint-Paul", NOW, () => undefined));
+    expect(r.meteo?.mesure?.station).toBe("Saint-Paul");
+    expect(r.non_inclus?.find((x: { outil: string }) => x.outil === "meteo_actuelle et prevision_meteo")).toBeUndefined();
+    expect(logs.mock.calls.flat().join("\n")).toContain("copie de l'île lue en");
+    expect(logs.mock.calls.flat().join("\n")).toContain("servie, copie du centre de données trop vieille, attente 2000 ms");
+    logs.mockRestore();
+  });
+
   it("gives the weather as its page has it, waiting a moment for a copy older than FRESH_SECONDS", async () => {
     // 31/10/2026, Le Tampon: the tool said 21,1 °C measured at 05:48, the page 19,9 °C at 06:06, at the same minute.
     const answer = async (min: number) => {

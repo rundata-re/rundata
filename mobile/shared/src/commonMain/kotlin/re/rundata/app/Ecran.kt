@@ -194,14 +194,15 @@ private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: Strin
 @Composable
 private fun BlocVigilance(v: Vigilance, ouvrir: (String) -> Unit) {
     val c = LocalCouleurs.current
-    val (teinte, encre) = v.couleur.teinte(c)
     Bloc("$SITE/vigilance", ouvrir, if (v.enPremier) c.avertissementFond else c.surface) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (v.couleur != Couleur.AUCUNE && v.etat != null) Box(Modifier.background(teinte, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
-                Texte("Vigilance ${v.etat}", 14.sp, encre, gras = true)
+        // Une pastille par phénomène nommé, chacune dans sa couleur ; puis la zone.
+        for (p in v.pastilles) {
+            val (teinte, encre) = p.couleur.teinte(c)
+            Box(Modifier.background(teinte, RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 2.dp)) {
+                Texte(p.texte, 14.sp, encre, gras = true)
             }
-            v.zone?.let { Texte("zone $it", 14.sp, c.attenue) }
         }
+        v.zone?.let { Texte("zone $it", 14.sp, c.attenue) }
         v.alerteCyclonique?.let { Texte(it, 16.sp, gras = true) }
         Texte(v.texte, 15.sp)
         v.officiel?.let { Texte(it, 13.sp, c.attenue) }

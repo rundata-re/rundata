@@ -42,16 +42,17 @@ data class Vigilance(
     val texte: String,
     /**
      * Ce que ce texte dit de la zone, tel quel : « verte », « orange vents forts, jaune fortes pluies / orages », « pas de
-     * vigilance émise ». La pastille le reprend mot pour mot.
+     * vigilance émise ».
      */
     val etat: String?,
     /** « Sud ». */
     val zone: String?,
     /**
-     * La couleur de la pastille, lue dans `etat` : celle qu'il nomme ; la plus grave quand il en nomme plusieurs, une par
-     * phénomène ; AUCUNE quand il n'en nomme pas (« pas de vigilance émise »). Jamais une couleur que le texte ne dit pas.
+     * Une pastille par couleur que `etat` nomme, chacune avec ses mots et sa couleur : « Vigilance orange vents forts » en
+     * orange, « Vigilance jaune fortes pluies / orages » en jaune. Aucune quand il n'en nomme pas (« pas de vigilance
+     * émise »). Jamais une couleur que le texte ne dit pas, ni une couleur pour un autre phénomène que le sien.
      */
-    val couleur: Couleur,
+    val pastilles: List<Pastille>,
     val auDessusDuVert: Boolean,
     /** Le texte de l'alerte cyclonique quand il y en a une. */
     val alerteCyclonique: String?,
@@ -167,9 +168,14 @@ internal fun etatDe(texte: String): String? {
     return apres.substringBefore(" pour l", "").trim().takeIf { it.isNotEmpty() }
 }
 
-/** La couleur de la pastille pour `etat` (voir Vigilance.couleur). */
-internal fun couleurDe(etat: String?): Couleur =
-    etat?.split(',')?.map { Couleur.de(it.trim().substringBefore(' ')) }?.filter { it != Couleur.AUCUNE }?.maxByOrNull { it.ordinal } ?: Couleur.AUCUNE
+/** « Vigilance orange vents forts », en orange : une pastille de vigilance. */
+data class Pastille(val texte: String, val couleur: Couleur)
+
+/** Les pastilles de `etat` (voir Vigilance.pastilles), dans l'ordre du texte. */
+fun pastillesDe(etat: String?): List<Pastille> =
+    etat?.split(',').orEmpty().map { it.trim() }.mapNotNull { mots ->
+        Couleur.de(mots.substringBefore(' ')).takeIf { it != Couleur.AUCUNE }?.let { Pastille("Vigilance $mots", it) }
+    }
 
 private fun vigilanceDe(v: JsonObject): Vigilance {
     val texte = v.texte("maintenant") ?: ""
@@ -178,7 +184,7 @@ private fun vigilanceDe(v: JsonObject): Vigilance {
         texte = texte,
         etat = etat,
         zone = v.texte("zone"),
-        couleur = couleurDe(etat),
+        pastilles = pastillesDe(etat),
         auDessusDuVert = (v["au_dessus_du_vert"] as? JsonPrimitive)?.booleanOrNull == true,
         alerteCyclonique = v.texte("alerte_cyclonique"),
         emise = v.texte("emise"),

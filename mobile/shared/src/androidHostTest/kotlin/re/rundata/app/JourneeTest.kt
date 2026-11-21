@@ -46,7 +46,7 @@ class JourneeTest {
         assertEquals("19:30", j.mesure!!.heureSeule)
         val v = assertNotNull(j.vigilance)
         assertEquals("Sud", v.zone)
-        assertEquals(Couleur.VERT, v.couleur)
+        assertEquals(listOf(Pastille("Vigilance verte", Couleur.VERT)), v.pastilles)
         assertEquals("verte", v.etat)
         assertFalse(v.enPremier)
         assertTrue(v.texte.startsWith("Vigilance météo\u00a0: verte pour le Sud"))
@@ -78,18 +78,21 @@ class JourneeTest {
         // Les formes que le serveur écrit (src/tools/vigilance.ts, zoneText) : la pastille reprend le texte mot pour mot.
         val vert = "Vigilance météo\u00a0: verte pour le Sud (Météo-France), la zone de Saint-Pierre."
         assertEquals("verte", etatDe(vert))
-        assertEquals(Couleur.VERT, couleurDe(etatDe(vert)))
+        assertEquals(listOf(Pastille("Vigilance verte", Couleur.VERT)), pastillesDe(etatDe(vert)))
         val deux = "Vigilance météo\u00a0: orange vents forts, jaune fortes pluies / orages pour l'Est (Météo-France), la zone de Saint-Benoît."
         assertEquals("orange vents forts, jaune fortes pluies / orages", etatDe(deux))
-        assertEquals(Couleur.ORANGE, couleurDe(etatDe(deux)))
-        assertEquals(Couleur.JAUNE, couleurDe("jaune fortes pluies / orages"))
-        assertEquals(Couleur.VIOLET, couleurDe("violette vents forts"))
+        // Deux phénomènes : deux pastilles, chacune dans la couleur que la phrase lui donne, jamais l'orange pour la pluie.
+        assertEquals(
+            listOf(Pastille("Vigilance orange vents forts", Couleur.ORANGE), Pastille("Vigilance jaune fortes pluies / orages", Couleur.JAUNE)),
+            pastillesDe(etatDe(deux)),
+        )
+        assertEquals(listOf(Pastille("Vigilance violette vents forts", Couleur.VIOLET)), pastillesDe("violette vents forts"))
         // Rien d'émis : ni couleur, ni vert inventé.
         val rien = "Vigilance météo\u00a0: pas de vigilance émise pour le Nord (Météo-France), la zone de Saint-Denis."
         assertEquals("pas de vigilance émise", etatDe(rien))
-        assertEquals(Couleur.AUCUNE, couleurDe(etatDe(rien)))
+        assertEquals(emptyList(), pastillesDe(etatDe(rien)))
         assertNull(etatDe("Vigilance indisponible."))
-        assertEquals(Couleur.AUCUNE, couleurDe(null))
+        assertEquals(emptyList(), pastillesDe(null))
     }
 
     @Test

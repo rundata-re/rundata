@@ -1,0 +1,29 @@
+# Le projet Xcode de l'hôte iPhone, produit sur le Mac par XcodeGen (`xcodegen generate` dans ce dossier).
+# Le framework Shared est lié par la phase de construction, qui appelle Gradle (:shared:embedAndSignAppleFrameworkForXcode).
+name: RundataRe
+options:
+  bundleIdPrefix: re.rundata
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  RundataRe:
+    type: application
+    platform: iOS
+    sources: [iosApp]
+    info:
+      path: iosApp/Info.plist
+      properties:
+        CFBundleDisplayName: rundata.re
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: re.rundata.app
+        FRAMEWORK_SEARCH_PATHS: "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS: [-framework, Shared]
+    preBuildScripts:
+      - name: Code commun (Kotlin)
+        script: |
+          cd "$SRCROOT/.." && ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        basedOnDependencyAnalysis: false

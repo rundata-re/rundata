@@ -235,6 +235,20 @@ export function aheadRows(c: CourantAnswer, commune: string, now: Date): Courant
   return own.filter((a) => ahead(a, now)).map((a) => row(a, now, a === own[0]));
 }
 
+/**
+ * The next range of a notice of a cut today or later, for the commune's tile (web/commune.ts): « lundi 23/11 de 09:00 à
+ * 12:30 », and how many others the notice gives after it; none for a notice that names no day.
+ */
+export function nextSlot(a: Pick<CourantRow, "creneaux">, now: Date): { quand: string; autres: number } | undefined {
+  const coming = (a.creneaux ?? []).filter((s) => ends(s) >= localDay(now));
+  const s = coming[0];
+  if (!s) return undefined;
+  // « aujourd'hui de 09:00 à 12:30 » during its day (marketing, 21/11/2026).
+  const day = (d: string) => (d === localDay(now) ? "aujourd'hui" : dayFr(d, now));
+  const quand = s.au ? `du ${day(s.jour)} au ${dayFr(s.au, now)}` : `${day(s.jour)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`;
+  return { quand, autres: coming.length - 1 };
+}
+
 /** « coupure d'électricité programmée le lundi 26/10 de 09:00 à 15:00 », for the summary's one line. */
 export function shortOf(a: Pick<CourantRow, "nature" | "creneaux" | "pdf">, now: Date): string {
   if (a.nature === "en cours") return "coupure d'électricité en cours selon la mairie";

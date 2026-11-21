@@ -30,7 +30,7 @@ import { SUJETS } from "../providers/actualites.js";
 import * as littoral from "../tools/littoral.js";
 import { horizonDe } from "../providers/calendrier.js";
 import { ferieDit, longDate, moonOf, ordinaux, UNPUBLISHED } from "../tools/calendrier.js";
-import type { CourantRow } from "../tools/courant.js";
+import { nextSlot, type CourantRow } from "../tools/courant.js";
 import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
 import { casse } from "../tools/casse.js";
 import { a, a as aLieu, de, enumeration, fr, heure, heuresDites, nombre, tranche } from "../tools/format.js";
@@ -995,6 +995,35 @@ export function electriciteLive(data: Cached<ElectriciteAnswer> | null, now = ne
     detail: `${esc(fr(Math.round(p.total_mw)))} MW produits ${esc(leJour(p.heure_mesure))}${signal ? ` · signal EDF ${esc(signal.toLowerCase())}${jeu ? ` (annoncé le ${esc(jeu.replace(" ", " à "))})` : ""}` : ""}`,
     // Never cut before the date EDF's terms ask for (three lines at 390 px are not enough for it).
     ...(signal && jeu && { entier: true }),
+  };
+}
+
+/**
+ * The commune's Électricité tile: a cut its mairie announces today or later first, its day and hours, the notice's link
+ * under it; the island's renewable share after, smaller (marketing, 21/11/2026). None announced: the island's tile, never
+ * « pas de coupure ».
+ */
+export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commune: string, now = new Date()): { live?: Live; more?: string; foot?: string } {
+  const island = electriciteLive(data, now);
+  const cut = data?.value.coupures_annoncees?.avis?.find((x) => x.commune === commune && x.nature);
+  if (!cut) return { live: island };
+  const next = nextSlot(cut, now);
+  const others = next?.autres ? `, et ${next.autres === 1 ? "1 autre plage" : `${next.autres} autres plages`} dans l'avis` : "";
+  // A cut the mairie says under way: « d'après la mairie, avis du 21/11 à 08:53 » (marketing, 21/11/2026).
+  const published = cut.publie_le ? `, avis du ${cut.publie_le.replace(" ", " à ")}` : "";
+  const when = next && cut.nature !== "en cours" ? `${next.quand}, d'après la mairie${cut.pdf ? ", heures et secteurs dans l'avis" : others}` : `d'après la mairie${published}`;
+  // « 82,2 % renouvelable sur l'île, le 20/11 à 17:10 »: the hour of EDF's figure, its day when not today's.
+  const p = data!.value.production;
+  const at = p?.heure_mesure.replace(" heure de La Réunion", "");
+  const today = localTime(now).split(" ")[0];
+  const share = p && at
+    ? `<p class="td all note">${esc(`${fr(p.renouvelable_pct)}\u202f% renouvelable sur l'île, ${at.startsWith(`${today} `) ? `à ${at.slice(today.length + 1)}` : leJour(at)}`)}</p>`
+    : "";
+  return {
+    // The notice's word, « programmée »; « en cours » only when the mairie's notice says so, never from the hour.
+    live: { valeur: cut.nature === "en cours" ? "Coupure en cours" : "Coupure programmée", detail: esc(when), entier: true },
+    ...(share ? { more: share } : {}),
+    foot: `<a href="${esc(cut.lien)}" rel="noopener">L'avis de la mairie${cut.pdf ? " (PDF)" : ""} →</a>`,
   };
 }
 

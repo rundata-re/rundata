@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Samedi 21 novembre 2026
 
+- Pages des communes : une coupure d'électricité relayée par la mairie s'affiche dans la tuile Électricité, avec ses heures et l'avis.
 - Événements : une sortie annoncée par un appel à exposants est donnée sous son nom, avec ses heures pour le public et le lien du billet.
 - Coupures d'électricité : chaque plage horaire du jour et les rues des avis en texte des mairies, même en gras, avec un renvoi à l'avis.
 - Événements : une sortie de l'agenda de la Ville de Saint-André est donnée même quand sa date n'est que dans le texte entier du billet.

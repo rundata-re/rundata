@@ -56,6 +56,17 @@ describe("appel à exposants", () => {
     expect(eventRow(e, e.seances).annonce).toBeUndefined();
   });
 
+  it("gives its capitals back to a title in capitals throughout, as the live one in Unicode bold (1.0.712)", () => {
+    expect(appelAuPublic(ev("APPEL À EXPOSANTS MARCHÉ DE NOËL AU COLOSSE !", JOURS))?.titre).toBe("Marché de Noël au Colosse");
+    expect(eventRow(appelAuPublic(ev("APPEL À EXPOSANTS MARCHÉ DE NOËL AU COLOSSE !", JOURS))!, JOURS).titre).toBe("Marché de Noël au Colosse");
+  });
+
+  it("writes a word as its post writes it elsewhere, for a place the gazetteer does not hold", () => {
+    const e = { ...ev("APPEL À EXPOSANTS FÊTE DES LETCHIS À BOIS-ROUGE", JOURS), description: "Une fête qui se tiendra à Bois-Rouge, sur le parvis." };
+    expect(appelAuPublic(e)?.titre).toBe("Fête des letchis à Bois-Rouge");
+    expect(nomUsage("marché de noël au kiosque", "Saint-Paul", "Rendez-vous au Kiosque de la plage.")).toBe("Marché de Noël au Kiosque");
+  });
+
   it("gives the capitals of the feasts and of the commune's places only", () => {
     expect(nomUsage("fête de noël au colosse", "Saint-André")).toBe("Fête de Noël au Colosse");
     expect(nomUsage("fête de noël au colosse", "Saint-Paul")).toBe("Fête de Noël au colosse");

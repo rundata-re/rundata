@@ -21,6 +21,20 @@ describe("the dated pages, the end", () => {
     expect(alertePage(O, copy({ ...v, emise: "" }), NOW)).toContain("Pas d&#39;alerte cyclonique en cours à La Réunion.</b>");
   });
 
+  it("/aujourdhui names the distributor read of a shared commune, and the ARS's sharing apart (L'Étang-Salé, 21/11/2026)", () => {
+    const p = pageOf("l-etang-sale")!;
+    const coupures = copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }, new Date("2026-11-21T05:34:00Z"));
+    const r = resume(p, { coupures } as never, NOW);
+    // The tool: a name in distributeur, the sharing in its own field, the network not read sent to the mairie.
+    expect(r.coupures_eau?.distributeur).toBe("runéo");
+    expect(r.coupures_eau?.partage?.texte).toMatch(/^D'après l'ARS, runéo distribue l'eau de \d+ réseaux sur \d+ à L'Étang-Salé, et la mairie celle du réseau .+\. Seuls les avis de runéo sont lus\.$/);
+    expect(r.coupures_eau?.partage?.mairie).toEqual({ libelle: "Le site de la mairie de L'Étang-Salé", lien: "https://www.letangsale.fr/" });
+    const html = aujourdhuiPage(O, p, r, null);
+    expect(html).toContain("<p>Aucune coupure annoncée par runéo le 21/11 à 09:34.</p>");
+    expect(html).not.toContain("par D'après");
+    expect(html).toMatch(/<p class="note">D&#39;après l&#39;<abbr[^>]*>ARS<\/abbr>, runéo distribue .+ Seuls les avis de runéo sont lus\. <a href="https:\/\/www\.letangsale\.fr\/" rel="noopener">Le site de la mairie de L&#39;Étang-Salé ↗<\/a><\/p>/);
+  });
+
   it("/aujourdhui says when the distributor's notices were read, the copy's time and never the call's", () => {
     const p = pageOf("saint-paul")!;
     const coupures = copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }, new Date("2026-11-06T09:05:00Z"));

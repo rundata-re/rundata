@@ -132,6 +132,19 @@ export function phrasePartage(commune: string, p: Partage): string {
     rest.map((d, i) => `${i === rest.length - 1 ? ", et" : ","} ${said(d.nom)} celle ${of(d.reseaux)}`).join("") + ".";
 }
 
+/**
+ * A shared commune, said apart from the name of the distributor read: who distributes which networks (phrasePartage),
+ * whose notices are read, and the mairie's site when one of them is not (LIENS). What coupures_eau and the commune's day
+ * say (« Aucune coupure annoncée par D'après l'ARS… » on /aujourdhui/l-etang-sale, 21/11/2026).
+ */
+export function partageLu(commune: string, d: Distributeur & { partage: Partage }): { texte: string; mairie?: { libelle: string; lien: string } } {
+  const lien = d.partage.par.some((x) => !x.site) ? LIENS[commune] : undefined;
+  return {
+    texte: `${phrasePartage(commune, d.partage)} Seuls les avis de ${d.par ?? d.nom} sont lus.`,
+    ...(lien ? { mairie: { libelle: lien.libelle, lien: lien.site } } : {}),
+  };
+}
+
 export function distributeur(commune: string): Distributeur | undefined {
   const raw = (data.communes as Record<string, string | null>)[commune];
   if (!raw) {

@@ -34,12 +34,19 @@ function sameCoast(a: Versant, b: Versant, km: number): boolean {
   return km < 10 && i >= 0 && j >= 0 && (Math.abs(i - j) === 1 || Math.abs(i - j) === 3);
 }
 
+/** Whether the station is on the place's side of the island, or across the line between two sides of one coast. */
+function onSide(place: Place, station: Station, d: number): boolean {
+  const vPlace = versant(place.lon, place.lat);
+  const vStation = versant(station.lon, station.lat);
+  return vPlace === vStation || sameCoast(vPlace, vStation, d);
+}
+
 export function fit(place: Place, station: Station): Fit {
   const d = distanceKm(place.lon, place.lat, station.lon, station.lat);
   const dAlt = place.altitude_m == null ? null : station.altitude_m - place.altitude_m;
   const vPlace = versant(place.lon, place.lat);
   const vStation = versant(station.lon, station.lat);
-  const sameSide = vPlace === vStation || sameCoast(vPlace, vStation, d);
+  const sameSide = onSide(place, station, d);
   const absAlt = Math.abs(dAlt ?? 0);
 
   const avertissements: string[] = [];
@@ -70,6 +77,18 @@ export function fit(place: Place, station: Station): Fit {
     avertissements,
     score: d + (3 * absAlt) / 100 + (sameSide ? 0 : 8),
   };
+}
+
+/**
+ * The rain gauges' order for a place: km, plus 1 km per 100 m of altitude difference, plus 8 km for the other side of
+ * the island. Lower is better. The score's 3 km per 100 m are the temperature's: with them, the gauge of Colimaçons,
+ * 1,6 km from the place and 354 m higher, came after Piton Saint-Leu, 9,1 km away (21/11/2026). Without any, Saint-Denis
+ * would read Le Colorado, 668 m up the slope, before Le Chaudron by the sea.
+ */
+export function pluieDabord(place: Place, station: Station): number {
+  const d = distanceKm(place.lon, place.lat, station.lon, station.lat);
+  const dAlt = place.altitude_m == null ? 0 : Math.abs(station.altitude_m - place.altitude_m);
+  return d + dAlt / 100 + (onSide(place, station, d) ? 0 : 8);
 }
 
 const RANG: Record<Pertinence, number> = { bonne: 0, moyenne: 1, faible: 2 };

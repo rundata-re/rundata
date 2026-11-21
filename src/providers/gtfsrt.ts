@@ -287,7 +287,10 @@ export const withRealtime = () => Object.keys(NETWORKS).filter((n) => NETWORKS[n
  * the South waited for them up to 8 s about once a minute, 8.5 to 9.5 s in the middle over 7 days for the robots that read
  * these pages one after the other (Loki, 20/11/2026, « source gtfs_rt_reunion sans réponse : rt:carsud »). A feed is a
  * small file that answers within a second when it works; once silent, it is asked again every 5 minutes, its last
- * copy served in between (or, older than MAX_AGE_SECONDS, the page says the feed is silent).
+ * copy served in between (or, older than MAX_AGE_SECONDS, the page says the feed is silent). Every 5 minutes, that next
+ * try goes on after the answer, the page served the last copy with its time: past 15 minutes of silence, a robot still
+ * waited for it on a stop's page, 1.2 to 2.1 s at the stations of Saint-Benoît and Saint-Louis (Loki, 20/11/2026,
+ * Car Jaune silent since 11:39 and Car Sud since 12:22).
  */
 export const RT_TIMEOUT_MS = 4000;
 export const RT_BACKOFF_SECONDS = 5 * 60;
@@ -296,7 +299,7 @@ export const RT_BACKOFF_SECONDS = 5 * 60;
 export async function realtime(cache: Cache, net: string): Promise<Cached<Realtime> | undefined> {
   const url = NETWORKS[net]?.temps_reel?.flux;
   if (!url) return undefined;
-  return cache.get(`rt:${net}`, FRESH_SECONDS, async () => decode(new Uint8Array(await getBytes(SOURCE.id, url, RT_TIMEOUT_MS))), RT_BACKOFF_SECONDS);
+  return cache.get(`rt:${net}`, FRESH_SECONDS, async () => decode(new Uint8Array(await getBytes(SOURCE.id, url, RT_TIMEOUT_MS))), RT_BACKOFF_SECONDS, true);
 }
 
 /**

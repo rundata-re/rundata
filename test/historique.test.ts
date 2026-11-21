@@ -4,10 +4,12 @@ import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { counted } from "../src/budget.js";
 import { Cache } from "../src/cache.js";
 import * as climat from "../src/providers/climat.js";
-import { VEILLE, type Veille } from "../src/providers/meteofrance-stations.js";
+import { STATIONS_974, VEILLE, type Veille } from "../src/providers/meteofrance-stations.js";
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import { LICENCES } from "../src/providers/autorisations.js";
 import { historiqueMeteo, nothing, parseDate, period, TODAY } from "../src/tools/historique.js";
+import { resolvePlace } from "../src/places/resolve.js";
+import { pluieDabord } from "../src/tools/representativeness.js";
 
 // Real rows of the archive (scripts/build-climat.py): eight stations, the years 2006, 2025 and 2026 up to 23 October.
 const NOW = new Date("2026-10-24T08:00:00Z");
@@ -339,6 +341,44 @@ describe("nothing measured", () => {
     const r = json(await historiqueMeteo(await kept({ "97418110": { rr: 0.4, tx: 28.1 } }), "Saint-Denis", { du: "2026-10-24" }, now));
     expect(r.resume).toMatch(/officielle\u00a0: pluie 0,4 mm à Saint-Denis Gillot \(aéroport\)\.$/);
     expect(r.hier_provisoire).not.toHaveProperty("temperatures");
+  });
+
+  it("gives the rain at the nearest gauge, 354 m higher, and the temperatures at the best-placed station: Colimaçons", async () => {
+    plug();
+    // As read on 21/11/2026 for the 20th: 11,2 mm at Colimaçons (7 mm from 15 h to 16 h), 3,4 mm at Piton Saint-Leu.
+    // The temperature's 3 km per 100 m put Piton Saint-Leu, 9,1 km away, before the gauge 1,6 km from the place.
+    const h = (wet: Record<number, number>) => Array.from({ length: 24 }, (_, k) => wet[k] ?? 0);
+    const c = await kept({
+      "97413520": { rr: 11.2, rr_h: h({ 14: 1.6, 15: 7, 16: 2.6 }) },
+      "97413580": { rr: 3.4, rr_h: h({ 15: 3.4 }), tn: 19.8, tx: 27.1 },
+      "97413550": { tn: 20.6, tx: 28.3 },
+    });
+    const a = json(await historiqueMeteo(c, "Colimaçons", { du: "2026-10-24" }, now));
+    expect(a.hier_heure_par_heure.stations).toEqual([
+      { station: "Colimaçons", pluie_mm: 11.2, heures_de_pluie: ["entre 14 h et 15 h : 1,6 mm", "entre 15 h et 16 h : 7 mm", "entre 16 h et 17 h : 2,6 mm"] },
+    ]);
+    expect(a.hier_provisoire.pluie).toMatchObject({ mm: 11.2, station: "Colimaçons", distance_km: 1.6, altitude_m: 798 });
+    // The altitude is still said, as a warning, beside the gauge.
+    expect(a.hier_provisoire.pluie.avertissements[0]).toMatch(/^La station est 354 m plus haut que Les Colimaçons/);
+    expect(a.hier_provisoire.temperatures).toMatchObject({ min: 20.6, max: 28.3, station: "Étang Saint-Leu - CIRAD", distance_km: 4.1 });
+    expect(a.resume).toMatch(/officielle\u00a0: pluie 11,2 mm à Colimaçons, températures de 20,6 °C à 28,3 °C à Étang Saint-Leu - CIRAD\./);
+    expect(a.resume).not.toContain("Piton Saint-Leu");
+  });
+
+  it("ranks the rain gauges by distance and 1 km per 100 m (pluieDabord), not by the temperature's 3 km", () => {
+    const order = (lieu: string, ids: string[]) => {
+      const p = resolvePlace(lieu)!.lieu;
+      return STATIONS_974.filter(([id]) => ids.includes(id))
+        .map(([id, nom, lat, lon, altitude_m]) => ({ nom, r: pluieDabord(p, { source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }) }))
+        .sort((u, v) => u.r - v.r).map((x) => x.nom);
+    };
+    // Colimaçons, 1,6 km and 354 m up, before Piton Saint-Leu, 9,1 km away and 86 m up.
+    expect(order("Colimaçons", ["97413520", "97413580"])).toEqual(["Colimaçons", "Piton Saint-Leu"]);
+    // The altitude still counts: Saint-Denis by the sea reads Le Chaudron, not Le Colorado 668 m up, though nearer.
+    const denis = resolvePlace("Saint-Denis")!.lieu;
+    const [chaudron, colorado] = ["Chaudron", "Colorado"].map((n) => STATIONS_974.find(([, nom]) => nom === n)!);
+    const r = (x: typeof chaudron) => pluieDabord(denis, { source: "meteofrance", id: x[0], nom: x[1], lat: x[2], lon: x[3], altitude_m: x[4], variables: [] });
+    expect(r(chaudron)).toBeLessThan(r(colorado));
   });
 
   it("gives yesterday at each station of the island's tour, until the day is loaded", async () => {

@@ -274,8 +274,9 @@ describe("the scheduled refresh of the shared copies", () => {
     for (const s of SHARED) expect(kv.writes.get(kvKey(s.key)), s.key).toBeLessThanOrEqual(perDay(typeof s.every === "number" ? s.every : 5));
     const total = [...kv.writes.values()].reduce((a, b) => a + b, 0);
     // The vigilance and the news every 5 minutes, the earthquakes every 10, the rivers every 15, quiet here, the volcano's
-    // copy, quiet too, every 30 minutes like four others, the ONF's map and the counts of /chiffres every hour, and the
-    // satellites' grids every 3 hours, and /sport's copy every 30 minutes (about 1 230 a day, partagees.ts), and the airports' METAR every 10 minutes (144). The air every hour, and every quarter of an hour
+    // copy, quiet too, every 30 minutes like three others, the water cuts every 15 minutes (96, since 21/11/2026: 48
+    // more), the ONF's map and the counts of /chiffres every hour, and the
+    // satellites' grids every 3 hours, and /sport's copy every 30 minutes (about 1 280 a day, partagees.ts), and the airports' METAR every 10 minutes (144). The air every hour, and every quarter of an hour
     // from 10 h to 14 h, its copy here never having the day's forecast: 12 more, at the hours of the day simulated, never
     // at those of the clock (the test went every 15 minutes all day when run from 10 h to 14 h).
     expect(kv.writes.get(kvKey("web:air"))).toBe(36);
@@ -284,8 +285,8 @@ describe("the scheduled refresh of the shared copies", () => {
     // worst day, NOAA not answering: a real day goes back to every hour once the window's granules are read.
     const passes = kv.writes.get(kvKey(viirs.KEY))!;
     expect(passes).toBe(112);
-    expect(total - passes).toBeLessThanOrEqual(1188 + 49 + 144);
-    expect(total - passes).toBeGreaterThanOrEqual(1145 + 49 + 144);
+    expect(total - passes).toBeLessThanOrEqual(1188 + 49 + 144 + 48);
+    expect(total - passes).toBeGreaterThanOrEqual(1145 + 49 + 144 + 48);
   });
 
   it("refreshes a copy at each of its slots, though written a few seconds into the event before", async () => {

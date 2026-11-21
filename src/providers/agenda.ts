@@ -23,7 +23,7 @@
  */
 import { de } from "../articles.js";
 import type { Bundle, Cache, Cached } from "../cache.js";
-import { getBytes, getText, httpUrl, UA_RUNDATA } from "../http.js";
+import { getBytes, getText, httpUrl, sharedSite, UA_RUNDATA } from "../http.js";
 import { inReunion } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
@@ -618,7 +618,11 @@ export function parseRss(xml: string, nom: string, commune: string, first = fals
     // 09:20 »), a label (« EVENEMENT », Drupal's « Texte de l'article ») or the title again.
     const texte = first ? full.replace(STAMP, "").replace(/^(?:[ÉE]V[ÉE]NEMENT\s+)?/iu, "").replace(new RegExp(`^${escapeRe(titre)}\\s*(?:Texte de l'article\\s*)?`, "u"), "") : full;
     const published = new Date(tag(item, "pubDate"));
-    const seances = datesIn(titre, published).length ? datesIn(`${titre} ${texte}`, published) : datesIn(texte, published);
+    // An excerpt cut before its day (« un marché de Noël qui se tiendra… […] », Saint-André, 21/11/2026): the day in
+    // the post's whole text, which WordPress gives in content:encoded; the excerpt stays what is shown.
+    const whole = () => clean(tag(item, "content:encoded"));
+    const seances = datesIn(titre, published).length ? datesIn(`${titre} ${texte}`, published)
+      : datesIn(texte, published).length ? datesIn(texte, published) : datesIn(whole(), published);
     if (!seances.length) return [];
     const lien = clean(tag(item, "link"));
     const statut = statusOf(titre, texte);
@@ -1906,6 +1910,11 @@ for (const a of AGENDAS) {
 }
 // Its link, the TÉAT's programme, is Le Séchoir's site while the TÉAT is not read.
 if (!AGENDAS.some((a) => a.id === "teat")) SALLES_SOURCE.url = "https://www.lesechoir.com";
+
+// The sites of the agendas with a source of their own, spaced with the other sources that read them (http.ts
+// `sharedSite`): a commune's news and its water or its power cuts, its news and its agenda. A source that several
+// agendas share (the halls', the mairies' agendas, OpenAgenda) names one of their sites only: left out.
+for (const a of AGENDAS) if (AGENDAS.filter((b) => b.source === a.source).length === 1) sharedSite(a.source.id, a.source.url);
 
 /**
  * The home pages some events link to instead of their own page (`accueil`): opened in a new window, as the terms of

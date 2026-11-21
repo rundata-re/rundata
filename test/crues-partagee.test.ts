@@ -198,7 +198,9 @@ describe("the 29 gauges, read by the scheduled event in batches", () => {
   it("for a question, asks for the vigilance, the heights and the flows together, two batches of each at once at most", async () => {
     await buildCrues(there(new MemoryStore(), NOW), NOW);
     expect(asks.filter((a) => a !== "vigilance").length).toBe(8);
-    expect(most).toBe(5);
+    // The heights and the flows two batches each at once; the vigilance, asked while their read is claimed (cache.ts
+    // `claim`, since 21/11/2026), has answered here before they go.
+    expect(most).toBe(4);
   });
 
   it("serves a question, in another data center, the copy the scheduled event kept in KV, with its time, without asking", async () => {

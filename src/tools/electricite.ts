@@ -60,19 +60,30 @@ export function constraints(hours: edf.Hour[]) {
     if (last && last.signal === h.signal_horaire_texte && Date.parse(last.fin) === Date.parse(h.dateheure)) last.fin = end;
     else out.push({ debut: new Date(h.dateheure).toISOString(), fin: end, signal: h.signal_horaire_texte, recharge_conseillee_pct: h.signal_horaire_taux_recharge_conseille });
   }
-  return out.map((c) => {
+  const days = out.map((c) => {
     const d = new Date(Date.parse(c.debut) + 4 * 3600_000);
     const m = (iso: string) => {
       const [h, mn] = localTime(new Date(iso)).split(" ")[1].split(":").map(Number);
       return h * 60 + mn;
     };
     const [start, end] = paire(m(c.debut), m(c.fin));
-    return {
-      quand: `${WEEKDAYS[d.getUTCDay()]} ${localTime(new Date(c.debut)).split(" ")[0]} de ${start} à ${end}`,
-      signal: c.signal.toLowerCase(),
-      recharge_conseillee_pct: c.recharge_conseillee_pct,
-    };
+    return { jour: `${WEEKDAYS[d.getUTCDay()]} ${localTime(new Date(c.debut)).split(" ")[0]}`, heures: `de ${start} à ${end}`, debut: Date.parse(c.debut), signal: c.signal.toLowerCase(), recharge_conseillee_pct: c.recharge_conseillee_pct };
   });
+  // The same hours day after day said once (« du samedi 21/11 au jeudi 26/11, chaque jour de 18 h à 22 h »): six
+  // identical lines were a fifth of the answer (21/11/2026), and the page lists them the same way.
+  const runs: (typeof days)[] = [];
+  for (const d of days) {
+    const run = runs[runs.length - 1];
+    const last = run?.[run.length - 1];
+    const same = last && last.heures === d.heures && last.signal === d.signal && last.recharge_conseillee_pct === d.recharge_conseillee_pct;
+    if (same && d.debut - last.debut === 86400_000) run.push(d);
+    else runs.push([d]);
+  }
+  return runs.map((run) => ({
+    quand: run.length > 1 ? `du ${run[0].jour} au ${run[run.length - 1].jour}, chaque jour ${run[0].heures}` : `${run[0].jour} ${run[0].heures}`,
+    signal: run[0].signal,
+    recharge_conseillee_pct: run[0].recharge_conseillee_pct,
+  }));
 }
 
 async function settle<T>(p: Promise<{ value: T }>): Promise<T | null> {

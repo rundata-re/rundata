@@ -5,7 +5,7 @@
  * gives them in a block of their own, `arretes_travaux_ville`). Only those in force or to come: number, place, dates, link.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText, UA_RUNDATA } from "../http.js";
+import { getText, sharedSite, UA_RUNDATA } from "../http.js";
 import type { SourceInfo } from "../types.js";
 import { strip } from "./avis-eau.js";
 
@@ -54,9 +54,15 @@ const dayOf = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString(
 /** Those in force or to come on `now`'s day: their last day not past. */
 export const enCours = (list: ArreteTravaux[], now: Date) => list.filter((a) => a.au >= dayOf(now));
 
-/** The list page, read at most every 30 minutes, one request. */
+sharedSite(SOURCE.id, SOURCE.url);
+
+/**
+ * The list page, read at most every 30 minutes, one request, by the scheduled event (web:coupures): the pages serve its
+ * copy, however old, and read the town's site only when there is none (cache.ts `islandRead`). Read by each data
+ * center's own pages before 21/11/2026; the town's site is read for its power cuts too (http.ts `sharedSite`).
+ */
 export function arretes(cache: Cache): Promise<Cached<ArreteTravaux[]>> {
-  return cache.get(KEY, FRESH_SECONDS, async () => parseArretes(await getText(SOURCE.id, SOURCE.url, 12_000, { "User-Agent": UA_RUNDATA })));
+  return cache.islandRead(KEY, FRESH_SECONDS, async () => parseArretes(await getText(SOURCE.id, SOURCE.url, 12_000, { "User-Agent": UA_RUNDATA })));
 }
 
 const JOURS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];

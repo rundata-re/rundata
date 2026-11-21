@@ -12,7 +12,7 @@ import { recentRainBlock } from "./pluie-recente.js";
 import { pluieCommune } from "./pluie-commune.js";
 import { hasExtremes, todayTemperatureBlock } from "./temperature-du-jour.js";
 import { type Observation, type SourceInfo, why } from "../types.js";
-import { fit, mieux } from "./representativeness.js";
+import { fit, mieux, pluieDabord } from "./representativeness.js";
 import { credits, de, fr, notFound, phrases, placeBlock, placeWarning, show, text, when } from "./format.js";
 
 interface Provider {
@@ -287,9 +287,10 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
   // Named, since the warning often concerns the second station only.
   const warnings = [...new Set(shown.filter((x) => x.f.pertinence !== "bonne" && x.f.avertissements[0])
     .map((x) => `${x.o.station.nom} : ${x.f.avertissements[0].replace(/^La station est/, "station")}`))];
-  // The rain of the last hours at the best-placed gauge.
+  // The rain of the last hours at the nearest gauge (pluieDabord): not the temperature's order, which counts the altitude.
   const recentRain = recent && meteofrance.enabled() ? await meteofrance.recentRain(cache, now) : undefined;
-  const gauge = recent === true && recentRain && ranked.find((x) => x.o.station.source === "meteofrance" && recentRain.hourly.rr[x.o.station.id]);
+  const gauge = recent === true && recentRain && [...ranked].sort((a, b) => pluieDabord(r.lieu, a.o.station) - pluieDabord(r.lieu, b.o.station))
+    .find((x) => x.o.station.source === "meteofrance" && recentRain.hourly.rr[x.o.station.id]);
   // Nothing in the hour under way nor in the newest full hour.
   const dry = (id: string) => recentRain!.slots(id).every((x) => !x.rr) && recentRain!.hourly.rr[id][0] === 0;
   const sky = obs.some(({ o }) =>

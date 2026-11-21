@@ -369,8 +369,11 @@ export const dayStart = (jour: string) => Date.parse(`${jour}T00:00:00+04:00`);
 // cold cache, a prefecture slow or down, or a release gone from its list of the latest must never leave the level
 // unknown.
 const LAST_PHASE = "volcan:prefecture:derniere-phase";
-// The durable store forgets its keys after a few days (kv.ts): the phase is kept again once a day.
+// The durable store forgets its keys after a few days (kv.ts): the phase is kept again once a day, and for years. Kept
+// for 3 days, it was lost on 20/11/2026 when the prefecture's latest 20 releases had none since the 17th (a phase lasts
+// between eruptions), the level said « à vérifier » on /volcan and in volcan_seismes.
 const KEEP_AGAIN_MS = 24 * 3600_000;
+export const PHASE_KEEP_SECONDS = 5 * 365 * 24 * 3600;
 // What this isolate's cache knows of the kept phase, read at most this often (a subrequest each).
 const KEPT_MEMORY_MS = 5 * 60_000;
 const known = new WeakMap<Cache, { phase: Cached<Phase> | undefined; at: number }>();
@@ -390,7 +393,7 @@ async function keepPhase(cache: Cache, p: Phase, now: number) {
   // The release's sentences kept go on with it while it is the same release.
   const merged: Phase = { ...p, ...(!p.phrases && k?.value.lien === p.lien && k.value.phrases && { phrases: k.value.phrases }) };
   if (k && JSON.stringify(k.value) === JSON.stringify(merged) && now - k.fetchedAt.getTime() < KEEP_AGAIN_MS) return;
-  await cache.keep(LAST_PHASE, merged);
+  await cache.keep(LAST_PHASE, merged, PHASE_KEEP_SECONDS);
   known.set(cache, { phase: { value: merged, fetchedAt: new Date(now), stale: true }, at: now });
 }
 
@@ -586,6 +589,24 @@ async function readPhase(cache: Cache, now: number): Promise<Cached<Phase | null
 }
 
 /**
+ * The phase of the newest release of the collector's record of the alerts (prefecture-copie.ts RELEVE_KV_KEY, never
+ * forgotten), read as from the list with its page's copy, and kept again: when the phase kept is lost and no release of
+ * the list declares one (20/11/2026). Undefined without a record.
+ */
+async function recorded(cache: Cache, now: number): Promise<Cached<Phase> | undefined> {
+  const entries = await prefecture.releveDuVolcan(cache);
+  const last = entries.reduce<copie.ReleveEntree | undefined>((a, e) => (!a || e.jour >= a.jour ? e : a), undefined);
+  if (!last) return undefined;
+  const page = await releasePage(cache, last.lien, now, SUBJECT_SECONDS).catch(() => undefined);
+  const release = { titre: last.titre, lien: last.lien, publie: new Date(`${last.jour}T12:00:00+04:00`).toISOString() } as Info;
+  const p = declared(release, page?.value);
+  if (!p) return undefined;
+  console.log(`volcan : phase reprise du relevé des alertes, ${p.niveau} du ${p.jour}`);
+  later(keepPhase(cache, p, now).catch((err) => console.error("volcan : phase non gardée", err)));
+  return { value: p, fetchedAt: new Date(Date.parse(last.releve_le)), stale: true };
+}
+
+/**
  * The phase of the newest release that declares one; else the last phase kept, as old as it is (tools/volcan.ts
  * `officiel` lets a newer, higher level of the OVPF's texts win over it). Throws only when neither is there.
  */
@@ -597,7 +618,7 @@ export async function phase(cache: Cache, now = Date.now()): Promise<Cached<Phas
     if (!read.stale) later(keepPhase(cache, p, now).catch((err) => console.error("volcan : phase non gardée", err)));
     return { ...read, value: p };
   }
-  const kept = await keptPhase(cache, now);
+  const kept = (await keptPhase(cache, now)) ?? (await recorded(cache, now));
   // The releases read, none declaring a phase: the kept one is not a copy for a silent source (tools/volcan.ts says
   // the prefecture read on it).
   if (kept) return "err" in read || read.stale ? kept : { ...kept, stale: false };

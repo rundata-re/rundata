@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { count, countRead, perInvocation } from "./budget.js";
+import { count, countRead, isScheduled, perInvocation } from "./budget.js";
 import { noteSource } from "./lectures.js";
 import { UpstreamError } from "./types.js";
 
@@ -141,6 +141,55 @@ export function patiently<T>(ms: number, work: () => T): T {
   return patience.run(ms, work);
 }
 
+/**
+ * A site that several sources read (a commune's: its water notices, its power cuts, its news) is asked at most once a
+ * minute, whichever source asks (rule of 20/11/2026: a commune's site is read slowly). Cilaos's site answered 429 on
+ * 20/11/2026; that day five pages had read its water notices within ten seconds, and the scheduled event had read two of
+ * its sources in the same second (its power cuts and its news, its water and its news). Each source names
+ * the sites it reads (`sharedSite`); a site two sources or more name is spaced: in the scheduled event, a request to it
+ * waits until SITE_SPACING_MS after the event's last one to it, its delay counted from then. Elsewhere these sources
+ * serve the copies the scheduled event keeps (cache.ts `islandRead`), not the sites.
+ */
+export const SITE_SPACING_MS = 60_000;
+/** The spacing applied, SITE_SPACING_MS: a test that builds the copies of an event sets it to 0 not to wait. */
+export const siteSpacing = { ms: SITE_SPACING_MS };
+
+const readers = new Map<string, Set<string>>();
+// One site with or without « www. » (www.saintleu.re, saintleu.re).
+const siteOf = (url: string) => new URL(url).hostname.replace(/^www\./, "");
+
+/** `source` reads these sites (their host names). */
+export function sharedSite(source: string, ...urls: string[]): void {
+  for (const url of urls) {
+    const host = siteOf(url);
+    let set = readers.get(host);
+    if (!set) readers.set(host, (set = new Set()));
+    set.add(source);
+  }
+}
+
+/** Whether `url`'s site is read by two sources or more, and so spaced. */
+export const spacedSite = (url: string) => (readers.get(siteOf(url))?.size ?? 0) > 1;
+
+// When this invocation asked each site last, or will once its wait is over, ms.
+const askedSites = () => perInvocation("http:sites", () => new Map<string, number>());
+
+/** How long ago this invocation asked `url`'s site, ms (negative while a request to it waits its turn), if it did. */
+export function siteAskedAgo(url: string): number | undefined {
+  const at = askedSites().get(siteOf(url));
+  return at == null ? undefined : Date.now() - at;
+}
+
+/** The time this request may go, written before any wait: two requests to one site at once take turns. */
+function siteTurn(url: string): number {
+  const host = siteOf(url);
+  const sites = askedSites();
+  const last = sites.get(host);
+  const at = isScheduled() && last != null && spacedSite(url) ? Math.max(Date.now(), last + siteSpacing.ms) : Date.now();
+  sites.set(host, at);
+  return at;
+}
+
 /** This invocation's fetches holding a place and waiting for one, now (web/mesure.ts). */
 export const places = () => perInvocation("http:places", () => new Places()).now();
 
@@ -167,6 +216,8 @@ async function get<T>(
   count();
   countRead(source);
   noteSource(source);
+  const turn = siteTurn(url);
+  if (turn > Date.now()) await new Promise((resolve) => setTimeout(resolve, turn - Date.now()));
   const places = perInvocation("http:places", () => new Places());
   await places.take();
   placed.getStore()?.();

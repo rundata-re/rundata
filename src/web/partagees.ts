@@ -63,7 +63,7 @@ export interface Shared {
   alongside?: boolean;
 }
 
-// About 1 230 KV writes a day in all: 48 for /sport, every 30 minutes, 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 48 a day for each of the five every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
+// About 1 280 KV writes a day in all: 48 for /sport, every 30 minutes, 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 96 for the water cuts, every 15 minutes, 48 a day for each of the four every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
 // of /chiffres (4 more for their events, 24 while an agenda does not answer), 12 for the power
 // cuts the mairies relay (48 while the site of one of them does not answer), 8 for the sea, 8 for the satellites' grids (48 while ACSPO lacks a day it should have), 4 for the calendar; the volcano's, every 5 minutes during an alert, adds up to 240 more while it lasts (the banner
 // of every page reads it). The events stay out: their build takes most of an invocation (they will come in a bundle).
@@ -79,7 +79,7 @@ export interface Shared {
 // The sea's: 18 when it read the satellites, less the 5 they took (13 against 8 in the same test, 25 October 2026): the
 // grids are their own copy. The grids': ACSPO's four files, a read and a write, MODIS's three more where ACSPO sees
 // nothing near a beach, plus one.
-// Their offsets (minutes after midnight UTC) spread them over the events: the five every 30 minutes one in each event
+// Their offsets (minutes after midnight UTC) spread them over the events: the four every 30 minutes one in each event
 // of the half hour but the first, which the hourly agendas and the AROME grids take (BUDGET.md, the busiest event);
 // the electricity's power cuts with the electricity, which embeds them.
 export const SHARED: Shared[] = [
@@ -112,8 +112,13 @@ export const SHARED: Shared[] = [
   // 18 since 20/11/2026, measured from a cold cache with every source's fixture (test/couts-froid.test.ts), 13 before:
   // the sites of Saint-Philippe, Cilaos, Les Trois-Bassins and Petite-Île, one request each (providers/avis-eau.ts),
   // and one read more of the data center's cache. 21 with the page of Sainte-Suzanne's orders allowing runéo's works
-  // (providers/arretes-travaux.ts: the data center's cache read, the page, the cache written).
-  { key: "web:coupures", build: buildCoupures, every: 30, cold: 21, cpu: 60, offset: 25 },
+  // (providers/arretes-travaux.ts: the data center's cache read, the page, the cache written). 23 since 21/11/2026:
+  // those orders are an island copy, read and written in KV too (`islandRead`).
+  // Every 15 minutes since 21/11/2026, at minutes 10, 25, 40 and 55, the rivers' (30 before): the notices are read by
+  // this copy's build only (providers/avis-eau.ts `lecture`), once their copy is 15 minutes old, and the pages serve it.
+  // Beside the copies after it (`alongside`): a commune's site read by another copy of the event a minute before is
+  // read after its turn (http.ts `sharedSite`), and the others need not wait for it.
+  { key: "web:coupures", build: buildCoupures, every: 15, cold: 23, cpu: 60, offset: 10, alongside: true },
   // The index (3), the copy of the measures at the stations (3: the data center's cache, KV, written back), the copy
   // of the sensors (1: KV, kept in memory).
   // Every quarter of an hour from 10 h to 14 h while the day's forecast is not out (tools/air.ts `airEvery`): 3 KV writes

@@ -5,7 +5,7 @@
  * (the days, the hours, the streets, whether the cut is happening now), with the title and the link of the mairie's
  * post: never the notice's text, worded by EDF. Read by the scheduled event into a shared copy (web/partagees.ts).
  */
-import { getJson } from "../http.js";
+import { getJson, sharedSite } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { strip } from "./avis-eau.js";
 import { AUTORISATIONS, autorisee } from "./autorisations.js";
@@ -45,6 +45,9 @@ export const SOURCE: SourceInfo = {
   attribution: `${names.length > 1 ? "Mairies" : "Mairie"} de ${listed}`,
   url: `${MAIRIES[0]?.site ?? LISIBLES[0].site}/`,
 };
+
+// Their sites, spaced with the other sources that read them (http.ts `sharedSite`): their water, their news.
+sharedSite(SOURCE.id, ...MAIRIES.map((m) => m.site));
 
 // The facts of each notice beside its title and link. False: the title, the date and the link only.
 const WITH_FACTS = true;
@@ -93,7 +96,8 @@ const RANGE = new RegExp(`\\bdu\\s+(\\d{1,2})(?:er)?(?:\\s+${MONTH})?\\s+au\\s+(
 const DAY = new RegExp(`\\b${WEEKDAY}(\\d{1,2})(?:er)?\\s+${MONTH}(?:\\s+(\\d{4}))?`, "giu");
 const HOURS = /(?:\bde|\bentre)\s+(\d{1,2})\s*h\s*(\d{2})?\s*(?:à|a|et|&)\s*(\d{1,2})\s*h\s*(\d{2})?/iu;
 // A street, a lane, a district: what the notices list, one per line or between dashes.
-const STREET = /^(?:rue|ruelle|chemin|impasse|route|allée|avenue|av\.|boulevard|bd|lotissement|lot\.|sentier|quai|place|cité|résidence|secteur|lieu-dit|îlet|ilet|ravine|rond-point|RN ?\d|route nationale)\b/iu;
+// A house number may come first (« 650 chemin Balance », « N176 ruelle Lacotte », Saint-André 19/11/2026).
+const STREET = /^(?:N?°?\s?\d{1,4}\s?(?:bis|ter|[a-z])?,?\s+)?(?:rue|ruelle|chemin|impasse|route|allée|avenue|av\.|boulevard|bd|lotissement|lot\.|sentier|quai|place|cité|résidence|secteur|lieu-dit|îlet|ilet|ravine|rond-point|RN ?\d|route nationale)\b/iu;
 const SMALL = new Set(["de", "des", "du", "la", "le", "les", "l", "d", "et", "à", "au", "aux", "en"]);
 
 const monthOf = (m: string) => MONTHS.findIndex((x) => x.normalize("NFD").replace(/\p{M}/gu, "") === m.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")) + 1;
@@ -145,16 +149,23 @@ export function slotsOf(text: string, published: Date): Creneau[] {
   const slots: Creneau[] = [];
   marks.forEach((mark, i) => {
     const piece = text.slice(mark.end, marks[i + 1]?.at ?? text.length);
-    const h = HOURS.exec(piece);
-    const [de, a] = h ? [hhmm(h[1], h[2]), hhmm(h[3], h[4])] : [];
-    // The same cut said again (a day repeated without hours, or with the same hours) only adds its streets.
-    const same = slots.find((s) => s.jour === mark.jour && s.au === mark.au && (!h || (s.de === de && s.a === a)));
-    const secteurs = streets(piece);
-    if (same) {
-      same.secteurs = [...new Set([...same.secteurs, ...secteurs])].slice(0, SECTORS_MAX);
-      return;
+    // Each range of hours of the day its own cut, with the streets after it (« De 9h00 à 10h30 650 chemin Balance. De 10h00
+    // à 14h00 N176 ruelle Lacotte », Saint-André 19/11/2026): one range alone would say the day's cut shorter than it is.
+    const hours = [...piece.matchAll(new RegExp(HOURS.source, "giu"))];
+    const parts = hours.length
+      ? hours.map((h, k) => ({ h, text: `${k ? "" : piece.slice(0, h.index)}\n${piece.slice(h.index! + h[0].length, hours[k + 1]?.index ?? piece.length)}` }))
+      : [{ h: undefined, text: piece }];
+    for (const { h, text: part } of parts) {
+      const [de, a] = h ? [hhmm(h[1], h[2]), hhmm(h[3], h[4])] : [];
+      // The same cut said again (a day repeated without hours, or with the same hours) only adds its streets.
+      const same = slots.find((s) => s.jour === mark.jour && s.au === mark.au && (!h || (s.de === de && s.a === a)));
+      const secteurs = streets(part);
+      if (same) {
+        same.secteurs = [...new Set([...same.secteurs, ...secteurs])].slice(0, SECTORS_MAX);
+        continue;
+      }
+      slots.push({ jour: mark.jour, au: mark.au, de, a, secteurs: secteurs.slice(0, SECTORS_MAX) });
     }
-    slots.push({ jour: mark.jour, au: mark.au, de, a, secteurs: secteurs.slice(0, SECTORS_MAX) });
   });
   // Sectors listed before the first day (« affecte les secteurs suivants », then the day) belong to it when it has none.
   if (slots.length && !slots[0].secteurs.length && marks.length) slots[0].secteurs = streets(text.slice(0, marks[0].at)).slice(0, SECTORS_MAX);

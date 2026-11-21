@@ -22,7 +22,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The other subjects narrowed: « vigilance » with its colour, not « une pluie de médailles », « une éruption de joie »,
   // fireworks, flights, « conseil » alone, nor « annulé » or « reporté » alone for culture; « AVC » is health.
   // « Enquête publique » and « tribunal administratif » no crimes.
-  actualites: 22,
+  // A headline « Saint-Denis : … » goes to the communes it names; « Bois de Nèfles » to the commune the text names.
+  actualites: 23,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -35,9 +36,12 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Cilaos, Saint-Joseph and Saint-Philippe read as the commune's public information (20/11/2026): their events, the
   // coverage, and nothing said instead of a commune any more.
   // Chaque événement porte la clé de sa page (/evenements/<titre>-<clé>), et le titre des listes y mène.
-  agenda: 42,
+  // Un billet de mairie dont l'extrait est coupé avant sa date : la date lue dans son texte entier (Saint-André, 21/11/2026).
+  agenda: 43,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
-  air: 13,
+  // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
+  // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
+  air: 15,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays
@@ -74,7 +78,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   coupures: 20,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
-  courant: 10,
+  // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).
+  // Each range of hours of a day its own cut, the streets after a house number read (« 650 chemin Balance », 21/11/2026).
+  courant: 12,
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
@@ -91,7 +97,11 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
   // A past notice in `coupures_annoncees`: its sentence, its commune and its link only (19/11/2026).
   // `coupures_annoncees` with the notices of Cilaos, Saint-Philippe and Sainte-Suzanne, nothing said instead (20/11/2026).
-  electricite: 22,
+  // The same strained hours day after day said once in `periodes_de_tension` (« du samedi 21/11 au jeudi 26/11, chaque
+  // jour de 18 h à 22 h », 21/11/2026).
+  // `coupures_annoncees` with a notice written in the bold letters of Unicode (21/11/2026).
+  // `coupures_annoncees` with each range of hours of a day (21/11/2026).
+  electricite: 25,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,
@@ -144,7 +154,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
   // Its news of the roads: not « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
   // Its news of the roads: not « le trafic de drogue », nor the dam of Takamaka.
-  trafic: 8,
+  // Its news of the roads by commune: a headline « Saint-Denis : … » to the communes it names (communesEnTete).
+  trafic: 9,
   velos: 7,
   // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
   // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.
@@ -195,7 +206,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // Read again with its written agreement of 06/11/2026, from its list: an older entry, read from its feed, is not served.
   "agenda:etang_sale": 2,
   // Read again with its written agreement of 16/11/2026, as its own source: an older entry was read as the mairies'.
-  "agenda:saint_andre": 2,
+  // The day of a post whose excerpt is cut before it, read in its whole text (content:encoded, 21/11/2026).
+  "agenda:saint_andre": 3,
   // The WordPress agendas, with their venue's position when the site gives one (« Y aller » of /evenements).
   // The volley league's weekend with its matches (`matchs`), for the sport tool to say another date.
   // The events not yet over (tribeUrl, `ends_after`): one begun before today kept, as the league's weekend of 04-07/11.

@@ -4,8 +4,17 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Samedi 21 novembre 2026
+
+- Coupures d'électricité : chaque plage horaire du jour et les rues des avis en texte des mairies, même en gras, avec un renvoi à l'avis.
+- Événements : une sortie de l'agenda de la Ville de Saint-André est donnée même quand sa date n'est que dans le texte entier du billet.
+- Qualité de l'air : l'indice prévu demain dans chaque commune, quand Atmo Réunion l'a diffusé, sur la page et dans les outils IA.
+- Assistants IA : la pluie mesurée vient du pluviomètre le plus proche du lieu, nommé avec sa distance.
+
 ## Vendredi 20 novembre 2026
 
+- Eau à ne pas boire : les secteurs nommés dans les avis de la CIREST, voies adjacentes comprises, avec le lien de chaque avis.
+- Défibrillateurs et bornes de recharge : la distance à vol d'oiseau, et le temps à pied seulement à moins de 1 km.
 - Mer : la carte dit l'heure du passage du satellite qui a mesuré l'eau, et l'heure d'une marée faible est dite plus incertaine.
 - Météo passée : pour un record du mois, les outils IA donnent aussi les repères de la page du lieu, avec leur station.
 - Événements : une sortie reportée dit son nouveau jour et le média qui l'annonce ; un marché fini n'est plus donné pour aujourd'hui.

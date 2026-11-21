@@ -54,6 +54,39 @@ describe("the power cuts the mairies relay", () => {
     expect(slotsOf("Courrier enregistré le 27 mars 2026 : coupure pour travaux – MERCREDI 29 avril 2026 – Rue Payet, du 24 septembre", published).map((s) => s.jour)).toEqual(["2026-04-29"]);
   });
 
+  it("reads a notice written in the bold letters of Unicode, as Saint-André pastes them from Facebook", () => {
+    // Its title, days and hours in « 𝗖𝗢𝗨𝗣𝗨𝗥𝗘𝗦 », « 𝟮𝟯 » and the accent beside its letter (« 𝗘́ »): the notice of 19/11/2026, unread.
+    const bold = (s: string) => [...s.normalize("NFD")].map((c) => {
+      const n = c.codePointAt(0)!;
+      if (n >= 65 && n <= 90) return String.fromCodePoint(0x1d5d4 + n - 65);
+      if (n >= 97 && n <= 122) return String.fromCodePoint(0x1d5ee + n - 97);
+      if (n >= 48 && n <= 57) return String.fromCodePoint(0x1d7ec + n - 48);
+      return c;
+    }).join("");
+    const html = `<p>EDF Réunion informe les administrés de coupures d’électricité programmées dans le cadre de travaux sur le réseau électrique.</p>
+<p><strong>${bold("LUNDI 23 NOVEMBRE 2026")}</strong><br>${bold("De 9h00 à 12h30")}<br>${bold("Secteurs concernés")} :</p>
+<p>185 avenue de la République</p>
+<p><strong>${bold("MARDI 24 NOVEMBRE 2026")}</strong><br>${bold("De 9h00 à 10h30")}</p><p>650 chemin Balance</p><p>${bold("De 10h00 à 14h00")}</p><p>N176 ruelle Lacotte</p>`;
+    const [avis, ...rest] = parsePosts([post("2026-11-19T08:53:29", `❗${bold("INFORMATION – COUPURES D’ÉLECTRICITÉ À SAINT-ANDRÉ")}`, html)], "Saint-André");
+    expect(rest).toEqual([]);
+    expect(avis.titre).toBe("INFORMATION – COUPURES D’ÉLECTRICITÉ À SAINT-ANDRÉ");
+    expect(avis.nature).toBe("programmée");
+    // Each range of hours of a day its own cut, with its streets, a house number before them (« 650 chemin Balance »).
+    expect(avis.creneaux).toEqual([
+      { jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: ["185 avenue de la République"] },
+      { jour: "2026-11-24", de: "09:00", a: "10:30", secteurs: ["650 chemin Balance"] },
+      { jour: "2026-11-24", de: "10:00", a: "14:00", secteurs: ["N176 ruelle Lacotte"] },
+    ]);
+    const said = sentence(avis, new Date("2026-11-21T08:00:00Z"));
+    expect(said).toMatch(/^Dernier avis de coupure d'électricité publié par la mairie de Saint-André le 19\/11 : coupure programmée le lundi 23\/11 de 09:00 à 12:30, secteur 185 avenue de la République/);
+    // « Secteur » at the head of a name said once, alone or in a list; further in a name, kept.
+    const chrystel = { ...avis, creneaux: [{ jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: ["Secteur Le Chrystel"] }] };
+    expect(sentence(chrystel, new Date("2026-11-21T08:00:00Z"))).toMatch(/de 09:00 à 12:30, secteur Le Chrystel\.$/);
+    const list = { ...avis, creneaux: [{ jour: "2026-11-23", de: "09:00", a: "12:30", secteurs: ["237 avenue de la République", "secteur Le Chrystel", "Rue du Secteur Nord"] }] };
+    expect(sentence(list, new Date("2026-11-21T08:00:00Z"))).toMatch(/de 09:00 à 12:30, secteurs 237 avenue de la République, Le Chrystel, Rue du Secteur Nord\.$/);
+    expect(said).toMatch(/le mardi 24\/11 de 09:00 à 10:30, secteur 650 chemin Balance\s?; le mardi 24\/11 de 10:00 à 14:00, secteur N176 ruelle Lacotte\.$/);
+  });
+
   it("keeps the notices of cuts only, with their facts, never their text", () => {
     const sm = parsePosts(POSTS["ville-saintemarie.re"], "Sainte-Marie");
     expect(sm.map((a) => a.publie)).toEqual(["2026-10-21T06:00:00.000Z", "2026-09-02T11:31:00.000Z"]);
@@ -74,7 +107,7 @@ describe("the power cuts the mairies relay", () => {
   it("says each notice in marketing's words, and never that there is no cut", () => {
     const [sm, , sp, ci] = copy.avis;
     expect(sentence(sm, NOW)).toBe(
-      "Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21/10 : coupure programmée le lundi 26/10 de 09:00 à 15:00, secteurs Rue des Jésuites, Rue Médard\u00a0; le mardi 27/10 de 09:30 à 12:00, secteurs Chemin Conteur.",
+      "Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21/10 : coupure programmée le lundi 26/10 de 09:00 à 15:00, secteurs Rue des Jésuites, Rue Médard\u00a0; le mardi 27/10 de 09:30 à 12:00, secteur Chemin Conteur.",
     );
     expect(sentence(sp, NOW)).toBe("Coupure en cours selon la mairie de Saint-Philippe (avis du 24/10) : secteurs Chemin Paul Hoareau, Chemin Ceinture.");
     // Two days later, a cut said to be happening is no longer said to be.
@@ -85,7 +118,7 @@ describe("the power cuts the mairies relay", () => {
     // Its days over, within the month: each said past, right after its hours (audit of the AI tools, 20/11/2026: a 29/10 cut given as is).
     const gone = sentence(sm, new Date("2026-10-29T10:00:00Z"));
     expect(gone).toMatch(/^Dernier avis de coupure d'électricité publié par la mairie de Sainte-Marie le 21\/10 : coupure programmée /);
-    expect(gone).toMatch(/ de 09:00 à 15:00 \(date passée\), secteurs Rue des Jésuites, Rue Médard\u00a0; le mardi 27\/10 de 09:30 à 12:00 \(date passée\), secteurs Chemin Conteur\.$/);
+    expect(gone).toMatch(/ de 09:00 à 15:00 \(date passée\), secteurs Rue des Jésuites, Rue Médard\u00a0; le mardi 27\/10 de 09:30 à 12:00 \(date passée\), secteur Chemin Conteur\.$/);
     expect(sentence(sm, NOW)).not.toContain("passée");
     // A notice of another year says its year.
     const old = parsePosts([post("2025-04-30T11:48:00", "Coupure d&rsquo;électricité à Sainte Suzanne", "<p>Coupure d'électricité programmée le mercredi 14 mai 2025, entre 9h30 à 13h30.</p>")], "Sainte-Suzanne")[0];

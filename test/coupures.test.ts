@@ -1,9 +1,10 @@
+import { counted, scheduled } from "../src/budget.js";
 import { UA_RUNDATA } from "../src/http.js";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, sectorsSaid, textOf } from "../src/providers/avis-eau.js";
-import { annonceCoupure, compteAvis, coupuresEau, noticeRow } from "../src/tools/coupures.js";
+import { annonceCoupure, compteAvis, coupuresEau, noticeRow, AVIS_AVEC_TEXTE, pourAssistant, TEXTE_PAR_LE_LIEN } from "../src/tools/coupures.js";
 import { cite } from "../src/tools/citer.js";
 import { arretesSection, coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { enCours, parseArretes } from "../src/providers/arretes-travaux.js";
@@ -31,6 +32,8 @@ const fixture = (f: string) => readFileSync(new URL(`./fixtures/avis-eau/${f}`, 
 const NOW = new Date("2026-10-24T04:00:00Z");
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 const cache = (now = NOW) => new Cache(new MemoryStore(), () => now.getTime());
+// In the scheduled event, the only one that reads the notices again once their copy is 15 minutes old (`lecture`).
+const enCron = async <T>(work: () => Promise<T>) => (await counted(1000, () => (scheduled(), work()))).value;
 // The night of La Créole's cut, the 23rd at 22:00 to the 24th at 06:00: 02:00 on the 24th.
 const NIGHT = new Date("2026-10-23T22:00:00Z");
 
@@ -257,7 +260,22 @@ describe("coupures d'eau", () => {
     expect(sr).toMatch(/Les secteurs concernés dans l'avis complet<span class="sr"> : [^<]+<\/span> →<\/a>/);
     const tool = body(await coupuresEau(cache(), "Sainte-Rose", NOW));
     expect(tool.avis.every((n: { secteurs: string[]; secteurs_complets: boolean }) => n.secteurs.length === 0 && !n.secteurs_complets)).toBe(true);
-    expect(body(await coupuresEau(cache(), "Saint-Denis", NOW)).avis[0]).toMatchObject({ secteurs: ["ROUTE DE BOIS DE NEFLES"], secteurs_complets: true, extrait_coupe: true });
+    expect(body(await coupuresEau(cache(), "Saint-Denis", NOW)).avis[0]).toMatchObject({ secteurs_dits: "ROUTE DE BOIS DE NEFLES", extrait_coupe: true });
+  });
+
+  it("gives an assistant the streets once and, past the first notices, their link for the text, never a « ne pas boire »'s", () => {
+    const row = (i: number, extra = {}) => ({ titre: `Avis ${i}`, communes: ["Saint-Denis"], precision: undefined, distributeur: "Dionéo", publie_le: "20/11/2026 à 14:23", date_de_l_avis: undefined, coupure: undefined, secteurs: ["RUE A", "RUE B"], secteurs_complets: true, secteurs_dits: "RUE A, RUE B", ne_pas_boire: undefined as true | undefined, forme: undefined, extrait_coupe: true as const, texte: `Texte ${i}`, lien: `https://dioneo.re/${i}`, ...extra });
+    const rows = [...Array.from({ length: AVIS_AVEC_TEXTE + 2 }, (_, i) => row(i)), row(9, { ne_pas_boire: true as const })];
+    const { avis, abreges } = pourAssistant(rows);
+    expect(abreges).toBe(true);
+    expect(avis.every((n) => !("secteurs" in n) && !("secteurs_complets" in n) && n.secteurs_dits === "RUE A, RUE B")).toBe(true);
+    expect(avis.slice(0, AVIS_AVEC_TEXTE).every((n) => n.texte)).toBe(true);
+    expect(avis[AVIS_AVEC_TEXTE]).toEqual(expect.not.objectContaining({ texte: expect.anything() }));
+    expect(avis[AVIS_AVEC_TEXTE]).toMatchObject({ titre: `Avis ${AVIS_AVEC_TEXTE}`, lien: `https://dioneo.re/${AVIS_AVEC_TEXTE}` });
+    expect(avis[avis.length - 1]).toMatchObject({ ne_pas_boire: true, texte: "Texte 9" });
+    // A list not read whole keeps its (empty) list, and the sentence where texts are left out is said once.
+    expect(pourAssistant([row(0, { secteurs: [], secteurs_complets: false, secteurs_dits: undefined })]).avis[0]).toMatchObject({ secteurs: [], secteurs_complets: false, texte: "Texte 0" });
+    expect(TEXTE_PAR_LE_LIEN).toContain("à son lien");
   });
 
   it("keeps only the text of a notice, even with broken tags", () => {
@@ -677,6 +695,7 @@ describe("coupures d'eau", () => {
       return new Response(fixture(file));
     });
     vi.spyOn(console, "error").mockImplementation(() => {});
+    await enCron(() => coupuresEau(at(), undefined, now));
     const sd = body(await coupuresEau(at(), "Saint-Denis", now));
     expect(sd.avis.length).toBeGreaterThan(0);
     expect(sd.injoignable).toEqual([{ texte: "Lu le 24/10 à 08:00 : le site de Dionéo n'a pas répondu depuis. Ce qui suit peut avoir changé : voir son site.", court: "lu le 24/10 à 08:00, sans réponse depuis", de: "de Dionéo", site: "https://dioneo.re/" }]);
@@ -698,7 +717,10 @@ describe("coupures d'eau", () => {
     // The island: both said, in a few words.
     const ile = body(await coupuresEau(at(), undefined, now));
     expect(ile.injoignable.map((f: { de: string }) => f.de)).toEqual(["de Dionéo", "de runéo"]);
-    expect(ile.resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    // Named once in the summary, their words in `injoignable` (MAX_BYTES, 21/11/2026); the page says them in full.
+    expect(ile.resume).toContain("Sans réponse à la dernière lecture\u00a0: Dionéo et runéo\u00a0: ce que chacun annonçait, dans injoignable.");
+    expect(ile.injoignable[1].texte).toBe("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(body(await coupuresEau(at(), undefined, now, true)).resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
     // The island's page says them under its head, as a commune's does; and no hour of reading over notices kept from
     // before: the head is never dated by a reading the silent sites were not part of.
     const head = (html: string) => html.slice(html.indexOf('<div class="now">'), html.indexOf("</div>", html.indexOf('<div class="now">')));
@@ -857,7 +879,7 @@ describe("coupures d'eau", () => {
     expect(sp.avis).toHaveLength(1);
     expect(sp.avis[0]).toMatchObject({
       titre: "Sudéau – interruption de la distribution en eau le 25 novembre 2026", distributeur: "Sudéau, par la commune de Saint-Philippe",
-      coupure: { de: "mercredi 25/11 à 07:00", a: "mercredi 25/11 à 14:00" }, secteurs: ["Tamaka", "Tremblet"], secteurs_complets: true,
+      coupure: { de: "mercredi 25/11 à 07:00", a: "mercredi 25/11 à 14:00" }, secteurs_dits: "Tamaka, Tremblet",
       lien: "https://saintphilippe.re/sudeau-interruption-de-la-distribution-en-eau-le-25-novembre-2026/",
     });
     expect(sp.avis[0].ne_pas_boire).toBeUndefined();
@@ -874,7 +896,7 @@ describe("coupures d'eau", () => {
     const feed = asked.filter((u) => u.includes("petite-ile"));
     expect(feed).toEqual(["https://www.petite-ile.re/taxonomy/term/301/feed"]);
     // Six days old on the 20th, past what the tool calls recent: read in the feeds' copy.
-    const petite = async () => (await lecture(c())).value.find((f) => f.de === "de la ville de Petite-Île")!.avis;
+    const petite = async () => (await enCron(() => lecture(c()))).value.find((f) => f.de === "de la ville de Petite-Île")!.avis;
     let pi = await petite();
     expect(pi[0]).toMatchObject({ titre: "Coupures d’eau", forme: "page", lien: "https://www.petite-ile.re/actualites/news/coupures-deau-45", texte: "" });
     t += 16 * 60_000;

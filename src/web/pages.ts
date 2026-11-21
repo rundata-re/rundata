@@ -68,7 +68,7 @@ import { PLEIN_ECRAN_CSS, pleinEcran } from "./plein-ecran.js";
 import { ALTITUDES_CREDIT, communeOf, METEO_SCRIPT, RADAR_CREDIT, rainPill, stationsMap, windPill } from "./meteo-carte.js";
 import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
-import { coastal, PAGES, type PlacePage, slugify } from "./places.js";
+import { coastal, PAGES, type PlacePage, PRINCIPAL, slugify } from "./places.js";
 import { bathingBlock } from "./baignade.js";
 import { adresseTexte } from "./adresse.js";
 import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
@@ -1489,7 +1489,7 @@ ${UNFOLD_SCRIPT}
 document.querySelectorAll("[data-copy]").forEach((b)=>b.addEventListener("click",async()=>{const t=document.getElementById(b.dataset.copy);
 const o=b.textContent;if(b.dataset.signal&&location.pathname==="/mcp")sig("c");try{await navigator.clipboard.writeText(t.textContent);b.textContent="Copié ✓";setTimeout(()=>b.textContent=o,2500)}catch{getSelection().selectAllChildren(t)}}));
 const f=document.getElementById("filtre");if(f){const n=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase();
-f.addEventListener("input",()=>{const q=n(f.value.trim());let any=false;document.querySelectorAll(".places li").forEach((li)=>{const ok=n(li.textContent).includes(q);li.hidden=!ok;any||=ok});
+f.addEventListener("input",()=>{const q=n(f.value.trim());let any=false;document.querySelectorAll(".places li").forEach((li)=>{const ok=n(li.textContent+" "+(li.dataset.aussi||"")).includes(q);li.hidden=!ok;any||=ok});
 document.querySelectorAll(".places h3").forEach((h)=>{h.hidden=![...h.nextElementSibling.children].some((li)=>!li.hidden)});const rq=document.getElementById("rien-q");if(rq)rq.textContent=f.value.trim();document.getElementById("rien").hidden=any})}
 const askl=(l,bind)=>{document.querySelectorAll("[data-askl]").forEach((b)=>b.setAttribute("aria-pressed",b.dataset.askl===l));
 document.querySelectorAll(".askbox>template[data-tl]").forEach((t)=>{if(t.dataset.tl!==l)return;const d=t.content.firstElementChild.cloneNode(true);t.replaceWith(d);if(bind){majOn(d);copieOn(d)}});
@@ -2170,8 +2170,12 @@ function stationsList(every: StationNow[], now: Date): string {
  * to their page of every category rather than their weather.
  */
 export function placeLinks(except?: string, hubs = false): string {
-  const li = (p: PlacePage) => `<li><a href="/${hubs && p.commune ? "communes" : "meteo"}/${p.slug}">${esc(p.nom)}</a></li>`;
-  const others = PAGES.filter((p) => p.slug !== except);
+  // A place sent to another's page (places.ts `PRINCIPAL`) has no chip of its own: L'Hermitage led to Saint-Gilles-les-Bains,
+  // the next chip (the site's watch, 21/11/2026). Its name stays on the principal's chip for the filter (`data-aussi`).
+  const aussi = (p: PlacePage) => PAGES.filter((o) => PRINCIPAL[o.slug] === p.slug).map((o) => o.nom).join(" ");
+  const li = (p: PlacePage) =>
+    `<li${aussi(p) ? ` data-aussi="${esc(aussi(p))}"` : ""}><a href="/${hubs && p.commune ? "communes" : "meteo"}/${p.slug}">${esc(p.nom)}</a></li>`;
+  const others = PAGES.filter((p) => p.slug !== except && !PRINCIPAL[p.slug]);
   // The weather's field (marketing, 06/11/2026): its label above it, what was typed in the answer when no page has it.
   const field = hubs
     ? `<label class="search">${icon("search")}<span class="sr">Chercher une commune ou un lieu</span>` +

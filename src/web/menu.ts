@@ -6,7 +6,7 @@
  */
 import { CATEGORIES } from "./categories.js";
 import { inScript } from "./map.js";
-import { PAGES } from "./places.js";
+import { meteoPath, PAGES, PRINCIPAL } from "./places.js";
 
 export interface Entree {
   key: string;
@@ -126,9 +126,11 @@ export function cibles(avecAssociations: boolean): [string, string, string[]][] 
     ["Cyclone : alerte", "/alerte-cyclone"],
     ["Cyclone : école fermée ?", "/ecoles-cyclone"],
     ["Sites sans réponse", "/sites-sans-reponse"],
-    ...PAGES.map((p): [string, string] => [p.nom, `/${p.commune ? "communes" : "meteo"}/${p.slug}`]),
+    ...PAGES.filter((p) => !PRINCIPAL[p.slug]).map((p): [string, string] => [p.nom, `/${p.commune ? "communes" : "meteo"}/${p.slug}`]),
   ];
-  return pages.map(([nom, path]) => [nom, path, [...new Set([nom, ...SYNONYMES.filter(([, to]) => to.includes(path)).flatMap(([w]) => w)].map(norm))]]);
+  // A place sent to another's page (places.ts `PRINCIPAL`): no entry of its own, its name finds the principal's (21/11/2026).
+  const aussi = (path: string) => PAGES.filter((p) => PRINCIPAL[p.slug] && meteoPath(p.slug) === path).map((p) => p.nom);
+  return pages.map(([nom, path]) => [nom, path, [...new Set([nom, ...aussi(path), ...SYNONYMES.filter(([, to]) => to.includes(path)).flatMap(([w]) => w)].map(norm))]]);
 }
 
 /**

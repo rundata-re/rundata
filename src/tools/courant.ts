@@ -125,12 +125,22 @@ export function ahead(a: cc.AvisCourant, now: Date): boolean {
 }
 
 /**
+ * « secteur 650 chemin Balance », « secteurs Rue Médard, Rue des Jésuites »: the singular before one street or address,
+ * the plural when the notice gives several, counted on its commas and « et » (marketing, 21/11/2026).
+ */
+const sectors = (list: string[]) => {
+  // « Secteur Le Chrystel » as the notice writes it: the word said once, « secteur Le Chrystel » (marketing, 21/11/2026).
+  const names = list.map((x) => x.replace(/^secteur\s+/iu, ""));
+  return `${names.length > 1 || names.some((x) => /,|\set\s/u.test(x)) ? "secteurs" : "secteur"} ${names.join(", ")}`;
+};
+
+/**
  * « le lundi 19/10 de 09:00 à 15:00, secteurs Rue Médard, Rue des Jésuites ». `past`: its day is over, said right after
  * the hours, « (date passée) » (marketing, 20/11/2026): only the date is known to be past, never that the cut took place.
  */
 function slotText(s: cc.Creneau, now: Date, past = false): string {
   const when = (s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`) + (past ? " (date passée)" : "");
-  return `${when}${s.secteurs.length ? `, secteurs ${s.secteurs.join(", ")}` : ""}`;
+  return `${when}${s.secteurs.length ? `, ${sectors(s.secteurs)}` : ""}`;
 }
 
 /** A notice of nothing to come, older than a month or of another year: said by its date only. */
@@ -152,10 +162,10 @@ export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
   const by = `${mairie(a.commune)} le ${ddmm(a.publie, now)}`;
   const head = `${first ? "Dernier avis" : "Avis"} de coupure d'électricité publié par ${by}`;
   if (a.nature === "en cours") {
-    const where = a.secteurs.length ? ` : secteurs ${a.secteurs.join(", ")}` : "";
+    const where = a.secteurs.length ? ` : ${sectors(a.secteurs)}` : "";
     return now.getTime() - Date.parse(a.publie) < NOW_HOURS * 3600_000
       ? `Coupure en cours selon ${mairie(a.commune)} (avis du ${ddmm(a.publie, now)})${where}.`
-      : `${head} : coupure en cours ce jour-là${a.secteurs.length ? `, secteurs ${a.secteurs.join(", ")}` : ""}.`;
+      : `${head} : coupure en cours ce jour-là${a.secteurs.length ? `, ${sectors(a.secteurs)}` : ""}.`;
   }
   if (!a.creneaux.length) return `${head} : « ${a.titre} ».`;
   const today = localDay(now);

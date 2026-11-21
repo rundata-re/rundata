@@ -5,7 +5,7 @@
  * (the days, the hours, the streets, whether the cut is happening now), with the title and the link of the mairie's
  * post: never the notice's text, worded by EDF. Read by the scheduled event into a shared copy (web/partagees.ts).
  */
-import { getJson } from "../http.js";
+import { getJson, sharedSite } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { strip } from "./avis-eau.js";
 import { AUTORISATIONS, autorisee } from "./autorisations.js";
@@ -45,6 +45,9 @@ export const SOURCE: SourceInfo = {
   attribution: `${names.length > 1 ? "Mairies" : "Mairie"} de ${listed}`,
   url: `${MAIRIES[0]?.site ?? LISIBLES[0].site}/`,
 };
+
+// Their sites, spaced with the other sources that read them (http.ts `sharedSite`): their water, their news.
+sharedSite(SOURCE.id, ...MAIRIES.map((m) => m.site));
 
 // The facts of each notice beside its title and link. False: the title, the date and the link only.
 const WITH_FACTS = true;

@@ -124,6 +124,12 @@ interface Copy {
   outil: string;
   /** Its page on the site, from the root. */
   page: string;
+  /**
+   * Built by the scheduled event only (web/partagees.ts), which reads its sources slowly: a page builds it only when it
+   * has no copy at all, never to bring one up to date (web:courant: five mairies' sites, read again by two pages within
+   * the same minute three times on 20/11/2026).
+   */
+  cron?: true;
 }
 
 const H = 60;
@@ -148,7 +154,7 @@ function copiesOf(commune: PlacePage, place: PlacePage): Record<Part, Copy | und
       : undefined,
     // Only the mairies that relay EDF's notices: elsewhere nothing is said, rather than the same « we do not know » each day.
     courant: followed(commune.nom)
-      ? { key: "web:courant", build: (cache) => buildCourant(cache), max: 6 * H, nom: "coupures d'électricité relayées par la mairie", outil: "electricite", page: "/electricite#coupures" }
+      ? { key: "web:courant", build: (cache) => buildCourant(cache), max: 6 * H, nom: "coupures d'électricité relayées par la mairie", outil: "electricite", page: "/electricite#coupures", cron: true }
       : undefined,
     // The communes of the volcano: the Enclos and the RN2 of the lava flows (Sainte-Rose, Saint-Philippe), the road of
     // the volcano (Le Tampon), the south flank (Saint-Joseph). Elsewhere the volcano is not the day's news.
@@ -725,7 +731,7 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
     // Built by another revision: left out, however recent, and brought up to date first (`UPDATING`).
     if (copy?.outdated) {
       leftOut.push({ partie: c.nom, raison: UPDATING, outil: c.outil, page: `${SITE_URL}${c.page}` });
-      if (!(name in held)) due.push({ key: c.key, build: () => c.build(cache, now), age: Infinity, outdated: true, cost: copy.cost, builtAt: copy.fetchedAt.getTime(), failedAt: copy.failedAt });
+      if (!(name in held) && !c.cron) due.push({ key: c.key, build: () => c.build(cache, now), age: Infinity, outdated: true, cost: copy.cost, builtAt: copy.fetchedAt.getTime(), failedAt: copy.failedAt });
       return;
     }
     if (usable(c, copy, now)) {
@@ -733,11 +739,11 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
       // The answer says how fresh it is from what it was served (tools/fraicheur.ts): these copies.
       noteLecture({ key: c.key, fetchedAt: copy.fetchedAt.getTime(), stale: false, freshSeconds: FRESH_SECONDS });
       const age = now.getTime() - copy.fetchedAt.getTime();
-      if (!(name in held) && age >= FRESH_SECONDS * 1000) due.push({ key: c.key, build: () => c.build(cache, now), age, cost: copy.cost, builtAt: copy.fetchedAt.getTime(), failedAt: copy.failedAt });
+      if (!(name in held) && !c.cron && age >= FRESH_SECONDS * 1000) due.push({ key: c.key, build: () => c.build(cache, now), age, cost: copy.cost, builtAt: copy.fetchedAt.getTime(), failedAt: copy.failedAt });
       return;
     }
     leftOut.push({ partie: c.nom, raison: copy ? `copie de ${localTime(copy.fetchedAt)}, trop ancienne` : "pas de copie récente", outil: c.outil, page: `${SITE_URL}${c.page}` });
-    if (!(name in held)) due.push({ key: c.key, build: () => c.build(cache, now), age: copy ? now.getTime() - copy.fetchedAt.getTime() : Infinity, cost: copy?.cost, builtAt: copy?.fetchedAt.getTime(), failedAt: copy?.failedAt });
+    if (!(name in held) && (!c.cron || !copy)) due.push({ key: c.key, build: () => c.build(cache, now), age: copy ? now.getTime() - copy.fetchedAt.getTime() : Infinity, cost: copy?.cost, builtAt: copy?.fetchedAt.getTime(), failedAt: copy?.failedAt });
   });
   if (!vig) leftOut.push({ partie: "vigilance", raison: mf.enabled() ? "Météo-France ne répond pas" : "vigilance non branchée", outil: "vigilance_meteo", page: `${SITE_URL}/vigilance` });
   return { copies, leftOut, refreshed: background ? refresh(cache, due, background, COST_UNKNOWN, now.getTime()) : [] };

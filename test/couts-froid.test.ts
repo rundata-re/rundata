@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { coastwatch } from "./sst.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { costOf, count, counted, measured } from "../src/budget.js";
+import { costOf, count, counted, measured, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
 import { SHARED, SHARED_AFTER, type Shared } from "../src/web/partagees.js";
 
@@ -144,11 +144,17 @@ const answering = async (input: string | URL | Request, init?: RequestInit) => {
 };
 const silent = async () => new Response("", { status: 503 });
 
-/** What the build of `s` takes alone from a cold cache, as the Worker counts it for its copy (`costOf`). */
+/**
+ * What the build of `s` takes alone from a cold cache, as the Worker counts it for its copy (`costOf`), in the scheduled
+ * event that builds it: a page without a copy claims its read first (cache.ts `claim`), the event does not.
+ */
 async function coldCost(s: Shared, scenario: string): Promise<number> {
   const key = `${s.key}#${scenario}`;
   const cache = workerCache();
-  const run = await counted(1000, () => measured(key, () => s.build(cache, NOW)).catch(() => undefined));
+  const run = await counted(1000, () => {
+    scheduled();
+    return measured(key, () => s.build(cache, NOW)).catch(() => undefined);
+  });
   await run.settled();
   return costOf(key) ?? 0;
 }

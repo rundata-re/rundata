@@ -18,8 +18,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 455 | 600 |
-| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 588 | 8 500 |
+| pire passage planifié, sous-requêtes | 457 | 600 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 590 | 8 500 |
 | queue « carte du CMRS », sous-requêtes | 19 | 100 |
 | queue « trace du CMRS », sous-requêtes | 8 | 100 |
 | queue « sites sans réponse », sous-requêtes | 22 | 100 |
@@ -48,19 +48,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:jours, sous-requêtes | 2 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 600.
-- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 600. Le pire passage, queues comprises (588), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
+- Queues : 16 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 600. Le pire passage, queues comprises (590), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 00:05 UTC, 118 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:trafic, web:sport, metar, seismes, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
+- Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 124 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:actualites, web:coupures, web:air, ens:ile, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 191 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 407 sous-requêtes à 06:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 409 sous-requêtes à 06:00 UTC.
 - Vue la plus chère : /communes/*, 99. Question la plus chère : resume_du_jour, 82. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 588 | 39 | 62 | 24 | 1 164 | 284 | 5 191 |
-| tâche planifiée, par jour | 39 199 | 5 091 | 4 587 | 2 407 | 102 914 | 58 511 | 294 496 |
-| tâche planifiée, par jour, cadences les plus courtes | 58 331 | 6 723 | 6 891 | 2 887 | 107 954 | 58 511 | 442 776 |
-| tâche planifiée, par mois (30 jours) | 1 175 957 | 152 730 | 137 610 | 72 223 | 3 087 411 | 1 755 321 | 8 834 867 |
+| pire passage planifié | 590 | 39 | 62 | 24 | 1 164 | 284 | 5 191 |
+| tâche planifiée, par jour | 40 543 | 5 139 | 4 683 | 2 407 | 102 914 | 58 511 | 297 376 |
+| tâche planifiée, par jour, cadences les plus courtes | 59 675 | 6 771 | 6 987 | 2 887 | 107 954 | 58 511 | 445 656 |
+| tâche planifiée, par mois (30 jours) | 1 216 277 | 154 170 | 140 490 | 72 223 | 3 087 411 | 1 755 321 | 8 921 267 |
 | tâches planifiées à part, par jour | 5 810 | 169 | 169 |  |  |  | 2 933 |
 | tâches planifiées à part, par mois (30 jours) | 174 300 | 5 070 | 5 070 |  |  |  | 87 990 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -68,7 +68,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 Les visites et les questions sont comptées par vue : leur total dépend du trafic.
 
-Écritures KV par mois (30 jours) : 142 830 pour les tâches ci-dessus, et 423 360 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 49 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 566 190 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
+Écritures KV par mois (30 jours) : 145 710 pour les tâches ci-dessus, et 423 360 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 49 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 569 070 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
 
 ## Tâche planifiée
 
@@ -83,7 +83,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | web:actualites | copie partagée (KV) | 30 min | 00:10 | 11 |  | 1 |  |  |  | 190 | mesuré |
 | web:trafic | copie partagée (KV) | 30 min | 00:05 | 31 |  | 1 | 2 | 840 |  | 160 | mesuré |
 | web:electricite | copie partagée (KV) | 30 min | 00:20 | 10 | 1 | 2 |  |  |  | 80 | mesuré |
-| web:coupures | copie partagée (KV) | 30 min | 00:25 | 24 | 1 | 2 |  |  |  | 60 | estimé |
+| web:coupures | copie partagée (KV) | 15 min | 00:10 | 26 | 1 | 2 |  |  |  | 60 | estimé |
 | web:air | copie partagée (KV) | 60 min (15 au plus court) | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
 | mer:satellites | copie partagée (KV) | 180 min (10 au plus court) | 00:55 | 8 |  | 1 |  |  |  | 400 | estimé |
 | mer:passages | copie partagée (KV) | 60 min (10 au plus court) | 00:00 | 4 |  | 1 |  |  |  | 400 | mesuré |

@@ -2,7 +2,7 @@ import { isScheduled, later, left, perInvocation } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
 import { holidays } from "../feries.js";
 import { inReunion } from "../geo.js";
-import { httpUrl, patiently, places, versBilletterie, whenPlaced } from "../http.js";
+import { httpUrl, patiently, places, siteAskedAgo, siteSpacing, spacedSite, versBilletterie, whenPlaced } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
 import type { Fil } from "../providers/actualites.js";
@@ -266,6 +266,18 @@ export function plannedDue(agenda: src.Agenda, ageMs: number, now: Date): boolea
   return into < PLANNED_WINDOW_SECONDS * 1000 && ageMs > into;
 }
 
+/** How long a planned agenda whose copy is `ageMs` old has been due, ms (negative before). */
+export function dueSince(agenda: src.Agenda, ageMs: number, now: Date): number {
+  const every = (agenda.relecture ?? PLANNED_FRESH_SECONDS) * 1000;
+  if (agenda.decalage == null) return ageMs - every;
+  return (((now.getTime() - agenda.decalage * 1000) % every) + every) % every;
+}
+
+// A planned agenda whose site this event asked less than a minute before (its water, its power cuts, another of its
+// agendas: http.ts `sharedSite`) is read at the next event rather than wait for its turn, once: due for longer than
+// this, an event has gone by since it was, and it is read in this one after its turn (http.ts waits for it).
+const REPORT_MS = 4 * 60_000;
+
 // When a planned agenda last failed (or found nothing where its copy had events), kept in the bundle beside its copy:
 // it is not tried again before its next reading is due, rather than at each scheduled event, for a subrequest and up
 // to TIMEOUT_MS each time (Saint-Joseph's site does not answer Cloudflare's addresses). In the bundle, not in memory:
@@ -427,6 +439,12 @@ export async function refreshPlanned(cache: Cache, now = new Date()): Promise<{ 
     const failed = bundle.peek(echec(agenda));
     if (failed && !plannedDue(agenda, failed.ageMs, now)) continue;
     if (left() - KEEP_LEFT - 1 < (agenda.requetes ?? 1)) {
+      out.reportes.push(agenda.id);
+      continue;
+    }
+    const ago = siteAskedAgo(agenda.source.url);
+    if (old && !failed && ago != null && ago < siteSpacing.ms && spacedSite(agenda.source.url) && dueSince(agenda, old.ageMs, now) < REPORT_MS) {
+      console.log(`source ${agenda.source.id} (${agenda.id}) reporté : son site lu il y a ${Math.max(0, Math.round(ago / 1000))} s dans cet événement`);
       out.reportes.push(agenda.id);
       continue;
     }

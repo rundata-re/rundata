@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Samedi 21 novembre 2026
 
+- Événements : une sortie de l'agenda de la Ville de Saint-André est donnée même quand sa date n'est que dans le texte entier du billet.
 - Qualité de l'air : l'indice prévu demain dans chaque commune, quand Atmo Réunion l'a diffusé, sur la page et dans les outils IA.
 - Assistants IA : la pluie mesurée vient du pluviomètre le plus proche du lieu, nommé avec sa distance.
 

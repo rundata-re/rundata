@@ -64,6 +64,8 @@ export interface Creneau {
   de?: string;
   a?: string;
   secteurs: string[];
+  /** The notice names other places for this cut, not read as streets: said « et d'autres lieux », the notice linked. */
+  autres_lieux?: true;
 }
 
 export interface AvisCourant {
@@ -86,7 +88,7 @@ interface Media { date: string; source_url: string; mime_type: string }
 
 // What a relayed notice of EDF's says in its title, and that it is about a cut, not a drone survey or a fallen pole.
 const ABOUT = /coupure|courant|[ée]lectri|\bEDF\b/i;
-const CUT = /coupure|coup[ée]e?s?\b|interruption|perturbation|r[ée]tabli/i;
+const CUT = /coupure|coup[ée]e?s?(?![\p{L}\d])|interruption|perturbation|r[ée]tabli/iu;
 const NOW = /affecte actuellement|depuis (?:hier|ce matin|cette nuit)|incident technique|coupure (?:est )?en cours/i;
 
 const MONTHS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
@@ -95,9 +97,14 @@ const WEEKDAY = "(?:(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\\s+)
 const RANGE = new RegExp(`\\bdu\\s+(\\d{1,2})(?:er)?(?:\\s+${MONTH})?\\s+au\\s+(\\d{1,2})(?:er)?\\s+${MONTH}(?:\\s+(\\d{4}))?`, "giu");
 const DAY = new RegExp(`\\b${WEEKDAY}(\\d{1,2})(?:er)?\\s+${MONTH}(?:\\s+(\\d{4}))?`, "giu");
 const HOURS = /(?:\bde|\bentre)\s+(\d{1,2})\s*h\s*(\d{2})?\s*(?:à|a|et|&)\s*(\d{1,2})\s*h\s*(\d{2})?/iu;
-// A street, a lane, a district: what the notices list, one per line or between dashes.
+// A street, a lane, a district: what the notices list, one per line or between dashes. A word ends before a letter or a
+// digit, never at `\b`, which knows the ASCII letters only (« cité », « allée », « à »).
 // A house number may come first (« 650 chemin Balance », « N176 ruelle Lacotte », Saint-André 19/11/2026).
-const STREET = /^(?:N?°?\s?\d{1,4}\s?(?:bis|ter|[a-z])?,?\s+)?(?:rue|ruelle|chemin|impasse|route|allée|avenue|av\.|boulevard|bd|lotissement|lot\.|sentier|quai|place|cité|résidence|secteur|lieu-dit|îlet|ilet|ravine|rond-point|RN ?\d|route nationale)\b/iu;
+const STREET = /^(?:N?°?\s?\d{1,4}\s?(?:bis|ter|[a-z])?,?\s+)?(?:rue|ruelle|chemin|ch(?=\.\s)|impasse|route|allée|avenue|av\.|boulevard|bd|lotissement|lot\.|sentier|quai|place|cité|résidence|secteur|lieu-dit|îlet|ilet|ravine|rond-point|RN ?\d|route nationale)(?![\p{L}\d])/iu;
+// A place a house number starts, whatever follows (« 65 Centre commercial, bâtiment B », Saint-André 19/11/2026); not a
+// day, an hour or a quantity (« 23 novembre », « 9 h », « 3 km »).
+const NUMBERED = new RegExp(`^N?°?\\s?\\d{1,4}\\s?(?:bis|ter|[a-z](?![\\p{L}\\d]))?,?\\s+(?!(?:${MONTH}|h|heures?|min(?:utes?)?|km|m|à|et)(?![\\p{L}\\d])|%)\\p{L}`, "iu");
+const place = (x: string) => (STREET.test(x) || NUMBERED.test(x)) && x.length < 80;
 const SMALL = new Set(["de", "des", "du", "la", "le", "les", "l", "d", "et", "à", "au", "aux", "en"]);
 
 const monthOf = (m: string) => MONTHS.findIndex((x) => x.normalize("NFD").replace(/\p{M}/gu, "") === m.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")) + 1;
@@ -125,12 +132,28 @@ function tidy(s: string): string {
 
 /** The streets a piece of a notice lists: its lines, or the pieces between its dashes, that name a street. */
 function streets(text: string): string[] {
-  const listed = text.split(/\n|\s[–—-]\s|;|,(?=\s*(?:rue|chemin|impasse|route|allée)\b)/iu).map((x) => x.replace(/^[\s>–—-]+/, "").trim());
-  const named = listed.filter((x) => STREET.test(x) && x.length < 80).map(tidy);
+  const listed = text.split(/\n|\s[–—-]\s|;|,(?=\s*(?:rue|chemin|impasse|route|allée)(?![\p{L}\d]))/iu).map((x) => x.replace(/^[\s>–—-]+/, "").trim());
+  const named = listed.filter(place).map(tidy);
   // « dans les secteurs de l'Îlet à Cordes et de Mare Sèche »
   const said = /secteurs? (?:de |du |des )([^.,\n]{3,60})/iu.exec(text)?.[1];
   const places = said && !named.length ? said.split(/\s+et\s+(?:de\s+|du\s+)?|,\s*/u).map((x) => tidy(x.replace(/^(?:de |du |des |l['’])/i, (m) => (m.toLowerCase().startsWith("l") ? m : "")))) : [];
   return [...new Set([...named, ...places])].filter((x) => x.length > 2);
+}
+
+/**
+ * Whether a piece names other places than the streets read: on a line that lists streets (« 185 avenue de la
+ * République ; Zone d'activités Est »), a part between its « ; » or dashes that is not one, nor a heading (« Secteurs
+ * concernés : »), or a list of short names between « ; ». The other lines (the advice, the help desk's phone number) are
+ * not lists of places.
+ */
+function othersIn(text: string): boolean {
+  return text.split("\n").some((line) => {
+    const parts = line.split(/\s[–—-]\s|;/u).map((x) => x.replace(/^[\s>–—-]+|[\s.]+$/g, "").trim()).filter((x) => x.length > 2);
+    const others = parts.filter((x) => !place(x) && !/:$|^secteurs? concern/iu.test(x));
+    // A line of streets with one that is not; or a list of short names between « ; » (« Zone d'activités Est ; Quartier
+    // Bel-Air »), never a sentence (the advice: long, with its full stop).
+    return others.length > 0 && (parts.some(place) || (line.includes(";") && parts.length > 1 && parts.every((x) => x.length < 50 && !/\.\s/u.test(x))));
+  });
 }
 
 /** The cuts a notice's text announces, in their order: each day (or days) with the hours and the streets after it. */
@@ -160,11 +183,14 @@ export function slotsOf(text: string, published: Date): Creneau[] {
       // The same cut said again (a day repeated without hours, or with the same hours) only adds its streets.
       const same = slots.find((s) => s.jour === mark.jour && s.au === mark.au && (!h || (s.de === de && s.a === a)));
       const secteurs = streets(part);
+      // Past SECTORS_MAX streets, the others are in the notice too.
+      const autres = othersIn(part) || secteurs.length > SECTORS_MAX ? { autres_lieux: true as const } : {};
       if (same) {
         same.secteurs = [...new Set([...same.secteurs, ...secteurs])].slice(0, SECTORS_MAX);
+        Object.assign(same, autres);
         continue;
       }
-      slots.push({ jour: mark.jour, au: mark.au, de, a, secteurs: secteurs.slice(0, SECTORS_MAX) });
+      slots.push({ jour: mark.jour, au: mark.au, de, a, secteurs: secteurs.slice(0, SECTORS_MAX), ...autres });
     }
   });
   // Sectors listed before the first day (« affecte les secteurs suivants », then the day) belong to it when it has none.

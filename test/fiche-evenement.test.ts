@@ -144,6 +144,21 @@ describe("an event's page", () => {
     expect(ficheUrls(kept, "2026-11-20").length).toBe(2);
   });
 
+  it("leaves out of the sitemap an event over at this minute, even while an older copy still lists it (21/11/2026)", () => {
+    const a = row({ description: "Un texte." }); // samedi 21/11 de 19:30 à 22:00
+    const b = row({ titre: "Initiation au mandala", fiche: "909ec8ad", date: "2026-11-21T14:00", quand: "samedi 21/11 à 14:00", description: "Un autre texte." });
+    const c = row({ titre: "Marché forain", fiche: "55556666", date: "2026-11-21", quand: "samedi 21/11", description: "Un texte encore." });
+    const kept = registre(undefined, [a, b, c], "2026-11-21");
+    const paths = (here: string) => ficheUrls(kept, here, [a, b, c]).map(([u]) => u.slice(-8));
+    expect(paths("2026-11-21T13:59")).toEqual(["0a1b2c3d", "909ec8ad", "55556666"]);
+    // Begun without an end: over, as the copy says it; until 22:00 for the concert; the day long for the market.
+    expect(paths("2026-11-21T14:01")).toEqual(["0a1b2c3d", "55556666"]);
+    expect(paths("2026-11-21T22:01")).toEqual(["55556666"]);
+    expect(paths("2026-11-22T00:00")).toEqual([]);
+    // A day alone, as before: what ends that day stays in until it is over.
+    expect(ficheUrls(kept, "2026-11-21", [a, b, c]).length).toBe(3);
+  });
+
   it("keeps the events over 30 days, with the day each row last changed, and puts in the sitemap those to come with a text", () => {
     const a = row({ description: "Un texte." });
     const b = row({ titre: "Fête du quartier", fiche: "33334444", date: "2026-11-22", quand: "dimanche 22/11" });

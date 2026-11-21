@@ -141,14 +141,25 @@ export function ficheIssue(path: string, fiche: string, rows: Row[] | undefined,
 }
 
 /**
+ * Whether an event of the register is over at `here` (a local day « 2026-11-21 », or a local minute
+ * « 2026-11-21T20:30 »), by the copy's own rule (tools/agenda.ts, inPeriod): its end, or its start when it has no end,
+ * to the minute when it has an hour, else at the end of its day.
+ */
+const finie = (x: Fiche, here: string) => {
+  const end = agendaEnd(x) ?? x.fin ?? x.date;
+  return end.length > 10 && here.length > 10 ? end < here : end.slice(0, 10) < here.slice(0, 10);
+};
+
+/**
  * The sitemap's events: to come and with a text of their own, with the day their row last changed. With the copy of
  * /evenements (`rows`), only those it lists: an event to come no agenda announces any more answers 410 (ficheIssue),
- * and stays out as well.
+ * and stays out as well. An event over at `here` stays out too, even while an older copy still lists it: the page
+ * reads a newer one, which no longer does, and answers 410 (21/11/2026).
  */
-export function ficheUrls(fiches: Entree[] | undefined, today: string, rows?: Pick<Row, "fiche">[]): [string, string][] {
+export function ficheUrls(fiches: Entree[] | undefined, here: string, rows?: Pick<Row, "fiche">[]): [string, string][] {
   const listed = rows && new Set(rows.map((r) => r.fiche));
   return (fiches ?? []).filter(vivante)
-    .filter((x) => x.texte && (x.fin ?? x.date.slice(0, 10)) >= today && (!listed || listed.has(x.f)))
+    .filter((x) => x.texte && !finie(x, here) && (!listed || listed.has(x.f)))
     .map((x) => [fichePath(x), x.modifie]);
 }
 

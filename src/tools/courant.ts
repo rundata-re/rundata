@@ -124,6 +124,10 @@ export function ahead(a: cc.AvisCourant, now: Date): boolean {
   return a.creneaux.some((s) => ends(s) >= today);
 }
 
+/** The hours of a day, as written: « de 09:00 à 15:00 », only one of them (« à partir de 09:00 », « jusqu'à 15:00 »), or none. */
+const hours = (s: Pick<cc.Creneau, "de" | "a">) =>
+  s.de && s.a ? ` de ${s.de} à ${s.a}` : s.de ? ` à partir de ${s.de}` : s.a ? ` jusqu'à ${s.a}` : "";
+
 /**
  * « secteur 650 chemin Balance », « secteurs Rue Médard, Rue des Jésuites »: the singular before one street or address,
  * the plural when the notice gives several, counted on its commas and « et » (marketing, 21/11/2026).
@@ -149,7 +153,7 @@ const sectors = (list: string[]) => {
  * the hours, « (date passée) » (marketing, 20/11/2026): only the date is known to be past, never that the cut took place.
  */
 function slotText(s: cc.Creneau, now: Date, past = false): string {
-  const when = (s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`) + (past ? " (date passée)" : "");
+  const when = (s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${hours(s)}`) + (past ? " (date passée)" : "");
   // Other places the notice names, not read as streets: said so, the notice's link beside (marketing, 21/11/2026).
   const others = s.autres_lieux ? (s.secteurs.length ? " et d'autres lieux nommés dans l'avis" : ", aux lieux nommés dans l'avis") : "";
   return `${when}${s.secteurs.length ? `, ${sectors(s.secteurs)}` : ""}${others}`;
@@ -241,7 +245,7 @@ export function shortOf(a: Pick<CourantRow, "nature" | "creneaux" | "pdf">, now:
   const next = (a.creneaux ?? []).find((s) => ends(s) >= localDay(now));
   if (!next) return "coupure d'électricité annoncée par la mairie";
   if (a.pdf) return `coupure d'électricité annoncée par EDF le ${dayFr(next.jour, now)}, heures et secteurs dans l'avis de la mairie`;
-  const when = next.au ? `du ${dayFr(next.jour, now)} au ${dayFr(next.au, now)}` : `le ${dayFr(next.jour, now)}${next.de && next.a ? ` de ${next.de} à ${next.a}` : ""}`;
+  const when = next.au ? `du ${dayFr(next.jour, now)} au ${dayFr(next.au, now)}` : `le ${dayFr(next.jour, now)}${hours(next)}`;
   return `coupure d'électricité programmée ${when}`;
 }
 

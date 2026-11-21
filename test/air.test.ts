@@ -248,6 +248,16 @@ describe("air quality tomorrow, when Atmo Réunion diffused it", () => {
     expect(page.match(/<li class="tgt" id="c-/g)).toHaveLength(24);
   });
 
+  it("counts the communes at the worst beyond 3, their names left to the cards a level each", async () => {
+    const worse = new Set(["Le Port", "Les Avirons", "Entre-Deux", "Saint-Pierre"]);
+    const four = both.map((x) => (x.jour === "2026-10-24" && worse.has(x.commune) ? { ...x, niveau: 3, sous_indices: { ...x.sous_indices, code_pm10: 3 } } : x));
+    const answer = body(await qualiteAir(cache(four), undefined, NOW, true));
+    expect(answer.demain.resume).toBe("Qualité de l'air prévue demain à La Réunion : au pire dégradé (3/6), dans 4 communes.");
+    const page = typo(airPage("https://rundata.re", { value: answer, fetchedAt: NOW, stale: false }, NOW));
+    expect(page).toContain('<a href="#h-demain-air">Demain, le 24/10\u00a0: au pire dégradé (3/6), dans 4 communes (prévision)</a>');
+    expect(page).toContain(`${'<span class="aq aq3">dégradé</span>'} prévu dans 4 communes`);
+  });
+
   it("is not said before Atmo Réunion diffuses it", async () => {
     const answer = body(await qualiteAir(cache(), undefined, NOW, true));
     expect(answer).not.toHaveProperty("demain");

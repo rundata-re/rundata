@@ -28,6 +28,48 @@ const published = (n: notices.Avis) => {
   // A source dated to the day only gets no hour.
   return `${l.slice(8, 10)}/${l.slice(5, 7)}/${l.slice(0, 4)}${n.jour ? "" : ` à ${l.slice(11, 16)}`}`;
 };
+/**
+ * When a cut is, said short for a résumé: « mercredi 25/11 de 08:00 à 17:00 », « dans la nuit du mardi 24 au mercredi
+ * 25/11, de 21:00 à 04:00 », else « du … au … » ; only one end known, that end.
+ */
+export function cutSaid(debut?: string, fin?: string): string | undefined {
+  const day = (l: string) => when(l)!.replace(/ à \d\d:\d\d$/, "");
+  const hour = (l: string) => l.slice(11, 16);
+  if (debut && fin) {
+    if (debut.slice(0, 10) === fin.slice(0, 10)) return `${day(debut)} de ${hour(debut)} à ${hour(fin)}`;
+    const next = new Date(`${debut.slice(0, 10)}T00:00:00Z`).getTime() + 86400_000 === new Date(`${fin.slice(0, 10)}T00:00:00Z`).getTime();
+    if (next && fin.slice(11, 16) <= debut.slice(11, 16)) {
+      // The month said once when both days are in it: « du mardi 24 au mercredi 25/11 ».
+      const first = debut.slice(5, 7) === fin.slice(5, 7) ? day(debut).replace(/\/\d\d$/, "") : day(debut);
+      return `dans la nuit du ${first} au ${day(fin)}, de ${hour(debut)} à ${hour(fin)}`;
+    }
+    return `du ${when(debut)} au ${when(fin)}`;
+  }
+  if (debut) return `à partir du ${when(debut)}`;
+  if (fin) return `jusqu'au ${when(fin)}`;
+}
+
+/** How many notices the résumé of a commune tells one by one; the others are counted, and all are in `avis`. */
+export const AVIS_AU_RESUME = 3;
+/** Streets a résumé names for one notice; past them, how many others, all in its `secteurs_dits`. */
+const VOIES_AU_RESUME = 2;
+
+/**
+ * A notice in a commune's résumé, told apart from the others of the same title: its title, when the cut is, and its
+ * first streets (« Travaux sur le réseau, jeudi 26/11 de 21:00 à 04:00, rue Sainte Anne… »).
+ */
+export function noticeSaid(n: notices.Avis, now: Date): string {
+  const here = nowLocal(now);
+  const cut = cutSaid(n.debut, n.fin);
+  const going = n.debut && n.debut <= here && (!n.fin || n.fin >= here);
+  const streets = n.secteurs_complets && n.secteurs.length ? n.secteurs : [];
+  const more = streets.length - VOIES_AU_RESUME;
+  const where = streets.length
+    ? ` (${streets.slice(0, VOIES_AU_RESUME).join(", ")}${more > 0 ? ` et ${more} autre${more > 1 ? "s" : ""} voie${more > 1 ? "s" : ""}` : ""})`
+    : "";
+  return `${n.titre}${cut ? `, ${going ? "en cours, " : ""}${cut}` : `, avis du ${published(n)}`}${where}`;
+}
+
 const nowLocal = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16);
 
 /** The notices still worth telling: a cut not over yet, or anything published in the last few days. */
@@ -153,6 +195,21 @@ export function pourAssistant(rows: ReturnType<typeof noticeRow>[]): { avis: Rec
   return { avis, abreges };
 }
 
+/**
+ * The notices of a commune in its résumé: the cuts soonest first, then the notices without hours, newest first; the
+ * first `AVIS_AU_RESUME` told apart (`noticeSaid`), the others counted (Saint-Denis, 21/11/2026: three « Travaux sur
+ * le réseau » said alike).
+ */
+export function resumeAvis(mine: notices.Avis[], now: Date): string {
+  const order = [...mine].sort((x, y) => {
+    const [kx, ky] = [x.debut ?? x.fin, y.debut ?? y.fin];
+    return kx && ky ? kx.localeCompare(ky) : kx ? -1 : ky ? 1 : y.publie.localeCompare(x.publie);
+  });
+  const rest = order.length - AVIS_AU_RESUME;
+  return order.slice(0, AVIS_AU_RESUME).map((n) => noticeSaid(n, now)).join("\u00a0; ") +
+    (rest > 0 ? `\u00a0; et ${rest} autre${rest > 1 ? "s" : ""}, dans avis` : "");
+}
+
 /** `complet`: the page's build, every field of every notice; the tool's answer is cut to its size (`pourAssistant`). */
 export async function coupuresEau(cache: Cache, lieu: string | undefined, now = new Date(), complet = false) {
   let all: notices.Avis[];
@@ -227,7 +284,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const resume = [
     dry ? `EAU À NE PAS BOIRE ${a(commune)} (secteurs dans l'avis), d'après l'avis du ${published(dry)} : « ${dry.titre} ».` : "",
     mine.length
-      ? `${mine.length} avis récent${mine.length > 1 ? "s" : ""} ou à venir ${a(commune)} : ${mine.slice(0, 3).map((n) => n.titre).join("\u00a0; ")}.`
+      ? `${mine.length} avis récent${mine.length > 1 ? "s" : ""} ou à venir ${a(commune)} : ${resumeAvis(mine, now)}.`
       : mute ? ""
       : covered ? `Aucun avis de coupure récent ou à venir ${a(commune)}${where}.`
       : unread ? `Pas d'avis en ligne lisible pour ${commune} : rundata.re ne lit pas les avis de coupure de ${unread.nom}, qui y distribue l'eau. ${siteDist ? `Voir le site ${deNom(unread.nom)}, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteDist}, ou la mairie.` : `Voir ${unread.nom} ou la mairie.`}`

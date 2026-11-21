@@ -4,7 +4,8 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, sectorsSaid, textOf } from "../src/providers/avis-eau.js";
-import { annonceCoupure, compteAvis, coupuresEau, noticeRow, AVIS_AVEC_TEXTE, pourAssistant, TEXTE_PAR_LE_LIEN } from "../src/tools/coupures.js";
+import { annonceCoupure, compteAvis, coupuresEau, cutSaid, noticeRow, AVIS_AVEC_TEXTE, pourAssistant, resumeAvis, TEXTE_PAR_LE_LIEN } from "../src/tools/coupures.js";
+import type { Avis } from "../src/providers/avis-eau.js";
 import { cite } from "../src/tools/citer.js";
 import { arretesSection, coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { enCours, parseArretes } from "../src/providers/arretes-travaux.js";
@@ -385,9 +386,35 @@ describe("coupures d'eau", () => {
     expect(coupuresLive(coupures)!.detail).toBe(`${coupures.value.avis.filter((n) => !n.ne_pas_boire).length} avis de coupure ou de travaux récents ou à venir`);
   });
 
+  it("tells apart in the résumé notices of the same title, by their hours and streets, and counts the others", () => {
+    // Saint-Denis, read on 21/11/2026 at 10:05: five notices of Dionéo, three titled « Travaux sur le réseau ».
+    const avis = (titre: string, publie: string, debut: string, fin: string, secteurs: string[]) =>
+      ({ titre, communes: ["Saint-Denis"], publie, debut, fin, secteurs, secteurs_complets: secteurs.length > 0, texte: "", lien: "https://example.re/" }) as unknown as Avis;
+    const mine = [
+      avis("Travaux sur le réseau", "2026-11-20T10:23:00Z", "2026-11-26T21:00", "2026-11-27T04:00", ["RUE SAINTE ANNE", "RUE MICHEL HA-SAM"]),
+      avis("Travaux sur le réseau", "2026-11-20T10:13:00Z", "2026-11-25T21:00", "2026-11-26T04:00", ["BOULEVARD DE SAINT FRANCOIS"]),
+      avis("Travaux sur le réseau", "2026-11-20T10:05:00Z", "2026-11-24T21:00", "2026-11-25T04:00", ["RUE LORY LES HAUTS", "RUE LORY LES BAS", "RUE GABRIEL LAHUPPE", "RUE DU BOIS DE MERLE", "RUE CLAUDE DEBUSSY", "ALLEE DES CHRYSANTHEMES", "ALLEE DU CIMETIERE"]),
+      avis("Travaux sur le réseau AEP Chemin Bois Rouge La bretagne", "2026-11-20T04:41:00Z", "2026-11-23T21:00", "2026-11-24T04:00", ["CHEMIN DE BOIS ROUGE", "CHEMIN DE LA ROSERAIE", "CHEMIN DU VERGER"]),
+      avis("Lavage de réservoir", "2026-11-18T06:42:00Z", "2026-11-25T08:00", "2026-11-25T17:00", []),
+    ];
+    const now = new Date("2026-11-21T06:05:00Z");
+    expect(resumeAvis(mine, now)).toBe(
+      "Travaux sur le réseau AEP Chemin Bois Rouge La bretagne, dans la nuit du lundi 23 au mardi 24/11, de 21:00 à 04:00 (CHEMIN DE BOIS ROUGE, CHEMIN DE LA ROSERAIE et 1 autre voie)\u00a0; " +
+      "Travaux sur le réseau, dans la nuit du mardi 24 au mercredi 25/11, de 21:00 à 04:00 (RUE LORY LES HAUTS, RUE LORY LES BAS et 5 autres voies)\u00a0; " +
+      "Lavage de réservoir, mercredi 25/11 de 08:00 à 17:00\u00a0; et 2 autres, dans avis");
+    // Under way, said so; a night across two months keeps both; one end only, that end.
+    expect(resumeAvis([mine[0]], new Date("2026-11-26T18:00:00Z"))).toBe("Travaux sur le réseau, en cours, dans la nuit du jeudi 26 au vendredi 27/11, de 21:00 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)");
+    expect(cutSaid("2026-11-30T21:00", "2026-12-01T04:00")).toBe("dans la nuit du lundi 30/11 au mardi 01/12, de 21:00 à 04:00");
+    expect(cutSaid("2026-11-24T08:00", "2026-11-27T17:00")).toBe("du mardi 24/11 à 08:00 au vendredi 27/11 à 17:00");
+    expect(cutSaid(undefined, "2026-11-24T17:00")).toBe("jusqu'au mardi 24/11 à 17:00");
+    // No hours: the notice's date, newest first after the cuts.
+    const sans = { ...mine[4], debut: undefined, fin: undefined } as Avis;
+    expect(resumeAvis([sans, mine[0]], now)).toBe("Travaux sur le réseau, dans la nuit du jeudi 26 au vendredi 27/11, de 21:00 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)\u00a0; Lavage de réservoir, avis du 18/11/2026 à 10:42");
+  });
+
   it("gives a cut to come with its hours", async () => {
     const b = body(await coupuresEau(cache(), "Saint-Denis", NOW));
-    expect(b.resume).toBe("1 avis récent ou à venir à Saint-Denis : Travaux sur le réseau / RD49.");
+    expect(b.resume).toBe("1 avis récent ou à venir à Saint-Denis : Travaux sur le réseau / RD49, dans la nuit du lundi 26 au mardi 27/10, de 21:00 à 05:00 (ROUTE DE BOIS DE NEFLES).");
     expect(b.avis[0].coupure).toEqual({ de: "lundi 26/10 à 21:00", a: "mardi 27/10 à 05:00", etat: "à venir" });
   });
 
@@ -541,7 +568,7 @@ describe("coupures d'eau", () => {
     expect(es.avis_lus_sur).toEqual({ publie_par: "runéo", distributeur: "runéo", lien: "https://www.runeo.re/" });
     expect(es.distributeur).toBeUndefined();
     const sp = body(await coupuresEau(cache(NIGHT), "Saint-Paul", NIGHT));
-    expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul : Interruption nocturne de la distribution du 23/10/2026.");
+    expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul : Interruption nocturne de la distribution du 23/10/2026, en cours, dans la nuit du vendredi 23 au samedi 24/10, de 22:00 à 06:00.");
     expect(sp.avis[0]).toMatchObject({ publie_le: "23/10/2026", coupure: { de: "vendredi 23/10 à 22:00", a: "samedi 24/10 à 06:00", etat: "en cours" } });
     // Over at 06:00: no longer said in the morning.
     expect(body(await coupuresEau(cache(), "Saint-Paul", NOW)).resume).toBe("Aucun avis de coupure récent ou à venir à Saint-Paul dans les avis de La Créole, qui y distribue l'eau d'après l'ARS\u00a0: https://lacreole.re/flash-infos.");

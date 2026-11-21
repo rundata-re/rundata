@@ -21,7 +21,7 @@ import { compass } from "../geo.js";
 import type { Station } from "../types.js";
 import { why } from "../types.js";
 import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
-import { fit, mieux } from "./representativeness.js";
+import { fit, mieux, pluieDabord } from "./representativeness.js";
 import { gaugesOf } from "./pluie-commune.js";
 import * as meteorOi from "../providers/meteor-oi.js";
 import { autorisee } from "../providers/autorisations.js";
@@ -713,8 +713,10 @@ async function hourly(cache: Cache, place: Place, p: Period, now: Date) {
   const m0 = ym(p.du);
   const m1 = ym(p.au);
   const all = (await climat.postesHoraires(cache)).value.filter((x) => x.debut <= m1 && x.fin >= m0);
-  const ranked = all.map((x) => ({ x, f: fit(place, asHourStation(x)) })).sort((u, v) => u.f.score - v.f.score);
-  const pick = (f: HourField) => ranked.filter((r) => r.x.params.includes(f)).slice(0, HOURLY_CANDIDATES).map((r) => r.x);
+  const ranked = all.map((x) => ({ x, f: fit(place, asHourStation(x)), r: pluieDabord(place, asHourStation(x)) })).sort((u, v) => u.f.score - v.f.score);
+  // The rain at the nearest gauge, as for the days (pluieDabord).
+  const gauges = [...ranked].sort((u, v) => u.r - v.r);
+  const pick = (f: HourField) => (f === "RR1" ? gauges : ranked).filter((r) => r.x.params.includes(f)).slice(0, HOURLY_CANDIDATES).map((r) => r.x);
   const wanted = [...new Set([...pick("RR1"), ...pick("T"), ...pick("INS").slice(0, 2), ...pick("FXI").slice(0, 2)])];
   const read = await climat.months(wanted.map((x) => x.poste), m0, m1);
   const hs = hours(p, now);
@@ -801,9 +803,9 @@ export function heuresHier(kept: Veille, place: Place) {
   const has = (id: string) => kept.stations[id]?.rr_h?.length === 24;
   const commune = place.type === "commune" ? gaugesOf(place.nom).filter(([id]) => has(id)) : [];
   const near = STATIONS_974.filter(([id]) => has(id))
-    .map(([id, nom, lat, lon, altitude_m]) => ({ id, nom, f: fit(place, { source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }) }))
-    // Ranked as the answer's own stations are (mieux), so that both blocks name the same gauge.
-    .sort((u, v) => mieux(u.f, v.f))[0];
+    .map(([id, nom, lat, lon, altitude_m]) => ({ id, nom, r: pluieDabord(place, { source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }) }))
+    // The nearest gauge, as the answer's own rain is (pluieDabord), so that both blocks name the same gauge.
+    .sort((u, v) => u.r - v.r)[0];
   const picked = commune.length ? commune.map(([id, nom]) => ({ id, nom })) : near ? [near] : [];
   if (!picked.length) return undefined;
   const hours = (id: string) => kept.stations[id].rr_h!.map((mm, h) => ({ h, mm })).filter((x) => x.mm > 0);
@@ -830,11 +832,12 @@ export function heuresHier(kept: Veille, place: Place) {
  * temperature at the best one that measured both every hour. Said until the daily file is loaded at noon.
  */
 function provisoire(kept: Veille, place: Place) {
-  const near = (has: (v: Veille["stations"][string]) => boolean) =>
+  const near = (has: (v: Veille["stations"][string]) => boolean, rain = false) =>
     STATIONS_974.filter(([id]) => kept.stations[id] && has(kept.stations[id]))
       .map(([id, nom, lat, lon, altitude_m]): Station => ({ source: "meteofrance", id, nom, lat, lon, altitude_m, variables: [] }))
-      .map((s) => ({ s, f: fit(place, s) })).sort((u, v) => u.f.score - v.f.score)[0];
-  const rain = near((v) => v.rr != null);
+      .map((s) => ({ s, f: fit(place, s), k: rain ? pluieDabord(place, s) : fit(place, s).score })).sort((u, v) => u.k - v.k)[0];
+  // The rain at the nearest gauge (pluieDabord), the temperatures at the best-placed station that measured both.
+  const rain = near((v) => v.rr != null, true);
   const temp = near((v) => v.tn != null && v.tx != null);
   if (!rain && !temp) return undefined;
   const at = (b: { s: Station; f: ReturnType<typeof fit> }) => ({
@@ -1000,13 +1003,15 @@ export async function historiqueMeteo(
   if (!res) return notFound(lieu);
   const place = res.lieu;
   // In the order of meteo_actuelle: the better relevance, then the lower score.
-  const ranked = all.filter(covers).map((x) => ({ x, f: fit(place, asStation(x)) })).sort((u, v) => mieux(u.f, v.f));
+  const ranked = all.filter(covers).map((x) => ({ x, f: fit(place, asStation(x)), r: pluieDabord(place, asStation(x)) })).sort((u, v) => mieux(u.f, v.f));
+  // The rain at the nearest gauge (pluieDabord), the temperature and the sun at the best-placed station.
+  const gauges = [...ranked].sort((u, v) => u.r - v.r);
   const take = y1 - y0 >= 2 ? LONG_CANDIDATES : CANDIDATES;
-  const pick = (f: Field) => ranked.filter((r) => r.x.params.includes(f)).slice(0, take).map((r) => r.x);
+  const pick = (f: Field) => (f === "RR" ? gauges : ranked).filter((r) => r.x.params.includes(f)).slice(0, take).map((r) => r.x);
   // The rain gauges above and below the place, for a rain station far from its altitude: never a « faible » one.
   const z = place.altitude_m;
   const side = (up: boolean) =>
-    z == null ? [] : ranked.filter((r) => r.x.params.includes("RR") && r.f.pertinence !== "faible" && (up ? r.x.alt > z : r.x.alt < z)).slice(0, take === LONG_CANDIDATES ? 1 : 2).map((r) => r.x);
+    z == null ? [] : gauges.filter((r) => r.x.params.includes("RR") && r.f.pertinence !== "faible" && (up ? r.x.alt > z : r.x.alt < z)).slice(0, take === LONG_CANDIDATES ? 1 : 2).map((r) => r.x);
   const wanted = [...new Set([...pick("RR"), ...pick("TX"), ...pick("INST").slice(0, take === LONG_CANDIDATES ? 1 : 2), ...side(true), ...side(false)])];
   let read: Map<string, Map<number, Year>>;
   try {

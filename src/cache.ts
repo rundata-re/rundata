@@ -385,12 +385,14 @@ export class Cache {
    * KV) asked last, as `island` does, but waited for that long at most: past it, the data center's copy, however old,
    * is the answer (a read of KV may take seconds, 09/11/2026), and what KV gives later is not waited for. The newer of
    * the two is put in the data center's stores. `islandAloneMs`: that wait when the data center has no copy at all,
-   * where giving up means a whole build (web/data.ts `snapshot`). A read past `islandWithinMs` is logged with its time.
+   * or none made since `uselessBefore` (a time, ms: one its reader would not use), where giving up means a whole build
+   * or no copy at all (web/data.ts `snapshot`). A read past `islandWithinMs` is logged with its time.
    */
-  async peek<T>(key: string, freshAfter?: number, islandWithinMs?: number, islandAloneMs = islandWithinMs): Promise<Cached<T> | undefined> {
+  async peek<T>(key: string, freshAfter?: number, islandWithinMs?: number, islandAloneMs = islandWithinMs, uselessBefore?: number): Promise<Cached<T> | undefined> {
     let hit = await this.store.get(key, freshAfter);
     if (islandWithinMs != null && this.lectures && !(hit && freshAfter != null && hit.fetchedAt >= freshAfter)) {
-      const waitMs = hit ? islandWithinMs : islandAloneMs!;
+      const useless = !!hit && uselessBefore != null && hit.fetchedAt < uselessBefore;
+      const waitMs = hit && !useless ? islandWithinMs : islandAloneMs!;
       const t = Date.now();
       let timer: ReturnType<typeof setTimeout> | undefined;
       const late = new Promise<"late">((resolve) => (timer = setTimeout(() => resolve("late"), waitMs)));
@@ -400,7 +402,7 @@ export class Cache {
       const far = won === "late" ? undefined : won;
       // How long KV took, when longer than the short wait: what the waits above are set from (21/11/2026).
       if (won === "late" || Date.now() - t > islandWithinMs) {
-        const said = (ms: number, what: string) => console.log(`copie de l'île lue en ${ms} ms : ${key}, ${what}, ${hit ? "copie du centre de données là" : "aucune copie au centre de données"}, attente ${waitMs} ms`);
+        const said = (ms: number, what: string) => console.log(`copie de l'île lue en ${ms} ms : ${key}, ${what}, ${!hit ? "aucune copie au centre de données" : useless ? "copie du centre de données trop vieille" : "copie du centre de données là"}, attente ${waitMs} ms`);
         if (won !== "late") said(Date.now() - t, far ? "servie" : "absente");
         else void read.then((e) => said(Date.now() - t, e ? "arrivée trop tard" : "absente, trop tard"));
       }

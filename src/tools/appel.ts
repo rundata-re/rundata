@@ -7,7 +7,7 @@
  */
 import gazetteer from "../places/gazetteer.js";
 import type { Evenement } from "../providers/agenda.js";
-import { COMMON } from "./casse.js";
+import { casse, COMMON } from "./casse.js";
 
 export type Appel = "exposants" | "candidatures";
 
@@ -35,15 +35,30 @@ function placesOf(commune: string | undefined): string[][] {
 }
 
 /**
- * The outing's name in the usual capitals: its first letter, the feasts, the names of its commune's places as the
- * gazetteer writes them. A name already written with capitals inside it is left as written.
+ * The words its post writes with a capital inside a sentence (« au Parc du Colosse », « un marché de Noël »), as it
+ * writes them: never a sentence's first word, nor one in capitals throughout.
  */
-export function nomUsage(nom: string, commune?: string): string {
-  const text = nom.replace(/[\s!.]+$/u, "").trim();
+function capitalesDu(texte: string | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const m of (texte ?? "").matchAll(/(?<=[\p{L}\p{N},;'’]\s+)(\p{Lu}\p{Ll}+)/gu)) out.set(fold(m[1]), m[1]);
+  return out;
+}
+
+/**
+ * The outing's name in the usual capitals: its first letter, the feasts, the words its post writes with a capital
+ * elsewhere (`texte`), the names of its commune's places as the gazetteer writes them. A name in capitals throughout
+ * (a title in Unicode bold reads so, Saint-André 21/11/2026) is first put in the case of a sentence (casse()); one
+ * already written with capitals inside it is left as written.
+ */
+export function nomUsage(nom: string, commune?: string, texte?: string): string {
+  const raw = nom.replace(/[\s!.]+$/u, "").trim();
+  const caps = !/\p{Ll}/u.test(raw);
+  const text = caps ? casse(raw.toLocaleUpperCase("fr")) : raw;
   const words = [...text.matchAll(WORD)];
   const out = words.map((m) => m[0]);
-  if (!/\p{Lu}/u.test(text.slice(1))) {
-    words.forEach((m, i) => { const f = FEASTS[fold(m[0])]; if (f) out[i] = f; });
+  if (caps || !/\p{Lu}/u.test(text.slice(1))) {
+    const said = capitalesDu(texte);
+    words.forEach((m, i) => { const f = FEASTS[fold(m[0])] ?? (m[0] === m[0].toLowerCase() ? said.get(fold(m[0])) : undefined); if (f) out[i] = f; });
     const between = (i: number) => text.slice(words[i].index! + words[i][0].length, words[i + 1].index);
     const known = placesOf(commune);
     for (let i = 0; i < words.length; i++) {
@@ -64,14 +79,14 @@ export function nomUsage(nom: string, commune?: string): string {
  * The event as an outing: unchanged when its title is no call; by the outing's name, with `appel`, when it is one and
  * every day it gives has its hours; undefined (not an outing) when it is one without them, or without a name.
  */
-export function appelAuPublic<E extends Pick<Evenement, "titre" | "seances" | "commune">>(e: E): (E & { appel?: Appel }) | undefined {
+export function appelAuPublic<E extends Pick<Evenement, "titre" | "seances" | "commune" | "description">>(e: E): (E & { appel?: Appel }) | undefined {
   const m = e.titre.match(CALL);
   if (!m) return e;
   const nom = e.titre.slice(m[0].length);
   const heures = e.seances.length > 0 && e.seances.every((s) => s.debut.length > 10);
   if (!heures || !/\p{L}{3}/u.test(nom)) return undefined;
   const appel: Appel = fold(m[1]).startsWith("exposant") ? "exposants" : "candidatures";
-  return { ...e, titre: nomUsage(nom, e.commune), appel };
+  return { ...e, titre: nomUsage(nom, e.commune, e.description), appel };
 }
 
 /** « annoncé par la Ville de Saint-André dans un appel à exposants » (marketing, 21/11/2026), the page and the tool alike. */

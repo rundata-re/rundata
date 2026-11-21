@@ -56,6 +56,25 @@ describe("appel à exposants", () => {
     expect(eventRow(e, e.seances).annonce).toBeUndefined();
   });
 
+  it("gives its capitals back to a title in capitals throughout, as the live one in Unicode bold (1.0.712)", () => {
+    expect(appelAuPublic(ev("APPEL À EXPOSANTS MARCHÉ DE NOËL AU COLOSSE !", JOURS))?.titre).toBe("Marché de Noël au Colosse");
+    expect(eventRow(appelAuPublic(ev("APPEL À EXPOSANTS MARCHÉ DE NOËL AU COLOSSE !", JOURS))!, JOURS).titre).toBe("Marché de Noël au Colosse");
+  });
+
+  it("writes a word as its post writes it elsewhere, for a place the gazetteer does not hold", () => {
+    const e = { ...ev("APPEL À EXPOSANTS FÊTE DES LETCHIS À BOIS-ROUGE", JOURS), description: "Une fête qui se tiendra à Bois-Rouge, sur le parvis." };
+    expect(appelAuPublic(e)?.titre).toBe("Fête des letchis à Bois-Rouge");
+    expect(nomUsage("marché de noël au kiosque", "Saint-Paul", "Rendez-vous au Kiosque de la plage.")).toBe("Marché de Noël au Kiosque");
+  });
+
+  it("puts in the case of a sentence a title in capitals throughout only, its sigles kept; a mixed one stays as written", () => {
+    expect(appelAuPublic(ev("Appel à candidatures : Soirée DJ Kabardock avec NRJ", JOURS))?.titre).toBe("Soirée DJ Kabardock avec NRJ");
+    expect(appelAuPublic(ev("Appel à exposants Marché UNESCO du Kabardock", JOURS))?.titre).toBe("Marché UNESCO du Kabardock");
+    expect(appelAuPublic(ev("APPEL À CANDIDATURES SOIRÉE DJ NRJ POUR L'UNESCO", JOURS))?.titre).toBe("Soirée DJ NRJ pour l'UNESCO");
+    // Any other title is never touched, mixed or in capitals: only a call's is rewritten here.
+    for (const t of ["Concert DJ Kabardock", "SOIRÉE NRJ", "Fête de l'UNESCO"]) expect(appelAuPublic(ev(t, JOURS))?.titre).toBe(t);
+  });
+
   it("gives the capitals of the feasts and of the commune's places only", () => {
     expect(nomUsage("fête de noël au colosse", "Saint-André")).toBe("Fête de Noël au Colosse");
     expect(nomUsage("fête de noël au colosse", "Saint-Paul")).toBe("Fête de Noël au colosse");

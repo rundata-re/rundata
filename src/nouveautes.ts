@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-21T13:06:00+04:00", texte: "Coupures d'électricité\u00a0: chaque plage horaire du jour et les rues des avis en texte des mairies, même en gras, avec un renvoi à l'avis." },
   { date: "2026-11-21T12:56:00+04:00", texte: "Événements\u00a0: une sortie de l'agenda de la Ville de Saint-André est donnée même quand sa date n'est que dans le texte entier du billet." },
   { date: "2026-11-21T10:17:00+04:00", texte: "Qualité de l'air\u00a0: l'indice prévu demain dans chaque commune, quand Atmo Réunion l'a diffusé, sur la page et dans les outils IA." },
   { date: "2026-11-21T08:41:00+04:00", texte: "Assistants IA\u00a0: la pluie mesurée vient du pluviomètre le plus proche du lieu, nommé avec sa distance." },

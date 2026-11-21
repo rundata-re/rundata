@@ -70,6 +70,7 @@ import { dessinsAccueil } from "./accueil-dessins.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { COMMUNES, communePage, communesPage, electionsPage, electionsPath } from "./commune.js";
 import { type Entree, FICHES, ficheAttente, ficheIssue, fichePage, fichePassee, ficheOf, ficheTerminee, ficheUrls } from "./fiche-evenement.js";
+import { FICHES_EVERY_MS } from "./fiches.js";
 import { buildEmploi, emploiPage } from "./emploi.js";
 import { buildMarches, marchesPage } from "./marches-publics.js";
 import { actualitesPage, agendaPage, airPage, bornesPage, busOutran, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, tracePage, traficPage, velosPage, volcanPage } from "./domains.js";
@@ -1207,7 +1208,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const [fuel, fiches, agenda] = await Promise.all([
       cache.peek<carburants.Prix>("carburants:prix").catch(() => undefined),
       cache.kept<Entree[]>(FICHES).catch(() => undefined),
-      cache.peek<AgendaAnswer>("web:agenda").catch(() => undefined),
+      // The copy of /evenements, to leave out the events it no longer lists (410): from this isolate's memory when it
+      // has one of the hour (the register is written hourly too), else the data center's cache; never KV.
+      cache.peek<AgendaAnswer>("web:agenda", now.getTime() - FICHES_EVERY_MS).catch(() => undefined),
     ]);
     return new Response(sitemap(origin, now, fuel?.value.depuis, fiches?.value, agenda ? (agenda.value.evenements ?? []) : undefined), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=86400" } });
   }

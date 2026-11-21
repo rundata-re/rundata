@@ -3720,11 +3720,13 @@ function agendaRow(r: AgendaRow, g: Porte = porte()): string {
   const news = r.statut_d_apres
     ? `<small class="said">${esc(r.statut!.toLowerCase())}${r.reporte_au ? ` au ${esc(r.reporte_au)}` : ""} d'après <a href="${esc(r.statut_d_apres.lien)}" rel="noopener"${fenetre(r.statut_d_apres.lien)}>${esc(r.statut_d_apres.media)}</a></small>`
     : "";
+  // A call to stallholders given as its outing (tools/appel.ts): said under its name, with the post's link.
+  const appel = r.annonce ? `<small class="said">${r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${blank}>${esc(r.annonce)}</a>` : esc(r.annonce)}</small>` : "";
   // « jusqu'au vendredi 11/12 » goes under the title on a phone (.fin): beside it, it left the title a word a line.
   const hours = agendaHours(r.quand);
   // Its title opens its page on rundata.re (web/fiche-evenement.ts), which links its source; a copy built before it, the source.
   const title = r.fiche ? `<a href="${fichePath(r)}">${esc(r.titre)}</a>` : r.lien ? `<a href="${esc(r.lien)}" rel="noopener"${blank}>${esc(r.titre)}</a>` : esc(r.titre);
-  return `<li data-g="${esc(r.genres.join(" "))}"><span>${badge}${title}${news}<small>${small}${logo}${book}</small>${eventGo(r, g)}</span><span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${esc(hours)}</span></li>`;
+  return `<li data-g="${esc(r.genres.join(" "))}"><span>${badge}${title}${news}${appel}<small>${small}${logo}${book}</small>${eventGo(r, g)}</span><span class="q-none${hours.startsWith("jusqu'au") ? " fin" : ""}">${esc(hours)}</span></li>`;
 }
 
 /** Under a day's title: its events, and those of more than a week going on that day (parJour). */

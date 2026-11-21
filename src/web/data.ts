@@ -2126,6 +2126,14 @@ export const ISLAND_PAGES = new Set(["web:meteo", ...PAGES.filter((p) => p.commu
  * 09/11/2026 (air:mesures); the home page's reader waits HOME_READER_WAIT_MS (800) in all, this included.
  */
 export const ISLAND_PEEK_MS = 300;
+/**
+ * That wait when the data center has no copy at all, ms: past it, the page is built from nothing, 60 to 120 subrequests
+ * and 3 to 8 s before the answer, or no live block for a person past WAIT_MS. From 19 to 21/11/2026, 8 % of the views
+ * of /aujourdhui/<commune> waited more than 3 s (p99 6.9 s), mostly people and Facebook's preview from the groups'
+ * links, each a whole build of web:lieu, while KV had a copy of the current revision 4 to 36 minutes old. Within the
+ * view's own wait (`waitMs`, `withoutCopyMs`).
+ */
+export const ISLAND_ALONE_MS = 2000;
 
 /**
  * The last copy of a page's data and when it was built, refreshed in the background when older than
@@ -2198,8 +2206,12 @@ export async function snapshot<T>(
   const island = ISLAND_PAGES.has(key);
   // The island's copy waited for ISLAND_PEEK_MS at most, and that wait taken from the reader's (`waitMs`).
   const start = Date.now();
-  const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000, island ? Math.min(ISLAND_PEEK_MS, waitMs) : undefined).catch(() => undefined);
-  if (island) waitMs = Math.max(0, waitMs - (Date.now() - start));
+  const seen = await cache.peek<T>(key, now.getTime() - Math.min(FRESH_SECONDS, sinceMidnight(now)) * 1000, island ? Math.min(ISLAND_PEEK_MS, waitMs) : undefined,
+    island ? Math.min(ISLAND_ALONE_MS, withoutCopyMs ?? waitMs) : undefined).catch(() => undefined);
+  if (island) {
+    waitMs = Math.max(0, waitMs - (Date.now() - start));
+    if (withoutCopyMs != null) withoutCopyMs = Math.max(0, withoutCopyMs - (Date.now() - start));
+  }
   const any = written(cache.getFrom(key, seen, KEEP_SECONDS, run, island ? FRESH_SECONDS : undefined));
   // A copy out of date by its revision alone (a deploy changed how the page is drawn), less than KEEP_SECONDS old,
   // made since midnight and young enough for `old`: served at once, its build behind, rather than after the whole wait

@@ -22,7 +22,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The other subjects narrowed: « vigilance » with its colour, not « une pluie de médailles », « une éruption de joie »,
   // fireworks, flights, « conseil » alone, nor « annulé » or « reporté » alone for culture; « AVC » is health.
   // « Enquête publique » and « tribunal administratif » no crimes.
-  actualites: 22,
+  // A headline « Saint-Denis : … » goes to the communes it names; « Bois de Nèfles » to the commune the text names.
+  actualites: 23,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -147,7 +148,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
   // Its news of the roads: not « un accident vasculaire » nor a day « sans accident »; « grévistes » a mobilisation.
   // Its news of the roads: not « le trafic de drogue », nor the dam of Takamaka.
-  trafic: 8,
+  // Its news of the roads by commune: a headline « Saint-Denis : … » to the communes it names (communesEnTete).
+  trafic: 9,
   velos: 7,
   // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
   // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.

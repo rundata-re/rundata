@@ -263,16 +263,42 @@ function hits(text: string): Map<string, { communes: string[]; commune: boolean 
   return out;
 }
 
+/**
+ * The communes a headline opens on, before its colon (« Saint-Denis : », « Saint-Pierre / Le Tampon : », « Saint-Gilles : »
+ * for Saint-Paul), when what comes before it is only names of the island's places; else undefined.
+ */
+export function communesEnTete(titre: string): string[] | undefined {
+  const m = /^([^:]{2,60}?)[\s\u00a0]*:\s/u.exec(titre);
+  if (!m) return undefined;
+  const found = hits(m[1]);
+  if (!found.size) return undefined;
+  const bare = (t: string) => ` ${normalize(t).replace(/\b(?:le|la|les|l)\b/g, " ").replace(/\s+/g, " ").trim()} `;
+  let rest = bare(m[1].replace(/\bSte?\b\.?(?=[\s-]\p{Lu})/gu, (x) => (x.startsWith("Ste") ? "Sainte" : "Saint")));
+  for (const nom of found.keys()) rest = rest.split(bare(nom)).join(" ");
+  return /^(?:[\s/&,-]|\bet\b)*$/.test(rest) ? places(found).communes : undefined;
+}
+
 /** The communes and places a text names, by their gazetteer names (« St-Pierre » too); a commune is named for its places. */
 export function placesIn(text: string): { communes: string[]; lieux: string[] } {
   return places(hits(text));
 }
 
-function places(found: ReturnType<typeof hits>): { communes: string[]; lieux: string[] } {
+/**
+ * The communes and places of the names found. A name of several communes (« Bois de Nèfles », at Saint-Paul and at
+ * Saint-Denis) goes to those of them the text names, when it names one: « rue Bois-de-Nèfles » at Saint-Denis is not
+ * Saint-Paul (21/11/2026). `only`: the communes kept, the others' places left out too.
+ */
+function places(found: ReturnType<typeof hits>, only?: Set<string>): { communes: string[]; lieux: string[] } {
   const communes = new Set<string>();
   const lieux = new Set<string>();
+  const self = (nom: string, h: { communes: string[] }) => h.communes.filter((c) => normalize(c) === normalize(nom));
+  const said = new Set([...found].flatMap(([nom, h]) => (h.commune ? self(nom, h) : [])));
   for (const [nom, h] of found) {
-    for (const c of h.communes) communes.add(c);
+    let cs = h.commune && self(nom, h).length ? self(nom, h) : h.communes;
+    if (cs.length > 1 && cs.some((c) => said.has(c))) cs = cs.filter((c) => said.has(c));
+    if (only) cs = cs.filter((c) => only.has(c));
+    if (!cs.length) continue;
+    for (const c of cs) communes.add(c);
     if (!h.commune) lieux.add(nom);
   }
   // « Saint-Gilles-les-Bains » says « Saint-Gilles » once.
@@ -373,6 +399,9 @@ function info(media: string, titre: string, raw: string, publie: Date, whole = "
   const body = whole.length > BODY_MAX ? whole.slice(0, whole.lastIndexOf(" ", BODY_MAX)) : whole;
   const resume = firstSentence(sansRubrique(body.trim()));
   const found = hits(`${titre} ${resume ?? ""}`);
+  // A headline that opens on its commune (« Saint-Denis : … », as Freedom, Imaz Press, Clicanoo and Le Quotidien write
+  // them) goes to the communes its headline names, never to one its first sentence names in passing (21/11/2026).
+  const lead = communesEnTete(titre);
   return {
     titre,
     resume: resume !== titre ? resume : undefined,
@@ -381,7 +410,7 @@ function info(media: string, titre: string, raw: string, publie: Date, whole = "
     publie: publie.toISOString(),
     heure: opts.heure ?? true,
     direct: opts.direct || undefined,
-    ...places(found),
+    ...places(found, lead && new Set(places(hits(titre)).communes)),
     // The subject is in the headline and the lead.
     sujets: sujetsOf(`${titre} ${body.slice(0, 300)}`),
   };

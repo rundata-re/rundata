@@ -20,12 +20,18 @@ function sentence(x: atmo.Index, when: string): string {
   return `${when} : ${atmo.level(x.niveau)} (${x.niveau}/6)${d.length ? `, surtout ${d.join(" et ")}` : ""}`;
 }
 
-/** « Qualité de l'air prévue aujourd'hui à La Réunion : au pire moyen (2/6) dans toutes les communes. » */
+/**
+ * « Qualité de l'air prévue aujourd'hui à La Réunion : au pire moyen (2/6) dans toutes les communes. », or « …, pour Le
+ * Port et Saint-Pierre. », beyond 3 communes « …, dans 13 communes. », their names left to the cards a level each
+ * (marketing, 21/11/2026: never « à Le Port », nor a long list).
+ */
 function islandSummary(xs: atmo.Index[], when: string): string {
   const worst = Math.max(0, ...xs.map((x) => x.niveau));
   const atWorst = xs.filter((x) => x.niveau === worst).map((x) => x.commune);
   return `Qualité de l'air prévue ${when} à La Réunion : au pire ${atmo.level(worst)} (${worst}/6)` +
-    (atWorst.length < xs.length ? `, à ${atWorst.join(", ")}` : " dans toutes les communes") + ".";
+    (atWorst.length === xs.length
+      ? " dans toutes les communes"
+      : atWorst.length > 3 ? `, dans ${atWorst.length} communes` : `, pour ${atWorst.join(", ").replace(/, ([^,]+)$/, " et $1")}`) + ".";
 }
 
 /**

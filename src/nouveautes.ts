@@ -57,6 +57,10 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-21T10:17:00+04:00", texte: "Qualité de l'air\u00a0: l'indice prévu demain dans chaque commune, quand Atmo Réunion l'a diffusé, sur la page et dans les outils IA." },
+  { date: "2026-11-21T08:41:00+04:00", texte: "Assistants IA\u00a0: la pluie mesurée vient du pluviomètre le plus proche du lieu, nommé avec sa distance." },
+  { date: "2026-11-20T16:42:00+04:00", texte: "Eau à ne pas boire\u00a0: les secteurs nommés dans les avis de la CIREST, voies adjacentes comprises, avec le lien de chaque avis." },
+  { date: "2026-11-20T14:27:00+04:00", texte: "Défibrillateurs et bornes de recharge\u00a0: la distance à vol d'oiseau, et le temps à pied seulement à moins de 1\u00a0km." },
   { date: "2026-11-20T14:27:00+04:00", texte: "Mer\u00a0: la carte dit l'heure du passage du satellite qui a mesuré l'eau, et l'heure d'une marée faible est dite plus incertaine." },
   { date: "2026-11-20T14:11:00+04:00", texte: "Météo passée\u00a0: pour un record du mois, les outils IA donnent aussi les repères de la page du lieu, avec leur station." },
   { date: "2026-11-20T14:06:00+04:00", texte: "Événements\u00a0: une sortie reportée dit son nouveau jour et le média qui l'annonce\u00a0; un marché fini n'est plus donné pour aujourd'hui." },

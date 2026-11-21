@@ -39,7 +39,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   agenda: 42,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
-  air: 14,
+  // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
+  air: 15,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays

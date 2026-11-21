@@ -14,6 +14,7 @@ import { evenements as proposes, ID as PROPOSITIONS_ID } from "../providers/agen
 import { SOURCE as SALLES_SOURCE, titleKey } from "../providers/salles.js";
 import { type SourceInfo, UpstreamError, why } from "../types.js";
 import { mesure } from "../web/mesure.js";
+import { annonceAppel, appelAuPublic } from "./appel.js";
 import { casse } from "./casse.js";
 import { a, credits, de, enumeration, notFound, placeBlock, text } from "./format.js";
 import { type Injoignable, injoignable } from "./injoignable.js";
@@ -615,6 +616,8 @@ export function eventRow(e: src.Evenement, seances: src.Seance[], place = false,
     categories: e.categories.length ? e.categories : undefined,
     genres: genres(e),
     statut: e.statut === "annulé" ? "ANNULÉ" : e.statut === "reporté" ? "REPORTÉ" : e.statut === "complet" ? "complet" : undefined,
+    /** « annoncé par la Ville de Saint-André dans un appel à exposants », when the post calls stallholders (tools/appel.ts); its link is `lien`. */
+    annonce: e.appel ? annonceAppel(e.publie_par, e.appel) : undefined,
     /** « d'après Imaz Press » when the news says it and the organiser's page does not yet. */
     statut_d_apres: e.selon ? { media: e.selon.media, lien: e.selon.lien } : undefined,
     /** A club's session for its members, told only to who says they are one. */
@@ -907,7 +910,7 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   const p = periode(quand, now);
   const what = matcher(quoi);
   // The communes' sports programmes go to the sport tool (src.programmesSportifs).
-  const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit, mention: g.agenda.mention, source_agenda: g.agenda.source })) : [])), news?.value.infos, now)
+  const all = withNews(unique(got.flatMap((g) => g.value ? g.value.value.filter((e) => !src.programmeSportif(e) && (adherent || !e.reserve_adherents)).map((e) => ({ ...e, lu_le: src.toLocal(g.value!.fetchedAt.toISOString()), site_commune: g.agenda.site_commune, credit: g.agenda.credit, mention: g.agenda.mention, source_agenda: g.agenda.source })).flatMap((e) => appelAuPublic(e) ?? []) : [])), news?.value.infos, now)
     .map((e) => ({ e, seances: inPeriod(e, p, now) }))
     .filter((x) => x.seances.length && (!what || what.test(x.e)))
     .sort(order(p));

@@ -135,7 +135,17 @@ const hours = (s: Pick<cc.Creneau, "de" | "a">) =>
 const sectors = (list: string[]) => {
   // « Secteur Le Chrystel » as the notice writes it: the word said once, « secteur Le Chrystel » (marketing, 21/11/2026).
   const names = list.map((x) => x.replace(/^secteur\s+/iu, ""));
-  return `${names.length > 1 || names.some((x) => /,|\set\s/u.test(x)) ? "secteurs" : "secteur"} ${names.join(", ")}`;
+  // A place a house number starts is one place, its comma its own (« 65 Centre commercial, bâtiment B »): in a list the
+  // comma separates the places, so its own becomes a space (marketing, 21/11/2026).
+  const numbered = (x: string) => /^N?°?\s?\d/u.test(x);
+  // « Chemin Balance, à proximité du terrain de football »: what follows the comma tells where the place is, no other
+  // place (rundata-lead, 21/11/2026); alone it keeps its comma, in a list a space.
+  // « entre le n° 12 et le n° 40 », « jusqu'au carrefour » too (marketing, 21/11/2026): their « et » no other place either.
+  const WHERE = "(?:à proximité|à côté|près (?:de|du|des)|face (?:à|au|aux)|en face|devant|derrière|au niveau|aux abords|en bordure|le long|entre|vers|jusqu['’](?:à|au|aux)|après|avant)[\\s'’]";
+  const own = (x: string) => (numbered(x) ? x.replace(/\s*,\s*/gu, " ") : x.replace(new RegExp(`\\s*,\\s*(?=${WHERE})`, "giu"), " "));
+  const bare = (x: string) => (numbered(x) ? "" : x.replace(new RegExp(`\\s*,\\s*${WHERE}[^,]*`, "giu"), ""));
+  const said = names.length > 1 ? names.map(own) : names;
+  return `${names.length > 1 || names.some((x) => /,|\set\s/u.test(bare(x))) ? "secteurs" : "secteur"} ${said.join(", ")}`;
 };
 
 /**
@@ -144,7 +154,9 @@ const sectors = (list: string[]) => {
  */
 function slotText(s: cc.Creneau, now: Date, past = false): string {
   const when = (s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${hours(s)}`) + (past ? " (date passée)" : "");
-  return `${when}${s.secteurs.length ? `, ${sectors(s.secteurs)}` : ""}`;
+  // Other places the notice names, not read as streets: said so, the notice's link beside (marketing, 21/11/2026).
+  const others = s.autres_lieux ? (s.secteurs.length ? " et d'autres lieux nommés dans l'avis" : ", aux lieux nommés dans l'avis") : "";
+  return `${when}${s.secteurs.length ? `, ${sectors(s.secteurs)}` : ""}${others}`;
 }
 
 /** A notice of nothing to come, older than a month or of another year: said by its date only. */

@@ -37,7 +37,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // coverage, and nothing said instead of a commune any more.
   // Chaque événement porte la clé de sa page (/evenements/<titre>-<clé>), et le titre des listes y mène.
   // Un billet de mairie dont l'extrait est coupé avant sa date : la date lue dans son texte entier (Saint-André, 21/11/2026).
-  agenda: 43,
+  // Un appel à exposants donné par le nom de sa sortie, « annoncé par … dans un appel à exposants » (21/11/2026).
+  agenda: 44,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
@@ -80,7 +81,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).
   // Each range of hours of a day its own cut, the streets after a house number read (« 650 chemin Balance », 21/11/2026).
-  courant: 12,
+  // A place a house number starts read, « Ch. » a street, the others said in the notice (`autres_lieux`, 21/11/2026).
+  courant: 13,
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
@@ -101,7 +103,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // jour de 18 h à 22 h », 21/11/2026).
   // `coupures_annoncees` with a notice written in the bold letters of Unicode (21/11/2026).
   // `coupures_annoncees` with each range of hours of a day (21/11/2026).
-  electricite: 25,
+  // `coupures_annoncees` with « et d'autres lieux nommés dans l'avis » (21/11/2026).
+  electricite: 26,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
   enfants: 15,

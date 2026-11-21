@@ -35,7 +35,7 @@ import { credit, joursDuJour } from "./data.js";
 import { aCommune, deCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
-import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, electriciteLive, HORAIRES_EN_ATTENTE, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
+import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, electriciteCommune, HORAIRES_EN_ATTENTE, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
@@ -773,7 +773,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   ];
   const island: Tile[] = [
     { icon: "volcano", nom: "Volcan", href: "/volcan", live: volcanLive(l.volcan ?? null, now) },
-    { icon: "bolt", nom: "Électricité", href: "/electricite", live: electriciteLive(l.electricite ?? null, now) },
+    { icon: "bolt", nom: "Électricité", href: "/electricite", ...electriciteCommune(l.electricite ?? null, p.nom, now) },
   ];
 
   const grid = spans(tiles);

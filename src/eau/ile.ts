@@ -177,6 +177,19 @@ export function configure(read: (() => Promise<Ile | null>) | undefined) {
   reader = read;
 }
 
+/**
+ * The island's copy where it is stored (the Worker's KV store), for a tool whose own reading of a source failed: never
+ * gathered for it (75 requests), and null when there is none.
+ */
+export async function storedCopy(cache: Cache, now = new Date()): Promise<Ile | null> {
+  if (!reader) return null;
+  try {
+    return (await ile(cache, now)).value;
+  } catch {
+    return null;
+  }
+}
+
 export async function ile(cache: Cache, now = new Date()): Promise<Cached<Ile>> {
   return cache.getCopy("eau:ile", FRESH_SECONDS, async () => {
     if (reader) {

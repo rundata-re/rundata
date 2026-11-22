@@ -7,7 +7,7 @@ import { SOURCE } from "../src/eau/requin.js";
 import { CONSIGNE } from "../src/eau/cyclone.js";
 import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote, tapSentence } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
-import { gather } from "../src/eau/ile.js";
+import { configure, gather } from "../src/eau/ile.js";
 import { eauPage } from "../src/web/domains.js";
 import { coupuresCommunePage, eauFaq, reseauxCommune, secheresseLigne } from "../src/web/coupures.js";
 import { PAGES } from "../src/web/places.js";
@@ -274,6 +274,30 @@ describe("qualité de l'eau", () => {
       .map((d: string) => d.split("/").reverse().join("-")).sort();
     expect(b.eau_du_robinet.derniere_analyse).toBe(dates.at(-1).split("-").reverse().join("/"));
     expect(b.eau_du_robinet.derniere_analyse).not.toBe(b.eau_du_robinet.reseaux[0].derniere_analyse);
+  });
+
+  it("gives the island's copy of a bathing site, with its time, when the ARS's site does not answer", async () => {
+    const live = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+    const [row] = live.baignade.sites;
+    const site = SITES.find((s) => s.nom === row.site)!;
+    const { prelevements_en_retard: _gap, ...kept } = row;
+    configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+    try {
+      vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
+      const b = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+      const note = "Le site de l'ARS ne répond pas\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).";
+      expect(b.baignade.sites).toEqual([row]);
+      expect(b.baignade.copie).toBe(note);
+      expect(b.resume).toBe(`${live.resume} ${note}`);
+      expect(b.erreur).toBeUndefined();
+      // A commune asked: its sites in the copy, the others' failure is the answer's.
+      expect(body(await qualiteEau(cache(), "Saint-Pierre", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
+      // Without a copy stored, the error stays the answer.
+      configure(undefined);
+      expect(body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
+    } finally {
+      configure(undefined);
+    }
   });
 
   it("gives a distributor's « ne pas boire » notice when the ARS analyses do not answer", async () => {

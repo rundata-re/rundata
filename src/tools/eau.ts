@@ -6,6 +6,7 @@ import { normalize, resolvePlace, type Resolution } from "../places/resolve.js";
 import * as baignades from "../providers/baignades.js";
 import { lues } from "../eau/distributeurs.js";
 import * as requin from "../eau/requin.js";
+import { storedCopy } from "../eau/ile.js";
 import * as potable from "../providers/eaupotable.js";
 import * as notices from "../providers/avis-eau.js";
 import { doNotDrink, noticeRow } from "./coupures.js";
@@ -208,12 +209,46 @@ export function siteNamed(lieu: string): baignades.Site | null {
   return scored[0]?.s ?? null;
 }
 
+/**
+ * Each site's row, read from the ARS's site; when it does not answer (22/11/2026, 30 s without a byte, while /eau still
+ * showed its copy), the row of the island's copy that /eau shows (eau/ile.ts), with its gap said again for today and the
+ * time of the copy. No copy, or the site not in it: the failure stands.
+ */
+async function siteRows(cache: Cache, sites: baignades.Site[], now: Date, from?: { lon: number; lat: number }) {
+  return Promise.all(sites.map(async (s) => {
+    try {
+      return { row: siteRow((await baignades.results(cache, s, now)).value, now, from), copie: undefined };
+    } catch (err) {
+      const copy = await storedCopy(cache, now);
+      const kept = copy?.baignades.find((b) => b.site === s.nom && b.commune === s.commune);
+      if (!copy || !kept) throw err;
+      const { lon: _lon, lat: _lat, ...row } = kept;
+      const last = row.dernier_prelevement.split("/").reverse().join("-");
+      return {
+        row: {
+          ...row,
+          distance_km: from ? Math.round(distanceKm(from.lon, from.lat, s.lon, s.lat) * 10) / 10 : undefined,
+          prelevements_en_retard: /^\d{4}-\d{2}-\d{2}$/.test(last) ? sansPrelevement(last, now) : undefined,
+        },
+        copie: copy.lu,
+      };
+    }
+  }));
+}
+
+/** Said when a site's row comes from the island's copy: the ARS's site did not answer, and when the copy was read. */
+function copyNote(lu: string | undefined): string | undefined {
+  if (!lu) return undefined;
+  const t = new Date(Date.parse(lu) + 4 * 3600_000).toISOString();
+  return `Le site de l'ARS ne répond pas${NB}: résultats de la dernière lecture de rundata.re, le ${day(t)} à ${t.slice(11, 16)} (heure de La Réunion).`;
+}
+
 async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) {
   const named = siteNamed(lieu);
   if (named) {
-    const r = await baignades.results(cache, named, now);
-    const row = siteRow(r.value, now);
-    return { resume: bathSentence(row), sites: [row] };
+    const [{ row, copie }] = await siteRows(cache, [named], now);
+    const note = copyNote(copie);
+    return { resume: bathSentence(row) + (note ? ` ${note}` : ""), sites: [row], ...(note ? { copie: note } : {}) };
   }
   const near = baignades.SITES
     .map((s) => ({ s, d: distanceKm(res.lieu.lon, res.lieu.lat, s.lon, s.lat) }))
@@ -227,18 +262,19 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
       sites_controles: baignades.SITES.map((s) => `${s.nom} (${s.commune})`),
     };
   }
-  const results = await Promise.all(picked.map((x) => baignades.results(cache, x.s, now)));
+  const read = await siteRows(cache, picked.map((x) => x.s), now, res.lieu);
   // Past the two nearest, a commune's sites without their latest samples (Saint-Paul's nine were 14 KB): asked by name,
   // a site gives them.
-  const rows = results.map((r, i) => {
-    const row = siteRow(r.value, now, res.lieu);
+  const note = copyNote(read.find((x) => x.copie)?.copie);
+  const rows = read.map(({ row }, i) => {
     if (i < 2) return row;
     const { derniers_prelevements: _, ...rest } = row;
     return rest;
   });
   return {
-    resume: bathSentences(rows),
+    resume: bathSentences(rows) + (note ? ` ${note}` : ""),
     sites: rows,
+    ...(note ? { copie: note } : {}),
     ...(rows.length > 2 ? { detail: "Les derniers prélèvements des deux sites les plus proches\u00a0; pour un autre site, rappeler l'outil avec son nom." } : {}),
   };
 }

@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Coupures d'eau : une coupure annoncée sans heure de début dit « jusqu'au … » au lieu d'une heure vide.
 - Baignade : quand le site de l'ARS ne répond pas, l'outil IA donne la dernière lecture de rundata.re, avec son jour et son heure.
 - Assistants IA : la sécheresse ne cite plus deux fois la préfecture parmi les sources.
 

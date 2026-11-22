@@ -79,6 +79,13 @@ describe("a commune's RSS feed", () => {
     expect(cut.path).toBe("/coupures-eau/saint-paul");
     expect(rssItems(SAINT_PAUL, { coupures: coupures("terminée") }, NOW)).toEqual([]);
   });
+  it("says a cut whose notice writes no start hour « jusqu'au … », never « du undefined » (1312, 23/11/2026)", () => {
+    const c = coupures("en cours");
+    c.value.avis[0].coupure = { a: "lundi 26/10 à 16:00", etat: "en cours" } as (typeof c.value.avis)[number]["coupure"];
+    const [cut] = rssItems(SAINT_PAUL, { coupures: c }, NOW);
+    expect(cut.description).toBe("Coupure jusqu'au lundi 26/10 à 16:00. Secteurs : Bois-de-Nèfles. Avis de CISE Réunion : https://example.re/avis/1");
+    expect(cut.description).not.toContain("undefined");
+  });
 
   it("has the commune's closed trails, undated", () => {
     const items = rssItems(CILAOS, { randonnees }, NOW);

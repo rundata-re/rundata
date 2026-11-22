@@ -102,7 +102,7 @@ function formulaire(e: Formulaire): string {
   <div class="f"><label for="r-secret">Secret client (client secret)</label><input id="r-secret" name="client_secret" type="password" required maxlength="${CLE_MAX}" autocomplete="off" spellcheck="false"${bad("client_secret")}>${note("client_secret")}</div>
   <div class="f"><label for="r-email">Adresse e-mail <span class="aide bloc">Le lien de confirmation y est envoyé, puis le lien pour retirer l'accès. Elle n'est jamais publiée.</span></label><input id="r-email" name="email" type="email" value="${v("email")}" required maxlength="254" autocomplete="email"${bad("email")}>${note("email")}</div>
   <div class="card lu">
-    <p>rundata.re lit seulement vos événements publics\u00a0: le titre, les dates, le lieu, le prix, le lien et le début de la description. Il ne lit jamais vos commandes, paiements, dons, participants ni adhérents, même si vos clés le permettent. Vos clés ne sont pas gardées\u00a0: elles servent une seule fois, à obtenir un jeton d'accès, qu'il garde chiffré et efface dès que vous retirez l'accès.</p>
+    <p>rundata.re lit seulement vos événements publics\u00a0: le titre, les dates, le lieu, le prix, le lien et le début de la description. Il ne lit jamais vos commandes, paiements, dons, participants ni adhérents, même si vos clés le permettent. Vos clés ne sont pas gardées\u00a0: elles servent une seule fois, à obtenir un jeton d'accès, gardé chiffré et effacé dès que vous retirez l'accès.</p>
   </div>
   <div class="f"><label class="case"><input type="checkbox" name="ouvert" value="oui"${f.get("ouvert") === "oui" ? " checked" : ""}> ${OUVERT}</label>
     <p class="aide">${OUVERT_AIDE}</p></div>

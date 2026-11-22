@@ -13,6 +13,7 @@ import { evenements as proposes, ID as PROPOSITIONS_ID } from "../providers/agen
 import { lisible } from "../propositions.js";
 import { inPeriod, periode, when } from "../tools/agenda.js";
 import type { Alerte } from "./data.js";
+import { adresseTexte } from "./adresse.js";
 import * as connecteurs from "./connecteurs.js";
 import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { ICS_PATH, JSON_PATH } from "./flux-associations.js";
@@ -120,7 +121,7 @@ const REGLES = [
   "Vos événements restent des données ouvertes (Licence Ouverte 2.0)\u00a0: tout le monde peut les réutiliser, en citant votre association.",
   "rundata.re ne reprend que les faits (titre, date, lieu, prix) et une phrase, avec votre nom et votre lien.",
   "Jamais de téléphone personnel, de nom d'enfant ni d'adresse de domicile\u00a0: seulement ce qui irait sur votre affiche.",
-  "Un événement est annulé ou faux\u00a0? Dites-le à rundata.re\u00a0: il est retiré dans la journée.",
+  "Un événement est annulé ou faux\u00a0? Écrivez à contact@rundata.re\u00a0: il est retiré dans la journée.",
 ];
 
 /** The three steps of the form, for search engines (HowTo). */
@@ -187,7 +188,7 @@ ${lienForm(PATH)}
 </section>
 <section aria-labelledby="h-regles">
   <div class="sec-h"><h2 id="h-regles">Les règles</h2></div>
-  <ul class="card">${REGLES.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+  <ul class="card">${REGLES.map((r) => `<li>${adresseTexte(r)}</li>`).join("")}</ul>
   <p class="note">Les événements proposés, en données ouvertes\u00a0: <a href="${ICS_PATH}">agenda ICS</a> · <a href="${JSON_PATH}">JSON</a> (Licence Ouverte 2.0).</p>
 </section>
 <section aria-labelledby="h-relais">

@@ -55,8 +55,8 @@ describe("the guide for those who publish (/publier)", () => {
     expect(page).not.toContain("Déjà lu par rundata.re");
     // The clubs' calendar on Sportsregions is not read until it agrees (src/providers/autorisations.ts): not offered.
     expect(page).not.toContain("Sportsregions");
-    expect(page.match(/>Sur demande : écrivez à rundata.re</g)).toHaveLength(3);
-    expect(page).toContain(`<a class="etat demande" href="${MAILTO}">`);
+    expect(page.match(/>Sur demande\u00a0: écrivez à <span class="adrweb">contact@<wbr>rundata.<wbr>re<\/span></g)).toHaveLength(3);
+    expect(page).toContain(`<a class="etat demande" href="${MAILTO}" aria-label="Sur demande\u00a0: écrivez à contact@rundata.re">`);
     expect(MAILTO).toBe("mailto:contact@rundata.re?subject=Flux%20%C3%A0%20r%C3%A9f%C3%A9rencer");
     // The address in bold opens the mail; it goes to the next line after its « @ » or a « . », never one letter before its end.
     expect(page).toContain(`<strong><a href="${MAILTO}" aria-label="contact@rundata.re"><span class="adrweb">contact@<wbr>rundata.<wbr>re</span></a></strong>`);

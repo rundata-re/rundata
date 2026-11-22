@@ -3,7 +3,7 @@
  * marketing (web/publier-texte.ts). Each format says whether rundata.re reads it, from the code: a label turns to
  * « Déjà lu » only once its reader is merged. Nothing is read to build it.
  */
-import { adressesDuTexte } from "./adresse.js";
+import { adresseCoupable, adressesDuTexte } from "./adresse.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, lienNom, nomsCoupables, soulignesCoupables, webPage } from "./domains.js";
 import { esc } from "./map.js";
@@ -30,14 +30,15 @@ const LABEL = {
   // After « rundata.re : » in the tutorials, as in the table: the name is not said twice.
   lu: ["Déjà lu", "Déjà lu"],
   bientot: ["Bientôt lu", "Bientôt lu"],
-  demande: ["Sur demande", "Sur demande : écrivez à rundata.re"],
+  demande: ["Sur demande", "Sur demande\u00a0: écrivez à contact@rundata.re"],
 } as const;
 
 function etat(kind: string, short: boolean): string {
   const e = ETATS[kind];
   if (!e) throw new Error(`état inconnu : ${kind}`);
   const text = LABEL[e][short ? 0 : 1];
-  return e === "demande" && !short ? `<a class="etat demande" href="${MAILTO}">${text}</a>` : `<span class="etat ${e}">${text}</span>`;
+  // The address may go to the next line after « @ » or « . » in its pill (text enlarged on a phone).
+  return e === "demande" && !short ? `<a class="etat demande" href="${MAILTO}" aria-label="${esc(text)}">${adresseCoupable(text)}</a>` : `<span class="etat ${e}">${text}</span>`;
 }
 
 /** The tutorials of the table, by their number: their anchors. */

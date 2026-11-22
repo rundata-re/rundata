@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Pages et assistants IA : rundata.re parle de lui par son nom, plus en « nous » (sites sans réponse, données anciennes, associations, clubs).
 - Eau, crues, marée et sentiers : les pages et les outils IA disent “rundata.re” là où ils disaient “nous”.
 - Sentiers : l'outil IA donne un sentier coupé en tronçons comme sa page, d'un seul tenant, avec sa longueur entière et la part fermée.
 - Coupures d'eau : une coupure annoncée sans heure de début dit « jusqu'au … » au lieu d'une heure vide.

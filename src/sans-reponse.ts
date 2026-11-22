@@ -64,17 +64,22 @@ let all: All | undefined;
 let batch: Batch | undefined;
 const registre = new Map<string, SourceInfo>();
 const themes = new Map<string, string>();
-const hotes = new Map<string, Hote>();
+const hotes = new Map<string, Hote[]>();
 
 /**
- * What a host is read for, when one source reads several sites (the media's headlines, providers/actualites.ts): its
- * own name and what it is missing, and the address actually read, where the recheck asks it. Clicanoo's root answers
- * 403 to our reads while its feed answers (21/11/2026): asked at its root, the row said it unread.
+ * What a host is read for, when one source reads several sites (the media's headlines, providers/actualites.ts; the
+ * water notices, providers/avis-eau.ts; EDF's notices relayed by the mairies, providers/coupures-courant.ts; the
+ * mairies' agendas, providers/agenda.ts): its own name and what it is missing, rather than the source's, which names
+ * them all (four rows « le site de Distributeurs d'eau et intercommunalités de La Réunion » on 21/11/2026, each saying
+ * the eleven sites' notices missing). `source`: the source it is read for, its `manque` said only on a row of that
+ * source; none, for any row of the host. `url`: the address actually read, where the recheck asks it. Clicanoo's root
+ * answers 403 to our reads while its feed answers (21/11/2026): asked at its root, the row said it unread.
  */
 export interface Hote {
   nom: string;
   manque: string;
-  url: string;
+  url?: string;
+  source?: string;
 }
 
 /** The database's calls (worker.ts), or none: nothing is written nor read. */
@@ -88,10 +93,13 @@ export function configure(r?: Run, a?: All, b?: Batch) {
  * The sources the server knows (sources_donnees' list): a row's editor and what it is missing, when the row does not
  * say; and the part of the site each is shown in (chiffres.ts, themesDesSources), its theme.
  */
-export function inscrire(sources: SourceInfo[], themesDes: Record<string, string> = {}, hotesDes: Record<string, Hote> = {}) {
+export function inscrire(sources: SourceInfo[], themesDes: Record<string, string> = {}, ...hotesDes: Record<string, Hote>[]) {
   for (const s of sources) if (!registre.has(s.id)) registre.set(s.id, s);
   for (const [id, t] of Object.entries(themesDes)) if (!themes.has(id)) themes.set(id, t);
-  for (const [h, x] of Object.entries(hotesDes)) if (!hotes.has(h)) hotes.set(h, x);
+  for (const [h, x] of hotesDes.flatMap((d) => Object.entries(d))) {
+    const deja = hotes.get(h) ?? [];
+    if (!deja.some((y) => y.source === x.source)) hotes.set(h, [...deja, x]);
+  }
 }
 
 export const GARDE_REVENUS_JOURS = 7;
@@ -218,7 +226,7 @@ export async function essayer(l: Pick<Ligne, "url" | "verifier">, now: Date, fet
   let res: Response;
   count();
   const h = hoteDe(l.url) ?? "";
-  const adresse = l.verifier ? undefined : (ADRESSES[h] ?? hotes.get(h)?.url);
+  const adresse = l.verifier ? undefined : (ADRESSES[h] ?? hotes.get(h)?.find((x) => x.url)?.url);
   try {
     res = await fetcher(l.verifier?.url ?? adresse ?? l.url, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(DELAI_MS) });
   } catch (err) {
@@ -381,8 +389,9 @@ export interface Public extends Ligne {
 
 /**
  * The rows shown: confirmed by a recheck, and none of a commune whose source is not read. A row that does not
- * name its editor or what it is missing takes them from its host (one medium among the media's source), else from its
- * sources.
+ * name its editor or what it is missing takes them from its host (one medium among the media's source, one distributor
+ * among the water notices'), else from its sources: what each of its sources misses of that host, or the source's own
+ * name for one that registered nothing for it.
  */
 export function publiques(rows: Ligne[]): Public[] {
   return rows
@@ -390,13 +399,20 @@ export function publiques(rows: Ligne[]): Public[] {
     .filter((l) => !l.sources.some((s) => enAttente(communeDe(s))))
     .map((l) => {
       const connues = l.sources.map((s) => registre.get(s)).filter((s): s is SourceInfo => !!s);
-      const hote = hotes.get(l.hote);
+      const deLHote = hotes.get(l.hote) ?? [];
+      const pour = deLHote.filter((h) => !h.source || l.sources.includes(h.source));
+      const tous = pour.find((h) => !h.source);
+      const manques = tous
+        ? [tous.manque]
+        : pour.length
+          ? [...new Set([...pour.map((h) => h.manque), ...connues.filter((s) => !pour.some((h) => h.source === s.id)).map((s) => s.nom)])]
+          : connues.map((s) => s.nom);
       return {
         ...l,
-        nom: l.nom ?? hote?.nom ?? connues[0]?.organisme ?? l.hote,
+        nom: l.nom ?? (pour[0] ?? deLHote[0])?.nom ?? connues[0]?.organisme ?? l.hote,
         // Sensor.Community's row, without a theme of its own, under « Qualité de l'air » rather than « Autres sites ».
         theme: l.theme ?? l.sources.map((s) => themes.get(s)).find(Boolean) ?? "Autres sites",
-        manque: l.manque ?? hote?.manque ?? (connues.length ? connues.map((s) => s.nom).join("\u00a0; ") : null),
+        manque: l.manque ?? (manques.length ? manques.join("\u00a0; ") : null),
       };
     })
     .sort((a, b) => a.premier_echec - b.premier_echec);
@@ -426,10 +442,11 @@ export const jourHeure = (t: number) => `${jour(t)} à ${iso(t).slice(11, 16)}`;
 
 /**
  * « le site du Quotidien », « le site d'Imaz Press », « le site de l'OVPF », « le site de Sudéau », « le site de la Ville
- * de Saint-Denis », « le site du TCO » (the publisher's article, as tools/appel.ts says it).
+ * de Saint-Denis », « le site du TCO », « le site des Eaux de La Possession » (the publisher's article, as tools/appel.ts
+ * says it).
  */
 export const siteDe = (nom: string) =>
-  `le site ${/^(?:Ville|Mairie|Commune|CINOR|CIREST|CIVIS|CASUD)\b/u.test(nom) ? `de la ${nom}` : /^TCO\b/u.test(nom) ? `du ${nom}` : de(nom)}`;
+  `le site ${/^(?:Ville|Mairie|Commune|CINOR|CIREST|CIVIS|CASUD)\b/u.test(nom) ? `de la ${nom}` : /^TCO\b/u.test(nom) ? `du ${nom}` : /^Eaux\b/u.test(nom) ? `des ${nom}` : de(nom)}`;
 
 /** The words of a row's state: « sans réponse depuis le 24/10 »… */
 export function statutEnMots(l: Public): string {

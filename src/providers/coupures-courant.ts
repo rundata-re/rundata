@@ -10,6 +10,7 @@ import { type SourceInfo, why } from "../types.js";
 import { strip } from "./avis-eau.js";
 import { AUTORISATIONS, autorisee } from "./autorisations.js";
 import { unlessSpent } from "../budget.js";
+import { de } from "../articles.js";
 
 /**
  * The mairies that relay EDF's notices through an open API, checked on 24/10/2026. `pdf`: the mairie puts EDF's
@@ -45,6 +46,16 @@ export const SOURCE: SourceInfo = {
   attribution: `${names.length > 1 ? "Mairies" : "Mairie"} de ${listed}`,
   url: `${MAIRIES[0]?.site ?? LISIBLES[0].site}/`,
 };
+
+/**
+ * Each mairie's site, as the list of the sites that do not answer names it (sans-reponse.ts): the mairie and its own
+ * notices as what is missing, never the five's (21/11/2026: the row of ville-saintesuzanne.re named EDF Réunion and the
+ * five mairies).
+ */
+export const HOTES_COURANT = Object.fromEntries(MAIRIES.map((m) => [
+  new URL(m.site).hostname.replace(/^www\./, ""),
+  { nom: `Ville ${de(m.commune)}`, manque: `Avis de coupure d'électricité d'EDF Réunion relayés par la mairie ${de(m.commune)}`, source: SOURCE.id },
+]));
 
 // Their sites, spaced with the other sources that read them (http.ts `sharedSite`): their water, their news.
 sharedSite(SOURCE.id, ...MAIRIES.map((m) => m.site));

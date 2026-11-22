@@ -377,6 +377,42 @@ describe("a medium's site, among the media's source", () => {
   });
 });
 
+describe("a site among a source that reads several: its own name and its own notices (22/11/2026)", () => {
+  it("names each distributor, mairie and agenda after itself, never the source that reads them all", async () => {
+    const { HOTES_EAU, SOURCE: EAU } = await import("../src/providers/avis-eau.js");
+    const { HOTES_COURANT, SOURCE: COURANT } = await import("../src/providers/coupures-courant.js");
+    const { HOTES_AGENDAS, SOURCES } = await import("../src/providers/agenda.js");
+    sr.inscrire([EAU, COURANT, SOURCES.mairies, { id: "salles_spectacle", nom: "Programmes des salles de spectacle", organisme: "Salles de spectacle de La Réunion", licence: "", attribution: "", url: "" }], {}, HOTES_EAU, HOTES_COURANT, HOTES_AGENDAS);
+    const site = (hote: string, ...sources: string[]): sr.Ligne => ({ hote, url: `https://${hote}/`, nom: null, theme: null, manque: null, page: null, sources, statut: "injoignable", premier_echec: T, constat: "delai", revenu_le: null, dernier_essai: T, n403: 0, verifier: null } as unknown as sr.Ligne);
+    const shown = sr.publiques([
+      site("cirest.fr", "avis_eau"),
+      site("dioneo.re", "avis_eau"),
+      site("eauxdelapossession.re", "avis_eau"),
+      site("runeo.re", "avis_eau"),
+      site("ville-saintesuzanne.re", "mairies_edf"),
+      site("letampon.fr", "agenda_mairies"),
+      // One site read for two sources: its name once, what each misses of it.
+      site("ville-saintemarie.re", "avis_eau", "mairies_edf"),
+    ]);
+    expect(shown.map((l) => [sr.siteDe(l.nom), l.manque])).toEqual([
+      ["le site de la CIREST", "Avis de la CIREST\u00a0: coupures, travaux, eau non potable"],
+      ["le site de Dionéo", "Avis de Dionéo\u00a0: coupures, travaux, eau non potable"],
+      ["le site des Eaux de La Possession", "Avis des Eaux de La Possession\u00a0: coupures, travaux, eau non potable"],
+      ["le site de runéo", "Avis de runéo\u00a0: coupures, travaux, eau non potable"],
+      ["le site de la Ville de Sainte-Suzanne", "Avis de coupure d'électricité d'EDF Réunion relayés par la mairie de Sainte-Suzanne"],
+      ["le site de la Ville du Tampon", "Agenda de la Ville du Tampon"],
+      ["le site de la Ville de Sainte-Marie", "Avis de la ville de Sainte-Marie\u00a0: coupures, travaux, eau non potable\u00a0; Avis de coupure d'électricité d'EDF Réunion relayés par la mairie de Sainte-Marie"],
+    ]);
+    // Never the source's own name, which names them all.
+    expect(shown.some((l) => /Distributeurs d'eau|Communes de La Réunion|relayés par les mairies/.test(`${l.nom} ${l.manque}`))).toBe(false);
+    // A source read on that host but registered nothing for it: its own name still said.
+    const autre = sr.publiques([site("letampon.fr", "agenda_mairies", "salles_spectacle")])[0];
+    expect(autre.manque).toMatch(/^Agenda de la Ville du Tampon\u00a0; Programmes des salles de spectacle$/);
+    // The page and the tool say it so.
+    expect(sansReponsePage("https://rundata.re", shown, T)).toContain(">le site de Dionéo</a>");
+  });
+});
+
 describe("the list's copy around the recheck, and a copy not read again (22/11/2026)", () => {
   // A cache that answers what it is given, and keeps the freshness asked.
   const stub = (copy: { value: unknown; fetchedAt: Date; stale: boolean }) => {

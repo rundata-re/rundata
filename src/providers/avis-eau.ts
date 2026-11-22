@@ -686,6 +686,15 @@ const PARTS: { de: string; site: string; load: (cache: Cache, before?: Avis[]) =
   { de: "de la ville de Petite-Île", site: "https://www.petite-ile.re/taxonomy/term/301", load: (cache, before) => petiteIle(cache, before) },
 ];
 
+/**
+ * Each distributor's site, as the list of the sites that do not answer names it (sans-reponse.ts): its own name and its
+ * own notices as what is missing, never the eleven sites' (21/11/2026: four rows with the source's name).
+ */
+export const HOTES_EAU = Object.fromEntries(PARTS.map((p) => {
+  const nom = p.de.replace(/^(?:de la |des |de )/, "").replace(/^(ville|commune) /, (m) => m[0].toUpperCase() + m.slice(1));
+  return [new URL(p.site).hostname.replace(/^www\./, ""), { nom, manque: `Avis ${p.de}\u00a0: coupures, travaux, eau non potable`, source: SOURCE.id }];
+}));
+
 // The sites these notices are read from, spaced with the other sources that read them (http.ts `sharedSite`).
 sharedSite(SOURCE.id, ...FEEDS.map((f) => f.url), CIREST, CREOLE.url, SAINTE_MARIE, SAINT_LEU, SAINT_PHILIPPE, CILAOS, TROIS_BASSINS, PETITE_ILE);
 

@@ -402,13 +402,20 @@ describe("the list's copy around the recheck, and a copy not read again (22/11/2
     expect((await sr.etat(stub({ value, fetchedAt: at("2026-11-22T06:40"), stale: true }).cache, at("2026-11-22T07:00"))).pasRelue).toBeUndefined();
     expect((await sr.etat(stub({ value, fetchedAt: at("2026-11-22T06:05"), stale: false }).cache, at("2026-11-22T07:30"))).pasRelue).toBeUndefined();
     const tool = JSON.parse((await sitesSansReponse(stub({ value, fetchedAt: at("2026-11-21T06:05"), stale: true }).cache, undefined, at("2026-11-22T07:00"))).content[0].text);
-    expect(tool.avertissement).toBe("Liste relue le 21/11 à 06:05 ; elle n'a pas pu être relue depuis.");
-    expect(sansReponsePage("https://rundata.re", [], value.passage, undefined, { relue: old.lu })).toContain("Liste relue le 21/11 à 06:05 ; elle n'a pas pu être relue depuis.");
+    expect(tool.avertissement).toBe("liste relue le 21/11 à 06:05, heure de La Réunion\u00a0; pas relue depuis, elle a pu changer");
+    expect(sansReponsePage("https://rundata.re", [], value.passage, undefined, { relue: old.lu })).toContain("Liste relue le 21/11 à 06:05\u00a0; elle n'a pas pu être relue depuis et a pu changer.");
   });
 
   it("never says « no site » when no list could be read", () => {
     const page = sansReponsePage("https://rundata.re", [], undefined, undefined, { illisible: true });
-    expect(page).toContain("La liste n'a pas pu être lue pour l'instant : revenez dans quelques minutes.");
+    expect(page).toContain("La liste n'a pas pu être lue pour l'instant\u00a0: réessayez plus tard.");
     expect(page).not.toContain("Aucun site public sans réponse");
+  });
+
+  it("answers the tool with the same words when no list could be read", async () => {
+    const broken = { get: async () => { throw new Error("D1 indisponible"); } } as unknown as Cache;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const tool = JSON.parse((await sitesSansReponse(broken, undefined, at("2026-11-22T07:00"))).content[0].text);
+    expect(tool).toEqual({ avertissement: "liste non lue pour l'instant\u00a0: réessayer plus tard", page: "https://rundata.re/sites-sans-reponse" });
   });
 });

@@ -3,6 +3,7 @@ import { constatEnMots, etat, jour, jourHeure, publiques, siteDe, type Public } 
 import { PATH } from "../web/sans-reponse.js";
 import { SITE_URL } from "./citer.js";
 import { text } from "./format.js";
+import { why } from "../types.js";
 
 const STATUTS = { injoignable: "sans réponse", bloque: "répond, mais pas à nos lectures", revenu: "répond de nouveau" } as const;
 
@@ -40,7 +41,10 @@ function site(l: Public) {
 
 /** sites_sans_reponse: the public sites that do not answer, all of them or those `quoi` names. */
 export async function sitesSansReponse(cache: Cache, quoi?: string, now = new Date()) {
-  const { lignes, passage, lu, pasRelue } = await etat(cache, now);
+  const e = await etat(cache, now).catch((err: unknown) => (console.error("sites sans réponse : liste illisible", why(err)), undefined));
+  // No list read: never « no site », the page's words (marketing).
+  if (!e) return text({ avertissement: "liste non lue pour l'instant\u00a0: réessayer plus tard", page: `${SITE_URL}${PATH}` });
+  const { lignes, passage, lu, pasRelue } = e;
   const all = publiques(lignes);
   const asked = quoi?.trim() ? all.filter((l) => matches(l, quoi.trim())) : all;
   const silent = asked.filter((l) => l.statut !== "revenu");
@@ -51,6 +55,6 @@ export async function sitesSansReponse(cache: Cache, quoi?: string, now = new Da
     : `Aucun site public sans réponse ce ${today}${quoi?.trim() ? ` pour « ${quoi.trim()} »` : ""}, d'après la revérification quotidienne.`;
   // The day's check, the date of what is said (tools/fraicheur.ts): not the time of this call.
   // The last copy, served for a failed read and more than an hour old: said with its time, as the page says it.
-  const avertissement = pasRelue ? `Liste relue le ${jourHeure(Math.floor(lu.getTime() / 1000))}\u00a0; elle n'a pas pu être relue depuis.` : undefined;
+  const avertissement = pasRelue ? `liste relue le ${jourHeure(Math.floor(lu.getTime() / 1000))}, heure de La Réunion\u00a0; pas relue depuis, elle a pu changer` : undefined;
   return text({ ...(avertissement && { avertissement }), resume, ...(passage && { derniere_verification: jourHeure(passage) }), sites: asked.map(site), page: `${SITE_URL}${PATH}` });
 }

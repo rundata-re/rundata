@@ -60,9 +60,9 @@ export function sansReponsePage(origin: string, rows: Ligne[], passage: number |
     bloques.length ? `<h2 id="pas-a-nos-lectures">Répondent, mais pas à nos lectures</h2><p>${BLOQUES}</p>${parTheme(bloques)}` : "",
     revenus.length ? `<h2 id="repondent-de-nouveau">Répondent de nouveau</h2>${parTheme(revenus)}` : "",
   ].filter(Boolean);
-  const relue = lecture?.relue && `<p class="note">Liste relue le ${jourHeure(Math.floor(lecture.relue.getTime() / 1000))}\u00a0; elle n'a pas pu être relue depuis.</p>`;
+  const relue = lecture?.relue && `<p class="note">Liste relue le ${jourHeure(Math.floor(lecture.relue.getTime() / 1000))}\u00a0; elle n'a pas pu être relue depuis et a pu changer.</p>`;
   const vide = lecture?.illisible
-    ? "<p>La liste n'a pas pu être lue pour l'instant\u00a0: revenez dans quelques minutes.</p>"
+    ? "<p>La liste n'a pas pu être lue pour l'instant\u00a0: réessayez plus tard.</p>"
     : `<p>${passage ? `Aucun site public sans réponse à la revérification du ${jour(passage)}.` : "Aucun site public sans réponse pour l'instant."}</p>`;
   const body = `<section style="max-width:44rem;display:grid;gap:1rem">
   ${relue ?? ""}

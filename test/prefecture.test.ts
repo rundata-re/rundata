@@ -110,11 +110,11 @@ describe("reading the prefecture, which can fail", () => {
     const c = new Cache(new MemoryStore(), () => NOW.getTime());
     expect((await pref.cyclone(c, NOW.getTime())).value?.decision).toMatchObject({ niveau: 3 });
     // Never a silent fallback: a decision may be missing, said beside it.
-    const said = "La rubrique cyclone du site de la préfecture n'a pas répondu à notre dernière lecture (le 24/10 à 14:00) : une décision publiée depuis peut manquer ici.";
+    const said = "La rubrique cyclone du site de la préfecture n'a pas répondu à la dernière lecture de rundata.re (le 24/10 à 14:00) : une décision publiée depuis peut manquer ici.";
     expect(await pref.rubriqueNonLue(c, NOW)).toBe(said);
     expect(ecolesPage("https://rundata.re", null, NOW, undefined, null, said)).not.toContain("décision publiée depuis");
     const v = { value: bulletin([[8, "2026-10-24T06:00:00"]]), fetchedAt: NOW, stale: false };
-    expect(ecolesPage("https://rundata.re", v, NOW, undefined, null, said).replace(/&#39;/g, "'")).toMatch(/La rubrique cyclone du site de la préfecture n'a pas répondu à notre dernière lecture \(le 24\/10 à 14(:|\u00a0:|&nbsp;:)00\)/);
+    expect(ecolesPage("https://rundata.re", v, NOW, undefined, null, said).replace(/&#39;/g, "'")).toMatch(/La rubrique cyclone du site de la préfecture n'a pas répondu à la dernière lecture de rundata.re \(le 24\/10 à 14(:|\u00a0:|&nbsp;:)00\)/);
     logged.mockRestore();
   });
 
@@ -137,7 +137,7 @@ describe("reading the prefecture, which can fail", () => {
       stored = { liste: list, rubrique_non_lue: true, lu_le: "2026-10-24T09:00:00.000Z" };
       const c = new Cache(new MemoryStore(), () => NOW.getTime());
       await pref.releases(c);
-      expect(await pref.rubriqueNonLue(c, NOW)).toMatch(/notre dernière lecture \(le 24\/10 à 13:00\)/);
+      expect(await pref.rubriqueNonLue(c, NOW)).toMatch(/la dernière lecture de rundata.re \(le 24\/10 à 13:00\)/);
       expect(asked).toEqual([]);
     } finally {
       copie.configure(undefined);
@@ -219,7 +219,7 @@ describe("the schools' state with the prefecture's releases", () => {
     const e = withPrefecture(ecoles(v, NOW), cyc("Levée de l'alerte cyclonique"), v, NOW);
     expect(e.etat).toBe("orange_avant_ouverture");
     expect(e.fermees).toBe(true);
-    expect(e.ecart).toBe("Le communiqué de la préfecture du samedi 24/10 annonce la fin de l'alerte : « Levée de l'alerte cyclonique » → Le bulletin de Météo-France émis le samedi 24/10 à 06:00 indique l'alerte orange. Nous montrons les deux : vérifiez sur reunion.gouv.fr.");
+    expect(e.ecart).toBe("Le communiqué de la préfecture du samedi 24/10 annonce la fin de l'alerte : « Levée de l'alerte cyclonique » → Le bulletin de Météo-France émis le samedi 24/10 à 06:00 indique l'alerte orange. rundata.re montre les deux : vérifiez sur reunion.gouv.fr.");
   });
 
   it("links each cited title on /ecoles-cyclone", () => {

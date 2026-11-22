@@ -301,14 +301,14 @@ export function sansAgendas(noms: string[]): string {
   noms = noms.filter((x) => x !== CONNECTEURS.nom);
   const sites = noms.filter((x) => x !== PROPOSITIONS.nom);
   const lus = sites.length
-    ? `sans ${sites.length > 1 ? "les agendas" : "l'agenda"} ${sites.map(ofAgenda).join(" et ")}, dont ${sites.length > 1 ? "les sites n'ont" : "le site n'a"} pas répondu à notre dernière lecture`
+    ? `sans ${sites.length > 1 ? "les agendas" : "l'agenda"} ${sites.map(ofAgenda).join(" et ")}, dont ${sites.length > 1 ? "les sites n'ont" : "le site n'a"} pas répondu à la dernière lecture de rundata.re`
     : "";
   if (sites.length === noms.length) return lus;
   return lus ? `${lus}, ni les événements proposés sur rundata.re pour le moment` : "sans les événements proposés sur rundata.re pour le moment";
 }
 
-/** Past SANS_MAX agendas missing: « d'après notre dernier compte complet, le 26/10 à 06:00 » (marketing, 26/10). */
-const dernierComplet = (c: Compte) => `d'après notre dernier compte complet, le ${aLHeure(new Date(c.le))}`;
+/** Past SANS_MAX agendas missing: « d'après le dernier compte complet de rundata.re, le 26/10 à 06:00 » (marketing, 26/10). */
+const dernierComplet = (c: Compte) => `d'après le dernier compte complet de rundata.re, le ${aLHeure(new Date(c.le))}`;
 
 /**
  * Everything counted, as sources_donnees gives it and the page shows it. `sources`: those read (server.ts,

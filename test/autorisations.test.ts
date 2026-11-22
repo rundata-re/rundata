@@ -180,7 +180,7 @@ describe("the notices of power cuts the mairies relay", () => {
     expect(cilaos.avis!.map((a) => a.commune)).toEqual(["Cilaos"]);
     expect(cilaos).not.toHaveProperty("non_repris");
     expect(courantBlock(copy, undefined, NOW).avis!.map((a) => a.commune).sort()).toEqual(["Cilaos", "Sainte-Marie"]);
-    expect(honesty()).toMatch(/^EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord \(lues le 03\/11\/2026\)\. Nous reprenons celles que relaient les mairies sur leurs sites : aujourd'hui [^.]*Cilaos[^.]*, quand leurs avis sont lisibles\.$/);
+    expect(honesty()).toMatch(/^EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord \(lues le 03\/11\/2026\)\. rundata.re reprend celles que relaient les mairies sur leurs sites : aujourd'hui [^.]*Cilaos[^.]*, quand leurs avis sont lisibles\.$/);
     const store = new MemoryStore();
     await store.put("web:courant", { value: before, fetchedAt: NOW.getTime() });
     vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));

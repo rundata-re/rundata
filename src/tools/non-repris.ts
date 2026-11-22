@@ -18,11 +18,11 @@ function demandees<T extends { etat: string; demandee_le?: string }>(waiting: T[
   const days = [...new Set(asked.map((x) => x.demandee_le ?? ""))].sort();
   const on = (day: string) => (day ? ` le ${dayMonth(day)}` : "");
   if (!asked.length) return "";
-  if (asked.length === waiting.length && days.length === 1) return ` Nous leur avons demandé cet accord${on(days[0])} et attendons leur réponse.`;
+  if (asked.length === waiting.length && days.length === 1) return ` rundata.re leur a demandé cet accord${on(days[0])} et attend leur réponse.`;
   const whom = days.length === 1
     ? `${on(days[0])} ${enumeration(asked.map(to))}`
     : ` ${enumeration(days.map((d) => `${enumeration(asked.filter((x) => (x.demandee_le ?? "") === d).map(to))}${on(d)}`))}`;
-  return ` Nous avons demandé cet accord${whom}${asked.length > 1 ? "," : ""} et attendons ${asked.length > 1 ? "leur" : "sa"} réponse.`;
+  return ` rundata.re a demandé cet accord${whom}${asked.length > 1 ? "," : ""} et attend ${asked.length > 1 ? "leur" : "sa"} réponse.`;
 }
 
 // ---------------------------------------------------------------- a medium not read
@@ -32,7 +32,7 @@ function demandees<T extends { etat: string; demandee_le?: string }>(waiting: T[
 // non-breaking one on the pages. Nothing said of a request before one has gone.
 const LA1ERE = MEDIAS["media:la1ere"];
 const TERMS = `les conditions d'utilisation des sites de France Télévisions, lues le ${dayMonth(LA1ERE.lues_le)}, interdisent d'en reprendre le contenu par un programme sans son accord écrit, titres compris`;
-const asked = () => (LA1ERE.etat === "demandee" && LA1ERE.demandee_le ? ` Nous lui avons demandé cet accord le ${dayMonth(LA1ERE.demandee_le)} et attendons sa réponse.` : "");
+const asked = () => (LA1ERE.etat === "demandee" && LA1ERE.demandee_le ? ` rundata.re lui a demandé cet accord le ${dayMonth(LA1ERE.demandee_le)} et attend sa réponse.` : "");
 
 /** The tools' line (`non_repris`): for the news, or for the sport news. */
 export function mentionLa1ere(famille: "actualites" | "sport"): string {
@@ -67,7 +67,7 @@ export { dayMonth };
 // its terms name. Nothing said of its agenda's state there, only the link; nothing of a request before one has gone.
 const REUNION_FR = MEDIAS["site:reunion_fr"];
 const TERMS_IRT = `es mentions légales de reunion.fr, le site d'Île de La Réunion Tourisme, lues le ${dayMonth(REUNION_FR.lues_le)}, interdisent d'en reprendre le contenu sans l'accord écrit du Comité Réunionnais du Tourisme`;
-const askedIrt = () => (REUNION_FR.etat !== "demandee" ? "" : ` Nous lui avons demandé cet accord${REUNION_FR.demandee_le ? ` le ${dayMonth(REUNION_FR.demandee_le)}` : ""} et attendons sa réponse.`);
+const askedIrt = () => (REUNION_FR.etat !== "demandee" ? "" : ` rundata.re lui a demandé cet accord${REUNION_FR.demandee_le ? ` le ${dayMonth(REUNION_FR.demandee_le)}` : ""} et attend sa réponse.`);
 
 /** The tools' line (`non_repris` of evenements): for the whole island, or the big fêtes and festivals. */
 export const mentionReunionFr = () => `L${TERMS_IRT} : rundata.re n'affiche donc pas l'agenda touristique du site.${askedIrt()} Son adresse : ${REUNION_FR.site}.`;
@@ -98,7 +98,7 @@ function phraseNonReprise(x: SourceNonReprise): string {
     return `${upper(x.cite)} a refusé${x.refusee_le ? `, le ${dayMonth(x.refusee_le)},` : ""} que rundata.re reprenne le contenu de son site : ${x.publie} ${x.publie.startsWith("les ") ? "ne s'affichent" : "ne s'affiche"} donc pas ici.`;
   }
   const first = `Les ${x.textes} ${x.du_site} interdisent ${x.interdit ?? "d'en reprendre le contenu sans son accord"} : rundata.re n'affiche donc pas ${x.publie}.`;
-  return x.etat === "demandee" ? `${first} Nous lui avons demandé cet accord${x.demandee_le ? ` le ${dayMonth(x.demandee_le)}` : ""} et attendons sa réponse.` : first;
+  return x.etat === "demandee" ? `${first} rundata.re lui a demandé cet accord${x.demandee_le ? ` le ${dayMonth(x.demandee_le)}` : ""} et attend sa réponse.` : first;
 }
 
 // « au TÉAT », « à la Cité des Arts », « à Bisik »: its short name when its citation has more.

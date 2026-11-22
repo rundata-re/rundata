@@ -28,7 +28,7 @@ export const TITLE = "Prix carburants : essence, gazole, gaz · La Réunion (974
  * stations l'affichent en général tel quel » left out: nothing published says what the stations display.
  */
 const LIRE = `<p>À La Réunion, le préfet fixe chaque mois les <b>prix maximum</b> des carburants et de la bouteille de gaz, par un arrêté. Ils tiennent compte des cours internationaux, du taux de change et du fret. Ils s'appliquent le 1er du mois, dans toutes les stations de l'île : aucune ne peut vendre plus cher.</p>
-<p>La page donne les prix du mois en cours et ceux du mois précédent, avec l'écart pour chaque produit. Elle reprend aussi la phrase du communiqué de la préfecture qui résume la hausse ou la baisse. Nous relisons l'arrêté chaque jour : un nouveau prix apparaît sur le site dès que l'arrêté est publié.</p>
+<p>La page donne les prix du mois en cours et ceux du mois précédent, avec l'écart pour chaque produit. Elle reprend aussi la phrase du communiqué de la préfecture qui résume la hausse ou la baisse. rundata.re relit l'arrêté chaque jour : un nouveau prix apparaît sur le site dès que l'arrêté est publié.</p>
 <p><b>Ce que la page réunit :</b></p>
 <ul class="plain"><li>l'arrêté du mois, le précédent et l'écart entre les deux, sur une seule ligne par produit ;</li>
 <li>les produits que l'on cherche moins souvent, comme le GNR, le pétrole lampant ou les carburants des professionnels de la mer.</li></ul>

@@ -54,7 +54,7 @@ describe("the size of electricite", () => {
     // Notices of no cut today or later: one sentence for the island, their mairies and days, without their links
     // (marketing, 22/11/2026); their sentences and links in the answer for their commune.
     expect(c.avis).toEqual([]);
-    expect(c.sans_date_a_venir).toBe("Dernier avis sans date à venir\u00a0: Sainte-Marie (avis du 12/10), Saint-André (avis du 04/09). Une coupure peut y être prévue sans que nous l'ayons lue.");
+    expect(c.sans_date_a_venir).toBe("Dernier avis sans date à venir\u00a0: Sainte-Marie (avis du 12/10), Saint-André (avis du 04/09). Une coupure peut y être prévue sans que rundata.re l'ait lue.");
     // 19/11/2026, with both full entries: 5 590 bytes live, 4 340 here. The 1 250 between are what the server adds (citer,
     // lien, fraicheur, serveur) and the live day's longer words: kept, so that both full entries fail here as they did live.
     const bytes = new TextEncoder().encode(r.content[0].text).length;

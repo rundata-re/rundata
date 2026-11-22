@@ -1259,7 +1259,7 @@ export const HORAIRES_EN_ATTENTE = enAttente(HORAIRES_CHARGENT);
 const busLire = (reseaux?: number, lignes?: number) =>
   (reseaux && lignes ? `<p>La page réunit ${reseaux} réseaux de bus et le téléphérique Papang, soit ${fr(lignes)} lignes. ` : "<p>") +
   `Elle part toujours d'un lieu : une gare routière, un arrêt ou un trajet. Pour chaque départ, elle donne la ligne, la direction, le réseau et l'heure.</p>
-<ul class="plain"><li>Quand le réseau publie ses retards en direct, l'heure en tient compte : nous les relisons chaque minute.</li>
+<ul class="plain"><li>Quand le réseau publie ses retards en direct, l'heure en tient compte : rundata.re les relit chaque minute.</li>
 <li>Sinon, c'est l'horaire théorique publié par le réseau, sans les retards ni les déviations.</li>
 <li>L'info trafic (arrêts non desservis, déviations, travaux) est reprise telle que les réseaux la publient.</li></ul>
 <p><b>Qui dessert quoi :</b></p>

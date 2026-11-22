@@ -215,13 +215,13 @@ describe("the map on /cyclones (marketing's words, 27/10)", () => {
   });
 
   it("keeps the last image when Météo-France does not answer, with the line that says so", () => {
-    expect(carteHtml({ image: i, sans_reponse: true }, NOW)).toContain("Météo-France n'a pas répondu depuis le 03/02 à 18:30 : c'est la dernière carte que nous avons lue.");
-    expect(carteHtml({ image: i, sans_reponse: true }, new Date("2026-02-04T08:00:00Z"))).toContain("Météo-France n'a pas répondu depuis le 03/02 à 18:30 : c'est la dernière carte que nous avons lue.");
+    expect(carteHtml({ image: i, sans_reponse: true }, NOW)).toContain("Météo-France n'a pas répondu depuis le 03/02 à 18:30 : c'est la dernière carte lue par rundata.re.");
+    expect(carteHtml({ image: i, sans_reponse: true }, new Date("2026-02-04T08:00:00Z"))).toContain("Météo-France n'a pas répondu depuis le 03/02 à 18:30 : c'est la dernière carte lue par rundata.re.");
   });
 
   it("says why there is no map, with the official link, and never shows one held back", () => {
     const held = carteHtml({ ecartee: true }, NOW);
-    expect(held).toContain("La carte de prévision de trajectoire du CMRS n'est pas affichée ici : nous n'avons pas pu vérifier qu'elle suit le dernier avis. ");
+    expect(held).toContain("La carte de prévision de trajectoire du CMRS n'est pas affichée ici : rundata.re n'a pas pu vérifier qu'elle suit le dernier avis. ");
     expect(held).not.toContain("<img");
     const failed = carteHtml({ illisible: "2026-02-03T13:30:00.000Z" }, NOW);
     expect(failed).toContain("La carte de prévision de trajectoire du CMRS n'a pas pu être lue le 03/02 à 17:30. ");

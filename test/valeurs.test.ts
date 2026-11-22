@@ -35,13 +35,13 @@ describe("/valeurs, what rundata.re stands for", () => {
     expect((await handle(get("/valeurs"), new Cache())).status).toBe(200);
     expect((await handle(get("/valeurs/"), new Cache())).headers.get("location")).toBe("/valeurs");
     const page = await text("/valeurs");
-    expect(page).toContain("<title>Nos valeurs · rundata.re</title>");
-    expect(page).toContain("<h1>Nos valeurs</h1>");
+    expect(page).toContain("<title>Les valeurs de rundata.re</title>");
+    expect(page).toContain('<h1>Les valeurs de <span class="ident">rundata.<wbr class="adr">re</span></h1>');
     const description = page.match(/<meta name="description" content="([^"]*)"/)![1];
     expect(description).toBe("rundata.re rassemble les données publiques de La Réunion, sans compte ni publicité, avec un code ouvert, et cite chaque source avec l&#39;heure de sa lecture.");
     expect(description.length).toBeLessThanOrEqual(DESCRIPTION_MAX);
     expect(page).toContain(`<meta property="og:description" content="${description}">`);
-    expect(page).toContain('"name":"Nos valeurs"');
+    expect(page).toContain('"name":"Les valeurs de rundata.re"');
     for (const id of ["enfermee", "habitudes", "sans-compte", "code", "donnees", "ferme", "reseaux-sociaux"]) expect(page).toContain(`<h2 id="${id}">`);
     expect(page).toContain("98,7\u00a0% des vues de posts sur Facebook");
   });
@@ -55,8 +55,8 @@ describe("/valeurs, what rundata.re stands for", () => {
   });
 
   it("is linked from the footer, next to the code, from /a-propos and from the sitemap", async () => {
-    expect(await text("/")).toContain(`<a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">nos valeurs</a>`);
-    expect(await text("/a-propos")).toContain('Voir aussi\u00a0: <a href="/valeurs">nos valeurs</a>,');
+    expect(await text("/")).toContain(`<a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">valeurs</a>`);
+    expect(await text("/a-propos")).toContain('Voir aussi\u00a0: <a href="/valeurs">les valeurs</a>,');
     expect(await text("/sitemap.xml")).toContain("<loc>https://rundata.re/valeurs</loc><changefreq>monthly</changefreq>");
   });
 });
@@ -88,8 +88,8 @@ describe("/ouvrir-ses-donnees, the guide to making one's information reusable", 
   });
 
   it("is linked from the footer, /a-propos, /valeurs, /sites-sans-reponse and the sitemap", async () => {
-    expect(await text("/")).toContain(`<a href="/valeurs">nos valeurs</a> · <a href="/chiffres">${sourcesLues} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · `);
-    expect(await text("/a-propos")).toContain('<a href="/valeurs">nos valeurs</a>, <a href="/ouvrir-ses-donnees">rendre ses données accessibles</a>, ');
+    expect(await text("/")).toContain(`<a href="/valeurs">valeurs</a> · <a href="/chiffres">${sourcesLues} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · `);
+    expect(await text("/a-propos")).toContain('<a href="/valeurs">les valeurs</a>, <a href="/ouvrir-ses-donnees">rendre ses données accessibles</a>, ');
     expect((await text("/valeurs")).split("<footer")[0].match(/href="\/ouvrir-ses-donnees"/g)).toHaveLength(2);
     expect(await text("/sites-sans-reponse")).toContain('Et pour rendre ses informations faciles à reprendre\u00a0: <a href="/ouvrir-ses-donnees">notre guide</a>.</p>');
     expect(await text("/sitemap.xml")).toContain("<loc>https://rundata.re/ouvrir-ses-donnees</loc><changefreq>monthly</changefreq>");

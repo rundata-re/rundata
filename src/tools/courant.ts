@@ -96,7 +96,7 @@ export function liveCommunes(c: CourantAnswer, now: Date): string[] {
 export function honesty(): string {
   const read = cc.MAIRIES.map((m) => m.commune);
   return `EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). ` +
-    `Nous reprenons celles que relaient les mairies sur leurs sites${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
+    `rundata.re reprend celles que relaient les mairies sur leurs sites${read.length ? `\u00a0: aujourd'hui ${list(read)}, quand ${read.length > 1 ? "leurs" : "ses"} avis sont lisibles` : ""}.`;
 }
 
 /**
@@ -113,7 +113,7 @@ export function injoignable(c: CourantAnswer, commune: string, readAt: string, n
 }
 
 export const none = (commune: string) =>
-  `rundata.re ${followed(commune) ? "n'a lu aucun avis" : "ne lit pas d'avis"} de coupure d'électricité pour ${commune} : nous ne savons pas si une coupure est prévue.`;
+  `rundata.re ${followed(commune) ? "n'a lu aucun avis" : "ne lit pas d'avis"} de coupure d'électricité pour ${commune}, et ne sait donc pas si une coupure y est prévue.`;
 export const panne = () => (EDF_DEPANNAGE ? `Panne chez vous ? Le service dépannage d'EDF Réunion répond au ${EDF_DEPANNAGE} (numéro vert).` : undefined);
 
 const ends = (s: cc.Creneau) => s.au ?? s.jour;
@@ -166,7 +166,7 @@ const headOf = (a: cc.AvisCourant, now: Date, first: boolean) =>
 /** What one notice says, in marketing's words. `first`: the commune's latest notice, its « dernier avis ». */
 export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
   if (stale(a, now)) {
-    return `Pas d'avis récent de ${mairie(a.commune)} : le dernier date du ${ddmm(a.publie, now)}. Nous ne savons pas si une coupure est prévue.`;
+    return `Pas d'avis récent de ${mairie(a.commune)} : le dernier date du ${ddmm(a.publie, now)}. rundata.re ne sait pas si une coupure est prévue.`;
   }
   // A PDF letter of EDF: its day when its name gives it, never its hours nor its streets, which are in the letter only.
   if (a.pdf) {
@@ -247,12 +247,12 @@ function brief(a: cc.AvisCourant, now: Date, first: boolean): CourantRow {
 /**
  * The mairies whose latest notice has nothing to come, in one sentence without their links, in the island's answer of
  * the tool, in marketing's words (22/11/2026: never « sans coupure », read as « no cut »): « Dernier avis sans date à
- * venir : Sainte-Marie (avis du 02/11), Cilaos (avis du 26/10). Une coupure peut y être prévue sans que nous l'ayons lue. »
+ * venir : Sainte-Marie (avis du 02/11), Cilaos (avis du 26/10). Une coupure peut y être prévue sans que rundata.re l'ait lue. »
  */
 function nothingAhead(latest: cc.AvisCourant[], now: Date): string | undefined {
   if (!latest.length) return undefined;
   const said = latest.map((a) => `${a.commune} (avis du ${ddmm(a.publie, now)})`);
-  return `Dernier avis sans date à venir\u00a0: ${said.join(", ")}. Une coupure peut y être prévue sans que nous l'ayons lue.`;
+  return `Dernier avis sans date à venir\u00a0: ${said.join(", ")}. Une coupure peut y être prévue sans que rundata.re l'ait lue.`;
 }
 
 /** A commune's notices to say: those of today or later, else its latest one; none when its mairie relays none. */

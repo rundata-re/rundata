@@ -145,8 +145,11 @@ export function citation(p: Payload): string {
   const firstId = typeof first?.source === "string" ? first.source : used[0]?.id;
   const names: string[] = [];
   for (const s of station ? [...used.filter((s) => s.id === firstId), ...used.filter((s) => s.id !== firstId)] : used) {
-    const n = shortName(s);
-    if (!names.some((x) => x.toLowerCase().startsWith(n.toLowerCase()))) names.push(names.length === 0 && station ? `${n} (${station})` : n);
+    // A producer named already left out of a credit that lists several: « Préfecture de La Réunion » then « VigiEau,
+    // préfecture de La Réunion » cite « Préfecture de La Réunion, VigiEau », never the prefecture twice (restrictions_eau, 18/11/2026).
+    const dit = (x: string) => names.some((y) => y.toLowerCase().split(", ").some((z) => z.startsWith(x.toLowerCase())));
+    const n = shortName(s).split(", ").filter((x) => !dit(x)).join(", ");
+    if (n && !dit(n)) names.push(names.length === 0 && station ? `${n} (${station})` : n);
   }
   // sources_donnees' short answer gives the number of its producers, not their names: their list.
   const producteurs = p.chiffres && typeof p.chiffres === "object" ? (p.chiffres as { producteurs?: unknown }).producteurs : undefined;

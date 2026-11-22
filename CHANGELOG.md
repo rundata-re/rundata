@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Lundi 23 novembre 2026
+
+- Assistants IA : la sécheresse ne cite plus deux fois la préfecture parmi les sources.
+
 ## Dimanche 22 novembre 2026
 
 - Bus : chaque page d'arrêt dit ses lignes, leurs terminus et les arrêts les plus proches, et les pages des communes renvoient aux arrêts.

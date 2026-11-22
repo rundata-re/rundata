@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { alertsFor, busiestStops, departureRow, departures, findStops, searchStops, stopPageDepartures, transports, tripRun, type Departure } from "../src/tools/transports.js";
+import { cite } from "../src/tools/citer.js";
 import { communeFaq } from "../src/web/commune-texte.js";
 import { communePage } from "../src/web/commune.js";
 import type { CommuneData } from "../src/web/data.js";
@@ -127,6 +128,27 @@ describe("the links to the stop pages from a commune's page", () => {
     expect(r.arrets_proches.map((x: { nom: string }) => x.nom)).toEqual(transit.pagesNear(station()).map((x) => x.page.nom));
     expect(r.arrets_proches[0]).toMatchObject({ nom: "Gare Routière de St Pierre", commune: "Saint-Pierre" });
     expect(r.arrets_proches.every((x: { distance_m: number }) => x.distance_m >= 0)).toBe(true);
+  });
+
+  it("cites the page of a stop named, in `lien` and at the end of the résumé, and /bus for a line or a place", async () => {
+    const said = async (arret?: string, ligne?: string) => JSON.parse((cite("transports", await transports(arret, ligne, NOW)) as { content: { text: string }[] }).content[0].text);
+    const gare = "https://rundata.re/bus/arret/saint-pierre/gare-de-saint-pierre";
+    // Three stops of three networks, in two pages: the first one's, each stop with its own.
+    const r = await said("Gare de St-Pierre, Saint-Pierre");
+    expect(r.lien).toBe(`${gare}?ref=mcp`);
+    expect(r.resume.endsWith(`${gare}?ref=mcp.`)).toBe(true);
+    expect(r.arrets.map((a: { reseau: string; lien: string }) => [a.reseau, a.lien])).toEqual([
+      ["Car Jaune", `${gare}?ref=mcp`],
+      ["Alternéo", `${gare}?ref=mcp`],
+      ["CarSud", "https://rundata.re/bus/arret/saint-pierre/gare-routiere-de-saint-pierre?ref=mcp"],
+    ]);
+    // A line alone, a commune, and a stop no bus serves (the stops served nearest it given): /bus.
+    for (const [arret, ligne] of [[undefined, "S1"], ["Saint-Pierre", undefined], ["mairie de Saint-Pierre", undefined]] as const) {
+      const x = await said(arret, ligne);
+      expect(x.lien, `${arret ?? ligne}`).toBe("https://rundata.re/bus?ref=mcp");
+      expect(x.resume).toMatch(/https:\/\/rundata\.re\/bus\?ref=mcp\.$/);
+      expect(x.arrets?.some((a: { lien?: string }) => a.lien) ?? false).toBe(false);
+    }
   });
 });
 

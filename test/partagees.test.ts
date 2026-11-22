@@ -407,6 +407,36 @@ describe("the scheduled refresh of the shared copies", () => {
     expect(kv.writes.get(kvKey(C))).toBe(5);
   });
 
+  it("after a deploy, leaves the page's copy while the copy it embeds is left for the budget, then builds both in order", async () => {
+    const kv = new FakeKv();
+    let now = T0;
+    const cache = new Cache(new TieredStore(new MemoryStore(), new MemoryStore()), () => now, false, undefined, "2.0.0");
+    const order: string[] = [];
+    // Families out of the revisions' table: both of another revision after the deploy, as web:courant and
+    // web:electricite were on 21/11/2026.
+    const [C, E] = ["web:essai-avis", "web:essai-page-avis"];
+    const at = (key: string, cost: number) =>
+      kv.put(kvKey(key), JSON.stringify({ value: {}, fetchedAt: T0 - 60 * 60_000, cost, version: "1.0.0" }), { metadata: { fetchedAt: T0 - 60 * 60_000, cost, every: 120, version: "1.0.0" } });
+    await at(C, 31);
+    await at(E, 2);
+    const list: Shared[] = [
+      { key: E, build: async () => (order.push(E), count(2), {}), every: 120, cold: 3 },
+      { key: C, before: [E], build: async () => (order.push(C), count(31), {}), every: 120, cold: 31 },
+    ];
+    const first = await counted(TIGHT, async () => {
+      count(20);
+      return warmShared(cache, kv, new Date(now), list);
+    });
+    // The notices' copy does not fit: the page's waits for it instead of being built from its copy of before.
+    expect(order).toEqual([]);
+    expect(first.value.written).toEqual([]);
+    expect(first.value.left).toContainEqual({ key: E, why: `autre version, attend ${C}` });
+    now += 5 * 60_000;
+    const second = await counted(SCHEDULED_BUDGET, () => warmShared(cache, kv, new Date(now), list));
+    expect(order).toEqual([C, E]);
+    expect(second.value.written).toEqual([C, E]);
+  });
+
   it("reads the events of /chiffres again an hour after a list in part, not at every event, and every 6 hours once whole", async () => {
     const kv = new FakeKv();
     let now = T0;

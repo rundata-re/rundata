@@ -70,7 +70,7 @@ describe("the /crues page", () => {
     expect(w).toContain(`${silent.station} · ${silent.commune} Aucune mesure publiée par Vigicrues depuis au moins 3 h.`);
     // Without a level and without that warning (a batch that did not answer, no copy before): not read, said so.
     const unread = data.value.stations.map((s) => (s === silent ? { ...s, avertissement: undefined } : s));
-    expect(words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations: unread } }, NOW))).toContain(`${silent.station} · ${silent.commune} Pas de mesure dans notre lecture du 24/10 à 03:51.`);
+    expect(words(cruesPage(ORIGIN, { ...data, value: { ...data.value, stations: unread } }, NOW))).toContain(`${silent.station} · ${silent.commune} Pas de mesure dans la lecture du 24/10 à 03:51.`);
     expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis -?\d+,?\d* m, (stable|en hausse|en baisse) · [\d,]+ m³\/s · mesurée le \d\d\/\d\d à \d\d:\d\d/);
     expect(w).toMatch(/Saint-Denis - Amont · Saint-Denis [^]*?Crues de référence [^]*?1,5 m · 43 m³\/s · Cyclone Dumile \(janvier 2013\)/);
     // The hour of the reading by the rivers; the producer and its licence at the bottom of the page.
@@ -149,8 +149,8 @@ describe("the /crues page", () => {
     const { data } = await page();
     const silent = data.value.stations.map((s) => ({ ...s, hauteur_m: null, avertissement: undefined }));
     const w = words(cruesPage(ORIGIN, { ...data, value: { ...data.value, vigilance_crues: undefined, stations: silent } }, NOW));
-    expect(w).toContain("Vigilance crues absente de notre lecture du 24/10 à 03:51 : voir vigicrues-reunion.re ↗.");
-    expect(w).toContain("Aucune des 29 stations n'a de mesure de moins de 30 minutes dans notre lecture du 24/10 à 03:51 : nous ne savons pas pour l'instant si les rivières montent.");
+    expect(w).toContain("Vigilance crues absente de la lecture de rundata.re du 24/10 à 03:51 : voir vigicrues-reunion.re ↗.");
+    expect(w).toContain("Aucune des 29 stations n'a de mesure de moins de 30 minutes dans la lecture du 24/10 à 03:51 : rundata.re ne sait pas pour l'instant si les rivières montent.");
   });
 
   it("gives the home page its tile: the vigilance's colour, then what the gauges measured lately", async () => {
@@ -200,7 +200,7 @@ describe("the /crues page", () => {
     expect(html).toContain('href="https://www.infotrafic.re/"');
     // Nothing announced: never « open », the official state where it is.
     const none = words(cruesPage(ORIGIN, data, NOW, undefined, { annonces: [], lue }));
-    expect(none).toContain("Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture du 24/10 à 03:50. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re.");
+    expect(none).toContain("Aucune annonce de la préfecture ni des médias sur un radier dans la lecture de rundata.re du 24/10 à 03:50. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re.");
     expect(none).not.toMatch(/radiers? (sont )?ouverts?\b|pas de radier fermé|Nous avons demandé à la Région/i);
     // The news not read: the instruction and the link, no « aucune annonce ».
     const unread = words(cruesPage(ORIGIN, data, NOW));

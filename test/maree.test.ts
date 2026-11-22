@@ -137,7 +137,7 @@ describe("tide gauges", () => {
     const r = body(await maree(cache(), "Saint-Pierre", NOW));
     expect(Object.keys(r).slice(0, 3)).toEqual(["lieu", "avertissement", "resume"]);
     expect(r.avertissement).toBe("Ne donner aucune heure de marée pour Saint-Pierre : les heures calculées au marégraphe de Pointe des Galets (Le Port) n'y valent pas, la marée y arrive à une autre heure. Renvoyer aux horaires officiels du SHOM : https://maree.shom.fr/harbor/SAINT-PIERRE_LA_REUNION/hlt/0.");
-    expect(r.resume).toMatch(/^Pas d'heures de marée calculées pour Saint-Pierre : nous les calculons d'après les marégraphes du Port et de Sainte-Marie, et la marée n'arrive pas à la même heure partout sur la côte\. Hauteur mesurée au marégraphe de Pointe des Galets \(Le Port\), à 49 km : 0,\d+ m à 03:4\d \(au Port, pas à Saint-Pierre\)\. Horaires officiels de la marée à Saint-Pierre, par le SHOM : https:\/\/maree\.shom\.fr\/harbor\/SAINT-PIERRE_LA_REUNION\/hlt\/0\.$/);
+    expect(r.resume).toMatch(/^Pas d'heures de marée calculées pour Saint-Pierre : rundata.re les calcule d'après les marégraphes du Port et de Sainte-Marie, et la marée n'arrive pas à la même heure partout sur la côte\. Hauteur mesurée au marégraphe de Pointe des Galets \(Le Port\), à 49 km : 0,\d+ m à 03:4\d \(au Port, pas à Saint-Pierre\)\. Horaires officiels de la marée à Saint-Pierre, par le SHOM : https:\/\/maree\.shom\.fr\/harbor\/SAINT-PIERRE_LA_REUNION\/hlt\/0\.$/);
     expect(r.horaires_officiels).toBe("https://maree.shom.fr/harbor/SAINT-PIERRE_LA_REUNION/hlt/0");
     const text = JSON.stringify(r);
     expect(text).not.toMatch(/vers \d\d:\d\d|prochaines_marees|tendance|derniers_extremes|montante|descendante|étale/);
@@ -213,7 +213,7 @@ describe("tide gauges", () => {
     const place = PAGES.find((x) => x.slug === "saint-pierre")!;
     const data = { value: { mer: { resume: "Eau de mer…", sources: [] } }, fetchedAt: NOW, stale: false };
     const html = placePage("https://rundata.re", place, data as never, NOW);
-    expect(html).toMatch(/<p>Marée : pas d(&#39;|')heures calculées ici, la marée y arrive à une autre heure qu(&#39;|')au Port et à Sainte-Marie, nos deux marégraphes\. <a href="https:\/\/maree\.shom\.fr\/harbor\/SAINT-PIERRE_LA_REUNION\/hlt\/0">Horaires officiels du SHOM pour Saint-Pierre<\/a><\/p>/);
+    expect(html).toMatch(/<p>Marée : pas d(&#39;|')heures calculées ici, la marée y arrive à une autre heure qu(&#39;|')au Port et à Sainte-Marie, les deux marégraphes lus par rundata\.re\. <a href="https:\/\/maree\.shom\.fr\/harbor\/SAINT-PIERRE_LA_REUNION\/hlt\/0">Horaires officiels du SHOM pour Saint-Pierre<\/a><\/p>/);
     expect(html).not.toMatch(/Marée à Pointe des Galets/);
     const elsewhere = placePage("https://rundata.re", PAGES.find((x) => x.slug === "saint-joseph")!, data as never, NOW);
     expect(elsewhere).toContain('<a href="https://maree.shom.fr">Horaires officiels sur le site du SHOM</a></p>');

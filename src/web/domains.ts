@@ -208,13 +208,13 @@ const connectorCta = (tool: string, what: string) => `<section aria-labelledby="
 const COUPURES_LIRE = (lus: number) => `<p>En haut, les avis en cours ou à venir, du plus récent au plus ancien. Chaque avis porte le nom du distributeur, la commune, l'heure de publication et le lien vers l'avis complet. On en distingue deux sortes :</p>
 <ul class="plain"><li>les <b>coupures et travaux</b> : l'eau est interrompue, avec l'heure de retour annoncée par le distributeur ;</li>
 <li>l'<b>eau à ne pas boire</b> : l'eau coule, mais le distributeur demande de ne pas la boire, souvent après de fortes pluies ou un incident à l'usine de traitement.</li></ul>
-<p>Nous relisons les avis de ${lus} distributeurs au moins toutes les 30 minutes. Chaque avis est repris tel qu'il est publié, avec un court extrait. Seul l'avis complet, sur le site du distributeur, fait foi. Quand un avis n'est publié qu'en image ou en PDF, nous ne pouvons pas le lire : la page donne alors seulement son lien.</p>
+<p>Les avis de ${lus} distributeurs sont relus au moins toutes les 30 minutes. Chaque avis est repris tel qu'il est publié, avec un court extrait. Seul l'avis complet, sur le site du distributeur, fait foi. Quand un avis n'est publié qu'en image ou en PDF, rundata.re ne peut pas le lire : la page donne alors seulement son lien.</p>
 <p><b>Ce que la page réunit et qu'aucun distributeur ne montre seul :</b></p>
 <ul class="plain"><li>les avis de tous les distributeurs lus, sur une seule page, alors que chacun ne publie que pour ses communes ;</li>
 <li>pour chaque commune : le niveau de sécheresse fixé par le préfet, le résultat des analyses de l'eau du robinet de l'ARS et les consignes du dispositif ORSEC après un cyclone.</li></ul>`;
 
 const COUPURES_FAQ: Faq[] = [
-  { q: "Aucun avis pour ma commune : l'eau n'est donc pas coupée ?", a: "Pas forcément. « Aucun avis en cours » veut dire que nous avons lu le site du distributeur et qu'il n'annonce rien. Une coupure qu'il n'a pas publiée, ou une fuite chez vous, n'apparaît pas ici. Si votre commune est dans la liste « Avis non lus par rundata.re », adressez-vous à la mairie ou au distributeur." },
+  { q: "Aucun avis pour ma commune : l'eau n'est donc pas coupée ?", a: "Pas forcément. « Aucun avis en cours » veut dire que le site du distributeur a été lu et qu'il n'annonce rien. Une coupure qu'il n'a pas publiée, ou une fuite chez vous, n'apparaît pas ici. Si votre commune est dans la liste « Avis non lus par rundata.re », adressez-vous à la mairie ou au distributeur." },
   // No figure of our own here (how long, how many minutes): the distributor's notice says what to do.
   { q: "L'eau revient : je peux la boire tout de suite ?", a: "Suivez les consignes de l'avis du distributeur, jusqu'à son avis suivant." },
   { q: "Quelle différence avec les restrictions de sécheresse ?", a: `Une coupure ou un avis « ne pas boire » vient du distributeur et concerne un secteur précis. Les restrictions de sécheresse viennent d'un arrêté du préfet : elles limitent certains usages, comme l'arrosage ou le lavage des voitures, dans toute la commune. Elles sont détaillées sur <a href="/secheresse">la page Sécheresse</a>.` },
@@ -1495,7 +1495,7 @@ function latestGauge(d: CruesAnswer | undefined): string {
 
 /** The vigilance in the page's status, from Vigicrues Réunion; `readAt`: our read, when it could not be read. */
 function floodVigilance(v: CruesAnswer["vigilance_crues"], read: string): string {
-  if (!v) return `<p class="lead">Vigilance crues absente de notre lecture ${esc(read)} : voir ${lienNom(vigicrues.SOURCE.url, "vigicrues-reunion.re ↗")}.</p>`;
+  if (!v) return `<p class="lead">Vigilance crues absente de la lecture de rundata.re ${esc(read)} : voir ${lienNom(vigicrues.SOURCE.url, "vigicrues-reunion.re ↗")}.</p>`;
   if (!v.active) {
     return `<p class="lead">Pas de vigilance crues en cours d'après Vigicrues Réunion : toutes les rivières suivies sont au vert.</p>` +
       (v.aucun_bulletin_depuis ? `<p class="note">Dernier bulletin le ${esc(v.aucun_bulletin_depuis)} : Vigicrues Réunion n'en publie qu'en vigilance jaune ou plus.</p>` : "");
@@ -1511,7 +1511,7 @@ function floodVigilance(v: CruesAnswer["vigilance_crues"], read: string): string
 /** The gauges in the page's status: only those measured lately are said rising or not; the others counted apart. */
 function floodLevels(stations: CruesStation[], read: string): string {
   const fresh = stations.filter(upToDate);
-  if (!fresh.length) return `<p class="lead">Aucune des ${stations.length} stations n'a de mesure de moins de 30 minutes dans notre lecture ${esc(read)} : nous ne savons pas pour l'instant si les rivières montent.</p>`;
+  if (!fresh.length) return `<p class="lead">Aucune des ${stations.length} stations n'a de mesure de moins de 30 minutes dans la lecture ${esc(read)} : rundata.re ne sait pas pour l'instant si les rivières montent.</p>`;
   // Apart: the gauges Vigicrues publishes nothing for, then the late ones.
   const none = stations.filter(unpublished);
   const others = stations.filter((s) => !upToDate(s) && !unpublished(s));
@@ -1537,7 +1537,7 @@ const gaugeValue = (s: CruesStation): string | null =>
 /** A gauge's line in its river's group: up to date, late, or without a level in our read. */
 function gaugeRow(s: CruesStation, read: string): string {
   const said = gaugeValue(s);
-  const value = said == null ? (unpublished(s) ? esc(s.avertissement!) : `Pas de mesure dans notre lecture ${esc(read)}.`) : esc(said);
+  const value = said == null ? (unpublished(s) ? esc(s.avertissement!) : `Pas de mesure dans la lecture ${esc(read)}.`) : esc(said);
   const floods = [...(s.crues_de_reference ?? [])].sort((a, b) => b.hauteur_m - a.hauteur_m);
   const marks = floods.length
     ? `<details><summary>Crues de référence</summary><ul class="plain">${floods.map((c) => `<li>${[metres(c.hauteur_m), ...(c.debit_m3s != null ? [flow(c.debit_m3s)] : []), esc(c.nom)].join(" · ")}</li>`).join("")}</ul></details>`
@@ -1562,7 +1562,7 @@ function fordsSection(f: Fords | undefined, now: Date): string {
     ? ""
     : f.annonces.length
       ? `<ul class="plain">${f.annonces.map((a) => `<li>${esc(a.heure)} · ${esc(a.source)} : <a href="${esc(a.lien)}" rel="noopener"${fenetre(a.lien)}>${esc(a.titre)} ↗</a></li>`).join("")}</ul>`
-      : `<p>Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture ${readAt(f.lue, now).de}. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re.</p>`;
+      : `<p>Aucune annonce de la préfecture ni des médias sur un radier dans la lecture de rundata.re ${readAt(f.lue, now).de}. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re.</p>`;
   return `<section aria-labelledby="h-radiers">
   <div class="sec-h"><p class="eyebrow">Par fortes pluies</p><h2 id="h-radiers">Les radiers</h2>
   <p>L'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région, qui ne s'affiche que chez elle. Ici, les annonces de la préfecture et des médias qui parlent d'un radier, avec leur heure.</p></div>
@@ -1611,7 +1611,7 @@ export function cruesPage(origin: string, data: Cached<CruesAnswer> | null, now 
     .sort((a, b) => GAUGE_RANK[a.kind] - GAUGE_RANK[b.kind]).flatMap(({ s, kind }) => {
     const at = place.get(s.station);
     if (!at) return [];
-    const line = gaugeValue(s) ?? (unpublished(s) ? vigicrues.NONE_PUBLISHED : `pas de mesure dans notre lecture ${read}`);
+    const line = gaugeValue(s) ?? (unpublished(s) ? vigicrues.NONE_PUBLISHED : `pas de mesure dans la lecture ${read}`);
     const where = `${s.station} · ${s.commune}`;
     return [{ lon: at.lon, lat: at.lat, label: kind === "hausse" ? "↑" : "", name: `${where}\u00a0: ${line}`, round: true, hollow: kind === "muette", big: kind === "hausse", color: GAUGE_COLOR[kind], quiet: true,
       place: where, say: line, href: `#${anchorId("s", s.station)}` }];
@@ -2017,7 +2017,7 @@ export const closedTrails = (d: SentiersAnswer) => new Set(d.points.map((p) => p
  * many full hikes; each sentence left out without its figure.
  */
 const sentiersLire = (suivis?: number, sansEtat?: number, randonnees?: number) => `<p>La page liste, commune par commune, les sentiers que la carte de l'ONF donne fermés. Pour chacun, elle donne la cause quand l'ONF la publie (éboulement, passage effondré, arbres en travers, travaux) et la date de réouverture si elle est annoncée. Un sentier est fermé par arrêté (préfet ou maire) ou par décision de l'ONF : s'y engager est interdit et dangereux.</p>
-<p>Nous relisons la carte de l'ONF chaque heure. La date en haut de page est celle de sa dernière mise à jour par l'ONF, pas celle de notre lecture.${suivis ? ` L'ONF suit ${suivis} sentiers.` : ""}${sansEtat ? ` ${sansEtat} autres sentiers, gérés par une commune, le Département ou un propriétaire privé, n'ont pas d'état connu ici.` : ""}</p>
+<p>rundata.re relit la carte de l'ONF chaque heure. La date en haut de page est celle de sa dernière mise à jour par l'ONF, pas celle de la dernière lecture.${suivis ? ` L'ONF suit ${suivis} sentiers.` : ""}${sansEtat ? ` ${sansEtat} autres sentiers, gérés par une commune, le Département ou un propriétaire privé, n'ont pas d'état connu ici.` : ""}</p>
 <p><b>Ce que la page réunit et qu'aucune source ne montre seule :</b></p>
 <ul class="plain"><li>l'état donné par la carte de l'ONF ;</li>
 <li>les avis de l'ONF qui la nuancent : certaines routes forestières sont fermées en semaine et ouvertes le week-end, et la page montre les deux ;</li>
@@ -2025,9 +2025,9 @@ const sentiersLire = (suivis?: number, sansEtat?: number, randonnees?: number) =
 <li>la météo de chaque secteur.</li></ul>`;
 
 const SENTIERS_FAQ: Faq[] = [
-  { q: "Un sentier n'est pas dans la liste : est-il ouvert ?", a: "S'il est géré par l'ONF et absent de la liste, la carte de l'ONF le donne ouvert. S'il n'est pas géré par l'ONF, nous ne connaissons pas son état : renseignez-vous auprès de la commune ou du Parc national. Dans tous les cas, la météo du jour et le balisage sur place comptent aussi." },
+  { q: "Un sentier n'est pas dans la liste : est-il ouvert ?", a: "S'il est géré par l'ONF et absent de la liste, la carte de l'ONF le donne ouvert. S'il n'est pas géré par l'ONF, rundata.re ne connaît pas son état : renseignez-vous auprès de la commune ou du Parc national. Dans tous les cas, la météo du jour et le balisage sur place comptent aussi." },
   { q: "Je peux passer quand même, avec prudence ?", a: "Non. Un sentier fermé l'est pour un danger constaté, et y entrer est interdit." },
-  { q: "Quand va-t-il rouvrir ?", a: "Quand l'ONF annonce une date ou une année, la page la donne, par exemple « Réouverture 2026 ». Sans annonce, nous n'en donnons pas. « Pas de réouverture prévue à court terme » est la formule de l'ONF." },
+  { q: "Quand va-t-il rouvrir ?", a: "Quand l'ONF annonce une date ou une année, la page la donne, par exemple « Réouverture 2026 ». Sans annonce, la page n'en donne pas. « Pas de réouverture prévue à court terme » est la formule de l'ONF." },
   { q: "La trace GPS suffit-elle pour partir ?", a: "Non. Une trace ne remplace ni le balisage ni l'état du sentier. Vérifiez cette page le jour même : une fermeture peut tomber d'un jour à l'autre." },
 ];
 

@@ -79,7 +79,7 @@ describe("Météo-France's vigilance in the tools on the weather's consequences"
       { titre: "Fortes pluies : le radier du Ouaki fermé à la circulation", lien: expect.any(String), source: "Clicanoo", heure: "aujourd'hui à 03:30" },
     ]);
     expect(body.radiers.resume).toBe(
-      "Annonces de la préfecture et des médias qui parlent d'un radier, d'après notre lecture du 24/10 à 03:50. Ce ne sont que des annonces : l'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région (https://www.infotrafic.re/).",
+      "Annonces de la préfecture et des médias qui parlent d'un radier, d'après la lecture de rundata.re du 24/10 à 03:50. Ce ne sont que des annonces : l'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région (https://www.infotrafic.re/).",
     );
     // Vigicrues Réunion's credit kept, the media's added once.
     const sources = body.sources.map((s: { source: string }) => s.source);
@@ -92,7 +92,7 @@ describe("Météo-France's vigilance in the tools on the weather's consequences"
     const none = (await call(await cacheWith({ ...NEWS, infos: NEWS.infos.slice(1) }), "crues_rivieres")).body;
     expect(none.radiers).not.toHaveProperty("annonces");
     expect(none.radiers.resume).toBe(
-      "Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture du 24/10 à 03:50. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re (https://www.infotrafic.re/).",
+      "Aucune annonce de la préfecture ni des médias sur un radier dans la lecture de rundata.re du 24/10 à 03:50. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re (https://www.infotrafic.re/).",
     );
     expect(none.sources).toHaveLength(1);
     const unread = (await call(await cacheWith(), "crues_rivieres")).body;

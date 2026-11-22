@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-23T02:53:00+04:00", texte: "Eau, crues, marée et sentiers\u00a0: les pages et les outils IA disent “rundata.re” là où ils disaient “nous”." },
   { date: "2026-11-23T01:16:00+04:00", texte: "Sentiers\u00a0: l'outil IA donne un sentier coupé en tronçons comme sa page, d'un seul tenant, avec sa longueur entière et la part fermée." },
   { date: "2026-11-23T01:12:00+04:00", texte: "Coupures d'eau\u00a0: une coupure annoncée sans heure de début dit «\u00a0jusqu'au …\u00a0» au lieu d'une heure vide." },
   { date: "2026-11-23T00:28:00+04:00", texte: "Baignade\u00a0: quand le site de l'ARS ne répond pas, l'outil IA donne la dernière lecture de rundata.re, avec son jour et son heure." },

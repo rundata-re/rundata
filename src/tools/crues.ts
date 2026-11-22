@@ -159,7 +159,7 @@ const NAMED_SILENT = 5;
  */
 export function islandLevels(levels: Level[], now: Date, readAt: number): string {
   const fresh = levels.filter((l) => l.hauteur && !late(l, now));
-  if (!fresh.length) return `Aucune des ${levels.length} stations n'a de mesure de moins de ${LATE_MINUTES} minutes dans notre lecture de ${hm(readAt)}\u00a0: nous ne savons pas pour l'instant si les rivières montent.`;
+  if (!fresh.length) return `Aucune des ${levels.length} stations n'a de mesure de moins de ${LATE_MINUTES} minutes dans la lecture de ${hm(readAt)}\u00a0: rundata.re ne sait pas pour l'instant si les rivières montent.`;
   // Apart: the gauges Vigicrues publishes nothing for (never said late), then the late ones.
   const silent = levels.filter((l) => !fresh.includes(l));
   const named = (ls: Level[]) => (ls.length <= NAMED_SILENT ? ls.map((l) => l.station.nom).join(", ") : `${ls.length} stations`);

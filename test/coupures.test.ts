@@ -731,7 +731,7 @@ describe("coupures d'eau", () => {
     expect(lt).not.toMatch(/ne publie pas/);
     expect(lt).not.toContain("Aucune coupure d&#39;eau annoncée");
     // Not read: who has its notices, never « pas d'avis » (marketing, 06/11/2026); the mairie's site linked when known.
-    expect(lt).toMatch(/<p class="card">Nous ne lisons pas les avis de coupure du Tampon\u00a0: ils sont sur le site de la mairie ou du distributeur\.(?: <a href="[^"]+" rel="noopener"[^>]*>[^<]+ →<\/a>)?<\/p>/);
+    expect(lt).toMatch(/<p class="card">rundata.re ne lit pas les avis de coupure du Tampon\u00a0: ils sont sur le site de la mairie ou du distributeur\.(?: <a href="[^"]+" rel="noopener"[^>]*>[^<]+ →<\/a>)?<\/p>/);
     expect(lt).not.toContain("Pas d&#39;avis en ligne lisible");
     // The connector asked a question, without the tool's name.
     expect(lt).toContain(`<p>Demandez aussi à votre IA, avec le <a href="/mcp">connecteur rundata.re</a>\u00a0: «\u00a0L'eau du robinet est-elle bonne au Tampon\u00a0?\u00a0»</p>`);
@@ -827,7 +827,7 @@ describe("coupures d'eau", () => {
     // A silent feed whose last notice said not to drink the water: said, without the hour of a reading it was not part of.
     const cirest = { texte: "Le site de la CIREST n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.", court: "sans réponse", de: "de la CIREST", site: "https://www.cirest.fr/" };
     const pdp = coupuresCommunePage("https://rundata.re", pageOf("la-plaine-des-palmistes")!, { coupures: { ...coupures, value: { ...coupures.value, injoignable: [...coupures.value.injoignable!, cirest] } } }, now);
-    expect(pdp).toContain('<meta name="description" content="La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire selon le dernier avis lu\u00a0; le site de la CIREST n&#39;a pas répondu à notre dernière lecture.">');
+    expect(pdp).toContain('<meta name="description" content="La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire selon le dernier avis lu\u00a0; le site de la CIREST n&#39;a pas répondu à la dernière lecture de rundata.re.">');
     vi.restoreAllMocks();
   });
 
@@ -837,8 +837,8 @@ describe("coupures d'eau", () => {
     const coupures = { value: await buildCoupures(c, at), fetchedAt: at };
     const sm = coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures }, at);
     expect(sm).toContain(`<a href="https://www.ville-saintemarie.re/communique-cise-reunion-33/" rel="noopener">Communiqué de la CISE du 02/10 (image) →</a>`);
-    expect(sm).toContain("Nous lisons, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a");
-    expect(sm).toContain("Un communiqué publié en image ou en PDF n'est pas lu : nous donnons seulement son lien.");
+    expect(sm).toContain("rundata.re lit, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a");
+    expect(sm).toContain("Un communiqué publié en image ou en PDF n'est pas lu : la page donne seulement son lien.");
     expect(sm).not.toContain("FERMETURE");
   });
 

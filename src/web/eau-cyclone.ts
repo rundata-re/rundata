@@ -36,12 +36,12 @@ export function coverageLine(commune: string): string {
   // The shared copy of the notices is rebuilt every 30 minutes at least (web/partagees.ts), more often when read.
   // Said as on the commune's card (web/coupures.ts): the ville's posts, some only an image whose advice is not read.
   if (d.site === MAIRIE_SAINTE_MARIE)
-    return "Nous lisons les communiqués de CISE Réunion publiés par la ville de Sainte-Marie, au moins toutes les 30 minutes\u00a0: ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu\u00a0: nous donnons seulement son lien.";
+    return "rundata.re lit les communiqués de CISE Réunion publiés par la ville de Sainte-Marie, au moins toutes les 30 minutes\u00a0: ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu\u00a0: la page donne seulement son lien.";
   // A mairie that posts its distributor's notices (Saint-Leu, Saint-Philippe, Petite-Île, Cilaos).
-  if (d.par && d.par !== "la CIREST") return `Nous lisons les avis de coupure publiés par ${d.par}, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.`;
+  if (d.par && d.par !== "la CIREST") return `rundata.re lit les avis de coupure publiés par ${d.par}, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.`;
   // The CIREST when it publishes the notices, else the distributor.
   const by = d.par ?? d.nom;
-  return `${shared}Nous lisons les avis publiés par ${by} pour ${commune}, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.`;
+  return `${shared}rundata.re lit les avis publiés par ${by} pour ${commune}, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.`;
 }
 
 const quote = () =>

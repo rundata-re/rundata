@@ -93,7 +93,7 @@ export const T = {
     "et les ZONEX quand elles sont ouvertes et surveillées. Arrêté préfectoral n° 180 du 13/02/2026, en vigueur jusqu'au 15/02/2027.",
   reduit: "Ces zones réduisent le risque requin, elles ne le suppriment pas.",
   intro: `Zones citées par le ${CSR} (securite-requin.re) :`,
-  ouverture: "Nous ne savons pas si une zone est ouverte aujourd'hui : regardez le drapeau sur place.",
+  ouverture: "rundata.re ne sait pas si une zone est ouverte aujourd'hui : regardez le drapeau sur place.",
   /** Under the zones of an answer, once one ZONEX is said: what a ZONEX is, said once rather than on each (the size of an answer). */
   zonex: "ZONEX : zone où la baignade et les activités de vague sont permises seulement quand elle est ouverte et surveillée.",
   /** Under the zones, once one kept by the BSAN is said. */
@@ -105,7 +105,7 @@ export const T = {
   autres: `Le ${CSR} ne cite pas de zone dans les autres communes.`,
   echu:
     "L'arrêté préfectoral n° 180 sur la baignade et les activités de vague a pris fin le 15/02/2027. " +
-    "Nous n'avons pas encore lu celui qui le remplace : vérifiez la règle en vigueur sur reunion.gouv.fr.",
+    "rundata.re n'a pas encore lu celui qui le remplace : vérifiez la règle en vigueur sur reunion.gouv.fr.",
   h2: "Baignade et requins",
   lien: "Toutes les zones et la règle",
 };

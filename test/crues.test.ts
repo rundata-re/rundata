@@ -88,7 +88,7 @@ describe("Vigicrues Réunion", () => {
     const name = (i: number) => STATIONS[i].nom;
     const read = at("03:48");
     // n = 0: the time of our read, and that we do not know.
-    expect(islandLevels([lvl(0, "03:00"), lvl(1)], now, read)).toBe("Aucune des 2 stations n'a de mesure de moins de 30 minutes dans notre lecture de 03:48\u00a0: nous ne savons pas pour l'instant si les rivières montent.");
+    expect(islandLevels([lvl(0, "03:00"), lvl(1)], now, read)).toBe("Aucune des 2 stations n'a de mesure de moins de 30 minutes dans la lecture de 03:48\u00a0: rundata.re ne sait pas pour l'instant si les rivières montent.");
     // n = 1: the station and its river, then the others named.
     expect(islandLevels([lvl(0, "03:45"), lvl(1, "03:00", "en hausse"), lvl(2)], now, read)).toBe(
       `La seule station à jour, ${name(0)} (${STATIONS[0].riviere}), n'est pas en hausse sur la dernière demi-heure (mesure de 03:45). Sans mesure récente\u00a0: ${name(1)}, ${name(2)}.`,

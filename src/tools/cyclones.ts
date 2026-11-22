@@ -35,6 +35,8 @@ export const SE_PREPARER = {
   d_apres: `${ORSEC.nom}, p. 17`,
   page: `${SITE_URL}/kit-cyclone`,
 };
+/** What /cyclones says under the alert scale, at all times, and the tool with it: the radio when the mobile network falls. */
+export const RADIO = "Écoutez la radio en cas de cyclone\u00a0: le réseau mobile peut tomber.";
 /** Whether to lead to the kit, on the page and in the tool alike: up to the pré-alerte (niveau ≤ 2), and with no alert. */
 export const kitAvantOrange = (ecoles?: { niveau: number }) => (ecoles?.niveau ?? -1) <= 2;
 
@@ -248,6 +250,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
     vie_quotidienne: a?.vie_quotidienne,
     ecoles: a?.ecoles,
     se_preparer: kitAvantOrange(a?.ecoles) ? SE_PREPARER : undefined,
+    radio: RADIO,
     systemes_actifs: rows.length ? rows : undefined,
     suivi_cmrs: suivis.length ? suivis : undefined,
     carte_officielle: carte,

@@ -134,6 +134,11 @@ ALIASES = {
     "Parc des Palmiers": "Parc des Palmiers du Monde",
     # The mountain, not the quartier of Saint-Joseph below it.
     "Dimitile": "Le Dimitile",
+    # Saint-Pierre's Mont Vert, as most write it, before the locality of Les Trois-Bassins, said beside it.
+    "Montvert": "Mont Vert les Hauts",
+    "Mont Vert": "Mont Vert les Hauts",
+    "Montvert les Hauts": "Mont Vert les Hauts",
+    "Montvert les Bas": "Mont Vert les Bas",
 }
 
 

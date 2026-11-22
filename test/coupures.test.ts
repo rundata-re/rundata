@@ -403,7 +403,7 @@ describe("coupures d'eau", () => {
       "Travaux sur le réseau, dans la nuit du mardi 24 au mercredi 25/11, de 21:00 à 04:00 (RUE LORY LES HAUTS, RUE LORY LES BAS et 5 autres voies)\u00a0; " +
       "Lavage de réservoir, mercredi 25/11 de 08:00 à 17:00\u00a0; et 2 autres avis, dans la liste des avis");
     // Begun: what the notice plans only, never « en cours »; a night across two months keeps both; one end only, that end.
-    expect(resumeAvis([mine[0]], new Date("2026-11-26T18:00:00Z"))).toBe("Travaux sur le réseau, prévue jusqu'au vendredi 27/11 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)");
+    expect(resumeAvis([mine[0]], new Date("2026-11-26T18:00:00Z"))).toBe("Travaux sur le réseau, jusqu'au vendredi 27/11 à 04:00 d'après l'avis (RUE SAINTE ANNE, RUE MICHEL HA-SAM)");
     expect(cutSaid("2026-11-30T21:00", "2026-12-01T04:00")).toBe("dans la nuit du lundi 30/11 au mardi 01/12, de 21:00 à 04:00");
     expect(cutSaid("2026-11-24T08:00", "2026-11-27T17:00")).toBe("du mardi 24/11 à 08:00 au vendredi 27/11 à 17:00");
     expect(cutSaid(undefined, "2026-11-24T17:00")).toBe("jusqu'au mardi 24/11 à 17:00");
@@ -477,7 +477,7 @@ describe("coupures d'eau", () => {
     vi.stubGlobal("fetch", async (url: string) => new URL(url).hostname === "dioneo.re"
       ? new Response(fixture("dioneo.xml").replace("</channel>", `${rssItem("Qualité de l'eau", "Wed, 04 Nov 2026 11:15:00 +0400", DIONEO_0411)}</channel>`))
       : others(url));
-    expect(body(await coupuresEau(cache(now), "Saint-Denis", now)).resume).toMatch(/^Eau à ne pas boire à Saint-Denis d'après Dionéo \(avis du 04\/11 à 11:15\)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS\. Aucun avis de coupure récent ou à venir à Saint-Denis /);
+    expect(body(await coupuresEau(cache(now), "Saint-Denis", now)).resume).toMatch(/^Eau à ne pas boire à Saint-Denis d'après Dionéo \(avis du 04\/11 à 11:15\)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS\. Pas d'avis de coupure récent ou à venir à Saint-Denis sur le site de Dionéo, lu le 04\/11 à 14:30\u00a0: https:\/\/dioneo\.re\/\. D'après l'ARS, Dionéo y distribue l'eau\. Une coupure peut être annoncée ailleurs, par la mairie par exemple\.$/);
     const coupures = { value: await buildCoupures(cache(now), now), fetchedAt: now };
     expect(coupures.value.ne_pas_boire).toContain("Saint-Denis");
     const day = resume(pageOf("saint-denis")!, { coupures } as never, now);
@@ -582,16 +582,16 @@ describe("coupures d'eau", () => {
     expect(c.resume).toContain("Source : rundata.re, d'après l'ARS La Réunion (données Hub'Eau)");
     // Two distributors named by the ARS (L'Étang-Salé): runéo's notices are read, the sharing is said.
     const es = body(await coupuresEau(cache(), "L'Étang-Salé", NOW));
-    expect(es.resume).toBe("Aucun avis de coupure récent ou à venir à L'Étang-Salé dans les avis de runéo\u00a0: https://www.runeo.re/. D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. Seuls les avis de runéo sont lus. Le site de la mairie de L'Étang-Salé\u00a0: https://www.letangsale.fr/.");
+    expect(es.resume).toBe("Pas d'avis de coupure récent ou à venir à L'Étang-Salé sur le site de runéo, lu le 24/10 à 08:00\u00a0: https://www.runeo.re/. Une coupure peut être annoncée ailleurs, par la mairie par exemple. D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. Seuls les avis de runéo sont lus. Le site de la mairie de L'Étang-Salé\u00a0: https://www.letangsale.fr/.");
     // The mairie's network: its site linked, as the page does.
     expect(es.mairie).toEqual({ libelle: "Le site de la mairie de L'Étang-Salé", lien: "https://www.letangsale.fr/" });
     expect(es.avis_lus_sur).toEqual({ publie_par: "runéo", distributeur: "runéo", lien: "https://www.runeo.re/" });
     expect(es.distributeur).toBeUndefined();
     const sp = body(await coupuresEau(cache(NIGHT), "Saint-Paul", NIGHT));
-    expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul\u00a0: Interruption nocturne de la distribution du 23/10/2026, prévue jusqu'au samedi 24/10 à 06:00.");
+    expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul\u00a0: Interruption nocturne de la distribution du 23/10/2026, jusqu'au samedi 24/10 à 06:00 d'après l'avis.");
     expect(sp.avis[0]).toMatchObject({ publie_le: "23/10/2026", coupure: { de: "vendredi 23/10 à 22:00", a: "samedi 24/10 à 06:00", etat: "en cours" } });
     // Over at 06:00: no longer said in the morning.
-    expect(body(await coupuresEau(cache(), "Saint-Paul", NOW)).resume).toBe("Aucun avis de coupure récent ou à venir à Saint-Paul dans les avis de La Créole, qui y distribue l'eau d'après l'ARS\u00a0: https://lacreole.re/flash-infos.");
+    expect(body(await coupuresEau(cache(), "Saint-Paul", NOW)).resume).toBe("Pas d'avis de coupure récent ou à venir à Saint-Paul sur le site de La Créole, lu le 24/10 à 08:00\u00a0: https://lacreole.re/flash-infos. D'après l'ARS, La Créole y distribue l'eau. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
     expect(sp.avis[0].ne_pas_boire).toBeUndefined();
     // Its notices are read: neither the distributor nor the contact, and only the notices credited.
     expect(sp.distributeur).toBeUndefined();
@@ -600,24 +600,24 @@ describe("coupures d'eau", () => {
     // Each distributor's own terms, never « Information publique » for those whose terms forbid the reproduction.
     expect(sp.sources[0].licence).toBe("Dionéo, runéo, Eaux de La Possession\u00a0: en attente d'accord. CIREST\u00a0: réutilisation libre en citant la source. Commune de Saint-Leu\u00a0: à fin d'information. La Créole, ville de Sainte-Marie\u00a0: aucune condition écrite. Saint-Philippe, Petite-Île, Cilaos, Trois-Bassins\u00a0: information publique des communes, reprise avec sa source et son lien");
     // runéo's feed is read: no notice for Saint-Pierre is no cut announced.
-    expect(body(await coupuresEau(cache(), "Saint-Pierre", NOW)).resume).toBe("Aucun avis de coupure récent ou à venir à Saint-Pierre dans les avis de runéo, qui y distribue l'eau d'après l'ARS\u00a0: https://www.runeo.re/.");
+    expect(body(await coupuresEau(cache(), "Saint-Pierre", NOW)).resume).toBe("Pas d'avis de coupure récent ou à venir à Saint-Pierre sur le site de runéo, lu le 24/10 à 08:00\u00a0: https://www.runeo.re/. D'après l'ARS, runéo y distribue l'eau. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
   });
 
   it("names the commune's distributor and where its notices are read when none is found, and cites them", async () => {
     // Cambuston: Saint-André, whose notices the CIREST publishes; O2LEST distributes its water (ARS).
     const sa = await coupuresEau(cache(), "Cambuston", NOW);
     const b = body(sa);
-    expect(b.resume).toBe("Aucun avis de coupure récent ou à venir à Saint-André dans les avis publiés par la CIREST\u00a0: https://www.cirest.fr/categorie/communique/communique-eau/. D'après l'ARS, O2LEST distribue l'eau à Saint-André.");
+    expect(b.resume).toBe("Pas d'avis de coupure récent ou à venir à Saint-André sur le site de la CIREST, lu le 24/10 à 08:00\u00a0: https://www.cirest.fr/categorie/communique/communique-eau/. D'après l'ARS, O2LEST distribue l'eau à Saint-André. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
     expect(b.avis_lus_sur).toEqual({ publie_par: "la CIREST", distributeur: "O2LEST", lien: "https://www.cirest.fr/categorie/communique/communique-eau/" });
     // The distributor named is the ARS's: credited, and in the citation beside the CIREST.
     expect(b.sources.map((s: { source: string }) => s.source)).toContain("Contrôle sanitaire de l'eau du robinet (ARS La Réunion, via Hub'Eau)");
     expect(body(cite("coupures_eau", sa)).citer).toBe("rundata.re, d'après les avis de la CIREST et l'ARS La Réunion");
     // A distributor that publishes its own notices: named once.
     const lp = await coupuresEau(cache(), "Le Port", NOW);
-    expect(body(lp).resume).toBe("Aucun avis de coupure récent ou à venir au Port dans les avis de runéo, qui y distribue l'eau d'après l'ARS\u00a0: https://www.runeo.re/.");
+    expect(body(lp).resume).toBe("Pas d'avis de coupure récent ou à venir au Port sur le site de runéo, lu le 24/10 à 08:00\u00a0: https://www.runeo.re/. D'après l'ARS, runéo y distribue l'eau. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
     expect(body(cite("coupures_eau", lp)).citer).toBe("rundata.re, d'après les avis de runéo et l'ARS La Réunion");
     // A mairie that posts its distributor's notices.
-    expect(body(await coupuresEau(cache(), "Sainte-Marie", NOW)).resume).toMatch(/^Aucun avis de coupure récent ou à venir à Sainte-Marie dans les avis publiés par la ville de Sainte-Marie\s: https:\/\/www\.ville-saintemarie\.re\/\?s=CISE\. D'après l'ARS, CISE Réunion distribue l'eau à Sainte-Marie\.$/);
+    expect(body(await coupuresEau(cache(), "Sainte-Marie", NOW)).resume).toMatch(/^Pas d'avis de coupure récent ou à venir à Sainte-Marie sur le site de la ville de Sainte-Marie, lu le \d\d\/\d\d à \d\d:\d\d\s: https:\/\/www\.ville-saintemarie\.re\/\?s=CISE\. D'après l'ARS, CISE Réunion distribue l'eau à Sainte-Marie\. Une coupure peut être annoncée ailleurs\.$/);
     // Notices shown: only those are credited, and the citation is the whole list when they come from elsewhere.
     const sp = await coupuresEau(cache(NIGHT), "Saint-Paul", NIGHT);
     expect(body(sp).sources).toHaveLength(1);
@@ -901,7 +901,7 @@ describe("coupures d'eau", () => {
 
   it("gives, for a commune whose ville publishes the notices, who publishes them and its distributor", async () => {
     const b = body(await coupuresEau(cache(), "Cilaos", NOW));
-    expect(b.resume).toBe("Aucun avis de coupure récent ou à venir à Cilaos dans les avis publiés par la ville de Cilaos\u00a0: https://ville-cilaos.fr/?s=eau. D'après l'ARS, RECIL distribue l'eau à Cilaos.");
+    expect(b.resume).toBe("Pas d'avis de coupure récent ou à venir à Cilaos sur le site de la ville de Cilaos, lu le 24/10 à 08:00\u00a0: https://ville-cilaos.fr/?s=eau. D'après l'ARS, RECIL distribue l'eau à Cilaos. Une coupure peut être annoncée ailleurs.");
     expect(b.avis_lus_sur).toEqual({ publie_par: "la ville de Cilaos", distributeur: "RECIL", lien: "https://ville-cilaos.fr/?s=eau" });
     expect(b.mairie).toBeUndefined();
     expect(body(await coupuresEau(cache(), "Saint-Leu", NOW)).mairie).toBeUndefined();

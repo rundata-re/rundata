@@ -60,9 +60,10 @@ const VOIES_AU_RESUME = 2;
  */
 export function noticeSaid(n: notices.Avis, now: Date): string {
   const here = nowLocal(now);
-  // Begun: only what the notice plans, never « en cours » (the site does not know whether the water is cut now).
+  // Begun: only what the notice plans, never « en cours » (the site does not know whether the water is cut now), in
+  // words that agree with any title (« Travaux sur le réseau, jusqu'au … d'après l'avis »).
   const going = n.debut && n.debut <= here && n.fin && n.fin >= here;
-  const cut = going ? `prévue jusqu'au ${when(n.fin)}` : cutSaid(n.debut, n.fin);
+  const cut = going ? `jusqu'au ${when(n.fin)} d'après l'avis` : cutSaid(n.debut, n.fin);
   const streets = n.secteurs_complets && n.secteurs.length ? n.secteurs : [];
   const more = streets.length - VOIES_AU_RESUME;
   const where = streets.length
@@ -217,8 +218,11 @@ export function resumeAvis(mine: notices.Avis[], now: Date): string {
 export async function coupuresEau(cache: Cache, lieu: string | undefined, now = new Date(), complet = false) {
   let all: notices.Avis[];
   let silent: FluxMuet[];
+  // When the notices were read: « Pas d'avis … sur le site de Dionéo, lu le 22/11 à 08:47 ».
+  let readAt: Date;
   try {
     const read = await notices.lecture(cache);
+    readAt = read.fetchedAt;
     all = read.value.flatMap((f) => f.avis).sort((x, y) => y.publie.localeCompare(x.publie));
     silent = muets(read, now);
   } catch (err) {
@@ -273,11 +277,15 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const lus = dist?.avis ? { publie_par: dist.par ?? dist.nom, distributeur: dist.partage && dist.par ? undefined : dist.nom, lien: dist.site! } : undefined;
   // No notice found: the distributor and where its notices are, never the bare « aucun avis » (a question on Cambuston
   // was answered without naming the CIREST nor O2LEST).
+  // « Pas d'avis » with where it was looked for and when, never « aucun avis », which reads as « no cut » (marketing).
+  const lu = `, lu le ${published({ publie: readAt.toISOString() } as notices.Avis).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1")}`;
+  // The mairie named as elsewhere, unless the notices read are its own (Cilaos, Sainte-Marie…).
+  const ailleurs = lus && /^(?:la )?(?:ville|commune|mairie)\b/i.test(lus.publie_par) ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   const where = !lus
     ? (dist ? `. D'après l'ARS, ${nomDit(dist)} distribue l'eau ${a(commune)}, et rundata.re ne lit pas ses avis` : "")
     : lus.distributeur === lus.publie_par
-      ? ` dans les avis ${deNom(lus.publie_par)}${shared ? "" : ", qui y distribue l'eau d'après l'ARS"}\u00a0: ${lus.lien}`
-      : ` dans les avis publiés par ${lus.publie_par}\u00a0: ${lus.lien}${shared || !lus.distributeur ? "" : `. D'après l'ARS, ${lus.distributeur} distribue l'eau ${a(commune)}`}`;
+      ? ` sur le site ${deNom(lus.publie_par)}${lu}\u00a0: ${lus.lien}${shared ? "" : `. D'après l'ARS, ${lus.distributeur} y distribue l'eau`}`
+      : ` sur le site ${deNom(lus.publie_par)}${lu}\u00a0: ${lus.lien}${shared || !lus.distributeur ? "" : `. D'après l'ARS, ${lus.distributeur} distribue l'eau ${a(commune)}`}`;
   // A distributor's own site, linked only (SITES_DISTRIBUTEURS): what the commune's page links.
   const siteDist = unread ? SITES_DISTRIBUTEURS[unread.nom] : undefined;
   // Its feed did not answer at the last read: its notices kept said so, or its read said failed, never « aucun avis ».
@@ -293,7 +301,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     cuts.length
       ? `${cuts.length} avis récent${cuts.length > 1 ? "s" : ""} ou à venir ${a(commune)}\u00a0: ${resumeAvis(cuts, now)}.`
       : mute ? ""
-      : covered ? `Aucun avis de coupure récent ou à venir ${a(commune)}${where}.`
+      : covered ? `Pas d'avis de coupure récent ou à venir ${a(commune)}${where}. ${ailleurs}`
       : unread ? `Pas d'avis en ligne lisible pour ${commune} : rundata.re ne lit pas les avis de coupure de ${unread.nom}, qui y distribue l'eau. ${siteDist ? `Voir le site ${deNom(unread.nom)}, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteDist}, ou la mairie.` : `Voir ${unread.nom} ou la mairie.`}`
       : `Pas d'avis en ligne lisible pour ${commune} : voir la mairie ou le distributeur d'eau.`,
     mute ? mute.texte : "",

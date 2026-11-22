@@ -35,7 +35,7 @@ describe("/appli, the Android app's trial version", () => {
     expect(page).toContain("<h2>Installer en 4 étapes</h2>");
     expect(page).toContain("Si Play Protect propose d'analyser l'appli, acceptez : elle n'est pas encore sur le Play Store.");
     expect(page).toContain("<strong>Sur iPhone :</strong> pas encore.");
-    expect(page).toContain("Version 0.2.0 · empreinte SHA-256 du fichier : <code>c30917489cdb9957d8c870390f71fecd65a72bd048550fbc4aa8b1f8f327ab91</code>");
+    expect(page).toContain("Version 0.2.0 · empreinte SHA-256 du fichier : <code>bbd9faf038d08e0c803f58a5221211cc6b12773afd0476ea70e62ba9f095f071</code>");
     // Neither the install block of the site on the home screen nor the sharing: this page is for the people it is sent to.
     expect(page).not.toContain('id="inst"');
     expect(page).not.toContain('<aside class="share wrap"');

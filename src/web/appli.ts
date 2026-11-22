@@ -16,7 +16,7 @@ export const VERSION = "0.2.0";
 /** The pre-release that carries the file. Releases are immutable: a tag published without its file can never take one (0.1.2 lives at android-v0.1.2-1). */
 export const TAG = "android-v0.2.0";
 /** SHA-256 of the file published with the pre-release TAG. */
-export const EMPREINTE = "c30917489cdb9957d8c870390f71fecd65a72bd048550fbc4aa8b1f8f327ab91";
+export const EMPREINTE = "bbd9faf038d08e0c803f58a5221211cc6b12773afd0476ea70e62ba9f095f071";
 export const APK_URL = `${GITHUB}/releases/download/${TAG}/rundata-re-${VERSION}.apk`;
 
 const TITLE = "L'appli rundata.re pour Android · version d'essai";

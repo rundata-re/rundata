@@ -160,10 +160,11 @@ private fun choisir(context: Context, id: GlanceId): Action {
 
 @Composable
 private fun Cadre(action: Action, contenu: @Composable ColumnScope.() -> Unit) {
-    val petit = LocalSize.current.height < 80.dp
+    val h = LocalSize.current.height
+    val petit = h < 80.dp
     Column(
         GlanceModifier.fillMaxSize().background(CLAIR.fond, SOMBRE.fond).cornerRadius(20.dp)
-            .padding(horizontal = if (petit) 12.dp else 14.dp, vertical = if (petit) 6.dp else 12.dp).clickable(action),
+            .padding(horizontal = if (petit) 12.dp else 14.dp, vertical = if (petit) 6.dp else if (h < 120.dp) 8.dp else 12.dp).clickable(action),
         verticalAlignment = Alignment.CenterVertically,
         content = contenu,
     )
@@ -232,17 +233,16 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
             T(d.commune, 14.sp, gras = true, modifier = GlanceModifier.defaultWeight())
             d.lueA?.let { T("Lu à $it", 11.sp, ATTENUE) }
         }
-        Spacer(GlanceModifier.height(4.dp))
     }
     Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
         Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
-            T(d.temperature ?: "–", if (haut) 26.sp else 20.sp, gras = true)
+            T(d.temperature ?: "–", if (haut) 22.sp else 20.sp, gras = true)
             T(if (haut) "air, ${d.echecA?.let { "mesure de " } ?: "à "}${d.heure ?: "?"}" else (if (d.echecA != null) "mesure de ${d.heure ?: "?"}" else d.commune), 11.sp, if (d.echecA != null) LAVE else ATTENUE)
         }
         if (avecMer) {
             Spacer(GlanceModifier.width(8.dp))
             Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(Pages.MER)), verticalAlignment = Alignment.CenterVertically) {
-                T(d.mer, if (haut) 26.sp else 20.sp, gras = true)
+                T(d.mer, if (haut) 22.sp else 20.sp, gras = true)
                 T(if (haut) "mer, par satellite" else "mer", 11.sp, ATTENUE)
             }
         }
@@ -324,7 +324,8 @@ private fun ColumnScope.Aujourdhui(commune: Commune?, d: Donnees?) {
             T(s.titre, 11.sp, LIEN, gras = true)
             if (s.lignes.isEmpty()) s.vide?.let { T(it, 12.sp, ATTENUE, lignes = 2) }
             for (l in s.lignes) {
-                T(l.texte, 12.sp, lignes = if (n == 1) 2 else 1)
+                // L'avis d'eau entier (ses dates et ses secteurs) ; les autres lignes sur deux, sauf au plus grand.
+                T(l.texte, 12.sp, lignes = if (i == 2) 3 else if (n >= 4) 1 else 2)
                 l.apres?.let { T(it, 10.sp, ATTENUE) }
             }
             enPlus(s.enPlus)?.let { T(it, 10.sp, ATTENUE) }

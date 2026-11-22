@@ -169,7 +169,7 @@ export function demos(h: HomeLive | null, now: Date): Demo[] {
         : e.eruption_en_cours
         ? `Oui, le Piton de la Fournaise est en éruption (niveau ORSEC : ${esc(e.niveau_orsec)}).`
         // What the texts read say, with when, never « Non » on our word nor pitonlive's (marketing).
-        : `Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (${leAt(h!.volcan!.fetchedAt)}).${e.niveau_inconnu ? "" : ` Niveau ORSEC : ${esc(e.niveau_orsec)}.`}`) +
+        : `Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes lus par rundata.re (${leAt(h!.volcan!.fetchedAt)}).${e.niveau_inconnu ? "" : ` Niveau ORSEC : ${esc(e.niveau_orsec)}.`}`) +
         (q ? ` L'observatoire a localisé ${q.sous_le_volcan["7_jours"]} séisme${q.sous_le_volcan["7_jours"] > 1 ? "s" : ""} sous le volcan en 7 jours${q.lus_jusqu_au ? `, ${esc(jusquALecture(q.lus_jusqu_au))}` : ""}.` : ""),
     });
   }

@@ -187,6 +187,9 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // coupures_eau says it: never « aucun avis », which reads as « no cut ». The mairie is not that elsewhere when the
   // notices read are its own (Cilaos, Sainte-Marie…).
   const ailleurs = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "") ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
+  // The same sentence opens the page and its description (meta, og, twitter, JSON-LD), so that neither says it otherwise.
+  // Given `esc` for the page, which escapes only the names and the hour.
+  const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
   const status = !d
     ? loading("Les avis des distributeurs")
     : x.muet && !x.avis.length
@@ -195,7 +198,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       ? noticesHead(x.avis, where, [], x.muet ? "" : at)
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
-        ? `<p class="lead">Pas d'avis de coupure récent ou à venir publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`}, lu ${esc(at)}. ${ailleurs}</p>`
+        ? `<p class="lead">${noNotice(esc)} ${ailleurs}</p>`
         : guide
         ? `<p class="lead">${guide.bandeau}</p>`
         : siteDist
@@ -272,7 +275,8 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       ? ((dated: string) => describe(`${dated}, avec les rues, les heures et les consignes.`, describe(`${dated}.`, short)))(
           `${p.nom} (974) : ${x.dry ? "eau à ne pas boire ; " : ""}${plural(x.avis.length, "avis", "avis")} ${ofBy(by)} en cours ou à venir, ${x.avis.length > 1 ? "lus" : "lu"} ${at}`)
       : dist?.avis && !x.muet
-        ? describe(`Aucune coupure d'eau annoncée par ${publisher}${publisher!.includes(p.nom) ? "" : ` ${where}`} (974) ${at}. Sécheresse, eau du robinet et contact du distributeur.`, short)
+        // Too long, only « Sécheresse… » goes: the hour of reading always stays.
+        ? describe(`${noNotice()} Sécheresse, eau du robinet et contact du distributeur.`, noNotice())
         : short;
   const trail = {
     "@context": "https://schema.org",

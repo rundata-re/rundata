@@ -17,6 +17,7 @@ Quelques règles :
 - une nouvelle source n'entre que si sa licence permet la reprise, et elle est citée dans `sources_donnees` et le README ;
 - une mesure n'est jamais mélangée à une prévision, et chaque valeur dit sa source et son heure ;
 - aucun secret ni adresse personnelle dans les fichiers ;
+- un changement visible a sa ligne de nouveautés dans `nouveautes-a-venir/<nom-de-la-branche>.txt` (voir le README de ce dossier), jamais directement dans `src/nouveautes.ts` : elle y est rangée à la fusion ;
 - quand un changement de description d'outil change l'outil qu'un assistant choisit, montez la date de la liste (`LISTE_DU`, `src/nouveautes.ts`) : les assistants dont la liste porte une autre date savent qu'elle est ancienne.
 
 Chaque pull request est relue avant d'être fusionnée, et une pull request fusionnée part en ligne sur rundata.re. Le code est sous licence MIT : en contribuant, vous acceptez que votre contribution le soit aussi.

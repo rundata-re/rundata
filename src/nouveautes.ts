@@ -4,7 +4,8 @@
  * every answer is fresh: each one carries a short `serveur` block with the newest tools (server.ts), and
  * sources_donnees the whole list and the latest changes. The model can then see that its list is old, and say so.
  *
- * Kept by hand: one line per tool, with the day it went online; one line per change people can notice. The changes
+ * Kept by hand: one line per tool, with the day it went online; one line per change people can notice, written by its
+ * pull request in nouveautes-a-venir/ and put here at the merge (scripts/ranger-nouveautes.ts). The changes
  * are also the site's page /nouveautes and the repository's CHANGELOG.md (`npm run changelog` writes it; a test
  * checks it is up to date), so they are said once, here.
  */

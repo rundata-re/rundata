@@ -37,6 +37,23 @@ describe("actualités", () => {
     expect(sujetsOf("Volcan : vigilance, et fortes pluies attendues sur l'Enclos")).toEqual(["meteo", "volcan"]);
   });
 
+  it("says « mobilisation » for a strike or a blockade, not for a party, football's play-offs nor a day for children (22/11/2026)", () => {
+    // The three the home's tile said « mobilisation en cours » above, on 22/11/2026.
+    const brasPanon = "Bras-Panon : 700 marmailles réunis pour célébrer les droits de l’enfant";
+    const lead = " Près de 700 marmailles ont participé, vendredi 20 novembre, à la Journée des droits de l’enfant organisée à Bras-Panon par la Ligue des droits de l’Homme (LDH) à La Réunion, en partenariat avec plusieurs acteurs associatifs. Cette mobilisation s’inscrivait dans le cadre du 37e anniversaire de la Convention internationale des droits de l’enfant (CIDE).";
+    expect(sujetsOf(brasPanon + lead, brasPanon)).not.toContain("mobilisation");
+    expect(sujetsOf("Visite de Marine Le Pen : Gaëlle Lebon et le Rassemblement Réunionnais veulent rencontrer la candidate RN À l’occasion de la visite annoncée de Marine Le Pen à La Réunion, Gaëlle Lebon sollicite un entretien avec la dirigeante du Rassemblement national.")).not.toContain("mobilisation");
+    expect(sujetsOf("Régional 1 : cinq clubs menacés par les barrages, le maintien se joue ce dimanche")).not.toContain("mobilisation");
+    expect(sujetsOf("Football : l'AS Excelsior jouera les barrages d'accession")).not.toContain("mobilisation");
+    // Still said: in the headline, or with a word of the streets in the lead.
+    for (const [titre, suite] of [
+      ["Mobilisation du 24 octobre : ce qui est prévu", " Les syndicats donnent rendez-vous."],
+      ["Vie chère : la journée du 24 octobre", " Une mobilisation et des barrages filtrants sont annoncés dès 6 heures."],
+      ["Saint-Benoît : un rassemblement devant la mairie", ""],
+      ["RN2 : des barrages sur la route à Sainte-Rose", ""],
+    ]) expect(sujetsOf(titre + suite, titre), titre).toContain("mobilisation");
+  });
+
   it("says « mobilisation » for a strike or a blockade, not for money or firms set to work", () => {
     // Freedom and Imaz Press, 20/11/2026: tagged « mobilisation », the home's tile said « mobilisation en cours » above them.
     const anru = "Saint-André : « 84% des financements ANRU engagé; Notre commune accélère sa transformation » C’est un communiqué de la ville de Saint-André : « […] Saint-André poursuit sa transformation urbaine avec des réalisations concrètes, une mobilisation financière remarquable et une…";
@@ -451,7 +468,7 @@ describe("actualités", () => {
   // A change that keeps something else (a link, a field, a medium, a filter) changes it: add its fingerprint here and
   // raise SOURCE_REVISION["actualites:fil"] (and RENDU_REVISION.actualites), so that the entry read by the old code is
   // read again after the deploy. A fixture changed alone: add its fingerprint and raise the number all the same.
-  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3"];
+  const FIL = ["b7e88ffb49a93884", "44c0eb346a5da96e", "95031bc5918208dd", "d177bf8851fdca3e", "e8416969f0a2d8cc", "3091f8c4c8a956ed", "257b273333650345", "69195050c2791723", "dcf1a479d2810ca3", "a79102468fde6006"];
 
   it("keeps, from the same pages, what its revision says: one fingerprint per revision of actualites:fil", async () => {
     const { value } = await fil(cache(), NOW);

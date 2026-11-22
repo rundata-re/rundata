@@ -23,7 +23,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // fireworks, flights, « conseil » alone, nor « annulé » or « reporté » alone for culture; « AVC » is health.
   // « Enquête publique » and « tribunal administratif » no crimes.
   // A headline « Saint-Denis : … » goes to the communes it names; « Bois de Nèfles » to the commune the text names.
-  actualites: 23,
+  // « Mobilisation » no party, no football play-offs, and in the headline only unless the lead says a strike (22/11/2026).
+  actualites: 24,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -204,7 +205,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // A rubric in capitals at the head of a first sentence left out (sansRubrique).
   // Its subjects narrowed (sujetsOf): « vigilance » with its colour, « annulé » or « reporté » alone no culture, « AVC » health.
   // « Enquête publique » and « tribunal administratif » no crimes (sujetsOf).
-  "actualites:fil": 9,
+  // « Mobilisation » no « Rassemblement national », no football's « barrages », and alone in the headline only (sujetsOf).
+  "actualites:fil": 10,
   // Every agenda's first sentence whole or none, never cut with « … » (lead()): the agendas without a key of their own
   // (CIREST, the halls' agenda:<hall> included), and the seven below raised with it.
   agenda: 1,

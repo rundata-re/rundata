@@ -324,9 +324,21 @@ export const ACCIDENT = String.raw`(?<!sans )accidents?(?! (?:vasculaires?|cardi
 /** Traffic on the roads, not of drugs or weapons (« le trafic de drogue démantelé »). On normalised text. */
 export const TRAFIC = String.raw`trafic(?! (?:de |d )?(?:drogues?|stupefiants?|cocaine|cannabis|zamal|armes?|influence|migrants?|especes)\b)`;
 
+// A road's barrage, not a dam's nor football's play-offs (« cinq clubs menacés par les barrages, le maintien se joue ce
+// dimanche », Le Quotidien, 21/11/2026, under « manifestations et blocages »). On normalised text.
+const BARRAGE = String.raw`(?<!(?:menace\w* par les|menaces? de|matchs? de|match d|places? de|tour de|finale de|qualifi\w* pour les|disputer les|jouer les|en) )barrages?(?! (?:de takamaka|hydro\w*|d irrigation|d accession|de (?:montee|maintien|relegation|promotion)|aller|retour)\b)`;
+// A gathering, not a party: « le Rassemblement national », « le Rassemblement réunionnais » (Clicanoo, 22/11/2026).
+const RASSEMBLEMENT = String.raw`rassemblement\w*(?! (?:national|reunionnais|pour la republique)\b)`;
+// The words that say people in the streets or roads blocked wherever they are in the lead; « mobilisation » alone says
+// it in the headline only: « Cette mobilisation s'inscrivait dans le cadre du 37e anniversaire de la Convention
+// internationale des droits de l'enfant » (Freedom, 22/11/2026, 700 children at a day on their rights in Bras-Panon).
+const MOBILISES = String.raw`${BARRAGE}|blocages?|bloqu\w*|manifest\w*|gilets? jaunes?|${RASSEMBLEMENT}|greve\w*|grevistes?|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*`;
+const MOBILISES_RE = new RegExp(String.raw`\b(?:${MOBILISES})\b`);
+const MOBILISATION_RE = new RegExp(String.raw`\b(?:${MOBILISATION})\b`);
+
 /** The subjects, for the questions people ask on a day like this. */
 export const SUJETS: { id: string; nom: string; re: RegExp }[] = [
-  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:barrages?(?! (?:de takamaka|hydro\w*|d irrigation)\b)|blocages?|bloqu\w*|manifest\w*|${MOBILISATION}|gilets? jaunes?|rassemblement\w*|greve\w*|grevistes?|cortege|violences urbaines|couvre feu|emeute\w*|affrontement\w*)\b`) },
+  { id: "mobilisation", nom: "manifestations et blocages", re: new RegExp(String.raw`\b(?:${MOBILISES}|${MOBILISATION})\b`) },
   { id: "route", nom: "routes et circulation", re: new RegExp(String.raw`\b(?:routes?|circulation|${TRAFIC}|bouchons?|embouteillage\w*|${ACCIDENT}|rn ?\d+|quatre voies|littoral|basculement|radiers?|deviation|chaussee|inforoutes?)\b`) },
   // « Vigilance » with its colour or a word of the weather only: « le CROS prône la vigilance » is no weather (24/10/2026).
   { id: "meteo", nom: "météo et cyclones", re: new RegExp(`\\b(?:${WEATHER}|vigilance (?:jaune|orange|rouge|violette|meteo\\w*|cyclon\\w*|fortes?)|alerte cyclonique)\\b`) },
@@ -342,9 +354,11 @@ export const SUJETS: { id: string; nom: string; re: RegExp }[] = [
   { id: "sport", nom: "sport", re: /\b(?:sport\w*|match\w*|football|handball|volley|basket|rugby|surf|trail|grand raid|championn\w*|competition\w*)\b/ },
 ];
 
-export function sujetsOf(text: string): string[] {
+/** The subjects of a headline and its lead (`text`); `titre`, the headline alone, when known: « mobilisation » said there only. */
+export function sujetsOf(text: string, titre?: string): string[] {
   const t = normalize(text);
-  const ids = SUJETS.filter((s) => s.re.test(t)).map((s) => s.id);
+  const seule = titre !== undefined && !MOBILISES_RE.test(t) && !MOBILISATION_RE.test(normalize(titre));
+  const ids = SUJETS.filter((s) => s.re.test(t) && !(seule && s.id === "mobilisation")).map((s) => s.id);
   // « Retour en phase de vigilance » of the volcano: not the weather, unless a word of the weather says it too.
   return ids.includes("volcan") && ids.includes("meteo") && !WEATHER_WORD.test(t) ? ids.filter((id) => id !== "meteo") : ids;
 }
@@ -413,7 +427,7 @@ function info(media: string, titre: string, raw: string, publie: Date, whole = "
     direct: opts.direct || undefined,
     ...places(found, lead && new Set(places(hits(titre)).communes)),
     // The subject is in the headline and the lead.
-    sujets: sujetsOf(`${titre} ${body.slice(0, 300)}`),
+    sujets: sujetsOf(`${titre} ${body.slice(0, 300)}`, titre),
   };
 }
 

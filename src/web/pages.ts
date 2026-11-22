@@ -211,9 +211,30 @@ export const followed = (list = SOCIAL) => list.filter((s) => s.url);
 /** Visits from the site's own links are counted apart (src/metrics.ts); not on GitHub, which brings none back to count. */
 const fromSite = (url: string) => (url === GITHUB ? url : `${url}${url.includes("?") ? "&" : "?"}ref=site`);
 
+/**
+ * Each account's logo is written once per page, as a <symbol> at the top of the bar (`accountSymbols`), and every link
+ * to it, in the bar, the menu and the footer, draws it with <use>: three copies of six logos weighed 11.8 KB of each
+ * page. The symbol keeps the logo's own fill or stroke; currentColor is the colour of the link that draws it.
+ */
+const symbolId = (s: Social) => `c-${s.nom.toLowerCase()}`;
+const ownLogo = (s: Social) => SOCIAL.includes(s) && !!s.url;
+
+/** The logos of the accounts that have an address, each a <symbol>, in an <svg> that takes no room. */
+export function accountSymbols(): string {
+  const symbols = followed().map((s) => {
+    const [, attrs, body] = s.svg.match(/^<svg ([^>]*)>([^]*)<\/svg>$/)!;
+    const kept = attrs.replace(/\s*(?:viewBox|aria-hidden)="[^"]*"/g, "").trim();
+    return `<symbol id="${symbolId(s)}" viewBox="0 0 24 24"${kept ? ` ${kept}` : ""}>${body}</symbol>`;
+  });
+  return symbols.length ? `<svg hidden aria-hidden="true">${symbols.join("")}</svg>` : "";
+}
+
 /** Each account as a link, its logo and its name; the logo alone in the bar, where its label names it. */
 const accountLinks = (list = SOCIAL, logoOnly = false) =>
-  followed(list).map((s) => `<a href="${esc(fromSite(s.url))}" rel="noopener" aria-label="rundata.re sur ${esc(s.nom)}">${s.svg}${logoOnly ? "" : esc(s.nom)}</a>`);
+  followed(list).map((s) => {
+    const logo = ownLogo(s) ? `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${symbolId(s)}"/></svg>` : s.svg;
+    return `<a href="${esc(fromSite(s.url))}" rel="noopener" aria-label="rundata.re sur ${esc(s.nom)}">${logo}${logoOnly ? "" : esc(s.nom)}</a>`;
+  });
 
 /** The links two by two, each group kept on one line, the last one by three when they are odd: never one left alone. */
 const paired = (links: string[]) => {
@@ -1653,7 +1674,7 @@ function header(path: string, origin: string, u: Urgent): string {
   // The accounts in the bar on wide screens; on a phone, in the menu, so that the bar keeps to the brand and two buttons.
   const top = accountLinks(SOCIAL, true);
   const sheet = accountLinks();
-  return `<header class="top"><div class="wrap bar">
+  return `${accountSymbols()}<header class="top"><div class="wrap bar">
   <a class="brand" href="/">${logo()}<span>rundata<span class="tld">.re</span></span></a>
   <nav class="quick" aria-label="Principales catégories">${quick}</nav>
   ${top.length ? `<nav class="follow-top" aria-label="Suivre rundata.re">${top.join("")}</nav>` : ""}

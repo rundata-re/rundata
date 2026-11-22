@@ -123,9 +123,11 @@ describe("the order of the pages", () => {
     const foot = homePage(O, null, NOW).split('<footer class="foot')[1];
     for (const s of SOCIAL) {
       const link = `<a href="${s.nom === "GitHub" ? s.url : `${s.url}?ref=site`}" rel="noopener" aria-label="rundata.re sur ${s.nom}">`;
-      expect(top).toContain(`${link}${s.svg}</a>`);
-      expect(sheet).toContain(`${link}${s.svg}${s.nom}</a>`);
-      expect(foot).toContain(`${link}${s.svg}${s.nom}</a>`);
+      // Each logo is drawn from its <symbol>, written once per page.
+      const logo = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#c-${s.nom.toLowerCase()}"/></svg>`;
+      expect(top).toContain(`${link}${logo}</a>`);
+      expect(sheet).toContain(`${link}${logo}${s.nom}</a>`);
+      expect(foot).toContain(`${link}${logo}${s.nom}</a>`);
     }
   });
 

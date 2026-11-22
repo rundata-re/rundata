@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { BAR_LEFT_OUT, follow, hook, placePage, SOCIAL, type Social } from "../src/web/pages.js";
+import { BAR_LEFT_OUT, CSS, follow, hook, placePage, SOCIAL, type Social } from "../src/web/pages.js";
 import { homePage } from "../src/web/home.js";
 import { pressePage } from "../src/web/presse.js";
 import { pageOf } from "../src/web/places.js";
@@ -152,10 +152,19 @@ describe("sharing and following", () => {
 describe("rundata.re's accounts", () => {
   const facebook = SOCIAL.find((s) => s.nom === "Facebook")!;
 
+  it("keep « Suivre rundata.re : » in one piece, one span that the footer's flex gap cannot split", () => {
+    const line = follow();
+    const inner = line.slice('<p class="social">'.length, -"</p>".length);
+    expect(inner.startsWith('<span class="suivre">Suivre rundata.re :</span> <span>')).toBe(true);
+    expect(inner.endsWith("</span>")).toBe(true);
+    expect(inner.split("Suivre").length).toBe(2);
+    expect(CSS).toContain(".social>.suivre{display:block}");
+  });
+
   it("are in every footer, with their logo, their name and ?ref=site", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const foot = html.slice(html.indexOf('<footer class="foot'));
-    expect(foot).toContain(`<p class="social">Suivre rundata.re : <span><span class="pair"><a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Facebook"><svg`);
+    expect(foot).toContain(`<p class="social"><span class="suivre">Suivre rundata.re :</span> <span><span class="pair"><a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Facebook"><svg`);
     expect(foot).toContain(`<a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener" aria-label="rundata.re sur Instagram"><svg`);
     expect(foot).toContain(`<a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Threads"><svg`);
     expect(foot).toContain(`<a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener" aria-label="rundata.re sur TikTok"><svg`);

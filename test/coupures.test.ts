@@ -192,6 +192,13 @@ describe("coupures d'eau", () => {
     expect(noticeCard(noticeRow(benoit, new Date("2026-11-20T10:00:00Z")))).toContain("Chemin Pinguet et les voies adjacentes</p>");
     expect(salazie.secteurs).toEqual(["Mare à Vieille Place", "Mare à Citron", "Bois de Pomme", "Mare à Goyaves", "Petit Sable", "Radier", "Fleurs Jaunes", "Secteur du village"]);
   });
+  it("writes a notice card with no start hour « Jusqu'au … », never « undefined → … » (1312, 23/11/2026)", () => {
+    const n = { titre: "Interruption de la distribution", communes: ["Saint-Paul"], distributeur: "La Créole", publie_le: "20/11/2026 à 07:30", coupure: { a: "vendredi 20/11 à 12:00", etat: "en cours" }, secteurs: [], secteurs_complets: false, texte: "" } as unknown as Parameters<typeof noticeCard>[0];
+    const card = noticeCard(n);
+    expect(card).toContain("<b>Jusqu'au vendredi 20/11 à 12:00</b>");
+    expect(card).not.toContain("undefined");
+    expect(card).not.toContain(" → vendredi");
+  });
 
   it("gives a list of streets only when it was read whole", () => {
     const cirest = parseCirest(JSON.parse(fixture("cirest.json")));

@@ -258,7 +258,7 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     ? card("drop", "Coupures d'eau",
         (r.coupures_eau.injoignable ? `<p class="note">${silentText(r.coupures_eau.injoignable)}</p>` : "") +
         (r.coupures_eau.avis.length
-          ? `<ul class="plain">${r.coupures_eau.avis.map((n) => `<li>${n.ne_pas_boire ? "<b>Eau à ne pas boire</b> · " : ""}${li({ titre: n.titre, lien: n.lien }).slice(4, -5)}${n.coupure ? ` <span class="note">${esc(n.coupure.a ? `${n.coupure.de} → ${n.coupure.a}` : `à partir du ${n.coupure.de}`)}${n.coupure.etat ? `, ${esc(n.coupure.etat)}` : ""}</span>` : ""}</li>`).join("")}</ul>`
+          ? `<ul class="plain">${r.coupures_eau.avis.map((n) => `<li>${n.ne_pas_boire ? "<b>Eau à ne pas boire</b> · " : ""}${li({ titre: n.titre, lien: n.lien }).slice(4, -5)}${n.coupure ? ` <span class="note">${esc(n.coupure.de && n.coupure.a ? `${n.coupure.de} → ${n.coupure.a}` : n.coupure.de ? `à partir du ${n.coupure.de}` : `jusqu'au ${n.coupure.a}`)}${n.coupure.etat ? `, ${esc(n.coupure.etat)}` : ""}</span>` : ""}</li>`).join("")}</ul>`
           : r.coupures_eau.injoignable ? ""
           : `<p>${esc(r.coupures_eau.note ?? noCut(r.coupures_eau))}</p>`) +
         // Shared: who distributes which networks, and the mairie's site for the one whose notices are not read.

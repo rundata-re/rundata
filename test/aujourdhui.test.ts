@@ -162,6 +162,20 @@ describe("the town hall in the page of a commune's day", () => {
   });
 });
 
+describe("a cut whose notice writes no start hour (1312, 20/11/2026)", () => {
+  it("says its end, never « undefined → … »", () => {
+    const p = pageOf("saint-paul")!;
+    const r = resume(p, full(p.nom) as never, NOW);
+    const avis = (r.coupures_eau as unknown as { avis: { coupure?: { de?: string; a?: string } }[] }).avis;
+    avis[0].coupure = { de: undefined, a: "vendredi 20/11 à 12:00" };
+    const html = aujourdhuiPage("https://rundata.re", p, r, null);
+    expect(html).toContain("jusqu&#39;au vendredi 20/11 à 12:00");
+    expect(html).not.toContain("undefined →");
+    avis[0].coupure = { de: "jeudi 19/11 à 08:00", a: "vendredi 20/11 à 12:00" };
+    expect(aujourdhuiPage("https://rundata.re", p, r, null)).toContain("jeudi 19/11 à 08:00 → vendredi 20/11 à 12:00");
+  });
+});
+
 describe("the top of the page of a commune's day", () => {
   const p = pageOf("salazie")!;
   const vigil = (maintenant: string, above: boolean, alerte_cyclonique?: string) => ({ maintenant, au_dessus_du_vert: above, alerte_cyclonique });

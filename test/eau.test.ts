@@ -8,6 +8,8 @@ import { CONSIGNE } from "../src/eau/cyclone.js";
 import { bathSentences, COMMON, noteBaignade, qualiteEau, sansPrelevement, siteNamed, sujetOf, tapNote, tapSentence } from "../src/tools/eau.js";
 import { distributeur } from "../src/eau/distributeurs.js";
 import { configure, gather } from "../src/eau/ile.js";
+import { withLectures } from "../src/lectures.js";
+import { fraicheur } from "../src/tools/fraicheur.js";
 import { eauPage } from "../src/web/domains.js";
 import { coupuresCommunePage, eauFaq, reseauxCommune, secheresseLigne } from "../src/web/coupures.js";
 import { PAGES } from "../src/web/places.js";
@@ -284,17 +286,49 @@ describe("qualité de l'eau", () => {
     configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
     try {
       vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
-      const b = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+      const { value, lectures } = await withLectures(() => qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+      const b = body(value);
       const note = "Le site de l'ARS ne répond pas\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).";
       expect(b.baignade.sites).toEqual([row]);
       expect(b.baignade.copie).toBe(note);
       expect(b.resume).toBe(`${live.resume} ${note}`);
       expect(b.erreur).toBeUndefined();
+      // The answer is as fresh as the copy: its time, not the time of the call.
+      expect(fraicheur(b, lectures, NOW).lue_a).toBe("24/10 07:12");
       // A commune asked: its sites in the copy, the others' failure is the answer's.
       expect(body(await qualiteEau(cache(), "Saint-Pierre", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
       // Without a copy stored, the error stays the answer.
       configure(undefined);
       expect(body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW)).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
+    } finally {
+      configure(undefined);
+    }
+  });
+
+  it("names the sites taken from the island's copy when the others were read live", async () => {
+    // Every site of Saint-Pierre read from the one page of the fixtures.
+    const served = globalThis.fetch;
+    const same = (url: string) => url.replace(/site=\d+/, "site=974000709");
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => served(same(url), init));
+    const live = body(await qualiteEau(cache(), "Saint-Pierre", "baignade", NOW));
+    const [first, ...others] = live.baignade.sites;
+    expect(others.length).toBeGreaterThan(0);
+    const site = SITES.find((s) => s.nom === first.site && s.commune === "Saint-Pierre")!;
+    const { prelevements_en_retard: _gap, ...kept } = first;
+    configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+    try {
+      // The ARS's site answers for every site but this one.
+      vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+        if (url.includes(`site=${site.id}&`)) throw new TypeError("fetch failed");
+        return served(same(url), init);
+      });
+      const { value, lectures } = await withLectures(() => qualiteEau(cache(), "Saint-Pierre", "baignade", NOW));
+      const b = body(value);
+      expect(b.baignade.sites.slice(1)).toEqual(others);
+      expect(b.baignade.copie).toBe(`Le site de l'ARS ne répond pas pour ${first.site}\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).`);
+      expect(b.resume.endsWith(` ${b.baignade.copie}`)).toBe(true);
+      // The oldest of what is served dates the answer: the copy's time.
+      expect(fraicheur(b, lectures, NOW).lue_a).toBe("24/10 07:12");
     } finally {
       configure(undefined);
     }

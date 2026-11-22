@@ -2124,10 +2124,15 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T | null> {
  * build of 70 to 90 subrequests, its data center (in the United States) having no copy or one too old; the robots
  * waited 0.54 s in the middle, 3.1 s at the 90th percentile and up to 22 s over 7 days (Analytics Engine). Built by the
  * views only, never by the scheduled event (each would take some 80 of its 600 subrequests). A view writes KV only when
- * KV has no copy of the last FRESH_SECONDS (`Cache.getFrom`): one write per key every 5 minutes, 48 keys, 414 720 a
- * month at most (BUDGET.md).
+ * KV has no copy of the last FRESH_SECONDS (`Cache.getFrom`): one write per key every 5 minutes.
+ *
+ * The weather of the 6 places that are not communes (web:lieu:<lieu>: Piton de la Fournaise, Maïdo, Plaine des Cafres,
+ * Hell-Bourg, L'Hermitage, Saint-Gilles-les-Bains), since 22/11/2026: kept by data center only, a view where it had none
+ * built /meteo/<lieu> from nothing, 30 to 55 subrequests before the answer, up to WAIT_MS for a person and 17.5 s for
+ * OAI-SearchBot (21 to 22/11). Read 327 times in 7 days, in 231 slots of 5 minutes. 55 keys in all, 475 200 writes a
+ * month at most (BUDGET.md; test/meteo-ile.test.ts keeps all of KV's writes under `KV_WRITES_CEILING`).
  */
-export const ISLAND_PAGES = new Set(["web:meteo", ...PAGES.filter((p) => p.commune).flatMap((p) => [`web:commune:${p.slug}`, `web:lieu:${p.slug}`])]);
+export const ISLAND_PAGES = new Set(["web:meteo", ...PAGES.filter((p) => p.commune).map((p) => `web:commune:${p.slug}`), ...PAGES.map((p) => `web:lieu:${p.slug}`)]);
 /**
  * How long a view waits for the island's copy in KV, ms, when its data center's is older than FRESH_SECONDS: past it,
  * the data center's copy is served, as before. A read of KV slower than a tool call's time was seen three times on

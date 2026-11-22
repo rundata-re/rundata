@@ -1041,7 +1041,8 @@ export const ISLAND_READS: Record<string, number> = {
  * The communes' page copies kept for the island (web/data.ts ISLAND_PAGES, since 20/11/2026: web:commune:<commune>,
  * web:lieu:<commune>) that each entry reads, besides ISLAND_READS: asked of KV when its data center's copy is past
  * FRESH_SECONDS, KV read again before its write (`Cache.getFrom`), and written: two reads and a write, three subrequests.
- * /meteo/* and /aujourdhui/* read web:lieu of a commune; resume_du_jour, of a commune too.
+ * /meteo/* reads web:lieu of a place (a commune or, since 22/11/2026, one of the 6 others); /aujourdhui/* and
+ * resume_du_jour, of a commune.
  */
 export const ISLAND_PAGE_COPIES: Record<string, number> = { "/communes/*": 2, "/meteo/*": 1, "/aujourdhui/*": 1, resume_du_jour: 1 };
 const withIsland = (e: Entry): Entry => {
@@ -1175,9 +1176,20 @@ const typeset = (md: string) => md.replace(/ ([:;?!])/g, "\u00a0$1").replace(/«
 export const KV_WRITES_INCLUDED = 1_000_000;
 /** At most one write per page copy of the island every FRESH_SECONDS, whatever the traffic (web/data.ts ISLAND_PAGES). */
 export const islandPagesMonth = () => ISLAND_PAGES.size * (86_400 / PAGE_FRESH_SECONDS) * 30;
+/**
+ * The month's KV writes kept under this, at worst, by test/meteo-ile.test.ts: a fifth of those included left for what
+ * no declaration counts (a deploy's writes, a source read again by hand). A copy added to ISLAND_PAGES (a place added
+ * to web/places.ts) or a task that writes more is counted against it.
+ */
+export const KV_WRITES_CEILING = 800_000;
+const taskWrites = (day: Run, own: Run, actions: Run) =>
+  ((day.kvWrites ?? 0) + (day.kvLists ?? 0) + (own.kvWrites ?? 0) + (own.kvLists ?? 0) + (actions.kvWrites ?? 0) + (actions.kvLists ?? 0)) * 30;
+/** The month's KV writes at worst: the scheduled tasks', and the island's page copies'. */
+export const kvWritesWorst = (entries = REGISTRY) =>
+  taskWrites(perDay("planifiée", entries), perDay("planifiée à part", entries), perDay("actions", entries)) + islandPagesMonth();
 /** The month's KV writes: the scheduled tasks', and the island's page copies' at worst, against those included. */
 export function kvWritesMonth(day: Run, own: Run, actions: Run): string {
-  const tasks = ((day.kvWrites ?? 0) + (day.kvLists ?? 0) + (own.kvWrites ?? 0) + (own.kvLists ?? 0) + (actions.kvWrites ?? 0) + (actions.kvLists ?? 0)) * 30;
+  const tasks = taskWrites(day, own, actions);
   const island = islandPagesMonth();
   return `Écritures KV par mois (30 jours) : ${n(tasks)} pour les tâches ci-dessus, et ${n(island)} au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : ${ISLAND_PAGES.size} clés, une écriture par clé toutes les ${PAGE_FRESH_SECONDS / 60} minutes au plus, quel que soit le trafic). Soit ${n(tasks + island)} au pire, face aux ${n(KV_WRITES_INCLUDED)} incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.\n\n`;
 }

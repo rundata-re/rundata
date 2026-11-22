@@ -68,7 +68,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 Les visites et les questions sont comptées par vue : leur total dépend du trafic.
 
-Écritures KV par mois (30 jours) : 154 350 pour les tâches ci-dessus, et 423 360 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 49 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 577 710 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
+Écritures KV par mois (30 jours) : 154 350 pour les tâches ci-dessus, et 475 200 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 55 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 629 550 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
 
 ## Tâche planifiée
 

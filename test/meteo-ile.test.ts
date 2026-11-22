@@ -156,10 +156,11 @@ describe("the pages of the communes, one copy for the island (web/data.ts ISLAND
     const communes = PAGES.filter((p) => p.commune);
     expect(communes).toHaveLength(24);
     for (const p of communes) expect([ISLAND_PAGES.has(`web:commune:${p.slug}`), ISLAND_PAGES.has(`web:lieu:${p.slug}`)]).toEqual([true, true]);
-    expect(ISLAND_PAGES.size).toBe(49);
-    // A place that is not a commune keeps its copy in its data center.
-    const quartier = PAGES.find((p) => !p.commune)!;
-    expect(ISLAND_PAGES.has(`web:lieu:${quartier.slug}`)).toBe(false);
+    expect(ISLAND_PAGES.size).toBe(55);
+    // The 6 places that are not communes: their weather (/meteo/<lieu>) for the island too, since 22/11/2026.
+    const lieux = PAGES.filter((p) => !p.commune);
+    expect(lieux.map((p) => p.slug).sort()).toEqual(["hell-bourg", "l-hermitage", "maido", "piton-de-la-fournaise", "plaine-des-cafres", "saint-gilles-les-bains"]);
+    for (const p of lieux) expect([ISLAND_PAGES.has(`web:lieu:${p.slug}`), ISLAND_PAGES.has(`web:commune:${p.slug}`)]).toEqual([true, false]);
   });
 
   it("are never built by the scheduled event: some 80 subrequests each, of its 600", async () => {
@@ -169,10 +170,16 @@ describe("the pages of the communes, one copy for the island (web/data.ts ISLAND
     expect(scheduled.filter((k) => /^web:(commune|lieu):/.test(k))).toEqual([]);
   });
 
-  it("cost at most one KV write per key every 5 minutes: 423 360 a month, under half the 1 million included", async () => {
+  it("cost at most one KV write per key every 5 minutes: 475 200 a month, under half the 1 million included", async () => {
     const { islandPagesMonth, KV_WRITES_INCLUDED } = await import("../src/registre.js");
-    expect(islandPagesMonth()).toBe(49 * 288 * 30);
+    expect(islandPagesMonth()).toBe(55 * 288 * 30);
     expect(islandPagesMonth()).toBeLessThan(KV_WRITES_INCLUDED / 2);
+  });
+
+  it("keep all of KV's writes at worst under the ceiling: a place added to web/places.ts is counted against it", async () => {
+    const { kvWritesWorst, KV_WRITES_CEILING, KV_WRITES_INCLUDED } = await import("../src/registre.js");
+    expect(KV_WRITES_CEILING).toBeLessThan(KV_WRITES_INCLUDED);
+    expect(kvWritesWorst()).toBeLessThanOrEqual(KV_WRITES_CEILING);
   });
 
   it("serve the copy another data center built, and write KV once per key in 5 minutes, two builds or not", async () => {

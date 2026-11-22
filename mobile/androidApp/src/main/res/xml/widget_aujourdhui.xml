@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 4×3 et plus : sortir, les routes et l'eau. Mis à jour par WorkManager toutes les 30 min (MiseAJour), pas par le système : updatePeriodMillis à 0.
+     La commune se choisit quand on le pose (configure), et de nouveau d'un appui long (reconfigurable). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="re.rundata.app.android.widget.ChoixCommuneWidget"
+    android:description="@string/widget_aujourdhui_description"
+    android:initialLayout="@layout/widget_chargement"
+    android:minWidth="250dp"
+    android:minHeight="180dp"
+    android:minResizeWidth="250dp"
+    android:minResizeHeight="40dp"
+    android:previewImage="@drawable/widget_apercu"
+    android:previewLayout="@layout/widget_apercu_aujourdhui"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="3"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

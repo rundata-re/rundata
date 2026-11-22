@@ -4,120 +4,349 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalSize
+import androidx.glance.action.Action
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.currentState
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.action.actionStartActivity
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.background
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.background
 import androidx.glance.background
 import androidx.glance.color.ColorProvider
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.ColumnScope
 import androidx.glance.layout.Row
-import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.width
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider as Couleur
 import re.rundata.app.CLAIR
+import re.rundata.app.Commune
+import re.rundata.app.Pages
+import re.rundata.app.Pastille
 import re.rundata.app.SOMBRE
-import re.rundata.app.android.MainActivity
 import re.rundata.app.android.PrefsReglages
 import re.rundata.app.communeDe
 import re.rundata.app.teinte
 
-/** Le widget d'écran d'accueil : la température mesurée de la commune choisie, son heure, la vigilance de sa zone. */
-class WidgetRundata : GlanceAppWidget() {
+/** Les quatre widgets : chacun sa place sur l'écran d'accueil, et ce qu'il montre de sa commune. */
+enum class Forme { TEMPERATURE, BANDEAU, JOURNEE, AUJOURDHUI }
+
+/**
+ * Un widget de rundata.re : la commune choisie quand on le pose (ChoixCommuneWidget), ce qui en a été lu en dernier
+ * (Donnees) et une mise en page par taille (SizeMode.Responsive), qui remplit la place donnée.
+ */
+abstract class WidgetRundata(private val forme: Forme) : GlanceAppWidget() {
     // Un compteur dans l'état Glance : chaque écriture du worker le change (redessiner), et le contenu est relu.
     override val stateDefinition = PreferencesGlanceStateDefinition
 
+    override val sizeMode: SizeMode = SizeMode.Responsive(
+        when (forme) {
+            Forme.TEMPERATURE -> setOf(DpSize(100.dp, 40.dp), DpSize(100.dp, 100.dp))
+            Forme.BANDEAU -> setOf(DpSize(180.dp, 40.dp), DpSize(250.dp, 40.dp), DpSize(250.dp, 100.dp))
+            Forme.JOURNEE -> setOf(DpSize(180.dp, 100.dp), DpSize(250.dp, 100.dp), DpSize(250.dp, 180.dp))
+            Forme.AUJOURDHUI -> setOf(DpSize(250.dp, 180.dp), DpSize(250.dp, 280.dp), DpSize(250.dp, 400.dp))
+        },
+    )
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val encre = ColorProvider(day = CLAIR.encre, night = SOMBRE.encre)
-        val attenue = ColorProvider(day = CLAIR.attenue, night = SOMBRE.attenue)
         provideContent {
             // Lu ici, dans le contenu, et non avant : une session Glance déjà ouverte se recompose sans repasser par
             // provideGlance ; lues avant, les données restaient celles de son ouverture (« Lecture des données… »).
-            currentState<Preferences>()[LECTURE]
-            val choisie = communeDe(PrefsReglages(context).commune)?.nom
-            val d = Donnees.lire(context)
-            val l = lignes(d, choisie)
-            Column(
-                GlanceModifier.fillMaxSize().background(CLAIR.fond, SOMBRE.fond).cornerRadius(20.dp).padding(14.dp)
-                    .clickable(actionStartActivity<MainActivity>()),
-                verticalAlignment = Alignment.Top,
-            ) {
-                // L'heure de lecture en haut, à droite du nom : elle reste visible quand le reste ne tient pas.
-                Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(l.titre, modifier = GlanceModifier.defaultWeight(), style = TextStyle(color = encre, fontSize = 15.sp, fontWeight = FontWeight.Medium), maxLines = 1)
-                    l.lue?.let { Text(it, style = TextStyle(color = attenue, fontSize = 11.sp), maxLines = 1) }
-                }
-                l.grande?.let { Text(it, style = TextStyle(color = encre, fontSize = 36.sp, fontWeight = FontWeight.Bold), maxLines = 1) }
-                l.detail?.let { Text(it, style = TextStyle(color = attenue, fontSize = 12.sp), maxLines = 2) }
-                // La vigilance, touchée : le site officiel de Météo-France.
-                val officiel = GlanceModifier.clickable(actionStartActivity(Intent(Intent.ACTION_VIEW, Uri.parse(d?.officielLien ?: OFFICIEL_VIGILANCE))))
-                for (p in l.vigilance) {
-                    Spacer(GlanceModifier.height(4.dp))
-                    val (fondClair, encreClair) = p.couleur.teinte(CLAIR)
-                    val (fondSombre, encreSombre) = p.couleur.teinte(SOMBRE)
-                    Box(officiel.background(fondClair, fondSombre).cornerRadius(6.dp).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                        Text(p.texte, style = TextStyle(color = ColorProvider(day = encreClair, night = encreSombre), fontSize = 12.sp, fontWeight = FontWeight.Medium), maxLines = 2)
-                    }
-                }
-                l.zone?.let { Text(it, modifier = officiel, style = TextStyle(color = attenue, fontSize = 11.sp), maxLines = 2) }
-                l.officiel?.let { Text(it, modifier = officiel, style = TextStyle(color = ColorProvider(day = CLAIR.lien, night = SOMBRE.lien), fontSize = 11.sp), maxLines = 2) }
-                l.eau?.let {
-                    Spacer(GlanceModifier.height(6.dp))
-                    // Touchée : l'avis du distributeur.
-                    val avis = d?.eauLien?.let { lien -> GlanceModifier.clickable(actionStartActivity(Intent(Intent.ACTION_VIEW, Uri.parse(lien)))) } ?: GlanceModifier
-                    Text(it, modifier = avis, style = TextStyle(color = encre, fontSize = 12.sp), maxLines = 3)
-                }
-                l.alerte?.let {
-                    Spacer(GlanceModifier.height(4.dp))
-                    Text(it, style = TextStyle(color = ColorProvider(day = CLAIR.lave, night = SOMBRE.lave), fontSize = 11.sp), maxLines = 2)
+            val etat = currentState<Preferences>()
+            etat[LECTURE_A]
+            val commune = communeDuWidget(context, etat[COMMUNE])
+            val d = commune?.let { Donnees.lire(context, it.slug) }
+            Cadre(if (commune == null) choisir(context, id) else ouvrir(commune.pageDuJour)) {
+                when (forme) {
+                    Forme.TEMPERATURE -> Temperature(commune, d)
+                    Forme.BANDEAU -> Bandeau(commune, d)
+                    Forme.JOURNEE -> Journee(commune, d)
+                    Forme.AUJOURDHUI -> Aujourdhui(commune, d)
                 }
             }
         }
     }
 
     companion object {
-        private val LECTURE = longPreferencesKey("lecture")
+        /** La commune du widget, son slug ; sans elle, celle de l'appli. */
+        val COMMUNE = stringPreferencesKey("commune")
+        private val LECTURE_A = longPreferencesKey("lecture")
+
+        val TOUS: List<Class<out WidgetRundata>> = listOf(WidgetTemperature::class.java, WidgetBandeau::class.java, WidgetJournee::class.java, WidgetAujourdhui::class.java)
+
+        fun communeDuWidget(context: Context, slug: String?): Commune? = communeDe(slug) ?: communeDe(PrefsReglages(context).commune)
+
+        /** Chaque widget posé, avec sa commune. */
+        suspend fun poses(context: Context): List<Pair<GlanceId, Commune?>> {
+            val m = GlanceAppWidgetManager(context)
+            return TOUS.flatMap { m.getGlanceIds(it) }.map { id ->
+                id to communeDuWidget(context, getAppWidgetState(context, PreferencesGlanceStateDefinition, id)[COMMUNE])
+            }
+        }
+
+        /** Le widget de la classe de `appWidgetId`. */
+        fun pour(context: Context, appWidgetId: Int): WidgetRundata? =
+            when (AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)?.provider?.className) {
+                RecepteurTemperature::class.java.name -> WidgetTemperature()
+                RecepteurBandeau::class.java.name -> WidgetBandeau()
+                RecepteurWidget::class.java.name -> WidgetJournee()
+                RecepteurAujourdhui::class.java.name -> WidgetAujourdhui()
+                else -> null
+            }
 
         /** Redessine chaque widget posé avec ce qui vient d'être écrit (Donnees.ecrire). */
         suspend fun redessiner(context: Context) {
-            for (id in GlanceAppWidgetManager(context).getGlanceIds(WidgetRundata::class.java)) {
-                updateAppWidgetState(context, id) { it[LECTURE] = System.currentTimeMillis() }
-                WidgetRundata().update(context, id)
+            val m = GlanceAppWidgetManager(context)
+            for (classe in TOUS) {
+                val widget = classe.getDeclaredConstructor().newInstance()
+                for (id in m.getGlanceIds(classe)) {
+                    updateAppWidgetState(context, id) { it[LECTURE_A] = System.currentTimeMillis() }
+                    widget.update(context, id)
+                }
             }
         }
     }
 }
 
-class RecepteurWidget : GlanceAppWidgetReceiver() {
-    override val glanceAppWidget: GlanceAppWidget = WidgetRundata()
+class WidgetTemperature : WidgetRundata(Forme.TEMPERATURE)
+class WidgetBandeau : WidgetRundata(Forme.BANDEAU)
+class WidgetJournee : WidgetRundata(Forme.JOURNEE)
+class WidgetAujourdhui : WidgetRundata(Forme.AUJOURDHUI)
+
+// Les couleurs du site, claires de jour et sombres de nuit (le thème du téléphone).
+private val ENCRE = ColorProvider(day = CLAIR.encre, night = SOMBRE.encre)
+private val ATTENUE = ColorProvider(day = CLAIR.attenue, night = SOMBRE.attenue)
+private val LIEN = ColorProvider(day = CLAIR.lien, night = SOMBRE.lien)
+private val LAVE = ColorProvider(day = CLAIR.lave, night = SOMBRE.lave)
+
+private fun ouvrir(adresse: String): Action = actionStartActivity(Intent(Intent.ACTION_VIEW, Uri.parse(adresse)))
+
+/** Sans commune : l'écran du choix, pour ce widget. */
+private fun choisir(context: Context, id: GlanceId): Action {
+    val appWidgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+    return actionStartActivity(
+        Intent(context, ChoixCommuneWidget::class.java).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).setData(Uri.parse("rundata-widget://choix/$appWidgetId")),
+    )
+}
+
+@Composable
+private fun Cadre(action: Action, contenu: @Composable ColumnScope.() -> Unit) {
+    val h = LocalSize.current.height
+    val petit = h < 80.dp
+    Column(
+        GlanceModifier.fillMaxSize().background(CLAIR.fond, SOMBRE.fond).cornerRadius(20.dp)
+            .padding(horizontal = if (petit) 12.dp else 14.dp, vertical = if (petit) 6.dp else if (h < 120.dp) 8.dp else 12.dp).clickable(action),
+        verticalAlignment = Alignment.CenterVertically,
+        content = contenu,
+    )
+}
+
+@Composable
+private fun T(texte: String, taille: TextUnit, couleur: Couleur = ENCRE, gras: Boolean = false, lignes: Int = 1, modifier: GlanceModifier = GlanceModifier) {
+    Text(texte, modifier = modifier, style = TextStyle(color = couleur, fontSize = taille, fontWeight = if (gras) FontWeight.Bold else FontWeight.Normal), maxLines = lignes)
+}
+
+@Composable
+private fun Puce(p: Pastille, action: Action, taille: TextUnit = 12.sp, lignes: Int = 2) {
+    val (fondClair, encreClair) = p.couleur.teinte(CLAIR)
+    val (fondSombre, encreSombre) = p.couleur.teinte(SOMBRE)
+    Box(GlanceModifier.clickable(action).background(fondClair, fondSombre).cornerRadius(6.dp).padding(horizontal = 6.dp, vertical = 2.dp)) {
+        Text(p.texte, style = TextStyle(color = ColorProvider(day = encreClair, night = encreSombre), fontSize = taille, fontWeight = FontWeight.Medium), maxLines = lignes)
+    }
+}
+
+/** Rien à montrer encore : le nom, et ce qui se passe (« Lecture des données… », « Toucher pour choisir… »). */
+@Composable
+private fun Attente(commune: Commune?, d: Donnees?): Boolean {
+    if (commune != null && d != null) return false
+    val l = lignes(d, commune?.nom)
+    T(l.titre, 14.sp, gras = true)
+    l.detail?.let { T(it, 12.sp, ATTENUE, lignes = 2) }
+    return true
+}
+
+/** 2×1 : la température mesurée, sa commune et son heure. Touché : la météo de la commune. */
+@Composable
+private fun ColumnScope.Temperature(commune: Commune?, d: Donnees?) {
+    if (Attente(commune, d)) return
+    commune!!; d!!
+    val haut = LocalSize.current.height >= 100.dp
+    val heure = d.echecA?.let { "mesure de ${d.heure ?: "?"}" } ?: d.heure?.let { "à $it" }
+    val meteo = GlanceModifier.clickable(ouvrir(commune.pageMeteo))
+    if (!haut) {
+        Row(meteo.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            Column(GlanceModifier.defaultWeight()) {
+                T(d.commune, 13.sp, gras = true)
+                heure?.let { T(it, 11.sp, if (d.echecA != null) LAVE else ATTENUE) }
+            }
+            T(d.temperature ?: "–", 26.sp, gras = true)
+        }
+    } else {
+        Column(meteo.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            T(d.commune, 14.sp, gras = true)
+            T(d.temperature ?: "Pas de mesure récente", if (d.temperature != null) 34.sp else 13.sp, gras = d.temperature != null)
+            d.heure?.let { T("mesurée à $it" + (d.station?.let { s -> ", $s" } ?: ""), 11.sp, ATTENUE, lignes = 2) }
+            horsLigne(d)?.let { T(it, 11.sp, LAVE, lignes = 2) }
+        }
+    }
+}
+
+/** 4×1 : la température, la mer et la vigilance côte à côte ; chacune touchée ouvre sa page. */
+@Composable
+private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
+    if (Attente(commune, d)) return
+    commune!!; d!!
+    val taille = LocalSize.current
+    val haut = taille.height >= 100.dp
+    val avecMer = taille.width >= 250.dp && d.mer != null
+    if (haut) {
+        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            T(d.commune, 14.sp, gras = true, modifier = GlanceModifier.defaultWeight())
+            d.lueA?.let { T("Lu à $it", 11.sp, ATTENUE) }
+        }
+    }
+    Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
+        Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
+            T(d.temperature ?: "–", if (haut) 22.sp else 20.sp, gras = true)
+            T(if (haut) "air, ${d.echecA?.let { "mesure de " } ?: "à "}${d.heure ?: "?"}" else (if (d.echecA != null) "mesure de ${d.heure ?: "?"}" else d.commune), 11.sp, if (d.echecA != null) LAVE else ATTENUE)
+        }
+        if (avecMer) {
+            Spacer(GlanceModifier.width(8.dp))
+            Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(Pages.MER)), verticalAlignment = Alignment.CenterVertically) {
+                T(d.mer, if (haut) 22.sp else 20.sp, gras = true)
+                T(if (haut) "mer, par satellite" else "mer", 11.sp, ATTENUE)
+            }
+        }
+        Spacer(GlanceModifier.width(8.dp))
+        val vigilance = ouvrir(Pages.VIGILANCE)
+        Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(vigilance), verticalAlignment = Alignment.CenterVertically) {
+            val v = vigilanceCourte(d)
+            when {
+                v == null -> T("Vigilance non lue", 12.sp, ATTENUE, lignes = 2)
+                v.second != null -> Puce(v.second!!, vigilance, if (haut) 12.sp else 11.sp, lignes = if (haut) 3 else 2)
+                else -> T(v.first, 12.sp, lignes = 2)
+            }
+            if (haut) d.zone?.let { T("zone $it", 11.sp, ATTENUE) }
+        }
+    }
+    if (haut) T(OFFICIEL, 10.sp, LIEN, modifier = GlanceModifier.clickable(ouvrir(d.officielLien ?: OFFICIEL_VIGILANCE)))
+}
+
+/** 4×2 : la journée de la commune, la mesure, la vigilance de sa zone, l'avis d'eau. Touché : la journée sur le site. */
+@Composable
+private fun ColumnScope.Journee(commune: Commune?, d: Donnees?) {
+    if (Attente(commune, d)) return
+    commune!!; d!!
+    val l = lignes(d, commune.nom)
+    val grand = LocalSize.current.height >= 180.dp
+    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        T(l.titre, 15.sp, gras = true, modifier = GlanceModifier.defaultWeight())
+        l.lue?.let { T(it, 11.sp, ATTENUE) }
+    }
+    Row(GlanceModifier.fillMaxWidth().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
+        l.grande?.let { T(it, 34.sp, gras = true) }
+        Spacer(GlanceModifier.width(10.dp))
+        l.detail?.let { T(it, 12.sp, ATTENUE, lignes = 2, modifier = GlanceModifier.defaultWeight()) }
+    }
+    val vigilance = ouvrir(Pages.VIGILANCE)
+    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        for (p in l.vigilance.take(if (grand) 3 else 2)) {
+            Puce(p, vigilance, lignes = 1)
+            Spacer(GlanceModifier.width(4.dp))
+        }
+        l.zone?.let { T(it, 11.sp, ATTENUE, modifier = GlanceModifier.clickable(vigilance)) }
+    }
+    l.officiel?.let { T(it, 11.sp, LIEN, modifier = GlanceModifier.clickable(ouvrir(d.officielLien ?: OFFICIEL_VIGILANCE))) }
+    if (grand) l.prevision?.let { T(it, 11.sp, ATTENUE, lignes = 2, modifier = GlanceModifier.clickable(ouvrir(commune.pageMeteo))) }
+    l.eau?.let {
+        Spacer(GlanceModifier.height(4.dp))
+        T(it, 12.sp, lignes = if (grand) 3 else 2, modifier = GlanceModifier.clickable(ouvrir(commune.pageCoupures)))
+    }
+    l.alerte?.let { T(it, 11.sp, LAVE, lignes = 2) }
+}
+
+/** Le grand widget : que faire aujourd'hui, sortir, les routes et l'eau. Chaque partie touchée ouvre sa page. */
+@Composable
+private fun ColumnScope.Aujourdhui(commune: Commune?, d: Donnees?) {
+    if (Attente(commune, d)) return
+    commune!!; d!!
+    val h = LocalSize.current.height
+    val n = when {
+        h >= 400.dp -> 4
+        h >= 280.dp -> 2
+        else -> 1
+    }
+    Row(GlanceModifier.fillMaxWidth().clickable(ouvrir(commune.pageDuJour)), verticalAlignment = Alignment.CenterVertically) {
+        T(d.commune, 15.sp, gras = true, modifier = GlanceModifier.defaultWeight())
+        d.temperature?.let { T(it, 15.sp, gras = true) }
+        d.lueA?.let { T("  Lu à $it", 11.sp, ATTENUE) }
+    }
+    vigilanceCourte(d)?.let { (texte, p) ->
+        val vigilance = ouvrir(Pages.VIGILANCE)
+        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            if (p != null) Puce(p, vigilance, 11.sp, lignes = 1) else T(texte, 11.sp, ATTENUE)
+            d.zone?.let { T("  zone $it", 11.sp, ATTENUE, modifier = GlanceModifier.clickable(vigilance)) }
+        }
+    }
+    val pages = listOf(commune.pageDuJour, Pages.TRAFIC, commune.pageCoupures)
+    sections(d, n).forEachIndexed { i, s ->
+        Spacer(GlanceModifier.height(6.dp))
+        Column(GlanceModifier.fillMaxWidth().clickable(ouvrir(pages[i]))) {
+            T(s.titre, 11.sp, LIEN, gras = true)
+            if (s.lignes.isEmpty()) s.vide?.let { T(it, 12.sp, ATTENUE, lignes = 2) }
+            for (l in s.lignes) {
+                // L'avis d'eau entier (ses dates et ses secteurs) ; les autres lignes sur deux, sauf au plus grand.
+                T(l.texte, 12.sp, lignes = if (i == 2) 3 else if (n >= 4) 1 else 2)
+                l.apres?.let { T(it, 10.sp, ATTENUE) }
+            }
+            enPlus(s.enPlus)?.let { T(it, 10.sp, ATTENUE) }
+        }
+    }
+    horsLigne(d)?.let {
+        Spacer(GlanceModifier.height(4.dp))
+        T(it, 11.sp, LAVE, lignes = 2)
+    }
+}
+
+/** Les récepteurs : un par widget du sélecteur, chacun avec sa taille de départ et son aperçu (res/xml). */
+abstract class RecepteurRundata(widget: GlanceAppWidget) : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = widget
 
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         MiseAJour.planifier(context)
     }
 
-    /** Au placement d'un widget (et à chaque demande du système) : la journée est lue tout de suite. */
+    /** Au placement d'un widget (et à chaque demande du système) : sa commune est lue tout de suite. */
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
         MiseAJour.planifier(context)
@@ -138,7 +367,13 @@ class RecepteurWidget : GlanceAppWidgetReceiver() {
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-        MiseAJour.annuler(context)
+        // Le dernier widget de ce genre enlevé : la relecture s'arrête quand il n'en reste plus aucun (MiseAJour).
+        MiseAJour.maintenant(context)
     }
 }
 
+class RecepteurTemperature : RecepteurRundata(WidgetTemperature())
+class RecepteurBandeau : RecepteurRundata(WidgetBandeau())
+/** Le nom de 0.1 gardé : le widget « La journée ». */
+class RecepteurWidget : RecepteurRundata(WidgetJournee())
+class RecepteurAujourdhui : RecepteurRundata(WidgetAujourdhui())

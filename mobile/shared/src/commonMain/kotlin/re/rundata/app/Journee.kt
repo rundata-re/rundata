@@ -67,6 +67,24 @@ data class Volcan(val niveau: String?, val eruption: String?, val alerte: Boolea
 
 data class Source(val nom: String, val licence: String?)
 
+/** La température de la mer au large de la commune, mesurée par satellite (le jour de la mesure). */
+data class Mer(val temperature: String, val auLargeDe: String?)
+
+/**
+ * Ce qui reste du jour d'après la PRÉVISION de modèle du résumé, jamais une mesure : « 24,1 °C », « 25,2 °C », « pas de
+ * pluie prévue de 20 h à minuit ». Jamais dite comme une alerte.
+ */
+data class Prevision(val min: String?, val max: String?, val pluie: String?)
+
+/** Une sortie du jour : un événement d'un agenda (avec son statut, « ANNULÉ »…) ou un marché, et son lien. */
+data class Sortie(val titre: String, val quand: String?, val lieu: String?, val statut: String?, val lien: String?, val marche: Boolean = false)
+
+/** Une information des médias sur les routes, ou un avis du réseau de bus, telle quelle, avec son heure et son média. */
+data class InfoRoute(val titre: String, val quand: String?, val media: String?, val lien: String?)
+
+/** Ce que le résumé dit des routes : ses informations, ou rien de lu (null : les médias n'ont pas été lus). */
+data class Routes(val infos: List<InfoRoute>?, val bus: List<InfoRoute>, val littoral: String?)
+
 data class AvisEau(
     val titre: String,
     val nePasBoire: Boolean,
@@ -93,6 +111,13 @@ data class Journee(
     val sources: List<Source>,
     /** « 21/11 19:35 » : quand rundata.re a lu ces données, heure de La Réunion. */
     val lueA: String?,
+    val mer: Mer? = null,
+    val prevision: Prevision? = null,
+    /** Les événements du jour puis les marchés ; null quand les agendas n'ont pas été lus. */
+    val sorties: List<Sortie>? = null,
+    val routes: Routes? = null,
+    /** « runéo » : le distributeur d'eau de la commune. */
+    val distributeur: String? = null,
 )
 
 /**
@@ -140,7 +165,44 @@ fun journeeDe(commune: Commune, resume: JsonObject, meteo: JsonObject?): Journee
         citer = resume.texte("citer"),
         sources = sources,
         lueA = (resume["fraicheur"] as? JsonObject)?.texte("lue_a") ?: meteo?.let { (it["fraicheur"] as? JsonObject)?.texte("lue_a") },
+        mer = (resume["mer"] as? JsonObject)?.let { m ->
+            m.texte("temperature_eau")?.let { Mer(it, (m["au_large_de"] as? JsonArray)?.firstOrNull()?.let { (it as? JsonPrimitive)?.contentOrNull }) }
+        },
+        prevision = ((resume["meteo"] as? JsonObject)?.get("prevision") as? JsonObject)?.get("aujourd_hui")?.let { it as? JsonObject }?.let {
+            Prevision(it.texte("temperature_min"), it.texte("temperature_max"), it.texte("pluie"))
+        },
+        sorties = sortiesDe(resume),
+        routes = (resume["circulation"] as? JsonObject)?.let { c ->
+            Routes(
+                infos = (c["infos_routes"] as? JsonArray)?.mapNotNull { (it as? JsonObject)?.let(::infoDe) },
+                bus = (c["bus"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.let(::infoDe) },
+                littoral = c.texte("route_du_littoral"),
+            )
+        },
+        distributeur = (resume["coupures_eau"] as? JsonObject)?.texte("distributeur"),
     )
+}
+
+/** Les événements du jour, tels quels, puis les marchés du jour : null quand ni l'un ni l'autre n'a été lu. */
+private fun sortiesDe(resume: JsonObject): List<Sortie>? {
+    val agenda = resume["evenements_du_jour"] as? JsonObject
+    val marches = resume["marches_du_jour"] as? JsonObject
+    if (agenda == null && marches == null) return null
+    val evenements = (agenda?.get("liste") as? JsonArray).orEmpty().mapNotNull { e ->
+        val o = e as? JsonObject ?: return@mapNotNull null
+        Sortie(o.texte("titre") ?: return@mapNotNull null, o.texte("quand"), o.texte("lieu"), o.texte("statut"), o.texte("lien"))
+    }
+    val duJour = (marches?.get("liste") as? JsonArray).orEmpty() + (marches?.get("permanents") as? JsonArray).orEmpty()
+    return evenements + duJour.mapNotNull { m ->
+        val o = m as? JsonObject ?: return@mapNotNull null
+        Sortie(o.texte("nom") ?: return@mapNotNull null, o.texte("horaires_aujourd_hui"), null, null, o.texte("lien"), marche = true)
+    }
+}
+
+private fun infoDe(o: JsonObject): InfoRoute? {
+    val titre = o.texte("titre") ?: return null
+    val reseau = o.texte("reseau")?.let { r -> r + ((o["lignes"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }?.takeIf { it.isNotEmpty() }?.let { " " + it.joinToString(", ") } ?: "") }
+    return InfoRoute(titre, o.texte("quand"), o.texte("media") ?: reseau, o.texte("lien"))
 }
 
 /**

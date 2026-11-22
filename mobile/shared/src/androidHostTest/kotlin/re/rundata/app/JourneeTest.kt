@@ -156,4 +156,27 @@ class JourneeTest {
         assertEquals(24, COMMUNES.map { it.slug }.toSet().size)
         assertEquals("https://rundata.re/aujourdhui/l-etang-sale", communeDe("l-etang-sale")!!.pageDuJour)
     }
+
+    @Test
+    fun laMerLaPrevisionLesSortiesEtLesRoutesDuResume() = runTest {
+        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis")))).journee(communeDe("saint-denis")!!)
+        assertEquals(Mer("27\u00a0°C", "Saint-Denis"), j.mer)
+        // Une PRÉVISION, gardée à part de la mesure.
+        assertEquals(Prevision("24,1\u00a0°C", "25,2\u00a0°C", "pas de pluie prévue de 20\u00a0h à minuit"), j.prevision)
+        val sorties = assertNotNull(j.sorties)
+        assertEquals("Exposition Hugues Savalli - 2026", sorties.first().titre)
+        assertEquals("Musée Léon Dierx", sorties.first().lieu)
+        assertEquals("https://www.departement974.fr/agenda/exposition-hugues-savalli-2026", sorties.first().lien)
+        val routes = assertNotNull(j.routes)
+        // Lues, et rien sur les routes : une liste vide, pas null.
+        assertEquals(emptyList(), routes.infos)
+        assertEquals(InfoRoute("Arrêt \"Barachois\" non desservi et reporté", null, "Car Jaune O2", null), routes.bus.single())
+        assertTrue(routes.littoral!!.startsWith("Pas d'annonce récente sur la route du Littoral"))
+        assertEquals("Dionéo", j.distributeur)
+        // Les marchés du jour suivent les événements.
+        val sp = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-pierre")))).journee(saintPierre)
+        assertEquals(listOf("Marché forain de Saint-Pierre", "Marché couvert de Saint-Pierre"), sp.sorties!!.map { it.titre })
+        assertEquals("de 5\u00a0h à\u00a012\u00a0h", sp.sorties!!.first().quand)
+        assertTrue(sp.sorties!!.all { it.marche })
+    }
 }

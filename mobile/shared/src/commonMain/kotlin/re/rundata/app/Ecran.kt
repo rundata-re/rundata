@@ -95,12 +95,20 @@ private fun EnTete(sous: String) {
     }
 }
 
+/** La liste des 24 communes, seule à l'écran : le choix de la commune d'un widget, quand on le pose. */
 @Composable
-private fun ListeDesCommunes(actuelle: Commune?, choisir: (Commune) -> Unit) {
+fun ChoixDeCommune(titre: String, sous: String, actuelle: Commune?, choisir: (Commune) -> Unit) {
+    Box(Modifier.fillMaxSize().background(LocalCouleurs.current.fond).windowInsetsPadding(WindowInsets.safeDrawing)) {
+        ListeDesCommunes(actuelle, choisir, titre, sous)
+    }
+}
+
+@Composable
+private fun ListeDesCommunes(actuelle: Commune?, choisir: (Commune) -> Unit, titre: String = Mots.CHOISIR, sous: String = Mots.SOUS_TITRE) {
     val c = LocalCouleurs.current
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-        item { EnTete(Mots.SOUS_TITRE) }
-        item { Texte(Mots.CHOISIR, 20.sp, gras = true, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
+        item { EnTete(sous) }
+        item { Texte(titre, 20.sp, gras = true, modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
         items(COMMUNES, key = { it.slug }) { commune ->
             Row(
                 Modifier.fillMaxWidth().clickable(role = Role.Button) { choisir(commune) }.padding(horizontal = 20.dp, vertical = 14.dp),

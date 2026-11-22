@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">rundata.re</string>
-    <string name="widget_nom">Météo mesurée</string>
-    <string name="widget_description">La température mesurée de votre commune et la vigilance de sa zone, d\'après rundata.re.</string>
+    <string name="widget_temperature_nom">Température</string>
+    <string name="widget_temperature_description">La température mesurée dans votre commune, avec son heure.</string>
+    <string name="widget_bandeau_nom">Météo, mer et vigilance</string>
+    <string name="widget_bandeau_description">La température mesurée, celle de la mer et la vigilance de la zone, sur une ligne.</string>
+    <string name="widget_nom">La journée</string>
+    <string name="widget_description">La température mesurée de votre commune, la vigilance de sa zone et l\'avis du distributeur d\'eau, s\'il y en a un.</string>
+    <string name="widget_aujourdhui_nom">Aujourd\'hui</string>
+    <string name="widget_aujourdhui_description">Que faire aujourd\'hui : sorties et marchés, routes et bus, avis du distributeur d\'eau.</string>
     <!-- L'aperçu du sélecteur de widgets : un exemple de lecture, pas une mesure. -->
     <string name="apercu_commune">Saint-Denis</string>
     <string name="apercu_temperature">25,5 °C</string>
@@ -10,5 +16,13 @@
     <string name="apercu_vigilance">Vigilance verte</string>
     <string name="apercu_zone">zone Nord</string>
     <string name="apercu_lue">Lu à 21:39</string>
+    <string name="apercu_heure">à 20:48</string>
+    <string name="apercu_mer">27 °C</string>
+    <string name="apercu_sortir">Sortir</string>
+    <string name="apercu_sortie">Marché forain · de 5 h à 12 h</string>
+    <string name="apercu_routes">Routes et bus</string>
+    <string name="apercu_route">Aucune information des médias sur les routes ces dernières heures.</string>
+    <string name="apercu_eau">Eau</string>
+    <string name="apercu_eau_avis">Pas d\'avis de coupure récent ou à venir.</string>
     <string name="apercu_officiel">Consulter le site officiel de Météo-France</string>
 </resources>

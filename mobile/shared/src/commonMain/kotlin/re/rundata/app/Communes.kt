@@ -8,6 +8,14 @@ data class Commune(val slug: String, val nom: String) {
     val pageCoupures: String get() = "$SITE/coupures-eau/$slug"
 }
 
+/** Les pages de l'île entière que l'appli et le widget ouvrent. */
+object Pages {
+    const val MER = "$SITE/mer"
+    const val VIGILANCE = "$SITE/vigilance"
+    const val TRAFIC = "$SITE/trafic"
+    const val ALERTE_CYCLONE = "$SITE/alerte-cyclone"
+}
+
 const val SITE = "https://rundata.re"
 
 /** Les 24 communes, dans l'ordre du site (src/web/places.ts). */

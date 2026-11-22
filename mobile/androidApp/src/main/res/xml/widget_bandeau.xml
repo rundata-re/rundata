@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 4×1 : la température, la mer et la vigilance. Mis à jour par WorkManager toutes les 30 min (MiseAJour), pas par le système : updatePeriodMillis à 0.
+     La commune se choisit quand on le pose (configure), et de nouveau d'un appui long (reconfigurable). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="re.rundata.app.android.widget.ChoixCommuneWidget"
+    android:description="@string/widget_bandeau_description"
+    android:initialLayout="@layout/widget_chargement"
+    android:minWidth="180dp"
+    android:minHeight="40dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="40dp"
+    android:previewImage="@drawable/widget_apercu"
+    android:previewLayout="@layout/widget_apercu_bandeau"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="4"
+    android:targetCellHeight="1"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

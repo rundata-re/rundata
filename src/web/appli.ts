@@ -35,8 +35,8 @@ export function appliPage(origin: string): string {
     <ul>
       <li>« Température » : la température mesurée et son heure ;</li>
       <li>« Météo, mer et vigilance », sur une ligne : la température mesurée, celle de la mer et la vigilance de la zone ;</li>
-      <li>« La journée » : la température mesurée avec sa station, la vigilance de la zone et l'avis d'eau du moment ;</li>
-      <li>« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, l'eau.</li>
+      <li>« La journée » : la température mesurée avec sa station, la vigilance de la zone et l'avis du distributeur d'eau, s'il y en a un ;</li>
+      <li>« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, les avis du distributeur d'eau.</li>
     </ul>
     <p>Ils se mettent à jour toutes les 30 minutes. Sans réseau, ils gardent la dernière lecture, avec son heure.</p>
   </div>

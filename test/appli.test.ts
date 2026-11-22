@@ -23,7 +23,8 @@ describe("/appli, the Android app's trial version", () => {
     expect(page).toMatch(/<h1>L'appli <span class="ident">rundata\.(<wbr class="adr">)?re<\/span> pour Android<\/h1>/);
     expect(page).toContain("La journée de votre commune, en direct sur votre téléphone, et des widgets pour l'écran d'accueil.");
     expect(page).toContain("Quatre widgets pour l'écran d'accueil, chacun pour la commune choisie en le posant :");
-    expect(page).toContain("« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, l'eau.");
+    expect(page).toContain("« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, les avis du distributeur d'eau.");
+    expect(page).toContain("la vigilance de la zone et l'avis du distributeur d'eau, s'il y en a un ;");
     expect(page).toContain("Sans réseau, ils gardent la dernière lecture, avec son heure.");
     // The uninstall words validated on 22/11/2026, under the button: 0.1.2 was signed with another key.
     expect(page).toContain("Désinstallez-la une fois avant d'installer celle-ci : elle est signée avec la clé définitive de l'appli, et Android refuse sinon de la mettre à jour.");

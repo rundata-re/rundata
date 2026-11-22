@@ -4,6 +4,7 @@
  * a command-line client asking for / gets one line saying what this is.
  */
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { appliDe, cleCopie, copieAGarder, copieLue, copyStore, garder, type CopyStore } from "./appli.js";
 import type { Cache } from "./cache.js";
 import { feedReader, stopwatch, type Recorder } from "./metrics.js";
 import { bodyText } from "./http.js";
@@ -116,6 +117,12 @@ export function failed(path: string, err: unknown): Response {
  * `background`: work to finish after the response (the Worker's waitUntil); in Node it just runs.
  * `record`: told of each MCP message and each page served (metrics.ts, usage.ts).
  */
+/** Where the app's copies are kept: this data center's cache in the Worker; a test may give its own. */
+let copies: () => CopyStore | undefined = copyStore;
+export function copiesPour(test: (() => CopyStore | undefined) | undefined) {
+  copies = test ?? copyStore;
+}
+
 export async function handle(request: Request, cache: Cache, background: Background = () => {}, record: Recorder = () => {}): Promise<Response> {
   // The team's scripts are not visitors: neither counted here nor by Cloudflare's Web Analytics (sansBalise).
   if (!equipe(request.headers)) return answer(request, cache, background, record);
@@ -180,8 +187,22 @@ async function answer(request: Request, cache: Cache, background: Background, re
       return withCors(rpcError(400, refused));
     }
     if ("body" in read) watching.read(read.body);
+    // The app's calls: answered from the copy of this data center when it has one, kept when it has none (appli.ts).
+    const key = "body" in read && appliDe(request.headers.get("user-agent") ?? "") ? cleCopie(read.body) : undefined;
+    const store = key ? copies() : undefined;
+    if (key && store) {
+      const kept = await copieLue(store, key, (read.body as { id?: unknown }).id).catch(() => undefined);
+      if (kept) {
+        watching.done(200, undefined, true);
+        return withCors(kept);
+      }
+    }
     const response = await transport.handleRequest(read.request, "body" in read ? { parsedBody: read.body } : undefined);
     watching.done(response.status);
+    if (key && store) {
+      const text = await copieAGarder(response);
+      if (text) background(garder(store, key, text).catch(() => {}));
+    }
     return withCors(response);
   }
   // What the browsers would block under the policy in observation (web/securite.ts): one log line, not a view.

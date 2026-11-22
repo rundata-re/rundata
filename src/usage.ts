@@ -131,7 +131,8 @@ export function watch(request: Request, record: Recorder) {
     vide(id: string | number) {
       empty.add(id);
     },
-    done(status: number, message?: string) {
+    /** `copie`: answered from the app's copy (appli.ts), the transport never ran. */
+    done(status: number, message?: string, copie = false) {
       const refused = status >= 400;
       const error = refused ? (message ?? failure) : undefined;
       if (!messages.length) {
@@ -164,6 +165,7 @@ export function watch(request: Request, record: Recorder) {
           cacheHits,
           cacheLoads,
           size: a?.size,
+          copie: copie || undefined,
         });
       }
     },

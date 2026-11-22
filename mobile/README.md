@@ -2,6 +2,8 @@
 
 La journée d'une commune de La Réunion, et un widget d'écran d'accueil avec la température mesurée et la vigilance de sa zone. Les données viennent uniquement du serveur MCP public de rundata.re (`POST https://rundata.re/mcp`, outils `resume_du_jour`, `vigilance_meteo` et `meteo_actuelle`).
 
+Côté serveur (`src/appli.ts`), les appels de l'appli se reconnaissent à son User-Agent, `rundata.re-android/<version>` (et `… widget` pour le widget). Leur réponse est gardée 5 minutes par outil et par lieu dans le cache de Cloudflare, et les statistiques n'en gardent ni le lieu, ni la commune, ni le pays : seulement « appli » ou « widget » et la version. Un outil que l'appli se met à lire s'ajoute à `APP_TOOLS`.
+
 - `shared/` : le code commun à Android et à l'iPhone (Kotlin Multiplatform). Il contient le client MCP, la journée d'une commune et l'écran principal (Compose Multiplatform).
 - `androidApp/` : l'appli Android et son widget (Jetpack Glance, mis à jour toutes les 30 min par WorkManager).
 - `iosApp/` : l'hôte SwiftUI de l'écran commun. Son projet Xcode est produit et construit sur un Mac (XcodeGen, `project.yml`).

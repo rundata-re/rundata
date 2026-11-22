@@ -7,6 +7,7 @@
  * go nowhere.
  */
 import { left, perInvocation } from "./budget.js";
+import { appliDe } from "./appli.js";
 
 export interface Hit {
   /**
@@ -46,6 +47,8 @@ export interface Hit {
   place?: string;
   /** Tool: the commune of the place understood. */
   commune?: string;
+  /** Tool: answered from the app's copy (appli.ts), not built again. */
+  copie?: boolean;
   /** Page, feed: the HTTP status. */
   status?: number;
   /** Feed: the reader, from its User-Agent (feedReader). */
@@ -119,6 +122,8 @@ export const TEAM = "interne";
  */
 export function visitor(userAgent: string, asn?: number): string {
   if (/rundata-interne/i.test(userAgent)) return TEAM;
+  const app = appliDe(userAgent);
+  if (app) return app.type;
   for (const [re, name] of AGENTS) if (re.test(userAgent)) return name;
   if (/bot|crawler|spider/i.test(userAgent)) return "autre robot";
   if (userAgent.startsWith("Mozilla/")) return asn === META_ASN ? "Meta" : "navigateur";
@@ -271,16 +276,16 @@ export interface Visit {
  * | blob2   | tool, or JSON-RPC method, or HTTP method   | path                                   |
  * | blob3   | place understood, or text not understood   | « bouton » (opened from a question)    |
  * | blob4   | visitor, from the User-Agent; « interne » for the team (teamVisit) | visitor; for a feed, its reader |
- * | blob5   | country                                    | country                                |
+ * | blob5   | country; empty for the app                 | country                                |
  * | blob6   | referring site, « ref:<canal> », or « interne » from a page of the site (origin) | same |
  * | blob7   | JSON-RPC method                            | category: accueil, meteo/*…            |
  * | blob8   | client name (initialize)                   | language: fr, en…                      |
- * | blob9   | client version (initialize)                | audience: humain, assistant, robot…, interne |
+ * | blob9   | client version (initialize); the app's version | audience: humain, assistant, robot…, interne |
  * | blob10  | protocol version                           | HTTP status                            |
  * | blob11  | outcome: ok, vide, erreur, lieu inconnu, rpc …, http … | « app » in the installed app, else empty |
  * | blob12  | protocol error message                     | device: mobile, tablette, ordinateur; empty for a robot |
  * | blob13  | argument names                             | —                                      |
- * | blob14  | place: résolu, inconnu, coordonnées        | —                                      |
+ * | blob14  | place: résolu, inconnu, coordonnées; « copie » for the app's copy | —                       |
  * | blob15  | commune of the place                       | —                                      |
  * | double1 | 1 if answered without error (« vide » too) | 1 if served without error              |
  * | double2 | milliseconds                               | milliseconds                           |
@@ -301,10 +306,20 @@ export function point(hit: Hit, v: Visit): { indexes: string[]; blobs: string[];
     page ? v.language : hit.client ?? "",
     page ? (hit.team ? TEAM : v.audience) : hit.clientVersion ?? "",
     signal ? hit.value ?? "" : page ? String(hit.status ?? "") : hit.protocol ?? "",
-    seen ? v.mode ?? "" : hit.outcome ?? "", seen ? v.device ?? "" : hit.message ?? "", hit.args ?? "", hit.place ?? "", hit.commune ?? "",
+    seen ? v.mode ?? "" : hit.outcome ?? "", seen ? v.device ?? "" : hit.message ?? "", hit.args ?? "", hit.copie ? "copie" : hit.place ?? "", hit.commune ?? "",
   ];
   const doubles = [hit.ok ? 1 : 0, hit.ms ?? 0, hit.subrequests ?? 0, hit.cacheHits ?? 0, hit.cacheLoads ?? 0, hit.kind === "flux" ? hit.subscribers ?? 1 : signal ? hit.lcp ?? 0 : hit.size ?? 0];
   return { indexes: [hit.kind], blobs, doubles };
+}
+
+/**
+ * The app's hits, as kept (appli.ts): nothing of the place it asked for (place, commune, the text asked), its version
+ * in blob9 in place of an initialize's. Any other hit, unchanged.
+ */
+export function sansLieu(hit: Hit, userAgent: string): Hit {
+  const app = appliDe(userAgent);
+  if (!app || (hit.kind !== "mcp" && hit.kind !== "rpc")) return hit;
+  return { ...hit, detail: undefined, place: undefined, commune: undefined, clientVersion: app.version };
 }
 
 /**

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { follow, hook, placePage, SOCIAL, type Social } from "../src/web/pages.js";
+import { BAR_LEFT_OUT, follow, hook, placePage, SOCIAL, type Social } from "../src/web/pages.js";
 import { homePage } from "../src/web/home.js";
 import { pressePage } from "../src/web/presse.js";
 import { pageOf } from "../src/web/places.js";
@@ -113,32 +113,34 @@ describe("sharing and following", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const text = "Météo Cilaos en direct et prévisions : https://rundata.re/meteo/cilaos?ref=wa";
     expect(html).toContain(`<a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Partager sur WhatsApp`);
-    expect(html).toContain(`<p>Suivez rundata.re sur <a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener">Facebook</a> (une info utile chaque matin), <a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener">Instagram</a>, <a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener">Threads</a> ou <a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener">TikTok</a>, et les sorties du week-end le vendredi sur notre <a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener">chaîne WhatsApp</a>.</p>`);
+    expect(html).toContain(`<p>Suivez rundata.re\u00a0: une info utile chaque matin sur <a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener">Facebook</a>, les sorties du week-end le vendredi sur notre <a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener">chaîne WhatsApp</a>. Aussi sur <a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener">Instagram</a>, <a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener">Threads</a>, <a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener">TikTok</a>, <a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener">YouTube</a> et <a href="https://x.com/rundata_re?ref=site" rel="noopener">X</a>.</p>`);
     expect(html.indexOf('class="share wrap"')).toBeLessThan(html.indexOf('id="avis"'));
   });
 
-  it("leaves out of that sentence an account without an address, and says « chaque matin » of Facebook only", () => {
+  it("leaves out of that sentence an account without an address, and promises a rhythm on Facebook and WhatsApp only", () => {
     const sentence = () => textOf(placePage(O, pageOf("cilaos")!, null, NOW).match(/class="share wrap"[^]*?<p>(.*?)<\/p>/)![1]);
     const urls = SOCIAL.map((s) => s.url);
     const only = (...noms: string[]) => SOCIAL.forEach((s, k) => (s.url = noms.includes(s.nom) ? urls[k] : ""));
     try {
       only("Facebook");
-      expect(sentence()).toBe("Suivez rundata.re sur Facebook (une info utile chaque matin).");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook.");
       only("Facebook", "Instagram");
-      expect(sentence()).toBe("Suivez rundata.re sur Facebook (une info utile chaque matin) ou Instagram.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook. Aussi sur Instagram.");
       only("Facebook", "WhatsApp");
-      expect(sentence()).toBe("Suivez rundata.re sur Facebook (une info utile chaque matin), et les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
-      only("Facebook", "Instagram", "Threads");
-      expect(sentence()).toBe("Suivez rundata.re sur Facebook (une info utile chaque matin), Instagram ou Threads.");
-      only("Facebook", "Instagram", "Threads", "TikTok");
-      expect(sentence()).toBe("Suivez rundata.re sur Facebook (une info utile chaque matin), Instagram, Threads ou TikTok.");
-      // No rhythm is promised for Instagram, Threads or TikTok.
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
+      only("Facebook", "WhatsApp", "Instagram", "Threads", "TikTok", "YouTube", "X", "GitHub");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne WhatsApp. Aussi sur Instagram, Threads, TikTok, YouTube et X.");
+      // No rhythm is promised for the networks after « Aussi sur »; a list of where rundata.re is, joined by « et ».
       only("Threads");
       expect(sentence()).toBe("Suivez rundata.re sur Threads.");
+      only("Threads", "X");
+      expect(sentence()).toBe("Suivez rundata.re sur Threads et X.");
       only("Instagram", "WhatsApp");
-      expect(sentence()).toBe("Suivez rundata.re sur Instagram, et les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: les sorties du week-end le vendredi sur notre chaîne WhatsApp. Aussi sur Instagram.");
       only("WhatsApp");
-      expect(sentence()).toBe("Suivez les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
+      only("GitHub");
+      expect(placePage(O, pageOf("cilaos")!, null, NOW).match(/<aside class="share wrap"[^]*?<\/aside>/)![0]).not.toContain("Suivez");
       only();
       expect(placePage(O, pageOf("cilaos")!, null, NOW).match(/<aside class="share wrap"[^]*?<\/aside>/)![0]).not.toContain("Suivez");
     } finally {
@@ -157,19 +159,21 @@ describe("rundata.re's accounts", () => {
     expect(foot).toContain(`<a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener" aria-label="rundata.re sur Instagram"><svg`);
     expect(foot).toContain(`<a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener" aria-label="rundata.re sur Threads"><svg`);
     expect(foot).toContain(`<a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener" aria-label="rundata.re sur TikTok"><svg`);
+    expect(foot).toContain(`<a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener" aria-label="rundata.re sur YouTube"><svg`);
+    expect(foot).toContain(`<a href="https://x.com/rundata_re?ref=site" rel="noopener" aria-label="rundata.re sur X"><svg`);
     expect(foot).toContain(`<a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener" aria-label="rundata.re sur WhatsApp"><svg`);
     // The code last, with no ?ref=site: GitHub brings no visit back to count.
     expect(foot).toContain(`<a href="https://github.com/rundata-re/rundata" rel="noopener" aria-label="rundata.re sur GitHub"><svg`);
     // Two by two, so that a narrow line never leaves one alone.
-    expect(foot).toMatch(/<\/svg>Facebook<\/a><a [^>]+><svg[^]*?<\/svg>Instagram<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>Threads<\/a><a [^>]+><svg[^]*?<\/svg>TikTok<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>WhatsApp<\/a><a [^>]+><svg[^]*?<\/svg>GitHub<\/a><\/span><\/span><\/p>/);
+    expect(foot).toMatch(/<\/svg>Facebook<\/a><a [^>]+><svg[^]*?<\/svg>Instagram<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>Threads<\/a><a [^>]+><svg[^]*?<\/svg>TikTok<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>YouTube<\/a><a [^>]+><svg[^]*?<\/svg>X<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>WhatsApp<\/a><a [^>]+><svg[^]*?<\/svg>GitHub<\/a><\/span><\/span><\/p>/);
   });
 
-  it("draw each logo from one <symbol> per page, in the bar, the menu and the footer", () => {
+  it("draw each logo from one <symbol> per page, in the bar, the menu and the footer (the bar's six networks)", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     for (const s of SOCIAL) {
       const id = `c-${s.nom.toLowerCase()}`;
       expect(html.match(new RegExp(`<symbol id="${id}" viewBox="0 0 24 24"`, "g")), s.nom).toHaveLength(1);
-      expect(html.match(new RegExp(`aria-label="rundata.re sur ${s.nom}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${id}"/></svg>`, "g")), s.nom).toHaveLength(3);
+      expect(html.match(new RegExp(`aria-label="rundata.re sur ${s.nom}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${id}"/></svg>`, "g")), s.nom).toHaveLength(BAR_LEFT_OUT.includes(s.nom) ? 2 : 3);
     }
     // Before the bar, out of the page's flow; each logo keeps its own fill or stroke, in the colour of its link.
     expect(html.indexOf('<svg hidden aria-hidden="true"><symbol id="c-facebook"')).toBeLessThan(html.indexOf('<header class="top">'));
@@ -188,7 +192,7 @@ describe("rundata.re's accounts", () => {
     const page = homePage(O, null, NOW);
     const ld = JSON.parse(page.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)![1]);
     const org = ld.find((x: { "@type": string }) => x["@type"] === "Organization");
-    expect(org.sameAs.slice(0, 5)).toEqual(["https://www.facebook.com/rundata.re", "https://www.instagram.com/rundata.re/", "https://www.threads.com/@rundata.re", "https://www.tiktok.com/@rundatare", "https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q"]);
+    expect(org.sameAs.slice(0, 7)).toEqual(["https://www.facebook.com/rundata.re", "https://www.instagram.com/rundata.re/", "https://www.threads.com/@rundata.re", "https://www.tiktok.com/@rundatare", "https://www.youtube.com/@rundatare", "https://x.com/rundata_re", "https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q"]);
     // The accounts, GitHub among them, then the data.gouv.fr reuse, Glama and LobeHub, each once.
     expect(org.sameAs).toHaveLength(SOCIAL.filter((s) => s.url).length + 3);
     expect(org.sameAs.slice(-2)).toEqual(["https://glama.ai/mcp/servers/rundata-re/rundata", "https://lobehub.com/mcp/rundata-re-rundata"]);

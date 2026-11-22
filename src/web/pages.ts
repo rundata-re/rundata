@@ -192,6 +192,17 @@ export const SOCIAL: Social[] = [
     url: "https://www.tiktok.com/@rundatare",
     svg: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>`,
   },
+  // YouTube's and X's marks from Simple Icons (CC0 1.0).
+  {
+    nom: "YouTube",
+    url: "https://www.youtube.com/@rundatare",
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`,
+  },
+  {
+    nom: "X",
+    url: "https://x.com/rundata_re",
+    svg: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z"/></svg>`,
+  },
   {
     nom: "WhatsApp",
     url: "https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q",
@@ -204,6 +215,9 @@ export const SOCIAL: Social[] = [
     svg: `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943"/></svg>`,
   },
 ];
+
+/** Accounts linked everywhere but in the bar of wide screens, where only the networks to follow fit. */
+export const BAR_LEFT_OUT = ["WhatsApp", "GitHub"];
 
 /** The accounts that have an address. */
 export const followed = (list = SOCIAL) => list.filter((s) => s.url);
@@ -476,10 +490,12 @@ border-bottom:1px solid rgb(255 255 255/.08);box-shadow:0 30px 60px -20px rgb(0 
 .sheet .wrap{padding-block:1rem 1.4rem;display:grid;gap:.9rem}
 .sheet-h{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--on-night-muted)}
 /* Six accounts in 2rem squares, their 24 px logo unchanged: in 2.4rem ones the bar ran onto a second line at every width
-   from 75rem, where it is never wider than .wrap. */
+   from 75rem, where it is never wider than .wrap. With a fifth category (an urgent one: the vigilance, the floods, the
+   volcano), the logos leave the bar, which kept no room for them; the accounts stay in the menu and the footer. */
 .follow-top{display:none}
 @media (min-width:75rem){.follow-top{display:flex;gap:.1rem}.follow-top a{display:grid;place-items:center;width:2rem;height:2rem;border-radius:12px;color:var(--on-night-muted)}
-.follow-top a:hover{color:#fff;background:rgb(255 255 255/.08)}.follow-top svg{width:24px;height:24px}}
+.follow-top a:hover{color:#fff;background:rgb(255 255 255/.08)}.follow-top svg{width:24px;height:24px}
+.bar:has(.quick>:nth-child(5)) .follow-top{display:none}}
 .follow-top a:focus-visible,.social a:focus-visible{outline:2px solid var(--sun);outline-offset:2px;border-radius:6px}
 .sheet .social{gap:.5rem 1.4rem}.sheet .social a{color:var(--on-night);font-weight:600;text-decoration:none}.sheet .social svg{width:24px;height:24px}
 @media (max-width:30rem){.sheet .social{gap:.5rem .9rem}.sheet .social a{font-size:.95rem}.sheet .social svg{width:22px;height:22px}}
@@ -1612,14 +1628,22 @@ export function hook(path: string): string | undefined {
 function share(origin: string, head: Head): string {
   const text = `${head.title.replace(/ · (?:La Réunion \(974\)|974)$/, "")} : ${origin}${head.path}?ref=wa`;
   const link = (s: Social, label = s.nom) => `<a href="${esc(fromSite(s.url))}" rel="noopener">${esc(label)}</a>`;
-  // The info of each morning is Facebook's; no rhythm is promised for Instagram, Threads or TikTok, so they are named without one (marketing).
+  // The two promises first, Facebook's fact every morning and the WhatsApp channel's outings on Friday; then the
+  // other networks, a plain list of where rundata.re is, with no rhythm promised (marketing, 22/11/2026): « Suivez
+  // rundata.re : une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne
+  // WhatsApp. Aussi sur Instagram, Threads, TikTok, YouTube et X. » A network added later goes before « et X ».
   // The code is not an account to follow for news: GitHub stays out of this sentence.
-  const accounts = followed().filter((s) => s.nom !== "WhatsApp" && s.nom !== "GitHub").map((s) => link(s) + (s.nom === "Facebook" ? " (une info utile chaque matin)" : ""));
-  const channel = followed().find((s) => s.nom === "WhatsApp");
-  // « Facebook (une info utile chaque matin), Instagram, Threads ou TikTok ».
-  const on = accounts.length > 1 ? `${accounts.slice(0, -1).join(", ")} ou ${accounts.at(-1)}` : accounts[0];
-  const weekend = channel && `les sorties du week-end le vendredi sur notre ${link(channel, "chaîne WhatsApp")}`;
-  const sentence = on ? `Suivez rundata.re sur ${on}${weekend ? `, et ${weekend}` : ""}.` : weekend ? `Suivez ${weekend}.` : "";
+  const has = (nom: string) => followed().find((s) => s.nom === nom);
+  const facebook = has("Facebook"), channel = has("WhatsApp");
+  const promises = [
+    facebook && `une info utile chaque matin sur ${link(facebook)}`,
+    channel && `les sorties du week-end le vendredi sur notre ${link(channel, "chaîne WhatsApp")}`,
+  ].filter((x): x is string => !!x);
+  const others = followed().filter((s) => !["Facebook", "WhatsApp", "GitHub"].includes(s.nom)).map((s) => link(s));
+  const list = others.length > 1 ? `${others.slice(0, -1).join(", ")} et ${others.at(-1)}` : others[0];
+  const sentence = promises.length
+    ? `Suivez rundata.re\u00a0: ${promises.join(", ")}.${list ? ` Aussi sur ${list}.` : ""}`
+    : list ? `Suivez rundata.re sur ${list}.` : "";
   return `<aside class="share wrap" aria-label="Partager et suivre"><div class="card">
   <a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Partager sur WhatsApp ${EXTERNAL}</a>
   ${sentence ? `<p>${sentence}</p>` : ""}
@@ -1672,7 +1696,9 @@ function header(path: string, origin: string, u: Urgent): string {
     return `<p class="sheet-h">${esc(g.nom)}</p>\n      <ul class="grid groupe">${list.map((m) => `<li>${link(m)}</li>`).join("")}</ul>${cyc}`;
   }).join("\n      ");
   // The accounts in the bar on wide screens; on a phone, in the menu, so that the bar keeps to the brand and two buttons.
-  const top = accountLinks(SOCIAL, true);
+  // In the bar, the networks to follow only: the WhatsApp channel and the code are in the menu and the footer (eight
+  // logos no longer fit beside the categories, 22/11/2026).
+  const top = accountLinks(SOCIAL.filter((s) => !BAR_LEFT_OUT.includes(s.nom)), true);
   const sheet = accountLinks();
   return `${accountSymbols()}<header class="top"><div class="wrap bar">
   <a class="brand" href="/">${logo()}<span>rundata<span class="tld">.re</span></span></a>

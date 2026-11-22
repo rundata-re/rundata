@@ -48,7 +48,7 @@ describe("/appli, the Android app's trial version", () => {
   it("leads the short address of the file to the pre-release's asset", async () => {
     const res = await handle(get("/appli/rundata-re.apk"), new Cache());
     expect(res.status).toBe(302);
-    expect(res.headers.get("location")).toBe("https://github.com/rundata-re/rundata/releases/download/android-v0.1.2/rundata-re-0.1.2.apk");
+    expect(res.headers.get("location")).toBe("https://github.com/rundata-re/rundata/releases/download/android-v0.1.2-1/rundata-re-0.1.2.apk");
     expect(res.headers.get("x-robots-tag")).toBe("noindex");
   });
 

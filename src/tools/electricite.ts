@@ -142,12 +142,14 @@ export async function newestMix(cache: Cache): Promise<Cached<edf.Mix>> {
 }
 
 // `live`: the latest line when the caller has read it already (the page's copy, with its 24 hours).
-export async function electricite(cache: Cache, now = new Date(), lieu?: string, live?: Promise<Cached<edf.Mix>>) {
+// `complet`: every field of the mairies' notices, for the page's copy (its commune tiles); the tool's answer for the
+// island says each notice briefly (tools/courant.ts courantBlock).
+export async function electricite(cache: Cache, now = new Date(), lieu?: string, live?: Promise<Cached<edf.Mix>>, complet = false) {
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
   const [m, sig, courant] = await Promise.all([settle(live ?? newestMix(cache)), settle(edf.signal(cache, now)), cuts(cache)]);
   const hours = sig?.heures;
-  const coupures = courantBlock(courant, res?.lieu.commune, now);
+  const coupures = courantBlock(courant, res?.lieu.commune, now, !complet);
   if (!m && !hours && !courant) {
     return { ...text({ erreur: "EDF ne répond pas pour le moment.", consulter: edf.SOURCE.url }), isError: true };
   }

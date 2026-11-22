@@ -159,6 +159,10 @@ function slotText(s: cc.Creneau, now: Date, past = false): string {
 const stale = (a: cc.AvisCourant, now: Date) =>
   !ahead(a, now) && (now.getTime() - Date.parse(a.publie) > RECENT_DAYS * 86400_000 || localDay(new Date(a.publie)).slice(0, 4) !== localDay(now).slice(0, 4));
 
+/** « Dernier avis de coupure d'électricité publié par la mairie de Saint-André le 19/11 ». */
+const headOf = (a: cc.AvisCourant, now: Date, first: boolean) =>
+  `${first ? "Dernier avis" : "Avis"} de coupure d'électricité publié par ${mairie(a.commune)} le ${ddmm(a.publie, now)}`;
+
 /** What one notice says, in marketing's words. `first`: the commune's latest notice, its « dernier avis ». */
 export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
   if (stale(a, now)) {
@@ -171,8 +175,7 @@ export function sentence(a: cc.AvisCourant, now: Date, first = true): string {
       ? `Coupure d'électricité annoncée par EDF ${at(a.commune)} le ${dayFr(day, now)} : heures et secteurs dans l'avis publié par la mairie`
       : `Avis de coupure d'EDF publié par ${mairie(a.commune)} le ${ddmm(a.publie, now)} : la date, les heures et les secteurs sont dans l'avis`;
   }
-  const by = `${mairie(a.commune)} le ${ddmm(a.publie, now)}`;
-  const head = `${first ? "Dernier avis" : "Avis"} de coupure d'électricité publié par ${by}`;
+  const head = headOf(a, now, first);
   if (a.nature === "en cours") {
     const where = a.secteurs.length ? ` : ${sectors(a.secteurs)}` : "";
     return now.getTime() - Date.parse(a.publie) < NOW_HOURS * 3600_000
@@ -222,6 +225,36 @@ const row = (a: cc.AvisCourant, now: Date, first: boolean): CourantRow =>
       }
     : { texte: sentence(a, now, first), commune: a.commune, lien: a.lien, pdf: a.pdf && !stale(a, now) ? true : undefined };
 
+/**
+ * A notice of a cut today or later in the island's answer of the tool (no commune asked): its first range of hours, how
+ * many others, its link; its streets in the notice, and in the answer for its commune (22/11/2026: four mairies' notices
+ * took `electricite` to 6.3 KB, past its 5.5, Saint-André's three ranges and their streets 1.25 KB of it). A letter of
+ * EDF in PDF and a cut under way keep their sentence, short already.
+ */
+function brief(a: cc.AvisCourant, now: Date, first: boolean): CourantRow {
+  const full = row(a, now, first);
+  const coming = a.creneaux.filter((x) => ends(x) >= localDay(now));
+  const s = coming[0];
+  const own = { commune: full.commune, nature: full.nature, lien: full.lien, ...(full.pdf ? { pdf: full.pdf } : {}) };
+  if (a.pdf || a.nature === "en cours" || !s) return { texte: full.texte, ...own };
+  const when = s.au ? `du ${dayFr(s.jour, now)} au ${dayFr(s.au, now)}` : `le ${dayFr(s.jour, now)}${s.de && s.a ? ` de ${s.de} à ${s.a}` : ""}`;
+  const more = coming.length - 1;
+  const others = more ? `, et ${more === 1 ? "1 autre plage" : `${more} autres plages`} dans l'avis` : "";
+  const where = coming.some((x) => x.secteurs.length || x.autres_lieux) ? "\u00a0; secteurs dans l'avis" : "";
+  return { texte: `${headOf(a, now, first)}\u00a0: coupure programmée ${when}${others}${where}.`, ...own };
+}
+
+/**
+ * The mairies whose latest notice has nothing to come, in one sentence without their links, in the island's answer of
+ * the tool, in marketing's words (22/11/2026: never « sans coupure », read as « no cut »): « Dernier avis sans date à
+ * venir : Sainte-Marie (avis du 02/11), Cilaos (avis du 26/10). Une coupure peut y être prévue sans que nous l'ayons lue. »
+ */
+function nothingAhead(latest: cc.AvisCourant[], now: Date): string | undefined {
+  if (!latest.length) return undefined;
+  const said = latest.map((a) => `${a.commune} (avis du ${ddmm(a.publie, now)})`);
+  return `Dernier avis sans date à venir\u00a0: ${said.join(", ")}. Une coupure peut y être prévue sans que nous l'ayons lue.`;
+}
+
 /** A commune's notices to say: those of today or later, else its latest one; none when its mairie relays none. */
 export function rowsOf(c: CourantAnswer, commune: string, now: Date): CourantRow[] {
   const own = followed(commune) ? c.avis.filter((a) => a.commune === commune) : [];
@@ -263,13 +296,25 @@ export function shortOf(a: Pick<CourantRow, "nature" | "creneaux" | "pdf">, now:
  * What the tool electricite adds: the commune's notices, or, when no place is given, the latest of each mairie that
  * relayed one lately (those of the honesty line): a notice of last year says nothing of the island today.
  */
-export function courantBlock(copy: Cached<CourantAnswer> | undefined, commune: string | undefined, now: Date) {
+export function courantBlock(copy: Cached<CourantAnswer> | undefined, commune: string | undefined, now: Date, court = false) {
   if (!copy) return { indisponible: "Les avis de coupure relayés par les mairies n'ont pas encore été lus : réessayer plus tard." };
   const c = copy.value;
-  const avis = commune ? rowsOf(c, commune, now) : liveCommunes(c, now).flatMap((x) => rowsOf(c, x, now));
+  // `court`: the tool's answer for the island (tools/electricite.ts); the page's copy keeps every field (its tile).
+  const live = commune ? [] : liveCommunes(c, now);
+  const own = (x: string) => c.avis.filter((a) => a.commune === x);
+  const quiet = court ? live.filter((x) => !own(x).some((a) => ahead(a, now))) : [];
+  const avis = commune
+    ? rowsOf(c, commune, now)
+    : court
+      ? live.flatMap((x) => own(x).filter((a) => ahead(a, now)).map((a) => brief(a, now, a === own(x)[0])))
+      : live.flatMap((x) => rowsOf(c, x, now));
+  const latest = quiet.map((x) => own(x)[0]).sort((a, b) => Date.parse(b.publie) - Date.parse(a.publie));
   const silent = (commune ? [commune] : c.indisponibles).flatMap((x) => injoignable(c, x, localTime(copy.fetchedAt), now) ?? []);
   return {
     avis,
+    // Marketing's words (22/11/2026).
+    sans_date_a_venir: court && !commune ? nothingAhead(latest, now) : undefined,
+    detail: court && !commune ? "Plages, secteurs et lien de chaque avis\u00a0: appeler electricite avec la commune." : undefined,
     note: commune && !avis.length && !silent.length ? none(commune) : undefined,
     injoignable: silent.length ? silent : undefined,
     a_savoir: honesty(),

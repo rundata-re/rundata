@@ -9,6 +9,7 @@ import * as rt from "../providers/gtfsrt.js";
 import * as transit from "../providers/transit.js";
 import { why } from "../types.js";
 import { quand } from "./actualites.js";
+import { SITE_URL } from "./citer.js";
 import { asksCrossing, T as FERRY } from "./ferries.js";
 import { a as aLieu, credits, de as deLieu, fr, heure, text } from "./format.js";
 import { rienTrouve } from "../vide.js";
@@ -695,11 +696,18 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
       sources: credits([transit.SOURCE]),
     });
   }
-  const stops = groups.map((g) => ({
+  // A stop named has its page: `page`, which `lien` and the résumé's source cite, is the one that gathers the departures
+  // given when the stops found share it, else the first stop's, each stop then with its own. A place, or the stops served
+  // nearest a stop with no bus, keep /bus.
+  const pages = !near.length && !mort ? groups.map((g) => transit.pageOfStop(g.ids[0])) : [];
+  const shared = pages[0] && pages.every((q) => q?.slug === pages[0]!.slug);
+  const urlOf = (q: transit.StopPage) => `${SITE_URL}/bus/arret/${q.slug}`;
+  const stops = groups.map((g, i) => ({
     nom: g.nom,
     commune: g.commune,
     reseau: transit.NETWORKS[g.reseau]?.nom ?? g.reseau,
     distance_m: near.find((x) => x.g === g) ? Math.round(near.find((x) => x.g === g)!.m / 10) * 10 : undefined,
+    ...(!shared && pages[i] ? { lien: `${urlOf(pages[i]!)}?ref=mcp` } : {}),
   }));
   const where = stops.map((s) => `${s.nom} (${s.commune}, ${s.reseau})`).join(", ");
   const page = transit.pageOfStop(groups[0].ids[0]);
@@ -724,6 +732,7 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
     // Said first: a stop found on some words only may be in another commune than the one meant.
     ...(manque?.length ? { avertissement: missingWords(asked, mort ? mort.map(stopWhere).join(", ") : where, manque) } : {}),
     resume,
+    ...(pages[0] ? { page: urlOf(pages[0]) } : {}),
     arrets: stops,
     // A stop named: the stops nearest it, as its page links them (web/arret.ts), never itself.
     ...(!near.length && !mort && proches.length ? { arrets_proches: proches } : {}),

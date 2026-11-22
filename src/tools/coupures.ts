@@ -28,6 +28,52 @@ const published = (n: notices.Avis) => {
   // A source dated to the day only gets no hour.
   return `${l.slice(8, 10)}/${l.slice(5, 7)}/${l.slice(0, 4)}${n.jour ? "" : ` à ${l.slice(11, 16)}`}`;
 };
+/**
+ * When a cut is, said short for a résumé: « mercredi 25/11 de 08:00 à 17:00 », « dans la nuit du mardi 24 au mercredi
+ * 25/11, de 21:00 à 04:00 », else « du … au … » ; only one end known, that end.
+ */
+export function cutSaid(debut?: string, fin?: string): string | undefined {
+  const day = (l: string) => when(l)!.replace(/ à \d\d:\d\d$/, "");
+  const hour = (l: string) => l.slice(11, 16);
+  if (debut && fin) {
+    if (debut.slice(0, 10) === fin.slice(0, 10)) return `${day(debut)} de ${hour(debut)} à ${hour(fin)}`;
+    const next = new Date(`${debut.slice(0, 10)}T00:00:00Z`).getTime() + 86400_000 === new Date(`${fin.slice(0, 10)}T00:00:00Z`).getTime();
+    if (next && fin.slice(11, 16) <= debut.slice(11, 16)) {
+      // The month said once when both days are in it: « du mardi 24 au mercredi 25/11 ».
+      const first = debut.slice(5, 7) === fin.slice(5, 7) ? day(debut).replace(/\/\d\d$/, "") : day(debut);
+      return `dans la nuit du ${first} au ${day(fin)}, de ${hour(debut)} à ${hour(fin)}`;
+    }
+    return `du ${when(debut)} au ${when(fin)}`;
+  }
+  if (debut) return `à partir du ${when(debut)}`;
+  if (fin) return `jusqu'au ${when(fin)}`;
+}
+
+/** How many notices the résumé of a commune tells one by one; the others are counted, and all are in `avis`. */
+export const AVIS_AU_RESUME = 3;
+/** Streets a résumé names for one notice; past them, how many others, all in its `secteurs_dits`. */
+const VOIES_AU_RESUME = 2;
+
+/**
+ * A notice in a commune's résumé, told apart from the others of the same title: its title, when the cut is, and its
+ * first streets (« Travaux sur le réseau, jeudi 26/11 de 21:00 à 04:00, rue Sainte Anne… »).
+ */
+export function noticeSaid(n: notices.Avis, now: Date): string {
+  const here = nowLocal(now);
+  // Begun: only what the notice plans, never « en cours » (the site does not know whether the water is cut now), in
+  // words that agree with any title (« Travaux sur le réseau, jusqu'au … d'après l'avis »).
+  const going = n.debut && n.debut <= here && n.fin && n.fin >= here;
+  const cut = going ? `jusqu'au ${when(n.fin)} d'après l'avis` : cutSaid(n.debut, n.fin);
+  const streets = n.secteurs_complets && n.secteurs.length ? n.secteurs : [];
+  const more = streets.length - VOIES_AU_RESUME;
+  const where = streets.length
+    ? ` (${streets.slice(0, VOIES_AU_RESUME).join(", ")}${more > 0 ? ` et ${more} autre${more > 1 ? "s" : ""} voie${more > 1 ? "s" : ""}` : ""})`
+    : "";
+  return `${n.titre}${cut ? `, ${cut}` : `, avis du ${publishedShort(n)}`}${where}`;
+}
+
+/** « 21/11 à 10:53 », the day only for a source dated to the day: a résumé's date, without the year. */
+const publishedShort = (n: notices.Avis) => published(n).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1");
 const nowLocal = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16);
 
 /** The notices still worth telling: a cut not over yet, or anything published in the last few days. */
@@ -153,12 +199,30 @@ export function pourAssistant(rows: ReturnType<typeof noticeRow>[]): { avis: Rec
   return { avis, abreges };
 }
 
+/**
+ * The notices of a commune in its résumé, the one not to drink the water left out (said first, in its own words): the cuts soonest first, then the notices without hours, newest first; the
+ * first `AVIS_AU_RESUME` told apart (`noticeSaid`), the others counted (Saint-Denis, 21/11/2026: three « Travaux sur
+ * le réseau » said alike).
+ */
+export function resumeAvis(mine: notices.Avis[], now: Date): string {
+  const order = [...mine].sort((x, y) => {
+    const [kx, ky] = [x.debut ?? x.fin, y.debut ?? y.fin];
+    return kx && ky ? kx.localeCompare(ky) : kx ? -1 : ky ? 1 : y.publie.localeCompare(x.publie);
+  });
+  const rest = order.length - AVIS_AU_RESUME;
+  return order.slice(0, AVIS_AU_RESUME).map((n) => noticeSaid(n, now)).join("\u00a0; ") +
+    (rest > 0 ? `\u00a0; et ${rest} autre${rest > 1 ? "s" : ""} avis, dans la liste des avis` : "");
+}
+
 /** `complet`: the page's build, every field of every notice; the tool's answer is cut to its size (`pourAssistant`). */
 export async function coupuresEau(cache: Cache, lieu: string | undefined, now = new Date(), complet = false) {
   let all: notices.Avis[];
   let silent: FluxMuet[];
+  // When the notices were read: « Pas d'avis … sur le site de Dionéo, lu le 22/11 à 08:47 ».
+  let readAt: Date;
   try {
     const read = await notices.lecture(cache);
+    readAt = read.fetchedAt;
     all = read.value.flatMap((f) => f.avis).sort((x, y) => y.publie.localeCompare(x.publie));
     silent = muets(read, now);
   } catch (err) {
@@ -213,23 +277,31 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const lus = dist?.avis ? { publie_par: dist.par ?? dist.nom, distributeur: dist.partage && dist.par ? undefined : dist.nom, lien: dist.site! } : undefined;
   // No notice found: the distributor and where its notices are, never the bare « aucun avis » (a question on Cambuston
   // was answered without naming the CIREST nor O2LEST).
+  // « Pas d'avis » with where it was looked for and when, never « aucun avis », which reads as « no cut » (marketing).
+  const lu = `, lu le ${published({ publie: readAt.toISOString() } as notices.Avis).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1")}`;
+  // The mairie named as elsewhere, unless the notices read are its own (Cilaos, Sainte-Marie…).
+  const ailleurs = lus && /^(?:la )?(?:ville|commune|mairie)\b/i.test(lus.publie_par) ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   const where = !lus
     ? (dist ? `. D'après l'ARS, ${nomDit(dist)} distribue l'eau ${a(commune)}, et rundata.re ne lit pas ses avis` : "")
     : lus.distributeur === lus.publie_par
-      ? ` dans les avis ${deNom(lus.publie_par)}${shared ? "" : ", qui y distribue l'eau d'après l'ARS"}\u00a0: ${lus.lien}`
-      : ` dans les avis publiés par ${lus.publie_par}\u00a0: ${lus.lien}${shared || !lus.distributeur ? "" : `. D'après l'ARS, ${lus.distributeur} distribue l'eau ${a(commune)}`}`;
+      ? ` sur le site ${deNom(lus.publie_par)}${lu}\u00a0: ${lus.lien}${shared ? "" : `. D'après l'ARS, ${lus.distributeur} y distribue l'eau`}`
+      : ` sur le site ${deNom(lus.publie_par)}${lu}\u00a0: ${lus.lien}${shared || !lus.distributeur ? "" : `. D'après l'ARS, ${lus.distributeur} distribue l'eau ${a(commune)}`}`;
   // A distributor's own site, linked only (SITES_DISTRIBUTEURS): what the commune's page links.
   const siteDist = unread ? SITES_DISTRIBUTEURS[unread.nom] : undefined;
   // Its feed did not answer at the last read: its notices kept said so, or its read said failed, never « aucun avis ».
   const mute = dist?.avis ? muetPour(silent, commune) : undefined;
   // The résumé names the distributor (`where`): the ARS credited beside the notices.
   const named = covered && !mine.length && !mute;
+  // The notices the résumé lists: every one but the one not to drink the water, said before them.
+  const cuts = mine.filter((n) => n !== dry);
   const resume = [
-    dry ? `EAU À NE PAS BOIRE ${a(commune)} (secteurs dans l'avis), d'après l'avis du ${published(dry)} : « ${dry.titre} ».` : "",
-    mine.length
-      ? `${mine.length} avis récent${mine.length > 1 ? "s" : ""} ou à venir ${a(commune)} : ${mine.slice(0, 3).map((n) => n.titre).join("\u00a0; ")}.`
+    // Always first, in its own words, never among the notices counted (the server's safety rule, worded by marketing).
+    dry ? `Eau à ne pas boire ${a(commune)} d'après ${dry.distributeur} (avis du ${publishedShort(dry)})\u00a0: « ${dry.titre} »` +
+      (dry.secteurs_complets && dry.secteurs.length ? `, secteurs\u00a0: ${notices.sectorsSaid(dry.secteurs)}.` : ", secteurs dans l'avis.") : "",
+    cuts.length
+      ? `${cuts.length} avis récent${cuts.length > 1 ? "s" : ""} ou à venir ${a(commune)}\u00a0: ${resumeAvis(cuts, now)}.`
       : mute ? ""
-      : covered ? `Aucun avis de coupure récent ou à venir ${a(commune)}${where}.`
+      : covered ? `Pas d'avis de coupure récent ou à venir ${a(commune)}${where}. ${ailleurs}`
       : unread ? `Pas d'avis en ligne lisible pour ${commune} : rundata.re ne lit pas les avis de coupure de ${unread.nom}, qui y distribue l'eau. ${siteDist ? `Voir le site ${deNom(unread.nom)}, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteDist}, ou la mairie.` : `Voir ${unread.nom} ou la mairie.`}`
       : `Pas d'avis en ligne lisible pour ${commune} : voir la mairie ou le distributeur d'eau.`,
     mute ? mute.texte : "",

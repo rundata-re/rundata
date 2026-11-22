@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Evenement } from "../src/providers/agenda.js";
 import { matcher } from "../src/tools/agenda.js";
-import { citerOf } from "../src/tools/citer.js";
+import { cite, citerOf } from "../src/tools/citer.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
 import { fini, marchesDuJour } from "../src/vie/marches.js";
 
@@ -46,5 +46,25 @@ describe("the AI tools' review of 20/11/2026", () => {
     ] };
     const c = citerOf("restrictions_eau", p);
     expect(c).toBe("rundata.re, d'après Préfecture de La Réunion, VigiEau");
+  });
+  it("names a producer once when another credit lists it beside others: VigiEau's « VigiEau, préfecture de La Réunion » (22/11/2026)", () => {
+    const p = { sources: [
+      { id: "a", nom: "Arrêté sécheresse", attribution: "Préfecture de La Réunion" },
+      { id: "b", nom: "Restrictions d'eau en cas de sécheresse (VigiEau, arrêtés préfectoraux)", attribution: "VigiEau, préfecture de La Réunion" },
+    ] };
+    expect(citerOf("restrictions_eau", p)).toBe("rundata.re, d'après Préfecture de La Réunion, VigiEau");
+    // Two producers never named before: both kept.
+    expect(citerOf("fiche_terrain_x", { sources: [{ id: "d", nom: "DVF", attribution: "DGFiP, Cerema" }] })).toBe("rundata.re, d'après DGFiP, Cerema");
+  });
+  it("names the prefecture once in restrictions_eau's « Source : » sentence of its résumé too, whichever credit comes first (23/11/2026)", () => {
+    const prefecture = { id: "a", nom: "Communiqués de la préfecture", attribution: "Préfecture de La Réunion" };
+    const vigieau = { id: "vigieau", nom: "Restrictions d'eau en cas de sécheresse (VigiEau, arrêtés préfectoraux)", attribution: "VigiEau, préfecture de La Réunion" };
+    for (const sources of [[prefecture, vigieau], [vigieau, prefecture]]) {
+      const r = cite("restrictions_eau", { content: [{ type: "text", text: JSON.stringify({ resume: "Sécheresse à La Réunion : alerte dans 13 communes.", sources }) }] });
+      const out = JSON.parse(r.content[0].text) as { resume: string; citer: string };
+      expect(out.resume.match(/préfecture/gi)).toHaveLength(1);
+      expect(out.citer.match(/préfecture/gi)).toHaveLength(1);
+      expect(out.resume).toContain(`Source : ${out.citer}, `);
+    }
   });
 });

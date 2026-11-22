@@ -271,7 +271,7 @@ export const PWA_CSS = `.inst{display:grid;gap:.6rem;max-width:44rem;margin-top:
 .inst .later{font:inherit;background:none;border:0;color:var(--muted);text-decoration:underline;padding:.6rem .2rem;cursor:pointer}
 .horsligne{background:var(--hl);color:var(--ink);font-weight:700;padding:.65rem max(16px,env(safe-area-inset-left,0px));text-align:center}
 .gardees{display:grid;gap:.4rem;padding-left:1.2rem}
-.app-page{max-width:44rem;display:grid;gap:1rem}.app-navs{display:grid;gap:.8rem}.app-nav{display:grid;gap:.6rem}.app-nav summary{cursor:pointer}
+.app-page{max-width:44rem;display:grid;gap:1rem}.appli-dl .app-go{display:inline-block;text-decoration:none}.appli ul,.appli ol{padding-left:1.4rem;display:grid;gap:.2rem}.appli code{overflow-wrap:anywhere}.app-navs{display:grid;gap:.8rem}.app-nav{display:grid;gap:.6rem}.app-nav summary{cursor:pointer}
 .app-nav summary h2{display:inline;font-size:1.1rem}.app-nav ol{padding-left:1.4rem;display:grid;gap:.2rem}.app-nav .partage{width:1.1em;height:1.1em;vertical-align:-.15em}
 .app-go[hidden],.app-page [hidden]{display:none}`.replace(/\n/g, "");
 

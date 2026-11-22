@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { busiestStops, departureRow, departures, findStops, searchStops, stopPageDepartures, transports, tripRun, type Departure } from "../src/tools/transports.js";
+import { alertsFor, busiestStops, departureRow, departures, findStops, searchStops, stopPageDepartures, transports, tripRun, type Departure } from "../src/tools/transports.js";
 import { communeFaq } from "../src/web/commune-texte.js";
 import { communePage } from "../src/web/commune.js";
 import type { CommuneData } from "../src/web/data.js";
@@ -49,7 +49,7 @@ describe("a stop's lasting text", () => {
     expect(d.desserte.length).toBeGreaterThan(LIGNES_DITES);
     const html = stopPage(O, p, d, NOW);
     const t = plain(stopText(p, d.desserte));
-    expect(t).toContain(`L'arrêt Gare de St-Pierre se trouve à Saint-Pierre. Il est desservi par ${d.desserte.length} lignes de Car Jaune et d'Alternéo\u00a0: O1 vers Gare de St-Denis, O1X vers Gare de St-Denis et Campus, O2 vers Gare de St-Denis, S1 vers Gare de St-Benoît, S2 vers Gare de St-Benoît, S3 vers Gare du Tampon et Gare de St-Joseph, S4 vers Gare de St-Paul, S5 vers Gare de l'Entre-Deux, et ${d.desserte.length - LIGNES_DITES} autres lignes.`);
+    expect(t).toContain(`L'arrêt Gare de St-Pierre se trouve à Saint-Pierre. Il est desservi par ${d.desserte.length} lignes de Car Jaune et d'Alternéo\u00a0: O1 vers Gare de St-Denis\u00a0; O1X vers Gare de St-Denis ou Campus\u00a0; O2 vers Gare de St-Denis\u00a0; S1 vers Gare de St-Benoît\u00a0; S2 vers Gare de St-Benoît\u00a0; S3 vers Gare du Tampon ou Gare de St-Joseph\u00a0; S4 vers Gare de St-Paul\u00a0; S5 vers Gare de l'Entre-Deux\u00a0; et ${d.desserte.length - LIGNES_DITES} autres lignes.`);
     // Each line once.
     expect(new Set(d.desserte.map((l) => `${l.reseau} ${l.ligne}`)).size).toBe(d.desserte.length);
     // Both networks announce their times in their real-time feed.
@@ -69,7 +69,7 @@ describe("a stop's lasting text", () => {
     const p = pageOf("mairie annexe Hell Bourg");
     const d = await stopPageDepartures(p.groups, NOW);
     const t = plain(stopText(p, d.desserte));
-    expect(t).toContain("L'arrêt Mairie Annexe Hell-Bourg se trouve à Salazie. Il est desservi par 1 ligne d'Estival\u00a0: 83 vers Gare Saint-André, Chemin Terre Plate et Mairie de Salazie.");
+    expect(t).toContain("L'arrêt Mairie Annexe Hell-Bourg se trouve à Salazie. Il est desservi par 1 ligne d'Estival\u00a0: 83 vers Gare Saint-André, Chemin Terre Plate ou Mairie de Salazie.");
     expect(t).toContain("Cette page donne les prochains départs de cette ligne, à l'horaire théorique\u00a0: rundata.re n'a pas d'heures en direct d'Estival.");
     expect(links(stopText(p, d.desserte))).toHaveLength(ARRETS_PROCHES);
     expect(links(stopText(p, d.desserte))).not.toContain(p.slug);
@@ -78,7 +78,7 @@ describe("a stop's lasting text", () => {
   it("says, at a stop of two networks where one has no real-time feed, which one gives its timetable only", () => {
     const p = [...transit.stopPages().values()].find((x) => x.groups.some((g) => g.reseau === "carjaune") && x.groups.some((g) => g.reseau === "citalis"))!;
     const t = plain(stopText(p, [{ ligne: "O1", reseau: "Car Jaune", terminus: ["Gare de St-Pierre"] }, { ligne: "1", reseau: "Citalis", terminus: [] }]));
-    expect(t).toContain("Il est desservi par 2 lignes de Car Jaune et de Citalis\u00a0: O1 vers Gare de St-Pierre, 1.");
+    expect(t).toContain("Il est desservi par 2 lignes de Car Jaune et de Citalis\u00a0: O1 vers Gare de St-Pierre\u00a0; 1.");
     expect(t).toContain("à l'heure annoncée en direct par Car Jaune quand il la publie, sinon à l'horaire théorique. Pour Citalis, rundata.re n'a que l'horaire théorique.");
   });
 
@@ -86,7 +86,7 @@ describe("a stop's lasting text", () => {
     const p = pageOf("Manapany les Bains");
     const d = await stopPageDepartures(p.groups, NOW);
     const html = stopText(p, d.desserte);
-    expect(plain(html)).toContain("Il est desservi par 1 ligne de Car Jaune\u00a0: S1 vers Gare de St-Pierre et Gare de St-Benoît.");
+    expect(plain(html)).toContain("Il est desservi par 1 ligne de Car Jaune\u00a0: S1 vers Gare de St-Pierre ou Gare de St-Benoît.");
     expect(links(html)).toEqual(transit.pagesNear(p).map((x) => x.page.slug));
     expect(links(html)).not.toContain(p.slug);
  
@@ -127,6 +127,23 @@ describe("the links to the stop pages from a commune's page", () => {
     expect(r.arrets_proches.map((x: { nom: string }) => x.nom)).toEqual(transit.pagesNear(station()).map((x) => x.page.nom));
     expect(r.arrets_proches[0]).toMatchObject({ nom: "Gare Routière de St Pierre", commune: "Saint-Pierre" });
     expect(r.arrets_proches.every((x: { distance_m: number }) => x.distance_m >= 0)).toBe(true);
+  });
+});
+
+describe("an alert of a network's feed", () => {
+  it("names every line of it that stops there, even with none of its departures given (the commune's tile)", async () => {
+    const groups = findStops("gare routière Saint-Pierre").groups.filter((g) => g.reseau === "carjaune");
+    const read = await transit.passes(groups.flatMap((g) => g.ids));
+    const n = transit.NETWORKS.carjaune;
+    const routes = [...new Set(read.map((p) => transit.ENDS[p.pattern][0]))].filter((r) => transit.ROUTES[r][0] === "carjaune");
+    expect(routes.length).toBeGreaterThan(2);
+    const alert = { titre: "Arrêt non desservi", lignes: routes.map((r) => n.temps_reel!.lignes[r - n.first_route]), arrets: [], periodes: [] };
+    const feeds = new Map([["carjaune", { at: NOW.getTime() / 1000, trips: {}, cancelled: [], alerts: [alert] }]]);
+    // No departure given: the lines are those of the passes read.
+    const [a] = alertsFor(groups, [], feeds, NOW, read);
+    expect(a.lignes!.length).toBe(routes.length);
+    // Without the passes, as before: only the lines of the departures given, here none.
+    expect(alertsFor(groups, [], feeds, NOW)).toEqual([]);
   });
 });
 

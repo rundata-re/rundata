@@ -242,10 +242,13 @@ export function onceEach(out: Departure[]): Departure[] {
 }
 
 /** Departures from these stops in the next `horizon` seconds, by yesterday's (after midnight), today's and tomorrow's services. */
-export async function departures(groups: transit.StopGroup[], now: Date, horizon = 3 * 3600): Promise<Departure[]> {
+/** The stops of these groups, as the passes are read for them. */
+export const stopIds = (groups: transit.StopGroup[]) => [...byStop(groups).keys()];
+
+export async function departures(groups: transit.StopGroup[], now: Date, horizon = 3 * 3600, read?: Pass[]): Promise<Departure[]> {
   const stopGroup = byStop(groups);
   const c = moment(now);
-  const pass = passing(await transit.passes([...stopGroup.keys()]), stopGroup, horizon, c);
+  const pass = passing(read ?? (await transit.passes([...stopGroup.keys()])), stopGroup, horizon, c);
   const pats = pass.length ? await transit.patterns([...new Set(pass.map((p) => p.pattern))]) : new Map<number, transit.Pattern>();
   return listed(pass, pats, stopGroup, horizon, c);
 }
@@ -402,13 +405,16 @@ export function withPositions(list: Departure[], feeds: Map<string, rt.Realtime>
 }
 
 /** The traffic alerts in force about these stops or the lines of these departures. */
-export function alertsFor(groups: transit.StopGroup[], list: Departure[], feeds: Map<string, rt.Realtime>, now: Date) {
+export function alertsFor(groups: transit.StopGroup[], list: Departure[], feeds: Map<string, rt.Realtime>, now: Date, read: Pass[] = []) {
   const out: { reseau: string; lignes?: string[]; titre: string; detail?: string }[] = [];
+  // The lines that stop there at any hour, from the passes already read: an alert names all of them that it is about,
+  // not only those of the departures given (O2 at Barachois, 22/11/2026, missing from the commune's tile).
+  const routes = [...new Set(read.map((p) => transit.ENDS[p.pattern]?.[0]).filter((r): r is number => r !== undefined))];
   for (const [net, f] of feeds) {
     const n = transit.NETWORKS[net];
     const stops = new Set(groups.filter((g) => g.reseau === net).flatMap((g) => g.ids.map((id) => gtfsStop(n, id))));
-    // The lines of these departures, by their GTFS id, with the name people know them by.
-    const lines = new Map(list.filter((d) => d.reseau === net).map((d) => [gtfsRoute(n, d.route), lineName(d.route).ligne]));
+    // The lines of these departures and of the passes, by their GTFS id, with the name people know them by.
+    const lines = new Map([...list.map((d) => d.route), ...routes].filter((r) => transit.ROUTES[r][0] === net).map((r) => [gtfsRoute(n, r), lineName(r).ligne]));
     for (const a of f.alerts) {
       if (!rt.active(a, now.getTime() / 1000) || out.some((x) => x.titre === a.titre)) continue;
       const named = [...new Set(a.lignes.filter((x) => lines.has(x)).map((x) => lines.get(x)!))];
@@ -562,16 +568,18 @@ const STOP_HELP = "Donner le nom de l'arrêt et sa commune (« Gare routière, S
 
 /** The departures at these stops, of these lines only when given, with the real-time feeds: what a stop's answer shows. */
 async function stopDepartures(groups: transit.StopGroup[], now: Date, cache: Cache | undefined, keep?: (d: Departure) => boolean) {
-  let list = await departures(groups, now);
+  // The passes read once: for the departures, near and far, and for the lines the alerts name, as the stop's page does.
+  const read = await transit.passes(stopIds(groups));
+  let list = await departures(groups, now, 3 * 3600, read);
   if (keep) list = list.filter(keep);
   if (list.length < 3) {
-    list = await departures(groups, now, 20 * 3600);
+    list = await departures(groups, now, 20 * 3600, read);
     if (keep) list = list.filter(keep);
   }
   const feeds = cache ? await realtimeFeeds(groups.map((g) => g.reseau), cache, now) : new Map<string, rt.Realtime>();
   list = applyRealtime(list, feeds, now);
   const shown = withPositions(spread(list), feeds, now);
-  return { shown, feeds, alertes: alertsFor(groups, shown, feeds, now), live: [...new Set(shown.filter((d) => d.retard !== undefined || d.supprime || d.bus).map((d) => transit.NETWORKS[d.reseau].nom))] };
+  return { shown, feeds, read, alertes: alertsFor(groups, shown, feeds, now, read), live: [...new Set(shown.filter((d) => d.retard !== undefined || d.supprime || d.bus).map((d) => transit.NETWORKS[d.reseau].nom))] };
 }
 
 const timetables = (live: string[], feeds: Map<string, rt.Realtime>) => {
@@ -673,9 +681,9 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
     rienTrouve("transports");
     return text({ ...first, resume: `Aucun arrêt de bus trouvé pour « ${asked} ».`, conseil: STOP_HELP, sources: credits([transit.SOURCE]) });
   }
-  const { shown, feeds, alertes, live } = await stopDepartures(groups, now, cache);
+  const { shown, feeds, alertes, live, read: passes } = await stopDepartures(groups, now, cache);
   // No departure at all: a stop no trip of the timetables stops at is said so, and the served stops nearest it given.
-  const read = !shown.length ? await transit.passes(groups.flatMap((g) => g.ids)) : undefined;
+  const read = !shown.length ? passes : undefined;
   if (read && !read.length && !mort) {
     const alt = await servedNear(groups);
     if (alt.length) return stopAnswer(asked, ligne, now, cache, { groups: alt.map((x) => x.g), near: alt, manque }, groups, trajet);
@@ -1304,7 +1312,7 @@ export async function stopPageDepartures(groups: transit.StopGroup[], now: Date,
     desserte: desserte(groups, all),
     departs: shown.map(pageRow(now)),
     ...(off ? { aucun: off.text } : {}),
-    alertes: [...(off?.alertes ?? []), ...alertsFor(groups, shown, feeds, now)].filter((a, i, l) => l.findIndex((b) => b.titre === a.titre) === i),
+    alertes: [...(off?.alertes ?? []), ...alertsFor(groups, shown, feeds, now, all)].filter((a, i, l) => l.findIndex((b) => b.titre === a.titre) === i),
     lignes: [...new Set(lines)].sort((a, b) => a.localeCompare(b, "fr", { numeric: true })),
     /** The networks whose departures shown come from their feed, and the feed's time (seconds since 1970). */
     direct: live.map((n) => transit.NETWORKS[n].nom),

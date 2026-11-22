@@ -85,7 +85,7 @@ describe("the stable text of the head pages", () => {
     ]);
     expect(faq[0].a).toContain('<a href="/coupures-eau/saint-paul">');
     expect(faq[1].a).toBe("Le réseau Kar&#39;Ouest et le Car Jaune.");
-    expect(communeFaq("Saint-Denis", "saint-denis")[1].a).toBe("Les réseaux Citalis, Téléphérique Papang et le Car Jaune.");
+    expect(communeFaq("Saint-Denis", "saint-denis")[1].a).toBe("Les réseaux Citalis et le Car Jaune, et le téléphérique Papang.");
     // A distributor whose notices are not read: said so, never « nous ne lisons pas ».
     const tampon = communeFaq("Le Tampon", "le-tampon")[0].a;
     expect(tampon).toContain("Ses avis ne sont pas encore lus par rundata.re");

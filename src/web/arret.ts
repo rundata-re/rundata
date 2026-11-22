@@ -25,6 +25,8 @@ export const SEARCH_MAX = 20;
 
 const networksOf = (p: transit.StopPage) => [...new Set(p.groups.map((g) => transit.NETWORKS[g.reseau]?.nom ?? g.reseau))];
 const list = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} et ${names[names.length - 1]}` : names[0] ?? "");
+/** A line's terminus, one or the other: « Gare de St-Denis, Campus ou Gare de St-Pierre » (marketing, 22/11/2026). */
+const either = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} ou ${names[names.length - 1]}` : names[0] ?? "");
 
 /** « Arrêt Gare de St-Pierre, Saint-Pierre », without the commune when the name already says it (« Mairie Du Tampon »). */
 function titled(p: transit.StopPage): string {
@@ -68,9 +70,10 @@ export function stopText(p: transit.StopPage, lignes: Departures["desserte"]): s
   const nets = lignes.length ? networksOf(p).filter((n) => lignes.some((l) => l.reseau === n)) : networksOf(p);
   const shown = lignes.slice(0, LIGNES_DITES);
   const more = lignes.length - shown.length;
-  const line = (l: (typeof lignes)[number]) => `${esc(l.ligne)}${l.terminus.length ? ` vers ${esc(list(l.terminus))}` : ""}`;
+  // « ou » between a line's terminus, « ; » between its lines.
+  const line = (l: (typeof lignes)[number]) => `${esc(l.ligne)}${l.terminus.length ? ` vers ${esc(either(l.terminus))}` : ""}`;
   const served = lignes.length
-    ? ` Il est desservi par ${lignes.length} ligne${lignes.length > 1 ? "s" : ""} ${esc(list(nets.map(deNom)))}\u00a0: ${shown.map(line).join(", ")}${more ? `, et ${more} autre${more > 1 ? "s" : ""} ligne${more > 1 ? "s" : ""}` : ""}.`
+    ? ` Il est desservi par ${lignes.length} ligne${lignes.length > 1 ? "s" : ""} ${esc(list(nets.map(deNom)))}\u00a0: ${shown.map(line).join("\u00a0; ")}${more ? `\u00a0; et ${more} autre${more > 1 ? "s" : ""} ligne${more > 1 ? "s" : ""}` : ""}.`
     : "";
   // How the times are known, true of each network: those with a real-time feed announce them when they publish them;
   // the others only publish their timetables (src/transit/network.json, `temps_reel`).

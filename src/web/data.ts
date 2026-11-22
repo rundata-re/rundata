@@ -38,7 +38,7 @@ import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
 import { buildChiffres, type Chiffres } from "./en-chiffres.js";
 import { named } from "../tools/annuaire.js";
-import { alertsFor, applyRealtime, busiestStops, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures } from "../tools/transports.js";
+import { alertsFor, applyRealtime, busiestStops, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures, stopIds } from "../tools/transports.js";
 import * as prefecture from "../providers/prefecture.js";
 import type { Cyclone } from "../providers/prefecture.js";
 import type { ReleveEntree } from "../providers/prefecture-copie.js";
@@ -1933,13 +1933,15 @@ export async function buildCommune(cache: Cache, p: PlacePage, now = new Date())
       if (!transit.enabled()) return undefined;
       const { gare, groups } = communeStops(p);
       if (!groups.length) return undefined;
-      let list = await departures(groups, now);
+      // The passes read once: for the departures, near and far, and for the lines the alerts name.
+      const read = await transit.passes(stopIds(groups));
+      let list = await departures(groups, now, 3 * 3600, read);
       let horizon = 3 * 3600;
-      if (list.length < 3) [list, horizon] = [await departures(groups, now, 20 * 3600), 20 * 3600];
+      if (list.length < 3) [list, horizon] = [await departures(groups, now, 20 * 3600, read), 20 * 3600];
       const feeds = await realtimeFeeds(groups.map((g) => g.reseau), cache, now);
       const all = applyRealtime(list, feeds, now);
       const shown = spread(all, 6);
-      const alertes = alertsFor(groups, shown, feeds, now);
+      const alertes = alertsFor(groups, shown, feeds, now, read);
       // Its most served stops, for the FAQ: none said when they cannot be read, the rest of the block kept.
       const desservis = await busiestStops(p.nom, now).catch((err) => (console.error(`page ${p.slug} : arrêts les plus desservis indisponibles`, why(err)), []));
       return {

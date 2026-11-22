@@ -265,7 +265,7 @@ function far(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace>>, al
       `Renvoyer aux horaires officiels du SHOM : ${f.lien}.`,
     resume:
       inland(p) +
-      `Pas d'heures de marée calculées pour ${le(p.nom)} : nous les calculons d'après les marégraphes du Port et de Sainte-Marie, et la marée n'arrive pas à la même heure partout sur la côte. ` +
+      `Pas d'heures de marée calculées pour ${le(p.nom)} : rundata.re les calcule d'après les marégraphes du Port et de Sainte-Marie, et la marée n'arrive pas à la même heure partout sur la côte. ` +
       (r
         ? `Hauteur mesurée au marégraphe ${de(f.nom)}, à ${km} km : ${m(r.h)} à ${hm(r.t)} (${at}, pas ${a(p.nom)}). `
         : `Le marégraphe ${de(f.nom)}, à ${km} km, ne transmet pas de mesure en ce moment. `) +

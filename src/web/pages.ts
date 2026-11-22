@@ -2705,7 +2705,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const tideLine = tides
     ? `<p>Marée ${esc(a(tides.nom))}, ${esc(TIDE_LABEL)}, à environ ${tides.minutes} min près : ${esc(thin(nextText(tides.next)))}.</p>`
     : away
-      ? `<p>Marée : pas d'heures calculées ici, la marée y arrive à une autre heure qu'au Port et à Sainte-Marie, nos deux marégraphes. ` +
+      ? `<p>Marée : pas d'heures calculées ici, la marée y arrive à une autre heure qu'au Port et à Sainte-Marie, les deux marégraphes lus par rundata.re. ` +
         `<a href="${esc(away.lien)}">${away.port ? `Horaires officiels du SHOM pour ${esc(away.port)}` : "Horaires officiels sur le site du SHOM"}</a></p>`
       : "";
   const sea = coastal(p) && d?.mer

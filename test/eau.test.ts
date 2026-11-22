@@ -142,7 +142,7 @@ describe("qualité de l'eau", () => {
     expect(COMMON.eau_du_robinet).not.toContain("Le Tampon");
     expect(COMMON.eau_du_robinet).not.toContain("les communes de l'Est");
     expect(COMMON.eau_du_robinet).toContain("Sainte-Suzanne et Salazie)\u00a0: dans cette réponse quand une commune est demandée, et par l'outil coupures_eau.");
-    expect(tapNote("page")).toContain("Il est repris sur la page des coupures d'eau pour les communes dont nous lisons les avis (Bras-Panon,");
+    expect(tapNote("page")).toContain("Il est repris sur la page des coupures d'eau pour les communes dont rundata.re lit les avis (Bras-Panon,");
     expect(tapNote("page")).not.toContain("coupures_eau");
   });
 

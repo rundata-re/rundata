@@ -182,8 +182,8 @@ async function withFords<R extends { content: { type: "text"; text: string }[]; 
   const payload = JSON.parse(r.content[0].text) as Record<string, unknown> & { sources?: { source: string }[] };
   const radiers = {
     resume: annonces.length
-      ? `Annonces de la préfecture et des médias qui parlent d'un radier, d'après notre lecture du ${lue}. Ce ne sont que des annonces : l'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région (${INFOTRAFIC}).`
-      : `Aucune annonce de la préfecture ni des médias sur un radier dans notre lecture du ${lue}. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re (${INFOTRAFIC}).`,
+      ? `Annonces de la préfecture et des médias qui parlent d'un radier, d'après la lecture de rundata.re du ${lue}. Ce ne sont que des annonces : l'état officiel des routes et des radiers est sur la carte d'infotrafic.re, le site de la Région (${INFOTRAFIC}).`
+      : `Aucune annonce de la préfecture ni des médias sur un radier dans la lecture de rundata.re du ${lue}. Cela ne dit pas qu'ils sont ouverts : l'état officiel est sur infotrafic.re (${INFOTRAFIC}).`,
     ...(annonces.length ? { annonces } : {}),
   };
   const credited = credits([

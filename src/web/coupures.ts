@@ -210,7 +210,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.avis.length
       ? `${silent}<ul class="zones">${x.avis.map(noticeCard).join("")}</ul>`
       : x.muet ? ""
-      : `<p class="card">${dist?.avis ? `Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu ${esc(at)}.` : guide?.texte ?? `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
+      : `<p class="card">${dist?.avis ? `Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu ${esc(at)}.` : guide?.texte ?? `rundata.re ne lit pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
 
   const unreadShare = dist?.partage?.par.filter((x) => !x.site).map((x) => x.nom) ?? [];
   const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +
@@ -220,14 +220,14 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
           ? dist.site === CIREST.site
             ? `<p>Les avis de la commune, publiés par la CIREST, sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site)}" rel="noopener">les avis de la CIREST</a>.</p>`
             : dist.site === MAIRIE_SAINTE_MARIE
-            ? `<p>Nous lisons, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la ville de Sainte-Marie</a> : ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu : nous donnons seulement son lien.</p>`
+            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les communiqués de CISE Réunion publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la ville de Sainte-Marie</a> : ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu : la page donne seulement son lien.</p>`
             : dist.site === MAIRIE_SAINT_LEU
-            ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la commune de Saint-Leu</a> : ils s'affichent en haut de cette page, avec un court extrait et le lien vers l'avis complet. Un avis publié en image n'est pas lu : nous donnons seulement son lien.</p>`
+            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site)}" rel="noopener">le site de la commune de Saint-Leu</a> : ils s'affichent en haut de cette page, avec un court extrait et le lien vers l'avis complet. Un avis publié en image n'est pas lu : la page donne seulement son lien.</p>`
             : dist.site === CREOLE.url
-            ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a>${aussi ? ` et ceux que publie <a href="${esc(aussi.site)}" rel="noopener">le site de ${esc(aussi.par)}</a>` : ""} : ils s'affichent en haut de cette page.</p>`
+            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les avis de <a href="${esc(dist.site)}" rel="noopener">la page « flash infos » de La Créole</a>${aussi ? ` et ceux que publie <a href="${esc(aussi.site)}" rel="noopener">le site de ${esc(aussi.par)}</a>` : ""} : ils s'affichent en haut de cette page.</p>`
             : dist.par
             // A mairie that posts its distributor's notices (Saint-Philippe, Petite-Île, Cilaos).
-            ? `<p>Nous lisons, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.par)}</a> : ils s'affichent en haut de cette page, avec le lien vers chaque avis.</p>`
+            ? `<p>rundata.re lit, au moins toutes les 30 minutes, les avis de coupure publiés sur <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.par)}</a> : ils s'affichent en haut de cette page, avec le lien vers chaque avis.</p>`
             : `<p>${dist.partage ? `Les avis de ${esc(dist.nom)}` : "Ses avis"} sont relus au moins toutes les 30 minutes : <a href="${esc(dist.site!)}" rel="noopener">le site de ${esc(dist.nom)}</a>.</p>`
           : guide
           ? `<p>${guide.distributeur}</p>`
@@ -267,7 +267,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       // Its feed silent: the notices kept were read before this copy, and the page says when; here no hour, and only the
       // water not to drink, which is never dropped (cut first: the site that did not answer).
       ? x.dry
-        ? describe(`${p.nom} (974) : eau à ne pas boire selon le dernier avis lu ; le site ${x.muet.de} n'a pas répondu à notre dernière lecture.`,
+        ? describe(`${p.nom} (974) : eau à ne pas boire selon le dernier avis lu ; le site ${x.muet.de} n'a pas répondu à la dernière lecture de rundata.re.`,
             `${p.nom} (974) : eau à ne pas boire selon le dernier avis lu.`)
         : short
     : x.avis.length

@@ -294,8 +294,8 @@ const NB = "\u00a0";
  */
 export function tapNote(where: "outil" | "page"): string {
   const taken = where === "outil"
-    ? `Il est repris pour les communes dont nous lisons les avis (${enumeration(lues())})${NB}: dans cette réponse quand une commune est demandée, et par l'outil coupures_eau.`
-    : `Il est repris sur la page des coupures d'eau pour les communes dont nous lisons les avis (${enumeration(lues())}).`;
+    ? `Il est repris pour les communes dont rundata.re lit les avis (${enumeration(lues())})${NB}: dans cette réponse quand une commune est demandée, et par l'outil coupures_eau.`
+    : `Il est repris sur la page des coupures d'eau pour les communes dont rundata.re lit les avis (${enumeration(lues())}).`;
   return `Analyses du contrôle sanitaire de l'ARS, publiées un à deux mois après le prélèvement. Un avis temporaire «${NB}ne pas boire l'eau${NB}» (après de fortes pluies, une panne de chloration…) est publié par le distributeur, la mairie ou l'ARS. ${taken} Pour les autres communes, un avis peut être en cours sans apparaître ici${NB}: voir la mairie ou le distributeur.`;
 }
 

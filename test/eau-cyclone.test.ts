@@ -27,15 +27,15 @@ describe("after a cyclone, the tap water", () => {
     expect(distributeur("L'Étang-Salé")).toMatchObject({ nom: "runéo", site: "https://www.runeo.re/", avis: true });
     expect(lues()).toContain("L'Étang-Salé");
     expect(coverageLine("L'Étang-Salé")).toBe("D'après l'ARS, runéo distribue l'eau de 7 réseaux sur 8 à L'Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts. " +
-      "Nous lisons les avis publiés par runéo pour L'Étang-Salé, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
+      "rundata.re lit les avis publiés par runéo pour L'Étang-Salé, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     expect(reseauNom("RESEAU SCES NOUVELLES LES HAUTS")).toBe("Sources Nouvelles les Hauts");
     expect(coverageLine("Le Tampon")).toBe("Les avis de Sudéau, qui distribue l'eau au Tampon, ne sont pas lus par rundata.re : renseignez-vous auprès de Sudéau ou de la mairie.");
-    expect(coverageLine("Saint-Paul")).toBe("Nous lisons les avis publiés par La Créole pour Saint-Paul, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
+    expect(coverageLine("Saint-Paul")).toBe("rundata.re lit les avis publiés par La Créole pour Saint-Paul, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     // Sainte-Marie: CISE Réunion's notices, as the ville posts them; Les Avirons, also CISE Réunion, is not read.
-    expect(coverageLine("Sainte-Marie")).toBe("Nous lisons les communiqués de CISE Réunion publiés par la ville de Sainte-Marie, au moins toutes les 30 minutes\u00a0: ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu\u00a0: nous donnons seulement son lien.");
+    expect(coverageLine("Sainte-Marie")).toBe("rundata.re lit les communiqués de CISE Réunion publiés par la ville de Sainte-Marie, au moins toutes les 30 minutes\u00a0: ils s'affichent en haut de cette page. Un communiqué publié en image ou en PDF n'est pas lu\u00a0: la page donne seulement son lien.");
     expect(coverageLine("Les Avirons")).toBe("Les avis de CISE Réunion, qui distribue l'eau aux Avirons, ne sont pas lus par rundata.re : renseignez-vous auprès de CISE Réunion ou de la mairie.");
-    expect(coverageLine("Saint-Denis")).toBe("Nous lisons les avis publiés par Dionéo pour Saint-Denis, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
-    expect(coverageLine("Salazie")).toBe("Nous lisons les avis publiés par la CIREST pour Salazie, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
+    expect(coverageLine("Saint-Denis")).toBe("rundata.re lit les avis publiés par Dionéo pour Saint-Denis, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
+    expect(coverageLine("Salazie")).toBe("rundata.re lit les avis publiés par la CIREST pour Salazie, au moins toutes les 30 minutes : ils s'affichent en haut de cette page.");
     // No word in quotation marks that no source writes, and no capitals as the ARS's table writes them.
     for (const c of ["Saint-Denis", "Salazie", "Saint-Paul", "L'Étang-Salé"]) expect(coverageLine(c)).not.toMatch(/«|MAIRIE|ÉTANG/);
   });

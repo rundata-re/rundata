@@ -260,11 +260,12 @@ const paired = (links: string[]) => {
 
 /**
  * « Suivre rundata.re » and each account, with its logo and its name; nothing when none has an address. The accounts
- * go together, under the words when they do not fit beside them (a phone), rather than one left alone on a line.
+ * go together, under the words when they do not fit beside them (a phone), rather than one left alone on a line. The
+ * words are one span, so the flex gap of .social never splits them (« Suivre   rundata.re   : »).
  */
 export function follow(list = SOCIAL, cls = "social"): string {
   const links = accountLinks(list);
-  return links.length ? `<p class="${cls}">Suivre rundata.re : <span>${paired(links)}</span></p>` : "";
+  return links.length ? `<p class="${cls}"><span class="suivre">Suivre rundata.re :</span> <span>${paired(links)}</span></p>` : "";
 }
 
 // Search engines cut (and Bing flags) a meta description over 160 characters.
@@ -1333,7 +1334,7 @@ ${CSS_CHIFFRES}
 /* The text read in an image of the OVPF, quoted apart from the card's own words (providers/ovpf-ocr.ts). */
 .posts details>summary{cursor:pointer}.posts details>p{margin:.6rem 0 0;padding-left:.8rem;border-left:3px solid var(--line)}
 .warn ul{padding:0}
-.social,.social>span{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}.social a{display:inline-flex;align-items:center;gap:.35rem}.social svg{width:1.1rem;height:1.1rem;flex:none}
+.social,.social>span{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem 1rem}.social>.suivre{display:block}.social a{display:inline-flex;align-items:center;gap:.35rem}.social svg{width:1.1rem;height:1.1rem;flex:none}
 /* Two accounts kept on one line while they fit; on a narrow screen or with larger text, the second goes under the first
    rather than widening the footer's column, and the whole page with it. */
 .social .pair{display:inline-flex;flex-wrap:wrap;align-items:center;gap:inherit}

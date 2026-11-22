@@ -30,9 +30,23 @@ describe("the dated pages, the end", () => {
     expect(r.coupures_eau?.partage?.texte).toMatch(/^D'après l'ARS, runéo distribue l'eau de \d+ réseaux sur \d+ à L'Étang-Salé, et la mairie celle du réseau .+\. Seuls les avis de runéo sont lus\.$/);
     expect(r.coupures_eau?.partage?.mairie).toEqual({ libelle: "Le site de la mairie de L'Étang-Salé", lien: "https://www.letangsale.fr/" });
     const html = aujourdhuiPage(O, p, r, null);
-    expect(html).toContain("<p>Aucune coupure annoncée par runéo le 21/11 à 09:34.</p>");
+    // « Pas d'avis », never « aucune coupure », with who publishes and when, as on /coupures-eau (22/11/2026).
+    expect(html).toContain("<p>Pas d&#39;avis de coupure récent ou à venir publié par runéo, lu le 21/11 à 09:34. Une coupure peut être annoncée ailleurs, par la mairie par exemple.</p>");
+    expect(html).not.toContain("Aucune coupure annoncée");
+    // The summary, in a few words: the day said, the copy not of the day of the call.
+    expect(r.resume).toContain("pas d'avis de coupure récent ou à venir de runéo, lu le 21/11 à 09:34");
+    expect(r.resume).not.toContain("pas de coupure d'eau annoncée");
     expect(html).not.toContain("par D'après");
     expect(html).toMatch(/<p class="note">D&#39;après l&#39;<abbr[^>]*>ARS<\/abbr>, runéo distribue .+ Seuls les avis de runéo sont lus\. <a href="https:\/\/www\.letangsale\.fr\/" rel="noopener">Le site de la mairie de L&#39;Étang-Salé ↗<\/a><\/p>/);
+  });
+
+  it("/aujourdhui and the summary name the mairie that publishes the notices read, without « par la mairie » as the elsewhere", () => {
+    const p = pageOf("sainte-marie")!;
+    const coupures = copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }, new Date("2026-11-06T09:05:00Z"));
+    const r = resume(p, { coupures } as never, NOW);
+    const html = aujourdhuiPage(O, p, r, null);
+    expect(html).toContain("<p>Pas d&#39;avis de coupure récent ou à venir publié par la ville de Sainte-Marie, lu le 06/11 à 13:05. Une coupure peut être annoncée ailleurs.</p>");
+    expect(r.resume).toContain("pas d'avis de coupure récent ou à venir de la ville de Sainte-Marie, lu à 13:05");
   });
 
   it("/aujourdhui says when the distributor's notices were read, the copy's time and never the call's", () => {
@@ -41,7 +55,9 @@ describe("the dated pages, the end", () => {
     const r = resume(p, { coupures } as never, NOW);
     expect(r.coupures_eau?.lus_le).toBe("06/11 13:05");
     const html = aujourdhuiPage(O, p, r, null);
-    expect(html).toMatch(/<p>Aucune coupure annoncée( par [^<]+)? le 06\/11 à 13:05\.<\/p>/);
+    expect(html).toMatch(/<p>Pas d&#39;avis de coupure récent ou à venir( publié par [^<]+)?, lu le 06\/11 à 13:05\. Une coupure peut être annoncée ailleurs[^<]*<\/p>/);
+    // Read the same day: the hour alone in the summary.
+    expect(r.resume).toMatch(/pas d'avis de coupure récent ou à venir (de |d')[^,]+, lu à 13:05/);
   });
 
   it("/electricite names the hour EDF's signal is for", () => {

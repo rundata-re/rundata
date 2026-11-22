@@ -1000,8 +1000,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   // The sites that do not answer: their rows read at most every 15 minutes (sans-reponse.ts), whatever the visits.
   if (path === SANS_REPONSE || path === `${SANS_REPONSE}/`) {
-    const [e, a] = await Promise.all([sansReponse(cache).catch(() => undefined), alerte(cache, background, now)]);
-    return new Response(sansReponsePage(origin, e?.lignes ?? [], e?.passage, a), { headers: { ...HTML, "cache-control": "public, max-age=900" } });
+    const [e, a] = await Promise.all([sansReponse(cache, now).catch(() => undefined), alerte(cache, background, now)]);
+    const lecture = !e ? { illisible: true as const } : e.pasRelue ? { relue: e.lu } : undefined;
+    // Not kept by the browsers for 15 minutes when the list was not read: the next visit asks again.
+    return new Response(sansReponsePage(origin, e?.lignes ?? [], e?.passage, a, lecture), { headers: { ...HTML, "cache-control": lecture ? "no-store" : "public, max-age=900" } });
   }
   if (path === "/mcp" || path === "/mcp/") {
     return new Response(connecteurPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600", vary: "accept" } });

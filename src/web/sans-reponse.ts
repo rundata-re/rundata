@@ -41,7 +41,11 @@ function parTheme(rows: Public[]): string {
   return themes.map((t) => `<h3>${esc(t)}</h3><ul>${rows.filter((l) => l.theme === t).map(item).join("")}</ul>`).join("");
 }
 
-export function sansReponsePage(origin: string, rows: Ligne[], passage: number | undefined, alerte?: Alerte): string {
+/**
+ * The page. `relue`: the time of the last copy, when the list could not be read again since (sans-reponse.ts
+ * `pasRelue`); `illisible`: no list at all could be read, never said « no site ».
+ */
+export function sansReponsePage(origin: string, rows: Ligne[], passage: number | undefined, alerte?: Alerte, lecture?: { relue?: Date; illisible?: true }): string {
   const shown = publiques(rows);
   const muets = shown.filter((l) => l.statut === "injoignable");
   const bloques = shown.filter((l) => l.statut === "bloque");
@@ -56,8 +60,13 @@ export function sansReponsePage(origin: string, rows: Ligne[], passage: number |
     bloques.length ? `<h2 id="pas-a-nos-lectures">Répondent, mais pas à nos lectures</h2><p>${BLOQUES}</p>${parTheme(bloques)}` : "",
     revenus.length ? `<h2 id="repondent-de-nouveau">Répondent de nouveau</h2>${parTheme(revenus)}` : "",
   ].filter(Boolean);
+  const relue = lecture?.relue && `<p class="note">Liste relue le ${jourHeure(Math.floor(lecture.relue.getTime() / 1000))}\u00a0; elle n'a pas pu être relue depuis et a pu changer.</p>`;
+  const vide = lecture?.illisible
+    ? "<p>La liste n'a pas pu être lue pour l'instant\u00a0: réessayez plus tard.</p>"
+    : `<p>${passage ? `Aucun site public sans réponse à la revérification du ${jour(passage)}.` : "Aucun site public sans réponse pour l'instant."}</p>`;
   const body = `<section style="max-width:44rem;display:grid;gap:1rem">
-  ${parts.length ? parts.join("\n  ") : `<p>${passage ? `Aucun site public sans réponse à la revérification du ${jour(passage)}.` : "Aucun site public sans réponse pour l'instant."}</p>`}
+  ${relue ?? ""}
+  ${parts.length ? parts.join("\n  ") : vide}
   <aside class="card"><p>${OPEN_DATA}</p></aside>
   <p>Revérifié chaque jour${passage ? `, dernier passage le ${jourHeure(passage)}` : ""}. Un site de cette liste répond pour vous ? Écrivez-nous : ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}. Et pour rendre ses informations faciles à reprendre\u00a0: <a href="${GUIDE}">notre guide</a>.</p>
   <p>Voir aussi : <a href="/chiffres">rundata.re en chiffres</a>.</p>

@@ -441,16 +441,28 @@ export function statutEnMots(l: Public): string {
 // ---------------------------------------------------------------- Read by the page and the tool
 
 const FRAIS_S = 900;
+/** From 06:00 to 06:30 in La Réunion, the recheck's half hour: a copy read for a minute only. */
+const FRAIS_PASSAGE_S = 60;
+/** A last copy served for a failed read, older than this: said as such, with its time. */
+export const RELUE_MAX_MS = 3600_000;
 
 /**
- * The rows and the last recheck, read at most every 15 minutes by each data center (the page and the tool alike). A
- * missing table is not kept as an empty list: the cache asks again a minute later (its failure backoff, cache.ts), so
- * that the rows show within a minute of the table's creation, not 15.
+ * How long a copy is good at `now`. The scheduled run of 06:00 builds its copies (the volcano's, /chiffres) before the
+ * recheck it starts, and wrote the rows of the day before in its data center's cache: shown 15 minutes after the
+ * recheck had ended (22/11/2026, Johannesburg). During the recheck's half hour, a copy is read again after a minute.
  */
-export async function etat(cache: Pick<Cache, "get">): Promise<{ lignes: Ligne[]; passage?: number; lu: Date }> {
+export const fraicheur = (now: Date) => (now.getUTCHours() === 2 && now.getUTCMinutes() < 30 ? FRAIS_PASSAGE_S : FRAIS_S);
+
+/**
+ * The rows and the last recheck, read at most every 15 minutes by each data center (the page and the tool alike), every
+ * minute in the recheck's half hour (`fraicheur`). A missing table is not kept as an empty list: the cache asks again a
+ * minute later (its failure backoff, cache.ts), so that the rows show within a minute of the table's creation, not 15.
+ * `pasRelue`: the last copy, served for a failed read, more than RELUE_MAX_MS old; its time is `lu`.
+ */
+export async function etat(cache: Pick<Cache, "get">, now = new Date()): Promise<{ lignes: Ligne[]; passage?: number; lu: Date; pasRelue?: true }> {
   try {
-    const c = await cache.get("sans-reponse", FRAIS_S, async () => ({ lignes: await toutes(), passage: await dernierPassage() }));
-    return { ...c.value, lu: c.fetchedAt };
+    const c = await cache.get("sans-reponse", fraicheur(now), async () => ({ lignes: await toutes(), passage: await dernierPassage() }));
+    return { ...c.value, lu: c.fetchedAt, ...(c.stale && now.getTime() - c.fetchedAt.getTime() > RELUE_MAX_MS && { pasRelue: true as const }) };
   } catch (err) {
     if (!absente(err)) throw err;
     return { lignes: [], lu: new Date() };

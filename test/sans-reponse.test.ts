@@ -376,3 +376,46 @@ describe("a medium's site, among the media's source", () => {
     expect([HOTES_MEDIAS["lequotidien.re"].manque, HOTES_MEDIAS["imazpress.com"].manque]).toEqual(["Les titres du Quotidien dans les actualités", "Les titres d'Imaz Press dans les actualités"]);
   });
 });
+
+describe("the list's copy around the recheck, and a copy not read again (22/11/2026)", () => {
+  // A cache that answers what it is given, and keeps the freshness asked.
+  const stub = (copy: { value: unknown; fetchedAt: Date; stale: boolean }) => {
+    const asked: number[] = [];
+    return { asked, cache: { get: async (_k: string, fresh: number) => (asked.push(fresh), copy) } as unknown as Cache };
+  };
+  const at = (local: string) => new Date(`${local}:00+04:00`);
+  const value = { lignes: [], passage: Math.floor(at("2026-11-21T06:04").getTime() / 1000) };
+
+  it("reads the list again every minute in the recheck's half hour, every 15 minutes else", async () => {
+    expect(sr.fraicheur(at("2026-11-22T05:59"))).toBe(900);
+    expect(sr.fraicheur(at("2026-11-22T06:00"))).toBe(60);
+    expect(sr.fraicheur(at("2026-11-22T06:29"))).toBe(60);
+    expect(sr.fraicheur(at("2026-11-22T06:30"))).toBe(900);
+    const s = stub({ value, fetchedAt: at("2026-11-22T06:01"), stale: false });
+    await sr.etat(s.cache, at("2026-11-22T06:16"));
+    expect(s.asked).toEqual([60]);
+  });
+
+  it("says a last copy served for a failed read once it is more than an hour old, never a fresh one", async () => {
+    const old = await sr.etat(stub({ value, fetchedAt: at("2026-11-21T06:05"), stale: true }).cache, at("2026-11-22T07:00"));
+    expect(old.pasRelue).toBe(true);
+    expect((await sr.etat(stub({ value, fetchedAt: at("2026-11-22T06:40"), stale: true }).cache, at("2026-11-22T07:00"))).pasRelue).toBeUndefined();
+    expect((await sr.etat(stub({ value, fetchedAt: at("2026-11-22T06:05"), stale: false }).cache, at("2026-11-22T07:30"))).pasRelue).toBeUndefined();
+    const tool = JSON.parse((await sitesSansReponse(stub({ value, fetchedAt: at("2026-11-21T06:05"), stale: true }).cache, undefined, at("2026-11-22T07:00"))).content[0].text);
+    expect(tool.avertissement).toBe("liste relue le 21/11 à 06:05, heure de La Réunion\u00a0; pas relue depuis, elle a pu changer");
+    expect(sansReponsePage("https://rundata.re", [], value.passage, undefined, { relue: old.lu })).toContain("Liste relue le 21/11 à 06:05\u00a0; elle n'a pas pu être relue depuis et a pu changer.");
+  });
+
+  it("never says « no site » when no list could be read", () => {
+    const page = sansReponsePage("https://rundata.re", [], undefined, undefined, { illisible: true });
+    expect(page).toContain("La liste n'a pas pu être lue pour l'instant\u00a0: réessayez plus tard.");
+    expect(page).not.toContain("Aucun site public sans réponse");
+  });
+
+  it("answers the tool with the same words when no list could be read", async () => {
+    const broken = { get: async () => { throw new Error("D1 indisponible"); } } as unknown as Cache;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const tool = JSON.parse((await sitesSansReponse(broken, undefined, at("2026-11-22T07:00"))).content[0].text);
+    expect(tool).toEqual({ avertissement: "liste non lue pour l'instant\u00a0: réessayer plus tard", page: "https://rundata.re/sites-sans-reponse" });
+  });
+});

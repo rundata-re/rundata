@@ -108,9 +108,13 @@ function citerCoupures(p: Payload): string {
  */
 const CITER: Partial<Record<string, (p: Payload) => string>> = {
   // The canyons are the Parc national's inventory, beside the ONF's trails they run along.
+  // Each mode its own producers: the canyons the Parc national's, the family walks the Conseil Général's and the
+  // AGORAH's list (« d'après l'ONF » alone for them, 20/11/2026).
   sentiers_randonnee: (p) => JSON.stringify(p.sources).includes("Parc national")
     ? "rundata.re, d'après le Parc national de La Réunion et l'ONF"
-    : `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
+    : JSON.stringify(p.sources).includes("AGORAH")
+      ? "rundata.re, d'après le Conseil Général de La Réunion, l'AGORAH et l'ONF"
+      : `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
   fiche_terrain: () => "rundata.re, d'après l'IGN, la DGFiP et la Base adresse nationale",
   qualite_eau: () => "rundata.re, d'après l'ARS La Réunion",
   coupures_eau: citerCoupures,

@@ -19,14 +19,23 @@ describe("a page's own copy out of date by its revision alone", () => {
     const c = new Cache(store, () => NOW.getTime(), false, undefined, "2.0.0");
     const later: Promise<unknown>[] = [];
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    const t = Date.now();
-    const [w, reader] = ownWaits(asking(ua));
-    const build = () => new Promise<string>((r) => setTimeout(() => r("nouvelle"), 1500));
-    const got = await snapshot(c, "web:commune:sainte-marie", build, (p) => later.push(p), NOW, w ?? waitMs, reader, undefined, oldCopy(asking(ua)));
-    const ms = Date.now() - t;
-    log.mockRestore();
-    await Promise.all(later);
-    return { value: got?.value ?? null, ms };
+    // The clock and the timers are the test's: on a loaded machine, real ones measured the machine, not the wait.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    try {
+      const t = Date.now();
+      let ms = -1;
+      const [w, reader] = ownWaits(asking(ua));
+      const build = () => new Promise<string>((r) => setTimeout(() => r("nouvelle"), 1500));
+      const got = snapshot(c, "web:commune:sainte-marie", build, (p) => later.push(p), NOW, w ?? waitMs, reader, undefined, oldCopy(asking(ua)))
+        .then((g) => ((ms = Date.now() - t), g));
+      await vi.advanceTimersByTimeAsync(5000);
+      const value = (await got)?.value ?? null;
+      await Promise.all(later);
+      return { value, ms };
+    } finally {
+      vi.useRealTimers();
+      log.mockRestore();
+    }
   };
 
   it("is served at once, to a person and to a search engine, its build behind", async () => {

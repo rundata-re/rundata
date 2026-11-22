@@ -134,7 +134,7 @@ describe("the budget of subrequests", () => {
         expect(r.used, `${path} with ${budget}`).toBeLessThanOrEqual(budget);
       }
     }
-  });
+  }, 30_000); // 48 pages built: about 2 s alone, past 5 s on a loaded machine.
 
   it("stays within it with the fires seen by satellite, cold, on the pages that build them", async () => {
     feux.configure("key");

@@ -102,7 +102,7 @@ describe("out of an alert, whether it erupts only with the official texts", () =
     const home = homePage(O, { volcan: copy } as unknown as HomeLive, NOW);
     expect(home).toContain(`<p class="tv">${enGrand("Pas d'éruption annoncée")}</p><p class="td">OVPF et préfecture, textes lus le 23/10 à 18:00 · `);
     const demo = demos({ volcan: copy } as unknown as HomeLive, NOW).find((d) => d.call === "volcan_seismes()")!.answer.replace(/&#39;/g, "'");
-    expect(demo.startsWith("Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes que nous avons lus (le 23/10 à 18:00). Niveau ORSEC : Vigilance.")).toBe(true);
+    expect(demo.startsWith("Pas d'éruption annoncée par l'OVPF ni par la préfecture dans les textes lus par rundata.re (le 23/10 à 18:00). Niveau ORSEC : Vigilance.")).toBe(true);
   });
 });
 

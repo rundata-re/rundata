@@ -76,7 +76,7 @@ export function aide(): string {
   return `<aside class="aide wrap" aria-label="Cette page vous a aidé ?" data-js hidden>
 <p class="q">Cette page vous a aidé ? <button type="button" data-aide="oui">Oui</button> <button type="button" data-aide="non">Non</button></p>
 <p data-apres="oui" role="status" hidden>Merci !</p>
-<p data-apres="non" role="status" hidden>Merci. Dites-nous ce qui vous a manqué : <a href="#avis">laisser un avis</a></p>
+<p data-apres="non" role="status" hidden>Merci. Dites à rundata.re ce qui vous a manqué : <a href="#avis">laisser un avis</a></p>
 </aside>`;
 }
 

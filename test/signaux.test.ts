@@ -205,7 +205,7 @@ describe("The pages' part", () => {
     expect(at).toBeLessThan(html.indexOf('id="avis"'));
     expect(html).toContain('data-js hidden>\n<p class="q">Cette page vous a aidé ? <button type="button" data-aide="oui">Oui</button> <button type="button" data-aide="non">Non</button></p>');
     expect(html).toContain('<p data-apres="oui" role="status" hidden>Merci !</p>');
-    expect(html).toContain('<p data-apres="non" role="status" hidden>Merci. Dites-nous ce qui vous a manqué : <a href="#avis">laisser un avis</a></p>');
+    expect(html).toContain('<p data-apres="non" role="status" hidden>Merci. Dites à rundata.re ce qui vous a manqué : <a href="#avis">laisser un avis</a></p>');
     // The paragraphs' display must not show the hidden answers with the question (seen on phones, 29/10/2026).
     expect(CSS).toContain(".aide [hidden]{display:none}");
   });

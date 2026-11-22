@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { motifs, nuance, ouvertWeekEnd, parseRoads, parseTrails, raison } from "../src/providers/sentiers.js";
-import { sentiersRandonnee, trailsNamed, warning } from "../src/tools/sentiers.js";
+import { sentiersRandonnee, trailKm, trailsNamed, warning } from "../src/tools/sentiers.js";
 import { buildRandonnees, buildSentiers, type SentiersAnswer } from "../src/web/data.js";
 import { communeHikes } from "../src/web/liens.js";
 import { pageOf, slugify } from "../src/web/places.js";
@@ -51,6 +51,38 @@ describe("sentiers de randonnée", () => {
     const canyon = body(await sentiersRandonnee(cache(), "Cilaos", NOW, undefined, false, true));
     expect(citerOf("sentiers_randonnee", canyon)).toBe("rundata.re, d'après le Parc national de La Réunion et l'ONF");
     expect(citerOf("sentiers_randonnee", body(await sentiersRandonnee(cache(), "Cilaos", NOW)))).toBe("rundata.re, d'après l'ONF");
+  });
+
+  it("credits the Conseil Général and the AGORAH for the family walks", () => {
+    const sources = [{ source: "Les sentiers marmailles à La Réunion", attribution: "Conseil Général de La Réunion / AGORAH" }, { source: "Sentiers (ONF La Réunion)", attribution: "ONF La Réunion" }];
+    expect(citerOf("sentiers_randonnee", { sources })).toBe("rundata.re, d'après le Conseil Général de La Réunion, l'AGORAH et l'ONF");
+  });
+
+  it("gives a trail cut in sections as one, as its page does, and around the trail, not a place of a like name (23/11/2026)", async () => {
+    type F = { attributes: Record<string, unknown>; geometry?: { paths?: [number, number][][] } };
+    const json = JSON.parse(fixture("sentiers.json")) as { features: F[] };
+    const nom = "Piste DFCI de la Glacière";
+    const mine = json.features.filter((f) => f.attributes.WS_NomIti === nom);
+    expect(mine.length).toBeGreaterThan(0);
+    // Two sections: the first open (2.4 km), the other closed (1.8 km).
+    const [a] = mine;
+    const features = [...json.features.filter((f) => f.attributes.WS_NomIti !== nom),
+      { ...a, attributes: { ...a.attributes, WS_Statut: "Sentier ouvert", WS_InfCaus: null, WS_LongM: 2400 } },
+      { ...a, attributes: { ...a.attributes, WS_Statut: "Sentier fermé", WS_InfCaus: "Travaux", WS_LongM: 1800 } }];
+    vi.stubGlobal("fetch", async (url: string) => new Response(url.includes("/5/query") ? JSON.stringify({ ...json, features }) : fixture(url.includes("/4/query") ? "routes.json" : "couche.json"), { headers: { "content-type": "application/json" } }));
+    const b = body(await sentiersRandonnee(cache(), nom, NOW));
+    // The length its page gives (trailKm): its trace's, else its sections added up.
+    const km = trailKm(nom, [{ longueur_km: 2.4 }, { longueur_km: 1.8 }]);
+    expect(b.sentiers_nommes).toHaveLength(1);
+    expect(b.sentiers_nommes[0]).toMatchObject({ sentier: nom, etat: "fermé", ferme_en_partie: true, longueur_fermee_km: 1.8, longueur_km: km });
+    expect(b.resume).toMatch(/^.*Piste DFCI de la Glacière : EN PARTIE FERMÉ \(Travaux\)\./);
+    expect(b.resume).not.toMatch(/portent ce nom/);
+    // « La Glacière » of Saint-Denis, found on part of the question only: not the place answered for.
+    expect(b.lieu).toBeUndefined();
+    expect(b.autour).toBeUndefined();
+    expect(b.aires_accueil?.ou ?? "").not.toMatch(/Glacière/);
+    // A word of trails left aside is not one: « Sentier du Maïdo » is still answered around the Maïdo.
+    expect(body(await sentiersRandonnee(cache(), "Sentier du Maïdo", NOW)).lieu?.trouve).toBe("Le Maïdo");
   });
 
   it("says a trail of the commune closed in part, past its limit, closed and never open (Piste DFCI de la Glacière, 04/11/2026)", async () => {

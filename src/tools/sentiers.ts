@@ -591,10 +591,15 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
 
   const q = normalize(lieu);
   const cirque = Object.entries(CIRQUES).find(([k]) => q.split(" ").includes(k))?.[1];
-  const res = cirque ? null : resolvePlace(lieu);
+  let res = cirque ? null : resolvePlace(lieu);
   // A cirque or a commune is a zone; its name in a few trails' names (« Cilaos - Bras Sec ») is not what is asked.
   const wide = !!cirque || res?.lieu.type === "commune";
   const named = wide && !/\bsentier\b/.test(q) ? [] : trailsNamed(carte.sentiers, lieu).slice(0, NAMED_MAX);
+  // A trail found by every word asked, a place that left some of them aside: the trail is what is asked, not the place
+  // (23/11/2026: « Piste DFCI de la Glacière », 2 175 to 2 493 m, answered around La Glacière of Saint-Denis, 367 m,
+  // « piste dfci » left aside). Only a word of the trail's own name counts: « Sentier du Maïdo » is still around the Maïdo.
+  const own = (res?.ignores ?? []).filter((w) => !/^(sentiers?|chemins?|traces?|gpx|randos?|randonnees?|balades?|du|de|des|la|le|les)$/.test(normalize(w)));
+  if (named.length && !wide && (own.length || res?.correspondance === "approchee")) res = null;
   const hikes = wide && !/\b(sentier|trace|gpx|gr)\b/.test(q) ? [] : routesNamed(lieu).slice(0, NAMED_MAX);
   if (!cirque && !res && !named.length && !hikes.length) return asked ? roadsAnswer(asked, carte.routes, common, fireSentence) : notFound(lieu);
 
@@ -638,11 +643,22 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     const row = routeRow(h, carte, now);
     parts.push(`${h.nom} (OpenStreetMap) : ${String(h.km).replace(".", ",")} km, ${relief(h)}${h.boucle ? ", en boucle" : ""}\u00a0; ${row.etat}\u00a0; trace GPS ${row.trace_gpx}.`);
   }
-  if (named.length) {
-    const shut = named.filter((s) => s.statut === "fermé");
-    parts.push(named.length === 1
-      ? `${named[0].nom} : ${named[0].statut === "fermé" ? (onf.nuance(named[0], now) ? onf.motifs(named[0], now).join(" · ") : `FERMÉ${named[0].cause ? ` (${named[0].cause})` : ""}`) : named[0].statut === "ouvert" ? "ouvert" : "état non connu (hors gestion ONF)"}.`
-      : `${named.length} sentiers portent ce nom : ${shut.length ? `${shut.length} fermé${shut.length > 1 ? "s" : ""} (${shut.map((s) => s.nom).join(", ")})` : "aucun fermé"}.`);
+  // One row per trail, as its page says it: the ONF's map cuts some in several sections (« Piste DFCI de la Glacière »,
+  // 2.4 km open and 1.8 km closed, was two trails of the same name; its page, one of 4.2 km, closed in part).
+  const namedTrails = unique(named.map((s) => s.nom)).map((nom) => {
+    const all = named.filter((x) => x.nom === nom);
+    const closed = all.filter((x) => x.statut === "fermé");
+    const partly = closed.length > 0 && all.some((x) => x.statut === "ouvert");
+    const closedKm = Math.round(closed.reduce((t, x) => t + x.longueur_km, 0) * 10) / 10;
+    const s = closed[0] ?? all.find((x) => x.statut === "ouvert") ?? all[0];
+    return { s, partly, row: { ...trailRow(s, undefined, now), longueur_km: trailKm(nom, all) || undefined, ...(partly ? { ferme_en_partie: true, longueur_fermee_km: closedKm || undefined } : {}) } };
+  });
+  if (namedTrails.length) {
+    const shut = namedTrails.filter((t) => t.s.statut === "fermé");
+    const [{ s: one, partly }] = namedTrails;
+    parts.push(namedTrails.length === 1
+      ? `${one.nom} : ${one.statut === "fermé" ? (onf.nuance(one, now) ? onf.motifs(one, now).join(" · ") : `${partly ? "EN PARTIE FERMÉ" : "FERMÉ"}${one.cause ? ` (${one.cause})` : ""}`) : one.statut === "ouvert" ? "ouvert" : "état non connu (hors gestion ONF)"}.`
+      : `${namedTrails.length} sentiers portent ce nom : ${shut.length ? `${shut.length} fermé${shut.length > 1 ? "s" : ""} (${shut.map((t) => t.s.nom + (t.partly ? " en partie" : "")).join(", ")})` : "aucun fermé"}.`);
   }
   let zoneOut: Record<string, unknown> | undefined;
   // The ONF's reception areas of the zone, else along the trail asked by its name.
@@ -723,7 +739,7 @@ export async function sentiersRandonnee(cache: Cache, lieu: string | undefined, 
     lieu: res ? placeBlock(lieu, res) : undefined,
     resume: parts.join(" "),
     randonnees: hikes.length ? hikes.map((h) => routeRow(h, carte, now)) : undefined,
-    sentiers_nommes: named.length ? named.map((s) => trailRow(s, undefined, now)) : undefined,
+    sentiers_nommes: namedTrails.length ? namedTrails.map((t) => t.row) : undefined,
     ...(zoneOut ? { autour: zoneOut } : {}),
     aires_accueil: reception?.nombre ? reception : undefined,
     ...common,

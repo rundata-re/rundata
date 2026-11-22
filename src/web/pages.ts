@@ -715,6 +715,9 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 .th .go{color:var(--k);font-weight:800}
 .tile h3 a{color:inherit;text-decoration:none}
 .tile h3 a::after{content:"";position:absolute;inset:0;border-radius:22px;z-index:1}
+/* The other links of a tile above that stretched link: a tap on « la gare de … », a departure, « Trouver une crèche »
+   or the official site under a vigilance opens that link, not the tile's page. */
+.tile a:not(h3 a){position:relative;z-index:2}
 .tile h3 a:focus-visible{outline:none}.tile:has(h3 a:focus-visible){outline:2px solid var(--link);outline-offset:2px}
 /* A tile's figure: the size of the screen, never wider than its tile allows (cqi, the tile's width: the same at 100 %,
    smaller with the text at 150 % in a narrow tile). Its word whole, smaller when the tile is too narrow for it

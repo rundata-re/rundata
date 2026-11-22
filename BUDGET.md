@@ -40,7 +40,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | pire passage planifié, CPU (ms) | 5 381 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 212 | 620 |
-| vue la plus chère, sous-requêtes | 99 | 200 |
+| vue la plus chère, sous-requêtes | 100 | 200 |
 | question la plus chère, sous-requêtes | 82 | 200 |
 | construction de copie la plus chère, sous-requêtes | 48 | 100 |
 | tâche planifiée à part meteor:stations, sous-requêtes | 40 | 100 |
@@ -53,7 +53,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 145 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:actualites, web:coupures, web:air, ens:ile, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 212 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
 - Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 430 sous-requêtes à 06:00 UTC.
-- Vue la plus chère : /communes/*, 99. Question la plus chère : resume_du_jour, 82. Construction la plus chère : web:chiffres:evenements, 48.
+- Vue la plus chère : /communes/*, 100. Question la plus chère : resume_du_jour, 82. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -178,7 +178,7 @@ Chacune a sa propre minuterie (wrangler.jsonc), dans sa propre invocation, avec 
 | entrée | ce que c'est | cadence | décalage (UTC) | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) | d'où |
 |---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---|
 | / | accueil : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 90 | 16 | 4 | 2 | 840 |  | 110 | mesuré |
-| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 99 | 17 | 6 | 1 | 150 |  | 160 | mesuré |
+| /communes/* | page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse | à chaque vue |  | 100 | 17 | 6 | 1 | 150 |  | 160 | mesuré |
 | /aujourdhui/* | la journée d'une commune (resume_du_jour) | à chaque vue |  | 82 | 20 | 6 | 1 | 150 |  | 130 | mesuré |
 | /meteo/* | la météo d'un lieu | à chaque vue |  | 68 | 8 | 5 | 1 | 150 |  | 135 | mesuré |
 | /meteo/pluie-radar.json | la couche pluie de la carte de /meteo : la dernière image du radar, ou celle de son historique (KV) quand le centre de données n'a qu'une copie gardée plus vieille | à chaque vue |  | 5 | 2 |  |  |  |  | 110 | code |

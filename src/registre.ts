@@ -790,7 +790,7 @@ const OTHER_PAGES: Record<string, Page> = {
   // Measured 78, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
   // « <Lieu> en chiffres » (web/en-chiffres.ts) adds 3 to the copy of the place when it is rebuilt: the day before (KV), the
   // stations of the archive (KV, kept 6 h) and their last 30 days (D1, one query, about 5 stations × 30 days) (10/11/2026).
-  "/communes/*": { subrequests: 83, cpuMs: 160, from: [...METEO, "src/tools/mer.ts"], what: "page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse", d1: { d1Calls: 1, d1RowsRead: 150 } },
+  "/communes/*": { subrequests: 84, cpuMs: 160, from: [...METEO, "src/tools/mer.ts"], what: "page d'une commune : sa météo, ses tuiles, et la plus vieille refaite après la réponse", d1: { d1Calls: 1, d1RowsRead: 150 } },
   // Measured 62, and 2 from the code for the FFVL's beacons (providers/ffvl.ts: their file and its redirect).
   // « <Lieu> en chiffres » (web/en-chiffres.ts) adds 3 to the copy of the place when it is rebuilt: the day before (KV), the
   // stations of the archive (KV, kept 6 h) and their last 30 days (D1, one query, about 5 stations × 30 days) (10/11/2026).

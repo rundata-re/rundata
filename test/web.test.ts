@@ -451,8 +451,8 @@ describe("commune pages", () => {
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
     const warm = await serve(isolate(edge), "/communes/saint-leu");
     expect(warm.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée) à[ \u00a0]\d\d:\d\d<\/p>/);
-    // One read per tile's copy, the hikes and the outings included, and the volcano's banner.
-    expect(warm.used).toBeLessThanOrEqual(18);
+    // One read per tile's copy, the hikes, the outings and the open public tenders included, and the volcano's banner.
+    expect(warm.used).toBeLessThanOrEqual(19);
   });
 
   it("have their day on a page of its own, cold within the limit, warm from a few reads", async () => {

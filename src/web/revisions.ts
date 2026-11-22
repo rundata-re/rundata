@@ -77,7 +77,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Sainte-Suzanne's orders allowing runéo's works, a block of their own (`arretes_sainte_suzanne`, 20/11/2026).
   // The sectors of the CIREST's notices on the quality of the water, « et les voies adjacentes » kept, said in
   // `secteurs_dits` (20/11/2026).
-  coupures: 20,
+  // « Pas d'avis de coupure récent ou à venir sur les sites lus », never « aucun avis », in the summary (22/11/2026).
+  coupures: 21,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).

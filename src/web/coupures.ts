@@ -183,6 +183,10 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   const siteDist = dist && !dist.avis ? SITES_DISTRIBUTEURS[dist.nom] : undefined;
   // Where its notices are published, in words of its own (GUIDES_AVIS): the lead, the distributor's card and the list.
   const guide = dist && !dist.avis ? GUIDES_AVIS[p.nom] : undefined;
+  // « Pas d'avis » with when its site was read, and that a cut may be told elsewhere (marketing, 22/11/2026), as the tool
+  // coupures_eau says it: never « aucun avis », which reads as « no cut ». The mairie is not that elsewhere when the
+  // notices read are its own (Cilaos, Sainte-Marie…).
+  const ailleurs = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "") ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
   const status = !d
     ? loading("Les avis des distributeurs")
     : x.muet && !x.avis.length
@@ -191,7 +195,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
       ? noticesHead(x.avis, where, [], x.muet ? "" : at)
       : dist?.avis
         // Worded with marketing: who publishes the notices read, without the commune when that name already says it.
-        ? `<p class="lead">Aucun avis de coupure publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`} ${esc(at)}.</p>`
+        ? `<p class="lead">Pas d'avis de coupure récent ou à venir publié par ${esc(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${esc(where)}`}, lu ${esc(at)}. ${ailleurs}</p>`
         : guide
         ? `<p class="lead">${guide.bandeau}</p>`
         : siteDist
@@ -203,7 +207,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
     : x.avis.length
       ? `${silent}<ul class="zones">${x.avis.map(noticeCard).join("")}</ul>`
       : x.muet ? ""
-      : `<p class="card">${dist?.avis ? `Aucun avis publié ${esc(at)}, ni coupure en cours ou à venir, ni avis « ne pas boire l'eau ».` : guide?.texte ?? `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
+      : `<p class="card">${dist?.avis ? `Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu ${esc(at)}.` : guide?.texte ?? `Nous ne lisons pas les avis de coupure ${esc(de(p.nom))}\u00a0: ils sont sur le site de la mairie ou du distributeur.${lienA}`}</p>`;
 
   const unreadShare = dist?.partage?.par.filter((x) => !x.site).map((x) => x.nom) ?? [];
   const distBlock = `<div class="card">${icon("drop")}<h3>Le distributeur</h3>` +

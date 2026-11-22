@@ -386,6 +386,20 @@ describe("coupures d'eau", () => {
     expect(coupuresLive(coupures)!.detail).toBe(`${coupures.value.avis.filter((n) => !n.ne_pas_boire).length} avis de coupure ou de travaux récents ou à venir`);
   });
 
+  it("says « Pas d'avis » for the whole island when no notice is current, never « aucun avis », in the tool and on the page", async () => {
+    // A month after the notices of the fixtures: no cut current any more (the water not to drink stays said).
+    const late = new Date("2026-11-30T06:00:00Z");
+    const b = body(await coupuresEau(cache(late), undefined, late));
+    expect(b.resume).toContain("Pas d'avis de coupure récent ou à venir sur les sites lus. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
+    expect(b.resume).not.toContain("Aucun avis de coupure");
+    // The page with no notice in its copy, every site answering, then one silent.
+    const value = await buildCoupures(cache(late), late);
+    const empty = (injoignable: typeof value.injoignable) =>
+      coupuresPage("https://rundata.re", { value: { ...value, avis: [], injoignable }, fetchedAt: late }, late);
+    expect(empty(undefined)).toContain("Pas d'avis de coupure récent ou à venir sur les sites lus. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
+    expect(empty(undefined)).not.toContain("Aucun avis de coupure récent");
+  });
+
   it("tells apart in the résumé notices of the same title, by their hours and streets, and counts the others", () => {
     // Saint-Denis, read on 21/11/2026 at 10:05: five notices of Dionéo, three titled « Travaux sur le réseau ».
     const avis = (titre: string, publie: string, debut: string, fin: string, secteurs: string[]) =>
@@ -670,7 +684,9 @@ describe("coupures d'eau", () => {
     expect(pdp).toMatch(/<meta name="description" content="La Plaine-des-Palmistes \(974\)\u00a0: eau à ne pas boire\u00a0; \d+ avis de /);
     expect(pdp).toContain("les avis de la CIREST");
     // runéo's feed is read, and has nothing for Saint-Pierre: said with the time of the copy.
-    expect(page("saint-pierre")).toContain("Aucun avis de coupure publié par runéo à Saint-Pierre le 24/10 à 08:00.");
+    expect(page("saint-pierre")).toContain("Pas d'avis de coupure récent ou à venir publié par runéo à Saint-Pierre, lu le 24/10 à 08:00. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
+    expect(page("saint-pierre")).toContain("Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu le 24/10 à 08:00.");
+    expect(page("saint-pierre")).not.toMatch(/Aucun avis (de coupure )?publié|ni coupure en cours/);
     expect(page("saint-pierre")).toContain(`content="Aucune coupure d&#39;eau annoncée par runéo à Saint-Pierre (974) le 24/10 à\u00a008:00.`);
     // La Créole's page is read: its notice, dated to the day without an hour, during the night of its cut.
     const night = { value: await buildCoupures(cache(NIGHT), NIGHT), fetchedAt: NIGHT };
@@ -878,7 +894,7 @@ describe("coupures d'eau", () => {
     expect(coupures.value.communes_suivies).toContain("Saint-Leu");
     // Read on their ville's site since 20/11/2026 (rule 3 bis), no longer only linked to.
     expect(page("cilaos")).toContain(`les avis de coupure publiés sur <a href="https://ville-cilaos.fr/?s=eau" rel="noopener">le site de la ville de Cilaos</a>`);
-    expect(page("petite-ile")).toContain("Aucun avis de coupure publié par la ville de Petite-Île le ");
+    expect(page("petite-ile")).toMatch(/Pas d'avis de coupure récent ou à venir publié par la ville de Petite-Île, lu le \d\d\/\d\d à \d\d:\d\d\. Une coupure peut être annoncée ailleurs\.</);
     // L'Étang-Salé: the ARS names runéo for 7 of its 8 networks and the mairie for one; runéo's notices are read.
     const es = page("l-etang-sale");
     expect(es).toContain("<p>D&#39;après l&#39;ARS, runéo distribue l&#39;eau de 7 réseaux sur 8 à L&#39;Étang-Salé, et la mairie celle du réseau Sources Nouvelles les Hauts.</p>");
@@ -890,7 +906,7 @@ describe("coupures d'eau", () => {
     // No notice of Saint-Leu at the time: said of the commune that publishes them, not of its distributor.
     const later = new Date("2026-10-24T04:00:00Z");
     const now = { value: await buildCoupures(cache(), later), fetchedAt: later };
-    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/Aucun avis de coupure publié par la commune de Saint-Leu le \d\d\/\d\d à \d\d:\d\d\./);
+    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/Pas d'avis de coupure récent ou à venir publié par la commune de Saint-Leu, lu le \d\d\/\d\d à \d\d:\d\d\. Une coupure peut être annoncée ailleurs\.</);
     expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toContain('content="Aucune coupure d&#39;eau annoncée par la commune de Saint-Leu (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
     // The east: the CIREST publishes the notices read, not O2LEST, which the ARS names as the distributor.
     const sa = coupuresCommunePage("https://rundata.re", pageOf("saint-andre")!, { coupures: now }, later);

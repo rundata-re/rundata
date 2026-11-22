@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-22T10:12:00+04:00", texte: "Coupures d'eau\u00a0: sans avis, la page et l'outil disent «\u00a0pas d'avis\u00a0» avec l'heure de lecture, et qu'une coupure peut être annoncée ailleurs." },
   { date: "2026-11-22T05:51:00+04:00", texte: "Fiche d'une adresse\u00a0: quand le Cerema ne répond pas, les prix de vente viennent des fichiers DVF d'Etalab, mêmes données de la DGFiP." },
   { date: "2026-11-21T15:05:00+04:00", texte: "Pages des communes\u00a0: une coupure d'électricité relayée par la mairie s'affiche dans la tuile Électricité, avec ses heures et l'avis." },
   { date: "2026-11-21T13:31:00+04:00", texte: "Événements\u00a0: une sortie annoncée par un appel à exposants est donnée sous son nom, avec ses heures pour le public et le lien du billet." },

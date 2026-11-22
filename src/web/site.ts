@@ -391,6 +391,11 @@ let swText: string | undefined;
  * not only an assistant's reader, waits for the refresh of an old copy (`snapshot`), for a page that would say something
  * wrong from it.
  */
+// The oldest copy of /bus a view shows as it is, its refresh after the answer: past it, the view waits for the refresh
+// (WAIT_MS for a person), since the next departures and their delays change by the minute. The scheduled event writes
+// a new copy every 5 minutes (web/partagees.ts SHARED): a copy past 10 minutes means it missed one.
+export const BUS_MAX_AGE_MS = 10 * 60_000;
+
 export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: Date) => Promise<any>; page: (origin: string, data: Cached<any> | null, now: Date, alerte?: Alerte, avec?: any) => string; waits?: ReaderWaits; /** Another page's copy the page also shows, read as it is (never built for it). */ avec?: string }> = {
   // The records of /historique's stations of reference, from its copy (block « Records »).
   "/meteo": { key: "web:meteo", build: buildHome, page: meteoPage, avec: "web:historique" },
@@ -398,8 +403,9 @@ export const DOMAINS: Record<string, { key: string; build: (cache: Cache, now: D
   "/air": { key: "web:air", build: buildAir, page: airPage },
   "/electricite": { key: "web:electricite", build: buildElectricite, page: electricitePage },
   "/calendrier": { key: "web:calendrier", build: buildCalendrier, page: calendrierPage },
-  // A copy past what it knows of a station would say « Pas de départ prévu » there (web/domains.ts `busOutran`).
-  "/bus": { key: "web:bus", build: (cache, now) => buildBus(now, cache), page: busPage, waits: (_key, value, ageMs) => (value as BusData).gares.some((g) => busOutran(g, ageMs)) },
+  // A copy past what it knows of a station would say « Pas de départ prévu » there (web/domains.ts `busOutran`); one older
+  // than BUS_MAX_AGE_MS would give delays long changed: both are refreshed before they are shown.
+  "/bus": { key: "web:bus", build: (cache, now) => buildBus(now, cache), page: busPage, waits: (_key, value, ageMs) => ageMs > BUS_MAX_AGE_MS || (value as BusData).gares.some((g) => busOutran(g, ageMs)) },
   "/trafic": { key: "web:trafic", build: buildTrafic, page: traficPage },
   "/velos": { key: "web:velos", build: buildVelos, page: velosPage },
   "/bornes": { key: "web:bornes", build: buildBornes, page: bornesPage },

@@ -5,7 +5,7 @@ import { communePage } from "../src/web/commune.js";
 import type { BusData, CommuneData } from "../src/web/data.js";
 import { busLive, busOutran, busPage, HORAIRES_CHARGENT } from "../src/web/domains.js";
 import { pageOf } from "../src/web/places.js";
-import { DOMAINS } from "../src/web/site.js";
+import { BUS_MAX_AGE_MS, DOMAINS } from "../src/web/site.js";
 
 const ORIGIN = "https://rundata.re";
 const at = (local: string) => new Date(`${local}+04:00`);
@@ -46,10 +46,19 @@ describe("a copy of /bus past what it knows of a station", () => {
   it("is refreshed before it is shown, to every visitor", () => {
     const waits = DOMAINS["/bus"].waits!;
     expect(waits("web:bus", bus.value, at("2026-10-31T01:37").getTime() - READ.getTime())).toBe(true);
-    expect(waits("web:bus", bus.value, at("2026-10-30T22:44").getTime() - READ.getTime())).toBe(false);
+    // Within what Saint-Pierre knows (3 hours) and BUS_MAX_AGE_MS: shown as it is, refreshed after the answer.
+    expect(waits("web:bus", bus.value, at("2026-10-30T19:54").getTime() - READ.getTime())).toBe(false);
     expect(busOutran(bus.value.gares[0], 180 * 60_000)).toBe(true);
     // A copy written before the field: taken as knowing, as before.
     expect(busOutran({}, 24 * 3600_000)).toBe(false);
+  });
+
+  it("past 10 minutes, is refreshed before it is shown too: the delays change by the minute", () => {
+    const waits = DOMAINS["/bus"].waits!;
+    // Le Tampon and Saint-Benoît alone, 20 hours known: only its age holds it.
+    const far = { ...bus.value, gares: bus.value.gares.slice(1) };
+    expect(waits("web:bus", far, BUS_MAX_AGE_MS)).toBe(false);
+    expect(waits("web:bus", far, BUS_MAX_AGE_MS + 1)).toBe(true);
   });
 
   it("gives the home page's tile nothing rather than « Pas de départ »", () => {

@@ -143,8 +143,9 @@ describe("the shared copies after a deploy", () => {
     const kv = new FakeKv();
     let now = T0;
     const edge = new CountedStore();
-    // Every copy in KV and in the data center's cache, written by the previous version 15 seconds apart, none due by its
-    // rate (the earthquakes' every 10 minutes) nor at its slot (all within their margin, a sixth of their rate, before it).
+    // Every copy in KV and in the data center's cache, written by the previous version 12 seconds apart, none due by its
+    // rate (the earthquakes' every 10 minutes) nor at its slot (all within their margin, a sixth of their rate, before it:
+    // 15 seconds apart until /bus's copy made them 21, the last then 315 seconds before, past its 300).
     // Their families renamed, out of the revisions' table (web/revisions.ts): « web:chiffres:evenements » as « web:chiffres-version:evenements »,
     // a source's key (« actualites:fil ») as « actualites-version:fil », its first part too: the table's family entries
     // (« onf ») are looked up by it.
@@ -152,7 +153,7 @@ describe("the shared copies after a deploy", () => {
     const list: Shared[] = SHARED.map((s) => ({ ...s, key: versioned(s.key), build: async () => (count(s.cold ?? 25), { at: now }) }));
     const writtenAt = new Map<string, number>();
     for (const [i, s] of list.entries()) {
-      const at = now - (i + 1) * 15_000;
+      const at = now - (i + 1) * 12_000;
       writtenAt.set(s.key, at);
       const entry = { value: {}, fetchedAt: at, cost: s.cold, version: "1.0.0" };
       await kv.put(kvKey(s.key), JSON.stringify(entry), { metadata: { fetchedAt: at, cost: s.cold, every: typeof s.every === "number" ? s.every : 30, version: "1.0.0" } });
@@ -209,10 +210,10 @@ describe("the shared copies after a deploy that raises no revision", () => {
     const kv = new FakeKv();
     const now = T0;
     const edge = new CountedStore();
-    // The real list's keys, each written by the previous version 15 seconds apart, none due by its rate nor at its slot.
+    // The real list's keys, each written by the previous version 12 seconds apart, none due by its rate nor at its slot.
     const list: Shared[] = SHARED.map((s) => ({ ...s, build: async () => (count(s.cold ?? 25), {}) }));
     for (const [i, s] of list.entries()) {
-      const at = now - (i + 1) * 15_000;
+      const at = now - (i + 1) * 12_000;
       const version = stampOf(s.key, "1.0.0");
       const entry = { value: {}, fetchedAt: at, cost: s.cold, ...(version && { version }) };
       await kv.put(kvKey(s.key), JSON.stringify(entry), { metadata: { fetchedAt: at, cost: s.cold, every: typeof s.every === "number" ? s.every : 30, ...(version && { version }) } });
@@ -285,8 +286,9 @@ describe("the scheduled refresh of the shared copies", () => {
     // worst day, NOAA not answering: a real day goes back to every hour once the window's granules are read.
     const passes = kv.writes.get(kvKey(viirs.KEY))!;
     expect(passes).toBe(112);
-    expect(total - passes).toBeLessThanOrEqual(1188 + 49 + 144 + 48);
-    expect(total - passes).toBeGreaterThanOrEqual(1145 + 49 + 144 + 48);
+    // /bus's copy every 5 minutes (288, since 22/11/2026).
+    expect(total - passes).toBeLessThanOrEqual(1188 + 49 + 144 + 48 + 289);
+    expect(total - passes).toBeGreaterThanOrEqual(1145 + 49 + 144 + 48 + 285);
   });
 
   it("refreshes a copy at each of its slots, though written a few seconds into the event before", async () => {

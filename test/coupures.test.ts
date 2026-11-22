@@ -38,6 +38,21 @@ const enCron = async <T>(work: () => Promise<T>) => (await counted(1000, () => (
 // The night of La Créole's cut, the 23rd at 22:00 to the 24th at 06:00: 02:00 on the 24th.
 const NIGHT = new Date("2026-10-23T22:00:00Z");
 
+const unescape = (t: string) => t.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+/** The meta, og and twitter descriptions and the JSON-LD's say the same, open as the page's lead and keep the hour of reading. */
+function sameSaid(html: string) {
+  const said = [/<meta name="description" content="([^"]*)">/, /<meta property="og:description" content="([^"]*)">/, /<meta name="twitter:description" content="([^"]*)">/]
+    .map((re) => unescape(html.match(re)![1]));
+  const ld = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => [JSON.parse(m[1])].flat()).find((j) => j["@type"] === "WebPage")!.description;
+  const lead = unescape(html.match(/<p class="lead">([^<]*)<\/p>/)![1]);
+  expect(new Set([...said, ld]).size).toBe(1);
+  // The page's spaces, which the head of the page makes unbreakable before an hour.
+  const plain = (t: string) => t.replace(/[\u00a0\u202f]/g, " ");
+  expect(plain(lead).startsWith(plain(said[0].replace(/ Sécheresse, eau du robinet et contact du distributeur\.$/, ""))), `${lead} / ${said[0]}`).toBe(true);
+  expect(said[0]).toMatch(/, lu le \d\d\/\d\d à\u00a0\d\d:\d\d\./);
+}
+
 describe("coupures d'eau", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", async (url: string) => {
@@ -687,7 +702,9 @@ describe("coupures d'eau", () => {
     expect(page("saint-pierre")).toContain("Pas d'avis de coupure récent ou à venir publié par runéo à Saint-Pierre, lu le 24/10 à 08:00. Une coupure peut être annoncée ailleurs, par la mairie par exemple.");
     expect(page("saint-pierre")).toContain("Pas d'avis de coupure récent ou à venir, ni d'avis «\u00a0ne pas boire l'eau\u00a0», lu le 24/10 à 08:00.");
     expect(page("saint-pierre")).not.toMatch(/Aucun avis (de coupure )?publié|ni coupure en cours/);
-    expect(page("saint-pierre")).toContain(`content="Aucune coupure d&#39;eau annoncée par runéo à Saint-Pierre (974) le 24/10 à\u00a008:00.`);
+    expect(page("saint-pierre")).toContain(`content="Pas d&#39;avis de coupure récent ou à venir publié par runéo à Saint-Pierre, lu le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">`);
+    // The four descriptions and the JSON-LD say the same, and open as the page does: none forgotten.
+    sameSaid(page("saint-pierre"));
     // La Créole's page is read: its notice, dated to the day without an hour, during the night of its cut.
     const night = { value: await buildCoupures(cache(NIGHT), NIGHT), fetchedAt: NIGHT };
     const sp = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: night }, NIGHT);
@@ -908,12 +925,13 @@ describe("coupures d'eau", () => {
     const later = new Date("2026-10-24T04:00:00Z");
     const now = { value: await buildCoupures(cache(), later), fetchedAt: later };
     expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toMatch(/Pas d'avis de coupure récent ou à venir publié par la commune de Saint-Leu, lu le \d\d\/\d\d à \d\d:\d\d\. Une coupure peut être annoncée ailleurs\.</);
-    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toContain('content="Aucune coupure d&#39;eau annoncée par la commune de Saint-Leu (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
+    expect(coupuresCommunePage("https://rundata.re", pageOf("saint-leu")!, { coupures: now }, later)).toContain('content="Pas d&#39;avis de coupure récent ou à venir publié par la commune de Saint-Leu, lu le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
     // The east: the CIREST publishes the notices read, not O2LEST, which the ARS names as the distributor.
     const sa = coupuresCommunePage("https://rundata.re", pageOf("saint-andre")!, { coupures: now }, later);
-    expect(sa).toContain('content="Aucune coupure d&#39;eau annoncée par la CIREST à Saint-André (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
+    for (const slug of ["saint-leu", "saint-andre", "sainte-marie"]) sameSaid(coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures: now }, later));
+    expect(sa).toContain('content="Pas d&#39;avis de coupure récent ou à venir publié par la CIREST à Saint-André, lu le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
     expect(sa).toContain("<b>O2LEST</b> distribue l'eau à Saint-André, d'après le contrôle sanitaire de l'ARS.");
-    expect(coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures: now }, later)).toContain('content="Aucune coupure d&#39;eau annoncée par la ville de Sainte-Marie (974) le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
+    expect(coupuresCommunePage("https://rundata.re", pageOf("sainte-marie")!, { coupures: now }, later)).toContain('content="Pas d&#39;avis de coupure récent ou à venir publié par la ville de Sainte-Marie, lu le 24/10 à\u00a008:00. Sécheresse, eau du robinet et contact du distributeur.">');
   });
 
   it("gives, for a commune whose ville publishes the notices, who publishes them and its distributor", async () => {

@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { codesByName, codeVoie, GARDE_TAPEE, gardeTapee, latestAct, nomVoie, planOf, SOURCES, streetSales, VEFA as VEFA_NATURE } from "../src/providers/terrain.js";
 import { SOURCES as TRACES } from "../src/providers/traces.js";
-import { communeOf, ficheLieu, incertain, lieuOf, market, riskLine, sameStreet, SCORE_FAIBLE, streetLine, streetMarket, townHallOf } from "../src/tools/terrain.js";
+import { communeOf, ficheLieu, incertain, nonLues, lieuOf, market, riskLine, sameStreet, SCORE_FAIBLE, streetLine, streetMarket, townHallOf } from "../src/tools/terrain.js";
 
 // Real answers of 23/10/2026 for 7 rue de la Buse, Saint-Paul: parcel BO 552, zone U1c, 115 sales since 2021.
 const raw = (f: string) => readFileSync(new URL(`./fixtures/terrain/${f}`, import.meta.url), "utf8");
@@ -166,22 +166,55 @@ describe("fiche terrain", () => {
     expect(urls.filter((u) => u.includes("geo-dvf"))[0]).toBe("https://files.data.gouv.fr/geo-dvf/latest/csv/2021/communes/974/97416.csv");
   });
 
-  it("keeps a street's sales when the area's do not answer: the same in the summary and in the market's field", async () => {
-    // 21/11/2026: the Cerema's API answered 522, Etalab's files the street's one sale; the field said « indisponible ».
+  it("reads the area's sales from Etalab's files when the Cerema's API does not answer, with Etalab cited alone", async () => {
+    // 21/11/2026: the Cerema's API answered 522 for an hour and a half; the area's sales were said « indisponible ».
+    files = { ...files, geocodage: "geocode-temple.json" };
+    const head = raw("geo-dvf.csv").split("\n")[0].split(",");
+    const line = (v: Record<string, string>) => head.map((c) => v[c] ?? "").join(",");
+    // Rue du Temple's point, 55.483017 -21.337952: three houses in the square (about 300 m each way), one 1 km away,
+    // one exchange in it.
+    const house = (id: string, valeur: string, bati: string, lon: number, lat: number, nature = "Vente") =>
+      line({ id_mutation: id, date_mutation: "2024-05-02", nature_mutation: nature, valeur_fonciere: valeur, code_commune: "97416", id_parcelle: `97416000AB${id.slice(-4)}`, code_type_local: "1", type_local: "Maison", surface_reelle_bati: bati, code_nature_culture: "S", surface_terrain: "300", longitude: String(lon), latitude: String(lat) });
+    const around = [
+      house("2024-A0001", "250000", "100", 55.4832, -21.3381),
+      house("2024-A0002", "300000", "100", 55.4815, -21.3365),
+      house("2024-A0003", "350000", "100", 55.4845, -21.3395),
+      house("2024-A0004", "900000", "100", 55.4930, -21.3380),
+      house("2024-A0005", "100000", "100", 55.4831, -21.3380, "Echange"),
+    ];
+    const inner = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = String(url);
+      if (new URL(u).hostname === "apidf-preprod.cerema.fr") return new Response("", { status: 522 });
+      if (u.includes("geo-dvf") && u.includes("/2024/")) return urls.push(u), new Response(`${raw("geo-dvf.csv").trimEnd()}\n${around.join("\n")}\n`);
+      return inner(url);
+    });
+    const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "rue du Temple, Saint-Pierre", NOW));
+    expect(r.marche_immobilier).toMatchObject({ perimetre: "environ 600 m × 600 m autour du point", depuis: 2021, maisons: { ventes: 3, prix_median: "300\u202f000\u00a0€", prix_m2_median: "3\u202f000\u00a0€/m²" }, toutes_ventes: 3 });
+    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Rue du Temple", depuis: 2021, ventes: 2, note: "2 ventes enregistrées dans DVF sur la voie depuis 2021, trop peu pour une médiane" });
+    expect(r.resume).toContain("dans le secteur alentour (environ 600 m sur 600 m), depuis 2021 : maisons 3\u202f000\u00a0€/m² (prix médian, 3 ventes)");
+    const cited = r.sources.map((x: { source: string }) => x.source);
+    expect(cited.filter((x: string) => x === "Demandes de valeurs foncières géolocalisées (DVF, Etalab)")).toHaveLength(1);
+    expect(cited).not.toContain("Demandes de valeurs foncières (DVF open data, Cerema)");
+  });
+
+  it("says who did not answer and when, the day with the hour, when neither the Cerema nor Etalab answers", async () => {
     files = { ...files, geocodage: "geocode-temple.json" };
     const inner = globalThis.fetch;
-    vi.stubGlobal("fetch", async (url: string) => (new URL(String(url)).hostname === "apidf-preprod.cerema.fr" ? new Response("", { status: 522 }) : inner(url)));
-    const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "rue du Temple, Saint-Pierre", NOW));
-    expect(r.resume).toContain("Rue du Temple, depuis 2021 : 2 ventes enregistrées dans DVF, trop peu pour une médiane");
-    expect(r.resume).not.toContain("dans le secteur alentour");
-    expect(r.marche_immobilier).toEqual({
-      secteur: "service momentanément indisponible : réessayer dans un instant",
-      sur_la_voie: { voie: "Rue du Temple", depuis: 2021, ventes: 2, note: "2 ventes enregistrées dans DVF sur la voie depuis 2021, trop peu pour une médiane" },
-      note: "Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.",
+    vi.stubGlobal("fetch", async (url: string) => {
+      const u = String(url);
+      if (new URL(u).hostname === "apidf-preprod.cerema.fr") return new Response("", { status: 522 });
+      if (u.includes("geo-dvf")) return new Response("", { status: 503 });
+      return inner(url);
     });
-    const cited = r.sources.map((x: { source: string }) => x.source);
-    expect(cited).toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
-    expect(cited).not.toContain("Demandes de valeurs foncières (DVF open data, Cerema)");
+    const r = body(await ficheLieu(new Cache(new MemoryStore(), () => NOW.getTime()), "rue du Temple, Saint-Pierre", NOW));
+    expect(r.marche_immobilier).toBe("ventes non lues\u00a0: ni le Cerema ni Etalab n'ont répondu le 23/10 à 09:00, heure de La Réunion\u00a0; réessayer plus tard");
+    // The street's files are Etalab's alone: named alone.
+    expect(r.resume).toContain("Rue du Temple : ventes de la voie non lues, Etalab n'a pas répondu le 23/10 à 09:00\u00a0; ");
+    expect(r.resume).not.toContain("dans le secteur alentour");
+    expect(r.sources.map((x: { source: string }) => x.source)).not.toContain("Demandes de valeurs foncières (DVF open data, Cerema)");
+    // Given coordinates outside a known commune: the Cerema alone was asked, named alone.
+    expect(nonLues(["Cerema"], NOW)).toBe("ventes non lues\u00a0: le Cerema n'a pas répondu le 23/10 à 09:00, heure de La Réunion\u00a0; réessayer plus tard");
   });
 
   it("reads an address: parcel, PLU zone, altitude, market", async () => {
@@ -537,8 +570,8 @@ describe("fiche terrain, a street without a land registry code", () => {
   it("says a street's sales were not read when DVF does not answer, a street with a code as well", async () => {
     answer(() => new Response("", { status: 400 }));
     const r = await fiche("7 rue de la Buse, Saint-Paul");
-    expect(r.resume).toContain("\u00a0; Rue de la Buse : ventes de la voie non lues, DVF ne répond pas pour l'instant\u00a0; dans le secteur alentour ");
-    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Rue de la Buse", non_lues: "DVF ne répond pas pour l'instant" });
+    expect(r.resume).toContain("\u00a0; Rue de la Buse : ventes de la voie non lues, Etalab n'a pas répondu le 23/10 à 09:00\u00a0; dans le secteur alentour ");
+    expect(r.marche_immobilier.sur_la_voie).toEqual({ voie: "Rue de la Buse", non_lues: "Etalab n'a pas répondu le 23/10 à 09:00" });
     expect(r.sources.map((x: { source: string }) => x.source)).not.toContain("Demandes de valeurs foncières géolocalisées (DVF, Etalab)");
     expect(urls.filter((u) => /plateforme|type=street/.test(u))).toEqual([]);
   });
@@ -607,7 +640,7 @@ describe("the cache of what someone typed (providers/terrain.ts gardeTapee)", ()
     // Each key the provider writes, by its prefix: a new one must be sorted here.
     const src = readFileSync(new URL("../src/providers/terrain.ts", import.meta.url), "utf8");
     const prefixes = [...src.matchAll(/cache\.get\(`([a-z-]+):/g)].map((m) => m[1]);
-    expect(new Set(prefixes)).toEqual(new Set(["ban", "ban-homonymes", "ban-code", "ban-voies", "cadastre", "gpu", "alti", "dvf", "dvf-voie", "ppr", "catnat", "mvt"]));
+    expect(new Set(prefixes)).toEqual(new Set(["ban", "ban-homonymes", "ban-code", "ban-voies", "cadastre", "gpu", "alti", "dvf", "dvf-voie", "dvf-geo", "ppr", "catnat", "mvt"]));
     for (const p of prefixes) expect(gardeTapee(`${p}:x`), p).toBe(p !== "catnat");
     expect(gardeTapee("ban:97413:mairie de saint-leu")).toBe(true);
     expect(gardeTapee("cadastre:55.28689,-21.16622")).toBe(true);

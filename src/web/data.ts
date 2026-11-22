@@ -38,7 +38,7 @@ import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
 import { buildChiffres, type Chiffres } from "./en-chiffres.js";
 import { named } from "../tools/annuaire.js";
-import { alertsFor, applyRealtime, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures } from "../tools/transports.js";
+import { alertsFor, applyRealtime, busiestStops, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures } from "../tools/transports.js";
 import * as prefecture from "../providers/prefecture.js";
 import type { Cyclone } from "../providers/prefecture.js";
 import type { ReleveEntree } from "../providers/prefecture-copie.js";
@@ -1879,11 +1879,14 @@ export interface CommuneData {
   bus?: {
     /** At the commune's bus station, or at the stops nearest its centre. */
     gare: boolean;
-    arrets: { nom: string; reseau: string }[];
+    /** Its stops, each with its page (/bus/arret/<page>), which the commune's page links. */
+    arrets: { nom: string; reseau: string; page?: string }[];
     departs: PageRow[];
     /** As a station's of /bus (`GareNow`). */
     complet_min?: number;
     alertes?: { reseau: string; lignes?: string[]; titre: string; detail?: string }[];
+    /** The commune's stops most served, the page's FAQ links (tools/transports.ts `busiestStops`). */
+    desservis?: { nom: string; page: string }[];
   };
   /** The commune's Altervélo stations, those with bikes first (Saint-Pierre, Saint-Louis, L'Étang-Salé). */
   velos?: VeloStation[];
@@ -1937,12 +1940,15 @@ export async function buildCommune(cache: Cache, p: PlacePage, now = new Date())
       const all = applyRealtime(list, feeds, now);
       const shown = spread(all, 6);
       const alertes = alertsFor(groups, shown, feeds, now);
+      // Its most served stops, for the FAQ: none said when they cannot be read, the rest of the block kept.
+      const desservis = await busiestStops(p.nom, now).catch((err) => (console.error(`page ${p.slug} : arrêts les plus desservis indisponibles`, why(err)), []));
       return {
         gare,
-        arrets: groups.map((g) => ({ nom: g.nom, reseau: transit.NETWORKS[g.reseau]?.nom ?? g.reseau })),
+        arrets: groups.map((g) => ({ nom: g.nom, reseau: transit.NETWORKS[g.reseau]?.nom ?? g.reseau, ...(transit.pageOfStop(g.ids[0]) ? { page: transit.pageOfStop(g.ids[0])!.slug } : {}) })),
         departs: shown.map(pageRow(now)),
         complet_min: completeMinutes(all, shown, horizon),
         ...(alertes.length ? { alertes } : {}),
+        ...(desservis.length ? { desservis: desservis.map(({ nom, page }) => ({ nom, page })) } : {}),
       };
     })(),
     BIKE_COMMUNES.includes(p.nom) ? velosLibreService(cache, p.nom, now, true).then((r) => answer<VelosAnswer>(r)?.stations) : Promise.resolve(undefined),

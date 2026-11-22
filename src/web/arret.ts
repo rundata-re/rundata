@@ -12,6 +12,8 @@ import { alertList, crumbBar, crumbs, departureLi, listClock, STOP_PATH, stopSea
 import { esc } from "./map.js";
 import { type Alerte, credit } from "./data.js";
 import { credits, DESCRIPTION_MAX, layout, leAt } from "./pages.js";
+import { pageOf, slugify } from "./places.js";
+import { a } from "../tools/format.js";
 
 // What a search engine shows of a title: the tab's title takes the first of its forms that fits.
 const TITLE_MAX = 60;
@@ -51,6 +53,46 @@ function described(p: transit.StopPage, lignes: string[]): string {
   return [0, 1, 2, 3].map((cut) => say(cut, [], 0)).find((d) => d.length <= DESCRIPTION_MAX) ?? say(3, [], 0);
 }
 
+/** Lines a stop's text names one by one; the others counted (marketing, 22/11/2026). */
+export const LIGNES_DITES = 8;
+/** Stops near it that the text links to. */
+export const ARRETS_PROCHES = 5;
+
+/**
+ * The stop's own lasting text, under its departures (marketing, 22/11/2026): its commune, its networks and lines with
+ * their terminus, how its times are known, the stops nearest it and the commune's day. Nothing in it changes in the day,
+ * and it differs from one stop to the next, unlike the sentence of /bus that the 815 indexed pages shared.
+ */
+export function stopText(p: transit.StopPage, lignes: Departures["desserte"]): string {
+  // The networks of the lines that stop there, in the page's order; all of the page's when no line is known.
+  const nets = lignes.length ? networksOf(p).filter((n) => lignes.some((l) => l.reseau === n)) : networksOf(p);
+  const shown = lignes.slice(0, LIGNES_DITES);
+  const more = lignes.length - shown.length;
+  const line = (l: (typeof lignes)[number]) => `${esc(l.ligne)}${l.terminus.length ? ` vers ${esc(list(l.terminus))}` : ""}`;
+  const served = lignes.length
+    ? ` Il est desservi par ${lignes.length} ligne${lignes.length > 1 ? "s" : ""} ${esc(list(nets.map(deNom)))}\u00a0: ${shown.map(line).join(", ")}${more ? `, et ${more} autre${more > 1 ? "s" : ""} ligne${more > 1 ? "s" : ""}` : ""}.`
+    : "";
+  // How the times are known, true of each network: those with a real-time feed announce them when they publish them;
+  // the others only publish their timetables (src/transit/network.json, `temps_reel`).
+  const live = nets.filter((n) => Object.values(transit.NETWORKS).some((x) => x.nom === n && x.temps_reel));
+  const timetable = nets.filter((n) => !live.includes(n));
+  const these = lignes.length > 1 ? " de toutes ces lignes" : lignes.length ? " de cette ligne" : "";
+  const how = !timetable.length
+    ? `à l'heure annoncée en direct par ${list(live)} quand ${live.length > 1 ? "ils la publient" : "il la publie"}, sinon à l'horaire théorique.`
+    : !live.length
+      ? `à l'horaire théorique\u00a0: rundata.re n'a pas d'heures en direct ${deNom(list(timetable))}.`
+      : `à l'heure annoncée en direct par ${list(live)} quand ${live.length > 1 ? "ils la publient" : "il la publie"}, sinon à l'horaire théorique. Pour ${list(timetable)}, rundata.re n'a que l'horaire théorique.`;
+  const near = transit.pagesNear(p, ARRETS_PROCHES)
+    .map(({ page }) => `<a href="${STOP_PATH}/${esc(page.slug)}">${esc(page.nom)}</a>${page.commune === p.commune ? "" : ` (${esc(page.commune)})`}`);
+  const day = pageOf(slugify(p.commune));
+  return `<section class="arret-texte"><div class="card">
+<p>L'arrêt ${esc(p.nom)} se trouve ${esc(a(p.commune))}.${served}</p>
+<p>Cette page donne les prochains départs${these}, ${esc(how)} Chaque départ mène à son parcours, arrêt par arrêt.</p>
+${near.length ? `<p>Arrêts proches\u00a0: ${near.join(", ")}.</p>` : ""}
+${day ? `<p><a href="/aujourdhui/${esc(day.slug)}">La journée ${esc(a(p.commune))}\u00a0: météo, vigilance, eau, sorties →</a></p>` : ""}
+</div></section>`;
+}
+
 /** The stops of a page within this many metres of the first are one place: one « Y aller ». */
 export const SAME_STOP_M = 50;
 
@@ -85,10 +127,10 @@ export function stopPage(origin: string, p: transit.StopPage, d: Departures, now
   const band = `${crumbBar(p.nom, { name: "Bus", path: "/bus" })}
 <div class="wrap intro">
   <div class="pitch">
-    <h1>Arrêt ${esc(p.nom)}</h1>
+    <h1>${esc(titled(p))}\u00a0: prochains bus</h1>
     <p class="lead">${esc(p.commune)} · ${names}</p>
     ${toStop(p, ya)}
-    <p>Les prochains bus qui passent à cet arrêt, toutes lignes et tous réseaux confondus. Chaque départ mène à son parcours, arrêt par arrêt.</p>
+    <p>Les prochains bus qui passent à cet arrêt, toutes lignes et tous réseaux confondus.</p>
   </div>
 </div>`;
 
@@ -110,6 +152,7 @@ export function stopPage(origin: string, p: transit.StopPage, d: Departures, now
   ${note}
   <p class="sources">Sources : ${credits(d.sources.map(credit))}.</p>
 </section>
+${stopText(p, d.desserte ?? [])}
 ${d.alertes.length ? `<section aria-labelledby="h-trafic"><h2 id="h-trafic">Info trafic</h2><div class="card">${alertList(d.alertes)}<p class="note">Publié par les réseaux dans leur flux en direct, repris tel quel.</p></div></section>` : ""}`;
 
   return layout(origin, { title, description, path, ...(p.indexe ? {} : { noindex: true }), jsonld: [crumbs(origin, p.nom, path, { name: "Bus", path: "/bus" })], alerte }, band, ya.ligne + body + ya.feuille);

@@ -67,7 +67,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its bus departures of today's service link their trip without « ?jour= », as on /bus.
   // All its bus departures link their trip without « ?jour= », as on /bus (19/11/2026).
   // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
-  commune: 29,
+  // Its bus stops with their page (/bus/arret/…), which the Bus block links (22/11/2026).
+  commune: 30,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).

@@ -18,8 +18,11 @@ export const COMMUNE_LIRE = "<p>En haut, ce qui change dans la journée, chaque 
 /** « A, B et C ». */
 const liste = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} et ${xs.at(-1)}`);
 
-/** The questions of a commune, each only with its data. `slug`: the commune's, for the link to its water cuts. */
-export function communeFaq(commune: string, slug: string): Faq[] {
+/**
+ * The questions of a commune, each only with its data. `slug`: the commune's, for the link to its water cuts.
+ * `desservis`: its stops most served, linked after its networks (marketing, 22/11/2026).
+ */
+export function communeFaq(commune: string, slug: string, desservis: { nom: string; page: string }[] = []): Faq[] {
   const faq: Faq[] = [];
   const d = distributeur(commune);
   if (d) {
@@ -40,7 +43,8 @@ export function communeFaq(commune: string, slug: string): Faq[] {
     const dits = locaux.map((n) => n.nom);
     faq.push({
       q: `Quels bus desservent ${commune} ?`,
-      a: esc(`${locaux.length > 1 ? "Les réseaux" : "Le réseau"} ${liste([...dits, ...(jaune ? ["le Car Jaune"] : [])])}.`),
+      a: esc(`${locaux.length > 1 ? "Les réseaux" : "Le réseau"} ${liste([...dits, ...(jaune ? ["le Car Jaune"] : [])])}.`) +
+        (desservis.length ? ` Les arrêts les plus desservis\u00a0: ${desservis.map((s) => `<a href="/bus/arret/${esc(s.page)}">${esc(s.nom)}</a>`).join(", ")}.` : ""),
     });
   }
   const zone = zoneShort(mf.ZONE_OF_COMMUNE[commune]);

@@ -2,8 +2,12 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { departureRow, departures, findStops, searchStops, stopPageDepartures, tripRun, type Departure } from "../src/tools/transports.js";
-import { searchPage, SEARCH_MAX, stopPage } from "../src/web/arret.js";
+import { busiestStops, departureRow, departures, findStops, searchStops, stopPageDepartures, transports, tripRun, type Departure } from "../src/tools/transports.js";
+import { communeFaq } from "../src/web/commune-texte.js";
+import { communePage } from "../src/web/commune.js";
+import type { CommuneData } from "../src/web/data.js";
+import { pageOf as placeOf } from "../src/web/places.js";
+import { ARRETS_PROCHES, LIGNES_DITES, searchPage, SEARCH_MAX, stopPage, stopText } from "../src/web/arret.js";
 import { busPage } from "../src/web/domains.js";
 import { site } from "../src/web/site.js";
 import { tripGonePage, tripPage } from "../src/web/trajet.js";
@@ -27,6 +31,104 @@ const station = () => transit.pageOfStop(findStops("gare routière Saint-Pierre"
 
 beforeEach(() => transit.configure(fake));
 afterEach(() => transit.configure(undefined));
+
+describe("a stop's lasting text", () => {
+  const pageOf = (q: string) => transit.pageOfStop(findStops(q).groups[0].ids[0])!;
+  const links = (html: string) => [...html.matchAll(/href="\/bus\/arret\/([^"]+)"/g)].map((m) => m[1]);
+  // The text between the tags: each piece after a « < » keeps what follows its « > » (the text escapes both).
+  const plain = (html: string) =>
+    html
+      .split("<")
+      .map((piece, i) => (i === 0 ? piece : piece.slice(piece.indexOf(">") + 1)))
+      .join("")
+      .replace(/&#39;/g, "'");
+
+  it("names, at a stop of two networks with more than 8 lines, its networks, 8 lines with their terminus, then the others counted", async () => {
+    const p = station();
+    const d = await stopPageDepartures(p.groups, NOW);
+    expect(d.desserte.length).toBeGreaterThan(LIGNES_DITES);
+    const html = stopPage(O, p, d, NOW);
+    const t = plain(stopText(p, d.desserte));
+    expect(t).toContain(`L'arrêt Gare de St-Pierre se trouve à Saint-Pierre. Il est desservi par ${d.desserte.length} lignes de Car Jaune et d'Alternéo\u00a0: O1 vers Gare de St-Denis, O1X vers Gare de St-Denis et Campus, O2 vers Gare de St-Denis, S1 vers Gare de St-Benoît, S2 vers Gare de St-Benoît, S3 vers Gare du Tampon et Gare de St-Joseph, S4 vers Gare de St-Paul, S5 vers Gare de l'Entre-Deux, et ${d.desserte.length - LIGNES_DITES} autres lignes.`);
+    // Each line once.
+    expect(new Set(d.desserte.map((l) => `${l.reseau} ${l.ligne}`)).size).toBe(d.desserte.length);
+    // Both networks announce their times in their real-time feed.
+    expect(t).toContain("Cette page donne les prochains départs de toutes ces lignes, à l'heure annoncée en direct par Car Jaune et Alternéo quand ils la publient, sinon à l'horaire théorique. Chaque départ mène à son parcours, arrêt par arrêt.");
+    expect(t).toContain("Arrêts proches\u00a0: Gare Routière de St Pierre, Rue du Presbytère, Casabona, ");
+    // Under the departures, before the traffic info; 5 stops linked, never the stop itself, then the commune's day.
+    expect(html.indexOf('class="arret-texte"')).toBeGreaterThan(html.indexOf('class="rows departs"'));
+    const text = stopText(p, d.desserte);
+    expect(links(text)).toHaveLength(ARRETS_PROCHES);
+    expect(links(text)).not.toContain(p.slug);
+    expect(links(html)).not.toContain(p.slug);
+    expect(text).toContain(`<a href="/aujourdhui/saint-pierre">La journée à Saint-Pierre\u00a0: météo, vigilance, eau, sorties →</a>`);
+    expect(html).not.toMatch(/temps r[ée]el/i);
+  });
+
+  it("says that a network without a real-time feed gives its timetable only, at a stop of one line (Hell-Bourg, Estival)", async () => {
+    const p = pageOf("mairie annexe Hell Bourg");
+    const d = await stopPageDepartures(p.groups, NOW);
+    const t = plain(stopText(p, d.desserte));
+    expect(t).toContain("L'arrêt Mairie Annexe Hell-Bourg se trouve à Salazie. Il est desservi par 1 ligne d'Estival\u00a0: 83 vers Gare Saint-André, Chemin Terre Plate et Mairie de Salazie.");
+    expect(t).toContain("Cette page donne les prochains départs de cette ligne, à l'horaire théorique\u00a0: rundata.re n'a pas d'heures en direct d'Estival.");
+    expect(links(stopText(p, d.desserte))).toHaveLength(ARRETS_PROCHES);
+    expect(links(stopText(p, d.desserte))).not.toContain(p.slug);
+  });
+
+  it("says, at a stop of two networks where one has no real-time feed, which one gives its timetable only", () => {
+    const p = [...transit.stopPages().values()].find((x) => x.groups.some((g) => g.reseau === "carjaune") && x.groups.some((g) => g.reseau === "citalis"))!;
+    const t = plain(stopText(p, [{ ligne: "O1", reseau: "Car Jaune", terminus: ["Gare de St-Pierre"] }, { ligne: "1", reseau: "Citalis", terminus: [] }]));
+    expect(t).toContain("Il est desservi par 2 lignes de Car Jaune et de Citalis\u00a0: O1 vers Gare de St-Pierre, 1.");
+    expect(t).toContain("à l'heure annoncée en direct par Car Jaune quand il la publie, sinon à l'horaire théorique. Pour Citalis, rundata.re n'a que l'horaire théorique.");
+  });
+
+  it("links, at a stop of one line among a few others (Manapany les Bains), its 5 nearest stops and never itself", async () => {
+    const p = pageOf("Manapany les Bains");
+    const d = await stopPageDepartures(p.groups, NOW);
+    const html = stopText(p, d.desserte);
+    expect(plain(html)).toContain("Il est desservi par 1 ligne de Car Jaune\u00a0: S1 vers Gare de St-Pierre et Gare de St-Benoît.");
+    expect(links(html)).toEqual(transit.pagesNear(p).map((x) => x.page.slug));
+    expect(links(html)).not.toContain(p.slug);
+ 
+    // No line known: the departures, without « cette ligne ».
+    expect(plain(stopText(p, []))).toContain("L'arrêt Manapany les Bains se trouve à Saint-Joseph.\nCette page donne les prochains départs, à l'heure annoncée en direct par Car Jaune et CarSud quand ils la publient");
+  });
+});
+
+describe("the links to the stop pages from a commune's page", () => {
+  it("ranks a commune's stops by their lines, then their departures of the day, and its FAQ links 5 of them", async () => {
+    const top = await busiestStops("Saint-Pierre", NOW);
+    // Its bus station, the stop of 15 lines of two networks, first.
+    expect(top[0]).toMatchObject({ page: "saint-pierre/gare-de-saint-pierre", lignes: 15 });
+    expect(top[0].departs).toBeGreaterThan(0);
+    for (let i = 1; i < top.length; i++) expect(top[i - 1].lignes > top[i].lignes || (top[i - 1].lignes === top[i].lignes && top[i - 1].departs >= top[i].departs)).toBe(true);
+    const five = [1, 2, 3, 4, 5].map((k) => ({ nom: `Arrêt ${k}`, page: `saint-pierre/arret-${k}` }));
+    const faq = communeFaq("Saint-Pierre", "saint-pierre", five).find((f) => f.q === "Quels bus desservent Saint-Pierre ?")!;
+    expect(faq.a).toMatch(/\. Les arrêts les plus desservis\u00a0: <a href="\/bus\/arret\/saint-pierre\/arret-1">Arrêt 1<\/a>, (<a [^>]+>Arrêt \d<\/a>, ){3}<a href="\/bus\/arret\/saint-pierre\/arret-5">Arrêt 5<\/a>\.$/);
+    // Without them (a copy made before), the answer as it was.
+    expect(communeFaq("Saint-Pierre", "saint-pierre").find((f) => f.q === "Quels bus desservent Saint-Pierre ?")!.a).not.toContain("desservis");
+  });
+
+  it("links, in the Bus block of a commune's page, the stop it names to its page, with the same words", () => {
+    const at = new Date("2026-10-23T03:30:00Z");
+    const departs = [{ heure: "07:40", dans_min: 10, ligne: "S1", direction: "Saint-Joseph", reseau: "Car Jaune", arret: "Gare de St-Pierre" }];
+    const page = (bus: CommuneData["bus"]) =>
+      communePage(O, placeOf("saint-pierre")!, { place: null, commune: { value: { bus, sources: [] } as CommuneData, fetchedAt: at, stale: false } as never }, at);
+    expect(page({ gare: true, arrets: [{ nom: "Gare de St-Pierre", reseau: "Car Jaune", page: "saint-pierre/gare-de-saint-pierre" }], departs }))
+      .toContain(`prochain départ à <a href="/bus/arret/saint-pierre/gare-de-saint-pierre">la gare de Saint-Pierre</a> : ligne S1`);
+    expect(page({ gare: false, arrets: [{ nom: "Casabona", reseau: "Car Jaune", page: "saint-pierre/casabona" }], departs }))
+      .toContain(`près du centre, arrêt <a href="/bus/arret/saint-pierre/casabona">Casabona</a>`);
+    // A copy made before the pages were kept: the words alone.
+    expect(page({ gare: true, arrets: [{ nom: "Gare de St-Pierre", reseau: "Car Jaune" }], departs })).toContain("prochain départ à la gare de Saint-Pierre : ligne S1");
+  });
+
+  it("gives in the tool the stops nearest a stop named, as its page links them", async () => {
+    const r = JSON.parse((await transports("gare routière Saint-Pierre", undefined, NOW)).content[0].text);
+    expect(r.arrets_proches.map((x: { nom: string }) => x.nom)).toEqual(transit.pagesNear(station()).map((x) => x.page.nom));
+    expect(r.arrets_proches[0]).toMatchObject({ nom: "Gare Routière de St Pierre", commune: "Saint-Pierre" });
+    expect(r.arrets_proches.every((x: { distance_m: number }) => x.distance_m >= 0)).toBe(true);
+  });
+});
 
 describe("the stop pages", () => {
   it("are one per name and commune, all networks together, and fewer than 1 000 of them are indexed", () => {
@@ -90,8 +192,8 @@ describe("the stop pages", () => {
     expect(d.lignes).toContain("S2");
     const html = stopPage(O, p, d, NOW);
     expect(html).toContain("<title>Arrêt Gare de St-Pierre : prochains bus · La Réunion (974)</title>");
-    expect(html).toContain("<h1>Arrêt Gare de St-Pierre</h1>");
-    expect(html).toContain("Les prochains bus qui passent à cet arrêt, toutes lignes et tous réseaux confondus. Chaque départ mène à son parcours, arrêt par arrêt.");
+    expect(html).toContain("<h1>Arrêt Gare de St-Pierre\u00a0: prochains bus</h1>");
+    expect(html).toContain("Les prochains bus qui passent à cet arrêt, toutes lignes et tous réseaux confondus.</p>");
     // Car Jaune's and Alternéo's stops of that name, one page. (The French spacing of the page comes at the response: typo.ts.)
     expect(html).toContain(`<p class="lead">Saint-Pierre · Car Jaune : Gare de St-Pierre · Alternéo : `);
     const description = html.match(/<meta name="description" content="([^"]*)">/)![1];
@@ -179,7 +281,7 @@ describe("the search for a stop", () => {
     expect((await get("/bus/arret/nulle-part/rien"))!.status).toBe(404);
     const page = (await get("/bus/arret/saint-pierre/gare-de-saint-pierre"))!;
     expect(page.status).toBe(200);
-    expect(await page.text()).toContain("<h1>Arrêt Gare de St-Pierre</h1>");
+    expect(await page.text()).toContain("<h1>Arrêt Gare de St-Pierre\u00a0: prochains bus</h1>");
     // The form on /bus, a plain GET.
     const bus = busPage(O, null, NOW);
     expect(bus).toContain(`<form class="card filter" role="search" action="/bus/arret" method="get"><label class="q">Arrêt de bus <input name="q" type="search" placeholder="Mairie, Le Tampon"`);

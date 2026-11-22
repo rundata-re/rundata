@@ -694,6 +694,8 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
     distance_m: near.find((x) => x.g === g) ? Math.round(near.find((x) => x.g === g)!.m / 10) * 10 : undefined,
   }));
   const where = stops.map((s) => `${s.nom} (${s.commune}, ${s.reseau})`).join(", ");
+  const page = transit.pageOfStop(groups[0].ids[0]);
+  const proches = page ? transit.pagesNear(page).map(({ page: q, m }) => ({ nom: q.nom, commune: q.commune, distance_m: Math.round(m / 10) * 10 })) : [];
   // Nothing left today: whether anything of the stop runs today at all, which reads its passes again.
   const off = shown.every((d) => d.at >= 86400) ? await quiet(groups, where, feeds, now, cache, read) : undefined;
   const told = new Set(off?.alertes?.map((a) => a.titre));
@@ -715,6 +717,8 @@ async function stopAnswer(asked: string, ligne: string | undefined, now: Date, c
     ...(manque?.length ? { avertissement: missingWords(asked, mort ? mort.map(stopWhere).join(", ") : where, manque) } : {}),
     resume,
     arrets: stops,
+    // A stop named: the stops nearest it, as its page links them (web/arret.ts), never itself.
+    ...(!near.length && !mort && proches.length ? { arrets_proches: proches } : {}),
     ...(near.length && !mort
       ? { note: `Arrêts les plus proches de « ${asked} » : préciser le nom de l'arrêt pour un résultat exact.` }
       : autres?.length
@@ -1197,6 +1201,81 @@ export async function tripRun(net: string, local: number, trip: string, jour: nu
  * patterns: what the tool reads for a stop.
  */
 /** `behind`: for a robot, the feeds already read, refreshed after the answer (`realtimeFeeds`). */
+/** A commune's stops ranked once a day in an isolate: the day's departures change little over a day (`busiest`). */
+const BUSIEST = new Map<string, Promise<{ nom: string; page: string; lignes: number; departs: number }[]>>();
+
+/**
+ * The stops of a commune most served (marketing, 22/11/2026): by their number of lines, then by their departures of the
+ * day, all networks of a page together. Among its indexed pages when it has at least `n` of them (the busy ones: the
+ * build keeps those with 2 lines and 60 buses on a Tuesday), else among all. Two reads of the database, the passes of
+ * those stops and the trips of their patterns (some hundred rows for Saint-Denis), once a day per isolate and commune.
+ */
+export function busiestStops(commune: string, now: Date, n = 5) {
+  const today = day(now);
+  const key = `${commune}|${today.ymd}|${n}`;
+  let got = BUSIEST.get(key);
+  if (!got) {
+    // Yesterday's rankings go: 24 communes a day.
+    if (BUSIEST.size > 100) BUSIEST.clear();
+    got = (async () => {
+      const pages = [...transit.stopPages().values()].filter((p) => p.commune === commune);
+      const indexed = pages.filter((p) => p.indexe);
+      const pool = indexed.length >= n ? indexed : pages;
+      const pageOf = new Map(pool.flatMap((p) => p.groups.flatMap((g) => g.ids.map((id) => [id, p] as const))));
+      const all = await transit.passes([...pageOf.keys()]);
+      const pats = await transit.patterns([...new Set(all.map((x) => x.pattern))]);
+      const tally = new Map<transit.StopPage, { lignes: Set<number>; departs: number }>();
+      for (const x of all) {
+        const p = pageOf.get(x.stop)!;
+        const e = transit.ENDS[x.pattern];
+        const t = tally.get(p) ?? { lignes: new Set<number>(), departs: 0 };
+        tally.set(p, t);
+        if (e) t.lignes.add(e[0]);
+        // A bus at its terminus leaves from nowhere: only the passes it goes on from.
+        if (e && e[2] !== x.stop) t.departs += (pats.get(x.pattern)?.trips ?? []).filter(([sv]) => transit.serviceRuns(netOf(x.pattern), sv, today.ymd, today.weekday)).length;
+      }
+      return [...tally].map(([p, t]) => ({ nom: p.nom, page: p.slug, lignes: t.lignes.size, departs: t.departs }))
+        .sort((a, b) => b.lignes - a.lignes || b.departs - a.departs || a.nom.localeCompare(b.nom, "fr"))
+        .slice(0, n);
+    })();
+    // A failed read is not kept: the next copy reads again.
+    got.catch(() => BUSIEST.delete(key));
+    BUSIEST.set(key, got);
+  }
+  return got;
+}
+
+/**
+ * The lines that stop at a page's stops, each once, with the terminus of each of its patterns passing there, in the
+ * order of the timetables (« O2 vers Gare de St-Pierre et Gare de St-Denis »), whatever the day: what the stop's page
+ * says of it durably (marketing, 22/11/2026). A pattern ending at the stop itself goes nowhere from there: its terminus
+ * is left out.
+ * Read from the passes the page already reads, with no other request.
+ */
+export function desserte(groups: transit.StopGroup[], all: { stop: number; pattern: number }[]): { ligne: string; reseau: string; terminus: string[] }[] {
+  const own = new Set(groups.flatMap((g) => g.ids));
+  const by = new Map<number, Set<string>>();
+  for (const p of [...all].sort((x, y) => x.pattern - y.pattern)) {
+    const e = transit.ENDS[p.pattern];
+    if (!e) continue;
+    const ends = by.get(e[0]) ?? new Set<string>();
+    by.set(e[0], ends);
+    if (!own.has(e[2])) ends.add(transit.stop(e[2]).nom);
+  }
+  // A line named once by its network, however many routes the feed gives it.
+  const lines = new Map<string, { ligne: string; reseau: string; terminus: string[] }>();
+  for (const [r, ends] of by) {
+    const { ligne, reseau } = lineName(r);
+    const l = lines.get(`${reseau}|${ligne}`) ?? { ligne, reseau, terminus: [] };
+    lines.set(`${reseau}|${ligne}`, l);
+    for (const t of ends) if (!l.terminus.includes(t)) l.terminus.push(t);
+  }
+  // By network, in the page's order (the Car Jaune first at a stop it shares), then by name; a line kept with no
+  // terminus when every pattern of it ends here (a cable car's station).
+  const nets = groups.map((g) => transit.NETWORKS[g.reseau]?.nom ?? g.reseau);
+  return [...lines.values()].sort((a, b) => nets.indexOf(a.reseau) - nets.indexOf(b.reseau) || a.ligne.localeCompare(b.ligne, "fr", { numeric: true }));
+}
+
 export async function stopPageDepartures(groups: transit.StopGroup[], now: Date, cache?: Cache, behind?: (work: Promise<unknown>) => void) {
   const c = moment(now);
   const m = byStop(groups);
@@ -1222,6 +1301,7 @@ export async function stopPageDepartures(groups: transit.StopGroup[], now: Date,
   const live = [...new Set(shown.filter((d) => d.retard !== undefined || d.supprime).map((d) => d.reseau))];
   const at = [...feeds].filter(([n]) => live.includes(n)).reduce((t, [, f]) => Math.max(t, f.at), 0);
   return {
+    desserte: desserte(groups, all),
     departs: shown.map(pageRow(now)),
     ...(off ? { aucun: off.text } : {}),
     alertes: [...(off?.alertes ?? []), ...alertsFor(groups, shown, feeds, now)].filter((a, i, l) => l.findIndex((b) => b.titre === a.titre) === i),

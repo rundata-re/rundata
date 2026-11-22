@@ -57,6 +57,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-22T10:29:00+04:00", texte: "Bus\u00a0: chaque page d'arrêt dit ses lignes, leurs terminus et les arrêts les plus proches, et les pages des communes renvoient aux arrêts." },
   { date: "2026-11-22T10:12:00+04:00", texte: "Coupures d'eau\u00a0: sans avis, la page et l'outil disent «\u00a0pas d'avis\u00a0» avec l'heure de lecture, et qu'une coupure peut être annoncée ailleurs." },
   { date: "2026-11-22T09:41:00+04:00", texte: "Assistants IA\u00a0: les coupures d'eau d'une commune, chaque avis avec son jour, ses heures et les rues qu'il nomme." },
   { date: "2026-11-22T05:51:00+04:00", texte: "Fiche d'une adresse\u00a0: quand le Cerema ne répond pas, les prix de vente viennent des fichiers DVF d'Etalab, mêmes données de la DGFiP." },

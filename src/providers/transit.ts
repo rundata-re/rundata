@@ -6,6 +6,7 @@
  * its rows from one build to the next.
  */
 import { count } from "../budget.js";
+import { distanceKm } from "../geo.js";
 import { normalize } from "../places/resolve.js";
 import { casseArret } from "../tools/casse.js";
 import network from "../transit/network.json" with { type: "json" };
@@ -188,6 +189,21 @@ export function stopPages(): Map<string, StopPage> {
   for (const p of pages.values()) p.indexe = p.groups.some((g) => g.ids.some((id) => INDEXED.has(id)));
   return pages;
 }
+/**
+ * The stop pages nearest a page, as the crow flies, of any network, never the page itself: from where its first group
+ * stands to where each other page's does (a stop's sides of the road stand together in one group). Some 4 900 distances,
+ * a fraction of a millisecond, at each view of a stop's page.
+ */
+export function pagesNear(p: StopPage, n = 5): { page: StopPage; m: number }[] {
+  const [at] = p.groups;
+  if (!at) return [];
+  return [...stopPages().values()]
+    .filter((q) => q.slug !== p.slug)
+    .map((q) => ({ page: q, m: distanceKm(at.lon, at.lat, q.groups[0].lon, q.groups[0].lat) * 1000 }))
+    .sort((x, y) => x.m - y.m)
+    .slice(0, n);
+}
+
 /** The page of a stop (island-wide index); none for a number no stop has (an old link's). */
 export function pageOfStop(id: number): StopPage | undefined {
   if (!Number.isInteger(id) || id < 0 || id >= STOPS.length) return undefined;

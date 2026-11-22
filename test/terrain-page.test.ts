@@ -102,15 +102,17 @@ describe("the fiche of an address, /terrain (web/terrain.ts)", () => {
 
   it("says the street's sales when only the area's are not read, as the tool's summary does", () => {
     const sur_la_voie = { voie: "Rue de l'Ancienne Mairie", depuis: 2021, ventes: 1, note: "1 vente enregistrée dans DVF sur la voie depuis 2021, trop peu pour une médiane" };
-    const fiche = { ...FICHE, marche_immobilier: { secteur: "service momentanément indisponible : réessayer dans un instant", sur_la_voie, note: "…" } };
+    const fiche = { ...FICHE, marche_immobilier: { secteur: "ventes non lues\u00a0: ni le Cerema ni Etalab n'ont répondu le 22/11 à 05:46, heure de La Réunion\u00a0; réessayer plus tard", sur_la_voie, note: "…" } };
     const html = plain(terrainPage("https://rundata.re", "rue de l'Ancienne Mairie, Saint-Paul", { fiche }));
     const block = html.slice(html.indexOf('id="h-prix"'), html.indexOf('id="h-prix"') + 1500);
     expect(block).toContain("Rue de l'Ancienne Mairie\u00a0: 1 vente enregistrée dans DVF sur la voie depuis 2021, trop peu pour une médiane");
-    expect(block).toContain("Ventes du secteur alentour (environ 600\u00a0m sur 600\u00a0m)\u00a0: source momentanément indisponible, rechargez la page dans un instant.");
+    // Who did not answer and when, the day with the hour (marketing, 22/11/2026).
+    expect(block).toContain("Ventes du secteur alentour (environ 600\u00a0m sur 600\u00a0m) non lues\u00a0: ni le Cerema ni Etalab n'ont répondu le 22/11 à 05:46. Réessayez plus tard.");
     expect(block).not.toContain("<table");
-    // Both down: the block says the source is down, as before.
-    const none = plain(terrainPage("https://rundata.re", "7 rue de la Buse, Saint-Paul", { fiche: { ...FICHE, marche_immobilier: "service momentanément indisponible : réessayer dans un instant" } }));
-    expect(none).toContain("Source momentanément indisponible\u00a0: rechargez la page dans un instant.");
+    // No sale read: the same, for the whole block.
+    const none = plain(terrainPage("https://rundata.re", "7 rue de la Buse, Saint-Paul", { fiche: { ...FICHE, marche_immobilier: "ventes non lues\u00a0: le Cerema n'a pas répondu le 22/11 à 05:46, heure de La Réunion\u00a0; réessayer plus tard" } }));
+    expect(none).toContain("Prix des ventes non lus\u00a0: le Cerema n'a pas répondu le 22/11 à 05:46. Réessayez plus tard.");
+    expect(none).not.toContain("dans un instant");
   });
 
   it("puts each warning beside its block, the risks' first, and never « sans risque »", () => {

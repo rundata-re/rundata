@@ -4,6 +4,10 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Dimanche 22 novembre 2026
+
+- Fiche d'une adresse : quand le Cerema ne répond pas, les prix de vente viennent des fichiers DVF d'Etalab, mêmes données de la DGFiP.
+
 ## Samedi 21 novembre 2026
 
 - Pages des communes : une coupure d'électricité relayée par la mairie s'affiche dans la tuile Électricité, avec ses heures et l'avis.

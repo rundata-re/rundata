@@ -52,6 +52,14 @@ const NON_LU = `Source momentanément indisponible${N}: rechargez la page dans u
 // The area's sales alone not read, the street's shown above it.
 const SECTEUR_MUET = `Ventes du secteur alentour (environ 600${N}m sur 600${N}m)${N}: source momentanément indisponible, rechargez la page dans un instant.`;
 
+/**
+ * The tool's « ventes non lues : ni le Cerema ni Etalab n'ont répondu le 22/11 à 05:46, heure de La Réunion ; … »
+ * (tools/terrain.ts nonLues): who did not answer and when, for the page's own sentence (marketing, 22/11/2026).
+ */
+function muet(x: unknown): string | undefined {
+  return typeof x === "string" ? /^ventes non lues\u00a0: (.+), heure de La Réunion/u.exec(x)?.[1] : undefined;
+}
+
 /** The tool's precision, in marketing's words after « l'adresse a été placée »; undefined for a point that is sure. */
 const PLACEE: Record<string, string> = {
   "milieu de la rue": "au milieu de la rue",
@@ -152,7 +160,8 @@ function risques(fiche: O, vague: boolean): string {
 
 function prix(fiche: O): string {
   const m = obj(fiche.marche_immobilier);
-  if (!m) return block("prix", "Prix des ventes voisines", `<p>${esc(NON_LU)}</p>`, esc(GARDES.prix));
+  const quiet = muet(fiche.marche_immobilier);
+  if (!m) return block("prix", "Prix des ventes voisines", `<p>${esc(quiet ? `Prix des ventes non lus${N}: ${quiet}. Réessayez plus tard.` : NON_LU)}</p>`, esc(GARDES.prix));
   const kind = (name: string, k: unknown) => {
     const x = obj(k);
     if (!x) return "";
@@ -161,7 +170,10 @@ function prix(fiche: O): string {
   const voie = obj(m.sur_la_voie);
   const street = voie ? `<p>${esc(String(voie.voie))}${N}: ${esc(str(voie.note) ?? str(voie.non_lues) ?? `${voie.ventes} ventes depuis ${voie.depuis}`)}</p>` : "";
   // The area's sales not read, the street's read (tools/terrain.ts `secteur`): the street said, as in the tool's summary.
-  if (m.secteur) return block("prix", "Prix des ventes voisines", `${street}<p>${esc(SECTEUR_MUET)}</p>`, esc(GARDES.prix));
+  if (m.secteur) {
+    const q = muet(m.secteur);
+    return block("prix", "Prix des ventes voisines", `${street}<p>${esc(q ? `Ventes du secteur alentour (environ 600${N}m sur 600${N}m) non lues${N}: ${q}. Réessayez plus tard.` : SECTEUR_MUET)}</p>`, esc(GARDES.prix));
+  }
   return block(
     "prix",
     "Prix des ventes voisines",

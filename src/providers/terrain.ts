@@ -31,14 +31,14 @@ const DAY = 24 * 3600;
  * How long the data center's cache keeps an entry that holds what someone typed, or the point it gave (worker.ts
  * EdgeStore): 3 days at most, where other entries stay 7 (20/11/2026). Their keys are the typed address (« ban: »,
  * « ban-voies: »), a street of it (« ban-homonymes: », « ban-code: », « dvf-voie: »), its point (« cadastre: », « gpu: »,
- * « alti: », « ppr: », « mvt: ») or the square around it (« dvf: »): kept 7 days, the page /terrain could not say
+ * « alti: », « ppr: », « mvt: ») or the square around it (« dvf: », « dvf-geo: »): kept 7 days, the page /terrain could not say
  * « 3 jours au plus dans les journaux et le cache techniques de Cloudflare ». Cloudflare's logs keep 3 days too.
  * The cost: a point asked again after 3 days is read again from its source, where its freshness allowed up to 30 days
  * (altitude) or 7 (the others): at most one subrequest per source, for a fiche asked twice that far apart; and an entry
  * served old while its source is down, 3 days at most instead of 7. catnat: (a commune) is no one's place: 7 days.
  */
 export const GARDE_TAPEE = 3 * DAY;
-const TAPEES = /^(?:ban|ban-voies|ban-homonymes|ban-code|dvf-voie|cadastre|gpu|alti|ppr|mvt|dvf):/;
+const TAPEES = /^(?:ban|ban-voies|ban-homonymes|ban-code|dvf-voie|cadastre|gpu|alti|ppr|mvt|dvf|dvf-geo):/;
 /** True for a cache key of this file that holds a typed address, a street, a point or the square around it. */
 export const gardeTapee = (key: string) => TAPEES.test(key);
 const point = (lon: number, lat: number) => encodeURIComponent(JSON.stringify({ type: "Point", coordinates: [lon, lat] }));
@@ -221,19 +221,31 @@ export interface Sale {
   nature: string;
 }
 
-/** Sales within about `halfSideM` metres since `fromYear`, without geometry nor parcel ids (aggregated by the tool). */
-export async function sales(cache: Cache, lon: number, lat: number, fromYear: number, halfSideM = 300): Promise<Cached<Sale[]>> {
-  // About 600 m × 600 m around the point (tools/terrain.ts): moved 8 m at most by the snapping.
+/** The square of about 2 × `halfSideM` metres around the point, moved 8 m at most by the snapping: lon, lat min then max. */
+function square(lon: number, lat: number, halfSideM: number): number[] {
   [lon, lat] = [snap(lon), snap(lat)];
   const dLat = halfSideM / 111_320;
   const dLon = halfSideM / (111_320 * Math.cos((lat * Math.PI) / 180));
-  const bbox = [lon - dLon, lat - dLat, lon + dLon, lat + dLat].map((v) => v.toFixed(5)).join(",");
+  return [lon - dLon, lat - dLat, lon + dLon, lat + dLat].map((v) => Number(v.toFixed(5)));
+}
+
+/**
+ * The Cerema's API is a preproduction one: on 21/11/2026 it answered 522 for an hour and a half, and on 22/11 took more
+ * than 20 s. Waited 10 s at most, so that the area's sales can still be read from Etalab's files (salesAround) within
+ * the page's time.
+ */
+const CEREMA_MS = 10_000;
+
+/** Sales within about `halfSideM` metres since `fromYear`, without geometry nor parcel ids (aggregated by the tool). */
+export async function sales(cache: Cache, lon: number, lat: number, fromYear: number, halfSideM = 300): Promise<Cached<Sale[]>> {
+  // About 600 m × 600 m around the point (tools/terrain.ts).
+  const bbox = square(lon, lat, halfSideM).map((v) => v.toFixed(5)).join(",");
   // v2: with the nature of each sale (an older entry has none).
   return cache.get(`dvf:v2:${bbox}:${fromYear}`, 7 * DAY, async () => {
     const r = await getJson<{ features: { properties: Record<string, string | number> }[] }>(
       SOURCES.dvf.id,
       `https://apidf-preprod.cerema.fr/dvf_opendata/geomutations/?in_bbox=${bbox}&anneemut_min=${fromYear}&page_size=500`,
-      25_000,
+      CEREMA_MS,
     );
     return r.features
       .map(({ properties: p }) => ({
@@ -293,16 +305,36 @@ function cells(line: string): string[] {
  * sale twice: two of the same value on exactly the same parcels and lots count once.
  */
 export function streetSales(csv: string, voie: string): StreetSale[] {
+  // The street's code is a field of its own: a quick look first, then the field checked.
+  return salesWhere(csv, ["adresse_code_voie"], (line) => line.includes(`,${voie},`), (c, [CODE_VOIE]) => c[CODE_VOIE] === voie);
+}
+
+/**
+ * The sales of one year file with a line inside the square `box` (lon, lat min then max), each sale once with all its
+ * lines, as on the street: the area's sales from Etalab's files, when the Cerema's API does not answer. A line without
+ * coordinates (a parcel DVF could not place) is not in the square.
+ */
+export function areaSales(csv: string, box: number[]): StreetSale[] {
+  const [x0, y0, x1, y1] = box;
+  return salesWhere(csv, ["longitude", "latitude"], () => true, (c, [LON, LAT]) => {
+    if (!c[LON] || !c[LAT]) return false;
+    const [x, y] = [Number(c[LON]), Number(c[LAT])];
+    return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+  });
+}
+
+/** The sales of one year file with a line that `keep` takes, given the columns `fields` (salesWhere's callers). */
+function salesWhere(csv: string, fields: string[], quick: (line: string) => boolean, keep: (c: string[], cols: number[]) => boolean): StreetSale[] {
   const lines = csv.split("\n");
   const head = cells(lines[0] ?? "");
   const col = (name: string) => head.indexOf(name);
-  const [ID, DATE, NATURE, VALEUR, CODE_VOIE, PARCELLE, LOT, TYPE, SBATI, CULTURE, STERR] = ["id_mutation", "date_mutation", "nature_mutation", "valeur_fonciere", "adresse_code_voie", "id_parcelle", "lot1_numero", "code_type_local", "surface_reelle_bati", "code_nature_culture", "surface_terrain"].map(col);
-  if ([ID, CODE_VOIE, VALEUR].some((i) => i < 0)) return [];
-  // The street's code is a field of its own: a quick look first, then the field checked.
+  const [ID, DATE, NATURE, VALEUR, PARCELLE, LOT, TYPE, SBATI, CULTURE, STERR] = ["id_mutation", "date_mutation", "nature_mutation", "valeur_fonciere", "id_parcelle", "lot1_numero", "code_type_local", "surface_reelle_bati", "code_nature_culture", "surface_terrain"].map(col);
+  const cols = fields.map(col);
+  if ([ID, VALEUR, ...cols].some((i) => i < 0)) return [];
   const ids = new Set<string>();
-  for (const line of lines.slice(1)) if (line.includes(`,${voie},`)) {
+  for (const line of lines.slice(1)) if (line && quick(line)) {
     const c = cells(line);
-    if (c[CODE_VOIE] === voie) ids.add(c[ID]);
+    if (keep(c, cols)) ids.add(c[ID]);
   }
   const rows = new Map<string, string[][]>();
   for (const line of lines.slice(1)) {
@@ -387,10 +419,7 @@ export async function salesOnStreet(cache: Cache, insee: string, voie: { code: s
   const which = "code" in voie ? voie.code : `nom:${nomVoie(voie.nom)}`;
   return cache.get(`dvf-voie:v3:${insee}:${which}:${fromYear}-${toYear}`, 7 * DAY, async () => {
     const years = Array.from({ length: toYear - fromYear + 1 }, (_, i) => fromYear + i);
-    const files = await Promise.all(years.map((y) => getText(SOURCES.dvfVoie.id, GEO_DVF(y, insee), 25_000).catch((err) => {
-      if (err instanceof UpstreamError && err.status === 404) return undefined;
-      throw err;
-    })));
+    const files = await yearFiles(insee, fromYear, toYear);
     const read = files.filter((f): f is string => f !== undefined);
     let code: string;
     if ("code" in voie) code = voie.code;
@@ -404,6 +433,41 @@ export async function salesOnStreet(cache: Cache, insee: string, voie: { code: s
       annees: years.filter((_, i) => files[i] !== undefined),
       code,
     };
+  });
+}
+
+/** The year files of DVF géolocalisées of commune `insee` from `fromYear` to `toYear`; a year without a file yet (404), undefined. */
+function yearFiles(insee: string, fromYear: number, toYear: number): Promise<(string | undefined)[]> {
+  const years = Array.from({ length: toYear - fromYear + 1 }, (_, i) => fromYear + i);
+  return Promise.all(years.map((y) => getText(SOURCES.dvfVoie.id, GEO_DVF(y, insee), 25_000).catch((err) => {
+    if (err instanceof UpstreamError && err.status === 404) return undefined;
+    throw err;
+  })));
+}
+
+/** A house, a flat or land sold, with the Cerema's type codes that `market` (tools/terrain.ts) counts by. */
+const CODE: Record<StreetSale["type"], string> = { maison: "111", appartement: "121", terrain: "2", autre: "" };
+
+/**
+ * The area's sales as `sales` gives them, read from Etalab's year files of commune `insee` (the same DGFiP data), from
+ * `fromYear` to `toYear`: the repli when the Cerema's API does not answer. Only the commune's own files are read: a square
+ * across a commune's limit misses the other commune's sales.
+ */
+export async function salesAround(cache: Cache, insee: string, lon: number, lat: number, fromYear: number, toYear: number, halfSideM = 300): Promise<Cached<Sale[]>> {
+  const box = square(lon, lat, halfSideM);
+  return cache.get(`dvf-geo:v1:${insee}:${box.join(",")}:${fromYear}-${toYear}`, 7 * DAY, async () => {
+    const files = await yearFiles(insee, fromYear, toYear);
+    if (!files.some((f) => f !== undefined)) throw new UpstreamError(SOURCES.dvfVoie.id, "aucun fichier", 404);
+    return files.flatMap((f) => (f ? areaSales(f, box) : [])).map((v) => ({
+      annee: v.annee,
+      type: v.type,
+      code: CODE[v.type],
+      valeur: v.valeur,
+      surface_bati: v.surface_bati,
+      surface_terrain: v.surface_terrain,
+      lots: 0,
+      nature: v.vefa ? VEFA : "Vente",
+    }));
   });
 }
 

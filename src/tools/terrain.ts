@@ -1,5 +1,5 @@
 import type { Cache } from "../cache.js";
-import { distanceKm } from "../geo.js";
+import { distanceKm, localTime } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import { resolvePlace, type Place } from "../places/resolve.js";
 import * as annuaireSrc from "../providers/annuaire.js";
@@ -306,6 +306,16 @@ async function settle<T>(source: string, p: Promise<{ value: T }>): Promise<T | 
 }
 
 const DOWN = "service momentanément indisponible : réessayer dans un instant";
+
+/**
+ * The sales not read, in marketing's words (22/11/2026): the services asked named, the day and the hour they did not
+ * answer (a page served from a copy may have been read the day before). The page /terrain says the part after « : ».
+ */
+export function nonLues(asked: ("Cerema" | "Etalab")[], now: Date): string {
+  const [day, hour] = localTime(now).split(" ");
+  const who = asked.length > 1 ? "ni le Cerema ni Etalab n'ont répondu" : `${asked[0] === "Cerema" ? "le Cerema" : "Etalab"} n'a pas répondu`;
+  return `ventes non lues\u00a0: ${who} le ${day} à ${hour}, heure de La Réunion\u00a0; réessayer plus tard`;
+}
 const MARCHE_NOTE = "Médianes des ventes enregistrées (DVF), maisons et appartements vendus seuls. Aucune vente individuelle n'est donnée.";
 
 // A place without an address nor a point: its centre is no one's land.
@@ -318,7 +328,7 @@ const placeLabel = (l: { nom: string; commune: string }) => (l.commune && l.comm
 
 // Why a street's sales were not read (words validated on 05/11).
 const NON_RETROUVEE = "la voie n'a pas été retrouvée avec certitude dans DVF";
-const DVF_MUET = "DVF ne répond pas pour l'instant";
+const DVF_MUET = (now: Date) => nonLues(["Etalab"], now).replace(/^ventes non lues\u00a0: (.*), heure de La Réunion.*$/, "$1");
 
 /**
  * The sales on the street asked: by its land registry code; or, for a street the address base names on its own, by its
@@ -478,11 +488,18 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   const parcelP = vague ? Promise.resolve(undefined) : settle(terrain.SOURCES.cadastre.id, terrain.parcel(cache, lon, lat));
   // Given coordinates name no commune: the parcel's id starts with its INSEE code.
   const inseeP = known ? Promise.resolve(known) : parcelP.then((x) => (x?.idu.startsWith("974") ? x.idu.slice(0, 5) : undefined));
-  const [p, z, alt, s, ppr, cat, mvt, insee, sv] = await Promise.all([
+  const [p, z, alt, dvf, ppr, cat, mvt, insee, sv] = await Promise.all([
     parcelP,
     vague ? undefined : settle(terrain.SOURCES.gpu.id, terrain.zone(cache, lon, lat)),
     vague ? undefined : settle(terrain.SOURCES.alti.id, terrain.altitude(cache, lon, lat)),
-    settle(terrain.SOURCES.dvf.id, terrain.sales(cache, lon, lat, fromYear)),
+    // The Cerema's API first; not answering, Etalab's files of the commune (the same DGFiP data, 22/11/2026).
+    settle(terrain.SOURCES.dvf.id, terrain.sales(cache, lon, lat, fromYear)).then(async (x) => {
+      if (x) return { ventes: x, source: terrain.SOURCES.dvf, asked: ["Cerema"] as ("Cerema" | "Etalab")[] };
+      const c = await inseeP;
+      if (!c?.startsWith("974")) return { ventes: undefined, source: undefined, asked: ["Cerema"] as ("Cerema" | "Etalab")[] };
+      const y = await settle(terrain.SOURCES.dvfVoie.id, terrain.salesAround(cache, c, lon, lat, fromYear, year));
+      return { ventes: y, source: y ? terrain.SOURCES.dvfVoie : undefined, asked: ["Cerema", "Etalab"] as ("Cerema" | "Etalab")[] };
+    }),
     vague ? undefined : settle(terrain.SOURCES.ppr.id, terrain.plans(cache, lon, lat)),
     inseeP.then((c) => (c ? settle(terrain.SOURCES.georisques.id, terrain.catnat(cache, c)) : undefined)),
     vague ? undefined : settle(terrain.SOURCES.georisques.id, terrain.landslides(cache, lon, lat)),
@@ -490,6 +507,8 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     voie ? streetSalesOf(cache, voie, fromYear, year) : undefined,
   ]);
 
+  const s = dvf.ventes;
+  const muet = nonLues(dvf.asked, now);
   const parts = [vague ? `${where.label}\u00a0: ${SANS_POINT}` : `${where.label} (${where.precision})`];
   if (alt != null) parts.push(`altitude ${nombre(alt)}\u00a0m`);
   if (p) parts.push(`parcelle cadastrale ${p.section} ${p.numero} (${nombre(p.contenance_m2)}\u00a0m²)`);
@@ -500,7 +519,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   if (risks) parts.push(risks);
   const onStreet = voie && sv ? streetMarket(voie.nom, fromYear, sv.ventes) : undefined;
   // Never « no sale » for a street not read: DVF may have some under another name, or DVF did not answer.
-  const notRead = voie && !sv ? (sv === null ? NON_RETROUVEE : DVF_MUET) : undefined;
+  const notRead = voie && !sv ? (sv === null ? NON_RETROUVEE : DVF_MUET(now)) : undefined;
   if (onStreet) parts.push(streetLine(onStreet));
   else if (voie && notRead) parts.push(`${voie.nom} : ventes de la voie non lues, ${notRead}`);
   const area = m ? [prixMedian("maisons", m.maisons), prixMedian("appartements", m.appartements)].filter(Boolean) : [];
@@ -518,8 +537,8 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
     ...(p ? [terrain.SOURCES.cadastre] : []),
     ...(z ? [terrain.SOURCES.gpu] : []),
     ...(alt != null ? [terrain.SOURCES.alti] : []),
-    ...(s ? [terrain.SOURCES.dvf] : []),
-    ...(onStreet ? [terrain.SOURCES.dvfVoie] : []),
+    ...(dvf.source ? [dvf.source] : []),
+    ...(onStreet && dvf.source !== terrain.SOURCES.dvfVoie ? [terrain.SOURCES.dvfVoie] : []),
     ...(ppr ? [terrain.SOURCES.ppr] : []),
     ...(cat || mvt ? [terrain.SOURCES.georisques] : []),
     ...(r ? [loyers.SOURCE] : []),
@@ -535,7 +554,7 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
       resume: `${parts.join("\u00a0; ")}.`,
       conseil: CONSEIL_POINT,
       lieu: { ...where, lon: Math.round(lon * 1e5) / 1e5, lat: Math.round(lat * 1e5) / 1e5 },
-      marche_immobilier: m ? { perimetre: "environ 600 m × 600 m autour du centre du lieu, pas d'un terrain", depuis: fromYear, ...m, note: MARCHE_NOTE } : DOWN,
+      marche_immobilier: m ? { perimetre: "environ 600 m × 600 m autour du centre du lieu, pas d'un terrain", depuis: fromYear, ...m, note: MARCHE_NOTE } : muet,
       ...(r ? { loyers_d_annonce: r.bloc } : {}),
       ...(net ? { internet_dans_la_commune: net.bloc } : {}),
       risques_dans_la_commune: { catastrophes_naturelles: r_.catastrophes_naturelles, seisme: r_.seisme, radon: r_.radon, cyclone_et_volcan: r_.cyclone_et_volcan, pour_aller_plus_loin: r_.pour_aller_plus_loin },
@@ -570,8 +589,8 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
           note: MARCHE_NOTE,
         }
       : onStreet
-        ? { secteur: DOWN, sur_la_voie: onStreet, note: MARCHE_NOTE }
-        : DOWN,
+        ? { secteur: muet, sur_la_voie: onStreet, note: MARCHE_NOTE }
+        : muet,
     ...(r ? { loyers_d_annonce: r.bloc } : {}),
     ...(net ? { internet_dans_la_commune: net.bloc } : {}),
     antennes_a_moins_de_500_m: point.bloc,

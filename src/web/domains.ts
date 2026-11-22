@@ -18,7 +18,7 @@ import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
 import { AHEAD_DAYS, CINEMAS, nombreDuJour, parJour, weekend } from "../tools/agenda.js";
 import { marchesSection, SPORT_LIEN } from "./marches-agenda.js";
-import { kitAvantOrange, suiviPhrase } from "../tools/cyclones.js";
+import { kitAvantOrange, RADIO, suiviPhrase } from "../tools/cyclones.js";
 import { ACCUEILS, AGENDAS } from "../providers/agenda.js";
 import { SOURCE as SALLES_SOURCE } from "../providers/salles.js";
 import type { Cached } from "../cache.js";
@@ -3516,7 +3516,7 @@ export function cyclonesPage(origin: string, data: Cached<CyclonesAnswer> | null
     <li><a href="/alerte-cyclone">Alerte cyclonique : ce qui ferme, ce qui continue</a></li>
   </ul></div>
   <div class="card"><h3>Alerte cyclonique</h3>${CYCLONE_SCALE}
-  <p class="note">Les consignes officielles et les arrêtés sont ceux de la <a href="https://www.reunion.gouv.fr/">préfecture de La Réunion</a>. Écoutez la radio en cas de cyclone : le réseau mobile peut tomber.</p></div>
+  <p class="note">Les consignes officielles et les arrêtés sont ceux de la <a href="https://www.reunion.gouv.fr/">préfecture de La Réunion</a>. ${esc(RADIO)}</p></div>
 </section>
 ${d ? `<section aria-labelledby="h-saison">
   <div class="sec-h"><p class="eyebrow">Juillet à juin</p><h2 id="h-saison">Saison ${esc(d.saison_en_cours.nom)}</h2><p>${esc(d.saison)}</p></div>

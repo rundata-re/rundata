@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { costOf, count, counted, measured, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore, TieredStore, type CacheEntry } from "../src/cache.js";
 import { SHARED, SHARED_AFTER, type Shared } from "../src/web/partagees.js";
+import * as transit from "../src/providers/transit.js";
 
 // What each shared copy's build takes from a cold cache, against the cold cost it declares (web/partagees.ts `cold`),
 // which the scheduled event expects of it after a deploy and the budget's registry counts (src/registre.ts). Each copy
@@ -28,10 +29,22 @@ class Counted extends MemoryStore {
     return super.put(key, entry);
   }
 }
+// The bus timetables' database (D1, which Node does not count): the rows of the stations of Saint-Pierre, Bancoul and
+// Hell-Bourg (test/transports.test.ts), so that /bus's build reads its feeds as in the Worker.
+const rows = JSON.parse(fixture("transit/rows.json").toString()) as Record<string, Record<string, { id: number }[] | undefined>>;
+const timetables: transit.TransitDb = {
+  all: async <T>(sql: string, keys: unknown) =>
+    (JSON.parse(String(keys)) as [string, number][]).flatMap(([feed, id]) =>
+      (/FROM passes/.test(sql) ? rows[feed]?.passes : /FROM pattern_stops/.test(sql) ? rows[feed]?.pattern_stops : rows[feed]?.patterns)
+        ?.filter((r) => r.id === id).map((r) => ({ feed, ...r })) ?? [],
+    ) as T[],
+};
 const workerCache = () => new Cache(new TieredStore(new MemoryStore(), new Counted()), () => NOW.getTime(), false, new Counted());
 
 // Each source's fixture, by the URL its build asks for.
 const ROUTES: [RegExp, string | ((body: string) => string)][] = [
+  // The buses' feeds in real time (/bus, /trafic): Car Jaune's, for the three networks that have one.
+  [/c0a17be1-e89a-48a3-aca1-d8eb8e89a55e|146fe36f-16c5-44bc-ac1a-06c0fedcc4dd|alterneo-civis-gtfs-rt-trip-update/, "gtfs_rt_carjaune.pb"],
   [/vigilanceom\/flux\/dernier/, "vigilance_om.zip"],
   [/clicanoo\.re\/rss/, "actualites/clicanoo.xml"],
   [/imazpress\.com\/sitemap-news/, "actualites/imaz_news.xml"],
@@ -163,12 +176,14 @@ const ALL = [...SHARED, ...SHARED_AFTER];
 
 describe("each shared copy's build from a cold cache (web/partagees.ts `cold`)", () => {
   beforeEach(() => {
+    transit.configure(timetables);
     unrouted = [];
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.spyOn(console, "log").mockImplementation(() => {});
   });
   afterEach(() => {
+    transit.configure(undefined);
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });

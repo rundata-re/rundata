@@ -107,6 +107,7 @@ const SHARED_FROM: Record<string, string[]> = {
   vigilance: ["src/providers/vigilance.ts"],
   "web:crues": ["src/tools/crues.ts"],
   "web:actualites": ["src/tools/actualites.ts"],
+  "web:bus": ["src/tools/transports.ts", "src/providers/transit.ts", "src/providers/gtfsrt.ts"],
   "web:trafic": ["src/tools/transports.ts", "src/tools/littoral.ts", "src/providers/transit.ts"],
   "web:electricite": ["src/tools/electricite.ts"],
   "web:coupures": ["src/tools/coupures.ts"],
@@ -126,7 +127,9 @@ const SHARED_FROM: Record<string, string[]> = {
 };
 // The traffic's copy reads the 8 bus stations' timetables in 2 D1 calls (the patterns, about 811 rows, and the passes,
 // about 23), as the D1 analytics count them.
+// /bus's copy reads the same, every 5 minutes since 22/11/2026; the traffic's keeps them, for a /bus copy it finds old.
 const SHARED_D1: Record<string, Pick<Run, "d1Calls" | "d1RowsRead">> = {
+  "web:bus": { d1Calls: 2, d1RowsRead: 840 },
   "web:trafic": { d1Calls: 2, d1RowsRead: 840 },
   // The state of the OVPF-IPGP's site (tools/volcan.ts), in the copy of /sites-sans-reponse.
   "web:volcan": SANS_REPONSE_D1,
@@ -1200,7 +1203,7 @@ export function budget(entries = REGISTRY): string {
     `## Limites\n\n` +
     `- ${n(SUBREQUEST_LIMIT)} sous-requêtes par invocation, et ${n(SERVICE_OPS_LIMIT)} appels à KV, D1 et aux autres services liés, ensemble.\n` +
     `- ${IN_FLIGHT} lectures en vol à la fois par invocation (src/http.ts), sur les 6 connexions que la plateforme ouvre ensemble.\n` +
-    `- Tâche planifiée : toutes les ${EVENT_MINUTES} minutes, ${n(SCHEDULED_BUDGET)} sous-requêtes, ${n(SCHEDULED_CPU_MS)} ms de CPU. Cette limite est la nôtre, bien sous celle de la plateforme : 550 depuis le 05/11/2026, 600 depuis le 20/11/2026, quand la copie de /sport est devenue partagée (42 à froid). Sans cela, après toutes les copies refaites à froid, il ne restait que 78 sous-requêtes aux agendas planifiés, pour plus de 100 gardées par le test (test/partagees.test.ts).\n` +
+    `- Tâche planifiée : toutes les ${EVENT_MINUTES} minutes, ${n(SCHEDULED_BUDGET)} sous-requêtes, ${n(SCHEDULED_CPU_MS)} ms de CPU. Cette limite est la nôtre, bien sous celle de la plateforme : 550 depuis le 05/11/2026, 600 depuis le 20/11/2026, quand la copie de /sport est devenue partagée (42 à froid), 620 depuis le 22/11/2026, avec celle de /bus (20 à froid). Sans cela, après toutes les copies refaites à froid, il ne restait que 78 sous-requêtes aux agendas planifiés après /sport, 90 après /bus, pour plus de 100 gardées par le test (test/partagees.test.ts).\n` +
     `- Mémoire : ${n(ISOLATE_MEMORY_MB)} Mo par isolat, pour toutes les invocations qu'il sert ensemble.\n` +
     `- Une visite ou une question : ${n(PAGE_BUDGET)} sous-requêtes. Une construction de copie : ${n(BUILD_BUDGET)}.\n\n` +
     `## Totaux\n\n` +

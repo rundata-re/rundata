@@ -15,7 +15,7 @@ import * as seismes from "../providers/seismes.js";
 import * as onf from "../providers/sentiers.js";
 import * as mf from "../providers/vigilance.js";
 import { why } from "../types.js";
-import { buildActualites, buildAir, buildCalendrier, buildCoupures, buildCourant, buildCrues, buildElectricite, buildSea, buildSport, buildTrafic, buildVolcan, type CruesAnswer, FRESH_SECONDS, type VolcanAnswer } from "./data.js";
+import { buildActualites, buildAir, buildBus, buildCalendrier, buildCoupures, buildCourant, buildCrues, buildElectricite, buildSea, buildSport, buildTrafic, buildVolcan, type CruesAnswer, FRESH_SECONDS, type VolcanAnswer } from "./data.js";
 import { airEvery } from "../tools/air.js";
 import { floodRaised } from "./domains.js";
 import { alerteVolcan } from "./volcan-alerte.js";
@@ -63,7 +63,7 @@ export interface Shared {
   alongside?: boolean;
 }
 
-// About 1 280 KV writes a day in all: 48 for /sport, every 30 minutes, 288 for the vigilance and 288 for the news, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 96 for the water cuts, every 15 minutes, 48 a day for each of the four every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
+// About 1 570 KV writes a day in all: 48 for /sport, every 30 minutes, 288 for the vigilance, 288 for the news and 288 for /bus, every 5 minutes, 144 for the earthquakes, every 10 minutes, 96 for the rivers, every 15 minutes (288 while a river is in yellow flood vigilance or above), 24 for the ONF's map, 96 for the water cuts, every 15 minutes, 48 a day for each of the four every 30 minutes, 24 for the air (36 at most, while Atmo's forecast of the day is late) and 24 for the counts
 // of /chiffres (4 more for their events, 24 while an agenda does not answer), 12 for the power
 // cuts the mairies relay (48 while the site of one of them does not answer), 8 for the sea, 8 for the satellites' grids (48 while ACSPO lacks a day it should have), 4 for the calendar; the volcano's, every 5 minutes during an alert, adds up to 240 more while it lasts (the banner
 // of every page reads it). The events stay out: their build takes most of an invocation (they will come in a bundle).
@@ -101,6 +101,15 @@ export const SHARED: Shared[] = [
   // event in three, providers/actualites.ts, and kept from that copy in between), plus one. Its CPU: parsing them, 132
   // ms the first time in Node and 25 to 37 ms after, rounded up. Before /actualites's copy, which embeds it.
   { key: actu.KEY, build: async (cache, now) => actu.lire(now, (await cache.peek<actu.Fil>(actu.KEY).catch(() => undefined))?.value), every: 5, cold: 11, cpu: 140, offset: 0, before: ["web:actualites"] },
+  // /bus, every 5 minutes, in every event: its view rebuilt it whenever its data center had no copy of the last 5 minutes,
+  // the real-time feeds and the stations' timetables read before the answer. From 21 to 22/11/2026, 46 of its 52 views
+  // did, 1.7 s in the middle and 3.3 s at the 90th percentile (Loki, « réponse : »). Read here, every data center serves
+  // the copy of KV; a view rebuilds it only past BUS_MAX_AGE_MS (web/site.ts), or past what it knows of a station.
+  // Before /trafic's copy, which embeds it. 288 KV writes a day. Its cold cost: the three networks' feeds in real time
+  // with their copies, 11 in the test (test/couts-froid.test.ts), and the two reads of the timetables in D1, which Node
+  // does not see; 19 at most before the answer in the views' logs, the banner's reads included: 20. Its CPU: the view's
+  // (BUDGET.md, measured).
+  { key: "web:bus", build: (cache, now) => buildBus(now, cache), every: 5, cold: 20, cpu: 190, offset: 0, before: ["web:trafic"] },
   { key: "web:crues", build: buildCrues, every: (last) => (floodRaised(last as CruesAnswer | undefined).length ? 5 : 15), cold: 24, cpu: 50, range: { usual: 15, shortest: 5 }, offset: 10, alongside: true },
   { key: "web:actualites", build: buildActualites, every: 30, cold: 10, cpu: 190, offset: 10 },
   { key: "web:trafic", build: buildTrafic, every: 30, cold: 30, cpu: 160, offset: 5 },

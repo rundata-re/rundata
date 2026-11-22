@@ -183,8 +183,9 @@ describe("MétéoR-OI's stations", () => {
     // 409 with the news of Cilaos, Saint-Joseph and Saint-Philippe (20/11/2026); 452 with /sport's shared copy (42 from cold,
     // and its read of the FFCK's state in KV); 455 with Sainte-Suzanne's orders allowing runéo's works (web:coupures: the
     // data center's cache read, the page, the cache written, 20/11/2026); 457 with those orders kept in KV too, read and
-    // written by the scheduled event only (cache.ts `islandRead`, 21/11/2026).
-    expect(worstMain().subrequests).toBeLessThanOrEqual(457);
+    // written by the scheduled event only (cache.ts `islandRead`, 21/11/2026); 478 with /bus's shared copy (20 from cold
+    // and its write, 22/11/2026).
+    expect(worstMain().subrequests).toBeLessThanOrEqual(478);
   });
 
   it("has its own cron, never the minute of the event of every 5 minutes", () => {

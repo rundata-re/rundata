@@ -423,7 +423,7 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
       // Off its slots, due by its age only past its rate and margin, should a slot have gone by without it. A copy of
       // another revision is due anyway, for its version, with the agendas' reserve.
       const byRate = onSlot && !old ? Math.max(0, age - every * 60_000) : age - every * 60_000 - (old ? 0 : margin(every));
-      return { s, at, kept, over: old && byRate < 0 ? age : byRate, version: old && byRate < 0 };
+      return { s, at, kept, old, over: old && byRate < 0 ? age : byRate, version: old && byRate < 0 };
     })
     .filter((x) => x.over >= 0)
     // Not by subtraction: the copies never written are all overdue by Infinity, and Infinity - Infinity is NaN.
@@ -436,7 +436,12 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
   const out: Warmed = { written: [], left: [] };
   const held: Promise<void>[] = [];
   const told: Promise<void>[] = [];
-  for (const { s, at, kept, over, version } of due) {
+  // The copies of another revision left for the budget in this event: a copy that embeds one of them and is of another
+  // revision too waits for it, rather than being built from its old copy and kept, now of this version, until its next
+  // build (21/11/2026: /electricite said Saint-André's notice of 04/09 for half an hour after the deploy, built from
+  // web:courant's copy of before, while the tool electricite already said the one of 19/11).
+  const putOff = new Set<string>();
+  for (const { s, at, kept, old, over, version } of due) {
     // An hour past its time, a copy is expected at its cold cost: what it took at a dearer hour, kept with its last
     // copy, must not hold it back until that copy expires (web:trafic, 31 at 04:00, never under 33 since).
     // Its build stays within the budget all the same. Past its time by its rate only: a copy due for its version
@@ -465,8 +470,15 @@ export async function warmShared(cache: Cache, kv: Kv, now = new Date(), list = 
     };
     // The copy looked up, then built, within what is left besides the writes; the writes (the data center's cache,
     // KV) go in the part kept for them.
+    const waits = old ? due.find((x) => putOff.has(x.s.key) && x.s.before?.includes(s.key)) : undefined;
+    if (waits) {
+      putOff.add(s.key);
+      leave(`autre version, attend ${waits.s.key}`);
+      continue;
+    }
     const cost = LOOKUP + (late && s.cold != null ? s.cold : expected(s, kept));
     if (cost > left() - (version ? AFTER_DEPLOY_RESERVE : 0)) {
+      if (old) putOff.add(s.key);
       leave(`${version ? "autre version, " : ""}budget : ${spent()} faites, ${cost} prévues`);
       continue;
     }

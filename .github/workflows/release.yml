@@ -35,11 +35,12 @@ jobs:
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "$TAG already released"; exit 0
           fi
-          PREV=$(git describe --tags --abbrev=0 "$GITHUB_SHA^" 2>/dev/null || true)
+          # Only the site's tags (v1.0.725): the app's pre-releases (android-v0.1.2) are not a previous site release.
+          PREV=$(git describe --tags --match 'v[0-9]*' --abbrev=0 "$GITHUB_SHA^" 2>/dev/null || true)
           if [ -n "$PREV" ] && git show "$PREV:src/nouveautes.ts" > "$RUNNER_TEMP/avant.ts" 2>/dev/null; then
             node scripts/release-notes.mjs src/nouveautes.ts "$RUNNER_TEMP/avant.ts" > "$RUNNER_TEMP/notes.md"
           else
             node scripts/release-notes.mjs src/nouveautes.ts > "$RUNNER_TEMP/notes.md"
           fi
           # The generated notes (the pull requests) come after these.
-          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --generate-notes
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" --generate-notes ${PREV:+--notes-start-tag "$PREV"}

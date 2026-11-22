@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Dimanche 22 novembre 2026
 
+- Bus : chaque page d'arrêt dit ses lignes, leurs terminus et les arrêts les plus proches, et les pages des communes renvoient aux arrêts.
 - Coupures d'eau : sans avis, la page et l'outil disent « pas d'avis » avec l'heure de lecture, et qu'une coupure peut être annoncée ailleurs.
 - Assistants IA : les coupures d'eau d'une commune, chaque avis avec son jour, ses heures et les rues qu'il nomme.
 - Fiche d'une adresse : quand le Cerema ne répond pas, les prix de vente viennent des fichiers DVF d'Etalab, mêmes données de la DGFiP.

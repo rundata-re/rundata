@@ -35,7 +35,7 @@ import { credit, joursDuJour } from "./data.js";
 import { aCommune, deCommune, LINK } from "./aujourdhui.js";
 import { waterLive } from "./coupures.js";
 import { communeEvents, communeHikes } from "./liens.js";
-import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, electriciteCommune, HORAIRES_EN_ATTENTE, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
+import { alertList, aq, bikeStock, busOutran, calendrierLive, departureLi, STOP_PATH, electriciteCommune, HORAIRES_EN_ATTENTE, lienNom, listClock, stillToCome, volcanLive } from "./domains.js";
 import { communePath as enfantsPath, enfantsLive } from "./enfants.js";
 import { esc, islandMap, laterMap } from "./map.js";
 import { communeNames, SURVOL_SCRIPT } from "./carte-communes.js";
@@ -246,7 +246,10 @@ function buses(p: PlacePage, data: Cached<CommuneData> | null | undefined, now: 
   // Its departures not read (the source failed, or no stop was found): never « pas de départ », which would be wrong.
   if (!b) return { live: empty(`Horaires des bus absents de la lecture ${readAt(data.fetchedAt, now).de}.`) };
   const left = stillToCome(b.departs, data.fetchedAt, now).slice(0, 4);
-  const where = b.gare ? `à la gare ${esc(de(p.nom))}` : `près du centre, arrêt ${esc(b.arrets[0].nom)}`;
+  // The stop named links its page (marketing, 22/11/2026), same words; a copy made before the pages were kept has none.
+  const page = (b.gare ? b.arrets.find((s) => s.page) : b.arrets[0])?.page;
+  const link = (words: string) => (page ? `<a href="${STOP_PATH}/${esc(page)}">${words}</a>` : words);
+  const where = b.gare ? `à ${link(`la gare ${esc(de(p.nom))}`)}` : `près du centre, arrêt ${link(esc(b.arrets[0].nom))}`;
   // A copy past what it knows: not « pas de départ », its refresh is on its way (web/data.ts `snapshot`).
   if (!left.length && busOutran(b, now.getTime() - data.fetchedAt.getTime())) return { live: { valeur: "", detail: HORAIRES_EN_ATTENTE, vide: true } };
   if (!left.length) return { live: { valeur: "Pas de départ", detail: `${where} dans les prochaines heures, d'après les horaires publiés` } };
@@ -855,7 +858,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
     ...(l.volcan?.value.sources ?? []),
     ...(l.electricite?.value.sources ?? []),
   ];
-  const faq = communeFaq(p.nom, p.slug);
+  const faq = communeFaq(p.nom, p.slug, l.commune?.value.bus?.desservis);
   const body = `<section id="en-ce-moment" aria-labelledby="h-now">
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-now">${esc(p.nom)} en ce moment</h2>
   <p>Chaque catégorie a sa page pour toute l'île ; ici, ce qui concerne ${esc(p.nom)}. Mise à jour en continu, chaque donnée avec son heure et sa source.</p></div>

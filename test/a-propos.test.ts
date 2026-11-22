@@ -139,7 +139,7 @@ describe("who makes rundata.re, the connector's page, the legal notice, the 404 
       html.split("<p").slice(1).map((p) => p.split("</p>")[0].replaceAll('<span class="ident">rundata.re</span>', "rundata.re"));
     // One paragraph of about 2 000 characters before (31/10/2026); its first sentence alone is about 1 000.
     const compte = paragraphs(section(await page("/confidentialite"), "<h2>Ce que le site compte</h2>", '<p id="mesure-cloudflare"'));
-    expect(compte.length).toBe(6);
+    expect(compte.length).toBe(7); // the app's paragraph since 22/11/2026
     expect(Math.max(...compte.map((p) => p.length))).toBeLessThan(1_000);
     const joindre = paragraphs(section(await page("/a-propos"), '<h2 id="contact">', "</section>"));
     expect(joindre.length).toBe(4);

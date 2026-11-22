@@ -125,4 +125,9 @@ describe("the app's calls to the MCP endpoint", () => {
     // Another client's hit is kept as before.
     expect(sansLieu(hits[0], "Claude-User")).toBe(hits[0]);
   });
+
+  it("is told on the privacy page", async () => {
+    const page = await (await handle(new Request("https://rundata.re/confidentialite", { headers: { accept: "text/html" } }), new Cache())).text();
+    expect(page.replaceAll('<span class="ident">rundata.re</span>', "rundata.re")).toContain("L'appli rundata.re pour téléphone lit les mêmes outils que le connecteur. Depuis le 22 novembre 2026, pour ses demandes, les statistiques ne gardent ni le lieu demandé, ni sa commune, ni le pays : seulement « appli » ou « widget » et la version de l'appli. Notre copie d'un an des journaux techniques ne garde pas non plus le pays ni le réseau ; seuls les journaux que Cloudflare garde quelques jours les contiennent, comme pour toute visite. Pour ne pas refaire le même travail pour chaque téléphone, la réponse à une même question est gardée 5 minutes dans le cache de Cloudflare, sans rien qui dise qui l'a demandée.");
+  });
 });

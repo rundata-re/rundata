@@ -1581,7 +1581,7 @@ export const buildElectricite = async (cache: Cache, now = new Date()): Promise<
   // One read of EDF's production for both (31/10/2026): the 24 hours, and their latest line for the rest of the page;
   // the day unread, the latest line alone, as the tool reads it.
   const day = edf.journee(cache).catch((err) => (console.error(`source ${edf.SOURCE.id} indisponible (24 h):`, why(err)), undefined));
-  const a = await electricite(cache, now, undefined, day.then((c) => (c ? edf.latest(c) : edf.mix(cache))));
+  const a = await electricite(cache, now, undefined, day.then((c) => (c ? edf.latest(c) : edf.mix(cache))), true);
   const d = needed<ElectriciteAnswer>(a, "électricité");
   const c = await day;
   // The day's hours into rundata.re's archive, at most once an hour, outside the copy's cost and with what is left;

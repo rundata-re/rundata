@@ -284,6 +284,7 @@ describe("« Y aller » on the places whose position the pages' copies now keep"
     // On a commune's page the Vélos tile is a link over its whole surface: the buttons sit above it, else a tap opens /velos.
     expect(CSS).toContain(".tile h3 a::after{content:\"\";position:absolute;inset:0;border-radius:22px;z-index:1}");
     expect(CSS).toContain(".tile .aller{position:relative;z-index:2}");
+    expect(CSS).toContain(".tile a:not(h3 a){position:relative;z-index:2}");
   });
 
   it("is under an event whose source gives its position, the place's name in the sheet, and not under the others", () => {

@@ -124,6 +124,20 @@ describe("resolvePlace", () => {
     expect(resolvePlace("Cilaos")!.autres).toEqual([]);
   });
 
+  it("takes Saint-Pierre's Mont Vert for « Montvert », as most write it, and says the locality of Les Trois-Bassins beside it (marketing, 18/11/2026)", () => {
+    for (const q of ["Montvert", "Mont Vert", "Montvert-les-Hauts", "Mont-Vert les Hauts"]) {
+      const r = resolvePlace(q)!;
+      expect([r.lieu.nom, r.lieu.commune], q).toEqual(["Mont Vert les Hauts", "Saint-Pierre"]);
+    }
+    const r = resolvePlace("Montvert")!;
+    expect(r.autres.map((a) => [a.nom, a.commune])).toEqual([["Montvert", "Les Trois-Bassins"]]);
+    expect(placeWarning("Montvert", r)).toContain("il y a aussi Montvert (localite, Les Trois-Bassins)");
+    expect([resolvePlace("Montvert-les-Bas")!.lieu.nom, resolvePlace("Montvert les Bas")!.lieu.commune]).toEqual(["Mont Vert les Bas", "Saint-Pierre"]);
+    // With its commune, the locality of Les Trois-Bassins.
+    const t = resolvePlace("Montvert Les Trois-Bassins")!;
+    expect([t.lieu.nom, t.lieu.commune]).toEqual(["Montvert", "Les Trois-Bassins"]);
+  });
+
   it("gives for a cirque or the volcan one place of it, said so, not as the place's own name", () => {
     for (const [q, nom] of [["Mafate", "La Nouvelle"], ["Cirque de Mafate", "La Nouvelle"], ["Volcan", "Pas de Bellecombe - Jacob"], ["Piton de la Fournaise", "Pas de Bellecombe - Jacob"]]) {
       const r = resolvePlace(q)!;
@@ -170,9 +184,10 @@ describe("resolvePlace", () => {
     expect(at("Trois-Mares")?.slice(0, 3)).toEqual(["Trois Mares", "quartier", "Le Tampon"]);
     expect(at("Vincendo")?.slice(0, 3)).toEqual(["Vincendo", "quartier", "Saint-Joseph"]);
     expect(at("Dimitile")?.slice(0, 2)).toEqual(["Le Dimitile", "sommet"]);
-    // Every commune and every town of OSM is still itself.
+    // Every commune and every town of OSM is still itself, but « Montvert », Saint-Pierre's Mont Vert first, the locality
+    // of Les Trois-Bassins said beside it (test below).
     for (const p of gazetteer.places.filter((p) => p.type === "commune" || p.type === "localite")) {
-      if (p.nom !== "L'Ermitage") expect([p.nom, resolvePlace(p.nom)!.lieu.nom]).toEqual([p.nom, p.nom]);
+      if (p.nom !== "L'Ermitage" && p.nom !== "Montvert") expect([p.nom, resolvePlace(p.nom)!.lieu.nom]).toEqual([p.nom, p.nom]);
     }
   });
 

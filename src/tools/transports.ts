@@ -1133,9 +1133,11 @@ const LIVE_AROUND_MS = 3600_000;
  * A trip of a pattern (numbered within its network) on the day of its service, else its run still to come: yesterday's
  * while it is on the road after midnight, today's, or the next day it runs within two weeks. Its stops with their times,
  * and what the real-time feed says of it while it is on the road. Undefined when the network, the pattern or the trip is
- * not in the timetables, or the trip does not run that day: a link from before they were published again.
+ * not in the timetables, or the trip does not run that day: a link from before they were published again. Without the
+ * day, `stop` (island-wide index), the stop clicked on: the run taken is the one that has not passed it yet, so that a
+ * departure listed for tomorrow at a stop opens tomorrow's run, while today's still rolls further down the line.
  */
-export async function tripRun(net: string, local: number, trip: string, jour: number | undefined, now: Date, cache?: Cache): Promise<TripRun | undefined> {
+export async function tripRun(net: string, local: number, trip: string, jour: number | undefined, now: Date, cache?: Cache, stop?: number): Promise<TripRun | undefined> {
   const n = transit.NETWORKS[net];
   if (!n || !Number.isInteger(local) || local < 0) return undefined;
   const pattern = n.first_pattern + local;
@@ -1151,10 +1153,13 @@ export async function tripRun(net: string, local: number, trip: string, jour: nu
   const runs = (ymd: number) => transit.serviceRuns(net, service, ymd, weekdayOf(ymd));
   let ymd = jour;
   if (ymd === undefined) {
-    // Yesterday's run still on the road, today's, or the next one.
+    // Yesterday's run still on the road, today's, or the next one: still before the stop clicked on, if the trip stops
+    // there (its last pass, on a loop), else before its end.
+    const passes = stop === undefined ? [] : (stops ?? []).filter(([id]) => id === stop).map(([, offset]) => offset);
+    const until = passes.length ? Math.max(...passes) : last;
     for (let back = 1; back >= -14 && ymd === undefined; back--) {
       const d = day(now, back).ymd;
-      if (runs(d) && (back < 0 || midnight(d) + (start + last) * 1000 >= now.getTime() - 60_000)) ymd = d;
+      if (runs(d) && (back < 0 || midnight(d) + (start + until) * 1000 >= now.getTime() - 60_000)) ymd = d;
     }
     if (ymd === undefined) return undefined;
   } else if (!runs(ymd)) return undefined;

@@ -177,6 +177,43 @@ describe("a trip", () => {
     const before = new Date("2026-10-23T19:00:00Z");
     expect(tripPage(ORIGIN, "/bus/trajet/carjaune/0/nuit?jour=20261023", friday, undefined, before)).toContain(">demain 00:30<");
   });
+
+  it("without a day, takes the run that has not passed the stop clicked on yet, the next day's once today's is beyond it", async () => {
+    const local = 0;
+    const id = CJ.first_pattern + local;
+    // Services of Car Jaune running on Friday 23/10 and Saturday 24/10, and a trip from 07:00 to 07:40 on them.
+    const service = Array.from({ length: 500 }, (_, i) => i).find((s) => transit.serviceRuns("carjaune", s, 20261023, 4) && transit.serviceRuns("carjaune", s, 20261024, 5))!;
+    expect(service).toBeDefined();
+    const db: transit.TransitDb = {
+      all: async <T>(sql: string) =>
+        (/FROM pattern_stops/.test(sql)
+          ? [{ feed: CJ.stops_feed, id: local, sens: 0, stops: JSON.stringify([[0, 0], [1, 1200], [2, 2400]]) }]
+          : [{ feed: CJ.feed, id: local, route: transit.ENDS[id][0] - CJ.first_route, headsign: "Saint-Denis", trips: JSON.stringify([[service, 7 * 3600, "matin"]]) }]) as T[],
+    };
+    transit.configure(db);
+    // Friday 07:25: today's run passed the second stop at 07:20 and rolls to the third, at 07:40.
+    const t = new Date("2026-10-23T03:25:00Z");
+    const [first, second, third] = [0, 1, 2].map((n) => CJ.first_stop + n);
+    expect((await tripRun("carjaune", local, "matin", undefined, t, undefined, second))!.jour).toBe(20261024);
+    expect((await tripRun("carjaune", local, "matin", undefined, t, undefined, first))!.jour).toBe(20261024);
+    expect((await tripRun("carjaune", local, "matin", undefined, t, undefined, third))!.jour).toBe(20261023);
+    // Without the stop, or with one the trip does not serve, its end decides, as before.
+    expect((await tripRun("carjaune", local, "matin", undefined, t))!.jour).toBe(20261023);
+    expect((await tripRun("carjaune", local, "matin", undefined, t, undefined, CJ.first_stop + 9))!.jour).toBe(20261023);
+    // A dated address still opens its day.
+    expect((await tripRun("carjaune", local, "matin", 20261023, t, undefined, second))!.jour).toBe(20261023);
+    // The page highlights tomorrow's time at the stop clicked on.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(t);
+    try {
+      const r = await handle(new Request(`${ORIGIN}/bus/trajet/carjaune/${local}/matin?arret=1`, { headers: { accept: "text/html" } }), new Cache());
+      expect(r.status).toBe(200);
+      const html = await r.text();
+      expect(html).toMatch(/<li id="arret-1" class="ici"[^>]*><span class="note">demain 07:20</);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("the page of a trip", () => {

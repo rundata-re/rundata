@@ -7,7 +7,7 @@
 import { TEXTES } from "./communes-textes.js";
 import { porte, type Porte, SHEET as ALLER } from "./aller.js";
 import type { Cached } from "../cache.js";
-import { localTime } from "../geo.js";
+import { ageMinutes, localTime } from "../geo.js";
 import { normalize } from "../places/resolve.js";
 import * as cal from "../providers/calendrier.js";
 import * as mf from "../providers/vigilance.js";
@@ -48,6 +48,7 @@ import { ligneTuile } from "./antennes.js";
 import { PATH as ECOLES, schoolLi } from "./ecoles-annuaire.js";
 import * as sitesHs from "../providers/sites-hs.js";
 import { enTete } from "../tools/representativeness.js";
+import { OLD_MINUTES } from "../tools/meteo.js";
 import { casse } from "../tools/casse.js";
 import { COMMUNE_LIRE, communeFaq } from "./commune-texte.js";
 import { faqPage, texteStable } from "./texte-stable.js";
@@ -782,8 +783,14 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const grid = spans(tiles);
 
   const s = enTete(l.place?.value.meteo?.stations);
+  // The measure older than OLD_MINUTES at this view (a copy of the day given to a search engine's fetcher as it is,
+  // web/site.ts `communeWaits`; a source that does not answer): the same note as a place's page (web/pages.ts).
+  const mesureA = s && l.place ? new Date(l.place.fetchedAt.getTime() - s.age_min * 60_000) : undefined;
+  const perimee = s && mesureA && ageMinutes(mesureA, now) > OLD_MINUTES
+    ? `<p class="note">${esc(`Dernière mesure lue à la station ${s.station} : ${leJour(s.heure_mesure)}. Ce n'est pas le temps qu'il fait maintenant.`)}</p>`
+    : "";
   const headline = s
-    ? `<div class="now"><span class="big">${enGrand(esc(thin(s.mesures.temperature!)))}</span>` +
+    ? `${perimee}<div class="now"><span class="big">${enGrand(esc(thin(s.mesures.temperature!)))}</span>` +
       `<p>mesurés <b>${esc(leJour(s.heure_mesure))}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 

@@ -314,6 +314,40 @@ export function oldCopy(request: Request): OldCopy | undefined {
 /** How long a page waits for its own copy's build for `request` when this data center has none (web/data.ts `snapshot`). */
 export const withoutCopy = (request: Request): number | undefined => (isReader(request) && !lecteurDirect(request) ? READER_WAIT_MS : undefined);
 
+// The search engines' fetchers, which index a page and answer no one now: given the page's own copy of the day as it is,
+// whatever its age, its refresh going on after the answer (web/data.ts `snapshot`), rather than a whole build before it.
+// From 19 to 22/11/2026 (Worker logs, « réponse : »), on /communes/<commune>: Googlebot 15 views, 18 ms in the middle;
+// people 118, 0.68 s, p90 2.1 s; OAI-SearchBot 69, 2.3 s, p90 3.8 s, 17 past 3 s, up to 25 s; from 21 to 22/11, its p90
+// 4.9 s on /meteo/<lieu> (122 views, up to 17.5 s) and 4.6 s on /aujourdhui/<commune>. Its slow views each built the
+// page from nothing (75 to 100 subrequests): the copy of the place (web/data.ts ISLAND_PAGES for the communes), built by
+// the views only, was past OLD_MINUTES where few read it, and counted as none for it. A measure past OLD_MINUTES is said
+// so on /meteo/<lieu> (web/pages.ts) and /communes/<commune> (web/commune.ts), and left out of /aujourdhui/<commune>
+// past 30 minutes (tools/resume.ts `METEO_MAX_MIN`); the vigilance banner is read apart, as for every view. A copy from
+// before midnight still waits for its refresh, as before; the fetchers that answer someone now, people and the daily
+// check of the sources keep theirs.
+const INDEXERS = /OAI-SearchBot|Googlebot|bingbot|Applebot|Claude-SearchBot/i;
+/** Whether `request` comes from a search engine's fetcher that indexes the page (`INDEXERS`). */
+export const indexeur = (request: Request) => {
+  const ua = request.headers.get("user-agent") ?? "";
+  return INDEXERS.test(ua) && !CHECK.test(ua) && !lecteurDirect(request);
+};
+/**
+ * How a view of /communes/<commune>, /meteo/<lieu> or /aujourdhui/<commune> waits for its own copies (`snapshot`'s
+ * `waitMs`, `reader`, `old`, `withoutCopyMs`): as `ownWaits`, `oldCopy` and `withoutCopy` say, but for a search engine's
+ * fetcher, the copy of the day at once.
+ */
+export function indexWaits(request: Request, now: Date): [number | undefined, boolean | ReaderWaits, OldCopy | undefined, number | undefined] {
+  if (!indexeur(request)) return [...ownWaits(request), oldCopy(request), withoutCopy(request)];
+  // A copy of the day is never too old for it; one from before midnight is useless here, KV waited for longer.
+  return [HOME_READER_WAIT_MS, false, { afterMs: Infinity, waitMs: READER_WAIT_MS, uselessAfterMs: sinceMidnight(now) * 1000 }, withoutCopy(request)];
+}
+
+/** `snapshot`'s waits for a place's weather (web:lieu), its forecast not counted in its completeness (`withoutForecast`). */
+const placeWaits = (request: Request, now: Date) => {
+  const [waitMs, reader, old, without] = indexWaits(request, now);
+  return [waitMs, reader, withoutForecast, old, without] as const;
+};
+
 /** Waits as `waits` says, or as the reader would. */
 const alsoWaits = (waits: ReaderWaits, reader: boolean | ReaderWaits): ReaderWaits => (key, value, ageMs) =>
   waits(key, value, ageMs) || (typeof reader === "function" ? reader(key, value, ageMs) : reader);
@@ -1056,7 +1090,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // 20/11/2026 at 11:41, /meteo/l-hermitage, then a page out of the index, still gave OAI-SearchBot a 503 while its copy was built.
     if (PRINCIPAL[p.slug]) return new Response(null, { status: 301, headers: { location: `${meteoPath(p.slug)}${new URL(request.url).search}`, "cache-control": STATIC } });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request)),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...placeWaits(request, now)),
       alerte(cache, background, now),
     ]);
     // The state of the hikes around: the hikers' page's last copy, as it is, never built for this page.
@@ -1071,7 +1105,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     // The weather is built when it has no copy, as on the commune's page; the rest only read (tools/resume.ts).
     const vigilance = vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now);
-    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request));
+    const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...placeWaits(request, now));
     // The weather's copy as the snapshot gave it: not read again (the read could be one subrequest too many).
     const { copies, leftOut } = await readCopies(cache, p, p, now, background, vigilance, { meteo: place });
     return page(path, (live) => (live
@@ -1103,9 +1137,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path.startsWith("/communes/")) {
     const p = pageOf(path.slice("/communes/".length).replace(/\/$/, ""));
     if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    const [waitMs, reader, old, without] = indexWaits(request, now);
     const [place, commune, vigilance] = await Promise.all([
-      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...ownWaits(request), withoutForecast, oldCopy(request), withoutCopy(request)),
-      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, ...ownWaits(request), undefined, oldCopy(request), withoutCopy(request)),
+      snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, waitMs, reader, withoutForecast, old, without),
+      snapshot(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now), background, now, waitMs, reader, undefined, old, without),
       vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now),
     ]);
     // The West's communes have their déchèteries' tile too (the TCO publishes them).

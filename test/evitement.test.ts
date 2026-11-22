@@ -24,7 +24,20 @@ describe("the skip link and the main landmark", () => {
   ] as const) {
     it(`${name}: « Aller au contenu » before anything else, to the main landmark, the title in it`, () => {
       const body = html.slice(html.indexOf("<body>"));
-      expect(body).toMatch(/^<body>\n<a class="evite" href="#contenu">Aller au contenu<\/a>\n<header class="top">/);
+      // The accounts' logos (one <symbol> each, hidden) may sit between the link and the bar: nothing there takes the focus.
+      const head = '<body>\n<a class="evite" href="#contenu">Aller au contenu</a>\n';
+      const open = '<svg hidden aria-hidden="true">';
+      expect(body.startsWith(head)).toBe(true);
+      const between = body.slice(head.length, body.indexOf('<header class="top">'));
+      expect(body.indexOf('<header class="top">')).toBeGreaterThanOrEqual(head.length);
+      if (between) {
+        expect(between.startsWith(open) && between.endsWith("</svg>")).toBe(true);
+        const symbols = between.slice(open.length, -"</svg>".length).split("</symbol>");
+        expect(symbols.pop()).toBe("");
+        expect(symbols.length).toBeGreaterThan(0);
+        for (const symbol of symbols) expect(symbol.startsWith("<symbol ")).toBe(true);
+        expect(between).not.toMatch(/<a[ >]|tabindex|<button|<input/);
+      }
       expect(html.match(/<main[ >]/g)).toHaveLength(1);
       expect(inMain(html, "<h1")).toBe(true);
       expect(inMain(html, '<div class="band')).toBe(true);

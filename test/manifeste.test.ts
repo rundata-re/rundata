@@ -164,6 +164,19 @@ describe("rundata.re's accounts", () => {
     expect(foot).toMatch(/<\/svg>Facebook<\/a><a [^>]+><svg[^]*?<\/svg>Instagram<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>Threads<\/a><a [^>]+><svg[^]*?<\/svg>TikTok<\/a><\/span><span class="pair"><a [^>]+><svg[^]*?<\/svg>WhatsApp<\/a><a [^>]+><svg[^]*?<\/svg>GitHub<\/a><\/span><\/span><\/p>/);
   });
 
+  it("draw each logo from one <symbol> per page, in the bar, the menu and the footer", () => {
+    const html = placePage(O, pageOf("cilaos")!, null, NOW);
+    for (const s of SOCIAL) {
+      const id = `c-${s.nom.toLowerCase()}`;
+      expect(html.match(new RegExp(`<symbol id="${id}" viewBox="0 0 24 24"`, "g")), s.nom).toHaveLength(1);
+      expect(html.match(new RegExp(`aria-label="rundata.re sur ${s.nom}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#${id}"/></svg>`, "g")), s.nom).toHaveLength(3);
+    }
+    // Before the bar, out of the page's flow; each logo keeps its own fill or stroke, in the colour of its link.
+    expect(html.indexOf('<svg hidden aria-hidden="true"><symbol id="c-facebook"')).toBeLessThan(html.indexOf('<header class="top">'));
+    expect(html).toContain('<symbol id="c-tiktok" viewBox="0 0 24 24" fill="currentColor"><path d="M12.525');
+    expect(html).toContain('<symbol id="c-instagram" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect');
+  });
+
   it("show nothing for an account without an address", () => {
     const later: Social = { nom: "Instagram", url: "", svg: "<svg></svg>" };
     expect(follow([later])).toBe("");

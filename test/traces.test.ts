@@ -273,8 +273,7 @@ describe("traces GPS", () => {
     // Every hike and trail is in the list, with what the filter reads.
     expect(page.match(/<li class="card hike/g)).toHaveLength(RANDONNEES.length);
     expect(page).toMatch(/<li data-k="s\d+" data-km="[\d.]+" data-dp="\d*" data-e="[ofi]"( data-b="1")?><span><a href="\/sentiers\//);
-    // 302 000 since the sixth account (TikTok), whose logo is in the bar, the menu and the footer of every page.
-    expect(page.length).toBeLessThan(302_000);
+    expect(page.length).toBeLessThan(300_000);
   });
 
   it("says when the ONF does not answer, rather than a file without its state", async () => {

@@ -8,7 +8,7 @@ import * as enfants from "../src/vie/enfants.js";
 import type { Alerte } from "../src/web/data.js";
 import { homePage, type HomeLive } from "../src/web/home.js";
 import { esc } from "../src/web/map.js";
-import { CSS, meteoPage, SOCIAL, STYLE_PATH } from "../src/web/pages.js";
+import { BAR_LEFT_OUT, CSS, meteoPage, SOCIAL, STYLE_PATH } from "../src/web/pages.js";
 import { type VolcanAlerte, withVolcan } from "../src/web/volcan-alerte.js";
 
 const O = "https://rundata.re";
@@ -125,10 +125,24 @@ describe("the order of the pages", () => {
       const link = `<a href="${s.nom === "GitHub" ? s.url : `${s.url}?ref=site`}" rel="noopener" aria-label="rundata.re sur ${s.nom}">`;
       // Each logo is drawn from its <symbol>, written once per page.
       const logo = `<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#c-${s.nom.toLowerCase()}"/></svg>`;
-      expect(top).toContain(`${link}${logo}</a>`);
+      // In the bar, the networks to follow; the WhatsApp channel and the code in the menu and the footer only.
+      if (BAR_LEFT_OUT.includes(s.nom)) expect(top).not.toContain(link);
+      else expect(top).toContain(`${link}${logo}</a>`);
       expect(sheet).toContain(`${link}${logo}${s.nom}</a>`);
       expect(foot).toContain(`${link}${logo}${s.nom}</a>`);
     }
+  });
+
+  it("names six networks in the bar, and takes them out of it while an urgent category joins the four others", () => {
+    const top = (html: string) => [...html.match(/<nav class="follow-top"[^>]*>(.*?)<\/nav>/s)![1].matchAll(/aria-label="rundata.re sur ([^"]+)"/g)].map((m) => m[1]);
+    expect(top(meteoPage(O, null, NOW))).toEqual(["Facebook", "Instagram", "Threads", "TikTok", "YouTube", "X"]);
+    // With a vigilance, five categories: the bar has no room left for the logos on wide screens (one line, 22/11/2026).
+    const vigilance = meteoPage(O, null, NOW, VIGILANCE);
+    expect(bar(vigilance)).toHaveLength(5);
+    // Last rule of the wide screens' media query, where the bar shows them.
+    expect(CSS).toContain(".follow-top svg{width:24px;height:24px}.bar:has(.quick>:nth-child(5)) .follow-top{display:none}}");
+    // The accounts stay in the menu, all eight.
+    expect(sheet(vigilance).match(/aria-label="rundata.re sur /g)).toHaveLength(SOCIAL.length);
   });
 
   it("leads the bar's button to /mcp under its page's name, « Mon IA » below 430 px, and says « Menu » under the menu's icon", () => {

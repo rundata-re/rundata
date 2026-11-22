@@ -2189,6 +2189,9 @@ export interface OldCopy {
   uselessAfterMs?: number;
 }
 
+/** The copies whose refresh this isolate runs after an answer, by key (`snapshot`): one at a time each. */
+const behind = new Set<string>();
+
 export async function snapshot<T>(
   cache: Cache,
   key: string,
@@ -2266,9 +2269,13 @@ export async function snapshot<T>(
   const freshFor = Math.min(incomplete?.(got.value) ? INCOMPLETE_RETRY_SECONDS : FRESH_SECONDS, sinceMidnight(now));
   const age = now.getTime() - got.fetchedAt.getTime();
   if (age > freshFor * 1000) {
+    const tooOld = old && (yesterday || age > old.afterMs);
+    const waits = yesterday || (typeof reader === "function" ? reader(key, got.value, age) : reader);
+    // A refresh no one waits for, while this isolate already has one of this copy going: the copy as it is, no second
+    // build (the Worker shares no build between requests, cache.ts `dedupe`).
+    if (!tooOld && !waits && behind.has(key)) return got;
     const fresh = written(cache.getFrom(key, got, freshFor, run, island ? FRESH_SECONDS : undefined));
     const logged = fresh.catch((err) => console.error(`page ${key} : rafraîchissement impossible`, why(err)));
-    const tooOld = old && (yesterday || age > old.afterMs);
     if (tooOld) {
       const newer = await within(logged, Math.max(0, old.waitMs - (Date.now() - start)));
       // A refresh that failed gives the same copy back: refused as well.
@@ -2278,13 +2285,14 @@ export async function snapshot<T>(
       background(logged);
       return null;
     }
-    if (yesterday || (typeof reader === "function" ? reader(key, got.value, age) : reader)) {
+    if (waits) {
       const newer = await within(logged, waitMs);
       if (newer) return newer;
       // The reader got the copy as it was: its age, to see what an assistant was given (the home page waits 800 ms).
       console.log(`copie servie au lecteur pendant son rafraîchissement : ${key}, âge ${Math.round(age / 60_000)} min`);
     }
-    background(logged);
+    behind.add(key);
+    background(logged.finally(() => behind.delete(key)));
   }
   return got;
 }

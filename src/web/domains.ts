@@ -3051,7 +3051,8 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   const list = d
     ? d.avis.length
       ? `<ul class="zones">${[...d.avis].sort((x, y) => Number(!!y.ne_pas_boire) - Number(!!x.ne_pas_boire)).map(noticeCard).join("")}</ul>`
-      : `<p class="card">Aucun avis de coupure récent ou à venir ${silent.length ? "sur les sites des distributeurs qui ont répondu" : "dans les communes suivies"}.</p>`
+      // « Pas d'avis », never « aucun avis », which reads as « no cut » (marketing, 22/11/2026), as the tool says it.
+      : `<p class="card">Pas d'avis de coupure récent ou à venir ${silent.length ? "sur les sites des distributeurs qui ont répondu" : "sur les sites lus"}. Une coupure peut être annoncée ailleurs, par la mairie par exemple.</p>`
     : `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`;
 
   // Up the page in the cyclone season, at its foot the rest of the year.

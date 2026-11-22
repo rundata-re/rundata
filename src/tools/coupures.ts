@@ -243,7 +243,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     return text({
       // The sites without an answer named once here, their words in `injoignable` (the page says them in full).
       resume: (dry.length ? `Eau à ne pas boire en ce moment : ${dry.join(", ")}. ` : "") +
-        (live.length ? `${live.length} avis des distributeurs d'eau récents ou à venir.` : silent.length ? "" : "Aucun avis de coupure récent ou à venir.") +
+        (live.length ? `${live.length} avis des distributeurs d'eau récents ou à venir.` : silent.length ? "" : "Pas d'avis de coupure récent ou à venir sur les sites lus. Une coupure peut être annoncée ailleurs, par la mairie par exemple.") +
         (complet ? silent.map((f) => ` ${f.texte}`).join("")
           : silent.length ? ` Sans réponse à la dernière lecture\u00a0: ${enumeration(silent.map((f) => f.de.replace(/^d(?:e (?:la |l'|les? )?|es )/, "")))}\u00a0: ce que chacun annonçait, dans injoignable.` : ""),
       injoignable: silent.length ? silent : undefined,

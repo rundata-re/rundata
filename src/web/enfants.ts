@@ -32,12 +32,12 @@ export const TITLE = "Avec les enfants à La Réunion (974) : lieux et activité
 export const H1 = "Avec les enfants à La Réunion";
 export const LEAD = typo("Aires de jeux, parcs, piscines, médiathèques, zoos, skateparks : les lieux où aller avec les enfants, commune par commune, et les activités pour eux ce week-end et dans les deux semaines qui viennent. De 0 à 17 ans, avec l'âge quand l'organisateur ou la carte le donne.");
 export const DESCRIPTION = "Où emmener les enfants à La Réunion : aires de jeux, parcs, piscines, médiathèques, zoos, skateparks, commune par commune, et les activités du week-end.";
-const MISSING = typo("<b>Ce que vous ne trouverez pas ici.</b> Les accueils de loisirs (centres aérés), les crèches et les relais petite enfance sont publiés par la CAF sur monenfant.fr, dont nous ne pouvons pas reprendre les données : nous donnons seulement, <a href=\"#creches\">plus bas</a>, le nombre de places en crèche de chaque commune, que la CAF publie en open data. Pour trouver un mode de garde ou un accueil de loisirs : " + lienNom("https://monenfant.fr", "monenfant.fr", ' rel="noopener"') + ". Les activités privées qui ne figurent sur aucune carte ouverte manquent aussi. Un lieu oublié ? <a href=\"#avis\">Dites-le-nous</a>, ou ajoutez-le sur <a href=\"https://www.openstreetmap.org/\" rel=\"noopener\">OpenStreetMap</a> : il apparaîtra ici.");
+const MISSING = typo("<b>Ce que vous ne trouverez pas ici.</b> Les accueils de loisirs (centres aérés), les crèches et les relais petite enfance sont publiés par la CAF sur monenfant.fr, dont rundata.re ne peut pas reprendre les données : la page donne seulement, <a href=\"#creches\">plus bas</a>, le nombre de places en crèche de chaque commune, que la CAF publie en open data. Pour trouver un mode de garde ou un accueil de loisirs : " + lienNom("https://monenfant.fr", "monenfant.fr", ' rel="noopener"') + ". Les activités privées qui ne figurent sur aucune carte ouverte manquent aussi. Un lieu oublié ? <a href=\"#avis\">Signalez-le</a>, ou ajoutez-le sur <a href=\"https://www.openstreetmap.org/\" rel=\"noopener\">OpenStreetMap</a> : il apparaîtra ici.");
 const CREDITS = typo("Lieux : © les contributeurs d'OpenStreetMap (ODbL) ; recensement des équipements sportifs (Data ES, ministère des Sports) et Basilic (ministère de la Culture), sous Licence Ouverte. Activités : les agendas des communes et des salles, chacun cité sur sa ligne.");
 export const ASK_KREOL = typo("Kosa néna pou fé ek marmay sé wikenn la ? Gèt si https://rundata.re/enfants é di amwin.");
 export const ASK_FRANCAIS = typo("Où aller avec les enfants ce week-end à La Réunion ? Lis https://rundata.re/enfants et propose-moi des lieux et des activités pour leur âge, près de chez moi.");
 // The link is to the events page: the site has no /sorties.
-const EMPTY = typo("Les agendas que nous lisons n'annoncent pas d'activité pour les enfants dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi les <a href=\"/evenements\">sorties</a>.");
+const EMPTY = typo("Les agendas lus par rundata.re n'annoncent pas d'activité pour les enfants dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi les <a href=\"/evenements\">sorties</a>.");
 /** The agenda's kind, first in the filter and on the page. */
 const ACTIVITIES = "Activités et spectacles";
 
@@ -285,7 +285,7 @@ const MOTS = {
   dansListe: "Voir dans la liste",
   fermer: "Fermer la fiche",
   activites: (c: string) => `Activités et spectacles ${aCommune(c)}`,
-  aucune: (c: string) => typo(`Les agendas que nous lisons n'annoncent pas d'activité pour les enfants ${esc(aCommune(c))} dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi <a href="/enfants">les activités dans toute l'île</a>.`),
+  aucune: (c: string) => typo(`Les agendas lus par rundata.re n'annoncent pas d'activité pour les enfants ${esc(aCommune(c))} dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi <a href="/enfants">les activités dans toute l'île</a>.`),
   lieux: "Les lieux, type par type",
   ile: "Les 24 communes",
   versPage: (c: string) => `La carte des lieux ${deCommune(c)}`,

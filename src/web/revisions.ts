@@ -24,7 +24,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « Enquête publique » and « tribunal administratif » no crimes.
   // A headline « Saint-Denis : … » goes to the communes it names; « Bois de Nèfles » to the commune the text names.
   // « Mobilisation » no party, no football play-offs, and in the headline only unless the lead says a strike (22/11/2026).
-  actualites: 24,
+  // A medium not read said « rundata.re ne sait pas ce qu'ils annoncent », never « nous » (23/11/2026).
+  actualites: 25,
   // La veille demandée aux agendas WordPress : un spectacle de ce soir revient (#795).
   // L'agenda de L'Étang-Salé repris avec l'accord écrit de la mairie du 06/11/2026.
   // Le week-end du connecteur compté comme sa page (vendredi dès 17:00, lundi férié), ce qui y commence d'abord.
@@ -40,7 +41,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Un billet de mairie dont l'extrait est coupé avant sa date : la date lue dans son texte entier (Saint-André, 21/11/2026).
   // Un appel à exposants donné par le nom de sa sortie, « annoncé par … dans un appel à exposants » (21/11/2026).
   // Ce nom avec ses majuscules quand le titre est tout en capitales (« Marché de Noël au Colosse », 21/11/2026).
-  agenda: 45,
+  // The agendas not read « sans réponse à la dernière lecture de rundata.re »; the linked associations' licence names rundata.re (23/11/2026).
+  agenda: 46,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
@@ -60,7 +62,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The news of Saint-Denis and Saint-Pierre, and Le Tampon's agenda, among the sources counted (20/11/2026).
   // The agendas of La Possession, Petite-Île and Saint-Benoît among the sources counted (20/11/2026).
   // The news of Cilaos, Saint-Joseph and Saint-Philippe among the sources counted (20/11/2026).
-  chiffres: 28,
+  // The linked associations' licence names rundata.re, never « nos données ouvertes » (23/11/2026).
+  chiffres: 29,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
@@ -69,7 +72,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // All its bus departures link their trip without « ?jour= », as on /bus (19/11/2026).
   // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
   // Its bus stops with their page (/bus/arret/…), which the Bus block links (22/11/2026).
-  commune: 30,
+  // A mairie's site not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
+  commune: 31,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
@@ -80,13 +84,15 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The sectors of the CIREST's notices on the quality of the water, « et les voies adjacentes » kept, said in
   // `secteurs_dits` (20/11/2026).
   // « Pas d'avis de coupure récent ou à venir sur les sites lus », never « aucun avis », in the summary (22/11/2026).
-  coupures: 21,
+  // A feed not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
+  coupures: 22,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).
   // Each range of hours of a day its own cut, the streets after a house number read (« 650 chemin Balance », 21/11/2026).
   // A place a house number starts read, « Ch. » a street, the others said in the notice (`autres_lieux`, 21/11/2026).
-  courant: 13,
+  // A mairie not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
+  courant: 14,
   crues: 3,
   cyclones: 11,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
@@ -155,7 +161,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // No sentence for the communes' sports programmes not read any more (20/11/2026).
   // The link to Réunion La 1ère's sport news at its new address (« /sport?r=reunion »; the old one answers 404).
   // A Grand Raid course's climb with its thousands separator, « 10\u202f200\u00a0m D+ ».
-  sport: 32,
+  // A championship's page not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
+  sport: 33,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
@@ -167,7 +174,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   velos: 7,
   // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
   // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.
-  volcan: 16,
+  // The earthquakes' copy said « la dernière lecture de rundata.re », never « notre lecture » (23/11/2026).
+  volcan: 17,
 };
 
 /**

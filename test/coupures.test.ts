@@ -790,14 +790,14 @@ describe("coupures d'eau", () => {
     // runéo had nothing for Saint-Pierre at the first read: no notice kept, its read said failed.
     const sp = body(await coupuresEau(at(), "Saint-Pierre", now));
     expect(sp.resume).not.toContain("Aucun avis");
-    expect(sp.injoignable[0].texte).toBe("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(sp.injoignable[0].texte).toBe("Le site de runéo n'a pas répondu à la dernière lecture (le 24/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.");
     // The page, the tile and the day's summary say it too.
     const coupures = { value: await buildCoupures(at(), now), fetchedAt: now };
     const page = coupuresCommunePage("https://rundata.re", pageOf("saint-pierre")!, { coupures }, now);
-    expect(page).toContain("Le site de runéo n&#39;a pas répondu à notre dernière lecture");
+    expect(page).toContain("Le site de runéo n&#39;a pas répondu à la dernière lecture");
     expect(page).not.toMatch(/Aucun avis|Aucune coupure/);
     expect(coupuresCommunePage("https://rundata.re", pageOf("saint-denis")!, { coupures }, now)).toContain('voir <a href="https://dioneo.re/" rel="noopener">son site</a>.');
-    expect(waterLive(pageOf("saint-pierre")!, { coupures })).toMatchObject({ valeur: "Site sans réponse", detail: expect.stringContaining("site sans réponse à notre dernière lecture (le 24/10 à 10:00)") });
+    expect(waterLive(pageOf("saint-pierre")!, { coupures })).toMatchObject({ valeur: "Site sans réponse", detail: expect.stringContaining("site sans réponse à la dernière lecture de rundata.re (le 24/10 à 10:00)") });
     const day = resume(pageOf("saint-pierre")!, { coupures } as never, now);
     expect(day.coupures_eau?.injoignable?.texte).toBe(sp.injoignable[0].texte);
     expect(JSON.stringify(day)).not.toContain("pas de coupure d'eau annoncée");
@@ -807,8 +807,8 @@ describe("coupures d'eau", () => {
     expect(ile.injoignable.map((f: { de: string }) => f.de)).toEqual(["de Dionéo", "de runéo"]);
     // Named once in the summary, their words in `injoignable` (MAX_BYTES, 21/11/2026); the page says them in full.
     expect(ile.resume).toContain("Sans réponse à la dernière lecture\u00a0: Dionéo et runéo\u00a0: ce que chacun annonçait, dans injoignable.");
-    expect(ile.injoignable[1].texte).toBe("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
-    expect(body(await coupuresEau(at(), undefined, now, true)).resume).toContain("Le site de runéo n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(ile.injoignable[1].texte).toBe("Le site de runéo n'a pas répondu à la dernière lecture (le 24/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.");
+    expect(body(await coupuresEau(at(), undefined, now, true)).resume).toContain("Le site de runéo n'a pas répondu à la dernière lecture (le 24/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.");
     // The island's page says them under its head, as a commune's does; and no hour of reading over notices kept from
     // before: the head is never dated by a reading the silent sites were not part of.
     const head = (html: string) => html.slice(html.indexOf('<div class="now">'), html.indexOf("</div>", html.indexOf('<div class="now">')));
@@ -825,7 +825,7 @@ describe("coupures d'eau", () => {
     expect(head(sdPage)).not.toMatch(/\blus? le /);
     expect(sdPage).toContain('<meta name="description" content="Coupures d&#39;eau à Saint-Denis (974)\u00a0: avis du distributeur, restrictions sécheresse et qualité de l&#39;eau du robinet.">');
     // A silent feed whose last notice said not to drink the water: said, without the hour of a reading it was not part of.
-    const cirest = { texte: "Le site de la CIREST n'a pas répondu à notre dernière lecture (le 24/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment.", court: "sans réponse", de: "de la CIREST", site: "https://www.cirest.fr/" };
+    const cirest = { texte: "Le site de la CIREST n'a pas répondu à la dernière lecture (le 24/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.", court: "sans réponse", de: "de la CIREST", site: "https://www.cirest.fr/" };
     const pdp = coupuresCommunePage("https://rundata.re", pageOf("la-plaine-des-palmistes")!, { coupures: { ...coupures, value: { ...coupures.value, injoignable: [...coupures.value.injoignable!, cirest] } } }, now);
     expect(pdp).toContain('<meta name="description" content="La Plaine-des-Palmistes (974)\u00a0: eau à ne pas boire selon le dernier avis lu\u00a0; le site de la CIREST n&#39;a pas répondu à la dernière lecture de rundata.re.">');
     vi.restoreAllMocks();

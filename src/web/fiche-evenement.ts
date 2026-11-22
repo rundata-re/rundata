@@ -154,7 +154,7 @@ export function ficheTerminee(origin: string, path: string, alerte?: Alerte): st
   const band = `${bar}
 <div class="wrap intro solo"><div class="pitch">
   <h1>Événement terminé</h1>
-  <p class="lead">Cet événement est terminé, ou n'est plus annoncé dans les agendas que nous lisons.</p>
+  <p class="lead">Cet événement est terminé, ou n'est plus annoncé dans les agendas lus par rundata.re.</p>
 </div></div>`;
   const body = `<section style="max-width:44rem"><p><a href="/evenements">Les événements des deux semaines à venir →</a></p></section>`;
   return layout(origin, { title, description, path, noindex: true, jsonld: [], alerte }, band, body);

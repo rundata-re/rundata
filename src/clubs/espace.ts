@@ -350,7 +350,7 @@ export function messageLien(c: Club, lienOuvrir: string): { subject: string; tex
     text: [
       "Bonjour,",
       "",
-      `Quelqu'un a demandé à ouvrir l'espace de ${c.nom} sur rundata.re. Nous écrivons à ${quelleAdresse(c)}.`,
+      `Quelqu'un a demandé à ouvrir l'espace de ${c.nom} sur rundata.re. Le site écrit à ${quelleAdresse(c)}.`,
       "",
       "Pour l'ouvrir, touchez ce lien (valable 48 heures) :",
       lienOuvrir,

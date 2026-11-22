@@ -57,7 +57,7 @@ export function sansReponsePage(origin: string, rows: Ligne[], passage: number |
 </div></div>`;
   const parts = [
     muets.length ? `<h2 id="sans-reponse">Sans réponse</h2>${parTheme(muets)}` : "",
-    bloques.length ? `<h2 id="pas-a-nos-lectures">Répondent, mais pas à nos lectures</h2><p>${BLOQUES}</p>${parTheme(bloques)}` : "",
+    bloques.length ? `<h2 id="pas-a-nos-lectures">Répondent, mais pas aux lectures de rundata.re</h2><p>${BLOQUES}</p>${parTheme(bloques)}` : "",
     revenus.length ? `<h2 id="repondent-de-nouveau">Répondent de nouveau</h2>${parTheme(revenus)}` : "",
   ].filter(Boolean);
   const relue = lecture?.relue && `<p class="note">Liste relue le ${jourHeure(Math.floor(lecture.relue.getTime() / 1000))}\u00a0; elle n'a pas pu être relue depuis et a pu changer.</p>`;
@@ -68,7 +68,7 @@ export function sansReponsePage(origin: string, rows: Ligne[], passage: number |
   ${relue ?? ""}
   ${parts.length ? parts.join("\n  ") : vide}
   <aside class="card"><p>${OPEN_DATA}</p></aside>
-  <p>Revérifié chaque jour${passage ? `, dernier passage le ${jourHeure(passage)}` : ""}. Un site de cette liste répond pour vous ? Écrivez-nous : ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}. Et pour rendre ses informations faciles à reprendre\u00a0: <a href="${GUIDE}">notre guide</a>.</p>
+  <p>Revérifié chaque jour${passage ? `, dernier passage le ${jourHeure(passage)}` : ""}. Un site de cette liste répond pour vous ? Écrivez à ${lienNom("mailto:contact@rundata.re", "contact@rundata.re")}. Et pour rendre ses informations faciles à reprendre\u00a0: <a href="${GUIDE}">le guide</a>.</p>
   <p>Voir aussi : <a href="/chiffres">rundata.re en chiffres</a>.</p>
 </section>`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, H1, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);

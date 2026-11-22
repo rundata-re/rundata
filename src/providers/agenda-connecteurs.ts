@@ -22,7 +22,7 @@ export const SOURCE = {
   id: "helloasso_associations",
   nom: "HelloAsso, associations reliées à rundata.re",
   organisme: "Associations de La Réunion, via HelloAsso",
-  licence: "Événements publics de chaque association qui a relié son compte, repris avec son accord. Sous Licence Ouverte 2.0, et dans nos données ouvertes, seulement pour les associations qui l'ont choisi.",
+  licence: "Événements publics de chaque association qui a relié son compte, repris avec son accord. Sous Licence Ouverte 2.0, et dans les données ouvertes de rundata.re, seulement pour les associations qui l'ont choisi.",
   attribution: "l'association organisatrice, via HelloAsso",
   url: "https://rundata.re/associations",
 } satisfies SourceInfo;

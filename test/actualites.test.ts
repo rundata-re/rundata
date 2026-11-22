@@ -430,7 +430,7 @@ describe("actualités", () => {
     down = /^(?!.*reunion\.gouv\.fr)/;
     const b = body(await actualites(cache(), "Saint-Pierre", undefined, undefined, NOW));
     expect(b.resume).not.toMatch(/Aucune information/);
-    expect(b.resume).toMatch(/Non lus cette fois : .*Clicanoo.*Freedom.*\. Leur site n'a pas répondu à notre dernière lecture \(le 24\/10 à 12:05\) : nous ne savons pas ce qu'ils annoncent en ce moment\./);
+    expect(b.resume).toMatch(/Non lus cette fois : .*Clicanoo.*Freedom.*\. Leur site n'a pas répondu à la dernière lecture \(le 24\/10 à 12:05\) : rundata.re ne sait pas ce qu'ils annoncent en ce moment\./);
     const html = actualitesPage("https://rundata.re", { value: await buildActualites(cache(), NOW), fetchedAt: NOW, stale: false }, NOW);
     expect(html).not.toContain("Aucune information des médias lus");
     expect(html).toMatch(/Non lus cette fois(\u00a0|&nbsp;| ): [^<]*Clicanoo/);

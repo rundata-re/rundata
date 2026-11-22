@@ -243,13 +243,13 @@ describe("a commune whose own site did not answer", () => {
     const r = resume(sd, copies as never, NOW);
     expect(r.resume).toContain("12 événements aujourd'hui, site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40)");
     expect(r.evenements_du_jour?.injoignable).toEqual({
-      texte: "Le site de la Ville de Saint-Denis n'a pas répondu à notre dernière lecture (le 24/10 à 14:40) : nous ne savons pas ce qu'il annonce en ce moment.",
+      texte: "Le site de la Ville de Saint-Denis n'a pas répondu à la dernière lecture (le 24/10 à 14:40) : rundata.re ne sait pas ce qu'il annonce en ce moment.",
       court: "site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40)",
       site: "https://www.saintdenis.re/",
     });
     const html = aujourdhuiPage("https://rundata.re", sd, r, null);
     expect(html).toContain("<li><b>Sorties :</b> 12 événements aujourd'hui, site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40).</li>");
-    expect(html).toContain(`<p class="note">Le site de la Ville de Saint-Denis n&#39;a pas répondu à notre dernière lecture (le 24/10 à 14:40) : nous ne savons pas ce qu&#39;il annonce en ce moment.</p>`);
+    expect(html).toContain(`<p class="note">Le site de la Ville de Saint-Denis n&#39;a pas répondu à la dernière lecture (le 24/10 à 14:40) : rundata.re ne sait pas ce qu&#39;il annonce en ce moment.</p>`);
     // None found: said too, the agendas read being incomplete.
     const none = resume(sd, { ...copies, agenda: { ...copies.agenda, value: { ...copies.agenda.value, evenements: [] } } } as never, NOW);
     expect(none.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets), site de la Ville de Saint-Denis sans réponse (le 24/10 à 14:40)");

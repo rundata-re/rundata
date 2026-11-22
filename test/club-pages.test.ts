@@ -79,14 +79,14 @@ describe("the clubs' own space", () => {
     let html = plain(await (await get(club.CLUB_PATH)).text());
     expect(html).toContain("<h1>Votre espace</h1>");
     expect(html).toContain('<label for="c-q">Le nom de votre club ou association</label>');
-    expect(html).toContain("Tapez les premières lettres : nous cherchons dans les annuaires officiels des clubs et associations.");
+    expect(html).toContain("Tapez les premières lettres : la recherche se fait dans les annuaires officiels des clubs et associations.");
     expect(html).toContain('<option value="HANDBALL CLUB DU TAMPON">Le Tampon · Handball</option>');
     expect(html).toContain('<meta name="robots" content="noindex">');
     html = plain(await (await get(`${club.CLUB_PATH}?q=hand+tampon`)).text());
     expect(html).toContain(`<li><a href="${club.DEMANDE_PATH}?club=${tampon}" rel="nofollow">HANDBALL CLUB DU TAMPON<span>Le Tampon · Handball</span></a></li>`);
     expect(html).not.toContain("ST PIERRE HAND &amp; CO<span>");
     html = plain(await (await get(`${club.CLUB_PATH}?q=badminton`)).text());
-    expect(html).toContain("Nous ne trouvons pas ce club dans les annuaires officiels. Vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.");
+    expect(html).toContain(`<span class="ident">rundata.re</span> ne trouve pas ce club dans les annuaires officiels. Vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.`);
     expect(html).toContain(`<a class="btn sun" href="${formulaires.PROPOSER_PATH}?ref=club">Proposer un événement</a>`);
   });
 
@@ -95,11 +95,11 @@ describe("the clubs' own space", () => {
     expect(r.status).toBe(200);
     const html = plain(await r.text());
     expect(html).toContain('<h2 id="h-club">HANDBALL CLUB DU TAMPON · Le Tampon</h2>');
-    expect(html).toContain("Nous envoyons un lien à l'adresse que la Fédération française de handball a créée pour votre club :");
+    expect(html).toContain(`<span class="ident">rundata.re</span> envoie un lien à l'adresse que la Fédération française de handball a créée pour votre club :`);
     expect(html).toContain("<b>5•••••@reunion.ffhandball.net</b>");
     expect(html).toContain('<button type="submit">Envoyer le lien</button>');
     expect(html).toContain("Ce n'est plus la bonne adresse ?");
-    expect(html).toContain("Pour votre sécurité, nous n'utilisons que l'adresse donnée par la Fédération française de handball. Faites-la corriger par la Fédération française de handball, puis revenez.");
+    expect(html).toContain("Pour votre sécurité, <span class=\"ident\">rundata.re</span> n'utilise que l'adresse donnée par la Fédération française de handball. Faites-la corriger par la Fédération française de handball, puis revenez.");
     expect(html).toContain('data-action="club"');
     expect(html).not.toContain(ADRESSE);
     expect(html).not.toContain("5974001");
@@ -112,7 +112,7 @@ describe("the clubs' own space", () => {
     });
     const r = await get(`${club.CLUB_PATH}?q=hand`);
     expect(r.status).toBe(503);
-    expect(plain(await r.text())).toContain(`La liste des clubs ne répond pas pour l'instant. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
+    expect(plain(await r.text())).toContain(`La liste des clubs ne répond pas pour l'instant. Réessayez dans quelques minutes ; si ça dure, écrivez à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
   });
 
   it("screen 2: reads the club's page once in ten minutes, however often it is opened, and keeps only the mask", async () => {
@@ -138,7 +138,7 @@ describe("the clubs' own space", () => {
     pages = {};
     r = await get(`${club.DEMANDE_PATH}?club=${tampon}`);
     expect(r.status).toBe(503);
-    expect(plain(await r.text())).toContain(`La vérification de l'adresse ne répond pas pour l'instant. Rien n'a été envoyé. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
+    expect(plain(await r.text())).toContain(`La vérification de l'adresse ne répond pas pour l'instant. Rien n'a été envoyé. Réessayez dans quelques minutes ; si ça dure, écrivez à <span class="adrweb">contact@<wbr class="adr">rundata.<wbr class="adr">re</span>.`);
     expect((await get(`${club.DEMANDE_PATH}?club=999`)).status).toBe(404);
     expect((await get(`${club.DEMANDE_PATH}?club=abc`)).status).toBe(404);
   });

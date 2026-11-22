@@ -349,7 +349,7 @@ describe("fraicheur", () => {
       { source: "Balises météo de la FFVL", lue_le: "18/10 20:20" },
     ]);
     expect(f.avertissement).toBe(
-      "Ces sources n'ont pas répondu à notre dernière lecture : « Observations aéroport (METAR) », lue le 18/10 à 20:20\u00a0; « Balises météo de la FFVL », lue le 18/10 à 20:20. Ce qui vient d'elles date de ces lectures.",
+      "Ces sources n'ont pas répondu à la dernière lecture de rundata.re : « Observations aéroport (METAR) », lue le 18/10 à 20:20\u00a0; « Balises météo de la FFVL », lue le 18/10 à 20:20. Ce qui vient d'elles date de ces lectures.",
     );
   });
 
@@ -447,45 +447,45 @@ describe("fraicheur", () => {
     const said = (lectures: object[]) => fraicheur({}, lectures as never, now, { nom });
     expect(said([fresh, la1ere])).toMatchObject({
       copies_de_secours: [{ source: "Réunion La 1ère (actualité sportive)", lue_le: "25/10 22:22" }],
-      avertissement: "La source « Réunion La 1ère (actualité sportive) » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
+      avertissement: "La source « Réunion La 1ère (actualité sportive) » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
     });
     // Every part a copy: no « reste ».
-    expect(said([la1ere]).avertissement).toBe("La source « Réunion La 1ère (actualité sportive) » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25/10 à 22:22.");
+    expect(said([la1ere]).avertissement).toBe("La source « Réunion La 1ère (actualité sportive) » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25/10 à 22:22.");
     expect(said([fresh, la1ere, ffhb]).avertissement).toBe(
-      "Ces sources n'ont pas répondu à notre dernière lecture : « FFHB », lue le 25/10 à 21:51\u00a0; « Réunion La 1ère (actualité sportive) », lue le 25/10 à 22:22. Ce qui vient d'elles date de ces lectures\u00a0; le reste de la réponse est à jour.",
+      "Ces sources n'ont pas répondu à la dernière lecture de rundata.re : « FFHB », lue le 25/10 à 21:51\u00a0; « Réunion La 1ère (actualité sportive) », lue le 25/10 à 22:22. Ce qui vient d'elles date de ces lectures\u00a0; le reste de la réponse est à jour.",
     );
     // A read of ours that failed: a part, no source, no cause.
     expect(said([fresh, ours("page", "22:22")])).toMatchObject({
       copies_de_secours: [{ lue_le: "25/10 22:22" }],
-      avertissement: "Une partie de cette réponse date de notre lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
+      avertissement: "Une partie de cette réponse date de la lecture de rundata.re du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
     });
     expect(said([fresh, ours("a", "21:51"), ours("b", "22:22")]).avertissement).toBe(
-      "Des parties de cette réponse datent de nos lectures du 25/10 à 21:51 et à 22:22 : les lectures suivantes n'ont pas abouti. Le reste de la réponse est à jour.",
+      "Des parties de cette réponse datent des lectures de rundata.re du 25/10 à 21:51 et à 22:22 : les lectures suivantes n'ont pas abouti. Le reste de la réponse est à jour.",
     );
     expect(said([fresh, la1ere, ffhb, ours("a", "21:51"), ours("b", "22:22")]).avertissement).toBe(
-      "Ces sources n'ont pas répondu à notre dernière lecture : « FFHB », lue le 25/10 à 21:51\u00a0; « Réunion La 1ère (actualité sportive) », lue le 25/10 à 22:22. Ce qui vient d'elles date de ces lectures. D'autres parties datent de nos lectures du 25/10 à 21:51 et à 22:22 : les lectures suivantes n'ont pas abouti. Le reste de la réponse est à jour.",
+      "Ces sources n'ont pas répondu à la dernière lecture de rundata.re : « FFHB », lue le 25/10 à 21:51\u00a0; « Réunion La 1ère (actualité sportive) », lue le 25/10 à 22:22. Ce qui vient d'elles date de ces lectures. D'autres parties datent des lectures du 25/10 à 21:51 et à 22:22 : les lectures suivantes n'ont pas abouti. Le reste de la réponse est à jour.",
     );
     expect(said([fresh, la1ere, ours("a", "22:22")]).avertissement).toBe(
-      "La source « Réunion La 1ère (actualité sportive) » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25/10 à 22:22. Une autre partie date de notre lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
+      "La source « Réunion La 1ère (actualité sportive) » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25/10 à 22:22. Une autre partie date de la lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
     );
     // The same source also read at its pace for this answer: it did answer for the rest, a sentence of its own.
     const la1ereFresh = { ...fresh, key: "sport:actu:hier", from: "la1ere" };
     expect(said([la1ereFresh, { ...la1ere, from: "la1ere" }])).toMatchObject({
       copies_de_secours: [{ source: "Réunion La 1ère (actualité sportive)", lue_le: "25/10 22:22", partielle: true }],
-      avertissement: "Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de notre lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
+      avertissement: "Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de la lecture de rundata.re du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
     });
     // Never in the list of the sources that did not answer: after it, before « le reste », said once.
     expect(said([la1ereFresh, la1ere, ffhb]).avertissement).toBe(
-      "La source « FFHB » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25/10 à 21:51. Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de notre lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
+      "La source « FFHB » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25/10 à 21:51. Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de la lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
     );
     const metar = { key: "metar", fetchedAt: t("21:00"), stale: true, freshSeconds: 600, source: "metar" };
     const said2 = (lectures: object[]) => fraicheur({}, lectures as never, now, { nom: (id) => ({ la1ere: "Réunion La 1ère (actualité sportive)", ffhb: "FFHB", metar: "METAR" })[id] });
     expect(said2([la1ereFresh, la1ere, ffhb, metar]).avertissement).toBe(
-      "Ces sources n'ont pas répondu à notre dernière lecture : « METAR », lue le 25/10 à 21:00\u00a0; « FFHB », lue le 25/10 à 21:51. Ce qui vient d'elles date de ces lectures. Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de notre lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
+      "Ces sources n'ont pas répondu à la dernière lecture de rundata.re : « METAR », lue le 25/10 à 21:00\u00a0; « FFHB », lue le 25/10 à 21:51. Ce qui vient d'elles date de ces lectures. Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de la lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
     );
     // Two partly old sources, one sentence each; a part of ours after them is « une autre partie ».
     expect(said([la1ereFresh, la1ere, { ...fresh, key: "hand:hier", from: "ffhb" }, ffhb, ours("page", "22:30")]).avertissement).toBe(
-      "Une partie de ce qui vient de la source « FFHB » date de notre lecture du 25/10 à 21:51 : la lecture suivante n'a pas abouti. Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de notre lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Une autre partie date de notre lecture du 25/10 à 22:30 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
+      "Une partie de ce qui vient de la source « FFHB » date de la lecture de rundata.re du 25/10 à 21:51 : la lecture suivante n'a pas abouti. Une partie de ce qui vient de la source « Réunion La 1ère (actualité sportive) » date de la lecture du 25/10 à 22:22 : la lecture suivante n'a pas abouti. Une autre partie date de la lecture du 25/10 à 22:30 : la lecture suivante n'a pas abouti. Le reste de la réponse est à jour.",
     );
     // Another source read fresh: the whole of it is old.
     expect(said([{ ...fresh, from: "ffhb" }, la1ere]).copies_de_secours).toEqual([{ source: "Réunion La 1ère (actualité sportive)", lue_le: "25/10 22:22" }]);
@@ -509,17 +509,17 @@ describe("fraicheur", () => {
     // The mark stays out of the answer: only the sentence changes.
     expect(said([fresh, copy])).toEqual(expect.objectContaining({
       copies_de_secours: [{ source: "Communiqués de presse de la préfecture de La Réunion", lue_le: "06/11 16:18" }],
-      avertissement: "Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de notre lecture du 06/11 à 16:18 : notre copie plus récente n'a pas pu être relue à temps. Le reste de la réponse est à jour.",
+      avertissement: "Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de la lecture de rundata.re du 06/11 à 16:18 : la copie plus récente n'a pas pu être relue à temps. Le reste de la réponse est à jour.",
     }));
     // A source read live and slow keeps its words, after it or not.
     const slow = { key: "sport:actu", fetchedAt: t("16:40"), stale: true, freshSeconds: 1800, source: "prefecture_raa", tardive: true as const };
     expect(said([copy, slow]).avertissement).toBe(
-      "Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de notre lecture du 06/11 à 16:18 : notre copie plus récente n'a pas pu être relue à temps. La source « Recueil des actes administratifs de la préfecture de La Réunion » a tardé à répondre : ce qui vient d'elle date de notre lecture du 06/11 à 16:40.",
+      "Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de la lecture de rundata.re du 06/11 à 16:18 : la copie plus récente n'a pas pu être relue à temps. La source « Recueil des actes administratifs de la préfecture de La Réunion » a tardé à répondre : ce qui vient d'elle date de la lecture du 06/11 à 16:40.",
     );
     // The same source also silent for another part: it did not answer, said as such.
-    expect(said([copy, { ...copy, key: "autre", fetchedAt: t("16:30"), tardive: undefined, copie: undefined }]).avertissement).toMatch(/^La source « Communiqués de presse de la préfecture de La Réunion » n'a pas répondu à notre dernière lecture/);
+    expect(said([copy, { ...copy, key: "autre", fetchedAt: t("16:30"), tardive: undefined, copie: undefined }]).avertissement).toMatch(/^La source « Communiqués de presse de la préfecture de La Réunion » n'a pas répondu à la dernière lecture de rundata.re/);
     // A copy is the whole of what comes from its source: never « une partie ».
-    expect(said([{ ...fresh, from: "prefecture_communiques" }, copy]).avertissement).toMatch(/^Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de notre lecture du 06\/11 à 16:18 : notre copie plus récente/);
+    expect(said([{ ...fresh, from: "prefecture_communiques" }, copy]).avertissement).toMatch(/^Ce qui vient de la source « Communiqués de presse de la préfecture de La Réunion » date de la lecture de rundata.re du 06\/11 à 16:18 : la copie plus récente/);
   });
 
   it("names a known producer for each collector's copy read from KV", async () => {
@@ -541,37 +541,37 @@ describe("fraicheur", () => {
     // The mark stays out of the answer: only the sentence changes.
     expect(said([fresh, slow])).toEqual(expect.objectContaining({
       copies_de_secours: [{ source: "Réunion La 1ère (actualité sportive)", lue_le: "25/10 22:22" }],
-      avertissement: "La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de notre lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
+      avertissement: "La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de la lecture de rundata.re du 25/10 à 22:22. Le reste de la réponse est à jour.",
     }));
-    expect(said([slow]).avertissement).toBe("La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de notre lecture du 25/10 à 22:22.");
+    expect(said([slow]).avertissement).toBe("La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de la lecture de rundata.re du 25/10 à 22:22.");
     // After those that did not answer, one sentence each; « le reste » after them all.
     expect(said([fresh, slow, ffhb]).avertissement).toBe(
-      "La source « FFHB » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25/10 à 21:51. La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de notre lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
+      "La source « FFHB » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25/10 à 21:51. La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de la lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
     );
     expect(said([fresh, slow, ffhb, metar]).avertissement).toBe(
-      "Ces sources n'ont pas répondu à notre dernière lecture : « METAR », lue le 25/10 à 21:00\u00a0; « FFHB », lue le 25/10 à 21:51. Ce qui vient d'elles date de ces lectures. La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de notre lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
+      "Ces sources n'ont pas répondu à la dernière lecture de rundata.re : « METAR », lue le 25/10 à 21:00\u00a0; « FFHB », lue le 25/10 à 21:51. Ce qui vient d'elles date de ces lectures. La source « Réunion La 1ère (actualité sportive) » a tardé à répondre : ce qui vient d'elle date de la lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
     );
     // Slow for one part, silent for another: it did not answer.
-    expect(said([fresh, slow, { ...slow, key: "sport:actu:2", fetchedAt: t("22:40"), tardive: undefined }]).avertissement).toMatch(/^La source « Réunion La 1ère \(actualité sportive\) » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25\/10 à 22:22\./);
+    expect(said([fresh, slow, { ...slow, key: "sport:actu:2", fetchedAt: t("22:40"), tardive: undefined }]).avertissement).toMatch(/^La source « Réunion La 1ère \(actualité sportive\) » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25\/10 à 22:22\./);
     // A page's copy (volcan.ts) says it too.
-    expect(sourceMuette("FFHB", new Date(t("21:51")), true)).toBe("La source « FFHB » a tardé à répondre : ce qui vient d'elle date de notre lecture du 25/10 à 21:51.");
+    expect(sourceMuette("FFHB", new Date(t("21:51")), true)).toBe("La source « FFHB » a tardé à répondre : ce qui vient d'elle date de la lecture de rundata.re du 25/10 à 21:51.");
     expect(sourceMuette("FFHB", new Date(t("21:51")))).toMatch(/n'a pas répondu/);
     // Partly fresh, partly too slow: the user's words, for that part only.
     const slowPart = { ...slow, from: "la1ere" };
     expect(said([{ ...fresh, key: "sport:actu:hier", from: "la1ere" }, slowPart]).avertissement).toBe(
-      "La source « Réunion La 1ère (actualité sportive) » a tardé à répondre pour une partie de ce qui vient d'elle : cette partie date de notre lecture du 25/10 à 22:22. Le reste de la réponse est à jour.",
+      "La source « Réunion La 1ère (actualité sportive) » a tardé à répondre pour une partie de ce qui vient d'elle : cette partie date de la lecture de rundata.re du 25/10 à 22:22. Le reste de la réponse est à jour.",
     );
     // Parts without a source too slow: « a tardé », one sentence; after a failed one, « une autre partie ».
     const ours = (key: string, hhmm: string, tardive?: true) => ({ key, fetchedAt: t(hhmm), stale: true, freshSeconds: 3600, ...(tardive && { tardive }) });
-    expect(said([fresh, ours("a", "22:22", true)]).avertissement).toBe("Une partie de cette réponse date de notre lecture du 25/10 à 22:22 : la lecture suivante a tardé. Le reste de la réponse est à jour.");
+    expect(said([fresh, ours("a", "22:22", true)]).avertissement).toBe("Une partie de cette réponse date de la lecture de rundata.re du 25/10 à 22:22 : la lecture suivante a tardé. Le reste de la réponse est à jour.");
     expect(said([fresh, ours("a", "21:51", true), ours("b", "22:22", true)]).avertissement).toBe(
-      "Des parties de cette réponse datent de nos lectures du 25/10 à 21:51 et à 22:22 : les lectures suivantes ont tardé. Le reste de la réponse est à jour.",
+      "Des parties de cette réponse datent des lectures de rundata.re du 25/10 à 21:51 et à 22:22 : les lectures suivantes ont tardé. Le reste de la réponse est à jour.",
     );
     expect(said([fresh, ours("a", "21:51"), ours("b", "22:22", true)]).avertissement).toBe(
-      "Une partie de cette réponse date de notre lecture du 25/10 à 21:51 : la lecture suivante n'a pas abouti. Une autre partie date de notre lecture du 25/10 à 22:22 : la lecture suivante a tardé. Le reste de la réponse est à jour.",
+      "Une partie de cette réponse date de la lecture de rundata.re du 25/10 à 21:51 : la lecture suivante n'a pas abouti. Une autre partie date de la lecture du 25/10 à 22:22 : la lecture suivante a tardé. Le reste de la réponse est à jour.",
     );
     expect(said([fresh, ffhb, ours("b", "22:22", true)]).avertissement).toBe(
-      "La source « FFHB » n'a pas répondu à notre dernière lecture : ce qui vient d'elle date de notre lecture du 25/10 à 21:51. Une autre partie date de notre lecture du 25/10 à 22:22 : la lecture suivante a tardé. Le reste de la réponse est à jour.",
+      "La source « FFHB » n'a pas répondu à la dernière lecture de rundata.re : ce qui vient d'elle date de la lecture du 25/10 à 21:51. Une autre partie date de la lecture du 25/10 à 22:22 : la lecture suivante a tardé. Le reste de la réponse est à jour.",
     );
   });
 

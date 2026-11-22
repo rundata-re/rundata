@@ -138,7 +138,7 @@ describe("the route du Littoral as the media announce it", () => {
     for (const [lieu, sujet] of asked) {
       const road = body(await actualites(cache, lieu, sujet, undefined, NOW)).route_du_littoral;
       expect(road, `${lieu ?? sujet}`).toEqual({
-        annonce: "Pas d'annonce récente sur la route du Littoral dans les titres des médias et de la préfecture que nous avons lus. L'état officiel, en direct, est sur infotrafic.re.",
+        annonce: "Pas d'annonce récente sur la route du Littoral dans les titres des médias et de la préfecture lus par rundata.re. L'état officiel, en direct, est sur infotrafic.re.",
         aucune_annonce: true,
         etat_officiel: "https://www.infotrafic.re/",
       });

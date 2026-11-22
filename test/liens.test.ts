@@ -79,20 +79,20 @@ describe("links between the weather, the hikes and the communes", () => {
     expect(communeEvents(pageOf("cilaos")!, agenda)).toMatchObject({ valeur: "Rien d'annoncé" });
     // Its own agenda did not answer this time: its site named in the detail.
     const silent = { ...agenda, value: { ...agenda.value, evenements: [], indisponible: ["Ville du Port"] } as unknown as AgendaAnswer };
-    expect(communeEvents(pageOf("le-port")!, silent, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville du Port sans réponse (le 27/10 à 10:00)", title: "Le site de la Ville du Port n'a pas répondu à notre dernière lecture (le 27/10 à 10:00) : nous ne savons pas ce qu'il annonce en ce moment." });
+    expect(communeEvents(pageOf("le-port")!, silent, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville du Port sans réponse (le 27/10 à 10:00)", title: "Le site de la Ville du Port n'a pas répondu à la dernière lecture (le 27/10 à 10:00) : rundata.re ne sait pas ce qu'il annonce en ce moment." });
     const show = { titre: "Concert", quand: "samedi 31/10 à 20:00", commune: "Le Port", lien: "https://example.re" };
     expect(communeEvents(pageOf("le-port")!, { ...silent, value: { ...silent.value, evenements: [show] } } as never, NOW)?.detail).toBe("site de la Ville du Port sans réponse (le 27/10 à 10:00) · le prochain : Concert, samedi 31/10 à 20:00");
     expect(communeEvents(pageOf("saint-leu")!, silent, NOW)).toMatchObject({ valeur: "Rien d'annoncé" });
     // Saint-Denis's own site, read by the scheduled event, refused at its last try and never read well (20/11/2026):
     // said with the hour of that try, not the copy's, beside the events of the other sources (CINOR's).
     const sd = { ...agenda, value: { ...agenda.value, evenements: [], non_lus: ["Ville de Saint-Denis : dernière lecture sans succès (le 27/10 à 09:40)", "Ville du Tampon : première lecture dans quelques minutes"] } as unknown as AgendaAnswer };
-    expect(communeEvents(pageOf("saint-denis")!, sd, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville de Saint-Denis sans réponse (le 27/10 à 09:40)", title: "Le site de la Ville de Saint-Denis n'a pas répondu à notre dernière lecture (le 27/10 à 09:40) : nous ne savons pas ce qu'il annonce en ce moment." });
+    expect(communeEvents(pageOf("saint-denis")!, sd, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "site de la Ville de Saint-Denis sans réponse (le 27/10 à 09:40)", title: "Le site de la Ville de Saint-Denis n'a pas répondu à la dernière lecture (le 27/10 à 09:40) : rundata.re ne sait pas ce qu'il annonce en ce moment." });
     const cinor = { ...show, commune: "Saint-Denis" };
     expect(communeEvents(pageOf("saint-denis")!, { ...sd, value: { ...sd.value, evenements: [cinor] } } as never, NOW)?.detail).toMatch(/^site de la Ville de Saint-Denis sans réponse \(le 27\/10 à 09:40\) · le prochain : Concert/);
     // A first read still to come is no failure.
     expect(communeEvents(pageOf("le-tampon")!, sd, NOW)).toMatchObject({ valeur: "Rien d'annoncé", detail: "d'ici quinze jours dans les agendas lus" });
     const page = agendaPage(O, { ...silent, stale: false } as never, NOW);
-    expect(page).toContain("<li>Sans réponse à notre dernière lecture (le 27/10 à 10:00) : Ville du Port. Ses événements peuvent manquer ici.</li>");
+    expect(page).toContain("<li>Sans réponse à la dernière lecture de rundata.re (le 27/10 à 10:00) : Ville du Port. Ses événements peuvent manquer ici.</li>");
     expect(page).not.toContain("en panne");
     // From a commune's site: said with the event.
     const fromSite = { value: { ...agenda.value, evenements: [{ ...rows[0], source: "site de la commune de Saint-Paul, lu le samedi 24/10 à 08:00" }] } as unknown as AgendaAnswer, fetchedAt: NOW };

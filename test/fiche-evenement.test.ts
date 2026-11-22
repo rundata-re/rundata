@@ -186,7 +186,7 @@ describe("an event's page", () => {
     expect(past).toContain("Cet événement a eu lieu du mardi 27/10 au dimanche 15/11, Saint-Pierre.");
     expect(past).toContain('<a href="/aujourdhui/saint-pierre">Les prochaines sorties à Saint-Pierre →</a>');
     expect(past).toContain('content="noindex"');
-    expect(ficheTerminee("https://rundata.re", "/evenements/x-0a1b2c3d")).toContain("Cet événement est terminé, ou n'est plus annoncé dans les agendas que nous lisons.");
+    expect(ficheTerminee("https://rundata.re", "/evenements/x-0a1b2c3d")).toContain("Cet événement est terminé, ou n'est plus annoncé dans les agendas lus par rundata.re.");
   });
 
   describe("its address", () => {

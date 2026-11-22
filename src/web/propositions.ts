@@ -119,8 +119,8 @@ export function lienForm(path: string, kept?: { f: URLSearchParams; refus: LienR
   const bad = (k: string) => (wrong.has(k) ? ` aria-invalid="true"` : "");
   const said = kept
     ? `<p class="msg vu" id="lien-${kept.refus.issue === "indisponible" ? "erreur" : kept.refus.issue}" role="alert">${LIEN_REFUS[kept.refus.issue]}</p>`
-    : `<h2 id="h-lien">Nous donner votre lien</h2>
-  <p class="msg ok" id="lien-merci" role="status">Merci. Nous vérifions que votre lien se lit bien\u00a0; vos événements apparaissent ensuite sur rundata.re, en général sous 48 h.</p>`;
+    : `<h2 id="h-lien">Envoyer votre lien</h2>
+  <p class="msg ok" id="lien-merci" role="status">Merci. rundata.re vérifie que votre lien se lit bien\u00a0; vos événements apparaissent ensuite sur le site, en général sous 48 h.</p>`;
   return `<form class="card fo" id="lien" method="post" action="${LIEN_PATH}" aria-labelledby="h-lien">
   ${said}
   <div class="f"><label for="lien-nom">Nom de l'organisation</label><input id="lien-nom" name="nom" required minlength="2" maxlength="${propositions.NOM_MAX}" autocomplete="organization"${v("nom")}${bad("nom")}></div>
@@ -165,8 +165,8 @@ const LIEN_META = "Le lien de votre agenda ou de votre flux n'a pas été enregi
 
 /** The link form given back, filled, on a page of its own: the page it was sent from cannot be rebuilt here. */
 export function lienPage(origin: string, page: string, kept: { f: URLSearchParams; refus: LienRefus }): string {
-  const band = `${crumbBar("Nous donner votre lien", PARENT)}
-<div class="wrap intro solo"><div class="pitch"><h1 id="h-lien">Nous donner votre lien</h1></div></div>`;
+  const band = `${crumbBar("Envoyer votre lien", PARENT)}
+<div class="wrap intro solo"><div class="pitch"><h1 id="h-lien">Envoyer votre lien</h1></div></div>`;
   const body = `${lienForm(page, kept)}${TURNSTILE_SCRIPT}
 <p><a href="${esc(page)}">Retour à la page précédente</a></p>`;
   return layout(origin, { title: LIEN_TITLE, description: LIEN_META, path: LIEN_PATH, jsonld: [], noindex: true, hook: "", sansAvis: true, sansPartage: true }, band, body);
@@ -215,7 +215,7 @@ const FAUX: Record<string, string> = {
   lien: "Un lien commence par https://.",
   email: "Indiquez une adresse e-mail valide\u00a0: vous y recevrez le lien de confirmation.",
   contact_public: "Le contact public est une adresse e-mail ou un numéro de téléphone.",
-  accord: "Cochez la case pour que nous puissions publier l'événement.",
+  accord: "Cochez la case pour que rundata.re puisse publier l'événement.",
 };
 
 type Etat = { kind: "vide" } | { kind: "hors_perimetre" } | { kind: "faux"; f: URLSearchParams; erreurs: string[] } | { kind: "limite"; f: URLSearchParams } | { kind: "indisponible"; f: URLSearchParams } | { kind: "envoye" };
@@ -327,7 +327,7 @@ export function proposerPage(origin: string, e: Etat = { kind: "vide" }, now = n
 <div class="wrap intro solo"><div class="pitch">
   <p class="pill">Clubs et associations</p>
   <h1>Proposer un événement</h1>
-  <p class="lead">Un match, une kermesse, une sortie, un concert\u00a0? Remplissez ce formulaire\u00a0: 2 minutes, sans compte. Après votre confirmation par e-mail, nous le relisons, en général sous 24 heures, puis il s'affiche sur rundata.re et dans les assistants IA qui l'utilisent, avec le nom de votre association.</p>
+  <p class="lead">Un match, une kermesse, une sortie, un concert\u00a0? Remplissez ce formulaire\u00a0: 2 minutes, sans compte. Après votre confirmation par e-mail, il est relu, en général sous 24 heures, puis il s'affiche sur rundata.re et dans les assistants IA qui l'utilisent, avec le nom de votre association.</p>
 </div></div>`;
   const body =
     e.kind === "hors_perimetre"
@@ -336,7 +336,7 @@ export function proposerPage(origin: string, e: Etat = { kind: "vide" }, now = n
   <p><a href="/associations">Retour à l'espace clubs et associations</a></p></section>`
       : e.kind === "envoye"
       ? `<section class="card fo" aria-labelledby="h-envoye"><h2 id="h-envoye">Vérifiez votre boîte e-mail</h2>
-  <p>Nous vous avons envoyé un lien pour confirmer l'événement. Sans confirmation sous 48 heures, la proposition est effacée.</p>
+  <p>rundata.re vous a envoyé un lien pour confirmer l'événement. Sans confirmation sous 48 heures, la proposition est effacée.</p>
   <p class="note">Rien reçu\u00a0? Regardez dans les indésirables, ou écrivez à ${adresseTexte("contact@rundata.re")}.</p>
   <p><a href="${PROPOSER_PATH}">Proposer un autre événement</a> · <a href="/associations">Retour à l'espace clubs et associations</a></p></section>`
       : `${proposerForm(e, now)}${REPETE_SCRIPT}${VIDE_SCRIPT}${TURNSTILE_SCRIPT}`;
@@ -369,13 +369,13 @@ const GERER_META = "Confirmer, corriger, annuler ou reporter l'événement que v
 
 /** What was just done, said once on the page the browser is sent back to. */
 const FAIT: Record<string, string> = {
-  confirmer: "Merci, l'événement est confirmé. Nous le relisons, en général sous 24 heures\u00a0; il s'affiche ensuite sur rundata.re.",
+  confirmer: "Merci, l'événement est confirmé. Il est relu, en général sous 24 heures\u00a0; il s'affiche ensuite sur rundata.re.",
   annuler: "C'est fait\u00a0: l'événement est annoncé «\u00a0annulé\u00a0» sur rundata.re et dans les réponses des assistants IA.",
   retirer: "C'est fait\u00a0: la proposition est retirée, elle ne sera pas publiée.",
   reporter: "C'est fait\u00a0: l'événement est annoncé «\u00a0reporté\u00a0», à sa nouvelle date.",
   prolonger: "C'est fait\u00a0: les nouvelles dates s'affichent.",
   retirer_contact: "C'est fait\u00a0: le contact public n'est plus affiché.",
-  corriger: "Merci, la correction est enregistrée. Nous la relisons, en général sous 24 heures, avant qu'elle s'affiche.",
+  corriger: "Merci, la correction est enregistrée. Elle est relue, en général sous 24 heures, avant qu'elle s'affiche.",
 };
 
 const ETAT: Record<propositions.EtatProposition, string> = {

@@ -191,7 +191,7 @@ describe("the concerts", () => {
     const notes = { ...d, value: { ...d.value, indisponible: ["CINOR", "Ville du Port"], remises: ["Ville du Port"], non_lus: ["Ville de Saint-Leu : dernière lecture le 22/10 à 10:00", "Ligue réunionnaise de volley-ball : dernière lecture sans succès (le 25/10 à 22:05)"] } };
     for (const html of [agendaPage("https://rundata.re", notes, TUESDAY), weekendPage("https://rundata.re", notes, TUESDAY), concertsPage("https://rundata.re", notes, TUESDAY)]) {
       expect(html).toContain("<li>Agendas sans lecture récente : Ville de Saint-Leu, dernière lecture le 22/10 à 10:00\u00a0; Ligue réunionnaise de volley-ball, dernière lecture sans succès (le 25/10 à 22:05). Leurs événements peuvent manquer ici.</li>");
-      expect(html).toContain("<li>Sans réponse à notre dernière lecture (le 27/10 à 10:00) : CINOR. Lecture remise à la suivante : Ville du Port. Leurs événements peuvent manquer ici.</li>");
+      expect(html).toContain("<li>Sans réponse à la dernière lecture de rundata.re (le 27/10 à 10:00) : CINOR. Lecture remise à la suivante : Ville du Port. Leurs événements peuvent manquer ici.</li>");
       expect(html.match(/<h3>À savoir<\/h3>/g)).toHaveLength(1);
     }
     expect(agendaPage("https://rundata.re", data(ROWS), TUESDAY)).not.toContain("sans lecture récente");

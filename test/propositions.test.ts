@@ -486,7 +486,7 @@ describe("the forms on the site (web/propositions.ts)", () => {
     // The refusals come with the form given back, filled (lienPage).
     for (const id of ["lien-limite", "lien-erreur", "lien-verif"]) expect(html).not.toContain(`id="${id}"`);
     expect(FORMS_CSS).toContain(".fo .msg:target");
-    expect(html).toContain("Merci. Nous vérifions que votre lien se lit bien ; vos événements apparaissent ensuite sur rundata.re, en général sous 48 h.");
+    expect(html).toContain("Merci. rundata.re vérifie que votre lien se lit bien ; vos événements apparaissent ensuite sur le site, en général sous 48 h.");
   });
 });
 
@@ -882,7 +882,7 @@ describe("the clubs' and associations' space (web/associations.ts)", () => {
     // No figure before there are ten clubs; the empty list says what to do.
     expect(html).not.toContain("clubs et associations lus par rundata.re");
     expect(html).toContain("Les premiers événements de clubs et d'associations arrivent : ");
-    expect(html).toContain("et la date à laquelle nous l'avons lu ou à laquelle vous l'avez proposé.");
+    expect(html).toContain(`et la date à laquelle <span class="ident">rundata.re</span> l'a lu ou à laquelle vous l'avez proposé.`);
     // One WhatsApp button, the relay's; the feedback form stays.
     expect(html.match(/Partager sur WhatsApp/g)).toHaveLength(1);
     expect(html).not.toContain("Une info utile chaque matin");

@@ -158,7 +158,7 @@ describe("the space's tables", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0].to).toBe(ADRESSE);
     expect(sent[0].subject).toBe("Votre espace sur rundata.re");
-    expect(sent[0].text).toContain("Quelqu'un a demandé à ouvrir l'espace de HANDBALL CLUB DU TAMPON sur rundata.re. Nous écrivons à l'adresse que la Fédération française de handball a créée pour votre club.");
+    expect(sent[0].text).toContain("Quelqu'un a demandé à ouvrir l'espace de HANDBALL CLUB DU TAMPON sur rundata.re. Le site écrit à l'adresse que la Fédération française de handball a créée pour votre club.");
     expect(sent[0].text).toContain("Pour l'ouvrir, touchez ce lien (valable 48 heures) :\nhttps://rundata.re/associations/club/acces/");
     expect(sent[0].text).toContain("Ce n'est pas vous ? Ne faites rien : sans clic, rien ne se passe.");
     // The trace: the club, the kind, the time; the link: its hash.
@@ -318,7 +318,7 @@ describe("the space's tables", () => {
     expect(espace.jourMois(c.adresse_le!)).toBe("28/10");
     expect(await espace.adresseOfficielle(c)).toEqual({ adresse: "bureau.petanque@example.org" });
     expect(await espace.demander(c, "https://rundata.re/associations/club/acces/", IP, NOW)).toEqual({ issue: "ok", masque: "b•••@e•••.org" });
-    expect(sent[0].text).toContain("Nous écrivons à l'adresse vérifiée avec vous le 28/10.");
+    expect(sent[0].text).toContain("Le site écrit à l'adresse vérifiée avec vous le 28/10.");
     expect(reads).toEqual([]);
     await espace.purger(later(espace.TRACE_SECONDES + 86400));
     expect(rows(`SELECT email FROM clubs WHERE id = ${id}`)).toEqual([{ email: null }]);

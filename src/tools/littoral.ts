@@ -20,7 +20,7 @@ const CONTRADICTION_HOURS = 2;
 
 export const A_SAVOIR = "Ce que publient les médias, pas une mesure : l'état officiel, en direct, est sur infotrafic.re.";
 // No figure: how far back each feed goes is its own; « titres »: annonceOf reads the headline and its first lines.
-export const NONE = "Pas d'annonce récente sur la route du Littoral dans les titres des médias et de la préfecture que nous avons lus. L'état officiel, en direct, est sur infotrafic.re.";
+export const NONE = "Pas d'annonce récente sur la route du Littoral dans les titres des médias et de la préfecture lus par rundata.re. L'état officiel, en direct, est sur infotrafic.re.";
 export const DISAGREE = "Les annonces ne disent pas la même chose (la plus récente en premier). Vérifiez sur infotrafic.re.";
 
 export type Etat = "4 voies" | "basculée" | "fermée" | "fermée la nuit" | "réouverture";

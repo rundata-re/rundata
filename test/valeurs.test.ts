@@ -91,7 +91,7 @@ describe("/ouvrir-ses-donnees, the guide to making one's information reusable", 
     expect(await text("/")).toContain(`<a href="/valeurs">valeurs</a> · <a href="/chiffres">${sourcesLues} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · `);
     expect(await text("/a-propos")).toContain('<a href="/valeurs">les valeurs</a>, <a href="/ouvrir-ses-donnees">rendre ses données accessibles</a>, ');
     expect((await text("/valeurs")).split("<footer")[0].match(/href="\/ouvrir-ses-donnees"/g)).toHaveLength(2);
-    expect(await text("/sites-sans-reponse")).toContain('Et pour rendre ses informations faciles à reprendre\u00a0: <a href="/ouvrir-ses-donnees">notre guide</a>.</p>');
+    expect(await text("/sites-sans-reponse")).toContain('Et pour rendre ses informations faciles à reprendre\u00a0: <a href="/ouvrir-ses-donnees">le guide</a>.</p>');
     expect(await text("/sitemap.xml")).toContain("<loc>https://rundata.re/ouvrir-ses-donnees</loc><changefreq>monthly</changefreq>");
   });
 

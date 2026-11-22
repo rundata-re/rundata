@@ -13,6 +13,7 @@ import { evenements as proposes, ID as PROPOSITIONS_ID } from "../providers/agen
 import { lisible } from "../propositions.js";
 import { inPeriod, periode, when } from "../tools/agenda.js";
 import type { Alerte } from "./data.js";
+import { adresseTexte } from "./adresse.js";
 import * as connecteurs from "./connecteurs.js";
 import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { ICS_PATH, JSON_PATH } from "./flux-associations.js";
@@ -78,25 +79,25 @@ const etat = (lu: boolean) => (lu ? `<span class="etat lu">Déjà lu</span>` : `
 const OUTILS: { nom: string; faire: string; temps: string; lu: boolean }[] = [
   {
     nom: "Google Agenda",
-    faire: `<ol><li>Créez un agenda à part pour vos événements publics.</li><li>Rendez-le public, avec tous les détails.</li><li>Copiez l'«\u00a0Adresse publique au format iCal\u00a0» et <a href="#lien">donnez-la-nous</a>.</li></ol><p><a href="/publier#google-agenda">Le pas à pas, avec les erreurs à éviter</a></p>`,
+    faire: `<ol><li>Créez un agenda à part pour vos événements publics.</li><li>Rendez-le public, avec tous les détails.</li><li>Copiez l'«\u00a0Adresse publique au format iCal\u00a0» et <a href="#lien">envoyez-la à rundata.re</a>.</li></ol><p><a href="/publier#google-agenda">Le pas à pas, avec les erreurs à éviter</a></p>`,
     temps: "10 min, une fois",
     lu: true,
   },
   {
     nom: "Outlook, iPhone, Nextcloud",
-    faire: `<p>Publiez un calendrier à part et <a href="#lien">donnez-nous son lien ICS</a>. <a href="/publier#outlook-nextcloud">Le pas à pas</a></p>`,
+    faire: `<p>Publiez un calendrier à part et <a href="#lien">envoyez son lien ICS à rundata.re</a>. <a href="/publier#outlook-nextcloud">Le pas à pas</a></p>`,
     temps: "10 min, une fois",
     lu: true,
   },
   {
     nom: "OpenAgenda",
-    faire: `<p>Proposez vos événements à l'agenda de votre commune ou de votre office de tourisme, s'il accepte les contributions. Vos dates apparaissent là où le public les cherche déjà, et chez nous. <a href="/publier#openagenda">Le pas à pas</a></p>`,
+    faire: `<p>Proposez vos événements à l'agenda de votre commune ou de votre office de tourisme, s'il accepte les contributions. Vos dates apparaissent là où le public les cherche déjà, et sur rundata.re. <a href="/publier#openagenda">Le pas à pas</a></p>`,
     temps: "5 min par événement",
     lu: true,
   },
   {
     nom: "Facebook ou Instagram",
-    faire: `<p>Nous ne pouvons pas lire Facebook ni Instagram. Gardez-les pour votre public, et <a href="${PROPOSER_PATH}">proposez chaque événement avec le formulaire</a>, en collant le lien de votre événement Facebook\u00a0: 2 minutes.</p>`,
+    faire: `<p>rundata.re ne peut pas lire Facebook ni Instagram. Gardez-les pour votre public, et <a href="${PROPOSER_PATH}">proposez chaque événement avec le formulaire</a>, en collant le lien de votre événement Facebook\u00a0: 2 minutes.</p>`,
     temps: "2 min par événement",
     lu: false,
   },
@@ -118,9 +119,9 @@ const OUTILS: { nom: string; faire: string; temps: string; lu: boolean }[] = [
 const REGLES = [
   "C'est gratuit à vie pour les associations à but non lucratif. Pas de compte à créer.",
   "Vos événements restent des données ouvertes (Licence Ouverte 2.0)\u00a0: tout le monde peut les réutiliser, en citant votre association.",
-  "Nous ne reprenons que les faits (titre, date, lieu, prix) et une phrase, avec votre nom et votre lien.",
+  "rundata.re ne reprend que les faits (titre, date, lieu, prix) et une phrase, avec votre nom et votre lien.",
   "Jamais de téléphone personnel, de nom d'enfant ni d'adresse de domicile\u00a0: seulement ce qui irait sur votre affiche.",
-  "Un événement est annulé ou faux\u00a0? Écrivez-nous, nous le retirons dans la journée.",
+  "Un événement est annulé ou faux\u00a0? Écrivez à contact@rundata.re\u00a0: il est retiré dans la journée.",
 ];
 
 /** The three steps of the form, for search engines (HowTo). */
@@ -152,7 +153,7 @@ function preuveSection(p: Preuve): string {
   <div class="sec-h"><p class="eyebrow">En direct</p><h2 id="h-preuve">Les prochains événements de clubs et d'associations</h2></div>
   ${count}
   <div class="card">${list}<p><a href="/evenements">Voir tous les événements</a></p></div>
-  <p class="note">Sur chaque événement\u00a0: le nom de votre club ou de votre association, un lien vers votre page, et la date à laquelle nous l'avons lu ou à laquelle vous l'avez proposé.</p>
+  <p class="note">Sur chaque événement\u00a0: le nom de votre club ou de votre association, un lien vers votre page, et la date à laquelle rundata.re l'a lu ou à laquelle vous l'avez proposé.</p>
 </section>`;
 }
 
@@ -169,7 +170,7 @@ export function associationsPage(origin: string, p: Preuve, alerte?: Alerte): st
     <p class="aide">Temps\u00a0: ${esc(o.temps)} · rundata.re\u00a0: ${etat(o.lu)}</p></li>`).join("\n  ");
   const body = `<section class="card proposer" aria-labelledby="h-proposer">
   <h2 id="h-proposer">Proposer un événement, en 2\u00a0minutes</h2>
-  <p>Un match, une kermesse, une sortie, un concert\u00a0? Remplissez le formulaire, avec ou sans page Facebook, sans compte. Nous le relisons, puis il s'affiche sur rundata.re et dans les assistants IA, avec le nom de votre association.</p>
+  <p>Un match, une kermesse, une sortie, un concert\u00a0? Remplissez le formulaire, avec ou sans page Facebook, sans compte. Il est relu, puis il s'affiche sur rundata.re et dans les assistants IA, avec le nom de votre association.</p>
   <p><a class="btn sun" href="${PROPOSER_PATH}">Proposer un événement</a></p>
 </section>
 ${connecteurs.enLigne() ? connecteurs.carte() : ""}
@@ -187,7 +188,7 @@ ${lienForm(PATH)}
 </section>
 <section aria-labelledby="h-regles">
   <div class="sec-h"><h2 id="h-regles">Les règles</h2></div>
-  <ul class="card">${REGLES.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
+  <ul class="card">${REGLES.map((r) => `<li>${adresseTexte(r)}</li>`).join("")}</ul>
   <p class="note">Les événements proposés, en données ouvertes\u00a0: <a href="${ICS_PATH}">agenda ICS</a> · <a href="${JSON_PATH}">JSON</a> (Licence Ouverte 2.0).</p>
 </section>
 <section aria-labelledby="h-relais">

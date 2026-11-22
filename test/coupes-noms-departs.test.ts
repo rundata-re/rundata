@@ -313,8 +313,8 @@ describe("an address in a sentence of /confidentialite, /conditions, the foot an
         "Motif : Date fausse. Pour toute question, écrivez à contact@rundata.re.</p>",
         "Ne le partagez pas. Lien perdu ? Écrivez à contact@rundata.re.</p>",
         "proposer l'événement à nouveau</a>, ou écrire à contact@rundata.re.</p>",
-        "Votre association en utilise une autre ? Dites-le-nous : contact@rundata.re</p>",
-        "Réessayez dans quelques minutes ; si ça dure, écrivez-nous : contact@rundata.re</p>",
+        "Votre association en utilise une autre ? Écrivez à contact@rundata.re</p>",
+        "Réessayez dans quelques minutes ; si ça dure, écrivez à contact@rundata.re</p>",
       ]) expect(lu).toContain(s);
       for (const page of pages) {
         expect(page).not.toMatch(/="[^"]*<wbr/);

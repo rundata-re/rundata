@@ -646,7 +646,7 @@ describe("sport", () => {
     expect(b.resume).toContain("Championnat de handball D1 féminine : lu le 24/10 à 08:00, sans réponse depuis (voir injoignable).");
     // Nothing read before: its read said failed.
     const b2 = body(await sportTool(cache(), "handball", undefined, undefined, NOW));
-    expect(b2.injoignable[0].texte).toBe("Le site de la Fédération française de handball n'a pas répondu à notre dernière lecture (le 24/10 à 08:00) : nous ne savons pas ce qu'il annonce en ce moment.");
+    expect(b2.injoignable[0].texte).toBe("Le site de la Fédération française de handball n'a pas répondu à la dernière lecture (le 24/10 à 08:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.");
   });
 
   it("keeps a championship refused for the budget as silent only past twice its freshness: before, the copy before is served", async () => {

@@ -246,7 +246,7 @@ describe("the children's page", () => {
 
   it("says, when the agenda has nothing for children, that it does not say everything", () => {
     const none = enfantsPage(O, { value: { ce_week_end: [], evenements: [] }, fetchedAt: NOW } as any, NOW);
-    expect(flat(none)).toContain("Les agendas que nous lisons n'annoncent pas d'activité pour les enfants dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi les ");
+    expect(flat(none)).toContain("Les agendas lus par rundata.re n'annoncent pas d'activité pour les enfants dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi les ");
     expect(none).toContain('<a href="/evenements">sorties</a>');
     expect(none).not.toMatch(/Aucune activité/);
   });
@@ -341,7 +341,7 @@ describe("a commune's children's page", () => {
     // A colour is named with the filters of its kinds in the commune (marketing, 29/10).
     expect(html).toContain("<span><i class=\"ksw f-culture\"></i>Médiathèques et musées</span>");
     const none = flat(enfantsCommunePage(O, pageOf("les-avirons")!, data, NOW));
-    expect(none).toContain(`Les agendas que nous lisons n'annoncent pas d'activité pour les enfants aux Avirons dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi <a href="/enfants">les activités dans toute l'île</a>.`);
+    expect(none).toContain(`Les agendas lus par rundata.re n'annoncent pas d'activité pour les enfants aux Avirons dans les deux semaines qui viennent. Ils ne disent pas tout : voyez aussi <a href="/enfants">les activités dans toute l'île</a>.`);
     expect(html).toContain('<p><a href="/enfants">Les 24 communes →</a></p>');
   });
 

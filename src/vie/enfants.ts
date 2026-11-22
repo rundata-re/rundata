@@ -138,7 +138,7 @@ export function agesSaid(r: { min?: number; max?: number }): string {
 }
 
 export const INDICATIF_NOTE = typo("Indication de rundata.re selon le type de lieu : ni l'exploitant ni la carte ne précisent d'âge.");
-export const AGES_NOTE = typo("Les âges en gras viennent de l'organisateur ou de la carte. Ceux marqués « indicatif » sont notre estimation selon le type de lieu, pas une règle du lieu.");
+export const AGES_NOTE = typo("Les âges en gras viennent de l'organisateur ou de la carte. Ceux marqués « indicatif » sont une estimation de rundata.re selon le type de lieu, pas une règle du lieu.");
 export const NO_AGE = "Âge non précisé";
 
 export interface Age {

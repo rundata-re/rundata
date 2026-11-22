@@ -174,7 +174,7 @@ describe("the morning's recheck", () => {
   });
 
   it("asks Sensor.Community at the API the sensors are read from, its root answering 403", async () => {
-    // From 29/10/2026 its row said « répond, mais pas à nos lectures »: the root's 403, while the API answered 200.
+    // From 29/10/2026 its row said « répond, mais pas aux lectures de rundata.re »: the root's 403, while the API answered 200.
     const asked: string[] = [];
     const fetcher = (async (input: RequestInfo | URL) => {
       asked.push(String(input));
@@ -303,7 +303,7 @@ describe("what is shown", () => {
     expect(page).toContain('<h2 id="repondent-de-nouveau">Répondent de nouveau</h2>');
     expect(page).toContain("répond de nouveau depuis le 25/10");
     expect(page).toContain("Une donnée publique déposée en fichier ouvert sur data.gouv.fr reste lisible même quand le site de son éditeur ne répond pas.");
-    expect(page).toContain("Revérifié chaque jour, dernier passage le 26/10 à\u00a006:01. Un site de cette liste répond pour vous ? Écrivez-nous : <a href=\"mailto:contact@rundata.re\" aria-label=\"contact@rundata.re\"><span class=\"adrweb\">contact@<wbr>rundata.<wbr>re</span></a>");
+    expect(page).toContain("Revérifié chaque jour, dernier passage le 26/10 à\u00a006:01. Un site de cette liste répond pour vous ? Écrivez à <a href=\"mailto:contact@rundata.re\" aria-label=\"contact@rundata.re\"><span class=\"adrweb\">contact@<wbr>rundata.<wbr>re</span></a>");
     // The rows still to check are not there.
     expect(page).not.toContain("georisques");
     const own = page.slice(page.indexOf('<div class="band">'), page.indexOf("</main>"));

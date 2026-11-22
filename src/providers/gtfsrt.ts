@@ -307,12 +307,17 @@ export async function realtime(cache: Cache, net: string): Promise<Cached<Realti
  * less than MAX_AGE_SECONDS old by its own time, read again after the answer (`behind`) when it is past its minute. A
  * stop's page waited for that read at each view a minute after the last: from 13 to 20/11/2026, the robots waited
  * 0.65 s for /bus/arret/<arrêt> in the middle, 2.8 s at the 90th percentile and up to 8.7 s (Analytics Engine), the
- * slow ones reading gtfs_rt_reunion before the answer (Loki). The page says the feed's time. Without such a copy, the
- * feed is read as for a person.
+ * slow ones reading gtfs_rt_reunion before the answer (Loki). The page says the feed's time. Without such a copy (none
+ * in this data center, or one past MAX_AGE_SECONDS), the feed is not waited for either: it is read after the answer, and
+ * the page gives the published timetables, said as such (« théoriques »), until the next view. Read during the view as
+ * for a person until 22/11/2026, it held OAI-SearchBot 1.8 s in the middle on a stop's page when the feed answered
+ * (2.7 s at the 90th percentile, 103 views over 48 h), and 3.3 to 4.5 s when Car Jaune or Car Sud fell silent at that
+ * read, the first to find it so waiting RT_TIMEOUT_MS (Loki, 21-22/11/2026, « sans réponse » without « après la
+ * réponse »). Never more subrequests: the same read, moved after the answer.
  */
 export async function realtimeKept(cache: Cache, net: string, now: Date, behind: (work: Promise<unknown>) => void): Promise<Cached<Realtime> | undefined> {
   const seen = await cache.peek<Realtime>(`rt:${net}`).catch(() => undefined);
-  if (!seen?.value || now.getTime() / 1000 - seen.value.at >= MAX_AGE_SECONDS) return realtime(cache, net);
-  if (now.getTime() - seen.fetchedAt.getTime() > FRESH_SECONDS * 1000) behind(realtime(cache, net).catch(() => undefined));
-  return seen;
+  const recent = !!seen?.value && now.getTime() / 1000 - seen.value.at < MAX_AGE_SECONDS;
+  if (!recent || now.getTime() - seen!.fetchedAt.getTime() > FRESH_SECONDS * 1000) behind(realtime(cache, net).catch(() => undefined));
+  return recent ? seen : undefined;
 }

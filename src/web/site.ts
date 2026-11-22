@@ -1210,7 +1210,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     })();
     let trip: Awaited<ReturnType<typeof tripRun>>;
     try {
-      trip = net && id && transit.enabled() ? await tripRun(net, Number(trajet![2]), id, jour, now, cache) : undefined;
+      trip = net && id && transit.enabled() ? await tripRun(net, Number(trajet![2]), id, jour, now, cache, arret) : undefined;
     } catch (err) {
       console.error(`page ${path} : horaires indisponibles`, why(err));
       return new Response(tripGonePage(origin, canonical, net, await alerte(cache, background, now), true), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "60" } });

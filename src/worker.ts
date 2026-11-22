@@ -11,7 +11,8 @@ import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, count, counted, later, rea
 import { Cache, CACHE_FORMAT, MemoryStore, TieredStore, type CacheEntry, type CacheStore } from "./cache.js";
 import { KvStore } from "./kv.js";
 import { toutesLesSources, VERSION } from "./server.js";
-import { audience, device, language, origin, point, TEAM, teamVisit, visitor, type Hit } from "./metrics.js";
+import { appliDe } from "./appli.js";
+import { audience, device, language, origin, point, sansLieu, TEAM, teamVisit, visitor, type Hit } from "./metrics.js";
 import * as irve from "./providers/irve.js";
 import * as eauIle from "./eau/ile.js";
 import * as carburants from "./providers/carburants.js";
@@ -181,10 +182,13 @@ function recorder(env: Env, request: Request) {
   // The network: a browser from Meta's is Meta checking a link (metrics.ts, META_ASN).
   const asn = typeof cf?.asn === "number" ? cf.asn : undefined;
   const who = team ? TEAM : visitor(headers.get("user-agent") ?? "", asn);
-  const country = String(cf?.country ?? "");
+  const ua = headers.get("user-agent") ?? "";
+  // Nothing of where the app's phone is, not even its country (appli.ts).
+  const country = appliDe(ua) ? "" : String(cf?.country ?? "");
   // The campaign's channel, a page of the site (« interne ») or the referring site (metrics.ts, origin).
   const from = origin(headers.get("referer"), new URL(request.url));
-  return (hit: Hit) => {
+  return (asked: Hit) => {
+    const hit = sansLieu(asked, ua);
     if (hit.kind === "mcp" || hit.kind === "rpc") console.log(logLine(hit, who, country));
     if (!usage) return;
     try {
@@ -203,7 +207,7 @@ function logLine(hit: Hit, visitor: string, country: string) {
     message: `mcp ${hit.method || hit.name}${hit.kind === "mcp" ? ` ${hit.name}` : ""} : ${hit.outcome}`,
     method: hit.method, tool: hit.kind === "mcp" ? hit.name : undefined, client: hit.client, client_version: hit.clientVersion,
     protocol: hit.protocol, outcome: hit.outcome, error: hit.message, args: hit.args, place: hit.detail, place_status: hit.place,
-    commune: hit.commune, ms: hit.ms, subrequests: hit.subrequests, cache_hits: hit.cacheHits, cache_loads: hit.cacheLoads,
+    commune: hit.commune, copie: hit.copie || undefined, ms: hit.ms, subrequests: hit.subrequests, cache_hits: hit.cacheHits, cache_loads: hit.cacheLoads,
     size: hit.size, visitor, country,
   };
   for (const k of Object.keys(line)) if (line[k] === undefined || line[k] === "") delete line[k];

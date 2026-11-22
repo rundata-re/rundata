@@ -9,6 +9,7 @@
  */
 import { costOf, left, measured } from "../budget.js";
 import { breakerMs, type Cache, type Cached } from "../cache.js";
+import { deNom } from "../articles.js";
 import { distributeur, partageLu } from "../eau/distributeurs.js";
 import { distanceKm, localTime } from "../geo.js";
 import { apart, noteLecture } from "../lectures.js";
@@ -512,7 +513,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",
     volc?.texte ?? "",
-    l.coupures ? (avis.length ? `${waterCount(avis)}${waterSilent ? ` (${waterSilent.court})` : ""}` : waterSilent ? `coupures d'eau : ${waterSilent.court}` : dist?.avis ? "pas de coupure d'eau annoncée" : "") : "",
+    l.coupures ? (avis.length ? `${waterCount(avis)}${waterSilent ? ` (${waterSilent.court})` : ""}` : waterSilent ? `coupures d'eau : ${waterSilent.court}` : dist?.avis ? noCutSaid(dist.par ?? dist.nom, l.coupures.fetchedAt, now) : "") : "",
     // None found is not none held: the agendas read are not all of them, the commune's own site may not be read at all.
     l.agenda
       ? events.length
@@ -720,6 +721,17 @@ function vigilanceOf(cache: Cache): Promise<Cached<mf.Vigilance> | null> {
  * vigilance as the caller has it already (a page waits for it only a moment), else it is read here. `held`: the
  * copies the caller has already (a page builds its weather), neither read again nor refreshed here.
  */
+/**
+ * No notice read: « pas d'avis », never « pas de coupure », with who publishes the notices read and when they were read
+ * (marketing, 22/11/2026), as the tool coupures_eau and the page /coupures-eau say it. The day with the hour when the
+ * copy is not of today.
+ */
+export function noCutSaid(publisher: string, readAt: Date, now: Date): string {
+  const [day, hour] = localTime(readAt).split(" ");
+  const at = day === localTime(now).split(" ")[0] ? `à ${hour}` : `le ${day} à ${hour}`;
+  return `pas d'avis de coupure récent ou à venir ${deNom(publisher)}, lu ${at}`;
+}
+
 export async function readCopies(cache: Cache, commune: PlacePage, place: PlacePage, now: Date, background?: Background, vigilance?: Promise<Cached<mf.Vigilance> | null>, held: Partial<Record<Part, Cached<any> | null>> = {}) {
   const parts = Object.entries(copiesOf(commune, place)).filter((e): e is [Part, Copy] => !!e[1]);
   // One read each, as long as the invocation has subrequests left.

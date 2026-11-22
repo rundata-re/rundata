@@ -246,15 +246,21 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const news = r.actualites
     ? card("news", `Actualités ${deCommune(p.nom)}`, r.actualites.length ? `<ul class="plain">${r.actualites.map(li).join("")}</ul>` : `<p>Rien de nouveau qui nomme ${esc(p.nom)} ces dernières heures dans les médias lus.</p>`, "/actualites")
     : "";
-  // The notices read are the distributor's, or the CIREST's for a shared commune that names none.
-  const by = (c: NonNullable<typeof r.coupures_eau>) => c.distributeur ?? c.publie_par;
+  // No notice read: « pas d'avis », never « aucune coupure », with who publishes the notices read (the mairie, the
+  // CIREST, else the distributor) and when, as on /coupures-eau/<commune> (marketing, 22/11/2026). The mairie is not that
+  // elsewhere when the notices read are its own.
+  const noCut = (c: NonNullable<typeof r.coupures_eau>) => {
+    const who = c.publie_par ?? c.distributeur;
+    const ailleurs = /^(?:la )?(?:ville|commune|mairie)\b/i.test(who ?? "") ? "Une coupure peut être annoncée ailleurs." : "Une coupure peut être annoncée ailleurs, par la mairie par exemple.";
+    return `Pas d'avis de coupure récent ou à venir${who ? ` publié par ${who}` : ""}${c.lus_le ? `, lu ${leJour(c.lus_le)}` : ""}. ${ailleurs}`;
+  };
   const cuts = r.coupures_eau
     ? card("drop", "Coupures d'eau",
         (r.coupures_eau.injoignable ? `<p class="note">${silentText(r.coupures_eau.injoignable)}</p>` : "") +
         (r.coupures_eau.avis.length
           ? `<ul class="plain">${r.coupures_eau.avis.map((n) => `<li>${n.ne_pas_boire ? "<b>Eau à ne pas boire</b> · " : ""}${li({ titre: n.titre, lien: n.lien }).slice(4, -5)}${n.coupure ? ` <span class="note">${esc(n.coupure.a ? `${n.coupure.de} → ${n.coupure.a}` : `à partir du ${n.coupure.de}`)}${n.coupure.etat ? `, ${esc(n.coupure.etat)}` : ""}</span>` : ""}</li>`).join("")}</ul>`
           : r.coupures_eau.injoignable ? ""
-          : `<p>${esc(r.coupures_eau.note ?? `Aucune coupure annoncée${by(r.coupures_eau) ? ` par ${by(r.coupures_eau)}` : ""}${r.coupures_eau.lus_le ? ` ${leJour(r.coupures_eau.lus_le)}` : ""}.`)}</p>`) +
+          : `<p>${esc(r.coupures_eau.note ?? noCut(r.coupures_eau))}</p>`) +
         // Shared: who distributes which networks, and the mairie's site for the one whose notices are not read.
         (r.coupures_eau.partage ? `<p class="note">${esc(r.coupures_eau.partage.texte)}${r.coupures_eau.partage.mairie ? ` ${lienNom(r.coupures_eau.partage.mairie.lien, `${r.coupures_eau.partage.mairie.libelle} ↗`, ' rel="noopener"')}` : ""}</p>` : ""),
         `/coupures-eau/${p.slug}`, r.coupures_eau.avis.some((n) => n.ne_pas_boire) ? " warn" : "", aCommune(p.nom))

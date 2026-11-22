@@ -777,6 +777,7 @@ describe("coupures d'eau", () => {
     const day = resume(pageOf("saint-pierre")!, { coupures } as never, now);
     expect(day.coupures_eau?.injoignable?.texte).toBe(sp.injoignable[0].texte);
     expect(JSON.stringify(day)).not.toContain("pas de coupure d'eau annoncée");
+    expect(JSON.stringify(day)).not.toContain("pas d'avis de coupure récent");
     // The island: both said, in a few words.
     const ile = body(await coupuresEau(at(), undefined, now));
     expect(ile.injoignable.map((f: { de: string }) => f.de)).toEqual(["de Dionéo", "de runéo"]);

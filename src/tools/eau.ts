@@ -236,18 +236,24 @@ async function siteRows(cache: Cache, sites: baignades.Site[], now: Date, from?:
   }));
 }
 
-/** Said when a site's row comes from the island's copy: the ARS's site did not answer, and when the copy was read. */
-function copyNote(lu: string | undefined): string | undefined {
-  if (!lu) return undefined;
-  const t = new Date(Date.parse(lu) + 4 * 3600_000).toISOString();
-  return `Le site de l'ARS ne répond pas${NB}: résultats de la dernière lecture de rundata.re, le ${day(t)} à ${t.slice(11, 16)} (heure de La Réunion).`;
+/**
+ * Said when a site's row comes from the island's copy: the ARS's site did not answer, and when the copy was read. Only
+ * some of the sites from it (the others read live): those sites named, the note is not the others'.
+ */
+function copyNote(read: { row: { site: string }; copie?: string }[]): string | undefined {
+  const kept = read.filter((x) => x.copie);
+  if (!kept.length) return undefined;
+  const t = new Date(Date.parse(kept[0].copie!) + 4 * 3600_000).toISOString();
+  const which = kept.length < read.length ? ` pour ${enumeration(kept.map((x) => x.row.site))}` : "";
+  return `Le site de l'ARS ne répond pas${which}${NB}: résultats de la dernière lecture de rundata.re, le ${day(t)} à ${t.slice(11, 16)} (heure de La Réunion).`;
 }
 
 async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) {
   const named = siteNamed(lieu);
   if (named) {
-    const [{ row, copie }] = await siteRows(cache, [named], now);
-    const note = copyNote(copie);
+    const read = await siteRows(cache, [named], now);
+    const [{ row }] = read;
+    const note = copyNote(read);
     return { resume: bathSentence(row) + (note ? ` ${note}` : ""), sites: [row], ...(note ? { copie: note } : {}) };
   }
   const near = baignades.SITES
@@ -265,7 +271,7 @@ async function baignade(cache: Cache, res: Resolution, now: Date, lieu: string) 
   const read = await siteRows(cache, picked.map((x) => x.s), now, res.lieu);
   // Past the two nearest, a commune's sites without their latest samples (Saint-Paul's nine were 14 KB): asked by name,
   // a site gives them.
-  const note = copyNote(read.find((x) => x.copie)?.copie);
+  const note = copyNote(read);
   const rows = read.map(({ row }, i) => {
     if (i < 2) return row;
     const { derniers_prelevements: _, ...rest } = row;

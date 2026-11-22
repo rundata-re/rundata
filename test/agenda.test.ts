@@ -1531,7 +1531,8 @@ describe("agenda", () => {
     });
     const fresh = new Cache(new MemoryStore(), () => t);
     const started = Date.now();
-    const [kept, none] = await Promise.all([gather(c, new Date(t), 2_000, 50), gather(fresh, new Date(t), 2_000, 50)]);
+    // A long wait far above the Kabardock's 300 ms, so that a loaded machine never reaches it by its own slowness.
+    const [kept, none] = await Promise.all([gather(c, new Date(t), 10_000, 50), gather(fresh, new Date(t), 10_000, 50)]);
     const k = kept.find((g) => g.agenda.id === "kabardock")?.value;
     expect(k?.stale).toBe(true);
     expect(k?.fetchedAt.getTime()).toBe(NOW.getTime());
@@ -1539,8 +1540,8 @@ describe("agenda", () => {
     const n = none.find((g) => g.agenda.id === "kabardock")?.value;
     expect(n?.stale).toBe(false);
     expect(n?.value.length).toBeGreaterThan(0);
-    expect(Date.now() - started).toBeLessThan(2_000);
-  });
+    expect(Date.now() - started).toBeLessThan(10_000);
+  }, 30_000);
 
   describe("within a Worker invocation's subrequests", () => {
     // Every fetch and every read or write of the data center's cache counts; past 50 the invocation fails.

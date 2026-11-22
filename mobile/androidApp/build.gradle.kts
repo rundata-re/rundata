@@ -2,7 +2,13 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+// La clé définitive de l'appli, hors du dépôt : son fichier (PKCS12) et son mot de passe, donnés au moment de construire.
+// Sans eux, la version release est signée avec la clé de debug, et ne s'installe pas par-dessus une version publiée.
+val cle: String? = System.getenv("RUNDATA_ANDROID_CLE")
+val cleMotDePasse: String? = System.getenv("RUNDATA_ANDROID_CLE_MDP")
 
 android {
     namespace = "re.rundata.app"
@@ -12,20 +18,31 @@ android {
         applicationId = "re.rundata.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 4
+        versionName = "0.2.0"
     }
 
     buildFeatures { buildConfig = true }
 
-    // La version release : réduite par R8 (code et ressources), signée avec la clé de debug tant qu'il n'y a pas de
-    // compte de store.
+    signingConfigs {
+        if (cle != null && cleMotDePasse != null) {
+            create("definitive") {
+                storeFile = file(cle)
+                storeType = "pkcs12"
+                storePassword = cleMotDePasse
+                keyAlias = "rundata"
+                keyPassword = cleMotDePasse
+            }
+        }
+    }
+
+    // La version release : réduite par R8 (code et ressources), signée avec la clé définitive (depuis 0.2.0).
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("definitive") ?: signingConfigs.getByName("debug")
         }
     }
 
@@ -48,6 +65,8 @@ dependencies {
     // Le widget (Jetpack Glance) et sa mise à jour toutes les 30 min
     implementation("androidx.glance:glance-appwidget:1.2.0")
     implementation("androidx.work:work-runtime-ktx:2.11.2")
+    // Ce que le widget garde de chaque commune, en JSON
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.4.21")
 }

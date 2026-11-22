@@ -1,7 +1,6 @@
 package re.rundata.app.android.widget
 
 import android.content.Context
-import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -10,27 +9,29 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import re.rundata.app.McpErreur
-import re.rundata.app.android.PrefsReglages
 import re.rundata.app.android.source
-import re.rundata.app.communeDe
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.TimeUnit
 
-/** Relit la journée de la commune choisie pour le widget : toutes les 30 min tant qu'un widget est posé. */
+/** Relit la journée de chaque commune d'un widget posé : toutes les 30 min tant qu'il en reste un. */
 class MiseAJour(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val c = applicationContext
-        if (GlanceAppWidgetManager(c).getGlanceIds(WidgetRundata::class.java).isEmpty()) return Result.success()
-        val commune = communeDe(PrefsReglages(c).commune)
-        if (commune != null) {
-            val avant = Donnees.lire(c)?.takeIf { it.commune == commune.nom }
+        val poses = WidgetRundata.poses(c)
+        if (poses.isEmpty()) {
+            annuler(c)
+            return Result.success()
+        }
+        // Une lecture par commune, quel que soit le nombre de widgets qui la montrent.
+        for (commune in poses.mapNotNull { it.second }.distinct()) {
+            val avant = Donnees.lire(c, commune.slug)
             val apres = try {
                 Donnees.de(c.source.journee(commune))
             } catch (e: McpErreur) {
-                // La dernière mesure reste, avec son heure ; l'échec est dit.
-                (avant ?: Donnees(commune.nom, null, null, null, null, false, null)).copy(echecA = heureLocale())
+                // La dernière lecture reste, avec son heure ; l'échec est dit.
+                (avant ?: Donnees(commune.nom, null, null, null, null, false, null, slug = commune.slug)).copy(echecA = heureLocale())
             }
             Donnees.ecrire(c, apres)
         }

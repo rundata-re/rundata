@@ -12,16 +12,16 @@ import { GITHUB, layout } from "./pages.js";
 export const PATH = "/appli";
 /** The short address of the file, the button's link: a redirect to the asset of the current pre-release. */
 export const APK_PATH = "/appli/rundata-re.apk";
-export const VERSION = "0.1.2";
-/** The pre-release that carries the file. Releases are immutable: a tag published without its file can never take one, so 0.1.2 lives at android-v0.1.2-1. */
-export const TAG = "android-v0.1.2-1";
+export const VERSION = "0.2.0";
+/** The pre-release that carries the file. Releases are immutable: a tag published without its file can never take one (0.1.2 lives at android-v0.1.2-1). */
+export const TAG = "android-v0.2.0";
 /** SHA-256 of the file published with the pre-release TAG. */
-export const EMPREINTE = "a26c8943f728e37b4bbd73622ba4d260a8c8be09a02f107af48994c3fc776a0f";
+export const EMPREINTE = "c30917489cdb9957d8c870390f71fecd65a72bd048550fbc4aa8b1f8f327ab91";
 export const APK_URL = `${GITHUB}/releases/download/${TAG}/rundata-re-${VERSION}.apk`;
 
 const TITLE = "L'appli rundata.re pour Android · version d'essai";
 const NAME = "L'appli rundata.re pour Android";
-const LEAD = "La journée de votre commune, en direct sur votre téléphone, et un widget pour l'écran d'accueil.";
+const LEAD = "La journée de votre commune, en direct sur votre téléphone, et des widgets pour l'écran d'accueil.";
 
 export function appliPage(origin: string): string {
   const band = `${crumbBar(NAME)}
@@ -31,23 +31,25 @@ export function appliPage(origin: string): string {
 </div></div>`;
   const body = `<section class="app-page appli">
   <div class="card">
-    <p>Le widget affiche, pour la commune choisie :</p>
+    <p>Quatre widgets pour l'écran d'accueil, chacun pour la commune choisie en le posant :</p>
     <ul>
-      <li>la température mesurée, avec le nom de la station et l'heure de la mesure ;</li>
-      <li>la vigilance météo de sa zone ;</li>
-      <li>l'avis d'eau du moment, s'il y en a un (coupure ou eau à ne pas boire).</li>
+      <li>« Température » : la température mesurée et son heure ;</li>
+      <li>« Météo, mer et vigilance », sur une ligne : la température mesurée, celle de la mer et la vigilance de la zone ;</li>
+      <li>« La journée » : la température mesurée avec sa station, la vigilance de la zone et l'avis d'eau du moment ;</li>
+      <li>« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, l'eau.</li>
     </ul>
-    <p>Il se met à jour toutes les 30 minutes.</p>
+    <p>Ils se mettent à jour toutes les 30 minutes. Sans réseau, ils gardent la dernière lecture, avec son heure.</p>
   </div>
   <p>C'est une version d'essai, partagée avec quelques personnes avant son arrivée sur le Play Store. Elle est gratuite, sans compte et sans publicité.</p>
   <p class="appli-dl"><a class="app-go" href="${APK_PATH}">Télécharger l'appli</a> <span class="note">(Android 8 ou plus récent, 2 Mo)</span></p>
+  <p class="note">Vous avez installé la version 0.1.2 ? Désinstallez-la une fois avant d'installer celle-ci : elle est signée avec la clé définitive de l'appli, et Android refuse sinon de la mettre à jour. Les versions suivantes s'installeront par-dessus. Votre commune sera à choisir de nouveau.</p>
   <div class="card">
     <h2>Installer en 4 étapes</h2>
     <ol>
       <li>Sur votre téléphone, touchez « Télécharger l'appli », puis ouvrez le fichier téléchargé.</li>
       <li>Android demande d'autoriser l'installation depuis votre navigateur : autorisez-la. Si Play Protect propose d'analyser l'appli, acceptez : elle n'est pas encore sur le Play Store.</li>
       <li>Ouvrez l'appli rundata.re et choisissez votre commune.</li>
-      <li>Pour le widget : appui long sur l'écran d'accueil, puis « Widgets », puis « rundata.re ». Posez-le où vous voulez.</li>
+      <li>Pour un widget : appui long sur l'écran d'accueil, puis « Widgets », puis « rundata.re ». Posez celui que vous voulez, puis choisissez sa commune.</li>
     </ol>
   </div>
   <p><strong>Sur iPhone :</strong> pas encore.</p>

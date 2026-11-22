@@ -21,6 +21,43 @@
             </intent-filter>
         </activity>
 
+        <!-- La commune d'un widget, choisie quand on le pose -->
+        <activity
+            android:name=".android.widget.ChoixCommuneWidget"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Rundata">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Les quatre widgets du sélecteur, du plus petit au plus grand -->
+        <receiver
+            android:name=".android.widget.RecepteurTemperature"
+            android:exported="true"
+            android:label="@string/widget_temperature_nom">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_temperature" />
+        </receiver>
+        <receiver
+            android:name=".android.widget.RecepteurBandeau"
+            android:exported="true"
+            android:label="@string/widget_bandeau_nom">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_bandeau" />
+        </receiver>
         <receiver
             android:name=".android.widget.RecepteurWidget"
             android:exported="true"
@@ -32,6 +69,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_rundata" />
+        </receiver>
+        <receiver
+            android:name=".android.widget.RecepteurAujourdhui"
+            android:exported="true"
+            android:label="@string/widget_aujourdhui_nom">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_aujourdhui" />
         </receiver>
     </application>
 

@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Mis à jour par WorkManager toutes les 30 min (MiseAJour), pas par le système : updatePeriodMillis à 0 -->
+<!-- 4×2 : la journée de la commune. Mis à jour par WorkManager toutes les 30 min (MiseAJour), pas par le système : updatePeriodMillis à 0.
+     La commune se choisit quand on le pose (configure), et de nouveau d'un appui long (reconfigurable). -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="re.rundata.app.android.widget.ChoixCommuneWidget"
     android:description="@string/widget_description"
     android:initialLayout="@layout/widget_chargement"
-    android:minWidth="110dp"
-    android:minHeight="110dp"
+    android:minWidth="180dp"
+    android:minHeight="100dp"
+    android:minResizeWidth="180dp"
+    android:minResizeHeight="40dp"
     android:previewImage="@drawable/widget_apercu"
     android:previewLayout="@layout/widget_apercu"
     android:resizeMode="horizontal|vertical"
-    android:targetCellWidth="2"
+    android:targetCellWidth="4"
     android:targetCellHeight="2"
     android:updatePeriodMillis="0"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

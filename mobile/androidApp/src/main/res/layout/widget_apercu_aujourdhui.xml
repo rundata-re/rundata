@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- L'aperçu du grand widget (Android 12 et plus), un exemple de lecture. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_fond"
+    android:gravity="top"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_commune"
+        android:textColor="@color/encre"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_sortir"
+        android:textColor="@color/lien"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_sortie"
+        android:textColor="@color/encre"
+        android:textSize="12sp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_routes"
+        android:textColor="@color/lien"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_route"
+        android:textColor="@color/attenue"
+        android:textSize="12sp" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_eau"
+        android:textColor="@color/lien"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/apercu_eau_avis"
+        android:textColor="@color/attenue"
+        android:textSize="12sp" />
+</LinearLayout>

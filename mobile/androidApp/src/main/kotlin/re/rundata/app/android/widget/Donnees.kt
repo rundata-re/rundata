@@ -2,17 +2,24 @@ package re.rundata.app.android.widget
 
 import android.content.Context
 import androidx.core.content.edit
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import re.rundata.app.AvisEau
+import re.rundata.app.InfoRoute
 import re.rundata.app.Journee
 import re.rundata.app.Mots
-import re.rundata.app.Pastille
+import re.rundata.app.Sortie
 import re.rundata.app.avisEnPremier
-import re.rundata.app.pastillesDe
+
+/** Une ligne d'une liste du widget : ce qu'elle dit, et ce qui la suit en plus petit (quand, où, quel média). */
+@Serializable
+data class Ligne(val texte: String, val apres: String? = null)
 
 /**
- * Ce que le widget montre, gardé d'une mise à jour à l'autre : la dernière mesure lue reste, avec son heure, quand la
- * lecture suivante échoue. Jamais une valeur inventée.
+ * Ce que les widgets montrent d'une commune, gardé d'une mise à jour à l'autre : la dernière lecture réussie reste, avec
+ * son heure, quand la suivante échoue. Jamais une valeur inventée. Une par commune : chaque widget a la sienne.
  */
+@Serializable
 data class Donnees(
     val commune: String,
     val temperature: String?,
@@ -29,59 +36,101 @@ data class Donnees(
     val lueA: String? = null,
     /** « verte », « orange vents forts, jaune fortes pluies / orages » : Vigilance.etat, tel quel. */
     val etat: String? = null,
-    /** L'avis d'eau sur le site du distributeur, ouvert quand on touche la ligne d'eau. */
+    /** L'avis d'eau sur le site du distributeur. */
     val eauLien: String? = null,
-    /** Le lien du champ officiel de la vigilance (vigilance.meteofrance.fr), ouvert quand on touche la vigilance. */
+    /** Le lien du champ officiel de la vigilance (vigilance.meteofrance.fr). */
     val officielLien: String? = null,
+    val slug: String? = null,
+    /** « 27 °C » : la mer au large de la commune, mesurée par satellite. */
+    val mer: String? = null,
+    /** « Prévision : de 24,1 °C à 25,2 °C, pas de pluie prévue de 20 h à minuit. » : une PRÉVISION, dite comme telle. */
+    val prevision: String? = null,
+    /** Les autres avis d'eau, après celui qui est dit. */
+    val eauAutres: Int = 0,
+    /** « runéo ». */
+    val distributeur: String? = null,
+    /** Les événements puis les marchés du jour ; null : les agendas n'ont pas été lus. */
+    val sorties: List<Ligne>? = null,
+    /** Les informations des médias sur les routes ; null : les médias n'ont pas été lus. */
+    val routes: List<Ligne>? = null,
+    /** Les avis des réseaux de bus. */
+    val bus: List<Ligne> = emptyList(),
+    /** Le texte de l'alerte cyclonique, tel quel, quand il y en a une. */
+    val alerteCyclonique: String? = null,
+    val format: Int = FORMAT,
 ) {
     companion object {
         /**
-         * Le format de ce qui est gardé : une donnée d'un format plus ancien (sans vigilance lue dans le résumé, sans lien
-         * d'eau) n'est pas montrée, elle est relue.
+         * Le format de ce qui est gardé : une donnée d'un format plus ancien n'est pas montrée, elle est relue.
+         * 4 : une par commune, avec la mer, la prévision, les sorties et les routes (0.2.0).
          */
-        const val FORMAT = 3
+        const val FORMAT = 4
 
-        fun de(j: Journee) = Donnees(
-            commune = j.commune.nom,
-            temperature = j.mesure?.temperature,
-            heure = j.mesure?.heureSeule,
-            station = j.mesure?.station,
-            etat = j.vigilance?.etat,
-            zone = j.vigilance?.zone,
-            vigilanceEnPremier = j.vigilance?.enPremier == true,
-            echecA = null,
-            eau = avisEnPremier(j.coupures, mois())?.let(::ligneEau),
-            eauLien = avisEnPremier(j.coupures, mois())?.lien,
-            officielLien = j.vigilance?.officiel?.substringAfter(" : ", "")?.trim()?.takeIf { it.startsWith("https://") },
-            lueA = j.lueA?.let { it.substringAfter(" ", it) },
-        )
+        private val JSON = Json { ignoreUnknownKeys = true }
+
+        fun de(j: Journee): Donnees {
+            val eau = avisEnPremier(j.coupures, mois())
+            return Donnees(
+                commune = j.commune.nom,
+                slug = j.commune.slug,
+                temperature = j.mesure?.temperature,
+                heure = j.mesure?.heureSeule,
+                station = j.mesure?.station,
+                etat = j.vigilance?.etat,
+                zone = j.vigilance?.zone,
+                vigilanceEnPremier = j.vigilance?.enPremier == true,
+                alerteCyclonique = j.vigilance?.alerteCyclonique,
+                echecA = null,
+                eau = eau?.let(::ligneEau),
+                eauLien = eau?.lien,
+                eauAutres = if (eau == null) 0 else j.coupures.size - 1,
+                distributeur = j.distributeur,
+                officielLien = j.vigilance?.officiel?.let { o -> o.indexOf("https://").takeIf { it >= 0 }?.let { o.substring(it).trim() } },
+                lueA = j.lueA?.let { it.substringAfter(" ", it) },
+                mer = j.mer?.temperature,
+                prevision = j.prevision?.let(::lignePrevision),
+                sorties = j.sorties?.map(::ligneSortie),
+                routes = j.routes?.infos?.map(::ligneRoute),
+                bus = j.routes?.bus.orEmpty().map(::ligneRoute),
+            )
+        }
 
         private fun mois(): Int = java.time.ZonedDateTime.now(java.time.ZoneId.of("Indian/Reunion")).monthValue
 
         private fun prefs(context: Context) = context.getSharedPreferences("widget", Context.MODE_PRIVATE)
 
-        fun lire(context: Context): Donnees? {
-            val p = prefs(context)
-            if (p.getInt("format", 1) < FORMAT) return null
-            val commune = p.getString("commune", null) ?: return null
-            return Donnees(
-                commune, p.getString("temperature", null), p.getString("heure", null), p.getString("station", null),
-                p.getString("zone", null), p.getBoolean("en_premier", false),
-                p.getString("echec_a", null), p.getString("eau", null), p.getString("lue_a", null), p.getString("etat", null),
-                p.getString("eau_lien", null), p.getString("officiel_lien", null),
-            )
-        }
+        /** Ce qui est gardé pour la commune `slug`, ou null : rien, ou d'un format plus ancien. */
+        fun lire(context: Context, slug: String): Donnees? = decoder(prefs(context).getString("journee.$slug", null))
 
         fun ecrire(context: Context, d: Donnees) {
-            prefs(context).edit {
-                putString("commune", d.commune).putString("temperature", d.temperature).putString("heure", d.heure)
-                putString("station", d.station).putString("zone", d.zone).putString("etat", d.etat)
-                putBoolean("en_premier", d.vigilanceEnPremier).putString("echec_a", d.echecA)
-                putString("eau", d.eau).putString("lue_a", d.lueA).putString("eau_lien", d.eauLien).putString("officiel_lien", d.officielLien).putInt("format", FORMAT)
-            }
+            val slug = d.slug ?: return
+            prefs(context).edit { putString("journee.$slug", JSON.encodeToString(serializer(), d)) }
         }
+
+        fun decoder(texte: String?): Donnees? = texte?.let { runCatching { JSON.decodeFromString(serializer(), it) }.getOrNull() }?.takeIf { it.format >= FORMAT }
+
+        fun encoder(d: Donnees): String = JSON.encodeToString(serializer(), d)
     }
 }
+
+/** « Prévision : de 24,1 °C à 25,2 °C, pas de pluie prévue de 20 h à minuit. » */
+fun lignePrevision(p: re.rundata.app.Prevision): String? {
+    val temp = when {
+        p.min != null && p.max != null && p.min != p.max -> "de ${p.min} à ${p.max}"
+        else -> p.max ?: p.min
+    }
+    val mots = listOfNotNull(temp, p.pluie).takeIf { it.isNotEmpty() } ?: return null
+    return "Prévision : " + mots.joinToString(", ") + "."
+}
+
+/** « ANNULÉ · Concert de … », puis « de 5 h à 12 h · Musée Léon Dierx ». */
+fun ligneSortie(s: Sortie): Ligne = Ligne(
+    (s.statut?.let { "$it · " } ?: "") + s.titre,
+    listOfNotNull(s.quand, s.lieu).joinToString(" · ").takeIf { it.isNotEmpty() },
+)
+
+/** « Route du Littoral fermée… », puis « Clicanoo · 21/11 18:40 ». */
+fun ligneRoute(i: InfoRoute): Ligne = Ligne(i.titre, listOfNotNull(i.media, i.quand).joinToString(" · ").takeIf { it.isNotEmpty() })
 
 /**
  * La ligne d'eau du widget : quoi, quand et où. « Eau à ne pas boire, secteur Traitement St Francois. », « Coupure d'eau
@@ -95,7 +144,7 @@ fun ligneEau(a: AvisEau): String {
     val quoi = if (a.nePasBoire) "Eau à ne pas boire" else "Coupure d'eau" + (Mots.quand(a)?.let { " $it" } ?: "")
     return when {
         ou != null -> "$quoi, $ou."
-        a.nePasBoire || Mots.quand(a) == null -> "$quoi\u00a0: ${a.titre}."
+        a.nePasBoire || Mots.quand(a) == null -> "$quoi : ${a.titre}."
         else -> "$quoi."
     }
 }
@@ -108,46 +157,4 @@ fun nomDeSecteur(s: String): String {
     return s.lowercase().split(' ').mapIndexed { i, mot ->
         if (i > 0 && mot in PETITS) mot else mot.split('-').joinToString("-") { it.replaceFirstChar(Char::uppercaseChar) }
     }.joinToString(" ")
-}
-
-/** Les lignes du widget, de haut en bas. */
-data class Lignes(
-    val titre: String,
-    val grande: String?,
-    val detail: String?,
-    /** Une pastille par phénomène que la phrase de la zone nomme, chacune dans sa couleur ; aucune sans vigilance émise. */
-    val vigilance: List<Pastille>,
-    /** « zone Nord » sous les pastilles ; « Pas de vigilance émise · zone Nord » quand rien n'est émis. */
-    val zone: String?,
-    val alerte: String?,
-    val eau: String? = null,
-    /** « Lu à 20:11 » : en bas, l'heure (de La Réunion) de la dernière lecture réussie. */
-    val lue: String? = null,
-    /** La mention du kit, mot pour mot, sous la vigilance : OFFICIEL. */
-    val officiel: String? = null,
-)
-
-/** La mention de Météo-France, une phrase entière avec ces mots exacts (le kit) : jamais une forme courte. */
-const val OFFICIEL = "Consulter le site officiel de Météo-France"
-/** Là où elle mène quand le résumé ne donne pas le lien (src/providers/vigilance.ts OFFICIEL_VIGILANCE). */
-const val OFFICIEL_VIGILANCE = "https://vigilance.meteofrance.fr/fr/la-reunion"
-
-/** Les mots du widget, d'après `d` ; null : aucune commune choisie dans l'appli. */
-fun lignes(d: Donnees?, communeChoisie: String?): Lignes {
-    if (d == null || communeChoisie == null || d.commune != communeChoisie) {
-        return Lignes(communeChoisie ?: "rundata.re", null, if (communeChoisie == null) "Choisir une commune dans l'appli." else "Lecture des données…", emptyList(), null, null)
-    }
-    // Les mots de la zone tels que le résumé les écrit, chacun dans la couleur qu'il nomme.
-    val vigilance = pastillesDe(d.etat)
-    val detail = when {
-        d.temperature == null -> "Pas de mesure récente."
-        else -> "mesurée à ${d.heure}" + (d.station?.let { ", $it" } ?: "")
-    }
-    val alerte = d.echecA?.let { if (d.temperature != null) "rundata.re injoignable à $it\u00a0: mesure de ${d.heure}." else "rundata.re injoignable à $it." }
-    val zone = when {
-        d.etat == null -> null
-        vigilance.isNotEmpty() -> d.zone?.let { "zone $it" }
-        else -> d.etat.replaceFirstChar(Char::uppercaseChar) + (d.zone?.let { " · zone $it" } ?: "")
-    }
-    return Lignes(d.commune, d.temperature, detail, vigilance, zone, alerte, d.eau, d.lueA?.let { "Lu à $it" }, OFFICIEL.takeIf { d.etat != null })
 }

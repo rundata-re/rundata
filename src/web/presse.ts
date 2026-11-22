@@ -100,7 +100,7 @@ const RELEASE = `<p class="eyebrow">Communiqué de presse · La Réunion, le 24 
 <p>Ce connecteur suit un protocole ouvert, le MCP (Model Context Protocol), que comprennent désormais la plupart des assistants IA : c'est une façon concrète de mettre les données publiques d'un territoire entier à la portée de ces outils.</p>
 <h3>Gratuit, ouvert, fait pour l'île</h3>
 <p>Le site n'a ni publicité ni cookie (les statistiques de visite sont anonymes). Toutes les données viennent d'organismes publics (Météo-France, ONF, ARS, OVPF-IPGP, EDF, Atmo Réunion, réseaux de bus, mairies…) ou de projets ouverts comme OpenStreetMap, et chaque chiffre est cité avec sa source. Le code est libre (licence MIT). rundata.re est un projet indépendant : il n'est rattaché à aucun de ces organismes et ne remplace pas leurs canaux officiels.</p>
-<p>« Nous voulions qu'on puisse répondre en un coup d'œil aux questions de tous les jours, avec la source officielle à côté de chaque chiffre », explique l'équipe de rundata.re.</p>
+<p>rundata.re veut qu'on puisse répondre en un coup d'œil aux questions de tous les jours, avec la source officielle à côté de chaque chiffre.</p>
 <h3>Liens</h3>
 <ul>
 <li>Le site : ${link("https://rundata.re")}</li>

@@ -33,8 +33,9 @@ describe("press page", () => {
     expect(html).toContain("<li><b>Actualités</b>\u00a0: les informations des médias de l'île");
     expect(html).toContain("les stations Météo-France de la côte aux sommets, relevées toutes les 6 minutes");
     expect(html).not.toContain("D'autres rubriques arrivent");
-    // The team speaks, not an unnamed user; the site is « en continu », not every five minutes.
-    expect(html).toContain("explique l'équipe de <span class=\"ident\">rundata.re</span>.</p>");
+    // No team is presented: the site says what it wants, in its own name; it is « en continu », not every five minutes.
+    expect(html).toContain("veut qu'on puisse répondre en un coup d'œil aux questions de tous les jours, avec la source officielle à côté de chaque chiffre.</p>");
+    expect(html).not.toContain("explique l'équipe");
     expect(html).not.toContain("premiers utilisateurs");
     expect(html).toContain("commune par commune, mise à jour en continu, chaque donnée avec son heure.");
     expect(html).not.toContain("cinq minutes");

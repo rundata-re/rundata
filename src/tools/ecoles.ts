@@ -169,7 +169,7 @@ export function withPrefecture(e: EcolesAnswer, c: Cyclone | null | undefined, v
     const bulletin = e.niveau >= 2 ? said(e.niveau) : "aucune alerte cyclonique";
     return {
       ...e,
-      ecart: `Le communiqué de la préfecture ${of} annonce ${said(d.niveau)} : ${cite(d)} Le bulletin de Météo-France émis le ${dayOf(localDay(new Date(v.emise)))} à ${localTime(new Date(v.emise)).split(" ")[1]} indique ${bulletin}. Nous montrons les deux : vérifiez sur reunion.gouv.fr.`,
+      ecart: `Le communiqué de la préfecture ${of} annonce ${said(d.niveau)} : ${cite(d)} Le bulletin de Météo-France émis le ${dayOf(localDay(new Date(v.emise)))} à ${localTime(new Date(v.emise)).split(" ")[1]} indique ${bulletin}. rundata.re montre les deux : vérifiez sur reunion.gouv.fr.`,
       cites,
     };
   }

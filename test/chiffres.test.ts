@@ -262,25 +262,25 @@ describe("the page /chiffres", () => {
     const page = (value: Copie) => typo(chiffresPage("https://rundata.re", chiffres(sources, { ...copie, value }, NOW, OUTILS_ICI), inventaire(sources)));
     const sans = (noms: string[]) => page({ ...COPIE, evenements: { ...COPIE.evenements!, sans: noms } });
     const fig = 'href="/evenements">214</a><span>événements dans les deux semaines qui viennent, ';
-    expect(sans(["Mairie de Saint-Paul"])).toContain(`${fig}sans l&#39;agenda de la mairie de Saint-Paul, dont le site n&#39;a pas répondu à notre dernière lecture. <small>(compté le 26/10 à`);
-    expect(sans(["Mairie de Saint-Paul", "Le Séchoir"])).toContain(`${fig}sans les agendas de la mairie de Saint-Paul et du Séchoir, dont les sites n&#39;ont pas répondu à notre dernière lecture. <small>`);
+    expect(sans(["Mairie de Saint-Paul"])).toContain(`${fig}sans l&#39;agenda de la mairie de Saint-Paul, dont le site n&#39;a pas répondu à la dernière lecture de rundata.re. <small>(compté le 26/10 à`);
+    expect(sans(["Mairie de Saint-Paul", "Le Séchoir"])).toContain(`${fig}sans les agendas de la mairie de Saint-Paul et du Séchoir, dont les sites n&#39;ont pas répondu à la dernière lecture de rundata.re. <small>`);
     // rundata.re's own base: « dont le site n'a pas répondu » would be false for it.
     expect(sans([PROPOSITIONS.nom])).toContain(`${fig}sans les événements proposés sur rundata.re pour le moment. <small>`);
-    expect(sans(["Mairie de Saint-Paul", PROPOSITIONS.nom])).toContain(`${fig}sans l&#39;agenda de la mairie de Saint-Paul, dont le site n&#39;a pas répondu à notre dernière lecture, ni les événements proposés sur rundata.re pour le moment. <small>`);
+    expect(sans(["Mairie de Saint-Paul", PROPOSITIONS.nom])).toContain(`${fig}sans l&#39;agenda de la mairie de Saint-Paul, dont le site n&#39;a pas répondu à la dernière lecture de rundata.re, ni les événements proposés sur rundata.re pour le moment. <small>`);
     expect(html).toContain("événements dans les deux semaines qui viennent <small>");
     // Past two missing: the last whole count, its hour said once.
     const complet = page({ ...COPIE, evenements: undefined, evenements_complet: COPIE.evenements });
-    expect(complet).toMatch(/href="\/evenements">214<\/a><span>événements dans les deux semaines qui viennent, d&#39;après notre dernier compte complet, le 26\/10 à\s04:50\.<\/span>/);
+    expect(complet).toMatch(/href="\/evenements">214<\/a><span>événements dans les deux semaines qui viennent, d&#39;après le dernier compte complet de rundata.re, le 26\/10 à\s04:50\.<\/span>/);
     const c = (value: Copie) => chiffres(sources, { ...copie, value }, NOW, OUTILS_ICI).en_ce_moment.evenements_deux_semaines;
-    expect(c({ ...COPIE, evenements: { ...COPIE.evenements!, sans: ["CINOR"] } })).toEqual({ nombre: 214, compte_le: "26/10 à 04:50", incomplet: "sans l'agenda de la CINOR, dont le site n'a pas répondu à notre dernière lecture" });
-    expect(c({ ...COPIE, evenements: undefined, evenements_complet: COPIE.evenements })).toEqual({ nombre: 214, compte_le: "26/10 à 04:50", incomplet: "d'après notre dernier compte complet, le 26/10 à 04:50" });
+    expect(c({ ...COPIE, evenements: { ...COPIE.evenements!, sans: ["CINOR"] } })).toEqual({ nombre: 214, compte_le: "26/10 à 04:50", incomplet: "sans l'agenda de la CINOR, dont le site n'a pas répondu à la dernière lecture de rundata.re" });
+    expect(c({ ...COPIE, evenements: undefined, evenements_complet: COPIE.evenements })).toEqual({ nombre: 214, compte_le: "26/10 à 04:50", incomplet: "d'après le dernier compte complet de rundata.re, le 26/10 à 04:50" });
     expect(c(COPIE)).not.toHaveProperty("incomplet");
   });
 
   it("gives every agenda read its article after « l'agenda », never « de Le » nor « de Les »", () => {
     // The linked associations' agenda is never named: no site of theirs was asked.
     expect(sansAgendas([CONNECTEURS.nom])).toBe("");
-    expect(sansAgendas([CONNECTEURS.nom, "Ville du Port"])).toBe("sans l'agenda de la Ville du Port, dont le site n'a pas répondu à notre dernière lecture");
+    expect(sansAgendas([CONNECTEURS.nom, "Ville du Port"])).toBe("sans l'agenda de la Ville du Port, dont le site n'a pas répondu à la dernière lecture de rundata.re");
     for (const a of AGENDAS.filter((x) => x !== PROPOSITIONS && x !== CONNECTEURS)) expect(sansAgendas([a.nom]), a.id).toMatch(/^sans l'agenda (de la (?!Mairie )|de l'|du |des |de (?!Le |La |Les |Clubs |Ville |Mairie ))\S/);
     const de = (nom: string) => sansAgendas([nom]).replace(/^sans l'agenda /, "").replace(/, dont .*$/, "");
     expect(de("Le Port")).toBe("du Port");
@@ -288,7 +288,7 @@ describe("the page /chiffres", () => {
     expect(de("Mairie des Trois-Bassins")).toBe("de la mairie des Trois-Bassins");
     expect(de("Ville du Port")).toBe("de la Ville du Port");
     expect(de("Office de tourisme de l'Est")).toBe("de l'Office de tourisme de l'Est");
-    expect(sansAgendas(["Clubs sportifs (Sportsregions)", "Ville du Port"])).toBe("sans les agendas des clubs sportifs (Sportsregions) et de la Ville du Port, dont les sites n'ont pas répondu à notre dernière lecture");
+    expect(sansAgendas(["Clubs sportifs (Sportsregions)", "Ville du Port"])).toBe("sans les agendas des clubs sportifs (Sportsregions) et de la Ville du Port, dont les sites n'ont pas répondu à la dernière lecture de rundata.re");
   });
 
   it("says the hour of a count kept from an earlier copy, and never shows a count not made", () => {

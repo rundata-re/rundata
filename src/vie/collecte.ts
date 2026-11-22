@@ -62,12 +62,12 @@ export const ailleurs = (commune: string, epci: { nom: string }) =>
 // Marketing's words, said by the tool and the pages.
 export const NOT_FOUND = "Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, ou essayez le nom du quartier.";
 // A street the TCO lists without a calendar: nothing is inferred, its contact page is the link of the arrow.
-export const NO_CALENDAR = `les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour cette voie, et nous ne savons pas si elle est collectée au porte-à-porte. Renseignez-vous auprès du TCO →`;
+export const NO_CALENDAR = `les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour cette voie, et rundata.re ne sait pas si elle est collectée au porte-à-porte. Renseignez-vous auprès du TCO →`;
 // The same above the list of such streets on a page (marketing).
-export const NO_CALENDAR_LIST = `Les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour ces voies, et nous ne savons pas si elles sont collectées au porte-à-porte. Renseignez-vous auprès du TCO →`;
+export const NO_CALENDAR_LIST = `Les calendriers ${YEAR} du TCO ne donnent pas de jour de collecte pour ces voies, et rundata.re ne sait pas si elles sont collectées au porte-à-porte. Renseignez-vous auprès du TCO →`;
 export const TCO_CONTACT = "https://www.tco.re/contact";
 /** Past the calendars' year, nothing of it is applied to the next. */
-export const notYet = () => `Les calendriers ${YEAR + 1} du TCO ne sont pas encore publiés : nous ne pouvons pas encore donner les jours de collecte.`;
+export const notYet = () => `Les calendriers ${YEAR + 1} du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte.`;
 const YEAR_DAYS = (Date.UTC(YEAR + 1, 0, 1) - Date.UTC(YEAR, 0, 1)) / DAY_MS;
 /** Whether `today` is past the calendars' year. */
 export const pastYear = (today: number) => today > YEAR_DAYS;

@@ -72,16 +72,16 @@ describe("the bins' calendars of the West", () => {
 
   it("never says a year's days of the next one", () => {
     const victoria = col.findStreets("rue victoria", "La Possession")[0];
-    expect(col.streetLine(victoria, day("2027-01-04"))).toBe("Les calendriers 2027 du TCO ne sont pas encore publiés : nous ne pouvons pas encore donner les jours de collecte.");
-    expect(col.streetLine(victoria, day("2026-12-20"))).toMatch(/\. Les calendriers 2027 du TCO ne sont pas encore publiés : nous ne pouvons pas encore donner les jours de collecte\.$/);
+    expect(col.streetLine(victoria, day("2027-01-04"))).toBe("Les calendriers 2027 du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte.");
+    expect(col.streetLine(victoria, day("2026-12-20"))).toMatch(/\. Les calendriers 2027 du TCO ne sont pas encore publiés : rundata.re ne peut pas encore donner les jours de collecte\.$/);
     expect(body(collecteAnswer("rue Victoria, La Possession", new Date("2027-01-04T08:00:00Z"))).resume).toBe(col.notYet());
   });
 
   it("says a street without a calendar as such, inferring nothing", () => {
     const nc = col.STREETS.find((s) => s.calendrier === -1)!;
-    expect(col.streetLine(nc, day("2026-10-24"))).toBe(`${col.streetName(nc)}, ${nc.commune} : les calendriers 2026 du TCO ne donnent pas de jour de collecte pour cette voie, et nous ne savons pas si elle est collectée au porte-à-porte. Renseignez-vous auprès du TCO →`);
+    expect(col.streetLine(nc, day("2026-10-24"))).toBe(`${col.streetName(nc)}, ${nc.commune} : les calendriers 2026 du TCO ne donnent pas de jour de collecte pour cette voie, et rundata.re ne sait pas si elle est collectée au porte-à-porte. Renseignez-vous auprès du TCO →`);
     const page = collectePage("https://rundata.re", NOW, nc.commune);
-    expect(page).toContain('<h3>Voies sans calendrier du TCO</h3><p>Les calendriers 2026 du TCO ne donnent pas de jour de collecte pour ces voies, et nous ne savons pas si elles sont collectées au porte-à-porte. <a href="https://www.tco.re/contact" rel="noopener">Renseignez-vous auprès du TCO →</a></p>');
+    expect(page).toContain('<h3>Voies sans calendrier du TCO</h3><p>Les calendriers 2026 du TCO ne donnent pas de jour de collecte pour ces voies, et rundata.re ne sait pas si elles sont collectées au porte-à-porte. <a href="https://www.tco.re/contact" rel="noopener">Renseignez-vous auprès du TCO →</a></p>');
     // After the streets that have a calendar.
     expect(page.indexOf("Voies sans calendrier du TCO")).toBeGreaterThan(page.lastIndexOf("du TCO (PDF)</a></p></div>"));
   });

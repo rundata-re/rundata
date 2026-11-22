@@ -205,14 +205,14 @@ describe("the power cuts the mairies relay", () => {
     expect(sentence(sm, NOW)).not.toContain("passée");
     // A notice of another year says its year.
     const old = parsePosts([post("2025-04-30T11:48:00", "Coupure d&rsquo;électricité à Sainte Suzanne", "<p>Coupure d'électricité programmée le mercredi 14 mai 2025, entre 9h30 à 13h30.</p>")], "Sainte-Suzanne")[0];
-    expect(sentence(old, NOW)).toBe("Pas d'avis récent de la mairie de Sainte-Suzanne : le dernier date du 30/04/2025. Nous ne savons pas si une coupure est prévue.");
+    expect(sentence(old, NOW)).toBe("Pas d'avis récent de la mairie de Sainte-Suzanne : le dernier date du 30/04/2025. rundata.re ne sait pas si une coupure est prévue.");
     // Past 30 days, the same: no details of a cut long gone.
-    expect(sentence(sm, new Date("2026-11-25T10:00:00Z"))).toBe("Pas d'avis récent de la mairie de Sainte-Marie : le dernier date du 21/10. Nous ne savons pas si une coupure est prévue.");
-    expect(none("Le Port")).toBe("rundata.re ne lit pas d'avis de coupure d'électricité pour Le Port : nous ne savons pas si une coupure est prévue.");
-    expect(none("Sainte-Marie")).toBe("rundata.re n'a lu aucun avis de coupure d'électricité pour Sainte-Marie : nous ne savons pas si une coupure est prévue.");
+    expect(sentence(sm, new Date("2026-11-25T10:00:00Z"))).toBe("Pas d'avis récent de la mairie de Sainte-Marie : le dernier date du 21/10. rundata.re ne sait pas si une coupure est prévue.");
+    expect(none("Le Port")).toBe("rundata.re ne lit pas d'avis de coupure d'électricité pour Le Port, et ne sait donc pas si une coupure y est prévue.");
+    expect(none("Sainte-Marie")).toBe("rundata.re n'a lu aucun avis de coupure d'électricité pour Sainte-Marie, et ne sait donc pas si une coupure y est prévue.");
     // The communes of the honesty line: every mairie read, with or without a recent notice (all read here, none by its written
     // agreement: what it says then, test/autorisations.test.ts).
-    expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). Nous reprenons celles que relaient les mairies sur leurs sites\u00a0: aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
+    expect(honesty()).toBe("EDF publie ses coupures pour travaux sur son site, mais ses mentions légales interdisent d'en reprendre le contenu sans son accord (lues le 03/11/2026). rundata.re reprend celles que relaient les mairies sur leurs sites\u00a0: aujourd'hui Sainte-Marie, Saint-Philippe, Cilaos, Saint-André et Sainte-Suzanne, quand leurs avis sont lisibles.");
     const cached = { value: copy, fetchedAt: NOW, stale: false };
     expect(courantBlock(cached, "Le Port", NOW)).toMatchObject({ avis: [], note: none("Le Port") });
     expect(courantBlock(cached, "Sainte-Marie", NOW).avis.map((x) => x.publie_le)).toEqual(["21/10 10:00"]);
@@ -367,9 +367,9 @@ describe("Saint-André's PDF letters of EDF", () => {
     expect(sentence(avis[0], NOW)).toBe("Coupure d'électricité annoncée par EDF à Saint-André le lundi 02/11 : heures et secteurs dans l'avis publié par la mairie");
     expect(sentence(avis[1], NOW)).toBe("Avis de coupure d'EDF publié par la mairie de Saint-André le 20/10 : la date, les heures et les secteurs sont dans l'avis");
     // A letter of July, its cut long gone: its upload's day only.
-    expect(sentence(avis[2], NOW)).toBe("Pas d'avis récent de la mairie de Saint-André : le dernier date du 06/07. Nous ne savons pas si une coupure est prévue.");
+    expect(sentence(avis[2], NOW)).toBe("Pas d'avis récent de la mairie de Saint-André : le dernier date du 06/07. rundata.re ne sait pas si une coupure est prévue.");
     const old = parseMedia([media("2026-09-04T09:34:00", up("2026/09", "EDF-REUNION"))], "Saint-André")[0];
-    expect(sentence(old, NOW)).toBe("Pas d'avis récent de la mairie de Saint-André : le dernier date du 04/09. Nous ne savons pas si une coupure est prévue.");
+    expect(sentence(old, NOW)).toBe("Pas d'avis récent de la mairie de Saint-André : le dernier date du 04/09. rundata.re ne sait pas si une coupure est prévue.");
     expect(shortOf({ ...avis[0], creneaux: avis[0].creneaux }, NOW)).toBe("coupure d'électricité annoncée par EDF le lundi 02/11, heures et secteurs dans l'avis de la mairie");
   });
 

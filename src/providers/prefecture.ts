@@ -119,7 +119,7 @@ export async function rubriqueNonLue(cache: Cache, now: Date): Promise<string | 
   const c = await cache.peek<Communiques & { lu_le?: string }>(copie.configured() ? COPY_KEY : KEY).catch(() => undefined);
   if (!c?.value.rubrique_non_lue) return undefined;
   const at = c.value.lu_le ? new Date(c.value.lu_le) : c.fetchedAt;
-  return `La rubrique cyclone du site de la préfecture n'a pas répondu à notre dernière lecture (${when(localTime(at), now)}) : une décision publiée depuis peut manquer ici.`;
+  return `La rubrique cyclone du site de la préfecture n'a pas répondu à la dernière lecture de rundata.re (${when(localTime(at), now)}) : une décision publiée depuis peut manquer ici.`;
 }
 
 /** A decision of the cyclone alert, as a release's title says it. */

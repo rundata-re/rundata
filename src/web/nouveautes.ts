@@ -31,7 +31,7 @@ export function nouveautesPage(origin: string): string {
   const band = `${crumbBar("Nouveautés")}
 <div class="wrap intro"><div class="pitch">
   <h1>Les nouveautés de rundata.re</h1>
-  <p class="lead">Ce qui arrive sur le site et dans votre IA, jour après jour. Une idée, une donnée qui manque ? Dites-le-nous en bas de page.</p>
+  <p class="lead">Ce qui arrive sur le site et dans votre IA, jour après jour. Une idée, une donnée qui manque ? Dites-le à rundata.re en bas de page.</p>
 </div></div>`;
   // The last day open, the days before folded in their card when the list is long (FOLD_ROWS), the day still its title.
   // The day's number with its month, on one line but on a small screen with the text enlarged (jourMois, as on /evenements).

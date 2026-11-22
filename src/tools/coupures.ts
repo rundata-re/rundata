@@ -60,16 +60,19 @@ const VOIES_AU_RESUME = 2;
  */
 export function noticeSaid(n: notices.Avis, now: Date): string {
   const here = nowLocal(now);
-  const cut = cutSaid(n.debut, n.fin);
-  const going = n.debut && n.debut <= here && (!n.fin || n.fin >= here);
+  // Begun: only what the notice plans, never « en cours » (the site does not know whether the water is cut now).
+  const going = n.debut && n.debut <= here && n.fin && n.fin >= here;
+  const cut = going ? `prévue jusqu'au ${when(n.fin)}` : cutSaid(n.debut, n.fin);
   const streets = n.secteurs_complets && n.secteurs.length ? n.secteurs : [];
   const more = streets.length - VOIES_AU_RESUME;
   const where = streets.length
     ? ` (${streets.slice(0, VOIES_AU_RESUME).join(", ")}${more > 0 ? ` et ${more} autre${more > 1 ? "s" : ""} voie${more > 1 ? "s" : ""}` : ""})`
     : "";
-  return `${n.titre}${cut ? `, ${going ? "en cours, " : ""}${cut}` : `, avis du ${published(n)}`}${where}`;
+  return `${n.titre}${cut ? `, ${cut}` : `, avis du ${publishedShort(n)}`}${where}`;
 }
 
+/** « 21/11 à 10:53 », the day only for a source dated to the day: a résumé's date, without the year. */
+const publishedShort = (n: notices.Avis) => published(n).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1");
 const nowLocal = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16);
 
 /** The notices still worth telling: a cut not over yet, or anything published in the last few days. */
@@ -196,7 +199,7 @@ export function pourAssistant(rows: ReturnType<typeof noticeRow>[]): { avis: Rec
 }
 
 /**
- * The notices of a commune in its résumé: the cuts soonest first, then the notices without hours, newest first; the
+ * The notices of a commune in its résumé, the one not to drink the water left out (said first, in its own words): the cuts soonest first, then the notices without hours, newest first; the
  * first `AVIS_AU_RESUME` told apart (`noticeSaid`), the others counted (Saint-Denis, 21/11/2026: three « Travaux sur
  * le réseau » said alike).
  */
@@ -207,7 +210,7 @@ export function resumeAvis(mine: notices.Avis[], now: Date): string {
   });
   const rest = order.length - AVIS_AU_RESUME;
   return order.slice(0, AVIS_AU_RESUME).map((n) => noticeSaid(n, now)).join("\u00a0; ") +
-    (rest > 0 ? `\u00a0; et ${rest} autre${rest > 1 ? "s" : ""}, dans avis` : "");
+    (rest > 0 ? `\u00a0; et ${rest} autre${rest > 1 ? "s" : ""} avis, dans la liste des avis` : "");
 }
 
 /** `complet`: the page's build, every field of every notice; the tool's answer is cut to its size (`pourAssistant`). */
@@ -281,10 +284,14 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const mute = dist?.avis ? muetPour(silent, commune) : undefined;
   // The résumé names the distributor (`where`): the ARS credited beside the notices.
   const named = covered && !mine.length && !mute;
+  // The notices the résumé lists: every one but the one not to drink the water, said before them.
+  const cuts = mine.filter((n) => n !== dry);
   const resume = [
-    dry ? `EAU À NE PAS BOIRE ${a(commune)} (secteurs dans l'avis), d'après l'avis du ${published(dry)} : « ${dry.titre} ».` : "",
-    mine.length
-      ? `${mine.length} avis récent${mine.length > 1 ? "s" : ""} ou à venir ${a(commune)} : ${resumeAvis(mine, now)}.`
+    // Always first, in its own words, never among the notices counted (the server's safety rule, worded by marketing).
+    dry ? `Eau à ne pas boire ${a(commune)} d'après ${dry.distributeur} (avis du ${publishedShort(dry)})\u00a0: « ${dry.titre} »` +
+      (dry.secteurs_complets && dry.secteurs.length ? `, secteurs\u00a0: ${notices.sectorsSaid(dry.secteurs)}.` : ", secteurs dans l'avis.") : "",
+    cuts.length
+      ? `${cuts.length} avis récent${cuts.length > 1 ? "s" : ""} ou à venir ${a(commune)}\u00a0: ${resumeAvis(cuts, now)}.`
       : mute ? ""
       : covered ? `Aucun avis de coupure récent ou à venir ${a(commune)}${where}.`
       : unread ? `Pas d'avis en ligne lisible pour ${commune} : rundata.re ne lit pas les avis de coupure de ${unread.nom}, qui y distribue l'eau. ${siteDist ? `Voir le site ${deNom(unread.nom)}, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0: ${siteDist}, ou la mairie.` : `Voir ${unread.nom} ou la mairie.`}`

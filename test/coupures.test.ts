@@ -401,26 +401,29 @@ describe("coupures d'eau", () => {
     expect(resumeAvis(mine, now)).toBe(
       "Travaux sur le réseau AEP Chemin Bois Rouge La bretagne, dans la nuit du lundi 23 au mardi 24/11, de 21:00 à 04:00 (CHEMIN DE BOIS ROUGE, CHEMIN DE LA ROSERAIE et 1 autre voie)\u00a0; " +
       "Travaux sur le réseau, dans la nuit du mardi 24 au mercredi 25/11, de 21:00 à 04:00 (RUE LORY LES HAUTS, RUE LORY LES BAS et 5 autres voies)\u00a0; " +
-      "Lavage de réservoir, mercredi 25/11 de 08:00 à 17:00\u00a0; et 2 autres, dans avis");
-    // Under way, said so; a night across two months keeps both; one end only, that end.
-    expect(resumeAvis([mine[0]], new Date("2026-11-26T18:00:00Z"))).toBe("Travaux sur le réseau, en cours, dans la nuit du jeudi 26 au vendredi 27/11, de 21:00 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)");
+      "Lavage de réservoir, mercredi 25/11 de 08:00 à 17:00\u00a0; et 2 autres avis, dans la liste des avis");
+    // Begun: what the notice plans only, never « en cours »; a night across two months keeps both; one end only, that end.
+    expect(resumeAvis([mine[0]], new Date("2026-11-26T18:00:00Z"))).toBe("Travaux sur le réseau, prévue jusqu'au vendredi 27/11 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)");
     expect(cutSaid("2026-11-30T21:00", "2026-12-01T04:00")).toBe("dans la nuit du lundi 30/11 au mardi 01/12, de 21:00 à 04:00");
     expect(cutSaid("2026-11-24T08:00", "2026-11-27T17:00")).toBe("du mardi 24/11 à 08:00 au vendredi 27/11 à 17:00");
     expect(cutSaid(undefined, "2026-11-24T17:00")).toBe("jusqu'au mardi 24/11 à 17:00");
     // No hours: the notice's date, newest first after the cuts.
     const sans = { ...mine[4], debut: undefined, fin: undefined } as Avis;
-    expect(resumeAvis([sans, mine[0]], now)).toBe("Travaux sur le réseau, dans la nuit du jeudi 26 au vendredi 27/11, de 21:00 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)\u00a0; Lavage de réservoir, avis du 18/11/2026 à 10:42");
+    expect(resumeAvis([sans, mine[0]], now)).toBe("Travaux sur le réseau, dans la nuit du jeudi 26 au vendredi 27/11, de 21:00 à 04:00 (RUE SAINTE ANNE, RUE MICHEL HA-SAM)\u00a0; Lavage de réservoir, avis du 18/11 à 10:42");
   });
 
   it("gives a cut to come with its hours", async () => {
     const b = body(await coupuresEau(cache(), "Saint-Denis", NOW));
-    expect(b.resume).toBe("1 avis récent ou à venir à Saint-Denis : Travaux sur le réseau / RD49, dans la nuit du lundi 26 au mardi 27/10, de 21:00 à 05:00 (ROUTE DE BOIS DE NEFLES).");
+    expect(b.resume).toBe("1 avis récent ou à venir à Saint-Denis\u00a0: Travaux sur le réseau / RD49, dans la nuit du lundi 26 au mardi 27/10, de 21:00 à 05:00 (ROUTE DE BOIS DE NEFLES).");
     expect(b.avis[0].coupure).toEqual({ de: "lundi 26/10 à 21:00", a: "mardi 27/10 à 05:00", etat: "à venir" });
   });
 
   it("warns for a commune whose water is not to be drunk", async () => {
     const b = body(await coupuresEau(cache(), "Plaine des Palmistes", NOW));
-    expect(b.resume).toMatch(/^EAU À NE PAS BOIRE à La Plaine-des-Palmistes \(secteurs dans l'avis\), d'après l'avis du 23\/10\/2026 à 21:49/);
+    // Always first and in its own words, never among the notices counted: here four notices come before it by their dates.
+    expect(b.resume).toMatch(/^Eau à ne pas boire à La Plaine-des-Palmistes d'après CIREST \/ CISE Réunion \(avis du 23\/10 à 21:49\)\u00a0: « 23\/10\/26 21h48 – LA PLAINE-DES-PALMISTES \| RESTRICTION D’USAGE DE L’EAU ET DÉPLOIEMENT DE 16 CITERNES », secteurs dans l'avis\. 4 avis récents ou à venir à La Plaine-des-Palmistes\u00a0: /);
+    expect(b.resume).toMatch(/\u00a0; et 1 autre avis, dans la liste des avis\.$/);
+    expect(b.resume.match(/RESTRICTION D’USAGE/g)).toHaveLength(1);
     expect(b.ne_pas_boire.titre).toMatch(/RESTRICTION D’USAGE DE L’EAU/);
   });
 
@@ -450,6 +453,23 @@ describe("coupures d'eau", () => {
     expect(benoit.ne_pas_boire).toBe(false);
   });
 
+  it("says the water not to drink first and in its own words, never among « et N autres », after four cuts that come sooner", async () => {
+    const now = new Date("2026-11-04T10:30:00Z");
+    // Four of Dionéo's cuts, the 5th to the 8th, from the notice of the fixture, and the notice of 04/11 not to drink the water.
+    const item = readFileSync(new URL("./fixtures/avis-eau/dioneo.xml", import.meta.url), "utf8").match(/<item>[\s\S]*?<\/item>/)![0];
+    const cut = (k: number) => item.replace(/RD49/g, `RUE ${k}`).replace(/ROUTE DE BOIS DE NEFLES/, `RUE NUMERO ${k}`)
+      .replace(/152143/g, `15214${k}`).replace("26/10/2026", `0${4 + k}/11/2026`).replace("27/10/2026", `0${5 + k}/11/2026`)
+      .replace(/<pubDate>[^<]*<\/pubDate>/, "<pubDate>Wed, 04 Nov 2026 08:00:00 +0400</pubDate>");
+    const others = globalThis.fetch;
+    vi.stubGlobal("fetch", async (url: string) => new URL(url).hostname === "dioneo.re"
+      ? new Response(fixture("dioneo.xml").replace("</channel>", `${[1, 2, 3, 4].map(cut).join("")}${rssItem("Qualité de l'eau", "Wed, 04 Nov 2026 11:15:00 +0400", DIONEO_0411)}</channel>`))
+      : others(url));
+    const r = body(await coupuresEau(cache(now), "Saint-Denis", now)).resume as string;
+    expect(r).toMatch(/^Eau à ne pas boire à Saint-Denis d'après Dionéo \(avis du 04\/11 à 11:15\)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS\. 4 avis récents ou à venir à Saint-Denis\u00a0: Travaux sur le réseau \/ RUE 1, dans la nuit du jeudi 05 au vendredi 06\/11, de 21:00 à 05:00 \(RUE NUMERO 1\)\u00a0; /);
+    expect(r).toMatch(/\u00a0; et 1 autre avis, dans la liste des avis\.$/);
+    expect(r.match(/Qualité de l'eau/g)).toHaveLength(1);
+  });
+
   it("says first, in the tool, the day of the commune and its page, the water not to drink of a notice that awaits the return to normal", async () => {
     const now = new Date("2026-11-04T10:30:00Z");
     // Dionéo's feed with the notice of 04/11, the other sources as before.
@@ -457,7 +477,7 @@ describe("coupures d'eau", () => {
     vi.stubGlobal("fetch", async (url: string) => new URL(url).hostname === "dioneo.re"
       ? new Response(fixture("dioneo.xml").replace("</channel>", `${rssItem("Qualité de l'eau", "Wed, 04 Nov 2026 11:15:00 +0400", DIONEO_0411)}</channel>`))
       : others(url));
-    expect(body(await coupuresEau(cache(now), "Saint-Denis", now)).resume).toMatch(/^EAU À NE PAS BOIRE à Saint-Denis \(secteurs dans l'avis\), d'après l'avis du 04\/11\/2026 à 11:15/);
+    expect(body(await coupuresEau(cache(now), "Saint-Denis", now)).resume).toMatch(/^Eau à ne pas boire à Saint-Denis d'après Dionéo \(avis du 04\/11 à 11:15\)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS\. Aucun avis de coupure récent ou à venir à Saint-Denis /);
     const coupures = { value: await buildCoupures(cache(now), now), fetchedAt: now };
     expect(coupures.value.ne_pas_boire).toContain("Saint-Denis");
     const day = resume(pageOf("saint-denis")!, { coupures } as never, now);
@@ -568,7 +588,7 @@ describe("coupures d'eau", () => {
     expect(es.avis_lus_sur).toEqual({ publie_par: "runéo", distributeur: "runéo", lien: "https://www.runeo.re/" });
     expect(es.distributeur).toBeUndefined();
     const sp = body(await coupuresEau(cache(NIGHT), "Saint-Paul", NIGHT));
-    expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul : Interruption nocturne de la distribution du 23/10/2026, en cours, dans la nuit du vendredi 23 au samedi 24/10, de 22:00 à 06:00.");
+    expect(sp.resume).toBe("1 avis récent ou à venir à Saint-Paul\u00a0: Interruption nocturne de la distribution du 23/10/2026, prévue jusqu'au samedi 24/10 à 06:00.");
     expect(sp.avis[0]).toMatchObject({ publie_le: "23/10/2026", coupure: { de: "vendredi 23/10 à 22:00", a: "samedi 24/10 à 06:00", etat: "en cours" } });
     // Over at 06:00: no longer said in the morning.
     expect(body(await coupuresEau(cache(), "Saint-Paul", NOW)).resume).toBe("Aucun avis de coupure récent ou à venir à Saint-Paul dans les avis de La Créole, qui y distribue l'eau d'après l'ARS\u00a0: https://lacreole.re/flash-infos.");

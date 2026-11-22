@@ -87,7 +87,7 @@ describe("GTFS-RT feed", () => {
     expect((await realtimeFeeds(["carjaune"], new Cache(new MemoryStore(), () => later.getTime(), false), later)).size).toBe(0);
   });
 
-  it("is given to a robot as already read while it is under 15 minutes old, read again after the answer", async () => {
+  it("is given to a robot as already read while it is under 15 minutes old, read again after the answer, and past that not waited for", async () => {
     const feed = rt.decode(FEED);
     const at = new Date(feed.at * 1000);
     // The source answers only once let go: an answer that waits for it never comes before.
@@ -114,19 +114,24 @@ describe("GTFS-RT feed", () => {
     const none: Promise<unknown>[] = [];
     await realtimeFeeds(["carjaune"], kept(at, soon), soon, (w) => none.push(w));
     expect([reads, none.length]).toEqual([0, 0]);
-    // A person, and a feed of more than 15 minutes for a robot: the answer waits for the read.
+    // A person waits for the read of a feed past its minute.
+    reads = 0;
+    let answered = false;
+    const answer = realtimeFeeds(["carjaune"], kept(at, now), now).then(() => (answered = true));
+    await vi.waitFor(() => expect(reads).toBe(1));
+    expect(answered).toBe(false);
+    letGo();
+    await answer;
+    // A robot, with a feed of more than 15 minutes: not waited for, no live departures, the feed read after the answer.
+    reads = 0;
     const late = new Date(at.getTime() + (rt.MAX_AGE_SECONDS + 60) * 1000);
-    for (const [when, robot] of [[now, false], [late, true]] as const) {
-      reads = 0;
-      let answered = false;
-      const after: Promise<unknown>[] = [];
-      const answer = realtimeFeeds(["carjaune"], kept(at, when), when, robot ? (w) => after.push(w) : undefined).then(() => (answered = true));
-      await vi.waitFor(() => expect(reads).toBe(1));
-      expect(answered).toBe(false);
-      letGo();
-      await answer;
-      expect(after).toHaveLength(0);
-    }
+    const after: Promise<unknown>[] = [];
+    const old = await realtimeFeeds(["carjaune"], kept(at, late), late, (w) => after.push(w));
+    expect([...old.keys()]).toEqual([]);
+    expect(after).toHaveLength(1);
+    await vi.waitFor(() => expect(reads).toBe(1));
+    letGo();
+    await Promise.all(after);
   });
 });
 

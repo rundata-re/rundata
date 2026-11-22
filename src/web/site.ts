@@ -170,6 +170,7 @@ import { CUMULS_PATH, DUREES, type Fin, FINS, JOUR_FILE, PATHS as REJEU, rejeu, 
 import { COUCHE_PATH, coucheResponse, RESUME_PATH, resumeResponse } from "./couches.js";
 import { UV_HEADERS, UV_PATH, uvMoufia } from "./uv-moufia.js";
 import { partageVideo, VIDEO_PATH } from "./partage-video.js";
+import { audience, TEAM } from "../metrics.js";
 
 const HTML = {
   "content-type": "text/html; charset=utf-8",
@@ -249,6 +250,21 @@ const readerWaits: ReaderWaits = (key, value, ageMs) => {
   const every = scheduledEvery(key, value);
   return every == null || ageMs > every * 60_000 + margin(every) + SCHEDULED_SLACK_MS;
 };
+/**
+ * Whether a stop's page gives `request` the real-time feed already read rather than wait for it (gtfsrt.ts
+ * `realtimeKept`): the fetchers of assistants and search engines (READERS), and every other visitor that is not a
+ * person by its headers (metrics.ts `audience`: a declared crawler such as GPTBot or SemrushBot, a script, a browser
+ * from a cloud network). Over 48 h to 22/11/2026, GPTBot waited 0.9 s in the middle and Semrush 1.2 s for a feed read
+ * during the view, up to 4.3 s when it fell silent at that read (Loki). A person still waits for the feed: the times
+ * announced live are what they came for. The daily check of the sources waits too: it must see the data.
+ */
+export const keptFeed = (request: Request): boolean => {
+  const reader = readerOf(request);
+  if (reader !== false) return typeof reader === "function";
+  const asn = (request as { cf?: { asn?: number } }).cf?.asn;
+  return !["humain", TEAM].includes(audience(request.headers, typeof asn === "number" ? asn : undefined));
+};
+
 /** Whether `request`'s reader waits for a page's old copy to be refreshed (web/data.ts `snapshot`). */
 export const readerOf = (request: Request): boolean | ReaderWaits =>
   isReader(request) && (CHECK.test(request.headers.get("user-agent") ?? "") || readerWaits);
@@ -1186,7 +1202,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     try {
       if (!transit.enabled()) throw new Error("horaires indisponibles ici");
       // A robot gets the real-time feed already read, refreshed after the answer; the daily check of the sources waits for it (gtfsrt.ts `realtimeKept`).
-      d = await stopPageDepartures(p.groups, now, cache, typeof readerOf(request) === "function" ? background : undefined);
+      d = await stopPageDepartures(p.groups, now, cache, keptFeed(request) ? background : undefined);
     } catch (err) {
       console.error(`page ${path} : horaires indisponibles`, why(err));
       return new Response(tripGonePage(origin, path, undefined, await alerte(cache, background, now), true), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "60" } });

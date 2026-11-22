@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { counted, PAGE_BUDGET, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { realtime, RT_BACKOFF_SECONDS, RT_TIMEOUT_MS } from "../src/providers/gtfsrt.js";
+import { type Realtime, realtime, realtimeKept, RT_BACKOFF_SECONDS, RT_TIMEOUT_MS } from "../src/providers/gtfsrt.js";
+import { keptFeed } from "../src/web/site.js";
 
 const T0 = new Date("2026-11-20T04:00:00Z").getTime();
 const MIN = 60_000;
@@ -91,5 +92,73 @@ describe("a network's real-time feed that falls silent (providers/gtfsrt.ts `rea
     });
     expect(value?.fetchedAt.getTime()).toBe(t);
     expect(value?.stale).toBe(false);
+  });
+});
+
+// 21-22/11/2026: a robot's view of a stop with no recent copy of the feed in its data center read the feed before the
+// answer, 1.8 s in the middle for OAI-SearchBot when it answered, 3.3 to 4.5 s when it fell silent at that read (Loki).
+describe("the feed for a robot (providers/gtfsrt.ts `realtimeKept`)", () => {
+  const feed = (at: number): Realtime => ({ at: Math.floor(at / 1000), trips: {}, cancelled: [], alerts: [] });
+  const hanging = () => {
+    let release: (() => void) | undefined;
+    vi.stubGlobal("fetch", (_url: unknown, init?: RequestInit) => new Promise<Response>((resolve, reject) => {
+      release = () => resolve(new Response(new Uint8Array(0)));
+      init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+    }));
+    // Let the read go once it has started: the read after the answer reaches fetch only past the cache's first step.
+    return async () => {
+      await vi.waitFor(() => expect(release).toBeDefined());
+      release!();
+    };
+  };
+
+  for (const [what, copy] of [["none", undefined], ["one past 15 minutes", 20 * MIN]] as const) {
+    it(`is not waited for with ${what}: no live departures, the feed read after the answer`, async () => {
+      const t = T0;
+      const store = new MemoryStore();
+      const cache = new Cache(store, () => t);
+      if (copy) await store.put("rt:carsud", { value: feed(t - copy), fetchedAt: t - copy });
+      const release = hanging();
+      const kept: Promise<unknown>[] = [];
+      const got = await realtimeKept(cache, "carsud", new Date(t), (w) => kept.push(w));
+      expect(got).toBeUndefined();
+      expect(kept.length).toBe(1);
+      await release();
+      await Promise.all(kept);
+      expect((await cache.peek<Realtime>("rt:carsud"))?.fetchedAt.getTime()).toBe(t);
+    });
+  }
+
+  it("gives a recent copy at once, past its minute read again after the answer", async () => {
+    const t = T0;
+    const store = new MemoryStore();
+    const cache = new Cache(store, () => t);
+    await store.put("rt:carsud", { value: feed(t - 3 * MIN), fetchedAt: t - 2 * MIN });
+    const release = hanging();
+    const kept: Promise<unknown>[] = [];
+    const got = await realtimeKept(cache, "carsud", new Date(t), (w) => kept.push(w));
+    expect(got?.fetchedAt.getTime()).toBe(t - 2 * MIN);
+    expect(kept.length).toBe(1);
+    await release();
+    await Promise.all(kept);
+  });
+});
+
+describe("who gets the feed already read on a stop's page (web/site.ts `keptFeed`)", () => {
+  const req = (ua: string, person = false) =>
+    new Request("https://rundata.re/bus/arret/le-tampon/casud", { headers: { "user-agent": ua, ...(person && { "accept-language": "fr-FR", "sec-fetch-mode": "navigate" }) } });
+  const CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36";
+  it("the assistants' and search engines' fetchers, the crawlers and the scripts", () => {
+    for (const ua of [
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.4; +https://openai.com/searchbot",
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.4; +https://openai.com/gptbot)",
+      "Mozilla/5.0 (compatible; SemrushBot/7~bl; +http://www.semrush.com/bot.html)",
+      "curl/8.18.0",
+      CHROME,
+    ]) expect(keptFeed(req(ua)), ua).toBe(true);
+  });
+  it("not a person's browser, nor the daily check of the sources", () => {
+    expect(keptFeed(req(CHROME, true))).toBe(false);
+    expect(keptFeed(req("rundata-check/verif"))).toBe(false);
   });
 });

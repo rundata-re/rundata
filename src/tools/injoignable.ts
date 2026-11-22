@@ -37,14 +37,14 @@ export function injoignable(site: string, keptAt: string | undefined, readAt: st
   }
   const hour = when(readAt, now);
   return {
-    texte: `${capital(site)} n'a pas répondu à notre dernière lecture (${hour}) : nous ne savons pas ce qu'il annonce en ce moment.`,
-    court: `site sans réponse à notre dernière lecture (${hour})`,
+    texte: `${capital(site)} n'a pas répondu à la dernière lecture (${hour}) : rundata.re ne sait pas ce qu'il annonce en ce moment.`,
+    court: `site sans réponse à la dernière lecture de rundata.re (${hour})`,
   };
 }
 
 /** Media not read this time, in one sentence (the page of the news, the tool's summary). `readAt`: the read that failed. */
 export const mediasNonLus = (names: string[], readAt: string, now: Date) =>
-  `Non lus cette fois : ${names.join(", ")}. Leur site n'a pas répondu à notre dernière lecture (${when(readAt, now)}) : nous ne savons pas ce qu'ils annoncent en ce moment.`;
+  `Non lus cette fois : ${names.join(", ")}. Leur site n'a pas répondu à la dernière lecture (${when(readAt, now)}) : rundata.re ne sait pas ce qu'ils annoncent en ce moment.`;
 
 /**
  * Agendas not read this time (`all`), those left to the next question for want of subrequests apart (`remises`): the
@@ -54,7 +54,7 @@ export function agendasNonLus(all: string[], remises: string[] | undefined, read
   const silent = all.filter((n) => !remises?.includes(n));
   const left = all.filter((n) => remises?.includes(n));
   return [
-    silent.length ? `Sans réponse à notre dernière lecture (${when(readAt, now)}) : ${silent.join(", ")}.` : "",
+    silent.length ? `Sans réponse à la dernière lecture de rundata.re (${when(readAt, now)}) : ${silent.join(", ")}.` : "",
     left.length ? `Lecture remise à la suivante : ${left.join(", ")}.` : "",
     `${all.length > 1 ? "Leurs" : "Ses"} événements peuvent manquer ici.`,
   ].filter(Boolean).join(" ");

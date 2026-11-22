@@ -451,7 +451,7 @@ export const siteDe = (nom: string) =>
 /** The words of a row's state: « sans réponse depuis le 24/10 »… */
 export function statutEnMots(l: Public): string {
   if (l.statut === "revenu") return `répond de nouveau depuis le ${jour(l.revenu_le ?? l.dernier_essai ?? l.premier_echec)}`;
-  if (l.statut === "bloque") return `répond, mais pas à nos lectures, depuis le ${jour(l.premier_echec)}`;
+  if (l.statut === "bloque") return `répond, mais pas aux lectures de rundata.re, depuis le ${jour(l.premier_echec)}`;
   return `sans réponse depuis le ${jour(l.premier_echec)}`;
 }
 

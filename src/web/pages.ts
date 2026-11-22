@@ -1638,7 +1638,7 @@ function share(origin: string, head: Head): string {
   const facebook = has("Facebook"), channel = has("WhatsApp");
   const promises = [
     facebook && `une info utile chaque matin sur ${link(facebook)}`,
-    channel && `les sorties du week-end le vendredi sur notre ${link(channel, "chaîne WhatsApp")}`,
+    channel && `les sorties du week-end le vendredi sur sa ${link(channel, "chaîne WhatsApp")}`,
   ].filter((x): x is string => !!x);
   const others = followed().filter((s) => !["Facebook", "WhatsApp", "GitHub"].includes(s.nom)).map((s) => link(s));
   const list = others.length > 1 ? `${others.slice(0, -1).join(", ")} et ${others.at(-1)}` : others[0];

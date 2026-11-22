@@ -61,7 +61,7 @@ export function ouvrirDonneesPage(origin: string, alerte?: Alerte): string {
   <h2 id="loi">7. Pour les communes et les administrations, c'est aussi la loi</h2>
   <p>La loi pour une République numérique du 7 octobre 2016 vise les administrations de 50 agents ou plus (en équivalents temps plein) et, pour une collectivité, d'au moins 3 500 habitants. Elles publient en ligne, entre autres, leurs bases de données mises à jour régulièrement, et les données dont la publication présente un intérêt économique, social, sanitaire ou environnemental (articles L312-1-1 et D312-1-1-1 du code des relations entre le public et l'administration). Les 24 communes de La Réunion comptent toutes plus de 3 500 habitants. Ce guide aide aussi à remplir cette obligation, simplement.</p>
   <h2 id="rundata">8. Et rundata.re\u00a0?</h2>
-  <p>Si vos informations sont publiées ainsi, rundata.re peut les reprendre en citant votre nom, votre page et l'heure de la lecture. Une question, ou envie que nous lisions votre flux\u00a0? Écrivez à ${lienAdresse("mailto:contact@rundata.re", "contact@rundata.re")}.</p>
+  <p>Si vos informations sont publiées ainsi, rundata.re peut les reprendre en citant votre nom, votre page et l'heure de la lecture. Une question, ou envie que votre flux soit lu\u00a0? Écrivez à ${lienAdresse("mailto:contact@rundata.re", "contact@rundata.re")}.</p>
 </section>`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, CRUMB, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte }, band, body);
 }

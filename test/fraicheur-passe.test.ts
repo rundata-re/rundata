@@ -20,7 +20,7 @@ describe("the time an answer says it read its data", () => {
     expect(f.lue_a).toBe("31/10 01:17");
     expect(f.age).toBe("il y a 59 min");
     expect(f.copies_de_secours).toEqual([{ source: "Programmes des salles", lue_le: "30/10 23:57" }]);
-    expect(f.avertissement).toContain("date de notre lecture du 30/10 à 23:57");
+    expect(f.avertissement).toContain("date de la lecture du 30/10 à 23:57");
     // Every part a copy: the oldest of them, as before.
     expect(fraicheur({}, [halls], now, { nom: () => "Programmes des salles" }).lue_a).toBe("30/10 23:57");
   });

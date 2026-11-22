@@ -113,7 +113,7 @@ describe("sharing and following", () => {
     const html = placePage(O, pageOf("cilaos")!, null, NOW);
     const text = "Météo Cilaos en direct et prévisions : https://rundata.re/meteo/cilaos?ref=wa";
     expect(html).toContain(`<a class="sh wa" href="https://wa.me/?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">Partager sur WhatsApp`);
-    expect(html).toContain(`<p>Suivez rundata.re\u00a0: une info utile chaque matin sur <a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener">Facebook</a>, les sorties du week-end le vendredi sur notre <a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener">chaîne WhatsApp</a>. Aussi sur <a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener">Instagram</a>, <a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener">Threads</a>, <a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener">TikTok</a>, <a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener">YouTube</a> et <a href="https://x.com/rundata_re?ref=site" rel="noopener">X</a>.</p>`);
+    expect(html).toContain(`<p>Suivez rundata.re\u00a0: une info utile chaque matin sur <a href="https://www.facebook.com/rundata.re?ref=site" rel="noopener">Facebook</a>, les sorties du week-end le vendredi sur sa <a href="https://www.whatsapp.com/channel/0029VbEDFav5Ui2agqGyG63Q?ref=site" rel="noopener">chaîne WhatsApp</a>. Aussi sur <a href="https://www.instagram.com/rundata.re/?ref=site" rel="noopener">Instagram</a>, <a href="https://www.threads.com/@rundata.re?ref=site" rel="noopener">Threads</a>, <a href="https://www.tiktok.com/@rundatare?ref=site" rel="noopener">TikTok</a>, <a href="https://www.youtube.com/@rundatare?ref=site" rel="noopener">YouTube</a> et <a href="https://x.com/rundata_re?ref=site" rel="noopener">X</a>.</p>`);
     expect(html.indexOf('class="share wrap"')).toBeLessThan(html.indexOf('id="avis"'));
   });
 
@@ -127,18 +127,18 @@ describe("sharing and following", () => {
       only("Facebook", "Instagram");
       expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook. Aussi sur Instagram.");
       only("Facebook", "WhatsApp");
-      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur sa chaîne WhatsApp.");
       only("Facebook", "WhatsApp", "Instagram", "Threads", "TikTok", "YouTube", "X", "GitHub");
-      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur notre chaîne WhatsApp. Aussi sur Instagram, Threads, TikTok, YouTube et X.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: une info utile chaque matin sur Facebook, les sorties du week-end le vendredi sur sa chaîne WhatsApp. Aussi sur Instagram, Threads, TikTok, YouTube et X.");
       // No rhythm is promised for the networks after « Aussi sur »; a list of where rundata.re is, joined by « et ».
       only("Threads");
       expect(sentence()).toBe("Suivez rundata.re sur Threads.");
       only("Threads", "X");
       expect(sentence()).toBe("Suivez rundata.re sur Threads et X.");
       only("Instagram", "WhatsApp");
-      expect(sentence()).toBe("Suivez rundata.re\u00a0: les sorties du week-end le vendredi sur notre chaîne WhatsApp. Aussi sur Instagram.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: les sorties du week-end le vendredi sur sa chaîne WhatsApp. Aussi sur Instagram.");
       only("WhatsApp");
-      expect(sentence()).toBe("Suivez rundata.re\u00a0: les sorties du week-end le vendredi sur notre chaîne WhatsApp.");
+      expect(sentence()).toBe("Suivez rundata.re\u00a0: les sorties du week-end le vendredi sur sa chaîne WhatsApp.");
       only("GitHub");
       expect(placePage(O, pageOf("cilaos")!, null, NOW).match(/<aside class="share wrap"[^]*?<\/aside>/)![0]).not.toContain("Suivez");
       only();

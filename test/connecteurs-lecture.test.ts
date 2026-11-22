@@ -172,7 +172,7 @@ describe("the scheduled reading of a linked association", () => {
     expect(r).toMatchObject({ issue: "echec", rappel: true });
     expect(sent).toHaveLength(1);
     expect(sent[0].subject).toBe("Club de pétanque du Tampon\u00a0: reliez à nouveau votre compte HelloAsso");
-    expect(sent[0].text).toContain("Depuis le 03/10/2026, nous n'arrivons plus à lire les événements de Club de pétanque du Tampon sur HelloAsso. Sans lecture d'ici le 02/11/2026, la connexion expirera");
+    expect(sent[0].text).toContain("Depuis le 03/10/2026, rundata.re n'arrive plus à lire les événements de Club de pétanque du Tampon sur HelloAsso. Sans lecture d'ici le 02/11/2026, la connexion expirera");
     const second = /https:\/\/rundata\.re\/associations\/connexion\/([\w-]+)\/retirer\n/.exec(sent[0].text)![1];
     expect(rows("SELECT jeton_retrait IS NOT NULL AS j FROM connexions")).toEqual([{ j: 1 }]);
     expect(JSON.stringify(rows("SELECT * FROM connexions"))).not.toContain(second);

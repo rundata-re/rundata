@@ -15,7 +15,7 @@ import { GUIDE, INTRO, KREOL, REFERENCER_FORMULAIRE } from "./publier-texte.js";
 
 export const PATH = "/publier";
 export const TITLE = "Publier agenda et données en open data · guide gratuit";
-export const META = "Mairies, associations, organisateurs\u00a0: publiez votre agenda en flux ouvert, gratuitement, avec nos tutos pas à pas. Google, assistants IA, rundata.re.";
+export const META = "Mairies, associations, organisateurs\u00a0: publiez votre agenda en flux ouvert, gratuitement, avec des tutos pas à pas. Google, assistants IA, rundata.re.";
 const H1 = "Publiez votre agenda et vos données\u00a0: le guide";
 export const MAILTO = "mailto:contact@rundata.re?subject=Flux%20%C3%A0%20r%C3%A9f%C3%A9rencer";
 
@@ -30,7 +30,7 @@ const LABEL = {
   // After « rundata.re : » in the tutorials, as in the table: the name is not said twice.
   lu: ["Déjà lu", "Déjà lu"],
   bientot: ["Bientôt lu", "Bientôt lu"],
-  demande: ["Sur demande", "Sur demande : écrivez-nous"],
+  demande: ["Sur demande", "Sur demande : écrivez à rundata.re"],
 } as const;
 
 function etat(kind: string, short: boolean): string {

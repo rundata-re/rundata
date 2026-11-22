@@ -289,13 +289,13 @@ describe("a mairie that does not answer", () => {
     // Nothing kept: its read said failed.
     const bare = await courantCopy();
     const unread = courantBlock({ value: bare, fetchedAt: NOW, stale: false }, "Sainte-Marie", NOW);
-    expect(unread.injoignable?.[0]).toMatchObject({ texte: "Le site de la mairie de Sainte-Marie n'a pas répondu à notre dernière lecture (le 24/10 à 14:00) : nous ne savons pas ce qu'il annonce en ce moment.", court: "site sans réponse à notre dernière lecture (le 24/10 à 14:00)" });
+    expect(unread.injoignable?.[0]).toMatchObject({ texte: "Le site de la mairie de Sainte-Marie n'a pas répondu à la dernière lecture (le 24/10 à 14:00) : rundata.re ne sait pas ce qu'il annonce en ce moment.", court: "site sans réponse à la dernière lecture de rundata.re (le 24/10 à 14:00)" });
     expect(unread.note).toBeUndefined();
     expect(JSON.stringify(unread)).not.toMatch(/Sainte-Marie ne publie pas|Aucun avis/);
     // The day's summary says it too, instead of nothing.
     const day = resume(pageOf("sainte-marie")!, { courant: { value: bare, fetchedAt: NOW, stale: false } } as never, NOW);
     expect(day.coupures_electricite?.injoignable?.texte).toBe(unread.injoignable?.[0].texte);
-    expect(aujourdhuiPage("https://rundata.re", pageOf("sainte-marie")!, day, null)).toContain("n&#39;a pas répondu à notre dernière lecture");
+    expect(aujourdhuiPage("https://rundata.re", pageOf("sainte-marie")!, day, null)).toContain("n&#39;a pas répondu à la dernière lecture");
   });
 });
 

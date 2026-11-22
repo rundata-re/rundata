@@ -37,7 +37,7 @@ export function connecteurPage(origin: string, alerte?: Alerte): string {
 </div></div>`;
   const body = `<section aria-labelledby="h-offres">
   <div class="sec-h"><p class="eyebrow">Avant de commencer</p><h2 id="h-offres">Quelle offre, quel réglage</h2>
-  <p>D'après l'aide de chaque assistant, vérifiée le <time datetime="${VERIFIE}">${VERIFIE_TEXTE}</time>. Ces conditions changent souvent : si un menu a bougé, dites-le-nous avec le formulaire en bas de page.</p></div>
+  <p>D'après l'aide de chaque assistant, vérifiée le <time datetime="${VERIFIE}">${VERIFIE_TEXTE}</time>. Ces conditions changent souvent : si un menu a bougé, dites-le à rundata.re avec le formulaire en bas de page.</p></div>
   <div class="three">
     <div class="card"><h3>Claude</h3><p><b>Offre :</b> toutes, y compris la gratuite.</p><p><b>Où :</b> rundata.re est disponible dans l'annuaire des connecteurs de Claude : <a href="https://claude.ai/directory/rundata-re">ouvrez sa fiche</a>, puis <b>Connecter</b>.</p><p><b>Autre façon :</b> <b>Personnaliser → Connecteurs → + → Ajouter un connecteur personnalisé</b>, avec l'adresse ci-dessus (sur l'offre gratuite, un seul connecteur personnalisé).</p></div>
     <div class="card"><h3>ChatGPT</h3><p><b>Offre :</b> Business, Enterprise et Edu d'après l'aide d'OpenAI ; testé aussi avec ChatGPT Go. Sur les autres offres, le menu peut manquer.</p><p><b>Où :</b> sur chatgpt.com, depuis un ordinateur, <b>Plugins → Ajouter → Ajouter un serveur MCP personnalisé</b>.</p><p><b>Ensuite :</b> nommez rundata.re dans la question (« Avec rundata.re : … ») ou tapez <b>@</b> et choisissez-le.</p></div>

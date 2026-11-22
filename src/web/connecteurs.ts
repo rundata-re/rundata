@@ -56,7 +56,7 @@ const ERREURS = {
   refuse: "HelloAsso n'a pas reconnu ces clés. Vérifiez que vous avez copié l'identifiant client et le secret client en entier, sans espace avant ou après.",
   association: "Ces clés ne sont rattachées à aucune association sur HelloAsso. Utilisez les clés d'un compte administrateur de l'association.",
   hors_ile: "Cette association n'a pas son adresse à La Réunion (code postal en 974) sur HelloAsso. rundata.re reprend seulement les associations de l'île.",
-  indisponible: "La vérification n'a pas pu se faire pour l'instant. Rien n'a été gardé. Réessayez dans quelques minutes\u00a0; si ça dure, écrivez-nous\u00a0: contact@rundata.re",
+  indisponible: "La vérification n'a pas pu se faire pour l'instant. Rien n'a été gardé. Réessayez dans quelques minutes\u00a0; si ça dure, écrivez à contact@rundata.re",
   expire: "La vérification a expiré. Rien n'a été gardé\u00a0: collez à nouveau vos clés et vérifiez-les. Par sécurité, une vérification ne vaut que 30 minutes.",
   limite: "Plus aucune vérification n'est possible aujourd'hui. Rien n'a été gardé\u00a0: réessayez demain, ou écrivez à contact@rundata.re.",
 } as const;
@@ -71,7 +71,7 @@ const FAUX: Record<string, string> = {
 
 // The open data, only when the association ticks it (HelloAsso agreed in writing, 29/10/2026): never ticked beforehand.
 const OUVERT = "Mettre aussi nos événements dans les données ouvertes de rundata.re (facultatif)";
-const OUVERT_AIDE = "Ils seront alors dans nos agendas ouverts (fichiers ICS et JSON), sous Licence Ouverte 2.0\u00a0: chacun pourra les reprendre, y compris pour un usage commercial, en citant votre association. Sans cette case, ils s'affichent sur rundata.re et dans les assistants IA, mais pas dans ces fichiers. Si vous retirez l'accès, ils en sortent aussi\u00a0; une copie déjà faite par quelqu'un d'autre reste sous la licence.";
+const OUVERT_AIDE = "Ils seront alors dans les agendas ouverts du site (fichiers ICS et JSON), sous Licence Ouverte 2.0\u00a0: chacun pourra les reprendre, y compris pour un usage commercial, en citant votre association. Sans cette case, ils s'affichent sur rundata.re et dans les assistants IA, mais pas dans ces fichiers. Si vous retirez l'accès, ils en sortent aussi\u00a0; une copie déjà faite par quelqu'un d'autre reste sous la licence.";
 
 type Formulaire = { f?: URLSearchParams; erreur?: Erreur; faux?: string[] };
 
@@ -88,7 +88,7 @@ function formulaire(e: Formulaire): string {
   return `<form class="card fo" method="post" action="${RELIER_PATH}" novalidate>
   ${top}
   <div class="f"><label for="r-plateforme">Votre plateforme</label><select id="r-plateforme" name="plateforme" required><option value="helloasso" selected>HelloAsso</option></select>
-    <p class="aide">D'autres plateformes viendront. Votre association en utilise une autre\u00a0? Dites-le-nous\u00a0: ${adresseTexte("contact@rundata.re")}</p></div>
+    <p class="aide">D'autres plateformes viendront. Votre association en utilise une autre\u00a0? Écrivez à ${adresseTexte("contact@rundata.re")}</p></div>
   <section aria-labelledby="h-ou">
     <h3 id="h-ou">Où trouver vos clés\u00a0?</h3>
     <ol>
@@ -102,7 +102,7 @@ function formulaire(e: Formulaire): string {
   <div class="f"><label for="r-secret">Secret client (client secret)</label><input id="r-secret" name="client_secret" type="password" required maxlength="${CLE_MAX}" autocomplete="off" spellcheck="false"${bad("client_secret")}>${note("client_secret")}</div>
   <div class="f"><label for="r-email">Adresse e-mail <span class="aide bloc">Le lien de confirmation y est envoyé, puis le lien pour retirer l'accès. Elle n'est jamais publiée.</span></label><input id="r-email" name="email" type="email" value="${v("email")}" required maxlength="254" autocomplete="email"${bad("email")}>${note("email")}</div>
   <div class="card lu">
-    <p>Nous lisons seulement vos événements publics\u00a0: le titre, les dates, le lieu, le prix, le lien et le début de la description. Nous ne lisons jamais vos commandes, paiements, dons, participants ni adhérents, même si vos clés le permettent. Vos clés ne sont pas gardées\u00a0: elles servent une seule fois, à obtenir un jeton d'accès, que nous gardons chiffré et effaçons dès que vous retirez l'accès.</p>
+    <p>rundata.re lit seulement vos événements publics\u00a0: le titre, les dates, le lieu, le prix, le lien et le début de la description. Il ne lit jamais vos commandes, paiements, dons, participants ni adhérents, même si vos clés le permettent. Vos clés ne sont pas gardées\u00a0: elles servent une seule fois, à obtenir un jeton d'accès, qu'il garde chiffré et efface dès que vous retirez l'accès.</p>
   </div>
   <div class="f"><label class="case"><input type="checkbox" name="ouvert" value="oui"${f.get("ouvert") === "oui" ? " checked" : ""}> ${OUVERT}</label>
     <p class="aide">${OUVERT_AIDE}</p></div>
@@ -135,13 +135,13 @@ function cestBienNous(a: connexions.Attente, scelle: string, dejaReliee: boolean
   const o = a.organisation;
   return `<section class="card fo" aria-labelledby="h-nous">
   <h2 id="h-nous">C'est bien votre association\u00a0?</h2>
-  <p>HelloAsso nous dit que ces clés administrent cette association\u00a0:</p>
+  <p>HelloAsso indique que ces clés administrent cette association\u00a0:</p>
   <ul>
     <li><b>${esc(o.nom)}</b></li>
     ${o.commune ? `<li>${esc(o.commune)}</li>` : ""}
     <li><a href="${esc(o.lien)}" rel="noopener">Votre page HelloAsso</a></li>
   </ul>
-  <p>Dans nos données ouvertes\u00a0: ${a.ouvert ? "oui" : "non"}</p>
+  <p>Dans les données ouvertes de rundata.re\u00a0: ${a.ouvert ? "oui" : "non"}</p>
   <p>En confirmant, vous recevrez un e-mail à ${esc(a.email)}. Rien ne s'affiche avant que vous ayez confirmé avec le lien qu'il contient.</p>
   ${dejaReliee ? `<p class="msg vu" role="status">Cette association est déjà reliée à rundata.re. Si vous confirmez, la nouvelle connexion remplacera l'ancienne, et l'adresse e-mail donnée la première fois en sera prévenue.</p>` : ""}
   <form class="fo" method="post" action="${CONFIRMER_PATH}">
@@ -234,13 +234,13 @@ export async function connexion(request: Request, now = new Date(), alerte?: Ale
     if (!c) return page("Retirer l'accès de rundata.re", EFFACEE, 404);
     if (!post) {
       const depuis = c.confirme_le ? ` depuis le ${jourDe(c.confirme_le)}` : "";
-      return page("Retirer l'accès de rundata.re", `<section class="card fo"><p>L'association ${esc(c.nom)} est reliée à rundata.re${depuis}. Si vous retirez l'accès, le jeton d'accès et votre adresse sont effacés tout de suite, et vos événements ne s'affichent plus sur rundata.re${c.ouvert ? " ni dans nos données ouvertes" : ""}.</p>
+      return page("Retirer l'accès de rundata.re", `<section class="card fo"><p>L'association ${esc(c.nom)} est reliée à rundata.re${depuis}. Si vous retirez l'accès, le jeton d'accès et votre adresse sont effacés tout de suite, et vos événements ne s'affichent plus sur rundata.re${c.ouvert ? " ni dans ses données ouvertes" : ""}.</p>
   <form class="fo" method="post" action="${esc(action)}"><button type="submit">Retirer l'accès</button></form></section>`);
     }
     const fait = await connexions.retirer(secret);
     if (!fait) return page("Retirer l'accès de rundata.re", EFFACEE, 404);
     await apres?.().catch(() => {});
-    return page("Retirer l'accès de rundata.re", `<section class="card fo"><p>C'est fait. Le jeton d'accès et votre adresse sont effacés, et les événements de ${esc(fait.nom)} ne s'affichent plus sur rundata.re${fait.ouvert ? " ni dans nos données ouvertes" : ""}. Un e-mail vous le confirme. Pour relier à nouveau votre association\u00a0: <a href="/associations">la page Clubs et associations</a>.</p></section>`);
+    return page("Retirer l'accès de rundata.re", `<section class="card fo"><p>C'est fait. Le jeton d'accès et votre adresse sont effacés, et les événements de ${esc(fait.nom)} ne s'affichent plus sur rundata.re${fait.ouvert ? " ni dans ses données ouvertes" : ""}. Un e-mail vous le confirme. Pour relier à nouveau votre association\u00a0: <a href="/associations">la page Clubs et associations</a>.</p></section>`);
   }
 
   if (!c || c.etat !== "a_confirmer") {
@@ -257,5 +257,5 @@ export async function connexion(request: Request, now = new Date(), alerte?: Ale
   return ok ? page("C'est confirmé", confirme(ok)) : page("Confirmer la connexion", `<section class="card fo"><p>${esc(ERREURS.indisponible)}</p></section>`, 503);
 }
 
-const confirme = (c: connexions.Connexion) => `<section class="card fo"><p>Merci. Nous vérifions une fois que ${esc(c.nom)} est bien une association de l'île, en général sous 24 heures. Ensuite, ses événements publics HelloAsso s'affichent sur rundata.re, relus toutes les 6 heures, sans autre démarche de votre part.</p>
+const confirme = (c: connexions.Connexion) => `<section class="card fo"><p>Merci. rundata.re vérifie une fois que ${esc(c.nom)} est bien une association de l'île, en général sous 24 heures. Ensuite, ses événements publics HelloAsso s'affichent sur le site, relus toutes les 6 heures, sans autre démarche de votre part.</p>
   <p class="note">Pour retirer l'accès plus tard, gardez l'e-mail\u00a0: il contient le lien.</p></section>`;

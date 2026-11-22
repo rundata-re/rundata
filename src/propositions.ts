@@ -289,7 +289,7 @@ export function messageConfirmation(p: Proposition, lien: string): { subject: st
       "Pour le voir et le confirmer, ouvrez ce lien\u00a0:",
       lien,
       "",
-      "Nous le relisons ensuite, en général sous 24 heures, avant qu'il s'affiche. Gardez ce message\u00a0: le même lien vous permet ensuite de corriger l'événement, de l'annuler ou de le reporter.",
+      "rundata.re le relit ensuite, en général sous 24 heures, avant qu'il s'affiche. Gardez ce message\u00a0: le même lien vous permet ensuite de corriger l'événement, de l'annuler ou de le reporter.",
       "",
       "Ce n'est pas vous\u00a0? Ignorez ce message\u00a0: sans confirmation, la proposition et votre adresse sont effacées sous 48 heures.",
       "",

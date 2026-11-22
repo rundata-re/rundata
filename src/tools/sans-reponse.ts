@@ -5,7 +5,7 @@ import { SITE_URL } from "./citer.js";
 import { text } from "./format.js";
 import { why } from "../types.js";
 
-const STATUTS = { injoignable: "sans réponse", bloque: "répond, mais pas à nos lectures", revenu: "répond de nouveau" } as const;
+const STATUTS = { injoignable: "sans réponse", bloque: "répond, mais pas aux lectures de rundata.re", revenu: "répond de nouveau" } as const;
 
 const plain = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[’']/g, " ").replace(/\s+/g, " ").trim();
 

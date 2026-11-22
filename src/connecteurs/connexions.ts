@@ -272,9 +272,9 @@ export function messageConfirmation(o: Organisation, plateforme: string, confirm
       "Pour confirmer, ouvrez ce lien\u00a0:",
       confirmation,
       "",
-      `Nous vérifions ensuite une fois que c'est bien une association de l'île, en général sous 24 heures. Ses événements publics ${plateforme} s'affichent alors sur rundata.re, relus toutes les 6 heures.`,
+      `rundata.re vérifie ensuite une fois que c'est bien une association de l'île, en général sous 24 heures. Les événements publics ${plateforme} de l'association s'affichent alors sur le site, relus toutes les 6 heures.`,
       "",
-      "Nous lisons seulement vos événements publics. Nous ne lisons jamais vos commandes, paiements, dons, participants ni adhérents.",
+      "rundata.re lit seulement vos événements publics. Il ne lit jamais vos commandes, paiements, dons, participants ni adhérents.",
       "",
       "Gardez ce message. Pour retirer l'accès, à tout moment\u00a0:",
       retrait,
@@ -312,7 +312,7 @@ export function messageRappel(nom: string, plateforme: string, depuis: string, e
     text: [
       "Bonjour,",
       "",
-      `Depuis le ${depuis}, nous n'arrivons plus à lire les événements de ${nom} sur ${plateforme}. Sans lecture d'ici le ${expire}, la connexion expirera et vos événements ne s'afficheront plus sur rundata.re.`,
+      `Depuis le ${depuis}, rundata.re n'arrive plus à lire les événements de ${nom} sur ${plateforme}. Sans lecture d'ici le ${expire}, la connexion expirera et vos événements ne s'afficheront plus sur le site.`,
       "",
       `Pour la garder, reliez à nouveau votre compte, avec vos clés ${plateforme} (2 minutes)\u00a0:`,
       "https://rundata.re/associations",
@@ -331,7 +331,7 @@ export function messageExpiree(nom: string, plateforme: string, depuis: string):
     text: [
       "Bonjour,",
       "",
-      `Nous n'avons pas pu lire les événements de ${nom} sur ${plateforme} depuis le ${depuis}. La connexion a expiré\u00a0: vos événements ne s'affichent plus sur rundata.re, et le jeton d'accès et votre adresse sont effacés.`,
+      `rundata.re n'a pas pu lire les événements de ${nom} sur ${plateforme} depuis le ${depuis}. La connexion a expiré\u00a0: vos événements ne s'affichent plus sur le site, et le jeton d'accès et votre adresse sont effacés.`,
       "",
       "Pour relier à nouveau votre association\u00a0: https://rundata.re/associations",
       ...SIGNATURE,
@@ -347,7 +347,7 @@ export function messageRemplacee(nom: string, plateforme: string): { subject: st
       "",
       `Quelqu'un a relié à nouveau le compte ${plateforme} de ${nom} à rundata.re, avec une autre adresse e-mail, et l'a confirmé. Cette nouvelle connexion remplace la vôtre\u00a0: votre adresse et l'ancien jeton d'accès sont effacés.`,
       "",
-      "Si vous ne connaissez pas cette démarche, écrivez-nous\u00a0: contact@rundata.re",
+      "Si vous ne connaissez pas cette démarche, écrivez à contact@rundata.re",
       ...SIGNATURE,
     ].join("\n"),
   };

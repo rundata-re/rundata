@@ -63,7 +63,7 @@ const section = (...p: string[]) => `<section class="card fo">
 </section>`;
 
 const proposer = `<a class="btn sun" href="${PROPOSER_PATH}?ref=club">Proposer un événement</a>`;
-const PAS_TROUVE = `<p>Nous ne trouvons pas ce club dans les annuaires officiels. Vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>
+const PAS_TROUVE = `<p>rundata.re ne trouve pas ce club dans les annuaires officiels. Vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>
   <p>${proposer}</p>`;
 
 // ---------------------------------------------------------------- screen 1
@@ -81,7 +81,7 @@ function recherche(clubs: readonly espace.ClubVu[], q: string): string {
   return `<form class="card fo" method="get" action="${CLUB_PATH}" role="search">
   <div class="f"><label for="c-q">Le nom de votre club ou association</label>
     <input id="c-q" name="q" value="${esc(q)}" list="c-clubs" maxlength="${Q_MAX}" minlength="${espace.RECHERCHE_MIN}" autocomplete="off" required aria-describedby="c-aide">
-    <p class="aide" id="c-aide">Tapez les premières lettres : nous cherchons dans les annuaires officiels des clubs et associations.</p></div>
+    <p class="aide" id="c-aide">Tapez les premières lettres : la recherche se fait dans les annuaires officiels des clubs et associations.</p></div>
   <datalist id="c-clubs">${clubs.map((c) => `<option value="${esc(c.nom)}">${esc([c.commune, c.activite].filter(Boolean).join(" · "))}</option>`).join("")}</datalist>
   <button type="submit">Chercher</button>
   ${results}
@@ -100,9 +100,9 @@ export async function trouver(request: Request, alerte?: Alerte): Promise<Respon
 // ---------------------------------------------------------------- screen 2
 
 /** Screen 1, when the list of the clubs cannot be read. */
-const LISTE_INDISPONIBLE = "La liste des clubs ne répond pas pour l'instant. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à contact@rundata.re.";
+const LISTE_INDISPONIBLE = "La liste des clubs ne répond pas pour l'instant. Réessayez dans quelques minutes ; si ça dure, écrivez à contact@rundata.re.";
 /** Screen 2 and the send, when the address cannot be read or the link not sent. */
-const INDISPONIBLE = "La vérification de l'adresse ne répond pas pour l'instant. Rien n'a été envoyé. Réessayez dans quelques minutes ; si ça dure, écrivez-nous à contact@rundata.re.";
+const INDISPONIBLE = "La vérification de l'adresse ne répond pas pour l'instant. Rien n'a été envoyé. Réessayez dans quelques minutes ; si ça dure, écrivez à contact@rundata.re.";
 /** Past a daily cap: whose, said truly. */
 const LIMITES: Record<espace.Limite, string> = {
   limite: "Trop de liens ont été demandés aujourd'hui pour ce club. Rien n'a été envoyé : utilisez le dernier e-mail reçu, ou réessayez demain.",
@@ -113,16 +113,16 @@ const LIMITES: Record<espace.Limite, string> = {
 /** « Nous envoyons un lien à l'adresse que … : », by level. */
 function quelleAdresse(c: espace.Club): string {
   const federation = espace.FEDERATIONS[c.source];
-  if (federation) return `Nous envoyons un lien à l'adresse que ${federation} a créée pour votre club :`;
-  return `Nous envoyons un lien à l'adresse que nous avons vérifiée avec vous le ${espace.jourMois(c.adresse_le ?? 0)} :`;
+  if (federation) return `rundata.re envoie un lien à l'adresse que ${federation} a créée pour votre club :`;
+  return `rundata.re envoie un lien à l'adresse vérifiée avec vous le ${espace.jourMois(c.adresse_le ?? 0)} :`;
 }
 
 /** « Ce n'est plus la bonne adresse ? », by level. */
 function plusLaBonne(c: espace.Club): string {
   const federation = espace.FEDERATIONS[c.source];
   const texte = federation
-    ? `<p>Pour votre sécurité, nous n'utilisons que l'adresse donnée par ${esc(federation)}. Faites-la corriger par ${esc(federation)}, puis revenez.</p>`
-    : `<p>Écrivez-nous depuis <a href="/associations">la page Associations</a> : nous vérifions la nouvelle adresse avec vous. En attendant, vous pouvez proposer vos dates avec le formulaire habituel.</p>
+    ? `<p>Pour votre sécurité, rundata.re n'utilise que l'adresse donnée par ${esc(federation)}. Faites-la corriger par ${esc(federation)}, puis revenez.</p>`
+    : `<p>Écrivez à rundata.re depuis <a href="/associations">la page Associations</a> : la nouvelle adresse est vérifiée avec vous. En attendant, vous pouvez proposer vos dates avec le formulaire habituel.</p>
     <p>${proposer}</p>`;
   return `<details class="note"><summary>Ce n'est plus la bonne adresse ?</summary>
     ${texte}
@@ -135,7 +135,7 @@ function sansAdresse(c: espace.Club): string {
   return section(
     federation
       ? `<p>La page de votre club chez ${esc(federation)} ne donne plus l'adresse que la fédération a créée pour lui. Rien n'a été envoyé. Faites-la corriger par ${esc(federation)}, puis revenez.</p>`
-      : `<p>Nous n'avons plus d'adresse vérifiée pour ce club. Rien n'a été envoyé. Écrivez-nous depuis <a href="/associations">la page Associations</a> : nous la vérifions avec vous.</p>`,
+      : `<p>rundata.re n'a plus d'adresse vérifiée pour ce club. Rien n'a été envoyé. Écrivez depuis <a href="/associations">la page Associations</a> : l'adresse est vérifiée avec vous.</p>`,
     `<p>En attendant, vous pouvez proposer vos dates avec le formulaire habituel : elles sont relues avant de s'afficher.</p>`,
     `<p>${proposer}</p>`,
   );

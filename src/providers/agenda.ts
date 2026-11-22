@@ -244,6 +244,8 @@ export interface Agenda {
   id: string;
   nom: string;
   source: SourceInfo;
+  /** The site it is read on, when its source reads others too: the host the list of the sites that do not answer names after it. */
+  adresse?: string;
   /** The commune of a mairie's agenda, for an event that names no other. */
   commune?: string;
   /** The communes whose agenda this is, when not only `commune` (an intercommunality's): what COVERED is made of. */
@@ -452,6 +454,7 @@ export function tribe(id: string, nom: string, site: string, commune: string | u
     nom,
     source,
     commune,
+    adresse: site,
     load: (cache, now) =>
       cache.get(`agenda:${id}`, FRESH_SECONDS, async () => {
         if (ical?.seul) return exporte(now);
@@ -650,6 +653,7 @@ function rss(id: string, nom: string, url: string, commune: string, source?: Sou
     nom,
     source: from,
     commune,
+    adresse: url,
     load: (cache) => cache.get(`agenda:${id}`, FRESH_SECONDS, async () => parseRss(await getText(from.id, url, TIMEOUT_MS, HEADERS), nom, commune, !!source)),
   };
 }
@@ -1897,6 +1901,15 @@ const mairiesLues = AGENDAS.filter((a) => a.source === SOURCES.mairies).map((a) 
 const listed = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} et ${xs.at(-1)}` : xs.join(""));
 SOURCES.mairies.nom = `Agendas des mairies ${listed(mairiesLues.map(de))}`;
 SOURCES.mairies.attribution = `Villes ${listed(mairiesLues.map(de))}`;
+/**
+ * Each mairie's site among the mairies' agendas, as the list of the sites that do not answer names it (sans-reponse.ts):
+ * the mairie and its own agenda as what is missing, never the agendas of all (21/11/2026: the row of letampon.fr named
+ * « Communes de La Réunion », with the three mairies' agendas).
+ */
+export const HOTES_AGENDAS = Object.fromEntries(AGENDAS.filter((a) => a.source === SOURCES.mairies && a.adresse).map((a) => [
+  new URL(a.adresse!).hostname.replace(/^www\./, ""),
+  { nom: a.nom, manque: `Agenda ${/^(?:Ville|Mairie|Commune)\b/u.test(a.nom) ? `de la ${a.nom}` : de(a.nom)}`, source: SOURCES.mairies.id },
+]));
 // The same for the halls: those read only.
 const sallesLues = AGENDAS.filter((a) => a.source === SALLES_SOURCE).map((a) => a.nom);
 // One hall: « Programme du Séchoir » (marketing).

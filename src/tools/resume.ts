@@ -521,7 +521,8 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     f?.temperature_min && f.temperature_max
       ? `${forecastAway ? `prévision du centre ${de(nom)}${f.periode ? ` ${f.periode}` : " du jour"}\u00a0: ` : f.periode ? `prévision ${f.periode}\u00a0: ` : "prévision du jour "}${fourchette(f.temperature_min, f.temperature_max)}${f.ciel_en_journee ? `, ${f.ciel_en_journee}` : ""}`
       : "",
-    v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique}` : ""}` : "",
+    // The alert's own full stop dropped too: the summary's « ; » follows it (1602, 23/11/2026).
+    v ? `${v.maintenant.replace(/\.$/, "")}${v.alerte_cyclonique ? `, ${v.alerte_cyclonique.replace(/\.$/, "")}` : ""}` : "",
     v?.ecoles ? v.ecoles.replace(/\.$/, "") : "",
     volc?.texte ?? "",
     dry ? "" : waterText,

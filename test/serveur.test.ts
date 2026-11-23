@@ -141,7 +141,9 @@ describe("the server's instructions", () => {
     // 39 563 the same day with Cilaos, Saint-Philippe and Sainte-Suzanne among the mairies whose notices of power cuts
     // electricite reads, as the communes' public information, and « les mairies » alone.
     // 39 664 the same day with the field radiers of crues_rivieres, the headlines on the fords that /crues shows.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_670);
+    // 39 764 on 23/11/2026 with the open procurement notices of a commune in annuaire_services_publics (a few words): no
+    // tool answered « marchés publics » or « appels d'offres », which got the markets.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_770);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

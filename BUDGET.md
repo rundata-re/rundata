@@ -438,7 +438,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | calendrier | providers/calendrier |
 | velos_libre_service | providers/velos |
 | maree | providers/arome, providers/calendrier, providers/ensemble, providers/maregraphes, providers/mf-auth, providers/openmeteo, providers/uv |
-| annuaire_services_publics | providers/annuaire, providers/carburants, providers/tco |
+| annuaire_services_publics | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/arretes-travaux, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
 | restrictions_eau | providers/vigieau |
 | bornes_recharge | providers/irve |
 | qualite_air | providers/air-mesures, providers/atmo, providers/capteurs |

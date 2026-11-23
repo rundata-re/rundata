@@ -517,7 +517,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Aussi les prix maximum des carburants et de la bouteille de gaz du mois, " +
         "(quoi = « carburant », « essence », « gazole », « gaz »), les pharmacies et les hôpitaux les plus proches " +
         "(quoi = « pharmacie », « médecin de garde », « urgences », « hôpital ») : la pharmacie de garde n'est connue que de 3237.fr et du 32 37, l'urgence et la garde passent par le 15\u00a0; " +
-        "les marchés forains et couverts (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), et les déchèteries de l'île, avec les bennes pleines " +
+        "les marchés forains et couverts (quoi = « marché »\u00a0; un marché de Noël ou nocturne annoncé : evenements), " +
+        "les avis de marchés publics ouverts d'une commune (quoi = « marchés publics », « appels d'offres »), " +
+        "et les déchèteries de l'île, avec les bennes pleines " +
         "en direct dans l'Ouest (TCO) (quoi = « déchèterie », « encombrants », « déchets verts »), et le jour de collecte rue par rue " +
         "(quoi = « collecte », « poubelles », lieu = la rue et la commune : « rue Labourdonnais, Saint-Paul »)\u00a0; " +
         "où aller avec les enfants (quoi = « enfants », « aire de jeux », « piscine », « médiathèque », « skatepark »…) : aussi parcs, zoos, " +

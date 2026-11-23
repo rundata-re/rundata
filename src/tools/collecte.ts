@@ -45,7 +45,8 @@ export function collecteAnswer(lieu: string | undefined, now = new Date()) {
   // A commune of another intercommunality: said before any street is looked for (04/11/2026, « rue non trouvée » at Saint-Denis).
   const other = !commune && lieu?.trim() ? elsewhere(lieu) : undefined;
   if (other) {
-    return text({ resume: col.ailleurs(other.commune, other.epci), intercommunalite: { nom: other.epci.nom.replace(/^la /, ""), site: other.epci.site }, page: page(), ...base });
+    // Nothing of the TCO's in it: credited to nobody, the intercommunality named with its site (citer « rundata.re »).
+    return text({ resume: col.ailleurs(other.commune, other.epci), intercommunalite: { nom: other.epci.nom.replace(/^la /, ""), site: other.epci.site }, page: page(), ...base, sources: [] });
   }
   if (rue.length < 3) {
     return text({

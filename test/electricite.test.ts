@@ -126,7 +126,8 @@ describe("electricity", () => {
     void store.put("web:courant", { value: { avis: [], lues: [], indisponibles: [], sources: [] }, fetchedAt: at.getTime() });
     const r = body(await electricite(new Cache(store, () => at.getTime()), at));
     expect(r.production.heure_mesure).toMatch(/^31\/10 05:25/);
-    expect(r.sources.map((s: { source: string }) => s.source)).toContain(cc.SOURCE.nom);
+    // No notice in it: the mairies gave nothing to this answer, not credited (audit of the AI tools, 23/11/2026).
+    expect(r.sources.map((s: { source: string }) => s.source)).not.toContain(cc.SOURCE.nom);
     // The day's copy older than edf:mix: edf:mix.
     void store.put("edf:journee", { value: { lignes: [{ ...line, date: "2026-10-31T05:15:00+04:00" }] }, fetchedAt: at.getTime() });
     expect(body(await electricite(new Cache(store, () => at.getTime()), at)).production.heure_mesure).toMatch(/^31\/10 05:20/);

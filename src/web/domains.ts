@@ -1962,7 +1962,7 @@ const meters = (n: number) => `${nombre(n)}\u00a0m`;
  */
 export const fireMarkers = (f: feux.Feux | undefined, now: Date): Marker[] =>
   (f?.detections ?? []).map((d, i) => ({ lon: d.lon, lat: d.lat, label: "", name: `${fire.listLine(d, now)} (${feux.LABEL})`, round: true, triangle: true, color: FIRE_COLOR, quiet: true,
-    place: "Feu vu par satellite", say: fire.listLine(d, now), href: `#${fireId(i)}` }));
+    place: "Point chaud vu par satellite", say: fire.listLine(d, now), href: `#${fireId(i)}` }));
 
 const FIRE_COLOR = "#7c2d12";
 const CLOSED_COLOR = "#e3262d";

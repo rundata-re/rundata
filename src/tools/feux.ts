@@ -9,7 +9,7 @@ import * as feux from "../providers/feux.js";
 
 export const URGENCE = "Vous voyez un feu ? Appelez le 18 ou le 112.";
 export const INTRO = "Points chauds repérés par les satellites VIIRS de la NASA ces dernières 24 h, chaque satellite passant deux fois par jour. Détection satellite, faux positifs possibles : toit chaud, site industriel, brûlage autorisé.";
-export const QUIET = "Aucun feu détecté par satellite ces dernières 24 h. Les nuages et les heures entre deux passages peuvent en masquer.";
+export const QUIET = "Aucun point chaud détecté par satellite ces dernières 24 h. Les nuages et les heures entre deux passages peuvent en masquer.";
 
 const localDay = (d: Date) => new Date(d.getTime() + 4 * 3600_000).toISOString().slice(0, 10);
 
@@ -25,14 +25,17 @@ export const when = (t: string, _now?: Date) => {
   return `le ${day} à ${time}`;
 };
 
-/** A point of the list on the site: « Feu détecté près de Bois-de-Nèfles, à 14:20 · confiance forte ». */
-export const listLine = (d: feux.Detection, now: Date) => `Feu détecté près ${de(d.lieu)}, ${when(d.t, now)} · confiance ${d.confiance}`;
+/** The page of the fires seen by satellite, given by the tools that speak of them. */
+export const PAGE = "https://rundata.re/feux";
+
+/** A point of the list on the site: « Point chaud détecté près de Bois-de-Nèfles, le 05/11 à 14:20 · confiance forte ». */
+export const listLine = (d: feux.Detection, now: Date) => `Point chaud détecté près ${de(d.lieu)}, ${when(d.t, now)} · confiance ${d.confiance}`;
 
 /** A commune's tile: the newest of its detections. */
 export function tileLine(list: feux.Detection[], now: Date): string {
   return list.length === 1
-    ? `feu détecté par satellite ${when(list[0].t, now)} (faux positifs possibles)`
-    : `${list.length} feux détectés par satellite, le dernier détecté ${when(list[0].t, now)} (faux positifs possibles)`;
+    ? `point chaud détecté par satellite ${when(list[0].t, now)} (faux positifs possibles)`
+    : `${list.length} points chauds détectés par satellite, le dernier ${when(list[0].t, now)} (faux positifs possibles)`;
 }
 
 /** A detection in a tool's answer, with its distance to the place asked. */
@@ -74,5 +77,5 @@ export function vigilanceLine(f: feux.Feux, now: Date): string | undefined {
   const n = f.detections.length;
   if (!n) return undefined;
   const last = f.detections[0];
-  return `${n} feu${n > 1 ? "x" : ""} de végétation détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près ${de(last.lieu)} (${last.commune}) ${when(last.t, now)} : ${feux.LABEL}. ${URGENCE} Détails avec sentiers_randonnee.`;
+  return `${n} point${n > 1 ? "s" : ""} chaud${n > 1 ? "s" : ""} détecté${n > 1 ? "s" : ""} par satellite ces dernières 24 h, le dernier près ${de(last.lieu)} (${last.commune}) ${when(last.t, now)}, confiance ${last.confiance} : ${feux.LABEL}, pas forcément un feu. ${URGENCE} La carte : ${PAGE}. Détails avec sentiers_randonnee.`;
 }

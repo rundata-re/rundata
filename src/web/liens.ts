@@ -133,7 +133,7 @@ export function communeHikes(p: PlacePage, hikes: Cached<RandonneesAnswer> | nul
   const fires = hikes.value.feux?.detections.filter((d) => d.commune === p.nom) ?? [];
   const burning = fires.length ? `${esc(fire.tileLine(fires, now))} · <b>${esc(fire.URGENCE)}</b>` : "";
   const foot = burning ? `<a href="/feux">Voir la carte des feux →</a>` : undefined;
-  if (!trails.length) return burning ? { nom: "Randonnée", href: "/feux", live: { valeur: "Feu détecté", detail: burning }, foot } : undefined;
+  if (!trails.length) return burning ? { nom: "Randonnée", href: "/feux", live: { valeur: "Point chaud", detail: burning }, foot } : undefined;
   const shut = trails.filter((t) => t.etat === "fermé").length;
   // All open: their number, never a bare « Sentiers ouverts » above « sur 15 » (« 15 sentiers ouverts », « sur 15 dans la
   // commune »): the detail's « sur N » needs a number before it.

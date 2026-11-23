@@ -130,10 +130,11 @@ describe("citation", () => {
     // Without a full stop, one is added; the rest of the answer is left as written.
     const r = cite("defibrillateurs", answer({ resume: "2 défibrillateurs à Cilaos", lieu: { trouve: "Cilaos" }, sources: [] }));
     expect(body(r).resume).toBe("2 défibrillateurs à Cilaos. Source : rundata.re, https://rundata.re/defibrillateurs?ref=mcp.");
-    // A station the résumé does not name: in its source.
+    // A station the résumé names: not again in its source.
     const other = (resume: string) => body(cite("bornes_recharge", answer({ resume, lieu: { trouve: "Saint-Pierre" }, sources: credits([irve.SOURCE]), stations: [{ station: "IMMODEX, 1 Av. des Oceanites, Saint-Pierre" }] }))).resume;
     expect(other("Par exemple : IMMODEX, 1 Av. des Oceanites, Saint-Pierre, 8 libres sur 8.")).not.toContain("(station");
-    expect(other("21 stations de recharge à Saint-Pierre.")).toContain("(station IMMODEX, 1 Av. des Oceanites, Saint-Pierre)");
+    // A charging station is not the station of a measurement: never in the source (audit of the AI tools, 23/11/2026).
+    expect(other("21 stations de recharge à Saint-Pierre.")).not.toContain("(station");
     expect(r.content[0].text.startsWith(`{"resume":"2 défibrillateurs à Cilaos. Source : rundata.re, `)).toBe(true);
     // A path of the site in a sentence is not its source (06/11/2026, resume_du_jour for a beach of Saint-Paul).
     const collecte = "Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul ; pharmacie de garde : 3237.fr.";

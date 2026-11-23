@@ -436,7 +436,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           "et les vagues-submersion, sur les 24 h du bulletin, avec les textes de suivi. " +
           "Pour : « on est en vigilance orange ? », « la mer est dangereuse ? », « on peut randonner à Mafate demain avec la pluie ? ». " +
           "Avec un lieu : la zone de vigilance de sa commune\u00a0; sans lieu : toute l'île." +
-          (feux.enabled() ? " Une ligne feux_detectes quand un feu de végétation a été détecté par satellite ces dernières 24 h : faux positifs possibles, et un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
+          (feux.enabled() ? " Une ligne feux_detectes quand un point chaud a été détecté par satellite ces dernières 24 h (pas forcément un feu : faux positifs possibles), et un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
         inputSchema: { lieu },
         annotations: { ...READ_ONLY },
       },
@@ -760,7 +760,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Avec un lieu ou un sentier, aussi les aires d'accueil de l'ONF autour (champ aires_accueil). " +
         "En famille (famille) : les sentiers marmailles, l'état des sentiers ONF qu'ils empruntent et l'avertissement à dire." +
         " Canyons (canyon) : l'inventaire du Parc national, ses interdits, la sécurité d'abord." +
-        (feux.enabled() ? " Avec les feux de végétation détectés par satellite (NASA FIRMS) ces dernières 24 h, dans feux_detectes : faux positifs possibles, un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
+        (feux.enabled() ? " Avec les points chauds détectés par satellite (NASA FIRMS) ces dernières 24 h, dans feux_detectes : pas forcément des feux, faux positifs possibles, un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
       inputSchema: {
         lieu: z
           .string().max(TEXTE_MAX)

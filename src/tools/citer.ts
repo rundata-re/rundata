@@ -74,6 +74,7 @@ const SHORT: Record<string, string> = {
   viirs: "NOAA CoastWatch",
   noaa_crw_dhw_5km: "NOAA Coral Reef Watch",
   modis: "NASA MODIS",
+  nasa_firms: "NASA FIRMS",
 };
 
 /** The producer's name for a sentence; else its attribution without web address (« © VIGICRUES, DEAL Réunion »). */
@@ -134,10 +135,14 @@ const CITER: Partial<Record<string, (p: Payload) => string>> = {
   cyclones: (p) => (JSON.stringify(p.sources).includes("WTIO31") ? "rundata.re, d'après les bulletins du CMRS de La Réunion (Météo-France) et GDACS" : citation(p)),
 };
 
+// Tools whose `stations` are not measuring stations (charging points, bike stations): never cited « (station …) ».
+const NOT_MEASURED = new Set(["bornes_recharge", "velos_libre_service"]);
+
 /** The `citer` of a tool's answer: its own words (CITER) when it credits a source, else made from the sources. */
 export function citerOf(tool: string, p: Payload): string {
   const own = CITER[tool];
-  return own && Array.isArray(p.sources) && p.sources.length ? own(p) : citation(p);
+  if (own && Array.isArray(p.sources) && p.sources.length) return own(p);
+  return citation(NOT_MEASURED.has(tool) ? { ...p, stations: undefined } : p);
 }
 
 /** « rundata.re, d'après Météo-France (station Le Port), MétéoR-OI » from the sources an answer credits. */
@@ -241,6 +246,10 @@ export interface Around {
   nom?: (id: string) => string | undefined;
 }
 
+// The cache keys whose read dates a tool's answer, when it reads slower sources beside its own data. Written here, not
+// imported: citer.ts is in every page's code, and the providers it would bring are counted in each page's budget.
+export const DATED_BY: Partial<Record<string, readonly string[]>> = { actualites: ["actualites:fil"] };
+
 /**
  * The answer with `citer`, `lien`, `fraicheur`, `signaler` when it found nothing, and `serveur` at the end; `fraicheur`
  * first instead when part of the answer is a last copy, so that its warning is read before the data. Left as is if it is
@@ -258,7 +267,7 @@ export function cite<R extends object>(tool: string, r: R, around: Around = {}):
   }
   if (!p || typeof p !== "object" || Array.isArray(p)) return r;
   const isError = "isError" in r && !!r.isError;
-  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, lentes: around.lentes, nom: around.nom }) };
+  const extra: Payload = { citer: citerOf(tool, p), lien: lien(tool, p), fraicheur: fraicheur(p, around.lectures ?? [], around.now ?? new Date(), { donnee: around.donnee, lentes: around.lentes, nom: around.nom, cles: DATED_BY[tool] }) };
   if (wanting(p, isError)) extra.signaler = AVIS_HINT;
   if (around.serveur) extra.serveur = around.serveur;
   // A last copy in the answer: its freshness first, the rest at the end as always.

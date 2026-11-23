@@ -128,7 +128,7 @@ describe("fires seen by satellite", () => {
   it("go first in the hikers' answer near them, with the label and the emergency numbers", async () => {
     feux.configure("key");
     const r = body(await sentiersRandonnee(cache(), "Maïdo", NOW));
-    expect(r.resume).toMatch(/^Feu de végétation détecté par satellite près (?:du|de la|de l'|des|de) [^,]+, le 24\/10 à 06:30 \(2 détections dans le secteur\) : détection satellite, faux positifs possibles\. Vous voyez un feu \? Appelez le 18 ou le 112\./);
+    expect(r.resume).toMatch(/^Point chaud détecté par satellite près (?:du|de la|de l'|des|de) [^,]+ \(Saint-Paul\), le 24\/10 à 06:30, confiance forte \(2 détections dans le secteur\) : détection satellite, faux positifs possibles, pas forcément un feu\. Vous voyez un feu \? Appelez le 18 ou le 112\. La carte : https:\/\/rundata\.re\/feux\./);
     expect(r.feux_detectes.urgence).toBe(URGENCE);
     expect(r.feux_detectes.detections[0]).toMatchObject({ quand: "06:30", commune: "Saint-Paul", confiance: "forte", satellite: "NOAA-20" });
     expect(r.feux_detectes.detections[0].distance_km).toBeLessThan(10);
@@ -153,7 +153,7 @@ describe("fires seen by satellite", () => {
     };
     feux.configure("key");
     const r = body(await vigilanceMeteo(withVigilance(), undefined, NOW));
-    expect(r.feux_detectes).toMatch(/^2 feux de végétation détectés par satellite ces dernières 24 h, le dernier près (?:du|de la|de l'|des|de) .+ \(Saint-Paul\) le 24\/10 à 06:30 : détection satellite, faux positifs possibles\. Vous voyez un feu \? Appelez le 18 ou le 112\./);
+    expect(r.feux_detectes).toMatch(/^2 points chauds détectés par satellite ces dernières 24 h, le dernier près (?:du|de la|de l'|des|de) .+ \(Saint-Paul\) le 24\/10 à 06:30, confiance forte : détection satellite, faux positifs possibles, pas forcément un feu\. Vous voyez un feu \? Appelez le 18 ou le 112\. La carte : https:\/\/rundata\.re\/feux\./);
     vi.stubGlobal("fetch", async (url: string) => upstream(String(url), true));
     expect(body(await vigilanceMeteo(withVigilance(), undefined, NOW)).feux_detectes).toBeUndefined();
   });
@@ -177,15 +177,15 @@ describe("fires on the site", () => {
     const html = sentiersPage("https://rundata.re", sentiers({ ...seen, lu: "2026-10-24T04:00:00Z" }), NOW);
     expect(html).toContain('<h2 id="h-feux">Feux de végétation vus par satellite</h2>');
     expect(html).toContain("<p><b>Vous voyez un feu ? Appelez le 18 ou le 112.</b></p>");
-    expect(html).toContain("Feu détecté près du Maïdo, le 24/10 à 06:30 · confiance forte");
-    expect(html).toContain("Feu détecté près du Maïdo, le 23/10 à 23:00 · confiance faible");
+    expect(html).toContain("Point chaud détecté près du Maïdo, le 24/10 à 06:30 · confiance forte");
+    expect(html).toContain("Point chaud détecté près du Maïdo, le 23/10 à 23:00 · confiance faible");
     expect(html.indexOf('id="h-feux"')).toBeLessThan(html.indexOf('id="h-fermes"'));
     // The hot spot's triangle in brown-red (charter of the maps), drawn in the legend as on the map, then the sources.
     expect(html).toMatch(/<path class="sh" d="M[\d.]+ [\d.]+L[\d.]+ [\d.]+H[\d.]+Z" fill="#7c2d12"\/>/);
     expect(html).toContain('<path d="M0 -36L35 28H-35Z" fill="#7c2d12"/></svg>Point chaud détecté par satellite, pas forcément un feu.</span>');
     expect(html).toContain('<span class="mls">Carte de l&#39;ONF. Points chauds : données des satellites de la NASA, lues le 24/10 à 08:00.</span>');
     // Their place in the bubble only: written on the map, it was cut by the frame and laid over the crosses.
-    expect(html).not.toMatch(/class="mn">Feu détecté/);
+    expect(html).not.toMatch(/class="mn">Point chaud détecté/);
     expect(html).not.toContain("#e8590c");
   });
 
@@ -201,7 +201,7 @@ describe("fires on the site", () => {
     const html = sentiersPage("https://rundata.re", s, NOW);
     expect(mapLinks(html).map((l) => l.href)).toEqual(["#t-sentier-de-la-glaciere", "#f-1", "#f-2"]);
     expect(mapLinks(html)[0].label).toBe("Sentier de la Glacière : sentier fermé, voir le détail");
-    expect(mapLinks(html)[1].label).toMatch(/^Feu vu par satellite : Feu détecté près du Maïdo, le 24\/10 à 06:30 · confiance forte[^"]*, voir le détail$/);
+    expect(mapLinks(html)[1].label).toMatch(/^Point chaud vu par satellite : Point chaud détecté près du Maïdo, le 24\/10 à 06:30 · confiance forte[^"]*, voir le détail$/);
     expect(deadAnchors(html)).toEqual([]);
     expect(doubleIds(html)).toEqual([]);
 
@@ -219,7 +219,7 @@ describe("fires on the site", () => {
 
   it("say a quiet day after the closed trails, and nothing at all without the key", () => {
     const quiet = sentiersPage("https://rundata.re", sentiers({ satellites: ["NOAA-20"], detections: [] }), NOW);
-    expect(quiet).toContain("Aucun feu détecté par satellite ces dernières 24 h. Les nuages et les heures entre deux passages peuvent en masquer.");
+    expect(quiet).toContain("Aucun point chaud détecté par satellite ces dernières 24 h. Les nuages et les heures entre deux passages peuvent en masquer.");
     expect(quiet).toContain("Appelez le 18 ou le 112");
     expect(quiet.indexOf('id="h-feux"')).toBeGreaterThan(quiet.indexOf('id="h-fermes"'));
     const none = sentiersPage("https://rundata.re", sentiers(), NOW);
@@ -230,13 +230,13 @@ describe("fires on the site", () => {
   it("are on the commune's hiking tile, with the emergency numbers", () => {
     const hikes = { value: { randonnees: [], secteurs: [{ secteur: "Hauts de l'Ouest", communes: ["Saint-Paul"], sentiers: [{ k: "s1", nom: "Sentier du Maïdo", commune: "Saint-Paul", communes: ["Saint-Paul"], km: 3, etat: "ouvert", boucle: false, randonnees: [] }] }], lignes: [], fermes: 0, suivis: 1, sources: [], feux: seen } as RandonneesAnswer, fetchedAt: NOW, stale: false };
     const tile = communeHikes(pageOf("saint-paul")!, hikes, NOW)!;
-    expect(tile.live!.detail).toMatch(/^2 feux détectés par satellite, le dernier détecté le 24\/10 à 06:30 \(faux positifs possibles\) · <b>Vous voyez un feu \? Appelez le 18 ou le 112\.<\/b> · sur 1 dans la commune, d'après la carte de l'ONF/);
+    expect(tile.live!.detail).toMatch(/^2 points chauds détectés par satellite, le dernier le 24\/10 à 06:30 \(faux positifs possibles\) · <b>Vous voyez un feu \? Appelez le 18 ou le 112\.<\/b> · sur 1 dans la commune, d'après la carte de l'ONF/);
     // The map's date from the ONF, else when we read it.
     expect(communeHikes(pageOf("saint-paul")!, { ...hikes, value: { ...hikes.value, carte_mise_a_jour: "2026-10-27T05:00:00.000Z" } }, NOW)!.live!.detail).toMatch(/sur 1 dans la commune, d'après la carte de l'ONF du 27\/10$/);
     expect(communeHikes(pageOf("saint-paul")!, { ...hikes, value: { ...hikes.value, carte_lue: "2026-10-24T03:00:00.000Z" } }, NOW)!.live!.detail).toMatch(/d'après la carte de l'ONF lue le 24\/10$/);
     // A commune with no trail of the ONF still says its fire.
     const port = communeHikes(pageOf("le-port")!, { ...hikes, value: { ...hikes.value, feux: { satellites: [], detections: [{ ...seen.detections[0], commune: "Le Port" }] } } }, NOW)!;
-    expect(port.live).toEqual({ valeur: "Feu détecté", detail: "feu détecté par satellite le 24/10 à 06:30 (faux positifs possibles) · <b>Vous voyez un feu ? Appelez le 18 ou le 112.</b>" });
+    expect(port.live).toEqual({ valeur: "Point chaud", detail: "point chaud détecté par satellite le 24/10 à 06:30 (faux positifs possibles) · <b>Vous voyez un feu ? Appelez le 18 ou le 112.</b>" });
     expect(communeHikes(pageOf("le-port")!, { ...hikes, value: { ...hikes.value, feux: undefined } }, NOW)).toBeUndefined();
   });
 });
@@ -247,12 +247,12 @@ describe("the fires' page", () => {
 
   it("says how many, the newest and where, in its description, and never « 0 » when it could not see", () => {
     const two = { satellites: ["NOAA-20"], detections: [at("2026-10-24T02:30:00Z"), at("2026-10-23T19:00:00Z")] };
-    expect(feuxDescription(two, NOW)).toBe("2 feux vus par satellite en 24 h à La Réunion (974), le dernier vu le 24/10 à 06:30 près du Maïdo. Faux positifs possibles. Un feu ? 18 ou 112.");
-    expect(feuxDescription({ satellites: [], detections: [at("2026-10-23T19:00:00Z")] }, NOW)).toBe("1 feu vu par satellite en 24 h à La Réunion (974), le 23/10 à 23:00 près du Maïdo. Faux positifs possibles. Un feu ? 18 ou 112.");
+    expect(feuxDescription(two, NOW)).toBe("2 points chauds vus par satellite en 24 h à La Réunion (974), le dernier vu le 24/10 à 06:30 près du Maïdo. Faux positifs possibles. Un feu ? 18 ou 112.");
+    expect(feuxDescription({ satellites: [], detections: [at("2026-10-23T19:00:00Z")] }, NOW)).toBe("1 point chaud vu par satellite en 24 h à La Réunion (974), le 23/10 à 23:00 près du Maïdo. Faux positifs possibles. Un feu ? 18 ou 112.");
     const long = feuxDescription({ satellites: [], detections: [at("2026-10-24T02:30:00Z", "Ravine des Chèvres et Grand Bassin du Bras de la Plaine"), at("2026-10-24T01:00:00Z")] }, NOW);
-    expect(long).toBe("2 feux vus par satellite en 24 h à La Réunion (974), le dernier vu le 24/10 à 06:30. Faux positifs possibles. Un feu ? 18 ou 112.");
+    expect(long).toBe("2 points chauds vus par satellite en 24 h à La Réunion (974), le dernier vu le 24/10 à 06:30. Faux positifs possibles. Un feu ? 18 ou 112.");
     // A quiet day with the time it was read: the preview stays in the message it was sent in.
-    expect(feuxDescription({ satellites: ["NOAA-20"], detections: [], fetchedAt: NOW }, NOW)).toBe("Aucun feu détecté par satellite à La Réunion (974) dans les 24 h avant le 24/10 à 08:00. Les nuages peuvent en masquer. Un feu ? 18 ou 112.");
+    expect(feuxDescription({ satellites: ["NOAA-20"], detections: [], fetchedAt: NOW }, NOW)).toBe("Aucun point chaud détecté par satellite à La Réunion (974) dans les 24 h avant le 24/10 à 08:00. Les nuages peuvent en masquer. Un feu ? 18 ou 112.");
     expect(feuxDescription(null, NOW)).not.toMatch(/\b0\b|Aucun/);
   });
 
@@ -274,9 +274,9 @@ describe("the fires' page", () => {
     expect(html).toContain("<title>Feux de forêt\u00a0: détections satellite 24\u00a0h · La Réunion (974)</title>");
     expect(html).toContain('<h1>Feux de végétation à La Réunion, vus par satellite <span class="n974">974</span></h1>');
     expect(html).not.toContain("noindex");
-    expect(html).toContain('<meta name="description" content="2 feux vus par satellite en 24\u00a0h à La Réunion (974), le dernier vu le 24/10 à\u00a006:30 près du Maïdo.');
+    expect(html).toContain('<meta name="description" content="2 points chauds vus par satellite en 24\u00a0h à La Réunion (974), le dernier vu le 24/10 à\u00a006:30 près du Maïdo.');
     expect(html).toContain('<h2 id="h-feux">Les feux des dernières 24\u00a0h</h2>');
-    expect(html).toContain("Feu détecté près du Maïdo");
+    expect(html).toContain("Point chaud détecté près du Maïdo");
     expect(html).toContain(`<h2 id="h-sentiers">Les sentiers fermés par l'ONF</h2>`);
     expect(html).toContain('<h2 id="h-vigilance">La vigilance Météo-France</h2>');
     expect(html).toContain("Votre IA, branchée sur les feux");

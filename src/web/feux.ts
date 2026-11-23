@@ -29,7 +29,7 @@ const TITLE = "Feux de forêt : détections satellite 24 h · La Réunion (974)"
 const H1 = "Feux de végétation à La Réunion, vus par satellite";
 const LEAD = "Les points chauds repérés par les satellites VIIRS de la NASA ces dernières 24 h, sur une carte et en liste, avec les sentiers fermés et la vigilance du jour. Détection satellite, faux positifs possibles : toit chaud, site industriel, brûlage autorisé.";
 // A preview stays in the message it was sent in: each state says its day and time, never « ces dernières 24 h » alone.
-const QUIET_META = (at: Date) => `Aucun feu détecté par satellite à La Réunion (974) dans les 24 h avant ${leAt(at)}. Les nuages peuvent en masquer. Un feu ? 18 ou 112.`;
+const QUIET_META = (at: Date) => `Aucun point chaud détecté par satellite à La Réunion (974) dans les 24 h avant ${leAt(at)}. Les nuages peuvent en masquer. Un feu ? 18 ou 112.`;
 // When the satellites could not be read: nothing said of the fires, never « 0 ».
 const BLIND_META = "Feux de végétation à La Réunion (974) vus par satellite : la carte des dernières 24 h, les sentiers fermés et la vigilance du jour. Un feu ? 18 ou 112.";
 const OFF = "La détection des feux par satellite n'est pas encore active sur rundata.re.";
@@ -60,8 +60,8 @@ export function feuxDescription(fires: (feux.Feux & { fetchedAt?: Date }) | null
   const at = when(last.t, now);
   const make = (where: string) =>
     n === 1
-      ? `1 feu vu par satellite en 24 h à La Réunion (974), ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`
-      : `${n} feux vus par satellite en 24 h à La Réunion (974), le dernier vu ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`;
+      ? `1 point chaud vu par satellite en 24 h à La Réunion (974), ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`
+      : `${n} points chauds vus par satellite en 24 h à La Réunion (974), le dernier vu ${at}${where}. Faux positifs possibles. Un feu ? 18 ou 112.`;
   const full = make(` près ${de(last.lieu)}`);
   return full.length <= DESCRIPTION_MAX ? full : make("");
 }
@@ -70,7 +70,7 @@ function firesList(fires: feux.Feux | null, now: Date): string {
   if (!feux.enabled()) return `<p>${esc(OFF)}</p>`;
   if (!fires) return `<p>${esc(DOWN)}</p>`;
   if (!fires.detections.length) return `<p>${esc(QUIET)}</p>`;
-  return `<ul class="rows eau">${fires.detections.map((d, i) => `<li class="tgt" id="${fireId(i)}"><span>${esc(listLine(d, now))}<small>${esc(d.commune)} · satellite ${esc(d.satellite)}</small></span><span class="q-mauvaise">feu</span></li>`).join("")}</ul>`;
+  return `<ul class="rows eau">${fires.detections.map((d, i) => `<li class="tgt" id="${fireId(i)}"><span>${esc(listLine(d, now))}<small>${esc(d.commune)} · satellite ${esc(d.satellite)}</small></span><span class="q-mauvaise">point chaud</span></li>`).join("")}</ul>`;
 }
 
 function trails(s: Cached<SentiersAnswer> | null | undefined): string {

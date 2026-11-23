@@ -74,6 +74,7 @@ import { compteAvis, muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { when } from "./injoignable.js";
 import { SITE_URL } from "./citer.js";
+import { PERIMEE_MIN, perimeeTexte } from "./electricite.js";
 import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, text } from "./format.js";
 import { coastText, cyclone, cycloneOn, forZone, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import { instant, type InfoRow } from "./actualites.js";
@@ -242,6 +243,17 @@ function usable(c: Copy, copy: Cached<unknown> | null | undefined, now: Date): c
   if (!copy) return false;
   if (now.getTime() - copy.fetchedAt.getTime() > c.max * 60_000) return false;
   return !c.sameDay || localDay(copy.fetchedAt) === localDay(now);
+}
+
+/**
+ * EDF's latest line past PERIMEE_MIN, said as electricite and /electricite say it: a line of Friday given on Monday was
+ * read as the day's electricity (audit of the AI tools, 23/11/2026). Its age now: the copy's, plus the time since it was built.
+ */
+export function prodAge(prod: { heure_mesure: string; age_min?: number }, fetchedAt: Date, now: Date) {
+  if (typeof prod.age_min !== "number") return {};
+  const age = prod.age_min + Math.max(0, Math.round((now.getTime() - fetchedAt.getTime()) / 60_000));
+  if (age <= PERIMEE_MIN) return {};
+  return { perimee: true, avertissement: perimeeTexte(prod.heure_mesure.replace(" heure de La Réunion", ""), age) };
 }
 
 function weather(d: PlaceData, fetchedAt: Date, now: Date) {
@@ -588,7 +600,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     volcan: volc?.bloc,
     air: airHere ? { nature: AIR_NATURE, jour: `${today.slice(8, 10)}/${today.slice(5, 7)}`, diffusion: l.air!.value.diffusion, indice_atmo: airHere.niveau, qualite: airHere.qualite, polluants: airHere.polluants.length ? airHere.polluants : undefined } : undefined,
     electricite: prod
-      ? { heure: prod.heure_mesure, renouvelable_pct: prod.renouvelable_pct, total_mw: prod.total_mw, signal: l.electricite!.value.meteo_electricite?.maintenant?.signal, signal_mis_a_jour: l.electricite!.value.meteo_electricite?.mis_a_jour }
+      ? { heure: prod.heure_mesure, ...prodAge(prod, l.electricite!.fetchedAt, now), renouvelable_pct: prod.renouvelable_pct, total_mw: prod.total_mw, signal: l.electricite!.value.meteo_electricite?.maintenant?.signal, signal_mis_a_jour: l.electricite!.value.meteo_electricite?.mis_a_jour }
       : undefined,
     circulation: {
       mesure_des_bouchons: NO_JAMS,

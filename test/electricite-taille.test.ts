@@ -44,6 +44,19 @@ beforeEach(() => vi.stubGlobal("fetch", async () => new Response("", { status: 4
 afterEach(() => vi.unstubAllGlobals());
 
 describe("the size of electricite", () => {
+  it("credits the mairies only when one of their notices is in the answer", async () => {
+    const store = new MemoryStore();
+    void store.put("edf:mix", { value: mix(), fetchedAt: NOW.getTime() });
+    void store.put("web:courant", { value: COURANT, fetchedAt: NOW.getTime() });
+    const cache = new Cache(store, () => NOW.getTime());
+    const named = async (lieu?: string) => body(await electricite(cache, NOW, lieu)).sources.map((s: { source: string }) => s.source).join(" | ");
+    // The island: the last notice of each mairie, in sans_date_a_venir.
+    expect(await named()).toMatch(/relayés par les mairies/);
+    // Saint-Denis, whose notices are not read: EDF alone.
+    expect(await named("Saint-Denis")).not.toMatch(/mairie/i);
+  });
+
+
   it("keeps the island's answer under the ceiling of the daily check of the sources, both mairies' past notices included", async () => {
     const store = new MemoryStore();
     void store.put("edf:mix", { value: mix(), fetchedAt: NOW.getTime() });

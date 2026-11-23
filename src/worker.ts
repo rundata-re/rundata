@@ -714,7 +714,12 @@ export default {
     // Once a day, at 06:00 in La Réunion: each public site that did not answer asked again (sans-reponse.ts), once the
     // reads above are done, so that its one GET is never part of a run of ours.
     if (sansReponse.heureDuPassage(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, () => sansReponse.reverifier(now)))
+      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
+        const fait = await sansReponse.reverifier(now);
+        // The rows just written replace this data center's copy, read before the recheck by the same event.
+        if (fait) await sansReponse.relire(c).catch((err) => console.error("sites sans réponse : relecture impossible", why(err)));
+        return fait;
+      }))
         .then(({ value, used, reads }) => value && console.log(`sites sans réponse : ${value.essayes} revérifiés${value.changes.length ? `, ${value.changes.join(", ")}` : ""}, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("sites sans réponse : revérification impossible", why(err))));
     }

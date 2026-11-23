@@ -470,6 +470,19 @@ export const RELUE_MAX_MS = 3600_000;
  */
 export const fraicheur = (now: Date) => (now.getUTCHours() === 2 && now.getUTCMinutes() < 30 ? FRAIS_PASSAGE_S : FRAIS_S);
 
+const CLE = "sans-reponse";
+const charger = async () => ({ lignes: await toutes(), passage: await dernierPassage() });
+
+/**
+ * Once the recheck is written (worker.ts, the scheduled event of 06:00): the rows read again into this data center's
+ * copy, at once, in place of the one the same event read before the recheck (23/11/2026: the list of the day before
+ * served about 15 minutes after the recheck). Two reads of the database, no KV write; the other data centers read the
+ * rows again within the minute (`fraicheur`).
+ */
+export async function relire(cache: Pick<Cache, "get">): Promise<void> {
+  await cache.get(CLE, 0, charger);
+}
+
 /**
  * The rows and the last recheck, read at most every 15 minutes by each data center (the page and the tool alike), every
  * minute in the recheck's half hour (`fraicheur`). A missing table is not kept as an empty list: the cache asks again a
@@ -478,7 +491,7 @@ export const fraicheur = (now: Date) => (now.getUTCHours() === 2 && now.getUTCMi
  */
 export async function etat(cache: Pick<Cache, "get">, now = new Date()): Promise<{ lignes: Ligne[]; passage?: number; lu: Date; pasRelue?: true }> {
   try {
-    const c = await cache.get("sans-reponse", fraicheur(now), async () => ({ lignes: await toutes(), passage: await dernierPassage() }));
+    const c = await cache.get(CLE, fraicheur(now), charger);
     return { ...c.value, lu: c.fetchedAt, ...(c.stale && now.getTime() - c.fetchedAt.getTime() > RELUE_MAX_MS && { pasRelue: true as const }) };
   } catch (err) {
     if (!absente(err)) throw err;

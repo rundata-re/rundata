@@ -6,6 +6,10 @@ import type { Resume } from "../src/tools/resume.js";
 import { CYCLONE_STEPS } from "../src/tools/vigilance.js";
 import { esc } from "../src/web/map.js";
 import { pageOf, PAGES } from "../src/web/places.js";
+import { handle } from "../src/app.js";
+import { Cache, MemoryStore } from "../src/cache.js";
+import { texteVisible } from "../src/robots.js";
+import { NON_LU } from "./non-lu.js";
 
 const NOW = new Date("2026-10-24T11:10:00Z");
 const COMMUNES = PAGES.filter((p) => p.commune);
@@ -167,11 +171,32 @@ describe("a commune whose distributor's notices are not read (1284, 20/11/2026)"
     const p = pageOf("saint-joseph")!;
     const none = { ...full(p.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) };
     const r = resume(p, none as never, NOW);
-    expect(r.coupures_eau?.note).toBe("Les avis de coupure de Sudéau ne sont pas lus par rundata.re\u00a0: voir son site, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.");
+    expect(r.coupures_eau?.note).toBe("Sudéau publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.");
     expect(r.coupures_eau?.site_distributeur).toBe("https://www.sudeau.re/");
     const html = aujourdhuiPage("https://rundata.re", p, r, null);
     expect(html).toContain('<a href="https://www.sudeau.re/" rel="noopener">Le site de Sudéau ↗</a>');
     expect(html).not.toContain("Les avis du distributeur à Saint-Joseph");
+  });
+});
+
+describe("a commune's day page in the sitemap, with its water notices not read (1599, 23/11/2026)", () => {
+  it("says where its distributor publishes them, never that they are not read, on every commune's page", async () => {
+    // With the water's copy and no notice in it: the card the sitemap test, rendering cold, never sees.
+    const xml = await (await handle(new Request("https://rundata.re/sitemap.xml"), new Cache(new MemoryStore()))).text();
+    const listed = [...xml.matchAll(/<loc>https:\/\/rundata\.re\/aujourdhui\/([^<]+)<\/loc>/g)].map((m) => m[1]);
+    expect(listed.length).toBeGreaterThan(0);
+    for (const slug of listed) expect(COMMUNES.some((p) => p.slug === slug), slug).toBe(true);
+    const fautes: string[] = [];
+    for (const p of COMMUNES) {
+      const none = { ...full(p.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) };
+      const r = resume(p, none as never, NOW);
+      const said = [r.coupures_eau?.note ?? "", texteVisible(aujourdhuiPage("https://rundata.re", p, r, null))].join("\n").match(NON_LU);
+      if (said) fautes.push(`${p.slug} : « ${said[0]} »`);
+    }
+    expect(fautes.join("\n")).toBe("");
+    // Le Tampon, in the sitemap, served by Sudéau (live on 23/11/2026 with « ne sont pas lus »).
+    const tampon = resume(pageOf("le-tampon")!, { ...full("Le Tampon"), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) } as never, NOW);
+    expect(tampon.coupures_eau?.note).toBe("Sudéau publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.");
   });
 });
 

@@ -6,6 +6,7 @@ import { enChargement, texteVisible } from "../src/robots.js";
 import { COMMUNES } from "../src/web/commune.js";
 import { STATIONS, stationPath } from "../src/web/station.js";
 import { avisLus, indexable } from "../src/web/coupures.js";
+import { NON_LU } from "./non-lu.js";
 
 const O = "https://rundata.re";
 const NAVIGATEUR = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
@@ -13,14 +14,6 @@ const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.co
 const get = (path: string, ua?: string) =>
   new Request(`${O}${path}`, { headers: { accept: "text/html", ...(ua ? { "user-agent": ua } : {}) } });
 
-/**
- * A page that says its own subject is not read: every wording of it in the code (web/coupures.ts, tools/coupures.ts,
- * web/eau-cyclone.ts, tools/resume.ts). Not a source named beside the subject and not read (the OVPF's Facebook page,
- * on /volcan with its data: « que nous ne lisons pas »), nor a read still to come (« pas encore lues : prochaine lecture »), nor one
- * distributor of a commune whose others are read (« Les avis de la mairie ne sont pas lus »), nor the water's question
- * on a commune's page, whose subject is the commune (web/commune-texte.ts).
- */
-const NON_LU = /(?:nous ne lisons|ne lit) pas (?:les |ses |d')avis|avis de coupure[^.]{0,80}ne sont pas (?:encore )?lus|leurs avis ne sont pas lus|avis du distributeur[^.]{0,40}ne sont pas lus/i;
 
 async function sitemap(): Promise<string[]> {
   const xml = await (await handle(get("/sitemap.xml"), new Cache(new MemoryStore()))).text();

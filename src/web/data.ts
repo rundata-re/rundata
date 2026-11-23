@@ -44,7 +44,7 @@ import * as prefecture from "../providers/prefecture.js";
 import type { Cyclone } from "../providers/prefecture.js";
 import type { ReleveEntree } from "../providers/prefecture-copie.js";
 import { ecoles, type ecolesBlock } from "../tools/ecoles.js";
-import { current, cyclone, cycloneLevel, highest, raised } from "../tools/vigilance.js";
+import { cyclone, cycloneLevel, cycloneNow, cycloneOn, raised } from "../tools/vigilance.js";
 import { COMMUNES as BIKE_COMMUNES, velosLibreService } from "../tools/velos.js";
 import { bornesRecharge, count as countPoints, lastChange, stationRow } from "../tools/bornes.js";
 import { ile, type Ile } from "../eau/ile.js";
@@ -2031,9 +2031,9 @@ export const BANNER_WAIT_MS = 1500;
 
 export function alerteOf(v: mf.Vigilance, now: Date): Alerte | undefined {
   const periods = v.zones[mf.ISLAND]?.[mf.CYCLONE];
-  if (periods && highest(periods) >= 2) {
+  if (cycloneOn(periods, now)) {
     const c = cycloneLevel(periods, now);
-    return { couleur: c, texte: `Météo-France : ${cyclone(v, now)}`, ecoles: ecoles(v, now).fermees || undefined, neutre: c === 2 || undefined, court: { cyclone: c, prevue: current(periods, now) < 2 } };
+    return { couleur: c, texte: `Météo-France : ${cyclone(v, now)}`, ecoles: ecoles(v, now).fermees || undefined, neutre: c === 2 || undefined, court: { cyclone: c, prevue: cycloneNow(periods, now) < 2 } };
   }
   const r = raised(v);
   if (!r.length) return undefined;

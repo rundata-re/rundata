@@ -75,7 +75,7 @@ import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from ".
 import { when } from "./injoignable.js";
 import { SITE_URL } from "./citer.js";
 import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, text } from "./format.js";
-import { coastText, cyclone, forZone, highest, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
+import { coastText, cyclone, cycloneOn, forZone, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
 import { instant, type InfoRow } from "./actualites.js";
 import { ENDS as LITTORAL_ENDS, forSummary, littoral, NONE as LITTORAL_NONE } from "./littoral.js";
 import { enTete } from "./representativeness.js";
@@ -267,7 +267,7 @@ function vigilance(p: PlacePage, v: mf.Vigilance, now: Date) {
   const zone = mf.ZONE_OF_COMMUNE[p.nom];
   const name = zoneShort(zone);
   const cyc = v.zones[mf.ISLAND]?.[mf.CYCLONE] ?? [];
-  const alert = highest(cyc) >= 2;
+  const alert = cycloneOn(cyc, now);
   return {
     zone: name || undefined,
     // « Vigilance météo : verte pour l'Ouest (Météo-France), la zone de Saint-Paul. », « la zone du Tampon »: the zone named, never the commune coloured.

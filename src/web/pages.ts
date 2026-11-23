@@ -30,7 +30,7 @@ import { a, communeDite, de, enGrand, fourchette, fr } from "../tools/format.js"
 import * as candhis from "../providers/candhis.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
-import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
+import { current, cyclone, cycloneHead, cycloneLevel, cycloneOn, feminine, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
 import type { Alerte, Credit, DepuisMinuit, HistoriqueAnswer, HomeData, PlaceData, RandonneesAnswer, SeaData, StationAnswer, StationNow } from "./data.js";
 import { confianceExplication } from "../tools/prevision.js";
 import { joursDuJour, vigilanceLue } from "./data.js";
@@ -2335,7 +2335,7 @@ export function vigilanceLive(data: Cached<mf.Vigilance> | null, now: Date): Liv
   const v = data?.value;
   if (!v) return undefined;
   const cyc = v.zones[mf.ISLAND]?.[mf.CYCLONE] ?? [];
-  if (highest(cyc) >= 2) {
+  if (cycloneOn(cyc, now)) {
     const c = Math.max(2, cycloneLevel(cyc, now));
     return officielLive(lue({ valeur: `<span class="vg ${cycloneVg(c)}">Cyclone : ${esc(mf.cycloneName(c))}</span>`, detail: esc(cyclone(v, now)) }, data!, now), mf.OFFICIEL_CYCLONE);
   }
@@ -2885,7 +2885,7 @@ export function vigilancePage(origin: string, data: Cached<mf.Vigilance> | null,
     // Météo-France's colour, its details in badges under it. The cyclone keeps one line, its state and /cyclones; in an
     // alert, from the pre-alert on, it comes first, in its colour, the vigilance after it, smaller, with the two pages
     // of the alert as buttons. Then the bulletin's time, and the link to Météo-France's site (its agreement).
-    const alert = highest(cyc) >= 2;
+    const alert = cycloneOn(cyc, now);
     const cyclones = `<a href="/cyclones">Cyclones dans le bassin, alerte du préfet →</a>`;
     const head = alert
       ? `<p class="big vh${cycNow >= 2 ? ` vab ${cycloneVg(cycNow)}` : ""}">${cycNow >= 2 ? esc(cycloneHead(cycNow)) : "Alerte cyclonique prévue"}</p><p class="lead">${esc(cyclone(v, now))}</p><p class="cyc">${cyclones}</p>`

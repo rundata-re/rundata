@@ -96,7 +96,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A mairie not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
   courant: 14,
   crues: 3,
-  cyclones: 11,
+  // An alert whose every period is over said lifted, never « prévue »; an alert not read said so (ALERTE_NON_LUE).
+  cyclones: 12,
   // A device's name written all in capitals in the base, as people read it (« FEAR - Saint-Paul »), an article starting a
   // part of it after « - » (« Station Service - Les Sables »), each part in capitals of a name with lowercase letters
   // (« Lycée Polyvalent Paul Moreau - Loge »). Its floor as people read it, without « étage » before a text that says it

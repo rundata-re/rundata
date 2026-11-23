@@ -172,24 +172,21 @@ export function slugWords(lien: string): string {
   return words.replace(/[-_]+/g, " ");
 }
 
+/** « Levée de l'alerte rouge », « fin d'alerte », « levée de l'alerte orange cyclonique »: the end of a step, its colour with it. */
+const LIFTS = /\b(?:fin|lev[ée]e)\s+(?:de\s+l['’]\s*|d['’]\s*)alerte(?:\s+(?:jaune|orange|rouge|violette))?(?:\s+cyclonique)?/i;
+/** The step a title names, from the worst. */
+const stepOf = (t: string) =>
+  /violette/i.test(t) ? 5 : /\brouge\b/i.test(t) ? 4 : /\borange\b/i.test(t) ? 3 : /pr[ée][\s-]?alerte|\bjaune\b/i.test(t) ? 2 : undefined;
+
 function declared(r: Info): Decision | undefined {
   const t = r.titre;
   if (!DECLARES.test(t)) return undefined;
   // The way out of the red alert goes through the phase de sauvegarde, often in the same title as the red's end
   // (« levée de l'alerte rouge, passage en phase de sauvegarde »): the sauvegarde first, then the end of the alert.
-  const niveau = /sauvegarde/i.test(t)
-    ? 6
-    : /\b(?:fin|lev[ée]e)\s+(?:de\s+l['’]\s*|d['’]\s*)alerte/i.test(t)
-      ? "levee"
-      : /violette/i.test(t)
-        ? 5
-        : /\brouge\b/i.test(t)
-          ? 4
-          : /\borange\b/i.test(t)
-            ? 3
-            : /pr[ée][\s-]?alerte|\bjaune\b/i.test(t)
-              ? 2
-              : undefined;
+  // A title with two steps, « Levée de l'alerte violette, retour en alerte rouge »: the step it goes to, not the one it
+  // lifts; the end of the alert only when no other step is named after it (23/11/2026).
+  const end = t.match(LIFTS);
+  const niveau = /sauvegarde/i.test(t) ? 6 : end ? (stepOf(t.replace(LIFTS, "")) ?? "levee") : stepOf(t);
   if (niveau === undefined) return undefined;
   return { niveau, titre: t, lien: r.lien, jour: localDay(r.publie) };
 }

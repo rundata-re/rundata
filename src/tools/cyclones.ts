@@ -106,8 +106,10 @@ export function seasonRow(s: gdacs.Systeme) {
 
 // reunion.gouv.fr can hang for seconds (24/10/2026): the answer does not wait for it longer than this.
 const PREFECTURE_WAIT_MS = 3000;
+/** The vigilance not read: said first, never an answer that reads as « no alert » (23/11/2026). */
+export const ALERTE_NON_LUE = "L'alerte cyclonique de Météo-France n'a pas pu être lue à l'instant : voir vigilance.meteofrance.fr et la préfecture (reunion.gouv.fr).";
 
-/** The cyclone alert of the prefecture through Météo-France's vigilance, and what it means for the schools; undefined when it cannot be read. */
+/** The cyclone alert of the prefecture through Météo-France's vigilance, and what it means for the schools; `non_lue` when it cannot be read, undefined without the key. */
 async function alert(cache: Cache, now: Date) {
   if (!mf.enabled()) return undefined;
   try {
@@ -119,7 +121,7 @@ async function alert(cache: Cache, now: Date) {
     return { texte: cycloneAlert(v, now), ecoles: ecolesBlock(v, now, c), vie_quotidienne: quotidienLine(v, now), injoignable: silent };
   } catch (err) {
     console.error(`source ${mf.SOURCE.id} indisponible:`, why(err));
-    return undefined;
+    return { non_lue: ALERTE_NON_LUE };
   }
 }
 
@@ -200,7 +202,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
     console.error(`source ${gdacs.SOURCE.id} indisponible:`, why(err));
     const a = await alerted;
     return {
-      ...text({ erreur: "Le suivi des systèmes tropicaux (GDACS) ne répond pas pour le moment.", alerte_cyclonique: a?.texte, injoignable: a?.injoignable, ecoles: a?.ecoles, officiel, consulter: OFFICIAL, sources: credits([gdacs.SOURCE]) }),
+      ...text({ erreur: "Le suivi des systèmes tropicaux (GDACS) ne répond pas pour le moment.", alerte_cyclonique: a?.texte ?? a?.non_lue, injoignable: a?.injoignable, ecoles: a?.ecoles, officiel, consulter: OFFICIAL, sources: credits([gdacs.SOURCE]) }),
       isError: true,
     };
   }
@@ -221,6 +223,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
 
   const parts: string[] = [];
   if (alerte) parts.push(alerte);
+  if (a?.non_lue) parts.push(a.non_lue);
   if (a?.injoignable) parts.push(a.injoignable);
   if (rows.length) {
     parts.push(`${rows.length} système${rows.length > 1 ? "s" : ""} tropical${rows.length > 1 ? "aux" : ""} actif${rows.length > 1 ? "s" : ""} dans le sud-ouest de l'océan Indien.`);
@@ -245,7 +248,7 @@ export async function cyclones(cache: Cache, _lieu: string | undefined, now = ne
 
   return text({
     resume: parts.join(" "),
-    alerte_cyclonique: alerte,
+    alerte_cyclonique: alerte ?? a?.non_lue,
     injoignable: a?.injoignable,
     vie_quotidienne: a?.vie_quotidienne,
     ecoles: a?.ecoles,

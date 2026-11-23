@@ -10,7 +10,7 @@ import * as mf from "../providers/vigilance.js";
 import { ecoles, ORSEC, withPrefecture } from "../tools/ecoles.js";
 import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
-import { citesHtml } from "./ecoles.js";
+import { citesHtml, copieLueHtml } from "./ecoles.js";
 import { esc } from "./map.js";
 import { duAt, layout, officielHtml } from "./pages.js";
 
@@ -152,7 +152,8 @@ export function lineHtml(l: Line): string {
   return `<li>${l.sujet ? `<b>${esc(l.sujet)}</b> : ` : ""}${text}${pagesHtml(l.pages)}${l.lien ? ` <a href="${l.lien.href}">${esc(l.lien.label)}</a>` : ""}</li>`;
 }
 
-type State = { texte: string; ancre?: string; label?: string; cites?: { titre: string; lien: string }[] };
+/** `notes`: what the prefecture's releases add, a confirmation or a gap with the bulletin, as /ecoles-cyclone says them. */
+type State = { texte: string; ancre?: string; label?: string; cites?: { titre: string; lien: string }[]; notes?: string[] };
 const THIS_STEP = "Ce que prévoit ce niveau ↓";
 
 /**
@@ -163,6 +164,11 @@ const THIS_STEP = "Ce que prévoit ce niveau ↓";
 function stateOf(v: mf.Vigilance | undefined, now: Date, decision?: Cyclone | null): State | undefined {
   if (!v) return undefined;
   const e = withPrefecture(ecoles(v, now), decision, v, now);
+  const notes = [e.communique, e.ecart].filter((x): x is string => Boolean(x));
+  return notes.length ? { ...stateOfBulletin(e, v), notes, cites: e.cites } : stateOfBulletin(e, v);
+}
+
+function stateOfBulletin(e: ReturnType<typeof withPrefecture>, v: mf.Vigilance): State {
   if (e.etat === "levee") return { texte: e.cites ? e.texte : "Alerte levée (bulletin de Météo-France).", ancre: "fin", label: "Ce que prévoit la fin d'alerte ↓", cites: e.cites };
   // The bulletin's own time: a copy of the page never says « pas d'alerte » of another day, in the cyclone season.
   const du = Number.isFinite(Date.parse(v.emise)) ? ` ${duAt(v.emise)}` : "";
@@ -176,7 +182,7 @@ export function alertePage(origin: string, data: Cached<mf.Vigilance> | null, no
   const path = "/alerte-cyclone";
   const s = stateOf(data?.value, now, decision);
   const state = s
-    ? `<div class="status"><p class="lead"><b>${citesHtml(esc(s.texte), s.cites)}</b>${s.ancre ? ` <a href="#${s.ancre}">${esc(s.label!)}</a>` : ""}${s.ancre === "pre-alerte" ? ` · <a href="/kit-cyclone">${esc(KIT)}</a>` : ""}</p>${rubrique ? `<p class="lead">${esc(rubrique)}</p>` : ""}</div>`
+    ? `<div class="status"><p class="lead"><b>${citesHtml(esc(s.texte), s.cites)}</b>${s.ancre ? ` <a href="#${s.ancre}">${esc(s.label!)}</a>` : ""}${s.ancre === "pre-alerte" ? ` · <a href="/kit-cyclone">${esc(KIT)}</a>` : ""}</p>${(s.notes ?? []).map((x) => `<p class="lead">${citesHtml(esc(x), s.cites)}</p>`).join("")}${rubrique ? `<p class="lead">${esc(rubrique)}</p>` : ""}${copieLueHtml(data, now)}</div>`
     : `<div class="status"><p class="lead">L'alerte en vigueur n'a pas pu être lue à l'instant : voir la préfecture (reunion.gouv.fr) et Météo-France.</p></div>`;
   const band = `${crumbBar("Alerte cyclonique")}
 <div class="wrap intro"><div class="pitch">

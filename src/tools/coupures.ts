@@ -179,15 +179,18 @@ export function muetPour<T extends { site: string }>(list: T[] | undefined, comm
 /** How many notices an assistant gets with their excerpt; the next ones with their link (MAX_BYTES, 21/11/2026). */
 export const AVIS_AVEC_TEXTE = 3;
 export const TEXTE_PAR_LE_LIEN = `Au-delà des ${AVIS_AVEC_TEXTE} premiers avis, leur texte n'est pas repris\u00a0: il est dans l'avis, à son lien. Un avis d'eau à ne pas boire garde toujours le sien.`;
+/** The island's answer: past the same notices, their streets too, kept by the answer for their commune (MAX_BYTES, 23/11/2026). */
+export const TEXTE_ET_SECTEURS_PAR_LE_LIEN = `Au-delà des ${AVIS_AVEC_TEXTE} premiers avis, leur texte et leurs secteurs ne sont pas repris\u00a0: ils sont dans l'avis, à son lien, et dans la réponse de coupures_eau pour sa commune. Un avis d'eau à ne pas boire garde toujours les siens.`;
 
 /**
  * The notices as an assistant reads them, within the answer's size (scripts/check-sources.ts, 15,1 Ko on 20/11/2026 for
  * 12,5): the streets said once, in the page's words (`secteurs_dits`, given for a list read whole only), never as a list beside
  * them; past the first
  * `AVIS_AVEC_TEXTE`, the excerpt left to the notice's link, except where it says not to drink the water. The page keeps
- * every field (`complet`).
+ * every field (`complet`). `ile`: the island's answer, where those notices leave their streets to the answer for their
+ * commune too (12,8 Ko on 23/11/2026 for 12,5, 16 notices of which 9 cuts to come, four nights at Saint-Denis).
  */
-export function pourAssistant(rows: ReturnType<typeof noticeRow>[]): { avis: Record<string, unknown>[]; abreges: boolean } {
+export function pourAssistant(rows: ReturnType<typeof noticeRow>[], ile = false): { avis: Record<string, unknown>[]; abreges: boolean } {
   let abreges = false;
   const avis = rows.map((r, i) => {
     const { secteurs, secteurs_complets, texte, extrait_coupe, ...rest } = r;
@@ -195,6 +198,10 @@ export function pourAssistant(rows: ReturnType<typeof noticeRow>[]): { avis: Rec
     const said = r.secteurs_dits ? {} : { secteurs, secteurs_complets };
     if (i < AVIS_AVEC_TEXTE || r.ne_pas_boire || !r.lien) return { ...rest, ...said, extrait_coupe, texte };
     abreges = true;
+    if (ile) {
+      const { secteurs_dits: _, ...short } = rest;
+      return short;
+    }
     return { ...rest, ...said };
   });
   return { avis, abreges };
@@ -244,7 +251,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     const stillDry = new Set(all.filter((n) => n.communes.some((c) => doNotDrink(all, c) === n)));
     const told = all.filter((n) => stillDry.has(n) || live.includes(n));
     const rows = told.map((n) => noticeRow(n, now, stillDry.has(n)));
-    const cut = complet ? undefined : pourAssistant(rows);
+    const cut = complet ? undefined : pourAssistant(rows, true);
     return text({
       avertissement,
       // The sites without an answer named once here, their words in `injoignable` (the page says them in full).
@@ -255,7 +262,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
       injoignable: silent.length ? silent : undefined,
       ne_pas_boire: dry.length ? dry : undefined,
       avis: cut ? cut.avis : rows,
-      ...(cut?.abreges && { avis_abreges: TEXTE_PAR_LE_LIEN }),
+      ...(cut?.abreges && { avis_abreges: TEXTE_ET_SECTEURS_PAR_LE_LIEN }),
       ...common,
     });
   }

@@ -83,6 +83,9 @@ function stationsOf(p: Payload): { station?: unknown; source?: unknown }[] {
   return Array.isArray(p.stations) ? (p.stations as { station?: unknown; source?: unknown }[]).filter((s) => s && typeof s === "object") : [];
 }
 
+/** The `citer` of the island's water cuts: the distributors and mairies whose notices are read, listed in `sources`. */
+export const COUPURES_ILE = "rundata.re, d'après les avis des distributeurs d'eau et des mairies (liste dans sources)";
+
 /**
  * A commune's water cuts: who publishes the notices read for it (`avis_lus_sur`: « la CIREST », « Dionéo »), and the ARS
  * when the answer names the distributor from its samples; every notice shown from that publisher, else the whole list.
@@ -91,6 +94,9 @@ function citerCoupures(p: Payload): string {
   // The ARS alone (a distributor whose notices are not read, none shown): who distributes the water, not what is cut.
   const only = Array.isArray(p.sources) && p.sources.length === 1 ? (p.sources[0] as { attribution?: unknown }).attribution : undefined;
   if (only === "ARS La Réunion, données Hub'Eau") return "rundata.re, d'après l'ARS La Réunion (données Hub'Eau)";
+  // The island's answer (no `lieu`): its eleven publishers said once, in `sources`, as resume_du_jour does; named in
+  // `citer` and again in the résumé's « Source », they took 630 bytes of an answer past its size (MAX_BYTES, 23/11/2026).
+  if (!p.lieu && !p.avis_lus_sur && Array.isArray(p.sources) && p.sources.length) return COUPURES_ILE;
   const lus = p.avis_lus_sur as { publie_par?: unknown } | undefined;
   if (!lus || typeof lus.publie_par !== "string") return citation(p);
   const par = lus.publie_par;

@@ -14,6 +14,7 @@
  * - Any other address under it, an id whose description is gone or unreadable, is the site's 404.
  */
 import { count } from "../budget.js";
+import { garde } from "../lecture-gardee.js";
 
 export const VIDEO_PATH = "/partage/video/";
 export const VIDEO_KV_PREFIX = "partage-video:";
@@ -32,9 +33,14 @@ export interface Description { taille: number; parties: number }
 
 let kv: KvVideo | undefined;
 
+// The descriptions read, found or not, a minute; a video's parts are read at each request (a range of its bytes).
+const descriptions = () => garde<unknown>({ ttlMs: 60_000, max: 64, introuvablesParMinute: 20 });
+let DESCRIPTIONS = descriptions();
+
 /** The KV that holds the videos; without it, every address under VIDEO_PATH is not found. */
 export function configurerVideo(store: KvVideo | undefined) {
   kv = store;
+  DESCRIPTIONS = descriptions();
 }
 
 const HEADERS = {
@@ -91,8 +97,10 @@ export async function partageVideo(request: Request): Promise<Response | null> {
   if (!id || !kv || (request.method !== "GET" && request.method !== "HEAD")) return null;
   let d: unknown;
   try {
-    count(1, "read");
-    d = await kv.get(`${VIDEO_KV_PREFIX}${id}`, "json");
+    d = await DESCRIPTIONS.lire(id, () => {
+      count(1, "read");
+      return kv!.get(`${VIDEO_KV_PREFIX}${id}`, "json");
+    });
   } catch {
     return null;
   }

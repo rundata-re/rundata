@@ -97,9 +97,12 @@ const HOST = /^(?=.{3,100}$)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0
 const ms = (s: string | null) => (s && /^\d{1,6}$/.test(s) && Number(s) <= 600_000 ? Number(s) : undefined);
 
 /** The body sent by the page, read strictly: anything else is no signal. */
+/** A table's value for a key sent by the page, its own keys only: « constructor » or « __proto__ » is no key. */
+const own = <T>(table: Record<string, T>, key: string | null): T | undefined => (key !== null && Object.hasOwn(table, key) ? table[key] : undefined);
+
 export function lire(body: string): Signal | undefined {
   const f = new URLSearchParams(body);
-  const event = EVENTS[f.get("e") ?? ""];
+  const event = own(EVENTS, f.get("e"));
   const path = f.get("p") ?? "";
   const v = f.get("v") ?? "";
   if (!event || !PATH.test(path)) return undefined;
@@ -115,11 +118,11 @@ function read(f: URLSearchParams, event: string, path: string, v: string): Signa
     case "c":
       return path === "/mcp" && !v ? { event, path, value: "" } : undefined;
     case "o":
-      return AIDE[v] ? { event, path, value: AIDE[v] } : undefined;
+      return own(AIDE, v) ? { event, path, value: own(AIDE, v)! } : undefined;
     case "s":
       return HOST.test(v) ? { event, path, value: v } : undefined;
     default:
-      return RETOURS[v] ? { event, path, value: RETOURS[v] } : undefined;
+      return own(RETOURS, v) ? { event, path, value: own(RETOURS, v)! } : undefined;
   }
 }
 

@@ -150,10 +150,10 @@ function risques(fiche: O, vague: boolean): string {
   const cat = obj(r.catastrophes_naturelles);
   if (cat) {
     const last = Array.isArray(cat.derniers) ? cat.derniers.map(obj).filter(Boolean) as O[] : [];
-    rows.push(li("Catastrophes naturelles dans la commune", `${cat.arretes_dans_la_commune} arrêté${Number(cat.arretes_dans_la_commune) > 1 ? "s" : ""}${last.length ? `, les derniers${N}: ${last.map((c) => `${esc(String(c.evenement))} du ${esc(String(c.du))} au ${esc(String(c.au))}`).join(`${N}; `)}` : ""}`));
+    rows.push(li("Catastrophes naturelles dans la commune", `${esc(String(cat.arretes_dans_la_commune))} arrêté${Number(cat.arretes_dans_la_commune) > 1 ? "s" : ""}${last.length ? `, les derniers${N}: ${last.map((c) => `${esc(String(c.evenement))} du ${esc(String(c.du))} au ${esc(String(c.au))}`).join(`${N}; `)}` : ""}`));
   } else if (typeof r.catastrophes_naturelles === "string") rows.push(li("Catastrophes naturelles", esc(NON_LU)));
   const mvt = obj(r.mouvements_de_terrain_recenses);
-  if (mvt) rows.push(li("Mouvements de terrain recensés à moins de 500 m", String(mvt.nombre)));
+  if (mvt) rows.push(li("Mouvements de terrain recensés à moins de 500 m", esc(String(mvt.nombre))));
   for (const [k, name] of [["seisme", "Séisme"], ["radon", "Radon"], ["cyclone_et_volcan", "Cyclone et volcan"]] as const) if (str(r[k])) rows.push(li(name, esc(str(r[k])!)));
   return `<section aria-labelledby="h-risques"><div class="sec-h"><h2 id="h-risques">Risques</h2></div><div class="card">${top}<ul class="plain">${rows.join("")}</ul></div></section>`;
 }
@@ -165,7 +165,7 @@ function prix(fiche: O): string {
   const kind = (name: string, k: unknown) => {
     const x = obj(k);
     if (!x) return "";
-    return `<tr><th scope="row">${name}</th><td>${x.ventes}</td><td>${esc(str(x.prix_m2_median) ?? "—")}</td><td>${esc(str(x.prix_median) ?? str(x.note) ?? "—")}</td></tr>`;
+    return `<tr><th scope="row">${name}</th><td>${esc(String(x.ventes))}</td><td>${esc(str(x.prix_m2_median) ?? "—")}</td><td>${esc(str(x.prix_median) ?? str(x.note) ?? "—")}</td></tr>`;
   };
   const voie = obj(m.sur_la_voie);
   const street = voie ? `<p>${esc(String(voie.voie))}${N}: ${esc(str(voie.note) ?? str(voie.non_lues) ?? `${voie.ventes} ventes depuis ${voie.depuis}`)}</p>` : "";
@@ -215,7 +215,7 @@ function antennes(fiche: O): string {
   return block(
     "antennes",
     "Antennes à moins de 500 m",
-    `<p>${m.supports} support${Number(m.supports) > 1 ? "s" : ""} d'antennes mobiles déclaré${Number(m.supports) > 1 ? "s" : ""} à l'ANFR${near.length ? `, le plus proche à ${near[0].distance_m}${N}m` : ""} (fichier du ${esc(String(m.fichier_du))}).</p>`,
+    `<p>${esc(String(m.supports))} support${Number(m.supports) > 1 ? "s" : ""} d'antennes mobiles déclaré${Number(m.supports) > 1 ? "s" : ""} à l'ANFR${near.length ? `, le plus proche à ${esc(String(near[0].distance_m))}${N}m` : ""} (fichier du ${esc(String(m.fichier_du))}).</p>`,
     esc(String(a.note).split(". ")[0] + "."),
   );
 }

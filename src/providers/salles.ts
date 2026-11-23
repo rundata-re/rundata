@@ -10,7 +10,7 @@
  * - Théâtre Luc Donat (Le Tampon), CDNOI (Saint-Denis), Léspas (Saint-Paul): their season, with the hours.
  * The TÉAT, Luc Donat and the CDNOI pages are in ISO-8859-1.
  */
-import { getBytes, getText, permis, postBytes, UA_RUNDATA } from "../http.js";
+import { getBytes, getText, httpUrl, permis, postBytes, UA_RUNDATA } from "../http.js";
 import { normalize } from "../places/resolve.js";
 import type { SourceInfo } from "../types.js";
 import type { Agenda, AgendaStore, Evenement, Seance } from "./agenda.js";
@@ -111,14 +111,7 @@ export function dayOf(day: number, month: number, today: string): string {
 }
 const hm = (h: string, m?: string) => `${h.padStart(2, "0")}:${m ?? "00"}`;
 /** A link of a venue's page as an absolute http(s) address; undefined for anything else (`javascript:`, `data:`, `mailto:`). */
-const abs = (base: string, href: string): string | undefined => {
-  try {
-    const u = new URL(href, base);
-    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : undefined;
-  } catch {
-    return undefined;
-  }
-};
+const abs = (base: string, href: string): string | undefined => httpUrl(href, base);
 const DAYS = /^(?:lun|mar|mer|jeu|ven|sam|dim)\w*\.?$/i;
 
 function event(e: Omit<Evenement, "categories" | "publie_par"> & Partial<Pick<Evenement, "categories">>, nom: string): Evenement {

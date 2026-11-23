@@ -5,7 +5,7 @@
  * into the Worker's KV store, where the Worker reads them; elsewhere, from the prefecture.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getText, permis, UA_RUNDATA } from "../http.js";
+import { getText, httpUrl, permis, UA_RUNDATA } from "../http.js";
 import { type SourceInfo, UpstreamError } from "../types.js";
 
 export const SOURCE: SourceInfo = {
@@ -78,7 +78,7 @@ export function headerDay(s: string): string | undefined {
  * (November 2026). A release on fuel that has no table of prices is read and passed over.
  */
 export function releases(html: string): string[] {
-  const all = [...html.matchAll(/href="([^"]*Communiques-de-presse\/[^"]*(?:carburant|gazole|sans-plomb)[^"]*)"/gi)].map((m) => new URL(m[1], ORIGIN).toString());
+  const all = [...html.matchAll(/href="([^"]*Communiques-de-presse\/[^"]*(?:carburant|gazole|sans-plomb)[^"]*)"/gi)].flatMap((m) => httpUrl(m[1], ORIGIN) ?? []);
   // Only the prefecture's own pages: a link planted in its list is never read.
   return [...new Set(all)].filter((lien) => permis(SOURCE.id, lien, [HOST]));
 }

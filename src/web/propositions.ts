@@ -471,7 +471,7 @@ function gererBody(l: propositions.Ligne, action: string, g: Extract<Gerer, { ki
     const max = propositions.addMonths(today, propositions.REPETITION_MOIS_MAX);
     parts.push(`<section class="card fo" aria-labelledby="h-prolonger"><h2 id="h-prolonger">Prolonger</h2>
   <p>Ajoutez des dates à l'événement qui se répète, jusqu'à 3 mois à partir d'aujourd'hui.</p>
-  ${actionForm(action, "prolonger", `<div class="f"><label for="g-jusqu">Jusqu'au</label><input id="g-jusqu" name="jusqu_au" type="date" min="${l.jusqu_au}" max="${max}" required></div><button type="submit">Prolonger</button>`)}</section>`);
+  ${actionForm(action, "prolonger", `<div class="f"><label for="g-jusqu">Jusqu'au</label><input id="g-jusqu" name="jusqu_au" type="date" min="${esc(l.jusqu_au)}" max="${max}" required></div><button type="submit">Prolonger</button>`)}</section>`);
   }
   if (l.contact_public) {
     parts.push(`<section class="card fo" aria-labelledby="h-contact"><h2 id="h-contact">Retirer le contact public</h2>

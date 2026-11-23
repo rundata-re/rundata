@@ -5,7 +5,7 @@
  * (the days, the hours, the streets, whether the cut is happening now), with the title and the link of the mairie's
  * post: never the notice's text, worded by EDF. Read by the scheduled event into a shared copy (web/partagees.ts).
  */
-import { getJson, sharedSite } from "../http.js";
+import { getJson, httpUrl, sharedSite } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { strip } from "./avis-eau.js";
 import { AUTORISATIONS, autorisee } from "./autorisations.js";
@@ -241,7 +241,7 @@ export function namedDay(url: string, uploaded: Date): string | undefined {
 /** A mairie's PDF letters of EDF, newest first: the day of cut when the name gives it, else the upload only. */
 export function parseMedia(media: Media[], commune: string): AvisCourant[] {
   return media
-    .filter((m) => m.mime_type === "application/pdf")
+    .filter((m) => m.mime_type === "application/pdf" && httpUrl(m.source_url))
     .map((m) => {
       // WordPress gives the local time without its offset.
       const publie = new Date(`${m.date}+04:00`);
@@ -250,7 +250,7 @@ export function parseMedia(media: Media[], commune: string): AvisCourant[] {
         commune,
         titre: "Avis de coupure d'EDF (PDF)",
         publie: publie.toISOString(),
-        lien: m.source_url,
+        lien: httpUrl(m.source_url)!,
         nature: jour ? "programmée" : "information",
         creneaux: jour ? [{ jour, secteurs: [] }] : [],
         secteurs: [],
@@ -263,7 +263,7 @@ export function parseMedia(media: Media[], commune: string): AvisCourant[] {
 export function parsePosts(posts: Post[], commune: string): AvisCourant[] {
   return posts
     .map((p) => ({ p, titre: strip(p.title.rendered).trim(), texte: strip(p.content.rendered.replace(/\[\/?et_pb_[^\]]*\]/g, "")).replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n") }))
-    .filter(({ titre, texte }) => ABOUT.test(titre) && /[ée]lectri|courant|\bEDF\b/i.test(`${titre} ${texte}`) && CUT.test(`${titre} ${texte}`))
+    .filter(({ p, titre, texte }) => httpUrl(p.link) && ABOUT.test(titre) && /[ée]lectri|courant|\bEDF\b/i.test(`${titre} ${texte}`) && CUT.test(`${titre} ${texte}`))
     .map(({ p, titre, texte }) => {
       // WordPress gives the local time without its offset.
       const publie = new Date(`${p.date}+04:00`);
@@ -273,7 +273,7 @@ export function parsePosts(posts: Post[], commune: string): AvisCourant[] {
         commune,
         titre,
         publie: publie.toISOString(),
-        lien: p.link,
+        lien: httpUrl(p.link)!,
         nature: now && !creneaux.some((c) => c.de) ? "en cours" : creneaux.length ? "programmée" : "information",
         creneaux,
         secteurs: WITH_FACTS && now && !creneaux.length ? streets(texte).slice(0, SECTORS_MAX) : [],

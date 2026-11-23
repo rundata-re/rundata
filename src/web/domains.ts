@@ -549,7 +549,7 @@ function quakeDays(days: Jour[] | undefined, imageAfter: string | undefined): st
   const scale = Math.max(DAYS_SCALE_MIN, ...read.map((j) => j.nombre));
   const bars = days.map((j) => "non_lu" in j
     ? `<li class="nolu" aria-label="${dd(j.jour)} : ${NON_LU}"></li>`
-    : `<li${j.en_cours ? ` class="now"` : ""} aria-label="${dd(j.jour)}${j.en_cours ? " (en cours)" : j.jusqu_a ? ` (jusqu'à ${j.jusqu_a})` : ""} : ${j.nombre}"><i style="height:${Math.round((j.nombre / scale) * 100)}%"></i></li>`).join("");
+    : `<li${j.en_cours ? ` class="now"` : ""} aria-label="${dd(j.jour)}${j.en_cours ? " (en cours)" : j.jusqu_a ? ` (jusqu'à ${esc(String(j.jusqu_a))})` : ""} : ${j.nombre}"><i style="height:${Math.round((j.nombre / scale) * 100)}%"></i></li>`).join("");
   const today = days.at(-1)!;
   const last = read.at(-1);
   const top = read.reduce<typeof last>((a, j) => (!a || j.nombre > a.nombre ? j : a), undefined);

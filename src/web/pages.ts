@@ -2373,7 +2373,7 @@ export function lue(l: Live, data: Cached<unknown>, now: Date): Live {
 export function recordsSection(h: HistoriqueAnswer | undefined): string {
   // A box per record: its words, its figure big, its date small (the cards of a station's page, station.ts).
   const box = (cls: string, label: string, x: { valeur: number; date: string } | undefined, v: (n: number) => string) =>
-    x ? `<li class="${cls}"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${x.date}</small></li>` : "";
+    x ? `<li class="${cls}"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${esc(x.date)}</small></li>` : "";
   const items = (h?.records_reference ?? []).flatMap((r) => {
     const boxes =
       box("chaud", "Le plus chaud", r.temperature_max, deg) +

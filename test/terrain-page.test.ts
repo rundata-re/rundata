@@ -133,3 +133,18 @@ describe("the fiche of an address, /terrain (web/terrain.ts)", () => {
     expect(html).toContain("https://rundata.re/terrain?adresse=7%20rue%20de%20la%20Buse%2C%20Saint-Paul");
   });
 });
+
+describe("the values of the fiche that the tool formats (web/terrain.ts)", () => {
+  it("are escaped like the others, whatever they hold (23/11/2026)", () => {
+    const X = "<i>x</i>";
+    const fiche = {
+      ...FICHE,
+      marche_immobilier: { ...FICHE.marche_immobilier, maisons: { ...FICHE.marche_immobilier.maisons, ventes: X } },
+      antennes_a_moins_de_500_m: { antennes_mobiles: { fichier_du: "01/11/2026", supports: X, plus_proches: [{ distance_m: X }] }, note: "Supports d'antennes déclarés à l'ANFR. Le reste." },
+      risques: { ...FICHE.risques, catastrophes_naturelles: { ...FICHE.risques.catastrophes_naturelles, arretes_dans_la_commune: X }, mouvements_de_terrain_recenses: { rayon_m: 500, nombre: X, plus_proches: [] } },
+    };
+    const html = terrainPage("https://rundata.re", "7 rue de la Buse, Saint-Paul", { fiche } as never);
+    expect(html).not.toContain(X);
+    expect(html.split("&lt;i&gt;x&lt;/i&gt;").length - 1).toBeGreaterThanOrEqual(5);
+  });
+});

@@ -223,12 +223,12 @@ function archive(h: StationHistory, now: Date): string {
   <div class="sta-grid two">${cards.join("")}</div></section>`;
 
   const y = h.annee.resume as Resume;
-  const since = y.pluie?.jours_mesures ? thin(` Depuis janvier : ${fr(Math.round(y.pluie.total_mm))} mm de pluie${y.pluie.rapport_a_la_normale ? `, ${y.pluie.rapport_a_la_normale} de la normale` : ""}.`) : "";
+  const since = y.pluie?.jours_mesures ? thin(` Depuis janvier : ${fr(Math.round(y.pluie.total_mm))} mm de pluie${y.pluie.rapport_a_la_normale ? `, ${esc(String(y.pluie.rapport_a_la_normale))} de la normale` : ""}.`) : "";
   const cell = (v: number | undefined, unit: string, normal?: number, round = num) => (v == null ? "<td>—</td>" : `<td><b>${thin(`${round(v)} ${unit}`)}</b>${normal != null ? `<small>normale ${round(normal)}</small>` : ""}</td>`);
   const whole = (n: number) => fr(Math.round(n));
   const rows = h.annee.mois.map((m) => {
     const name = String(m.mois).replace(/ \d{4}$/, "");
-    return `<tr><td>${name.charAt(0).toUpperCase()}${name.slice(1)}</td>${cell(m.pluie_mm, "mm", m.pluie_normale_mm, whole)}${cell(m.tmax_moyenne, "°C", m.tmax_normale)}${cell(m.soleil_h_par_jour, "h")}</tr>`;
+    return `<tr><td>${esc(name.charAt(0).toUpperCase() + name.slice(1))}</td>${cell(m.pluie_mm, "mm", m.pluie_normale_mm, whole)}${cell(m.tmax_moyenne, "°C", m.tmax_normale)}${cell(m.soleil_h_par_jour, "h")}</tr>`;
   }).join("");
   // The month of the last day, when it is not over.
   const au = h.annee.mois.length ? h.jusqu_au : "";
@@ -237,11 +237,11 @@ function archive(h: StationHistory, now: Date): string {
   const annee = `<section aria-labelledby="h-an"><div class="sec-h"><p class="eyebrow">Historique</p><h2 id="h-an">Mois par mois en ${h.annee.annee}</h2>
   <p>Comparés à la normale 1991-2020 de la station.${since}</p></div>
   <div class="card"><table class="sta-m"><caption class="sr">Mois par mois en ${h.annee.annee}</caption><thead><tr><th>Mois</th><th>Pluie</th><th>Maximales</th><th>Soleil par jour</th></tr></thead><tbody>${rows}</tbody></table>
-  ${lastMonth ? `<p class="note">${lastMonth.charAt(0).toUpperCase()}${lastMonth.slice(1)} jusqu'au ${dated(au, now)}.</p>` : ""}</div></section>`;
+  ${lastMonth ? `<p class="note">${esc(lastMonth.charAt(0).toUpperCase() + lastMonth.slice(1))} jusqu'au ${dated(au, now)}.</p>` : ""}</div></section>`;
 
   const rec = h.records;
   const card = (label: string, x: { valeur: number; date: string } | undefined, v: (n: number) => string) =>
-    x ? `<li class="card"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${x.date}</small></li>` : "";
+    x ? `<li class="card"><span>${label}</span><b>${thin(v(x.valeur))}</b><small>le ${esc(x.date)}</small></li>` : "";
   const items = rec
     ? card("Température la plus haute", rec.temperature_max, deg) + card("Température la plus basse", rec.temperature_min, deg) +
       card("Pluie en un jour", rec.pluie_en_un_jour_mm, (n) => `${fr(Math.round(n))} mm`) + card("Rafale la plus forte", rec.rafale_max_kmh, (n) => `${n} km/h`)

@@ -1154,11 +1154,11 @@ export function parsePetiteIle(html: string, now: Date, nom = "Ville de Petite-Ã
     let k = i - 2;
     while (k >= 0 && !t[k].href) k--;
     const href = t[k]?.href;
-    if (!titre || !seances.length || !href?.includes("/agenda/")) continue;
+    const lien = httpUrl(href, "https://www.petite-ile.re/");
+    if (!titre || !seances.length || !lien || !href?.includes("/agenda/")) continue;
     let j = i + 2;
     const lieu = t[j]?.t === "location_on" && t[j + 1]?.t ? clean(t[(j += 2) - 1].t!) : undefined;
     const texte = t[j]?.t ? clean(t[j].t!) : "";
-    const lien = new URL(href, "https://www.petite-ile.re/").toString();
     const statut = statusOf(titre, texte);
     out.push({
       ...(statut ? { statut } : {}),

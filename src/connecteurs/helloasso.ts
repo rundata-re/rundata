@@ -15,7 +15,7 @@
  * new at each use (the old one stays valid until the new one is used). The authentication API takes 10 calls in 10
  * seconds, 20 in 10 minutes, 50 in an hour: the scheduled event reads one link per run (src/registre.ts).
  */
-import { getText, postFormOAuth } from "../http.js";
+import { getText, httpUrl, postFormOAuth } from "../http.js";
 import { lead } from "../providers/agenda-mots.js";
 import { UpstreamError } from "../types.js";
 import { AccesRefuse, garde, reunionnais, type Acces, type EvenementPublic, type Plateforme, type Verification } from "./plateforme.js";
@@ -152,7 +152,8 @@ const phrase = (s: string | undefined) => (s && !s.includes("<") ? lead(texte(s)
 export function evenement(f: FormDetails): EvenementPublic | undefined {
   const debut = heureLocale(f.startDate);
   const titre = texte(f.title);
-  if (!f.formSlug || !titre || !debut || !f.url) return undefined;
+  const lien = httpUrl(f.url);
+  if (!f.formSlug || !titre || !debut || !lien) return undefined;
   const fin = heureLocale(f.endDate);
   return {
     id: f.formSlug,
@@ -166,7 +167,7 @@ export function evenement(f: FormDetails): EvenementPublic | undefined {
     ...(texte(f.place?.zipCode) ? { code_postal: texte(f.place?.zipCode) } : {}),
     ...(prix(f.tiers) ? { prix: prix(f.tiers) } : {}),
     ...(phrase(f.description) ? { description: phrase(f.description) } : {}),
-    lien: f.url,
+    lien,
   };
 }
 
@@ -197,7 +198,7 @@ async function verifier(cles: Record<string, string>): Promise<Verification> {
       nom: nomBorne(o.name!)!,
       ...(texte(o.city) ? { commune: texte(o.city) } : {}),
       ...(texte(o.zipCode) ? { code_postal: texte(o.zipCode) } : {}),
-      lien: o.url ?? `https://www.helloasso.com/associations/${o.organizationSlug}`,
+      lien: httpUrl(o.url) ?? `https://www.helloasso.com/associations/${o.organizationSlug}`,
     },
     secret: t.refresh_token,
   };

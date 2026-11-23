@@ -12,6 +12,7 @@ import { slugify } from "../web/places.js";
 import { deNom } from "../articles.js";
 import { a, credits, enumeration, notFound, placeBlock, text } from "./format.js";
 import { type Injoignable, injoignable } from "./injoignable.js";
+import { copieAncienne, VOIR_EAU } from "./copie-ancienne.js";
 
 const RECENT_DAYS = 5;
 const QUALITY = /qualit|potab|boire|chlor|conformit|bouilli|embouteill/i;
@@ -231,6 +232,10 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   }
   const live = current(all, now);
   const common = { ...COMMON, ...apresCyclone(now), sources: credits([notices.SOURCE]) };
+  // The scheduled event has not read them for a while: said first (tools/copie-ancienne.ts). Not in the pages' copy,
+  // which say it at each view from its own hour.
+  const ancienne = complet ? undefined : copieAncienne("eau", readAt, now, "outil");
+  const avertissement = ancienne && `${ancienne} ${VOIR_EAU}`;
 
   if (!lieu?.trim()) {
     const dry = lues().map((c) => doNotDrink(all, c) && c).filter(Boolean) as string[];
@@ -241,6 +246,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
     const rows = told.map((n) => noticeRow(n, now, stillDry.has(n)));
     const cut = complet ? undefined : pourAssistant(rows);
     return text({
+      avertissement,
       // The sites without an answer named once here, their words in `injoignable` (the page says them in full).
       resume: (dry.length ? `Eau à ne pas boire en ce moment : ${dry.join(", ")}. ` : "") +
         (live.length ? `${live.length} avis des distributeurs d'eau récents ou à venir.` : silent.length ? "" : "Pas d'avis de coupure récent ou à venir sur les sites lus. Une coupure peut être annoncée ailleurs, par la mairie par exemple.") +
@@ -310,6 +316,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   // Sainte-Suzanne: the orders allowing runéo's works, a block of their own, never a notice (providers/arretes-travaux.ts).
   const arretes = commune === arretesVille.COMMUNE ? await arretesVille.bloc(cache, now) : undefined;
   return text({
+    avertissement,
     lieu: placeBlock(lieu, res),
     resume,
     ne_pas_boire: dry ? noticeRow(dry, now) : undefined,

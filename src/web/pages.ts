@@ -738,6 +738,7 @@ background:radial-gradient(closest-side,color-mix(in srgb,var(--k) 22%,transpare
 .tq{font-size:.92rem;font-style:italic;align-self:flex-start;padding:.4rem .85rem;border-radius:16px 16px 16px 4px;background:var(--surface-2);border:1px solid var(--line)}
 .ta{display:none}
 @media (min-width:66rem){.ta{display:block;font-size:.86rem;line-height:1.45;color:var(--muted);padding-top:.5rem;margin-top:auto;border-top:1px solid var(--line)}}
+.dessus{position:relative;z-index:2}
 .tl{position:relative;z-index:2;font-weight:700;font-size:.9rem;margin-top:.2rem}
 
 .hero{position:relative;z-index:1;overflow:hidden;color:#fff;--sky1:#050f1a;--sky2:#0f2c4b;--glow:rgb(255 207 31/.0);
@@ -771,6 +772,8 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 @media (max-width:190px){.hero h1{font-size:min(2.6rem,20vw)}}
 .hero .lead{color:rgb(255 255 255/.82);font-size:clamp(1.02rem,3.6vw,1.2rem);max-width:32rem}
 .hero .lead b{color:#fff}
+/* A warning card in the night band (white text, white links): the page's ink and links (#1288). */
+.band .card.warn{color:var(--ink)}.band .card.warn a{color:var(--link)}
 .hero-cta{display:flex;flex-wrap:wrap;gap:.6rem;width:100%;max-width:30rem}.hero-cta .btn{flex:1 1 auto;justify-content:center}
 .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.25rem;border-radius:16px;font:800 1rem/1 system-ui,sans-serif;text-decoration:none;transition:transform .15s,box-shadow .15s}
 .btn .ic{width:1.15rem;height:1.15rem}

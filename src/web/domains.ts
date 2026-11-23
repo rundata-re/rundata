@@ -31,7 +31,9 @@ import * as littoral from "../tools/littoral.js";
 import { horizonDe } from "../providers/calendrier.js";
 import { ferieDit, longDate, moonOf, ordinaux, UNPUBLISHED } from "../tools/calendrier.js";
 import { nextSlot, type CourantRow } from "../tools/courant.js";
+import { MAIRIES } from "../providers/coupures-courant.js";
 import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
+import { copieAncienne, copieAncienneCourte, VOIR_COURANT, VOIR_EAU } from "../tools/copie-ancienne.js";
 import { casse } from "../tools/casse.js";
 import { a, a as aLieu, de, enumeration, fr, heure, heuresDites, nombre, tranche } from "../tools/format.js";
 import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
@@ -137,6 +139,13 @@ export const agendaNotes = (data: Cached<AgendaAnswer> | null | undefined, now: 
 
 const warnings = (list: string[]) =>
   list.length ? `<div class="card warn">${icon("alert")}<h3>À savoir</h3><ul class="plain">${list.map((w) => `<li>${adresseTexte(w)}</li>`).join("")}</ul></div>` : "";
+
+/**
+ * The notices of cuts the scheduled event has not read again for a while (tools/copie-ancienne.ts), said before the
+ * rest: `voir`, the « Voir … » of the page, its links given (HTML).
+ */
+export const copieBandeau = (texte: string | undefined, voir = "") =>
+  texte ? `<div class="card warn">${icon("alert")}<p>${esc(texte)}${voir ? ` ${voir}` : ""}</p></div>` : "";
 
 /**
  * A tool's name or a layer's code, escaped, that may be cut after each « . » and « _ » on a narrow screen
@@ -931,6 +940,7 @@ export function electricitePage(origin: string, data: Cached<ElectriciteAnswer> 
     ? `<section id="coupures" aria-labelledby="h-coupures">
   <div class="sec-h"><h2 id="h-coupures">Coupures d'électricité annoncées par les mairies</h2>
   ${c.a_savoir ? `<p>${esc(c.a_savoir)}</p>` : ""}${c.depannage ? `<p><b>${esc(c.depannage)}</b></p>` : ""}</div>
+  ${c.lu_le ? copieBandeau(copieAncienne("courant", new Date(c.lu_le), now, "page"), esc(VOIR_COURANT)) : ""}
   ${(c.injoignable ?? []).map((s) => `<p class="note">${silentText(s)}</p>`).join("")}
   ${c.avis?.length
     ? `<div class="card"><ul class="plain">${c.avis.map(courantItem).join("")}</ul></div>`
@@ -1019,10 +1029,18 @@ export function electriciteCommune(data: Cached<ElectriciteAnswer> | null, commu
   const share = p && at
     ? `<p class="td all note">${esc(`${fr(p.renouvelable_pct)}\u202f% renouvelable sur l'île, ${at.startsWith(`${today} `) ? `à ${at.slice(today.length + 1)}` : leJour(at)}`)}</p>`
     : "";
+  // The notices not read again for a while: said under the cut in the short form of the tile, the mairie's site linked
+  // above the tile's own link (.dessus), so that a touch opens it (marketing, 23/11/2026).
+  const lu = data!.value.coupures_annoncees?.lu_le;
+  const ancienne = lu ? copieAncienneCourte("courant", new Date(lu), now) : undefined;
+  const site = MAIRIES.find((m) => m.commune === commune)?.site;
+  const old = ancienne
+    ? `<p class="td all note">${esc(ancienne)} À vérifier sur ${site ? `<a class="dessus" href="${esc(site)}" rel="noopener">le site de la mairie</a>` : "le site de la mairie"}.</p>`
+    : "";
   return {
     // The notice's word, « programmée »; « en cours » only when the mairie's notice says so, never from the hour.
     live: { valeur: cut.nature === "en cours" ? "Coupure en cours" : "Coupure programmée", detail: esc(when), entier: true },
-    ...(share ? { more: share } : {}),
+    ...(share || old ? { more: old + share } : {}),
     foot: `<a href="${esc(cut.lien)}" rel="noopener">L'avis de la mairie${cut.pdf ? " (PDF)" : ""} →</a>`,
   };
 }
@@ -3046,7 +3064,8 @@ export function coupuresPage(origin: string, data: Cached<CoupuresAnswer> | null
   const silent = d?.injoignable ?? [];
   const status = !d
     ? loading("Les avis des distributeurs")
-    : noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(data!.fetchedAt), silent.length > 0) +
+    : copieBandeau(copieAncienne("eau", data!.fetchedAt, now, "page"), esc(VOIR_EAU)) +
+      noticesHead(d.avis, "", dry, silent.length && d.avis.length ? "" : leAt(data!.fetchedAt), silent.length > 0) +
       silent.map((f) => `<p class="note">${silentText(f)}</p>`).join("");
 
   const list = d

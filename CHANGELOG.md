@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Coupures d'eau et de courant : un avertissement s'affiche quand les avis n'ont pas pu être relus depuis plus de 2 h (eau) ou 6 h (courant).
 - Journée d'une commune : quand le distributeur d'eau publie ses avis sur son propre site, la carte le nomme et donne le lien de ce site.
 - Pages et assistants IA : rundata.re parle de lui par son nom, plus en « nous » (sites sans réponse, données anciennes, associations, clubs).
 - Eau, crues, marée et sentiers : les pages et les outils IA disent “rundata.re” là où ils disaient “nous”.

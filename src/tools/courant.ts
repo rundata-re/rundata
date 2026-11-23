@@ -8,6 +8,7 @@ import { localTime } from "../geo.js";
 import * as cc from "../providers/coupures-courant.js";
 import { a as at, credits, de } from "./format.js";
 import { injoignable as siteSilent } from "./injoignable.js";
+import { copieAncienne, VOIR_COURANT } from "./copie-ancienne.js";
 
 export interface CourantAnswer {
   avis: cc.AvisCourant[];
@@ -310,7 +311,11 @@ export function courantBlock(copy: Cached<CourantAnswer> | undefined, commune: s
       : live.flatMap((x) => rowsOf(c, x, now));
   const latest = quiet.map((x) => own(x)[0]).sort((a, b) => Date.parse(b.publie) - Date.parse(a.publie));
   const silent = (commune ? [commune] : c.indisponibles).flatMap((x) => injoignable(c, x, localTime(copy.fetchedAt), now) ?? []);
+  // The scheduled event has not read them for a while (tools/copie-ancienne.ts): said first in the tool's answer; the
+  // page says it at each view, from `lu_le`.
+  const ancienne = court ? copieAncienne("courant", copy.fetchedAt, now, "outil") : undefined;
   return {
+    avertissement: ancienne && `${ancienne} ${commune ? `Voir le site de ${mairie(commune)}, qui relaie les avis d'EDF.` : VOIR_COURANT}`,
     avis,
     // Marketing's words (22/11/2026).
     sans_date_a_venir: court && !commune ? nothingAhead(latest, now) : undefined,
@@ -320,6 +325,7 @@ export function courantBlock(copy: Cached<CourantAnswer> | undefined, commune: s
     a_savoir: honesty(),
     depannage: panne(),
     lu_a: localTime(copy.fetchedAt),
+    lu_le: copy.fetchedAt.toISOString(),
     indisponibles: c.indisponibles.filter(followed).length ? c.indisponibles.filter(followed) : undefined,
   };
 }

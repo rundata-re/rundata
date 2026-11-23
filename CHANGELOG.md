@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Événements : quand le site d'une commune n'annonce rien, sa page et l'outil IA le disent, avec l'heure de la lecture.
 - Connecteur : la journée d'une commune dit d'abord l'eau à ne pas boire et la vigilance, et nomme la météo du lieu demandé (Maïdo…).
 - Coupures d'eau et de courant : un avertissement s'affiche quand les avis n'ont pas pu être relus depuis plus de 2 h (eau) ou 6 h (courant).
 - Journée d'une commune : quand le distributeur d'eau publie ses avis sur son propre site, la carte le nomme et donne le lien de ce site.

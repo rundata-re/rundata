@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-23T08:08:00+04:00", texte: "Événements\u00a0: quand le site d'une commune n'annonce rien, sa page et l'outil IA le disent, avec l'heure de la lecture." },
   { date: "2026-11-23T06:42:00+04:00", texte: "Connecteur\u00a0: la journée d'une commune dit d'abord l'eau à ne pas boire et la vigilance, et nomme la météo du lieu demandé (Maïdo…)." },
   { date: "2026-11-23T05:31:00+04:00", texte: "Coupures d'eau et de courant\u00a0: un avertissement s'affiche quand les avis n'ont pas pu être relus depuis plus de 2\u00a0h (eau) ou 6\u00a0h (courant)." },
   { date: "2026-11-23T05:27:00+04:00", texte: "Journée d'une commune\u00a0: quand le distributeur d'eau publie ses avis sur son propre site, la carte le nomme et donne le lien de ce site." },

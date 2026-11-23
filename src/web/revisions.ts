@@ -42,7 +42,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Un appel à exposants donné par le nom de sa sortie, « annoncé par … dans un appel à exposants » (21/11/2026).
   // Ce nom avec ses majuscules quand le titre est tout en capitales (« Marché de Noël au Colosse », 21/11/2026).
   // The agendas not read « sans réponse à la dernière lecture de rundata.re »; the linked associations' licence names rundata.re (23/11/2026).
-  agenda: 46,
+  // Each commune's own sites read, at their oldest read, for its tile when they announce nothing (23/11/2026).
+  agenda: 47,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).

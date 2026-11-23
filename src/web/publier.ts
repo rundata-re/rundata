@@ -30,7 +30,7 @@ const LABEL = {
   // After « rundata.re : » in the tutorials, as in the table: the name is not said twice.
   lu: ["Déjà lu", "Déjà lu"],
   bientot: ["Bientôt lu", "Bientôt lu"],
-  demande: ["Sur demande", "Sur demande\u00a0: écrivez à contact@rundata.re"],
+  demande: ["Sur demande", "Sur demande\u00a0: contact@rundata.re"],
 } as const;
 
 function etat(kind: string, short: boolean): string {

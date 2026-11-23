@@ -94,7 +94,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Each range of hours of a day its own cut, the streets after a house number read (« 650 chemin Balance », 21/11/2026).
   // A place a house number starts read, « Ch. » a street, the others said in the notice (`autres_lieux`, 21/11/2026).
   // A mairie not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
-  courant: 14,
+  // A cut with one hour written said « à partir de 09:00 » or « jusqu'à 15:00 », no longer silent.
+  courant: 15,
   crues: 3,
   // An alert whose every period is over said lifted, never « prévue »; an alert not read said so (ALERTE_NON_LUE).
   cyclones: 12,

@@ -243,7 +243,9 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
   const small = [
     r.mer ? `<li>Mer : <b>${esc(thin(r.mer.temperature_eau))}</b> <span class="note">${esc(r.mer.mesure)}</span> · <a href="/mer">la mer →</a></li>` : "",
     r.air ? `<li>Air : <b>${esc(r.air.qualite)}</b> <span class="note">indice ATMO prévu ${r.air.indice_atmo}${r.air.polluants ? `, ${esc(r.air.polluants.join(", "))}` : ""}</span> · <a href="/air">l'air →</a></li>` : "",
-    r.electricite ? `<li>Électricité : <b>${String(r.electricite.renouvelable_pct).replace(".", ",")} % renouvelable</b> <span class="note">à ${esc(r.electricite.heure)}</span> · <a href="/electricite">l'électricité →</a></li>` : "",
+    // A line past its hour: in electricite's words, never its value as the day's (audit of the AI tools, 23/11/2026).
+    r.electricite?.avertissement ? `<li>Électricité : <span class="note">${esc(r.electricite.avertissement)}</span> · <a href="/electricite">l'électricité →</a></li>`
+    : r.electricite ? `<li>Électricité : <b>${String(r.electricite.renouvelable_pct).replace(".", ",")} % renouvelable</b> <span class="note">à ${esc(r.electricite.heure)}</span> · <a href="/electricite">l'électricité →</a></li>` : "",
     r.calendrier?.jour_ferie ? `<li>Jour férié : <b>${esc(r.calendrier.jour_ferie)}</b></li>` : "",
     r.calendrier?.vacances_scolaires ? `<li>${esc(r.calendrier.vacances_scolaires)} en cours · <a href="/calendrier">le calendrier →</a></li>` : "",
     `<li>Soleil : lever ${esc(r.soleil.lever)}, coucher ${esc(r.soleil.coucher)}</li>`,

@@ -218,9 +218,10 @@ export const sourceMuette = (source: string, at: Date, tardive?: boolean) =>
 /**
  * `donnee`: false leaves `donnee_du` out (an answer made of many dated parts, each saying its own), and dates the read
  * by the newest of them. `lentes`: every read counts, the slow ones too. `nom`: a source's
- * name from its id, for the one served from its last copy.
+ * name from its id, for the one served from its last copy. `cles`: the cache keys of the tool's own data, which date the
+ * read when one of them was read; the others are still in `lectures`.
  */
-export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { donnee?: boolean; lentes?: boolean; nom?: (id: string) => string | undefined } = {}) {
+export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { donnee?: boolean; lentes?: boolean; nom?: (id: string) => string | undefined; cles?: readonly string[] } = {}) {
   // `lentes`: an answer whose slow reads are its data (the events of the agendas read once a day, 20/11/2026: « lue à
   // 11:29 » over the Département's events read at 10:00, which the page said), none left out as reference.
   const live = opts.lentes ? lectures : lectures.filter((l) => l.freshSeconds < REFERENCE_SECONDS);
@@ -229,7 +230,11 @@ export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { do
   // the warning, not here (31/10/2026: the events read at 01:17 said « il y a 2 h », the time of a silent source's
   // copy). Every part a copy: the oldest of them. Without any read, the data is rundata.re's own copy, read now.
   const served = pool.filter((l) => !l.stale);
-  const basis = served.length ? served : pool;
+  const all = served.length ? served : pool;
+  // The tool's own data, when it says which (actualites: the media, read every 5 minutes): « lue à 12:01 » over news of
+  // 12:40 was the prefecture's slower read, said apart in the answer (audit of the AI tools, 23/11/2026).
+  const own = opts.cles ? all.filter((l) => opts.cles!.includes(l.key)) : [];
+  const basis = own.length ? own : all;
   // An answer of many dated parts (`donnee` false, resume_du_jour), each saying its own time: the newest of its reads,
   // never older than one of them (31/10/2026: « lue à 06:25 » over a weather measured at 07:00, read again for it).
   const reads = basis.map((l) => l.fetchedAt);
@@ -242,7 +247,8 @@ export function fraicheur(p: Payload, lectures: Lecture[], now: Date, opts: { do
   const when = new Date(read);
   // Sources read at different times: the oldest and the newest of the reads served up to date, both said (20/11/2026:
   // « lue à 00:20 » alone over news read at 10:10, the time of a collector's copy).
-  const span = reads.length ? [localTime(new Date(Math.min(...reads))), localTime(new Date(Math.max(...reads)))] : [];
+  const every = all.map((l) => l.fetchedAt);
+  const span = every.length ? [localTime(new Date(Math.min(...every))), localTime(new Date(Math.max(...every)))] : [];
   const entre = span.length && span[0] !== span[1] ? { plus_ancienne: span[0], plus_recente: span[1] } : undefined;
   // Only those the answer is about: a list of stations kept from yesterday says nothing of the measurement.
   const secours = copies(pool, opts.nom ?? (() => undefined));

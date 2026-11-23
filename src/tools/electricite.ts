@@ -217,7 +217,8 @@ export async function electricite(cache: Cache, now = new Date(), lieu?: string,
       "La part renouvelable est celle publiée par filière, hors stockage.",
     ],
     // The mairies' notices credited here, in this instance: the copy's own credits were registered where it was built,
-    // so citer named EDF alone (audit of the AI tools, 20/11/2026).
-    sources: credits(courant ? [edf.SOURCE, cc.SOURCE] : [edf.SOURCE]),
+    // so citer named EDF alone (audit of the AI tools, 20/11/2026). Only when one of their notices is in the answer:
+    // « rundata.re ne lit pas d'avis… pour Saint-Denis » credited five mairies that gave nothing to it.
+    sources: credits(courant && (coupures.avis?.length || coupures.sans_date_a_venir) ? [edf.SOURCE, cc.SOURCE] : [edf.SOURCE]),
   });
 }

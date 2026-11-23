@@ -1,6 +1,8 @@
 # The daily check of the sources through rundata.re (scripts/check-sources.ts): a few tools on /mcp and a few pages,
 # each failing when its data is older than its source allows, when it says a source did not answer, or when the
-# volcano's ORSEC level is unknown. Nothing is asked of the sources themselves. The failure is the alert.
+# volcano's ORSEC level is unknown. Nothing is asked of the sources themselves. The failure is the alert, except for
+# a breakdown upstream listed in scripts/pannes-amont.json (known, said on the site, dated, 7 days at most): a warning
+# in the job's summary, without failing.
 name: Contrôle des sources
 
 on:

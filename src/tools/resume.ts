@@ -588,11 +588,11 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           // When the notices were read, the copy's time and never the call's: « 06/11 14:15 ».
           lus_le: localTime(l.coupures.fetchedAt),
           // Notices not read: the distributor named, and its site when it has one to give (Sudéau's for Saint-Joseph and Le Tampon),
-          // as /coupures-eau/<commune> says it; never « voir la mairie » alone (1284, 20/11/2026).
+          // said as where its notices are published, never « not read » on a page of the sitemap (1599, 23/11/2026).
           note: avis.length || dist?.avis ? undefined
-            : !dist ? `Les avis du distributeur ${a(nom)} ne sont pas lus par rundata.re : voir la mairie.`
-            : SITES_DISTRIBUTEURS[dist.nom] ? `Les avis de coupure de ${nomDit(dist)} ne sont pas lus par rundata.re\u00a0: voir son site, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.`
-            : `Les avis de coupure de ${nomDit(dist)} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.`,
+            : !dist ? `Pour les coupures d'eau ${a(nom)}, renseignez-vous auprès de la mairie.`
+            : SITES_DISTRIBUTEURS[dist.nom] ? `${nomDit(dist)} publie ses avis de coupure sur son site, rubrique «\u00a0L'eau dans ma commune\u00a0»\u00a0; la mairie peut aussi vous renseigner.`
+            : `${nomDit(dist)} prévient ses abonnés des coupures par ses propres avis\u00a0; la mairie peut aussi vous renseigner.`,
           site_distributeur: avis.length || dist?.avis || !dist ? undefined : SITES_DISTRIBUTEURS[dist.nom],
           injoignable: waterSilent && { texte: waterSilent.texte, site: waterSilent.site },
         }

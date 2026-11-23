@@ -73,7 +73,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
   // Its bus stops with their page (/bus/arret/…), which the Bus block links (22/11/2026).
   // A mairie's site not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
-  commune: 31,
+  // Its water card says where a distributor not read publishes its notices, never « not read » (23/11/2026).
+  commune: 32,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).

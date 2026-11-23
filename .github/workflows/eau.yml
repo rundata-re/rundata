@@ -1,6 +1,7 @@
 # The water of the whole island for the /eau page: four times a day, every bathing site the ARS checks and the tap
 # water of each commune (scripts/eau-ile.ts) are written to the Worker's KV store, where src/eau/ile.ts reads them.
-# That is some 75 requests, more than the Worker may make for one page.
+# That is some 75 requests, more than the Worker may make for one page. A source that does not answer keeps its half of
+# the copy already stored, with its time, said as a warning of the run; the run fails only with nothing read and no copy.
 name: Qualité de l'eau
 
 on:
@@ -32,7 +33,13 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The copy already stored: a source that does not answer keeps its half of it, with its time (src/eau/ile.ts keep).
+      # None (first run, or expired) is not a failure.
+      - name: The copy already stored
+        run: npx wrangler kv key get eau:ile --binding STORE --remote --text > copie-avant.json 2>/dev/null || rm -f copie-avant.json
       - name: Every bathing site and every commune
-        run: npx tsx scripts/eau-ile.ts eau-ile.json
+        run: npx tsx scripts/eau-ile.ts eau-ile.json copie-avant.json
+      # Nothing written when neither source answered and a copy is stored: that copy stays.
       - name: Into the KV store, kept 3 days at most
+        if: hashFiles('eau-ile.json') != ''
         run: npx wrangler kv key put eau:ile --path eau-ile.json --binding STORE --remote --ttl 259200

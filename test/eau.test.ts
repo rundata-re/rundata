@@ -278,6 +278,44 @@ describe("qualité de l'eau", () => {
     expect(b.eau_du_robinet.derniere_analyse).not.toBe(b.eau_du_robinet.reseaux[0].derniere_analyse);
   });
 
+  it("gives the time the copy's bathing sites were read, when they were kept from an earlier copy (23/11/2026)", async () => {
+    const live = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+    const [row] = live.baignade.sites;
+    const site = SITES.find((s) => s.nom === row.site)!;
+    const { prelevements_en_retard: _gap, ...kept } = row;
+    // Written at 08:20, the tap water read then, the bathing sites kept from the copy of 07:12 (the ARS silent at 08:20).
+    configure(async () => ({ lu: "2026-10-24T04:20:00.000Z", baignades_lu: "2026-10-24T03:12:00.000Z", baignades: [{ ...kept, lon: site.lon, lat: site.lat }], communes: [] }));
+    try {
+      vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
+      const { value, lectures } = await withLectures(() => qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+      const b = body(value);
+      expect(b.baignade.copie).toBe("Le site de l'ARS ne répond pas\u00a0: résultats de la dernière lecture de rundata.re, le 24/10/2026 à 07:12 (heure de La Réunion).");
+      expect(fraicheur(b, lectures, NOW).lue_a).toBe("24/10 07:12");
+    } finally {
+      configure(undefined);
+    }
+  });
+
+  it("says each source silent since its last read, past 7 days, as /eau, instead of the copy's old results (23/11/2026)", async () => {
+    const live = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+    const [row] = live.baignade.sites;
+    const site = SITES.find((s) => s.nom === row.site)!;
+    // Both halves last read on 16/10 at 07:12, heure de La Réunion: 8 days before NOW.
+    configure(async () => ({ lu: "2026-10-24T03:12:00.000Z", baignades_lu: "2026-10-16T03:12:00.000Z", communes_lu: "2026-10-16T03:12:00.000Z", baignades: [{ ...row, lon: site.lon, lat: site.lat }], communes: [] }));
+    try {
+      vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
+      const bath = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
+      expect(bath.baignade).toEqual({ resume: "Le site de l'ARS ne répond plus depuis le 16/10\u00a0: voir les résultats des plages et bassins sur le site de l'ARS, ou l'affichage sur place.", ne_repond_plus: true });
+      expect(bath.resume).toBe(bath.baignade.resume);
+      expect(bath.indisponible).toEqual(["eau de baignade"]);
+      const tap = body(await qualiteEau(cache(), "Saint-Pierre", "robinet", NOW));
+      expect(tap.eau_du_robinet).toEqual({ resume: "Hub'Eau ne répond plus depuis le 16/10\u00a0: voir le site de l'ARS.", ne_repond_plus: true });
+      expect(tap.erreur).toBeUndefined();
+    } finally {
+      configure(undefined);
+    }
+  });
+
   it("gives the island's copy of a bathing site, with its time, when the ARS's site does not answer", async () => {
     const live = body(await qualiteEau(cache(), "plage de l'Hermitage", "baignade", NOW));
     const [row] = live.baignade.sites;

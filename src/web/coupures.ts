@@ -8,12 +8,13 @@ import { CIREST, distributeur, GUIDES_AVIS, LIENS, MAIRIES_AUSSI, nomDit, MAIRIE
 import { ACCUEILS } from "../providers/agenda.js";
 import { CREOLE } from "../providers/avis-eau.js";
 import { compteAvis, muetPour } from "../tools/coupures.js";
+import { copieAncienne, VOIR_EAU } from "../tools/copie-ancienne.js";
 import { de, deNom } from "../articles.js";
 import { faqPage, type Faq } from "./texte-stable.js";
 import { a } from "../tools/format.js";
 import type { Alerte, CoupuresAnswer, DernierAvis, EauAnswer, SecheresseAnswer } from "./data.js";
 import { cycloneWater } from "./eau-cyclone.js";
-import { afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
+import { copieBandeau, afterCutNote, afterCutShort, connectorAsk, describe, droughtBadge, loading, nobreak, noticeCard, noticesHead, silentText, sourcesNote, tapCard, webPage } from "./domains.js";
 import { esc, islandMap } from "./map.js";
 import { ask, icon, layout, type Live, SITE, leAt } from "./pages.js";
 import { PAGES, type PlacePage } from "./places.js";
@@ -190,9 +191,27 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // The same sentence opens the page and its description (meta, og, twitter, JSON-LD), so that neither says it otherwise.
   // Given `esc` for the page, which escapes only the names and the hour.
   const noNotice = (e = (t: string) => t) => `Pas d'avis de coupure récent ou à venir publié par ${e(publisher!)}${publisher!.includes(p.nom) ? "" : ` ${e(where)}`}, lu ${e(at)}.`;
+  // Not read again for a while (tools/copie-ancienne.ts): said first, the publisher's site and the mairie's linked when
+  // known (marketing, 23/11/2026); the mairie alone when the notices read are its own.
+  const ancienne = w.coupures && (dist?.avis || x.avis.length) ? copieAncienne("eau", w.coupures.fetchedAt, now, "page") : undefined;
+  const siteDe = (nom: string, href?: string) => (href ? `<a href="${esc(href)}" rel="noopener">${esc(nom)}</a>` : esc(nom));
+  const pubSite = dist?.avis ? dist.site : siteDist ?? undefined;
+  // « de <a>La Créole</a> », the article out of the link (marketing: « Voir le site de runéo ou de la mairie »).
+  const deLien = (nom: string, href?: string) => {
+    const [, pre, reste] = /^(d'|du |des |de (?:la |l')?)(.*)$/.exec(deNom(nom)) ?? ["", "", deNom(nom)];
+    return `${esc(pre)}${siteDe(reste, href)}`;
+  };
+  const sienne = /^(?:la )?(?:ville|commune|mairie)\b/i.test(publisher ?? "");
+  const mairieDe = `la mairie ${de(p.nom)}`;
+  const voir = !publisher
+    ? esc(VOIR_EAU)
+    : sienne
+      ? `Voir le site de ${siteDe(mairieDe, lien?.site)}.`
+      : `Voir le site ${deLien(publisher, pubSite)} ou de ${siteDe(mairieDe, lien?.site)}.`;
+  const bandeau = copieBandeau(ancienne, voir);
   const status = !d
     ? loading("Les avis des distributeurs")
-    : x.muet && !x.avis.length
+    : bandeau + (x.muet && !x.avis.length
       ? `<p class="lead">${esc(x.muet.texte)}</p>`
       : x.avis.length
       ? noticesHead(x.avis, where, [], x.muet ? "" : at)
@@ -203,7 +222,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
         ? `<p class="lead">${guide.bandeau}</p>`
         : siteDist
         ? `<p class="lead">Les avis de coupure de ${esc(nomDit(dist!))} ne sont pas lus par rundata.re\u00a0: voir <a href="${esc(siteDist)}" rel="noopener">son site</a>, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.${lienA}</p>`
-        : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`;
+        : `<p class="lead">Les avis de coupure ${dist ? `de ${esc(nomDit(dist))}` : "du distributeur"} ne sont pas lus par rundata.re : voir ses avis aux abonnés ou la mairie.${lienA}</p>`);
 
   const list = !d
     ? `<p class="card">Les avis se chargent : rechargez la page dans quelques secondes.</p>`

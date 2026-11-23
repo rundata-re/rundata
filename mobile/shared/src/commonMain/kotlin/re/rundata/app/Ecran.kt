@@ -55,10 +55,10 @@ object Mots {
         val dixiemes = (d * 10).roundToLong()
         return if (dixiemes >= 100 || dixiemes % 10 == 0L) "${(dixiemes + 5) / 10} km" else "${dixiemes / 10},${dixiemes % 10} km"
     }
-    fun mesureA(m: Mesure): String = "mesurée à ${m.heureSeule}, $HEURE, station ${m.station}" + (m.distanceKm?.let { ", à ${km(it)}" } ?: "") + (if (m.amateur) " (station amateur)" else "")
-    /** « Source : rundata.re, d'après Météo-France et d'autres sources. Lu à 19:35, heure de La Réunion. » */
+    fun mesureA(m: Mesure, lueA: String? = null): String = "mesurée ${Quand.a(m.heure, lueA)}, $HEURE, station ${m.station}" + (m.distanceKm?.let { ", à ${km(it)}" } ?: "") + (if (m.amateur) " (station amateur)" else "")
+    /** « Source : rundata.re, d'après Météo-France et d'autres sources. Lu le 21/11 à 19:35, heure de La Réunion. » */
     fun source(j: Journee): String = "Source\u00a0: " + (j.citer?.substringBefore(" (liste dans sources)") ?: "rundata.re, d'après les données publiques") +
-        (j.lueA?.let { ". Lu à ${it.substringAfter(' ', it)}, $HEURE." } ?: ".")
+        (j.lueA?.let { ". ${Quand.lu(it)}, $HEURE." } ?: ".")
     /** « du jeudi 26/11 à 21:00 au vendredi 27/11 à 04:00 (à venir) ». */
     fun quand(a: AvisEau): String? = a.de?.let { de -> "du $de" + (a.a?.let { " au $it" } ?: "") + (a.etat?.let { " (${it.replace(' ', '\u00a0')})" } ?: "") }
     /** Les secteurs, trois au plus, puis leur nombre. */
@@ -66,14 +66,14 @@ object Mots {
         "Secteurs\u00a0: " + s.take(3).joinToString(", ") + if (s.size > 3) " et ${s.size - 3} autres" else ""
     }
     /**
-     * « Bulletin de Météo-France de 16:21 », « Avis du CMRS du 23/11 10:00 » ; l'alerte cyclonique, décidée par la
-     * préfecture et lue dans le bulletin de Météo-France : « Alerte de la préfecture · bulletin de Météo-France de 03:31 ».
+     * « Bulletin de Météo-France du 22/11 à 16:21 », « Avis du CMRS du 23/11 10:00 » ; l'alerte cyclonique, décidée par
+     * la préfecture et lue dans le bulletin de Météo-France : « Alerte de la préfecture · bulletin de Météo-France du 23/11 à 03:31 ».
      */
     fun heureAlerte(a: Alerte): String = when {
-        a.cyclonique -> "Alerte de la préfecture · " + (a.heure?.let { "bulletin de Météo-France de $it" } ?: "d'après Météo-France")
+        a.cyclonique -> "Alerte de la préfecture · " + (a.heure?.let { "bulletin de Météo-France ${Quand.du(it)}" } ?: "d'après Météo-France")
         a.heure == null -> if (a.systeme) "D'après le CMRS de La Réunion" else "D'après Météo-France"
         a.systeme -> "Avis du CMRS du ${a.heure}"
-        else -> "Bulletin de Météo-France de ${a.heure}"
+        else -> "Bulletin de Météo-France ${Quand.du(a.heure)}"
     }
     fun licence(s: Source): String = s.nom + (s.licence?.let { "\u00a0: $it" } ?: "")
 }
@@ -173,7 +173,7 @@ private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: Strin
                 val m = j.mesure
                 if (m != null) {
                     Texte(m.temperature, 44.sp, gras = true)
-                    Texte(Mots.mesureA(m), 15.sp, c.attenue)
+                    Texte(Mots.mesureA(m, j.lueA), 15.sp, c.attenue)
                 } else Texte(Mots.PAS_DE_MESURE, 15.sp)
             }
             if (v != null && !v.enPremier) BlocVigilance(v, ouvrir)

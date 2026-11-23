@@ -52,6 +52,7 @@ import re.rundata.app.CLAIR
 import re.rundata.app.Commune
 import re.rundata.app.Pages
 import re.rundata.app.Pastille
+import re.rundata.app.Quand
 import re.rundata.app.SOMBRE
 import re.rundata.app.android.PrefsReglages
 import re.rundata.app.communeDe
@@ -260,7 +261,8 @@ private fun ColumnScope.Temperature(commune: Commune?, d: Donnees?) {
     if (Attente(commune, d)) return
     commune!!; d!!
     val haut = LocalSize.current.height >= 100.dp
-    val heure = d.echecA?.let { "mesure de ${d.heure ?: "?"}" } ?: d.heure?.let { "à $it" }
+    // Pas de « Lu le … » sur ce petit widget : l'heure de la mesure porte toujours son jour.
+    val heure = d.heure?.let { h -> d.echecA?.let { "mesure " + Quand.du(h) } ?: Quand.a(h) }
     val meteo = GlanceModifier.clickable(ouvrir(commune.pageMeteo))
     if (!haut) {
         Row(meteo.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
@@ -274,7 +276,7 @@ private fun ColumnScope.Temperature(commune: Commune?, d: Donnees?) {
         Column(meteo.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
             T(d.commune, 14.sp, gras = true)
             T(d.temperature ?: "Pas de mesure récente", if (d.temperature != null) 34.sp else 13.sp, gras = d.temperature != null)
-            d.heure?.let { T("mesurée à $it" + (d.station?.let { s -> ", $s" } ?: ""), 11.sp, ATTENUE, lignes = 2) }
+            d.heure?.let { T("mesurée " + Quand.a(it) + (d.station?.let { s -> ", $s" } ?: ""), 11.sp, ATTENUE, lignes = 2) }
             horsLigne(d)?.let { T(it, 11.sp, LAVE, lignes = 2) }
         }
     }
@@ -291,13 +293,13 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
     if (haut) {
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             T(d.commune, 14.sp, gras = true, modifier = GlanceModifier.defaultWeight())
-            d.lueA?.let { T("Lu à $it", 11.sp, ATTENUE) }
+            d.lueA?.let { T(Quand.lu(it), 11.sp, ATTENUE) }
         }
     }
     Row(GlanceModifier.fillMaxWidth().defaultWeight(), verticalAlignment = Alignment.CenterVertically) {
         Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
             T(d.temperature ?: "–", if (haut) 22.sp else 20.sp, gras = true)
-            T(if (haut) "air, ${d.echecA?.let { "mesure de " } ?: "à "}${d.heure ?: "?"}" else (if (d.echecA != null) "mesure de ${d.heure ?: "?"}" else d.commune), 11.sp, if (d.echecA != null) LAVE else ATTENUE)
+            T(if (haut) "air, " + (d.heure?.let { h -> d.echecA?.let { "mesure " + Quand.du(h, d.lueA) } ?: Quand.a(h, d.lueA) } ?: "?") else (if (d.echecA != null) "mesure " + (d.heure?.let { Quand.du(it) } ?: "?") else d.commune), 11.sp, if (d.echecA != null) LAVE else ATTENUE)
         }
         if (avecMer) {
             Spacer(GlanceModifier.width(8.dp))
@@ -371,7 +373,7 @@ private fun ColumnScope.Aujourdhui(commune: Commune?, d: Donnees?) {
     Row(GlanceModifier.fillMaxWidth().clickable(ouvrir(commune.pageDuJour)), verticalAlignment = Alignment.CenterVertically) {
         T(d.commune, 15.sp, gras = true, modifier = GlanceModifier.defaultWeight())
         d.temperature?.let { T(it, 15.sp, gras = true) }
-        d.lueA?.let { T("  Lu à $it", 11.sp, ATTENUE) }
+        d.lueA?.let { T("  " + Quand.lu(it), 11.sp, ATTENUE) }
     }
     BandeauAlerte(d)
     vigilanceCourte(d)?.let { (texte, p) ->

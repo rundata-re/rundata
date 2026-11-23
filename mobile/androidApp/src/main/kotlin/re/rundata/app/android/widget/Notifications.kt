@@ -41,8 +41,12 @@ object Notifications {
         else -> null
     }
 
-    /** Ce qui distingue une alerte d'une autre : la même alerte pour une autre zone est une autre alerte. */
-    fun cle(a: Alerte, zone: String?): String = "${zone ?: "île"}|${a.cle}"
+    /**
+     * Ce qui distingue une alerte d'une autre : la même vigilance pour une autre zone est une autre alerte. L'alerte
+     * cyclonique et un système tropical valent pour toute l'île : une seule clé, quelle que soit la zone de la commune,
+     * sinon deux communes de deux zones la diraient deux fois.
+     */
+    fun cle(a: Alerte, zone: String?): String = if (a.cyclonique || a.systeme) "île|${a.cle}" else "${zone ?: "île"}|${a.cle}"
 
     /**
      * Les notifications à montrer et à retirer, d'après les alertes lues (`lues`, par clé) et celles déjà dites
@@ -70,25 +74,32 @@ object Notifications {
      */
     data class Decision(val nouvelles: List<Pair<String, Pair<Alerte, Donnees>>>, val retirees: Set<String>, val dites: Set<String>)
 
-    fun decider(lues: List<Donnees>, dites: Set<String>): Decision {
+    /**
+     * `montrable` : la notification de cette alerte peut être montrée (permission donnée, notifications et canal
+     * ouverts). Sinon elle n'est pas retenue comme dite : elle sera dite quand les notifications seront permises, si
+     * elle dure encore.
+     */
+    fun decider(lues: List<Donnees>, dites: Set<String>, montrable: (Alerte) -> Boolean = { true }): Decision {
         // Une commune dont les alertes n'ont pas été lues en entier (vigilance ou cyclones sans réponse) ne retire rien :
         // on ne sait pas si son alerte est partie. Retirée à tort, elle serait renvoyée à la lecture suivante.
         val parCle = lues.filter { it.alertes != null && it.echecA == null }.flatMap { d -> d.alertes!!.map { cle(it, d.zone) to (it to d) } }.toMap()
         val nonLues = lues.any { it.alertes == null || it.echecA != null || !it.vigilanceLue || !it.cyclonesLus }
-        val (nouvelles, parties) = aFaire(parCle.mapValues { it.value.first }, dites)
+        val (toutes, parties) = aFaire(parCle.mapValues { it.value.first }, dites)
+        val nouvelles = toutes.filter { (_, a) -> montrable(a) }
         val retirees = if (nonLues) emptySet() else parties
         return Decision(nouvelles.map { (k, _) -> k to parCle.getValue(k) }, retirees, dites - retirees + nouvelles.map { it.first })
     }
 
     /** Après une mise à jour : `lues`, les alertes de chaque commune lue, avec la zone de sa vigilance. */
     fun signaler(context: Context, lues: List<Donnees>) {
-        val (nouvelles, retirees, dites) = decider(lues, prefs(context).getStringSet("dites", emptySet()).orEmpty())
         val gestion = NotificationManagerCompat.from(context)
-        val permise = Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        if (permise && gestion.areNotificationsEnabled()) {
-            creerCanaux(context)
-            for ((k, ad) in nouvelles) gestion.notify(k.hashCode(), construire(context, ad.first, ad.second))
+        val permise = (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) &&
+            gestion.areNotificationsEnabled()
+        if (permise) creerCanaux(context)
+        val (nouvelles, retirees, dites) = decider(lues, prefs(context).getStringSet("dites", emptySet()).orEmpty()) { a ->
+            permise && canal(a)?.let { c -> gestion.getNotificationChannelCompat(c)?.importance != NotificationManagerCompat.IMPORTANCE_NONE } == true
         }
+        if (permise) for ((k, ad) in nouvelles) gestion.notify(k.hashCode(), construire(context, ad.first, ad.second))
         for (k in retirees) gestion.cancel(k.hashCode())
         prefs(context).edit { putStringSet("dites", dites) }
     }

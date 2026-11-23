@@ -26,7 +26,7 @@ class AlertesTest {
         val a = alertesDe(vigilance(vert), horsSaison)
         assertEquals(emptyList(), a.liste)
         assertEquals("Sud", a.zone)
-        assertEquals("05:47", a.emise)
+        assertEquals("23/11 05:47", a.emise)
         assertTrue(a.vigilanceLue)
     }
 
@@ -38,8 +38,8 @@ class AlertesTest {
         )
         assertEquals(
             listOf(
-                Alerte("Vigilance orange vents forts", "orange du 23/11 06:00 au 23/11 18:00", Couleur.ORANGE, "05:47"),
-                Alerte("Vigilance jaune fortes pluies / orages", null, Couleur.JAUNE, "05:47"),
+                Alerte("Vigilance orange vents forts", "orange du 23/11 06:00 au 23/11 18:00", Couleur.ORANGE, "23/11 05:47"),
+                Alerte("Vigilance jaune fortes pluies / orages", null, Couleur.JAUNE, "23/11 05:47"),
             ),
             a.liste,
         )
@@ -49,13 +49,13 @@ class AlertesTest {
     @Test
     fun unePeriodeAVenirEstDiteAVenir() {
         val a = alertesDe(vigilance("""{"phenomene":"Fortes pluies / orages","maintenant":"vert","a_venir":["jaune à partir du 23/11 18:00"]}"""), null)
-        assertEquals(Alerte("Vigilance jaune fortes pluies / orages à venir", "jaune à partir du 23/11 18:00", Couleur.JAUNE, "05:47"), a.premiere)
+        assertEquals(Alerte("Vigilance jaune fortes pluies / orages à venir", "jaune à partir du 23/11 18:00", Couleur.JAUNE, "23/11 05:47"), a.premiere)
     }
 
     @Test
     fun lesVaguesSubmersionDeLaCote() {
         val a = alertesDe(vigilance(vert, cote = """[{"zone":"Zone côtière du Sud","phenomene":"Vagues - submersion","couleur_max":"jaune","periodes":["jaune du 23/11 12:00 au 24/11 06:00"]}]"""), null)
-        assertEquals(Alerte("Vigilance jaune vagues-submersion", "zone côtière du Sud, jaune du 23/11 12:00 au 24/11 06:00", Couleur.JAUNE, "05:47"), a.premiere)
+        assertEquals(Alerte("Vigilance jaune vagues-submersion", "zone côtière du Sud, jaune du 23/11 12:00 au 24/11 06:00", Couleur.JAUNE, "23/11 05:47"), a.premiere)
     }
 
     @Test
@@ -67,7 +67,7 @@ class AlertesTest {
             ),
             null,
         )
-        assertEquals(Alerte("Alerte cyclonique rouge", "« je me confine » : danger imminent", Couleur.ROUGE, "05:47", cyclonique = true), a.liste[0])
+        assertEquals(Alerte("Alerte cyclonique rouge", "« je me confine » : danger imminent", Couleur.ROUGE, "23/11 05:47", cyclonique = true), a.liste[0])
         assertEquals("Vigilance rouge vents forts", a.liste[1].texte)
         assertTrue(a.liste.all { it.urgente })
         assertEquals("$SITE/cyclones", a.liste[0].page)
@@ -117,7 +117,7 @@ class AlertesTest {
         val a = alertesDe(vigilance("""{"phenomene":"Vents forts","maintenant":"violet"}"""), null)
         assertEquals(emptyList(), a.liste)
         val pluie = alertesDe(vigilance("""{"phenomene":"Fortes pluies / orages","maintenant":"orange"}"""), null).premiere!!
-        assertEquals(Alerte("Vigilance orange fortes pluies / orages", null, Couleur.ORANGE, "05:47"), pluie)
+        assertEquals(Alerte("Vigilance orange fortes pluies / orages", null, Couleur.ORANGE, "23/11 05:47"), pluie)
         assertTrue(alertesDe(vigilance("""{"phenomene":"Fortes pluies / orages","maintenant":"rouge"}"""), null).premiere!!.urgente)
         assertTrue(alerteCycloniqueDe("ALERTE CYCLONIQUE violette, « je me confine strictement » : même les secours ne circulent plus.", null)!!.let { it.cyclonique && it.urgente })
     }
@@ -130,6 +130,8 @@ class AlertesTest {
             Mots.heureAlerte(Alerte("Alerte cyclonique orange", null, Couleur.ORANGE, "03:31", cyclonique = true)),
         )
         assertEquals("Avis du CMRS du 23/11 10:00", Mots.heureAlerte(Alerte("Tempête tropicale modérée Bheki", null, Couleur.AUCUNE, "23/11 10:00", systeme = true)))
+        // Le bulletin lu porte son jour : un écran ou un widget de la veille le dit.
+        assertEquals("Bulletin de Météo-France du 22/11 à 16:21", Mots.heureAlerte(Alerte("Vigilance orange vents forts", null, Couleur.ORANGE, "22/11 16:21")))
     }
 
     /**

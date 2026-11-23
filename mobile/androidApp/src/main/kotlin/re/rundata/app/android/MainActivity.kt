@@ -40,11 +40,13 @@ class MainActivity : ComponentActivity() {
         val modele = Modele(app.source, reglages, viewModelScope)
     }
 
+    private lateinit var modele: Modele
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as RundataApp
-        val modele = ViewModelProvider(this, object : ViewModelProvider.Factory {
+        modele = ViewModelProvider(this, object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T = Etat(app) as T
         })[Etat::class.java].modele
@@ -82,10 +84,12 @@ class MainActivity : ComponentActivity() {
 
     /**
      * À chaque ouverture de l'appli, les widgets posés et les alertes de la commune choisie sont relus (la dernière
-     * lecture peut dater), et leur relecture toutes les 30 min est planifiée.
+     * lecture peut dater), et leur relecture toutes les 30 min est planifiée. L'écran lui-même est relu s'il date
+     * (Modele.revenir).
      */
     override fun onResume() {
         super.onResume()
+        modele.revenir()
         val m = AppWidgetManager.getInstance(this)
         val poses = RECEPTEURS.any { m.getAppWidgetIds(ComponentName(this, it)).isNotEmpty() }
         if (PrefsReglages(this).commune != null || poses) {

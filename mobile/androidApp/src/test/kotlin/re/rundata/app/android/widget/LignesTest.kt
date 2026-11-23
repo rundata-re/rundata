@@ -131,4 +131,16 @@ class LignesTest {
         assertEquals("Rue Michel Ha-Sam", nomDeSecteur("RUE MICHEL HA-SAM"))
         assertEquals("Les Hauts de Sainte-Marie", nomDeSecteur("Les Hauts de Sainte-Marie"))
     }
+
+    @Test
+    fun uneMesureDUnAutreJourLeDit() {
+        val l = lignes(lue.copy(heure = "20/11 23:50", lueA = "21/11 00:05"), "Saint-Pierre")
+        assertEquals("mesurée le 20/11 à 23:50, Saint-Pierre Pierrefonds (aéroport)", l.detail)
+        assertEquals("Lu le 21/11 à 00:05", l.lue)
+        assertEquals("mesurée à 00:02, Saint-Pierre Pierrefonds (aéroport)", lignes(lue.copy(heure = "21/11 00:02", lueA = "21/11 00:05"), "Saint-Pierre").detail)
+        assertEquals(
+            "rundata.re injoignable le 22/11 à 08:00\u00a0: mesure du 21/11 à 23:50.",
+            horsLigne(lue.copy(heure = "21/11 23:50", lueA = "21/11 23:55", echecA = "22/11 08:00")),
+        )
+    }
 }

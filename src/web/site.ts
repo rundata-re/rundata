@@ -300,6 +300,19 @@ export function ownWaits(request: Request): [number | undefined, boolean | Reade
   return reader === true ? [READER_WAIT_MS, true] : [HOME_READER_WAIT_MS, true];
 }
 
+// A station's page (web/station.ts) is its last measure: its copy is kept by data center and built again only by a view
+// there, so a person got it as it was, whatever its age that day, its refresh after the answer. On 23/11/2026 at 06:58,
+// the first view of /meteo/station/97422445 (Bras-Sec) in its data center showed the measure of 06:06 while that of
+// 06:48 was out. A person now waits for the refresh of a copy older than STATION_STALE_MINUTES (two slots of the
+// 6-minute package and a margin), up to WAIT_MS, then gets the copy as it is, its measure dated. The same build as the
+// refresh behind the answer: no request more.
+export const STATION_STALE_MINUTES = 15;
+const stationStale: ReaderWaits = (_key, _value, ageMs) => ageMs > STATION_STALE_MINUTES * 60_000;
+/** How long a station's page waits for its copy for `request`, and whether for its refresh (web/data.ts `snapshot`). */
+export function stationWaits(request: Request): [number | undefined, boolean | ReaderWaits] {
+  return readerOf(request) ? ownWaits(request) : [undefined, stationStale];
+}
+
 // A page's own copy too old to be told as the present: older than OLD_MINUTES, where the place's page says « Ce n'est
 // pas le temps qu'il fait maintenant », or made before midnight. Each data center keeps its own, rebuilt only by a view
 // there: from 12 to 14/11/2026, readers were given 677 of them while they were rebuilt, 316 minutes old in the middle,
@@ -1110,7 +1123,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");
     if (!stationOf(id)) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
     const [data, a] = await Promise.all([
-      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...ownWaits(request), undefined, oldCopy(request), withoutCopy(request)),
+      snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...stationWaits(request), undefined, oldCopy(request), withoutCopy(request)),
       alerte(cache, background, now),
     ]);
     return page(path, (live) => stationPage(origin, live ? data : null, id, now, a), data, background, [rebuild(cache, `web:station:${id}`, () => buildStation(cache, id, now))]);

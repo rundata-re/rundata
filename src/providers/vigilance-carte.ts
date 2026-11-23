@@ -16,6 +16,7 @@
  *   is billed. A try that fails is not made again before the next event.
  */
 import { count, left } from "../budget.js";
+import { garde } from "../lecture-gardee.js";
 import { pdfLines, type Line } from "../pdf.js";
 import { why } from "../types.js";
 
@@ -35,9 +36,14 @@ let store: Store | undefined;
 let browser: Browser | undefined;
 
 /** The Worker's KV and browser (worker.ts). Without KV, nothing is kept and no map is shown; without the browser, none is made. */
+// The files asked by their address, found or not: a bulletin's file never changes, a few are kept ten minutes.
+const fichiers = () => garde<ArrayBuffer>({ ttlMs: 10 * 60_000, max: 6, introuvablesParMinute: 20, garder: (b) => b.byteLength <= 2_000_000 });
+let FICHIERS = fichiers();
+
 export function configure(kv?: Store, b?: Browser): void {
   store = kv;
   browser = kv && b;
+  FICHIERS = fichiers();
 }
 
 export const configured = () => store != null;
@@ -153,10 +159,15 @@ export async function kept(): Promise<Carte | undefined> {
 }
 
 /** A kept file, as bytes: the PDF or the picture of a bulletin by its fingerprint. */
+
 export async function fichier(kind: "pdf" | "png", empreinte: string): Promise<ArrayBuffer | null> {
-  if (!store) return null;
-  count(1, "read");
-  return store.bytes(kind === "pdf" ? pdfKey(empreinte) : pngKey(empreinte));
+  const s = store;
+  if (!s) return null;
+  const key = kind === "pdf" ? pdfKey(empreinte) : pngKey(empreinte);
+  return FICHIERS.lire(key, () => {
+    count(1, "read");
+    return s.bytes(key);
+  });
 }
 
 /** The browser photographs page 1 of `b`: its PNG, or an error. */

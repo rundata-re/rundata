@@ -799,6 +799,16 @@ describe("the secret link's page (web/propositions.ts)", () => {
     expect(html).not.toContain('name="email"');
   });
 
+  it("says nothing for a « fait » that is no action, a key of every object included (23/11/2026)", async () => {
+    formulaires.ouvrir(true);
+    const secret = await propose();
+    for (const fait of ["constructor", "__proto__", "toString", "inconnu"]) {
+      const html = await (await page(secret, `?fait=${fait}`)).text();
+      expect(html, fait).not.toContain('class="msg vu ok"');
+      expect(html, fait).not.toContain("[native code]");
+    }
+  });
+
   it("takes the page's own buttons, sent with « Origin: null » under its no-referrer, only when the browser says same-origin", async () => {
     // 31/10/2026: « Formulaire d'un autre site refusé. » on « Confirmer l'événement », Safari on an iPhone.
     formulaires.ouvrir(true);

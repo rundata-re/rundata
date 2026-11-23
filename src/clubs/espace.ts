@@ -20,7 +20,10 @@
  * Each link carries a secret drawn here, of which the table keeps only the hash. Without the database nothing answers
  * but « indisponible ».
  */
-import { empreinte, type Run } from "../avis.js";
+import { empreinte, reseau, type Run } from "../avis.js";
+
+// The connection's part of an address, kept here too for the club space's callers.
+export { reseau };
 import type { Cache } from "../cache.js";
 import { normalize } from "../places/resolve.js";
 import { empreinteJeton, jetonNeuf, type All, type Envoi } from "../propositions.js";
@@ -205,18 +208,6 @@ const ENVOI = `INSERT INTO envois (club, type, t, source) SELECT ?, 'lien', ?, ?
 WHERE (SELECT COUNT(*) FROM envois WHERE club = ? AND type = 'lien' AND t > ?) < ?
 AND (SELECT COUNT(*) FROM envois WHERE source = ? AND type = 'lien' AND t > ?) < ?
 AND (SELECT COUNT(*) FROM envois WHERE type = 'lien' AND t > ?) < ?`;
-
-/** The part of a connection's address that names it: the address in IPv4, its /64 in IPv6 (a home's whole network). */
-export function reseau(ip: string): string {
-  const v4 = /(?:^|:)(\d{1,3}(?:\.\d{1,3}){3})$/.exec(ip);
-  if (v4) return v4[1];
-  if (!ip.includes(":")) return ip;
-  const [head, tail] = ip.toLowerCase().split("::");
-  const h = head ? head.split(":") : [];
-  const t = tail ? tail.split(":") : [];
-  const all8 = [...h, ...Array<string>(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
-  return `${all8.slice(0, 4).map((x) => x.replace(/^0+(?=.)/, "")).join(":")}::/64`;
-}
 
 /** Which cap refused a link: the club's, the connection's, or everyone's together. */
 export type Limite = "limite" | "limite-connexion" | "limite-totale";

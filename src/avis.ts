@@ -57,9 +57,24 @@ export const enabled = () => !!run;
 let ownSalt: string | undefined;
 const salt = () => (ownSalt ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join(""));
 
-/** A short hash of the sender's address and the day: the same within a day, meaningless without the salt. */
+/** The part of a connection's address that names it: the address in IPv4, its /64 in IPv6 (a home's whole network). */
+export function reseau(ip: string): string {
+  const v4 = /(?:^|:)(\d{1,3}(?:\.\d{1,3}){3})$/.exec(ip);
+  if (v4) return v4[1];
+  if (!ip.includes(":")) return ip;
+  const [head, tail] = ip.toLowerCase().split("::");
+  const h = head ? head.split(":") : [];
+  const t = tail ? tail.split(":") : [];
+  const all8 = [...h, ...Array<string>(Math.max(0, 8 - h.length - t.length)).fill("0"), ...t];
+  return `${all8.slice(0, 4).map((x) => x.replace(/^0+(?=.)/, "")).join(":")}::/64`;
+}
+
+/**
+ * A short hash of the sender's connection and the day: the same within a day, meaningless without the salt. The
+ * connection is its `reseau`: in IPv6 the /64, which a single home or script holds whole, so it counts once.
+ */
 export async function empreinte(adresse: string, now: Date): Promise<string> {
-  const data = new TextEncoder().encode(`${sel ?? salt()}|${now.toISOString().slice(0, 10)}|${adresse}`);
+  const data = new TextEncoder().encode(`${sel ?? salt()}|${now.toISOString().slice(0, 10)}|${reseau(adresse)}`);
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
   return Array.from(h.slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
 }

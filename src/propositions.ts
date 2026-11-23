@@ -17,6 +17,7 @@
  */
 import { a } from "./articles.js";
 import { empreinte, nettoie, type Run } from "./avis.js";
+import { garde } from "./lecture-gardee.js";
 
 export const LIENS_PAR_JOUR = 5;
 export const LIENS_EN_TOUT_JOUR = 50;
@@ -110,10 +111,15 @@ let all: All | undefined;
  * `db` and `select`: the D1 tables' doors (worker.ts, the feedback's database), to write and to read; `send`: how the
  * confirmation is sent.
  */
+// The secrets that name no proposal, a minute: an existing one is read each time (its page changes with each action).
+const inconnus = () => garde<Ligne>({ ttlMs: 60_000, max: 256, introuvablesParMinute: 20, garder: () => false });
+let INCONNUS = inconnus();
+
 export function configure(db: Run | undefined, send?: Envoi, select?: All) {
   run = db;
   envoi = send;
   all = select;
+  INCONNUS = inconnus();
 }
 
 export const enabled = () => !!run;
@@ -372,9 +378,11 @@ export const VISIBLES: readonly EtatProposition[] = ["publie", "annule", "report
 export const lisible = () => !!all;
 
 /** The proposal a secret leads to, if any. */
+
 export async function parJeton(jeton: string): Promise<Ligne | undefined> {
-  if (!all || !/^[\w-]{22}$/.test(jeton)) return undefined;
-  return (await all<Ligne>(`SELECT ${COLONNES} FROM propositions WHERE jeton = ?`, await empreinteJeton(jeton)))[0];
+  const q = all;
+  if (!q || !/^[\w-]{22}$/.test(jeton)) return undefined;
+  return (await INCONNUS.lire(jeton, async () => (await q<Ligne>(`SELECT ${COLONNES} FROM propositions WHERE jeton = ?`, await empreinteJeton(jeton)))[0] ?? null)) ?? undefined;
 }
 
 /** The proposals the public sees, from today on; [] without the database. */

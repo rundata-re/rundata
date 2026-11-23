@@ -443,7 +443,7 @@ function gererBody(l: propositions.Ligne, action: string, g: Extract<Gerer, { ki
   const shown = propositions.VISIBLES.includes(l.etat) && open;
   const head = `<section class="card fo" aria-labelledby="h-gerer">
   <h2 id="h-gerer">${esc(l.titre)}</h2>
-  ${g.fait && FAIT[g.fait] ? `<p class="msg vu ok" role="status">${FAIT[g.fait]}</p>` : ""}
+  ${g.fait && Object.hasOwn(FAIT, g.fait) ? `<p class="msg vu ok" role="status">${FAIT[g.fait]}</p>` : ""}
   ${g.refuse ? `<p class="msg vu" id="p-erreur">Ce changement n'est plus possible pour cet événement. Pour toute question, écrivez à ${adresseTexte("contact@rundata.re")}.</p>${ERREUR_SCRIPT}` : ""}
   <p><span class="badge${TEINTE[l.etat]}">${esc(ETAT[l.etat])}</span> ${esc(quandOu(l))}.</p>
   <p class="note">Organisé par ${esc(l.organisateur)}.${l.contact_public ? ` Contact public\u00a0: ${esc(l.contact_public)}.` : ""}${l.etat === "refuse" ? `${l.motif ? ` Motif\u00a0: ${esc(l.motif)}.` : ""} Pour toute question, écrivez à ${adresseTexte("contact@rundata.re")}.` : ""}</p>

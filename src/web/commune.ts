@@ -47,6 +47,7 @@ import { INSEE } from "../places/insee.js";
 import { ligneTuile } from "./antennes.js";
 import { PATH as ECOLES, schoolLi } from "./ecoles-annuaire.js";
 import * as sitesHs from "../providers/sites-hs.js";
+import { type MarchesAnswer, ouvertsA, PATH as MARCHES } from "./marches-publics.js";
 import { enTete } from "../tools/representativeness.js";
 import { OLD_MINUTES } from "../tools/meteo.js";
 import { casse } from "../tools/casse.js";
@@ -72,6 +73,8 @@ export interface CommuneLive {
   dechets?: Cached<DechetsAnswer> | null;
   /** The mobile sites out of service, the Arcep's file of the day (providers/sites-hs.ts). */
   hs?: Cached<sitesHs.Copie> | null;
+  /** The island's open procurement notices, the copy of /marches-publics (web/marches-publics.ts). */
+  marches?: Cached<MarchesAnswer> | null;
 }
 
 export const COMMUNES = PAGES.filter((p) => p.commune);
@@ -712,6 +715,22 @@ function sunTimes(p: PlacePage, calendrier: Cached<CalendrierAnswer> | null | un
 /** The commune's own text, when it has one (communes-textes.ts): two paragraphs, fixed, the lead of the band. */
 const texteDe = (slug: string) => TEXTES[slug]?.map((x) => `<p class="lead">${esc(x)}</p>`).join("\n    ");
 
+/**
+ * The commune's open procurement notices, from the copy of /marches-publics, with the link that opens that page on the
+ * commune (marketing, 22/11/2026): « 4 avis ouverts aux réponses à Saint-Paul, d'après le BOAMP lu à 14:05 ». Without a
+ * notice of the commune, or without a list read, no tile.
+ */
+function marchesTile(p: PlacePage, c: Cached<MarchesAnswer> | null | undefined, now: Date): { href: string; live: Live } | undefined {
+  const d = c?.value;
+  if (!c || !d || d.prochaine) return undefined;
+  const n = ouvertsA(d.avis, p.slug);
+  if (!n) return undefined;
+  return {
+    href: `${MARCHES}?commune=${p.slug}`,
+    live: { valeur: `${n}\u00a0avis`, detail: `${n > 1 ? "ouverts" : "ouvert"} aux réponses ${esc(aCommune(p.nom))}, d'après le BOAMP lu ${readAt(d.lu ? new Date(d.lu) : c.fetchedAt, now).a}` },
+  };
+}
+
 export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const place = p.place;
@@ -729,6 +748,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
   const droit = justice(l.commune, g, now);
   const lieux = discover(p);
   const fichePj = l.commune?.value.justice?.lieu.fiche;
+  const marches = marchesTile(p, l.marches, now);
 
   const tiles: Tile[] = [
     { icon: "thermo", nom: "Météo", href: `/meteo/${p.slug}`, sr: aCommune(p.nom), live: w },
@@ -747,6 +767,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       question: `La mairie ${de(p.nom)} est ouverte ?`,
       foot: fiche ? `${lienNom(fiche, "Fiche service-public.fr", ' rel="noopener"')}` : `<a href="/mcp">Demandez à votre IA →</a>`,
     },
+    ...(marches ? [{ icon: "building", nom: "Marchés publics", href: marches.href, sr: aCommune(p.nom), live: marches.live, foot: `<a href="${marches.href}">Les voir →</a>` }] : []),
     ...(dech.TCO_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: wasteLive(p, l.dechets, now) }] : []),
     ...(dech.ELSEWHERE_COMMUNES.includes(p.nom) ? [{ icon: "pin", nom: "Déchèteries", href: `/decheteries#${anchorOf(p.nom)}`, sr: aCommune(p.nom), live: elsewhereLive(p) }] : []),
     { icon: "heart", nom: "Pharmacies", live: pharmacies(p), foot: `${lienNom(sante.GARDE.site, "Pharmacie de garde : 3237.fr", ' rel="noopener"')}` },

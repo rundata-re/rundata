@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Marchés publics : un lien ouvre la liste sur une seule commune, et la page d'une commune dit combien d'avis y sont ouverts, s'il y en a.
 - Nouvelle page en anglais, /en : ce que montre le site, les pages utiles aux visiteurs, et comment interroger votre assistant IA en anglais.
 - Événements : quand le site d'une commune n'annonce rien, sa page et l'outil IA le disent, avec l'heure de la lecture.
 - Connecteur : la journée d'une commune dit d'abord l'eau à ne pas boire et la vigilance, et nomme la météo du lieu demandé (Maïdo…).

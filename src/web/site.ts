@@ -460,7 +460,8 @@ const BUILDS: Record<string, (cache: Cache, now: Date) => Promise<unknown>> = {
 export const HOME_TILES = ["web:actualites", "web:volcan", "web:air", "web:electricite", "web:calendrier", "web:bus", "web:trafic", "web:velos", "web:bornes", "web:eau", "web:sentiers", "web:secheresse", "web:coupures", "web:sport", "web:cyclones", "web:historique", "web:agenda", "web:crues", "web:emploi", "web:marches-publics"];
 // A commune's feed: the copies besides the vigilance (web/rss.ts).
 const RSS_TILES = ["web:coupures", "web:randonnees", "web:volcan"];
-export const COMMUNE_TILES = ["web:air", "web:mer", "web:volcan", "web:electricite", "web:calendrier", "web:coupures", "web:secheresse", "web:eau", "web:randonnees", "web:agenda"];
+// web:marches-publics: the commune's open notices, with the link to /marches-publics?commune=<slug> (web/commune.ts).
+export const COMMUNE_TILES = ["web:air", "web:mer", "web:volcan", "web:electricite", "web:calendrier", "web:coupures", "web:secheresse", "web:eau", "web:randonnees", "web:agenda", "web:marches-publics"];
 
 /**
  * How young a tile's copy is to be shown without being brought up to date: FRESH_SECONDS, and made since the last
@@ -1172,9 +1173,9 @@ async function pages(request: Request, cache: Cache, background: Background, now
     ]);
     // The West's communes have their déchèteries' tile too (the TCO publishes them).
     const tiles = TCO_COMMUNES.includes(p.nom) ? [...COMMUNE_TILES, "web:dechets"] : COMMUNE_TILES;
-    const [[air, mer, volcan, electricite, calendrier, coupures, secheresse, eau, randonnees, agenda, dechets], hs] = await Promise.all([tileCopies(cache, tiles, background, place, now), sitesHs.sites(cache)]);
+    const [[air, mer, volcan, electricite, calendrier, coupures, secheresse, eau, randonnees, agenda, marches, dechets], hs] = await Promise.all([tileCopies(cache, tiles, background, place, now), sitesHs.sites(cache)]);
     return page(path, (live) => (live
-      ? communePage(origin, p, { place, commune, vigilance, air, mer, volcan, electricite, calendrier, coupures, secheresse, eau, randonnees, agenda, dechets, hs }, now, alerteLue(vigilance, now))
+      ? communePage(origin, p, { place, commune, vigilance, air, mer, volcan, electricite, calendrier, coupures, secheresse, eau, randonnees, agenda, dechets, hs, marches }, now, alerteLue(vigilance, now))
       : communePage(origin, p, { place: null, commune: null, vigilance: null, air: null, mer: null, volcan: null, electricite: null, calendrier: null, coupures: null, secheresse: null, eau: null, randonnees: null, agenda: null, dechets: null }, now)),
     place, background, [rebuild(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now)), rebuild(cache, `web:commune:${p.slug}`, () => buildCommune(cache, p, now))]);
   }

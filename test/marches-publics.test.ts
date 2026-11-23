@@ -205,7 +205,7 @@ describe("the page /marches-publics", () => {
     expect(p).toContain("jusqu&#39;au 01/12</span>");
     expect(p).not.toContain("RECTORAT DE MAYOTTE");
     expect(p).not.toContain("Ville de la Trinité");
-    expect(p).toContain('<option>Le Port</option><option>Saint-Denis</option><option>Saint-Joseph</option><option>Saint-Paul</option>');
+    expect(p).toContain('<option data-s="le-port">Le Port</option><option data-s="saint-denis">Saint-Denis</option><option data-s="saint-joseph">Saint-Joseph</option><option data-s="saint-paul">Saint-Paul</option>');
     expect(p).toContain("https://www.boamp.fr/pages/avis/?q=idweb:26-103764");
     expect(p).not.toContain("idweb:26-95112");
   });

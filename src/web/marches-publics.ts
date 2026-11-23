@@ -13,6 +13,7 @@ import { crumbBar, crumbs, lienNom, sourcesNote, warnings, webPage } from "./dom
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
+import { PAGES, slugify } from "./places.js";
 
 export const PATH = "/marches-publics";
 export const NOM = "Marchés publics";
@@ -62,6 +63,15 @@ export async function buildMarches(cache: Cache, now = new Date()): Promise<Marc
   };
 }
 
+/** The commune of a notice: its place of work's, else its buyer's (`groups`). */
+const communeOf = (a: Avis) => a.commune ?? a.communeAcheteur;
+
+/** How many of `avis` are the commune's whose page is /communes/`slug` (web/commune.ts). */
+export const ouvertsA = (avis: Avis[], slug: string) => avis.filter((a) => { const c = communeOf(a); return !!c && slugify(c) === slug; }).length;
+
+/** The communes of /communes/<slug>, by slug: `?commune=<slug>` chooses one in the filter, even with no notice. */
+const COMMUNE_NAMES = JSON.stringify(Object.fromEntries(PAGES.filter((p) => p.commune).map((p) => [p.slug, p.nom])));
+
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
 /** « 2026-11-14 » → « 14/11 », with its year when it is not this one: « 08/01/2027 ». */
@@ -97,17 +107,26 @@ function groups(avis: Avis[], now: Date): string {
 const FILTER = `<form id="of" class="card filter" hidden role="search" aria-label="Filtrer les avis">
 <label class="q">Chercher <input name="q" type="search" placeholder="voirie, restauration scolaire, nettoyage…" autocomplete="off"></label>
 <label>Commune <select name="c"><option value="">toutes</option>COMMUNES</select></label>
-<p class="note" id="of-n" aria-live="polite"></p></form>`;
+<p class="note" id="of-n" aria-live="polite"></p></form>
+<p class="card" id="of-0" hidden>Aucun avis de marché ouvert pour <b></b> dans la dernière lecture du BOAMP, HEURE_LUE. Les avis sont rangés selon le lieu des travaux, ou à défaut la commune de l'acheteur. <a href="/marches-publics">Voir les avis de toute l'île →</a></p>`;
 
+// `?commune=<slug>` (the slug of /communes/<slug>) chooses its commune at the opening, the other parameters kept (`ref`);
+// choosing another one writes it in the address, to copy the link. A commune without a notice says so (`of-0`); a slug
+// that is no commune's leaves the page as it is. Read in the browser: the Worker serves the same page whatever it says.
 const SCRIPT = `(()=>{const f=document.getElementById("of");if(!f)return;f.hidden=false;
-const items=[...document.querySelectorAll("#marches li")];
+const items=[...document.querySelectorAll("#marches li")],list=document.getElementById("marches"),zero=document.getElementById("of-0");
+const names=JSON.parse(f.dataset.communes||"{}"),opts=[...f.c.options];
 const norm=(s)=>s.normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
 for(const e of items)e.dataset.q=norm(e.textContent);
 const run=()=>{const q=norm(f.q.value).split(" ").filter(Boolean),c=f.c.value;let n=0;
 for(const e of items){const ok=q.every((t)=>e.dataset.q.includes(t))&&(!c||e.dataset.c===c);e.hidden=!ok;if(ok)n++}
 const on=q.length>0||!!c;for(const g of document.querySelectorAll("#marches .groupe")){const k=!!g.querySelector("li:not([hidden])");g.hidden=on&&!k;g.firstElementChild.open=on&&k}
 document.getElementById("of-n").textContent=q.length||c?n+" avis sur "+items.length+".":"";};
-f.addEventListener("input",run);f.addEventListener("submit",(e)=>e.preventDefault());})();`;
+const none=(on)=>{zero.hidden=!on;list.hidden=on;};
+const url=()=>{try{const p=new URLSearchParams(location.search),o=f.c.selectedOptions[0];if(o&&o.dataset.s)p.set("commune",o.dataset.s);else p.delete("commune");const s=p.toString();history.replaceState(null,"",location.pathname+(s?"?"+s:"")+location.hash)}catch{}};
+const s=new URLSearchParams(location.search).get("commune");
+if(s){const o=opts.find((x)=>x.dataset.s===s);if(o){f.c.value=o.value;run()}else if(Object.hasOwn(names,s)){zero.querySelector("b").textContent=names[s];none(true)}}
+f.addEventListener("input",(e)=>{none(false);if(e.target===f.c)url();run()});f.addEventListener("submit",(e)=>e.preventDefault());})();`;
 
 /**
  * The home page's tile, from the page's copy: its count of open notices, when the BOAMP was read. Never a read of the
@@ -124,7 +143,7 @@ export function marchesLive(data: Cached<MarchesAnswer> | null): Live | undefine
 
 export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const d = data?.value;
-  const communes = [...new Set((d?.avis ?? []).flatMap((a) => { const c = a.commune ?? a.communeAcheteur; return c ? [c] : []; }))].sort((x, y) => x.localeCompare(y, "fr"));
+  const communes = [...new Set((d?.avis ?? []).flatMap((a) => { const c = communeOf(a); return c ? [c] : []; }))].sort((x, y) => x.localeCompare(y, "fr"));
 
   const triage = !!d && !d.avis.length && !!d.enLecture;
   const status = d && data && !d.prochaine && !triage
@@ -137,7 +156,9 @@ export function marchesPage(origin: string, data: Cached<MarchesAnswer> | null, 
       : triage
       ? `<p class="card">${plural(d.enLecture!, "avis lu", "avis lus")} au BOAMP ${leAt(d.lu ?? data.fetchedAt)} ${d.enLecture! > 1 ? "sont" : "est"} en cours de tri, pour ne garder que ceux de l'île.</p>`
       : d.avis.length
-      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option>${esc(c)}</option>`).join(""))}<div id="marches" class="plis">${groups(d.avis, now)}</div>`
+      ? `${FILTER.replace("COMMUNES", communes.map((c) => `<option data-s="${slugify(c)}">${esc(c)}</option>`).join(""))
+        .replace('role="search"', `role="search" data-communes="${esc(COMMUNE_NAMES)}"`)
+        .replace("HEURE_LUE", esc(readAt(d.lu ? new Date(d.lu) : data.fetchedAt, now).a))}<div id="marches" class="plis">${groups(d.avis, now)}</div>`
       : `<p class="card">Aucun avis de marché ouvert pour La Réunion sur le BOAMP ${leAt(data.fetchedAt)}.</p>`;
 
   const title = "Marchés publics, appels d'offres en cours · La Réunion (974)";

@@ -6,7 +6,7 @@ import { normalize, resolvePlace, type Resolution } from "../places/resolve.js";
 import * as baignades from "../providers/baignades.js";
 import { lues } from "../eau/distributeurs.js";
 import * as requin from "../eau/requin.js";
-import { bathRead, storedCopy } from "../eau/ile.js";
+import { bathRead, silentBath, silentTap, storedCopy, tapRead, tooOld } from "../eau/ile.js";
 import * as potable from "../providers/eaupotable.js";
 import * as notices from "../providers/avis-eau.js";
 import { doNotDrink, noticeRow } from "./coupures.js";
@@ -94,6 +94,12 @@ export function tapSentence(row: ReturnType<typeof networkRow>, where: string): 
 
 const ANALYSES_MUETTES = "Les analyses du contrôle sanitaire de l'ARS (Hub'Eau) ne répondent pas pour le moment.";
 
+/**
+ * A source silent for more than 7 days, its half of the island's copy too old to be shown (eau/ile.ts KEPT_MAX_MS):
+ * the answer says so, in the words of /eau, instead of an error.
+ */
+class Silent extends Error {}
+
 /** A distributor's « ne pas boire » notice in force for the commune, if its feed is read; never fails the answer. */
 async function notice(cache: Cache, commune: string, now: Date) {
   try {
@@ -111,10 +117,13 @@ async function robinet(cache: Cache, res: Resolution, now: Date) {
   const [analyses, avis] = await Promise.all([potable.commune(cache, insee, now).catch((err: unknown) => err as Error), notice(cache, commune, now)]);
   const warn = avis ? { resume_avis: `EAU À NE PAS BOIRE ${a(commune)} d'après l'avis du distributeur du ${avis.publie_le ?? avis.date_de_l_avis} : « ${avis.titre} ».`, avis_ne_pas_boire: avis } : {};
   if (analyses instanceof Error) {
+    // Hub'Eau silent for more than 7 days, by the island's copy: said since when, as on /eau (23/11/2026).
+    const copy = await storedCopy(cache, now);
+    const silent = copy && tooOld(tapRead(copy), now) ? silentTap(tapRead(copy)) : undefined;
     // Hub'Eau down: the distributor's « ne pas boire » notice, read apart, is still the answer (04/11/2026, Saint-Benoît).
-    if (!avis) throw analyses;
+    if (!avis) throw silent ? new Silent(silent) : analyses;
     console.error(`source ${potable.SOURCE.id} indisponible:`, why(analyses));
-    return { resume: `${warn.resume_avis} ${ANALYSES_MUETTES}`, ...warn, analyses_indisponibles: true };
+    return { resume: `${warn.resume_avis} ${silent ?? ANALYSES_MUETTES}`, ...warn, analyses_indisponibles: true };
   }
   const { value } = analyses;
   const rows = value.reseaux.map((r) => networkRow(r, value.prelevements));
@@ -220,6 +229,8 @@ async function siteRows(cache: Cache, sites: baignades.Site[], now: Date, from?:
       return { row: siteRow((await baignades.results(cache, s, now)).value, now, from), copie: undefined };
     } catch (err) {
       const copy = await storedCopy(cache, now);
+      // Read more than 7 days ago: not shown, the ARS's site said silent since then, as on /eau (23/11/2026).
+      if (copy && tooOld(bathRead(copy), now)) throw new Silent(silentBath(bathRead(copy)));
       const kept = copy?.baignades.find((b) => b.site === s.nom && b.commune === s.commune);
       if (!copy || !kept) throw err;
       const { lon: _lon, lat: _lat, ...row } = kept;
@@ -337,11 +348,12 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     } catch (err) {
       const src = w === "robinet" ? potable.SOURCE : baignades.SOURCE;
       console.error(`source ${src.id} indisponible:`, why(err));
+      if (err instanceof Silent) parts[w === "robinet" ? "eau_du_robinet" : "baignade"] = { resume: err.message, ne_repond_plus: true };
       failed.push(w);
     }
   }));
   // Guessed, not asked: no bathing part for a place far from any site checked.
-  if (!sujet && wanted.length === 2 && !(parts.baignade as { sites?: unknown[] } | undefined)?.sites) delete parts.baignade;
+  if (!sujet && wanted.length === 2 && !(parts.baignade as { sites?: unknown[]; ne_repond_plus?: boolean } | undefined)?.sites && !(parts.baignade as { ne_repond_plus?: boolean } | undefined)?.ne_repond_plus) delete parts.baignade;
   for (const k of ["eau_du_robinet", "baignade"]) {
     const p = parts[k] as { resume?: string } | undefined;
     if (p?.resume) summary.push(p.resume);

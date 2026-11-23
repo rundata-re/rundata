@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { GIVE_UP_AFTER, RETRY_MS, gatherForCopy, keep, oldestRead, parseCopy, thin, type Ile } from "../src/eau/ile.js";
+import { GIVE_UP_AFTER, RETRY_MS, gatherForCopy, keep, oldestRead, parseCopy, silentTap, thin, tooOld, type Ile } from "../src/eau/ile.js";
 import { INSEE } from "../src/places/insee.js";
 import type { Cached } from "../src/cache.js";
 import type { EauAnswer } from "../src/web/data.js";
@@ -162,11 +162,36 @@ describe("what the workflow writes when a source does not answer (ile.ts keep)",
 
   it("says on /eau the time of the half kept, as the ARS's or Hub'Eau's silence", () => {
     const page = (v: Partial<Ile>) => eauPage("https://rundata.re", { value: { lu: at, baignades: [], communes: [], a_savoir: {}, sources: [], ...v }, fetchedAt: new Date(at), stale: false } as unknown as Cached<EauAnswer>, new Date(at)).replace(/&#39;/g, "'");
-    expect(page({ baignades_lu: before.lu })).toContain("Le site de l'ARS n'a pas répondu à la dernière lecture\u00a0: résultats des plages et bassins lus le 22/11 à 18:20.");
-    expect(page({ communes_lu: before.lu })).toContain("Hub'Eau n'a pas répondu à la dernière lecture\u00a0: analyses de l'eau du robinet rassemblées le 22/11 à 18:20.");
+    expect(page({ baignades_lu: before.lu })).toContain("Le site de l'ARS n'a pas répondu à la dernière lecture\u00a0: résultats des plages et bassins lus le 22/11 à 18:20. Un résultat publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS.");
+    expect(page({ communes_lu: before.lu })).toContain("Hub'Eau, le service national qui publie les analyses de l'ARS, n'a pas répondu à la dernière lecture\u00a0: analyses de l'eau du robinet lues le 22/11 à 18:20. Un avis publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS ou de la mairie.");
     const both = page({});
     expect(both).not.toContain("n'a pas répondu à la dernière lecture");
     // In Réunion's time: 00:20 UTC is 04:20 on the 23rd.
     expect(both).toContain("Analyses rassemblées le 23/11 à 04:20.");
+  });
+
+  it("shows a half 7 days after it was read, no longer, and then says its source silent since that read (23/11/2026)", () => {
+    const site = { site: "Plage de test", commune: "Saint-Paul", lon: 55.2, lat: -21.0, dernier_prelevement: "20/11/2026", qualite_dernier_prelevement: "bonne", derniers_prelevements: [] } as unknown as Ile["baignades"][number];
+    const commune = communes(1, "avant")[0];
+    const copy = { lu: at, baignades: [site], baignades_lu: before.lu, communes: [commune], communes_lu: before.lu };
+    const page = (now: string) => eauPage("https://rundata.re", { value: { ...copy, a_savoir: {}, sources: [] }, fetchedAt: new Date(at), stale: false } as unknown as Cached<EauAnswer>, new Date(now)).replace(/&#39;/g, "'");
+    const week = 7 * 86_400_000;
+    // Exactly 7 days after the read (22/11 18:20): still shown, with its time.
+    const shown = page(new Date(Date.parse(before.lu) + week).toISOString());
+    expect(shown).toContain("Plage de test");
+    expect(shown).toContain("résultats des plages et bassins lus le 22/11 à 18:20.");
+    expect(shown).not.toContain("ne répond plus");
+    expect(shown).toContain(`<h3>${commune.commune} <span`);
+    // One minute later: neither half shown; each source said silent since the day of its last read, not of its first failure.
+    const past = page(new Date(Date.parse(before.lu) + week + 60_000).toISOString());
+    expect(past).not.toContain("Plage de test");
+    expect(past).not.toContain("n'a pas répondu à la dernière lecture");
+    expect(past).toContain("Le site de l'ARS ne répond plus depuis le 22/11\u00a0: voir les résultats des plages et bassins sur le site de l'ARS, ou l'affichage sur place.");
+    expect(past).toContain("Hub'Eau ne répond plus depuis le 22/11\u00a0: voir le site de l'ARS.");
+    expect(past).not.toContain(`<h3>${commune.commune} <span`);
+    expect(tooOld(before.lu, new Date(Date.parse(before.lu) + week))).toBe(false);
+    expect(tooOld(before.lu, new Date(Date.parse(before.lu) + week + 1))).toBe(true);
+    // The day in Réunion's time: read at 21:00 UTC is the next day there.
+    expect(silentTap("2026-11-22T21:00:00.000Z")).toBe("Hub'Eau ne répond plus depuis le 23/11\u00a0: voir le site de l'ARS.");
   });
 });

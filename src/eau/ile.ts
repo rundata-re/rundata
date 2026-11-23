@@ -162,6 +162,23 @@ export const tapRead = (ile: Ile) => ile.communes_lu ?? ile.lu;
 export const oldestRead = (ile: Ile) => (bathRead(ile) < tapRead(ile) ? bathRead(ile) : tapRead(ile));
 
 /**
+ * How long a half is shown after it was read (23/11/2026): 7 days. Each run that keeps a half writes it again, with a new
+ * time to live in the store, so without this a silent source would keep its old results for ever. Past it, the half is
+ * not shown and its source is said silent since that read (silentBath, silentTap), on /eau and by qualite_eau.
+ */
+export const KEPT_MAX_MS = 7 * 86_400_000;
+export const tooOld = (read: string, now: Date) => now.getTime() - Date.parse(read) > KEPT_MAX_MS;
+/** The day of a read, JJ/MM, heure de La Réunion (UTC+4 all year). */
+const readDay = (read: string) => {
+  const t = new Date(Date.parse(read) + 4 * 3600_000).toISOString();
+  return `${t.slice(8, 10)}/${t.slice(5, 7)}`;
+};
+/** Said instead of a half read more than 7 days ago: the day is that of the last read that answered (text of 23/11/2026). */
+export const silentBath = (read: string) =>
+  `Le site de l'ARS ne répond plus depuis le ${readDay(read)}\u00a0: voir les résultats des plages et bassins sur le site de l'ARS, ou l'affichage sur place.`;
+export const silentTap = (read: string) => `Hub'Eau ne répond plus depuis le ${readDay(read)}\u00a0: voir le site de l'ARS.`;
+
+/**
  * What the workflow writes (scripts/eau-ile.ts), from a gathering and the copy already stored (`before`, null without
  * one). A source that does not answer is neither gone nor empty (22-23/11/2026: the ARS's site silent five runs in a row,
  * each run failed, the tap water read from Hub'Eau not written either): its half of the earlier copy is kept, with the

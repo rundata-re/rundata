@@ -78,7 +78,7 @@ import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
 import { lues } from "../eau/distributeurs.js";
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
-import { bathRead, tapRead } from "../eau/ile.js";
+import { bathRead, silentBath, silentTap, tapRead, tooOld } from "../eau/ile.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
@@ -1844,25 +1844,31 @@ export function duAu(from: string, to: string): string {
 
 /**
  * A half of the island's copy kept from an earlier one, its source silent at the last gathering (eau/ile.ts keep): said
- * with the time it was read, never as today's.
+ * with the time it was read, never as today's, and what may have been published since (texts of 23/11/2026).
  */
-const keptNote = (source: string, what: string, at: string) =>
-  `${source} n'a pas répondu à la dernière lecture\u00a0: ${what} ${leAt(at)}.`;
+const keptNote = (source: string, what: string, at: string, since: string) =>
+  `${source} n'a pas répondu à la dernière lecture\u00a0: ${what} ${leAt(at)}. ${since}`;
 
 export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const d = data?.value;
   const url = `${origin}/eau`;
-  const good = d?.baignades.filter((s) => s.qualite_dernier_prelevement === "bonne").length ?? 0;
-  const notGood = d?.baignades.filter((s) => s.qualite_dernier_prelevement && s.qualite_dernier_prelevement !== "bonne") ?? [];
-  const samples = (d?.baignades ?? []).map((s) => s.dernier_prelevement.split("/").reverse().join("-")).sort();
+  // A half read more than 7 days ago is not shown: its source is said silent since then (eau/ile.ts KEPT_MAX_MS).
+  const bathOld = !!d && tooOld(bathRead(d), now);
+  const tapOld = !!d && tooOld(tapRead(d), now);
+  const bains = d && !bathOld ? d.baignades : [];
+  const good = bains.filter((s) => s.qualite_dernier_prelevement === "bonne").length;
+  const notGood = bains.filter((s) => s.qualite_dernier_prelevement && s.qualite_dernier_prelevement !== "bonne");
+  const samples = bains.map((s) => s.dernier_prelevement.split("/").reverse().join("-")).sort();
   const firstSample = samples[0];
   const lastSample = samples.at(-1);
-  const tapBad = d?.communes.filter((c) => c.non_conformes_6_mois) ?? [];
+  const tapBad = d && !tapOld ? d.communes.filter((c) => c.non_conformes_6_mois) : [];
   const gap = sansPrelevement(lastSample, now);
 
   const status = !d
     ? loading("La qualité de l'eau")
+    : bathOld
+    ? `<p>${esc(silentBath(bathRead(d)))}</p>`
     : `<div class="now"><span class="big">${good}</span><p>plage${good > 1 ? "s" : ""} et bassin${good > 1 ? "s" : ""} sur <b>${d.baignades.length}</b> contrôlés par l'ARS en bonne qualité au dernier prélèvement` +
       `${lastSample ? ` (${esc(dayFr(lastSample))})` : ""}${notGood.length ? ` ; à surveiller : ${esc(notGood.map((s) => s.site).join(", "))}` : ""}.</p></div>` +
       // No sample published for weeks (04/11/2026: none since 22/09): said under the count, never left to the dates alone.
@@ -1870,24 +1876,26 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
 
   const rank = (q?: string) => ["bonne", "moyenne", "mauvaise"].indexOf(q ?? "");
   // The worse last, drawn over the good ones next to them.
-  const markers = [...(d?.baignades ?? [])].sort((a, b) => rank(a.qualite_dernier_prelevement) - rank(b.qualite_dernier_prelevement)).map((s) => {
+  const markers = [...bains].sort((a, b) => rank(a.qualite_dernier_prelevement) - rank(b.qualite_dernier_prelevement)).map((s) => {
     const q = s.qualite_dernier_prelevement ?? "";
     // Every name in the bubble only: written on the map, the sites to watch were cut by its frame.
     return { lon: s.lon, lat: s.lat, label: WATER_MARK[q] ?? "?", name: q ? `${s.site}\u00a0: ${q}` : s.site, round: true, color: WATER_COLOR[q] ?? "#868e96", quiet: true,
       place: s.site, say: q ? `qualité ${q} au dernier prélèvement` : "pas de résultat", href: `#${anchorId("b", s.site)}` };
   });
 
-  const sites = d
-    ? `<ul class="zones">${[...new Set(d.baignades.map((s) => s.commune))].sort((a, b) => a.localeCompare(b, "fr")).map((c) => {
-        const mine = d.baignades.filter((s) => s.commune === c);
+  const sites = bathOld
+    ? `<p class="card">${esc(silentBath(bathRead(d!)))}</p>`
+    : d
+    ? `<ul class="zones">${[...new Set(bains.map((s) => s.commune))].sort((a, b) => a.localeCompare(b, "fr")).map((c) => {
+        const mine = bains.filter((s) => s.commune === c);
         return `<li class="card"><h3>${esc(c)}</h3><ul class="rows eau">${mine.map((s) => siteLine(s, g)).join("")}</ul></li>`;
       }).join("")}</ul>`
     : `<p class="card">La qualité de l'eau se charge : rechargez la page dans quelques secondes.</p>`;
 
   const title = "Qualité de l'eau : baignade et robinet · La Réunion (974)";
   const short = "Qualité de l'eau à La Réunion (974) : les plages et bassins contrôlés par l'ARS et l'eau du robinet de chaque commune, réseau par réseau.";
-  const description = d
-    ? describe(`Qualité de l'eau à La Réunion (974) : ${good} plages et bassins sur ${d.baignades.length} en bonne qualité au dernier prélèvement de l'ARS, et l'eau du robinet des 24 communes, réseau par réseau.`, short)
+  const description = d && !bathOld
+    ? describe(`Qualité de l'eau à La Réunion (974) : ${good} plages et bassins sur ${bains.length} en bonne qualité au dernier prélèvement de l'ARS, et l'eau du robinet des 24 communes, réseau par réseau.`, short)
     : short;
 
   const band = `${crumbBar("Qualité de l'eau")}
@@ -1908,16 +1916,17 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   <div class="sec-h"><p class="eyebrow">Plages et bassins</p><h2 id="h-baignade">L'eau de baignade</h2>
   <p>${esc(EAU_TEXT.baignade)}</p></div>
   ${sites}
-  ${d ? `<p class="note">${esc(noteBaignade(!!gap))}</p>` : ""}
-  ${d?.baignades_lu ? `<p class="note">${esc(keptNote("Le site de l'ARS", "résultats des plages et bassins lus", bathRead(d)))}</p>` : ""}
+  ${d && !bathOld ? `<p class="note">${esc(noteBaignade(!!gap))}</p>` : ""}
+  ${d?.baignades_lu && !bathOld ? `<p class="note">${esc(keptNote("Le site de l'ARS", "résultats des plages et bassins lus", bathRead(d), "Un résultat publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS."))}</p>` : ""}
   <p class="note">${BAIGNADE_LINE}</p>
 </section>
 <section aria-labelledby="h-robinet">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-robinet">L'eau du robinet</h2>
-  <p>${d ? `${tapBad.length ? `Des analyses non conformes en 6 mois dans ${tapBad.length} commune${tapBad.length > 1 ? "s" : ""} sur ${d.communes.length}, sur un ou deux réseaux chacune.` : "Toutes les analyses des 6 derniers mois sont conformes."} ` : ""}${esc(EAU_TEXT.robinet)}</p></div>
-  ${d ? `<ul class="zones">${d.communes.map(tapCard).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">${d.communes_lu ? esc(keptNote("Hub'Eau", "analyses de l'eau du robinet rassemblées", tapRead(d))) : `Analyses rassemblées ${esc(leAt(d.lu))}.`}</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
+  <p>${d && !tapOld ? `${tapBad.length ? `Des analyses non conformes en 6 mois dans ${tapBad.length} commune${tapBad.length > 1 ? "s" : ""} sur ${d.communes.length}, sur un ou deux réseaux chacune.` : "Toutes les analyses des 6 derniers mois sont conformes."} ` : ""}${esc(EAU_TEXT.robinet)}</p></div>
+  ${tapOld ? `<p class="card">${esc(silentTap(tapRead(d!)))}</p><p class="note"><a href="/coupures-eau">Les avis en cours →</a></p>` : ""}
+  ${d && !tapOld ? `<ul class="zones">${d.communes.map(tapCard).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">${d.communes_lu ? esc(keptNote("Hub'Eau, le service national qui publie les analyses de l'ARS,", "analyses de l'eau du robinet lues", tapRead(d), "Un avis publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS ou de la mairie.")) : `Analyses rassemblées ${esc(leAt(d.lu))}.`}</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
 </section>
-${connectorAsk("la qualité de l'eau", "Saint-Denis")}${d?.baignades.length ? g.feuille : ""}`;
+${connectorAsk("la qualité de l'eau", "Saint-Denis")}${bains.length ? g.feuille : ""}`;
 
   return layout(origin, { title, description, path: "/eau", jsonld: [crumbs(origin, "Qualité de l'eau", "/eau"), webPage(origin, "/eau", title, description, data)], alerte }, band, g.ligne + body);
 }

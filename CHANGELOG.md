@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Qualité de l'eau : quand le site de l'ARS ou Hub'Eau ne répond pas, la page garde les derniers résultats lus et dit leur heure.
 - Marchés publics : l'outil IA donne les avis ouverts d'une commune, comme sa page, avec le lien vers leur liste.
 - Marchés publics : un lien ouvre la liste sur une seule commune, et la page d'une commune dit combien d'avis y sont ouverts, s'il y en a.
 - Nouvelle page en anglais, /en : ce que montre le site, les pages utiles aux visiteurs, et comment interroger votre assistant IA en anglais.

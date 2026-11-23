@@ -75,8 +75,16 @@ export function providers(): Provider[] {
   return ALL_PROVIDERS.filter((p) => p.enabled?.() ?? true);
 }
 
-/** What the stations are; with `n`, how many measured in the answer's reading (sources_donnees reads none: no number). */
-export function coverage(n?: number): string {
+/**
+ * What the stations are; with `n`, how many measured in the answer's reading (sources_donnees reads none: no number).
+ * `court`, for a place's answer: the networks and their rates only, the places of the wind beacons and of MétéoR-OI's
+ * stations left to sources_donnees (713 bytes down to about 300, meteo_actuelle at 7,8 KB on 20 and 21/11/2026).
+ */
+export function coverage(n?: number, court = false): string {
+  if (court && n && meteofrance.enabled()) {
+    return `Les ${n}\u00a0stations qui ont mesuré dans cette lecture\u00a0: Météo-France (toutes les 6 min), les 2 aéroports (METAR), ` +
+      "les balises de vent de la FFVL et l'association MétéoR Océan Indien (toutes les 5 min). Le détail\u00a0: sources_donnees.";
+  }
   return meteofrance.enabled()
     ? `${n ? `Les ${n}\u00a0stations qui ont mesuré dans cette lecture\u00a0: celles` : "Les stations"} de Météo-France, de la côte aux sommets et dans les cirques (mesures toutes les ` +
         "6 min, publiées 5 à 10 min après : température, pluie, et pour une partie d'entre elles humidité et vent), " +
@@ -331,7 +339,7 @@ export async function meteoActuelle(cache: Cache, lieu: string | undefined, now 
     pluie_recente: pluie && (({ resume: _, ...block }) => block)(pluie),
     pluie_commune: commune && (({ resume: _, ...block }) => block)(commune),
     sources_indisponibles: indisponibles,
-    couverture: coverage(toutes(obs).length),
+    couverture: coverage(toutes(obs).length, true),
     sources,
   });
 }

@@ -1,0 +1,9 @@
+[
+  {
+    "point": "electricite",
+    "motif": "production d'il y a ",
+    "depuis": "2026-11-20",
+    "jusqu_au": "2026-11-27",
+    "pourquoi": "L'open data d'EDF Réunion ne publie plus de production depuis le 20/11/2026 à 17:10 ; rundata.re le dit, avec l'heure de la dernière mesure."
+  }
+]

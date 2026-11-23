@@ -17,7 +17,7 @@ const STUCK_MS = 90 * 60_000;
 
 /** Every hour, how it is written: one hour from the first time to the second, Réunion time. */
 export const CONVENTION =
-  "Chaque ligne va de la première heure à la seconde (heure de La Réunion) : « 14:00–15:00 : 1,4 mm », c'est la pluie tombée entre 14:00 et 15:00.";
+  "« 14:00–15:00 : 1,4 mm » : la pluie tombée entre 14:00 et 15:00, heure de La Réunion.";
 
 export const day = (ms: number) => Math.floor((ms + LOCAL_MS) / (24 * HOUR_MS));
 /**

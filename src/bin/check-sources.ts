@@ -200,6 +200,8 @@ export const MAX_BYTES: Record<string, number> = {
   // words in `couverture`); the size of the day plus a tenth, rounded up to 500.
   // 7 676 on 16/11/2026 with the rain at each gauge of the commune (1.0.586); 7 206 once each gauge's rain is said
   // without repeating the period, the gauges with the same rain named together, and the gap said once.
+  // 7 8xx on 20 and 21/11/2026; 7 249 on 23/11 at 08:14, about 6 715 once a place's `couverture` says the networks only
+  // (713 bytes down to 239) and the rain's `convention` is shorter (153 to 93): the cap kept, now with room again.
   "meteo_actuelle (Saint-Denis)": 7_500, // 5 822
   "prevision_meteo (Saint-Denis)": 13_000, // 11 410
   "temperature_mer (Saint-Gilles)": 12_000, // 14 827, then 10 671 with the whales' rules on /mer only
@@ -356,3 +358,66 @@ export function checkPage(c: PageCheck, status: number, cacheControl: string, ht
   if (c.max) out.push(...fresh(point, "donnée", /"dateModified":"([^"]+)"/.exec(html)?.[1], c.max, now));
   return [...out, ...(c.check?.(html, now) ?? [])];
 }
+
+/**
+ * A breakdown of a source, upstream of rundata.re, already known and said on the site (scripts/pannes-amont.json): a
+ * problem it covers is a warning, written in the job's summary, and does not fail the check. Each entry is dated and
+ * lasts 7 days at most (`depuis` to `jusqu_au`, days of La Réunion): past it, the problem fails again until the entry
+ * is reviewed. Any other problem still fails the check: the failure stays the alert.
+ */
+export interface PanneConnue {
+  point: string;
+  /** The start of the problem's motif it covers, « production d'il y a » for « production d'il y a 62,1 h (seuil 3 h) ». */
+  motif: string;
+  depuis: string;
+  jusqu_au: string;
+  pourquoi: string;
+}
+
+export const PANNE_MAX_JOURS = 7;
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const reunionDay = (now: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Indian/Reunion" }).format(now);
+const daysBetween = (a: string, b: string) => (Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / (24 * HOUR);
+
+/** What is wrong with an entry of the list itself; undefined when it can be used. */
+function entreeFausse(e: PanneConnue): string | undefined {
+  if (!e.point || !e.motif || !e.pourquoi) return "point, motif ou pourquoi manquant";
+  if (!DAY.test(e.depuis) || !DAY.test(e.jusqu_au) || Number.isNaN(Date.parse(e.depuis)) || Number.isNaN(Date.parse(e.jusqu_au))) return "dates illisibles (AAAA-MM-JJ)";
+  const span = daysBetween(e.depuis, e.jusqu_au);
+  if (span < 0) return "jusqu_au avant depuis";
+  if (span > PANNE_MAX_JOURS) return `plus de ${PANNE_MAX_JOURS} jours (${span})`;
+  return undefined;
+}
+
+/**
+ * The problems split: those a known breakdown in force covers (warnings), and those that fail the check, among them a
+ * problem whose entry has expired, said so, and each entry of the list that cannot be used.
+ */
+export function trierPannes(problems: Probleme[], pannes: PanneConnue[], now: Date): { connus: { probleme: Probleme; panne: PanneConnue }[]; echecs: Probleme[] } {
+  const today = reunionDay(now);
+  const usable = pannes.filter((e) => !entreeFausse(e));
+  const echecs: Probleme[] = pannes.flatMap((e) => {
+    const why = entreeFausse(e);
+    return why ? [{ point: "pannes amont connues", motif: `entrée « ${e.point ?? "?"} » : ${why}` }] : [];
+  });
+  const connus: { probleme: Probleme; panne: PanneConnue }[] = [];
+  for (const p of problems) {
+    const covering = usable.filter((e) => e.point === p.point && p.motif.startsWith(e.motif));
+    const inForce = covering.find((e) => e.depuis <= today && today <= e.jusqu_au);
+    if (inForce) connus.push({ probleme: p, panne: inForce });
+    else {
+      const expired = covering.filter((e) => e.jusqu_au < today).sort((a, b) => b.jusqu_au.localeCompare(a.jusqu_au))[0];
+      echecs.push(expired ? { ...p, motif: `${p.motif}\u00a0; panne amont connue jusqu'au ${expired.jusqu_au} seulement : à revoir` } : p);
+    }
+  }
+  return { connus, echecs };
+}
+
+/** The known breakdowns met, for the job's summary; "" without one. */
+export const pannesSummary = (connus: { probleme: Probleme; panne: PanneConnue }[]) =>
+  connus.length
+    ? `\n### Pannes amont connues : ${connus.length} avertissement(s), sans échec\n\n| Point | Motif | Depuis | Jusqu'au | Pourquoi |\n|---|---|---|---|---|\n${connus
+        .map(({ probleme: p, panne: e }) => `| ${p.point} | ${p.motif.replace(/\|/g, "/")} | ${e.depuis} | ${e.jusqu_au} | ${e.pourquoi.replace(/\|/g, "/")} |`)
+        .join("\n")}\n`
+    : "";

@@ -137,7 +137,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
   // « Pas d'avis de coupure récent ou à venir de …, lu à … » in the summary, never « pas de coupure annoncée » (22/11/2026).
   // Its measured rain: an hour not read says « la lecture de rundata.re n'a pas abouti », not « nous » (23/11/2026).
-  lieu: 32,
+  // Its `couverture` the networks only, the detail left to sources_donnees; the rain's `convention` shorter (23/11/2026).
+  lieu: 33,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».

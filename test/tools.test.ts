@@ -269,7 +269,10 @@ describe("meteo_actuelle with the Météo-France stations", () => {
     expect(r.stations[0]).toMatchObject({ station: "Cilaos", source: "meteofrance", pertinence: "bonne", age_min: 7 });
     expect(r.resume).toMatch(/il pleut \(0,2 mm en 6 min, 1 mm en 1 h\)/);
     // Counted in the answer's reading, as /meteo counts them in its title: never a number written in the code.
-    expect(r.couverture).toMatch(/^Les 56\u00a0stations qui ont mesuré dans cette lecture\u00a0: celles de Météo-France, de la côte aux sommets/);
+    // A place's answer says the networks only, the detail left to sources_donnees (7,8 KB on 20 and 21/11/2026).
+    expect(r.couverture).toBe("Les 56\u00a0stations qui ont mesuré dans cette lecture\u00a0: Météo-France (toutes les 6 min), les 2 aéroports (METAR), les balises de vent de la FFVL et l'association MétéoR Océan Indien (toutes les 5 min). Le détail\u00a0: sources_donnees.");
+    expect(new TextEncoder().encode(r.couverture).length).toBeLessThanOrEqual(300);
+    expect(coverage(56)).toMatch(/^Les 56\u00a0stations qui ont mesuré dans cette lecture\u00a0: celles de Météo-France, de la côte aux sommets/);
     // sources_donnees reads no station: no number.
     expect(coverage()).toMatch(/^Les stations de Météo-France, de la côte aux sommets/);
   });

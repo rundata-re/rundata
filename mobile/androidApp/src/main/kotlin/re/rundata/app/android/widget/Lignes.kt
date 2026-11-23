@@ -1,5 +1,6 @@
 package re.rundata.app.android.widget
 
+import re.rundata.app.Alerte
 import re.rundata.app.Pastille
 import re.rundata.app.pastillesDe
 
@@ -92,3 +93,30 @@ fun sections(d: Donnees, n: Int): List<Section> {
 
 /** « et 2 autres » sous une section coupée. */
 fun enPlus(n: Int): String? = if (n <= 0) null else "et $n autre${if (n > 1) "s" else ""} sur rundata.re"
+
+/** Le bandeau d'alerte : ce qu'elle dit, puis son heure (« bulletin de 16:21 », « avis du CMRS du 23/11 10:00 »). */
+data class LigneAlerte(val texte: String, val heure: String?, val detail: String?, val alerte: Alerte?)
+
+/** La vigilance pas lue : jamais « pas d'alerte ». La forme longue là où il y a la place. */
+const val ALERTES_NON_LUES = "Vigilance pas encore lue"
+const val ALERTES_NON_LUES_LONG = "Vigilance pas encore lue, réessai bientôt"
+const val PAS_D_ALERTE = "Pas d'alerte en cours"
+
+/** « bulletin de 16:21 », « avis du CMRS du 23/11 10:00 ». */
+fun heureAlerte(a: Alerte): String? = a.heure?.let { if (a.systeme) "avis du CMRS du $it" else "bulletin de $it" }
+
+/**
+ * Le widget « Alerte » : la plus grave, sa couleur et son heure ; « Pas d'alerte en cours », avec la zone et l'heure
+ * du bulletin, seulement quand la vigilance a été lue ; « Vigilance pas encore lue » sinon, jamais un « rien » inventé.
+ */
+fun ligneAlerte(d: Donnees): LigneAlerte {
+    val a = d.alertes?.firstOrNull()
+    return when {
+        a != null -> LigneAlerte(a.texte, heureAlerte(a), a.detail, a)
+        d.alertes == null || !d.vigilanceLue -> LigneAlerte(ALERTES_NON_LUES, null, null, null)
+        else -> LigneAlerte(PAS_D_ALERTE, d.alertesEmise?.let { "bulletin de $it" }, listOfNotNull(d.zone?.let { "zone $it" }, "d'après Météo-France").joinToString(" · "), null)
+    }
+}
+
+/** « et 1 autre alerte » sous la plus grave. */
+fun enPlusAlertes(n: Int): String? = if (n <= 0) null else "et $n autre${if (n > 1) "s" else ""} alerte${if (n > 1) "s" else ""}"

@@ -12,11 +12,11 @@ import { GITHUB, layout } from "./pages.js";
 export const PATH = "/appli";
 /** The short address of the file, the button's link: a redirect to the asset of the current pre-release. */
 export const APK_PATH = "/appli/rundata-re.apk";
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 /** The pre-release that carries the file. Releases are immutable: a tag published without its file can never take one (0.1.2 lives at android-v0.1.2-1). */
-export const TAG = "android-v0.2.0";
+export const TAG = "android-v0.3.0";
 /** SHA-256 of the file published with the pre-release TAG. */
-export const EMPREINTE = "bbd9faf038d08e0c803f58a5221211cc6b12773afd0476ea70e62ba9f095f071";
+export const EMPREINTE = "d98d515b5b28ea30f8213c59e597e89f5b4810b69434ecc4f13a08071282852d";
 export const APK_URL = `${GITHUB}/releases/download/${TAG}/rundata-re-${VERSION}.apk`;
 
 const TITLE = "L'appli rundata.re pour Android · version d'essai";
@@ -31,14 +31,16 @@ export function appliPage(origin: string): string {
 </div></div>`;
   const body = `<section class="app-page appli">
   <div class="card">
-    <p>Quatre widgets pour l'écran d'accueil, chacun pour la commune choisie en le posant :</p>
+    <p>Cinq widgets pour l'écran d'accueil, chacun pour la commune choisie en le posant :</p>
     <ul>
       <li>« Température » : la température mesurée et son heure ;</li>
       <li>« Météo, mer et vigilance », sur une ligne : la température mesurée, celle de la mer et la vigilance de la zone ;</li>
       <li>« La journée » : la température mesurée avec sa station, la vigilance de la zone et l'avis du distributeur d'eau, s'il y en a un ;</li>
-      <li>« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, les avis du distributeur d'eau.</li>
+      <li>« Aujourd'hui », le plus grand : les sorties et les marchés du jour, les routes et les bus, les avis du distributeur d'eau ;</li>
+      <li>« Alerte », sur une ligne : la vigilance jaune, orange ou rouge de Météo-France pour la zone, ou l'alerte cyclonique de la préfecture, dans sa couleur officielle et avec son heure.</li>
     </ul>
     <p>Ils se mettent à jour toutes les 30 minutes. Sans réseau, ils gardent la dernière lecture, avec son heure.</p>
+    <p>L'appli et les grands widgets montrent ces alertes en haut, en bandeau. Une vigilance orange donne une notification ; une vigilance rouge et l'alerte cyclonique s'affichent en haut de l'écran. Les fortes pluies sont signalées quand Météo-France met la zone en vigilance, jamais d'après une simple prévision de pluie.</p>
   </div>
   <p>C'est une version d'essai, partagée avec quelques personnes avant son arrivée sur le Play Store. Elle est gratuite, sans compte et sans publicité.</p>
   <p class="appli-dl"><a class="app-go" href="${APK_PATH}">Télécharger l'appli</a> <span class="note">(Android 8 ou plus récent, 2 Mo)</span></p>

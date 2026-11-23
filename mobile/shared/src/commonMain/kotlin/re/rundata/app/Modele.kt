@@ -52,7 +52,7 @@ class Modele(private val source: JourneeSource, private val reglages: Reglages, 
         _etat.value = Etat.Chargement(commune, derniere)
         lecture = portee.launch {
             _etat.value = try {
-                val j = source.journee(commune)
+                val j = source.journeeEtAlertes(commune)
                 derniere = j
                 Etat.Prete(j)
             } catch (e: McpErreur) {

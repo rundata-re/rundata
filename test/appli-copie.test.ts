@@ -79,7 +79,9 @@ describe("the app's calls to the MCP endpoint", () => {
     expect(cleCopie({ jsonrpc: "2.0", id: 1, method: "tools/list" })).toBeUndefined();
     expect(cleCopie({ ...call("meteo_actuelle", "x"), params: { name: "meteo_actuelle", arguments: { lieu: 3 } } })).toBeUndefined();
     expect(cleCopie(call("meteo_actuelle", "x".repeat(81)))).toBeUndefined();
-    expect([...APP_TOOLS].sort()).toEqual(["meteo_actuelle", "resume_du_jour", "vigilance_meteo"]);
+    // The cyclones, read without a place for the alert band (0.3.0): one copy for the whole island.
+    expect(cleCopie({ jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "cyclones", arguments: {} } })).toBe("https://rundata.re/_appli/cyclones?");
+    expect([...APP_TOOLS].sort()).toEqual(["cyclones", "meteo_actuelle", "resume_du_jour", "vigilance_meteo"]);
   });
 
   it("answers the second read from the copy, with the caller's id, and builds it once", async () => {

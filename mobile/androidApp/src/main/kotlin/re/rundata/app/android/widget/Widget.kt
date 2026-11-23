@@ -47,6 +47,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider as Couleur
+import re.rundata.app.Alerte
 import re.rundata.app.CLAIR
 import re.rundata.app.Commune
 import re.rundata.app.Pages
@@ -56,8 +57,8 @@ import re.rundata.app.android.PrefsReglages
 import re.rundata.app.communeDe
 import re.rundata.app.teinte
 
-/** Les quatre widgets : chacun sa place sur l'écran d'accueil, et ce qu'il montre de sa commune. */
-enum class Forme { TEMPERATURE, BANDEAU, JOURNEE, AUJOURDHUI }
+/** Les cinq widgets : chacun sa place sur l'écran d'accueil, et ce qu'il montre de sa commune. */
+enum class Forme { TEMPERATURE, BANDEAU, JOURNEE, AUJOURDHUI, ALERTE }
 
 /**
  * Un widget de rundata.re : la commune choisie quand on le pose (ChoixCommuneWidget), ce qui en a été lu en dernier
@@ -73,6 +74,7 @@ abstract class WidgetRundata(private val forme: Forme) : GlanceAppWidget() {
             Forme.BANDEAU -> setOf(DpSize(180.dp, 40.dp), DpSize(250.dp, 40.dp), DpSize(250.dp, 100.dp))
             Forme.JOURNEE -> setOf(DpSize(180.dp, 100.dp), DpSize(250.dp, 100.dp), DpSize(250.dp, 180.dp))
             Forme.AUJOURDHUI -> setOf(DpSize(250.dp, 180.dp), DpSize(250.dp, 280.dp), DpSize(250.dp, 400.dp))
+            Forme.ALERTE -> setOf(DpSize(180.dp, 40.dp), DpSize(250.dp, 40.dp), DpSize(250.dp, 100.dp))
         },
     )
 
@@ -84,12 +86,20 @@ abstract class WidgetRundata(private val forme: Forme) : GlanceAppWidget() {
             etat[LECTURE_A]
             val commune = communeDuWidget(context, etat[COMMUNE])
             val d = commune?.let { Donnees.lire(context, it.slug) }
-            Cadre(if (commune == null) choisir(context, id) else ouvrir(commune.pageDuJour)) {
+            // Le widget « Alerte » prend la couleur officielle de la plus grave ; les grands widgets partent du haut.
+            val alerte = if (forme == Forme.ALERTE && commune != null && d != null) d.alertes?.firstOrNull() else null
+            val action = when {
+                commune == null -> choisir(context, id)
+                forme == Forme.ALERTE -> ouvrir(alerte?.page ?: Pages.VIGILANCE)
+                else -> ouvrir(commune.pageDuJour)
+            }
+            Cadre(action, alerte, enHaut = forme == Forme.JOURNEE || forme == Forme.AUJOURDHUI) {
                 when (forme) {
                     Forme.TEMPERATURE -> Temperature(commune, d)
                     Forme.BANDEAU -> Bandeau(commune, d)
                     Forme.JOURNEE -> Journee(commune, d)
                     Forme.AUJOURDHUI -> Aujourdhui(commune, d)
+                    Forme.ALERTE -> AlerteSeule(commune, d)
                 }
             }
         }
@@ -100,7 +110,7 @@ abstract class WidgetRundata(private val forme: Forme) : GlanceAppWidget() {
         val COMMUNE = stringPreferencesKey("commune")
         private val LECTURE_A = longPreferencesKey("lecture")
 
-        val TOUS: List<Class<out WidgetRundata>> = listOf(WidgetTemperature::class.java, WidgetBandeau::class.java, WidgetJournee::class.java, WidgetAujourdhui::class.java)
+        val TOUS: List<Class<out WidgetRundata>> = listOf(WidgetTemperature::class.java, WidgetBandeau::class.java, WidgetJournee::class.java, WidgetAujourdhui::class.java, WidgetAlerte::class.java)
 
         fun communeDuWidget(context: Context, slug: String?): Commune? = communeDe(slug) ?: communeDe(PrefsReglages(context).commune)
 
@@ -119,6 +129,7 @@ abstract class WidgetRundata(private val forme: Forme) : GlanceAppWidget() {
                 RecepteurBandeau::class.java.name -> WidgetBandeau()
                 RecepteurWidget::class.java.name -> WidgetJournee()
                 RecepteurAujourdhui::class.java.name -> WidgetAujourdhui()
+                RecepteurAlerte::class.java.name -> WidgetAlerte()
                 else -> null
             }
 
@@ -140,6 +151,7 @@ class WidgetTemperature : WidgetRundata(Forme.TEMPERATURE)
 class WidgetBandeau : WidgetRundata(Forme.BANDEAU)
 class WidgetJournee : WidgetRundata(Forme.JOURNEE)
 class WidgetAujourdhui : WidgetRundata(Forme.AUJOURDHUI)
+class WidgetAlerte : WidgetRundata(Forme.ALERTE)
 
 // Les couleurs du site, claires de jour et sombres de nuit (le thème du téléphone).
 private val ENCRE = ColorProvider(day = CLAIR.encre, night = SOMBRE.encre)
@@ -158,16 +170,64 @@ private fun choisir(context: Context, id: GlanceId): Action {
     )
 }
 
+/**
+ * Le fond et les marges d'un widget. `alerte` : le fond prend sa couleur officielle (widget « Alerte »). `enHaut` : le
+ * contenu part du haut, sans bande vide au-dessus (les grands widgets) ; centré en hauteur sinon.
+ */
 @Composable
-private fun Cadre(action: Action, contenu: @Composable ColumnScope.() -> Unit) {
+private fun Cadre(action: Action, alerte: Alerte? = null, enHaut: Boolean = false, contenu: @Composable ColumnScope.() -> Unit) {
     val h = LocalSize.current.height
     val petit = h < 80.dp
+    val fond = alerte?.let { it.couleur.teinte(CLAIR).first to it.couleur.teinte(SOMBRE).first } ?: (CLAIR.fond to SOMBRE.fond)
     Column(
-        GlanceModifier.fillMaxSize().background(CLAIR.fond, SOMBRE.fond).cornerRadius(20.dp)
+        GlanceModifier.fillMaxSize().background(fond.first, fond.second).cornerRadius(20.dp)
             .padding(horizontal = if (petit) 12.dp else 14.dp, vertical = if (petit) 6.dp else if (h < 120.dp) 8.dp else 12.dp).clickable(action),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = if (enHaut) Alignment.Top else Alignment.CenterVertically,
         content = contenu,
     )
+}
+
+/** L'encre qui se lit sur la couleur de `a`. */
+private fun encreDe(a: Alerte): Couleur = ColorProvider(day = a.couleur.teinte(CLAIR).second, night = a.couleur.teinte(SOMBRE).second)
+
+/**
+ * Le bandeau d'alerte des grands widgets : la plus grave, dans sa couleur officielle, avec son heure ; « et 1 autre »
+ * quand il y en a plus. Touché : sa page. Rien quand il n'y a pas d'alerte, ou qu'elles n'ont pas été lues.
+ */
+@Composable
+private fun BandeauAlerte(d: Donnees) {
+    val liste = d.alertes.orEmpty()
+    val a = liste.firstOrNull() ?: return
+    val (fondClair, _) = a.couleur.teinte(CLAIR)
+    val (fondSombre, _) = a.couleur.teinte(SOMBRE)
+    val encre = encreDe(a)
+    Column(GlanceModifier.fillMaxWidth().background(fondClair, fondSombre).cornerRadius(8.dp).padding(horizontal = 8.dp, vertical = 4.dp).clickable(ouvrir(a.page))) {
+        Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            T(a.texte, 12.sp, encre, gras = true, lignes = 2, modifier = GlanceModifier.defaultWeight())
+            heureAlerte(a)?.let { T("  $it", 10.sp, encre) }
+        }
+        enPlusAlertes(liste.size - 1)?.let { T(it, 10.sp, encre) }
+    }
+    Spacer(GlanceModifier.height(4.dp))
+}
+
+/** 4×1 « Alerte » : la plus grave dans sa couleur, ce qu'elle veut dire et son heure ; ou qu'il n'y en a pas, et d'après quel bulletin. */
+@Composable
+private fun ColumnScope.AlerteSeule(commune: Commune?, d: Donnees?) {
+    if (Attente(commune, d)) return
+    d!!
+    val l = ligneAlerte(d)
+    val haut = LocalSize.current.height >= 100.dp
+    val encre = l.alerte?.let(::encreDe) ?: ENCRE
+    val doux = l.alerte?.let(::encreDe) ?: ATTENUE
+    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        T(if (haut && l.texte == ALERTES_NON_LUES) ALERTES_NON_LUES_LONG else l.texte, if (haut) 16.sp else 14.sp, encre, gras = true, lignes = 2, modifier = GlanceModifier.defaultWeight())
+        l.heure?.let { T("  $it", 11.sp, doux) }
+    }
+    val detail = listOfNotNull(l.detail, enPlusAlertes((d.alertes?.size ?: 0) - 1)).joinToString(" · ").takeIf { it.isNotEmpty() }
+    detail?.let { T(it, 11.sp, doux, lignes = if (haut) 3 else 1) }
+    if (haut) T(if (l.alerte == null) d.commune else "${d.commune}${d.zone?.let { " · zone $it" } ?: ""}", 11.sp, doux)
+    horsLigne(d)?.let { T(it, 10.sp, if (l.alerte == null) LAVE else encre, lignes = 1) }
 }
 
 @Composable
@@ -250,7 +310,9 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
         val vigilance = ouvrir(Pages.VIGILANCE)
         Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(vigilance), verticalAlignment = Alignment.CenterVertically) {
             val v = vigilanceCourte(d)
+            val cyclone = d.alertes?.firstOrNull()?.takeIf { it.cyclonique }
             when {
+                cyclone != null -> Puce(Pastille(cyclone.texte, cyclone.couleur), ouvrir(cyclone.page), if (haut) 12.sp else 11.sp, lignes = if (haut) 3 else 2)
                 v == null -> T("Vigilance non lue", 12.sp, ATTENUE, lignes = 2)
                 v.second != null -> Puce(v.second!!, vigilance, if (haut) 12.sp else 11.sp, lignes = if (haut) 3 else 2)
                 else -> T(v.first, 12.sp, lignes = 2)
@@ -272,6 +334,7 @@ private fun ColumnScope.Journee(commune: Commune?, d: Donnees?) {
         T(l.titre, 15.sp, gras = true, modifier = GlanceModifier.defaultWeight())
         l.lue?.let { T(it, 11.sp, ATTENUE) }
     }
+    BandeauAlerte(d)
     Row(GlanceModifier.fillMaxWidth().clickable(ouvrir(commune.pageMeteo)), verticalAlignment = Alignment.CenterVertically) {
         l.grande?.let { T(it, 34.sp, gras = true) }
         Spacer(GlanceModifier.width(10.dp))
@@ -310,6 +373,7 @@ private fun ColumnScope.Aujourdhui(commune: Commune?, d: Donnees?) {
         d.temperature?.let { T(it, 15.sp, gras = true) }
         d.lueA?.let { T("  Lu à $it", 11.sp, ATTENUE) }
     }
+    BandeauAlerte(d)
     vigilanceCourte(d)?.let { (texte, p) ->
         val vigilance = ouvrir(Pages.VIGILANCE)
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -377,3 +441,4 @@ class RecepteurBandeau : RecepteurRundata(WidgetBandeau())
 /** Le nom de 0.1 gardé : le widget « La journée ». */
 class RecepteurWidget : RecepteurRundata(WidgetJournee())
 class RecepteurAujourdhui : RecepteurRundata(WidgetAujourdhui())
+class RecepteurAlerte : RecepteurRundata(WidgetAlerte())

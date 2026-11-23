@@ -9,6 +9,8 @@
     <string name="widget_description">La température mesurée de votre commune, la vigilance de sa zone et l\'avis du distributeur d\'eau, s\'il y en a un.</string>
     <string name="widget_aujourdhui_nom">Aujourd\'hui</string>
     <string name="widget_aujourdhui_description">Que faire aujourd\'hui : sorties et marchés, routes et bus, avis du distributeur d\'eau.</string>
+    <string name="widget_alerte_nom">Alerte</string>
+    <string name="widget_alerte_description">La vigilance jaune, orange ou rouge de Météo-France pour la zone de votre commune, ou l\'alerte cyclonique de la préfecture, dans sa couleur officielle et avec son heure.</string>
     <!-- L'aperçu du sélecteur de widgets : un exemple de lecture, pas une mesure. -->
     <string name="apercu_commune">Saint-Denis</string>
     <string name="apercu_temperature">25,5 °C</string>
@@ -25,4 +27,6 @@
     <string name="apercu_eau">Eau</string>
     <string name="apercu_eau_avis">Pas d\'avis de coupure récent ou à venir.</string>
     <string name="apercu_officiel">Consulter le site officiel de Météo-France</string>
+    <string name="apercu_pas_d_alerte">Pas d\'alerte en cours</string>
+    <string name="apercu_alerte_detail">zone Nord · d\'après Météo-France · bulletin de 16:21</string>
 </resources>

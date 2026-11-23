@@ -18,7 +18,7 @@
  */
 
 /** The tools the app reads, whose answers are kept. Another tool the app comes to read is added here. */
-export const APP_TOOLS = new Set(["resume_du_jour", "meteo_actuelle", "vigilance_meteo"]);
+export const APP_TOOLS = new Set(["resume_du_jour", "meteo_actuelle", "vigilance_meteo", "cyclones"]);
 
 /** How long an answer is kept, seconds: the time a vigilance or a water notice may take to reach the widget, on top of its 30 minutes. */
 export const COPY_SECONDS = 300;

@@ -65,6 +65,16 @@ object Mots {
     fun secteurs(a: AvisEau): String? = a.secteurs.takeIf { it.isNotEmpty() }?.let { s ->
         "Secteurs\u00a0: " + s.take(3).joinToString(", ") + if (s.size > 3) " et ${s.size - 3} autres" else ""
     }
+    /**
+     * « Bulletin de Météo-France de 16:21 », « Avis du CMRS du 23/11 10:00 » ; l'alerte cyclonique, décidée par la
+     * préfecture et lue dans le bulletin de Météo-France : « Alerte de la préfecture · bulletin de Météo-France de 03:31 ».
+     */
+    fun heureAlerte(a: Alerte): String = when {
+        a.cyclonique -> "Alerte de la préfecture · " + (a.heure?.let { "bulletin de Météo-France de $it" } ?: "d'après Météo-France")
+        a.heure == null -> if (a.systeme) "D'après le CMRS de La Réunion" else "D'après Météo-France"
+        a.systeme -> "Avis du CMRS du ${a.heure}"
+        else -> "Bulletin de Météo-France de ${a.heure}"
+    }
     fun licence(s: Source): String = s.nom + (s.licence?.let { "\u00a0: $it" } ?: "")
 }
 
@@ -153,6 +163,8 @@ private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: Strin
                 }
             }
             if (j == null) return@Column
+            // Les alertes tout en haut, dans leur couleur officielle, avec leur heure.
+            j.alertes?.liste?.forEach { BandeauAlerte(it, ouvrir) }
             // La vigilance en premier quand il y en a une, avec le lien officiel de Météo-France.
             val v = j.vigilance
             if (v != null && v.enPremier) BlocVigilance(v, ouvrir)
@@ -196,6 +208,22 @@ private fun Carte(commune: Commune, j: Journee?, enCours: String?, erreur: Strin
                 j.sources.forEach { Texte(Mots.licence(it), 12.sp, c.attenue) }
             }
         }
+    }
+}
+
+/** Une alerte en bandeau : sa couleur officielle (gris sans couleur), ses mots, son heure ; touchée, sa page. */
+@Composable
+fun BandeauAlerte(a: Alerte, ouvrir: (String) -> Unit) {
+    val c = LocalCouleurs.current
+    val (teinte, encre) = a.couleur.teinte(c)
+    Column(
+        Modifier.fillMaxWidth().background(teinte, RoundedCornerShape(12.dp)).clickable(role = Role.Button) { ouvrir(a.page) }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Texte(a.texte, 17.sp, encre, gras = true)
+        a.detail?.let { Texte(it, 14.sp, encre) }
+        Texte(Mots.heureAlerte(a), 13.sp, encre)
     }
 }
 

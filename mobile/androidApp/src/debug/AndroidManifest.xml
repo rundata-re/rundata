@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- La version d'essai seulement : le récepteur qui simule une alerte (Simulation.kt). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver android:name="re.rundata.app.android.Simuler" android:exported="true" />
+    </application>
+</manifest>

@@ -22,6 +22,21 @@ import { compteAvis } from "../tools/coupures.js";
 import { ask, credits, icon, layout, officielHtml, SITE, thin, leJour } from "./pages.js";
 import type { PlacePage } from "./places.js";
 
+type SiteLu = { site: string; lu_le: string; a_jour: boolean };
+const leA = (lu_le: string) => { const [d, h] = lu_le.split(" "); return `le ${d} à ${h}`; };
+/** Its own site read with nothing today (tools/resume.ts): « , dont le site de la commune de Saint-André, lu le 24/10 à 08:00 »;
+ *  read more than a day ago: « ; le site … n'a pas pu être relu depuis le 24/10 à 08:00 » (23/11/2026). `court` drops the
+ *  commune's name, which the card says before it. */
+function sitesDits(sites: SiteLu[] | undefined, commune: string, court = false) {
+  const name = (x: SiteLu) => esc(court ? x.site.replace(` ${de(commune)}`, "") : x.site);
+  const fresh = sites?.filter((x) => x.a_jour) ?? [];
+  const old = sites?.filter((x) => !x.a_jour) ?? [];
+  return {
+    dont: fresh.length ? `, dont ${fresh.map((x) => `le ${name(x)}, lu ${leA(x.lu_le)}`).join(" et ")}` : "",
+    ancien: old.map((x) => `le ${name(x)} n'a pas pu être relu depuis ${leA(x.lu_le)}`).join(" et "),
+  };
+}
+
 const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 152;
 
@@ -104,10 +119,11 @@ export function dayLines(p: PlacePage, r: Resume): string {
   const level = v && !v.au_dessus_du_vert && !v.alerte_cyclonique ? vigilanceLevel(v.maintenant) : "";
   const ev = r.evenements_du_jour;
   const n = ev ? ev.liste.length + (ev.autres ?? 0) : 0;
+  const lus = sitesDits(ev?.sites_lus, p.nom);
   const lines = [
     measured || forecast ? line("Météo", [measured, forecast].filter(Boolean).join(" ")) : "",
     level ? line("Vigilance", `${esc(level)} (Météo-France).`) : "",
-    ev ? line("Sorties", `${n ? `${plural(n, "événement")} aujourd'hui` : "aucun événement trouvé aujourd'hui dans les agendas lus"}${ev.injoignable ? `, ${esc(ev.injoignable.court)}` : ""}.`) : "",
+    ev ? line("Sorties", `${n ? `${plural(n, "événement")} aujourd'hui` : `aucun événement trouvé aujourd'hui dans les agendas lus${lus.dont}${lus.ancien ? `\u00a0; ${lus.ancien}` : ""}`}${ev.injoignable ? `, ${esc(ev.injoignable.court)}` : ""}.`) : "",
     r.carburants?.prix_maximum ? line("Carburants", `prix maximum du mois\u00a0: ${esc(r.carburants.prix_maximum)}.`) : "",
     line("Pharmacie de garde", `${lienNom(r.pharmacie_de_garde.site, "3237.fr", ' rel="noopener"')}`),
   ].filter(Boolean);
@@ -270,7 +286,9 @@ export function aujourdhuiPage(origin: string, p: PlacePage, r: Resume, at: Cach
     ? card("music", "Sortir aujourd'hui",
         (ev.liste.length
           ? `<ul class="plain" data-sortie>${ev.liste.map((e) => `<li>${e.statut ? `<b>${esc(e.statut)}</b> · ` : ""}${e.lien && ACCUEILS.has(e.lien) ? `<a href="${esc(e.lien)}" rel="noopener" target="_blank">${esc(e.titre)}</a>` : li({ titre: e.titre, lien: e.lien }).slice(4, -5)} <span class="note">${[e.quand, e.lieu, e.prix].filter(Boolean).map((x) => esc(x!)).concat(e.source ? [adresseTexte(`Source\u00a0: ${e.source}`)] : []).join(" · ")}</span></li>`).join("")}</ul>${ev.autres ? `<p class="note">Et ${plural(ev.autres, "autre")}.</p>` : ""}`
-          : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus.</p>`) +
+          : ((lus) => lus.ancien
+            ? `<p>Rien trouvé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus${lus.dont}. ${lus.ancien.charAt(0).toUpperCase()}${lus.ancien.slice(1)}\u00a0: à vérifier sur son agenda.</p>`
+            : `<p>Rien d'annoncé aujourd'hui ${esc(aCommune(p.nom))} dans les agendas lus${lus.dont}.</p>`)(sitesDits(ev.sites_lus, p.nom, true))) +
         // Its own site that did not answer at our last read, with its hour (tools/injoignable.ts).
         (ev.injoignable ? `<p class="note">${silentText(ev.injoignable)}</p>` : ""),
         "/evenements")

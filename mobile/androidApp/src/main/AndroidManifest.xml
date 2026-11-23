@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Les notifications d'alerte (Android 13 et plus : demandée à l'ouverture de l'appli) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".android.RundataApp"
@@ -33,7 +35,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Les quatre widgets du sélecteur, du plus petit au plus grand -->
+        <!-- Les cinq widgets du sélecteur, du plus petit au plus grand -->
         <receiver
             android:name=".android.widget.RecepteurTemperature"
             android:exported="true"
@@ -81,6 +83,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_aujourdhui" />
+        </receiver>
+        <receiver
+            android:name=".android.widget.RecepteurAlerte"
+            android:exported="true"
+            android:label="@string/widget_alerte_nom">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_alerte" />
         </receiver>
     </application>
 

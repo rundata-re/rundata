@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.content.edit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import re.rundata.app.Alerte
 import re.rundata.app.AvisEau
 import re.rundata.app.InfoRoute
 import re.rundata.app.Journee
@@ -57,6 +58,11 @@ data class Donnees(
     val bus: List<Ligne> = emptyList(),
     /** Le texte de l'alerte cyclonique, tel quel, quand il y en a une. */
     val alerteCyclonique: String? = null,
+    /** Les alertes du bandeau, la plus grave en premier ; null : pas lues (jamais « pas d'alerte »). */
+    val alertes: List<Alerte>? = null,
+    /** « 16:21 » : le bulletin de vigilance d'où elles viennent ; null quand la vigilance n'a pas été lue. */
+    val alertesEmise: String? = null,
+    val vigilanceLue: Boolean = false,
     val format: Int = FORMAT,
 ) {
     companion object {
@@ -92,6 +98,9 @@ data class Donnees(
                 sorties = j.sorties?.map(::ligneSortie),
                 routes = j.routes?.infos?.map(::ligneRoute),
                 bus = j.routes?.bus.orEmpty().map(::ligneRoute),
+                alertes = j.alertes?.liste,
+                alertesEmise = j.alertes?.emise,
+                vigilanceLue = j.alertes?.vigilanceLue == true,
             )
         }
 

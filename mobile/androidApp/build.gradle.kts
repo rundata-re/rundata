@@ -18,8 +18,8 @@ android {
         applicationId = "re.rundata.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.2.0"
+        versionCode = 5
+        versionName = "0.3.0"
     }
 
     buildFeatures { buildConfig = true }
@@ -38,6 +38,12 @@ android {
 
     // La version release : réduite par R8 (code et ressources), signée avec la clé définitive (depuis 0.2.0).
     buildTypes {
+        // La version d'essai, pour les captures : à côté de la vraie (autre identifiant), elle sait simuler une alerte
+        // (src/debug/Simulation.kt). Jamais publiée.
+        debug {
+            applicationIdSuffix = ".essai"
+            versionNameSuffix = "-essai"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

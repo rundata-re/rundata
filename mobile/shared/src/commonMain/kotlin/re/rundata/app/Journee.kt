@@ -17,6 +17,9 @@ enum class Couleur(val mot: String) {
     /** « verte », « jaune » : accordé à « vigilance ». */
     val feminin: String get() = when (this) { VERT -> "verte"; VIOLET -> "violette"; else -> mot }
 
+    /** Jaune, orange, rouge ou violet : une alerte du bandeau. */
+    val auDessusDuVert: Boolean get() = ordinal > VERT.ordinal
+
     companion object {
         /** « vert » ou « verte », « violet » ou « violette » ; AUCUNE pour tout autre mot. */
         fun de(mot: String?): Couleur = mot?.trim()?.lowercase().let { m -> entries.firstOrNull { it != AUCUNE && (it.mot == m || it.feminin == m) } } ?: AUCUNE
@@ -118,17 +121,37 @@ data class Journee(
     val routes: Routes? = null,
     /** « runéo » : le distributeur d'eau de la commune. */
     val distributeur: String? = null,
+    /** Les alertes du bandeau (vigilance_meteo, cyclones) ; null quand elles n'ont pas été lues. */
+    val alertes: Alertes? = null,
 )
 
 /**
  * Lit la journée de `commune` : `resume_du_jour`, et `meteo_actuelle` si le résumé n'a pas la mesure. La vigilance, texte
  * et couleur, vient du seul champ `vigilance.maintenant` du résumé, pour qu'ils disent la même chose.
  */
-class JourneeSource(private val mcp: RundataMcp) {
+class JourneeSource(
+    private val mcp: RundataMcp,
+    /** Les réponses de `vigilance_meteo` et de `cyclones` à montrer au lieu des vraies : la version d'essai seulement. */
+    private val simulees: () -> Pair<JsonObject?, JsonObject?>? = { null },
+) {
     suspend fun journee(commune: Commune): Journee = coroutineScope {
         val resume = mcp.appeler("resume_du_jour", mapOf("lieu" to commune.nom))
         val meteo = if (mesureDuResume(resume) == null) runCatching { mcp.appeler("meteo_actuelle", mapOf("lieu" to commune.nom)) }.getOrNull() else null
         journeeDe(commune, resume, meteo)
+    }
+
+    /**
+     * La journée et ses alertes, lues ensemble : `vigilance_meteo` pour la zone de la commune, `cyclones` pour l'île. Les
+     * alertes qui n'ont pas pu être lues restent null : le bandeau n'en dit rien, jamais « pas d'alerte ».
+     */
+    suspend fun journeeEtAlertes(commune: Commune): Journee = coroutineScope {
+        val essai = simulees()
+        val vigilance = async { essai?.first ?: runCatching { mcp.appeler("vigilance_meteo", mapOf("lieu" to commune.nom)) }.getOrNull() }
+        val cyclones = async { essai?.second ?: runCatching { mcp.appeler("cyclones") }.getOrNull() }
+        val j = journee(commune)
+        val v = vigilance.await()
+        val c = cyclones.await()
+        j.copy(alertes = if (v == null && c == null) null else alertesDe(v, c))
     }
 }
 

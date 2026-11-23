@@ -11,7 +11,7 @@ import re.rundata.app.clientHttp
 
 class RundataApp : Application() {
     /** Un client pour toute l'appli, écran et widget. */
-    val source: JourneeSource by lazy { JourneeSource(RundataMcp(clientHttp(), USER_AGENT)) }
+    val source: JourneeSource by lazy { JourneeSource(RundataMcp(clientHttp(), USER_AGENT), alertesSimulees(this)) }
 
     companion object {
         /** Honnête : qui lit le serveur MCP public, et en quelle version. */

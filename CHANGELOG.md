@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Lundi 23 novembre 2026
 
+- Feux vus par satellite : la page et les outils IA disent « point chaud », pas forcément un feu, avec la confiance et le lien vers la carte.
 - Mer : la houle mesurée par la bouée du Cerema au large de Saint-Pierre, sur /mer et dans temperature_mer, à côté de la houle prévue.
 - Lieux : « le Sud », « l'Ouest » ou « le Nord » répondent pour la ville principale de la zone de Météo-France, et Takamaka est trouvé.
 - Qualité de l'eau : un avis “ne pas boire” en cours s'affiche à la ligne de sa commune, avec son distributeur et ses secteurs.

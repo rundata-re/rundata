@@ -6,7 +6,11 @@ import { KEY as ACTUALITES_KEY } from "../src/providers/actualites.js";
 import { collecteAnswer } from "../src/tools/collecte.js";
 import { credits } from "../src/tools/format.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { prodAge } from "../src/tools/resume.js";
+import { prodAge, resume } from "../src/tools/resume.js";
+import { perimeeTexte } from "../src/tools/electricite.js";
+import { aujourdhuiPage } from "../src/web/aujourdhui.js";
+import { esc } from "../src/web/map.js";
+import { pageOf } from "../src/web/places.js";
 
 const t = (s: string) => Date.parse(`${s}+04:00`);
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
@@ -63,5 +67,24 @@ describe("the AI tools say what their pages say", () => {
     expect(prodAge({ heure_mesure: "23/11 12:40 heure de La Réunion", age_min: 5 }, new Date(t("2026-11-23T12:45:00")), now)).toEqual({});
     // A line of 11:40 in a copy of 12:30, served at 12:53: 73 minutes, past the hour.
     expect(prodAge({ heure_mesure: "23/11 11:40 heure de La Réunion", age_min: 50 }, built, now)).toMatchObject({ perimee: true });
+  });
+
+  it("gives that age in resume_du_jour's electricite block and on /aujourdhui, in place of the percentage", () => {
+    const now = new Date(t("2026-11-23T12:53:00"));
+    const p = pageOf("saint-pierre")!;
+    const copie = (heure_mesure: string, age_min: number) => ({
+      electricite: { value: { resume: "", avertissements: [], sources: credits([feux.SOURCE]), production: { heure_mesure, age_min, total_mw: 420, parts: [], renouvelable_pct: 82.2, statut: "" } }, fetchedAt: new Date(t("2026-11-23T12:30:00")), stale: false },
+    });
+    // EDF's last line of Friday 17:10, 4040 minutes old in the copy of 12:30, served on Monday at 12:53: 4063 minutes.
+    const vieille = resume(p, copie("20/11 17:10 heure de La Réunion", 4040) as never, now);
+    expect(vieille.electricite).toMatchObject({ perimee: true, renouvelable_pct: 82.2, avertissement: perimeeTexte("20/11 17:10", 4063) });
+    expect(vieille.electricite!.avertissement).toMatch(/^Dernière mesure de production lue chez EDF : le 20\/11 à 17:10, il y a \d jours\. Ce n'est pas la production de maintenant\.$/);
+    const html = aujourdhuiPage("https://rundata.re", p, vieille, null);
+    expect(html).toContain(`Électricité : <span class="note">${esc(vieille.electricite!.avertissement!)}</span>`);
+    expect(html).not.toMatch(/82,2 % renouvelable/);
+    // A line of the hour: the percentage, as before, with no warning.
+    const fraiche = resume(p, copie("23/11 12:25 heure de La Réunion", 5) as never, now);
+    expect(fraiche.electricite).not.toHaveProperty("perimee");
+    expect(aujourdhuiPage("https://rundata.re", p, fraiche, null)).toContain("<b>82,2 % renouvelable</b>");
   });
 });

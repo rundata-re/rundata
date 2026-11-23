@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-23T16:03:00+04:00", texte: "Feux vus par satellite\u00a0: la page et les outils IA disent «\u00a0point chaud\u00a0», pas forcément un feu, avec la confiance et le lien vers la carte." },
   { date: "2026-11-23T14:22:00+04:00", texte: "Mer\u00a0: la houle mesurée par la bouée du Cerema au large de Saint-Pierre, sur /mer et dans temperature_mer, à côté de la houle prévue." },
   { date: "2026-11-23T14:16:00+04:00", texte: "Lieux\u00a0: «\u00a0le Sud\u00a0», «\u00a0l'Ouest\u00a0» ou «\u00a0le Nord\u00a0» répondent pour la ville principale de la zone de Météo-France, et Takamaka est trouvé." },
   { date: "2026-11-23T14:12:00+04:00", texte: "Qualité de l'eau\u00a0: un avis “ne pas boire” en cours s'affiche à la ligne de sa commune, avec son distributeur et ses secteurs." },

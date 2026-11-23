@@ -52,8 +52,13 @@ data class Alertes(
     val emise: String?,
     /** « Consulter le site officiel de Météo-France : https://… ». */
     val officiel: String?,
-    /** La vigilance n'a pas pu être lue : rien n'est dit de la zone, jamais « pas d'alerte ». */
+    /**
+     * La vigilance de la zone n'a pas pu être lue (pas de réponse, ou une réponse pour toute l'île) : rien n'est dit de
+     * la zone, jamais « pas d'alerte ».
+     */
     val vigilanceLue: Boolean = true,
+    /** `cyclones` a été lu : sans lui, un système suivi par le CMRS n'est ni dit ni dit parti. */
+    val cyclonesLus: Boolean = true,
 ) {
     val premiere: Alerte? get() = liste.firstOrNull()
 }
@@ -90,7 +95,9 @@ fun alertesDe(vigilance: JsonObject?, cyclones: JsonObject?): Alertes {
         zone = vigilance?.texte("zone_vigilance")?.substringBefore(' ')?.substringBefore(" :")?.trim(),
         emise = emise,
         officiel = vigilance?.texte("officiel"),
-        vigilanceLue = vigilance != null,
+        // Sans « niveaux », le serveur a répondu pour toute l'île (lieu rattaché à aucune zone) : rien de la zone n'est lu.
+        vigilanceLue = vigilance?.get("niveaux") is JsonArray,
+        cyclonesLus = cyclones != null,
     )
 }
 

@@ -63,7 +63,7 @@ export async function marchesPublicsAnswer(cache: Cache, lieu: string | undefine
       if (k) par.set(k, (par.get(k) ?? 0) + 1);
     }
     return text({
-      resume: `${d.nombre} avis de marché ${d.nombre > 1 ? "ouverts" : "ouvert"} aux réponses à La Réunion, d'après le BOAMP lu ${le}. Donner une commune pour les siens.`,
+      resume: `${d.nombre} avis de marché ${d.nombre > 1 ? "ouverts" : "ouvert"} aux réponses à La Réunion, d'après le BOAMP lu ${le}. Préciser une commune pour n'avoir que ses avis.`,
       par_commune: Object.fromEntries([...par].sort(([x, m], [y, n]) => n - m || x.localeCompare(y, "fr"))),
       lien,
       ...common,

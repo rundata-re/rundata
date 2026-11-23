@@ -120,7 +120,7 @@ export function weekendPage(origin: string, data: Cached<AgendaAnswer> | null, n
     const here = inWeekend(r, w, now);
     if (!here.length) continue;
     listed.push(r);
-    dated.push({ ...r, date: here[0].date, quand: here[0].quand });
+    dated.push({ ...r, date: here[0].date, quand: here[0].quand, autres_dates: undefined });
   }
   // Each day with what goes on that day, a fête of two days on both (parJour, as the tool's `par_jour`); the shows by
   // their hour, the fêtes of several days after them; those of more than a week once, after the days.

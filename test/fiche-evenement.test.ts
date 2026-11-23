@@ -172,7 +172,8 @@ describe("an event's page", () => {
     expect(registre(again, [], "2026-12-21").map((x) => x.f)).toEqual(["0a1b2c3d", "33334444"]);
     expect(ficheUrls(registre(again, [], "2026-12-21"), "2026-12-21")).toEqual([]);
     // Past those 30 days, its key alone, a year more, for its address to say gone; then nothing.
-    expect(registre(again, [], "2026-12-23")).toEqual([{ f: "0a1b2c3d", fin: "2026-11-21", parti: true }, { f: "33334444", fin: "2026-11-22", parti: true }]);
+    // The one whose page was indexed (a text of its own) keeps its commune, for its address to send there (301).
+    expect(registre(again, [], "2026-12-23")).toEqual([{ f: "0a1b2c3d", fin: "2026-11-21", parti: true, commune: "Saint-Pierre" }, { f: "33334444", fin: "2026-11-22", parti: true }]);
     expect(registre(registre(again, [], "2026-12-23"), [], "2027-12-21").map((x) => x.f)).toEqual(["0a1b2c3d", "33334444"]);
     expect(registre(registre(again, [], "2026-12-23"), [], "2027-12-23")).toEqual([]);
     expect(ficheUrls(registre(again, [], "2026-12-23"), "2026-11-01")).toEqual([]);
@@ -192,9 +193,13 @@ describe("an event's page", () => {
   describe("its address", () => {
     const a = row();
     const path = fichePath(a);
-    const over: Fiche = { f: "0a1b2c3d", titre: a.titre, date: "2026-10-27T10:00", fin: "2026-11-15", quand: "", commune: "Saint-Pierre", publie_par: "Mairie de Saint-Pierre", texte: true, modifie: "2026-10-27", sig: "" };
+    // Over, served in noindex while to come (no text of its own): its page « a eu lieu ».
+    const over: Fiche = { f: "0a1b2c3d", titre: a.titre, date: "2026-10-27T10:00", fin: "2026-11-15", quand: "", commune: "Saint-Pierre", publie_par: "Mairie de Saint-Pierre", texte: false, modifie: "2026-10-27", sig: "" };
+    // Over, its page indexed while to come: sent to its commune.
+    const indexee: Fiche = { ...over, texte: true };
     const toCome: Fiche = { ...over, date: "2026-11-28", fin: undefined };
     const gone: Entree = { f: "0a1b2c3d", fin: "2026-09-01", parti: true };
+    const goneIndexee: Entree = { ...gone, commune: "Saint-Pierre" };
 
     it("serves the page of an event listed, and sends an older title on to it (301)", () => {
       expect(ficheIssue(path, "0a1b2c3d", [a], undefined, "2026-11-20")).toEqual({ page: a });
@@ -210,6 +215,17 @@ describe("an event's page", () => {
       expect(ficheIssue(fichePath(over), "0a1b2c3d", undefined, [over], "2026-11-20")).toEqual({ passee: over });
       expect(ficheIssue(path, "0a1b2c3d", [], [gone], "2026-11-20")).toEqual({ statut: 410 });
       expect(ficheIssue(path, "0a1b2c3d", undefined, [gone], "2026-11-20")).toEqual({ statut: 410 });
+    });
+
+    it("sends an event over whose page was indexed to its commune (301), past the 30 days too, but for a commune it does not know", () => {
+      for (const kept of [[indexee], [goneIndexee]]) {
+        expect(ficheIssue(fichePath(over), "0a1b2c3d", [], kept, "2026-11-20")).toEqual({ commune: "Saint-Pierre" });
+        expect(ficheIssue("/evenements/autre-0a1b2c3d", "0a1b2c3d", undefined, kept, "2026-11-20")).toEqual({ commune: "Saint-Pierre" });
+      }
+      expect(ficheIssue(fichePath(over), "0a1b2c3d", [], [indexee], "2026-11-20", () => false)).toEqual({ passee: indexee });
+      expect(ficheIssue(path, "0a1b2c3d", [], [goneIndexee], "2026-11-20", () => false)).toEqual({ statut: 410 });
+      // To come, no longer announced: gone, as before (it did not take place).
+      expect(ficheIssue(path, "0a1b2c3d", [], [{ ...toCome, texte: true }], "2026-11-20")).toEqual({ statut: 410 });
     });
 
     it("says gone (410) an event to come no agenda announces any more, never seen not found (404), and without the copy come back (503)", () => {
@@ -242,6 +258,10 @@ describe("an event's page", () => {
         expect(await ended.text()).toContain("Cet événement est terminé");
         expect((await serve(path, [toCome], []))!.status).toBe(410);
         expect((await serve("/evenements/inconnu-99999999", [over], []))!.status).toBe(404);
+        for (const kept of [[indexee], [goneIndexee]]) {
+          const sent = (await serve(fichePath(over), kept, []))!;
+          expect([sent.status, sent.headers.get("location")]).toEqual([301, "https://rundata.re/aujourdhui/saint-pierre"]);
+        }
       });
 
       it("answers 503, to come back, while the copy is not there", async () => {

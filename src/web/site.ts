@@ -941,8 +941,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const rows = (data?.value as AgendaAnswer | undefined)?.evenements;
     // The register is read only for an event the copy does not list (over, or an address never known).
     const kept = rows?.some((x) => x.fiche === fiche) ? undefined : await cache.kept<Entree[]>(FICHES).catch(() => undefined);
-    const issue = ficheIssue(path, fiche, data ? (rows ?? []) : undefined, kept?.value, localDay(now));
+    const issue = ficheIssue(path, fiche, data ? (rows ?? []) : undefined, kept?.value, localDay(now), (nom) => COMMUNES.some((p) => p.nom === nom));
     if ("vers" in issue) return Response.redirect(`${origin}${issue.vers}`, 301);
+    // Over, its page once indexed: its commune's day, with its next outings (23/11/2026: a page that only said « a eu
+    // lieu » lost the visitors a search engine still sent to it).
+    if ("commune" in issue) return Response.redirect(`${origin}/aujourdhui/${COMMUNES.find((p) => p.nom === issue.commune)!.slug}`, 301);
     if ("page" in issue) {
       const r = issue.page;
       const c = r.commune ? COMMUNES.find((p) => p.nom === r.commune) : undefined;

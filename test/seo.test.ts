@@ -199,6 +199,22 @@ describe("events as schema.org Events", () => {
     expect(agendaEvents([row({ commune: "Saint-Paul", quand: "samedi 24/10 à 20:00", date: "2026-10-24T20:00" })])[0]).not.toHaveProperty("endDate");
   });
 
+  it("give each of an event's dates, one Event a date, a run of several days as one", () => {
+    const [ven, sam, juil] = agendaEvents([row({
+      commune: "Saint-Paul", titre: "Kabar", date: "2026-10-23T19:30", quand: "vendredi 23/10 de 19:30 à 22:00",
+      autres_dates: ["samedi 24/10 à 20:00", "du samedi 31/10 au dimanche 01/11", "et 2 autres"],
+    })]) as any[];
+    expect([ven.startDate, ven.endDate]).toEqual(["2026-10-23T19:30:00+04:00", "2026-10-23T22:00:00+04:00"]);
+    expect(sam.startDate).toBe("2026-10-24T20:00:00+04:00");
+    expect(sam).not.toHaveProperty("endDate");
+    expect([juil.startDate, juil.endDate]).toEqual(["2026-10-31", "2026-11-01"]);
+    expect(new Set([ven, sam, juil].map((e) => e.name))).toEqual(new Set(["Kabar"]));
+    // « et 2 autres » is not a date: three Events, not five.
+    expect(agendaEvents([row({ commune: "Saint-Paul", date: "2026-10-23", quand: "vendredi 23/10", autres_dates: ["samedi 24/10", "et 2 autres"] })])).toHaveLength(2);
+    // Over the new year: the next year.
+    expect((agendaEvents([row({ commune: "Saint-Paul", date: "2026-12-31", quand: "jeudi 31/12", autres_dates: ["samedi 02/01"] })])[1] as any).startDate).toBe("2027-01-02");
+  });
+
   it("leave out an event without a commune or a date, and are on the page", () => {
     expect(agendaEvents([row({}), row({ commune: "Saint-Paul", date: "bientôt" })])).toEqual([]);
     const d = { resume: "", nombre: 1, evenements: [row({ commune: "Saint-Paul" })], couverture: "", a_savoir: "", sources: [], ce_week_end: [] } as AgendaAnswer;

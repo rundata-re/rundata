@@ -11,7 +11,8 @@
  *
  * Over, the events are kept 30 days in a small register (FICHES, written by buildAgenda at most once an hour): the
  * page says it took place, in noindex, then is gone (410), its key remembered a year more, as is the page of an event
- * no agenda announces any more.
+ * no agenda announces any more. An event over whose page was indexed sends its address to its commune's day instead
+ * (301), all that year (fiches.ts `suivie`).
  */
 import type { Cached } from "../cache.js";
 import { a } from "../articles.js";

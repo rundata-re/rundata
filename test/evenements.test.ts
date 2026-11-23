@@ -145,7 +145,8 @@ describe("the concerts", () => {
     expect(html).toContain("Concert de maloya");
     expect(html).not.toContain("Fête du chouchou");
     expect(html).toContain("Aujourd&#39;hui, mardi 27 octobre");
-    expect(html.match(/"@type":"Event"/g)).toHaveLength(2);
+    // The Kabar of Tuesday and of Saturday: one Event a date.
+    expect(html.match(/"@type":"Event"/g)).toHaveLength(3);
     expect(html).toContain(`<meta name="description" content="Concerts à La Réunion ce soir et dans les deux semaines à venir\u00a0: salles, mairies et offices de tourisme.">`);
   });
 

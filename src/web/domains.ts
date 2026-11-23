@@ -16,7 +16,7 @@ import { sectorsSaid } from "../providers/avis-eau.js";
 import * as onf from "../providers/sentiers.js";
 import * as vigicrues from "../providers/vigicrues.js";
 import { ANNONCERONT, alerteVolcan, BLUESKY_SEUL, ENCLOS, followOvpf, levelSaid, mediaSection, releaseCard, tileLive, type VolcanAlerte, volcanBanner, volcanH1, volcanLead, volcanMeta, volcanTitle } from "./volcan-alerte.js";
-import { AHEAD_DAYS, CINEMAS, nombreDuJour, parJour, weekend } from "../tools/agenda.js";
+import { AHEAD_DAYS, CINEMAS, nombreDuJour, occurrences, parJour, weekend } from "../tools/agenda.js";
 import { marchesSection, SPORT_LIEN } from "./marches-agenda.js";
 import { kitAvantOrange, RADIO, suiviPhrase } from "../tools/cyclones.js";
 import { ACCUEILS, AGENDAS } from "../providers/agenda.js";
@@ -3859,13 +3859,11 @@ export function eventSummary(r: AgendaRow): string {
  */
 export function agendaEvents(rows: AgendaRow[]): object[] {
   const iso = (local: string) => (local.length > 10 ? `${local}:00+04:00` : local);
-  return rows.filter((r) => r.commune && /^\d{4}-\d\d-\d\d(T\d\d:\d\d)?$/.test(r.date)).map((r) => {
-    const end = agendaEnd(r);
-    return {
+  return rows.filter((r) => r.commune && /^\d{4}-\d\d-\d\d(T\d\d:\d\d)?$/.test(r.date)).flatMap((r) => seances(r).map(([start, end]) => ({
       "@type": "Event",
       name: r.titre,
-      startDate: iso(r.date),
-      ...(end && end >= r.date ? { endDate: iso(end) } : {}),
+      startDate: iso(start),
+      ...(end && end >= start ? { endDate: iso(end) } : {}),
       eventStatus: `https://schema.org/${STATUS[r.statut ?? ""] ?? "EventScheduled"}`,
       eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
       location: {
@@ -3879,8 +3877,25 @@ export function agendaEvents(rows: AgendaRow[]): object[] {
       ...offer(r),
       // The credit OpenAgenda gives, as its creator and its credit line; no copyright notice nor licence page it does not give.
       ...(r.image ? { image: { "@type": "ImageObject", url: r.image.url, author: { "@type": "Organization", name: r.image.auteur }, creator: { "@type": "Organization", name: r.image.auteur }, creditText: r.image.auteur, license: LICENCE_OUVERTE } } : {}),
-    };
+    })));
+}
+
+/**
+ * The start and end (local) of each of an event's dates its row lists, as schema.org wants an event given on several
+ * dates: one Event a date, not the first alone (23/11/2026: a show on the Friday and the Saturday said the Friday only).
+ * A run of several days in one go (« du vendredi 23/10 au dimanche 25/10 ») is one date, from its first day to its last.
+ * Its first date as before (agendaEnd) when the row lists no other one it can read; « et 3 autres » is not read.
+ */
+function seances(r: AgendaRow): [string, string | undefined][] {
+  const first: [string, string | undefined] = [r.date, agendaEnd(r)];
+  if (!r.autres_dates?.length) return [first];
+  const others = occurrences(r).slice(1).map((o): [string, string | undefined] => {
+    const start = o.debut ? `${o.du}T${o.debut}` : o.du;
+    // As agendaEnd: a day without an hour ends that day; an hour without its end has none, unless it runs to another day.
+    const end = o.fin ? `${o.au}T${o.fin}` : !o.debut || o.au !== o.du ? o.au : undefined;
+    return [start, end];
   });
+  return [first, ...others];
 }
 
 // The licence of OpenAgenda's pictures (rights.license of each event, providers/agenda.ts).

@@ -49,11 +49,15 @@ export interface Fiche {
   sig: string;
 }
 
-/** What is left of an event over for more than PASSE_JOURS: its key and its last day, for its address to say gone (410). */
+/**
+ * What is left of an event over for more than PASSE_JOURS: its key and its last day, for its address to say gone (410);
+ * and its commune when its page was indexed (`suivie`), for its address to keep sending there (301).
+ */
 export interface Partie {
   f: string;
   fin: string;
   parti: true;
+  commune?: string;
 }
 
 /** An entry of the register: an event with its page, or the key of one gone. */
@@ -61,6 +65,13 @@ export type Entree = Fiche | Partie;
 
 /** An event the register still has a page for. */
 export const vivante = (x: Entree): x is Fiche => !("parti" in x);
+
+/**
+ * The commune an event over sends its address to (301), rather than a page that only says it took place: an event whose
+ * page was indexed (`texte`: in the sitemap while to come, the only ones a search engine sends visitors to; the others
+ * are served in noindex), in a commune. Undefined for the others, which keep their page « a eu lieu », then 410.
+ */
+export const suivie = (x: Entree): string | undefined => (vivante(x) ? (x.texte ? x.commune : undefined) : x.commune);
 
 const hash = (s: string) => {
   let h = 5381;
@@ -111,7 +122,10 @@ export function registre(prev: Entree[] | undefined, rows: Row[], today: string)
     const fin = vivante(x) ? (x.fin ?? x.date.slice(0, 10)) : x.fin;
     const age = daysBetween(fin, today);
     if (age <= PASSE_JOURS && vivante(x)) out.set(x.f, x);
-    else if (age <= PASSE_JOURS + PARTI_JOURS) out.set(x.f, { f: x.f, fin, parti: true });
+    else if (age <= PASSE_JOURS + PARTI_JOURS) {
+      const commune = suivie(x);
+      out.set(x.f, { f: x.f, fin, parti: true, ...(commune ? { commune } : {}) });
+    }
   }
   return [...out.values()];
 }
@@ -120,22 +134,26 @@ export function registre(prev: Entree[] | undefined, rows: Row[], today: string)
 export type Issue =
   | { page: Row }
   | { vers: string }
+  | { commune: string }
   | { passee: Fiche }
   | { statut: 404 | 410 | 503 };
 
 /**
  * An event's address, `fiche` its key: its page while the copy lists it; then, from the register, the page saying it
  * took place for PASSE_JOURS, gone (410) for PARTI_JOURS after; gone also for an event to come no agenda announces any
- * more. An address with another title is sent on to the page's own (301). Without the copy, an event the register
+ * more. An event over whose page was indexed sends its address to its commune instead, all that time (suivie, 301),
+ * when `connue` knows the commune. An address with another title is sent on to the page's own (301). Without the copy, an event the register
  * does not say over cannot be told: come back (503), never « over » for one that may be on. A key never seen: 404.
  */
-export function ficheIssue(path: string, fiche: string, rows: Row[] | undefined, kept: Entree[] | undefined, today: string): Issue {
+export function ficheIssue(path: string, fiche: string, rows: Row[] | undefined, kept: Entree[] | undefined, today: string, connue: (commune: string) => boolean = () => true): Issue {
   const bare = path.replace(/\/$/, "");
   const r = rows?.find((x) => x.fiche === fiche);
   if (r) return bare === fichePath(r) ? { page: r } : { vers: fichePath(r) };
   const x = kept?.find((y) => y.f === fiche);
-  if (x && !vivante(x)) return { statut: 410 };
-  if (x && (x.fin ?? x.date.slice(0, 10)) < today) return bare === fichePath(x) ? { passee: x } : { vers: fichePath(x) };
+  const vers = x && suivie(x);
+  const commune = vers && connue(vers) ? vers : undefined;
+  if (x && !vivante(x)) return commune ? { commune } : { statut: 410 };
+  if (x && (x.fin ?? x.date.slice(0, 10)) < today) return commune ? { commune } : bare === fichePath(x) ? { passee: x } : { vers: fichePath(x) };
   if (!rows) return { statut: 503 };
   return { statut: x ? 410 : 404 };
 }

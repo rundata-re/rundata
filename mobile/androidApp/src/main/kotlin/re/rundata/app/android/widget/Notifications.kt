@@ -64,25 +64,33 @@ object Notifications {
 
     private fun prefs(context: Context) = context.getSharedPreferences("notifications", Context.MODE_PRIVATE)
 
+    /**
+     * Ce qu'une mise à jour fait des notifications, sans effet de bord (testé à part) : `nouvelles`, les alertes à
+     * notifier, avec leur commune ; `retirees`, les clés dont la notification s'en va ; `dites`, ce qui est retenu.
+     */
+    data class Decision(val nouvelles: List<Pair<String, Pair<Alerte, Donnees>>>, val retirees: Set<String>, val dites: Set<String>)
+
+    fun decider(lues: List<Donnees>, dites: Set<String>): Decision {
+        // Une commune dont les alertes n'ont pas été lues en entier (vigilance ou cyclones sans réponse) ne retire rien :
+        // on ne sait pas si son alerte est partie. Retirée à tort, elle serait renvoyée à la lecture suivante.
+        val parCle = lues.filter { it.alertes != null && it.echecA == null }.flatMap { d -> d.alertes!!.map { cle(it, d.zone) to (it to d) } }.toMap()
+        val nonLues = lues.any { it.alertes == null || it.echecA != null || !it.vigilanceLue || !it.cyclonesLus }
+        val (nouvelles, parties) = aFaire(parCle.mapValues { it.value.first }, dites)
+        val retirees = if (nonLues) emptySet() else parties
+        return Decision(nouvelles.map { (k, _) -> k to parCle.getValue(k) }, retirees, dites - retirees + nouvelles.map { it.first })
+    }
+
     /** Après une mise à jour : `lues`, les alertes de chaque commune lue, avec la zone de sa vigilance. */
     fun signaler(context: Context, lues: List<Donnees>) {
-        // Une commune dont les alertes n'ont pas été lues ne retire rien : on ne sait pas si son alerte est partie.
-        val parCle = lues.filter { it.alertes != null && it.echecA == null }.flatMap { d -> d.alertes!!.map { cle(it, d.zone) to (it to d) } }.toMap()
-        val nonLues = lues.any { it.alertes == null || it.echecA != null }
-        val dites = prefs(context).getStringSet("dites", emptySet()).orEmpty()
-        val (nouvelles, parties) = aFaire(parCle.mapValues { it.value.first }, dites)
+        val (nouvelles, retirees, dites) = decider(lues, prefs(context).getStringSet("dites", emptySet()).orEmpty())
         val gestion = NotificationManagerCompat.from(context)
         val permise = Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         if (permise && gestion.areNotificationsEnabled()) {
             creerCanaux(context)
-            for ((k, a) in nouvelles) {
-                val d = parCle.getValue(k).second
-                gestion.notify(k.hashCode(), construire(context, a, d))
-            }
+            for ((k, ad) in nouvelles) gestion.notify(k.hashCode(), construire(context, ad.first, ad.second))
         }
-        val retirees = if (nonLues) emptySet() else parties
         for (k in retirees) gestion.cancel(k.hashCode())
-        prefs(context).edit { putStringSet("dites", dites - retirees + nouvelles.map { it.first }) }
+        prefs(context).edit { putStringSet("dites", dites) }
     }
 
     private fun construire(context: Context, a: Alerte, d: Donnees): android.app.Notification {

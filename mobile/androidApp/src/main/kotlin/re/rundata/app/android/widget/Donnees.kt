@@ -63,6 +63,8 @@ data class Donnees(
     /** « 16:21 » : le bulletin de vigilance d'où elles viennent ; null quand la vigilance n'a pas été lue. */
     val alertesEmise: String? = null,
     val vigilanceLue: Boolean = false,
+    /** `cyclones` a été lu avec ces alertes. */
+    val cyclonesLus: Boolean = false,
     val format: Int = FORMAT,
 ) {
     companion object {
@@ -101,6 +103,7 @@ data class Donnees(
                 alertes = j.alertes?.liste,
                 alertesEmise = j.alertes?.emise,
                 vigilanceLue = j.alertes?.vigilanceLue == true,
+                cyclonesLus = j.alertes?.cyclonesLus == true,
             )
         }
 

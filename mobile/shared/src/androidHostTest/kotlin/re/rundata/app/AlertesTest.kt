@@ -131,4 +131,21 @@ class AlertesTest {
         )
         assertEquals("Avis du CMRS du 23/11 10:00", Mots.heureAlerte(Alerte("Tempête tropicale modérée Bheki", null, Couleur.AUCUNE, "23/11 10:00", systeme = true)))
     }
+
+    /**
+     * Le serveur répond pour toute l'île, sans « niveaux » ni zone, quand il ne rattache le lieu à aucune zone : rien n'est
+     * dit de la zone de la commune, jamais « pas d'alerte ».
+     */
+    @Test
+    fun uneVigilanceDeToutLIleNEstPasCelleDeLaZone() {
+        val ile = json(
+            """{"resume":"Pas d'alerte cyclonique en cours. Vigilances au-dessus du vert : orange vents forts pour Sud.","emise":"23/11 05:47 heure de La Réunion",
+            "alerte_cyclonique":"Pas d'alerte cyclonique en cours.","vigilances":[{"zone":"Sud","phenomene":"Vents forts","couleur_max":"orange"}]}""",
+        )
+        val a = alertesDe(ile, horsSaison)
+        assertFalse(a.vigilanceLue)
+        assertEquals(emptyList(), a.liste)
+        assertTrue(a.cyclonesLus)
+        assertFalse(alertesDe(vigilance(vert), null).cyclonesLus)
+    }
 }

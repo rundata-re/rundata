@@ -78,7 +78,7 @@ import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
 import { lues } from "../eau/distributeurs.js";
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
-import { bathRead, silentBath, silentTap, tapRead, tooOld } from "../eau/ile.js";
+import { bathRead, keptBath, keptTap, silentBath, silentTap, tapRead, tooOld } from "../eau/ile.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
@@ -1823,12 +1823,22 @@ function siteLine(s: EauAnswer["baignades"][number], g: Porte): string {
     `<span class="q-${q ?? "none"}">${q ? esc(q) : "pas de résultat"}</span></li>`;
 }
 
-function tapCard(c: EauAnswer["communes"][number]): string {
-  const head = `<h3>${esc(c.commune)} <span class="note">${c.reseaux} réseau${c.reseaux > 1 ? "x" : ""}, ${c.analyses_6_mois} analyse${c.analyses_6_mois > 1 ? "s" : ""} en 6 mois</span></h3>`;
+/**
+ * A distributor's « ne pas boire » notice in force, on its commune's line of /eau, in coupures_eau's words, with its
+ * link (23/11/2026: Dionéo's for one sector of Saint-Denis was on /coupures-eau only).
+ */
+function dryLine(dry: { dit: string; lien?: string }, commune: string): string {
+  return `<p><b>${esc(dry.dit)}</b>${dry.lien ? ` <a href="${esc(dry.lien)}" rel="noopener">L'avis complet<span class="sr"> : ${esc(commune)}</span> →</a>` : ""}</p>`;
+}
+
+function tapCard(c: EauAnswer["communes"][number], dry?: { dit: string; lien?: string }): string {
+  const head = `<h3>${esc(c.commune)} <span class="note">${c.reseaux} réseau${c.reseaux > 1 ? "x" : ""}, ${c.analyses_6_mois} analyse${c.analyses_6_mois > 1 ? "s" : ""} en 6 mois</span></h3>` +
+    (dry ? dryLine(dry, c.commune) : "");
+  const warn = dry ? " warn" : "";
   if (!c.a_surveiller.length) {
-    return `<li class="card">${head}<p>${c.analyses_6_mois ? "Toutes les analyses conformes" : "Pas d'analyse publiée"}${c.derniere_analyse ? ` (dernière le ${esc(dayFr(c.derniere_analyse))})` : ""}.</p></li>`;
+    return `<li class="card${warn}">${head}<p>${c.analyses_6_mois ? "Toutes les analyses conformes" : "Pas d'analyse publiée"}${c.derniere_analyse ? ` (dernière le ${esc(dayFr(c.derniere_analyse))})` : ""}.</p></li>`;
   }
-  return `<li class="card">${head}<ul class="rows eau">${c.a_surveiller.map((r) =>
+  return `<li class="card${warn}">${head}<ul class="rows eau">${c.a_surveiller.map((r) =>
     `<li><span>Réseau ${esc(r.reseau)}<small>${r.quartiers ? `${esc(r.quartiers)} · ` : ""}${(r.non_conformites ?? []).map((n) => `${esc(n.date)}${n.depassements ? ` : ${esc(n.depassements.join(", "))}` : ""}`).join(" ; ")}</small></span>` +
     `<span class="q-mauvaise">${r.non_conformes_6_mois} non conforme${r.non_conformes_6_mois > 1 ? "s" : ""}</span></li>`).join("")}</ul></li>`;
 }
@@ -1841,13 +1851,6 @@ export function duAu(from: string, to: string): string {
   if (from === to) return `du ${dayMonth(from)}`;
   return `du ${from.slice(0, 7) === to.slice(0, 7) ? Number(from.slice(8, 10)) : dayMonth(from)} au ${dayMonth(to)}`;
 }
-
-/**
- * A half of the island's copy kept from an earlier one, its source silent at the last gathering (eau/ile.ts keep): said
- * with the time it was read, never as today's, and what may have been published since (texts of 23/11/2026).
- */
-const keptNote = (source: string, what: string, at: string, since: string) =>
-  `${source} n'a pas répondu à la dernière lecture\u00a0: ${what} ${leAt(at)}. ${since}`;
 
 export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
@@ -1917,14 +1920,14 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   <p>${esc(EAU_TEXT.baignade)}</p></div>
   ${sites}
   ${d && !bathOld ? `<p class="note">${esc(noteBaignade(!!gap))}</p>` : ""}
-  ${d?.baignades_lu && !bathOld ? `<p class="note">${esc(keptNote("Le site de l'ARS", "résultats des plages et bassins lus", bathRead(d), "Un résultat publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS."))}</p>` : ""}
+  ${d?.baignades_lu && !bathOld ? `<p class="note">${esc(keptBath(bathRead(d)))}</p>` : ""}
   <p class="note">${BAIGNADE_LINE}</p>
 </section>
 <section aria-labelledby="h-robinet">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-robinet">L'eau du robinet</h2>
   <p>${d && !tapOld ? `${tapBad.length ? `Des analyses non conformes en 6 mois dans ${tapBad.length} commune${tapBad.length > 1 ? "s" : ""} sur ${d.communes.length}, sur un ou deux réseaux chacune.` : "Toutes les analyses des 6 derniers mois sont conformes."} ` : ""}${esc(EAU_TEXT.robinet)}</p></div>
-  ${tapOld ? `<p class="card">${esc(silentTap(tapRead(d!)))}</p><p class="note"><a href="/coupures-eau">Les avis en cours →</a></p>` : ""}
-  ${d && !tapOld ? `<ul class="zones">${d.communes.map(tapCard).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">${d.communes_lu ? esc(keptNote("Hub'Eau, le service national qui publie les analyses de l'ARS,", "analyses de l'eau du robinet lues", tapRead(d), "Un avis publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS ou de la mairie.")) : `Analyses rassemblées ${esc(leAt(d.lu))}.`}</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
+  ${tapOld ? `<p class="card">${esc(silentTap(tapRead(d!)))}</p>${Object.entries(d!.ne_pas_boire ?? {}).length ? `<ul class="zones">${Object.entries(d!.ne_pas_boire!).map(([c, n]) => `<li class="card warn"><h3>${esc(c)}</h3>${dryLine(n, c)}</li>`).join("")}</ul>` : ""}<p class="note"><a href="/coupures-eau">Les avis en cours →</a></p>` : ""}
+  ${d && !tapOld ? `<ul class="zones">${d.communes.map((c) => tapCard(c, d.ne_pas_boire?.[c.commune])).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">${d.communes_lu ? esc(keptTap(tapRead(d))) : `Analyses rassemblées ${esc(leAt(d.lu))}.`}</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
 </section>
 ${connectorAsk("la qualité de l'eau", "Saint-Denis")}${bains.length ? g.feuille : ""}`;
 

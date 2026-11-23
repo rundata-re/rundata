@@ -5,6 +5,7 @@
  * (scripts/eau-ile.ts). The Node server, given no reader, gathers it itself.
  */
 import type { Cache, Cached } from "../cache.js";
+import { localTime } from "../geo.js";
 import { INSEE } from "../places/insee.js";
 import * as baignades from "../providers/baignades.js";
 import * as potable from "../providers/eaupotable.js";
@@ -179,6 +180,20 @@ const readDay = (read: string) => {
 export const silentBath = (read: string) =>
   `Le site de l'ARS ne répond plus depuis le ${readDay(read)}\u00a0: voir les résultats des plages et bassins sur le site de l'ARS, ou l'affichage sur place.`;
 export const silentTap = (read: string) => `Hub'Eau ne répond plus depuis le ${readDay(read)}\u00a0: voir le site de l'ARS.`;
+
+/** « le 22/11 à 18:20 »: the time of a read, heure de La Réunion, as /eau says it (web/pages.ts leAt). */
+const readAt = (read: string) => {
+  const [day, hour] = localTime(new Date(read)).split(" ");
+  return `le ${day} à ${hour}`;
+};
+/**
+ * A half kept from an earlier copy, its source silent at the last read (keep): said with the time it was read, never as
+ * today's, and what may have been published since (texts of 23/11/2026). The same words on /eau and by qualite_eau.
+ */
+export const keptBath = (read: string) =>
+  `Le site de l'ARS n'a pas répondu à la dernière lecture\u00a0: résultats des plages et bassins lus ${readAt(read)}. Un résultat publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS.`;
+export const keptTap = (read: string) =>
+  `Hub'Eau, le service national qui publie les analyses de l'ARS, n'a pas répondu à la dernière lecture\u00a0: analyses de l'eau du robinet lues ${readAt(read)}. Un avis publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS ou de la mairie.`;
 
 /**
  * What the workflow writes (scripts/eau-ile.ts), from a gathering and the copy already stored (`before`, null without

@@ -15,6 +15,9 @@ import { coupuresCommunePage, eauFaq, reseauxCommune, secheresseLigne } from "..
 import { PAGES } from "../src/web/places.js";
 import { esc } from "../src/web/map.js";
 import { a } from "../src/articles.js";
+import { citerOf } from "../src/tools/citer.js";
+import { buildEau } from "../src/web/data.js";
+import { SOURCE as NOTICES } from "../src/providers/avis-eau.js";
 import { mapPoints, tabStops } from "./cartes.js";
 
 // Hub'Eau for Saint-Pierre and the ministry's page of the plage de l'Hermitage centre, read on 24/10/2026: the latest
@@ -381,13 +384,104 @@ describe("qualité de l'eau", () => {
     };
     await c.island("avis-eau:flux", 3600, async () => [{ de: "de la CIREST", site: "https://www.cirest.fr", avis: [avis] }]);
     const b = body(await qualiteEau(c, "eau du robinet à Saint-Benoît", "robinet", NOW));
-    expect(b.resume).toMatch(/^EAU À NE PAS BOIRE à Saint-Benoît d'après l'avis du distributeur du .* : « Qualité de l'eau : ne pas consommer l'eau du robinet ». Les analyses du contrôle sanitaire de l'ARS \(Hub'Eau\) ne répondent pas pour le moment\.$/);
+    // In coupures_eau's words: the distributor and the sectors, never the whole commune's nor the ARS's (23/11/2026).
+    expect(b.resume).toBe("Eau à ne pas boire à Saint-Benoît d'après CIREST (avis du 23/10 à 10:47)\u00a0: « Qualité de l'eau : ne pas consommer l'eau du robinet », secteurs dans l'avis. Les analyses du contrôle sanitaire de l'ARS (Hub'Eau) ne répondent pas pour le moment.");
+    expect(b.sources.map((x: { source: string }) => x.source)).toContain(NOTICES.nom);
+    expect(citerOf("qualite_eau", b)).toBe("rundata.re, d'après l'avis de CIREST et l'ARS La Réunion");
     expect(b.eau_du_robinet.avis_ne_pas_boire.titre).toBe(avis.titre);
     expect(b.indisponible).toEqual(["eau du robinet"]);
     expect(b.erreur).toBeUndefined();
     // Without a notice, the error stays the answer.
     const none = await qualiteEau(cache(), "eau du robinet à Saint-Benoît", "robinet", NOW);
     expect(body(none).erreur).toBe("Les données de qualité de l'eau ne répondent pas pour le moment.");
+  });
+
+  it("says a notice's sectors and its distributor, and credits its source, with the analyses read (23/11/2026, Saint-Denis)", async () => {
+    const c = cache();
+    const avis = {
+      distributeur: "Dionéo", titre: "Qualité de l'eau", communes: ["Saint-Denis"], publie: "2026-10-23T06:53:00.000Z",
+      secteurs: ["TRAITEMENT ST FRANCOIS"], secteurs_complets: true, ne_pas_boire: true, texte: "Ne pas consommer l'eau du robinet dans le secteur de l'avis.",
+    };
+    await c.island("avis-eau:flux", 3600, async () => [{ de: "de Dionéo", site: "https://www.dioneo.re", avis: [avis] }]);
+    const b = body(await qualiteEau(c, "eau du robinet à Saint-Denis", "robinet", NOW));
+    expect(b.resume.startsWith("Eau à ne pas boire à Saint-Denis d'après Dionéo (avis du 23/10 à 10:53)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS. Eau du robinet à Saint-Denis : ")).toBe(true);
+    expect(b.resume).not.toMatch(/EAU À NE PAS BOIRE|distributeur du/);
+    expect(b.eau_du_robinet.avis_ne_pas_boire.secteurs_dits).toBe("TRAITEMENT ST FRANCOIS");
+    expect(b.sources.map((x: { source: string }) => x.source)).toEqual(expect.arrayContaining([NOTICES.nom]));
+    expect(citerOf("qualite_eau", b)).toBe("rundata.re, d'après l'avis de Dionéo et l'ARS La Réunion");
+    // No notice: the ARS alone, as before.
+    const plain = body(await qualiteEau(cache(), "eau du robinet à Saint-Denis", "robinet", NOW));
+    expect(plain.sources.map((x: { source: string }) => x.source)).not.toContain(NOTICES.nom);
+    expect(citerOf("qualite_eau", plain)).toBe("rundata.re, d'après l'ARS La Réunion");
+  });
+
+  it("gives the island's copy of a commune's tap water, with its time and the words of /eau, when Hub'Eau does not answer (23/11/2026)", async () => {
+    const watched = {
+      reseau: "TERRE SAINTE", quartiers: "Terre Sainte", derniere_analyse: "20/10/2026", derniere_analyse_dans_les_limites: false,
+      conclusion_ars: "Eau non conforme aux limites de qualité", analyses_6_mois: 6, non_conformes_6_mois: 1,
+    };
+    const commune = {
+      commune: "Saint-Pierre", reseaux: 2, analyses_6_mois: 14, non_conformes_6_mois: 1, derniere_analyse: "2026-10-21", a_surveiller: [watched],
+      reseaux_detail: [
+        { reseau: "TERRE SAINTE", quartiers: ["Terre Sainte"], derniere_analyse: "2026-10-20", conclusion: "Eau non conforme aux limites de qualité" },
+        { reseau: "BOIS D'OLIVES", quartiers: ["Bois d'Olives"], derniere_analyse: "2026-10-21", conclusion: "Eau d'alimentation conforme aux exigences de qualité." },
+      ],
+    };
+    // The tap water last read on 22/10 at 04:20 (heure de La Réunion), 2 days before NOW.
+    const copy = { lu: "2026-10-24T00:20:00.000Z", communes_lu: "2026-10-22T00:20:00.000Z", baignades: [], communes: [commune] };
+    const note = "Hub'Eau, le service national qui publie les analyses de l'ARS, n'a pas répondu à la dernière lecture\u00a0: analyses de l'eau du robinet lues le 22/10 à 04:20. Un avis publié depuis peut ne pas y figurer\u00a0: voir le site de l'ARS ou de la mairie.";
+    configure(async () => copy as never);
+    try {
+      vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
+      const town = body(await qualiteEau(cache(), "Saint-Pierre", "robinet", NOW));
+      expect(town.resume).toBe(`Eau du robinet à Saint-Pierre : 2 réseaux, 14 analyses en 6 mois\u00a0; non-conformités sur TERRE SAINTE (1). La qualité dépend du réseau qui dessert le quartier : préciser le quartier. ${note}`);
+      expect(town.eau_du_robinet).toMatchObject({ copie: note, derniere_analyse: "21/10/2026", reseaux_a_surveiller: [watched] });
+      expect(town.erreur).toBeUndefined();
+      expect(town.indisponible).toBeUndefined();
+      // A district: its network, by the districts the copy keeps for it.
+      const watchedOne = body(await qualiteEau(cache(), "Terre Sainte", "robinet", NOW));
+      expect(watchedOne.eau_du_robinet.reseau).toEqual(watched);
+      expect(watchedOne.resume.endsWith(note)).toBe(true);
+      const quiet = body(await qualiteEau(cache(), "Bois d'Olives", "robinet", NOW));
+      expect(quiet.resume).toBe(`Eau du robinet, réseau BOIS D'OLIVES à Bois d'Olives : dernière analyse le 21/10/2026, conclusion de l'ARS : « Eau d'alimentation conforme aux exigences de qualité »\u00a0; aucune analyse non conforme en 6 mois. ${note}`);
+      // Read more than 7 days ago: no longer given, Hub'Eau said silent since then.
+      configure(async () => ({ ...copy, communes_lu: "2026-10-16T00:20:00.000Z" }) as never);
+      const old = body(await qualiteEau(cache(), "Saint-Pierre", "robinet", NOW));
+      expect(old.eau_du_robinet).toEqual({ resume: "Hub'Eau ne répond plus depuis le 16/10\u00a0: voir le site de l'ARS.", ne_repond_plus: true });
+    } finally {
+      configure(undefined);
+    }
+  });
+
+  it("shows on /eau a distributor's « ne pas boire » notice on its commune's line, in coupures_eau's words (23/11/2026)", async () => {
+    const c = cache();
+    const avis = {
+      distributeur: "Dionéo", titre: "Qualité de l'eau", communes: ["Saint-Denis"], publie: "2026-10-23T06:53:00.000Z", lien: "https://www.dioneo.re/avis/qualite",
+      secteurs: ["TRAITEMENT ST FRANCOIS"], secteurs_complets: true, ne_pas_boire: true, texte: "Ne pas consommer l'eau du robinet dans le secteur de l'avis.",
+    };
+    await c.island("avis-eau:flux", 3600, async () => [{ de: "de Dionéo", site: "https://www.dioneo.re", avis: [avis] }]);
+    const town = (commune: string) => ({ commune, reseaux: 1, analyses_6_mois: 3, non_conformes_6_mois: 0, derniere_analyse: "2026-10-20", a_surveiller: [] });
+    configure(async () => ({ lu: "2026-10-24T00:20:00.000Z", baignades: [], communes: [town("Saint-Denis"), town("Saint-Paul")] }) as never);
+    try {
+      const data = await buildEau(c, NOW);
+      const said = "Eau à ne pas boire à Saint-Denis d'après Dionéo (avis du 23/10 à 10:53)\u00a0: « Qualité de l'eau », secteurs\u00a0: TRAITEMENT ST FRANCOIS.";
+      expect(data.ne_pas_boire).toEqual({ "Saint-Denis": { dit: said, lien: avis.lien } });
+      expect(data.sources.map((x) => x.source)).toContain(NOTICES.nom);
+      const page = eauPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false } as never, NOW).replace(/&#39;/g, "'");
+      const card = page.slice(page.indexOf("<h3>Saint-Denis "), page.indexOf("<h3>Saint-Paul "));
+      expect(card).toContain(`<b>${said}</b>`);
+      expect(card).toContain(`<a href="${avis.lien}" rel="noopener">L'avis complet`);
+      expect(page).toContain('<li class="card warn"><h3>Saint-Denis ');
+      expect(page).not.toContain('<li class="card warn"><h3>Saint-Paul ');
+      // The notices not read: nothing said either way, no « ne pas boire » on /eau.
+      const mute = cache();
+      await mute.island("avis-eau:flux", 3600, async () => { throw new Error("flux muet"); }).catch(() => undefined);
+      vi.stubGlobal("fetch", async () => { throw new TypeError("fetch failed"); });
+      const none = await buildEau(mute, NOW);
+      expect(none.ne_pas_boire).toBeUndefined();
+    } finally {
+      configure(undefined);
+    }
   });
 
   it("tells which water a question is about", () => {

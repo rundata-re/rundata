@@ -6,10 +6,10 @@ import { normalize, resolvePlace, type Resolution } from "../places/resolve.js";
 import * as baignades from "../providers/baignades.js";
 import { lues } from "../eau/distributeurs.js";
 import * as requin from "../eau/requin.js";
-import { bathRead, silentBath, silentTap, storedCopy, tapRead, tooOld } from "../eau/ile.js";
+import { bathRead, keptTap, silentBath, silentTap, storedCopy, tapRead, tooOld, type Ile } from "../eau/ile.js";
 import * as potable from "../providers/eaupotable.js";
 import * as notices from "../providers/avis-eau.js";
-import { doNotDrink, noticeRow } from "./coupures.js";
+import { doNotDrink, drySaid, noticeRow } from "./coupures.js";
 import { why } from "../types.js";
 import { a, credits, enumeration, notFound, placeBlock, text } from "./format.js";
 
@@ -100,14 +100,50 @@ const ANALYSES_MUETTES = "Les analyses du contrôle sanitaire de l'ARS (Hub'Eau)
  */
 class Silent extends Error {}
 
-/** A distributor's « ne pas boire » notice in force for the commune, if its feed is read; never fails the answer. */
+/**
+ * A distributor's « ne pas boire » notice in force for the commune, if its feed is read; never fails the answer. Said
+ * as coupures_eau says it (coupures.ts drySaid): its distributor and its sectors, never the whole commune's nor the
+ * ARS's (23/11/2026, Dionéo's notice for one sector of Saint-Denis).
+ */
 async function notice(cache: Cache, commune: string, now: Date) {
   try {
     const n = doNotDrink((await notices.avis(cache)).value, commune);
-    return n ? noticeRow(n, now) : undefined;
+    return n ? { said: drySaid(n, commune), row: noticeRow(n, now) } : undefined;
   } catch {
     return undefined;
   }
+}
+
+/**
+ * The tap water of a commune from the island's copy (eau/ile.ts), Hub'Eau silent: what the copy keeps, a summary per
+ * commune and each network's last sample, never the samples one by one. A district asked: its network, when the copy
+ * names it among its districts.
+ */
+function keptRows(c: Ile["communes"][number], res: Resolution) {
+  const asked = res.lieu.type === "commune" ? null
+    : networkFor((c.reseaux_detail ?? []).map((r) => ({ nom: r.reseau, quartiers: r.quartiers }) as potable.Reseau), res.lieu.nom, c.commune);
+  if (asked) {
+    const watched = c.a_surveiller.find((r) => r.reseau === asked.nom);
+    if (watched) return { resume: tapSentence(watched, a(res.lieu.nom)), reseau: watched };
+    const r = c.reseaux_detail!.find((x) => x.reseau === asked.nom)!;
+    const said = r.conclusion ? `, conclusion de l'ARS : « ${r.conclusion.trim().replace(/\.$/, "")} »` : "";
+    return {
+      resume: r.derniere_analyse
+        ? `Eau du robinet, réseau ${r.reseau} ${a(res.lieu.nom)} : dernière analyse le ${day(r.derniere_analyse)}${said}\u00a0; aucune analyse non conforme en 6 mois.`
+        : `Pas d'analyse publiée depuis 6 mois pour le réseau ${r.reseau} ${a(res.lieu.nom)}.`,
+      reseau: { reseau: r.reseau, quartiers: r.quartiers.join("\u00a0; ") || undefined, derniere_analyse: r.derniere_analyse ? day(r.derniere_analyse) : undefined, conclusion_ars: r.conclusion?.trim() || undefined },
+    };
+  }
+  const bad = c.a_surveiller.filter((r) => r.non_conformes_6_mois);
+  return {
+    resume: `Eau du robinet ${a(c.commune)} : ${c.reseaux} réseau${c.reseaux > 1 ? "x" : ""}, ${c.analyses_6_mois} analyse${c.analyses_6_mois > 1 ? "s" : ""} en 6 mois` +
+      (bad.length
+        ? `\u00a0; non-conformités sur ${bad.map((r) => `${r.reseau} (${r.non_conformes_6_mois})`).join(", ")}.`
+        : c.analyses_6_mois ? ", toutes dans les limites de qualité." : ".") +
+      (c.reseaux > 1 ? " La qualité dépend du réseau qui dessert le quartier : préciser le quartier." : ""),
+    ...(c.derniere_analyse ? { derniere_analyse: day(c.derniere_analyse) } : {}),
+    reseaux_a_surveiller: c.a_surveiller,
+  };
 }
 
 async function robinet(cache: Cache, res: Resolution, now: Date) {
@@ -115,11 +151,19 @@ async function robinet(cache: Cache, res: Resolution, now: Date) {
   const insee = INSEE[commune];
   if (!insee) return { resume: "Commune introuvable pour l'eau du robinet." };
   const [analyses, avis] = await Promise.all([potable.commune(cache, insee, now).catch((err: unknown) => err as Error), notice(cache, commune, now)]);
-  const warn = avis ? { resume_avis: `EAU À NE PAS BOIRE ${a(commune)} d'après l'avis du distributeur du ${avis.publie_le ?? avis.date_de_l_avis} : « ${avis.titre} ».`, avis_ne_pas_boire: avis } : {};
+  const warn = avis ? { resume_avis: avis.said, avis_ne_pas_boire: avis.row } : {};
   if (analyses instanceof Error) {
     // Hub'Eau silent for more than 7 days, by the island's copy: said since when, as on /eau (23/11/2026).
     const copy = await storedCopy(cache, now);
     const silent = copy && tooOld(tapRead(copy), now) ? silentTap(tapRead(copy)) : undefined;
+    // Less than 7 days: the commune's row of the copy, with the time it was read and the sentence of /eau (23/11/2026).
+    const kept = copy && !silent ? copy.communes.find((c) => c.commune === commune) : undefined;
+    if (copy && kept) {
+      console.error(`source ${potable.SOURCE.id} indisponible, copie de l'île reprise:`, why(analyses));
+      const note = keptTap(tapRead(copy));
+      const { resume, ...rows } = keptRows(kept, res);
+      return { resume: [warn.resume_avis, resume, note].filter(Boolean).join(" "), ...warn, ...rows, copie: note };
+    }
     // Hub'Eau down: the distributor's « ne pas boire » notice, read apart, is still the answer (04/11/2026, Saint-Benoît).
     if (!avis) throw silent ? new Silent(silent) : analyses;
     console.error(`source ${potable.SOURCE.id} indisponible:`, why(analyses));
@@ -324,7 +368,6 @@ export const COMMON = {
 export const noteBaignade = (enRetard: boolean) => (enRetard ? `S${SEUILS}` : COMMON.eau_de_baignade);
 
 export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?: Sujet, now = new Date()) {
-  const sources = credits([potable.SOURCE, baignades.SOURCE]);
   if (!lieu?.trim()) {
     return text({
       resume: "Préciser une commune, un quartier, une plage ou un bassin : la qualité de l'eau du robinet dépend du réseau, celle de la baignade du site.",
@@ -364,6 +407,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
       isError: true,
     };
   }
+  const dry = !!(parts.eau_du_robinet as { avis_ne_pas_boire?: unknown } | undefined)?.avis_ne_pas_boire;
   // The shark rule goes with a bathing answer, even when the ARS results did not come.
   const sea = wanted.includes("baignade") && (!!parts.baignade || failed.includes("baignade"));
   return text({
@@ -377,6 +421,7 @@ export async function qualiteEau(cache: Cache, lieu: string | undefined, sujet?:
     },
     ...(sea ? { risque_requin: requin.requinBlock(now, res.lieu) } : {}),
     consulter: wanted.map((w) => (w === "robinet" ? "https://www.reunion.ars.sante.fr" : baignades.SOURCE.url)),
-    sources: sea ? credits([potable.SOURCE, baignades.SOURCE, requin.SOURCE]) : sources,
+    // A distributor's notice used: its source credited beside the ARS's (23/11/2026), and named in `citer` (citer.ts).
+    sources: credits([potable.SOURCE, baignades.SOURCE, ...(sea ? [requin.SOURCE] : []), ...(dry ? [notices.SOURCE] : [])]),
   });
 }

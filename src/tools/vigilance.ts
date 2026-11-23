@@ -54,19 +54,49 @@ export const cycloneHead = (c: number) => (c === 2 ? "Pré-alerte cyclonique" : 
  * code: the phase de sauvegarde (6) comes after a red alert, it is not worse.
  */
 export function cycloneLevel(periods: mf.Period[] | undefined, now: Date): number {
-  if (!periods) return -1;
-  const c = current(periods, now);
+  if (!periods || cycloneEnded(periods, now)) return -1;
+  const c = cycloneNow(periods, now);
   if (c >= 2) return c;
   const t = now.toISOString();
   return periods.find((p) => p.couleur >= 2 && p.debut > t)?.couleur ?? -1;
 }
 
+/**
+ * Whether the bulletin's cyclone alert is over: every period ended before now, none announced, one of them above
+ * green. A copy served after the last end (up to the next read, or longer when Météo-France does not answer) said it
+ * « prévue » or still in force (23/11/2026).
+ */
+export function cycloneEnded(periods: mf.Period[], now: Date): boolean {
+  const t = now.toISOString();
+  return periods.length > 0 && periods.every((p) => p.fin && p.fin <= t) && highest(periods) >= 2;
+}
+
+/** Whether the island is in a cyclone alert, in force or announced: neither none nor over. */
+export function cycloneOn(periods: mf.Period[] | undefined, now: Date): boolean {
+  return Boolean(periods) && highest(periods!) >= 2 && !cycloneEnded(periods!, now);
+}
+
+/**
+ * The cyclone step in force at `now`, as current() but never a period already over: between a pré-alerte ended and
+ * an orange alert announced for the evening, the copy said the pré-alerte in force rather than the orange « prévue ».
+ */
+export function cycloneNow(periods: mf.Period[], now: Date): number {
+  const t = now.toISOString();
+  return periods.some((p) => p.debut <= t && (!p.fin || t < p.fin)) || periods.every((p) => p.debut > t) ? current(periods, now) : -1;
+}
+
+export const CYCLONE_LIFTED = "Alerte cyclonique levée (bulletin de Météo-France).";
+
 export function cyclone(v: mf.Vigilance, now: Date): string {
   const periods = v.zones[mf.ISLAND]?.[mf.CYCLONE];
+  if (periods && cycloneEnded(periods, now)) return CYCLONE_LIFTED;
   if (!periods || highest(periods) < 2) return "Pas d'alerte cyclonique en cours.";
-  const c = current(periods, now);
+  const c = cycloneNow(periods, now);
   const step = CYCLONE_STEPS[c] ?? mf.colour(c);
-  return c >= 2 ? `ALERTE CYCLONIQUE ${step}.` : `Alerte cyclonique prévue : ${spans(periods, mf.cycloneName).join(", ")}.`;
+  // The periods to come only: a pré-alerte over since noon is not « prévue » with the orange of the evening.
+  const t = now.toISOString();
+  const ahead = periods.filter((p) => !p.fin || p.fin > t);
+  return c >= 2 ? `ALERTE CYCLONIQUE ${step}.` : `Alerte cyclonique prévue : ${spans(ahead, mf.cycloneName).join(", ")}.`;
 }
 
 /** Every zone with a phenomenon above green in the next 24 h, worst first. */

@@ -29,7 +29,7 @@ import { anchorOf } from "./decheteries.js";
 import { hoursOn, openNow } from "../tools/annuaire.js";
 import { a, ailleurs, communeDite, de, ecartsCourts, enGrand, fourchette, fr, nombre } from "../tools/format.js";
 import { tidesNear } from "../tools/maree.js";
-import { coastText, cyclone, cycloneLevel, feminine, highest, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
+import { coastText, cyclone, cycloneLevel, cycloneOn, feminine, NONE_ISSUED, zoneLevels, zoneShort } from "../tools/vigilance.js";
 import type { AgendaAnswer, AirAnswer, Alerte, CalendrierAnswer, CommuneData, DechetsAnswer, CoupuresAnswer, EauAnswer, ElectriciteAnswer, PlaceData, RandonneesAnswer, SeaData, SecheresseAnswer, VolcanAnswer } from "./data.js";
 import { credit, joursDuJour } from "./data.js";
 import { aCommune, deCommune, LINK } from "./aujourdhui.js";
@@ -176,7 +176,7 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
   const v = data?.value;
   if (!v) return undefined;
   const cyc = v.zones[mf.ISLAND]?.[mf.CYCLONE] ?? [];
-  if (highest(cyc) >= 2) {
+  if (cycloneOn(cyc, now)) {
     const c = Math.max(2, cycloneLevel(cyc, now));
     return officielLive(lue({ valeur: `<span class="vg ${cycloneVg(c)}">Cyclone : ${esc(mf.cycloneName(c))}</span>`, detail: esc(cyclone(v, now)) }, data!, now), mf.OFFICIEL_CYCLONE);
   }

@@ -6,7 +6,7 @@ import type { Cached } from "../cache.js";
 import * as mf from "../providers/vigilance.js";
 import type { Cyclone } from "../providers/prefecture.js";
 import { ecoles, LIMITE, ORSEC, RECTORAT, REGLE, withPrefecture } from "../tools/ecoles.js";
-import type { Alerte } from "./data.js";
+import { type Alerte, vigilanceLue } from "./data.js";
 import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { ask, layout, officielHtml } from "./pages.js";
@@ -43,6 +43,15 @@ export function citesHtml(html: string, cites: { titre: string; lien: string }[]
   return out;
 }
 
+/**
+ * When the vigilance was read, once more than 15 min ago: a copy served while Météo-France does not answer says its
+ * hour, on the two pages of the alert as on the banner (23/11/2026).
+ */
+export function copieLueHtml(data: Cached<mf.Vigilance> | null, now: Date): string {
+  const when = data && vigilanceLue(data.fetchedAt, now);
+  return when ? `<p class="lead">${esc(`Vigilance de Météo-France ${when}.`)}</p>` : "";
+}
+
 /** `rubrique`: the cyclone's section of the prefecture not read (providers/prefecture.ts, rubriqueNonLue). */
 export function ecolesPage(origin: string, data: Cached<mf.Vigilance> | null, now = new Date(), alerte?: Alerte, decision?: Cyclone | null, rubrique?: string): string {
   const path = "/ecoles-cyclone";
@@ -50,7 +59,7 @@ export function ecolesPage(origin: string, data: Cached<mf.Vigilance> | null, no
   const step = e?.fermees ? (e.niveau === 6 ? "Phase de sauvegarde" : `Alerte ${mf.cycloneName(e.niveau)}`) : undefined;
   const description = step ? metaClosed(step) : META;
   const state = e
-    ? `<div class="status"><p class="lead"><b>${citesHtml(stateHtml(e.texte, Boolean(e.selon)), e.cites)}</b></p>${e.reouverture ? `<p class="lead">${citesHtml(esc(e.reouverture), e.cites)}</p>` : ""}${e.depuis ? `<p class="lead">${bulletinHtml(e.depuis, e.lien_depuis)}</p>` : ""}${[e.communique, e.ecart].filter(Boolean).map((x) => `<p class="lead">${citesHtml(esc(x!), e.cites)}</p>`).join("")}${rubrique ? `<p class="lead">${esc(rubrique)}</p>` : ""}</div>`
+    ? `<div class="status"><p class="lead"><b>${citesHtml(stateHtml(e.texte, Boolean(e.selon)), e.cites)}</b></p>${e.reouverture ? `<p class="lead">${citesHtml(esc(e.reouverture), e.cites)}</p>` : ""}${e.depuis ? `<p class="lead">${bulletinHtml(e.depuis, e.lien_depuis)}</p>` : ""}${[e.communique, e.ecart].filter(Boolean).map((x) => `<p class="lead">${citesHtml(esc(x!), e.cites)}</p>`).join("")}${rubrique ? `<p class="lead">${esc(rubrique)}</p>` : ""}${copieLueHtml(data, now)}</div>`
     : `<div class="status"><p class="lead">${esc(UNREAD)}</p></div>`;
   const band = `${crumbBar("Écoles et cyclone")}
 <div class="wrap intro"><div class="pitch">

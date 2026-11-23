@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 
-// The vigilance as read: switched on, its read only recorded (the alert is then said unread, which this test does not look at).
+// The vigilance as read: switched on, its read only recorded, and failed: the alert is then said unread.
 const read: string[] = [];
 vi.mock("../src/providers/vigilance.js", async (original) => ({
   ...(await original<typeof import("../src/providers/vigilance.js")>()),
@@ -44,6 +44,18 @@ describe("cyclones: the alert's wait", () => {
     expect(read).toContain("vigilance");
     answer();
     const r = JSON.parse((await call).content[0].text);
-    expect(r.resume).toMatch(/^Aucun système tropical actif dans le sud-ouest de l'océan Indien\./);
+    expect(r.resume).toContain("Aucun système tropical actif dans le sud-ouest de l'océan Indien.");
+  });
+
+  it("says the alert could not be read, first, rather than nothing", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", async (url: string | Request) => {
+      const u = typeof url === "string" ? url : url.url;
+      if (u.includes("geteventlist")) return new Response(fixture(u.includes("pagenumber=2") ? "liste_page2.json" : "liste_page1.json"));
+      return new Response("", { status: 503 });
+    });
+    const r = JSON.parse((await cyclones(new Cache(new MemoryStore(), () => NOW.getTime()), undefined, NOW)).content[0].text);
+    expect(r.resume).toMatch(/^L'alerte cyclonique de Météo-France n'a pas pu être lue à l'instant : voir vigilance\.meteofrance\.fr et la préfecture \(reunion\.gouv\.fr\)\. Aucun système tropical actif/);
+    expect(r.alerte_cyclonique).toBe("L'alerte cyclonique de Météo-France n'a pas pu être lue à l'instant : voir vigilance.meteofrance.fr et la préfecture (reunion.gouv.fr).");
   });
 });

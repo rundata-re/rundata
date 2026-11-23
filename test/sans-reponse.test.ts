@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Cache } from "../src/cache.js";
+import { Cache, MemoryStore } from "../src/cache.js";
 import { AUTORISATIONS } from "../src/providers/autorisations.js";
 import * as sr from "../src/sans-reponse.js";
 import { matches, sitesSansReponse } from "../src/tools/sans-reponse.js";
@@ -430,6 +430,38 @@ describe("the list's copy around the recheck, and a copy not read again (22/11/2
     const s = stub({ value, fetchedAt: at("2026-11-22T06:01"), stale: false });
     await sr.etat(s.cache, at("2026-11-22T06:16"));
     expect(s.asked).toEqual([60]);
+  });
+
+  // 23/11/2026: the list of the day before served about 15 minutes after the recheck had written the new one.
+  it("puts the rows the recheck has just written in place of the copy the same event read before it", async () => {
+    const { db } = database();
+    db.prepare("INSERT INTO sans_reponse_passage (id, t) VALUES (1, ?)").run(T - 86_400);
+    let clock = MORNING.getTime() - 30_000;
+    const cache = new Cache(new MemoryStore(), () => clock);
+    // Read by the event (a page it builds) before the recheck: the passage of the day before.
+    expect((await sr.etat(cache, new Date(clock))).passage).toBe(T - 86_400);
+    expect(await sr.reverifier(MORNING, answers({}), async () => undefined)).not.toBeNull();
+    clock = MORNING.getTime() + 10_000;
+    // Without the new read, the copy is still good for its minute: the day before shown.
+    expect((await sr.etat(cache, new Date(clock))).passage).toBe(T - 86_400);
+    await sr.relire(cache);
+    expect((await sr.etat(cache, new Date(clock))).passage).toBe(T);
+  });
+
+  it("is kept by the browsers no longer than its copy is good: a minute in the recheck's half hour", async () => {
+    sr.configure(undefined, async () => [] as never[]);
+    const ask = async (iso: string) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(iso));
+      try {
+        const { handle } = await import("../src/app.js");
+        return (await handle(new Request("https://rundata.re/sites-sans-reponse"), new Cache(new MemoryStore()))).headers.get("cache-control");
+      } finally {
+        vi.useRealTimers();
+      }
+    };
+    expect(await ask("2026-11-23T02:05:00Z")).toBe("public, max-age=60");
+    expect(await ask("2026-11-23T03:05:00Z")).toBe("public, max-age=900");
   });
 
   it("says a last copy served for a failed read once it is more than an hour old, never a fresh one", async () => {

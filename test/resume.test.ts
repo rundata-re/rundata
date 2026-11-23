@@ -9,7 +9,7 @@ import { fraicheur } from "../src/tools/fraicheur.js";
 import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
-import { citation } from "../src/tools/citer.js";
+import { citation, cite, lien } from "../src/tools/citer.js";
 import { credits } from "../src/tools/format.js";
 import { UpstreamError } from "../src/types.js";
 import { AGENDAS } from "../src/providers/agenda.js";
@@ -493,6 +493,13 @@ describe("reading the copies", () => {
     expect(r.commune).toBe("Saint-Paul");
     expect(r.meteo.lieu).toBe("Maïdo");
     expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo du Maïdo\u00a0;/);
+    // Cited by « La journée d'une commune », its commune's, which shows what the answer says (23/11/2026), never the
+    // commune's page.
+    expect(r.page).toBe("https://rundata.re/aujourdhui/saint-paul");
+    expect(lien("resume_du_jour", r)).toBe("https://rundata.re/aujourdhui/saint-paul?ref=mcp");
+    const cited = body(cite("resume_du_jour", { content: [{ type: "text", text: JSON.stringify(r) }] }, { now: NOW, donnee: false }) as never);
+    expect(cited.lien).toBe("https://rundata.re/aujourdhui/saint-paul?ref=mcp");
+    expect(JSON.stringify(cited)).not.toContain("/communes/saint-paul");
   });
 
   describe("the weather of a place without a page of its own", () => {

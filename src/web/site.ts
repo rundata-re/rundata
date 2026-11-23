@@ -150,7 +150,7 @@ import { PATH as SANS_REPONSE, sansReponsePage } from "./sans-reponse.js";
 import { chiffres, type Copie, inventaire, KEY as CHIFFRES_KEY, PATH as CHIFFRES } from "../chiffres.js";
 import { chiffresPage } from "./chiffres.js";
 import { toutesLesSources } from "../server.js";
-import { etat as sansReponse } from "../sans-reponse.js";
+import { etat as sansReponse, fraicheur as sansReponseFraicheur } from "../sans-reponse.js";
 import { connecteurPage } from "./connecteur.js";
 import { enTetes, SECURITY_TEXT, SECURITY_TXT } from "./securite.js";
 import { typo, typoPage } from "./typo.js";
@@ -1071,8 +1071,10 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path === SANS_REPONSE || path === `${SANS_REPONSE}/`) {
     const [e, a] = await Promise.all([sansReponse(cache, now).catch(() => undefined), alerte(cache, background, now)]);
     const lecture = !e ? { illisible: true as const } : e.pasRelue ? { relue: e.lu } : undefined;
-    // Not kept by the browsers for 15 minutes when the list was not read: the next visit asks again.
-    return new Response(sansReponsePage(origin, e?.lignes ?? [], e?.passage, a, lecture), { headers: { ...HTML, "cache-control": lecture ? "no-store" : "public, max-age=900" } });
+    // Not kept by the browsers for 15 minutes when the list was not read: the next visit asks again. Kept as long as the
+    // copy is good (a minute during the recheck's half hour, sans-reponse.ts `fraicheur`): a page seen at 06:01 is not
+    // shown again until 06:16 (23/11/2026).
+    return new Response(sansReponsePage(origin, e?.lignes ?? [], e?.passage, a, lecture), { headers: { ...HTML, "cache-control": lecture ? "no-store" : `public, max-age=${sansReponseFraicheur(now)}` } });
   }
   if (path === "/mcp" || path === "/mcp/") {
     return new Response(connecteurPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600", vary: "accept" } });

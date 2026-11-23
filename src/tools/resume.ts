@@ -824,7 +824,7 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
 }
 
 /** The short answer, the tool's default (Claude's directory asks for frugal answers): what it leaves out, and where. */
-export const COURT = "Réponse courte : sans la liste de ce qu'accepte chaque déchèterie ni le prix de chaque carburant. Le détail : rappeler l'outil avec detail, ou la page de la commune (lien).";
+export const COURT = "Réponse courte : sans la liste de ce qu'accepte chaque déchèterie ni le prix de chaque carburant. Le détail : rappeler l'outil avec detail, ou la page de la journée de la commune (lien).";
 
 /**
  * The summary without its long lists, every warning and every link kept. Its sources, half of the answer, keep their
@@ -879,5 +879,8 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   // after the commune and the day, and after the water not to drink, never before an alert (20/11/2026).
   const said = placeWarning(lieu, res);
   const day = said ? { ...r, resume: apresAlertes(r.resume, said, !!r.avertissement?.startsWith("Eau à ne pas boire")) } : r;
-  return text({ ...(day.avertissement && { avertissement: day.avertissement }), lieu: placeBlock(lieu, res), ...(detail ? day : court(day)) });
+  // Cited by its page, « La journée d'une commune », which shows what the answer says (23/11/2026; the commune's page
+  // before, which says other things): `lien` and `citer` take it from `page` (citer.ts).
+  const page = `${SITE_URL}/aujourdhui/${commune.slug}`;
+  return text({ ...(day.avertissement && { avertissement: day.avertissement }), lieu: placeBlock(lieu, res), ...(detail ? day : court(day)), page });
 }

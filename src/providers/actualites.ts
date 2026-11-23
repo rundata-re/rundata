@@ -518,7 +518,7 @@ export function parseQuotidien(html: string, now: Date, origin = "https://www.le
 export function parsePrefecture(html: string, origin = "https://www.reunion.gouv.fr"): Info[] {
   return [...html.matchAll(/<a class="fr-card__link" href="([^"]+)">([\s\S]*?)<\/a>[\s\S]*?Publié le (\d\d)\/(\d\d)\/(\d{4})/g)].map(([, href, t, d, m, y]) =>
     // The day at noon, La Réunion's time: the hour is not given.
-    info("Préfecture de La Réunion", plain(t), new URL(href, origin).toString(), new Date(`${y}-${m}-${d}T12:00:00+04:00`), undefined, { heure: false }),
+    info("Préfecture de La Réunion", plain(t), httpUrl(href, origin) ?? "", new Date(`${y}-${m}-${d}T12:00:00+04:00`), undefined, { heure: false }),
   ).filter((x): x is Info => x !== null);
 }
 

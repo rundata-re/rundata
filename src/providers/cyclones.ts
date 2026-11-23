@@ -13,7 +13,7 @@
  * means, not the RSMC's figures.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getJson } from "../http.js";
+import { getJson, httpUrl } from "../http.js";
 import { why, type SourceInfo } from "../types.js";
 
 export const SOURCE: SourceInfo = {
@@ -118,7 +118,7 @@ export function parseList(raw: { features?: RawEvent[] }): Systeme[] {
         lat: f.geometry.coordinates[1],
         centre: p.source === "RSMC" ? "CMRS de La Réunion" : p.source === "JTWC" ? "JTWC (centre américain, système venu d'un autre bassin)" : p.source,
         alerte_gdacs: p.alertlevel,
-        rapport: p.url?.report ?? `https://www.gdacs.org/report.aspx?eventid=${p.eventid}&episodeid=${p.episodeid}&eventtype=TC`,
+        rapport: httpUrl(p.url?.report) ?? `https://www.gdacs.org/report.aspx?eventid=${p.eventid}&episodeid=${p.episodeid}&eventtype=TC`,
       };
     });
 }

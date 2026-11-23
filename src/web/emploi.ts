@@ -98,7 +98,7 @@ function row(o: OffreRow, once: boolean): string {
     ? `<span class="refs"><small>${o.nombre_offres} offres\u00a0:</small>` +
       o.references.map((r) => {
         // A reference joined by « _ » may go to the next line after it (soulignesCoupables), the link named by its text.
-        const jour = o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${r.publiee_le}`;
+        const jour = o.date_limite || o.publiee_le ? "" : `, publiée\u00a0le\u00a0${esc(String(r.publiee_le))}`;
         const ref = soulignesCoupables(esc(r.reference));
         return `<a href="${esc(r.lien)}" rel="noopener"${ref === esc(r.reference) ? "" : ` aria-label="${esc(`Réf. ${r.reference}${jour}`)}"`}>Réf. <span class="nw">${ref}</span>${jour}</a>`;
       }).join("") + "</span>"

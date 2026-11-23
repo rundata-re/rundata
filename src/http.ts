@@ -3,10 +3,24 @@ import { count, countRead, isScheduled, perInvocation } from "./budget.js";
 import { noteSource } from "./lectures.js";
 import { UpstreamError } from "./types.js";
 
-/** A link read from a source, kept only as an absolute http(s) address: `javascript:`, `data:`, a relative link or « //hote » give no link. */
-export function httpUrl(raw: string | undefined): string | undefined {
+/**
+ * A link read from a source, kept only as an absolute http(s) address: `javascript:`, `data:`, `mailto:`, a relative
+ * link or « //hote » give no link. With `base`, the page it was read in, a relative link is resolved against it first,
+ * and the address it gives must be http(s) all the same. Every link a reader takes from a source passes here: the
+ * pages write it in a `href`, and the answers of the tools, the RSS and ICS feeds carry it as it is.
+ */
+export function httpUrl(raw: string | null | undefined, base?: string): string | undefined {
   const s = raw?.trim();
-  if (!s || !/^https?:\/\/[^/]/i.test(s)) return undefined;
+  if (!s) return undefined;
+  if (base !== undefined) {
+    try {
+      const u = new URL(s, base);
+      return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  if (!/^https?:\/\/[^/]/i.test(s)) return undefined;
   try {
     new URL(s);
     return s;

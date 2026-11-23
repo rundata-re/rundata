@@ -19,7 +19,7 @@
  */
 import type { Cache, Cached } from "../cache.js";
 import { localTime } from "../geo.js";
-import { getBytes, getJson, getText } from "../http.js";
+import { getBytes, getJson, getText, httpUrl } from "../http.js";
 import { type SourceInfo, why } from "../types.js";
 import { textOf } from "./avis-eau.js";
 import { unlessSpent } from "../budget.js";
@@ -448,7 +448,7 @@ export function parseGolf(raw: { documents: RawGolf[] }): Epreuve[] {
     lieu: COURSES[g.golfLabel]?.nom ?? title(g.golfLabel),
     commune: COURSES[g.golfLabel]?.commune,
     detail: [g.nbTrous ? `${g.nbTrous} trous` : "", g.formeJeu, g.formuleJeu].filter(Boolean).join(", ") || undefined,
-    lien: g.lienResultatsFleole || g.lienDeparts || undefined,
+    lien: httpUrl(g.lienResultatsFleole) ?? httpUrl(g.lienDeparts),
   }));
 }
 
@@ -518,6 +518,6 @@ export function parseLsar(html: string, link: string): Epreuve[] {
 export async function sportAuto(cache: Cache): Promise<Cached<Epreuve[]>> {
   return cache.get("sport:auto", 24 * 3600, async () => {
     const page = await getJson<{ link: string; content: { rendered: string } }>(SOURCES.lsar.id, "https://lsar.re/wp-json/wp/v2/posts/15268?_fields=link,content", 12_000);
-    return parseLsar(page.content.rendered, page.link);
+    return parseLsar(page.content.rendered, httpUrl(page.link) ?? "https://lsar.re/");
   });
 }

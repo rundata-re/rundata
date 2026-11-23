@@ -11,7 +11,7 @@
  * site's weekly file on data.gouv.fr (offres-datagouv-20261004.csv, read on 29/10/2026: p25 30, p75 32, p90 36 days).
  */
 import type { Cache, Cached } from "../cache.js";
-import { getMatch, getText } from "../http.js";
+import { getMatch, getText, httpUrl } from "../http.js";
 import { communeDe } from "../places/codes-postaux.js";
 import type { SourceInfo } from "../types.js";
 
@@ -143,7 +143,7 @@ const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", 
 export function parseRecherche(html: string): Offre[] {
   return html.split('<li class="fr-col-12 item">').slice(1).flatMap((card) => {
     const a = /<a\s+href="([^"]+)"[^>]*>\s*([^<]+?)\s*<\/a>/.exec(card);
-    const ref = a && refDe(a[1]);
+    const ref = a && httpUrl(a[1], SITE) && refDe(a[1]);
     const d = /En ligne depuis le (\d{1,2}) (\p{L}+) (\d{4})/u.exec(card);
     const m = d ? MOIS.indexOf(d[2].toLowerCase()) : -1;
     if (!a || !ref || !d || m < 0) return [];

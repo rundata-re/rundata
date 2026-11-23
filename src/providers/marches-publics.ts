@@ -14,7 +14,7 @@
  * « ANNULATION »). The awards (« résultats de marché ») are not read, nor their holder, who may be a person.
  */
 import type { Cache, Cached } from "../cache.js";
-import { getJson } from "../http.js";
+import { getJson, httpUrl } from "../http.js";
 import { communeAdresse, communeDe } from "../places/codes-postaux.js";
 import type { SourceInfo } from "../types.js";
 
@@ -218,8 +218,9 @@ export function affiches(avis: Avis[]): Avis[] {
 }
 
 /** A notice of the list, as the page keeps it. */
-function fromLigne(l: Ligne, had?: Avis): (Avis & { departements: string[] }) | undefined {
-  if (!l.idweb || !l.objet || !l.datelimitereponse || !l.url_avis) return undefined;
+export function fromLigne(l: Ligne, had?: Avis): (Avis & { departements: string[] }) | undefined {
+  const lien = httpUrl(l.url_avis);
+  if (!l.idweb || !l.objet || !l.datelimitereponse || !lien) return undefined;
   return {
     id: l.idweb,
     objet: l.objet.replace(/\s+/g, " ").trim(),
@@ -227,7 +228,7 @@ function fromLigne(l: Ligne, had?: Avis): (Avis & { departements: string[] }) | 
     types: (l.type_marche ?? []).map((t) => TYPES[t]).filter(Boolean),
     parution: l.dateparution ?? "",
     limite: l.datelimitereponse.slice(0, 10),
-    lien: l.url_avis,
+    lien,
     ...(had?.commune ? { commune: had.commune } : {}),
     ...(had?.communeAcheteur ? { communeAcheteur: had.communeAcheteur } : {}),
     ...((l.etat === "RECTIFICATIF" || l.etat === "ANNULATION") && l.annonce_lie?.length ? { corrige: l.annonce_lie } : {}),

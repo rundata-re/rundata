@@ -70,7 +70,8 @@ import { ALTITUDES_CREDIT, communeOf, METEO_SCRIPT, RADAR_CREDIT, rainPill, stat
 import { stationOf, stationPath } from "./station.js";
 import { hash, INSTALL, OFFLINE_PATH, OFFLINE_SCRIPT, PWA_CSS, PWA_SCRIPT } from "./pwa.js";
 import { coastal, PAGES, type PlacePage, PRINCIPAL, slugify } from "./places.js";
-import { bathingBlock } from "./baignade.js";
+import { bathingBlock, ruleTop } from "./baignade.js";
+import { REGLE_COURTE } from "../eau/requin.js";
 import { adresseTexte } from "./adresse.js";
 import { coupable, crumbBar, crumbs, lienNom, nomsCoupables } from "./domains.js";
 import * as meteorOi from "../providers/meteor-oi.js";
@@ -2722,7 +2723,8 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const sea = coastal(p) && d?.mer
     ? `<section aria-labelledby="h-mer"><h2 id="h-mer">Température de la mer ${esc(a(p.nom))}</h2>` +
       `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span><b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
-      `<p>${esc(thin(d.mer.resume))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
+      // The swimming rule of the tool's résumé (item 1828) said once, in the « Baignade et requins » block below.
+      `<p>${esc(thin(d.mer.resume.replace(` ${REGLE_COURTE}`, "")))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
       `pas celle du lagon ni du bord.${d.mer.houle_mesuree ? ` Houle mesurée : la bouée ${esc(d.mer.houle_mesuree.bouee)} du Cerema, au large, à l'heure dite.` : ""}${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""} Source : ${credits(d.mer.sources)}${tides ? `, ${esc(TIDE_CITATION)}` : ""}.</p></div></section>`
     : "";
 
@@ -3181,6 +3183,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
     <p class="pill">Mesure satellite${day ? ` · ${esc(lesJours(seen.map((b) => b.jour!)).replace(/^(le|les|du) /, ""))}` : ""}</p>
     <h1>Mer à La Réunion\u00a0: température et houle <span class="n974">974</span></h1>
     ${status}
+    ${ruleTop(now)}
     ${ask(`Dolo la mèr lé sho ? Gèt si ${url} é di amwin pou chak plaj.`,
       `Quelle est la température de l'eau à La Réunion ? Lis ${url} et donne-moi la température plage par plage, avec la date de la mesure.`)}
   </div>

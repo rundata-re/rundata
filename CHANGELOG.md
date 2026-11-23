@@ -4,6 +4,11 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 <!-- Généré à partir de src/nouveautes.ts par `npm run changelog` : modifier la liste là-bas. -->
 
+## Mardi 24 novembre 2026
+
+- Coupures d'eau : sur la page d'une commune, les avis en cours passent en premier, avant la qualité de l'eau du robinet.
+- Mer : la règle de baignade dite en haut de la page et dans la réponse de l'outil temperature_mer.
+
 ## Lundi 23 novembre 2026
 
 - Feux vus par satellite : la page et les outils IA disent « point chaud », pas forcément un feu, avec la confiance et le lien vers la carte.

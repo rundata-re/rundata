@@ -320,13 +320,16 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   // /coupures-eau, where the sentence links. While a notice is in progress, or the notices are loading, both stay here.
   const calm = !!d && !x.avis.length;
   const cyclone = calm ? { html: "", lead: false } : cycloneWater(now, p.nom);
-  const body = `${tap}
-<section aria-labelledby="h-coupures-eau">
+  const notices = `<section aria-labelledby="h-coupures-eau">
   <div class="sec-h"><p class="eyebrow">Récents ou à venir</p><h2 id="h-coupures-eau">Les avis ${esc(where)}</h2></div>
   ${list}
   ${derniersAvis(p.nom, w, x.avis)}
   ${d ? (calm ? afterCutShort : afterCutNote) : ""}
-</section>
+</section>`;
+  // A notice in progress or to come: the notices first, as the page says (« ils s'affichent en haut de cette page »);
+  // at 390 px, two notices of Saint-Paul came 3 664 px down, under its 13 networks (revue ux du 24/11, item 1831).
+  // None: the portrait of the water at the top (marketing/seo-pages-tete-1411.md).
+  const body = `${x.avis.length ? `${notices}\n${tap}` : `${tap}\n${notices}`}
 ${arretesSection(p.nom, d?.arretes_sainte_suzanne)}
 ${cyclone.lead ? cyclone.html : ""}
 <section aria-labelledby="h-qui"><div class="sec-h"><h2 id="h-qui">Qui distribue l'eau, et les restrictions</h2></div>

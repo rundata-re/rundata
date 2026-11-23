@@ -754,10 +754,12 @@ describe("coupures d'eau", () => {
     const sp = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: night }, NIGHT);
     expect(sp).toContain("Interruption nocturne de la distribution du 23/10/2026");
     expect(sp).toContain("La Créole, publié le 23/10/2026</span>");
-    // Read the evening before, the notice bears the day of its cut: not « publié le » a day still to come.
+    // Read the evening before, the notice bears the day of its cut: not « publié le » a day still to come, and said as the
+    // cut's day, never « avis daté du », read as the day it was published (revue ux du 24/11, item 1831).
     const eve = new Date("2026-10-22T18:00:00+04:00");
     const before = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: { value: await buildCoupures(cache(eve), eve), fetchedAt: eve } }, eve);
-    expect(before).toContain("La Créole, avis daté du 23/10/2026</span>");
+    expect(before).toContain("La Créole, coupure du 23/10/2026</span>");
+    expect(before).not.toContain("avis daté du");
     expect(sp).toContain("<b>vendredi 23/10 à 22:00 → samedi 24/10 à 06:00</b>");
     expect(sp).toContain(`les avis de <a href="https://lacreole.re/flash-infos" rel="noopener">la page « flash infos » de La Créole</a> : ils s'affichent en haut de cette page.`);
     expect(sp).not.toContain("Ses avis de coupure ne sont pas lus");

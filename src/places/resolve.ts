@@ -6,6 +6,8 @@
  */
 import gazetteer from "./gazetteer.js";
 import { distanceKm, inReunion } from "../geo.js";
+import { CODES_POSTAUX } from "./codes-postaux.js";
+import { NO_PLACE, type Region, regionOf } from "./regions.js";
 
 export interface Place {
   nom: string;
@@ -34,6 +36,8 @@ export interface Resolution {
   proche?: { nom: string; km: number };
   /** The words of the text left aside around the name found, but its commune's (« parc », « palmiers » around « Saint-Pierre »). */
   ignores?: string[];
+  /** A part of the island asked (« le Sud »): `lieu` is the commune answers stand for, `tient_lieu` (regions.ts). */
+  region?: Region;
 }
 
 // Words that carry no identity ("plage de la …"), dropped from both the question and the names.
@@ -94,6 +98,8 @@ const STAND_INS = new Set(["Cirque de Mafate", "Mafate", "Volcan", "Piton de la 
 
 const PLACES = [...gazetteer.places, ...gazetteer.places_ign] as Place[];
 const byName = new Map(PLACES.map((p) => [p.nom, p]));
+// The communes by their name, not a place that bears it too.
+const COMMUNES = new Map(PLACES.filter((p) => p.type === "commune").map((p) => [p.nom, p]));
 const INDEX: Entry[] = [
   ...PLACES.map((place) => ({ place, tokens: tokens(place.nom), alias: false })),
   ...Object.entries(gazetteer.aliases as Record<string, string>).map(([alias, target]) => ({
@@ -214,6 +220,15 @@ function resolve(text: string): Resolution | null {
       proche: { nom: near.nom, km: Math.round(distanceKm(b, a, near.lon, near.lat) * 10) / 10 },
     };
   }
+
+  // A part of the island (« le Sud »): its chief town, said a stand-in for the whole part, rather than a lieu-dit whose
+  // name holds the word. The Hauts or the cirques are no one zone: no place.
+  const region = regionOf(text);
+  if (region) return { lieu: COMMUNES.get(region.pour)!, correspondance: "approchee", tient_lieu: true, autres: [], region };
+  if (NO_PLACE.test(normalize(text))) return null;
+  // A postcode of the island (« 97430 »): its commune.
+  const cp = /^\s*(974\d\d)\s*$/.exec(text)?.[1];
+  if (cp) return CODES_POSTAUX[cp] ? { lieu: COMMUNES.get(CODES_POSTAUX[cp])!, correspondance: "exacte", autres: [] } : null;
 
   const q = tokens(text);
   if (q.length === 0) return null;

@@ -255,6 +255,12 @@ export function credits(sources: SourceInfo[]) {
   return sources.map((s) => ({ source: s.nom, licence: s.licence, attribution: s.attribution }));
 }
 
+/**
+ * « 25/10/2026 » from « 2026-10-25 »: the day a bundled list was read or its file published, in `mis_a_jour`, which
+ * fraicheur.ts gives as the data's date instead of the call's « à l'instant » (23/11/2026).
+ */
+export const jourDuFichier = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
 /** A tool's answer, each link to a site that asks for it with its mention beside it (mentions.ts). */
 export function text(payload: unknown) {
   return { content: [{ type: "text" as const, text: withMentions(payload) }] };

@@ -20,6 +20,8 @@ export interface Etablissement {
 
 export const ETABLISSEMENTS = data.etablissements as Etablissement[];
 export const BUILT = data.construit;
+/** The day of FINESS's extract the list is made from (« 2026-05-12 »). */
+export const EXTRACTION: string = data.extraction;
 
 export const FINESS: SourceInfo = {
   id: "finess",

@@ -13,12 +13,13 @@ import * as carteScolaire from "../vie/carte-scolaire.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as ips from "../vie/ips.js";
 import { slugify } from "../web/places.js";
-import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, jourDuFichier, notFound, placeBlock, text } from "./format.js";
 
 /** Whether `quoi` asks for a school, a collège or a lycée, or one of their services; not a driving or surf school. */
-export const SCHOOL = /(?<!\p{L})[ée]coles?(?! (?:de|d'|du) (?:conduite|surf|musique|danse|voile|plong[ée]e|kite|parapente|commerce|ing[ée]nieurs?))(?!\p{L})|coll[èe]ges?|lyc[ée]es?|maternelle|[ée]l[ée]mentaire|\bulis\b|\bsegpa\b|internat|cantine|[ée]tablissements? scolaires?/iu;
+// The exams too (« résultats du bac »), but not a driving school nor a childminder (23/11/2026).
+export const SCHOOL = /(?<!\p{L}|auto[- ]?)[ée]coles?(?! (?:de|d'|du) (?:conduite|surf|musique|danse|voile|plong[ée]e|kite|parapente|commerce|ing[ée]nieurs?))(?!\p{L})|coll[èe]ges?|lyc[ée]es?|(?<!assistantes? |assistants? )maternelle|\bbac\b|baccalaur[ée]at|\bbrevet\b|[ée]l[ée]mentaire|\bulis\b|\bsegpa\b|internat|cantine|[ée]tablissements? scolaires?/iu;
 
-const KINDS: [RegExp, ecoles.Kind][] = [[/[ée]cole|maternelle|[ée]l[ée]mentaire/i, "ecole"], [/coll[èe]ge|segpa/i, "college"], [/lyc[ée]e/i, "lycee"]];
+const KINDS: [RegExp, ecoles.Kind][] = [[/(?<!auto[- ]?)[ée]cole|maternelle|[ée]l[ée]mentaire/i, "ecole"], [/coll[èe]ge|segpa|\bbrevet\b/i, "college"], [/lyc[ée]e|\bbac\b|baccalaur/i, "lycee"]];
 const SERVICES: [RegExp, (e: ecoles.Etablissement) => boolean][] = [
   [/internat/i, (e) => !!e.internat], [/\bulis\b/i, (e) => !!e.ulis], [/\bsegpa\b/i, (e) => !!e.segpa], [/cantine/i, (e) => !!e.cantine],
   [/maternelle/i, (e) => !!e.niveau?.includes("maternelle")], [/[ée]l[ée]mentaire/i, (e) => !!e.niveau?.includes("élémentaire")],
@@ -70,7 +71,7 @@ function depp(e: ecoles.Etablissement) {
 /** The notes and sources of a list: the DEPP's when one of its rows carries its figures. */
 function credited(list: ecoles.Etablissement[]) {
   const has = list.some((e) => COLLEGE_IPS.has(e.uai) || LYCEE_IPS.has(e.uai));
-  return { avertissements: has ? [...NOTES, DEPP] : NOTES, sources: credits(has ? [ecoles.SOURCE, ips.SOURCE_IPS, ips.SOURCE_VA] : [ecoles.SOURCE]) };
+  return { avertissements: has ? [...NOTES, DEPP] : NOTES, mis_a_jour: jourDuFichier(ecoles.UPDATED), sources: credits(has ? [ecoles.SOURCE, ips.SOURCE_IPS, ips.SOURCE_VA] : [ecoles.SOURCE]) };
 }
 
 const row = ({ e, km }: { e: ecoles.Etablissement; km?: number }) => ({
@@ -166,6 +167,7 @@ export function ecolesAnswer(quoi: string, lieu: string | undefined) {
       resume: `${pool.length} établissements à La Réunion d'après l'annuaire de l'Éducation nationale (${count(pool)}). Donner une commune ou un lieu pour la liste, les plus proches d'abord.`,
       par_commune: Object.fromEntries(communes.map((c) => [c, pool.filter((e) => e.commune === c).length])),
       avertissements: NOTES,
+      mis_a_jour: jourDuFichier(ecoles.UPDATED),
       sources: credits([ecoles.SOURCE]),
     });
   }

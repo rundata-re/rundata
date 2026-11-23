@@ -10,10 +10,10 @@ import * as tco from "../providers/tco.js";
 import { why } from "../types.js";
 import { slugify } from "../web/places.js";
 import * as dech from "../vie/decheteries.js";
-import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, jourDuFichier, notFound, placeBlock, text } from "./format.js";
 
 /** Whether `quoi` asks about a déchèterie or getting rid of waste. */
-export const WASTE = /d[ée]ch[eèé]t|encombrant|gravat|\bbenne|centre de propret/i;
+export const WASTE = /d[ée]ch[eèé]t|encombrant|gravat|\bbenne|centre de propret|centres? de tri\b/i;
 
 const ONLY_TCO = "Seul le TCO (Ouest) publie l'état des bennes en direct. Ailleurs, la liste des déchèteries vient de l'annuaire de l'ADEME, sans les horaires.";
 const km = (n: number) => `${fr(Math.round(n * 10) / 10)} km`;
@@ -36,6 +36,7 @@ function elsewhere(lieu: string, res: NonNullable<ReturnType<typeof resolvePlace
       page: s.epci.site,
     })),
     avertissements: [ONLY_TCO],
+    mis_a_jour: jourDuFichier(dech.UPDATED),
     sources: credits([dech.ADEME]),
   });
 }

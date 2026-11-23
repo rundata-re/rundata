@@ -9,7 +9,7 @@ import { why } from "../types.js";
 import { credits, text } from "./format.js";
 
 /** Whether `quoi` asks about fuel, the pump or the gas bottle. */
-export const FUEL = /carbur|essence|gazole|gasoil|diesel|sans[- ]?plomb|\bsp ?9[58]\b|super\b|\bgnr\b|p[ée]trole|bouteille de gaz|\bgaz\b|pompe|station[- ]service/i;
+export const FUEL = /carbur|essence|gazole|gasoil|diesel|sans[- ]?plomb|\bsp ?9[58]\b|\bsuper\b(?! ?(?:u|march[ée]s?)\b)|\bgnr\b|p[ée]trole|bouteille de gaz|\bgaz\b(?! de ville)|pompe(?!s? fun[èe]bre)|station[- ]service/i;
 
 const eur = (n: number) => `${n.toFixed(2).replace(".", ",")} €`;
 const diff = (p: carburants.Produit) =>

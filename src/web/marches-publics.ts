@@ -3,13 +3,11 @@
  * commune or by words, each with its link to the notice on boamp.fr. In marketing's words (29/10/2026). The
  * assistants get a commune's notices from annuaire_services_publics (tools/marches-publics.ts, 23/11/2026).
  */
-import type { Cache, Cached } from "../cache.js";
-import { localTime } from "../geo.js";
-import { avis, type Avis, prochaineLecture, SOURCE } from "../providers/marches-publics.js";
+import type { Cached } from "../cache.js";
+import type { Avis } from "../providers/marches-publics.js";
 import { acheteur, objet } from "../tools/employeurs.js";
-import { a as aCommune, credits } from "../tools/format.js";
-import { communeOf, COUVERTURE, ouvertsA } from "../tools/marches-publics.js";
-import { injoignable } from "../tools/injoignable.js";
+import { a as aCommune } from "../tools/format.js";
+import { communeOf, COUVERTURE, type MarchesAnswer, ouvertsA } from "../tools/marches-publics.js";
 import { crumbBar, crumbs, lienNom, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
@@ -21,47 +19,8 @@ export const NOM = "Marchés publics";
 export { COUVERTURE, ouvertsA };
 
 
-export interface MarchesAnswer {
-  nombre: number;
-  avis: Avis[];
-  injoignable?: string;
-  sources: { source: string; licence: string; attribution: string }[];
-  /**
-   * When the list was read (ISO), said as the last read: not the page's copy's time, a few minutes later (on 29/10/2026
-   * the page said 16:40 for the list read at 16:35).
-   */
-  lu?: string;
-  /** No copy of the notices yet: when the scheduled event reads them next (ISO). */
-  prochaine?: string;
-  /**
-   * How many notices read in the list wait for their full text, to tell the island's. Without a notice shown, the page
-   * says them, never « no notice ».
-   */
-  enLecture?: number;
-}
-
-/**
- * The page's copy: every notice open, from the store. Without a copy in the store, when they are read next: reloading
- * would not bring them sooner.
- */
-export async function buildMarches(cache: Cache, now = new Date()): Promise<MarchesAnswer> {
-  let c;
-  try {
-    c = await avis(cache, now);
-  } catch {
-    c = null;
-  }
-  if (!c) return { nombre: 0, avis: [], sources: [], prochaine: prochaineLecture(now).toISOString() };
-  const at = localTime(c.fetchedAt);
-  return {
-    nombre: c.value.avis.length,
-    avis: c.value.avis,
-    lu: c.value.lu,
-    ...(c.value.echec ? { injoignable: injoignable("le BOAMP", at, localTime(new Date(c.value.echec)), now).texte } : {}),
-    ...(c.value.attente?.length ? { enLecture: c.value.attente.length } : {}),
-    sources: credits([SOURCE]),
-  };
-}
+// The page's copy and its type live with the tool, which reads them without the site's pages (BUDGET.md).
+export { buildMarches, type MarchesAnswer } from "../tools/marches-publics.js";
 
 
 /** The communes of /communes/<slug>, by slug: `?commune=<slug>` chooses one in the filter, even with no notice. */

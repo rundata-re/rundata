@@ -7,7 +7,7 @@
 import { resolvePlace } from "../places/resolve.js";
 import * as medecins from "../vie/medecins.js";
 import { slugify } from "../web/places.js";
-import { a, credits, notFound, placeBlock, text } from "./format.js";
+import { a, credits, jourDuFichier, notFound, placeBlock, text } from "./format.js";
 
 /** The specialities asked in a resident's words, and the directory's wording of each. */
 const SPECIALTIES: [RegExp, RegExp][] = [
@@ -85,6 +85,7 @@ export function medecinsAnswer(quoi: string, lieu: string | undefined) {
       ),
       ameli: medecins.AMELI,
       avertissements: notes(),
+      mis_a_jour: jourDuFichier(C.mis_a_jour),
       sources: credits([medecins.SOURCE]),
     });
   }
@@ -100,6 +101,7 @@ export function medecinsAnswer(quoi: string, lieu: string | undefined) {
       par_commune: Object.fromEntries(elsewhere),
       ameli: medecins.AMELI,
       avertissements: notes(),
+      mis_a_jour: jourDuFichier(C.mis_a_jour),
       sources: credits([medecins.SOURCE]),
     });
   }
@@ -111,6 +113,7 @@ export function medecinsAnswer(quoi: string, lieu: string | undefined) {
     ameli: { accueil: medecins.AMELI, generalistes: links.length ? links : undefined },
     page: `https://rundata.re/communes/${slugify(commune)}#medecins`,
     avertissements: notes(),
+    mis_a_jour: jourDuFichier(C.mis_a_jour),
     sources: credits([medecins.SOURCE]),
   });
 }

@@ -7,12 +7,13 @@
 import { resolvePlace } from "../places/resolve.js";
 import * as sante from "../sante/etablissements.js";
 import * as garde from "../sante/garde.js";
-import { credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { credits, de, fr, jourDuFichier, notFound, placeBlock, text } from "./format.js";
 
 /** Whether `quoi` asks about a pharmacy. */
 export const PHARMACY = /pharmac|officine|m[ée]dicament/i;
 /** Whether `quoi` asks about the emergencies or a hospital. */
-export const EMERGENCY = /urgence|h[ôo]pita|clinique|\bchu\b|samu|\bsmur\b/i;
+// Not a vet's, nor an emergency shelter (23/11/2026).
+export const EMERGENCY = /(?<!v[ée]t[ée]rinaires?.*|(?:h[ée]bergements?|logements?|accueils?) d.)(?:urgence|h[ôo]pita|clinique|\bchu\b|samu|\bsmur\b)(?!.*v[ée]t[ée]rinaire)/i;
 
 /**
  * Whether `quoi` asks for the doctor on duty: « médecin de garde », « garde », « maison médicale de garde »,
@@ -46,6 +47,7 @@ export function pharmaciesAnswer(lieu: string | undefined) {
       "rundata.re ne sait pas quelle pharmacie est de garde : seuls 3237.fr et le 32 37 le disent. Ne jamais en désigner une comme étant de garde.",
       "Horaires d'ouverture non publiés dans FINESS : appeler la pharmacie.",
     ],
+    mis_a_jour: jourDuFichier(sante.EXTRACTION),
     sources: credits([sante.FINESS, sante.ARS_GARDE]),
   });
 }
@@ -64,6 +66,7 @@ export function urgencesAnswer(lieu: string | undefined) {
     urgences_pediatriques: { sites: ["CHU Nord (Saint-Denis)", "CHU Sud (Saint-Pierre)", "CHOR (Saint-Paul)"], source: sante.SANTE_FR.url, smur: garde.SMUR_PEDIATRIQUE.texte, smur_source: garde.SMUR_PEDIATRIQUE.source },
     etablissements: near.length ? near.map((e) => ({ ...row(e), type: e.type === "hopital" ? "hôpital" : "clinique" })) : undefined,
     avertissements: ["FINESS ne dit pas quels établissements ont un service d'urgences ouvert : le 15 oriente.", "Pharmacie de garde : 3237.fr ou le 32 37 (payant)."],
+    mis_a_jour: jourDuFichier(sante.EXTRACTION),
     sources: credits([sante.SANTE_FR, sante.FINESS]),
   });
 }

@@ -7,7 +7,7 @@
 import { resolvePlace } from "../places/resolve.js";
 import * as enfants from "../vie/enfants.js";
 import { slugify } from "../web/places.js";
-import { a, credits, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, fr, jourDuFichier, notFound, placeBlock, text } from "./format.js";
 
 /** Whether `quoi` asks where to go with children, or for one of the kinds of place the page lists. */
 export const CHILDREN = /enfant|marmaille|\bkids?\b|b[ée]b[ée]|aires? de jeux|jeux pour|ludoth[èe]que|m[ée]diath[èe]que|biblioth[èe]que|piscine|skate|city.?stade|pumptrack|escalade|\bzoo|aquarium|parcs? (?:aquatique|de loisirs|d'attraction|animalier)|trampoline|laser.?game|mus[ée]e/i;
@@ -60,6 +60,7 @@ export function enfantsAnswer(quoi: string, lieu: string | undefined, now = new 
       par_commune: Object.fromEntries(communes.map((c) => [c, pool.filter((l) => l.commune === c).length])),
       page: "https://rundata.re/enfants",
       avertissements: warnings,
+      mis_a_jour: jourDuFichier(enfants.BUILT),
       sources: credits(enfants.sourcesOf(pool)),
     });
   }
@@ -76,6 +77,7 @@ export function enfantsAnswer(quoi: string, lieu: string | undefined, now = new 
     lieux: rows,
     page: `https://rundata.re/enfants#c-${slugify(commune)}`,
     avertissements: warnings,
+    mis_a_jour: jourDuFichier(enfants.BUILT),
     sources: credits(enfants.sourcesOf(rows.length ? (here.length ? here : near) : pool)),
   });
 }

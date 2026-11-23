@@ -121,24 +121,52 @@ export function named(list: annuaire.Office[], quoi: string): annuaire.Office[] 
   });
 }
 
+/** A market announced for a day (Noël, a night market): an event, which evenements gives with its date and link. */
+const FAIR = /march[ée]s? (?:de no[eë]l|nocturnes?)/i;
+/** A school's results, or a lycée or collège named: the schools, before the bins (« résultats du bac »). */
+const EXAM = /baccalaur|\bbrevet\b|r[ée]sultats?|taux de r[ée]ussite|lyc[ée]e|coll[èe]ge/i;
+
+/** Which part of practical life `quoi` asks about; « annuaire » for the administration's directory. */
+export function branche(quoi: string, adresse?: string) {
+  // The places of justice first (« tribunal pour enfants »), public procurement before the markets (« marchés publics »
+  // is no market), a school's results before the bins (« résultats du bac », 23/11/2026).
+  if (JUSTICE.test(quoi)) return "justice";
+  if (PHARMACY.test(quoi)) return "pharmacies";
+  if (GARDE.test(quoi)) return "garde";
+  if (EMERGENCY.test(quoi)) return "urgences";
+  if (PROCUREMENT.test(quoi)) return "marches_publics";
+  if (FAIR.test(quoi)) return "evenement";
+  if (MARKET.test(quoi)) return "marches";
+  if (SCHOOL.test(quoi) && EXAM.test(quoi)) return adresse?.trim() ? "college_de_secteur" : "ecoles";
+  if (COLLECTION.test(quoi)) return "collecte";
+  if (WASTE.test(quoi)) return "decheteries";
+  if (FUEL.test(quoi)) return "carburants";
+  if (DOCTOR.test(quoi)) return "medecins";
+  // An address: the collège of its sector; it goes nowhere else.
+  if (SCHOOL.test(quoi)) return adresse?.trim() ? "college_de_secteur" : "ecoles";
+  if (CHILDREN.test(quoi)) return "enfants";
+  return "annuaire";
+}
+
 export async function annuaireTool(cache: Cache, quoi: string, lieu: string | undefined, now = new Date(), adresse?: string) {
   // Practical life, asked the same way: the pharmacies, the doctor on duty, the emergencies, the markets, the déchèteries,
-  // the fuel prices, the doctors, the schools, where to go with children; the places of justice first (« tribunal pour enfants »).
-  if (JUSTICE.test(quoi)) return justiceAnswer(cache, quoi, lieu, now);
-  if (PHARMACY.test(quoi)) return pharmaciesAnswer(lieu);
-  if (GARDE.test(quoi)) return gardeAnswer(quoi, lieu);
-  if (EMERGENCY.test(quoi)) return urgencesAnswer(lieu);
-  // Public procurement before the markets: « marchés publics » is no market.
-  if (PROCUREMENT.test(quoi)) return marchesPublicsAnswer(cache, lieu);
-  if (MARKET.test(quoi)) return marchesAnswer(lieu);
-  if (COLLECTION.test(quoi)) return collecteAnswer(lieu, now);
-  if (WASTE.test(quoi)) return decheteriesAnswer(cache, quoi, lieu, now);
-  if (FUEL.test(quoi)) return carburantsAnswer(cache, now);
-  if (DOCTOR.test(quoi)) return medecinsAnswer(quoi, lieu);
-  // An address: the collège of its sector; it goes nowhere else.
-  if (SCHOOL.test(quoi) && adresse?.trim()) return collegeAnswer(quoi, lieu, adresse);
-  if (SCHOOL.test(quoi)) return ecolesAnswer(quoi, lieu);
-  if (CHILDREN.test(quoi)) return enfantsAnswer(quoi, lieu, now);
+  // the fuel prices, the doctors, the schools, where to go with children.
+  switch (branche(quoi, adresse)) {
+    case "justice": return justiceAnswer(cache, quoi, lieu, now);
+    case "pharmacies": return pharmaciesAnswer(lieu);
+    case "garde": return gardeAnswer(quoi, lieu);
+    case "urgences": return urgencesAnswer(lieu);
+    case "marches_publics": return marchesPublicsAnswer(cache, lieu, now);
+    case "evenement": return text({ resume: "Un marché de Noël ou un marché nocturne est un événement\u00a0: l'outil evenements le donne, avec sa date et son lien." });
+    case "marches": return marchesAnswer(lieu);
+    case "collecte": return collecteAnswer(lieu, now);
+    case "decheteries": return decheteriesAnswer(cache, quoi, lieu, now);
+    case "carburants": return carburantsAnswer(cache, now);
+    case "medecins": return medecinsAnswer(quoi, lieu);
+    case "college_de_secteur": return collegeAnswer(quoi, lieu, adresse!);
+    case "ecoles": return ecolesAnswer(quoi, lieu);
+    case "enfants": return enfantsAnswer(quoi, lieu, now);
+  }
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   if (lieu?.trim() && !res) return notFound(lieu);
   const code = res ? INSEE[res.lieu.commune] : undefined;

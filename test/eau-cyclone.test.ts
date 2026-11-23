@@ -65,6 +65,9 @@ describe("after a cyclone, the tap water", () => {
     const pos = (html: string, mark: string) => html.indexOf(mark);
     const island = (now: Date) => coupuresPage("https://rundata.re", null, now);
     const commune = (now: Date) => coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: null }, now);
+    // Present on both pages, in and out of the season: an absent block (-1) would pass every comparison below (23/11/2026).
+    for (const html of [island(JANUARY), island(OCTOBER), commune(JANUARY), commune(OCTOBER)]) expect(pos(html, 'id="h-cyclone-eau"')).toBeGreaterThan(-1);
+    for (const mark of ['id="h-coupures-eau"', 'id="h-qui"', 'id="h-autres"']) expect(pos(commune(JANUARY) + island(JANUARY) + commune(OCTOBER), mark), mark).toBeGreaterThan(-1);
     // The season: right after the notices, before the rest.
     expect(pos(island(JANUARY), 'id="h-cyclone-eau"')).toBeGreaterThan(pos(island(JANUARY), 'id="h-coupures-eau"'));
     expect(pos(commune(JANUARY), 'id="h-cyclone-eau"')).toBeLessThan(pos(commune(JANUARY), 'id="h-qui"'));

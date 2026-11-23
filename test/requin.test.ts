@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { CSR_URL, inForce, noneLine, requinBlock, SOURCE, STORIES, T, ZONES, zonesNear } from "../src/eau/requin.js";
@@ -14,6 +14,10 @@ const text = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/&#39;/g, "
 const NEVER = /pas de requin|sans requin|baignade s[uû]re|sans risque|s[ée]curis|prot[ée]g|(?<!si une zone )est ouverte aujourd'hui|ouvert aujourd'hui/i;
 
 describe("the shark rule and the zones where bathing is allowed", () => {
+  // handle() reads the clock (web/site.ts), not the cache's: pinned at NOW, or the pages turn to the lapsed order on
+  // their own from 16/02/2027 (23/11/2026).
+  beforeEach(() => void vi.useFakeTimers({ toFake: ["Date"], now: NOW }));
+  afterEach(() => void vi.useRealTimers());
   it("apply the decree n° 180 up to the end of 15/02/2027, Réunion time", () => {
     expect(inForce(new Date("2026-02-16T00:00:00+04:00"))).toBe(true);
     expect(inForce(new Date("2027-02-15T23:59:00+04:00"))).toBe(true);

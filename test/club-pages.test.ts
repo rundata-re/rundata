@@ -46,6 +46,7 @@ beforeEach(async () => {
   for (const level of ["log", "warn", "error", "info"] as const) vi.spyOn(console, level).mockImplementation((...a: unknown[]) => void logged.push(a.map(String).join(" ")));
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   espace.configure(undefined);
@@ -171,6 +172,8 @@ describe("the clubs' own space", () => {
   });
 
   it("screen 3: opening the link changes nothing; « Ouvrir mon espace » leads to the personal link, kept secret", async () => {
+    // A fixed day, so that « Vérifié le » is read against a date and not against the same clock (23/11/2026).
+    vi.useFakeTimers({ toFake: ["Date"], now: new Date("2026-11-23T03:00:00Z") });
     const s = await demande();
     const r = await get(`${club.ACCES_PATH}${s}`);
     expect(r.status).toBe(200);
@@ -200,7 +203,7 @@ describe("the clubs' own space", () => {
     html = plain(await a.text());
     expect(html).toContain("<h1>HANDBALL CLUB DU TAMPON</h1>");
     // The pages read the clock: verified today.
-    expect(html).toContain(`Vérifié le ${espace.jourMois(Math.floor(Date.now() / 1000))}`);
+    expect(html).toContain("Vérifié le 23/11");
     expect(html).toContain("Vos prochaines dates");
     expect(html).toContain("Gardez cette page : ajoutez-la à vos favoris ou à l'écran d'accueil de votre téléphone. Pour revenir sans elle, demandez un nouveau lien depuis la page Associations.");
     expect(html).not.toContain(location.slice(-22));

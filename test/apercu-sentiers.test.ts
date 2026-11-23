@@ -11,7 +11,9 @@ const trail = (nom: string, slug: string, etat: string, troncons: TraceAnswer["t
 });
 const ENTITIES: Record<string, string> = { "&#39;": "'", "&quot;": '"', "&lt;": "<", "&gt;": ">", "&amp;": "&" };
 const og = (html: string) => (html.match(/<meta property="og:description" content="([^"]*)"/)?.[1] ?? "").replace(/&(?:#39|quot|lt|gt|amp);/g, (e) => ENTITIES[e]);
-const page = (d: TraceAnswer, now = new Date()) => og(tracePage("https://rundata.re", d.genre, d.slug, d.nom, { value: d, fetchedAt: new Date("2026-11-04T10:00:00Z"), stale: false }, now));
+// A fixed day of the audit, never the clock: the notices with a date to come stay to come (23/11/2026).
+const DAY = new Date("2026-11-04T12:00:00Z");
+const page = (d: TraceAnswer, now = DAY) => og(tracePage("https://rundata.re", d.genre, d.slug, d.nom, { value: d, fetchedAt: new Date("2026-11-04T10:00:00Z"), stale: false }, now));
 
 const KAPOR = trail("Sentier Kapor", "sentier-kapor", "Fermé : Éruption en cours (Sentier instable pour cause d'éruption récente, risques d'intoxication et de brulures)",
   [{ etat: "fermé", cause: "Éruption en cours", precision: "Sentier instable pour cause d'éruption récente, risques d'intoxication et de brulures" }]);

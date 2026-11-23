@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
+import { configure as mfConfigure } from "../src/providers/mf-auth.js";
 import { advisoryTime, parseList, parseTimeline, seasonOf, systemName } from "../src/providers/cyclones.js";
 import { cyclones, kitAvantOrange, RADIO, SE_PREPARER } from "../src/tools/cyclones.js";
 import { SECTIONS } from "../src/web/kit-cyclone.js";
@@ -134,6 +135,24 @@ describe("cyclones", () => {
     // One rule for the page and the tool: none from the orange alert (niveau 3) on.
     expect([undefined, { niveau: -1 }, { niveau: 2 }].map(kitAvantOrange)).toEqual([true, true, true]);
     expect([{ niveau: 3 }, { niveau: 4 }].map(kitAvantOrange)).toEqual([false, false]);
+  });
+
+  it("gives no « se préparer » once the orange alert is on, in the tool as on the page (23/11/2026)", async () => {
+    // Météo-France's vigilance with the island in orange cyclone alert since the day before.
+    mfConfigure({ token: "test" });
+    try {
+      const store = new MemoryStore();
+      const orange = { emise: "2026-10-24T05:00:00Z", zones: { VIGI974: { 10: [{ couleur: 3, debut: "2026-10-23T12:00:00Z" }] } }, suivi: [] };
+      await store.put("vigilance", { value: orange, fetchedAt: OCTOBER.getTime() });
+      const r = body(await cyclones(new Cache(store, () => OCTOBER.getTime()), undefined, OCTOBER));
+      expect(r.alerte_cyclonique).toMatch(/^ALERTE CYCLONIQUE orange/);
+      expect(r.ecoles.niveau).toBe(3);
+      expect(r).not.toHaveProperty("se_preparer");
+      // The radio, still.
+      expect(r.radio).toBe(RADIO);
+    } finally {
+      mfConfigure({});
+    }
   });
 
   it("says the radio as /cyclones does, at all times: the mobile network can fall", async () => {

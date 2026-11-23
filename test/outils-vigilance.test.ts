@@ -5,6 +5,7 @@ import { Cache, MemoryStore } from "../src/cache.js";
 import { KEY as FIL } from "../src/providers/actualites.js";
 import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
+import { vigilanceLive } from "../src/web/pages.js";
 import { unzip } from "../src/zip.js";
 
 // Météo-France's vigilance joins the answers of the tools on the weather's consequences, as on their pages: the sea, the
@@ -98,6 +99,23 @@ describe("Météo-France's vigilance in the tools on the weather's consequences"
     const unread = (await call(await cacheWith(), "crues_rivieres")).body;
     expect(unread).not.toHaveProperty("radiers");
     expect(unread.vigilance).toHaveLength(2);
+  });
+
+  it("adds nothing to an answer in error, whose own words come first (23/11/2026)", async () => {
+    // Atmo Réunion does not answer: qualite_air says so, alone, though the island is in orange alert.
+    const r = await call(await cacheWith(), "qualite_air", { lieu: "Saint-Pierre" });
+    expect(r.isError).toBe(true);
+    expect(r.body.erreur).toBe("L'indice de qualité de l'air ne répond pas pour le moment.");
+    expect(r.body).not.toHaveProperty("vigilance");
+    expect(r.body).not.toHaveProperty("officiel");
+  });
+
+  it("puts the cyclone alert in the tile of the home page and of a commune's, with its colour (23/11/2026)", async () => {
+    const tile = vigilanceLive({ value: await storm(), fetchedAt: NOW, stale: false }, NOW)!;
+    expect(tile.valeur).toContain('<span class="vg');
+    expect(tile.valeur).toContain("Cyclone : orange</span>");
+    // Under the alert, the tile says it before any weather vigilance.
+    expect(tile.valeur).not.toContain("fortes pluies");
   });
 
   it("joins the five other tools to it, as meteo_actuelle, prevision_meteo and temperature_mer", () => {

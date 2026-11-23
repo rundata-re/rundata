@@ -32,6 +32,8 @@ export const REFRESH_EVERY = 15;
 export const REFRESH_OFFSET = 5;
 /** Kept 6 hours in KV: past that, the pages say the status is unknown rather than show an old one. */
 export const LIVE_TTL_SECONDS = 6 * 3600;
+/** The key the scheduled event writes La Réunion's part under, and the Worker reads it from (worker.ts): one name for both. */
+export const KV_KEY = "irve:etat";
 
 export interface Point {
   id: string;
@@ -154,7 +156,7 @@ export function configure(read: (() => Promise<Live | null>) | undefined) {
 }
 
 export async function live(cache: Cache) {
-  return cache.getCopy("irve:etat", LIVE_SECONDS, async () => {
+  return cache.getCopy(KV_KEY, LIVE_SECONDS, async () => {
     if (reader) {
       const v = await reader();
       if (!v?.points) throw new Error("état des bornes absent du stockage");

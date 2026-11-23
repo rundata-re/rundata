@@ -67,6 +67,9 @@ describe("/alerte-cyclone and the tool quote the plan, page by page", () => {
       const said = l.cite ? [l.texte] : quotes(l.texte);
       for (const q of said) if (l.pages.every((p) => DSO.has(p))) expect(onPages(q, l.pages), `p. ${l.pages.join("-")} : « ${q} »`).toBe(true);
     }
+    // The pages whose text the fixture does not hold, named: one more quoted from elsewhere is not skipped in silence (23/11/2026).
+    expect([...new Set(lines.flatMap((l) => l.pages).filter((p) => !DSO.has(p)))]).toEqual([22]);
+    expect(lines.filter((l) => !l.pages.every((p) => DSO.has(p)))).toHaveLength(1);
     for (const s of STEPS) if (s.devise) expect(onPages(s.devise, [17, 18]), s.devise).toBe(true);
   });
 });

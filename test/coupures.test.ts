@@ -195,7 +195,8 @@ describe("coupures d'eau", () => {
   it("writes a notice card with no start hour « Jusqu'au … », never « undefined → … » (1312, 23/11/2026)", () => {
     const n = { titre: "Interruption de la distribution", communes: ["Saint-Paul"], distributeur: "La Créole", publie_le: "20/11/2026 à 07:30", coupure: { a: "vendredi 20/11 à 12:00", etat: "en cours" }, secteurs: [], secteurs_complets: false, texte: "" } as unknown as Parameters<typeof noticeCard>[0];
     const card = noticeCard(n);
-    expect(card).toContain("<b>Jusqu'au vendredi 20/11 à 12:00</b>");
+    // The period is escaped with the rest of the card (« ' » written &#39;).
+    expect(card).toContain("<b>Jusqu&#39;au vendredi 20/11 à 12:00</b>");
     expect(card).not.toContain("undefined");
     expect(card).not.toContain(" → vendredi");
   });

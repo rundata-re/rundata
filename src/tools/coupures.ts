@@ -24,6 +24,14 @@ function when(local?: string): string | undefined {
   const wd = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"][d.getUTCDay()];
   return `${wd} ${local.slice(8, 10)}/${local.slice(5, 7)} à ${local.slice(11, 16)}`;
 }
+/**
+ * A cut's span in words: « lundi 26/10 à 21:00 → mardi 27/10 à 06:00 », « à partir du lundi 26/10 à 21:00 » when only
+ * its start is written (La Créole), « jusqu'au mardi 27/10 à 06:00 » when the notice writes no start (« dès
+ * maintenant »): never « undefined ». Empty when it has neither.
+ */
+export const periodeCoupure = (c: { de?: string; a?: string }): string =>
+  c.de && c.a ? `${c.de} → ${c.a}` : c.de ? `à partir du ${c.de}` : c.a ? `jusqu'au ${c.a}` : "";
+
 const published = (n: notices.Avis) => {
   const l = new Date(new Date(n.publie).getTime() + 4 * 3600_000).toISOString();
   // A source dated to the day only gets no hour.

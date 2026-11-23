@@ -50,7 +50,7 @@ import { LATE_MIN, OUVERT_ONF, ROAD_NEAR_M, type ActualitesAnswer, type AgendaAn
 import { ageMinutes, daysApart, localTime } from "../geo.js";
 import { agendasNonLus, mediasNonLus } from "../tools/injoignable.js";
 import { FAST_KW, RECHARGEPEI } from "../tools/bornes.js";
-import { AFTER_CUT, ARS_COUPURE, muetPour } from "../tools/coupures.js";
+import { AFTER_CUT, ARS_COUPURE, muetPour, periodeCoupure } from "../tools/coupures.js";
 import { fuelSay, keep } from "../tools/carburants.js";
 import { SECTEURS as SECTEURS_RANDO, secteurNamed, type Secteur } from "../traces/secteurs.js";
 import island from "../places/island.json" with { type: "json" };
@@ -3014,9 +3014,9 @@ export function noticeCard(n: CoupuresAnswer["avis"][number]): string {
   // An image or a PDF: nothing is read from it, the link only.
   if (n.forme) return `<li class="card"><h3>${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${n.lien ? `<a href="${esc(n.lien)}" rel="noopener">${esc(n.titre)} →</a>` : esc(n.titre)}</p></li>`;
-  // Only the start written (La Créole): said as a start, not as the hour of the cut.
-  // A notice with no start hour (« dès maintenant ») keeps its end: never « undefined → … » (1312, 20/11/2026).
-  const cut = n.coupure?.de || n.coupure?.a ? `<p><b>${n.coupure.de && n.coupure.a ? `${esc(n.coupure.de)} → ${esc(n.coupure.a)}` : n.coupure.de ? `À partir du ${esc(n.coupure.de)}` : `Jusqu'au ${esc(n.coupure.a ?? "")}`}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
+  // Only the start written (La Créole): said as a start, not as the hour of the cut; only the end: « Jusqu'au … ».
+  const span = n.coupure ? periodeCoupure(n.coupure) : "";
+  const cut = n.coupure && span ? `<p><b>${esc(n.coupure.de && n.coupure.a ? span : span.charAt(0).toUpperCase() + span.slice(1))}</b>${n.coupure.etat ? ` <span class="note">(${esc(n.coupure.etat)})</span>` : ""}</p>` : "";
   return `<li class="card${n.ne_pas_boire ? " warn" : ""}"><h3>${n.ne_pas_boire ? "Ne pas boire l'eau · " : ""}${nobreak(n.communes.join(", "))} <span class="note">${nobreak(n.distributeur)}, ${dateOfNotice(n)}</span></h3>` +
     `<p>${esc(n.titre)}</p>${n.precision ? `<p class="note">${esc(n.precision)}</p>` : ""}${cut}${n.secteurs_complets ? `<p class="note">Secteurs : ${esc(sectorsSaid(n.secteurs))}</p>` : ""}` +
     `<p class="note">${nobreak(n.texte)}${n.lien ? ` <a href="${esc(n.lien)}" rel="noopener">${n.extrait_coupe && !n.secteurs_complets ? "Les secteurs concernés dans l'avis complet" : "L'avis complet"}<span class="sr"> : ${esc(n.communes.join(", "))}</span> →</a>` : ""}</p></li>`;

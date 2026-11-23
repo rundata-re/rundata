@@ -157,12 +157,24 @@ describe("the Candhis buoys", () => {
       const u = new URL(url);
       if (u.pathname.endsWith("/getCampListe.php"))
         return json(u.searchParams.get("type") === "2" ? liste(2, [["97409", "Sainte-Marie", "1", "TR directionnel H13"], ["97410", "Saint-Pierre (large)", "1", "TR directionnel H13"], ["97411", "Ailleurs", "1", "TR directionnel H13"]]) : liste(0, []));
+      // Sainte-Marie's place, the shape of getCampInfos for 97410 on 23/11/2026, the point made up.
+      if (u.pathname.endsWith("/getCampInfos.php"))
+        return json({ apiVer: "1.00", success: true, message: "Infos campagne `97409`", nbLig: 1, entete: ["Nom", "Latitude", "Longitude", "Profondeur", "Directionnel", "Capteur"], results: [["Sainte-Marie", "-20.8500000", "55.5600000", "60.000", "1", "Houlographe Axys TriAxys"]] });
       return json({ ...H13, message: "Données TR directionnel H13 (+97409+,+97410+)\\ 2026-10-27 10:00 ", results: [["97409", ...H13.results[0].slice(1)], ["97410", ...H13.results[1].slice(1)]] });
     };
-    expect(await candhis.refresh(s.before, s.write, NOW)).toBe("2 bouées actives, 2 mesures nouvelles, 4 requêtes");
+    // Saint-Pierre (large)'s place is known (getCampInfos, 23/11/2026): only Sainte-Marie's is asked, once.
+    expect(candhis.BOUEES.filter((b) => b.lat === undefined).map((b) => [b.code, b.nom])).toEqual([["97409", "Sainte-Marie"]]);
+    expect(await candhis.refresh(s.before, s.write, NOW)).toBe("2 bouées actives, 2 mesures nouvelles, 5 requêtes");
+    expect(asked.map((a) => new URL(a.url).pathname.split("/").pop())).toEqual(["getCampListe.php", "getCampListe.php", "getCampListe.php", "getCampInfos.php", "getCampListeTR.php"]);
+    expect(asked[3].url).toBe("https://candhis.cerema.fr/API/v1/getCampInfos.php?camp=97409");
     expect(asked.at(-1)?.url).toBe("https://candhis.cerema.fr/API/v1/getCampListeTR.php?type=2&camp=97409,97410");
     expect(Object.keys(s.written[0].mesures).sort()).toEqual(["97409", "97410"]);
-    expect(candhis.BOUEES.filter((b) => b.lat === undefined).map((b) => [b.code, b.nom])).toEqual([["97409", "Sainte-Marie"], ["97410", "Saint-Pierre (large)"]]);
+    expect(s.written[0].positions).toEqual({ "97409": { lat: -20.85, lon: 55.56 } });
+    // The next half hour: the place kept, not asked again.
+    asked = [];
+    await candhis.refresh(s.written[0], s.write, new Date(NOW.getTime() + 30 * 60_000));
+    expect(asked.map((a) => new URL(a.url).pathname.split("/").pop())).toEqual(["getCampListeTR.php"]);
+    expect(s.written[1].positions).toEqual({ "97409": { lat: -20.85, lon: 55.56 } });
   });
 
   it("stop for a while after a refusal (quota reached), writing why, and ask nothing until then", async () => {

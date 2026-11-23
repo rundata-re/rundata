@@ -55,7 +55,7 @@ import { resumeDuJour } from "./tools/resume.js";
 import { credits, text } from "./tools/format.js";
 import { localTime } from "./geo.js";
 import { INFOTRAFIC } from "./tools/littoral.js";
-import { temperatureMer, COVERAGE as SEA_COVERAGE } from "./tools/mer.js";
+import { temperatureMer, coverage as seaCoverage } from "./tools/mer.js";
 import { AROME_WAIT_MS, previsionMeteo, coverage as forecastCoverage } from "./tools/prevision.js";
 import { coverage as weatherCoverage, meteoActuelle, providers as weatherProviders } from "./tools/meteo.js";
 import * as vigilance from "./providers/vigilance.js";
@@ -132,7 +132,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.788";
+export const VERSION = "1.0.789";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -1102,7 +1102,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         non_reprises: [FICHE_LA1ERE, FICHE_REUNION_FR, ...fichesNonReprises()],
         lieux: GAZETTEER_ATTRIBUTION,
         // The agendas read are told by evenements, which answers on them.
-        couverture: { meteo: weatherCoverage(), mer: SEA_COVERAGE, previsions: forecastCoverage() },
+        couverture: { meteo: weatherCoverage(), mer: seaCoverage(), previsions: forecastCoverage() },
         // The producers of each domain are named on /chiffres and with detail; the short answer gives their domains only.
         chiffres: args.detail === true ? c : { ...c, par_domaine: c.par_domaine.map(({ producteurs: _, ...d }) => d) },
         version: VERSION,

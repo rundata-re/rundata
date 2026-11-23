@@ -2,6 +2,7 @@ import type { Cache, Cached } from "../cache.js";
 import { distanceKm, localTime } from "../geo.js";
 import { resolvePlace, type Place } from "../places/resolve.js";
 import * as acspo from "../providers/acspo.js";
+import * as candhis from "../providers/candhis.js";
 import * as coraux from "../providers/coraux.js";
 import * as cetaces from "./cetaces.js";
 import * as houle from "../providers/houle.js";
@@ -51,6 +52,59 @@ export const COVERAGE =
   `qui distingue la houle principale du reste de la mer, là où il a un point à moins de ${MF_MAX_KM} km (ouest et sud), ` +
   `et du modèle ${houle.MODEL.nom} ailleurs (nord et est), sur ${houle.MODEL.echeance_jours} jours. ` +
   "Aucune bouée de l'île ne publie de mesure de houle en ce moment (réseau Candhis du Cerema : dernières mesures en juin 2024, à la Rivière des Galets).";
+
+/** A buoy farther than this from a place does not measure its sea: none is said in its answer. */
+export const BOUEE_MAX_KM = 25;
+
+/**
+ * The coverage, with the Candhis buoys once the Worker has their key (providers/candhis.ts): Météo-France's buoy off
+ * Saint-Pierre measures since November 2026 (veille Candhis, 23/11/2026). Without the key, as before.
+ */
+export function coverage(): string {
+  return candhis.configured()
+    ? COVERAGE.replace(/Aucune bouée de l'île[^]*$/, `Houle MESURÉE : les bouées du réseau Candhis du Cerema qui publient (au large de Saint-Pierre depuis novembre 2026), leur dernière mesure de moins de ${candhis.MESURE_MAX_HOURS} h, à moins de ${BOUEE_MAX_KM} km du lieu.`)
+    : COVERAGE;
+}
+
+/** The buoys' last measurements the scheduled event keeps; none without the key, or when KV holds none. */
+export async function boueesLues(cache: Cache, now: Date, near?: { lon: number; lat: number }): Promise<candhis.Releve[]> {
+  if (!candhis.configured()) return [];
+  try {
+    return candhis.releves((await candhis.etat(cache)).value, now, near, distanceKm);
+  } catch (err) {
+    console.error(`source ${candhis.SOURCE.id} indisponible:`, why(err));
+    return [];
+  }
+}
+
+/** One buoy's measurement as an answer says it: always labelled a measurement, never merged into the forecast. */
+export function releveBlock(r: candhis.Releve, near?: { lon: number; lat: number }) {
+  const d = near ? Math.round(distanceKm(near.lon, near.lat, r.lon, r.lat) * 10) / 10 : undefined;
+  return {
+    nature: "mesure",
+    bouee: r.nom,
+    reseau: "Candhis (Cerema)",
+    ...(d != null ? { distance_km: d } : {}),
+    mesuree_a: localTime(new Date(r.t)),
+    ...(r.hauteur != null ? { hauteur_significative: metres(r.hauteur), hauteur_selon: r.hauteur_selon } : {}),
+    ...(r.hmax != null ? { vague_max: metres(r.hmax) } : {}),
+    ...(r.periode != null ? { periode: `${Math.round(r.periode)} s`, periode_selon: r.periode_selon } : {}),
+    ...(r.periode_pic != null ? { periode_pic: `${Math.round(r.periode_pic)} s` } : {}),
+    ...(r.direction != null ? { venant: from(r.direction), direction_deg: Math.round(r.direction) } : {}),
+    ...(r.temperature != null ? { temperature_eau: `${fr(Math.round(r.temperature * 10) / 10)}\u00a0°C` } : {}),
+  };
+}
+
+/** « Houle MESURÉE à la bouée Saint-Pierre (large) du Cerema, à 3,2 km, le 23/11 à 09:20 : 1,1 m du sud, période 7 s, vagues jusqu'à 1,9 m. » */
+export function releveSaid(b: ReturnType<typeof releveBlock>): string {
+  const [jour, h] = b.mesuree_a.split(" ");
+  const what = [
+    b.hauteur_significative && `${b.hauteur_significative}${b.venant ? ` ${b.venant}` : ""}`,
+    b.periode && `période ${b.periode}`,
+    b.vague_max && `vagues jusqu'à ${b.vague_max}`,
+  ].filter(Boolean).join(", ");
+  return `Houle MESURÉE à la bouée ${b.bouee} du Cerema${b.distance_km != null ? `, à ${fr(b.distance_km)} km` : ""}, le ${jour} à ${h}\u00a0: ${what || "pas de hauteur mesurée"}.`;
+}
 
 const CAVEATS = [
   "Mesure satellite de la toute première couche d'eau, sur des carrés de 2 à 4 km : " +
@@ -486,9 +540,10 @@ export async function corauxBlock(cache: Cache, near?: { lon: number; lat: numbe
 /** `withCoraux`: false for a place's page (web/data.ts), whose copy shows no corals and does not pay for their read. */
 export async function temperatureMer(cache: Cache, lieu: string | undefined, now = new Date(), withCoraux = true) {
   if (!lieu?.trim()) {
-    const [gs, ps, w, reef] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null]);
+    const [gs, ps, w, reef, buoys] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache) : null, boueesLues(cache, now)]);
     const t = gs.length || ps ? tourOf(gs, now, TOUR, ps) : null;
-    if (!t && !w && !reef) return unavailable();
+    if (!t && !w && !reef && !buoys.length) return unavailable();
+    const measuredWaves = buoys.map((b) => releveBlock(b));
     const at = TOUR.map((n) => resolvePlace(n)!.lieu).map((p) => ({ p, v: w ? wavesAt(w.value, p.lon, p.lat, now) : null }));
     const points = at.map(({ p, v }, i) => ({
       lieu: p.nom,
@@ -504,16 +559,18 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     return text({
       resume: [
         measured.length ? `Eau de mer, MESURÉE par satellite\u00a0: ${measured.join("\u00a0; ")}.` : "Pas de mesure satellite de l'eau pour le moment.",
+        ...measuredWaves.map(releveSaid),
         ...(waves.length ? [`Vagues PRÉVUES maintenant (${modelWords(models)}, pas une mesure) : ${waves.join("\u00a0; ")}.`] : []),
       ].join(" "),
       points,
+      ...(measuredWaves.length ? { houle_mesuree: measuredWaves } : {}),
       avertissements: [...(t ? CAVEATS : []), ...(t?.used.flatMap(staleWarning) ?? []), ...(w ? WAVE_WARNINGS : [])],
       risque_requin: requin.requinBlock(now),
       ...(reef ? { coraux: reef } : {}),
       // The rules of approach of whales and dolphins, from the decrees in the code: nothing read.
       cetaces: cetaces.cetacesBlock(now),
-      couverture: COVERAGE,
-      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...models.map((m) => m.source), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
+      couverture: coverage(),
+      sources: credits([...(t?.used.map((g) => g.source) ?? []), ...(measuredWaves.length ? [candhis.SOURCE] : []), ...models.map((m) => m.source), requin.SOURCE, ...(reef ? [coraux.SOURCE] : []), cetaces.SOURCE]),
       // The oldest day measured among the points, not when rundata.re read the grids: what the answer's freshness says.
       jour_mesure: points.flatMap((p) => ("jour_mesure" in p && p.jour_mesure ? [p.jour_mesure] : [])).sort()[0],
     });
@@ -521,8 +578,11 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
 
   const r = resolvePlace(lieu);
   if (!r) return notFound(lieu);
-  const [gs, ps, w, reef] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache, r.lieu) : null]);
-  if (!gs.length && !ps && !w) return unavailable();
+  const [gs, ps, w, reef, buoys] = await Promise.all([copiedGrids(cache, now), copiedPasses(cache, now), wavesNow(cache), withCoraux ? corauxBlock(cache, r.lieu) : null, boueesLues(cache, now, r.lieu)]);
+  // The nearest buoy that measured, within BOUEE_MAX_KM: the sea off this place, said with its distance.
+  const near = buoys.find((b) => distanceKm(r.lieu.lon, r.lieu.lat, b.lon, b.lat) <= BOUEE_MAX_KM);
+  const buoy = near ? releveBlock(near, r.lieu) : undefined;
+  if (!gs.length && !ps && !w && !buoy) return unavailable();
   const m = gs.length || ps ? reading(r.lieu, gs, now, ps) : null;
   const v = w ? waveBlock(w, r.lieu, now) : null;
   const temperature = m
@@ -539,8 +599,9 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
       : "Prévision des vagues momentanément indisponible.";
   return text({
     lieu: placeBlock(lieu, r),
-    resume: `${temperature} ${waves}`,
+    resume: `${temperature}${buoy ? ` ${releveSaid(buoy)}` : ""} ${waves}`,
     ...(m ? { mesure: said(m.mesure, true) } : {}),
+    ...(buoy ? { houle_mesuree: buoy } : {}),
     ...(v ? { etat_de_la_mer: v.bloc } : {}),
     ...(m
       ? {
@@ -557,8 +618,8 @@ export async function temperatureMer(cache: Cache, lieu: string | undefined, now
     ...((m || v) && reef ? { coraux: reef } : {}),
     // On the coast only too: the rules of approach of whales and dolphins.
     ...(m || v ? { cetaces: cetaces.cetacesBlock(now) } : {}),
-    couverture: COVERAGE,
-    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : [])]),
+    couverture: coverage(),
+    sources: credits([...(m ? [m.grid.source] : gs.map((g) => g.source)), ...(buoy ? [candhis.SOURCE] : []), ...(v ? [v.model.source] : []), ...(m || v ? [requin.SOURCE] : []), ...((m || v) && reef ? [coraux.SOURCE] : []), ...(m || v ? [cetaces.SOURCE] : [])]),
   });
 }
 

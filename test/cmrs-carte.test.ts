@@ -274,6 +274,15 @@ describe("the map on /cyclones (marketing's words, 27/10)", () => {
     expect(await carteRoute("/cyclones/fytia")).toBeNull();
   });
 
+  it("reads an image of the store once a while, and keys found in nothing only a few times a minute (23/11/2026)", async () => {
+    kv.data.set(`cmrs:carte:png:${i.empreinte}`, IMAGE());
+    const reads = vi.spyOn(kv, "bytes");
+    for (let n = 0; n < 3; n++) expect((await carteRoute(`/cyclones/carte/${i.empreinte}.png`))!.status).toBe(200);
+    expect(reads).toHaveBeenCalledTimes(1);
+    for (let n = 0; n < 40; n++) expect((await carteRoute(`/cyclones/carte/${n.toString(16).padStart(16, "0")}.png`))!.status).toBe(404);
+    expect(reads.mock.calls.length).toBeLessThanOrEqual(1 + 20);
+  });
+
   it("says the agreement in the cyclones' licence, without « Licence Ouverte »", () => {
     expect(GDACS.licence).toContain("Météo-France La Réunion : cartes de prévision de trajectoire du CMRS affichées telles quelles, avec son accord écrit du 27/10/2026");
     expect(GDACS.licence).not.toContain("Licence Ouverte");

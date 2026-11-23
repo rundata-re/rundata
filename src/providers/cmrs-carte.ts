@@ -21,6 +21,7 @@
 import type { Cache } from "../cache.js";
 import { count, perInvocation } from "../budget.js";
 import { getFile, getText } from "../http.js";
+import { garde } from "../lecture-gardee.js";
 import { why } from "../types.js";
 import * as gdacs from "./cyclones.js";
 import * as cmrsTrace from "./cmrs-trace.js";
@@ -50,10 +51,14 @@ const MAX_PNG = 5_000_000;
 const HOUR = 3_600_000;
 
 let store: Store | undefined;
+// The images asked by their address, found or not: an image never changes under its fingerprint, a few are kept ten minutes.
+const fichiers = () => garde<ArrayBuffer>({ ttlMs: 10 * 60_000, max: 6, introuvablesParMinute: 20, garder: (b) => b.byteLength <= 2_000_000 });
+let FICHIERS = fichiers();
 
 /** The Worker's KV (worker.ts). Without it, nothing is read, kept or shown. */
 export function configure(kv?: Store): void {
   store = kv;
+  FICHIERS = fichiers();
 }
 
 /** What the scheduled event keeps in KV. Times in ISO 8601. */
@@ -153,9 +158,13 @@ export function kept(): Promise<Carte | undefined> {
 
 /** A kept image, by its fingerprint. */
 export async function fichier(empreinte: string): Promise<ArrayBuffer | null> {
-  if (!store) return null;
-  count(1, "read");
-  return store.bytes(pngKey(empreinte));
+  const s = store;
+  if (!s) return null;
+  const key = pngKey(empreinte);
+  return FICHIERS.lire(key, () => {
+    count(1, "read");
+    return s.bytes(key);
+  });
 }
 
 async function lireListe(e: Etat): Promise<{ etat: Etat; dit: string }> {
@@ -192,6 +201,7 @@ async function lireImage(e: Etat, now: Date): Promise<{ etat: Etat; dit: string 
   if (!same) {
     count(1, true);
     await store!.put(pngKey(empreinte), file.bytes, TTL_SECONDS);
+    FICHIERS.oublier(pngKey(empreinte));
   }
   const { echec: _, ...rest } = e;
   const image = { empreinte, ...size, ...(modifiee && { modifiee }), depuis: same ? e.image!.depuis : le, lue: le };

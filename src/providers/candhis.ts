@@ -42,8 +42,9 @@ export interface Bouee {
 
 /**
  * The island's measuring campaigns, from the Cerema's list of stations on data.gouv.fr (candhis_houlographes_202412),
- * then the two buoys of Météo-France to come, with their codes and names from the Cerema's answer of 18/11/2026: not in
- * service yet, their place not given. Only these codes are read from the API's lists.
+ * then the two buoys of Météo-France, with their codes and names from the Cerema's answer of 18/11/2026. Saint-Pierre
+ * (large) measures since November 2026, its place from getCampInfos (23/11/2026); Sainte-Marie's is asked of
+ * getCampInfos the day it shows active (`refresh`). Only these codes are read from the API's lists.
  */
 export const BOUEES: Bouee[] = [
   { code: "97401", nom: "Baie de la Possession", lat: -20.91018, lon: 55.34598 },
@@ -55,7 +56,7 @@ export const BOUEES: Bouee[] = [
   { code: "97407", nom: "Vincendo", lat: -21.381, lon: 55.681 },
   { code: "97408", nom: "Port Réunion Est", lat: -20.92452, lon: 55.3242 },
   { code: "97409", nom: "Sainte-Marie" },
-  { code: "97410", nom: "Saint-Pierre (large)" },
+  { code: "97410", nom: "Saint-Pierre (large)", lat: -21.365, lon: 55.46525 },
 ];
 const CODES = new Set(BOUEES.map((b) => b.code));
 
@@ -107,6 +108,8 @@ export interface Etat {
   mesures: Record<string, Mesure>;
   /** The type of each active buoy of the island (getCampListe), and when that list was read. */
   types?: { lu: number; actives: Record<string, Kind> };
+  /** Where each active buoy whose place BOUEES lacks is, from getCampInfos: asked once, the day it shows active. */
+  positions?: Record<string, { lat: number; lon: number }>;
   /** The last failure, if the last try failed. */
   echec?: { at: number; status?: number; message: string };
   /** No request before then: after a refusal (key refused, address banned, quota reached). */
@@ -225,6 +228,16 @@ export function availability(message: unknown): { avec: string[]; sans: string[]
   };
 }
 
+/** getCampInfos: the campaign's place (columns Nom, Latitude, Longitude, …), when it gives one. */
+export function parseInfos(r: Reponse): { lat: number; lon: number } | undefined {
+  if (!ok(r) || !Array.isArray(r.results) || !Array.isArray(r.entete)) return undefined;
+  const head = r.entete.map(label);
+  const row = r.results[0];
+  if (!Array.isArray(row)) return undefined;
+  const [lat, lon] = [value(row[head.indexOf("Latitude")]), value(row[head.indexOf("Longitude")])];
+  return lat != null && lon != null && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && (lat !== 0 || lon !== 0) ? { lat, lon } : undefined;
+}
+
 /**
  * How long to wait after a refusal: a key refused or an address banned is for a person to look at (a day); a quota
  * reached, until the quota can have turned (3 hours, as its period is not documented).
@@ -241,7 +254,7 @@ export async function refresh(before: Etat | null, write: (etat: Etat) => Promis
   const t = now.getTime();
   if (!apiKey) return "sans clé";
   if (before?.pause_jusqu_a && before.pause_jusqu_a > t) return `en pause jusqu'à ${new Date(before.pause_jusqu_a).toISOString()}`;
-  const etat: Etat = { essai: t, mesures: { ...before?.mesures }, ...(before?.lu ? { lu: before.lu } : {}), ...(before?.types ? { types: before.types } : {}) };
+  const etat: Etat = { essai: t, mesures: { ...before?.mesures }, ...(before?.lu ? { lu: before.lu } : {}), ...(before?.types ? { types: before.types } : {}), ...(before?.positions ? { positions: before.positions } : {}) };
   let asked = 0;
   try {
     if (!etat.types || t - etat.types.lu >= TYPES_DAYS * DAY) {
@@ -251,6 +264,14 @@ export async function refresh(before: Etat | null, write: (etat: Etat) => Promis
         for (const code of parseListe(await ask(`getCampListe.php?type=${k}`))) actives[code] = k;
       }
       etat.types = { lu: t, actives };
+    }
+    // A buoy that starts measuring with no place known (Sainte-Marie): its place once, so that it can be shown.
+    for (const code of Object.keys(etat.types.actives).sort()) {
+      const b = BOUEES.find((x) => x.code === code);
+      if (b?.lat != null || etat.positions?.[code]) continue;
+      asked++;
+      const at = parseInfos(await ask(`getCampInfos.php?camp=${code}`));
+      if (at) etat.positions = { ...etat.positions, [code]: at };
     }
     const byKind = new Map<Kind, string[]>();
     for (const [code, k] of Object.entries(etat.types.actives)) byKind.set(k, [...(byKind.get(k) ?? []), code]);
@@ -282,4 +303,28 @@ export async function etat(cache: Cache) {
     if (!v?.mesures) throw new UpstreamError(SOURCE.id, "état des bouées absent du stockage");
     return v;
   });
+}
+
+/** Past this, a buoy's last measurement is not shown: a buoy silent for half a day is not the sea of now. */
+export const MESURE_MAX_HOURS = 6;
+
+export interface Releve extends Mesure {
+  nom: string;
+  lat: number;
+  lon: number;
+}
+
+/**
+ * The buoys that measured in the last MESURE_MAX_HOURS hours and whose place is known, nearest first to `near` when
+ * given; none without the key or the state.
+ */
+export function releves(e: Etat | null | undefined, now: Date, near?: { lon: number; lat: number }, km?: (lon1: number, lat1: number, lon2: number, lat2: number) => number): Releve[] {
+  if (!e?.mesures) return [];
+  const out = BOUEES.flatMap((b) => {
+    const m = e.mesures[b.code];
+    const at = b.lat != null && b.lon != null ? { lat: b.lat, lon: b.lon } : e.positions?.[b.code];
+    if (!m || !at || now.getTime() - m.t > MESURE_MAX_HOURS * 3600_000 || m.t > now.getTime() + 600_000) return [];
+    return [{ ...m, nom: b.nom, ...at }];
+  });
+  return near && km ? out.sort((a, b) => km(near.lon, near.lat, a.lon, a.lat) - km(near.lon, near.lat, b.lon, b.lat)) : out;
 }

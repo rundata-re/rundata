@@ -597,7 +597,8 @@ const SCHEDULED: Entry[] = [
     what: "bouées Candhis du Cerema : la dernière mesure de chaque bouée de La Réunion, une requête par type de bouée, gardée dans KV",
     every: CANDHIS_EVERY,
     offset: CANDHIS_OFFSET,
-    run: { subrequests: 2 + Object.keys(CANDHIS_KINDS).length, kvReads: 1, kvWrites: 1, cpuMs: 10 },
+    // At most: the cache, KV, a list per type once a day, getCampInfos the day a buoy with no place starts, a measurement per type.
+    run: { subrequests: 3 + Object.keys(CANDHIS_KINDS).length, kvReads: 1, kvWrites: 1, cpuMs: 10 },
     from: ["src/providers/candhis.ts"],
     basis: "code",
   },

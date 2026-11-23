@@ -32,7 +32,8 @@ import { qualiteAir, type Amateurs, type Measured } from "../tools/air.js";
 import { calendrier } from "../tools/calendrier.js";
 import { electricite } from "../tools/electricite.js";
 import { pointsOf } from "./electricite-historique.js";
-import { BEACHES, modelsOf, SEA_SOURCES, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
+import { BEACHES, boueesLues, modelsOf, releveBlock, SEA_SOURCES, seaTour, TOUR as SEA_TOUR, temperatureMer, waveLine, wavesNow } from "../tools/mer.js";
+import * as candhis from "../providers/candhis.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
 import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
@@ -205,6 +206,8 @@ export interface MerAnswer {
   resume: string;
   mesure?: { temperature_eau: string; jour_mesure: string; distance_km: number };
   etat_de_la_mer?: { maintenant: { heures: string; hauteur: string; periode?: string; venant?: string }; jours: { jour: string; hauteur_max: string }[] };
+  /** The nearest Candhis buoy that measured, within 25 km (tools/mer.ts): said in `resume` with its hour and distance. */
+  houle_mesuree?: { bouee: string; distance_km?: number; mesuree_a: string };
   sources: Credit[];
 }
 
@@ -335,6 +338,11 @@ export interface SeaData {
   maree?: ReturnType<typeof gaugeRow>[];
   /** The corals' grid as a view of /mer last kept it, for the home page's map; missing when no view had read it. */
   coraux?: coraux.Coraux;
+  /**
+   * The Candhis buoys that measured in the last hours (providers/candhis.ts), each with its time `t` (epoch ms): the
+   * page says them while they are recent at the view. Missing without the key, or on a copy made before.
+   */
+  bouees?: (ReturnType<typeof releveBlock> & { t: number })[];
   sources: Credit[];
 }
 
@@ -357,7 +365,7 @@ async function corauxGardes(cache: Cache, now: Date): Promise<coraux.Coraux | un
 }
 
 export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData> {
-  const [t, tide, w, reef] = await Promise.all([seaTour(cache, now, BEACHES), gauges(cache, now), wavesNow(cache), corauxGardes(cache, now)]);
+  const [t, tide, w, reef, buoys] = await Promise.all([seaTour(cache, now, BEACHES), gauges(cache, now), wavesNow(cache), corauxGardes(cache, now), boueesLues(cache, now)]);
   if (!t && !w) throw new Error("ni mesure satellite de la mer, ni prévision des vagues");
   // Without the satellites' grids (before the scheduled event first shares them, or a day after they last came): the
   // last copy's readings, each with its day, rather than a copy without the water's temperature that the home page
@@ -385,8 +393,10 @@ export async function buildSea(cache: Cache, now = new Date()): Promise<SeaData>
     }),
     ...(read ? { maree: tide.map((g) => gaugeRow(g, now)) } : {}),
     ...(reef && { coraux: reef }),
+    ...(buoys.length ? { bouees: buoys.map((b) => ({ t: b.t, ...releveBlock(b) })) } : {}),
     sources: [
       ...(t ? t.used.map((g) => credit(g.source)) : (last?.sources?.filter((s) => satellites.includes(s.source)) ?? [])),
+      ...(buoys.length ? [credit(candhis.SOURCE)] : []),
       ...modelsOf(lines.map((l) => l?.at)).map((m) => credit(m.source)),
       ...(read ? [credit(maregraphes.SOURCE)] : []),
     ],

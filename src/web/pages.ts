@@ -27,6 +27,7 @@ import { ageMinutes, ageText, daysApart, localTime, versant } from "../geo.js";
 import { toutesLesSources, VERSION } from "../server.js";
 import { compte } from "../producteurs.js";
 import { a, communeDite, de, enGrand, fourchette, fr } from "../tools/format.js";
+import * as candhis from "../providers/candhis.js";
 import * as mf from "../providers/vigilance.js";
 import { carteHero, carteHtml } from "./vigilance-carte.js";
 import { current, cyclone, cycloneHead, cycloneLevel, feminine, highest, islandGreen, NONE_ISSUED, NONE_ISSUED_SAID, raised, spans } from "../tools/vigilance.js";
@@ -2722,7 +2723,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
     ? `<section aria-labelledby="h-mer"><h2 id="h-mer">Température de la mer ${esc(a(p.nom))}</h2>` +
       `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span><b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
       `<p>${esc(thin(d.mer.resume))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
-      `pas celle du lagon ni du bord.${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""} Source : ${credits(d.mer.sources)}${tides ? `, ${esc(TIDE_CITATION)}` : ""}.</p></div></section>`
+      `pas celle du lagon ni du bord.${d.mer.houle_mesuree ? ` Houle mesurée : la bouée ${esc(d.mer.houle_mesuree.bouee)} du Cerema, au large, à l'heure dite.` : ""}${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""} Source : ${credits(d.mer.sources)}${tides ? `, ${esc(TIDE_CITATION)}` : ""}.</p></div></section>`
     : "";
 
   const f = d?.prevision && { ...d.prevision, jours: joursDuJour(d.prevision.jours, data!.fetchedAt, now) };
@@ -3083,6 +3084,21 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
       `<p class="note">Mis à jour ${leAt(data!.fetchedAt)}.</p><p class="sources">Sources : ${credits(d.sources)}.</p>`
     : `<p class="card">Les mesures satellite se chargent : rechargez la page dans quelques secondes.</p>`;
 
+  // The buoys' measurements, while recent at the view (providers/candhis.ts): a measurement, never mixed with the forecast.
+  const buoys = (d?.bouees ?? []).filter((b) => now.getTime() - b.t <= candhis.MESURE_MAX_HOURS * 3600_000);
+  const measuredSwell = buoys.length
+    ? `<section aria-labelledby="h-houle-mesuree">
+  <div class="sec-h"><p class="eyebrow">Mesure, pas une prévision</p><h2 id="h-houle-mesuree">La houle mesurée au large</h2>
+  <p>La dernière demi-heure mesurée par ${buoys.length > 1 ? "les bouées" : "la bouée"} du réseau Candhis du Cerema : la hauteur significative (celle du tiers des plus hautes vagues), la vague la plus haute, la période, la direction d'où viennent les vagues et la température de la mer à la bouée. Au large, avant le récif : dans le lagon, les vagues sont bien plus petites.</p></div>
+  <div class="card"><ul class="seas">${buoys.map((b) => {
+      const [jour, h] = b.mesuree_a.split(" ");
+      const what = [b.venant, b.periode && `période ${b.periode}`, b.vague_max && `vagues jusqu'à ${b.vague_max}`].filter(Boolean).join(", ");
+      return `<li><span>${esc(b.bouee)}</span><b>${b.hauteur_significative ? esc(thin(b.hauteur_significative)) : "—"}</b><span>${esc(thin(what))}</span>` +
+        `<span>mesurée le ${esc(jour)} à ${esc(h)}${b.temperature_eau ? `, mer à ${esc(thin(b.temperature_eau))}` : ""}</span></li>`;
+    }).join("")}</ul><p class="sources">Source : ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}).</p></div>
+</section>`
+    : "";
+
   const waves = d?.plages.filter((b) => b.houle) ?? [];
   const top = waves.length ? waves.reduce((a, b) => (b.houle!.hauteur_m > a.houle!.hauteur_m ? b : a)) : undefined;
   const swell = waves.length
@@ -3177,7 +3193,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
 </section>
 ${reef !== undefined ? reefSection(reef) : ""}
 ${whaleSection(now)}
-${swell}
+${measuredSwell}${swell}
 ${tide}
 ${bathingBlock(now, undefined, g)}${g.feuille}
 <p class="lead"><a href="/peche">Pêche de loisir\u00a0: langouste, bichiques, capucin nain, ce qui est fermé aujourd'hui →</a></p>

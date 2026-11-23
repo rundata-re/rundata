@@ -529,10 +529,10 @@ describe("what crawlers and previews fetch", () => {
     // page per hike and per ONF trail with its GPS trace, and per past cyclone, and the busiest bus stops. Not the weather
     // stations' pages, out of it while Google judges the site again, nor the pages left out from 19/11/2026 (marketing's
     // list of 18/11/2026): 19 days and 14 places for children of a commune, and stops (web/sitemap-retires.ts, counted in
-    // test/sitemap-liste.test.ts). And the fiche of an address, /terrain (20/11/2026).
+    // test/sitemap-liste.test.ts). And the fiche of an address, /terrain (20/11/2026), and /en, the one page in English (23/11/2026).
     const stops = [...stopPages().values()].filter((p) => p.indexe && !retiree(`/bus/arret/${p.slug}`));
     // The places whose page sends to another (places.ts PRINCIPAL) are out of it.
-    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length - Object.keys(PRINCIPAL).length + 61 + 24 + 21 + 24 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length + 1);
+    expect(map.match(/<loc>/g)).toHaveLength(PAGES.length - Object.keys(PRINCIPAL).length + 61 + 24 + 21 + 24 + 24 + 24 - 19 - 14 + SECTEURS_RANDO.length + RANDONNEES.length + Object.keys(SENTIERS).length + PASSES.length + stops.length + 1 + 1);
     expect(map).not.toContain("<loc>https://rundata.re/meteo/station/97418110</loc>");
     expect(map).toContain(`<loc>https://rundata.re/bus/arret/${stops[0].slug}</loc>`);
     expect(map).toContain("<loc>https://rundata.re/enfants</loc>");

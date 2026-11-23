@@ -6,7 +6,7 @@ import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../sr
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { AFTER_ANSWER_CAP, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
 import { citation } from "../src/tools/citer.js";
@@ -484,6 +484,17 @@ describe("reading the copies", () => {
     expect((await run.settled()).used).toBeLessThanOrEqual(PAGE_BUDGET);
   });
 
+  it("names the place measured when it has a weather page of its own: the Maïdo's weather, never Saint-Paul's", async () => {
+    const edge = await edgeWith();
+    await edge.put("web:lieu:maido", { value: COPIES.meteo.value, fetchedAt: ago(2).getTime() });
+    const pending: Promise<unknown>[] = [];
+    const r = body(await resumeDuJour(isolate(edge), "Maïdo", NOW, (p) => pending.push(p)));
+    await Promise.allSettled(pending);
+    expect(r.commune).toBe("Saint-Paul");
+    expect(r.meteo.lieu).toBe("Maïdo");
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; météo du Maïdo\u00a0;/);
+  });
+
   describe("the weather of a place without a page of its own", () => {
     const ask = async (lieu: string, edge: EdgeLike, budget = PAGE_BUDGET) => {
       const pending: Promise<unknown>[] = [];
@@ -539,12 +550,22 @@ describe("reading the copies", () => {
       const { r } = await ask("Saint-Paul", edge);
       expect(r.meteo).not.toHaveProperty("lieu");
       expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\u00a0; 27,4 °C mesurés à 13:54 \(station Saint-Paul\)/);
-      // The beach of L'Hermitage has its page (web/places.ts): its page's weather, as before.
+      // The beach of L'Hermitage: its page sends to Saint-Gilles-les-Bains' (places.ts `PRINCIPAL`), whose weather and name
+      // are given, never the centre's, never the address sent elsewhere.
       const plage = (await ask("plage de l'Ermitage", await edgeWith())).r;
-      expect(plage.meteo).toMatchObject({ mesure: { station: "Pointe des Trois-Bassins" } });
+      expect(plage.meteo).toMatchObject({ lieu: "Saint-Gilles-les-Bains", mesure: { station: "Pointe des Trois-Bassins" } });
       expect(plage.meteo).not.toHaveProperty("avertissement");
-      expect(plage.resume).not.toMatch(/météo (du centre|de )/);
+      // The note on the homonyms after the commune and the day, never before them (20/11/2026).
+      expect(plage.resume).toMatch(/^Saint-Paul, samedi 24 octobre\. Plusieurs lieux s'appellent .* Météo de Saint-Gilles-les-Bains\u00a0; 26,9 °C/);
+      expect(JSON.stringify(plage)).not.toContain("/meteo/l-hermitage");
     });
+  });
+
+  it("sets the note on the place asked after the day and the water not to drink, never before an alert", () => {
+    expect(apresAlertes("Salazie, vendredi 20 novembre\u00a0; 1 avis d'eau à ne pas boire\u00a0; météo de Hell-Bourg.", "Note.", true))
+      .toBe("Salazie, vendredi 20 novembre\u00a0; 1 avis d'eau à ne pas boire. Note. Météo de Hell-Bourg.");
+    expect(apresAlertes("Salazie, vendredi 20 novembre\u00a0; météo de Hell-Bourg.", "Note.", false)).toBe("Salazie, vendredi 20 novembre. Note. Météo de Hell-Bourg.");
+    expect(apresAlertes("Salazie, vendredi 20 novembre.", "Note.", false)).toBe("Salazie, vendredi 20 novembre. Note.");
   });
 
   it("says a place off the island is not in La Réunion, and first what a word taken for part of a name was taken for", async () => {
@@ -554,7 +575,7 @@ describe("reading the copies", () => {
     const pending: Promise<unknown>[] = [];
     const r = body(await resumeDuJour(isolate(await edgeWith()), "France", NOW, (p) => pending.push(p)));
     await Promise.all(pending);
-    expect(r.resume).toMatch(/^«\u00a0France\u00a0» compris comme Petite France \(localite, Saint-Paul\), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur\. /);
+    expect(r.resume).toMatch(/^Saint-Paul, samedi 24 octobre\. «\u00a0France\u00a0» compris comme Petite France \(localite, Saint-Paul\), dont le nom ne correspond qu'en partie\u00a0: le dire à l'utilisateur\. Météo de Petite France\u00a0; /);
     expect(r.commune).toBe("Saint-Paul");
   });
 
@@ -720,6 +741,24 @@ describe("the vigilance of the day, in words people read", () => {
     const r = said("saint-joseph", {});
     expect(r.vigilance?.maintenant).toBe("Vigilance météo : pas de vigilance émise pour le Sud-Est (Météo-France), la zone de Saint-Joseph.");
     expect(r.vigilance?.au_dessus_du_vert).toBe(false);
+  });
+
+  it("puts the vigilance above green, the cyclone alert and the closed schools in the avertissement, first and in /aujourdhui's order", () => {
+    // The vigilance above green alone.
+    const rain = said("saint-benoit", { "VIGI974-12": { 12: at(2), 1: at(1) } });
+    expect(Object.keys(rain)[0]).toBe("avertissement");
+    expect(rain.avertissement).toBe("Vigilance météo : jaune fortes pluies / orages pour l'Est (Météo-France), la zone de Saint-Benoît.");
+    // The cyclone alert with a green vigilance: the alert and the schools it closes, never the green.
+    const orange = said("saint-benoit", { VIGI974: { 10: at(3) }, "VIGI974-12": { 12: at(1) } });
+    expect(Object.keys(orange)[0]).toBe("avertissement");
+    expect(orange.avertissement).toBe("ALERTE CYCLONIQUE orange, « je me prépare » : danger dans les 24 heures. Crèches, écoles, collèges et lycées fermés (alerte orange cyclonique), selon le dispositif ORSEC Cyclones (arrêté 2026-182).");
+    // All three: the vigilance, then the alert, then the schools.
+    const red = said("saint-benoit", { VIGI974: { 10: at(4) }, "VIGI974-12": { 12: at(3) } });
+    expect(red.avertissement).toBe(
+      "Vigilance météo : orange fortes pluies / orages pour l'Est (Météo-France), la zone de Saint-Benoît. ALERTE CYCLONIQUE rouge, « je me confine » : danger imminent. Crèches, écoles, collèges et lycées fermés (alerte rouge cyclonique), selon le dispositif ORSEC Cyclones (arrêté 2026-182).",
+    );
+    // Green everywhere, no cyclone alert: no avertissement.
+    expect(said("saint-benoit", { VIGI974: { 10: at(1) }, "VIGI974-12": { 12: at(1) } }).avertissement).toBeUndefined();
   });
 });
 

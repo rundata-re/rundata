@@ -50,7 +50,7 @@ describe("annuaire_services_publics and the public procurement notices", () => {
     expect(r.avis).toBeUndefined();
     expect(r.lien).toBe("https://rundata.re/marches-publics?commune=cilaos");
     const i = await ask("marchés publics");
-    expect(i.resume).toBe("4 avis de marché ouverts aux réponses à La Réunion, d'après le BOAMP lu le 23/11 à 14:05. Donner une commune pour les siens.");
+    expect(i.resume).toBe("4 avis de marché ouverts aux réponses à La Réunion, d'après le BOAMP lu le 23/11 à 14:05. Préciser une commune pour n'avoir que ses avis.");
     expect(i.par_commune).toEqual({ "Saint-Pierre": 2, "Saint-Paul": 1 });
     expect(i.lien).toBe("https://rundata.re/marches-publics");
   });

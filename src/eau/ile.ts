@@ -49,6 +49,8 @@ export interface Reseau {
 }
 
 const FRESH_SECONDS = 3600;
+/** The key .github/workflows/eau.yml writes the island's copy under, and the Worker reads it from (worker.ts). */
+export const KV_KEY = "eau:ile";
 
 /** The first failure of a source in a gathering: what it was, the HTTP status if there was one, and how long it took. */
 export interface Echec {
@@ -266,7 +268,7 @@ export async function storedCopy(cache: Cache, now = new Date()): Promise<Ile | 
 }
 
 export async function ile(cache: Cache, now = new Date()): Promise<Cached<Ile>> {
-  return cache.getCopy("eau:ile", FRESH_SECONDS, async () => {
+  return cache.getCopy(KV_KEY, FRESH_SECONDS, async () => {
     if (reader) {
       const v = await reader();
       if (!v?.baignades) throw new Error("qualité de l'eau absente du stockage");

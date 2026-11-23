@@ -256,12 +256,12 @@ function setup(env: Env): Cache {
   // Filtered from the national file by the scheduled event below (src/providers/irve.ts).
   irve.configure(kv && (async () => {
     count();
-    return (await kv.get("irve:etat", "json")) as irve.Live | null;
+    return (await kv.get(irve.KV_KEY, "json")) as irve.Live | null;
   }));
   // Gathered site by site and commune by commune by .github/workflows/eau.yml (src/eau/ile.ts).
   eauIle.configure(kv && (async () => {
     count();
-    return (await kv.get("eau:ile", "json")) as eauIle.Ile | null;
+    return (await kv.get(eauIle.KV_KEY, "json")) as eauIle.Ile | null;
   }));
   // Read every 15 minutes from the prefecture by scripts/prefecture.ts, on a machine of the project: its site cuts the
   // connection of the Workers (src/providers/prefecture-copie.ts).
@@ -550,7 +550,7 @@ export default {
     if (kv && irve.refreshDue(now)) {
       ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, () => irve.refresh(async (live) => {
         count(1, true);
-        await kv.put("irve:etat", JSON.stringify(live), { expirationTtl: irve.LIVE_TTL_SECONDS });
+        await kv.put(irve.KV_KEY, JSON.stringify(live), { expirationTtl: irve.LIVE_TTL_SECONDS });
       }, now)))
         .then(({ value, used, reads }) => console.log(`bornes de recharge : ${value} points de La Réunion, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("bornes de recharge : état impossible", why(err))));

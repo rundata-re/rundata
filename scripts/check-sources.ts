@@ -3,11 +3,12 @@
  * [origin]`. Run every morning by .github/workflows/sources.yml. A point that fails is checked once more a minute
  * later; what still fails is printed, written to the job's summary, and fails the job: the failure is the alert.
  * A problem that a breakdown of scripts/pannes-amont.json covers (upstream, known, said on the site, dated, 7 days at
- * most) is a warning instead, in the summary too, and does not fail the job.
+ * most) is a warning instead, in the summary too, and does not fail the job; so is an answer whose size follows the
+ * day's data, past its cap but within its margin (SUIT_LES_DONNEES).
  */
 import { appendFileSync, readFileSync } from "node:fs";
 import "../src/bin/net.js";
-import { AGENT, checkAnswer, checkPage, PAGES, pannesSummary, sizesSummary, TOOLS, trierPannes, type PageCheck, type PanneConnue, type Probleme, type ToolCheck } from "../src/bin/check-sources.js";
+import { AGENT, checkAnswer, checkPage, PAGES, pannesSummary, sizesSummary, taillesSummary, TOOLS, trierPannes, type PageCheck, type PanneConnue, type Probleme, type ToolCheck } from "../src/bin/check-sources.js";
 
 const origin = process.argv[2] ?? "https://rundata.re";
 const TIMEOUT_MS = 60_000;
@@ -61,15 +62,19 @@ if (failing.tools.length || failing.pages.length) {
 }
 
 const pannes = JSON.parse(readFileSync(new URL("./pannes-amont.json", import.meta.url), "utf8")) as PanneConnue[];
-const { connus, echecs } = trierPannes(problems, pannes, new Date());
+const tailles = problems.filter((p) => p.avertissement);
+const { connus, echecs } = trierPannes(problems.filter((p) => !p.avertissement), pannes, new Date());
 
 const total = TOOLS.length + PAGES.length;
 const lines = echecs.map((p) => `| ${p.point} | ${p.motif.replace(/\|/g, "/")} |`);
 const summary = (echecs.length
   ? `## Contrôle des sources : ${echecs.length} problème(s)\n\n| Point | Motif |\n|---|---|\n${lines.join("\n")}\n${sizesSummary(echecs)}`
-  : `## Contrôle des sources : ${total} points, ${connus.length ? "rien d'autre qu'une panne amont connue" : "tout est à jour"}\n`) + pannesSummary(connus);
+  : `## Contrôle des sources : ${total} points, ${connus.length || tailles.length ? "rien d'autre qu'un avertissement" : "tout est à jour"}\n`) +
+  pannesSummary(connus) +
+  taillesSummary(tailles);
 console.log(summary);
 if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 for (const { probleme: p, panne: e } of connus) console.log(`::warning::${p.point} : ${p.motif} (panne amont connue depuis le ${e.depuis}, jusqu'au ${e.jusqu_au})`);
+for (const p of tailles) console.log(`::warning::${p.point} : ${p.motif}`);
 for (const p of echecs) console.error(`::error::${p.point} : ${p.motif}`);
 if (echecs.length) process.exitCode = 1;

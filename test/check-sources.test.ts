@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { configurerEquipe, handle, JETON_EQUIPE, sansBalise } from "../src/app.js";
 import { Cache } from "../src/cache.js";
-import { AGENT, checkAnswer, checkPage, MAX_BYTES, PAGES, parseTime, RADAR_HISTORY, sizesOf, sizesSummary, TOOLS } from "../src/bin/check-sources.js";
+import { AGENT, checkAnswer, checkPage, MARGE_DONNEES, MAX_BYTES, PAGES, parseTime, RADAR_HISTORY, sizesOf, sizesSummary, SUIT_LES_DONNEES, taillesSummary, TOOLS } from "../src/bin/check-sources.js";
 import type { Hit } from "../src/metrics.js";
 
 // Saturday 24 October 2026, 07:11 in Réunion.
@@ -135,7 +135,7 @@ describe("the daily check of the sources", () => {
     const c = TOOLS.find((x) => x.point === "resume_du_jour (Saint-Paul)")!;
     const answer = { evenements_du_jour: { liste: ["é".repeat(6_000)] }, sources: ["x".repeat(4_000)], lien: "https://rundata.re/aujourdhui/saint-paul", fraicheur: {} };
     const [p] = checkAnswer(c, { content: [{ type: "text", text: JSON.stringify(answer) }] }, now);
-    expect(p.motif).toBe("réponse de 16,1\u00a0Ko, au-delà de 10,5\u00a0Ko");
+    expect(p.motif).toBe("réponse de 16,1\u00a0Ko, au-delà de 15,8\u00a0Ko"); // 10,5 plus a half: its size follows the day's data
     expect(p.blocs).toEqual([["evenements_du_jour", 12_014], ["sources", 4_004], ["lien", 42], ["fraicheur", 2]]);
     expect(sizesOf({ a: "é", b: [1, 2] })).toEqual([["b", 5], ["a", 4]]);
     const summary = sizesSummary([p, { point: "maree (Saint-Pierre)", motif: "marée absente" }]);
@@ -167,7 +167,38 @@ describe("the daily check of the sources", () => {
       expect(at.filter((m) => m.startsWith("réponse de")), point).toEqual([]);
       const over = motifs(point, { resume: "x".repeat(max - 12) });
       expect(over.filter((m) => m.startsWith("réponse de")), point).toHaveLength(1);
+      // An answer whose size follows the day's data, warned at its cap, fails past its margin.
+      const marge = SUIT_LES_DONNEES.has(point) ? Math.round(max * MARGE_DONNEES) : max;
+      const far = checkAnswer(TOOLS.find((c) => c.point === point)!, { content: [{ type: "text", text: JSON.stringify({ resume: "x".repeat(marge - 12) }) }] }, NOW);
+      expect(far.filter((p) => p.motif.startsWith("réponse de") && !p.avertissement), point).toHaveLength(1);
     }
+  });
+
+  // 23/11/2026: coupures_eau at 12,8 Ko for 12,5, 16 notices of which 9 cuts to come; the job red each morning.
+  it("warns, without failing, for an answer whose size follows the day's data, up to its cap plus a half", () => {
+    const now = new Date("2026-11-23T04:10:00Z");
+    const c = TOOLS.find((x) => x.point === "coupures_eau")!;
+    const answer = (n: number) => ({ content: [{ type: "text", text: JSON.stringify({ resume: "x".repeat(n - 13) }) }] });
+    const busy = checkAnswer(c, answer(12_800), now);
+    expect(busy).toEqual([
+      { point: "coupures_eau", motif: "réponse de 12,8\u00a0Ko, au-delà de 12,5\u00a0Ko (taille qui suit les données du jour, échec au-delà de 18,8\u00a0Ko)", blocs: [["resume", 12_789]], avertissement: true },
+    ]);
+    expect(checkAnswer(c, answer(18_750), now)[0].avertissement).toBe(true);
+    // Past the margin, the check fails again, the margin said.
+    const [far] = checkAnswer(c, answer(18_751), now);
+    expect(far.motif).toBe("réponse de 18,8\u00a0Ko, au-delà de 18,8\u00a0Ko");
+    expect(far.avertissement).toBeUndefined();
+    // A fixed-form answer keeps its cap as a failure.
+    const [maree] = checkAnswer(TOOLS.find((x) => x.point === "maree (Saint-Pierre)")!, answer(3_001), now);
+    expect(maree.avertissement).toBeUndefined();
+    // Said in the summary with each part's bytes; nothing without a warning.
+    const summary = taillesSummary(busy);
+    expect(summary).toContain("### Tailles qui suivent les données du jour : 1 avertissement(s), sans échec");
+    expect(summary).toContain("| coupures_eau | réponse de 12,8");
+    expect(summary).toContain("| resume | 12\u202f789 |");
+    expect(taillesSummary([])).toBe("");
+    // Each such answer is one the check reads, with a cap.
+    expect([...SUIT_LES_DONNEES].filter((k) => !(k in MAX_BYTES))).toEqual([]);
   });
 
   it("checks a page: its live block, no source down, its data's day", () => {

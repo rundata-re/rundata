@@ -36,7 +36,7 @@ export const NIVEAUX: { niveau: string; libelle: string }[] = [
   { niveau: "Alerte 2-3", libelle: "L'éruption est située hors de l'enclos et présente une réelle menace pour la sécurité des personnes, des biens ou de l'environnement (impact possible sur les zones habitées)." },
   { niveau: "Sauvegarde", libelle: "L'éruption est terminée, une réouverture partielle de l'enclos est possible" },
 ];
-export const VERSION = "Version de 2021, la dernière que nous ayons lue.";
+export const VERSION = "Version de 2021, la dernière lue par rundata.re.";
 
 /** The plan's words for `niveau` (« éruption probable ou imminente »), undefined for a level it does not name. */
 export const libelle = (niveau: string | undefined) => NIVEAUX.find((x) => x.niveau.toLowerCase() === niveau?.toLowerCase())?.libelle;
@@ -95,12 +95,12 @@ export function acces(niveau: string | undefined, p: volcan.Phase | undefined, p
   const same = p && { source: "même communiqué", lien: p.lien };
 
   if (!niveau) {
-    lignes.push({ lieu: "Enclos", texte: `Nous n'avons pas pu lire le dernier communiqué de la préfecture : ${VERIFIER} avant de monter au volcan.` });
+    lignes.push({ lieu: "Enclos", texte: `rundata.re n'a pas pu lire le dernier communiqué de la préfecture : ${VERIFIER} avant de monter au volcan.` });
   } else if (/^Vigilance/i.test(niveau)) {
     lignes.push({ lieu: "Enclos", texte: "Partie haute de l'Enclos : « l'accès du public non-accompagné est restreint aux seuls sentiers balisés et ouverts »", source: `${DSO}, p. 23` });
   } else if (!p) {
     // The level is the OVPF's, above any release read: closed at that level by the plan, no release yet to quote.
-    lignes.push({ lieu: "Enclos", texte: `Enclos : accès interdit à ce niveau d'alerte (${DSO}). Le communiqué de la préfecture sur ce niveau n'est pas encore dans les textes que nous avons lus : ${VERIFIER} avant de monter au volcan.` });
+    lignes.push({ lieu: "Enclos", texte: `Enclos : accès interdit à ce niveau d'alerte (${DSO}). Le communiqué de la préfecture sur ce niveau n'est pas encore dans les textes lus par rundata.re : ${VERIFIER} avant de monter au volcan.` });
   } else if (/^Sauvegarde/i.test(niveau)) {
     lignes.push({ lieu: "Enclos", texte: `Enclos : en phase de sauvegarde, « une réouverture partielle de l'enclos est possible » (${DSO}, p. 22). Ce qui est ouvert est dans le communiqué de la préfecture du ${dayOf(p.jour)}.`, lien: p.lien });
   } else {

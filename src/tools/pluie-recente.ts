@@ -151,7 +151,7 @@ export function recentRainBlock(rain: RecentRain, station: StationRain, lieu: st
   }
   // Yesterday's hours listed cover part of it only: their sum is not yesterday's rain (« il a plu combien hier ? »).
   const hier = hierPartiel(end, listed, t);
-  if (stuck) lines.unshift(`${day(end) < day(t) ? `${dayWord(end, t)} ` : ""}${span(end, from)} : non lue (notre lecture n'a pas abouti)`);
+  if (stuck) lines.unshift(`${day(end) < day(t) ? `${dayWord(end, t)} ` : ""}${span(end, from)} : non lue (la lecture de rundata.re n'a pas abouti)`);
   if (newest) lines.unshift(`${span(from, newest)} : ${partialWhole ? "" : "au moins "}${mm(partial)} (${stuck ? "dernières mesures lues, toutes les 6 minutes" : "heure en cours"})`);
 
   const avertissements = [...station.fit.avertissements];

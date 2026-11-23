@@ -102,13 +102,13 @@ describe("volcano", () => {
     const r = body(await volcanSeismes(cacheWith(posts), NOW));
     expect(r.resume).toContain("Dernière publication de l'OVPF, le 24/10 à 19:46 : une image, sans texte. rundata.re ne lit pas les images : à voir sur https://bsky.app/profile/ovpf.bsky.social/post/arret.");
     // Newer than the release of 07/05 the state comes from: the state may not account for it, and nothing is drawn from it.
-    expect(r.resume).toContain("La dernière publication de l'OVPF est une image que nous ne lisons pas : l'état ci-dessus peut ne pas en tenir compte.");
+    expect(r.resume).toContain("La dernière publication de l'OVPF est une image, qui n'est pas lue\u00a0: l'état ci-dessus peut ne pas en tenir compte.");
     expect(r.etat).toMatchObject({ image_ovpf_plus_recente: true, eruption_en_cours: false, niveau_orsec: "Vigilance" });
     expect(r.publications_ovpf[0]).toMatchObject({ texte: "Publication en une image, sans texte", image: true, lien: "https://bsky.app/profile/ovpf.bsky.social/post/arret", a_lire: A_LIRE });
     expect(r.publications_ovpf[1].a_lire).toBeUndefined();
     const html = volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<p>Publication en une image, sans texte</p><p><a href="https://bsky.app/profile/ovpf.bsky.social/post/arret">Voir les images sur Bluesky →</a></p>`);
-    expect(html).toContain(`<p class="lead">La dernière publication de l&#39;OVPF est une image que nous ne lisons pas : l&#39;état ci-dessus peut ne pas en tenir compte.</p>`);
+    expect(html).toContain(`<p class="lead">La dernière publication de l&#39;OVPF est une image, qui n&#39;est pas lue\u00a0: l&#39;état ci-dessus peut ne pas en tenir compte.</p>`);
 
     // An image older than what the state comes from, the day of the release: nothing more said.
     const older = body(await volcanSeismes(cacheWith(activityPosts({ feed: [post("ancienne", "2026-05-06T08:00:00.000Z", "", image())] })), NOW));
@@ -135,7 +135,7 @@ describe("volcano", () => {
     void store.put("volcan:prefecture:phase", { value: phaseOf([alerte]), fetchedAt: t });
     const cache = new Cache(store, () => t);
     const r = body(await volcanSeismes(cache, now));
-    expect(r.resume).toContain(`L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes que nous avons lus. La dernière publication de l'OVPF, le 25/10 à 08:02, est en images, que nous ne lisons pas : la voir, ${lien}.`);
+    expect(r.resume).toContain(`L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re. La dernière publication de l'OVPF, le 25/10 à 08:02, est en images, qui ne sont pas lues : la voir, ${lien}.`);
     expect(r.resume).not.toContain("08:00");
     // Said once under the alert: neither « Dernière publication de l'OVPF… » nor « l'état ci-dessus peut ne pas en tenir
     // compte » besides; the flag stays.
@@ -149,12 +149,12 @@ describe("volcano", () => {
     // On /volcan: under the lead, the link; the card says what it is and where to see it. And the home page's demo.
     const v = await buildVolcan(cache, now);
     const html = volcanPage("https://rundata.re", { value: v, fetchedAt: now, stale: false }, now).replace(/&#39;/g, "'");
-    expect(html).toContain(`<p class="note">La dernière publication de l'OVPF, le 25/10 à 08:02, est en images, que nous ne lisons pas\u00a0: <a href="${lien}">la voir sur Bluesky ↗</a></p>`);
+    expect(html).toContain(`<p class="note">La dernière publication de l'OVPF, le 25/10 à 08:02, est en images, qui ne sont pas lues\u00a0: <a href="${lien}">la voir sur Bluesky ↗</a></p>`);
     expect(html.split("facebook.com/ObsVolcano")).toHaveLength(2);
     expect(html).not.toContain("peut ne pas en tenir compte");
     expect(html).toContain(`<p>Publication en 3 images, sans texte</p><p><a href="${lien}">Voir les images sur Bluesky →</a></p>`);
     const demo = demos({ volcan: { value: v, fetchedAt: now, stale: false } } as unknown as HomeLive, now).find((d) => d.call === "volcan_seismes()")!;
-    expect(demo.answer.replace(/&#39;/g, "'")).toContain(`dans les textes que nous avons lus. La dernière publication de l'OVPF, le 25/10 à 08:02, est en images, que nous ne lisons pas : <a href="${lien}">la voir sur Bluesky ↗</a>, ou suivre <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">l'OVPF sur Facebook ↗</a>. Le volcan est en alerte 1`);
+    expect(demo.answer.replace(/&#39;/g, "'")).toContain(`dans les textes lus par rundata.re. La dernière publication de l'OVPF, le 25/10 à 08:02, est en images, qui ne sont pas lues : <a href="${lien}">la voir sur Bluesky ↗</a>, ou suivre <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">l'OVPF sur Facebook ↗</a>. Le volcan est en alerte 1`);
   });
 
   it("keeps a release in images with a word or two as such, its words quoted, and a gallery counted", () => {
@@ -181,7 +181,7 @@ describe("volcano", () => {
   it("sums it all up", async () => {
     const r = body(await volcanSeismes(cacheWith(), NOW));
     // The official texts first, never « pas d'éruption » on pitonlive's word (the user, 25/10).
-    expect(r.resume.startsWith("L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes que nous avons lus. Communiqué de la préfecture du 07/05")).toBe(true);
+    expect(r.resume.startsWith("L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re. Communiqué de la préfecture du 07/05")).toBe(true);
     expect(r.resume).toContain("Niveau du dispositif ORSEC volcan : Vigilance.");
     // The last eruption, the OVPF's dates, never pitonlive's.
     expect(r.resume).toContain("Dernière éruption : du 13 février au 12 avril 2026, selon l'OVPF (https://bsky.app/profile/ovpf.bsky.social/post/3mjdrynd4ns2g).");
@@ -230,7 +230,7 @@ describe("volcano", () => {
     const said = "Le site de l'OVPF-IPGP n'a pas répondu depuis le 21/10 (dernier essai le 22/10 à 06:02). Un communiqué ou un bulletin de l'observatoire publié depuis peut manquer ici\u00a0; ses publications sur Bluesky et les communiqués de la préfecture, eux, sont lus.";
     const r = body(await volcanSeismes(cacheWith(undefined, ipgp("injoignable")), NOW));
     expect(r.injoignable).toBe(said);
-    expect(r.resume).toMatch(/^L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes que nous avons lus\. Le site de l'OVPF-IPGP n'a pas répondu depuis le 21\/10 /);
+    expect(r.resume).toMatch(/^L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re\. Le site de l'OVPF-IPGP n'a pas répondu depuis le 21\/10 /);
     const html = volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<p class="note">${esc(said)} <a href="/sites-sans-reponse">Voir les sites sans réponse</a>.</p>`);
     // Under the state line, above what follows it.
@@ -259,7 +259,7 @@ describe("volcano", () => {
       vi.restoreAllMocks();
     }
     // Answering, but not to our reads, in /sites-sans-reponse's words; asked again the same day: « aujourd'hui ».
-    expect(body(await volcanSeismes(cacheWith(undefined, ipgp("bloque")), NOW)).injoignable).toMatch(/^Le site de l'OVPF-IPGP répond, mais pas à nos lectures, depuis le 21\/10 \(dernier essai le 22\/10 à 06:02\)\. /);
+    expect(body(await volcanSeismes(cacheWith(undefined, ipgp("bloque")), NOW)).injoignable).toMatch(/^Le site de l'OVPF-IPGP répond, mais pas aux lectures de rundata.re, depuis le 21\/10 \(dernier essai le 22\/10 à 06:02\)\. /);
     const sameDay = new Date("2026-10-22T05:00:00Z");
     expect(body(await volcanSeismes(cacheWith(undefined, ipgp("injoignable")), sameDay)).injoignable).toContain("(dernier essai aujourd'hui à 06:02)");
 

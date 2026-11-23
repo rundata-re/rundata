@@ -206,7 +206,7 @@ export const avant2021 = (e: Episode) => e.debut[0].jour < PLAN_2021;
 // Worded by marketing.
 export const TITRE = "Les alertes précédentes";
 export const CHAPEAU =
-  "Voici, depuis 2016, les épisodes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture que nous avons retrouvé. " +
+  "Voici, depuis 2016, les épisodes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture retrouvé par rundata.re. " +
   "Les phrases sont citées telles quelles. Leur fin est celle de la préfecture, qui lève l'alerte par un communiqué, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. " +
   "Ce n'est pas un historique complet\u00a0: un épisode dont il manque l'un des deux communiqués n'y figure pas.";
 export const NOTE = "Liens vers les copies des communiqués conservées par la Wayback Machine (archive.org).";
@@ -217,7 +217,7 @@ export const noteReleve = () =>
 export const note = (list: Episode[] = EPISODES) => (list.some((e) => e.fin.communique.releve) ? `${NOTE} ${noteReleve()}` : NOTE);
 export const avantTitre = (n: number) => `De 2016 à novembre 2021 (${n}\u00a0épisodes)`;
 export const PUIS = "Le même jour, nouvelle";
-export const SANS_FIN = "Sa fin n'est pas dans les communiqués que nous avons retrouvés.";
+export const SANS_FIN = "Sa fin n'est pas dans les communiqués retrouvés.";
 export const AVANT_2021 = "Avant novembre 2021, les niveaux d'alerte étaient ceux du plan précédent : ils sont cités tels que les communiqués les écrivent.";
 
 /** « 19/09/2022 ». */
@@ -234,7 +234,7 @@ const quoi = (m: Moment) => (m.selon ? `${m.quoi} (${m.selon})` : m.quoi);
  * link (the answer's size, 05/11/2026); the page /volcan quotes them all.
  */
 export const CHAPEAU_OUTIL =
-  "Voici, depuis 2016, les épisodes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture que nous avons retrouvé\u00a0: " +
+  "Voici, depuis 2016, les épisodes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture retrouvé par rundata.re\u00a0: " +
   "pour chacun, le jour de son début et de sa fin, son niveau et le lien du communiqué qui l'ouvre. " +
   "Pour le dernier, les phrases des communiqués sont citées telles quelles\u00a0; celles des autres sont sur https://rundata.re/volcan#alertes-precedentes. " +
   "Leur fin est celle de la préfecture, qui lève l'alerte par un communiqué, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. " +
@@ -252,7 +252,7 @@ const puisText = (m: Moment, cite: boolean) =>
 
 /** The short answer's note: its last `n` episodes, the rest with detail. */
 export const noteCourte = (n: number, total: number) =>
-  `Les ${n} dernières des ${total} alertes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture que nous avons retrouvé (liste partielle). ` +
+  `Les ${n} dernières des ${total} alertes dont le début et la fin sont chacun écrits dans un communiqué de la préfecture retrouvé par rundata.re (liste partielle). ` +
   "Leur fin est celle de la préfecture, parfois des semaines après l'arrêt de l'éruption annoncé par l'OVPF. " +
   "Les autres, depuis 2016, et les phrases des communiqués\u00a0: rappeler l'outil avec detail.";
 

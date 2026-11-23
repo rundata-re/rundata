@@ -58,7 +58,7 @@ describe("the volcano put forward during an alert", () => {
   });
 
   it("tells the AI the same: the prefecture's words, and the eruption dated by its release only", async () => {
-    expect((await answer(ALERT_1)).resume).toContain("Alerte 1 au Piton de la Fournaise : « éruption probable ou imminente » (dispositif ORSEC Volcan). L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes que nous avons lus.");
+    expect((await answer(ALERT_1)).resume).toContain("Alerte 1 au Piton de la Fournaise : « éruption probable ou imminente » (dispositif ORSEC Volcan). L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re.");
     // Never that it has not begun, on our word: the OVPF's newest post may be an image we do not read.
     expect((await answer(ALERT_1)).resume).not.toMatch(/pas (encore )?commencé/);
     expect((await answer(ALERT_2)).resume).toMatch(/^ÉRUPTION EN COURS au Piton de la Fournaise, annoncée par la préfecture le \S+\./);
@@ -74,14 +74,14 @@ describe("the volcano put forward during an alert", () => {
     expect(page).not.toContain("très brève");
     // The top: no eruption announced (whose words), the Enclos and the way to the detail, whose the level is, the OVPF's
     // accounts; each fact once (marketing, 26/10/2026). The hook is not said: the heading and these lines say it.
-    expect(page).toContain("<p class=\"lead\"><b>L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus jusqu&#39;au 24/10 à 18:00.</b></p>");
+    expect(page).toContain("<p class=\"lead\"><b>L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes lus par rundata.re jusqu&#39;au 24/10 à 18:00.</b></p>");
     expect(page).toContain("<p class=\"lead\"><b>Accès à l&#39;Enclos interdit.</b> <a href=\"#monter\">Routes et sentiers, lieu par lieu ↓</a></p>");
     expect(page).toContain("<p class=\"note\">Alerte\u00a01 du préfet, communiqué du 24\u00a0octobre.</p>");
     expect(page).toContain(`<p class="note">Suivre l'OVPF\u00a0: <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">Facebook ↗</a> · <a href="https://bsky.app/profile/ovpf.bsky.social">Bluesky ↗</a> · <a href="https://x.com/obsfournaise">X ↗</a></p>`);
     expect(page).not.toContain("Éruption ou pas, Enclos ouvert ou fermé");
     expect(page).not.toContain("Niveau du dispositif ORSEC volcan");
     // « Seuls l'OVPF et la préfecture… » heads the official texts, below.
-    expect(page).toContain("<h2 id=\"h-officiel\">Les annonces officielles</h2><p>Seuls l&#39;OVPF et la préfecture annonceront une éruption : leurs textes s&#39;affichent ici dès que nous les avons lus. L&#39;OVPF publie aussi sur Facebook et X, que nous ne lisons pas : ses messages ci-dessous viennent de Bluesky.</p>");
+    expect(page).toContain("<h2 id=\"h-officiel\">Les annonces officielles</h2><p>Seuls l&#39;OVPF et la préfecture annonceront une éruption\u00a0: leurs textes s&#39;affichent ici dès que rundata.re les a lus. L&#39;OVPF publie aussi sur Facebook et X, qui ne sont pas lus ici\u00a0: ses messages ci-dessous viennent de Bluesky.</p>");
     expect(page).not.toMatch(/pas (encore )?commencé/);
     // Each once in the page's body: the Enclos forbidden at the top (its detail in « Puis-je monter au volcan ? »),
     // Facebook in « Suivre l'OVPF »; no « Seules comptent », no « À savoir » (the foot of « Puis-je monter » says it).
@@ -132,7 +132,7 @@ describe("the volcano put forward during an alert", () => {
     const v = await answer(ALERT_1);
     expect(homeCard(alerteVolcan(v)!)).toContain("<h2>🌋 Piton de la Fournaise : alerte\u00a01</h2><p class=\"lead\">Alerte\u00a01 du préfet (communiqué du 24\u00a0octobre) : « éruption probable ou imminente », selon le dispositif ORSEC Volcan. Accès à l&#39;Enclos interdit. <b>Suivre en direct\u00a0→</b></p>");
     const demo = demos({ volcan: { value: v, fetchedAt: NOW, stale: false } } as unknown as Parameters<typeof demos>[0], NOW).find((d) => d.call === "volcan_seismes()")!;
-    expect(demo.answer).toMatch(/^L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus\. Le volcan est en alerte 1 : « éruption probable ou imminente » \(dispositif ORSEC Volcan\)\./);
+    expect(demo.answer).toMatch(/^L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes lus par rundata.re\. Le volcan est en alerte 1 : « éruption probable ou imminente » \(dispositif ORSEC Volcan\)\./);
     expect(demo.answer).not.toContain("Pas encore");
   });
 
@@ -289,12 +289,12 @@ describe("the volcano put forward during an alert", () => {
     const v = await buildVolcan(new Cache(store, () => t), NOW);
     expect(v.etat).toMatchObject({ eruption_en_cours: false, niveau_inconnu: true, pitonlive_non_officiel: { niveau: "Alerte 2-1", eruption: true, lu: "24/10 à 18:00" } });
     expect(alerteVolcan(v)).toBeUndefined();
-    expect(v.resume).toContain("Nous n'avons pas pu lire le niveau d'alerte de la préfecture : vérifiez-le sur reunion.gouv.fr avant de monter au volcan. Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00 : « Alerte 2-1 ». Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00, une éruption est en cours. L'OVPF et la préfecture ne l'ont pas annoncée dans les textes que nous avons lus : suivez l'OVPF (https://bsky.app/profile/ovpf.bsky.social) et reunion.gouv.fr.");
+    expect(v.resume).toContain("Le niveau d'alerte de la préfecture n'a pas pu être lu\u00a0: vérifiez-le sur reunion.gouv.fr avant de monter au volcan. Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00 : « Alerte 2-1 ». Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00, une éruption est en cours. L'OVPF et la préfecture ne l'ont pas annoncée dans les textes lus par rundata.re : suivez l'OVPF (https://bsky.app/profile/ovpf.bsky.social) et reunion.gouv.fr.");
     expect(v.resume).not.toMatch(/ÉRUPTION EN COURS/);
     const copy = { value: v, fetchedAt: NOW, stale: false };
     const page = volcanPage("https://rundata.re", copy, NOW);
     expect(page).toContain("<title>Piton de la Fournaise : état du volcan · 974</title>");
-    expect(page).toContain(`<p class="lead">Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00 : « Alerte 2-1 ».</p><p class="lead">Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00, une éruption est en cours. L&#39;OVPF et la préfecture ne l&#39;ont pas annoncée dans les textes que nous avons lus : suivez l&#39;OVPF (<a href="https://bsky.app/profile/ovpf.bsky.social">bsky.app/profile/ovpf.bsky.social</a>) et reunion.gouv.fr.</p>`);
+    expect(page).toContain(`<p class="lead">Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00 : « Alerte 2-1 ».</p><p class="lead">Selon pitonlive.com, site non officiel, lu le 24/10 à 18:00, une éruption est en cours. L&#39;OVPF et la préfecture ne l&#39;ont pas annoncée dans les textes lus par rundata.re : suivez l&#39;OVPF (<a href="https://bsky.app/profile/ovpf.bsky.social">bsky.app/profile/ovpf.bsky.social</a>) et reunion.gouv.fr.</p>`);
     const head = page.slice(0, page.indexOf("</h1>"));
     const home = homePage("https://rundata.re", { volcan: copy } as unknown as HomeLive, NOW);
     // The footer credits every source of the site, pitonlive « en dernier recours ».

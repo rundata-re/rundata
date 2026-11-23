@@ -107,7 +107,7 @@ describe("« Puis-je monter au volcan ? »", () => {
     expect(eruption[3]).toBe("Pendant une éruption, en cas d'affluence, le plan de la préfecture prévoit que la route du volcan puisse être fermée depuis Bourg-Murat, ou son accès filtré (dispositif ORSEC Volcan, p. 34).");
     expect(eruption[2]).toMatch(/^Route du volcan \(route forestière/);
     expect(acces("Alerte 1", ALERT_1, releaseSentences(PAGE), carte()).lignes.map(lineText).join(" ")).not.toContain("p. 34");
-    expect(lineText(acces(undefined, undefined, undefined, undefined).lignes[0])).toBe("Nous n'avons pas pu lire le dernier communiqué de la préfecture : vérifiez sur reunion.gouv.fr avant de monter au volcan.");
+    expect(lineText(acces(undefined, undefined, undefined, undefined).lignes[0])).toBe("rundata.re n'a pas pu lire le dernier communiqué de la préfecture : vérifiez sur reunion.gouv.fr avant de monter au volcan.");
   });
 
   it("quotes in an eruption the bans the release shown writes, exactly, as the same release, and nothing of ours", () => {
@@ -172,7 +172,7 @@ describe("« Puis-je monter au volcan ? » in the answer and on /volcan", () => 
     // A non-breaking space before our colon, none put inside the quote.
     expect(html).toContain(`<li>RN 2 (Grand Brûlé)\u00a0: « La RN 2 reste ouverte à la circulation » (<a href="${LIEN}">même communiqué →</a>).</li>`);
     expect(html).toContain("<summary>Les niveaux du dispositif</summary>");
-    expect(html).toContain("<small>Version de 2021, la dernière que nous ayons lue.</small>");
+    expect(html).toContain("<small>Version de 2021, la dernière lue par rundata.re.</small>");
     expect(html.indexOf('id="h-monter"')).toBeLessThan(html.indexOf('id="h-volcan"'));
 
     // Another isolate, the prefecture's page down: the sentences kept with the phase.

@@ -45,7 +45,7 @@ describe("domain pages", () => {
   };
 
   it("show what the tool answers right now", () => {
-    expect(pages.volcan).toContain("L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes que nous avons lus jusqu&#39;au 23/10 à 18:39.");
+    expect(pages.volcan).toContain("L&#39;OVPF et la préfecture n&#39;ont pas annoncé d&#39;éruption dans les textes lus par rundata.re jusqu&#39;au 23/10 à 18:39.");
     expect(pages.volcan).toContain(`Enclos : <b>« réouverture partielle »</b> selon le <a href="https://www.reunion.gouv.fr/x">communiqué de la préfecture du 07/05</a>.`);
     expect(pages.air).toMatch(/<p class="big">moyen<\/p>/);
     expect(pages.air).toContain("var(--aq2)"); // the map without a measure: the forecast, a dot in each commune
@@ -56,7 +56,7 @@ describe("domain pages", () => {
     expect(doubleIds(pages.air)).toEqual([]);
     expect(pages.air).toContain("L&#39;Etang-Salé");
     // Out of an alert too, high on the page: the OVPF's Facebook page, a link only.
-    expect(pages.volcan.replace(/&#39;/g, "'").replaceAll("\u00a0", " ")).toContain(`<p class="lead">L'OVPF publie aussi sur Facebook, que nous ne lisons pas : <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">suivre sa page officielle ↗</a></p>`);
+    expect(pages.volcan.replace(/&#39;/g, "'").replaceAll("\u00a0", " ")).toContain(`<p class="lead">L'OVPF publie aussi sur Facebook, que rundata.re ne lit pas : <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">suivre sa page officielle ↗</a></p>`);
     expect(pages.volcan).not.toContain("facebook.com/plugins");
     expect(pages.electricite).toContain(`<span class="big">100 %</span>`);
     expect(pages.electricite).toContain("bioliquide");

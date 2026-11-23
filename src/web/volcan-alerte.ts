@@ -109,8 +109,8 @@ const planSaid = (a: VolcanAlerte) => (plan(a) ? ` : « ${plan(a)} », selon le 
 
 export const ENCLOS = "Accès à l'Enclos interdit.";
 // The head of « Les annonces officielles » on /volcan (marketing, 26/10/2026): who announces, then whose posts are read.
-export const ANNONCERONT = "Seuls l'OVPF et la préfecture annonceront une éruption : leurs textes s'affichent ici dès que nous les avons lus.";
-export const BLUESKY_SEUL = "L'OVPF publie aussi sur Facebook et X, que nous ne lisons pas : ses messages ci-dessous viennent de Bluesky.";
+export const ANNONCERONT = "Seuls l'OVPF et la préfecture annonceront une éruption\u00a0: leurs textes s'affichent ici dès que rundata.re les a lus.";
+export const BLUESKY_SEUL = "L'OVPF publie aussi sur Facebook et X, qui ne sont pas lus ici\u00a0: ses messages ci-dessous viennent de Bluesky.";
 
 export function bannerText(a: VolcanAlerte): string {
   return a.eruption
@@ -164,11 +164,11 @@ function alertMeta(a: VolcanAlerte): string {
 
 export const volcanLead = (a: VolcanAlerte) =>
   a.arret
-    ? `${arretSaid(a)}. Seuls l'OVPF et la préfecture disent la suite : leurs communiqués s'affichent ici dès que nous les avons lus.`
+    ? `${arretSaid(a)}. Seuls l'OVPF et la préfecture disent la suite\u00a0: leurs communiqués s'affichent ici dès que rundata.re les a lus.`
     : a.eruption
     ? "Où, quelle intensité, quelles routes : ce que publient l'OVPF et la préfecture, dans l'ordre, avec l'heure. Respectez les consignes et les fermetures de routes."
     // Never « n'a pas commencé » on our word: the OVPF's newest post may be an image we do not read (marketing).
-    : `${NON_ANNONCEE} Seuls l'OVPF et la préfecture l'annonceront : leurs communiqués s'affichent ici dès que nous les avons lus.`;
+    : `${NON_ANNONCEE} Seuls l'OVPF et la préfecture l'annonceront\u00a0: leurs communiqués s'affichent ici dès qu'ils sont lus.`;
 
 /**
  * The home page's first card, above the weather, the only volcano block there: what the banner of the other pages says

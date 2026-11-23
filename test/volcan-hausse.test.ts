@@ -44,7 +44,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const LIGNE = "Selon pitonlive.com, site non officiel, lu le 24/10 à 20:30 : « Alerte 2-1 ». Ce niveau n'apparaît pas dans les communiqués de la préfecture que nous avons lus : vérifiez sur reunion.gouv.fr avant de monter au volcan.";
+const LIGNE = "Selon pitonlive.com, site non officiel, lu le 24/10 à 20:30 : « Alerte 2-1 ». Ce niveau n'apparaît pas dans les communiqués de la préfecture lus par rundata.re : vérifiez sur reunion.gouv.fr avant de monter au volcan.";
 
 describe("pitonlive higher than the prefecture's release: the release's level, pitonlive's a line apart", () => {
   it("keeps the release's level and eruption in the answer, pitonlive's line after the level", async () => {

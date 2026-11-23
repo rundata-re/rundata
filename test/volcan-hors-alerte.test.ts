@@ -73,7 +73,7 @@ describe("out of an alert, whether it erupts only with the official texts", () =
       const all = texts.flatMap(claims);
       expect(all.length).toBeGreaterThan(3);
       for (const c of all) expect(c).toMatch(/^pas d'éruption annoncée/i);
-      expect(v.resume.startsWith("L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes que nous avons lus.")).toBe(true);
+      expect(v.resume.startsWith("L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re.")).toBe(true);
       // The footer's credit left out: pitonlive.com is said nowhere else, not even for the last eruption (the OVPF's).
       const rest = texts.join(" ").replace(/en dernier recours pitonlive\.com \(site non officiel\)/g, "");
       expect(rest).not.toMatch(/pitonlive|« partiel »|2026-627/);

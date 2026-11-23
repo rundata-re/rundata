@@ -194,8 +194,10 @@ describe("the link, once « C'est bien nous » is clicked", () => {
     expect(JSON.stringify(row)).not.toContain(secret);
     expect(await chiffre.dechiffrer(row.secret, chiffre.lien("helloasso", "club-de-petanque", row.jeton))).toBe(REFRESH);
     const m = sent[0];
-    expect(m.subject).toBe("Confirmez la connexion de Club de pétanque du Tampon à rundata.re");
-    expect(m.text).toContain("Vous avez relié le compte HelloAsso de Club de pétanque du Tampon (Le Tampon) à rundata.re.");
+    expect(m.subject).toBe("Confirmez la connexion de votre compte HelloAsso à rundata.re");
+    expect(m.text).toContain("Vous avez relié un compte HelloAsso à rundata.re.");
+    // Sent to an address nobody confirmed yet: nothing of the HelloAsso account in it, neither its name, its town nor its page.
+    for (const tiers of ["Club de pétanque", "Le Tampon", "helloasso.com"]) expect(`${m.subject}\n${m.text}`).not.toContain(tiers);
     expect(m.text).toContain(`https://rundata.re/associations/connexion/${secret}\n`);
     expect(m.text).toContain(`https://rundata.re/associations/connexion/${secret}/retirer\n`);
     expect(m.text).toContain("\nL'équipe rundata.re\nrundata.re · https://rundata.re/associations");

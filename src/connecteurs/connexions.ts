@@ -164,7 +164,7 @@ export async function enregistrer(a: Ouverte, adresse: string, base: string, now
     console.error("connecteurs : écriture impossible", err instanceof Error ? err.message : String(err));
     return "indisponible";
   }
-  return (await envoyer(a.email, messageConfirmation(o, PLATEFORMES[a.plateforme].nom, `${base}${secretLien}`, `${base}${secretLien}${RETRAIT}`))) ? "ok" : "indisponible";
+  return (await envoyer(a.email, messageConfirmation(PLATEFORMES[a.plateforme].nom, `${base}${secretLien}`, `${base}${secretLien}${RETRAIT}`))) ? "ok" : "indisponible";
 }
 
 /** The end of the withdrawal link: the same page, opened on its button. */
@@ -259,15 +259,20 @@ export async function purger(now = new Date()): Promise<number> {
 // ---------------------------------------------------------------- the e-mails (marketing's words)
 
 const SIGNATURE = ["", "L'équipe rundata.re", "rundata.re · https://rundata.re/associations"];
-const nommee = (o: Pick<Organisation, "nom" | "commune">) => (o.commune ? `${o.nom} (${o.commune})` : o.nom);
 
-export function messageConfirmation(o: Organisation, plateforme: string, confirmation: string, retrait: string): { subject: string; text: string } {
+/**
+ * The one e-mail sent to an address not confirmed yet, typed by whoever pasted the keys: nothing in it comes from the
+ * platform's account (its name, its town, its page), so that nobody can have rundata.re send a text of their own to a
+ * stranger. The association is named on the page that asked for it, and in the e-mails sent once the address is
+ * confirmed.
+ */
+export function messageConfirmation(plateforme: string, confirmation: string, retrait: string): { subject: string; text: string } {
   return {
-    subject: `Confirmez la connexion de ${o.nom} à rundata.re`,
+    subject: `Confirmez la connexion de votre compte ${plateforme} à rundata.re`,
     text: [
       "Bonjour,",
       "",
-      `Vous avez relié le compte ${plateforme} de ${nommee(o)} à rundata.re.`,
+      `Vous avez relié un compte ${plateforme} à rundata.re.`,
       "",
       "Pour confirmer, ouvrez ce lien\u00a0:",
       confirmation,

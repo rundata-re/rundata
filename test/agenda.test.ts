@@ -7,7 +7,7 @@ import { annonceEvenement, extrait, premiere } from "../src/providers/agenda-mot
 import { parseBisik, SOURCE as SALLES_SOURCE } from "../src/providers/salles.js";
 import { ID as CONNECTEURS_ID } from "../src/providers/agenda-connecteurs.js";
 import { ID as PROPOSITIONS_ID } from "../src/providers/agenda-propositions.js";
-import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, order, periode, plannedDue, refreshPlanned, repris, sourcesServies, when, MARCHES_REGULIERS, longRun, nombreDuJour, occurrences, parJour } from "../src/tools/agenda.js";
+import { agenda, AGENDAS_LUS, COUVERTURE, COUVERTURE_OUTIL, MAIRIES_ACTUALITES, type EventRow, LISTED_OUTIL, gather, inPeriod, MAIRIES_LUES, matcher, order, periode, plannedDue, refreshPlanned, repris, rienAnnonce, sourcesServies, when, MARCHES_REGULIERS, longRun, nombreDuJour, occurrences, parJour } from "../src/tools/agenda.js";
 import { FICHE_REUNION_FR, mentionReunionFr, noteReunionFr, RESUME_REUNION_FR } from "../src/tools/non-repris.js";
 import { handle } from "../src/app.js";
 import { buildAgenda } from "../src/web/data.js";
@@ -16,6 +16,11 @@ import { CSS } from "../src/web/pages.js";
 import { mesure } from "../src/web/mesure.js";
 import { SOURCE_REVISION } from "../src/web/revisions.js";
 import { withVide } from "../src/vide.js";
+import { withLectures } from "../src/lectures.js";
+import { fraicheur } from "../src/tools/fraicheur.js";
+import { localTime } from "../src/geo.js";
+import { communeEvents } from "../src/web/liens.js";
+import { pageOf } from "../src/web/places.js";
 
 // « 2026-10-24T12:05 » → « le 24/10 à 12:05 », the form of the reads.
 const leLocal = (l: string) => `le ${l.slice(8, 10)}/${l.slice(5, 7)} à ${l.slice(11, 16)}`;
@@ -1397,6 +1402,37 @@ describe("agenda", () => {
     const b = body(await agenda(cache(), "Saint-André", "2026-11-28", undefined, NOW));
     expect(b.nombre).toBe(0);
     expect(b.sources.map((x: { attribution?: string }) => x.attribution)).toContain("Ville de Saint-André");
+  });
+
+  it("says a commune's own site read with nothing announced, with the hour of its read, on the tool and its tile (23/11/2026)", async () => {
+    const b = body(await agenda(cache(), "Saint-André", "2026-11-28", undefined, NOW));
+    expect(b.nombre).toBe(0);
+    expect(b.resume).toMatch(/^Aucun événement trouvé à Saint-André [^;]+ ; le site de la commune de Saint-André, lu le 24\/10 à 08:00, n'en annonce aucun ; \d+ ailleurs sur l'île/);
+    // A genre asked: the site may announce another kind, nothing said of it.
+    expect(body(await agenda(cache(), "Saint-André", "2026-11-28", "concert", NOW)).resume).not.toContain("n'en annonce aucun");
+    // A commune not read says nothing of a site.
+    expect(body(await agenda(cache(), "Entre-Deux", "2026-11-28", undefined, NOW)).resume).not.toContain("n'en annonce aucun");
+    // Two sites read, the oldest first, each with its hour.
+    expect(rienAnnonce([{ site: "site de la commune de Cilaos", lu_le: "2026-10-23T22:00:00Z" }, { site: "agenda de l'office", lu_le: "2026-10-24T04:00:00Z" }]))
+      .toBe("le site de la commune de Cilaos, lu le 24/10 à 02:00, et le agenda de l'office, lu le 24/10 à 08:00, n'en annoncent aucun");
+    // The pages' copy: the commune's tile says the site read, in marketing's words.
+    const page = await buildAgenda(cache(), NOW);
+    expect(page.sites_lus?.["Saint-André"]).toEqual([{ site: "site de la commune de Saint-André", lu_le: NOW.toISOString() }]);
+    const empty = { value: { ...page, evenements: [] }, fetchedAt: NOW, stale: false };
+    expect(communeEvents(pageOf("saint-andre")!, empty, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "d'ici quinze jours, d'après le site de la commune lu le 24/10 à 08:00" });
+    expect(communeEvents(pageOf("entre-deux")!, empty, NOW)).toEqual({ valeur: "Rien d'annoncé", detail: "d'ici quinze jours dans les agendas lus" });
+  });
+
+  it("dates its answer by the oldest agenda served, read by the scheduled event, as /evenements says it (23/11/2026)", async () => {
+    const store = new MemoryStore();
+    const before = new Date(NOW.getTime() - 6 * 3600_000);
+    await plannedCache(new Cache(store, () => before.getTime()), before);
+    const { value, lectures } = await withLectures(() => agenda(new Cache(store, () => NOW.getTime()), undefined, undefined, undefined, NOW));
+    const f = fraicheur(body(value), lectures, NOW, { lentes: true });
+    const page = await buildAgenda(new Cache(store, () => NOW.getTime()), NOW);
+    expect(f.lue_a).toBe(localTime(before));
+    expect(f.lue_a).toBe(localTime(new Date(page.lus_le!)));
+    expect(f.lectures?.plus_ancienne).toBe(localTime(before));
   });
 
   it("says when a commune publishes no agenda, and what there is elsewhere", async () => {

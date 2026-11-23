@@ -1,7 +1,8 @@
 import { isScheduled, later, left, perInvocation } from "../budget.js";
 import type { Cache, Cached } from "../cache.js";
+import { type Lecture, noteLecture, withLectures } from "../lectures.js";
 import { holidays } from "../feries.js";
-import { inReunion } from "../geo.js";
+import { inReunion, localTime } from "../geo.js";
 import { httpUrl, patiently, places, siteAskedAgo, siteSpacing, spacedSite, versBilletterie, whenPlaced } from "../http.js";
 import { INSEE } from "../places/insee.js";
 import { normalize, resolvePlace } from "../places/resolve.js";
@@ -891,7 +892,12 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     if (!res) return notFound(lieu);
   }
   const commune = res?.lieu.commune;
-  const got = await gather(cache, now);
+  // Each agenda served dates the answer by its own read, as /evenements says it (oldestRead): not the copy that brings
+  // the scheduled ones together, written later (23/11/2026: « lue à 02:43 » over the Département's events read at 22:00
+  // the day before, which the page said). Without any agenda served, the reads as they were.
+  const { value: got, lectures: brought } = await withLectures(() => gather(cache, now));
+  const served = got.filter((g) => g.value?.value.length);
+  for (const l of served.length ? served.map((g) => agendaRead(g)) : brought) noteLecture(l);
   // The news already read (the page /actualites, the tool actualites), for the cancellations it reports: never fetched
   // for this, read once per invocation (the page asks twice), and after the agendas, so as not to take one's subrequest.
   const news = await perInvocation("agenda:actualites", async () => {
@@ -937,6 +943,9 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     commune && !covered ? src.SANS_AGENDA[commune] ?? `ni la mairie ${de(commune)} ni une salle de la commune ne publient d'agenda lisible` : "",
     irt ? RESUME_REUNION_FR : "",
     partly ? `${commune} : ${partly.partiel}${besides(commune!)}` : "",
+    // Its own site read, none announced: said with the hour of the read, so that « aucun » is not taken for a commune
+    // not read (Saint-Louis, 17/11/2026). Not with a genre asked: the site may announce another kind.
+    commune && !n && !what ? rienAnnonce(sitesLus(got, commune)) : "",
     commune && !n && all.length ? `${all.length} ailleurs sur l'île` : "",
     !n && market ? MARCHES_REGULIERS : "",
     // Said in the summary, not only in `indisponible`: a partial list must not be read as the whole of it.
@@ -986,6 +995,8 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
     // For the pages only (`place`): when the oldest of the agendas served was read, the time /evenements says, as the
     // tool's fraicheur does, not the time its copy was built (04/11/2026: « lus à 14:05 » for agendas read at 13:09).
     lus_le: place ? oldestRead(got) : undefined,
+    // For the pages only: each commune's own sites read, for its tile when they announce nothing (web/liens.ts).
+    sites_lus: place ? Object.fromEntries([...new Set(got.map((g) => g.agenda.commune).filter((c): c is string => !!c))].map((c) => [c, sitesLus(got, c)]).filter(([, v]) => v.length)) : undefined,
   });
 }
 
@@ -1009,6 +1020,33 @@ export function marchesDesJours(p: Periode, commune: string | undefined, asked: 
     ? { note: "Marchés forains réguliers, à leur jour habituel d'après leur source (datée) : un jour férié, la météo ou la mairie peuvent les changer. Ils ne sont pas comptés dans nombre.", jours: out }
     : undefined;
 }
+
+/** A commune's own sites read (its mairie's agenda or news, `site_commune`), each at its oldest read, the oldest first. */
+export function sitesLus(got: Got[], commune: string): { site: string; lu_le: string }[] {
+  const by = new Map<string, number>();
+  for (const g of got) {
+    if (!g.value || g.agenda.commune !== commune || !g.agenda.site_commune) continue;
+    // « site de la commune du Port », without the copyright its pages show with it.
+    const site = g.agenda.site_commune.replace(/\s*\(.*\)$/, "");
+    by.set(site, Math.min(by.get(site) ?? Infinity, g.value.fetchedAt.getTime()));
+  }
+  return [...by].sort((x, y) => x[1] - y[1]).map(([site, t]) => ({ site, lu_le: new Date(t).toISOString() }));
+}
+
+/** « le 23/11 à 06:56 », from ISO. */
+export const luLe = (iso: string) => {
+  const [d, h] = localTime(new Date(iso)).split(" ");
+  return `le ${d} à ${h}`;
+};
+
+/** « le site de la commune de Saint-Louis, lu le 23/11 à 06:56, n'en annonce aucun » (marketing, 23/11/2026); "" without one. */
+export function rienAnnonce(sites: { site: string; lu_le: string }[]): string {
+  if (!sites.length) return "";
+  return `${sites.map((x) => `le ${x.site}, lu ${luLe(x.lu_le)},`).join(" et ")} n'en annonce${sites.length > 1 ? "nt" : ""} aucun`;
+}
+
+/** An agenda served, as a read of the answer: its own time, never left out as reference data (`lentes`). */
+const agendaRead = (g: Got): Lecture => ({ key: `agenda:${g.agenda.id}`, fetchedAt: g.value!.fetchedAt.getTime(), stale: false, freshSeconds: 3600, from: g.agenda.source.id });
 
 /** The oldest reading of the agendas whose events are served, ISO; none when none is. */
 function oldestRead(got: Got[]): string | undefined {

@@ -1388,6 +1388,8 @@ export interface AgendaAnswer {
   ce_week_end: EventRow[];
   /** When the oldest of the agendas served was read, ISO (tools/agenda.ts `oldestRead`). */
   lus_le?: string;
+  /** Each commune's own sites read, at their oldest read (tools/agenda.ts `sitesLus`): its tile says one with nothing. */
+  sites_lus?: Record<string, { site: string; lu_le: string }[]>;
   /** The days it covers, « vendredi 06/11 » to « jeudi 19/11 » (tools/agenda.ts `periode`). */
   periode?: { du: string; au: string; soir?: boolean };
 }

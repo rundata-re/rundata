@@ -7,7 +7,7 @@ import type { Cached } from "../cache.js";
 import { distanceKm, localTime } from "../geo.js";
 import * as traces from "../providers/traces.js";
 import * as fire from "../tools/feux.js";
-import { repris, silentOf } from "../tools/agenda.js";
+import { repris, luLe, silentOf } from "../tools/agenda.js";
 import { secteur } from "../tools/sentiers.js";
 import { de, nombre } from "../tools/format.js";
 import { secteurNamed } from "../traces/secteurs.js";
@@ -169,6 +169,10 @@ export function communeEvents(p: PlacePage, agenda: Cached<AgendaAnswer> | null 
   const said = silent.length > 1 ? `${silent.length} sites sans réponse (${hour(silent[0].at)})` : silent.length ? `${silent[0].site.replace(/^le /, "")} sans réponse (${hour(silent[0].at)})` : undefined;
   const whole = silent.length ? silent.map((x) => x.texte).join(" ") : undefined;
   if (!rows.length && said) return { valeur: "Rien d'annoncé", detail: esc(said), title: whole };
+  // Its own site read with nothing announced: said with the hour of the read, so that it is not taken for a commune not
+  // read (marketing, 23/11/2026: « d'ici quinze jours, d'après le site de la commune lu le 23/11 à 06:56 »).
+  const read = agenda.value.sites_lus?.[p.nom]?.[0];
+  if (!rows.length && read) return { valeur: "Rien d'annoncé", detail: `d'ici quinze jours, d'après le site de la commune lu ${luLe(read.lu_le)}` };
   if (!rows.length) return { valeur: "Rien d'annoncé", detail: "d'ici quinze jours dans les agendas lus" };
   const next = `le prochain : ${esc(rows[0].titre)}, ${esc(rows[0].quand)}${rows[0].source ? ` (Source\u00a0: ${esc(rows[0].source)})` : ""}`;
   const head = said ? esc(said) : undefined;

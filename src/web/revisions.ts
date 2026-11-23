@@ -106,7 +106,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   dae: 11,
   dechets: 2,
   // The communes whose notices are read, in the tap water's note, with those shared between distributors (L'Étang-Salé).
-  eau: 4,
+  // The distributors' « ne pas boire » notices in force, on their commune's line (`ne_pas_boire`, 23/11/2026).
+  eau: 5,
   // EDF's line older than an hour said first (perimee, avertissement), its day when not today's, never « en ce moment ».
   // Saint-André's notices read again, with its written agreement of 16/11/2026 (`coupures_annoncees`, from web:courant).
   // A past notice in `coupures_annoncees`: its sentence, its commune and its link only (19/11/2026).

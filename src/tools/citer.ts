@@ -122,7 +122,11 @@ const CITER: Partial<Record<string, (p: Payload) => string>> = {
       ? "rundata.re, d'après le Conseil Général de La Réunion, l'AGORAH et l'ONF"
       : `rundata.re, d'après l'ONF${JSON.stringify(p.sources).includes("FIRMS") ? " et la NASA" : ""}`,
   fiche_terrain: () => "rundata.re, d'après l'IGN, la DGFiP et la Base adresse nationale",
-  qualite_eau: () => "rundata.re, d'après l'ARS La Réunion",
+  // A distributor's « ne pas boire » notice opens the answer: its publisher named first, never the ARS alone (23/11/2026).
+  qualite_eau: (p) => {
+    const by = (p.eau_du_robinet as { avis_ne_pas_boire?: { distributeur?: unknown } } | undefined)?.avis_ne_pas_boire?.distributeur;
+    return typeof by === "string" ? `rundata.re, d'après l'avis ${deNom(by)} et l'ARS La Réunion` : "rundata.re, d'après l'ARS La Réunion";
+  },
   coupures_eau: citerCoupures,
   crues_rivieres: () => "rundata.re, d'après Vigicrues",
   resume_du_jour: () => "rundata.re, d'après Météo-France et d'autres sources (liste dans sources)",

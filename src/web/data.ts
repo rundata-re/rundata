@@ -61,8 +61,8 @@ import { type PlusRecent, restrictionsEau } from "../tools/secheresse.js";
 import { crues } from "../tools/crues.js";
 import * as daeSource from "../providers/dae.js";
 import { anyHour, byCommune as daeByCommune, daeRow, URGENCE as DAE_URGENCE } from "../tools/dae.js";
-import { coupuresEau, type FluxMuet, type noticeRow } from "../tools/coupures.js";
-import { avis as avisEau } from "../providers/avis-eau.js";
+import { coupuresEau, doNotDrink, drySaid, type FluxMuet, type noticeRow } from "../tools/coupures.js";
+import { avis as avisEau, SOURCE as AVIS_EAU } from "../providers/avis-eau.js";
 import { lues } from "../eau/distributeurs.js";
 import { type CourantAnswer, type courantBlock, courantCopy } from "../tools/courant.js";
 import { type NonOfficiel, volcanSeismes } from "../tools/volcan.js";
@@ -639,12 +639,33 @@ export async function buildBornes(cache: Cache, now = new Date()): Promise<Borne
   return { ...a, etat_jusqu_a: etat, stations };
 }
 
-export type EauAnswer = Ile & { a_savoir: typeof EAU_COMMON; sources: Credit[] };
+export type EauAnswer = Ile & {
+  a_savoir: typeof EAU_COMMON;
+  sources: Credit[];
+  /**
+   * The distributors' « ne pas boire » notices in force, by commune, in coupures_eau's words (drySaid, 23/11/2026):
+   * shown on the commune's line. Absent when the notices could not be read: then nothing is said either way.
+   */
+  ne_pas_boire?: Record<string, { dit: string; lien?: string }>;
+};
 
 /** The bathing sites and the tap water of every commune, gathered by the workflow (src/eau/ile.ts). */
 export async function buildEau(cache: Cache, now = new Date()): Promise<EauAnswer> {
   const { value } = await ile(cache, now);
-  return { ...value, a_savoir: EAU_COMMON, sources: credits([eauPotableSource.SOURCE, baignadesSource.SOURCE]) };
+  const avis = await avisEau(cache).then((r) => r.value, (err: unknown) => {
+    console.error("source avis_eau indisponible pour /eau:", why(err));
+    return undefined;
+  });
+  const dry = avis ? value.communes.flatMap((c) => {
+    const n = doNotDrink(avis, c.commune);
+    return n ? [[c.commune, { dit: drySaid(n, c.commune), lien: n.lien }] as const] : [];
+  }) : [];
+  return {
+    ...value,
+    a_savoir: EAU_COMMON,
+    sources: credits([eauPotableSource.SOURCE, baignadesSource.SOURCE, ...(dry.length ? [AVIS_EAU] : [])]),
+    ...(avis ? { ne_pas_boire: Object.fromEntries(dry) } : {}),
+  };
 }
 
 export interface SentiersAnswer {

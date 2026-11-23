@@ -174,7 +174,8 @@ describe("what the workflow writes when a source does not answer (ile.ts keep)",
     const site = { site: "Plage de test", commune: "Saint-Paul", lon: 55.2, lat: -21.0, dernier_prelevement: "20/11/2026", qualite_dernier_prelevement: "bonne", derniers_prelevements: [] } as unknown as Ile["baignades"][number];
     const commune = communes(1, "avant")[0];
     const copy = { lu: at, baignades: [site], baignades_lu: before.lu, communes: [commune], communes_lu: before.lu };
-    const page = (now: string) => eauPage("https://rundata.re", { value: { ...copy, a_savoir: {}, sources: [] }, fetchedAt: new Date(at), stale: false } as unknown as Cached<EauAnswer>, new Date(now)).replace(/&#39;/g, "'");
+    const dry = { [commune.commune]: { dit: `Eau à ne pas boire ${commune.commune} d'après un distributeur.`, lien: "https://example.org/avis" } };
+    const page = (now: string) => eauPage("https://rundata.re", { value: { ...copy, a_savoir: {}, sources: [], ne_pas_boire: dry }, fetchedAt: new Date(at), stale: false } as unknown as Cached<EauAnswer>, new Date(now)).replace(/&#39;/g, "'");
     const week = 7 * 86_400_000;
     // Exactly 7 days after the read (22/11 18:20): still shown, with its time.
     const shown = page(new Date(Date.parse(before.lu) + week).toISOString());
@@ -189,6 +190,8 @@ describe("what the workflow writes when a source does not answer (ile.ts keep)",
     expect(past).toContain("Le site de l'ARS ne répond plus depuis le 22/11\u00a0: voir les résultats des plages et bassins sur le site de l'ARS, ou l'affichage sur place.");
     expect(past).toContain("Hub'Eau ne répond plus depuis le 22/11\u00a0: voir le site de l'ARS.");
     expect(past).not.toContain(`<h3>${commune.commune} <span`);
+    // A distributor's notice is no part of Hub'Eau's copy: still shown on its commune's line.
+    expect(past).toContain(`<li class="card warn"><h3>${commune.commune}</h3><p><b>Eau à ne pas boire ${commune.commune} d'après un distributeur.</b>`);
     expect(tooOld(before.lu, new Date(Date.parse(before.lu) + week))).toBe(false);
     expect(tooOld(before.lu, new Date(Date.parse(before.lu) + week + 1))).toBe(true);
     // The day in Réunion's time: read at 21:00 UTC is the next day there.

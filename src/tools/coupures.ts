@@ -73,6 +73,14 @@ export function noticeSaid(n: notices.Avis, now: Date): string {
   return `${n.titre}${cut ? `, ${cut}` : `, avis du ${publishedShort(n)}`}${where}`;
 }
 
+/**
+ * The notice not to drink the water, in the same words in coupures_eau, qualite_eau and on /eau (23/11/2026): who
+ * publishes it, when, its title, and its sectors, so that it is never read as the whole commune's, nor as the ARS's.
+ */
+export const drySaid = (n: notices.Avis, commune: string) =>
+  `Eau à ne pas boire ${a(commune)} d'après ${n.distributeur} (avis du ${publishedShort(n)})\u00a0: « ${n.titre} »` +
+  (n.secteurs_complets && n.secteurs.length ? `, secteurs\u00a0: ${notices.sectorsSaid(n.secteurs)}.` : ", secteurs dans l'avis.");
+
 /** « 21/11 à 10:53 », the day only for a source dated to the day: a résumé's date, without the year. */
 const publishedShort = (n: notices.Avis) => published(n).replace(/^(\d\d\/\d\d)\/\d{4}/, "$1");
 const nowLocal = (now: Date) => new Date(now.getTime() + 4 * 3600_000).toISOString().slice(0, 16);
@@ -309,8 +317,7 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
   const cuts = mine.filter((n) => n !== dry);
   const resume = [
     // Always first, in its own words, never among the notices counted (the server's safety rule, worded by marketing).
-    dry ? `Eau à ne pas boire ${a(commune)} d'après ${dry.distributeur} (avis du ${publishedShort(dry)})\u00a0: « ${dry.titre} »` +
-      (dry.secteurs_complets && dry.secteurs.length ? `, secteurs\u00a0: ${notices.sectorsSaid(dry.secteurs)}.` : ", secteurs dans l'avis.") : "",
+    dry ? drySaid(dry, commune) : "",
     cuts.length
       ? `${cuts.length} avis récent${cuts.length > 1 ? "s" : ""} ou à venir ${a(commune)}\u00a0: ${resumeAvis(cuts, now)}.`
       : mute ? ""

@@ -58,6 +58,7 @@ export const OUTILS: Outil[] = [
 // Newest first; the latest few go out in sources_donnees. Plain words, for residents (worded by marketing): what
 // someone can now ask or find, true outside the page too.
 export const NOUVEAUTES: { date: string; texte: string }[] = [
+  { date: "2026-11-23T12:17:00+04:00", texte: "Marchés publics\u00a0: l'outil IA donne les avis ouverts d'une commune, comme sa page, avec le lien vers leur liste." },
   { date: "2026-11-23T11:12:00+04:00", texte: "Marchés publics\u00a0: un lien ouvre la liste sur une seule commune, et la page d'une commune dit combien d'avis y sont ouverts, s'il y en a." },
   { date: "2026-11-23T09:52:00+04:00", texte: "Nouvelle page en anglais, /en\u00a0: ce que montre le site, les pages utiles aux visiteurs, et comment interroger votre assistant IA en anglais." },
   { date: "2026-11-23T08:08:00+04:00", texte: "Événements\u00a0: quand le site d'une commune n'annonce rien, sa page et l'outil IA le disent, avec l'heure de la lecture." },

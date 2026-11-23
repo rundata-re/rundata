@@ -8,6 +8,7 @@ import { localTime } from "../geo.js";
 import { avis, type Avis, prochaineLecture, SOURCE } from "../providers/marches-publics.js";
 import { acheteur, objet } from "../tools/employeurs.js";
 import { a as aCommune, credits } from "../tools/format.js";
+import { communeOf, COUVERTURE, ouvertsA } from "../tools/marches-publics.js";
 import { injoignable } from "../tools/injoignable.js";
 import { crumbBar, crumbs, lienNom, sourcesNote, warnings, webPage } from "./domains.js";
 import type { Alerte } from "./data.js";
@@ -17,9 +18,8 @@ import { PAGES, slugify } from "./places.js";
 
 export const PATH = "/marches-publics";
 export const NOM = "Marchés publics";
+export { COUVERTURE, ouvertsA };
 
-/** What is covered, in marketing's words. */
-export const COUVERTURE = "Les avis de marché publiés au Bulletin officiel des annonces des marchés publics (BOAMP) pour La Réunion, lus chaque heure. Un avis reste ici jusqu'à sa date limite de réponse ; un rectificatif remplace l'avis qu'il corrige. La liste n'est pas complète : sous 90 000 € HT, l'acheteur choisit où il publie, et jusqu'aux seuils européens, il peut publier dans un journal d'annonces légales plutôt qu'au BOAMP. Le dossier de consultation se télécharge sur le profil d'acheteur, dont l'avis donne le lien : l'avis fait foi.";
 
 export interface MarchesAnswer {
   nombre: number;
@@ -63,11 +63,6 @@ export async function buildMarches(cache: Cache, now = new Date()): Promise<Marc
   };
 }
 
-/** The commune of a notice: its place of work's, else its buyer's (`groups`). */
-const communeOf = (a: Avis) => a.commune ?? a.communeAcheteur;
-
-/** How many of `avis` are the commune's whose page is /communes/`slug` (web/commune.ts). */
-export const ouvertsA = (avis: Avis[], slug: string) => avis.filter((a) => { const c = communeOf(a); return !!c && slugify(c) === slug; }).length;
 
 /** The communes of /communes/<slug>, by slug: `?commune=<slug>` chooses one in the filter, even with no notice. */
 const COMMUNE_NAMES = JSON.stringify(Object.fromEntries(PAGES.filter((p) => p.commune).map((p) => [p.slug, p.nom])));

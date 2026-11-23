@@ -151,7 +151,7 @@ describe("the alerts before this one", () => {
     const fev2019 = p.episodes.find((e) => e.debut === "16/02/2019")!;
     expect(fev2019.niveau).toBe("alerte 1, puis alerte 2-2 le 18/02/2019");
     // A new alert the day of the end, without its end: still said, with its release.
-    expect(fev2019.puis).toMatch(/^Le même jour, nouvelle alerte 2-2 \(communiqué du 19\/02\/2019 : https:\/\/web\.archive\.org\/.+\)\. Sa fin n'est pas dans les communiqués que nous avons retrouvés\.$/);
+    expect(fev2019.puis).toMatch(/^Le même jour, nouvelle alerte 2-2 \(communiqué du 19\/02\/2019 : https:\/\/web\.archive\.org\/.+\)\. Sa fin n'est pas dans les communiqués retrouvés\.$/);
     expect(p.episodes.find((e) => e.debut === "03/04/2018")!.niveau).toBe("éruption débutée (selon le communiqué du 04/04/2018)");
     expect(p.episodes).toHaveLength(EPISODES.length);
   });
@@ -170,7 +170,7 @@ describe("the alerts before this one", () => {
         "19/09/2022 alerte 1, 19/09/2022 alerte 2-1 → 05/10/2022 éruption arrêtée\u00a0; " +
         "02/04/2020 alerte 2-2 → 06/04/2020 passage en phase de sauvegarde\u00a0; 25/10/2019 alerte 2-2 → 28/10/2019 passage en phase de sauvegarde\u00a0; " +
         "21/10/2019 alerte 1 → 23/10/2019 retour en phase de vigilance\u00a0; 11/08/2019 alerte 2-2 → 04/09/2019 retour en phase de vigilance\u00a0; " +
-        "16/02/2019 alerte 1, 18/02/2019 alerte 2-2 → 19/02/2019 passage en phase de sauvegarde (le même jour, nouvelle alerte 2-2 : sa fin n'est pas dans les communiqués que nous avons retrouvés)\u00a0; 15/09/2018 alerte 1, 15/09/2018 alerte 2-2 → 01/11/2018 passage en phase de sauvegarde\u00a0; " +
+        "16/02/2019 alerte 1, 18/02/2019 alerte 2-2 → 19/02/2019 passage en phase de sauvegarde (le même jour, nouvelle alerte 2-2 : sa fin n'est pas dans les communiqués retrouvés)\u00a0; 15/09/2018 alerte 1, 15/09/2018 alerte 2-2 → 01/11/2018 passage en phase de sauvegarde\u00a0; " +
         "03/04/2018 éruption débutée (selon le communiqué du 04/04/2018) → 14/04/2018 retour en phase de vigilance volcanique\u00a0; 14/07/2017 alerte 2-2 → 28/08/2017 passage en phase de sauvegarde\u00a0; " +
         "17/05/2017 alerte 1, 17/05/2017 alerte 2-2 → 02/06/2017 retour en phase de vigilance\u00a0; 31/01/2017 alerte 1, 31/01/2017 alerte 2-2 → 28/02/2017 passage en phase de sauvegarde\u00a0; " +
         "11/09/2016 alerte 1, 11/09/2016 alerte 2-2 → 18/09/2016 passage en phase de sauvegarde\u00a0; 26/05/2016 alerte 2-2 → 27/05/2016 passage en phase de sauvegarde.",
@@ -191,10 +191,10 @@ describe("the alerts before this one", () => {
     expect(older).toMatch(/^<summary>De 2016 à novembre 2021 \(12\u00a0épisodes\)<\/summary><p class="note">Avant novembre 2021, les niveaux d&#39;alerte étaient ceux du plan précédent\u00a0: ils sont cités tels que les communiqués les écrivent.<\/p><ul class="posts">/);
     expect(older.match(/<li class="card">/g)).toHaveLength(12);
     // February 2019: the alert again the same day, said after the end, or the reader thinks all stopped on 19/02.
-    expect(older).toContain(`<p>Le même jour, nouvelle alerte 2-2\u00a0: «\u00a0le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce mardi 19 février à 18h30\u00a0» (<a href="https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html">communiqué du 19/02/2019 →</a>). Sa fin n&#39;est pas dans les communiqués que nous avons retrouvés.</p></li>`);
+    expect(older).toContain(`<p>Le même jour, nouvelle alerte 2-2\u00a0: «\u00a0le Préfet a décidé la mise en œuvre de la phase d’alerte 2-2 […] ce mardi 19 février à 18h30\u00a0» (<a href="https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html">communiqué du 19/02/2019 →</a>). Sa fin n&#39;est pas dans les communiqués retrouvés.</p></li>`);
     expect(older.match(/Le même jour/g)).toHaveLength(1);
     const feb2019 = p.episodes.find((e) => e.fin.startsWith("19/02/2019"))!;
-    expect(feb2019.puis).toBe("Le même jour, nouvelle alerte 2-2 (communiqué du 19/02/2019 : https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html). Sa fin n'est pas dans les communiqués que nous avons retrouvés.");
+    expect(feb2019.puis).toBe("Le même jour, nouvelle alerte 2-2 (communiqué du 19/02/2019 : https://web.archive.org/web/20190222142555/http://www.reunion.gouv.fr/piton-de-la-fournaise-passage-en-alerte-2-2-a4948.html). Sa fin n'est pas dans les communiqués retrouvés.");
     expect(p.episodes.filter((e) => "puis" in e)).toHaveLength(1);
     expect(older).toContain(`<li><b>26/05/2016</b>, alerte 2-2\u00a0: «\u00a0le préfet de la Réunion a déclenché ce jour (jeudi 26 mai 2016) à 8h30 l’alerte 2-2\u00a0» <a href="https://web.archive.org/web/20160530083219/http://www.reunion.gouv.fr/piton-de-la-fournaise-eruption-en-cours-dans-l-a1635.html">communiqué du 26/05/2016 →</a></li>`);
   });

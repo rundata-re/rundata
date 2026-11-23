@@ -300,8 +300,8 @@ const OVPF_LINK = `<a href="${OVPF.url}">${OVPF.url.replace("https://", "")}</a>
 const linked = (t: string, url: string, a: string) => esc(t).replace(esc(url), a);
 
 // The OVPF's Facebook page, which rundata.re does not read: a link only, no embed (marketing).
-const FACEBOOK_LINE = `<p class="lead">L'OVPF publie aussi sur Facebook, que nous ne lisons pas : <a href="${OVPF_FACEBOOK}">suivre sa page officielle ↗</a></p>`;
-/** After « …est en images, que nous ne lisons pas : »: the post on Bluesky, and the OVPF's Facebook page, where the same post may not be (marketing). */
+const FACEBOOK_LINE = `<p class="lead">L'OVPF publie aussi sur Facebook, que rundata.re ne lit pas : <a href="${OVPF_FACEBOOK}">suivre sa page officielle ↗</a></p>`;
+/** After « …est en images, qui ne sont pas lues : »: the post on Bluesky, and the OVPF's Facebook page, where the same post may not be (marketing). */
 export const imageLinks = (lien: string) => `<a href="${esc(lien)}">la voir sur Bluesky ↗</a>, ou suivre <a href="${OVPF_FACEBOOK}">l'OVPF sur Facebook ↗</a>`;
 
 // Where the prefecture publishes each phase of the ORSEC volcano plan.

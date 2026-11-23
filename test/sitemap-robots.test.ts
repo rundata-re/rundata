@@ -101,7 +101,7 @@ describe("the sitemap, as a search engine's robot reads it", () => {
       "Les avis de la mairie ne sont pas lus par rundata.re.",
       "Sudéau, d'après le contrôle sanitaire de l'ARS. Ses avis ne sont pas encore lus par rundata.re : adressez-vous à la mairie ou au distributeur.",
       "Avis non lus par rundata.re : Sudéau (Le Tampon).",
-      "L'OVPF publie aussi sur Facebook, que nous ne lisons pas : suivre sa page officielle.",
+      "L'OVPF publie aussi sur Facebook, que rundata.re ne lit pas : suivre sa page officielle.",
       "Programme sportif de la commune : rundata.re ne lit pas ce document, il en donne seulement le lien.",
       "Un événement Facebook n'est pas un flux ouvert, et rundata.re ne lit pas Facebook.",
     ]) expect(t, t).not.toMatch(NON_LU);

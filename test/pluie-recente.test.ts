@@ -86,7 +86,7 @@ describe("the rain of the last hours", () => {
     const b = recentRainBlock({ hourly: HOURLY, slots: () => slots }, { id: "97412356", nom: "La Crête", fit: near }, "Saint-Joseph", now, false)!;
     expect(b.par_heure.slice(0, 3)).toEqual([
       "16:30–17:24 : 0 mm (dernières mesures lues, toutes les 6 minutes)",
-      "12:00–16:30 : non lue (notre lecture n'a pas abouti)",
+      "12:00–16:30 : non lue (la lecture de rundata.re n'a pas abouti)",
       "11:00–12:00 : 2,6 mm",
     ]);
     // The last rain read is before the hours not read: it may have rained since.

@@ -133,7 +133,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « Repères du mois »: the month's normals and records at the station that speaks best for the place (19/11/2026).
   // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
   // « Pas d'avis de coupure récent ou à venir de …, lu à … » in the summary, never « pas de coupure annoncée » (22/11/2026).
-  lieu: 31,
+  // Its measured rain: an hour not read says « la lecture de rundata.re n'a pas abouti », not « nous » (23/11/2026).
+  lieu: 32,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
@@ -175,7 +176,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
   // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.
   // The earthquakes' copy said « la dernière lecture de rundata.re », never « notre lecture » (23/11/2026).
-  volcan: 17,
+  // Its texts name rundata.re instead of « nous » (« lus par rundata.re », « jusqu'à la lecture du … », the Enclos'
+  // access, the past alerts' heads), and a no-break space before « : » (23/11/2026).
+  volcan: 18,
 };
 
 /**

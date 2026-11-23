@@ -24,23 +24,23 @@ const day = (iso: string) => localTime(new Date(iso)).split(" ")[0];
 /** « 24/10 », of a day « 2026-10-24 ». */
 const dayOf = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
 // Worded by marketing: what the texts read say, never that the eruption has not begun.
-export const NON_ANNONCEE = "L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes que nous avons lus.";
-export const IMAGE_APRES = "La dernière publication de l'OVPF est une image que nous ne lisons pas : l'état ci-dessus peut ne pas en tenir compte.";
+export const NON_ANNONCEE = "L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par rundata.re.";
+export const IMAGE_APRES = "La dernière publication de l'OVPF est une image, qui n'est pas lue\u00a0: l'état ci-dessus peut ne pas en tenir compte.";
 /**
  * After NON_ANNONCEE when the newest post is in images and newer than the release: « the texts we read » leaves it out,
  * and its time tells it is newer (marketing). Followed by « : la voir », the link. IMAGE_APRES is then not said.
  */
 /** « La dernière publication de l'OVPF, le 25/10 à 08:02, est en images », on /volcan before the way to its text read. */
 export const enImages = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images`;
-export const enImagesApres = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images, que nous ne lisons pas`;
+export const enImagesApres = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images, qui ne sont pas lues`;
 /**
  * The same, the text of its first image read by rundata.re (providers/ovpf-ocr.ts) and quoted beside: read by a
- * machine, « sans l'analyser », not one of « les textes que nous avons lus » of NON_ANNONCEE (marketing).
+ * machine, « sans analyse », not one of « les textes que nous avons lus » of NON_ANNONCEE (marketing).
  */
-export const enImagesLuesApres = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images\u00a0; nous citons le texte de la première, lu automatiquement, sans l'analyser`;
+export const enImagesLuesApres = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images\u00a0; le texte de la première est cité tel qu'il a été lu automatiquement, sans analyse`;
 /** The same where the text is not quoted (the home page's demo): where it is (marketing). */
 export const enImagesLuesAilleurs = (jour: string, heure: string) => `La dernière publication de l'OVPF, le ${jour} à ${heure}, est en images\u00a0; le texte de la première, lu automatiquement, est cité sur la page Volcan`;
-export const IMAGE_LUE_APRES = "La dernière publication de l'OVPF est en images : l'état ci-dessus peut ne pas en tenir compte. Nous citons le texte de la première image, lu automatiquement, sans l'analyser.";
+export const IMAGE_LUE_APRES = "La dernière publication de l'OVPF est en images\u00a0: l'état ci-dessus peut ne pas en tenir compte. Le texte de la première image est cité tel qu'il a été lu automatiquement, sans analyse.";
 /** Before the text read in the first image, wherever it is quoted (marketing). */
 export const LU_DANS_L_IMAGE = "Texte de la première image, lu automatiquement par rundata.re (il peut contenir des erreurs)";
 /** For the AI, beside the text read in the first image (marketing). */
@@ -82,7 +82,7 @@ async function settle<T>(source: string, p: Promise<Cached<T>>): Promise<Cached<
  */
 export function ipgpMuet(l: Public, lus: { bluesky: boolean; prefecture: boolean | string }, now: Date): string {
   // /sites-sans-reponse's words for a site that answers, but not to our reads (statutEnMots).
-  const depuis = l.statut === "bloque" ? `répond, mais pas à nos lectures, depuis le ${jourDe(l.premier_echec)}` : `n'a pas répondu depuis le ${jourDe(l.premier_echec)}`;
+  const depuis = l.statut === "bloque" ? `répond, mais pas aux lectures de rundata.re, depuis le ${jourDe(l.premier_echec)}` : `n'a pas répondu depuis le ${jourDe(l.premier_echec)}`;
   // « aujourd'hui à 06:02 » the same day, as lu_le.
   const t = l.dernier_essai;
   const essai = t ? ` (dernier essai ${jourDe(t) === jourDe(now.getTime() / 1000) ? `aujourd'hui à ${jourHeure(t).split(" à ")[1]}` : `le ${jourHeure(t)}`})` : "";
@@ -107,13 +107,13 @@ export const BULLETIN_QUOTIDIEN = "https://www.ipgp.fr/volcanoweb/reunion/Bullet
  */
 export const LOCALISES_LIEN = [
   "L'OVPF ne localise qu'une partie des séismes qu'il enregistre\u00a0: son",
-  "donne le nombre enregistré, nos chiffres comptent ceux qu'il a localisés, d'après son catalogue.",
+  "donne le nombre enregistré, les chiffres de rundata.re comptent ceux qu'il a localisés, d'après son catalogue.",
 ] as const;
 export const LOCALISES = `${LOCALISES_LIEN[0]} bulletin quotidien (${BULLETIN_QUOTIDIEN}) ${LOCALISES_LIEN[1]}`;
 const BAR_DAYS = 30;
 // The catalogue silent: the counts end at its last read, the days after it are not read (marketing).
-/** « jusqu'à notre lecture du 26/10 à 19:00 », of `lus_jusqu_au` « 26/10 à 19:00 ». */
-export const jusquALecture = (lu: string) => `jusqu'à notre lecture du ${lu}`;
+/** « jusqu'à la lecture du 26/10 à 19:00 », of `lus_jusqu_au` « 26/10 à 19:00 ». */
+export const jusquALecture = (lu: string) => `jusqu'à la lecture du ${lu}`;
 /** After the counts of the last copy, so that an AI never takes the days after it for zeros. */
 export const JOURS_NON_COMPTES = "Les jours suivants ne sont pas comptés.";
 export const NON_LU = "non lu";
@@ -287,17 +287,17 @@ export function nonOfficiel(s: volcan.PitonState | null, readAt: Date | undefine
 // Worded by marketing: pitonlive after the official source, always « Selon pitonlive.com, site non
 // officiel », with the time we read it.
 export const pitonNiveau = (n: NonOfficiel) =>
-  `Selon pitonlive.com, site non officiel, lu le ${n.lu} : « ${n.niveau} ». Ce niveau n'apparaît pas dans les communiqués de la préfecture que nous avons lus : vérifiez sur reunion.gouv.fr avant de monter au volcan.`;
+  `Selon pitonlive.com, site non officiel, lu le ${n.lu} : « ${n.niveau} ». Ce niveau n'apparaît pas dans les communiqués de la préfecture lus par rundata.re : vérifiez sur reunion.gouv.fr avant de monter au volcan.`;
 export const pitonEruption = (n: NonOfficiel, ovpf: string) =>
-  `Selon pitonlive.com, site non officiel, lu le ${n.lu}, une éruption est en cours. L'OVPF et la préfecture ne l'ont pas annoncée dans les textes que nous avons lus : suivez l'OVPF (${ovpf}) et reunion.gouv.fr.`;
-export const NIVEAU_ILLISIBLE = "Nous n'avons pas pu lire le niveau d'alerte de la préfecture : vérifiez-le sur reunion.gouv.fr avant de monter au volcan.";
+  `Selon pitonlive.com, site non officiel, lu le ${n.lu}, une éruption est en cours. L'OVPF et la préfecture ne l'ont pas annoncée dans les textes lus par rundata.re : suivez l'OVPF (${ovpf}) et reunion.gouv.fr.`;
+export const NIVEAU_ILLISIBLE = "Le niveau d'alerte de la préfecture n'a pas pu être lu\u00a0: vérifiez-le sur reunion.gouv.fr avant de monter au volcan.";
 export const pitonSeul = (n: NonOfficiel) => `Selon pitonlive.com, site non officiel, lu le ${n.lu} : « ${n.niveau} ».`;
 /** pitonlive's lines, in that order: the level alone when no official one, else a higher one; then the eruption. */
 export const pitonLines = (n: NonOfficiel, alone: boolean, ovpf: string) =>
   [n.niveau ? (alone ? pitonSeul(n) : pitonNiveau(n)) : "", n.eruption ? pitonEruption(n, ovpf) : ""].filter(Boolean);
 // A level from the OVPF's text, newer and higher than the release (marketing).
 export const ovpfNiveau = (niveau: string, quand: string, lien: string) =>
-  `${niveau}, selon l'OVPF (publication du ${quand}, ${lien}). Le communiqué de la préfecture sur ce niveau n'est pas encore dans les textes que nous avons lus.`;
+  `${niveau}, selon l'OVPF (publication du ${quand}, ${lien}). Le communiqué de la préfecture sur ce niveau n'est pas encore dans les textes lus par rundata.re.`;
 /** « 25/10 à 08:00 », of a time the answer gives, « 25/10 08:00 heure de La Réunion ». */
 export const givenAt = (date: string) => date.replace(" heure de La Réunion", "").replace(" ", " à ");
 // Draft, to marketing: the eruption's start or end from the OVPF's text.

@@ -58,7 +58,7 @@ describe("the located earthquakes per day under the volcano", () => {
     const said = "Les séismes trop faibles pour être localisés ne sont pas comptés ici\u00a0: l'OVPF les compte dans son bulletin quotidien";
     expect(BULLETIN_QUOTIDIEN).toBe("https://www.ipgp.fr/volcanoweb/reunion/Bulletin_quotidien/bulletin.html");
     // In the summary, the note once, the bulletin named in it with its address (data-run).
-    expect(r.resume).toContain(`L'OVPF ne localise qu'une partie des séismes qu'il enregistre\u00a0: son bulletin quotidien (${BULLETIN_QUOTIDIEN}) donne le nombre enregistré, nos chiffres comptent ceux qu'il a localisés, d'après son catalogue.`);
+    expect(r.resume).toContain(`L'OVPF ne localise qu'une partie des séismes qu'il enregistre\u00a0: son bulletin quotidien (${BULLETIN_QUOTIDIEN}) donne le nombre enregistré, les chiffres de rundata.re comptent ceux qu'il a localisés, d'après son catalogue.`);
     expect(r.resume.split(LOCALISES)).toHaveLength(2);
     // The field `seismes.note` says the same sentence, the address after the bulletin's name (data-run).
     expect(r.seismes.note).toContain(`son bulletin quotidien (${BULLETIN_QUOTIDIEN}) donne le nombre enregistré`);
@@ -77,7 +77,7 @@ describe("the located earthquakes per day under the volcano", () => {
     expect(html.match(/<figure class="qdays">[\s\S]*?<\/ol>/)![0].match(/<li/g)).toHaveLength(30);
     expect(html).toContain(`<li class="now" aria-label="23/10 (en cours) : `);
     expect(html).toContain(`<p class="axis"><span>24/09</span><span>23/10 (en cours)</span></p>`);
-    expect(html).toContain(`<p class="note">L&#39;OVPF ne localise qu&#39;une partie des séismes qu&#39;il enregistre\u00a0: son <a href="${BULLETIN_QUOTIDIEN}">bulletin quotidien</a> donne le nombre enregistré, nos chiffres comptent ceux qu&#39;il a localisés, d&#39;après son catalogue.</p>`);
+    expect(html).toContain(`<p class="note">L&#39;OVPF ne localise qu&#39;une partie des séismes qu&#39;il enregistre\u00a0: son <a href="${BULLETIN_QUOTIDIEN}">bulletin quotidien</a> donne le nombre enregistré, les chiffres de rundata.re comptent ceux qu&#39;il a localisés, d&#39;après son catalogue.</p>`);
     // Said once on the page: the bulletin in the note, not a sentence more (data-run).
     expect(html).not.toContain("ne sont pas comptés ici");
     expect(html).not.toContain(`(${BULLETIN_QUOTIDIEN})`);
@@ -120,6 +120,6 @@ describe("the located earthquakes per day under the volcano", () => {
     const r = body(await volcanSeismes(cacheWith(activityPosts(image)), NOW));
     const html = volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
     const bars = html.slice(html.indexOf(`<figure class="qdays">`));
-    expect(bars.slice(0, bars.indexOf(`<p class="facts">`))).toContain("La dernière publication de l&#39;OVPF est une image que nous ne lisons pas");
+    expect(bars.slice(0, bars.indexOf(`<p class="facts">`))).toContain("La dernière publication de l&#39;OVPF est une image, qui n&#39;est pas lue");
   });
 });

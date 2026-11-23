@@ -172,7 +172,7 @@ describe("the earthquakes of a copy two days old: the days after it are not read
     vi.spyOn(console, "error").mockImplementation(() => {});
     const r = body(await volcanSeismes(cache(), LATER));
     expect(r.seismes.lus_jusqu_au).toBe("26/10 à 19:00");
-    expect(r.resume).toContain("Séismes localisés par l'OVPF jusqu'à notre lecture du 26/10 à 19:00 : 3 sous le volcan en 7 jours et 3 en 30 jours (magnitude max 0,8)\u00a0; 0 ailleurs sur l'île en 30 jours. Les jours suivants ne sont pas comptés.");
+    expect(r.resume).toContain("Séismes localisés par l'OVPF jusqu'à la lecture du 26/10 à 19:00 : 3 sous le volcan en 7 jours et 3 en 30 jours (magnitude max 0,8)\u00a0; 0 ailleurs sur l'île en 30 jours. Les jours suivants ne sont pas comptés.");
     expect(r.resume).toContain("26/10 1 (jusqu'à 19:00), 27/10 non lu, 28/10 non lu.");
     expect(r.resume).not.toMatch(/2[78]\/10 0/);
     const html = volcanPage("https://rundata.re", { value: r, fetchedAt: LATER, stale: false }, LATER);
@@ -181,9 +181,9 @@ describe("the earthquakes of a copy two days old: the days after it are not read
     expect(html).toContain(`<span>28/10 (non lu)</span>`);
     expect(html).toContain(`<p>Le 26/10 jusqu'à 19:00 : <b>1</b>. Les jours suivants ne sont pas lus. Le plus en un jour sur ces 30 jours : <b>1</b>, le 20/10.</p>`);
     expect(html).not.toContain("Aujourd'hui (en cours)");
-    expect(html).toContain(`Séismes localisés par l'OVPF sous le volcan, jusqu&#39;à notre lecture du 26/10 à 19:00 : <b>3</b> en 7 jours`);
-    expect(html).toContain(`<span>Sous le volcan, jusqu&#39;à notre lecture du 26/10 à 19:00 : <b>3</b> en 30 jours, magnitude max 0,8</span>`);
-    expect(html).toContain(`<p class="lead">Séismes localisés par l'OVPF sous le volcan, jusqu&#39;à notre lecture du 26/10 à 19:00 : <b>3</b> en 7 jours, <b>3</b> en 30 jours.</p>`);
-    expect(volcanLive({ value: r, fetchedAt: LATER, stale: false }, LATER)!.detail).toContain("3 séismes localisés par l'OVPF sous le volcan en 7 jours, jusqu'à notre lecture du 26/10 à 19:00");
+    expect(html).toContain(`Séismes localisés par l'OVPF sous le volcan, jusqu&#39;à la lecture du 26/10 à 19:00 : <b>3</b> en 7 jours`);
+    expect(html).toContain(`<span>Sous le volcan, jusqu&#39;à la lecture du 26/10 à 19:00 : <b>3</b> en 30 jours, magnitude max 0,8</span>`);
+    expect(html).toContain(`<p class="lead">Séismes localisés par l'OVPF sous le volcan, jusqu&#39;à la lecture du 26/10 à 19:00 : <b>3</b> en 7 jours, <b>3</b> en 30 jours.</p>`);
+    expect(volcanLive({ value: r, fetchedAt: LATER, stale: false }, LATER)!.detail).toContain("3 séismes localisés par l'OVPF sous le volcan en 7 jours, jusqu'à la lecture du 26/10 à 19:00");
   });
 });

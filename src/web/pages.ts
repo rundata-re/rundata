@@ -2392,7 +2392,7 @@ export function recordsSection(h: HistoriqueAnswer | undefined): string {
  */
 const meteoLire = () => `<p>Tout ce qui est sur cette page est <b>mesuré</b>. La prévision est à part, sur la page de chaque commune, et elle est toujours présentée comme une prévision.</p>
 <p>Chaque chiffre est la dernière mesure d'une station, avec son heure. Les mesures viennent de plusieurs réseaux :</p>
-<ul class="plain"><li><b>Les stations de Météo-France</b> publient une mesure toutes les 6 minutes, et nous les relisons toutes les ${METEOFRANCE_RELECTURE_MIN} minutes.</li>
+<ul class="plain"><li><b>Les stations de Météo-France</b> publient une mesure toutes les 6 minutes, et rundata.re les relit toutes les ${METEOFRANCE_RELECTURE_MIN} minutes.</li>
 <li><b>Les deux aéroports</b> publient leurs observations toutes les 30 minutes.</li>
 <li><b>Des balises de vent</b> complètent le réseau, dont celles des clubs de parapente (FFVL).</li>
 <li><b>Les stations amateur du réseau MétéoR-OI</b>, en option, ajoutent des points de mesure dans les hauts et les quartiers. Leur fiabilité n'est pas vérifiée comme celle des stations officielles : elles sont dessinées avec un contour en pointillé.</li></ul>
@@ -2737,7 +2737,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
         (j.indice_uv_max ? `<p>UV : ${esc(j.indice_uv_max)}</p>` : "") +
         (j.confiance ? `<p>Confiance : <b>${esc(j.confiance)}</b></p>` + whyNot(j.confiance_pourquoi) : "") + `</li>`).join("") +
       `</ul>` +
-      (confidenceNote ? `<p class="note">Plus l'échéance est lointaine, moins la prévision est sûre\u00a0: <a href="/meteo#${CONFIANCE_ANCRE}">comment nous l'indiquons →</a></p>` : "") +
+      (confidenceNote ? `<p class="note">Plus l'échéance est lointaine, moins la prévision est sûre\u00a0: <a href="/meteo#${CONFIANCE_ANCRE}">comment rundata.re l'indique →</a></p>` : "") +
       `<p class="note">${esc(f.modele ? `Modèle ${f.modele.nom}, maille de ${fr(f.modele.maille_km)} km${f.modele.run_du_modele ? `, calcul du ${f.modele.run_du_modele.replace(" ", " à ")}` : ""}. ` : "")}` +
       `Un modèle ne voit pas tous les microclimats de l'île. Cyclone, fortes pluies : seule compte la vigilance de <a href="https://meteofrance.re/">Météo-France La Réunion</a>. ` +
       `Source : ${credits(f.sources)}.</p></section>`

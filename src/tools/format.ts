@@ -218,6 +218,8 @@ export function placeWarning(asked: string, r: Resolution): string | undefined {
   }
   if ((r.correspondance !== "partielle" || r.ignores) && r.correspondance !== "approchee") return undefined;
   const p = r.lieu;
+  // A part of the island (places/regions.ts): its chief town stands for it, its communes said.
+  if (r.region) return `«\u00a0${asked.trim()}\u00a0» est une partie de l'île, pas un lieu\u00a0: réponse pour ${r.region.pour}, sa ville principale. ${majuscule(r.region.nom)} compte ${r.region.communes.join(", ")} (zone ${r.region.zone} de la vigilance de Météo-France). Le dire à l'utilisateur et lui proposer de donner sa commune.`;
   if (r.tient_lieu) return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), un lieu de ce secteur, pas tout le secteur\u00a0: le dire à l'utilisateur.`;
   return `«\u00a0${asked.trim()}\u00a0» compris comme ${p.nom} (${p.type}, ${p.commune}), dont le nom ne correspond ${r.correspondance === "approchee" ? "qu'à peu près" : "qu'en partie"}\u00a0: le dire à l'utilisateur.`;
 }

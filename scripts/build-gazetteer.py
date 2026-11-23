@@ -139,6 +139,26 @@ ALIASES = {
     "Mont Vert": "Mont Vert les Hauts",
     "Montvert les Hauts": "Mont Vert les Hauts",
     "Montvert les Bas": "Mont Vert les Bas",
+    # The valley of Saint-Benoît (its dams, its belvédère, its rain), before the quartier of Saint-Philippe, said beside it.
+    "Takamaka": "Village de Takamaka",
+    "Vallée de Takamaka": "Village de Takamaka",
+    "Barrage de Takamaka": "Village de Takamaka",
+    # Saint-Denis's, above La Montagne: not La Plaine of Saint-Paul.
+    "Plaine d'Affouches": "Les Affouches",
+    "Plaine des Affouches": "Les Affouches",
+    # The quartier of Saint-Denis, by its ravine.
+    "Patate à Durand": "Ravine des Patates à Durand",
+    "NRL": "Nouvelle Route du Littoral",
+    # Le Tampon's quartiers by their kilometre, as they are said.
+    "11e km": "Le Onzième",
+    "12e km": "Le Douzième",
+    "14e km": "Le Quatorzième",
+    "14ème km": "Le Quatorzième",
+    "17e km": "Le Dix-Septième",
+    "19e km": "Le Dix-Neuvième",
+    "22e km": "Le Vingt-Deuxième",
+    "23e km": "Le Vingt-Troisième",
+    "23ème km": "Le Vingt-Troisième",
 }
 
 

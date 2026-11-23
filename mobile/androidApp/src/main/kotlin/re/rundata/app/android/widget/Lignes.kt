@@ -2,6 +2,7 @@ package re.rundata.app.android.widget
 
 import re.rundata.app.Alerte
 import re.rundata.app.Pastille
+import re.rundata.app.Quand
 import re.rundata.app.pastillesDe
 
 /** Les lignes du widget « La journée », de haut en bas. */
@@ -15,7 +16,7 @@ data class Lignes(
     val zone: String?,
     val alerte: String?,
     val eau: String? = null,
-    /** « Lu à 20:11 » : en haut, l'heure (de La Réunion) de la dernière lecture réussie. */
+    /** « Lu le 21/11 à 20:11 » : en haut, le jour et l'heure (de La Réunion) de la dernière lecture réussie. */
     val lue: String? = null,
     /** La mention du kit, mot pour mot, sous la vigilance : OFFICIEL. */
     val officiel: String? = null,
@@ -40,22 +41,22 @@ fun lignes(d: Donnees?, commune: String?): Lignes {
     val vigilance = pastillesDe(d.etat)
     val detail = when {
         d.temperature == null -> "Pas de mesure récente."
-        else -> "mesurée à ${d.heure}" + (d.station?.let { ", $it" } ?: "")
+        else -> "mesurée" + (d.heure?.let { " " + Quand.a(it, d.lueA) } ?: "") + (d.station?.let { ", $it" } ?: "")
     }
     val zone = when {
         d.etat == null -> null
         vigilance.isNotEmpty() -> d.zone?.let { "zone $it" }
         else -> d.etat.replaceFirstChar(Char::uppercaseChar) + (d.zone?.let { " · zone $it" } ?: "")
     }
-    return Lignes(d.commune, d.temperature, detail, vigilance, zone, horsLigne(d), d.eau, d.lueA?.let { "Lu à $it" }, OFFICIEL.takeIf { d.etat != null }, d.prevision)
+    return Lignes(d.commune, d.temperature, detail, vigilance, zone, horsLigne(d), d.eau, d.lueA?.let(Quand::lu), OFFICIEL.takeIf { d.etat != null }, d.prevision)
 }
 
-/** « rundata.re injoignable à 20:05 : mesure de 19:30. » ; null quand la dernière lecture a réussi. */
+/** « rundata.re injoignable le 22/11 à 20:05 : mesure de 19:30. » ; null quand la dernière lecture a réussi. */
 fun horsLigne(d: Donnees): String? = d.echecA?.let {
     when {
-        d.temperature != null -> "rundata.re injoignable à $it : mesure de ${d.heure}."
-        d.lueA != null -> "rundata.re injoignable à $it : lu à ${d.lueA}."
-        else -> "rundata.re injoignable à $it."
+        d.temperature != null && d.heure != null -> "rundata.re injoignable ${Quand.a(it)} : mesure ${Quand.du(d.heure, it)}."
+        d.lueA != null -> "rundata.re injoignable ${Quand.a(it)} : lu ${Quand.a(d.lueA, it)}."
+        else -> "rundata.re injoignable ${Quand.a(it)}."
     }
 }
 
@@ -94,7 +95,7 @@ fun sections(d: Donnees, n: Int): List<Section> {
 /** « et 2 autres » sous une section coupée. */
 fun enPlus(n: Int): String? = if (n <= 0) null else "et $n autre${if (n > 1) "s" else ""} sur rundata.re"
 
-/** Le bandeau d'alerte : ce qu'elle dit, puis son heure (« bulletin de 16:21 », « avis du CMRS du 23/11 10:00 »). */
+/** Le bandeau d'alerte : ce qu'elle dit, puis son heure (« bulletin du 22/11 à 16:21 », « avis du CMRS du 23/11 10:00 »). */
 data class LigneAlerte(val texte: String, val heure: String?, val detail: String?, val alerte: Alerte?)
 
 /** La vigilance pas lue : jamais « pas d'alerte ». La forme longue là où il y a la place. */
@@ -102,8 +103,8 @@ const val ALERTES_NON_LUES = "Vigilance pas encore lue"
 const val ALERTES_NON_LUES_LONG = "Vigilance pas encore lue, réessai bientôt"
 const val PAS_D_ALERTE = "Pas d'alerte en cours"
 
-/** « bulletin de 16:21 », « avis du CMRS du 23/11 10:00 ». */
-fun heureAlerte(a: Alerte): String? = a.heure?.let { if (a.systeme) "avis du CMRS du $it" else "bulletin de $it" }
+/** « bulletin du 22/11 à 16:21 », « avis du CMRS du 23/11 10:00 » : toujours avec le jour. */
+fun heureAlerte(a: Alerte): String? = a.heure?.let { if (a.systeme) "avis du CMRS du $it" else "bulletin ${Quand.du(it)}" }
 
 /**
  * Le widget « Alerte » : la plus grave, sa couleur et son heure ; « Pas d'alerte en cours », avec la zone et l'heure
@@ -114,7 +115,7 @@ fun ligneAlerte(d: Donnees): LigneAlerte {
     return when {
         a != null -> LigneAlerte(a.texte, heureAlerte(a), a.detail, a)
         d.alertes == null || !d.vigilanceLue -> LigneAlerte(ALERTES_NON_LUES, null, null, null)
-        else -> LigneAlerte(PAS_D_ALERTE, d.alertesEmise?.let { "bulletin de $it" }, listOfNotNull(d.zone?.let { "zone $it" }, "d'après Météo-France").joinToString(" · "), null)
+        else -> LigneAlerte(PAS_D_ALERTE, d.alertesEmise?.let { "bulletin ${Quand.du(it)}" }, listOfNotNull(d.zone?.let { "zone $it" }, "d'après Météo-France").joinToString(" · "), null)
     }
 }
 

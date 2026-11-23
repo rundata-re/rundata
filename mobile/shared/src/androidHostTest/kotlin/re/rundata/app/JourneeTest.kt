@@ -56,8 +56,10 @@ class JourneeTest {
         assertEquals("21/11 19:35", j.lueA)
         assertTrue(j.sources.any { "Météo-France" in it.nom && it.licence != null })
         // Citer : rundata.re et les producteurs, et l'heure de lecture.
-        assertEquals("Source\u00a0: rundata.re, d'après Météo-France et d'autres sources. Lu à 19:35, heure de La Réunion.", Mots.source(j))
-        assertEquals("mesurée à 19:30, heure de La Réunion, station Saint-Pierre Pierrefonds (aéroport), à 5,9 km", Mots.mesureA(j.mesure!!))
+        assertEquals("Source\u00a0: rundata.re, d'après Météo-France et d'autres sources. Lu le 21/11 à 19:35, heure de La Réunion.", Mots.source(j))
+        // La mesure du jour de la lecture dit son heure seule ; sans lecture à laquelle la rapporter, son jour aussi.
+        assertEquals("mesurée à 19:30, heure de La Réunion, station Saint-Pierre Pierrefonds (aéroport), à 5,9 km", Mots.mesureA(j.mesure!!, j.lueA))
+        assertEquals("mesurée le 21/11 à 19:30, heure de La Réunion, station Saint-Pierre Pierrefonds (aéroport), à 5,9 km", Mots.mesureA(j.mesure!!))
         // Un seul appel : la mesure était dans le résumé, et la vigilance s'y lit. Le User-Agent dit qui lit.
         assertEquals(1, vues.size)
         assertTrue(vues.all { it.headers[HttpHeaders.UserAgent] == "rundata.re-android/test" })
@@ -141,6 +143,15 @@ class JourneeTest {
         val decembre = AvisEau("Décembre", false, null, de = "jeudi 31/12 à\u00a008:00")
         assertEquals("Décembre", avisEnPremier(listOf(janvier, decembre), 12)?.titre)
         assertNull(avisEnPremier(emptyList(), 11))
+    }
+
+    @Test
+    fun uneCoupureTermineeNEstJamaisLaProchaine() {
+        // Le serveur garde les avis récents : une coupure finie hier commence avant celle de demain.
+        val finie = AvisEau("Finie", false, null, de = "dimanche 22/11 à 21:00", a = "lundi 23/11 à 04:00", etat = "terminée")
+        val demain = AvisEau("Demain", false, null, de = "mardi 24/11 à 21:00", a = "mercredi 25/11 à 04:00", etat = "à venir")
+        assertEquals("Demain", avisEnPremier(listOf(finie, demain), 11)?.titre)
+        assertNull(avisEnPremier(listOf(finie), 11))
     }
 
     @Test

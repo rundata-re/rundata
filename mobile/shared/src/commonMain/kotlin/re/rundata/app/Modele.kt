@@ -5,6 +5,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /** Ce que l'appli garde d'une fois sur l'autre (SharedPreferences sur Android, NSUserDefaults sur l'iPhone). */
 interface Reglages {
@@ -21,12 +25,22 @@ sealed interface Etat {
     data class Erreur(val commune: Commune, val message: String, val precedente: Journee?) : Etat
 }
 
-/** L'état de l'écran principal, commun aux deux téléphones. */
-class Modele(private val source: JourneeSource, private val reglages: Reglages, private val portee: CoroutineScope) {
+/**
+ * L'état de l'écran principal, commun aux deux téléphones. `temps` : l'horloge qui dit depuis quand l'écran a été lu
+ * (remplacée dans les tests).
+ */
+class Modele(
+    private val source: JourneeSource,
+    private val reglages: Reglages,
+    private val portee: CoroutineScope,
+    private val temps: TimeSource = TimeSource.Monotonic,
+) {
     private val _etat = MutableStateFlow<Etat>(communeDe(reglages.commune)?.let { Etat.Chargement(it, null) } ?: Etat.Choix(null))
     val etat: StateFlow<Etat> = _etat
     private var lecture: Job? = null
     private var derniere: Journee? = null
+    /** La dernière lecture lancée, réussie ou non. */
+    private var lanceeA: TimeMark? = null
 
     init {
         (etat.value as? Etat.Chargement)?.let { lire(it.commune) }
@@ -47,9 +61,26 @@ class Modele(private val source: JourneeSource, private val reglages: Reglages, 
         communeDe(reglages.commune)?.let(::lire)
     }
 
+    /**
+     * L'écran revient au premier plan : relu si sa dernière lecture date de plus de `RELIRE_APRES`. Sans ça, un écran
+     * laissé ouvert en arrière-plan montrerait au retour une mesure ou une alerte de la veille. Rien pendant une lecture
+     * en cours, ni sur le choix de la commune.
+     */
+    fun revenir() {
+        if (_etat.value !is Etat.Prete && _etat.value !is Etat.Erreur) return
+        val depuis = lanceeA?.elapsedNow() ?: Duration.INFINITE
+        if (depuis >= RELIRE_APRES) rafraichir()
+    }
+
+    companion object {
+        /** Le site relit ses sources toutes les quelques minutes : relire plus souvent ne montrerait rien de neuf. */
+        val RELIRE_APRES = 10.minutes
+    }
+
     private fun lire(commune: Commune) {
         lecture?.cancel()
         _etat.value = Etat.Chargement(commune, derniere)
+        lanceeA = temps.markNow()
         lecture = portee.launch {
             _etat.value = try {
                 val j = source.journeeEtAlertes(commune)

@@ -50,7 +50,7 @@ class MiseAJour(context: Context, params: WorkerParameters) : CoroutineWorker(co
         private const val PERIODIQUE = "widget-periodique"
         private const val UNIQUE = "widget-maintenant"
 
-        private fun heureLocale(): String = ZonedDateTime.now(ZoneId.of("Indian/Reunion")).format(DateTimeFormatter.ofPattern("HH:mm"))
+        private fun heureLocale(): String = ZonedDateTime.now(ZoneId.of("Indian/Reunion")).format(DateTimeFormatter.ofPattern("dd/MM HH:mm"))
 
         fun planifier(context: Context) {
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(

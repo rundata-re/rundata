@@ -24,16 +24,16 @@ data class Ligne(val texte: String, val apres: String? = null)
 data class Donnees(
     val commune: String,
     val temperature: String?,
-    /** « 19:30 », heure de La Réunion. */
+    /** « 21/11 19:30 », heure de La Réunion : le jour avec l'heure (Quand). */
     val heure: String?,
     val station: String?,
     val zone: String?,
     val vigilanceEnPremier: Boolean,
-    /** « 20:05 » : la dernière lecture qui a échoué, après celle-ci ; null quand la dernière a réussi. */
+    /** « 21/11 20:05 » : la dernière lecture qui a échoué, après celle-ci ; null quand la dernière a réussi. */
     val echecA: String?,
     /** L'avis d'eau à dire (avisEnPremier), déjà écrit : « Coupure d'eau du lundi 23/11 à 21:00 (à venir) ». */
     val eau: String? = null,
-    /** « 20:11 » : quand rundata.re a lu ces données, heure de La Réunion. */
+    /** « 21/11 20:11 » : quand rundata.re a lu ces données, heure de La Réunion. */
     val lueA: String? = null,
     /** « verte », « orange vents forts, jaune fortes pluies / orages » : Vigilance.etat, tel quel. */
     val etat: String? = null,
@@ -60,7 +60,7 @@ data class Donnees(
     val alerteCyclonique: String? = null,
     /** Les alertes du bandeau, la plus grave en premier ; null : pas lues (jamais « pas d'alerte »). */
     val alertes: List<Alerte>? = null,
-    /** « 16:21 » : le bulletin de vigilance d'où elles viennent ; null quand la vigilance n'a pas été lue. */
+    /** « 21/11 16:21 » : le bulletin de vigilance d'où elles viennent ; null quand la vigilance n'a pas été lue. */
     val alertesEmise: String? = null,
     val vigilanceLue: Boolean = false,
     /** `cyclones` a été lu avec ces alertes. */
@@ -71,8 +71,9 @@ data class Donnees(
         /**
          * Le format de ce qui est gardé : une donnée d'un format plus ancien n'est pas montrée, elle est relue.
          * 4 : une par commune, avec la mer, la prévision, les sorties et les routes (0.2.0).
+         * 5 : les heures gardées avec leur jour, « 21/11 19:30 » (0.3.2).
          */
-        const val FORMAT = 4
+        const val FORMAT = 5
 
         private val JSON = Json { ignoreUnknownKeys = true }
 
@@ -82,7 +83,7 @@ data class Donnees(
                 commune = j.commune.nom,
                 slug = j.commune.slug,
                 temperature = j.mesure?.temperature,
-                heure = j.mesure?.heureSeule,
+                heure = j.mesure?.heure,
                 station = j.mesure?.station,
                 etat = j.vigilance?.etat,
                 zone = j.vigilance?.zone,
@@ -94,7 +95,7 @@ data class Donnees(
                 eauAutres = if (eau == null) 0 else j.coupures.size - 1,
                 distributeur = j.distributeur,
                 officielLien = j.vigilance?.officiel?.let { o -> o.indexOf("https://").takeIf { it >= 0 }?.let { o.substring(it).trim() } },
-                lueA = j.lueA?.let { it.substringAfter(" ", it) },
+                lueA = j.lueA,
                 mer = j.mer?.temperature,
                 prevision = j.prevision?.let(::lignePrevision),
                 sorties = j.sorties?.map(::ligneSortie),

@@ -230,14 +230,15 @@ private fun infoDe(o: JsonObject): InfoRoute? {
 
 /**
  * L'avis d'eau à dire en premier, quand la place manque (le widget) : l'eau à ne pas boire, puis une coupure en cours,
- * puis la prochaine à venir, d'après sa date de début (« lundi 23/11 à 21:00 »). `mois` : le mois d'aujourd'hui, pour
+ * puis la prochaine à venir (jamais une terminée), d'après sa date de début (« lundi 23/11 à 21:00 »). `mois` : le mois d'aujourd'hui, pour
  * placer après décembre une date de janvier.
  */
 fun avisEnPremier(avis: List<AvisEau>, mois: Int): AvisEau? {
     avis.firstOrNull { it.nePasBoire }?.let { return it }
     avis.firstOrNull { it.etat == "en cours" }?.let { return it }
     val date = Regex("(\\d{1,2})/(\\d{1,2})\\D+(\\d{1,2}):(\\d{2})")
-    return avis.mapNotNull { a ->
+    // Le serveur garde aussi les avis récents : une coupure terminée commence avant la prochaine, elle n'en est jamais une.
+    return avis.filter { it.etat != "terminée" }.mapNotNull { a ->
         val g = a.de?.let { date.find(it) }?.groupValues ?: return@mapNotNull null
         val m = g[2].toInt()
         val annee = if (m < mois - 6) 1 else 0

@@ -20,7 +20,7 @@ data class Alerte(
     val detail: String?,
     /** La couleur officielle ; AUCUNE quand la source n'en donne pas (pré-alerte, système actif). */
     val couleur: Couleur,
-    /** « 16:21 » : l'heure du bulletin de Météo-France ; « 23/11 10:00 » : celle du dernier avis du CMRS. */
+    /** « 22/11 16:21 » : le jour et l'heure du bulletin de Météo-France, ou du dernier avis du CMRS. */
     val heure: String?,
     /** L'alerte cyclonique de la préfecture (pré-alerte, orange, rouge, violette, phase de sauvegarde). */
     val cyclonique: Boolean = false,
@@ -48,7 +48,7 @@ data class Alertes(
     val liste: List<Alerte>,
     /** « Sud ». */
     val zone: String?,
-    /** « 16:21 » : l'heure du bulletin de vigilance lu. */
+    /** « 22/11 16:21 » : le bulletin de vigilance lu. */
     val emise: String?,
     /** « Consulter le site officiel de Météo-France : https://… ». */
     val officiel: String?,
@@ -76,7 +76,7 @@ private val Couleur.deVigilance: Boolean get() = this == Couleur.JAUNE || this =
  * manquer (non lue). L'alerte cyclonique vient de la vigilance, celle des cyclones à défaut.
  */
 fun alertesDe(vigilance: JsonObject?, cyclones: JsonObject?): Alertes {
-    val emise = vigilance?.texte("emise")?.let(::heureDe)
+    val emise = Quand.de(vigilance?.texte("emise"))
     val liste = buildList {
         val cyclonique = (vigilance?.texte("alerte_cyclonique") ?: cyclones?.texte("alerte_cyclonique"))?.let { alerteCycloniqueDe(it, emise) }
         cyclonique?.let(::add)

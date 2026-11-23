@@ -6,7 +6,7 @@ import { normalize, resolvePlace, type Resolution } from "../places/resolve.js";
 import * as baignades from "../providers/baignades.js";
 import { lues } from "../eau/distributeurs.js";
 import * as requin from "../eau/requin.js";
-import { storedCopy } from "../eau/ile.js";
+import { bathRead, storedCopy } from "../eau/ile.js";
 import * as potable from "../providers/eaupotable.js";
 import * as notices from "../providers/avis-eau.js";
 import { doNotDrink, noticeRow } from "./coupures.js";
@@ -230,7 +230,8 @@ async function siteRows(cache: Cache, sites: baignades.Site[], now: Date, from?:
           distance_km: from ? Math.round(distanceKm(from.lon, from.lat, s.lon, s.lat) * 10) / 10 : undefined,
           prelevements_en_retard: /^\d{4}-\d{2}-\d{2}$/.test(last) ? sansPrelevement(last, now) : undefined,
         },
-        copie: copy.lu,
+        // The time the copy's bathing sites were read: older than the copy when the ARS's site was silent then too.
+        copie: bathRead(copy),
       };
     }
   }));

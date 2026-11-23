@@ -14,6 +14,13 @@ import { UpstreamError, why } from "../types.js";
 export interface Ile {
   /** ISO time of the gathering. */
   lu: string;
+  /**
+   * ISO time the bathing sites were read, when it is not `lu`: the ARS's site did not answer the gathering, and the
+   * previous copy's sites are kept with their own time (`keep`). Absent when they were read with the rest.
+   */
+  baignades_lu?: string;
+  /** The same for the tap water, when Hub'Eau did not answer the gathering. */
+  communes_lu?: string;
   baignades: (Omit<ReturnType<typeof siteRow>, "prelevements_en_retard"> & { lon: number; lat: number })[];
   communes: {
     commune: string;
@@ -148,6 +155,57 @@ export function thin(ile: Ile): string | undefined {
   return undefined;
 }
 
+/** When the bathing sites and the tap water were read, each (ISO): `lu`, unless one was kept from an earlier copy. */
+export const bathRead = (ile: Ile) => ile.baignades_lu ?? ile.lu;
+export const tapRead = (ile: Ile) => ile.communes_lu ?? ile.lu;
+/** The oldest of the two: the copy's freshness. */
+export const oldestRead = (ile: Ile) => (bathRead(ile) < tapRead(ile) ? bathRead(ile) : tapRead(ile));
+
+/**
+ * What the workflow writes (scripts/eau-ile.ts), from a gathering and the copy already stored (`before`, null without
+ * one). A source that does not answer is neither gone nor empty (22-23/11/2026: the ARS's site silent five runs in a row,
+ * each run failed, the tap water read from Hub'Eau not written either): its half of the earlier copy is kept, with the
+ * time it was read, and the other half is written. Nothing to write (`ile` undefined) when neither half was read and a
+ * copy is stored: that copy stays as it is. `warnings` says each half kept or left thin; `fail` when nothing was read
+ * and no copy is stored, the only case where the workflow fails.
+ */
+export function keep(fresh: Ile, before: Ile | null): { ile?: Ile; warnings: string[]; fail?: string } {
+  const bathThin = fresh.baignades.length < baignades.SITES.length / 2;
+  const tapThin = fresh.communes.length < Object.keys(INSEE).length / 2;
+  if (!bathThin && !tapThin) return { ile: fresh, warnings: [] };
+  const why = thin(fresh)!;
+  if (bathThin && tapThin) {
+    return before
+      ? { warnings: [`${why} : la copie du ${bathRead(before)} (baignade) et du ${tapRead(before)} (robinet) est gardée telle quelle`] }
+      : { warnings: [], fail: `${why}, et aucune copie gardée` };
+  }
+  if (!before) return { ile: fresh, warnings: [`${why} : écrit tel quel, aucune copie gardée`] };
+  if (bathThin) {
+    return {
+      ile: { ...fresh, baignades: before.baignades, baignades_lu: bathRead(before) },
+      warnings: [`seulement ${fresh.baignades.length} sites de baignade sur ${baignades.SITES.length} : ceux de la copie du ${bathRead(before)} sont gardés, l'eau du robinet est écrite`],
+    };
+  }
+  return {
+    ile: { ...fresh, communes: before.communes, communes_lu: tapRead(before) },
+    warnings: [`seulement ${fresh.communes.length} communes sur ${Object.keys(INSEE).length} : celles de la copie du ${tapRead(before)} sont gardées, la baignade est écrite`],
+  };
+}
+
+/**
+ * A copy read back from the store (wrangler's output, or nothing): null when it is not one. From the first « { » to the
+ * last « } », whatever a tool may print around the value.
+ */
+export function parseCopy(text: string | undefined): Ile | null {
+  const t = text ?? "";
+  try {
+    const v = JSON.parse(t.slice(t.indexOf("{"), t.lastIndexOf("}") + 1));
+    return v && typeof v.lu === "string" && Array.isArray(v.baignades) && Array.isArray(v.communes) ? (v as Ile) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The pause before the one new try of a thin gathering: the ARS's site now and then stalls a few minutes, at any hour.
  * Longer than the minute the cache remembers a failure (cache.ts FAILURE_BACKOFF_SECONDS), or the new try would ask nothing.
@@ -198,5 +256,5 @@ export async function ile(cache: Cache, now = new Date()): Promise<Cached<Ile>> 
       return v;
     }
     return gather(cache, now);
-  }, (v) => v.lu);
+  }, oldestRead);
 }

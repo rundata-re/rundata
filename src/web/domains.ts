@@ -71,13 +71,14 @@ import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import { SANS_FORMATION as DAE_SANS_FORMATION } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
 import * as atmo from "../providers/atmo.js";
-import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, hm, icon, ISLAND, layout, type Live, lue, leAt, duAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
+import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, icon, ISLAND, layout, type Live, lue, leAt, duAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
 import { PASSES } from "../historique/cyclones-passes.js";
 import { cycloneWater, distributeursLus } from "./eau-cyclone.js";
 import { lues } from "../eau/distributeurs.js";
 import { faqPage, texteStable, type Faq } from "./texte-stable.js";
 import { noteBaignade, sansPrelevement, tapNote } from "../tools/eau.js";
+import { bathRead, tapRead } from "../eau/ile.js";
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
@@ -1841,6 +1842,13 @@ export function duAu(from: string, to: string): string {
   return `du ${from.slice(0, 7) === to.slice(0, 7) ? Number(from.slice(8, 10)) : dayMonth(from)} au ${dayMonth(to)}`;
 }
 
+/**
+ * A half of the island's copy kept from an earlier one, its source silent at the last gathering (eau/ile.ts keep): said
+ * with the time it was read, never as today's.
+ */
+const keptNote = (source: string, what: string, at: string) =>
+  `${source} n'a pas répondu à la dernière lecture\u00a0: ${what} ${leAt(at)}.`;
+
 export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = new Date(), alerte?: Alerte): string {
   const g = porte(alerte);
   const d = data?.value;
@@ -1901,12 +1909,13 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
   <p>${esc(EAU_TEXT.baignade)}</p></div>
   ${sites}
   ${d ? `<p class="note">${esc(noteBaignade(!!gap))}</p>` : ""}
+  ${d?.baignades_lu ? `<p class="note">${esc(keptNote("Le site de l'ARS", "résultats des plages et bassins lus", bathRead(d)))}</p>` : ""}
   <p class="note">${BAIGNADE_LINE}</p>
 </section>
 <section aria-labelledby="h-robinet">
   <div class="sec-h"><p class="eyebrow">Commune par commune</p><h2 id="h-robinet">L'eau du robinet</h2>
   <p>${d ? `${tapBad.length ? `Des analyses non conformes en 6 mois dans ${tapBad.length} commune${tapBad.length > 1 ? "s" : ""} sur ${d.communes.length}, sur un ou deux réseaux chacune.` : "Toutes les analyses des 6 derniers mois sont conformes."} ` : ""}${esc(EAU_TEXT.robinet)}</p></div>
-  ${d ? `<ul class="zones">${d.communes.map(tapCard).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">Analyses rassemblées le ${esc(dayFr(d.lu))} à ${esc(hm(new Date(d.lu)))}.</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
+  ${d ? `<ul class="zones">${d.communes.map(tapCard).join("")}</ul><p class="note">${esc(tapNote("page"))}<br><a href="/coupures-eau">Les avis en cours →</a></p>${data ? `<p class="note">${d.communes_lu ? esc(keptNote("Hub'Eau", "analyses de l'eau du robinet rassemblées", tapRead(d))) : `Analyses rassemblées ${esc(leAt(d.lu))}.`}</p><p class="sources">Sources : ${esc(d.sources.map((x) => x.attribution).join(" ; "))}.</p>` : ""}` : ""}
 </section>
 ${connectorAsk("la qualité de l'eau", "Saint-Denis")}${d?.baignades.length ? g.feuille : ""}`;
 

@@ -51,6 +51,8 @@ export interface Probleme {
   motif: string;
   /** An answer past its size: the bytes of each of its top-level fields, the largest first (never their content). */
   blocs?: [string, number][];
+  /** A warning, said in the job's summary, that does not fail the check (an answer past its size within its margin). */
+  avertissement?: true;
 }
 
 /** The bytes of each top-level field of an answer, as JSON, the largest first: what made it grow, without its content. */
@@ -230,12 +232,36 @@ export const MAX_BYTES: Record<string, number> = {
   "resume_du_jour (Saint-Paul)": 10_500,
 };
 
+/**
+ * The answers whose size follows the day's data (the notices, the departures, the events, the results): a cap set at
+ * the size of a calm day plus a tenth does not hold on a busy one, and was raised by hand 4 times in 18 days. Past its
+ * cap, such an answer is a warning with the bytes of each part; past the cap plus a half (`MARGE_DONNEES`), the check
+ * fails. The size an answer must keep is held offline, on fixed data, by its own tests (coupures.test.ts and others).
+ */
+export const SUIT_LES_DONNEES = new Set([
+  "coupures_eau",
+  "transports (gare de Saint-Denis)",
+  "evenements",
+  "actualites (routes)",
+  "resume_du_jour (Saint-Paul)",
+  "sport",
+]);
+export const MARGE_DONNEES = 1.5;
+
 /** For each answer past its size, the table of its fields' bytes, for the job's summary; "" without one. */
 export const sizesSummary = (problems: Probleme[]) =>
   problems
     .filter((p) => p.blocs?.length)
     .map((p) => `\n### ${p.point} : taille de chaque bloc\n\n| Bloc | Octets |\n|---|---|\n${p.blocs!.map(([k, n]) => `| ${k} | ${n.toLocaleString("fr-FR")} |`).join("\n")}\n`)
     .join("");
+
+/** The answers past their size within their margin, for the job's summary, each with its parts' bytes; "" without one. */
+export const taillesSummary = (avertissements: Probleme[]) =>
+  avertissements.length
+    ? `\n### Tailles qui suivent les données du jour : ${avertissements.length} avertissement(s), sans échec\n\n| Point | Motif |\n|---|---|\n${avertissements
+        .map((p) => `| ${p.point} | ${p.motif.replace(/\|/g, "/")} |`)
+        .join("\n")}\n${sizesSummary(avertissements)}`
+    : "";
 
 const ko = (bytes: number) => `${(bytes / 1000).toLocaleString("fr-FR", { maximumFractionDigits: 1 })}\u00a0Ko`;
 
@@ -283,7 +309,11 @@ export function checkAnswer(c: ToolCheck, result: { isError?: boolean; content?:
   const bytes = new TextEncoder().encode(text).length;
   const max = MAX_BYTES[c.point];
   // 11/11/2026: resume_du_jour at 11.8 KB, and nothing left to say which part had grown; its sizes are now said.
-  if (max != null && bytes > max) out.push({ point: c.point, motif: `réponse de ${ko(bytes)}, au-delà de ${ko(max)}`, blocs: sizesOf(p) });
+  if (max != null && bytes > max) {
+    const marge = SUIT_LES_DONNEES.has(c.point) ? Math.round(max * MARGE_DONNEES) : max;
+    if (bytes > marge) out.push({ point: c.point, motif: `réponse de ${ko(bytes)}, au-delà de ${ko(marge)}`, blocs: sizesOf(p) });
+    else out.push({ point: c.point, motif: `réponse de ${ko(bytes)}, au-delà de ${ko(max)} (taille qui suit les données du jour, échec au-delà de ${ko(marge)})`, blocs: sizesOf(p), avertissement: true });
+  }
   return [...out, ...c.check(p, now)];
 }
 

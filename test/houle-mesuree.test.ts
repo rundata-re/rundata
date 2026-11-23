@@ -127,7 +127,9 @@ describe("the waves measured by the Candhis buoys", () => {
     expect(page).toContain(`<p class="eyebrow">Mesure, pas une prévision</p><h2 id="h-houle-mesuree">La houle mesurée au large</h2>`);
     expect(page).toContain("<li><span>Saint-Pierre (large)</span><b>1,1 m</b>");
     expect(page).toContain("mesurée le 22/10 à 09:20, mer à 26,8");
-    expect(page).toContain("Source : Cerema / Candhis (Licence Ouverte Etalab 2.0).");
+    // Its producer under the measurement, in the section itself, not only in the page's sources at its end.
+    const section = page.slice(page.indexOf(`id="h-houle-mesuree"`), page.indexOf(`id="h-houle"`));
+    expect(section).toMatch(/<p class="note">Source\s:\sCerema \/ Candhis \(Licence Ouverte Etalab 2\.0\)\.<\/p>/);
     expect(page.indexOf("h-houle-mesuree")).toBeLessThan(page.indexOf(`id="h-houle"`));
     // The same copy viewed 6 hours later: the measurement is no longer the sea of now.
     expect(seaPage("https://rundata.re", copy, new Date(AT + 6 * 3600_000 + 60_000))).not.toContain("h-houle-mesuree");

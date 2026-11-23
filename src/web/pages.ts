@@ -3085,6 +3085,7 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
     : `<p class="card">Les mesures satellite se chargent : rechargez la page dans quelques secondes.</p>`;
 
   // The buoys' measurements, while recent at the view (providers/candhis.ts): a measurement, never mixed with the forecast.
+  // Its producer said under it, in a note: a « sources » paragraph is moved to the page's end (sourcesLast).
   const buoys = (d?.bouees ?? []).filter((b) => now.getTime() - b.t <= candhis.MESURE_MAX_HOURS * 3600_000);
   const measuredSwell = buoys.length
     ? `<section aria-labelledby="h-houle-mesuree">
@@ -3095,7 +3096,8 @@ export function seaPage(origin: string, data: Cached<SeaData> | null, now = new 
       const what = [b.venant, b.periode && `période ${b.periode}`, b.vague_max && `vagues jusqu'à ${b.vague_max}`].filter(Boolean).join(", ");
       return `<li><span>${esc(b.bouee)}</span><b>${b.hauteur_significative ? esc(thin(b.hauteur_significative)) : "—"}</b><span>${esc(thin(what))}</span>` +
         `<span>mesurée le ${esc(jour)} à ${esc(h)}${b.temperature_eau ? `, mer à ${esc(thin(b.temperature_eau))}` : ""}</span></li>`;
-    }).join("")}</ul><p class="sources">Source : ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}).</p></div>
+    }).join("")}</ul>
+  <p class="note">Source\u00a0: ${esc(candhis.SOURCE.attribution)} (${esc(candhis.SOURCE.licence)}).</p></div>
 </section>`
     : "";
 

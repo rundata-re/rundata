@@ -180,6 +180,9 @@ export function offIsland(text: string): boolean {
   return hits.length > 0 && q.every((t) => hits.some((n) => n.includes(t)));
 }
 
+/** Words of a place, its small ones left out (`tokens`): more is no place. */
+export const MOTS_MAX = 12;
+
 const COORDS = /^\s*(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)\s*$/;
 
 // The last texts asked and what they gave: a question's place is resolved by its tool, then again by the metrics.
@@ -214,6 +217,9 @@ function resolve(text: string): Resolution | null {
 
   const q = tokens(text);
   if (q.length === 0) return null;
+  // A place is a few words: the longest name of the gazetteer has 12, its small words counted. Past MOTS_MAX, a text is
+  // not one place, and comparing each of its words to every name would only take time.
+  if (q.length > MOTS_MAX) return null;
   const wantsBeach = BEACH_WORDS.test(normalize(text));
   const rank = (p: Place) => (wantsBeach && p.type === "plage" ? -1 : RANK[p.type] ?? 99);
 

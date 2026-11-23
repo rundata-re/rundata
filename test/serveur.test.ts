@@ -143,7 +143,8 @@ describe("the server's instructions", () => {
     // 39 664 the same day with the field radiers of crues_rivieres, the headlines on the fords that /crues shows.
     // 39 764 on 23/11/2026 with the open procurement notices of a commune in annuaire_services_publics (a few words): no
     // tool answered « marchés publics » or « appels d'offres », which got the markets.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(39_770);
+    // 40 340 the same day with a bound on the length of each text argument (« maxLength »: 200), no word more.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(40_350);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

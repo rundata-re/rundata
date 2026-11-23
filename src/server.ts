@@ -132,7 +132,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.789";
+export const VERSION = "1.0.790";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -232,18 +232,25 @@ const ADHERENT = z
 // Only Sportsregions' events are for members: the argument is offered while it is read (providers/autorisations.ts).
 const ADHERENT_SI_LU: Record<string, typeof ADHERENT> = autorisee("agenda:sportsregions") ? { adherent: ADHERENT } : {};
 
+/**
+ * Bounds on the length of the tools' text arguments: a place, a name, a few words. The longest place of the gazetteer
+ * has 66 characters; an address, a stop with its commune or a list of words stay well under. Past it, the argument is
+ * refused before the tool runs.
+ */
+export const TEXTE_MAX = 200;
+
 // The tools whose place is not left out when it is the whole island (track).
 const NEEDS_PLACE = new Set(["resume_du_jour", "donner_avis"]);
 
 const lieu = z
-  .string()
+  .string().max(TEXTE_MAX)
   .optional()
   .describe("Lieu à La Réunion : commune, plage, quartier, cirque, sommet, ou coordonnées « -21.05, 55.22 ». Vide = toute l'île.");
 
 // meteo_actuelle and prevision_meteo keep the place with its examples and their English, as on main: with the short one,
 // haiku called prevision_meteo before meteo_actuelle for « Il fait quel temps au Tampon ? ».
 const lieuAvecExemples = z
-  .string()
+  .string().max(TEXTE_MAX)
   .optional()
   .describe(
     "Lieu à La Réunion, en texte libre : commune (« Saint-Paul »), plage (« plage de l'Hermitage », « Boucan Canot »), " +
@@ -389,7 +396,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       inputSchema: {
         lieu: lieuAvecExemples,
         quand: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe(
             "Quand, en texte libre : « aujourd'hui », « cet après-midi », « ce soir », « cette nuit », « demain », « demain matin », " +
@@ -528,9 +535,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "combien de médecins libéraux par commune (quoi = « médecin », « pédiatre »…). " +
         "Pour : « horaires de la mairie de Saint-Paul ? », « prix de l'essence ? », « quel jour passent les poubelles à Saint-Paul ? ».",
       inputSchema: {
-        quoi: z.string().describe("« mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, « carburant » pour les prix du mois, « pharmacie », « urgences », « collecte », « école », « marché », « enfants » (lieux où aller avec eux)."),
+        quoi: z.string().max(TEXTE_MAX).describe("« mairie », « CAF », « préfecture », « impôts », « France Travail », « tribunal »…, « carburant » pour les prix du mois, « pharmacie », « urgences », « collecte », « école », « marché », « enfants » (lieux où aller avec eux)."),
         lieu,
-        adresse: z.string().optional().describe("Collège de secteur (quoi = « collège ») : l'adresse sur laquelle on s'interroge, pas la position de l'utilisateur : numéro et voie, commune dans lieu. Ni gardée ni journalisée."),
+        adresse: z.string().max(TEXTE_MAX).optional().describe("Collège de secteur (quoi = « collège ») : l'adresse sur laquelle on s'interroge, pas la position de l'utilisateur : numéro et voie, commune dans lieu. Ni gardée ni journalisée."),
       },
       annotations: { ...READ_ONLY },
     },
@@ -551,7 +558,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« prix au m² des maisons à l'Hermitage ? », « quels risques à cette adresse ? ».",
       inputSchema: {
         adresse: z
-          .string()
+          .string().max(TEXTE_MAX)
           .describe(
             "Le bien ou le lieu sur lequel on s'interroge, pas la position de l'utilisateur : adresse du bien (« 7 rue de la Buse, Saint-Paul ») " +
               "ou lieu-dit (« Bois de Nèfles »).",
@@ -577,8 +584,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           "Pour : « prochain bus à la gare routière de Saint-Pierre ? », « le car jaune a du retard ? », « où est le S1 en ce moment ? ». " +
           "Chaque départ dit d'où vient le car et où il va\u00a0; un jour sans service (dimanche, jour férié) est dit. Bateau ou ferry pour Maurice ou Rodrigues : dit qu'il n'y a pas de liaison maritime régulière de passagers, ne pas en inventer ni d'horaires de bateau.",
         inputSchema: {
-          arret: z.string().optional().describe("Nom de l'arrêt et sa commune (« Gare routière, Saint-Pierre »), ou un lieu (« plage de Boucan », « Manapany ») pour les arrêts les plus proches\u00a0; avec une ligne, dit si elle y passe, sinon son arrêt le plus proche. Une heure (« après 17 h ») donne les départs une par une. Facultatif avec une ligne. Un trajet d'un lieu à un autre (« de Trou d'Eau à Saint-Pierre ») n'est pas calculé ici\u00a0: donner le lien https://rundata.re/bus/itineraire?de=<départ>&a=<arrivée>, qui cherche les trajets directs ou avec une correspondance sur tous les réseaux de l'île."),
-          ligne: z.string().optional().describe("Une ligne (« S1 », « O1X », « 2 », « S1 Car Jaune ») : seule, ses arrêts dans l'ordre pour chaque sens, ses départs du jour et ses bus en circulation qui donnent leur position\u00a0; avec un arrêt, ses prochains départs là."),
+          arret: z.string().max(TEXTE_MAX).optional().describe("Nom de l'arrêt et sa commune (« Gare routière, Saint-Pierre »), ou un lieu (« plage de Boucan », « Manapany ») pour les arrêts les plus proches\u00a0; avec une ligne, dit si elle y passe, sinon son arrêt le plus proche. Une heure (« après 17 h ») donne les départs une par une. Facultatif avec une ligne. Un trajet d'un lieu à un autre (« de Trou d'Eau à Saint-Pierre ») n'est pas calculé ici\u00a0: donner le lien https://rundata.re/bus/itineraire?de=<départ>&a=<arrivée>, qui cherche les trajets directs ou avec une correspondance sur tous les réseaux de l'île."),
+          ligne: z.string().max(TEXTE_MAX).optional().describe("Une ligne (« S1 », « O1X », « 2 », « S1 Car Jaune ») : seule, ses arrêts dans l'ordre pour chaque sens, ses départs du jour et ses bus en circulation qui donnent leur position\u00a0; avec un arrêt, ses prochains départs là."),
         },
         annotations: { ...READ_ONLY },
       },
@@ -596,7 +603,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "à la station IUT ? », « où prendre un vélo près du front de mer de Saint-Pierre ? », « je peux rendre mon vélo au pôle d'échanges de Saint-Louis ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Nom d'une station (« IUT », « Front de mer »), un lieu ou une commune (« Saint-Pierre », « plage de l'Étang-Salé »). Vide = tout le réseau."),
       },
@@ -617,11 +624,11 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour : « offres d'emploi à la mairie de Saint-Paul ? », « le CHU recrute des infirmiers ? », « emploi public au Tampon ? », « formation cariste CPF ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Une commune ou un lieu de l'île (« Saint-Pierre », « Saint-Gilles ») pour les offres de sa commune. Vide = toute l'île."),
         mot_cle: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Des mots de l'intitulé, du métier ou de l'employeur : « infirmier », « agent d'entretien », « CHU », « contractuel », « cariste »."),
       },
@@ -639,8 +646,8 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "tailles minimales, quantités, espèces interdites, lagons. Citer l'article\u00a0; d'autres règles dépendent du lieu, seul le texte des arrêtés fait foi. " +
         "Pour : « la langouste est fermée ? », « jusqu'à quand les bichiques ? ».",
       inputSchema: {
-        espece: z.string().optional().describe("Langouste, bichiques, capucin nain, anguille marbrée. Vide = toutes."),
-        date: z.string().optional().describe("AAAA-MM-JJ. Vide = aujourd'hui."),
+        espece: z.string().max(TEXTE_MAX).optional().describe("Langouste, bichiques, capucin nain, anguille marbrée. Vide = toutes."),
+        date: z.string().max(TEXTE_MAX).optional().describe("AAAA-MM-JJ. Vide = aujourd'hui."),
       },
       annotations: { ...READ_ONLY },
     },
@@ -660,7 +667,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour : « la marée monte ? », « c'est quand la marée basse demain ? », « niveau de la mer au Port ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Un lieu de la côte (« Le Port », « Saint-Gilles », « Sainte-Marie ») pour le marégraphe le plus proche. Vide = les deux."),
       },
@@ -680,7 +687,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« il y a une vigilance crues ? », « niveau de la ravine Saint-Gilles ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Une rivière (« rivière des Galets », « ravine Saint-Gilles ») ou un lieu (« Salazie », « Saint-Benoît ») pour les stations proches. Vide = toute l'île."),
       },
@@ -699,7 +706,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour : « borne de recharge libre près de Saint-Gilles ? », « où recharger rapidement à Saint-Pierre ? », « bornes au Tampon ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Un lieu ou une commune (« Saint-Gilles-les-Bains », « Le Tampon », « aéroport Roland-Garros »). Vide = toute l'île."),
         rapide: z
@@ -723,7 +730,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "« l'eau du bassin Dinan est propre ? ». Avec la baignade, la règle requin de l'arrêté préfectoral (bande des 300 m) et les zones permises : ne jamais dire qu'un endroit est sans requin ou sans risque, ni qu'une zone est ouverte aujourd'hui, renvoyer au drapeau sur place. Les avis « ne pas boire » en cours sont dans coupures_eau.",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Commune, quartier, plage ou bassin (« Hell-Bourg », « plage de l'Hermitage », « bassin Bleu »)."),
         eau: z
@@ -756,7 +763,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         (feux.enabled() ? " Avec les feux de végétation détectés par satellite (NASA FIRMS) ces dernières 24 h, dans feux_detectes : faux positifs possibles, un jour sans détection ne prouve pas qu'il n'y a pas de feu\u00a0; toujours donner « Vous voyez un feu ? Appelez le 18 ou le 112. »." : ""),
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Un sentier ou une randonnée (« sentier de la Roche Pendue », « Piton des Neiges », « GR R2 »), un lieu (« Maïdo »), un cirque (« Mafate ») ou une commune\u00a0; vide = toute l'île."),
         longueur_min_km: z.number().min(0).optional().describe("Longueur minimale en km d'une randonnée proposée (« une rando de 10 km » : 8)."),
@@ -825,7 +832,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Ce qui manque est listé dans non_inclus avec l'outil à appeler. Pour : « quoi de neuf à Saint-Paul aujourd'hui ? », « ma journée au Tampon ». " +
         "Réponse courte par défaut\u00a0; detail pour ce qu'accepte chaque déchèterie et le prix de chaque carburant.",
       inputSchema: {
-        lieu: z.string().describe("Commune ou lieu de La Réunion (« Saint-Paul », « Boucan Canot », « Cilaos »), rapporté à sa commune."),
+        lieu: z.string().max(TEXTE_MAX).describe("Commune ou lieu de La Réunion (« Saint-Paul », « Boucan Canot », « Cilaos »), rapporté à sa commune."),
         detail: z.boolean().optional().describe("true : la réponse complète."),
       },
       annotations: { ...READ_ONLY },
@@ -844,7 +851,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Dire d'abord d'appeler le 15 ou le 112 et de commencer le massage cardiaque.",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Le lieu sur lequel on s'interroge, pas la position de l'utilisateur : commune, plage, quartier, cirque, sommet. Vide = toute l'île."),
       },
@@ -872,7 +879,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           .optional()
           .describe("Le sport\u00a0; vide = tous. « football » et « basket » renvoient l'actualité seulement (pas de résultats officiels lus)."),
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Une commune (« Saint-Paul »), une partie de l'île (« le sud », « l'ouest », « le nord », « l'est ») ou un club (« VBSP », « Tampon Gecko Volley ») : ce qui s'y joue et ses clubs à l'extérieur. Vide = toute l'île."),
         quand: z
@@ -898,7 +905,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       // No `lieu` any more (no distance computed): a client that still sends one gets the same answer.
       inputSchema: {
         nom: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe(`Un cyclone passé (« Garance », « Dina 2002 ») : la pluie et les rafales mesurées station par station pendant son passage, les records de station et sa page\u00a0; le champ selon_meteo_france cite Météo-France mot pour mot (records mondiaux de Gamède) : à attribuer à Météo-France, jamais à rundata.re. Disponibles : ${PASSES_LIST}.`),
       },
@@ -924,9 +931,9 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         lieu,
         jours: z.number().int().min(1).max(3650).optional()
           .describe("Les N derniers jours jusqu'à hier (30 par défaut)."),
-        du: z.string().optional()
+        du: z.string().max(TEXTE_MAX).optional()
           .describe("Début : « 2026-10-01 », « 01/10/2026 », « 2026-10 » (un mois), « 2006 » (une année). Seul, c'est ce jour, ce mois ou cette année."),
-        au: z.string().optional().describe("Fin, même format. Pour « cette nuit » ou « ce matin », la date d'aujourd'hui."),
+        au: z.string().max(TEXTE_MAX).optional().describe("Fin, même format. Pour « cette nuit » ou « ce matin », la date d'aujourd'hui."),
         detail: z.enum(["jour", "heure"]).optional()
           .describe("« heure » : heure par heure jusqu'à 7 jours (sinon automatique sur 3 jours ou moins)\u00a0; « jour » : sans le détail horaire."),
       },
@@ -948,15 +955,15 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour : « que faire ce week-end à Saint-Paul ? », « concert ce soir ? », « c'est quand la fête de l'ail ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Une commune ou un lieu (« Saint-Paul », « Saint-Gilles ») : les événements de sa commune. Vide = toute l'île."),
         quand: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("« aujourd_hui », « ce_soir », « demain », « ce_week_end », « cette_semaine », « a_venir » (30 jours), un jour (« samedi ») ou une date (« 2026-10-31 »)\u00a0; vide = les 14 jours qui viennent."),
         quoi: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Le genre (« concert », « spectacle », « théâtre », « danse », « humour », « soirée », « festival », « marché », « cinéma », « enfants », « sport », « exposition ») ou des mots du titre ou de la salle (« ail », « dragon boat », « Kabardock »)\u00a0; vide = tout."),
         ...ADHERENT_SI_LU,
@@ -981,11 +988,11 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour : « il y a des blocages à Saint-Pierre ? », « route fermée ? », « quoi de neuf à Saint-Benoît ? ».",
       inputSchema: {
         lieu: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Une commune ou un lieu (« Saint-Pierre », « Hell-Bourg », « Saint-Gilles ») : les informations qui le nomment. Vide = toute l'île."),
         sujet: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("« mobilisation » (manifestations, blocages, barrages), « route », « meteo », « volcan », « eau », « securite », « sante », « politique », « culture », « sport », ou des mots du titre\u00a0; vide = tout."),
         heures: z
@@ -1058,7 +1065,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
         "Pour : « le site de l'OVPF marche ? », « pourquoi pas de bulletin du volcan ? », « le site de Sudéau ne répond plus ? ».",
       inputSchema: {
         quoi: z
-          .string()
+          .string().max(TEXTE_MAX)
           .optional()
           .describe("Un site, une commune ou un thème : « volcan », « eau », « Saint-Joseph ». Vide = toute la liste."),
       },

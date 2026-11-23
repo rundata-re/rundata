@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { communesIn, cut, extract, lecture, lifts, operatorOf, parseCilaos, parseCirest, parseCreole, parseNotice, parsePetiteIlePage, parseRss, parseSaintLeu, parseSainteMarie, parseTroisBassins, sansBlocs, sectorList, sectorsSaid, textOf } from "../src/providers/avis-eau.js";
-import { annonceCoupure, compteAvis, coupuresEau, cutSaid, noticeRow, AVIS_AVEC_TEXTE, pourAssistant, resumeAvis, TEXTE_PAR_LE_LIEN } from "../src/tools/coupures.js";
+import { annonceCoupure, compteAvis, coupuresEau, cutSaid, noticeRow, AVIS_AVEC_TEXTE, pourAssistant, resumeAvis, TEXTE_ET_SECTEURS_PAR_LE_LIEN, TEXTE_PAR_LE_LIEN } from "../src/tools/coupures.js";
 import type { Avis } from "../src/providers/avis-eau.js";
-import { cite } from "../src/tools/citer.js";
+import { cite, COUPURES_ILE } from "../src/tools/citer.js";
 import { arretesSection, coupuresCommunePage, waterLive } from "../src/web/coupures.js";
 import { enCours, parseArretes } from "../src/providers/arretes-travaux.js";
 import { buildCoupures } from "../src/web/data.js";
@@ -312,6 +312,29 @@ describe("coupures d'eau", () => {
     // A list not read whole keeps its (empty) list, and the sentence where texts are left out is said once.
     expect(pourAssistant([row(0, { secteurs: [], secteurs_complets: false, secteurs_dits: undefined })]).avis[0]).toMatchObject({ secteurs: [], secteurs_complets: false, texte: "Texte 0" });
     expect(TEXTE_PAR_LE_LIEN).toContain("à son lien");
+  });
+
+  it("leaves the island's notices past the first their streets to the commune's answer, and its publishers to sources (23/11/2026)", async () => {
+    // 23/11/2026 07:15: the island's answer at 12,8 Ko for 12,5 (16 notices, 9 cuts to come, four nights at Saint-Denis).
+    const row = (i: number, extra = {}) => ({ titre: `Avis ${i}`, communes: ["Saint-Denis"], precision: undefined, distributeur: "Dionéo", publie_le: "20/11/2026 à 14:23", date_de_l_avis: undefined, coupure: undefined, secteurs: ["RUE A", "RUE B"], secteurs_complets: true, secteurs_dits: "RUE A, RUE B", ne_pas_boire: undefined as true | undefined, forme: undefined, extrait_coupe: true as const, texte: `Texte ${i}`, lien: `https://dioneo.re/${i}`, ...extra });
+    const rows = [...Array.from({ length: AVIS_AVEC_TEXTE + 2 }, (_, i) => row(i)), row(8, { secteurs: [], secteurs_complets: false, secteurs_dits: undefined }), row(9, { ne_pas_boire: true as const })];
+    const { avis } = pourAssistant(rows, true);
+    expect(avis.slice(0, AVIS_AVEC_TEXTE).every((n) => n.secteurs_dits === "RUE A, RUE B" && n.texte)).toBe(true);
+    for (const n of avis.slice(AVIS_AVEC_TEXTE, -1)) {
+      expect(Object.keys(n).filter((k) => /^secteurs|^texte$|^extrait_coupe$/.test(k))).toEqual([]);
+      expect(n.lien).toMatch(/^https:\/\/dioneo\.re\/\d$/);
+    }
+    // Not to drink the water: its streets and its text, always.
+    expect(avis[avis.length - 1]).toMatchObject({ ne_pas_boire: true, secteurs_dits: "RUE A, RUE B", texte: "Texte 9" });
+    // A commune's answer keeps every notice's streets.
+    expect(pourAssistant(rows).avis.slice(AVIS_AVEC_TEXTE, AVIS_AVEC_TEXTE + 2).every((n) => n.secteurs_dits === "RUE A, RUE B")).toBe(true);
+    expect(TEXTE_ET_SECTEURS_PAR_LE_LIEN).toContain("à son lien, et dans la réponse de coupures_eau pour sa commune");
+    // The island's publishers once, in sources, each with its attribution; the citation and the résumé send there.
+    const ile = body(cite("coupures_eau", await coupuresEau(cache(), undefined, NOW)));
+    expect(ile.citer).toBe(COUPURES_ILE);
+    expect(ile.resume).toContain(`Source : ${COUPURES_ILE}`);
+    expect(JSON.stringify(ile.sources)).toMatch(/Dionéo.*runéo.*La Créole.*CIREST/);
+    expect(body(cite("coupures_eau", await coupuresEau(cache(), "Le Port", NOW))).citer).toBe("rundata.re, d'après les avis de runéo et l'ARS La Réunion");
   });
 
   it("keeps only the text of a notice, even with broken tags", () => {

@@ -1431,6 +1431,8 @@ interface Head {
   alerte?: Alerte;
   /** Kept out of the search engines: a page whose data is not served yet (/feux without its key). */
   noindex?: boolean;
+  /** A page written in English (/en): the page in lang="en", the site's menu, banners and footer, still in French, in lang="fr". */
+  en?: boolean;
   /** The page's RSS feed (a commune's alerts): announced in the head, linked in the footer. */
   rss?: { href: string; title: string; link: string; hint: string };
   /** The offline page, kept on phones until the service worker changes: no banner of the moment, nothing to send. */
@@ -1888,8 +1890,10 @@ export function layout(origin: string, head: Head, written: string, body: string
   const [top, text] = ownIds(withSigles([withHook(band, head.path, head.volcan, head.hook, head.texte), mentionLinks(main)]));
   // The contour lines of the decor (web/fonds.ts), in the footer of every page from 1200 px and in the band of a few.
   const decor = !head.shell && motif(head.alerte, !!urgent(head).volcan);
+  // On a page in English, what the site keeps in French around it, said so to a reader of the page aloud.
+  const fr = head.en ? ' lang="fr"' : "";
   return `<!doctype html>
-<html lang="fr">
+<html lang="${head.en ? "en" : "fr"}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -1904,7 +1908,7 @@ ${head.rss ? `<link rel="alternate" type="application/rss+xml" title="${esc(head
 <link rel="preload" href="${FONT_PATH}" as="font" type="font/woff2" crossorigin>
 <meta name="theme-color" content="#0b1f36">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="fr_FR">
+<meta property="og:locale" content="${head.en ? "en_GB" : "fr_FR"}">
 <meta property="og:site_name" content="${SITE}">
 <meta property="og:title" content="${esc(head.title)}">
 <meta property="og:description" content="${d}">
@@ -1922,20 +1926,20 @@ ${head.rss ? `<link rel="alternate" type="application/rss+xml" title="${esc(head
 ${head.jsonld.length ? `<script type="application/ld+json">${JSON.stringify(head.jsonld.length === 1 ? head.jsonld[0] : head.jsonld, frenchDescriptions).replace(/</g, "\\u003c")}</script>\n` : ""}<link rel="stylesheet" href="${STYLE_PATH}">
 </head>
 <body>
-<a class="evite" href="#contenu">Aller au contenu</a>
-${header(head.path, origin, urgent(head))}
+<a class="evite" href="#contenu"${fr}>${head.en ? "Skip to content" : "Aller au contenu"}</a>
+${head.en ? header(head.path, origin, urgent(head)).replace("<header ", '<header lang="fr" ') : header(head.path, origin, urgent(head))}
 <main id="contenu" tabindex="-1">
-${head.shell ? "" : `${banner(head.alerte, head.path)}
-${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}`}
+${head.shell ? "" : `${head.en ? '<div lang="fr" style="display:contents">' : ""}${banner(head.alerte, head.path)}
+${head.volcan ? "" : bannerHtml(volcanBanner(), head.path)}${head.en ? "</div>" : ""}`}
 <div class="band${decor && (head.motif || MOTIF_PAGES.has(head.path)) ? " motif" : ""}">${head.shell || head.noindex ? "" : fond(head.path, head.alerte, !!urgent(head).volcan, head.vert)}${top}</div>
 <div class="wrap corps">
 ${text}
 </div>
 </main>
-${aside ? `${aside}\n` : ""}${head.shell ? "" : `${head.sansPartage ? "" : share(origin, head)}
+${aside ? `${aside}\n` : ""}${head.shell ? "" : `${head.en ? '<div lang="fr" style="display:contents">' : ""}${head.sansPartage ? "" : share(origin, head)}
 ${head.sansAvis ? "" : `${aide()}
-${avisForm(head.path)}`}`}
-${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot${decor ? " motif" : ""}"><div class="wrap">
+${avisForm(head.path)}`}${head.en ? "</div>" : ""}`}
+${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sources">${sources.join("\n")}</div>\n` : ""}<footer class="foot${decor ? " motif" : ""}"${fr}><div class="wrap">
   <div>
     <a class="brand" href="/">${logo()}<span>rundata.re</span></a>
     ${SLOGAN}

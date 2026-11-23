@@ -74,6 +74,7 @@ export const SANS_FOND: Record<string, string> = {
   "/chiffres": "about the site itself, which has no place to show",
   "/a-propos": "about the site itself, which has no place to show",
   "/valeurs": "about the site itself, which has no place to show",
+  "/en": "about the site itself, which has no place to show",
   "/sources/transport": "about the site itself, which has no place to show",
   "/presse": "about the site itself, which has no place to show",
   "/nouveautes": "about the site itself, which has no place to show",

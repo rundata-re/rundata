@@ -162,6 +162,19 @@ describe("the town hall in the page of a commune's day", () => {
   });
 });
 
+describe("a commune whose distributor's notices are not read (1284, 20/11/2026)", () => {
+  it("names the distributor and links its site, as /coupures-eau says it, never « voir la mairie » alone", () => {
+    const p = pageOf("saint-joseph")!;
+    const none = { ...full(p.nom), coupures: copy({ resume: "", couverture: "", a_savoir: "", sources: [], communes_suivies: [], avis: [] }) };
+    const r = resume(p, none as never, NOW);
+    expect(r.coupures_eau?.note).toBe("Les avis de coupure de Sudéau ne sont pas lus par rundata.re\u00a0: voir son site, rubrique «\u00a0L'eau dans ma commune\u00a0», ou la mairie.");
+    expect(r.coupures_eau?.site_distributeur).toBe("https://www.sudeau.re/");
+    const html = aujourdhuiPage("https://rundata.re", p, r, null);
+    expect(html).toContain('<a href="https://www.sudeau.re/" rel="noopener">Le site de Sudéau ↗</a>');
+    expect(html).not.toContain("Les avis du distributeur à Saint-Joseph");
+  });
+});
+
 describe("a cut whose notice writes no start hour (1312, 20/11/2026)", () => {
   it("says its end, never « undefined → … »", () => {
     const p = pageOf("saint-paul")!;

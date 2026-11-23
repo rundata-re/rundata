@@ -760,6 +760,14 @@ describe("the vigilance of the day, in words people read", () => {
     // Green everywhere, no cyclone alert: no avertissement.
     expect(said("saint-benoit", { VIGI974: { 10: at(1) }, "VIGI974-12": { 12: at(1) } }).avertissement).toBeUndefined();
   });
+
+  it("says the cyclone alert in the summary without its full stop before the « ; » (23/11/2026)", () => {
+    const r = said("saint-benoit", { VIGI974: { 10: at(4) }, "VIGI974-12": { 12: at(3) } });
+    expect(r.resume).toContain("la zone de Saint-Benoît, ALERTE CYCLONIQUE rouge, « je me confine » : danger imminent ; Crèches, écoles");
+    expect(r.resume).not.toMatch(/\.\s*;/);
+    // The field itself keeps its sentence, full stop included.
+    expect(r.vigilance?.alerte_cyclonique).toBe("ALERTE CYCLONIQUE rouge, « je me confine » : danger imminent.");
+  });
 });
 
 describe("the summary's calendar", () => {

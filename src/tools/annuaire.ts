@@ -14,6 +14,7 @@ import { CHILDREN, enfantsAnswer } from "./enfants.js";
 import { collegeAnswer, ecolesAnswer, SCHOOL } from "./etablissements.js";
 import { JUSTICE, justiceAnswer } from "./justice.js";
 import { MARKET, marchesAnswer } from "./marches.js";
+import { marchesPublicsAnswer, PROCUREMENT } from "./marches-publics.js";
 import { DOCTOR, medecinsAnswer } from "./medecins.js";
 import { EMERGENCY, GARDE, gardeAnswer, PHARMACY, pharmaciesAnswer, urgencesAnswer } from "./sante.js";
 import { sansLien } from "../liens.js";
@@ -127,6 +128,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
   if (PHARMACY.test(quoi)) return pharmaciesAnswer(lieu);
   if (GARDE.test(quoi)) return gardeAnswer(quoi, lieu);
   if (EMERGENCY.test(quoi)) return urgencesAnswer(lieu);
+  // Public procurement before the markets: « marchés publics » is no market.
+  if (PROCUREMENT.test(quoi)) return marchesPublicsAnswer(cache, lieu);
   if (MARKET.test(quoi)) return marchesAnswer(lieu);
   if (COLLECTION.test(quoi)) return collecteAnswer(lieu, now);
   if (WASTE.test(quoi)) return decheteriesAnswer(cache, quoi, lieu, now);

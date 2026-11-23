@@ -85,7 +85,7 @@ beforeEach(() => {
     expect(u.hostname).toBe("api.helloasso.com");
     if (u.pathname === "/oauth2/token") {
       refreshUsed.push(new URLSearchParams(String(init?.body)).get("refresh_token") ?? "");
-      if (token.body !== undefined) return new Response(JSON.stringify(token.body), { status: token.status });
+      if (token.body !== undefined) return new Response(typeof token.body === "string" ? token.body : JSON.stringify(token.body), { status: token.status });
       return new Response(JSON.stringify({ access_token: ACCESS, refresh_token: `rafraichissement-${++turned}`, expires_in: 1799 }));
     }
     expect(new Headers(init?.headers).get("Authorization")).toBe(`Bearer ${ACCESS}`);
@@ -163,6 +163,41 @@ describe("the scheduled reading of a linked association", () => {
     expect(sent).toHaveLength(1);
     expect(sent[0]).toMatchObject({ to: "club@example.org", subject: "La connexion de Club de pétanque du Tampon à rundata.re est retirée" });
     expect(sent[0].text).toContain("HelloAsso a refusé l'accès de rundata.re au compte de Club de pétanque du Tampon");
+  });
+
+  it("keeps the link when the token is refused without an OAuth refusal: a firewall, a limit, a page of HelloAsso", async () => {
+    await relie();
+    await lireUne(NOW);
+    let later = NOW.getTime();
+    for (const answer of [
+      { status: 403, body: "<html><body>Accès bloqué</body></html>" },
+      { status: 403, body: { message: "Forbidden" } },
+      { status: 401, body: "" },
+      { status: 400, body: { error: "invalid_request" } },
+      { status: 429, body: { error: "rate_limit" } },
+    ]) {
+      token = answer;
+      later += 6 * H;
+      expect(await lireUne(new Date(later)), String(answer.status)).toMatchObject({ issue: "echec" });
+    }
+    expect(rows("SELECT etat, echecs FROM connexions")).toEqual([{ etat: "actif", echecs: 5 }]);
+    expect(rows("SELECT COUNT(*) AS n FROM evenements_connectes")).toEqual([{ n: 2 }]);
+    expect(await secretGarde()).toBe("rafraichissement-1");
+    expect(sent).toEqual([]);
+  });
+
+  it("withdraws the link on each OAuth refusal of the kept secret", async () => {
+    for (const answer of [
+      { status: 400, body: { error: "invalid_grant", error_description: "refresh token expired" } },
+      { status: 401, body: { error: "invalid_client" } },
+      { status: 400, body: { error: "unauthorized_client" } },
+    ]) {
+      db.exec("DELETE FROM connexions");
+      await relie();
+      token = answer;
+      expect(await lireUne(NOW), answer.body.error).toMatchObject({ issue: "retire" });
+      expect(rows("SELECT * FROM connexions")).toEqual([]);
+    }
   });
 
   it("reminds once after 25 days without a good reading, with a second link that withdraws, the first still working", async () => {

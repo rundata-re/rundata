@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as chiffre from "../src/connecteurs/chiffre.js";
-import { CHEMINS, DETAILS_MAX, evenement, HELLOASSO, heureLocale, lireLe, prix } from "../src/connecteurs/helloasso.js";
+import { CHEMINS, DETAILS_MAX, evenement, HELLOASSO, heureLocale, lireLe, NOM_MAX, nomBorne, prix } from "../src/connecteurs/helloasso.js";
 import { AccesRefuse, CheminInterdit, garde, reunionnais, type EvenementPublic } from "../src/connecteurs/plateforme.js";
 
 // Thursday 29 October 2026, 10:00 at La Réunion.
@@ -148,6 +148,17 @@ describe("HelloAsso", () => {
       allowed();
     });
 
+    it("keeps a name on one line, without control characters, and cut at a word past its bound", async () => {
+      expect(nomBorne(" Club\nde\u202epétanque\u0007 du Tampon ")).toBe("Club de pétanque du Tampon");
+      expect(nomBorne("\u200f \n")).toBeUndefined();
+      const long = nomBorne(`Association ${"des amis du sentier ".repeat(12)}`)!;
+      expect(long.length).toBeLessThanOrEqual(NOM_MAX);
+      expect(long).toMatch(/[a-z]…$/);
+      expect(nomBorne("x".repeat(300))).toBe(`${"x".repeat(NOM_MAX - 1)}…`);
+      answers["GET /v5/users/me/organizations"] = json([{ organizationSlug: "club", name: "Club\r\nBcc: x@example.org", zipCode: "97430" }]);
+      expect((await HELLOASSO.verifier({ client_id: "a", client_secret: "le-secret-client" })).organisation.nom).toBe("Club Bcc: x@example.org");
+    });
+
     it("says refused when HelloAsso refuses the keys, when they are missing, or when they administer no single association", async () => {
       answers["POST /oauth2/token"] = json({ error: "invalid_client" }, 400);
       await expect(HELLOASSO.verifier({ client_id: "a", client_secret: "le-secret-client" })).rejects.toBeInstanceOf(AccesRefuse);
@@ -165,12 +176,35 @@ describe("HelloAsso", () => {
       expect(err).not.toBeInstanceOf(AccesRefuse);
       expect(String(err)).toContain("HTTP 503");
     });
+
+    it("takes as a refusal only an OAuth error, not the same status from a firewall or a limit", async () => {
+      for (const [answer, refus] of [
+        [json({ error: "invalid_client" }, 401), true],
+        [json({ error: "unauthorized_client" }, 400), true],
+        [() => new Response("<html>Accès bloqué</html>", { status: 403 }), false],
+        [json({ error: "invalid_grant" }, 403), false],
+        [json({ error: "invalid_request" }, 400), false],
+        [() => new Response("Bad Request", { status: 400 }), false],
+        [json({ error: "<b>invalid_grant</b>" }, 400), false],
+      ] as const) {
+        answers["POST /oauth2/token"] = answer;
+        const err = await HELLOASSO.verifier({ client_id: "a", client_secret: "le-secret-client" }).catch((e) => e);
+        expect(err instanceof AccesRefuse, String(calls.length)).toBe(refus);
+      }
+    });
   });
 
   describe("opening a reading", () => {
     it("trades the kept refresh token for an access token and the next refresh token", async () => {
       expect(await HELLOASSO.acceder("ancien-jeton")).toEqual({ jeton: ACCESS, secret: REFRESH });
       expect(new URLSearchParams(calls[0].body)).toEqual(new URLSearchParams({ grant_type: "refresh_token", refresh_token: "ancien-jeton" }));
+    });
+
+    it("never reads a refused reading as a withdrawal: the token was just given", async () => {
+      answers["GET /v5/organizations/club-de-petanque/forms"] = json({ message: "Unauthorized" }, 401);
+      const err = await HELLOASSO.lire(ACCESS, "club-de-petanque", new Map()).catch((e) => e);
+      expect(err).not.toBeInstanceOf(AccesRefuse);
+      expect(String(err)).toContain("HTTP 401");
     });
 
     it("reads a refused refresh token (the keys changed on HelloAsso) as a withdrawal", async () => {

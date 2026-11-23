@@ -15,7 +15,7 @@
  * new at each use (the old one stays valid until the new one is used). The authentication API takes 10 calls in 10
  * seconds, 20 in 10 minutes, 50 in an hour: the scheduled event reads one link per run (src/registre.ts).
  */
-import { getText, postForm } from "../http.js";
+import { getText, postFormOAuth } from "../http.js";
 import { lead } from "../providers/agenda-mots.js";
 import { UpstreamError } from "../types.js";
 import { AccesRefuse, garde, reunionnais, type Acces, type EvenementPublic, type Plateforme, type Verification } from "./plateforme.js";
@@ -73,29 +73,33 @@ interface Jetons {
   refresh_token: string;
 }
 
-/** A token asked for; a refusal (400, 401, 403) is AccesRefuse, anything else HelloAsso's silence. */
+/**
+ * The OAuth errors that refuse the keys or the kept token (RFC 6749, 5.2): the token was withdrawn or has expired, the
+ * client is unknown or may not use it. Only these are a refusal: the same status without one of them (a firewall's
+ * 403, a limit, an error page) is HelloAsso's silence, and a link is never withdrawn on it (lecture.ts).
+ */
+const REFUS_OAUTH = new Set(["invalid_grant", "invalid_client", "unauthorized_client"]);
+
+/** A token asked for; an OAuth refusal is AccesRefuse, anything else HelloAsso's silence. */
 async function jetons(etape: string, champs: Record<string, string>): Promise<Jetons> {
   let r: Partial<Jetons>;
   try {
-    r = await postForm<Partial<Jetons>>(ID, `${API}/oauth2/token`, champs, TIMEOUT_MS);
+    r = await postFormOAuth<Partial<Jetons>>(ID, `${API}/oauth2/token`, champs, TIMEOUT_MS);
   } catch (err) {
-    if (err instanceof UpstreamError && (err.status === 400 || err.status === 401 || err.status === 403)) throw new AccesRefuse(ID, etape, err.status);
+    if (err instanceof UpstreamError && err.code && REFUS_OAUTH.has(err.code)) throw new AccesRefuse(ID, etape, err.status);
     throw err;
   }
   if (typeof r.access_token !== "string" || typeof r.refresh_token !== "string") throw new UpstreamError(ID, `${etape} : réponse sans jeton`);
   return { access_token: r.access_token, refresh_token: r.refresh_token };
 }
 
-/** One of CHEMINS, with the access token; its JSON. */
+/**
+ * One of CHEMINS, with the access token; its JSON. A refusal here is never a withdrawal: the token was given a moment
+ * before, so the kept secret is still good; the next reading asks for a new one, and a withdrawn secret is told there.
+ */
 async function appel<T>(jeton: string, chemin: string, organisation?: string): Promise<T> {
   garde(ID, CHEMINS, chemin, organisation);
-  let texte: string;
-  try {
-    texte = await getText(ID, API + chemin, TIMEOUT_MS, { Authorization: `Bearer ${jeton}`, Accept: "application/json" });
-  } catch (err) {
-    if (err instanceof UpstreamError && err.status === 401) throw new AccesRefuse(ID, "lecture", 401);
-    throw err;
-  }
+  const texte = await getText(ID, API + chemin, TIMEOUT_MS, { Authorization: `Bearer ${jeton}`, Accept: "application/json" });
   return JSON.parse(texte) as T;
 }
 
@@ -126,6 +130,20 @@ export function prix(tiers: FormDetails["tiers"]): string | undefined {
 }
 
 const texte = (s: string | undefined) => s?.replace(/\s+/g, " ").trim() || undefined;
+
+/** The most an association's name keeps: it goes into pages and e-mail subjects. */
+export const NOM_MAX = 120;
+/** Control and direction characters: none of them belongs in a name. */
+const CONTROLES = /[\p{Cc}\u200e\u200f\u202a-\u202e\u2066-\u2069]/gu;
+
+/** An association's name as HelloAsso gives it, on one line, without control characters, cut at a word past NOM_MAX. */
+export function nomBorne(s: string): string | undefined {
+  const t = texte(s.replace(CONTROLES, " "));
+  if (!t || t.length <= NOM_MAX) return t;
+  const cut = t.slice(0, NOM_MAX - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > NOM_MAX / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
 
 /** The first sentence of a description in plain text; none from one written in HTML, never cut out of its tags. */
 const phrase = (s: string | undefined) => (s && !s.includes("<") ? lead(texte(s) ?? "") || undefined : undefined);
@@ -169,14 +187,14 @@ async function verifier(cles: Record<string, string>): Promise<Verification> {
   if (!clientId || !clientSecret) throw new AccesRefuse(ID, "clés");
   const t = await jetons("clés", { grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret });
   const orgs = await appel<Organization[]>(t.access_token, "/v5/users/me/organizations");
-  const found = (Array.isArray(orgs) ? orgs : []).filter((o) => o.organizationSlug && o.name);
+  const found = (Array.isArray(orgs) ? orgs : []).filter((o) => o.organizationSlug && typeof o.name === "string" && nomBorne(o.name));
   // An association's key administers its association alone; none, or several, is not one we can link.
   if (found.length !== 1) throw new AccesRefuse(ID, "association");
   const o = found[0];
   return {
     organisation: {
       id: o.organizationSlug!,
-      nom: o.name!.trim(),
+      nom: nomBorne(o.name!)!,
       ...(texte(o.city) ? { commune: texte(o.city) } : {}),
       ...(texte(o.zipCode) ? { code_postal: texte(o.zipCode) } : {}),
       lien: o.url ?? `https://www.helloasso.com/associations/${o.organizationSlug}`,

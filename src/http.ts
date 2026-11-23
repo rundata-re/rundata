@@ -212,6 +212,7 @@ async function get<T>(
   read: (res: Response) => Promise<T>,
   headers: Record<string, string> = {},
   body?: URLSearchParams | string,
+  errorCode?: (res: Response) => Promise<string | undefined>,
 ): Promise<T> {
   count();
   countRead(source);
@@ -240,8 +241,9 @@ async function get<T>(
       throw unanswered(err);
     }
     if (!res.ok) {
+      const code = errorCode ? await errorCode(res).catch(() => undefined) : undefined;
       await res.body?.cancel().catch(() => {});
-      const failed = new UpstreamError(source, `HTTP ${res.status}`, res.status);
+      const failed = new UpstreamError(source, `HTTP ${res.status}`, res.status, code);
       onFailure?.(source, url, failed);
       throw failed;
     }
@@ -336,6 +338,22 @@ export async function getFile(
 /** A form posted as a web page's own script would, for the sites whose data has no other door (Vigicrues Réunion). */
 export async function postForm<T>(source: string, url: string, fields: Record<string, string>, timeoutMs = 15_000): Promise<T> {
   return get(source, url, timeoutMs, (res) => res.json() as Promise<T>, {}, new URLSearchParams(fields));
+}
+
+/** The `error` of an OAuth refusal (RFC 6749, 5.2: a 400 or 401 in JSON), read from at most 4 KB; never its description. */
+async function oauthError(res: Response): Promise<string | undefined> {
+  if (res.status !== 400 && res.status !== 401) return undefined;
+  const text = (await res.text()).slice(0, 4096);
+  const error = (JSON.parse(text) as { error?: unknown }).error;
+  return typeof error === "string" && /^[a-z_]{1,40}$/.test(error) ? error : undefined;
+}
+
+/**
+ * A form posted to an OAuth token endpoint: as postForm, and a refusal carries its OAuth `error` (UpstreamError.code),
+ * so that a refused secret is told apart from a firewall, a limit or an error page with the same status.
+ */
+export async function postFormOAuth<T>(source: string, url: string, fields: Record<string, string>, timeoutMs = 15_000): Promise<T> {
+  return get(source, url, timeoutMs, (res) => res.json() as Promise<T>, {}, new URLSearchParams(fields), oauthError);
 }
 
 /** A form posted as is, for a page whose form expects its own encoding (the TÉAT's, in ISO-8859-1); its bytes. */

@@ -52,7 +52,8 @@ export interface SourceInfo {
 
 /** Thrown when an upstream source cannot be reached and nothing is cached. */
 export class UpstreamError extends Error {
-  constructor(public source: string, message: string, public status?: number) {
+  /** `code`: the OAuth error a token endpoint gave with its refusal (RFC 6749, 5.2), when the caller asked for it. */
+  constructor(public source: string, message: string, public status?: number, public code?: string) {
     super(`${source}: ${message}`);
   }
 }

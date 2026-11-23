@@ -6,10 +6,11 @@
  */
 import { resolvePlace } from "../places/resolve.js";
 import * as marches from "../vie/marches.js";
-import { a, credits, de, fr, notFound, placeBlock, text } from "./format.js";
+import { a, credits, de, fr, jourDuFichier, notFound, placeBlock, text } from "./format.js";
 
 /** Whether `quoi` asks about a market, not a supermarket. */
-export const MARKET = /(?<!super|hyper)march[ée]s?(?!\p{L})|forain|halle(?!\p{L})/iu;
+// Not a walk (« marche nordique », « club de marche ») nor a sports hall (23/11/2026).
+export const MARKET = /(?<!super|hyper|club de |clubs de )march[ée]s?(?!\p{L})(?! (?:nordique|[àa] pied|afghane|sportive|rapide))|forain|halle(?!\p{L})(?! (?:des|de|du) (?:sports?|gymnase))/iu;
 
 const NOT_ALL = "D'après OpenStreetMap, relevé par ses contributeurs, et les sites des mairies : tous les marchés n'y sont pas, et les jours peuvent avoir changé. La mairie a le calendrier des marchés forains. " +
   "Vous connaissez un marché absent ? Signalez-le avec donner_avis, ou ajoutez-le vous-même sur OpenStreetMap.";
@@ -36,6 +37,7 @@ export function marchesAnswer(lieu: string | undefined) {
       resume: `${all.length} marchés dans ${communes.length} communes, ${all.filter((m) => marches.jours(m)).length} avec leurs jours. Donner une commune pour les siens.`,
       par_commune: Object.fromEntries(communes.map((c) => [c, all.filter((m) => m.commune === c).map(row)])),
       avertissements: [NOT_ALL],
+      mis_a_jour: jourDuFichier(marches.OSM_LU),
       sources: sourcesOf(all),
     });
   }
@@ -55,6 +57,7 @@ export function marchesAnswer(lieu: string | undefined) {
     marches: near.map(row),
     mairie: townHall ? { texte: `Jours et horaires des marchés : site de la mairie ${de(commune)}`, site: townHall } : undefined,
     avertissements: [NOT_ALL],
+    mis_a_jour: jourDuFichier(marches.OSM_LU),
     sources: sourcesOf(near),
   });
 }

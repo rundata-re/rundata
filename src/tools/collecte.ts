@@ -5,11 +5,12 @@
  */
 import { normalize, resolvePlace } from "../places/resolve.js";
 import * as col from "../vie/collecte.js";
-import { credits, text } from "./format.js";
+import { credits, jourDuFichier, text } from "./format.js";
 const { communeSlug, honesty, NOT_FOUND } = col;
 
 /** Whether `quoi` asks when the bins are collected. */
-export const COLLECTION = /collecte|poubelle|ordures?\b|ramassage|\bbacs?\b|\btri\b|camion/i;
+// Not the school bus (« ramassage scolaire ») nor a centre de tri, a déchèterie's (23/11/2026).
+export const COLLECTION = /collecte|poubelle|ordures?\b|ramassage(?! scolaire)|\bbacs?\b|(?<!centres? de )\btri\b|camion/i;
 
 const page = (commune?: string) => `https://rundata.re/collecte${commune ? `/${communeSlug(commune)}` : ""}`;
 // The line marketing gives for a commune, without a street.
@@ -40,7 +41,7 @@ export function elsewhere(lieu: string): { commune: string; epci: (typeof col.AI
 export function collecteAnswer(lieu: string | undefined, now = new Date()) {
   const today = col.todayOf(now);
   const { commune, rue } = parseLieu(lieu ?? "");
-  const base = { a_savoir: honesty(), sources: credits([col.SOURCE]) };
+  const base = { a_savoir: honesty(), mis_a_jour: jourDuFichier(col.UPDATED), sources: credits([col.SOURCE]) };
   // A commune of another intercommunality: said before any street is looked for (04/11/2026, « rue non trouvée » at Saint-Denis).
   const other = !commune && lieu?.trim() ? elsewhere(lieu) : undefined;
   if (other) {

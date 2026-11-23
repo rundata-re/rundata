@@ -12,13 +12,19 @@
  */
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { insecables } from "../src/typographie.js";
 
 export const DOSSIER = new URL("../nouveautes-a-venir/", import.meta.url);
 const SOURCE = new URL("../src/nouveautes.ts", import.meta.url);
 
-/** The site's typography, so that a line can be written with ordinary spaces: a no-break space before « : ; ? ! » and inside « ». */
+/**
+ * The site's typography, so that a line can be written with ordinary spaces: a no-break space before « : ; ? ! » and
+ * inside « », then every other one the site and the assistants' answers put (src/typographie.ts: between a figure and
+ * its unit, after « à » before a figure, between the thousands). The list then holds each text as sources_donnees
+ * says it: a line filed with « 2 h » in ordinary spaces was not the text the tool answered.
+ */
 export function typographie(texte: string): string {
-  return texte.trim().replace(/ +([:;?!])/g, " $1").replace(/« +/g, "« ").replace(/ +»/g, " »");
+  return insecables(texte.trim().replace(/ +([:;?!])/g, " $1").replace(/« +/g, "« ").replace(/ +»/g, " »"));
 }
 
 /** The waiting lines, file by file in name order, one change per non-empty line. */
@@ -50,7 +56,7 @@ export function ranger(source: string, textes: string[], maintenant: Date): stri
   const dates = [...source.slice(debut).matchAll(/date: "([^"]+)"/g)].map((m) => Date.parse(m[1]));
   const minute = 60_000;
   const t = Math.max(Math.floor(maintenant.getTime() / minute) * minute, dates.length ? Math.max(...dates) + minute : 0);
-  const lignes = textes.map((x) => `  { date: "${heureReunion(t)}", texte: ${JSON.stringify(x).replace(/ /g, "\\u00a0")} },\n`);
+  const lignes = textes.map((x) => `  { date: "${heureReunion(t)}", texte: ${JSON.stringify(x).replace(/ /g, "\\u00a0").replace(/\u202f/g, "\\u202f")} },\n`);
   return source.slice(0, ouverture) + lignes.join("") + source.slice(ouverture);
 }
 

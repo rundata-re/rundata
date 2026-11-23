@@ -66,7 +66,7 @@ import {
 } from "../web/data.js";
 import { anchorOf } from "../web/decheteries.js";
 import { coastal, meteoPath, PAGES, pageOf, type PlacePage, PRINCIPAL, slugify } from "../web/places.js";
-import { occurrences, repris, silentOf, sourcesServies } from "./agenda.js";
+import { luLe, occurrences, repris, rienAnnonce, silentOf, sourcesServies } from "./agenda.js";
 import { HORAIRES_A_SAVOIR, hoursOn, openNow } from "./annuaire.js";
 import { priceLine } from "./carburants.js";
 import { ecoles, resumeLine } from "./ecoles.js";
@@ -183,6 +183,8 @@ const NEWS_MAX = 4;
 // resume()'s answer is kept in no copy: it is computed at each view (web/site.ts) and each call of the tool, from the
 // copies, so no RENDU_REVISION to raise (web/revisions.ts).
 const EVENTS_MAX = 5;
+/** A commune's own site read within this many hours is said to announce nothing today; older, said as not read again since. */
+export const SITE_RELU_HEURES = 24;
 // A build whose cost was measured neither in this isolate nor with its copy is taken to cost this much (web/site.ts
 // does the same).
 const COST_UNKNOWN = 25;
@@ -451,6 +453,13 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
   const eventsSilent = l.agenda ? silentOf(l.agenda.value.indisponible, nom, localTime(l.agenda.fetchedAt), now, l.agenda.value.non_lus) : [];
   // In a few words, as the commune's tile says it (web/liens.ts): « site de la Ville de Saint-Denis sans réponse (le 20/11 à 05:40) ».
   const eventsSaid = eventsSilent.map((x) => `${x.site.replace(/^le /, "")} sans réponse (${when(x.at)})`).join(", ");
+  // Its own site read, none today: said with the hour of the read, as evenements says it, so that « aucun » is not
+  // taken for a commune not read (23/11/2026). Read more than a day ago, « none » is no longer said: the site may have
+  // published since. Not when its site is already said without answer.
+  const sitesRead = events.length || eventsSilent.length ? [] : (l.agenda?.value.sites_lus?.[nom] ?? []).map((x) => ({ ...x, a_jour: now.getTime() - Date.parse(x.lu_le) < SITE_RELU_HEURES * 3600_000 }));
+  const sitesFresh = rienAnnonce(sitesRead.filter((x) => x.a_jour));
+  const sitesOld = sitesRead.filter((x) => !x.a_jour).map((x) => `le ${x.site} n'a pas pu être relu depuis ${luLe(x.lu_le)}`).join(", ");
+  const sitesSaid = `${sitesFresh ? `, ${sitesFresh}` : ""}${sitesOld ? `\u00a0; ${sitesOld}` : ""}`;
   // The EVENTS_MAX shown: those with a state first (ANNULÉ, REPORTÉ, complet), which the server's rule says first and
   // which no one should travel for, the others in the agenda's order; the same list credited.
   const shown = [...events.filter((r) => r.statut), ...events.filter((r) => !r.statut)].slice(0, EVENTS_MAX);
@@ -530,7 +539,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     l.agenda
       ? events.length
         ? `${events.length} événement${events.length > 1 ? "s" : ""} aujourd'hui${eventsSaid ? `, ${eventsSaid}` : ""}`
-        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets)${eventsSaid ? `, ${eventsSaid}` : ""}`
+        : `aucun événement trouvé aujourd'hui dans les agendas lus (incomplets)${sitesSaid}${eventsSaid ? `, ${eventsSaid}` : ""}`
       : "",
     roads.length ? `${roads.length} info${roads.length > 1 ? "s" : ""} sur les routes ou des blocages` : "",
     power.length ? shortOf(power[0], now) : "",
@@ -618,6 +627,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           outil: events.length > EVENTS_MAX ? "evenements" : undefined,
           page: events.length > EVENTS_MAX ? `${SITE_URL}/evenements` : undefined,
           aucun: events.length ? undefined : "Aucun événement trouvé aujourd'hui dans les agendas que lit rundata.re : ils sont incomplets, ce n'est pas la preuve qu'il ne se passe rien.",
+          sites_lus: sitesRead.length ? sitesRead.map((x) => ({ site: x.site, lu_le: localTime(new Date(x.lu_le)), a_jour: x.a_jour })) : undefined,
           injoignable: eventsSilent.length ? { texte: eventsSilent.map((x) => x.texte).join(" "), court: eventsSaid, site: eventsSilent[0].lien } : undefined,
         }
       : undefined,

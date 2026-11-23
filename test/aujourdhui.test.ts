@@ -295,3 +295,37 @@ describe("a commune whose own site did not answer", () => {
     expect(resume(sd, base as never, NOW).evenements_du_jour?.injoignable).toBeUndefined();
   });
 });
+
+describe("a commune whose own site was read and announces nothing today (23/11/2026)", () => {
+  it("says the site with the hour of its read, in resume_du_jour and on its day's page", () => {
+    const sa = pageOf("saint-andre")!;
+    const base = full(sa.nom);
+    const sites_lus = { "Saint-André": [{ site: "site de la commune de Saint-André", lu_le: "2026-10-24T04:00:00.000Z" }] };
+    const copies = { ...base, agenda: { ...base.agenda, value: { ...base.agenda.value, evenements: [], sites_lus } } };
+    const r = resume(sa, copies as never, NOW);
+    expect(r.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets), le site de la commune de Saint-André, lu le 24/10 à 08:00, n'en annonce aucun ;");
+    expect(r.evenements_du_jour?.sites_lus).toEqual([{ site: "site de la commune de Saint-André", lu_le: "24/10 08:00", a_jour: true }]);
+    const html = aujourdhuiPage("https://rundata.re", sa, r, null);
+    expect(html).toContain("<li><b>Sorties :</b> aucun événement trouvé aujourd'hui dans les agendas lus, dont le site de la commune de Saint-André, lu le 24/10 à 08:00.</li>");
+    expect(html).toContain("<p>Rien d'annoncé aujourd'hui à Saint-André dans les agendas lus, dont le site de la commune, lu le 24/10 à 08:00.</p>");
+    // With events of the day, or another commune's site: nothing said of it.
+    expect(resume(sa, { ...copies, agenda: { ...copies.agenda, value: { ...copies.agenda.value, evenements: base.agenda.value.evenements } } } as never, NOW).evenements_du_jour?.sites_lus).toBeUndefined();
+    const ed = pageOf("entre-deux")!;
+    expect(resume(ed, copies as never, NOW).resume).not.toContain("n'en annonce aucun");
+    // Read more than a day ago: not « none », the site may have published since.
+    const old = { ...copies, agenda: { ...copies.agenda, value: { ...copies.agenda.value, sites_lus: { "Saint-André": [{ ...sites_lus["Saint-André"][0], lu_le: "2026-10-23T04:00:00.000Z" }] } } } };
+    const stale = resume(sa, old as never, NOW);
+    expect(stale.resume).toContain("aucun événement trouvé aujourd'hui dans les agendas lus (incomplets)\u00a0; le site de la commune de Saint-André n'a pas pu être relu depuis le 23/10 à 08:00\u00a0;");
+    expect(stale.resume).not.toContain("n'en annonce aucun");
+    const page = aujourdhuiPage("https://rundata.re", sa, stale, null);
+    expect(page).toContain("<li><b>Sorties\u00a0:</b> aucun événement trouvé aujourd'hui dans les agendas lus\u00a0; le site de la commune de Saint-André n'a pas pu être relu depuis le 23/10 à 08:00.</li>");
+    expect(page).toContain("<p>Rien trouvé aujourd'hui à Saint-André dans les agendas lus. Le site de la commune n'a pas pu être relu depuis le 23/10 à 08:00\u00a0: à vérifier sur son agenda.</p>");
+    expect(page).not.toContain("Rien d'annoncé aujourd'hui");
+    // Its site already said without answer: said once, that way.
+    const silent = { ...copies, agenda: { ...copies.agenda, value: { ...copies.agenda.value, non_lus: ["Ville de Saint-André : dernière lecture sans succès (le 24/10 à 06:00)"] } } };
+    const r2 = resume(sa, silent as never, NOW);
+    expect(r2.evenements_du_jour?.injoignable?.court).toBe("site de la Ville de Saint-André sans réponse (le 24/10 à 06:00)");
+    expect(r2.evenements_du_jour?.sites_lus).toBeUndefined();
+    expect(r2.resume).not.toContain("n'en annonce aucun");
+  });
+});

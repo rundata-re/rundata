@@ -7,7 +7,6 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 ## Mardi 24 novembre 2026
 
 - Eau de baignade : /eau dit d'abord que l'ARS n'a publié aucun prélèvement de la saison, avec ses dates, sans rien conclure sur l'eau
-- Eau de baignade : /eau dit d'abord que l'ARS n'a publié aucun prélèvement de la saison, avec ses dates, sans rien conclure sur l'eau
 - Randonnée : un sentier que l'ONF a retiré de sa carte n'est plus dit ouvert ; sa page renvoie à la carte officielle
 - Volcan : un lien vers les caméras de l'OVPF. Défibrillateurs : où se former aux premiers secours (PSC1).
 - Outils IA : la liste des sources compte les producteurs par famille de licence, comme la page des chiffres

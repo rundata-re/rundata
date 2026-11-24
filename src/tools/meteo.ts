@@ -1,3 +1,4 @@
+import { within } from "../lectures.js";
 import type { Cache, Cached } from "../cache.js";
 import { distanceKm, versant } from "../geo.js";
 import { INSEE } from "../places/insee.js";
@@ -132,7 +133,9 @@ async function collect(cache: Cache, now: Date, list: Provider[]) {
   results.forEach((r, i) => {
     if (r.status === "fulfilled") {
       const kept = r.value.value.filter((o) => !r.value.stale || now.getTime() - o.time.getTime() <= COPY_MAX_MINUTES * 60_000);
-      kept.forEach((o) => obs.push({ o, stale: r.value.stale }));
+      // A copy served because its read was too slow for the answer (`tardive`, cache.ts) is not a source that failed: no
+      // « injoignable » on its stations; the answer's freshness (fraicheur.ts) says the time it was read.
+      kept.forEach((o) => obs.push({ o, stale: r.value.stale && !r.value.tardive }));
       // Every measure of the copy too old: the source is said unavailable, as when there is no copy.
       if (r.value.stale && r.value.value.length && !kept.length) down.push(list[i].source.nom);
     } else {
@@ -238,6 +241,22 @@ export async function islandTour(cache: Cache, now = new Date()) {
 
 // A METAR's sky now, its trend (TEMPO, BECMG) left out: broken or overcast clouds, drizzle, rain or showers nearby.
 const LOADED_SKY = /\b(BKN|OVC)\d{3}|(^|\s)[-+]?(DZ|RA|SHRA)\b|\bVCSH\b/;
+
+/**
+ * How long a tool call waits for a station's read whose copy is too old, ms: then the copy, with the time it was read,
+ * its read going on after the answer for the next call. The wait of /meteo/<lieu> for an assistant that answers someone
+ * now (web/site.ts HOME_READER_WAIT_MS). It waited the call's whole time (server.ts TOOL_WAIT_MS, 5 s): from 21 to
+ * 24/11/2026, 10 calls of 107 took over 2 s, each one reading the stations again. A source without a copy is waited for
+ * as before, and a fresh copy is served as before: the answer does not change.
+ */
+export const METEO_ACTUELLE_WAIT_MS = 800;
+
+/**
+ * The tool meteo_actuelle (server.ts): meteoActuelle with that wait. The place pages' build calls meteoActuelle itself,
+ * and waits for its stations as before: a copy it keeps for minutes is never filled with a measure too slow for one call.
+ */
+export const meteoActuelleOutil = (cache: Cache, lieu: string | undefined, now = new Date()) =>
+  within(METEO_ACTUELLE_WAIT_MS, () => meteoActuelle(cache, lieu, now));
 
 /**
  * With a place, the rain of the last hours at its nearest gauge and the max and min since midnight (`recent`). The place

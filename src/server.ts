@@ -62,7 +62,7 @@ import { localTime } from "./geo.js";
 import { INFOTRAFIC } from "./tools/littoral.js";
 import { temperatureMer, coverage as seaCoverage } from "./tools/mer.js";
 import { AROME_WAIT_MS, previsionMeteo, coverage as forecastCoverage } from "./tools/prevision.js";
-import { coverage as weatherCoverage, meteoActuelle, providers as weatherProviders } from "./tools/meteo.js";
+import { coverage as weatherCoverage, meteoActuelleOutil, providers as weatherProviders } from "./tools/meteo.js";
 import * as vigilance from "./providers/vigilance.js";
 import { vigilanceMeteo, vigilanceWarnings } from "./tools/vigilance.js";
 import * as seismes from "./providers/seismes.js";
@@ -138,7 +138,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.942";
+export const VERSION = "1.0.943";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -422,7 +422,7 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
       inputSchema: { lieu: lieuAvecExemples },
       annotations: { ...READ_ONLY },
     },
-    track("meteo_actuelle", (args) => withVigilance(cache, meteoActuelle(cache, args.lieu))),
+    track("meteo_actuelle", (args) => withVigilance(cache, meteoActuelleOutil(cache, args.lieu))),
   );
 
   server.registerTool(

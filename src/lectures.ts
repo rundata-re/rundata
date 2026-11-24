@@ -48,6 +48,15 @@ export async function withLectures<T>(fn: () => Promise<T>, waitMs?: number): Pr
 export const callDeadline = () => until.getStore();
 
 /**
+ * Runs `fn` with the tool call's wait for a source that has a copy brought nearer, to `ms` from now: never later than the
+ * call's own. Outside a tool call (a page's build, the scheduled event), `fn` runs as it is and waits for its sources.
+ */
+export function within<T>(ms: number, fn: () => T): T {
+  const end = until.getStore();
+  return end == null ? fn() : until.run(Math.min(end, Date.now() + ms), fn);
+}
+
+/**
  * In a tool call, a source read without a copy is waited for this long past the call's deadline for copies (5 s): 8 s in
  * all. Past it, the read is said not answered and ends after the answer, stored for the next question. 22/11/2026: the
  * ARS's site silent, its two tries (8 then 12 s) waited for, qualite_eau answered in 20 and 28 s, the assistants gone

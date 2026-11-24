@@ -52,6 +52,33 @@ function nameAlone(lieu: string): string | undefined {
   return n.replace(/ /g, "").length >= 4 ? n : undefined;
 }
 
+/**
+ * A road asked as a place (« route des Tamarins », « RN2 », « la route du Maïdo »): the words of the headlines that name
+ * it. The gazetteer puts a road at one point of it, in one commune: the news of that commune were given for the road,
+ * a wedding in Saint-Leu for the route des Tamarins (24/11/2026). The route du Littoral has its own answer (littoral.ts).
+ */
+export function roadOf(lieu: string, res: ReturnType<typeof resolvePlace>): { nom: string; test: (text: string) => boolean } | undefined {
+  const bare = (x: string) => normalize(x).replace(/^(?:la|le|l) /, "");
+  const asked = bare(lieu);
+  const road = res?.lieu.type === "route";
+  if (!road && !/^(?:route (?:de|du|des|d) \S|r?n ?\d)/.test(asked)) return undefined;
+  const said = new Set([asked, ...(road ? [bare(res!.lieu.nom)] : [])]);
+  // The names the headlines use for the same road.
+  const SAME: Record<string, string[]> = { "route des plaines": ["rn3"], "route de cilaos": ["rn5"], "route du volcan": ["rf5"], "route des laves": ["rn2"] };
+  for (const x of [...said]) for (const y of SAME[x.replace(/^(r?n) (\d)/, "$1$2")] ?? []) said.add(y);
+  for (const [k, v] of Object.entries(SAME)) if (v.some((y) => said.has(y) || said.has(y.replace(/^rn/, "n")))) said.add(k);
+  const words = [...said].map((x) => {
+    // A national road by its number: « RN2 », « RN 2 », « N2 », « route nationale 2 », never the RN2002.
+    const n = x.match(/^r?n ?(\d+[a-z]?)$/)?.[1];
+    if (n) return `(?:rn ?|route nationale )${n}`;
+    const f = x.match(/^rf ?(\d+)$/)?.[1];
+    return f ? `rf ?${f}` : x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  });
+  const re = new RegExp(`(?:^| )(?:${words.join("|")})(?= |$)`);
+  const nom = road ? res!.lieu.nom : lieu.trim().replace(/^(?:la|le|l')\s*/i, "");
+  return { nom: /^route/i.test(nom) ? `la ${nom[0].toLowerCase()}${nom.slice(1)}` : `la ${nom}`, test: (text) => re.test(normalize(text)) };
+}
+
 const DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const local = (iso: string) => new Date(Date.parse(iso) + 4 * 3600_000);
 
@@ -179,17 +206,20 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   const what = sujetMatcher(sujet);
   const pool = data.infos.filter((i) => i.publie >= since && (!what || what.test(i)));
 
-  const commune = res?.lieu.commune;
+  // A road: what names the road, never the news of the commune of the point the gazetteer gives it.
+  const way = lieu?.trim() ? roadOf(lieu, res) : undefined;
+  const commune = way ? undefined : res?.lieu.commune;
   // A place inside a commune (La Plaine des Cafres) is looked for by its own name too.
   // What names it itself comes first.
   const place = said ?? (res && res.lieu.type !== "commune" ? normalize(res.lieu.nom).replace(/^(le|la|les|l) /, "") : undefined);
-  const own = (i: src.Info) => !!place && ` ${normalize(`${i.lieux.join(" ")} ${i.titre} ${i.resume ?? ""}`)} `.includes(` ${place} `);
+  const own = (i: src.Info) => way ? way.test(`${i.lieux.join(" ")} ${i.titre} ${i.resume ?? ""}`)
+    : !!place && ` ${normalize(`${i.lieux.join(" ")} ${i.titre} ${i.resume ?? ""}`)} `.includes(` ${place} `);
   const names = (i: src.Info) => own(i) || (!!commune && i.communes.includes(commune));
-  const asked = !!res || !!said;
-  const where = said ? `« ${lieu!.trim()} »` : res ? (res.lieu.type === "commune" ? commune! : `${res.lieu.nom} (${commune})`) : undefined;
+  const asked = !!res || !!said || !!way;
+  const where = way ? way.nom : said ? `« ${lieu!.trim()} »` : res ? (res.lieu.type === "commune" ? commune! : `${res.lieu.nom} (${commune})`) : undefined;
   // What a count of texts names: the place only when each of them names it, else its commune, with how many name the
   // place itself (Grand Coude, 06/11/2026: « 2 informations mentionnent Grand Coude » for articles on Manapany and Vincendo).
-  const whom = (all: number, ownCount: number) => !place || said || ownCount === all ? where
+  const whom = (all: number, ownCount: number) => way || !place || said || ownCount === all ? where
     : `${commune}, la commune ${de(res!.lieu.nom)}${ownCount ? `, dont ${ownCount} qui nomme${ownCount > 1 ? "nt" : ""} ${res!.lieu.nom}` : ""}`;
 
   const live = pool.filter((i) => i.direct).slice(0, LIVE_MAX);
@@ -235,7 +265,8 @@ export async function actualites(cache: Cache, lieu?: string, sujet?: string, he
   // The fixed speed cameras, public information, beside the news of the roads: the commune's, or the island's.
   const cameras = roadAsked || /\bradars?\b/.test(normalize(sujet ?? "")) ? radars.forTool(commune, commune && a(commune)) : undefined;
   return text({
-    lieu: res && lieu ? placeBlock(lieu, res) : said ? { demande: lieu, trouve: null, note: NOM_SEUL } : undefined,
+    // A road the gazetteer lacks or takes for another place (« route des Plaines », La Plaine): the road, as asked.
+    lieu: way && res?.lieu.type !== "route" ? { demande: lieu, trouve: way.nom.replace(/^la /, ""), type: "route" } : res && lieu ? placeBlock(lieu, res) : said ? { demande: lieu, trouve: null, note: NOM_SEUL } : undefined,
     resume,
     route_du_littoral: roadAsked ? littoral.forTool(littoral.littoral(data, now), now) : undefined,
     radars_fixes: cameras,

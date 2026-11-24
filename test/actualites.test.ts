@@ -392,6 +392,37 @@ describe("actualités", () => {
     expect([none.isError, body(none).erreur]).toEqual([true, "Lieu introuvable à La Réunion : « Zorglubville »."]);
   });
 
+  it("gives for a main road asked as a place the news that name the road, never the commune of a point of it", async () => {
+    const item = (titre: string, at: string, n: number) =>
+      `<item><title>${titre}</title><link>https://freedom.fr/route-${n}/</link><pubDate>${new Date(at).toUTCString()}</pubDate></item>`;
+    const feed = `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Free Dom</title>${[
+      item("Saint-Leu : un mariage au temple du Piton", "2026-10-24T07:58:00Z", 1),
+      item("Route des Tamarins : un accident ralentit la circulation vers Saint-Paul", "2026-10-24T07:50:00Z", 2),
+      item("Sainte-Rose : la RN2 coupée après un éboulis", "2026-10-24T07:45:00Z", 3),
+      item("Saint-Joseph : la RN 2002 refaite à neuf", "2026-10-24T07:44:00Z", 4),
+      item("Le Tampon : la route des Plaines fermée cette nuit pour travaux", "2026-10-24T07:40:00Z", 5),
+      item("Saint-Paul : travaux sur la route du Maïdo jusqu'à vendredi", "2026-10-24T07:35:00Z", 6),
+      item("Cilaos : la RN5 en circulation alternée", "2026-10-24T07:30:00Z", 7),
+    ].join("")}</channel></rss>`;
+    const ALL = [...feed.matchAll(/<title>([^<]*)<\/title><link>/g)].map((m) => m[1]);
+    vi.stubGlobal("fetch", async (url: string) => (url.includes("freedom") ? new Response(feed) : new Response("", { status: 503 })));
+    const titles = async (lieu: string) => body(await actualites(cache(), lieu, undefined, undefined, NOW)).infos.map((r: { titre: string }) => ALL.indexOf(r.titre) + 1);
+
+    // The route des Tamarins is in the gazetteer at a point in Saint-Leu: Saint-Leu's wedding is not news of the road.
+    const tamarins = body(await actualites(cache(), "route des Tamarins", undefined, undefined, NOW));
+    expect(tamarins.lieu.trouve).toBe("Route des Tamarins");
+    expect(tamarins.resume).toMatch(/^1 information des dernières 24 h mentionne la route des Tamarins\. /);
+    expect(await titles("route des Tamarins")).toEqual([2]);
+    // A national road by its number, never another number that starts with it.
+    expect(await titles("RN2")).toEqual([3]);
+    // By the names the headlines use: the RN3 is the route des Plaines, the RN5 the route de Cilaos.
+    expect(await titles("route des Plaines")).toEqual([5]);
+    expect(await titles("la RN3")).toEqual([5]);
+    expect(await titles("route de Cilaos")).toEqual([7]);
+    // A road the gazetteer has only as a forest track: the road the headlines name.
+    expect(await titles("route du Maïdo")).toEqual([6]);
+  });
+
   it("gives the fixed speed cameras of the ministry's list with the roads, never the mobile checks", async () => {
     const sp = body(await actualites(cache(), "Saint-Pierre", "route", undefined, NOW));
     expect(sp.radars_fixes.resume).toBe("5 radars fixes à Saint-Pierre dans la liste du ministère de l'Intérieur (fichier du 30/12/2025), limités à 90\u00a0km/h et 110\u00a0km/h.");

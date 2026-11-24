@@ -8,6 +8,9 @@
 # monuments), a few requests to the Région's portal (its OpenDataSoft API, Licence Ouverte, paced by the scripts) and a
 # few minutes of a GitHub runner a week, free for a public repository; nothing on Cloudflare (no request to the Worker,
 # no KV, no D1).
+# Then the places we give against a second source (scripts/verifier-positions.py): the annuaire's offices against their
+# address in the Base adresse nationale, the communes' points against their town hall in OpenStreetMap. It fails only on a
+# gap that is new or grew since scripts/positions-reference.json, and says a gap that closed: three requests, one each.
 name: Listes embarquées
 
 on:
@@ -58,14 +61,21 @@ jobs:
         id: monuments
         continue-on-error: true
         run: python3 -I scripts/build-monuments.py --verifier 0
+      # An office the annuaire places far from its address, a commune's point far from its town hall: « y aller », the
+      # distances and the nearest office are given wrong. Said to its producer, or the list rebuilt.
+      - name: Positions (annuaire contre BAN, communes contre mairies OSM)
+        id: positions
+        continue-on-error: true
+        run: python3 -I scripts/verifier-positions.py --verifier
       - name: Say what is to be redone
-        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success' || steps.canyons.outcome != 'success' || steps.marmailles.outcome != 'success' || steps.monuments.outcome != 'success'
+        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success' || steps.canyons.outcome != 'success' || steps.marmailles.outcome != 'success' || steps.monuments.outcome != 'success' || steps.positions.outcome != 'success'
         env:
           IRVE: ${{ steps.irve.outcome }}
           DAE: ${{ steps.dae.outcome }}
           CANYONS: ${{ steps.canyons.outcome }}
           MARMAILLES: ${{ steps.marmailles.outcome }}
           MONUMENTS: ${{ steps.monuments.outcome }}
+          POSITIONS: ${{ steps.positions.outcome }}
         run: |
-          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE ; canyons : $CANYONS ; sentiers marmailles : $MARMAILLES ; monuments historiques : $MONUMENTS. Le détail est dans l'étape en échec (écarts, ou source qui n'a pas répondu)."
+          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE ; canyons : $CANYONS ; sentiers marmailles : $MARMAILLES ; monuments historiques : $MONUMENTS ; positions : $POSITIONS. Le détail est dans l'étape en échec (écarts, ou source qui n'a pas répondu)."
           exit 1

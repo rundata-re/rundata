@@ -249,6 +249,7 @@ function placeAll(
         if (found) at[i] = found;
       }
     }
+    untangle(m, at, w, h);
     const faults = misplaced(m, at, w, h);
     const worst = faults.reduce((a, f, k) => (f > faults[a] ? k : a), 0);
     if (!faults[worst]) {
@@ -296,6 +297,34 @@ function faultOf(markers: Marker[], at: [number, number][], w: number[], h: numb
     }
     return covered + (seen * 2 < steps ? 1 : 0);
   };
+}
+
+/**
+ * Two marks of one size whose lines cross swap their places, when that leaves fewer crossings on the map and no more
+ * faults (misplaced()): the lines are then shorter together, and none passes under the other's mark (25/11/2026, /eau:
+ * Hermitage centre's and La Saline-les-Bains's lines, 8° apart, La Saline's under Hermitage centre's round).
+ */
+function untangle(m: Marker[], at: [number, number][], w: number[], h: number[]) {
+  const places = m.map((x) => project(x.lon, x.lat));
+  const tied = (i: number) => !onPlace(m[i], at[i]);
+  const side = (a: [number, number], b: [number, number], c: [number, number]) => Math.sign((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]));
+  const cross = (i: number, j: number) => tied(i) && tied(j) &&
+    side(places[i], at[i], places[j]) * side(places[i], at[i], at[j]) < 0 && side(places[j], at[j], places[i]) * side(places[j], at[j], at[i]) < 0;
+  const crossings = () => m.reduce((n, _, i) => n + m.filter((_, j) => j > i && cross(i, j)).length, 0);
+  const faults = () => misplaced(m, at, w, h).reduce((a, b) => a + b, 0);
+  for (let round = 0; round < 50; round++) {
+    let swapped = false;
+    for (let i = 0; i < m.length; i++) {
+      for (let j = i + 1; j < m.length; j++) {
+        if (w[i] !== w[j] || h[i] !== h[j] || !cross(i, j)) continue;
+        const [n, f] = [crossings(), faults()];
+        [at[i], at[j]] = [at[j], at[i]];
+        if (crossings() < n && faults() <= f) swapped = true;
+        else [at[i], at[j]] = [at[j], at[i]];
+      }
+    }
+    if (!swapped) break;
+  }
 }
 
 /** How far `q` is from the segment from `a` to `b`. */

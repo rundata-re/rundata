@@ -16,20 +16,24 @@ const O = "https://rundata.re";
 const NOW = new Date("2026-10-29T08:00:00Z");
 const count = (html: string, re: RegExp) => html.match(re)?.length ?? 0;
 
-/** The page's script with a link to `hash`: whether the <details> it should open was opened. */
-function follow(hash: string, target: { inside?: boolean; holds?: boolean } | null) {
+/**
+ * The page's script with a link to `hash`, the row of id `id` being `target`: whether the <details> it should open was
+ * opened, the address it reads, and what it listens to.
+ */
+function follow(hash: string, target: { inside?: boolean; holds?: boolean } | null, id = hash.slice(1)) {
   const d = { open: false };
+  const location = { hash };
   const el = target && {
     closest: (s: string) => (s === "details" && target.inside ? d : null),
     querySelector: (s: string) => (s === ":scope>details" && target.holds ? d : null),
   };
-  let onHash = () => {};
+  const heard: Record<string, () => void> = {};
   runInNewContext(UNFOLD_SCRIPT, {
-    location: { hash },
-    document: { getElementById: (id: string) => (id === hash.slice(1) ? el : null) },
-    addEventListener: (_: string, f: () => void) => (onHash = f),
+    location,
+    document: { getElementById: (x: string) => (x === id ? el : null) },
+    addEventListener: (event: string, f: () => void) => (heard[event] = f),
   });
-  return { d, onHash };
+  return { d, location, heard };
 }
 
 describe("long lists folded by category, each opened with a tap", () => {
@@ -42,9 +46,12 @@ describe("long lists folded by category, each opened with a tap", () => {
     expect(follow("#lieu-3", { inside: true }).d.open).toBe(true);
     expect(follow("#c-saint-pierre", { holds: true }).d.open).toBe(true);
     expect(follow("", null).d.open).toBe(false);
-    const later = follow("#rien", null);
+    // A link followed once the page is open: the category opens on the new address.
+    const later = follow("", { inside: true }, "lieu-3");
     expect(later.d.open).toBe(false);
-    later.onHash();
+    later.location.hash = "#lieu-3";
+    later.heard.hashchange!();
+    expect(later.d.open).toBe(true);
   });
 
   it("folds each kind of a commune's places for children, « Aires de jeux · 11 », a short list left open", () => {

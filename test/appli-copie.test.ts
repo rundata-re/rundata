@@ -5,6 +5,7 @@ import { APP_TOOLS, appliDe, cleCopie, COPY_SECONDS, type CopyStore } from "../s
 import { Cache } from "../src/cache.js";
 import { point, sansLieu, visitor, type Hit } from "../src/metrics.js";
 import { configure } from "../src/providers/mf-auth.js";
+import worker from "../src/worker.js";
 
 const ZIP = readFileSync(new URL("./fixtures/vigilance_om.zip", import.meta.url));
 
@@ -126,6 +127,29 @@ describe("the app's calls to the MCP endpoint", () => {
     expect(point(sansLieu({ ...hits[0], copie: true }, APP), { who: "appli", country: "", from: "", audience: "", language: "" }).blobs[13]).toBe("copie");
     // Another client's hit is kept as before.
     expect(sansLieu(hits[0], "Claude-User")).toBe(hits[0]);
+  });
+
+  it("keeps the country Cloudflare gives out of the app's point and log line, through the Worker", async () => {
+    // The country is read by the Worker from the request (request.cf), not given by the test: the app's is never kept,
+    // another client's is.
+    const asked = async (ua: string) => {
+      const points: { blobs?: string[] }[] = [];
+      const lines: unknown[] = [];
+      const log = vi.spyOn(console, "log").mockImplementation((l: unknown) => void lines.push(l));
+      const request = post({ jsonrpc: "2.0", id: 1, method: "tools/list" }, ua);
+      Object.defineProperty(request, "cf", { value: { country: "RE", asn: 37002 } });
+      const env = { USAGE: { writeDataPoint: (p: { blobs?: string[] }) => void points.push(p) } };
+      const after: Promise<unknown>[] = [];
+      await worker.fetch(request, env as never, { waitUntil: (p) => void after.push(p) });
+      await Promise.all(after);
+      log.mockRestore();
+      const mcp = points.filter((p) => p.blobs?.[0] === "rpc" || p.blobs?.[0] === "mcp");
+      const line = lines.find((l): l is { country?: string } => typeof l === "object" && l !== null && "method" in l);
+      return { countries: mcp.map((p) => p.blobs![4]), logged: line?.country };
+    };
+    expect(await asked(APP)).toEqual({ countries: [""], logged: undefined });
+    expect(await asked(WIDGET)).toEqual({ countries: [""], logged: undefined });
+    expect(await asked("Claude-User")).toEqual({ countries: ["RE"], logged: "RE" });
   });
 
   it("is told on the privacy page", async () => {

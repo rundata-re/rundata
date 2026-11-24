@@ -20,7 +20,9 @@ function open(search: string) {
   const handlers: ((e: { target: unknown }) => void)[] = [];
   const c = { value: "", options, get selectedOptions() { return options.filter((o) => o.value === c.value); } };
   const f = { hidden: true, dataset: { communes: JSON.stringify(communes) }, q: { value: "" }, c, addEventListener: (k: string, h: (e: { target: unknown }) => void) => k === "input" && handlers.push(h) };
-  const items = LISTE.map((a) => ({ hidden: false, dataset: { c: a.commune ?? a.communeAcheteur ?? "" } as Record<string, string>, textContent: a.objet }));
+  // The items as the page writes them: their commune is the page's own data-c, never rebuilt here.
+  const items = [...html.matchAll(/<li data-c="([^"]*)">[\s\S]*?(Objet \d+)/g)].map((m) => ({ hidden: false, dataset: { c: m[1]!.replace(/&#39;/g, "'") } as Record<string, string>, textContent: m[2]! }));
+  expect(items).toHaveLength(LISTE.length);
   const b = { textContent: "" };
   const zero = { hidden: true, querySelector: () => b };
   const list = { hidden: false };

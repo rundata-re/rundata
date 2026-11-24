@@ -16,7 +16,7 @@ import * as seismes from "../src/providers/seismes.js";
 import * as vigicrues from "../src/providers/vigicrues.js";
 import * as mfStations from "../src/providers/meteofrance-stations.js";
 import * as onf from "../src/providers/sentiers.js";
-import { COUCHES, couchePath, type CoucheJson, MAX_GZIP, precisionDe, RESUME_PATH, type Resume } from "../src/web/couches.js";
+import { bornesCouche, COUCHES, couchePath, type CoucheJson, MAX_GZIP, precisionDe, RESUME_PATH, type Resume } from "../src/web/couches.js";
 
 const NOW = new Date("2026-10-31T18:00:00Z");
 
@@ -205,8 +205,10 @@ describe("the figures of /carte's « En direct » band", () => {
     expect(precisionDe(55.446, -21.3213)).toBe("adresse");
     expect(precisionDe(55.45, -21.29014)).toBe("adresse");
     const ez = irve.STATIONS.find((s) => s.adresse.startsWith("2 Rue Benoite Boulard"))!;
-    const layer = COUCHES.find((c) => c.id === "bornes")!;
-    expect(layer).toBeTruthy();
     expect(precisionDe(ez.lon, ez.lat)).toBe("commune");
+    // The layer the map reads gives each station its own precision: this one the commune, another its address.
+    const objets = bornesCouche(irve.STATIONS, NOW.toISOString()).objets;
+    expect(objets.find((o) => o.infos?.adresse === ez.adresse)!.precision).toBe("commune");
+    expect(objets.some((o) => o.precision === "adresse")).toBe(true);
   });
 });

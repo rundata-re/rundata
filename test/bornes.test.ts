@@ -68,6 +68,9 @@ describe("bornes de recharge", () => {
     // Never « en ce moment »: the count is the operators' state at its latest change, behind the reading (04:37).
     expect(r.resume).not.toContain("en ce moment");
     expect(r.communes[0]).toEqual({ commune: "Sainte-Marie", stations: 18, points: 103, libres: 45 });
+    // The 15 stations of 50 kW and more in the fixture, the best state first: an empty list would pass « every ».
+    expect(r.recharge_rapide).toHaveLength(15);
+    expect(r.recharge_rapide[0]).toMatchObject({ station: "Total Réunion, N1, Le Port", puissance_max_kw: 160 });
     expect(r.recharge_rapide.every((s: { puissance_max_kw: number }) => s.puissance_max_kw >= 50)).toBe(true);
   });
 

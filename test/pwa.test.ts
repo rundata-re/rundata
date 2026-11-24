@@ -163,7 +163,8 @@ describe("the service worker", () => {
   });
 
   it("keeps no page without its live block (no-store), no error, and never the assistants' copies, the MCP server or the feeds", async () => {
-    const w = worker({ net: async (r) => basic(new Response("<body>x</body>", { status: r.url.includes("erreur") ? 500 : 200, headers: { "content-type": "text/html", "cache-control": "no-store" } })) });
+    // Each refused for its own reason: the error has no no-store, the live block has a 200.
+    const w = worker({ net: async (r) => basic(r.url.includes("erreur") ? new Response("<body>x</body>", { status: 500, headers: { "content-type": "text/html" } }) : new Response("<body>x</body>", { headers: { "content-type": "text/html", "cache-control": "no-store" } })) });
     await w.navigate("/vigilance");
     await w.navigate("/erreur");
     expect(w.caches.stores.get("pages")?.size ?? 0).toBe(0);

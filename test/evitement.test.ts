@@ -57,8 +57,10 @@ describe("the skip link and the main landmark", () => {
   });
 
   it("names the sources at the end of a page as a region", () => {
-    const html = meteoPage(ORIGIN, null, NOW);
-    if (html.includes("fin-sources")) expect(html).toContain('<div class="wrap fin-sources" role="region" aria-label="Sources">');
+    // A body with its « Sources : » paragraph, which the layout moves to the end of the page.
+    const head = { title: "Chiffres", description: "Les chiffres", path: "/chiffres", jsonld: [] };
+    const html = layout(ORIGIN, head, "", '<p>Corps.</p><p class="sources">Source : Météo-France.</p>');
+    expect(html).toContain('<div class="wrap fin-sources" role="region" aria-label="Sources"><p class="sources">Source : Météo-France.</p></div>');
   });
 });
 

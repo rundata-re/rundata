@@ -7,6 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
+import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
 import { Cache, CACHE_FORMAT, MemoryStore, TieredStore, type CacheEntry, type CacheStore } from "./cache.js";
 import { KvStore } from "./kv.js";
@@ -581,6 +582,13 @@ export default {
       }, now)))
         .then(({ value, used, reads }) => console.log(`bornes de recharge : ${value} points de La Réunion, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("bornes de recharge : état impossible", why(err))));
+    }
+    // From 00:00 to 00:40 in La Réunion: the communes' page copies of the day, a few each event, once the reads above
+    // are done, in a budget of their own (web/minuit.ts).
+    if (kv && minuitDu(now)) {
+      ctx.waitUntil(reads.then(() => counted(MINUIT_BUDGET, () => minuit(c, new Date()), (p) => ctx.waitUntil(p)))
+        .then(({ value, used }) => console.log(`copies de minuit : ${minuitSaid(value, used)}`))
+        .catch((err) => console.error("copies de minuit impossibles", why(err))));
     }
     // The collectors that keep one copy in KV (collecteurs.ts), each in a budget of its own once the reads above are done.
     if (kv) {

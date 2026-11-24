@@ -53,7 +53,7 @@ describe("the budget's registry (src/registre.ts)", () => {
     const event = src.slice(src.indexOf("async scheduled("));
     // The collectors of the table (collecteurs.ts) run by one loop of the event, each in its own counted(BUILD_BUDGET).
     const blocks = [
-      ...event.split("counted(BUILD_BUDGET").slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI"),
+      ...event.split(/counted\((?:BUILD_BUDGET|MINUIT_BUDGET)/).slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI"),
       ...COLLECTEURS.map((c) => c.nom),
     ];
     expect(new Set(blocks).size).toBe(blocks.length);
@@ -62,7 +62,7 @@ describe("the budget's registry (src/registre.ts)", () => {
     // The queues leave SCHEDULED_BUDGET, never the invocation: its total, queues and all, under the platform's limit less 15 %.
     expect(worstMain().subrequests).toBeLessThan(worstEvent().subrequests);
     expect(worstEvent().subrequests).toBeLessThanOrEqual(PLATFORM_SHARE * SUBREQUEST_LIMIT);
-    for (const q of queues()) expect(q.run.subrequests, q.queue).toBeLessThanOrEqual(BUILD_BUDGET);
+    for (const q of queues()) expect(q.run.subrequests, q.queue).toBeLessThanOrEqual(q.budget);
   });
 
   it("would fail a read that passes its limit", () => {

@@ -15,6 +15,7 @@
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, SERVICE_OPS_LIMIT, SUBREQUEST_LIMIT } from "./budget.js";
+import { MINUIT_BUDGET, MINUIT_PAR_PASSAGE } from "./web/minuit.js";
 import { DETAILS_MAX as CONNECTEUR_DETAILS, PAGES_MAX as CONNECTEUR_PAGES } from "./connecteurs/helloasso.js";
 import { IN_FLIGHT } from "./http.js";
 import { AGENDAS } from "./providers/agenda.js";
@@ -87,6 +88,8 @@ export interface Entry {
    * SCHEDULED_BUDGET; each queue is held to BUILD_BUDGET, and the invocation's total, queues and all, to the platform's.
    */
   queue?: string;
+  /** A queue's own budget when it is not BUILD_BUDGET (`counted(MINUIT_BUDGET, …)`, web/minuit.ts). */
+  queueBudget?: number;
   run: Run;
   /** Where its reads start: files whose imports reach every source it reads. Never a file that reaches them all. */
   from: string[];
@@ -344,6 +347,24 @@ const SCHEDULED: Entry[] = [
     run: { subrequests: SANS_REPONSE_HOSTS + 2, d1Calls: 2, d1RowsRead: SANS_REPONSE_HOSTS, d1RowsWritten: SANS_REPONSE_HOSTS + 1, cpuMs: 30 },
     from: ["src/sans-reponse.ts"],
     basis: "estimé",
+  },
+  // The communes' page copies built again after midnight in La Réunion (web/minuit.ts), from 00:00 to 00:40, at most
+  // MINUIT_PAR_PASSAGE communes an event in its own budget (MINUIT_BUDGET): 24 communes in six events, declared here as
+  // one event every 4 hours so that the day's total is the night's. From cold, a commune's two copies took 87
+  // subrequests in the middle, 117 at most, and 300 ms of CPU (first views after midnight, 21 to 24/11/2026, Worker
+  // logs); its event gives up past its budget, the next goes on. KV: the copy read (peek) and read again before its
+  // write (islandPut), then written, for each of the two.
+  {
+    id: "minuit:communes",
+    queue: "copies de minuit",
+    queueBudget: MINUIT_BUDGET,
+    trigger: "planifiée",
+    what: `copies de minuit : web:lieu et web:commune de ${MINUIT_PAR_PASSAGE} communes par passage, de 00:00 à 00:40 heure de La Réunion, celles d'avant minuit seulement`,
+    every: 4 * 60,
+    offset: 0,
+    run: { subrequests: MINUIT_BUDGET, kvReads: 4 * MINUIT_PAR_PASSAGE, kvWrites: 2 * MINUIT_PAR_PASSAGE, cpuMs: 300 * MINUIT_PAR_PASSAGE },
+    from: ["src/web/minuit.ts"],
+    basis: "mesuré",
   },
   // The national file (about 9 Mo, 125 000 lines), read after the event's other reads. In the Worker's logs (26/10, its
   // first four runs against the sixteen runs of the same minutes before): about 160 ms of CPU more on average, 260 at
@@ -1131,9 +1152,12 @@ export const worstEvent = (entries = REGISTRY) => sum(scheduled(entries).map((e)
 const main = (entries = REGISTRY) => scheduled(entries).filter((e) => !e.queue);
 /** The same, without the queues: what SCHEDULED_BUDGET holds (worker.ts, `counted(SCHEDULED_BUDGET, …)`). */
 export const worstMain = (entries = REGISTRY) => sum(main(entries).map((e) => e.run));
-/** Each queue and what its entries take at once, from cold: held to BUILD_BUDGET. */
+/** Each queue and what its entries take at once, from cold: held to its budget, BUILD_BUDGET unless it says another. */
 export const queues = (entries = REGISTRY) =>
-  [...new Set(scheduled(entries).flatMap((e) => (e.queue ? [e.queue] : [])))].map((q) => ({ queue: q, run: sum(scheduled(entries).filter((e) => e.queue === q).map((e) => e.run)) }));
+  [...new Set(scheduled(entries).flatMap((e) => (e.queue ? [e.queue] : [])))].map((q) => {
+    const of = scheduled(entries).filter((e) => e.queue === q);
+    return { queue: q, run: sum(of.map((e) => e.run)), budget: Math.max(...of.map((e) => e.queueBudget ?? BUILD_BUDGET)) };
+  });
 /** The share of the platform's subrequests per invocation the whole scheduled invocation may take: 15 % kept. */
 export const PLATFORM_SHARE = 0.85;
 
@@ -1179,7 +1203,7 @@ export function checks(entries = REGISTRY): { what: string; value: number; limit
   return [
     { what: "pire passage planifié, sous-requêtes", value: worstMain(entries).subrequests, limit: SCHEDULED_BUDGET },
     { what: "pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %)", value: worst.subrequests, limit: Math.floor(PLATFORM_SHARE * SUBREQUEST_LIMIT) },
-    ...queues(entries).map((q) => ({ what: `queue « ${q.queue} », sous-requêtes`, value: q.run.subrequests, limit: BUILD_BUDGET })),
+    ...queues(entries).map((q) => ({ what: `queue « ${q.queue} », sous-requêtes`, value: q.run.subrequests, limit: q.budget })),
     { what: "pire passage planifié, appels KV et D1", value: serviceOps(worst), limit: SERVICE_OPS_LIMIT },
     { what: "pire passage planifié, CPU (ms)", value: worst.cpuMs, limit: SCHEDULED_CPU_MS },
     { what: "pire passage planifié, mémoire déclarée (Mo)", value: worst.memoryMb ?? 0, limit: ISOLATE_MEMORY_MB },
@@ -1254,7 +1278,7 @@ export function budget(entries = REGISTRY): string {
     `| contrôle | valeur | limite |\n|---|---:|---:|\n` +
     checks(entries).map((c) => `| ${c.what} | ${n(c.value)} | ${n(c.limit)} |`).join("\n") + `\n\n` +
     `- Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre ${n(SCHEDULED_BUDGET)}.\n` +
-    `- Queues : ${queues(entries).length} lectures lancées après celles de la tâche, chacune dans son propre budget de ${n(BUILD_BUDGET)} sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux ${n(SCHEDULED_BUDGET)}. Le pire passage, queues comprises (${n(worst.subrequests)}), reste sous la limite de la plateforme, ${n(SUBREQUEST_LIMIT)} sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.\n` +
+    `- Queues : ${queues(entries).length} lectures lancées après celles de la tâche, chacune dans son propre budget, de ${n(BUILD_BUDGET)} sous-requêtes sauf mention dans le tableau ci-dessus (src/worker.ts), dans la même invocation. Elles ne prennent rien aux ${n(SCHEDULED_BUDGET)}. Le pire passage, queues comprises (${n(worst.subrequests)}), reste sous la limite de la plateforme, ${n(SUBREQUEST_LIMIT)} sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.\n` +
     // Past 85 % of its limit, the margin left is said, with the rule that keeps it (decided on 31/10/2026).
     (worstMain(entries).subrequests > 0.85 * SCHEDULED_BUDGET
       ? `- Marge : le pire passage planifié est à ${n(worstMain(entries).subrequests)} sous-requêtes sur ${n(SCHEDULED_BUDGET)}. Une PR qui ajoute des sous-requêtes à la tâche planifiée en retire ou en étale d'abord autant (une cadence plus longue, un autre décalage), pour qu'il ne monte plus. Sous les ${n(SERVICE_OPS_LIMIT)} appels à KV, D1 et aux services liés que la plateforme permet par invocation, il en reste au moins ${n(SERVICE_OPS_LIMIT - worst.subrequests)}, chaque sous-requête comptée comme un appel. Hors déploiement, le passage le plus chargé est à ${n(short.run.subrequests)} (cadences les plus courtes).\n`

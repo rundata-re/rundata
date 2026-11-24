@@ -19,10 +19,11 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | contrôle | valeur | limite |
 |---|---:|---:|
 | pire passage planifié, sous-requêtes | 479 | 620 |
-| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 618 | 8 500 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 1 018 | 8 500 |
 | queue « carte du CMRS », sous-requêtes | 19 | 100 |
 | queue « trace du CMRS », sous-requêtes | 8 | 100 |
 | queue « sites sans réponse », sous-requêtes | 22 | 100 |
+| queue « copies de minuit », sous-requêtes | 400 | 400 |
 | queue « bornes de recharge », sous-requêtes | 2 | 100 |
 | queue « mesures de l'air », sous-requêtes | 6 | 100 |
 | queue « sites mobiles hors service », sous-requêtes | 3 | 100 |
@@ -37,8 +38,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | queue « connecteurs », sous-requêtes | 22 | 100 |
 | queue « veille », sous-requêtes | 2 | 100 |
 | queue « espace club », sous-requêtes | 4 | 100 |
-| pire passage planifié, appels KV et D1 | 131 | 1 000 |
-| pire passage planifié, CPU (ms) | 5 387 | 30 000 |
+| pire passage planifié, appels KV et D1 | 155 | 1 000 |
+| pire passage planifié, CPU (ms) | 6 587 | 30 000 |
 | pire passage planifié, mémoire déclarée (Mo) | 112 | 128 |
 | passage le plus chargé (cadences les plus courtes), sous-requêtes | 213 | 620 |
 | vue la plus chère, sous-requêtes | 100 | 200 |
@@ -49,7 +50,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:jours, sous-requêtes | 2 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 620.
-- Queues : 17 lectures lancées après celles de la tâche, chacune dans son propre budget de 100 sous-requêtes (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 620. Le pire passage, queues comprises (618), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
+- Queues : 18 lectures lancées après celles de la tâche, chacune dans son propre budget, de 100 sous-requêtes sauf mention dans le tableau ci-dessus (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 620. Le pire passage, queues comprises (1 018), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
 - Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 146 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:actualites, web:coupures, web:air, ens:ile, alertes:etat, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 213 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, alertes:etat, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
@@ -58,10 +59,10 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 618 | 41 | 64 | 26 | 2 004 | 284 | 5 387 |
-| tâche planifiée, par jour | 47 647 | 5 571 | 5 115 | 2 983 | 344 834 | 58 511 | 353 104 |
-| tâche planifiée, par jour, cadences les plus courtes | 66 779 | 7 203 | 7 419 | 3 463 | 349 874 | 58 511 | 501 384 |
-| tâche planifiée, par mois (30 jours) | 1 429 397 | 167 130 | 153 450 | 89 503 | 10 345 011 | 1 755 321 | 10 593 107 |
+| pire passage planifié | 1 018 | 57 | 72 | 26 | 2 004 | 284 | 6 587 |
+| tâche planifiée, par jour | 50 047 | 5 667 | 5 163 | 2 983 | 344 834 | 58 511 | 360 304 |
+| tâche planifiée, par jour, cadences les plus courtes | 69 179 | 7 299 | 7 467 | 3 463 | 349 874 | 58 511 | 508 584 |
+| tâche planifiée, par mois (30 jours) | 1 501 397 | 170 010 | 154 890 | 89 503 | 10 345 011 | 1 755 321 | 10 809 107 |
 | tâches planifiées à part, par jour | 5 810 | 169 | 169 |  |  |  | 2 933 |
 | tâches planifiées à part, par mois (30 jours) | 174 300 | 5 070 | 5 070 |  |  |  | 87 990 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -69,7 +70,7 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 Les visites et les questions sont comptées par vue : leur total dépend du trafic.
 
-Écritures KV par mois (30 jours) : 158 670 pour les tâches ci-dessus, et 475 200 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 55 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 633 870 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
+Écritures KV par mois (30 jours) : 160 110 pour les tâches ci-dessus, et 475 200 au plus pour les copies de pages de l'île (web/data.ts ISLAND_PAGES : 55 clés, une écriture par clé toutes les 5 minutes au plus, quel que soit le trafic). Soit 635 310 au pire, face aux 1 000 000 incluses par mois. Les visites qui écrivent une copie d'une source de l'île (ISLAND_READS) s'y ajoutent selon le trafic.
 
 ## Tâche planifiée
 
@@ -131,6 +132,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | sans-reponse:echecs | sites sans réponse : l'état des sites relu quand une lecture échoue (D1), au plus toutes les 10 minutes par isolat, après la réponse aussi pour une vue ou une question ; une écriture de plus pour un site qui entre dans la liste | 10 min | 00:00 | 1 |  |  | 1 | 20 |  | 2 | estimé |
 | copies:echecs | copies partagées : l'échec d'une copie en retard, lu avec elle et écrit après un essai manqué (KV), au plus une fois toutes les 5 minutes par copie pour tous les centres de données, seulement quand sa source ne répond pas | 5 min | 00:00 | 2 | 1 | 1 |  |  |  |  | code |
 | sans-reponse:reverification | sites sans réponse : la revérification quotidienne, une lecture par site (D1 et sites), à 06:00 heure de La Réunion (queue « sites sans réponse ») | 1440 min | 02:00 | 22 |  |  | 2 | 20 | 21 | 30 | estimé |
+| minuit:communes | copies de minuit : web:lieu et web:commune de 4 communes par passage, de 00:00 à 00:40 heure de La Réunion, celles d'avant minuit seulement (queue « copies de minuit ») | 240 min | 00:00 | 400 | 16 | 8 |  |  |  | 1 200 | mesuré |
 | irve:etat | bornes de recharge : la part de La Réunion du fichier national (environ 9 Mo), écrite dans KV après les autres lectures (queue « bornes de recharge ») | 15 min | 00:05 | 2 |  | 1 |  |  |  | 300 | estimé |
 | air:mesures | qualité de l'air : les mesures horaires des stations d'Atmo Réunion, leurs lignes du fichier national du LCSQA (jusqu'à 12,5 Mo, lu ligne à ligne), écrites dans KV quand la dernière heure change (queue « mesures de l'air ») | 60 min | 00:45 | 6 | 1 | 1 |  |  |  | 260 | mesuré |
 | antennes:hors-service | sites mobiles hors service : les lignes de La Réunion du fichier quotidien de l'Arcep (0,5 à 2,2 Mo), écrites dans KV une fois par jour (queue « sites mobiles hors service ») | 1440 min | 10:30 | 3 | 1 | 1 |  |  |  | 40 | estimé |
@@ -341,6 +343,7 @@ Les fichiers qui lisent un site (par src/http.ts), atteints par les imports de c
 | agenda:luc_donat | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | sans-reponse:echecs | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
 | sans-reponse:reverification | connecteurs/helloasso, providers/agenda, providers/avis-eau, providers/salles, providers/sport |
+| minuit:communes | connecteurs/helloasso, providers/acspo, providers/actualites, providers/agenda, providers/air-mesures, providers/annuaire, providers/arome, providers/arretes-travaux, providers/atmo, providers/avis-eau, providers/baignades, providers/calendrier, providers/candhis, providers/capteurs, providers/carburants, providers/cmrs-carte, providers/cmrs-trace, providers/coraux, providers/coupures-courant, providers/cpf, providers/cyclones, providers/eaupotable, providers/edf, providers/emploi, providers/ensemble, providers/feux, providers/ffck, providers/ffvl, providers/gtfsrt, providers/houle, providers/irve, providers/marches-publics, providers/maregraphes, providers/metar, providers/meteofrance, providers/meteor-oi, providers/mf-auth, providers/modis, providers/openmeteo, providers/prefecture, providers/radar, providers/salles, providers/seismes, providers/sentiers, providers/sites-hs, providers/sport-avis, providers/sport, providers/tco, providers/terrain, providers/traces, providers/uv-mesure, providers/uv, providers/velos, providers/vigicrues, providers/vigieau, providers/vigilance, providers/viirs, providers/volcan |
 | irve:etat | providers/irve |
 | air:mesures | providers/air-mesures |
 | antennes:hors-service | providers/sites-hs |

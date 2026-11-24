@@ -1,0 +1,1490 @@
+{
+ "construit": "2026-11-24",
+ "mis_a_jour": "2026-11-20",
+ "source": "Répertoire national des élus (RNE), ministère de l'Intérieur, Licence Ouverte 2.0",
+ "page": "https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1/",
+ "communes": {
+  "97401": {
+   "maire": {
+    "prenom": "Eric",
+    "nom": "FERRERE"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Léon Alphonse",
+     "nom": "HOARAU"
+    },
+    {
+     "rang": 2,
+     "prenom": "Céline",
+     "nom": "SANCH"
+    },
+    {
+     "rang": 3,
+     "prenom": "Jean Daniel",
+     "nom": "DENNEMONT"
+    },
+    {
+     "rang": 4,
+     "prenom": "Marie Hélène",
+     "nom": "RICQUEBOURG"
+    },
+    {
+     "rang": 5,
+     "prenom": "Fabrice Maximin",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie Suzie",
+     "nom": "FREDELISY"
+    },
+    {
+     "rang": 7,
+     "prenom": "Frédo Georges",
+     "nom": "FERRERE"
+    },
+    {
+     "rang": 8,
+     "prenom": "Lydia Marie Audrey",
+     "nom": "DEVEAUX"
+    },
+    {
+     "rang": 9,
+     "prenom": "Luc Pierrot",
+     "nom": "CANTINA"
+    }
+   ]
+  },
+  "97402": {
+   "maire": {
+    "prenom": "Jeannick",
+    "nom": "ATCHAPA"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Thierry",
+     "nom": "HENRIETTE"
+    },
+    {
+     "rang": 2,
+     "prenom": "Nina",
+     "nom": "ROGER"
+    },
+    {
+     "rang": 3,
+     "prenom": "Mario",
+     "nom": "EDMOND"
+    },
+    {
+     "rang": 4,
+     "prenom": "Nadège",
+     "nom": "BLAS"
+    },
+    {
+     "rang": 5,
+     "prenom": "Jean-Bernard",
+     "nom": "LATCHIMY"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie Ghislaine",
+     "nom": "VITRY"
+    },
+    {
+     "rang": 7,
+     "prenom": "Frédéric",
+     "nom": "STAINCQ"
+    },
+    {
+     "rang": 8,
+     "prenom": "Florence",
+     "nom": "BOYER"
+    },
+    {
+     "rang": 9,
+     "prenom": "Eric",
+     "nom": "ROUGET"
+    }
+   ]
+  },
+  "97403": {
+   "maire": {
+    "prenom": "Camille",
+    "nom": "CLAIN"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Garry",
+     "nom": "RIVIERE"
+    },
+    {
+     "rang": 2,
+     "prenom": "Mathilde",
+     "nom": "HOARAU"
+    },
+    {
+     "rang": 3,
+     "prenom": "Christophe",
+     "nom": "PASQUET"
+    },
+    {
+     "rang": 4,
+     "prenom": "Catherine",
+     "nom": "COULOMBEL"
+    },
+    {
+     "rang": 5,
+     "prenom": "Marc André",
+     "nom": "HOARAU"
+    },
+    {
+     "rang": 6,
+     "prenom": "Mymose",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 7,
+     "prenom": "Dominique",
+     "nom": "GONTHIER"
+    },
+    {
+     "rang": 8,
+     "prenom": "Aurélie",
+     "nom": "GRONDIN"
+    }
+   ]
+  },
+  "97404": {
+   "maire": {
+    "prenom": "Mathieu",
+    "nom": "HOARAU"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Harry",
+     "nom": "EMMA"
+    },
+    {
+     "rang": 2,
+     "prenom": "Marie Frede",
+     "nom": "FRANCOISE"
+    },
+    {
+     "rang": 3,
+     "prenom": "Stephenson",
+     "nom": "LALLEMAND"
+    },
+    {
+     "rang": 4,
+     "prenom": "Christine",
+     "nom": "PIANG-SIONG"
+    },
+    {
+     "rang": 5,
+     "prenom": "Jérémy",
+     "nom": "LEPINAY"
+    },
+    {
+     "rang": 6,
+     "prenom": "Sophia",
+     "nom": "BENTAALLA"
+    },
+    {
+     "rang": 7,
+     "prenom": "Anthony",
+     "nom": "CADET"
+    },
+    {
+     "rang": 8,
+     "prenom": "Emmanuelle",
+     "nom": "DOUANIER"
+    },
+    {
+     "rang": 9,
+     "prenom": "Antony",
+     "nom": "TAOCHY"
+    }
+   ]
+  },
+  "97405": {
+   "maire": {
+    "prenom": "Serge",
+    "nom": "HOAREAU"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Éric",
+     "nom": "LEBON"
+    },
+    {
+     "rang": 2,
+     "prenom": "Mimose",
+     "nom": "SEVERIN"
+    },
+    {
+     "rang": 3,
+     "prenom": "Nicolas",
+     "nom": "ETHEVE"
+    },
+    {
+     "rang": 4,
+     "prenom": "Clarisse",
+     "nom": "GENNEPY METRO"
+    },
+    {
+     "rang": 5,
+     "prenom": "Gino",
+     "nom": "LEBON"
+    },
+    {
+     "rang": 6,
+     "prenom": "Emmanuelle",
+     "nom": "MUSSARD"
+    },
+    {
+     "rang": 7,
+     "prenom": "Pascal",
+     "nom": "SUZANNE"
+    },
+    {
+     "rang": 8,
+     "prenom": "Reine Claude",
+     "nom": "AMYCLAS"
+    },
+    {
+     "rang": 9,
+     "prenom": "Olivier",
+     "nom": "FORT"
+    }
+   ]
+  },
+  "97406": {
+   "maire": {
+    "prenom": "Johnny",
+    "nom": "PAYET"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Jean Yves",
+     "nom": "FAUSTIN"
+    },
+    {
+     "rang": 2,
+     "prenom": "Sabine",
+     "nom": "IGOUFE"
+    },
+    {
+     "rang": 3,
+     "prenom": "Jean Claude",
+     "nom": "DAMOUR"
+    },
+    {
+     "rang": 4,
+     "prenom": "Marie Heliette",
+     "nom": "THIBURCE"
+    },
+    {
+     "rang": 5,
+     "prenom": "Alain",
+     "nom": "RIVIERE"
+    },
+    {
+     "rang": 6,
+     "prenom": "Gina",
+     "nom": "DALLEAU"
+    },
+    {
+     "rang": 7,
+     "prenom": "Mickaël",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 8,
+     "prenom": "Marie Mélissa",
+     "nom": "MOGALIA"
+    }
+   ]
+  },
+  "97407": {
+   "maire": {
+    "prenom": "Olivier",
+    "nom": "HOARAU"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Franck",
+     "nom": "JACQUES-ANTOINE"
+    },
+    {
+     "rang": 2,
+     "prenom": "Annick",
+     "nom": "LE TOULLEC"
+    },
+    {
+     "rang": 3,
+     "prenom": "Wilfrid",
+     "nom": "CERVEAUX"
+    },
+    {
+     "rang": 4,
+     "prenom": "Jasmine",
+     "nom": "BETON"
+    },
+    {
+     "rang": 5,
+     "prenom": "Bernard",
+     "nom": "ROBERT"
+    },
+    {
+     "rang": 6,
+     "prenom": "Mémouna",
+     "nom": "PATEL"
+    },
+    {
+     "rang": 7,
+     "prenom": "Guy",
+     "nom": "PERNIC"
+    },
+    {
+     "rang": 8,
+     "prenom": "Catherine",
+     "nom": "GOSSARD"
+    },
+    {
+     "rang": 9,
+     "prenom": "Zakaria",
+     "nom": "ALI"
+    },
+    {
+     "rang": 10,
+     "prenom": "Danila",
+     "nom": "BEGUE"
+    },
+    {
+     "rang": 11,
+     "prenom": "Armand",
+     "nom": "MOUNIATA"
+    }
+   ]
+  },
+  "97408": {
+   "maire": {
+    "prenom": "Erick",
+    "nom": "FONTAINE"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Julien",
+     "nom": "DOMENJOD"
+    },
+    {
+     "rang": 2,
+     "prenom": "Aurélie",
+     "nom": "NARAYANIN-RAMAYE"
+    },
+    {
+     "rang": 3,
+     "prenom": "Jean Roland",
+     "nom": "POTHIN"
+    },
+    {
+     "rang": 4,
+     "prenom": "Sophie",
+     "nom": "TECHER"
+    },
+    {
+     "rang": 5,
+     "prenom": "Philippe Roland",
+     "nom": "ROBERT"
+    },
+    {
+     "rang": 6,
+     "prenom": "Evane Nil",
+     "nom": "AYDOGARD"
+    },
+    {
+     "rang": 7,
+     "prenom": "Jérôme Emile",
+     "nom": "MOUNY"
+    },
+    {
+     "rang": 8,
+     "prenom": "Anaëlle",
+     "nom": "DUFESTIN"
+    },
+    {
+     "rang": 9,
+     "prenom": "Vincent",
+     "nom": "RIVIERE"
+    },
+    {
+     "rang": 10,
+     "prenom": "Jodaïde",
+     "nom": "DUFESTIN"
+    },
+    {
+     "rang": 11,
+     "prenom": "Jean Claude",
+     "nom": "LALLEMAND"
+    }
+   ]
+  },
+  "97409": {
+   "maire": {
+    "prenom": "Joé",
+    "nom": "BEDIER"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Jean-Marc",
+     "nom": "PEQUIN"
+    },
+    {
+     "rang": 2,
+     "prenom": "Gilberte",
+     "nom": "RAYEPIN MOUTOUSSAMY"
+    },
+    {
+     "rang": 3,
+     "prenom": "Jean Michel",
+     "nom": "JAUZE"
+    },
+    {
+     "rang": 4,
+     "prenom": "Evelyne",
+     "nom": "VOISIN"
+    },
+    {
+     "rang": 5,
+     "prenom": "Laurent",
+     "nom": "PAPAYA"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie Linda",
+     "nom": "VIRAPIN KICHENIN"
+    },
+    {
+     "rang": 7,
+     "prenom": "Gilles",
+     "nom": "NAZE"
+    },
+    {
+     "rang": 8,
+     "prenom": "Migline",
+     "nom": "GRONDIN"
+    },
+    {
+     "rang": 9,
+     "prenom": "Christian",
+     "nom": "GOTTE"
+    },
+    {
+     "rang": 10,
+     "prenom": "Josette",
+     "nom": "SABABADY"
+    },
+    {
+     "rang": 11,
+     "prenom": "Jean-Paul",
+     "nom": "CONSTANT"
+    },
+    {
+     "rang": 12,
+     "prenom": "Jimmye",
+     "nom": "COUPOU"
+    },
+    {
+     "rang": 13,
+     "prenom": "Michel",
+     "nom": "MAZEAU"
+    }
+   ]
+  },
+  "97410": {
+   "maire": {
+    "prenom": "Patrice",
+    "nom": "SELLY"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Ridwane",
+     "nom": "ISSA"
+    },
+    {
+     "rang": 2,
+     "prenom": "Valentine",
+     "nom": "SERRANO"
+    },
+    {
+     "rang": 3,
+     "prenom": "Augustin",
+     "nom": "CAZAL"
+    },
+    {
+     "rang": 4,
+     "prenom": "Anne",
+     "nom": "CHANE-KANE-BONE TAVEL"
+    },
+    {
+     "rang": 5,
+     "prenom": "François",
+     "nom": "CATAN"
+    },
+    {
+     "rang": 6,
+     "prenom": "Sylvie",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 7,
+     "prenom": "Patrice",
+     "nom": "ELLAMA"
+    },
+    {
+     "rang": 8,
+     "prenom": "Odile",
+     "nom": "DAMOUR"
+    },
+    {
+     "rang": 9,
+     "prenom": "Xavier",
+     "nom": "MANDRIN"
+    }
+   ]
+  },
+  "97411": {
+   "maire": {
+    "prenom": "Ericka",
+    "nom": "BAREIGTS"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Jean-François",
+     "nom": "HOAREAU"
+    },
+    {
+     "rang": 2,
+     "prenom": "Brigitte",
+     "nom": "ADAME"
+    },
+    {
+     "rang": 3,
+     "prenom": "Gérard",
+     "nom": "FRANCOISE"
+    },
+    {
+     "rang": 4,
+     "prenom": "Monique",
+     "nom": "ORPHÉ"
+    },
+    {
+     "rang": 5,
+     "prenom": "Yassine",
+     "nom": "MANGROLIA"
+    },
+    {
+     "rang": 6,
+     "prenom": "Julie",
+     "nom": "LALLEMAND"
+    },
+    {
+     "rang": 7,
+     "prenom": "Jacques",
+     "nom": "LOWINSKY"
+    },
+    {
+     "rang": 8,
+     "prenom": "Alexandra",
+     "nom": "CLAIN"
+    },
+    {
+     "rang": 9,
+     "prenom": "Jean-Pierre",
+     "nom": "RIVIERE"
+    },
+    {
+     "rang": 10,
+     "prenom": "Véronique",
+     "nom": "MALAYANDY"
+    },
+    {
+     "rang": 11,
+     "prenom": "David",
+     "nom": "BELDA"
+    },
+    {
+     "rang": 12,
+     "prenom": "Claudette",
+     "nom": "CLAIN"
+    },
+    {
+     "rang": 13,
+     "prenom": "Guillaume",
+     "nom": "KICHENAMA"
+    },
+    {
+     "rang": 14,
+     "prenom": "Tracy",
+     "nom": "NATAN"
+    },
+    {
+     "rang": 15,
+     "prenom": "Jean-Alexandre",
+     "nom": "POLEYA"
+    },
+    {
+     "rang": 16,
+     "prenom": "Audrey",
+     "nom": "ROBERT"
+    },
+    {
+     "rang": 17,
+     "prenom": "Patrice",
+     "nom": "BEDIER"
+    }
+   ]
+  },
+  "97412": {
+   "maire": {
+    "prenom": "Patrick",
+    "nom": "LEBRETON"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Gérald",
+     "nom": "KERBIDI"
+    },
+    {
+     "rang": 2,
+     "prenom": "Fiona",
+     "nom": "BENARD"
+    },
+    {
+     "rang": 3,
+     "prenom": "Axel",
+     "nom": "VIENNE"
+    },
+    {
+     "rang": 4,
+     "prenom": "Rose Andrée",
+     "nom": "MUSSARD"
+    },
+    {
+     "rang": 5,
+     "prenom": "Harry Claude",
+     "nom": "MOREL"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie Andrée",
+     "nom": "LEJOYEUX"
+    },
+    {
+     "rang": 7,
+     "prenom": "David",
+     "nom": "LEBON"
+    },
+    {
+     "rang": 8,
+     "prenom": "Lucette",
+     "nom": "COURTOIS"
+    },
+    {
+     "rang": 9,
+     "prenom": "Henri Claude",
+     "nom": "HUET"
+    },
+    {
+     "rang": 10,
+     "prenom": "Stéphanie",
+     "nom": "LEICHNIG"
+    },
+    {
+     "rang": 11,
+     "prenom": "Mohamed",
+     "nom": "D'JAFFAR M'ZE"
+    },
+    {
+     "rang": 12,
+     "prenom": "François",
+     "nom": "CARDIN"
+    },
+    {
+     "rang": 13,
+     "prenom": "Gilberte",
+     "nom": "FULBERT GÉRARD"
+    },
+    {
+     "rang": 14,
+     "prenom": "Jean-Denis",
+     "nom": "NAZE"
+    }
+   ]
+  },
+  "97413": {
+   "maire": {
+    "prenom": "Karim",
+    "nom": "JUHOOR"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Vanessa Judikaelle",
+     "nom": "BALENCOURT"
+    },
+    {
+     "rang": 2,
+     "prenom": "Didier",
+     "nom": "FOS"
+    },
+    {
+     "rang": 3,
+     "prenom": "Lucette",
+     "nom": "PALAS"
+    },
+    {
+     "rang": 4,
+     "prenom": "Gabriel",
+     "nom": "AUBERT"
+    },
+    {
+     "rang": 5,
+     "prenom": "Georgette",
+     "nom": "RAMIDGE BANE"
+    },
+    {
+     "rang": 6,
+     "prenom": "Lionel",
+     "nom": "LEBEAU"
+    },
+    {
+     "rang": 7,
+     "prenom": "Anne-Gaëlle",
+     "nom": "HOAREAU"
+    },
+    {
+     "rang": 8,
+     "prenom": "Christophe",
+     "nom": "ESTEVE"
+    },
+    {
+     "rang": 9,
+     "prenom": "Océane Mélissa",
+     "nom": "RIVIERE"
+    },
+    {
+     "rang": 10,
+     "prenom": "Jean-Marie",
+     "nom": "PATOUMA"
+    },
+    {
+     "rang": 11,
+     "prenom": "Eléna Marie-Claire",
+     "nom": "MAXWEL"
+    }
+   ]
+  },
+  "97414": {
+   "maire": {
+    "prenom": "Juliana",
+    "nom": "M'DOIHOMA"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Sylvain",
+     "nom": "ARTHÉMISE"
+    },
+    {
+     "rang": 2,
+     "prenom": "Gaëlle",
+     "nom": "MOUNIAMA COUPAN"
+    },
+    {
+     "rang": 3,
+     "prenom": "Imran",
+     "nom": "HATTEEA"
+    },
+    {
+     "rang": 4,
+     "prenom": "Eliana",
+     "nom": "NARCISSE"
+    },
+    {
+     "rang": 5,
+     "prenom": "Mickaël",
+     "nom": "CHAMAND"
+    },
+    {
+     "rang": 6,
+     "prenom": "Dominique",
+     "nom": "AMAZINGOI-RIVIÈRE"
+    },
+    {
+     "rang": 7,
+     "prenom": "Joël",
+     "nom": "LALLEMAND"
+    },
+    {
+     "rang": 8,
+     "prenom": "Yannicke",
+     "nom": "SEVERIN"
+    },
+    {
+     "rang": 9,
+     "prenom": "Jean Michel",
+     "nom": "FLORENCY"
+    },
+    {
+     "rang": 10,
+     "prenom": "Françoise",
+     "nom": "GASTRIN"
+    },
+    {
+     "rang": 11,
+     "prenom": "Pascal",
+     "nom": "DORSEUIL"
+    },
+    {
+     "rang": 12,
+     "prenom": "Rose Méry",
+     "nom": "CORENTHY"
+    },
+    {
+     "rang": 13,
+     "prenom": "Mathieu",
+     "nom": "MAILLOT"
+    }
+   ]
+  },
+  "97415": {
+   "maire": {
+    "prenom": "Emmanuel",
+    "nom": "SÉRAPHIN"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Nila",
+     "nom": "RADAKICHENIN"
+    },
+    {
+     "rang": 2,
+     "prenom": "Sebastien",
+     "nom": "GUYON"
+    },
+    {
+     "rang": 3,
+     "prenom": "Martine",
+     "nom": "GAZE"
+    },
+    {
+     "rang": 4,
+     "prenom": "Ludovic",
+     "nom": "LASAONE"
+    },
+    {
+     "rang": 5,
+     "prenom": "Karine",
+     "nom": "AGATHE FILAIN"
+    },
+    {
+     "rang": 6,
+     "prenom": "Jean Harry",
+     "nom": "GADO"
+    },
+    {
+     "rang": 7,
+     "prenom": "Patricia",
+     "nom": "VALLON-HOARAU CROSSON"
+    },
+    {
+     "rang": 8,
+     "prenom": "Sergio",
+     "nom": "PERFILLON"
+    },
+    {
+     "rang": 9,
+     "prenom": "Florence",
+     "nom": "LIM-HOUN-TCHEN"
+    },
+    {
+     "rang": 10,
+     "prenom": "Jean-François",
+     "nom": "LALLEMAND"
+    },
+    {
+     "rang": 11,
+     "prenom": "Carole",
+     "nom": "LEVENEUR"
+    },
+    {
+     "rang": 12,
+     "prenom": "Yann",
+     "nom": "CRIGHTON"
+    },
+    {
+     "rang": 13,
+     "prenom": "Marie-Anick",
+     "nom": "FLORIANT"
+    },
+    {
+     "rang": 14,
+     "prenom": "Marie Suzelle",
+     "nom": "BUCHLE"
+    },
+    {
+     "rang": 14,
+     "prenom": "Dominique",
+     "nom": "VIRAMA-COUTAYE"
+    },
+    {
+     "rang": 16,
+     "prenom": "Edie",
+     "nom": "SOPHIE"
+    }
+   ]
+  },
+  "97416": {
+   "maire": {
+    "prenom": "David",
+    "nom": "LORION"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Michèle",
+     "nom": "LAKERMANCE"
+    },
+    {
+     "rang": 2,
+     "prenom": "Olivier",
+     "nom": "NARIA"
+    },
+    {
+     "rang": 3,
+     "prenom": "Nadège",
+     "nom": "NARINSAMY"
+    },
+    {
+     "rang": 4,
+     "prenom": "Mohammad",
+     "nom": "OMARJEE"
+    },
+    {
+     "rang": 5,
+     "prenom": "Emilie",
+     "nom": "FONTAINE"
+    },
+    {
+     "rang": 6,
+     "prenom": "Kichena",
+     "nom": "DAMOUR"
+    },
+    {
+     "rang": 7,
+     "prenom": "Lisa",
+     "nom": "DERFLA"
+    },
+    {
+     "rang": 8,
+     "prenom": "Jackson",
+     "nom": "RICHARDSON"
+    },
+    {
+     "rang": 9,
+     "prenom": "Sandrine",
+     "nom": "AHO-NIENNE"
+    },
+    {
+     "rang": 10,
+     "prenom": "Roger",
+     "nom": "SELLY"
+    },
+    {
+     "rang": 11,
+     "prenom": "Héléna",
+     "nom": "ARAYE"
+    },
+    {
+     "rang": 12,
+     "prenom": "Nazir",
+     "nom": "VALY"
+    },
+    {
+     "rang": 13,
+     "prenom": "Jennifer",
+     "nom": "LABENNE"
+    },
+    {
+     "rang": 14,
+     "prenom": "Frédéric",
+     "nom": "VIENNE"
+    },
+    {
+     "rang": 15,
+     "prenom": "Patricia",
+     "nom": "TAYLLAMIN"
+    }
+   ]
+  },
+  "97417": {
+   "maire": {
+    "prenom": "Olivier",
+    "nom": "RIVIERE"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Claude-François",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 2,
+     "prenom": "Coralie",
+     "nom": "DUCHEMANN"
+    },
+    {
+     "rang": 3,
+     "prenom": "Francois Frédéric",
+     "nom": "SALVAN"
+    },
+    {
+     "rang": 4,
+     "prenom": "Lauriane",
+     "nom": "LEICHNIG"
+    },
+    {
+     "rang": 5,
+     "prenom": "Joseph Edwand",
+     "nom": "DAMOUR"
+    },
+    {
+     "rang": 6,
+     "prenom": "Larissa",
+     "nom": "SALVAN"
+    },
+    {
+     "rang": 7,
+     "prenom": "Mickaël",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 8,
+     "prenom": "Reine-Claude",
+     "nom": "RENAULT"
+    }
+   ]
+  },
+  "97418": {
+   "maire": {
+    "prenom": "Céline",
+    "nom": "SITOUZE"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "André",
+     "nom": "CHERIMONT"
+    },
+    {
+     "rang": 2,
+     "prenom": "Lucie",
+     "nom": "GRONDIN-DAFREVILLE"
+    },
+    {
+     "rang": 3,
+     "prenom": "Jean-Paul",
+     "nom": "LEOCADIE"
+    },
+    {
+     "rang": 4,
+     "prenom": "Rose Line",
+     "nom": "VALLIAMEE-CALY"
+    },
+    {
+     "rang": 5,
+     "prenom": "Jean-François",
+     "nom": "VELIN-CASSIM"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie-Silogia",
+     "nom": "TECHER"
+    },
+    {
+     "rang": 7,
+     "prenom": "Dimitri",
+     "nom": "VINKETASSALA"
+    },
+    {
+     "rang": 8,
+     "prenom": "Joëlle",
+     "nom": "NAUCHE"
+    },
+    {
+     "rang": 9,
+     "prenom": "David",
+     "nom": "BRUNO"
+    },
+    {
+     "rang": 10,
+     "prenom": "Heliette",
+     "nom": "BAKARI"
+    },
+    {
+     "rang": 11,
+     "prenom": "Teddy",
+     "nom": "LIBELLE"
+    }
+   ]
+  },
+  "97419": {
+   "maire": {
+    "prenom": "Michel",
+    "nom": "VERGOZ"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Dominique",
+     "nom": "PANAMBALOM"
+    },
+    {
+     "rang": 2,
+     "prenom": "Marie Cindy",
+     "nom": "BIRONDA"
+    },
+    {
+     "rang": 3,
+     "prenom": "Jean-Yves",
+     "nom": "THAO-THION"
+    },
+    {
+     "rang": 4,
+     "prenom": "Catherine",
+     "nom": "KBIDI"
+    },
+    {
+     "rang": 5,
+     "prenom": "Jimmy",
+     "nom": "PERIBE"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie-Pierre",
+     "nom": "MOULOUMA"
+    },
+    {
+     "rang": 7,
+     "prenom": "Dominique",
+     "nom": "CLAIN"
+    },
+    {
+     "rang": 8,
+     "prenom": "Henriette",
+     "nom": "DIJOUX"
+    }
+   ]
+  },
+  "97420": {
+   "maire": {
+    "prenom": "Alexandre",
+    "nom": "LAI-KANE-CHEONG"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Sarah Marie Joëlle",
+     "nom": "ASSAMA"
+    },
+    {
+     "rang": 2,
+     "prenom": "Rémi",
+     "nom": "ISSARAMBE REFANE"
+    },
+    {
+     "rang": 3,
+     "prenom": "Claudette",
+     "nom": "RAMSAMY"
+    },
+    {
+     "rang": 4,
+     "prenom": "Thierry",
+     "nom": "SINAN"
+    },
+    {
+     "rang": 5,
+     "prenom": "Christelle",
+     "nom": "HOAREAU"
+    },
+    {
+     "rang": 6,
+     "prenom": "Maximin",
+     "nom": "ASTOURNE"
+    },
+    {
+     "rang": 7,
+     "prenom": "Marie Prisca",
+     "nom": "TURPIN ÉPOUSE VALLIAMEE NADIANA"
+    },
+    {
+     "rang": 8,
+     "prenom": "Serge",
+     "nom": "ALPOU"
+    },
+    {
+     "rang": 9,
+     "prenom": "Jennifer",
+     "nom": "SELEMANY EPOUSE DE FONDAUMIERE"
+    },
+    {
+     "rang": 10,
+     "prenom": "Pascal",
+     "nom": "TAILAMEE"
+    }
+   ]
+  },
+  "97421": {
+   "maire": {
+    "prenom": "Sidoleine",
+    "nom": "PAPAYA"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Marcel",
+     "nom": "DAMOUR"
+    },
+    {
+     "rang": 2,
+     "prenom": "Catherine",
+     "nom": "GEVIA"
+    },
+    {
+     "rang": 3,
+     "prenom": "Mario",
+     "nom": "MOREAU"
+    },
+    {
+     "rang": 4,
+     "prenom": "Nathalie",
+     "nom": "HOAREAU"
+    },
+    {
+     "rang": 5,
+     "prenom": "Benjamin",
+     "nom": "PAUSÉ"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie-Jeanne",
+     "nom": "ELISABETH"
+    },
+    {
+     "rang": 7,
+     "prenom": "Harry",
+     "nom": "LUCILLY"
+    },
+    {
+     "rang": 8,
+     "prenom": "Severine",
+     "nom": "HOAREAU"
+    }
+   ]
+  },
+  "97422": {
+   "maire": {
+    "prenom": "Alexis",
+    "nom": "CHAUSSALET"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Christine",
+     "nom": "GAUTHIER VIDOT"
+    },
+    {
+     "rang": 2,
+     "prenom": "Eric",
+     "nom": "DUCROUX"
+    },
+    {
+     "rang": 3,
+     "prenom": "Marie-Pierre",
+     "nom": "MURAT"
+    },
+    {
+     "rang": 4,
+     "prenom": "Cédric",
+     "nom": "DIJOUX"
+    },
+    {
+     "rang": 5,
+     "prenom": "Pauline",
+     "nom": "LAURET"
+    },
+    {
+     "rang": 6,
+     "prenom": "Sliman",
+     "nom": "DIALLO"
+    },
+    {
+     "rang": 7,
+     "prenom": "Hanessa",
+     "nom": "HOARAU"
+    },
+    {
+     "rang": 8,
+     "prenom": "Dominique",
+     "nom": "LEBOT"
+    },
+    {
+     "rang": 9,
+     "prenom": "Christelle",
+     "nom": "OLICHON"
+    },
+    {
+     "rang": 10,
+     "prenom": "Max",
+     "nom": "BELVISÉE"
+    },
+    {
+     "rang": 11,
+     "prenom": "Anne",
+     "nom": "FONTAINE"
+    },
+    {
+     "rang": 12,
+     "prenom": "Kévin",
+     "nom": "TURPIN"
+    },
+    {
+     "rang": 13,
+     "prenom": "Sabrina",
+     "nom": "BOULANGER"
+    },
+    {
+     "rang": 14,
+     "prenom": "Jean-Eudes",
+     "nom": "DALLOU"
+    },
+    {
+     "rang": 15,
+     "prenom": "Katell",
+     "nom": "LOUARN"
+    }
+   ]
+  },
+  "97423": {
+   "maire": {
+    "prenom": "Daniel",
+    "nom": "PAUSÉ"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Jackson",
+     "nom": "ZEPHIR"
+    },
+    {
+     "rang": 2,
+     "prenom": "Cathy",
+     "nom": "SADEYEN"
+    },
+    {
+     "rang": 3,
+     "prenom": "Frederic",
+     "nom": "SADEYEN"
+    },
+    {
+     "rang": 4,
+     "prenom": "Chantal",
+     "nom": "SANDANCE"
+    },
+    {
+     "rang": 5,
+     "prenom": "Bruno Joseph",
+     "nom": "VAÏTY"
+    },
+    {
+     "rang": 6,
+     "prenom": "Marie Jocelyne",
+     "nom": "JANNIN"
+    },
+    {
+     "rang": 7,
+     "prenom": "Joseph",
+     "nom": "POTHIN"
+    },
+    {
+     "rang": 8,
+     "prenom": "Gertrude Marie Josée",
+     "nom": "SEYCHELLES HOARAU"
+    }
+   ]
+  },
+  "97424": {
+   "maire": {
+    "prenom": "Laïla",
+    "nom": "NASSIBOU"
+   },
+   "adjoints": [
+    {
+     "rang": 1,
+     "prenom": "Luciano",
+     "nom": "FIGUIN"
+    },
+    {
+     "rang": 2,
+     "prenom": "Marie-Pierre",
+     "nom": "LEBLE"
+    },
+    {
+     "rang": 3,
+     "prenom": "Brandon",
+     "nom": "HOARAU"
+    },
+    {
+     "rang": 4,
+     "prenom": "Valérie",
+     "nom": "DIJOUX"
+    },
+    {
+     "rang": 5,
+     "prenom": "Jean Paul",
+     "nom": "PAYET"
+    },
+    {
+     "rang": 6,
+     "prenom": "Elisabeth",
+     "nom": "FERRERE"
+    },
+    {
+     "rang": 7,
+     "prenom": "Benjamin",
+     "nom": "DARID"
+    },
+    {
+     "rang": 8,
+     "prenom": "Marie Laure",
+     "nom": "GRONDIN"
+    }
+   ]
+  }
+ }
+}

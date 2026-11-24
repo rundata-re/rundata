@@ -169,8 +169,10 @@ describe("the summary of a day", () => {
     // Each source once, by its name and licence, what the rule « Citer » needs.
     expect(c.sources).toEqual(r.sources.map((x) => ({ source: x.source, licence: x.licence })));
     expect(c.sources.length).toBeGreaterThan(5);
-    const { decheteries: _d, carburants: _c, detail: _x, sources: _s, ...rest } = c;
-    const { decheteries: _rd, carburants: _rc, sources: _rs, ...all } = r;
+    // The deputies counted, not listed.
+    expect(c.elus).toEqual(r.elus && { maire: r.elus.maire, donnees_du: r.elus.donnees_du, adjoints_au_maire: r.elus.adjoints.length });
+    const { decheteries: _d, carburants: _c, detail: _x, sources: _s, elus: _e, ...rest } = c;
+    const { decheteries: _rd, carburants: _rc, sources: _rs, elus: _re, ...all } = r;
     expect(rest).toEqual(all);
   });
 

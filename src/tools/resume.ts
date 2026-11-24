@@ -78,6 +78,7 @@ import { compteAvis, muetPour } from "./coupures.js";
 import { aheadRows, type CourantAnswer, followed, injoignable, shortOf } from "./courant.js";
 import { when } from "./injoignable.js";
 import { SITE_URL } from "./citer.js";
+import * as elus from "../vie/elus.js";
 import { PERIMEE_MIN, perimeeTexte } from "./electricite.js";
 import { a, ailleurs, credits, de, fourchette, le, notFound, placeBlock, placeWarning, show, text, when as measuredAt } from "./format.js";
 import { coastText, cyclone, cycloneOn, forZone, zoneLevels, zoneShort, zoneText } from "./vigilance.js";
@@ -583,6 +584,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     const own = all.filter((x) => keep.includes(x.source));
     return own.length ? own : all;
   };
+  const elu = elus.elusDe(nom);
   const shownSources = [
     weatherSources(l.meteo?.value, meteo), l.vigilance ? credits([mf.SOURCE]) : undefined, airSources(!!airHere, l.air?.value.sources), seaPart?.sources,
     prod ? credits([edf.SOURCE]) : undefined,
@@ -597,6 +599,7 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
     l.coupures?.value.sources, agendaSources(shown, l.agenda?.value.sources), calendrier ? l.calendrier?.value.sources : undefined,
     mairie ? commune_([annuaire.SOURCE.nom]) : undefined, busAlerts ? commune_([transit.SOURCE.nom, rt.SOURCE.nom]) : undefined,
     sites?.length ? l.dechets?.value.sources : undefined, volc ? volcanoSources(l.volcan!.value.sources) : undefined, power.length ? l.courant!.value.sources : undefined, marketSources.length ? credits(marketSources) : undefined, credits([sante.ARS_GARDE]),
+    elu ? credits([elus.SOURCE]) : undefined,
   ];
 
   return {
@@ -665,6 +668,14 @@ export function resume(commune: PlacePage, l: ResumeCopies, now: Date, leftOut: 
           adresse: mairie.adresse,
           telephone: mairie.telephone,
           avertissement: HORAIRES_A_SAVOIR,
+        }
+      : undefined,
+    // The RNE's mayor and deputies: their name and office only, with the day of the ministry's file (vie/elus.ts).
+    elus: elu
+      ? {
+          maire: elus.nomDe(elu.maire),
+          adjoints: elu.adjoints.map((a) => ({ fonction: elus.fonctionDe(a), nom: elus.nomDe(a) })),
+          donnees_du: elus.MIS_A_JOUR,
         }
       : undefined,
     coupures_electricite: power.length || powerSilent ? { avis: power.length ? power : undefined, injoignable: powerSilent && { texte: powerSilent.texte, site: powerSilent.site } } : undefined,
@@ -849,7 +860,7 @@ export async function readCopies(cache: Cache, commune: PlacePage, place: PlaceP
 }
 
 /** The short answer, the tool's default (Claude's directory asks for frugal answers): what it leaves out, and where. */
-export const COURT = "Réponse courte : sans la liste de ce qu'accepte chaque déchèterie ni le prix de chaque carburant. Le détail : rappeler l'outil avec detail, ou la page de la journée de la commune (lien).";
+export const COURT = "Réponse courte : sans la liste de ce qu'accepte chaque déchèterie, ni le prix de chaque carburant, ni la liste des adjoints au maire. Le détail : rappeler l'outil avec detail, ou la page de la journée de la commune (lien).";
 
 /**
  * The summary without its long lists, every warning and every link kept. Its sources, half of the answer, keep their
@@ -861,6 +872,7 @@ export function court(r: Resume) {
     ...r,
     decheteries: r.decheteries && { ...r.decheteries, sites: r.decheteries.sites.map(({ accepte: _, ...s }) => s) },
     carburants: fuel,
+    elus: r.elus && (({ adjoints, ...e }) => ({ ...e, adjoints_au_maire: adjoints.length }))(r.elus),
     sources: r.sources.map(({ source, licence }) => ({ source, licence })),
     detail: COURT,
   };

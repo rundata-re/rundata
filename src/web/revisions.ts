@@ -60,7 +60,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Every departure links its trip without « ?jour= », tomorrow's and yesterday's after midnight too (19/11/2026).
   bus: 16,
   // The Moon between its main phases said once in the summary: « Lune décroissante », not « Lune : Lune décroissante ».
-  calendrier: 5,
+  // Every public holiday named as people say it (« Jour de l'an », « Armistice de 1918 »), the 20 December « Fête de
+  // l'abolition de l'esclavage » (24/11/2026).
+  calendrier: 6,
   // sensors.social among the air's sources, under ODbL (09/11/2026).
   // MétéoR Océan Indien among the weather's sources, under CC BY-NC (09/11/2026).
   // The news of Saint-Denis and Saint-Pierre, and Le Tampon's agenda, among the sources counted (20/11/2026).

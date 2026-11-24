@@ -933,7 +933,9 @@ export async function agenda(cache: Cache, lieu?: string, quand?: string, quoi?:
   if (!n) rienTrouve("evenements");
   const covered = !commune || src.COVERED.includes(commune);
   // A commune read only through its mairie's news: said, so that a short list is not taken for its whole agenda.
-  const partly = commune ? partial.find((x) => x.commune === commune && !towns.some((y) => (y.couvre ?? [y.commune]).includes(commune))) : undefined;
+  // The TCO's agenda, a few events a month over its five communes, is no commune's agenda: Saint-Leu, read through its
+  // news, still says so.
+  const partly = commune ? partial.find((x) => x.commune === commune && !towns.some((y) => y.id !== src.TCO.id && (y.couvre ?? [y.commune]).includes(commune))) : undefined;
   const off = mine.filter((x) => x.e.statut === "annulé" || x.e.statut === "reporté");
   // reunion.fr's agenda, not read (tools/non-repris.ts): said for the whole island and for the big fêtes and festivals.
   const irt = !commune || !!what?.nom?.includes("fêtes et festivals");

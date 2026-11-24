@@ -17,10 +17,6 @@ export const PDSA: SourceInfo = {
   url: "https://www.reunion.gouv.fr/contenu/telechargement/51490/389150/file/Arr%C3%AAt%C3%A9%20n%C2%B082-ARS-2026%20portant%20adoption%20du%20cahier%20des%20charges%20de%20la%20permanence%20des%20soins%20ambulatoires%20dans%20le%20d%C3%A9partement%20de%20La%20R%C3%A9union.pdf",
 };
 
-/** The specification itself, annexed to the arrêté. */
-export const CAHIER =
-  "https://www.reunion.gouv.fr/contenu/telechargement/51492/389160/file/Cahier%20des%20charges%20de%20la%20permanence%20des%20soins%20ambulatoires%20D%C3%A9partement%20de%20La%20R%C3%A9union%20.pdf";
-
 /** The same in every territory. */
 export const HORAIRES = {
   soirs: "tous les soirs de 19 h à 23 h",

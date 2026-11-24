@@ -218,16 +218,6 @@ export function parseTR(r: Reponse): Mesure[] {
   });
 }
 
-/** getCampListeTR's message marks each campaign asked: « +01704+ » with data, « -02906- » without. */
-export function availability(message: unknown): { avec: string[]; sans: string[] } {
-  const inside = /\(([^)]*)\)/.exec(String(message ?? ""))?.[1] ?? "";
-  const items = inside.split(",").map((x) => x.replace(/\s+/g, ""));
-  return {
-    avec: items.flatMap((x) => (/^\+\w{5}\+$/.test(x) ? [x.slice(1, -1)] : [])),
-    sans: items.flatMap((x) => (/^-\w{5}-$/.test(x) ? [x.slice(1, -1)] : [])),
-  };
-}
-
 /** getCampInfos: the campaign's place (columns Nom, Latitude, Longitude, …), when it gives one. */
 export function parseInfos(r: Reponse): { lat: number; lon: number } | undefined {
   if (!ok(r) || !Array.isArray(r.results) || !Array.isArray(r.entete)) return undefined;

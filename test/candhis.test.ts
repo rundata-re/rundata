@@ -106,12 +106,6 @@ describe("the Candhis buoys", () => {
     expect(candhis.parseTR({ success: false, message: "Aucune donnée", entete: null, results: null })).toEqual([]);
   });
 
-  it("say which campaigns asked sent data, from the answer's message", () => {
-    expect(candhis.availability(H13.message)).toEqual({ avec: ["97405", "97408"], sans: ["97406"] });
-    // As the documentation prints it, broken over two lines.
-    expect(candhis.availability("Données TR directionnel H13 (+01704+,-02906-,-\n02911-,+05602+)\\ 2024-03-04 10:30 ")).toEqual({ avec: ["01704", "05602"], sans: ["02906", "02911"] });
-  });
-
   it("the first time, list the island's active buoys by type, then ask each type once; the key only in the header", async () => {
     candhis.configure(KEY);
     const s = store();

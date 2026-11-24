@@ -83,8 +83,6 @@ export const TITRE = "Chantiers de runéo autorisés par la ville";
 export const PHRASE =
   "La ville de Sainte-Suzanne publie les arrêtés qui autorisent les chantiers de runéo : voici ceux en cours ou à venir, avec leur lieu, leurs dates et leur lien. Ce sont des autorisations de chantier, pas des avis de coupure d'eau ; les avis de runéo sont plus haut sur cette page.";
 export const NOTE = "Autorisations de chantier publiées par la ville de Sainte-Suzanne, pas des avis de coupure : ne jamais en déduire une coupure ni son absence.";
-export const ligne = (a: ArreteTravaux) => `Arrêté n° ${a.numero} : ${a.lieu}, du ${jourDit(a.du)} au ${jourDit(a.au)}.`;
-export const pied = (at: Date) => `D'après le site de la ville de Sainte-Suzanne, lu le ${luLe(at)}.`;
 export const aucun = (at: Date) => `Pas d'arrêté de chantier de runéo en cours ou à venir sur le site de la ville, lu le ${luLe(at)}.`;
 
 /**

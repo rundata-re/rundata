@@ -9,7 +9,6 @@
 import { INSEE } from "../places/insee.js";
 import type { SourceInfo } from "../types.js";
 import data from "./decouvrir.json" with { type: "json" };
-import { MONUMENTS, type Monument } from "./monuments.js";
 
 export interface Lieu {
   nom: string;
@@ -79,9 +78,6 @@ export function resume(texte: string | undefined): string | undefined {
     .replace(/\s*,\s*$/, "").trim();
   return s.length > 15 ? `${s}.` : undefined;
 }
-
-/** The historic monument it is. */
-export const monumentOf = (l: Lieu): Monument | undefined => (l.monument ? MONUMENTS.find((m) => m.ref === l.monument) : undefined);
 
 export const SOURCE: SourceInfo = {
   id: "sit_lieux_remarquables",

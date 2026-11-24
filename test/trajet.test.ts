@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import { type Departure, departures, findStops, pageRow, todayOf, tripPath, tripRun } from "../src/tools/transports.js";
+import { type Departure, departures, findStops, pageRow, tripPath, tripRun } from "../src/tools/transports.js";
 import { tripGonePage, tripPage } from "../src/web/trajet.js";
 import { handle } from "../src/app.js";
 
@@ -49,12 +49,6 @@ describe("the link of a departure", () => {
     // A journey searched for a given day keeps it (tools/itineraire.ts): without it, its trip's page would open another run.
     expect(tripPath(d)).toBe(`${base}?jour=20261023&arret=${local}#arret-${local}`);
     expect(tripPath(d, false)).toBe(plain);
-  });
-
-  it("takes today as La Réunion's date, midnight included", () => {
-    expect(todayOf(new Date("2026-10-23T19:59:59Z"))).toBe(20261023);
-    expect(todayOf(new Date("2026-10-23T20:00:00Z"))).toBe(20261024);
-    expect(todayOf(new Date("2026-10-22T20:00:00Z"))).toBe(20261023);
   });
 
   it("without the day, opens the same run as with it: today's, the stop at the departure's time", async () => {

@@ -4,7 +4,8 @@ import { INSEE } from "../src/places/insee.js";
 import { toutesLesSources } from "../src/server.js";
 import { DECOUVRIR_SHOWN, communePage } from "../src/web/commune.js";
 import { pageOf } from "../src/web/places.js";
-import { counts, LIEUX, LISTE_DU, monumentOf, ofCommune, resume, SOURCE } from "../src/vie/decouvrir.js";
+import { counts, LIEUX, LISTE_DU, ofCommune, resume, SOURCE } from "../src/vie/decouvrir.js";
+import { MONUMENTS } from "../src/vie/monuments.js";
 
 // Saturday 31/10/2026, 01:13 at La Réunion.
 const NOW = new Date("2026-10-30T21:13:00Z");
@@ -34,7 +35,7 @@ describe("the remarkable places (vie/decouvrir.ts)", () => {
   });
 
   it("say which ones are historic monuments: the same name, or a word of their own beside one", () => {
-    const monuments = LIEUX.filter((l) => l.monument).map((l) => [l.nom, monumentOf(l)?.nom]);
+    const monuments = LIEUX.filter((l) => l.monument).map((l) => [l.nom, MONUMENTS.find((m) => m.ref === l.monument)?.nom]);
     expect(monuments).toHaveLength(9);
     expect(monuments).toContainEqual(["Maison Folio", "Villa Folio"]);
     expect(monuments).toContainEqual(["Musée de Villèle", "Domaine de Villèle"]);

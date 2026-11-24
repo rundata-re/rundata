@@ -74,10 +74,6 @@ export const STATIONS_974: [id: string, nom: string, lat: number, lon: number, a
   ["97424460", "Palmiste-Rouge", -21.168667, 55.4745, 830],
 ];
 
-// Those of the list that publish: the Réunion rows of a 6-minute packet (test/fixtures/meteofrance_6min.csv, 23/10).
-// The others are listed by Météo-France but closed or silent; the count moves a little from day to day.
-export const STATIONS_EN_SERVICE = 56;
-
 export const SOURCE: SourceInfo = {
   id: "meteofrance",
   nom: "Stations Météo-France (mesures toutes les 6 minutes)",

@@ -6,9 +6,13 @@ plugins {
 }
 
 // La clé définitive de l'appli, hors du dépôt : son fichier (PKCS12) et son mot de passe, donnés au moment de construire.
-// Sans eux, la version release est signée avec la clé de debug, et ne s'installe pas par-dessus une version publiée.
+// Sans eux, la version release refuse de se construire : signée avec la clé de debug, elle ne s'installerait pas
+// par-dessus une version publiée. Seule exception, demandée en toutes lettres : `-Prundata.release.cleDebug=true`, pour
+// construire et tester la version release (réduite par R8) là où la clé n'est pas, comme la CI ; jamais à publier.
 val cle: String? = System.getenv("RUNDATA_ANDROID_CLE")
 val cleMotDePasse: String? = System.getenv("RUNDATA_ANDROID_CLE_MDP")
+val cleDebugPermise: Boolean = providers.gradleProperty("rundata.release.cleDebug").orNull == "true"
+val cleDefinitive: Boolean = cle != null && cleMotDePasse != null
 
 android {
     namespace = "re.rundata.app"
@@ -61,6 +65,21 @@ android {
         abortOnError = true
     }
 }
+
+// Avant d'empaqueter la version release : la clé définitive, ou l'exception demandée. Vérifié à l'exécution seulement,
+// pour que les tests et la version debug se construisent sans la clé.
+val verifierCleRelease = tasks.register("verifierCleRelease") {
+    val permise = cleDefinitive || cleDebugPermise
+    doLast {
+        if (!permise) {
+            throw GradleException(
+                "Version release sans clé de signature : donner RUNDATA_ANDROID_CLE et RUNDATA_ANDROID_CLE_MDP " +
+                    "(ou -Prundata.release.cleDebug=true pour un essai qui ne sera jamais publié).",
+            )
+        }
+    }
+}
+tasks.matching { it.name == "packageRelease" }.configureEach { dependsOn(verifierCleRelease) }
 
 dependencies {
     implementation(project(":shared"))

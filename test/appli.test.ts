@@ -1,10 +1,24 @@
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
+import { APK_URL, TAG, VERSION } from "../src/web/appli.js";
 
 const O = "https://rundata.re";
 const BROWSER = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
 const get = (path: string) => new Request(`${O}${path}`, { headers: { accept: BROWSER } });
+
+// The version is written by hand in the app and here: the page must offer the APK built from the app as it is in this
+// commit, under the tag of that version.
+describe("the app's version, the page's and the tag's", () => {
+  const gradle = readFileSync(new URL("../mobile/androidApp/build.gradle.kts", import.meta.url), "utf8");
+
+  it("are the same", () => {
+    expect(gradle.match(/^\s*versionName = "([^"]+)"$/m)?.[1]).toBe(VERSION);
+    expect(TAG).toBe(`android-v${VERSION}`);
+    expect(APK_URL.endsWith(`/releases/download/${TAG}/rundata-re-${VERSION}.apk`)).toBe(true);
+  });
+});
 
 // /appli (22/11/2026): the Android app's trial version, marketing's words of 21/11/2026, never indexed nor linked.
 describe("/appli, the Android app's trial version", () => {

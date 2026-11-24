@@ -1,0 +1,74 @@
+# The mobile app (mobile/): its tests, the iOS code compiled, and the release build (minified by R8, as published) with
+# its lint, on every pull request and every commit on main that touches it. The release is built here with the debug key
+# (-Prundata.release.cleDebug=true): the real key never leaves the machine that signs, and this APK is never published.
+# When an android-v* release is published, checks that its tag holds the same version (the APK's source is at its tag).
+# Actions are pinned to a commit (the tag can be moved, the commit cannot); Dependabot keeps them current.
+name: Mobile
+
+on:
+  pull_request:
+    paths: [mobile/**, .github/workflows/mobile.yml]
+  push:
+    branches: [main]
+    paths: [mobile/**, .github/workflows/mobile.yml]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.event_name != 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 17
+      # Also checks the wrapper's jar against Gradle's published checksums; the distribution's own is in
+      # gradle-wrapper.properties (distributionSha256Sum).
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+      - name: Tests, iOS code, release build and lint
+        run: >-
+          ./gradlew --no-daemon -Prundata.release.cleDebug=true
+          :shared:testAndroidHostTest
+          :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64
+          :androidApp:testDebugUnitTest
+          :androidApp:assembleRelease :androidApp:assembleDebug :androidApp:lintRelease
+      - name: Without the signing key, the release build refuses
+        run: |
+          if ./gradlew --no-daemon -q :androidApp:verifierCleRelease; then
+            echo "::error::the release build went on without its signing key"
+            exit 1
+          fi
+
+  tag:
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'android-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.release.tag_name }}
+      - name: The tag holds the version it is named after
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          found=$(sed -n 's/^ *versionName = "\(.*\)"/\1/p' mobile/androidApp/build.gradle.kts)
+          if [ "android-v$found" != "$TAG" ]; then
+            echo "::error::$TAG points to a commit whose app is version $found"
+            exit 1
+          fi

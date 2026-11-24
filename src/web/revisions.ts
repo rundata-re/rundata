@@ -43,7 +43,9 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Ce nom avec ses majuscules quand le titre est tout en capitales (« Marché de Noël au Colosse », 21/11/2026).
   // The agendas not read « sans réponse à la dernière lecture de rundata.re »; the linked associations' licence names rundata.re (23/11/2026).
   // Each commune's own sites read, at their oldest read, for its tile when they announce nothing (23/11/2026).
-  agenda: 47,
+  // A copy older than its keeping, with a read that failed after it, said « dernière lecture sans succès » at that try,
+  // so that the commune's site is said without answer on its day and its tile (24/11/2026).
+  agenda: 48,
   // The sensors of sensors.social besides Sensor.Community's: each value with its network, and its credit (09/11/2026).
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
@@ -174,7 +176,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The link to Réunion La 1ère's sport news at its new address (« /sport?r=reunion »; the old one answers 404).
   // A Grand Raid course's climb with its thousands separator, « 10\u202f200\u00a0m D+ ».
   // A championship's page not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
-  sport: 33,
+  // The volley league or Sportsregions failing after an old copy said « dernière lecture sans succès » (24/11/2026).
+  sport: 34,
   station: 2,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.

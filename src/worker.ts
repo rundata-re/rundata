@@ -7,6 +7,7 @@
  * live in KV instead: the event runs in some data center, the questions in all the others.
  */
 import { configurerEquipe, failed, handle } from "./app.js";
+import { lenteSaid, withAttentes } from "./attentes.js";
 import { minuit, minuitDu, minuitSaid, MINUIT_BUDGET } from "./web/minuit.js";
 import { BUILD_BUDGET, PAGE_BUDGET, SCHEDULED_BUDGET, copiesSaid, copyRead, count, counted, later, readsSaid, reponseSaid, scheduled, spent } from "./budget.js";
 import { Cache, CACHE_FORMAT, MemoryStore, TieredStore, type CacheEntry, type CacheStore } from "./cache.js";
@@ -476,7 +477,11 @@ export default {
     // answer is still stored (tools/agenda.ts).
     // The path as the log lines write it, without the secret of a club's link (chemin-secret.ts).
     const path = cheminMasque(new URL(request.url).pathname);
-    const { value, used, settled } = await counted(PAGE_BUDGET, () => handle(request, c, later, recorder(env, request)).catch((err) => failed(path, err)), (p) => ctx.waitUntil(p));
+    const { value: { value, attentes }, used, settled } = await counted(
+      PAGE_BUDGET,
+      () => withAttentes(() => handle(request, c, later, recorder(env, request)).catch((err) => failed(path, err))),
+      (p) => ctx.waitUntil(p),
+    );
     // Once the work after the response is done too: it counts against the same budget.
     ctx.waitUntil(settled().then((total) => {
       const after = total.used > used ? `, dont ${total.used - used} après la réponse` : "";
@@ -484,7 +489,11 @@ export default {
       if (total.used) console.log(`sous-requêtes : ${total.used} (${path})${after}${refused}${readsSaid(total.reads)}${copiesSaid(total.copies)}`);
     }));
     // The wait of the visitor, apart from the invocation's duration (which counts the work after the response).
-    console.log(reponseSaid(Date.now() - arrived, path));
+    const ms = Date.now() - arrived;
+    console.log(reponseSaid(ms, path));
+    // Past SLOW_MS, what the view waited for, in one line (attentes.ts).
+    const lente = lenteSaid(ms, path, attentes);
+    if (lente) console.log(lente);
     // A file that is not a page is kept out of search results (web/noindex.ts).
     return sansIndex(value);
   },

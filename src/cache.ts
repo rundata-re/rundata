@@ -9,6 +9,7 @@
  */
 import { costOf, isScheduled, later, partOfLoad } from "./budget.js";
 import { cacheTally } from "./metrics.js";
+import { attendu } from "./attentes.js";
 
 import { callDeadline, noteLecture, withSource } from "./lectures.js";
 import { UpstreamError, why } from "./types.js";
@@ -261,9 +262,12 @@ export class Cache {
    * `backoffSeconds`: how long a failure is remembered (in this process) before the source is asked again. `behindSilent`:
    * once the source is found silent, its next try goes on after the answer, the last copy served (`serve`).
    */
-  async get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS, behindSilent = false): Promise<Cached<T>> {
-    const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
-    return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e), backoffSeconds, behindSilent));
+  get<T>(key: string, freshSeconds: number, load: () => Promise<T>, backoffSeconds = FAILURE_BACKOFF_SECONDS, behindSilent = false): Promise<Cached<T>> {
+    // Noted for a slow view's line (attentes.ts): what the request waited for.
+    return attendu(key, (async () => {
+      const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
+      return this.noted(key, freshSeconds, await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e), backoffSeconds, behindSilent));
+    })());
   }
 
   /**
@@ -274,8 +278,8 @@ export class Cache {
    * warning names it when the copy is served for lack of time, as a copy, not as a slow source (fraicheur.ts).
    */
   async getCopy<T>(key: string, freshSeconds: number, load: () => Promise<T>, lu: (value: T) => string | undefined, source?: string): Promise<Cached<T>> {
-    const hit = await this.store.get(key, this.now() - freshSeconds * 1000);
-    const c = await this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e));
+    const hit = await attendu(key, this.store.get(key, this.now() - freshSeconds * 1000));
+    const c = await attendu(key, this.serve(key, hit, freshSeconds, load, (e) => this.store.put(key, e)));
     const at = Date.parse(lu(c.value) ?? "");
     const said = Number.isNaN(at) ? c : { ...c, fetchedAt: new Date(Math.min(at, c.fetchedAt.getTime())) };
     // Read from KV, the copy has no source of its own (`withSource` sees none): without `source`, a copy served for lack
@@ -462,10 +466,10 @@ export class Cache {
         added = true;
       },
       get: async <T>(k: string, freshSeconds: number, load: () => Promise<T>) =>
-        this.noted(full(k), freshSeconds, await this.serve(full(k), s.entries[k], freshSeconds, load, async (e) => {
+        this.noted(full(k), freshSeconds, await attendu(full(k), this.serve(full(k), s.entries[k], freshSeconds, load, async (e) => {
           s.entries[k] = e;
           added = true;
-        })),
+        }))),
       drop: (keep) => {
         for (const k of Object.keys(s.entries)) if (!keep(k)) delete s.entries[k];
       },

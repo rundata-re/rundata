@@ -362,6 +362,22 @@ describe("reading the copies", () => {
     expect(v2.leftOut.find((x) => x.outil === "coupures_eau")).toEqual({ partie: "coupures d'eau", raison: "copie de 24/10 09:00, trop ancienne", outil: "coupures_eau", page: "https://rundata.re/coupures-eau/saint-paul" });
   });
 
+  it("keeps the agenda's copy of the day before for today's events, under its 24 hours, and refreshes it after the answer", async () => {
+    // 24/11/2026 at 03:32, a quiet data center: its copy of the agenda was of 15:19 the day before, and the day's events
+    // were left out (« trop ancienne ») though the copy lists two weeks. Here: read at 15:19 the day before, 22 h 41 ago.
+    const edge = await edgeWith();
+    await edge.put("web:agenda", { value: COPIES.agenda.value, fetchedAt: Date.parse("2026-10-23T11:19:00Z") });
+    const late: Promise<unknown>[] = [];
+    const { value } = await counted(PAGE_BUDGET, () => readCopies(isolate(edge), SAINT_PAUL, SAINT_PAUL, NOW, (p) => void late.push(p)));
+    expect(value.copies.agenda?.fetchedAt).toEqual(new Date("2026-10-23T11:19:00Z"));
+    expect(value.leftOut.map((x) => x.outil)).not.toContain("evenements");
+    expect(value.refreshed).toContain("web:agenda");
+    // Past its 24 hours: left out, as before.
+    await edge.put("web:agenda", { value: COPIES.agenda.value, fetchedAt: Date.parse("2026-10-23T09:59:00Z") });
+    const { value: old } = await counted(PAGE_BUDGET, () => readCopies(isolate(edge), SAINT_PAUL, SAINT_PAUL, NOW));
+    expect(old.leftOut.find((x) => x.outil === "evenements")).toMatchObject({ raison: "copie de 23/10 13:59, trop ancienne" });
+  });
+
   it("brings the oldest missing copy up to date after the answer, only within the invocation's subrequests", async () => {
     // What each build takes, learnt as the site would (budget.ts keeps the most of it per isolate).
     await counted(PAGE_BUDGET, () => measured(KEYS.meteo, () => buildPlace(isolate(new EdgeLike()), SAINT_PAUL, NOW)));

@@ -12,7 +12,7 @@ import { RANDONNEES, SENTIERS } from "../providers/traces.js";
 import { GROUPS as STOP_GROUPS, NETWORKS } from "../providers/transit.js";
 import { createServer } from "../server.js";
 import { COMMUNES } from "./commune.js";
-import type { AgendaAnswer, HomeData, RandonneesAnswer } from "./data.js";
+import type { AgendaAnswer, Alerte, HomeData, RandonneesAnswer } from "./data.js";
 import { enLigne } from "./associations-drapeau.js";
 import { esc } from "./map.js";
 import icons from "./icons.json" with { type: "json" };
@@ -121,7 +121,7 @@ function visual(id: keyof typeof visuals): string {
 </figure>`;
 }
 
-export function pressePage(origin: string, figures: Figure[]): string {
+export function pressePage(origin: string, figures: Figure[], alerte?: Alerte): string {
   const ids = Object.keys(visuals) as (keyof typeof visuals)[];
   const wide = ids.filter((id) => visuals[id].largeur >= visuals[id].hauteur);
   const phones = ids.filter((id) => visuals[id].largeur < visuals[id].hauteur);
@@ -176,5 +176,5 @@ export function pressePage(origin: string, figures: Figure[]): string {
       { "@type": "ListItem", position: 2, name: "Presse", item: `${origin}/presse` },
     ],
   };
-  return layout(origin, { title, description, path: "/presse", jsonld: [crumbs] }, band, `${keyFigures}\n${release}\n${gallery}`);
+  return layout(origin, { title, description, path: "/presse", jsonld: [crumbs], alerte }, band, `${keyFigures}\n${release}\n${gallery}`);
 }

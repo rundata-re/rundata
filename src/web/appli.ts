@@ -6,6 +6,7 @@
  * VERSION, EMPREINTE and the asset's name here.
  */
 import { adresseTexte } from "./adresse.js";
+import type { Alerte } from "./data.js";
 import { crumbBar, lienNom } from "./domains.js";
 import { GITHUB, layout } from "./pages.js";
 
@@ -23,7 +24,7 @@ const TITLE = "L'appli rundata.re pour Android · version d'essai";
 const NAME = "L'appli rundata.re pour Android";
 const LEAD = "La journée de votre commune, en direct sur votre téléphone, et des widgets pour l'écran d'accueil.";
 
-export function appliPage(origin: string): string {
+export function appliPage(origin: string, alerte?: Alerte): string {
   const band = `${crumbBar(NAME)}
 <div class="wrap intro solo"><div class="pitch">
   <h1>${NAME}</h1>
@@ -58,5 +59,5 @@ export function appliPage(origin: string): string {
   <p><strong>Une remarque, un souci ?</strong> Écrivez à ${adresseTexte("contact@rundata.re")}.</p>
   <p class="note">Version ${VERSION} · empreinte SHA-256 du fichier : <code>${EMPREINTE}</code> · code source libre (licence MIT) : ${lienNom(GITHUB, "github.com/rundata-re/rundata")}</p>
 </section>`;
-  return layout(origin, { title: TITLE, description: LEAD, path: PATH, jsonld: [], noindex: true, sansInstallation: true, sansPartage: true }, band, body);
+  return layout(origin, { title: TITLE, description: LEAD, path: PATH, jsonld: [], noindex: true, sansInstallation: true, sansPartage: true, alerte }, band, body);
 }

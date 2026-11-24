@@ -62,13 +62,15 @@ export function cycloneLevel(periods: mf.Period[] | undefined, now: Date): numbe
 }
 
 /**
- * Whether the bulletin's cyclone alert is over: every period ended before now, none announced, one of them above
- * green. A copy served after the last end (up to the next read, or longer when Météo-France does not answer) said it
- * « prévue » or still in force (23/11/2026).
+ * Whether the bulletin's cyclone alert is over: every period above green ended before now, none announced. A copy
+ * served after the last end (up to the next read, or longer when Météo-France does not answer) said it « prévue » or
+ * still in force (23/11/2026). The hours after the end count for nothing: Météo-France gives each of its 24 hours, -1
+ * once the alert is lifted, and with them the copy said « Alerte cyclonique prévue : . » with an empty banner (24/11/2026).
  */
 export function cycloneEnded(periods: mf.Period[], now: Date): boolean {
   const t = now.toISOString();
-  return periods.length > 0 && periods.every((p) => p.fin && p.fin <= t) && highest(periods) >= 2;
+  const raised = periods.filter((p) => p.couleur >= 2);
+  return raised.length > 0 && raised.every((p) => p.fin && p.fin <= t);
 }
 
 /** Whether the island is in a cyclone alert, in force or announced: neither none nor over. */

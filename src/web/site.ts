@@ -747,6 +747,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const url = new URL(request.url);
   const origin = url.origin;
   const path = url.pathname;
+  // The site's 404 with the vigilance's banner, as every page: an address gone under a red alert still says it.
+  const missing = async () => new Response(notFoundPage(origin, path, await alerte(cache, background, now)), { status: 404, headers: HTML });
 
   // One address per page: « /a-propos/ » goes to « /a-propos », the search kept, and an alias to its page in one step.
   // Slashes in front never make it another site's address: « //exemple.com/ » goes to « /exemple.com ». « /mcp/ » is the
@@ -802,7 +804,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const collecte = /^\/collecte(?:\/([a-z-]+))?\/?$/.exec(path);
   if (collecte) {
     const commune = collecte[1] ? communeOf(collecte[1]) : undefined;
-    if (collecte[1] && !commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (collecte[1] && !commune) return (await missing());
     const a = await alerte(cache, background, now);
     return new Response(collectePage(origin, now, commune, a), { headers: HTML });
   }
@@ -813,7 +815,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     // The name without its year leads to its page, as people type it.
     const nom = c ? undefined : slugDuNom(passe[1]);
     if (nom) return new Response(null, { status: 301, headers: { location: `/cyclones/${nom}`, "cache-control": STATIC } });
-    if (!c) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!c) return (await missing());
     const a = await alerte(cache, background, now);
     return new Response(passePage(origin, c, a), { headers: HTML });
   }
@@ -902,7 +904,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const kids = /^\/enfants\/([a-z-]+)\/?$/.exec(path);
   if (kids) {
     const p = pageOf(kids[1]);
-    if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!p?.commune) return (await missing());
     const [data, a] = await Promise.all([
       snapshot(cache, DOMAINS["/enfants"].key, () => buildEnfants(cache, now), background, now, waitFor(request), readerOf(request)),
       alerte(cache, background, now),
@@ -913,7 +915,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   const water = /^\/coupures-eau\/([a-z-]+)\/?$/.exec(path);
   if (water) {
     const p = pageOf(water[1]);
-    if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!p?.commune) return (await missing());
     const [coupures, a] = await Promise.all([
       snapshot(cache, "web:coupures", () => buildCoupures(cache, now), background, now, waitFor(request), readerOf(request)),
       alerte(cache, background, now),
@@ -965,7 +967,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     }
     if ("passee" in issue) return new Response(fichePassee(origin, issue.passee, a), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
     if (issue.statut === 503) return new Response(ficheAttente(origin, path, a), { status: 503, headers: { ...HTML, "cache-control": "no-store", "retry-after": "30" } });
-    if (issue.statut === 404) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (issue.statut === 404) return (await missing());
     return new Response(ficheTerminee(origin, path, a), { status: 410, headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
   const domain = DOMAINS[path.replace(/(.)\/$/, "$1")];
@@ -998,7 +1000,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const [, dir, slug, file] = trace;
     const t = dir === "sentiers" ? traces.sentier(slug) : undefined;
     const r = dir === "randonnees" ? traces.randonnee(slug) : undefined;
-    if (!t && !r) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!t && !r) return (await missing());
     if (file) {
       try {
         const body = t ? await trailGpx(cache, origin, t, now) : await routeGpx(cache, origin, r!, now);
@@ -1019,14 +1021,14 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   if (path === "/presse" || path === "/presse/") {
     // Its live counts are read from copies already here: a few minutes in browsers is enough.
-    return new Response(pressePage(origin, await pressFigures(cache)), { headers: { ...HTML, "cache-control": "public, max-age=300" } });
+    return new Response(pressePage(origin, await pressFigures(cache), await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=300" } });
   }
   if (path === "/carburants" || path === "/carburants/") {
     const [data, a] = await Promise.all([carburants.prix(cache, now).catch(() => null), alerte(cache, background, now)]);
     return page(path, (live) => carburantsPage(origin, live ? data : null, now, a), data, background);
   }
   if (path === "/nouveautes" || path === "/nouveautes/") {
-    return new Response(nouveautesPage(origin), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(nouveautesPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
   // With the vigilance's banner, and so as short-lived as the others: a calm lagoon must not stay above an alert.
   if (path === BAIGNADE || path === `${BAIGNADE}/`) {
@@ -1060,7 +1062,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // The Android app's trial version: never indexed (noindex in the page and in its header), out of the sitemap, linked
   // from nowhere on the site. Its file is the GitHub pre-release's asset; the short address follows the version.
   if (path === APPLI) {
-    return new Response(appliPage(origin), { headers: { ...HTML, "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
+    return new Response(appliPage(origin, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600", "x-robots-tag": "noindex" } });
   }
   if (path === APK_PATH) return new Response(null, { status: 302, headers: { location: APK_URL, "cache-control": "public, max-age=300", "x-robots-tag": "noindex" } });
   // How to put the site on the home screen, browser by browser: the same.
@@ -1097,7 +1099,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
     return new Response(llmsTxt(origin), { headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "public, max-age=86400", "x-content-type-options": "nosniff" } });
   }
   if (path === "/confidentialite" || path === "/conditions") {
-    return new Response(legalPage(origin, path.slice(1) as "confidentialite" | "conditions"), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
+    return new Response(legalPage(origin, path.slice(1) as "confidentialite" | "conditions", await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=3600" } });
   }
   // The radar's rain for /meteo's map, asked by its script: data, not a page.
   if (path === PLUIE_RADAR) return rainGrid(cache);
@@ -1111,15 +1113,15 @@ async function pages(request: Request, cache: Cache, background: Background, now
   // The 24 hours with the lame d'eau in mm, asked by /meteo's « Pluie tombée » (pluie-cumuls.ts).
   if (path === CUMULS_PATH) return rejeuCumuls(cache, background, now);
   const jour = JOUR_FILE.exec(path);
-  if (jour) return (await rejeuJour(jour[1], cache, background, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+  if (jour) return (await rejeuJour(jour[1], cache, background, now)) ?? (await missing());
   // The figures of /carte's « En direct » band, from its layers' copies (couches.ts).
   if (path === RESUME_PATH) return resumeResponse(cache, now);
   // A layer of /carte, asked by its script when its box is ticked (couches.ts): data, not a page.
-  if (path.startsWith(COUCHE_PATH)) return (await coucheResponse(path, cache, now)) ?? new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+  if (path.startsWith(COUCHE_PATH)) return (await coucheResponse(path, cache, now)) ?? (await missing());
   // A station's page (web/station.ts): its copy built like a commune's, kept by station.
   if (path.startsWith(`${STATION_PATH}/`)) {
     const id = path.slice(STATION_PATH.length + 1).replace(/\/$/, "");
-    if (!stationOf(id)) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!stationOf(id)) return (await missing());
     const [data, a] = await Promise.all([
       snapshot(cache, `web:station:${id}`, () => buildStation(cache, id, now), background, now, ...stationWaits(request), undefined, oldCopy(request), withoutCopy(request)),
       alerte(cache, background, now),
@@ -1129,7 +1131,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   if (path.startsWith("/meteo/")) {
     const slug = path.slice("/meteo/".length).replace(/\/$/, "");
     const p = pageOf(slug);
-    if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!p) return (await missing());
     // A place whose page would say what another's says (places.ts `PRINCIPAL`): sent there for good, nothing built. On
     // 20/11/2026 at 11:41, /meteo/l-hermitage, then a page out of the index, still gave OAI-SearchBot a 503 while its copy was built.
     if (PRINCIPAL[p.slug]) return new Response(null, { status: 301, headers: { location: `${meteoPath(p.slug)}${new URL(request.url).search}`, "cache-control": STATIC } });
@@ -1146,7 +1148,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   if (path.startsWith("/aujourdhui/")) {
     const p = pageOf(path.slice("/aujourdhui/".length).replace(/\/$/, ""));
-    if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!p?.commune) return (await missing());
     // The weather is built when it has no copy, as on the commune's page; the rest only read (tools/resume.ts).
     const vigilance = vigilanceNow(cache, background, waitFor(request) ?? BANNER_WAIT_MS, now);
     const place = await snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, ...placeWaits(request, now));
@@ -1176,11 +1178,11 @@ async function pages(request: Request, cache: Cache, background: Background, now
     const html = p?.commune ? electionsPage(origin, p, await alerte(cache, background, now)) : undefined;
     return html
       ? new Response(html, { headers: { ...HTML, "cache-control": "public, max-age=3600" } })
-      : new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+      : (await missing());
   }
   if (path.startsWith("/communes/")) {
     const p = pageOf(path.slice("/communes/".length).replace(/\/$/, ""));
-    if (!p?.commune) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!p?.commune) return (await missing());
     const [waitMs, reader, old, without] = indexWaits(request, now);
     const [place, commune, vigilance] = await Promise.all([
       snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background, now, waitMs, reader, withoutForecast, old, without),
@@ -1219,7 +1221,7 @@ async function pages(request: Request, cache: Cache, background: Background, now
   }
   if (path.startsWith(`${STOP_PATH}/`)) {
     const p = transit.stopPages().get(path.slice(STOP_PATH.length + 1).replace(/\/$/, ""));
-    if (!p) return new Response(notFoundPage(origin, path), { status: 404, headers: HTML });
+    if (!p) return (await missing());
     let d: Awaited<ReturnType<typeof stopPageDepartures>>;
     try {
       if (!transit.enabled()) throw new Error("horaires indisponibles ici");

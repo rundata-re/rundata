@@ -39,7 +39,7 @@ COMMUNES = {
 # (UAI, field, directory's value, corrected value, day checked, source)
 CORRECTIONS = [
     ("9741546M", "web", "http://college-alexandre-monnet.ac-reunion.fr/", "https://colleges-st-michel-monnet.re/", "2026-11-24",
-     "l'ancien site renvoie à l'accueil de l'académie ; le site commun des collèges La Salle Saint-Michel et Alexandre-Monnet présente le collège, avec son téléphone"),
+     "l'ancien site renvoie à l'accueil de l'académie\u00a0; le site commun des collèges La Salle Saint-Michel et Alexandre-Monnet présente le collège, avec son téléphone"),
     ("9740471U", "web", "https://etab.ac-reunion.fr/lyc-amiral-bouvet", "https://etab.ac-reunion.fr/lyc-jean-claude-fruteau/", "2026-11-24",
      "lycée renommé Jean-Claude-Fruteau : son site, à sa nouvelle adresse sur etab.ac-reunion.fr"),
     ("9740054R", "web", "http://lycee-lgeoffroy.ac-reunion.fr", "https://lislet-geoffroy.re/", "2026-11-24",

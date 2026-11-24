@@ -78,7 +78,8 @@ describe("the workflows' Cloudflare token (.github/workflows)", () => {
         while (s > 0 && !/^ {6}- /.test(lines[s])) s--;
         let e = i + 1;
         while (e < lines.length && !/^ {6}- /.test(lines[e]) && !/^ {0,4}\S/.test(lines[e])) e++;
-        expect(lines.slice(s, e).join("\n"), `${f}:${i + 1}`).toMatch(/\bwrangler\b|climat-ready\.mjs/);
+        // wrangler itself, or one of the two scripts that run it to ask D1 before a deployment.
+        expect(lines.slice(s, e).join("\n"), `${f}:${i + 1}`).toMatch(/\bwrangler\b|(?:climat|transit)-ready\.mjs/);
       });
     }
   });

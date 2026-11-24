@@ -88,6 +88,17 @@ function stationsOf(p: Payload): { station?: unknown; source?: unknown }[] {
   return Array.isArray(p.stations) ? (p.stations as { station?: unknown; source?: unknown }[]).filter((s) => s && typeof s === "object") : [];
 }
 
+/**
+ * The page id of the Météo-France station meteo_actuelle's values come from: the one of its temperature since midnight,
+ * else of its recent rain, else the first Météo-France station of the list. None among the stations: undefined.
+ */
+function valuesStation(p: Payload): string | undefined {
+  const named = (b: unknown) => (b && typeof b === "object" ? (b as { station?: unknown }).station : undefined);
+  const mf = stationsOf(p).filter((s) => s.source === "meteofrance" && typeof s.station === "string").map((s) => s.station as string);
+  const nom = [named(p.temperature_depuis_minuit), named(p.pluie_recente)].find((n): n is string => typeof n === "string" && mf.includes(n)) ?? mf[0];
+  return nom ? STATION_IDS.get(nom) : undefined;
+}
+
 /** The `citer` of the island's water cuts: the distributors and mairies whose notices are read, listed in `sources`. */
 export const COUPURES_ILE = "rundata.re, d'après les avis des distributeurs d'eau et des mairies (liste dans sources)";
 
@@ -197,8 +208,9 @@ export function lien(tool: string, p: Payload): string {
   let path = PAGES[tool];
   // The measures of a place without a page of its own (a district, coordinates) come from a station that its commune's
   // page may not show (20/11/2026: Saint-François for La Montagne, Chaudron on /meteo/saint-denis): that station's page.
-  const first = stationsOf(p)[0];
-  const station = tool === "meteo_actuelle" && !page(lieu.trouve) && first?.source === "meteofrance" && typeof first.station === "string" ? STATION_IDS.get(first.station) : undefined;
+  // The Météo-France station the temperature and the rain come from, not the first of the list: a beacon or an amateur's
+  // station may come before it, without a page (24/11/2026: the Trou d'Eau's beacon before the Pointe des Trois-Bassins).
+  const station = tool === "meteo_actuelle" && !page(lieu.trouve) ? valuesStation(p) : undefined;
   if (station) path = `/meteo/station/${station}`;
   else if (WEATHER.has(tool) && place) path = meteoPath(place.slug);
   else if (!path) path = commune ? `/communes/${commune.slug}` : "/";

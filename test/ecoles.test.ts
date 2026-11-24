@@ -99,7 +99,7 @@ describe("the schools and the cyclone alert", () => {
     expect(calm).toContain("<h1>Cyclone : les écoles sont-elles fermées ?</h1>");
     expect(calm).toContain("Pas d&#39;alerte cyclonique en cours à La Réunion.");
     expect(calm).toContain("Ce que prévoit le plan ORSEC Cyclones</h2>");
-    expect(calm).toContain("Alerte orange cyclonique\u00a0: crèches, écoles, collèges et lycées fermés pour l&#39;ensemble du département. La règle du plan ORSEC");
+    expect(calm).toContain("Alerte orange cyclonique\u00a0: crèches, écoles, collèges et lycées fermés dans toute l&#39;île, selon le plan ORSEC du préfet. L&#39;alerte en cours");
     const orange = page(map([[8, "2026-10-24T06:00:00"]]));
     expect(orange).toContain('selon le <a href="https://www.reunion.gouv.fr/Actions-de-l-Etat/');
     expect(orange).toContain("🌀 Alerte orange à La Réunion (974)\u00a0: crèches, écoles, collèges et lycées fermés, selon le plan ORSEC Cyclones de la préfecture.");

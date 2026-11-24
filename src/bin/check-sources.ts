@@ -188,6 +188,11 @@ export const TOOLS: ToolCheck[] = [
   { point: "sport", tool: "sport", args: {}, check: none },
   { point: "evenements", tool: "evenements", args: {}, check: none },
   { point: "resume_du_jour (Saint-Paul)", tool: "resume_du_jour", args: { lieu: "Saint-Paul" }, check: none },
+  // The answers of 13 to 33 KB read on 23/11/2026, with no cap, each with the place that made it the biggest.
+  { point: "resume_du_jour (Saint-Denis)", tool: "resume_du_jour", args: { lieu: "Saint-Denis" }, check: none },
+  { point: "annuaire_services_publics (enfants, Saint-Denis)", tool: "annuaire_services_publics", args: { quoi: "enfants", lieu: "Saint-Denis" }, check: none },
+  { point: "qualite_eau (Saint-Paul)", tool: "qualite_eau", args: { lieu: "Saint-Paul" }, check: none },
+  { point: "sentiers_randonnee (île)", tool: "sentiers_randonnee", args: {}, check: none },
 ];
 
 /**
@@ -230,6 +235,15 @@ export const MAX_BYTES: Record<string, number> = {
   // weather, the events and the skips (copies too old), 10 776 at 07:50 with all, about 9 500 with the sources of the
   // parts shown only (rule 3).
   "resume_du_jour (Saint-Paul)": 10_500,
+  // 12 868 on 23/11/2026 at 13:00, its `sources` 3 225: the island's capital has the most news, events and notices.
+  "resume_du_jour (Saint-Denis)": 14_000,
+  // 32 832 on 23/11/2026 with its 118 places in full; the 15 nearest since, the others on the commune's page.
+  "annuaire_services_publics (enfants, Saint-Denis)": 10_000,
+  // 19 413 on 23/11/2026, with tap water, its nine beaches and the shark rule; about 16 000 once the parts' sentences
+  // are said once (the answer's resume) and the samples' gap once for the nine.
+  "qualite_eau (Saint-Paul)": 17_500,
+  // 24 593 on 23/11/2026: the island's closed trails, as many as the ONF's orders of the day.
+  "sentiers_randonnee (île)": 27_000,
 };
 
 /**
@@ -245,6 +259,9 @@ export const SUIT_LES_DONNEES = new Set([
   "actualites (routes)",
   "resume_du_jour (Saint-Paul)",
   "sport",
+  "resume_du_jour (Saint-Denis)",
+  "qualite_eau (Saint-Paul)",
+  "sentiers_randonnee (île)",
 ]);
 export const MARGE_DONNEES = 1.5;
 

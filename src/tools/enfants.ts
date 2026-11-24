@@ -4,6 +4,7 @@
  * Each place's ages: the map's when it gives them, else an indication by kind, said as rundata.re's. The activities of
  * the coming days are the agenda's (evenements, quoi = « enfants »).
  */
+import { de } from "../articles.js";
 import { resolvePlace } from "../places/resolve.js";
 import * as enfants from "../vie/enfants.js";
 import { slugify } from "../web/places.js";
@@ -26,6 +27,12 @@ const NOT_ALL =
 const AGES =
   "age : celui de la carte quand elle le donne (age_d_apres_la_source = true)\u00a0; sinon une indication de rundata.re selon le type de lieu, à dire comme telle, jamais comme une règle du lieu. Aucun lieu n'est dit ouvert sans horaires de la source.";
 const ACTIVITIES = "Activités et spectacles pour les enfants des deux semaines qui viennent : outil evenements, quoi = « enfants ».";
+
+/**
+ * The places given for a commune: all of them up to this number, else the nearest to the place asked, with their
+ * distance; the commune's page has them all. Saint-Denis's 118 made a 33 KB answer.
+ */
+const MAX_LIEUX = 15;
 
 const row = (now: Date) => (l: enfants.Lieu & { km?: number }) => {
   const age = enfants.ageOf(l);
@@ -66,18 +73,20 @@ export function enfantsAnswer(quoi: string, lieu: string | undefined, now = new 
   }
   const commune = res.lieu.commune;
   const here = pool.filter((l) => l.commune === commune);
-  const near = here.length ? here : enfants.nearest(res.lieu.lon, res.lieu.lat, pool, 5);
-  const rows = (here.length ? here.map((l) => ({ ...l, km: undefined })) : near).map(row(now));
+  const capped = here.length > MAX_LIEUX;
+  const near = here.length && !capped ? here : enfants.nearest(res.lieu.lon, res.lieu.lat, here.length ? here : pool, here.length ? MAX_LIEUX : 5);
+  const rows = (here.length && !capped ? here.map((l) => ({ ...l, km: undefined })) : near).map(row(now));
   const byKind = enfants.TYPES.map((t) => [t.type, here.filter((l) => l.type === t.type).length] as const).filter(([, n]) => n);
   return text({
     lieu: placeBlock(lieu!, res),
     resume: here.length
-      ? `${here.length} ${what} ${a(commune)} d'après les cartes ouvertes${kind ? "" : ` : ${byKind.map(([k, n]) => enfants.counted(k, n)).join(", ")}`}.`
+      ? `${here.length} ${what} ${a(commune)} d'après les cartes ouvertes${kind ? "" : ` : ${byKind.map(([k, n]) => enfants.counted(k, n)).join(", ")}`}.` +
+        (capped ? ` Ci-dessous les ${MAX_LIEUX} plus proches ${de(res.lieu.nom)}\u00a0; tous sur la page de la commune.` : "")
       : `Aucun lieu de ce type ${a(commune)} dans les sources. Les plus proches : ${near.slice(0, 3).map((l) => `${enfants.nameOf(l)}, ${a(l.commune)}, à ${fr(Math.round(((l as { km?: number }).km ?? 0) * 10) / 10)} km`).join("\u00a0; ")}.`,
     lieux: rows,
-    page: `https://rundata.re/enfants#c-${slugify(commune)}`,
+    page: `https://rundata.re/enfants/${slugify(commune)}`,
     avertissements: warnings,
     mis_a_jour: jourDuFichier(enfants.BUILT),
-    sources: credits(enfants.sourcesOf(rows.length ? (here.length ? here : near) : pool)),
+    sources: credits(enfants.sourcesOf(rows.length ? near : pool)),
   });
 }

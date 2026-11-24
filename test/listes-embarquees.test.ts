@@ -19,4 +19,13 @@ describe("le contrôle du lundi des listes embarquées", () => {
       expect(py.indexOf("sys.exit(verifier("), s).toBeLessThan(py.indexOf(".write_text("));
     }
   });
+
+  it("is run by the Monday job, each list on its own step, any difference failing it", () => {
+    const yml = read(".github/workflows/listes.yml");
+    for (const s of ["build-canyons", "build-marmailles", "build-monuments"]) expect(yml, s).toContain(`run: python3 -I scripts/${s}.py --verifier 0`);
+    // The step that says what is to be redone names each of them.
+    expect(yml).toContain("steps.canyons.outcome != 'success'");
+    expect(yml).toContain("steps.marmailles.outcome != 'success'");
+    expect(yml).toContain("steps.monuments.outcome != 'success'");
+  });
 });

@@ -1,9 +1,13 @@
-# The lists bundled with the server, against their national base (scripts/build-irve.py, scripts/build-dae.py): every
-# Monday, each script builds its list in memory from the day's file and compares it with the bundled one, without
-# writing it. Past a few points added or gone, the job fails, saying which: the failure is the alert, someone rebuilds the
-# list and proposes it. Nothing is committed from here; the lists online stay as they were.
-# Its cost: two downloads (about 130 Mo for the charging points, 80 Mo for the defibrillators) and a few minutes of a
-# GitHub runner a week, free for a public repository; nothing on Cloudflare (no request to the Worker, no KV, no D1).
+# The lists bundled with the server, against their source: scripts/build-irve.py and scripts/build-dae.py (national
+# bases), scripts/build-canyons.py and scripts/build-marmailles.py (the Région's open data portal), and
+# scripts/build-monuments.py (the base Mérimée). Every Monday, each script builds its list in memory from the day's data
+# and compares it with the bundled one, without writing it. Past its threshold, the job fails, saying which: the failure
+# is the alert, someone rebuilds the list and proposes it. Nothing is committed from here; the lists online stay as
+# they were.
+# Its cost: three downloads (about 130 Mo for the charging points, 80 Mo for the defibrillators, 100 Mo for the
+# monuments), a few requests to the Région's portal (its OpenDataSoft API, Licence Ouverte, paced by the scripts) and a
+# few minutes of a GitHub runner a week, free for a public repository; nothing on Cloudflare (no request to the Worker,
+# no KV, no D1).
 name: Listes embarquées
 
 on:
@@ -36,11 +40,32 @@ jobs:
         id: dae
         continue-on-error: true
         run: python3 -I scripts/build-dae.py --verifier 20
+      # Any canyon added, gone or changed fails it (a ban by decree is one line): the portal's date of change moves with no
+      # change of content (16/11/2026), so the lists are compared, entry by entry, not dated.
+      - name: Canyons (data.regionreunion.com)
+        id: canyons
+        continue-on-error: true
+        run: python3 -I scripts/build-canyons.py --verifier 0
+      # Any trace added, gone or changed fails it.
+      - name: Sentiers marmailles (data.regionreunion.com)
+        id: marmailles
+        continue-on-error: true
+        run: python3 -I scripts/build-marmailles.py --verifier 0
+      # Any monument added, gone or changed fails it: the base changes by a few protections a year, each one a real change
+      # of the page (a building classé, inscrit or delisted); its date of change moves each week with no change of content
+      # (19/11/2026, the same 204 monuments as on 29/10), so the list is compared monument by monument, never dated.
+      - name: Monuments historiques (Mérimée)
+        id: monuments
+        continue-on-error: true
+        run: python3 -I scripts/build-monuments.py --verifier 0
       - name: Say what is to be redone
-        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success'
+        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success' || steps.canyons.outcome != 'success' || steps.marmailles.outcome != 'success' || steps.monuments.outcome != 'success'
         env:
           IRVE: ${{ steps.irve.outcome }}
           DAE: ${{ steps.dae.outcome }}
+          CANYONS: ${{ steps.canyons.outcome }}
+          MARMAILLES: ${{ steps.marmailles.outcome }}
+          MONUMENTS: ${{ steps.monuments.outcome }}
         run: |
-          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE. Le détail est dans l'étape en échec (écarts, ou base qui n'a pas répondu)."
+          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE ; canyons : $CANYONS ; sentiers marmailles : $MARMAILLES ; monuments historiques : $MONUMENTS. Le détail est dans l'étape en échec (écarts, ou source qui n'a pas répondu)."
           exit 1

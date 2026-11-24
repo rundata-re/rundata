@@ -39,20 +39,36 @@ export interface End {
   commune?: string;
   /** Each stop (island-wide index) with the walk to it from the place asked, in seconds: none for a stop or a commune. */
   stops: Map<number, number>;
+  /**
+   * A commune's stops ranked as its page ranks them (web/data.ts communeStops): its bus station first (0), then the
+   * others by their distance to its centre, in metres. A bus is left, or taken, at the best of its stops there, not at
+   * the first reached (Saint-Leu → Cilaos: the 60 at Le Vieux Cep, by Cilaos Ville, six minutes after Mare Sèche, at
+   * the town's edge, where it went on without the page saying so).
+   */
+  centre?: Map<number, number>;
 }
 
 const walkSeconds = (m: number) => Math.round(((m * DETOUR) / WALK_M_PER_MIN) * 60);
 
-/** A commune's main stops: its busiest (those with a page for search engines) and those near its centre. */
-function communeStops(commune: string): Map<number, number> {
+/** A commune's bus station, when « gare <commune> » finds stops by that name (not Le Port's « Gare Maritime »). */
+function gareOf(commune: string): Set<transit.StopGroup> {
+  const { groups, near } = findStops(`gare ${commune}`);
+  const gare = !near.length && groups.length && groups.every((g) => g.commune === commune && /\bgare\b/i.test(g.nom) && !/maritime/i.test(g.nom));
+  return new Set(gare ? groups : []);
+}
+
+/** A commune's main stops: its bus station, its busiest (those with a page for search engines) and those near its centre. */
+function communeStops(commune: string): { stops: Map<number, number>; centre: Map<number, number> } {
   const centre = resolvePlace(commune)?.lieu;
+  const gare = gareOf(commune);
   const groups = transit.GROUPS.filter((g) => g.commune === commune)
-    .map((g) => ({ g, km: centre ? distanceKm(centre.lon, centre.lat, g.lon, g.lat) : 0, busy: transit.pageOfStop(g.ids[0])?.indexe ?? false }))
+    .map((g) => ({ g, km: gare.has(g) ? 0 : centre ? distanceKm(centre.lon, centre.lat, g.lon, g.lat) : 0, busy: gare.has(g) || (transit.pageOfStop(g.ids[0])?.indexe ?? false) }))
     .filter((x) => x.busy || x.km <= ZONE_KM)
     .sort((a, b) => Number(b.busy) - Number(a.busy) || a.km - b.km);
   const out = new Map<number, number>();
-  for (const { g } of groups) for (const id of g.ids) if (out.size < ZONE_MAX) out.set(id, 0);
-  return out;
+  const metres = new Map<number, number>();
+  for (const { g, km } of groups) for (const id of g.ids) if (out.size < ZONE_MAX) (out.set(id, 0), metres.set(id, Math.round(km * 1000)));
+  return { stops: out, centre: metres };
 }
 
 /** The stops within 600 m of a place, else the 3 nearest within 2 km, with the walk to each. */
@@ -67,7 +83,7 @@ function placeStops(lon: number, lat: number): Map<number, number> {
 /** What a start or an end says: a stop by its name, a commune alone, or a place (« aéroport », « plage de Boucan »). */
 export function endOf(asked: string): End | undefined {
   const { reseau, commune, words } = parseQuery(asked);
-  if (!words.length && commune && !reseau) return { nom: commune, sorte: "commune", commune, stops: communeStops(commune) };
+  if (!words.length && commune && !reseau) return { nom: commune, sorte: "commune", commune, ...communeStops(commune) };
   const { groups, near } = findStops(asked);
   // A stop matching only some words (« Plage » for « plage de l'Hermitage »): the place, when it is known.
   const all = (g: transit.StopGroup) => words.every((w) => g.words.has(w) || (w.length >= 4 && [...g.words].some((x) => x.startsWith(w))));
@@ -208,6 +224,15 @@ export async function journeys(from: End, to: End, ymd: number, time: number, ar
   return day.trop_large ? { ...first, lectures: day.lectures } : day;
 }
 
+/**
+ * Whether stop `a`, reached at `thenA`, is a better end of a ride than stop `b`, reached at `thenB`: nearer the centre of
+ * a commune asked, else (or at the same distance) reached sooner.
+ */
+function better(to: End, a: number, thenA: number, b: number, thenB: number): boolean {
+  const nearer = to.centre ? to.centre.get(b)! - to.centre.get(a)! : 0;
+  return nearer > 0 || (nearer === 0 && thenA < thenB);
+}
+
 /** The journeys between `lo` and `hi` (seconds after midnight of the day asked), with the passes already read. */
 async function within(from: End, to: End, days: Day[], all: Awaited<ReturnType<typeof transit.passes>>, [lo, hi]: [number, number], arriveBy: boolean, read: { requetes: number; lignes: number }): Promise<Search> {
   const mayPass = (pattern: number, offset: number, a: number, b: number) => {
@@ -218,11 +243,13 @@ async function within(from: End, to: End, days: Day[], all: Awaited<ReturnType<t
   const [leaveLo, leaveHi] = arriveBy ? [lo - WINDOW_S, hi] : [lo, hi];
   const [reachLo, reachHi] = arriveBy ? [lo, hi] : [lo, hi + WINDOW_S];
   // A bus passing at several stops of the start is taken at the last of them, the walk counted: the same bus, left later.
+  // A commune's: at the one of its stops nearest the centre.
   const latest = new Map<number, (typeof all)[number]>();
   for (const p of all) {
     if (!from.stops.has(p.stop) || !mayPass(p.pattern, p.offset, leaveLo, leaveHi)) continue;
     const kept = latest.get(p.pattern);
-    if (!kept || p.offset - from.stops.get(p.stop)! > kept.offset - from.stops.get(kept.stop)!) latest.set(p.pattern, p);
+    const nearer = kept && from.centre ? from.centre.get(kept.stop)! - from.centre.get(p.stop)! : 0;
+    if (!kept || nearer > 0 || (nearer === 0 && p.offset - from.stops.get(p.stop)! > kept.offset - from.stops.get(kept.stop)!)) latest.set(p.pattern, p);
   }
   const starts = [...latest.values()];
   const endIds = new Set(all.filter((p) => to.stops.has(p.stop) && mayPass(p.pattern, p.offset, reachLo, reachHi)).map((p) => p.pattern));
@@ -250,7 +277,7 @@ async function within(from: End, to: End, days: Day[], all: Awaited<ReturnType<t
   }
 
   // For each stop where a bus to the end passes before it: that bus, its offset there, and the best of its stops at
-  // the end after it (the one reached soonest, the walk from it included).
+  // the end after it (the one reached soonest, the walk from it included; a commune's, the one nearest its centre).
   const toEnd = new Map<number, { pattern: number; offset: number; a: number; offA: number; then: number }[]>();
   for (const pattern of ends.keys()) {
     const stops = order?.get(pattern)?.stops;
@@ -260,7 +287,7 @@ async function within(from: End, to: End, days: Day[], all: Awaited<ReturnType<t
       const [s, off] = stops[k];
       if (to.stops.has(s)) {
         const then = off + to.stops.get(s)!;
-        if (!best || then < best.then) best = { a: s, offA: off, then };
+        if (!best || better(to, s, then, best.a, best.then)) best = { a: s, offA: off, then };
       }
       if (best && off < best.offA) toEnd.set(s, [...(toEnd.get(s) ?? []), { pattern, offset: off, ...best }]);
     }
@@ -282,9 +309,10 @@ async function within(from: End, to: End, days: Day[], all: Awaited<ReturnType<t
     for (const run of timetable.get(s.pattern) ?? []) {
       const leave = run[0] + s.offset;
       if (leave < leaveLo || leave > leaveHi) continue;
-      // Direct: the same bus passes at the end afterwards.
-      for (const e of ends.get(s.pattern) ?? []) {
-        if (e.offset <= s.offset) continue;
+      // Direct: the same bus passes at the end afterwards; at a commune, left at its stop nearest the centre.
+      const after = (ends.get(s.pattern) ?? []).filter((e) => e.offset > s.offset);
+      const centre = to.centre && after.reduce<(typeof after)[number] | undefined>((m, e) => (!m || better(to, e.stop, e.offset, m.stop, m.offset) ? e : m), undefined);
+      for (const e of centre ? [centre] : after) {
         const walkOut = to.stops.get(e.stop)!;
         found.push({ legs: [legOf(p1, run, s.stop, e.stop, s.offset, e.offset)], marche_depart: walkIn, marche_arrivee: walkOut, depart: leave - walkIn, arrivee: run[0] + e.offset + walkOut });
       }

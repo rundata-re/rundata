@@ -50,6 +50,29 @@ describe("the start and the end of a journey", () => {
   });
 });
 
+describe("a commune asked: the bus left, or taken, in its centre (item of 24/11)", () => {
+  it("ranks a commune's bus station first, then its stops by their distance to its centre", () => {
+    const e = endOf("Saint-Pierre")!;
+    const gare = [...e.centre!].filter(([, m]) => m === 0).map(([id]) => transit.stop(id).nom);
+    expect(new Set(gare)).toEqual(new Set(["Gare de St-Pierre", "Gare de Saint-Pierre", "Gare Routière de St Pierre"]));
+    // Cilaos has no bus station: Le Vieux Cep, by Cilaos Ville, before Mare Sèche, at the town's edge.
+    const c = endOf("Cilaos")!.centre!;
+    const at = (nom: string) => Math.min(...[...c].filter(([id]) => transit.stop(id).nom === nom).map(([, m]) => m));
+    expect(at("Le Vieux Cep")).toBeLessThan(at("Mare Sèche"));
+  });
+
+  it("leaves the 60 at Le Vieux Cep, by Cilaos Ville, not six minutes earlier at Mare Sèche (Saint-Leu → Cilaos, 24/11)", async () => {
+    const r = await journeys(endOf("Saint-Leu")!, endOf("Cilaos")!, 20261124, 7 * 3600);
+    expect(r.trajets.length).toBeGreaterThan(0);
+    for (const j of r.trajets) {
+      const last = j.legs.at(-1)!;
+      expect(last.ligne).toBe("60");
+      expect(transit.stop(last.a).nom).toBe("Le Vieux Cep");
+    }
+    expect(r.trajets.map(said)).toContain("08:31 O2 Mairie de St-Leu 08:31-Gare de St-Louis 09:05 / 60 Echangeur de Bel Air 09:16-Le Vieux Cep 10:32 10:32");
+  });
+});
+
 describe("the journeys", () => {
   it("go from Petite-Île to the airport on Monday 2/11 before 18:00 with one change at Saint-Pierre (a Facebook group's question)", async () => {
     const r = await journeys(endOf("Petite-Île")!, endOf("aéroport Roland-Garros")!, 20261102, 18 * 3600, true);

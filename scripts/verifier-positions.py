@@ -4,11 +4,13 @@
   - each office of the annuaire of service-public.fr at La Réunion, at its position, against its address geocoded by the
     Base adresse nationale (the Géoplateforme's geocoder, one request for all the addresses);
   - each commune's point in src/places/gazetteer.json (its main settlement, OSM's) against its town hall in OpenStreetMap
-    (one Overpass request).
+    (one Overpass request);
+  - each bus stop of the island's GTFS (the networks of scripts/build-transit.py, one download each) against OSM's bus
+    stops (the same Overpass request): only the few a producer may have misplaced are watched, see cas_reseau().
 
 The gaps found today are in scripts/positions-reference.json. The job fails only on a gap that is new, or that grew by
 more than MARGE metres since: the failure is the alert, someone looks at the place and says it to its producer, or
-rebuilds the list. A gap of the reference that closed is printed, without failing. Each source that does not answer is
+rebuilds the list. A bus stop is a case or not: only a new case fails. A gap of the reference that closed is printed, without failing. Each source that does not answer is
 said, and fails the step: no gap is read from a missing source.
 
 Usage: python3 -I scripts/verifier-positions.py --verifier      # compare with the reference, exit 1 on a new gap
@@ -16,6 +18,7 @@ Usage: python3 -I scripts/verifier-positions.py --verifier      # compare with t
 """
 import argparse
 import csv
+import importlib.util
 import io
 import json
 import math
@@ -27,6 +30,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import zipfile
+from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,7 +45,11 @@ ANNUAIRE = (
 )
 GEOCODAGE_CSV = "https://data.geopf.fr/geocodage/search/csv"
 OVERPASS = "https://overpass-api.de/api/interpreter"
-MAIRIES = '[out:json][timeout:60][bbox:-21.40,55.20,-20.86,55.84];nwr["amenity"="townhall"];out center tags;'
+# One Overpass request for both: the town halls, and the bus stops (a stop drawn as a node, or a platform for buses).
+OSM_LIEUX = (
+    '[out:json][timeout:90][bbox:-21.40,55.20,-20.86,55.84];'
+    '(nwr["amenity"="townhall"];nwr["highway"="bus_stop"];nwr["public_transport"="platform"]["bus"="yes"];);out center tags;'
+)
 
 # An office further than this from its address, a commune's point further than this from its town hall: a gap.
 ECART_ANNUAIRE_M = 300
@@ -155,9 +164,9 @@ def commune_de(nom):
 def ecarts_centres():
     communes = [p for p in json.loads((ROOT / "src" / "places" / "gazetteer.json").read_text())["places"] if p["type"] == "commune"]
     mairies = {}
-    for e in json.loads(get(OVERPASS, urllib.parse.urlencode({"data": MAIRIES}).encode()))["elements"]:
+    for e in lieux_osm():
         t = e.get("tags", {})
-        if t.get("townhall:type") == "annex":
+        if t.get("amenity") != "townhall" or t.get("townhall:type") == "annex":
             continue
         c = commune_de(t.get("name"))
         p = e.get("center") or e
@@ -174,6 +183,174 @@ def ecarts_centres():
         if m > ECART_CENTRE_M:
             ecarts[c["nom"]] = {"ecart_m": m, "mairie": osm}
     return len(communes), ecarts
+
+
+_OSM = []
+
+
+def lieux_osm():
+    """OpenStreetMap's town halls and bus stops of the island, read once for both steps."""
+    if not _OSM:
+        _OSM.extend(json.loads(get(OVERPASS, urllib.parse.urlencode({"data": OSM_LIEUX}).encode()))["elements"])
+    return _OSM
+
+
+# The bus stops. The producers' positions hold (24/11/2026: 99.6 % of the 9,942 stops within 30 m of the shape of the
+# trips that serve them) and OSM knows fewer than half of them: a stop absent from OSM is no alert. What is watched is
+# the few stops a producer may have misplaced, by three signs:
+#   - suspect: no OSM stop within ECART_ARRET_M, and the order gives it away: along the shape of a trip, its position goes
+#     back by more than RECUL_M between the stop before and the one after, or the detour it makes is more than DETOUR
+#     times the direct way between them. A sign, not a proof: it also catches loops and terminuses, hence the reference;
+#   - homonyme: no OSM stop within ECART_ARRET_M, but one of the same name within HOMONYME_M: one of the two is off;
+#   - doublon: two stops of one network, of different names, at exactly the same point.
+# The reference holds those of 24/11/2026; only a new one fails. The Papang cable car is no bus.
+ECART_ARRET_M = 300
+HOMONYME_M = 1000
+RECUL_M = 200
+DETOUR = 3
+
+
+def reseaux():
+    """The GTFS networks of scripts/build-transit.py, the one list of their links."""
+    spec = importlib.util.spec_from_file_location("build_transit", Path(__file__).parent / "build-transit.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return [(n[0], n[1], n[3]) for n in mod.NETWORKS if n[0] != "papang"]
+
+
+def nom_arret(s):
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    s = re.sub(r"\b(arret|station|gare routiere|quai [a-z0-9]+|\(.*?\))\b", " ", s)
+    s = re.sub(r"\bst\b", "saint", s)
+    s = re.sub(r"\bste\b", "sainte", s)
+    return re.sub(r"[^a-z0-9]+", " ", s).strip()
+
+
+def gtfs_table(z, name):
+    names = {Path(n).name: n for n in z.namelist()}
+    return list(csv.DictReader(io.TextIOWrapper(z.open(names[name]), encoding="utf-8-sig"))) if name in names else []
+
+
+def metres_xy(lat):
+    """Metres per degree of longitude and of latitude, here: a local flat projection, right to a metre over a few km."""
+    return math.cos(math.radians(lat)) * 111320, 110540
+
+
+def le_long(pts, cum, lon, lat):
+    """How far along a shape (its points, their running length) a point projects, where it is nearest the shape."""
+    kx, ky = metres_xy(lat)
+    best = None
+    for i, (a, b) in enumerate(zip(pts, pts[1:])):
+        ax, ay, bx, by = (a[0] - lon) * kx, (a[1] - lat) * ky, (b[0] - lon) * kx, (b[1] - lat) * ky
+        dx, dy = bx - ax, by - ay
+        t = 0 if dx == dy == 0 else max(0, min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy)))
+        d = math.hypot(ax + t * dx, ay + t * dy)
+        if best is None or d < best[0] - 1:
+            best = (d, cum[i] + t * (cum[i + 1] - cum[i]))
+    return best[1]
+
+
+def cas_reseau(net, label, z, osm_pres, osm_noms):
+    """The suspect, homonym and duplicate stops of one network's GTFS (a ZipFile)."""
+    st = {s["stop_id"]: s for s in gtfs_table(z, "stops.txt") if (s.get("location_type") or "0") in ("0", "")}
+    pos = {k: (float(s["stop_lon"]), float(s["stop_lat"])) for k, s in st.items()}
+    cas = {}
+
+    def autour(lon, lat):
+        """The nearest OSM stop of any name, and the nearest of the stop's name, in metres (None when there is none)."""
+        cx, cy = int(lon / 0.01), int(lat / 0.01)
+        near = [o for dx in (-3, -2, -1, 0, 1, 2, 3) for dy in (-3, -2, -1, 0, 1, 2, 3) for o in osm_pres.get((cx + dx, cy + dy), ())]
+        return min((km(lon, lat, o[0], o[1]) * 1000 for o in near), default=None)
+
+    loin = {}
+    for k, (lon, lat) in pos.items():
+        m = autour(lon, lat)
+        if m is None or m > ECART_ARRET_M:
+            loin[k] = m
+    for k, m in loin.items():
+        lon, lat = pos[k]
+        same = min((km(lon, lat, o[0], o[1]) * 1000 for o in osm_noms.get(nom_arret(st[k]["stop_name"]), ())), default=None)
+        if same is not None and same <= HOMONYME_M:
+            cas[f"{net}:{k}"] = {"cas": "homonyme", "reseau": label, "nom": st[k]["stop_name"].strip(), "lon": lon, "lat": lat, "osm_m": round(same)}
+
+    # The order of the stops, only around the far ones: each trip pattern once.
+    shapes = defaultdict(list)
+    for p in gtfs_table(z, "shapes.txt"):
+        shapes[p["shape_id"]].append((int(p["shape_pt_sequence"]), float(p["shape_pt_lon"]), float(p["shape_pt_lat"])))
+    longueurs = {}
+    for sh, l in shapes.items():
+        pts = [(x, y) for _, x, y in sorted(l)]
+        cum = [0.0]
+        for a, b in zip(pts, pts[1:]):
+            kx, ky = metres_xy(a[1])
+            cum.append(cum[-1] + math.hypot((b[0] - a[0]) * kx, (b[1] - a[1]) * ky))
+        longueurs[sh] = (pts, cum)
+    trips = {t["trip_id"]: t.get("shape_id") for t in gtfs_table(z, "trips.txt")}
+    seq = defaultdict(list)
+    for r in gtfs_table(z, "stop_times.txt"):
+        seq[r["trip_id"]].append((int(r["stop_sequence"]), r["stop_id"]))
+    motifs = {(tuple(s for _, s in sorted(l) if s in pos), trips.get(tid)) for tid, l in seq.items()}
+    signes, le_long_de = defaultdict(set), {}
+
+    def position(sh, k):
+        if (sh, k) not in le_long_de:
+            le_long_de[(sh, k)] = le_long(*longueurs[sh], *pos[k])
+        return le_long_de[(sh, k)]
+
+    for ids, sh in motifs:
+        for i in range(1, len(ids) - 1):
+            a, s, b = ids[i - 1], ids[i], ids[i + 1]
+            if s not in loin:
+                continue
+            direct = km(*pos[a], *pos[b])
+            if direct > 0.05 and (km(*pos[a], *pos[s]) + km(*pos[s], *pos[b])) / direct > DETOUR:
+                signes[s].add("détour")
+            if sh in longueurs:
+                pa, ps, pb = (position(sh, x) for x in (a, s, b))
+                if ps < pa - RECUL_M and pb > pa:
+                    signes[s].add("hors d'ordre sur le tracé")
+    for k, sg in signes.items():
+        cas.setdefault(f"{net}:{k}", {"cas": "soupçon", "reseau": label, "nom": st[k]["stop_name"].strip(), "lon": pos[k][0], "lat": pos[k][1],
+                                       "osm_m": None if loin[k] is None else round(loin[k]), "signe": ", ".join(sorted(sg))})
+
+    # Two names at one point: one of the two stops is misplaced.
+    par_point = defaultdict(list)
+    for k, s in st.items():
+        par_point[pos[k]].append(k)
+    for (lon, lat), ks in par_point.items():
+        noms = {nom_arret(st[k]["stop_name"]) for k in ks}
+        if len(noms) > 1:
+            cas[f"{net}:{'+'.join(sorted(ks))}"] = {"cas": "doublon", "reseau": label, "nom": " / ".join(sorted({st[k]["stop_name"].strip() for k in ks})), "lon": lon, "lat": lat}
+    return len(st), cas
+
+
+def cas_arrets():
+    osm_pres, osm_noms = defaultdict(list), defaultdict(list)
+    for e in lieux_osm():
+        t = e.get("tags", {})
+        if not (t.get("highway") == "bus_stop" or (t.get("public_transport") == "platform" and t.get("bus") == "yes")):
+            continue
+        p = e.get("center") or e
+        if "lon" not in p:
+            continue
+        o = (p["lon"], p["lat"])
+        osm_pres[(int(o[0] / 0.01), int(o[1] / 0.01))].append(o)
+        if t.get("name"):
+            osm_noms[nom_arret(t["name"])].append(o)
+    n, cas = 0, {}
+    for net, label, url in reseaux():
+        k, c = cas_reseau(net, label, zipfile.ZipFile(io.BytesIO(get(url))), osm_pres, osm_noms)
+        n += k
+        cas.update(c)
+    return n, cas
+
+
+def comparer_arrets(avant, maintenant):
+    """A stop's case is new or not: the position of a stop does not « grow ». A case that went is said."""
+    echecs = [f"arrêts : nouveau cas, {k} {json.dumps(v, ensure_ascii=False)}" for k, v in sorted(maintenant.items()) if k not in avant]
+    for k in sorted(set(avant) - set(maintenant)):
+        print(f"arrêts : cas fermé, {k} ({avant[k].get('reseau')}, {avant[k].get('nom')}, {avant[k].get('cas')})")
+    return echecs
 
 
 def comparer(titre, avant, maintenant, seuil):
@@ -202,7 +379,7 @@ def main():
     args = ap.parse_args()
 
     out, erreurs = {}, []
-    for cle, lire in (("annuaire", ecarts_annuaire), ("centres", ecarts_centres)):
+    for cle, lire in (("annuaire", ecarts_annuaire), ("centres", ecarts_centres), ("arrets", cas_arrets)):
         try:
             n, out[cle] = lire()
             print(f"{cle} : {n} lus, {len(out[cle])} écarts")
@@ -222,6 +399,8 @@ def main():
         echecs += comparer("annuaire", ref.get("annuaire", {}), out["annuaire"], ECART_ANNUAIRE_M)
     if "centres" in out:
         echecs += comparer("centres", ref.get("centres", {}), out["centres"], ECART_CENTRE_M)
+    if "arrets" in out:
+        echecs += comparer_arrets(ref.get("arrets", {}), out["arrets"])
     for e in echecs:
         print(e)
     if echecs:

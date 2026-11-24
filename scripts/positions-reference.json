@@ -469,6 +469,483 @@
    "nom": "Mission locale pour l'insertion professionnelle et sociale des jeunes (16-25 ans) - Sainte-Rose (La Réunion)"
   }
  },
+ "arrets": {
+  "alterneo:0:01635P": {
+   "cas": "soupçon",
+   "lat": -21.3248852,
+   "lon": 55.4900263,
+   "nom": "9 Chemin Bassin Plat",
+   "osm_m": 362,
+   "reseau": "Alternéo",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "alterneo:0:01640C": {
+   "cas": "soupçon",
+   "lat": -21.3161746,
+   "lon": 55.4942452,
+   "nom": "PK3",
+   "osm_m": 1145,
+   "reseau": "Alternéo",
+   "signe": "détour"
+  },
+  "alterneo:0:01690P": {
+   "cas": "soupçon",
+   "lat": -21.3267523,
+   "lon": 55.4974874,
+   "nom": "Chemin Ringuin",
+   "osm_m": 1156,
+   "reseau": "Alternéo",
+   "signe": "détour"
+  },
+  "alterneo:0:016912C": {
+   "cas": "soupçon",
+   "lat": -21.306421,
+   "lon": 55.5102071,
+   "nom": "5 Chemin De L'IRFA",
+   "osm_m": 1053,
+   "reseau": "Alternéo",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "alterneo:0:09330C": {
+   "cas": "soupçon",
+   "lat": -21.3133595,
+   "lon": 55.5148259,
+   "nom": "Relais Des Gites",
+   "osm_m": 1915,
+   "reseau": "Alternéo",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "alterneo:0:16072C": {
+   "cas": "soupçon",
+   "lat": -21.2434243,
+   "lon": 55.401404,
+   "nom": "Croisée Pièce Jeanne",
+   "osm_m": 1353,
+   "reseau": "Alternéo",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "alterneo:0:41300C": {
+   "cas": "soupçon",
+   "lat": -21.2398447,
+   "lon": 55.3737364,
+   "nom": "55 Chemin Neuf",
+   "osm_m": 1473,
+   "reseau": "Alternéo",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "alterneo:0:44071C": {
+   "cas": "soupçon",
+   "lat": -21.2537624,
+   "lon": 55.3853061,
+   "nom": "Louis Fontaine",
+   "osm_m": 1681,
+   "reseau": "Alternéo",
+   "signe": "détour"
+  },
+  "alterneo:0:44071P": {
+   "cas": "soupçon",
+   "lat": -21.2538782,
+   "lon": 55.385328,
+   "nom": "Louis Fontaine",
+   "osm_m": 1693,
+   "reseau": "Alternéo",
+   "signe": "détour"
+  },
+  "carsud:ED0115P": {
+   "cas": "soupçon",
+   "lat": -21.258328,
+   "lon": 55.464588,
+   "nom": "Chemin Frontin",
+   "osm_m": 478,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:ED0235C": {
+   "cas": "soupçon",
+   "lat": -21.232638,
+   "lon": 55.472852,
+   "nom": "181 Rue Bras Long",
+   "osm_m": 1717,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:ED0245C": {
+   "cas": "soupçon",
+   "lat": -21.232649,
+   "lon": 55.469762,
+   "nom": "Chemin Des Rêves",
+   "osm_m": 1397,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:ED0280C": {
+   "cas": "soupçon",
+   "lat": -21.234697,
+   "lon": 55.466686,
+   "nom": "Rue Cinaire",
+   "osm_m": 1099,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:ED0390C": {
+   "cas": "soupçon",
+   "lat": -21.244873,
+   "lon": 55.479313,
+   "nom": "Lambrequin",
+   "osm_m": 609,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:ED0410C": {
+   "cas": "soupçon",
+   "lat": -21.238872,
+   "lon": 55.480418,
+   "nom": "Rue Leperlier",
+   "osm_m": 1262,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:PH00420C": {
+   "cas": "soupçon",
+   "lat": -21.359794,
+   "lon": 55.720712,
+   "nom": "Badamier",
+   "osm_m": 1100,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ00690C": {
+   "cas": "soupçon",
+   "lat": -21.334297,
+   "lon": 55.60078,
+   "nom": "Rue Fernando",
+   "osm_m": 1303,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ00700P": {
+   "cas": "soupçon",
+   "lat": -21.333579,
+   "lon": 55.60264,
+   "nom": "Chemin Du Versant",
+   "osm_m": 1509,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ00780P": {
+   "cas": "soupçon",
+   "lat": -21.340856,
+   "lon": 55.593798,
+   "nom": "Trois Palmiers",
+   "osm_m": 633,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ0120C": {
+   "cas": "soupçon",
+   "lat": -21.327691,
+   "lon": 55.607557,
+   "nom": "Plaine Des Grègues",
+   "osm_m": 2219,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ02430C": {
+   "cas": "soupçon",
+   "lat": -21.336541,
+   "lon": 55.65689,
+   "nom": "Rue Moutoussamy Haut",
+   "osm_m": 1308,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ02790C": {
+   "cas": "soupçon",
+   "lat": -21.365486,
+   "lon": 55.689833,
+   "nom": "Route De Matouta Bis",
+   "osm_m": 1812,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:SJ04410C": {
+   "cas": "soupçon",
+   "lat": -21.337807,
+   "lon": 55.664253,
+   "nom": "Rue Edouard Turpin",
+   "osm_m": 1941,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:TA1810C": {
+   "cas": "soupçon",
+   "lat": -21.243539,
+   "lon": 55.511835,
+   "nom": "Chemin Doudou",
+   "osm_m": 1264,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:TA2170P": {
+   "cas": "soupçon",
+   "lat": -21.310788,
+   "lon": 55.538032,
+   "nom": "Eglise Berive",
+   "osm_m": 338,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:TA2330C": {
+   "cas": "soupçon",
+   "lat": -21.192299,
+   "lon": 55.538243,
+   "nom": "Route Du Piton Bleu",
+   "osm_m": 536,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:TA9000C": {
+   "cas": "soupçon",
+   "lat": -21.207934,
+   "lon": 55.593595,
+   "nom": "Impasse Jean Claude Picard",
+   "osm_m": 910,
+   "reseau": "CarSud",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "carsud:TA9545C": {
+   "cas": "soupçon",
+   "lat": -21.212756,
+   "lon": 55.565689,
+   "nom": "151 Rue Alfred Lacroix",
+   "osm_m": 561,
+   "reseau": "CarSud",
+   "signe": "détour"
+  },
+  "citalis:2140R": {
+   "cas": "soupçon",
+   "lat": -20.88392329633887,
+   "lon": 55.44377767208063,
+   "nom": "Redoute",
+   "osm_m": 304,
+   "reseau": "Citalis",
+   "signe": "détour"
+  },
+  "citalis:2720A+2729A": {
+   "cas": "doublon",
+   "lat": -20.901722,
+   "lon": 55.50255,
+   "nom": "Pierre Loti / Siège CINOR",
+   "reseau": "Citalis"
+  },
+  "citalis:2720R+2729R": {
+   "cas": "doublon",
+   "lat": -20.901862,
+   "lon": 55.502178,
+   "nom": "Pierre Loti / Siège CINOR",
+   "reseau": "Citalis"
+  },
+  "citalis:4409A": {
+   "cas": "homonyme",
+   "lat": -20.91208297896344,
+   "lon": 55.55197015123734,
+   "nom": "Bellier",
+   "osm_m": 516,
+   "reseau": "Citalis"
+  },
+  "citalis:4409R": {
+   "cas": "homonyme",
+   "lat": -20.9120278038679,
+   "lon": 55.55185531253746,
+   "nom": "Bellier",
+   "osm_m": 523,
+   "reseau": "Citalis"
+  },
+  "citalis:6621R": {
+   "cas": "homonyme",
+   "lat": -20.96852211327511,
+   "lon": 55.59046559246431,
+   "nom": "Chemin Bras de Fer les Hauts",
+   "osm_m": 305,
+   "reseau": "Citalis"
+  },
+  "citalis:6702A": {
+   "cas": "homonyme",
+   "lat": -20.95406745069172,
+   "lon": 55.59803487836505,
+   "nom": "Espérance",
+   "osm_m": 830,
+   "reseau": "Citalis"
+  },
+  "citalis:6702R": {
+   "cas": "homonyme",
+   "lat": -20.9540033501554,
+   "lon": 55.59792969005131,
+   "nom": "Espérance",
+   "osm_m": 827,
+   "reseau": "Citalis"
+  },
+  "citalis:6703A": {
+   "cas": "homonyme",
+   "lat": -20.95279674391695,
+   "lon": 55.60060478533763,
+   "nom": "Sentier Oeillet",
+   "osm_m": 899,
+   "reseau": "Citalis"
+  },
+  "citalis:6703R": {
+   "cas": "homonyme",
+   "lat": -20.95278573800468,
+   "lon": 55.60036446771409,
+   "nom": "Sentier Oeillet",
+   "osm_m": 881,
+   "reseau": "Citalis"
+  },
+  "karouest:1185_a": {
+   "cas": "soupçon",
+   "lat": -21.077263,
+   "lon": 55.29593,
+   "nom": "Bassin Souris",
+   "osm_m": 2685,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:1328_a": {
+   "cas": "soupçon",
+   "lat": -21.076712,
+   "lon": 55.290293,
+   "nom": "Aloès",
+   "osm_m": 2705,
+   "reseau": "Kar'Ouest",
+   "signe": "détour"
+  },
+  "karouest:1328_r": {
+   "cas": "soupçon",
+   "lat": -21.07672,
+   "lon": 55.29031,
+   "nom": "Aloès",
+   "osm_m": 2704,
+   "reseau": "Kar'Ouest",
+   "signe": "détour"
+  },
+  "karouest:176_r": {
+   "cas": "soupçon",
+   "lat": -21.181747,
+   "lon": 55.298105,
+   "nom": "Chemin Fatak",
+   "osm_m": 1038,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:279_a": {
+   "cas": "soupçon",
+   "lat": -21.151021,
+   "lon": 55.320113,
+   "nom": "Collège de la Chaloupe",
+   "osm_m": 2511,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:51_a": {
+   "cas": "soupçon",
+   "lat": -21.223448,
+   "lon": 55.310136,
+   "nom": "Boites aux Lettres",
+   "osm_m": 530,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:51_r": {
+   "cas": "soupçon",
+   "lat": -21.223433,
+   "lon": 55.310098,
+   "nom": "Boites aux Lettres",
+   "osm_m": 530,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:541_r": {
+   "cas": "soupçon",
+   "lat": -21.027397,
+   "lon": 55.291014,
+   "nom": "Ligne Chéreau",
+   "osm_m": 333,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:543_r": {
+   "cas": "soupçon",
+   "lat": -21.116739,
+   "lon": 55.303006,
+   "nom": "Local Calumets",
+   "osm_m": 1427,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:563_a": {
+   "cas": "soupçon",
+   "lat": -21.082493,
+   "lon": 55.236327,
+   "nom": "Lotissement Bruniquel",
+   "osm_m": 515,
+   "reseau": "Kar'Ouest",
+   "signe": "détour"
+  },
+  "karouest:63_a": {
+   "cas": "soupçon",
+   "lat": -21.221605,
+   "lon": 55.307746,
+   "nom": "Boutique BDN",
+   "osm_m": 512,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:64_a": {
+   "cas": "soupçon",
+   "lat": -21.071623,
+   "lon": 55.296463,
+   "nom": "Boutique Capoutry",
+   "osm_m": 2969,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:658_a1": {
+   "cas": "soupçon",
+   "lat": -21.134709,
+   "lon": 55.309913,
+   "nom": "Notre Dame des Champs",
+   "osm_m": 1581,
+   "reseau": "Kar'Ouest",
+   "signe": "détour"
+  },
+  "karouest:658_r": {
+   "cas": "soupçon",
+   "lat": -21.135071,
+   "lon": 55.309811,
+   "nom": "Notre Dame des Champs",
+   "osm_m": 1561,
+   "reseau": "Kar'Ouest",
+   "signe": "détour"
+  },
+  "karouest:6_a": {
+   "cas": "soupçon",
+   "lat": -21.151151,
+   "lon": 55.319013,
+   "nom": "Agapanthes",
+   "osm_m": 2436,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  },
+  "karouest:760_a": {
+   "cas": "soupçon",
+   "lat": -21.144845,
+   "lon": 55.301742,
+   "nom": "Réservoir Bras Mouton",
+   "osm_m": 964,
+   "reseau": "Kar'Ouest",
+   "signe": "hors d'ordre sur le tracé"
+  }
+ },
  "centres": {
   "La Plaine-des-Palmistes": {
    "ecart_m": 1472,

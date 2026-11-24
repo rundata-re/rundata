@@ -29,9 +29,26 @@ describe("le contrôle du lundi des listes embarquées", () => {
     expect(py).toContain('(Path(__file__).parent / "user-agent.txt").read_text(');
     expect(py.match(/^(ANNUAIRE|GEOCODAGE_CSV|OVERPASS) = /gm)).toHaveLength(3);
     expect(py.indexOf("if args.ecrire:")).toBeLessThan(py.indexOf(".write_text("));
+    // The bus stops come from the GTFS of the networks the server is built from, the cable car left out, and the town
+    // halls and the bus stops from one Overpass request.
+    expect(py).toContain('Path(__file__).parent / "build-transit.py"');
+    expect(py).toContain('if n[0] != "papang"');
+    expect(py.match(/get\(OVERPASS/g)).toHaveLength(1);
     // The reference: the annuaire's gaps by the office's id, the communes' by their name; every commune has its town hall.
     const ref = JSON.parse(read("scripts/positions-reference.json")) as Record<string, Record<string, { ecart_m: number | null }>>;
-    expect(Object.keys(ref).sort()).toEqual(["annuaire", "centres"]);
+    expect(Object.keys(ref).sort()).toEqual(["annuaire", "arrets", "centres"]);
+    // The stops by network and id, each with its case: the 45 suspects, the 7 homonyms and the shared point of 24/11/2026.
+    const arrets = Object.entries(ref.arrets as unknown as Record<string, { cas: string; reseau: string; lon: number; lat: number }>);
+    for (const [k, v] of arrets) {
+      expect(k).toMatch(/^[a-z]+:\S+$/);
+      expect(["soupçon", "homonyme", "doublon"]).toContain(v.cas);
+      expect(v.lat).toBeGreaterThan(-21.4);
+      expect(v.lat).toBeLessThan(-20.86);
+    }
+    expect(arrets.filter(([, v]) => v.cas === "soupçon")).toHaveLength(45);
+    expect(arrets.filter(([, v]) => v.cas === "homonyme")).toHaveLength(7);
+    expect(arrets.filter(([k]) => k.startsWith("citalis:2720"))).toHaveLength(2);
+    delete ref.arrets;
     for (const v of Object.values(ref.annuaire)) expect(v.ecart_m).toBeGreaterThan(300);
     for (const [c, v] of Object.entries(ref.centres)) expect(v.ecart_m, c).toBeGreaterThan(1000);
   });

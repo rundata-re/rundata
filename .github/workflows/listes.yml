@@ -11,6 +11,8 @@
 # Then the places we give against a second source (scripts/verifier-positions.py): the annuaire's offices against their
 # address in the Base adresse nationale, the communes' points against their town hall in OpenStreetMap. It fails only on a
 # gap that is new or grew since scripts/positions-reference.json, and says a gap that closed: three requests, one each.
+# With them, the bus stops of the GTFS against OSM's (the same Overpass request, and the six GTFS, about 15 Mo): only a
+# stop that is newly suspect (far from any OSM stop and out of its trips' order), or a new homonym or shared point, fails.
 name: Listes embarquées
 
 on:
@@ -62,8 +64,9 @@ jobs:
         continue-on-error: true
         run: python3 -I scripts/build-monuments.py --verifier 0
       # An office the annuaire places far from its address, a commune's point far from its town hall: « y aller », the
-      # distances and the nearest office are given wrong. Said to its producer, or the list rebuilt.
-      - name: Positions (annuaire contre BAN, communes contre mairies OSM)
+      # distances and the nearest office are given wrong. Said to its producer, or the list rebuilt. A bus stop misplaced
+      # by its network: the walk to it, the connections on foot and « y aller » are given wrong; said to the network.
+      - name: Positions (annuaire contre BAN, communes contre mairies OSM, arrêts de bus contre OSM)
         id: positions
         continue-on-error: true
         run: python3 -I scripts/verifier-positions.py --verifier

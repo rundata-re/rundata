@@ -307,6 +307,42 @@ describe("coupures d'eau", () => {
     expect(coupuresCommunePage("https://rundata.re", PAGES.find((x) => x.commune && x.nom === commune)!, { coupures: { value: before, fetchedAt: NOW } }, NOW)).not.toContain("Derniers avis publiés");
   });
 
+  it("says on the page when the notices were read, as the tool does, not when the page's copy was built (24/11/2026)", async () => {
+    // Read at 08:00; the page's copy built at 08:08 from that read, still fresh (15 min): « lu le 24/10 à 08:08 » was
+    // the copy's hour, while coupures_eau said 08:00 at the same moment (Bras-Panon, 24/11/2026: 05:33 against 05:25).
+    const store = new MemoryStore();
+    const later = new Date(NOW.getTime() + 8 * 60_000);
+    const tool = body(await coupuresEau(new Cache(store, () => NOW.getTime()), "Le Port", NOW));
+    expect(tool.resume).toContain(", lu le 24/10 à 08:00");
+    const value = await buildCoupures(new Cache(store, () => later.getTime()), later);
+    const html = coupuresCommunePage("https://rundata.re", pageOf("le-port")!, { coupures: { value, fetchedAt: later } }, later);
+    expect(unescape(html).replace(/\u00a0/g, " ")).toContain("lu le 24/10 à 08:00.");
+    // The page's own hour stays its own: « Mis à jour le 24/10 à 08:08 ».
+    const flat = unescape(html).replace(/\u00a0/g, " ");
+    expect(flat.match(/lu(?:s)? le 24\/10 à 08:08/g)).toBeNull();
+    expect(flat).toContain("Mis à jour le 24/10 à 08:08.");
+    // The island's page: the same hour.
+    const isle = unescape(coupuresPage("https://rundata.re", { value, fetchedAt: later }, later)).replace(/\u00a0/g, " ");
+    expect(isle).toContain("Avis des distributeurs, lus le 24/10 à 08:00.");
+    expect(isle.match(/lu(?:s)? le 24\/10 à 08:08/g)).toBeNull();
+    // The same hour on the commune's tile.
+    expect(waterLive(pageOf("le-port")!, { coupures: { value, fetchedAt: later } })!.detail).toContain("avis lus le 24/10 à");
+    expect(waterLive(pageOf("le-port")!, { coupures: { value, fetchedAt: later } })!.detail.replace(/\u00a0/g, " ")).toContain("08:00");
+  });
+
+  it("counts the old-read warning from when the notices were read, on the commune's page and the island's (24/11/2026)", async () => {
+    // Read long ago, the copy rebuilt just now from that read: both pages say it was not read again since.
+    const value = { ...(await buildCoupures(cache(), NOW)), avis_lus_le: new Date(NOW.getTime() - 3 * 86_400_000).toISOString() };
+    const copy = { value, fetchedAt: NOW };
+    const said = "ont été lus le 21/10 à 08:00 et n'ont pas pu être relus depuis";
+    const flat = (h: string) => unescape(h).replace(/\u00a0/g, " ");
+    expect(flat(coupuresCommunePage("https://rundata.re", pageOf("le-port")!, { coupures: copy }, NOW))).toContain(said);
+    expect(flat(coupuresPage("https://rundata.re", copy, NOW))).toContain(said);
+    // Read just now: neither page says it.
+    const fresh = { value: { ...value, avis_lus_le: NOW.toISOString() }, fetchedAt: NOW };
+    expect(flat(coupuresPage("https://rundata.re", fresh, NOW))).not.toContain("n'ont pas pu être relus");
+  });
+
   it("shows a list read whole, else sends to the notice for the streets, on the page and in the tool", async () => {
     const coupures = { value: await buildCoupures(cache(), NOW), fetchedAt: NOW };
     const page = (slug: string) => coupuresCommunePage("https://rundata.re", pageOf(slug)!, { coupures }, NOW);

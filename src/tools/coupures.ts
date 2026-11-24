@@ -294,6 +294,9 @@ export async function coupuresEau(cache: Cache, lieu: string | undefined, now = 
         (complet ? silent.map((f) => ` ${f.texte}`).join("")
           : silent.length ? ` Sans réponse à la dernière lecture\u00a0: ${enumeration(silent.map((f) => f.de.replace(/^d(?:e (?:la |l'|les? )?|es )/, "")))}\u00a0: ce que chacun annonçait, dans injoignable.` : ""),
       injoignable: silent.length ? silent : undefined,
+      // When the notices were read, for the pages: their copy is built later from that read (24/11/2026: « lu le … à
+      // 05:33 », the copy's hour, against 05:25 for the tool).
+      ...(complet && { avis_lus_le: readAt.toISOString() }),
       ne_pas_boire: dry.length ? dry : undefined,
       avis: cut ? cut.avis : rows,
       ...(cut?.abreges && { avis_abreges: TEXTE_ET_SECTEURS_PAR_LE_LIEN }),

@@ -1266,12 +1266,17 @@ export async function buildSecheresse(cache: Cache, now = new Date()): Promise<S
   return { ...a, interdits };
 }
 
+/** When the notices of a coupures copy were read: the read it was built from, not the copy's own hour (24/11/2026). */
+export const lusLe = (c: { value: CoupuresAnswer; fetchedAt: Date | string }) => c.value.avis_lus_le ?? c.fetchedAt;
+
 export interface CoupuresAnswer {
   resume: string;
   ne_pas_boire?: string[];
   avis: ReturnType<typeof noticeRow>[];
   /** The feeds that did not answer at the last read (tools/coupures.ts). */
   injoignable?: FluxMuet[];
+  /** When the notices were read (ISO), which the copy may postdate. Absent from a copy built before 24/11/2026. */
+  avis_lus_le?: string;
   couverture: string;
   a_savoir: string;
   sources: Credit[];

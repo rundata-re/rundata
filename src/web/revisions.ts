@@ -90,7 +90,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // « Pas d'avis de coupure récent ou à venir sur les sites lus », never « aucun avis », in the summary (22/11/2026).
   // A feed not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
   // A notice's place on its card (`lieu`); a silent feed said with what its last read held for the commune (24/11/2026).
-  coupures: 23,
+  // With the hour the notices were read (avis_lus_le), said by the commune's page instead of the copy's (24/11/2026).
+  coupures: 24,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).

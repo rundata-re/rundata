@@ -239,7 +239,7 @@ describe("an address in a sentence of /confidentialite, /conditions, the foot an
         "écrire à <b>contact@rundata.re</b> en le citant.",
         "ou demande à contact@rundata.re), quand HelloAsso",
         "écrivez à <b>contact@rundata.re</b> : nous répondons sous un mois.",
-        ' · <a href="/publier">publier vos données</a> · contact@rundata.re</p>',
+        ' · <a href="/publier">publier vos données</a> · <a href="/en" lang="en" hreflang="en">English</a> · contact@rundata.re</p>',
         "Services publics : service-public.fr. Bus : horaires publiés par les réseaux sur transport.data.gouv.fr. Vélos",
         "Lieux : © contributeurs OpenStreetMap (ODbL), IGN, geo.api.gouv.fr. Relief",
       ]) expect(lu(privacy)).toContain(s);

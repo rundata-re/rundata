@@ -1899,6 +1899,8 @@ export function layout(origin: string, head: Head, written: string, body: string
   // The contour lines of the decor (web/fonds.ts), in the footer of every page from 1200 px and in the band of a few.
   const decor = !head.shell && motif(head.alerte, !!urgent(head).volcan);
   // On a page in English, what the site keeps in French around it, said so to a reader of the page aloud.
+  // The page in English (web/en.ts) is linked from the footer of every other page, in one word (marketing,
+  // 24/11/2026): no page led to it.
   const fr = head.en ? ' lang="fr"' : "";
   return `<!doctype html>
 <html lang="${head.en ? "en" : "fr"}">
@@ -1953,7 +1955,7 @@ ${sources.length ? `<div class="wrap fin-sources" role="region" aria-label="Sour
     ${SLOGAN}
     <p>La Réunion 974 en direct, pour vous et votre assistant IA.</p>
     ${head.rss ? `<p><a href="${esc(head.rss.href)}" title="${esc(head.rss.hint)}">${esc(head.rss.link)}</a></p>` : ""}
-    <p>rundata.re, version <a href="/nouveautes">${VERSION}</a> · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">valeurs</a> · <a href="/chiffres">${sourcesLues()} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a> · ${adresseTexte("contact@rundata.re")}</p>
+    <p>rundata.re, version <a href="/nouveautes">${VERSION}</a> · <a href="${GITHUB}">code libre (MIT)</a> · <a href="/valeurs">valeurs</a> · <a href="/chiffres">${sourcesLues()} sources publiques</a> · <a href="/application">sur votre écran d'accueil</a> · <a href="/ouvrir-ses-donnees">ouvrir ses données</a> · <a href="/sites-sans-reponse">sites sans réponse</a> · aucun cookie, statistiques de visite anonymes · <a href="/confidentialite">confidentialité</a> · <a href="/conditions">conditions et mentions légales</a> · <a href="/a-propos">qui fait rundata.re ?</a> · <a href="/chiffres">rundata.re en chiffres</a> · <a href="/presse">presse</a> · <a href="/nouveautes">nouveautés</a> · <a href="/publier">publier vos données</a>${head.en ? "" : ` · <a href="/en" lang="en" hreflang="en">English</a>`} · ${adresseTexte("contact@rundata.re")}</p>
     <p>Référencé sur ${lienNom(DATAGOUV_REUSE, "data.gouv.fr")}, la plateforme des données publiques françaises, et sur <a href="${GLAMA}">Glama</a>, l'annuaire des serveurs MCP.</p>
     ${follow()}
   </div>

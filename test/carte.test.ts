@@ -4,11 +4,12 @@ import { counted, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import * as irve from "../src/providers/irve.js";
 import { REGISTRY } from "../src/registre.js";
-import { DIRECT_VERS, MOTS, ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
+import { LIGNE_VUE, MOTS, ORDRE, PAR_DEFAUT, VUES } from "../src/web/carte.js";
 import { CARTE_CSS } from "../src/web/carte-style.js";
 import { PLEIN_ECRAN_CSS, pleinEcran } from "../src/web/plein-ecran.js";
 import { bornesObjets, COUCHES, RESUME_PATH } from "../src/web/couches.js";
 import { borneRow } from "../src/web/domains.js";
+import { esc } from "../src/web/map.js";
 import { VENT_DE, ventDe } from "../src/web/meteo-carte.js";
 
 beforeEach(() => {
@@ -107,18 +108,28 @@ describe("/carte", () => {
     expect(PAR_DEFAUT.every((id) => COUCHES.some((c) => c.id === id))).toBe(true);
   });
 
-  it("has its « En direct » band over the map, each figure leading to a view or a layer there is, and its views on the map's sea", async () => {
+  it("shows its views as cards over the map, each with the small map of the island, the place it frames and its line", async () => {
     const { html } = await serve("/carte");
-    expect(html).toContain('<p class="kdir" hidden>');
-    expect(html.indexOf('class="kdir"')).toBeLessThan(html.indexOf('class="card mapcard kmapc"'));
-    expect(html).toMatch(/<figure class="card mapcard kmapc"><nav class="kvues"/);
-    const conf = JSON.parse(/<script type="application\/json" id="k-conf">(.*?)<\/script>/.exec(html)![1]);
-    expect([conf.resume, conf.direct]).toEqual([RESUME_PATH, DIRECT_VERS]);
-    expect(Object.keys(DIRECT_VERS)).toEqual(Object.keys(MOTS.enDirect));
-    for (const h of Object.values(DIRECT_VERS)) {
-      const c = /^#c=(.+)$/.exec(h);
-      expect(c ? COUCHES.some((x) => x.id === c[1]) : VUES.some((v) => `#${v.id}` === h), h).toBe(true);
+    const cartes = /<ul class="kac" aria-label="Vues">(.*?)<\/ul>/.exec(html)![1];
+    expect(html.indexOf('class="kac"')).toBeLessThan(html.indexOf('class="card mapcard kmapc"'));
+    expect(html.indexOf('class="kdir"')).toBeLessThan(html.indexOf('class="kac"'));
+    const items = [...cartes.matchAll(/<li><a href="#([a-z-]+)" data-v="\1"><svg viewBox="0 0 \d+ \d+" aria-hidden="true" focusable="false"><use href="#isl"\/>(<rect [^>]+\/>)?<\/svg><span><strong>([^<]+)<\/strong><small( data-k="([a-z]+)")?>([^<]*)<\/small><\/span><\/a><\/li>/g)];
+    expect(items.map((m) => [m[1], m[3]])).toEqual(VUES.map((v) => [v.id, esc(v.nom)]));
+    // A frame drawn where the view has one; the outline is the map's own, defined once in the page.
+    expect(items.map((m) => !!m[2])).toEqual(VUES.map((v) => !!v.cadre));
+    expect(html.split('<g id="isl">').length - 1).toBe(1);
+    // The live line left for the script, a figure the band had; the fixed lists' line written.
+    for (const m of items) {
+      const l = LIGNE_VUE[m[1]];
+      if ("direct" in l) expect([m[5], m[6]]).toEqual([l.direct, ""]);
+      else expect([m[5], m[6]]).toEqual([undefined, esc(l.fixe)]);
     }
+    expect(Object.values(LIGNE_VUE).flatMap((l) => ("direct" in l ? [l.direct] : [])).sort()).toEqual(Object.keys(MOTS.enDirect).sort());
+    // The pills stay for the full screen only.
+    expect(html).toMatch(/<figure class="card mapcard kmapc"><nav class="kvues"/);
+    expect(CARTE_CSS).toContain(".kcarte:not(.pe-on) .kvues :is(h3,ul){display:none}.pe-on .kac{display:none}");
+    const conf = JSON.parse(/<script type="application\/json" id="k-conf">(.*?)<\/script>/.exec(html)![1]);
+    expect(conf.resume).toBe(RESUME_PATH);
     // None, one, many: the figure in the words but for none.
     for (const [k, w] of Object.entries(MOTS.enDirect)) expect(w.map((x) => x.includes("{n}")), k).toEqual([false, true, true]);
   });

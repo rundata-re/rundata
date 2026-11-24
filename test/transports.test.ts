@@ -8,7 +8,7 @@ import { waitText } from "../src/web/domains.js";
 import { type Departure, departures, findStops, linesNamed, onceEach, parseQuery, stationDepartures, transports, tripAsked } from "../src/tools/transports.js";
 
 // Rows of the D1 database for the stations of Saint-Pierre, the cable car at Bancoul and Hell-Bourg, from the
-// networks' GTFS of 23/10/2026 (scripts/build-transit.py).
+// networks' GTFS of 23/10/2026, Car Jaune's of 18/11/2026 (scripts/build-transit.py).
 // By feed, as scripts/build-transit.py writes them to the database.
 const rows = JSON.parse(readFileSync(new URL("./fixtures/transit/rows.json", import.meta.url), "utf8")) as Record<
   string,

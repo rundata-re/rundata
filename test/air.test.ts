@@ -90,7 +90,7 @@ describe("air quality: what the index is and where it comes from", () => {
       licence: "ODbL 1.0",
       licence_lien: "https://opendatacommons.org/licenses/odbl/1-0/",
       fiche: "https://www.data.gouv.fr/datasets/indice-de-la-qualite-de-lair-quotidien-par-commune-indice-atmo",
-      site: "https://www.atmo-reunion.net",
+      site: "https://atmo-reunion.net",
     });
     expect(r.comment_c_est_fait.lien).toBe(atmo.GUIDE);
     expect(r.comment_c_est_fait.d_apres).toBe("Guide de calcul de l'indice ATMO d'Atmo France (version du 14/12/2020)");
@@ -130,7 +130,7 @@ describe("air quality: what the index is and where it comes from", () => {
     // The tool's answer, for a place or the island, keeps its fields: the day is the page's only.
     expect(body(await qualiteAir(cache(diffused(YESTERDAY)), undefined, NOW)).echeance).toBeUndefined();
     const source = page.slice(page.indexOf('id="h-source-air"'), page.indexOf("</section>", page.indexOf('id="h-source-air"')));
-    expect(source).toContain('<a href="https://www.atmo-reunion.net" rel="noopener">Atmo Réunion</a>');
+    expect(source).toContain('<a href="https://atmo-reunion.net" rel="noopener">Atmo Réunion</a>');
     expect(source).toContain(`<a href="${atmo.DIFFUSION}" rel="noopener" aria-label="sa fiche sur data.gouv.fr">sa fiche sur <span class="adrweb">data.<wbr>gouv.<wbr>fr</span></a>`);
     expect(source).toContain(`<a href="${atmo.ODBL}" rel="noopener">ODbL 1.0</a>`);
     expect(source).toContain(`<a href="${esc(atmo.GUIDE)}" rel="noopener">guide de calcul de l'indice ATMO</a>`);

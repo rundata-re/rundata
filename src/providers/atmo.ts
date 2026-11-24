@@ -16,7 +16,7 @@ export const SOURCE: SourceInfo = {
   organisme: "Atmo Réunion, observatoire agréé de la qualité de l'air",
   licence: "ODbL 1.0",
   attribution: "Atmo Réunion / Atmo France",
-  url: "https://www.atmo-reunion.net",
+  url: "https://atmo-reunion.net",
 };
 
 /** Atmo France's calculation guide of the index, version of 14/12/2020, in application of the order of 10 July 2020. */
@@ -32,7 +32,7 @@ export const PROVENANCE = {
   licence: "ODbL 1.0",
   licence_lien: ODBL,
   fiche: DIFFUSION,
-  site: "https://www.atmo-reunion.net",
+  site: "https://atmo-reunion.net",
 };
 
 /** The step the island's answer keeps (marketing, 30/10/2026): what changes what can be said by a busy road. */

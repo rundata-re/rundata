@@ -134,7 +134,7 @@ import * as peche from "./tools/peche.js";
 import * as cetaces from "./tools/cetaces.js";
 import { insecables } from "./typographie.js";
 
-export const VERSION = "1.0.847";
+export const VERSION = "1.0.848";
 
 // Some clients keep only the start of these instructions (Claude Code cut them near 4 000 characters): they stay under
 // 4 000 (a test checks). ChatGPT weighs the first 512 characters most: what rundata.re is and when to use it come first,
@@ -594,11 +594,13 @@ export function createServer(cache: Cache, record: Recorder = () => {}, backgrou
           "Chaque départ dit d'où vient le car et où il va\u00a0; un jour sans service (dimanche, jour férié) est dit. Bateau ou ferry pour Maurice ou Rodrigues : dit qu'il n'y a pas de liaison maritime régulière de passagers, ne pas en inventer ni d'horaires de bateau.",
         inputSchema: {
           arret: z.string().max(TEXTE_MAX).optional().describe("Nom de l'arrêt et sa commune (« Gare routière, Saint-Pierre »), ou un lieu (« plage de Boucan », « Manapany ») pour les arrêts les plus proches\u00a0; avec une ligne, dit si elle y passe, sinon son arrêt le plus proche. Une heure (« après 17 h ») donne les départs une par une. Facultatif avec une ligne. Un trajet d'un lieu à un autre (« de Trou d'Eau à Saint-Pierre ») n'est pas calculé ici\u00a0: donner le lien https://rundata.re/bus/itineraire?de=<départ>&a=<arrivée>, qui cherche les trajets directs ou avec une correspondance sur tous les réseaux de l'île."),
+          lieu: z.string().max(TEXTE_MAX).optional().describe("Comme arret."),
           ligne: z.string().max(TEXTE_MAX).optional().describe("Une ligne (« S1 », « O1X », « 2 », « S1 Car Jaune ») : seule, ses arrêts dans l'ordre pour chaque sens, ses départs du jour et ses bus en circulation qui donnent leur position\u00a0; avec un arrêt, ses prochains départs là."),
         },
         annotations: { ...READ_ONLY },
       },
-      track("transports", (args: { arret?: string; ligne?: string }) => transports(args.arret, args.ligne, new Date(), cache)),
+      // `lieu`, as every other tool takes the place: the stop or the place asked (23/11/2026, « Saint-Louis » given so went unread).
+      track("transports", (args: { arret?: string; lieu?: string; ligne?: string }) => transports(args.arret ?? args.lieu, args.ligne, new Date(), cache)),
     );
   }
 

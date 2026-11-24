@@ -688,6 +688,8 @@ background:none;color:var(--muted);cursor:pointer}
 .rows.velos li{grid-template-columns:minmax(0,1fr) auto;align-items:center}
 .rows.velos small{display:block;font-size:.88rem;margin-top:.1rem}
 .rows.lieux li{grid-template-columns:minmax(0,1fr)}
+.heures-ligne{list-style:none;margin:.3rem 0 .8rem;padding:0;display:flex;flex-wrap:wrap;gap:.3rem .9rem;font-variant-numeric:tabular-nums}
+.lignes summary{cursor:pointer;display:flex;align-items:baseline;gap:.6rem;min-height:44px}.lignes summary h3{margin:0}.lignes{margin-bottom:.8rem}.arrets-ligne li{padding-block:.55rem}.arrets-ligne .commune-ligne{color:var(--muted);font-size:.88rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-top:0;padding-block:.9rem .2rem}
 .rows.lieux small{font-size:.88rem;margin-top:.1rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .tile details.plus>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:.35rem;font-weight:600;color:var(--link);list-style:none}
 .tile details.plus>summary::-webkit-details-marker{display:none}

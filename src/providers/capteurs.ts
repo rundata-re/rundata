@@ -14,6 +14,7 @@
 import type { Cached } from "../cache.js";
 import { getJson, UA_RUNDATA } from "../http.js";
 import { placeAt } from "../places/resolve.js";
+import { communeDuContour } from "../places/contours.js";
 import { distanceKm } from "../geo.js";
 import type { SourceInfo } from "../types.js";
 import { autorisee } from "./autorisations.js";
@@ -182,10 +183,12 @@ const ECHEC_REWRITE_MS = 12 * 3600_000;
 type Marker = { sensor_id?: unknown; geo?: { lat?: unknown; lng?: unknown }; timestamp?: unknown };
 type Point = { data?: Record<string, unknown>; timestamp?: unknown };
 
-/** A place of the island, by its commune; undefined at sea or off it. */
+/** A place of the island, by its commune (its outline, else the nearest place on the shore); undefined at sea or off it. */
 function communeAt(lat: number, lon: number): string | undefined {
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) return undefined;
   if (lat < BOX.south || lat > BOX.north || lon < BOX.west || lon > BOX.east) return undefined;
+  const dedans = communeDuContour(lon, lat);
+  if (dedans) return dedans;
   const place = placeAt(lon, lat);
   return distanceKm(lon, lat, place.lon, place.lat) > ISLAND_KM ? undefined : place.commune;
 }

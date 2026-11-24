@@ -7,6 +7,7 @@
 import gazetteer from "./gazetteer.js";
 import { distanceKm, inReunion } from "../geo.js";
 import { CODES_POSTAUX } from "./codes-postaux.js";
+import { communeDuContour } from "./contours.js";
 import { NO_PLACE, type Region, regionOf } from "./regions.js";
 
 export interface Place {
@@ -310,7 +311,10 @@ export function placeAt(lon: number, lat: number): Place {
 /** The places of the gazetteer within `km` of a point: the hamlets, beaches and quarters a stop there may be said by. */
 export const placesNear = (lon: number, lat: number, km: number): Place[] => PLACES.filter((p) => distanceKm(lon, lat, p.lon, p.lat) <= km);
 
-/** The commune of a point: that of the nearest place of the gazetteer. */
-export const communeAt = (lon: number, lat: number): string => placeAt(lon, lat).commune;
+/**
+ * The commune of a point: the one whose outline holds it (contours.ts), else, off every outline (the shore, at sea),
+ * that of the nearest place of the gazetteer.
+ */
+export const communeAt = (lon: number, lat: number): string => communeDuContour(lon, lat) ?? placeAt(lon, lat).commune;
 
 export const GAZETTEER_ATTRIBUTION: string = gazetteer.attribution;

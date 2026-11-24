@@ -52,7 +52,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Tomorrow's index by commune, when Atmo Réunion diffused it, under the day's (21/11/2026).
   // The communes at the worst « pour Le Port et Saint-Pierre », counted beyond 3; tomorrow « Pas une mesure : … » (21/11/2026).
   // Atmo Réunion's site without « www. », which answers by a redirection (24/11/2026).
-  air: 16,
+  // A sensor's commune, from its outline, no longer the nearest place's (24/11/2026).
+  air: 17,
   bornes: 5,
   // Stop names, directions and lines' long names written all in capitals, or with a capital on every word, by their
   // network, as people read them (« Gare Saint-André », « Rue des Amphiboles »); an article between two hyphens stays
@@ -84,7 +85,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its bus stops with their page (/bus/arret/…), which the Bus block links (22/11/2026).
   // A mairie's site not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
   // Its water card says where a distributor not read publishes its notices, never « not read » (23/11/2026).
-  commune: 32,
+  // The commune of a station, a sensor or a trail given by a point, from its outline (24/11/2026).
+  commune: 33,
   // A La Créole notice with the hours and the streets it writes (« de 8h à 15h », « secteur suivant : »).
   // A commune whose water the ARS shares between distributors read when one of them is (L'Étang-Salé, runéo's notices).
   // What to know after a cut in the words of the ARS La Réunion's leaflet, with its link (14/11/2026).
@@ -136,7 +138,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   electricite: 27,
   // A title written all in capitals in the case of a sentence, its employer named (« Commune du Tampon »).
   emploi: 9,
-  enfants: 15,
+  // The children's trails (sentiers marmailles) by the commune of their outline (24/11/2026).
+  enfants: 16,
   // Un jour incomplet dit jusqu'à quelle heure, jamais présenté entier (10/11/2026).
   // Les records des six stations de référence rangés dans la copie (`records_reference`), pour le bloc Records de /meteo.
   // Hier heure par heure aux pluviomètres d'une commune, gardé à 00:20, tant que l'archive horaire ne l'a pas (avis n° 22).
@@ -156,7 +159,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its `couverture` the networks only, the detail left to sources_donnees; the rain's `convention` shorter (23/11/2026).
   // The nearest Candhis buoy that measured, in the sea's answer (houle_mesuree, 23/11/2026).
   // The UV index measured at Moufia in the forecast's answer (prevision_meteo, `indice_uv_mesure`, 24/11/2026).
-  lieu: 35,
+  // The commune of a station or a place given by a point, from its outline, no longer the nearest place's (24/11/2026).
+  lieu: 36,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
@@ -169,8 +173,10 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The amateur stations (MétéoR-OI) apart: never the station named first, marked in the answer (10/11/2026).
   // The home page's sea (SeaNow) with each beach's pass time and the nearest corals' level.
   // Each station's kind in words, official or amateur, in the answer (`nature`) and its summary (20/11/2026).
-  meteo: 13,
-  randonnees: 15,
+  // The commune of a station off Météo-France, from its outline, no longer the nearest place's (24/11/2026).
+  meteo: 14,
+  // The communes of the hikes' trails, from their outlines (24/11/2026).
+  randonnees: 16,
   // The levels of the order n°2026-2094 of 12/11/2026 while VigiEau serves the one it replaced, VigiEau's said beside.
   // A newer drought order out in the prefecture's recueil, not taken into account yet, said first (arrete_plus_recent).
   secheresse: 3,
@@ -180,7 +186,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its copies keep a closed trail's state (web/data.ts closedState): « En partie fermé : … » first, « Fermé » said once.
   // Its copy keeps the middle of each forest road closed to traffic (web/data.ts routes_points), for the home page's map.
   // A trail's copy says when the ONF's map of the day no longer lists it (hors_carte), never « ouvert » (24/11/2026).
-  sentiers: 24,
+  // The communes of the trails and the forest roads, from their outlines (24/11/2026).
+  sentiers: 25,
   // Its copy dates the volley league's tournaments by the days of their title, else « (dates données par la Ligue) ».
   // A volley match's sets written as its score, « 26-28 ».
   // The ffgolf's written refusal of 09/11/2026: its own line, dated, in the golf's mention.
@@ -190,7 +197,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // A championship's page not read said « rundata.re ne sait pas ce qu'il annonce », never « nous » (23/11/2026).
   // The volley league or Sportsregions failing after an old copy said « dernière lecture sans succès » (24/11/2026).
   sport: 34,
-  station: 2,
+  // A station's commune, from its outline, no longer the nearest place's (24/11/2026).
+  station: 3,
   // Its copy keeps the bus feeds' times (`temps_reel`, data.ts `feedTimes`), now with their day.
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // Its news of the roads: « mobilisation » for a strike or a blockade only (« mobilisation financière » left out).
@@ -198,7 +206,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its news of the roads: not « le trafic de drogue », nor the dam of Takamaka.
   // Its news of the roads by commune: a headline « Saint-Denis : … » to the communes it names (communesEnTete).
   trafic: 9,
-  velos: 7,
+  // A station's commune, from its outline, no longer the nearest place's (24/11/2026).
+  velos: 8,
   // « Puis-je monter au volcan ? »: the Enclos' closed trails too, each with the ONF's reason (20/11/2026).
   // Its past alerts: the release of 13/02/2026 linked on the prefecture's site, without another assistant's tag.
   // The earthquakes' copy said « la dernière lecture de rundata.re », never « notre lecture » (23/11/2026).

@@ -194,7 +194,8 @@ export function apart(
   const p = places.map(([x, y]): [number, number] => [x, y]);
   const w = widths;
   const h = heights;
-  for (let round = 0; round < 200; round++) {
+  // Each pair of marks that overlap, half each; two at the same height or column apart in their order.
+  const separate = () => {
     let moved = false;
     for (let i = 0; i < p.length; i++) {
       for (let j = i + 1; j < p.length; j++) {
@@ -204,7 +205,6 @@ export function apart(
         const oy = (h[i] + h[j]) / 2 + GAP - Math.abs(dy);
         if (ox <= 0 || oy <= 0) continue;
         moved = true;
-        // Half each; two at the same height or column apart in their order.
         if (ox < oy * aside) {
           const s = dx < 0 ? -1 : 1;
           p[i][0] -= (s * ox) / 2;
@@ -216,6 +216,17 @@ export function apart(
         }
       }
     }
+    return moved;
+  };
+  const inMap = () => {
+    for (let i = 0; i < p.length; i++) {
+      p[i][0] = Math.min(W - w[i] / 2 - GAP, Math.max(w[i] / 2 + GAP, p[i][0]));
+      p[i][1] = Math.min(H - h[i] / 2 - GAP, Math.max(h[i] / 2 + GAP, p[i][1]));
+    }
+  };
+  let settled = false;
+  for (let round = 0; round < 200; round++) {
+    let moved = separate();
     // A place stays where it is: the pill alone goes, all the way out, the shorter way that stays inside the map (a
     // place by the coast, at the top, sends it below or beside, never above).
     for (let i = 0; i < p.length; i++) {
@@ -251,11 +262,19 @@ export function apart(
         moved = true;
       }
     }
-    for (let i = 0; i < p.length; i++) {
-      p[i][0] = Math.min(W - w[i] / 2 - GAP, Math.max(w[i] / 2 + GAP, p[i][0]));
-      p[i][1] = Math.min(H - h[i] / 2 - GAP, Math.max(h[i] / 2 + GAP, p[i][1]));
+    inMap();
+    if (!moved) {
+      settled = true;
+      break;
     }
-    if (!moved) break;
+  }
+  // Too many places for the room around them (24/11/2026, /eau: seven beaches on the 15 km of coast from Boucan Canot
+  // to the Pointe des Trois Roches): clearing the places undid, round after round, what parted the marks, and two rounds
+  // were left one over the other, their mark unread. Then the marks part at last, one over a place dot rather than over
+  // each other: each place is still tied to its mark.
+  for (let round = 0; !settled && round < 200; round++) {
+    settled = !separate();
+    inMap();
   }
   return p.map(([x, y]) => [Math.round(x), Math.round(y)]);
 }

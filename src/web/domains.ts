@@ -1963,7 +1963,7 @@ export function eauPage(origin: string, data: Cached<EauAnswer> | null, now = ne
     ${ask(`Dlo lé bon pou bengn La Rényon ? Gèt si ${url} é di amwin pou la plaj l'Ermitaz é pou dlo robinè Sin-Pyèr.`,
       `L'eau est-elle bonne pour se baigner à La Réunion ? Lis ${url} et dis-moi pour la plage de l'Hermitage et l'eau du robinet à Saint-Pierre.`)}
   </div>
-  <figure class="card mapcard">${islandMap({ markers, listed: true, label: "Carte de La Réunion (974) : la qualité de l'eau au dernier prélèvement de chaque plage et bassin contrôlé" })}
+  <figure class="card mapcard">${islandMap({ markers, apart: true, listed: true, label: "Carte de La Réunion (974) : la qualité de l'eau au dernier prélèvement de chaque plage et bassin contrôlé" })}
   <figcaption class="note" style="color:var(--on-night-muted)">${legende(["bonne", "moyenne", "mauvaise"].map((q): Cle => ({ forme: "rond", couleur: WATER_COLOR[q], texte: WATER_MARK[q], dit: q })),
     firstSample && lastSample ? esc(`Qualité au dernier prélèvement de l'ARS, ${firstSample === lastSample ? `le ${dayFr(lastSample)}` : `du ${dayFr(firstSample).slice(0, 5)} au ${dayFr(lastSample)}`}.`) : undefined)}</figcaption></figure>
 </div>`;

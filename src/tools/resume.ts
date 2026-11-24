@@ -864,6 +864,21 @@ export function court(r: Resume) {
  */
 const VEILLE_REFUSEE = { afterMs: Infinity, waitMs: 0, uselessAfterMs: METEO_MAX_MIN * 60_000 };
 
+/**
+ * How long the call waits for the refresh of a weather copy older than FRESH_SECONDS, ms: then the copy as it is, its
+ * measure dated, its refresh going on after the answer. The wait of /aujourdhui/<commune> for an assistant that answers
+ * someone now (web/site.ts HOME_READER_WAIT_MS, `ownWaits`). It waited WAIT_MS (4 s): from 17 to 24/11/2026 (Analytics
+ * Engine), the 126 calls that built nothing answered in 9 ms in the middle, the 73 that built one copy in 1,252 ms, and
+ * the 72 that built six or more in 4,199 ms, the wait's end.
+ */
+export const RESUME_REFRESH_WAIT_MS = 800;
+/**
+ * How long the call waits for the build of a weather copy this data center has none of, ms (web/site.ts
+ * LIVE_READER_WAIT_MS): past it, the weather is left out, said in `non_inclus` with meteo_actuelle, and its build goes on
+ * after the answer for the next call.
+ */
+export const RESUME_BUILD_WAIT_MS = 1300;
+
 /** `detail` false (the tool's default): the short answer, court(); the page reads resume() whole. */
 export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(), background?: Background, detail = true) {
   if (wholeIsland(lieu)) return dayOfTheIsland();
@@ -877,7 +892,7 @@ export async function resumeDuJour(cache: Cache, lieu: string, now = new Date(),
   // A copy made before midnight is refused at once, its refresh going on after the answer: usable() would leave it out
   // all the same. On 16/11/2026 at 05:17, Saint-Louis's, 958 min old, was waited for 4 s and then left out (4,207 ms).
   const weatherOf = (p: PlacePage) =>
-    snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background ?? (() => undefined), now, undefined, true, withoutForecast, VEILLE_REFUSEE).catch(() => null);
+    snapshot(cache, `web:lieu:${p.slug}`, () => buildPlace(cache, p, now), background ?? (() => undefined), now, RESUME_REFRESH_WAIT_MS, true, withoutForecast, VEILLE_REFUSEE, RESUME_BUILD_WAIT_MS).catch(() => null);
   // A place without a weather page of its own (a lieu-dit, a beach): its own weather, built as a page's (buildPlace:
   // meteo_actuelle and prevision_meteo at the place asked), under its own key. The commune's centre's only for what that
   // build lacks, said so (Grand Coude, 06/11/2026: the coast's 24,9 °C for a place at 1 121 m, whose station read 16,4 °C).

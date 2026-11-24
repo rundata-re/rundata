@@ -6,7 +6,8 @@ import { Cache, type CacheEntry, MemoryStore, stampOf, TieredStore } from "../sr
 import { configure } from "../src/providers/mf-auth.js";
 import { withLectures } from "../src/lectures.js";
 import { fraicheur } from "../src/tools/fraicheur.js";
-import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, readCopies, refresh, resume, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { AFTER_ANSWER_CAP, apresAlertes, COURT, court, readCopies, refresh, resume, RESUME_BUILD_WAIT_MS, RESUME_REFRESH_WAIT_MS, resumeDuJour, UPDATING, VOLCANO_COMMUNES } from "../src/tools/resume.js";
+import { HOME_READER_WAIT_MS, LIVE_READER_WAIT_MS } from "../src/web/site.js";
 import * as volcanSrc from "../src/providers/volcan.js";
 import * as seismes from "../src/providers/seismes.js";
 import { citation, cite, lien } from "../src/tools/citer.js";
@@ -674,7 +675,8 @@ describe("reading the copies", () => {
     expect(r.meteo?.mesure?.station).toBe("Saint-Paul");
     expect(r.non_inclus?.find((x: { outil: string }) => x.outil === "meteo_actuelle et prevision_meteo")).toBeUndefined();
     expect(logs.mock.calls.flat().join("\n")).toContain("copie de l'île lue en");
-    expect(logs.mock.calls.flat().join("\n")).toContain("servie, copie du centre de données trop vieille, attente 2000 ms");
+    // The island's copy waited within the call's own wait without a copy (ISLAND_ALONE_MS, bounded by RESUME_BUILD_WAIT_MS).
+    expect(logs.mock.calls.flat().join("\n")).toContain(`servie, copie du centre de données trop vieille, attente ${RESUME_BUILD_WAIT_MS} ms`);
     logs.mockRestore();
   });
 
@@ -696,6 +698,52 @@ describe("reading the copies", () => {
     // Within FRESH_SECONDS, the copy as it is; 25 min old, the stations read again (their file in the fixtures).
     expect(await answer(2)).toBe("24/10 13:54");
     expect(await answer(25)).toBe("22/10 09:18");
+  });
+
+  describe("waits for slow stations no longer than /aujourdhui waits for an assistant", () => {
+    // From 17 to 24/11/2026, the calls that built six copies or more answered in 4.2 s in the middle: the stations
+    // waited WAIT_MS (4 s) for every weather copy more than FRESH_SECONDS old.
+    const slowStations = () => {
+      const served = globalThis.fetch;
+      vi.stubGlobal("fetch", (url: string, init?: RequestInit) =>
+        String(url).includes("DPPaquetObs") ? new Promise<Response>((ok) => setTimeout(() => ok(served(url, init)), 8000)) : served(url, init));
+    };
+    const timed = async (edge: EdgeLike) => {
+      const pending: Promise<unknown>[] = [];
+      const t = Date.now();
+      const r = body(await resumeDuJour(isolate(edge), "Saint-Paul", NOW, (p) => pending.push(p)));
+      return { r, took: Date.now() - t, pending };
+    };
+
+    it("gives a copy 25 minutes old as it is, its measure dated, past RESUME_REFRESH_WAIT_MS, its refresh behind", async () => {
+      const edge = await edgeWith();
+      await edge.put(KEYS.meteo, { value: COPIES.meteo.value, fetchedAt: ago(25).getTime() });
+      slowStations();
+      const logs = vi.spyOn(console, "log").mockImplementation(() => undefined);
+      const { r, took, pending } = await timed(edge);
+      expect(took).toBeGreaterThanOrEqual(RESUME_REFRESH_WAIT_MS - 50);
+      expect(took).toBeLessThan(RESUME_REFRESH_WAIT_MS + 700);
+      expect(r.meteo.mesure.heure_mesure).toBe("24/10 13:54");
+      expect(logs.mock.calls.flat().join("\n")).toContain("copie servie au lecteur pendant son rafraîchissement : web:lieu:saint-paul, âge 25 min");
+      expect(pending.length).toBeGreaterThan(0);
+      logs.mockRestore();
+    });
+
+    it("leaves the weather out past RESUME_BUILD_WAIT_MS when there is no copy, said with its tool, its build behind", async () => {
+      const edge = await edgeWith([], ["meteo"]);
+      slowStations();
+      const { r, took, pending } = await timed(edge);
+      expect(took).toBeGreaterThanOrEqual(RESUME_BUILD_WAIT_MS - 50);
+      expect(took).toBeLessThan(RESUME_BUILD_WAIT_MS + 700);
+      expect(r.meteo).toBeUndefined();
+      expect(r.non_inclus.find((x: { outil: string }) => x.outil === "meteo_actuelle et prevision_meteo")).toBeDefined();
+      expect(pending.length).toBeGreaterThan(0);
+    });
+
+    it("are the waits of /aujourdhui for an assistant that answers someone now", () => {
+      expect(RESUME_REFRESH_WAIT_MS).toBe(HOME_READER_WAIT_MS);
+      expect(RESUME_BUILD_WAIT_MS).toBe(LIVE_READER_WAIT_MS);
+    });
   });
 
   it("starts after one view's answer no more builds than AFTER_ANSWER_CAP lets, and the next views take the others", async () => {

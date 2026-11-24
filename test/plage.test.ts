@@ -1,7 +1,10 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import worker from "../src/worker.js";
 import { plage } from "../src/web/plage.js";
+
+// The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
 
 const BYTES = Uint8Array.from({ length: 100 }, (_, i) => i);
 const file = () => new Response(BYTES, { headers: { "content-type": "video/mp4" } });

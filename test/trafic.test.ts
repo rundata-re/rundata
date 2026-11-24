@@ -233,10 +233,13 @@ describe("circulation", () => {
 
     it("shows headlines that arrive after the page's copy was built", async () => {
       // The copy of /trafic built before anyone read the news (a new version), then the news read for /actualites.
-      const c = cache();
+      const store = new MemoryStore();
+      const c = new Cache(store, () => NOW.getTime());
       const first = await (await handle(new Request("https://rundata.re/trafic", BOT), c)).text();
       expect(first).not.toContain("Signalé par les médias");
-      await c.get<Fil>("actualites:fil", 300, async () => fil());
+      // Put in the stores as /actualites's read leaves it. Not c.get: this view may have started a read of the news after
+      // it (once a minute at most, so only when no test before it did), failed here, the feeds down, and remembered.
+      await store.put("actualites:fil", { value: fil(), fetchedAt: NOW.getTime() });
       const next = await (await handle(new Request("https://rundata.re/trafic", BOT), c)).text();
       expect(next).toContain("Barrage levé au rond-point des Casernes");
       expect(next).toContain("Accident sur la quatre-voies à Sainte-Marie");

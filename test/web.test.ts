@@ -28,6 +28,10 @@ import { PASSES } from "../src/historique/cyclones-passes.js";
 import { STATIONS } from "../src/web/station.js";
 import { esc, islandMap, RELIEF_LEGER, RELIEF_LEGER_W, RELIEF_PATH, RELIEF_SCRIPT } from "../src/web/map.js";
 
+// What a process's pages remember (data.ts, the refreshes under way; budget.ts, what the builds took): this file's own
+// modules, as in the new isolates its tests start.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const NOW = new Date("2026-10-22T06:00:00Z");
 const RUN = "2026-10-21T18.00.00Z";

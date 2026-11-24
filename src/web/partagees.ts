@@ -371,6 +371,11 @@ export interface Warmed {
 // What this isolate last wrote to KV, per key: a listing may not show a write of the last minute yet (KV is
 // eventually consistent), and this isolate knows its own.
 const wrote = new Map<string, KvMeta>();
+/**
+ * For the tests only: this memory as a new isolate has it, empty. Their files share their modules (vitest.config.ts):
+ * each file that refreshes the shared copies starts from it, as it would in an isolate of its own.
+ */
+export const oublierEcritures = () => wrote.clear();
 
 /** « 75 min », « 16 h ». */
 const ago = (ms: number) => (ms < 2 * 3600_000 ? `${Math.round(ms / 60_000)} min` : `${Math.floor(ms / 3600_000)} h`);

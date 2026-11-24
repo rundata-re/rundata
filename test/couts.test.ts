@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { count, counted, measured } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { site } from "../src/web/site.js";
+
+// What the builds took is remembered per process (budget.ts): this file's own modules, as in a new isolate.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
 
 // In a file of its own: what the builds took is remembered per process (budget.ts), and here no build has run yet,
 // as in a new isolate.

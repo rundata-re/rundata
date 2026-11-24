@@ -1,9 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { chiffres, inventaire } from "../src/chiffres.js";
 import { toutesLesSources } from "../src/server.js";
 import { chiffresPage } from "../src/web/chiffres.js";
 import { homePage } from "../src/web/home.js";
 import { meteoPage } from "../src/web/pages.js";
+
+// The footer's count of sources is counted once per process, with the readers set then: this file's own modules.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
 
 const ORIGIN = "https://rundata.re";
 const NOW = new Date("2026-11-03T04:30:00Z");

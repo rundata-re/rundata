@@ -1,11 +1,14 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted, SCHEDULED_BUDGET, scheduled } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, TieredStore } from "../src/cache.js";
 import { readings, type Readings, STATIONS } from "../src/providers/vigicrues.js";
 import { buildCrues, type CruesAnswer, FRESH_SECONDS } from "../src/web/data.js";
 import { cruesLive } from "../src/web/domains.js";
-import { type Kv, kvKey, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
+import { type Kv, kvKey, oublierEcritures, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
+
+// What an earlier file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten, as in an isolate of this file's own.
+beforeAll(oublierEcritures);
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url), "utf8");
 const NOW = new Date("2026-10-26T07:42:07Z");

@@ -25,8 +25,9 @@ import { pageOf } from "../src/web/places.js";
 // « 2026-10-24T12:05 » → « le 24/10 à 12:05 », the form of the reads.
 const leLocal = (l: string) => `le ${l.slice(8, 10)}/${l.slice(5, 7)} à ${l.slice(11, 16)}`;
 
-// The communes' sites read, as once they have agreed (test/autorisations.test.ts for what is said until then).
-vi.mock("../src/providers/autorisations.js", () => import("./autorisees.js"));
+// The communes' sites read, as once they have agreed (test/autorisations.test.ts for what is said until then): AGENDAS too,
+// made when agenda.ts loads.
+await vi.hoisted(async () => (await import("./autorisees.js")).chargeesToutesAccordees());
 
 // The agendas on Saturday 24/10/2026 in the morning: the Fête de l'ail at Petite-Île (23 to 25), a concert tonight at
 // Les Trois-Bassins, the Dragon Boat festival tomorrow at Le Port, the Koupe Kartié next Saturday at Saint-Gilles.

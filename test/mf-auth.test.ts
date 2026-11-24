@@ -49,6 +49,9 @@ beforeEach(() => {
 
 afterEach(() => {
   share(undefined);
+  // No application left set for the files after this one, which share its modules (vitest.config.ts): their pages would
+  // ask Météo-France for the vigilance.
+  configure({});
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });

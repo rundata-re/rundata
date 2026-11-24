@@ -182,8 +182,18 @@ export const LICENCES: Record<string, LicenceDemandee> = {
 /** The states in which a source is read. */
 export const LISIBLE: readonly string[] = ["accordee", "permise", "publique"];
 
+/**
+ * For the tests of the readers only (test/autorisees.ts): every source read, as if all had agreed, while it is on. Set
+ * in modules loaded anew for one test file, and dropped with them after it.
+ */
+let toutesAccordees = false;
+export const accorderToutes = (oui: boolean) => {
+  toutesAccordees = oui;
+};
+
 /** Whether a source may be read: yes for one whose site asks nothing, allows it, or is a commune's public information. */
 export const autorisee = (source: string) =>
+  toutesAccordees ||
   LISIBLE.includes(AUTORISATIONS[source]?.etat ?? NON_REPRISES[source]?.etat ?? LICENCES[source]?.etat ?? "accordee");
 
 /** The halls or the sports sites not read until they agree, in the list's order. */

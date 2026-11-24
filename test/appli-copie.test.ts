@@ -7,6 +7,9 @@ import { point, sansLieu, visitor, type Hit } from "../src/metrics.js";
 import { configure } from "../src/providers/mf-auth.js";
 import worker from "../src/worker.js";
 
+// The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 const ZIP = readFileSync(new URL("./fixtures/vigilance_om.zip", import.meta.url));
 
 const APP = "rundata.re-android/0.1.2";

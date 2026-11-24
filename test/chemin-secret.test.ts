@@ -8,6 +8,9 @@ import { PROPOSITION_PATH } from "../src/web/propositions.js";
 import { lire } from "../src/web/signaux.js";
 import worker from "../src/worker.js";
 
+// The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 const SECRET = "Zq8sJ3kLw0vN5xYb2mR7tA";
 const O = "https://rundata.re";
 // One path of each kind that carries a secret, and how it is written down.

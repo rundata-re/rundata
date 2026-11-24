@@ -1,13 +1,16 @@
 import { readFileSync } from "node:fs";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { counted, SCHEDULED_BUDGET } from "../src/budget.js";
 import { Cache, type CacheEntry, MemoryStore, TieredStore } from "../src/cache.js";
 import { configure } from "../src/providers/mf-auth.js";
 import * as mf from "../src/providers/vigilance.js";
 import { alerte, vigilanceNow, BANNER_WAIT_MS } from "../src/web/data.js";
 import { homePage } from "../src/web/home.js";
-import { type Kv, kvKey, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
+import { type Kv, kvKey, oublierEcritures, SHARED, SharedFallback, warmShared } from "../src/web/partagees.js";
 import { unzip } from "../src/zip.js";
+
+// What an earlier file wrote to KV, kept by partagees.ts as an isolate keeps it: forgotten, as in an isolate of this file's own.
+beforeAll(oublierEcritures);
 
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const NOW = new Date("2026-10-26T04:48:20Z");

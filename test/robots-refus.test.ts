@@ -4,6 +4,9 @@ import worker from "../src/worker.js";
 import { handle } from "../src/app.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 
+// The Worker sets the readers of its copies in the modules (worker.ts, at each request): its own modules, dropped after.
+await vi.hoisted(async () => (await import("./modules-neufs.js")).modulesNeufs());
+
 // The User-Agents as these robots send them.
 const UA: Record<string, string> = {
   "meta-externalagent": "meta-externalagent/1.1 (+https://developers.facebook.com/docs/sharing/webmasters/crawler)",

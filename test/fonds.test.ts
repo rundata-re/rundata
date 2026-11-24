@@ -153,17 +153,19 @@ describe("the illustrations behind the band", () => {
     }
   });
 
-  it("stay under a yellow vigilance, and leave every page under an orange or red one or a cyclone alert", () => {
-    for (const [path, render] of Object.entries(PAGES)) {
+  // One test per page: the pages rendered five times each in one test took 1 to 6 s, near vitest's 5, on a busy machine.
+  for (const [path, render] of Object.entries(PAGES)) {
+    it(`stay under a yellow vigilance, and leave ${path} under an orange or red one or a cyclone alert`, () => {
       // /cyclones: only while all is green.
       if (path !== "/cyclones") expect(picture(render(vigilance(2, "jaune"))), path).toBeDefined();
-      expect(picture(render(vigilance(3, "orange")))).toBeUndefined();
+      const orange = render(vigilance(3, "orange"));
+      expect(picture(orange)).toBeUndefined();
       expect(picture(render(vigilance(4, "rouge")))).toBeUndefined();
       // The pré-alerte too: no calm picture while a cyclone is announced.
       expect(picture(render({ couleur: 2, neutre: true, texte: "Météo-France : pré-alerte cyclonique.", court: { cyclone: 2, prevue: false } }))).toBeUndefined();
-      expect(render(vigilance(3, "orange"))).not.toContain(MENTION);
-    }
-  });
+      expect(orange).not.toContain(MENTION);
+    });
+  }
 
   it("leave every page while the volcano is in alert or erupting", () => {
     for (const render of Object.values(PAGES)) {

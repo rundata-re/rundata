@@ -141,7 +141,10 @@ describe("the antennas of the island (ANFR)", () => {
 
   it("shows each support the same in the browser as counted on the server, for every choice", () => {
     const js = new Function(`${LOOK} return look;`)() as typeof look;
-    const codes = antennes.SUPPORTS.map((s) => parse(code(s)));
+    // What a dot shows depends on its support's code alone: each of the supports' codes once (79 for 1 151 supports;
+    // all 1 151 took 2 to 6 s, near vitest's 5, on a busy machine).
+    const codes = [...new Set(antennes.SUPPORTS.map(code))].map(parse);
+    expect(codes.length).toBeGreaterThan(50);
     // Every set of operators and of generations, none being all.
     const sets = (l: string[]) => l.reduce<string[][]>((acc, x) => acc.concat(acc.map((a) => [...a, x])), [[]]);
     for (const o of sets(["o", "s", "f", "z"])) for (const g of sets(["2", "3", "4", "5"])) for (const m of ["o", "t"]) {

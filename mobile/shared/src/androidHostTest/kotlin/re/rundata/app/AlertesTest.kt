@@ -90,8 +90,17 @@ class AlertesTest {
     fun unSystemeActifSansAlerteEstUneInformation() {
         val c = json("""{"alerte_cyclonique":"Pas d'alerte cyclonique en cours.","systemes_actifs":[{"nom":"Bheki","stade":"tempête tropicale modérée","dernier_avis":"23/11 10:00 (heure de La Réunion)"}]}""")
         val a = alertesDe(vigilance(vert), c)
-        assertEquals(listOf(Alerte("Tempête tropicale modérée Bheki", null, Couleur.AUCUNE, "23/11 10:00", systeme = true)), a.liste)
+        // Il dit qu'il n'y a pas d'alerte, avec les mots de la source : sans ça, la bande du widget Alerte faisait croire à
+        // une alerte sur l'île (« Perturbation tropicale n° 3 » seule, le 24/11/2026).
+        assertEquals(listOf(Alerte("Tempête tropicale modérée Bheki", "Pas d'alerte cyclonique en cours", Couleur.AUCUNE, "23/11 10:00", systeme = true)), a.liste)
         assertFalse(a.premiere!!.urgente)
+    }
+
+    @Test
+    fun unSystemeSansMotDeLaSourceSurLAlerteNeDitRienDeLAlerte() {
+        // Ni la vigilance ni les cyclones ne disent l'état de l'alerte : rien n'est déduit.
+        val c = json("""{"systemes_actifs":[{"nom":"Bheki","stade":"tempête tropicale modérée","dernier_avis":"23/11 10:00 (heure de La Réunion)"}]}""")
+        assertEquals(null, alertesDe(null, c).premiere!!.detail)
     }
 
     @Test
@@ -149,5 +158,13 @@ class AlertesTest {
         assertEquals(emptyList(), a.liste)
         assertTrue(a.cyclonesLus)
         assertFalse(alertesDe(vigilance(vert), null).cyclonesLus)
+    }
+
+    /** Le lien officiel de la carte Vigilance s'ouvre à part : l'adresse est lue dans le texte de la source. */
+    @Test
+    fun lAdresseOfficielleEstLueDansLeTexte() {
+        assertEquals("https://vigilance.meteofrance.fr/fr/la-reunion", Mots.adresseDe("Consulter le site officiel de Météo-France : https://vigilance.meteofrance.fr/fr/la-reunion"))
+        assertEquals("https://meteofrance.re/fr/cyclone", Mots.adresseDe("Voir https://meteofrance.re/fr/cyclone."))
+        assertNull(Mots.adresseDe("Consulter le site officiel de Météo-France"))
     }
 }

@@ -43,9 +43,9 @@ fun ecranPrincipal(version: String): UIViewController {
     return ComposeUIViewController {
         val etat by modele.etat.collectAsState()
         ThemeRundata(isSystemInDarkTheme()) {
-            EcranPrincipal(etat, modele::choisir, modele::changerDeCommune, modele::rafraichir) { adresse ->
+            EcranPrincipal(etat, modele::choisir, modele::changerDeCommune, modele::rafraichir, ouvrir = { adresse ->
                 NSURL.URLWithString(adresse)?.let { UIApplication.sharedApplication.openURL(it, emptyMap<Any?, Any?>(), null) }
-            }
+            })
         }
     }
 }

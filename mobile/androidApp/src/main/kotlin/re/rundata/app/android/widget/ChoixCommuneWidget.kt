@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import re.rundata.app.ChoixDeCommune
 import re.rundata.app.Commune
+import re.rundata.app.R
 import re.rundata.app.ThemeRundata
 import re.rundata.app.android.PrefsReglages
 
@@ -33,9 +34,13 @@ class ChoixCommuneWidget : ComponentActivity() {
         lifecycleScope.launch {
             val id = runCatching { GlanceAppWidgetManager(this@ChoixCommuneWidget).getGlanceIdBy(appWidgetId) }.getOrNull()
             val actuelle = id?.let { WidgetRundata.communeDuWidget(this@ChoixCommuneWidget, null) }
+            // Ce que montrera ce widget-là, avec les mots de la liste des widgets d'Android (son nom, sa description).
+            val sujet = AppWidgetManager.getInstance(this@ChoixCommuneWidget).getAppWidgetInfo(appWidgetId)?.provider?.className?.let(::sujetDuWidget)
+            val titre = titreDuChoix(sujet?.let { getString(it.first) })
+            val phrase = sujet?.let { getString(it.second) } ?: "Ce widget montrera la journée de la commune choisie."
             setContent {
                 ThemeRundata(isSystemInDarkTheme()) {
-                    ChoixDeCommune("La commune du widget", "Ce widget montrera la journée de la commune choisie.", actuelle) { commune -> choisir(appWidgetId, commune, reglages) }
+                    ChoixDeCommune(titre, phrase, actuelle) { commune -> choisir(appWidgetId, commune, reglages) }
                 }
             }
         }
@@ -55,3 +60,19 @@ class ChoixCommuneWidget : ComponentActivity() {
         }
     }
 }
+
+/**
+ * Le nom et la description (ressources) du widget dont le récepteur est `classe`, tels que la liste des widgets d'Android
+ * les montre ; null pour un récepteur inconnu. Avant 0.3.4, l'écran disait « la journée » pour tous, Alerte compris.
+ */
+fun sujetDuWidget(classe: String): Pair<Int, Int>? = when (classe) {
+    RecepteurAlerte::class.java.name -> R.string.widget_alerte_nom to R.string.widget_alerte_description
+    RecepteurBandeau::class.java.name -> R.string.widget_bandeau_nom to R.string.widget_bandeau_description
+    RecepteurTemperature::class.java.name -> R.string.widget_temperature_nom to R.string.widget_temperature_description
+    RecepteurAujourdhui::class.java.name -> R.string.widget_aujourdhui_nom to R.string.widget_aujourdhui_description
+    RecepteurWidget::class.java.name -> R.string.widget_nom to R.string.widget_description
+    else -> null
+}
+
+/** « Widget « Alerte » : choisissez la commune » : une seule paire de guillemets ; sans nom connu, « Widget : choisissez la commune ». */
+fun titreDuChoix(nom: String?): String = (nom?.let { "Widget «\u00a0$it\u00a0»" } ?: "Widget") + "\u00a0: choisissez la commune"

@@ -121,3 +121,6 @@ fun ligneAlerte(d: Donnees): LigneAlerte {
 
 /** « et 1 autre alerte » sous la plus grave. */
 fun enPlusAlertes(n: Int): String? = if (n <= 0) null else "et $n autre${if (n > 1) "s" else ""} alerte${if (n > 1) "s" else ""}"
+
+/** Sous la température de la mer : « mer, vue par satellite le 21/11 », le jour du passage ; sans lui, « mer, vue par satellite ». */
+fun libelleMer(jour: String?): String = jour?.let { "mer, vue par satellite le $it" } ?: "mer, vue par satellite"

@@ -13,13 +13,17 @@
     <string name="widget_alerte_description">La vigilance jaune, orange ou rouge de Météo-France pour la zone de votre commune, ou l\'alerte cyclonique de la préfecture, dans sa couleur officielle et avec son heure.</string>
     <!-- L'aperçu du sélecteur de widgets : un exemple de lecture, pas une mesure. -->
     <string name="apercu_commune">Saint-Denis</string>
-    <string name="apercu_temperature">25,5 °C</string>
-    <string name="apercu_mesure">mesurée à 20:48, Chaudron</string>
+    <string name="apercu_temperature">25,5 °C</string>
+    <string name="apercu_mesure">Mesure avec son heure</string>
     <string name="apercu_vigilance">Vigilance verte</string>
     <string name="apercu_zone">zone Nord</string>
-    <string name="apercu_lue">Lu le 21/11 à 21:39</string>
-    <string name="apercu_heure">à 20:48</string>
-    <string name="apercu_mer">27 °C</string>
+    <string name="apercu_lue">Exemple</string>
+    <string name="apercu_heure">Mesure avec son heure</string>
+    <string name="apercu_mer">27,1 °C</string>
+    <!-- Les aperçus de la liste des widgets d'Android : un exemple, jamais une heure ou une date qui ressemblerait à une
+         mesure (avant 0.3.4 : « à 20:48 », « Lu le 21/11 à 21:39 »). -->
+    <string name="apercu_bandeau_air">25,5 °C air</string>
+    <string name="apercu_bandeau_mer">27,1 °C mer</string>
     <string name="apercu_sortir">Sortir</string>
     <string name="apercu_sortie">Marché forain · de 5 h à 12 h</string>
     <string name="apercu_routes">Routes et bus</string>
@@ -28,5 +32,5 @@
     <string name="apercu_eau_avis">Pas d\'avis de coupure récent ou à venir.</string>
     <string name="apercu_officiel">Consulter le site officiel de Météo-France</string>
     <string name="apercu_pas_d_alerte">Pas d\'alerte en cours</string>
-    <string name="apercu_alerte_detail">zone Nord · d\'après Météo-France · bulletin de 16:21</string>
+    <string name="apercu_alerte_detail">Zone de la commune · d\'après Météo-France · heure du bulletin</string>
 </resources>

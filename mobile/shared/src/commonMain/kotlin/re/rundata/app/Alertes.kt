@@ -86,9 +86,11 @@ fun alertesDe(vigilance: JsonObject?, cyclones: JsonObject?): Alertes {
             (v["vagues_submersion"] as? JsonArray).orEmpty().forEach { c -> (c as? JsonObject)?.let { coteDe(it, emise) }?.let(::add) }
         }
         // Un système suivi, sans alerte cyclonique : dit après les vigilances, sans couleur.
+        // Avec lui, la phrase de la source qui dit qu'aucune alerte n'est en cours, jamais déduite de son absence.
         if (cyclonique == null) {
+            val aucune = (vigilance?.texte("alerte_cyclonique") ?: cyclones?.texte("alerte_cyclonique"))?.trim()?.trimEnd('.')?.takeIf { it.startsWith("Pas d'alerte") }
             val actifs = (cyclones?.get("systemes_actifs") as? JsonArray).orEmpty() + (cyclones?.get("suivi_cmrs") as? JsonArray).orEmpty()
-            actifs.mapNotNull { (it as? JsonObject)?.let(::systemeDe) }.forEach(::add)
+            actifs.mapNotNull { (it as? JsonObject)?.let(::systemeDe) }.forEach { add(it.copy(detail = aucune)) }
         }
     }
     return Alertes(

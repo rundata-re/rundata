@@ -129,6 +129,29 @@ class JourneeTest {
     }
 
     @Test
+    fun lesAvisDEauVontDuPlusProcheAuPlusLointain() = runTest {
+        val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis")))).journee(communeDe("saint-denis")!!)
+        // Dionéo les donne du plus récent au plus ancien : l'écran disait le 26/11 avant la coupure de ce soir (24/11/2026).
+        val ordre = avisDansLOrdre(j.coupures, 11).map { it.titre to it.de }
+        assertEquals(
+            listOf(
+                "Qualité de l'eau" to null,
+                "Travaux sur le réseau AEP Chemin Bois Rouge La bretagne" to "lundi 23/11 à\u00a021:00",
+                "Travaux sur le réseau" to "mardi 24/11 à\u00a021:00",
+                "Lavage de réservoir" to "mercredi 25/11 à\u00a008:00",
+                "Travaux sur le réseau" to "mercredi 25/11 à\u00a021:00",
+                "Travaux sur le réseau" to "jeudi 26/11 à\u00a021:00",
+            ),
+            ordre,
+        )
+        // Une coupure terminée en dernier, une en cours avant celles à venir.
+        val fin = j.coupures[1].copy(titre = "Finie", etat = "terminée")
+        val enCours = j.coupures[2].copy(titre = "En cours", etat = "en cours")
+        assertEquals(listOf("Qualité de l'eau", "En cours"), avisDansLOrdre(listOf(fin) + j.coupures + enCours, 11).map { it.titre }.take(2))
+        assertEquals("Finie", avisDansLOrdre(listOf(fin) + j.coupures, 11).last().titre)
+    }
+
+    @Test
     fun lAvisDEauDitEnPremierQuandLaPlaceManque() = runTest {
         val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis")))).journee(communeDe("saint-denis")!!)
         // L'eau à ne pas boire d'abord.
@@ -171,7 +194,7 @@ class JourneeTest {
     @Test
     fun laMerLaPrevisionLesSortiesEtLesRoutesDuResume() = runTest {
         val j = JourneeSource(serveur(mapOf("resume_du_jour" to enregistree("resume-saint-denis")))).journee(communeDe("saint-denis")!!)
-        assertEquals(Mer("27\u00a0°C", "Saint-Denis"), j.mer)
+        assertEquals(Mer("27\u00a0°C", "Saint-Denis", "21/11"), j.mer)
         // Une PRÉVISION, gardée à part de la mesure.
         assertEquals(Prevision("24,1\u00a0°C", "25,2\u00a0°C", "pas de pluie prévue de 20\u00a0h à minuit"), j.prevision)
         val sorties = assertNotNull(j.sorties)

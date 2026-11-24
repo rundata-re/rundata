@@ -52,6 +52,10 @@ const MAIRIES: Record<string, { par: string; site: string }> = {
   Cilaos: { par: "la ville de Cilaos", site: "https://ville-cilaos.fr/?s=eau" },
   // Since 24/11/2026: Le Tampon posts Sudéau's notices among its news (« Communiqué : SUDÉAU – … »).
   "Le Tampon": { par: "la ville du Tampon", site: "https://letampon.fr/?s=sud%C3%A9au&post_type=actualites" },
+  // Since 24/11/2026: Saint-Joseph posts Sudéau's notices among its news, seldom; Les Avirons relayed the CISE's until
+  // 18/11/2024, and its sitemap is read for the day it posts one again.
+  "Saint-Joseph": { par: "la ville de Saint-Joseph", site: "https://saintjoseph.re/" },
+  "Les Avirons": { par: "la commune des Avirons", site: "https://www.mairie-avirons.fr/" },
 };
 /** A commune whose mairie also posts the notices of a distributor read elsewhere: Les Trois-Bassins, La Créole's. */
 export const MAIRIES_AUSSI: Readonly<Record<string, { par: string; site: string }>> = {
@@ -82,7 +86,8 @@ export const LIENS: Record<string, { par: string; site: string; libelle: string 
  * source's home page linked only, never a page of its site, with the page's lead and its distributor's card. Its page then has something of its own to show, and stays
  * in the search engines and the sitemap (web/coupures.ts indexable).
  * - Les Avirons: CISE Réunion, edited by Saur, whose terms allow a link to the home page only (art. 8) and forbid
- *   copying without its written agreement (art. 5); the mairie stopped relaying its notices on 18/11/2024.
+ *   copying without its written agreement (art. 5); the mairie stopped relaying its notices on 18/11/2024. Its site is
+ *   read since 24/11/2026 (MAIRIES): its bandeau follows « Pas d'avis », its site in the tool's answer.
  */
 export const GUIDES_AVIS: Readonly<Record<string, { bandeau: string; distributeur: string; texte: string }>> = {
   "Les Avirons": {

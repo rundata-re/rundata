@@ -18,8 +18,8 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 
 | contrôle | valeur | limite |
 |---|---:|---:|
-| pire passage planifié, sous-requêtes | 483 | 620 |
-| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 1 025 | 8 500 |
+| pire passage planifié, sous-requêtes | 485 | 620 |
+| pire passage planifié, queues comprises, sous-requêtes (limite de la plateforme moins 15 %) | 1 027 | 8 500 |
 | queue « carte du CMRS », sous-requêtes | 19 | 100 |
 | queue « trace du CMRS », sous-requêtes | 8 | 100 |
 | queue « sites sans réponse », sous-requêtes | 22 | 100 |
@@ -51,19 +51,19 @@ Les chiffres « mesuré » sont le plus haut relevé du 23/10/2026 23:07 au 25
 | tâche planifiée à part meteor:jours, sous-requêtes | 2 | 100 |
 
 - Pire passage planifié : toutes les entrées planifiées dues ensemble, à froid (après un déploiement), sauf les queues, contre 620.
-- Queues : 19 lectures lancées après celles de la tâche, chacune dans son propre budget, de 100 sous-requêtes sauf mention dans le tableau ci-dessus (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 620. Le pire passage, queues comprises (1 025), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
+- Queues : 19 lectures lancées après celles de la tâche, chacune dans son propre budget, de 100 sous-requêtes sauf mention dans le tableau ci-dessus (src/worker.ts), dans la même invocation. Elles ne prennent rien aux 620. Le pire passage, queues comprises (1 027), reste sous la limite de la plateforme, 10 000 sous-requêtes par invocation, moins 15 % de marge ; les appels KV et D1, le CPU et la mémoire se comptent aussi queues comprises.
 - Mémoire : déclarée par les lectures d'un fichier de plusieurs Mo (irve:etat, 30 Mo au pic, antennes:hors-service, 15 Mo au pic, cpf:formations, 10 Mo au pic, radar:6h, 7 Mo au pic, radar:7j, 10 Mo au pic, emploi:offres, 5 Mo au pic, marches-publics:textes, 25 Mo au pic, clubs:annuaire, 10 Mo au pic), face aux 128 Mo d'un isolat ; les autres ne la déclarent pas.
-- Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 147 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:actualites, web:coupures, web:air, ens:ile, alertes:etat, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
+- Passage le plus chargé selon les décalages, cadences habituelles : 04:40 UTC, 149 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:actualites, web:coupures, web:air, ens:ile, alertes:etat, vigilance:carte, agendas:planifies, sans-reponse:echecs, copies:echecs, meteofrance:jeton, meteofrance:jeton:nouveau, meteofrance:stations).
 - Le même, cadences les plus courtes (volcan en alerte, satellites en retard, carburants en fin de mois) : 00:05 UTC, 213 sous-requêtes (arome:veille, partagees:liste, vigilance, actualites:fil, web:bus, web:crues, web:trafic, mer:satellites, web:sport, metar, seismes, web:volcan, alertes:etat, vigilance:carte, agendas:planifies, copies:echecs, meteofrance:jeton, meteofrance:stations).
-- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 435 sous-requêtes à 06:00 UTC.
+- Sans les décalages des copies partagées (toutes dues à 00:00 UTC), cadences les plus courtes : 437 sous-requêtes à 06:00 UTC.
 - Vue la plus chère : /communes/*, 100. Question la plus chère : resume_du_jour, 82. Construction la plus chère : web:chiffres:evenements, 48.
 
 | | sous-requêtes | lectures KV | écritures KV | appels D1 | lignes D1 lues | lignes D1 écrites | CPU (ms) |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| pire passage planifié | 1 025 | 59 | 73 | 26 | 2 004 | 284 | 6 627 |
-| tâche planifiée, par jour | 50 307 | 5 763 | 5 211 | 2 983 | 344 834 | 58 511 | 360 904 |
-| tâche planifiée, par jour, cadences les plus courtes | 69 439 | 7 395 | 7 515 | 3 463 | 349 874 | 58 511 | 509 184 |
-| tâche planifiée, par mois (30 jours) | 1 509 197 | 172 890 | 156 330 | 89 503 | 10 345 011 | 1 755 321 | 10 827 107 |
+| pire passage planifié | 1 027 | 59 | 73 | 26 | 2 004 | 284 | 6 627 |
+| tâche planifiée, par jour | 50 499 | 5 763 | 5 211 | 2 983 | 344 834 | 58 511 | 360 904 |
+| tâche planifiée, par jour, cadences les plus courtes | 69 631 | 7 395 | 7 515 | 3 463 | 349 874 | 58 511 | 509 184 |
+| tâche planifiée, par mois (30 jours) | 1 514 957 | 172 890 | 156 330 | 89 503 | 10 345 011 | 1 755 321 | 10 827 107 |
 | tâches planifiées à part, par jour | 5 810 | 169 | 169 |  |  |  | 2 933 |
 | tâches planifiées à part, par mois (30 jours) | 174 300 | 5 070 | 5 070 |  |  |  | 87 990 |
 | tâches GitHub, par jour | 0 |  | 5 | 2 |  | 28 700 |  |
@@ -87,7 +87,7 @@ Les visites et les questions sont comptées par vue : leur total dépend du tra
 | web:actualites | copie partagée (KV) | 30 min | 00:10 | 11 |  | 1 |  |  |  | 190 | mesuré |
 | web:trafic | copie partagée (KV) | 30 min | 00:05 | 31 |  | 1 | 2 | 840 |  | 160 | mesuré |
 | web:electricite | copie partagée (KV) | 30 min | 00:20 | 10 | 1 | 2 |  |  |  | 80 | mesuré |
-| web:coupures | copie partagée (KV) | 15 min | 00:10 | 27 | 1 | 2 |  |  |  | 60 | estimé |
+| web:coupures | copie partagée (KV) | 15 min | 00:10 | 29 | 1 | 2 |  |  |  | 60 | estimé |
 | web:air | copie partagée (KV) | 60 min (15 au plus court) | 00:40 | 9 | 2 | 1 |  |  |  | 40 | mesuré |
 | mer:satellites | copie partagée (KV) | 180 min (10 au plus court) | 00:55 | 8 |  | 1 |  |  |  | 400 | estimé |
 | mer:passages | copie partagée (KV) | 60 min (10 au plus court) | 00:00 | 4 |  | 1 |  |  |  | 400 | mesuré |

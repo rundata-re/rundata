@@ -105,7 +105,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // With the hour the notices were read (avis_lus_le), said by the commune's page instead of the copy's (24/11/2026).
   // Le Tampon's notices, Sudéau's read on the town's site (24/11/2026).
   // The ville du Tampon and Sudéau by it in the sources' terms and credit (24/11/2026).
-  coupures: 26,
+  // Les Avirons and Saint-Joseph read on their mairies' sites, the CISE named after « Pas d'avis » at Les Avirons (24/11/2026).
+  coupures: 27,
   // Saint-André's notices read again, with its written agreement of 16/11/2026.
   // The notices of Cilaos, Saint-Philippe and Sainte-Suzanne read as the communes' public information (20/11/2026).
   // A notice written in the bold letters of Unicode read (Saint-André's of 19/11/2026, typographie.ts `unstyled`).
@@ -302,7 +303,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   // 20/11/2026).
   // La Créole's titles in the case of a sentence, and the place a notice names in its sentence (`lieu`, 24/11/2026).
   // Sudéau's notices posted by the town of Le Tampon, one feed more (24/11/2026).
-  "avis-eau:flux": 7,
+  // Saint-Joseph's feed and Les Avirons's sitemap, two sites more (24/11/2026).
+  "avis-eau:flux": 8,
   // The date and the cause of a notice parted by « · » (avis(), Sentier Bayonne).
   "onf:sentiers": 1,
   // The trace of one trail (onf:trace:<slug>), its notice parted by « · » too (parseTrace, Sentier Bayonne).

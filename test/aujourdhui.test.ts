@@ -159,11 +159,34 @@ describe("the town hall in the page of a commune's day", () => {
     // Monday 26/10, 10:00 open, and 17:00 closed: the day's hours after the state.
     expect(line("2026-10-26T06:00:00Z")).toMatch(/^<li>Mairie : <b>ouverte<\/b> <span class="note">07:30–12:00 et 13:00–16:00<\/span> · 0262/);
     const evening = line("2026-10-26T13:00:00Z");
-    expect(evening).toMatch(/^<li>Mairie : <b>fermée<\/b> <span class="note">07:30–12:00 et 13:00–16:00<\/span> · 0262/);
+    expect(evening).toMatch(/^<li>Mairie : <b>fermée depuis 16:00<\/b> · 0262/);
     // Wednesday 11/11, a holiday on a weekday of its hours.
     const holiday = line("2026-11-11T06:00:00Z", "Armistice 1918");
     expect(holiday).toMatch(/^<li>Mairie : <b>sans doute fermée, jour férié<\/b> · 0262/);
     for (const l of [saturday, evening, holiday]) expect(l.match(/fermée/g), l).toHaveLength(1);
+  });
+
+  // Before it opens, « fermée 8 h–16 h » read « fermée de 8 h à 16 h » (24/11/2026): when it opens, and until when, in
+  // marketing's words; one writing of the hours on the line, with minutes when one of the day's has some.
+  it("says when a closed town hall opens, reopens, or closed, never « fermée » before its hours", () => {
+    // Monday 26/10 (07:30–12:00 and 13:00–16:00): 06:00, 12:30, then 17:00.
+    expect(line("2026-10-26T02:00:00Z")).toMatch(/^<li>Mairie : <b>ouvre à 07:30<\/b> <span class="note">\(jusqu&#39;à 12:00, puis 13:00–16:00\)<\/span> · 0262/);
+    expect(line("2026-10-26T08:30:00Z")).toMatch(/^<li>Mairie : <b>rouvre à 13:00<\/b> <span class="note">\(jusqu&#39;à 16:00\)<\/span> · 0262/);
+    // Its hours of one span, round: « 8 h », as Saint-Leu's at 07:15 on 24/11/2026; and its true closing, never rounded.
+    const p = pageOf("saint-leu")!;
+    const at = (iso: string, plages: [string, string][]) => {
+      const now = new Date(iso);
+      const c = <T>(value: T) => ({ value, fetchedAt: new Date(now.getTime() - 60_000), stale: false });
+      const hall = { ...HALL, nom: "Mairie de Saint-Leu", horaires: [{ de: "lundi", a: "vendredi", plages }] };
+      const r = resume(p, { commune: c({ sources: [], mairie: hall }) } as never, now);
+      return { li: aujourdhuiPage("https://rundata.re", p, r, null).match(/<li>Mairie : .*?<\/li>/)![0], etat: r.mairie?.etat };
+    };
+    const matin = at("2026-11-24T03:15:00Z", [["08h00", "16h00"]]);
+    expect(matin.li).toMatch(/^<li>Mairie : <b>ouvre à 8\u00a0h<\/b> <span class="note">\(jusqu&#39;à 16\u00a0h\)<\/span>/);
+    expect(at("2026-11-24T13:00:00Z", [["08h00", "16h30"]]).li).toMatch(/^<li>Mairie : <b>fermée depuis 16:30<\/b>/);
+    // The tool says it word for word (rule of the site and the tools saying the same thing).
+    expect(matin.etat).toBe("ouvre à 8\u00a0h (jusqu'à 16\u00a0h)");
+    expect(at("2026-11-24T06:00:00Z", [["08h00", "16h00"]]).etat).toBeUndefined();
   });
 });
 

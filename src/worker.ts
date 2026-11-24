@@ -587,11 +587,12 @@ export default {
       // Last, with what is left: the agendas read only here.
       const agendas = kv ? await refreshPlanned(c).catch((err) => (console.error("agendas planifiés impossibles", why(err)), null)) : null;
       await Promise.all(held);
-      // The alerts a push would follow, from the copies just kept (alertes-etat.ts): a log line at each change, nothing
-      // sent. One KV read, one write only when the state changes.
+      // The alerts a push would follow, from the copies just kept (alertes-etat.ts): a log line a run when one would go,
+      // nothing sent. The copies whole, so that a stale or late one is not read. One KV read, one write only when the
+      // state changes.
       if (kv) {
         const [vig, vol] = await Promise.all([c.peek<mf.Vigilance>(mf.KEY), c.peek<VolcanAnswer>("web:volcan")]).catch(() => [undefined, undefined] as const);
-        await detecter(kv, vig?.value, vol?.value, new Date()).catch((err) => console.error("alertes push (essai) : état impossible", why(err)));
+        await detecter(kv, vig, vol, new Date()).catch((err) => console.error("alertes push (essai) : état impossible", why(err)));
       }
       const copies = { written: [...first.written, ...after.written], left: [...first.left, ...after.left] };
       return { arome, aromeUsed, stations, copies, agendas };

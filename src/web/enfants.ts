@@ -8,6 +8,7 @@ import { mentionOf } from "../mentions.js";
 import { ACCUEILS } from "../providers/agenda.js";
 import * as traces from "../providers/traces.js";
 import * as creches from "../vie/creches.js";
+import { accueil, SEUIL_PHRASE } from "../tools/creches.js";
 import * as ecoles from "../vie/ecoles.js";
 import * as enfants from "../vie/enfants.js";
 import * as marmailles from "../vie/marmailles.js";
@@ -49,8 +50,8 @@ const CRECHES = {
   global: "Tous<br>modes<br>pour 100",
   places: "Places<br>en crèche",
   ile: "La Réunion",
-  intro: (annee: number) => typo(`Combien de places la CAF compte pour 100 enfants de moins de 3 ans, fin ${annee} : en crèche, puis en comptant aussi les assistantes maternelles, la garde à domicile et l'école. C'est une offre théorique : une place peut être libre, ou partagée par plusieurs enfants.`),
-  sans: (noms: string[]) => typo(`La CAF ne donne le chiffre d'une commune qu'au-dessus de 10\u00a0000 habitants. ${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]} n'en ont pas : seul celui de leur intercommunalité, plus bas, les compte avec ses autres communes.`),
+  intro: (annee: number) => typo(`Combien de places la CAF compte pour 100 enfants de moins de 3 ans, fin ${annee} : en crèche, puis en comptant aussi les assistantes maternelles, la garde à domicile et l'école. C'est une offre théorique : ${accueil}.`),
+  sans: (noms: string[]) => typo(`${SEUIL_PHRASE} ${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]} n'en ont pas : seul celui de leur intercommunalité, plus bas, les compte avec ses autres communes.`),
   trouver: typo(`Pour trouver une crèche et ses places : ${lienNom("https://monenfant.fr", "monenfant.fr", ' rel="noopener"')}, de la CAF.`),
   credit: (annee: number, le: string, an: string) => typo(`Caisse nationale des Allocations familiales (Cnaf), data.caf.fr, Licence Ouverte : chiffres de décembre ${annee}, publiés le ${le}/${an}.`),
 };

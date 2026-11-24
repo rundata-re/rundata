@@ -149,7 +149,9 @@ describe("the server's instructions", () => {
     // 40 340 the same day with a bound on the length of each text argument (« maxLength »: 200), no word more.
     // 41 348 on 24/11/2026 with the tool elections (a commune's results had a page and no tool): its description in three
     // sentences and three arguments. The cap follows the size measured, it is no allowance: a tool added pays its words.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_350);
+    // 41 425 the same day with the places in crèche in annuaire_services_publics (a few words of its description): no tool
+    // answered « crèche », which had a page.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_425);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

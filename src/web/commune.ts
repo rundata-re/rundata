@@ -17,6 +17,7 @@ import * as medecins from "../vie/medecins.js";
 import * as elections from "../vie/elections.js";
 import * as accidents from "../routes/accidents.js";
 import * as creches from "../vie/creches.js";
+import { epciDit, offreDite, SEUIL } from "../tools/creches.js";
 import * as parcoursup from "../vie/parcoursup.js";
 import * as decouvrir from "../vie/decouvrir.js";
 import * as enfants from "../vie/enfants.js";
@@ -554,20 +555,10 @@ function rents(p: PlacePage): Live | undefined {
  */
 function nursery(p: PlacePage): Live | undefined {
   const c = creches.ofCommune(p.nom);
-  const theorique = `offre théorique fin ${creches.ANNEE}, d'après la CAF`;
-  if (c)
-    return {
-      valeur: `${creches.taux(c.creche)} places`,
-      detail: `en crèche pour 100 enfants de moins de 3\u00a0ans · ${creches.taux(c.global)} pour 100 en comptant les assistantes maternelles, la garde à domicile et l'école · ${nombre(c.places_creche)} places en crèche · ${theorique}`,
-      entier: true,
-    };
+  if (c) return { valeur: `${creches.taux(c.creche)} places`, detail: offreDite(c), entier: true };
   const e = creches.epciOf(p.nom);
   if (!e) return undefined;
-  return {
-    valeur: "Pas de chiffre pour la commune",
-    detail: `la CAF ne le donne que pour les communes de plus de 10\u00a0000 habitants · pour ${e.nom}, ses ${e.communes.length} communes ensemble\u00a0: ${creches.taux(e.creche)} places en crèche pour 100 enfants de moins de 3\u00a0ans · ${theorique}`,
-    entier: true,
-  };
+  return { valeur: "Pas de chiffre pour la commune", detail: `${SEUIL} · pour ${epciDit(e)}`, entier: true };
 }
 
 /**

@@ -5,10 +5,13 @@ From data.education.gouv.fr, « Annuaire de l'éducation » (fr-en-annuaire-educ
 code_departement 974 whose type is an école, a collège or a lycée. Left out: the sections attached to another
 establishment (a collège's SEGPA, a lycée's vocational section: the mother establishment carries them) and the
 schools « sans effectifs permanents ». The directory is updated daily; schools seldom change: run this by hand.
-Usage: python3 -I scripts/build-ecoles.py [--json FILE]   (FILE: the API's JSON export, already downloaded)
+Usage: python3 -I scripts/build-ecoles.py [--json FILE] [--verifier ECART]   (FILE: the API's JSON export, already downloaded)
+--verifier: write nothing, compare with the bundled list, fail past ECART establishments added, gone or changed
+(the Monday check, .github/workflows/listes.yml).
 """
 import argparse
 import json
+import sys
 import urllib.request
 from datetime import date
 from pathlib import Path
@@ -66,6 +69,7 @@ def row(x):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json")
+    ap.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/ecoles.json, fail past ECART establishments added, gone or changed")
     a = ap.parse_args()
     if a.json:
         rows = json.load(open(a.json, encoding="utf-8"))
@@ -78,9 +82,35 @@ def main():
         raise SystemExit(f"only {len(keep)} establishments: the export looks cut, nothing written")
     order = {"ecole": 0, "college": 1, "lycee": 2}
     out = sorted((row(x) for x in keep), key=lambda e: (e["commune"], order[e["type"]], e["nom"]))
+    if a.verifier is not None:
+        sys.exit(verifier(out, a.verifier))
     data = {"construit": date.today().isoformat(), "mis_a_jour": max(x["date_maj_ligne"] for x in keep), "etablissements": out}
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"{len(out)} establishments written to {OUT.relative_to(ROOT)}")
+
+
+def verifier(out, ecart):
+    """The bundled list against today's directory, without writing: each establishment by its UAI, added, gone, or with
+    a field changed (a phone, an address, a canteen). 1 (the job's failure, its alert) past `ecart` of them."""
+    bundled = json.loads(OUT.read_text(encoding="utf-8"))
+    before, now = {e["uai"]: e for e in bundled["etablissements"]}, {e["uai"]: e for e in out}
+    added = [now[u] for u in now.keys() - before.keys()]
+    gone = [before[u] for u in before.keys() - now.keys()]
+    changed = [(before[u], now[u]) for u in before.keys() & now.keys() if before[u] != now[u]]
+    print(f"liste du {bundled['construit']} : {len(before)} établissements ; annuaire aujourd'hui : {len(now)}, "
+          f"{len(added)} nouveaux, {len(gone)} disparus, {len(changed)} changés")
+    for e in added[:20]:
+        print(f"  nouveau : {e['nom']} ({e['commune']}, {e['uai']})")
+    for e in gone[:20]:
+        print(f"  disparu : {e['nom']} ({e['commune']}, {e['uai']})")
+    for b, n in changed[:20]:
+        fields = sorted(k for k in b.keys() | n.keys() if b.get(k) != n.get(k))
+        print(f"  changé : {n['nom']} ({n['commune']}, {n['uai']}) : {', '.join(fields)}")
+    total = len(added) + len(gone) + len(changed)
+    if total > ecart:
+        print(f"::error::La liste des écoles a {total} écarts avec l'annuaire de l'Éducation (seuil {ecart}) : lancer scripts/build-ecoles.py et proposer la PR.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

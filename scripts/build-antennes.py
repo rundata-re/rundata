@@ -9,12 +9,15 @@ Two datasets of the ANFR on data.gouv.fr, Licence Ouverte 2.0:
   broadcast ones are kept (FM radio, TNT, DAB+), by support. Without civil aviation, Defence and the Interior. A private
   site's operator is never kept, nor any address: a place and a height only.
 Run again once a week (mobile) or once a month (broadcast). Downloads at a low pace, one request a minute per host.
-Usage: python3 -I scripts/build-antennes.py [--mobile observatoire.zip --mobile-du 2026-10-22 --radio data.zip --ref ref.zip --radio-du 2026-09-30]
+Usage: python3 -I scripts/build-antennes.py [--mobile observatoire.zip --mobile-du 2026-10-22 --radio data.zip --ref ref.zip --radio-du 2026-09-30] [--verifier ECART]
+--verifier: write nothing, compare with the bundled list, fail past ECART supports added, gone or changed (the Monday
+check, .github/workflows/listes.yml).
 """
 import argparse
 import csv
 import io
 import json
+import sys
 import tempfile
 import time
 import urllib.request
@@ -139,6 +142,7 @@ def main():
     p.add_argument("--radio", help="a local copy of the monthly zip of the stations over 5 W (…-export-etalab-data.zip)")
     p.add_argument("--ref", help="and of its reference tables (…-export-etalab-ref.zip)")
     p.add_argument("--radio-du", help="the day of that export, 2026-09-30")
+    p.add_argument("--verifier", type=int, metavar="ECART", help="write nothing: compare with src/vie/antennes.json, fail past ECART supports added, gone or changed")
     a = p.parse_args()
     work = Path(tempfile.mkdtemp())
     if a.mobile:
@@ -161,6 +165,8 @@ def main():
     supports, newest_service = mobile(mob, nature)
     radio = broadcast(data, zipfile.ZipFile(ref), nature)
     dest = ROOT / "src/vie/antennes.json"
+    if a.verifier is not None:
+        sys.exit(verifier(dest, supports, radio, mob_day, radio_day, a.verifier))
     dest.write_text(json.dumps({
         "construit": date.today().isoformat(),
         "mobile": {"fichier_du": mob_day, "derniere_mise_en_service": newest_service, "source": "ANFR, Données sur les réseaux mobiles, Licence Ouverte 2.0",
@@ -171,6 +177,31 @@ def main():
         "emetteurs": radio,
     }, ensure_ascii=False, separators=(",", ":")) + "\n")
     print(dest, len(supports), "supports mobiles au", mob_day, ";", len(radio), "supports radio et TV au", radio_day)
+
+
+def verifier(dest, supports, radio, mob_day, radio_day, ecart):
+    """The bundled list against the ANFR's newest files, without writing: each support by its id, mobile and broadcast,
+    added, gone, or changed (an operator, a generation's state, a height). 1 (the job's failure, its alert) past `ecart`."""
+    bundled = json.loads(dest.read_text(encoding="utf-8"))
+    total = 0
+    for name, before, now, day, was in (("mobiles", bundled["supports"], supports, mob_day, bundled["mobile"]["fichier_du"]),
+                                         ("radio et TV", bundled["emetteurs"], radio, radio_day, bundled["radio_tv"]["fichier_du"])):
+        b, n = {x["id"]: x for x in before}, {x["id"]: x for x in now}
+        added, gone = [n[i] for i in n.keys() - b.keys()], [b[i] for i in b.keys() - n.keys()]
+        changed = [(b[i], n[i]) for i in b.keys() & n.keys() if b[i] != n[i]]
+        print(f"supports {name} : liste au {was}, {len(b)} ; fichier de l'ANFR au {day}, {len(n)} : "
+              f"{len(added)} nouveaux, {len(gone)} disparus, {len(changed)} changés")
+        for x in added[:20]:
+            print(f"  nouveau : {x['id']} ({x['insee']}, {x.get('nature', '')})")
+        for x in gone[:20]:
+            print(f"  disparu : {x['id']} ({x['insee']}, {x.get('nature', '')})")
+        for x, y in changed[:20]:
+            print(f"  changé : {y['id']} ({y['insee']}) : {', '.join(sorted(k for k in x.keys() | y.keys() if x.get(k) != y.get(k)))}")
+        total += len(added) + len(gone) + len(changed)
+    if total > ecart:
+        print(f"::error::La liste des antennes a {total} écarts avec les fichiers de l'ANFR (seuil {ecart}) : lancer scripts/build-antennes.py et proposer la PR.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":

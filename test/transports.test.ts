@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as transit from "../src/providers/transit.js";
 import type * as rt from "../src/providers/gtfsrt.js";
 import { Cache, MemoryStore } from "../src/cache.js";
+import { delai } from "../src/tools/format.js";
+import { waitText } from "../src/web/domains.js";
 import { type Departure, departures, findStops, linesNamed, onceEach, parseQuery, stationDepartures, transports, tripAsked } from "../src/tools/transports.js";
 
 // Rows of the D1 database for the stations of Saint-Pierre, the cable car at Bancoul and Hell-Bourg, from the
@@ -327,7 +329,7 @@ describe("a line", () => {
     const asked = `${g.nom} car jaune`;
     const where = `${g.nom} \\(${g.commune}, Car Jaune\\)`;
     const sunday = body(await transports(asked, undefined, new Date("2026-10-25T06:00:00Z")));
-    expect(sunday.resume).toMatch(new RegExp(`^Arrêt ${where}\u00a0: aucun départ aujourd'hui, dimanche 25 octobre\\. D'après les horaires publiés, aucune des lignes qui le desservent ne circule le dimanche\\. Prochains départs\u00a0: E1 vers St-(Denis|Benoît) demain à 5\u00a0h \\(dans 19 h\\)\u00a0; `));
+    expect(sunday.resume).toMatch(new RegExp(`^Arrêt ${where}\u00a0: aucun départ aujourd'hui, dimanche 25 octobre\\. D'après les horaires publiés, aucune des lignes qui le desservent ne circule le dimanche\\. Prochains départs\u00a0: E1 vers St-(Denis|Benoît) demain à 05:00 \\(dans 19 h\\)\u00a0; `));
     const WED = new Date("2026-11-11T06:00:00Z");
     const feries = { get: async () => ({ value: { "2026-11-11": "11 novembre" }, fetchedAt: new Date() }) } as unknown as Cache;
     expect(body(await transports(asked, undefined, WED, feries)).resume)
@@ -448,5 +450,29 @@ describe("a stop no trip stops at", () => {
   it("says so when no served stop is near", async () => {
     const r = body(await transports("Mairie de Saint Pierre", undefined, NOW));
     expect(r.resume).toBe("L'arrêt Mairie de Saint Pierre (Saint-Pierre, Alternéo) n'a aucun passage dans les horaires publiés, et aucun arrêt desservi n'est à moins de 600 m.");
+  });
+});
+
+// 24/11/2026: « 21 … à 05:30 (dans 1 h 59) ; 21 … à 6 h (dans 2 h 29) » and « à 04:50 (dans 79 min) » beside « dans 1 h 34 »:
+// the kit's hours, all with their minutes in a list (« 06:00 »), and one way of saying a wait, the stop's page's.
+describe("the times and waits of a list of departures", () => {
+  it("gives every time with its minutes, and a wait of an hour or more in hours", async () => {
+    const said: string[] = [];
+    for (const q of ["gare routière Saint-Pierre", "Hell-Bourg"]) {
+      for (const h of [0, 1, 2, 3, 4, 5, 8, 11, 14, 17, 20]) {
+        said.push(body(await transports(q, undefined, new Date(Date.parse("2026-10-22T20:00:00Z") + h * 3600_000))).resume as string);
+      }
+    }
+    const all = said.join("\n");
+    expect(all).not.toMatch(/à \d{1,2} h\b/);
+    expect([...all.matchAll(/dans (\d+) min/g)].map((m) => Number(m[1])).filter((n) => n >= 60)).toEqual([]);
+    expect(all).toMatch(/à \d\d:00 \(/);
+    expect(all).toMatch(/dans 1 h \d\d\)/);
+  });
+
+  it("says a wait as the stop's page does", () => {
+    expect([delai(4), delai(59), delai(60), delai(79), delai(120), delai(134)]).toEqual(["dans 4 min", "dans 59 min", "dans 1 h", "dans 1 h 19", "dans 2 h", "dans 2 h 14"]);
+    expect(waitText(79, "05:05")).toBe("dans 1 h 19");
+    expect(waitText(95, "05:20")).toBe("à 05:20");
   });
 });

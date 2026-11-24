@@ -161,6 +161,7 @@ import { LINE_NOINDEX, linePage } from "./ligne-page.js";
 import { answer, askedOf, ITINERAIRE_PATH, itinerairePage } from "./itineraire.js";
 import { endOf } from "../tools/itineraire.js";
 import { STOP_PATH } from "./domains.js";
+import { ARRETS_LISTE, arretsListeResponse } from "./arrets-autour.js";
 import * as transit from "../providers/transit.js";
 import { carteRoute } from "./vigilance-carte.js";
 import { carteRoute as cmrsRoute } from "./cmrs-carte.js";
@@ -1233,6 +1234,8 @@ async function pages(request: Request, cache: Cache, background: Background, now
     return new Response(linePage(origin, p, day, now, await alerte(cache, background, now)), { headers: { ...HTML, "cache-control": "public, max-age=300", ...(LINE_NOINDEX ? { "x-robots-tag": "noindex" } : {}) } });
   }
   // A stop's page, and the search for one: read from the timetables at each view, never kept (web/arret.ts).
+  // The stops' list of « Arrêts autour de moi » (web/arrets-autour.ts): loaded on the click, the same for everyone.
+  if (path === ARRETS_LISTE) return arretsListeResponse();
   if (path === STOP_PATH || path === `${STOP_PATH}/`) {
     const q = (url.searchParams.get("q") ?? "").trim().slice(0, 100);
     if (!q) return new Response(null, { status: 302, headers: { location: "/bus", "cache-control": "no-store" } });

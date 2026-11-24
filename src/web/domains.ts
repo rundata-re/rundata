@@ -37,7 +37,7 @@ import { MAIRIES } from "../providers/coupures-courant.js";
 import { PERIMEE_MIN, perimeeTexte } from "../tools/electricite.js";
 import { copieAncienne, copieAncienneCourte, VOIR_COURANT, VOIR_EAU } from "../tools/copie-ancienne.js";
 import { casse } from "../tools/casse.js";
-import { a, a as aLieu, de, enumeration, fr, heure, heuresDites, nombre, tranche } from "../tools/format.js";
+import { a, a as aLieu, de, delai, enumeration, fr, heure, heuresDites, nombre, tranche } from "../tools/format.js";
 import { CAPTEURS_AVERTISSEMENT, CAPTEURS_EXPLICATION, type Measured } from "../tools/air.js";
 import * as capteurs from "../providers/capteurs.js";
 import * as accidents from "../routes/accidents.js";
@@ -72,6 +72,7 @@ import { T as FERRY } from "../tools/ferries.js";
 import { BUILT as DAE_BUILT, DAES } from "../providers/dae.js";
 import { SANS_FORMATION as DAE_SANS_FORMATION, SE_FORMER as DAE_SE_FORMER } from "../tools/dae.js";
 import DAE_LIST from "../dae/liste.json" with { type: "json" };
+import { arretsAutour } from "./arrets-autour.js";
 import * as atmo from "../providers/atmo.js";
 import { adressesCoupables, anchorId, ask, credits, CYCLONE_SCALE, dayMonth, DESCRIPTION_MAX, empty, FOLD_ROWS, folded, icon, ISLAND, layout, type Live, lue, leAt, duAt, leJour, duJour, officielHtml, readAt, SITE, vg } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
@@ -1210,7 +1211,7 @@ export function calendrierLive(data: Cached<CalendrierAnswer> | null, now = new 
 export const listClock = (heure: string) => heure.replace(/\b(\d{1,2})[\u00a0 ]h$/, (_, h: string) => `${h.padStart(2, "0")}:00`);
 
 export const waitText = (min: number, heure: string) =>
-  heure.startsWith("demain") ? heure : min < 1 ? "maintenant" : min < 90 ? `dans ${fr(min)} min` : `à ${heure}`;
+  heure.startsWith("demain") ? heure : min < 1 ? "maintenant" : min < 90 ? delai(min) : `à ${heure}`;
 
 type Row = BusData["gares"][number]["departs"][number];
 
@@ -1375,6 +1376,7 @@ export function busPage(origin: string, data: Cached<BusData> | null, now = new 
     <h1>Bus et cars <span class="n974">974</span></h1>
     ${status}
     ${stopSearch()}
+    ${arretsAutour()}
     ${ask(`Kansa i pas lo prochin bis la gar Sin-Pyèr ? Gèt si ${url} é di amwin.`,
       `Quand passe le prochain bus à la gare routière de Saint-Pierre ? Lis ${url} et dis-le-moi.`)}
   </div>

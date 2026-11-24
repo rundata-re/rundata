@@ -12,7 +12,7 @@ import { quand } from "./actualites.js";
 import { SITE_URL } from "./citer.js";
 import { LINE_PATH, lineOfRoutes } from "../web/ligne.js";
 import { asksCrossing, T as FERRY } from "./ferries.js";
-import { a as aLieu, credits, de as deLieu, fr, heure, text } from "./format.js";
+import { a as aLieu, credits, de as deLieu, delai, fr, heure, text } from "./format.js";
 import { rienTrouve } from "../vide.js";
 import { answer as tripSearch, ITINERAIRE_PATH, journeyRow, none, said as endSaid } from "./itineraire.js";
 
@@ -128,11 +128,11 @@ const hm = (s: number) => {
   const m = Math.floor((((s % 86400) + 86400) % 86400) / 60);
   return `${s >= 86400 ? "demain " : ""}${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 };
-/** « à 07:05 », « demain à 05:51 ». */
-const atTime = (s: number) => `${s >= 86400 ? "demain " : ""}à ${clock(s)}`;
+/** « à 07:05 », « à 06:00 » beside « à 05:30 » (the kit: in a list, every time with its minutes), « demain à 05:51 ». */
+const atTime = (s: number) => `${s >= 86400 ? "demain " : ""}à ${hm(s % 86400)}`;
 const minutes = (d: Departure) => Math.max(0, Math.round(expected(d) / 60));
-/** « dans 4 min », « dans 11 h 15 ». */
-const wait = (min: number) => (min < 90 ? `dans ${fr(min)} min` : `dans ${Math.floor(min / 60)} h${min % 60 ? ` ${String(min % 60).padStart(2, "0")}` : ""}`);
+/** « dans 4 min », « dans 1 h 19 », « dans 11 h 15 » (format.ts `delai`). */
+const wait = delai;
 
 /** Local day as YYYYMMDD and Monday-first weekday, `back` days before `now`. */
 function day(now: Date, back = 0) {

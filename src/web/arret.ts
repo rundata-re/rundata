@@ -10,6 +10,7 @@ import { porte, type Porte } from "./aller.js";
 import type { stopPageDepartures } from "../tools/transports.js";
 import { alertList, crumbBar, crumbs, departureLi, listClock, STOP_PATH, stopSearch, waitText } from "./domains.js";
 import { esc } from "./map.js";
+import { arretsAutour } from "./arrets-autour.js";
 import { type Alerte, credit } from "./data.js";
 import { credits, DESCRIPTION_MAX, layout, leAt } from "./pages.js";
 import { pageOf, slugify } from "./places.js";
@@ -170,6 +171,6 @@ export function searchPage(origin: string, q: string, found: transit.StopPage[],
 ${found.length > SEARCH_MAX ? `<p class="note">Les ${SEARCH_MAX} premiers sont affichés : ajoutez la commune pour affiner.</p>` : ""}`
     : `<p>Aucun arrêt de bus trouvé pour « ${esc(q)} ». Donnez le nom de l'arrêt et sa commune (« Gare routière, Saint-Pierre »).</p>`;
   const band = `${crumbBar("Arrêt de bus", { name: "Bus", path: "/bus" })}
-<div class="wrap intro"><div class="pitch"><h1>Arrêt de bus</h1>${stopSearch(q)}</div></div>`;
+<div class="wrap intro"><div class="pitch"><h1>Arrêt de bus</h1>${stopSearch(q)}${arretsAutour()}</div></div>`;
   return layout(origin, { title: "Arrêt de bus · La Réunion (974)", description: "Prochains bus à un arrêt de La Réunion (974), tous réseaux.", path: STOP_PATH, noindex: true, jsonld: [], alerte }, band, `<section class="card">${result}</section>`);
 }

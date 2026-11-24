@@ -10,6 +10,8 @@ import { distanceKm } from "../geo.js";
 import { normalize } from "../places/resolve.js";
 import { casseArret } from "../tools/casse.js";
 import network from "../transit/network.json" with { type: "json" };
+/** The build of the bundled stops and timetables (scripts/build-transit.py): changes with them. */
+export const BUILD: string = (network as { build: string }).build;
 import type { SourceInfo } from "../types.js";
 
 export const SOURCE: SourceInfo = {

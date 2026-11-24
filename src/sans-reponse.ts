@@ -161,6 +161,17 @@ let etats: Map<string, Statut> | undefined;
 let lusLe = 0;
 let lecture: Promise<void> | undefined;
 
+/**
+ * For the tests only: this isolate's memory of the table and of its reads, as a new isolate has it. A test that gives
+ * `configure` a database of its own starts from it; the Worker calls `configure` at each request, with the same one.
+ */
+export function oublierIsolat() {
+  etats = undefined;
+  lusLe = 0;
+  lecture = undefined;
+  lectures.clear();
+}
+
 async function lireEtats(now: number) {
   if (etats && now - lusLe < RELIRE_MS) return;
   lecture ??= (async () => {

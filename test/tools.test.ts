@@ -191,21 +191,24 @@ describe("temperature_mer", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     let now = NOW.getTime();
     const cache = new Cache(new MemoryStore(), () => now);
-    // A range of the day's file after each answer, more than ten minutes apart, until the day is read.
+    // A range of the day's file after each answer, more than ten minutes apart, until the day is read. Each range is
+    // decoded and written after the answer: within vi.waitFor's default second alone, not always on a loaded machine
+    // (24/11/2026, two cores kept busy beside the suite), hence 10 s, and 60 s for the test.
+    const late = { timeout: 10_000 };
     let mesure: unknown;
     for (let i = 0; i < 20 && !mesure; i++) {
       const asked = ranges.length;
       mesure = body(await temperatureMer(cache, "Saint-Leu", new Date(now))).mesure;
       if (i === 0) expect(mesure).toBeUndefined();
       if (mesure) break;
-      await vi.waitFor(() => expect(ranges.length).toBe(asked + 1));
-      await vi.waitFor(async () => expect((await cache.peek(SATELLITES))?.fetchedAt.getTime()).toBe(now));
+      await vi.waitFor(() => expect(ranges.length).toBe(asked + 1), late);
+      await vi.waitFor(async () => expect((await cache.peek(SATELLITES))?.fetchedAt.getTime()).toBe(now), late);
       now += 11 * 60_000;
     }
     expect(mesure).toMatchObject({ nature: "mesure_satellite", produit: "moyenne du jour", jour_mesure: "2026-10-17" });
     expect(ranges.length).toBeGreaterThan(5);
     expect(new Set(ranges).size).toBe(ranges.length);
-  });
+  }, 60_000);
 
   it("reads the grids again after half an hour while ACSPO lacks the day it should have, else after 3 hours", () => {
     const at = new Date("2026-10-25T12:09:00Z"); // the 24th is due

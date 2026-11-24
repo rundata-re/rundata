@@ -29,6 +29,9 @@ const communeTile = (page: string) => page.match(/<li class="tile">(?:(?!<\/li>)
 const banner = (page: string) => page.match(/<div class="alerte vg[^>]*>(.*?)<\/div><\/div>/s)?.[1];
 
 beforeEach(() => {
+  // The waits are the code's own (BANNER_WAIT_MS, Météo-France 300 ms later still): on a fake clock, moved on by `late`,
+  // rather than 1.8 s of the machine's for each page.
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   configure({ applicationId: "test" });
   // Météo-France answers, but later than a page waits for it.
   vi.stubGlobal("fetch", async (url: string) => {
@@ -39,6 +42,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   configure({});
@@ -52,7 +56,10 @@ async function late(ageMin?: number) {
   const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
   const pending: Promise<unknown>[] = [];
   const background = (p: Promise<unknown>) => void pending.push(p);
-  const [v, a] = await Promise.all([vigilanceNow(cache, background, BANNER_WAIT_MS, NOW), alerte(cache, background, NOW)]);
+  const both = Promise.all([vigilanceNow(cache, background, BANNER_WAIT_MS, NOW), alerte(cache, background, NOW)]);
+  // The pages' wait, then Météo-France's late answer.
+  await vi.advanceTimersByTimeAsync(BANNER_WAIT_MS + 300);
+  const [v, a] = await both;
   await Promise.all(pending);
   const home = homePage(ORIGIN, { meteo: null, vigilance: v }, NOW, a);
   const commune = communePage(ORIGIN, pageOf("saint-benoit")!, { place: null, vigilance: v }, NOW, a);

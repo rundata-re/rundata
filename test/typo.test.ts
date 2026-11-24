@@ -128,8 +128,13 @@ describe("French typography on the pages", () => {
     // Each round times 8 passes over the page, then one pass over the page repeated 8 times: the same work, a few
     // milliseconds each, one right after the other, so the rest of the suite running in parallel weighs on both alike.
     // That work only ever adds time: the fastest of 12 rounds is the cost of typo itself, on each side.
+    // Its cost is measured against a pass of one regular expression over the same page, a function called on each match,
+    // timed in the same rounds: a loaded machine slows both alike, where a bound in milliseconds failed under load
+    // (3.09 ms for 3, 24/11/2026, two cores kept busy beside the suite).
+    const reference = (h: string) => h.replace(/[<>&"'\u00a0:;?!«»]/g, (c) => c).length;
     let one = Infinity;
     let big = Infinity;
+    let pass = Infinity;
     for (let r = 0; r < 12; r++) {
       let t = performance.now();
       for (let i = 0; i < 8; i++) typo(html, true);
@@ -137,9 +142,15 @@ describe("French typography on the pages", () => {
       t = performance.now();
       typo(eight, true);
       big = Math.min(big, performance.now() - t);
+      t = performance.now();
+      for (let i = 0; i < 8; i++) reference(html);
+      pass = Math.min(pass, (performance.now() - t) / 8);
     }
-    // From 0.3 ms to 1.6 ms on the 130 kB home page, depending on the machine (a regular expression took twice as long).
-    expect(one).toBeLessThan(3);
+    // From 0.3 ms to 1.6 ms on the 130 kB home page, depending on the machine (a regular expression took twice as long):
+    // 0.32 to 0.40 times the reference pass alone, up to 1.45 in a shuffled suite on a loaded machine (24/11/2026, typo
+    // then sharing its compiled code with the other files of its process). A bound ten times the usual: a pass several
+    // times as slow is still seen, the machine's noise is not.
+    expect(one / pass).toBeLessThan(4);
     // Linear in the page's length: eight times the page about eight times the time, where a quadratic pass would take 64
     // times as long. Measured 7.9 to 8.2 alone and 6.8 to 8.5 under two whole suites in parallel (5/11/2026); twice the
     // page had read 1.7 to 3.2 under load, too close to a bound of 3 to tell noise from a slow pass.

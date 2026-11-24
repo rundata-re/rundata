@@ -17,6 +17,8 @@ const T = Math.floor(MORNING.getTime() / 1000);
 function database(withTable = true) {
   const db = new DatabaseSync(":memory:");
   if (withTable) db.exec(SQL);
+  // A database of its own: the states and the reads an earlier test left in the module's memory are not its.
+  sr.oublierIsolat();
   const writes: string[] = [];
   sr.configure(
     async (sql, ...params) => (writes.push(sql), Number(db.prepare(sql).run(...(params as never[])).changes)),

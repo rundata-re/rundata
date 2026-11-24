@@ -22,6 +22,6 @@ describe("/carte's layers", () => {
     expect(map.indexOf('class="kpluie"')).toBeLessThan(map.indexOf('<g class="kcs">'));
     expect(map.indexOf('class="rd')).toBeGreaterThan(0);
     expect(map.indexOf('class="rd')).toBeLessThan(map.indexOf('<g class="kcs">'));
-    expect(map.match(/<g class="kl kc-[^"]+" data-c="[^"]+"><\/g>/g)?.length).toBe(14);
+    expect(map.match(/<g class="kl kc-[^"]+" data-c="[^"]+"><\/g>/g)?.length).toBe(15);
   });
 });

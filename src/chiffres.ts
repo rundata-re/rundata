@@ -87,7 +87,7 @@ export const DOMAINES: Domaine[] = [
   { categorie: "mer", sources: ids("viirs", "acspo", "modis", "noaa_crw_dhw_5km", "openmeteo_houle", "openmeteo_houle_mf", "refmar", "dmsoi_cetaces"), cadence: { minutes: 5, de: "refmar" } },
   // The buses' delays every minute (providers/gtfsrt.ts).
   { categorie: "bus", sources: ids("gtfs_reunion", "gtfs_rt_reunion"), cadence: { minutes: 1, de: "gtfs_rt_reunion" } },
-  { categorie: "velos", sources: ids("altervelo", "region_voie_velo", "saint_denis_pistes_cyclables", "civis_accroches_velo"), cadence: { minutes: 1, de: "altervelo" } },
+  { categorie: "velos", sources: ids("altervelo", "region_voie_velo", "geovelo_amenagements_cyclables", "civis_accroches_velo"), cadence: { minutes: 1, de: "altervelo" } },
   // The scheduled event writes the charge points' states every 15 minutes (providers/irve.ts, refresh).
   { categorie: "bornes", sources: ids("irve"), cadence: { minutes: 15, de: "irve" } },
   { categorie: "coupures", sources: ids("avis_eau", "arretes_sainte_suzanne"), cadence: { minutes: 15, de: "avis_eau" } },

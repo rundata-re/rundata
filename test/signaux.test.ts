@@ -169,7 +169,7 @@ describe("A link followed from an agenda of events", () => {
     const { concertsPage } = await import("../src/web/evenements.js");
     const empty = { value: { evenements: [], couverture: "", sources: [] }, fetchedAt: new Date(), stale: false } as never;
     expect(concertsPage(O, empty)).toMatch(/<p data-sortie>Les programmes des salles/);
-    const { longsCard } = await import("../src/web/domains.js");
+    const { longsCard } = await import("../src/web/agenda.js");
     expect(longsCard([{ titre: "Expo", date: "2026-11-20", quand: "du vendredi 20/11 au dimanche 20/12", genres: [], lien: "https://www.teat.re/expo" } as never], undefined as never, "x"))
       .toContain('<ul class="rows eau" data-sortie>');
   });

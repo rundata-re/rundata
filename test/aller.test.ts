@@ -23,7 +23,8 @@ import { resume } from "../src/tools/resume.js";
 import { MARCHES } from "../src/vie/marches.js";
 import { aujourdhuiPage } from "../src/web/aujourdhui.js";
 import { buildDae } from "../src/web/data.js";
-import { agendaPage, bikeRow, eventGo } from "../src/web/domains.js";
+import { bikeRow } from "../src/web/domains.js";
+import { agendaPage, eventGo } from "../src/web/agenda.js";
 import type { AgendaAnswer, EnfantsAnswer } from "../src/web/data.js";
 
 const O = "https://rundata.re";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { eventRow } from "../src/tools/agenda.js";
-import { agendaRow } from "../src/web/domains.js";
+import { agendaRow } from "../src/web/agenda.js";
 import { ficheIssue, fichePath } from "../src/web/fiche-evenement.js";
 import { annonceAppel, appelAuPublic, nomUsage } from "../src/tools/appel.js";
 import type { Evenement } from "../src/providers/agenda.js";

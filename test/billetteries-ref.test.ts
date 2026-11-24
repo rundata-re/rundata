@@ -3,7 +3,7 @@ import { BILLETTERIES, versBilletterie } from "../src/http.js";
 import { parseRss as agendaRss } from "../src/providers/agenda.js";
 import { eventRow } from "../src/tools/agenda.js";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { fichePage } from "../src/web/fiche-evenement.js";
 
 // The real event pages each ticket office was checked on (05/11/2026): 200 and the same page with « ?ref=rundata ».

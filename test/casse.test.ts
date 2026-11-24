@@ -3,7 +3,7 @@ import { parseRss } from "../src/providers/agenda.js";
 import { eventRow } from "../src/tools/agenda.js";
 import { casse } from "../src/tools/casse.js";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 
 describe("an agenda's title written all in capitals", () => {
   it("takes the case of a sentence", () => {

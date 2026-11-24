@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { GENRE_SCRIPT } from "../src/web/domains.js";
+import { GENRE_SCRIPT } from "../src/web/agenda.js";
 import { CSS } from "../src/web/pages.js";
 
 // The filters of /emploi, /marches-publics and /evenements hide the lines that do not match with the attribute

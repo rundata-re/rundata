@@ -5,7 +5,8 @@
 import type { Cached } from "../cache.js";
 import type { AgendaAnswer, Alerte } from "./data.js";
 import { porte } from "./aller.js";
-import { agendaEvents, agendaNotes, agendaRow, agendaTabs, connectorCta, GENRE_SCRIPT, GENRES, jourCompte, jourMois, loading, longDay, longsCard, sourcesNote, warnings, webPage } from "./domains.js";
+import { agendaNotes, connectorCta, jourMois, loading, sourcesNote, warnings, webPage } from "./domains.js";
+import { agendaEvents, agendaRow, agendaTabs, GENRE_SCRIPT, GENRES, jourCompte, longDay, longsCard } from "./agenda.js";
 import { AHEAD_DAYS, type Jour, longRun, occurrences, parJour, weekend, type Weekend } from "../tools/agenda.js";
 import { forecastLinks } from "./liens.js";
 import { esc } from "./map.js";
@@ -93,7 +94,7 @@ function dayList(jours: Jour<Row>[], rows: Row[], heading: (day: string) => stri
     `<li class="card"><h3>${esc(heading(j.jour))} <span class="note">${jourCompte(j)}</span></h3><ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>${after(j.jour)}</li>`).join("")}${longs}</ul></div>${script(GENRE_SCRIPT)}`;
 }
 
-/** The events of a page as schema.org `Event`s (domains.ts `agendaEvents`), when there are any. */
+/** The events of a page as schema.org `Event`s (agenda.ts `agendaEvents`), when there are any. */
 const graph = (rows: Row[], origin: string) => {
   const events = agendaEvents(rows);
   return events.length ? [{ "@context": "https://schema.org", "@graph": events }] : [];

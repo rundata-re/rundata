@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgendaAnswer } from "../src/web/data.js";
-import { agendaPage, tracePage, traficPage } from "../src/web/domains.js";
+import { tracePage, traficPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { weekendPage } from "../src/web/evenements.js";
 import { cloudSeaTold, communeEvents, forecastLinks, hikesNear, summitOf, weatherNear } from "../src/web/liens.js";
 import { placePage } from "../src/web/pages.js";

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { adresseCoupable, adressesDuTexte, adresseTexte } from "../src/web/adresse.js";
 import { associationsPage } from "../src/web/associations.js";
-import { agendaPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { adressesCoupables, CSS } from "../src/web/pages.js";
 import { publierPage } from "../src/web/publier.js";
 

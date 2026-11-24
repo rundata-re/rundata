@@ -15,10 +15,8 @@ import { collectePage } from "../src/web/collecte.js";
 import { communesPage } from "../src/web/commune.js";
 import { connecteurPage } from "../src/web/connecteur.js";
 import type { Alerte, CruesAnswer, CyclonesAnswer } from "../src/web/data.js";
-import {
-  agendaPage, airPage, bornesPage, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage,
-  randonneesPage, secheressePage, sentiersPage, sportPage, traficPage, velosPage, volcanPage,
-} from "../src/web/domains.js";
+import { airPage, bornesPage, busPage, calendrierPage, coupuresPage, cruesPage, cyclonesPage, daePage, eauPage, electricitePage, historiquePage, randonneesPage, secheressePage, sentiersPage, sportPage, traficPage, velosPage, volcanPage } from "../src/web/domains.js";
+import { agendaPage } from "../src/web/agenda.js";
 import { decheteriesPage } from "../src/web/decheteries.js";
 import { emploiPage } from "../src/web/emploi.js";
 import { marchesPage } from "../src/web/marches-publics.js";

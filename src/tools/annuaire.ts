@@ -241,6 +241,8 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
       // Not a site that submits any link to its agreement (Saint-Benoît's town hall).
       site: sansLien(o.site) ? undefined : o.site,
       fiche: o.fiche || undefined,
+      // Its position not the directory's, said as the page says it under « Y aller ».
+      position: annuaire.positionNote(o),
     })),
     mairies_annexes: near.length
       ? {
@@ -251,6 +253,6 @@ export async function annuaireTool(cache: Cache, quoi: string, lieu: string | un
       : undefined,
     avertissements: [HORAIRES_A_SAVOIR],
     page: town?.commune ? `https://rundata.re/communes/${town.slug}` : undefined,
-    sources: credits([annuaire.SOURCE, ...(near.length ? [annexesSd.SOURCE] : [])]),
+    sources: credits([annuaire.SOURCE, ...annuaire.positionSources(ranked.map((x) => x.o)), ...(near.length ? [annexesSd.SOURCE] : [])]),
   });
 }

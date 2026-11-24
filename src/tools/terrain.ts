@@ -579,8 +579,11 @@ export async function ficheDonnees(cache: Cache, adresse: string, now = new Date
   if (ant) parts.push(ant.ligne);
 
   const used = [
-    // The town hall's point from the directory: the address base was not read.
-    mairie && where.lon === mairie.lon && where.lat === mairie.lat ? annuaireSrc.SOURCE : terrain.SOURCES.ban,
+    // The town hall's point from the directory, checked against OSM's town hall and the address base, which give it when
+    // the directory's lay more than 300 m away (annuaire.placed()).
+    ...(mairie && where.lon === mairie.lon && where.lat === mairie.lat
+      ? [annuaireSrc.SOURCE, ...annuaireSrc.positionSources([mairie])]
+      : [terrain.SOURCES.ban]),
     ...(p ? [terrain.SOURCES.cadastre] : []),
     ...(z ? [terrain.SOURCES.gpu] : []),
     ...(alt != null ? [terrain.SOURCES.alti] : []),

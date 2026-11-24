@@ -6,6 +6,7 @@
  * computer. The place alone goes into the links, never the visitor's position, and rundata.re learns nothing of the
  * click: nothing is counted. The words are marketing's.
  */
+import { type Office, positionNote } from "../providers/annuaire.js";
 import { ORSEC } from "../tools/ecoles.js";
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
@@ -113,6 +114,15 @@ export interface Lieu {
   /** Where it is (« Sainte-Suzanne »), read after the name by screen readers only, for places of the same name on a page; the sheet shows the name alone. */
   ou?: string;
 }
+
+/**
+ * Beside « Y aller » to an office of the annuaire: where its position comes from when it is not the directory's (« Position
+ * d'après OpenStreetMap : … »), as annuaire_services_publics says it; nothing otherwise.
+ */
+export const notePosition = (o: Office) => {
+  const n = positionNote(o);
+  return n ? ` <span class="note">${esc(n)}</span>` : "";
+};
 
 /** The route to a place in Google Maps: the link without the script, the same on every device. */
 export const route = (lat: number, lon: number, pied = false) =>

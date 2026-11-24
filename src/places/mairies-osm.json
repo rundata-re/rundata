@@ -1,0 +1,127 @@
+{
+ "construit": "2026-11-24",
+ "source": "OpenStreetMap, amenity=townhall (Overpass), annexes exclues",
+ "licence": "ODbL 1.0",
+ "mairies": {
+  "Bras-Panon": {
+   "lon": 55.676164,
+   "lat": -20.995217,
+   "osm": "relation/2972562"
+  },
+  "Cilaos": {
+   "lon": 55.470998,
+   "lat": -21.135209,
+   "osm": "node/1928575754"
+  },
+  "Entre-Deux": {
+   "lon": 55.47032,
+   "lat": -21.248772,
+   "osm": "way/69579763"
+  },
+  "L'Étang-Salé": {
+   "lon": 55.366872,
+   "lat": -21.266043,
+   "osm": "way/134389169"
+  },
+  "La Plaine-des-Palmistes": {
+   "lon": 55.625802,
+   "lat": -21.13506,
+   "osm": "way/67317511"
+  },
+  "La Possession": {
+   "lon": 55.335847,
+   "lat": -20.926514,
+   "osm": "way/147871237"
+  },
+  "Le Port": {
+   "lon": 55.290243,
+   "lat": -20.935422,
+   "osm": "way/64489671"
+  },
+  "Le Tampon": {
+   "lon": 55.515312,
+   "lat": -21.278189,
+   "osm": "way/130591357"
+  },
+  "Les Avirons": {
+   "lon": 55.333357,
+   "lat": -21.241766,
+   "osm": "node/2340360995"
+  },
+  "Les Trois-Bassins": {
+   "lon": 55.295083,
+   "lat": -21.105723,
+   "osm": "node/1449125319"
+  },
+  "Petite-Île": {
+   "lon": 55.566018,
+   "lat": -21.355814,
+   "osm": "node/2627145973"
+  },
+  "Saint-André": {
+   "lon": 55.65026,
+   "lat": -20.96034,
+   "osm": "node/7882992240"
+  },
+  "Saint-Benoît": {
+   "lon": 55.712629,
+   "lat": -21.03401,
+   "osm": "way/104756327"
+  },
+  "Saint-Denis": {
+   "lon": 55.447961,
+   "lat": -20.879141,
+   "osm": "way/1366551925"
+  },
+  "Saint-Joseph": {
+   "lon": 55.619166,
+   "lat": -21.378537,
+   "osm": "way/142353323"
+  },
+  "Saint-Leu": {
+   "lon": 55.286897,
+   "lat": -21.166222,
+   "osm": "way/143366750"
+  },
+  "Saint-Louis": {
+   "lon": 55.409213,
+   "lat": -21.286629,
+   "osm": "way/119069747"
+  },
+  "Saint-Paul": {
+   "lon": 55.269668,
+   "lat": -21.009684,
+   "osm": "node/4435765589"
+  },
+  "Saint-Philippe": {
+   "lon": 55.767685,
+   "lat": -21.359375,
+   "osm": "way/84813986"
+  },
+  "Saint-Pierre": {
+   "lon": 55.477846,
+   "lat": -21.341789,
+   "osm": "way/67644380"
+  },
+  "Sainte-Marie": {
+   "lon": 55.54928,
+   "lat": -20.896907,
+   "osm": "node/5491382740"
+  },
+  "Sainte-Rose": {
+   "lon": 55.793285,
+   "lat": -21.127676,
+   "osm": "way/85024020"
+  },
+  "Sainte-Suzanne": {
+   "lon": 55.607481,
+   "lat": -20.905519,
+   "osm": "way/95377828"
+  },
+  "Salazie": {
+   "lon": 55.539146,
+   "lat": -21.02766,
+   "osm": "way/67036470"
+  }
+ }
+}

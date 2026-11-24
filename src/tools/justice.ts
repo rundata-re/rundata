@@ -116,6 +116,8 @@ export async function justiceAnswer(cache: Cache, quoi: string, lieu: string | u
       telephone: o.telephone,
       courriel: o.courriel,
       fiche: o.fiche || undefined,
+      // Its position not the directory's, said as the commune's page says it under « Y aller ».
+      position: annuaire.positionNote(o),
     }))])),
     avertissements: [
       groupes.some((x) => x.g === "acces") && sansHoraires
@@ -127,6 +129,6 @@ export async function justiceAnswer(cache: Cache, quoi: string, lieu: string | u
       "Horaires publiés par chaque service sur service-public.fr : jours fériés et fermetures exceptionnelles non pris en compte.",
     ].filter(Boolean),
     page: town?.commune ? `https://rundata.re/communes/${town.slug}` : undefined,
-    sources: credits([annuaire.SOURCE]),
+    sources: credits([annuaire.SOURCE, ...annuaire.positionSources(groupes.flatMap((x) => x.ranked.map((r) => r.o)))]),
   });
 }

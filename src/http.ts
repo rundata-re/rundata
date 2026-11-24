@@ -237,7 +237,7 @@ async function get<T>(
   timeoutMs: number,
   read: (res: Response) => Promise<T>,
   headers: Record<string, string> = {},
-  body?: URLSearchParams | string,
+  body?: URLSearchParams | string | FormData,
   errorCode?: (res: Response) => Promise<string | undefined>,
 ): Promise<T> {
   count();
@@ -378,6 +378,11 @@ export async function getFile(
 }
 
 /** A form posted as a web page's own script would, for the sites whose data has no other door (Vigicrues Réunion). */
+/** A multipart form posted (a file and its fields, as the Géoplateforme's geocoding of a CSV takes it), its answer as text. */
+export async function postFile(source: string, url: string, form: FormData, timeoutMs = 15_000): Promise<string> {
+  return get(source, url, timeoutMs, (res) => res.text(), {}, form);
+}
+
 export async function postForm<T>(source: string, url: string, fields: Record<string, string>, timeoutMs = 15_000): Promise<T> {
   return get(source, url, timeoutMs, (res) => res.json() as Promise<T>, {}, new URLSearchParams(fields));
 }

@@ -4,7 +4,8 @@
 From data.education.gouv.fr, « Annuaire de l'éducation » (fr-en-annuaire-education, Licence Ouverte 2.0), the rows of
 code_departement 974 whose type is an école, a collège or a lycée. Left out: the sections attached to another
 establishment (a collège's SEGPA, a lycée's vocational section: the mother establishment carries them) and the
-schools « sans effectifs permanents ». The directory is updated daily; schools seldom change: run this by hand.
+schools « sans effectifs permanents ». The directory is updated daily; schools seldom change: run this by hand. A site the
+directory has not caught up with gets a dated local correction (CORRECTIONS), kept beside its value in the list.
 Usage: python3 -I scripts/build-ecoles.py [--json FILE] [--verifier ECART]   (FILE: the API's JSON export, already downloaded)
 --verifier: write nothing, compare with the bundled list, fail past ECART establishments added, gone or changed
 (the Monday check, .github/workflows/listes.yml).
@@ -30,6 +31,47 @@ COMMUNES = {
     "97415": "Saint-Paul", "97416": "Saint-Pierre", "97417": "Saint-Philippe", "97418": "Sainte-Marie", "97419": "Sainte-Rose",
     "97420": "Sainte-Suzanne", "97421": "Salazie", "97422": "Le Tampon", "97423": "Les Trois-Bassins", "97424": "Cilaos",
 }
+
+
+# Local corrections, dated, of a field the directory has not caught up with yet. Each is applied only while the directory
+# still gives the old value: once it changes (caught up, or another value), the correction is left out and the build
+# says so, to remove it. The directory's value is kept beside the correction in the list (« corrections »).
+# (UAI, field, directory's value, corrected value, day checked, source)
+CORRECTIONS = [
+    ("9741546M", "web", "http://college-alexandre-monnet.ac-reunion.fr/", "https://colleges-st-michel-monnet.re/", "2026-11-24",
+     "l'ancien site renvoie à l'accueil de l'académie ; le site commun des collèges La Salle Saint-Michel et Alexandre-Monnet présente le collège, avec son téléphone"),
+    ("9740471U", "web", "https://etab.ac-reunion.fr/lyc-amiral-bouvet", "https://etab.ac-reunion.fr/lyc-jean-claude-fruteau/", "2026-11-24",
+     "lycée renommé Jean-Claude-Fruteau : son site, à sa nouvelle adresse sur etab.ac-reunion.fr"),
+    ("9740054R", "web", "http://lycee-lgeoffroy.ac-reunion.fr", "https://lislet-geoffroy.re/", "2026-11-24",
+     "l'ancienne adresse renvoie au nouveau site du lycée"),
+    ("9740072K", "web", "http://www.stmichel.re/", "https://colleges-st-michel-monnet.re/", "2026-11-24",
+     "l'ancienne adresse renvoie au site commun des collèges La Salle Saint-Michel et Alexandre-Monnet"),
+    ("9741098A", "web", "http://ecolemaritime.fr", "https://ecolemaritime.re/", "2026-11-24",
+     "l'ancienne adresse renvoie au nouveau site de l'école"),
+    ("9741630D", "web", "http://www.lasalle.stcharles.fr/", "https://lasalle.stcharles.fr/", "2026-11-24", "le site passe en https"),
+    ("9740835P", "web", "http://lasalle.stcharles.fr/", "https://lasalle.stcharles.fr/", "2026-11-24", "le site passe en https"),
+    ("9741255W", "web", "http://lasalle.stcharles.fr", "https://lasalle.stcharles.fr/", "2026-11-24", "le site passe en https"),
+    ("9741233X", "web", "http://lycee-mandela.fr", "https://lycee-mandela.fr/", "2026-11-24", "le site passe en https"),
+    ("9741088P", "web", "http://www.martherobin.re/", "https://www.martherobin.re/", "2026-11-24", "le site passe en https"),
+]
+
+
+def corriger(out):
+    """Applies CORRECTIONS to the built rows; returns those applied, each with the directory's value, for the list."""
+    by_uai = {e["uai"]: e for e in out}
+    done = []
+    for uai, field, annuaire, corrige, jour, source in CORRECTIONS:
+        e = by_uai.get(uai)
+        now = e.get(field) if e else None
+        if now == annuaire:
+            e[field] = corrige
+            done.append({"uai": uai, "champ": field, "annuaire": annuaire, "corrige": corrige, "verifie": jour, "source": source})
+        elif e is None:
+            print(f"::warning::Correction locale sans objet : {uai} n'est plus dans l'annuaire. La retirer de scripts/build-ecoles.py.")
+        else:
+            print(f"::warning::Correction locale sans objet : l'annuaire donne maintenant {field} = {now!r} pour {e['nom']} ({uai}), "
+                  f"plus {annuaire!r}. La retirer de scripts/build-ecoles.py (et vérifier la nouvelle valeur).")
+    return done
 
 
 def phone(t):
@@ -82,9 +124,11 @@ def main():
         raise SystemExit(f"only {len(keep)} establishments: the export looks cut, nothing written")
     order = {"ecole": 0, "college": 1, "lycee": 2}
     out = sorted((row(x) for x in keep), key=lambda e: (e["commune"], order[e["type"]], e["nom"]))
+    corrections = corriger(out)
     if a.verifier is not None:
         sys.exit(verifier(out, a.verifier))
-    data = {"construit": date.today().isoformat(), "mis_a_jour": max(x["date_maj_ligne"] for x in keep), "etablissements": out}
+    data = {"construit": date.today().isoformat(), "mis_a_jour": max(x["date_maj_ligne"] for x in keep), "etablissements": out,
+            "corrections": corrections}
     OUT.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"{len(out)} establishments written to {OUT.relative_to(ROOT)}")
 

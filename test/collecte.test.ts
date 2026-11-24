@@ -3,6 +3,7 @@ import { annuaireTool } from "../src/tools/annuaire.js";
 import { collecteAnswer, parseLieu } from "../src/tools/collecte.js";
 import { resume } from "../src/tools/resume.js";
 import * as col from "../src/vie/collecte.js";
+import est from "../src/vie/collecte-cirest.json" with { type: "json" };
 import { insecables } from "../src/typographie.js";
 import { collectePage, communeOf, ELSEWHERE, horsTco } from "../src/web/collecte.js";
 import { pageOf } from "../src/web/places.js";
@@ -19,8 +20,8 @@ describe("the bins' calendars of the West", () => {
   it("holds every calendar of the TCO with its days, and every street with its calendar", () => {
     expect(col.CALENDARS.length).toBeGreaterThan(100);
     expect(col.STREETS.length).toBeGreaterThan(3000);
-    expect(col.CALENDARS.every((c) => c.OM && c.OM.length > 40 && c.pdf.startsWith("https://www.tco.re/"))).toBe(true);
-    expect(col.COMMUNES).toEqual(["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", "Les Trois-Bassins"]);
+    expect(col.CALENDARS.every((c) => c.OM && c.OM.length > 40 && c.pdf.startsWith(c.epci === "tco" ? "https://www.tco.re/" : "https://www.cirest.fr/"))).toBe(true);
+    expect(col.COMMUNES).toEqual(["Saint-Paul", "La Possession", "Saint-Leu", "Le Port", "Les Trois-Bassins", "Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes"]);
     expect(col.STREETS.every((s) => s.calendrier === -1 || col.CALENDARS[s.calendrier])).toBe(true);
   });
 
@@ -101,19 +102,24 @@ describe("the tool and the pages", () => {
     const r = body(collecteAnswer("12 rue Victoria, La Possession", NOW));
     expect(r.resume).toMatch(/^Rue Victoria, La Possession : ordures ménagères le lundi et le jeudi\u00a0; tri le mercredi, une semaine sur deux \(prochain : 28\/10\)/);
     expect(r.rues[0].calendrier_pdf).toMatch(/2026_POSS_01\.pdf$/);
-    expect(r.a_savoir).toBe("Seulement les 5 communes de l'Ouest (TCO) pour l'instant. Calendriers 2026 publiés par le TCO (data.tco.re), mis à jour le 06/08/2026. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO.");
-    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).resume).toBe("Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, ou essayez le nom du quartier.");
+    expect(r.a_savoir).toBe(`Seulement les communes de l'Ouest (TCO) et de l'Est (CIREST, sauf Sainte-Rose) pour l'instant. Calendriers 2026 publiés par le TCO (data.tco.re), mis à jour le 06/08/2026, et par la CIREST (cirest.fr), lus le ${col.UPDATED_CIREST.split("-").reverse().join("/")}. En cas d'alerte cyclonique, la collecte peut être suspendue : suivez les annonces du TCO et de la CIREST.`);
+    expect(r.mis_a_jour).toBe("06/08/2026");
+    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).resume).toBe("Rue non trouvée dans les calendriers du TCO et de la CIREST. Vérifiez l'orthographe, ou essayez le nom du quartier.");
     expect(body(collecteAnswer("Saint-Paul", NOW)).resume).toBe("Collecte des déchets : le jour de votre rue sur rundata.re/collecte/saint-paul.");
   });
 
   it("says who collects in a commune outside the TCO, never a street to spell again", () => {
     const sd = body(collecteAnswer("12 rue de Paris, Saint-Denis", NOW));
-    expect(sd.resume).toBe("Saint-Denis : la collecte des déchets y est assurée par la CINOR, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu). Voir le site de la CINOR.");
+    expect(sd.resume).toBe("Saint-Denis : la collecte des déchets y est assurée par la CINOR, dont les calendriers ne sont pas repris ici. rundata.re reprend ceux du TCO (Le Port, La Possession, Saint-Paul, Trois-Bassins, Saint-Leu) et de la CIREST (Saint-André, Bras-Panon, Saint-Benoît, Salazie, La Plaine-des-Palmistes). Voir le site de la CINOR.");
     expect(sd.intercommunalite).toEqual({ nom: "CINOR", site: "https://www.cinor.re/" });
     expect(body(collecteAnswer("Saint-Denis", NOW)).intercommunalite.nom).toBe("CINOR");
     expect(body(collecteAnswer("chemin Bœuf Mort, Le Tampon 97430", NOW)).resume).toMatch(/^Le Tampon : la collecte des déchets y est assurée par la CASUD,/);
     expect(body(collecteAnswer("L'Étang-Salé", NOW)).intercommunalite.nom).toBe("CIVIS");
-    // Every commune of the island once: the TCO's five, the others in one intercommunality each.
+    // Sainte-Rose: the CIREST's, without a calendar online; said so, with the CIREST's site, never a street to spell again.
+    const sr = body(collecteAnswer("rue des Bambous, Sainte-Rose", NOW));
+    expect(sr.resume).toBe("Sainte-Rose : le calendrier de collecte de ses rues n'est pas publié en ligne. rundata.re reprend ceux des autres communes de l'Est et ceux du TCO. Voir le site de la CIREST.");
+    expect(sr.intercommunalite.nom).toBe("CIREST");
+    // Every commune of the island once: the TCO's and the CIREST's read, the others in one intercommunality each.
     const others = col.AILLEURS.flatMap((e) => e.communes);
     expect(new Set([...others, ...col.COMMUNES]).size).toBe(24);
     expect(others.length + col.COMMUNES.length).toBe(24);
@@ -139,10 +145,10 @@ describe("the tool and the pages", () => {
     // West is read, in the tool's words (its a_savoir).
     expect(page).toContain(`hors=${horsTco}`);
     expect(page).toContain(JSON.stringify(ELSEWHERE[0]).slice(0, 40));
-    expect(page).toContain("Rue non trouvée dans les calendriers du TCO. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. Seulement les 5 communes de l'Ouest (TCO) pour l'instant.".replace(/'/g, "&#39;"));
+    expect(page).toContain("Rue non trouvée dans les calendriers du TCO et de la CIREST. Vérifiez l'orthographe, essayez le nom du quartier, ou cherchez dans la liste ci-dessous. Seulement les communes de l'Ouest (TCO) et de l'Est (CIREST, sauf Sainte-Rose) pour l'instant.".replace(/'/g, "&#39;"));
     // Said under the field too, before anything is typed.
-    expect(page).toContain(`aria-describedby="ouest"></label>\n  <p class="note" id="ouest">Seulement les 5 communes de l&#39;Ouest (TCO) pour l&#39;instant.</p>`);
-    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).a_savoir).toMatch(/^Seulement les 5 communes de l'Ouest \(TCO\) pour l'instant\. /);
+    expect(page).toContain(`aria-describedby="ouest"></label>\n  <p class="note" id="ouest">Seulement les communes de l&#39;Ouest (TCO) et de l&#39;Est (CIREST, sauf Sainte-Rose) pour l&#39;instant.</p>`);
+    expect(body(collecteAnswer("rue Inexistante du Test, Saint-Paul", NOW)).a_savoir).toMatch(/^Seulement les communes de l'Ouest \(TCO\) et de l'Est \(CIREST, sauf Sainte-Rose\) pour l'instant\. /);
   });
 
   it("is what annuaire_services_publics answers about the bins, not the déchèteries", async () => {
@@ -153,7 +159,7 @@ describe("the tool and the pages", () => {
 
   it("gives /collecte and a page per commune, every street of it, grouped by calendar", () => {
     const all = collectePage("https://rundata.re", NOW);
-    expect(all).toContain(`<title>Calendrier collecte TCO ${col.YEAR} : jours par rue · 974</title>`);
+    expect(all).toContain(`<title>Calendrier collecte TCO et CIREST ${col.YEAR} : jours par rue · 974</title>`);
     expect(all).toContain("<h1>Quel jour passent les poubelles ?</h1>");
     expect(communeOf("trois-bassins")).toBe("Les Trois-Bassins");
     const sp = collectePage("https://rundata.re", NOW, "Saint-Paul");
@@ -164,6 +170,45 @@ describe("the tool and the pages", () => {
     expect(sp).not.toContain("Rue Victoria");
     expect(sp).toContain('<a href="/decheteries">');
     expect(collectePage("https://rundata.re", NOW, "Le Port")).toContain("Les rues du Port");
+    // A commune of the East: the CIREST named, its calendars' PDFs; the TCO's never.
+    const sa = collectePage("https://rundata.re", NOW, "Saint-André");
+    expect(sa).toContain(`<p class="pill">Calendriers de la CIREST · ${col.YEAR}</p>`);
+    expect(sa).toContain(`d'après les calendriers ${col.YEAR} publiés par la CIREST.`.replaceAll("'", "&#39;"));
+    expect(sa).toContain('rel="noopener">calendrier SA03 de la CIREST (PDF)</a>');
+    expect(sa).toContain("<li>Allée Alamandas</li>");
+    expect(sa).not.toContain("du TCO (PDF)");
+    // Each of the East's five pages names the CIREST as its source; the West's old sentence is said nowhere.
+    for (const c of ["Saint-André", "Bras-Panon", "Saint-Benoît", "Salazie", "La Plaine-des-Palmistes"]) {
+      const p = collectePage("https://rundata.re", NOW, c);
+      expect(p, c).toContain(`<p class="pill">Calendriers de la CIREST · ${col.YEAR}</p>`);
+      expect(p, c).toContain(`publiés par la CIREST.`);
+      expect(p, c).not.toContain("Seulement les 5 communes");
+    }
+    expect(collectePage("https://rundata.re", NOW)).not.toContain("Seulement les 5 communes");
+    expect(sp).toMatch(/<p class="pill">Calendriers du (<abbr [^>]+>)?TCO(<\/abbr>)? · 2026<\/p>/);
+  });
+
+  it("reads the CIREST's calendars: a street of the East, its days, its PDF and the CIREST's date", () => {
+    // Both publish the same year: one YEAR for the page and the tool.
+    expect(est.annee).toBe(col.YEAR);
+    const r = body(collecteAnswer("allée Alamandas, Saint-André", NOW));
+    expect(r.resume).toBe("Allée Alamandas, Saint-André : ordures ménagères le mercredi\u00a0; tri le lundi, une semaine sur deux (prochain : 2/11)\u00a0; déchets verts les mercredis 4/11, 2/12\u00a0; encombrants le vendredi 30/10 et le mercredi 30/12.");
+    expect(r.rues[0].calendrier_pdf).toBe("https://www.cirest.fr/wp-content/themes/econature-child/calendriers_collecte/saintandre/SA03.pdf");
+    expect(r.mis_a_jour).toBe(col.UPDATED_CIREST.split("-").reverse().join("/"));
+    expect(r.sources.map((s: { attribution: string }) => s.attribution)).toEqual(["CIREST"]);
+    // Every calendar of the East holds its whole year: each week's household waste, the bulky waste some days.
+    const east = col.CALENDARS.filter((c) => c.epci === "cirest");
+    expect(east).toHaveLength(45);
+    for (const c of east) {
+      expect(c.OM!.length).toBeGreaterThanOrEqual(52);
+      expect(c.EN!.length).toBeGreaterThan(0);
+    }
+    expect(col.STREETS.filter((s) => s.epci === "cirest").length).toBeGreaterThan(1500);
+    expect(col.STREETS.some((s) => s.commune === "Sainte-Rose")).toBe(false);
+    // The « Œ » the CIREST's page gives in Latin-9 (« ¼ » read as UTF-8) put back: « œillets » finds its street.
+    expect(col.STREETS.filter((s) => /[¼½]/.test(s.nom)).map((s) => s.nom)).toEqual([]);
+    for (const q of ["oeillets", "œillets", "Chemin Œillets"]) expect(col.findStreets(q, "Salazie").map((s) => s.nom), q).toContain("Chemin Œillets (des)");
+    expect(col.findStreets("allée soeurs", "Saint-André").map((s) => s.nom)).toContain("Allée Sœurs");
   });
 
   it("tells apart, under their heading, the groups of a commune that share it: the collection that parts them", () => {
@@ -198,7 +243,7 @@ describe("the tool and the pages", () => {
     }
     for (const commune of [undefined, "Saint-Paul"]) {
       const page = collectePage("https://rundata.re", new Date("2027-01-01T08:00:00Z"), commune);
-      expect(page).toContain(`<p class="card">${col.notYet()}</p>`);
+      expect(page).toContain(`<p class="card">${col.notYet(col.epciDe(commune))}</p>`);
       expect(page).not.toContain('class="card groupe"');
     }
   });
@@ -207,11 +252,19 @@ describe("the tool and the pages", () => {
     const now = new Date("2026-11-24T08:00:00Z");
     for (const commune of [undefined, "Saint-Paul"]) {
       const page = collectePage("https://rundata.re", now, commune);
-      expect(page).toContain(`<p class="card">${col.untilYearEnd().replaceAll("'", "&#39;")}</p>`);
-      expect(page).not.toContain(col.notYet());
+      expect(page).toContain(`<p class="card">${col.untilYearEnd(col.epciDe(commune)).replaceAll("'", "&#39;")}</p>`);
+      expect(page).not.toContain(col.notYet(col.epciDe(commune)));
       expect(page).toContain('class="card groupe"');
     }
     expect(col.untilYearEnd()).toBe("Jours de collecte valables jusqu'au 31 décembre 2026 : les calendriers 2027 du TCO ne sont pas encore publiés.");
+    // On /collecte, which lists the East's streets too, both named; on a commune's page, who collects there.
+    expect(collectePage("https://rundata.re", now)).toContain("les calendriers 2027 du TCO et de la CIREST ne sont pas encore publiés.");
+    expect(collectePage("https://rundata.re", now, "Salazie")).toContain("les calendriers 2027 de la CIREST ne sont pas encore publiés.");
+    const jan = new Date("2027-01-01T08:00:00Z");
+    expect(collectePage("https://rundata.re", jan)).toContain("Les calendriers 2027 du TCO et de la CIREST ne sont pas encore publiés");
+    expect(collectePage("https://rundata.re", jan, "Saint-Benoît")).toContain("Les calendriers 2027 de la CIREST ne sont pas encore publiés");
+    expect(body(collecteAnswer("rue Victoria", jan)).resume).toMatch(/^Les calendriers 2027 du TCO et de la CIREST /);
+    expect(body(collecteAnswer("rue Victoria, La Possession", jan)).resume).toMatch(/^Les calendriers 2027 du TCO ne /);
     const r = body(collecteAnswer("rue Victoria, La Possession", now));
     expect(JSON.stringify(r)).toContain(col.untilYearEnd());
     expect(JSON.stringify(r)).not.toContain("ne peut pas encore donner");

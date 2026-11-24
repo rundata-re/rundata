@@ -17,11 +17,11 @@ async function sitemap(): Promise<string[]> {
 const RETIREES = ["/aujourdhui/cilaos", "/enfants/les-avirons", "/communes/petite-ile/elections", "/bus/arret/saint-pierre/pierrefonds", "/bus/arret/les-avirons/gare-des-avirons", "/meteo/les-avirons"];
 
 describe("the sitemap from 24/11/2026, the validated list of that day", () => {
-  it("holds the 232 pages kept, but for the one not served here, and nothing else", async () => {
+  it("holds the 237 pages kept, but for the one not served here, and nothing else", async () => {
     const urls = await sitemap();
     // 231 kept, less /feux with no FIRMS key here. 893 before. 230 from 24/11/2026: a deviation the ONF took off its
-    // map, its page no longer a trail's state. 231 the same day: Le Tampon's water cuts, its notices read; 232: Saint-Joseph's.
-    expect(NOMBRE).toBe(232);
+    // map, its page no longer a trail's state. 231 the same day: Le Tampon's water cuts, its notices read; 232: Saint-Joseph's; 237: the waste collection of the CIREST's five communes with calendars.
+    expect(NOMBRE).toBe(237);
     expect(urls).not.toContain("/sentiers/sentier-du-trou-de-fer-deviation-par-rf-fleurs-jaunes");
     expect(urls).toHaveLength(NOMBRE - 1);
     expect(urls).not.toContain("/feux");

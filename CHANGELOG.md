@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Calendrier de collecte des déchets rue par rue aussi dans l'Est : Saint-André, Bras-Panon, Saint-Benoît, Salazie et La Plaine-des-Palmistes.
 - Carte de la qualité de l'eau des plages : moins de traits passent sous le rond d'une autre plage.
 - Coupures d'eau : les avis publiés par la ville de Saint-Joseph et par la commune des Avirons sont lus, avec le lien de chaque avis.
 - Journée d'une commune : la température de la mer mesurée à la bouée de Saint-Pierre, avec son heure, avant celle du satellite.

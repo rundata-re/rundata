@@ -154,7 +154,9 @@ describe("the server's instructions", () => {
     // 41 835 the same day with the sea's past in temperature_mer (two arguments, date and historique, and one sentence):
     // no tool answered « la mer était à combien le 15/03/2019 ? », which /mer/historique shows.
     // 41 897 the same day with the polling stations in elections: « où voter » in its example and its argument scrutin.
-    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_897);
+    // 41 952 the same day with the CIREST's calendars in annuaire_services_publics (« dans l'Ouest (TCO) et l'Est (CIREST,
+    // sauf Sainte-Rose) »): the East's streets answered, Sainte-Rose said apart.
+    expect(JSON.stringify(tools).length).toBeLessThanOrEqual(41_952);
     for (const t of tools) expect(t.description.length, t.name).toBeLessThanOrEqual(2_000);
   });
 

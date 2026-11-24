@@ -87,9 +87,9 @@ describe("the pages people find by a question, titled by its answer", () => {
     expect(sp.meta).toBe(`Calendrier ${y} de collecte des déchets à Saint-Paul (974) : ordures ménagères, tri et déchets verts, le jour de passage de votre rue, d'après le TCO.`);
     expect(sp.h1).toBe("Quel jour passent les poubelles à Saint-Paul ?");
     const all = of(collectePage(O, NOW));
-    expect(all.title).toBe(`Calendrier collecte TCO ${y} : jours par rue · 974`);
+    expect(all.title).toBe(`Calendrier collecte TCO et CIREST ${y} : jours par rue · 974`);
     expect(all.h1).toBe("Quel jour passent les poubelles ?");
-    expect(all.meta).toBe("Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue à Saint-Paul, La Possession, Saint-Leu, Le Port et Trois-Bassins (974), d'après le TCO.");
+    expect(all.meta).toBe("Ordures ménagères, tri, déchets verts : le jour de collecte rue par rue dans l'Ouest et l'Est (974), d'après le TCO et la CIREST.");
     fits(all, "/collecte");
     // Every commune's fits, a long name without « jours par rue ».
     for (const c of collecte.COMMUNES) {

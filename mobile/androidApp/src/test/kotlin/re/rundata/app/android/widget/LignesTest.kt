@@ -151,9 +151,13 @@ class LignesTest {
         kotlin.test.assertEquals("mer, vue par satellite", libelleMer(null))
     }
 
-    /** Une bouée mesure près de la commune : le widget dit la bouée et l'heure de sa mesure, pas le satellite. */
+    /**
+     * Une bouée mesure près de la commune : le widget dit la bouée et l'heure de sa mesure, pas le satellite. Sans son nom :
+     * « mer, bouée Saint-Pierre (large) à 22:50 » était coupé dans le 4×1 (émulateur, 24/11) ; le nom est sur la page /mer.
+     */
     @Test
     fun laMerDitLaBoueeQuandElleMesure() {
-        kotlin.test.assertEquals("mer, bouée Saint-Pierre à 09:40", libelleMer(null, bouee = "Saint-Pierre", heure = "09:40"))
+        kotlin.test.assertEquals("mer, bouée à 22:50", libelleMer(null, bouee = "Saint-Pierre (large)", heure = "22:50"))
+        kotlin.test.assertTrue(libelleMer(null, bouee = "Saint-Pierre (large)", heure = "22:50").length <= "mer, vue par satellite".length)
     }
 }

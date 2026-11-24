@@ -56,6 +56,7 @@ import {
   windText,
   withTemp,
 } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 /** The last copy of each category page, as the home page found it; null or missing when there is none yet. */
 export interface HomeLive {
@@ -227,7 +228,7 @@ function champ(): string {
     `<span class="search">${icon("search")}<input id="aller-q" type="search" placeholder="${esc(CHAMP.exemple)}" autocomplete="off" enterkeyhint="go"></span>` +
     `<ul class="chips" id="aller-r" hidden></ul>` +
     `<p class="note" id="aller-rien" hidden>${esc(CHAMP.rienAvant)}<span id="aller-s"></span>${esc(CHAMP.rienApres)}<a href="/mcp">${esc(CHAMP.rienLien)}</a>${esc(CHAMP.rienFin)}</p>` +
-    `</section><script>${champScript(enLigne())}</script>`;
+    `</section>${script(champScript(enLigne()))}`;
 }
 
 /**

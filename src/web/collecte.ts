@@ -10,6 +10,7 @@ import type { Alerte } from "./data.js";
 import { connectorCta, crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { esc } from "./map.js";
 import { folded, layout } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 // The texts of the pages, worded by marketing.
 // The titles and a commune's description say the year of the calendars read (vie/collecte.ts YEAR), never the year of
@@ -185,6 +186,6 @@ export function collectePage(origin: string, now: Date, commune?: string, alerte
 <section><p>${commune ? `Les autres communes : ${others}` : `Par commune : ${others}`}</p>
 <p><a href="/decheteries">Les déchèteries de l'Ouest et leurs bennes en direct →</a></p></section>
 ${connectorCta("annuaire_services_publics", "les jours de collecte")}
-<script>${SCRIPT}</script>`;
+${script(SCRIPT)}`;
   return layout(origin, { title, description, path, jsonld: [crumbs(origin, commune ? `Collecte ${a(commune)}` : "Collecte des déchets", path, commune ? COLLECTE : undefined), webPage(origin, path, title, description, null)], alerte }, band, body);
 }

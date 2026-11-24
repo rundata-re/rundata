@@ -7,6 +7,7 @@ import type { Alerte } from "./data.js";
 import { crumbBar, crumbs, webPage } from "./domains.js";
 import { layout } from "./pages.js";
 import { KIND_OF, SECTIONS } from "./pwa.js";
+import { script } from "./scripts-declares.js";
 
 export const PATH = "/application";
 const TITLE = "rundata.re sur l'écran d'accueil, comme une application";
@@ -45,6 +46,6 @@ export function applicationPage(origin: string, alerte?: Alerte): string {
   <p id="fait">Déjà fait\u00a0? L'icône rundata.re ouvre le site comme une application. Pour la retirer, faites un appui long sur l'icône, puis supprimez-la comme une autre application.</p>
   <p id="deja" hidden>rundata.re est déjà sur votre écran d'accueil.</p>
 </section>
-<script>${SCRIPT}</script>`;
+${script(SCRIPT)}`;
   return layout(origin, { title: TITLE, description: DESCRIPTION, path: PATH, jsonld: [crumbs(origin, NAME, PATH), webPage(origin, PATH, TITLE, DESCRIPTION, null)], alerte, sansInstallation: true }, band, body);
 }

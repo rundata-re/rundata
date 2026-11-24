@@ -9,6 +9,7 @@ import routes from "./routes.json" with { type: "json" };
 import { ACCUEILS } from "../providers/accueils-medias.js";
 import { HIKES_REACH, MAX_ZOOM, zoomControls } from "./carte-zoom.js";
 import { nombre } from "../tools/format.js";
+import { script } from "./scripts-declares.js";
 
 const [LON0, LAT0, LON1, LAT1] = island.bbox;
 export const W = island.w;
@@ -730,7 +731,7 @@ export function ownIds(parts: string[]): string[] {
  * Without a script, it is not shown: what it shows must be in the page besides (a list).
  */
 export function laterMap(svg: string): string {
-  return `<template class="carte">${svg}</template><script>${LATER_SCRIPT}</script>`;
+  return `<template class="carte">${svg}</template>${script(LATER_SCRIPT)}`;
 }
 
 // Once the page is read: the scripts of the points and of the names, at its end, listen before the map comes.
@@ -995,7 +996,7 @@ export function hikesMap(lines: HikeLine[], label: string, cadre?: HikeLine[]): 
   const closed = lines.filter((l) => l.genre === "sentier" && l.etat === "fermé");
   const svg = islandMap({ label, overlay: `<g class="lines">${[...under, ...routes, ...closed].map(draw).join("")}</g>`, fond: "h" });
   const box = cadre?.length ? frameOf(cadre.map((l) => l.d)) : undefined;
-  return zoomIsland(svg, "h", { id: "hmap", cls: "hikes", box }) + `<script>${HIKES_REACH}</script>`;
+  return zoomIsland(svg, "h", { id: "hmap", cls: "hikes", box }) + `${script(HIKES_REACH)}`;
 }
 
 /** How much wider than the lines a frame is: a fifth of their width on each side. */
@@ -1131,7 +1132,7 @@ function fondChoice(key: string): string {
   // moves nothing when it shows.
   return `<p class="fd-w" id="fd-w-${key}" role="status"></p><div class="tabs fonds" role="radiogroup" aria-label="Fond de la carte" data-fd="${key}" hidden>` +
     FONDS.map((f, i) => `<input type="radio" name="fd-${key}" id="fd-${key}-${f.id}" value="${f.id}"${i ? "" : " checked"}><label for="fd-${key}-${f.id}">${f.nom}</label>`).join("") +
-    `</div><script>${FONDS_SCRIPT}</script>`;
+    `</div>${script(FONDS_SCRIPT)}`;
 }
 
 // The characters that could end a <script> or a line of JavaScript inside a string written into one, each as \uXXXX.

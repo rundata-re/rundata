@@ -9,6 +9,7 @@ import * as mf from "../providers/vigilance.js";
 import { localTime } from "../geo.js";
 import { esc } from "./map.js";
 import { officielHtml } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 /** « le 27/10 à 16:00 ». */
 const leA = (iso: string) => {
@@ -63,7 +64,7 @@ export function renduPage(empreinte: string): string {
 <html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><title>Bulletin de suivi vigilance à La Réunion</title>
 <style>html,body{margin:0;background:#fff}canvas{display:block}</style></head>
 <body><canvas id="page1"></canvas>
-<script type="module">
+${script(`
 import { getDocument, GlobalWorkerOptions } from "${PDFJS}/pdf.min.mjs";
 GlobalWorkerOptions.workerSrc = "${PDFJS}/pdf.worker.min.mjs";
 const c = document.getElementById("page1");
@@ -78,7 +79,7 @@ try {
 } catch (e) {
   document.body.dataset.echec = String(e);
 }
-</script></body></html>`;
+`, "module")}</body></html>`;
 }
 
 /** pdf.js 4.10.38 (Apache 2.0), its two files only: public/pdfjs/, loaded by the page above alone. */

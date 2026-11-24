@@ -82,6 +82,7 @@ import { bathRead, keptBath, keptTap, silentBath, silentTap, tapRead, tooOld } f
 import { aller, MOTS as ALLER_MOTS, permis, porte, type Porte, retire, SHEET as ALLER } from "./aller.js";
 import { mentionSports, noteLa1ere, noteReunionFr } from "../tools/non-repris.js";
 import { journeyForm, nowAsked } from "./itineraire.js";
+import { script } from "./scripts-declares.js";
 
 const FOURNAISE = { lon: 55.7083, lat: -21.2444, name: "Piton de la Fournaise" };
 // What a search engine shows of a title.
@@ -2321,7 +2322,7 @@ ${ours}
 ${why}
 ${crash}
 ${connectorCta("transports", "les bus en direct")}
-<script>${WAZE_SCRIPT}</script>`;
+${script(WAZE_SCRIPT)}`;
   return layout(origin, { title, description, path: "/trafic", jsonld: [crumbs(origin, "Circulation", "/trafic"), webPage(origin, "/trafic", title, description, data)], alerte }, band, body);
 }
 
@@ -2568,7 +2569,7 @@ export function randonneesPage(origin: string, data: Cached<RandonneesAnswer> | 
 ${trails}
 ${safety}
 ${connectorCta("sentiers_randonnee", "la randonnée")}
-<script>${FILTER_SCRIPT}</script>`;
+${script(FILTER_SCRIPT)}`;
   return layout(origin, { title, description, path: "/randonnees", hook: randoHook(d?.carte_mise_a_jour), jsonld: [crumbs(origin, "Randonnée", "/randonnees"), webPage(origin, "/randonnees", title, description, data), ...list], alerte }, band, etatOnf(body));
 }
 
@@ -3266,7 +3267,7 @@ export function daePage(origin: string, data: Cached<DaeAnswer> | null, now = ne
   <p class="note">Source : Géo'DAE, base nationale des défibrillateurs (ministère chargé de la santé), Licence Ouverte 2.0.</p>
 </section>
 ${connectorCta("defibrillateurs", "les défibrillateurs")}
-<script>${AUTOUR_SCRIPT}</script>${ALLER}`;
+${script(AUTOUR_SCRIPT)}${ALLER}`;
 
   return layout(origin, { title, description, path: "/defibrillateurs", jsonld: [crumbs(origin, "Défibrillateurs", "/defibrillateurs"), webPage(origin, "/defibrillateurs", title, description, data)], alerte }, band, body);
 }
@@ -3505,7 +3506,7 @@ function basinFigure(d: CyclonesAnswer | undefined, active: number): string {
     ? `Positions\u00a0: Météo-France, CMRS de La Réunion (bulletins WTIO31 FMEE), avec son accord écrit${ACCORD_TRACE ? ` du ${ACCORD_TRACE.split("-").reverse().join("/")}` : ""}, dernière position le ${avisLe(parcours[0].heure)} (heure de La Réunion). Cette carte ne montre aucune prévision. `
     : "Cette carte ne montre aucun système, ni sa position ni sa trajectoire. ";
   return `<figure class="card bassin${active ? "" : " mapcard"}">${basinMap(traces, parcours)}<figcaption>${now}${path}<details class="note"><summary>Sources</summary><p>En pointillé, la zone suivie par le CMRS de La Réunion (Météo-France), de l'équateur à 40°\u00a0S et des côtes de l'Afrique à 90°\u00a0E (<a href="${ZONE_SOURCE}" rel="noopener">CMRS, présentation à l'OMM, 2017</a>). ` +
-    `${sources}Côtes\u00a0: Natural Earth (domaine public).</p></details></figcaption></figure>${traces ? `<script>${TRACES_SCRIPT}</script>` : ""}`;
+    `${sources}Côtes\u00a0: Natural Earth (domaine public).</p></details></figcaption></figure>${traces ? `${script(TRACES_SCRIPT)}` : ""}`;
 }
 
 // The summary ends with Météo-France's address (tools/cyclones.ts), written out for the connector, which has no links: on
@@ -3700,7 +3701,7 @@ export function historiquePage(origin: string, data: Cached<HistoriqueAnswer> | 
   ${d ? `<p>${esc(measured)}</p>` : ""}</div>
   ${table}
 </section>
-${charts ? `${charts}<script>${GRAPHES_SCRIPT}</script>` : ""}
+${charts ? `${charts}${script(GRAPHES_SCRIPT)}` : ""}
 ${d?.heures ? hourlySection(d.heures) : ""}
 <section aria-labelledby="h-archive">
   <div class="sec-h"><p class="eyebrow">Toute l'archive</p><h2 id="h-archive">N'importe quel jour depuis 1900</h2>
@@ -4021,7 +4022,7 @@ export function agendaPage(origin: string, data: Cached<AgendaAnswer> | null, no
       ? `${filter}<div id="jours"><ul class="zones">${[...days].map(([day, j]) =>
           `<li class="card">${folded(foldDays,
             `<h3>${jourMois(longDay(day).replace(/^\p{L}/u, (c) => c.toUpperCase()))}${foldDays ? "\u00a0" : " "}<span class="note">${foldDays ? "· " : ""}${jourCompte(j)}</span></h3>`,
-            `<ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}${longsCard(longs, g, LONGS_DEUX_SEMAINES)}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}<script>${GENRE_SCRIPT}</script>`
+            `<ul class="rows eau" data-sortie>${j.evenements.map((x) => agendaRow({ ...x.r, quand: x.o.quand }, g)).join("")}</ul>`, day <= tomorrow)}</li>`).join("")}${longsCard(longs, g, LONGS_DEUX_SEMAINES)}</ul></div>${d.autres ? `<p class="note">${esc(d.autres)} Demandez-les à votre IA.</p>` : ""}${script(GENRE_SCRIPT)}`
       : `<p class="card">Aucun événement trouvé dans les agendas lus pour les deux semaines qui viennent.</p>`;
 
   const title = "Que faire à La Réunion (974) ? Concerts, fêtes, sorties";
@@ -4186,7 +4187,7 @@ ${pref}
   <p class="note">${noteLa1ere("actualites")}</p>
 </section>
 ${connectorCta("actualites", "l'actualité de l'île")}
-<script>${NEWS_SCRIPT}</script>`;
+${script(NEWS_SCRIPT)}`;
 
   return layout(origin, { title, description, path: "/actualites", jsonld: [crumbs(origin, "Actualités", "/actualites"), webPage(origin, "/actualites", title, description, data)], alerte, iaAside: true }, band, body);
 }

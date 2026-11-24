@@ -16,6 +16,7 @@ import { connectorCta, crumbBar, crumbs, lienNom, soulignesCoupables, sourcesNot
 import type { Alerte } from "./data.js";
 import { esc } from "./map.js";
 import { folded, hm, layout, type Live, readAt, leAt } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 export const PATH = "/emploi";
 export const NOM = "Emploi public";
@@ -211,7 +212,7 @@ export function emploiPage(origin: string, data: Cached<EmploiAnswer> | null, no
 </section>
 ${cpfSection(d?.cpf, now)}
 ${connectorCta("emploi", "les offres d'emploi public")}
-<script>${SCRIPT}</script>`;
+${script(SCRIPT)}`;
 
   return layout(origin, { title, description, path: PATH, jsonld: [crumbs(origin, NOM, PATH), webPage(origin, PATH, title, description, data)], alerte }, band, body);
 }

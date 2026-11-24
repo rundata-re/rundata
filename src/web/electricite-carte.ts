@@ -19,6 +19,7 @@ import type { Journee } from "./data.js";
 import { esc, H, inScript, islandMap, project, W } from "./map.js";
 import { slugify } from "./places.js";
 import { VITESSE_JS, vitesseBouton } from "./vitesse.js";
+import { script } from "./scripts-declares.js";
 
 interface Filiere { nom: string; mw: number; installations: number }
 interface Commune { commune: string; filieres: Filiere[] }
@@ -310,7 +311,7 @@ export function productionChart(j: Journee): string {
   const fkeys = mix ? `<span class="mlg ech-kf" hidden>${LEGENDE.map((i) =>
     `<span><svg viewBox="-20 -20 40 40" aria-hidden="true"><rect class="${MIX[i][1]}" x="-15" y="-15" width="30" height="30" rx="4"/></svg>${MIX[i][0]}</span>`).join("")}</span>` : "";
   return `<figure class="card ecard" data-ech="${data}" data-h="${HISTORIQUE_PATH}">${durees}${vue}<div class="ech-g"><div class="ech-p">${svg}<span class="ech-ax" aria-hidden="true">${ys}${xs}</span></div>` +
-    `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}${fkeys}<span class="mls ech-src">${source}</span><span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure><script>${CHART_SCRIPT}</script>`;
+    `<figcaption class="note"><p class="ech-m" aria-live="polite">${esc(momentText(tl, Math.round(last[3]), Math.round(last[1]), Math.round(last[2])))}</p>${bar}${keys}${fkeys}<span class="mls ech-src">${source}</span><span class="mls ech-n" hidden>${archive}</span></figcaption></div></figure>${script(CHART_SCRIPT)}`;
 }
 
 /**

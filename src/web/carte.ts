@@ -36,6 +36,7 @@ import { CURSEUR_PAGE, curseurBar, curseurConf } from "./carte-curseur.js";
 import { pleinEcran } from "./plein-ecran.js";
 import * as velo from "../vie/velo.js";
 import * as vitesses from "../vie/vitesses.js";
+import { script } from "./scripts-declares.js";
 
 export const PATH = "/carte";
 
@@ -304,7 +305,7 @@ function corps(): string {
   <details class="kch" open hidden><summary>${esc(MOTS.couches)} (<span class="kcn">0</span>)</summary><div class="kths">${choix()}</div></details>
 </section>
 <section aria-labelledby="h-aff" class="kaff" hidden><h2 id="h-aff">${esc(MOTS.affichees)}</h2><p class="note kvide">${esc(MOTS.aucune)}</p>${COUCHES.map(bloc).join("")}</section>
-<script type="application/json" id="k-conf">${inScript(conf())}</script><script>${CARTE_SCRIPT}</script>
+<script type="application/json" id="k-conf">${inScript(conf())}</script>${script(CARTE_SCRIPT)}
 ${pleinEcran({ boite: ".kcarte", carte: ".kmapc", barre: '.kzoom[data-fd="k"]', panneau: [".kcur", ".kvues", '.fonds[data-fd="k"]', ".kch"], legende: ".kmapc>figcaption" })}`;
 }
 

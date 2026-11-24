@@ -17,6 +17,7 @@ import { crumbBar, crumbs, lienNom, webPage } from "./domains.js";
 import { MAX_ZOOM } from "./carte-zoom.js";
 import { esc, FOND_ZOOM, islandMap, project, zoomIsland } from "./map.js";
 import { credits, layout, type Live } from "./pages.js";
+import { script } from "./scripts-declares.js";
 
 export const PATH = "/antennes";
 
@@ -195,7 +196,7 @@ function map(): string {
   const compte = `<span class="lg">${esc(phrase(all.filter((l) => !l[0]).length, all.filter((l) => l[0]).length, 0, []))}</span>`;
   return `<figure class="card mapcard antmap">${filtres}` +
     zoomIsland(islandMap({ overlay: `<g class="ants">${supports}${emetteurs}</g>`, peaks: true, fond: "a", label: "Carte de La Réunion (974) : les supports d'antennes déclarés à l'ANFR, filtrés par opérateur et par type" }), "a", { id: "amap", mostFd: MAX_ZOOM * FOND_ZOOM / 2 }) +
-    `<script>${TAILLE_SCRIPT}</script><figcaption class="note">${legende}${formes}${compte}</figcaption></figure><script>${FILTRES_SCRIPT}</script>`;
+    `${script(TAILLE_SCRIPT)}<figcaption class="note">${legende}${formes}${compte}</figcaption></figure>${script(FILTRES_SCRIPT)}`;
 }
 
 function table(): string {

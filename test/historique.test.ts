@@ -8,7 +8,7 @@ import { STATIONS_974, VEILLE, type Veille } from "../src/providers/meteofrance-
 import * as meteorOi from "../src/providers/meteor-oi.js";
 import { LICENCES } from "../src/providers/autorisations.js";
 import { historiqueMeteo, nothing, parseDate, period, TODAY } from "../src/tools/historique.js";
-import { hourlyLead } from "../src/web/historique.js";
+import { hourlyLead, pageNote } from "../src/web/historique.js";
 import { resolvePlace } from "../src/places/resolve.js";
 import { pluieDabord } from "../src/tools/representativeness.js";
 
@@ -156,6 +156,16 @@ describe("historique_meteo, hour by hour", () => {
     expect(a.resume).toContain(TODAY);
     expect(a.resume).not.toMatch(/Aucune station|lendemain/);
     expect(a.a_savoir[0]).toContain("Pour aujourd'hui depuis minuit (température la plus haute et la plus basse, pluie), voir meteo_actuelle");
+  });
+
+  it("says the archive's notes without the assistant's words", async () => {
+    // 24/11/2026, /historique online: « …voir meteo_actuelle ; pour les jours à venir, prevision_meteo » in the list of notes.
+    both();
+    const a = json(await historiqueMeteo(new Cache(), "Saint-Pierre", { du: "2026-10-20" }, NOW));
+    const notes = a.a_savoir.map(pageNote).join("\n");
+    expect(notes).not.toMatch(/meteo_actuelle|prevision_meteo|hier_provisoire|detail/);
+    expect(notes).toContain('Pour aujourd&#39;hui depuis minuit (température la plus haute et la plus basse, pluie), et pour les jours à venir, voir <a href="/meteo">la page Météo</a>.');
+    expect(notes).toContain("hier est donné à titre provisoire");
   });
 
   it("names the rainy hours, each value being the hour that ends then", async () => {

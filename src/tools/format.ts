@@ -10,6 +10,12 @@ import type { Reading, SourceInfo } from "../types.js";
  * A time of day, in minutes since midnight, as every answer writes it: « 19:12 » with its minutes, « 18\u00a0h » on the
  * hour (« 24\u00a0h » for the end of a day). Never « 18h », nor « 19 h 12 ».
  */
+/**
+ * A wait, as every list of departures says it (tools/transports.ts, the stop's page): « dans 4 min », past an hour
+ * « dans 1 h 19 », « dans 2 h » (24/11/2026: « dans 79 min » was said beside « dans 1 h 34 »).
+ */
+export const delai = (min: number) => (min < 60 ? `dans ${fr(min)} min` : `dans ${Math.floor(min / 60)} h${min % 60 ? ` ${String(min % 60).padStart(2, "0")}` : ""}`);
+
 export function heure(minutes: number): string {
   const [h, m] = [Math.floor(minutes / 60), minutes % 60];
   return m ? `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}` : `${h}\u00a0h`;

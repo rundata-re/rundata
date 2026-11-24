@@ -49,6 +49,10 @@ ANNUAIRE = (
 )
 GEOCODAGE_CSV = "https://data.geopf.fr/geocodage/search/csv"
 OVERPASS = "https://overpass-api.de/api/interpreter"
+# A second public instance, asked once and only when the first still fails after all its waits (24/11/2026: overpass-api.de
+# answered 502 through the whole 7.5 minutes). Private.coffee (formerly overpass.kumi.systems) states no rate limit and
+# asks for a User-Agent naming the project and a contact, which user-agent.txt gives; same query, same licence (ODbL).
+OVERPASS_REPLI = "https://overpass.private.coffee/api/interpreter"
 # One Overpass request for both: the town halls, and the bus stops (a stop drawn as a node, or a platform for buses).
 OSM_LIEUX = (
     '[out:json][timeout:90][bbox:-21.40,55.20,-20.86,55.84];'
@@ -75,9 +79,9 @@ def km(lon1, lat1, lon2, lat2):
 ATTENTES = (30, 60, 120, 240)
 
 
-def get(url, data=None, headers=None):
-    """One request; asked again after each of ATTENTES while the server says it is busy (Overpass often does)."""
-    for attente in (*ATTENTES, None):
+def get(url, data=None, headers=None, attentes=ATTENTES):
+    """One request; asked again after each of attentes while the server says it is busy (Overpass often does)."""
+    for attente in (*attentes, None):
         req = urllib.request.Request(url, data=data, headers={"User-Agent": UA, **(headers or {})})
         try:
             with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
@@ -205,12 +209,25 @@ _OSM_ECHEC = []
 
 
 def lieux_osm():
-    """OpenStreetMap's town halls and bus stops of the island, read once for both steps; a failure too, said by both."""
+    """OpenStreetMap's town halls and bus stops of the island, read once for both steps (from the second instance when the
+    first fails); a failure too, said by both."""
     if _OSM_ECHEC:
         raise _OSM_ECHEC[0]
     if not _OSM:
+        data = urllib.parse.urlencode({"data": OSM_LIEUX}).encode()
         try:
-            _OSM.extend(json.loads(get(OVERPASS, urllib.parse.urlencode({"data": OSM_LIEUX}).encode()))["elements"])
+            try:
+                reponse = get(OVERPASS, data)
+            except Exception as e:
+                # The second instance, one request without waits: a failure there too is the first one's, said by both.
+                print(f"overpass-api.de n'a pas répondu ({type(e).__name__}: {e}), une requête à "
+                      f"{urllib.parse.urlsplit(OVERPASS_REPLI).netloc}", flush=True)
+                try:
+                    reponse = get(OVERPASS_REPLI, data, attentes=())
+                except Exception as e2:
+                    print(f"{urllib.parse.urlsplit(OVERPASS_REPLI).netloc} n'a pas répondu non plus ({type(e2).__name__}: {e2})", flush=True)
+                    raise e from None
+            _OSM.extend(json.loads(reponse)["elements"])
         except Exception as e:
             _OSM_ECHEC.append(e)
             raise

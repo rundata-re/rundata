@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { configure, IDS, parseLive, refresh, refreshDue, STATIONS, timeOf, type Live } from "../src/providers/irve.js";
-import { bornesRecharge, etatDe, lastChange, since } from "../src/tools/bornes.js";
+import { bornesRecharge, etatDe, lastChange, pointState, since } from "../src/tools/bornes.js";
 import { dataDate } from "../src/tools/fraicheur.js";
 import { localTime } from "../src/geo.js";
 import { bornesLive, bornesPage } from "../src/web/domains.js";
@@ -15,6 +15,14 @@ const CSV = readFileSync(new URL("./fixtures/irve_dynamique.csv", import.meta.ur
 const NOW = new Date("2026-10-24T00:40:00Z");
 const LIVE = parseLive(CSV, IDS, new Date("2026-10-24T00:37:00Z"));
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
+
+// The counts come from the bundled list and the fixture, never written out: the list is rebuilt from the national base
+// (scripts/build-irve.py), and points come and go from one rebuild to the next.
+const POINTS = STATIONS.flatMap((s) => s.points.map((p) => ({ ...p, commune: s.commune })));
+const LUS = Object.keys(LIVE.points).length;
+const libre = (id: string) => LIVE.points[id]?.[0] === "en_service" && LIVE.points[id]?.[1] === "libre";
+const LIBRES = POINTS.filter((p) => libre(p.id)).length;
+const ETAT = localTime(new Date(lastChange(LIVE)!)).slice(6);
 
 function cache(live: Live | null) {
   configure(async () => live);
@@ -34,7 +42,8 @@ describe("bornes de recharge", () => {
   });
 
   it("keeps La Réunion's points only, their times in UTC", () => {
-    expect(Object.keys(LIVE.points)).toHaveLength(407);
+    // Each bundled point the fixture lists, and only those: most of them.
+    expect(LUS).toBeGreaterThan(POINTS.length * 0.9);
     expect(Object.keys(LIVE.points).every((id) => IDS.has(id))).toBe(true);
     // Freshmile writes Paris time without its offset: UTC+2 until the last Sunday of October, then UTC+1.
     expect(timeOf("2026-10-24 02:12:04")).toBe("2026-10-24T00:12:04.000Z");
@@ -49,7 +58,7 @@ describe("bornes de recharge", () => {
     let written: Live | undefined;
     const write = async (live: Live) => void (written = live);
     vi.stubGlobal("fetch", async () => new Response(CSV));
-    expect(await refresh(write, NOW)).toBe(407);
+    expect(await refresh(write, NOW)).toBe(LUS);
     expect(written).toEqual({ lu: NOW.toISOString(), points: LIVE.points });
     written = undefined;
     vi.stubGlobal("fetch", async () => new Response(CSV.split("\n").slice(0, 100).join("\n")));
@@ -58,16 +67,18 @@ describe("bornes de recharge", () => {
   });
 
   it("knows every station's commune and each point's power", () => {
-    expect(STATIONS).toHaveLength(136);
+    expect(STATIONS.length).toBeGreaterThan(100);
+    expect(new Set(STATIONS.map((s) => s.id)).size).toBe(STATIONS.length);
     expect(STATIONS.every((s) => s.commune && s.points.length && s.points.every((p) => p.kw > 0))).toBe(true);
   });
 
   it("sums up the island, fast charging apart", async () => {
     const r = body(await bornesRecharge(cache(LIVE), undefined, false, NOW));
-    expect(r.resume).toMatch(/^Bornes de recharge publiques à La Réunion : 136 stations, 411 points de charge\u00a0; d'après l'état des opérateurs de 04:12, 268 libres sur 411/);
+    expect(r.resume).toMatch(new RegExp(`^Bornes de recharge publiques à La Réunion : ${STATIONS.length} stations, ${POINTS.length} points de charge\u00a0; d'après l'état des opérateurs de ${ETAT}, ${LIBRES} libres sur ${POINTS.length}`));
     // Never « en ce moment »: the count is the operators' state at its latest change, behind the reading (04:37).
     expect(r.resume).not.toContain("en ce moment");
-    expect(r.communes[0]).toEqual({ commune: "Sainte-Marie", stations: 18, points: 103, libres: 45 });
+    const c0 = r.communes[0].commune;
+    expect(r.communes[0]).toEqual({ commune: c0, stations: STATIONS.filter((s) => s.commune === c0).length, points: POINTS.filter((p) => p.commune === c0).length, libres: POINTS.filter((p) => p.commune === c0 && libre(p.id)).length });
     // The 15 stations of 50 kW and more in the fixture, the best state first: an empty list would pass « every ».
     expect(r.recharge_rapide).toHaveLength(15);
     expect(r.recharge_rapide[0]).toMatchObject({ station: "Total Réunion, N1, Le Port", puissance_max_kw: 160 });
@@ -93,7 +104,25 @@ describe("bornes de recharge", () => {
     expect(r.resume).toMatch(/^Borne de recharge la plus proche de Saint-Gilles-les-Bains : .+, à 1,6\u00a0km à vol d'oiseau, \d+ libres? sur \d+/);
     expect(r.stations[0].points[0]).toMatchObject({ puissance_kw: 80, prises: ["Combo CCS"], etat: "libre" });
     const town = body(await bornesRecharge(cache(LIVE), "Le Tampon", false, NOW));
-    expect(town.resume).toMatch(/^9 stations de recharge au Tampon : 18 libres sur 19/);
+    const tampon = POINTS.filter((p) => p.commune === "Le Tampon");
+    expect(town.resume).toMatch(new RegExp(`^${STATIONS.filter((s) => s.commune === "Le Tampon").length} stations de recharge au Tampon : ${tampon.filter((p) => libre(p.id)).length} libres sur ${tampon.length}`));
+  });
+
+  it("counts a bundled point the national file no longer lists « sans information », and a point it does not bundle not at all", async () => {
+    const gone = Object.keys(LIVE.points).find(libre)!;
+    const without: Live = { ...LIVE, points: { ...LIVE.points, FRXXXE9999999999: ["en_service", "libre", LIVE.lu] } };
+    delete without.points[gone];
+    expect(pointState(without, gone).etat).toBe("état inconnu");
+    const sans = (l: Live) => POINTS.filter((p) => pointState(l, p.id).etat === "état inconnu").length;
+    expect(sans(without)).toBe(sans(LIVE) + 1);
+    const r = body(await bornesRecharge(cache(without), undefined, false, NOW));
+    expect(r.resume).toContain(`${POINTS.length} points de charge`);
+    expect(r.resume).toContain(`${LIBRES - 1} libres sur ${POINTS.length}`);
+  });
+
+  it("knows the points the national base added since the fixture was recorded, and says them « sans information » until the file lists them", () => {
+    const added = POINTS.filter((p) => !LIVE.points[p.id]);
+    expect(added.every((p) => pointState(LIVE, p.id).etat === "état inconnu")).toBe(true);
   });
 
   it("still lists the stations when the live state is missing", async () => {
@@ -107,7 +136,7 @@ describe("bornes de recharge", () => {
   it("dates the count by the reading, said as such, when the file gives no time of change", async () => {
     const data = { ...(await buildBornes(cache(LIVE), NOW)), etat_jusqu_a: undefined };
     const page = bornesPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false }, NOW);
-    expect(page).toContain(`<span class="big">268</span><p>points de charge libres lu le 24/10 à 04:40, sur <b>`);
+    expect(page).toContain(`<span class="big">${LIBRES}</span><p>points de charge libres lu le 24/10 à 04:40, sur <b>`);
     expect(bornesLive({ value: data, fetchedAt: NOW, stale: false }, NOW)?.detail).not.toContain("état");
   });
 
@@ -116,14 +145,14 @@ describe("bornes de recharge", () => {
     const bare: Live = { ...LIVE, points: Object.fromEntries(Object.entries(LIVE.points).map(([id, [st, etat]]) => [id, [st, etat, ""]])) as Live["points"] };
     expect(lastChange(bare)).toBeUndefined();
     const r = body(await bornesRecharge(cache(bare), undefined, false, NOW));
-    expect(r.resume).toMatch(/^Bornes de recharge publiques à La Réunion : 136 stations, 411 points de charge\u00a0; dans le fichier lu à 04:37, 268 libres sur 411/);
+    expect(r.resume).toMatch(new RegExp(`^Bornes de recharge publiques à La Réunion : ${STATIONS.length} stations, ${POINTS.length} points de charge\u00a0; dans le fichier lu à 04:37, ${LIBRES} libres sur ${POINTS.length}`));
     expect(r.resume).not.toMatch(/en ce moment|d'après l'état/);
     expect(r.etat_jusqu_a).toBeUndefined();
   });
 
   it("gives the home page's tile the time of the operators' state", async () => {
     const data = await buildBornes(cache(LIVE), NOW);
-    expect(bornesLive({ value: data, fetchedAt: NOW, stale: false }, NOW)?.detail).toMatch(/^sur 411, dans 136 stations, état du 24\/10 à 04:12 ; recharge rapide libre dans \d+ stations?$/);
+    expect(bornesLive({ value: data, fetchedAt: NOW, stale: false }, NOW)?.detail).toMatch(new RegExp(`^sur ${POINTS.length}, dans ${STATIONS.length} stations, état du 24/10 à ${ETAT} ; recharge rapide libre dans \\d+ stations?$`));
   });
 
   it("says the state's time with its day when it is not the reading's", () => {
@@ -135,23 +164,24 @@ describe("bornes de recharge", () => {
   it("serves a page with the free points of each commune", async () => {
     const data = await buildBornes(cache(LIVE), NOW);
     const page = bornesPage("https://rundata.re", { value: data, fetchedAt: NOW, stale: false }, NOW);
-    expect(page).toContain('<span class="big">268</span>');
+    expect(page).toContain(`<span class="big">${LIBRES}</span>`);
     // The count dated by the operators' state (its latest change in the file, 04:12), not by the reading (04:40), and
     // never « en ce moment »: a copy kept by a search engine says its day.
-    expect(page).toContain(`<span class="big">268</span><p>points de charge libres d&#39;après l&#39;état des opérateurs du 24/10 à 04:12, sur <b>`);
-    expect(page).toMatch(/<meta name="description" content="Bornes de recharge à La Réunion \(974\), état du 24\/10 à\u00a004:12\u00a0: 268 points libres sur \d+, la recharge rapide et chaque station, commune par commune\.">/);
+    expect(page).toContain(`<span class="big">${LIBRES}</span><p>points de charge libres d&#39;après l&#39;état des opérateurs du 24/10 à ${ETAT}, sur <b>`);
+    expect(page).toMatch(new RegExp(`<meta name="description" content="Bornes de recharge à La Réunion \\(974\\), état du 24/10 à\u00a0${ETAT}\u00a0: ${LIBRES} points libres sur \\d+, la recharge rapide et chaque station, commune par commune\\.">`));
     expect(page).not.toContain("en ce moment");
     expect(page).toContain("Recharge rapide");
     // The legend drawn as on the map (charter of the maps): a free point, none free, then the state's nature and time.
     expect(page).toContain('<circle r="34" fill="#2b8a3e"/><text y="11">3</text></svg>points de charge libres dans la commune</span>');
     // The state is that of the latest change in the national file, said beside its reading, each with its day.
     expect(page).toMatch(/<span class="mls">D&#39;après les opérateurs de recharge \(<span class="adrweb">transport\.<wbr class="adr">data\.<wbr class="adr">gouv\.<wbr class="adr">fr<\/span>\), état jusqu&#39;au \d\d\/\d\d à \d\d:\d\d, lu le 24\/10 à 04:40\.<\/span>/);
-    expect(page).toMatch(/<details><summary><h3>Sainte-Marie\u00a0<span class="note">· 45\u00a0libres sur\u00a0103, 18\u00a0stations<\/span><\/h3><\/summary>/);
+    const sm = { stations: STATIONS.filter((s) => s.commune === "Sainte-Marie").length, points: POINTS.filter((p) => p.commune === "Sainte-Marie").length, libres: POINTS.filter((p) => p.commune === "Sainte-Marie" && libre(p.id)).length };
+    expect(page).toContain(`<details><summary><h3>Sainte-Marie\u00a0<span class="note">· ${sm.libres}\u00a0libres sur\u00a0${sm.points}, ${sm.stations}\u00a0stations</span></h3></summary>`);
     // Each commune's marker leads to its card.
-    expect(mapLinks(page).find((l) => l.label.startsWith("Sainte-Marie :"))).toEqual({ kind: "mk", href: "#c-sainte-marie", label: "Sainte-Marie : 45 points de charge libres sur 103, voir le détail" });
+    expect(mapLinks(page).find((l) => l.label.startsWith("Sainte-Marie :"))).toEqual({ kind: "mk", href: "#c-sainte-marie", label: `Sainte-Marie : ${sm.libres} points de charge libres sur ${sm.points}, voir le détail` });
     // The count in the point, the commune's name in its bubble: no label under the points, which covered one another at 1280.
     expect(page).not.toContain('class="mn"');
-    expect(page).toContain("Sainte-Marie : 45 libres sur 103");
+    expect(page).toContain(`Sainte-Marie : ${sm.libres} libres sur ${sm.points}`);
     expect(deadAnchors(page)).toEqual([]);
     expect(doubleIds(page)).toEqual([]);
     const description = page.match(/<meta name="description" content="([^"]+)"/)?.[1] ?? "";
@@ -172,7 +202,8 @@ describe("bornes de recharge", () => {
   });
 
   it("keeps each station apart, with an id of its own, when the base has no roaming id for it", () => {
-    expect(STATIONS.some((s) => !/^FR[A-Z0-9]{3}/.test(s.id))).toBe(false);
+    // Its first point's id when it has no roaming one (« REEFLEV0176757 », Saint-André): an anchor on /bornes all the same.
+    expect(STATIONS.every((s) => /^[A-Za-z0-9*]+$/.test(s.id) && s.points.some((p) => p.id === s.id || /^FR[A-Z0-9]{3}/.test(s.id)))).toBe(true);
     expect(new Set(STATIONS.map((s) => s.id)).size).toBe(STATIONS.length);
   });
 });

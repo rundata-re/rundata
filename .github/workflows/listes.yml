@@ -1,0 +1,46 @@
+# The lists bundled with the server, against their national base (scripts/build-irve.py, scripts/build-dae.py): every
+# Monday, each script builds its list in memory from the day's file and compares it with the bundled one, without
+# writing it. Past a few points added or gone, the job fails, saying which: the failure is the alert, someone rebuilds the
+# list and proposes it. Nothing is committed from here; the lists online stay as they were.
+# Its cost: two downloads (about 130 Mo for the charging points, 80 Mo for the defibrillators) and a few minutes of a
+# GitHub runner a week, free for a public repository; nothing on Cloudflare (no request to the Worker, no KV, no D1).
+name: Listes embarquées
+
+on:
+  schedule:
+    - cron: "41 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: listes
+  cancel-in-progress: true
+
+jobs:
+  ecarts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # A point gone is said « sans information » by bornes_recharge and /bornes; a point added is not shown at all.
+      - name: Bornes de recharge (base nationale des IRVE)
+        id: irve
+        continue-on-error: true
+        run: python3 -I scripts/build-irve.py --verifier 5
+      # Some devices come and go each week: past 20, the nearest one given may no longer be the nearest.
+      - name: Défibrillateurs (Géo'DAE)
+        id: dae
+        continue-on-error: true
+        run: python3 -I scripts/build-dae.py --verifier 20
+      - name: Say what is to be redone
+        if: steps.irve.outcome != 'success' || steps.dae.outcome != 'success'
+        env:
+          IRVE: ${{ steps.irve.outcome }}
+          DAE: ${{ steps.dae.outcome }}
+        run: |
+          echo "::error::Bornes de recharge : $IRVE ; défibrillateurs : $DAE. Le détail est dans l'étape en échec (écarts, ou base qui n'a pas répondu)."
+          exit 1

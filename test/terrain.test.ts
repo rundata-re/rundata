@@ -244,7 +244,7 @@ describe("fiche terrain", () => {
     expect(r.sources.map((x: { source: string }) => x.source)).toContain("Ma connexion internet (statistiques d'éligibilité par commune)");
     // Then the antennas around, from the bundled files of the ANFR.
     expect(r.resume).toMatch(/\u00a0; 3 supports d'antennes mobiles à moins de 500\u00a0m, le plus proche à 310\u00a0m \(ANFR\)\.$/);
-    expect(r.antennes_a_moins_de_500_m.antennes_mobiles).toMatchObject({ fichier_du: "22/10/2026", supports: 3 });
+    expect(r.antennes_a_moins_de_500_m.antennes_mobiles).toMatchObject({ fichier_du: "19/11/2026", supports: 3 });
     expect(r.sources.map((x: { source: string }) => x.source)).toContain("Données sur les réseaux mobiles (antennes 2G, 3G, 4G, 5G)");
     // One file a year of the commune, from 2021; none of a sale, its parcel or its price alone in the answer.
     expect(urls.filter((u) => u.includes("geo-dvf"))).toEqual([2021, 2022, 2023, 2024, 2025, 2026].map((y) => `https://files.data.gouv.fr/geo-dvf/latest/csv/${y}/communes/974/97415.csv`));

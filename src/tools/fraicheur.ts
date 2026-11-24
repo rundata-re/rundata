@@ -169,7 +169,7 @@ const quoted = (s: string) => `« ${s} »`;
 
 /**
  * Marketing's words: the sources that did not answer named, each with its last read; then those too slow for the
- * answer, each in a sentence of its own, a collector's copy not read again in time with its own words (data-run, 06/11/2026:
+ * answer, each in a sentence of its own, a collector's copy not read again in time with its own words (06/11/2026:
  * « a tardé à répondre » would blame a source that was not slow); then each source only part of which is old, in a sentence of its own (it did
  * answer for the rest), or too slow for the answer for a part of it; then the parts whose read did not succeed, without
  * a cause, then those too slow; « le reste » only when every other part was read at its own pace.

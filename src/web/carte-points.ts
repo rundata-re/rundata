@@ -62,7 +62,7 @@ export const LINGER_MS = 400;
  */
 export const ARM_MS = 300;
 
-/** The bubble's links: data-run's words. */
+/** The bubble's links: the words validated for them. */
 // A marker names another word for its link in `data-pv` (an event's point leads to its announcement), or its own words
 // in `data-pt` (a layer of /carte: « Voir la page Recharge → »).
 export const MOTS = {

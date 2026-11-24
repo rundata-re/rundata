@@ -248,7 +248,7 @@ export async function vigilanceMeteo(cache: Cache, lieu: string | undefined, now
   };
 
   // The whole island: asked without a place, or for a place not known (« Lieu introuvable » alone said no vigilance at all,
-  // ux 20/11/2026), then saying so first.
+  // 20/11/2026), then saying so first.
   const res = lieu?.trim() ? resolvePlace(lieu) : null;
   const zone = res ? mf.ZONE_OF_COMMUNE[res.lieu.commune] : undefined;
   if (!res || !zone) {

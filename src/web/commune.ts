@@ -190,7 +190,7 @@ function vigilance(p: PlacePage, data: Cached<mf.Vigilance> | null | undefined, 
   const said = above.length ? above.map((x) => `${colour(x.couleur)} ${esc(x.phenomene.toLowerCase())}`).join(", ") : issued ? colour(1) : esc(NONE_ISSUED);
   const coast = coastal(p) ? coastText(v) : undefined;
   return officielLive(lue({
-    // The zone named, under the tile's title « Vigilance », never said twice (UX review of 04/11/2026, data-run 06/11):
+    // The zone named, under the tile's title « Vigilance », never said twice (UX review of 04/11/2026, 06/11):
     // « Zone Ouest : verte » / « Saint-Paul est dans cette zone de Météo-France ».
     valeur: `Zone ${esc(name)} : ${said}`,
     detail: esc(`${p.nom} est dans cette zone de Météo-France`) + (coast ? ` · ${esc(coast)}` : ""),
@@ -815,7 +815,7 @@ export function communePage(origin: string, p: PlacePage, l: CommuneLive, now = 
       `<p>mesurés <b>${esc(leJour(s.heure_mesure))}</b> par la station <b>${esc(s.station)}</b>${esc(ailleurs(s, p.nom))}${ecartsCourts(s).map((x) => `, ${esc(x)}`).join("")}${mairie ? `. Mairie <b>${mairie.valeur.toLowerCase()}</b>` : ""}${bus.live && !bus.live.vide && bus.live.valeur !== "Pas de départ" ? `, prochain bus à <b>${bus.live.valeur}</b>` : ""}.</p></div>`
     : "";
 
-  // Each of the commune's two pages says its role (UX review of 04/11/2026, words validated by data-run on 06/11): this
+  // Each of the commune's two pages says its role (UX review of 04/11/2026, words validated on 06/11): this
   // one the lasting record, /aujourdhui/<commune> the day.
   const title = [`${p.nom}, La Réunion (974) : mairie, écoles, élections`, `${p.nom}, La Réunion (974) : mairie, écoles`]
     .find((x) => x.length <= TITLE_MAX) ?? `${p.nom} 974 : mairie, écoles`;

@@ -27,7 +27,7 @@ export const MISE_A_JOUR = data.mise_a_jour;
 
 export const points = (t: Troncon) => decode(t.ligne);
 
-/** Said with the layer, in its legend and its panel (data-run, 03/11). */
+/** Said with the layer, in its legend and its panel (03/11). */
 export const RELEVE = "Limitations relevées par la Région, mise à jour d'août 2024 : les panneaux sur place et les zones de travaux font foi.";
 
 export const SOURCE: SourceInfo = {

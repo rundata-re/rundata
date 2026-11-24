@@ -29,7 +29,7 @@ export const EXPORT_DU = data.export_du;
 export const LU_LE = data.construit;
 
 const [y, mo, d] = EXPORT_DU.split("-");
-/** Said with the list, in the tool's answer and on the page (data-run, 03/11). */
+/** Said with the list, in the tool's answer and on the page (03/11). */
 export const LISTE = `Liste de la Ville de Saint-Denis (export du ${d}/${mo}/${y}), sans horaires ni téléphone : les demander à l'Hôtel de Ville.`;
 export const TITRE = "Mairies annexes et centres municipaux";
 

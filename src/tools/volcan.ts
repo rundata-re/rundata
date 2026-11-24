@@ -108,7 +108,7 @@ export const CAMERAS_OVPF = { texte: "Les caméras de l'OVPF en direct", lien: "
 /**
  * Worded by marketing, under the counts: the catalogue holds the located events only, far fewer in a seismic crisis.
  * What the counts are, never compared with a figure read in an image (marketing, 26/10/2026). Split around « bulletin
- * quotidien » (data-run): the note says it once, the bulletin linked on /volcan, its address after it in the answer.
+ * quotidien »: the note says it once, the bulletin linked on /volcan, its address after it in the answer.
  */
 export const LOCALISES_LIEN = [
   "L'OVPF ne localise qu'une partie des séismes qu'il enregistre\u00a0: son",
@@ -282,7 +282,7 @@ export function nonOfficiel(s: volcan.PitonState | null, readAt: Date | undefine
   const at = s.status.published_at ? Date.parse(s.status.published_at) : 0;
   const recent = !o.prefecture || at >= volcan.dayStart(o.prefecture.jour);
   // Alone, only an alert: pitonlive follows the prefecture by hours or days, and must never say « Vigilance » while the
-  // prefecture is in alert (data-run, 24/10).
+  // prefecture is in alert (24/10).
   const said = niveau && (o.niveau ? recent && rank(niveau) > rank(o.niveau) : /^Alerte/.test(niveau)) ? niveau : undefined;
   const eruption = s.status.is_erupting && !o.eruption && recent ? (true as const) : undefined;
   if (niveau && o.niveau && niveau !== o.niveau) console.error(`volcan : niveau officiel ${o.niveau}, pitonlive ${niveau} (${s.status.published_at ?? "sans date"})`);
@@ -480,7 +480,7 @@ export async function volcanSeismes(cache: Cache, now = new Date(), detail = tru
       ...(imageAfter && { image_ovpf_plus_recente: true }),
       ...(ended && { derniere_eruption: { debut: historique.DERNIERE_ERUPTION.debut, fin: historique.DERNIERE_ERUPTION.fin, lien: historique.DERNIERE_ERUPTION.lien, source: "OVPF-IPGP" } }),
       ...(newerEnd && { derniere_eruption_a_dater: pub(newerEnd) }),
-      // No word of pitonlive's on the Enclos, not even as a last resort (data-run): the release's, the plan's, or none.
+      // No word of pitonlive's on the Enclos, not even as a last resort: the release's, the plan's, or none.
       ...(enclos && { acces_enclos: enclos }),
       ...(given && { communique_prefecture: { niveau: given.niveau, titre: given.titre, lien: given.lien, jour: given.jour } }),
       source: "préfecture de La Réunion (communiqués) et OVPF-IPGP (publications)",

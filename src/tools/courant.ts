@@ -140,7 +140,7 @@ const sectors = (list: string[]) => {
   // comma separates the places, so its own becomes a space (marketing, 21/11/2026).
   const numbered = (x: string) => /^N?°?\s?\d/u.test(x);
   // « Chemin Balance, à proximité du terrain de football »: what follows the comma tells where the place is, no other
-  // place (rundata-lead, 21/11/2026); alone it keeps its comma, in a list a space.
+  // place (21/11/2026); alone it keeps its comma, in a list a space.
   // « entre le n° 12 et le n° 40 », « jusqu'au carrefour » too (marketing, 21/11/2026): their « et » no other place either.
   const WHERE = "(?:à proximité|à côté|près (?:de|du|des)|face (?:à|au|aux)|en face|devant|derrière|au niveau|aux abords|en bordure|le long|entre|vers|jusqu['’](?:à|au|aux)|après|avant)[\\s'’]";
   const own = (x: string) => (numbered(x) ? x.replace(/\s*,\s*/gu, " ") : x.replace(new RegExp(`\\s*,\\s*(?=${WHERE})`, "giu"), " "));

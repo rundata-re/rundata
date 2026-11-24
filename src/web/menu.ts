@@ -1,5 +1,5 @@
 /**
- * The menu in five groups, and the field « Aller à une rubrique, une commune ou un lieu » of the home page (ux's
+ * The menu in five groups, and the field « Aller à une rubrique, une commune ou un lieu » of the home page (the
  * mock-up and marketing's words of 04/11/2026, which the user approved). The field leads to a page, it does not search
  * the pages' content: it matches the start of the names of the pages and of a short list of other words (marketing's),
  * in the browser, with nothing asked of the server. A word typed is never shown as the name of a page.

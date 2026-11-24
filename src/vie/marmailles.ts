@@ -51,7 +51,7 @@ export const communes = () => [...new Set(SENTIERS.map(communeOf))].sort((a, b) 
 export const figures = (m: Marmaille) =>
   `${String(m.km).replace(".", ",")}\u00a0km${m.parcours === "boucle" ? " en boucle" : m.parcours ? ` ${m.parcours}` : ""} · ${m.duree}`;
 
-/** Said with them, in the tool as on /enfants (data-run, 03/11). */
+/** Said with them, in the tool as on /enfants (03/11). */
 export const AVERTISSEMENT = "Tracés du Conseil Général, sans date\u00a0: un chemin a pu changer depuis.";
 
 /**

@@ -209,7 +209,7 @@ describe("coupures d'eau", () => {
     expect(noticeCard(noticeRow(benoit, new Date("2026-11-20T10:00:00Z")))).toContain("Chemin Pinguet et les voies adjacentes</p>");
     expect(salazie.secteurs).toEqual(["Mare à Vieille Place", "Mare à Citron", "Bois de Pomme", "Mare à Goyaves", "Petit Sable", "Radier", "Fleurs Jaunes", "Secteur du village"]);
   });
-  it("writes a notice card with no start hour « Jusqu'au … », never « undefined → … » (1312, 23/11/2026)", () => {
+  it("writes a notice card with no start hour « Jusqu'au … », never « undefined → … » (23/11/2026)", () => {
     const n = { titre: "Interruption de la distribution", communes: ["Saint-Paul"], distributeur: "La Créole", publie_le: "20/11/2026 à 07:30", coupure: { a: "vendredi 20/11 à 12:00", etat: "en cours" }, secteurs: [], secteurs_complets: false, texte: "" } as unknown as Parameters<typeof noticeCard>[0];
     const card = noticeCard(n);
     // The period is escaped with the rest of the card (« ' » written &#39;).
@@ -822,7 +822,7 @@ describe("coupures d'eau", () => {
     expect(sp).toContain("Interruption nocturne de la distribution du 23/10/2026");
     expect(sp).toContain("La Créole, publié le 23/10/2026</span>");
     // Read the evening before, the notice bears the day of its cut: not « publié le » a day still to come, and said as the
-    // cut's day, never « avis daté du », read as the day it was published (revue ux du 24/11, item 1831).
+    // cut's day, never « avis daté du », read as the day it was published (24/11/2026).
     const eve = new Date("2026-10-22T18:00:00+04:00");
     const before = coupuresCommunePage("https://rundata.re", pageOf("saint-paul")!, { coupures: { value: await buildCoupures(cache(eve), eve), fetchedAt: eve } }, eve);
     expect(before).toContain("La Créole, coupure du 23/10/2026</span>");
@@ -1029,7 +1029,7 @@ describe("coupures d'eau", () => {
     expect(page).not.toContain("<code>coupures_eau</code>");
     // A commune not followed: said as the legend says, with its page.
     expect(page).toContain(`<a class="zn" href="/coupures-eau/saint-joseph" aria-label="Saint-Joseph : site pas lu\u00a0: voir la mairie ou le distributeur, voir le détail" data-pn="Saint-Joseph" data-p2="site pas lu\u00a0: voir la mairie ou le distributeur" data-pv="commune">`);
-    // Two colours far apart (ux, 06/11/2026): the commune not read in grey, no longer the land's colour.
+    // Two colours far apart (06/11/2026): the commune not read in grey, no longer the land's colour.
     const sj = island.paths.find((p: { nom: string }) => p.nom === "Saint-Joseph")!;
     expect(page).toContain(`<path d="${sj.d}" style="fill:#adb5bd"/>`);
   });

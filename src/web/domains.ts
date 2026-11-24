@@ -271,7 +271,7 @@ const dayOf = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { day: 
 
 // The Enclos as the official texts say it (marketing): the prefecture's release in its title's own words, « 20/10 » its
 // day, or closed by the level of an alert whose title says nothing of it; in vigilance from a release, the plan's rule.
-// Never pitonlive's (data-run, 25/10/2026).
+// Never pitonlive's (25/10/2026).
 const dd = (jour: string) => `${jour.slice(8, 10)}/${jour.slice(5, 7)}`;
 const releaseLink = (c: NonNullable<Enclos["communique"]>) => `<a href="${esc(c.lien)}">communiqué de la préfecture du ${dd(c.jour)}</a>`;
 // The release's words in bold and its day linked, « Accès à l'Enclos : <b>« fermeture »</b> selon le <a>communiqué de la
@@ -536,12 +536,12 @@ ${connectorCta("volcan_seismes", "le volcan")}`;
 
 // A place of an earthquake row this long or shorter never breaks inside: about a third of a line at 390 px.
 const PLACE_WHOLE = 20;
-// Below this many a day, the bars keep their scale: one event must not fill the chart (data-run: no scale that
+// Below this many a day, the bars keep their scale: one event must not fill the chart (no scale that
 // magnifies a small number, the axis at 0).
 const DAYS_SCALE_MIN = 10;
 
 /**
- * The events located under the summit per day, as bars from 0, today marked « en cours » (data-run, marketing); each
+ * The events located under the summit per day, as bars from 0, today marked « en cours » (marketing); each
  * bar says its day and count to screen readers, and the line under it today's, yesterday's and the highest. The
  * catalogue silent: the day of its last read « jusqu'à » that time, the days after it hatched, « non lu », no bar.
  */
@@ -686,11 +686,11 @@ function airMap(d: AirAnswer | undefined, layers: AirLayer[]): string {
     `<figcaption class="note">Indice ATMO prévu pour aujourd'hui dans chaque commune, de 1 (bon) à 6 (extrêmement mauvais) : une prévision, pas une mesure.</figcaption></figure>`;
 }
 
-/** A pollutant with its article, after « surtout » (data-run, 06/11/2026): « l'ozone », « les particules PM10 », « le dioxyde d'azote ». */
+/** A pollutant with its article, after « surtout » (06/11/2026): « l'ozone », « les particules PM10 », « le dioxyde d'azote ». */
 const withArticle = (p: string) => (p.startsWith("particules") ? `les ${p}` : /^[aeiouy]/i.test(p) ? `l'${p}` : `le ${p}`);
 
 /**
- * The forecast under the measure at the top of /air (marketing's words, data-run's choices of 06/11/2026): one line
+ * The forecast under the measure at the top of /air (marketing's words, choices of 06/11/2026): one line
  * always shown, « Air prévu aujourd'hui : moyen (prévision) » in the index's colour, or « de bon à moyen selon la
  * commune »; under it the index out of 6, the pollutant most often in cause in the communes at the highest level, when
  * Atmo Réunion diffused it and when rundata.re read it.
@@ -3027,7 +3027,7 @@ export function nobreak(text: string): string {
 
 /**
  * « publié le 04/11/2026 à 11:15 », or for a notice dated after its reading, La Créole's dated by the day of its cut,
- * « coupure du 05/11/2026 »: « avis daté du » read as the day it was published (revue ux du 24/11, item 1831).
+ * « coupure du 05/11/2026 »: « avis daté du » read as the day it was published (24/11/2026).
  */
 const dateOfNotice = (n: CoupuresAnswer["avis"][number]) => (n.publie_le ? `publié le ${esc(n.publie_le)}` : `coupure du ${esc(n.date_de_l_avis ?? "")}`);
 
@@ -3065,7 +3065,7 @@ export function noticesHead(avis: { ne_pas_boire?: boolean }[], where = "", dry:
 }
 
 /** The colours of the communes followed on the map of /coupures-eau, drawn the same in its legend. */
-// A commune read with nothing announced and one not read, in two colours far apart (ux, 06/11/2026): a pale blue, a grey.
+// A commune read with nothing announced and one not read, in two colours far apart (06/11/2026): a pale blue, a grey.
 // A followed commune whose feed did not answer at the last read: a darker grey, never the blue of « aucun avis ».
 const WATER_CUT = { dry: "#f03e3e", avis: "#4dabf7", calme: "#a5d8ff", nonLu: "#adb5bd", muet: "#868e96" };
 const CALME = "Aucun avis en cours (site lu)";
@@ -3433,7 +3433,7 @@ ${connectorCta("sport", "le sport")}`;
 const MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
 /**
- * The name a source gives the next event, on the home page's tile (words validated by data-run on 06/11/2026): without a
+ * The name a source gives the next event, on the home page's tile (words validated on 06/11/2026): without a
  * leading « Saison 2026-2027 » in that exact form, nor a closing date (« 06-07 novembre ») whose days and month are all
  * in its « quand ». Nothing else of the source's name is rewritten.
  */
@@ -3450,7 +3450,7 @@ export function sportLive(data: Cached<SportAnswer> | null): Live | undefined {
   const d = data?.value;
   if (!d) return undefined;
   // The page's count: all of them, not only those listed, cancelled ones included (06/11/2026: « 40 » here for 68).
-  // The whole detail shown (entier), the next event's sport and day included (data-run, 06/11/2026).
+  // The whole detail shown (entier), the next event's sport and day included (06/11/2026).
   const total = d.a_venir_en_tout ?? d.a_venir?.length ?? 0;
   const first = (d.a_venir ?? []).find((r) => r.etat !== "annulée");
   return { valeur: `${total} rendez-vous`, detail: first ? `officiels d'ici quinze jours ; prochain : ${esc(libelleProchain(first.epreuve, first.quand))}${first.sport ? ` (${esc(first.sport)})` : ""}, ${esc(first.quand)}` : "officiels d'ici quinze jours", entier: true };

@@ -7,7 +7,7 @@ import { seaPage } from "../src/web/pages.js";
 import { esc } from "../src/web/map.js";
 import { coastwatch, parseAscii } from "./sst.js";
 
-// The swimming rule said where one asks about the sea, not only in a field of its own (revue ux du 24/11, item 1828):
+// The swimming rule said where one asks about the sea, not only in a field of its own (24/11/2026):
 // the résumé of temperature_mer and the top of /mer, the same words as a place's page (marketing, 20/11).
 const fixture = (f: string) => readFileSync(new URL(`./fixtures/${f}`, import.meta.url));
 const NOW = new Date("2026-10-22T06:00:00Z");

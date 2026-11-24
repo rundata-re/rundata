@@ -285,7 +285,7 @@ export const metres = (m: number) => thin(`${m.toLocaleString("fr-FR")} m`);
 const ICON: Record<string, string> = {
   thermo: `<path d="M14 14.8V4a2 2 0 1 0-4 0v10.8a4 4 0 1 0 4 0Z"/><path d="M12 9v8"/>`,
   cloud: `<path d="M17.5 19H8a5 5 0 1 1 1.1-9.9A6 6 0 0 1 20.5 12a3.5 3.5 0 0 1-3 7Z"/><path d="M9 22l1-2M13 22l1-2"/>`,
-  // A flame, for the fires seen by satellite: not the vigilance's triangle (ux, 04/11/2026).
+  // A flame, for the fires seen by satellite: not the vigilance's triangle (04/11/2026).
   // A fuel pump, for the prices at the pump in the menu: not the floods' gauge (04/11/2026).
   fuel: `<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12M4 10h10"/><path d="M14 8h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V8l-3-3"/>`,
   flame: `<path d="M12 3c.5 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2.3 1.2-3.6 2.2-4.6.3 1.6 1.1 2.6 2.3 3 0-2.8-.6-5.5 0-8.4Z"/>`,
@@ -471,18 +471,18 @@ padding:.45rem .55rem;border-radius:12px;font-size:.93rem;font-weight:600}.quick
 .cta-ia{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem .95rem;border-radius:14px;background:var(--sun);color:var(--sun-ink);
 font:800 .95rem/1 system-ui,sans-serif;text-decoration:none;box-shadow:0 6px 18px -6px rgb(255 207 31/.55);white-space:nowrap}
 .cta-ia .ic{width:1.05rem;height:1.05rem}
-/* The page's own name from 430 px; below, « Mon IA », the whole name in its aria-label (ux, 06/11/2026: the whole name
+/* The page's own name from 430 px; below, « Mon IA », the whole name in its aria-label (06/11/2026: the whole name
    widened the page by 12 px at 390 px and 82 px at 320 px). */
 .cta-ia .ia-l{display:none}@media (min-width:430px){.cta-ia .ia-l{display:inline}.cta-ia .ia-c{display:none}}
 /* The « Menu » button never shrinks: at 320 px it ended 14 px past the margin, cut with a fallback font, off the screen
-   with larger text (ux, 06/11/2026). Tighter below 352 px keeps the bar on one line at 320 px; the wrap catches the rest. */
+   with larger text (06/11/2026). Tighter below 352 px keeps the bar on one line at 320 px; the wrap catches the rest. */
 @media (max-width:351px){.bar{gap:.35rem}.cta-ia{padding-inline:.6rem}}
 .menu{position:static}
 .menu summary{list-style:none;display:grid;place-items:center;width:2.6rem;height:2.6rem;border-radius:14px;cursor:pointer;
 background:rgb(255 255 255/.08);border:1px solid rgb(255 255 255/.12);color:#fff}
 .menu summary::-webkit-details-marker{display:none}
 .menu summary .ic{width:1.3rem;height:1.3rem;display:block}.menu summary span{display:grid;place-items:center}
-/* « Menu » under the icon, in the same square (ux, 06/11/2026). */
+/* « Menu » under the icon, in the same square (06/11/2026). */
 .menu summary{align-content:center;gap:1px}.menu summary .ic{width:1.1rem;height:1.1rem}.menu summary .m{font:700 .75rem/1 system-ui,sans-serif}
 .menu summary .x,.menu[open] summary .g{display:none}.menu[open] summary .x{display:block}
 /* A closed menu's sheet not laid out at all: the browser contains a closed <details>'s content, so the sheet took the
@@ -518,7 +518,7 @@ text-align:center;background:#0f1d2c;border:1px solid rgb(255 255 255/.07);trans
 .grid a:focus-visible{outline:2px solid #ffcf1f;outline-offset:2px}
 .grid a[aria-current]{background:color-mix(in srgb,var(--k) 14%,#0f1d2c);border-color:color-mix(in srgb,var(--k) 45%,transparent)}
 @media (max-width:30rem){.grid a{font-size:.82rem;letter-spacing:-.005em}}
-/* The menu in five groups (ux's mock-up, 04/11/2026): two columns, the icon beside the name; « Communes » above them. */
+/* The menu in five groups (mock-up of 04/11/2026): two columns, the icon beside the name; « Communes » above them. */
 .sheet .groupe{grid-template-columns:repeat(auto-fill,minmax(min(10rem,calc((100% - .5rem) / 2)),1fr));gap:.5rem;margin:0}
 /* One column on a narrow screen once the text is larger: in rem, a media query follows the text size the reader chose.
    19.9rem is 318 px at 100 %, under any phone (two columns from 320 px, as before), and 478 px at 150 %, where two
@@ -802,7 +802,7 @@ radial-gradient(1px 1px at 6% 92%,#fff,transparent),radial-gradient(1.2px 1.2px 
 @keyframes pop{from{opacity:0;transform:translateY(6px)}}
 .hero-map figcaption{display:flex;align-items:center;justify-content:center;gap:.5rem;font-size:.82rem;color:rgb(255 255 255/.75);text-align:center;flex-wrap:wrap}
 .hero-map figcaption a{color:#fff}
-/* The home page's map (accueil-carte.ts): marketing's « Lagon » on ux's « Circuit », a layout for a phone, one for a wide screen. */
+/* The home page's map (accueil-carte.ts): marketing's « Lagon » on the « Circuit » layout, a layout for a phone, one for a wide screen. */
 .ile .map.defs{position:absolute;width:0;height:0;overflow:hidden}
 .ile .hm-large{display:none}
 @media (min-width:58rem){.ile .hm-tel{display:none}.ile .hm-large{display:block}}
@@ -1068,7 +1068,7 @@ border-radius:6px;padding:.2rem .5rem;background:var(--warn-bg);color:var(--lave
 /* A temperature point has the colours of the veil under it: a dark shadow outside its white edge, in both themes. */
 .wxmap circle.pt.l-t{filter:drop-shadow(0 0 2px rgb(0 0 0/.85))}
 .amchk{order:1;display:inline-flex;align-items:center;gap:.4rem;min-height:44px;font-size:.9rem;font-weight:600;color:var(--on-night-muted);cursor:pointer;margin-bottom:.5rem}.amchk input{width:1.1rem;height:1.1rem;margin:0}.pe-on .wxbar .amchk{margin:0}
-/* The two boxes on a line of their own under the tabs, « Valeurs » first, side by side at 390 px (data-run, 10/11/2026). */
+/* The two boxes on a line of their own under the tabs, « Valeurs » first, side by side at 390 px (10/11/2026). */
 .wxchk{order:1;flex:1 0 100%;display:flex;flex-wrap:wrap;justify-content:space-between;column-gap:1rem}.pe-on .wxbar .wxchk{flex-basis:auto;gap:1rem}
 /* « Radar » and « Pluviomètres » on a second line, from the left, on the rain's tab only; in the full screen, on the line
    of the rest (16/11/2026). Each box unticked hides its layer and its legend: the radar's rain, its drops and
@@ -2731,7 +2731,7 @@ export function placePage(origin: string, p: PlacePage, data: Cached<PlaceData> 
   const sea = coastal(p) && d?.mer
     ? `<section aria-labelledby="h-mer"><h2 id="h-mer">Température de la mer ${esc(a(p.nom))}</h2>` +
       `<div class="card">${d.mer.mesure ? `<ul class="seas"><li><span>Au large, le ${esc(dayMonth(d.mer.mesure.jour_mesure))}</span><b>${esc(thin(d.mer.mesure.temperature_eau))}</b></li></ul>` : ""}` +
-      // The swimming rule of the tool's résumé (item 1828) said once, in the « Baignade et requins » block below.
+      // The swimming rule of the tool's résumé said once, in the « Baignade et requins » block below.
       `<p>${esc(thin(d.mer.resume.replace(` ${REGLE_COURTE}`, "")))}</p>${tideLine}<p class="note">Température : mesure satellite au large, du jour indiqué (une mesure paraît au plus tôt le lendemain), ` +
       `pas celle du lagon ni du bord.${d.mer.houle_mesuree ? ` Houle mesurée : la bouée ${esc(d.mer.houle_mesuree.bouee)} du Cerema, au large, à l'heure dite.` : ""}${d.mer.etat_de_la_mer ? " Vagues : prévision d'un modèle, au large, pas une mesure." : ""}${tides ? ` Marée : calculée d'après les mesures des marégraphes, hauteurs à environ 5 cm près, <a href="/mer">détail sur la page mer</a>.` : ""}</p></div></section>`
     : "";

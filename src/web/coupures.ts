@@ -344,7 +344,7 @@ export function coupuresCommunePage(origin: string, p: PlacePage, w: WaterCopies
   ${d ? (calm ? afterCutShort : afterCutNote) : ""}
 </section>`;
   // A notice in progress or to come: the notices first, as the page says (« ils s'affichent en haut de cette page »);
-  // at 390 px, two notices of Saint-Paul came 3 664 px down, under its 13 networks (revue ux du 24/11, item 1831).
+  // at 390 px, two notices of Saint-Paul came 3 664 px down, under its 13 networks (24/11/2026).
   // None: the portrait of the water at the top (marketing/seo-pages-tete-1411.md).
   const body = `${x.avis.length ? `${notices}\n${tap}` : `${tap}\n${notices}`}
 ${arretesSection(p.nom, d?.arretes_sainte_suzanne)}

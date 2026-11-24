@@ -348,7 +348,7 @@ describe("« Toutes les sources » on /chiffres (chiffres.ts, inventaire)", () =
     expect(inv.find((d) => d.categorie === "terrain")).toMatchObject({ cadence: "à chaque question" });
     expect(inv.find((d) => d.categorie === "dae")).toMatchObject({ cadence: "à chaque version du site" });
     expect(html).toMatch(/Relues à chaque question\./);
-    // A list bundled with the site: words a reader understands (data-run, 03/11).
+    // A list bundled with the site: words a reader understands (03/11).
     expect(html).toContain("<p>Mises à jour avec le site.</p>");
     expect(html).not.toContain("Relues à chaque version du site");
     // Météo-France's packets need its key: read in the Worker, not here.

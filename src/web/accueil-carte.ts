@@ -2,7 +2,7 @@
  * The island at the top of the home page (the user's choice, 10/11/2026): one square label per subject around the
  * island, each tied by a track to the real place it speaks of, over the island's relief. The look is marketing's
  * « Lagon » (each subject in its colour, bends rounded, the places as hubs in a dashed ring, the coast's lagoon glow);
- * the placement is ux's « Circuit » (labels on the edges, tracks horizontal, vertical or at 45°, none crossing another).
+ * the placement is the « Circuit » layout (labels on the edges, tracks horizontal, vertical or at 45°, none crossing another).
  * A phone and a wide screen each have their layout, the island drawn once (reliefDefs()).
  *
  * Hover, keyboard focus or a first tap on a subject (the bubble's script marks the link `.on`, pages.ts): its tracks
@@ -114,7 +114,7 @@ function via(a: P, b: P, x0: number, y0: number, x1: number, y1: number): Seg[][
 // ---------------------------------------------------------------- the subjects
 
 export type Id = "sortie" | "sentiers" | "routes" | "mer" | "volcan" | "velos" | "meteo" | "air" | "elec";
-/** The order of reading (ux): the keyboard meets the labels in it. */
+/** The order of reading: the keyboard meets the labels in it. */
 export const IDS: Id[] = ["sortie", "routes", "sentiers", "volcan", "mer", "velos", "meteo", "air", "elec"];
 
 export interface Sujet {
@@ -153,7 +153,7 @@ const HREF: Record<Id, string> = {
   sortie: "/evenements", sentiers: "/sentiers", routes: "/trafic", mer: "/mer", volcan: "/volcan", velos: "/velos", meteo: "/meteo", air: "/air", elec: "/electricite",
 };
 
-/** Météo-France's three stations of the map: the coast, a cirque, a plain (ux's mock-up): Gillot, Cilaos, Plaine des Cafres. */
+/** Météo-France's three stations of the map: the coast, a cirque, a plain (the mock-up's): Gillot, Cilaos, Plaine des Cafres. */
 export const TROIS = ["97418110", "97424410", "97422440"];
 const NEIGES = project(55.4783, -21.0989) as P;
 const FOURNAISE = project(55.7083, -21.2444) as P;
@@ -314,7 +314,7 @@ function agendaOf(source: string | undefined): string {
   const of = lower.startsWith("le ") ? `du ${name.slice(3)}` : lower.startsWith("les ") ? `des ${name.slice(4)}` : /^[aeiouyéèêàâîôûh]/i.test(name) ? `d'${name}` : `de ${name}`;
   return `d'après l'agenda ${of}`;
 }
-/** From « dégradé » Air's label has a track (ux); up to 3 communes, the bubble names them, past that it counts them (marketing). */
+/** From « dégradé » Air's label has a track; up to 3 communes, the bubble names them, past that it counts them (marketing). */
 const AIR_TRACE = 3;
 const AIR_PAR_NOM = 3;
 /** « (ozone) », « (ozone et particules PM10) »: the pollutants of communes, the most named first. */
@@ -369,7 +369,7 @@ function air(h: HomeLive, now: Date): Sujet | undefined {
   const value = best === worst ? name(worst) : `${name(best)} à ${name(worst)}`;
   const at = l.filter((c) => c.niveau === worst);
   // A track only where the air is « dégradé » or worse, in 3 communes at most: one drawn to the first of 20 would say it
-  // is worse there than elsewhere (ux).
+  // is worse there than elsewhere.
   const place = best !== worst && worst >= AIR_TRACE && at.length <= AIR_PAR_NOM ? placeOf(at[0].commune) : undefined;
   return {
     id: "air", k: "Air", src: "prévu (Atmo)", value, color: COLOURS.air, href: HREF.air, pts: place ? [place] : [],
@@ -395,7 +395,7 @@ function elec(h: HomeLive, now: Date): Sujet | undefined {
   // An old line is not the island's production now: the label leaves it to /electricite, which says so.
   if (!p || p.perimee || !/^\d\d\/\d\d \d\d:\d\d/.test(p.heure_mesure)) return undefined;
   return {
-    // No track (ux): the figure is the whole island's, and EDF gives it by kind of plant, not by plant.
+    // No track: the figure is the whole island's, and EDF gives it by kind of plant, not by plant.
     id: "elec", k: "Électricité", src: "EDF", value: `${fr(Math.round(p.renouvelable_pct))}\u202f% renouvelable`, color: COLOURS.elec, href: HREF.elec, pts: [], entier: true,
     tip: { place: `${fr(Math.round(p.total_mw))} MW produits`, value: "", detail: `${edfWhen(p.heure_mesure, now)}, d'après EDF` },
     lu: iso(h.electricite!.fetchedAt),
@@ -424,7 +424,7 @@ function sentiers(h: HomeLive, now: Date): Sujet | undefined {
   const d = h.sentiers?.value;
   if (!d) return undefined;
   const n = closedTrails(d);
-  // The closed trails of the cirque with the most (ux): a small network where it is, inside the island, which no label
+  // The closed trails of the cirque with the most: a small network where it is, inside the island, which no label
   // covers (those of the coasts, Sainte-Rose's, run under the labels of the sides).
   const top = d.fermes_par_commune.filter((c) => CIRQUES.includes(c.commune)).sort((a, b) => b.sentiers_fermes.length - a.sentiers_fermes.length)[0];
   const names = new Set(top?.sentiers_fermes.map((t) => t.sentier) ?? []);
@@ -479,7 +479,7 @@ export function sujets(h: HomeLive, now: Date): Sujet[] {
   return all.filter((s): s is Sujet => !!s);
 }
 
-// ---------------------------------------------------------------- ux's placement
+// ---------------------------------------------------------------- the placement
 
 interface Layout {
   name: "tel" | "large";
@@ -490,9 +490,9 @@ interface Layout {
   at: Record<Id, [number, number, ("r" | "l")?]>;
 }
 
-/** ux's « Circuit » (maquette-circuit.ts, c-phone and c-wide), Météo's place added by ux. */
+/** The « Circuit » layouts (maquette-circuit.ts, c-phone and c-wide), Météo's place added. */
 export const LAYOUTS: Layout[] = [
-  // ux, 14/11: the sea takes the top-left corner, the only way to the west coast; Air right under the island, which
+  // 14/11: the sea takes the top-left corner, the only way to the west coast; Air right under the island, which
   // nothing covers; Électricité beside Volcan.
   { name: "tel", frame: [-10, -270, 1010, 1200], F1: 24, F2: 36, at: {
     mer: [0, -260], meteo: [410, -260], routes: [150, -150], sentiers: [1000, -150, "r"],
@@ -504,14 +504,14 @@ export const LAYOUTS: Layout[] = [
     mer: [-250, 420], air: [-250, 600], velos: [-250, 830], elec: [480, 878], volcan: [1190, 520, "r"], meteo: [1190, -60, "r"] } },
 ];
 
-/** The widest a label may be, so that it never reaches its neighbour's place (ux's layouts); a few narrower. */
+/** The widest a label may be, so that it never reaches its neighbour's place (the layouts); a few narrower. */
 const CAP = 420;
-// Électricité's value never cut (ux): its longest, « 100 % renouvelable », whole on the wide layout (484 units guessed),
+// Électricité's value never cut: its longest, « 100 % renouvelable », whole on the wide layout (484 units guessed),
 // on two lines on the phone's, where it would reach Vélos' track (entier, as Volcan's).
 const CAPS: Partial<Record<`${Layout["name"]}:${Id}`, number>> = { "tel:sortie": 400, "tel:elec": 470, "large:elec": 490 };
 
 /**
- * A text's width, guessed from its letters with room to spare (ux: 0,66 em a bold letter, the system font of an iPhone
+ * A text's width, guessed from its letters with room to spare (0,66 em a bold letter, the system font of an iPhone
  * being wider than Chromium's; 0,74 em a capital of the first line, with its spacing).
  */
 const wide1 = (t: string, F1: number) => t.length * F1 * 0.74;
@@ -767,7 +767,7 @@ function drawOnce(L: Layout, list: Sujet[], temps: P[], skip: P[]): Drawn {
 /** A way's points, from its first to its last. */
 const points = (r: Seg[]): P[] => (r.length ? [[r[0][0], r[0][1]], ...r.map((g): P => [g[2], g[3]])] : []);
 
-/** The disc of a temperature (34) and a little air: Météo's tracks stop at its edge, never over its figure (ux). */
+/** The disc of a temperature (34) and a little air: Météo's tracks stop at its edge, never over its figure. */
 const DISC = 36;
 
 /** A way cut `r` before a place it reaches (a temperature's disc, the summit), at either end; a piece left shorter than 6 dropped. */

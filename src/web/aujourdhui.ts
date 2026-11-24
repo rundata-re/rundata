@@ -45,7 +45,7 @@ export const aCommune = a;
 export const deCommune = de;
 
 // The texts of the page, worded by marketing.
-// Each of the commune's two pages says its role (UX review of 04/11/2026, words validated by data-run on 06/11): this
+// Each of the commune's two pages says its role (UX review of 04/11/2026, words validated on 06/11): this
 // one the day, /communes/<commune> the lasting record.
 export const titleOf = (p: PlacePage) =>
   [`La journée ${aCommune(p.nom)} : eau, météo, sorties · La Réunion (974)`, `La journée ${aCommune(p.nom)} · La Réunion (974)`]

@@ -53,7 +53,7 @@ describe("resolvePlace", () => {
     expect(a.correspondance).toBe("coordonnees");
     expect(a.lieu.lat).toBeCloseTo(-21.05);
     expect(resolvePlace("55.22 -21.05")!.lieu.lon).toBeCloseTo(55.22);
-    // In the commune of the nearest known place, said with it (« zone inconnue » for vigilance_meteo before, ux 20/11/2026).
+    // In the commune of the nearest known place, said with it (« zone inconnue » for vigilance_meteo before, 20/11/2026).
     const w = resolvePlace("-21.0545, 55.2270")!;
     expect(w.lieu.commune).toBe("Saint-Paul");
     expect(w.proche!.km).toBeLessThan(3);

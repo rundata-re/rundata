@@ -72,7 +72,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // The news of Cilaos, Saint-Joseph and Saint-Philippe among the sources counted (20/11/2026).
   // The linked associations' licence names rundata.re, never « nos données ouvertes » (23/11/2026).
   // Atmo Réunion's site without « www. », which answers by a redirection (24/11/2026).
-  chiffres: 30,
+  // The UV index measured at Moufia among the weather's sources: SolarDB and NASA's ozone (24/11/2026).
+  chiffres: 31,
   // The commune's stops, named as on /bus (« Gare Saint-André », « St Gilles-les-Hauts », « Lastic-La Mare »).
   // Its bus alerts with two quoted stop names joined by a bare comma spaced, as on /bus.
   // The stations of MétéoR Océan Indien besides the others, each with its credit (09/11/2026).
@@ -154,7 +155,8 @@ export const RENDU_REVISION: Readonly<Record<string, number>> = {
   // Its measured rain: an hour not read says « la lecture de rundata.re n'a pas abouti », not « nous » (23/11/2026).
   // Its `couverture` the networks only, the detail left to sources_donnees; the rain's `convention` shorter (23/11/2026).
   // The nearest Candhis buoy that measured, in the sea's answer (houle_mesuree, 23/11/2026).
-  lieu: 34,
+  // The UV index measured at Moufia in the forecast's answer (prevision_meteo, `indice_uv_mesure`, 24/11/2026).
+  lieu: 35,
   "marches-publics": 5,
   // The waves of the west and the south from Météo-France's MFWAM, with the main swell; WAM north and east.
   // The satellite's last pass first, its time and distance (« passage de cette nuit à 01:39 »), else « moyenne du 06/11 ».
@@ -288,6 +290,8 @@ export const SOURCE_REVISION: Readonly<Record<string, number>> = {
   onf: 1,
   // CAMS's UV index: a day without its hours of 10 h to 14 h kept without an index, never « UV 0 » (10/11/2026).
   "uv:ile": 1,
+  // The UV index measured at Moufia, with its ozone (providers/uv-mesure.ts, 24/11/2026).
+  "uv-mesure": 1,
   // Each bathing site's results with its classification read in its own tag (« Excellent »): the entries read before,
   // with an empty one, read again (24/11/2026).
   baignade: 1,

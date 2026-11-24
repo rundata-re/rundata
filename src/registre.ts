@@ -19,6 +19,7 @@ import { DETAILS_MAX as CONNECTEUR_DETAILS, PAGES_MAX as CONNECTEUR_PAGES } from
 import { IN_FLIGHT } from "./http.js";
 import { AGENDAS } from "./providers/agenda.js";
 import { LISTED_AFTER_MIN, MAX_NEW_GRIDS } from "./providers/arome.js";
+import { REFRESH_EVERY as UV_MESURE_EVERY, REFRESH_OFFSET as UV_MESURE_OFFSET } from "./providers/uv-mesure.js";
 import { KINDS as CANDHIS_KINDS, REFRESH_EVERY as CANDHIS_EVERY, REFRESH_OFFSET as CANDHIS_OFFSET } from "./providers/candhis.js";
 import { IMAGE_OFFSET as CMRS_IMAGE_OFFSET, LISTE_OFFSET as CMRS_LISTE_OFFSET, REFRESH_EVERY as CMRS_EVERY } from "./providers/cmrs-carte.js";
 import { FROM_MINUTE as TRACE_FROM, QUIET_MINUTES as TRACE_EVERY } from "./providers/cmrs-trace.js";
@@ -612,6 +613,20 @@ const SCHEDULED: Entry[] = [
     // At most: the cache, KV, a list per type once a day, getCampInfos the day a buoy with no place starts, a measurement per type.
     run: { subrequests: 3 + Object.keys(CANDHIS_KINDS).length, kvReads: 1, kvWrites: 1, cpuMs: 10 },
     from: ["src/providers/candhis.ts"],
+    basis: "code",
+  },
+  // Only with SolarDB's token, and while the sun is up at Moufia (about 13 h a day in December, 11 h in June; counted all
+  // day): the state read from KV, a login and one read of the last 20 minutes of SolarDB, OMI's ozone (the last 4 kB of
+  // its file) once a day, counted in every run, and the state written: 3 requests, 2 KV calls.
+  {
+    id: "uv-mesure:etat",
+    queue: "indice UV mesuré",
+    trigger: "planifiée",
+    what: "indice UV mesuré au Moufia : la tension du radiomètre d'ENERGY-Lab (SolarDB), avec l'ozone de la NASA une fois par jour, gardé dans KV",
+    every: UV_MESURE_EVERY,
+    offset: UV_MESURE_OFFSET,
+    run: { subrequests: 5, kvReads: 1, kvWrites: 1, cpuMs: 5 },
+    from: ["src/providers/uv-mesure.ts"],
     basis: "code",
   },
   // The FFCK's calendar: the state read from KV, one page of app.ffck.org at most (a season's list once a day, else the

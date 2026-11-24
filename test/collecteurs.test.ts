@@ -22,7 +22,7 @@ class FakeKv {
 describe("the collectors of the scheduled event", () => {
   it("are one table, their log lines word for word those the dashboards read", () => {
     expect(COLLECTEURS.map((c) => c.nom)).toEqual([
-      "bouées Candhis", "calendrier FFCK", "mesures de l'air", "capteurs amateurs", "offres d'emploi",
+      "bouées Candhis", "calendrier FFCK", "indice UV mesuré", "mesures de l'air", "capteurs amateurs", "offres d'emploi",
       "sites mobiles hors service", "formations CPF", "marchés publics",
     ]);
     expect(new Set(COLLECTEURS.map((c) => c.cle)).size).toBe(COLLECTEURS.length);

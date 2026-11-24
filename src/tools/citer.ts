@@ -70,6 +70,8 @@ const SHORT: Record<string, string> = {
   openmeteo_houle: "Open-Meteo (modèle de vagues WAM de l'ECMWF)",
   openmeteo_houle_mf: "Open-Meteo (modèle de vagues MFWAM de Météo-France, Copernicus Marine)",
   cams_uv: "Copernicus (CAMS), via Open-Meteo",
+  solardb_uv: "ENERGY-Lab (Université de La Réunion), SolarDB",
+  nasa_omi_ozone: "NASA (satellite Aura, OMI)",
   refmar: "SHOM (REFMAR)",
   gdacs_cyclones: "CMRS de La Réunion (Météo-France), via GDACS",
   acspo: "NOAA CoastWatch",

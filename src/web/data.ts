@@ -37,6 +37,7 @@ import * as candhis from "../providers/candhis.js";
 import { gaugeRow, gauges } from "../tools/maree.js";
 import { amateur, islandTour, meteoActuelle } from "../tools/meteo.js";
 import { previsionMeteo } from "../tools/prevision.js";
+import type { Bloc as UvMesureBloc } from "../providers/uv-mesure.js";
 import { buildChiffres, type Chiffres } from "./en-chiffres.js";
 import { named } from "../tools/annuaire.js";
 import { alertsFor, applyRealtime, busiestStops, completeMinutes, departures, findStops, nearStops, type PageRow, pageRow, realtimeFeeds, spread, stationDepartures, stopIds } from "../tools/transports.js";
@@ -244,6 +245,8 @@ export interface PrevisionAnswer {
   mer_de_nuages?: MerDeNuages;
   /** The sky of the coming night, from 18 h to 6 h (tools/nuages.ts); missing on a copy made before it. */
   ciel_de_nuit?: CielDeNuit;
+  /** The UV index MEASURED at Moufia, near it (providers/uv-mesure.ts): the same words as the tool's. */
+  indice_uv_mesure?: UvMesureBloc;
   avertissements?: string[];
   sources: Credit[];
 }

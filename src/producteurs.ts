@@ -86,6 +86,9 @@ export const FICHES: Record<string, Fiche> = {
   openmeteo_houle: { famille: "cc_by", producteurs: [ECMWF] },
   openmeteo_houle_mf: { famille: "cc_by", producteurs: [MF] },
   cams_uv: { famille: "cc_by", producteurs: [ECMWF] },
+  // Under ENERGY-Lab's written agreement of 23/11/2026, CC BY 4.0.
+  solardb_uv: { famille: "cc_by", producteurs: ["ENERGY-Lab (Université de La Réunion)"] },
+  nasa_omi_ozone: { famille: "domaine_public", producteurs: ["NASA"] },
   acspo: { famille: "domaine_public", producteurs: ["NOAA"] },
   viirs: { famille: "domaine_public", producteurs: ["NOAA"] },
   noaa_crw_dhw_5km: { famille: "domaine_public", producteurs: ["NOAA"] },

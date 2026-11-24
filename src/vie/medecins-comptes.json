@@ -1,10 +1,10 @@
 {
- "construit": "2026-11-01",
- "mis_a_jour": "2026-10-26",
+ "construit": "2026-11-24",
+ "mis_a_jour": "2026-11-09",
  "ile": {
   "generalistes": {
-   "total": 1043,
-   "secteur_1": 1030,
+   "total": 1042,
+   "secteur_1": 1029,
    "secteur_2": 8,
    "depassement_permanent": 0,
    "non_conventionnes": 5,
@@ -16,7 +16,7 @@
     "secteur_1": 10
    },
    "Anesthésiste réanimateur": {
-    "total": 43,
+    "total": 44,
     "secteur_1": 13
    },
    "Cancérologue médical": {
@@ -24,8 +24,8 @@
     "secteur_1": 2
    },
    "Cancérologue radiothérapeute": {
-    "total": 5,
-    "secteur_1": 5
+    "total": 6,
+    "secteur_1": 6
    },
    "Cardiologue": {
     "total": 60,
@@ -128,7 +128,7 @@
     "secteur_1": 31
    },
    "Ophtalmologiste": {
-    "total": 58,
+    "total": 57,
     "secteur_1": 21
    },
    "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
@@ -503,7 +503,7 @@
      "secteur_1": 10
     },
     "Ophtalmologiste": {
-     "total": 13,
+     "total": 12,
      "secteur_1": 3
     },
     "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {
@@ -746,8 +746,8 @@
     "97490"
    ],
    "generalistes": {
-    "total": 166,
-    "secteur_1": 161,
+    "total": 167,
+    "secteur_1": 162,
     "secteur_2": 4,
     "depassement_permanent": 0,
     "non_conventionnes": 1,
@@ -1034,8 +1034,8 @@
     "97450"
    ],
    "generalistes": {
-    "total": 69,
-    "secteur_1": 69,
+    "total": 68,
+    "secteur_1": 68,
     "secteur_2": 0,
     "depassement_permanent": 0,
     "non_conventionnes": 0,
@@ -1119,7 +1119,7 @@
    },
    "specialistes": {
     "Anesthésiste réanimateur": {
-     "total": 3,
+     "total": 4,
      "secteur_1": 0
     },
     "Cardiologue": {
@@ -1224,8 +1224,8 @@
     "97432"
    ],
    "generalistes": {
-    "total": 181,
-    "secteur_1": 181,
+    "total": 180,
+    "secteur_1": 180,
     "secteur_2": 0,
     "depassement_permanent": 0,
     "non_conventionnes": 0,
@@ -1241,8 +1241,8 @@
      "secteur_1": 0
     },
     "Cancérologue radiothérapeute": {
-     "total": 3,
-     "secteur_1": 3
+     "total": 4,
+     "secteur_1": 4
     },
     "Cardiologue": {
      "total": 12,
@@ -1301,7 +1301,7 @@
      "secteur_1": 7
     },
     "Ophtalmologiste": {
-     "total": 12,
+     "total": 11,
      "secteur_1": 3
     },
     "Oto-Rhino-Laryngologue (ORL) et chirurgien cervico-facial": {

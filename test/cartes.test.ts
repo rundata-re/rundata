@@ -3,11 +3,13 @@ import baignades from "../src/eau/baignades.json" with { type: "json" };
 import { COMMON } from "../src/tools/eau.js";
 import type { EauAnswer, HistoriqueAnswer, SeaData } from "../src/web/data.js";
 import { eauPage, historiquePage } from "../src/web/domains.js";
-import { seaPage } from "../src/web/pages.js";
+import { project } from "../src/web/map.js";
+import { anchorId, seaPage } from "../src/web/pages.js";
 import { deadAnchors, doubleIds, mapLinks, tabStops } from "./cartes.js";
 
 const NOW = new Date("2026-10-24T06:00:00Z");
 const cached = <T>(value: T) => ({ value, fetchedAt: NOW, stale: false });
+const sub = ([a, b]: [number, number], [c, d]: [number, number]): [number, number] => [a - c, b - d];
 
 describe("the maps of the pages read from a bundle or a database", () => {
   it("lead each bathing site to its line on /eau", () => {
@@ -39,10 +41,41 @@ describe("the maps of the pages read from a bundle or a database", () => {
       sources: [],
     } as unknown as EauAnswer;
     const page = eauPage("https://rundata.re", cached(value), NOW);
-    const rounds = [...page.matchAll(/<circle class="sh" cx="(-?\d+)" cy="(-?\d+)" r="(\d+)"/g)].map((m) => m.slice(1, 4).map(Number));
-    expect(rounds).toHaveLength(baignades.sites.length);
-    const over = rounds.flatMap(([x, y, r], i) => rounds.slice(i + 1).filter(([u, v, q]) => Math.hypot(u - x, v - y) < r + q).map(() => i));
+    // Each round with the site it stands for (its link), and the site's point on the map.
+    const rounds = [...page.matchAll(/<a class="mk" href="#([^"]+)"[^>]*>(?:(?!<\/a>).)*?<circle class="sh" cx="(-?\d+)" cy="(-?\d+)" r="(\d+)"/gs)]
+      .map((m) => ({ id: m[1], x: +m[2], y: +m[3], r: +m[4] }));
+    const point = (id: string) => {
+      const s = baignades.sites.find((b) => anchorId("b", b.nom) === id);
+      return project(s!.lon, s!.lat);
+    };
+    // A site left off the map is named under it, with a link to its line.
+    const under = page.match(/<p class="note hors"[^>]*>(.*?)<\/p>/s)?.[1] ?? "";
+    const out = [...under.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]);
+    expect(rounds.length + out.length).toBe(baignades.sites.length);
+    expect(out.length).toBeLessThanOrEqual(4);
+    const over = rounds.flatMap((a, i) => rounds.slice(i + 1).filter((b) => Math.hypot(b.x - a.x, b.y - a.y) < a.r + b.r).map((b) => `${a.id} / ${b.id}`));
     expect(over).toEqual([]);
+    // 24/11/2026 (/eau online): Citerne Quarante Six's point under the round of Saint-Leu's town centre, the Bassin de la
+    // Passerelle's bitten by Manapany's. No round covers another place's point (10, its white ring 2).
+    const hides = rounds.flatMap((a) => rounds.filter((b) => b.id !== a.id && Math.hypot(...sub(point(b.id), [a.x, a.y])) < a.r + 12).map((b) => `${a.id} sur ${b.id}`));
+    expect(hides).toEqual([]);
+    // La Saline-les-Bains and the Pointe des Trois Roches, their lines under each other's round: each line, from its
+    // point to its own round's edge, is seen over half its length at least.
+    const hidden = rounds.flatMap((a) => {
+      const [x0, y0] = point(a.id);
+      const d = Math.hypot(a.x - x0, a.y - y0);
+      const len = d - a.r;
+      if (len <= 0) return [];
+      const steps = 100;
+      let seen = 0;
+      for (let k = 0; k < steps; k++) {
+        const t = ((k + 0.5) / steps) * (len / d);
+        const [x, y] = [x0 + (a.x - x0) * t, y0 + (a.y - y0) * t];
+        if (!rounds.some((b) => b.id !== a.id && Math.hypot(b.x - x, b.y - y) < b.r)) seen++;
+      }
+      return seen < steps / 2 ? [`${a.id} : ${seen} %`] : [];
+    });
+    expect(hidden).toEqual([]);
   });
 
   it("lead each station of the rain map to its row on /historique", () => {

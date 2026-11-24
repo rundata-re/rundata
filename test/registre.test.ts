@@ -5,6 +5,7 @@ import { BUILD_BUDGET, SUBREQUEST_LIMIT } from "../src/budget.js";
 import { budget, checks, FETCHING, HUBS, PAGE_PATHS, PLATFORM_SHARE, queues, reached, REGISTRY, TOOL_NAMES, worstEvent, worstMain, type Entry } from "../src/registre.js";
 import { SHARED, SHARED_AFTER } from "../src/web/partagees.js";
 import { DOMAINS } from "../src/web/site.js";
+import { COLLECTEURS } from "../src/collecteurs.js";
 
 const ids = new Set(REGISTRY.map((e) => e.id));
 
@@ -50,7 +51,11 @@ describe("the budget's registry (src/registre.ts)", () => {
     // name its log line starts with, which is its entries' queue.
     const src = readFileSync(new URL("../src/worker.ts", import.meta.url), "utf8");
     const event = src.slice(src.indexOf("async scheduled("));
-    const blocks = event.split("counted(BUILD_BUDGET").slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI");
+    // The collectors of the table (collecteurs.ts) run by one loop of the event, each in its own counted(BUILD_BUDGET).
+    const blocks = [
+      ...event.split("counted(BUILD_BUDGET").slice(1).map((b) => b.match(/console\.log\(`([^`$:]+?) :/)?.[1]).filter((x) => x && x !== "stations MétéoR-OI"),
+      ...COLLECTEURS.map((c) => c.nom),
+    ];
     expect(new Set(blocks).size).toBe(blocks.length);
     expect([...new Set(REGISTRY.flatMap((e) => (e.queue ? [e.queue] : [])))].sort()).toEqual([...blocks].sort());
     for (const e of REGISTRY.filter((x) => x.queue)) expect(e.trigger, e.id).toBe("planifiée");

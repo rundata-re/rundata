@@ -65,6 +65,7 @@ import * as radarSemaine from "./web/radar-semaine.js";
 import * as rejeu from "./web/rejeu.js";
 import * as carteScolaire from "./vie/carte-scolaire.js";
 import { why } from "./types.js";
+import { COLLECTEURS, dit, passage } from "./collecteurs.js";
 import { configure as metaWebhookSecrets } from "./meta-webhook.js";
 import { cheminMasque } from "./chemin-secret.js";
 import { plage } from "./web/plage.js";
@@ -555,33 +556,14 @@ export default {
         .then(({ value, used, reads }) => console.log(`bornes de recharge : ${value} points de La Réunion, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("bornes de recharge : état impossible", why(err))));
     }
-    // Every 30 minutes, at 10 and 40 past the hour: the Candhis buoys' last half hour, one request per type of buoy,
-    // kept in KV (src/providers/candhis.ts), once the reads above are done. Nothing without the key.
-    if (kv && candhis.configured() && candhis.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(candhis.KEY, "json")) as candhis.Etat | null;
-        return candhis.refresh(before, async (etat) => {
-          count(1, true);
-          await kv.put(candhis.KEY, JSON.stringify(etat), { expirationTtl: candhis.TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`bouées Candhis : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("bouées Candhis : lecture impossible", why(err))));
-    }
-    // Every 30 minutes, at 25 and 55 past the hour: one page of the FFCK's calendar at most, a season's list once a day or
-    // the page of an event of the island, kept in KV (src/providers/ffck.ts), once the reads above are done.
-    if (kv && ffck.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(ffck.KEY, "json")) as ffck.Etat | null;
-        return ffck.refresh(before, async (etat) => {
-          count(1, true);
-          await kv.put(ffck.KEY, JSON.stringify(etat), { expirationTtl: ffck.TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`calendrier FFCK : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("calendrier FFCK : lecture impossible", why(err))));
+    // The collectors that keep one copy in KV (collecteurs.ts), each in a budget of its own once the reads above are done.
+    if (kv) {
+      for (const col of COLLECTEURS) {
+        if (!col.due(now)) continue;
+        ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, () => passage(col, kv, now)))
+          .then((r) => console.log(dit(col, r)))
+          .catch((err) => console.error(`${col.nom} : lecture impossible`, why(err))));
+      }
     }
     // Every run: the radar's latest image added to its last 6 hours in KV when it is new, or a gap when it cannot be
     // read or is too old (web/pluie-retro.ts), once the Météo-France token is renewed, never after the reads above: the
@@ -608,94 +590,6 @@ export default {
       })))
         .then(({ value, used, reads }) => console.log(`historique radar : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
         .catch((err) => console.error("historique radar : passage impossible", why(err))));
-    }
-    // Every hour, at 45 past: the measures at Atmo Réunion's stations, La Réunion's lines of the LCSQA's national file
-    // (up to 12.5 Mo, read line by line), kept in KV when the latest hour changed, once the reads above are done.
-    if (kv && airMesures.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(airMesures.KV_KEY, "json")) as airMesures.Copie | null;
-        return airMesures.collect(before, async (copie) => {
-          count(1, true);
-          await kv.put(airMesures.KV_KEY, JSON.stringify(copie), { expirationTtl: airMesures.KV_TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`mesures de l'air : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("mesures de l'air : lecture impossible", why(err))));
-    }
-    // Every 15 minutes, at 10, 25, 40 and 55 past: the sensors of private people on Sensor.Community over the island,
-    // one request, and at 10 past those of sensors.social besides, its list and one request per sensor of the island;
-    // kept in KV for 2 hours (src/providers/capteurs.ts), once the reads above are done.
-    if (kv && capteurs.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(capteurs.KV_KEY, "json")) as capteurs.Stocke | null;
-        return capteurs.collect(before, async (stocke) => {
-          count(1, true);
-          await kv.put(capteurs.KV_KEY, JSON.stringify(stocke), { expirationTtl: capteurs.KV_TTL_SECONDS });
-        }, now, capteurs.socialDue(now));
-      }))
-        .then(({ value, used, reads }) => console.log(`capteurs amateurs : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("capteurs amateurs : lecture impossible", why(err))));
-    }
-    // Every event: one page of an offer of the public sector at La Réunion, the newest not read yet or else each in
-    // turn, for its employer and closing date, and every hour at 25 past the feed besides; kept in KV when they
-    // changed, once the reads above are done.
-    if (kv) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(emploi.KV_KEY, "json")) as emploi.Copie | null;
-        return emploi.collect(before, async (copie) => {
-          count(1, true);
-          await kv.put(emploi.KV_KEY, JSON.stringify(copie), { expirationTtl: emploi.KV_TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`offres d'emploi : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("offres d'emploi : lecture impossible", why(err))));
-    }
-    // Every hour at half past, from 14:30 to 23:30 in La Réunion, until the file of the day is read: the mobile sites out of
-    // service at La Réunion, its lines of the Arcep's national file (0.5 to 2.2 Mo), kept in KV, once the reads above
-    // are done.
-    if (kv && sitesHs.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(sitesHs.KV_KEY, "json")) as sitesHs.Copie | null;
-        return sitesHs.collect(before, async (copie) => {
-          count(1, true);
-          await kv.put(sitesHs.KV_KEY, JSON.stringify(copie), { expirationTtl: sitesHs.KV_TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`sites mobiles hors service : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("sites mobiles hors service : lecture impossible", why(err))));
-    }
-    // Every hour at 15 past, from 12:15 to 18:15 UTC, until the catalogue of the day is read: the formations eligible to
-    // the CPF with an open session at La Réunion (Caisse des Dépôts, about 780 Ko), kept in KV, once the reads above are
-    // done.
-    if (kv && cpf.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(cpf.KV_KEY, "json")) as cpf.Copie | null;
-        return cpf.collect(before, async (copie) => {
-          count(1, true);
-          await kv.put(cpf.KV_KEY, JSON.stringify(copie), { expirationTtl: cpf.KV_TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`formations CPF : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("formations CPF : lecture impossible", why(err))));
-    }
-    // Every hour, at 35 past: the public procurement notices open at La Réunion (BOAMP), the full text of the new ones
-    // only, kept in KV when they changed, once the reads above are done.
-    if (kv && marchesPublics.refreshDue(now)) {
-      ctx.waitUntil(reads.then(() => counted(BUILD_BUDGET, async () => {
-        count();
-        const before = (await kv.get(marchesPublics.KV_KEY, "json")) as marchesPublics.Copie | null;
-        return marchesPublics.collect(before, async (copie) => {
-          count(1, true);
-          await kv.put(marchesPublics.KV_KEY, JSON.stringify(copie), { expirationTtl: marchesPublics.KV_TTL_SECONDS });
-        }, now);
-      }))
-        .then(({ value, used, reads }) => console.log(`marchés publics : ${value}, sous-requêtes : ${used}${readsSaid(reads)}`))
-        .catch((err) => console.error("marchés publics : lecture impossible", why(err))));
     }
     // Every 30 minutes while GDACS has an active system: the RSMC's list of bulletins at 15 and 45 past the hour, its
     // track map at 20 and 50, one request each, kept in KV (src/providers/cmrs-carte.ts), once the reads above are done.

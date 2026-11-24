@@ -76,6 +76,37 @@ describe("a failed read", () => {
     expect(writes.filter((w) => w.startsWith("INSERT"))).toHaveLength(1);
   });
 
+  it("dates a silent site's last try by the day's failed reads too, a write per half hour at most (24/11/2026)", async () => {
+    // Saint-Joseph's site answered 522 to the reads of 03:06, 04:11 and 05:15 while the page said « dernier essai le
+    // 23/11 à 06:00 », the morning's recheck.
+    const { db, writes, row } = database();
+    db.prepare("DELETE FROM sans_reponse").run();
+    const recheck = T - 86_400;
+    db.prepare("INSERT INTO sans_reponse (hote, url, statut, premier_echec, dernier_essai, constat) VALUES ('saintjoseph.re', 'https://www.saintjoseph.re/', 'injoignable', ?, ?, 'delai')").run(recheck - 86_400, recheck);
+    db.prepare("INSERT INTO sans_reponse (hote, url, statut, premier_echec, dernier_essai, constat, n403) VALUES ('reunion.gouv.fr', 'https://www.reunion.gouv.fr/', 'bloque', ?, ?, 'http_403', 2)").run(recheck, recheck);
+    const at = (h: string) => new Date(`2026-10-26T${h}:00Z`);
+    const essai = (h: string) => Math.floor(at(h).getTime() / 1000);
+    const updates = () => writes.filter((w) => w.startsWith("UPDATE")).length;
+    await sr.noter("agenda_mairies", "https://www.saintjoseph.re/agenda", "http_522", at("23:06"));
+    expect(row("saintjoseph.re")).toMatchObject({ statut: "injoignable", dernier_essai: essai("23:06"), constat: "http_522", premier_echec: recheck - 86_400 });
+    // The next read's failure, 20 minutes later: nothing written; an hour later: its time.
+    await sr.noter("agenda_mairies", "https://www.saintjoseph.re/agenda", "http_522", at("23:26"));
+    expect(row("saintjoseph.re")).toMatchObject({ dernier_essai: essai("23:06") });
+    await sr.noter("agenda_mairies", "https://www.saintjoseph.re/agenda", "delai", at("23:59"));
+    expect(row("saintjoseph.re")).toMatchObject({ dernier_essai: essai("23:59"), constat: "delai" });
+    expect(updates()).toBe(2);
+    // A 403 or a 429 of the day is our reads turned away, not the site's silence: the row stays as the recheck left it.
+    await sr.noter("agenda_mairies", "https://www.saintjoseph.re/agenda", "http_429", new Date("2026-10-27T01:00:00Z"));
+    expect(row("saintjoseph.re")).toMatchObject({ dernier_essai: essai("23:59"), constat: "delai" });
+    // A site that turns our reads away keeps the morning's state, whatever the day's reads saw.
+    await sr.noter("prefecture_communiques", "https://www.reunion.gouv.fr/Actualites", "delai", at("23:06"));
+    expect(row("reunion.gouv.fr")).toMatchObject({ statut: "bloque", dernier_essai: recheck, constat: "http_403" });
+    // What the tool and the page say.
+    expect(typo(sansReponsePage("https://rundata.re", await sr.lignes(), T))).toContain(typo("dernier essai le 27/10 à 03:59"));
+    const tool = JSON.parse((await sitesSansReponse(new Cache(), undefined, new Date("2026-10-27T01:00:00Z"))).content[0].text);
+    expect(tool.sites.find((x: { site: string }) => x.site.includes("saintjoseph"))).toMatchObject({ dernier_essai: "27/10 à 03:59", constat: "pas de réponse dans le délai" });
+  });
+
   it("brings a host that had come back to « a_verifier » again, with this failure's address", async () => {
     const { row } = database();
     await sr.noter("acspo", "https://coastwatch.noaa.gov/thredds/dodsC/x.ascii", "http_500", MORNING);

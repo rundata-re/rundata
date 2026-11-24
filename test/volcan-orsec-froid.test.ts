@@ -69,7 +69,7 @@ describe("the ORSEC level of a cold copy, the prefecture not read in time", () =
     const html = await page(cold(durable).cache);
     // Whose the level is, at the top: the prefecture's release kept.
     expect(html).toContain("Alerte\u00a01 du préfet, communiqué du 24\u00a0octobre.");
-    expect(html).not.toMatch(/ORSEC[^<]*<b>Vigilance/);
+    expect(html).not.toMatch(/ORSEC(?:<\/abbr>)?[^<]*<b>Vigilance/);
   });
 
   it("keeps it too when the release has left the prefecture's list of the latest", async () => {
@@ -96,7 +96,7 @@ describe("the ORSEC level of a cold copy, the prefecture not read in time", () =
     expect(html).toContain(`<h1>Piton de la Fournaise\u00a0: état du volcan</h1>`);
     expect(html.replace(/&#39;/g, "'")).toContain(`L'OVPF et la préfecture n'ont pas annoncé d'éruption dans les textes lus par <span class="ident">rundata.re</span> jusqu'au 24/10 à\u00a019:35. Le niveau d'alerte de la préfecture n'a pas pu être lu\u00a0: vérifiez-le sur <a href="https://www.reunion.gouv.fr/Actualites/Communiques-de-presse" aria-label="reunion.gouv.fr"><span class="adrweb">reunion.<wbr>gouv.<wbr>fr</span></a> avant de monter au volcan.`);
     expect(html).toContain(`Accès à l'Enclos\u00a0: à vérifier sur <a href="https://www.reunion.gouv.fr/Actualites/Communiques-de-presse" aria-label="reunion.gouv.fr"><span class="adrweb">reunion.<wbr>gouv.<wbr>fr</span></a>, avant de partir.`);
-    expect(html).not.toMatch(/ORSEC[^<]*<b>Vigilance/);
+    expect(html).not.toMatch(/ORSEC(?:<\/abbr>)?[^<]*<b>Vigilance/);
     expect(html).not.toContain("partiellement ouvert");
   });
 

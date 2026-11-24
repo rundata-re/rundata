@@ -1,13 +1,13 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { handle } from "../src/app.js";
 import { counted, PAGE_BUDGET } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
-import island from "../src/places/island.json" with { type: "json" };
 import * as meteofrance from "../src/providers/meteofrance.js";
 import { CARTE_CSS } from "../src/web/carte-style.js";
 import { curseurScript, curseurScriptPath, LONGUEURS } from "../src/web/carte-curseur.js";
-import { project, W, H } from "../src/web/map.js";
-import { PATHS } from "../src/web/rejeu.js";
+import { project } from "../src/web/map.js";
+import { heures, HEURES, merge, PATHS } from "../src/web/rejeu.js";
 import { site } from "../src/web/site.js";
 
 async function serve(path: string) {
@@ -63,11 +63,16 @@ describe("/carte's time cursor", () => {
   });
 
   it("puts the replay's stations where /carte puts them: the same projection, to half a unit", () => {
-    const [A, B, C, D] = island.bbox;
-    for (const s of meteofrance.stations()) {
-      const [x, y] = project(s.lon, s.lat);
-      expect(Math.abs(Math.round(((s.lon - A) / (C - A)) * W * 10) / 10 - x), s.id).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(Math.round(((D - s.lat) / (D - B)) * H * 10) / 10 - y), s.id).toBeLessThanOrEqual(0.5);
+    // The places the replay's file gives (rejeu.ts), from Météo-France's hours of 25/10, against /carte's projection.
+    const csv = readFileSync(new URL("./fixtures/meteofrance_horaire.csv", import.meta.url), "utf8");
+    const now = Date.parse("2026-10-25T08:57:00Z");
+    const six = heures(merge(null, meteofrance.parseHourly(csv, now), new Date(now)), HEURES["6h"])!;
+    expect(six.st.length).toBeGreaterThan(0);
+    const byId = new Map(meteofrance.stations().map((s) => [s.id, s]));
+    for (const s of six.st) {
+      const [x, y] = project(byId.get(s.id)!.lon, byId.get(s.id)!.lat);
+      expect(Math.abs(s.x - x), s.id).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(s.y - y), s.id).toBeLessThanOrEqual(0.5);
     }
   });
 });

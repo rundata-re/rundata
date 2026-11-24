@@ -27,7 +27,10 @@ function sources(titre?: string) {
   void store.put("seismes", { value: parse(fixture("ipgp_seismes.txt")), fetchedAt: t });
   void store.put("volcan:ovpf", { value: activityPosts(JSON.parse(fixture("ovpf_bluesky.json"))), fetchedAt: t });
   void store.put("volcan:pitonlive", { value: JSON.parse(fixture("pitonlive_state.json")), fetchedAt: t });
-  void store.put("volcan:prefecture:phase", { value: titre ? phaseOf([release(titre, "2026-10-24")]) : null, fetchedAt: t });
+  // With the sentences of its page, as the prefecture wrote them on 24/10/2026: a day's words the page must not take.
+  const r = titre ? release(titre, "2026-10-24") : undefined;
+  const phrases = ["Une éruption est donc probable à très brève échéance, dans les prochaines minutes ou heures."];
+  void store.put("volcan:prefecture:phase", { value: r ? { ...phaseOf([r])!, phrases } : null, fetchedAt: t });
   return new Cache(store, () => t);
 }
 
@@ -79,7 +82,7 @@ describe("the volcano put forward during an alert", () => {
     expect(page).toContain("<p class=\"note\">Alerte\u00a01 du préfet, communiqué du 24\u00a0octobre.</p>");
     expect(page).toContain(`<p class="note">Suivre l'OVPF\u00a0: <a href="https://www.facebook.com/ObsVolcanoPitonFournaise">Facebook ↗</a> · <a href="https://bsky.app/profile/ovpf.bsky.social">Bluesky ↗</a> · <a href="https://x.com/obsfournaise">X ↗</a></p>`);
     expect(page).not.toContain("Éruption ou pas, Enclos ouvert ou fermé");
-    expect(page).not.toContain("Niveau du dispositif ORSEC volcan");
+    expect(page).not.toMatch(/Niveau du dispositif (?:<abbr[^>]*>)?ORSEC/);
     // « Seuls l'OVPF et la préfecture… » heads the official texts, below.
     expect(page).toContain("<h2 id=\"h-officiel\">Les annonces officielles</h2><p>Seuls l&#39;OVPF et la préfecture annonceront une éruption\u00a0: leurs textes s&#39;affichent ici dès que rundata.re les a lus. L&#39;OVPF publie aussi sur Facebook et X, qui ne sont pas lus ici\u00a0: ses messages ci-dessous viennent de Bluesky.</p>");
     expect(page).not.toMatch(/pas (encore )?commencé/);

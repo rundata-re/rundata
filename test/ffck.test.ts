@@ -186,10 +186,12 @@ describe("the scheduled event", () => {
     site({ "saison=2026": LISTE, "saison=2027": "" });
     const rows = ffck.candidates(ffck.parseListe(LISTE), TODAY);
     const old = { codex: "FFCK20260001", type: "Compétition officielle - Slalom", nom: "Passé", debut: "2026-10-01", fin: "2026-10-01", lieu: "SAINT BENOIT" };
-    const before: ffck.Etat = { listes: {}, candidates: [...rows, old], fiches: { FFCK20260001: { ligne: "x", lue: 0 } }, essai: 0 };
+    // Beside it, the page of an event to come, read just now: kept.
+    const coming = rows[0].codex;
+    const before: ffck.Etat = { listes: {}, candidates: [...rows, old], fiches: { FFCK20260001: { ligne: "x", lue: 0 }, [coming]: { ligne: "y", lue: NOW.getTime() } }, essai: 0 };
     let after: ffck.Etat | undefined;
     await ffck.refresh(before, async (e) => void (after = e), NOW);
-    expect(after!.fiches).toEqual({});
+    expect(Object.keys(after!.fiches)).toEqual([coming]);
     expect(after!.candidates.map((r) => r.codex)).not.toContain("FFCK20260001");
   });
 });

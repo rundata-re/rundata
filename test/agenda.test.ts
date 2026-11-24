@@ -226,7 +226,12 @@ describe("agenda", () => {
     const rows: EventRow[] = r.evenements;
     expect(rows).toHaveLength(r.nombre);
     const jours = parJour(rows, "2026-10-24", "2026-10-25");
-    expect(r.par_jour.jours).toEqual(jours.map((j, i) => ({ jour: ["samedi 24/10", "dimanche 25/10"][i], nombre: nombreDuJour(j), ...(j.aussi.length ? { aussi_en_cours: j.aussi.length } : {}) })));
+    // The fixture's weekend, its figures written out: a rule changed in the tool and its pages is seen here.
+    expect(r.par_jour.jours).toEqual([
+      { jour: "samedi 24/10", nombre: 16, aussi_en_cours: 7 },
+      { jour: "dimanche 25/10", nombre: 4, aussi_en_cours: 7 },
+    ]);
+    expect(jours.map(nombreDuJour)).toEqual([16, 4]);
     expect(r.par_jour.a_savoir).toContain("compte pour chacun de ses jours");
     // What runs over both days is counted on the Sunday too, not only on the day it begins.
     const both = rows.filter((e) => occurrences(e).some((o) => o.du <= "2026-10-24" && o.au >= "2026-10-25" && !longRun(o)));
@@ -1628,6 +1633,7 @@ describe("agenda", () => {
         return agenda(c, undefined, undefined, undefined, NOW);
       });
       expect(first.used).toBeLessThanOrEqual(PAGE_BUDGET);
+      expect((await first.settled()).refused).toBe(0);
       const named = body(first.value).indisponible as string[];
       expect(named.length).toBeGreaterThan(0);
       expect(body(first.value).resume).toContain(`non lu${named.length > 1 ? "s" : ""} cette fois : ${named.join(", ")}`);
@@ -1641,6 +1647,7 @@ describe("agenda", () => {
           return agenda(c, undefined, undefined, undefined, NOW);
         });
         expect(next.used).toBeLessThanOrEqual(PAGE_BUDGET);
+        expect((await next.settled()).refused).toBe(0);
         rest = body(next.value).indisponible;
       }
       expect(rest).toBeUndefined();

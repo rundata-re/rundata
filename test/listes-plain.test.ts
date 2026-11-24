@@ -73,7 +73,10 @@ describe("an event's source on /evenements", () => {
     expect(html).toContain(`(Saint-Denis) · ${cut}`);
     // The map's point keeps its text whole in its attribute.
     expect(html).toContain(`data-p3="Source : ${DEPARTEMENT_MENTION}`);
-    for (const attr of html.match(/"[^"<>]*"/g) ?? []) expect(attr).not.toContain("<wbr");
+    // Each attribute's whole value, « < » included: a pattern without it could never hold a <wbr>.
+    const values = [...html.matchAll(/\s[\w-]+="([^"]*)"/g)].map((m) => m[1]);
+    expect(values.some((v) => v.startsWith("Source") && v.includes("departement974"))).toBe(true);
+    for (const v of values) expect(v).not.toMatch(/<wbr|<span/);
   });
 });
 

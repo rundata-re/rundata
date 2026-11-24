@@ -120,6 +120,8 @@ describe("the fiche of an address, /terrain (web/terrain.ts)", () => {
     const at = (s: string) => html.indexOf(s);
     expect(at("Le cadastre ne prouve pas la propriété")).toBeGreaterThan(at('id="h-cadastre"'));
     expect(at("Le cadastre ne prouve pas la propriété")).toBeLessThan(at('id="h-plu"'));
+    // Under its own heading: a warning left out (-1) would be « before » the next one.
+    expect(at("La zone du PLU ne dit pas tout")).toBeGreaterThan(at('id="h-plu"'));
     expect(at("La zone du PLU ne dit pas tout")).toBeLessThan(at('id="h-risques"'));
     expect(at("Cette fiche ne remplace pas l'état des risques")).toBeGreaterThan(at('id="h-risques"'));
     expect(at("Cette fiche ne remplace pas l'état des risques")).toBeLessThan(at("Catastrophes naturelles"));

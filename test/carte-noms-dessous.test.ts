@@ -12,10 +12,13 @@ describe("/carte's layers", () => {
     expect(layers).toBeGreaterThan(0);
     expect(map.indexOf('<g class="nm"')).toBeGreaterThan(0);
     expect(map.indexOf('<g class="nm"')).toBeLessThan(layers);
+    // Found before compared: a group left out (-1) would be « under » the layers.
+    expect(map.indexOf('<g class="pk">')).toBeGreaterThan(0);
     expect(map.indexOf('<g class="pk">')).toBeLessThan(layers);
   });
 
   it("stay over the rain and the roads, each in its group", () => {
+    expect(map.indexOf('class="kpluie"')).toBeGreaterThan(0);
     expect(map.indexOf('class="kpluie"')).toBeLessThan(map.indexOf('<g class="kcs">'));
     expect(map.indexOf('class="rd')).toBeGreaterThan(0);
     expect(map.indexOf('class="rd')).toBeLessThan(map.indexOf('<g class="kcs">'));

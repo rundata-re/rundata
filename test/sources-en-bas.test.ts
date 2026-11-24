@@ -47,6 +47,7 @@ describe("the sources of a page", () => {
 
   it("hold the producers and their licences alone, in every page's code: no hour, no warning", () => {
     const dir = new URL("../src/web/", import.meta.url);
+    let seen = 0;
     for (const f of readdirSync(dir).filter((n) => n.endsWith(".ts"))) {
       const code = readFileSync(new URL(f, dir), "utf8");
       for (let at = code.indexOf('<p class="sources">Sources : '); at >= 0; at = code.indexOf('<p class="sources">Sources : ', at + 1)) {
@@ -59,8 +60,11 @@ describe("the sources of a page", () => {
           else if (!depth) words += code[i];
         }
         expect(words.replace('<p class="sources">Sources : ', ""), f).toMatch(/^[\s,();.]*$/);
+        seen++;
       }
     }
+    // The paragraphs found in the code: none found, nothing was checked.
+    expect(seen).toBeGreaterThan(5);
   });
 
   it("are in small, in the muted colour", () => {

@@ -159,6 +159,7 @@ describe("long lists folded, the second pages", () => {
     const sp = collectePage(O, NOW, "Saint-Paul");
     const lines = [...sp.matchAll(/<details><summary><h3>([^<]*)\u00a0<span class="note">· \d+\u00a0rues?<\/span>(?:<br><span class="note">[^<]+<\/span>)?<\/h3><\/summary><p>([^<]*)\.<\/p>/g)];
     expect(lines.length).toBe(count(sp, /<div class="card groupe"[^>]*><details>/g));
+    expect(lines.length).toBeGreaterThan(0);
     for (const [, line, whole] of lines) {
       expect(line).not.toContain(";");
       expect(whole.startsWith(`${line}\u00a0; `)).toBe(true);

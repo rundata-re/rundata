@@ -190,6 +190,7 @@ describe("the whole page, the text grown by a page zoom of 250 % and more", () =
     expect(under12Rules).toContain("details.pli{padding:.7rem}details.pli .card{padding:.5rem}");
     expect(CSS.slice(under9, CSS.indexOf("}}", under9) + 2)).toContain("details.pli,details.pli .card{padding:.4rem}");
     // After the fold's own rule, which they override with the same weight.
+    expect(CSS.indexOf("details.pli{background:")).toBeGreaterThan(-1);
     expect(CSS.indexOf("details.pli{background:")).toBeLessThan(under12);
     // 390 px at 100 % is 24.4 rem: none of them applies.
     expect(390 / 16).toBeGreaterThan(12.5);

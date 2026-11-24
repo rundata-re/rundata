@@ -8,12 +8,20 @@ import { NOUVEAUTES } from "../src/nouveautes.js";
 import { insecables } from "../src/typographie.js";
 
 describe("the changes waiting to be listed (nouveautes-a-venir/)", () => {
+  // The rules of the list, as one check: what a line breaks, none when it follows them.
+  const fautes = (texte: string) => [
+    texte.length > 140 ? "plus de 140 caractères" : "",
+    /quota|(?<!date )limite|sous-requête|cloudflare|staging|tailnet|NAS\b/i.test(texte) ? "interne" : "",
+    /\\u00a0|^\s*[-*] /.test(texte) ? "pas une phrase simple" : "",
+  ].filter(Boolean);
+
   it("follow the rules of the list: one plain sentence each, 140 characters at most, nothing internal", () => {
-    for (const { fichier, texte } of lignesAVenir()) {
-      expect(texte.length, `${fichier} : ${texte}`).toBeLessThanOrEqual(140);
-      expect(texte, fichier).not.toMatch(/quota|(?<!date )limite|sous-requête|cloudflare|staging|tailnet|NAS\b/i);
-      expect(texte, fichier).not.toMatch(/\\u00a0|^\s*[-*] /);
-    }
+    for (const { fichier, texte } of lignesAVenir()) expect(fautes(texte), `${fichier} : ${texte}`).toEqual([]);
+    // The folder is empty on main, between two pull requests: the rules are checked on lines that break them too.
+    expect(fautes("Bus : les horaires de la ligne 1 en direct.")).toEqual([]);
+    expect(fautes(`Bus : ${"x".repeat(140)}`)).toEqual(["plus de 140 caractères"]);
+    expect(fautes("Météo : moins de sous-requêtes vers Cloudflare.")).toEqual(["interne"]);
+    expect(fautes("- Mer : la houle\\u00a0prévue.")).toEqual(["pas une phrase simple"]);
   });
 
   it("are read one per line, file by file, with the site's no-break spaces", () => {

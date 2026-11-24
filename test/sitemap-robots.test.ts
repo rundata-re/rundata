@@ -4,6 +4,8 @@ import { counted } from "../src/budget.js";
 import { Cache, MemoryStore } from "../src/cache.js";
 import { enChargement, texteVisible } from "../src/robots.js";
 import { COMMUNES } from "../src/web/commune.js";
+import { FICHES, fichePath, registre, type Row } from "../src/web/fiche-evenement.js";
+import { site } from "../src/web/site.js";
 import { STATIONS, stationPath } from "../src/web/station.js";
 import { avisLus, indexable } from "../src/web/coupures.js";
 import { NON_LU } from "./non-lu.js";
@@ -44,6 +46,34 @@ describe("the sitemap, as a search engine's robot reads it", () => {
     }
     expect(fautes.join("\n")).toBe("");
   }, 600_000);
+
+  it("names no event's page, even with their copies, which stay indexable: none in noindex, none saying it does not read its source", async () => {
+    // The register and /evenements's copy of Friday 20/11/2026: the event pages exist only with them, never cold. Out of
+    // the sitemap since 24/11/2026 (sitemap-gardees.ts), still online and indexable.
+    const NOW = new Date("2026-11-20T06:00:00Z");
+    const row = (fiche: string, titre: string, date: string) =>
+      ({ titre, quand: "samedi 21/11 de 19:30 à 22:00", date, lieu: "Kerveguen", commune: "Saint-Pierre", genres: ["concert"], publie_par: "Mairie de Saint-Pierre", lien: `https://www.saintpierre.re/agenda/${fiche}`, fiche, description: `${titre} : la soirée, d'après la mairie.` }) as Row;
+    const rows = [row("0a1b2c3d", "Concert de maloya au Kerveguen", "2026-11-21T19:30"), row("1b2c3d4e", "Kabar au Kerveguen", "2026-11-22T18:00")];
+    const store = new MemoryStore();
+    const t = NOW.getTime();
+    await store.put("web:agenda", { value: { resume: "", nombre: rows.length, evenements: rows, couverture: "", a_savoir: "", sources: [], ce_week_end: [] }, fetchedAt: t });
+    await store.put(FICHES, { value: registre(undefined, rows, "2026-11-20"), fetchedAt: t });
+    const serve = async (path: string, ua: string) => (await counted(0, () => site(get(path, ua), new Cache(store, () => t), () => {}, NOW))).value!;
+    const xml = await (await serve("/sitemap.xml", GOOGLEBOT)).text();
+    const events = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].slice(O.length)).filter((u) => /^\/evenements\/.+-[0-9a-f]{8}$/.test(u));
+    expect(events).toEqual([]);
+    for (const path of rows.map((r) => fichePath(r))) {
+      for (const ua of [GOOGLEBOT, NAVIGATEUR]) {
+        const r = await serve(path, ua);
+        const vu = await r.text();
+        expect(r.status, path).toBe(200);
+        expect(enChargement(vu), path).toBe(false);
+        expect(vu, path).not.toMatch(/<meta name="robots" content="[^"]*noindex/);
+        expect(r.headers.get("x-robots-tag") ?? "", path).not.toContain("noindex");
+        expect(texteVisible(vu).match(NON_LU), path).toBeNull();
+      }
+    }
+  });
 
   it("leaves out the weather stations' pages and the water cuts of a commune whose notices are not read, still online", async () => {
     const urls = new Set(await sitemap());

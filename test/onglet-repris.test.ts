@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { meteoPage, RELOAD_SCRIPT } from "../src/web/pages.js";
+import { meteoPage, RELOAD_SCRIPT, since } from "../src/web/pages.js";
 
 type Listener = (e: { persisted?: boolean }) => void;
 
@@ -55,6 +55,14 @@ describe("a tab taken up again", () => {
     const u = tab([ago(180)], NOW);
     u.shown();
     expect(u.reloads()).toBe(1);
+    // Either side of the 15 minutes, the age as the page writes it (`since`).
+    const written = (min: number) => /data-age="([^"]+)"/.exec(since(ago(min), new Date(NOW)))![1];
+    const past = tab([written(16)], NOW);
+    past.shown();
+    expect(past.reloads()).toBe(1);
+    const within = tab([written(14)], NOW);
+    within.shown();
+    expect(within.reloads()).toBe(0);
   });
 
   it("keeps a page whose newest measure is recent, or that has none, and a page just loaded", () => {

@@ -123,8 +123,12 @@ describe("a commune's RSS feed", () => {
     expect(xml).toContain("<item><title>Ce flux publie les alertes de Saint-Paul</title><link>https://rundata.re/communes/saint-paul</link>");
     expect(xml).toContain('<guid isPermaLink="false">rundata.re/saint-paul/flux</guid><pubDate>Sat, 24 Oct 2026 12:00:00 GMT</pubDate>');
     expect(xml.match(/<item>/g)).toHaveLength(3);
-    // Nothing unescaped in the text: every & starts an entity.
-    expect(xml.replace(/&(amp|lt|gt|quot|#39);/g, "")).not.toMatch(/&/);
+    // Nothing unescaped in the text: every & starts an entity. A title with « & » and « < », as a distributor may write it.
+    const odd = coupures("en cours");
+    const raw = { ...odd, value: { ...odd.value, avis: [{ ...odd.value.avis[0], titre: "Travaux réseau & réservoir <urgent> / Bois-de-Nèfles" }, ...odd.value.avis.slice(1)] } };
+    const sharp = communeRss("https://rundata.re", SAINT_PAUL, { coupures: raw }, NOW);
+    expect(sharp).toContain("Travaux réseau &amp; réservoir &lt;urgent&gt;");
+    for (const x of [xml, sharp]) expect(x.replace(/&(amp|lt|gt|quot|#39);/g, "")).not.toMatch(/&|<urgent/);
     expect(xml).toContain(`<lastBuildDate>${NOW.toUTCString()}</lastBuildDate>`);
   });
 

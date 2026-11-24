@@ -107,12 +107,13 @@ afterEach(() => {
 /** A page as a Worker serves it: counted, background work awaited within the same invocation. */
 async function serve(cache: Cache, path: string) {
   const pending: Promise<unknown>[] = [];
-  const { value, used } = await counted(PAGE_BUDGET, async () => {
+  const { value, used, settled } = await counted(PAGE_BUDGET, async () => {
     const r = (await site(html(path), cache, (p) => pending.push(p), NOW))!;
     await Promise.all(pending);
     return r;
   });
-  return { r: value, text: await value.text(), used };
+  // Past the budget a subrequest is refused, never counted in `used`: `refused` says whether the page fitted.
+  return { r: value, text: await value.text(), used, refused: (await settled()).refused };
 }
 
 describe("the budget of subrequests", () => {
@@ -159,6 +160,7 @@ describe("the budget of subrequests", () => {
     expect(r.status).toBe(200);
     expect(r.used + r.refused).toBeGreaterThan(0);
     expect(r.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(r.refused).toBe(0);
   });
 });
 
@@ -180,11 +182,13 @@ describe("home page", () => {
     expect(cold.text).not.toContain("En direct · <b>");
     expect(cold.text).toMatch(/<figcaption><span class="cap"><span class="dot"><\/span>Lu (à\u00a0\d\d:\d\d|le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d|entre \d\d:\d\d et \d\d:\d\d|entre le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d et le \d\d\/\d\d à[\u00a0 ]\d\d:\d\d)\u00a0· /);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(cold.refused).toBe(0);
     // Another isolate of the same data center: the weather from the edge, and the oldest of the other tiles brought up
     // to date afterwards, still within the limit.
     const warm = await serve(isolate(edge), "/");
     expect(warm.text).toContain("Piton Maïdo");
     expect(warm.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(warm.refused).toBe(0);
   });
 
   it("takes the sea from the copy of /mer, however old, and never asks the satellites itself, nor does a place on the coast", async () => {
@@ -412,10 +416,12 @@ describe("place pages", () => {
     expect(cold.text).toContain("Dernière mesure près de Cilaos");
     expect(cold.text).not.toContain("Température de la mer à Cilaos");
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(cold.refused).toBe(0);
     // Cold, the budget holds the stations and the forecast too (FORECAST_MIN_LEFT in web/data.ts no longer bites).
     expect(cold.text).toContain("Prévision, pas une mesure");
     const next = await counted(PAGE_BUDGET, () => buildPlace(isolate(edge), pageOf("cilaos")!, NOW));
     expect(next.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await next.settled()).refused).toBe(0);
     const built = placePage("https://rundata.re", pageOf("cilaos")!, { value: next.value, fetchedAt: NOW, stale: false }, NOW);
     expect(built).toContain("Dernière mesure près de Cilaos");
     expect(built).toContain("Prévision, pas une mesure");
@@ -440,9 +446,10 @@ describe("place pages", () => {
   });
 
   it("give the sea temperature on the coast", async () => {
-    const { text, used } = await serve(isolate(), "/meteo/saint-leu");
+    const { text, used, refused } = await serve(isolate(), "/meteo/saint-leu");
     expect(text).toContain("Température de la mer à Saint-Leu");
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(refused).toBe(0);
   });
 
   it("answer an unknown place with a 404 that links to the others", async () => {
@@ -475,6 +482,7 @@ describe("commune pages", () => {
     expect(meta.replace(/\u00a0/g, " ")).toBe("Saint-Leu (La Réunion, 974) : la mairie et ses horaires, les écoles, les médecins, les élections, le logement ; météo, air et bus en direct.");
     expect(meta.length).toBeLessThanOrEqual(160);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(cold.refused).toBe(0);
     const warm = await serve(isolate(edge), "/communes/saint-leu");
     expect(warm.text).toMatch(/<h3>Mairie<\/h3><p class="tv">(Ouverte|Fermée) à[ \u00a0]\d\d:\d\d<\/p>/);
     // One read per tile's copy, the hikes, the outings and the open public tenders included, and the volcano's banner.
@@ -494,6 +502,7 @@ describe("commune pages", () => {
     expect(cold.text).toContain("<span class=\"ident\">rundata.re</span> ne mesure pas les bouchons");
     expect(cold.text).toMatch(/Pas de copie récente pour\u00a0: .*<a href="\/coupures-eau\/saint-leu">coupures d&#39;eau<\/a>/);
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(cold.refused).toBe(0);
     // Another isolate: a read for each copy and the vigilance, and the oldest copy missing brought up to date when it fits.
     const warm = await serve(isolate(edge), "/aujourdhui/saint-leu");
     expect(warm.used).toBeLessThanOrEqual(20);
@@ -847,7 +856,7 @@ describe("vigilance and sea pages", () => {
   }
 
   it("shows the vigilance zone by zone, without a banner when all is green", async () => {
-    const { r, text, used } = await serve(isolate(), "/vigilance");
+    const { r, text, used, refused } = await serve(isolate(), "/vigilance");
     expect(r.headers.get("cache-control")).toBe("public, max-age=60");
     expect(text).toContain("Pas d'alerte cyclonique");
     expect(text).toContain("Vigilance dans les 5 zones de l'île");
@@ -857,6 +866,7 @@ describe("vigilance and sea pages", () => {
     expect(text).toContain("<h3>Fortes pluies/<wbr>Orages</h3>");
     expect(text).not.toContain('class="alerte');
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(refused).toBe(0);
   });
 
   it("puts a banner on every page while something is above green", async () => {
@@ -895,7 +905,7 @@ describe("vigilance and sea pages", () => {
     const edge = new EdgeLike();
     await edge.put(SATELLITES, { value: (await counted(PAGE_BUDGET, () => buildSatellites(isolate(), NOW))).value, fetchedAt: NOW.getTime() });
     const cache = isolate(edge);
-    const { text, used } = await serve(cache, "/mer");
+    const { text, used, refused } = await serve(cache, "/mer");
     expect(text).toContain("Mer à La Réunion\u00a0: température et houle <span class=\"n974\">974</span>");
     expect(text).toMatch(/<title>Mer\u00a0: houle, température de l(&#39;|')eau, marée · La Réunion \(974\)<\/title>/);
     expect(text).toContain("Boucan-Canot");
@@ -907,6 +917,7 @@ describe("vigilance and sea pages", () => {
     expect(swell.match(/<li>/g)).toHaveLength(14);
     expect(swell).toMatch(/<b>\d+(,\d)?\u202fm<\/b><span>(du |de l')[a-z-]+, période \d+ s, vers \d+\u00a0h<\/span><span>jusqu'à\u00a0\d+(,\d)?\u202fm /);
     expect(used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect(refused).toBe(0);
     // A coastal commune's tile says it too, from the same copy.
     const saintLeu = await serve(cache, "/communes/saint-leu");
     expect(saintLeu.text).toMatch(/houle prévue\u00a0: \d+(,\d)?\u202fm/);

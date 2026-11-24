@@ -241,8 +241,8 @@ describe("the map on /cyclones (marketing's words, 27/10)", () => {
     const page = cyclonesPage("https://rundata.re", { value: a, fetchedAt: now, stale: false }, now);
     expect(page).toContain(`<img src="/cyclones/carte/${i.empreinte}.png"`);
     expect(page).not.toMatch(/og:image[^>]*cyclones\/carte/);
-    // No active system: no map, no line, and the state is not read.
-    kv.data.clear();
+    expect(page).toContain("mf-carte");
+    // No active system: no map, no line, and the state is not read, the last map still in KV.
     const october = await buildCyclones(cache(OCTOBER), OCTOBER);
     expect(october.carte).toBeUndefined();
     expect(cyclonesPage("https://rundata.re", { value: october, fetchedAt: OCTOBER, stale: false }, OCTOBER)).not.toContain("mf-carte");

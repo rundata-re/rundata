@@ -36,6 +36,8 @@ describe("the texts of third parties in an answer", () => {
     vi.stubGlobal("fetch", async () => new Response("", { status: 503 }));
     for (const level of ["log", "warn", "error"] as const) vi.spyOn(console, level).mockImplementation(() => {});
     const listed = (await (await handle(rpc("tools/list", {}), new Cache())).json()).result.tools.map((t: { name: string }) => t.name);
+    // The four, by name: every other source is down here, so only the day's summary is seen marked below.
+    expect([...OUTILS_TIERS].sort()).toEqual(["actualites", "evenements", "resume_du_jour", "sport"]);
     for (const name of OUTILS_TIERS) expect(listed).toContain(name);
     const text = async (name: string, args: Record<string, unknown>) => (await (await handle(rpc("tools/call", { name, arguments: args }), new Cache())).json()).result.content[0].text as string;
     // Every source down: the day's summary still answers, the others say so in an error, which quotes no one.

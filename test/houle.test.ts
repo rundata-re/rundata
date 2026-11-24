@@ -197,6 +197,7 @@ describe("the waves in temperature_mer", () => {
       await temperatureMer(cache, undefined, NOW);
     });
     expect(cold.used).toBeLessThanOrEqual(PAGE_BUDGET);
+    expect((await cold.settled()).refused).toBe(0);
     expect(marine()).toBe(2);
     expect(fetched.filter((u) => u.includes("marine-api")).map((u) => new URL(u).searchParams.get("models"))).toEqual(["ecmwf_wam", "meteofrance_wave"]);
     expect(edge.ops.filter((k) => k.startsWith("houle:"))).toEqual(["houle:plages", "houle:plages"]); // the miss, the write

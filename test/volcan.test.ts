@@ -234,7 +234,10 @@ describe("volcano", () => {
     const html = volcanPage("https://rundata.re", { value: r, fetchedAt: NOW, stale: false }, NOW);
     expect(html).toContain(`<p class="note">${esc(said)} <a href="/sites-sans-reponse">Voir les sites sans réponse</a>.</p>`);
     // Under the state line, above what follows it.
-    expect(html.indexOf("Niveau du dispositif ORSEC volcan")).toBeLessThan(html.indexOf("Le site de l&#39;OVPF-IPGP"));
+    // « ORSEC » in its <abbr>: the line as the page writes it, found before it is compared.
+    const level = html.search(/Niveau du dispositif <abbr[^>]*>ORSEC<\/abbr> volcan/);
+    expect(level).toBeGreaterThan(0);
+    expect(level).toBeLessThan(html.indexOf("Le site de l&#39;OVPF-IPGP"));
 
     // The collector's copy of the releases not renewed for 2 hours (our machine or the site, we do not know which): not
     // said to be read, only when it read the site.

@@ -19,7 +19,9 @@ const kept = airMesures.latest(all);
 // 10:00 in La Réunion.
 const NOW = new Date("2026-10-29T06:00:00Z");
 const copie: airMesures.Copie = { lu: "2026-10-29T05:40:00Z", derniere_heure: "2026-10-29T08:00:00+04:00", mesures: kept };
-const atmo = parse(JSON.parse(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url), "utf8")));
+// Atmo's layer of 22-23/10, moved to the day before and the day of NOW: with no index of the day, the forecast's
+// answer was the one saying it is missing, and the checks of its words and dots had nothing to check.
+const atmo = parse(JSON.parse(readFileSync(new URL("./fixtures/atmo_974.json", import.meta.url), "utf8").replaceAll("2026-10-22", "2026-10-28").replaceAll("2026-10-23", "2026-10-29")));
 const body = (r: { content: { text: string }[] }) => JSON.parse(r.content[0].text);
 function cache() {
   const store = new MemoryStore();
@@ -160,6 +162,7 @@ describe("measures at Atmo Réunion's stations", () => {
     airMesures.configure(undefined);
     const none = airPage("https://rundata.re", { value: body(await qualiteAir(cache(), undefined, NOW, true)), fetchedAt: NOW, stale: false }, NOW);
     expect(none).not.toContain("airmap");
+    expect(mapLinks(none).length).toBeGreaterThan(0);
     expect(mapLinks(none).every((l) => l.kind === "mk" && / : indice \d sur 6, /.test(l.label))).toBe(true);
     expect(none).toMatch(/Indice ATMO prévu pour aujourd'hui dans chaque commune, de 1 \(bon\) à 6 \(extrêmement mauvais\)\s:\sune prévision, pas une mesure\./);
   });

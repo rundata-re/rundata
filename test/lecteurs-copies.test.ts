@@ -349,6 +349,7 @@ describe("a fetcher that answers someone now and a copy refused for its age, thr
   } as unknown as MeteoAnswer;
   afterEach(() => vi.unstubAllGlobals());
 
+  // The page writes the figure with a narrow space (thin()): « 17,3 °C » as typed here was never in it.
   /** /meteo/cilaos for ChatGPT-User, its copy 5 hours old, the sources answering as `fetch` does. */
   async function ask(fetch: () => Promise<Response>) {
     vi.stubGlobal("fetch", fetch);
@@ -376,14 +377,14 @@ describe("a fetcher that answers someone now and a copy refused for its age, thr
     expect(got.retry).toBeNull();
     expect(got.waited).toBeLessThan(LIVE_READER_WAIT_MS + 500);
     expect(got.html).toContain("Les mesures se chargent");
-    expect(got.html).not.toContain("17,3 °C");
+    expect(got.html).not.toMatch(/17,3[\s\u202f]°C/);
     expect(got.lines).toContain(`copie refusée pour son âge : ${KEY}, âge 300 min`);
   });
 
   it("gives it the page, 200, without the old figures, when the sources fail", async () => {
     const got = await ask(async () => { throw new Error("hors ligne"); });
     expect(got.status).toBe(200);
-    expect(got.html).not.toContain("17,3 °C");
+    expect(got.html).not.toMatch(/17,3[\s\u202f]°C/);
     expect(got.html).not.toMatch(/mesurés <b>/);
   });
 });

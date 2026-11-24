@@ -211,7 +211,10 @@ export const MAX_BYTES: Record<string, number> = {
   // (713 bytes down to 239) and the rain's `convention` is shorter (153 to 93): the cap kept, now with room again.
   "meteo_actuelle (Saint-Denis)": 7_500, // 5 822
   "prevision_meteo (Saint-Denis)": 13_000, // 11 410
-  "temperature_mer (Saint-Gilles)": 12_000, // 14 827, then 10 671 with the whales' rules on /mer only
+  // 14 827, then 10 671 with the whales' rules on /mer only. 12 3xx on 24/11/2026 at 17:32 with the last 30 days
+  // (sur_30_jours, 821, the cap not raised with it); about 12 050 once its nature and NOAA's reference are said in
+  // fewer words (REFERENCE_OUTIL): the size of the day plus a tenth, rounded up to 500.
+  "temperature_mer (Saint-Gilles)": 13_500,
   // 8 688 on 10/11/2026: +509 for sensors.social (its network, its source, its credit), +404 for Atmo unreachable (the
   // warning and the last copy, which go when it answers again); 8 284 without the Atmo part, plus a tenth, rounded up
   // to 500.

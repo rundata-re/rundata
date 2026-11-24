@@ -305,7 +305,8 @@ private fun ColumnScope.Bandeau(commune: Commune?, d: Donnees?) {
             Spacer(GlanceModifier.width(8.dp))
             Column(GlanceModifier.defaultWeight().fillMaxHeight().clickable(ouvrir(Pages.MER)), verticalAlignment = Alignment.CenterVertically) {
                 T(d.mer, if (haut) 22.sp else 20.sp, gras = true)
-                T(if (haut) libelleMer(d.merJour, d.merBouee, d.merHeure) else "mer", 11.sp, ATTENUE)
+                // Deux lignes quand le widget est haut : « mer, vue par satellite le 21/11 » ne tient pas sur une à 411 dp.
+                T(if (haut) libelleMer(d.merJour, d.merBouee, d.merHeure) else "mer", 11.sp, ATTENUE, lignes = if (haut) 2 else 1)
             }
         }
         Spacer(GlanceModifier.width(8.dp))

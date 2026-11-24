@@ -76,7 +76,11 @@ export function findStops(asked: string): { groups: transit.StopGroup[]; near: {
       .map((s) => ({ ...s, extra: extra(s.g) }));
     if (scored.length) {
       const best = Math.max(...scored.map((s) => s.n));
-      const top = scored.filter((s) => s.n === best).sort((a, b) => a.extra - b.extra);
+      // Among equals, the stop of the very name asked first, whatever its network: « Pôle d'Echanges » is Kar'Ouest's,
+      // whose page the tool then gives, not Car Jaune's « Pôle d'Échanges Le Port » (live check of 24/11/2026).
+      const said = transit.expand(asked).trim();
+      const exact = (g: transit.StopGroup) => (transit.expand(g.nom).trim() === said ? 0 : 1);
+      const top = scored.filter((s) => s.n === best).sort((a, b) => a.extra - b.extra || exact(a.g) - exact(b.g));
       const first = top[0].g;
       const groups = top.filter((s) => distanceKm(first.lon, first.lat, s.g.lon, s.g.lat) < 0.4).slice(0, 4).map((s) => s.g);
       // The other stops of that name, farther than the first's few: named, not left unsaid (« La Montagne » gave Montagne

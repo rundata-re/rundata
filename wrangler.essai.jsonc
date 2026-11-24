@@ -3,7 +3,7 @@
 // key, and NO scheduled event, so that the sources are never read twice. Only the alerts' addresses are meant to be
 // used there: no KV, no static assets, none of production's other bindings. ALERTES_ESSAI opens those addresses.
 //
-// Set up once, from the repository (the database's id, not a secret, goes in database_id below after step 1):
+// Set up once, from the repository (the database's id, not a secret, is in database_id below since step 1):
 //   1. npx wrangler d1 create rundata-essai
 //   2. npx wrangler d1 execute rundata-essai -c wrangler.essai.jsonc --remote --file scripts/alertes.sql
 //   3. node scripts/vapid-cles.mjs | npx wrangler secret put VAPID_PRIVE -c wrangler.essai.jsonc
@@ -20,6 +20,6 @@
   "workers_dev": true,
   "preview_urls": false,
   "vars": { "ALERTES_ESSAI": "1" },
-  "d1_databases": [{ "binding": "AVIS", "database_name": "rundata-essai", "database_id": "00000000-0000-0000-0000-000000000000" }],
+  "d1_databases": [{ "binding": "AVIS", "database_name": "rundata-essai", "database_id": "b4ac7d04-82bb-4573-b478-10f91d646594" }],
   "ratelimits": [{ "name": "LIMITE_FORMULAIRES", "namespace_id": "974902", "simple": { "limit": 20, "period": 60 } }]
 }

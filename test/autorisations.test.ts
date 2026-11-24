@@ -84,7 +84,7 @@ describe("the communes' sources", () => {
     expect(MAIRIES_LUES).toBe("Saint-Paul, Le Port, Les Trois-Bassins, Sainte-Marie, Salazie, Le Tampon, Saint-Louis, Saint-André, L'Étang-Salé, La Possession, Petite-Île, Bras-Panon, Saint-Benoît");
     const actus = /\(pas un agenda complet\) : ([^.]*)\./.exec(COUVERTURE)![1].split(", ");
     expect(ACTUS.filter((c) => !actus.includes(c))).toEqual([]);
-    expect(/Sans agenda lu[^:]*: ([^.]*)\./.exec(COUVERTURE)![1]).toBe("Les Avirons, Entre-Deux, Sainte-Rose");
+    expect(/Sans agenda lu[^:]*: ([^.]*)\./.exec(COUVERTURE)![1]).toBe("Les Avirons, Entre-Deux");
     expect(COUVERTURE).not.toMatch(/des sites de \d+ communes|du site de la commune/);
     const c = await cacheWith();
     for (const commune of [...ACTUS, "Le Tampon"]) {

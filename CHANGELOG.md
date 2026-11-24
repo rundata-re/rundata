@@ -6,6 +6,7 @@ Ce que rundata.re sait faire de plus, jour après jour, sur le site (https://run
 
 ## Mardi 24 novembre 2026
 
+- Agenda : les fêtes de l'Est que la CIREST annonce (Dipavali, Détakali, Jours de Feu), y compris à Sainte-Rose et à Salazie.
 - Événements : les contes, la magie et les marionnettes ont chacun leur genre, sur la page et dans l'outil IA, au lieu d'être dits « cirque ».
 - Coupures d'eau : les avis de Sudéau publiés par la ville du Tampon sont lus, avec le lien de chaque avis.
 - Mer : en courbes, la houle mesurée sur 7 jours à la bouée de Saint-Pierre puis prévue sur 4 jours, et la température de la mer sur 30 jours.
